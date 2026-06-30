@@ -122,6 +122,22 @@ def sync_chalice_map_description(player_char):
         _set_chalice_map_description(player_char, CHALICE_MAP_BLANK_DESC)
 
 
+def sync_rookie_body_drop_marker(player_char):
+    """Reflect Rookie Mistake dropped-body quest state onto the loaded tile."""
+    quest = getattr(player_char, "quest_dict", {}).get("Side", {}).get("Rookie Mistake")
+    world_dict = getattr(player_char, "world_dict", {})
+    for tile in world_dict.values():
+        if getattr(tile, "dropped_rookie_body", False):
+            tile.dropped_rookie_body = False
+    dropped_at = quest.get("Body Dropped At") if quest else None
+    if not dropped_at or "Dead Soldier" in getattr(player_char, "special_inventory", {}):
+        return
+    tile = world_dict.get(tuple(dropped_at))
+    if tile is not None:
+        tile.dropped_rookie_body = True
+        tile.read = False
+
+
 def reveal_chalice_map_on_inspect(player_char, item) -> bool:
     """Reveal Chalice location when an instructed player inspects the map."""
     if not item or getattr(item, "name", "") != "Chalice Map":
@@ -198,6 +214,25 @@ CAMBION_ROTATOR_FLAVOR = {
 }
 
 
+def _enemy_names_for_collection_item(item_key: str) -> set[str]:
+    """Return random-encounter enemies that can drop the quest collection item."""
+    if not isinstance(item_key, str) or not item_key.strip():
+        return set()
+    item_key = item_key.strip()
+    targets: set[str] = set()
+    for catalog in enemies.random_enemy_catalog().values():
+        for enemy in catalog:
+            inventory = getattr(enemy, "inventory", {}) or {}
+            for drop_entries in inventory.values():
+                for drop_entry in drop_entries:
+                    item_cls = drop_entry if isinstance(drop_entry, type) else type(drop_entry)
+                    if getattr(item_cls, "__name__", "") == item_key:
+                        enemy_name = getattr(enemy, "name", "").strip()
+                        if enemy_name:
+                            targets.add(enemy_name)
+    return targets
+
+
 def active_random_encounter_quest_targets(player_char) -> set[str]:
     """Return active quest enemy names that random encounters may softly favor."""
     targets: set[str] = set()
@@ -208,13 +243,14 @@ def active_random_encounter_quest_targets(player_char) -> set[str]:
         for quest_data in quests.values():
             if not isinstance(quest_data, dict):
                 continue
-            if quest_data.get("Type") != "Defeat":
-                continue
             if quest_data.get("Completed") or quest_data.get("Turned In"):
                 continue
+            quest_type = quest_data.get("Type")
             target = quest_data.get("What")
-            if isinstance(target, str) and target.strip():
+            if quest_type == "Defeat" and isinstance(target, str) and target.strip():
                 targets.add(target.strip())
+            elif quest_type == "Collect":
+                targets.update(_enemy_names_for_collection_item(target))
 
     for enemy_name, bounty_data in (quest_dict.get("Bounty", {}) or {}).items():
         try:
@@ -240,7 +276,7 @@ def random_encounter_quest_bias_chance(player_char) -> float:
     except (TypeError, ValueError):
         charisma = 0
 
-    return min(0.35, 0.10 + (luck_mod * 0.01) + (charisma * 0.005))
+    return min(0.15, 0.05 + (luck_mod * 0.005) + (charisma * 0.0025))
 
 
 def quest_biased_random_enemy(player_char, level: str, rng=random):
@@ -805,11 +841,36 @@ class CavePath1(CavePath):
     def rookie_body_marker(self):
         return (self.x, self.y, self.z) == (8, 8, 1)
 
+    def _dropped_rookie_body_here(self, player_char):
+        rookie_quest = player_char.quest_dict.get('Side', {}).get('Rookie Mistake')
+        if not rookie_quest:
+            return False
+        dropped_at = rookie_quest.get("Body Dropped At")
+        return list(dropped_at or []) == [self.x, self.y, self.z] and "Dead Soldier" not in player_char.special_inventory
+
     def _should_trigger_rookie_event(self, player_char):
         rookie_quest = player_char.quest_dict.get('Side', {}).get('Rookie Mistake')
-        return bool(self.rookie_body_marker and rookie_quest and not rookie_quest.get('Completed'))
+        return bool(
+            self.rookie_body_marker
+            and rookie_quest
+            and not rookie_quest.get('Completed')
+            and not rookie_quest.get("Body Dropped At")
+        )
 
     def modify_player(self, game, textbox=None, popup_class=None):
+        if self._dropped_rookie_body_here(game.player_char):
+            self.visited = True
+            self.adjacent_visited(game.player_char)
+            rookie_item = items.DeadSoldier()
+            game.player_char.modify_inventory(rookie_item, rare=True)
+            rookie_quest = game.player_char.quest_dict['Side']['Rookie Mistake']
+            rookie_quest['Completed'] = True
+            rookie_quest.pop("Body Dropped At", None)
+            self.dropped_rookie_body = False
+            self.read = True
+            if textbox:
+                textbox.print_text_in_rectangle("You recover the rookie's body.\n")
+            return
         if self._should_trigger_rookie_event(game.player_char):
             self.visited = True
             self.adjacent_visited(game.player_char)

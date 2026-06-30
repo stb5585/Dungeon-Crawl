@@ -115,6 +115,33 @@ def test_vampire_bite_life_steal(monkeypatch):
     assert attacker.health.current == initial_health + 20
 
 
+def test_demon_claw_reports_doom_message():
+    """Demon Claw should surface the Doom message when its special applies."""
+    from src.core.character import StatusEffect
+
+    attacker = create_test_character("Demon", level_num=20)
+    defender = create_test_character("Victim", level_num=5)
+    attacker.stats.charisma = 200
+    defender.stats.wisdom = 1
+    defender.status_effects["Doom"] = StatusEffect()
+
+    result = CombatResult(
+        action="Weapon",
+        actor=attacker,
+        target=defender,
+        hit=True,
+        crit=2.0,
+        damage=20,
+    )
+    results = CombatResultGroup()
+    results.add(result)
+
+    items.DemonClaw().special_effect(results)
+
+    assert defender.status_effects["Doom"].active is True
+    assert "timer has been placed" in results.results[0].message.lower()
+
+
 def test_ninjato_instant_death(monkeypatch):
     """Test that Ninjato can instant kill on critical hits."""
     attacker = create_test_character("Ninja", level_num=20)

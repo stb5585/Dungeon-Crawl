@@ -183,6 +183,7 @@ def test_bounty_accept_turn_in_and_view(monkeypatch):
 
     manager.accept_bounty()
     assert "Goblin Hunt" in player.quest_dict["Bounty"]
+    assert "Goblin Hunt" not in presenter.game.bounties
     assert any("Bounty Accepted: Goblin Hunt" in message for message in FakePopup.messages)
     assert all(kwargs["flush_events"] is True for kwargs in FakePopup.show_kwargs)
     assert all(kwargs["require_key_release"] is True for kwargs in FakePopup.show_kwargs)
@@ -191,6 +192,7 @@ def test_bounty_accept_turn_in_and_view(monkeypatch):
     assert "No new bounties available at this time." in FakePopup.messages
 
     player.quest_dict["Bounty"]["Goblin Hunt"][2] = True
+    presenter.game.bounties["Goblin Hunt"] = player.quest_dict["Bounty"]["Goblin Hunt"][0]
     player.level.exp_to_gain = 0
     level_up_calls = []
     manager.level_up = lambda: level_up_calls.append(True) or setattr(player.level, "exp_to_gain", "MAX")
@@ -200,7 +202,90 @@ def test_bounty_accept_turn_in_and_view(monkeypatch):
     assert added_items == ["Goblin Ear"]
     assert level_up_calls == [True]
     assert "Goblin Hunt" not in player.quest_dict["Bounty"]
+    assert "Goblin Hunt" not in presenter.game.bounties
 
     player.quest_dict["Bounty"] = {}
     manager.view_active_bounties()
     assert any("No active bounties." in message for message in FakePopup.messages)
+
+
+def test_bounty_board_can_abandon_active_bounty(monkeypatch):
+    FakePopup.messages = []
+    FakePopup.show_kwargs = []
+    player = _make_player(level=20)
+    player.quest_dict["Bounty"] = {
+        "Rat Hunt": [{"enemy": SimpleNamespace(name="Giant Rat"), "num": 3, "gold": 40, "exp": 4}, 1, False]
+    }
+    presenter = _make_presenter()
+    presenter.game = SimpleNamespace(bounties={"Fresh Bounty": {"num": 1}})
+    monkeypatch.setattr(inn.InnManager, "_load_background", lambda self: setattr(self, "background", None))
+    monkeypatch.setattr("src.ui_pygame.gui.inn.ConfirmationPopup", FakePopup)
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.inn.LevelUpScreen",
+        lambda *_args, **_kwargs: SimpleNamespace(show_level_up=lambda *_a, **_k: None),
+    )
+    manager = inn.InnManager(presenter, player)
+    board_options = []
+    board_calls = 0
+
+    class FakeLocationMenuScreen:
+        def __init__(self, _presenter, title):
+            self.title = title
+
+        def navigate(self, options, reset_cursor=False, **_kwargs):
+            nonlocal board_calls
+            if self.title == "Bounty Board":
+                board_options.append(list(options))
+                board_calls += 1
+                return options.index("Abandon Bounty") if board_calls == 1 else options.index("Leave")
+            if self.title == "Abandon Bounty":
+                return 0
+            return None
+
+    monkeypatch.setattr("src.ui_pygame.gui.inn.LocationMenuScreen", FakeLocationMenuScreen)
+
+    manager.show_bounty_board()
+
+    assert "Abandon Bounty" in board_options[0]
+    assert "Rat Hunt" not in player.quest_dict["Bounty"]
+    assert presenter.game.bounties == {"Fresh Bounty": {"num": 1}}
+    assert any("abandon the Rat Hunt bounty" in message for message in FakePopup.messages)
+    assert "Abandoned bounty: Rat Hunt" in FakePopup.messages
+
+
+def test_accept_bounty_stays_open_until_no_bounties_remain(monkeypatch):
+    FakePopup.messages = []
+    FakePopup.show_kwargs = []
+    player = _make_player(level=20)
+    presenter = _make_presenter()
+    presenter.game = SimpleNamespace(
+        bounties={
+            "Goblin Hunt": {"enemy": SimpleNamespace(name="Goblin"), "num": 2, "gold": 50, "exp": 5},
+            "Rat Hunt": {"enemy": SimpleNamespace(name="Rat"), "num": 3, "gold": 40, "exp": 4},
+        }
+    )
+    monkeypatch.setattr(inn.InnManager, "_load_background", lambda self: setattr(self, "background", None))
+    monkeypatch.setattr("src.ui_pygame.gui.inn.ConfirmationPopup", FakePopup)
+    monkeypatch.setattr("src.ui_pygame.gui.inn.LevelUpScreen", lambda *_args, **_kwargs: SimpleNamespace(show_level_up=lambda *_a, **_k: None))
+    manager = inn.InnManager(presenter, player)
+    menu_titles = []
+
+    class FakeLocationMenuScreen:
+        def __init__(self, _presenter, title):
+            self.title = title
+
+        def navigate_with_content(self, items, **_kwargs):
+            menu_titles.append((self.title, tuple(name for name, _value in items)))
+            return 0
+
+    monkeypatch.setattr("src.ui_pygame.gui.inn.LocationMenuScreen", FakeLocationMenuScreen)
+
+    manager.accept_bounty()
+
+    assert set(player.quest_dict["Bounty"]) == {"Goblin Hunt", "Rat Hunt"}
+    assert presenter.game.bounties == {}
+    assert menu_titles == [
+        ("Accept Bounty", ("Goblin Hunt", "Rat Hunt", "Back")),
+        ("Accept Bounty", ("Rat Hunt", "Back")),
+    ]
+    assert any("No new bounties available at this time." in message for message in FakePopup.messages)

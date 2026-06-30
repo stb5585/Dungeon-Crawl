@@ -186,11 +186,11 @@ def test_modern_character_summary_helpers_cover_xp_equipment_resistances_and_eff
     player.location_z = 3
     assert screen.location_label(player) == "Dungeon Level 3"
     player.location_z = 0
-    assert screen.portrait_filename(player) == "human_female.png"
+    assert screen.portrait_filename(player) == "human_base_portraits.png"
 
     player.race = SimpleNamespace(name="Half Elf")
     player.sex = "Male"
-    assert screen.portrait_filename(player) == "half_elf_male.png"
+    assert screen.portrait_filename(player) == "half_elf_base_portraits.png"
     player.race = SimpleNamespace(name="Human")
     player.sex = "Female"
 
@@ -198,6 +198,7 @@ def test_modern_character_summary_helpers_cover_xp_equipment_resistances_and_eff
     assert combat["HP"] == "45/60"
     assert combat["Attack"] == "18"
     assert combat["Magic Defense"] == "7"
+
     assert combat["Critical"] == "12.5%"
     assert combat["Weight"] == "19/140"
 
@@ -317,6 +318,48 @@ def test_modern_character_summary_helpers_cover_xp_equipment_resistances_and_eff
     assert screen.selected_equipment_slot(player) == "Armor"
     screen.move_equipment_selector(player, "right")
     assert screen.selected_equipment_slot(player) == "OffHand"
+
+
+def test_portrait_details_draws_long_location_without_truncating(monkeypatch):
+    screen = ModernCharacterScreen(_make_presenter())
+    drawn = []
+    monkeypatch.setattr(
+        screen,
+        "_draw_text",
+        lambda text, font, _color, _x, y, _max_width=None: drawn.append((text, y, font.get_height())),
+    )
+
+    detail_rect = pygame.Rect(0, 0, 120, 80)
+    screen._draw_portrait_details(
+        [("Location", "Realm of Cambion")],
+        detail_rect,
+        0,
+    )
+
+    assert "Realm of Cambion" in [text for text, _y, _height in drawn]
+    assert not any(str(text).endswith("...") for text, _y, _height in drawn)
+    assert all(y + height <= detail_rect.bottom for _text, y, height in drawn)
+
+
+def test_portrait_details_compact_rows_stay_inside_short_detail_box(monkeypatch):
+    screen = ModernCharacterScreen(_make_presenter())
+    drawn = []
+    monkeypatch.setattr(
+        screen,
+        "_draw_text",
+        lambda text, font, _color, _x, y, _max_width=None: drawn.append((text, y, font.get_height())),
+    )
+
+    detail_rect = pygame.Rect(0, 0, 210, 46)
+    screen._draw_portrait_details(
+        [("Gold", "71789G"), ("Location", "Dungeon Level 1")],
+        detail_rect,
+        0,
+    )
+
+    assert "Location" in [text for text, _y, _height in drawn]
+    assert "Dungeon Level 1" in [text for text, _y, _height in drawn]
+    assert all(y + height <= detail_rect.bottom for _text, y, height in drawn)
 
 
 def test_modern_character_companion_display_prefers_familiar_then_living_summon():
@@ -447,10 +490,10 @@ def test_modern_character_menu_renders_with_and_without_portrait_assets(monkeypa
     screen.load_portrait = lambda _player: pygame.Surface((225, 400), pygame.SRCALPHA)
     screen.draw_all(player)
     assert presenter.screen.blit_calls
-    assert "Gold" in presenter.normal_font.render_calls
-    assert "321G" in presenter.normal_font.render_calls
-    assert "Location" in presenter.normal_font.render_calls
-    assert "Town" in presenter.normal_font.render_calls
+    assert "Gold" in presenter.small_font.render_calls
+    assert "321G" in presenter.small_font.render_calls
+    assert "Location" in presenter.small_font.render_calls
+    assert "Town" in presenter.small_font.render_calls
     gold_label_x = next(position[0] for surface, position in presenter.screen.blit_calls if getattr(surface, "text", None) == "Gold")
     gold_value_x = next(position[0] for surface, position in presenter.screen.blit_calls if getattr(surface, "text", None) == "321G")
     assert gold_value_x > gold_label_x

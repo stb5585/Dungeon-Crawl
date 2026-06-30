@@ -628,9 +628,6 @@ class DungeonManager:
             new_tile.visited = True
             new_tile.adjacent_visited(self.player_char)
 
-        # Add movement confirmation
-        self.add_message(f"Moved to ({self.player_char.location_x}, {self.player_char.location_y})")
-
         # Debug: log tile type and FirePath state on each step
         try:
             x = self.player_char.location_x
@@ -1432,6 +1429,12 @@ class DungeonManager:
             if self.player_char.quest_dict["Main"]["A Bad Dream"].get("Turned In"):
                 if not self.player_char.quest_dict["Main"]["A Bad Dream"].get("Waitress Defeated", False):
                     self.game.special_event("Waitress")
+                    self._play_sfx("waitress_wail")
+                    self._show_special_event_dialogue(
+                        "Waitress",
+                        title="Waitress",
+                        image_path=self._enemy_combat_sprite_image_path("mad_waitress.png"),
+                    )
                     self.add_message("The Waitress appears, overcome with grief and rage!")
                     
                     enemy = enemies.NightHag2()
@@ -2498,9 +2501,12 @@ class DungeonManager:
                     self.player_char.exit_realm_of_cambion()
                     self._mark_view_dirty()
                 else:
-                    self.add_message("You were defeated... You awaken safely back in town.")
+                    self.add_message("You were defeated...")
                     self._detach_dungeon_background_provider()
-                    self.player_char.to_town()
+                    death_message = self.player_char.death()
+                    for line in str(death_message or "").splitlines():
+                        if line.strip():
+                            self.add_message(line.strip())
                 self.player_char.state = 'normal'
                 # End dungeon exploration loop (return control to town menu)
                 self.running = False

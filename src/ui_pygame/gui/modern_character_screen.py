@@ -132,12 +132,8 @@ class ModernCharacterScreen(TownScreenBase):
     @staticmethod
     def portrait_filename(player_char) -> str:
         race = ModernCharacterScreen._attr_name(getattr(player_char, "race", None), "Human")
-        sex = str(getattr(player_char, "sex", "Male") or "Male")
         race_key = PortraitManager.normalize_key(race, "human")
-        sex_key = PortraitManager.normalize_key(sex, "male")
-        if sex_key not in {"male", "female"}:
-            sex_key = "male"
-        return f"{race_key}_{sex_key}.png"
+        return f"{race_key}_base_portraits.png"
 
     def portrait_path(self, player_char) -> Path:
         return PORTRAIT_DIR / self.portrait_filename(player_char)
@@ -393,16 +389,25 @@ class ModernCharacterScreen(TownScreenBase):
         ]
 
     def _draw_portrait_details(self, rows: list[tuple[str, str]], rect: pygame.Rect, y: int) -> int:
-        font = self.normal_font
-        line_gap = 6
-        label_width = max(62, rect.width // 3)
-        value_width = max(1, rect.width - label_width - 12)
+        font = self.small_font
+        line_gap = 4
         for label, value in rows:
+            if y + font.get_height() > rect.bottom:
+                break
+            label_width = min(max(62, font.size(label)[0] + 8), max(62, rect.width // 2))
+            value_width = max(1, rect.width - label_width - 12)
             self._draw_text(label, font, self.colors.GRAY, rect.left + 4, y, label_width)
-            value_text = self._fit_text(value, font, value_width)
-            value_x = rect.right - 4 - font.size(value_text)[0]
-            self._draw_text(value_text, font, self.colors.WHITE, value_x, y, value_width)
-            y += font.get_height() + line_gap
+            if font.size(str(value))[0] <= value_width:
+                value_text = str(value)
+                value_x = rect.right - 4 - font.size(value_text)[0]
+                self._draw_text(value_text, font, self.colors.WHITE, value_x, y, value_width)
+                y += font.get_height() + line_gap
+            else:
+                y += font.get_height()
+                full_width = max(1, rect.width - 8)
+                value_text = str(value)
+                self._draw_text(value_text, font, self.colors.WHITE, rect.left + 4, y, full_width)
+                y += font.get_height() + line_gap
             if y > rect.bottom:
                 break
         return y
@@ -799,8 +804,8 @@ class ModernCharacterScreen(TownScreenBase):
         else:
             self._draw_text("Portrait", self.small_font, self.colors.GRAY, portrait.left + 10, portrait.centery - self.small_font.get_height() // 2, portrait.width - 20)
 
-        detail_y = portrait.bottom + 12
-        detail_rect = pygame.Rect(portrait.left, detail_y, portrait.width, self.character_panel_rect.bottom - detail_y - 16)
+        detail_y = portrait.bottom + 8
+        detail_rect = pygame.Rect(portrait.left, detail_y, portrait.width, self.character_panel_rect.bottom - detail_y - 8)
         self._draw_portrait_details(self.build_portrait_details(player_char), detail_rect, detail_y)
 
         info_x = portrait.right + 16

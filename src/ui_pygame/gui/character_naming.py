@@ -53,10 +53,7 @@ class CharacterNamingScreen:
     @staticmethod
     def portrait_filename(race_name: str, sex: str) -> str:
         race_key = PortraitManager.normalize_key(race_name, "human")
-        sex_key = PortraitManager.normalize_key(sex, "male")
-        if sex_key not in {"male", "female"}:
-            sex_key = "male"
-        return f"{race_key}_{sex_key}.png"
+        return f"{race_key}_base_portraits.png"
 
     @property
     def portrait_path(self) -> Path:

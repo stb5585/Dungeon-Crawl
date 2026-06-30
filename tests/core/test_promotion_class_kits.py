@@ -288,6 +288,51 @@ def test_rogue_cheat_death_spends_misfortune_and_applies_jinx(monkeypatch):
     assert promotion_kits.combat_state(rogue)["jinx_turns"] == 0
 
 
+def test_thief_rogue_fortune_only_grows_on_critical_damage():
+    thief = _player("Thief")
+    target = enemies.Goblin()
+
+    promotion_kits.record_damage_event(
+        thief,
+        target,
+        10,
+        "Physical",
+        metadata={"attack_source": "weapon", "is_critical": False},
+    )
+    assert promotion_kits.combat_state(thief)["fortune"] == 0
+
+    promotion_kits.record_damage_event(
+        thief,
+        target,
+        10,
+        "Physical",
+        metadata={"attack_source": "weapon", "is_critical": True},
+    )
+    assert promotion_kits.combat_state(thief)["fortune"] == 1
+
+
+def test_risky_thief_ability_miss_adds_misfortune_without_noncrit_fortune(monkeypatch):
+    thief = _player("Thief", mana=(100, 100))
+    target = enemies.Goblin()
+
+    monkeypatch.setattr(thief, "weapon_damage", lambda *_args, **_kwargs: ("misses.\n", False, 1))
+    abilities.Mug().use(thief, target)
+    state = promotion_kits.combat_state(thief)
+    assert state["fortune"] == 0
+    assert state["misfortune"] == 1
+
+    state["misfortune"] = 0
+
+    def noncritical_hit(target, **_kwargs):
+        target.health.current -= 5
+        return "hits.\n", True, 1
+
+    monkeypatch.setattr(thief, "weapon_damage", noncritical_hit)
+    abilities.Mug().use(thief, target)
+    assert state["fortune"] == 0
+    assert state["misfortune"] == 0
+
+
 def test_troubadour_crescendo_coda_practice_and_encore_preservation():
     troubadour = _player("Troubadour", mana=(100, 100))
     troubadour.equipment["OffHand"] = items.Lute()

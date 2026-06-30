@@ -733,6 +733,45 @@ class TestSpecialTiles:
         assert type(rookie_tile.enemy).__name__ == "Zombie"
         assert player.state == "fight"
 
+    def test_rookie_mistake_body_drops_on_death_and_can_be_recovered(self):
+        player = _make_player(level=12)
+        player.location_x, player.location_y, player.location_z = (4, 5, 1)
+        player.gold = 0
+        dropped_tile = map_tiles.CavePath1(4, 5, 1)
+        player.world_dict[(4, 5, 1)] = dropped_tile
+        player.quest_dict["Side"]["Rookie Mistake"] = {
+            "What": "Rookie",
+            "Total": 1,
+            "Completed": True,
+            "Turned In": False,
+        }
+        player.modify_inventory(items.DeadSoldier(), rare=True)
+
+        message = player.death()
+
+        quest = player.quest_dict["Side"]["Rookie Mistake"]
+        assert "Dead Soldier" not in player.special_inventory
+        assert quest["Completed"] is False
+        assert quest["Body Dropped At"] == [4, 5, 1]
+        assert dropped_tile.dropped_rookie_body is True
+        assert "rookie's body slips from your grasp" in message.lower()
+
+        dropped_tile.dropped_rookie_body = False
+        map_tiles.sync_rookie_body_drop_marker(player)
+        assert dropped_tile.dropped_rookie_body is True
+
+        game = _make_game(player)
+        textbox = RecordingTextBox()
+        player.location_x, player.location_y, player.location_z = (4, 5, 1)
+        dropped_tile.modify_player(game, textbox=textbox)
+
+        assert "Dead Soldier" in player.special_inventory
+        assert quest["Completed"] is True
+        assert "Body Dropped At" not in quest
+        assert dropped_tile.dropped_rookie_body is False
+        assert game.events == []
+        assert textbox.messages == ["You recover the rookie's body.\n"]
+
     def test_ore_vault_hidden_branch_warp_idle_branch_and_funhouse_return_guard(self, monkeypatch):
         player = _make_player()
         player.world_dict = {

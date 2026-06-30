@@ -1705,7 +1705,7 @@ class TestBatch3YAMLLoading:
         ("dispel_slash.yaml", "Dispel Slash", 20),
         ("life_tap.yaml", "Life Tap", 0),
         ("mana_tap.yaml", "Mana Tap", 0),
-        ("smoke_screen.yaml", "Smoke Screen", 0),
+        ("smoke_screen.yaml", "Smoke Screen", 5),
     ])
     def test_load_skill(self, filename, expected_name, expected_cost):
         from src.core.data.ability_loader import AbilityFactory
@@ -1770,6 +1770,11 @@ class TestBatch3AbilityFactories:
         assert sa._requires_incapacitated is True
         assert sa._crit_override == 2
         assert sa._ignore_armor is True
+
+    def test_backstab_requires_incapacitated_target(self):
+        from src.core import abilities
+        bs = abilities.Backstab()
+        assert bs._requires_incapacitated is True
 
     def test_imbue_weapon_intel_mod(self):
         from src.core import abilities
@@ -1866,8 +1871,19 @@ class TestBatch3CombatIntegration:
         from src.core import abilities
         user, target = self._make_combatants()
         sa = abilities.SneakAttack()
+        mana_before = user.mana.current
         result = sa.use(user, target)
         assert "ineffective" in result.lower()
+        assert user.mana.current == mana_before
+
+    def test_backstab_ineffective_on_active_target(self):
+        from src.core import abilities
+        user, target = self._make_combatants()
+        backstab = abilities.Backstab()
+        mana_before = user.mana.current
+        result = backstab.use(user, target)
+        assert "ineffective" in result.lower()
+        assert user.mana.current == mana_before
 
     def test_sneak_attack_works_when_incapacitated(self):
         from src.core import abilities
@@ -5336,7 +5352,7 @@ class TestBatch9YAMLLoading:
 
     _YAMLS = [
         ("shield_slam.yaml", "Shield Slam", 8),
-        ("kidney_punch.yaml", "Kidney Punch", 0),
+        ("kidney_punch.yaml", "Kidney Punch", 18),
         ("poison_strike.yaml", "Poison Strike", 14),
         ("dim_mak.yaml", "Dim Mak", 50),
         ("exploit_weakness.yaml", "Exploit Weakness", 10),
@@ -5491,8 +5507,14 @@ class TestBatch9KidneyPunch:
         user, target = self._make_combatants()
         mana_before = user.mana.current
         abilities.KidneyPunch().use(user, target)
-        # Effect handles mana: 12
-        assert user.mana.current == mana_before - 12
+        assert user.mana.current == mana_before - 18
+
+    def test_kidney_punch_mana_never_goes_negative(self):
+        from src.core import abilities
+        user, target = self._make_combatants()
+        user.mana.current = 10
+        abilities.KidneyPunch().use(user, target)
+        assert user.mana.current == 0
 
 
 class TestBatch9PoisonStrike:

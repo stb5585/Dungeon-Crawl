@@ -74,8 +74,8 @@ def test_bounty_options_and_accept_quest_handle_missing_names():
     board.accept_quest({"name": "Goblin Hunt"})
     assert board.bounties == [{"name": "Rat Hunt"}]
 
-    board.bounties = [{"enemy": "Nameless"}]
-    assert board.bounty_options() == []
+    board.bounties = [{"enemy": SimpleNamespace(name="Wolf")}, {"enemy": "Nameless"}]
+    assert board.bounty_options() == ["Wolf"]
 
 
 def test_get_quest_dict_uses_cache(monkeypatch):

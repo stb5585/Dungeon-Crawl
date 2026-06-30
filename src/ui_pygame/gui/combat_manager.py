@@ -1339,7 +1339,8 @@ class GUICombatManager:
             if line.strip():
                 self.combat_view.add_combat_message(line)
 
-        if engine_action == "Use Skill" and choice == "Smoke Screen":
+        action_fled = result.fled or bool(getattr(self.engine, "flee", False))
+        if engine_action == "Use Skill" and choice == "Smoke Screen" and action_fled:
             self._play_smoke_screen_visual(player_char, enemy, "player")
         else:
             self._flush_result_frame(player_char, enemy)
@@ -1371,7 +1372,7 @@ class GUICombatManager:
 
         self._preserve_waitress_for_transition(enemy)
 
-        if result.fled or bool(getattr(self.engine, "flee", False)):
+        if action_fled:
             return "flee"
         return "action_taken"
     
@@ -1551,7 +1552,7 @@ class GUICombatManager:
         """Show skill selection menu and return selected skill name."""
         # Filter out passive and currently unusable equipment-dependent skills.
         skills = [name for name, skill in player_char.spellbook['Skills'].items()
-                  if self._skill_available_for_selection(player_char, skill)]
+                  if self._skill_available_for_selection(player_char, skill, enemy)]
         
         if not skills:
             self.combat_view.add_combat_message("No skills learned!")
@@ -1811,7 +1812,7 @@ class GUICombatManager:
                     if confirmed:
                         return confirm_intent(intents[selected])
 
-    def _skill_available_for_selection(self, player_char, skill) -> bool:
+    def _skill_available_for_selection(self, player_char, skill, target=None) -> bool:
         """Return whether a learned skill should be shown in the combat skill list."""
         if getattr(skill, 'passive', False):
             return False
@@ -1822,6 +1823,11 @@ class GUICombatManager:
 
         if getattr(skill, 'weapon', False) and player_char.is_disarmed():
             return False
+
+        if getattr(skill, '_requires_incapacitated', False):
+            incapacitated = getattr(target, 'incapacitated', None)
+            if target is None or not callable(incapacitated) or not incapacitated():
+                return False
 
         return True
     
@@ -1971,75 +1977,107 @@ class GUICombatManager:
                 return "flee"
             return None
 
+        def is_shapeshift_action(action_name, choice_name, skill_obj=None):
+            return (
+                action_name == "Use Skill"
+                and (choice_name == "Shapeshift" or getattr(skill_obj, "name", "") == "Shapeshift")
+            )
+
+        def execute_enemy_action(action_name, choice_name, *, pause_after=True):
+            if action_name == "Nothing":
+                self.combat_view.add_combat_message(f"{enemy.name} does nothing.")
+                return None, False
+
+            # Record state before execution
+            player_hp_before = player_char.health.current
+            player_stun_before = bool(player_char.status_effects["Stun"].active)
+            enemy_name_before = enemy.name
+            enemy_hp_before = enemy.health.current
+
+            # Delegate to engine (handles Smoke Screen flee, Slot Machine, Doublecast, Jump, etc.)
+            slot_cb = None
+            skill_obj = None
+            if action_name == "Use Skill" and choice_name:
+                skill_obj = enemy.spellbook.get('Skills', {}).get(choice_name)
+                if skill_obj and skill_obj.name == "Slot Machine":
+                    slot_cb = lambda _u, _t: self._show_slot_machine_reveal(player_char, enemy)
+
+            result = self.engine.execute_action(action_name, choice=choice_name, slot_machine_callback=slot_cb)
+            self._record_bestiary_ability_if_visible(player_char, enemy, choice_name or action_name)
+            is_smoke_screen = (
+                action_name == "Use Skill"
+                and (choice_name == "Smoke Screen" or getattr(skill_obj, "name", "") == "Smoke Screen")
+            )
+            action_fled = result.fled or bool(getattr(self.engine, "flee", False))
+            if action_fled and is_smoke_screen:
+                self.combat_view.hide_enemy_for_flee()
+
+            # Display messages
+            for line in result.message.strip().split('\n'):
+                if line.strip():
+                    self.combat_view.add_combat_message(line)
+            self._add_new_player_stun_message(player_char, player_stun_before, result.message)
+
+            if is_smoke_screen and action_fled:
+                self._play_smoke_screen_visual(player_char, enemy, "enemy")
+            else:
+                self._flush_result_frame(player_char, enemy)
+
+            # Check if enemy shapeshifted (name changed)
+            shapeshifted = is_shapeshift_action(action_name, choice_name, skill_obj)
+            if enemy.name != enemy_name_before:
+                self.combat_view.reload_enemy_sprite(enemy)
+
+            # Show damage flash if player took damage
+            damage_to_player = max(0, player_hp_before - player_char.health.current)
+            if damage_to_player > 0:
+                self._show_combat_damage_effect("player", action_name, choice_name, result.message, damage_to_player)
+                self._flush_result_frame(player_char, enemy)
+            else:
+                self._show_combat_heal_text("player", max(0, player_char.health.current - player_hp_before))
+            self._show_combat_heal_text("enemy", max(0, enemy.health.current - enemy_hp_before))
+
+            if action_fled:
+                return "flee", shapeshifted
+
+            if pause_after:
+                # Render updated state and show result (with animation updates)
+                result_clock = pygame.time.Clock()
+                for _ in range(48):  # 800ms at 60fps
+                    for event in pygame.event.get():
+                        if event.type == pygame.QUIT:
+                            pygame.quit()
+                            sys.exit(0)
+                        self._handle_combat_log_scroll_event(event)
+                    self._render_combat_frame(player_char, enemy, [], -1)
+                    pygame.display.flip()
+                    result_clock.tick(60)
+
+            return None, shapeshifted
+
         # Enemy AI chooses action
         action, choice = self.engine.get_enemy_action()
-
-        if action == "Nothing":
-            self.combat_view.add_combat_message(f"{enemy.name} does nothing.")
-            return None
-
-        # Record state before execution
-        player_hp_before = player_char.health.current
-        player_stun_before = bool(player_char.status_effects["Stun"].active)
-        enemy_name_before = enemy.name
-        enemy_hp_before = enemy.health.current
-
-        # Delegate to engine (handles Smoke Screen flee, Slot Machine, Doublecast, Jump, etc.)
-        slot_cb = None
-        skill_obj = None
-        if action == "Use Skill" and choice:
-            skill_obj = enemy.spellbook.get('Skills', {}).get(choice)
-            if skill_obj and skill_obj.name == "Slot Machine":
-                slot_cb = lambda _u, _t: self._show_slot_machine_reveal(player_char, enemy)
-
-        result = self.engine.execute_action(action, choice=choice, slot_machine_callback=slot_cb)
-        self._record_bestiary_ability_if_visible(player_char, enemy, choice or action)
-        is_smoke_screen = (
-            action == "Use Skill"
-            and (choice == "Smoke Screen" or getattr(skill_obj, "name", "") == "Smoke Screen")
+        skill_obj = enemy.spellbook.get('Skills', {}).get(choice) if action == "Use Skill" and choice else None
+        result_status, shapeshifted = execute_enemy_action(
+            action,
+            choice,
+            pause_after=not is_shapeshift_action(action, choice, skill_obj),
         )
-        action_fled = result.fled or bool(getattr(self.engine, "flee", False))
-        if action_fled and is_smoke_screen:
-            self.combat_view.hide_enemy_for_flee()
+        if result_status:
+            return result_status
 
-        # Display messages
-        for line in result.message.strip().split('\n'):
-            if line.strip():
-                self.combat_view.add_combat_message(line)
-        self._add_new_player_stun_message(player_char, player_stun_before, result.message)
-
-        if is_smoke_screen:
-            self._play_smoke_screen_visual(player_char, enemy, "enemy")
-        else:
-            self._flush_result_frame(player_char, enemy)
-
-        # Check if enemy shapeshifted (name changed)
-        if enemy.name != enemy_name_before:
-            self.combat_view.reload_enemy_sprite(enemy)
-
-        # Show damage flash if player took damage
-        damage_to_player = max(0, player_hp_before - player_char.health.current)
-        if damage_to_player > 0:
-            self._show_combat_damage_effect("player", action, choice, result.message, damage_to_player)
-            self._flush_result_frame(player_char, enemy)
-        else:
-            self._show_combat_heal_text("player", max(0, player_char.health.current - player_hp_before))
-        self._show_combat_heal_text("enemy", max(0, enemy.health.current - enemy_hp_before))
-
-        if action_fled:
-            return "flee"
-
-        # Render updated state and show result (with animation updates)
-        result_clock = pygame.time.Clock()
-        for _ in range(48):  # 800ms at 60fps
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    sys.exit(0)
-                self._handle_combat_log_scroll_event(event)
-            self._render_combat_frame(player_char, enemy, [], -1)
-            pygame.display.flip()
-            result_clock.tick(60)
+        if shapeshifted and player_char.is_alive():
+            follow_action, follow_choice = self.engine.get_enemy_action()
+            follow_skill = (
+                enemy.spellbook.get('Skills', {}).get(follow_choice)
+                if follow_action == "Use Skill" and follow_choice
+                else None
+            )
+            if is_shapeshift_action(follow_action, follow_choice, follow_skill):
+                follow_action, follow_choice = "Attack", None
+            result_status, _follow_shapeshifted = execute_enemy_action(follow_action, follow_choice)
+            if result_status:
+                return result_status
 
         return None
 

@@ -181,11 +181,18 @@ class PromotionScreen(TownScreenBase):
             y += line_height
 
         y += 15
-        equip_header = self.normal_font.render("New Equipment", True, self.colors.GOLD)
+        equip_header = self.normal_font.render("Class Gear Profile", True, self.colors.GOLD)
         self.screen.blit(equip_header, (left_rect.left + 18, y))
         y = equip_header.get_height() + y + 4
 
         equipment = cls_instance.equipment
+        note = "Existing legal gear is kept; illegal gear moves to inventory."
+        for wrapped in self._wrap_lines(note, 80):
+            text = self.small_font.render(wrapped, True, self.colors.GRAY)
+            self.screen.blit(text, (left_rect.left + 28, y))
+            y += line_height
+        y += 4
+
         equip_lines = [
             ("Weapon", equipment.get("Weapon")),
             ("OffHand", equipment.get("OffHand")),

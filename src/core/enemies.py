@@ -2861,7 +2861,6 @@ class Wendigo(Fey):
                                      "Berserk": abilities.Berserk()},
                           "Skills": {'Double Strike': abilities.DoubleStrike(),
                                      'Crushing Blow': abilities.CrushingBlow()}}
-        self.flying = True
         self.resistance['Fire'] = -0.75
         self.resistance['Ice'] = 1
         self.resistance["Poison"] = 1

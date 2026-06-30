@@ -143,7 +143,8 @@ def _make_character():
         magic_effects={"Totem": _effect(), "Regen": _effect(), "Jump": _effect(), "Astral Shift": _effect()},
         class_effects={"Power Chant": _effect()},
         maelstrom_hits=2,
-        spellbook={"Skills": {"Maelstrom Weapon": object()}},
+        evasive_guard_stacks=2,
+        spellbook={"Skills": {"Maelstrom Weapon": object(), "Evasive Guard": object()}},
     )
 
 
@@ -197,6 +198,7 @@ def test_combat_log_filters_scrolls_and_status_helpers():
     assert ("REG", True) in icons
     assert ("AST", True) in icons
     assert ("MW2", True) in icons
+    assert ("EG2", True) in icons
     assert icons.index(("PRN", False)) < icons.index(("REG", True))
 
     character = _make_character()
@@ -397,6 +399,48 @@ def test_turn_indicator_renders_player_and_enemy_states(monkeypatch):
     assert player_token_calls == [(player.name, (46, 46))]
     assert token_calls == [(enemy.name, (46, 46))]
     assert not circle_calls
+
+
+def test_turn_indicator_skips_incapacitated_actor(monkeypatch):
+    view = _make_view()
+    player = SimpleNamespace(name="Hero", incapacitated=lambda: True)
+    enemy = SimpleNamespace(name="Goblin", incapacitated=lambda: False)
+    player_token_calls = []
+    view.player_token_manager = SimpleNamespace(
+        get_scaled_token=lambda target, size: player_token_calls.append((target.name, size))
+    )
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.draw.rect", lambda *_args, **_kwargs: None)
+
+    view._render_turn_indicator(player, enemy, current_turn="player")
+
+    assert player_token_calls == []
+    assert view.screen.blit_calls == []
+
+
+def test_flying_enemy_renders_higher_than_grounded(monkeypatch):
+    view = _make_view()
+    enemy = SimpleNamespace(name="Bat", health=SimpleNamespace(current=10, max=10), flying=False, tunnel=False)
+    animator = SimpleNamespace(
+        damage_flash=0,
+        animation_type=None,
+        death_progress=0,
+        bob_offset=0,
+        sway_offset=0,
+        apply_tint=lambda surface, _color, _alpha: surface,
+    )
+    monkeypatch.setattr(view, "_get_sprite_animator", lambda _enemy: animator)
+    monkeypatch.setattr(view, "_enemy_combat_sprite_size", lambda _enemy: (64, 64))
+    monkeypatch.setattr(view, "_enemy_sprite_surface", lambda *_args, **_kwargs: DummySurface((64, 64), text="enemy"))
+    monkeypatch.setattr(view, "_draw_mirror_images", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.draw.rect", lambda *_args, **_kwargs: None)
+
+    view._render_enemy(enemy)
+    grounded_center_y = view._last_enemy_target_rect.centery
+    enemy.flying = True
+    view._render_enemy(enemy)
+    flying_center_y = view._last_enemy_target_rect.centery
+
+    assert flying_center_y < grounded_center_y
 
 
 def test_render_combat_does_not_default_to_player_turn(monkeypatch):

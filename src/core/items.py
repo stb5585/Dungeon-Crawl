@@ -1725,7 +1725,9 @@ class DemonClaw(NaturalWeapon):
             caster = results.results[0].actor
             target = results.results[0].target
             if caster and target:
-                abilities.Doom().cast(caster, target, special=True)
+                doom_message = abilities.Doom().cast(caster, target, special=True)
+                if doom_message:
+                    results.results[0].message += str(doom_message)
         return results
 
 

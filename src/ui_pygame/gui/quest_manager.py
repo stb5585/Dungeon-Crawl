@@ -437,6 +437,14 @@ class QuestManager:
         # Quest-specific post-turn-in events
         self._handle_quest_events(quest_name)
 
+    def _remove_lucky_locket_for_bad_dream(self) -> None:
+        """Remove Joffrey's locket when the Waitress takes it during turn-in."""
+        try:
+            self.player_char.modify_inventory(items.LuckyLocket(), subtract=True, rare=True)
+        except Exception:
+            special_inventory = getattr(self.player_char, "special_inventory", {})
+            special_inventory.pop("Lucky Locket", None)
+
     def _handle_quest_events(self, quest_name: str) -> None:
         """Handle special events triggered by specific quest turn-ins."""
         def show_special_event_text(event_name: str) -> None:
@@ -454,6 +462,8 @@ class QuestManager:
                 self._show_popup(popup)
 
         if quest_name == "A Bad Dream":
+            self._remove_lucky_locket_for_bad_dream()
+
             # Show Busboy special event
             show_special_event_text("Busboy")
             

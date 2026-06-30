@@ -52,10 +52,16 @@ class BountyBoard:
                 self.bounties.append(bounty)
 
     def bounty_options(self):
-        try:
-            return [x["name"] for x in self.bounties]
-        except KeyError:
-            return []
+        options = []
+        for bounty in self.bounties:
+            if "name" in bounty:
+                options.append(bounty["name"])
+                continue
+            enemy = bounty.get("enemy")
+            enemy_name = getattr(enemy, "name", None)
+            if enemy_name:
+                options.append(enemy_name)
+        return options
 
     def accept_quest(self, quest):
         quest_idx = self.bounties.index(quest)

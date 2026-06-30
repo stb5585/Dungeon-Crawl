@@ -1056,6 +1056,22 @@ def test_select_item_spell_and_skill_cover_empty_cancel_and_selection_paths(monk
     assert menu_calls[-1][1] == ("Smoke Screen (MP: 1)",)
     player.is_disarmed = lambda: False
 
+    enemy.incapacitated = lambda: False
+    player.spellbook["Skills"] = {
+        "Backstab": SimpleNamespace(name="Backstab", cost=4, passive=False, _requires_incapacitated=True),
+        "Slash": SimpleNamespace(name="Slash", cost=1, passive=False),
+    }
+    event_batches = iter([[SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)]])
+    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, []))
+    assert manager._select_skill(player, enemy) == "Slash"
+    assert menu_calls[-1][1] == ("Slash (MP: 1)",)
+
+    enemy.incapacitated = lambda: True
+    event_batches = iter([[SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)]])
+    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, []))
+    assert manager._select_skill(player, enemy) == "Backstab"
+    assert menu_calls[-1][1] == ("Backstab (MP: 4)", "Slash (MP: 1)")
+
     player.spellbook["Skills"] = {
         "Passive Stance": SimpleNamespace(cost=0, passive=True),
         "Slash": SimpleNamespace(cost=1, passive=False),
@@ -1564,3 +1580,79 @@ def test_enemy_smoke_screen_flee_keeps_enemy_hidden_for_end_transition(monkeypat
     assert manager._enemy_turn(player, enemy) == "flee"
     assert smoke_visuals == [("enemy", 1)]
     assert manager.combat_view.hide_enemy_calls == 1
+
+
+def test_enemy_smoke_screen_without_flee_does_not_play_smoke_or_hide_enemy(monkeypatch):
+    manager = _make_manager(monkeypatch)
+    player = _make_player()
+    enemy = _make_enemy("Bandit")
+    enemy.spellbook = {"Skills": {"Smoke Screen": SimpleNamespace(name="Smoke Screen")}}
+    player.status_effects = {"Stun": SimpleNamespace(active=False)}
+    smoke_visuals = []
+    flushes = []
+
+    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.display.flip", lambda: None)
+    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: [])
+    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.time.Clock", lambda: DummyClock())
+    manager._render_combat_frame = lambda *args, **kwargs: None
+    manager._flush_result_frame = lambda *_args: flushes.append(True)
+    manager._play_smoke_screen_visual = lambda _player, _enemy, target: smoke_visuals.append(target)
+
+    manager.engine = SimpleNamespace(
+        flee=False,
+        pre_turn=lambda: SimpleNamespace(effects_text="", died_from_effects=False, can_act=True, inactive_reason=""),
+        get_forced_action=lambda: None,
+        get_enemy_action=lambda: ("Use Skill", "Smoke Screen"),
+        execute_action=lambda *_args, **_kwargs: SimpleNamespace(
+            message="Smoke Screen requires a weapon.",
+            fled=False,
+        ),
+    )
+
+    assert manager._enemy_turn(player, enemy) is None
+    assert smoke_visuals == []
+    assert manager.combat_view.hide_enemy_calls == 0
+    assert flushes
+
+
+def test_enemy_shapeshift_gets_one_same_turn_followup_action(monkeypatch):
+    manager = _make_manager(monkeypatch)
+    player = _make_player()
+    enemy = _make_enemy("Shifter")
+    enemy.spellbook = {
+        "Skills": {
+            "Shapeshift": SimpleNamespace(name="Shapeshift"),
+            "Claw": SimpleNamespace(name="Claw"),
+        }
+    }
+    player.status_effects = {"Stun": SimpleNamespace(active=False)}
+    actions = iter([("Use Skill", "Shapeshift"), ("Use Skill", "Claw")])
+    executed = []
+
+    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.display.flip", lambda: None)
+    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: [])
+    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.time.Clock", lambda: DummyClock())
+    manager._render_combat_frame = lambda *args, **kwargs: None
+    manager._flush_result_frame = lambda *_args: None
+
+    def execute_action(action, choice=None, slot_machine_callback=None):
+        executed.append((action, choice))
+        if choice == "Shapeshift":
+            enemy.name = "Wolf"
+            return SimpleNamespace(message="Shifter changes shape.", fled=False)
+        player.health.current -= 7
+        return SimpleNamespace(message="Wolf uses Claw.", fled=False)
+
+    manager.engine = SimpleNamespace(
+        flee=False,
+        pre_turn=lambda: SimpleNamespace(effects_text="", died_from_effects=False, can_act=True, inactive_reason=""),
+        get_forced_action=lambda: None,
+        get_enemy_action=lambda: next(actions),
+        show_enemy_details=lambda: False,
+        execute_action=execute_action,
+    )
+
+    assert manager._enemy_turn(player, enemy) is None
+    assert executed == [("Use Skill", "Shapeshift"), ("Use Skill", "Claw")]
+    assert manager.combat_view.reload_calls == [enemy]
+    assert player.health.current == 43

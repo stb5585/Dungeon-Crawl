@@ -148,6 +148,9 @@ class InnManager(TownScreenBase):
             completable = [name for name, data in bounty_dict.items() if data[2]]
             if completable:
                 bounty_options.insert(1, "Turn In Bounty")
+            if bounty_dict:
+                abandon_idx = len(bounty_options) - 1
+                bounty_options.insert(abandon_idx, "Abandon Bounty")
             
             choice_idx = bounty_screen.navigate(
                 bounty_options,
@@ -164,6 +167,9 @@ class InnManager(TownScreenBase):
             
             elif bounty_options[choice_idx] == "Turn In Bounty":
                 self.turn_in_bounty(completable)
+
+            elif bounty_options[choice_idx] == "Abandon Bounty":
+                self.abandon_bounty()
             
             elif bounty_options[choice_idx] == "View Active Bounties":
                 self.view_active_bounties()
@@ -171,53 +177,54 @@ class InnManager(TownScreenBase):
     def accept_bounty(self):
         """Accept a bounty from the board."""
         bounty_dict = self.player_char.quest_dict.get('Bounty', {})
-        
-        # Get available bounties
-        bounties_available = []
-        if hasattr(self.presenter, 'game') and hasattr(self.presenter.game, 'bounties'):
-            game_bounties = self.presenter.game.bounties
-            # Only offer bounties the player doesn't already have
-            for bounty_name in game_bounties.keys():
-                if bounty_name not in bounty_dict:
-                    bounties_available.append(bounty_name)
-        
-        if not bounties_available:
-            popup = ConfirmationPopup(self.presenter, "No new bounties available at this time.", show_buttons=False)
-            popup.show(**self.popup_show_kwargs())
-            return
-        
         bounty_screen = LocationMenuScreen(self.presenter, "Accept Bounty")
-        
-        # Build display list
-        bounty_display = [(name, 0) for name in bounties_available]
-        bounty_display.append(("Back", 0))
-        
-        choice = bounty_screen.navigate_with_content(
-            bounty_display,
-            flush_events=True,
-            require_key_release=True,
-        )
-        
-        if choice is None or bounty_display[choice][0] == "Back":
-            return
-        
-        bounty_name = bounty_display[choice][0]
-        bounty_data = self.presenter.game.bounties[bounty_name]
-        enemy_obj = bounty_data.get("enemy")
-        enemy_name = getattr(enemy_obj, "name", bounty_data.get("enemy_name", "Unknown"))
-        
-        # Add bounty to player's quest dict
-        self.player_char.quest_dict['Bounty'][bounty_name] = [bounty_data, 0, False]
-        
-        # Show bounty info
-        info_msg = (
-            f"Bounty Accepted: {bounty_name}\n"
-            f"Target: {enemy_name}\n"
-            f"Enemies to defeat: {bounty_data.get('num', 1)}\n"
-            f"Reward: {bounty_data.get('gold', 0)} Gold, {bounty_data.get('exp', 0)} Experience"
-        )
-        popup = ConfirmationPopup(self.presenter, info_msg, show_buttons=False)
-        popup.show(**self.popup_show_kwargs())
+
+        while True:
+            # Get available bounties
+            bounties_available = []
+            if hasattr(self.presenter, 'game') and hasattr(self.presenter.game, 'bounties'):
+                game_bounties = self.presenter.game.bounties
+                # Only offer bounties the player doesn't already have
+                for bounty_name in game_bounties.keys():
+                    if bounty_name not in bounty_dict:
+                        bounties_available.append(bounty_name)
+
+            if not bounties_available:
+                popup = ConfirmationPopup(self.presenter, "No new bounties available at this time.", show_buttons=False)
+                popup.show(**self.popup_show_kwargs())
+                return
+
+            # Build display list
+            bounty_display = [(name, 0) for name in bounties_available]
+            bounty_display.append(("Back", 0))
+
+            choice = bounty_screen.navigate_with_content(
+                bounty_display,
+                flush_events=True,
+                require_key_release=True,
+            )
+
+            if choice is None or bounty_display[choice][0] == "Back":
+                return
+
+            bounty_name = bounty_display[choice][0]
+            bounty_data = self.presenter.game.bounties[bounty_name]
+            enemy_obj = bounty_data.get("enemy")
+            enemy_name = getattr(enemy_obj, "name", bounty_data.get("enemy_name", "Unknown"))
+
+            # Add bounty to player's quest dict
+            self.player_char.quest_dict['Bounty'][bounty_name] = [bounty_data, 0, False]
+            self._remove_board_bounty(bounty_name)
+
+            # Show bounty info
+            info_msg = (
+                f"Bounty Accepted: {bounty_name}\n"
+                f"Target: {enemy_name}\n"
+                f"Enemies to defeat: {bounty_data.get('num', 1)}\n"
+                f"Reward: {bounty_data.get('gold', 0)} Gold, {bounty_data.get('exp', 0)} Experience"
+            )
+            popup = ConfirmationPopup(self.presenter, info_msg, show_buttons=False)
+            popup.show(**self.popup_show_kwargs())
     
     def turn_in_bounty(self, completable):
         """Turn in completed bounties using the inn UI."""
@@ -276,6 +283,7 @@ class InnManager(TownScreenBase):
 
         # Remove completed bounty
         del self.player_char.quest_dict['Bounty'][bounty_name]
+        self._remove_board_bounty(bounty_name)
 
         # Check for level up
         if not self.player_char.max_level():
@@ -283,6 +291,50 @@ class InnManager(TownScreenBase):
                 self.level_up()
                 if self.player_char.level.exp_to_gain == "MAX":
                     break
+
+    def _remove_board_bounty(self, bounty_name):
+        """Remove an accepted or completed bounty from the current board."""
+        game = getattr(self.presenter, "game", None)
+        bounties = getattr(game, "bounties", None)
+        if isinstance(bounties, dict):
+            bounties.pop(bounty_name, None)
+
+    def abandon_bounty(self):
+        """Abandon an active bounty without returning it to the current board."""
+        bounty_dict = self.player_char.quest_dict.get('Bounty', {})
+
+        if not bounty_dict:
+            popup = ConfirmationPopup(self.presenter, "No active bounties to abandon.", show_buttons=False)
+            popup.show(**self.popup_show_kwargs())
+            return
+
+        bounty_screen = LocationMenuScreen(self.presenter, "Abandon Bounty")
+        bounty_options = list(bounty_dict) + ["Back"]
+
+        choice_idx = bounty_screen.navigate(
+            bounty_options,
+            reset_cursor=False,
+            flush_events=True,
+            require_key_release=True,
+        )
+
+        if choice_idx is None or bounty_options[choice_idx] == "Back":
+            return
+
+        bounty_name = bounty_options[choice_idx]
+        popup = ConfirmationPopup(
+            self.presenter,
+            f"Are you sure you want to abandon the {bounty_name} bounty?",
+            show_buttons=True,
+        )
+        if popup.show(**self.popup_show_kwargs()):
+            del bounty_dict[bounty_name]
+            notice = ConfirmationPopup(
+                self.presenter,
+                f"Abandoned bounty: {bounty_name}",
+                show_buttons=False,
+            )
+            notice.show(**self.popup_show_kwargs())
     
     def view_active_bounties(self):
         """View all active bounty quests."""

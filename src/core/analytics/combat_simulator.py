@@ -931,6 +931,35 @@ class CombatSimulator:
         )
 
 
+def remaining_improvement_tuning_report() -> dict[str, object]:
+    """Return the bounded simulation targets for deferred roadmap tuning."""
+    return {
+        "footpad": {
+            "status": "measure_before_tuning",
+            "levels": [1, 5, 10],
+            "matchups": ["Warrior", "Rogue", "Mage", "Cleric"],
+            "metrics": ["win_rate", "average_turns", "damage_taken", "close_fight_rate"],
+        },
+        "ordinary_drops": {
+            "status": "measure_before_tuning",
+            "luck_profiles": ["low", "average", "high"],
+            "iterations_per_profile": 500,
+            "excluded_drop_sources": ["quest", "special", "boss"],
+            "metrics": ["drop_rate", "items_per_kill", "gold_value_per_kill"],
+        },
+        "multi_strike_accuracy": {
+            "status": "measure_before_tuning",
+            "strike_counts": [2, 3, 4],
+            "metrics": ["hits_per_use", "damage_per_use", "miss_streak_rate"],
+            "candidate_change": "per_strike_accuracy_falloff",
+        },
+        "enfeeble": {
+            "status": "measure_before_tuning",
+            "metrics": ["land_rate", "debuff_amount", "duration", "enemy_damage_delta"],
+        },
+    }
+
+
 def quick_balance_test(class_name: str, level: int = 10) -> BalanceReport:
     """
     Quick helper function to test a class against all other classes.

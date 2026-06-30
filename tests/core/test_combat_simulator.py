@@ -82,6 +82,19 @@ def test_balance_report_empty_results_return_zero_metrics():
     assert report.identify_outliers() == {"overpowered": [], "underpowered": []}
 
 
+def test_remaining_improvement_tuning_report_lists_deferred_measurement_targets():
+    from src.core.analytics.combat_simulator import remaining_improvement_tuning_report
+
+    report = remaining_improvement_tuning_report()
+
+    assert set(report) == {"footpad", "ordinary_drops", "multi_strike_accuracy", "enfeeble"}
+    assert report["footpad"]["status"] == "measure_before_tuning"
+    assert "win_rate" in report["footpad"]["metrics"]
+    assert report["ordinary_drops"]["excluded_drop_sources"] == ["quest", "special", "boss"]
+    assert report["multi_strike_accuracy"]["candidate_change"] == "per_strike_accuracy_falloff"
+    assert "land_rate" in report["enfeeble"]["metrics"]
+
+
 def test_balance_report_aggregates_metrics_and_usage():
     from src.core.analytics.combat_simulator import BalanceReport
 

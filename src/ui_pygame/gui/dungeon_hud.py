@@ -6,6 +6,7 @@ Displays character stats, minimap, inventory quick-access, and other UI elements
 import pygame
 
 from src.core import map_tiles
+from src.core.classes import promotion_kits
 from src.core.player import LIMINAL_GAP_LEVEL, REALM_OF_CAMBION_LEVEL
 from .status_icons import (
     STATUS_ICON_COLORS,
@@ -224,6 +225,14 @@ class DungeonHUD:
             has_maelstrom = "Maelstrom Weapon" in skills
             if has_maelstrom and maelstrom_hits > 0:
                 icons.append((f"MW{maelstrom_hits}", True))
+        except (AttributeError, TypeError, ValueError):
+            pass
+
+        try:
+            guard_stacks = int(getattr(character, "evasive_guard_stacks", 0) or 0)
+            skills = getattr(character, "spellbook", {}).get("Skills", {})
+            if "Evasive Guard" in skills and guard_stacks > 0:
+                icons.append((f"EG{min(3, guard_stacks)}", True))
         except (AttributeError, TypeError, ValueError):
             pass
 
@@ -536,6 +545,21 @@ class DungeonHUD:
             if getattr(effect, "active", False):
                 lines.append((name, f"{getattr(effect, 'duration', 0)} turns", (200, 190, 255)))
 
+        if cls_name in {"Thief", "Rogue"}:
+            state = promotion_kits.combat_state(player_char)
+            fortune = int(state.get("fortune", 0) or 0)
+            misfortune = int(state.get("misfortune", 0) or 0)
+            lines.append(("Fortune", f"{fortune}/{promotion_kits.cap_for(player_char, 'fortune')}", (230, 205, 120)))
+            lines.append(("Misfortune", f"{misfortune}/{promotion_kits.cap_for(player_char, 'misfortune')}", (220, 150, 150)))
+
+        try:
+            guard_stacks = int(getattr(player_char, "evasive_guard_stacks", 0) or 0)
+            skills = getattr(player_char, "spellbook", {}).get("Skills", {})
+            if "Evasive Guard" in skills and guard_stacks > 0:
+                lines.append(("Evasive Guard", f"{min(3, guard_stacks)} stack(s)", (170, 210, 255)))
+        except (AttributeError, TypeError, ValueError):
+            pass
+
         if len(lines) == 1:
             enemy_name = getattr(enemy, "name", "Enemy")
             lines.append(("Target", enemy_name, self.text_color))
@@ -578,9 +602,16 @@ class DungeonHUD:
 
         lines = self._combat_feature_lines(player_char, enemy)
         y = panel_rect.top + 12
-        label_w = 78
+        visible_lines = lines[:7]
+        label_gap = 10
+        label_widths = [
+            self.small_font.render(f"{label}:", True, (170, 170, 180)).get_width()
+            for label, _value, _color in visible_lines
+        ]
+        max_label_w = max(label_widths, default=68)
+        label_w = min(max(78, max_label_w + label_gap), max(78, panel_rect.width - 120))
         max_value_w = max(60, panel_rect.width - label_w - 26)
-        for label, value, color in lines[:7]:
+        for label, value, color in visible_lines:
             if y + 20 > panel_rect.bottom - 12:
                 break
             label_surf = self.small_font.render(f"{label}:", True, (170, 170, 180))
@@ -670,6 +701,11 @@ class DungeonHUD:
                         and getattr(tile, 'enter', True)
                         and tile_type not in ('FakeWall', 'FunhouseWall', 'MirrorWall')
                     )
+                    is_discovered_wall = bool(
+                        getattr(tile, 'near', False)
+                        and not getattr(tile, 'enter', True)
+                        and tile_type not in ('FakeWall', 'FunhouseWall', 'MirrorWall')
+                    )
                     is_discovered_special = bool(
                         getattr(tile, 'near', False) and (
                             any(
@@ -700,7 +736,13 @@ class DungeonHUD:
                                 pygame.draw.rect(self.screen, (120, 120, 130), tile_rect)
                         self._render_minimap_player_marker(tile_rect, player_char.facing, tile_size)
                         
-                    elif getattr(tile, 'visited', False) or is_directly_visible or is_discovered_explorable or is_discovered_special:
+                    elif (
+                        getattr(tile, 'visited', False)
+                        or is_directly_visible
+                        or is_discovered_explorable
+                        or is_discovered_wall
+                        or is_discovered_special
+                    ):
                         # Explored tile (visited) or directly visible adjacent tile
                         is_visited = getattr(tile, 'visited', False)
                         is_near = getattr(tile, 'near', False)
@@ -921,6 +963,12 @@ class DungeonHUD:
             and tile_type not in ('FakeWall', 'FunhouseWall', 'MirrorWall')
         ):
             return True
+        if (
+            getattr(tile, 'near', False)
+            and not getattr(tile, 'enter', True)
+            and tile_type not in ('FakeWall', 'FunhouseWall', 'MirrorWall')
+        ):
+            return True
         if not getattr(tile, 'near', False):
             return False
         special_markers = (
@@ -1029,8 +1077,12 @@ class DungeonHUD:
                 continue
             if not self._is_direction_visible_from_tile(current_tile, direction, adjacent_tile):
                 continue
-            if player_char.world_dict.get((tile_x, tile_y, player_z)) is not None:
-                visible.add((tile_x, tile_y))
+            tile_type = type(adjacent_tile).__name__
+            if tile_type in ('FakeWall', 'FunhouseWall', 'MirrorWall') and not getattr(adjacent_tile, 'visited', False):
+                continue
+            if not getattr(adjacent_tile, 'enter', True):
+                continue
+            visible.add((tile_x, tile_y))
 
         return visible
 

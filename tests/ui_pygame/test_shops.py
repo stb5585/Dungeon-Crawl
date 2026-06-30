@@ -92,6 +92,7 @@ def _make_player(*, level=12, in_town=True, gold=500):
         player_level=lambda: level,
         modify_inventory=modify_inventory,
         equip=equip,
+        can_equip_item=lambda item, slot=None: equip_check(item, slot) if slot else bool(item),
         equip_diff=lambda item, slot, buy=False: "",
     )
     player.inventory_calls = calls
@@ -501,6 +502,41 @@ def test_buy_with_shop_screen_equips_purchased_weapon_to_chosen_slot(monkeypatch
     assert any("Equipped Rapier to OffHand." in message for message, _buttons in FakePopup.messages)
 
 
+def test_alchemist_and_secret_consumables_include_status_items(monkeypatch):
+    manager = _manager(monkeypatch, gold=120)
+    captured = []
+    manager._buy_with_shop_screen = lambda itemdict, category_name, **kwargs: captured.append((category_name, itemdict, kwargs))
+
+    manager.buy_potions()
+    manager.buy_alchemist_goods()
+    manager._buy_secret_consumables(SimpleNamespace())
+
+    assert captured[0][1]["Status Items"] == items.items_dict["Potion"]["Status"]
+    assert captured[1][1]["Status Items"] == items.items_dict["Potion"]["Status"]
+    assert captured[2][1]["Status Items"] == items.items_dict["Potion"]["Status"]
+
+
+def test_shop_item_info_separates_main_hand_and_offhand_comparisons(monkeypatch):
+    manager = _manager(monkeypatch, gold=120)
+    manager.player_char.equipment["Weapon"] = items.Dirk()
+    manager.player_char.equipment["OffHand"] = items.Buckler()
+    manager.player_char.equip_diff = lambda _item, slot, buy=False: (
+        "Attack          10 -> 12" if slot == "Weapon" else "Block Chance     20% -> 0%"
+    )
+
+    weapon_info = manager._format_item_info(items.Rapier())
+    shield_info = manager._format_item_info(items.Aspis())
+
+    assert "=== Hand Comparison ===" in weapon_info
+    assert "Main Hand:" in weapon_info
+    assert "OffHand:" in weapon_info
+    assert "replaces Dirk" in weapon_info
+    assert "replaces Buckler" in weapon_info
+    assert "Main Hand:" in shield_info
+    assert "not usable in this slot" in shield_info
+    assert "OffHand:" in shield_info
+
+
 def test_buy_with_shop_screen_can_dual_wield_multi_quantity_purchase(monkeypatch):
     manager = _manager(monkeypatch, gold=120)
     item = items.Dirk()
@@ -526,7 +562,7 @@ def test_buy_with_shop_screen_can_dual_wield_multi_quantity_purchase(monkeypatch
     header = FakeSelectionPopup.created[-1][1]
     assert "Purchased 2x Dirk. Equip now?" in header
     assert "Cancel keeps every purchased item in inventory." in header
-    assert "Dual Wield:" in header
+    assert "Dual Wield:" not in header
     assert "Main Hand: replaces empty" in header
     assert "OffHand: replaces empty" in header
     assert any("Equipped Dirk to Main Hand and OffHand." in message for message, _buttons in FakePopup.messages)
@@ -568,9 +604,13 @@ def test_format_item_info_and_item_availability_helpers(monkeypatch):
     assert "Theme Name: Mighty New Sword" in info
     assert "Damage: 12" in info
     assert "Value: 75g" in info
-    assert "=== Currently Equipped ===" in info
-    assert "(Better)" in info
-    assert "(Worse)" in info
+    assert "=== Hand Comparison ===" in info
+    assert "Main Hand:" in info
+    assert "replaces Old Sword" in info
+    assert "Attack  +5" in info
+    assert "Defense  -2" in info
+    assert "OffHand:" in info
+    assert "not usable in this slot" in info
 
     manager.player_char.equipment = {"Ring": DummyItem(name="None", typ="Accessory", subtyp="Ring")}
     ring_info = manager._format_item_info(DummyItem(name="Silver Band", typ="Accessory", subtyp="Ring", value=40))

@@ -199,6 +199,67 @@ def test_handle_promotion_success_and_cancel(monkeypatch):
     assert "Promotion cancelled." in FakePopup.messages[-1]
 
 
+def test_handle_promotion_keeps_legal_gear_removes_illegal_and_grants_no_defaults(monkeypatch):
+    FakePopup.messages = []
+    player = _make_player()
+    player.level.level = 30
+    presenter = _make_presenter()
+    inventory_calls = []
+    keep_weapon = SimpleNamespace(name="Keep Blade", subtyp="Sword")
+    illegal_armor = SimpleNamespace(name="Old Plate", subtyp="Heavy")
+    player.equipment = {
+        "Weapon": keep_weapon,
+        "Armor": illegal_armor,
+        "OffHand": items.NoOffHand(),
+        "Helmet": items.NoHelmet(),
+    }
+    player.modify_inventory = lambda item, *_args, **_kwargs: inventory_calls.append(item.name)
+    player.can_equip_item = lambda item, slot=None: item.name == "Keep Blade"
+
+    monkeypatch.setattr(church.ChurchManager, "_load_background", lambda self: setattr(self, "background", None))
+    monkeypatch.setattr("src.ui_pygame.gui.church.ConfirmationPopup", FakePopup)
+    monkeypatch.setattr("src.ui_pygame.gui.church.apply_promotion_ability_rules", lambda _player, _chosen: "")
+    monkeypatch.setattr("src.ui_pygame.gui.church.spell_dict", {})
+    monkeypatch.setattr("src.ui_pygame.gui.church.skill_dict", {})
+
+    class BaseClass:
+        def __init__(self):
+            self.name = "Warrior"
+
+    class PromotedClass:
+        def __init__(self):
+            self.name = "Knight"
+            self.equipment = {
+                "Weapon": SimpleNamespace(name="Default Sword", subtyp="Sword"),
+                "Armor": SimpleNamespace(name="Default Armor", subtyp="Light"),
+            }
+
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.church.classes_dict",
+        {"Base": {"class": BaseClass, "pro": {"Knight": {"class": PromotedClass}}}},
+    )
+
+    class FakePromotionScreen:
+        def __init__(self, *_args, **_kwargs):
+            pass
+
+        def navigate(self):
+            return "Knight"
+
+    monkeypatch.setattr("src.ui_pygame.gui.church.PromotionScreen", FakePromotionScreen)
+
+    manager = church.ChurchManager(presenter, player)
+    manager.handle_promotion()
+
+    assert player.equipment["Weapon"] is keep_weapon
+    assert player.equipment["Armor"].name == "No Armor"
+    assert inventory_calls == ["Old Plate"]
+    assert "Default Sword" not in [getattr(item, "name", item) for item in player.equipment.values()]
+    warning = "\n".join(FakePopup.messages)
+    assert "Some equipped gear no longer fits" in warning
+    assert "Armor: Old Plate" in warning
+
+
 def test_handle_promotion_advanced_branches(monkeypatch):
     FakePopup.messages = []
     FakePopup.show_kwargs = []
@@ -418,7 +479,7 @@ def test_arcane_class_ring_rites_awaken_ring_and_apply_mods(monkeypatch):
     for class_name, expected_mod, expected_label in (
         ("Wizard", "School Streak", "Four Formulae"),
         ("Shadowcaster", "Umbral Debt", "Debt Cap Trial"),
-        ("Knight Enchanter", "Mana Tap+", "Arcane Duel"),
+        ("Knight Enchanter", "Arcane Tempo", "Arcane Duel"),
         ("Grand Summoner", "+30% Summons", "Conduit Ritual"),
         ("Templar", "Ordered Blessings", "Relic Defense"),
         ("Master Monk", "Martial Master", "Purity Rite"),

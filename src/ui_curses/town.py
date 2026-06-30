@@ -138,6 +138,10 @@ def turn_in_quest(game, quest, typ):
             if game.player_char.level.exp_to_gain == "MAX":
                 break
     if quest == "A Bad Dream":
+        try:
+            game.player_char.modify_inventory(items.LuckyLocket(), subtract=True, rare=True)
+        except Exception:
+            game.player_char.special_inventory.pop("Lucky Locket", None)
         game.special_event("Busboy")
         if "Where's the Beef?" in game.player_char.quest_dict["Side"]:
             if not game.player_char.quest_dict["Side"]["Where's the Beef?"]["Turned In"]:

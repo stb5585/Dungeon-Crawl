@@ -126,7 +126,8 @@ def _make_player():
         equipment={"Pendant": SimpleNamespace(mod="None")},
         sight=False,
         maelstrom_hits=2,
-        spellbook={"Skills": {"Maelstrom Weapon": object()}},
+        evasive_guard_stacks=2,
+        spellbook={"Skills": {"Maelstrom Weapon": object(), "Evasive Guard": object()}},
         status_effects={"Poison": _effect(), "Steal Success": _effect()},
         physical_effects={"Prone": _effect()},
         stat_effects={"Attack": _effect(extra=1), "Defense": _effect(extra=-1)},
@@ -165,6 +166,7 @@ def test_effect_and_status_icon_helpers(monkeypatch):
     assert ("AST", True) in icons
     assert ("BLE", True) in icons
     assert ("MW2", True) in icons
+    assert ("EG2", True) in icons
     assert icons.index(("PRN", False)) < icons.index(("REG", True))
 
     player.status_effects["Blind Rage"] = SimpleNamespace(active=True)
@@ -187,6 +189,7 @@ def test_effect_and_status_icon_helpers(monkeypatch):
 
     player.spellbook = {"Skills": {}}
     assert ("MW2", True) not in hud._collect_status_icons(player)
+    assert ("EG2", True) not in hud._collect_status_icons(player)
 
     y = hud._render_status_icons(_make_player(), 100)
     assert y > 100
@@ -241,6 +244,7 @@ def test_status_art_icons_render_without_badge_background_in_hud(monkeypatch):
     player.magic_effects = {}
     player.class_effects = {}
     player.maelstrom_hits = 0
+    player.evasive_guard_stacks = 0
 
     hud._render_status_icons(player, 100)
 
@@ -479,6 +483,43 @@ def test_visibility_helpers_minimap_compass_and_combat_indicator(monkeypatch):
     assert "Dungeon Level 2 Map" in bundle.stat_font.render_calls
 
 
+def test_visible_adjacent_positions_require_enterable_and_hide_undiscovered_fake_walls(monkeypatch):
+    bundle = _make_hud(monkeypatch)
+    hud = bundle.hud
+
+    class Floor:
+        enter = True
+        visited = True
+        blocked = None
+
+    class Wall:
+        enter = False
+        visited = False
+        near = True
+        blocked = None
+
+    class FakeWall:
+        enter = True
+        visited = False
+        blocked = None
+
+    player = SimpleNamespace(location_x=2, location_y=2, location_z=1)
+    player.world_dict = {
+        (2, 2, 1): Floor(),
+        (2, 1, 1): Floor(),
+        (2, 3, 1): FakeWall(),
+        (3, 2, 1): Wall(),
+    }
+
+    visible = hud._get_visible_adjacent_positions(player)
+
+    assert (2, 1) in visible
+    assert (2, 3) not in visible
+    assert (3, 2) not in visible
+    assert hud._minimap_tile_is_revealed(player, 3, 2, player.world_dict[(3, 2, 1)], visible) is True
+    assert hud._minimap_tile_is_revealed(player, 2, 3, player.world_dict[(2, 3, 1)], visible) is False
+
+
 def test_enlarged_minimap_modal_requests_full_level_map(monkeypatch):
     bundle = _make_hud(monkeypatch)
     hud = bundle.hud
@@ -546,12 +587,30 @@ def test_combat_focus_panel_shows_familiar_summons_and_totem(monkeypatch):
     assert any(label == "Summons" and value == "Fuath" for label, value, _color in lines)
     assert ("Totem", "Fire Totem", (230, 205, 120)) in lines
     assert any(label == "Benefit" and "+25% ATK" in value and "Elemental" in value for label, value, _color in lines)
+    assert ("Evasive Guard", "2 stack(s)", (170, 210, 255)) in lines
+
+    player.cls = SimpleNamespace(name="Rogue")
+    player._promotion_kit_combat = {"fortune": 2, "misfortune": 1}
+    lines = hud._combat_feature_lines(player, enemy=SimpleNamespace(name="Jester"))
+    assert ("Fortune", "2/3", (230, 205, 120)) in lines
+    assert ("Misfortune", "1/3", (220, 150, 150)) in lines
 
     y = hud._render_combat_features(player, SimpleNamespace(name="Jester"), 120, feature_height=190)
     assert y > 120
     assert "Combat Focus" in bundle.stat_font.render_calls
     assert "Totem:" in bundle.small_font.render_calls
     assert bundle.draw_circle_calls
+
+    bundle.screen.blit_calls = []
+    guard_player = _make_player()
+    hud._render_combat_features(guard_player, SimpleNamespace(name="Warrior"), 120, feature_height=190)
+    rendered = [
+        (getattr(surface, "text", ""), position, surface)
+        for surface, position in bundle.screen.blit_calls
+    ]
+    guard_label = next(entry for entry in rendered if entry[0] == "Evasive Guard:")
+    guard_value = next(entry for entry in rendered if entry[0] == "2 stack(s)")
+    assert guard_value[1][0] >= guard_label[1][0] + guard_label[2].get_width() + 8
 
 
 def test_render_hud_full_flow(monkeypatch):

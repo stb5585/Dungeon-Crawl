@@ -585,6 +585,11 @@ def test_wall_overlay_key_is_stable_for_same_map_tile_at_different_depths():
     assert SceneRenderer._get_wall_overlay_key(tile, depth=1) == SceneRenderer._get_wall_overlay_key(tile, depth=3)
 
 
+def test_wall_overlay_key_hides_sconces_on_fake_walls():
+    assert SceneRenderer._get_wall_overlay_key(FakeWall(visited=False), depth=1) is None
+    assert SceneRenderer._get_wall_overlay_key(FakeWall(visited=True), depth=3) is None
+
+
 def test_texture_library_brightens_funhouse_floor_texture():
     pygame.init()
     base = pygame.Surface((2, 2), pygame.SRCALPHA)
@@ -2247,6 +2252,31 @@ def test_scene_renderer_scales_ladder_down_as_pit_floor_sprite():
     assert SceneRenderer._get_floor_sprite_ratio(1, "ladder_down") > SceneRenderer._get_floor_sprite_ratio(2, "ladder_down")
     assert SceneRenderer._get_floor_sprite_ratio(1, "ladder_down") > SceneRenderer._get_floor_sprite_ratio(1, "chest")
     assert SceneRenderer._get_floor_sprite_ratio(1, "dead_soldier_item") < SceneRenderer._get_floor_sprite_ratio(1, "dead_body")
+    assert SceneRenderer._get_floor_sprite_ratio(1, "dead_body") < SceneRenderer._get_floor_sprite_ratio(1, "boulder")
+
+
+def test_scene_renderer_places_dead_body_lower_than_default_floor_anchor(monkeypatch):
+    class RecordingScreen:
+        def __init__(self):
+            self.blit_calls = []
+
+        def blit(self, surface, position):
+            self.blit_calls.append((surface, position))
+
+    screen = RecordingScreen()
+    presenter = DummyPresenter(width=640, height=480, screen=screen)
+    scene_renderer = SceneRenderer(presenter, TextureLibrary())
+    sprite = pygame.Surface((54, 54), pygame.SRCALPHA)
+    sprite.fill((120, 60, 40, 255))
+
+    monkeypatch.setattr(scene_renderer.textures, "get_special_texture", lambda _key, _size=None: sprite)
+    monkeypatch.setattr(scene_renderer, "_apply_darkness_to_surface", lambda surface, _darkness: surface)
+
+    rect = pygame.Rect(0, 0, 100, 100)
+    scene_renderer._render_floor_sprite("dead_body", rect, darkness=0.0, depth=1, kind="dead_body")
+
+    assert screen.blit_calls
+    assert screen.blit_calls[-1][1][1] > rect.bottom - sprite.get_height()
 
 
 def test_scene_renderer_sizes_stairs_down_from_floor_width(monkeypatch):
@@ -3232,8 +3262,8 @@ def test_scene_renderer_renders_migrated_special_tile_sprites():
     assert ("portal", None) in special_calls
     assert ("boulder_sword", 112) in special_calls
     assert ("boulder", 112) in special_calls
-    assert ("dead_body", 120) in special_calls
-    assert ("burial_site", 120) in special_calls
+    assert ("dead_body", 86) in special_calls
+    assert ("burial_site", 86) in special_calls
     assert ("dead_soldier_item", 67) in special_calls
     assert ("triangulus_altar", 96) in special_calls
     assert ("empty_altar", 96) in special_calls

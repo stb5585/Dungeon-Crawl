@@ -22,31 +22,27 @@ def _init_pygame():
 
 
 def _write_portrait_fixture(root: Path) -> Path:
-    atlas_json = root / "base_portrait_atlas.json"
-    atlas_json.write_text(
+    mapping_json = root / "portrait_atlas_mapping.json"
+    mapping_json.write_text(
         json.dumps(
             {
-                "image": "base_portrait_atlas.png",
-                "entries": {
-                    "human_male": {
-                        "x": 0,
-                        "y": 0,
-                        "w": 100,
-                        "h": 160,
-                        "race": "human",
-                        "gender": "male",
-                    }
+                "universal_frames": {
+                    "male_1": {"x": 0, "y": 0, "w": 100, "h": 160},
+                    "female_1": {"x": 0, "y": 160, "w": 100, "h": 160},
+                },
+                "sheets": {
+                    "human": {"image": "human_base_portraits.png", "uses": "universal_frames"},
                 },
             }
         ),
         encoding="utf-8",
     )
-    surface = pygame.Surface((100, 160), pygame.SRCALPHA)
+    surface = pygame.Surface((100, 320), pygame.SRCALPHA)
     surface.fill((20, 20, 30, 255))
     surface.fill((210, 170, 130, 255), pygame.Rect(24, 14, 52, 52))
     surface.fill((70, 40, 28, 255), pygame.Rect(24, 66, 52, 80))
-    pygame.image.save(surface, root / "base_portrait_atlas.png")
-    return atlas_json
+    pygame.image.save(surface, root / "human_base_portraits.png")
+    return mapping_json
 
 
 def test_player_token_manager_crops_face_and_caches_scaled_token(tmp_path):

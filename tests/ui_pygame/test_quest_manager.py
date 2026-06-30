@@ -286,6 +286,7 @@ def test_turn_in_handles_reward_selection_and_bad_dream_event(monkeypatch):
         "Turned In": False,
     }
     player.quest_dict["Side"]["Where's the Beef?"] = {"Turned In": False}
+    player.special_inventory["Lucky Locket"] = [DummyItem("Lucky Locket", typ="Misc", subtyp="Key")]
 
     FakeRewardSelectionPopup.responses = [None, 1]
     FakeRewardSelectionPopup.show_kwargs = []
@@ -301,6 +302,7 @@ def test_turn_in_handles_reward_selection_and_bad_dream_event(monkeypatch):
     manager._turn_in("A Bad Dream", "Side")
 
     assert any(call[0] == "Shield Reward" for call in player.inventory_calls)
+    assert ("Lucky Locket", 1, True, True) in player.inventory_calls
     assert all(kwargs["flush_events"] is True for kwargs in FakeRewardSelectionPopup.show_kwargs)
     assert all(kwargs["require_key_release"] is True for kwargs in FakeRewardSelectionPopup.show_kwargs)
     beef = player.quest_dict["Side"]["Where's the Beef?"]

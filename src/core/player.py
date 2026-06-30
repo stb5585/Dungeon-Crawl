@@ -404,7 +404,7 @@ class Player(Character):
         self.encumbered = False
         self.power_up = False
         self.inventory_sort_mode = "Name"
-        self.gameplay_stats = normalize_gameplay_stats(current_level=self.level.level)
+        self.gameplay_stats = normalize_gameplay_stats(current_level=self.player_level())
         # Dwarf Gluttony (racial sin): out-of-combat hangover that can affect initiative
         # for a number of steps after using combat consumables.
         self.dwarf_hangover_steps = 0
@@ -437,7 +437,7 @@ class Player(Character):
         """Ensure gameplay statistics exist and include all supported counters."""
         self.gameplay_stats = normalize_gameplay_stats(
             getattr(self, "gameplay_stats", None),
-            current_level=getattr(getattr(self, "level", None), "level", 1),
+            current_level=self.player_level(),
         )
         return self.gameplay_stats
 
@@ -620,7 +620,7 @@ class Player(Character):
         stats = self.ensure_gameplay_stats()
         stats["highest_level_reached"] = max(
             stats["highest_level_reached"],
-            int(getattr(self.level, "level", 1) or 1),
+            int(self.player_level() or 1),
         )
 
     def exp_gain_multiplier(self) -> float:
@@ -778,6 +778,7 @@ class Player(Character):
             world_dict[wind_pos] = map_tiles.StrangeDraftTile(*wind_pos)
 
         self.world_dict = world_dict
+        map_tiles.sync_rookie_body_drop_marker(self)
 
     def additional_actions(self, action_list):
         """
@@ -2175,10 +2176,31 @@ class Player(Character):
                 death_message += f"You have lost 1 {stat_name}.\n"
         self.state = 'normal'
         self.effects(end=True)
+        death_message += self._drop_rookie_body_on_death()
         self.to_town()
         death_message += "You wake up in town.\n"
         if textbox:
             textbox.print_text_in_rectangle(death_message)
+        return death_message
+
+    def _drop_rookie_body_on_death(self):
+        """Leave the Rookie Mistake body where the player fell."""
+        quest = self.quest_dict.get("Side", {}).get("Rookie Mistake")
+        if not quest or "Dead Soldier" not in self.special_inventory:
+            return ""
+
+        self.special_inventory.pop("Dead Soldier", None)
+        quest["Completed"] = False
+        dropped_at = [self.location_x, self.location_y, self.location_z]
+        quest["Body Dropped At"] = dropped_at
+        try:
+            tile = self.world_dict.get(tuple(dropped_at))
+            if tile is not None:
+                setattr(tile, "dropped_rookie_body", True)
+                setattr(tile, "read", False)
+        except Exception:
+            pass
+        return "The rookie's body slips from your grasp and remains where you fell.\n"
 
     def class_upgrades(self, game, enemy):
         upgrade_str = ""

@@ -319,6 +319,15 @@ def record_damage_event(
     cls = class_name(actor)
     damage_type = str(damage_type or "Physical")
     weapon_hit = _is_weapon_hit(metadata)
+    if isinstance(metadata, dict):
+        critical_hit = bool(metadata.get("is_critical"))
+        if not critical_hit:
+            try:
+                critical_hit = float(metadata.get("crit", 1) or 1) > 1
+            except (TypeError, ValueError):
+                critical_hit = False
+    else:
+        critical_hit = False
 
     if cls == "Astromancer" and not weapon_hit:
         _message(actor, gain_meter(actor, "foresight_threads", 1, "successful spell thread"))
@@ -337,8 +346,8 @@ def record_damage_event(
         _message(actor, gain_meter(actor, "aerial_tempo", 1, "clean Jump landing"))
         actor._jump_landed_cleanly = False
 
-    if cls in {"Thief", "Rogue"}:
-        _message(actor, gain_meter(actor, "fortune", 1, "successful risky hit"))
+    if cls in {"Thief", "Rogue"} and critical_hit:
+        _message(actor, gain_meter(actor, "fortune", 1, "critical risky hit"))
 
     if cls in {"Cleric", "Templar"} and (damage_type == "Holy" or weapon_hit):
         _message(actor, gain_meter(actor, "devotion", 1, "holy or shield pressure"))

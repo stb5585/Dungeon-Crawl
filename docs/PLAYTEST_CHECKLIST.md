@@ -9,6 +9,44 @@ remain the prompts; the evidence ledger is the running decision record.
 
 ## Recently Changed
 
+### Roadmap Bugfix Pass
+- [ ] Use Smoke Screen from an invalid/non-fleeing state, then enter another battle.
+  - Expected: No stale smoke fade, hidden enemy, or flee transition carries over.
+- [ ] Open the Character screen in Town, a normal dungeon, Realm of Cambion, and Liminal Gap.
+  - Expected: Location text is fully readable and does not collide with nearby details.
+- [x] Check Records/Statistics on promoted characters.
+  - Expected: Highest Level Reached uses cumulative promoted level.
+- [x] Visit pygame potion/alchemist/secret consumable shops.
+  - Expected: Status items such as Antidote, Eye Drop, Echo Screen, Bandage, and Phoenix Down are available.
+- [ ] Accept multiple available bounties in one Tavern visit.
+  - Expected: The Accept Bounty screen remains open until Back/Cancel or no new bounties remain.
+- [ ] Fight enemies that stun, sleep, or otherwise incapacitate the active actor.
+  - Expected: Incapacitated actors do not display an active turn token.
+- [ ] Compare flying and grounded enemies in combat.
+  - Expected: Flying enemies render slightly higher without leaving the combat frame.
+- [ ] Check minimap adjacent markers around walls, closed doors, and undiscovered Fake Walls.
+  - Expected: Only enterable visible directions are shown, undiscovered Fake Walls are not revealed, and discovered non-Fake blocking walls appear on later map review.
+- [ ] Fight a Shapeshift-capable enemy.
+  - Expected: The enemy can Shapeshift once, refresh its sprite/name, then take one normal same-turn action.
+- [ ] Browse weapon/offhand shop item details as a dual-wield-capable character.
+  - Expected: Main Hand and OffHand comparisons are separate and unusable slots are called out.
+
+### Remaining Improvements Pass
+- [ ] Die in normal PyGame dungeon combat after level 10, then repeat in Funhouse and Realm of Cambion.
+  - Expected: Normal death uses resurrection gold/stat messaging and returns to town; special exits keep their route-specific defeat behavior.
+- [ ] Pick up the Rookie Mistake body, die before town, return to the death tile, and pick it up again.
+  - Expected: The body is removed from inventory on death, visible where dropped, recoverable, and only turned in after returning to town with it.
+- [ ] Promote a character while wearing one legal and one illegal core-slot item.
+  - Expected: Legal gear stays equipped, illegal gear moves to inventory, empty illegal slots become `No*` gear, and no promoted-class default gear is granted.
+- [ ] Move between town/church/inn/barracks/storage menus and transient confirmation/select-one screens.
+  - Expected: Hub menus retain cursor position within the same visit; transient screens reset.
+- [ ] Browse load-game saves with valid, corrupt, and missing-asset portrait data.
+  - Expected: Valid saves show a portrait preview; corrupt or missing portrait cases fall back cleanly.
+- [ ] Search Joffrey's body after turning in Bad Dream and before defeating the Waitress.
+  - Expected: The Mad Waitress cue uses the existing sprite, plays the waitress wail if available, then starts combat.
+- [ ] Approach the Minotaur room on level 1.
+  - Expected: The existing bone pile tile appears on the approach path without changing the boss room.
+
 ### Class Ring Activations
 - [ ] Inspect Class Ring wording across absent, inventory-only, stored, equipped dormant, and equipped awakened states.
   - Expected: Item/status/story text distinguishes town-visible rings from inventory-only rings, and distinguishes dormant/awakened state from equipped active effects.
@@ -254,6 +292,9 @@ remain the prompts; the evidence ledger is the running decision record.
   - Expected: The user transforms into an oak form for 3 turns, cannot attack, gains defense/status protection, and heals each turn.
 - [ ] Exercise P6 passive hooks in ordinary combat.
   - Expected: Zephyrstrike, Retaliate, Defensive Regen, Posturing, Third Eye, Pious Bounty, Final Assault, Last Stand, and polearm/Monkey Grip penalties or bonuses match their class descriptions.
+- [ ] Use Footpad stealth skills against valid and invalid targets.
+  - Expected: Kidney Punch costs exactly 18 MP and never leaves the caster below 0 MP.
+  - Expected: Backstab is hidden from the skill list unless the target is incapacitated.
 - [ ] Use Ranger `Tame` and `Favored Enemy`.
   - Expected: Tame works only on eligible wounded Animal enemies, saves one compact companion, and replaces the prior companion clearly.
   - Expected: Favored Enemy uses kill history and applies bonuses against the most-killed enemy type.
@@ -417,16 +458,20 @@ remain the prompts; the evidence ledger is the running decision record.
   - Expected: Walls, floors, and ceilings use the new painterly dungeon materials and deeper areas feel darker, more broken, or more overgrown.
 - [x] Inspect the dungeon HUD location label across ordinary levels, Realm of Cambion, and Liminal Gap.
   - Expected: The HUD shows `Dungeon Level N`, `Realm of Cambion`, or `Liminal Gap` without crowding resource bars, compass, minimap, or combat focus panels.
-- [ ] Open the enlarged minimap modal with `M` and by clicking the minimap.
+- [x] Open the enlarged minimap modal with `M` and by clicking the minimap.
   - Expected: The modal reuses existing discovered/visible tile rules, frames the fully revealed current level instead of only the small HUD viewport, and closes with `M`, `Esc`, or outside click.
 - [ ] Move near decorative rubble, roots, fungus, crystal clusters, bone piles, and broken gear in a test map or authored fixture.
   - Expected: Decorative props render as floor-bound hooks and remain traversable unless future gameplay explicitly changes them.
+- [ ] Revisit a defeated encounter body in the dungeon view.
+  - Expected: The body renders floor-bound, lower in the scene, and smaller than large blocking props.
 - [ ] Inspect root and fungus floor variants in a dungeon test map.
   - Expected: Roots and fungus look embedded into the floor texture, with no flat sticker edges, chroma artifacts, or obvious rectangular backgrounds.
 - [ ] Inspect transparent root/fungus overlay sprites on ordinary dungeon floor tiles.
   - Expected: Overlay sprites have transparent backgrounds, muted colors, and soft contact shadows without visible green/chroma fringes.
 - [ ] Face ordinary walls across multiple floors.
   - Expected: Torch/sconce overlays appear occasionally, with cleaner lit fixtures high in the dungeon and more broken/unlit fixtures deeper down.
+- [ ] Face undiscovered Fake Walls/Fake Paths across multiple floors.
+  - Expected: Wall torch/sconce overlays do not render on fake walls before discovery.
 - [x] Enter and walk along funhouse boundaries.
   - Expected: Exterior funhouse boundaries use the funhouse boundary wall material at side depths and remain impassable.
 - [ ] Enter a dungeon room with side doors or detected Ore Vault doors.
@@ -461,6 +506,9 @@ remain the prompts; the evidence ledger is the running decision record.
   - Expected: Spell Reflect uses the magic reflect icon, while Totem's melee-reflect secondary uses the melee reflect icon.
 - [ ] Stack repeated status effects alongside several other combat states.
   - Expected: Counted status icons keep urgent effects visible first and use stable ordering instead of flickering between turns.
+- [ ] Build Evasive Guard stacks as a Footpad-line character in pygame combat.
+  - Expected: The combat status row shows an `EG#` stack indicator, and Combat Focus lists the current Evasive Guard stack count.
+  - Expected: Evasive Guard stacks reset after a successful dodge.
 - [ ] Resize the game window or view a crowded combat overlay.
   - Expected: Status icon labels remain clipped to the icon pill instead of spilling into neighboring UI.
 - [ ] Inspect combat status layout diagnostics with many active effects.
@@ -602,8 +650,8 @@ remain the prompts; the evidence ledger is the running decision record.
   - Expected: Inventory, equipment management, and character progression remain unchanged.
 - [ ] Create several new characters and browse portrait variants on the naming screen.
   - Expected: The standalone sex-selection page no longer appears in the creation flow.
-  - Expected: Male/Female buttons below the portrait switch between the selected race's portrait sets.
-  - Expected: The initial portrait varies across attempts, left/right arrows or portrait buttons cycle through available atlas variants, and the chosen sex/portrait persists into the Character Menu and player token.
+  - Expected: Male/Female buttons below the portrait switch between the selected race's five-portrait sex-specific sets.
+  - Expected: The initial portrait varies across attempts, left/right arrows or portrait buttons cycle through five atlas variants, and the chosen sex/portrait persists into the Character Menu and player token.
 - [x] Open the pygame Character Menu before and after equipping a stronger weapon.
   - Expected: The Attack stat includes equipped weapon damage and matches the value previewed by equipment changes.
   - Expected: The display falls back to the base combat attack only if weapon-adjusted attack cannot be calculated.
@@ -640,6 +688,8 @@ remain the prompts; the evidence ledger is the running decision record.
   - Expected: Repeated combat-frame rendering does not inflate Seen count.
 - [ ] Defeat or load a legacy-save defeated enemy with no detailed record.
   - Expected: The entry still appears from `kill_dict`, shows defeated count, and displays defeated-gated practical info.
+- [ ] Defeat or load a defeated boss with no detailed Bestiary record.
+  - Expected: The entry shows defeated-gated practical info but does not suggest using Vision to reveal boss details.
 - [ ] Check fixed and special encounters such as Green Slime, Mimic, Red Dragon, Funhouse enemies, and the Realm of Cambion terminal alarm.
   - Expected: Coarse locations are readable, such as `Early Dungeon`, `Chests`, `Funhouse`, boss-room labels, or realm labels, without exact coordinates.
   - Expected: Quest-only inactive material drops are not shown as normal possible drops.
@@ -701,6 +751,7 @@ remain the prompts; the evidence ledger is the running decision record.
 - [ ] Turn in "A Bad Dream" after locating Joffrey.
   - Expected: The reward message grants 3 Old Keys.
   - Expected: The inventory shows 3 more Old Keys than before turn-in.
+  - Expected: The Waitress takes the Lucky Locket during turn-in.
   - Expected: The quest-manager turn-in path records the quest as turned in after granting the keys.
 
 ## Regression Areas

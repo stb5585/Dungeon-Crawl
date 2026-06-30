@@ -169,6 +169,14 @@ class Resource:
     max: int = 0
     current: int = 0
 
+    def __setattr__(self, name, value):
+        if name == "current":
+            try:
+                value = max(0, int(value))
+            except (TypeError, ValueError):
+                value = 0
+        super().__setattr__(name, value)
+
 @dataclass
 class Level:
     level: int = 1
@@ -373,6 +381,8 @@ class Character:
                         "weapon_type": weapon_type,
                         "ability_name": ability_name,
                         "item_name": item_name,
+                        "is_critical": is_critical,
+                        "crit": is_critical,
                     },
                 )
                 promotion_kits.record_damage_taken(target, damage, damage_type)
@@ -1128,11 +1138,9 @@ class Character:
             from a parry counter-attack and the caller should return early.
         """
         msg = ""
-        # Evasive Guard stacks decay whenever the defender successfully dodges.
+        # Evasive Guard stacks reset whenever the defender successfully dodges.
         if "Evasive Guard" in defender.spellbook.get("Skills", {}):
-            defender.evasive_guard_stacks = max(
-                0, int(getattr(defender, "evasive_guard_stacks", 0) or 0) - 1
-            )
+            defender.evasive_guard_stacks = 0
         if 'Parry' in defender.spellbook['Skills']:
             from .classes import ability_mechanics
 

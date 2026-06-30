@@ -136,7 +136,8 @@ def test_promotion_screen_draw_helpers(monkeypatch):
     assert "Choose your path" in presenter.normal_font.render_calls
     assert "Knight" in presenter.large_font.render_calls
     assert "Promotion Stats" in presenter.normal_font.render_calls
-    assert "New Equipment" in presenter.normal_font.render_calls
+    assert "Class Gear Profile" in presenter.normal_font.render_calls
+    assert any("Existing legal gear is kept" in call for call in presenter.small_font.render_calls)
     assert "Equipment Restrictions" in presenter.normal_font.render_calls
     assert "UP/DOWN: Select   ENTER: Promote   ESC: Cancel" in presenter.small_font.render_calls
     assert draw_rect_calls

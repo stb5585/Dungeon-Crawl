@@ -256,6 +256,28 @@ behavior, or gameplay rules.
 No active bugfixes are currently tracked here. Move newly found regressions into
 this section until fixed, then record the completed fix in `CHANGELOG.md`.
 
+## Improvements
+
+- Class Scaling
+  - Early level Footpads need nerfing
+    - hit much harder than expected
+    - still very squishy; glass cannons atm
+    - seems to level out at lower dungeon levels
+- Lower item drop rates to increase benefit of skills like Steal and passives like
+  luck
+- Add/create blood spatter overlay for walls/floor/ceiling
+- Quasits look too much like imps; remake the enemy combat sprite, following the
+  description here:
+  "Quasits stood somewhere between 1‒2 ft (0.3‒0.61 m) tall and weighed around 8 lb
+  (3.6 kg). Their tiny humanoid forms had green skin covered in warts and pustules.
+  Their tails were covered in barbs while their horns were spiky. Both their hands
+  and feet were slender, with long, claw-tipped digits."
+- Optimize NPC responses to match their personalities
+- Progressively lessen the accuracy of multi-strike skills to make them more balanced
+- Enfeeble needs to be tuned, as it currently is very weak
+- Use `remaining_improvement_tuning_report()` as the baseline measurement target
+  list before changing Footpad, ordinary drop, multi-strike, or Enfeeble numbers.
+
 ## Watch Items
 
 - Keep checking guarded input after unusual transitions, especially paths that

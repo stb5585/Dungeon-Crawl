@@ -1764,7 +1764,7 @@ class SceneRenderer:
             )
             return
 
-        if bool(getattr(tile, "rookie_body_marker", False)):
+        if bool(getattr(tile, "rookie_body_marker", False)) or bool(getattr(tile, "dropped_rookie_body", False)):
             if bool(getattr(tile, "read", False)):
                 return
             self._render_floor_sprite(
@@ -1924,6 +1924,12 @@ class SceneRenderer:
             sprite_rect.midbottom = (
                 rect.centerx,
                 round(rect.y + (rect.height * 0.55)),
+            )
+        elif kind == "dead_body":
+            anchor_x, _anchor_y = self._get_floor_sprite_anchor(rect, side=side, lateral_view=lateral_view)
+            sprite_rect.midbottom = (
+                anchor_x,
+                round(rect.y + (rect.height * (1.06 if lateral_view else 1.08))),
             )
 
         if lateral_view and side is not None:
@@ -2206,7 +2212,7 @@ class SceneRenderer:
     def _is_floor_sprite_tile(tile) -> bool:
         if tile is None:
             return False
-        if bool(getattr(tile, "rookie_body_marker", False)):
+        if bool(getattr(tile, "rookie_body_marker", False)) or bool(getattr(tile, "dropped_rookie_body", False)):
             return not bool(getattr(tile, "read", False))
 
         tile_type = type(tile).__name__
@@ -2360,7 +2366,7 @@ class SceneRenderer:
         if kind == "boulder":
             return {1: 0.70, 2: 0.58, 3: 0.46}.get(depth, 0.46)
         if kind == "dead_body":
-            return {1: 0.75, 2: 0.60, 3: 0.46}.get(depth, 0.46)
+            return {1: 0.54, 2: 0.43, 3: 0.33}.get(depth, 0.33)
         if kind == "dead_soldier_item":
             return {1: 0.42, 2: 0.34, 3: 0.26}.get(depth, 0.26)
         if kind == "defeated_boss":
@@ -2459,6 +2465,8 @@ class SceneRenderer:
     @staticmethod
     def _get_wall_overlay_key(tile, depth: int) -> str | None:
         if tile is None:
+            return None
+        if type(tile).__name__ in {"FakeWall", "FunhouseWall", "MirrorWall"}:
             return None
         z = getattr(tile, "z", 1)
         seed = (getattr(tile, "x", 0) * 31) + (getattr(tile, "y", 0) * 17) + (z * 13)

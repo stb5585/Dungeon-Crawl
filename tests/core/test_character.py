@@ -59,6 +59,15 @@ class TestCharacterCreation:
         assert hasattr(char, 'hit_chance')
         assert hasattr(char, 'dodge_chance')
 
+    def test_resource_current_cannot_go_negative(self):
+        """Resource pools should floor at zero when costs overrun."""
+        from src.core.character import Resource
+
+        resource = Resource(max=30, current=5)
+        resource.current -= 12
+
+        assert resource.current == 0
+
 
 class TestCharacterMethods:
     """Test character methods exist and have correct signatures."""
@@ -326,6 +335,18 @@ class TestGameplayStatistics:
         assert player.gameplay_stats["highest_damage_dealt"] == 0
         assert player.gameplay_stats["highest_damage_taken"] == 0
 
+    def test_promoted_player_initializes_highest_level_with_total_level(self):
+        player = TestGameState.create_player(
+            name="PromotedStatsHero",
+            class_name="Warrior",
+            race_name="Human",
+            level=15,
+            pro_level=2,
+        )
+
+        assert player.player_level() == 45
+        assert player.gameplay_stats["highest_level_reached"] == 45
+
     def test_player_move_and_stairs_update_gameplay_stats(self):
         player = TestGameState.create_player(
             name="Walker",
@@ -372,6 +393,7 @@ class TestGameplayStatistics:
             class_name="Warrior",
             race_name="Human",
             level=9,
+            pro_level=2,
         )
 
         serialized = PlayerDataSerializer.serialize(player)
@@ -379,7 +401,7 @@ class TestGameplayStatistics:
 
         restored = PlayerDataSerializer.deserialize(serialized, skip_tiles=True)
 
-        assert restored.gameplay_stats["highest_level_reached"] == 9
+        assert restored.gameplay_stats["highest_level_reached"] == 39
         assert restored.gameplay_stats["steps_taken"] == 0
 
     def test_player_data_serializer_persists_sex_and_backfills_legacy_saves(self):
@@ -490,11 +512,12 @@ class TestPlayerUtilityBehaviors:
         player.record_damage_dealt(55)
         player.record_damage_taken(22)
         player.level.level = 18
+        player.level.pro_level = 2
         player.refresh_highest_level()
 
         assert player.gameplay_stats["highest_damage_dealt"] == 55
         assert player.gameplay_stats["highest_damage_taken"] == 22
-        assert player.gameplay_stats["highest_level_reached"] == 18
+        assert player.gameplay_stats["highest_level_reached"] == 48
 
     def test_exp_gain_multiplier_matches_race(self):
         from src.core.constants import HUMAN_EXP_MULTIPLIER, HALF_GIANT_EXP_MULTIPLIER

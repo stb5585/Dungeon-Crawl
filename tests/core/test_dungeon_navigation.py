@@ -66,6 +66,13 @@ def test_movement():
     assert player.in_town() is False
 
 
+def test_bone_pile_marks_minotaur_approach_tile():
+    player = _make_player()
+
+    assert isinstance(player.world_dict[(3, 2, 1)], map_tiles.MinotaurBossRoom)
+    assert isinstance(player.world_dict[(3, 3, 1)], map_tiles.BonePileTile)
+
+
 def test_decorative_dungeon_tiles_are_traversable_hooks():
     game = SimpleNamespace(player_char=SimpleNamespace(spellbook={"Skills": []}))
     for tile_class in (
@@ -133,6 +140,37 @@ def test_random_encounter_bias_is_soft_and_floor_limited():
     assert "Giant Rat" in rng.choice_names[0]
     assert "Goblin" in rng.choice_names[0]
     assert "Lich" not in rng.choice_names[0]
+
+
+def test_random_encounter_bias_includes_enemy_drop_collection_quests():
+    player = SimpleNamespace(
+        quest_dict={
+            "Main": {},
+            "Side": {
+                "Rat Trap": {"Type": "Collect", "What": "RatTail", "Completed": False},
+                "Ticket to Ride": {"Type": "Collect", "What": "TicketPiece", "Completed": False},
+            },
+            "Bounty": {},
+        },
+        stats=SimpleNamespace(charisma=10),
+        check_mod=lambda *_args, **_kwargs: 5,
+    )
+
+    targets = map_tiles.active_random_encounter_quest_targets(player)
+
+    assert "Giant Rat" in targets
+    assert "Wererat" in targets
+    assert "TicketPiece" not in targets
+
+
+def test_random_encounter_bias_chance_is_softened_and_capped():
+    player = SimpleNamespace(
+        quest_dict={"Main": {}, "Side": {}, "Bounty": {}},
+        stats=SimpleNamespace(charisma=999),
+        check_mod=lambda *_args, **_kwargs: 999,
+    )
+
+    assert map_tiles.random_encounter_quest_bias_chance(player) == 0.15
 
 
 def test_random_enemy_override_bypasses_encounter_bias():

@@ -21,6 +21,9 @@ class DummySurface:
     def get_height(self):
         return self._size[1]
 
+    def get_size(self):
+        return self._size
+
     def get_rect(self, **kwargs):
         rect = pygame.Rect(0, 0, *self._size)
         for key, value in kwargs.items():
@@ -77,6 +80,15 @@ def _valid_save_metadata(filename, *, empty=False):
 
 def test_load_game_draw_helpers_and_data_loading(monkeypatch):
     presenter = _make_presenter()
+    portrait_calls = []
+
+    class FakePortraitManager:
+        def get_portrait(self, *args, **kwargs):
+            portrait_calls.append((args, kwargs))
+            return DummySurface((90, 160), text="portrait")
+
+    monkeypatch.setattr(load_game, "PortraitManager", FakePortraitManager)
+    monkeypatch.setattr(load_game.pygame.transform, "smoothscale", lambda surface, size: DummySurface(size, text="scaled-portrait"))
     screen = load_game.LoadGameScreen(presenter)
 
     draw_calls = []
@@ -92,6 +104,7 @@ def test_load_game_draw_helpers_and_data_loading(monkeypatch):
         level=SimpleNamespace(level=5, exp=123),
         gold=77,
         stats=SimpleNamespace(strength=10, intel=9, wisdom=8, con=11, charisma=7, dex=6),
+        portrait_variant=3,
     )
     player_b = None
 
@@ -116,6 +129,7 @@ def test_load_game_draw_helpers_and_data_loading(monkeypatch):
     assert screen.save_data[0]["name"] == "Hero"
     assert screen.save_data[0]["loadable"] is True
     assert screen.save_data[0]["sex"] == "Female"
+    assert screen.save_data[0]["portrait_variant"] == 3
     assert screen.save_data[0]["stats"]["STR"] == 10
     assert screen.save_data[1]["name"] == "Corrupted save"
     assert screen.save_data[1]["loadable"] is False
@@ -127,6 +141,9 @@ def test_load_game_draw_helpers_and_data_loading(monkeypatch):
 
     screen.current_selection = 0
     screen.draw_char_info()
+    assert portrait_calls[-1][0][:2] == ("Human", "Female")
+    assert portrait_calls[-1][1]["variant"] == 3
+    assert any(getattr(surface, "text", None) == "scaled-portrait" for surface, _pos in presenter.screen.blit_calls)
     assert "Level: 5" in presenter.small_font.render_calls
     assert "Race: Human" in presenter.small_font.render_calls
     assert "Sex: Female" in presenter.small_font.render_calls

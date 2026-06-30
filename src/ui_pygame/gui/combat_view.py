@@ -882,6 +882,14 @@ class CombatView:
         except (AttributeError, TypeError, ValueError):
             pass
 
+        try:
+            guard_stacks = int(getattr(character, "evasive_guard_stacks", 0) or 0)
+            skills = getattr(character, "spellbook", {}).get("Skills", {})
+            if "Evasive Guard" in skills and guard_stacks > 0:
+                icons.append((f"EG{min(3, guard_stacks)}", True))
+        except (AttributeError, TypeError, ValueError):
+            pass
+
         if ("DEF", True) in icons:
             icons = [icon for icon in icons if icon != ("DEF", False)]
 
@@ -1328,6 +1336,8 @@ class CombatView:
 
         is_flying = getattr(enemy, "flying", False)
         is_tunneled = getattr(enemy, "tunnel", False)
+        if is_flying:
+            center_y -= min(48, max(24, int(self.combat_height * 0.05)))
         
         # If enemy is tunneled, show a "burrowed" message instead of sprite
         if is_tunneled:
@@ -1800,6 +1810,8 @@ class CombatView:
         center_y = int(self.screen_height * 0.65) + visual_offset_y
 
         is_flying = getattr(enemy, "flying", False)
+        if is_flying:
+            center_y -= min(56, max(28, int(self.screen_height * 0.05)))
         
         # Get animator for this enemy
         animator = self._get_sprite_animator(enemy)
@@ -2050,6 +2062,10 @@ class CombatView:
     def _render_turn_indicator(self, player_char, enemy, current_turn=None, overlay=False):
         """Render a compact banner showing whose turn is active."""
         if current_turn not in {"player", "enemy"}:
+            return
+        current_actor = player_char if current_turn == "player" else enemy
+        incapacitated = getattr(current_actor, "incapacitated", None)
+        if callable(incapacitated) and incapacitated():
             return
 
         view_width = int(self.screen_width * 0.65) if overlay else self.combat_width

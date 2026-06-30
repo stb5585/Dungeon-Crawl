@@ -25,6 +25,8 @@ class PortraitFrame:
     race: str
     gender: str
     rect: pygame.Rect
+    image_path: Path | None = None
+    variant: int = 0
 
 
 class PortraitManager:
@@ -43,13 +45,16 @@ class PortraitManager:
         self.fallback_root = self.base_root / "fallback_individuals"
         self.overlay_root = Path(overlay_root or self.portrait_root / "overlays")
         self.atlas_json_path = Path(atlas_json or self._first_existing(
+            self.portrait_root / "portrait_atlas_mapping.json",
             self.base_root / "base_portrait_atlas.json",
             self.portrait_root / "base_portrait_atlas.json",
         ))
         self.atlas_image_path = Path(atlas_image) if atlas_image else None
         self.atlas_image_paths: list[Path] = [self.atlas_image_path] if self.atlas_image_path else []
+        self.sheet_image_paths: dict[str, Path] = {}
+        self.sheet_variant_count = 0
         self.frames: dict[str, PortraitFrame] = {}
-        self._atlas_surfaces: dict[int, pygame.Surface] = {}
+        self._atlas_surfaces: dict[Any, pygame.Surface] = {}
         self._base_cache: dict[tuple[str, str, int], pygame.Surface] = {}
         self._portrait_cache: dict[tuple[Any, ...], pygame.Surface] = {}
         self.missing_overlays: list[Path] = []
@@ -105,6 +110,10 @@ class PortraitManager:
             logger.warning("Could not load portrait atlas JSON %s: %s", self.atlas_json_path, exc)
             return
 
+        if data.get("sheets"):
+            self._load_sheet_mapping(data)
+            return
+
         image_name = str(data.get("image", "base_portrait_atlas.png"))
         if self.atlas_image_path is not None:
             self.atlas_image_paths = [self.atlas_image_path]
@@ -122,9 +131,93 @@ class PortraitManager:
             key = self.entry_key(race, gender)
             self.frames[key] = PortraitFrame(key=key, race=race, gender=gender, rect=rect)
 
+    def _load_sheet_mapping(self, data: dict[str, Any]) -> None:
+        """Load per-race sheets where columns are portrait variants."""
+        universal_frames = data.get("universal_frames") or {}
+        max_variant = 0
+        for race_name, sheet in (data.get("sheets") or {}).items():
+            race = self.normalize_key(race_name, "human")
+            image_path = self._resolve_sheet_image_path(race, str(sheet.get("image", "")))
+            self.sheet_image_paths[race] = Path(self.atlas_image_path or image_path)
+            frames = sheet.get("frames") if isinstance(sheet.get("frames"), dict) else None
+            if frames is None and sheet.get("uses") == "universal_frames":
+                frames = universal_frames
+            if not isinstance(frames, dict):
+                logger.warning("Skipping portrait sheet %s without frames", race_name)
+                continue
+
+            for frame_key, frame in frames.items():
+                parsed = self._parse_sheet_frame_key(str(frame_key), race)
+                if parsed is None:
+                    logger.warning("Skipping invalid portrait sheet frame key %s", frame_key)
+                    continue
+                gender, variant_number = parsed
+                try:
+                    rect = pygame.Rect(int(frame["x"]), int(frame["y"]), int(frame["w"]), int(frame["h"]))
+                except (KeyError, TypeError, ValueError) as exc:
+                    logger.warning("Skipping invalid portrait sheet frame %s: %s", frame_key, exc)
+                    continue
+
+                max_variant = max(max_variant, variant_number)
+                key = self.variant_entry_key(race, gender, variant_number - 1)
+                portrait_frame = PortraitFrame(
+                    key=key,
+                    race=race,
+                    gender=gender,
+                    rect=rect,
+                    image_path=self.sheet_image_paths[race],
+                    variant=variant_number - 1,
+                )
+                self.frames[key] = portrait_frame
+                if variant_number == 1:
+                    self.frames[self.entry_key(race, gender)] = portrait_frame
+
+        self.sheet_variant_count = max_variant
+        if self.sheet_image_paths and self.atlas_image_path is None:
+            self.atlas_image_paths = list(dict.fromkeys(self.sheet_image_paths.values()))
+            self.atlas_image_path = self.atlas_image_paths[0] if self.atlas_image_paths else None
+
+    def _resolve_sheet_image_path(self, race: str, image_name: str) -> Path:
+        """Resolve mapping image names, accepting the current *_base_portraits convention."""
+        base_dir = self.atlas_json_path.parent
+        candidates: list[Path] = []
+        if image_name:
+            path = base_dir / image_name
+            candidates.append(path)
+            if image_name.endswith("_portraits.png") and not image_name.endswith("_base_portraits.png"):
+                candidates.append(base_dir / image_name.replace("_portraits.png", "_base_portraits.png"))
+        candidates.extend([
+            base_dir / f"{race}_base_portraits.png",
+            base_dir / f"{race}_portraits.png",
+        ])
+        return self._first_existing(*candidates)
+
+    @staticmethod
+    def _parse_sheet_frame_key(frame_key: str, race: str) -> tuple[str, int] | None:
+        key = PortraitManager.normalize_key(frame_key, "")
+        race_prefix = f"{race}_"
+        if key.startswith(race_prefix):
+            key = key[len(race_prefix):]
+        match = re.fullmatch(r"(male|female)_(\d+)", key)
+        if not match:
+            return None
+        variant_number = int(match.group(2))
+        if variant_number < 1:
+            return None
+        return match.group(1), variant_number
+
     @staticmethod
     def entry_key(race: Any, gender: Any) -> str:
         return f"{PortraitManager.normalize_key(race)}_{PortraitManager.normalize_key(gender, 'male')}"
+
+    @staticmethod
+    def variant_entry_key(race: Any, gender: Any, variant: Any = None) -> str:
+        variant_index = 0
+        try:
+            variant_index = int(variant or 0)
+        except (TypeError, ValueError):
+            variant_index = 0
+        return f"{PortraitManager.entry_key(race, gender)}_{variant_index + 1}"
 
     def cache_key(
         self,
@@ -147,6 +240,8 @@ class PortraitManager:
         )
 
     def variant_count(self) -> int:
+        if self.sheet_variant_count:
+            return max(1, self.sheet_variant_count)
         return max(1, len(self.atlas_image_paths))
 
     def variant_index(self, variant: Any = None) -> int:
@@ -203,8 +298,11 @@ class PortraitManager:
         return surface
 
     def atlas_portrait(self, race: str, gender: str, variant: Any = None) -> pygame.Surface | None:
-        frame = self.frames.get(self.entry_key(race, gender))
-        atlas = self.atlas_surface(variant)
+        variant_key = self.variant_index(variant)
+        frame = self.frames.get(self.variant_entry_key(race, gender, variant_key))
+        if frame is None:
+            frame = self.frames.get(self.entry_key(race, gender))
+        atlas = self.atlas_surface(variant_key, race=race if frame and frame.image_path else None)
         if frame is None or atlas is None:
             return None
         rect = self._frame_rect_for_atlas(frame.rect, atlas)
@@ -231,7 +329,20 @@ class PortraitManager:
         adjusted.height = min(adjusted.height, max(1, atlas_height - adjusted.y))
         return adjusted
 
-    def atlas_surface(self, variant: Any = None) -> pygame.Surface | None:
+    def atlas_surface(self, variant: Any = None, *, race: str | None = None) -> pygame.Surface | None:
+        if race and race in self.sheet_image_paths:
+            cache_key: Any = ("sheet", race)
+            if cache_key in self._atlas_surfaces:
+                return self._atlas_surfaces[cache_key]
+            atlas_path = self.sheet_image_paths[race]
+            if not atlas_path.exists():
+                logger.warning("Portrait sheet image missing: %s", atlas_path)
+                return None
+            surface = self.load_image(atlas_path)
+            if surface is not None:
+                self._atlas_surfaces[cache_key] = surface
+            return surface
+
         variant_key = self.variant_index(variant)
         if variant_key in self._atlas_surfaces:
             return self._atlas_surfaces[variant_key]

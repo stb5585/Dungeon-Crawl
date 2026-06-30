@@ -491,12 +491,12 @@ class DataDrivenSkill(Skill):
         if self.weapon and hasattr(user, "is_disarmed") and user.is_disarmed():
             return f"{self.name} requires a weapon."
 
-        if not special:
-            user.mana.current -= self.cost
-
         if self._requires_incapacitated and target is not None:
             if not target.incapacitated():
                 return f"{self.name} is ineffective against {target.name}."
+
+        if not special:
+            user.mana.current -= self.cost
 
         fortune_force_hit = False
         if self.name in {"Steal", "Mug", "Gold Toss", "Slot Machine", "Sneak Attack"}:
@@ -572,7 +572,8 @@ class DataDrivenSkill(Skill):
             if self.name in {"Steal", "Mug", "Gold Toss", "Slot Machine", "Sneak Attack"}:
                 if hit:
                     msg += promotion_kits.resolve_misfortune_payoff(user, target, result.damage, self.name)
-                msg += promotion_kits.add_fortune(user, bool(hit), self.name)
+                if not hit or crit > 1:
+                    msg += promotion_kits.add_fortune(user, bool(hit and crit > 1), self.name)
             msg += promotion_kits.pop_messages(user)
             if target is not None:
                 msg += promotion_kits.pop_messages(target)

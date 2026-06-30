@@ -37,6 +37,30 @@
   prompt wrapping, and the final dungeon-frame flash on return to town.
 - Improved minimap readability with outlined special-tile indicators and a
   blinking player-position marker.
+- Fixed data-driven stealth-skill regressions so Kidney Punch costs exactly
+  18 MP, mana/resource pools cannot underflow, and Backstab only works against
+  incapacitated targets.
+- Surfaced Footpad Evasive Guard stacks in pygame status icons and Combat Focus,
+  and changed undetailed boss Bestiary entries so they no longer suggest Vision
+  can reveal boss details.
+- Fixed roadmap bugfix queue items for Smoke Screen flee visuals, promoted
+  highest-level statistics, long character-screen locations, and status
+  consumables missing from pygame shops.
+- Improved contained pygame flows for bounty acceptance, incapacitated turn
+  indicators, flying enemy placement, minimap adjacent visibility, enemy
+  Shapeshift follow-up actions, and dual-wield shop comparison text.
+- Fixed additional playtest polish around state-gated skill menu visibility,
+  fake-wall wall overlays, non-enterable minimap review tiles, Evasive Guard
+  dodge falloff, dead-body dungeon placement, and the Bad Dream Lucky Locket
+  turn-in handoff.
+- Fixed Demon Claw Doom feedback, PyGame bounty abandonment parity, softer
+  quest encounter bias including enemy-drop collection quests, movement log
+  coordinate spam, and Thief/Rogue Fortune/Misfortune combat focus behavior.
+- Implemented remaining contained roadmap improvements for PyGame death parity,
+  Rookie Mistake body drop/recovery, promotion equipment cleanup, menu cursor
+  policy coverage, save-preview portraits, Mad Waitress dungeon cue/SFX hooks,
+  and the Minotaur approach bone pile; added measurement targets for deferred
+  Footpad, drop-rate, multi-strike, and Enfeeble tuning.
 
 ### Promotion Class Kits
 
@@ -84,6 +108,8 @@
   creation screen starts on a random portrait variant, lets players browse with
   arrows/clickable portrait buttons, and persists the chosen variant for later
   Character Menu and player-token rendering.
+- Replaced the base racial portrait source with per-race portrait sheets,
+  providing five male and five female selectable base portraits per race.
 - Folded sex selection into the character naming screen so character creation
   skips the old standalone sex page; Male/Female buttons below the portrait now
   switch the race-specific portrait set before confirmation.

@@ -1,36 +1,15 @@
 #!/usr/bin/env python3
-"""Focused coverage for portrait atlas loading and composition."""
+"""Focused coverage for portrait sheet loading and composition."""
 
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from types import SimpleNamespace
 
 import pygame
 
 from src.ui_pygame.assets.portrait_manager import PortraitManager
-
-
-def _write_atlas_json(path: Path) -> None:
-    path.write_text(
-        json.dumps(
-            {
-                "image": "atlas.png",
-                "entries": {
-                    "human_male": {"x": 0, "y": 0, "w": 10, "h": 10, "race": "human", "gender": "male"},
-                    "half_orc_female": {
-                        "x": 10,
-                        "y": 0,
-                        "w": 10,
-                        "h": 10,
-                        "race": "half_orc",
-                        "gender": "female",
-                    },
-                },
-            }
-        ),
-        encoding="utf-8",
-    )
 
 
 def _surface(size=(10, 10), color=(0, 0, 0, 255)):
@@ -39,43 +18,80 @@ def _surface(size=(10, 10), color=(0, 0, 0, 255)):
     return surface
 
 
-def test_portrait_atlas_json_loading(tmp_path):
-    atlas_json = tmp_path / "base_portrait_atlas.json"
-    _write_atlas_json(atlas_json)
-
-    manager = PortraitManager(portrait_root=tmp_path, atlas_json=atlas_json)
-
-    assert manager.atlas_image_path == tmp_path / "atlas.png"
-    assert manager.frames["human_male"].rect == pygame.Rect(0, 0, 10, 10)
-    assert manager.frames["half_orc_female"].race == "half_orc"
-    assert manager.variant_count() == 1
-
-
-def test_portrait_atlas_discovers_numbered_sibling_variants(tmp_path):
-    atlas_json = tmp_path / "base_portrait_atlas.json"
-    atlas_json.write_text(
+def _write_sheet_mapping(root: Path, *, frames: dict | None = None) -> Path:
+    mapping_json = root / "portrait_atlas_mapping.json"
+    default_frames = frames or {
+        "male_1": {"x": 0, "y": 0, "w": 10, "h": 10},
+        "male_2": {"x": 10, "y": 0, "w": 10, "h": 10},
+        "female_1": {"x": 0, "y": 10, "w": 10, "h": 10},
+        "female_2": {"x": 10, "y": 10, "w": 10, "h": 10},
+    }
+    mapping_json.write_text(
         json.dumps(
             {
-                "image": "base_portrait_atlas.png",
-                "entries": {
-                    "human_male": {"x": 0, "y": 0, "w": 10, "h": 10, "race": "human", "gender": "male"},
+                "universal_frames": default_frames,
+                "sheets": {
+                    "human": {
+                        "image": "human_base_portraits.png",
+                        "frames": {
+                            "human_male_1": default_frames["male_1"],
+                            "human_male_2": default_frames["male_2"],
+                            "human_female_1": default_frames["female_1"],
+                            "human_female_2": default_frames["female_2"],
+                        },
+                    },
+                    "half_orc": {
+                        "image": "half_orc_base_portraits.png",
+                        "uses": "universal_frames",
+                    },
                 },
             }
         ),
         encoding="utf-8",
     )
-    for index in (2, 1, 3):
-        (tmp_path / f"base_portrait_atlas_{index}.png").touch()
+    (root / "human_base_portraits.png").touch()
+    (root / "half_orc_base_portraits.png").touch()
+    return mapping_json
 
-    manager = PortraitManager(portrait_root=tmp_path, atlas_json=atlas_json)
 
-    assert [path.name for path in manager.atlas_image_paths] == [
-        "base_portrait_atlas_1.png",
-        "base_portrait_atlas_2.png",
-        "base_portrait_atlas_3.png",
-    ]
-    assert manager.atlas_image_path == tmp_path / "base_portrait_atlas_1.png"
-    assert manager.variant_count() == 3
+def test_portrait_sheet_mapping_json_loading(tmp_path):
+    mapping_json = _write_sheet_mapping(tmp_path)
+
+    manager = PortraitManager(portrait_root=tmp_path, atlas_json=mapping_json)
+
+    assert manager.atlas_image_path == tmp_path / "human_base_portraits.png"
+    assert manager.sheet_image_paths["human"] == tmp_path / "human_base_portraits.png"
+    assert manager.sheet_image_paths["half_orc"] == tmp_path / "half_orc_base_portraits.png"
+    assert manager.frames["human_male"].rect == pygame.Rect(0, 0, 10, 10)
+    assert manager.frames["human_male_2"].rect == pygame.Rect(10, 0, 10, 10)
+    assert manager.frames["half_orc_female_2"].race == "half_orc"
+    assert manager.variant_count() == 2
+
+
+def test_portrait_sheet_mapping_uses_per_race_variant_columns(tmp_path):
+    mapping_json = _write_sheet_mapping(tmp_path)
+    human_sheet = _surface((20, 20), (0, 0, 0, 0))
+    human_sheet.fill((255, 0, 0, 255), pygame.Rect(0, 0, 10, 10))
+    human_sheet.fill((0, 255, 0, 255), pygame.Rect(10, 0, 10, 10))
+    human_sheet.fill((255, 255, 0, 255), pygame.Rect(10, 10, 10, 10))
+    orc_sheet = _surface((20, 20), (0, 0, 255, 255))
+    surfaces = {
+        "human_base_portraits.png": human_sheet,
+        "half_orc_base_portraits.png": orc_sheet,
+    }
+
+    manager = PortraitManager(portrait_root=tmp_path, atlas_json=mapping_json)
+    manager.load_image = lambda path: surfaces[path.name]
+
+    male_1 = manager.base_portrait("Human", "Male", variant=0)
+    male_2 = manager.base_portrait("Human", "Male", variant=1)
+    female_2 = manager.base_portrait("Human", "Female", variant=1)
+    half_orc = manager.base_portrait("Half Orc", "Female", variant=1)
+
+    assert male_1.get_at((1, 1)) == pygame.Color(255, 0, 0, 255)
+    assert male_2.get_at((1, 1)) == pygame.Color(0, 255, 0, 255)
+    assert female_2.get_at((1, 1)) == pygame.Color(255, 255, 0, 255)
+    assert half_orc.get_at((1, 1)) == pygame.Color(0, 0, 255, 255)
 
 
 def test_portrait_key_normalization_variants():
@@ -87,36 +103,13 @@ def test_portrait_key_normalization_variants():
     assert PortraitManager.entry_key(SimpleNamespace(name="Half Orc"), "Female") == "half_orc_female"
 
 
-def test_successful_base_portrait_lookup_from_atlas(tmp_path):
-    atlas_json = tmp_path / "base_portrait_atlas.json"
-    _write_atlas_json(atlas_json)
-    (tmp_path / "atlas.png").touch()
-    (tmp_path / "atlas_1.png").touch()
-    manager = PortraitManager(portrait_root=tmp_path, atlas_json=atlas_json)
-    atlas = _surface((20, 10), (0, 0, 0, 0))
-    atlas.fill((255, 0, 0, 255), pygame.Rect(0, 0, 10, 10))
-    atlas.fill((0, 0, 255, 255), pygame.Rect(10, 0, 10, 10))
-    manager.load_image = lambda _path: atlas
+def test_base_portrait_lookup_uses_selected_sheet_variant(tmp_path):
+    mapping_json = _write_sheet_mapping(tmp_path)
+    human_sheet = _surface((20, 20), (20, 20, 20, 255))
+    human_sheet.fill((80, 80, 80, 255), pygame.Rect(10, 0, 10, 10))
 
-    portrait = manager.base_portrait("Human", "Male")
-    half_orc = manager.base_portrait("Half Orc", "Female")
-
-    assert portrait.get_size() == (10, 10)
-    assert portrait.get_at((1, 1)) == pygame.Color(255, 0, 0, 255)
-    assert half_orc.get_at((1, 1)) == pygame.Color(0, 0, 255, 255)
-
-
-def test_base_portrait_lookup_uses_selected_atlas_variant(tmp_path):
-    atlas_json = tmp_path / "base_portrait_atlas.json"
-    _write_atlas_json(atlas_json)
-    (tmp_path / "atlas.png").touch()
-    (tmp_path / "atlas_1.png").touch()
-    manager = PortraitManager(portrait_root=tmp_path, atlas_json=atlas_json)
-    surfaces = {
-        "atlas.png": _surface((20, 10), (20, 20, 20, 255)),
-        "atlas_1.png": _surface((20, 10), (80, 80, 80, 255)),
-    }
-    manager.load_image = lambda path: surfaces[path.name]
+    manager = PortraitManager(portrait_root=tmp_path, atlas_json=mapping_json)
+    manager.load_image = lambda _path: human_sheet
 
     base = manager.base_portrait("Human", "Male", variant=0)
     variant = manager.base_portrait("Human", "Male", variant=1)
@@ -127,27 +120,20 @@ def test_base_portrait_lookup_uses_selected_atlas_variant(tmp_path):
     assert wrapped is variant
 
 
-def test_portrait_frame_scales_when_atlas_variant_is_narrower_than_json_bounds(tmp_path):
-    atlas_json = tmp_path / "base_portrait_atlas.json"
-    atlas_json.write_text(
-        json.dumps(
-            {
-                "image": "base_portrait_atlas.png",
-                "entries": {
-                    "left_male": {"x": 0, "y": 0, "w": 10, "h": 10, "race": "left", "gender": "male"},
-                    "right_male": {"x": 90, "y": 0, "w": 20, "h": 10, "race": "right", "gender": "male"},
-                },
-            }
-        ),
-        encoding="utf-8",
-    )
-    (tmp_path / "base_portrait_atlas_1.png").touch()
-    manager = PortraitManager(portrait_root=tmp_path, atlas_json=atlas_json)
-    atlas = _surface((100, 10), (0, 0, 0, 0))
+def test_portrait_frame_scales_when_sheet_is_narrower_than_json_bounds(tmp_path):
+    frames = {
+        "male_1": {"x": 0, "y": 0, "w": 10, "h": 10},
+        "male_2": {"x": 90, "y": 0, "w": 20, "h": 10},
+        "female_1": {"x": 0, "y": 10, "w": 10, "h": 10},
+        "female_2": {"x": 90, "y": 10, "w": 20, "h": 10},
+    }
+    mapping_json = _write_sheet_mapping(tmp_path, frames=frames)
+    manager = PortraitManager(portrait_root=tmp_path, atlas_json=mapping_json)
+    atlas = _surface((100, 20), (0, 0, 0, 0))
     atlas.fill((200, 60, 40, 255), pygame.Rect(82, 0, 18, 10))
     manager.load_image = lambda _path: atlas
 
-    portrait = manager.base_portrait("Right", "Male")
+    portrait = manager.base_portrait("Human", "Male", variant=1)
 
     assert portrait.get_size() == (18, 10)
     assert portrait.get_at((1, 1)) == pygame.Color(200, 60, 40, 255)
@@ -164,11 +150,9 @@ def test_missing_portrait_returns_placeholder_and_logs_warning(tmp_path, caplog)
 
 
 def test_missing_overlay_is_recorded_and_skipped(tmp_path):
-    atlas_json = tmp_path / "base_portrait_atlas.json"
-    _write_atlas_json(atlas_json)
-    (tmp_path / "atlas.png").touch()
-    manager = PortraitManager(portrait_root=tmp_path, atlas_json=atlas_json)
-    manager.load_image = lambda _path: _surface((20, 10), (10, 20, 30, 255))
+    mapping_json = _write_sheet_mapping(tmp_path)
+    manager = PortraitManager(portrait_root=tmp_path, atlas_json=mapping_json)
+    manager.load_image = lambda _path: _surface((20, 20), (10, 20, 30, 255))
 
     portrait = manager.get_portrait("Human", "Male", class_name="Warrior")
 
@@ -178,11 +162,9 @@ def test_missing_overlay_is_recorded_and_skipped(tmp_path):
 
 
 def test_portrait_composition_order_and_cache_reuse(tmp_path):
-    atlas_json = tmp_path / "base_portrait_atlas.json"
-    _write_atlas_json(atlas_json)
-    (tmp_path / "atlas.png").touch()
-    manager = PortraitManager(portrait_root=tmp_path, atlas_json=atlas_json)
-    manager.load_image = lambda _path: _surface((20, 10), (10, 10, 10, 255))
+    mapping_json = _write_sheet_mapping(tmp_path)
+    manager = PortraitManager(portrait_root=tmp_path, atlas_json=mapping_json)
+    manager.load_image = lambda _path: _surface((20, 20), (10, 10, 10, 255))
     order = []
     colors = {
         "warrior.png": (20, 20, 20, 255),
@@ -220,12 +202,9 @@ def test_portrait_composition_order_and_cache_reuse(tmp_path):
 
 
 def test_portrait_cache_distinguishes_promotion_and_effects(tmp_path):
-    atlas_json = tmp_path / "base_portrait_atlas.json"
-    _write_atlas_json(atlas_json)
-    (tmp_path / "atlas.png").touch()
-    (tmp_path / "atlas_1.png").touch()
-    manager = PortraitManager(portrait_root=tmp_path, atlas_json=atlas_json)
-    manager.load_image = lambda _path: _surface((20, 10), (10, 10, 10, 255))
+    mapping_json = _write_sheet_mapping(tmp_path)
+    manager = PortraitManager(portrait_root=tmp_path, atlas_json=mapping_json)
+    manager.load_image = lambda _path: _surface((20, 20), (10, 10, 10, 255))
     manager.load_overlay = lambda _path: None
 
     base = manager.get_portrait("Human", "Male", first_promotion="Paladin")

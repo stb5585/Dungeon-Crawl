@@ -5,6 +5,7 @@ Load Game screen for Pygame GUI - matches the shop layout with character details
 import pygame
 
 from src.core.save_system import SaveManager
+from src.ui_pygame.assets.portrait_manager import PortraitManager
 from .confirmation_popup import ConfirmationPopup
 from .input_guards import prepare_guarded_input, release_guard_allows_input, update_input_armed_from_event
 from .mouse_helpers import hit_index, is_left_click, mouse_position
@@ -40,6 +41,10 @@ class LoadGameScreen:
         self.current_selection = 0
         self.save_files = []
         self.save_data = []
+        try:
+            self.portrait_manager = PortraitManager()
+        except Exception:
+            self.portrait_manager = None
         
         # Calculate window positions (left for character info, right for file list)
         self.calculate_window_rects()
@@ -79,14 +84,28 @@ class LoadGameScreen:
         
         info = self.save_data[self.current_selection]
         
-        # Start position for text
         x = self.char_info_rect.left + 20
         y = self.char_info_rect.top + 20
         line_height = 30
+
+        portrait = self._portrait_for_save_info(info)
+        details_x = x
+        if portrait is not None:
+            target_h = min(180, self.char_info_rect.height // 3)
+            src_w = max(1, portrait.get_width())
+            src_h = max(1, portrait.get_height())
+            target_w = max(1, int(src_w * (target_h / src_h)))
+            portrait_rect = pygame.Rect(x, y, target_w, target_h)
+            try:
+                portrait = pygame.transform.smoothscale(portrait, (target_w, target_h))
+            except Exception:
+                pass
+            self.screen.blit(portrait, portrait_rect)
+            details_x = portrait_rect.right + 18
         
         # Character name (bold/larger)
         name_text = self.normal_font.render(info['name'], True, self.GOLD)
-        self.screen.blit(name_text, (x, y))
+        self.screen.blit(name_text, (details_x, y))
         y += line_height * 1.5
         
         # Character details
@@ -105,12 +124,14 @@ class LoadGameScreen:
         
         for detail in details:
             text = self.small_font.render(detail, True, self.WHITE)
-            self.screen.blit(text, (x, y))
+            self.screen.blit(text, (details_x, y))
             y += line_height
         
         # Stats if available
         if 'stats' in info and info['stats']:
             y += 10
+            if portrait is not None:
+                y = max(y, self.char_info_rect.top + 20 + target_h + 18)
             stats_header = self.small_font.render("Stats:", True, self.GOLD)
             self.screen.blit(stats_header, (x, y))
             y += line_height
@@ -119,6 +140,20 @@ class LoadGameScreen:
                 stat_text = self.small_font.render(f"{stat_name}: {stat_value}", True, self.WHITE)
                 self.screen.blit(stat_text, (x, y))
                 y += line_height - 5
+
+    def _portrait_for_save_info(self, info):
+        """Return a save preview portrait, falling back silently when unavailable."""
+        if not info.get("loadable", True) or self.portrait_manager is None:
+            return None
+        try:
+            return self.portrait_manager.get_portrait(
+                info.get("race", "Human"),
+                info.get("sex", "Male"),
+                class_name=info.get("class"),
+                variant=info.get("portrait_variant", 0),
+            )
+        except Exception:
+            return None
     
     def draw_file_list(self):
         """Draw the save file list panel."""
@@ -251,6 +286,7 @@ class LoadGameScreen:
                         'level': getattr(player_char.level, 'level', 1) if hasattr(player_char, 'level') else 1,
                         'experience': getattr(player_char.level, 'exp', 0) if hasattr(player_char, 'level') else 0,
                         'gold': getattr(player_char, 'gold', 0),
+                        'portrait_variant': getattr(player_char, 'portrait_variant', 0),
                         'file': save_file,
                         'loadable': True,
                     }

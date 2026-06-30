@@ -2411,12 +2411,11 @@ class KidneyPunchEffect(Effect):
     """Kidney Punch: offhand-weapon check → weapon_damage → stun.
 
     Handles its own equipment check, weapon_damage call, and stun logic.
-    Expects: check_weapon=false, cost=0 in YAML (effect manages mana).
+    Expects the owning skill to manage mana through its top-level YAML cost.
     """
 
-    def __init__(self, cost: int = 12, **_kw):
+    def __init__(self, **_kw):
         super().__init__()
-        self.cost = cost
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
         import random as _rng
@@ -2427,9 +2426,6 @@ class KidneyPunchEffect(Effect):
         if not offhand or getattr(offhand, "typ", None) != "Weapon":
             messages.append(f"{actor.name} needs an off-hand weapon to use Kidney Punch.\n")
             return
-
-        # Mana
-        actor.mana.current -= self.cost
 
         # Weapon damage (main hand)
         use_str, hit, crit = actor.weapon_damage(target, dmg_mod=1.0, cover=False, use_offhand=False)

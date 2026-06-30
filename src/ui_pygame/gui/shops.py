@@ -254,7 +254,10 @@ class ShopManager(TownScreenBase):
     
     def buy_potions(self, background_image="town.png"):
         """Buy potions from alchemist with level-based availability."""
-        potion_dict = {"Restorative": self._potion_item_classes()}
+        potion_dict = {
+            "Restorative": self._potion_item_classes(),
+            "Status Items": self._status_item_classes(),
+        }
         self._buy_with_shop_screen(potion_dict, "Potions", background_image=background_image)
 
     def buy_alchemist_goods(self):
@@ -263,10 +266,15 @@ class ShopManager(TownScreenBase):
         scrolls = misc_dict.pop("Scroll", [])
         alchemist_tabs = {
             "Potions": self._potion_item_classes(),
+            "Status Items": self._status_item_classes(),
             "Scrolls": scrolls,
             **self._available_item_groups(misc_dict),
         }
         self._buy_with_shop_screen(alchemist_tabs, "Alchemist Goods")
+
+    def _status_item_classes(self):
+        """Return status-curing consumable classes sold by alchemists."""
+        return list(items_module.items_dict.get("Potion", {}).get("Status", []))
 
     def _potion_item_classes(self):
         """Return level-appropriate restorative potion classes."""
@@ -409,6 +417,8 @@ class ShopManager(TownScreenBase):
         else:
             lines.append("Cancel keeps the purchased item in inventory.")
         for action, slots in actions.items():
+            if action == "Dual Wield":
+                continue
             lines.append("")
             lines.append(f"{action}:")
             lines.extend(self._equip_preview_lines(item, slots))
@@ -540,6 +550,12 @@ class ShopManager(TownScreenBase):
         
         # Equipment comparison for equipment items
         if item.typ in ["Weapon", "OffHand", "Armor", "Helmet", "Accessory"]:
+            dual_slot_lines = self._dual_wield_comparison_lines(item)
+            if dual_slot_lines:
+                info_lines.append("")
+                info_lines.extend(dual_slot_lines)
+                return "\n".join(info_lines)
+
             equip_slot = item.typ
             if item.typ == "Accessory":
                 equip_slot = item.subtyp
@@ -578,6 +594,39 @@ class ShopManager(TownScreenBase):
                 info_lines.append(f"(No {equip_slot} currently equipped)")
         
         return "\n".join(info_lines)
+
+    def _dual_wield_comparison_lines(self, item) -> list[str]:
+        """Return explicit main/offhand shop comparison lines for hand items."""
+        if getattr(item, "typ", None) not in {"Weapon", "OffHand"}:
+            return []
+
+        lines = ["=== Hand Comparison ==="]
+        for label, slot in (("Main Hand", "Weapon"), ("OffHand", "OffHand")):
+            lines.append(f"{label}:")
+            if slot not in items_module.equipment_slots_for_item(item):
+                lines.append("  not usable in this slot")
+                continue
+            can_equip = getattr(self.player_char, "can_equip_item", None)
+            if callable(can_equip):
+                slot_allowed = can_equip(item, slot)
+            else:
+                equip_check = getattr(getattr(self.player_char, "cls", None), "equip_check", None)
+                slot_allowed = bool(callable(equip_check) and equip_check(item, slot))
+            if not slot_allowed:
+                lines.append("  not usable by this character")
+                continue
+            current_item = self.player_char.equipment.get(slot)
+            current_name = getattr(current_item, "name", "empty")
+            if current_name == "None":
+                current_name = "empty"
+            lines.append(f"  replaces {current_name}")
+            stat_diff = self.player_char.equip_diff(item, slot, buy=True)
+            diff_lines = [line.strip() for line in stat_diff.splitlines() if line.strip()]
+            if diff_lines:
+                lines.extend(f"  {line}" for line in diff_lines)
+            else:
+                lines.append("  no stat change")
+        return lines
     
     def _has_available_items(self, item_classes):
         """Check if any items in the given list are available at the player's level."""
@@ -802,6 +851,7 @@ class ShopManager(TownScreenBase):
         """Buy potions and scrolls from secret shop."""
         consumable_tabs = {
             "Potions": self._potion_item_classes(),
+            "Status Items": self._status_item_classes(),
             "Stat Potions": items_module.items_dict["Potion"].get("Stat", []),
             "Scrolls": items_module.items_dict["Misc"].get("Scroll", []),
             "Keys": items_module.items_dict.get("Misc", {}).get("Key", []),

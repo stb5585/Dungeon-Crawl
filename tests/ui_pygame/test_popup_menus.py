@@ -371,6 +371,25 @@ def test_bestiary_popup_defeated_entries_show_locations_and_drops(monkeypatch):
     assert "Details unknown." in presenter.normal_font.render_calls
 
 
+def test_bestiary_popup_undetailed_boss_does_not_suggest_vision(monkeypatch):
+    presenter = _make_presenter()
+    parent = _make_parent()
+    popup = popup_menus.BestiaryPopupMenu(presenter, parent)
+    player = SimpleNamespace(
+        kill_dict={"Dragon": {"Red Dragon": 1}},
+        bestiary={},
+    )
+    monkeypatch.setattr(popup, "_draw_enemy_sprite", lambda *_args, **_kwargs: None)
+
+    popup.build_items(player)
+    popup.draw_details(player)
+
+    assert "Details unknown." in presenter.normal_font.render_calls
+    assert "Boss details cannot be revealed" in presenter.small_font.render_calls
+    assert "with Vision." in presenter.small_font.render_calls
+    assert "Use Vision while fighting this enemy to reveal bestiary details." not in presenter.small_font.render_calls
+
+
 def test_bestiary_popup_detailed_defeated_entries_keep_mechanics_with_practical_info(monkeypatch):
     presenter = _make_presenter()
     parent = _make_parent()

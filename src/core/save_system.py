@@ -751,7 +751,11 @@ class PlayerDataSerializer:
             'liminal_gap_return': getattr(player, 'liminal_gap_return', None),
             'gameplay_stats': normalize_gameplay_stats(
                 getattr(player, 'gameplay_stats', None),
-                current_level=getattr(getattr(player, 'level', None), 'level', 1),
+                current_level=(
+                    player.player_level()
+                    if hasattr(player, 'player_level')
+                    else getattr(getattr(player, 'level', None), 'level', 1)
+                ),
             ),
             
             # World state (tile visited flags, defeated enemies, open doors, etc.)
@@ -984,7 +988,11 @@ class PlayerDataSerializer:
         player.liminal_gap_return = liminal_gap_return
         player.gameplay_stats = normalize_gameplay_stats(
             data.get('gameplay_stats'),
-            current_level=player.level.level,
+            current_level=(
+                player.player_level()
+                if hasattr(player, 'player_level')
+                else player.level.level
+            ),
         )
         player.intro_shown = data.get('intro_shown', False)
         
@@ -1022,6 +1030,7 @@ class PlayerDataSerializer:
                     for tile in player.world_dict.values():
                         if type(tile).__name__ == "FunhouseTeleporter" and hasattr(tile, "active"):
                             tile.active = False
+                map_tiles.sync_rookie_body_drop_marker(player)
         
         return player
 

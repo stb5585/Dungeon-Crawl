@@ -100,7 +100,7 @@ def test_character_naming_draws_identity_and_default_preview(monkeypatch):
 
     assert manager_calls == [("Half Elf", "Female", 1)]
     assert screen.selected_portrait_variant == 1
-    assert screen.portrait_path.name == "half_elf_female.png"
+    assert screen.portrait_path.name == "half_elf_base_portraits.png"
     assert "Name your character" in presenter.normal_font.render_calls
     assert {"Male", "Female", "Race", "Class", "Half Elf", "Spellblade"}.issubset(
         set(presenter.normal_font.render_calls)

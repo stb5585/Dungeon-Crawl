@@ -1,0 +1,48 @@
+{
+  "meta": {
+    "description": "Atlas mapping for 2-row x 5-column racial portrait sheets. Top row is male, bottom row is female.",
+    "sheet_width": 1402,
+    "sheet_height": 1122,
+    "columns": 5,
+    "rows": 2,
+    "coordinate_system": "top-left origin, pixels",
+    "notes": "Sheet width is not evenly divisible by 5, so column widths alternate between 280 and 281 pixels to cover the full image exactly. Use the same frame coordinates for every race sheet if exported at 1402x1122."
+  },
+  "column_bounds": [0, 280, 560, 841, 1121, 1402],
+  "row_bounds": [0, 561, 1122],
+  "universal_frames": {
+    "male_1": { "x": 0, "y": 0, "w": 280, "h": 561 },
+    "male_2": { "x": 280, "y": 0, "w": 280, "h": 561 },
+    "male_3": { "x": 560, "y": 0, "w": 281, "h": 561 },
+    "male_4": { "x": 841, "y": 0, "w": 280, "h": 561 },
+    "male_5": { "x": 1121, "y": 0, "w": 281, "h": 561 },
+    "female_1": { "x": 0, "y": 561, "w": 280, "h": 561 },
+    "female_2": { "x": 280, "y": 561, "w": 280, "h": 561 },
+    "female_3": { "x": 560, "y": 561, "w": 281, "h": 561 },
+    "female_4": { "x": 841, "y": 561, "w": 280, "h": 561 },
+    "female_5": { "x": 1121, "y": 561, "w": 281, "h": 561 }
+  },
+  "sheets": {
+    "human": {
+      "image": "human_base_portraits.png",
+      "frames": {
+        "human_male_1": { "x": 0, "y": 0, "w": 280, "h": 561 },
+        "human_male_2": { "x": 280, "y": 0, "w": 280, "h": 561 },
+        "human_male_3": { "x": 560, "y": 0, "w": 281, "h": 561 },
+        "human_male_4": { "x": 841, "y": 0, "w": 280, "h": 561 },
+        "human_male_5": { "x": 1121, "y": 0, "w": 281, "h": 561 },
+        "human_female_1": { "x": 0, "y": 561, "w": 280, "h": 561 },
+        "human_female_2": { "x": 280, "y": 561, "w": 280, "h": 561 },
+        "human_female_3": { "x": 560, "y": 561, "w": 281, "h": 561 },
+        "human_female_4": { "x": 841, "y": 561, "w": 280, "h": 561 },
+        "human_female_5": { "x": 1121, "y": 561, "w": 281, "h": 561 }
+      }
+    },
+    "elf": { "image": "elf_base_portraits.png", "uses": "universal_frames" },
+    "half_elf": { "image": "half_elf_base_portraits.png", "uses": "universal_frames" },
+    "half_giant": { "image": "half_giant_base_portraits.png", "uses": "universal_frames" },
+    "gnome": { "image": "gnome_base_portraits.png", "uses": "universal_frames" },
+    "dwarf": { "image": "dwarf_base_portraits.png", "uses": "universal_frames" },
+    "half_orc": { "image": "half_orc_base_portraits.png", "uses": "universal_frames" }
+  }
+}

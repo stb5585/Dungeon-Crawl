@@ -562,6 +562,7 @@ def test_move_forward_branches_and_turning(monkeypatch):
     assert destination.visited is True
     assert "Intro text" in manager.messages
     assert "effects" in manager.messages
+    assert not any(message.startswith("Moved to (") for message in manager.messages)
 
     manager.turn_left()
     manager.turn_right()
@@ -784,6 +785,41 @@ def test_interact_door_relic_warp_terminal_and_room_pickups(monkeypatch):
     assert body_tile.read is True
 
 
+def test_dead_body_waitress_hook_uses_existing_sprite_and_missing_safe_sfx(monkeypatch):
+    manager, presenter, player, game = _make_manager(monkeypatch)
+    events = []
+    sfx_calls = []
+    dialogues = []
+    combats = []
+    game.special_event = lambda name: events.append(name)
+    presenter.sound_manager = SimpleNamespace(play_sfx=lambda name: sfx_calls.append(name))
+    manager._show_special_event_dialogue = lambda event_name, title="", image_path="": dialogues.append(
+        (event_name, title, image_path)
+    )
+    manager._refresh_cached_frame = lambda: None
+    manager.combat_manager.start_combat = lambda player_arg, enemy_arg, tile_arg: combats.append(
+        (player_arg, getattr(enemy_arg, "name", ""), tile_arg)
+    ) or True
+    player.quest_dict["Main"]["A Bad Dream"] = {
+        "Completed": True,
+        "Turned In": True,
+        "Waitress Defeated": False,
+    }
+    body_tile = SimpleNamespace(read=True)
+
+    manager._interact_dead_body(body_tile)
+
+    assert events == ["Waitress"]
+    assert sfx_calls == ["waitress_wail"]
+    assert dialogues == [(
+        "Waitress",
+        "Waitress",
+        "src/ui_pygame/assets/enemy_combat_sprites/mad_waitress.png",
+    )]
+    assert combats and combats[0][0] is player and combats[0][2] is body_tile
+    assert player.quest_dict["Main"]["A Bad Dream"]["Waitress Defeated"] is True
+
+
 def test_underground_spring_intro_and_tile_effect_branches(monkeypatch):
     manager, _presenter, player, game = _make_manager(monkeypatch)
     sfx_calls = []
@@ -917,6 +953,12 @@ def test_get_tile_intro_check_tile_effects_and_menu_helpers(monkeypatch):
     player.to_town = lambda: manager.messages.append(
         "to-town-after-detach" if provider_calls and provider_calls[-1] is None else "to-town"
     )
+    player.death = lambda: (
+        manager.messages.append(
+            "death-after-detach" if provider_calls and provider_calls[-1] is None else "death"
+        )
+        or "Resurrection costs you 10 gold.\nYou wake up in town.\n"
+    )
     player.location_z = 7
     enemy2 = SimpleNamespace(name="Ghost", health=SimpleNamespace(current=5), is_alive=lambda: True)
     enemy_tile2 = EnemyTile(enemy2)
@@ -935,7 +977,10 @@ def test_get_tile_intro_check_tile_effects_and_menu_helpers(monkeypatch):
     loading_count = manager.messages.count("town-loading")
     manager.running = True
     manager._check_tile_effects()
-    assert "to-town-after-detach" in manager.messages
+    assert "death-after-detach" in manager.messages
+    assert "Resurrection costs you 10 gold." in manager.messages
+    assert "You wake up in town." in manager.messages
+    assert "to-town-after-detach" not in manager.messages
     assert manager.messages.count("town-loading") == loading_count
     assert manager.running is False
 

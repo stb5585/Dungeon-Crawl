@@ -26,7 +26,7 @@ def test_evasive_guard_builds_stacks_on_hit_and_resets_on_dodge(monkeypatch):
     attacker.weapon_damage(defender)
     assert defender.evasive_guard_stacks == 3  # capped
 
-    # Now force a dodge; stacks should decay by 1.
+    # Now force a dodge; stacks should reset.
     monkeypatch.setattr(defender, "dodge_chance", lambda *a, **k: 1.0)
     attacker.weapon_damage(defender)
-    assert defender.evasive_guard_stacks == 2
+    assert defender.evasive_guard_stacks == 0

@@ -213,6 +213,7 @@ cost: 6
 weapon: true
 damage_mod: 2.0
 ignore_armor: true
+requires_incapacitated: true
 ```
 
 ### Status — `doom.yaml`

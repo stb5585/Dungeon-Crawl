@@ -191,6 +191,32 @@ class ChurchManager(TownScreenBase):
         )
         return vow if confirm == 0 else None
 
+    def _remove_illegal_promotion_gear(self):
+        """Move newly illegal promoted-class core gear back to inventory."""
+        removed = []
+        equipment = getattr(self.player_char, "equipment", {})
+        can_equip = getattr(self.player_char, "can_equip_item", None)
+        inventory = getattr(self.player_char, "modify_inventory", None)
+
+        for slot in ("Weapon", "OffHand", "Armor", "Helmet"):
+            item = equipment.get(slot)
+            if item is None or getattr(item, "subtyp", None) == "None":
+                continue
+            try:
+                legal = bool(can_equip(item, slot)) if callable(can_equip) else bool(self.player_char.cls.equip_check(item, slot))
+            except Exception:
+                legal = False
+            if legal:
+                continue
+            if callable(inventory):
+                try:
+                    inventory(item, 1)
+                except TypeError:
+                    inventory(item)
+            equipment[slot] = remove_equipment(slot)
+            removed.append((slot, getattr(item, "name", str(item))))
+        return removed
+
     def _legacy_paladin_vow_available(self):
         return paladin.is_paladin_lineage(self.player_char) and not paladin.path(self.player_char)
 
@@ -372,22 +398,16 @@ class ChurchManager(TownScreenBase):
                 pass
 
             try:
-                self.player_char.unequip(promo=True)
-                for slot in ["Weapon", "OffHand", "Armor", "Helmet"]:
-                    try:
-                        self.player_char.equipment[slot] = remove_equipment(slot)
-                    except Exception:
-                        pass
-                core_slots = {"Weapon", "OffHand", "Armor", "Helmet"}
-                for slot, item in self.player_char.cls.equipment.items():
-                    if slot not in core_slots:
-                        continue
-                    try:
-                        self.player_char.equip(slot, item, check=True)
-                    except Exception:
-                        self.player_char.equipment[slot] = item
+                removed_gear = self._remove_illegal_promotion_gear()
             except Exception:
-                pass
+                removed_gear = []
+
+            if removed_gear:
+                lines = ["Some equipped gear no longer fits your promoted class:"]
+                lines.extend(f"{slot}: {name}" for slot, name in removed_gear)
+                lines.append("Check your inventory and equip replacement gear before returning to the dungeon.")
+                popup = ConfirmationPopup(self.presenter, "\n".join(lines), show_buttons=False)
+                popup.show(**self.popup_show_kwargs())
 
             ability_change_msg = apply_promotion_ability_rules(self.player_char, chosen_name)
             if ability_change_msg:

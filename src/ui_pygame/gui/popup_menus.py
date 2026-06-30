@@ -1924,7 +1924,11 @@ class BestiaryPopupMenu(BasePopupMenu):
             y += 8
             self.screen.blit(self.normal_font.render("Details unknown.", True, self.GRAY), (x, y))
             y += self.line_height
-            hint = "Use Vision while fighting this enemy to reveal bestiary details."
+            boss_entry = enemies.bestiary_uses_boss_drop_rules(enemy_name) or "Boss" in set(observed.get("features", []) or [])
+            if boss_entry:
+                hint = "Boss details cannot be revealed with Vision."
+            else:
+                hint = "Use Vision while fighting this enemy to reveal bestiary details."
             for line in self._wrap_text(hint, self.details_rect.width - 32):
                 self.screen.blit(self.small_font.render(line, True, self.LIGHT_GRAY), (x, y))
                 y += self.line_height
