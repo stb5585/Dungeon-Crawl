@@ -95,6 +95,63 @@ def test_remaining_improvement_tuning_report_lists_deferred_measurement_targets(
     assert "land_rate" in report["enfeeble"]["metrics"]
 
 
+def test_remaining_balance_baseline_wrapper_plans_canonical_targets(tmp_path):
+    from tools.run_remaining_balance_baseline import (
+        CANONICAL_BASELINE_COMMANDS,
+        planned_baseline_payload,
+        write_baseline_summary,
+    )
+
+    payload = planned_baseline_payload(
+        output_dir=tmp_path,
+        timestamp="20260701_120000",
+        python_executable="./.venv/bin/python",
+    )
+
+    assert len(payload["commands"]) == len(CANONICAL_BASELINE_COMMANDS) == 4
+    command_text = "\n".join(command["command"] for command in payload["commands"])
+    assert "--tier base --level 10 --iters 30 --seed 1337" in command_text
+    assert "--tier first --level 20 --iters 30 --seed 1337" in command_text
+    assert "--tier second --level 30 --iters 30 --seed 1337" in command_text
+    assert "--races Human Elf Half Elf Half Giant Gnome Dwarf Half Orc --delta --baseline-race Human" in command_text
+    assert set(payload["remaining_tuning_targets"]) == {
+        "footpad",
+        "ordinary_drops",
+        "multi_strike_accuracy",
+        "enfeeble",
+    }
+
+    text_path, json_path = write_baseline_summary(
+        output_dir=tmp_path,
+        timestamp="20260701_120000",
+        python_executable="./.venv/bin/python",
+    )
+
+    assert text_path.name == "remaining_balance_baseline_summary.txt"
+    assert json_path.name == "remaining_balance_baseline_summary.json"
+    assert "Deferred tuning targets" in text_path.read_text(encoding="utf-8")
+
+
+def test_remaining_balance_baseline_dry_run_writes_result_paths(tmp_path):
+    import json
+
+    from tools.run_remaining_balance_baseline import run_baseline_bundle
+
+    _text_path, json_path = run_baseline_bundle(
+        output_dir=tmp_path,
+        timestamp="20260701_121500",
+        python_executable="./.venv/bin/python",
+        dry_run=True,
+    )
+
+    payload = json.loads(json_path.read_text(encoding="utf-8"))
+    assert [result["returncode"] for result in payload["results"]] == [0, 0, 0, 0]
+    for result in payload["results"]:
+        stdout_path = Path(result["stdout_path"])
+        assert stdout_path.exists()
+        assert stdout_path.read_text(encoding="utf-8").startswith("DRY RUN:")
+
+
 def test_balance_report_aggregates_metrics_and_usage():
     from src.core.analytics.combat_simulator import BalanceReport
 

@@ -7,9 +7,9 @@ this file should keep active, deferred, or decision-gated direction.
 
 ## Status
 
-Status: `Spec Map, V1 Quick Wins`
+Status: `Spec Map, V1 Quick Wins Shipped`
 
-The first implementation slice prioritizes low-risk improvements that do not
+The first implementation slice shipped low-risk improvements that do not
 require new maps, generated art, or broad content rewrites:
 
 - Relic-specific discovery text.
@@ -123,7 +123,7 @@ coexist with the existing short damage flash used by floor hazards.
 
 ## Validation
 
-Focused tests should cover:
+Focused regression coverage now covers:
 
 - decorative dungeon tiles remain traversable and continue to show intro text;
 - opened chests stay open and do not regenerate loot;

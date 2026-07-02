@@ -39,6 +39,49 @@ CASE_MILESTONES = (
     (25, "Known Tells"),
 )
 
+CLASS_KIT_LOG_TERMS = (
+    "aerial",
+    "arcane larceny",
+    "arcane tempo",
+    "aspect harmony",
+    "beast command",
+    "blade charge",
+    "bloodied momentum",
+    "case journal",
+    "class ring",
+    "companion bond",
+    "companion command",
+    "conduit",
+    "corruption",
+    "crescendo",
+    "death mark",
+    "devotion",
+    "divine intervention",
+    "dragon essence",
+    "echo",
+    "encore",
+    "foresight",
+    "fortune",
+    "harmony bonus",
+    "ki",
+    "loaded dice",
+    "misfortune",
+    "no-trace",
+    "oath conviction",
+    "ordered blessings",
+    "patron",
+    "prayer",
+    "revelation",
+    "resolve",
+    "ring preserve",
+    "ring ready",
+    "stolen charge",
+    "threaded cast",
+    "totem resonance",
+    "umbral",
+    "vow affirmation",
+)
+
 
 def class_name(character: Any) -> str:
     return str(getattr(getattr(character, "cls", None), "name", "") or "")
@@ -1287,7 +1330,7 @@ PRESERVATION_METERS = {
 }
 
 
-def _ring_readiness_line(character: Any, cls: str) -> str | None:
+def _ring_readiness_row(character: Any, cls: str) -> tuple[str, str] | None:
     try:
         from . import class_rings
 
@@ -1295,37 +1338,41 @@ def _ring_readiness_line(character: Any, cls: str) -> str | None:
             return None
         if class_rings.is_awakened(character, cls):
             if class_rings.has_equipped_class_ring(character):
-                return f"{'Ring Ready:':13} {class_rings.ring_mod(character)}"
-            return f"{'Ring Ready:':13} Awakened, unequipped"
+                return ("Ring Ready", class_rings.ring_mod(character))
+            return ("Ring Ready", "Awakened, unequipped")
         if class_rings.has_visible_class_ring(character):
-            return f"{'Ring Ready:':13} Dormant"
+            return ("Ring Ready", "Dormant")
     except Exception:
         return None
     return None
 
 
-def _preservation_line(character: Any, cls: str) -> str | None:
+def _preservation_row(character: Any, cls: str) -> tuple[str, str] | None:
     keys = PRESERVATION_METERS.get(cls)
     if not keys or not _ring_awakened_equipped(character, cls):
         return None
     preserved = combat_state(character).setdefault("ring_preserved", set())
     used = all(f"{cls}:{key}" in preserved for key in keys)
-    return f"{'Ring Preserve:':13} {'Used' if used else 'Ready'}"
+    return ("Ring Preserve", "Used" if used else "Ready")
 
 
-def _totem_status_line(character: Any) -> str | None:
+def _totem_status_row(character: Any) -> tuple[str, str] | None:
     effect = getattr(character, "magic_effects", {}).get("Totem")
     if not effect or not effect.active or not isinstance(effect.extra, dict):
         return None
     aspect = effect.extra.get("aspect") or "Unknown"
     resonance = totem_resonance(character)
-    return f"{'Totem:':13} {aspect} {resonance}/{cap_for(character, 'totem_resonance')}"
+    return ("Totem", f"{aspect} {resonance}/{cap_for(character, 'totem_resonance')}")
 
 
-def status_summary(character: Any) -> list[str]:
+def _status_line(label: str, value: str) -> str:
+    return f"{label + ':':13} {value}"
+
+
+def status_summary_rows(character: Any) -> list[tuple[str, str]]:
     cls = class_name(character)
     state = combat_state(character)
-    lines: list[str] = []
+    rows: list[tuple[str, str]] = []
     if cls == "Demonologist":
         try:
             from . import demonologist
@@ -1334,99 +1381,103 @@ def status_summary(character: Any) -> list[str]:
             patron = contracts.get("active_patron") or "None"
             mood = contracts.get("patron_moods", {}).get(patron, 0) if patron != "None" else 0
             echo = contracts.get("imprisoned_familiar") or {}
-            lines.append(f"{'Corruption:':13} {int(contracts.get('corruption', 0) or 0)}/100")
-            lines.append(f"{'Patron:':13} {patron} ({int(mood)})")
+            rows.append(("Corruption", f"{int(contracts.get('corruption', 0) or 0)}/100"))
+            rows.append(("Patron", f"{patron} ({int(mood)})"))
             if echo.get("name") or echo.get("spec"):
-                lines.append(f"{'Echo:':13} {echo.get('name') or echo.get('spec')}")
+                rows.append(("Echo", str(echo.get("name") or echo.get("spec"))))
             if contracts.get("ring_awakened"):
                 ready = "Equipped" if demonologist.has_equipped_class_ring(character) else "Awakened"
-                lines.append(f"{'Ring Ready:':13} {ready}")
+                rows.append(("Ring Ready", ready))
         except Exception:
             pass
     if cls == "Astromancer":
-        lines.append(f"{'Threads:':13} {int(state.get('foresight_threads', 0) or 0)}/3")
+        rows.append(("Threads", f"{int(state.get('foresight_threads', 0) or 0)}/3"))
         if state.get("threaded_cast_pending"):
-            lines.append(f"{'Threaded:':13} Pending")
+            rows.append(("Threaded", "Pending"))
     if cls == "Shadowcaster":
         data = _class_ring_data(character, "Shadowcaster")
-        lines.append(f"{'Backlash:':13} {int(data.get('backlash', 0) or 0)}")
+        rows.append(("Backlash", str(int(data.get('backlash', 0) or 0))))
         eclipse = int(data.get("eclipse_turns", 0) or 0)
         if eclipse:
-            lines.append(f"{'Eclipse:':13} {eclipse} turn(s)")
+            rows.append(("Eclipse", f"{eclipse} turn(s)"))
     if cls in {"Spellblade", "Knight Enchanter"}:
-        lines.append(f"{'Blade Charge:':13} {state.get('blade_charge') or 'None'}")
+        rows.append(("Blade Charge", str(state.get('blade_charge') or 'None')))
         if cls == "Knight Enchanter":
-            lines.append(f"{'Tempo:':13} {int(state.get('arcane_tempo', 0) or 0)}/3")
+            rows.append(("Arcane Tempo", f"{int(state.get('arcane_tempo', 0) or 0)}/3"))
     if cls == "Berserker":
-        lines.append(f"{'Momentum:':13} {int(state.get('bloodied_momentum', 0) or 0)}/{cap_for(character, 'bloodied_momentum')}")
+        rows.append(("Momentum", f"{int(state.get('bloodied_momentum', 0) or 0)}/{cap_for(character, 'bloodied_momentum')}"))
     if cls in {"Paladin", "Crusader"}:
-        lines.append(f"{'Conviction:':13} {int(state.get('oath_conviction', 0) or 0)}/{cap_for(character, 'oath_conviction')}")
+        rows.append(("Conviction", f"{int(state.get('oath_conviction', 0) or 0)}/{cap_for(character, 'oath_conviction')}"))
     if cls in {"Lancer", "Dragoon"}:
-        lines.append(f"{'Aerial Tempo:':13} {int(state.get('aerial_tempo', 0) or 0)}/{cap_for(character, 'aerial_tempo')}")
+        rows.append(("Aerial Tempo", f"{int(state.get('aerial_tempo', 0) or 0)}/{cap_for(character, 'aerial_tempo')}"))
     if cls == "Sentinel":
         cap = 50
-        lines.append(f"{'Resolve:':13} {int(_class_ring_data(character, 'Stalwart Defender').get('guard_meter', 0) or 0)}/{cap}")
+        rows.append(("Resolve", f"{int(_class_ring_data(character, 'Stalwart Defender').get('guard_meter', 0) or 0)}/{cap}"))
     if cls in {"Sentinel", "Stalwart Defender"} and int(state.get("hold_the_line", 0) or 0) > 0:
-        lines.append(f"{'Guard Stance:':13} Hold ({int(state.get('hold_the_line', 0) or 0)})")
+        rows.append(("Guard Stance", f"Hold ({int(state.get('hold_the_line', 0) or 0)})"))
     if cls in {"Thief", "Rogue"}:
-        lines.append(f"{'Fortune:':13} {int(state.get('fortune', 0) or 0)}/{cap_for(character, 'fortune')}")
-        lines.append(f"{'Misfortune:':13} {int(state.get('misfortune', 0) or 0)}/{cap_for(character, 'misfortune')}")
+        rows.append(("Fortune", f"{int(state.get('fortune', 0) or 0)}/{cap_for(character, 'fortune')}"))
+        rows.append(("Misfortune", f"{int(state.get('misfortune', 0) or 0)}/{cap_for(character, 'misfortune')}"))
         if int(state.get("jinx_turns", 0) or 0) > 0:
-            lines.append(f"{'Jinx:':13} {int(state.get('jinx_turns', 0) or 0)} turn(s)")
+            rows.append(("Jinx", f"{int(state.get('jinx_turns', 0) or 0)} turn(s)"))
     if cls in {"Inquisitor", "Seeker"}:
         best = max(ensure_state(character)["case_journal"].values(), default=0)
-        lines.append(f"{'Case:':13} {best}/100 {case_rank(best)}")
+        rows.append(("Case", f"{best}/100 {case_rank(best)}"))
         revelation = state.get("revelation", {})
         current = max((int(value or 0) for value in revelation.values()), default=0) if isinstance(revelation, dict) else 0
-        lines.append(f"{'Revelation:':13} {current}/{cap_for(character, 'revelation')}")
+        rows.append(("Revelation", f"{current}/{cap_for(character, 'revelation')}"))
     if cls in {"Assassin", "Ninja"}:
         marks = state.get("death_marks", {})
         current = max((int(value or 0) for value in marks.values()), default=0) if isinstance(marks, dict) else 0
-        lines.append(f"{'Death Mark:':13} {current}/{cap_for(character, 'death_marks')}")
+        rows.append(("Death Mark", f"{current}/{cap_for(character, 'death_marks')}"))
     if cls in {"Spell Stealer", "Arcane Trickster"}:
-        lines.append(f"{'Stolen Charge:':13} {int(state.get('stolen_charge', 0) or 0)}/{cap_for(character, 'stolen_charge')}")
+        rows.append(("Stolen Charge", f"{int(state.get('stolen_charge', 0) or 0)}/{cap_for(character, 'stolen_charge')}"))
     if cls in {"Cleric", "Templar"}:
-        lines.append(f"{'Devotion:':13} {int(state.get('devotion', 0) or 0)}/{cap_for(character, 'devotion')}")
+        rows.append(("Devotion", f"{int(state.get('devotion', 0) or 0)}/{cap_for(character, 'devotion')}"))
     if cls in {"Priest", "Archbishop"}:
-        lines.append(f"{'Prayer:':13} {int(state.get('prayer', 0) or 0)}/{cap_for(character, 'prayer')}")
+        rows.append(("Prayer", f"{int(state.get('prayer', 0) or 0)}/{cap_for(character, 'prayer')}"))
     if cls in {"Monk", "Master Monk"}:
-        lines.append(f"{'Ki:':13} {int(state.get('ki', 0) or 0)}/{cap_for(character, 'ki')}")
+        rows.append(("Ki", f"{int(state.get('ki', 0) or 0)}/{cap_for(character, 'ki')}"))
     if cls in {"Bard", "Troubadour"}:
-        lines.append(f"{'Crescendo:':13} {int(state.get('crescendo', 0) or 0)}/3")
+        rows.append(("Crescendo", f"{int(state.get('crescendo', 0) or 0)}/3"))
         if cls == "Troubadour":
             repertoire = ensure_state(character)["bard_repertoire"]
             mastered = sum(1 for entry in repertoire.values() if entry.get("known"))
-            lines.append(f"{'Repertoire:':13} {mastered}/{len(repertoire)} mastered")
+            rows.append(("Repertoire", f"{mastered}/{len(repertoire)} mastered"))
     if cls == "Lycan":
         control = lycan_control_state(character)
-        lines.append(f"{'Control:':13} {control['rank']}")
-        lines.append(f"{'Dragon Essence:':13} {'Yes' if control['dragon_essence'] else 'No'}")
+        rows.append(("Control", str(control['rank'])))
+        rows.append(("Dragon Essence", "Yes" if control["dragon_essence"] else "No"))
     if cls == "Archdruid":
         aspects = state.get("aspect_harmony", set())
         if not isinstance(aspects, set):
             aspects = set(aspects)
-        lines.append(f"{'Harmony:':13} {','.join(sorted(aspects)) or 'None'}")
+        rows.append(("Harmony", ",".join(sorted(aspects)) or "None"))
     if cls in {"Ranger", "Beast Master"}:
         companion = getattr(character, "tamed_companion", {}) or {}
         bond = _clamp_int(companion.get("bond", 0), 0, 100)
-        lines.append(f"{'Companion:':13} {companion.get('name') or 'None'} {bond}/100 {companion_bond_rank(bond)}")
+        rows.append(("Companion", f"{companion.get('name') or 'None'} {bond}/100 {companion_bond_rank(bond)}"))
         command = state.get("pending_companion_command")
         if command:
-            lines.append(f"{'Command:':13} {command}")
+            rows.append(("Command", str(command)))
     if cls in {"Summoner", "Grand Summoner"}:
         bonds = ensure_state(character)["summon_bonds"]
         name, bond = max(bonds.items(), key=lambda item: item[1])
-        lines.append(f"{'Summon Bond:':13} {name} {int(bond)}/100")
+        rows.append(("Summon Bond", f"{name} {int(bond)}/100"))
         if state.get("conduit_command"):
-            lines.append(f"{'Conduit:':13} Primed")
+            rows.append(("Conduit", "Primed"))
     if cls in {"Shaman", "Soulcatcher"}:
-        totem_line = _totem_status_line(character)
-        if totem_line:
-            lines.append(totem_line)
-    ring_line = _ring_readiness_line(character, cls)
-    if ring_line:
-        lines.append(ring_line)
-    preserve_line = _preservation_line(character, cls)
-    if preserve_line:
-        lines.append(preserve_line)
-    return lines
+        totem_row = _totem_status_row(character)
+        if totem_row:
+            rows.append(totem_row)
+    ring_row = _ring_readiness_row(character, cls)
+    if ring_row:
+        rows.append(ring_row)
+    preserve_row = _preservation_row(character, cls)
+    if preserve_row:
+        rows.append(preserve_row)
+    return rows
+
+
+def status_summary(character: Any) -> list[str]:
+    return [_status_line(label, value) for label, value in status_summary_rows(character)]

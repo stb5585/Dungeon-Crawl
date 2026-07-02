@@ -136,6 +136,25 @@ def test_display_quest_text_debug_mode_renders_full_text_and_exits(monkeypatch):
     pygame.quit()
 
 
+def test_display_quest_text_debug_mode_exits_on_left_click(monkeypatch):
+    pygame.init()
+    pygame.display.set_mode((1, 1))
+    presenter = _make_presenter(debug_mode=True, screen=pygame.Surface((640, 480), pygame.SRCALPHA))
+    monkeypatch.setattr("src.ui_pygame.gui.town_base.os.path.exists", lambda _path: False)
+    base = RecordingTownScreen(presenter)
+
+    events = [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=(320, 240))]
+    monkeypatch.setattr("src.ui_pygame.gui.town_base.pygame.event.get", lambda: list(events))
+    monkeypatch.setattr("src.ui_pygame.gui.town_base.pygame.display.flip", lambda: None)
+
+    base.display_quest_text("====== Quest ======\nLine one\n\nLine two")
+
+    assert base.background_calls == 1
+    assert base.top_calls == 1
+    assert base.options_calls == 1
+    pygame.quit()
+
+
 def test_display_quest_text_non_debug_supports_skip_and_advance(monkeypatch):
     pygame.init()
     pygame.display.set_mode((1, 1))
@@ -165,6 +184,44 @@ def test_display_quest_text_non_debug_supports_skip_and_advance(monkeypatch):
     monkeypatch.setattr("time.sleep", lambda _value: None)
 
     base.display_quest_text("====== Quest ======\nSkip me quickly")
+
+    assert clear_calls == [pygame.KEYDOWN]
+    assert base.background_calls >= 2
+    assert base.top_calls >= 2
+    assert base.options_calls >= 2
+    assert tick_calls == []
+    pygame.quit()
+
+
+def test_display_quest_text_non_debug_supports_mouse_skip_and_advance(monkeypatch):
+    pygame.init()
+    pygame.display.set_mode((1, 1))
+    presenter = _make_presenter(debug_mode=False, screen=pygame.Surface((640, 480), pygame.SRCALPHA))
+    monkeypatch.setattr("src.ui_pygame.gui.town_base.os.path.exists", lambda _path: False)
+    base = RecordingTownScreen(presenter)
+
+    mouse_events = iter(
+        [
+            [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=(320, 240))],
+            [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=(320, 240))],
+        ]
+    )
+
+    def fake_get():
+        try:
+            return next(mouse_events)
+        except StopIteration:
+            return []
+
+    clear_calls = []
+    tick_calls = []
+    presenter.clock = SimpleNamespace(tick=lambda fps: tick_calls.append(fps))
+    monkeypatch.setattr("src.ui_pygame.gui.town_base.pygame.event.get", fake_get)
+    monkeypatch.setattr("src.ui_pygame.gui.town_base.pygame.event.clear", lambda event_type=None: clear_calls.append(event_type))
+    monkeypatch.setattr("src.ui_pygame.gui.town_base.pygame.display.flip", lambda: None)
+    monkeypatch.setattr("time.sleep", lambda _value: None)
+
+    base.display_quest_text("====== Quest ======\nClick me quickly")
 
     assert clear_calls == [pygame.KEYDOWN]
     assert base.background_calls >= 2

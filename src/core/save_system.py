@@ -19,7 +19,7 @@ import os
 from dataclasses import dataclass, asdict
 from typing import TYPE_CHECKING
 
-from . import abilities, enemies, items, main_story
+from . import abilities, enemies, items, main_story, town as town_core
 from .classes import promotion_kits
 from .character import Resource, Stats, Combat, Level
 
@@ -648,6 +648,13 @@ class PlayerDataSerializer:
             and getattr(skill, "name", "") == "Totem"
             and hasattr(skill, "unlocked_aspects")
         )
+
+    @staticmethod
+    def _portrait_variant(value) -> int:
+        try:
+            return max(0, int(value or 0))
+        except (TypeError, ValueError):
+            return 0
     
     @staticmethod
     def serialize(player) -> dict[str, Any]:
@@ -716,6 +723,9 @@ class PlayerDataSerializer:
             'class_name': player.cls.name if player.cls else None,
             'race_name': player.race.name if player.race else None,
             'sex': getattr(player, 'sex', 'Male'),
+            'portrait_variant': PlayerDataSerializer._portrait_variant(
+                getattr(player, 'portrait_variant', 0)
+            ),
             'invisible': player.invisible,
             'flying': player.flying,
             'sight': player.sight,
@@ -728,6 +738,9 @@ class PlayerDataSerializer:
             
             # Derived data - serialize quest_dict properly
             'quest_dict': QuestDataSerializer.serialize_quest_dict(player.quest_dict),
+            'bounty_board_state': town_core.normalize_bounty_board_state(
+                getattr(player, 'bounty_board_state', None)
+            ),
             'kill_dict': player.kill_dict,
             'bestiary': getattr(player, 'bestiary', {}),
             'absorb_essence_state': getattr(player, 'absorb_essence_state', {}),
@@ -823,6 +836,9 @@ class PlayerDataSerializer:
         # Restore basic attributes
         player.name = data['name']
         player.sex = data.get('sex', 'Male')
+        player.portrait_variant = PlayerDataSerializer._portrait_variant(
+            data.get('portrait_variant', 0)
+        )
         player.invisible = data['invisible']
         player.flying = data['flying']
         player.sight = data['sight']
@@ -906,6 +922,9 @@ class PlayerDataSerializer:
         
         # Restore quest/kill dicts
         player.quest_dict = QuestDataSerializer.deserialize_quest_dict(data.get('quest_dict', {'Bounty': {}, 'Main': {}, 'Side': {}}))
+        player.bounty_board_state = town_core.normalize_bounty_board_state(
+            data.get('bounty_board_state')
+        )
         player.kill_dict = data.get('kill_dict', {})
         player.bestiary = data.get('bestiary', {})
         player.absorb_essence_state = data.get('absorb_essence_state', getattr(player, 'absorb_essence_state', {}))

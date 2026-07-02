@@ -163,6 +163,31 @@ def test_random_encounter_bias_includes_enemy_drop_collection_quests():
     assert "TicketPiece" not in targets
 
 
+def test_random_encounter_bias_ignores_completed_and_turned_in_targets():
+    player = SimpleNamespace(
+        quest_dict={
+            "Main": {
+                "Done": {"Type": "Defeat", "What": "Giant Rat", "Completed": True},
+                "Turned": {"Type": "Defeat", "What": "Goblin", "Turned In": True},
+            },
+            "Side": {
+                "Collected": {"Type": "Collect", "What": "RatTail", "Completed": True},
+                "Turned Collect": {"Type": "Collect", "What": "RatTail", "Turned In": True},
+            },
+            "Bounty": {
+                "Bandit": [{"num": 1}, 1, True],
+                "Skeleton": [{"num": 1}, 0, False],
+            },
+        },
+        stats=SimpleNamespace(charisma=10),
+        check_mod=lambda *_args, **_kwargs: 5,
+    )
+
+    targets = map_tiles.active_random_encounter_quest_targets(player)
+
+    assert targets == {"Skeleton"}
+
+
 def test_random_encounter_bias_chance_is_softened_and_capped():
     player = SimpleNamespace(
         quest_dict={"Main": {}, "Side": {}, "Bounty": {}},

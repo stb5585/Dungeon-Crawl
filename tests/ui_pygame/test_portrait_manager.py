@@ -94,6 +94,45 @@ def test_portrait_sheet_mapping_uses_per_race_variant_columns(tmp_path):
     assert half_orc.get_at((1, 1)) == pygame.Color(0, 0, 255, 255)
 
 
+def test_portrait_mapping_excludes_internal_separator_lines():
+    manager = PortraitManager()
+
+    def bright_separator_pixels(surface, side: str) -> int:
+        width, height = surface.get_size()
+        if side == "left":
+            pixels = [surface.get_at((0, y)) for y in range(height)]
+        elif side == "right":
+            pixels = [surface.get_at((width - 1, y)) for y in range(height)]
+        else:
+            raise AssertionError(side)
+        return sum(
+            1
+            for pixel in pixels
+            if min(pixel.r, pixel.g, pixel.b) > 190
+            and max(pixel.r, pixel.g, pixel.b) - min(pixel.r, pixel.g, pixel.b) < 45
+        )
+
+    for race in ("Human", "Elf", "Half Elf", "Half Giant", "Gnome", "Dwarf", "Half Orc"):
+        for gender in ("Male", "Female"):
+            for variant in range(manager.variant_count()):
+                portrait = manager.base_portrait(race, gender, variant=variant)
+                _width, height = portrait.get_size()
+                assert bright_separator_pixels(portrait, "left") < height * 0.25
+                assert bright_separator_pixels(portrait, "right") < height * 0.25
+
+
+def test_portrait_mapping_keeps_variant_sizes_stable():
+    manager = PortraitManager()
+    sizes = {
+        manager.base_portrait(race, gender, variant=variant).get_size()
+        for race in ("Human", "Elf", "Half Elf", "Half Giant", "Gnome", "Dwarf", "Half Orc")
+        for gender in ("Male", "Female")
+        for variant in range(manager.variant_count())
+    }
+
+    assert sizes == {(269, 561)}
+
+
 def test_portrait_key_normalization_variants():
     assert PortraitManager.normalize_key("Half Orc") == "half_orc"
     assert PortraitManager.normalize_key("half_orc") == "half_orc"

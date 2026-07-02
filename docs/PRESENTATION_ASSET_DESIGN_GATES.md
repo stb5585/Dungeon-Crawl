@@ -8,7 +8,7 @@ presentation direction.
 
 ## Status
 
-Status: `Spec Map, V1 Screen/Cue Implementation`
+Status: `Spec Map, V1 Screen/Cue And Identity/Asset Implementation`
 
 The first implementation slice prioritizes quick wins that do not require a new
 art direction pass:
@@ -21,6 +21,10 @@ art direction pass:
 
 Generated bitmap batches are allowed for later asset-heavy slices, but each
 batch must have a review artifact before runtime integration.
+
+The next implementation set shipped Enemy Identity Presentation V1, the Quasit
+combat-sprite remake, and active/inactive Warp Point dungeon art. Runtime PNGs
+remain transparent, review sheets are checked in, and fallbacks remain valid.
 
 ## Screen Polish V1
 
@@ -74,9 +78,10 @@ Warp Point artistic renderings are a generated-bitmap batch. Targets are:
 - inactive or spent Warp Point;
 - optional charged shimmer overlay.
 
-The implementation should prefer transparent PNGs or dungeon special-tile
-manifest entries and preserve current fallback behavior. Runtime logic should
-continue to render a readable Warp Point when an approved asset is absent.
+V1 uses transparent PNGs through dungeon special-tile manifest entries:
+`warp_point_active` and `warp_point_inactive`. Active Warp Points keep the
+existing spark overlay. Runtime logic falls back to the legacy `teleporter`
+sprite when an approved Warp Point asset is absent.
 
 ## Town, NPC, And Venue Art Pass
 
@@ -108,6 +113,11 @@ combat mechanics.
 - Construct-friendly bleed flavor: wording such as `Oil Leak` may be presented
   for construct enemies, but the underlying effect remains `Bleed` for combat
   logic, saves, tests, and compatibility.
+
+V1 implements this in pygame presentation only. Invisible target notes appear
+inside the combat target panel, Mad Waitress uses a visible form-change note,
+and construct enemies can show `Oil Leak` wording/icons while core effect maps
+and simulator metrics continue to use `Bleed`.
 
 ## Website
 

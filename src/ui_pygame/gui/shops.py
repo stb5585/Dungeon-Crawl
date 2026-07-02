@@ -399,7 +399,9 @@ class ShopManager(TownScreenBase):
             label = self._slot_label(slot)
             lines.append(f"{label}: replaces {self._current_slot_item_name(slot)}")
             equip_diff = getattr(self.player_char, "equip_diff", None)
+            diff_lines: list[str] = []
             if not callable(equip_diff):
+                lines.append("  no stat change")
                 continue
             try:
                 diff = equip_diff(item, slot, buy=True)
@@ -407,7 +409,11 @@ class ShopManager(TownScreenBase):
                 diff = ""
             for diff_line in str(diff or "").splitlines():
                 if diff_line.strip():
-                    lines.append(f"  {diff_line.strip()}")
+                    diff_lines.append(f"  {diff_line.strip()}")
+            if diff_lines:
+                lines.extend(diff_lines)
+            else:
+                lines.append("  no stat change")
         return lines
 
     def _equip_prompt_header(self, item, quantity: int, actions: dict[str, tuple[str, ...]]) -> str:
@@ -417,11 +423,19 @@ class ShopManager(TownScreenBase):
         else:
             lines.append("Cancel keeps the purchased item in inventory.")
         for action, slots in actions.items():
-            if action == "Dual Wield":
-                continue
             lines.append("")
             lines.append(f"{action}:")
+            if action == "Dual Wield":
+                lines.append("  uses 2 purchased copies")
             lines.extend(self._equip_preview_lines(item, slots))
+        if (
+            quantity < 2
+            and "Main Hand" in actions
+            and "OffHand" in actions
+            and "Dual Wield" not in actions
+        ):
+            lines.append("")
+            lines.append("Dual Wield: buy 2 copies to equip both hands.")
         return "\n".join(lines)
 
     def _equip_actions_for_purchase(self, item, quantity: int) -> dict[str, tuple[str, ...]]:
@@ -443,13 +457,65 @@ class ShopManager(TownScreenBase):
     def _purchased_inventory_items(self, item, count: int) -> list:
         return list(getattr(self.player_char, "inventory", {}).get(item.name, []))[-count:]
 
-    def _equip_purchased_item(self, item, slots: tuple[str, ...]) -> bool:
-        purchased = self._purchased_inventory_items(item, len(slots))
-        if len(purchased) < len(slots):
+    def _can_equip_purchase_slot(self, item, slot: str) -> bool:
+        can_equip = getattr(self.player_char, "can_equip_item", None)
+        if callable(can_equip):
+            try:
+                return bool(can_equip(item, slot))
+            except Exception:
+                return False
+        equip_check = getattr(getattr(self.player_char, "cls", None), "equip_check", None)
+        if not callable(equip_check):
             return False
+        try:
+            return bool(equip_check(item, slot))
+        except Exception:
+            return False
+
+    def _can_equip_purchased_item(self, item, slots: tuple[str, ...]) -> bool:
+        if len(self._purchased_inventory_items(item, len(slots))) < len(slots):
+            return False
+        return all(self._can_equip_purchase_slot(item, slot) for slot in slots)
+
+    def _snapshot_equip_state(self) -> tuple[dict, dict]:
+        equipment = getattr(self.player_char, "equipment", {})
+        inventory = getattr(self.player_char, "inventory", {})
+        return dict(equipment), {name: list(item_list) for name, item_list in inventory.items()}
+
+    def _restore_equip_state(self, snapshot: tuple[dict, dict]) -> None:
+        equipment_snapshot, inventory_snapshot = snapshot
+        equipment = getattr(self.player_char, "equipment", None)
+        inventory = getattr(self.player_char, "inventory", None)
+        if isinstance(equipment, dict):
+            equipment.clear()
+            equipment.update(equipment_snapshot)
+        else:
+            self.player_char.equipment = dict(equipment_snapshot)
+        if isinstance(inventory, dict):
+            inventory.clear()
+            inventory.update({name: list(item_list) for name, item_list in inventory_snapshot.items()})
+        else:
+            self.player_char.inventory = {
+                name: list(item_list) for name, item_list in inventory_snapshot.items()
+            }
+
+    def _equip_purchased_item(self, item, slots: tuple[str, ...]) -> bool:
+        if not self._can_equip_purchased_item(item, slots):
+            return False
+        purchased = self._purchased_inventory_items(item, len(slots))
+        snapshot = self._snapshot_equip_state()
         for slot, purchased_item in zip(slots, purchased):
             equip_method = getattr(self.player_char, "equip", None)
-            if not callable(equip_method) or equip_method(slot, purchased_item) is False:
+            if not callable(equip_method):
+                self._restore_equip_state(snapshot)
+                return False
+            try:
+                equipped = equip_method(slot, purchased_item)
+            except Exception:
+                self._restore_equip_state(snapshot)
+                return False
+            if equipped is False:
+                self._restore_equip_state(snapshot)
                 return False
         return True
 

@@ -1196,6 +1196,7 @@ class GUICombatManager:
         # Collect transition messages to display in popup
         transition_messages = [
             "The Mad Waitress momentarily comes to her senses...",
+            "This visible form change reveals the waitress beneath the hag's shape.",
             "Her eyes clear. She sees what she has become.",
             "",
             "Recognizing the horror of her actions,",
@@ -1217,6 +1218,9 @@ class GUICombatManager:
         popup.show(flush_events=True, require_key_release=True)
 
         # Show combat log messages for the self-attack
+        self.combat_view.add_combat_message(
+            "The Mad Waitress visibly changes form without changing her true identity."
+        )
         self.combat_view.add_combat_message(
             f"{enemy.name} turns her weapon on herself in despair!"
         )

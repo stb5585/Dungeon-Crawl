@@ -404,7 +404,58 @@ class TestGameplayStatistics:
         assert restored.gameplay_stats["highest_level_reached"] == 39
         assert restored.gameplay_stats["steps_taken"] == 0
 
-    def test_player_data_serializer_persists_sex_and_backfills_legacy_saves(self):
+    def test_player_data_serializer_round_trips_bounty_board_state(self):
+        player = TestGameState.create_player(
+            name="BountySaver",
+            class_name="Warrior",
+            race_name="Human",
+            level=11,
+        )
+        player.bounty_board_state = {
+            "initialized": True,
+            "last_restock_level": 11,
+            "last_restock_steps": 210,
+            "last_restock_enemies_defeated": 9,
+        }
+
+        serialized = PlayerDataSerializer.serialize(player)
+        restored = PlayerDataSerializer.deserialize(serialized, skip_tiles=True)
+
+        assert serialized["bounty_board_state"] == player.bounty_board_state
+        assert restored.bounty_board_state == player.bounty_board_state
+
+    def test_player_data_serializer_backfills_missing_bounty_board_state(self):
+        from src.core import town
+
+        player = TestGameState.create_player(
+            name="LegacyBounty",
+            class_name="Warrior",
+            race_name="Human",
+            level=5,
+        )
+
+        serialized = PlayerDataSerializer.serialize(player)
+        serialized.pop("bounty_board_state", None)
+        legacy_restored = PlayerDataSerializer.deserialize(serialized, skip_tiles=True)
+
+        assert legacy_restored.bounty_board_state == town.default_bounty_board_state()
+
+        serialized["bounty_board_state"] = {
+            "initialized": True,
+            "last_restock_level": "bad",
+            "last_restock_steps": -3,
+            "last_restock_enemies_defeated": "7",
+        }
+        malformed_restored = PlayerDataSerializer.deserialize(serialized, skip_tiles=True)
+
+        assert malformed_restored.bounty_board_state == {
+            "initialized": True,
+            "last_restock_level": 0,
+            "last_restock_steps": 0,
+            "last_restock_enemies_defeated": 7,
+        }
+
+    def test_player_data_serializer_persists_portrait_choice_and_backfills_legacy_saves(self):
         player = TestGameState.create_player(
             name="PortraitHero",
             class_name="Warrior",
@@ -412,17 +463,27 @@ class TestGameplayStatistics:
             level=5,
         )
         player.sex = "Female"
+        player.portrait_variant = 3
 
         serialized = PlayerDataSerializer.serialize(player)
         restored = PlayerDataSerializer.deserialize(serialized, skip_tiles=True)
 
         assert serialized["sex"] == "Female"
+        assert serialized["portrait_variant"] == 3
         assert restored.sex == "Female"
+        assert restored.portrait_variant == 3
 
         serialized.pop("sex", None)
+        serialized.pop("portrait_variant", None)
         legacy_restored = PlayerDataSerializer.deserialize(serialized, skip_tiles=True)
 
         assert legacy_restored.sex == "Male"
+        assert legacy_restored.portrait_variant == 0
+
+        serialized["portrait_variant"] = "bad"
+        malformed_restored = PlayerDataSerializer.deserialize(serialized, skip_tiles=True)
+
+        assert malformed_restored.portrait_variant == 0
 
     def test_damage_event_updates_high_water_marks(self):
         from src.core.events.event_bus import EventType, get_event_bus, reset_event_bus

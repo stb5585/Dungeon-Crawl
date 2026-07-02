@@ -13,6 +13,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parents[2]))
 
 from src.ui_pygame.gui import combat_view
+from src.ui_pygame.assets.enemy_combat_sprite_manager import EnemyCombatSpriteManager
 from src.ui_pygame.gui.status_icons import (
     STATUS_ICON_COLORS,
     combine_duplicate_status_icons,
@@ -586,9 +587,13 @@ def test_class_kit_log_filter_keeps_required_failure_messages():
 
     view.add_combat_message("Death Mark is immune to execution and downgrades to pressure.")
     view.add_combat_message("Threaded Cast is immune to the negated rider.")
+    view.add_combat_message("Class Ring resists the failed payoff and Ring Preserve remains ready.")
+    view.add_combat_message("Arcane Tempo fails to trigger because the blade charge was lost.")
 
     assert "Death Mark is immune to execution and downgrades to pressure." in view.combat_log
     assert "Threaded Cast is immune to the negated rider." in view.combat_log
+    assert "Class Ring resists the failed payoff and Ring Preserve remains ready." in view.combat_log
+    assert "Arcane Tempo fails to trigger because the blade charge was lost." in view.combat_log
 
 
 def test_sight_rules():
@@ -899,6 +904,98 @@ def test_enemy_info_panel_renders_combat_sprite(monkeypatch):
     assert "Type Humanoid" in rendered_text
     assert any(text.startswith("Weak Fire") for text in rendered_text)
     assert any(text.startswith("Resist Poison") for text in rendered_text)
+
+
+def test_quasit_combat_sprite_mapping_loads_remade_asset():
+    from tools.build_enemy_combat_sprites import mapped_sprite_keys
+
+    manager = EnemyCombatSpriteManager()
+
+    assert manager.get_sprite_key_for_enemy("Quasit") == "quasit"
+    assert "quasit" in mapped_sprite_keys(manager.sprite_root)
+    sprite = manager.get_sprite_by_name("Quasit")
+    width, height = sprite.get_size()
+    assert width > 0
+    assert height > 0
+
+
+def test_enemy_info_panel_adds_invisible_notes_and_preserves_sight_gate(monkeypatch):
+    view = _make_view()
+    calls = []
+    fonts = iter([RecordingFont(), RecordingFont(), RecordingFont(), RecordingFont()])
+    enemy = SimpleNamespace(
+        name="Invisible Stalker",
+        enemy_typ="Elemental",
+        invisible=True,
+        health=SimpleNamespace(current=12, max=24),
+        resistance={"Fire": -0.25},
+        status_effects={},
+        physical_effects={},
+        stat_effects={},
+        magic_effects={},
+        class_effects={},
+    )
+    view.enemy_combat_sprite_manager = SimpleNamespace(
+        get_scaled_sprite=lambda target, size: calls.append((target.name, size)) or DummySurface(size, text="enemy-combat-sprite"),
+        fallback_surface=lambda: DummySurface((256, 320), text="fallback-sprite"),
+    )
+
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.font.Font", lambda *_args, **_kwargs: next(fonts))
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.draw.rect", lambda *_args, **_kwargs: None)
+
+    view._render_enemy_info_panel(enemy, has_sight=False, overlay=True)
+
+    rendered_text = [
+        getattr(surface, "text", "")
+        for surface, _pos, _args, _kwargs in view.screen.blit_calls
+        if getattr(surface, "text", "")
+    ]
+    assert any(text.startswith("Invisible: details hidden") for text in rendered_text)
+    assert "HP 12 / 24" not in rendered_text
+    assert not any(text.startswith("Weak Fire") for text in rendered_text)
+    assert calls == []
+
+    view.screen.blit_calls.clear()
+    view._render_enemy_info_panel(enemy, has_sight=True, overlay=True)
+
+    rendered_text = [
+        getattr(surface, "text", "")
+        for surface, _pos, _args, _kwargs in view.screen.blit_calls
+        if getattr(surface, "text", "")
+    ]
+    assert any(text.startswith("Sight reveals this invisible") for text in rendered_text)
+    assert "HP 12 / 24" in rendered_text
+    assert any(text.startswith("Weak Fire") for text in rendered_text)
+    assert calls and calls[0][0] == "Invisible Stalker"
+
+
+def test_construct_bleed_uses_oil_leak_presentation_without_changing_effect():
+    view = _make_view()
+    construct = _make_character()
+    construct.name = "Cyborg"
+    construct.enemy_typ = "Construct"
+    construct.physical_effects["Bleed"] = _effect()
+    construct.physical_effects["Bleed"].active = True
+    construct.physical_effects["Bleed"].duration = 2
+    construct.physical_effects["Bleed"].extra = 6
+
+    biological = _make_character()
+    biological.name = "Bandit"
+    biological.enemy_typ = "Humanoid"
+    biological.physical_effects["Bleed"] = _effect()
+    biological.physical_effects["Bleed"].active = True
+
+    assert construct.physical_effects["Bleed"].active is True
+    assert ("OIL", False) in view._collect_status_icons(construct)
+    assert ("RND", False) in view._collect_status_icons(biological)
+
+    view._set_combat_log_actors(SimpleNamespace(name="Hero"), construct)
+    view.add_combat_message("Cyborg bleeds for 4 health points.")
+    assert view.combat_log[-1] == "Cyborg leaks oil for 4 health points."
+
+    view._set_combat_log_actors(SimpleNamespace(name="Hero"), biological)
+    view.add_combat_message("Bandit bleeds for 4 health points.")
+    assert view.combat_log[-1] == "Bandit bleeds for 4 health points."
 
 
 def test_damage_flash_enemy_render_and_combat_render_paths(monkeypatch):

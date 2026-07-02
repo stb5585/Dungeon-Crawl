@@ -22,7 +22,7 @@ export DUNGEON_RENDERER_DEBUG_SURFACE_SLOTS=1
 
 # Optional ability-testing override:
 # export DUNGEON_FORCE_ENEMY=Bandit
-#unset DUNGEON_FORCE_ENEMY
+unset DUNGEON_FORCE_ENEMY
 
 # Run the GUI game
 python game_pygame.py --debug

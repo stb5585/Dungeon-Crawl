@@ -39,6 +39,66 @@ class LocationMenuScreen(TownScreenBase):
             pygame.Rect(options_rect.left + 12, options_rect.top + (idx + 1) * option_height - 6, options_rect.width - 24, self.normal_font.get_height() + 12)
             for idx, _option in enumerate(options)
         ]
+
+    def _content_item_layout(self) -> tuple[pygame.Rect, int, int, int, int, int]:
+        top_height = self.height // 12
+        content_width = 2 * self.width // 3
+        content_height = self.height - top_height
+        content_x = self.width // 3
+        content_y = top_height
+        content_rect = pygame.Rect(content_x, content_y, content_width, content_height)
+        line_height = 28
+        max_visible = max(1, (content_height - 80) // line_height)
+        cursor_x = content_rect.left + 20
+        item_x = cursor_x + 20
+        quantity_x = content_rect.right - 80
+        return content_rect, line_height, max_visible, cursor_x, item_x, quantity_x
+
+    def content_row_rects(self, item_count: int) -> list[tuple[int, pygame.Rect]]:
+        """Return visible content-row indexes and clickable rectangles."""
+        if item_count <= 0:
+            return []
+        content_rect, line_height, max_visible, _cursor_x, item_x, _quantity_x = self._content_item_layout()
+        max_scroll = max(0, item_count - max_visible)
+        self.scroll_offset = max(0, min(self.scroll_offset, max_scroll))
+        end = min(item_count, self.scroll_offset + max_visible)
+        rows = []
+        for visible_idx, item_idx in enumerate(range(self.scroll_offset, end)):
+            text_y = content_rect.top + 40 + (visible_idx * line_height)
+            rows.append((
+                item_idx,
+                pygame.Rect(item_x - 8, text_y - 4, content_rect.right - item_x - 20, line_height),
+            ))
+        return rows
+
+    def _hit_content_row(self, item_count: int, pos: tuple[int, int] | None) -> int | None:
+        if pos is None:
+            return None
+        for item_idx, rect in self.content_row_rects(item_count):
+            if rect.collidepoint(pos):
+                return item_idx
+        return None
+
+    def _ensure_content_selection_visible(self, item_count: int, max_visible: int) -> None:
+        if item_count <= 0:
+            self.current_option = 0
+            self.scroll_offset = 0
+            return
+        max_visible = max(1, max_visible)
+        max_scroll = max(0, item_count - max_visible)
+        self.current_option = max(0, min(self.current_option, item_count - 1))
+        if self.current_option < self.scroll_offset:
+            self.scroll_offset = self.current_option
+        if self.current_option >= self.scroll_offset + max_visible:
+            self.scroll_offset = self.current_option - max_visible + 1
+        self.scroll_offset = max(0, min(self.scroll_offset, max_scroll))
+
+    def _move_content_selection(self, delta: int, item_count: int, max_visible: int) -> None:
+        if item_count <= 0:
+            self._ensure_content_selection_visible(item_count, max_visible)
+            return
+        self.current_option = (self.current_option + delta) % item_count
+        self._ensure_content_selection_visible(item_count, max_visible)
     
     def draw_all(self):
         """Draw the location menu interface."""
@@ -112,29 +172,18 @@ class LocationMenuScreen(TownScreenBase):
         # Handle structured items data with proper alignment and scrolling
         if items_data:
             font = self.large_font
-            line_height = 28
+            _content_rect, line_height, max_visible, cursor_x, item_x, quantity_x = self._content_item_layout()
             
-            # Calculate max visible items based on content height
-            max_visible = (content_height - 80) // line_height  # Reserve space for top/bottom padding
-            
+            row_rects = dict(self.content_row_rects(len(items_data)))
+
             # Determine visible window of items
             visible_items = items_data[self.scroll_offset:self.scroll_offset + max_visible]
             
             text_y = content_rect.top + 40  # Start with some padding
             
-            # Define column positions
-            cursor_x = content_rect.left + 20
-            item_x = cursor_x + 20
-            quantity_x = content_rect.right - 80  # Right-aligned quantity column
-            
             for idx, item_name, quantity, is_selected in visible_items:
                 if is_selected:
-                    row_rect = pygame.Rect(
-                        item_x - 8,
-                        text_y - 4,
-                        content_rect.right - item_x - 20,
-                        line_height,
-                    )
+                    row_rect = row_rects[idx]
                     pygame.draw.rect(self.screen, self.colors.HIGHLIGHT_BG, row_rect)
                     pygame.draw.rect(self.screen, self.colors.GOLD, row_rect, 1)
                 # Draw cursor for selected item
@@ -277,7 +326,7 @@ class LocationMenuScreen(TownScreenBase):
                     pygame.quit()
                     import sys
                     sys.exit()
-                elif event.type == pygame.KEYDOWN:
+                elif event.type == pygame.KEYDOWN or is_left_click(event):
                     # Exit display on any key
                     return
             
@@ -326,10 +375,7 @@ class LocationMenuScreen(TownScreenBase):
             self.scroll_offset = 0
         
         # Calculate max visible items
-        top_height = self.height // 12
-        content_height = self.height - top_height
-        line_height = 28
-        max_visible = (content_height - 80) // line_height  # Reserve space for top/bottom padding
+        _content_rect, _line_height, max_visible, _cursor_x, _item_x, _quantity_x = self._content_item_layout()
 
         input_armed = prepare_guarded_input(
             flush_events=flush_events,
@@ -357,27 +403,30 @@ class LocationMenuScreen(TownScreenBase):
                     import sys
                     sys.exit()
                 input_armed = update_input_armed_from_event(event, require_key_release, input_armed)
+                hovered = self._hit_content_row(len(items_data), mouse_position(event))
+                if hovered is not None and event.type == pygame.MOUSEMOTION:
+                    self.current_option = hovered
+                    self._ensure_content_selection_visible(len(items_data), max_visible)
+                elif hovered is not None and is_left_click(event):
+                    if input_armed:
+                        self.current_option = hovered
+                        self._ensure_content_selection_visible(len(items_data), max_visible)
+                        return self.current_option
+                elif event.type == pygame.MOUSEWHEEL and items_data:
+                    wheel_y = getattr(event, "y", 0)
+                    if wheel_y:
+                        direction = -1 if wheel_y > 0 else 1
+                        for _ in range(abs(wheel_y)):
+                            self._move_content_selection(direction, len(items_data), max_visible)
                 if event.type == pygame.KEYDOWN:
                     if not input_armed:
                         continue
                     if event.key == pygame.K_ESCAPE:
                         return None
                     elif event.key == pygame.K_UP:
-                        self.current_option = (self.current_option - 1) % len(items_data)
-                        # Adjust scroll offset
-                        if self.current_option < self.scroll_offset:
-                            self.scroll_offset = self.current_option
-                        elif self.current_option == len(items_data) - 1:
-                            # Wrapped to bottom
-                            self.scroll_offset = max(0, len(items_data) - max_visible)
+                        self._move_content_selection(-1, len(items_data), max_visible)
                     elif event.key == pygame.K_DOWN:
-                        self.current_option = (self.current_option + 1) % len(items_data)
-                        # Adjust scroll offset
-                        if self.current_option >= self.scroll_offset + max_visible:
-                            self.scroll_offset = self.current_option - max_visible + 1
-                        elif self.current_option == 0:
-                            # Wrapped to top
-                            self.scroll_offset = 0
+                        self._move_content_selection(1, len(items_data), max_visible)
                     elif event.key == pygame.K_RETURN or event.key == pygame.K_SPACE:
                         return self.current_option
             

@@ -730,8 +730,10 @@ def test_waitress_transition_and_preservation_helpers(monkeypatch):
     assert enemy.health.current == 0
     assert manager.combat_view.reload_calls == [enemy]
     assert manager.combat_view.enemy_deaths == [enemy]
+    assert any("visibly changes form" in message for message in manager.combat_view.messages)
     assert any("turns her weapon on herself" in message for message in manager.combat_view.messages)
     assert popup_calls
+    assert "visible form change" in popup_calls[0][0]
     assert popup_calls[0][1].get("flush_events") is True
     assert popup_calls[0][1].get("require_key_release") is True
 

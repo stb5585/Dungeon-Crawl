@@ -400,6 +400,7 @@ def tavern(game):
             if tavern_options[tavern_idx] == "Talk with Patrons":
                 tavern_patrons(game)
             elif tavern_options[tavern_idx] == "View the Job Board":
+                game.update_bounties()
                 bounty_list = list(game.bounties.values())
                 bounty_options = list(game.bounties.keys())
                 if len(game.player_char.quest_dict['Bounty']) > 0:

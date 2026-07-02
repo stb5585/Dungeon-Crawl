@@ -7,6 +7,8 @@ import os
 
 import pygame
 
+from .mouse_helpers import is_left_click
+
 
 class TownColors:
     """Centralized color definitions for town UI."""
@@ -174,7 +176,7 @@ class TownScreenBase:
                         pygame.quit()
                         import sys
                         sys.exit()
-                    elif event.type == pygame.KEYDOWN:
+                    elif event.type == pygame.KEYDOWN or is_left_click(event):
                         return
                 self.presenter.clock.tick(30)
         else:
@@ -222,7 +224,7 @@ class TownScreenBase:
 
                         time.sleep(0.02)
 
-                        # Skip current paragraph on SPACE/ENTER/ESC
+                        # Skip current paragraph on SPACE/ENTER/ESC or left click.
                         for event in pygame.event.get():
                             if event.type == pygame.QUIT:
                                 pygame.quit()
@@ -232,6 +234,9 @@ class TownScreenBase:
                                 if event.key in (pygame.K_SPACE, pygame.K_RETURN, pygame.K_ESCAPE):
                                     skipped = True
                                     break
+                            elif is_left_click(event):
+                                skipped = True
+                                break
                         if skipped:
                             break
 
@@ -254,7 +259,7 @@ class TownScreenBase:
                             pygame.quit()
                             import sys
                             sys.exit()
-                        elif event.type == pygame.KEYDOWN:
+                        elif event.type == pygame.KEYDOWN or is_left_click(event):
                             # Advance to next paragraph on any key
                             break
                     else:

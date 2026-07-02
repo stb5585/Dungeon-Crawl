@@ -20,20 +20,147 @@ RESPONSE_MAP = get_response_map()
 TAVERN_FLAVOR_DIALOGUES = get_tavern_flavor_dialogues()
 
 
+BOUNTY_RESTOCK_STEP_THRESHOLD = 200
+BOUNTY_RESTOCK_ENEMY_THRESHOLD = 8
+
+BOUNTY_BOARD_STATE_DEFAULTS = {
+    "initialized": False,
+    "last_restock_level": 0,
+    "last_restock_steps": 0,
+    "last_restock_enemies_defeated": 0,
+}
+
+
+def default_bounty_board_state():
+    """Return fresh bounty-board restock state for a player/save."""
+    return dict(BOUNTY_BOARD_STATE_DEFAULTS)
+
+
+def _nonnegative_int(value, fallback=0):
+    try:
+        return max(0, int(value))
+    except (TypeError, ValueError):
+        return fallback
+
+
+def normalize_bounty_board_state(state=None):
+    """Return a backward-compatible bounty-board restock state dictionary."""
+    normalized = default_bounty_board_state()
+    if isinstance(state, dict):
+        normalized.update(state)
+
+    normalized["initialized"] = bool(normalized.get("initialized", False))
+    for key in (
+        "last_restock_level",
+        "last_restock_steps",
+        "last_restock_enemies_defeated",
+    ):
+        normalized[key] = _nonnegative_int(
+            normalized.get(key),
+            BOUNTY_BOARD_STATE_DEFAULTS[key],
+        )
+    return normalized
+
+
+def _player_level(player_char):
+    if hasattr(player_char, "player_level"):
+        try:
+            return _nonnegative_int(player_char.player_level(), 1)
+        except TypeError:
+            pass
+    level = getattr(player_char, "level", None)
+    return _nonnegative_int(getattr(level, "level", 1), 1)
+
+
+def _gameplay_stat(player_char, stat_name):
+    stats = getattr(player_char, "gameplay_stats", {})
+    if isinstance(stats, dict):
+        return _nonnegative_int(stats.get(stat_name, 0))
+    return 0
+
+
+def ensure_bounty_board_state(player_char):
+    """Attach normalized bounty-board restock state to the player."""
+    state = normalize_bounty_board_state(
+        getattr(player_char, "bounty_board_state", None)
+    )
+    player_char.bounty_board_state = state
+    return state
+
+
+def active_bounty_count(player_char):
+    quest_dict = getattr(player_char, "quest_dict", {})
+    bounty_dict = quest_dict.get("Bounty", {}) if isinstance(quest_dict, dict) else {}
+    return len(bounty_dict)
+
+
+def mark_bounty_board_restock(player_char):
+    """Record the progress point used for the next intermittent restock."""
+    player_char.bounty_board_state = {
+        "initialized": True,
+        "last_restock_level": _player_level(player_char),
+        "last_restock_steps": _gameplay_stat(player_char, "steps_taken"),
+        "last_restock_enemies_defeated": _gameplay_stat(
+            player_char,
+            "enemies_defeated",
+        ),
+    }
+    return player_char.bounty_board_state
+
+
+def should_restock_bounty_board(game, *, available_count=None):
+    """Return whether the bounty board should refill at the current progress point."""
+    player_char = game.player_char
+    state = ensure_bounty_board_state(player_char)
+    if available_count is None:
+        available_count = len(getattr(game, "bounties", {}) or {})
+    if active_bounty_count(player_char) > 0 or available_count > 0:
+        return False
+    if not state["initialized"]:
+        return True
+
+    current_level = _player_level(player_char)
+    current_steps = _gameplay_stat(player_char, "steps_taken")
+    current_defeats = _gameplay_stat(player_char, "enemies_defeated")
+
+    return (
+        current_level > state["last_restock_level"]
+        or current_steps - state["last_restock_steps"] >= BOUNTY_RESTOCK_STEP_THRESHOLD
+        or current_defeats - state["last_restock_enemies_defeated"] >= BOUNTY_RESTOCK_ENEMY_THRESHOLD
+    )
+
+
 # classes
 class BountyBoard:
+    MAX_ENEMY_ROLL_ATTEMPTS = 25
 
     def __init__(self):
         self.bounties = []
 
+    def _existing_target_names(self, game):
+        return set(game.player_char.quest_dict.get('Bounty', {})) | set(self.bounty_options())
+
+    def _catalog_bounty_enemy(self, level, existing_names):
+        catalog = enemies.random_enemy_catalog()
+        if level not in catalog:
+            level = max(catalog, key=int)
+        candidates = [enemy for enemy in catalog[level] if enemy.name not in existing_names]
+        if not candidates:
+            candidates = catalog[level]
+        return random.choice(candidates)
+
     def create_bounty(self, game):
         bounty = {"reward": None}
         level = str(min(6, game.player_char.player_level() // 10))
-        while True:
-            enemy = enemies.random_enemy(level)
-            if enemy.name not in game.player_char.quest_dict['Bounty'] and \
-                enemy.name not in self.bounty_options():
+        existing_names = self._existing_target_names(game)
+        enemy = None
+        for _attempt in range(self.MAX_ENEMY_ROLL_ATTEMPTS):
+            candidate = enemies.random_enemy(level)
+            if candidate.name not in existing_names:
+                enemy = candidate
                 break
+        if enemy is None:
+            enemy = self._catalog_bounty_enemy(level, existing_names)
         bounty["enemy"] = enemy
         bounty["num"] = random.randint(3, 8)
         bounty["exp"] = random.randint(enemy.experience*bounty["num"] // 2, enemy.experience*bounty["num"]) * \
@@ -45,11 +172,26 @@ class BountyBoard:
         return bounty
 
     def generate_bounties(self, game):
+        available_count = len(getattr(game, "bounties", {}) or {})
+        if (
+            active_bounty_count(game.player_char) > 0
+            or available_count > 0
+        ):
+            state = ensure_bounty_board_state(game.player_char)
+            if not state["initialized"]:
+                mark_bounty_board_restock(game.player_char)
+            return False
+        if not should_restock_bounty_board(game, available_count=available_count):
+            return False
         num = random.randint(1, 4) - len(game.player_char.quest_dict['Bounty'])
         if num > 0:
             for _ in range(num):
                 bounty = self.create_bounty(game)
                 self.bounties.append(bounty)
+        if self.bounties:
+            mark_bounty_board_restock(game.player_char)
+            return True
+        return False
 
     def bounty_options(self):
         options = []

@@ -17,6 +17,7 @@ from .input_guards import (
     release_guard_allows_input,
     update_input_armed_from_event,
 )
+from .mouse_helpers import is_left_click, mouse_position
 
 
 ITEM_ART_DIR = Path(__file__).resolve().parents[1] / "assets" / "item_art"
@@ -172,6 +173,36 @@ class BasePopupMenu:
 
     def visible_row_count(self) -> int:
         return max(1, (self.list_rect.height - (self.list_vertical_padding() * 2)) // self.line_height)
+
+    def visible_row_rects(self) -> list[tuple[int, pygame.Rect]]:
+        """Return visible popup-list indexes and clickable row rectangles."""
+        if not self.items:
+            return []
+        max_visible = self.visible_row_count()
+        start = max(0, min(self.scroll_offset, max(0, len(self.items) - max_visible)))
+        self.scroll_offset = start
+        end = min(len(self.items), start + max_visible)
+        y = self.list_rect.top + self.list_vertical_padding()
+        return [
+            (
+                idx,
+                pygame.Rect(
+                    self.list_rect.left + 8,
+                    y + ((idx - start) * self.line_height) - 2,
+                    self.list_rect.width - 16,
+                    self.line_height,
+                ),
+            )
+            for idx in range(start, end)
+        ]
+
+    def _hit_visible_row(self, pos: tuple[int, int] | None) -> int | None:
+        if pos is None:
+            return None
+        for index, rect in self.visible_row_rects():
+            if rect.collidepoint(pos):
+                return index
+        return None
 
     def _handle_held_scroll(self):
         try:
@@ -433,7 +464,7 @@ class BasePopupMenu:
             item = self.items[idx]
             is_header = isinstance(item, dict) and item.get("is_header")
             text_str = self._truncate_text(self.item_display_text(item), text_max_width)
-            row_rect = pygame.Rect(self.list_rect.left + 8, y - 2, self.list_rect.width - 16, self.line_height)
+            row_rect = dict(self.visible_row_rects())[idx]
             if is_header:
                 text = self.normal_font.render(text_str, True, self.GOLD)
             elif idx == self.selected_index:
@@ -559,6 +590,19 @@ class BasePopupMenu:
             self.presenter.set_background_provider(lambda: menu_surface_ref[0] or self.screen.copy())
 
         try:
+            def activate_selected_item():
+                nonlocal running, result, background_surface
+                if not self.items or not self._is_selectable_index(self.selected_index):
+                    return
+                current_item = self.items[self.selected_index]
+                result = self.on_select(player_char, current_item)
+                if result is not None:
+                    running = False
+                else:
+                    self.parent_screen.draw_all(player_char, do_flip=False)
+                    background_surface = self.screen.copy()
+                    menu_surface_ref[0] = None
+
             while running:
                 self.draw_background(background_surface)
                 self.draw_popup(player_char)
@@ -574,6 +618,25 @@ class BasePopupMenu:
                         import sys
                         sys.exit()
                     input_armed = update_input_armed_from_event(event, require_key_release, input_armed)
+                    hovered = self._hit_visible_row(mouse_position(event))
+                    if hovered is not None and event.type == pygame.MOUSEMOTION and self._is_selectable_index(hovered):
+                        self.selected_index = hovered
+                        self._ensure_visible()
+                    elif hovered is not None and is_left_click(event):
+                        if not input_armed:
+                            continue
+                        if self._is_selectable_index(hovered):
+                            self.selected_index = hovered
+                            self._ensure_visible()
+                            activate_selected_item()
+                        continue
+                    elif event.type == pygame.MOUSEWHEEL and self.items:
+                        wheel_y = getattr(event, "y", 0)
+                        if wheel_y:
+                            direction = -1 if wheel_y > 0 else 1
+                            for _ in range(abs(wheel_y)):
+                                self._move_selection(direction)
+                            self._quick_scroll_frame = 0
                     if event.type == pygame.KEYUP:
                         continue
                     if event.type == pygame.KEYDOWN:
@@ -588,19 +651,7 @@ class BasePopupMenu:
                             running = False
                             result = None
                         elif event.key == pygame.K_RETURN or event.key == pygame.K_SPACE:
-                            if self.items:
-                                current_item = self.items[self.selected_index]
-                                # Skip headers
-                                if not (isinstance(current_item, dict) and current_item.get("is_header")):
-                                    result = self.on_select(player_char, current_item)
-                                    # If on_select returns None, keep menu open (for actions that update in place)
-                                    if result is not None:
-                                        running = False
-                                    else:
-                                        # Rebuild display after action
-                                        self.parent_screen.draw_all(player_char, do_flip=False)
-                                        background_surface = self.screen.copy()
-                                        menu_surface_ref[0] = None
+                            activate_selected_item()
                         elif event.key == pygame.K_UP:
                             self._move_selection(-1)
                             self._quick_scroll_frame = 0

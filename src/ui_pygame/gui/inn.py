@@ -142,6 +142,11 @@ class InnManager(TownScreenBase):
         bounty_screen = LocationMenuScreen(self.presenter, "Bounty Board")
         
         while True:
+            game = getattr(self.presenter, "game", None)
+            update_bounties = getattr(game, "update_bounties", None)
+            if callable(update_bounties):
+                update_bounties()
+
             bounty_options = ["Accept Bounty", "View Active Bounties", "Leave"]
             
             # Check if any bounties are complete

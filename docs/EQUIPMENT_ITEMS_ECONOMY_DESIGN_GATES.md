@@ -7,11 +7,11 @@ should keep active, deferred, or decision-gated direction.
 
 ## Status
 
-Status: `Spec Map, Shop Polish V1`
+Status: `Spec Map, Shop Polish V1 Shipped`
 
-The first implementation slice prioritizes the existing shop purchase and
-equip-now flow because it does not require new economy rules, new item state, or
-save migration.
+The first implementation slice shipped for the existing pygame shop purchase
+and equip-now flow because it did not require new economy rules, new item state,
+or save migration.
 
 Save-heavy systems such as durability, identification, item modification, and
 equipment active abilities remain deferred until their serializer, UI, economy,
@@ -19,8 +19,8 @@ and balance contracts are explicitly promoted.
 
 ## Shop Polish V1
 
-Shop Polish V1 improves clarity around the existing buy-then-equip path without
-changing prices, stock, inventory, gold, or equip legality.
+Shop Polish V1 improves clarity around the existing pygame buy-then-equip path
+without changing prices, stock, inventory, gold, or equip legality.
 
 The shop should make clear:
 
@@ -34,6 +34,11 @@ The shop should make clear:
 The compatibility baseline remains the existing `ShopManager`, `ShopScreen`,
 item metadata helpers, `equipment_slots_for_item`, `Player.equip`, and
 `Player.equip_diff`.
+
+Shipped coverage includes pygame prompt copy for replacement slots, stat/no-stat
+comparisons, dual-wield copy requirements, cancel behavior, preflight equip
+failure, and rollback after partial equip failure. Curses prompt parity remains
+a later polish pass unless promoted separately.
 
 ## Ultimate Helmet Acquisition
 

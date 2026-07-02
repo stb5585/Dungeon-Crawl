@@ -14,7 +14,9 @@
     "rubble": "special_tiles/rubble.png",
     "sconce_broken": "special_tiles/sconce_broken.png",
     "sconce_unlit": "special_tiles/sconce_unlit.png",
-    "torch_lit": "special_tiles/torch_lit.png"
+    "torch_lit": "special_tiles/torch_lit.png",
+    "warp_point_active": "special_tiles/warp_point_active.png",
+    "warp_point_inactive": "special_tiles/warp_point_inactive.png"
   },
   "textures": {
     "ceiling": "ceilings/stone.png",

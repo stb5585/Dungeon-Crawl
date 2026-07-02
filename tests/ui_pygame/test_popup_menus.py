@@ -109,6 +109,18 @@ class DemoPopup(popup_menus.BasePopupMenu):
         return ("selected", item)
 
 
+class StickyPopup(DemoPopup):
+    def __init__(self, presenter, parent_screen, title="Sticky"):
+        super().__init__(presenter, parent_screen, title=title)
+        self.select_calls = []
+
+    def on_select(self, player_char, item):
+        self.select_calls.append(item)
+        if len(self.select_calls) == 1:
+            return None
+        return ("selected", item)
+
+
 def _make_presenter():
     return SimpleNamespace(
         screen=RecordingScreen(),
@@ -199,6 +211,72 @@ def test_base_popup_helpers_and_show_navigation(monkeypatch):
     monkeypatch.setattr("src.ui_pygame.gui.popup_menus.pygame.event.get", lambda: next(events, []))
     result = popup.show(player)
     assert result[0] == "selected"
+
+
+def test_base_popup_supports_mouse_hover_click_and_wheel(monkeypatch):
+    _patch_visuals(monkeypatch)
+    presenter = _make_presenter()
+    parent = _make_parent()
+    popup = DemoPopup(presenter, parent, title="Test")
+    player = _make_player()
+    popup.build_items(player)
+    rows = dict(popup.visible_row_rects())
+
+    beta_pos = rows[2].center
+    events = iter([
+        [SimpleNamespace(type=pygame.MOUSEMOTION, pos=beta_pos)],
+        [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=beta_pos)],
+    ])
+    monkeypatch.setattr("src.ui_pygame.gui.popup_menus.pygame.event.get", lambda: next(events, []))
+
+    assert popup.show(player) == ("selected", "Beta")
+
+    popup = DemoPopup(presenter, parent, title="Test")
+    popup.build_items(player)
+    rows = dict(popup.visible_row_rects())
+    events = iter([
+        [SimpleNamespace(type=pygame.MOUSEWHEEL, y=-1)],
+        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+    ])
+    monkeypatch.setattr("src.ui_pygame.gui.popup_menus.pygame.event.get", lambda: next(events, []))
+
+    assert popup.show(player) == ("selected", "Beta")
+
+
+def test_base_popup_ignores_header_click_and_keeps_open_on_none(monkeypatch):
+    _patch_visuals(monkeypatch)
+    presenter = _make_presenter()
+    parent = _make_parent()
+    player = _make_player()
+
+    popup = DemoPopup(presenter, parent, title="Test")
+    popup.build_items(player)
+    rows = dict(popup.visible_row_rects())
+    header_pos = rows[0].center
+    gamma_pos = rows[3].center
+    events = iter([
+        [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=header_pos)],
+        [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=gamma_pos)],
+    ])
+    monkeypatch.setattr("src.ui_pygame.gui.popup_menus.pygame.event.get", lambda: next(events, []))
+
+    assert popup.show(player) == ("selected", "Gamma")
+
+    popup = StickyPopup(presenter, parent, title="Sticky")
+    popup.build_items(player)
+    rows = dict(popup.visible_row_rects())
+    alpha_pos = rows[1].center
+    beta_pos = rows[2].center
+    parent.calls.clear()
+    events = iter([
+        [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=alpha_pos)],
+        [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=beta_pos)],
+    ])
+    monkeypatch.setattr("src.ui_pygame.gui.popup_menus.pygame.event.get", lambda: next(events, []))
+
+    assert popup.show(player) == ("selected", "Beta")
+    assert popup.select_calls == ["Alpha", "Beta"]
+    assert len(parent.calls) >= 2
 
 
 def test_selection_popup_preserves_header_line_breaks(monkeypatch):

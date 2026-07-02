@@ -117,48 +117,55 @@ Completed follow-up posture:
 
 ## Presentation And Asset Gates
 
-Status: `Spec Gate`
+Status: `Spec Gate, V1 Identity/Asset Slices Shipped`
 
 `docs/PRESENTATION_ASSET_DESIGN_GATES.md` is the behavior reference for this
 section. The first quick-win slice shipped visual Character Created and New Game
 story-card screens plus reusable combat cues for reflection, hard-control hits,
-and elemental weapon strikes.
+and elemental weapon strikes. The next focused slices shipped enemy identity
+readability, a remade Quasit combat sprite, and active/inactive Warp Point
+dungeon art with checked-in review sheets.
 
 Remaining follow-up after this V1 slice:
 
 - Status-effect artwork remains opt-in; fallback initials remain valid where no
   approved PNG exists.
+  - Left to do
+    - Evasive Guard
 - Jump and Charge wind-up/impact visuals remain deferred until enemy sprite
   stance adjustments are planned.
-- Warp Point artistic renderings need a generated-bitmap batch with review
-  sheet/contact sheet before integration.
+- Warp Point artistic renderings now have generated active/inactive runtime PNGs
+  and a contact sheet. Staffed Warp Point scientist/town scene art remains part
+  of the deferred Town/NPC/Venue batch.
 - Town NPC and venue renderings remain batch-gated until art direction,
   dimensions, and target list are selected.
-- Enemy identity presentation still needs the rules/readability implementation
-  for invisible reveal notes, special-form notes, and construct-friendly bleed
-  flavor such as `Oil Leak` while preserving underlying mechanics.
+- Enemy identity presentation V1 is shipped for invisible reveal notes,
+  Mad Waitress form-change notes, and construct-friendly `Oil Leak` wording
+  while preserving underlying mechanics.
 
 ## Dungeon, World, And Encounter Gates
 
-Status: `Spec Map, V1 Quick Wins`
+Status: `Spec Map, V1 Quick Wins Shipped`
 
 `docs/DUNGEON_WORLD_ENCOUNTER_DESIGN_GATES.md` is the durable reference for
 dungeon interaction, chest policy, encounter bias, Realm of Cambion deferrals,
 relic discovery text, town hint flavor, and low-health dungeon navigation
-presentation. V1 quick wins formalize one-and-done chests, add relic-specific
-discovery text, add a soft active-quest random-encounter nudge, and keep a
-persistent low-health cue visible while navigating the dungeon.
+presentation. V1 quick wins have shipped and are locked by focused regression
+coverage: opened chests stay open, relic rooms use relic-specific discovery
+text, random encounters can receive a soft active-quest target nudge, and pygame
+dungeon navigation keeps a persistent low-health cue visible.
 
 ## Equipment, Items, And Economy Gates
 
-Status: `Spec Map, Shop Polish V1`
+Status: `Spec Map, Shop Polish V1 Shipped`
 
 `docs/EQUIPMENT_ITEMS_ECONOMY_DESIGN_GATES.md` is the durable reference for
 shop polish, ultimate helmet acquisition, durability/repair, item
 identification, equipment actives, armor mobility, rarity semantics, dungeon
 refreshers, Tome special effects, elemental armor/item modification, and
-P6-adjacent item content. V1 prioritizes low-risk shop purchase/equip clarity
-before save-heavy systems.
+P6-adjacent item content. Shop Polish V1 has shipped for pygame purchase/equip
+prompt clarity and equip-failure inventory safety; save-heavy systems remain
+deferred until their contracts are promoted.
 
 ## Class, Ability, And Combat Gates
 
@@ -226,7 +233,7 @@ promoted.
 
 ## Systems, Audio, And Meta Gates
 
-Status: `Spec Map, Mouse Support V1 Next`
+Status: `Spec Map, Mouse Support V1 Shipped`
 
 Systems, audio, and meta planning is split across durable owner docs:
 
@@ -244,39 +251,49 @@ behavior are specified. Current per-save Bestiary behavior and reveal layering
 remain the baseline: seen identity, defeated practical info, and detailed
 mechanics only after combat detail visibility was earned.
 
-First implementation priority after this spec map is Mouse Support V1: finish
-mouse-click parity for NPC conversation progression, quest boxes, Accept Bounty
-selection, Active Bounties, and remaining popup-menu flows. Use existing
-`mouse_helpers`, popup menu, and choice/confirmation popup patterns; do not
-alter quest state, bounty generation, save data, audio routing, keyboard
-behavior, or gameplay rules.
+Mouse Support V1 has shipped for the highest-ROI shared pygame layers: NPC
+conversation/quest-text progression, bounty/content selection lists, read-only
+content boxes, and reusable popup-menu row hover/click/wheel behavior. The pass
+used the existing `mouse_helpers`, popup menu, and guarded-input patterns
+without altering quest state, bounty generation, save data, audio routing,
+keyboard behavior, or gameplay rules.
+
+Bounty-board restocks now use saved per-character progress baselines: an empty
+board with no active bounty can refill after enough dungeon steps, enemy
+defeats, or a level gain, while immediate turn-in/reopen loops remain blocked.
+Current tuning is conservative and should be playtested before changing the
+thresholds.
 
 ## Bugfixes
 
-No active bugfixes are currently tracked here. Move newly found regressions into
-this section until fixed, then record the completed fix in `CHANGELOG.md`.
+- the dead body sprite for Rookie Mistake should not appear in the dungeon before
+  the player is given the quest
 
 ## Improvements
 
-- Class Scaling
+- Class/Enemy/Ability Scaling
   - Early level Footpads need nerfing
     - hit much harder than expected
     - still very squishy; glass cannons atm
     - seems to level out at lower dungeon levels
+  - Poison is very inconsistent; some creatures apply really weak poisons and others
+    very strong
 - Lower item drop rates to increase benefit of skills like Steal and passives like
   luck
 - Add/create blood spatter overlay for walls/floor/ceiling
-- Quasits look too much like imps; remake the enemy combat sprite, following the
-  description here:
-  "Quasits stood somewhere between 1‒2 ft (0.3‒0.61 m) tall and weighed around 8 lb
-  (3.6 kg). Their tiny humanoid forms had green skin covered in warts and pustules.
-  Their tails were covered in barbs while their horns were spiky. Both their hands
-  and feet were slender, with long, claw-tipped digits."
 - Optimize NPC responses to match their personalities
 - Progressively lessen the accuracy of multi-strike skills to make them more balanced
 - Enfeeble needs to be tuned, as it currently is very weak
-- Use `remaining_improvement_tuning_report()` as the baseline measurement target
-  list before changing Footpad, ordinary drop, multi-strike, or Enfeeble numbers.
+- Use `tools/run_remaining_balance_baseline.py` and
+  `remaining_improvement_tuning_report()` as the evidence baseline before
+  changing Footpad, ordinary drop, multi-strike, or Enfeeble numbers.
+- Combat Focus improvements
+  - Thief/Rogue
+    - Remove redundant Evasive Guard
+    - Change Fortune/Misfortune indicator from simple counts to visual representation
+      - Indicated by coins, Fortune heads and Misfortune tails
+      - Have them grayed out when inactive and highlighted when active
+- Add 'x' to popup windows to allow mouse click closing
 
 ## Watch Items
 

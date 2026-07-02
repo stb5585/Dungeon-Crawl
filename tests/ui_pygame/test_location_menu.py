@@ -187,6 +187,12 @@ def test_location_menu_navigation_and_item_navigation(monkeypatch):
     monkeypatch.setattr("src.ui_pygame.gui.location_menu.pygame.event.get", lambda: next(event_batches, []))
     screen.display_items_list([("Potion", 2)])
 
+    event_batches = iter([
+        [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=(450, 250))],
+    ])
+    monkeypatch.setattr("src.ui_pygame.gui.location_menu.pygame.event.get", lambda: next(event_batches, []))
+    screen.display_items_list([("Potion", 2)])
+
     items = [(f"Item {idx}", idx + 1) for idx in range(25)]
     screen.current_option = 0
     screen.scroll_offset = 0
@@ -205,6 +211,25 @@ def test_location_menu_navigation_and_item_navigation(monkeypatch):
     monkeypatch.setattr("src.ui_pygame.gui.location_menu.pygame.event.get", lambda: next(event_batches, []))
     assert screen.navigate_with_content(items) == len(items) - 1
     assert screen.scroll_offset > 0
+
+    screen.current_option = 0
+    screen.scroll_offset = 0
+    row_pos = dict(screen.content_row_rects(len(items)))[2].center
+    event_batches = iter([
+        [SimpleNamespace(type=pygame.MOUSEMOTION, pos=row_pos)],
+        [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=row_pos)],
+    ])
+    monkeypatch.setattr("src.ui_pygame.gui.location_menu.pygame.event.get", lambda: next(event_batches, []))
+    assert screen.navigate_with_content(items) == 2
+
+    screen.current_option = 0
+    screen.scroll_offset = 0
+    event_batches = iter([
+        [SimpleNamespace(type=pygame.MOUSEWHEEL, y=-1)],
+        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+    ])
+    monkeypatch.setattr("src.ui_pygame.gui.location_menu.pygame.event.get", lambda: next(event_batches, []))
+    assert screen.navigate_with_content(items) == 1
 
     screen.current_option = 0
     screen.scroll_offset = 0

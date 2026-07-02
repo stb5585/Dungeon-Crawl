@@ -13,7 +13,7 @@ from src.core.classes import classes_dict
 from src.core.data.data_loader import get_intro_story, get_special_events
 from src.core.races import races_dict
 from src.core.save_system import SaveManager
-from src.core.town import BountyBoard
+from src.core.town import BountyBoard, ensure_bounty_board_state, mark_bounty_board_restock
 from . import menus, town
 from .battle import BattleManager
 from .enhanced_manager import EnhancedBattleManager
@@ -420,11 +420,17 @@ class Game:
             dmenu.refresh_all()
 
     def update_bounties(self):
+        if getattr(self, "bounties", None):
+            state = ensure_bounty_board_state(self.player_char)
+            if not state["initialized"]:
+                mark_bounty_board_restock(self.player_char)
+            return
         self.bounties = {}
         bounties = BountyBoard()
         bounties.generate_bounties(self)
-        for bounty in bounties.bounties:
-            self.bounties[bounty["enemy"].name] = bounty
+        if bounties.bounties:
+            for bounty in bounties.bounties:
+                self.bounties[bounty["enemy"].name] = bounty
 
     def delete_bounty(self, bounty):
         del self.bounties[bounty["enemy"].name]

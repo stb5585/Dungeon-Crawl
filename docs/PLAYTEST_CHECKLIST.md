@@ -20,6 +20,8 @@ remain the prompts; the evidence ledger is the running decision record.
   - Expected: Status items such as Antidote, Eye Drop, Echo Screen, Bandage, and Phoenix Down are available.
 - [ ] Accept multiple available bounties in one Tavern visit.
   - Expected: The Accept Bounty screen remains open until Back/Cancel or no new bounties remain.
+- [ ] Complete or abandon all board bounties, then revisit the Tavern before and after making progress.
+  - Expected: The board does not refill immediately, then restocks after enough dungeon steps, enemy defeats, or a level gain.
 - [ ] Fight enemies that stun, sleep, or otherwise incapacitate the active actor.
   - Expected: Incapacitated actors do not display an active turn token.
 - [ ] Compare flying and grounded enemies in combat.
@@ -219,6 +221,12 @@ remain the prompts; the evidence ledger is the running decision record.
   - Expected: The town menu still includes both `Warp Point` and `Old Warehouse`.
 
 ### Combat Architecture And Balance
+- [x] Dry-run the remaining-improvement balance baseline wrapper.
+  - Command: `./.venv/bin/python tools/run_remaining_balance_baseline.py --dry-run`
+  - Expected: Timestamped text/JSON summaries list the base, first, second, and race-delta commands plus Footpad, ordinary drop, multi-strike accuracy, and Enfeeble measurement targets.
+- [ ] Run and review the full remaining-improvement balance baseline before numeric tuning.
+  - Command: `./.venv/bin/python tools/run_remaining_balance_baseline.py`
+  - Expected: Reports are written under `reports/balance_baselines/`, local report outputs remain ignored by git, and no balance constants are changed by the report run.
 - [ ] Run the base-tier canonical balance report.
   - Command: `./.venv/bin/python tools/run_balance_suite.py --tier base --level 10 --iters 30 --seed 1337`
   - Expected: The report completes, prints class/enemy win-rate rows, and highlights no command/runtime failure unrelated to combat balance.
@@ -460,6 +468,8 @@ remain the prompts; the evidence ledger is the running decision record.
   - Expected: The HUD shows `Dungeon Level N`, `Realm of Cambion`, or `Liminal Gap` without crowding resource bars, compass, minimap, or combat focus panels.
 - [x] Open the enlarged minimap modal with `M` and by clicking the minimap.
   - Expected: The modal reuses existing discovered/visible tile rules, frames the fully revealed current level instead of only the small HUD viewport, and closes with `M`, `Esc`, or outside click.
+- [x] Navigate the pygame dungeon at or below 25% HP.
+  - Expected: A persistent red edge cue appears in the dungeon viewport without tinting the right-side HUD or changing movement, encounters, damage, healing, or death behavior.
 - [ ] Move near decorative rubble, roots, fungus, crystal clusters, bone piles, and broken gear in a test map or authored fixture.
   - Expected: Decorative props render as floor-bound hooks and remain traversable unless future gameplay explicitly changes them.
 - [ ] Revisit a defeated encounter body in the dungeon view.
@@ -491,6 +501,9 @@ remain the prompts; the evidence ledger is the running decision record.
   - Expected: Fallback key lists identify the affected texture, special-tile, or enemy asset names by category.
 - [ ] Run renderer diagnostics with all shipped dungeon assets present.
   - Expected: Texture, special-tile, and manifest fallback counts remain zero for shipped dungeon-render assets.
+- [x] Review active and inactive Warp Point dungeon art.
+  - Expected: `src/ui_pygame/assets/dungeon_tiles/special_tiles/warp_point_art_review_sheet.png` shows both approved variants.
+  - Expected: Active Warp Points use the active platform plus existing spark overlay; inactive/spent Warp Points use the dim platform; missing approved art falls back to the readable legacy teleporter.
 - [ ] Inspect aggregate texture diagnostics after entering and leaving several rooms.
   - Expected: Loaded state, fallback counts/totals, cache size/limit/capacity, and override counts are visible in one diagnostic payload.
 
@@ -585,6 +598,8 @@ remain the prompts; the evidence ledger is the running decision record.
   - Expected: Long action labels are truncated inside their cells instead of overlapping neighboring actions.
 - [x] Set `DUNGEON_FORCE_ENEMY=Test` before running `launch_gui_debug.sh`, or uncomment the matching line in the script during an ability debug run.
   - Expected: Random encounters use the requested debug enemy only while the environment variable is active, then return to normal catalog selection.
+- [x] Trigger random encounters while an active defeat, collection, or bounty quest target exists in the current floor catalog.
+  - Expected: The helper can softly prefer matching active quest enemies, ignores completed/turned-in targets, falls back on soft-roll failure, and still lets debug overrides win.
 - [ ] Use `src.core.enemies.set_random_enemy_override("Test")` from a Python harness, then call
   `src.core.enemies.clear_random_enemy_override()`.
   - Expected: The explicit helper still forces targeted encounters and takes precedence over the environment variable when both are set.
@@ -630,9 +645,12 @@ remain the prompts; the evidence ledger is the running decision record.
   - Expected: Combat action-grid navigation accepts the first fresh movement/confirm key after turn start once pygame key state has been pumped.
 - [x] Move through main, town, load-game, shop-selection, race, class, naming, and location menus after a prior key press.
   - Expected: Guarded navigation still blocks buffered held keys but accepts the next fresh key without waiting for a KEYUP event that may never arrive.
-- [ ] Navigate selector-style pygame screens with the mouse.
+- [x] Navigate selector-style pygame screens with the mouse.
   - Expected: Hovering updates the highlighted row where rows are selectable.
   - Expected: Left-clicking main menu, town menu, shop selection, location, race, class, Character Menu action, tab, and equipment-slot targets selects the same option the keyboard would select.
+  - Expected: NPC conversation and quest text boxes advance with left click using the same skip/continue behavior as keyboard confirm.
+  - Expected: Accept Bounty and Active Bounties content lists support row hover, left-click selection, and mouse-wheel movement without changing bounty state.
+  - Expected: Reusable popup menus support row hover, left-click selection, ignored header-row clicks, and mouse-wheel movement while preserving keyboard behavior.
 - [x] Open the in-dungeon popup menu after a key-driven transition.
   - Expected: The menu ignores a still-held buffered key but accepts the first fresh selection key once no key is physically held.
 - [x] Open inventory, equipment, or quest popups after a key-driven transition.
@@ -718,14 +736,18 @@ remain the prompts; the evidence ledger is the running decision record.
   - Expected: The item description includes an `Element: ...` line for any item type with elemental metadata.
   - Expected: Fist weapons such as Indra's Fist show their elemental metadata in the secret-shop description panel.
   - Expected: Resistance-bearing shields and accessories show explicit `Resistance: ...` or `Immunity: ...` lines.
-- [ ] Buy an equipable item from blacksmith, jeweler, and secret-shop equipment categories in pygame and curses.
+- [x] Buy an equipable item from blacksmith, jeweler, and secret-shop equipment categories in pygame.
   - Expected: After the purchase summary, the shop offers to equip class-eligible equipment immediately.
+  - Expected: The equip prompt shows available actions, replacement slots, stat changes or `no stat change`, and dual-wield copy requirements.
   - Expected: Choosing equip uses normal equipment rules and leaves failed equip attempts in inventory.
   - Expected: Non-equipment purchases such as potions, keys, scrolls, and quest items do not show equip prompts.
+- [ ] Buy an equipable item from blacksmith, jeweler, and secret-shop equipment categories in curses.
+  - Expected: Existing curses shop behavior remains usable; prompt-copy parity with pygame is a later polish pass.
 - [ ] Buy one weapon that can be equipped in either hand.
   - Expected: The equip prompt offers `Main Hand`, `OffHand`, and `Cancel`.
+  - Expected: The equip prompt explains that dual-wield requires buying two copies.
   - Expected: Choosing either slot equips the purchased weapon there and removes one purchased copy from inventory.
-- [ ] Buy two copies of a dual-wieldable weapon.
+- [x] Buy two copies of a dual-wieldable weapon in pygame.
   - Expected: The equip prompt offers `Main Hand`, `OffHand`, `Dual Wield`, and `Cancel`.
   - Expected: `Dual Wield` equips one copy in each hand and leaves any extra purchased copies in inventory.
 - [ ] Take hits while wearing each ultimate armor reward.
@@ -905,6 +927,10 @@ remain the prompts; the evidence ledger is the running decision record.
 - [x] Open a chest or reward popup that grants loot.
   - Expected: Loot entries show large artwork beside the item name, description, and stats.
   - Expected: Empty chest and unlock prompts are unchanged.
+- [x] Reopen a chest that has already been opened.
+  - Expected: The chest reports that it has already been opened and does not regenerate loot, trigger combat, show a loot popup, or mutate inventory.
+- [x] Collect a relic from a relic room and interact with the room again.
+  - Expected: The first interaction uses relic-specific discovery text, grants the relic, sets the room read state, and restores HP/MP; repeat interaction does not duplicate the relic or restoration.
 - [ ] Simulate or create an item with no exact render mapping.
   - Expected: The render manager falls back through icon mapping, category/slot, and then the generated fallback surface without blocking gameplay.
 - [x] Save and reload after viewing item artwork.
@@ -919,6 +945,9 @@ remain the prompts; the evidence ledger is the running decision record.
 - [x] Inspect the combat target panel while Sight is active and inactive.
   - Expected: Enemy sprite and name remain visible.
   - Expected: HP, weaknesses, resistances, and status icons appear only when combat visibility rules allow them.
+  - Expected: Invisible enemies explain whether details are hidden without Sight or revealed by Sight.
+- [x] Apply or simulate Bleed on a construct enemy in pygame combat.
+  - Expected: Pygame combat presentation uses `Oil Leak` wording/icon text for the construct while core mechanics, saves, and reports still use canonical `Bleed`.
 - [ ] Verify enemy sprite lookup does not affect saves.
   - Expected: Save/load data is unchanged.
   - Expected: Combat panels, enemy tokens, and dungeon boss navigation figures use `enemy_combat_sprites/`.
@@ -929,6 +958,7 @@ remain the prompts; the evidence ledger is the running decision record.
 - [x] Review the generated enemy combat sprite sheet.
   - Expected: `src/ui_pygame/assets/enemy_combat_sprites/enemy_combat_sprite_review_sheet.png` shows every sprite on a neutral dungeon background.
   - Expected: Sprites have transparent backgrounds, clean silhouettes, no rectangular cards, no labels, and no clipping.
+  - Expected: Quasit is visually distinct from Imp, with green warted skin, spiky horns, barbed tail, and long clawed digits.
 - [x] Start combat against Skeleton, Giant Rat, an elemental such as Ice Myrmidon, Dragon, Demon, boss fallback, and generic fallback enemies.
   - Expected: Center combat uses `EnemyCombatSpriteManager` sprites from `enemy_combat_sprites/`.
   - Expected: Enemy portraits, enemy render artwork, and enemy tokens do not appear as the center enemy body.

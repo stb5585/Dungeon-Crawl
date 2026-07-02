@@ -61,6 +61,26 @@
   policy coverage, save-preview portraits, Mad Waitress dungeon cue/SFX hooks,
   and the Minotaur approach bone pile; added measurement targets for deferred
   Footpad, drop-rate, multi-strike, and Enfeeble tuning.
+- Finished the Mouse Support V1 shared-layer pass for pygame NPC/quest text,
+  bounty/content selection lists, read-only item boxes, and reusable popup-menu
+  row hover/click/wheel behavior.
+- Shipped pygame Shop Polish V1 buy/equip clarity with replacement previews,
+  stat/no-stat comparison lines, dual-wield copy guidance, and inventory-safe
+  cancel/failure handling.
+- Closed Dungeon Quick Wins V1 with regression coverage for one-and-done
+  chests, relic-specific discovery text, soft active-quest encounter bias, and
+  the persistent pygame low-health dungeon cue.
+- Shipped Enemy Identity Presentation V1 with Sight-gated invisible target
+  notes, Mad Waitress form-change readability, and construct-facing `Oil Leak`
+  wording while keeping canonical `Bleed` mechanics unchanged.
+- Added the remaining-improvement balance baseline wrapper, dry-run summary
+  coverage, and ignored timestamped report outputs so Footpad, drop-rate,
+  multi-strike, and Enfeeble tuning remain evidence-gated.
+- Remade the Quasit combat sprite and added active/inactive Warp Point dungeon
+  art with review sheets and fallback-preserving renderer coverage.
+- Added saved, progress-gated bounty-board restocks so completed boards refill
+  intermittently after enough steps, enemy defeats, or a level gain instead of
+  refreshing immediately.
 
 ### Promotion Class Kits
 

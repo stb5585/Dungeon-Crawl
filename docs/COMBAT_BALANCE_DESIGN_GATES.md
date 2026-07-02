@@ -69,11 +69,18 @@ and gates future combat or balance changes behind explicit one-page specs.
 Canonical report commands for later validation:
 
 ```bash
+./.venv/bin/python tools/run_remaining_balance_baseline.py --dry-run
+./.venv/bin/python tools/run_remaining_balance_baseline.py
 ./.venv/bin/python tools/run_balance_suite.py --tier base --level 10 --iters 30 --seed 1337
 ./.venv/bin/python tools/run_balance_suite.py --tier first --level 20 --iters 30 --seed 1337
 ./.venv/bin/python tools/run_balance_suite.py --tier second --level 30 --iters 30 --seed 1337
 ./.venv/bin/python tools/run_balance_suite.py --tier all --level 20 --iters 30 --seed 1337 --races Human Elf "Half Elf" "Half Giant" Gnome Dwarf "Half Orc" --delta --baseline-race Human
 ```
+
+The wrapper writes timestamped text and JSON summaries under
+`reports/balance_baselines/` and includes the deferred
+`remaining_improvement_tuning_report()` target list. The report directory is
+ignored so local baseline runs do not dirty source control.
 
 Report questions to answer before changing balance values:
 

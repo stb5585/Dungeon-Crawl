@@ -506,10 +506,62 @@ class DungeonHUD:
             benefits.append(secondary)
         return f"{aspect} Totem", ", ".join(benefits) or "Active"
 
+    def _class_kit_feature_color(self, label: str) -> tuple[int, int, int]:
+        if label in {"Ring Ready", "Ring Preserve"}:
+            return (248, 226, 142)
+        if label in {"Fortune", "Threads", "Devotion", "Prayer", "Ki", "Crescendo"}:
+            return (230, 205, 120)
+        if label in {"Misfortune", "Backlash", "Death Mark", "Corruption"}:
+            return (220, 150, 150)
+        if label in {"Aerial Tempo", "Arcane Tempo", "Revelation", "Stolen Charge", "Conduit"}:
+            return (170, 210, 255)
+        if label in {"Companion", "Summon Bond", "Command", "Patron", "Echo"}:
+            return (170, 210, 255)
+        return self.text_color
+
+    @staticmethod
+    def _class_kit_row_bucket(label: str) -> int:
+        if label == "Ring Preserve":
+            return 0
+        if label == "Ring Ready":
+            return 1
+        if label in {
+            "Threads",
+            "Threaded",
+            "Backlash",
+            "Eclipse",
+            "Blade Charge",
+            "Arcane Tempo",
+            "Momentum",
+            "Conviction",
+            "Aerial Tempo",
+            "Resolve",
+            "Guard Stance",
+            "Fortune",
+            "Misfortune",
+            "Jinx",
+            "Revelation",
+            "Death Mark",
+            "Stolen Charge",
+            "Devotion",
+            "Prayer",
+            "Ki",
+            "Crescendo",
+            "Harmony",
+            "Command",
+            "Totem",
+            "Conduit",
+        }:
+            return 2
+        return 4
+
     def _combat_feature_lines(self, player_char, enemy=None) -> list[tuple[str, str, tuple[int, int, int]]]:
-        lines: list[tuple[str, str, tuple[int, int, int]]] = []
+        class_line: tuple[str, str, tuple[int, int, int]]
+        active_rows: list[tuple[str, str, tuple[int, int, int]]] = []
+        rich_rows: list[tuple[str, str, tuple[int, int, int]]] = []
+        persistent_rows: list[tuple[str, str, tuple[int, int, int]]] = []
         cls_name = getattr(getattr(player_char, "cls", None), "name", "Adventurer")
-        lines.append(("Class", cls_name, self.text_color))
+        class_line = ("Class", cls_name, self.text_color)
 
         familiar = getattr(player_char, "familiar", None)
         if familiar:
@@ -517,8 +569,8 @@ class DungeonHUD:
             spec = getattr(familiar, "spec", "")
             level = self._level_value(familiar)
             suffix = f"{spec} Lv {level}" if spec and level is not None else spec or (f"Lv {level}" if level is not None else "Ready")
-            lines.append(("Familiar", familiar_name, (170, 210, 255)))
-            lines.append(("Bond", suffix, self.text_color))
+            rich_rows.append(("Familiar", familiar_name, (170, 210, 255)))
+            rich_rows.append(("Bond", suffix, self.text_color))
 
         summons = getattr(player_char, "summons", {}) or {}
         active_summons = []
@@ -531,35 +583,41 @@ class DungeonHUD:
             summary = ", ".join(active_summons[:2])
             if len(active_summons) > 2:
                 summary += f" +{len(active_summons) - 2}"
-            lines.append(("Summons", summary, (170, 210, 255)))
+            rich_rows.append(("Summons", summary, (170, 210, 255)))
 
         totem = self._totem_effect(player_char)
         if totem:
             label, benefits = self._totem_summary(totem)
-            lines.append(("Totem", label, (230, 205, 120)))
-            lines.append(("Benefit", benefits, self.text_color))
-            lines.append(("Turns", getattr(totem, "duration", 0), self.text_color))
+            rich_rows.append(("Totem", label, (230, 205, 120)))
+            rich_rows.append(("Benefit", benefits, self.text_color))
+            rich_rows.append(("Turns", getattr(totem, "duration", 0), self.text_color))
 
         class_effects = getattr(player_char, "class_effects", {}) or {}
         for name, effect in class_effects.items():
             if getattr(effect, "active", False):
-                lines.append((name, f"{getattr(effect, 'duration', 0)} turns", (200, 190, 255)))
-
-        if cls_name in {"Thief", "Rogue"}:
-            state = promotion_kits.combat_state(player_char)
-            fortune = int(state.get("fortune", 0) or 0)
-            misfortune = int(state.get("misfortune", 0) or 0)
-            lines.append(("Fortune", f"{fortune}/{promotion_kits.cap_for(player_char, 'fortune')}", (230, 205, 120)))
-            lines.append(("Misfortune", f"{misfortune}/{promotion_kits.cap_for(player_char, 'misfortune')}", (220, 150, 150)))
+                rich_rows.append((name, f"{getattr(effect, 'duration', 0)} turns", (200, 190, 255)))
 
         try:
             guard_stacks = int(getattr(player_char, "evasive_guard_stacks", 0) or 0)
             skills = getattr(player_char, "spellbook", {}).get("Skills", {})
             if "Evasive Guard" in skills and guard_stacks > 0:
-                lines.append(("Evasive Guard", f"{min(3, guard_stacks)} stack(s)", (170, 210, 255)))
+                rich_rows.append(("Evasive Guard", f"{min(3, guard_stacks)} stack(s)", (170, 210, 255)))
         except (AttributeError, TypeError, ValueError):
             pass
 
+        rich_labels = {label for label, _value, _color in rich_rows}
+        for label, value in promotion_kits.status_summary_rows(player_char):
+            if label in rich_labels:
+                continue
+            row = (label, value, self._class_kit_feature_color(label))
+            bucket = self._class_kit_row_bucket(label)
+            if bucket < 3:
+                active_rows.append(row)
+            else:
+                persistent_rows.append(row)
+        active_rows.sort(key=lambda row: self._class_kit_row_bucket(row[0]))
+
+        lines = [class_line, *active_rows, *rich_rows, *persistent_rows]
         if len(lines) == 1:
             enemy_name = getattr(enemy, "name", "Enemy")
             lines.append(("Target", enemy_name, self.text_color))

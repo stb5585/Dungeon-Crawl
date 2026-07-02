@@ -398,6 +398,28 @@ def test_dungeon_renderer_applies_low_health_vignette_only_when_critical():
     pygame.quit()
 
 
+def test_dungeon_renderer_render_view_invokes_low_health_overlay(monkeypatch):
+    pygame.init()
+    screen = pygame.display.set_mode((640, 480))
+    presenter = DummyPresenter(width=640, height=480, screen=screen)
+    renderer = DungeonRenderer(presenter)
+    player = SimpleNamespace(health=SimpleNamespace(current=5, max=20))
+    calls = []
+
+    monkeypatch.setattr(renderer.scene_renderer, "render", lambda player_char, world_dict: calls.append(("scene", player_char, world_dict)))
+    monkeypatch.setattr(renderer.overlays, "render_vignette", lambda: calls.append(("vignette",)))
+    monkeypatch.setattr(renderer.overlays, "render_low_health_vignette", lambda player_char: calls.append(("low-health", player_char)))
+
+    renderer.render_dungeon_view(player, {"world": True})
+
+    assert calls == [
+        ("scene", player, {"world": True}),
+        ("vignette",),
+        ("low-health", player),
+    ]
+    pygame.quit()
+
+
 def test_texture_library_does_not_tile_ladder_pit_panels():
     pygame.init()
     textures = TextureLibrary()
@@ -519,11 +541,15 @@ def test_texture_library_loads_dungeon_texture_manifest():
 
     assert "floor_crystal" in textures.texture_paths
     assert "crystal_cluster" in textures.special_texture_paths
+    assert "warp_point_active" in textures.special_texture_paths
+    assert "warp_point_inactive" in textures.special_texture_paths
     assert textures.get_texture("floor_crystal").get_size() == (512, 512)
     assert textures.get_texture("door_open").get_at((256, 330)).a == 0
     assert textures.get_texture("door_open").get_at((256, 490)).a == 0
     assert max(textures.get_special_texture("crystal_cluster", size=64).get_size()) == 64
     assert textures.get_special_texture("dead_soldier_item") is not None
+    assert textures.get_special_texture("warp_point_active") is not None
+    assert textures.get_special_texture("warp_point_inactive") is not None
 
     pygame.quit()
 
@@ -2306,6 +2332,30 @@ def test_scene_renderer_sizes_stairs_down_from_floor_width(monkeypatch):
     pygame.quit()
 
 
+def test_scene_renderer_scales_bone_pile_larger_than_other_decorative_props(monkeypatch):
+    pygame.init()
+    screen = pygame.display.set_mode((640, 480))
+    presenter = DummyPresenter(width=640, height=480, screen=screen)
+    scene_renderer = SceneRenderer(presenter, TextureLibrary())
+    requested_sizes = []
+    sprite = pygame.Surface((32, 32), pygame.SRCALPHA)
+    sprite.fill((164, 150, 126, 255))
+
+    def fake_get_special_texture(texture_key, size=None):
+        requested_sizes.append((texture_key, size))
+        return sprite
+
+    monkeypatch.setattr(scene_renderer.textures, "get_special_texture", fake_get_special_texture)
+
+    rect = pygame.Rect(100, 120, 180, 100)
+    scene_renderer._render_floor_sprite("bone_pile", rect, darkness=0, depth=1, kind="decorative_prop")
+    scene_renderer._render_floor_sprite("rubble", rect, darkness=0, depth=1, kind="decorative_prop")
+
+    assert requested_sizes == [("bone_pile", 96), ("rubble", 62)]
+
+    pygame.quit()
+
+
 def test_scene_renderer_places_center_ladder_down_on_next_floor_slot():
     pygame.init()
     screen = pygame.display.set_mode((640, 480))
@@ -3271,7 +3321,7 @@ def test_scene_renderer_renders_migrated_special_tile_sprites():
     assert ("empty_golden_chalice_altar", 96) in special_calls
     assert ("unobtainium", 72) in special_calls
     assert ("secret_shop", None) in special_calls
-    assert ("teleporter", 172) in special_calls
+    assert ("warp_point_inactive", 172) in special_calls
     assert ("rotator", 89) in special_calls
     assert ("stairs_down", 184) in special_calls
     assert ("stairs_down", None) not in special_calls
@@ -3600,6 +3650,36 @@ def test_scene_renderer_renders_active_warp_point_with_active_sprite():
     pygame.quit()
 
 
+def test_scene_renderer_uses_warp_point_state_assets_and_teleporter_fallback():
+    pygame.init()
+    screen = pygame.display.set_mode((640, 480))
+    presenter = DummyPresenter(width=640, height=480, screen=screen)
+    scene_renderer = SceneRenderer(presenter, TextureLibrary())
+
+    scene_renderer.player_char = DummyPlayer(warp_point=True)
+    assert scene_renderer._warp_point_sprite_key() == "warp_point_active"
+
+    scene_renderer.player_char = DummyPlayer(warp_point=False)
+    assert scene_renderer._warp_point_sprite_key() == "warp_point_inactive"
+
+    scene_renderer.player_char = DummyPlayer(warp_point=True)
+    scene_renderer.textures.special_texture_paths.pop("warp_point_active", None)
+    assert scene_renderer._warp_point_sprite_key() == "teleporter"
+
+    pygame.quit()
+
+
+def test_warp_point_art_review_sheet_builder_smoke(tmp_path):
+    from tools.build_warp_point_art_sheet import DEFAULT_SPECIAL_ROOT, draw_review_sheet
+
+    output = tmp_path / "warp_point_sheet.png"
+
+    draw_review_sheet(DEFAULT_SPECIAL_ROOT, output)
+
+    assert output.exists()
+    assert output.stat().st_size > 0
+
+
 def test_scene_renderer_centers_warp_point_effects_on_sprite():
     pygame.init()
     screen = pygame.display.set_mode((640, 480))
@@ -3637,8 +3717,8 @@ def test_scene_renderer_scales_warp_point_down_with_distance():
     scene_renderer._render_special_tile(WarpPoint(), rect, darkness=0.0, depth=1)
     scene_renderer._render_special_tile(WarpPoint(), rect, darkness=0.0, depth=2)
 
-    teleporter_sizes = [size for texture_key, size in special_calls if texture_key == "teleporter"]
-    assert teleporter_sizes[0] > teleporter_sizes[1]
+    warp_sizes = [size for texture_key, size in special_calls if texture_key == "warp_point_active"]
+    assert warp_sizes[0] > warp_sizes[1]
 
     pygame.quit()
 
@@ -3666,7 +3746,7 @@ def test_scene_renderer_renders_current_tile_warp_point_on_front_floor_band():
 
     def recording_render_center_floor_warp_point(quad, darkness, depth):
         nonlocal teleporter_rect
-        sprite = scene_renderer._trim_transparent_sprite(scene_renderer.textures.get_special_texture("teleporter"))
+        sprite = scene_renderer._trim_transparent_sprite(scene_renderer.textures.get_special_texture(scene_renderer._warp_point_sprite_key()))
         teleporter_rect = scene_renderer._get_center_floor_warp_point_rect(quad, sprite)
         return original_render_center_floor_warp_point(quad, darkness, depth)
 
@@ -3687,7 +3767,7 @@ def test_scene_renderer_renders_current_tile_warp_point_on_front_floor_band():
         depth=1,
     )
     slot_quad = scene_renderer._get_center_floor_slot_quad(zone, depth=1, slot_suffix="x0")
-    sprite = scene_renderer._trim_transparent_sprite(scene_renderer.textures.get_special_texture("teleporter"))
+    sprite = scene_renderer._trim_transparent_sprite(scene_renderer.textures.get_special_texture(scene_renderer._warp_point_sprite_key()))
     expected_rect = scene_renderer._get_center_floor_warp_point_rect(slot_quad, sprite)
     assert teleporter_rect == expected_rect
 

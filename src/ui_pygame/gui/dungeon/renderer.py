@@ -1707,7 +1707,7 @@ class SceneRenderer:
 
         if "WarpPoint" in tile_type:
             self._render_floor_sprite(
-                "teleporter",
+                self._warp_point_sprite_key(),
                 rect,
                 darkness=darkness,
                 depth=depth,
@@ -1902,6 +1902,7 @@ class SceneRenderer:
         lateral_view: bool = False,
     ) -> None:
         size_ratio = self._get_floor_sprite_ratio(depth, kind)
+        size_ratio *= self._get_floor_sprite_texture_scale(texture_key)
         if lateral_view:
             size_ratio *= 0.9
         sprite_basis = rect.width if kind == "stairs_down" else rect.height
@@ -2309,7 +2310,9 @@ class SceneRenderer:
         return effect_rect
 
     def _render_center_floor_warp_point(self, quad: Quad, darkness: float, depth: int) -> None:
-        sprite = self.textures.get_special_texture("teleporter")
+        sprite = self.textures.get_special_texture(self._warp_point_sprite_key())
+        if sprite is None:
+            sprite = self.textures.get_special_texture("teleporter")
         if sprite is None:
             return
 
@@ -2325,6 +2328,22 @@ class SceneRenderer:
                 darkness=darkness,
                 depth=depth,
             )
+
+    @staticmethod
+    def _special_texture_available(texture_library, texture_key: str) -> bool:
+        rel_path = getattr(texture_library, "special_texture_paths", {}).get(texture_key)
+        if not rel_path:
+            return False
+        resolver = getattr(texture_library, "_resolve_asset_path", None)
+        if not callable(resolver):
+            return True
+        return os.path.exists(resolver(rel_path))
+
+    def _warp_point_sprite_key(self) -> str:
+        preferred = "warp_point_active" if bool(getattr(self.player_char, "warp_point", False)) else "warp_point_inactive"
+        if self._special_texture_available(self.textures, preferred):
+            return preferred
+        return "teleporter"
 
     @staticmethod
     def _get_center_floor_warp_point_rect(quad: Quad, sprite: pygame.Surface) -> pygame.Rect:
@@ -2382,6 +2401,12 @@ class SceneRenderer:
         if kind == "decorative_prop":
             return {1: 0.62, 2: 0.50, 3: 0.38}.get(depth, 0.38)
         return {1: 1.0, 2: 0.8, 3: 0.6}.get(depth, 0.6)
+
+    @staticmethod
+    def _get_floor_sprite_texture_scale(texture_key: str) -> float:
+        return {
+            "bone_pile": 1.55,
+        }.get(texture_key, 1.0)
 
     @staticmethod
     def _get_decorative_floor_sprite_key(tile_type: str) -> str | None:

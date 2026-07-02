@@ -7,6 +7,8 @@ from types import SimpleNamespace
 
 import pygame
 
+from src.core import items
+from src.core.classes import class_rings, promotion_kits
 from src.ui_pygame.gui import dungeon_hud
 from src.ui_pygame.gui.status_icons import prioritize_status_icons
 
@@ -586,8 +588,10 @@ def test_combat_focus_panel_shows_familiar_summons_and_totem(monkeypatch):
     assert ("Familiar", "Izulu", (170, 210, 255)) in lines
     assert any(label == "Summons" and value == "Fuath" for label, value, _color in lines)
     assert ("Totem", "Fire Totem", (230, 205, 120)) in lines
+    assert sum(1 for label, _value, _color in lines if label == "Totem") == 1
     assert any(label == "Benefit" and "+25% ATK" in value and "Elemental" in value for label, value, _color in lines)
     assert ("Evasive Guard", "2 stack(s)", (170, 210, 255)) in lines
+    assert hud._truncate_text(bundle.small_font, "A very long class-kit readiness value", 48).endswith("...")
 
     player.cls = SimpleNamespace(name="Rogue")
     player._promotion_kit_combat = {"fortune": 2, "misfortune": 1}
@@ -595,10 +599,43 @@ def test_combat_focus_panel_shows_familiar_summons_and_totem(monkeypatch):
     assert ("Fortune", "2/3", (230, 205, 120)) in lines
     assert ("Misfortune", "1/3", (220, 150, 150)) in lines
 
+    player.cls = SimpleNamespace(name="Astromancer")
+    player.equipment["Ring"] = items.ClassRing()
+    class_rings.ensure_state(player)["awakened"]["Astromancer"] = True
+    player.equipment["Ring"].class_mod(player)
+    player._promotion_kit_combat = {"foresight_threads": 1, "threaded_cast_pending": True}
+    lines = hud._combat_feature_lines(player, enemy=SimpleNamespace(name="Jester"))
+    assert ("Threads", "1/3", (230, 205, 120)) in lines
+    assert ("Threaded", "Pending", hud.text_color) in lines
+    assert ("Ring Ready", "Constellation Cycle", (248, 226, 142)) in lines
+
+    player.cls = SimpleNamespace(name="Dragoon")
+    player._promotion_kit_combat = {"aerial_tempo": 2}
+    lines = hud._combat_feature_lines(player, enemy=SimpleNamespace(name="Jester"))
+    assert ("Aerial Tempo", "2/3", (170, 210, 255)) in lines
+
+    player.cls = SimpleNamespace(name="Beast Master")
+    player.tamed_companion = {"active": True, "name": "Wolf", "bond": 50}
+    promotion_kits.combat_state(player)["pending_companion_command"] = "Pack Strike"
+    lines = hud._combat_feature_lines(player, enemy=SimpleNamespace(name="Jester"))
+    assert any(label == "Companion" and "Battle-Trained" in value for label, value, _color in lines)
+    assert ("Command", "Pack Strike", (170, 210, 255)) in lines
+
+    player.cls = SimpleNamespace(name="Templar")
+    player.equipment["Ring"] = items.ClassRing()
+    class_rings.ensure_state(player)["awakened"]["Templar"] = True
+    player.equipment["Ring"].class_mod(player)
+    player.familiar = SimpleNamespace(name="Izulu", spec="Mephit", level=SimpleNamespace(level=3))
+    player._promotion_kit_combat = {"devotion": 2}
+    lines = hud._combat_feature_lines(player, enemy=SimpleNamespace(name="Jester"))
+    visible_labels = [label for label, _value, _color in lines[:7]]
+    assert visible_labels[:4] == ["Class", "Ring Preserve", "Ring Ready", "Devotion"]
+    assert visible_labels.index("Ring Ready") < visible_labels.index("Familiar")
+
     y = hud._render_combat_features(player, SimpleNamespace(name="Jester"), 120, feature_height=190)
     assert y > 120
     assert "Combat Focus" in bundle.stat_font.render_calls
-    assert "Totem:" in bundle.small_font.render_calls
+    assert "Ring Preserve:" in bundle.small_font.render_calls
     assert bundle.draw_circle_calls
 
     bundle.screen.blit_calls = []

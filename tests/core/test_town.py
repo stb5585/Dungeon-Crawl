@@ -50,6 +50,47 @@ def test_create_bounty_skips_existing_targets_and_can_grant_reward(monkeypatch):
     assert bounty["reward"] == "Reward-3"
 
 
+def test_create_bounty_force_enemy_collision_falls_back_to_catalog(monkeypatch):
+    from src.core import town
+
+    board = town.BountyBoard()
+    game = _make_game(bounty_quests={"Goblin": {"Completed": False}}, player_level=1, luck=0)
+
+    monkeypatch.setattr("src.core.town.enemies.random_enemy", lambda level: SimpleNamespace(name="Goblin", experience=10))
+    monkeypatch.setattr("src.core.town.random.choice", lambda candidates: candidates[0])
+    monkeypatch.setattr("src.core.town.random.randint", lambda a, b: 0 if a == 0 else a)
+
+    bounty = board.create_bounty(game)
+
+    assert bounty["enemy"].name != "Goblin"
+
+
+def test_generate_bounties_force_enemy_can_fill_multiple_slots(monkeypatch):
+    from src.core import town
+
+    board = town.BountyBoard()
+    game = _make_game(player_level=1, luck=0)
+
+    monkeypatch.setattr("src.core.town.enemies.random_enemy", lambda level: SimpleNamespace(name="Goblin", experience=10))
+    monkeypatch.setattr("src.core.town.random.choice", lambda candidates: candidates[0])
+
+    def fake_randint(a, b):
+        if (a, b) == (1, 4):
+            return 2
+        if a == 0:
+            return 0
+        return a
+
+    monkeypatch.setattr("src.core.town.random.randint", fake_randint)
+
+    board.generate_bounties(game)
+
+    names = [bounty["enemy"].name for bounty in board.bounties]
+    assert len(names) == 2
+    assert names[0] == "Goblin"
+    assert names[1] != "Goblin"
+
+
 def test_generate_bounties_appends_requested_count(monkeypatch):
     from src.core import town
 
@@ -62,6 +103,111 @@ def test_generate_bounties_appends_requested_count(monkeypatch):
     board.generate_bounties(game)
 
     assert len(board.bounties) == 3
+
+
+def test_bounty_board_records_initial_restock_baseline(monkeypatch):
+    from src.core import town
+
+    board = town.BountyBoard()
+    game = _make_game()
+    game.player_char.gameplay_stats = {"steps_taken": 12, "enemies_defeated": 2}
+
+    monkeypatch.setattr("src.core.town.random.randint", lambda _a, _b: 1)
+    monkeypatch.setattr(board, "create_bounty", lambda _game: {"name": "Goblin Hunt"})
+
+    assert board.generate_bounties(game) is True
+
+    assert board.bounties == [{"name": "Goblin Hunt"}]
+    assert game.player_char.bounty_board_state == {
+        "initialized": True,
+        "last_restock_level": 20,
+        "last_restock_steps": 12,
+        "last_restock_enemies_defeated": 2,
+    }
+
+
+def test_bounty_board_does_not_restock_when_visible_or_active(monkeypatch):
+    from src.core import town
+
+    game = _make_game()
+    game.bounties = {"Goblin": {"name": "Goblin Hunt"}}
+    game.player_char.bounty_board_state = town.default_bounty_board_state()
+    game.player_char.gameplay_stats = {"steps_taken": 999, "enemies_defeated": 99}
+    board = town.BountyBoard()
+    monkeypatch.setattr(board, "create_bounty", lambda _game: {"name": "New Hunt"})
+
+    assert board.generate_bounties(game) is False
+    assert board.bounties == []
+    assert game.player_char.bounty_board_state["initialized"] is True
+
+    game = _make_game(bounty_quests={"Goblin": [{"enemy": "Goblin"}, 0, False]})
+    game.player_char.gameplay_stats = {"steps_taken": 999, "enemies_defeated": 99}
+    board = town.BountyBoard()
+    monkeypatch.setattr(board, "create_bounty", lambda _game: {"name": "New Hunt"})
+
+    assert board.generate_bounties(game) is False
+    assert board.bounties == []
+    assert game.player_char.bounty_board_state["initialized"] is True
+
+
+def test_bounty_board_waits_for_progress_before_restock(monkeypatch):
+    from src.core import town
+
+    board = town.BountyBoard()
+    game = _make_game()
+    game.player_char.gameplay_stats = {"steps_taken": 199, "enemies_defeated": 7}
+    game.player_char.bounty_board_state = {
+        "initialized": True,
+        "last_restock_level": 20,
+        "last_restock_steps": 0,
+        "last_restock_enemies_defeated": 0,
+    }
+    monkeypatch.setattr("src.core.town.random.randint", lambda _a, _b: 1)
+    monkeypatch.setattr(board, "create_bounty", lambda _game: {"name": "New Hunt"})
+
+    assert board.generate_bounties(game) is False
+    assert board.bounties == []
+
+    game.player_char.gameplay_stats["steps_taken"] = town.BOUNTY_RESTOCK_STEP_THRESHOLD
+    assert board.generate_bounties(game) is True
+    assert board.bounties == [{"name": "New Hunt"}]
+
+
+def test_bounty_board_restock_can_be_triggered_by_defeats_or_level(monkeypatch):
+    from src.core import town
+
+    monkeypatch.setattr("src.core.town.random.randint", lambda _a, _b: 1)
+
+    defeat_board = town.BountyBoard()
+    defeat_game = _make_game()
+    defeat_game.player_char.gameplay_stats = {
+        "steps_taken": 0,
+        "enemies_defeated": town.BOUNTY_RESTOCK_ENEMY_THRESHOLD,
+    }
+    defeat_game.player_char.bounty_board_state = {
+        "initialized": True,
+        "last_restock_level": 20,
+        "last_restock_steps": 0,
+        "last_restock_enemies_defeated": 0,
+    }
+    monkeypatch.setattr(defeat_board, "create_bounty", lambda _game: {"name": "Defeat Hunt"})
+
+    assert defeat_board.generate_bounties(defeat_game) is True
+    assert defeat_board.bounties == [{"name": "Defeat Hunt"}]
+
+    level_board = town.BountyBoard()
+    level_game = _make_game(player_level=21)
+    level_game.player_char.gameplay_stats = {"steps_taken": 0, "enemies_defeated": 0}
+    level_game.player_char.bounty_board_state = {
+        "initialized": True,
+        "last_restock_level": 20,
+        "last_restock_steps": 0,
+        "last_restock_enemies_defeated": 0,
+    }
+    monkeypatch.setattr(level_board, "create_bounty", lambda _game: {"name": "Level Hunt"})
+
+    assert level_board.generate_bounties(level_game) is True
+    assert level_board.bounties == [{"name": "Level Hunt"}]
 
 
 def test_bounty_options_and_accept_quest_handle_missing_names():

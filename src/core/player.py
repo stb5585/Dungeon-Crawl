@@ -24,7 +24,7 @@ from .constants import (
 
 import numpy
 
-from . import abilities, enemies, items
+from . import abilities, enemies, items, town
 from .classes import (
     archdruid,
     bard,
@@ -372,10 +372,12 @@ class Player(Character):
         self.level = level
         self.resistance = resistance
         self.sex = "Male"
+        self.portrait_variant = 0
         self.inventory = {}
         self.special_inventory = {}
         self.world_dict = {}
         self.quest_dict = {'Bounty': {}, 'Main': {}, 'Side': {}}
+        self.bounty_board_state = town.default_bounty_board_state()
         self.kill_dict = {}
         self.bestiary = {}
         self.storage = {}

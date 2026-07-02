@@ -496,9 +496,12 @@ def test_buy_with_shop_screen_equips_purchased_weapon_to_chosen_slot(monkeypatch
     header = FakeSelectionPopup.created[-1][1]
     assert "Purchased 1x Rapier. Equip now?" in header
     assert "Cancel keeps the purchased item in inventory." in header
+    assert "Main Hand: replaces empty" in header
+    assert "no stat change" in header
     assert "OffHand: replaces Buckler" in header
     assert "Attack  +5" in header
     assert "Defense  -2" in header
+    assert "Dual Wield: buy 2 copies to equip both hands." in header
     assert any("Equipped Rapier to OffHand." in message for message, _buttons in FakePopup.messages)
 
 
@@ -543,7 +546,7 @@ def test_buy_with_shop_screen_can_dual_wield_multi_quantity_purchase(monkeypatch
     itemdict = {"Daggers": [items.Dirk]}
 
     FakeShopScreen.item_sequences = [[("Dirk", item, 10, 0), None]]
-    FakeQuantityPopup.responses = [2]
+    FakeQuantityPopup.responses = [3]
     FakePopup.responses = [True]
     FakeSelectionPopup.responses = ["Dual Wield"]
 
@@ -554,15 +557,16 @@ def test_buy_with_shop_screen_can_dual_wield_multi_quantity_purchase(monkeypatch
 
     manager._buy_with_shop_screen(itemdict, "Weapons")
 
-    assert manager.player_char.gold == 100
+    assert manager.player_char.gold == 90
     assert manager.player_char.equipment["Weapon"].name == "Dirk"
     assert manager.player_char.equipment["OffHand"].name == "Dirk"
-    assert "Dirk" not in manager.player_char.inventory
+    assert len(manager.player_char.inventory["Dirk"]) == 1
     assert FakeSelectionPopup.created[-1][2] == ("Main Hand", "OffHand", "Dual Wield", "Cancel")
     header = FakeSelectionPopup.created[-1][1]
-    assert "Purchased 2x Dirk. Equip now?" in header
+    assert "Purchased 3x Dirk. Equip now?" in header
     assert "Cancel keeps every purchased item in inventory." in header
-    assert "Dual Wield:" not in header
+    assert "Dual Wield:" in header
+    assert "uses 2 purchased copies" in header
     assert "Main Hand: replaces empty" in header
     assert "OffHand: replaces empty" in header
     assert any("Equipped Dirk to Main Hand and OffHand." in message for message, _buttons in FakePopup.messages)
@@ -590,6 +594,66 @@ def test_buy_with_shop_screen_cancel_equip_keeps_purchase_in_inventory(monkeypat
     assert manager.player_char.equipment["OffHand"].name == "No OffHand"
     assert len(manager.player_char.inventory["Rapier"]) == 1
     assert not any("Equipped Rapier" in message for message, _buttons in FakePopup.messages)
+
+
+def test_buy_with_shop_screen_preflight_failure_keeps_purchase_in_inventory(monkeypatch):
+    manager = _manager(monkeypatch, gold=120)
+    item = items.Rapier()
+    itemdict = {"Swords": [items.Rapier]}
+    manager.player_char.equipment["OffHand"] = items.Buckler()
+    manager._can_equip_purchase_slot = lambda _item, slot: slot != "OffHand"
+
+    FakeShopScreen.item_sequences = [[("Rapier", item, 10, 0), None]]
+    FakeQuantityPopup.responses = [1]
+    FakePopup.responses = [True]
+    FakeSelectionPopup.responses = ["OffHand"]
+
+    monkeypatch.setattr(shops, "ShopScreen", FakeShopScreen)
+    monkeypatch.setattr("src.ui_pygame.gui.confirmation_popup.QuantityPopup", FakeQuantityPopup)
+    monkeypatch.setattr(shops, "ConfirmationPopup", FakePopup)
+    monkeypatch.setattr(shops, "SelectionPopup", FakeSelectionPopup)
+
+    manager._buy_with_shop_screen(itemdict, "Weapons")
+
+    assert manager.player_char.gold == 110
+    assert manager.player_char.equipment["Weapon"].name == "Bare Hands"
+    assert manager.player_char.equipment["OffHand"].name == "Buckler"
+    assert len(manager.player_char.inventory["Rapier"]) == 1
+    assert any("Could not equip Rapier. It remains in inventory." in message for message, _buttons in FakePopup.messages)
+
+
+def test_buy_with_shop_screen_mid_action_failure_restores_inventory_and_equipment(monkeypatch):
+    manager = _manager(monkeypatch, gold=120)
+    item = items.Dirk()
+    itemdict = {"Daggers": [items.Dirk]}
+    equip_calls = []
+
+    def flaky_equip(slot, purchased_item):
+        equip_calls.append(slot)
+        manager.player_char.equipment[slot] = purchased_item
+        manager.player_char.modify_inventory(purchased_item, subtract=True)
+        return slot != "OffHand"
+
+    manager.player_char.equip = flaky_equip
+
+    FakeShopScreen.item_sequences = [[("Dirk", item, 10, 0), None]]
+    FakeQuantityPopup.responses = [2]
+    FakePopup.responses = [True]
+    FakeSelectionPopup.responses = ["Dual Wield"]
+
+    monkeypatch.setattr(shops, "ShopScreen", FakeShopScreen)
+    monkeypatch.setattr("src.ui_pygame.gui.confirmation_popup.QuantityPopup", FakeQuantityPopup)
+    monkeypatch.setattr(shops, "ConfirmationPopup", FakePopup)
+    monkeypatch.setattr(shops, "SelectionPopup", FakeSelectionPopup)
+
+    manager._buy_with_shop_screen(itemdict, "Weapons")
+
+    assert equip_calls == ["Weapon", "OffHand"]
+    assert manager.player_char.gold == 100
+    assert manager.player_char.equipment["Weapon"].name == "Bare Hands"
+    assert manager.player_char.equipment["OffHand"].name == "No OffHand"
+    assert len(manager.player_char.inventory["Dirk"]) == 2
+    assert any("Could not equip Dirk. It remains in inventory." in message for message, _buttons in FakePopup.messages)
 
 
 def test_format_item_info_and_item_availability_helpers(monkeypatch):

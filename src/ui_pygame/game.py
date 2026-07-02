@@ -591,12 +591,19 @@ class PygameGame:
                 self.enter_dungeon()
 
     def update_bounties(self):
-        """Generate bounties (parity with text-mode game)."""
+        """Generate bounties when the shared restock cadence allows it."""
         from src.core import town
 
+        if getattr(self, "bounties", None):
+            state = town.ensure_bounty_board_state(self.player_char)
+            if not state["initialized"]:
+                town.mark_bounty_board_restock(self.player_char)
+            return
+        self.bounties = {}
         bounty_board = town.BountyBoard()
         bounty_board.generate_bounties(self)
-        self.bounties = {bounty["enemy"].name: bounty for bounty in bounty_board.bounties}
+        if bounty_board.bounties:
+            self.bounties = {bounty["enemy"].name: bounty for bounty in bounty_board.bounties}
     
     def show_intro(self):
         """Show the game introduction story."""

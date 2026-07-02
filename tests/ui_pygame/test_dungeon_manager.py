@@ -675,6 +675,24 @@ def test_interact_chest_covers_unlock_mimic_loot_and_empty_cases(monkeypatch):
     manager._interact_chest(empty, "Chest")
     assert loot_calls[-1][0:2] == ([], "Empty Chest")
 
+    generate_calls = []
+    combat_count = len(combat_calls)
+    loot_count = len(loot_calls)
+    inventory_count = len(player.inventory_calls)
+    opened = SimpleNamespace(
+        open=True,
+        locked=False,
+        loot=lambda: SimpleNamespace(name="Stale Loot"),
+        enemy=None,
+        generate_loot=lambda: generate_calls.append("generated"),
+    )
+    manager._interact_chest(opened, "Chest")
+    assert "This chest has already been opened." in manager.messages
+    assert generate_calls == []
+    assert len(combat_calls) == combat_count
+    assert len(loot_calls) == loot_count
+    assert len(player.inventory_calls) == inventory_count
+
     manager._interact_chest(empty, "Chest")
     assert "This chest has already been opened." in manager.messages
 
@@ -732,9 +750,19 @@ def test_interact_door_relic_warp_terminal_and_room_pickups(monkeypatch):
     game.special_event = lambda name: special_events.append(name)
     manager._interact_relic(relic_tile)
     assert special_events == ["Relic Room"]
+    assert relic_tile.read is True
     assert player.health.current == player.health.max
     assert player.mana.current == player.mana.max
     assert "You found a relic: Relic 2!" in manager.messages
+
+    inventory_count = len(player.inventory_calls)
+    player.health.current = 3
+    player.mana.current = 2
+    manager._interact_relic(relic_tile)
+    assert len(player.inventory_calls) == inventory_count
+    assert player.health.current == 3
+    assert player.mana.current == 2
+    assert manager.messages[-1] == "You already collected the relic from this room."
 
     player.warp_point = True
     warp_tile = SimpleNamespace(warped=True)

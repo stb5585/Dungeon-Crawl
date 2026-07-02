@@ -158,6 +158,33 @@ def test_ui_log_polish_persistent_and_preservation_status_lines():
     assert "Used" in used_status
 
 
+def test_status_summary_rows_are_clean_label_value_pairs():
+    dragoon = _player("Dragoon")
+    promotion_kits.combat_state(dragoon)["aerial_tempo"] = 2
+    assert ("Aerial Tempo", "2/3") in promotion_kits.status_summary_rows(dragoon)
+    assert "Aerial Tempo:" in dragoon._class_kit_status_str()
+
+    archbishop = _player("Archbishop", mana=(100, 100))
+    _awaken_ring(archbishop, "Archbishop")
+    promotion_kits.gain_meter(archbishop, "prayer", 2, "test")
+    archbishop_rows = promotion_kits.status_summary_rows(archbishop)
+    assert ("Prayer", "2/7") in archbishop_rows
+    assert ("Ring Ready", "Divine Intervention") in archbishop_rows
+    assert ("Ring Preserve", "Ready") in archbishop_rows
+
+    demo = _player("Demonologist")
+    demo.demonologist_contracts = demonologist.default_state()
+    demo.demonologist_contracts["unlocked_contracts"] = ["Imp"]
+    demo.demonologist_contracts["active_patron"] = "Imp"
+    demo.demonologist_contracts["corruption"] = 40
+    demo.demonologist_contracts["patron_moods"]["Imp"] = 12
+    demo.demonologist_contracts["imprisoned_familiar"] = {"name": "Ash", "spec": "Arcane"}
+    demo_rows = promotion_kits.status_summary_rows(demo)
+    assert ("Corruption", "40/100") in demo_rows
+    assert ("Patron", "Imp (12)") in demo_rows
+    assert ("Echo", "Ash") in demo_rows
+
+
 def test_ui_log_polish_representative_messages():
     monk = _player("Master Monk")
     cap = promotion_kits.cap_for(monk, "ki")

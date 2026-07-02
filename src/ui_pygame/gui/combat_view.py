@@ -11,7 +11,7 @@ import sys
 
 import pygame
 
-from src.core.classes import astromancer
+from src.core.classes import astromancer, promotion_kits
 from src.ui_pygame.assets.enemy_combat_sprite_manager import (
     EnemyCombatSpriteManager,
     get_enemy_combat_sprite_manager,
@@ -19,6 +19,11 @@ from src.ui_pygame.assets.enemy_combat_sprite_manager import (
 from src.ui_pygame.assets.enemy_token_manager import get_enemy_token_manager
 from src.ui_pygame.assets.player_token_manager import get_player_token_manager
 
+from .enemy_presentation import (
+    effect_icon_label,
+    invisible_target_note,
+    present_status_log_line,
+)
 from .status_icons import (
     STATUS_ICON_COLORS,
     combine_duplicate_status_icons,
@@ -180,6 +185,7 @@ class CombatView:
         self._suppress_logged_telegraph_banner = False
         self._combat_log_player_name: str | None = None
         self._combat_log_enemy_name: str | None = None
+        self._combat_log_enemy = None
         self._combat_log_revision = 0
         self._combat_log_wrap_cache: dict[tuple[int, int, bool, int], list[CombatLogLine]] = {}
 
@@ -306,6 +312,7 @@ class CombatView:
                 line = self._short_telegraph_message(line)
                 self._active_telegraph_line = line
                 self._suppress_logged_telegraph_banner = False
+            line = present_status_log_line(line, self._combat_log_enemy)
             self.combat_log.append(line)
         while len(self.combat_log) > self.max_log_lines:
             self.combat_log.pop(0)
@@ -573,37 +580,9 @@ class CombatView:
             "disarmed",
             "silenced",
         )
-        class_kit_terms = (
-            "aerial",
-            "arcane larceny",
-            "aspect harmony",
-            "case journal",
-            "crescendo",
-            "death mark",
-            "devotion",
-            "divine intervention",
-            "encore",
-            "foresight",
-            "fortune",
-            "harmony bonus",
-            "ki",
-            "loaded dice",
-            "misfortune",
-            "no-trace",
-            "oath conviction",
-            "ordered blessings",
-            "prayer",
-            "revelation",
-            "resolve",
-            "stolen charge",
-            "threaded cast",
-            "totem resonance",
-            "umbral",
-            "vow affirmation",
-        )
         for line in message.split("\n"):
             line_lower = line.lower()
-            keep_class_kit_line = any(term in line_lower for term in class_kit_terms)
+            keep_class_kit_line = any(term in line_lower for term in promotion_kits.CLASS_KIT_LOG_TERMS)
             if "is affected by" in line_lower:
                 continue
             if not keep_class_kit_line and any(term in line_lower for term in suppress_terms):
@@ -861,7 +840,7 @@ class CombatView:
                 icons.append((self._effect_label(name), name in positive_status))
         for name, effect in character.physical_effects.items():
             if effect.active and name not in skip_effects:
-                icons.append((self._effect_label(name), name in positive_status))
+                icons.append((effect_icon_label(name, self._effect_label(name), character), name in positive_status))
         for name, effect in character.stat_effects.items():
             if name not in skip_effects:
                 icon = stat_effect_status_icon(self._effect_label(name), effect)
@@ -996,6 +975,7 @@ class CombatView:
             self._combat_log_player_name = player_name
             self._combat_log_enemy_name = enemy_name
             self._invalidate_combat_log_wrap_cache()
+        self._combat_log_enemy = enemy
 
     def _combat_log_marker_color(self, line: str, overlay: bool = False) -> tuple[int, int, int]:
         if self._is_telegraph_message(line):
@@ -1516,17 +1496,26 @@ class CombatView:
         name_surf = title_font.render(name, True, self.colors["text"])
         self.screen.blit(name_surf, (panel_rect.left + pad, panel_rect.top + pad))
 
-        art_top = panel_rect.top + pad + 30
+        note = invisible_target_note(enemy, has_sight)
+        if note:
+            note_text = self._truncate_text(body_font, note, panel_w - (pad * 2))
+            note_surf = body_font.render(note_text, True, (210, 196, 150))
+            self.screen.blit(note_surf, (panel_rect.left + pad, panel_rect.top + pad + 28))
+
+        art_top = panel_rect.top + pad + (52 if note else 30)
         art_h = max(110, min(210, panel_h - 150))
         art_rect = pygame.Rect(panel_rect.left + pad, art_top, panel_w - (pad * 2), art_h)
-        try:
-            artwork = self.enemy_combat_sprite_manager.get_scaled_sprite(enemy, art_rect.size)
-        except Exception as exc:  # pragma: no cover - hard runtime fallback for broken external assets
-            print(f"Failed to render enemy combat sprite for {getattr(enemy, 'name', enemy)}: {exc}")
-            artwork = self.enemy_combat_sprite_manager.fallback_surface()
-            artwork = pygame.transform.smoothscale(artwork, art_rect.size)
-        self.screen.blit(artwork, art_rect.topleft)
-        pygame.draw.rect(self.screen, (58, 48, 38), art_rect, 1)
+        if has_sight:
+            try:
+                artwork = self.enemy_combat_sprite_manager.get_scaled_sprite(enemy, art_rect.size)
+            except Exception as exc:  # pragma: no cover - hard runtime fallback for broken external assets
+                print(f"Failed to render enemy combat sprite for {getattr(enemy, 'name', enemy)}: {exc}")
+                artwork = self.enemy_combat_sprite_manager.fallback_surface()
+                artwork = pygame.transform.smoothscale(artwork, art_rect.size)
+            self.screen.blit(artwork, art_rect.topleft)
+            pygame.draw.rect(self.screen, (58, 48, 38), art_rect, 1)
+        else:
+            pygame.draw.rect(self.screen, (32, 32, 38), art_rect, 1)
 
         y = art_rect.bottom + 10
         if has_sight and hasattr(enemy, "health"):
