@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from .base import Job
-from .. import items
 
 
 class Druid(Job):
@@ -32,11 +31,6 @@ class Druid(Job):
             def_plus=2,
             magic_plus=2,
             magic_def_plus=2,
-            equipment={
-                "Weapon": items.SerpentStaff(),
-                "OffHand": items.NoOffHand(),
-                "Armor": items.Cuirboulli(),
-            },
             restrictions={
                 "Weapon": ["Dagger", "Club", "Polearm", "Hammer", "Staff"],
                 "OffHand": ["Tome"],

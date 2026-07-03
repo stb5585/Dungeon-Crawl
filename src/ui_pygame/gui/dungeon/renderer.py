@@ -1505,7 +1505,7 @@ class SceneRenderer:
         if (
             zone is not None
             and next_zone is not None
-            and self._is_floor_sprite_tile(tile)
+            and self._is_floor_sprite_tile(tile, getattr(self, "player_char", None))
             and type(tile).__name__ != "FakeWall"
             and "BossRoom" not in type(tile).__name__
         ):
@@ -1765,7 +1765,13 @@ class SceneRenderer:
             return
 
         if bool(getattr(tile, "rookie_body_marker", False)) or bool(getattr(tile, "dropped_rookie_body", False)):
-            if bool(getattr(tile, "read", False)):
+            player_char = getattr(self, "player_char", None)
+            visible = (
+                not bool(getattr(tile, "read", False))
+                if player_char is None
+                else map_tiles.rookie_body_visible_for_player(player_char, tile)
+            )
+            if not visible:
                 return
             self._render_floor_sprite(
                 "dead_soldier_item",
@@ -2210,11 +2216,13 @@ class SceneRenderer:
         pygame.draw.lines(surface, core_color, False, points, 1)
 
     @staticmethod
-    def _is_floor_sprite_tile(tile) -> bool:
+    def _is_floor_sprite_tile(tile, player_char=None) -> bool:
         if tile is None:
             return False
         if bool(getattr(tile, "rookie_body_marker", False)) or bool(getattr(tile, "dropped_rookie_body", False)):
-            return not bool(getattr(tile, "read", False))
+            if player_char is None:
+                return not bool(getattr(tile, "read", False))
+            return map_tiles.rookie_body_visible_for_player(player_char, tile)
 
         tile_type = type(tile).__name__
         return any(
@@ -2425,6 +2433,22 @@ class SceneRenderer:
             zone = zones[depth]
             darkness = self._get_layer_darkness(depth)
 
+            if not is_wall(visible_depth.center):
+                self._render_surface_blood_overlay(
+                    visible_depth.center,
+                    zone.center_floor.bounding_rect(),
+                    darkness=darkness,
+                    depth=depth,
+                    surface="floor",
+                )
+                self._render_surface_blood_overlay(
+                    visible_depth.center,
+                    zone.center_ceiling.bounding_rect(),
+                    darkness=darkness,
+                    depth=depth,
+                    surface="ceiling",
+                )
+
             if is_wall(visible_depth.center) and not self._is_door_tile(visible_depth.center):
                 self._render_wall_overlay_for_tile(
                     visible_depth.center,
@@ -2450,6 +2474,39 @@ class SceneRenderer:
                     depth=depth,
                     side="right",
                 )
+
+    def _render_surface_blood_overlay(
+        self,
+        tile,
+        rect,
+        darkness: float,
+        depth: int,
+        surface: str,
+    ) -> None:
+        texture_key = self._get_blood_overlay_key(tile, surface)
+        if texture_key is None:
+            return
+
+        if not isinstance(rect, pygame.Rect):
+            rect = pygame.Rect(
+                round(rect.x),
+                round(rect.y),
+                max(1, round(rect.w)),
+                max(1, round(rect.h)),
+            )
+
+        max_size = max(16, round(min(rect.width, rect.height) * (0.42 if surface == "floor" else 0.34)))
+        sprite = self.textures.get_special_texture(texture_key, max_size)
+        if sprite is None:
+            return
+
+        sprite_rect = sprite.get_rect()
+        if surface == "ceiling":
+            sprite_rect.center = (rect.centerx, round(rect.y + rect.height * 0.52))
+        else:
+            sprite_rect.center = (rect.centerx, round(rect.y + rect.height * 0.62))
+        shaded = self._apply_darkness_to_surface(sprite, darkness)
+        self.screen.blit(shaded, sprite_rect.topleft)
 
     def _render_wall_overlay_for_tile(
         self,
@@ -2491,6 +2548,9 @@ class SceneRenderer:
     def _get_wall_overlay_key(tile, depth: int) -> str | None:
         if tile is None:
             return None
+        blood_key = SceneRenderer._get_blood_overlay_key(tile, "wall")
+        if blood_key is not None:
+            return blood_key
         if type(tile).__name__ in {"FakeWall", "FunhouseWall", "MirrorWall"}:
             return None
         z = getattr(tile, "z", 1)
@@ -2507,6 +2567,20 @@ class SceneRenderer:
             return "sconce_unlit"
         if seed % 5 == 0:
             return "sconce_broken"
+        return None
+
+    @staticmethod
+    def _get_blood_overlay_key(tile, surface: str) -> str | None:
+        if tile is None:
+            return None
+        overlay = getattr(tile, "blood_overlay", None)
+        overlays = getattr(tile, "blood_overlays", None)
+        if overlay is True or overlay == surface:
+            return f"blood_{surface}_overlay"
+        if isinstance(overlays, (set, list, tuple)) and surface in overlays:
+            return f"blood_{surface}_overlay"
+        if getattr(tile, f"blood_{surface}_overlay", False):
+            return f"blood_{surface}_overlay"
         return None
 
     @staticmethod
@@ -2544,7 +2618,7 @@ class SceneRenderer:
         next_zone=None,
         depth: int | None = None,
     ) -> pygame.Rect:
-        if not self._is_floor_sprite_tile(tile) or is_wall(center_tile):
+        if not self._is_floor_sprite_tile(tile, getattr(self, "player_char", None)) or is_wall(center_tile):
             return rect
 
         if zone is not None and next_zone is not None and depth is not None:

@@ -1,6 +1,6 @@
 """
 Promotion selection screen with the updated town aesthetic.
-Shows detailed class previews, stat changes, equipment, and restrictions.
+Shows detailed class previews, stat changes, and equipment restrictions.
 """
 
 import textwrap
@@ -42,16 +42,6 @@ class PromotionScreen(TownScreenBase):
                 continue
             lines.extend(textwrap.wrap(paragraph, width, break_on_hyphens=False))
         return lines
-
-    def _format_offhand(self, item):
-        if not item:
-            return "None"
-        subtype = getattr(item, "subtyp", "")
-        if subtype == "Shield":
-            return f"{item.name} ({int(getattr(item, 'mod', 0) * 100)}%)"
-        if subtype in ["Tome", "Rod"]:
-            return f"{item.name} (+{int(getattr(item, 'mod', 0))})"
-        return item.name
 
     def _stat_pairs(self, cls_instance):
         pc = self.player_char
@@ -180,32 +170,7 @@ class PromotionScreen(TownScreenBase):
             self.screen.blit(r_text, (col2_x, y))
             y += line_height
 
-        y += 15
-        equip_header = self.normal_font.render("Class Gear Profile", True, self.colors.GOLD)
-        self.screen.blit(equip_header, (left_rect.left + 18, y))
-        y = equip_header.get_height() + y + 4
-
-        equipment = cls_instance.equipment
-        note = "Existing legal gear is kept; illegal gear moves to inventory."
-        for wrapped in self._wrap_lines(note, 80):
-            text = self.small_font.render(wrapped, True, self.colors.GRAY)
-            self.screen.blit(text, (left_rect.left + 28, y))
-            y += line_height
-        y += 4
-
-        equip_lines = [
-            ("Weapon", equipment.get("Weapon")),
-            ("OffHand", equipment.get("OffHand")),
-            ("Armor", equipment.get("Armor")),
-        ]
-        for label_text, item in equip_lines:
-            item_display = self._format_offhand(item) if label_text == "OffHand" else (item.name if item else "None")
-            line = f"{label_text}: {item_display}"
-            text = self.small_font.render(line, True, self.colors.WHITE)
-            self.screen.blit(text, (left_rect.left + 28, y))
-            y += line_height
-
-        y += 20
+        y += 12
         rest_header = self.normal_font.render("Equipment Restrictions", True, self.colors.GOLD)
         self.screen.blit(rest_header, (left_rect.left + 18, y))
         y = rest_header.get_height() + y + 4
@@ -218,6 +183,14 @@ class PromotionScreen(TownScreenBase):
                 text = self.small_font.render(wrapped, True, self.colors.WHITE)
                 self.screen.blit(text, (left_rect.left + 28, y))
                 y += line_height
+
+        note = "Existing legal gear is kept; illegal gear moves to inventory."
+        note_lines = self._wrap_lines(note, 80)
+        note_y = left_rect.bottom - 18 - (len(note_lines) * line_height)
+        for wrapped in note_lines:
+            text = self.small_font.render(wrapped, True, self.colors.GRAY)
+            self.screen.blit(text, (left_rect.left + 28, note_y))
+            note_y += line_height
 
     def _draw_instructions(self):
         hint = "UP/DOWN: Select   ENTER: Promote   ESC: Cancel"

@@ -6,7 +6,6 @@ import random
 from typing import Any
 
 from .base import Job
-from .. import items
 
 
 CONSTELLATIONS = ("Ember", "Tide", "Gale", "Stone")
@@ -244,11 +243,6 @@ class Astromancer(Job):
             def_plus=1,
             magic_plus=4,
             magic_def_plus=4,
-            equipment={
-                "Weapon": items.Rondel(),
-                "OffHand": items.DragonRouge(),
-                "Armor": items.CloakEnchantment(),
-            },
             restrictions={
                 "Weapon": ["Dagger", "Staff"],
                 "OffHand": ["Tome", "Rod"],

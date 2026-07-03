@@ -719,6 +719,70 @@ class TestBattleEngineBasics:
         assert "silenced" in result.message.lower()
         assert result.summon_started is False
 
+    def test_summon_uses_player_summons_when_enemy_is_current_attacker(self):
+        engine, player, enemy, _tile = self._make_engine()
+        engine.attacker = enemy
+        engine.defender = player
+        summon = TestBattleEngineBasics._make_engine(self)[2]
+        summon.name = "Patagon"
+        player.summons["Patagon"] = summon
+
+        result = engine.execute_action("Summon", choice="Patagon")
+
+        assert result.summon_started is True
+        assert result.summon is summon
+        assert engine.attacker is summon
+        assert "Hero summons Patagon" in result.message
+
+    def test_summon_replaces_available_actions_and_victory_awards_bond(self):
+        from src.core import classes, companions
+
+        engine, player, enemy, _tile = self._make_engine()
+        player.cls = classes.Summoner()
+        engine.attacker = player
+        engine.defender = enemy
+        summon = companions.Patagon()
+        summon.initialize_stats(player)
+        player.summons["Patagon"] = summon
+
+        result = engine.execute_action("Summon", choice="Patagon")
+
+        assert result.summon_started is True
+        assert engine.available_actions == ["Attack", "Use Skill", "Recall"]
+        assert player.active_summon_name == "Patagon"
+
+        enemy.health.current = 0
+        outcome = engine.end_battle()
+
+        assert "Patagon gained" in outcome.message
+        assert "to next" not in outcome.message
+        assert "Patagon bond grows by 1 from victory (1/100)." in outcome.message
+        assert player.promotion_kit_state["summon_bonds"]["Patagon"] == 1
+
+    def test_summon_actions_refresh_when_turn_returns_to_summon(self):
+        from src.core import classes, companions
+
+        engine, player, enemy, _tile = self._make_engine()
+        player.cls = classes.Summoner()
+        engine.attacker = player
+        engine.defender = enemy
+        summon = companions.Patagon()
+        summon.initialize_stats(player)
+        player.summons["Patagon"] = summon
+
+        engine.execute_action("Summon", choice="Patagon")
+        assert engine.attacker is summon
+        assert engine.available_actions == ["Attack", "Use Skill", "Recall"]
+
+        engine.post_turn()
+        engine.swap_turns()
+        assert engine.attacker is enemy
+
+        engine.post_turn()
+        engine.swap_turns()
+        assert engine.attacker is summon
+        assert engine.available_actions == ["Attack", "Use Skill", "Recall"]
+
 
 class TestBattleLogger:
     def test_export_payload_includes_metadata_events_and_summary(self):

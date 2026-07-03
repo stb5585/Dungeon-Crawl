@@ -6,7 +6,6 @@ import random
 from typing import Any
 
 from .base import Job
-from .. import items
 
 MOON_PHASES = ("New", "Waxing", "Full", "Waning")
 STEPS_PER_PHASE = 120
@@ -36,11 +35,6 @@ class Lycan(Job):
             def_plus=2,
             magic_plus=2,
             magic_def_plus=3,
-            equipment={
-                "Weapon": items.EarthHammer(),
-                "OffHand": items.NoOffHand(),
-                "Armor": items.StuddedLeather(),
-            },
             restrictions={
                 "Weapon": ["Dagger", "Club", "Polearm", "Hammer", "Staff"],
                 "OffHand": ["Tome"],

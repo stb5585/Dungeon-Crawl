@@ -267,16 +267,27 @@ class Summons(Character):
         self.exp_scale: int = 2500
         self.description: str = ""
 
+    def _starting_stat_values(self) -> list[int]:
+        """Return health, mana, and six core stats from summon starting data."""
+        return (list(self.start_stats[:8]) + [0] * 8)[:8]
+
+    def _starting_combat_values(self) -> list[int]:
+        """Return attack, defense, magic, and magic defense from starting data."""
+        combat_values = (list(self.start_combat[:4]) + [0] * 4)[:4]
+        for index, value in enumerate(self.start_stats[8:12]):
+            combat_values[index] = value
+        return combat_values
+
     def initialize_stats(self, player_char: Character) -> None:
         self.level.exp_to_gain = self.level.pro_level * self.exp_scale
         stat_scale = 25 - self.level.pro_level
         stat_adj = 1 + (((player_char.stats.intel - random.randint(10, 20)) + 
                          (player_char.stats.charisma - random.randint(10, 20))) / stat_scale)
-        stats = [int(x * stat_adj) for x in self.start_stats]
+        stats = [int(x * stat_adj) for x in self._starting_stat_values()]
         self.health = Resource(stats[0], stats[0])
         self.mana = Resource(stats[1], stats[1])
         self.stats = Stats(*stats[2:])
-        combat_stats = [int(x * stat_adj) for x in self.start_combat]
+        combat_stats = [int(x * stat_adj) for x in self._starting_combat_values()]
         self.combat = Combat(*combat_stats)
         try:
             from .classes import class_rings
@@ -307,7 +318,8 @@ class Summons(Character):
                 self.spellbook[typ][ability.name] = ability
                 level_str += f"{self.name} gains the ability {ability.name}.\n"
         if self.level.level % 2 == 0:
-            chances = [x / sum(self.start_stats[2:]) for x in self.start_stats[2:]]
+            starting_stats = self._starting_stat_values()[2:]
+            chances = [x / sum(starting_stats) for x in starting_stats]
             new_stats = list(self.stats.__dict__.values())
             for _ in range(total_level):
                 ind = random.choices([0, 1, 2, 3, 4, 5], chances)[0]

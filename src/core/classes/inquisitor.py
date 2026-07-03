@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from .base import Job
-from .. import items
 
 
 class Inquisitor(Job):
@@ -35,11 +34,6 @@ class Inquisitor(Job):
             def_plus=2,
             magic_plus=2,
             magic_def_plus=2,
-            equipment={
-                "Weapon": items.Talwar(),
-                "OffHand": items.Glagwa(),
-                "Armor": items.ScaleMail(),
-            },
             restrictions={
                 "Weapon": ["Dagger", "Sword", "Club"],
                 "OffHand": ["Shield"],

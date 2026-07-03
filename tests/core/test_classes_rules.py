@@ -55,6 +55,27 @@ def test_promotion_rules_ignore_unknown_class_without_mutating_spellbook():
     assert set(player.spellbook["Skills"]) == {"Feint"}
 
 
+def test_grant_summoner_initial_summon_initializes_patagon(monkeypatch):
+    initialized = []
+
+    class FakePatagon:
+        name = "Patagon"
+
+        def initialize_stats(self, player):
+            initialized.append(player)
+
+    monkeypatch.setattr("src.core.companions.Patagon", FakePatagon)
+    player = SimpleNamespace(summons={})
+
+    message = classes.grant_summoner_initial_summon(player)
+    repeat_message = classes.grant_summoner_initial_summon(player)
+
+    assert message == "You have gained the summon Patagon.\n"
+    assert repeat_message == ""
+    assert "Patagon" in player.summons
+    assert initialized == [player]
+
+
 def test_job_equipment_defaults_and_equip_checks_cover_helmet_and_accessories():
     warrior = classes.Warrior()
 

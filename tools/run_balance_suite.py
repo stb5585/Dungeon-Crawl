@@ -467,25 +467,28 @@ def _apply_meta_progression_loadouts(player, target_level: int) -> None:
     # In real play this is quest-gated. For analytics we assume it's unlocked
     # for promoted characters (and late-game levels).
     if lvl >= 30 and getattr(player, "cls", None) is not None:
+        def ability_ctor(name: str):
+            return getattr(abilities, name, None)
+
         powerup_dict = {
-            "Berserker": abilities.BloodRage,
-            "Crusader": abilities.DivineAegis,
-            "Dragoon": abilities.DragonsFury,
-            "Wizard": abilities.SpellMastery,
-            "Shadowcaster": abilities.VeilShadows,
-            "Knight Enchanter": abilities.ArcaneBlast,
-            "Summoner": abilities.EternalConduit,
-            "Rogue": abilities.StrokeLuck,
-            "Seeker": abilities.EyesUnseen,
-            "Ninja": abilities.BladeFatalities,
-            "Templar": abilities.HolyRetribution,
-            "Archbishop": abilities.GreatGospel,
-            "Master Monk": abilities.DimMak,
-            "Troubadour": abilities.SongInspiration,
-            "Lycan": abilities.LunarFrenzy,
-            "Astromancer": abilities.TetraDisaster,
-            "Soulcatcher": abilities.SoulHarvest,
-            "Beast Master": abilities.PackBond,
+            "Berserker": ability_ctor("BloodRage"),
+            "Crusader": ability_ctor("DivineAegis"),
+            "Dragoon": ability_ctor("DraconicOnslaught"),
+            "Wizard": ability_ctor("SpellMastery"),
+            "Shadowcaster": ability_ctor("VeilShadows"),
+            "Knight Enchanter": ability_ctor("ArcaneBlast"),
+            "Summoner": ability_ctor("EternalConduit"),
+            "Rogue": ability_ctor("StrokeLuck"),
+            "Seeker": ability_ctor("EyesUnseen"),
+            "Ninja": ability_ctor("BladeFatalities"),
+            "Templar": ability_ctor("HolyRetribution"),
+            "Archbishop": ability_ctor("GreatGospel"),
+            "Master Monk": ability_ctor("DimMak"),
+            "Troubadour": ability_ctor("SongInspiration"),
+            "Lycan": ability_ctor("LunarFrenzy"),
+            "Astromancer": ability_ctor("TetraDisaster"),
+            "Soulcatcher": ability_ctor("SoulHarvest"),
+            "Beast Master": ability_ctor("PackBond"),
         }
         ctor = powerup_dict.get(player.cls.name)
         if ctor is not None:

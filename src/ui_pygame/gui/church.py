@@ -7,7 +7,14 @@ import os
 
 from src.core import companions
 from src.core.abilities import ability_classes_for_level, spell_dict, skill_dict
-from src.core.classes import classes_dict, apply_promotion_ability_rules, class_rings, demonologist, paladin
+from src.core.classes import (
+    classes_dict,
+    apply_promotion_ability_rules,
+    grant_summoner_initial_summon,
+    class_rings,
+    demonologist,
+    paladin,
+)
 from src.core.items import remove_equipment
 from .quest_manager import QuestManager
 from .confirmation_popup import ConfirmationPopup
@@ -490,14 +497,10 @@ class ChurchManager(TownScreenBase):
                                 popup.show(**self.popup_show_kwargs())
 
             if chosen_name == "Summoner":
-                try:
-                    pet = companions.Patagon()
-                    pet.initialize_stats(self.player_char)
-                    self.player_char.summons[pet.name] = pet
+                summon_message = grant_summoner_initial_summon(self.player_char)
+                if summon_message:
                     popup = ConfirmationPopup(self.presenter, "You have learned to summon Patagon.", show_buttons=False)
                     popup.show(**self.popup_show_kwargs())
-                except Exception:
-                    pass
 
             if chosen_name == "Demonologist":
                 self.player_char.ensure_demonologist_contracts()

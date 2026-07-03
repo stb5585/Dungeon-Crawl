@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from .base import Job
-from .. import items
 
 
 class Soulcatcher(Job):
@@ -36,11 +35,6 @@ class Soulcatcher(Job):
             def_plus=2,
             magic_plus=2,
             magic_def_plus=3,
-            equipment={
-                "Weapon": items.BattleGauntlet(),
-                "OffHand": items.BattleGauntlet(),
-                "Armor": items.Breastplate(),
-            },
             restrictions={
                 "Weapon": ["Fist", "Dagger", "Club", "Staff"],
                 "OffHand": ["Fist", "Shield"],

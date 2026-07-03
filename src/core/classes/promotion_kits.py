@@ -231,14 +231,24 @@ def start_combat(character: Any) -> str:
     return ""
 
 
-def end_combat(character: Any, *, victory: bool = False, enemy: Any | None = None) -> str:
+def end_combat(
+    character: Any,
+    *,
+    victory: bool = False,
+    enemy: Any | None = None,
+    exp_gain: int | None = None,
+) -> str:
     msg = ""
     if victory and enemy is not None:
         msg += gain_case_progress(character, getattr(enemy, "enemy_typ", None), 4, "victory")
         msg += gain_companion_bond(character, 4, reason="victory")
         if getattr(enemy, "enemy_typ", None) == favorite_enemy_type(character):
             msg += gain_companion_bond(character, 2, reason="Favored Enemy hunt")
-        msg += gain_summon_bond_for_active(character, 5, "victory")
+        msg += gain_summon_bond_for_active(
+            character,
+            summon_bond_gain_for_victory(character, exp_gain if exp_gain is not None else getattr(enemy, "experience", 0)),
+            "victory",
+        )
     msg += convert_shadow_backlash(character, fraction=0.05, reason="combat end")
     clear_combat_state(character)
     return msg
@@ -1074,6 +1084,23 @@ def gain_summon_bond_for_active(character: Any, amount: int, reason: str) -> str
     if not summon:
         return ""
     return gain_summon_bond(character, str(summon), amount, reason)
+
+
+def summon_bond_gain_for_victory(character: Any, exp_gain: int) -> int:
+    summon_name = getattr(character, "active_summon_name", None)
+    summons = getattr(character, "summons", {}) or {}
+    summon = summons.get(summon_name) if summon_name else None
+    level = getattr(getattr(summon, "level", None), "level", 1)
+    try:
+        level = max(1, int(level))
+    except (TypeError, ValueError):
+        level = 1
+    try:
+        exp_gain = max(0, int(exp_gain))
+    except (TypeError, ValueError):
+        exp_gain = 0
+    level_scale = max(1, 11 - level)
+    return max(1, int((exp_gain // 100) * level_scale / 10))
 
 
 def gain_summon_bond(character: Any, summon_name: str, amount: int, reason: str) -> str:

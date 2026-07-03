@@ -616,6 +616,72 @@ def test_wall_overlay_key_hides_sconces_on_fake_walls():
     assert SceneRenderer._get_wall_overlay_key(FakeWall(visited=True), depth=3) is None
 
 
+def test_rookie_body_sprite_respects_player_quest_gate():
+    pygame.init()
+    screen = pygame.display.set_mode((640, 480))
+    presenter = DummyPresenter(width=640, height=480, screen=screen)
+    scene_renderer = SceneRenderer(presenter, TextureLibrary())
+    tile = RookieCavePath(read=False)
+    rect = pygame.Rect(120, 120, 120, 120)
+    calls = []
+    scene_renderer._render_floor_sprite = lambda *args, **kwargs: calls.append((args, kwargs))
+
+    scene_renderer.player_char = DummyPlayer()
+    scene_renderer.player_char.quest_dict = {"Side": {}, "Main": {}, "Bounty": {}}
+    scene_renderer.player_char.special_inventory = {}
+    scene_renderer._render_special_tile(tile, rect, darkness=0.0, depth=1)
+    assert calls == []
+
+    scene_renderer.player_char.quest_dict["Side"]["Rookie Mistake"] = {"Completed": False}
+    scene_renderer._render_special_tile(tile, rect, darkness=0.0, depth=1)
+    assert calls and calls[-1][0][0] == "dead_soldier_item"
+
+    pygame.quit()
+
+
+def test_blood_overlay_keys_and_render_hooks():
+    pygame.init()
+    screen = pygame.display.set_mode((640, 480))
+    presenter = DummyPresenter(width=640, height=480, screen=screen)
+    scene_renderer = SceneRenderer(presenter, TextureLibrary())
+    keys = []
+
+    def fake_special_texture(key, max_size=None):
+        keys.append((key, max_size))
+        return pygame.Surface((20, 20), pygame.SRCALPHA)
+
+    scene_renderer.textures.get_special_texture = fake_special_texture
+    floor_tile = SimpleNamespace(blood_overlays={"floor", "ceiling"})
+    wall_tile = SimpleNamespace(blood_wall_overlay=True, x=1, y=1, z=1)
+
+    scene_renderer._render_surface_blood_overlay(
+        floor_tile,
+        pygame.Rect(100, 220, 140, 80),
+        darkness=0.0,
+        depth=1,
+        surface="floor",
+    )
+    scene_renderer._render_surface_blood_overlay(
+        floor_tile,
+        pygame.Rect(100, 80, 140, 60),
+        darkness=0.0,
+        depth=1,
+        surface="ceiling",
+    )
+    scene_renderer._render_wall_overlay_for_tile(
+        wall_tile,
+        pygame.Rect(260, 120, 160, 160),
+        darkness=0.0,
+        depth=1,
+    )
+
+    assert ("blood_floor_overlay", 34) in keys
+    assert ("blood_ceiling_overlay", 20) in keys
+    assert any(key == "blood_wall_overlay" for key, _size in keys)
+
+    pygame.quit()
+
+
 def test_texture_library_brightens_funhouse_floor_texture():
     pygame.init()
     base = pygame.Surface((2, 2), pygame.SRCALPHA)
@@ -3266,6 +3332,16 @@ def test_scene_renderer_renders_migrated_special_tile_sprites():
     presenter = DummyPresenter(width=640, height=480, screen=screen)
     scene_renderer = SceneRenderer(presenter, TextureLibrary())
     scene_renderer.player_char = DummyPlayer(location_z=3)
+    scene_renderer.player_char.quest_dict = {
+        "Side": {
+            "Rookie Mistake": {"Completed": False},
+            "The Holy Grail of Quests": {
+                "Completed": False,
+                "Chalice Progress": {"Revealed": True},
+            },
+        }
+    }
+    scene_renderer.player_char.special_inventory = {}
     rect = pygame.Rect(120, 120, 160, 160)
 
     special_calls = []

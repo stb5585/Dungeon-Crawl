@@ -280,6 +280,7 @@ def test_popup_mouse_paths_select_confirm_and_adjust(monkeypatch):
     presenter = _make_presenter()
     monkeypatch.setattr("src.ui_pygame.gui.confirmation_popup.pygame.event.clear", lambda: None)
     monkeypatch.setattr("src.ui_pygame.gui.confirmation_popup.pygame.key.get_pressed", lambda: [])
+    monkeypatch.setattr("src.ui_pygame.gui.confirmation_popup.pygame.display.flip", lambda: None)
 
     confirm = confirmation_popup.ConfirmationPopup(presenter, "Proceed?")
     no_pos = confirm.button_rects()[1].center
@@ -315,6 +316,41 @@ def test_popup_mouse_paths_select_confirm_and_adjust(monkeypatch):
     ])
     monkeypatch.setattr("src.ui_pygame.gui.confirmation_popup.pygame.event.get", lambda: next(event_batches, []))
     assert code.show() == "0100"
+
+
+def test_popup_close_x_returns_cancel_or_dismiss(monkeypatch):
+    presenter = _make_presenter()
+    monkeypatch.setattr("src.ui_pygame.gui.confirmation_popup.pygame.event.clear", lambda: None)
+    monkeypatch.setattr("src.ui_pygame.gui.confirmation_popup.pygame.key.get_pressed", lambda: [])
+    monkeypatch.setattr("src.ui_pygame.gui.confirmation_popup.pygame.display.flip", lambda: None)
+
+    confirm = confirmation_popup.ConfirmationPopup(presenter, "Proceed?")
+    confirm.draw_popup = lambda: None
+    close_pos = confirmation_popup.popup_close_rect(confirm.popup_rect).center
+    event_batches = iter([[_mouse_event(pygame.MOUSEBUTTONDOWN, close_pos)]])
+    monkeypatch.setattr("src.ui_pygame.gui.confirmation_popup.pygame.event.get", lambda: next(event_batches, []))
+    assert confirm.show() is False
+
+    message = confirmation_popup.ConfirmationPopup(presenter, "Read this.", show_buttons=False)
+    message.draw_popup = lambda: None
+    close_pos = confirmation_popup.popup_close_rect(message.popup_rect).center
+    event_batches = iter([[_mouse_event(pygame.MOUSEBUTTONDOWN, close_pos)]])
+    monkeypatch.setattr("src.ui_pygame.gui.confirmation_popup.pygame.event.get", lambda: next(event_batches, []))
+    assert message.show() is True
+
+    choice = confirmation_popup.ChoicePopup(presenter, "Pick", ["Alpha", "Beta"])
+    choice.draw_popup = lambda *_args, **_kwargs: None
+    close_pos = confirmation_popup.popup_close_rect(choice.popup_rect).center
+    event_batches = iter([[_mouse_event(pygame.MOUSEBUTTONDOWN, close_pos)]])
+    monkeypatch.setattr("src.ui_pygame.gui.confirmation_popup.pygame.event.get", lambda: next(event_batches, []))
+    assert choice.show() is None
+
+    quantity = confirmation_popup.QuantityPopup(presenter, "Potion", max_quantity=9, default_quantity=1)
+    quantity.draw_popup = lambda *_args, **_kwargs: None
+    close_pos = confirmation_popup.popup_close_rect(quantity.popup_rect).center
+    event_batches = iter([[_mouse_event(pygame.MOUSEBUTTONDOWN, close_pos)]])
+    monkeypatch.setattr("src.ui_pygame.gui.confirmation_popup.pygame.event.get", lambda: next(event_batches, []))
+    assert quantity.show() is None
 
 
 def test_reward_selection_popup_draw_and_show_confirm_branch(monkeypatch):

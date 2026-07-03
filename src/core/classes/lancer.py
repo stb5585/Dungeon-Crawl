@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from .base import Job
-from .. import items
 
 
 class Lancer(Job):
@@ -31,11 +30,6 @@ class Lancer(Job):
             def_plus=3,
             magic_plus=0,
             magic_def_plus=2,
-            equipment={
-                "Weapon": items.Halberd(),
-                "OffHand": items.Glagwa(),
-                "Armor": items.Splint(),
-            },
             restrictions={
                 "Weapon": ["Sword", "Polearm"],
                 "OffHand": ["Shield"],

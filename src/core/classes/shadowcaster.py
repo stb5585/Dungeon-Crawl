@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from .base import Job
-from .. import items
 
 
 class Shadowcaster(Job):
@@ -30,11 +29,6 @@ class Shadowcaster(Job):
             def_plus=1,
             magic_plus=5,
             magic_def_plus=3,
-            equipment={
-                "Weapon": items.Rondel(),
-                "OffHand": items.DragonRouge(),
-                "Armor": items.CloakEnchantment(),
-            },
             restrictions={
                 "Weapon": ["Dagger", "Staff"],
                 "OffHand": ["Tome"],

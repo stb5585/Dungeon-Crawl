@@ -7,7 +7,6 @@ from copy import deepcopy
 from typing import Any
 
 from .base import Job
-from .. import items
 
 
 WEAPON_TYPES = (
@@ -79,11 +78,6 @@ class GrandmasterOfArms(Job):
             def_plus=3,
             magic_plus=0,
             magic_def_plus=2,
-            equipment={
-                "Weapon": items.Shamshir(),
-                "OffHand": items.Pernach(),
-                "Armor": items.Breastplate(),
-            },
             restrictions={
                 "Weapon": [
                     "Fist",

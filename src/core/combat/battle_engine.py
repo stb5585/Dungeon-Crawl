@@ -136,6 +136,7 @@ class BattleEngine:
 
         self.summon_active: bool = False
         self.summon: Character | None = None
+        self.player.active_summon_name = None
 
         self.attacker: Character | None = None
         self.defender: Character | None = None
@@ -163,6 +164,11 @@ class BattleEngine:
         return bool(getattr(self.enemy, "class_ring_no_healing_duel", False))
 
     def _available_actions(self) -> list:
+        if self.summon_active and self.attacker == self.summon and self.summon:
+            options = getattr(self.summon, "options", None)
+            if callable(options):
+                return options()
+            return ["Attack", "Recall"]
         actions = list(self.tile.available_actions(self.player))
         if astromancer.boostable_spells(self.player) and "Runic Boost" not in actions:
             insert_at = actions.index("Cast Spell") + 1 if "Cast Spell" in actions else len(actions)
@@ -452,6 +458,8 @@ class BattleEngine:
             result.message = f"{self.attacker.name} does nothing.\n"
             return result
 
+        debuff_snapshot = self._debuff_state_snapshot(self.attacker, choice, self.defender)
+
         if (
             action == "Attack"
             and getattr(self.attacker, "magic_effects", {}).get("Tree of Life")
@@ -516,6 +524,7 @@ class BattleEngine:
         duel_text = self._fail_no_healing_duel_if_healed(hp_before)
         if duel_text:
             result.message = f"{result.message}{duel_text}"
+        self._record_failed_enemy_debuff(self.attacker, choice, self.defender, debuff_snapshot)
 
         # Log the action
         self.logger.log_event(
@@ -527,6 +536,71 @@ class BattleEngine:
         )
 
         return result
+
+    @staticmethod
+    def _debuff_state_snapshot(actor, ability_name: str | None, target) -> dict | None:
+        rules = getattr(actor, "_DEBUFF_REAPPLY_RULES", None)
+        if not ability_name or not isinstance(rules, dict) or target is None:
+            return None
+        rule = rules.get(ability_name)
+        if not rule:
+            return None
+
+        snapshot = {"rule": rule}
+        status_name = rule.get("status")
+        if status_name:
+            effect = getattr(target, "status_effects", {}).get(status_name)
+            snapshot["status"] = bool(getattr(effect, "active", False))
+
+        physical_name = rule.get("physical")
+        if physical_name:
+            effect = getattr(target, "physical_effects", {}).get(physical_name)
+            snapshot["physical"] = bool(getattr(effect, "active", False))
+
+        stat_all = rule.get("stat_all")
+        if stat_all:
+            stat_effects = getattr(target, "stat_effects", {})
+            snapshot["stats"] = {
+                stat_name: bool(getattr(stat_effects.get(stat_name), "active", False))
+                for stat_name in stat_all
+            }
+        return snapshot
+
+    @staticmethod
+    def _debuff_snapshot_gained_effect(snapshot: dict | None, target) -> bool:
+        if not snapshot or target is None:
+            return True
+        rule = snapshot.get("rule", {})
+
+        status_name = rule.get("status")
+        if status_name:
+            effect = getattr(target, "status_effects", {}).get(status_name)
+            return bool(getattr(effect, "active", False)) and not snapshot.get("status", False)
+
+        physical_name = rule.get("physical")
+        if physical_name:
+            effect = getattr(target, "physical_effects", {}).get(physical_name)
+            return bool(getattr(effect, "active", False)) and not snapshot.get("physical", False)
+
+        stat_all = rule.get("stat_all")
+        if stat_all:
+            before = snapshot.get("stats", {})
+            stat_effects = getattr(target, "stat_effects", {})
+            return any(
+                bool(getattr(stat_effects.get(stat_name), "active", False))
+                and not before.get(stat_name, False)
+                for stat_name in stat_all
+            )
+        return True
+
+    def _record_failed_enemy_debuff(self, actor, ability_name: str | None, target, snapshot: dict | None) -> None:
+        if snapshot is None or actor is not self.enemy:
+            return
+        if self._debuff_snapshot_gained_effect(snapshot, target):
+            return
+        record_failure = getattr(actor, "record_debuff_failure", None)
+        if callable(record_failure):
+            record_failure(str(ability_name), turns=2)
 
     def companion_turn(self) -> str:
         """Process the attacker's familiar/companion turn. Returns message text."""
@@ -601,6 +675,7 @@ class BattleEngine:
                     result.messages.append(msg)
                     result.summon_died = True
                     self.summon_active = False
+                    self.player.active_summon_name = None
                     self.summon = None
                     self.defender = self.player
 
@@ -644,6 +719,7 @@ class BattleEngine:
             self.attacker, self.defender = self.enemy, active_user
         else:
             self.attacker, self.defender = active_user, self.enemy
+        self.available_actions = self._available_actions()
 
     def end_battle(self) -> BattleOutcome:
         """
@@ -1043,18 +1119,23 @@ class BattleEngine:
 
     def _execute_summon(self, choice: str | None) -> tuple[str, bool, Character | None]:
         """Summon a companion. Returns (message, success, summon_character)."""
-        if self.attacker.abilities_suppressed():
-            reason = "the anti-magic field" if getattr(self.attacker, "anti_magic_active", False) else "being silenced"
-            return f"{self.attacker.name} cannot summon because of {reason}!\n", False, None
+        summoner = self.player
+        if summoner.abilities_suppressed():
+            reason = "the anti-magic field" if getattr(summoner, "anti_magic_active", False) else "being silenced"
+            return f"{summoner.name} cannot summon because of {reason}!\n", False, None
 
-        if not choice or choice not in self.attacker.summons:
-            return f"{self.attacker.name} has nothing to summon.\n", False, None
+        summons = getattr(summoner, "summons", {}) or {}
+        if not choice or choice not in summons:
+            return f"{summoner.name} has nothing to summon.\n", False, None
 
-        summon = self.attacker.summons[choice]
+        summon = summons[choice]
         self.summon = summon
         self.summon_active = True
+        self.player.active_summon_name = summon.name
         self.attacker = summon
-        message = f"{self.player.name} summons {summon.name} to aid them in combat.\n"
+        self.defender = self.enemy
+        self.available_actions = self._available_actions()
+        message = f"{summoner.name} summons {summon.name} to aid them in combat.\n"
         return message, True, summon
 
     def _execute_recall(self) -> tuple[str, bool]:
@@ -1064,7 +1145,11 @@ class BattleEngine:
 
         message = f"{self.player.name} recalls {self.summon.name}.\n"
         self.summon_active = False
+        self.summon = None
+        self.player.active_summon_name = None
         self.attacker = self.player
+        self.defender = self.enemy
+        self.available_actions = self._available_actions()
         return message, True
 
     def _execute_totem(self) -> str:
@@ -1098,7 +1183,6 @@ class BattleEngine:
         # Handle summon experience
         if self.summon:
             self.summon.effects(end=True)
-            msg += f"{self.summon.name} gained {exp_gain} experience.\n"
             self.summon.level.exp += exp_gain
             if self.summon.level.level < 10:
                 self.summon.level.exp_to_gain -= exp_gain
@@ -1106,6 +1190,7 @@ class BattleEngine:
                     msg += self.summon.level_up(self.player)
                     if self.summon.level.level == 10:
                         break
+            msg += self._summon_experience_text(self.summon, exp_gain)
 
         if mercy:
             msg += self._award_mercy_gold()
@@ -1134,7 +1219,7 @@ class BattleEngine:
             if scar_text:
                 msg += scar_text
             class_rings.record_soul_harvest(self.player, getattr(self.enemy, "enemy_typ", None))
-            msg += promotion_kits.end_combat(self.player, victory=True, enemy=self.enemy)
+            msg += promotion_kits.end_combat(self.player, victory=True, enemy=self.enemy, exp_gain=exp_gain)
             try:
                 from ..classes import demonologist
 
@@ -1173,6 +1258,13 @@ class BattleEngine:
             self.player.award_grandmaster_victory_xp()
 
         return msg
+
+    @staticmethod
+    def _summon_experience_text(summon: Character, exp_gain: int) -> str:
+        level = getattr(summon, "level", None)
+        if getattr(level, "level", 1) >= 10:
+            return f"{summon.name} gained {exp_gain} experience (MAX level).\n"
+        return f"{summon.name} gained {exp_gain} experience.\n"
 
     def _award_mercy_gold(self) -> str:
         gold = max(0, int(getattr(self.enemy, "gold", 0) or 0))

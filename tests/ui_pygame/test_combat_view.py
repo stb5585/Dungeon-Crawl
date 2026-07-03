@@ -360,6 +360,7 @@ def test_turn_indicator_renders_player_and_enemy_states(monkeypatch):
     )
     player_token_calls = []
     token_calls = []
+    companion_token_calls = []
     view.player_token_manager = SimpleNamespace(
         get_scaled_token=lambda target, size: player_token_calls.append((target.name, size))
         or DummySurface(size, text="player-token")
@@ -368,6 +369,14 @@ def test_turn_indicator_renders_player_and_enemy_states(monkeypatch):
         get_scaled_token=lambda target, size: token_calls.append((target.name, size))
         or DummySurface(size, text="enemy-token")
     )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.combat_view.get_companion_art_manager",
+        lambda: SimpleNamespace(
+            get_scaled_sprite=lambda target, size: companion_token_calls.append((target.name, size))
+            or DummySurface(size, text="summon-token")
+        ),
+    )
+    view._collect_status_icons = lambda _actor: []
     fonts = iter([RecordingFont(), RecordingFont(), RecordingFont(), RecordingFont(), RecordingFont(), RecordingFont(), RecordingFont(), RecordingFont()])
     rect_calls = []
     circle_calls = []
@@ -379,6 +388,12 @@ def test_turn_indicator_renders_player_and_enemy_states(monkeypatch):
 
     view._render_turn_indicator(player, enemy, current_turn="player")
     view._render_turn_indicator(player, enemy, current_turn="enemy", overlay=True)
+    view._render_turn_indicator(
+        player,
+        enemy,
+        current_turn="player",
+        current_actor=SimpleNamespace(name="Patagon"),
+    )
     view._render_turn_indicator(player, enemy, current_turn=None)
 
     rendered_text = [
@@ -390,8 +405,10 @@ def test_turn_indicator_renders_player_and_enemy_states(monkeypatch):
 
     assert "Your Turn" in rendered_text
     assert "Enemy Turn" in rendered_text
+    assert "Patagon" in rendered_text
     assert "player-token" in rendered_text
     assert "enemy-token" in rendered_text
+    assert "summon-token" in rendered_text
     enemy_label = next(text for text in rendered_text if text.startswith("Goblin"))
     assert enemy_label.endswith("...")
     assert RecordingFont().size(enemy_label)[0] <= int(view.screen_width * 0.65) - 30 - 86
@@ -399,6 +416,7 @@ def test_turn_indicator_renders_player_and_enemy_states(monkeypatch):
     assert view.colors["turn_enemy"] in colors
     assert player_token_calls == [(player.name, (46, 46))]
     assert token_calls == [(enemy.name, (46, 46))]
+    assert companion_token_calls == [("Patagon", (46, 46))]
     assert not circle_calls
 
 

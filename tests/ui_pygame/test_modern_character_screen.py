@@ -155,9 +155,12 @@ def _make_player():
 def test_modern_character_tabs_are_generic_and_switchable():
     screen = ModernCharacterScreen(_make_presenter())
 
-    assert [tab.label for tab in screen.tabs] == ["Character", "Equipment"]
+    assert [tab.label for tab in screen.tabs] == ["Character", "Class", "Equipment"]
     assert screen.active_tab.key == "character"
     assert abs((screen.character_panel_rect.width * 2) - (screen.combat_panel_rect.width * 3)) <= 3
+
+    screen.move_tab(1)
+    assert screen.active_tab.key == "class"
 
     screen.move_tab(1)
     assert screen.active_tab.key == "equipment"
@@ -381,16 +384,28 @@ def test_modern_character_companion_display_prefers_familiar_then_living_summon(
     assert screen.active_companion_for_display(player) == ("Summon", living)
     assert ("Type", "Spirit") in screen.companion_summary_rows("Summon", living)
 
+    patagon = SimpleNamespace(name="Patagon", cls=None, level=SimpleNamespace(level=1), is_alive=lambda: True)
+    assert ("Type", "Summon") in screen.companion_summary_rows("Summon", patagon)
+
     player.summons = {"Spent": spent}
     assert screen.active_companion_for_display(player) is None
 
 
-def test_modern_character_combat_panel_renders_companion_art(monkeypatch):
+def test_modern_character_class_tab_renders_companion_art(monkeypatch):
     presenter = _make_presenter()
     screen = ModernCharacterScreen(presenter)
     player = _make_player()
-    companion = SimpleNamespace(name="Spark", race="Mephit", level=SimpleNamespace(level=3), is_alive=lambda: True)
-    player.familiar = companion
+    companion = SimpleNamespace(
+        name="Patagon",
+        cls=None,
+        health=SimpleNamespace(current=40, max=50),
+        mana=SimpleNamespace(current=5, max=10),
+        combat=SimpleNamespace(attack=14, defense=8, magic=0, magic_def=3),
+        level=SimpleNamespace(level=1),
+        is_alive=lambda: True,
+    )
+    player.cls = SimpleNamespace(name="Summoner", description="Calls allies from distant realms.")
+    player.summons = {"Patagon": companion}
     calls = []
     screen.companion_art_manager = SimpleNamespace(
         get_scaled_sprite=lambda entity, size: calls.append((entity, size)) or DummySurface(size)
@@ -400,11 +415,67 @@ def test_modern_character_combat_panel_renders_companion_art(monkeypatch):
     monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.rect", lambda *_args, **_kwargs: None)
     monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.line", lambda *_args, **_kwargs: None)
 
-    screen.draw_combat_panel(player)
+    screen.draw_class_tab(player)
 
     assert calls and calls[0][0] is companion
     rendered_text = set(presenter.small_font.render_calls + presenter.normal_font.render_calls)
-    assert {"Familiar", "Companion", "Spark", "Type", "Mephit", "Level", "3"}.issubset(rendered_text)
+    assert {"Class", "Class Profile", "Companions & Summons", "Patagon", "Type", "Summon", "HP", "40/50"}.issubset(rendered_text)
+
+
+def test_modern_character_class_tab_supports_multiple_summon_tiles_and_popup(monkeypatch):
+    presenter = _make_presenter()
+    screen = ModernCharacterScreen(presenter)
+    player = _make_player()
+
+    def summon(name):
+        return SimpleNamespace(
+            name=name,
+            cls=None,
+            health=SimpleNamespace(current=40, max=50),
+            mana=SimpleNamespace(current=5, max=10),
+            combat=SimpleNamespace(attack=14, defense=8, magic=0, magic_def=3),
+            level=SimpleNamespace(level=1, exp=25, exp_to_gain=75),
+            spellbook={"Skills": {"Throw Rock": object()}, "Spells": {}},
+            is_alive=lambda: True,
+        )
+
+    player.cls = SimpleNamespace(name="Summoner", description="Calls allies from distant realms. " * 12)
+    player.promotion_kit_state = {"summon_bonds": {"Patagon": 15, "Dilong": 0, "Agloolik": 0}}
+    player.summons = {"Patagon": summon("Patagon"), "Dilong": summon("Dilong"), "Agloolik": summon("Agloolik")}
+    screen.companion_art_manager = SimpleNamespace(get_scaled_sprite=lambda _entity, size: DummySurface(size))
+    popups = []
+
+    class FakePopup:
+        def __init__(self, _presenter, message, show_buttons=False):
+            self.message = message
+            self.show_buttons = show_buttons
+            self.show_kwargs = None
+            popups.append(self)
+
+        def show(self, **kwargs):
+            self.show_kwargs = kwargs
+            return None
+
+    import src.ui_pygame.gui.modern_character_screen as modern_module
+
+    monkeypatch.setattr(modern_module, "ConfirmationPopup", FakePopup)
+    monkeypatch.setattr(screen, "draw_semi_transparent_panel", lambda rect, alpha=180: DummySurface((rect.width, rect.height)))
+    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.rect", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.line", lambda *_args, **_kwargs: None)
+
+    screen.draw_class_tab(player)
+
+    assert len(screen.class_companion_tile_rects(screen.class_companion_entries(player))) == 3
+    rendered_text = set(presenter.small_font.render_calls + presenter.normal_font.render_calls)
+    assert {"Patagon", "Dilong", "Agloolik", "XP", "25/100 XP", "Bond", "15/100"}.issubset(rendered_text)
+
+    screen.selected_class_companion_index = 1
+    screen._open_class_companion_popup(player)
+
+    assert popups
+    assert "Dilong" in popups[-1].message
+    assert "Abilities:" in popups[-1].message
+    assert callable(popups[-1].show_kwargs["background_draw_func"])
 
 
 def test_modern_character_draw_all_renders_active_tabs(monkeypatch):
@@ -445,6 +516,12 @@ def test_modern_character_draw_all_renders_active_tabs(monkeypatch):
     assert "250/300 XP (50 next)" in presenter.small_font.render_calls
     assert len(draw_line_calls) >= 2
     assert flip_calls
+
+    screen.select_tab("class")
+    screen.draw_all(player, do_flip=False)
+    assert "Class" in presenter.large_font.render_calls
+    assert "Class Profile" in presenter.normal_font.render_calls
+    assert "Companions & Summons" in presenter.normal_font.render_calls
 
     screen.select_tab("equipment")
     screen.draw_all(player, do_flip=False)
@@ -532,6 +609,7 @@ def test_modern_character_navigation_switches_tabs_and_exits(monkeypatch):
 
     event_batches = iter([
         [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_2)],
+        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_3)],
         [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE)],
     ])
     monkeypatch.setattr(screen, "draw_all", lambda *_args, **_kwargs: None)
@@ -548,9 +626,9 @@ def test_modern_equipment_selector_requires_explicit_toggle(monkeypatch):
     player = _make_player()
 
     event_batches = iter([
-        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_2)],
+        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_3)],
         [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RIGHT)],
-        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_2)],
+        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_3)],
         [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_e)],
         [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RIGHT)],
         [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE)],
@@ -627,7 +705,7 @@ def test_modern_character_menu_mouse_tabs_and_actions(monkeypatch):
     monkeypatch.setattr(screen, "draw_all", lambda *_args, **_kwargs: None)
     monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
 
-    equipment_tab_pos = screen.tab_button_rects()[1].center
+    equipment_tab_pos = screen.tab_button_rects()[2].center
     exit_pos = screen.action_rects()[-1].center
     event_batches = iter([
         [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=equipment_tab_pos)],

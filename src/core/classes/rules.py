@@ -132,4 +132,21 @@ def apply_promotion_ability_rules(promoted_player: Any, new_class_name: str) -> 
     return message
 
 
+def grant_summoner_initial_summon(promoted_player: Any) -> str:
+    """Grant Patagon, the starting summon for new Summoners."""
+    from .. import companions
+
+    summons = getattr(promoted_player, "summons", None)
+    if summons is None:
+        summons = {}
+        promoted_player.summons = summons
+    if "Patagon" in summons:
+        return ""
+
+    summon = companions.Patagon()
+    summon.initialize_stats(promoted_player)
+    summons[summon.name] = summon
+    return "You have gained the summon Patagon.\n"
+
+
 # Classes

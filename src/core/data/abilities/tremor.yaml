@@ -6,3 +6,15 @@ cost: 3
 damage_mod: 1.5
 crit: 8
 school: Elemental
+effects:
+  - type: physical_effect_apply
+    effect_name: Prone
+    actor_stat: intel
+    actor_lo_divisor: 2
+    actor_hi_divisor: 1
+    target_stat: con
+    target_lo_divisor: 2
+    target_hi_divisor: 1
+    duration: 1
+    skip_if_active: true
+    check_flying: true

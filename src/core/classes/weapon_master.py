@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from .base import Job
-from .. import items
 
 
 class WeaponMaster(Job):
@@ -34,11 +33,6 @@ class WeaponMaster(Job):
             def_plus=2,
             magic_plus=0,
             magic_def_plus=2,
-            equipment={
-                "Weapon": items.DoubleAxe(),
-                "OffHand": items.NoOffHand(),
-                "Armor": items.ScaleMail(),
-            },
             restrictions={
                 "Weapon": [
                     "Fist",

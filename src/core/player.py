@@ -2497,7 +2497,6 @@ class Player(Character):
                                  f"{self.name} gained {exp_gain} experience.\n")
             if summon:
                 summon.effects(end=True)
-                endcombat_str += f"{summon.name} gained {exp_gain} experience.\n"
                 summon.level.exp += exp_gain
                 if summon.level.level < 10:
                     summon.level.exp_to_gain -= exp_gain
@@ -2505,6 +2504,10 @@ class Player(Character):
                         endcombat_str += summon.level_up(self)
                         if summon.level.level == 10:
                             break
+                if summon.level.level >= 10:
+                    endcombat_str += f"{summon.name} gained {exp_gain} experience (MAX level).\n"
+                else:
+                    endcombat_str += f"{summon.name} gained {exp_gain} experience.\n"
             if enemy.enemy_typ not in self.kill_dict:
                 self.kill_dict[enemy.enemy_typ] = {}
             if enemy.name not in self.kill_dict[enemy.enemy_typ]:

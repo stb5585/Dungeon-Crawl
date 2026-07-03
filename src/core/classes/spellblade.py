@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from .base import Job
-from .. import items
 
 
 class Spellblade(Job):
@@ -32,11 +31,6 @@ class Spellblade(Job):
             def_plus=1,
             magic_plus=2,
             magic_def_plus=2,
-            equipment={
-                "Weapon": items.Talwar(),
-                "OffHand": items.ElementalPrimer(),
-                "Armor": items.Cuirboulli(),
-            },
             restrictions={
                 "Weapon": ["Dagger", "Sword"],
                 "OffHand": ["Tome"],

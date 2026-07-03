@@ -291,6 +291,31 @@ def test_p4b_content_hooks_load_post_fight_and_storage_flavor():
     assert any("storage lockers" in line for line in tavern_flavor)
 
 
+def test_response_map_keeps_two_personality_responses_per_npc():
+    from src.core.data import data_loader
+
+    data_loader.clear_cache()
+    responses = data_loader.get_response_map()
+
+    expected = {
+        "Barkeep",
+        "Waitress",
+        "Busboy",
+        "Soldier",
+        "Drunkard",
+        "Hooded Figure",
+        "Griswold",
+        "Alchemist",
+        "Jeweler",
+        "Priest",
+        "Sergeant",
+    }
+    assert set(responses) == expected
+    assert all(len(lines) == 2 for lines in responses.values())
+    assert "Field results" in responses["Alchemist"][0]
+    assert "Dismissed" in responses["Sergeant"][1]
+
+
 def test_holy_grail_rotation_hints_cover_hooded_and_sergeant_states():
     from src.core.town import get_holy_grail_rotation_hints
 

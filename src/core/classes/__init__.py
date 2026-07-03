@@ -1,7 +1,12 @@
 """Player class package exports."""
 
 from .base import Job
-from .rules import PROMOTION_ABILITY_RULES, PromotionRule, apply_promotion_ability_rules
+from .rules import (
+    PROMOTION_ABILITY_RULES,
+    PromotionRule,
+    apply_promotion_ability_rules,
+    grant_summoner_initial_summon,
+)
 from .warrior import Warrior
 from .weapon_master import WeaponMaster
 from .grandmaster import GrandmasterOfArms
@@ -57,6 +62,7 @@ __all__ = [
     "PROMOTION_ABILITY_RULES",
     "PromotionRule",
     "apply_promotion_ability_rules",
+    "grant_summoner_initial_summon",
     "Warrior",
     "WeaponMaster",
     "GrandmasterOfArms",

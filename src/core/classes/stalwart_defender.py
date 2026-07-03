@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from .base import Job
-from .. import items
 
 
 class StalwartDefender(Job):
@@ -33,11 +32,6 @@ class StalwartDefender(Job):
             def_plus=5,
             magic_plus=0,
             magic_def_plus=4,
-            equipment={
-                "Weapon": items.Shamshir(),
-                "OffHand": items.KiteShield(),
-                "Armor": items.PlateMail(),
-            },
             restrictions={
                 "Weapon": ["Fist", "Sword", "Club"],
                 "OffHand": ["Shield"],

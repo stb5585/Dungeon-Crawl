@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from .base import Job
-from .. import items
 
 
 class Seeker(Job):
@@ -32,11 +31,6 @@ class Seeker(Job):
             def_plus=2,
             magic_plus=2,
             magic_def_plus=3,
-            equipment={
-                "Weapon": items.Shamshir(),
-                "OffHand": items.KiteShield(),
-                "Armor": items.Breastplate(),
-            },
             restrictions={
                 "Weapon": ["Dagger", "Sword", "Club"],
                 "OffHand": ["Shield"],

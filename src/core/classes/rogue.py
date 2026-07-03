@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from .base import Job
-from .. import items
 
 
 class Rogue(Job):
@@ -31,11 +30,6 @@ class Rogue(Job):
             def_plus=2,
             magic_plus=2,
             magic_def_plus=3,
-            equipment={
-                "Weapon": items.Shamshir(),
-                "OffHand": items.Rondel(),
-                "Armor": items.StuddedLeather(),
-            },
             restrictions={
                 "Weapon": ["Fist", "Dagger", "Sword", "Club"],
                 "OffHand": ["Fist", "Dagger", "Sword", "Club"],

@@ -301,6 +301,7 @@ class Enemy(Character):
         self.enemy_typ: str = ""
         self.action_stack: list[dict] = []
         self.last_action_stack_entry: dict | None = None
+        self._debuff_failure_cooldowns: dict[str, int] = {}
         # Ability names that can only be used once per combat by this enemy.
         self.single_use_abilities: set[str] = set()
         self._used_single_use_abilities: set[str] = set()
@@ -425,6 +426,7 @@ class Enemy(Character):
             ability = None
         if ability in self.single_use_abilities:
             self._used_single_use_abilities.add(ability)
+        self._advance_debuff_failure_cooldowns()
         return action, ability
 
     def _choose_action_by_priority(self, target: Character, tile: object) -> tuple[str, str | None]:
@@ -550,6 +552,7 @@ class Enemy(Character):
         self.last_action_stack_entry = action_entry
         if ability_name in self.single_use_abilities:
             self._used_single_use_abilities.add(ability_name)
+        self._advance_debuff_failure_cooldowns()
         return action_type, ability_name
 
     def _pickup_weapon_priority(self) -> ActionPriority:
@@ -644,6 +647,7 @@ class Enemy(Character):
             ability = random.choice(item_list)
         if ability in self.single_use_abilities:
             self._used_single_use_abilities.add(ability)
+        self._advance_debuff_failure_cooldowns()
         
         return action, ability
 
@@ -931,6 +935,8 @@ class Enemy(Character):
         rule = self._DEBUFF_REAPPLY_RULES.get(ability_name)
         if not rule:
             return False
+        if self._debuff_failure_cooldowns.get(ability_name, 0) > 0:
+            return True
 
         status_name = rule.get("status")
         if status_name:
@@ -955,6 +961,25 @@ class Enemy(Character):
             )
 
         return False
+
+    def record_debuff_failure(self, ability_name: str, turns: int = 2) -> None:
+        """Temporarily suppress a debuff that failed to affect its target."""
+        if ability_name not in self._DEBUFF_REAPPLY_RULES:
+            return
+        self._debuff_failure_cooldowns[ability_name] = max(
+            self._debuff_failure_cooldowns.get(ability_name, 0),
+            max(0, int(turns)),
+        )
+
+    def _advance_debuff_failure_cooldowns(self) -> None:
+        if not self._debuff_failure_cooldowns:
+            return
+        for ability_name in list(self._debuff_failure_cooldowns):
+            remaining = self._debuff_failure_cooldowns[ability_name] - 1
+            if remaining <= 0:
+                del self._debuff_failure_cooldowns[ability_name]
+            else:
+                self._debuff_failure_cooldowns[ability_name] = remaining
 
     def _target_has_weapon(self, target: Character) -> bool:
         equipment = getattr(target, "equipment", {})
@@ -1734,7 +1759,7 @@ class Barghest(Fiend):
              "priority_if": {"self_status": "Shapeshifted",
                               "priority": ActionPriority.SKIP,
                               "else": ActionPriority.NORMAL}},
-            {"ability": "Enfeeble", "priority": ActionPriority.NORMAL}
+            {"ability": "Enfeeble", "priority": ActionPriority.LOW}
         ]
         self.level.pro_level = 2
         self.sight = True

@@ -11,7 +11,7 @@ class Job:
     """
     Base definition for the class.
     *_plus describe the bonus at first level for each class (5 -> 6 -> 7 gain).
-    equipment lists the items the player_char starts out with for the selected class.
+    equipment lists the items the player_char starts out with for the selected base class.
     restrictions list the allowable item types the class can equip.
     """
 
@@ -29,9 +29,9 @@ class Job:
         def_plus: int,
         magic_plus: int,
         magic_def_plus: int,
-        equipment: dict[str, items.Item],
-        restrictions: dict[str, list[str]],
-        pro_level: int,
+        equipment: dict[str, items.Item] | None = None,
+        restrictions: dict[str, list[str]] | None = None,
+        pro_level: int = 1,
     ):
         self.name = name
         self.description = "\n".join(wrap(description, 75, break_on_hyphens=False))
@@ -45,13 +45,16 @@ class Job:
         self.def_plus = def_plus
         self.magic_plus = magic_plus
         self.magic_def_plus = magic_def_plus
-        self.equipment = equipment
-        self.restrictions = restrictions
+        self.equipment = dict(equipment or {})
+        self.restrictions = restrictions or {}
+        self.equipment.setdefault("Weapon", items.NoWeapon())
+        self.equipment.setdefault("OffHand", items.NoOffHand())
+        self.equipment.setdefault("Armor", items.NoArmor())
         self.equipment.setdefault("Helmet", items.NoHelmet())
-        if "Helmet" not in self.restrictions:
-            self.restrictions["Helmet"] = list(self.restrictions.get("Armor", []))
         self.equipment.setdefault("Ring", items.NoRing())
         self.equipment.setdefault("Pendant", items.NoPendant())
+        if "Helmet" not in self.restrictions:
+            self.restrictions["Helmet"] = list(self.restrictions.get("Armor", []))
         self.pro_level = pro_level
 
     def equip_check(self, item: items.Item | type[items.Item], equip_slot: str) -> bool:

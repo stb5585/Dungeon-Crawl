@@ -185,6 +185,31 @@ def test_priority_ai_keeps_pickup_low_for_spell_focused_enemy(monkeypatch):
     assert len(spell_entries) == 4
 
 
+def test_failed_debuff_cooldown_skips_repeated_enfeeble(monkeypatch):
+    enemy = _make_enemy()
+    target = _make_target(True)
+    enemy.spellbook["Spells"] = {"Enfeeble": abilities.Enfeeble()}
+    enemy.spellbook["Skills"] = {}
+    enemy.action_stack = [
+        {"ability": "Attack", "priority": ActionPriority.NORMAL},
+        {"ability": "Enfeeble", "priority": ActionPriority.HIGH},
+    ]
+    enemy.record_debuff_failure("Enfeeble", turns=2)
+    captured = []
+
+    def choose(seq):
+        captured.append(list(seq))
+        assert all(entry[1] != "Enfeeble" for entry in seq)
+        return seq[0]
+
+    monkeypatch.setattr(random, "choice", choose)
+
+    assert enemy.options(target, [], None) == ("Attack", None)
+    assert enemy.options(target, [], None) == ("Attack", None)
+    assert len(captured) == 2
+    assert enemy._debuff_failure_cooldowns == {}
+
+
 def test_priority_action_stack_can_explicitly_request_pickup_weapon(monkeypatch):
     enemy = _make_enemy()
     target = _make_target(True)

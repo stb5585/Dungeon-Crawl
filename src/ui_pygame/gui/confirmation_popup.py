@@ -20,6 +20,28 @@ def _get_safe_background_surface(presenter, screen):
     return screen.copy()
 
 
+def popup_close_rect(popup_rect: pygame.Rect) -> pygame.Rect:
+    """Return the shared close-button hitbox for popup chrome."""
+    return pygame.Rect(popup_rect.right - 30, popup_rect.top + 8, 20, 20)
+
+
+def draw_popup_close_button(screen, popup_rect: pygame.Rect, font, *, hovered: bool = False) -> pygame.Rect:
+    """Draw a compact x close button and return its hitbox."""
+    rect = popup_close_rect(popup_rect)
+    fill = (72, 48, 56) if hovered else (36, 32, 40)
+    border = (218, 165, 32) if hovered else (150, 150, 158)
+    pygame.draw.rect(screen, fill, rect)
+    pygame.draw.rect(screen, border, rect, 1)
+    text = font.render("x", True, border)
+    screen.blit(text, text.get_rect(center=rect.center))
+    return rect
+
+
+def popup_close_clicked(event, popup_rect: pygame.Rect) -> bool:
+    """Return whether a mouse event clicked the shared popup close button."""
+    return is_left_click(event) and popup_close_rect(popup_rect).collidepoint(mouse_position(event) or (-1, -1))
+
+
 class ConfirmationPopup:
     """
     A Yes/No confirmation popup that appears over the current screen.
@@ -105,6 +127,7 @@ class ConfirmationPopup:
         # Draw popup background
         pygame.draw.rect(self.screen, self.POPUP_BG, self.popup_rect)
         pygame.draw.rect(self.screen, self.BORDER_COLOR, self.popup_rect, 3)
+        draw_popup_close_button(self.screen, self.popup_rect, self.small_font)
         
         # Original compact confirmation layout
         y = self.popup_y + 30
@@ -243,6 +266,8 @@ class ConfirmationPopup:
                         continue
                     if min_display_ms and (pygame.time.get_ticks() - start_ms) < min_display_ms:
                         continue
+                    if popup_close_clicked(event, self.popup_rect):
+                        return finish(False if self.show_buttons else True)
                     if self.show_buttons:
                         hovered = hit_index(self.button_rects(), mouse_position(event))
                         if hovered is not None:
@@ -339,6 +364,7 @@ class ChoicePopup:
 
         pygame.draw.rect(self.screen, self.POPUP_BG, self.popup_rect)
         pygame.draw.rect(self.screen, self.BORDER_COLOR, self.popup_rect, 3)
+        draw_popup_close_button(self.screen, self.popup_rect, self.small_font)
 
         title_text = self.title_font.render(self.title, True, self.GOLD)
         title_rect = title_text.get_rect(centerx=self.popup_rect.centerx, top=self.popup_y + 20)
@@ -400,6 +426,8 @@ class ChoicePopup:
                     elif event.key == pygame.K_ESCAPE:
                         return None
                 elif event.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN):
+                    if popup_close_clicked(event, self.popup_rect):
+                        return None
                     hovered = hit_index(self.option_rects(), mouse_position(event))
                     if hovered is not None:
                         self.current_selection = hovered
@@ -491,6 +519,7 @@ class RewardSelectionPopup:
 
         pygame.draw.rect(self.screen, self.POPUP_BG, self.popup_rect)
         pygame.draw.rect(self.screen, self.BORDER_COLOR, self.popup_rect, 2)
+        draw_popup_close_button(self.screen, self.popup_rect, self.small_font)
 
         title_text = self.title_font.render(self.title, True, self.GOLD)
         self.screen.blit(title_text, (self.popup_rect.centerx - title_text.get_width() // 2, self.popup_rect.top + 16))
@@ -582,6 +611,8 @@ class RewardSelectionPopup:
                 elif event.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN):
                     if not input_armed:
                         continue
+                    if popup_close_clicked(event, self.popup_rect):
+                        return None
                     hovered = hit_index(self.row_rects(), mouse_position(event))
                     if hovered is not None:
                         self.selected_index = hovered
@@ -714,6 +745,7 @@ class QuantityPopup:
         # Draw popup background
         pygame.draw.rect(self.screen, self.POPUP_BG, self.popup_rect)
         pygame.draw.rect(self.screen, self.BORDER_COLOR, self.popup_rect, 3)
+        draw_popup_close_button(self.screen, self.popup_rect, self.small_font)
         
         # Title based on action
         if self.action == "store":
@@ -875,6 +907,8 @@ class QuantityPopup:
                 elif event.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN, pygame.MOUSEWHEEL):
                     if not input_armed:
                         continue
+                    if popup_close_clicked(event, self.popup_rect):
+                        return finish(None)
                     if event.type == pygame.MOUSEWHEEL:
                         delta = 1 if getattr(event, "y", 0) > 0 else -1
                         if self.selected_place == 0:
@@ -968,6 +1002,7 @@ class CodeEntryPopup:
 
         pygame.draw.rect(self.screen, self.POPUP_BG, self.popup_rect)
         pygame.draw.rect(self.screen, self.BORDER_COLOR, self.popup_rect, 3)
+        draw_popup_close_button(self.screen, self.popup_rect, self.small_font)
 
         title_text = self.title_font.render(self.title, True, self.GOLD)
         title_rect = title_text.get_rect(centerx=self.popup_rect.centerx, top=self.popup_y + 18)
@@ -1057,6 +1092,8 @@ class CodeEntryPopup:
                 elif event.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN, pygame.MOUSEWHEEL):
                     if not input_armed:
                         continue
+                    if popup_close_clicked(event, self.popup_rect):
+                        return finish(None)
                     if event.type == pygame.MOUSEWHEEL:
                         delta = 1 if getattr(event, "y", 0) > 0 else -1
                         self.digits[self.selected_digit] = max(0, min(9, self.digits[self.selected_digit] + delta))

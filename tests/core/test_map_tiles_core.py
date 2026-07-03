@@ -733,6 +733,29 @@ class TestSpecialTiles:
         assert type(rookie_tile.enemy).__name__ == "Zombie"
         assert player.state == "fight"
 
+    def test_rookie_body_visibility_requires_active_quest_or_dropped_body(self):
+        player = _make_player()
+        rookie_tile = map_tiles.CavePath1(8, 8, 1)
+
+        assert map_tiles.rookie_body_visible_for_player(player, rookie_tile) is False
+
+        player.quest_dict["Side"]["Rookie Mistake"] = {"Completed": False}
+        assert map_tiles.rookie_body_visible_for_player(player, rookie_tile) is True
+
+        player.quest_dict["Side"]["Rookie Mistake"]["Completed"] = True
+        assert map_tiles.rookie_body_visible_for_player(player, rookie_tile) is False
+
+        dropped_tile = map_tiles.CavePath1(4, 5, 1)
+        dropped_tile.dropped_rookie_body = True
+        player.quest_dict["Side"]["Rookie Mistake"] = {
+            "Completed": False,
+            "Body Dropped At": [4, 5, 1],
+        }
+        assert map_tiles.rookie_body_visible_for_player(player, dropped_tile) is True
+
+        player.special_inventory["Dead Soldier"] = [items.DeadSoldier()]
+        assert map_tiles.rookie_body_visible_for_player(player, dropped_tile) is False
+
     def test_rookie_mistake_body_drops_on_death_and_can_be_recovered(self):
         player = _make_player(level=12)
         player.location_x, player.location_y, player.location_z = (4, 5, 1)

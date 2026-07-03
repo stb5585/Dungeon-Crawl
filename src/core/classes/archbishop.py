@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from .base import Job
-from .. import items
 
 
 class Archbishop(Job):
@@ -28,11 +27,6 @@ class Archbishop(Job):
             def_plus=2,
             magic_plus=4,
             magic_def_plus=3,
-            equipment={
-                "Weapon": items.HolyStaff(),
-                "OffHand": items.NoOffHand(),
-                "Armor": items.CloakEnchantment(),
-            },
             restrictions={
                 "Weapon": ["Club", "Staff"],
                 "OffHand": ["Tome"],

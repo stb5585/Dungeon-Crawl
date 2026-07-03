@@ -7,3 +7,15 @@ damage_mod: 1.75
 crit: 6
 school: Elemental
 rank: 1
+effects:
+  - type: stat_contest
+    actor_stat: intel
+    actor_divisor: 2
+    target_stat: dex
+    target_lo_divisor: 3
+    target_hi_divisor: 1
+    effect:
+      type: debuff
+      stat: speed
+      amount: 3
+      duration: 2

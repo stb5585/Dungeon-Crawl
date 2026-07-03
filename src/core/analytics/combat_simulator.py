@@ -957,6 +957,11 @@ def remaining_improvement_tuning_report() -> dict[str, object]:
             "status": "measure_before_tuning",
             "metrics": ["land_rate", "debuff_amount", "duration", "enemy_damage_delta"],
         },
+        "poison_consistency": {
+            "status": "measure_before_tuning",
+            "sources": ["Poison Dart", "Poison Breath", "Poison Strike", "Hex"],
+            "metrics": ["application_rate", "duration", "tick_damage", "resist_outcome", "immunity_outcome"],
+        },
     }
 
 

@@ -7,7 +7,6 @@ import random
 from typing import Any
 
 from .base import Job
-from .. import items
 
 
 class Paladin(Job):
@@ -37,11 +36,6 @@ class Paladin(Job):
             def_plus=2,
             magic_plus=2,
             magic_def_plus=2,
-            equipment={
-                "Weapon": items.WarHammer(),
-                "OffHand": items.Glagwa(),
-                "Armor": items.Splint(),
-            },
             restrictions={
                 "Weapon": ["Sword", "Club", "Longsword", "Hammer"],
                 "OffHand": ["Shield"],

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from .base import Job
-from .. import items
 
 
 class Warlock(Job):
@@ -33,11 +32,6 @@ class Warlock(Job):
             def_plus=1,
             magic_plus=4,
             magic_def_plus=2,
-            equipment={
-                "Weapon": items.Kris(),
-                "OffHand": items.ElementalPrimer(),
-                "Armor": items.GoldCloak(),
-            },
             restrictions={
                 "Weapon": ["Dagger", "Staff"],
                 "OffHand": ["Tome"],

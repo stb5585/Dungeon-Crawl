@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import Any
 
 from .base import Job
-from .. import items
 
 
 class Dragoon(Job):
@@ -34,11 +33,6 @@ class Dragoon(Job):
             def_plus=3,
             magic_plus=0,
             magic_def_plus=3,
-            equipment={
-                "Weapon": items.Naginata(),
-                "OffHand": items.KiteShield(),
-                "Armor": items.PlateMail(),
-            },
             restrictions={
                 "Weapon": ["Sword", "Polearm"],
                 "OffHand": ["Shield"],

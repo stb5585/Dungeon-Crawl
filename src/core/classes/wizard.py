@@ -6,7 +6,6 @@ import random
 from typing import Any
 
 from .base import Job
-from .. import items
 
 AFFINITY_SCHOOLS = ("Fire", "Ice", "Water", "Electric", "Earth", "Wind")
 OPPOSITES = {
@@ -66,11 +65,6 @@ class Wizard(Job):
             def_plus=1,
             magic_plus=5,
             magic_def_plus=4,
-            equipment={
-                "Weapon": items.RuneStaff(),
-                "OffHand": items.NoOffHand(),
-                "Armor": items.CloakEnchantment(),
-            },
             restrictions={
                 "Weapon": ["Dagger", "Staff"],
                 "OffHand": ["Tome"],

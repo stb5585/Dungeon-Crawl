@@ -87,12 +87,13 @@ def test_remaining_improvement_tuning_report_lists_deferred_measurement_targets(
 
     report = remaining_improvement_tuning_report()
 
-    assert set(report) == {"footpad", "ordinary_drops", "multi_strike_accuracy", "enfeeble"}
+    assert set(report) == {"footpad", "ordinary_drops", "multi_strike_accuracy", "enfeeble", "poison_consistency"}
     assert report["footpad"]["status"] == "measure_before_tuning"
     assert "win_rate" in report["footpad"]["metrics"]
     assert report["ordinary_drops"]["excluded_drop_sources"] == ["quest", "special", "boss"]
     assert report["multi_strike_accuracy"]["candidate_change"] == "per_strike_accuracy_falloff"
     assert "land_rate" in report["enfeeble"]["metrics"]
+    assert "tick_damage" in report["poison_consistency"]["metrics"]
 
 
 def test_remaining_balance_baseline_wrapper_plans_canonical_targets(tmp_path):
@@ -119,6 +120,7 @@ def test_remaining_balance_baseline_wrapper_plans_canonical_targets(tmp_path):
         "ordinary_drops",
         "multi_strike_accuracy",
         "enfeeble",
+        "poison_consistency",
     }
 
     text_path, json_path = write_baseline_summary(
@@ -130,6 +132,44 @@ def test_remaining_balance_baseline_wrapper_plans_canonical_targets(tmp_path):
     assert text_path.name == "remaining_balance_baseline_summary.txt"
     assert json_path.name == "remaining_balance_baseline_summary.json"
     assert "Deferred tuning targets" in text_path.read_text(encoding="utf-8")
+
+
+def test_balance_suite_dragoon_meta_loadout_uses_existing_power_up():
+    from tools.run_balance_suite import _apply_meta_progression_loadouts
+
+    player = SimpleNamespace(
+        name="Tester",
+        cls=SimpleNamespace(name="Dragoon"),
+        spellbook={"Spells": {}, "Skills": {}},
+        familiar=None,
+        summons={},
+        kill_dict={},
+        power_up=False,
+    )
+
+    _apply_meta_progression_loadouts(player, 30)
+
+    assert player.power_up is True
+    assert "Draconic Onslaught" in player.spellbook["Skills"]
+
+
+def test_balance_suite_meta_loadout_skips_missing_optional_power_up():
+    from tools.run_balance_suite import _apply_meta_progression_loadouts
+
+    player = SimpleNamespace(
+        name="Tester",
+        cls=SimpleNamespace(name="Astromancer"),
+        spellbook={"Spells": {}, "Skills": {}},
+        familiar=None,
+        summons={},
+        kill_dict={},
+        power_up=False,
+    )
+
+    _apply_meta_progression_loadouts(player, 30)
+
+    assert player.power_up is False
+    assert player.spellbook["Skills"] == {}
 
 
 def test_remaining_balance_baseline_dry_run_writes_result_paths(tmp_path):

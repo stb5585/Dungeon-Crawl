@@ -520,7 +520,7 @@ remain the prompts; the evidence ledger is the running decision record.
 - [ ] Stack repeated status effects alongside several other combat states.
   - Expected: Counted status icons keep urgent effects visible first and use stable ordering instead of flickering between turns.
 - [ ] Build Evasive Guard stacks as a Footpad-line character in pygame combat.
-  - Expected: The combat status row shows an `EG#` stack indicator, and Combat Focus lists the current Evasive Guard stack count.
+  - Expected: The combat status row shows an `EG#` stack indicator.
   - Expected: Evasive Guard stacks reset after a successful dodge.
 - [ ] Resize the game window or view a crowded combat overlay.
   - Expected: Status icon labels remain clipped to the icon pill instead of spilling into neighboring UI.

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from .base import Job
-from .. import items
 
 
 class Sentinel(Job):
@@ -34,11 +33,6 @@ class Sentinel(Job):
             def_plus=4,
             magic_plus=0,
             magic_def_plus=3,
-            equipment={
-                "Weapon": items.Talwar(),
-                "OffHand": items.Glagwa(),
-                "Armor": items.Splint(),
-            },
             restrictions={
                 "Weapon": ["Fist", "Sword", "Club"],
                 "OffHand": ["Shield"],

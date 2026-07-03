@@ -11,7 +11,7 @@ from src.core import enemies, items
 from src.core import map_tiles
 from src.ui_pygame.assets.icon_manager import IconManager
 from src.ui_pygame.assets.item_render_manager import get_item_render_manager
-from .confirmation_popup import ConfirmationPopup
+from .confirmation_popup import ConfirmationPopup, draw_popup_close_button, popup_close_clicked
 from .input_guards import (
     prepare_guarded_input,
     release_guard_allows_input,
@@ -435,6 +435,7 @@ class BasePopupMenu:
     def draw_popup(self, player_char):
         pygame.draw.rect(self.screen, self.BLACK, self.popup_rect)
         pygame.draw.rect(self.screen, self.BORDER_COLOR, self.popup_rect, 2)
+        draw_popup_close_button(self.screen, self.popup_rect, self.small_font)
 
         # Title
         title_text = self.title_font.render(self.title, True, self.GOLD)
@@ -618,6 +619,12 @@ class BasePopupMenu:
                         import sys
                         sys.exit()
                     input_armed = update_input_armed_from_event(event, require_key_release, input_armed)
+                    if popup_close_clicked(event, self.popup_rect):
+                        if not input_armed:
+                            continue
+                        running = False
+                        result = None
+                        continue
                     hovered = self._hit_visible_row(mouse_position(event))
                     if hovered is not None and event.type == pygame.MOUSEMOTION and self._is_selectable_index(hovered):
                         self.selected_index = hovered

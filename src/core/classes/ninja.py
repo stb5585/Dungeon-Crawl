@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from .base import Job
-from .. import items
 
 
 class Ninja(Job):
@@ -32,11 +31,6 @@ class Ninja(Job):
             def_plus=1,
             magic_plus=1,
             magic_def_plus=4,
-            equipment={
-                "Weapon": items.Tanto(),
-                "OffHand": items.Rondel(),
-                "Armor": items.StuddedLeather(),
-            },
             restrictions={
                 "Weapon": ["Fist", "Dagger", "Ninja Blade"],
                 "OffHand": ["Fist", "Dagger", "Ninja Blade"],

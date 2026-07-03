@@ -10,7 +10,7 @@ from types import SimpleNamespace
 
 sys.path.insert(0, str(Path(__file__).parents[2]))
 
-from src.core import abilities, enemies, items
+from src.core import abilities, companions, enemies, items
 from src.core.save_system import (
     AbilitySerializer,
     EnemyStateSerializer,
@@ -171,6 +171,69 @@ def test_player_data_serializer_round_trips_bestiary_records():
     restored = PlayerDataSerializer.deserialize(PlayerDataSerializer.serialize(player), skip_tiles=True)
 
     assert restored.bestiary == player.bestiary
+
+
+def test_player_data_serializer_round_trips_summons():
+    player = TestGameState.create_player(
+        name="Summoner",
+        class_name="Summoner",
+        race_name="Human",
+        level=12,
+    )
+    summon = companions.Patagon()
+    summon.initialize_stats(player)
+    summon.health.current = max(1, summon.health.max - 7)
+    summon.mana.current = max(0, summon.mana.max - 3)
+    summon.level.level = 3
+    summon.level.exp = 123
+    player.summons["Patagon"] = summon
+
+    serialized = PlayerDataSerializer.serialize(player)
+    restored = PlayerDataSerializer.deserialize(serialized, skip_tiles=True)
+
+    assert "Patagon" in serialized["summons"]
+    assert "Patagon" in restored.summons
+    restored_summon = restored.summons["Patagon"]
+    assert restored_summon.name == "Patagon"
+    assert restored_summon.health.current == summon.health.current
+    assert restored_summon.mana.current == summon.mana.current
+    assert restored_summon.level.level == 3
+    assert restored_summon.level.exp == 123
+
+
+def test_player_data_serializer_round_trips_malformed_single_ability_summon_sections():
+    player = TestGameState.create_player(
+        name="Summoner",
+        class_name="Summoner",
+        race_name="Human",
+        level=12,
+    )
+    summon = companions.Fuath()
+    summon.initialize_stats(player)
+    player.summons["Fuath"] = summon
+
+    restored = PlayerDataSerializer.deserialize(
+        PlayerDataSerializer.serialize(player),
+        skip_tiles=True,
+    )
+
+    assert "Water Jet" in restored.summons["Fuath"].spellbook["Spells"]
+    assert "Screech" in restored.summons["Fuath"].spellbook["Skills"]
+
+
+def test_player_data_deserialize_grants_patagon_for_legacy_summoner_save():
+    player = TestGameState.create_player(
+        name="LegacySummoner",
+        class_name="Summoner",
+        race_name="Human",
+        level=12,
+    )
+    serialized = PlayerDataSerializer.serialize(player)
+    serialized.pop("summons", None)
+
+    restored = PlayerDataSerializer.deserialize(serialized, skip_tiles=True)
+
+    assert "Patagon" in restored.summons
 
 
 def test_player_data_deserialize_deactivates_funhouse_teleporter_for_existing_jester_save(monkeypatch):

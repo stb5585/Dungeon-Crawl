@@ -349,7 +349,7 @@ def test_handle_promotion_advanced_branches(monkeypatch):
     monkeypatch.setattr("src.ui_pygame.gui.church.spell_dict", {"Warlock": {"1": FakeSpell}})
     monkeypatch.setattr("src.ui_pygame.gui.church.skill_dict", {"Warlock": {"1": FakeSkill}})
     monkeypatch.setattr("src.ui_pygame.gui.church.companions.Fairy", FakeFairy)
-    monkeypatch.setattr("src.ui_pygame.gui.church.companions.Patagon", FakePatagon)
+    monkeypatch.setattr(companions, "Patagon", FakePatagon)
 
     class FakePromotionScreen:
         def __init__(self, _presenter, _player, options, option_map, current_class, pro_level):

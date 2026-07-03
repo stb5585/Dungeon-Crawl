@@ -206,6 +206,33 @@ def test_battle_manager_take_turn_and_player_input(monkeypatch):
     assert textbox.print_calls[-1] == "Pet helps"
 
 
+def test_battle_manager_take_turn_continues_after_summon(monkeypatch):
+    manager, engine, ui, popup, textbox, *_rest = _make_manager(monkeypatch)
+
+    engine.pre_turn = lambda: SimpleNamespace(effects_text="", died_from_effects=False, can_act=True, inactive_reason="")
+    engine.get_forced_action = lambda: None
+    engine.is_player_turn = lambda: True
+    engine.attacker.summons = {"Wolf": object()}
+    ui.actions = ["Summon", "Attack"]
+    popup.responses = ["Wolf"]
+    execute_calls = []
+
+    def execute_action(action, choice=None):
+        execute_calls.append((action, choice))
+        return SimpleNamespace(
+            message=f"{action}:{choice}",
+            summon_started=action == "Summon",
+            summon_recalled=False,
+        )
+
+    engine.execute_action = execute_action
+
+    manager.take_turn()
+
+    assert execute_calls == [("Summon", "Wolf"), ("Attack", None)]
+    assert textbox.print_calls[-3:] == ["Summon:Wolf", "Attack:None", "Pet helps"]
+
+
 def test_battle_manager_execute_battle_and_end_battle(monkeypatch):
     manager, engine, _ui, _popup, _textbox, end_calls, getch_calls, logger_calls, _swaps = _make_manager(monkeypatch)
 

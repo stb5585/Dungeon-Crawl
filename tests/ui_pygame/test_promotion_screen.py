@@ -90,11 +90,6 @@ class KnightClass:
         self.def_plus = 5
         self.magic_plus = 1
         self.magic_def_plus = 2
-        self.equipment = {
-            "Weapon": SimpleNamespace(name="Knight Sword"),
-            "OffHand": SimpleNamespace(name="Tower Shield", subtyp="Shield", mod=0.25),
-            "Armor": SimpleNamespace(name="Plate Armor"),
-        }
         self.restrictions = {"Weapon": ["Sword", "Mace"], "Armor": ["Heavy"]}
 
 
@@ -120,8 +115,6 @@ def test_promotion_screen_draw_helpers(monkeypatch):
     monkeypatch.setattr("src.ui_pygame.gui.promotion_screen.pygame.display.flip", lambda: flip_calls.append(True))
 
     assert screen._wrap_lines("alpha beta\ngamma", 5)
-    assert screen._format_offhand(SimpleNamespace(name="Shield", subtyp="Shield", mod=0.2)) == "Shield (20%)"
-    assert screen._format_offhand(SimpleNamespace(name="Codex", subtyp="Tome", mod=3)) == "Codex (+3)"
 
     stat_pairs = screen._stat_pairs(KnightClass())
     assert stat_pairs[0][0][0] == "Strength"
@@ -136,9 +129,20 @@ def test_promotion_screen_draw_helpers(monkeypatch):
     assert "Choose your path" in presenter.normal_font.render_calls
     assert "Knight" in presenter.large_font.render_calls
     assert "Promotion Stats" in presenter.normal_font.render_calls
-    assert "Class Gear Profile" in presenter.normal_font.render_calls
+    assert "Class Gear Profile" not in presenter.normal_font.render_calls
     assert any("Existing legal gear is kept" in call for call in presenter.small_font.render_calls)
     assert "Equipment Restrictions" in presenter.normal_font.render_calls
+    note_blits = [
+        pos
+        for surface, pos in presenter.screen.blit_calls
+        if getattr(surface, "text", "").startswith("Existing legal gear is kept")
+    ]
+    restriction_blits = [
+        pos
+        for surface, pos in presenter.screen.blit_calls
+        if getattr(surface, "text", "") == "Equipment Restrictions"
+    ]
+    assert note_blits[-1][1] > restriction_blits[-1][1]
     assert "UP/DOWN: Select   ENTER: Promote   ESC: Cancel" in presenter.small_font.render_calls
     assert draw_rect_calls
     assert flip_calls

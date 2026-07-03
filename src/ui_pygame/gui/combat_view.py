@@ -18,6 +18,7 @@ from src.ui_pygame.assets.enemy_combat_sprite_manager import (
 )
 from src.ui_pygame.assets.enemy_token_manager import get_enemy_token_manager
 from src.ui_pygame.assets.player_token_manager import get_player_token_manager
+from src.ui_pygame.assets.companion_art_manager import get_companion_art_manager
 
 from .enemy_presentation import (
     effect_icon_label,
@@ -1274,7 +1275,16 @@ class CombatView:
         if self._smoke_screen_active_for(character, target):
             self._render_smoke_screen_visual(rect)
     
-    def render_combat(self, player_char, enemy, actions, selected_action=0, current_turn=None, show_enemy_details=None):
+    def render_combat(
+        self,
+        player_char,
+        enemy,
+        actions,
+        selected_action=0,
+        current_turn=None,
+        show_enemy_details=None,
+        current_actor=None,
+    ):
         """Render the complete combat view."""
         self._set_combat_log_actors(player_char, enemy)
         # Update animations
@@ -1292,7 +1302,7 @@ class CombatView:
         self._render_enemy_info_panel(enemy, has_sight, overlay=False)
 
         # Render current turn indicator
-        self._render_turn_indicator(player_char, enemy, current_turn=current_turn)
+        self._render_turn_indicator(player_char, enemy, current_turn=current_turn, current_actor=current_actor)
         self._render_telegraph_banner(enemy=enemy, overlay=False)
 
         # Render player status at bottom left
@@ -1942,7 +1952,16 @@ class CombatView:
         self._render_active_impact_effects()
         self._render_floating_texts()
 
-    def render_combat_overlay(self, player_char, enemy, actions, selected_action, current_turn=None, show_enemy_details=None):
+    def render_combat_overlay(
+        self,
+        player_char,
+        enemy,
+        actions,
+        selected_action,
+        current_turn=None,
+        show_enemy_details=None,
+        current_actor=None,
+    ):
         """Render combat UI overlay (action menu and combat log) over the dungeon view."""
         self._set_combat_log_actors(player_char, enemy)
         self._last_player_target_rect = pygame.Rect(
@@ -1952,7 +1971,13 @@ class CombatView:
             130,
         )
         self._render_player_danger_vignette(player_char)
-        self._render_turn_indicator(player_char, enemy, current_turn=current_turn, overlay=True)
+        self._render_turn_indicator(
+            player_char,
+            enemy,
+            current_turn=current_turn,
+            overlay=True,
+            current_actor=current_actor,
+        )
         self._render_telegraph_banner(enemy=enemy, overlay=True)
         has_sight = self._enemy_details_visible(player_char, enemy, show_enemy_details)
         self._render_enemy_info_panel(enemy, has_sight, overlay=True)
@@ -2048,12 +2073,12 @@ class CombatView:
             translucent_highlight=True,
         )
 
-    def _render_turn_indicator(self, player_char, enemy, current_turn=None, overlay=False):
+    def _render_turn_indicator(self, player_char, enemy, current_turn=None, overlay=False, current_actor=None):
         """Render a compact banner showing whose turn is active."""
         if current_turn not in {"player", "enemy"}:
             return
-        current_actor = player_char if current_turn == "player" else enemy
-        incapacitated = getattr(current_actor, "incapacitated", None)
+        turn_actor = current_actor if current_actor is not None else (player_char if current_turn == "player" else enemy)
+        incapacitated = getattr(turn_actor, "incapacitated", None)
         if callable(incapacitated) and incapacitated():
             return
 
@@ -2062,7 +2087,7 @@ class CombatView:
         text_left = token_size + 26
         min_height = 64
         label = "Your Turn" if current_turn == "player" else "Enemy Turn"
-        sublabel = getattr(player_char, "name", "Player") if current_turn == "player" else getattr(enemy, "name", "Enemy")
+        sublabel = getattr(turn_actor, "name", "Player" if current_turn == "player" else "Enemy")
         color = self.colors["turn_player" if current_turn == "player" else "turn_enemy"]
 
         font = pygame.font.Font(None, 26)
@@ -2086,9 +2111,12 @@ class CombatView:
         pygame.draw.rect(self.screen, color, rect, 3)
         if current_turn == "player":
             try:
-                token = self.player_token_manager.get_scaled_token(player_char, (token_size, token_size))
+                if turn_actor is player_char:
+                    token = self.player_token_manager.get_scaled_token(player_char, (token_size, token_size))
+                else:
+                    token = get_companion_art_manager().get_scaled_sprite(turn_actor, (token_size, token_size))
             except Exception as exc:  # pragma: no cover - defensive runtime fallback for external art failures
-                print(f"Failed to render player token for {getattr(player_char, 'name', player_char)}: {exc}")
+                print(f"Failed to render player-side token for {getattr(turn_actor, 'name', turn_actor)}: {exc}")
                 token = None
         else:
             try:
@@ -2100,6 +2128,10 @@ class CombatView:
             self.screen.blit(token, (rect.left + 8, rect.centery - token_size // 2))
         self.screen.blit(label_surf, (rect.left + text_left, rect.top + 8))
         self.screen.blit(sublabel_surf, (rect.left + text_left, rect.top + 34))
+        if current_turn == "player" and turn_actor is not player_char:
+            icons = self._collect_status_icons(turn_actor)
+            if icons:
+                self._render_status_icons(icons, rect.left + text_left, rect.bottom + 4, max_width=width - text_left - 10, max_rows=1)
 
     def _latest_telegraph_line(self, actor=None) -> str | None:
         if self._active_telegraph_line:

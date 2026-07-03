@@ -59,6 +59,7 @@ SLOT_CARD_VALUES = {
 }
 VESPERION_FALSE_FINAL_HP_RATIO = 0.70
 VESPERION_FALSE_FINAL_ENEMY_TURNS = 3
+COMBAT_START_TRANSITION_FRAMES = 12
 
 
 def _battle_log_slug(value: object) -> str:
@@ -480,6 +481,13 @@ class GUICombatManager:
         scroll_offset = self._scroll_offset_for_selection(selected, scroll_offset)
         return selected, scroll_offset, is_left_click(event) and input_armed
 
+    def _render_described_selection_menu(self, title, options, selected, scroll_offset, descriptions):
+        self._selection_menu_descriptions = descriptions
+        try:
+            self._render_selection_menu(title, options, selected, scroll_offset)
+        finally:
+            self._selection_menu_descriptions = None
+
     @staticmethod
     def _scroll_offset_for_selection(selected: int, scroll_offset: int, max_visible: int = 3) -> int:
         if selected < scroll_offset:
@@ -487,6 +495,10 @@ class GUICombatManager:
         if selected >= scroll_offset + max_visible:
             return selected - max_visible + 1
         return scroll_offset
+
+    def _selection_frame_player(self, actor):
+        """Return the player object to use while rendering actor submenus."""
+        return getattr(self.engine, "player", None) or actor
 
     @staticmethod
     def _fit_text_to_width(font: pygame.font.Font, text: str, max_width: int) -> str:
@@ -586,7 +598,7 @@ class GUICombatManager:
                     pygame.quit()
                     sys.exit(0)
                 self._handle_combat_log_scroll_event(event)
-            self._render_combat_frame(player_char, enemy, [], -1)
+            self._render_combat_frame(self._selection_frame_player(player_char), enemy, [], -1)
             pygame.display.flip()
             clock.tick(60)
 
@@ -772,13 +784,13 @@ class GUICombatManager:
         
         # Show initial combat screen with brief transition delay (with animation updates)
         init_clock = pygame.time.Clock()
-        for _ in range(48):  # 800ms at 60fps
+        for _ in range(COMBAT_START_TRANSITION_FRAMES):
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit(0)
                 self._handle_combat_log_scroll_event(event)
-            self._render_combat_frame(player_char, enemy, [], -1)
+            self._render_combat_frame(self._selection_frame_player(player_char), enemy, [], -1)
             pygame.display.flip()
             init_clock.tick(60)
         
@@ -921,8 +933,11 @@ class GUICombatManager:
         if "Defend" not in deduped and "Attack" in deduped:
             deduped.insert(1, "Defend")
 
-        # Add Pickup Weapon if disarmed
-        if self.engine.player.is_disarmed() and "Pickup Weapon" not in deduped:
+        actor = getattr(self.engine, "attacker", None) or getattr(self.engine, "player", None)
+
+        # Add Pickup Weapon if the active actor is disarmed
+        is_disarmed = getattr(actor, "is_disarmed", None)
+        if actor is not None and callable(is_disarmed) and is_disarmed() and "Pickup Weapon" not in deduped:
             idx = 2 if "Defend" in deduped else 1
             deduped.insert(idx, "Pickup Weapon")
 
@@ -1045,7 +1060,8 @@ class GUICombatManager:
                 return True
 
             if forced.action == "Attack":
-                self.combat_view.add_combat_message(f"{player_char.name} is BERSERKED and attacks wildly!")
+                actor_name = getattr(getattr(self.engine, "attacker", None), "name", player_char.name)
+                self.combat_view.add_combat_message(f"{actor_name} is BERSERKED and attacks wildly!")
 
             # Execute the forced action via engine
             enemy_hp_before = enemy.health.current
@@ -1128,6 +1144,12 @@ class GUICombatManager:
                         )
                         if action_result == "flee":
                             return "flee"
+                        elif action_result == "continue_turn":
+                            self._refresh_display_actions()
+                            actions = self.available_actions
+                            selected_action = 0
+                            input_armed = self._clear_pending_input()
+                            break
                         elif action_result is not None:
                             action_taken = True
                     elif event.key in [pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4, pygame.K_5, pygame.K_6]:
@@ -1141,6 +1163,12 @@ class GUICombatManager:
                             )
                             if action_result == "flee":
                                 return "flee"
+                            elif action_result == "continue_turn":
+                                self._refresh_display_actions()
+                                actions = self.available_actions
+                                selected_action = 0
+                                input_armed = self._clear_pending_input()
+                                break
                             elif action_result is not None:
                                 action_taken = True
                 elif event.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN):
@@ -1157,6 +1185,12 @@ class GUICombatManager:
                     )
                     if action_result == "flee":
                         return "flee"
+                    elif action_result == "continue_turn":
+                        self._refresh_display_actions()
+                        actions = self.available_actions
+                        selected_action = 0
+                        input_armed = self._clear_pending_input()
+                        break
                     elif action_result is not None:
                         action_taken = True
             
@@ -1242,6 +1276,7 @@ class GUICombatManager:
     
     def _execute_action(self, action, player_char, enemy):
         """Execute a player action by delegating to the engine."""
+        actor = getattr(self.engine, "attacker", None) or player_char
         if action == "Auto Kill":
             if not self._debug_mode_enabled():
                 self.combat_view.add_combat_message("Auto Kill is only available in debug mode.")
@@ -1261,19 +1296,19 @@ class GUICombatManager:
         choice = None
 
         if action == "Items":
-            selected_item = self._select_item(player_char, enemy)
+            selected_item = self._select_item(actor, enemy)
             if not selected_item:
                 return None  # Cancelled
             choice = selected_item.name
 
         elif action == "Spells":
-            if player_char.abilities_suppressed():
-                reason = "the anti-magic field" if getattr(player_char, "anti_magic_active", False) else "silence"
+            if actor.abilities_suppressed():
+                reason = "the anti-magic field" if getattr(actor, "anti_magic_active", False) else "silence"
                 self.combat_view.add_combat_message(
-                    f"{player_char.name} cannot cast spells because of {reason}!"
+                    f"{actor.name} cannot cast spells because of {reason}!"
                 )
                 return None
-            selected_spell = self._select_spell(player_char, enemy)
+            selected_spell = self._select_spell(actor, enemy)
             if not selected_spell:
                 return None
             choice = selected_spell
@@ -1297,13 +1332,13 @@ class GUICombatManager:
             choice = selected_spell
 
         elif action == "Skills":
-            if player_char.abilities_suppressed():
-                reason = "the anti-magic field" if getattr(player_char, "anti_magic_active", False) else "silence"
+            if actor.abilities_suppressed():
+                reason = "the anti-magic field" if getattr(actor, "anti_magic_active", False) else "silence"
                 self.combat_view.add_combat_message(
-                    f"{player_char.name} cannot use skills because of {reason}!"
+                    f"{actor.name} cannot use skills because of {reason}!"
                 )
                 return None
-            selected_skill = self._select_skill(player_char, enemy)
+            selected_skill = self._select_skill(actor, enemy)
             if not selected_skill:
                 return None
             choice = selected_skill
@@ -1311,30 +1346,44 @@ class GUICombatManager:
                 intent = self._select_contract_intent(player_char, enemy)
                 if not intent:
                     return None
-                skill_obj = player_char.spellbook.get('Skills', {}).get("Call Contract")
+                skill_obj = actor.spellbook.get('Skills', {}).get("Call Contract")
                 if skill_obj:
                     skill_obj.pending_intent = intent
 
+        elif action == "Summon":
+            if player_char.abilities_suppressed():
+                reason = "the anti-magic field" if getattr(player_char, "anti_magic_active", False) else "silence"
+                self.combat_view.add_combat_message(
+                    f"{player_char.name} cannot summon because of {reason}!"
+                )
+                return None
+            selected_summon = self._select_summon(player_char, enemy)
+            if not selected_summon:
+                return None
+            choice = selected_summon
+
         elif action == "Pickup Weapon":
-            if not player_char.is_disarmed():
+            is_disarmed = getattr(actor, "is_disarmed", None)
+            if not callable(is_disarmed) or not is_disarmed():
                 self.combat_view.add_combat_message("Not disarmed!")
                 return None
 
         if choice is not None:
-            self._render_combat_frame(player_char, enemy, [], -1)
+            self._render_combat_frame(self._selection_frame_player(player_char), enemy, [], -1)
             pygame.display.flip()
 
         # Record HP before execution for damage flash
         enemy_hp_before = enemy.health.current
         player_hp_before = player_char.health.current
+        actor_hp_before = getattr(getattr(actor, "health", None), "current", 0)
         enemy_name_before = enemy.name
 
         # Delegate to engine (handles attack rolls, spell casts, skill use, etc.)
         slot_cb = None
         if action == "Skills" and choice:
-            skill_obj = player_char.spellbook.get('Skills', {}).get(choice)
+            skill_obj = actor.spellbook.get('Skills', {}).get(choice)
             if skill_obj and skill_obj.name == "Slot Machine":
-                slot_cb = lambda _u, _t: self._show_slot_machine_reveal(player_char, enemy)
+                slot_cb = lambda _u, _t: self._show_slot_machine_reveal(actor, enemy)
 
         result = self.engine.execute_action(engine_action, choice=choice, slot_machine_callback=slot_cb)
 
@@ -1360,12 +1409,18 @@ class GUICombatManager:
             self._show_combat_heal_text("enemy", max(0, enemy.health.current - enemy_hp_before))
 
         # Show damage flash for player damage (from reflected/self-damage skills)
+        active_hp_after = getattr(getattr(actor, "health", None), "current", actor_hp_before)
         damage_to_player = max(0, player_hp_before - player_char.health.current)
+        if actor is not player_char:
+            damage_to_player = max(0, actor_hp_before - active_hp_after)
         if damage_to_player > 0:
             self._show_combat_damage_effect("player", action, choice, result.message, damage_to_player)
             showed_damage_effect = True
         else:
-            self._show_combat_heal_text("player", max(0, player_char.health.current - player_hp_before))
+            heal_amount = max(0, player_char.health.current - player_hp_before)
+            if actor is not player_char:
+                heal_amount = max(0, active_hp_after - actor_hp_before)
+            self._show_combat_heal_text("player", heal_amount)
 
         if showed_damage_effect:
             self._flush_result_frame(player_char, enemy)
@@ -1378,6 +1433,9 @@ class GUICombatManager:
 
         if action_fled:
             return "flee"
+        if getattr(result, "summon_started", False):
+            self._refresh_display_actions()
+            return "continue_turn"
         return "action_taken"
     
     def _select_totem_aspect(self, player_char, enemy, totem_skill):
@@ -1448,14 +1506,17 @@ class GUICombatManager:
         selected = 0
         scroll_offset = 0
         input_armed = self._clear_pending_input()
+        frame_player = self._selection_frame_player(player_char)
         while True:
-            self._render_combat_frame(player_char, enemy, [], -1)
+            self._render_combat_frame(frame_player, enemy, [], -1)
             item_options = [f"{name} ({count})" for name, _, count in items]
-            self._render_selection_menu(
+            item_descriptions = [getattr(item, "description", "") for _, item, _ in items]
+            self._render_described_selection_menu(
                 "Select Item",
                 item_options,
                 selected,
                 scroll_offset,
+                item_descriptions,
             )
             pygame.display.flip()
             
@@ -1508,15 +1569,22 @@ class GUICombatManager:
         selected = 0
         scroll_offset = 0
         input_armed = self._clear_pending_input()
+        frame_player = self._selection_frame_player(player_char)
         while True:
-            self._render_combat_frame(player_char, enemy, [], -1)
+            self._render_combat_frame(frame_player, enemy, [], -1)
             spell_options = []
             for spell_name in spells:
                 spell = player_char.spellbook['Spells'][spell_name]
                 cost = spell.cost
                 spell_options.append(f"{spell_name} (MP: {cost})")
+            spell_descriptions = [
+                getattr(player_char.spellbook['Spells'][spell_name], "description", "")
+                for spell_name in spells
+            ]
             
-            self._render_selection_menu("Select Spell", spell_options, selected, scroll_offset)
+            self._render_described_selection_menu(
+                "Select Spell", spell_options, selected, scroll_offset, spell_descriptions
+            )
             pygame.display.flip()
             
             input_armed = release_guard_allows_input(True, input_armed)
@@ -1566,16 +1634,23 @@ class GUICombatManager:
         selected = 0
         scroll_offset = 0
         input_armed = self._clear_pending_input()
+        frame_player = self._selection_frame_player(player_char)
         while True:
             # Render combat with skill menu overlay
-            self._render_combat_frame(player_char, enemy, [], -1)
+            self._render_combat_frame(frame_player, enemy, [], -1)
             skill_options = []
             for skill_name in skills:
                 skill = player_char.spellbook['Skills'][skill_name]
                 cost = skill.cost
                 skill_options.append(f"{skill_name} (MP: {cost})")
+            skill_descriptions = [
+                getattr(player_char.spellbook['Skills'][skill_name], "description", "")
+                for skill_name in skills
+            ]
             
-            self._render_selection_menu("Select Skill", skill_options, selected, scroll_offset)
+            self._render_described_selection_menu(
+                "Select Skill", skill_options, selected, scroll_offset, skill_descriptions
+            )
             pygame.display.flip()
             
             # Handle input
@@ -1618,6 +1693,72 @@ class GUICombatManager:
                     if confirmed:
                         return skills[selected]
 
+    def _select_summon(self, player_char, enemy):
+        """Show summon selection menu and return selected summon name."""
+        summons = getattr(player_char, "summons", {}) or {}
+        summon_names = [
+            name for name, summon in summons.items()
+            if self._living_summon_available(summon)
+        ]
+
+        if not summon_names:
+            self.combat_view.add_combat_message("No summons available!")
+            self._pause_with_events(500)
+            return None
+
+        selected = 0
+        scroll_offset = 0
+        input_armed = self._clear_pending_input()
+        while True:
+            self._render_combat_frame(player_char, enemy, [], -1)
+            summon_options = []
+            for summon_name in summon_names:
+                summon = summons[summon_name]
+                level = getattr(getattr(summon, "level", None), "level", None)
+                suffix = f" (Lv {level})" if level is not None else ""
+                summon_options.append(f"{summon_name}{suffix}")
+
+            self._render_selection_menu("Select Summon", summon_options, selected, scroll_offset)
+            pygame.display.flip()
+
+            input_armed = release_guard_allows_input(True, input_armed)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit(0)
+                input_armed = self._arm_guarded_input(event, input_armed)
+                if event.type == pygame.KEYDOWN and not input_armed:
+                    continue
+                elif event.type == pygame.KEYDOWN:
+                    if event.key in [pygame.K_ESCAPE, pygame.K_BACKSPACE]:
+                        return None
+                    elif event.key in [pygame.K_UP, pygame.K_w]:
+                        selected = (selected - 1) % len(summon_names)
+                    elif event.key in [pygame.K_DOWN, pygame.K_s]:
+                        selected = (selected + 1) % len(summon_names)
+                    elif event.key == pygame.K_PAGEUP:
+                        selected = max(0, selected - 10)
+                    elif event.key == pygame.K_PAGEDOWN:
+                        selected = min(len(summon_names) - 1, selected + 10)
+                    elif event.key in [pygame.K_RETURN, pygame.K_SPACE]:
+                        return summon_names[selected]
+                    scroll_offset = self._scroll_offset_for_selection(selected, scroll_offset)
+                elif event.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN):
+                    selected, scroll_offset, confirmed = self._selection_menu_mouse_update(
+                        event,
+                        summon_options,
+                        selected,
+                        scroll_offset,
+                        input_armed,
+                    )
+                    if confirmed:
+                        return summon_names[selected]
+
+    @staticmethod
+    def _living_summon_available(summon) -> bool:
+        is_alive = getattr(summon, "is_alive", None)
+        return bool(is_alive()) if callable(is_alive) else True
+
     def _select_runic_boost_spell(self, player_char, enemy):
         """Show Runic Boost spell selection and return selected spell name."""
         spells = astromancer.boostable_spells(player_char)
@@ -1636,8 +1777,14 @@ class GUICombatManager:
                 spell = player_char.spellbook["Spells"][spell_name]
                 sign = astromancer.sign_for_spell(spell) or "Rune"
                 spell_options.append(f"{sign}: {spell_name} (MP: {spell.cost})")
+            spell_descriptions = [
+                getattr(player_char.spellbook["Spells"][spell_name], "description", "")
+                for spell_name in spells
+            ]
 
-            self._render_selection_menu("Runic Boost", spell_options, selected, scroll_offset)
+            self._render_described_selection_menu(
+                "Runic Boost", spell_options, selected, scroll_offset, spell_descriptions
+            )
             pygame.display.flip()
 
             input_armed = release_guard_allows_input(True, input_armed)
@@ -1700,7 +1847,15 @@ class GUICombatManager:
         input_armed = self._clear_pending_input()
         while True:
             self._render_combat_frame(player_char, enemy, [], -1)
-            self._render_selection_menu("Steal As Well", options, selected, scroll_offset)
+            descriptions = []
+            for option in options:
+                spell = player_char.spellbook["Spells"].get(option)
+                if spell is not None:
+                    descriptions.append(getattr(spell, "description", ""))
+                    continue
+                item_list = player_char.inventory.get(option, [])
+                descriptions.append(getattr(item_list[0], "description", "") if item_list else "")
+            self._render_described_selection_menu("Steal As Well", options, selected, scroll_offset, descriptions)
             pygame.display.flip()
 
             input_armed = release_guard_allows_input(True, input_armed)
@@ -1865,6 +2020,17 @@ class GUICombatManager:
         font_small = pygame.font.Font(None, 18)
         title_surf = font_large.render(title, True, (232, 218, 186))
         self.screen.blit(title_surf, (panel_x + 20, panel_y + 12))
+        descriptions = getattr(self, "_selection_menu_descriptions", None)
+        if descriptions and 0 <= selected < len(descriptions):
+            title_width = title_surf.get_width() if hasattr(title_surf, "get_width") else font_large.size(title)[0]
+            description = self._fit_text_to_width(
+                font_small,
+                str(descriptions[selected] or ""),
+                max(80, panel_width - title_width - 58),
+            )
+            if description:
+                desc_surf = font_small.render(description, True, (188, 188, 176))
+                self.screen.blit(desc_surf, (panel_x + title_width + 34, panel_y + 18))
 
         option_y = panel_y + 50
         option_rect_width = panel_width - 58
@@ -2094,6 +2260,9 @@ class GUICombatManager:
     
     def _render_combat_frame(self, player_char, enemy, actions, selected_action):
         """Render a single frame of combat."""
+        if not hasattr(player_char, "level_exp"):
+            player_char = self._selection_frame_player(player_char)
+
         # Clear screen
         self.screen.fill((0, 0, 0))
         
@@ -2107,7 +2276,9 @@ class GUICombatManager:
                 self.screen.fill((0, 0, 0))
         
         current_turn = None
+        current_actor = None
         if self.engine is not None and getattr(self.engine, "attacker", None) is not None:
+            current_actor = self.engine.attacker
             current_turn = "player" if self.engine.is_player_turn() else "enemy"
         show_enemy_details = None
         if self.engine is not None and hasattr(self.engine, "show_enemy_details"):
@@ -2126,6 +2297,7 @@ class GUICombatManager:
             selected_action,
             current_turn=current_turn,
             show_enemy_details=show_enemy_details,
+            current_actor=current_actor,
         )
         
         # Render HUD (right 1/3) with combat mode indicator

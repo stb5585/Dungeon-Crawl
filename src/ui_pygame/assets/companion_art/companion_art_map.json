@@ -1,10 +1,21 @@
 {
   "Arcane": "mephit",
+  "Agloolik": "ice_myrmidon",
+  "Bardi": "wraith",
   "Defense": "homunculus",
+  "Cacus": "fire_elemental",
+  "Dilong": "earth_elemental",
   "Fairy": "fairy",
+  "Fuath": "fuath",
+  "Grigori": "griffin",
+  "Hala": "air_elemental",
   "Homunculus": "homunculus",
+  "Izulu": "electric_bat",
   "Jinkin": "jinkin",
+  "Kobalos": "trickster",
   "Luck": "jinkin",
   "Mephit": "mephit",
+  "Patagon": "giant",
+  "Zahhak": "red_dragon",
   "Support": "fairy"
 }

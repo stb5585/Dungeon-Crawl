@@ -138,6 +138,29 @@ def sync_rookie_body_drop_marker(player_char):
         tile.read = False
 
 
+def rookie_body_visible_for_player(player_char, tile) -> bool:
+    """Return whether the Rookie Mistake body marker should be visible."""
+    if tile is None:
+        return False
+    if bool(getattr(tile, "read", False)):
+        return False
+
+    quest = getattr(player_char, "quest_dict", {}).get("Side", {}).get("Rookie Mistake")
+    if not quest:
+        return False
+
+    if bool(getattr(tile, "dropped_rookie_body", False)):
+        dropped_at = quest.get("Body Dropped At")
+        tile_pos = [getattr(tile, "x", None), getattr(tile, "y", None), getattr(tile, "z", None)]
+        return bool(dropped_at) and list(dropped_at) == tile_pos and "Dead Soldier" not in getattr(
+            player_char, "special_inventory", {}
+        )
+
+    if not bool(getattr(tile, "rookie_body_marker", False)):
+        return False
+    return not quest.get("Completed") and not quest.get("Body Dropped At")
+
+
 def reveal_chalice_map_on_inspect(player_char, item) -> bool:
     """Reveal Chalice location when an instructed player inspects the map."""
     if not item or getattr(item, "name", "") != "Chalice Map":

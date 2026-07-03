@@ -60,11 +60,6 @@ class Archdruid(Job):
             def_plus=2,
             magic_plus=4,
             magic_def_plus=3,
-            equipment={
-                "Weapon": items.RuneStaff(),
-                "OffHand": items.NoOffHand(),
-                "Armor": items.CloakEnchantment(),
-            },
             restrictions={
                 "Weapon": ["Dagger", "Staff"],
                 "OffHand": ["Tome"],

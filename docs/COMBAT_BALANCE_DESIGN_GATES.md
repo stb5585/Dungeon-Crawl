@@ -135,6 +135,11 @@ tests, and balance assumptions.
 ### Ability Reworks
 
 - Wind eject effects and reward handling.
+- Elemental attack spell secondary-effect parity. Fire, Ice, and Electric
+  attack lines already have baseline secondary effects; Water, Wind, and Earth
+  need a promoted spec before adding family-wide effects. The spec should define
+  current named exceptions, target proc identities, status/immunity behavior,
+  boss boundaries, combat-log text, simulator impact, and regression coverage.
 - Absorb Essence rework.
 - Mana-percentage damage abilities.
 - Prismatic Rays.

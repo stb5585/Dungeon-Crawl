@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from .base import Job
-from .. import items
 
 
 class BeastMaster(Job):
@@ -33,11 +32,6 @@ class BeastMaster(Job):
             def_plus=2,
             magic_plus=1,
             magic_def_plus=3,
-            equipment={
-                "Weapon": items.Shamshir(),
-                "OffHand": items.Rondel(),
-                "Armor": items.StuddedLeather(),
-            },
             restrictions={
                 "Weapon": ["Dagger", "Sword", "Longsword", "Battle Axe", "Polearm"],
                 "OffHand": ["Dagger"],

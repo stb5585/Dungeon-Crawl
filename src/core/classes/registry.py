@@ -152,18 +152,18 @@ classes_dict = {
                     "Lycan": {"class": Lycan},
                     "Archdruid": {"class": Archdruid},
                 },
+            },
             "Diviner": {
                 "class": Diviner,
-                "pro": {"Astromancer": {"class": Astromancer}}
-                },
+                "pro": {"Astromancer": {"class": Astromancer}},
+            },
             "Shaman": {
                 "class": Shaman,
-                "pro": {"Soulcatcher": {"class": Soulcatcher}}
-                },
+                "pro": {"Soulcatcher": {"class": Soulcatcher}},
+            },
             "Ranger": {
                 "class": Ranger,
                 "pro": {"Beast Master": {"class": BeastMaster}},
-                },
             },
         },
     },

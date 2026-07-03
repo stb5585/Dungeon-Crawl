@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from .base import Job
-from .. import items
 
 
 class GrandSummoner(Job):
@@ -34,11 +33,6 @@ class GrandSummoner(Job):
             def_plus=2,
             magic_plus=4,
             magic_def_plus=4,
-            equipment={
-                "Weapon": items.RuneStaff(),
-                "OffHand": items.NoOffHand(),
-                "Armor": items.CloakEnchantment(),
-            },
             restrictions={
                 "Weapon": ["Dagger", "Staff"],
                 "OffHand": ["Tome"],

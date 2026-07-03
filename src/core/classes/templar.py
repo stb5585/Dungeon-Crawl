@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from .base import Job
-from .. import items
 
 
 class Templar(Job):
@@ -31,11 +30,6 @@ class Templar(Job):
             def_plus=2,
             magic_plus=2,
             magic_def_plus=3,
-            equipment={
-                "Weapon": items.Pernach(),
-                "OffHand": items.KiteShield(),
-                "Armor": items.PlateMail(),
-            },
             restrictions={
                 "Weapon": ["Club", "Hammer"],
                 "OffHand": ["Shield"],

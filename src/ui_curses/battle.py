@@ -231,8 +231,12 @@ class BattleManager:
                     self.execute_action(forced.action, choice=forced.choice)
             elif self.engine.is_player_turn():
                 # Get player input via curses UI
-                action, choice = self._get_player_input()
-                self.execute_action(action, choice=choice)
+                while True:
+                    action, choice = self._get_player_input()
+                    action_result = self.execute_action(action, choice=choice)
+                    if not getattr(action_result, "summon_started", False):
+                        break
+                    self.render_screen()
             else:
                 # Enemy AI chooses action
                 action, choice = self.engine.get_enemy_action()
@@ -290,6 +294,7 @@ class BattleManager:
             self.engine.summon_active = False
 
         self.print_text(action_result.message)
+        return action_result
 
     def companion_turn(self) -> None:
         """Handles the companion's turn (called from EnhancedBattleManager)."""

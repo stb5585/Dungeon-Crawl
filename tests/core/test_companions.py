@@ -82,6 +82,42 @@ def test_summon_constructors_define_core_identity(factory):
     assert isinstance(summon.description, str)
 
 
+@pytest.mark.parametrize(
+    "factory",
+    [
+        "Patagon",
+        "Dilong",
+        "Agloolik",
+        "Cacus",
+        "Fuath",
+        "Izulu",
+        "Hala",
+        "Grigori",
+        "Bardi",
+        "Kobalos",
+        "Zahhak",
+    ],
+)
+def test_summon_initialization_splits_stats_and_combat(factory, monkeypatch):
+    from types import SimpleNamespace
+
+    from src.core import companions
+
+    monkeypatch.setattr("src.core.companions.random.randint", lambda _a, _b: 15)
+    player = SimpleNamespace(
+        stats=SimpleNamespace(intel=30, charisma=30),
+    )
+
+    summon = getattr(companions, factory)()
+    summon.initialize_stats(player)
+
+    assert summon.health.max > 0
+    assert summon.mana.max > 0
+    assert len(summon.stats.__dict__) == 6
+    assert summon.combat.attack > 0
+    assert summon.combat.defense > 0
+
+
 def test_summon_options_hide_spell_actions_when_silenced():
     from src.core.companions import Patagon
 

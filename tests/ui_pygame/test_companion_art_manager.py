@@ -93,6 +93,41 @@ def test_companion_art_manager_falls_back_to_enemy_sprite_manager(tmp_path):
     assert enemy_manager.scaled_calls == [(companion, (16, 16))]
 
 
+def test_companion_art_manager_uses_mapped_enemy_sprite_fallback(tmp_path):
+    art_root = tmp_path / "companion_art"
+    art_root.mkdir()
+    (art_root / "companion_art_map.json").write_text(
+        json.dumps({"Patagon": "giant"}),
+        encoding="utf-8",
+    )
+    fallback = pygame.Surface((24, 24), pygame.SRCALPHA)
+    fallback.fill((80, 90, 100, 255))
+    scaled = pygame.Surface((16, 16), pygame.SRCALPHA)
+    scaled.fill((100, 90, 80, 255))
+
+    class FakeEnemyManager:
+        def __init__(self):
+            self.sprite_key_calls = []
+            self.scaled_key_calls = []
+
+        def get_sprite_by_key(self, key):
+            self.sprite_key_calls.append(key)
+            return fallback
+
+        def get_scaled_sprite_by_key(self, key, target_size):
+            self.scaled_key_calls.append((key, target_size))
+            return scaled
+
+    enemy_manager = FakeEnemyManager()
+    manager = CompanionArtManager(art_root=art_root, enemy_sprite_manager=enemy_manager)
+    companion = SimpleNamespace(name="Patagon")
+
+    assert manager.get_sprite(companion) is fallback
+    assert manager.get_scaled_sprite(companion, (16, 16)) is scaled
+    assert enemy_manager.sprite_key_calls == ["giant"]
+    assert enemy_manager.scaled_key_calls == [("giant", (16, 16))]
+
+
 def test_default_companion_art_assets_cover_core_familiars():
     manager = CompanionArtManager()
 

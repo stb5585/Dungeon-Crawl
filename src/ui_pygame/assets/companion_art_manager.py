@@ -86,10 +86,23 @@ class CompanionArtManager:
                 return normalized
         return None
 
+    def get_mapped_fallback_key_for_companion(self, companion: Any) -> str | None:
+        for name in self._candidate_names(companion):
+            mapped = self.art_map.get(name)
+            if mapped:
+                return self.normalize_key(mapped)
+        return None
+
     def get_sprite(self, companion: Any) -> pygame.Surface:
         key = self.get_art_key_for_companion(companion)
         if key is None:
             enemy_manager = self.enemy_sprite_manager or get_enemy_combat_sprite_manager()
+            fallback_key = self.get_mapped_fallback_key_for_companion(companion)
+            if fallback_key:
+                try:
+                    return enemy_manager.get_sprite_by_key(fallback_key)
+                except Exception:
+                    pass
             try:
                 return enemy_manager.get_sprite(companion)
             except Exception:
@@ -120,6 +133,12 @@ class CompanionArtManager:
         key = self.get_art_key_for_companion(companion)
         if key is None:
             enemy_manager = self.enemy_sprite_manager or get_enemy_combat_sprite_manager()
+            fallback_key = self.get_mapped_fallback_key_for_companion(companion)
+            if fallback_key:
+                try:
+                    return enemy_manager.get_scaled_sprite_by_key(fallback_key, target_size)
+                except Exception:
+                    pass
             try:
                 return enemy_manager.get_scaled_sprite(companion, target_size)
             except Exception:

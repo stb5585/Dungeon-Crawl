@@ -1,5 +1,8 @@
 {
   "special_textures": {
+    "blood_ceiling_overlay": "special_tiles/blood_ceiling_overlay.png",
+    "blood_floor_overlay": "special_tiles/blood_floor_overlay.png",
+    "blood_wall_overlay": "special_tiles/blood_wall_overlay.png",
     "bone_pile": "special_tiles/bone_pile.png",
     "broken_gear": "special_tiles/broken_gear.png",
     "ceiling_fungus_overlay": "special_tiles/ceiling_fungus_overlay.png",
@@ -14,9 +17,7 @@
     "rubble": "special_tiles/rubble.png",
     "sconce_broken": "special_tiles/sconce_broken.png",
     "sconce_unlit": "special_tiles/sconce_unlit.png",
-    "torch_lit": "special_tiles/torch_lit.png",
-    "warp_point_active": "special_tiles/warp_point_active.png",
-    "warp_point_inactive": "special_tiles/warp_point_inactive.png"
+    "torch_lit": "special_tiles/torch_lit.png"
   },
   "textures": {
     "ceiling": "ceilings/stone.png",

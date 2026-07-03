@@ -39,6 +39,10 @@ page counter, wrapped body text, and a clear continue action. They should accept
 keyboard confirm or mouse click, and may allow Escape to skip the remaining
 story sequence without cancelling character creation.
 
+### Improvements
+
+- Shop menu option select mouse click support
+
 ## Combat Status Art
 
 Status-effect artwork remains opt-in. Missing effect PNGs continue to fall back
@@ -62,6 +66,45 @@ Combat cues should use the existing `CombatView` impact-effect layer. V1 covers:
 
 Effects trigger only after confirmed relevant outcomes. Misses, fully resisted
 actions, and non-damaging actions must not play hit/spell particle effects.
+
+### Improvements
+
+- Elemental attack spell effects should more resemble there actual effect
+  - Fire spells look like fire
+    - Firebolt looks like a small fireball
+    - Fireball would be the same but larger
+    - Firestorm would be multiple Fireballs coming from above
+    - Scorch
+    - Molten Rock
+    - Volcano
+    - add burn effect if triggered
+  - Ice spells resemble the spell name
+    - Ice Lance looks like an ice dagger
+    - Icicle falls from above with multiple icicle-looking daggers
+    - Blizzard shows wind and snow blanketing the view
+    - triggered effect should "freeze" the target
+  - Electric spells resemble the spell name
+    - Shock is short electric shock around the target sprite
+    - Lightning
+    - Electrocution
+    - Bolt
+    - Ball Lightning
+  - Water
+    - Water Jet
+    - Aqualung
+    - Tsunami
+  - Earth
+    - Tremor
+    - Mudslide
+    - Earthquake
+    - Sandstorm
+  - Wind
+    - Gust
+    - Hurricane
+    - Tornado
+- Existing Ability Effects
+  - Player Mana Shield effect should be removed; new effect should cover screen with
+    blue hue that "vibrates" between blue and purple on a hit
 
 ## Jump And Charge Visuals
 

@@ -597,14 +597,6 @@ class DungeonHUD:
             if getattr(effect, "active", False):
                 rich_rows.append((name, f"{getattr(effect, 'duration', 0)} turns", (200, 190, 255)))
 
-        try:
-            guard_stacks = int(getattr(player_char, "evasive_guard_stacks", 0) or 0)
-            skills = getattr(player_char, "spellbook", {}).get("Skills", {})
-            if "Evasive Guard" in skills and guard_stacks > 0:
-                rich_rows.append(("Evasive Guard", f"{min(3, guard_stacks)} stack(s)", (170, 210, 255)))
-        except (AttributeError, TypeError, ValueError):
-            pass
-
         rich_labels = {label for label, _value, _color in rich_rows}
         for label, value in promotion_kits.status_summary_rows(player_char):
             if label in rich_labels:
@@ -674,9 +666,13 @@ class DungeonHUD:
                 break
             label_surf = self.small_font.render(f"{label}:", True, (170, 170, 180))
             self.screen.blit(label_surf, (panel_rect.left + 12, y))
-            value_text = self._truncate_text(self.small_font, str(value), max_value_w)
-            value_surf = self.small_font.render(value_text, True, color)
-            self.screen.blit(value_surf, (panel_rect.left + 12 + label_w, y))
+            value_x = panel_rect.left + 12 + label_w
+            if label in {"Fortune", "Misfortune"}:
+                self._render_coin_meter(label, str(value), value_x, y + 10, max_value_w)
+            else:
+                value_text = self._truncate_text(self.small_font, str(value), max_value_w)
+                value_surf = self.small_font.render(value_text, True, color)
+                self.screen.blit(value_surf, (value_x, y))
             y += 22
 
         totem = self._totem_effect(player_char)
@@ -684,6 +680,30 @@ class DungeonHUD:
             self._render_totem_focus_glyph(panel_rect, totem)
 
         return panel_rect.bottom + 5
+
+    def _render_coin_meter(self, label: str, value: str, x: int, center_y: int, max_width: int) -> None:
+        try:
+            active_text, cap_text = value.split("/", 1)
+            active = max(0, int(active_text))
+            cap = max(1, int(cap_text))
+        except (AttributeError, TypeError, ValueError):
+            active, cap = 0, 3
+        cap = min(cap, max(1, max_width // 18))
+        active = min(active, cap)
+        radius = 7
+        gap = 4
+        active_color = (232, 196, 72) if label == "Fortune" else (176, 70, 82)
+        inactive_color = (82, 82, 88)
+        mark = "H" if label == "Fortune" else "T"
+        for index in range(cap):
+            cx = x + radius + index * ((radius * 2) + gap)
+            color = active_color if index < active else inactive_color
+            pygame.draw.circle(self.screen, color, (cx, center_y), radius)
+            pygame.draw.circle(self.screen, (32, 28, 24), (cx, center_y), radius, 1)
+            mark_color = (42, 30, 20) if index < active else (145, 145, 150)
+            mark_surf = self.small_font.render(mark, True, mark_color)
+            mark_rect = mark_surf.get_rect(center=(cx, center_y))
+            self.screen.blit(mark_surf, mark_rect)
 
     def _render_minimap(
         self,
@@ -759,10 +779,9 @@ class DungeonHUD:
                         and getattr(tile, 'enter', True)
                         and tile_type not in ('FakeWall', 'FunhouseWall', 'MirrorWall')
                     )
-                    is_discovered_wall = bool(
-                        getattr(tile, 'near', False)
-                        and not getattr(tile, 'enter', True)
-                        and tile_type not in ('FakeWall', 'FunhouseWall', 'MirrorWall')
+                    is_wall_tile = bool(
+                        not getattr(tile, 'enter', True)
+                        or tile_type in ('FakeWall', 'FunhouseWall', 'MirrorWall')
                     )
                     is_discovered_special = bool(
                         getattr(tile, 'near', False) and (
@@ -796,9 +815,8 @@ class DungeonHUD:
                         
                     elif (
                         getattr(tile, 'visited', False)
-                        or is_directly_visible
+                        or (is_directly_visible and not is_wall_tile)
                         or is_discovered_explorable
-                        or is_discovered_wall
                         or is_discovered_special
                     ):
                         # Explored tile (visited) or directly visible adjacent tile
@@ -856,15 +874,7 @@ class DungeonHUD:
                             pygame.draw.polygon(self.screen, (0, 255, 255), points)
 
                         if 'RelicRoom' in tile_type and getattr(tile, 'read', False):
-                            # Relic altar (collected) - gold diamond
-                            icon_size = tile_size // 3
-                            center_x = screen_x + tile_size // 2
-                            center_y = screen_y + tile_size // 2
-                            points = [(center_x, center_y - icon_size // 2),
-                                     (center_x + icon_size // 2, center_y),
-                                     (center_x, center_y + icon_size // 2),
-                                     (center_x - icon_size // 2, center_y)]
-                            pygame.draw.polygon(self.screen, (255, 215, 0), points)
+                            self._render_minimap_spent_relic_altar_icon(screen_x, screen_y, tile_size)
 
                         if 'GoldenChaliceRoom' in tile_type and map_tiles.chalice_altar_visible(player_char):
                             # Chalice altar - warm gold cup marker
@@ -965,6 +975,26 @@ class DungeonHUD:
         width = max(1, tile_size // 8)
         pygame.draw.rect(self.screen, (220, 180, 80), tile_rect, width)
 
+    def _render_minimap_spent_relic_altar_icon(self, screen_x: int, screen_y: int, tile_size: int) -> None:
+        pad = max(2, tile_size // 5)
+        base_h = max(2, tile_size // 5)
+        base_rect = pygame.Rect(
+            screen_x + pad,
+            screen_y + tile_size - pad - base_h,
+            max(2, tile_size - pad * 2),
+            base_h,
+        )
+        pillar_rect = pygame.Rect(
+            screen_x + tile_size // 2 - max(1, tile_size // 10),
+            screen_y + pad,
+            max(2, tile_size // 5),
+            max(2, tile_size - pad * 2 - base_h),
+        )
+        pygame.draw.rect(self.screen, (72, 72, 80), pillar_rect)
+        pygame.draw.rect(self.screen, (165, 145, 88), pillar_rect, max(1, tile_size // 10))
+        pygame.draw.rect(self.screen, (72, 72, 80), base_rect)
+        pygame.draw.rect(self.screen, (165, 145, 88), base_rect, max(1, tile_size // 10))
+
     @staticmethod
     def _minimap_blink_on() -> bool:
         return (pygame.time.get_ticks() // 350) % 2 == 0
@@ -1013,17 +1043,17 @@ class DungeonHUD:
     @staticmethod
     def _minimap_tile_is_revealed(player_char, tile_x: int, tile_y: int, tile, visible_adjacent: set[tuple[int, int]]) -> bool:
         tile_type = type(tile).__name__
-        if getattr(tile, 'visited', False) or (tile_x, tile_y) in visible_adjacent:
+        tile_is_wall = bool(
+            not getattr(tile, 'enter', True)
+            or tile_type in ('FakeWall', 'FunhouseWall', 'MirrorWall')
+        )
+        if getattr(tile, 'visited', False):
+            return True
+        if (tile_x, tile_y) in visible_adjacent and not tile_is_wall:
             return True
         if (
             getattr(tile, 'near', False)
             and getattr(tile, 'enter', True)
-            and tile_type not in ('FakeWall', 'FunhouseWall', 'MirrorWall')
-        ):
-            return True
-        if (
-            getattr(tile, 'near', False)
-            and not getattr(tile, 'enter', True)
             and tile_type not in ('FakeWall', 'FunhouseWall', 'MirrorWall')
         ):
             return True

@@ -462,7 +462,8 @@ def test_visibility_helpers_minimap_compass_and_combat_indicator(monkeypatch):
     assert bundle.draw_polygon_calls
     assert bundle.draw_circle_calls
     minimap_colors = [args[1] for args, _kwargs in bundle.draw_rect_calls if len(args) > 1]
-    assert (255, 215, 0) in minimap_colors
+    assert (72, 72, 80) in minimap_colors
+    assert (165, 145, 88) in minimap_colors
     assert (255, 255, 110) in minimap_colors
     assert (255, 255, 255) in minimap_colors
     assert (220, 180, 80) in minimap_colors
@@ -505,7 +506,7 @@ def test_visible_adjacent_positions_require_enterable_and_hide_undiscovered_fake
         visited = False
         blocked = None
 
-    player = SimpleNamespace(location_x=2, location_y=2, location_z=1)
+    player = SimpleNamespace(location_x=2, location_y=2, location_z=1, facing="north")
     player.world_dict = {
         (2, 2, 1): Floor(),
         (2, 1, 1): Floor(),
@@ -518,8 +519,13 @@ def test_visible_adjacent_positions_require_enterable_and_hide_undiscovered_fake
     assert (2, 1) in visible
     assert (2, 3) not in visible
     assert (3, 2) not in visible
-    assert hud._minimap_tile_is_revealed(player, 3, 2, player.world_dict[(3, 2, 1)], visible) is True
+    assert hud._minimap_tile_is_revealed(player, 3, 2, player.world_dict[(3, 2, 1)], visible) is False
     assert hud._minimap_tile_is_revealed(player, 2, 3, player.world_dict[(2, 3, 1)], visible) is False
+
+    hud._render_minimap(player, 120)
+    minimap_colors = [args[1] for args, _kwargs in bundle.draw_rect_calls if len(args) > 1]
+    assert (70, 70, 80) not in minimap_colors
+    assert (80, 80, 90) not in minimap_colors
 
 
 def test_enlarged_minimap_modal_requests_full_level_map(monkeypatch):
@@ -590,7 +596,7 @@ def test_combat_focus_panel_shows_familiar_summons_and_totem(monkeypatch):
     assert ("Totem", "Fire Totem", (230, 205, 120)) in lines
     assert sum(1 for label, _value, _color in lines if label == "Totem") == 1
     assert any(label == "Benefit" and "+25% ATK" in value and "Elemental" in value for label, value, _color in lines)
-    assert ("Evasive Guard", "2 stack(s)", (170, 210, 255)) in lines
+    assert all(label != "Evasive Guard" for label, _value, _color in lines)
     assert hud._truncate_text(bundle.small_font, "A very long class-kit readiness value", 48).endswith("...")
 
     player.cls = SimpleNamespace(name="Rogue")
@@ -639,15 +645,16 @@ def test_combat_focus_panel_shows_familiar_summons_and_totem(monkeypatch):
     assert bundle.draw_circle_calls
 
     bundle.screen.blit_calls = []
-    guard_player = _make_player()
-    hud._render_combat_features(guard_player, SimpleNamespace(name="Warrior"), 120, feature_height=190)
-    rendered = [
-        (getattr(surface, "text", ""), position, surface)
-        for surface, position in bundle.screen.blit_calls
-    ]
-    guard_label = next(entry for entry in rendered if entry[0] == "Evasive Guard:")
-    guard_value = next(entry for entry in rendered if entry[0] == "2 stack(s)")
-    assert guard_value[1][0] >= guard_label[1][0] + guard_label[2].get_width() + 8
+    coin_player = _make_player()
+    coin_player.cls = SimpleNamespace(name="Rogue")
+    coin_player._promotion_kit_combat = {"fortune": 2, "misfortune": 1}
+    hud._render_combat_features(coin_player, SimpleNamespace(name="Warrior"), 120, feature_height=190)
+    rendered_text = [getattr(surface, "text", "") for surface, _position in bundle.screen.blit_calls]
+    assert "2/3" not in rendered_text
+    assert "1/3" not in rendered_text
+    assert "H" in rendered_text
+    assert "T" in rendered_text
+    assert len(bundle.draw_circle_calls) >= 12
 
 
 def test_render_hud_full_flow(monkeypatch):

@@ -7,7 +7,6 @@ from typing import Any
 import random
 
 from .base import Job
-from .. import items
 
 
 PATRONS = ("Imp", "Quasit", "Incubus", "Succubus", "Archvile", "Maelephant", "Balor")
@@ -81,11 +80,6 @@ class Demonologist(Job):  # TODO
             def_plus=2,
             magic_plus=3,
             magic_def_plus=4,
-            equipment={
-                "Weapon": items.Rondel(),
-                "OffHand": items.DragonRouge(),
-                "Armor": items.CloakEnchantment(),
-            },
             restrictions={
                 "Weapon": ["Dagger", "Staff"],
                 "OffHand": ["Tome"],

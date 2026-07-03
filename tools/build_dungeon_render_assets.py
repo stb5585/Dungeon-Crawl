@@ -65,6 +65,9 @@ SPECIAL_TEXTURES = {
     "torch_lit": "special_tiles/torch_lit.png",
     "sconce_unlit": "special_tiles/sconce_unlit.png",
     "sconce_broken": "special_tiles/sconce_broken.png",
+    "blood_floor_overlay": "special_tiles/blood_floor_overlay.png",
+    "blood_wall_overlay": "special_tiles/blood_wall_overlay.png",
+    "blood_ceiling_overlay": "special_tiles/blood_ceiling_overlay.png",
 }
 
 MAP_ICONS = {
@@ -1495,6 +1498,45 @@ def _save_generated_organic_special(key: str, image: Image.Image) -> None:
         image.save(path)
 
 
+def blood_spatter_overlay(seed: int, *, surface: str) -> Image.Image:
+    rng = random.Random(seed)
+    image = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(image, "RGBA")
+    base = (82, 6, 10, 185)
+    dark = (42, 0, 4, 150)
+    center_y = {"floor": 300, "wall": 235, "ceiling": 250}.get(surface, 260)
+    spread_x = 180 if surface == "wall" else 210
+    spread_y = 70 if surface == "wall" else 90
+
+    for _ in range(22):
+        x = rng.randint(SIZE // 2 - spread_x, SIZE // 2 + spread_x)
+        y = rng.randint(center_y - spread_y, center_y + spread_y)
+        rx = rng.randint(8, 34)
+        ry = rng.randint(4, 22)
+        color = base if rng.random() > 0.28 else dark
+        draw.ellipse((x - rx, y - ry, x + rx, y + ry), fill=color)
+
+    for _ in range(38):
+        x = rng.randint(SIZE // 2 - spread_x - 25, SIZE // 2 + spread_x + 25)
+        y = rng.randint(center_y - spread_y - 20, center_y + spread_y + 30)
+        r = rng.randint(2, 7)
+        draw.ellipse((x - r, y - r, x + r, y + r), fill=(92, 8, 12, rng.randint(90, 170)))
+
+    if surface in {"wall", "ceiling"}:
+        for _ in range(9):
+            x = rng.randint(SIZE // 2 - 150, SIZE // 2 + 150)
+            y = rng.randint(center_y - 55, center_y + 35)
+            length = rng.randint(30, 105 if surface == "wall" else 64)
+            width = rng.randint(2, 6)
+            draw.line((x, y, x + rng.randint(-8, 8), y + length), fill=(66, 4, 8, 145), width=width)
+            r = max(3, width + rng.randint(1, 4))
+            draw.ellipse((x - r, y + length - r, x + r, y + length + r), fill=(66, 4, 8, 150))
+
+    return image.filter(ImageFilter.GaussianBlur(0.45)).filter(
+        ImageFilter.UnsharpMask(radius=0.5, percent=60)
+    )
+
+
 def write_textures() -> None:
     _masonry_wall_texture(100).save(DUNGEON_ROOT / TEXTURES["wall"])
     _tint_texture(_masonry_wall_texture(101), (44, 58, 78), 0.10).save(DUNGEON_ROOT / TEXTURES["wall_upper"])
@@ -1532,6 +1574,9 @@ def write_specials() -> None:
     torch(True).save(DUNGEON_ROOT / SPECIAL_TEXTURES["torch_lit"])
     torch(False).save(DUNGEON_ROOT / SPECIAL_TEXTURES["sconce_unlit"])
     torch(False, broken=True).save(DUNGEON_ROOT / SPECIAL_TEXTURES["sconce_broken"])
+    blood_spatter_overlay(1701, surface="floor").save(DUNGEON_ROOT / SPECIAL_TEXTURES["blood_floor_overlay"])
+    blood_spatter_overlay(1702, surface="wall").save(DUNGEON_ROOT / SPECIAL_TEXTURES["blood_wall_overlay"])
+    blood_spatter_overlay(1703, surface="ceiling").save(DUNGEON_ROOT / SPECIAL_TEXTURES["blood_ceiling_overlay"])
 
 
 def write_manifest() -> None:

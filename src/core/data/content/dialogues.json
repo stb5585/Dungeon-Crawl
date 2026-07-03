@@ -113,48 +113,48 @@
   },
   "response_map": {
     "Barkeep": [
-      "Great, come back to me when it is completed.",
-      "That's a shame, come back if you change your mind."
+      "Good. I'll keep your seat warm and an ear open for word of your return.",
+      "Fair enough. The offer stays on the bar if courage finds you later."
     ],
     "Waitress": [
-      "Oh, that's truly wonderful! I'll be waiting to hear from you.",
-      "I understand, it was stupid of me to even ask..."
+      "Thank you. I know it is dangerous, but I will be hoping for you every step.",
+      "I understand. I should not have put one more burden on you."
     ],
     "Busboy": [
-      "Good to hear. Now excuse me, I have to get back to work.",
-      "Pfft, why did I even bother?"
+      "Good. I'll make sure nobody clears your table before you get back.",
+      "Right. Forget I said anything; I've got enough spills to clean up."
     ],
     "Soldier": [
-      "Excellent, your efforts will not go unnoticed.",
-      "Do not waste my time if you are not dedicated to the cause."
+      "Excellent. Report back when the objective is complete.",
+      "Then stand aside. We have no room for half-measures."
     ],
     "Drunkard": [
-      "Well fine then, go...wait, oh you said yes...(hic) well thanks! I'll be right here, as always...(hic)",
-      "Oh I see, your time (hic) is too precious, huh?"
+      "That's the spirit...or spirits? Either way, I'll be right here when you get back. (hic)",
+      "Sure, sure, leave the old drunk to worry about it. (hic)"
     ],
     "Hooded Figure": [
-      "Splendid, I will await your return.",
-      "Pity, you showed so much promise. Be gone then..."
+      "Splendid. Threads move when the willing hand takes hold.",
+      "Pity. Promise without motion is only another shadow."
     ],
     "Griswold": [
-      "Finally someone with some stones! I knew I liked you!",
-      "Accept or not, at least keep an eye out..."
+      "Ha! I knew there was steel in you. Come back in one piece.",
+      "Fine, but keep your eyes open. Trouble rarely waits for permission."
     ],
     "Alchemist": [
-      "Our arrangement will be mutually beneficial, you will see.",
-      "It's a shame you deny me this request."
+      "Excellent. Field results are always cleaner than theory.",
+      "A disappointing refusal, but even negative results teach something."
     ],
     "Jeweler": [
-      "You will not be disappointed!",
-      "Not sure of your reasoning but fair enough."
+      "Marvelous. Bring it back untarnished if you can.",
+      "A curious choice, but value is often a matter of timing."
     ],
     "Priest": [
-      "The light of Elysia will guide your efforts.",
-      "Patience is a virtue I hold sacred. I will wait as long as I need."
+      "May Elysia's light steady your hand and soften your fear.",
+      "Then I will wait, and pray that another path opens."
     ],
     "Sergeant": [
-      "Outstanding! Return to me when you have completed the quest.",
-      "You came a long way for nothing..."
+      "Outstanding. Complete the mission and report directly back to me.",
+      "Dismissed, then. Do not mistake hesitation for strategy."
     ]
   },
   "tavern_flavor_dialogues": [

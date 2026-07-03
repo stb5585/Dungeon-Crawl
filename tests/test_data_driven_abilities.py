@@ -549,6 +549,76 @@ class TestDataDrivenSpellCast:
 
         assert dot_applied, "DOT should have triggered at least once in 50 casts"
 
+    def test_corruption_dot_uses_corruption_message(self):
+        """Corruption DOT should not reuse burn text."""
+        from src.core.data.ability_loader import AbilityFactory
+
+        filepath = Path(__file__).parent.parent / "src" / "core" / "data" / "abilities" / "corruption.yaml"
+        spell = AbilityFactory.create_from_yaml(filepath)
+
+        for _ in range(80):
+            caster, target = self._make_combatants()
+            caster.stats.charisma = 100
+            target.stats.wisdom = 1
+            result = spell.cast(caster, target)
+            if target.magic_effects["DOT"].active:
+                assert "wreathed in corrupting magic" in result.message
+                assert "set ablaze" not in result.message
+                return
+
+        pytest.fail("Corruption DOT should have triggered at least once in 80 casts")
+
+    def test_water_attack_spells_can_reduce_attack(self):
+        from src.core import abilities
+
+        spell = abilities.WaterJet()
+        for _ in range(50):
+            caster, target = self._make_combatants()
+            caster.stats.intel = 120
+            target.stats.con = 1
+            target.combat.attack = 140
+            spell.cast(caster, target)
+            if target.stat_effects["Attack"].active:
+                return
+
+        pytest.fail("Water Jet should have reduced Attack at least once")
+
+    def test_wind_attack_spells_can_reduce_speed(self):
+        from src.core import abilities
+
+        spell = abilities.Gust()
+        for _ in range(50):
+            caster, target = self._make_combatants()
+            caster.stats.intel = 120
+            target.stats.dex = 1
+            spell.cast(caster, target)
+            if target.stat_effects["Speed"].active:
+                return
+
+        pytest.fail("Gust should have reduced Speed at least once")
+
+    def test_earth_attack_spells_can_knock_prone_but_respect_flying(self):
+        from src.core import abilities
+
+        spell = abilities.Tremor()
+        for _ in range(50):
+            caster, target = self._make_combatants()
+            caster.stats.intel = 120
+            target.stats.con = 1
+            spell.cast(caster, target)
+            if target.physical_effects["Prone"].active:
+                break
+        else:
+            pytest.fail("Tremor should have knocked the target prone at least once")
+
+        caster, flying_target = self._make_combatants()
+        caster.stats.intel = 120
+        flying_target.stats.con = 1
+        flying_target.flying = True
+        for _ in range(20):
+            spell.cast(caster, flying_target)
+        assert not flying_target.physical_effects["Prone"].active
+
     def test_electric_spell_can_apply_stun(self):
         """Electric spells should sometimes apply Stun."""
         from src.core.data.ability_loader import AbilityFactory
@@ -1911,7 +1981,7 @@ class TestBatch3CombatIntegration:
         ss = abilities.SmokeScreen()
         mana_before = user.mana.current
         result = ss.use(user, target)
-        assert user.mana.current == mana_before
+        assert user.mana.current == mana_before - ss.cost
         assert result == ""
 
     def test_goad_ice_block_check(self):

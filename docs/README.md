@@ -18,6 +18,8 @@ only as historical context.
 - [COMBAT_BALANCE_DESIGN_GATES.md](COMBAT_BALANCE_DESIGN_GATES.md) - combat
   architecture, balance decision gates, current behavior decisions, and report
   plan.
+- [CLASS_STAT_PRIORITIES.md](CLASS_STAT_PRIORITIES.md) - gameplay-facing stat
+  impact reference and class-by-class stat priority guide.
 - [PLAYTEST_CHECKLIST.md](PLAYTEST_CHECKLIST.md) - manual validation checklist
   for class mechanics, rendering, UI, saves, audio, and content flows.
 - [STORY_AND_ENDGAME_DESIGN.md](STORY_AND_ENDGAME_DESIGN.md) - Vesperion,

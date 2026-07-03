@@ -6,7 +6,6 @@ import random
 from typing import Any
 
 from .base import Job
-from .. import items
 
 SCAR_CAP = 20
 SCAR_CHANCE = 0.10
@@ -41,11 +40,6 @@ class Berserker(Job):
             def_plus=2,
             magic_plus=0,
             magic_def_plus=3,
-            equipment={
-                "Weapon": items.Parashu(),
-                "OffHand": items.Changdao(),
-                "Armor": items.StuddedLeather(),
-            },
             restrictions={
                 "Weapon": ["Longsword", "Battle Axe", "Polearm", "Hammer"],
                 "OffHand": ["Longsword", "Battle Axe", "Polearm", "Hammer"],

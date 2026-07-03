@@ -385,7 +385,14 @@ class DataDrivenSpell(Spell):
             for magic_eff in result.effects_applied.get("Magic", []):
                 if magic_eff not in effects_before.get("Magic", []):
                     if "DOT" in magic_eff:
-                        msg += f"{target.name} is set ablaze.\n"
+                        dot = target.magic_effects.get("DOT")
+                        source = str(getattr(dot, "source", "") or "").lower()
+                        if source == "burn":
+                            msg += f"{target.name} is set ablaze.\n"
+                        elif source == "corruption":
+                            msg += f"{target.name} is wreathed in corrupting magic.\n"
+                        else:
+                            msg += f"{target.name} is afflicted by lingering magic.\n"
                     elif magic_eff == "Regen":
                         msg += f"{target.name} begins to regenerate.\n"
 

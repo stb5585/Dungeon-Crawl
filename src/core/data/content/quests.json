@@ -8,7 +8,7 @@
           "What": "Minotaur",
           "Total": 1,
           "Start Text": "There is a monster guarding the steps to the first floor, the Minotaur, that is responsible for lots of carnage. If you defeat it, I will give you something to help you explore the dungeon.",
-          "End Text": "I'm glad to hear you took that butcher out. Here's an item that should help you in any future quests.",
+          "End Text": "I'm glad to hear you took that butcher out. Here's something that should help you in any future quests.",
           "Help Text": "If you are having trouble finding the Minotaur, he is located north of the entrance to the town.",
           "Reward": ["OldKey"],
           "Reward Number": 2,

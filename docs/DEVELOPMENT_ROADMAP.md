@@ -264,11 +264,6 @@ defeats, or a level gain, while immediate turn-in/reopen loops remain blocked.
 Current tuning is conservative and should be playtested before changing the
 thresholds.
 
-## Bugfixes
-
-- the dead body sprite for Rookie Mistake should not appear in the dungeon before
-  the player is given the quest
-
 ## Improvements
 
 - Class/Enemy/Ability Scaling
@@ -280,20 +275,61 @@ thresholds.
     very strong
 - Lower item drop rates to increase benefit of skills like Steal and passives like
   luck
-- Add/create blood spatter overlay for walls/floor/ceiling
-- Optimize NPC responses to match their personalities
 - Progressively lessen the accuracy of multi-strike skills to make them more balanced
 - Enfeeble needs to be tuned, as it currently is very weak
 - Use `tools/run_remaining_balance_baseline.py` and
   `remaining_improvement_tuning_report()` as the evidence baseline before
   changing Footpad, ordinary drop, multi-strike, or Enfeeble numbers.
-- Combat Focus improvements
-  - Thief/Rogue
-    - Remove redundant Evasive Guard
-    - Change Fortune/Misfortune indicator from simple counts to visual representation
-      - Indicated by coins, Fortune heads and Misfortune tails
-      - Have them grayed out when inactive and highlighted when active
-- Add 'x' to popup windows to allow mouse click closing
+- Summoner/Summon Creatures
+  - Create bespoke companion art for summon creatures beyond current mapped
+    fallback sprites
+  - Allow some intervention from Summoner while summon creature is active
+
+### 2026-07-03 Roadmap Triage Implementation Note
+
+- Confirmed `ENCUMBERED` already affects initiative, hit chance, and dodge; no
+  new mechanic was needed.
+- Fixed Corruption DOT apply messaging so it uses corruption language instead
+  of burn language.
+- Added baseline secondary effects for Water, Wind, and Earth attack spell
+  families: Water weakens Attack, Wind slows Speed, and Earth can knock prone.
+- Reduced Barghest Enfeeble pressure by lowering its priority and adding short
+  debuff-failure cooldown behavior for enemy AI.
+- Added pygame combat menu descriptions for usable items, spells, skills, Runic
+  Boost, and Steal As Well.
+- Reduced the fixed pygame combat-start transition delay.
+- Changed looted relic altar minimap presentation to a spent altar icon.
+- Added summon combat presentation follow-up: mapped summon art fallbacks,
+  active-summon turn token display, active-summon status icons in the turn card,
+  simplified summon victory XP text, and XP/level-scaled summon bond gain.
+- Balance baseline status: focused tests passed, but the full
+  `tools/run_remaining_balance_baseline.py` wrapper did not complete in-session
+  because its captured subprocess bundle stayed silent for several minutes.
+  A dry-run bundle summary was written at
+  `reports/balance_baselines/20260703_085504/remaining_balance_baseline_summary.txt`;
+  do not treat it as numeric tuning evidence.
+
+### 2026-07-02 Implementation And Evidence Note
+
+- Implemented the Rookie Mistake sprite gate, popup mouse-close affordance,
+  Combat Focus Evasive Guard cleanup, Fortune/Misfortune coin meters, blood
+  overlay renderer/assets, and NPC response-map voice polish.
+- Preserved current Footpad, ordinary drop, multi-strike, poison, and Enfeeble
+  numeric behavior for this evidence-only balance pass.
+- Added `poison_consistency` to `remaining_improvement_tuning_report()` with
+  application rate, duration, tick damage, resist outcome, and immunity outcome
+  metrics.
+- Ran `./.venv/bin/python tools/run_remaining_balance_baseline.py`; summary
+  output:
+  `reports/balance_baselines/20260702_112805/remaining_balance_baseline_summary.txt`.
+  `base_level_10` completed with return code 0. `first_level_20`,
+  `second_level_30`, and `race_delta_level_20` returned 1 because
+  `tools/run_balance_suite.py` referenced missing `abilities.DragonsFury`.
+  The analytics harness now uses the existing Dragoon `DraconicOnslaught`
+  power-up and skips optional missing power-ups instead of aborting. A rerun
+  wrote partial output under `reports/balance_baselines/20260702_113519/` and
+  was stopped after `base_level_10` completed because the remaining sweeps were
+  still running beyond the practical validation window.
 
 ## Watch Items
 

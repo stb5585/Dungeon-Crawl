@@ -782,6 +782,21 @@ def test_execute_action_handles_suppression_and_slot_machine_skill(monkeypatch):
     assert manager.combat_view.reload_calls[-1] == enemy
     assert frame_calls[-1][0] == (player, enemy, [], -1)
 
+    manager.combat_view.messages.clear()
+    frame_calls.clear()
+    manager._select_summon = lambda _player, _enemy: "Patagon"
+
+    def execute_summon(action, choice=None, slot_machine_callback=None):
+        assert action == "Summon"
+        assert choice == "Patagon"
+        assert slot_machine_callback is None
+        return SimpleNamespace(message="Hero summons Patagon.", fled=False)
+
+    manager.engine = SimpleNamespace(execute_action=execute_summon)
+    enemy.health.current = 11
+    assert manager._execute_action("Summon", player, enemy) == "action_taken"
+    assert manager.combat_view.messages[-1] == "Hero summons Patagon."
+
 
 def test_execute_spell_flushes_result_log_before_damage_effect(monkeypatch):
     manager = _make_manager(monkeypatch)
@@ -1068,6 +1083,20 @@ def test_select_item_spell_and_skill_cover_empty_cancel_and_selection_paths(monk
     assert manager._select_skill(player, enemy) == "Slash"
     assert menu_calls[-1][1] == ("Slash (MP: 1)",)
 
+    player.summons = {}
+    assert manager._select_summon(player, enemy) is None
+    assert manager.combat_view.messages[-1] == "No summons available!"
+
+    player.summons = {
+        "Spent": SimpleNamespace(name="Spent", is_alive=lambda: False),
+        "Patagon": SimpleNamespace(name="Patagon", level=SimpleNamespace(level=1), is_alive=lambda: True),
+    }
+    event_batches = iter([[SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)]])
+    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, []))
+    assert manager._select_summon(player, enemy) == "Patagon"
+    assert menu_calls[-1][0] == "Select Summon"
+    assert menu_calls[-1][1] == ("Patagon (Lv 1)",)
+
     enemy.incapacitated = lambda: True
     event_batches = iter([[SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)]])
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, []))
@@ -1190,12 +1219,14 @@ def test_render_selection_menu_refresh_background_and_pause_helpers(monkeypatch)
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.display.flip", lambda: None)
 
     long_options = [f"Option {index} with very long descriptive text that should truncate" for index in range(15)]
+    manager._selection_menu_descriptions = [""] * 13 + ["Selected option description"] + [""]
     manager._render_selection_menu("Choose Action", long_options, selected=13, scroll_offset=99)
 
     assert "Choose Action" in large_font.render_calls
     fitted_option = next(text for text in medium_font.render_calls if text.startswith("13. Option 12"))
     assert fitted_option.endswith("...")
     assert medium_font.size(fitted_option)[0] <= 462
+    assert "Selected option description" in small_font.render_calls
     assert "Up/Down or W/S: Navigate | PgUp/PgDn: Scroll | Enter: Select | Esc: Cancel" in small_font.render_calls
     assert draw_calls
 
@@ -1443,6 +1474,112 @@ def test_player_turn_refreshes_actions_after_silence_expires(monkeypatch):
     assert manager._player_turn(player, enemy) is True
     assert actions == ["Spells"]
     assert manager.available_actions == ["Attack", "Defend", "Spells", "Skills", "Items"]
+
+
+def test_player_turn_continues_after_summoning_for_summon_action(monkeypatch):
+    manager = _make_manager(monkeypatch)
+    player = _make_player("Rydia")
+    enemy = _make_enemy("Warrior")
+
+    manager._render_combat_frame = lambda *args, **kwargs: None
+    manager._flush_result_frame = lambda *_args: None
+    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.display.flip", lambda: None)
+    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
+
+    companion_turns = []
+    engine = SimpleNamespace(
+        available_actions=["Summon"],
+        pre_turn=lambda: SimpleNamespace(effects_text="", died_from_effects=False, can_act=True, inactive_reason=""),
+        get_forced_action=lambda: None,
+        companion_turn=lambda: companion_turns.append(True) or None,
+    )
+    manager.engine = engine
+    manager.available_actions = ["Summon"]
+    actions = []
+
+    def execute_action(action, _player, _enemy):
+        actions.append(action)
+        if action == "Summon":
+            engine.available_actions = ["Attack"]
+            return "continue_turn"
+        return "action_taken"
+
+    manager._execute_action = execute_action
+    event_batches = iter([
+        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+    ])
+    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, []))
+
+    assert manager._player_turn(player, enemy) is True
+    assert actions == ["Summon", "Attack"]
+    assert companion_turns == [True]
+
+
+def test_execute_skill_uses_active_summon_spellbook(monkeypatch):
+    manager = _make_manager(monkeypatch)
+    player = _make_player("Rydia")
+    enemy = _make_enemy("Warrior")
+    skill = SimpleNamespace(name="Throw Rock", cost=0)
+    summon = SimpleNamespace(
+        name="Patagon",
+        health=SimpleNamespace(current=35, max=35),
+        mana=SimpleNamespace(current=35, max=35),
+        spellbook={"Spells": {}, "Skills": {"Throw Rock": skill}},
+        abilities_suppressed=lambda: False,
+        is_disarmed=lambda: False,
+    )
+    calls = {}
+
+    manager.engine = SimpleNamespace(
+        attacker=summon,
+        execute_action=lambda action, choice=None, slot_machine_callback=None: calls.update(
+            action=action,
+            choice=choice,
+            slot_machine_callback=slot_machine_callback,
+        ) or SimpleNamespace(message="Patagon uses Throw Rock.\n", fled=False),
+        flee=False,
+    )
+    def select_skill(actor, _enemy):
+        calls["selected_actor"] = actor
+        return "Throw Rock"
+
+    manager._select_skill = select_skill
+    manager._render_combat_frame = lambda *_args, **_kwargs: None
+    manager._flush_result_frame = lambda *_args, **_kwargs: None
+    manager._show_combat_damage_effect = lambda *_args, **_kwargs: None
+    manager._show_combat_heal_text = lambda *_args, **_kwargs: None
+    manager._preserve_waitress_for_transition = lambda _enemy: None
+    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.display.flip", lambda: None)
+
+    assert manager._execute_action("Skills", player, enemy) == "action_taken"
+    assert calls["selected_actor"] is summon
+    assert calls["action"] == "Use Skill"
+    assert calls["choice"] == "Throw Rock"
+
+
+def test_select_skill_for_active_summon_renders_player_frame(monkeypatch):
+    manager = _make_manager(monkeypatch)
+    player = _make_player("Rydia")
+    enemy = _make_enemy("Warrior")
+    skill = SimpleNamespace(name="Throw Rock", cost=0, passive=False)
+    summon = SimpleNamespace(
+        name="Patagon",
+        spellbook={"Spells": {}, "Skills": {"Throw Rock": skill}},
+        is_disarmed=lambda: False,
+    )
+    manager.engine = SimpleNamespace(player=player)
+
+    rendered_players = []
+    manager._render_combat_frame = lambda frame_player, *_args, **_kwargs: rendered_players.append(frame_player)
+    manager._render_selection_menu = lambda *_args, **_kwargs: None
+    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.display.flip", lambda: None)
+    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
+    event_batches = iter([[SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)]])
+    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, []))
+
+    assert manager._select_skill(summon, enemy) == "Throw Rock"
+    assert rendered_players == [player]
 
 
 def test_enemy_turn_covers_skip_forced_nothing_and_damage_paths(monkeypatch):

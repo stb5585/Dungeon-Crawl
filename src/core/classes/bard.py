@@ -101,11 +101,6 @@ class Bard(Job):
             def_plus=1,
             magic_plus=3,
             magic_def_plus=3,
-            equipment={
-                "Weapon": items.Kris(),
-                "OffHand": items.Lute(),
-                "Armor": items.Cuirboulli(),
-            },
             restrictions={
                 "Weapon": ["Dagger", "Sword", "Staff"],
                 "OffHand": ["Dagger", "Musical Instrument"],
@@ -165,7 +160,6 @@ def compose_sheet_music(character: Any, song: str) -> tuple[bool, str]:
     if song not in options:
         required = COMPOSITIONS.get(song, ("a matching instrument", ""))[0]
         return False, f"{character.name} needs {required} to compose {song}.\n"
-    from .. import items
 
     sheet = getattr(items, options[song])()
     character.modify_inventory(sheet)
