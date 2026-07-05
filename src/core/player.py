@@ -2801,9 +2801,7 @@ class Player(Character):
                 except (TypeError, ValueError):
                     pass
             if self.flying:
-                if typ == 'Earth':
-                    res_mod = 1
-                elif typ == 'Wind':
+                if typ == 'Wind':
                     res_mod = -0.25
             if typ == "Fire" and self.magic_effects.get("Stone Skin") and self.magic_effects["Stone Skin"].active:
                 res_mod += 0.5

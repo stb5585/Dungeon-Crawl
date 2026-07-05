@@ -83,6 +83,7 @@ Triage bands:
 | Presentation and asset expansions | Jump/Charge animation, Warp Point art, town/NPC/venue art, status-effect artwork, enemy identity presentation, website. | `Needs Evidence` | Target list and review-sheet workflow are approved, or UX evidence identifies a readability need. | `PRESENTATION_ASSET_DESIGN_GATES.md` | One generated bitmap batch or one readability layer with fallback behavior. |
 | Story/endgame expansion | Bespoke Guardian rooms, mini-bosses, stronger consequences, deeper per-class Voluntas quests, deeper Reflection mechanics, Vesperion tuning/presentation, legacy Devil retirement. | `Needs Spec` | Story-content decision block defines beat, trigger, flags, UI surface, fallback, and tests. | `STORY_AND_ENDGAME_DESIGN.md` | One story-only vignette or one Guardian room spec, not route replacement. |
 | Audio/event/meta systems | Final audio replacement, dynamic music, spatial audio, profiles, event payload enrichment, account-wide Bestiary, achievements, run summaries, persistent statistics. | `Needs Spec` | Concrete consumer, privacy/profile-storage decision, or asset-content need exists. | `SOUND_SYSTEM.md`, `EVENT_EMISSIONS.md`, Systems/Audio/Meta roadmap section | Source-specific event payload or audio route for an existing consumer. |
+| UI/core boundary cleanup | Moving mechanics or data ownership out of `ui_*` modules into core services. | `Do Not Promote As Cleanup` | A concrete duplicated rule, save-critical behavior, or testability blocker is identified with owner module and compatibility behavior. | Systems/Audio/Meta roadmap section and the affected domain gate | One rule extraction with parity tests, not a broad UI-module refactor. |
 
 ## Active Priority - P7 Additional Improvements
 
@@ -91,8 +92,8 @@ Status: `Completed`
 The P7 implementation for selector mouse support, reusable presenter/popup mouse
 support, Equipment selected-slot visibility, dungeon location labels, enlarged
 minimap modal, portrait-atlas variant browsing, generated dungeon special tiles,
-generated familiar artwork, and Character Menu companion art has shipped and is
-tracked in `CHANGELOG.md`. There is no remaining P7 Active Priority
+generated familiar/summon artwork, and Character Menu companion art has shipped
+and is tracked in `CHANGELOG.md`. There is no remaining P7 Active Priority
 implementation work.
 
 Completed follow-up posture:
@@ -112,8 +113,8 @@ Completed follow-up posture:
    - Decision: defer until core gameplay is complete, then re-evaluate need and
      scope.
 3. Broader companion-management UI, summon action previews, and combat-side
-   companion art remain deferred until playtest confirms the Character Menu
-   presentation needs expansion.
+   companion art placement remain deferred until playtest confirms the
+   Character Menu presentation needs expansion.
 
 ## Presentation And Asset Gates
 
@@ -142,6 +143,7 @@ Remaining follow-up after this V1 slice:
 - Enemy identity presentation V1 is shipped for invisible reveal notes,
   Mad Waitress form-change notes, and construct-friendly `Oil Leak` wording
   while preserving underlying mechanics.
+- Replace rock pile with dead boss renderings
 
 ## Dungeon, World, And Encounter Gates
 
@@ -231,6 +233,15 @@ final Vesperion balance/presentation tuning, or a dedicated legacy Devil
 compatibility-retirement cleanup after the audit-only boundary is intentionally
 promoted.
 
+### Additional Storyline/Endgame Content
+
+- Currently Red Dragon feeds multiple class storylines (Kaelenon and Zahhak);
+  there needs to be a continuity correction or an explanation for the varying
+  storylines
+- Add a post final boss/end game save spot; the user can now replay the game on
+  much harder difficulty using up to 3 characters that have also completed the
+  game
+
 ## Systems, Audio, And Meta Gates
 
 Status: `Spec Map, Mouse Support V1 Shipped`
@@ -264,26 +275,23 @@ defeats, or a level gain, while immediate turn-in/reopen loops remain blocked.
 Current tuning is conservative and should be playtested before changing the
 thresholds.
 
+## Bugfixes
+
+- No active contained bugfixes are queued. Add newly observed, reproducible
+  defects here until they are fixed and moved to `CHANGELOG.md`.
+
 ## Improvements
 
-- Class/Enemy/Ability Scaling
-  - Early level Footpads need nerfing
-    - hit much harder than expected
-    - still very squishy; glass cannons atm
-    - seems to level out at lower dungeon levels
-  - Poison is very inconsistent; some creatures apply really weak poisons and others
-    very strong
-- Lower item drop rates to increase benefit of skills like Steal and passives like
-  luck
-- Progressively lessen the accuracy of multi-strike skills to make them more balanced
-- Enfeeble needs to be tuned, as it currently is very weak
-- Use `tools/run_remaining_balance_baseline.py` and
-  `remaining_improvement_tuning_report()` as the evidence baseline before
-  changing Footpad, ordinary drop, multi-strike, or Enfeeble numbers.
-- Summoner/Summon Creatures
-  - Create bespoke companion art for summon creatures beyond current mapped
-    fallback sprites
-  - Allow some intervention from Summoner while summon creature is active
+- No unsorted improvements are queued. Current tuning and polish ideas have
+  owner gates:
+  - `docs/COMBAT_BALANCE_DESIGN_GATES.md` owns Footpad, poison consistency,
+    multi-strike accuracy, Enfeeble, and Dilong damage evidence gates.
+  - `docs/EQUIPMENT_ITEMS_ECONOMY_DESIGN_GATES.md` owns ordinary drop-rate
+    tuning and Steal/luck economy questions.
+  - `docs/CLASS_KIT_DESIGN_GATES.md` owns Summoner/Grand Summoner consumable
+    targeting and active-summon support follow-up.
+  - The Deferred Expansion Triage Map owns broad `ui_*` to core extraction as a
+    boundary-cleanup gate, not a standing refactor task.
 
 ### 2026-07-03 Roadmap Triage Implementation Note
 
@@ -302,6 +310,8 @@ thresholds.
 - Added summon combat presentation follow-up: mapped summon art fallbacks,
   active-summon turn token display, active-summon status icons in the turn card,
   simplified summon victory XP text, and XP/level-scaled summon bond gain.
+- Replaced mapped summon art fallbacks with bespoke transparent companion art
+  for all 11 summon creatures, plus a summon companion-art review sheet.
 - Balance baseline status: focused tests passed, but the full
   `tools/run_remaining_balance_baseline.py` wrapper did not complete in-session
   because its captured subprocess bundle stayed silent for several minutes.

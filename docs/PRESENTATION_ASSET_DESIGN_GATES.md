@@ -23,8 +23,9 @@ Generated bitmap batches are allowed for later asset-heavy slices, but each
 batch must have a review artifact before runtime integration.
 
 The next implementation set shipped Enemy Identity Presentation V1, the Quasit
-combat-sprite remake, and active/inactive Warp Point dungeon art. Runtime PNGs
-remain transparent, review sheets are checked in, and fallbacks remain valid.
+combat-sprite remake, active/inactive Warp Point dungeon art, and bespoke
+summon companion art. Runtime PNGs remain transparent, review sheets are checked
+in, and fallbacks remain valid.
 
 ## Screen Polish V1
 
@@ -143,6 +144,29 @@ If a future pass needs shared loading/caching, add a small manager following the
 existing asset-manager pattern. Do not introduce one-off path loading in several
 screens.
 
+## Companion And Summon Art
+
+Familiar and summon artwork uses `CompanionArtManager` and
+`src/ui_pygame/assets/companion_art/companion_art_map.json`. Runtime companion
+PNGs must remain transparent 512x512 sprites. Tamed companions and any future
+unmapped companion continue to fall back through `EnemyCombatSpriteManager`;
+do not remove that fallback path when adding new companion art.
+
+In the Character Menu, the Class tab should keep companion and summon rows
+compact and text-first. The companion/summon overview roster uses stacked
+full-width rows, not a square grid, and must fit all 11 summon creatures without
+requiring hidden rows. Companion/summon artwork belongs in the selected
+companion details popup, which should follow the Character tab's visual pattern:
+art/identity/core attributes on the left and combat stats, abilities, and
+resistance groups on the right.
+
+The first summon art pass covers Patagon, Dilong, Agloolik, Cacus, Fuath,
+Izulu, Hala, Grigori, Bardi, Kobalos, and Zahhak. The checked-in review sheet is
+`src/ui_pygame/assets/companion_art/summon_companion_art_review_sheet.png`.
+Rebuild the review sheet with
+`./.venv/bin/python tools/build_companion_art_sprites.py` after changing those
+sprites.
+
 ## Enemy Identity Presentation
 
 Enemy identity presentation is a readability layer and must preserve underlying
@@ -187,6 +211,7 @@ Prefer existing systems:
 - status and effect icons through `status_icons.py`;
 - enemy combat visuals through `EnemyCombatSpriteManager`;
 - dungeon and Warp Point visuals through the dungeon texture manifest;
+- companion/familiar/summon visuals through `CompanionArtManager`;
 - town/NPC art through a dedicated manager only if direct path loading would be
   duplicated.
 

@@ -123,10 +123,10 @@ def test_summon_options_hide_spell_actions_when_silenced():
 
     summon = Patagon()
 
-    assert summon.options() == ["Attack", "Use Skill", "Recall"]
+    assert summon.options() == ["Attack", "Use Skill", "Support"]
 
     summon.status_effects["Silence"].active = True
-    assert summon.options() == ["Attack", "Recall"]
+    assert summon.options() == ["Attack", "Support"]
 
 
 def test_summon_inspect_formats_stat_block():
@@ -161,6 +161,10 @@ def test_summon_level_up_adds_even_level_stats_and_odd_level_ability(monkeypatch
     assert summon.level.level == 3
     assert "power increases" in even_message
     assert summon.stats.strength == 7
+    assert isinstance(summon.combat.attack, int)
+    assert isinstance(summon.combat.defense, int)
+    assert isinstance(summon.combat.magic, int)
+    assert isinstance(summon.combat.magic_def, int)
     assert "Piercing Strike" in summon.spellbook["Skills"]
     assert "Piercing Strike" in odd_message
 

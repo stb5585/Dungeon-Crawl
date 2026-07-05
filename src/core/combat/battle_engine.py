@@ -175,6 +175,64 @@ class BattleEngine:
             actions.insert(insert_at, "Runic Boost")
         return actions
 
+    def summoner_support_actions(self) -> list[str]:
+        """Return limited owner actions available while a summon takes point."""
+        if not self.summon_active or not self.summon:
+            return []
+        actions = []
+        if getattr(self.player, "inventory", None):
+            actions.append("Use Item")
+        actions.append("Recall")
+        skills = getattr(self.player, "spellbook", {}).get("Skills", {})
+        for name in skills:
+            if name in {"Heal Summon", "Raise Summon", "Conduit Command"} or name.startswith("Invoke "):
+                actions.append("Use Skill")
+                break
+        return actions
+
+    def summoner_support_skill_names(self) -> list[str]:
+        """Return owner skill names valid through the active-summon Support menu."""
+        skills = getattr(self.player, "spellbook", {}).get("Skills", {})
+        return [
+            name for name, skill in skills.items()
+            if (
+                name in {"Heal Summon", "Raise Summon", "Conduit Command"}
+                or name.startswith("Invoke ")
+            )
+            and not getattr(skill, "passive", False)
+        ]
+
+    def execute_summoner_support_action(
+        self,
+        action: str,
+        choice: str | None = None,
+        slot_machine_callback: Callable | None = None,
+    ) -> ActionResult:
+        """Execute a constrained Summoner intervention during an active summon turn."""
+        if not self.summon_active or not self.summon:
+            result = ActionResult()
+            result.message = "No active summon can be supported.\n"
+            return result
+
+        original_attacker = self.attacker
+        original_defender = self.defender
+        self.attacker = self.player
+        self.defender = self.enemy
+        try:
+            result = self.execute_action(action, choice, slot_machine_callback)
+        finally:
+            if self.summon_active and self.summon:
+                self.attacker = self.summon
+                self.defender = self.enemy
+            else:
+                self.attacker = self.player
+                self.defender = self.enemy
+            self.available_actions = self._available_actions()
+            if not self.summon_active and original_attacker is self.enemy:
+                self.attacker = original_attacker
+                self.defender = original_defender
+        return result
+
     def _fail_no_healing_duel_if_healed(self, hp_before: int) -> str:
         """Fail the Berserker duel when the player restores HP during the bout."""
         if not self._no_healing_duel_active():
@@ -458,6 +516,10 @@ class BattleEngine:
             result.message = f"{self.attacker.name} does nothing.\n"
             return result
 
+        if self._tunneled_action_blocked(action, choice):
+            result.message = f"{self.attacker.name} must surface before doing that.\n"
+            return result
+
         debuff_snapshot = self._debuff_state_snapshot(self.attacker, choice, self.defender)
 
         if (
@@ -536,6 +598,15 @@ class BattleEngine:
         )
 
         return result
+
+    def _tunneled_action_blocked(self, action: str, choice: str | None) -> bool:
+        if not getattr(self.attacker, "tunnel", False):
+            return False
+        if action in {"Recall", "Support", "Nothing", "Cancelled"}:
+            return False
+        if action == "Use Skill" and choice == "Surface":
+            return False
+        return action in {"Attack", "Cast Spell", "Use Skill"}
 
     @staticmethod
     def _debuff_state_snapshot(actor, ability_name: str | None, target) -> dict | None:
@@ -1129,14 +1200,53 @@ class BattleEngine:
             return f"{summoner.name} has nothing to summon.\n", False, None
 
         summon = summons[choice]
+        mana_cost = self._summon_mana_cost(summon)
+        gold_cost = self._summon_gold_cost(summon)
+        if mana_cost and getattr(summoner.mana, "current", 0) < mana_cost:
+            return f"{summoner.name} needs {mana_cost} MP to summon {summon.name}.\n", False, None
+        if gold_cost and getattr(summoner, "gold", 0) < gold_cost:
+            return f"{summoner.name} needs {gold_cost} gold to summon {summon.name}.\n", False, None
+        if mana_cost:
+            summoner.mana.current = max(0, summoner.mana.current - mana_cost)
+        if gold_cost:
+            summoner.gold = max(0, int(getattr(summoner, "gold", 0) or 0) - gold_cost)
         self.summon = summon
         self.summon_active = True
         self.player.active_summon_name = summon.name
         self.attacker = summon
         self.defender = self.enemy
         self.available_actions = self._available_actions()
-        message = f"{summoner.name} summons {summon.name} to aid them in combat.\n"
+        costs = []
+        if mana_cost:
+            costs.append(f"{mana_cost} MP")
+        if gold_cost:
+            costs.append(f"{gold_cost} gold")
+        cost_text = f" ({', '.join(costs)})" if costs else ""
+        message = f"{summoner.name} summons {summon.name} to aid them in combat{cost_text}.\n"
         return message, True, summon
+
+    @staticmethod
+    def _summon_mana_cost(summon: Character) -> int:
+        explicit = getattr(summon, "summon_mana_cost", None)
+        if explicit is not None:
+            try:
+                return max(0, int(explicit))
+            except (TypeError, ValueError):
+                return 0
+        if not hasattr(summon, "start_stats"):
+            return 0
+        try:
+            pro_level = max(1, int(getattr(getattr(summon, "level", None), "pro_level", 1) or 1))
+        except (TypeError, ValueError):
+            pro_level = 1
+        return pro_level * 8
+
+    @staticmethod
+    def _summon_gold_cost(summon: Character) -> int:
+        try:
+            return max(0, int(getattr(summon, "summon_gold_cost", 0) or 0))
+        except (TypeError, ValueError):
+            return 0
 
     def _execute_recall(self) -> tuple[str, bool]:
         """Recall a summoned companion. Returns (message, success)."""
@@ -1182,6 +1292,10 @@ class BattleEngine:
 
         # Handle summon experience
         if self.summon:
+            try:
+                self.player._active_summon_bond_level_span_xp = promotion_kits.summon_level_span_xp(self.summon)
+            except Exception:
+                pass
             self.summon.effects(end=True)
             self.summon.level.exp += exp_gain
             if self.summon.level.level < 10:
@@ -1219,7 +1333,7 @@ class BattleEngine:
             if scar_text:
                 msg += scar_text
             class_rings.record_soul_harvest(self.player, getattr(self.enemy, "enemy_typ", None))
-            msg += promotion_kits.end_combat(self.player, victory=True, enemy=self.enemy, exp_gain=exp_gain)
+            msg += promotion_kits.end_combat(self.player, victory=True, enemy=self.enemy, exp_gain=exp_gain, boss=self.boss)
             try:
                 from ..classes import demonologist
 

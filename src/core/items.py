@@ -3941,8 +3941,8 @@ class LevitationPendant(Accessory):
 
     def __init__(self):
         super().__init__(name="Levitation Pendant", description="Gives the wearer the ability to fly, making them "
-                                                                 "harder to hit and immunity from Earth spells. The "
-                                                                 "downfall is that Wind spells will hurt more.",
+                                                                 "harder to hit and immune to ground-based spells. "
+                                                                 "The downfall is that Wind spells will hurt more.",
                          value=30000, rarity=0.25, mod="Flying", subtyp="Pendant", unequip=False)
         self.weight = 0.2
 

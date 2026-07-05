@@ -437,8 +437,21 @@ def test_bestiary_popup_defeated_entries_show_locations_and_drops(monkeypatch):
         bestiary={},
     )
     monkeypatch.setattr(popup, "_draw_enemy_sprite", lambda *_args, **_kwargs: None)
+    location_calls = []
+    drop_calls = []
+    monkeypatch.setattr(
+        popup_menus.enemies,
+        "bestiary_location_hints",
+        lambda enemy_name: location_calls.append(enemy_name) or ["Early Dungeon"],
+    )
+    monkeypatch.setattr(
+        popup_menus.enemies,
+        "bestiary_drop_hints",
+        lambda enemy, boss=False: drop_calls.append((getattr(enemy, "name", None), boss)) or ["Key (Common)"],
+    )
 
     popup.build_items(player)
+    popup.draw_details(player)
     popup.draw_details(player)
 
     assert "Status: Defeated" in presenter.normal_font.render_calls
@@ -447,6 +460,8 @@ def test_bestiary_popup_defeated_entries_show_locations_and_drops(monkeypatch):
     assert "Possible Drops" in presenter.normal_font.render_calls
     assert "Key (Common)" in presenter.small_font.render_calls
     assert "Details unknown." in presenter.normal_font.render_calls
+    assert location_calls == ["Green Slime"]
+    assert drop_calls == [("Green Slime", False)]
 
 
 def test_bestiary_popup_undetailed_boss_does_not_suggest_vision(monkeypatch):
@@ -1007,8 +1022,11 @@ def test_equipment_popup_build_details_and_selection_flows(monkeypatch):
             assert _kwargs["require_key_release"] is True
             return ("selection", "Cancel")
 
+    flips = []
+    monkeypatch.setattr(pygame.display, "flip", lambda: flips.append("flip"))
     monkeypatch.setattr(popup_menus, "EquipmentSelectionPopup", FakeEquipPopup)
     assert popup.on_select(player, popup.items[0]) is None
+    assert flips == []
 
 
 def test_equipment_popup_uses_player_equip_logic_for_two_handed_weapons(monkeypatch):

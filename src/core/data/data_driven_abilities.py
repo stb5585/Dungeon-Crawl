@@ -100,6 +100,7 @@ class DataDrivenSpell(Spell):
         telegraph_message: str | None = None,
         priority: str | None = None,
         notes: str | None = None,
+        grounded_damage: bool = False,
     ):
         super().__init__(name, description, school=school)
         self.cost = cost
@@ -114,6 +115,7 @@ class DataDrivenSpell(Spell):
         self._telegraph_message = telegraph_message
         self._priority = priority
         self._notes = notes
+        self._grounded_damage = grounded_damage
 
     # ------------------------------------------------------------------
     # Attack.cast() replica with composed-effects integration
@@ -144,6 +146,10 @@ class DataDrivenSpell(Spell):
 
         # ── 2. Immunity checks ──────────────────────────────────────
         if any([target.magic_effects["Ice Block"].active, target.tunnel]):
+            result.hit = False
+            result.message = "It has no effect.\n"
+            return result
+        if self._grounded_damage and getattr(target, "flying", False):
             result.hit = False
             result.message = "It has no effect.\n"
             return result

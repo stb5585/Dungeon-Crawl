@@ -12,7 +12,7 @@ from src.ui_pygame.assets.companion_art_manager import get_companion_art_manager
 from src.ui_pygame.assets.item_render_manager import get_item_render_manager
 from src.ui_pygame.assets.portrait_manager import PortraitManager
 
-from .confirmation_popup import ConfirmationPopup
+from .confirmation_popup import ConfirmationPopup, draw_popup_close_button, popup_close_clicked
 from .input_guards import prepare_guarded_input, release_guard_allows_input, update_input_armed_from_event
 from .mouse_helpers import hit_index, is_left_click, mouse_position
 from .popup_menus import BestiaryPopupMenu, EquipmentPopupMenu, InventoryPopupMenu, JumpModsPopupMenu, SimpleListPopupMenu, TotemAspectsPopupMenu
@@ -65,6 +65,257 @@ RESISTANCE_SLOT_COUNT = len(RESISTANCE_ORDER)
 PORTRAIT_DIR = Path(__file__).resolve().parents[1] / "assets" / "portraits"
 
 
+def _whole_stat_text(value) -> str:
+    """Format combat stats as whole-number values for stable stat surfaces."""
+    try:
+        return str(int(float(value)))
+    except (TypeError, ValueError):
+        return str(value)
+
+
+class ClassCompanionDetailsPopup:
+    """Character-tab-style details modal for familiars, companions, and summons."""
+
+    def __init__(self, presenter, parent_screen: "ModernCharacterScreen", player_char, kind: str, companion: Any):
+        self.presenter = presenter
+        self.parent_screen = parent_screen
+        self.player_char = player_char
+        self.kind = kind
+        self.companion = companion
+        self.screen = presenter.screen
+        self.width = presenter.width
+        self.height = presenter.height
+        self.small_font = presenter.small_font
+        self.normal_font = presenter.normal_font
+        self.large_font = presenter.large_font
+        self.colors = parent_screen.colors
+
+        popup_width = min(self.width - 60, max(760, self.width * 9 // 10))
+        popup_height = min(self.height - 56, max(500, self.height * 4 // 5))
+        self.popup_rect = pygame.Rect(
+            (self.width - popup_width) // 2,
+            (self.height - popup_height) // 2,
+            popup_width,
+            popup_height,
+        )
+
+    def _content_rects(self) -> tuple[pygame.Rect, pygame.Rect]:
+        gap = 12
+        content = self.popup_rect.inflate(-32, -104)
+        content.top = self.popup_rect.top + 72
+        content.height = self.popup_rect.bottom - content.top - 42
+        left_width = (content.width * 3) // 5
+        left_rect = pygame.Rect(content.left, content.top, left_width, content.height)
+        right_rect = pygame.Rect(left_rect.right + gap, content.top, content.right - left_rect.right - gap, content.height)
+        return left_rect, right_rect
+
+    def _draw_overlay(self, background_surface) -> None:
+        self.screen.blit(background_surface, (0, 0))
+        overlay = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 180))
+        self.screen.blit(overlay, (0, 0))
+        pygame.draw.rect(self.screen, (8, 8, 12), self.popup_rect)
+        pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, self.popup_rect, 2)
+        draw_popup_close_button(self.screen, self.popup_rect, self.small_font)
+
+    def _draw_art_and_identity(self, rect: pygame.Rect, y: int) -> int:
+        art_width = min(max(170, rect.width // 3), rect.width // 2)
+        art_height = min(max(190, (rect.height * 9) // 20), rect.height - 180)
+        art_rect = pygame.Rect(rect.left + 16, y, art_width, art_height)
+        pygame.draw.rect(self.screen, self.colors.DARK_GRAY, art_rect)
+        pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, art_rect, 2)
+        sprite = self.parent_screen.companion_art_manager.get_scaled_sprite(self.companion, art_rect.size)
+        self.screen.blit(sprite, art_rect)
+        pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, art_rect, 2)
+
+        name = self.parent_screen._attr_name(self.companion, self.kind)
+        info_x = art_rect.right + 16
+        info_y = y
+        info_width = rect.right - info_x - 16
+        identity_rows = self.parent_screen.companion_summary_rows(self.kind, self.companion)
+        identity_rows = [row for row in identity_rows if row[0] != "Companion"]
+        identity_rows.insert(0, ("Name", name))
+        identity_rows.append(("XP", self.parent_screen._companion_xp_label(self.companion)))
+        bond = self.parent_screen._summon_bond_label(self.player_char, self.companion)
+        if bond is not None:
+            identity_rows.append(("Bond", bond))
+
+        for index, (label, value) in enumerate(identity_rows):
+            label_text = label.upper()
+            label_width = self.normal_font.size(label_text)[0]
+            self.parent_screen._draw_text(
+                label_text,
+                self.normal_font,
+                self.colors.GRAY,
+                info_x + max(0, info_width - label_width),
+                info_y,
+                info_width,
+            )
+            info_y += self.normal_font.get_height()
+            value_font = self.large_font if index == 0 else self.normal_font
+            value_gap = 8 if index == 0 else 4
+            value_text = self.parent_screen._fit_text(str(value), value_font, info_width)
+            value_width = value_font.size(value_text)[0]
+            self.parent_screen._draw_text(
+                value_text,
+                value_font,
+                self.colors.WHITE,
+                info_x + max(0, info_width - value_width),
+                info_y,
+                info_width,
+            )
+            info_y += value_font.get_height() + value_gap
+
+        return max(art_rect.bottom, info_y)
+
+    def _core_attribute_rows(self) -> list[tuple[str, str]]:
+        stats = getattr(self.companion, "stats", None)
+        return [
+            ("Strength", str(getattr(stats, "strength", 0))),
+            ("Intelligence", str(getattr(stats, "intel", 0))),
+            ("Wisdom", str(getattr(stats, "wisdom", 0))),
+            ("Constitution", str(getattr(stats, "con", 0))),
+            ("Charisma", str(getattr(stats, "charisma", 0))),
+            ("Dexterity", str(getattr(stats, "dex", 0))),
+        ]
+
+    def _combat_rows(self) -> list[tuple[str, str]]:
+        health = getattr(self.companion, "health", None)
+        mana = getattr(self.companion, "mana", None)
+        combat = getattr(self.companion, "combat", None)
+        return [
+            ("HP", f"{getattr(health, 'current', 0)}/{getattr(health, 'max', 0)}"),
+            ("MP", f"{getattr(mana, 'current', 0)}/{getattr(mana, 'max', 0)}"),
+            ("Attack", _whole_stat_text(getattr(combat, "attack", 0))),
+            ("Defense", _whole_stat_text(getattr(combat, "defense", 0))),
+            ("Magic", _whole_stat_text(getattr(combat, "magic", 0))),
+            ("Magic Defense", _whole_stat_text(getattr(combat, "magic_def", 0))),
+        ]
+
+    def _ability_names(self) -> list[str]:
+        spellbook = getattr(self.companion, "spellbook", {}) or {}
+        if not isinstance(spellbook, dict):
+            return []
+        names: list[str] = []
+        for bucket in ("Skills", "Spells"):
+            abilities = spellbook.get(bucket, {})
+            if isinstance(abilities, dict):
+                names.extend(str(name) for name in abilities.keys())
+        return names
+
+    def _draw_abilities(self, rect: pygame.Rect, y: int, bottom_limit: int) -> int:
+        names = self._ability_names()
+        self.parent_screen._draw_divider(rect, y - 10)
+        self.parent_screen._draw_text("Abilities", self.large_font, self.colors.GOLD, rect.left + 16, y, rect.width - 32)
+        y += self.large_font.get_height() + 8
+        if not names:
+            self.parent_screen._draw_text("None", self.normal_font, self.colors.GRAY, rect.left + 16, y, rect.width - 32)
+            return y + self.normal_font.get_height() + 8
+
+        available_lines = max(1, (bottom_limit - y) // (self.small_font.get_height() + 4))
+        return self.parent_screen._draw_wrapped_text(
+            ", ".join(names),
+            self.small_font,
+            self.colors.WHITE,
+            rect.left + 16,
+            y,
+            rect.width - 32,
+            max_lines=available_lines,
+        )
+
+    def draw(self, background_surface) -> None:
+        self._draw_overlay(background_surface)
+        name = self.parent_screen._attr_name(self.companion, self.kind)
+        title = f"{name} Details"
+        title_text = self.presenter.title_font.render(title, True, self.colors.GOLD)
+        self.screen.blit(
+            title_text,
+            (self.popup_rect.centerx - title_text.get_width() // 2, self.popup_rect.top + 18),
+        )
+
+        left_rect, right_rect = self._content_rects()
+        y = self.parent_screen._draw_panel(left_rect, self.kind)
+        y = self._draw_art_and_identity(left_rect, y)
+        y += 16
+        self.parent_screen._draw_divider(left_rect, y - 8)
+        self.parent_screen._draw_text("Core Attributes", self.large_font, self.colors.GOLD, left_rect.left + 16, y, left_rect.width - 32)
+        y += self.large_font.get_height() + 8
+        self.parent_screen._draw_key_values(
+            self._core_attribute_rows(),
+            left_rect,
+            y,
+            font=self.small_font,
+            label_padding=36,
+            right_align_values=True,
+            row_gap=2,
+            bottom_limit=left_rect.bottom - 16,
+        )
+
+        y = self.parent_screen._draw_panel(right_rect, "Combat Stats")
+        resistance_height = min(
+            190,
+            self.large_font.get_height() + 8 + (6 * (self.small_font.get_height() + 2)),
+        )
+        resistance_top = right_rect.bottom - resistance_height - 16
+        y = self.parent_screen._draw_key_values(
+            self._combat_rows(),
+            right_rect,
+            y,
+            font=self.small_font,
+            row_gap=2,
+            right_align_values=True,
+            bottom_limit=resistance_top - 14,
+        )
+        y = self._draw_abilities(right_rect, y + 18, resistance_top - 14)
+        groups = self.parent_screen.group_resistances(self.companion)
+        y = max(y + 12, resistance_top)
+        self.parent_screen._draw_divider(right_rect, y - 10)
+        column_gap = 12
+        column_width = (right_rect.width - 32 - column_gap) // 2
+        weakness_rect = pygame.Rect(right_rect.left + 16, y, column_width, right_rect.bottom - y - 16)
+        resistance_rect = pygame.Rect(weakness_rect.right + column_gap, y, column_width, weakness_rect.height)
+        self.parent_screen._draw_text("Weaknesses", self.large_font, self.colors.RED, weakness_rect.left, y, weakness_rect.width)
+        self.parent_screen._draw_text("Resistances", self.large_font, self.colors.GREEN, resistance_rect.left, y, resistance_rect.width)
+        group_y = y + self.large_font.get_height() + 6
+        self.parent_screen._draw_resistance_group(groups["weaknesses"], weakness_rect, group_y, self.colors.RED, font=self.small_font, row_gap=2)
+        self.parent_screen._draw_resistance_group(groups["resistances"], resistance_rect, group_y, self.colors.GREEN, font=self.small_font, row_gap=2)
+
+        footer = "Esc/Enter: Close"
+        footer_text = self.small_font.render(footer, True, self.colors.GRAY)
+        self.screen.blit(footer_text, (self.popup_rect.left + 16, self.popup_rect.bottom - footer_text.get_height() - 12))
+        pygame.display.flip()
+
+    def show(self, background_draw_func=None, flush_events: bool = False, require_key_release: bool = False) -> None:
+        if background_draw_func is None:
+            background = self.screen.copy()
+            background_draw_func = lambda: self.screen.blit(background, (0, 0))
+        background_draw_func()
+        background_surface = self.screen.copy()
+        input_armed = prepare_guarded_input(flush_events=flush_events, require_key_release=require_key_release)
+
+        while True:
+            self.draw(background_surface)
+            input_armed = release_guard_allows_input(require_key_release, input_armed)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    import sys
+
+                    sys.exit()
+                input_armed = update_input_armed_from_event(event, require_key_release, input_armed)
+                if popup_close_clicked(event, self.popup_rect):
+                    if input_armed:
+                        background_draw_func()
+                        return
+                    continue
+                if event.type != pygame.KEYDOWN or not input_armed:
+                    continue
+                if event.key in (pygame.K_ESCAPE, pygame.K_RETURN, pygame.K_SPACE):
+                    background_draw_func()
+                    return
+            self.presenter.clock.tick(30)
+
+
 class ModernCharacterScreen(TownScreenBase):
     """RPG-style character menu used by the standard pygame character flow."""
 
@@ -77,6 +328,7 @@ class ModernCharacterScreen(TownScreenBase):
         self.selected_equipment_slot_index = 0
         self.selected_class_companion_index = 0
         self.equipment_selector_active = False
+        self.class_companion_selector_active = False
         self.current_selection = 0
         self.menu_options: list[str] = []
         super().__init__(presenter)
@@ -119,6 +371,8 @@ class ModernCharacterScreen(TownScreenBase):
                 self.active_tab_index = index
                 if key != "equipment":
                     self.equipment_selector_active = False
+                if key != "class":
+                    self.class_companion_selector_active = False
                 return
         raise ValueError(f"Unknown character tab: {key}")
 
@@ -126,6 +380,8 @@ class ModernCharacterScreen(TownScreenBase):
         self.active_tab_index = (self.active_tab_index + delta) % len(self.tabs)
         if self.active_tab.key != "equipment":
             self.equipment_selector_active = False
+        if self.active_tab.key != "class":
+            self.class_companion_selector_active = False
 
     @staticmethod
     def _attr_name(value: Any, default: str = "Unknown") -> str:
@@ -270,10 +526,10 @@ class ModernCharacterScreen(TownScreenBase):
             [
                 ("HP", f"{getattr(health, 'current', 0)}/{getattr(health, 'max', 0)}"),
                 ("MP", f"{getattr(mana, 'current', 0)}/{getattr(mana, 'max', 0)}"),
-                ("Attack", str(getattr(combat, "attack", 0))),
-                ("Defense", str(getattr(combat, "defense", 0))),
-                ("Magic", str(getattr(combat, "magic", 0))),
-                ("Magic Defense", str(getattr(combat, "magic_def", 0))),
+                ("Attack", _whole_stat_text(getattr(combat, "attack", 0))),
+                ("Defense", _whole_stat_text(getattr(combat, "defense", 0))),
+                ("Magic", _whole_stat_text(getattr(combat, "magic", 0))),
+                ("Magic Defense", _whole_stat_text(getattr(combat, "magic_def", 0))),
             ]
         )
         return rows
@@ -1029,29 +1285,49 @@ class ModernCharacterScreen(TownScreenBase):
         )
 
     def class_companion_tile_rects(self, entries: list[tuple[str, Any]]) -> list[pygame.Rect]:
-        """Return compact clickable companion tile rectangles for the Class tab."""
+        """Return stacked clickable companion row rectangles for the Class tab."""
         if not entries or not hasattr(self, "_class_roster_rect"):
             return []
 
         roster_rect = self._class_roster_rect
-        columns = 2 if roster_rect.width >= 430 else 1
-        gap = 10
-        tile_height = 116
-        tile_width = (roster_rect.width - gap * (columns - 1)) // columns
+        gap = 6
+        tile_width = roster_rect.width
         top = roster_rect.top + self.normal_font.get_height() + 10
+        available_height = max(1, roster_rect.bottom - top)
+        tile_height = min(64, max(30, (available_height - gap * (len(entries) - 1)) // len(entries)))
         rects = []
         for index, _entry in enumerate(entries):
-            row = index // columns
-            col = index % columns
-            rect = pygame.Rect(
-                roster_rect.left + col * (tile_width + gap),
-                top + row * (tile_height + gap),
-                tile_width,
-                tile_height,
+            rects.append(
+                pygame.Rect(
+                    roster_rect.left,
+                    top + index * (tile_height + gap),
+                    tile_width,
+                    tile_height,
+                )
             )
-            if rect.bottom <= roster_rect.bottom:
-                rects.append(rect)
         return rects
+
+    def _draw_inline_companion_fields(
+        self,
+        fields: list[tuple[str, str]],
+        rect: pygame.Rect,
+        y: int,
+        *,
+        selected: bool,
+    ) -> None:
+        x = rect.left + 12
+        max_x = rect.right - 10
+        label_color = self.colors.GOLD if selected else self.colors.GRAY
+        for label, value in fields:
+            label_text = str(label)
+            label_width = self.small_font.size(label_text)[0]
+            value_width = self.small_font.size(str(value))[0]
+            if x + label_width + 4 + value_width > max_x:
+                break
+            self._draw_text(label_text, self.small_font, label_color, x, y, label_width)
+            x += label_width + 4
+            self._draw_text(str(value), self.small_font, self.colors.WHITE, x, y, max_x - x)
+            x += value_width + 14
 
     def _draw_class_companion_tile(
         self,
@@ -1065,21 +1341,16 @@ class ModernCharacterScreen(TownScreenBase):
         pygame.draw.rect(self.screen, self.colors.HIGHLIGHT_BG if selected else (14, 14, 19), rect)
         pygame.draw.rect(self.screen, self.colors.GOLD if selected else self.colors.BORDER_COLOR, rect, 2 if selected else 1)
 
-        art_size = min(58, rect.height - 18, max(42, rect.width // 4))
-        art_rect = pygame.Rect(rect.left + 10, rect.top + (rect.height - art_size) // 2, art_size, art_size)
-        self._draw_item_art_backdrop(art_rect)
-        sprite = self.companion_art_manager.get_scaled_sprite(companion, art_rect.size)
-        self.screen.blit(sprite, art_rect)
-
-        text_x = art_rect.right + 10
+        text_x = rect.left + 12
         text_width = rect.right - text_x - 8
         y = rect.top + 8
-        self._draw_text(self._attr_name(companion, kind), self.normal_font, self.colors.GOLD, text_x, y, text_width)
-        y += self.normal_font.get_height() + 2
+        name = self._attr_name(companion, kind)
+        name_width = max(90, min(text_width // 2, self.normal_font.size(name)[0] + 8))
+        self._draw_text(name, self.normal_font, self.colors.GOLD, text_x, y, name_width)
 
         level = getattr(getattr(companion, "level", None), "level", "?")
         health = getattr(companion, "health", None)
-        rows = [
+        fields = [
             ("Type", kind),
             ("Level", str(level)),
             ("HP", f"{getattr(health, 'current', 0)}/{getattr(health, 'max', 0)}"),
@@ -1087,15 +1358,23 @@ class ModernCharacterScreen(TownScreenBase):
         ]
         bond = self._summon_bond_label(player_char, companion)
         if bond is not None:
-            rows.append(("Bond", bond))
-        self._draw_key_values(
-            rows,
-            pygame.Rect(text_x - 16, y, text_width + 16, rect.bottom - y - 6),
-            y,
-            font=self.small_font,
-            label_padding=10,
-            row_gap=0,
-            bottom_limit=rect.bottom - 6,
+            fields.append(("Bond", bond))
+
+        first_line_fields = fields[:2]
+        second_line_fields = fields[2:]
+        field_x = text_x + name_width + 8
+        self._draw_inline_companion_fields(
+            first_line_fields,
+            pygame.Rect(field_x, y + 2, rect.right - field_x - 8, self.small_font.get_height()),
+            y + 2,
+            selected=selected,
+        )
+        detail_y = min(rect.bottom - self.small_font.get_height() - 4, y + self.normal_font.get_height() + 1)
+        self._draw_inline_companion_fields(
+            second_line_fields,
+            pygame.Rect(text_x, detail_y, text_width, self.small_font.get_height()),
+            detail_y,
+            selected=selected,
         )
 
     def _open_class_companion_popup(self, player_char) -> None:
@@ -1107,28 +1386,8 @@ class ModernCharacterScreen(TownScreenBase):
             min(self.selected_class_companion_index, len(entries) - 1),
         )
         kind, companion = entries[self.selected_class_companion_index]
-        rows = self.companion_detail_rows(kind, companion)
-        rows.append(("XP", self._companion_xp_label(companion)))
-        bond = self._summon_bond_label(player_char, companion)
-        if bond is not None:
-            rows.append(("Bond", bond))
-
-        spellbook = getattr(companion, "spellbook", {}) or {}
-        skills = spellbook.get("Skills", {}) if isinstance(spellbook, dict) else {}
-        spells = spellbook.get("Spells", {}) if isinstance(spellbook, dict) else {}
-        ability_names = []
-        if isinstance(skills, dict):
-            ability_names.extend(skills.keys())
-        if isinstance(spells, dict):
-            ability_names.extend(spells.keys())
-
-        name = self._attr_name(companion, kind)
-        lines = [f"{name}", ""]
-        lines.extend(f"{label}: {value}" for label, value in rows)
-        if ability_names:
-            lines.extend(["", "Abilities:", ", ".join(ability_names)])
         background = self.screen.copy()
-        popup = ConfirmationPopup(self.presenter, "\n".join(lines), show_buttons=False)
+        popup = ClassCompanionDetailsPopup(self.presenter, self, player_char, kind, companion)
         popup.show(
             background_draw_func=lambda: self.screen.blit(background, (0, 0)),
             flush_events=True,
@@ -1189,6 +1448,20 @@ class ModernCharacterScreen(TownScreenBase):
         )
         self._class_roster_rect = roster_rect
         self._draw_text("Companions & Summons", self.normal_font, self.colors.GOLD, roster_rect.left, y, roster_rect.width)
+        helper = (
+            "Arrows: Select  Enter: Inspect  C/Esc: Back"
+            if self.class_companion_selector_active
+            else "C: Select summon"
+        )
+        helper_width = self.small_font.size(helper)[0]
+        self._draw_text(
+            helper,
+            self.small_font,
+            self.colors.GRAY,
+            roster_rect.right - min(helper_width, roster_rect.width),
+            self.details_rect.top + 18,
+            roster_rect.width,
+        )
         if not entries:
             empty_y = y + self.normal_font.get_height() + 10
             self._draw_text("None", self.normal_font, self.colors.GRAY, roster_rect.left, empty_y, roster_rect.width)
@@ -1474,6 +1747,8 @@ class ModernCharacterScreen(TownScreenBase):
                             self.active_tab_index = tab_index
                             if self.active_tab.key != "equipment":
                                 self.equipment_selector_active = False
+                            if self.active_tab.key != "class":
+                                self.class_companion_selector_active = False
                         continue
                     elif action_index is not None and is_left_click(event):
                         if input_armed:
@@ -1496,6 +1771,7 @@ class ModernCharacterScreen(TownScreenBase):
                         entries = self.class_companion_entries(player_char)
                         tile_index = hit_index(self.class_companion_tile_rects(entries), pos)
                         if tile_index is not None:
+                            self.class_companion_selector_active = True
                             self.selected_class_companion_index = tile_index
                             if is_left_click(event) and input_armed:
                                 self._open_class_companion_popup(player_char)
@@ -1508,18 +1784,27 @@ class ModernCharacterScreen(TownScreenBase):
 
                 if event.key == pygame.K_ESCAPE and self.equipment_selector_active:
                     self.equipment_selector_active = False
+                elif event.key == pygame.K_ESCAPE and self.class_companion_selector_active:
+                    self.class_companion_selector_active = False
                 elif event.key == pygame.K_ESCAPE:
                     return "Exit Menu"
                 elif event.key == pygame.K_e and self.active_tab.key == "equipment":
                     self.equipment_selector_active = not self.equipment_selector_active
+                elif event.key == pygame.K_c and self.active_tab.key == "class":
+                    self.class_companion_selector_active = not self.class_companion_selector_active
                 elif event.key in (pygame.K_TAB, pygame.K_RIGHT):
                     if self.active_tab.key == "equipment" and self.equipment_selector_active and event.key == pygame.K_RIGHT:
                         self.move_equipment_selector(player_char, "right")
+                    elif self.active_tab.key == "class" and self.class_companion_selector_active and event.key == pygame.K_RIGHT:
+                        entries = self.class_companion_entries(player_char)
+                        self.selected_class_companion_index = min(len(entries) - 1, self.selected_class_companion_index + 1)
                     else:
                         self.move_tab(1)
                 elif event.key == pygame.K_LEFT:
                     if self.active_tab.key == "equipment" and self.equipment_selector_active:
                         self.move_equipment_selector(player_char, "left")
+                    elif self.active_tab.key == "class" and self.class_companion_selector_active:
+                        self.selected_class_companion_index = max(0, self.selected_class_companion_index - 1)
                     else:
                         self.move_tab(-1)
                 elif event.key == pygame.K_1:
@@ -1531,27 +1816,27 @@ class ModernCharacterScreen(TownScreenBase):
                 elif event.key == pygame.K_UP:
                     if self.active_tab.key == "equipment" and self.equipment_selector_active:
                         self.move_equipment_selector(player_char, "up")
-                    elif self.active_tab.key == "class" and self.class_companion_entries(player_char):
-                        self.selected_class_companion_index = max(0, self.selected_class_companion_index - 2)
+                    elif self.active_tab.key == "class" and self.class_companion_selector_active and self.class_companion_entries(player_char):
+                        self.selected_class_companion_index = max(0, self.selected_class_companion_index - 1)
                     else:
                         self.current_selection = (self.current_selection - 1) % len(self.menu_options)
                 elif event.key == pygame.K_DOWN:
                     if self.active_tab.key == "equipment" and self.equipment_selector_active:
                         self.move_equipment_selector(player_char, "down")
-                    elif self.active_tab.key == "class" and self.class_companion_entries(player_char):
+                    elif self.active_tab.key == "class" and self.class_companion_selector_active and self.class_companion_entries(player_char):
                         entries = self.class_companion_entries(player_char)
-                        self.selected_class_companion_index = min(len(entries) - 1, self.selected_class_companion_index + 2)
+                        self.selected_class_companion_index = min(len(entries) - 1, self.selected_class_companion_index + 1)
                     else:
                         self.current_selection = (self.current_selection + 1) % len(self.menu_options)
-                elif event.key == pygame.K_a and self.active_tab.key == "class" and self.class_companion_entries(player_char):
+                elif event.key == pygame.K_a and self.active_tab.key == "class" and self.class_companion_selector_active and self.class_companion_entries(player_char):
                     self.selected_class_companion_index = max(0, self.selected_class_companion_index - 1)
-                elif event.key == pygame.K_d and self.active_tab.key == "class" and self.class_companion_entries(player_char):
+                elif event.key == pygame.K_d and self.active_tab.key == "class" and self.class_companion_selector_active and self.class_companion_entries(player_char):
                     entries = self.class_companion_entries(player_char)
                     self.selected_class_companion_index = min(len(entries) - 1, self.selected_class_companion_index + 1)
                 elif event.key in (pygame.K_RETURN, pygame.K_SPACE):
                     if self.active_tab.key == "equipment" and self.equipment_selector_active:
                         self.open_selected_equipment_change(player_char)
-                    elif self.active_tab.key == "class" and self.class_companion_entries(player_char):
+                    elif self.active_tab.key == "class" and self.class_companion_selector_active and self.class_companion_entries(player_char):
                         self._open_class_companion_popup(player_char)
                     else:
                         result = self._open_menu_choice(self.menu_options[self.current_selection], player_char)

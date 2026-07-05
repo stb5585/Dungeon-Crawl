@@ -5236,9 +5236,7 @@ class Devil(Fiend):
             if typ in self.resistance:
                 res_mod = self.resistance[typ]
             if self.flying:
-                if typ == 'Earth':
-                    res_mod = 1
-                elif typ == 'Wind':
+                if typ == 'Wind':
                     res_mod = -0.25
             return res_mod
         if mod == 'luck':

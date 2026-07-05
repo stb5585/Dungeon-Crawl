@@ -9,7 +9,11 @@ import pygame
 
 from src.ui_pygame import game as pygame_game
 from src.ui_pygame.gui.dungeon_manager import DungeonManager
-from src.ui_pygame.gui.modern_character_screen import ModernCharacterScreen, RESISTANCE_ORDER
+from src.ui_pygame.gui.modern_character_screen import (
+    ClassCompanionDetailsPopup,
+    ModernCharacterScreen,
+    RESISTANCE_ORDER,
+)
 
 
 class DummySurface:
@@ -391,7 +395,7 @@ def test_modern_character_companion_display_prefers_familiar_then_living_summon(
     assert screen.active_companion_for_display(player) is None
 
 
-def test_modern_character_class_tab_renders_companion_art(monkeypatch):
+def test_modern_character_class_tab_lists_companions_without_art(monkeypatch):
     presenter = _make_presenter()
     screen = ModernCharacterScreen(presenter)
     player = _make_player()
@@ -417,7 +421,7 @@ def test_modern_character_class_tab_renders_companion_art(monkeypatch):
 
     screen.draw_class_tab(player)
 
-    assert calls and calls[0][0] is companion
+    assert calls == []
     rendered_text = set(presenter.small_font.render_calls + presenter.normal_font.render_calls)
     assert {"Class", "Class Profile", "Companions & Summons", "Patagon", "Type", "Summon", "HP", "40/50"}.issubset(rendered_text)
 
@@ -445,10 +449,10 @@ def test_modern_character_class_tab_supports_multiple_summon_tiles_and_popup(mon
     screen.companion_art_manager = SimpleNamespace(get_scaled_sprite=lambda _entity, size: DummySurface(size))
     popups = []
 
-    class FakePopup:
-        def __init__(self, _presenter, message, show_buttons=False):
-            self.message = message
-            self.show_buttons = show_buttons
+    class FakeCompanionPopup:
+        def __init__(self, _presenter, _screen, _player, kind, companion):
+            self.kind = kind
+            self.companion = companion
             self.show_kwargs = None
             popups.append(self)
 
@@ -458,7 +462,7 @@ def test_modern_character_class_tab_supports_multiple_summon_tiles_and_popup(mon
 
     import src.ui_pygame.gui.modern_character_screen as modern_module
 
-    monkeypatch.setattr(modern_module, "ConfirmationPopup", FakePopup)
+    monkeypatch.setattr(modern_module, "ClassCompanionDetailsPopup", FakeCompanionPopup)
     monkeypatch.setattr(screen, "draw_semi_transparent_panel", lambda rect, alpha=180: DummySurface((rect.width, rect.height)))
     monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.rect", lambda *_args, **_kwargs: None)
     monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.line", lambda *_args, **_kwargs: None)
@@ -473,9 +477,115 @@ def test_modern_character_class_tab_supports_multiple_summon_tiles_and_popup(mon
     screen._open_class_companion_popup(player)
 
     assert popups
-    assert "Dilong" in popups[-1].message
-    assert "Abilities:" in popups[-1].message
+    assert popups[-1].kind == "Summon"
+    assert popups[-1].companion is player.summons["Dilong"]
     assert callable(popups[-1].show_kwargs["background_draw_func"])
+
+
+def test_modern_character_class_tab_stacks_all_eleven_summons(monkeypatch):
+    presenter = _make_presenter()
+    screen = ModernCharacterScreen(presenter)
+    player = _make_player()
+    summon_names = [
+        "Patagon",
+        "Dilong",
+        "Agloolik",
+        "Cacus",
+        "Fuath",
+        "Izulu",
+        "Hala",
+        "Grigori",
+        "Bardi",
+        "Kobalos",
+        "Zahhak",
+    ]
+
+    def summon(name):
+        return SimpleNamespace(
+            name=name,
+            cls=None,
+            health=SimpleNamespace(current=40, max=50),
+            mana=SimpleNamespace(current=5, max=10),
+            combat=SimpleNamespace(attack=14, defense=8, magic=0, magic_def=3),
+            level=SimpleNamespace(level=1, exp=25, exp_to_gain=75),
+            spellbook={"Skills": {}, "Spells": {}},
+            is_alive=lambda: True,
+        )
+
+    player.cls = SimpleNamespace(name="Grand Summoner", description="Calls every ally.")
+    player.promotion_kit_state = {"summon_bonds": {name: 0 for name in summon_names}}
+    player.summons = {name: summon(name) for name in summon_names}
+
+    monkeypatch.setattr(screen, "draw_semi_transparent_panel", lambda rect, alpha=180: DummySurface((rect.width, rect.height)))
+    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.rect", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.line", lambda *_args, **_kwargs: None)
+
+    screen.draw_class_tab(player)
+    rects = screen.class_companion_tile_rects(screen.class_companion_entries(player))
+
+    assert len(rects) == 11
+    assert all(rect.left == rects[0].left and rect.width == rects[0].width for rect in rects)
+    assert all(rects[index].bottom < rects[index + 1].top for index in range(len(rects) - 1))
+    assert rects[-1].bottom <= screen._class_roster_rect.bottom
+
+
+def test_class_companion_details_popup_uses_character_tab_style_and_art(monkeypatch):
+    presenter = _make_presenter()
+    screen = ModernCharacterScreen(presenter)
+    player = _make_player()
+    companion = SimpleNamespace(
+        name="Patagon",
+        cls=None,
+        health=SimpleNamespace(current=40, max=50),
+        mana=SimpleNamespace(current=5, max=10),
+        stats=SimpleNamespace(strength=20, intel=5, wisdom=8, con=15, charisma=3, dex=14),
+        combat=SimpleNamespace(attack=14.9, defense=8.2, magic=0.8, magic_def=3.4),
+        resistance={"Fire": -0.25, "Physical": 0.2},
+        level=SimpleNamespace(level=1, exp=25, exp_to_gain=75),
+        spellbook={"Skills": {"Throw Rock": object(), "Charge": object()}, "Spells": {}},
+        is_alive=lambda: True,
+    )
+    player.promotion_kit_state = {"summon_bonds": {"Patagon": 15}}
+    calls = []
+    screen.companion_art_manager = SimpleNamespace(
+        get_scaled_sprite=lambda entity, size: calls.append((entity, size)) or DummySurface(size)
+    )
+
+    monkeypatch.setattr(screen, "draw_semi_transparent_panel", lambda rect, alpha=180: DummySurface((rect.width, rect.height)))
+    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.rect", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.line", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.draw_popup_close_button", lambda *_args, **_kwargs: pygame.Rect(0, 0, 20, 20))
+    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.display.flip", lambda: None)
+
+    popup = ClassCompanionDetailsPopup(presenter, screen, player, "Summon", companion)
+    popup.draw("background")
+
+    assert calls and calls[0][0] is companion
+    rendered_text = set(
+        presenter.title_font.render_calls
+        + presenter.large_font.render_calls
+        + presenter.normal_font.render_calls
+        + presenter.small_font.render_calls
+    )
+    assert {
+        "Patagon Details",
+        "Summon",
+        "Core Attributes",
+        "Combat Stats",
+        "Abilities",
+        "Throw Rock, Charge",
+        "Weaknesses",
+        "Resistances",
+        "Fire (-25%)",
+        "Physical (+20%)",
+        "15/100",
+        "14",
+        "8",
+        "0",
+        "3",
+    }.issubset(rendered_text)
+    assert "14.9" not in rendered_text
+    assert "8.2" not in rendered_text
 
 
 def test_modern_character_draw_all_renders_active_tabs(monkeypatch):
@@ -671,6 +781,56 @@ def test_modern_equipment_tab_enter_opens_selected_slot_change(monkeypatch):
     screen.open_selected_equipment_change(player)
 
     assert opened == ["Ring"]
+
+
+def test_modern_character_c_toggles_class_summon_focus_and_opens_popup(monkeypatch):
+    presenter = _make_presenter()
+    screen = ModernCharacterScreen(presenter)
+    player = _make_player()
+
+    def summon(name):
+        return SimpleNamespace(
+            name=name,
+            cls=None,
+            health=SimpleNamespace(current=40, max=50),
+            mana=SimpleNamespace(current=5, max=10),
+            combat=SimpleNamespace(attack=14, defense=8, magic=0, magic_def=3),
+            level=SimpleNamespace(level=1, exp=0, exp_to_gain=100),
+            spellbook={"Skills": {}, "Spells": {}},
+            is_alive=lambda: True,
+        )
+
+    player.cls = SimpleNamespace(name="Summoner", description="")
+    player.summons = {"Patagon": summon("Patagon"), "Dilong": summon("Dilong")}
+    opened = []
+
+    class FakeCompanionPopup:
+        def __init__(self, _presenter, _screen, _player, kind, companion):
+            opened.append((kind, companion.name))
+
+        def show(self, **_kwargs):
+            return None
+
+    import src.ui_pygame.gui.modern_character_screen as modern_module
+
+    monkeypatch.setattr(modern_module, "ClassCompanionDetailsPopup", FakeCompanionPopup)
+    monkeypatch.setattr(screen, "draw_all", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
+    event_batches = iter([
+        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_c)],
+        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_2)],
+        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_c)],
+        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_DOWN)],
+        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN)],
+        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE)],
+        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE)],
+    ])
+    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.event.get", lambda: next(event_batches, []))
+
+    assert screen.navigate(player) == "Exit Menu"
+    assert screen.active_tab.key == "class"
+    assert opened == [("Summon", "Dilong")]
+    assert screen.class_companion_selector_active is False
 
 
 def test_modern_character_menu_mouse_selects_equipment_slot(monkeypatch):

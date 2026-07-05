@@ -1712,9 +1712,9 @@ class AcidSpitEffect:
 
 class BreathDamageEffect:
     """
-    Breath weapon: ``(strength + intel) * multiplier * variance``, then
-    ``damage_reduction(typ=element)``.  The element can be set in YAML or
-    overridden at call-time via ``result.extra["use_kwargs"]["typ"]``.
+    Breath weapon: ``(strength + intel) * multiplier * variance``, then active
+    spell defenses and ``damage_reduction(typ=element)``.  The element can be
+    set in YAML or overridden at call-time via ``result.extra["use_kwargs"]["typ"]``.
     """
 
     def __init__(
@@ -1746,11 +1746,16 @@ class BreathDamageEffect:
         variance = _rng.uniform(DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH)
         damage = int(base_damage * variance)
 
-        _, reduction_msg, damage = target.damage_reduction(damage, actor, typ=typ)
+        hit, defense_msg, damage = target.handle_defenses(actor, damage, typ=typ)
+        reduction_msg = ""
+        if hit:
+            _, reduction_msg, damage = target.damage_reduction(damage, actor, typ=typ)
 
         messages.append(
             self.announce_message.format(actor=actor.name, element=typ)
         )
+        if defense_msg:
+            messages.append(defense_msg)
         if reduction_msg:
             messages.append(reduction_msg)
 

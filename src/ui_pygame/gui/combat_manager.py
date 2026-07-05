@@ -59,7 +59,8 @@ SLOT_CARD_VALUES = {
 }
 VESPERION_FALSE_FINAL_HP_RATIO = 0.70
 VESPERION_FALSE_FINAL_ENEMY_TURNS = 3
-COMBAT_START_TRANSITION_FRAMES = 12
+COMBAT_START_TRANSITION_FRAMES = 0
+POST_TURN_DELAY_FRAMES = 6
 
 
 def _battle_log_slug(value: object) -> str:
@@ -882,7 +883,7 @@ class GUICombatManager:
             self.available_actions = self._build_display_actions()
             
             # Small delay between turns (with animation updates)
-            for _ in range(18):  # 300ms at 60fps
+            for _ in range(POST_TURN_DELAY_FRAMES):
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT:
                         pygame.quit()
@@ -1291,12 +1292,20 @@ class GUICombatManager:
 
         # Map display name back to engine name
         engine_action = _DISPLAY_TO_ENGINE.get(action, action)
+        support_mode = action == "Support"
 
         # Sub-menu actions need a selection UI first
         choice = None
 
+        if support_mode:
+            support = self._select_summoner_support_action(player_char, enemy)
+            if not support:
+                return None
+            action, engine_action, choice = support
+            actor = player_char
+
         if action == "Items":
-            selected_item = self._select_item(actor, enemy)
+            selected_item = self._select_item(actor, enemy, support_only=support_mode)
             if not selected_item:
                 return None  # Cancelled
             choice = selected_item.name
@@ -1338,7 +1347,13 @@ class GUICombatManager:
                     f"{actor.name} cannot use skills because of {reason}!"
                 )
                 return None
-            selected_skill = self._select_skill(actor, enemy)
+            allowed_skill_names = None
+            if support_mode and self.engine is not None:
+                allowed_skill_names = self.engine.summoner_support_skill_names()
+            if allowed_skill_names is None:
+                selected_skill = self._select_skill(actor, enemy)
+            else:
+                selected_skill = self._select_skill(actor, enemy, allowed_names=allowed_skill_names)
             if not selected_skill:
                 return None
             choice = selected_skill
@@ -1385,7 +1400,10 @@ class GUICombatManager:
             if skill_obj and skill_obj.name == "Slot Machine":
                 slot_cb = lambda _u, _t: self._show_slot_machine_reveal(actor, enemy)
 
-        result = self.engine.execute_action(engine_action, choice=choice, slot_machine_callback=slot_cb)
+        if support_mode:
+            result = self.engine.execute_summoner_support_action(engine_action, choice=choice, slot_machine_callback=slot_cb)
+        else:
+            result = self.engine.execute_action(engine_action, choice=choice, slot_machine_callback=slot_cb)
 
         # Display result messages
         for line in result.message.strip().split('\n'):
@@ -1437,6 +1455,56 @@ class GUICombatManager:
             self._refresh_display_actions()
             return "continue_turn"
         return "action_taken"
+
+    def _select_summoner_support_action(self, player_char, enemy):
+        """Show the active-summon support menu and return display/action/choice seeds."""
+        if self.engine is None:
+            return None
+        raw_actions = self.engine.summoner_support_actions()
+        if not raw_actions:
+            self.combat_view.add_combat_message("No summon support actions are available.")
+            self._pause_with_events(500)
+            return None
+        display_actions = [
+            str(action).replace("Use Skill", "Skills").replace("Use Item", "Items")
+            for action in raw_actions
+        ]
+        selected = 0
+        input_armed = self._clear_pending_input()
+        while True:
+            self._render_combat_frame(player_char, enemy, [], -1)
+            self._render_selection_menu("Summoner Support", display_actions, selected)
+            pygame.display.flip()
+
+            input_armed = release_guard_allows_input(True, input_armed)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit(0)
+                input_armed = self._arm_guarded_input(event, input_armed)
+                if event.type == pygame.KEYDOWN and not input_armed:
+                    continue
+                elif event.type == pygame.KEYDOWN:
+                    if event.key in [pygame.K_ESCAPE, pygame.K_BACKSPACE]:
+                        return None
+                    elif event.key in [pygame.K_UP, pygame.K_w]:
+                        selected = (selected - 1) % len(display_actions)
+                    elif event.key in [pygame.K_DOWN, pygame.K_s]:
+                        selected = (selected + 1) % len(display_actions)
+                    elif event.key in [pygame.K_RETURN, pygame.K_SPACE]:
+                        display = display_actions[selected]
+                        return display, _DISPLAY_TO_ENGINE.get(display, display), None
+                elif event.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN):
+                    selected, _scroll_offset, confirmed = self._selection_menu_mouse_update(
+                        event,
+                        display_actions,
+                        selected,
+                        0,
+                        input_armed,
+                    )
+                    if confirmed:
+                        display = display_actions[selected]
+                        return display, _DISPLAY_TO_ENGINE.get(display, display), None
     
     def _select_totem_aspect(self, player_char, enemy, totem_skill):
         """Show Totem aspect selection menu and return aspect name."""
@@ -1490,9 +1558,9 @@ class GUICombatManager:
                     if confirmed:
                         return aspects[selected]
     
-    def _select_item(self, player_char, enemy):
+    def _select_item(self, player_char, enemy, *, support_only=False):
         """Show item selection menu and return selected item."""
-        usable_types = ['Health', 'Mana', 'Elixir', 'Status', 'Scroll']
+        usable_types = ['Health', 'Mana', 'Elixir', 'Status'] if support_only else ['Health', 'Mana', 'Elixir', 'Status', 'Scroll']
         items = []
         for item_name, item_list in player_char.inventory.items():
             if item_list and item_list[0].subtyp in usable_types:
@@ -1620,11 +1688,15 @@ class GUICombatManager:
                     if confirmed:
                         return spells[selected]
     
-    def _select_skill(self, player_char, enemy):
+    def _select_skill(self, player_char, enemy, *, allowed_names=None):
         """Show skill selection menu and return selected skill name."""
         # Filter out passive and currently unusable equipment-dependent skills.
+        allowed = set(allowed_names) if allowed_names is not None else None
+        if getattr(player_char, "tunnel", False):
+            allowed = {"Surface"} if allowed is None else allowed & {"Surface"}
         skills = [name for name, skill in player_char.spellbook['Skills'].items()
-                  if self._skill_available_for_selection(player_char, skill, enemy)]
+                  if (allowed is None or name in allowed)
+                  and self._skill_available_for_selection(player_char, skill, enemy)]
         
         if not skills:
             self.combat_view.add_combat_message("No skills learned!")
@@ -2301,7 +2373,13 @@ class GUICombatManager:
         )
         
         # Render HUD (right 1/3) with combat mode indicator
-        self.hud.render_hud(player_char, combat_mode=True, enemy=enemy)
+        active_summon = None
+        if self.engine is not None and getattr(self.engine, "summon_active", False):
+            summon = getattr(self.engine, "summon", None)
+            is_alive = getattr(summon, "is_alive", None)
+            if summon is not None and (bool(is_alive()) if callable(is_alive) else True):
+                active_summon = summon
+        self.hud.render_hud(player_char, combat_mode=True, enemy=enemy, active_summon=active_summon)
 
     def _record_bestiary_ability_if_visible(self, player_char, enemy, ability_name) -> None:
         if self.engine is None or not hasattr(self.engine, "show_enemy_details"):

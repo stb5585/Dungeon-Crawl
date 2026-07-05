@@ -264,7 +264,9 @@ class Summons(Character):
         self.start_stats: list[int] = [0, 0, 0, 0, 0, 0, 0, 0]  # health, mana, str, intel, wis, con, cha, dex
         self.start_combat: list[int] = [0, 0, 0, 0]  # attack, defense, magic, magic_def
         self.cls = self
-        self.exp_scale: int = 2500
+        self.exp_scale: int = 1000
+        self.summon_mana_cost: int | None = None
+        self.summon_gold_cost: int = 0
         self.description: str = ""
 
     def _starting_stat_values(self) -> list[int]:
@@ -273,10 +275,7 @@ class Summons(Character):
 
     def _starting_combat_values(self) -> list[int]:
         """Return attack, defense, magic, and magic defense from starting data."""
-        combat_values = (list(self.start_combat[:4]) + [0] * 4)[:4]
-        for index, value in enumerate(self.start_stats[8:12]):
-            combat_values[index] = value
-        return combat_values
+        return (list(self.start_combat[:4]) + [0] * 4)[:4]
 
     def initialize_stats(self, player_char: Character) -> None:
         self.level.exp_to_gain = self.level.pro_level * self.exp_scale
@@ -310,7 +309,7 @@ class Summons(Character):
         stat_adj = 1 + (((player_char.stats.intel + player_char.stats.charisma) / stat_scale))
         self.health.max = int(self.health.max * stat_adj)
         self.mana.max = int(self.mana.max * stat_adj)
-        new_combat = [x * stat_adj for x in list(self.combat.__dict__.values())]
+        new_combat = [int(x * stat_adj) for x in list(self.combat.__dict__.values())]
         self.combat = Combat(*new_combat)
         for typ in summon_abilities[self.name]:
             if str(self.level.level) in summon_abilities[self.name][typ]:
@@ -328,13 +327,20 @@ class Summons(Character):
         return level_str
 
     def options(self) -> list[str]:
+        if getattr(self, "tunnel", False):
+            action_list = []
+            if not self.status_effects["Silence"].active and "Surface" in self.spellbook.get("Skills", {}):
+                action_list.append("Use Skill")
+            action_list.append("Support")
+            return action_list
+
         action_list = ["Attack"]
         if not self.status_effects["Silence"].active:
             if self.spellbook["Skills"]:
                 action_list.append("Use Skill")
             if self.spellbook["Spells"]:
                 action_list.append("Cast Spell")
-        action_list.append("Recall")
+        action_list.append("Support")
         return action_list
 
     def inspect(self) -> str:
@@ -373,8 +379,8 @@ class Patagon(Summons):
     def __init__(self) -> None:
         super().__init__(name="Patagon", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat())
         self.level.pro_level = 1
-        self.start_stats = [125, 85, 20, 5, 8, 15, 3, 14, 75, 40]
-        self.start_combat = [0, 0, 0, 0]
+        self.start_stats = [125, 85, 20, 5, 8, 15, 3, 14]
+        self.start_combat = [75, 40, 15, 25]
         self.equipment = {'Weapon': items.GiantClub(), 'Armor': items.NoArmor(), 'OffHand': items.NoOffHand(),
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
         self.spellbook["Skills"]["Throw Rock"] =  abilities.ThrowRock()
@@ -409,12 +415,13 @@ class Dilong(Summons):
     def __init__(self) -> None:
         super().__init__(name="Dilong", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat())
         self.level.pro_level = 2
-        self.start_stats = [225, 118, 24, 7, 12, 23, 4, 15, 85, 80]
-        self.start_combat = [0, 0, 0, 0]
+        self.start_stats = [225, 118, 24, 7, 12, 23, 4, 15]
+        self.start_combat = [105, 80, 65, 55]
         self.equipment = {'Weapon': items.EarthMaw(), 'Armor': items.SnakeScales2(), 'OffHand': items.NoOffHand(),
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
         self.spellbook["Spells"]["Tremor"] = abilities.Tremor()
         self.spellbook["Skills"]["Tunnel"] = abilities.Tunnel()
+        self.spellbook["Skills"]["Surface"] = abilities.Surface()
         self.resistance["Water"] = -0.5
         self.resistance["Earth"] = 1.0
         self.status_immunity = ["Stone"]
@@ -445,8 +452,8 @@ class Agloolik(Summons):
     def __init__(self) -> None:
         super().__init__(name="Agloolik", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat())
         self.level.pro_level = 2
-        self.start_stats = [190, 168, 18, 15, 13, 12, 9, 18, 80, 55]
-        self.start_combat = [0, 0, 0, 0]
+        self.start_stats = [190, 168, 18, 15, 13, 12, 9, 18]
+        self.start_combat = [80, 55, 88, 70]
         self.equipment = {'Weapon': items.IceShard(), 'Armor': items.NoArmor(), 'OffHand': items.NoOffHand(),
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
         self.spellbook["Spells"]["Ice Lance"] = abilities.IceLance()
@@ -482,8 +489,8 @@ class Cacus(Summons):
     def __init__(self) -> None:
         super().__init__(name="Cacus", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat())
         self.level.pro_level = 2
-        self.start_stats = [215, 112, 25, 11, 13, 21, 7, 15, 110, 60]
-        self.start_combat = [0, 0, 0, 0]
+        self.start_stats = [215, 112, 25, 11, 13, 21, 7, 15]
+        self.start_combat = [110, 60, 90, 65]
         self.equipment = {'Weapon': items.VulcansHammer(), 'Armor': items.Splint(), 'OffHand': items.NoOffHand(),
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
         self.spellbook["Spells"]["Scorch"] = abilities.Scorch()
@@ -518,8 +525,8 @@ class Fuath(Summons):
     def __init__(self) -> None:
         super().__init__(name="Fuath", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat())
         self.level.pro_level = 2
-        self.start_stats = [202, 147, 19, 14, 18, 14, 11, 15, 90, 55]
-        self.start_combat = [0, 0, 0, 0]
+        self.start_stats = [202, 147, 19, 14, 18, 14, 11, 15]
+        self.start_combat = [90, 55, 92, 72]
         self.equipment = {'Weapon': items.Pincers2(), 'Armor': items.NoArmor(), 'OffHand': items.Pincers2(),
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
         self.spellbook["Spells"] = abilities.WaterJet()
@@ -555,8 +562,8 @@ class Izulu(Summons):
     def __init__(self) -> None:
         super().__init__(name="Izulu", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat())
         self.level.pro_level = 2
-        self.start_stats = [212, 123, 18, 11, 12, 14, 13, 22, 85, 50]
-        self.start_combat = [0, 0, 0, 0]
+        self.start_stats = [212, 123, 18, 11, 12, 14, 13, 22]
+        self.start_combat = [85, 50, 86, 62]
         self.equipment = {'Weapon': items.VampireBite(), 'Armor': items.NoArmor(), 'OffHand': items.VampireBite(),
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
         self.spellbook["Spells"]["Shock"] = abilities.Shock()
@@ -594,8 +601,8 @@ class Hala(Summons):
     def __init__(self) -> None:
         super().__init__(name="Hala", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat())
         self.level.pro_level = 2
-        self.start_stats = [224, 109, 20, 12, 9, 15, 10, 24, 105, 65]
-        self.start_combat = [0, 0, 0, 0]
+        self.start_stats = [224, 109, 20, 12, 9, 15, 10, 24]
+        self.start_combat = [105, 65, 72, 60]
         self.equipment = {'Weapon': items.Claw2(), 'Armor': items.DemonArmor(), 'OffHand': items.DemonClaw(),
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
         self.spellbook["Skills"]["Parry"] = abilities.Parry()
@@ -633,8 +640,8 @@ class Grigori(Summons):
     def __init__(self) -> None:
         super().__init__(name="Grigori", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat())
         self.level.pro_level = 3
-        self.start_stats = [280, 205, 29, 12, 18, 30, 14, 12, 130, 90]
-        self.start_combat = [0, 0, 0, 0]
+        self.start_stats = [280, 205, 29, 12, 18, 30, 14, 12]
+        self.start_combat = [130, 90, 115, 105]
         self.equipment = {'Weapon': items.Pernach(), 'Armor': items.Breastplate(), 'OffHand': items.KiteShield(),
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
         self.spellbook["Spells"]["Smite"] = abilities.Smite2()
@@ -673,8 +680,8 @@ class Bardi(Summons):
     def __init__(self) -> None:
         super().__init__(name="Bardi", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat())
         self.level.pro_level = 4
-        self.start_stats = [321, 285, 32, 19, 22, 27, 19, 18, 155, 80]
-        self.start_combat = [0, 0, 0, 0]
+        self.start_stats = [321, 285, 32, 19, 22, 27, 19, 18]
+        self.start_combat = [155, 80, 132, 95]
         self.equipment = {'Weapon': items.Scythe(), 'Armor': items.DemonArmor2(), 'OffHand': items.NoOffHand(),
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
         self.spellbook["Skills"]["Battle Cry"] = abilities.BattleCry()
@@ -714,8 +721,9 @@ class Kobalos(Summons):
     def __init__(self) -> None:
         super().__init__(name="Kobalos", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat())
         self.level.pro_level = 4
-        self.start_stats = [365, 305, 23, 14, 13, 19, 20, 25, 130, 75]
-        self.start_combat = [0, 0, 0, 0]
+        self.start_stats = [365, 305, 23, 14, 13, 19, 20, 25]
+        self.start_combat = [130, 75, 55, 65]
+        self.summon_gold_cost = 100
         self.equipment = {'Weapon': items.KoboldDagger(), 'Armor': items.StuddedCuirboulli(),
                           'OffHand': items.KoboldDagger(),
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
@@ -765,8 +773,8 @@ class Zahhak(Summons):
     def __init__(self) -> None:
         super().__init__(name="Zahhak", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat())
         self.level.pro_level = 5
-        self.start_stats = [455, 402, 32, 29, 31, 35, 23, 26, 190, 100]
-        self.start_combat = [0, 0, 0, 0]
+        self.start_stats = [455, 402, 32, 29, 31, 35, 23, 26]
+        self.start_combat = [190, 100, 165, 130]
         self.equipment = {'Weapon': items.DragonClaw2(), 'Armor': items.DragonScale(), 'OffHand': items.DragonTail2(),
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
         self.spellbook["Spells"]["Magic Missile"] = abilities.MagicMissile2()

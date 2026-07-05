@@ -9,6 +9,7 @@ damage_mod: 2.5
 crit: 8
 school: Elemental
 rank: 2
+grounded_damage: true
 effects:
   - type: physical_effect_apply
     effect_name: Prone

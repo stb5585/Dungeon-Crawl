@@ -619,6 +619,37 @@ class TestDataDrivenSpellCast:
             spell.cast(caster, flying_target)
         assert not flying_target.physical_effects["Prone"].active
 
+    def test_ground_contact_earth_spells_do_not_damage_flying_targets(self):
+        from src.core import abilities
+
+        caster, flying_target = self._make_combatants()
+        caster.stats.intel = 120
+        flying_target.flying = True
+        hp_before = flying_target.health.current
+
+        result = abilities.Tremor().cast(caster, flying_target)
+
+        assert flying_target.health.current == hp_before
+        assert result.hit is False
+        assert "no effect" in result.message.lower()
+
+    def test_non_grounded_earth_spells_can_damage_flying_targets(self):
+        from src.core import abilities
+
+        for _ in range(50):
+            caster, flying_target = self._make_combatants()
+            caster.stats.intel = 120
+            flying_target.stats.dex = 1
+            flying_target.stats.con = 1
+            flying_target.flying = True
+            hp_before = flying_target.health.current
+            result = abilities.Sandstorm().cast(caster, flying_target)
+            if flying_target.health.current < hp_before:
+                assert result.damage > 0
+                return
+
+        pytest.fail("Sandstorm should be able to damage flying targets")
+
     def test_electric_spell_can_apply_stun(self):
         """Electric spells should sometimes apply Stun."""
         from src.core.data.ability_loader import AbilityFactory
@@ -2178,6 +2209,7 @@ class TestBatch4StatusSkillExtensions:
         target.flying = False
         # Use high actor stats to ensure contest win
         user.stats.strength = 100
+        target.stats.con = 1
         skill = DataDrivenStatusSkill(
             name="Test Trip",
             description="",
@@ -8375,6 +8407,28 @@ class TestBatch19DragonBreathCharging:
         hp_before = target.health.current
         ab.use(user, target)  # charge_turns 1 -> 0 -> execute
         assert target.health.current < hp_before
+
+    def test_breath_respects_mana_shield(self):
+        """Dragon Breath should route through Mana Shield before damage lands."""
+        from src.core import abilities
+
+        ab = abilities.DragonBreathFire()
+        user, target = self._make_combatants()
+        target.mana.max = 500
+        target.mana.current = 500
+        target.magic_effects["Mana Shield"].active = True
+        target.magic_effects["Mana Shield"].duration = 2
+
+        ab.use(user, target)
+        ab.use(user, target)
+        hp_before = target.health.current
+        mana_before = target.mana.current
+        message = ab.use(user, target)
+
+        assert target.health.current == hp_before
+        assert target.mana.current < mana_before
+        assert target.magic_effects["Mana Shield"].active is True
+        assert "mana shield" in message.lower()
 
 
 class TestBatch19EnemySpellbooks:

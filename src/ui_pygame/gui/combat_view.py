@@ -175,6 +175,7 @@ class CombatView:
             'log_muted': (175, 175, 180),
             'log_player': (50, 150, 250),
             'log_enemy': (200, 50, 50),
+            'log_summon': (85, 215, 190),
         }
         
         # Combat log
@@ -186,6 +187,7 @@ class CombatView:
         self._suppress_logged_telegraph_banner = False
         self._combat_log_player_name: str | None = None
         self._combat_log_enemy_name: str | None = None
+        self._combat_log_summon_name: str | None = None
         self._combat_log_enemy = None
         self._combat_log_revision = 0
         self._combat_log_wrap_cache: dict[tuple[int, int, bool, int], list[CombatLogLine]] = {}
@@ -958,6 +960,8 @@ class CombatView:
             return self.colors["log_damage"]
         if self._line_starts_with_actor(lower, self._combat_log_player_name):
             return self.colors["log_player"]
+        if self._line_starts_with_actor(lower, self._combat_log_summon_name):
+            return self.colors["log_summon"]
         if self._line_starts_with_actor(lower, self._combat_log_enemy_name):
             return self.colors["log_enemy"]
         return (240, 240, 240) if overlay else self.colors["text"]
@@ -972,9 +976,15 @@ class CombatView:
     def _set_combat_log_actors(self, player_char, enemy) -> None:
         player_name = str(getattr(player_char, "name", "") or "") or None
         enemy_name = str(getattr(enemy, "name", "") or "") or None
-        if player_name != self._combat_log_player_name or enemy_name != self._combat_log_enemy_name:
+        summon_name = str(getattr(player_char, "active_summon_name", "") or "") or None
+        if (
+            player_name != self._combat_log_player_name
+            or enemy_name != self._combat_log_enemy_name
+            or summon_name != self._combat_log_summon_name
+        ):
             self._combat_log_player_name = player_name
             self._combat_log_enemy_name = enemy_name
+            self._combat_log_summon_name = summon_name
             self._invalidate_combat_log_wrap_cache()
         self._combat_log_enemy = enemy
 

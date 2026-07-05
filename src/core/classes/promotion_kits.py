@@ -9,6 +9,8 @@ hooks.
 
 from __future__ import annotations
 
+import math
+import random
 from copy import deepcopy
 from typing import Any
 
@@ -237,6 +239,7 @@ def end_combat(
     victory: bool = False,
     enemy: Any | None = None,
     exp_gain: int | None = None,
+    boss: bool = False,
 ) -> str:
     msg = ""
     if victory and enemy is not None:
@@ -246,9 +249,19 @@ def end_combat(
             msg += gain_companion_bond(character, 2, reason="Favored Enemy hunt")
         msg += gain_summon_bond_for_active(
             character,
-            summon_bond_gain_for_victory(character, exp_gain if exp_gain is not None else getattr(enemy, "experience", 0)),
-            "victory",
+            summon_bond_gain_for_victory(
+                character,
+                exp_gain if exp_gain is not None else getattr(enemy, "experience", 0),
+                guaranteed=bool(boss),
+                multiplier=2 if boss else 1,
+            ),
+            "boss victory" if boss else "victory",
         )
+        if hasattr(character, "_active_summon_bond_level_span_xp"):
+            try:
+                delattr(character, "_active_summon_bond_level_span_xp")
+            except Exception:
+                pass
     msg += convert_shadow_backlash(character, fraction=0.05, reason="combat end")
     clear_combat_state(character)
     return msg
@@ -1086,7 +1099,30 @@ def gain_summon_bond_for_active(character: Any, amount: int, reason: str) -> str
     return gain_summon_bond(character, str(summon), amount, reason)
 
 
-def summon_bond_gain_for_victory(character: Any, exp_gain: int) -> int:
+def summon_level_span_xp(summon: Any) -> int:
+    level = getattr(summon, "level", None)
+    try:
+        creature_level = max(1, int(getattr(level, "level", 1) or 1))
+    except (TypeError, ValueError):
+        creature_level = 1
+    try:
+        pro_level = max(1, int(getattr(level, "pro_level", 1) or 1))
+    except (TypeError, ValueError):
+        pro_level = 1
+    try:
+        exp_scale = max(1, int(getattr(summon, "exp_scale", 1000) or 1000))
+    except (TypeError, ValueError):
+        exp_scale = 1000
+    return max(1, pro_level * exp_scale * creature_level)
+
+
+def summon_bond_gain_for_victory(
+    character: Any,
+    exp_gain: int,
+    *,
+    guaranteed: bool = False,
+    multiplier: int = 1,
+) -> int:
     summon_name = getattr(character, "active_summon_name", None)
     summons = getattr(character, "summons", {}) or {}
     summon = summons.get(summon_name) if summon_name else None
@@ -1095,12 +1131,29 @@ def summon_bond_gain_for_victory(character: Any, exp_gain: int) -> int:
         level = max(1, int(level))
     except (TypeError, ValueError):
         level = 1
+    if level < 2:
+        return 0
     try:
         exp_gain = max(0, int(exp_gain))
     except (TypeError, ValueError):
         exp_gain = 0
-    level_scale = max(1, 11 - level)
-    return max(1, int((exp_gain // 100) * level_scale / 10))
+    if exp_gain <= 0:
+        return 0
+    level_span = getattr(character, "_active_summon_bond_level_span_xp", None)
+    try:
+        level_span = max(1, int(level_span))
+    except (TypeError, ValueError):
+        level_span = summon_level_span_xp(summon)
+    ratio = max(0.0, float(exp_gain) / float(level_span))
+    chance = min(1.0, ratio)
+    if chance < 1.0 and not guaranteed and random.random() >= chance:
+        return 0
+    gain = max(1, min(5, int(math.ceil(ratio * 5))))
+    try:
+        multiplier = max(1, int(multiplier))
+    except (TypeError, ValueError):
+        multiplier = 1
+    return min(10, gain * multiplier)
 
 
 def gain_summon_bond(character: Any, summon_name: str, amount: int, reason: str) -> str:

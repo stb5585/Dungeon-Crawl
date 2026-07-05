@@ -15,7 +15,7 @@ sys.path.insert(0, str(Path(__file__).parents[2]))
 import pytest
 
 from src.core.enemies import Goblin
-from src.core import items, enemies, abilities
+from src.core import items, enemies, abilities, companions
 from src.core.save_system import PlayerDataSerializer, QuestDataSerializer, TileStateSerializer
 from tests.test_framework import TestGameState
 
@@ -296,6 +296,26 @@ class TestStatusEffectImprovements:
         bleed_damage = defender.health.max - defender.health.current
 
         assert bleed_damage > base_damage
+
+    def test_dilong_earth_maw_damages_electric_bat(self, monkeypatch):
+        import src.core.character as character_mod
+
+        dilong = companions.Dilong()
+        bat = enemies.ElectricBat()
+        bat.health.max = 999
+        bat.health.current = 999
+
+        monkeypatch.setattr(character_mod.random, "uniform", lambda _a, _b: 1.0)
+        monkeypatch.setattr(dilong, "critical_chance", lambda _att: 0.0)
+
+        assert bat.flying is True
+        assert bat.check_mod("resist", enemy=dilong, typ="Earth") == 0
+
+        message, hit, _crit = dilong.weapon_damage(bat, hit=True, use_offhand=False)
+
+        assert hit is True
+        assert bat.health.current < 999
+        assert "bites Electric Bat" in message
 
     def test_equip_diff_pendant_preview_does_not_leak_vision_buff(self):
         player = TestGameState.create_player(name="PendantHero", class_name="Warrior", race_name="Human")

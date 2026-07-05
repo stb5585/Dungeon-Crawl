@@ -734,7 +734,7 @@ class TestBattleEngineBasics:
         assert engine.attacker is summon
         assert "Hero summons Patagon" in result.message
 
-    def test_summon_replaces_available_actions_and_victory_awards_bond(self):
+    def test_summon_replaces_available_actions_and_level_one_victory_awards_no_bond(self):
         from src.core import classes, companions
 
         engine, player, enemy, _tile = self._make_engine()
@@ -748,16 +748,130 @@ class TestBattleEngineBasics:
         result = engine.execute_action("Summon", choice="Patagon")
 
         assert result.summon_started is True
-        assert engine.available_actions == ["Attack", "Use Skill", "Recall"]
+        assert engine.available_actions == ["Attack", "Use Skill", "Support"]
         assert player.active_summon_name == "Patagon"
+        assert player.mana.current == 2
 
         enemy.health.current = 0
         outcome = engine.end_battle()
 
         assert "Patagon gained" in outcome.message
         assert "to next" not in outcome.message
-        assert "Patagon bond grows by 1 from victory (1/100)." in outcome.message
-        assert player.promotion_kit_state["summon_bonds"]["Patagon"] == 1
+        assert "Patagon bond grows" not in outcome.message
+        assert player.promotion_kit_state["summon_bonds"]["Patagon"] == 0
+
+    def test_summon_victory_uses_scaled_level_span_bond_roll(self, monkeypatch):
+        from src.core import classes, companions
+
+        engine, player, enemy, _tile = self._make_engine()
+        player.cls = classes.Summoner()
+        engine.attacker = player
+        engine.defender = enemy
+        enemy.experience = 500
+        summon = companions.Patagon()
+        summon.initialize_stats(player)
+        summon.level.level = 2
+        summon.level.exp_to_gain = summon.level.pro_level * summon.exp_scale * summon.level.level
+        player.summons["Patagon"] = summon
+        monkeypatch.setattr("src.core.classes.promotion_kits.random.random", lambda: 0.0)
+
+        engine.execute_action("Summon", choice="Patagon")
+        enemy.health.current = 0
+        outcome = engine.end_battle()
+
+        assert "Patagon bond grows by 2 from victory (2/100)." in outcome.message
+        assert player.promotion_kit_state["summon_bonds"]["Patagon"] == 2
+
+    def test_summon_costs_require_mana_and_kobalos_gold(self):
+        from src.core import classes, companions
+
+        engine, player, _enemy, _tile = self._make_engine()
+        player.cls = classes.Summoner()
+        engine.attacker = player
+        player.summons["Patagon"] = companions.Patagon()
+        player.summons["Patagon"].initialize_stats(player)
+
+        player.mana.current = 7
+        result = engine.execute_action("Summon", choice="Patagon")
+        assert result.summon_started is False
+        assert "needs 8 MP" in result.message
+
+        kobalos = companions.Kobalos()
+        kobalos.initialize_stats(player)
+        player.summons["Kobalos"] = kobalos
+        player.mana.current = 50
+        player.gold = 99
+        result = engine.execute_action("Summon", choice="Kobalos")
+        assert result.summon_started is False
+        assert "needs 100 gold" in result.message
+
+        player.gold = 100
+        result = engine.execute_action("Summon", choice="Kobalos")
+        assert result.summon_started is True
+        assert player.mana.current == 18
+        assert player.gold == 0
+
+    def test_boss_summon_victory_guarantees_and_doubles_bond(self, monkeypatch):
+        from src.core import classes, companions
+
+        engine, player, enemy, _tile = self._make_engine()
+        player.cls = classes.Summoner()
+        engine.boss = True
+        engine.attacker = player
+        enemy.experience = 10
+        summon = companions.Patagon()
+        summon.initialize_stats(player)
+        summon.level.level = 2
+        summon.level.exp_to_gain = summon.level.pro_level * summon.exp_scale * summon.level.level
+        player.summons["Patagon"] = summon
+        monkeypatch.setattr("src.core.classes.promotion_kits.random.random", lambda: 0.99)
+
+        engine.execute_action("Summon", choice="Patagon")
+        enemy.health.current = 0
+        outcome = engine.end_battle()
+
+        assert "Patagon bond grows by 2 from boss victory (2/100)." in outcome.message
+        assert player.promotion_kit_state["summon_bonds"]["Patagon"] == 2
+
+    def test_active_summon_support_actions_exclude_defend_and_advance_turn(self):
+        from src.core import classes, companions
+
+        engine, player, enemy, _tile = self._make_engine()
+        player.cls = classes.Summoner()
+        engine.attacker = player
+        engine.defender = enemy
+        summon = companions.Patagon()
+        summon.initialize_stats(player)
+        player.summons["Patagon"] = summon
+
+        engine.execute_action("Summon", choice="Patagon")
+
+        assert "Defend" not in engine.summoner_support_actions()
+        assert "Recall" in engine.summoner_support_actions()
+        result = engine.execute_summoner_support_action("Use Item", choice="Missing")
+        assert "can't find Missing" in result.message
+        assert engine.attacker is summon
+        engine.post_turn()
+        engine.swap_turns()
+        assert engine.attacker is enemy
+
+    def test_active_summon_support_recall_clears_summon(self):
+        from src.core import classes, companions
+
+        engine, player, enemy, _tile = self._make_engine()
+        player.cls = classes.Summoner()
+        engine.attacker = player
+        engine.defender = enemy
+        summon = companions.Patagon()
+        summon.initialize_stats(player)
+        player.summons["Patagon"] = summon
+
+        engine.execute_action("Summon", choice="Patagon")
+        result = engine.execute_summoner_support_action("Recall")
+
+        assert result.summon_recalled is True
+        assert engine.summon_active is False
+        assert player.active_summon_name is None
 
     def test_summon_actions_refresh_when_turn_returns_to_summon(self):
         from src.core import classes, companions
@@ -772,7 +886,7 @@ class TestBattleEngineBasics:
 
         engine.execute_action("Summon", choice="Patagon")
         assert engine.attacker is summon
-        assert engine.available_actions == ["Attack", "Use Skill", "Recall"]
+        assert engine.available_actions == ["Attack", "Use Skill", "Support"]
 
         engine.post_turn()
         engine.swap_turns()
@@ -781,7 +895,29 @@ class TestBattleEngineBasics:
         engine.post_turn()
         engine.swap_turns()
         assert engine.attacker is summon
-        assert engine.available_actions == ["Attack", "Use Skill", "Recall"]
+        assert engine.available_actions == ["Attack", "Use Skill", "Support"]
+
+    def test_tunneled_summon_only_surfaces_or_recalls(self):
+        from src.core import classes, companions
+
+        engine, player, enemy, _tile = self._make_engine()
+        player.cls = classes.Summoner()
+        engine.attacker = player
+        engine.defender = enemy
+        player.mana.current = 50
+        summon = companions.Dilong()
+        summon.initialize_stats(player)
+        summon.tunnel = True
+        player.summons["Dilong"] = summon
+
+        engine.execute_action("Summon", choice="Dilong")
+
+        assert engine.available_actions == ["Use Skill", "Support"]
+        blocked = engine.execute_action("Attack")
+        assert "must surface" in blocked.message
+        surfaced = engine.execute_action("Use Skill", choice="Surface")
+        assert "surfaces" in surfaced.message
+        assert summon.tunnel is False
 
 
 class TestBattleLogger:

@@ -345,6 +345,31 @@ def test_character_info_resource_bars_stats_and_quick_info(monkeypatch):
     assert "HP: 40/50" in bundle.stat_font.render_calls
     assert "MP: 10/20" in bundle.stat_font.render_calls
 
+    summon = SimpleNamespace(
+        name="Patagon",
+        health=SimpleNamespace(current=25, max=30),
+        mana=SimpleNamespace(current=12, max=18),
+        level=SimpleNamespace(level=2, pro_level=1, exp_to_gain=1500),
+        exp_scale=1000,
+        is_alive=lambda: True,
+        status_effects={"Poison": _effect()},
+        physical_effects={},
+        stat_effects={},
+        magic_effects={},
+        class_effects={},
+        class_status_effects={},
+    )
+    y_summon = hud._render_resource_bars(player, y, active_summon=summon)
+    assert y_summon == y2
+    assert "Patagon" not in bundle.small_font.render_calls
+
+    hud._render_combat_features(player, SimpleNamespace(name="Jester"), 120, feature_height=190, active_summon=summon)
+    assert "Patagon Lv 2" in bundle.small_font.render_calls
+    assert "500/2000 XP" in bundle.small_font.render_calls
+    assert "HP: 25/30" in bundle.small_font.render_calls
+    assert "MP: 12/18" in bundle.small_font.render_calls
+    assert ("PSN", False) in hud._collect_status_icons(summon)
+
     y3 = hud._render_stats(player, y2)
     assert y3 > y2
     assert "Stats" in bundle.stat_font.render_calls
@@ -554,12 +579,12 @@ def test_combat_hud_replaces_minimap_with_class_focus_panel(monkeypatch):
 
     monkeypatch.setattr(hud, "_render_combat_indicator", lambda enemy, y: y + 10)
     monkeypatch.setattr(hud, "_render_character_info", lambda player_char, y: y + 120)
-    monkeypatch.setattr(hud, "_render_resource_bars", lambda player_char, y: y + 70)
+    monkeypatch.setattr(hud, "_render_resource_bars", lambda player_char, y, active_summon=None: y + 70)
     monkeypatch.setattr(hud, "_render_status_icons", lambda player_char, y: y + 80)
     monkeypatch.setattr(
         hud,
         "_render_combat_features",
-        lambda player_char, enemy, y, feature_height=None: feature_calls.append((y, feature_height, enemy.name)) or (y + feature_height),
+        lambda player_char, enemy, y, feature_height=None, active_summon=None: feature_calls.append((y, feature_height, enemy.name, active_summon)) or (y + feature_height),
     )
     monkeypatch.setattr(
         hud,
@@ -570,7 +595,7 @@ def test_combat_hud_replaces_minimap_with_class_focus_panel(monkeypatch):
     hud.render_hud(player, combat_mode=True, enemy=SimpleNamespace(name="Orc"))
 
     feature_height = hud._combat_feature_height()
-    assert feature_calls == [(hud._combat_feature_title_y(feature_height), feature_height, "Orc")]
+    assert feature_calls == [(hud._combat_feature_title_y(feature_height), feature_height, "Orc", None)]
     assert minimap_calls == []
 
 
@@ -590,9 +615,9 @@ def test_combat_focus_panel_shows_familiar_summons_and_totem(monkeypatch):
     player.magic_effects["Totem"].duration = 6
 
     lines = hud._combat_feature_lines(player, enemy=SimpleNamespace(name="Jester"))
-    assert ("Class", "Soulcatcher", hud.text_color) in lines
+    assert all(label != "Class" for label, _value, _color in lines)
     assert ("Familiar", "Izulu", (170, 210, 255)) in lines
-    assert any(label == "Summons" and value == "Fuath" for label, value, _color in lines)
+    assert all(label != "Summons" for label, _value, _color in lines)
     assert ("Totem", "Fire Totem", (230, 205, 120)) in lines
     assert sum(1 for label, _value, _color in lines if label == "Totem") == 1
     assert any(label == "Benefit" and "+25% ATK" in value and "Elemental" in value for label, value, _color in lines)
@@ -627,6 +652,20 @@ def test_combat_focus_panel_shows_familiar_summons_and_totem(monkeypatch):
     assert any(label == "Companion" and "Battle-Trained" in value for label, value, _color in lines)
     assert ("Command", "Pack Strike", (170, 210, 255)) in lines
 
+    idle_summoner = _make_player()
+    idle_summoner.cls = SimpleNamespace(name="Summoner")
+    idle_summoner.familiar = None
+    idle_summoner.summons = {
+        "Patagon": SimpleNamespace(name="Patagon", is_alive=lambda: True),
+    }
+    idle_summoner.magic_effects = {}
+    idle_summoner.class_effects = {}
+    idle_summoner._promotion_kit_combat = {}
+    promotion_kits.ensure_state(idle_summoner)["summon_bonds"]["Patagon"] = 50
+    lines = hud._combat_feature_lines(idle_summoner, enemy=SimpleNamespace(name="Jester"))
+    assert all(label != "Summon Bond" for label, _value, _color in lines)
+    assert ("Focus", "No active combat focuses", (145, 145, 155)) in lines
+
     player.cls = SimpleNamespace(name="Templar")
     player.equipment["Ring"] = items.ClassRing()
     class_rings.ensure_state(player)["awakened"]["Templar"] = True
@@ -635,7 +674,7 @@ def test_combat_focus_panel_shows_familiar_summons_and_totem(monkeypatch):
     player._promotion_kit_combat = {"devotion": 2}
     lines = hud._combat_feature_lines(player, enemy=SimpleNamespace(name="Jester"))
     visible_labels = [label for label, _value, _color in lines[:7]]
-    assert visible_labels[:4] == ["Class", "Ring Preserve", "Ring Ready", "Devotion"]
+    assert visible_labels[:4] == ["Ring Preserve", "Ring Ready", "Devotion", "Familiar"]
     assert visible_labels.index("Ring Ready") < visible_labels.index("Familiar")
 
     y = hud._render_combat_features(player, SimpleNamespace(name="Jester"), 120, feature_height=190)
@@ -665,7 +704,7 @@ def test_render_hud_full_flow(monkeypatch):
 
     monkeypatch.setattr(hud, "_render_combat_indicator", lambda enemy, y: calls.append(("combat", enemy.name if enemy else None, y)) or (y + 10))
     monkeypatch.setattr(hud, "_render_character_info", lambda player_char, y: calls.append(("info", player_char.name, y)) or (y + 10))
-    monkeypatch.setattr(hud, "_render_resource_bars", lambda player_char, y: calls.append(("bars", player_char.name, y)) or (y + 10))
+    monkeypatch.setattr(hud, "_render_resource_bars", lambda player_char, y, active_summon=None: calls.append(("bars", player_char.name, y, active_summon)) or (y + 10))
     monkeypatch.setattr(hud, "_render_location_label", lambda player_char, y: calls.append(("location", player_char.name, y)) or (y + 10))
     monkeypatch.setattr(hud, "_render_status_icons", lambda player_char, y: calls.append(("status", player_char.name, y)) or (y + 10))
     monkeypatch.setattr(
@@ -682,6 +721,7 @@ def test_render_hud_full_flow(monkeypatch):
 
     hud.render_hud(player, combat_mode=True, enemy=SimpleNamespace(name="Orc"))
     assert [entry[0] for entry in calls] == ["combat", "info", "bars", "status", "focus"]
+    assert calls[2][3] is None
 
     calls.clear()
     hud.render_hud(player, combat_mode=False, enemy=None)

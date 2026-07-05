@@ -26,6 +26,10 @@ remain the prompts; the evidence ledger is the running decision record.
   - Expected: Incapacitated actors do not display an active turn token.
 - [ ] Compare flying and grounded enemies in combat.
   - Expected: Flying enemies render slightly higher without leaving the combat frame.
+  - Expected: Flying enemies are not inherently immune to Earth elemental
+    damage. Ground-contact Earth spells such as `Tremor`, `Mudslide`, and
+    `Earthquake` do not damage flying targets, while non-grounded Earth effects
+    such as `Sandstorm` can.
 - [ ] Check minimap adjacent markers around walls, closed doors, and undiscovered Fake Walls.
   - Expected: Only enterable visible directions are shown, undiscovered Fake Walls are not revealed, and discovered non-Fake blocking walls appear on later map review.
 - [ ] Fight a Shapeshift-capable enemy.
@@ -34,6 +38,10 @@ remain the prompts; the evidence ledger is the running decision record.
   - Expected: Main Hand and OffHand comparisons are separate and unusable slots are called out.
 
 ### Remaining Improvements Pass
+- [x] Select/click an equipment slot in the modern Character Menu and open the
+  replacement picker.
+  - Expected: The filtered replacement list appears without a one-frame flash
+    of the full equipment-slot list.
 - [ ] Die in normal PyGame dungeon combat after level 10, then repeat in Funhouse and Realm of Cambion.
   - Expected: Normal death uses resurrection gold/stat messaging and returns to town; special exits keep their route-specific defeat behavior.
 - [ ] Pick up the Rookie Mistake body, die before town, return to the death tile, and pick it up again.
@@ -276,8 +284,8 @@ remain the prompts; the evidence ledger is the running decision record.
   - Expected: One companion action plus active living victory gives about `+5/combat`, reaching `Trusted` near 5 ordinary active wins. Favored Enemy wins can be faster, near 4 active wins.
   - Record: companion name/species, combat count, companion actions, Favored Enemy state, ring state, replacement/tame interruptions, and cadence band.
 - [ ] Raise one Summoner or Grand Summoner bond to at least `50` without switching summons.
-  - Expected: One active non-Recall summon action plus victory gives about `+6/combat`, reaching bond `50` near 9 focused combats. Switching summons should distribute progress and slow each individual bond.
-  - Record: summon name, combat count, summon action count, victories, recall/death interruptions, ring state, and cadence band.
+  - Expected: Bond does not increase before the active summon reaches level `2`. After that, victory bond is chance-based from enemy XP divided by the summon level's full XP span; low-XP fights often give no bond, while meaningful fights can grant scaled `+1` to `+5`.
+  - Record: summon name, summon level, level-span XP, enemy XP, combat count, successful bond rolls, no-bond victories, recall/death interruptions, ring state, and cadence band.
 - [ ] Raise one Inquisitor or Seeker Case Journal enemy type to at least `Known Tells`.
   - Expected: `Inspect` plus visible-detail victory gives about `+7/combat`, reaching `Known Tells` near 4 focused combats. Rich evidence loops can be faster; victory-only visible-detail progress can be slower.
   - Record: enemy type, combat count, evidence actions, visible-detail state, ring state, spread across other enemy types, and cadence band.
@@ -456,6 +464,19 @@ remain the prompts; the evidence ledger is the running decision record.
   - Expected: A major incoming hit spends 100 Resolve to reduce damage by 40%.
 - [ ] Summon creatures before and after awakening Grand Summoner `Conduit Ritual`.
   - Expected: Future summons initialize with the awakened +30% HP and attack/magic scaling.
+- [ ] Summon Patagon and Kobalos in pygame combat.
+  - Expected: Summons spend MP when called; Kobalos also spends gold and refuses
+    to appear if the Summoner lacks the fee.
+  - Expected: Active summon action log lines use a distinct color from player
+    and enemy log lines.
+- [ ] Use `Support` while a summon creature is active.
+  - Expected: The summon remains the single active actor, but `Support` lets the Summoner spend the turn on restorative/support items, `Recall`, `Heal Summon`, `Raise Summon`, `Conduit Command`, or unlocked `Invoke <Summon>` skills.
+  - Expected: Direct Summoner attacks, ordinary offensive spells, ordinary offensive skills, fleeing, and starting another summon are not available through `Support`.
+- [ ] Defeat a boss with an eligible level 2+ active summon alive.
+  - Expected: Boss victory guarantees summon bond gain and awards double the
+    normal scaled gain, capped by the 100 bond maximum.
+- [ ] Fight with Dilong and use `Tunnel`, then `Surface`.
+  - Expected: Dilong starts with usable Magic and Magic Defense, `Tremor` can contribute, `Tunnel` hides normal offense, and the tunneled action list only allows surfacing or recalling.
 - [ ] Fight as Soulcatcher and defeat distinct enemy types with awakened ring.
   - Expected: Distinct harvested type count increases and appears in status text.
 - [ ] Heal a Beast Master with awakened `Shared Recovery` while a familiar/companion is present.
@@ -466,6 +487,18 @@ remain the prompts; the evidence ledger is the running decision record.
   - Expected: Walls, floors, and ceilings use the new painterly dungeon materials and deeper areas feel darker, more broken, or more overgrown.
 - [x] Inspect the dungeon HUD location label across ordinary levels, Realm of Cambion, and Liminal Gap.
   - Expected: The HUD shows `Dungeon Level N`, `Realm of Cambion`, or `Liminal Gap` without crowding resource bars, compass, minimap, or combat focus panels.
+- [ ] Summon a creature during pygame combat and inspect the right-side HUD.
+  - Expected: Combat Focus shows the active summon name, level, XP bar, HP bar, MP bar, and any active summon status icons.
+  - Expected: Recalling, losing, or ending the summon removes the summon Combat Focus resource readout without shifting the panel into the action area.
+  - Expected: Combat Focus does not show passive `Class`, known `Summons`, or persistent `Summon Bond` rows while class/details screens still show summon bond progress.
+- [ ] Enter pygame combat with no active focus mechanics.
+  - Expected: Combat Focus shows a no-active-focus message instead of passive class or roster summaries.
+- [ ] Step onto a tile with special location text such as a class/aspect presence.
+  - Expected: The location text appears in a popup before tile damage/combat effects so it cannot be missed in the scrolling log.
+- [ ] Open the Character Menu and press `C`.
+  - Expected: `C` does not jump between tabs. Open the Class tab normally, then press `C` to toggle summon row selection; arrows move between summons, `Enter` opens the details popup, and `Esc` leaves row selection before closing the menu.
+- [ ] Trigger several pygame random encounters.
+  - Expected: The first actionable combat frame appears quickly without the old start delay; ordinary post-turn pauses are shorter while damage, death, popup, and special transition animations remain readable.
 - [x] Open the enlarged minimap modal with `M` and by clicking the minimap.
   - Expected: The modal reuses existing discovered/visible tile rules, frames the fully revealed current level instead of only the small HUD viewport, and closes with `M`, `Esc`, or outside click.
 - [x] Navigate the pygame dungeon at or below 25% HP.
@@ -571,6 +604,8 @@ remain the prompts; the evidence ledger is the running decision record.
 - [x] Trigger an enemy telegraph such as Jump, Charge, or Dragon Breath.
   - Expected: The incoming-action banner appears as a compact warning strip near the enemy combat area and does not cover the action panel or combat log.
   - Expected: A charging enemy continues or resolves the charged ability on its next turns instead of taking unrelated attacks.
+- [ ] Trigger Dragon Breath against a character with active Mana Shield.
+  - Expected: Mana Shield absorbs Dragon Breath damage before elemental reduction or HP loss; absorbed breaths spend mana and report the shield absorption.
 - [x] Use Jump, then become stunned before Jump resolves.
   - Expected: Non-Unstoppable Jump is cancelled by stun instead of waiting to resolve after stun ends.
 - [x] Use Jump without Quick Dive.
@@ -700,6 +735,8 @@ remain the prompts; the evidence ledger is the running decision record.
   - Expected: Status changes to `Defeated`, defeated count increases, and coarse `Locations` plus `Possible Drops` appear.
   - Expected: Drop info uses broad labels such as `Common`, `Rare`, or `Very Rare`, not exact percentages.
   - Expected: Mechanics remain hidden with the detail-unlock hint.
+- [ ] Browse several defeated Bestiary entries repeatedly.
+  - Expected: Location and drop hints redraw smoothly from the popup cache while preserving the same visible rows.
 - [ ] Use Vision, Reveal, Seeker, or Inquisitor sight during a non-boss fight, observe at least one enemy special action, then open the Bestiary.
   - Expected: Status changes to `Detailed`.
   - Expected: Resistances, known abilities, immunities, and features appear alongside Locations and Possible Drops after defeat.
@@ -935,6 +972,17 @@ remain the prompts; the evidence ledger is the running decision record.
   - Expected: The render manager falls back through icon mapping, category/slot, and then the generated fallback surface without blocking gameplay.
 - [x] Save and reload after viewing item artwork.
   - Expected: Save data is unchanged; large artwork is resolved from item names/types at render time.
+
+### Companion And Summon Artwork
+- [x] Review the generated summon companion-art sheet.
+  - Expected: `src/ui_pygame/assets/companion_art/summon_companion_art_review_sheet.png` shows Patagon, Dilong, Agloolik, Cacus, Fuath, Izulu, Hala, Grigori, Bardi, Kobalos, and Zahhak.
+  - Expected: Sprites have transparent backgrounds, clean silhouettes, no rectangular cards, no labels, and no clipping.
+- [ ] View at least one familiar, one tamed companion, and one summon in pygame companion-art surfaces.
+  - Expected: The Class tab companion/summon list is compact, does not show art thumbnails, and uses stacked full-width rows instead of a square grid.
+  - Expected: A Grand Summoner with all 11 summons shows all 11 companion/summon rows without clipping or hiding the last rows.
+  - Expected: Selecting a companion or summon opens a Character-tab-style details popup with the large companion artwork, identity, core attributes, combat stats, abilities, weaknesses, and resistances.
+  - Expected: Familiars and summons resolve through `CompanionArtManager` from `companion_art/`; tamed companions still fall back through enemy combat sprites when no bespoke companion art exists.
+  - Expected: Save/load data is unchanged.
 
 ### Enemy Sprite Artwork
 - [ ] Start combat against an enemy mapped to the boss fallback.

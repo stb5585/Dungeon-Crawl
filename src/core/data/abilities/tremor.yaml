@@ -6,6 +6,7 @@ cost: 3
 damage_mod: 1.5
 crit: 8
 school: Elemental
+grounded_damage: true
 effects:
   - type: physical_effect_apply
     effect_name: Prone

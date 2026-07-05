@@ -101,6 +101,36 @@ Report questions to answer before changing balance values:
 Numeric tuning remains out of scope until the reports above are generated,
 saved, and reviewed against actual playtest findings.
 
+## Remaining Improvement Tuning Gates
+
+Status: `Evidence Required`
+
+The following tuning ideas are known watch items, not implementation-ready
+tasks. Before changing any numbers, run
+`./.venv/bin/python tools/run_remaining_balance_baseline.py` and review the
+`remaining_improvement_tuning_report()` payload alongside manual playtest notes.
+
+- Footpad early-level damage and survivability: watch whether Footpads hit too
+  hard while remaining too fragile, especially before lower dungeon-level
+  scaling smooths out. Do not nerf damage, defense, Evasive Guard, stealth
+  skills, or enemy matchups without a focused evidence row.
+- Poison consistency: compare `Poison Dart`, `Poison Breath`, `Poison Strike`,
+  `Hex`, enemy poison sources, resistance, immunity, duration, and tick-damage
+  outcomes. Do not normalize poison globally without preserving named ability
+  identity.
+- Multi-strike accuracy: progressively lower accuracy only if simulator and
+  manual evidence show multi-hit skills are outperforming single-hit peers
+  without enough miss risk. The spec must name affected skills and whether
+  accuracy decays per extra hit, per target, or per repeated use.
+- Enfeeble strength: tune only after measuring application rate, debuff size,
+  duration, enemy priority usage, and whether the current effect is weak for
+  players, enemies, or both.
+- Dilong damage: after the Earth/flying correction, use focused combat evidence
+  before changing Dilong's physical attack, Earth Maw, or the global physical
+  damage curve. Flying targets are not blanket immune to Earth; only grounded
+  Earth spells such as `Tremor`, `Mudslide`, and `Earthquake` miss flying
+  targets.
+
 ## Class-Kit Threshold Use
 
 `docs/CLASS_KIT_DESIGN_GATES.md` owns the class-kit balance thresholds for
@@ -135,11 +165,16 @@ tests, and balance assumptions.
 ### Ability Reworks
 
 - Wind eject effects and reward handling.
-- Elemental attack spell secondary-effect parity. Fire, Ice, and Electric
-  attack lines already have baseline secondary effects; Water, Wind, and Earth
-  need a promoted spec before adding family-wide effects. The spec should define
-  current named exceptions, target proc identities, status/immunity behavior,
-  boss boundaries, combat-log text, simulator impact, and regression coverage.
+- Elemental attack spell secondary-effect parity. Fire, Ice, Electric, Water,
+  Wind, and Earth attack lines have baseline secondary effects; future tuning
+  needs a promoted spec before changing family-wide proc identities or rates.
+  The spec should define current named exceptions, target proc identities,
+  status/immunity behavior, boss boundaries, combat-log text, simulator impact,
+  and regression coverage.
+  Current Earth/flying semantics: flying is not blanket Earth immunity; only
+  ground-contact Earth spells such as `Tremor`, `Mudslide`, and `Earthquake`
+  should fail against flying targets, while non-grounded Earth damage such as
+  `Sandstorm` remains valid.
 - Absorb Essence rework.
 - Mana-percentage damage abilities.
 - Prismatic Rays.

@@ -118,6 +118,11 @@ class DummyCombatView:
         self.enemy_deaths.append(enemy)
 
 
+def test_fast_combat_entry_and_turn_delay_constants():
+    assert combat_manager.COMBAT_START_TRANSITION_FRAMES == 0
+    assert combat_manager.POST_TURN_DELAY_FRAMES == 6
+
+
 class DummyLevelUpScreen:
     def __init__(self, screen, presenter):
         self.screen = screen
@@ -480,6 +485,25 @@ def test_render_combat_frame_preserves_enemy_draw_before_overlay(monkeypatch):
     assert manager.combat_view.render_calls[1][2]["current_turn"] is None
     assert manager.combat_view.render_calls[1][2]["show_enemy_details"] is False
     assert manager.hud.calls
+    assert manager.hud.calls[-1][1]["active_summon"] is None
+
+
+def test_render_combat_frame_passes_active_summon_to_hud(monkeypatch):
+    manager = _make_manager(monkeypatch)
+    player = _make_player()
+    enemy = _make_enemy()
+    summon = SimpleNamespace(name="Patagon", is_alive=lambda: True)
+    manager.engine = SimpleNamespace(
+        attacker=summon,
+        summon_active=True,
+        summon=summon,
+        is_player_turn=lambda: True,
+        show_enemy_details=lambda: False,
+    )
+
+    manager._render_combat_frame(player, enemy, ["Attack"], 0)
+
+    assert manager.hud.calls[-1][1]["active_summon"] is summon
 
 
 def test_render_combat_frame_records_bestiary_details_when_visible(monkeypatch):

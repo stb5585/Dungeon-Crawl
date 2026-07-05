@@ -56,6 +56,10 @@
 - Fixed Demon Claw Doom feedback, PyGame bounty abandonment parity, softer
   quest encounter bias including enemy-drop collection quests, movement log
   coordinate spam, and Thief/Rogue Fortune/Misfortune combat focus behavior.
+- Fixed flying target Earth interactions so flying no longer grants blanket
+  Earth immunity; only ground-contact spells such as `Tremor`, `Mudslide`, and
+  `Earthquake` fail to damage flying targets, while `Sandstorm` and Earth
+  elemental damage can still connect.
 - Implemented remaining contained roadmap improvements for PyGame death parity,
   Rookie Mistake body drop/recovery, promotion equipment cleanup, menu cursor
   policy coverage, save-preview portraits, Mad Waitress dungeon cue/SFX hooks,
@@ -142,6 +146,38 @@
 - Added generated companion/familiar artwork for Homunculus, Fairy, Mephit, and
   Jinkin, plus a companion art manager that uses those assets first and falls
   back to existing enemy sprites for tamed beasts and summons.
+- Added bespoke transparent companion-art sprites for all 11 summon creatures
+  and a summon companion-art review sheet; summon mappings now resolve to those
+  assets before enemy fallback lookup.
+- Moved companion/summon artwork out of Class tab tiles and into a
+  Character-tab-style companion details popup with identity, attributes, combat
+  stats, abilities, weaknesses, and resistances.
+- Changed the Class tab companion/summon overview from a square grid to stacked
+  full-width rows that fit the complete 11-summon roster.
+- Moved active-summon HP, MP, level, and XP presentation into the pygame Combat
+  Focus panel.
+- Added active-summon `Support`, level-span-based summon bond rolls, explicit
+  summon starting combat stats, Dilong `Surface`, Class-tab summon selection via
+  `C`, Combat Focus summon-bond cleanup, and faster pygame combat entry pacing;
+  `C` no longer jumps to the Class tab from other Character Menu tabs.
+- Removed passive `Class` and known-`Summons` summary rows from pygame Combat
+  Focus; the panel now shows active focus content, active summon resources, or a
+  quiet no-focus message.
+- Changed dungeon special-location text in pygame from a scrolling combat/log
+  line into a popup message so one-off location events remain visible.
+- Fixed Dragon Breath damage so it routes through Mana Shield before applying
+  elemental reduction and HP loss.
+- Kept summon level-up combat stat gains as integers so details popups no
+  longer show fractional Attack/Defense/Magic/Magic Defense values.
+- Cached bestiary location/drop hint rows inside the pygame Bestiary popup to
+  reduce repeated redraw work while browsing enemy entries.
+- Fixed the pygame equipment replacement popup so slot selection no longer
+  flashes the full equipment-slot list before the filtered replacement list.
+- Added summon calling costs, including MP for summon creatures and an
+  additional gold fee for Kobalos.
+- Added active-summon combat log coloring, active summon status icons in Combat
+  Focus, boss-victory guaranteed/doubled summon bond gain, and a Dilong starting
+  Attack bump for better low/mid-level hit payoff.
 - Removed the deferred `Explore Town` prototype entry from the normal town menu
   while keeping the direct prototype launcher available for later work.
 - Reworked the stairs-down dungeon tile as a floor-bound stairwell overlay

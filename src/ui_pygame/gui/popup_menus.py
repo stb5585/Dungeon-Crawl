@@ -1151,7 +1151,6 @@ class EquipmentPopupMenu(BasePopupMenu):
         self.draw_popup(player_char)
         self.draw_list()
         self.draw_details(player_char)
-        pygame.display.flip()
         action_bg = self.screen.copy()
         
         # Temporarily override draw_background for nested popup
@@ -1722,6 +1721,7 @@ class BestiaryPopupMenu(BasePopupMenu):
     def __init__(self, presenter, parent_screen):
         super().__init__(presenter, parent_screen, title="Bestiary")
         self._enemy_cache: dict[str, enemies.Enemy | None] = {}
+        self._hint_cache: dict[tuple[str, bool], tuple[list[str], list[str]]] = {}
         self.summary_text = "Seen: 0 | Defeated: 0 | Detailed: 0"
         self.popup_rect = pygame.Rect(int(self.width * 0.05), int(self.height * 0.08), int(self.width * 0.9), int(self.height * 0.82))
         self.list_rect = pygame.Rect(
@@ -1936,6 +1936,17 @@ class BestiaryPopupMenu(BasePopupMenu):
             y += self.line_height
         return y
 
+    def bestiary_hints(self, enemy_name: str, enemy, boss: bool) -> tuple[list[str], list[str]]:
+        """Return cached location/drop hints for repeated bestiary redraws."""
+        key = (str(enemy_name), bool(boss))
+        if key not in self._hint_cache:
+            self._hint_cache[key] = (
+                enemies.bestiary_location_hints(enemy_name),
+                enemies.bestiary_drop_hints(enemy, boss=boss),
+            )
+        locations, drops = self._hint_cache[key]
+        return list(locations), list(drops)
+
     def draw_details(self, player_char):
         item = self.items[self.selected_index] if self.items else None
         x = self.details_rect.left + 16
@@ -1969,13 +1980,10 @@ class BestiaryPopupMenu(BasePopupMenu):
         defeated_count = int(item.get("count", 0) or 0)
         if defeated_count > 0:
             y += 8
-            locations = enemies.bestiary_location_hints(enemy_name)
+            boss_drop_rules = enemies.bestiary_uses_boss_drop_rules(enemy_name)
+            locations, drop_rows = self.bestiary_hints(enemy_name, enemy, boss=boss_drop_rules)
             y = self._draw_detail_section("Locations", locations, x, y, empty_text="Unknown")
             y += 4
-            drop_rows = enemies.bestiary_drop_hints(
-                enemy,
-                boss=enemies.bestiary_uses_boss_drop_rules(enemy_name),
-            )
             y = self._draw_detail_section("Possible Drops", drop_rows, x, y, empty_text="None")
 
         if not details_unlocked:

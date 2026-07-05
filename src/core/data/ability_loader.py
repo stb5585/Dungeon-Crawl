@@ -1216,6 +1216,7 @@ class AbilityFactory:
                 telegraph_message=telegraph_message,
                 priority=priority,
                 notes=notes,
+                grounded_damage=ability_data.get('grounded_damage', False),
             )
         elif ability_type == 'WeaponSpell':
             ability = DataDrivenWeaponSpell(

@@ -136,3 +136,28 @@ def test_default_companion_art_assets_cover_core_familiars():
         assert sprite.get_width() > 0
         assert sprite.get_height() > 0
         assert sprite.get_flags() & pygame.SRCALPHA
+
+
+def test_default_companion_art_assets_cover_summons():
+    manager = CompanionArtManager()
+    summon_art = {
+        "Patagon": "patagon",
+        "Dilong": "dilong",
+        "Agloolik": "agloolik",
+        "Cacus": "cacus",
+        "Fuath": "fuath",
+        "Izulu": "izulu",
+        "Hala": "hala",
+        "Grigori": "grigori",
+        "Bardi": "bardi",
+        "Kobalos": "kobalos",
+        "Zahhak": "zahhak",
+    }
+
+    for summon_name, art_key in summon_art.items():
+        companion = SimpleNamespace(name=summon_name)
+        sprite = manager.get_sprite(companion)
+
+        assert manager.get_art_key_for_companion(companion) == art_key
+        assert sprite.get_size() == (512, 512)
+        assert sprite.get_flags() & pygame.SRCALPHA

@@ -161,7 +161,7 @@ promoted one-page tuning spec.
 | --- | --- | --- | --- | --- |
 | Bard/Troubadour | Crescendo gains `+1` per maintained combat song turn, caps at `3`, and spends only on natural expiration. Troubadour repertoire mastery requires `18` practice XP and `3` clean finishes. | Combat-only mastery should take `3` clean full 3-turn performances: each gives `+3` turn XP plus `+3` completion XP. | Exploration mastery can also take `3` clean full performances: each can give up to `+4` step XP plus `+3` completion XP. Composition `+1` XP buffers progress but never removes the `3` clean-finish requirement. | Watch if clean completions do not visibly move mastery, if interruption costs are unclear, or if codas/Encore make song loops win with low player input. |
 | Beast Master | Companion bond caps at `100`; milestones are `25` `Trusted`, `50` `Battle-Trained`, `75` `Packmate`, and `100` `True Bond`. | With one companion action and an active living victory, bond gains about `+5/combat`; milestones land near `5/10/15/20` combats. | Favored Enemy active victories gain about `+7/combat`; milestones land near `4/8/11/15` combats. | Watch if `Trusted` is not reachable around 5-6 ordinary active wins, if replacement/tame state hides the pacing cost, or if command output regularly dominates direct player turns. |
-| Summoner/Grand Summoner | Each summon has its own bond cap of `100`; milestones are `25`, `50`, `75`, and `100`. | With one active non-Recall summon action and victory, bond gains about `+6/combat`; milestones land near `5/9/13/17` combats. | With two summon actions and victory, bond gains about `+7/combat`; milestones land near `4/8/11/15` combats. Victory-only active wins gain `+5/combat`, or about `5/10/15/20` combats. | Watch if one focused summon cannot reach bond `50` in a reasonable focused run, or if switching summons does not clearly distribute progress and slow each individual bond by design. |
+| Summoner/Grand Summoner | Each summon has its own bond cap of `100`; milestones are `25`, `50`, `75`, and `100`. | Bond starts at summon level `2`; victory rolls a chance equal to enemy XP divided by that summon level's full XP span. A successful roll grants scaled `+1` to `+5` bond. | Low-XP fights often give no bond, while meaningful fights advance bond in proportion to their leveling value. Support actions do not add separate action bond. | Watch if low-level or low-threat fights become the best bond farm, if focused bond `50` feels unreachable, or if the chance-based cadence feels too opaque in logs/playtest notes. |
 | Inquisitor/Seeker | Case Journal progress is per broad enemy type, caps at `100`, and milestones are `25` `Known Tells`, `50` `Weakness Brief`, `75` `Pattern Lock`, and `100` `Closed Case`. | `Inspect` plus visible-detail victory gains about `+7/combat`; milestones land near `4/8/11/15` combats against one enemy type. | Rich evidence loops with `Inspect`, `Exploit Weakness`, a visible telegraph, and victory gain about `+10/combat`; milestones land near `3/5/8/10` combats. Victory-only visible-detail progress gains `+4/combat`, or about `7/13/19/25` combats. | Watch if one enemy type cannot reach `Known Tells` after focused evidence gathering, or if spreading fights across many enemy types does not feel intentionally slower and readable. |
 | Lycan | Control ranks are behavior-only. Each gate requires `3` matching successful stress records: `survive`, `dismiss`, `resist`, then `full_moon`. | Minimum full path is `12` phase-correct records: `Feral -> Muzzled`, `Muzzled -> Restive`, `Restive -> Tethered`, then `Tethered -> Tame`. | Real pacing depends on eligible stress opportunities, moon timing, and whether the player survives or resolves the correct behavior at the current gate. | Watch if a gate does not reasonably progress after 6-8 eligible opportunities, if the needed behavior is unclear, or if Class Ring/Dragon Essence appears to advance control rank. |
 
@@ -350,6 +350,8 @@ updates them.
 
 ### Diviner/Astromancer Foresight Threads
 
+Class Design Inspirations: FF Tactics
+
 V1 implementation spec: preserve the shipped Diviner/Astromancer rune system and
 make Astromancer the time-threading capstone. Diviner keeps the current
 learned-spell and rune foundation. Astromancer adds combat-only `Foresight
@@ -395,6 +397,8 @@ payoff.
   conservative and be tuned after playtest.
 
 ### Demonologist Corruption And Bargain Presentation
+
+Class Design Inspirations: WoW
 
 V1 implementation spec: keep the existing fiend contract loop, then add corruption
 as a real risk/reward meter, persistent patron mood, and stronger imprisoned
@@ -462,6 +466,8 @@ familiar into a permanent contract-shaping echo.
 
 ### Shadowcaster Umbral Debt And Eclipse
 
+Class Design Inspirations: WoW
+
 V1 implementation spec: carry Warlock forward through shadow spells and familiar
 identity, then make `Umbral Debt` the baseline Shadowcaster mechanic. Shadow
 damage builds a spendable reserve, `Eclipse` spends that reserve for a short
@@ -520,6 +526,8 @@ and Eclipse stability.
 
 ### Spellblade/Knight Enchanter
 
+Class Design Inspirations: Tales of Destiny
+
 V1 implementation spec: make Spellblade a spell-to-blade hybrid whose first
 promotion loop carries forward into Knight Enchanter's awakened `Arcane Tempo`
 identity.
@@ -557,7 +565,13 @@ identity.
   spell and weapon actions without making pure weapon turns or pure spell turns
   obsolete.
 
+#### Improvements
+
+- Ultimate weapon can be made sentient, allowing interaction and weapon can level
+
 ### Summoner/Grand Summoner
+
+Class design inspiration: FFX
 
 V1 implementation spec: add per-summon bond progression that lets Summoners borrow
 limited invocations from trusted summons, while Grand Summoner keeps the
@@ -569,9 +583,15 @@ existing `Conduit Ritual` sacrifice and `+30% Summons` ring scaling.
 - Storage: add persistent per-save `summon_bonds`, keyed by known summon name
   and capped at 100. Normalize missing or invalid state to 0 and ignore unknown
   summon keys.
-- Bond gain: active summons gain +1 bond after completing a non-Recall combat
-  action. Winning combat with an active, living summon grants that summon +5
-  bond. Bond gains clamp at 100.
+- Bond gain: an active, living summon is eligible for victory bond only at
+  summon level `2+`. Use the enemy XP divided by the summon level's full XP span
+  (`level.pro_level * summon.exp_scale * level.level`) as the roll chance. On a
+  successful roll, grant scaled `+1` to `+5` bond from that same ratio. Bond
+  gains clamp at 100. Boss victories guarantee the eligible bond roll succeeds
+  and double the resulting gain. Do not grant separate per-action bond in this
+  pass.
+- Summon costs: calling a summon spends Summoner MP based on the summon tier;
+  Kobalos also requires gold.
 - Bond milestones: 25 grants `Attuned Bond`, adding +5% HP and damage when that
   summon initializes; 50 unlocks the owner-cast `Invoke <Summon>` borrowed
   invocation; 75 grants `Deep Bond`, raising the initialization bonus to +10%;
@@ -599,19 +619,49 @@ existing `Conduit Ritual` sacrifice and `+30% Summons` ring scaling.
   rider to the empowered action.
 - Expiration: conduit empowerment expires after the summon takes its next
   non-Recall action, is recalled, dies, or combat ends.
+- Active-summon support: while a summon is active, the summon remains the
+  single player-side actor, but the visible `Support` action lets the Summoner
+  spend that turn on limited intervention: restorative/support items, `Recall`,
+  `Heal Summon`, `Raise Summon`, `Conduit Command`, or unlocked
+  `Invoke <Summon>` skills. Do not expose Summoner `Defend`, full attacks,
+  ordinary offensive spells, ordinary offensive skills, flee, or starting
+  another summon through this support lane.
+- Dilong/Tunnel: Dilong starts with explicit nonzero Magic and Magic Defense and
+  learns `Surface`. Tunneling hides normal summon offense until `Surface` or
+  `Recall` is chosen.
 - UI text/surfaces: class/ring status text should show known summon bond values
-  and Grand Summoner conduit readiness. Combat logs should clearly report bond
-  gain, borrowed invocation use, conduit empowerment, and True Name riders.
+  and Grand Summoner conduit readiness. Combat Focus omits the persistent
+  `Summon Bond` row and, while a summon is active, shows active summon level,
+  XP, HP, MP, and status icons. Combat logs should clearly report bond gain,
+  borrowed invocation use, conduit empowerment, and True Name riders, with
+  active summon action lines colored separately from player and enemy lines.
 - Save migration: old saves default to empty/zero bond state. Existing Grand
   Summoner awakening state and `hp_sacrificed` data remain compatible.
-- Tests: cover bond normalization/save-load, action and victory bond gain, 100
-  cap, 25/75 initialization bonuses stacking with `+30% Summons`, invocation
-  unlock gates and representative riders, `Conduit Command` requirements,
-  empowerment expiration, and bond-100 ring-only True Name rider behavior.
+- Tests: cover bond normalization/save-load, level-gated XP-ratio victory bond
+  gain, failed/successful bond rolls, 100 cap, 25/75 initialization bonuses
+  stacking with `+30% Summons`, invocation unlock gates and representative
+  riders, `Conduit Command` requirements, support action turn flow, Dilong
+  `Tunnel`/`Surface`, empowerment expiration, and bond-100 ring-only True Name
+  rider behavior.
 - Balance assumptions: start conservative; this is a v1 progression layer, not
   a full summon economy redesign or dual-summon combat rewrite.
 
+Open follow-up gates:
+
+- Consumable targeting policy: decide whether ordinary consumables beyond the
+  current restorative/support lane can target summon creatures directly. The
+  decision must define eligible item subtypes, combat-only versus menu use,
+  Support-menu placement, failure text, save implications if any, and tests for
+  active, dead, recalled, and missing summons.
+- Dilong damage evidence: after the explicit starting Attack bump and the
+  Earth/flying correction, use focused combat evidence before changing Dilong's
+  physical damage numbers. Ground-contact Earth spells remain blocked by
+  flying, but Earth Maw and non-grounded Earth damage should connect against
+  flying targets that lack Earth resistance.
+
 ### Weapon Master/Berserker Bloodied Momentum
+
+Class Design Inspirations: D&D
 
 V1 implementation spec: preserve Weapon Master's implemented Weapon Discipline and
 Weapon Arts, then give Berserker a distinct controlled-risk combat loop:
@@ -718,6 +768,8 @@ awakened `Vow Affirmation` smoothing the loop without erasing mark drawbacks.
 
 ### Lancer/Dragoon Aerial Tempo And Aerial Supremacy
 
+Class Design Inspirations: FFIV
+
 V1 implementation spec: center Lancer and Dragoon on combat-only `Aerial Tempo`.
 Clean Jump landings build short momentum, and the next eligible polearm or
 weapon action automatically converts that momentum into follow-through pressure.
@@ -764,6 +816,8 @@ landing protection.
   playtest.
 
 ### Sentinel/Stalwart Defender Resolve And Counterguard
+
+Class Design Inspirations: FFVII, WoW, D&D
 
 V1 implementation spec: center Sentinel and Stalwart Defender on baseline `Resolve`,
 shield stances, and controlled counterattacks. Sentinel becomes the active
@@ -1401,6 +1455,8 @@ through behavior, not form mastery.
 
 ### Druid/Archdruid Aspect Harmony
 
+Class Design Inspirations: WoW, D&D
+
 V1 implementation spec: center Archdruid's class-kit expansion on combat-only
 `Aspect Harmony`. The existing Fourfold Balance attunement, Grove rituals,
 catalysts, mastery perks, and Class Ring `Harmony Bonus` remain the persistent
@@ -1460,6 +1516,8 @@ balance through `Fourfold Surge`.
 
 ### Ranger/Beast Master
 
+Class Design Inspirations: Pokemon, WoW
+
 V1 implementation spec: center Ranger and Beast Master on one persistent tamed
 companion. Ranger keeps `Tame` and `Favored Enemy`, gains companion bond and
 conservative companion growth, while Beast Master carries that bond forward with
@@ -1514,7 +1572,14 @@ direct companion commands and stronger awakened-ring `Shared Recovery`.
   be visible but conservative; player agency comes mainly from Beast Master
   commands.
 
+#### Improvements
+
+- Add collection flavor a la Pokemon; pets evolve instead of leveling
+- Collection will be stored in a stable-esque style location
+
 ### Shaman/Soulcatcher Totem Resonance
+
+Class Design Inspirations: WoW
 
 V1 implementation spec: deepen the shipped Totem system without changing its core
 contracts. Matching casts and Totem pulses build short combat-only `Totem

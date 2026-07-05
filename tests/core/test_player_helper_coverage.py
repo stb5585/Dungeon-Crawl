@@ -358,7 +358,8 @@ class TestPlayerHelperCoverage:
         assert geomancer.check_mod("resist", typ="Fire") == pytest.approx(1.6)
 
         geomancer.flying = True
-        assert geomancer.check_mod("resist", typ="Earth") == pytest.approx(1.5)
+        assert geomancer.check_mod("resist", typ="Earth") == pytest.approx(0.5)
+        assert geomancer.check_mod("resist", typ="Wind") == pytest.approx(0.25)
 
         shadowcaster = TestGameState.create_player(class_name="Shadowcaster", race_name="Human")
         shadowcaster.stats.charisma = 20

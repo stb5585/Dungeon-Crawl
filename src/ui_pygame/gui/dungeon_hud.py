@@ -54,13 +54,14 @@ class DungeonHUD:
         self.status_colors = STATUS_ICON_COLORS
         self.last_minimap_rect: pygame.Rect | None = None
         
-    def render_hud(self, player_char, combat_mode=False, enemy=None):
+    def render_hud(self, player_char, combat_mode=False, enemy=None, active_summon=None):
         """Render the complete HUD.
         
         Args:
             player_char: The player character
             combat_mode: Whether we're in combat (shows combat indicator)
             enemy: The enemy being fought (if in combat)
+            active_summon: The currently summoned combat ally, when active
         """
         # Background
         pygame.draw.rect(self.screen, self.bg_color, self.hud_rect)
@@ -94,7 +95,13 @@ class DungeonHUD:
         if combat_mode:
             feature_height = self._combat_feature_height()
             feature_y = self._combat_feature_title_y(feature_height)
-            self._render_combat_features(player_char, enemy, feature_y, feature_height=feature_height)
+            self._render_combat_features(
+                player_char,
+                enemy,
+                feature_y,
+                feature_height=feature_height,
+                active_summon=active_summon,
+            )
             return
 
         # Compass - hide during combat and keep it above the anchored minimap.
@@ -345,52 +352,81 @@ class DungeonHUD:
         
         return y_offset
     
-    def _render_resource_bars(self, player_char, y_offset):
-        """Render HP and MP bars."""
+    @staticmethod
+    def _is_living_active_summon(active_summon) -> bool:
+        if active_summon is None:
+            return False
+        is_alive = getattr(active_summon, "is_alive", None)
+        return bool(is_alive()) if callable(is_alive) else True
+
+    def _render_resource_pair(
+        self,
+        character,
+        y_offset,
+        *,
+        bar_width: int,
+        bar_height: int,
+        x_margin: int,
+        font,
+        label_prefix: str = "",
+        border_width: int = 2,
+        row_gap: int = 10,
+    ):
+        """Render HP and MP bars for a combatant and return the next y offset."""
+        health = getattr(character, "health", None)
+        mana = getattr(character, "mana", None)
+        hp_current = getattr(health, "current", 0)
+        hp_max = max(1, getattr(health, "max", 0))
+        mp_current = getattr(mana, "current", 0)
+        mp_max = max(1, getattr(mana, "max", 0))
+
+        hp_percent = hp_current / hp_max
+        hp_text = f"{label_prefix}HP: {hp_current}/{hp_max}"
+
+        pygame.draw.rect(self.screen, (40, 40, 45),
+                        pygame.Rect(x_margin, y_offset, bar_width, bar_height))
+        pygame.draw.rect(self.screen, self.hp_color,
+                        pygame.Rect(x_margin, y_offset, int(bar_width * hp_percent), bar_height))
+        pygame.draw.rect(self.screen, self.border_color,
+                        pygame.Rect(x_margin, y_offset, bar_width, bar_height), border_width)
+
+        hp_surface = font.render(hp_text, True, (255, 255, 255))
+        text_x = x_margin + (bar_width - hp_surface.get_width()) // 2
+        self.screen.blit(hp_surface, (text_x, y_offset + max(1, (bar_height - hp_surface.get_height()) // 2)))
+        y_offset += bar_height + row_gap
+
+        mp_percent = mp_current / mp_max
+        mp_text = f"{label_prefix}MP: {mp_current}/{mp_max}"
+
+        pygame.draw.rect(self.screen, (40, 40, 45),
+                        pygame.Rect(x_margin, y_offset, bar_width, bar_height))
+        pygame.draw.rect(self.screen, self.mp_color,
+                        pygame.Rect(x_margin, y_offset, int(bar_width * mp_percent), bar_height))
+        pygame.draw.rect(self.screen, self.border_color,
+                        pygame.Rect(x_margin, y_offset, bar_width, bar_height), border_width)
+
+        mp_surface = font.render(mp_text, True, (255, 255, 255))
+        text_x = x_margin + (bar_width - mp_surface.get_width()) // 2
+        self.screen.blit(mp_surface, (text_x, y_offset + max(1, (bar_height - mp_surface.get_height()) // 2)))
+        return y_offset + bar_height
+
+    def _render_resource_bars(self, player_char, y_offset, active_summon=None):
+        """Render player HP/MP bars."""
         x_margin = self.hud_x + 20
         bar_width = self.hud_width - 40
         bar_height = 25
-        
-        # HP Bar
-        hp_percent = player_char.health.current / max(1, player_char.health.max)
-        hp_text = f"HP: {player_char.health.current}/{player_char.health.max}"
-        
-        # HP background
-        pygame.draw.rect(self.screen, (40, 40, 45),
-                        pygame.Rect(x_margin, y_offset, bar_width, bar_height))
-        # HP fill
-        pygame.draw.rect(self.screen, self.hp_color,
-                        pygame.Rect(x_margin, y_offset, int(bar_width * hp_percent), bar_height))
-        # HP border
-        pygame.draw.rect(self.screen, self.border_color,
-                        pygame.Rect(x_margin, y_offset, bar_width, bar_height), 2)
-        
-        # HP text
-        hp_surface = self.stat_font.render(hp_text, True, (255, 255, 255))
-        text_x = x_margin + (bar_width - hp_surface.get_width()) // 2
-        self.screen.blit(hp_surface, (text_x, y_offset + 2))
-        y_offset += bar_height + 10
-        
-        # MP Bar
-        mp_percent = player_char.mana.current / max(1, player_char.mana.max)
-        mp_text = f"MP: {player_char.mana.current}/{player_char.mana.max}"
-        
-        # MP background
-        pygame.draw.rect(self.screen, (40, 40, 45),
-                        pygame.Rect(x_margin, y_offset, bar_width, bar_height))
-        # MP fill
-        pygame.draw.rect(self.screen, self.mp_color,
-                        pygame.Rect(x_margin, y_offset, int(bar_width * mp_percent), bar_height))
-        # MP border
-        pygame.draw.rect(self.screen, self.border_color,
-                        pygame.Rect(x_margin, y_offset, bar_width, bar_height), 2)
-        
-        # MP text
-        mp_surface = self.stat_font.render(mp_text, True, (255, 255, 255))
-        text_x = x_margin + (bar_width - mp_surface.get_width()) // 2
-        self.screen.blit(mp_surface, (text_x, y_offset + 2))
-        y_offset += bar_height + 5
-        
+
+        y_offset = self._render_resource_pair(
+            player_char,
+            y_offset,
+            bar_width=bar_width,
+            bar_height=bar_height,
+            x_margin=x_margin,
+            font=self.stat_font,
+            row_gap=10,
+        )
+        y_offset += 5
+
         return y_offset
     
     def _render_stats(self, player_char, y_offset):
@@ -555,13 +591,10 @@ class DungeonHUD:
             return 2
         return 4
 
-    def _combat_feature_lines(self, player_char, enemy=None) -> list[tuple[str, str, tuple[int, int, int]]]:
-        class_line: tuple[str, str, tuple[int, int, int]]
+    def _combat_feature_lines(self, player_char, enemy=None, active_summon=None) -> list[tuple[str, str, tuple[int, int, int]]]:
         active_rows: list[tuple[str, str, tuple[int, int, int]]] = []
         rich_rows: list[tuple[str, str, tuple[int, int, int]]] = []
         persistent_rows: list[tuple[str, str, tuple[int, int, int]]] = []
-        cls_name = getattr(getattr(player_char, "cls", None), "name", "Adventurer")
-        class_line = ("Class", cls_name, self.text_color)
 
         familiar = getattr(player_char, "familiar", None)
         if familiar:
@@ -571,19 +604,6 @@ class DungeonHUD:
             suffix = f"{spec} Lv {level}" if spec and level is not None else spec or (f"Lv {level}" if level is not None else "Ready")
             rich_rows.append(("Familiar", familiar_name, (170, 210, 255)))
             rich_rows.append(("Bond", suffix, self.text_color))
-
-        summons = getattr(player_char, "summons", {}) or {}
-        active_summons = []
-        for summon in summons.values():
-            is_alive = getattr(summon, "is_alive", None)
-            if callable(is_alive) and not is_alive():
-                continue
-            active_summons.append(getattr(summon, "name", str(summon)))
-        if active_summons:
-            summary = ", ".join(active_summons[:2])
-            if len(active_summons) > 2:
-                summary += f" +{len(active_summons) - 2}"
-            rich_rows.append(("Summons", summary, (170, 210, 255)))
 
         totem = self._totem_effect(player_char)
         if totem:
@@ -599,6 +619,8 @@ class DungeonHUD:
 
         rich_labels = {label for label, _value, _color in rich_rows}
         for label, value in promotion_kits.status_summary_rows(player_char):
+            if label == "Summon Bond":
+                continue
             if label in rich_labels:
                 continue
             row = (label, value, self._class_kit_feature_color(label))
@@ -609,11 +631,9 @@ class DungeonHUD:
                 persistent_rows.append(row)
         active_rows.sort(key=lambda row: self._class_kit_row_bucket(row[0]))
 
-        lines = [class_line, *active_rows, *rich_rows, *persistent_rows]
-        if len(lines) == 1:
-            enemy_name = getattr(enemy, "name", "Enemy")
-            lines.append(("Target", enemy_name, self.text_color))
-            lines.append(("Focus", "No class feature active", self.GRAY if hasattr(self, "GRAY") else (145, 145, 155)))
+        lines = [*active_rows, *rich_rows, *persistent_rows]
+        if not lines and not self._is_living_active_summon(active_summon):
+            lines.append(("Focus", "No active combat focuses", self.GRAY if hasattr(self, "GRAY") else (145, 145, 155)))
         return lines
 
     def _render_totem_focus_glyph(self, rect: pygame.Rect, effect) -> None:
@@ -639,7 +659,61 @@ class DungeonHUD:
         pygame.draw.rect(self.screen, (35, 28, 24), head, 2, border_radius=4)
         pygame.draw.circle(self.screen, (248, 226, 142), head.center, 4)
 
-    def _render_combat_features(self, player_char, enemy, y_offset, feature_height=None):
+    def _render_active_summon_focus(self, active_summon, panel_rect: pygame.Rect, y: int) -> int:
+        """Render active summon resources inside Combat Focus."""
+        if not self._is_living_active_summon(active_summon):
+            return y
+
+        x = panel_rect.left + 12
+        width = panel_rect.width - 24
+        level = self._level_value(active_summon)
+        name = getattr(active_summon, "name", "Summon")
+        title = f"{name} Lv {level}" if level is not None else str(name)
+        title_surf = self.small_font.render(self._truncate_text(self.small_font, title, width), True, (170, 210, 255))
+        self.screen.blit(title_surf, (x, y))
+        y += title_surf.get_height() + 3
+
+        level_obj = getattr(active_summon, "level", None)
+        exp_to_gain = getattr(level_obj, "exp_to_gain", 0)
+        if isinstance(exp_to_gain, str):
+            xp_percent = 1.0
+            xp_text = "MAX LEVEL"
+        else:
+            try:
+                creature_level = max(1, int(getattr(level_obj, "level", 1) or 1))
+                pro_level = max(1, int(getattr(level_obj, "pro_level", 1) or 1))
+                exp_scale = max(1, int(getattr(active_summon, "exp_scale", 1000) or 1000))
+                total_xp = max(1, pro_level * exp_scale * creature_level)
+                remaining = max(0, int(exp_to_gain or 0))
+            except (TypeError, ValueError):
+                total_xp = 1
+                remaining = 0
+            progress = max(0, min(total_xp, total_xp - remaining))
+            xp_percent = progress / total_xp
+            xp_text = f"{progress}/{total_xp} XP"
+
+        xp_rect = pygame.Rect(x, y, width, 10)
+        pygame.draw.rect(self.screen, (40, 40, 45), xp_rect)
+        pygame.draw.rect(self.screen, self.exp_color, pygame.Rect(x, y, int(width * xp_percent), 10))
+        pygame.draw.rect(self.screen, self.border_color, xp_rect, 1)
+        xp_surf = self.small_font.render(self._truncate_text(self.small_font, xp_text, width), True, self.text_color)
+        self.screen.blit(xp_surf, (x + max(0, (width - xp_surf.get_width()) // 2), y - 5))
+        y += 16
+
+        y = self._render_resource_pair(
+            active_summon,
+            y,
+            bar_width=width,
+            bar_height=13,
+            x_margin=x,
+            font=self.small_font,
+            border_width=1,
+            row_gap=4,
+        )
+        y = self._render_status_icons(active_summon, y, max_rows=1)
+        return y + 9
+
+    def _render_combat_features(self, player_char, enemy, y_offset, feature_height=None, active_summon=None):
         """Render combat-relevant class systems in place of the exploration minimap."""
         x_margin = self.hud_x + 20
         panel_width = self.hud_width - 40
@@ -650,9 +724,11 @@ class DungeonHUD:
         pygame.draw.rect(self.screen, (15, 15, 20), panel_rect)
         pygame.draw.rect(self.screen, self.border_color, panel_rect, 2)
 
-        lines = self._combat_feature_lines(player_char, enemy)
         y = panel_rect.top + 12
-        visible_lines = lines[:7]
+        y = self._render_active_summon_focus(active_summon, panel_rect, y)
+        lines = self._combat_feature_lines(player_char, enemy, active_summon=active_summon)
+        max_lines = 4 if self._is_living_active_summon(active_summon) else 7
+        visible_lines = lines[:max_lines]
         label_gap = 10
         label_widths = [
             self.small_font.render(f"{label}:", True, (170, 170, 180)).get_width()

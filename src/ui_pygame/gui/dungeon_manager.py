@@ -2392,8 +2392,20 @@ class DungeonManager:
         if hasattr(current_tile, 'special_text') and not is_boss_encounter:
             try:
                 special = current_tile.special_text(self.game)
-                if special:
-                    self.add_message(special)
+                special_text = str(special).strip() if special else ""
+                if special_text:
+                    from .confirmation_popup import ConfirmationPopup
+                    popup = ConfirmationPopup(
+                        self.presenter,
+                        special_text,
+                        show_buttons=False,
+                    )
+                    popup.show(
+                        background_draw_func=self._draw_cached_popup_background,
+                        flush_events=True,
+                        require_key_release=True,
+                        min_display_ms=300,
+                    )
             except Exception:
                 pass
 

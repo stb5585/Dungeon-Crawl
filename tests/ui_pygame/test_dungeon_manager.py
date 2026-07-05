@@ -959,8 +959,21 @@ def test_get_tile_intro_check_tile_effects_and_menu_helpers(monkeypatch):
     fire_tile.enemy = None
     player.health.current = 10
     player.world_dict[(player.location_x, player.location_y, player.location_z)] = fire_tile
+    popup_calls = []
+
+    class FakeConfirm:
+        def __init__(self, _presenter, message, show_buttons=True):
+            popup_calls.append(("init", message, show_buttons))
+
+        def show(self, **kwargs):
+            popup_calls.append(("show", kwargs))
+            return None
+
+    monkeypatch.setattr("src.ui_pygame.gui.confirmation_popup.ConfirmationPopup", FakeConfirm)
     manager._check_tile_effects()
-    assert "The flames dance." in manager.messages
+    assert "The flames dance." not in manager.messages
+    assert popup_calls[0] == ("init", "The flames dance.", False)
+    assert popup_calls[1][0] == "show"
     assert any("3 damage" in msg for msg in manager.messages)
     assert "flash" in manager.messages
     assert "Cambion warning" in manager.messages

@@ -127,6 +127,26 @@ Future economy work should split rarity language into separate concepts:
 The current rarity buckets and item values remain the compatibility baseline
 until a later economy pass promotes a new model.
 
+## Ordinary Drop-Rate Tuning
+
+Ordinary item drop rates remain an evidence-gated economy question. Lowering
+baseline drops may improve the value of `Steal`, luck passives, Bestiary hints,
+and class-kit loot riders, but it can also starve early consumables and quest
+routes.
+
+Future tuning must use `tools/run_remaining_balance_baseline.py` and the
+`ordinary_drops` section of `remaining_improvement_tuning_report()` before
+changing drop rates, rarity nudges, gold values, or eligible item pools.
+
+The tuning spec must preserve these boundaries:
+
+- quest, special, boss-guaranteed, summon-gated, class-ring, and ultimate item
+  sources are not ordinary-drop knobs;
+- Steal and luck bonuses should feel useful without becoming mandatory;
+- early consumable access should remain playable;
+- Bestiary possible-drop hints must continue to describe possible outcomes
+  without promising exact odds.
+
 ## Dungeon Refreshers
 
 Random healing or mana refresher spots remain deferred until dungeon

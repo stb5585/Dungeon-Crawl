@@ -251,6 +251,52 @@ def test_case_revelation_death_mark_stolen_charge_and_summon_bond():
     assert "invokes Patagon" in abilities.InvokePatagon().use(summoner, target)
 
 
+def test_summon_bond_gain_uses_level_span_scaled_roll(monkeypatch):
+    from src.core import companions
+
+    summoner = _player("Summoner")
+    summon = companions.Patagon()
+    summon.level.level = 2
+    summon.level.pro_level = 1
+    summon.exp_scale = 250
+    summoner.summons = {"Patagon": summon}
+    summoner.active_summon_name = "Patagon"
+    monkeypatch.setattr("src.core.classes.promotion_kits.random.random", lambda: 0.09)
+
+    assert promotion_kits.summon_level_span_xp(summon) == 500
+    assert promotion_kits.summon_bond_gain_for_victory(summoner, 50) == 1
+
+
+def test_summon_bond_gain_blocks_low_level_and_failed_roll(monkeypatch):
+    from src.core import companions
+
+    summoner = _player("Summoner")
+    summon = companions.Patagon()
+    summoner.summons = {"Patagon": summon}
+    summoner.active_summon_name = "Patagon"
+
+    assert promotion_kits.summon_bond_gain_for_victory(summoner, 9999) == 0
+
+    summon.level.level = 2
+    monkeypatch.setattr("src.core.classes.promotion_kits.random.random", lambda: 0.99)
+    assert promotion_kits.summon_bond_gain_for_victory(summoner, 50) == 0
+
+
+def test_summon_defaults_and_dilong_starting_stats(monkeypatch):
+    from src.core import companions
+
+    player = _player("Summoner")
+    dilong = companions.Dilong()
+    monkeypatch.setattr("src.core.companions.random.randint", lambda _low, _high: 15)
+    dilong.initialize_stats(player)
+
+    assert dilong.exp_scale == 1000
+    assert dilong.level.exp_to_gain == 2000
+    assert dilong.combat.magic > 0
+    assert dilong.combat.magic_def > 0
+    assert "Surface" in dilong.spellbook["Skills"]
+
+
 def test_lycan_control_and_dragon_essence():
     lycan = _player("Lycan")
     assert "rank Feral" in promotion_kits.record_lycan_stress(lycan, "survive")
