@@ -131,6 +131,8 @@ class ChurchManager(TownScreenBase):
         church_options.append("Leave")
         
         church_screen = LocationMenuScreen(self.presenter, "Church of Elysia")
+        church_screen.set_location_portrait("Priest")
+        self._popup_background_draw_func = lambda: church_screen.draw_frame(do_flip=False)
         
         while True:
             choice_idx = church_screen.navigate(
@@ -155,7 +157,8 @@ class ChurchManager(TownScreenBase):
                 qm = QuestManager(
                     self.presenter, 
                     self.player_char, 
-                    quest_text_renderer=lambda text: church_screen.display_quest_text(text)
+                    quest_text_renderer=lambda text: church_screen.display_quest_text(text, npc_name="Priest"),
+                    renderer_preserve_formatting=True,
                 )
                 qm.check_and_offer('Priest')
 

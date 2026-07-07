@@ -10,7 +10,12 @@ import textwrap
 from typing import Any
 
 from src.core import items
-from src.core.town import quest_dict, RESPONSE_MAP, get_holy_grail_rotation_hints
+from src.core.town import (
+    RESPONSE_MAP,
+    already_defeated_enemy,
+    get_holy_grail_rotation_hints,
+    quest_dict,
+)
 from .confirmation_popup import ConfirmationPopup, RewardSelectionPopup
 from .level_up import LevelUpScreen
 
@@ -65,10 +70,10 @@ class QuestManager:
         return progress
 
     def _show_hint(self, message: str) -> None:
-        wrapped = "\n".join(textwrap.wrap(message, width=self.wrap_width))
         if self.quest_text_renderer:
-            self.quest_text_renderer(wrapped)
+            self.quest_text_renderer(self._format_for_renderer(message))
         else:
+            wrapped = "\n".join(textwrap.wrap(message, width=self.wrap_width))
             popup = ConfirmationPopup(self.presenter, wrapped, show_buttons=False)
             self._show_popup(popup)
 
@@ -489,11 +494,7 @@ class QuestManager:
             show_special_event_text("Timmy Home")
     
     def _already_killed(self, enemy_name: str) -> bool:
-        kill_dict = getattr(self.player_char, 'kill_dict', {})
-        for typ_dict in kill_dict.values():
-            if enemy_name in typ_dict:
-                return True
-        return False
+        return already_defeated_enemy(self.player_char, enemy_name)
 
     def _offer(self, giver: str, quest_name: str, q: dict[str, Any], typ: str) -> bool:
         # Offer quest via presenter
@@ -602,6 +603,10 @@ class QuestManager:
             return out
 
         for name, q in flatten(mains):
+            pdata = self.player_char.quest_dict.get('Main', {}).get(name)
+            if pdata and not pdata.get('Completed') and q.get('Type') == 'Defeat' and isinstance(q.get('What'), str):
+                if self._already_killed(q['What']):
+                    pdata['Completed'] = True
             # Safety: auto-complete Relics collect quest if already fulfilled but not marked
             pdata = self.player_char.quest_dict.get('Main', {}).get(name)
             if pdata and not pdata.get('Completed') and q.get('Type') == 'Collect' and q.get('What') == 'Relics':
@@ -617,6 +622,10 @@ class QuestManager:
                 showed_message = True
                 return did_action, showed_message
         for name, q in flatten(sides):
+            pdata = self.player_char.quest_dict.get('Side', {}).get(name)
+            if pdata and not pdata.get('Completed') and q.get('Type') == 'Defeat' and isinstance(q.get('What'), str):
+                if self._already_killed(q['What']):
+                    pdata['Completed'] = True
             pdata = self.player_char.quest_dict.get('Side', {}).get(name)
             if pdata and pdata.get('Completed') and not pdata.get('Turned In'):
                 self._turn_in(name, 'Side')

@@ -605,7 +605,26 @@ def test_use_stairs_up_interact_secret_shop_and_dialogue_helpers(monkeypatch):
     manager._show_dungeon_choice("prompt", ["Yes", "No"], image_path="npc.png")
     monkeypatch.setattr(dungeon_manager, "get_special_events", lambda: {"Event": {"Text": ["Line 1", "Line 2"]}})
     manager._show_special_event_dialogue("Event", title="Title", image_path="img.png")
+    monkeypatch.setattr(
+        dungeon_manager,
+        "get_npc_art_manager",
+        lambda: SimpleNamespace(
+            get_image_path=lambda name: f"npc:{name}"
+            if name in {"Nimue", "The Acolyte", "Reflection", "Vesperion"}
+            else ""
+        ),
+    )
+    manager._show_dungeon_dialogue("water", title="Nimue")
+    manager._show_special_event_dialogue("Event", title="Nimue")
+    manager._show_special_event_dialogue("Event", title="The Acolyte")
+    manager._show_special_event_dialogue("Event", title="Reflection")
+    manager._show_special_event_dialogue("Event", title="Vesperion")
     assert manager.messages.count("rendered") >= 3
+    assert shown_messages[-5][1]["image_path"] == "npc:Nimue"
+    assert shown_messages[-4][1]["image_path"] == "npc:Nimue"
+    assert shown_messages[-3][1]["image_path"] == "npc:The Acolyte"
+    assert shown_messages[-2][1]["image_path"] == "npc:Reflection"
+    assert shown_messages[-1][1]["image_path"] == "npc:Vesperion"
 
 
 def test_interact_chest_covers_unlock_mimic_loot_and_empty_cases(monkeypatch):
@@ -1169,7 +1188,9 @@ def test_final_room_incubus_and_golden_chalice_branches(monkeypatch):
     manager, presenter, player, _game = _make_manager(monkeypatch)
     manager._refresh_cached_frame = lambda: manager.messages.append("refresh")
     manager._mark_view_dirty = lambda: manager.messages.append("dirty")
-    presenter.show_message = lambda message, title=None: manager.messages.append(f"{title}:{message}")
+    presenter.show_message = lambda message, title=None, **kwargs: manager.messages.append(
+        f"{kwargs.get('title', title)}:{message}"
+    )
     presenter.render_menu = lambda prompt, options: 0
     monkeypatch.setattr(dungeon_manager, "get_special_events", lambda: {"Final Boss": {"Text": ["I await", "your challenge"]}})
     monkeypatch.setattr("src.ui_pygame.gui.dungeon_manager.pygame.event.clear", lambda: manager.messages.append("clear-events"))
@@ -1246,6 +1267,11 @@ def test_final_room_pending_false_final_enters_liminal_stub(monkeypatch):
             "Liminal Gap Arrival": {"Text": ["You wake before the threshold."]},
         },
     )
+    monkeypatch.setattr(
+        dungeon_manager,
+        "get_npc_art_manager",
+        lambda: SimpleNamespace(get_image_path=lambda name: f"npc:{name}" if name == "Vesperion" else ""),
+    )
     monkeypatch.setattr("src.ui_pygame.gui.dungeon_manager.pygame.event.clear", lambda: None)
     monkeypatch.setattr("src.core.enemies.Vesperion", lambda: SimpleNamespace(name="Vesperion"))
 
@@ -1272,6 +1298,10 @@ def test_final_room_pending_false_final_enters_liminal_stub(monkeypatch):
     assert player.main_story["pending_liminal_gap_entry"] is False
     assert player.main_story["liminal_gap_entered"] is True
     assert any(call[1].get("title") == "Vesperion" for call in shown)
+    assert shown[0][1]["title"] == "Vesperion"
+    assert shown[0][1]["image_path"] == "npc:Vesperion"
+    assert shown[1][1]["title"] == "Vesperion"
+    assert shown[1][1]["image_path"] == "npc:Vesperion"
     assert any(call[1].get("title") == "The Liminal Gap" for call in shown)
     assert "You wake in the Liminal Gap, wounded but alive." in manager.messages
     assert player.quit is False
@@ -2198,6 +2228,11 @@ def test_final_room_true_final_reentry_uses_true_final_prelude(monkeypatch):
             "The Thirsty Dog Epilogue": {"Text": ["The tavern remembers who is missing."]},
         },
     )
+    monkeypatch.setattr(
+        dungeon_manager,
+        "get_npc_art_manager",
+        lambda: SimpleNamespace(get_image_path=lambda name: f"npc:{name}" if name == "Vesperion" else ""),
+    )
     monkeypatch.setattr("src.ui_pygame.gui.dungeon_manager.pygame.event.clear", lambda: None)
     monkeypatch.setattr("src.core.enemies.Vesperion", lambda: SimpleNamespace(name="Vesperion"))
     manager.combat_manager.start_combat = lambda *args, **_kwargs: combat_calls.append(args) or True
@@ -2217,6 +2252,12 @@ def test_final_room_true_final_reentry_uses_true_final_prelude(monkeypatch):
     assert "Choice has wounds." in shown[1][0][0]
     assert "tavern grief" in shown[2][0][0]
     assert "Voluntas remains." in shown[3][0][0]
+    assert [call[1].get("image_path") for call in shown[:4]] == [
+        "npc:Vesperion",
+        "npc:Vesperion",
+        "npc:Vesperion",
+        "npc:Vesperion",
+    ]
     assert "The tenet is remembered." in shown[4][0][0]
     assert "who is missing" in shown[5][0][0]
     assert combat_calls[0][1].name == "Vesperion"

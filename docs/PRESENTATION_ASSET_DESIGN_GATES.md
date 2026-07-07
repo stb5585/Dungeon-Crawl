@@ -40,11 +40,15 @@ page counter, wrapped body text, and a clear continue action. They should accept
 keyboard confirm or mouse click, and may allow Escape to skip the remaining
 story sequence without cancelling character creation.
 
-### Improvements
-
-- Shop menu option select mouse click support
+Shop screen mouse support has shipped for main shop options, item rows, subtype
+tabs, and item-list wheel scrolling while preserving keyboard behavior and
+guarded input.
 
 ## Combat Status Art
+
+Evasive Guard now uses the approved `evasive_guard.png` status icon through the
+shared `status_icons.py` resolver, including counted stack labels such as
+`EG2`.
 
 Status-effect artwork remains opt-in. Missing effect PNGs continue to fall back
 to readable initials or compact pills. New status assets belong under
@@ -129,16 +133,104 @@ sprite when an approved Warp Point asset is absent.
 
 ## Town, NPC, And Venue Art Pass
 
-Town/NPC/Venue renderings are batch-gated until art direction, target list,
-dimensions, and review workflow are approved. Candidate targets:
+Town/NPC/Venue renderings are batch-gated by art direction, target list,
+dimensions, and review workflow. Approved shipped targets include recurring
+town NPCs, Old Warehouse guards, staffed Warp Point scientists, and selected
+endgame story figures. Remaining candidate scene targets:
 
-- Sergeant/Barracks;
-- inn patrons;
-- shop purveyors;
-- Church priest;
-- Old Warehouse guards;
-- staffed Warp Point scientists;
 - Bring Him Home family and child scenes.
+
+### NPC Artistic Renderings
+
+NPC renderings should match the established dark fantasy painterly look used by
+enemy, companion, item, and character artwork. This is a presentation-only art
+pass: it must not change quest routing, dialogue availability, shop inventory,
+town navigation, save fields, or NPC mechanics.
+
+V1 recurring town NPC portraits have shipped for dialogue and location/menu
+surfaces where the NPC is the subject. The approved runtime keys are:
+
+- `alchemist`;
+- `barkeep`;
+- `busboy`;
+- `drunkard`;
+- `griswold`;
+- `hooded_figure`;
+- `jeweler`;
+- `nimue`;
+- `old_warehouse_guard`;
+- `priest`;
+- `sergeant`;
+- `soldier`;
+- `waitress`;
+- `warp_point_scientist`.
+
+NPC Story Portrait Batch V2 adds endgame story figures to the same manager and
+review-sheet workflow:
+
+- `acolyte`: failed former hero, worn pilgrim/adventurer silhouette,
+  ash-gray Liminal light, sorrowful but not hostile.
+- `reflection`: mirror-dark Psychopomp/almost-self figure, ambiguous
+  martial/mystic/hybrid cues, reflective edges, not a player portrait clone.
+- `vesperion`: fallen Guardian of Voluntas, radiant twilight severity, Evening
+  Star motif, controlled mercy rather than demonic cruelty.
+
+V2 runtime use is dialogue-only and title-driven. Acolyte, Reflection, and
+Vesperion portraits may appear in named Liminal/final-room special-event
+dialogue, but must not replace combat sprites, enemy info panels, map tiles,
+combat HUD art, shop item panes, bounty boards, town hover panels, or ending
+text where no named figure is speaking. `Voluntas` remains an abstract
+principle/title, not a portrait target.
+
+Each NPC should have one canonical runtime key and one approved neutral-state
+rendering before adding variants. Variants such as injured, missing, hostile,
+celebrating, or post-quest states remain deferred until the base NPC pass has a
+manager, manifest, and review sheet.
+
+Vesperion also requires a separate full-body
+`enemy_combat_sprites/vesperion.png` combat sprite so narrative dialogue art and
+center-combat presentation stay related without reusing portrait-shaped bust
+art. The combat sprite should show the complete standing body, head to feet,
+with no frame, label, rectangular background, portrait crop, or token crop.
+This is a presentation asset mapping only and must not change Vesperion stats,
+AI, phase pressure, rewards, or Liminal route state.
+
+### NPC Diversity Refresh V3
+
+V3 improves fantasy-town ensemble variety for approved grounded town-human
+portraits while respecting story anchors such as the Waitress/Joffrey tragedy,
+town guard roles, shop identities, and approved supernatural/story portraits.
+The shipped replacement portraits are Alchemist, Barkeep, Jeweler, Priest,
+Soldier, Waitress, and Warp Point Scientist. Busboy, Drunkard, Griswold, Old
+Warehouse Guard, and Sergeant keep their prior approved portraits for now.
+
+The reviewed candidate batch and replaced originals are archived under
+`src/ui_pygame/assets/npc_art/old_files/`. Archive files must remain unavailable
+to `NpcArtManager`; only root-level files mapped by `npc_art_map.json` are live
+runtime portraits. This pass must not change quests, dialogue availability,
+save data, shop behavior, combat, rewards, or town routing.
+
+### Story Scene Targets
+
+Future story-scene assets are deferred as named special-event/dialogue-only
+targets. They should not appear in venue-wide location panels, town hover
+panels, shop panes, combat HUDs, enemy info panels, bounty boards, or ending
+text unless that future pass explicitly adds a matching runtime surface.
+
+- `joffrey_body`: Joffrey discovery/dead-body story art.
+- `timmy_found`: Timmy found in the dungeon.
+- `timmy_home`: Timmy reunited with family.
+- `waitress_grief`: Waitress locket/Joffrey grief scene or variant.
+- `waitress_mad`: optional hostile grief-transformed variant, separate from
+  the existing Mad Waitress enemy sprite.
+
+Venue-wide scenes and location-panel art remain deferred to a separate future
+batch.
+
+Runtime use should favor focused NPC detail/dialogue panels and town/venue
+surfaces where the character is the subject. Do not place large NPC portraits in
+shop item comparison panes, quest reward selection, combat HUD, or any surface
+where they would compete with functional information.
 
 If a future pass needs shared loading/caching, add a small manager following the
 existing asset-manager pattern. Do not introduce one-off path loading in several

@@ -180,6 +180,12 @@ tests, and balance assumptions.
 - Prismatic Rays.
 - Throw inventory-item ability.
 - Magic-stat success scaling.
+- Low-stat-benefit abilities or effects. A promoted spec must name the affected
+  abilities/effects, define exact scaling rules and caps, explain whether the
+  benefit rewards a low actor stat, a low target stat, or a stat gap, and
+  include simulator/playtest evidence. The spec must also update
+  `docs/CLASS_STAT_PRIORITIES.md` if it changes the current stat-priority
+  guidance.
 - Always-hit spell flags. A promoted spec must define resistance behavior,
   boss-immunity boundaries, UI text, combat log text, and regression tests.
 
@@ -192,6 +198,10 @@ tests, and balance assumptions.
 - Whether status ticks should continue after enemy defeat in any future
   multi-actor flow.
 - Ignore-defense semantics and shield/Reflect/damage-resolution order.
+- Attack of Opportunity. Candidate triggers include picking up a weapon,
+  standing from Prone, and charging a skill, but no trigger is implementation
+  ready until a promoted spec defines action timing, eligible actors, dodge or
+  mitigation rules, UI/log text, simulator impact, and regression coverage.
 - Unlockable races, unlockable classes, level caps, and difficulty tiers.
 
 ### Architecture Expansions

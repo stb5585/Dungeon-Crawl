@@ -45,6 +45,7 @@ from .battle_logger import BattleLogger
 from .initiative import determine_initiative
 from ..constants import SPECIAL_ATTACK_LUCK_FACTOR, SPECIAL_ATTACK_ROLL_MAX
 from .. import items
+from ..enemy_identity import remember_defeat_identity, restore_defeat_identity
 from ..events.event_bus import get_event_bus, create_combat_event, EventType
 from ..classes import astromancer, bard, berserker, class_rings, dragoon, lycan, nature_totems, ability_mechanics, paladin, promotion_kits, wizard
 
@@ -130,6 +131,7 @@ class BattleEngine:
         self.tile: Any = tile
         self.game: Any = game
         self.logger: BattleLogger = logger if logger else BattleLogger()
+        remember_defeat_identity(self.enemy)
 
         self.flee: bool = False
         self.boss: bool = "Boss" in str(tile)
@@ -1281,6 +1283,7 @@ class BattleEngine:
 
     def _process_victory(self) -> str:
         """Handle victory bookkeeping: exp, loot, quests, kill tracking."""
+        restore_defeat_identity(self.enemy)
         mercy = bool(getattr(self.enemy, "paladin_mercy_victory", False))
         exp_gain = int(self.enemy.experience)
         try:

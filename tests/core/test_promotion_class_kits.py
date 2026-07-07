@@ -90,7 +90,9 @@ def test_ui_log_polish_status_matrix_surfaces():
     abilities.ThreadedCast().use(astro)
     astro_status = astro._class_kit_status_str()
     assert "Threads:" in astro_status
+    assert "Threaded ready" in astro_status
     assert "Threaded:" in astro_status
+    assert "Pending next spell" in astro_status
     assert "Ring Ready:" in astro_status
 
     soulcatcher = _player("Soulcatcher")
@@ -161,14 +163,14 @@ def test_ui_log_polish_persistent_and_preservation_status_lines():
 def test_status_summary_rows_are_clean_label_value_pairs():
     dragoon = _player("Dragoon")
     promotion_kits.combat_state(dragoon)["aerial_tempo"] = 2
-    assert ("Aerial Tempo", "2/3") in promotion_kits.status_summary_rows(dragoon)
+    assert ("Aerial Tempo", "2/3 Follow-up") in promotion_kits.status_summary_rows(dragoon)
     assert "Aerial Tempo:" in dragoon._class_kit_status_str()
 
     archbishop = _player("Archbishop", mana=(100, 100))
     _awaken_ring(archbishop, "Archbishop")
     promotion_kits.gain_meter(archbishop, "prayer", 2, "test")
     archbishop_rows = promotion_kits.status_summary_rows(archbishop)
-    assert ("Prayer", "2/7") in archbishop_rows
+    assert ("Prayer", "2/7 Supplication ready") in archbishop_rows
     assert ("Ring Ready", "Divine Intervention") in archbishop_rows
     assert ("Ring Preserve", "Ready") in archbishop_rows
 
@@ -248,6 +250,7 @@ def test_case_revelation_death_mark_stolen_charge_and_summon_bond():
 
     summoner = _player("Grand Summoner", mana=(100, 100))
     assert "Patagon bond" in promotion_kits.gain_summon_bond(summoner, "Patagon", 50, "test")
+    assert ("Summon Bond", "Patagon 50/100 Invoke ready") in promotion_kits.status_summary_rows(summoner)
     assert "invokes Patagon" in abilities.InvokePatagon().use(summoner, target)
 
 
@@ -276,10 +279,14 @@ def test_summon_bond_gain_blocks_low_level_and_failed_roll(monkeypatch):
     summoner.active_summon_name = "Patagon"
 
     assert promotion_kits.summon_bond_gain_for_victory(summoner, 9999) == 0
+    message = promotion_kits.gain_summon_bond_for_active(summoner, 0, "victory")
+    assert "Summon Bond: Patagon bond needs level 2." in message
 
     summon.level.level = 2
     monkeypatch.setattr("src.core.classes.promotion_kits.random.random", lambda: 0.99)
     assert promotion_kits.summon_bond_gain_for_victory(summoner, 50) == 0
+    message = promotion_kits.gain_summon_bond_for_active(summoner, 0, "victory")
+    assert "Summon Bond: Patagon bond holds steady after a low-XP victory." in message
 
 
 def test_summon_defaults_and_dilong_starting_stats(monkeypatch):

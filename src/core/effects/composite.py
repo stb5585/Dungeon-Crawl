@@ -3894,9 +3894,12 @@ class ShapeshiftEffect(Effect):
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
         import random as _rng
+        from src.core.enemy_identity import remember_defeat_identity
+
         # With self_target the effect_target == actor (the shapeshifter)
         user = target
         messages = result.extra.setdefault("messages", [])
+        remember_defeat_identity(user)
 
         while True:
             s_creature = _rng.choice(user.transform)()

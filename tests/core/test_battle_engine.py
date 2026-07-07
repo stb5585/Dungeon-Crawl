@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from src.core.combat.battle_engine import BattleEngine
 from src.core.data.data_driven_abilities import DataDrivenSpell
-from src.core.enemies import Goblin
+from src.core.enemies import Barghest, Goblin
 from tests.test_framework import TestGameState
 
 
@@ -151,6 +151,37 @@ def test_start_battle_records_bestiary_encounter():
     assert record["seen_count"] == 1
     assert record["details_unlocked"] is False
     assert "resistances" not in record
+
+
+def test_shapeshifted_barghest_victory_credits_original_enemy(monkeypatch):
+    player = TestGameState.create_player(name="Kongol", class_name="Warrior", race_name="Half Giant")
+    enemy = Barghest()
+    engine = BattleEngine(player, enemy, DummyCombatTile())
+    player.quest_dict = {
+        "Bounty": {},
+        "Main": {
+            "Cry Havoc!": {
+                "Type": "Defeat",
+                "What": "Barghest",
+                "Total": 1,
+                "Completed": False,
+            }
+        },
+        "Side": {},
+    }
+    monkeypatch.setattr(player, "loot", lambda defeated_enemy, _tile: f"{defeated_enemy.name} dropped loot.\n")
+
+    engine.start_battle()
+    enemy.name = "Direwolf"
+    enemy.enemy_typ = "Animal"
+
+    msg = engine._process_victory()
+
+    assert player.bestiary["Barghest"]["seen_count"] == 1
+    assert player.kill_dict["Fiend"]["Barghest"] == 1
+    assert "Direwolf" not in player.kill_dict.get("Animal", {})
+    assert player.quest_dict["Main"]["Cry Havoc!"]["Completed"] is True
+    assert "Barghest dropped loot" in msg
 
 
 def test_boss_battle_blocks_enemy_detail_vision():

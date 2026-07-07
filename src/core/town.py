@@ -2,6 +2,7 @@
 """ Town manager """
 
 import random
+import re
 
 from . import enemies, items
 from .data.data_loader import get_quests, get_patron_dialogues, get_response_map, get_tavern_flavor_dialogues
@@ -92,6 +93,68 @@ def active_bounty_count(player_char):
     quest_dict = getattr(player_char, "quest_dict", {})
     bounty_dict = quest_dict.get("Bounty", {}) if isinstance(quest_dict, dict) else {}
     return len(bounty_dict)
+
+
+def prior_bounty_target_defeats(player_char, bounty_data) -> int:
+    """Return already-recorded defeats for the bounty target, across enemy types."""
+    enemy = bounty_data.get("enemy") if isinstance(bounty_data, dict) else None
+    target_name = getattr(enemy, "name", None)
+    if not target_name and isinstance(enemy, str):
+        target_name = enemy
+    if not target_name and isinstance(bounty_data, dict):
+        target_name = bounty_data.get("enemy_name")
+    if not target_name:
+        return 0
+
+    kill_dict = getattr(player_char, "kill_dict", {}) or {}
+    total = 0
+    if isinstance(kill_dict, dict):
+        for enemy_counts in kill_dict.values():
+            if isinstance(enemy_counts, dict):
+                try:
+                    total += int(enemy_counts.get(target_name, 0) or 0)
+                except (TypeError, ValueError):
+                    continue
+    return max(0, total)
+
+
+def _split_boss_room_name(class_name: str) -> str:
+    base_name = class_name.removesuffix("BossRoom")
+    return re.sub(r"(?<!^)(?=[A-Z])", " ", base_name).strip()
+
+
+def already_defeated_enemy(player_char, enemy_name: str) -> bool:
+    """Return whether saved progress already proves this enemy was defeated."""
+    target_name = str(enemy_name or "").strip()
+    if not target_name:
+        return False
+
+    kill_dict = getattr(player_char, "kill_dict", {}) or {}
+    if isinstance(kill_dict, dict):
+        for enemy_counts in kill_dict.values():
+            if not isinstance(enemy_counts, dict):
+                continue
+            try:
+                if int(enemy_counts.get(target_name, 0) or 0) > 0:
+                    return True
+            except (TypeError, ValueError):
+                continue
+
+    world_dict = getattr(player_char, "world_dict", {}) or {}
+    if not isinstance(world_dict, dict):
+        return False
+    for tile in world_dict.values():
+        if not getattr(tile, "defeated", False):
+            continue
+        tile_class_name = type(tile).__name__
+        candidates = {tile_class_name, _split_boss_room_name(tile_class_name)}
+        tile_enemy = getattr(tile, "enemy", None)
+        if tile_enemy is not None:
+            candidates.add(str(getattr(tile_enemy, "name", "") or ""))
+            candidates.add(str(getattr(tile_enemy, "__name__", "") or ""))
+        if target_name in candidates:
+            return True
+    return False
 
 
 def mark_bounty_board_restock(player_char):

@@ -112,6 +112,33 @@ def test_location_menu_draw_helpers(monkeypatch):
     assert draw_rect_calls
 
 
+def test_location_menu_draws_static_and_option_portraits(monkeypatch):
+    presenter = _make_presenter()
+    screen = location_menu.LocationMenuScreen(presenter, "Patrons")
+    screen.options_list = ["Barkeep", "Waitress", "Back"]
+    drawn_portraits = []
+
+    monkeypatch.setattr(screen, "draw_background", lambda: None)
+    monkeypatch.setattr(screen, "draw_top", lambda: None)
+    monkeypatch.setattr(screen, "draw_options", lambda: None)
+    monkeypatch.setattr(screen, "draw_content", lambda *args, **kwargs: None)
+    monkeypatch.setattr(screen, "draw_npc_portrait", lambda **kwargs: drawn_portraits.append(kwargs.get("npc_name")))
+    monkeypatch.setattr("src.ui_pygame.gui.location_menu.pygame.display.flip", lambda: None)
+
+    screen.set_location_portrait("Priest")
+    screen.draw_all()
+    assert drawn_portraits[-1] == "Priest"
+
+    screen.set_option_portraits(["Barkeep", "Waitress", None])
+    screen.current_option = 1
+    screen.draw_all()
+    assert drawn_portraits[-1] == "Waitress"
+
+    screen.current_option = 2
+    screen.draw_all()
+    assert drawn_portraits[-1] is None
+
+
 def test_location_menu_navigation_and_item_navigation(monkeypatch):
     presenter = _make_presenter()
     screen = location_menu.LocationMenuScreen(presenter, "Inn")

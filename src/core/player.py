@@ -21,6 +21,7 @@ from .constants import (
     LEVELUP_STAT_DIVISOR,
     TOWN_LOCATION,
 )
+from .enemy_identity import restore_defeat_identity
 
 import numpy
 
@@ -1127,12 +1128,6 @@ class Player(Character):
             lines.append(f"{'Moon:':13} {state['moon_phase']} ({state['moon_steps']}/{lycan.STEPS_PER_PHASE})")
             if state["frenzy_turns"]:
                 lines.append(f"{'Frenzy Lock:':13} {state['frenzy_turns']} turns")
-        if cls_name == "Stalwart Defender":
-            guard = class_rings.ensure_state(self)["data"]["Stalwart Defender"].get("guard_meter", 0)
-            lines.append(f"{'Resolve:':13} {int(guard)}/100")
-        if cls_name == "Shadowcaster":
-            debt = class_rings.ensure_state(self)["data"]["Shadowcaster"].get("debt", 0)
-            lines.append(f"{'Umbral Debt:':13} {int(debt)}/{promotion_kits.shadowcaster_debt_cap(self)}")
         if cls_name in {"Diviner", "Astromancer"}:
             self.ensure_astromancer_state()
             lines.append(f"{'Runes:':13} {astromancer.rune_status_summary(self)}")
@@ -1540,6 +1535,15 @@ class Player(Character):
                         rare[i] = True if summon else False
             if drop[i]:
                 loot_message += f"{enemy.name} dropped a {item.name}.\n"
+                if self.cls.name in {"Thief", "Rogue"} and item.subtyp not in {"Quest", "Special", "Ability"}:
+                    try:
+                        _summon, _name = item.subtyp.split(" - ")
+                        summon_gated = True
+                    except ValueError:
+                        summon_gated = False
+                    if not summon_gated and 'Boss' not in str(tile):
+                        passive = "Scavenger's Eye" if self.cls.name == "Thief" else "Finders Keepers"
+                        loot_message += f"{passive} spots ordinary loot: {item.name}.\n"
                 self.modify_inventory(item, rare=rare[i])
                 loot_message += self.quests(item=item)
                 # Unlock Jump modification for special items
@@ -1802,13 +1806,16 @@ class Player(Character):
             # Get current stats with original equipment
             main_dmg = self.check_mod('weapon')
             main_crit = int((self.equipment['Weapon'].crit + (BASE_CRIT_PER_POINT * self.check_mod("speed"))) * 100)
-            attack = f"{str(main_dmg)}"
-            crit = f"{str(main_crit)}%"
-            if self.equipment['OffHand'].typ == 'Weapon':
-                off_dmg = self.check_mod('offhand')
-                off_crit = int((self.equipment['OffHand'].crit  + (BASE_CRIT_PER_POINT * self.check_mod("speed"))) * 100)
-                attack = f"{str(main_dmg)}/{str(off_dmg)}"
-                crit = f"{str(main_crit)}%/{str(off_crit)}%"
+
+            def offhand_weapon_stats() -> tuple[bool, int, int]:
+                offhand_item = self.equipment.get("OffHand")
+                if getattr(offhand_item, "typ", None) != "Weapon":
+                    return False, 0, 0
+                damage = self.check_mod('offhand')
+                crit_chance = int((offhand_item.crit + (BASE_CRIT_PER_POINT * self.check_mod("speed"))) * 100)
+                return True, damage, crit_chance
+
+            had_offhand_weapon, off_dmg, off_crit = offhand_weapon_stats()
             armor = self.check_mod('armor')
             block = self.check_mod('shield')
             spell_def = self.check_mod('magic def')
@@ -1853,43 +1860,17 @@ class Player(Character):
             # Get new stats with test equipment
             new_main_dmg = self.check_mod('weapon')
             if new_main_dmg != main_dmg:
-                diff_dict["Attack"] = f"{main_dmg} -> {new_main_dmg}"
+                diff_dict["Main Attack"] = f"{main_dmg} -> {new_main_dmg}"
             new_main_crit = int((self.equipment['Weapon'].crit + (BASE_CRIT_PER_POINT * self.check_mod("speed"))) * 100)
             if new_main_crit != main_crit:
-                diff_dict["Critical Chance"] = f"{main_crit}% -> {new_main_crit}%"
-            if equip_slot == 'Weapon':
-                if original_offhand and original_offhand.typ == 'Weapon':
-                    if item.handed == 2 and self.cls.name not in ["Lancer", "Dragoon", "Berserker"]:
-                        diff_dict["Attack"] = f"{main_dmg}/{off_dmg} -> {new_main_dmg}"
-                        diff_dict["Critical Chance"] = f"{main_crit}%/{off_crit}% -> {new_main_crit}%"
-                    else:
-                        new_off_dmg = self.check_mod('offhand')
-                        new_off_crit = int((self.equipment['OffHand'].crit + (BASE_CRIT_PER_POINT * self.check_mod("speed"))) * 100)
-                        if new_main_dmg != main_dmg or new_off_dmg != off_dmg:
-                            diff_dict["Attack"] = f"{main_dmg}/{off_dmg} -> {new_main_dmg}/{new_off_dmg}"
-                        if new_main_crit != main_crit or new_off_crit != off_crit:
-                            diff_dict["Critical Chance"] = f"{main_crit}%/{off_crit}% -> {new_main_crit}%/{new_off_crit}%"
-                elif item.subtyp in self.cls.restrictions["OffHand"] and buy:
-                    new_off_dmg = self.check_mod('offhand')
-                    new_off_crit = int((self.equipment['OffHand'].crit + (BASE_CRIT_PER_POINT * self.check_mod("speed"))) * 100)
-                    if original_offhand and original_offhand.typ == "Weapon":
-                        diff_dict["Attack"] = f"{main_dmg}/{off_dmg} -> {new_main_dmg}/{new_off_dmg}"
-                        diff_dict["Critical Chance"] = f"{main_crit}%/{off_crit}% -> {new_main_crit}%/{new_off_crit}%"
-                    else:
-                        diff_dict["Attack"] = f"{main_dmg} -> {new_main_dmg}/{new_off_dmg}"
-                        diff_dict["Critical Chance"] = f"{main_crit}% -> {new_main_crit}%/{new_off_crit}%"
-            if equip_slot == 'OffHand':
-                if item.typ == "Weapon":
-                    new_off_dmg = self.check_mod('offhand')
-                    new_off_crit = int((self.equipment['OffHand'].crit + (BASE_CRIT_PER_POINT * self.check_mod("speed"))) * 100)
-                    diff_dict["Attack"] = f"{main_dmg} -> {main_dmg}/{new_off_dmg}"
-                    diff_dict["Critical Chance"] = f"{main_crit}% -> {main_crit}%/{new_off_crit}%"
-                    if original_offhand and original_offhand.typ == 'Weapon':
-                        diff_dict["Attack"] = f"{main_dmg}/{off_dmg} -> {main_dmg}/{new_off_dmg}"
-                        diff_dict["Critical Chance"] = f"{main_crit}%/{off_crit}% -> {main_crit}%/{new_off_crit}%"
-                if item.subtyp == "None" and original_offhand and original_offhand.typ == "Weapon":
-                    diff_dict["Attack"] = f"{main_dmg}/{off_dmg} -> {main_dmg}"
-                    diff_dict["Critical Chance"] = f"{main_crit}%/{off_crit}% -> {main_crit}%"
+                diff_dict["Main Crit"] = f"{main_crit}% -> {new_main_crit}%"
+
+            has_new_offhand_weapon, new_off_dmg, new_off_crit = offhand_weapon_stats()
+            if had_offhand_weapon or has_new_offhand_weapon:
+                if new_off_dmg != off_dmg:
+                    diff_dict["OffHand Attack"] = f"{off_dmg} -> {new_off_dmg}"
+                if new_off_crit != off_crit:
+                    diff_dict["OffHand Crit"] = f"{off_crit}% -> {new_off_crit}%"
             if self.check_mod('shield') != block:
                 diff_dict["Block Chance"] = f"{block}% -> {self.check_mod('shield')}%"
             if self.check_mod('armor') != armor:
@@ -1916,7 +1897,7 @@ class Player(Character):
         finally:
             # ALWAYS restore original equipment, even if an exception occurs
             self.equipment[equip_slot] = original_item
-            if equip_slot == "Weapon" and original_offhand:
+            if equip_slot == "Weapon":
                 self.equipment["OffHand"] = original_offhand
             self.sight = original_sight
             self.invisible = original_invisible
@@ -2481,6 +2462,7 @@ class Player(Character):
             self.transform(back=True)
         self.effects(end=True)
         if all([self.is_alive(), not flee]):
+            restore_defeat_identity(enemy)
             exp_gain = int(enemy.experience)
             try:
                 exp_gain = max(0, int(exp_gain * float(self.exp_gain_multiplier())))

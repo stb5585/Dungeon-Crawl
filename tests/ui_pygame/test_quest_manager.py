@@ -10,6 +10,11 @@ from src.core.data.data_loader import get_quests
 from src.ui_pygame.gui import quest_manager
 
 
+class BarghestBossRoom:
+    defeated = True
+    enemy = None
+
+
 class DummyItem:
     def __init__(
         self,
@@ -201,6 +206,7 @@ def test_can_offer_and_already_killed_helpers():
     player.quest_dict["Main"]["Earlier"] = {"Turned In": True}
     player.quest_dict["Side"]["Blocked"] = {"Turned In": False}
     player.kill_dict = {"Boss": {"Dragon": 1}}
+    player.world_dict = {(0, 0, 1): BarghestBossRoom()}
     manager = _manager(player)
 
     assert manager._can_offer_quest("Any", {}, "Main") is True
@@ -208,7 +214,34 @@ def test_can_offer_and_already_killed_helpers():
     assert manager._can_offer_quest("Later", {"Requires": "Blocked"}, "Main") is False
     assert manager._can_offer_quest("Later", {"Requires": "Missing"}, "Main") is False
     assert manager._already_killed("Dragon") is True
+    assert manager._already_killed("Barghest") is True
     assert manager._already_killed("Slime") is False
+
+
+def test_check_and_offer_autocompletes_defeated_boss_room_without_kill_entry(monkeypatch):
+    player = _make_player(level=12)
+    player.world_dict = {(5, 5, 1): BarghestBossRoom()}
+    player.quest_dict["Main"]["Cry Havoc!"] = {
+        "Type": "Defeat",
+        "What": "Barghest",
+        "Completed": False,
+        "Turned In": False,
+    }
+    manager = _manager(player)
+
+    monkeypatch.setattr(
+        manager,
+        "_eligible_quests",
+        lambda giver: ([{"Cry Havoc!": {"Type": "Defeat", "What": "Barghest"}}], []),
+    )
+    turnins = []
+    monkeypatch.setattr(manager, "_turn_in", lambda name, typ: turnins.append((name, typ)))
+
+    acted, showed = manager.check_and_offer("Sergeant")
+
+    assert (acted, showed) == (True, True)
+    assert player.quest_dict["Main"]["Cry Havoc!"]["Completed"] is True
+    assert turnins == [("Cry Havoc!", "Main")]
 
 
 def test_offer_accept_covers_kill_check_relics_naivete_and_decline(monkeypatch):

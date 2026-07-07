@@ -424,7 +424,13 @@ class ModernCharacterScreen(TownScreenBase):
         target_rect = fitted.get_rect(center=rect.center)
         self.screen.blit(fitted, target_rect)
 
-    def portrait_frame_rect(self, y: int, surface: pygame.Surface | None = None) -> pygame.Rect:
+    def portrait_frame_rect(
+        self,
+        y: int,
+        surface: pygame.Surface | None = None,
+        *,
+        reserved_bottom: int = 32,
+    ) -> pygame.Rect:
         source_width, source_height = (225, 400)
         if surface is not None:
             surface_width, surface_height = surface.get_size()
@@ -432,7 +438,10 @@ class ModernCharacterScreen(TownScreenBase):
                 source_width, source_height = surface_width, surface_height
 
         max_width = min(source_width, max(150, self.character_panel_rect.width // 2 - 12))
-        max_height = min(source_height, max(220, self.character_panel_rect.height - (y - self.character_panel_rect.top) - 32))
+        max_height = min(
+            source_height,
+            max(120, self.character_panel_rect.height - (y - self.character_panel_rect.top) - reserved_bottom),
+        )
         scale = min(max_width / source_width, max_height / source_height, 1.0)
         portrait_width = max(1, int(source_width * scale))
         portrait_height = max(1, int(source_height * scale))
@@ -707,6 +716,18 @@ class ModernCharacterScreen(TownScreenBase):
             if y > rect.bottom:
                 break
         return y
+
+    def _portrait_details_min_height(self, rows: list[tuple[str, str]], width: int) -> int:
+        """Return the height needed for compact portrait metadata rows."""
+        font = self.small_font
+        line_gap = 4
+        height = 0
+        for label, value in rows:
+            label_width = min(max(62, font.size(label)[0] + 8), max(62, width // 2))
+            value_width = max(1, width - label_width - 12)
+            row_lines = 1 if font.size(str(value))[0] <= value_width else 2
+            height += (font.get_height() * row_lines) + line_gap
+        return height
 
     def build_core_attributes(self, player_char) -> list[tuple[str, str]]:
         stats = getattr(player_char, "stats", None)
@@ -1091,7 +1112,16 @@ class ModernCharacterScreen(TownScreenBase):
     def draw_character_panel(self, player_char):
         y = self._draw_panel(self.character_panel_rect, "Character")
         portrait_surface = self.load_portrait(player_char)
-        portrait = self.portrait_frame_rect(y, portrait_surface)
+        portrait_rows = self.build_portrait_details(player_char)
+        initial_portrait = self.portrait_frame_rect(y, portrait_surface)
+        detail_gap = 8
+        detail_bottom_padding = 8
+        detail_height = self._portrait_details_min_height(portrait_rows, initial_portrait.width)
+        portrait = self.portrait_frame_rect(
+            y,
+            portrait_surface,
+            reserved_bottom=detail_gap + detail_height + detail_bottom_padding,
+        )
         pygame.draw.rect(self.screen, self.colors.DARK_GRAY, portrait)
         pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, portrait, 2)
         if portrait_surface is not None:
@@ -1100,9 +1130,9 @@ class ModernCharacterScreen(TownScreenBase):
         else:
             self._draw_text("Portrait", self.small_font, self.colors.GRAY, portrait.left + 10, portrait.centery - self.small_font.get_height() // 2, portrait.width - 20)
 
-        detail_y = portrait.bottom + 8
-        detail_rect = pygame.Rect(portrait.left, detail_y, portrait.width, self.character_panel_rect.bottom - detail_y - 8)
-        self._draw_portrait_details(self.build_portrait_details(player_char), detail_rect, detail_y)
+        detail_y = portrait.bottom + detail_gap
+        detail_rect = pygame.Rect(portrait.left, detail_y, portrait.width, self.character_panel_rect.bottom - detail_y - detail_bottom_padding)
+        self._draw_portrait_details(portrait_rows, detail_rect, detail_y)
 
         info_x = portrait.right + 16
         info_y = y

@@ -7,6 +7,8 @@ import os
 
 import pygame
 
+from src.ui_pygame.assets.npc_art_manager import get_npc_art_manager
+
 from .mouse_helpers import is_left_click
 
 
@@ -49,6 +51,8 @@ class TownScreenBase:
         
         # Load background once
         self.background = None
+        self._npc_portrait_surface_cache = {}
+        self._popup_background_draw_func = None
         self._load_background()
     
     def _load_background(self):
@@ -99,13 +103,66 @@ class TownScreenBase:
 
     def popup_show_kwargs(self):
         """Common modal-popup options for town screens."""
-        return {
-            "background_draw_func": self.draw_background,
+        kwargs = {
             "flush_events": True,
             "require_key_release": True,
         }
+        if self._popup_background_draw_func is not None:
+            kwargs["background_draw_func"] = self._popup_background_draw_func
+        return kwargs
 
-    def display_quest_text(self, quest_text):
+    def dialogue_portrait_rect(self) -> pygame.Rect:
+        """Return the left-column portrait area below the location options."""
+        top_height = self.height // 12
+        options_width = self.width // 3
+        options_height = self.height // 4
+        portrait_y = top_height + options_height
+        return pygame.Rect(0, portrait_y, options_width, self.height - portrait_y)
+
+    def npc_portrait_surface(self, *, npc_name: str | None = None, image_path: str = ""):
+        """Return a cached NPC portrait surface, or None when art is unavailable."""
+        portrait_path = image_path or get_npc_art_manager().get_image_path(npc_name or "")
+        if not portrait_path:
+            return None
+        if portrait_path not in self._npc_portrait_surface_cache:
+            try:
+                self._npc_portrait_surface_cache[portrait_path] = pygame.image.load(portrait_path).convert_alpha()
+            except Exception:
+                self._npc_portrait_surface_cache[portrait_path] = None
+        return self._npc_portrait_surface_cache[portrait_path]
+
+    def draw_dialogue_portrait(self, portrait_surface, rect: pygame.Rect | None = None) -> None:
+        """Draw an optional dialogue portrait under the left-side options."""
+        if portrait_surface is None:
+            return
+        portrait_rect = rect or self.dialogue_portrait_rect()
+        if portrait_rect.width <= 0 or portrait_rect.height <= 0:
+            return
+
+        self.draw_semi_transparent_panel(portrait_rect)
+        pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, portrait_rect, 2)
+
+        art_rect = portrait_rect.inflate(-28, -28)
+        source_w, source_h = portrait_surface.get_size()
+        scale = min(art_rect.width / max(1, source_w), art_rect.height / max(1, source_h))
+        fitted_size = (max(1, int(source_w * scale)), max(1, int(source_h * scale)))
+        fitted = pygame.transform.smoothscale(portrait_surface, fitted_size)
+        self.screen.blit(fitted, fitted.get_rect(center=art_rect.center))
+
+    def draw_npc_portrait(
+        self,
+        *,
+        npc_name: str | None = None,
+        image_path: str = "",
+        rect: pygame.Rect | None = None,
+    ) -> None:
+        """Resolve and draw an NPC portrait when mapped art exists."""
+        self.draw_dialogue_portrait(
+            self.npc_portrait_surface(npc_name=npc_name, image_path=image_path),
+            rect=rect,
+        )
+
+    def display_quest_text(self, quest_text, *, npc_name: str | None = None, image_path: str = ""):
         """Display quest text in the content area with slow printing animation."""
         import time
         import pygame
@@ -120,9 +177,32 @@ class TownScreenBase:
         if first_line.startswith("======") and first_line.endswith("======"):
             header_text = first_line.replace("=", "").strip()
             text = lines[1] if len(lines) > 1 else ""
+        if header_text is None and first_line in {"Quest Complete"}:
+            header_text = first_line
+            text = lines[1] if len(lines) > 1 else ""
+        elif header_text is None and first_line.startswith(("Quest: ", "Quest Complete: ")):
+            header_text = first_line
+            text = lines[1] if len(lines) > 1 else ""
+            if text.startswith("\n"):
+                text = text[1:]
+        portrait_surface = self.npc_portrait_surface(npc_name=npc_name or header_text or "", image_path=image_path)
 
-        # Paginate by paragraph (blank line separated) so hints show one at a time
-        paragraphs = text.split("\n\n")
+        def text_wrap_width() -> int:
+            content_width = 2 * self.width // 3
+            text_width = content_width - 40
+            sample = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+            avg_char_width = max(1, self.large_font.size(sample)[0] / len(sample))
+            return max(18, int(text_width / avg_char_width))
+
+        def wrapped_text_lines() -> list[str]:
+            wrapped_lines: list[str] = []
+            for raw_line in text.split("\n"):
+                if not raw_line.strip():
+                    wrapped_lines.append("")
+                    continue
+                wrapped = textwrap.wrap(raw_line, width=text_wrap_width(), break_on_hyphens=False)
+                wrapped_lines.extend(wrapped or [raw_line])
+            return wrapped_lines
 
         def draw_content_formatted(lines_to_draw):
             """Draw content with special formatting for headers."""
@@ -138,14 +218,16 @@ class TownScreenBase:
             pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, content_rect, 2)
             
             if lines_to_draw:
-                text_x = content_rect.left + 20
+                text_rect = content_rect.inflate(-40, -40)
+
+                text_x = text_rect.left
                 text_y = content_rect.top + 20
 
                 # Draw header (once per frame) if present
                 if header_text:
                     surface = self.normal_font.render(header_text, True, self.colors.GOLD)
                     line_width = surface.get_width()
-                    centered_x = content_rect.centerx - line_width // 2
+                    centered_x = text_rect.centerx - line_width // 2
                     self.screen.blit(surface, (centered_x, text_y))
                     text_y += self.normal_font.get_height() + 8
                 for line in lines_to_draw:
@@ -159,15 +241,12 @@ class TownScreenBase:
 
         if getattr(self.presenter, "debug_mode", False):
             # Show everything at once in debug
-            full_lines = []
-            for para in paragraphs:
-                if para.strip():
-                    full_lines.extend(para.split("\n"))
-                    full_lines.append("")
+            full_lines = wrapped_text_lines()
             while True:
                 self.draw_background()
                 self.draw_top()
                 self.draw_options()
+                self.draw_dialogue_portrait(portrait_surface)
                 draw_content_formatted(full_lines)
                 pygame.display.flip()
 
@@ -186,86 +265,72 @@ class TownScreenBase:
             except Exception:
                 for _ in pygame.event.get():
                     pass
-            for para in paragraphs:
-                if not para.strip():
+            wrapped_lines = wrapped_text_lines()
+            displayed_lines = []
+            skipped = False
+
+            for wrapped_line in wrapped_lines:
+                if wrapped_line == "":
+                    displayed_lines.append("")
                     continue
-                
-                # Always wrap paragraphs while preserving intentional line breaks
-                raw_lines = para.split("\n")
-                wrapped_lines = []
-                for raw_line in raw_lines:
-                    # Keep explicit blank lines
-                    if not raw_line.strip():
-                        wrapped_lines.append("")
-                        continue
 
-                    # Wrap each raw line individually to avoid losing manual breaks
-                    wrapped = textwrap.wrap(raw_line, width=52, break_on_hyphens=False)
-                    if wrapped:
-                        wrapped_lines.extend(wrapped)
-                    else:
-                        wrapped_lines.append(raw_line)
-                
-                displayed_lines = []
-                skipped = False
+                displayed_chars = ""
+                for char in wrapped_line:
+                    displayed_chars += char
 
-                for wrapped_line in wrapped_lines:
-                    displayed_chars = ""
-                    for char in wrapped_line:
-                        displayed_chars += char
-
-                        # Redraw screen
-                        self.draw_background()
-                        self.draw_top()
-                        self.draw_options()
-
-                        draw_content_formatted(displayed_lines + [displayed_chars])
-                        pygame.display.flip()
-
-                        time.sleep(0.02)
-
-                        # Skip current paragraph on SPACE/ENTER/ESC or left click.
-                        for event in pygame.event.get():
-                            if event.type == pygame.QUIT:
-                                pygame.quit()
-                                import sys
-                                sys.exit()
-                            elif event.type == pygame.KEYDOWN:
-                                if event.key in (pygame.K_SPACE, pygame.K_RETURN, pygame.K_ESCAPE):
-                                    skipped = True
-                                    break
-                            elif is_left_click(event):
-                                skipped = True
-                                break
-                        if skipped:
-                            break
-
-                    if skipped:
-                        displayed_lines = wrapped_lines
-                        break
-                    else:
-                        displayed_lines.append(wrapped_line)
-
-                # Show full paragraph and wait for key to advance
-                while True:
+                    # Redraw screen
                     self.draw_background()
                     self.draw_top()
                     self.draw_options()
-                    draw_content_formatted(displayed_lines)
+                    self.draw_dialogue_portrait(portrait_surface)
+
+                    draw_content_formatted(displayed_lines + [displayed_chars])
                     pygame.display.flip()
 
+                    time.sleep(0.02)
+
+                    # Skip current dialogue on SPACE/ENTER/ESC or left click.
                     for event in pygame.event.get():
                         if event.type == pygame.QUIT:
                             pygame.quit()
                             import sys
                             sys.exit()
-                        elif event.type == pygame.KEYDOWN or is_left_click(event):
-                            # Advance to next paragraph on any key
+                        elif event.type == pygame.KEYDOWN:
+                            if event.key in (pygame.K_SPACE, pygame.K_RETURN, pygame.K_ESCAPE):
+                                skipped = True
+                                break
+                        elif is_left_click(event):
+                            skipped = True
                             break
-                    else:
-                        self.presenter.clock.tick(30)
-                        continue
+                    if skipped:
+                        break
+
+                if skipped:
+                    displayed_lines = wrapped_lines
                     break
+                else:
+                    displayed_lines.append(wrapped_line)
+
+            # Show full dialogue and wait for key to advance.
+            while True:
+                self.draw_background()
+                self.draw_top()
+                self.draw_options()
+                self.draw_dialogue_portrait(portrait_surface)
+                draw_content_formatted(displayed_lines)
+                pygame.display.flip()
+
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        pygame.quit()
+                        import sys
+                        sys.exit()
+                    elif event.type == pygame.KEYDOWN or is_left_click(event):
+                        break
+                else:
+                    self.presenter.clock.tick(30)
+                    continue
+                break
 
             # Done with all paragraphs
             return

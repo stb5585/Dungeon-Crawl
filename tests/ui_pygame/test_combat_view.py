@@ -613,11 +613,15 @@ def test_class_kit_log_filter_keeps_required_failure_messages():
     view.add_combat_message("Threaded Cast is immune to the negated rider.")
     view.add_combat_message("Class Ring resists the failed payoff and Ring Preserve remains ready.")
     view.add_combat_message("Arcane Tempo fails to trigger because the blade charge was lost.")
+    view.add_combat_message("Summon Bond: Patagon bond holds steady after a low-XP victory.")
+    view.add_combat_message("Scavenger's Eye spots ordinary loot: Iron Dagger.")
 
     assert "Death Mark is immune to execution and downgrades to pressure." in view.combat_log
     assert "Threaded Cast is immune to the negated rider." in view.combat_log
     assert "Class Ring resists the failed payoff and Ring Preserve remains ready." in view.combat_log
     assert "Arcane Tempo fails to trigger because the blade charge was lost." in view.combat_log
+    assert "Summon Bond: Patagon bond holds steady after a low-XP victory." in view.combat_log
+    assert "Scavenger's Eye spots ordinary loot: Iron Dagger." in view.combat_log
 
 
 def test_sight_rules():

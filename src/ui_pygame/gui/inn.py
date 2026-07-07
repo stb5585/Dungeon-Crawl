@@ -4,9 +4,8 @@ Implements the core tavern logic from town.py adapted for Pygame presenter.
 """
 
 import random
-import textwrap
 
-from src.core.town import PATRON_DIALOGUES, TAVERN_FLAVOR_DIALOGUES
+from src.core.town import PATRON_DIALOGUES, TAVERN_FLAVOR_DIALOGUES, prior_bounty_target_defeats
 from .level_up import LevelUpScreen
 from .confirmation_popup import ConfirmationPopup
 from .location_menu import LocationMenuScreen
@@ -26,6 +25,7 @@ class InnManager(TownScreenBase):
         inn_options = ["Talk to Patrons", "Bounty Board", "Leave"]
         
         inn_screen = LocationMenuScreen(self.presenter, "The Thirsty Dog Tavern")
+        self._popup_background_draw_func = lambda: inn_screen.draw_frame(do_flip=False)
         
         while True:
             choice_idx = inn_screen.navigate(
@@ -95,6 +95,10 @@ class InnManager(TownScreenBase):
         while True:
             # Rebuild patron list each iteration to reflect quest state changes
             options = self._build_patron_list()
+            patrons_screen.set_option_portraits([
+                patron if patron != "Back" else None
+                for patron in options
+            ])
             choice = patrons_screen.navigate(
                 options,
                 reset_cursor=False,
@@ -111,7 +115,8 @@ class InnManager(TownScreenBase):
                 qm = QuestManager(
                     self.presenter, 
                     self.player_char, 
-                    quest_text_renderer=lambda text: patrons_screen.display_quest_text(text)
+                    quest_text_renderer=lambda text, patron=patron: patrons_screen.display_quest_text(text, npc_name=patron),
+                    renderer_preserve_formatting=True,
                 )
                 did_action, showed_message = qm.check_and_offer(patron, show_help=False, suppress_no_quests_message=True)
                 if not did_action and not showed_message:
@@ -125,8 +130,7 @@ class InnManager(TownScreenBase):
                         pool.append(comment)
                     if pool:
                         selection = random.choice(pool)
-                        wrapped_selection = "\n".join(textwrap.wrap(selection, width=52))
-                        qm.quest_text_renderer(wrapped_selection)
+                        qm.quest_text_renderer(selection)
             else:
                 # This branch is not used since all patrons are handled above,
                 # but keep a fallback to show a general tavern flavor comment.
@@ -216,20 +220,41 @@ class InnManager(TownScreenBase):
             bounty_data = self.presenter.game.bounties[bounty_name]
             enemy_obj = bounty_data.get("enemy")
             enemy_name = getattr(enemy_obj, "name", bounty_data.get("enemy_name", "Unknown"))
+            if enemy_name == "Unknown" and isinstance(enemy_obj, str):
+                enemy_name = enemy_obj
+            required = self._bounty_required_count(bounty_data)
+            prior_defeats = min(
+                required,
+                prior_bounty_target_defeats(self.player_char, bounty_data),
+            )
+            completed = prior_defeats >= required
 
             # Add bounty to player's quest dict
-            self.player_char.quest_dict['Bounty'][bounty_name] = [bounty_data, 0, False]
+            self.player_char.quest_dict['Bounty'][bounty_name] = [bounty_data, prior_defeats, completed]
             self._remove_board_bounty(bounty_name)
 
             # Show bounty info
+            progress_line = (
+                f"\nPrior defeats counted: {prior_defeats}/{required}"
+                if prior_defeats
+                else ""
+            )
             info_msg = (
                 f"Bounty Accepted: {bounty_name}\n"
                 f"Target: {enemy_name}\n"
-                f"Enemies to defeat: {bounty_data.get('num', 1)}\n"
+                f"Enemies to defeat: {required}\n"
                 f"Reward: {bounty_data.get('gold', 0)} Gold, {bounty_data.get('exp', 0)} Experience"
+                f"{progress_line}"
             )
             popup = ConfirmationPopup(self.presenter, info_msg, show_buttons=False)
             popup.show(**self.popup_show_kwargs())
+
+    @staticmethod
+    def _bounty_required_count(bounty_data):
+        try:
+            return max(1, int(bounty_data.get("num", 1) or 1))
+        except (AttributeError, TypeError, ValueError):
+            return 1
     
     def turn_in_bounty(self, completable):
         """Turn in completed bounties using the inn UI."""

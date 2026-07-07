@@ -26,6 +26,9 @@ promoting any tuning, content, or expansion slice.
 - Automated regression evidence exists for class-kit shared status lines,
   representative combat-log messages, pygame log filtering/wrapping, class-ring
   readiness/status behavior, and simulator payload aggregation/export.
+- A presentation-only all-track UI/log readability batch is active for compact
+  status hints, class-kit log preservation, Thief/Rogue loot visibility, and
+  Summoner bond eligibility/no-bond messaging.
 - Manual readability, cadence, preservation feel, action-economy pressure, and
   pacing feel remain pending until focused playtest notes are recorded below.
 
@@ -37,6 +40,8 @@ promoting any tuning, content, or expansion slice.
 | Ring preservation | Representative awakened class-ring tracks | Automated regression | `./.venv/bin/python -m pytest tests/core/test_promotion_class_kits.py tests/core/test_class_ring_awakening.py` | `Pass` | Tests cover existing preservation/readiness paths such as Devotion/Prayer smoothing, Troubadour Encore preservation, and class-ring activation/status behavior. | Use manual preservation rows to judge whether smoothing feels mandatory or erases failure costs. |
 | Analytics payloads | Combat simulator class-kit and action-economy reporting | Automated regression | `./.venv/bin/python -m pytest tests/core/test_combat_simulator.py tests/core/test_combat_simulator_advanced.py` | `Pass` | 25 tests passed on 2026-06-28. Coverage includes aggregate/export payload behavior and smoke coverage for `class_kit_events` and `action_economy_events`. | Use payloads as investigation support, not automatic tuning failures. |
 | Progression pacing | Troubadour, Beast Master, Summoner/Grand Summoner, Seeker/Inquisitor, Lycan | Design baseline | `docs/CLASS_KIT_DESIGN_GATES.md` progression pacing tables | `Design Baseline` | Tables document expected formulas and watch gates: Troubadour clean completions, Beast Master bond milestones, Summoner bond milestones, Seeker Case Journal milestones, and Lycan stress-record gates. | Manual pacing rows must confirm actual combat counts, interruptions, ring state, and feel before any tuning spec. |
+| UI/log readability | Thief level 13 Fortune/Misfortune and loot visibility | Manual playtest | Player-reported Thief route, level 13 | `Watch` | Fortune gain was visible, but spend/use eligibility was not obvious; Misfortune was not encountered clearly from ordinary misses; `Scavenger's Eye` felt too subtle because loot text did not make the class identity visible. | Improve compact meter eligibility/status hints and ordinary-loot visibility first; keep broader lower-impact ordinary-combat Fortune/Misfortune expansion behind a future design gate. |
+| Progression pacing | Summoner level 5 Patagon bond | Manual playtest | Player-reported Summoner route, Patagon reached level 2 and gained bond | `Tuning Gate Candidate` | Patagon reached level 2 and bond gains were visible but rare; the level-2 eligibility gate was not memorable enough. Concrete route counts, enemy XP context, recall/death interruptions, and final bond value are still needed before changing numbers. | Add level-2 eligibility and no-bond outcome messaging now; promote numeric bond pacing only after route-count evidence is recorded. |
 
 ## Manual Evidence Queue
 

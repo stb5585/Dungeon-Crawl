@@ -369,6 +369,31 @@ def test_portrait_details_compact_rows_stay_inside_short_detail_box(monkeypatch)
     assert all(y + height <= detail_rect.bottom for _text, y, height in drawn)
 
 
+def test_character_panel_reserves_portrait_detail_rows_after_large_portrait(monkeypatch):
+    presenter = _make_presenter()
+    screen = ModernCharacterScreen(presenter)
+    player = _make_player()
+    player.location_z = 7
+    player.gold = 71789
+    monkeypatch.setattr(screen, "draw_semi_transparent_panel", lambda rect, alpha=180: DummySurface((rect.width, rect.height)))
+    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.rect", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.line", lambda *_args, **_kwargs: None)
+    screen.load_portrait = lambda _player: pygame.Surface((225, 400), pygame.SRCALPHA)
+
+    screen.draw_character_panel(player)
+
+    detail_texts = {"Gold", "71789G", "Location", "Dungeon Level 7"}
+    detail_blits = [
+        (getattr(surface, "text", None), position)
+        for surface, position in presenter.screen.blit_calls
+        if getattr(surface, "text", None) in detail_texts
+    ]
+    assert {text for text, _position in detail_blits} == detail_texts
+    panel_bottom = screen.character_panel_rect.bottom
+    for text, (_x, y) in detail_blits:
+        assert y + presenter.small_font.get_height() <= panel_bottom, text
+
+
 def test_modern_character_companion_display_prefers_familiar_then_living_summon():
     screen = ModernCharacterScreen(_make_presenter())
     player = _make_player()

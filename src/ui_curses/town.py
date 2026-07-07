@@ -7,7 +7,13 @@ from textwrap import wrap
 
 from src.core import classes, items
 from src.core.classes import dragoon
-from src.core.town import quest_dict, PATRON_DIALOGUES, RESPONSE_MAP, get_holy_grail_rotation_hints
+from src.core.town import (
+    PATRON_DIALOGUES,
+    RESPONSE_MAP,
+    already_defeated_enemy,
+    get_holy_grail_rotation_hints,
+    quest_dict,
+)
 from . import menus
 
 
@@ -226,8 +232,7 @@ def accept_quest(game, quest, typ):
         acceptquestbox.print_text_in_rectangle(message)
         acceptquestbox.clear_rectangle()
         if quest[quest_key]['Type'] == 'Defeat':
-            kill_list = [name for typ_dict in player_char.kill_dict.values() for name in typ_dict]
-            if quest[quest_key]["What"] in kill_list:
+            if already_defeated_enemy(player_char, quest[quest_key]["What"]):
                 player_char.quest_dict[typ][quest_key]['Completed'] = True
         accepted = True
     else:
@@ -273,6 +278,9 @@ def check_quests(game, quest_giver):
                 # Ensure collection quests like Relics reflect current progress even if accepted late
                 try:
                     q = game.player_char.quest_dict['Main'][key]
+                    if q.get('Type') == 'Defeat' and isinstance(q.get('What'), str) and not q.get('Completed'):
+                        if already_defeated_enemy(game.player_char, q['What']):
+                            q['Completed'] = True
                     if q.get('Type') == 'Collect' and q.get('What') == 'Relics' and not q.get('Completed'):
                         if game.player_char.has_relics():
                             q['Completed'] = True
@@ -295,6 +303,13 @@ def check_quests(game, quest_giver):
         for side_quest in side_quests:
             key = list(side_quest)[0]
             if key in player_sides:
+                try:
+                    q = game.player_char.quest_dict['Side'][key]
+                    if q.get('Type') == 'Defeat' and isinstance(q.get('What'), str) and not q.get('Completed'):
+                        if already_defeated_enemy(game.player_char, q['What']):
+                            q['Completed'] = True
+                except Exception:
+                    pass
                 if game.player_char.quest_dict['Side'][key]['Completed'] and \
                         not game.player_char.quest_dict['Side'][key]['Turned In']:
                     turn_in_quest(game, key, "Side")

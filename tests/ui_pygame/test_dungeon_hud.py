@@ -627,8 +627,8 @@ def test_combat_focus_panel_shows_familiar_summons_and_totem(monkeypatch):
     player.cls = SimpleNamespace(name="Rogue")
     player._promotion_kit_combat = {"fortune": 2, "misfortune": 1}
     lines = hud._combat_feature_lines(player, enemy=SimpleNamespace(name="Jester"))
-    assert ("Fortune", "2/3", (230, 205, 120)) in lines
-    assert ("Misfortune", "1/3", (220, 150, 150)) in lines
+    assert ("Fortune", "2/3 Steal/Mug", (230, 205, 120)) in lines
+    assert ("Misfortune", "1/3 Payoff on hit", (220, 150, 150)) in lines
 
     player.cls = SimpleNamespace(name="Astromancer")
     player.equipment["Ring"] = items.ClassRing()
@@ -636,21 +636,21 @@ def test_combat_focus_panel_shows_familiar_summons_and_totem(monkeypatch):
     player.equipment["Ring"].class_mod(player)
     player._promotion_kit_combat = {"foresight_threads": 1, "threaded_cast_pending": True}
     lines = hud._combat_feature_lines(player, enemy=SimpleNamespace(name="Jester"))
-    assert ("Threads", "1/3", (230, 205, 120)) in lines
-    assert ("Threaded", "Pending", hud.text_color) in lines
+    assert ("Threads", "1/3 Threaded ready", (230, 205, 120)) in lines
+    assert ("Threaded", "Pending next spell", hud.text_color) in lines
     assert ("Ring Ready", "Constellation Cycle", (248, 226, 142)) in lines
 
     player.cls = SimpleNamespace(name="Dragoon")
     player._promotion_kit_combat = {"aerial_tempo": 2}
     lines = hud._combat_feature_lines(player, enemy=SimpleNamespace(name="Jester"))
-    assert ("Aerial Tempo", "2/3", (170, 210, 255)) in lines
+    assert ("Aerial Tempo", "2/3 Follow-up", (170, 210, 255)) in lines
 
     player.cls = SimpleNamespace(name="Beast Master")
     player.tamed_companion = {"active": True, "name": "Wolf", "bond": 50}
     promotion_kits.combat_state(player)["pending_companion_command"] = "Pack Strike"
     lines = hud._combat_feature_lines(player, enemy=SimpleNamespace(name="Jester"))
     assert any(label == "Companion" and "Battle-Trained" in value for label, value, _color in lines)
-    assert ("Command", "Pack Strike", (170, 210, 255)) in lines
+    assert ("Command", "Pack Strike Pending", (170, 210, 255)) in lines
 
     idle_summoner = _make_player()
     idle_summoner.cls = SimpleNamespace(name="Summoner")

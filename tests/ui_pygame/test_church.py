@@ -77,19 +77,26 @@ def test_visit_church_routes_actions(monkeypatch):
 
     selections = iter([0, 1, 2, 3])
     rendered = []
+    draw_frame_calls = []
 
     class FakeLocationMenuScreen:
         def __init__(self, _presenter, _title):
             pass
 
+        def set_location_portrait(self, _npc_name):
+            return None
+
+        def draw_frame(self, *, do_flip=False):
+            draw_frame_calls.append(do_flip)
+
         def navigate(self, _options, reset_cursor=False, **_kwargs):
             return next(selections)
 
-        def display_quest_text(self, text):
-            rendered.append(text)
+        def display_quest_text(self, text, **kwargs):
+            rendered.append((text, kwargs.get("npc_name")))
 
     class FakeQuestManager:
-        def __init__(self, _presenter, _player, quest_text_renderer):
+        def __init__(self, _presenter, _player, quest_text_renderer, **_kwargs):
             self.quest_text_renderer = quest_text_renderer
 
         def check_and_offer(self, patron):
@@ -101,11 +108,13 @@ def test_visit_church_routes_actions(monkeypatch):
     manager.visit_church()
 
     assert calls == ["promotion", "save"]
-    assert rendered == ["Priest quest"]
+    assert rendered == [("Priest quest", "Priest")]
     assert "Let the light of Elysia guide you." in FakePopup.messages
     assert FakePopup.show_kwargs[-1]["flush_events"] is True
     assert FakePopup.show_kwargs[-1]["require_key_release"] is True
     assert callable(FakePopup.show_kwargs[-1]["background_draw_func"])
+    FakePopup.show_kwargs[-1]["background_draw_func"]()
+    assert draw_frame_calls == [False]
 
 
 def test_handle_promotion_guards_and_save_game(monkeypatch):

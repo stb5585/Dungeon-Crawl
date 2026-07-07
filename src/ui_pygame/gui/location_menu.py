@@ -24,6 +24,25 @@ class LocationMenuScreen(TownScreenBase):
         self.current_option = 0
         self.scroll_offset = 0
         self.options_list = []
+        self.location_portrait_name: str | None = None
+        self.option_portrait_names: list[str | None] | None = None
+
+    def set_location_portrait(self, npc_name: str | None) -> None:
+        """Set a persistent portrait for this location menu."""
+        self.location_portrait_name = npc_name
+        self.option_portrait_names = None
+
+    def set_option_portraits(self, npc_names: list[str | None] | None) -> None:
+        """Set per-option portrait names for menus with multiple speakers."""
+        self.option_portrait_names = npc_names
+
+    def current_portrait_name(self) -> str | None:
+        """Return the portrait name for the current highlighted option."""
+        if self.option_portrait_names is not None:
+            if 0 <= self.current_option < len(self.option_portrait_names):
+                return self.option_portrait_names[self.current_option]
+            return None
+        return self.location_portrait_name
 
     def option_rects(self, options: list[str] | None = None) -> list[pygame.Rect]:
         """Return clickable rectangles for the visible location options."""
@@ -102,12 +121,18 @@ class LocationMenuScreen(TownScreenBase):
     
     def draw_all(self):
         """Draw the location menu interface."""
+        self.draw_frame(do_flip=True)
+
+    def draw_frame(self, *, do_flip: bool = False):
+        """Draw the location frame, optionally flipping the display."""
         self.draw_background()
         
         self.draw_top()
         self.draw_options()
+        self.draw_npc_portrait(npc_name=self.current_portrait_name())
         self.draw_content()
-        pygame.display.flip()
+        if do_flip:
+            pygame.display.flip()
 
     def draw_top(self):
         """Draw the top header with location name."""
@@ -318,6 +343,7 @@ class LocationMenuScreen(TownScreenBase):
             self.draw_background()
             self.draw_top()
             self.draw_options()
+            self.draw_npc_portrait(npc_name=self.current_portrait_name())
             self.draw_content(items_text)
             pygame.display.flip()
             
@@ -386,6 +412,7 @@ class LocationMenuScreen(TownScreenBase):
             self.draw_background()
             self.draw_top()
             self.draw_options_instructions()
+            self.draw_npc_portrait(npc_name=self.current_portrait_name())
             
             # Build structured items data with selection state
             formatted_items = []

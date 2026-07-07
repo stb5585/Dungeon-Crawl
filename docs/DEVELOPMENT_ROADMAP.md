@@ -100,6 +100,8 @@ Completed follow-up posture:
 
 1. Watch for future selectable pygame overlays added during playtest and apply
    the same hover-to-select, left-click-to-confirm contract where appropriate.
+   - Shop screens now include that contract for main options, item rows, buy-list
+     subtype tabs, and item-list wheel scrolling.
 2. Defer first-person town navigation until a later dedicated town-navigation
    pass.
    - The direct `--town-navigation` prototype path is optional; the town menu
@@ -130,16 +132,19 @@ dungeon art with checked-in review sheets.
 Remaining follow-up after this V1 slice:
 
 - Status-effect artwork remains opt-in; fallback initials remain valid where no
-  approved PNG exists.
-  - Left to do
-    - Evasive Guard
+  approved PNG exists. Evasive Guard now uses the approved status PNG.
 - Jump and Charge wind-up/impact visuals remain deferred until enemy sprite
   stance adjustments are planned.
 - Warp Point artistic renderings now have generated active/inactive runtime PNGs
-  and a contact sheet. Staffed Warp Point scientist/town scene art remains part
-  of the deferred Town/NPC/Venue batch.
-- Town NPC and venue renderings remain batch-gated until art direction,
-  dimensions, and target list are selected.
+  and a contact sheet.
+- Town NPC renderings have shipped for recurring dialogue/shop/tavern figures,
+  Old Warehouse guards, staffed Warp Point scientists, and story figures
+  Acolyte, Reflection, and Vesperion through dialogue-only runtime art. Venue
+  scenes and memory/reunion scene art remain deferred.
+- Vesperion has a separate full-body combat sprite so final-boss combat art
+  does not reuse dialogue portrait art or fall back to the generic boss sprite.
+- Deferred story-scene targets are routed to presentation gates for
+  Joffrey-body, Timmy-found/home, and Waitress grief/hostile variants.
 - Enemy identity presentation V1 is shipped for invisible reveal notes,
   Mad Waitress form-change notes, and construct-friendly `Oil Leak` wording
   while preserving underlying mechanics.
@@ -171,7 +176,7 @@ deferred until their contracts are promoted.
 
 ## Class, Ability, And Combat Gates
 
-Status: `Spec Map, UI/Log Polish Next`
+Status: `Spec Map, UI/Log Polish Batch Active`
 
 Class, ability, and combat planning is split across durable owner docs rather
 than a single umbrella spec:
@@ -188,10 +193,12 @@ than a single umbrella spec:
 - `docs/STORY_AND_ENDGAME_DESIGN.md` owns future Voluntas/class-identity story
   tie-ins.
 
-First implementation priority after this spec map is UI/log readability polish
-for class-kit meters, ring state, and combat messages. Mechanics and numeric
-tuning should remain unchanged until playtest or simulator evidence promotes a
-specific balance change.
+Current active implementation batch is presentation-only UI/log readability
+polish for class-kit meters, ring state, combat messages, and compact
+menu/status hints across all shipped promotion tracks. This batch may add
+status/log text and evidence notes, but mechanics and numeric tuning should
+remain unchanged until playtest or simulator evidence promotes a specific
+balance change.
 
 ## Story And Endgame Gates
 
@@ -275,23 +282,24 @@ defeats, or a level gain, while immediate turn-in/reopen loops remain blocked.
 Current tuning is conservative and should be playtested before changing the
 thresholds.
 
+## Design Questions
+
+- Should Class tab in Character Menu stay active for all classes?
+
 ## Bugfixes
 
-- No active contained bugfixes are queued. Add newly observed, reproducible
-  defects here until they are fixed and moved to `CHANGELOG.md`.
+- No active roadmap bugfixes are staged in this section.
 
 ## Improvements
 
-- No unsorted improvements are queued. Current tuning and polish ideas have
-  owner gates:
-  - `docs/COMBAT_BALANCE_DESIGN_GATES.md` owns Footpad, poison consistency,
-    multi-strike accuracy, Enfeeble, and Dilong damage evidence gates.
-  - `docs/EQUIPMENT_ITEMS_ECONOMY_DESIGN_GATES.md` owns ordinary drop-rate
-    tuning and Steal/luck economy questions.
-  - `docs/CLASS_KIT_DESIGN_GATES.md` owns Summoner/Grand Summoner consumable
-    targeting and active-summon support follow-up.
-  - The Deferred Expansion Triage Map owns broad `ui_*` to core extraction as a
-    boundary-cleanup gate, not a standing refactor task.
+- No unsorted improvements remain in this section. Routed follow-up gates live
+  in the owner docs:
+  - Shop stock reveal pacing and account-wide found/sold stock:
+    `docs/EQUIPMENT_ITEMS_ECONOMY_DESIGN_GATES.md`.
+  - Character creation fate questions:
+    `docs/STORY_AND_ENDGAME_DESIGN.md`.
+  - Attack of Opportunity and low-stat-benefit abilities:
+    `docs/COMBAT_BALANCE_DESIGN_GATES.md`.
 
 ### 2026-07-03 Roadmap Triage Implementation Note
 

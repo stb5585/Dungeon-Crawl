@@ -761,7 +761,7 @@ class DungeonHUD:
         try:
             active_text, cap_text = value.split("/", 1)
             active = max(0, int(active_text))
-            cap = max(1, int(cap_text))
+            cap = max(1, int(str(cap_text).split()[0]))
         except (AttributeError, TypeError, ValueError):
             active, cap = 0, 3
         cap = min(cap, max(1, max_width // 18))

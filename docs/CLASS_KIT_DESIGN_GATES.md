@@ -646,6 +646,11 @@ existing `Conduit Ritual` sacrifice and `+30% Summons` ring scaling.
 - Balance assumptions: start conservative; this is a v1 progression layer, not
   a full summon economy redesign or dual-summon combat rewrite.
 
+Additional Improvements:
+
+- Dying reduces the bond level by 50% for Summoner, reduce to 25% for Grand
+  Summoner; once bond reaches 100, dying no longer reduces bond
+
 Open follow-up gates:
 
 - Consumable targeting policy: decide whether ordinary consumables beyond the

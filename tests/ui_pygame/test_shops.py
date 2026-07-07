@@ -160,6 +160,7 @@ class FakeShopScreen:
     def __init__(self, _presenter, _player_char, shop_message, background_image="town.png", options_list=None):
         self.shop_message = shop_message
         self.background_image = background_image
+        self.location_portrait_name = None
         self.options = list(options_list or [])
         self.set_calls = []
         self.update_calls = []
@@ -171,6 +172,9 @@ class FakeShopScreen:
     def set_options(self, options):
         self.options = list(options)
         self.set_calls.append(list(options))
+
+    def set_location_portrait(self, npc_name):
+        self.location_portrait_name = npc_name
 
     def navigate_options(self):
         return self._navigate_options.pop(0) if self._navigate_options else None
@@ -184,14 +188,15 @@ class FakeShopScreen:
     def draw_all(self, do_flip=True):
         self.draw_calls.append(do_flip)
 
-    def display_quest_text(self, text):
+    def display_quest_text(self, text, **kwargs):
         self.last_quest_text = text
+        self.last_quest_npc_name = kwargs.get("npc_name")
 
 
 class FakeQuestManager:
     instances = []
 
-    def __init__(self, _presenter, _player_char, quest_text_renderer):
+    def __init__(self, _presenter, _player_char, quest_text_renderer, **_kwargs):
         self.quest_text_renderer = quest_text_renderer
         self.calls = []
         FakeQuestManager.instances.append(self)
@@ -285,8 +290,37 @@ def test_visit_blacksmith_handles_unobtainium_buy_branch_and_leave(monkeypatch):
         ["Buy", "Sell", "Quests", "Leave"],
         ["Weapons", "Shields", "Armor", "Helmets", "Back"],
     ]
+    assert FakeShopScreen.instances[0].location_portrait_name == "Griswold"
     assert FakeShopScreen.instances[0].shop_message == "Griswold's Blacksmith"
     assert any("Come back whenever you'd like." in message for message, _buttons in FakePopup.messages)
+
+
+def test_visit_blacksmith_quest_renderer_uses_griswold_portrait(monkeypatch):
+    manager = _manager(monkeypatch, level=12)
+
+    FakeShopScreen.option_sequences = [["Quests", "Leave"]]
+    monkeypatch.setattr(shops, "ShopScreen", FakeShopScreen)
+    monkeypatch.setattr(shops, "ConfirmationPopup", FakePopup)
+    monkeypatch.setattr("src.ui_pygame.gui.quest_manager.QuestManager", FakeQuestManager)
+
+    manager.visit_blacksmith()
+    FakeQuestManager.instances[0].quest_text_renderer("Griswold quest")
+
+    assert FakeQuestManager.instances[0].calls == ["Griswold"]
+    assert FakeShopScreen.instances[0].last_quest_npc_name == "Griswold"
+
+
+def test_blacksmith_buy_submenu_keeps_griswold_portrait(monkeypatch):
+    manager = _manager(monkeypatch, level=12)
+    manager._active_shopkeeper_portrait = "Griswold"
+
+    FakeShopScreen.option_sequences = [["Back"]]
+    monkeypatch.setattr(shops, "ShopScreen", FakeShopScreen)
+
+    manager.buy_weapons()
+
+    assert FakeShopScreen.instances[0].shop_message == "Choose weapon type"
+    assert FakeShopScreen.instances[0].location_portrait_name == "Griswold"
 
 
 def test_visit_blacksmith_crafts_master_monk_ultimate_staff(monkeypatch):
@@ -328,6 +362,12 @@ def test_visit_alchemist_and_jeweler_cover_quest_and_sell_paths(monkeypatch):
 
     assert FakeQuestManager.instances[0].calls == ["Alchemist"]
     assert FakeQuestManager.instances[1].calls == ["Jeweler"]
+    assert FakeShopScreen.instances[0].location_portrait_name == "Alchemist"
+    assert FakeShopScreen.instances[1].location_portrait_name == "Jeweler"
+    FakeQuestManager.instances[0].quest_text_renderer("Alchemist quest")
+    FakeQuestManager.instances[1].quest_text_renderer("Jeweler quest")
+    assert FakeShopScreen.instances[0].last_quest_npc_name == "Alchemist"
+    assert FakeShopScreen.instances[1].last_quest_npc_name == "Jeweler"
     assert sell_calls == ["sold"]
     assert any("Good luck on your adventures!" in message for message, _buttons in FakePopup.messages)
     assert any("May fortune favor you!" in message for message, _buttons in FakePopup.messages)

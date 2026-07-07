@@ -15,6 +15,7 @@ from src.core import items, enemies, companions, main_story, map_tiles
 from src.core.classes import class_rings
 from src.core.data.data_loader import get_special_events
 from src.core.player import DIRECTIONS
+from src.ui_pygame.assets.npc_art_manager import get_npc_art_manager
 from .combat_manager import GUICombatManager
 from .dungeon_hud import DungeonHUD
 from .dungeon_renderer import DungeonRenderer
@@ -335,6 +336,7 @@ class DungeonManager:
 
     def _show_dungeon_dialogue(self, message: str, title: str = "", image_path: str = ""):
         """Show split dialogue panel with optional NPC image on the left."""
+        image_path = image_path or get_npc_art_manager().get_image_path(title)
         self.presenter.show_message(
             message,
             title=title,
@@ -360,6 +362,7 @@ class DungeonManager:
             message = " ".join(line.strip() for line in lines if line is not None).strip() if lines else event_name
         except Exception:
             message = event_name
+        image_path = image_path or get_npc_art_manager().get_image_path(title or event_name)
         self.presenter.show_message(
             message,
             title=title or event_name,
@@ -1220,7 +1223,7 @@ class DungeonManager:
         """Handle underground spring interaction."""
         from .confirmation_popup import ConfirmationPopup
 
-        nimue_image_path = self._npc_image_path("nimue.png")
+        nimue_image_path = get_npc_art_manager().get_image_path("Nimue")
         popup = ConfirmationPopup(
             self.presenter,
             "You see a refreshing underground spring.\n\nDo you want to drink from it?",
@@ -1511,9 +1514,7 @@ class DungeonManager:
             special_event_dict = get_special_events()
             event_name = "True Final Prelude" if true_final and "True Final Prelude" in special_event_dict else "Final Boss"
             if event_name in special_event_dict:
-                dialog_lines = special_event_dict[event_name]["Text"]
-                dialog_text = " ".join(line.strip() for line in dialog_lines if line is not None).strip()
-                self.presenter.show_message(dialog_text, "Vesperion")
+                self._show_special_event_dialogue(event_name, title="Vesperion")
             if true_final:
                 self._show_vesperion_choice_argument_if_ready(story_state)
             
@@ -1580,11 +1581,9 @@ class DungeonManager:
 
     def _enter_liminal_gap_stub(self, return_location, vesperion=None):
         """Resolve the scripted false-final transition into the Liminal Gap hub."""
-        image_path = self._enemy_dialogue_image_path(vesperion) if vesperion is not None else ""
         self._show_special_event_dialogue(
             "Vesperion False Final",
             title="Vesperion",
-            image_path=image_path,
         )
 
         enter_stub = getattr(self.player_char, "enter_liminal_gap_stub", None)

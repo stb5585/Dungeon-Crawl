@@ -27,6 +27,7 @@ class FakePopup:
 def _make_player(*, level=10):
     return SimpleNamespace(
         quest_dict={"Main": {}, "Bounty": {}},
+        kill_dict={},
         gold=10,
         familiar=None,
         summons={},
@@ -67,10 +68,14 @@ def test_visit_inn_and_patron_helpers(monkeypatch):
     manager.show_bounty_board = lambda: calls.append("bounty")
 
     selections = iter([0, 1, 2])
+    location_portraits = []
 
     class FakeLocationMenuScreen:
         def __init__(self, _presenter, _title):
             pass
+
+        def set_location_portrait(self, npc_name):
+            location_portraits.append(npc_name)
 
         def navigate(self, _options, reset_cursor=False, **_kwargs):
             return next(selections)
@@ -80,6 +85,7 @@ def test_visit_inn_and_patron_helpers(monkeypatch):
     manager.visit_inn()
 
     assert calls == ["talk", "bounty"]
+    assert location_portraits == []
     assert "Come back whenever you'd like." in FakePopup.messages
     assert FakePopup.show_kwargs[-1]["flush_events"] is True
     assert FakePopup.show_kwargs[-1]["require_key_release"] is True
@@ -113,16 +119,19 @@ def test_talk_to_patrons_accepts_quest_or_shows_hint(monkeypatch):
         def __init__(self, _presenter, _title):
             pass
 
+        def set_option_portraits(self, _npc_names):
+            return None
+
         def navigate(self, _options, reset_cursor=False, **_kwargs):
             if not rendered:
                 return 0
             return 1
 
-        def display_quest_text(self, text):
-            rendered.append(text)
+        def display_quest_text(self, text, **kwargs):
+            rendered.append((text, kwargs.get("npc_name")))
 
     class FakeQuestManager:
-        def __init__(self, _presenter, _player, quest_text_renderer):
+        def __init__(self, _presenter, _player, quest_text_renderer, **_kwargs):
             self.quest_text_renderer = quest_text_renderer
 
         def check_and_offer(self, patron, show_help=False, suppress_no_quests_message=True):
@@ -137,7 +146,7 @@ def test_talk_to_patrons_accepts_quest_or_shows_hint(monkeypatch):
 
     manager.talk_to_patrons()
 
-    assert rendered == ["Barkeep hint"]
+    assert rendered == [("Barkeep hint", "Barkeep")]
 
 
 def test_bounty_accept_turn_in_and_view(monkeypatch):
@@ -166,6 +175,12 @@ def test_bounty_accept_turn_in_and_view(monkeypatch):
     class FakeLocationMenuScreen:
         def __init__(self, _presenter, title):
             self.title = title
+
+        def set_location_portrait(self, _npc_name):
+            return None
+
+        def set_option_portraits(self, _npc_names):
+            return None
 
         def navigate(self, options, reset_cursor=False, **_kwargs):
             if self.title == "Turn In Bounty":
@@ -209,6 +224,66 @@ def test_bounty_accept_turn_in_and_view(monkeypatch):
     assert any("No active bounties." in message for message in FakePopup.messages)
 
 
+def test_bounty_accept_counts_prior_defeats_and_can_turn_in_immediately(monkeypatch):
+    FakePopup.messages = []
+    FakePopup.show_kwargs = []
+    player = _make_player(level=20)
+    player.kill_dict = {"Fiend": {"Barghest": 3}}
+    presenter = _make_presenter()
+    presenter.game = SimpleNamespace(
+        bounties={
+            "Barghest Hunt": {
+                "enemy": SimpleNamespace(name="Barghest"),
+                "num": 3,
+                "gold": 75,
+                "exp": 9,
+            }
+        }
+    )
+    monkeypatch.setattr(inn.InnManager, "_load_background", lambda self: setattr(self, "background", None))
+    monkeypatch.setattr("src.ui_pygame.gui.inn.ConfirmationPopup", FakePopup)
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.inn.LevelUpScreen",
+        lambda *_args, **_kwargs: SimpleNamespace(show_level_up=lambda *_a, **_k: None),
+    )
+    manager = inn.InnManager(presenter, player)
+
+    class FakeLocationMenuScreen:
+        def __init__(self, _presenter, title):
+            self.title = title
+
+        def set_location_portrait(self, _npc_name):
+            return None
+
+        def set_option_portraits(self, _npc_names):
+            return None
+
+        def navigate(self, options, reset_cursor=False, **_kwargs):
+            if self.title == "Turn In Bounty":
+                assert options[0] == "Barghest Hunt"
+                return 0
+            return None
+
+        def navigate_with_content(self, items, **_kwargs):
+            if self.title == "Accept Bounty":
+                return 0
+            return None
+
+    monkeypatch.setattr("src.ui_pygame.gui.inn.LocationMenuScreen", FakeLocationMenuScreen)
+
+    manager.accept_bounty()
+
+    assert player.quest_dict["Bounty"]["Barghest Hunt"][1:] == [3, True]
+    assert "Barghest Hunt" not in presenter.game.bounties
+    assert any("Prior defeats counted: 3/3" in message for message in FakePopup.messages)
+
+    manager.turn_in_bounty(["Barghest Hunt"])
+
+    assert player.gold == 85
+    assert player.level.exp == 9
+    assert "Barghest Hunt" not in player.quest_dict["Bounty"]
+
+
 def test_bounty_board_can_abandon_active_bounty(monkeypatch):
     FakePopup.messages = []
     FakePopup.show_kwargs = []
@@ -231,6 +306,12 @@ def test_bounty_board_can_abandon_active_bounty(monkeypatch):
     class FakeLocationMenuScreen:
         def __init__(self, _presenter, title):
             self.title = title
+
+        def set_location_portrait(self, _npc_name):
+            return None
+
+        def set_option_portraits(self, _npc_names):
+            return None
 
         def navigate(self, options, reset_cursor=False, **_kwargs):
             nonlocal board_calls
@@ -273,6 +354,12 @@ def test_accept_bounty_stays_open_until_no_bounties_remain(monkeypatch):
     class FakeLocationMenuScreen:
         def __init__(self, _presenter, title):
             self.title = title
+
+        def set_location_portrait(self, _npc_name):
+            return None
+
+        def set_option_portraits(self, _npc_names):
+            return None
 
         def navigate_with_content(self, items, **_kwargs):
             menu_titles.append((self.title, tuple(name for name, _value in items)))

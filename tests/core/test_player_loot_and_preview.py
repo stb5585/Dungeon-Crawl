@@ -175,6 +175,25 @@ class TestPlayerLootCoverage:
         assert message == ""
         assert captured == []
 
+    def test_thief_loot_identity_logs_existing_ordinary_drop(self, monkeypatch):
+        player = TestGameState.create_player(class_name="Thief", race_name="Human")
+        player.check_mod = lambda mod, enemy=None, typ=None, luck_factor=1, **_kwargs: 10 if mod == "luck" else 0
+        captured = []
+        player.modify_inventory = lambda item, rare=False, **_kwargs: captured.append((item.name, rare))
+        player.quests = lambda enemy=None, item=None: ""
+        enemy = SimpleNamespace(
+            name="Bandit",
+            gold=0,
+            inventory={"drops": [SimpleNamespace(name="Iron Dagger", subtyp="Dagger", rarity=1.0)]},
+        )
+        monkeypatch.setattr(player_module.random, "random", lambda: 0.0)
+
+        message = player.loot(enemy, CaveTile())
+
+        assert "Bandit dropped a Iron Dagger." in message
+        assert "Scavenger's Eye spots ordinary loot: Iron Dagger." in message
+        assert captured == [("Iron Dagger", False)]
+
 
 class TestPlayerPreviewCoverage:
     def test_equip_diff_returns_empty_for_forbidden_item(self):
@@ -192,14 +211,24 @@ class TestPlayerPreviewCoverage:
 
         greatsword = _fake_item("Greatsword", handed=2, crit=0.2)
         weapon_diff = player.equip_diff(greatsword, "Weapon")
-        assert "10/5 -> 20" in weapon_diff
-        assert "10%/5% -> 20%" in weapon_diff
+        assert "Main Attack" in weapon_diff
+        assert "10 -> 20" in weapon_diff
+        assert "Main Crit" in weapon_diff
+        assert "10% -> 20%" in weapon_diff
+        assert "OffHand Attack" in weapon_diff
+        assert "5 -> 0" in weapon_diff
+        assert "OffHand Crit" in weapon_diff
+        assert "5% -> 0%" in weapon_diff
+        assert "10/5" not in weapon_diff
         assert player.equipment["Weapon"].name == "Blade"
         assert player.equipment["OffHand"].name == "Dagger"
 
         offhand_diff = player.equip_diff(_fake_item("Twinblade", typ="Weapon", subtyp="Dagger", crit=0.15), "OffHand")
-        assert "10 -> 10/15" in offhand_diff
-        assert "10% -> 10%/15%" in offhand_diff
+        assert "OffHand Attack" in offhand_diff
+        assert "5 -> 15" in offhand_diff
+        assert "OffHand Crit" in offhand_diff
+        assert "5% -> 15%" in offhand_diff
+        assert "/" not in offhand_diff
 
         ring_diff = player.equip_diff(
             _fake_item("Power Ring", typ="Accessory", subtyp="Ring", handed=0),
@@ -214,8 +243,15 @@ class TestPlayerPreviewCoverage:
 
         diff = player.equip_diff(_fake_item("Twinblade", crit=0.15), "Weapon", buy=True)
 
-        assert "10 -> 15/15" in diff
-        assert "10% -> 15%/15%" in diff
+        assert "Main Attack" in diff
+        assert "10 -> 15" in diff
+        assert "Main Crit" in diff
+        assert "10% -> 15%" in diff
+        assert "OffHand Attack" in diff
+        assert "0 -> 15" in diff
+        assert "OffHand Crit" in diff
+        assert "0% -> 15%" in diff
+        assert "/" not in diff
         assert player.equipment["Weapon"].name == "Blade"
         assert player.equipment["OffHand"].subtyp == "None"
 

@@ -40,6 +40,18 @@ Shipped. Future intro edits should remain in shared content data, preserve
 pygame story-card presentation, preserve curses parity, and keep late-game
 identities and true-final route mechanics hidden.
 
+### Character Creation Fate Questions
+
+Character creation fate questions remain deferred as future build-identity
+mechanics, not flavor-only intro copy. Story ownership covers prompt tone,
+setting fit, spoiler boundaries, and how answers are remembered or echoed.
+
+No fate-question implementation is authorized until a promoted spec defines the
+mechanical contract for any stat, resource, item, class, race, or starting-route
+effect. The spec must preserve pygame/curses parity, define save fields and
+old-save fallback behavior before adding fields, and state whether answers can
+be changed, replayed, or surfaced later in story text.
+
 ### Class Identity And Class Ring Tie-Ins
 
 V2 has shipped as optional story-state-only route polish. The Hooded Figure can

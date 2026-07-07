@@ -12,29 +12,29 @@ remain the prompts; the evidence ledger is the running decision record.
 ### Roadmap Bugfix Pass
 - [ ] Use Smoke Screen from an invalid/non-fleeing state, then enter another battle.
   - Expected: No stale smoke fade, hidden enemy, or flee transition carries over.
-- [ ] Open the Character screen in Town, a normal dungeon, Realm of Cambion, and Liminal Gap.
+- [x] Open the Character screen in Town, a normal dungeon, Realm of Cambion, and Liminal Gap.
   - Expected: Location text is fully readable and does not collide with nearby details.
 - [x] Check Records/Statistics on promoted characters.
   - Expected: Highest Level Reached uses cumulative promoted level.
 - [x] Visit pygame potion/alchemist/secret consumable shops.
   - Expected: Status items such as Antidote, Eye Drop, Echo Screen, Bandage, and Phoenix Down are available.
-- [ ] Accept multiple available bounties in one Tavern visit.
+- [x] Accept multiple available bounties in one Tavern visit.
   - Expected: The Accept Bounty screen remains open until Back/Cancel or no new bounties remain.
-- [ ] Complete or abandon all board bounties, then revisit the Tavern before and after making progress.
+- [x] Complete or abandon all board bounties, then revisit the Tavern before and after making progress.
   - Expected: The board does not refill immediately, then restocks after enough dungeon steps, enemy defeats, or a level gain.
-- [ ] Fight enemies that stun, sleep, or otherwise incapacitate the active actor.
+- [x] Fight enemies that stun, sleep, or otherwise incapacitate the active actor.
   - Expected: Incapacitated actors do not display an active turn token.
-- [ ] Compare flying and grounded enemies in combat.
+- [x] Compare flying and grounded enemies in combat.
   - Expected: Flying enemies render slightly higher without leaving the combat frame.
   - Expected: Flying enemies are not inherently immune to Earth elemental
     damage. Ground-contact Earth spells such as `Tremor`, `Mudslide`, and
     `Earthquake` do not damage flying targets, while non-grounded Earth effects
     such as `Sandstorm` can.
-- [ ] Check minimap adjacent markers around walls, closed doors, and undiscovered Fake Walls.
+- [x] Check minimap adjacent markers around walls, closed doors, and undiscovered Fake Walls.
   - Expected: Only enterable visible directions are shown, undiscovered Fake Walls are not revealed, and discovered non-Fake blocking walls appear on later map review.
-- [ ] Fight a Shapeshift-capable enemy.
+- [x] Fight a Shapeshift-capable enemy.
   - Expected: The enemy can Shapeshift once, refresh its sprite/name, then take one normal same-turn action.
-- [ ] Browse weapon/offhand shop item details as a dual-wield-capable character.
+- [x] Browse weapon/offhand shop item details as a dual-wield-capable character.
   - Expected: Main Hand and OffHand comparisons are separate and unusable slots are called out.
 
 ### Remaining Improvements Pass
@@ -337,6 +337,13 @@ remain the prompts; the evidence ledger is the running decision record.
   - Expected: Pygame and curses combat logs keep the class-kit message visible, wrap long lines cleanly, and do not suppress important failure, immunity, downgrade, or preservation text as generic status noise.
 - [ ] Inspect one menu/exploration-adjacent class-kit surface, such as Demonologist contracts, Seeker `Hidden Cache`, Troubadour composition/repertoire, Lycan `Dismiss Form`, Beast Master tame/command, or Soulcatcher Totem aspects.
   - Expected: The surface explains current availability and failure state clearly without changing quest gates, save state, combat rules, or numeric balance.
+- [ ] Inspect compact class-kit hints across all promotion tracks in Combat Focus and character status.
+  - Expected: Meter rows keep current value/cap visible and add only short readiness hints such as `Ready`, `Building`, `Pending`, `Primed`, `Needs level 2`, or equivalent compact wording.
+  - Expected: Pygame coin meters for Fortune/Misfortune still render as coins even when the backing value includes a compact hint.
+- [ ] Defeat ordinary loot-bearing enemies as Thief/Rogue after the readability pass.
+  - Expected: Existing ordinary eligible drops remain unchanged mechanically, but `Scavenger's Eye` or `Finders Keepers` makes the class loot identity visible in the combat log when such loot appears.
+- [ ] Win with an active level-1 summon and then with an active level-2+ summon.
+  - Expected: Level-1 victories explain that summon bond needs level 2; level-2+ low-XP/no-roll victories can report that bond held steady; successful gains still report the amount and current bond.
 
 ### Legacy Class-Kit Mechanics
 - [ ] Build `Devotion` as Cleric through healing, Holy pressure, shield actions, and `Turn Undead`.
@@ -553,7 +560,7 @@ remain the prompts; the evidence ledger is the running decision record.
 - [ ] Stack repeated status effects alongside several other combat states.
   - Expected: Counted status icons keep urgent effects visible first and use stable ordering instead of flickering between turns.
 - [ ] Build Evasive Guard stacks as a Footpad-line character in pygame combat.
-  - Expected: The combat status row shows an `EG#` stack indicator.
+  - Expected: The combat status row shows an `EG#` stack indicator using the approved Evasive Guard PNG.
   - Expected: Evasive Guard stacks reset after a successful dodge.
 - [ ] Resize the game window or view a crowded combat overlay.
   - Expected: Status icon labels remain clipped to the icon pill instead of spilling into neighboring UI.
@@ -683,6 +690,7 @@ remain the prompts; the evidence ledger is the running decision record.
 - [x] Navigate selector-style pygame screens with the mouse.
   - Expected: Hovering updates the highlighted row where rows are selectable.
   - Expected: Left-clicking main menu, town menu, shop selection, location, race, class, Character Menu action, tab, and equipment-slot targets selects the same option the keyboard would select.
+  - Expected: Shop screens support hover and left-click selection for main options, item rows, and buy-list subtype tabs; item-list mouse-wheel movement preserves keyboard behavior.
   - Expected: NPC conversation and quest text boxes advance with left click using the same skip/continue behavior as keyboard confirm.
   - Expected: Accept Bounty and Active Bounties content lists support row hover, left-click selection, and mouse-wheel movement without changing bounty state.
   - Expected: Reusable popup menus support row hover, left-click selection, ignored header-row clicks, and mouse-wheel movement while preserving keyboard behavior.
@@ -973,6 +981,28 @@ remain the prompts; the evidence ledger is the running decision record.
 - [x] Save and reload after viewing item artwork.
   - Expected: Save data is unchanged; large artwork is resolved from item names/types at render time.
 
+### NPC Story Artwork
+- [ ] Review the generated NPC portrait sheet after the story portrait batch.
+  - Expected: `src/ui_pygame/assets/npc_art/npc_art_review_sheet.png` shows recurring town NPCs, Old Warehouse Guard, Warp Point Scientist, Acolyte, Reflection, and Vesperion.
+  - Expected: Portraits have transparent edges, no rectangular backgrounds, no labels or watermarks, consistent dark fantasy painterly style, and readable silhouettes.
+- [ ] Inspect Old Warehouse Guard and Warp Point Scientist portrait aliases.
+  - Expected: Their assets appear in the NPC review sheet and resolve through `NpcArtManager` without appearing in unrelated shop, combat, bounty, or town hover panels.
+- [ ] Visit the Old Warehouse before the Footpad-branch Class Ring rite is available.
+  - Expected: The off-limits warning uses the split dialogue popup with the Old Warehouse Guard portrait instead of a plain text-only popup.
+- [ ] Review `src/ui_pygame/assets/npc_art/npc_art_review_sheet.png` after the V3 diversity replacements.
+  - Expected: Alchemist, Barkeep, Jeweler, Priest, Soldier, Waitress, and Warp Point Scientist use the approved replacement portraits.
+  - Expected: Busboy, Drunkard, Griswold, Old Warehouse Guard, and Sergeant retain their prior approved portraits.
+  - Expected: Archived originals and rejected candidates under `npc_art/old_files/` do not appear in live dialogue, shops, town menus, combat, bounty boards, or hover panels.
+- [ ] Trigger Acolyte Liminal Waiting/Mirror dialogue.
+  - Expected: The Acolyte portrait appears only on named Acolyte dialogue surfaces and does not alter Liminal route state.
+- [ ] Trigger Reflection locked/prelude/victory/defeat dialogue.
+  - Expected: The Reflection portrait appears on named Reflection dialogue surfaces while combat still uses the Reflection enemy sprite through the combat renderer.
+- [ ] Trigger initial and true-final Vesperion story dialogue.
+  - Expected: Vesperion narrative dialogue uses the Vesperion portrait, including the initial final-room prelude.
+  - Expected: Combat sprites, enemy info panels, combat HUD, ending text, shops, bounties, and town hover panels do not display story portraits unless explicitly mapped.
+- [ ] Review the deferred story-scene target map before creating the next story art batch.
+  - Expected: `joffrey_body`, `timmy_found`, `timmy_home`, `waitress_grief`, and optional `waitress_mad` are documented as named special-event/dialogue targets, not venue-wide or location-panel art.
+
 ### Companion And Summon Artwork
 - [x] Review the generated summon companion-art sheet.
   - Expected: `src/ui_pygame/assets/companion_art/summon_companion_art_review_sheet.png` shows Patagon, Dilong, Agloolik, Cacus, Fuath, Izulu, Hala, Grigori, Bardi, Kobalos, and Zahhak.
@@ -998,6 +1028,9 @@ remain the prompts; the evidence ledger is the running decision record.
   - Expected: Pygame combat presentation uses `Oil Leak` wording/icon text for the construct while core mechanics, saves, and reports still use canonical `Bleed`.
 - [ ] Verify enemy sprite lookup does not affect saves.
   - Expected: Save/load data is unchanged.
+- [ ] Start Vesperion combat after the portrait batch.
+  - Expected: Center combat uses the full-body `src/ui_pygame/assets/enemy_combat_sprites/vesperion.png`, visually matching the dialogue portrait identity instead of reusing the portrait crop or generic boss sprite.
+  - Expected: Vesperion combat mechanics, phase pressure, Liminal transition, true-final victory, rewards, and save state are unchanged.
   - Expected: Combat panels, enemy tokens, and dungeon boss navigation figures use `enemy_combat_sprites/`.
 - [ ] Review `docs/ENEMY_VISUAL_SYSTEM.md` before adding new enemy presentation screens.
   - Expected: Combat sprites and enemy tokens are used for their intended visual layers.

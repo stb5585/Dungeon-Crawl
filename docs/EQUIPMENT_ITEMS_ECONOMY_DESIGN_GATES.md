@@ -40,6 +40,34 @@ comparisons, dual-wield copy requirements, cancel behavior, preflight equip
 failure, and rollback after partial equip failure. Curses prompt parity remains
 a later polish pass unless promoted separately.
 
+## Shop Stock Reveal Pacing
+
+Shop stock reveal pacing remains a future per-character economy polish gate.
+This covers slower or staged appearance of newly available shop items without
+adding account-wide storage or cross-character stock sharing.
+
+Future work must define:
+
+- which shop families, rarity bands, player levels, or dungeon milestones
+  control reveal timing;
+- whether basic items remain visible while deeper stock is delayed;
+- how unavailable stock is described in pygame and curses;
+- how reveal pacing interacts with existing level, rarity, and secret-shop
+  filters;
+- tests that prove prices, item ownership, inventory, gold, and equip legality
+  are unchanged unless explicitly promoted by the spec.
+
+## Account-Wide Found/Sold Stock
+
+Mordor: Depths of Dejenol-style shared shop stock remains a separate deferred
+gate. In that model, basic stock may be visible by default while deeper stock
+requires finding and selling items so future characters can buy them.
+
+This is a profile/account-storage feature, not a shop-list timing tweak. Future
+work must define profile storage, migration rules, cross-character ownership,
+duplication prevention, item identity, shop UI, sell/buyback behavior, and
+economy balance before implementation.
+
 ## Ultimate Helmet Acquisition
 
 Ultimate helmet acquisition remains a future quest/reward gate using existing

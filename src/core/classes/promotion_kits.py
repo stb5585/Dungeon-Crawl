@@ -65,6 +65,7 @@ CLASS_KIT_LOG_TERMS = (
     "foresight",
     "fortune",
     "harmony bonus",
+    "finders keepers",
     "ki",
     "loaded dice",
     "misfortune",
@@ -77,7 +78,9 @@ CLASS_KIT_LOG_TERMS = (
     "resolve",
     "ring preserve",
     "ring ready",
+    "scavenger",
     "stolen charge",
+    "summon bond",
     "threaded cast",
     "totem resonance",
     "umbral",
@@ -260,6 +263,11 @@ def end_combat(
         if hasattr(character, "_active_summon_bond_level_span_xp"):
             try:
                 delattr(character, "_active_summon_bond_level_span_xp")
+            except Exception:
+                pass
+        if hasattr(character, "_active_summon_bond_note"):
+            try:
+                delattr(character, "_active_summon_bond_note")
             except Exception:
                 pass
     msg += convert_shadow_backlash(character, fraction=0.05, reason="combat end")
@@ -1132,12 +1140,14 @@ def summon_bond_gain_for_victory(
     except (TypeError, ValueError):
         level = 1
     if level < 2:
+        setattr(character, "_active_summon_bond_note", f"{summon_name or 'Summon'} bond needs level 2.")
         return 0
     try:
         exp_gain = max(0, int(exp_gain))
     except (TypeError, ValueError):
         exp_gain = 0
     if exp_gain <= 0:
+        setattr(character, "_active_summon_bond_note", f"{summon_name or 'Summon'} bond sees no eligible XP.")
         return 0
     level_span = getattr(character, "_active_summon_bond_level_span_xp", None)
     try:
@@ -1147,12 +1157,18 @@ def summon_bond_gain_for_victory(
     ratio = max(0.0, float(exp_gain) / float(level_span))
     chance = min(1.0, ratio)
     if chance < 1.0 and not guaranteed and random.random() >= chance:
+        setattr(
+            character,
+            "_active_summon_bond_note",
+            f"{summon_name or 'Summon'} bond holds steady after a low-XP victory.",
+        )
         return 0
     gain = max(1, min(5, int(math.ceil(ratio * 5))))
     try:
         multiplier = max(1, int(multiplier))
     except (TypeError, ValueError):
         multiplier = 1
+    setattr(character, "_active_summon_bond_note", "")
     return min(10, gain * multiplier)
 
 
@@ -1164,7 +1180,8 @@ def gain_summon_bond(character: Any, summon_name: str, amount: int, reason: str)
     after = min(100, before + max(0, int(amount)))
     state["summon_bonds"][summon_name] = after
     if after == before:
-        return ""
+        note = str(getattr(character, "_active_summon_bond_note", "") or "")
+        return f"Summon Bond: {note}\n" if note else ""
     return f"{summon_name} bond grows by {after - before} from {reason} ({after}/100).\n"
 
 
@@ -1449,6 +1466,43 @@ def _status_line(label: str, value: str) -> str:
     return f"{label + ':':13} {value}"
 
 
+def _meter_hint(value: int, cap: int, ready: str = "Ready", empty: str = "Building") -> str:
+    value = max(0, int(value or 0))
+    cap = max(1, int(cap or 1))
+    if value <= 0:
+        hint = empty
+    else:
+        hint = ready
+    return f"{value}/{cap} {hint}"
+
+
+def _best_summon_bond(character: Any) -> tuple[str, int]:
+    bonds = ensure_state(character)["summon_bonds"]
+    active = str(getattr(character, "active_summon_name", "") or "")
+    if active in bonds:
+        return active, int(bonds.get(active, 0) or 0)
+    return max(bonds.items(), key=lambda item: item[1])
+
+
+def _active_summon_bond_hint(character: Any, summon_name: str, bond: int) -> str:
+    summons = getattr(character, "summons", {}) or {}
+    summon = summons.get(summon_name)
+    level = getattr(getattr(summon, "level", None), "level", None)
+    try:
+        level_value = int(level)
+    except (TypeError, ValueError):
+        level_value = None
+    if level_value is not None and level_value < 2:
+        return "Needs level 2"
+    if bond >= 100:
+        return "True Name"
+    if bond >= 50:
+        return "Invoke ready"
+    if bond >= 25:
+        return "Attuned"
+    return "Building"
+
+
 def status_summary_rows(character: Any) -> list[tuple[str, str]]:
     cls = class_name(character)
     state = combat_state(character)
@@ -1471,33 +1525,47 @@ def status_summary_rows(character: Any) -> list[tuple[str, str]]:
         except Exception:
             pass
     if cls == "Astromancer":
-        rows.append(("Threads", f"{int(state.get('foresight_threads', 0) or 0)}/3"))
+        threads = int(state.get('foresight_threads', 0) or 0)
+        rows.append(("Threads", _meter_hint(threads, 3, ready="Threaded ready")))
         if state.get("threaded_cast_pending"):
-            rows.append(("Threaded", "Pending"))
+            rows.append(("Threaded", "Pending next spell"))
     if cls == "Shadowcaster":
         data = _class_ring_data(character, "Shadowcaster")
+        debt = int(data.get("debt", 0) or 0)
+        rows.append(("Umbral Debt", _meter_hint(debt, shadowcaster_debt_cap(character), ready="Eclipse ready")))
         rows.append(("Backlash", str(int(data.get('backlash', 0) or 0))))
         eclipse = int(data.get("eclipse_turns", 0) or 0)
         if eclipse:
             rows.append(("Eclipse", f"{eclipse} turn(s)"))
     if cls in {"Spellblade", "Knight Enchanter"}:
-        rows.append(("Blade Charge", str(state.get('blade_charge') or 'None')))
+        charge = state.get('blade_charge')
+        rows.append(("Blade Charge", f"{charge} Ready" if charge else "None, cast first"))
         if cls == "Knight Enchanter":
-            rows.append(("Arcane Tempo", f"{int(state.get('arcane_tempo', 0) or 0)}/3"))
+            tempo = int(state.get('arcane_tempo', 0) or 0)
+            rows.append(("Arcane Tempo", _meter_hint(tempo, 3, ready="Burst at 3")))
     if cls == "Berserker":
-        rows.append(("Momentum", f"{int(state.get('bloodied_momentum', 0) or 0)}/{cap_for(character, 'bloodied_momentum')}"))
+        momentum = int(state.get('bloodied_momentum', 0) or 0)
+        rows.append(("Momentum", _meter_hint(momentum, cap_for(character, 'bloodied_momentum'), ready="Heavy art")))
     if cls in {"Paladin", "Crusader"}:
-        rows.append(("Conviction", f"{int(state.get('oath_conviction', 0) or 0)}/{cap_for(character, 'oath_conviction')}"))
+        conviction = int(state.get('oath_conviction', 0) or 0)
+        rows.append(("Conviction", _meter_hint(conviction, cap_for(character, 'oath_conviction'), ready="Vow ready")))
     if cls in {"Lancer", "Dragoon"}:
-        rows.append(("Aerial Tempo", f"{int(state.get('aerial_tempo', 0) or 0)}/{cap_for(character, 'aerial_tempo')}"))
-    if cls == "Sentinel":
-        cap = 50
-        rows.append(("Resolve", f"{int(_class_ring_data(character, 'Stalwart Defender').get('guard_meter', 0) or 0)}/{cap}"))
+        aerial = int(state.get('aerial_tempo', 0) or 0)
+        rows.append(("Aerial Tempo", _meter_hint(aerial, cap_for(character, 'aerial_tempo'), ready="Follow-up")))
+        shield = _class_ring_data(character, "Dragoon")
+        if int(shield.get("meteor_guard_turns", 0) or 0) > 0:
+            rows.append(("Landing Shield", f"{int(shield.get('meteor_guard_turns', 0) or 0)} turn(s)"))
+    if cls in {"Sentinel", "Stalwart Defender"}:
+        cap = 100 if cls == "Stalwart Defender" else 50
+        resolve = int(_class_ring_data(character, 'Stalwart Defender').get('guard_meter', 0) or 0)
+        rows.append(("Resolve", _meter_hint(resolve, cap, ready="Guard ready")))
     if cls in {"Sentinel", "Stalwart Defender"} and int(state.get("hold_the_line", 0) or 0) > 0:
         rows.append(("Guard Stance", f"Hold ({int(state.get('hold_the_line', 0) or 0)})"))
     if cls in {"Thief", "Rogue"}:
-        rows.append(("Fortune", f"{int(state.get('fortune', 0) or 0)}/{cap_for(character, 'fortune')}"))
-        rows.append(("Misfortune", f"{int(state.get('misfortune', 0) or 0)}/{cap_for(character, 'misfortune')}"))
+        fortune = int(state.get('fortune', 0) or 0)
+        misfortune = int(state.get('misfortune', 0) or 0)
+        rows.append(("Fortune", _meter_hint(fortune, cap_for(character, 'fortune'), ready="Steal/Mug")))
+        rows.append(("Misfortune", _meter_hint(misfortune, cap_for(character, 'misfortune'), ready="Payoff on hit")))
         if int(state.get("jinx_turns", 0) or 0) > 0:
             rows.append(("Jinx", f"{int(state.get('jinx_turns', 0) or 0)} turn(s)"))
     if cls in {"Inquisitor", "Seeker"}:
@@ -1505,21 +1573,28 @@ def status_summary_rows(character: Any) -> list[tuple[str, str]]:
         rows.append(("Case", f"{best}/100 {case_rank(best)}"))
         revelation = state.get("revelation", {})
         current = max((int(value or 0) for value in revelation.values()), default=0) if isinstance(revelation, dict) else 0
-        rows.append(("Revelation", f"{current}/{cap_for(character, 'revelation')}"))
+        rows.append(("Revelation", _meter_hint(current, cap_for(character, 'revelation'), ready="Target read")))
     if cls in {"Assassin", "Ninja"}:
         marks = state.get("death_marks", {})
         current = max((int(value or 0) for value in marks.values()), default=0) if isinstance(marks, dict) else 0
-        rows.append(("Death Mark", f"{current}/{cap_for(character, 'death_marks')}"))
+        rows.append(("Death Mark", _meter_hint(current, cap_for(character, 'death_marks'), ready="Finisher")))
     if cls in {"Spell Stealer", "Arcane Trickster"}:
-        rows.append(("Stolen Charge", f"{int(state.get('stolen_charge', 0) or 0)}/{cap_for(character, 'stolen_charge')}"))
+        stolen = int(state.get('stolen_charge', 0) or 0)
+        rows.append(("Stolen Charge", _meter_hint(stolen, cap_for(character, 'stolen_charge'), ready="Charge ready", empty="Steal first")))
     if cls in {"Cleric", "Templar"}:
-        rows.append(("Devotion", f"{int(state.get('devotion', 0) or 0)}/{cap_for(character, 'devotion')}"))
+        devotion = int(state.get('devotion', 0) or 0)
+        hint = "Aegis ready" if cls == "Templar" and devotion >= 2 else "Ward ready"
+        rows.append(("Devotion", _meter_hint(devotion, cap_for(character, 'devotion'), ready=hint)))
     if cls in {"Priest", "Archbishop"}:
-        rows.append(("Prayer", f"{int(state.get('prayer', 0) or 0)}/{cap_for(character, 'prayer')}"))
+        prayer = int(state.get('prayer', 0) or 0)
+        hint = "Benediction ready" if cls == "Archbishop" and prayer >= 3 else "Supplication ready"
+        rows.append(("Prayer", _meter_hint(prayer, cap_for(character, 'prayer'), ready=hint)))
     if cls in {"Monk", "Master Monk"}:
-        rows.append(("Ki", f"{int(state.get('ki', 0) or 0)}/{cap_for(character, 'ki')}"))
+        ki = int(state.get('ki', 0) or 0)
+        rows.append(("Ki", _meter_hint(ki, cap_for(character, 'ki'), ready="Dim Mak")))
     if cls in {"Bard", "Troubadour"}:
-        rows.append(("Crescendo", f"{int(state.get('crescendo', 0) or 0)}/3"))
+        crescendo = int(state.get('crescendo', 0) or 0)
+        rows.append(("Crescendo", _meter_hint(crescendo, 3, ready="Coda")))
         if cls == "Troubadour":
             repertoire = ensure_state(character)["bard_repertoire"]
             mastered = sum(1 for entry in repertoire.values() if entry.get("known"))
@@ -1527,25 +1602,33 @@ def status_summary_rows(character: Any) -> list[tuple[str, str]]:
     if cls == "Lycan":
         control = lycan_control_state(character)
         rows.append(("Control", str(control['rank'])))
+        try:
+            from . import lycan
+
+            rows.append(("Form", "Shifted" if lycan.is_transformed(character) else "Human"))
+        except Exception:
+            pass
         rows.append(("Dragon Essence", "Yes" if control["dragon_essence"] else "No"))
     if cls == "Archdruid":
         aspects = state.get("aspect_harmony", set())
         if not isinstance(aspects, set):
             aspects = set(aspects)
-        rows.append(("Harmony", ",".join(sorted(aspects)) or "None"))
+        harmony_value = ",".join(sorted(aspects)) or "None"
+        if len(aspects) >= 2:
+            harmony_value += " Surge ready"
+        rows.append(("Harmony", harmony_value))
     if cls in {"Ranger", "Beast Master"}:
         companion = getattr(character, "tamed_companion", {}) or {}
         bond = _clamp_int(companion.get("bond", 0), 0, 100)
         rows.append(("Companion", f"{companion.get('name') or 'None'} {bond}/100 {companion_bond_rank(bond)}"))
         command = state.get("pending_companion_command")
         if command:
-            rows.append(("Command", str(command)))
+            rows.append(("Command", f"{command} Pending"))
     if cls in {"Summoner", "Grand Summoner"}:
-        bonds = ensure_state(character)["summon_bonds"]
-        name, bond = max(bonds.items(), key=lambda item: item[1])
-        rows.append(("Summon Bond", f"{name} {int(bond)}/100"))
+        name, bond = _best_summon_bond(character)
+        rows.append(("Summon Bond", f"{name} {int(bond)}/100 {_active_summon_bond_hint(character, name, int(bond))}"))
         if state.get("conduit_command"):
-            rows.append(("Conduit", "Primed"))
+            rows.append(("Conduit", "Primed next summon action"))
     if cls in {"Shaman", "Soulcatcher"}:
         totem_row = _totem_status_row(character)
         if totem_row:

@@ -14,6 +14,7 @@ from src.core import items as items_module
 from src.ui_pygame.assets.item_render_manager import get_item_render_manager
 
 from .input_guards import prepare_guarded_input, release_guard_allows_input, update_input_armed_from_event
+from .mouse_helpers import hit_index, is_left_click, mouse_position
 from .town_base import TownScreenBase
 
 
@@ -39,6 +40,7 @@ class ShopScreen(TownScreenBase):
         self.active_tab_index = 0
         self._itemdict_source = {}
         self.item_render_manager = get_item_render_manager()
+        self.location_portrait_name: str | None = None
 
         # Caching for equip_diff to prevent recalculation on every blit
         self.cached_item_index = -1
@@ -75,6 +77,29 @@ class ShopScreen(TownScreenBase):
         self.options_list = options_list
         if reset_cursor:
             self.current_option = 0
+
+    def set_location_portrait(self, npc_name: str | None) -> None:
+        """Set a persistent shopkeeper portrait for the main shop menu."""
+        self.location_portrait_name = npc_name
+
+    def option_rects(self) -> list[pygame.Rect]:
+        """Return clickable rectangles for the main shop option rows."""
+        num_options = len(self.options_list)
+        if num_options <= 0:
+            return []
+        option_height = self.options_rect.height // (num_options + 1)
+        rects: list[pygame.Rect] = []
+        for idx in range(num_options):
+            text_y = self.options_rect.top + (idx + 1) * option_height
+            rects.append(
+                pygame.Rect(
+                    self.options_rect.left + 10,
+                    text_y - 5,
+                    self.options_rect.width - 20,
+                    self.normal_font.get_height() + 10,
+                )
+            )
+        return rects
     
     def calculate_window_rects(self):
         """Calculate the rectangles for each UI section matching curses layout."""
@@ -128,9 +153,7 @@ class ShopScreen(TownScreenBase):
             self.draw_selected_item_art(self.options_rect, selected_item)
             return
         
-        # Calculate spacing for options
-        num_options = len(self.options_list)
-        option_height = self.options_rect.height // (num_options + 1)
+        option_rects = self.option_rects()
         
         for idx, option in enumerate(self.options_list):
             # Highlight selected option
@@ -139,16 +162,11 @@ class ShopScreen(TownScreenBase):
             # Draw option text centered
             text = self.normal_font.render(option, True, color)
             text_x = self.options_rect.centerx - text.get_width() // 2
-            text_y = self.options_rect.top + (idx + 1) * option_height
+            text_y = option_rects[idx].top + 5 if idx < len(option_rects) else self.options_rect.top
 
             # Highlight background for selected
             if idx == self.current_option:
-                highlight_rect = pygame.Rect(
-                    self.options_rect.left + 10,
-                    text_y - 5,
-                    self.options_rect.width - 20,
-                    text.get_height() + 10
-                )
+                highlight_rect = option_rects[idx] if idx < len(option_rects) else pygame.Rect(text_x, text_y, text.get_width(), text.get_height())
                 pygame.draw.rect(self.screen, self.colors.HIGHLIGHT_BG, highlight_rect)
                 pygame.draw.rect(self.screen, self.colors.GOLD, highlight_rect, 2)
             
@@ -164,6 +182,10 @@ class ShopScreen(TownScreenBase):
         if display_str in {"Go Back", "Next Page"}:
             return None
         return item
+
+    def is_item_browsing(self) -> bool:
+        """Return whether the shop should draw item browser panels."""
+        return self.buy_or_sell in {"Buy", "Sell"}
 
     def draw_selected_item_art(self, rect: pygame.Rect, item) -> None:
         panel_rect = rect.inflate(-4, -4)
@@ -217,6 +239,17 @@ class ShopScreen(TownScreenBase):
     
     def draw_shop_list(self):
         """Draw the list of items for sale or selling."""
+        if not self.is_item_browsing():
+            if self.location_portrait_name:
+                portrait_rect = pygame.Rect(
+                    self.list_rect.left,
+                    self.list_rect.top,
+                    self.width // 3,
+                    self.list_rect.height,
+                )
+                self.draw_npc_portrait(npc_name=self.location_portrait_name, rect=portrait_rect)
+            return
+
         self.draw_semi_transparent_panel(self.list_rect)
         pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, self.list_rect, 2)
         
@@ -322,17 +355,8 @@ class ShopScreen(TownScreenBase):
         if not self.tab_labels:
             return
 
-        tab_y = self.list_rect.top + 6
-        tab_height = 26
-        available_width = self.list_rect.width - 20
-        tab_width = max(1, available_width // len(self.tab_labels))
         for idx, label in enumerate(self.tab_labels):
-            tab_rect = pygame.Rect(
-                self.list_rect.left + 10 + (idx * tab_width),
-                tab_y,
-                max(1, min(tab_width - 4, self.list_rect.right - 10 - (self.list_rect.left + 10 + (idx * tab_width)))),
-                tab_height,
-            )
+            tab_rect = self.item_tab_rects()[idx]
             active = idx == self.active_tab_index
             fill_color = self.colors.HIGHLIGHT_BG if active else (0, 0, 0, 80)
             pygame.draw.rect(self.screen, fill_color, tab_rect)
@@ -452,10 +476,11 @@ class ShopScreen(TownScreenBase):
         self.draw_background()
         self.draw_top()
         self.draw_options()
-        self.draw_item_desc()
         self.draw_shop_list()
-        self.draw_mod()
-        self.draw_gold()
+        if self.is_item_browsing():
+            self.draw_item_desc()
+            self.draw_mod()
+            self.draw_gold()
         if do_flip:
             pygame.display.flip()
 
@@ -474,6 +499,52 @@ class ShopScreen(TownScreenBase):
     def _visible_item_count() -> int:
         """Return the number of item rows visible in the shop list."""
         return 19
+
+    def item_tab_rects(self) -> list[pygame.Rect]:
+        """Return clickable rectangles for buy-list subtype tabs."""
+        if not self.tab_labels:
+            return []
+        tab_y = self.list_rect.top + 6
+        tab_height = 26
+        available_width = self.list_rect.width - 20
+        tab_width = max(1, available_width // len(self.tab_labels))
+        rects: list[pygame.Rect] = []
+        for idx in range(len(self.tab_labels)):
+            left = self.list_rect.left + 10 + (idx * tab_width)
+            width = max(1, min(tab_width - 4, self.list_rect.right - 10 - left))
+            rects.append(pygame.Rect(left, tab_y, width, tab_height))
+        return rects
+
+    def item_row_rects(self) -> list[tuple[int, pygame.Rect]]:
+        """Return visible item-list indexes and clickable row rectangles."""
+        if not self.item_list:
+            return []
+        max_visible = self._visible_item_count()
+        header_y = self.list_rect.top + (38 if self.tab_labels else 10)
+        line_height = (self.list_rect.height - 40) // max_visible
+        visible_start = self.scroll_offset
+        visible_end = min(self.scroll_offset + max_visible, len(self.item_list))
+        return [
+            (
+                index,
+                pygame.Rect(
+                    self.list_rect.left + 5,
+                    header_y + 25 + (index - visible_start) * line_height - 2,
+                    self.list_rect.width - 10,
+                    line_height - 2,
+                ),
+            )
+            for index in range(visible_start, visible_end)
+        ]
+
+    def _hit_item_row(self, pos: tuple[int, int] | None) -> int | None:
+        """Return the item-list index under a mouse position."""
+        if pos is None:
+            return None
+        for index, rect in self.item_row_rects():
+            if rect.collidepoint(pos):
+                return index
+        return None
 
     def _max_scroll_offset(self) -> int:
         """Return the highest scroll offset that can still fill the list window."""
@@ -624,6 +695,13 @@ class ShopScreen(TownScreenBase):
                     import sys
                     sys.exit()
                 input_armed = self._arm_guarded_input(event, input_armed)
+                hovered = hit_index(self.option_rects(), mouse_position(event))
+                if hovered is not None and event.type == pygame.MOUSEMOTION:
+                    self.current_option = hovered
+                elif hovered is not None and is_left_click(event):
+                    if input_armed:
+                        self.current_option = hovered
+                        return self.options_list[self.current_option]
                 if event.type == pygame.KEYDOWN and not input_armed:
                     continue
                 elif event.type == pygame.KEYDOWN:
@@ -658,6 +736,37 @@ class ShopScreen(TownScreenBase):
                     import sys
                     sys.exit()
                 input_armed = self._arm_guarded_input(event, input_armed)
+                if event.type == pygame.MOUSEWHEEL:
+                    if not self.item_list:
+                        continue
+                    direction = -1 if getattr(event, "y", 0) > 0 else 1
+                    self.current_item = max(0, min(len(self.item_list) - 1, self.current_item + direction))
+                    self._keep_current_item_visible()
+                    continue
+                if event.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN):
+                    pos = mouse_position(event)
+                    tab_index = hit_index(self.item_tab_rects(), pos)
+                    if tab_index is not None:
+                        if event.type == pygame.MOUSEMOTION:
+                            pass
+                        elif is_left_click(event) and input_armed and tab_index != self.active_tab_index:
+                            self.active_tab_index = tab_index
+                            active_label = self.tab_labels[self.active_tab_index]
+                            self.item_list = list(self._build_buy_rows(self._itemdict_source[active_label]))
+                            self.current_item = 0
+                            self.scroll_offset = 0
+                            self._finalize_item_list(preserve_cursor=False)
+                        continue
+                    hovered_item = self._hit_item_row(pos)
+                    if hovered_item is not None:
+                        self.current_item = hovered_item
+                        self._keep_current_item_visible()
+                        if is_left_click(event) and input_armed:
+                            display_str, item, cost, owned = self.item_list[self.current_item]
+                            if display_str in {"Go Back", "Back"}:
+                                return None
+                            return (display_str, item, cost, owned)
+                        continue
                 if event.type == pygame.KEYDOWN and not input_armed:
                     continue
                 elif event.type == pygame.KEYDOWN:

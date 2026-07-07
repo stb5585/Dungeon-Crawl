@@ -8,10 +8,12 @@ from pathlib import Path
 import re
 from types import SimpleNamespace
 
+from PIL import Image
 import pygame
 import pytest
 
 from src.ui_pygame.assets.enemy_combat_sprite_manager import EnemyCombatSpriteManager
+from tools.build_enemy_combat_sprites import mapped_sprite_keys
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -239,6 +241,27 @@ def test_default_jester_form_combat_sprites_exist_and_resolve():
         key = Path(picture).stem
         assert key in manager.available_keys
         assert manager.get_sprite_key_for_enemy(SimpleNamespace(name="Jester", picture=picture)) == key
+
+
+def test_default_vesperion_combat_sprite_uses_separate_full_body_asset():
+    manager = EnemyCombatSpriteManager()
+    sprite_path = manager.sprite_root / "vesperion.png"
+    portrait_path = PROJECT_ROOT / "src" / "ui_pygame" / "assets" / "npc_art" / "vesperion.png"
+
+    assert manager.get_sprite_key_for_enemy("Vesperion") == "vesperion"
+    assert "vesperion" in manager.available_keys
+    assert "vesperion" in mapped_sprite_keys(manager.sprite_root)
+    assert sprite_path.exists()
+    assert sprite_path.read_bytes() != portrait_path.read_bytes()
+
+    with Image.open(sprite_path) as image:
+        assert image.mode == "RGBA"
+        assert image.getchannel("A").getbbox() is not None
+
+    sprite = manager.get_sprite_by_name("Vesperion")
+    assert sprite.get_width() > 0
+    assert sprite.get_height() > 0
+    assert sprite.get_at((0, 0)).a == 0
 
 
 def _concrete_enemy_names() -> set[str]:

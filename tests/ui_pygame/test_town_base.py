@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import os
+import textwrap
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -136,6 +137,46 @@ def test_display_quest_text_debug_mode_renders_full_text_and_exits(monkeypatch):
     pygame.quit()
 
 
+def test_display_quest_text_debug_mode_draws_npc_portrait(monkeypatch):
+    pygame.init()
+    pygame.display.set_mode((1, 1))
+    presenter = _make_presenter(debug_mode=True, screen=pygame.Surface((640, 480), pygame.SRCALPHA))
+    monkeypatch.setattr("src.ui_pygame.gui.town_base.os.path.exists", lambda _path: False)
+    base = RecordingTownScreen(presenter)
+
+    loaded_paths = []
+    panel_rects = []
+    scaled_sizes = []
+    portrait = pygame.Surface((512, 768), pygame.SRCALPHA)
+
+    def fake_load(path):
+        loaded_paths.append(path)
+        return portrait
+
+    def fake_smoothscale(surface, size):
+        scaled_sizes.append((surface.get_size(), size))
+        return pygame.Surface(size, pygame.SRCALPHA)
+
+    events = [SimpleNamespace(type=pygame.KEYDOWN)]
+    monkeypatch.setattr("src.ui_pygame.gui.town_base.pygame.image.load", fake_load)
+    monkeypatch.setattr("src.ui_pygame.gui.town_base.pygame.transform.smoothscale", fake_smoothscale)
+    monkeypatch.setattr("src.ui_pygame.gui.town_base.pygame.event.get", lambda: list(events))
+    monkeypatch.setattr("src.ui_pygame.gui.town_base.pygame.display.flip", lambda: None)
+    monkeypatch.setattr(base, "draw_semi_transparent_panel", lambda rect, alpha=180: panel_rects.append(rect))
+
+    base.display_quest_text("====== Sergeant ======\nLine one", image_path="sergeant.png")
+
+    assert loaded_paths == ["sergeant.png"]
+    assert base.dialogue_portrait_rect() in panel_rects
+    assert base.dialogue_portrait_rect().left == 0
+    assert base.dialogue_portrait_rect().top == presenter.height // 12 + presenter.height // 4
+    assert scaled_sizes
+    assert scaled_sizes[-1][0] == (512, 768)
+    assert scaled_sizes[-1][1][0] <= base.dialogue_portrait_rect().width
+    assert scaled_sizes[-1][1][1] <= base.dialogue_portrait_rect().height
+    pygame.quit()
+
+
 def test_display_quest_text_debug_mode_exits_on_left_click(monkeypatch):
     pygame.init()
     pygame.display.set_mode((1, 1))
@@ -183,13 +224,60 @@ def test_display_quest_text_non_debug_supports_skip_and_advance(monkeypatch):
     monkeypatch.setattr("src.ui_pygame.gui.town_base.pygame.display.flip", lambda: None)
     monkeypatch.setattr("time.sleep", lambda _value: None)
 
-    base.display_quest_text("====== Quest ======\nSkip me quickly")
+    base.display_quest_text("====== Quest ======\nSkip me quickly\n\nThen show this too")
 
     assert clear_calls == [pygame.KEYDOWN]
     assert base.background_calls >= 2
     assert base.top_calls >= 2
     assert base.options_calls >= 2
     assert tick_calls == []
+    pygame.quit()
+
+
+def test_display_quest_text_non_debug_keeps_full_text_width_with_portrait(monkeypatch):
+    pygame.init()
+    pygame.display.set_mode((1, 1))
+    presenter = _make_presenter(debug_mode=False, screen=pygame.Surface((640, 480), pygame.SRCALPHA))
+    monkeypatch.setattr("src.ui_pygame.gui.town_base.os.path.exists", lambda _path: False)
+    base = RecordingTownScreen(presenter)
+
+    portrait = pygame.Surface((512, 768), pygame.SRCALPHA)
+    monkeypatch.setattr("src.ui_pygame.gui.town_base.pygame.image.load", lambda _path: portrait)
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.town_base.pygame.transform.smoothscale",
+        lambda _surface, size: pygame.Surface(size, pygame.SRCALPHA),
+    )
+
+    wrap_widths = []
+
+    def fake_wrap(raw_line, width, break_on_hyphens=False):
+        wrap_widths.append(width)
+        return ["wrapped"]
+
+    monkeypatch.setattr(textwrap, "wrap", fake_wrap)
+    monkeypatch.setattr("src.ui_pygame.gui.town_base.pygame.event.clear", lambda event_type=None: None)
+    monkeypatch.setattr("src.ui_pygame.gui.town_base.pygame.display.flip", lambda: None)
+    monkeypatch.setattr("time.sleep", lambda _value: None)
+
+    def show_dialogue(*, image_path=""):
+        key_events = iter(
+            [
+                [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_SPACE)],
+                [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+            ]
+        )
+        monkeypatch.setattr("src.ui_pygame.gui.town_base.pygame.event.get", lambda: next(key_events, []))
+        base.display_quest_text(
+            "====== Sergeant ======\nThis is a longer portrait dialogue line.",
+            image_path=image_path,
+        )
+
+    show_dialogue()
+    no_portrait_width = wrap_widths[-1]
+    show_dialogue(image_path="sergeant.png")
+
+    assert wrap_widths
+    assert wrap_widths[-1] == no_portrait_width
     pygame.quit()
 
 

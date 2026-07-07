@@ -18,6 +18,7 @@ from src.core.player import summarize_gameplay_stat_groups
 from src.core.races import races_dict
 from src.core.save_system import SaveManager
 from src.core import items
+from src.ui_pygame.assets.npc_art_manager import get_npc_art_manager
 from .presentation.pygame_presenter import PygamePresenter
 
 # GUI modules
@@ -810,6 +811,26 @@ class PygameGame:
             require_key_release=True,
         )
 
+    def _show_town_npc_dialogue(self, message: str, *, title: str, npc_name: str = "", background_draw_func=None) -> None:
+        """Show a town dialogue message with optional NPC portrait art."""
+        image_path = get_npc_art_manager().get_image_path(npc_name or title)
+        if hasattr(self.presenter, "show_message"):
+            self.presenter.show_message(
+                message,
+                title=title,
+                image_path=image_path,
+                split_layout=True,
+                background_draw_func=background_draw_func,
+            )
+            return
+
+        popup = ConfirmationPopup(self.presenter, message, show_buttons=False)
+        popup.show(
+            background_draw_func=background_draw_func,
+            flush_events=True,
+            require_key_release=True,
+        )
+
     def _footpad_class_ring_rite_config(self):
         return self.FOOTPAD_CLASS_RING_RITES.get(class_rings.class_name(self.player_char))
 
@@ -828,11 +849,11 @@ class PygameGame:
     def visit_old_warehouse(self, background_draw_func=None):
         """Handle Old Warehouse entry and Footpad-branch Class Ring jobs."""
         if not self._footpad_class_ring_rite_available():
-            popup = ConfirmationPopup(self.presenter, "Authorized personnel only.\nPlease leave.", show_buttons=False)
-            popup.show(
+            self._show_town_npc_dialogue(
+                'A warehouse guard steps into your path.\n\n"Authorized personnel only. Please leave."',
+                title="Old Warehouse Guard",
+                npc_name="Old Warehouse Guard",
                 background_draw_func=background_draw_func,
-                flush_events=True,
-                require_key_release=True,
             )
             return False
 

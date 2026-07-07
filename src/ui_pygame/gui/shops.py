@@ -17,6 +17,11 @@ class ShopManager(TownScreenBase):
     def __init__(self, presenter, player_char):
         super().__init__(presenter)
         self.player_char = player_char
+        self._active_shopkeeper_portrait: str | None = None
+
+    def _set_shopkeeper_portrait(self, shop_screen: ShopScreen) -> None:
+        if self._active_shopkeeper_portrait:
+            shop_screen.set_location_portrait(self._active_shopkeeper_portrait)
     
     def visit_blacksmith(self):
         """Visit Griswold's Blacksmith - weapons and shields."""
@@ -30,13 +35,16 @@ class ShopManager(TownScreenBase):
         
         # Use ShopScreen for the main interface
         shop_screen = ShopScreen(self.presenter, self.player_char, "Griswold's Blacksmith")
+        self._active_shopkeeper_portrait = "Griswold"
+        self._set_shopkeeper_portrait(shop_screen)
         shop_screen.set_options(["Buy", "Sell", "Quests", "Leave"])
 
         from .quest_manager import QuestManager
         qm = QuestManager(
             self.presenter,
             self.player_char,
-            quest_text_renderer=lambda text: shop_screen.display_quest_text(text),
+            quest_text_renderer=lambda text: shop_screen.display_quest_text(text, npc_name="Griswold"),
+            renderer_preserve_formatting=True,
         )
         
         while True:
@@ -116,10 +124,13 @@ class ShopManager(TownScreenBase):
         
         # Use ShopScreen for the main interface
         shop_screen = ShopScreen(self.presenter, self.player_char, "Welcome to Ye Olde Item Shoppe.")
+        self._active_shopkeeper_portrait = "Alchemist"
+        self._set_shopkeeper_portrait(shop_screen)
         qm = QuestManager(
             self.presenter,
             self.player_char,
-            quest_text_renderer=lambda text: shop_screen.display_quest_text(text),
+            quest_text_renderer=lambda text: shop_screen.display_quest_text(text, npc_name="Alchemist"),
+            renderer_preserve_formatting=True,
         )
         shop_screen.set_options(["Buy", "Sell", "Quests", "Leave"])
         
@@ -149,10 +160,13 @@ class ShopManager(TownScreenBase):
         
         # Use ShopScreen for the main interface
         shop_screen = ShopScreen(self.presenter, self.player_char, "Come glimpse the finest jewelry in the land.")
+        self._active_shopkeeper_portrait = "Jeweler"
+        self._set_shopkeeper_portrait(shop_screen)
         qm = QuestManager(
             self.presenter,
             self.player_char,
-            quest_text_renderer=lambda text: shop_screen.display_quest_text(text),
+            quest_text_renderer=lambda text: shop_screen.display_quest_text(text, npc_name="Jeweler"),
+            renderer_preserve_formatting=True,
         )
         options = ["Buy", "Sell", "Quests", "Leave"]
         if dragoon.can_craft_draconite_pendant(self.player_char):
@@ -185,6 +199,7 @@ class ShopManager(TownScreenBase):
         """Buy weapons - choose handedness first, then browse subtype tabs."""
         # Use ShopScreen for weapon type selection
         shop_screen = ShopScreen(self.presenter, self.player_char, "Choose weapon type")
+        self._set_shopkeeper_portrait(shop_screen)
         shop_screen.set_options(["1-Handed", "2-Handed", "Back"])
         handed_choice = shop_screen.navigate_options()
         
@@ -313,6 +328,7 @@ class ShopManager(TownScreenBase):
             return
         
         shop_screen = ShopScreen(self.presenter, self.player_char, f"Buy {category_name}", background_image=background_image, options_list=[])
+        self._set_shopkeeper_portrait(shop_screen)
         shop_screen.update_item_list(itemdict, "Buy")
         
         # Create background function for popups

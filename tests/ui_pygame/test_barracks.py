@@ -86,7 +86,7 @@ def test_visit_barracks_routes_and_special_event(monkeypatch):
     manager.manage_storage = lambda: storage_calls.append(True)
 
     class FakeQuestManager:
-        def __init__(self, _presenter, _player, quest_text_renderer):
+        def __init__(self, _presenter, _player, quest_text_renderer, **_kwargs):
             self.quest_text_renderer = quest_text_renderer
 
         def check_and_offer(self, giver):
@@ -102,18 +102,21 @@ def test_visit_barracks_routes_and_special_event(monkeypatch):
         def draw_all(self):
             return None
 
+        def set_location_portrait(self, _npc_name):
+            return None
+
         def navigate(self, _options, reset_cursor=False, **_kwargs):
             return next(nav_values)
 
-        def display_quest_text(self, text):
-            rendered.append(text)
+        def display_quest_text(self, text, **kwargs):
+            rendered.append((text, kwargs.get("npc_name")))
 
     monkeypatch.setattr("src.ui_pygame.gui.barracks.LocationMenuScreen", FakeLocationMenuScreen)
     monkeypatch.setattr("src.ui_pygame.gui.quest_manager.QuestManager", FakeQuestManager)
 
     manager.visit_barracks()
 
-    assert rendered == ["Sergeant quest"]
+    assert rendered == [("Sergeant quest", "Sergeant")]
     assert storage_calls == [True]
     assert any("Joffrey's Letter" in message for message in FakePopup.messages)
     assert any(call.get("flush_events") for call in FakePopup.calls)
@@ -277,7 +280,7 @@ def test_dragoon_and_stalwart_trials_awaken_ring_after_success(monkeypatch):
     monkeypatch.setattr("src.ui_pygame.gui.barracks.ConfirmationPopup", FakePopup)
 
     for class_name, expected_mod, expected_label in (
-        ("Dragoon", "+1 Jump Mod", "Guard The Fall"),
+        ("Dragoon", "Aerial Supremacy", "Guard The Fall"),
         ("Stalwart Defender", "Guard Meter", "Siege Trial"),
     ):
         player = _make_player()
@@ -317,6 +320,9 @@ def test_manage_storage_store_and_retrieve(monkeypatch):
     class FakeLocationMenuScreen:
         def __init__(self, _presenter, _title):
             pass
+
+        def set_location_portrait(self, _npc_name):
+            return None
 
         def navigate(self, _options, reset_cursor=False, **_kwargs):
             return next(nav_values)

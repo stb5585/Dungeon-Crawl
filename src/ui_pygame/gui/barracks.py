@@ -131,6 +131,7 @@ class BarracksManager(TownScreenBase):
         
         barracks_screen = LocationMenuScreen(self.presenter, "Barracks")
         barracks_screen.options_list = barracks_options
+        barracks_screen.set_location_portrait("Sergeant")
 
         # Pre-render barracks frame so entry popups draw over the proper background.
         barracks_screen.draw_all()
@@ -197,7 +198,8 @@ class BarracksManager(TownScreenBase):
                 qm = QuestManager(
                     self.presenter, 
                     self.player_char, 
-                    quest_text_renderer=lambda text: barracks_screen.display_quest_text(text)
+                    quest_text_renderer=lambda text: barracks_screen.display_quest_text(text, npc_name="Sergeant"),
+                    renderer_preserve_formatting=True,
                 )
                 qm.check_and_offer('Sergeant')
 

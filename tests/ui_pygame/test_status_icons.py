@@ -214,6 +214,7 @@ def test_status_icon_asset_path_uses_existing_effect_art_with_text_fallback():
     assert status_icon_asset_path("DOM").name == "doom.png"
     assert status_icon_asset_path("DSA").name == "disarm.png"
     assert status_icon_asset_path("DUP").name == "mirror_image.png"
+    assert status_icon_asset_path("EG2").name == "evasive_guard.png"
     assert status_icon_asset_path("ICE").name == "ice_block.png"
     assert status_icon_asset_path("MSH").name == "mana_shield.png"
     assert status_icon_asset_path("REG").name == "regen.png"

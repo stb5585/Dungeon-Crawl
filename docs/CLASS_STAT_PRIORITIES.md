@@ -25,6 +25,11 @@ classes through the promotion tree, including the Pathfinder branches
 - `DEX`: speed, crit, and evasion. Improves speed, critical chance, flee odds,
   parry, Evasive Guard scaling, and rogue-style defense.
 
+Future low-stat-benefit mechanics are gated in
+`docs/COMBAT_BALANCE_DESIGN_GATES.md`. They should not invalidate this stat
+priority guide unless a promoted combat-balance spec explicitly updates both
+the mechanic and the affected class priorities.
+
 ## Class Priorities
 
 Stats are ordered from most important to least important for typical play.

@@ -17,6 +17,7 @@ STATUS_ICON_ASSETS = {
     "DOM": "doom.png",
     "DOT": "dot.png",
     "DUP": "mirror_image.png",
+    "EG": "evasive_guard.png",
     "ICE": "ice_block.png",
     "MSH": "mana_shield.png",
     "MW": "maelstrom_weapon.png",
@@ -73,8 +74,9 @@ IMPORTANT_POSITIVE_STATUS_LABELS = {
     "RFM": 2,
     "ICE": 3,
     "REG": 4,
-    "ATK": 5,
-    "DEF": 6,
+    "EG": 5,
+    "ATK": 6,
+    "DEF": 7,
 }
 
 

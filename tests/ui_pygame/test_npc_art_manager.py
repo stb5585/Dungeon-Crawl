@@ -1,0 +1,133 @@
+#!/usr/bin/env python3
+"""Coverage for NPC dialogue portrait asset resolution."""
+
+from __future__ import annotations
+
+import json
+
+from PIL import Image
+
+from src.ui_pygame.assets.npc_art_manager import NpcArtManager
+from tools import build_npc_art_sheet
+
+
+V1_NPC_KEYS = {
+    "alchemist",
+    "barkeep",
+    "busboy",
+    "drunkard",
+    "griswold",
+    "hooded_figure",
+    "jeweler",
+    "nimue",
+    "old_warehouse_guard",
+    "priest",
+    "sergeant",
+    "soldier",
+    "waitress",
+    "warp_point_scientist",
+}
+
+V2_NPC_KEYS = {
+    "acolyte",
+    "reflection",
+    "vesperion",
+}
+
+
+def _write_png(path):
+    Image.new("RGBA", (32, 48), (180, 120, 80, 255)).save(path)
+
+
+def test_npc_art_manager_resolves_mapped_paths_and_aliases(tmp_path):
+    art_root = tmp_path / "npc_art"
+    art_root.mkdir()
+    _write_png(art_root / "sergeant.png")
+    _write_png(art_root / "hooded_figure.png")
+    map_path = art_root / "npc_art_map.json"
+    map_path.write_text(
+        json.dumps({"Sergeant": "sergeant", "The Hooded Figure": "hooded_figure"}),
+        encoding="utf-8",
+    )
+
+    manager = NpcArtManager(art_root=art_root, art_map_path=map_path)
+
+    assert manager.get_image_path("Sergeant") == str(art_root / "sergeant.png")
+    assert manager.get_image_path("The Hooded Figure") == str(art_root / "hooded_figure.png")
+    assert manager.get_image_path("Hooded Figure") == str(art_root / "hooded_figure.png")
+
+
+def test_npc_art_manager_tolerates_missing_map_and_missing_files(tmp_path):
+    art_root = tmp_path / "npc_art"
+    art_root.mkdir()
+
+    missing_map = NpcArtManager(art_root=art_root, art_map_path=art_root / "missing.json")
+    assert missing_map.get_image_path("Sergeant") == ""
+
+    map_path = art_root / "npc_art_map.json"
+    map_path.write_text(json.dumps({"Sergeant": "sergeant"}), encoding="utf-8")
+    manager = NpcArtManager(art_root=art_root, art_map_path=map_path)
+    assert manager.get_image_path("Sergeant") == ""
+
+    _write_png(art_root / "sergeant.png")
+    manager.clear_cache()
+    assert manager.get_image_path("Sergeant") == str(art_root / "sergeant.png")
+
+
+def test_default_npc_art_map_covers_v1_dialogue_npcs():
+    art_root = build_npc_art_sheet.DEFAULT_ART_ROOT
+    map_path = art_root / "npc_art_map.json"
+    data = json.loads(map_path.read_text(encoding="utf-8"))
+    manager = NpcArtManager(art_root=art_root, art_map_path=map_path)
+
+    assert V1_NPC_KEYS.issubset(set(data.values()))
+    assert manager.get_image_path("Old Warehouse Guard").endswith("old_warehouse_guard.png")
+    assert manager.get_image_path("Warehouse Guard").endswith("old_warehouse_guard.png")
+    assert manager.get_image_path("Warp Point Scientist").endswith("warp_point_scientist.png")
+    assert manager.get_image_path("Staffed Warp Point Scientist").endswith("warp_point_scientist.png")
+
+
+def test_default_npc_art_map_covers_v2_story_npcs():
+    art_root = build_npc_art_sheet.DEFAULT_ART_ROOT
+    map_path = art_root / "npc_art_map.json"
+    data = json.loads(map_path.read_text(encoding="utf-8"))
+    manager = NpcArtManager(art_root=art_root, art_map_path=map_path)
+
+    assert V2_NPC_KEYS.issubset(set(data.values()))
+    assert manager.get_image_path("The Acolyte").endswith("acolyte.png")
+    assert manager.get_image_path("Acolyte").endswith("acolyte.png")
+    assert manager.get_image_path("Reflection").endswith("reflection.png")
+    assert manager.get_image_path("Reflection Psychopomp").endswith("reflection.png")
+    assert manager.get_image_path("Vesperion").endswith("vesperion.png")
+
+
+def test_npc_art_manager_ignores_archived_art_subfolders(tmp_path):
+    art_root = tmp_path / "npc_art"
+    archive_root = art_root / "old_files"
+    archive_root.mkdir(parents=True)
+    _write_png(art_root / "sergeant.png")
+    _write_png(archive_root / "sergeant_original.png")
+    map_path = art_root / "npc_art_map.json"
+    map_path.write_text(json.dumps({"Sergeant": "sergeant"}), encoding="utf-8")
+
+    manager = NpcArtManager(art_root=art_root, art_map_path=map_path)
+
+    assert "sergeant_original" not in manager.available_keys
+    assert manager.get_image_path("Sergeant") == str(art_root / "sergeant.png")
+
+
+def test_build_npc_art_review_sheet_smoke(tmp_path):
+    art_root = tmp_path / "npc_art"
+    art_root.mkdir()
+    map_path = art_root / "npc_art_map.json"
+    map_path.write_text(json.dumps({"Sergeant": "sergeant", "Priest": "priest"}), encoding="utf-8")
+    _write_png(art_root / "sergeant.png")
+    _write_png(art_root / "priest.png")
+    output = tmp_path / "review.png"
+
+    build_npc_art_sheet.draw_review_sheet(art_root, output, columns=2)
+
+    assert output.exists()
+    with Image.open(output) as sheet:
+        assert sheet.size[0] > 0
+        assert sheet.size[1] > 0

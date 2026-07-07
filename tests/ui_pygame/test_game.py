@@ -791,7 +791,10 @@ def test_gameplay_statistics_popup_and_town_menu_entry(monkeypatch):
 
 def test_old_warehouse_footpad_ring_jobs_require_visible_dormant_ring(monkeypatch):
     game = pygame_game.PygameGame.__new__(pygame_game.PygameGame)
-    game.presenter = SimpleNamespace()
+    shown_messages = []
+    game.presenter = SimpleNamespace(
+        show_message=lambda message, **kwargs: shown_messages.append((message, kwargs)),
+    )
     game.player_char = SimpleNamespace(
         cls=SimpleNamespace(name="Rogue"),
         class_ring_awakening=class_rings.default_state(),
@@ -809,11 +812,20 @@ def test_old_warehouse_footpad_ring_jobs_require_visible_dormant_ring(monkeypatc
             return True
 
     monkeypatch.setattr(pygame_game, "ConfirmationPopup", FakePopup)
+    monkeypatch.setattr(
+        pygame_game,
+        "get_npc_art_manager",
+        lambda: SimpleNamespace(get_image_path=lambda name: f"npc:{name}" if name == "Old Warehouse Guard" else ""),
+    )
 
     assert game._footpad_class_ring_rite_label() == "Loaded Game"
     assert game._footpad_class_ring_rite_available() is False
     assert game.visit_old_warehouse() is False
-    assert popup_messages[-1] == "Authorized personnel only.\nPlease leave."
+    assert popup_messages == []
+    assert shown_messages[-1][0] == 'A warehouse guard steps into your path.\n\n"Authorized personnel only. Please leave."'
+    assert shown_messages[-1][1]["title"] == "Old Warehouse Guard"
+    assert shown_messages[-1][1]["image_path"] == "npc:Old Warehouse Guard"
+    assert shown_messages[-1][1]["split_layout"] is True
 
     game.player_char.storage = {"Class Ring": [items.ClassRing()]}
     assert game._footpad_class_ring_rite_available() is True
