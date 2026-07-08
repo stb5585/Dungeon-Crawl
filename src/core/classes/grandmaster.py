@@ -23,9 +23,20 @@ ONE_HANDED_WEAPONS = {"Fist", "Dagger", "Sword", "Club"}
 TWO_HANDED_WEAPONS = {"Longsword", "Battle Axe", "Polearm", "Hammer"}
 
 MAX_RANK = 10
-XP_THRESHOLDS = (8, 20, 38, 62, 95, 138, 192, 258, 336, 430)
+XP_THRESHOLDS = (24, 60, 114, 186, 285, 414, 576, 774, 1008, 1290)
 HIT_XP = 1
 VICTORY_XP = 3
+ART_XP = 2
+
+DISCIPLINE_XP_CHANCES = {
+    "hit": 0.30,
+    "crit": 0.55,
+    "art": 0.75,
+    "victory": 0.65,
+}
+DISCIPLINE_INT_CHANCE_PER_POINT = 0.02
+DISCIPLINE_MIN_CHANCE = 0.05
+DISCIPLINE_MAX_CHANCE = 0.95
 
 BASE_ACCURACY_PER_RANK = 0.005
 BASE_PROC_PER_RANK = 0.01
@@ -69,11 +80,11 @@ class GrandmasterOfArms(Job):
             "mastering the art of dual-wielding and wielding powerful "
             "blades with unmatched skill.",
             str_plus=2,
-            int_plus=0,
+            int_plus=1,
             wis_plus=0,
             con_plus=2,
             cha_plus=0,
-            dex_plus=3,
+            dex_plus=2,
             att_plus=5,
             def_plus=3,
             magic_plus=0,
@@ -129,7 +140,10 @@ def normalize_state(state: Any) -> dict[str, Any]:
     if isinstance(disciplines, dict):
         for weapon_type in WEAPON_TYPES:
             entry = disciplines.get(weapon_type, {})
-            xp = int(entry.get("xp", 0) or 0) if isinstance(entry, dict) else 0
+            try:
+                xp = int(entry.get("xp", 0) or 0) if isinstance(entry, dict) else 0
+            except (TypeError, ValueError):
+                xp = 0
             normalized["disciplines"][weapon_type] = {
                 "xp": max(0, xp),
                 "rank": rank_for_xp(xp),
@@ -184,6 +198,38 @@ def discipline_rank(character: Any, weapon_type: str | None) -> int:
     return int(state["disciplines"][weapon_type]["rank"])
 
 
+def format_xp_value(value: float) -> str:
+    value = max(0.0, float(value or 0))
+    if value.is_integer():
+        return str(int(value))
+    return f"{value:.2f}".rstrip("0").rstrip(".")
+
+
+def discipline_difficulty_factor(opponent: Any) -> float:
+    if opponent is None:
+        return 1.0
+    level = getattr(opponent, "level", None)
+    try:
+        pro_level = float(getattr(level, "pro_level", 0) or 0)
+    except (TypeError, ValueError):
+        pro_level = 0.0
+    return max(0.0, pro_level / 2.0)
+
+
+def discipline_xp_chance(character: Any, opponent: Any = None, *, reason: str = "hit") -> float:
+    difficulty = discipline_difficulty_factor(opponent)
+    if difficulty <= 0:
+        return 0.0
+    base_chance = DISCIPLINE_XP_CHANCES.get(reason, DISCIPLINE_XP_CHANCES["hit"])
+    stats = getattr(character, "stats", None)
+    try:
+        intel = int(getattr(stats, "intel", 10) or 10)
+    except (TypeError, ValueError):
+        intel = 10
+    chance = (base_chance + ((intel - 10) * DISCIPLINE_INT_CHANCE_PER_POINT)) * difficulty
+    return max(DISCIPLINE_MIN_CHANCE, min(DISCIPLINE_MAX_CHANCE, chance))
+
+
 def add_discipline_xp(character: Any, weapon_type: str | None, amount: int) -> tuple[int, int]:
     if weapon_type not in WEAPON_TYPES or amount <= 0 or not is_weapon_discipline_class(character):
         return 0, 0
@@ -195,6 +241,55 @@ def add_discipline_xp(character: Any, weapon_type: str | None, amount: int) -> t
     setattr(character, "grandmaster_discipline", state)
     sync_weapon_art_skills(character)
     return before, int(entry["rank"])
+
+
+def roll_discipline_xp(
+    character: Any,
+    weapon_type: str | None,
+    amount: int,
+    opponent: Any = None,
+    *,
+    reason: str = "hit",
+    rng=random,
+) -> tuple[int, int, int]:
+    if weapon_type not in WEAPON_TYPES or amount <= 0 or not is_weapon_discipline_class(character):
+        return 0, 0, 0
+    chance = discipline_xp_chance(character, opponent, reason=reason)
+    if chance <= 0 or rng.random() >= chance:
+        current_rank = discipline_rank(character, weapon_type)
+        return current_rank, current_rank, 0
+    before, after = add_discipline_xp(character, weapon_type, int(amount))
+    return before, after, int(amount)
+
+
+def xp_label(character: Any, weapon_type: str | None) -> str:
+    if weapon_type not in WEAPON_TYPES:
+        return "0/0 XP"
+    state = normalize_state(getattr(character, "grandmaster_discipline", None))
+    entry = state["disciplines"][weapon_type]
+    xp = max(0, int(entry.get("xp", 0) or 0))
+    rank = max(0, int(entry.get("rank", 0) or 0))
+    if rank >= MAX_RANK:
+        return "MAX"
+    return f"{format_xp_value(xp)}/{XP_THRESHOLDS[rank]} XP"
+
+
+def discipline_xp_text(
+    character: Any,
+    weapon_type: str | None,
+    amount: int,
+    before_rank: int,
+    after_rank: int,
+) -> str:
+    if weapon_type not in WEAPON_TYPES or amount <= 0:
+        return ""
+    text = f"{weapon_type} Discipline +{format_xp_value(amount)} XP.\n"
+    if after_rank > before_rank:
+        text += f"{weapon_type} Discipline reached rank {after_rank}.\n"
+        art_name = WEAPON_ARTS.get(weapon_type)
+        if art_name and before_rank < 1 <= after_rank:
+            text += f"Learned {art_name}.\n"
+    return text
 
 
 def bind_weapon(character: Any, weapon_type: str) -> bool:
@@ -323,6 +418,9 @@ def perform_weapon_art(character: Any, target: Any, art_name: str) -> str:
         return msg
 
     msg += _apply_art_effect(character, target, weapon_type, rank, crit, perfect)
+    if hasattr(character, "record_grandmaster_weapon_art"):
+        before, after, amount = character.record_grandmaster_weapon_art(weapon_type, target)
+        msg += discipline_xp_text(character, weapon_type, amount, before, after)
     return msg
 
 

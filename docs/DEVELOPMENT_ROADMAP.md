@@ -33,9 +33,11 @@ appropriate design-gate document before coding.
   Pygame dungeon/town/combat flows, selected-item artwork, enemy combat sprites,
   dungeon tile art, and non-asset audio routing are implemented.
 - Recent class-mechanic follow-up shipped Weapon Master/Berserker/Grandmaster
-  Weapon Discipline and weapon arts, the Sorcerer/Wizard 0-based School
-  Affinity progression, the promotion ability transition decision matrix, and
-  the V1 promotion class-kit track implementation.
+  Weapon Discipline and weapon arts, the `Weapon Discipline` Character Menu
+  tab, pygame promotion preview/stat-delta education, INT-backed promotion
+  stat tuning, the Sorcerer/Wizard 0-based School Affinity progression, the
+  promotion ability transition decision matrix, and the V1 promotion class-kit
+  track implementation.
 - Current planning references:
   - `docs/CLASS_KIT_DESIGN_GATES.md` for promotion class-kit behavior and
     follow-up tuning gates.
@@ -152,15 +154,16 @@ Remaining follow-up after this V1 slice:
 
 ## Dungeon, World, And Encounter Gates
 
-Status: `Spec Map, V1 Quick Wins Shipped`
+Status: `Spec Map, V1 Quick Wins Shipped, Relic Text Shared`
 
 `docs/DUNGEON_WORLD_ENCOUNTER_DESIGN_GATES.md` is the durable reference for
 dungeon interaction, chest policy, encounter bias, Realm of Cambion deferrals,
 relic discovery text, town hint flavor, and low-health dungeon navigation
 presentation. V1 quick wins have shipped and are locked by focused regression
 coverage: opened chests stay open, relic rooms use relic-specific discovery
-text, random encounters can receive a soft active-quest target nudge, and pygame
-dungeon navigation keeps a persistent low-health cue visible.
+text through shared pygame and core/curses handling, random encounters can
+receive a soft active-quest target nudge, and pygame dungeon navigation keeps a
+persistent low-health cue visible.
 
 ## Equipment, Items, And Economy Gates
 

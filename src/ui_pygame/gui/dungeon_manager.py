@@ -30,19 +30,8 @@ from .loot_popup import LootPopup
 logger = logging.getLogger(__name__)
 
 
-RELIC_DISCOVERY_TEXT = {
-    "Triangulus": "Triangulus rises from the altar, its three points bright with mind, body, and spirit.",
-    "Quadrata": "Quadrata settles into your hands, steady as a vow carved into stone.",
-    "Hexagonum": "Hexagonum hums with living geometry, every edge answering the deep places of the world.",
-    "Luna": "Luna glows with a pale warmth, a quiet reminder that love is a choice renewed.",
-    "Polaris": "Polaris catches a fixed northern light, pointing onward through the dark.",
-    "Infinitas": "Infinitas turns without beginning or end, holding the shape of endurance.",
-}
-
-
 def relic_discovery_text(relic) -> str:
-    name = getattr(relic, "name", "Unknown Relic")
-    return RELIC_DISCOVERY_TEXT.get(name, f"You found a relic: {name}!")
+    return map_tiles.relic_discovery_text(relic)
 
 
 class DungeonManager:

@@ -11,7 +11,7 @@ from src.core.town import (
     PATRON_DIALOGUES,
     RESPONSE_MAP,
     already_defeated_enemy,
-    get_holy_grail_rotation_hints,
+    get_reactive_town_hints,
     quest_dict,
 )
 from . import menus
@@ -391,7 +391,7 @@ def tavern_patrons(game):
             level_talks = [talks[x] for x in talks if game.player_char.player_level() >= int(x)]
             if patron_options[patron_idx] == "Drunkard" and game.player_char.player_level() >= 65:
                 level_talks = [talks[65]]
-            rotation_hints = get_holy_grail_rotation_hints(game.player_char, patron_options[patron_idx])
+            rotation_hints = get_reactive_town_hints(game.player_char, patron_options[patron_idx])
             if rotation_hints:
                 level_talks = level_talks + [rotation_hints]
             response = random.choice(random.choice(level_talks))
@@ -519,7 +519,7 @@ def barracks(game):
     """
 
     barracks_message = "Step inside, soldier. This is your new home."
-    barracks_options = ["Quests", "Storage", "Leave"]
+    barracks_options = ["Quests", "Storage Locker", "Leave"]
     menu = menus.LocationMenu(game, barracks_message, barracks_options)
     barracksbox = menus.TextBox(game)
     menu.draw_all()
@@ -541,7 +541,7 @@ def barracks(game):
                 barracksbox.print_text_in_rectangle(message)
                 barracksbox.clear_rectangle()
                 return
-            if barracks_options[barrack_idx] == 'Storage':
+            if barracks_options[barrack_idx] == 'Storage Locker':
                 storage_message = "What would you like to do?"
                 storage_options = ['Store', 'Go Back']
                 if len(game.player_char.storage) > 0:
@@ -645,7 +645,7 @@ def barracks(game):
                                 barracksbox.print_text_in_rectangle(response)
                                 barracksbox.clear_rectangle()
                                 continue
-                    rotation_hints = get_holy_grail_rotation_hints(game.player_char, "Sergeant")
+                    rotation_hints = get_reactive_town_hints(game.player_char, "Sergeant")
                     if rotation_hints:
                         responses = responses + [rotation_hints]
                     response = random.choice(random.choice(responses))

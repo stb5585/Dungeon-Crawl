@@ -7,6 +7,8 @@ import textwrap
 
 import pygame
 
+from src.core.classes import promotion_mechanic_guidance, promotion_mechanic_tab_label
+
 from .confirmation_popup import ConfirmationPopup
 from .mouse_helpers import hit_index, is_left_click, mouse_position
 from .town_base import TownScreenBase
@@ -59,6 +61,87 @@ class PromotionScreen(TownScreenBase):
             (("Dexterity", pc.stats.dex + cls_instance.dex_plus, cls_instance.dex_plus),
              ("Magic Defense", pc.combat.magic_def + cls_instance.magic_def_plus, cls_instance.magic_def_plus)),
         ]
+
+    def _stat_delta_color(self, delta):
+        if delta > 0:
+            return self.colors.GREEN
+        if delta < 0:
+            return self.colors.RED
+        return self.colors.GRAY
+
+    def _draw_wrapped_lines(self, lines, font, color, x, y, line_height, *, max_y=None):
+        for line in lines:
+            if max_y is not None and y + line_height > max_y:
+                break
+            text = font.render(line, True, color)
+            self.screen.blit(text, (x, y))
+            y += line_height
+        return y
+
+    def _draw_character_tab_preview(self, rect, cls_name, y):
+        header = self.normal_font.render("Character Menu Preview", True, self.colors.GOLD)
+        self.screen.blit(header, (rect.left + 18, y))
+        y += header.get_height() + 8
+
+        mechanic_tab = promotion_mechanic_tab_label(cls_name)
+        tabs = ["Character"]
+        if mechanic_tab:
+            tabs.append(mechanic_tab)
+        tabs.append("Equipment")
+
+        gap = 8
+        tab_width = max(110, min(190, (rect.width - 36 - gap * (len(tabs) - 1)) // len(tabs)))
+        tab_height = 34
+        x = rect.left + 18
+        for tab in tabs:
+            tab_rect = pygame.Rect(x, y, tab_width, tab_height)
+            highlighted = bool(mechanic_tab and tab == mechanic_tab)
+            pygame.draw.rect(self.screen, self.colors.HIGHLIGHT_BG if highlighted else (14, 14, 19), tab_rect)
+            pygame.draw.rect(self.screen, self.colors.GOLD if highlighted else self.colors.BORDER_COLOR, tab_rect, 2 if highlighted else 1)
+            color = self.colors.GOLD if highlighted else self.colors.WHITE
+            label = self.small_font.render(tab, True, color)
+            self.screen.blit(label, label.get_rect(center=tab_rect.center))
+            x += tab_width + gap
+        y += tab_height + 10
+
+        guidance = promotion_mechanic_guidance(cls_name).strip()
+        if not guidance:
+            guidance = "Open the Character Menu after promotion to review your class and equipment."
+        guidance = guidance.replace("Character Menu tab available: ", "New tab: ")
+        guide_lines = self._wrap_lines(guidance, 78)
+        return self._draw_wrapped_lines(
+            guide_lines[:3],
+            self.small_font,
+            self.colors.WHITE if mechanic_tab else self.colors.GRAY,
+            rect.left + 28,
+            y,
+            self.small_font.get_height() + 3,
+        )
+
+    def _draw_promotion_stat_grid(self, rect, cls_instance, y):
+        header = self.normal_font.render("Promotion Impact", True, self.colors.GOLD)
+        self.screen.blit(header, (rect.left + 18, y))
+        y += header.get_height() + 8
+
+        line_height = self.small_font.get_height() + 6
+        col_width = (rect.width - 68) // 2
+        col1_x = rect.left + 24
+        col2_x = rect.left + 42 + col_width
+        for left, right in self._stat_pairs(cls_instance):
+            for x, row in ((col1_x, left), (col2_x, right)):
+                label, value, delta = row
+                label_text = self.small_font.render(label, True, self.colors.GRAY)
+                self.screen.blit(label_text, (x, y))
+
+                value_x = x + min(120, max(88, col_width // 2))
+                value_text = self.small_font.render(str(value), True, self.colors.WHITE)
+                self.screen.blit(value_text, (value_x, y))
+
+                delta_text = f"+{delta}" if delta >= 0 else str(delta)
+                delta_surface = self.small_font.render(delta_text, True, self._stat_delta_color(delta))
+                self.screen.blit(delta_surface, (value_x + 48, y))
+            y += line_height
+        return y
 
     def _draw_header(self):
         top_rect = pygame.Rect(0, 0, self.width, self.height // 12)
@@ -134,52 +217,45 @@ class PromotionScreen(TownScreenBase):
 
         y = left_rect.top + 14
 
-        name_text = self.large_font.render(cls_instance.name, True, self.colors.GOLD)
+        transition = f"{self.current_class} -> {cls_instance.name}"
+        name_text = self.large_font.render(transition, True, self.colors.GOLD)
         name_rect = name_text.get_rect(centerx=left_rect.centerx, top=y)
         self.screen.blit(name_text, name_rect)
         y = name_rect.bottom + 8
 
-        desc_lines = self._wrap_lines(cls_instance.description, 88)
-        max_desc_lines = 7
-        line_height = self.normal_font.get_height() + 4
+        desc_lines = self._wrap_lines(cls_instance.description, 92)
+        line_height = self.small_font.get_height() + 4
         desc_start_y = y
-        for line in desc_lines[:max_desc_lines]:
-            text = self.normal_font.render(line, True, self.colors.WHITE)
-            self.screen.blit(text, (left_rect.left + 18, y))
-            y += line_height
+        y = self._draw_wrapped_lines(
+            desc_lines[:4],
+            self.small_font,
+            self.colors.WHITE,
+            left_rect.left + 18,
+            y,
+            line_height,
+        )
 
         # Reserve a fixed block for descriptions so lower sections stay aligned
-        y = desc_start_y + (line_height * max_desc_lines) + 8
+        y = desc_start_y + (line_height * 4) + 10
 
-        stats_header = self.normal_font.render("Promotion Stats", True, self.colors.GOLD)
-        self.screen.blit(stats_header, (left_rect.left + 18, y))
-        y = stats_header.get_height() + y + 6
+        y = self._draw_character_tab_preview(left_rect, cls_instance.name, y)
+        y += 14
 
-        stat_pairs = self._stat_pairs(cls_instance)
-        line_height = self.small_font.get_height() + 6
-        col1_x = left_rect.left + 24
-        col2_x = left_rect.left + (left_rect.width // 2) + 10
-        for left, right in stat_pairs:
-            l_label, l_val, l_bonus = left
-            r_label, r_val, r_bonus = right
-            left_line = f"{l_label}: {l_val} (+{l_bonus})"
-            right_line = f"{r_label}: {r_val} (+{r_bonus})"
-            l_text = self.small_font.render(left_line, True, self.colors.WHITE)
-            r_text = self.small_font.render(right_line, True, self.colors.WHITE)
-            self.screen.blit(l_text, (col1_x, y))
-            self.screen.blit(r_text, (col2_x, y))
-            y += line_height
-
-        y += 12
+        y = self._draw_promotion_stat_grid(left_rect, cls_instance, y)
+        y += 10
         rest_header = self.normal_font.render("Equipment Restrictions", True, self.colors.GOLD)
         self.screen.blit(rest_header, (left_rect.left + 18, y))
         y = rest_header.get_height() + y + 4
 
+        line_height = self.small_font.get_height() + 5
+        max_restriction_y = left_rect.bottom - 48
         for slot, allowed in cls_instance.restrictions.items():
             if not allowed:
                 continue
             line = f"{slot}: {', '.join(allowed)}"
             for wrapped in self._wrap_lines(line, 80):
+                if y + line_height > max_restriction_y:
+                    break
                 text = self.small_font.render(wrapped, True, self.colors.WHITE)
                 self.screen.blit(text, (left_rect.left + 28, y))
                 y += line_height
@@ -212,6 +288,25 @@ class PromotionScreen(TownScreenBase):
         self._draw_instructions()
         pygame.display.flip()
 
+    def draw_modal_background(self):
+        """Redraw the promotion preview behind confirmation popups."""
+        self.draw_background()
+        self._draw_header()
+
+        if self.options:
+            selected_name = self.options[self.current_selection]
+            cls_ctor = self.option_map.get(selected_name)
+            if cls_ctor:
+                self._draw_detail_panel(cls_ctor)
+
+        self._draw_options_panel()
+        self._draw_instructions()
+
+    def _confirmation_kwargs(self):
+        kwargs = self.popup_show_kwargs()
+        kwargs.setdefault("background_draw_func", self.draw_modal_background)
+        return kwargs
+
     def navigate(self):
         if not self.options:
             return None
@@ -236,7 +331,7 @@ class PromotionScreen(TownScreenBase):
                             self.presenter,
                             f"Promote to {selected_name}?"
                         )
-                        if popup.show(**self.popup_show_kwargs()):
+                        if popup.show(**self._confirmation_kwargs()):
                             return selected_name
                     elif event.key == pygame.K_ESCAPE:
                         return None
@@ -254,6 +349,6 @@ class PromotionScreen(TownScreenBase):
                         self.presenter,
                         f"Promote to {selected_name}?"
                     )
-                    if popup.show(**self.popup_show_kwargs()):
+                    if popup.show(**self._confirmation_kwargs()):
                         return selected_name
             self.presenter.clock.tick(30)

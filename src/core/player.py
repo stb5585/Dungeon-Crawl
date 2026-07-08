@@ -545,23 +545,52 @@ class Player(Character):
         self.ensure_demonologist_contracts()
         return demonologist.refresh_unlocked_contracts(self)
 
-    def record_grandmaster_weapon_hit(self, weapon_type: str | None) -> tuple[int, int]:
+    def record_grandmaster_weapon_hit(
+        self,
+        weapon_type: str | None,
+        opponent=None,
+        *,
+        reason: str = "hit",
+    ) -> tuple[int, int, int]:
         """Award per-hit discipline XP and remember the weapon type for victory XP."""
         self.ensure_grandmaster_discipline()
-        before, after = grandmaster.add_discipline_xp(self, weapon_type, grandmaster.HIT_XP)
+        before, after, amount = grandmaster.roll_discipline_xp(
+            self,
+            weapon_type,
+            grandmaster.HIT_XP,
+            opponent,
+            reason=reason,
+        )
         if weapon_type in grandmaster.WEAPON_TYPES:
             self._grandmaster_battle_hit_types.add(weapon_type)
-        return before, after
+        return before, after, amount
 
-    def award_grandmaster_victory_xp(self) -> dict[str, tuple[int, int]]:
+    def record_grandmaster_weapon_art(self, weapon_type: str | None, opponent=None) -> tuple[int, int, int]:
+        """Award discipline insight for successfully landing a Weapon Art."""
+        self.ensure_grandmaster_discipline()
+        return grandmaster.roll_discipline_xp(
+            self,
+            weapon_type,
+            grandmaster.ART_XP,
+            opponent,
+            reason="art",
+        )
+
+    def award_grandmaster_victory_xp(self, opponent=None) -> dict[str, tuple[int, int, int]]:
         """Award victory discipline XP to equipped weapon types used in this battle."""
         self.ensure_grandmaster_discipline()
         results = {}
         for weapon_type in sorted(self._grandmaster_battle_hit_types):
             if weapon_type in grandmaster.WEAPON_TYPES:
-                results[weapon_type] = grandmaster.add_discipline_xp(
-                    self, weapon_type, grandmaster.VICTORY_XP
+                before, after, amount = grandmaster.roll_discipline_xp(
+                    self,
+                    weapon_type,
+                    grandmaster.VICTORY_XP,
+                    opponent,
+                    reason="victory",
                 )
+                if amount > 0:
+                    results[weapon_type] = (before, after, amount)
         self._grandmaster_battle_hit_types.clear()
         grandmaster.sync_weapon_art_skills(self)
         return results

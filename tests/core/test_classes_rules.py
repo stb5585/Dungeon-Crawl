@@ -55,6 +55,39 @@ def test_promotion_rules_ignore_unknown_class_without_mutating_spellbook():
     assert set(player.spellbook["Skills"]) == {"Feint"}
 
 
+def test_promotion_mechanic_guidance_points_to_relevant_character_tab():
+    weapon_guidance = classes.promotion_mechanic_guidance("Weapon Master")
+    assert "Weapon Discipline" in weapon_guidance
+    assert "Intelligence" in weapon_guidance
+    assert classes.promotion_mechanic_tab_label("Weapon Master") == "Weapon Discipline"
+
+    summoner_guidance = classes.promotion_mechanic_guidance("Summoner")
+    assert "Summons" in summoner_guidance
+    assert "bond growth" in summoner_guidance
+    assert classes.promotion_mechanic_tab_label("Summoner") == "Summons"
+
+    companion_guidance = classes.promotion_mechanic_guidance("Warlock")
+    assert "Companion" in companion_guidance
+    assert "familiar" in companion_guidance
+    assert classes.promotion_mechanic_tab_label("Warlock") == "Companion"
+
+    assert classes.promotion_mechanic_guidance("Knight") == ""
+    assert classes.promotion_mechanic_tab_label("Knight") == ""
+
+
+def test_weapon_discipline_classes_include_intelligence_promotion_bonus():
+    weapon_master = classes.WeaponMaster()
+    grandmaster = classes.GrandmasterOfArms()
+
+    assert weapon_master.str_plus == 2
+    assert weapon_master.int_plus == 1
+    assert weapon_master.dex_plus == 2
+
+    assert grandmaster.str_plus == 2
+    assert grandmaster.int_plus == 1
+    assert grandmaster.dex_plus == 2
+
+
 def test_grant_summoner_initial_summon_initializes_patagon(monkeypatch):
     initialized = []
 

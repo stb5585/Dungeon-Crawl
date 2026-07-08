@@ -181,7 +181,7 @@ def test_show_hint_eligible_quests_and_random_help(monkeypatch):
             }
         },
     )
-    monkeypatch.setattr(quest_manager, "get_holy_grail_rotation_hints", lambda _player, _giver: ["Secret grail hint"])
+    monkeypatch.setattr(quest_manager, "get_reactive_town_hints", lambda _player, _giver: ["Secret grail hint"])
     monkeypatch.setattr(quest_manager.random, "choice", lambda seq: seq[0])
 
     mains, sides = manager._eligible_quests("Guide")
@@ -199,6 +199,22 @@ def test_show_hint_eligible_quests_and_random_help(monkeypatch):
         "flush_events": True,
         "require_key_release": True,
     }
+
+
+def test_random_help_hint_uses_reactive_town_hints_when_no_quest_help(monkeypatch):
+    player = _make_player(level=10)
+    player.quest_dict = {"Main": {}, "Side": {}}
+    manager = _manager(player)
+
+    monkeypatch.setattr(
+        quest_manager,
+        "quest_dict",
+        {"Guide": {"Main": {}, "Side": {}}},
+    )
+    monkeypatch.setattr(quest_manager, "get_reactive_town_hints", lambda _player, _giver: ["Reactive warning"])
+    monkeypatch.setattr(quest_manager.random, "choice", lambda seq: seq[0])
+
+    assert manager.get_random_help_hint("Guide") == "Reactive warning"
 
 
 def test_can_offer_and_already_killed_helpers():
@@ -394,7 +410,7 @@ def test_check_and_offer_covers_turnin_offer_help_and_noquest(monkeypatch):
     monkeypatch.setattr(manager, "_turn_in", lambda name, typ: turnins.append((name, typ)))
     monkeypatch.setattr(manager, "_offer", lambda giver, name, q, typ: offers.append((giver, name, typ)) or False)
     monkeypatch.setattr(manager, "_handle_chalice_giver_hint", lambda giver: False)
-    monkeypatch.setattr(quest_manager, "get_holy_grail_rotation_hints", lambda _player, _giver: [])
+    monkeypatch.setattr(quest_manager, "get_reactive_town_hints", lambda _player, _giver: [])
     monkeypatch.setattr(quest_manager.random, "choice", lambda seq: seq[0])
     monkeypatch.setattr(quest_manager, "ConfirmationPopup", FakePopup)
     FakePopup.messages = []

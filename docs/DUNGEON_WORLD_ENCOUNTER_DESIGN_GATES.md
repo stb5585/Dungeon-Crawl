@@ -7,7 +7,7 @@ this file should keep active, deferred, or decision-gated direction.
 
 ## Status
 
-Status: `Spec Map, V1 Quick Wins Shipped`
+Status: `Spec Map, V1 Quick Wins Shipped, Relic Text Shared`
 
 The first implementation slice shipped low-risk improvements that do not
 require new maps, generated art, or broad content rewrites:
@@ -16,6 +16,7 @@ require new maps, generated art, or broad content rewrites:
 - Persistent low-health presentation while navigating the dungeon.
 - Chest behavior formalized as one-and-done in V1.
 - A small random-encounter nudge toward active quest enemy targets.
+- Shared relic discovery copy for pygame and core/curses relic-room flows.
 
 Heavier dungeon interaction systems and deeper Realm of Cambion content remain
 deferred until their content beats are chosen.
@@ -99,6 +100,10 @@ Relic rooms should use relic-specific discovery text instead of the generic
 
 Missing text mappings fall back to a readable generic message.
 
+Runtime relic discovery text is owned by `src/core/map_tiles.py` and reused by
+the pygame dungeon manager. Both pygame interaction and core/curses
+`RelicRoom.special_text()` should use the same mapping and fallback.
+
 ## Town Hint Flavor
 
 Town hint work should extend existing systems rather than adding a new town
@@ -131,7 +136,7 @@ Focused regression coverage now covers:
 - encounter bias can choose an active quest target with seeded RNG;
 - encounter bias falls back when the target is absent or the soft roll fails;
 - fixed and special encounters continue to bypass encounter bias;
-- relic text mappings, generic fallback, inventory grant, `read` state, and
-  full HP/MP restore;
+- shared relic text mappings, generic fallback, inventory grant, `read` state,
+  and full HP/MP restore in pygame and core/curses relic-room paths;
 - low-health overlay visibility at or below 25% HP and absence above the
   threshold.

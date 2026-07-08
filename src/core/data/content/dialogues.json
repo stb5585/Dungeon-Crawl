@@ -18,7 +18,8 @@
       ],
       "25": [
         "The whole room gets quieter when you come back from a boss fight. That's respect, friend, even if nobody says it outright.",
-        "If the Sergeant starts sounding less angry and more worried, that means you are getting close to something important."
+        "If the Sergeant starts sounding less angry and more worried, that means you are getting close to something important.",
+        "People keep asking how many relics you have found. I keep telling them that counting relics is easier than counting what they cost."
       ],
       "65": [
         "After the Jester fell, three people paid their tabs without making a single joke. I have never seen this room so relieved.",
@@ -39,6 +40,10 @@
       ],
       "25": [
         "Joffrey returned yesterday bloodied but resolute. He has gained much experience and hopes to have found the source of our suffering by month's end. I gave him my lucky pendant to return to me when his mission is complete."
+      ],
+      "50": [
+        "The deeper reports sound less like monster stories and more like warnings left by people who knew they would not get another chance.",
+        "When relic-light comes through that door, everyone notices. They just pretend they were looking somewhere else."
       ]
     },
     "Soldier": {
@@ -52,7 +57,8 @@
       ],
       "50": [
         "The Sergeant keeps a ledger of every relic report. If you bring him proof, he'll know exactly which blood-soaked story it belongs to.",
-        "After the Iron Golem fell, the engineers started hauling brass coils toward the old warehouse. Something big is coming."
+        "After the Iron Golem fell, the engineers started hauling brass coils toward the old warehouse. Something big is coming.",
+        "Every boss report changes the patrol map. The lines get cleaner, but the margins keep getting darker."
       ],
       "65": [
         "The final evil is not just another monster. The relic reports say ordinary strength will not be enough when the Evening Star opens its eye.",
@@ -72,7 +78,8 @@
       ],
       "65": [
         "We are all praying for your success and survival!",
-        "Rutger used to talk about a so-called Master key, that could open any lock. I wonder how much truth was in that."
+        "Rutger used to talk about a so-called Master key, that could open any lock. I wonder how much truth was in that.",
+        "Six relics, one hero, no sane odds. Good thing nobody asked the odds. (hic)"
       ]
     },
     "Busboy": {
@@ -88,7 +95,8 @@
       ],
       "50": [
         "The scientists tip in strange coins and smell like ozone. They keep asking whether the fifth floor is still intact.",
-        "One of the guards said the relics hum louder when they are brought near each other. I have been trying very hard not to think about that."
+        "One of the guards said the relics hum louder when they are brought near each other. I have been trying very hard not to think about that.",
+        "The more guardian names people cross off the wall, the less anyone wants to stand near the wall."
       ],
       "65": [
         "A guard left a note under his cup that just said, 'The Jester is gone.' Nobody touched the table for an hour.",
@@ -104,7 +112,8 @@
         "Hmm...interesting..."
       ],
       "50": [
-        "Your power has grown...I am impressed."
+        "Your power has grown...I am impressed.",
+        "The relics do not gather by accident. Neither do witnesses."
       ],
       "60": [
         "Have you defeated the Red Dragon yet?"

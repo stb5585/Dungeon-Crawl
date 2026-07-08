@@ -593,6 +593,8 @@ class TestSpecialTiles:
         assert relic_room.read is True
         assert player.health.current == player.health.max
         assert player.mana.current == player.mana.max
+        assert any("old oath" in message for message in textbox.messages)
+        assert any("health and mana" in message for message in textbox.messages)
         assert textbox.clear_count == 1
         assert any(name == "Triangulus" for name, *_rest in calls)
 

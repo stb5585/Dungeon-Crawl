@@ -111,7 +111,7 @@ actions, and non-damaging actions must not play hit/spell particle effects.
   - Player Mana Shield effect should be removed; new effect should cover screen with
     blue hue that "vibrates" between blue and purple on a hit
 
-## Jump And Charge Visuals
+### Jump And Charge Visuals
 
 Full Jump and Charge wind-up/impact animation remains deferred until enemy
 sprite stance adjustments are planned. Future work may add lightweight hooks for
@@ -236,6 +236,10 @@ If a future pass needs shared loading/caching, add a small manager following the
 existing asset-manager pattern. Do not introduce one-off path loading in several
 screens.
 
+### Additional Targets
+
+- Add storage locker image to show where Sergeant shows in Barracks
+
 ## Companion And Summon Art
 
 Familiar and summon artwork uses `CompanionArtManager` and
@@ -251,6 +255,13 @@ requiring hidden rows. Companion/summon artwork belongs in the selected
 companion details popup, which should follow the Character tab's visual pattern:
 art/identity/core attributes on the left and combat stats, abilities, and
 resistance groups on the right.
+
+For classes with non-companion usage mechanics, the middle Character Menu tab
+is renamed to that mechanic instead of showing a generic Class tab. Weapon
+Master, Berserker, and Grandmaster of Arms use the `Weapon Discipline` tab,
+with a full-width per-weapon board, item icons, rank/XP progress bars, and
+equipped-weapon highlighting. Classes without a class-usage mechanic hide the
+middle tab entirely.
 
 The first summon art pass covers Patagon, Dilong, Agloolik, Cacus, Fuath,
 Izulu, Hala, Grigori, Bardi, Kobalos, and Zahhak. The checked-in review sheet is

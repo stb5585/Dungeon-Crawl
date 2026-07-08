@@ -323,6 +323,32 @@ def test_save_manager_round_trip_preserves_old_key_counts(monkeypatch, tmp_path)
     assert all(item.name == "Old Key" for item in restored.inventory["Old Key"])
 
 
+def test_load_player_fills_missing_equipment_slots(monkeypatch, tmp_path):
+    save_dir = tmp_path / "saves"
+    tmp_dir = tmp_path / "tmp"
+    monkeypatch.setattr(SaveManager, "SAVE_DIR", str(save_dir))
+    monkeypatch.setattr(SaveManager, "TMP_DIR", str(tmp_dir))
+
+    player = TestGameState.create_player(name="SlotSaver", class_name="Warrior", race_name="Human", level=10)
+    assert SaveManager.save_player(player, "slots.save") is True
+
+    save_path = save_dir / "slots.save"
+    data = json.loads(save_path.read_text(encoding="utf-8"))
+    for slot in ("Weapon", "OffHand", "Armor", "Helmet", "Ring", "Pendant"):
+        data["equipment"].pop(slot, None)
+    save_path.write_text(json.dumps(data), encoding="utf-8")
+
+    restored = SaveManager.load_player("slots.save", skip_tiles=True)
+
+    assert restored is not None
+    assert restored.equipment["Weapon"].name == "Bare Hands"
+    assert restored.equipment["OffHand"].name == "No OffHand"
+    assert restored.equipment["Armor"].name == "No Armor"
+    assert restored.equipment["Helmet"].name == "No Helmet"
+    assert restored.equipment["Ring"].name == "No Ring"
+    assert restored.equipment["Pendant"].name == "No Pendant"
+
+
 def test_save_manager_describes_save_files_without_reading_payload(monkeypatch, tmp_path):
     save_dir = tmp_path / "saves"
     tmp_dir = tmp_path / "tmp"

@@ -35,6 +35,10 @@ def _make_player():
         cls=SimpleNamespace(name="Warrior", equipment={}),
         race=SimpleNamespace(cls_res={"First": []}),
         level=SimpleNamespace(level=10, pro_level=1, exp_to_gain=10),
+        stats=SimpleNamespace(strength=10, intel=10, wisdom=10, con=10, charisma=10, dex=10),
+        health=SimpleNamespace(max=100, current=100),
+        mana=SimpleNamespace(max=50, current=50),
+        combat=SimpleNamespace(attack=10, defense=10, magic=10, magic_def=10),
         spellbook={"Spells": {}, "Skills": {}},
         equipment={},
         level_exp=lambda: 42,
@@ -173,12 +177,22 @@ def test_handle_promotion_success_and_cancel(monkeypatch):
 
     class PromotedClass:
         def __init__(self):
-            self.name = "Knight"
+            self.name = "Weapon Master"
             self.equipment = {"Weapon": "blade", "Armor": "plate", "Accessory": "ring"}
+            self.str_plus = 2
+            self.int_plus = 1
+            self.wis_plus = 0
+            self.con_plus = 1
+            self.cha_plus = 0
+            self.dex_plus = 2
+            self.att_plus = 4
+            self.def_plus = 2
+            self.magic_plus = 0
+            self.magic_def_plus = 2
 
     monkeypatch.setattr(
         "src.ui_pygame.gui.church.classes_dict",
-        {"Base": {"class": BaseClass, "pro": {"Knight": {"class": PromotedClass}}}},
+        {"Base": {"class": BaseClass, "pro": {"Weapon Master": {"class": PromotedClass}}}},
     )
 
     class FakePromotionScreen:
@@ -188,18 +202,30 @@ def test_handle_promotion_success_and_cancel(monkeypatch):
         def navigate(self):
             return selection.pop(0)
 
-    selection = ["Knight", None]
+    selection = ["Weapon Master", None]
     monkeypatch.setattr("src.ui_pygame.gui.church.PromotionScreen", FakePromotionScreen)
 
     manager = church.ChurchManager(presenter, player)
     manager.handle_promotion()
 
-    assert player.cls.name == "Knight"
+    assert player.cls.name == "Weapon Master"
     assert player.level.pro_level == 2
     assert player.level.level == 1
     assert player.level.exp_to_gain == 42
-    assert "Promotion rules updated." in FakePopup.messages
-    assert "Congratulations! You are now a Knight." in FakePopup.messages
+    assert player.stats.strength == 12
+    assert player.stats.intel == 11
+    assert player.stats.con == 11
+    assert player.stats.dex == 12
+    assert player.health.max == 102
+    assert player.health.current == 102
+    assert player.mana.max == 52
+    assert player.mana.current == 52
+    assert player.combat.attack == 14
+    assert player.combat.defense == 12
+    assert player.combat.magic_def == 12
+    assert "Promotion rules updated." not in FakePopup.messages
+    assert not any("Character Menu tab available" in message for message in FakePopup.messages)
+    assert "Congratulations! You are now a Weapon Master." in FakePopup.messages
 
     player.cls = BaseClass()
     player.level.level = 30
@@ -294,16 +320,22 @@ def test_handle_promotion_advanced_branches(monkeypatch):
         def __init__(self):
             self.name = "Warlock"
             self.equipment = {"Weapon": "wand", "OffHand": "orb", "Armor": "robe"}
+            self.str_plus = self.int_plus = self.wis_plus = self.con_plus = self.cha_plus = self.dex_plus = 0
+            self.att_plus = self.def_plus = self.magic_plus = self.magic_def_plus = 0
 
     class SummonerClass:
         def __init__(self):
             self.name = "Summoner"
             self.equipment = {"Weapon": "staff", "Armor": "cloak"}
+            self.str_plus = self.int_plus = self.wis_plus = self.con_plus = self.cha_plus = self.dex_plus = 0
+            self.att_plus = self.def_plus = self.magic_plus = self.magic_def_plus = 0
 
     class NestedClass:
         def __init__(self):
             self.name = "Archmage"
             self.equipment = {}
+            self.str_plus = self.int_plus = self.wis_plus = self.con_plus = self.cha_plus = self.dex_plus = 0
+            self.att_plus = self.def_plus = self.magic_plus = self.magic_def_plus = 0
 
     class FakeSpell:
         def __init__(self):
@@ -387,7 +419,8 @@ def test_handle_promotion_advanced_branches(monkeypatch):
     assert player.spellbook["Skills"]["Transform"].name == "Transform"
     assert player.familiar is not None
     assert player.familiar.name == "Buddy"
-    assert any("joins you as 'Buddy'" in message for message in FakePopup.messages)
+    assert not any("joins you as 'Buddy'" in message for message in FakePopup.messages)
+    assert not any("Character Menu tab available: Companion" in message for message in FakePopup.messages)
     assert shown_messages[-1][0] == "Fairy"
 
     player.cls = BaseClass()
@@ -396,7 +429,8 @@ def test_handle_promotion_advanced_branches(monkeypatch):
     player.summons = {}
     manager.handle_promotion()
     assert "Patagon" in player.summons
-    assert any("learned to summon Patagon" in message for message in FakePopup.messages)
+    assert not any("learned to summon Patagon" in message for message in FakePopup.messages)
+    assert not any("Character Menu tab available: Summons" in message for message in FakePopup.messages)
 
     player.cls = WarlockClass()
     player.level.level = 30

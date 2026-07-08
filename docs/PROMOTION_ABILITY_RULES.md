@@ -180,12 +180,18 @@ promo_str += ability_change_msg
 ### Pygame Version (gui/church.py)
 The `ChurchManager.handle_promotion()` method calls:
 ```python
-ability_change_msg = apply_promotion_ability_rules(self.player_char, chosen_name)
-if ability_change_msg:
-    self.presenter.show_message(ability_change_msg.strip())
+apply_promotion_ability_rules(self.player_char, chosen_name)
 ```
 
-Both versions use the same underlying `apply_promotion_ability_rules()` function for consistency.
+The pygame promotion preview now carries the class-change, stat-delta, and
+class-mechanic education. After confirmation, pygame applies the promotion,
+adds class stat/resource/combat bonuses, increases current HP/MP by the same
+amount as max HP/MP bonuses, and shows one concise congratulations popup. It no
+longer emits separate ability-change/tutorial popups for the normal success
+path.
+
+Both versions use the same underlying `apply_promotion_ability_rules()` function
+for consistency.
 
 ## Function Reference
 

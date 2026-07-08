@@ -13,7 +13,7 @@ from src.core import items
 from src.core.town import (
     RESPONSE_MAP,
     already_defeated_enemy,
-    get_holy_grail_rotation_hints,
+    get_reactive_town_hints,
     quest_dict,
 )
 from .confirmation_popup import ConfirmationPopup, RewardSelectionPopup
@@ -130,7 +130,7 @@ class QuestManager:
                 ht = pdata.get('Help Text', '')
                 if isinstance(ht, str) and ht.strip():
                     hints.append(ht)
-        hints.extend(get_holy_grail_rotation_hints(self.player_char, giver))
+        hints.extend(get_reactive_town_hints(self.player_char, giver))
         return random.choice(hints) if hints else None
 
     def _eligible_quests(self, giver: str) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
@@ -671,7 +671,7 @@ class QuestManager:
             pdata = self.player_char.quest_dict.get('Side', {}).get(name)
             if pdata and not pdata.get('Turned In'):
                 help_texts.append(pdata.get('Help Text', ''))
-        help_texts.extend(get_holy_grail_rotation_hints(self.player_char, giver))
+        help_texts.extend(get_reactive_town_hints(self.player_char, giver))
         if help_texts and show_help:
             # Show a single random hint per interaction instead of all at once
             candidates = [ht for ht in help_texts if isinstance(ht, str) and ht.strip()]

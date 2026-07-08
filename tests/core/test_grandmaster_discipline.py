@@ -61,9 +61,6 @@ def test_weapon_master_starts_discipline_and_unlocks_rank_one_art():
     player = _weapon_master()
     player.equipment["Weapon"] = items.BrassKnuckles()
 
-    before, after = player.record_grandmaster_weapon_hit("Fist")
-
-    assert (before, after) == (0, 0)
     player.grandmaster_discipline["disciplines"]["Fist"]["xp"] = grandmaster.XP_THRESHOLDS[0]
     player.ensure_grandmaster_discipline()
 
@@ -115,14 +112,114 @@ def test_bound_class_ring_doubles_chosen_weapon_bonus():
     assert "bound to Sword Discipline" in player.equipment["Ring"].get_description(player)
 
 
-def test_weapon_hits_and_victory_award_discipline_xp():
+def test_weapon_hits_and_victory_award_discipline_xp(monkeypatch):
     player = _grandmaster()
+    enemy = Goblin()
+    enemy.level.pro_level = 2
+    monkeypatch.setattr(grandmaster.random, "random", lambda: 0.0)
 
-    player.record_grandmaster_weapon_hit("Sword")
+    player.record_grandmaster_weapon_hit("Sword", enemy)
     assert player.grandmaster_discipline["disciplines"]["Sword"]["xp"] == 1
 
-    player.award_grandmaster_victory_xp()
+    player.award_grandmaster_victory_xp(enemy)
     assert player.grandmaster_discipline["disciplines"]["Sword"]["xp"] == 4
+
+
+def test_weapon_discipline_xp_chance_scales_by_enemy_pro_level_and_intellect(monkeypatch):
+    player = _weapon_master()
+    player.stats.intel = 10
+    zero_enemy = Goblin()
+    zero_enemy.level.pro_level = 0
+
+    before, after, amount = player.record_grandmaster_weapon_hit("Sword", zero_enemy)
+
+    assert (before, after, amount) == (0, 0, 0)
+    assert player.grandmaster_discipline["disciplines"]["Sword"]["xp"] == 0
+    assert player.award_grandmaster_victory_xp(zero_enemy) == {}
+
+    weak_enemy = Goblin()
+    weak_enemy.level.pro_level = 1
+    baseline_enemy = Goblin()
+    baseline_enemy.level.pro_level = 2
+    assert grandmaster.discipline_xp_chance(player, weak_enemy, reason="hit") == (
+        grandmaster.discipline_xp_chance(player, baseline_enemy, reason="hit") / 2
+    )
+
+    low_int = _weapon_master()
+    low_int.stats.intel = 5
+    high_int = _weapon_master()
+    high_int.stats.intel = 18
+    assert grandmaster.discipline_xp_chance(high_int, baseline_enemy, reason="hit") > grandmaster.discipline_xp_chance(
+        low_int,
+        baseline_enemy,
+        reason="hit",
+    )
+
+    monkeypatch.setattr(grandmaster.random, "random", lambda: 1.0)
+    player.record_grandmaster_weapon_hit("Sword", weak_enemy)
+    assert player.grandmaster_discipline["disciplines"]["Sword"]["xp"] == 0
+
+    monkeypatch.setattr(grandmaster.random, "random", lambda: 0.0)
+    player.record_grandmaster_weapon_hit("Sword", weak_enemy)
+    assert player.grandmaster_discipline["disciplines"]["Sword"]["xp"] == 1
+    player.award_grandmaster_victory_xp(weak_enemy)
+    assert player.grandmaster_discipline["disciplines"]["Sword"]["xp"] == 4
+
+
+def test_weapon_master_battle_axe_hits_show_rank_progression_text(monkeypatch):
+    player = _weapon_master()
+    player.equipment["Weapon"] = items.Broadaxe()
+    player.equipment["OffHand"] = items.NoOffHand()
+    target = Goblin()
+    target.level.pro_level = 2
+    target.health.current = target.health.max = 999
+    player.grandmaster_discipline["disciplines"]["Battle Axe"]["xp"] = grandmaster.XP_THRESHOLDS[0] - 1
+    player.ensure_grandmaster_discipline()
+    monkeypatch.setattr(grandmaster.random, "random", lambda: 0.0)
+
+    message, hit, _crit = player.weapon_damage(target, hit=True, use_offhand=False)
+
+    assert hit is True
+    battle_axe = player.grandmaster_discipline["disciplines"]["Battle Axe"]
+    assert battle_axe["xp"] == grandmaster.XP_THRESHOLDS[0]
+    assert battle_axe["rank"] == 1
+    assert "Battle Axe Discipline +1 XP" in message
+    assert f"{grandmaster.XP_THRESHOLDS[0]}/{grandmaster.XP_THRESHOLDS[1]} XP" not in message
+    assert "Battle Axe Discipline reached rank 1" in message
+    assert "Learned Reaver's Mark" in message
+
+
+def test_weapon_art_can_grant_discipline_insight(monkeypatch):
+    player = _weapon_master()
+    player.equipment["Weapon"] = items.BrassKnuckles()
+    enemy = Goblin()
+    enemy.level.pro_level = 2
+    grandmaster.add_discipline_xp(player, "Fist", grandmaster.XP_THRESHOLDS[0])
+    before_xp = player.grandmaster_discipline["disciplines"]["Fist"]["xp"]
+    monkeypatch.setattr(player, "weapon_damage", lambda *_args, **_kwargs: ("Iron Palm lands.\n", True, 1))
+    monkeypatch.setattr(grandmaster.random, "random", lambda: 0.0)
+
+    message = player.spellbook["Skills"]["Iron Palm"].use(player, enemy)
+
+    assert player.grandmaster_discipline["disciplines"]["Fist"]["xp"] == before_xp + grandmaster.ART_XP
+    assert f"Fist Discipline +{grandmaster.ART_XP} XP" in message
+
+
+def test_normal_victory_reports_weapon_discipline_bonus_xp(monkeypatch):
+    player = _weapon_master()
+    enemy = Goblin()
+    enemy.level.pro_level = 2
+    monkeypatch.setattr(grandmaster.random, "random", lambda: 0.0)
+    player.record_grandmaster_weapon_hit("Sword", enemy)
+    enemy.health.current = 0
+    tile = DummyTrialTile()
+    engine = BattleEngine(player, enemy, tile)
+
+    outcome = engine.end_battle()
+
+    assert outcome.result == "victory"
+    assert "Sword Discipline +3 XP" in outcome.message
+    assert f"4/{grandmaster.XP_THRESHOLDS[0]} XP" not in outcome.message
 
 
 def test_one_handed_technique_stacks_cap_and_refresh(monkeypatch):
@@ -159,10 +256,12 @@ def test_two_handed_technique_refreshes_without_stacking(monkeypatch):
     assert not hasattr(target, "grandmaster_technique_stacks")
 
 
-def test_trial_victory_skips_normal_rewards_but_keeps_discipline_xp():
+def test_trial_victory_skips_normal_rewards_but_keeps_discipline_xp(monkeypatch):
     player = _grandmaster()
-    player.record_grandmaster_weapon_hit("Sword")
     enemy = Enemy("Trial Adept", 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, exp=999)
+    enemy.level.pro_level = 2
+    monkeypatch.setattr(grandmaster.random, "random", lambda: 0.0)
+    player.record_grandmaster_weapon_hit("Sword", enemy)
     enemy.gold = 500
     enemy.inventory = {"Class Ring": [items.ClassRing]}
     enemy.enemy_typ = "Trial"

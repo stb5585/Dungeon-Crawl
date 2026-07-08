@@ -1050,7 +1050,12 @@ class PlayerDataSerializer:
         # Restore equipment
         for slot, item_data in data['equipment'].items():
             player.equipment[slot] = ItemSerializer.deserialize(item_data)
+        player.equipment.setdefault("Weapon", items.NoWeapon())
+        player.equipment.setdefault("OffHand", items.NoOffHand())
+        player.equipment.setdefault("Armor", items.NoArmor())
         player.equipment.setdefault("Helmet", items.NoHelmet())
+        player.equipment.setdefault("Ring", items.NoRing())
+        player.equipment.setdefault("Pendant", items.NoPendant())
         
         # Restore inventory
         for item_name, item_list in data['inventory'].items():

@@ -7,6 +7,7 @@ from types import SimpleNamespace
 
 import pygame
 
+from src.core.classes import grandmaster
 from src.ui_pygame import game as pygame_game
 from src.ui_pygame.gui.dungeon_manager import DungeonManager
 from src.ui_pygame.gui.modern_character_screen import (
@@ -158,20 +159,24 @@ def _make_player():
 
 def test_modern_character_tabs_are_generic_and_switchable():
     screen = ModernCharacterScreen(_make_presenter())
+    player = _make_player()
 
     assert [tab.label for tab in screen.tabs] == ["Character", "Class", "Equipment"]
+    assert [tab.label for tab in screen.visible_tabs(player)] == ["Character", "Equipment"]
     assert screen.active_tab.key == "character"
     assert abs((screen.character_panel_rect.width * 2) - (screen.combat_panel_rect.width * 3)) <= 3
 
-    screen.move_tab(1)
-    assert screen.active_tab.key == "class"
-
-    screen.move_tab(1)
+    screen.move_tab(1, player)
     assert screen.active_tab.key == "equipment"
 
-    screen.move_tab(1)
+    screen.move_tab(1, player)
     assert screen.active_tab.key == "character"
     assert screen.equipment_selector_active is False
+
+    player.cls = SimpleNamespace(name="Weapon Master")
+    assert [tab.label for tab in screen.visible_tabs(player)] == ["Character", "Weapon Discipline", "Equipment"]
+    screen.move_tab(1, player)
+    assert screen.active_tab.key == "class"
 
 
 def test_modern_character_summary_helpers_cover_xp_equipment_resistances_and_effects():
@@ -448,7 +453,50 @@ def test_modern_character_class_tab_lists_companions_without_art(monkeypatch):
 
     assert calls == []
     rendered_text = set(presenter.small_font.render_calls + presenter.normal_font.render_calls)
-    assert {"Class", "Class Profile", "Companions & Summons", "Patagon", "Type", "Summon", "HP", "40/50"}.issubset(rendered_text)
+    assert {"Summons", "Patagon", "Type", "Summon", "HP", "40/50"}.issubset(rendered_text)
+    assert "Companions & Summons" not in rendered_text
+
+
+def test_modern_character_class_tab_shows_weapon_discipline_for_weapon_master(monkeypatch):
+    presenter = _make_presenter()
+    screen = ModernCharacterScreen(presenter)
+    player = _make_player()
+    player.cls = SimpleNamespace(name="Weapon Master", description="Builds mastery through repeated weapon use.")
+    player.equipment["Weapon"] = SimpleNamespace(name="Broadaxe", typ="Weapon", subtyp="Battle Axe")
+    player.equipment["OffHand"] = SimpleNamespace(name="No OffHand", typ="OffHand", subtyp="None")
+    player.grandmaster_discipline = grandmaster.default_state()
+    battle_axe_xp = grandmaster.XP_THRESHOLDS[0] + 1
+    player.grandmaster_discipline["disciplines"]["Battle Axe"]["xp"] = battle_axe_xp
+    player.grandmaster_discipline["disciplines"]["Battle Axe"]["rank"] = grandmaster.rank_for_xp(battle_axe_xp)
+    render_calls = []
+    screen.item_render_manager = SimpleNamespace(
+        get_scaled_render=lambda item, size: render_calls.append((getattr(item, "name", ""), size)) or DummySurface(size)
+    )
+
+    monkeypatch.setattr(screen, "draw_semi_transparent_panel", lambda rect, alpha=180: DummySurface((rect.width, rect.height)))
+    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.rect", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.line", lambda *_args, **_kwargs: None)
+
+    screen.draw_class_tab(player)
+
+    assert screen.class_summary_rows(player) == []
+
+    rendered_text = set(
+        presenter.large_font.render_calls + presenter.small_font.render_calls + presenter.normal_font.render_calls
+    )
+    assert {
+        "Weapon Discipline",
+        "Battle Axe",
+        "Rank 1",
+        f"{battle_axe_xp}/{grandmaster.XP_THRESHOLDS[1]} XP",
+        "Reaver's Mark",
+    }.issubset(rendered_text)
+    assert "Companions & Summons" not in rendered_text
+    assert "Weapon Master" not in rendered_text
+    assert "Promotion Tier" not in rendered_text
+    assert "Equipped Discipline" not in rendered_text
+    assert "Highest Discipline" not in rendered_text
+    assert any(name == "Broadaxe" for name, _size in render_calls)
 
 
 def test_modern_character_class_tab_supports_multiple_summon_tiles_and_popup(monkeypatch):
@@ -654,9 +702,9 @@ def test_modern_character_draw_all_renders_active_tabs(monkeypatch):
 
     screen.select_tab("class")
     screen.draw_all(player, do_flip=False)
-    assert "Class" in presenter.large_font.render_calls
-    assert "Class Profile" in presenter.normal_font.render_calls
-    assert "Companions & Summons" in presenter.normal_font.render_calls
+    assert screen.active_tab.key == "character"
+    assert "Class Profile" not in presenter.normal_font.render_calls
+    assert "Companions & Summons" not in presenter.normal_font.render_calls
 
     screen.select_tab("equipment")
     screen.draw_all(player, do_flip=False)
@@ -890,7 +938,7 @@ def test_modern_character_menu_mouse_tabs_and_actions(monkeypatch):
     monkeypatch.setattr(screen, "draw_all", lambda *_args, **_kwargs: None)
     monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
 
-    equipment_tab_pos = screen.tab_button_rects()[2].center
+    equipment_tab_pos = screen.tab_button_rects(player)[1].center
     exit_pos = screen.action_rects()[-1].center
     event_batches = iter([
         [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=equipment_tab_pos)],

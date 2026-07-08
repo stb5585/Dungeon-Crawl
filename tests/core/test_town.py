@@ -385,3 +385,81 @@ def test_holy_grail_rotation_hints_return_empty_for_completed_or_missing_quest()
         special_inventory={},
     )
     assert get_holy_grail_rotation_hints(completed, "Sergeant") == []
+
+
+def test_reactive_town_hints_return_empty_without_relevant_state():
+    from src.core.town import get_reactive_town_hints
+
+    player = SimpleNamespace(
+        quest_dict={"Main": {}, "Side": {}, "Bounty": {}},
+        special_inventory={},
+        kill_dict={},
+        world_dict={},
+    )
+
+    assert get_reactive_town_hints(player, "Sergeant") == []
+
+
+def test_reactive_town_hints_report_partial_and_complete_relic_progress():
+    from src.core.town import get_reactive_town_hints
+
+    player = SimpleNamespace(
+        quest_dict={"Main": {}, "Side": {}, "Bounty": {}},
+        special_inventory={"Triangulus": [SimpleNamespace(name="Triangulus")]},
+        kill_dict={},
+        world_dict={},
+    )
+
+    partial_hints = get_reactive_town_hints(player, "Sergeant")
+    assert any("1 of the six relics" in hint for hint in partial_hints)
+
+    player.special_inventory = {
+        name: [SimpleNamespace(name=name)]
+        for name in ("Triangulus", "Quadrata", "Hexagonum", "Luna", "Polaris", "Infinitas")
+    }
+    complete_hints = get_reactive_town_hints(player, "Sergeant")
+    assert any("All six relics" in hint for hint in complete_hints)
+
+
+def test_reactive_town_hints_include_kill_dict_and_defeated_tile_bosses():
+    from src.core.town import get_reactive_town_hints
+
+    class MerzhinBossRoom:
+        defeated = True
+        enemy = None
+
+    player = SimpleNamespace(
+        quest_dict={"Main": {}, "Side": {}, "Bounty": {}},
+        special_inventory={},
+        kill_dict={"Boss": {"Jester": 1}},
+        world_dict={(1, 1, 9): MerzhinBossRoom()},
+    )
+
+    soldier_hints = get_reactive_town_hints(player, "Soldier")
+    barkeep_hints = get_reactive_town_hints(player, "Barkeep")
+
+    assert any("Jester" in hint for hint in soldier_hints)
+    assert any("Cambion" in hint for hint in barkeep_hints)
+
+
+def test_reactive_town_hints_include_cambion_quest_readiness():
+    from src.core.town import get_reactive_town_hints
+
+    player = SimpleNamespace(
+        quest_dict={
+            "Main": {},
+            "Side": {
+                "The Holy Grail of Quests": {"Completed": True, "Turned In": False},
+                "The Wizard's Folly": {"Completed": False, "Turned In": False},
+            },
+            "Bounty": {},
+        },
+        special_inventory={},
+        kill_dict={},
+        world_dict={},
+    )
+
+    hints = get_reactive_town_hints(player, "Sergeant")
+
+    assert any("Chalice is found" in hint for hint in hints)
+    assert any("Cambion" in hint for hint in hints)

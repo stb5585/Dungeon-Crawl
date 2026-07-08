@@ -11,6 +11,8 @@ import pygame
 from src.ui_pygame.assets.companion_art_manager import get_companion_art_manager
 from src.ui_pygame.assets.item_render_manager import get_item_render_manager
 from src.ui_pygame.assets.portrait_manager import PortraitManager
+from src.core import items
+from src.core.classes import grandmaster
 
 from .confirmation_popup import ConfirmationPopup, draw_popup_close_button, popup_close_clicked
 from .input_guards import prepare_guarded_input, release_guard_allows_input, update_input_armed_from_event
@@ -63,6 +65,16 @@ TWO_HANDED_WEAPON_SUBTYPES = frozenset({"Longsword", "Battle Axe", "Hammer"})
 RESISTANCE_ORDER = ("Fire", "Electric", "Earth", "Shadow", "Poison", "Ice", "Water", "Wind", "Holy", "Physical")
 RESISTANCE_SLOT_COUNT = len(RESISTANCE_ORDER)
 PORTRAIT_DIR = Path(__file__).resolve().parents[1] / "assets" / "portraits"
+WEAPON_DISCIPLINE_ICON_FACTORIES = {
+    "Fist": items.BrassKnuckles,
+    "Dagger": items.Dirk,
+    "Sword": items.Rapier,
+    "Club": items.Mace,
+    "Longsword": items.Bastard,
+    "Battle Axe": items.Broadaxe,
+    "Polearm": items.Framea,
+    "Hammer": items.Sledgehammer,
+}
 
 
 def _whole_stat_text(value) -> str:
@@ -321,6 +333,7 @@ class ModernCharacterScreen(TownScreenBase):
 
     def __init__(self, presenter, tabs: tuple[CharacterTab, ...] = DEFAULT_CHARACTER_TABS):
         self.tabs = tabs
+        self.active_tab_key = tabs[0].key
         self.active_tab_index = 0
         self.portrait_manager = PortraitManager()
         self.item_render_manager = get_item_render_manager()
@@ -363,11 +376,15 @@ class ModernCharacterScreen(TownScreenBase):
 
     @property
     def active_tab(self) -> CharacterTab:
-        return self.tabs[self.active_tab_index]
+        for tab in self.tabs:
+            if tab.key == self.active_tab_key:
+                return tab
+        return self.tabs[0]
 
     def select_tab(self, key: str) -> None:
         for index, tab in enumerate(self.tabs):
             if tab.key == key:
+                self.active_tab_key = key
                 self.active_tab_index = index
                 if key != "equipment":
                     self.equipment_selector_active = False
@@ -376,8 +393,45 @@ class ModernCharacterScreen(TownScreenBase):
                 return
         raise ValueError(f"Unknown character tab: {key}")
 
-    def move_tab(self, delta: int) -> None:
-        self.active_tab_index = (self.active_tab_index + delta) % len(self.tabs)
+    def class_mechanic_tab(self, player_char) -> CharacterTab | None:
+        if grandmaster.is_weapon_discipline_class(player_char):
+            return CharacterTab("class", "Weapon Discipline")
+        class_name = self._attr_name(getattr(player_char, "cls", None), "")
+        summons = getattr(player_char, "summons", {}) or {}
+        familiar = getattr(player_char, "familiar", None)
+        if class_name in {"Summoner", "Grand Summoner"} or summons:
+            return CharacterTab("class", "Summons")
+        if class_name in {"Warlock", "Beast Master"} or familiar is not None:
+            return CharacterTab("class", "Companion")
+        return None
+
+    def visible_tabs(self, player_char=None) -> tuple[CharacterTab, ...]:
+        if player_char is None:
+            return self.tabs
+        tabs = [self.tabs[0]]
+        mechanic_tab = self.class_mechanic_tab(player_char)
+        if mechanic_tab is not None:
+            tabs.append(mechanic_tab)
+        tabs.append(self.tabs[-1])
+        return tuple(tabs)
+
+    def ensure_active_tab_visible(self, player_char) -> None:
+        visible = self.visible_tabs(player_char)
+        if self.active_tab_key not in {tab.key for tab in visible}:
+            self.select_tab(visible[0].key)
+
+    def select_visible_tab_index(self, index: int, player_char) -> None:
+        visible = self.visible_tabs(player_char)
+        if 0 <= index < len(visible):
+            self.select_tab(visible[index].key)
+
+    def move_tab(self, delta: int, player_char=None) -> None:
+        visible = self.visible_tabs(player_char)
+        active_index = next(
+            (index for index, tab in enumerate(visible) if tab.key == self.active_tab_key),
+            0,
+        )
+        self.select_tab(visible[(active_index + delta) % len(visible)].key)
         if self.active_tab.key != "equipment":
             self.equipment_selector_active = False
         if self.active_tab.key != "class":
@@ -544,20 +598,59 @@ class ModernCharacterScreen(TownScreenBase):
         return rows
 
     def class_summary_rows(self, player_char) -> list[tuple[str, str]]:
-        """Return class and companion counts for the Class tab."""
+        """Return class-specific summary rows for the Class tab."""
+        if grandmaster.is_weapon_discipline_class(player_char):
+            return []
         level = getattr(player_char, "level", None)
         pro_level = self._non_negative_int(getattr(level, "pro_level", 1), 1)
-        class_name = self._attr_name(getattr(player_char, "cls", None), "Unknown")
         summons = getattr(player_char, "summons", {}) or {}
         familiar = getattr(player_char, "familiar", None)
         rows = [
-            ("Class", class_name),
             ("Promotion Tier", str(pro_level)),
-            ("Known Summons", str(len(summons))),
         ]
+        if summons:
+            rows.append(("Known Summons", str(len(summons))))
         if familiar is not None:
             rows.append(("Familiar", self._attr_name(familiar, "Familiar")))
         return rows
+
+    def _weapon_discipline_progress_label(self, xp: float, rank: int) -> str:
+        if rank >= grandmaster.MAX_RANK:
+            return "MAX"
+        next_threshold = grandmaster.XP_THRESHOLDS[rank]
+        return f"{grandmaster.format_xp_value(xp)}/{next_threshold} XP"
+
+    def _weapon_discipline_progress_fraction(self, xp: int, rank: int) -> float:
+        if rank >= grandmaster.MAX_RANK:
+            return 1.0
+        previous_threshold = grandmaster.XP_THRESHOLDS[rank - 1] if rank > 0 else 0
+        next_threshold = grandmaster.XP_THRESHOLDS[rank]
+        span = max(1, next_threshold - previous_threshold)
+        return max(0.0, min(1.0, (xp - previous_threshold) / span))
+
+    def weapon_discipline_rows(self, player_char) -> list[tuple[str, str]]:
+        """Return per-weapon Weapon Discipline progression rows."""
+        state = grandmaster.normalize_state(getattr(player_char, "grandmaster_discipline", None))
+        rows: list[tuple[str, str]] = []
+        for weapon_type in grandmaster.WEAPON_TYPES:
+            entry = state["disciplines"][weapon_type]
+            xp = self._non_negative_float(entry.get("xp", 0))
+            rank = self._non_negative_int(entry.get("rank", 0))
+            progress = self._weapon_discipline_progress_label(xp, rank)
+            rows.append((weapon_type, f"Rank {rank} - {progress}"))
+        return rows
+
+    def _weapon_discipline_icon_item(self, weapon_type: str):
+        if not hasattr(self, "_weapon_discipline_icon_cache"):
+            self._weapon_discipline_icon_cache = {}
+        cache = self._weapon_discipline_icon_cache
+        if weapon_type not in cache:
+            factory = WEAPON_DISCIPLINE_ICON_FACTORIES.get(weapon_type, items.NoWeapon)
+            try:
+                cache[weapon_type] = factory()
+            except Exception:
+                cache[weapon_type] = items.NoWeapon()
+        return cache[weapon_type]
 
     def _get_key_items_list(self, player_char):
         special_inv = getattr(player_char, "special_inventory", {})
@@ -629,6 +722,13 @@ class ModernCharacterScreen(TownScreenBase):
             return max(0, int(value or default))
         except (TypeError, ValueError):
             return max(0, int(default))
+
+    @staticmethod
+    def _non_negative_float(value: Any, default: float = 0.0) -> float:
+        try:
+            return max(0.0, float(value or default))
+        except (TypeError, ValueError):
+            return max(0.0, float(default))
 
     @staticmethod
     def xp_progress(player_char) -> float:
@@ -1090,23 +1190,25 @@ class ModernCharacterScreen(TownScreenBase):
             1,
         )
 
-    def draw_tabs(self):
+    def draw_tabs(self, player_char=None):
         self._draw_panel(self.tab_rect)
-        for index, tab in enumerate(self.tabs):
-            rect = self.tab_button_rects()[index]
-            active = index == self.active_tab_index
+        visible_tabs = self.visible_tabs(player_char)
+        for index, tab in enumerate(visible_tabs):
+            rect = self.tab_button_rects(player_char)[index]
+            active = tab.key == self.active_tab_key
             if active:
                 pygame.draw.rect(self.screen, self.colors.HIGHLIGHT_BG, rect)
                 pygame.draw.rect(self.screen, self.colors.GOLD, rect, 2)
             self._draw_text(tab.label, self.normal_font, self.colors.GOLD if active else self.colors.WHITE, rect.left + 12, rect.centery - self.normal_font.get_height() // 2, rect.width - 24)
 
-    def tab_button_rects(self) -> list[pygame.Rect]:
+    def tab_button_rects(self, player_char=None) -> list[pygame.Rect]:
         """Return clickable rectangles for character tabs."""
+        visible_tabs = self.visible_tabs(player_char)
         x = self.tab_rect.left + 12
-        tab_width = max(120, min(190, (self.tab_rect.width - 24) // max(1, len(self.tabs))))
+        tab_width = max(120, min(220, (self.tab_rect.width - 24) // max(1, len(visible_tabs))))
         return [
             pygame.Rect(x + (index * tab_width), self.tab_rect.top + 8, tab_width - 8, self.tab_rect.height - 16)
-            for index, _tab in enumerate(self.tabs)
+            for index, _tab in enumerate(visible_tabs)
         ]
 
     def draw_character_panel(self, player_char):
@@ -1424,8 +1526,110 @@ class ModernCharacterScreen(TownScreenBase):
             require_key_release=True,
         )
 
+    def _draw_weapon_discipline_progress_bar(
+        self,
+        rect: pygame.Rect,
+        *,
+        xp: int,
+        rank: int,
+        equipped: bool,
+    ) -> None:
+        fill_width = int(rect.width * self._weapon_discipline_progress_fraction(xp, rank))
+        pygame.draw.rect(self.screen, (24, 24, 28), rect)
+        if fill_width > 0:
+            fill_rect = pygame.Rect(rect.left, rect.top, fill_width, rect.height)
+            pygame.draw.rect(self.screen, self.colors.GOLD if equipped else self.colors.GREEN, fill_rect)
+        pygame.draw.rect(self.screen, self.colors.GOLD if equipped else self.colors.BORDER_COLOR, rect, 1)
+
+    def _draw_weapon_discipline_row(
+        self,
+        weapon_type: str,
+        entry: dict[str, Any],
+        rect: pygame.Rect,
+        *,
+        equipped: bool,
+    ) -> None:
+        pygame.draw.rect(self.screen, self.colors.HIGHLIGHT_BG if equipped else (14, 14, 19), rect)
+        pygame.draw.rect(self.screen, self.colors.GOLD if equipped else self.colors.BORDER_COLOR, rect, 2 if equipped else 1)
+
+        icon_size = min(40, max(28, rect.height - 12))
+        icon_rect = pygame.Rect(rect.left + 8, rect.top + (rect.height - icon_size) // 2, icon_size, icon_size)
+        self._draw_item_art_backdrop(icon_rect)
+        icon_item = self._weapon_discipline_icon_item(weapon_type)
+        render = self.item_render_manager.get_scaled_render(icon_item, icon_rect.size)
+        self.screen.blit(render, icon_rect)
+
+        xp = self._non_negative_float(entry.get("xp", 0))
+        rank = self._non_negative_int(entry.get("rank", 0))
+        name_color = self.colors.GOLD if equipped else self.colors.WHITE
+        detail_color = self.colors.WHITE if equipped else self.colors.GRAY
+        text_x = icon_rect.right + 10
+        name_width = min(150, max(104, rect.width // 3))
+        self._draw_text(weapon_type, self.normal_font, name_color, text_x, rect.top + 7, name_width)
+        art_name = grandmaster.WEAPON_ARTS.get(weapon_type, "")
+        self._draw_text(art_name, self.small_font, detail_color, text_x, rect.top + 28, name_width)
+
+        bar_x = text_x + name_width + 12
+        bar_width = max(80, rect.right - bar_x - 12)
+        rank_text = f"Rank {rank}"
+        xp_text = self._weapon_discipline_progress_label(xp, rank)
+        self._draw_text(rank_text, self.small_font, self.colors.WHITE, bar_x, rect.top + 7, bar_width)
+        xp_width = self.small_font.size(xp_text)[0]
+        self._draw_text(
+            xp_text,
+            self.small_font,
+            detail_color,
+            rect.right - 12 - min(xp_width, bar_width),
+            rect.top + 7,
+            bar_width,
+        )
+        bar_rect = pygame.Rect(bar_x, rect.top + 30, bar_width, 10)
+        self._draw_weapon_discipline_progress_bar(bar_rect, xp=xp, rank=rank, equipped=equipped)
+
+    def _draw_weapon_discipline_panel(self, player_char, rect: pygame.Rect, y: int, *, show_heading: bool = True) -> None:
+        if show_heading:
+            self._draw_text("Weapon Discipline", self.normal_font, self.colors.GOLD, rect.left, y, rect.width)
+            y += self.normal_font.get_height() + 10
+        state = grandmaster.normalize_state(getattr(player_char, "grandmaster_discipline", None))
+        equipped = {
+            weapon_type
+            for weapon_type in (
+                grandmaster.get_weapon_type(player_char, "Weapon"),
+                grandmaster.get_weapon_type(player_char, "OffHand"),
+            )
+            if weapon_type is not None
+        }
+        row_gap = 6
+        available_height = max(1, rect.bottom - y - 4)
+        row_height = min(54, max(42, (available_height - row_gap * (len(grandmaster.WEAPON_TYPES) - 1)) // len(grandmaster.WEAPON_TYPES)))
+        for index, weapon_type in enumerate(grandmaster.WEAPON_TYPES):
+            row_rect = pygame.Rect(rect.left, y + index * (row_height + row_gap), rect.width, row_height)
+            if row_rect.bottom > rect.bottom:
+                break
+            self._draw_weapon_discipline_row(
+                weapon_type,
+                state["disciplines"][weapon_type],
+                row_rect,
+                equipped=weapon_type in equipped,
+            )
+
     def draw_class_tab(self, player_char):
-        y = self._draw_panel(self.details_rect, "Class")
+        mechanic_tab = self.class_mechanic_tab(player_char)
+        panel_title = mechanic_tab.label if mechanic_tab is not None else "Class"
+        y = self._draw_panel(self.details_rect, panel_title)
+
+        if grandmaster.is_weapon_discipline_class(player_char):
+            self.class_companion_selector_active = False
+            discipline_rect = pygame.Rect(
+                self.details_rect.left + 16,
+                y,
+                self.details_rect.width - 32,
+                self.details_rect.bottom - y - 16,
+            )
+            self._class_roster_rect = discipline_rect
+            self._draw_weapon_discipline_panel(player_char, discipline_rect, y, show_heading=False)
+            return
+
         gap = 14
         left_width = max(260, (self.details_rect.width * 2) // 5)
         overview_rect = pygame.Rect(
@@ -1441,7 +1645,8 @@ class ModernCharacterScreen(TownScreenBase):
             self.details_rect.bottom - y - 16,
         )
 
-        self._draw_text("Class Profile", self.normal_font, self.colors.GOLD, overview_rect.left, y, overview_rect.width)
+        class_name = self._attr_name(getattr(player_char, "cls", None), "Unknown")
+        self._draw_text(class_name, self.normal_font, self.colors.GOLD, overview_rect.left, y, overview_rect.width)
         overview_y = y + self.normal_font.get_height() + 10
         overview_y = self._draw_key_values(
             self.class_summary_rows(player_char),
@@ -1472,12 +1677,18 @@ class ModernCharacterScreen(TownScreenBase):
             )
 
         entries = self.class_companion_entries(player_char)
+        if not entries:
+            self.class_companion_selector_active = False
+            self._class_roster_rect = roster_rect
+            return
+
         self.selected_class_companion_index = max(
             0,
             min(self.selected_class_companion_index, max(0, len(entries) - 1)),
         )
         self._class_roster_rect = roster_rect
-        self._draw_text("Companions & Summons", self.normal_font, self.colors.GOLD, roster_rect.left, y, roster_rect.width)
+        heading = mechanic_tab.label if mechanic_tab is not None else "Companions"
+        self._draw_text(heading, self.normal_font, self.colors.GOLD, roster_rect.left, y, roster_rect.width)
         helper = (
             "Arrows: Select  Enter: Inspect  C/Esc: Back"
             if self.class_companion_selector_active
@@ -1492,10 +1703,6 @@ class ModernCharacterScreen(TownScreenBase):
             self.details_rect.top + 18,
             roster_rect.width,
         )
-        if not entries:
-            empty_y = y + self.normal_font.get_height() + 10
-            self._draw_text("None", self.normal_font, self.colors.GRAY, roster_rect.left, empty_y, roster_rect.width)
-            return
 
         for index, rect in enumerate(self.class_companion_tile_rects(entries)):
             kind, companion = entries[index]
@@ -1679,8 +1886,9 @@ class ModernCharacterScreen(TownScreenBase):
             self._draw_text(option, self.small_font, self.colors.GOLD if index == self.current_selection else self.colors.WHITE, rect.left + 8, rect.centery - self.small_font.get_height() // 2, rect.width - 16)
 
     def draw_all(self, player_char, do_flip=True):
+        self.ensure_active_tab_visible(player_char)
         self.draw_background()
-        self.draw_tabs()
+        self.draw_tabs(player_char)
         if self.active_tab.key == "character":
             self.draw_character_panel(player_char)
             self.draw_combat_panel(player_char)
@@ -1757,6 +1965,7 @@ class ModernCharacterScreen(TownScreenBase):
             if not started_in_town and player_char.in_town():
                 return "Exit Menu"
 
+            self.ensure_active_tab_visible(player_char)
             self.draw_all(player_char)
             input_armed = release_guard_allows_input(require_key_release, input_armed)
             for event in pygame.event.get():
@@ -1768,13 +1977,13 @@ class ModernCharacterScreen(TownScreenBase):
 
                 if event.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN):
                     pos = mouse_position(event)
-                    tab_index = hit_index(self.tab_button_rects(), pos)
+                    tab_index = hit_index(self.tab_button_rects(player_char), pos)
                     action_index = hit_index(self.action_rects(), pos)
                     if action_index is not None and event.type == pygame.MOUSEMOTION:
                         self.current_selection = action_index
                     elif tab_index is not None and is_left_click(event):
                         if input_armed:
-                            self.active_tab_index = tab_index
+                            self.select_visible_tab_index(tab_index, player_char)
                             if self.active_tab.key != "equipment":
                                 self.equipment_selector_active = False
                             if self.active_tab.key != "class":
@@ -1797,7 +2006,7 @@ class ModernCharacterScreen(TownScreenBase):
                             if is_left_click(event) and input_armed:
                                 self.open_selected_equipment_change(player_char)
                             continue
-                    elif self.active_tab.key == "class":
+                    elif self.active_tab.key == "class" and not grandmaster.is_weapon_discipline_class(player_char):
                         entries = self.class_companion_entries(player_char)
                         tile_index = hit_index(self.class_companion_tile_rects(entries), pos)
                         if tile_index is not None:
@@ -1821,28 +2030,39 @@ class ModernCharacterScreen(TownScreenBase):
                 elif event.key == pygame.K_e and self.active_tab.key == "equipment":
                     self.equipment_selector_active = not self.equipment_selector_active
                 elif event.key == pygame.K_c and self.active_tab.key == "class":
-                    self.class_companion_selector_active = not self.class_companion_selector_active
+                    entries = [] if grandmaster.is_weapon_discipline_class(player_char) else self.class_companion_entries(player_char)
+                    self.class_companion_selector_active = bool(entries) and not self.class_companion_selector_active
                 elif event.key in (pygame.K_TAB, pygame.K_RIGHT):
                     if self.active_tab.key == "equipment" and self.equipment_selector_active and event.key == pygame.K_RIGHT:
                         self.move_equipment_selector(player_char, "right")
-                    elif self.active_tab.key == "class" and self.class_companion_selector_active and event.key == pygame.K_RIGHT:
+                    elif (
+                        self.active_tab.key == "class"
+                        and self.class_companion_selector_active
+                        and event.key == pygame.K_RIGHT
+                        and self.class_companion_entries(player_char)
+                    ):
                         entries = self.class_companion_entries(player_char)
                         self.selected_class_companion_index = min(len(entries) - 1, self.selected_class_companion_index + 1)
                     else:
-                        self.move_tab(1)
+                        self.move_tab(1, player_char)
                 elif event.key == pygame.K_LEFT:
                     if self.active_tab.key == "equipment" and self.equipment_selector_active:
                         self.move_equipment_selector(player_char, "left")
-                    elif self.active_tab.key == "class" and self.class_companion_selector_active:
+                    elif (
+                        self.active_tab.key == "class"
+                        and self.class_companion_selector_active
+                        and self.class_companion_entries(player_char)
+                    ):
                         self.selected_class_companion_index = max(0, self.selected_class_companion_index - 1)
                     else:
-                        self.move_tab(-1)
+                        self.move_tab(-1, player_char)
                 elif event.key == pygame.K_1:
-                    self.select_tab("character")
+                    self.select_visible_tab_index(0, player_char)
                 elif event.key == pygame.K_2:
-                    self.select_tab("class")
+                    self.select_visible_tab_index(1, player_char)
                 elif event.key == pygame.K_3:
-                    self.select_tab("equipment")
+                    if any(tab.key == "equipment" for tab in self.visible_tabs(player_char)):
+                        self.select_tab("equipment")
                 elif event.key == pygame.K_UP:
                     if self.active_tab.key == "equipment" and self.equipment_selector_active:
                         self.move_equipment_selector(player_char, "up")

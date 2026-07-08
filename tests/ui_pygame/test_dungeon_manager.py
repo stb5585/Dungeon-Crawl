@@ -718,12 +718,12 @@ def test_interact_chest_covers_unlock_mimic_loot_and_empty_cases(monkeypatch):
 
 def test_relic_discovery_text_mapping_and_fallback():
     expected = {
-        "Triangulus": "mind, body, and spirit",
-        "Quadrata": "steady as a vow",
-        "Hexagonum": "living geometry",
-        "Luna": "love is a choice",
-        "Polaris": "northern light",
-        "Infinitas": "without beginning or end",
+        "Triangulus": "old oath",
+        "Quadrata": "measured and contained",
+        "Hexagonum": "Something patient",
+        "Luna": "silence around it",
+        "Polaris": "harder to lose",
+        "Infinitas": "road continues",
     }
 
     for relic_name, phrase in expected.items():

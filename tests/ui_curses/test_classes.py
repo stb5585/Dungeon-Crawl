@@ -350,6 +350,7 @@ def test_promotion_second_tier_and_special_class_branches(monkeypatch):
     curses_classes.promotion(game)
     assert "Spark goes up a level." in output[-2]
     assert "Buddy the Fairy familiar has joined your team!" in output[-2]
+    assert "Character Menu tab available: Companion" in output[-2]
 
     game.player_char.cls = Warrior()
     game.player_char.level.pro_level = 1
@@ -360,6 +361,7 @@ def test_promotion_second_tier_and_special_class_branches(monkeypatch):
     game.player_char.level.pro_level = 1
     curses_classes.promotion(game)
     assert "You have gained the summon Patagon." in output[-2]
+    assert "Character Menu tab available: Summons" in output[-2]
     assert "Patagon" in game.player_char.summons
     assert patagons == [True]
 

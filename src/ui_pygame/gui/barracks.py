@@ -120,7 +120,7 @@ class BarracksManager(TownScreenBase):
     
     def visit_barracks(self):
         """Visit the barracks for quests and storage."""
-        barracks_options = ["Quests", "Storage"]
+        barracks_options = ["Quests", "Storage Locker"]
         if self._berserker_duel_available():
             barracks_options.append("No Healing Duel")
         if self._legacy_barracks_trial_available():
@@ -203,7 +203,7 @@ class BarracksManager(TownScreenBase):
                 )
                 qm.check_and_offer('Sergeant')
 
-            elif choice_label == "Storage":
+            elif choice_label == "Storage Locker":
                 self.manage_storage()
                 if self._berserker_duel_available() and "No Healing Duel" not in barracks_options:
                     barracks_options.insert(-1, "No Healing Duel")

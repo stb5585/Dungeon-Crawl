@@ -23,8 +23,8 @@ class WeaponMaster(Job):
             "the ability to dual wield one-handed weapons. Since Weapon"
             " Masters really on agility, they lose the ability to "
             "wear heavy armor and shields.",
-            str_plus=3,
-            int_plus=0,
+            str_plus=2,
+            int_plus=1,
             wis_plus=0,
             con_plus=1,
             cha_plus=0,

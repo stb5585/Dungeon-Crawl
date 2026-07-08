@@ -93,6 +93,14 @@ class KnightClass:
         self.restrictions = {"Weapon": ["Sword", "Mace"], "Armor": ["Heavy"]}
 
 
+class WeaponMasterClass(KnightClass):
+    def __init__(self):
+        super().__init__()
+        self.name = "Weapon Master"
+        self.description = "Mastery grows through worthy weapon practice."
+        self.restrictions = {"Weapon": ["Fist", "Dagger", "Sword"], "Armor": ["Light", "Medium"]}
+
+
 def test_promotion_screen_draw_helpers(monkeypatch):
     presenter = _make_presenter()
     player = _make_player()
@@ -127,8 +135,11 @@ def test_promotion_screen_draw_helpers(monkeypatch):
 
     assert "Church of Elysia - Promotion" in presenter.normal_font.render_calls
     assert "Choose your path" in presenter.normal_font.render_calls
-    assert "Knight" in presenter.large_font.render_calls
-    assert "Promotion Stats" in presenter.normal_font.render_calls
+    assert "Warrior -> Knight" in presenter.large_font.render_calls
+    assert "Promotion Impact" in presenter.normal_font.render_calls
+    assert "Character Menu Preview" in presenter.normal_font.render_calls
+    assert "Character" in presenter.small_font.render_calls
+    assert "Equipment" in presenter.small_font.render_calls
     assert "Class Gear Profile" not in presenter.normal_font.render_calls
     assert any("Existing legal gear is kept" in call for call in presenter.small_font.render_calls)
     assert "Equipment Restrictions" in presenter.normal_font.render_calls
@@ -146,6 +157,35 @@ def test_promotion_screen_draw_helpers(monkeypatch):
     assert "UP/DOWN: Select   ENTER: Promote   ESC: Cancel" in presenter.small_font.render_calls
     assert draw_rect_calls
     assert flip_calls
+
+
+def test_promotion_screen_previews_new_mechanic_tab(monkeypatch):
+    presenter = _make_presenter()
+    player = _make_player()
+    monkeypatch.setattr(promotion_screen.PromotionScreen, "_load_background", lambda self: setattr(self, "background", None))
+    screen = promotion_screen.PromotionScreen(
+        presenter,
+        player,
+        options=["Weapon Master"],
+        option_map={"Weapon Master": WeaponMasterClass},
+        current_class="Warrior",
+        pro_level=1,
+    )
+
+    panel_calls = []
+    draw_rect_calls = []
+    monkeypatch.setattr(screen, "draw_background", lambda: panel_calls.append("bg"))
+    monkeypatch.setattr(screen, "draw_semi_transparent_panel", lambda rect, alpha=180: panel_calls.append((rect, alpha)))
+    monkeypatch.setattr("src.ui_pygame.gui.promotion_screen.pygame.draw.rect", lambda *_a, **_k: draw_rect_calls.append(True))
+    monkeypatch.setattr("src.ui_pygame.gui.promotion_screen.pygame.display.flip", lambda: None)
+
+    screen.draw_all()
+
+    assert "Warrior -> Weapon Master" in presenter.large_font.render_calls
+    assert "Weapon Discipline" in presenter.small_font.render_calls
+    assert any("New tab: Weapon Discipline" in call for call in presenter.small_font.render_calls)
+    assert any("Intelligence helps" in call for call in presenter.small_font.render_calls)
+    assert draw_rect_calls
 
 
 def test_promotion_screen_navigation(monkeypatch):

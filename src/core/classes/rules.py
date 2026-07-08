@@ -79,6 +79,50 @@ PROMOTION_ABILITY_RULES: dict[str, PromotionRule] = {
 }
 
 
+PROMOTION_MECHANIC_GUIDANCE: dict[str, str] = {
+    "Weapon Master": (
+        "Character Menu tab available: Weapon Discipline. Fight with a weapon "
+        "type in worthy battles to build its discipline and reveal weapon arts; "
+        "Intelligence helps turn practice into insight."
+    ),
+    "Berserker": (
+        "Character Menu tab available: Weapon Discipline. Your weapon training "
+        "continues here, carrying ranks and revealed arts forward."
+    ),
+    "Grandmaster of Arms": (
+        "Character Menu tab available: Weapon Discipline. Your weapon training "
+        "continues here, carrying ranks and revealed arts forward."
+    ),
+    "Warlock": (
+        "Character Menu tab available: Companion. Use it to review your familiar "
+        "as it grows beside you."
+    ),
+    "Beast Master": (
+        "Character Menu tab available: Companion. Use it to review your companion "
+        "as it grows beside you."
+    ),
+    "Summoner": (
+        "Character Menu tab available: Summons. Use it to review summoned allies "
+        "and their bond growth as they fight beside you."
+    ),
+    "Grand Summoner": (
+        "Character Menu tab available: Summons. Use it to review summoned allies "
+        "and their bond growth as they fight beside you."
+    ),
+}
+
+
+PROMOTION_MECHANIC_TABS: dict[str, str] = {
+    "Weapon Master": "Weapon Discipline",
+    "Berserker": "Weapon Discipline",
+    "Grandmaster of Arms": "Weapon Discipline",
+    "Warlock": "Companion",
+    "Beast Master": "Companion",
+    "Summoner": "Summons",
+    "Grand Summoner": "Summons",
+}
+
+
 def apply_promotion_ability_rules(promoted_player: Any, new_class_name: str) -> str:
     """Apply ability transition rules for a promotion.
 
@@ -130,6 +174,17 @@ def apply_promotion_ability_rules(promoted_player: Any, new_class_name: str) -> 
             del promoted_player.spellbook["Skills"][skill_name]
 
     return message
+
+
+def promotion_mechanic_guidance(new_class_name: str) -> str:
+    """Return concise player-facing guidance for a promoted class mechanic."""
+    guidance = PROMOTION_MECHANIC_GUIDANCE.get(new_class_name, "")
+    return f"{guidance}\n" if guidance else ""
+
+
+def promotion_mechanic_tab_label(new_class_name: str) -> str:
+    """Return the Character Menu mechanic tab unlocked by a promoted class."""
+    return PROMOTION_MECHANIC_TABS.get(new_class_name, "")
 
 
 def grant_summoner_initial_summon(promoted_player: Any) -> str:

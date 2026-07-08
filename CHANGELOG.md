@@ -74,6 +74,9 @@
 - Closed Dungeon Quick Wins V1 with regression coverage for one-and-done
   chests, relic-specific discovery text, soft active-quest encounter bias, and
   the persistent pygame low-health dungeon cue.
+- Expanded relic discovery text into shared core handling so pygame and
+  core/curses relic-room interactions use the same relic-specific copy and
+  generic fallback.
 - Shipped Enemy Identity Presentation V1 with Sight-gated invisible target
   notes, Mad Waitress form-change readability, and construct-facing `Oil Leak`
   wording while keeping canonical `Bleed` mechanics unchanged.
@@ -99,6 +102,19 @@
 - Added the Master Monk-only `Ruyi Jingu Bang` ultimate staff, class-specific
   ultimate-staff selection, and curses/pygame blacksmith coverage for the
   `Unobtainium` crafting flow.
+- Expanded Weapon Master/Berserker/Grandmaster Weapon Discipline into a
+  player-facing progression loop with weapon-type ranks, active Weapon Arts,
+  whole-XP insight rolls, INT-scaled insight chance, enemy-promotion difficulty
+  gating, combat/victory/rank-up messaging, and pygame Character Menu progress
+  bars with weapon icons and equipped highlighting.
+- Redesigned the pygame promotion preview to show class transitions,
+  promotion stat deltas, and post-promotion Character Menu mechanic tabs;
+  pygame promotion now applies class stat/resource/combat bonuses, increases
+  current HP/MP alongside max HP/MP bonuses, and shows one concise
+  congratulations popup without extra tutorial popups.
+- Tuned Weapon Master and Grandmaster of Arms promotion stat bonuses to include
+  `+1 INT`, reinforcing Intelligence as martial study and Weapon Discipline
+  insight rather than only spellcasting.
 - Completed additional promotion-kit smoothing hooks for `Loaded Dice`,
   `Ordered Blessings`, `Divine Intervention`, `Encore`, and bond-scaling
   `Shared Recovery`, including representative Rogue Fortune/Misfortune payoff,
@@ -132,6 +148,9 @@
   creation screen starts on a random portrait variant, lets players browse with
   arrows/clickable portrait buttons, and persists the chosen variant for later
   Character Menu and player-token rendering.
+- Hardened save loading so missing core equipment slots are backfilled with
+  empty equipment, preventing legacy or synthetic saves without `OffHand` from
+  crashing Character Menu resistance calculations.
 - Replaced the base racial portrait source with per-race portrait sheets,
   providing five male and five female selectable base portraits per race.
 - Folded sex selection into the character naming screen so character creation

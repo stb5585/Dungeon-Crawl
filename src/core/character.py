@@ -1075,7 +1075,18 @@ class Character:
                         weapon_dam_str += f"{defender.name} answers with Riposte Line.\n"
                         weapon_dam_str += counter
                     if hasattr(self, "record_grandmaster_weapon_hit"):
-                        self.record_grandmaster_weapon_hit(weapon_type)
+                        before_rank, after_rank, discipline_xp = self.record_grandmaster_weapon_hit(
+                            weapon_type,
+                            defender,
+                            reason="crit" if crits[i] > 1 else "hit",
+                        )
+                        weapon_dam_str += grandmaster.discipline_xp_text(
+                            self,
+                            weapon_type,
+                            discipline_xp,
+                            before_rank,
+                            after_rank,
+                        )
                     weapon_dam_str += self._apply_on_hit_effects(defender, damage, crits[i], att)
                     weapon_dam_str += grandmaster.apply_weapon_technique(self, defender, weapon_type)
                 # Evasive Guard: build stacks when you get hit; capped at 3.

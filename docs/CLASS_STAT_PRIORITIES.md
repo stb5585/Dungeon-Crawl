@@ -13,8 +13,9 @@ classes through the promotion tree, including the Pathfinder branches
 
 - `STR`: physical identity. Improves attack growth, strength contests, some
   weapon skills, and shield-block mitigation against weaker attackers.
-- `INT`: spell offense. Improves mana growth, magic modifier, spell/status
-  contests, and many elemental/status effects.
+- `INT`: spell offense and technical mastery. Improves mana growth, magic
+  modifier, spell/status contests, many elemental/status effects, and Weapon
+  Discipline insight chance for Weapon Master/Berserker/Grandmaster of Arms.
 - `WIS`: healing and resistance. Improves healing, magic defense, luck/save
   checks, and many defensive contests.
 - `CON`: durability. Improves HP growth, defense growth, poison/bleed
@@ -38,9 +39,9 @@ Ties mean the class wants both stats about equally.
 | Class | Stat Priority |
 |---|---|
 | Warrior | `STR/CON`, `DEX`, `WIS/CHA/INT` |
-| Weapon Master | `STR`, `DEX`, `CON`, `WIS/CHA/INT` |
-| Berserker | `STR`, `DEX`, `CON/CHA`, `WIS/INT` |
-| Grandmaster of Arms | `DEX`, `STR/CON`, `WIS/CHA/INT` |
+| Weapon Master | `STR`, `DEX/INT`, `CON`, `WIS/CHA` |
+| Berserker | `STR`, `DEX/CON`, `INT/CHA`, `WIS` |
+| Grandmaster of Arms | `DEX`, `STR/INT`, `CON`, `WIS/CHA` |
 | Paladin | `CON/WIS`, `STR/CHA`, `DEX/INT` |
 | Crusader | `STR/CON/WIS`, `CHA`, `DEX/INT` |
 | Lancer | `STR/CON`, `DEX/CHA`, `WIS/INT` |
@@ -85,6 +86,11 @@ Ties mean the class wants both stats about equally.
 | Soulcatcher | `STR/DEX`, `WIS/CON/CHA`, `INT` |
 | Ranger | `STR/DEX`, `CON/CHA`, `WIS/INT` |
 | Beast Master | `STR/DEX/CHA`, `CON`, `WIS/INT` |
+
+Weapon Discipline class bonuses now include Intelligence as technical mastery:
+Weapon Master uses `+2 STR / +1 INT / +2 DEX`, and Grandmaster of Arms uses
+`+2 STR / +1 INT / +2 DEX`. This keeps the branch martial while making INT a
+visible promotion reward rather than only a hidden insight chance.
 
 ## Elemental Spell Secondary Effects
 

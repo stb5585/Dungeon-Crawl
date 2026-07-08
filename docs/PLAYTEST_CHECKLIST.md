@@ -138,8 +138,18 @@ remain the prompts; the evidence ledger is the running decision record.
   - Expected: HP, MP, XP, loot, Class Ring mechanics, true-final gates, Reflection mechanics, and route rewards do not change from viewing the bridge.
 
 ### Weapon Discipline And School Affinity
+- [ ] Promote a Warrior to Weapon Master.
+  - Expected: The pygame promotion preview shows `Warrior -> Weapon Master`, highlights promotion stat deltas, previews the post-promotion Character Menu tabs, and visually emphasizes the new `Weapon Discipline` tab.
+  - Expected: Weapon Master promotion stat deltas include `+2 STR`, `+1 INT`, and `+2 DEX`.
+  - Expected: Confirming promotion applies the class change and stat bonuses, increases current HP/MP by the same amount as max HP/MP bonuses, and shows one concise congratulations popup without extra tutorial popups.
 - [ ] Fight as a Weapon Master with each supported weapon type equipped.
   - Expected: Successful main-hand/offhand hits grant Weapon Discipline XP to the matching weapon type.
+  - Expected: Combat logs show per-hit Weapon Discipline XP without parenthesized progress, and the victory completion text shows the bonus Weapon Discipline XP for weapon types used in the fight.
+  - Expected: Starter enemies with `pro_level = 0` grant no Weapon Discipline XP, `pro_level = 1` enemies grant half the baseline insight chance, `pro_level = 2` enemies grant baseline chance, and higher promotion levels scale upward.
+  - Expected: The Character Menu shows a full-width `Weapon Discipline` tab with weapon icons, rank/XP progress bars, and visual equipped highlighting instead of a generic Class tab, description rail, or redundant summary rows.
+  - Expected: Classes without a class-usage mechanic hide the middle mechanic tab and show only Character and Equipment.
+  - Expected: Crossing a Weapon Discipline rank threshold reports the rank increase in combat text and names the rank-1 art unlock.
+  - Expected: Rank 1 requires `24` Weapon Discipline XP, so a one-hit kill against a baseline `pro_level = 2` enemy worth `+1` hit XP and `+3` victory XP no longer reaches rank 1 after only two kills.
   - Expected: Rank 1 unlocks the matching art: `Iron Palm`, `Hemorrhage`, `Riposte Line`, `Low Sweep`, `Guard Cleaver`, `Reaver's Mark`, `Brace`, or `Anvil Strike`.
 - [ ] Try each Weapon Art with a matching and nonmatching weapon equipped.
   - Expected: Matching weapons allow the art when MP is sufficient.
@@ -148,6 +158,8 @@ remain the prompts; the evidence ledger is the running decision record.
   - Expected: Rank 5 and rank 10 add the documented improved/mastered behavior without changing the save key shape.
 - [ ] Promote a Weapon Master with discipline progress into Berserker.
   - Expected: Weapon Discipline ranks and unlocked arts carry forward and remain usable.
+- [ ] Promote a Weapon Master into Grandmaster of Arms.
+  - Expected: Grandmaster of Arms promotion stat deltas include `+2 STR`, `+1 INT`, and `+2 DEX`.
 - [ ] Awaken and equip a Grandmaster of Arms Class Ring, bind it to a weapon, then use the matching rank-10 art.
   - Expected: Bound discipline bonuses double while equipped.
   - Expected: Perfect Bound Art adds the conservative bound-weapon mastered bonus only for the bound weapon type.
@@ -975,7 +987,7 @@ remain the prompts; the evidence ledger is the running decision record.
 - [x] Reopen a chest that has already been opened.
   - Expected: The chest reports that it has already been opened and does not regenerate loot, trigger combat, show a loot popup, or mutate inventory.
 - [x] Collect a relic from a relic room and interact with the room again.
-  - Expected: The first interaction uses relic-specific discovery text, grants the relic, sets the room read state, and restores HP/MP; repeat interaction does not duplicate the relic or restoration.
+  - Expected: The first interaction uses the shared relic-specific discovery text in pygame and core/curses flows, grants the relic, sets the room read state, and restores HP/MP; repeat interaction does not duplicate the relic or restoration.
 - [ ] Simulate or create an item with no exact render mapping.
   - Expected: The render manager falls back through icon mapping, category/slot, and then the generated fallback surface without blocking gameplay.
 - [x] Save and reload after viewing item artwork.

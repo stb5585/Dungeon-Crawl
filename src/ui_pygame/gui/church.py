@@ -227,6 +227,34 @@ class ChurchManager(TownScreenBase):
             removed.append((slot, getattr(item, "name", str(item))))
         return removed
 
+    def _apply_promotion_stat_bonuses(self, new_class):
+        """Apply promoted class stat, resource, and combat bonuses."""
+        self.player_char.stats.strength += getattr(new_class, "str_plus", 0)
+        self.player_char.stats.intel += getattr(new_class, "int_plus", 0)
+        self.player_char.stats.wisdom += getattr(new_class, "wis_plus", 0)
+        self.player_char.stats.con += getattr(new_class, "con_plus", 0)
+        self.player_char.stats.charisma += getattr(new_class, "cha_plus", 0)
+        self.player_char.stats.dex += getattr(new_class, "dex_plus", 0)
+
+        health_bonus = getattr(new_class, "con_plus", 0) * 2
+        mana_bonus = getattr(new_class, "int_plus", 0) * 2
+        self.player_char.health.max += health_bonus
+        if hasattr(self.player_char.health, "current"):
+            self.player_char.health.current = min(
+                self.player_char.health.max,
+                getattr(self.player_char.health, "current", 0) + health_bonus,
+            )
+        self.player_char.mana.max += mana_bonus
+        if hasattr(self.player_char.mana, "current"):
+            self.player_char.mana.current = min(
+                self.player_char.mana.max,
+                getattr(self.player_char.mana, "current", 0) + mana_bonus,
+            )
+        self.player_char.combat.attack += getattr(new_class, "att_plus", 0)
+        self.player_char.combat.defense += getattr(new_class, "def_plus", 0)
+        self.player_char.combat.magic += getattr(new_class, "magic_plus", 0)
+        self.player_char.combat.magic_def += getattr(new_class, "magic_def_plus", 0)
+
     def _legacy_paladin_vow_available(self):
         return paladin.is_paladin_lineage(self.player_char) and not paladin.path(self.player_char)
 
@@ -398,9 +426,11 @@ class ChurchManager(TownScreenBase):
                 return
 
         try:
-            self.player_char.cls = chosen_ctor()
+            new_class = chosen_ctor()
+            self.player_char.cls = new_class
             self.player_char.level.pro_level += 1
             self.player_char.level.level = 1
+            self._apply_promotion_stat_bonuses(new_class)
 
             try:
                 self.player_char.level.exp_to_gain = self.player_char.level_exp()
@@ -419,40 +449,21 @@ class ChurchManager(TownScreenBase):
                 popup = ConfirmationPopup(self.presenter, "\n".join(lines), show_buttons=False)
                 popup.show(**self.popup_show_kwargs())
 
-            ability_change_msg = apply_promotion_ability_rules(self.player_char, chosen_name)
-            if ability_change_msg:
-                popup = ConfirmationPopup(self.presenter, ability_change_msg.strip(), show_buttons=False)
-                popup.show(**self.popup_show_kwargs())
+            apply_promotion_ability_rules(self.player_char, chosen_name)
 
             # Grant level 1 abilities for the new class
-            promo_ability_messages = []
             for spell_cls in ability_classes_for_level(spell_dict, chosen_name, self.player_char.level.level):
                 spell_gain = spell_cls()
-                if spell_gain.name in self.player_char.spellbook["Spells"]:
-                    promo_ability_messages.append(f"{spell_gain.name} goes up a level.")
-                else:
-                    promo_ability_messages.append(f"You have gained the spell {spell_gain.name}.")
                 self.player_char.spellbook["Spells"][spell_gain.name] = spell_gain
             
             for skill_cls in ability_classes_for_level(skill_dict, chosen_name, self.player_char.level.level):
                 skill_gain = skill_cls()
-                if skill_gain.name in self.player_char.spellbook["Skills"]:
-                    promo_ability_messages.append(f"{skill_gain.name} goes up a level.")
-                else:
-                    promo_ability_messages.append(f"You have gained the skill {skill_gain.name}.")
                 self.player_char.spellbook["Skills"][skill_gain.name] = skill_gain
                 if skill_gain.name in ["Transform", "Reveal", "Purity of Body"]:
                     skill_gain.use(self.player_char)
-            
-            if promo_ability_messages:
-                popup = ConfirmationPopup(self.presenter, "\n".join(promo_ability_messages), show_buttons=False)
-                popup.show(**self.popup_show_kwargs())
 
             if chosen_vow:
-                success, vow_message = self.player_char.choose_paladin_vow(chosen_vow)
-                if success:
-                    popup = ConfirmationPopup(self.presenter, vow_message.strip(), show_buttons=False)
-                    popup.show(**self.popup_show_kwargs())
+                self.player_char.choose_paladin_vow(chosen_vow)
 
             if chosen_name == "Warlock":
                 fam_options = ["Homunculus", "Fairy", "Mephit", "Jinkin"]
@@ -496,23 +507,12 @@ class ChurchManager(TownScreenBase):
                                 fam_confirmed = True
                                 familiar.name = fam_name
                                 self.player_char.familiar = familiar
-                                popup = ConfirmationPopup(self.presenter, f"Your familiar {familiar.race} joins you as '{familiar.name}'.", show_buttons=False)
-                                popup.show(**self.popup_show_kwargs())
 
             if chosen_name == "Summoner":
-                summon_message = grant_summoner_initial_summon(self.player_char)
-                if summon_message:
-                    popup = ConfirmationPopup(self.presenter, "You have learned to summon Patagon.", show_buttons=False)
-                    popup.show(**self.popup_show_kwargs())
+                grant_summoner_initial_summon(self.player_char)
 
             if chosen_name == "Demonologist":
                 self.player_char.ensure_demonologist_contracts()
-                popup = ConfirmationPopup(
-                    self.presenter,
-                    "As you leave the altar, a priest whispers of a sealed crypt below the church.",
-                    show_buttons=False,
-                )
-                popup.show(**self.popup_show_kwargs())
 
             popup = ConfirmationPopup(self.presenter, f"Congratulations! You are now a {chosen_name}.", show_buttons=False)
             popup.show(**self.popup_show_kwargs())

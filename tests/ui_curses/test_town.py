@@ -421,6 +421,22 @@ def test_tavern_patrons_handles_holy_grail_hint_branch(monkeypatch):
     assert any("Golden Chalice" in str(message) for message in FakeTextBox.messages)
 
 
+def test_tavern_patrons_includes_reactive_boss_hint_pool(monkeypatch):
+    _install_fake_menus(monkeypatch)
+    FakeLocationMenu.responses = [3, 4]
+    FakeTextBox.messages = []
+    player = _build_player(level=10)
+    player.kill_dict = {"Boss": {"Jester": 1}}
+    game = SimpleNamespace(player_char=player)
+
+    monkeypatch.setattr(curses_town, "check_quests", lambda game, who: (False, [["no quest"]]))
+    monkeypatch.setattr(curses_town.random, "choice", lambda seq: seq[-1])
+
+    curses_town.tavern_patrons(game)
+
+    assert any("Jester" in str(message) for message in FakeTextBox.messages)
+
+
 def test_barracks_handles_brass_key_and_storage_store_flow(monkeypatch):
     _install_fake_menus(monkeypatch)
     FakeLocationMenu.responses = [1, 0, 0, 1, 2, 2]
@@ -627,6 +643,7 @@ def test_tavern_job_board_accepts_and_abandons_bounties(monkeypatch):
         player_char=player,
         bounties={"Wolf": {"enemy": SimpleNamespace(name="Wolf"), "num": 2, "gold": 9, "exp": 4, "reward": None}},
     )
+    game.update_bounties = lambda: None
     deleted = []
     game.delete_bounty = lambda selection: deleted.append(selection["enemy"].name)
 
@@ -654,6 +671,22 @@ def test_barracks_quest_branch_handles_sergeant_chalice_hint(monkeypatch):
     assert progress["Map"] is True
     assert progress["Sergeant"] is True
     assert any("hidden route somewhere on the third floor" in str(message) for message in FakeTextBox.messages)
+
+
+def test_barracks_quest_branch_includes_reactive_relic_hint_pool(monkeypatch):
+    _install_fake_menus(monkeypatch)
+    FakeLocationMenu.responses = [0, 2]
+    FakeTextBox.messages = []
+    player = _build_player()
+    player.special_inventory["Triangulus"] = [SimpleNamespace(name="Triangulus")]
+    game = SimpleNamespace(player_char=player, special_event=lambda name: None)
+
+    monkeypatch.setattr(curses_town, "check_quests", lambda game, who: (False, [["fallback"]]))
+    monkeypatch.setattr(curses_town.random, "choice", lambda seq: seq[-1])
+
+    curses_town.barracks(game)
+
+    assert any("1 of the six relics" in str(message) for message in FakeTextBox.messages)
 
 
 def test_barracks_storage_retrieves_items(monkeypatch):

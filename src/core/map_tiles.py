@@ -236,6 +236,38 @@ CAMBION_ROTATOR_FLAVOR = {
     False: "With the anti-magic field silent, the mechanism wobbles before throwing you onward.",
 }
 
+RELIC_DISCOVERY_TEXT = {
+    "Triangulus": (
+        "Triangulus rises from the altar, its three points bright with mind, body, and spirit. "
+        "The room steadies as if an old oath has remembered its shape."
+    ),
+    "Quadrata": (
+        "Quadrata settles into your hands, steady as a vow carved into stone. "
+        "For one breath, the dungeon's shifting dark feels measured and contained."
+    ),
+    "Hexagonum": (
+        "Hexagonum hums with living geometry, every edge answering roots, bone, and deep earth. "
+        "Something patient beneath the floor recognizes you."
+    ),
+    "Luna": (
+        "Luna glows with pale warmth, a quiet reminder that love is a choice renewed. "
+        "The altar light softens, but the silence around it does not."
+    ),
+    "Polaris": (
+        "Polaris catches a fixed northern light, pointing onward through the dark. "
+        "The way ahead is no safer, only harder to lose."
+    ),
+    "Infinitas": (
+        "Infinitas turns without beginning or end, holding the shape of endurance. "
+        "The circle closes in your palm, and still the road continues."
+    ),
+}
+
+
+def relic_discovery_text(relic) -> str:
+    name = getattr(relic, "name", "Unknown Relic")
+    return RELIC_DISCOVERY_TEXT.get(name, f"You found a relic: {name}!")
+
 
 def _enemy_names_for_collection_item(item_key: str) -> set[str]:
     """Return random-encounter enemies that can drop the quest collection item."""
@@ -2009,7 +2041,10 @@ class RelicRoom(SpecialTile):
         if not self.read:
             game.special_event("Relic Room")
             relics = [items.Relic1(), items.Relic2(), items.Relic3(), items.Relic4(), items.Relic5(), items.Relic6()]
-            game.player_char.modify_inventory(relics[game.player_char.location_z - 1], rare=True, quest=True)
+            relic = relics[game.player_char.location_z - 1]
+            if textbox:
+                textbox.print_text_in_rectangle(relic_discovery_text(relic))
+            game.player_char.modify_inventory(relic, rare=True, quest=True)
             self.read = True
             if textbox:
                 textbox.print_text_in_rectangle("Your health and mana have been restored to full!\n")

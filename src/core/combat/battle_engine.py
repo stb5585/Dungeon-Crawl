@@ -47,7 +47,7 @@ from ..constants import SPECIAL_ATTACK_LUCK_FACTOR, SPECIAL_ATTACK_ROLL_MAX
 from .. import items
 from ..enemy_identity import remember_defeat_identity, restore_defeat_identity
 from ..events.event_bus import get_event_bus, create_combat_event, EventType
-from ..classes import astromancer, bard, berserker, class_rings, dragoon, lycan, nature_totems, ability_mechanics, paladin, promotion_kits, wizard
+from ..classes import astromancer, bard, berserker, class_rings, dragoon, grandmaster, lycan, nature_totems, ability_mechanics, paladin, promotion_kits, wizard
 
 if TYPE_CHECKING:
     from typing import Any, Callable
@@ -1372,9 +1372,23 @@ class BattleEngine:
             self.player.transform(back=True)
         self.player.effects(end=True)
         if hasattr(self.player, "award_grandmaster_victory_xp"):
-            self.player.award_grandmaster_victory_xp()
+            msg += self._grandmaster_victory_xp_text()
 
         return msg
+
+    def _grandmaster_victory_xp_text(self) -> str:
+        if not hasattr(self.player, "award_grandmaster_victory_xp"):
+            return ""
+        text = ""
+        for weapon_type, (before, after, amount) in self.player.award_grandmaster_victory_xp(self.enemy).items():
+            text += grandmaster.discipline_xp_text(
+                self.player,
+                weapon_type,
+                amount,
+                before,
+                after,
+            )
+        return text
 
     @staticmethod
     def _summon_experience_text(summon: Character, exp_gain: int) -> str:
@@ -1409,12 +1423,6 @@ class BattleEngine:
 
     def _process_grandmaster_trial_victory(self) -> str:
         """Handle Secret Master trial victory without normal combat rewards."""
-        rank_ups = []
-        if hasattr(self.player, "award_grandmaster_victory_xp"):
-            for weapon_type, (before, after) in self.player.award_grandmaster_victory_xp().items():
-                if after > before:
-                    rank_ups.append(f"{weapon_type} Discipline reached rank {after}.")
-
         self.player.state = 'normal'
         if hasattr(self.player, 'transform_type') and self.player.cls != self.player.transform_type:
             self.player.transform(back=True)
@@ -1422,8 +1430,7 @@ class BattleEngine:
         self.enemy.effects(end=True)
 
         msg = "You complete this Secret Master bout.\n"
-        if rank_ups:
-            msg += "\n".join(rank_ups) + "\n"
+        msg += self._grandmaster_victory_xp_text()
         return msg
 
     def _process_class_ring_trial_victory(self) -> str:

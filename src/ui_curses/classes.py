@@ -58,7 +58,12 @@ def choose_paladin_vow(game):
 def promotion(game):
     from src.ui_curses import menus as utils
     from src.core.abilities import ability_classes_for_level, spell_dict, skill_dict
-    from src.core.classes import apply_promotion_ability_rules, classes_dict, grant_summoner_initial_summon
+    from src.core.classes import (
+        apply_promotion_ability_rules,
+        classes_dict,
+        grant_summoner_initial_summon,
+        promotion_mechanic_guidance,
+    )
 
     pro_message = "Choose your path"
     pro1_dict = {
@@ -182,6 +187,7 @@ def promotion(game):
                         promo_str += f"Totem aspects unlocked: {aspects_str}.\n"
             if new_class.name == "Summoner":
                 promo_str += grant_summoner_initial_summon(promoted_player)
+            promo_str += promotion_mechanic_guidance(new_class.name)
             if new_class.name in ["Seeker", "Wizard"]:
                 promoted_player.teleport = (
                     promoted_player.location_x,

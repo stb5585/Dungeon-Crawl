@@ -79,15 +79,41 @@ Grandmaster tracks discipline XP and rank for:
 - `Polearm`
 - `Hammer`
 
-Successful main-hand and offhand weapon hits grant discipline XP to that weapon
-type. Victory grants bonus discipline XP to equipped weapon types that landed at
-least one hit. Discipline uses 10 increasing ranks.
+Successful main-hand and offhand weapon hits can grant base `+1` discipline XP
+to that weapon type. Victory can grant base `+3` bonus discipline XP to equipped
+weapon types that landed at least one hit, and successful Weapon Arts can grant
+base `+2` discipline XP. These are whole-XP insight rolls, not fractional
+awards. Intelligence modifies the chance to gain insight, while performance
+modifies the base chance: critical hits roll better than ordinary hits, Weapon
+Arts roll better again, and victory rolls separately. Enemy promotion level
+scales eligibility and chance: `pro_level = 0` grants no Weapon Discipline XP,
+`pro_level = 1` grants half the baseline chance, `pro_level = 2` grants baseline
+chance, and higher promotion levels scale upward. Discipline uses 10 increasing
+ranks with a slower mastery curve: rank 1 begins at `24` XP and rank 10 at
+`1290` XP.
+
+The Character Menu surfaces this as a `Weapon Discipline` tab for Weapon Master,
+Berserker, and Grandmaster of Arms, using a full-width per-weapon board with
+icons, rank/XP progress bars, and visual equipped highlighting. Classes without
+a class-usage mechanic hide the middle mechanic tab. Rank threshold crossings
+also report in combat text; the first rank names the newly unlocked weapon art.
+The pygame promotion preview shows the class transition, highlights promotion
+stat deltas, previews the post-promotion Character Menu tabs, and highlights
+the `Weapon Discipline` tab for Weapon Master. It briefly frames weapon use,
+worthy fights, weapon arts, and Intelligence as the practical path into the
+mechanic without exposing the underlying roll math. The pygame promotion flow
+adds one concise congratulations popup after success, but does not add extra
+tutorial popups after the redesigned preview; warnings, errors, and required
+branch choices may still interrupt the flow.
 
 Each rank grants `+0.5%` accuracy and `+1%` technique proc chance for that
 weapon type. At rank 10 this is `+5%` accuracy and `10%` technique chance.
 Weapon Master now starts this same Weapon Discipline progression before second
 promotion, using the existing save state so progress carries through Berserker
 or into Grandmaster of Arms.
+To reinforce that INT represents martial study as well as spellcraft, Weapon
+Master and Grandmaster of Arms each gain `+1 INT` in their promotion stat
+bonuses, trading one point from their prior pure martial peak stat.
 
 ### Weapon Arts
 
