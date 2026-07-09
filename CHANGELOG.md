@@ -88,6 +88,48 @@
 - Added saved, progress-gated bounty-board restocks so completed boards refill
   intermittently after enough steps, enemy defeats, or a level gain instead of
   refreshing immediately.
+- Fixed empty pygame bounty-board prompts so the “No new bounties” popup redraws
+  over the Bounty Board submenu instead of the main tavern menu.
+- Fixed Invisible Stalker combat presentation so it does not draw the generic
+  fallback body when the player lacks Vision or another sight source.
+- Added compact combat indicators for Vision/sight and Weapon Art states such
+  as Reaver's Mark, Brace, and Riposte Line.
+- Improved Weapon Discipline presentation with required-weapon text in Weapon
+  Art descriptions, selectable/clickable discipline rows, detail popups, and
+  cleaner class-tab rows that no longer duplicate art names under weapon types.
+- Expanded pygame promotion-preview mechanic tabs for Pathfinder branches so
+  Diviner, Shaman, and Ranger previews announce their Runes, Totems, and
+  Companion class tabs.
+- Wired Warrior-line promotion mechanic tabs so Paladin/Crusader, Lancer/Dragoon,
+  and Sentinel/Stalwart Defender previews and Character Menu tabs announce Oath
+  Conviction, Aerial Tempo, and Resolve.
+- Replaced the pygame Paladin vow picker with a styled selection popup that
+  previews each vow's signature skill, aura, mark, and broad playstyle identity
+  before a terse final oath confirmation without exposing tuning details.
+- Moved pygame Lancer/Dragoon Jump Mods management inline into the `Aerial
+  Tempo` Character Menu tab, expanded `Oath Conviction` vow details, and rebuilt
+  Sentinel/Stalwart `Resolve` around a large red meter with ability boxes.
+- Added Sentinel/Stalwart `Resolve` class-tab spend and Surge listings and
+  captured future Paladin vow drift/oathless recovery as a design gate instead
+  of loose roadmap notes.
+- Rendered Sentinel/Stalwart `Resolve` in Combat Focus as a red value bar and
+  kept active Defend from displaying as a Defense-down combat status icon.
+- Implemented the Sentinel/Stalwart Resolve direction so Sentinel owns normal
+  Resolve spending, Stalwart Defender inherits those shield actions, and
+  Stalwart adds full-bar `Resolve Surges`.
+- Split Sentinel/Stalwart Resolve actions into their own pygame combat menu
+  with Resolve-cost labels, and reworked the low-cost shield control action as
+  `Shield Check` so it no longer overlaps `Shield Slam`.
+- Wired Mage-tree promotion mechanic tabs so Sorcerer/Wizard, Warlock,
+  Shadowcaster, Demonologist, Spellblade/Knight Enchanter, and Summoner/Grand
+  Summoner previews and Character Menu tabs announce School Affinity, Familiar,
+  Umbral Debt, Contracts, Blade Charge, Arcane Tempo, and Summons.
+- Wired Footpad-tree promotion mechanic tabs so Thief/Rogue, Inquisitor/Seeker,
+  Assassin/Ninja, and Spell Stealer/Arcane Trickster previews and Character
+  Menu tabs announce Fortune, Case Journal, Death Mark, and Stolen Charge.
+- Wired Healer-tree promotion mechanic tabs so Cleric/Templar, Monk/Master
+  Monk, Priest/Archbishop, and Bard/Troubadour previews and Character Menu tabs
+  announce Devotion, Ki, Prayer, and Crescendo.
 
 ### Promotion Class Kits
 

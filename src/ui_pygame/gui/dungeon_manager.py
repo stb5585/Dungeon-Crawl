@@ -1128,13 +1128,17 @@ class DungeonManager:
         ]
 
         if 1 <= z <= 6:
+            relic = relics[z - 1]
+            discovery_message = relic_discovery_text(relic)
+            popup_shown = False
             try:
                 if self.game is not None:
-                    self.game.special_event("Relic Room")
+                    self.game.special_event("Relic Room", message=discovery_message)
+                    popup_shown = True
             except Exception:
                 pass
-            relic = relics[z - 1]
-            self.add_message(relic_discovery_text(relic))
+            if not popup_shown:
+                self.add_message(discovery_message)
             self.player_char.modify_inventory(relic, rare=True, quest=True)
             relic_tile.read = True
 

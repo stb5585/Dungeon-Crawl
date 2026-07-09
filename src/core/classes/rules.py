@@ -93,9 +93,121 @@ PROMOTION_MECHANIC_GUIDANCE: dict[str, str] = {
         "Character Menu tab available: Weapon Discipline. Your weapon training "
         "continues here, carrying ranks and revealed arts forward."
     ),
+    "Paladin": (
+        "Character Menu tab available: Oath Conviction. Use it to review your "
+        "sworn vow, conviction meter, and vow-aligned combat rhythm."
+    ),
+    "Crusader": (
+        "Character Menu tab available: Oath Conviction. Use it to review your "
+        "sworn vow, conviction meter, and vow-aligned combat rhythm."
+    ),
+    "Lancer": (
+        "Character Menu tab available: Aerial Tempo. Use it to review Jump "
+        "follow-through readiness and polearm combat flow."
+    ),
+    "Dragoon": (
+        "Character Menu tab available: Aerial Tempo. Use it to review Jump "
+        "follow-through readiness, landing shields, and polearm combat flow."
+    ),
+    "Sentinel": (
+        "Character Menu tab available: Resolve. Use it to review shield guard "
+        "readiness, Hold the Line pressure, and Resolve-spending shield actions."
+    ),
+    "Stalwart Defender": (
+        "Character Menu tab available: Resolve. Use it to review shield guard "
+        "readiness, inherited shield actions, and full-bar Resolve Surges."
+    ),
+    "Sorcerer": (
+        "Character Menu tab available: School Affinity. Use it to review six-school "
+        "affinity growth and tier-2 elemental upgrade progress."
+    ),
+    "Wizard": (
+        "Character Menu tab available: School Affinity. Use it to review six-school "
+        "affinity mastery, tier-3 upgrades, and Wizard ring acceleration."
+    ),
     "Warlock": (
-        "Character Menu tab available: Companion. Use it to review your familiar "
+        "Character Menu tab available: Familiar. Use it to review your familiar "
         "as it grows beside you."
+    ),
+    "Shadowcaster": (
+        "Character Menu tab available: Umbral Debt. Use it to review debt, "
+        "backlash, Eclipse readiness, and shadow-form pressure."
+    ),
+    "Demonologist": (
+        "Character Menu tab available: Contracts. Use it to review corruption, "
+        "patron mood, contracts, and familiar echo identity."
+    ),
+    "Spellblade": (
+        "Character Menu tab available: Blade Charge. Use it to review spell-to-blade "
+        "charge readiness and hybrid combat flow."
+    ),
+    "Knight Enchanter": (
+        "Character Menu tab available: Arcane Tempo. Use it to review blade charge, "
+        "Arcane Tempo stacks, and burst readiness."
+    ),
+    "Thief": (
+        "Character Menu tab available: Fortune. Use it to review Fortune, "
+        "Misfortune, and risky-action payoff readiness."
+    ),
+    "Rogue": (
+        "Character Menu tab available: Fortune. Use it to review Fortune, "
+        "Misfortune, Cheat Death, and Loaded Dice payoff readiness."
+    ),
+    "Inquisitor": (
+        "Character Menu tab available: Case Journal. Use it to review enemy-type "
+        "evidence, Revelation stacks, and open investigation counterplay."
+    ),
+    "Seeker": (
+        "Character Menu tab available: Case Journal. Use it to review enemy-type "
+        "evidence, Revelation stacks, and Wayfinding progress."
+    ),
+    "Assassin": (
+        "Character Menu tab available: Death Mark. Use it to review mark setup "
+        "and finisher readiness."
+    ),
+    "Ninja": (
+        "Character Menu tab available: Death Mark. Use it to review mark setup, "
+        "finisher readiness, and No-Trace Opener pressure."
+    ),
+    "Spell Stealer": (
+        "Character Menu tab available: Stolen Charge. Use it to review stolen "
+        "spell charge and magical theft payoff readiness."
+    ),
+    "Arcane Trickster": (
+        "Character Menu tab available: Stolen Charge. Use it to review stolen "
+        "spell charge, Arcane Larceny, and hybrid payoff readiness."
+    ),
+    "Cleric": (
+        "Character Menu tab available: Devotion. Use it to review holy defender "
+        "stacks, Sanctuary Ward readiness, and shield-support rhythm."
+    ),
+    "Templar": (
+        "Character Menu tab available: Devotion. Use it to review holy defender "
+        "stacks, Relic Aegis readiness, and Ordered Blessings."
+    ),
+    "Monk": (
+        "Character Menu tab available: Ki. Use it to review martial focus, Ki "
+        "stacks, and Dim Mak readiness."
+    ),
+    "Master Monk": (
+        "Character Menu tab available: Ki. Use it to review martial focus, Ki "
+        "stacks, Dim Mak readiness, and Martial Mastery."
+    ),
+    "Priest": (
+        "Character Menu tab available: Prayer. Use it to review divine support "
+        "stacks and Supplication readiness."
+    ),
+    "Archbishop": (
+        "Character Menu tab available: Prayer. Use it to review divine support "
+        "stacks, Benediction readiness, and Divine Intervention."
+    ),
+    "Bard": (
+        "Character Menu tab available: Crescendo. Use it to review song momentum "
+        "and coda payoff readiness."
+    ),
+    "Troubadour": (
+        "Character Menu tab available: Crescendo. Use it to review song momentum, "
+        "repertoire mastery, Encore, and coda payoff readiness."
     ),
     "Beast Master": (
         "Character Menu tab available: Companion. Use it to review your companion "
@@ -109,6 +221,38 @@ PROMOTION_MECHANIC_GUIDANCE: dict[str, str] = {
         "Character Menu tab available: Summons. Use it to review summoned allies "
         "and their bond growth as they fight beside you."
     ),
+    "Druid": (
+        "Character Menu tab available: Forms. Use it to review stable wild-shape "
+        "identity and nature-form progression as it unlocks."
+    ),
+    "Lycan": (
+        "Character Menu tab available: Forms. Use it to review moon form, control, "
+        "and transformation pressure."
+    ),
+    "Archdruid": (
+        "Character Menu tab available: Aspects. Use it to review nature aspect "
+        "identity and Fourfold Balance progression."
+    ),
+    "Diviner": (
+        "Character Menu tab available: Runes. Use it to review learned-spell "
+        "runes and elemental casting identity."
+    ),
+    "Astromancer": (
+        "Character Menu tab available: Runes. Use it to review rune signs, "
+        "constellation flow, and Foresight Threads."
+    ),
+    "Shaman": (
+        "Character Menu tab available: Totems. Use it to review active Totem "
+        "aspects and elemental communion."
+    ),
+    "Soulcatcher": (
+        "Character Menu tab available: Totems. Use it to review Totem Resonance, "
+        "Soul Aspect, and harvest scaling."
+    ),
+    "Ranger": (
+        "Character Menu tab available: Companion. Use it to review your tamed "
+        "companion and Favored Enemy hunt identity."
+    ),
 }
 
 
@@ -116,10 +260,46 @@ PROMOTION_MECHANIC_TABS: dict[str, str] = {
     "Weapon Master": "Weapon Discipline",
     "Berserker": "Weapon Discipline",
     "Grandmaster of Arms": "Weapon Discipline",
-    "Warlock": "Companion",
+    "Paladin": "Oath Conviction",
+    "Crusader": "Oath Conviction",
+    "Lancer": "Aerial Tempo",
+    "Dragoon": "Aerial Tempo",
+    "Sentinel": "Resolve",
+    "Stalwart Defender": "Resolve",
+    "Sorcerer": "School Affinity",
+    "Wizard": "School Affinity",
+    "Warlock": "Familiar",
+    "Shadowcaster": "Umbral Debt",
+    "Demonologist": "Contracts",
+    "Spellblade": "Blade Charge",
+    "Knight Enchanter": "Arcane Tempo",
+    "Thief": "Fortune",
+    "Rogue": "Fortune",
+    "Inquisitor": "Case Journal",
+    "Seeker": "Case Journal",
+    "Assassin": "Death Mark",
+    "Ninja": "Death Mark",
+    "Spell Stealer": "Stolen Charge",
+    "Arcane Trickster": "Stolen Charge",
+    "Cleric": "Devotion",
+    "Templar": "Devotion",
+    "Monk": "Ki",
+    "Master Monk": "Ki",
+    "Priest": "Prayer",
+    "Archbishop": "Prayer",
+    "Bard": "Crescendo",
+    "Troubadour": "Crescendo",
     "Beast Master": "Companion",
     "Summoner": "Summons",
     "Grand Summoner": "Summons",
+    "Druid": "Forms",
+    "Lycan": "Forms",
+    "Archdruid": "Aspects",
+    "Diviner": "Runes",
+    "Astromancer": "Runes",
+    "Shaman": "Totems",
+    "Soulcatcher": "Totems",
+    "Ranger": "Companion",
 }
 
 

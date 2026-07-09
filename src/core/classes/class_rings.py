@@ -190,7 +190,7 @@ def default_state() -> dict[str, Any]:
             },
             "Crusader": {"vow": None},
             "Dragoon": {"meteor_guard_shield": 0, "meteor_guard_turns": 0},
-            "Stalwart Defender": {"guard_meter": 0},
+            "Stalwart Defender": {"guard_meter": 0, "resolve_mastery": 0},
             "Wizard": {"school_streak": {}},
             "Shadowcaster": {
                 "debt": 0,
@@ -260,6 +260,9 @@ def _normalize_lists(state: dict[str, Any]) -> None:
     shadow["backlash"] = max(0, int(shadow.get("backlash", 0) or 0))
     shadow["eclipse_turns"] = max(0, int(shadow.get("eclipse_turns", 0) or 0))
     shadow["familiar_echo_used"] = bool(shadow.get("familiar_echo_used", False))
+    stalwart = state["data"]["Stalwart Defender"]
+    stalwart["guard_meter"] = max(0, int(stalwart.get("guard_meter", 0) or 0))
+    stalwart["resolve_mastery"] = max(0, int(stalwart.get("resolve_mastery", 0) or 0))
 
 
 def ensure_state(character: Any) -> dict[str, Any]:

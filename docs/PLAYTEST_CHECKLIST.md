@@ -20,6 +20,9 @@ remain the prompts; the evidence ledger is the running decision record.
   - Expected: Status items such as Antidote, Eye Drop, Echo Screen, Bandage, and Phoenix Down are available.
 - [x] Accept multiple available bounties in one Tavern visit.
   - Expected: The Accept Bounty screen remains open until Back/Cancel or no new bounties remain.
+  - Expected: If no new bounties are available, the notice popup keeps the
+    Bounty Board menu visible behind it instead of returning to the main
+    Tavern menu frame.
 - [x] Complete or abandon all board bounties, then revisit the Tavern before and after making progress.
   - Expected: The board does not refill immediately, then restocks after enough dungeon steps, enemy defeats, or a level gain.
 - [x] Fight enemies that stun, sleep, or otherwise incapacitate the active actor.
@@ -93,6 +96,9 @@ remain the prompts; the evidence ledger is the running decision record.
   - Expected: Completing the rite awakens the ring and applies the expected equipped mod.
 - [ ] Promote a Warrior-line character to Paladin in pygame and curses.
   - Expected: Promotion requires choosing one permanent vow: `Redemption`, `Conquest`, `Protection`, or `Retribution`.
+  - Expected: The pygame vow picker uses the styled selection popup and updates
+    signature skill, aura, mark, and broad playstyle details while each vow is
+    highlighted, without revealing percentage or duration tuning.
   - Expected: Canceling the vow choice cancels promotion.
   - Expected: Completing promotion grants the matching vow skill: `Redeem`, `Challenge`, `Interpose`, or `Judgment Riposte`.
 - [ ] Load or create a legacy Paladin/Crusader save with no vow, then visit the Church.
@@ -142,6 +148,44 @@ remain the prompts; the evidence ledger is the running decision record.
   - Expected: The pygame promotion preview shows `Warrior -> Weapon Master`, highlights promotion stat deltas, previews the post-promotion Character Menu tabs, and visually emphasizes the new `Weapon Discipline` tab.
   - Expected: Weapon Master promotion stat deltas include `+2 STR`, `+1 INT`, and `+2 DEX`.
   - Expected: Confirming promotion applies the class change and stat bonuses, increases current HP/MP by the same amount as max HP/MP bonuses, and shows one concise congratulations popup without extra tutorial popups.
+- [ ] Promote a Warrior to Paladin, Lancer, and Sentinel.
+  - Expected: The pygame promotion preview shows the matching post-promotion
+    class mechanic tab: `Oath Conviction` for Paladin, `Aerial Tempo` for
+    Lancer, and `Resolve` for Sentinel.
+  - Expected: Paladin's final vow confirmation repeats only the vow question;
+    detailed vow descriptions stay in the selection popup.
+  - Expected: `Oath Conviction` shows the sworn vow, signature skill, aura,
+    mark, and Conviction rhythm without repeating the class name.
+  - Expected: Lancer/Dragoon Jump Mods are selected and toggled directly inside
+    the `Aerial Tempo` tab instead of appearing as a bottom action-menu option
+    or separate popup.
+  - Expected: Sentinel `Resolve` shows a large centered red bar with the
+    `current/cap` value inside it and Sentinel-owned Resolve-spending ability
+    boxes in the class mechanic tab.
+  - Expected: Sentinel/Stalwart `Resolve` appears in Combat Focus as a red
+    charge bar with the `current/cap` value centered inside it.
+  - Expected: Stalwart Defender keeps the inherited Sentinel Resolve actions
+    while adding a `Resolve Surges` section with locked/unlocked full-bar
+    payoffs.
+- [ ] Promote a Pathfinder to Diviner, Shaman, and Ranger.
+  - Expected: The pygame promotion preview shows the matching post-promotion
+    class mechanic tab: `Runes` for Diviner, `Totems` for Shaman, and
+    `Companion` for Ranger.
+- [ ] Promote through the Mage tree in pygame.
+  - Expected: The promotion preview shows the matching post-promotion class
+    mechanic tab: `School Affinity` for Sorcerer/Wizard, `Familiar` for
+    Warlock, `Umbral Debt` for Shadowcaster, `Contracts` for Demonologist,
+    `Blade Charge` for Spellblade, `Arcane Tempo` for Knight Enchanter, and
+    `Summons` for Summoner/Grand Summoner.
+- [ ] Promote through the Footpad tree in pygame.
+  - Expected: The promotion preview shows the matching post-promotion class
+    mechanic tab: `Fortune` for Thief/Rogue, `Case Journal` for
+    Inquisitor/Seeker, `Death Mark` for Assassin/Ninja, and `Stolen Charge`
+    for Spell Stealer/Arcane Trickster.
+- [ ] Promote through the Healer tree in pygame.
+  - Expected: The promotion preview shows the matching post-promotion class
+    mechanic tab: `Devotion` for Cleric/Templar, `Ki` for Monk/Master Monk,
+    `Prayer` for Priest/Archbishop, and `Crescendo` for Bard/Troubadour.
 - [ ] Fight as a Weapon Master with each supported weapon type equipped.
   - Expected: Successful main-hand/offhand hits grant Weapon Discipline XP to the matching weapon type.
   - Expected: Combat logs show per-hit Weapon Discipline XP without parenthesized progress, and the victory completion text shows the bonus Weapon Discipline XP for weapon types used in the fight.

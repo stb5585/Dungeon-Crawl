@@ -76,7 +76,7 @@ combat math, or numeric balance.
 | Berserker | Battle Scars, Bloodied Momentum/cap, bloodied threshold state where relevant. | Momentum gain/cap/spend, miss preservation, heavy-art mutation, `Final Assault` use. | None beyond existing weapon-art menus. | Show awakened/equipped `Bloodied Crits` and preservation readiness when relevant. | Build Momentum below 50% HP and spend it on a heavy art. |
 | Crusader | Vow, aura/mark, Oath Conviction/cap. | Conviction gain/spend, clean-outcome bonus, vow rider, mark/aura changes, preservation. | Vow Trial text remains explicit when no vow exists. | Show awakened/equipped `Vow Affirmation` preservation readiness. | Use sworn-vow action before and after ring awakening. |
 | Dragoon | Aerial Tempo/cap, pending follow-through, landing shield if active. | Clean Jump gain, interruption cleanup, spend, follow-through, landing shield. | Jump modification UI keeps existing capacity and no longer promises extra active mod capacity. | Show awakened/equipped `Aerial Supremacy` readiness. | Land a clean Jump, follow through, and inspect shield/readiness text. |
-| Sentinel/Stalwart Defender | Resolve/cap, guard stance, auto-guard readiness. | Resolve gain/cap/spend, block, barrier, riposte, automatic major-hit mitigation. | Shield-required actions fail clearly when shield/offhand setup is invalid. | Show awakened/equipped `Guard Meter` auto-spend readiness. | Build Resolve, use `Bulwark`, and trigger/inspect major-hit mitigation. |
+| Sentinel/Stalwart Defender | Sentinel Resolve/cap/spends; Stalwart full-bar Resolve Surges. | Resolve gain/cap/spend, block, barrier, riposte, Surge unlock/progress, automatic major-hit mitigation. | Shield-required actions fail clearly when shield/offhand setup is invalid. | Show awakened/equipped `Guard Meter` auto-spend readiness without making it the only Stalwart identity. | Build Resolve as Sentinel, spend it on shield actions, then promote and inspect Resolve Surges. |
 | Rogue | Fortune, Misfortune, `Jinx`, risky-action readiness. | Meter gain/spend/cap, Fortune smoothing, Misfortune payoff, `Cheat Death`, preservation. | Loot finds exclude invalid item categories and log as extra ordinary finds. | Show awakened/equipped `Loaded Dice` and once-per-combat preservation readiness. | Spend both meters and verify `Loaded Dice` status/logs. |
 | Seeker | Case Journal progress/rank, Revelation/cap, sight/detail state where available. | Case progress, milestone, Revelation gain/spend, telegraph prediction, mobility smoothing. | `Hidden Cache` and movement tools report claim/failure/smoothing clearly. | Show awakened/equipped `Hidden Cache` availability/readiness. | Gain Case progress, build Revelation, and inspect status/logs. |
 | Ninja | Death Mark/cap on current target when available, opener readiness. | Mark application/cap/spend, miss consumption, immunity/boss/trial downgrade, preservation. | Stealth/opener surfaces keep initiative requirements clear. | Show awakened/equipped `No-Trace Opener` readiness. | Apply marks, spend a finisher, and verify downgrade/preservation lines. |
@@ -270,7 +270,7 @@ Current shipped Totem behavior:
 
 These effects are implemented and visible through existing runtime hooks:
 
-- Stalwart Defender `Resolve` / `Guard Meter`.
+- Sentinel `Resolve` with Stalwart Defender legacy `Guard Meter` compatibility.
 - Grand Summoner future summon scaling.
 - Soulcatcher harvest tracking and Soul Aspect scaling.
 - Beast Master shared recovery.
@@ -759,9 +759,9 @@ awakened `Vow Affirmation` smoothing the loop without erasing mark drawbacks.
   Marks stay separate: Conviction never cleanses, shortens, or disables mark
   drawbacks.
 - UI text/surfaces: class/status text should show sworn vow, active aura/mark,
-  `Oath Conviction` stacks/cap, and affirmed-ring preservation readiness.
-  Combat logs should report Conviction gain, spend, cap, clean outcome bonus,
-  vow-specific rider, mark/aura changes, and ring preservation.
+  and `Oath Conviction` stacks/cap without surfacing class-ring details in the
+  Character Menu class tab. Combat logs should report Conviction gain, spend,
+  cap, clean outcome bonus, vow-specific rider, and mark/aura changes.
 - Tests: cover vow normalization, legacy no-vow saves, permanent vow locking,
   signature skill grants, Conviction cap/gain/extra gain/spend order/cleanup,
   all four vow spend riders, immunity boundaries, marks staying separate, and
@@ -770,6 +770,27 @@ awakened `Vow Affirmation` smoothing the loop without erasing mark drawbacks.
 - Balance assumptions: V1 supports all four vow paths equally. This is not a
   morality system, oath-respec system, or broader quest arc. Numeric values are
   conservative starting points for playtest tuning.
+
+#### Future Design Gate: Devotion Drift And Oathless Recovery
+
+This is not V1 implementation scope. It defines the design space for a later,
+more intentional path to changing the vow selected at promotion without turning
+the vow into a casual menu toggle.
+
+- Devotion drift: each vow can track an internal devotion band. Aura-aligned
+  outcomes move the character toward that vow's ideal; mark-triggering or
+  oath-straining outcomes move away from it. The band may influence the strength
+  or flavor of the signature skill, aura, and mark, but the exact scale and
+  breakpoints require separate tuning.
+- Oathless state: extreme negative devotion should break the current vow into an
+  oathless state instead of immediately selecting a replacement vow. Oathless
+  applies a persistent vow-specific drawback until recovery is completed.
+- Ritual recovery: each vow needs a named ritual that can restore, change, or
+  reframe the oath. Ritual outcomes should be rated in broad tiers so the
+  starting Conviction/Devotion band reflects how cleanly the oath was renewed.
+- Required design decisions before implementation: devotion scale, oathless
+  boundaries, ritual list, save/load shape, Church UI copy, combat status copy,
+  and regression coverage for vow loss, restoration, and migration.
 
 ### Lancer/Dragoon Aerial Tempo And Aerial Supremacy
 
@@ -806,9 +827,12 @@ landing protection.
   follow-through after Jump and grant a reduced landing shield under the same
   identity, replacing separate `+1 Jump Mod` and `Meteor Guard` presentation.
 - UI text/surfaces: class/status text should show Aerial Tempo stacks, cap,
-  pending follow-through, and `Aerial Supremacy` readiness. Combat logs should
-  report Tempo gain, interruption cleanup, Tempo spend, follow-through
-  damage/control, landing shield, and legacy ring migration/display.
+  and pending follow-through in combat/status surfaces. The pygame Character
+  Menu manages Jump Mods inline from the `Aerial Tempo` tab rather than the
+  general action row or a separate popup, and class-tab copy should avoid
+  class-ring details. Combat logs should report Tempo gain, interruption
+  cleanup, Tempo spend, follow-through damage/control, landing shield, and
+  legacy ring migration/display.
 - Tests: cover Aerial Tempo cap, clean-landing gain, no gain on interrupted
   Jump, follow-through consumption, miss behavior, combat-end/save-load
   cleanup, Lancer cap `2`, Dragoon cap `3`, eligible follow-through action
@@ -820,23 +844,26 @@ landing protection.
   payoff. Numeric tuning starts conservative and should be adjusted after
   playtest.
 
-### Sentinel/Stalwart Defender Resolve And Counterguard
+### Sentinel/Stalwart Defender Resolve And Surges
 
 Class Design Inspirations: FFVII, WoW, D&D
 
-V1 implementation spec: center Sentinel and Stalwart Defender on baseline `Resolve`,
-shield stances, and controlled counterattacks. Sentinel becomes the active
-shield-tactics class; Stalwart Defender deepens that loop with a higher Resolve
-cap, active spends, `Last Stand` synergy, and awakened-ring automatic major-hit
-mitigation.
+Implementation target: center Sentinel on baseline `Resolve`, shield
+stances, and controlled counterattacks. Sentinel should feel complete at first
+promotion: it builds Resolve through defensive pressure and spends it on
+shield-only tactical abilities. Stalwart Defender inherits the Sentinel Resolve
+kit, raises the cap to support full-bar payoffs, and adds `Resolve Surges`
+as the second-promotion identity.
 
 - Preserve current identity: keep the shield/offhand requirement, heavy armor
   identity, `Shield Block`, `Goad`, `Retaliate`, `Last Stand`,
   `Shield Mastery`, and awakened Stalwart `Guard Meter` compatibility.
 - Resolve storage: use the existing Stalwart `guard_meter` save shape as the
   compatibility key where practical, but present the resource as `Resolve`.
-  Sentinel caps at `50`; Stalwart Defender caps at `100`. Normalize invalid or
-  missing values on load and clamp to the class cap.
+  Sentinel caps at `50`. Stalwart Defender raises the inherited cap to `100`
+  so it can either keep using Sentinel shield spends or hold the full bar for
+  Surges. Normalize invalid or missing values on load and clamp to the current
+  class cap.
 - Resolve gain: `Defend`, successful blocks, mitigated physical hits, and
   shield-tactic actions such as `Goad` build Resolve. Log gains clearly and
   report when Resolve is capped.
@@ -845,31 +872,68 @@ mitigation.
   `Retaliate` remains the counter identity: successful blocks can trigger a
   modest weapon counter, with stronger reliability while `Hold the Line` is
   active.
-- Stalwart spends: add `Bulwark`, spending Resolve for a short barrier or
-  next-hit mitigation pulse, and `Shield Riposte`, spending Resolve after
-  blocking or while guarded for a controlled counter with light Attack or Speed
-  pressure.
+- Sentinel Resolve spends: move `Bulwark` and `Shield Riposte` into the
+  Sentinel kit. `Bulwark` spends Resolve for a short barrier or next-hit
+  mitigation pulse. `Shield Riposte` spends Resolve after blocking or while
+  guarded for a controlled counter with light Attack or Speed pressure.
+- Additional Sentinel Resolve-only abilities:
+  - `Shield Check`: spend a small amount of Resolve to batter the enemy with
+    your shield, lowering their Attack and Speed without overlapping the direct
+    damage/stun role of `Shield Slam`.
+  - `Brace Wall`: spend Resolve to refresh `Hold the Line` and raise Defense
+    for the next exchange.
+  - `Covering Guard`: spend Resolve to prepare a short shield ward against the
+    next dangerous hit.
+  - `Deflect Spell`: spend Resolve with a shield equipped to raise Magic Defense
+    and brace against hostile spell pressure without becoming a full anti-mage
+    class.
+- Stalwart Defender mechanic: add `Resolve Surges` as full-bar ultimate-style
+  shield payoffs. Stalwart keeps all Sentinel spends, but can also save the
+  larger Resolve bar for a Surge.
+- Initial Surge set:
+  - `Citadel Aegis`: full-bar defensive barrier/major-hit answer.
+  - `Ironwall Reprisal`: full-bar retaliation/counter discharge.
+  - `Last Bastion`: full-bar survival/emergency recovery payoff.
+- Surge unlock source: Resolve mastery progress from real combat behavior such
+  as spending Resolve, blocking, mitigating hits, using `Hold the Line`, and
+  other shield-tactic actions. Locked Surges are visible as grayed/question-mark
+  boxes until mastery reveals them on the class tab. In combat, Surges should
+  stay out of the `Resolve` action menu until the Stalwart is at full Resolve.
 - `Last Stand` synergy: keep the attack tradeoff, but improve low-HP block
-  reliability and Resolve gain so the skill reinforces the wall-and-counter
-  loop instead of acting as a disconnected passive.
+  reliability, Resolve gain, and Surge readiness so the skill reinforces
+  the wall-and-counter loop instead of acting as a disconnected passive.
 - Class Ring enhancement: awakened/equipped `Shield Mastery` keeps the current
-  automatic major-hit reduction. At full Resolve, the ring spends `100` Resolve
-  to reduce a major incoming hit by `40%`. The ring also modestly improves
-  block chance, spell-block eligibility, and counter reliability without
-  replacing active Resolve spends.
-- UI text/surfaces: class status should show Resolve, cap, active guard stance,
-  and ring auto-guard readiness. Combat logs should report Resolve gain/spend,
-  capped Resolve, blocks, barriers, ripostes, and automatic ring mitigation.
-- Tests: cover Sentinel and Stalwart Resolve caps, gain sources, clamping,
-  save/load normalization, legacy Stalwart `guard_meter` compatibility,
-  `Hold the Line` shield requirements and expiration, `Retaliate` counter
-  behavior, `Bulwark` and `Shield Riposte` costs/gates/effects/failure text,
-  `Last Stand` low-HP defensive benefits and attack tradeoff, and
-  awakened/equipped ring auto-spend behavior.
+  automatic major-hit reduction through legacy `Guard Meter` compatibility.
+  The class tab should describe Stalwart identity through Resolve and Surges,
+  not through ring terminology. The ring can modestly improve block chance,
+  spell-block eligibility, and counter reliability without replacing active
+  Sentinel Resolve spends or Stalwart Resolve Surges.
+- UI text/surfaces: class status should show Resolve and cap; the pygame
+  Character Menu class tab should center a large red Resolve progress bar with
+  `current/cap` inside it, then list Sentinel Resolve-spending abilities as
+  ability boxes. Stalwart Defender should add a `Resolve Surges` section with
+  locked/unlocked boxes and full-bar requirement text. Combat should expose
+  Resolve actions through a separate `Resolve` menu rather than the general
+  `Skills` menu, and that menu should show Resolve costs instead of MP costs.
+  Resolve actions are shield-pressure techniques, so Silence should not block
+  their use.
+  Combat Focus should render Resolve as a red charge bar with the `current/cap`
+  value centered inside it rather than plain text. Combat logs should report Resolve
+  gain/spend, capped Resolve, Surge use, blocks, barriers, ripostes, and
+  automatic ring mitigation.
+- Tests: cover Sentinel Resolve cap, gain sources, clamping, save/load
+  normalization, legacy Stalwart `guard_meter` compatibility, `Hold the Line`
+  shield requirements and expiration, `Retaliate` counter behavior, all
+  Sentinel Resolve spend costs/gates/effects/failure text, Stalwart
+  inherited-spend behavior, Surge lock/unlock/use/UI, `Last Stand` low-HP
+  defensive benefits and attack tradeoff, and awakened/equipped ring auto-spend
+  compatibility.
 - Balance assumptions: this is a V1 shield-depth spec, not a party-tank or
   multi-target threat rewrite. Sentinel/Stalwart should feel like
-  `Wall + Counter`: survive pressure, then answer with controlled retaliation.
-  Numeric tuning starts conservative and should be adjusted after playtest.
+  `Wall + Counter`: Sentinel survives pressure and spends Resolve on shield
+  actions; Stalwart Defender layers full-bar Surges and stronger reactions
+  onto that foundation. Numeric tuning starts conservative and should be
+  adjusted after playtest.
 
 ### Thief/Rogue Fortune And Misfortune
 

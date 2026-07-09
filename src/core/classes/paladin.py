@@ -63,20 +63,21 @@ SKILL_CLASS_NAMES = {
 
 DESCRIPTIONS = {
     "Redemption": (
-        "Seek mercy victories through Redeem. Mercy grants normal XP and gold "
-        "without loot, bounty, or kill credit."
+        "Redeem offers wounded foes a chance to yield. Mercy can still be "
+        "rewarding, especially when your oath is burning bright, but it turns "
+        "away from trophies and bloody renown."
     ),
     "Conquest": (
-        "Challenge a foe for three turns. Defeating the challenged foe or an "
-        "active bounty target builds Conquest Aura."
+        "Challenge names a foe and presses the fight toward a decisive end. "
+        "Victories against chosen or hunted enemies feed your commanding aura."
     ),
     "Protection": (
-        "Interpose for two turns, strengthening your next block. Successful "
-        "blocks build Protection Aura."
+        "Interpose commits you to a guarded stand. Timely blocks turn defense "
+        "into protective momentum for the battles ahead."
     ),
     "Retribution": (
-        "Prepare Judgment Riposte for two turns. The next enemy attack draws a "
-        "Holy counter, and a killing counter doubles Retribution Aura."
+        "Judgment Riposte waits for enemy aggression and answers it with holy "
+        "reprisal. Clean vengeance can leave your aura burning brighter."
     ),
 }
 

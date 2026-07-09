@@ -1074,6 +1074,15 @@ class BattleEngine:
             message += "The spell fails to open a path for theft.\n"
         return message
 
+    @staticmethod
+    def _skill_uses_resolve(skill: object) -> bool:
+        if getattr(skill, "resource_type", None) == "Resolve":
+            return True
+        skill_name = str(getattr(skill, "name", "") or "")
+        resolve_names = {entry["name"] for entry in promotion_kits.RESOLVE_SPEND_ABILITIES}
+        surge_names = {entry["name"] for entry in promotion_kits.RESOLVE_SURGES}
+        return skill_name in resolve_names or skill_name in surge_names
+
     def _execute_skill(
         self,
         choice: str | None,
@@ -1094,13 +1103,15 @@ class BattleEngine:
         skill = skills[choice]
         # Charging skills deduct mana at start, then must be allowed to continue
         # even when the user is at 0 mana or becomes silenced (otherwise the
-        # charge can never resolve).
+        # charge can never resolve). Resolve actions spend shield pressure, not
+        # voice or spellcasting focus, so silence should not suppress them.
         already_charging = bool(getattr(skill, "charging", False))
-        if self.attacker.abilities_suppressed() and not already_charging:
+        is_resolve_skill = self._skill_uses_resolve(skill)
+        if self.attacker.abilities_suppressed() and not already_charging and not is_resolve_skill:
             reason = "the anti-magic field" if getattr(self.attacker, "anti_magic_active", False) else "silence"
             return f"{self.attacker.name} cannot use skills because of {reason}!\n"
 
-        if not already_charging and self.attacker.mana.current < skill.cost:
+        if not already_charging and not is_resolve_skill and self.attacker.mana.current < skill.cost:
             return f"{self.attacker.name} does not have enough mana to use {choice}!\n"
 
         self._event_bus.emit(create_combat_event(
@@ -1109,7 +1120,7 @@ class BattleEngine:
             target=self.defender,
             skill_name=skill.name,
             ability_name=skill.name,
-            source="skill",
+            source="resolve" if is_resolve_skill else "skill",
         ))
 
         message = f"{self.attacker.name} uses {skill.name}.\n"

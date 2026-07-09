@@ -23,7 +23,7 @@ class InnManager(TownScreenBase):
     def visit_inn(self):
         """Visit the inn/tavern - integrates with The Thirsty Dog tavern."""
         inn_options = ["Talk to Patrons", "Bounty Board", "Leave"]
-        
+
         inn_screen = LocationMenuScreen(self.presenter, "The Thirsty Dog Tavern")
         self._popup_background_draw_func = lambda: inn_screen.draw_frame(do_flip=False)
         
@@ -144,45 +144,50 @@ class InnManager(TownScreenBase):
         bounty_dict = self.player_char.quest_dict.get('Bounty', {})
         
         bounty_screen = LocationMenuScreen(self.presenter, "Bounty Board")
-        
-        while True:
-            game = getattr(self.presenter, "game", None)
-            update_bounties = getattr(game, "update_bounties", None)
-            if callable(update_bounties):
-                update_bounties()
+        previous_background_draw_func = self._popup_background_draw_func
+        self._popup_background_draw_func = lambda: bounty_screen.draw_frame(do_flip=False)
 
-            bounty_options = ["Accept Bounty", "View Active Bounties", "Leave"]
-            
-            # Check if any bounties are complete
-            completable = [name for name, data in bounty_dict.items() if data[2]]
-            if completable:
-                bounty_options.insert(1, "Turn In Bounty")
-            if bounty_dict:
-                abandon_idx = len(bounty_options) - 1
-                bounty_options.insert(abandon_idx, "Abandon Bounty")
-            
-            choice_idx = bounty_screen.navigate(
-                bounty_options,
-                reset_cursor=False,
-                flush_events=True,
-                require_key_release=True,
-            )
-            
-            if choice_idx is None or bounty_options[choice_idx] == "Leave":
-                break
-            
-            if bounty_options[choice_idx] == "Accept Bounty":
-                self.accept_bounty()
-            
-            elif bounty_options[choice_idx] == "Turn In Bounty":
-                self.turn_in_bounty(completable)
+        try:
+            while True:
+                game = getattr(self.presenter, "game", None)
+                update_bounties = getattr(game, "update_bounties", None)
+                if callable(update_bounties):
+                    update_bounties()
 
-            elif bounty_options[choice_idx] == "Abandon Bounty":
-                self.abandon_bounty()
-            
-            elif bounty_options[choice_idx] == "View Active Bounties":
-                self.view_active_bounties()
-    
+                bounty_options = ["Accept Bounty", "View Active Bounties", "Leave"]
+
+                # Check if any bounties are complete
+                completable = [name for name, data in bounty_dict.items() if data[2]]
+                if completable:
+                    bounty_options.insert(1, "Turn In Bounty")
+                if bounty_dict:
+                    abandon_idx = len(bounty_options) - 1
+                    bounty_options.insert(abandon_idx, "Abandon Bounty")
+
+                choice_idx = bounty_screen.navigate(
+                    bounty_options,
+                    reset_cursor=False,
+                    flush_events=True,
+                    require_key_release=True,
+                )
+
+                if choice_idx is None or bounty_options[choice_idx] == "Leave":
+                    break
+
+                if bounty_options[choice_idx] == "Accept Bounty":
+                    self.accept_bounty()
+
+                elif bounty_options[choice_idx] == "Turn In Bounty":
+                    self.turn_in_bounty(completable)
+
+                elif bounty_options[choice_idx] == "Abandon Bounty":
+                    self.abandon_bounty()
+
+                elif bounty_options[choice_idx] == "View Active Bounties":
+                    self.view_active_bounties()
+        finally:
+            self._popup_background_draw_func = previous_background_draw_func
+
     def accept_bounty(self):
         """Accept a bounty from the board."""
         bounty_dict = self.player_char.quest_dict.get('Bounty', {})

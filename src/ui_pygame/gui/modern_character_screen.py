@@ -12,12 +12,12 @@ from src.ui_pygame.assets.companion_art_manager import get_companion_art_manager
 from src.ui_pygame.assets.item_render_manager import get_item_render_manager
 from src.ui_pygame.assets.portrait_manager import PortraitManager
 from src.core import items
-from src.core.classes import grandmaster
+from src.core.classes import grandmaster, paladin, promotion_kits, promotion_mechanic_tab_label
 
 from .confirmation_popup import ConfirmationPopup, draw_popup_close_button, popup_close_clicked
 from .input_guards import prepare_guarded_input, release_guard_allows_input, update_input_armed_from_event
 from .mouse_helpers import hit_index, is_left_click, mouse_position
-from .popup_menus import BestiaryPopupMenu, EquipmentPopupMenu, InventoryPopupMenu, JumpModsPopupMenu, SimpleListPopupMenu, TotemAspectsPopupMenu
+from .popup_menus import BestiaryPopupMenu, EquipmentPopupMenu, InventoryPopupMenu, SimpleListPopupMenu, TotemAspectsPopupMenu
 from .town_base import TownScreenBase
 
 
@@ -340,8 +340,12 @@ class ModernCharacterScreen(TownScreenBase):
         self.companion_art_manager = get_companion_art_manager()
         self.selected_equipment_slot_index = 0
         self.selected_class_companion_index = 0
+        self.selected_weapon_discipline_index = 0
         self.equipment_selector_active = False
         self.class_companion_selector_active = False
+        self.weapon_discipline_selector_active = False
+        self.selected_jump_mod_index = 0
+        self._jump_mod_row_rects: list[pygame.Rect] = []
         self.current_selection = 0
         self.menu_options: list[str] = []
         super().__init__(presenter)
@@ -390,6 +394,7 @@ class ModernCharacterScreen(TownScreenBase):
                     self.equipment_selector_active = False
                 if key != "class":
                     self.class_companion_selector_active = False
+                    self.weapon_discipline_selector_active = False
                 return
         raise ValueError(f"Unknown character tab: {key}")
 
@@ -397,11 +402,16 @@ class ModernCharacterScreen(TownScreenBase):
         if grandmaster.is_weapon_discipline_class(player_char):
             return CharacterTab("class", "Weapon Discipline")
         class_name = self._attr_name(getattr(player_char, "cls", None), "")
+        mechanic_label = promotion_mechanic_tab_label(class_name)
         summons = getattr(player_char, "summons", {}) or {}
         familiar = getattr(player_char, "familiar", None)
         if class_name in {"Summoner", "Grand Summoner"} or summons:
             return CharacterTab("class", "Summons")
-        if class_name in {"Warlock", "Beast Master"} or familiar is not None:
+        if class_name in {"Ranger", "Beast Master"}:
+            return CharacterTab("class", "Companion")
+        if mechanic_label:
+            return CharacterTab("class", mechanic_label)
+        if familiar is not None:
             return CharacterTab("class", "Companion")
         return None
 
@@ -424,6 +434,12 @@ class ModernCharacterScreen(TownScreenBase):
         visible = self.visible_tabs(player_char)
         if 0 <= index < len(visible):
             self.select_tab(visible[index].key)
+
+    def active_mechanic_label(self, player_char) -> str:
+        if self.active_tab_key != "class":
+            return ""
+        mechanic_tab = self.class_mechanic_tab(player_char)
+        return mechanic_tab.label if mechanic_tab is not None else ""
 
     def move_tab(self, delta: int, player_char=None) -> None:
         visible = self.visible_tabs(player_char)
@@ -639,6 +655,40 @@ class ModernCharacterScreen(TownScreenBase):
             progress = self._weapon_discipline_progress_label(xp, rank)
             rows.append((weapon_type, f"Rank {rank} - {progress}"))
         return rows
+
+    def weapon_discipline_detail_text(self, player_char, weapon_type: str) -> str:
+        """Return readable progression details for one Weapon Discipline row."""
+        state = grandmaster.normalize_state(getattr(player_char, "grandmaster_discipline", None))
+        entry = state["disciplines"].get(weapon_type, {"xp": 0, "rank": 0})
+        xp = self._non_negative_float(entry.get("xp", 0))
+        rank = self._non_negative_int(entry.get("rank", 0))
+        progress = self._weapon_discipline_progress_label(xp, rank)
+        art_name = grandmaster.WEAPON_ARTS.get(weapon_type, "Weapon Art")
+        equipped = weapon_type in {
+            grandmaster.get_weapon_type(player_char, "Weapon"),
+            grandmaster.get_weapon_type(player_char, "OffHand"),
+        }
+        unlocked = rank >= 1
+        improved = rank >= 5
+        mastered = rank >= grandmaster.MAX_RANK
+        lines = [
+            f"{weapon_type} Discipline",
+            f"Rank {rank} - {progress}",
+            f"Equipped now: {'Yes' if equipped else 'No'}",
+            "",
+            f"Weapon Art: {art_name}",
+            f"Required weapon: {weapon_type}",
+            "",
+            "Unlocks:",
+            f"Rank 1: {'Unlocked' if unlocked else 'Locked'} - learn {art_name}.",
+            f"Rank 5: {'Unlocked' if improved else 'Locked'} - improved art effect.",
+            f"Rank {grandmaster.MAX_RANK}: {'Unlocked' if mastered else 'Locked'} - mastered art effect.",
+        ]
+        if rank < grandmaster.MAX_RANK:
+            next_threshold = grandmaster.XP_THRESHOLDS[rank]
+            remaining = max(0, next_threshold - int(xp))
+            lines.append(f"Next rank: {remaining} XP remaining.")
+        return "\n".join(lines)
 
     def _weapon_discipline_icon_item(self, weapon_type: str):
         if not hasattr(self, "_weapon_discipline_icon_cache"):
@@ -1439,6 +1489,10 @@ class ModernCharacterScreen(TownScreenBase):
             )
         return rects
 
+    def weapon_discipline_row_rects(self) -> list[pygame.Rect]:
+        """Return clickable Weapon Discipline row rectangles for the Class tab."""
+        return list(getattr(self, "_weapon_discipline_row_rects", []))
+
     def _draw_inline_companion_fields(
         self,
         fields: list[tuple[str, str]],
@@ -1526,6 +1580,26 @@ class ModernCharacterScreen(TownScreenBase):
             require_key_release=True,
         )
 
+    def _open_weapon_discipline_popup(self, player_char) -> None:
+        if not grandmaster.is_weapon_discipline_class(player_char):
+            return
+        self.selected_weapon_discipline_index = max(
+            0,
+            min(self.selected_weapon_discipline_index, len(grandmaster.WEAPON_TYPES) - 1),
+        )
+        weapon_type = grandmaster.WEAPON_TYPES[self.selected_weapon_discipline_index]
+        background = self.screen.copy()
+        popup = ConfirmationPopup(
+            self.presenter,
+            self.weapon_discipline_detail_text(player_char, weapon_type),
+            show_buttons=False,
+        )
+        popup.show(
+            background_draw_func=lambda: self.screen.blit(background, (0, 0)),
+            flush_events=True,
+            require_key_release=True,
+        )
+
     def _draw_weapon_discipline_progress_bar(
         self,
         rect: pygame.Rect,
@@ -1548,9 +1622,12 @@ class ModernCharacterScreen(TownScreenBase):
         rect: pygame.Rect,
         *,
         equipped: bool,
+        selected: bool,
     ) -> None:
-        pygame.draw.rect(self.screen, self.colors.HIGHLIGHT_BG if equipped else (14, 14, 19), rect)
-        pygame.draw.rect(self.screen, self.colors.GOLD if equipped else self.colors.BORDER_COLOR, rect, 2 if equipped else 1)
+        highlighted = equipped or selected
+        border_color = self.colors.GOLD if highlighted else self.colors.BORDER_COLOR
+        pygame.draw.rect(self.screen, self.colors.HIGHLIGHT_BG if highlighted else (14, 14, 19), rect)
+        pygame.draw.rect(self.screen, border_color, rect, 2 if highlighted else 1)
 
         icon_size = min(40, max(28, rect.height - 12))
         icon_rect = pygame.Rect(rect.left + 8, rect.top + (rect.height - icon_size) // 2, icon_size, icon_size)
@@ -1562,12 +1639,14 @@ class ModernCharacterScreen(TownScreenBase):
         xp = self._non_negative_float(entry.get("xp", 0))
         rank = self._non_negative_int(entry.get("rank", 0))
         name_color = self.colors.GOLD if equipped else self.colors.WHITE
-        detail_color = self.colors.WHITE if equipped else self.colors.GRAY
+        detail_color = self.colors.WHITE if highlighted else self.colors.GRAY
         text_x = icon_rect.right + 10
         name_width = min(150, max(104, rect.width // 3))
-        self._draw_text(weapon_type, self.normal_font, name_color, text_x, rect.top + 7, name_width)
-        art_name = grandmaster.WEAPON_ARTS.get(weapon_type, "")
-        self._draw_text(art_name, self.small_font, detail_color, text_x, rect.top + 28, name_width)
+        name_y = rect.centery - self.normal_font.get_height() // 2
+        self._draw_text(weapon_type, self.normal_font, name_color, text_x, name_y, name_width)
+        if equipped:
+            equipped_y = min(rect.bottom - self.small_font.get_height() - 4, name_y + self.normal_font.get_height() - 1)
+            self._draw_text("Equipped", self.small_font, detail_color, text_x, equipped_y, name_width)
 
         bar_x = text_x + name_width + 12
         bar_width = max(80, rect.right - bar_x - 12)
@@ -1590,6 +1669,21 @@ class ModernCharacterScreen(TownScreenBase):
         if show_heading:
             self._draw_text("Weapon Discipline", self.normal_font, self.colors.GOLD, rect.left, y, rect.width)
             y += self.normal_font.get_height() + 10
+        self.selected_weapon_discipline_index = max(
+            0,
+            min(self.selected_weapon_discipline_index, len(grandmaster.WEAPON_TYPES) - 1),
+        )
+        helper = "Arrows: Select  Enter: Details"
+        helper_width = self.small_font.size(helper)[0]
+        self._draw_text(
+            helper,
+            self.small_font,
+            self.colors.GRAY,
+            rect.right - min(helper_width, rect.width),
+            y,
+            rect.width,
+        )
+        y += self.small_font.get_height() + 6
         state = grandmaster.normalize_state(getattr(player_char, "grandmaster_discipline", None))
         equipped = {
             weapon_type
@@ -1602,16 +1696,300 @@ class ModernCharacterScreen(TownScreenBase):
         row_gap = 6
         available_height = max(1, rect.bottom - y - 4)
         row_height = min(54, max(42, (available_height - row_gap * (len(grandmaster.WEAPON_TYPES) - 1)) // len(grandmaster.WEAPON_TYPES)))
+        self._weapon_discipline_row_rects = []
         for index, weapon_type in enumerate(grandmaster.WEAPON_TYPES):
             row_rect = pygame.Rect(rect.left, y + index * (row_height + row_gap), rect.width, row_height)
             if row_rect.bottom > rect.bottom:
                 break
+            self._weapon_discipline_row_rects.append(row_rect)
             self._draw_weapon_discipline_row(
                 weapon_type,
                 state["disciplines"][weapon_type],
                 row_rect,
                 equipped=weapon_type in equipped,
+                selected=index == self.selected_weapon_discipline_index,
             )
+
+    def _draw_meter_bar(self, rect: pygame.Rect, value: int, cap: int, *, color=None) -> None:
+        cap = max(1, int(cap or 1))
+        value = max(0, min(cap, int(value or 0)))
+        fill_width = int(rect.width * (value / cap))
+        pygame.draw.rect(self.screen, (24, 24, 28), rect)
+        if fill_width > 0:
+            pygame.draw.rect(self.screen, color or self.colors.GREEN, pygame.Rect(rect.left, rect.top, fill_width, rect.height))
+        pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, rect, 1)
+
+    def _draw_mechanic_note_card(self, rect: pygame.Rect, title: str, body: str, y: int) -> int:
+        card = pygame.Rect(rect.left, y, rect.width, max(74, self.small_font.get_height() * 3 + 28))
+        pygame.draw.rect(self.screen, (14, 14, 19), card)
+        pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, card, 1)
+        self._draw_text(title, self.normal_font, self.colors.GOLD, card.left + 12, card.top + 10, card.width - 24)
+        return self._draw_wrapped_text(
+            body,
+            self.small_font,
+            self.colors.WHITE,
+            card.left + 12,
+            card.top + self.normal_font.get_height() + 14,
+            card.width - 24,
+            max_lines=3,
+        ) + 10
+
+    def jump_mod_summary_rows(self, player_char) -> list[tuple[str, str]]:
+        jump_skill = self._get_jump_skill(player_char)
+        if not jump_skill or not hasattr(jump_skill, "modifications"):
+            return [("Jump Mods", "Jump not learned")]
+        active_count = jump_skill.get_active_count() if hasattr(jump_skill, "get_active_count") else sum(bool(v) for v in jump_skill.modifications.values())
+        max_count = jump_skill.get_max_active_modifications(player_char) if hasattr(jump_skill, "get_max_active_modifications") else len(jump_skill.modifications)
+        unlocked = jump_skill.get_unlocked_modifications() if hasattr(jump_skill, "get_unlocked_modifications") else list(jump_skill.modifications.keys())
+        active = [name for name in unlocked if jump_skill.modifications.get(name)]
+        return [
+            ("Active Mods", f"{active_count}/{max_count}"),
+            ("Unlocked", str(len(unlocked))),
+            ("Equipped", ", ".join(active) if active else "None"),
+        ]
+
+    def jump_mod_entries(self, player_char) -> list[str]:
+        jump_skill = self._get_jump_skill(player_char)
+        if not jump_skill or not hasattr(jump_skill, "modifications"):
+            return []
+        if hasattr(jump_skill, "get_unlocked_modifications"):
+            return list(jump_skill.get_unlocked_modifications())
+        return list(jump_skill.modifications.keys())
+
+    def jump_mod_row_rects(self) -> list[pygame.Rect]:
+        return list(self._jump_mod_row_rects)
+
+    def _jump_mod_counts(self, player_char) -> tuple[int, int]:
+        jump_skill = self._get_jump_skill(player_char)
+        if not jump_skill or not hasattr(jump_skill, "modifications"):
+            return 0, 0
+        active_count = jump_skill.get_active_count() if hasattr(jump_skill, "get_active_count") else sum(bool(v) for v in jump_skill.modifications.values())
+        max_count = jump_skill.get_max_active_modifications(player_char) if hasattr(jump_skill, "get_max_active_modifications") else len(jump_skill.modifications)
+        return int(active_count), int(max_count)
+
+    def _toggle_selected_jump_mod(self, player_char) -> None:
+        entries = self.jump_mod_entries(player_char)
+        if not entries:
+            return
+        self.selected_jump_mod_index = max(0, min(self.selected_jump_mod_index, len(entries) - 1))
+        jump_skill = self._get_jump_skill(player_char)
+        if not jump_skill or not hasattr(jump_skill, "modifications"):
+            return
+        mod_name = entries[self.selected_jump_mod_index]
+        current = bool(jump_skill.modifications.get(mod_name, False))
+        if hasattr(jump_skill, "set_modification"):
+            jump_skill.set_modification(mod_name, not current, player_char)
+        else:
+            jump_skill.modifications[mod_name] = not current
+
+    def _jump_mod_unlock_text(self, jump_skill, mod_name: str) -> str:
+        requirements = getattr(jump_skill, "unlock_requirements", {}) or {}
+        req = requirements.get(mod_name, {}) if isinstance(requirements, dict) else {}
+        req_type = req.get("type", "")
+        req_val = req.get("requirement")
+        if req_type == "lancer_level":
+            return f"Unlocked: Lancer Level {req_val}"
+        if req_type == "dragoon_level":
+            return f"Unlocked: Dragoon Level {req_val}"
+        if req_type == "boss":
+            return f"Unlocked by defeating {req_val}"
+        if req_type == "item":
+            return f"Unlocked by finding {req_val}"
+        return "Initial modification"
+
+    def _jump_mod_description(self, mod_name: str) -> str:
+        descriptions = {
+            "Crit": "Increases critical factor but reduces damage to 1.5x weapon damage.",
+            "Thrust": "After landing, thrust for 3/4 weapon damage if the target survives.",
+            "Defend": "Increased damage reduction while preparing to Jump.",
+            "Rend": "Chance to apply Bleed, dealing damage over time.",
+            "Quake": "Chance to stun the enemy upon landing.",
+            "Acrobat": "Gain an evasion bonus while preparing to Jump.",
+            "Dragon's Fury": "Deals additional random elemental damage.",
+            "Soaring Strike": "Takes two turns to charge, but deals increased damage.",
+            "Quick Dive": "Removes charge time but reduces damage to 0.75x.",
+            "Retribution": "Taking damage while charging boosts the Jump damage.",
+            "Unstoppable": "Jump cannot be interrupted once started.",
+            "Recover": "Regain a small amount of health and mana upon landing.",
+            "Skyfall": "Additional smaller hits fall on the target after landing.",
+        }
+        return descriptions.get(mod_name, "")
+
+    def _draw_aerial_tempo_tab(self, player_char, y: int) -> None:
+        self.class_companion_selector_active = False
+        self.weapon_discipline_selector_active = False
+        content = self.details_rect.inflate(-32, -64)
+        content.top = y
+        left_width = max(300, (content.width * 9) // 20)
+        list_rect = pygame.Rect(content.left, content.top, left_width, content.height)
+        detail_rect = pygame.Rect(list_rect.right + 18, content.top, content.right - list_rect.right - 18, content.height)
+
+        jump_skill = self._get_jump_skill(player_char)
+        entries = self.jump_mod_entries(player_char)
+        self.selected_jump_mod_index = max(0, min(self.selected_jump_mod_index, max(0, len(entries) - 1)))
+        active_count, max_count = self._jump_mod_counts(player_char)
+
+        header = f"Jump Modifications ({active_count}/{max_count} active)" if jump_skill else "Jump not learned"
+        self._draw_text(header, self.normal_font, self.colors.GOLD, list_rect.left, list_rect.top, list_rect.width)
+        helper = "UP/DOWN: Select  ENTER: Toggle"
+        helper_width = self.small_font.size(helper)[0]
+        self._draw_text(helper, self.small_font, self.colors.GRAY, list_rect.right - min(helper_width, list_rect.width), list_rect.top + self.normal_font.get_height() + 2, list_rect.width)
+
+        y_cursor = list_rect.top + self.normal_font.get_height() + self.small_font.get_height() + 14
+        row_height = 42
+        row_gap = 6
+        self._jump_mod_row_rects = []
+        for index, mod_name in enumerate(entries):
+            row_rect = pygame.Rect(list_rect.left, y_cursor + index * (row_height + row_gap), list_rect.width, row_height)
+            if row_rect.bottom > list_rect.bottom:
+                break
+            self._jump_mod_row_rects.append(row_rect)
+            selected = index == self.selected_jump_mod_index
+            active = bool(getattr(jump_skill, "modifications", {}).get(mod_name, False))
+            pygame.draw.rect(self.screen, self.colors.HIGHLIGHT_BG if selected else (14, 14, 19), row_rect)
+            pygame.draw.rect(self.screen, self.colors.GOLD if selected else self.colors.BORDER_COLOR, row_rect, 2 if selected else 1)
+            marker = "[X]" if active else "[ ]"
+            self._draw_text(marker, self.normal_font, self.colors.GOLD if active else self.colors.GRAY, row_rect.left + 12, row_rect.top + 10, 40)
+            self._draw_text(mod_name, self.normal_font, self.colors.WHITE, row_rect.left + 58, row_rect.top + 10, row_rect.width - 70)
+
+        pygame.draw.rect(self.screen, (14, 14, 19), detail_rect)
+        pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, detail_rect, 1)
+        if entries and jump_skill:
+            mod_name = entries[self.selected_jump_mod_index]
+            active = bool(jump_skill.modifications.get(mod_name, False))
+            detail_y = detail_rect.top + 16
+            self._draw_text(mod_name, self.large_font, self.colors.GOLD, detail_rect.left + 16, detail_y, detail_rect.width - 32)
+            detail_y += self.large_font.get_height() + 12
+            self._draw_text(f"Status: {'Active' if active else 'Inactive'}", self.normal_font, self.colors.WHITE, detail_rect.left + 16, detail_y, detail_rect.width - 32)
+            detail_y += self.normal_font.get_height() + 8
+            self._draw_text(self._jump_mod_unlock_text(jump_skill, mod_name), self.small_font, self.colors.GRAY, detail_rect.left + 16, detail_y, detail_rect.width - 32)
+            detail_y += self.small_font.get_height() + 14
+            self._draw_wrapped_text(
+                self._jump_mod_description(mod_name),
+                self.normal_font,
+                self.colors.WHITE,
+                detail_rect.left + 16,
+                detail_y,
+                detail_rect.width - 32,
+                max_lines=5,
+            )
+        else:
+            self._draw_text("Jump has not been learned.", self.normal_font, self.colors.GRAY, detail_rect.left + 16, detail_rect.top + 16, detail_rect.width - 32)
+
+    def _resolve_value_and_cap(self, player_char) -> tuple[int, int]:
+        cap = promotion_kits.resolve_cap(player_char)
+        try:
+            from src.core.classes import class_rings
+
+            data = class_rings.ensure_state(player_char)["data"]["Stalwart Defender"]
+            value = int(data.get("guard_meter", 0) or 0)
+        except Exception:
+            value = 0
+        return max(0, min(cap, value)), cap
+
+    def resolve_spend_rows(self, player_char) -> list[dict[str, Any]]:
+        return promotion_kits.resolve_spend_rows(player_char)
+
+    def _draw_resolve_ability_box(self, entry: dict[str, Any], rect: pygame.Rect, *, surge: bool = False) -> None:
+        unlocked = bool(entry.get("unlocked"))
+        bg = (14, 14, 20) if unlocked else (24, 24, 28)
+        border = self.colors.GOLD if unlocked else self.colors.DARK_GRAY
+        text_color = self.colors.WHITE if unlocked else self.colors.GRAY
+        title_color = self.colors.GOLD if unlocked else self.colors.GRAY
+        pygame.draw.rect(self.screen, bg, rect)
+        pygame.draw.rect(self.screen, border, rect, 1)
+
+        title = str(entry.get("name", ""))
+        role = str(entry.get("role", ""))
+        description = str(entry.get("description", ""))
+        if not unlocked:
+            title = "???"
+            description = "Locked"
+        cost = "Full bar" if surge else f"{int(entry.get('cost', 0) or 0)} Resolve"
+
+        self._draw_text(title, self.normal_font, title_color, rect.left + 10, rect.top + 8, rect.width - 20)
+        self._draw_text(f"{role} - {cost}", self.small_font, text_color, rect.left + 10, rect.top + 34, rect.width - 20)
+        self._draw_wrapped_text(description, self.small_font, text_color, rect.left + 10, rect.top + 56, rect.width - 20, max_lines=2)
+
+    def _draw_resolve_tab(self, player_char, y: int) -> None:
+        self.class_companion_selector_active = False
+        self.weapon_discipline_selector_active = False
+        self._jump_mod_row_rects = []
+        resolve, cap = self._resolve_value_and_cap(player_char)
+        content = self.details_rect.inflate(-32, -64)
+        content.top = y
+        meter_width = min(700, max(360, (content.width * 3) // 4))
+        bar_rect = pygame.Rect(content.centerx - meter_width // 2, y + 58, meter_width, 28)
+        self._draw_meter_bar(bar_rect, resolve, cap, color=self.colors.RED)
+        value_text = f"{resolve}/{cap}"
+        value_surface = self.normal_font.render(value_text, True, self.colors.WHITE)
+        self.screen.blit(value_surface, value_surface.get_rect(center=bar_rect.center))
+
+        section_y = bar_rect.bottom + 36
+        self._draw_text("Resolve Spends", self.normal_font, self.colors.GOLD, content.left, section_y, content.width)
+        box_top = section_y + self.normal_font.get_height() + 14
+        columns = 3
+        gap = 12
+        box_width = (content.width - gap * (columns - 1)) // columns
+        box_height = 92
+        for index, entry in enumerate(self.resolve_spend_rows(player_char)):
+            col = index % columns
+            row = index // columns
+            rect = pygame.Rect(content.left + col * (box_width + gap), box_top + row * (box_height + gap), box_width, box_height)
+            self._draw_resolve_ability_box(entry, rect)
+
+        class_name = self._attr_name(getattr(player_char, "cls", None), "")
+        if class_name == "Stalwart Defender":
+            surge_y = box_top + 2 * (box_height + gap) + 22
+            self._draw_text("Resolve Surges", self.normal_font, self.colors.GOLD, content.left, surge_y, content.width)
+            for index, entry in enumerate(promotion_kits.resolve_surge_rows(player_char)):
+                rect = pygame.Rect(
+                    content.left + index * (box_width + gap),
+                    surge_y + self.normal_font.get_height() + 14,
+                    box_width,
+                    box_height,
+                )
+                self._draw_resolve_ability_box(entry, rect, surge=True)
+
+    def _draw_oath_conviction_tab(self, player_char, y: int) -> None:
+        self.class_companion_selector_active = False
+        self.weapon_discipline_selector_active = False
+        self._jump_mod_row_rects = []
+        state = promotion_kits.combat_state(player_char)
+        conviction = int(state.get("oath_conviction", 0) or 0)
+        cap = max(1, promotion_kits.cap_for(player_char, "oath_conviction"))
+        vow = paladin.path(player_char) or "Unsworn"
+        content = self.details_rect.inflate(-32, -64)
+        content.top = y
+        left_width = max(320, (content.width * 2) // 5)
+        left_rect = pygame.Rect(content.left, content.top, left_width, content.height)
+        right_rect = pygame.Rect(left_rect.right + 18, content.top, content.right - left_rect.right - 18, content.height)
+
+        self._draw_text(f"Conviction {conviction}/{cap}", self.large_font, self.colors.WHITE, left_rect.left, y, left_rect.width)
+        bar_rect = pygame.Rect(left_rect.left, y + self.large_font.get_height() + 8, left_rect.width, 16)
+        self._draw_meter_bar(bar_rect, conviction, cap, color=self.colors.GOLD)
+        rows = [("Vow", vow)]
+        if vow in paladin.PATHS:
+            rows.extend(
+                [
+                    ("Signature", paladin.SKILL_NAMES[vow]),
+                    ("Aura", paladin.AURA_NAMES[vow]),
+                    ("Mark", paladin.MARK_NAMES[vow]),
+                ]
+            )
+        self._draw_key_values(rows, left_rect, bar_rect.bottom + 18, font=self.normal_font, row_gap=8)
+
+        detail_y = right_rect.top
+        self._draw_text("Oath Rhythm", self.normal_font, self.colors.GOLD, right_rect.left, detail_y, right_rect.width)
+        detail_y += self.normal_font.get_height() + 12
+        for title, body in (
+            ("Build", "Use your sworn vow skill and complete its clean payoff to build Conviction."),
+            ("Spend", "Your next matching vow action spends stored Conviction to strengthen that vow's defining moment."),
+            ("Risk", "Aura and mark pressure still matter; Conviction reinforces the oath without erasing its drawback."),
+        ):
+            if detail_y + 80 > right_rect.bottom:
+                break
+            detail_y = self._draw_mechanic_note_card(right_rect, title, body, detail_y)
 
     def draw_class_tab(self, player_char):
         mechanic_tab = self.class_mechanic_tab(player_char)
@@ -1630,6 +2008,20 @@ class ModernCharacterScreen(TownScreenBase):
             self._draw_weapon_discipline_panel(player_char, discipline_rect, y, show_heading=False)
             return
 
+        if mechanic_tab is not None and mechanic_tab.label == "Oath Conviction":
+            self._draw_oath_conviction_tab(player_char, y)
+            return
+
+        if mechanic_tab is not None and mechanic_tab.label == "Aerial Tempo":
+            self._draw_aerial_tempo_tab(player_char, y)
+            return
+
+        if mechanic_tab is not None and mechanic_tab.label == "Resolve":
+            self._draw_resolve_tab(player_char, y)
+            return
+
+        self._jump_mod_row_rects = []
+        self.weapon_discipline_selector_active = False
         gap = 14
         left_width = max(260, (self.details_rect.width * 2) // 5)
         overview_rect = pygame.Rect(
@@ -1645,9 +2037,7 @@ class ModernCharacterScreen(TownScreenBase):
             self.details_rect.bottom - y - 16,
         )
 
-        class_name = self._attr_name(getattr(player_char, "cls", None), "Unknown")
-        self._draw_text(class_name, self.normal_font, self.colors.GOLD, overview_rect.left, y, overview_rect.width)
-        overview_y = y + self.normal_font.get_height() + 10
+        overview_y = y
         overview_y = self._draw_key_values(
             self.class_summary_rows(player_char),
             overview_rect,
@@ -1689,10 +2079,14 @@ class ModernCharacterScreen(TownScreenBase):
         self._class_roster_rect = roster_rect
         heading = mechanic_tab.label if mechanic_tab is not None else "Companions"
         self._draw_text(heading, self.normal_font, self.colors.GOLD, roster_rect.left, y, roster_rect.width)
+        singular_label = {
+            "Familiar": "familiar",
+            "Companion": "companion",
+        }.get(heading, "summon")
         helper = (
             "Arrows: Select  Enter: Inspect  C/Esc: Back"
             if self.class_companion_selector_active
-            else "C: Select summon"
+            else f"C: Select {singular_label}"
         )
         helper_width = self.small_font.size(helper)[0]
         self._draw_text(
@@ -1923,9 +2317,6 @@ class ModernCharacterScreen(TownScreenBase):
         elif chosen == "Specials":
             popup = SimpleListPopupMenu(self.presenter, self, title="Special Abilities", source_fn=self._get_specials_list)
             _ = popup.show(player_char, flush_events=True, require_key_release=True)
-        elif chosen == "Jump Mods":
-            popup = JumpModsPopupMenu(self.presenter, self, title="Jump Modifications")
-            _ = popup.show(player_char, flush_events=True, require_key_release=True)
         elif chosen == "Totem Aspects":
             popup = TotemAspectsPopupMenu(self.presenter, self, title="Totem Aspects")
             _ = popup.show(player_char, flush_events=True, require_key_release=True)
@@ -1948,8 +2339,6 @@ class ModernCharacterScreen(TownScreenBase):
 
     def navigate(self, player_char, flush_events=True, require_key_release=True):
         menu_options = self._base_menu_options()
-        if self._has_jump_mods(player_char):
-            menu_options.insert(-1, "Jump Mods")
         if self._has_totem_aspects(player_char):
             menu_options.insert(-1, "Totem Aspects")
         self.menu_options = menu_options
@@ -2006,6 +2395,16 @@ class ModernCharacterScreen(TownScreenBase):
                             if is_left_click(event) and input_armed:
                                 self.open_selected_equipment_change(player_char)
                             continue
+                    elif (
+                        self.active_tab.key == "class"
+                        and self.active_mechanic_label(player_char) == "Aerial Tempo"
+                    ):
+                        row_index = hit_index(self.jump_mod_row_rects(), pos)
+                        if row_index is not None:
+                            self.selected_jump_mod_index = row_index
+                            if is_left_click(event) and input_armed:
+                                self._toggle_selected_jump_mod(player_char)
+                            continue
                     elif self.active_tab.key == "class" and not grandmaster.is_weapon_discipline_class(player_char):
                         entries = self.class_companion_entries(player_char)
                         tile_index = hit_index(self.class_companion_tile_rects(entries), pos)
@@ -2014,6 +2413,13 @@ class ModernCharacterScreen(TownScreenBase):
                             self.selected_class_companion_index = tile_index
                             if is_left_click(event) and input_armed:
                                 self._open_class_companion_popup(player_char)
+                            continue
+                    elif self.active_tab.key == "class" and grandmaster.is_weapon_discipline_class(player_char):
+                        row_index = hit_index(self.weapon_discipline_row_rects(), pos)
+                        if row_index is not None:
+                            self.selected_weapon_discipline_index = row_index
+                            if is_left_click(event) and input_armed:
+                                self._open_weapon_discipline_popup(player_char)
                             continue
 
                 if event.type == pygame.KEYDOWN and not input_armed:
@@ -2030,8 +2436,9 @@ class ModernCharacterScreen(TownScreenBase):
                 elif event.key == pygame.K_e and self.active_tab.key == "equipment":
                     self.equipment_selector_active = not self.equipment_selector_active
                 elif event.key == pygame.K_c and self.active_tab.key == "class":
-                    entries = [] if grandmaster.is_weapon_discipline_class(player_char) else self.class_companion_entries(player_char)
-                    self.class_companion_selector_active = bool(entries) and not self.class_companion_selector_active
+                    if not grandmaster.is_weapon_discipline_class(player_char):
+                        entries = self.class_companion_entries(player_char)
+                        self.class_companion_selector_active = bool(entries) and not self.class_companion_selector_active
                 elif event.key in (pygame.K_TAB, pygame.K_RIGHT):
                     if self.active_tab.key == "equipment" and self.equipment_selector_active and event.key == pygame.K_RIGHT:
                         self.move_equipment_selector(player_char, "right")
@@ -2066,16 +2473,28 @@ class ModernCharacterScreen(TownScreenBase):
                 elif event.key == pygame.K_UP:
                     if self.active_tab.key == "equipment" and self.equipment_selector_active:
                         self.move_equipment_selector(player_char, "up")
+                    elif self.active_tab.key == "class" and self.active_mechanic_label(player_char) == "Aerial Tempo" and self.jump_mod_entries(player_char):
+                        self.selected_jump_mod_index = max(0, self.selected_jump_mod_index - 1)
                     elif self.active_tab.key == "class" and self.class_companion_selector_active and self.class_companion_entries(player_char):
                         self.selected_class_companion_index = max(0, self.selected_class_companion_index - 1)
+                    elif self.active_tab.key == "class" and grandmaster.is_weapon_discipline_class(player_char):
+                        self.selected_weapon_discipline_index = max(0, self.selected_weapon_discipline_index - 1)
                     else:
                         self.current_selection = (self.current_selection - 1) % len(self.menu_options)
                 elif event.key == pygame.K_DOWN:
                     if self.active_tab.key == "equipment" and self.equipment_selector_active:
                         self.move_equipment_selector(player_char, "down")
+                    elif self.active_tab.key == "class" and self.active_mechanic_label(player_char) == "Aerial Tempo" and self.jump_mod_entries(player_char):
+                        entries = self.jump_mod_entries(player_char)
+                        self.selected_jump_mod_index = min(len(entries) - 1, self.selected_jump_mod_index + 1)
                     elif self.active_tab.key == "class" and self.class_companion_selector_active and self.class_companion_entries(player_char):
                         entries = self.class_companion_entries(player_char)
                         self.selected_class_companion_index = min(len(entries) - 1, self.selected_class_companion_index + 1)
+                    elif self.active_tab.key == "class" and grandmaster.is_weapon_discipline_class(player_char):
+                        self.selected_weapon_discipline_index = min(
+                            len(grandmaster.WEAPON_TYPES) - 1,
+                            self.selected_weapon_discipline_index + 1,
+                        )
                     else:
                         self.current_selection = (self.current_selection + 1) % len(self.menu_options)
                 elif event.key == pygame.K_a and self.active_tab.key == "class" and self.class_companion_selector_active and self.class_companion_entries(player_char):
@@ -2086,8 +2505,16 @@ class ModernCharacterScreen(TownScreenBase):
                 elif event.key in (pygame.K_RETURN, pygame.K_SPACE):
                     if self.active_tab.key == "equipment" and self.equipment_selector_active:
                         self.open_selected_equipment_change(player_char)
+                    elif (
+                        self.active_tab.key == "class"
+                        and self.active_mechanic_label(player_char) == "Aerial Tempo"
+                        and self._has_jump_mods(player_char)
+                    ):
+                        self._toggle_selected_jump_mod(player_char)
                     elif self.active_tab.key == "class" and self.class_companion_selector_active and self.class_companion_entries(player_char):
                         self._open_class_companion_popup(player_char)
+                    elif self.active_tab.key == "class" and grandmaster.is_weapon_discipline_class(player_char):
+                        self._open_weapon_discipline_popup(player_char)
                     else:
                         result = self._open_menu_choice(self.menu_options[self.current_selection], player_char)
                         if result:

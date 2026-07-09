@@ -184,7 +184,7 @@ class DungeonHUD:
             "Steal Success",
             "Totem",
         }
-        positive_status = set()
+        positive_status = {"Defend", "Steal Success"}
         positive_magic = {
             "Astral Shift",
             "Duplicates",
@@ -242,6 +242,9 @@ class DungeonHUD:
                 icons.append((f"EG{min(3, guard_stacks)}", True))
         except (AttributeError, TypeError, ValueError):
             pass
+
+        if ("DEF", True) in icons:
+            icons = [icon for icon in icons if icon != ("DEF", False)]
 
         return prioritize_status_icons(combine_duplicate_status_icons(icons))
 
@@ -745,6 +748,8 @@ class DungeonHUD:
             value_x = panel_rect.left + 12 + label_w
             if label in {"Fortune", "Misfortune"}:
                 self._render_coin_meter(label, str(value), value_x, y + 10, max_value_w)
+            elif label == "Resolve":
+                self._render_focus_meter(str(value), value_x, y + 10, max_value_w, fill_color=(190, 55, 55))
             else:
                 value_text = self._truncate_text(self.small_font, str(value), max_value_w)
                 value_surf = self.small_font.render(value_text, True, color)
@@ -780,6 +785,25 @@ class DungeonHUD:
             mark_surf = self.small_font.render(mark, True, mark_color)
             mark_rect = mark_surf.get_rect(center=(cx, center_y))
             self.screen.blit(mark_surf, mark_rect)
+
+    def _render_focus_meter(self, value: str, x: int, center_y: int, max_width: int, *, fill_color) -> None:
+        try:
+            active_text, cap_text = value.split("/", 1)
+            active = max(0, int(active_text))
+            cap = max(1, int(str(cap_text).split()[0]))
+        except (AttributeError, TypeError, ValueError):
+            active, cap = 0, 1
+        width = max(150, min(max_width, 220))
+        height = 18
+        rect = pygame.Rect(x, center_y - height // 2, width, height)
+        fill_width = int(width * (min(active, cap) / cap))
+        pygame.draw.rect(self.screen, (40, 40, 45), rect)
+        if fill_width > 0:
+            pygame.draw.rect(self.screen, fill_color, pygame.Rect(rect.left, rect.top, fill_width, rect.height))
+        pygame.draw.rect(self.screen, self.border_color, rect, 1)
+        value_text = f"{active}/{cap}"
+        value_surf = self.small_font.render(value_text, True, self.text_color)
+        self.screen.blit(value_surf, value_surf.get_rect(center=rect.center))
 
     def _render_minimap(
         self,

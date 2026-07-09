@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import os
-import textwrap
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -116,6 +115,15 @@ def test_draw_background_and_panel_helpers(monkeypatch):
     panel = base.draw_semi_transparent_panel(pygame.Rect(10, 20, 30, 40), alpha=123)
     assert panel.get_size() == (30, 40)
     assert screen.blit_calls[-1][1] == (10, 20)
+
+
+def test_wrap_text_to_pixel_width_allows_narrow_text_to_use_full_line():
+    pygame.font.init()
+    font = pygame.font.Font(None, 24)
+    line = " ".join(["iiiiiiiiii"] * 8)
+
+    assert len(line) > 50
+    assert town_base.wrap_text_to_pixel_width(line, font, font.size(line)[0]) == [line]
 
 
 def test_display_quest_text_debug_mode_renders_full_text_and_exits(monkeypatch):
@@ -250,11 +258,11 @@ def test_display_quest_text_non_debug_keeps_full_text_width_with_portrait(monkey
 
     wrap_widths = []
 
-    def fake_wrap(raw_line, width, break_on_hyphens=False):
-        wrap_widths.append(width)
+    def fake_wrap(raw_line, font, max_width):
+        wrap_widths.append(max_width)
         return ["wrapped"]
 
-    monkeypatch.setattr(textwrap, "wrap", fake_wrap)
+    monkeypatch.setattr(town_base, "wrap_text_to_pixel_width", fake_wrap)
     monkeypatch.setattr("src.ui_pygame.gui.town_base.pygame.event.clear", lambda event_type=None: None)
     monkeypatch.setattr("src.ui_pygame.gui.town_base.pygame.display.flip", lambda: None)
     monkeypatch.setattr("time.sleep", lambda _value: None)

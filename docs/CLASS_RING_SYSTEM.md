@@ -424,10 +424,11 @@ additional visual presentation, and playtest follow-up.
     physical damage build Resolve. While the awakened ring is equipped, a major
     incoming hit automatically spends 100 Resolve to reduce that hit by 40%.
   - The promotion-kit V1 pass makes Resolve a baseline Sentinel/Stalwart
-    resource. Sentinel starts the shield stance and counterguard loop, while
-    Stalwart adds active Resolve spends such as `Bulwark` and `Shield Riposte`.
-    Awakened/equipped `Shield Mastery` remains the strongest
-    automation layer for major-hit mitigation.
+    resource. Sentinel owns the shield stance and normal Resolve spends such as
+    `Bulwark`, `Shield Riposte`, `Shield Check`, `Brace Wall`,
+    `Covering Guard`, and `Deflect Spell`; Stalwart keeps those actions and
+    adds full-bar `Resolve Surges`. Awakened/equipped `Shield Mastery` remains
+    the strongest automation layer for major-hit mitigation.
   - Status: playable in the Barracks when a dormant Stalwart Defender Class
     Ring is equipped or stored.
   - The trial has no normal XP, gold, loot, quest, kill-count, or death penalty

@@ -997,6 +997,54 @@ def test_enemy_info_panel_adds_invisible_notes_and_preserves_sight_gate(monkeypa
     assert calls and calls[0][0] == "Invisible Stalker"
 
 
+def test_invisible_stalker_dungeon_combat_does_not_draw_fallback_without_sight(monkeypatch):
+    view = _make_view()
+    calls = []
+    circle_calls = []
+    fonts = iter([RecordingFont(), RecordingFont()])
+    player = _make_character()
+    player.sight = False
+    player.equipment["Pendant"].mod = "None"
+    enemy = SimpleNamespace(
+        name="Invisible Stalker",
+        health=SimpleNamespace(current=12, max=24),
+        status_effects={},
+        physical_effects={},
+        stat_effects={},
+        magic_effects={},
+        class_effects={},
+    )
+    view.enemy_combat_sprite_manager = SimpleNamespace(
+        get_sprite_key_for_enemy=lambda target: calls.append(target.name) or "invisible_stalker",
+        get_scaled_sprite_by_key=lambda _key, size: DummySurface(size, text="enemy-combat-sprite"),
+    )
+
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.font.Font", lambda *_args, **_kwargs: next(fonts))
+    monkeypatch.setattr("src.ui_pygame.gui.combat_view.pygame.draw.circle", lambda *args, **kwargs: circle_calls.append((args, kwargs)))
+
+    view.render_enemy_in_dungeon(player, enemy)
+
+    assert calls == []
+    assert circle_calls == []
+    assert not any(getattr(surface, "text", "") == "enemy-combat-sprite" for surface, *_rest in view.screen.blit_calls)
+
+
+def test_collect_status_icons_includes_vision_and_weapon_art_states():
+    view = _make_view()
+    character = _make_character()
+    character.sight = True
+    character._reavers_mark = {"turns": 2, "bonus": 0.1}
+    character._brace_art = {"turns": 1}
+    character._riposte_line = {"turns": 1}
+
+    icons = view._collect_status_icons(character)
+
+    assert ("VIS", True) in icons
+    assert ("RMK", False) in icons
+    assert ("BRC", True) in icons
+    assert ("RIP", True) in icons
+
+
 def test_construct_bleed_uses_oil_leak_presentation_without_changing_effect():
     view = _make_view()
     construct = _make_character()

@@ -39,6 +39,7 @@ class LoadGameScreen:
         
         # State
         self.current_selection = 0
+        self.scroll_offset = 0
         self.save_files = []
         self.save_data = []
         try:
@@ -185,13 +186,24 @@ class LoadGameScreen:
         )
         self.screen.blit(hint, hint_rect)
         
+        self.ensure_selection_visible()
+        if self.scroll_offset > 0:
+            up_text = self.small_font.render("^", True, self.GRAY)
+            up_rect = up_text.get_rect(centerx=self.file_list_rect.centerx, top=self.file_list_rect.top + 32)
+            self.screen.blit(up_text, up_rect)
+        if self.scroll_offset + self.max_visible_saves() < len(self.save_data):
+            down_text = self.small_font.render("v", True, self.GRAY)
+            down_rect = down_text.get_rect(centerx=self.file_list_rect.centerx, bottom=hint_rect.top - 8)
+            self.screen.blit(down_text, down_rect)
+
         # Draw file list
-        for i, data in enumerate(self.save_data[:self.max_visible_saves()]):
-            highlight_rect = self.save_row_rects()[i]
+        for visible_index, data in enumerate(self.visible_save_data()):
+            data_index = self.scroll_offset + visible_index
+            highlight_rect = self.save_row_rects()[visible_index]
             y = highlight_rect.top + 2
             
             # Highlight selected
-            if i == self.current_selection:
+            if data_index == self.current_selection:
                 pygame.draw.rect(self.screen, self.HIGHLIGHT_BG, highlight_rect)
                 pygame.draw.rect(self.screen, self.GOLD, highlight_rect, 1)
                 color = self.GOLD
@@ -210,11 +222,47 @@ class LoadGameScreen:
         """Return the number of save rows rendered in the current panel."""
         return 10
 
+    def max_scroll_offset(self) -> int:
+        """Return the highest valid save-list scroll offset."""
+        return max(0, len(self.save_data) - self.max_visible_saves())
+
+    def visible_save_data(self) -> list[dict]:
+        """Return the save rows currently visible in the file list."""
+        end = self.scroll_offset + self.max_visible_saves()
+        return self.save_data[self.scroll_offset:end]
+
+    def ensure_selection_visible(self) -> None:
+        """Clamp scroll state and keep the selected save inside the visible window."""
+        if not self.save_data:
+            self.current_selection = 0
+            self.scroll_offset = 0
+            return
+        self.current_selection = max(0, min(self.current_selection, len(self.save_data) - 1))
+        if self.current_selection < self.scroll_offset:
+            self.scroll_offset = self.current_selection
+        visible_count = self.max_visible_saves()
+        if self.current_selection >= self.scroll_offset + visible_count:
+            self.scroll_offset = self.current_selection - visible_count + 1
+        self.scroll_offset = max(0, min(self.scroll_offset, self.max_scroll_offset()))
+
+    def scroll_file_list(self, delta: int) -> None:
+        """Scroll the visible save list and keep the selection in view."""
+        if not self.save_data:
+            self.scroll_offset = 0
+            self.current_selection = 0
+            return
+        self.scroll_offset = max(0, min(self.scroll_offset + int(delta), self.max_scroll_offset()))
+        if self.current_selection < self.scroll_offset:
+            self.current_selection = self.scroll_offset
+        last_visible = min(len(self.save_data) - 1, self.scroll_offset + self.max_visible_saves() - 1)
+        if self.current_selection > last_visible:
+            self.current_selection = last_visible
+
     def save_row_rects(self) -> list[pygame.Rect]:
         """Return clickable rectangles for visible save rows."""
         line_height = 40
         rects = []
-        for i, _data in enumerate(self.save_data[:self.max_visible_saves()]):
+        for i, _data in enumerate(self.visible_save_data()):
             y = self.file_list_rect.top + 50 + i * line_height
             rects.append(
                 pygame.Rect(
@@ -244,6 +292,7 @@ class LoadGameScreen:
         self.save_files = save_files
         self.save_data = []
         self.current_selection = 0
+        self.scroll_offset = 0
         
         for save_file in save_files:
             try:
@@ -382,6 +431,7 @@ class LoadGameScreen:
             self.save_files.remove(save_file)
         if self.current_selection >= len(self.save_data):
             self.current_selection = max(0, len(self.save_data) - 1)
+        self.ensure_selection_visible()
         return True
     
     def navigate(
@@ -426,6 +476,10 @@ class LoadGameScreen:
                         self.current_selection = (self.current_selection - 1) % len(self.save_data)
                     elif event.key == pygame.K_DOWN:
                         self.current_selection = (self.current_selection + 1) % len(self.save_data)
+                    elif event.key == pygame.K_PAGEUP:
+                        self.current_selection = max(0, self.current_selection - self.max_visible_saves())
+                    elif event.key == pygame.K_PAGEDOWN:
+                        self.current_selection = min(len(self.save_data) - 1, self.current_selection + self.max_visible_saves())
                     elif event.key == pygame.K_RETURN or event.key == pygame.K_SPACE:
                         selected_save = self.save_data[self.current_selection]
                         if selected_save.get('loadable', True):
@@ -445,11 +499,14 @@ class LoadGameScreen:
                         )
                     elif event.key == pygame.K_ESCAPE:
                         return None
+                    self.ensure_selection_visible()
+                elif event.type == pygame.MOUSEWHEEL:
+                    self.scroll_file_list(-event.y)
                 elif event.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN):
                     hovered = hit_index(self.save_row_rects(), mouse_position(event))
                     if hovered is None:
                         continue
-                    self.current_selection = hovered
+                    self.current_selection = self.scroll_offset + hovered
                     if not is_left_click(event):
                         continue
                     if not input_armed:

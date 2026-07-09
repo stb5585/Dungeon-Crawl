@@ -161,8 +161,8 @@ def test_effect_and_status_icon_helpers(monkeypatch):
     assert ("PSN", False) in icons
     assert ("PRN", False) in icons
     assert ("ATK2", True) in icons
-    assert ("DEF", False) in icons
     assert ("DEF", True) in icons
+    assert ("DEF", False) not in icons
     assert ("REG", True) in icons
     assert ("TOT", True) not in icons
     assert ("AST", True) in icons
@@ -694,6 +694,31 @@ def test_combat_focus_panel_shows_familiar_summons_and_totem(monkeypatch):
     assert "H" in rendered_text
     assert "T" in rendered_text
     assert len(bundle.draw_circle_calls) >= 12
+
+    bundle.screen.blit_calls = []
+    sentinel = _make_player()
+    sentinel.cls = SimpleNamespace(name="Sentinel")
+    class_rings.ensure_state(sentinel)["data"]["Stalwart Defender"]["guard_meter"] = 25
+    hud._render_combat_features(sentinel, SimpleNamespace(name="Warrior"), 120, feature_height=190)
+    rendered_text = [getattr(surface, "text", "") for surface, _position in bundle.screen.blit_calls]
+    assert "Resolve:" in rendered_text
+    assert "25/50" in rendered_text
+    assert "25/50 Building" not in rendered_text
+    assert any(args[1] == (190, 55, 55) for args, _kwargs in bundle.draw_rect_calls if len(args) > 1)
+
+
+def test_combat_status_icons_prefer_defend_over_defense_down(monkeypatch):
+    bundle = _make_hud(monkeypatch)
+    hud = bundle.hud
+    player = _make_player()
+    player.status_effects["Defend"] = _effect(active=True, extra=0.25)
+    player.stat_effects["Defense"] = _effect(active=True, extra=-1)
+    player.magic_effects["Totem"].active = False
+
+    icons = hud._collect_status_icons(player)
+
+    assert ("DEF", True) in icons
+    assert ("DEF", False) not in icons
 
 
 def test_render_hud_full_flow(monkeypatch):

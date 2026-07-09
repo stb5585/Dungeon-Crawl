@@ -81,6 +81,9 @@ def test_load_tiles_places_floor_three_strange_draft_and_unlocks_wind():
     assert "learns Tornado" in message
     assert "Tornado" in shaman.spellbook["Spells"]
 
+    warrior = TestGameState.create_player(class_name="Warrior", race_name="Human")
+    assert tile.special_text(SimpleNamespace(player_char=warrior)) == ""
+
 
 def test_communion_spell_round_trips_through_save_serializer():
     shaman = TestGameState.create_player(class_name="Shaman", race_name="Human")

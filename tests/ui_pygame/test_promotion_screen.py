@@ -101,6 +101,223 @@ class WeaponMasterClass(KnightClass):
         self.restrictions = {"Weapon": ["Fist", "Dagger", "Sword"], "Armor": ["Light", "Medium"]}
 
 
+class PaladinClass(KnightClass):
+    def __init__(self):
+        super().__init__()
+        self.name = "Paladin"
+        self.description = "Swears a permanent vow and builds Oath Conviction."
+
+
+class LancerClass(KnightClass):
+    def __init__(self):
+        super().__init__()
+        self.name = "Lancer"
+        self.description = "Uses Jump to build Aerial Tempo."
+
+
+class SentinelClass(KnightClass):
+    def __init__(self):
+        super().__init__()
+        self.name = "Sentinel"
+        self.description = "Uses shield pressure to build Resolve."
+
+
+class SorcererClass(KnightClass):
+    def __init__(self):
+        super().__init__()
+        self.name = "Sorcerer"
+        self.description = "Builds six-school elemental affinity."
+
+
+class WizardClass(KnightClass):
+    def __init__(self):
+        super().__init__()
+        self.name = "Wizard"
+        self.description = "Masters six-school elemental affinity."
+
+
+class WarlockClass(KnightClass):
+    def __init__(self):
+        super().__init__()
+        self.name = "Warlock"
+        self.description = "Binds a familiar through shadow magic."
+
+
+class ShadowcasterClass(KnightClass):
+    def __init__(self):
+        super().__init__()
+        self.name = "Shadowcaster"
+        self.description = "Turns shadow pressure into Umbral Debt."
+
+
+class DemonologistClass(KnightClass):
+    def __init__(self):
+        super().__init__()
+        self.name = "Demonologist"
+        self.description = "Shapes contracts through corruption and patron mood."
+
+
+class SpellbladeClass(KnightClass):
+    def __init__(self):
+        super().__init__()
+        self.name = "Spellblade"
+        self.description = "Stores spells as blade charges."
+
+
+class KnightEnchanterClass(KnightClass):
+    def __init__(self):
+        super().__init__()
+        self.name = "Knight Enchanter"
+        self.description = "Converts blade charges into Arcane Tempo."
+
+
+class SummonerClass(KnightClass):
+    def __init__(self):
+        super().__init__()
+        self.name = "Summoner"
+        self.description = "Builds bonds with summoned allies."
+
+
+class GrandSummonerClass(KnightClass):
+    def __init__(self):
+        super().__init__()
+        self.name = "Grand Summoner"
+        self.description = "Deepens summon bonds into conduit power."
+
+
+class ThiefClass(KnightClass):
+    def __init__(self):
+        super().__init__()
+        self.name = "Thief"
+        self.description = "Turns risky theft into Fortune and Misfortune."
+
+
+class RogueClass(KnightClass):
+    def __init__(self):
+        super().__init__()
+        self.name = "Rogue"
+        self.description = "Deepens Fortune and Misfortune payoffs."
+
+
+class InquisitorClass(KnightClass):
+    def __init__(self):
+        super().__init__()
+        self.name = "Inquisitor"
+        self.description = "Builds a Case Journal through open investigation."
+
+
+class SeekerClass(KnightClass):
+    def __init__(self):
+        super().__init__()
+        self.name = "Seeker"
+        self.description = "Turns Case Journal evidence into Wayfinding."
+
+
+class AssassinClass(KnightClass):
+    def __init__(self):
+        super().__init__()
+        self.name = "Assassin"
+        self.description = "Sets up Death Marks for lethal finishers."
+
+
+class NinjaClass(KnightClass):
+    def __init__(self):
+        super().__init__()
+        self.name = "Ninja"
+        self.description = "Deepens Death Mark execution pressure."
+
+
+class SpellStealerClass(KnightClass):
+    def __init__(self):
+        super().__init__()
+        self.name = "Spell Stealer"
+        self.description = "Builds Stolen Charge through magical theft."
+
+
+class ArcaneTricksterClass(KnightClass):
+    def __init__(self):
+        super().__init__()
+        self.name = "Arcane Trickster"
+        self.description = "Turns Stolen Charge into Arcane Larceny payoffs."
+
+
+class ClericClass(KnightClass):
+    def __init__(self):
+        super().__init__()
+        self.name = "Cleric"
+        self.description = "Builds Devotion through holy defense."
+
+
+class TemplarClass(KnightClass):
+    def __init__(self):
+        super().__init__()
+        self.name = "Templar"
+        self.description = "Turns Devotion into ordered blessings."
+
+
+class MonkClass(KnightClass):
+    def __init__(self):
+        super().__init__()
+        self.name = "Monk"
+        self.description = "Trades spells for martial Ki."
+
+
+class MasterMonkClass(KnightClass):
+    def __init__(self):
+        super().__init__()
+        self.name = "Master Monk"
+        self.description = "Deepens Ki mastery and Dim Mak."
+
+
+class PriestClass(KnightClass):
+    def __init__(self):
+        super().__init__()
+        self.name = "Priest"
+        self.description = "Builds Prayer through divine support."
+
+
+class ArchbishopClass(KnightClass):
+    def __init__(self):
+        super().__init__()
+        self.name = "Archbishop"
+        self.description = "Turns Prayer into great benedictions."
+
+
+class BardClass(KnightClass):
+    def __init__(self):
+        super().__init__()
+        self.name = "Bard"
+        self.description = "Builds Crescendo through songcraft."
+
+
+class TroubadourClass(KnightClass):
+    def __init__(self):
+        super().__init__()
+        self.name = "Troubadour"
+        self.description = "Deepens Crescendo with repertoire mastery."
+
+
+class DivinerClass(KnightClass):
+    def __init__(self):
+        super().__init__()
+        self.name = "Diviner"
+        self.description = "Studies elemental runes and learned enemy magic."
+
+
+class ShamanClass(KnightClass):
+    def __init__(self):
+        super().__init__()
+        self.name = "Shaman"
+        self.description = "Communes with elemental Totems."
+
+
+class RangerClass(KnightClass):
+    def __init__(self):
+        super().__init__()
+        self.name = "Ranger"
+        self.description = "Bonds with a wilderness companion."
+
+
 def test_promotion_screen_draw_helpers(monkeypatch):
     presenter = _make_presenter()
     player = _make_player()
@@ -186,6 +403,172 @@ def test_promotion_screen_previews_new_mechanic_tab(monkeypatch):
     assert any("New tab: Weapon Discipline" in call for call in presenter.small_font.render_calls)
     assert any("Intelligence helps" in call for call in presenter.small_font.render_calls)
     assert draw_rect_calls
+
+
+def test_promotion_screen_previews_warrior_branch_mechanics(monkeypatch):
+    for option, cls_ctor, expected_tab in (
+        ("Paladin", PaladinClass, "Oath Conviction"),
+        ("Lancer", LancerClass, "Aerial Tempo"),
+        ("Sentinel", SentinelClass, "Resolve"),
+    ):
+        presenter = _make_presenter()
+        player = _make_player()
+        monkeypatch.setattr(promotion_screen.PromotionScreen, "_load_background", lambda self: setattr(self, "background", None))
+        screen = promotion_screen.PromotionScreen(
+            presenter,
+            player,
+            options=[option],
+            option_map={option: cls_ctor},
+            current_class="Warrior",
+            pro_level=1,
+        )
+
+        monkeypatch.setattr(screen, "draw_background", lambda: None)
+        monkeypatch.setattr(screen, "draw_semi_transparent_panel", lambda rect, alpha=180: None)
+        monkeypatch.setattr("src.ui_pygame.gui.promotion_screen.pygame.draw.rect", lambda *_a, **_k: None)
+        monkeypatch.setattr("src.ui_pygame.gui.promotion_screen.pygame.display.flip", lambda: None)
+
+        screen.draw_all()
+
+        assert f"Warrior -> {option}" in presenter.large_font.render_calls
+        assert expected_tab in presenter.small_font.render_calls
+        assert any(f"New tab: {expected_tab}" in call for call in presenter.small_font.render_calls)
+
+
+def test_promotion_screen_previews_mage_branch_mechanics(monkeypatch):
+    for current_class, option, cls_ctor, expected_tab in (
+        ("Mage", "Sorcerer", SorcererClass, "School Affinity"),
+        ("Sorcerer", "Wizard", WizardClass, "School Affinity"),
+        ("Mage", "Warlock", WarlockClass, "Familiar"),
+        ("Warlock", "Shadowcaster", ShadowcasterClass, "Umbral Debt"),
+        ("Warlock", "Demonologist", DemonologistClass, "Contracts"),
+        ("Mage", "Spellblade", SpellbladeClass, "Blade Charge"),
+        ("Spellblade", "Knight Enchanter", KnightEnchanterClass, "Arcane Tempo"),
+        ("Mage", "Summoner", SummonerClass, "Summons"),
+        ("Summoner", "Grand Summoner", GrandSummonerClass, "Summons"),
+    ):
+        presenter = _make_presenter()
+        player = _make_player()
+        monkeypatch.setattr(promotion_screen.PromotionScreen, "_load_background", lambda self: setattr(self, "background", None))
+        screen = promotion_screen.PromotionScreen(
+            presenter,
+            player,
+            options=[option],
+            option_map={option: cls_ctor},
+            current_class=current_class,
+            pro_level=1,
+        )
+
+        monkeypatch.setattr(screen, "draw_background", lambda: None)
+        monkeypatch.setattr(screen, "draw_semi_transparent_panel", lambda rect, alpha=180: None)
+        monkeypatch.setattr("src.ui_pygame.gui.promotion_screen.pygame.draw.rect", lambda *_a, **_k: None)
+        monkeypatch.setattr("src.ui_pygame.gui.promotion_screen.pygame.display.flip", lambda: None)
+
+        screen.draw_all()
+
+        assert f"{current_class} -> {option}" in presenter.large_font.render_calls
+        assert expected_tab in presenter.small_font.render_calls
+        assert any(f"New tab: {expected_tab}" in call for call in presenter.small_font.render_calls)
+
+
+def test_promotion_screen_previews_footpad_branch_mechanics(monkeypatch):
+    for current_class, option, cls_ctor, expected_tab in (
+        ("Footpad", "Thief", ThiefClass, "Fortune"),
+        ("Thief", "Rogue", RogueClass, "Fortune"),
+        ("Footpad", "Inquisitor", InquisitorClass, "Case Journal"),
+        ("Inquisitor", "Seeker", SeekerClass, "Case Journal"),
+        ("Footpad", "Assassin", AssassinClass, "Death Mark"),
+        ("Assassin", "Ninja", NinjaClass, "Death Mark"),
+        ("Footpad", "Spell Stealer", SpellStealerClass, "Stolen Charge"),
+        ("Spell Stealer", "Arcane Trickster", ArcaneTricksterClass, "Stolen Charge"),
+    ):
+        presenter = _make_presenter()
+        player = _make_player()
+        monkeypatch.setattr(promotion_screen.PromotionScreen, "_load_background", lambda self: setattr(self, "background", None))
+        screen = promotion_screen.PromotionScreen(
+            presenter,
+            player,
+            options=[option],
+            option_map={option: cls_ctor},
+            current_class=current_class,
+            pro_level=1,
+        )
+
+        monkeypatch.setattr(screen, "draw_background", lambda: None)
+        monkeypatch.setattr(screen, "draw_semi_transparent_panel", lambda rect, alpha=180: None)
+        monkeypatch.setattr("src.ui_pygame.gui.promotion_screen.pygame.draw.rect", lambda *_a, **_k: None)
+        monkeypatch.setattr("src.ui_pygame.gui.promotion_screen.pygame.display.flip", lambda: None)
+
+        screen.draw_all()
+
+        assert f"{current_class} -> {option}" in presenter.large_font.render_calls
+        assert expected_tab in presenter.small_font.render_calls
+        assert any(f"New tab: {expected_tab}" in call for call in presenter.small_font.render_calls)
+
+
+def test_promotion_screen_previews_healer_branch_mechanics(monkeypatch):
+    for current_class, option, cls_ctor, expected_tab in (
+        ("Healer", "Cleric", ClericClass, "Devotion"),
+        ("Cleric", "Templar", TemplarClass, "Devotion"),
+        ("Healer", "Monk", MonkClass, "Ki"),
+        ("Monk", "Master Monk", MasterMonkClass, "Ki"),
+        ("Healer", "Priest", PriestClass, "Prayer"),
+        ("Priest", "Archbishop", ArchbishopClass, "Prayer"),
+        ("Healer", "Bard", BardClass, "Crescendo"),
+        ("Bard", "Troubadour", TroubadourClass, "Crescendo"),
+    ):
+        presenter = _make_presenter()
+        player = _make_player()
+        monkeypatch.setattr(promotion_screen.PromotionScreen, "_load_background", lambda self: setattr(self, "background", None))
+        screen = promotion_screen.PromotionScreen(
+            presenter,
+            player,
+            options=[option],
+            option_map={option: cls_ctor},
+            current_class=current_class,
+            pro_level=1,
+        )
+
+        monkeypatch.setattr(screen, "draw_background", lambda: None)
+        monkeypatch.setattr(screen, "draw_semi_transparent_panel", lambda rect, alpha=180: None)
+        monkeypatch.setattr("src.ui_pygame.gui.promotion_screen.pygame.draw.rect", lambda *_a, **_k: None)
+        monkeypatch.setattr("src.ui_pygame.gui.promotion_screen.pygame.display.flip", lambda: None)
+
+        screen.draw_all()
+
+        assert f"{current_class} -> {option}" in presenter.large_font.render_calls
+        assert expected_tab in presenter.small_font.render_calls
+        assert any(f"New tab: {expected_tab}" in call for call in presenter.small_font.render_calls)
+
+
+def test_promotion_screen_previews_pathfinder_branch_mechanics(monkeypatch):
+    for option, cls_ctor, expected_tab in (
+        ("Diviner", DivinerClass, "Runes"),
+        ("Shaman", ShamanClass, "Totems"),
+        ("Ranger", RangerClass, "Companion"),
+    ):
+        presenter = _make_presenter()
+        player = _make_player()
+        monkeypatch.setattr(promotion_screen.PromotionScreen, "_load_background", lambda self: setattr(self, "background", None))
+        screen = promotion_screen.PromotionScreen(
+            presenter,
+            player,
+            options=[option],
+            option_map={option: cls_ctor},
+            current_class="Pathfinder",
+            pro_level=1,
+        )
+
+        monkeypatch.setattr(screen, "draw_background", lambda: None)
+        monkeypatch.setattr(screen, "draw_semi_transparent_panel", lambda rect, alpha=180: None)
+        monkeypatch.setattr("src.ui_pygame.gui.promotion_screen.pygame.draw.rect", lambda *_a, **_k: None)
+        monkeypatch.setattr("src.ui_pygame.gui.promotion_screen.pygame.display.flip", lambda: None)
+
+        screen.draw_all()
+
+        assert f"Pathfinder -> {option}" in presenter.large_font.render_calls
+        assert expected_tab in presenter.small_font.render_calls
+        assert any(f"New tab: {expected_tab}" in call for call in presenter.small_font.render_calls)
 
 
 def test_promotion_screen_navigation(monkeypatch):

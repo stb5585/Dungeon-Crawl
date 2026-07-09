@@ -385,6 +385,12 @@ def _matching_weapon_equipped(character: Any, weapon_type: str) -> bool:
     return get_weapon_type(character, "Weapon") == weapon_type or get_weapon_type(character, "OffHand") == weapon_type
 
 
+def matching_weapon_for_art_equipped(character: Any, art_name: str) -> bool:
+    """Return whether a known weapon art has its matching weapon equipped."""
+    weapon_type = ART_WEAPON_TYPES.get(art_name)
+    return weapon_type is not None and _matching_weapon_equipped(character, weapon_type)
+
+
 def _set_status(effect: Any, *, duration: int, extra: int) -> None:
     effect.active = True
     effect.duration = max(int(getattr(effect, "duration", 0) or 0), duration)

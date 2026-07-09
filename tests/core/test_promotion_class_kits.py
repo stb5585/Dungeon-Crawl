@@ -210,10 +210,24 @@ def test_ui_log_polish_representative_messages():
 
 
 def test_resolve_aerial_aspect_totem_and_beast_commands():
+    sentinel = _player("Sentinel")
+    sentinel.equipment["OffHand"] = items.Glagwa()
+    assert "Resolve" in promotion_kits.build_resolve(sentinel, 50, "test")
+    assert class_rings.ensure_state(sentinel)["data"]["Stalwart Defender"]["guard_meter"] == 50
+    assert "Bulwark" in abilities.Bulwark().use(sentinel)
+
     defender = _player("Stalwart Defender")
     defender.equipment["OffHand"] = items.Glagwa()
-    assert "Resolve" in promotion_kits.build_resolve(defender, 50, "test")
-    assert "Bulwark" in abilities.Bulwark().use(defender)
+    assert "Resolve" in promotion_kits.build_resolve(defender, 100, "test")
+    assert promotion_kits.resolve_surge_unlocked(defender, "Citadel Aegis")
+    assert not promotion_kits.resolve_surge_unlocked(defender, "Ironwall Reprisal")
+    assert "Citadel Aegis" in abilities.CitadelAegis().use(defender)
+    assert class_rings.ensure_state(defender)["data"]["Stalwart Defender"]["guard_meter"] == 0
+    promotion_kits.gain_resolve_mastery(defender, 4, "shield tactics")
+    assert promotion_kits.resolve_surge_unlocked(defender, "Ironwall Reprisal")
+
+    restored = PlayerDataSerializer.deserialize(PlayerDataSerializer.serialize(defender), skip_tiles=True)
+    assert promotion_kits.resolve_surge_unlocked(restored, "Ironwall Reprisal")
 
     dragoon = _player("Dragoon")
     promotion_kits.combat_state(dragoon)["aerial_tempo"] = 2

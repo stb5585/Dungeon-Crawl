@@ -11,7 +11,7 @@ from src.core.save_system import SaveManager
 from src.core.character import scaled_decay_function
 from src.core import map_tiles
 from src.core import items as items_module
-from src.core.classes import astromancer
+from src.core.classes import astromancer, grandmaster
 
 
 # functions
@@ -1473,7 +1473,12 @@ class CombatPopupMenu(PopupMenu):
                             self.game.player_char.spellbook['Skills'][entry].name == "Backstab" and \
                                 not tile.enemy.incapacitated(),
                             self.game.player_char.spellbook["Skills"][entry].weapon and \
-                                self.game.player_char.physical_effects["Disarm"].active]):
+                                self.game.player_char.physical_effects["Disarm"].active,
+                            self.game.player_char.spellbook["Skills"][entry].name in grandmaster.ART_WEAPON_TYPES and \
+                                not grandmaster.matching_weapon_for_art_equipped(
+                                    self.game.player_char,
+                                    self.game.player_char.spellbook["Skills"][entry].name,
+                                )]):
                         continue
                     if entry == "Mana Shield" and self.game.player_char.magic_effects["Mana Shield"].active:
                         self.options_list.append(

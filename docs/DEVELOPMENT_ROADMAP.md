@@ -150,7 +150,8 @@ Remaining follow-up after this V1 slice:
 - Enemy identity presentation V1 is shipped for invisible reveal notes,
   Mad Waitress form-change notes, and construct-friendly `Oil Leak` wording
   while preserving underlying mechanics.
-- Replace rock pile with dead boss renderings
+- Replace rock pile with dead boss renderings; should reflect the current log
+  message when encountering the dead body
 
 ## Dungeon, World, And Encounter Gates
 
@@ -285,24 +286,14 @@ defeats, or a level gain, while immediate turn-in/reopen loops remain blocked.
 Current tuning is conservative and should be playtested before changing the
 thresholds.
 
-## Design Questions
-
-- Should Class tab in Character Menu stay active for all classes?
-
-## Bugfixes
-
-- No active roadmap bugfixes are staged in this section.
-
-## Improvements
-
-- No unsorted improvements remain in this section. Routed follow-up gates live
-  in the owner docs:
-  - Shop stock reveal pacing and account-wide found/sold stock:
-    `docs/EQUIPMENT_ITEMS_ECONOMY_DESIGN_GATES.md`.
-  - Character creation fate questions:
-    `docs/STORY_AND_ENDGAME_DESIGN.md`.
-  - Attack of Opportunity and low-stat-benefit abilities:
-    `docs/COMBAT_BALANCE_DESIGN_GATES.md`.
+The July 2026 ad hoc bugfix/improvement batch for Invisible Stalker visibility,
+combat buff indicators, Weapon Discipline presentation, bounty-board popup
+backgrounds, Pathfinder-branch promotion-preview tabs, and Warrior-line class
+mechanic tabs has shipped and is tracked in `CHANGELOG.md`. Mage-tree mechanic
+tabs are also wired, including Warlock's `Familiar` tab wording, and Footpad-tree
+and Healer-tree tabs now announce their matching class-kit tracks. The pygame
+Paladin vow picker now uses the current styled selection popup with highlighted
+vow details before oath confirmation.
 
 ### 2026-07-03 Roadmap Triage Implementation Note
 

@@ -3,6 +3,10 @@
 
 from __future__ import annotations
 
+from types import SimpleNamespace
+
+from src.core import abilities
+from src.core.classes import class_rings, promotion_kits
 from src.core.combat.battle_engine import BattleEngine
 from src.core.data.data_driven_abilities import DataDrivenSpell
 from src.core.enemies import Barghest, Goblin
@@ -81,6 +85,22 @@ def test_pre_turn_duration_one_stun_still_skips_current_turn():
     assert result.inactive_reason == ""
     assert "no longer stunned" in result.effects_text
     assert player.status_effects["Stun"].active is False
+
+
+def test_resolve_skill_ignores_silence_and_spends_resolve():
+    engine, player = _make_engine_with_player_attacking()
+    player.cls = SimpleNamespace(name="Sentinel")
+    player.equipment["OffHand"] = SimpleNamespace(subtyp="Shield")
+    player.spellbook["Skills"]["Shield Check"] = abilities.ShieldBash()
+    class_rings.ensure_state(player)["data"]["Stalwart Defender"]["guard_meter"] = 10
+    player.abilities_suppressed = lambda: True
+
+    result = engine.execute_action("Use Skill", "Shield Check")
+
+    assert "cannot use skills because of silence" not in result.message
+    assert "uses Shield Check" in result.message
+    assert "spends 10 Resolve on Shield Check" in result.message
+    assert promotion_kits.current_resolve(player) == 0
 
 
 def test_pre_turn_duration_one_sleep_still_skips_current_turn():

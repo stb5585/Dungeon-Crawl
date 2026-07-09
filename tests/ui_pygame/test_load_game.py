@@ -229,6 +229,39 @@ def test_load_game_navigation_selects_and_cancels(monkeypatch):
     assert screen.navigate(["a.save", "b.save"]) == "b.save"
 
 
+def test_load_game_scrolls_visible_save_window(monkeypatch):
+    presenter = _make_presenter()
+    screen = load_game.LoadGameScreen(presenter)
+    screen.save_data = [
+        {"name": f"Hero {index}", "level": index, "file": f"{index}.save"}
+        for index in range(14)
+    ]
+    screen.save_files = [entry["file"] for entry in screen.save_data]
+    monkeypatch.setattr(screen, "load_save_files", lambda _save_files: None)
+    monkeypatch.setattr(screen, "draw_all", lambda: None)
+
+    event_batches = iter([
+        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)]
+        for _index in range(11)
+    ] + [
+        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)]
+    ])
+    monkeypatch.setattr("src.ui_pygame.gui.load_game.pygame.event.get", lambda: next(event_batches, []))
+
+    assert screen.navigate(screen.save_files) == "11.save"
+    assert screen.current_selection == 11
+    assert screen.scroll_offset == 2
+    assert screen.visible_save_data()[0]["file"] == "2.save"
+
+    click_pos = screen.save_row_rects()[3].center
+    event_batches = iter([
+        [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=click_pos)],
+    ])
+    monkeypatch.setattr("src.ui_pygame.gui.load_game.pygame.event.get", lambda: next(event_batches, []))
+
+    assert screen.navigate(screen.save_files) == "5.save"
+
+
 def test_load_game_navigation_deletes_selected_save(monkeypatch):
     presenter = _make_presenter()
     screen = load_game.LoadGameScreen(presenter)

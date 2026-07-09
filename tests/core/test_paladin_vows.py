@@ -96,6 +96,7 @@ def test_vow_skills_update_state_for_challenge_interpose_and_riposte():
 
     retribution = _player()
     retribution.choose_paladin_vow("Retribution")
+    retribution.equipment["Weapon"] = items.Rapier()
     assert "retaliatory judgment" in abilities.JudgmentRiposte().use(retribution)
     assert paladin.pending_riposte(retribution)
     target = _enemy(hp=(30, 30))

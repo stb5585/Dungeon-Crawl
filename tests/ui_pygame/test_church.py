@@ -66,6 +66,54 @@ def _make_presenter():
     )
 
 
+def _make_surface_presenter(width=900, height=700):
+    presenter = _make_presenter()
+    presenter.screen = pygame.Surface((width, height))
+    presenter.width = width
+    presenter.height = height
+    return presenter
+
+
+def test_paladin_vow_selection_popup_draws_details_and_selects_highlighted(monkeypatch):
+    pygame.init()
+    pygame.event.clear()
+    presenter = _make_surface_presenter()
+    flips = []
+    monkeypatch.setattr("src.ui_pygame.gui.church.pygame.display.flip", lambda: flips.append(True))
+
+    popup = church.PaladinVowSelectionPopup(presenter)
+    popup.draw(lambda: presenter.screen.fill((0, 0, 0)))
+
+    assert popup.options == list(paladin.PATHS)
+    assert len(popup.option_rects) == len(paladin.PATHS)
+    assert popup.detail_rect is not None
+    assert popup.instruction_rect is not None
+    assert popup.instruction_rect.top > popup.detail_rect.bottom
+    assert popup._detail_rows("Conquest") == [
+        ("Signature", "Challenge"),
+        ("Aura", "Conquest Aura"),
+        ("Mark", "Mark of the Craven"),
+    ]
+    popup_copy = " ".join(
+        list(paladin.DESCRIPTIONS.values())
+        + [" ".join(lines) for lines in popup.DETAIL_LINES.values()]
+    )
+    for exact_mechanic in ("normal XP", "three turns", "two turns", "+5", "percentage"):
+        assert exact_mechanic not in popup_copy
+
+    pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_DOWN))
+    pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN))
+
+    selected = popup.show(
+        flush_events=False,
+        require_key_release=False,
+        background_draw_func=lambda: presenter.screen.fill((0, 0, 0)),
+    )
+
+    assert selected == "Conquest"
+    assert flips
+
+
 def test_visit_church_routes_actions(monkeypatch):
     FakePopup.messages = []
     FakePopup.show_kwargs = []
@@ -556,11 +604,22 @@ def test_arcane_class_ring_rites_awaken_ring_and_apply_mods(monkeypatch):
 
 def test_paladin_legacy_vow_choice_and_crusader_vow_trial(monkeypatch):
     FakePopup.messages = []
+    FakePopup.show_kwargs = []
     presenter = _make_presenter()
-    selections = iter([0, 0])
-    presenter.render_menu = lambda *_args, **_kwargs: next(selections)
     monkeypatch.setattr(church.ChurchManager, "_load_background", lambda self: setattr(self, "background", None))
     monkeypatch.setattr("src.ui_pygame.gui.church.ConfirmationPopup", FakePopup)
+
+    class FakeVowSelectionPopup:
+        show_kwargs = []
+
+        def __init__(self, _presenter):
+            pass
+
+        def show(self, **kwargs):
+            FakeVowSelectionPopup.show_kwargs.append(kwargs)
+            return "Redemption"
+
+    monkeypatch.setattr("src.ui_pygame.gui.church.PaladinVowSelectionPopup", FakeVowSelectionPopup)
 
     player = _make_player()
     player.cls = SimpleNamespace(name="Paladin")
@@ -570,6 +629,12 @@ def test_paladin_legacy_vow_choice_and_crusader_vow_trial(monkeypatch):
 
     assert manager._legacy_paladin_vow_available() is True
     assert manager.visit_legacy_paladin_vow_choice() is True
+    assert FakeVowSelectionPopup.show_kwargs[-1]["flush_events"] is True
+    assert FakeVowSelectionPopup.show_kwargs[-1]["require_key_release"] is True
+    assert FakePopup.show_kwargs[-1]["flush_events"] is True
+    assert FakePopup.show_kwargs[-1]["require_key_release"] is True
+    assert FakePopup.messages[0] == "Swear the Vow of Redemption?"
+    assert "Redeem offers" not in FakePopup.messages[0]
     assert player.paladin_vow["path"] == "Redemption"
     assert "Redeem" in player.spellbook["Skills"]
 

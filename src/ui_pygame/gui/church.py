@@ -5,6 +5,8 @@ Implements the core church logic from town.py adapted for Pygame presenter.
 
 import os
 
+import pygame
+
 from src.core import companions
 from src.core.abilities import ability_classes_for_level, spell_dict, skill_dict
 from src.core.classes import (
@@ -19,8 +21,223 @@ from src.core.items import remove_equipment
 from .quest_manager import QuestManager
 from .confirmation_popup import ConfirmationPopup
 from .location_menu import LocationMenuScreen
+from .mouse_helpers import hit_index, is_left_click, mouse_position
 from .promotion_screen import PromotionScreen
-from .town_base import TownScreenBase
+from .town_base import TownColors, TownScreenBase, wrap_text_to_pixel_width
+from .input_guards import prepare_guarded_input, release_guard_allows_input
+
+
+class PaladinVowSelectionPopup:
+    """Styled vow selector with detail text for the highlighted Paladin path."""
+
+    DETAIL_LINES = {
+        "Redemption": (
+            "Mercy path focused on Redeem.",
+            "Mercy still pays, but turns away from trophies and kill claims.",
+            "Conviction makes mercy more persuasive and more rewarding.",
+        ),
+        "Conquest": (
+            "Challenge path focused on naming a foe.",
+            "Clean victories against chosen or hunted enemies feed your aura.",
+            "Conviction sharpens the pressure on your chosen target.",
+        ),
+        "Protection": (
+            "Guardian path focused on Interpose.",
+            "Well-timed blocks turn defense into protective momentum.",
+            "Conviction reinforces your next guarded stand.",
+        ),
+        "Retribution": (
+            "Counter path focused on Judgment Riposte.",
+            "Enemy aggression can be answered with holy retaliation.",
+            "Conviction makes reprisal feel more certain and punishing.",
+        ),
+    }
+
+    def __init__(self, presenter, *, title: str = "Choose Paladin Vow"):
+        self.presenter = presenter
+        self.screen = presenter.screen
+        self.width = presenter.width
+        self.height = presenter.height
+        self.title_font = presenter.title_font
+        self.large_font = presenter.large_font
+        self.normal_font = presenter.normal_font
+        self.small_font = presenter.small_font
+        self.colors = TownColors
+        self.title = title
+        self.options = list(paladin.PATHS)
+        self.current_selection = 0
+        self.panel_rect = self._panel_rect()
+        self.option_rects: list[pygame.Rect] = []
+        self.list_rect: pygame.Rect | None = None
+        self.detail_rect: pygame.Rect | None = None
+        self.instruction_rect: pygame.Rect | None = None
+
+    def _panel_rect(self) -> pygame.Rect:
+        width = min(int(self.width * 0.82), 820)
+        height = min(int(self.height * 0.72), 560)
+        return pygame.Rect((self.width - width) // 2, (self.height - height) // 2, width, height)
+
+    def _draw_text(self, text: str, font, color, x: int, y: int, max_width: int | None = None) -> int:
+        if max_width is not None:
+            text = self._fit_text(text, font, max_width)
+        surface = font.render(text, True, color)
+        self.screen.blit(surface, (x, y))
+        return y + font.get_height()
+
+    def _fit_text(self, text: str, font, max_width: int) -> str:
+        if font.size(text)[0] <= max_width:
+            return text
+        ellipsis = "..."
+        available = max(1, max_width - font.size(ellipsis)[0])
+        fitted = ""
+        for char in text:
+            if font.size(fitted + char)[0] > available:
+                break
+            fitted += char
+        return fitted.rstrip() + ellipsis
+
+    def _draw_wrapped(self, text: str, font, color, x: int, y: int, max_width: int, *, max_lines: int = 4) -> int:
+        for line in wrap_text_to_pixel_width(text, font, max_width)[:max_lines]:
+            y = self._draw_text(line, font, color, x, y)
+            y += 3
+        return y
+
+    def _option_rects(self, list_rect: pygame.Rect) -> list[pygame.Rect]:
+        row_height = 48
+        gap = 10
+        total_height = len(self.options) * row_height + (len(self.options) - 1) * gap
+        y = list_rect.centery - total_height // 2
+        return [
+            pygame.Rect(list_rect.left + 16, y + index * (row_height + gap), list_rect.width - 32, row_height)
+            for index, _option in enumerate(self.options)
+        ]
+
+    def _detail_rows(self, vow: str) -> list[tuple[str, str]]:
+        return [
+            ("Signature", paladin.SKILL_NAMES[vow]),
+            ("Aura", paladin.AURA_NAMES[vow]),
+            ("Mark", paladin.MARK_NAMES[vow]),
+        ]
+
+    def draw(self, background_draw_func=None):
+        if background_draw_func is not None:
+            background_draw_func()
+
+        overlay = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 140))
+        self.screen.blit(overlay, (0, 0))
+
+        panel = self.panel_rect
+        panel_surface = pygame.Surface((panel.width, panel.height), pygame.SRCALPHA)
+        panel_surface.fill((14, 14, 20, 238))
+        self.screen.blit(panel_surface, panel)
+        pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, panel, 3)
+
+        title_surface = self.title_font.render(self.title, True, self.colors.GOLD)
+        self.screen.blit(title_surface, title_surface.get_rect(center=(panel.centerx, panel.top + 42)))
+
+        content_top = panel.top + 82
+        footer_top = panel.bottom - 56
+        content_rect = pygame.Rect(
+            panel.left + 18,
+            content_top,
+            panel.width - 36,
+            max(240, footer_top - content_top - 14),
+        )
+        list_width = max(230, int(content_rect.width * 0.36))
+        list_rect = pygame.Rect(content_rect.left, content_rect.top, list_width, content_rect.height)
+        detail_rect = pygame.Rect(list_rect.right + 18, content_rect.top, content_rect.right - list_rect.right - 18, content_rect.height)
+        self.list_rect = list_rect
+        self.detail_rect = detail_rect
+
+        pygame.draw.rect(self.screen, (20, 20, 28), list_rect)
+        pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, list_rect, 1)
+        pygame.draw.rect(self.screen, (20, 20, 28), detail_rect)
+        pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, detail_rect, 1)
+
+        self.option_rects = self._option_rects(list_rect)
+        for index, vow in enumerate(self.options):
+            row_rect = self.option_rects[index]
+            selected = index == self.current_selection
+            if selected:
+                pygame.draw.rect(self.screen, self.colors.HIGHLIGHT_BG, row_rect)
+                pygame.draw.rect(self.screen, self.colors.GOLD, row_rect, 2)
+            color = self.colors.GOLD if selected else self.colors.WHITE
+            label = self.normal_font.render(vow, True, color)
+            self.screen.blit(label, label.get_rect(center=row_rect.center))
+
+        vow = self.options[self.current_selection]
+        x = detail_rect.left + 20
+        y = detail_rect.top + 20
+        y = self._draw_text(f"Vow of {vow}", self.large_font, self.colors.GOLD, x, y, detail_rect.width - 40)
+        y += 12
+        for label, value in self._detail_rows(vow):
+            label_surface = self.small_font.render(label, True, self.colors.GRAY)
+            value_surface = self.normal_font.render(value, True, self.colors.WHITE)
+            self.screen.blit(label_surface, (x, y + 3))
+            self.screen.blit(value_surface, (x + 104, y))
+            y += self.normal_font.get_height() + 10
+        pygame.draw.line(self.screen, self.colors.BORDER_COLOR, (x, y), (detail_rect.right - 20, y), 1)
+        y += 14
+        y = self._draw_wrapped(paladin.DESCRIPTIONS[vow], self.normal_font, self.colors.WHITE, x, y, detail_rect.width - 40, max_lines=4)
+        y += 10
+        for line in self.DETAIL_LINES.get(vow, ()):
+            y = self._draw_wrapped(line, self.small_font, self.colors.GRAY, x, y, detail_rect.width - 40, max_lines=2)
+            y += 4
+
+        instructions = "UP/DOWN: Navigate   ENTER: Select   ESC: Cancel"
+        instruction_surface = self.small_font.render(instructions, True, self.colors.GRAY)
+        self.instruction_rect = instruction_surface.get_rect(center=(panel.centerx, panel.bottom - 26))
+        self.screen.blit(instruction_surface, self.instruction_rect)
+
+        pygame.display.flip()
+
+    def show(self, *, flush_events: bool = False, require_key_release: bool = False, background_draw_func=None) -> str | None:
+        background = None
+        if background_draw_func is None and hasattr(self.screen, "copy"):
+            background = self.screen.copy()
+            background_draw_func = lambda: self.screen.blit(background, (0, 0))
+        elif background_draw_func is None:
+            background_draw_func = lambda: self.screen.fill(self.colors.BLACK)
+
+        input_armed = prepare_guarded_input(
+            flush_events=flush_events,
+            require_key_release=require_key_release,
+        )
+
+        def finish(result: str | None) -> str | None:
+            if background_draw_func is not None:
+                background_draw_func()
+                pygame.display.flip()
+            return result
+
+        while True:
+            self.draw(background_draw_func)
+            input_armed = release_guard_allows_input(require_key_release, input_armed)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    raise SystemExit
+                if event.type == pygame.KEYDOWN:
+                    if not input_armed:
+                        continue
+                    if event.key in (pygame.K_ESCAPE, pygame.K_BACKSPACE):
+                        return finish(None)
+                    if event.key == pygame.K_UP:
+                        self.current_selection = (self.current_selection - 1) % len(self.options)
+                    elif event.key == pygame.K_DOWN:
+                        self.current_selection = (self.current_selection + 1) % len(self.options)
+                    elif event.key in (pygame.K_RETURN, pygame.K_SPACE):
+                        return finish(self.options[self.current_selection])
+                elif event.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN):
+                    if not input_armed:
+                        continue
+                    hovered = hit_index(self.option_rects, mouse_position(event))
+                    if hovered is not None:
+                        self.current_selection = hovered
+                        if is_left_click(event):
+                            return finish(self.options[self.current_selection])
+            self.presenter.clock.tick(30)
 
 
 class ChurchManager(TownScreenBase):
@@ -189,17 +406,19 @@ class ChurchManager(TownScreenBase):
                 church_options.remove(rite_label)
 
     def _choose_paladin_vow(self):
-        choices = list(paladin.PATHS)
-        idx = self.presenter.render_menu("Choose Paladin Vow", choices)
-        if idx is None or not (0 <= idx < len(choices)):
-            return None
-        vow = choices[idx]
-        desc = paladin.DESCRIPTIONS[vow]
-        confirm = self.presenter.render_menu(
-            f"Swear the Vow of {vow}?\n\n{desc}",
-            ["Yes", "No"],
+        vow = PaladinVowSelectionPopup(self.presenter).show(
+            flush_events=True,
+            require_key_release=True,
         )
-        return vow if confirm == 0 else None
+        if vow is None:
+            return None
+
+        confirm = ConfirmationPopup(
+            self.presenter,
+            f"Swear the Vow of {vow}?",
+            show_buttons=True,
+        )
+        return vow if confirm.show(flush_events=True, require_key_release=True) else None
 
     def _remove_illegal_promotion_gear(self):
         """Move newly illegal promoted-class core gear back to inventory."""

@@ -2408,7 +2408,7 @@ class ShieldSlamEffect(Effect):
                 def_roll = _rng.randint(target.stats.strength // 2, target.stats.strength)
                 if target.stun_contest_success(actor, att_roll, def_roll):
                     turns = _rng.randint(1, max(1, actor.stats.strength // 8))
-                    if target.apply_stun(turns, source="Shield Bash", applier=actor):
+                    if target.apply_stun(turns, source="Shield Slam", applier=actor):
                         messages.append(f"{target.name} is stunned for {turns} turn(s)!\n")
 
 

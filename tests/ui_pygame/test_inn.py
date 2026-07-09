@@ -284,6 +284,46 @@ def test_bounty_accept_counts_prior_defeats_and_can_turn_in_immediately(monkeypa
     assert "Barghest Hunt" not in player.quest_dict["Bounty"]
 
 
+def test_empty_bounty_popup_uses_bounty_board_background(monkeypatch):
+    FakePopup.messages = []
+    FakePopup.show_kwargs = []
+    player = _make_player(level=20)
+    presenter = _make_presenter()
+    presenter.game = SimpleNamespace(bounties={})
+    monkeypatch.setattr(inn.InnManager, "_load_background", lambda self: setattr(self, "background", None))
+    monkeypatch.setattr("src.ui_pygame.gui.inn.ConfirmationPopup", FakePopup)
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.inn.LevelUpScreen",
+        lambda *_args, **_kwargs: SimpleNamespace(show_level_up=lambda *_a, **_k: None),
+    )
+    manager = inn.InnManager(presenter, player)
+    drawn_frames = []
+    board_calls = 0
+
+    class FakeLocationMenuScreen:
+        def __init__(self, _presenter, title):
+            self.title = title
+
+        def navigate(self, options, reset_cursor=False, **_kwargs):
+            nonlocal board_calls
+            if self.title == "Bounty Board":
+                board_calls += 1
+                return options.index("Accept Bounty") if board_calls == 1 else options.index("Leave")
+            return None
+
+        def draw_frame(self, *, do_flip=False):
+            drawn_frames.append((self.title, do_flip))
+
+    monkeypatch.setattr("src.ui_pygame.gui.inn.LocationMenuScreen", FakeLocationMenuScreen)
+
+    manager.show_bounty_board()
+
+    assert "No new bounties available at this time." in FakePopup.messages
+    background_draw = FakePopup.show_kwargs[-1]["background_draw_func"]
+    background_draw()
+    assert drawn_frames == [("Bounty Board", False)]
+
+
 def test_bounty_board_can_abandon_active_bounty(monkeypatch):
     FakePopup.messages = []
     FakePopup.show_kwargs = []

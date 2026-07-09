@@ -14,7 +14,7 @@ import sys
 import pygame
 
 from src.core import enemies, main_story
-from src.core.classes import astromancer, demonologist
+from src.core.classes import astromancer, demonologist, grandmaster, promotion_kits
 from src.core.combat.battle_engine import BattleEngine
 from src.core.character import Character
 from src.core.combat.battle_logger import BattleLogger
@@ -34,6 +34,7 @@ if TYPE_CHECKING:
 _DISPLAY_TO_ENGINE = {
     "Spells": "Cast Spell",
     "Skills": "Use Skill",
+    "Resolve": "Use Skill",
     "Items": "Use Item",
 }
 
@@ -502,6 +503,49 @@ class GUICombatManager:
         return getattr(self.engine, "player", None) or actor
 
     @staticmethod
+    def _canonical_resolve_skill_name(name: object) -> str:
+        return str(name or "")
+
+    def _is_resolve_skill(self, skill) -> bool:
+        name = self._canonical_resolve_skill_name(getattr(skill, "name", ""))
+        resolve_names = {entry["name"] for entry in promotion_kits.RESOLVE_SPEND_ABILITIES}
+        surge_names = {entry["name"] for entry in promotion_kits.RESOLVE_SURGES}
+        return (
+            getattr(skill, "resource_type", None) == "Resolve"
+            or name in resolve_names
+            or name in surge_names
+        )
+
+    def _available_skill_names(self, player_char, enemy=None, *, allowed_names=None, resolve: bool | None = None) -> list[str]:
+        allowed = set(allowed_names) if allowed_names is not None else None
+        if getattr(player_char, "tunnel", False):
+            allowed = {"Surface"} if allowed is None else allowed & {"Surface"}
+        names = []
+        for name, skill in getattr(player_char, "spellbook", {}).get("Skills", {}).items():
+            is_resolve = self._is_resolve_skill(skill)
+            if resolve is not None and is_resolve != resolve:
+                continue
+            if allowed is not None and name not in allowed:
+                continue
+            if self._skill_available_for_selection(player_char, skill, enemy):
+                names.append(name)
+        return names
+
+    def _resolve_skill_cost_label(self, skill) -> str:
+        cost = getattr(skill, "resolve_cost", None)
+        name = self._canonical_resolve_skill_name(getattr(skill, "name", ""))
+        if cost is None:
+            for entry in promotion_kits.RESOLVE_SPEND_ABILITIES:
+                if entry["name"] == name:
+                    cost = entry["cost"]
+                    break
+        if cost is None and name in {entry["name"] for entry in promotion_kits.RESOLVE_SURGES}:
+            cost = "Full"
+        if str(cost).lower() == "full":
+            return "Full Resolve"
+        return f"Resolve: {int(cost or 0)}"
+
+    @staticmethod
     def _fit_text_to_width(font: pygame.font.Font, text: str, max_width: int) -> str:
         """Trim text to the rendered width available for compact combat overlays."""
         if max_width <= 0 or font.size(text)[0] <= max_width:
@@ -526,7 +570,7 @@ class GUICombatManager:
             return "status"
         if action in {"Spells", "Cast Spell"}:
             return "spell"
-        if action in {"Skills", "Use Skill"}:
+        if action in {"Skills", "Resolve", "Use Skill"}:
             return "skill"
         if choice and any(term in str(choice).lower() for term in ("spell", "bolt", "blast", "storm", "fire", "ice")):
             return "spell"
@@ -935,6 +979,16 @@ class GUICombatManager:
             deduped.insert(1, "Defend")
 
         actor = getattr(self.engine, "attacker", None) or getattr(self.engine, "player", None)
+
+        target = getattr(self.engine, "defender", None)
+        if actor is not None and "Skills" in deduped:
+            has_resolve = bool(self._available_skill_names(actor, target, resolve=True))
+            has_standard_skills = bool(self._available_skill_names(actor, target, resolve=False))
+            if has_resolve and "Resolve" not in deduped:
+                skill_index = deduped.index("Skills")
+                deduped.insert(skill_index, "Resolve")
+            if has_resolve and not has_standard_skills and "Skills" in deduped:
+                deduped.remove("Skills")
 
         # Add Pickup Weapon if the active actor is disarmed
         is_disarmed = getattr(actor, "is_disarmed", None)
@@ -1365,6 +1419,12 @@ class GUICombatManager:
                 if skill_obj:
                     skill_obj.pending_intent = intent
 
+        elif action == "Resolve":
+            selected_skill = self._select_resolve_ability(actor, enemy)
+            if not selected_skill:
+                return None
+            choice = selected_skill
+
         elif action == "Summon":
             if player_char.abilities_suppressed():
                 reason = "the anti-magic field" if getattr(player_char, "anti_magic_active", False) else "silence"
@@ -1395,7 +1455,7 @@ class GUICombatManager:
 
         # Delegate to engine (handles attack rolls, spell casts, skill use, etc.)
         slot_cb = None
-        if action == "Skills" and choice:
+        if action in {"Skills", "Resolve"} and choice:
             skill_obj = actor.spellbook.get('Skills', {}).get(choice)
             if skill_obj and skill_obj.name == "Slot Machine":
                 slot_cb = lambda _u, _t: self._show_slot_machine_reveal(actor, enemy)
@@ -1691,12 +1751,7 @@ class GUICombatManager:
     def _select_skill(self, player_char, enemy, *, allowed_names=None):
         """Show skill selection menu and return selected skill name."""
         # Filter out passive and currently unusable equipment-dependent skills.
-        allowed = set(allowed_names) if allowed_names is not None else None
-        if getattr(player_char, "tunnel", False):
-            allowed = {"Surface"} if allowed is None else allowed & {"Surface"}
-        skills = [name for name, skill in player_char.spellbook['Skills'].items()
-                  if (allowed is None or name in allowed)
-                  and self._skill_available_for_selection(player_char, skill, enemy)]
+        skills = self._available_skill_names(player_char, enemy, allowed_names=allowed_names, resolve=False)
         
         if not skills:
             self.combat_view.add_combat_message("No skills learned!")
@@ -1758,6 +1813,67 @@ class GUICombatManager:
                     selected, scroll_offset, confirmed = self._selection_menu_mouse_update(
                         event,
                         skill_options,
+                        selected,
+                        scroll_offset,
+                        input_armed,
+                    )
+                    if confirmed:
+                        return skills[selected]
+
+    def _select_resolve_ability(self, player_char, enemy):
+        """Show Resolve ability selection menu and return selected skill name."""
+        skills = self._available_skill_names(player_char, enemy, resolve=True)
+        if not skills:
+            self.combat_view.add_combat_message("No Resolve abilities available!")
+            self._pause_with_events(500)
+            return None
+
+        selected = 0
+        scroll_offset = 0
+        input_armed = self._clear_pending_input()
+        frame_player = self._selection_frame_player(player_char)
+        while True:
+            self._render_combat_frame(frame_player, enemy, [], -1)
+            resolve_options = []
+            for skill_name in skills:
+                skill = player_char.spellbook["Skills"][skill_name]
+                display_name = self._canonical_resolve_skill_name(getattr(skill, "name", skill_name))
+                resolve_options.append(f"{display_name} ({self._resolve_skill_cost_label(skill)})")
+            descriptions = [
+                getattr(player_char.spellbook["Skills"][skill_name], "description", "")
+                for skill_name in skills
+            ]
+            self._render_described_selection_menu(
+                "Select Resolve", resolve_options, selected, scroll_offset, descriptions
+            )
+            pygame.display.flip()
+
+            input_armed = release_guard_allows_input(True, input_armed)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit(0)
+                input_armed = self._arm_guarded_input(event, input_armed)
+                if event.type == pygame.KEYDOWN and not input_armed:
+                    continue
+                elif event.type == pygame.KEYDOWN:
+                    if event.key in [pygame.K_ESCAPE, pygame.K_BACKSPACE]:
+                        return None
+                    elif event.key in [pygame.K_UP, pygame.K_w]:
+                        selected = (selected - 1) % len(skills)
+                    elif event.key in [pygame.K_DOWN, pygame.K_s]:
+                        selected = (selected + 1) % len(skills)
+                    elif event.key == pygame.K_PAGEUP:
+                        selected = max(0, selected - 10)
+                    elif event.key == pygame.K_PAGEDOWN:
+                        selected = min(len(skills) - 1, selected + 10)
+                    elif event.key in [pygame.K_RETURN, pygame.K_SPACE]:
+                        return skills[selected]
+                    scroll_offset = self._scroll_offset_for_selection(selected, scroll_offset)
+                elif event.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN):
+                    selected, scroll_offset, confirmed = self._selection_menu_mouse_update(
+                        event,
+                        resolve_options,
                         selected,
                         scroll_offset,
                         input_armed,
@@ -2052,8 +2168,20 @@ class GUICombatManager:
             offhand = getattr(player_char, 'equipment', {}).get('OffHand')
             return getattr(offhand, 'subtyp', None) == "Shield"
 
+        if self._is_resolve_skill(skill):
+            offhand = getattr(player_char, 'equipment', {}).get('OffHand')
+            if getattr(offhand, 'subtyp', None) != "Shield":
+                return False
+
         if getattr(skill, 'weapon', False) and player_char.is_disarmed():
             return False
+
+        art_name = getattr(skill, 'name', None)
+        if art_name in grandmaster.ART_WEAPON_TYPES:
+            return grandmaster.matching_weapon_for_art_equipped(player_char, art_name)
+
+        if art_name in {entry["name"] for entry in promotion_kits.RESOLVE_SURGES}:
+            return promotion_kits.resolve_surge_available(player_char, art_name)
 
         if getattr(skill, '_requires_incapacitated', False):
             incapacitated = getattr(target, 'incapacitated', None)

@@ -8,7 +8,8 @@ from types import SimpleNamespace
 import pygame
 import pytest
 
-from src.core import enemies, main_story
+from src.core import abilities, enemies, main_story
+from src.core.classes import class_rings
 from src.ui_pygame.gui import combat_manager
 
 
@@ -223,6 +224,32 @@ def _make_enemy(name="Goblin", hp=(20, 20)):
     enemy = SimpleNamespace(name=name, health=SimpleNamespace(current=hp[0], max=hp[1]))
     enemy.is_alive = lambda: enemy.health.current > 0
     return enemy
+
+
+def test_resolve_surges_are_hidden_until_mastery_unlocks(monkeypatch):
+    manager = _make_manager(monkeypatch)
+    player = _make_player()
+    player.cls = SimpleNamespace(name="Stalwart Defender")
+    player.equipment = {"OffHand": SimpleNamespace(subtyp="Shield")}
+    player.class_ring_awakening = class_rings.default_state()
+    state = class_rings.ensure_state(player)["data"]["Stalwart Defender"]
+    state["guard_meter"] = 99
+    state["resolve_mastery"] = 0
+
+    assert not manager._skill_available_for_selection(player, abilities.CitadelAegis())
+    class_rings.ensure_state(player)["data"]["Stalwart Defender"]["guard_meter"] = 100
+    assert manager._skill_available_for_selection(player, abilities.CitadelAegis())
+    assert not manager._skill_available_for_selection(player, abilities.IronwallReprisal())
+    assert not manager._skill_available_for_selection(player, abilities.LastBastionSurge())
+    assert manager._skill_available_for_selection(player, abilities.Bulwark())
+
+    state = class_rings.ensure_state(player)["data"]["Stalwart Defender"]
+    state["guard_meter"] = 99
+    state["resolve_mastery"] = 4
+    assert not manager._skill_available_for_selection(player, abilities.IronwallReprisal())
+
+    class_rings.ensure_state(player)["data"]["Stalwart Defender"]["guard_meter"] = 100
+    assert manager._skill_available_for_selection(player, abilities.IronwallReprisal())
 
 
 def _patch_fast_start_combat(monkeypatch, manager):
@@ -548,6 +575,28 @@ def test_capture_background_scroll_handling_and_action_deduplication(monkeypatch
     )
     assert manager._build_display_actions() == ["Attack", "Defend", "Pickup Weapon", "Spells", "Skills", "Items"]
 
+    player.is_disarmed = lambda: False
+    player.equipment = {"OffHand": SimpleNamespace(subtyp="Shield")}
+    player.spellbook["Skills"] = {
+        "Shield Check": abilities.ShieldBash(),
+        "Shield Slam": SimpleNamespace(name="Shield Slam", cost=2, passive=False),
+    }
+    manager.engine = SimpleNamespace(
+        available_actions=["Attack", "Use Skill", "Use Item"],
+        player=player,
+        defender=_make_enemy(),
+    )
+    assert manager._build_display_actions() == ["Attack", "Defend", "Resolve", "Skills", "Items"]
+
+    player.spellbook["Skills"].pop("Shield Slam")
+    assert manager._build_display_actions() == ["Attack", "Defend", "Resolve", "Items"]
+
+    player = _make_player()
+    player.is_disarmed = lambda: True
+    manager.engine = SimpleNamespace(
+        available_actions=["Attack", "Cast Spell", {"name": "Use Skill"}, "Use Item"],
+        player=player,
+    )
     manager.game.debug_mode = True
     assert manager._build_display_actions() == [
         "Attack",
@@ -1081,10 +1130,17 @@ def test_select_item_spell_and_skill_cover_empty_cancel_and_selection_paths(monk
     assert manager.combat_view.messages[-1] == "No skills learned!"
 
     player.equipment = {"OffHand": SimpleNamespace(subtyp="Shield")}
+    player.spellbook["Skills"]["Shield Check"] = abilities.ShieldBash()
     event_batches = iter([[SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)]])
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, []))
     assert manager._select_skill(player, enemy) == "Shield Slam"
     assert menu_calls[-1][1] == ("Shield Slam (MP: 2)",)
+
+    event_batches = iter([[SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)]])
+    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, []))
+    assert manager._select_resolve_ability(player, enemy) == "Shield Check"
+    assert menu_calls[-1][0] == "Select Resolve"
+    assert menu_calls[-1][1] == ("Shield Check (Resolve: 10)",)
 
     player.is_disarmed = lambda: True
     player.spellbook["Skills"] = {
@@ -1096,6 +1152,19 @@ def test_select_item_spell_and_skill_cover_empty_cancel_and_selection_paths(monk
     assert manager._select_skill(player, enemy) == "Smoke Screen"
     assert menu_calls[-1][1] == ("Smoke Screen (MP: 1)",)
     player.is_disarmed = lambda: False
+
+    player.equipment = {
+        "Weapon": SimpleNamespace(subtyp="Polearm"),
+        "OffHand": SimpleNamespace(subtyp="None"),
+    }
+    player.spellbook["Skills"] = {
+        "Reaver's Mark": SimpleNamespace(name="Reaver's Mark", cost=9, passive=False, weapon=True),
+        "Brace": SimpleNamespace(name="Brace", cost=8, passive=False, weapon=True),
+    }
+    event_batches = iter([[SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)]])
+    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, []))
+    assert manager._select_skill(player, enemy) == "Brace"
+    assert menu_calls[-1][1] == ("Brace (MP: 8)",)
 
     enemy.incapacitated = lambda: False
     player.spellbook["Skills"] = {

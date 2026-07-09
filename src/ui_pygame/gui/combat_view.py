@@ -801,6 +801,10 @@ class CombatView:
             "Resist Wind": "RWI",
             "Jump": "JMP",
             "Power Up": "PWR",
+            "Vision": "VIS",
+            "Reaver's Mark": "RMK",
+            "Brace": "BRC",
+            "Riposte Line": "RIP",
         }
         return labels.get(effect_name, effect_name[:3].upper())
 
@@ -832,6 +836,16 @@ class CombatView:
         }
 
         icons.extend(totem_status_icons(character))
+
+        if self._vision_icon_active(character):
+            icons.append(("VIS", True))
+
+        if self._timed_art_state_active(character, "_reavers_mark"):
+            icons.append(("RMK", False))
+        if self._timed_art_state_active(character, "_brace_art"):
+            icons.append(("BRC", True))
+        if self._timed_art_state_active(character, "_riposte_line"):
+            icons.append(("RIP", True))
 
         dot_effect = character.magic_effects.get("DOT")
         if dot_effect and dot_effect.active:
@@ -876,6 +890,27 @@ class CombatView:
             icons = [icon for icon in icons if icon != ("DEF", False)]
 
         return prioritize_status_icons(combine_duplicate_status_icons(icons))
+
+    @staticmethod
+    def _timed_art_state_active(character, attr_name: str) -> bool:
+        state = getattr(character, attr_name, None)
+        if not isinstance(state, dict):
+            return False
+        try:
+            return int(state.get("turns", 0) or 0) > 0
+        except (TypeError, ValueError):
+            return False
+
+    @staticmethod
+    def _vision_icon_active(character) -> bool:
+        cls_name = getattr(getattr(character, "cls", None), "name", "")
+        if cls_name in {"Inquisitor", "Seeker"}:
+            return True
+        equipment = getattr(character, "equipment", {})
+        pendant = equipment.get("Pendant") if isinstance(equipment, dict) else None
+        if getattr(pendant, "mod", None) == "Vision":
+            return True
+        return bool(getattr(character, "sight", False))
 
     @staticmethod
     def _is_telegraph_message(line: str) -> bool:
@@ -1076,11 +1111,13 @@ class CombatView:
         - Reveal spell effect (sets sight = True)
         """
         # Check class
-        if player_char.cls.name in ["Inquisitor", "Seeker"]:
+        if getattr(getattr(player_char, "cls", None), "name", None) in ["Inquisitor", "Seeker"]:
             return True
         
         # Check equipment
-        if player_char.equipment['Pendant'].mod == "Vision":
+        equipment = getattr(player_char, "equipment", {})
+        pendant = equipment.get("Pendant") if isinstance(equipment, dict) else None
+        if getattr(pendant, "mod", None) == "Vision":
             return True
         
         # Check sight attribute (set by Reveal spell or other effects)
@@ -1088,6 +1125,10 @@ class CombatView:
             return True
         
         return False
+
+    @staticmethod
+    def _enemy_hidden_by_invisibility(enemy, has_sight: bool) -> bool:
+        return not has_sight and getattr(enemy, "name", "") == "Invisible Stalker"
 
     def _enemy_details_visible(self, player_char, enemy, show_enemy_details=None) -> bool:
         """Return whether sight-based enemy details should be displayed."""
@@ -1117,7 +1158,7 @@ class CombatView:
 
     def _enemy_sprite_surface(self, enemy, size: tuple[int, int], has_sight: bool = True):
         """Return the enemy battlefield sprite scaled to a fixed combat box."""
-        if has_sight or getattr(enemy, "name", "") != "Invisible Stalker":
+        if not self._enemy_hidden_by_invisibility(enemy, has_sight):
             try:
                 sprite_key = self.enemy_combat_sprite_manager.get_sprite_key_for_enemy(enemy)
                 return self.enemy_combat_sprite_manager.get_scaled_sprite_by_key(sprite_key, size)
@@ -1412,6 +1453,9 @@ class CombatView:
             sprite_rect = display_sprite.get_rect(center=(bob_x, bob_y))
             self._last_enemy_target_rect = sprite_rect.copy()
             self.screen.blit(display_sprite, sprite_rect)
+        elif self._enemy_hidden_by_invisibility(enemy, has_sight):
+            enemy_size = 0
+            self._last_enemy_target_rect = pygame.Rect(center_x, center_y, 1, 1)
         else:
             # Fallback to simple representation
             enemy_size = 120
@@ -1870,6 +1914,9 @@ class CombatView:
             sprite_rect = display_sprite.get_rect(center=(bob_x, bob_y))
             self._last_enemy_target_rect = sprite_rect.copy()
             self.screen.blit(display_sprite, sprite_rect)
+        elif self._enemy_hidden_by_invisibility(enemy, has_sight):
+            enemy_size = 0
+            self._last_enemy_target_rect = pygame.Rect(center_x, center_y, 1, 1)
         else:
             # Fallback to simple representation
             enemy_size = 150

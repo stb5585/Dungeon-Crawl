@@ -1,6 +1,6 @@
 from types import SimpleNamespace
 
-from src.core import items
+from src.core import abilities, items
 from src.core.classes import grandmaster
 from src.core.combat.battle_engine import BattleEngine
 from src.core.enemies import Enemy, Goblin
@@ -67,6 +67,13 @@ def test_weapon_master_starts_discipline_and_unlocks_rank_one_art():
     assert grandmaster.discipline_rank(player, "Fist") == 1
     assert "Iron Palm" in player.spellbook["Skills"]
     assert player.spellbook["Skills"]["Iron Palm"].cost == grandmaster.ART_COSTS["Fist"]
+
+
+def test_weapon_art_descriptions_include_required_weapon_type():
+    art = abilities.ReaversMark()
+
+    assert art.required_weapon_type == "Battle Axe"
+    assert art.description.startswith("Requires: Battle Axe.")
 
 
 def test_weapon_art_requires_matching_weapon_and_applies_effect(monkeypatch):

@@ -929,6 +929,36 @@ def test_town_menu_keeps_old_warehouse_for_eligible_footpad_after_warp(monkeypat
     assert any("Warp Point" in options and "Old Warehouse" in options for options in options_seen)
 
 
+def test_special_event_message_override_uses_popup_text(monkeypatch):
+    game = pygame_game.PygameGame.__new__(pygame_game.PygameGame)
+    game.presenter = SimpleNamespace()
+    game.player_char = SimpleNamespace(location_z=0)
+    game.dungeon_manager = None
+    popup_messages = []
+    popup_kwargs = []
+
+    class FakePopup:
+        def __init__(self, _presenter, message, show_buttons=False, **kwargs):
+            popup_messages.append((message, show_buttons, kwargs))
+
+        def show(self, **kwargs):
+            popup_kwargs.append(kwargs)
+
+    monkeypatch.setattr(pygame_game, "ConfirmationPopup", FakePopup)
+    monkeypatch.setattr(
+        pygame_game,
+        "get_special_events",
+        lambda: {"Relic Room": {"Text": ["Generic relic text."]}},
+    )
+
+    game.special_event("Relic Room", message="Triangulus rises from the altar.")
+
+    assert popup_messages[0][0] == "Triangulus rises from the altar."
+    assert popup_messages[0][1] is False
+    assert popup_messages[0][2]["slow_print"] is True
+    assert popup_kwargs[0]["flush_events"] is True
+
+
 def test_town_menu_silently_drops_off_rookie_body_without_extra_popup(monkeypatch):
     game = pygame_game.PygameGame.__new__(pygame_game.PygameGame)
     game.presenter = SimpleNamespace()

@@ -12,6 +12,27 @@ from src.ui_pygame.assets.npc_art_manager import get_npc_art_manager
 from .mouse_helpers import is_left_click
 
 
+def wrap_text_to_pixel_width(text: str, font: pygame.font.Font, max_width: int) -> list[str]:
+    """Wrap text using actual rendered pixel widths."""
+    if not text:
+        return [""]
+
+    lines: list[str] = []
+    current = ""
+    for word in text.split():
+        candidate = f"{current} {word}".strip()
+        if not current or font.size(candidate)[0] <= max_width:
+            current = candidate
+            continue
+
+        lines.append(current)
+        current = word
+
+    if current:
+        lines.append(current)
+    return lines or [text]
+
+
 class TownColors:
     """Centralized color definitions for town UI."""
     BLACK = (0, 0, 0)
@@ -166,7 +187,6 @@ class TownScreenBase:
         """Display quest text in the content area with slow printing animation."""
         import time
         import pygame
-        import textwrap
 
         # Normalize text and peel off a header line if present (====== Name ======)
         text = quest_text.replace("\r\n", "\n")
@@ -189,10 +209,7 @@ class TownScreenBase:
 
         def text_wrap_width() -> int:
             content_width = 2 * self.width // 3
-            text_width = content_width - 40
-            sample = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-            avg_char_width = max(1, self.large_font.size(sample)[0] / len(sample))
-            return max(18, int(text_width / avg_char_width))
+            return max(1, content_width - 40)
 
         def wrapped_text_lines() -> list[str]:
             wrapped_lines: list[str] = []
@@ -200,7 +217,7 @@ class TownScreenBase:
                 if not raw_line.strip():
                     wrapped_lines.append("")
                     continue
-                wrapped = textwrap.wrap(raw_line, width=text_wrap_width(), break_on_hyphens=False)
+                wrapped = wrap_text_to_pixel_width(raw_line, self.large_font, text_wrap_width())
                 wrapped_lines.extend(wrapped or [raw_line])
             return wrapped_lines
 

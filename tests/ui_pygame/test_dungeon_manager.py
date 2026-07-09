@@ -766,13 +766,14 @@ def test_interact_door_relic_warp_terminal_and_room_pickups(monkeypatch):
     monkeypatch.setattr("src.core.items.Relic5", lambda: SimpleNamespace(name="Relic 5"))
     monkeypatch.setattr("src.core.items.Relic6", lambda: SimpleNamespace(name="Relic 6"))
     special_events = []
-    game.special_event = lambda name: special_events.append(name)
+    game.special_event = lambda name, **kwargs: special_events.append((name, kwargs))
     manager._interact_relic(relic_tile)
-    assert special_events == ["Relic Room"]
+    assert special_events == [("Relic Room", {"message": "You found a relic: Relic 2!"})]
     assert relic_tile.read is True
     assert player.health.current == player.health.max
     assert player.mana.current == player.mana.max
-    assert "You found a relic: Relic 2!" in manager.messages
+    assert "You found a relic: Relic 2!" not in manager.messages
+    assert "Your health and mana have been fully restored!" in manager.messages
 
     inventory_count = len(player.inventory_calls)
     player.health.current = 3

@@ -853,6 +853,10 @@ class StrangeDraftTile(EmptyCavePath):
         return intro_str
 
     def special_text(self, game):
+        from .classes import nature_totems
+
+        if not nature_totems.is_nature_totem_class(game.player_char):
+            return ""
         return nature_communion_text(game.player_char, "Wind")
 
 

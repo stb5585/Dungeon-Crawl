@@ -75,8 +75,11 @@ IMPORTANT_POSITIVE_STATUS_LABELS = {
     "ICE": 3,
     "REG": 4,
     "EG": 5,
-    "ATK": 6,
-    "DEF": 7,
+    "VIS": 6,
+    "BRC": 7,
+    "RIP": 8,
+    "ATK": 9,
+    "DEF": 10,
 }
 
 

@@ -91,7 +91,7 @@ pruning change unless an implemented rule is called out.
 | Warrior -> Lancer | Keep | Retain core martial skills while adding Jump, polearm identity, and Aerial Tempo. |
 | Lancer -> Dragoon | Keep | Retain Jump/polearm progression and deepen Aerial Tempo through Aerial Supremacy follow-through. |
 | Warrior -> Sentinel | Keep | Retain core martial skills while adding shield/guard identity. |
-| Sentinel -> Stalwart Defender | Keep | Retain shield/guard identity and deepen Resolve, guard stances, and counterguard spends. |
+| Sentinel -> Stalwart Defender | Keep | Retain shield/guard identity and deepen Resolve with full-bar Resolve Surges. |
 
 ### Mage Branch
 

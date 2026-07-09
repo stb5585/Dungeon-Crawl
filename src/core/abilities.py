@@ -633,8 +633,8 @@ class PolearmMastery(_PassiveSkill):
 
 
 class _WeaponArt(Class):
-    def __init__(self, name: str, description: str):
-        super().__init__(name=name, description=description)
+    def __init__(self, name: str, weapon_type: str, description: str):
+        super().__init__(name=name, description=f"Requires: {weapon_type}. {description}")
         self.cost = {
             "Iron Palm": 6,
             "Hemorrhage": 7,
@@ -646,6 +646,7 @@ class _WeaponArt(Class):
             "Anvil Strike": 10,
         }.get(name, 0)
         self.weapon = True
+        self.required_weapon_type = weapon_type
 
     def use(
         self,
@@ -665,6 +666,7 @@ class IronPalm(_WeaponArt):
     def __init__(self):
         super().__init__(
             "Iron Palm",
+            "Fist",
             "A fist discipline art that disrupts the target's attack and hardens your stance as mastery grows.",
         )
 
@@ -673,6 +675,7 @@ class Hemorrhage(_WeaponArt):
     def __init__(self):
         super().__init__(
             "Hemorrhage",
+            "Dagger",
             "A dagger discipline art that opens and worsens bleeding wounds.",
         )
 
@@ -681,6 +684,7 @@ class RiposteLine(_WeaponArt):
     def __init__(self):
         super().__init__(
             "Riposte Line",
+            "Sword",
             "A sword discipline art that strikes and prepares a brief counter line.",
         )
 
@@ -689,6 +693,7 @@ class LowSweep(_WeaponArt):
     def __init__(self):
         super().__init__(
             "Low Sweep",
+            "Club",
             "A club discipline art that disrupts footing with speed pressure and prone chances.",
         )
 
@@ -697,6 +702,7 @@ class GuardCleaver(_WeaponArt):
     def __init__(self):
         super().__init__(
             "Guard Cleaver",
+            "Longsword",
             "A longsword discipline art that cuts through and weakens guard.",
         )
 
@@ -705,6 +711,7 @@ class ReaversMark(_WeaponArt):
     def __init__(self):
         super().__init__(
             "Reaver's Mark",
+            "Battle Axe",
             "A battle axe discipline art that marks a foe to take increased weapon pressure.",
         )
 
@@ -713,6 +720,7 @@ class Brace(_WeaponArt):
     def __init__(self):
         super().__init__(
             "Brace",
+            "Polearm",
             "A polearm discipline art that prepares a defensive counter stance.",
         )
 
@@ -721,6 +729,7 @@ class AnvilStrike(_WeaponArt):
     def __init__(self):
         super().__init__(
             "Anvil Strike",
+            "Hammer",
             "A hammer discipline art that crushes defense and can suppress guard at mastery.",
         )
 
@@ -1081,6 +1090,15 @@ class _PromotionActive(Class):
         self.cost = cost
 
 
+class _ResolveActive(_PromotionActive):
+    resource_type = "Resolve"
+
+    def __init__(self, name: str, description: str, resolve_cost: int | str):
+        super().__init__(name, description, 0)
+        self.resource_type = "Resolve"
+        self.resolve_cost = resolve_cost
+
+
 class ThreadedCast(_PromotionActive):
     def __init__(self):
         super().__init__("Threaded Cast", "Spend Foresight Threads to mark the next eligible spell payoff.", 8)
@@ -1101,7 +1119,7 @@ class Eclipse(_PromotionActive):
         return promotion_kits.eclipse(user)
 
 
-class HoldTheLine(_PromotionActive):
+class HoldTheLine(_ResolveActive):
     def __init__(self):
         super().__init__("Hold the Line", "Enter a shield stance that improves block and mitigation.", 0)
 
@@ -1111,9 +1129,29 @@ class HoldTheLine(_PromotionActive):
         return promotion_kits.hold_the_line(user)
 
 
-class Bulwark(_PromotionActive):
+class ShieldBash(_ResolveActive):
     def __init__(self):
-        super().__init__("Bulwark", "Spend Resolve for a short mitigation barrier.", 0)
+        super().__init__("Shield Check", "Spend Resolve to lower the enemy's Attack and Speed.", 10)
+
+    def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        from .classes import promotion_kits
+
+        return promotion_kits.shield_bash(user, target)
+
+
+class BraceWall(_ResolveActive):
+    def __init__(self):
+        super().__init__("Brace Wall", "Spend Resolve to refresh Hold the Line and raise Defense.", 15)
+
+    def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        from .classes import promotion_kits
+
+        return promotion_kits.brace_wall(user)
+
+
+class Bulwark(_ResolveActive):
+    def __init__(self):
+        super().__init__("Bulwark", "Spend Resolve to create a short-lived damage barrier.", 25)
 
     def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
         from .classes import promotion_kits
@@ -1121,14 +1159,64 @@ class Bulwark(_PromotionActive):
         return promotion_kits.bulwark(user)
 
 
-class ShieldRiposte(_PromotionActive):
+class ShieldRiposte(_ResolveActive):
     def __init__(self):
-        super().__init__("Shield Riposte", "Spend Resolve for a controlled shield counter.", 0)
+        super().__init__("Shield Riposte", "Spend Resolve for an immediate weapon counter.", 20)
 
     def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
         from .classes import promotion_kits
 
         return promotion_kits.shield_riposte(user, target)
+
+
+class CoveringGuard(_ResolveActive):
+    def __init__(self):
+        super().__init__("Covering Guard", "Spend Resolve to ward against the next dangerous hit.", 20)
+
+    def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        from .classes import promotion_kits
+
+        return promotion_kits.covering_guard(user)
+
+
+class DeflectSpell(_ResolveActive):
+    def __init__(self):
+        super().__init__("Deflect Spell", "Spend Resolve to raise Magic Defense against hostile spells.", 20)
+
+    def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        from .classes import promotion_kits
+
+        return promotion_kits.deflect_spell(user)
+
+
+class CitadelAegis(_ResolveActive):
+    def __init__(self):
+        super().__init__("Citadel Aegis", "Consume full Resolve for a fortress barrier and defensive stance.", "Full")
+
+    def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        from .classes import promotion_kits
+
+        return promotion_kits.citadel_aegis(user)
+
+
+class IronwallReprisal(_ResolveActive):
+    def __init__(self):
+        super().__init__("Ironwall Reprisal", "Consume full Resolve for a crushing counterattack.", "Full")
+
+    def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        from .classes import promotion_kits
+
+        return promotion_kits.ironwall_reprisal(user, target)
+
+
+class LastBastionSurge(_ResolveActive):
+    def __init__(self):
+        super().__init__("Last Bastion", "Consume full Resolve to recover and rebuild your guard.", "Full")
+
+    def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        from .classes import promotion_kits
+
+        return promotion_kits.last_bastion(user)
 
 
 class SanctuaryWard(_PromotionActive):
@@ -3951,7 +4039,8 @@ skill_dict = {
         "30": TruePiercingStrike,
         },
     "Lancer": {
-        "1": [Jump, PolearmProficiency],
+        "1": [Jump,
+              PolearmProficiency],
         "12": Zephyrstrike,
         },
     "Dragoon": {
@@ -3963,11 +4052,18 @@ skill_dict = {
         "1": ShieldBlock,
         "3": Goad,
         "5": HoldTheLine,
+        "6": ShieldBash,
+        "7": BraceWall,
         "9": Retaliate,
+        "10": ShieldRiposte,
+        "12": CoveringGuard,
+        "14": DeflectSpell,
+        "16": Bulwark,
         },
     "Stalwart Defender": {
-        "5": Bulwark,
-        "9": ShieldRiposte,
+        "1": [CitadelAegis,
+              IronwallReprisal,
+              LastBastionSurge],
         "18": LastStand,
         },
     "Mage": {
@@ -4022,7 +4118,17 @@ skill_dict = {
     "Grand Summoner": {
         "1": Summon2,
         "2": ConduitCommand,
-        "3": [InvokePatagon, InvokeDilong, InvokeAgloolik, InvokeCacus, InvokeFuath, InvokeIzulu, InvokeHala, InvokeGrigori, InvokeBardi, InvokeKobalos, InvokeZahhak],
+        "3": [InvokePatagon,
+              InvokeDilong,
+              InvokeAgloolik,
+              InvokeCacus,
+              InvokeFuath,
+              InvokeIzulu,
+              InvokeHala,
+              InvokeGrigori,
+              InvokeBardi,
+              InvokeKobalos,
+              InvokeZahhak],
         "8": RaiseSummon,
     },
     "Footpad": {

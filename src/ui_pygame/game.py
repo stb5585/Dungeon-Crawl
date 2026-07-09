@@ -182,22 +182,23 @@ class PygameGame:
         except Exception:
             return
 
-    def special_event(self, name: str):
+    def special_event(self, name: str, *, message: str | None = None):
         """GUI implementation of narrative special events.
 
         Displays a formatted modal message using the Pygame confirmation popup.
         """
-        try:
-            special_event_dict = get_special_events()
-            lines = special_event_dict.get(name, {}).get("Text", [])
-        except Exception:
-            lines = []
+        if message is None:
+            try:
+                special_event_dict = get_special_events()
+                lines = special_event_dict.get(name, {}).get("Text", [])
+            except Exception:
+                lines = []
 
-        if lines:
-            # Join lines into paragraphs and let the popup handle wrapping
-            message = " ".join(line.strip() for line in lines if line is not None).strip()
-        else:
-            message = name
+            if lines:
+                # Join lines into paragraphs and let the popup handle wrapping
+                message = " ".join(line.strip() for line in lines if line is not None).strip()
+            else:
+                message = name
 
         # Show message-only popup (any key to continue)
         # Pass a background draw function that maintains current screen state

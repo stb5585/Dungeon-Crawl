@@ -7,7 +7,8 @@ from types import SimpleNamespace
 
 import pygame
 
-from src.core.classes import grandmaster
+from src.core import abilities
+from src.core.classes import class_rings, grandmaster, promotion_kits
 from src.ui_pygame import game as pygame_game
 from src.ui_pygame.gui.dungeon_manager import DungeonManager
 from src.ui_pygame.gui.modern_character_screen import (
@@ -89,6 +90,25 @@ def _make_presenter():
 
 def _effect(active=True, duration=2, extra=0):
     return SimpleNamespace(active=active, duration=duration, extra=extra)
+
+
+class FakeJumpSkill:
+    def __init__(self):
+        self.name = "Jump"
+        self.modifications = {"Crit": True, "Recover": False, "Skyfall": True}
+
+    def get_active_count(self):
+        return 2
+
+    def get_max_active_modifications(self, _player):
+        return 3
+
+    def get_unlocked_modifications(self):
+        return ["Crit", "Recover", "Skyfall"]
+
+    def set_modification(self, mod_name, active, _player):
+        self.modifications[mod_name] = active
+        return True, ""
 
 
 def _make_player():
@@ -457,6 +477,200 @@ def test_modern_character_class_tab_lists_companions_without_art(monkeypatch):
     assert "Companions & Summons" not in rendered_text
 
 
+def test_modern_character_warlock_class_tab_uses_familiar_label(monkeypatch):
+    presenter = _make_presenter()
+    screen = ModernCharacterScreen(presenter)
+    player = _make_player()
+    familiar = SimpleNamespace(
+        name="Aster",
+        cls="Familiar",
+        health=SimpleNamespace(current=24, max=30),
+        mana=SimpleNamespace(current=18, max=20),
+        combat=SimpleNamespace(attack=4, defense=6, magic=12, magic_def=10),
+        level=SimpleNamespace(level=4),
+        is_alive=lambda: True,
+    )
+    player.cls = SimpleNamespace(name="Warlock", description="Binds familiar aid.")
+    player.familiar = familiar
+    player.summons = {}
+
+    monkeypatch.setattr(screen, "draw_semi_transparent_panel", lambda rect, alpha=180: DummySurface((rect.width, rect.height)))
+    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.rect", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.line", lambda *_args, **_kwargs: None)
+
+    screen.draw_class_tab(player)
+
+    rendered_text = set(presenter.small_font.render_calls + presenter.normal_font.render_calls)
+    assert {"Familiar", "Aster", "C: Select familiar"}.issubset(rendered_text)
+    assert "Companion" not in rendered_text
+    assert "C: Select summon" not in rendered_text
+
+
+def test_modern_character_oath_conviction_tab_shows_vow_details(monkeypatch):
+    presenter = _make_presenter()
+    screen = ModernCharacterScreen(presenter)
+    player = _make_player()
+    player.cls = SimpleNamespace(name="Paladin", description="Holy knight.")
+    player.paladin_vow = {"path": "Redemption"}
+    promotion_kits.combat_state(player)["oath_conviction"] = 1
+
+    monkeypatch.setattr(screen, "draw_semi_transparent_panel", lambda rect, alpha=180: DummySurface((rect.width, rect.height)))
+    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.rect", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.line", lambda *_args, **_kwargs: None)
+
+    screen.select_tab("class")
+    screen.draw_class_tab(player)
+
+    rendered_text = set(
+        presenter.large_font.render_calls + presenter.normal_font.render_calls + presenter.small_font.render_calls
+    )
+    assert {
+        "Oath Conviction",
+        "Conviction 1/2",
+        "Vow",
+        "Redemption",
+        "Signature",
+        "Redeem",
+        "Aura",
+        "Redemption Aura",
+        "Mark",
+        "Mark of Perdition",
+        "Oath Rhythm",
+        "Build",
+        "Spend",
+        "Risk",
+    }.issubset(rendered_text)
+    assert "Paladin" not in rendered_text
+    assert not any("class ring" in str(text).lower() or "ring identity" in str(text).lower() for text in rendered_text)
+
+
+def test_modern_character_aerial_tempo_tab_owns_jump_mods(monkeypatch):
+    presenter = _make_presenter()
+    screen = ModernCharacterScreen(presenter)
+    player = _make_player()
+    player.cls = SimpleNamespace(name="Lancer", description="Leaps into danger.")
+    player.spellbook["Skills"]["Jump"] = FakeJumpSkill()
+    promotion_kits.combat_state(player)["aerial_tempo"] = 1
+
+    monkeypatch.setattr(screen, "draw_semi_transparent_panel", lambda rect, alpha=180: DummySurface((rect.width, rect.height)))
+    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.rect", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.line", lambda *_args, **_kwargs: None)
+
+    screen.select_tab("class")
+    screen.draw_class_tab(player)
+
+    rendered_text = set(
+        presenter.large_font.render_calls + presenter.normal_font.render_calls + presenter.small_font.render_calls
+    )
+    assert {
+        "Aerial Tempo",
+        "Jump Modifications (2/3 active)",
+        "UP/DOWN: Select  ENTER: Toggle",
+        "[X]",
+        "Crit",
+        "Recover",
+        "Skyfall",
+        "Status: Active",
+        "Initial modification",
+    }.issubset(rendered_text)
+    assert screen.jump_mod_row_rects()
+    assert "Lancer" not in rendered_text
+    assert "Building Tempo" not in rendered_text
+    assert "Ring Identity" not in rendered_text
+    assert not any("class ring" in str(text).lower() or "ring identity" in str(text).lower() for text in rendered_text)
+
+
+def test_modern_character_resolve_tab_shows_meter_progression(monkeypatch):
+    presenter = _make_presenter()
+    screen = ModernCharacterScreen(presenter)
+    player = _make_player()
+    player.cls = SimpleNamespace(name="Sentinel", description="Holds the line.")
+    player.spellbook["Skills"] = {
+        "Shield Check": abilities.ShieldBash(),
+        "Brace Wall": abilities.BraceWall(),
+        "Shield Riposte": abilities.ShieldRiposte(),
+        "Covering Guard": abilities.CoveringGuard(),
+        "Deflect Spell": abilities.DeflectSpell(),
+        "Bulwark": abilities.Bulwark(),
+    }
+    class_rings.ensure_state(player)["data"]["Stalwart Defender"]["guard_meter"] = 25
+    promotion_kits.combat_state(player)["hold_the_line"] = 1
+    rect_calls = []
+
+    monkeypatch.setattr(screen, "draw_semi_transparent_panel", lambda rect, alpha=180: DummySurface((rect.width, rect.height)))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.modern_character_screen.pygame.draw.rect",
+        lambda _surface, color, rect, *_args, **_kwargs: rect_calls.append((color, rect.copy())) if isinstance(rect, pygame.Rect) else None,
+    )
+    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.line", lambda *_args, **_kwargs: None)
+
+    screen.select_tab("class")
+    screen.draw_class_tab(player)
+
+    rendered_text = set(
+        presenter.large_font.render_calls + presenter.normal_font.render_calls + presenter.small_font.render_calls
+    )
+    assert {
+        "Resolve",
+        "25/50",
+        "Resolve Spends",
+        "Shield Check",
+        "Brace Wall",
+        "Shield Riposte",
+        "Covering Guard",
+        "Deflect Spell",
+        "Bulwark",
+    }.issubset(rendered_text)
+    assert "Resolve Surges" not in rendered_text
+    assert "Resolve 25/50" not in rendered_text
+    meter_rects = [rect for _color, rect in rect_calls if rect.height == 28]
+    assert meter_rects
+    assert abs(meter_rects[0].centerx - screen.details_rect.centerx) <= 1
+    assert any(color == screen.colors.RED and rect.height == 28 for color, rect in rect_calls)
+    assert "Sentinel" not in rendered_text
+    assert "Resolve Flow" not in rendered_text
+    assert "Guard Stance" not in rendered_text
+    assert "Build" not in rendered_text
+    assert not any("class ring" in str(text).lower() or "ring identity" in str(text).lower() for text in rendered_text)
+
+
+def test_modern_character_resolve_tab_shows_stalwart_surges(monkeypatch):
+    presenter = _make_presenter()
+    screen = ModernCharacterScreen(presenter)
+    player = _make_player()
+    player.cls = SimpleNamespace(name="Stalwart Defender", description="Holds the line.")
+    player.spellbook["Skills"] = {
+        "Shield Check": abilities.ShieldBash(),
+        "Brace Wall": abilities.BraceWall(),
+        "Shield Riposte": abilities.ShieldRiposte(),
+        "Covering Guard": abilities.CoveringGuard(),
+        "Deflect Spell": abilities.DeflectSpell(),
+        "Bulwark": abilities.Bulwark(),
+        "Citadel Aegis": abilities.CitadelAegis(),
+        "Ironwall Reprisal": abilities.IronwallReprisal(),
+        "Last Bastion": abilities.LastBastionSurge(),
+    }
+    data = class_rings.ensure_state(player)["data"]["Stalwart Defender"]
+    data["guard_meter"] = 100
+    data["resolve_mastery"] = 0
+
+    monkeypatch.setattr(screen, "draw_semi_transparent_panel", lambda rect, alpha=180: DummySurface((rect.width, rect.height)))
+    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.rect", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.line", lambda *_args, **_kwargs: None)
+
+    screen.select_tab("class")
+    screen.draw_class_tab(player)
+
+    rendered_text = set(
+        presenter.large_font.render_calls + presenter.normal_font.render_calls + presenter.small_font.render_calls
+    )
+    assert {"100/100", "Resolve Spends", "Resolve Surges", "Citadel Aegis", "???"}.issubset(rendered_text)
+    assert "Ironwall Reprisal" not in rendered_text
+    assert "Last Bastion" not in rendered_text
+    assert any("Full bar" in str(text) for text in rendered_text)
+    assert not any("class ring" in str(text).lower() or "ring identity" in str(text).lower() for text in rendered_text)
+
+
 def test_modern_character_class_tab_shows_weapon_discipline_for_weapon_master(monkeypatch):
     presenter = _make_presenter()
     screen = ModernCharacterScreen(presenter)
@@ -489,14 +703,151 @@ def test_modern_character_class_tab_shows_weapon_discipline_for_weapon_master(mo
         "Battle Axe",
         "Rank 1",
         f"{battle_axe_xp}/{grandmaster.XP_THRESHOLDS[1]} XP",
-        "Reaver's Mark",
     }.issubset(rendered_text)
+    assert "Reaver's Mark" not in rendered_text
     assert "Companions & Summons" not in rendered_text
     assert "Weapon Master" not in rendered_text
     assert "Promotion Tier" not in rendered_text
     assert "Equipped Discipline" not in rendered_text
     assert "Highest Discipline" not in rendered_text
     assert any(name == "Broadaxe" for name, _size in render_calls)
+    assert screen.weapon_discipline_detail_text(player, "Battle Axe").splitlines()[:6] == [
+        "Battle Axe Discipline",
+        f"Rank 1 - {battle_axe_xp}/{grandmaster.XP_THRESHOLDS[1]} XP",
+        "Equipped now: Yes",
+        "",
+        "Weapon Art: Reaver's Mark",
+        "Required weapon: Battle Axe",
+    ]
+
+
+def test_modern_character_weapon_discipline_popup_uses_selected_row(monkeypatch):
+    presenter = _make_presenter()
+    screen = ModernCharacterScreen(presenter)
+    player = _make_player()
+    player.cls = SimpleNamespace(name="Weapon Master", description="Builds mastery through repeated weapon use.")
+    player.equipment["Weapon"] = SimpleNamespace(name="Framea", typ="Weapon", subtyp="Polearm")
+    player.grandmaster_discipline = grandmaster.default_state()
+    screen.selected_weapon_discipline_index = grandmaster.WEAPON_TYPES.index("Polearm")
+    popup_messages = []
+    popup_kwargs = []
+
+    class FakePopup:
+        def __init__(self, _presenter, message, show_buttons=False, **_kwargs):
+            popup_messages.append((message, show_buttons))
+
+        def show(self, **kwargs):
+            popup_kwargs.append(kwargs)
+
+    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.ConfirmationPopup", FakePopup)
+
+    screen._open_weapon_discipline_popup(player)
+
+    assert "Polearm Discipline" in popup_messages[0][0]
+    assert "Weapon Art: Brace" in popup_messages[0][0]
+    assert "Required weapon: Polearm" in popup_messages[0][0]
+    assert popup_messages[0][1] is False
+    assert popup_kwargs[0]["flush_events"] is True
+
+
+def test_modern_character_class_mechanic_tabs_include_pathfinder_branches():
+    presenter = _make_presenter()
+    screen = ModernCharacterScreen(presenter)
+    player = _make_player()
+
+    for class_name, expected_tabs in (
+        ("Diviner", ["Character", "Runes", "Equipment"]),
+        ("Shaman", ["Character", "Totems", "Equipment"]),
+        ("Ranger", ["Character", "Companion", "Equipment"]),
+    ):
+        player.cls = SimpleNamespace(name=class_name)
+        player.summons = {}
+        player.familiar = None
+        assert [tab.label for tab in screen.visible_tabs(player)] == expected_tabs
+
+
+def test_modern_character_class_mechanic_tabs_include_warrior_branches():
+    presenter = _make_presenter()
+    screen = ModernCharacterScreen(presenter)
+    player = _make_player()
+
+    for class_name, expected_tabs in (
+        ("Paladin", ["Character", "Oath Conviction", "Equipment"]),
+        ("Crusader", ["Character", "Oath Conviction", "Equipment"]),
+        ("Lancer", ["Character", "Aerial Tempo", "Equipment"]),
+        ("Dragoon", ["Character", "Aerial Tempo", "Equipment"]),
+        ("Sentinel", ["Character", "Resolve", "Equipment"]),
+        ("Stalwart Defender", ["Character", "Resolve", "Equipment"]),
+    ):
+        player.cls = SimpleNamespace(name=class_name)
+        player.summons = {}
+        player.familiar = None
+        assert [tab.label for tab in screen.visible_tabs(player)] == expected_tabs
+
+
+def test_modern_character_class_mechanic_tabs_include_mage_branches():
+    presenter = _make_presenter()
+    screen = ModernCharacterScreen(presenter)
+    player = _make_player()
+    familiar = SimpleNamespace(name="Aster", is_alive=lambda: True)
+
+    for class_name, expected_tabs, has_familiar in (
+        ("Sorcerer", ["Character", "School Affinity", "Equipment"], False),
+        ("Wizard", ["Character", "School Affinity", "Equipment"], False),
+        ("Warlock", ["Character", "Familiar", "Equipment"], True),
+        ("Shadowcaster", ["Character", "Umbral Debt", "Equipment"], True),
+        ("Demonologist", ["Character", "Contracts", "Equipment"], True),
+        ("Spellblade", ["Character", "Blade Charge", "Equipment"], False),
+        ("Knight Enchanter", ["Character", "Arcane Tempo", "Equipment"], False),
+        ("Summoner", ["Character", "Summons", "Equipment"], False),
+        ("Grand Summoner", ["Character", "Summons", "Equipment"], False),
+    ):
+        player.cls = SimpleNamespace(name=class_name)
+        player.summons = {}
+        player.familiar = familiar if has_familiar else None
+        assert [tab.label for tab in screen.visible_tabs(player)] == expected_tabs
+
+
+def test_modern_character_class_mechanic_tabs_include_footpad_branches():
+    presenter = _make_presenter()
+    screen = ModernCharacterScreen(presenter)
+    player = _make_player()
+
+    for class_name, expected_tabs in (
+        ("Thief", ["Character", "Fortune", "Equipment"]),
+        ("Rogue", ["Character", "Fortune", "Equipment"]),
+        ("Inquisitor", ["Character", "Case Journal", "Equipment"]),
+        ("Seeker", ["Character", "Case Journal", "Equipment"]),
+        ("Assassin", ["Character", "Death Mark", "Equipment"]),
+        ("Ninja", ["Character", "Death Mark", "Equipment"]),
+        ("Spell Stealer", ["Character", "Stolen Charge", "Equipment"]),
+        ("Arcane Trickster", ["Character", "Stolen Charge", "Equipment"]),
+    ):
+        player.cls = SimpleNamespace(name=class_name)
+        player.summons = {}
+        player.familiar = None
+        assert [tab.label for tab in screen.visible_tabs(player)] == expected_tabs
+
+
+def test_modern_character_class_mechanic_tabs_include_healer_branches():
+    presenter = _make_presenter()
+    screen = ModernCharacterScreen(presenter)
+    player = _make_player()
+
+    for class_name, expected_tabs in (
+        ("Cleric", ["Character", "Devotion", "Equipment"]),
+        ("Templar", ["Character", "Devotion", "Equipment"]),
+        ("Monk", ["Character", "Ki", "Equipment"]),
+        ("Master Monk", ["Character", "Ki", "Equipment"]),
+        ("Priest", ["Character", "Prayer", "Equipment"]),
+        ("Archbishop", ["Character", "Prayer", "Equipment"]),
+        ("Bard", ["Character", "Crescendo", "Equipment"]),
+        ("Troubadour", ["Character", "Crescendo", "Equipment"]),
+    ):
+        player.cls = SimpleNamespace(name=class_name)
+        player.summons = {}
+        player.familiar = None
+        assert [tab.label for tab in screen.visible_tabs(player)] == expected_tabs
 
 
 def test_modern_character_class_tab_supports_multiple_summon_tiles_and_popup(monkeypatch):
@@ -964,6 +1315,30 @@ def test_modern_character_menu_actions_remove_quit_and_put_exit_last(monkeypatch
     assert screen.menu_options == ["Inventory", "Quests", "Key Items", "Bestiary", "Specials", "Exit Menu"]
     assert "Change Equipment" not in screen.menu_options
     assert "Quit Game" not in screen.menu_options
+
+
+def test_modern_character_aerial_tempo_tab_toggles_jump_mods_inline(monkeypatch):
+    presenter = _make_presenter()
+    screen = ModernCharacterScreen(presenter)
+    player = _make_player()
+    player.cls = SimpleNamespace(name="Lancer")
+    jump_skill = FakeJumpSkill()
+    player.spellbook["Skills"]["Jump"] = jump_skill
+    screen.select_tab("class")
+
+    event_batches = iter([
+        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_DOWN)],
+        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN)],
+        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE)],
+    ])
+    monkeypatch.setattr(screen, "draw_all", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
+    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.event.get", lambda: next(event_batches, []))
+
+    assert screen.navigate(player) == "Exit Menu"
+    assert "Jump Mods" not in screen.menu_options
+    assert screen.selected_jump_mod_index == 1
+    assert jump_skill.modifications["Recover"] is True
 
 
 def test_modern_character_menu_opens_bestiary(monkeypatch):

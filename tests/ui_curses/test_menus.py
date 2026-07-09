@@ -250,7 +250,7 @@ def test_combat_popup_and_helpers(monkeypatch):
     game.player_char.magic_effects = {"Mana Shield": SimpleNamespace(active=False)}
     game.player_char.equipment = {
         "OffHand": SimpleNamespace(subtyp="Shield"),
-        "Weapon": SimpleNamespace(handed=2),
+        "Weapon": SimpleNamespace(handed=2, subtyp="Polearm"),
     }
     game.player_char.spellbook = {
         "Spells": {
@@ -261,6 +261,8 @@ def test_combat_popup_and_helpers(monkeypatch):
             "Slash": SimpleNamespace(cost=2, passive=False, name="Slash", weapon=False),
             "Smoke Screen": SimpleNamespace(cost=1, passive=False, name="Smoke Screen", weapon=False),
             "Lockpick": SimpleNamespace(cost=0, passive=False, name="Lockpick", weapon=False),
+            "Reaver's Mark": SimpleNamespace(cost=4, passive=False, name="Reaver's Mark", weapon=True),
+            "Brace": SimpleNamespace(cost=4, passive=False, name="Brace", weapon=True),
         },
     }
     tile = SimpleNamespace(enemy=SimpleNamespace(incapacitated=lambda: True))
@@ -270,6 +272,8 @@ def test_combat_popup_and_helpers(monkeypatch):
     assert combat_popup.options_list == ["Fire  3", "Go Back"]
     combat_popup.update_options("Use Skill", tile=tile)
     assert "Slash  2" in combat_popup.options_list
+    assert "Brace  4" in combat_popup.options_list
+    assert "Reaver's Mark  4" not in combat_popup.options_list
 
     game.player_char.world_dict = {(0, 0, 1): SimpleNamespace(enemy=None, intro_text=lambda game: "Room")}
     game.player_char.minimap = lambda: "Map"
