@@ -11,6 +11,7 @@ remain the prompts; the evidence ledger is the running decision record.
 
 ### Roadmap Bugfix Pass
 - [ ] Use Smoke Screen from an invalid/non-fleeing state, then enter another battle.
+  - Expected: Player Smoke Screen requires and consumes one `Smoke Bomb`; enemies can still use their innate Smoke Screen behavior.
   - Expected: No stale smoke fade, hidden enemy, or flee transition carries over.
 - [x] Open the Character screen in Town, a normal dungeon, Realm of Cambion, and Liminal Gap.
   - Expected: Location text is fully readable and does not collide with nearby details.
@@ -145,12 +146,18 @@ remain the prompts; the evidence ledger is the running decision record.
 
 ### Weapon Discipline And School Affinity
 - [ ] Promote a Warrior to Weapon Master.
-  - Expected: The pygame promotion preview shows `Warrior -> Weapon Master`, highlights promotion stat deltas, previews the post-promotion Character Menu tabs, and visually emphasizes the new `Weapon Discipline` tab.
+  - Expected: The pygame promotion preview shows `Warrior -> Weapon Master`
+    and highlights promotion stat deltas without embedding a Character Menu
+    tab preview.
   - Expected: Weapon Master promotion stat deltas include `+2 STR`, `+1 INT`, and `+2 DEX`.
-  - Expected: Confirming promotion applies the class change and stat bonuses, increases current HP/MP by the same amount as max HP/MP bonuses, and shows one concise congratulations popup without extra tutorial popups.
+  - Expected: Confirming promotion applies the class change and stat bonuses,
+    increases current HP/MP by the same amount as max HP/MP bonuses, shows one
+    concise congratulations popup, then shows a separate `Weapon Discipline`
+    Character Menu help popup.
 - [ ] Promote a Warrior to Paladin, Lancer, and Sentinel.
-  - Expected: The pygame promotion preview shows the matching post-promotion
-    class mechanic tab: `Oath Conviction` for Paladin, `Aerial Tempo` for
+  - Expected: The pygame promotion preview does not embed Character Menu tab
+    help; after confirmation, a separate help popup names the matching
+    post-promotion tab: `Oath Conviction` for Paladin, `Aerial Tempo` for
     Lancer, and `Resolve` for Sentinel.
   - Expected: Paladin's final vow confirmation repeats only the vow question;
     detailed vow descriptions stay in the selection popup.
@@ -168,24 +175,27 @@ remain the prompts; the evidence ledger is the running decision record.
     while adding a `Resolve Surges` section with locked/unlocked full-bar
     payoffs.
 - [ ] Promote a Pathfinder to Diviner, Shaman, and Ranger.
-  - Expected: The pygame promotion preview shows the matching post-promotion
+  - Expected: Post-confirmation help popups name the matching post-promotion
     class mechanic tab: `Runes` for Diviner, `Totems` for Shaman, and
     `Companion` for Ranger.
 - [ ] Promote through the Mage tree in pygame.
-  - Expected: The promotion preview shows the matching post-promotion class
-    mechanic tab: `School Affinity` for Sorcerer/Wizard, `Familiar` for
+  - Expected: Post-confirmation help popups show the matching post-promotion
+    class mechanic tab: `School Affinity` for Sorcerer/Wizard, `Familiar` for
     Warlock, `Umbral Debt` for Shadowcaster, `Contracts` for Demonologist,
     `Blade Charge` for Spellblade, `Arcane Tempo` for Knight Enchanter, and
     `Summons` for Summoner/Grand Summoner.
 - [ ] Promote through the Footpad tree in pygame.
-  - Expected: The promotion preview shows the matching post-promotion class
-    mechanic tab: `Fortune` for Thief/Rogue, `Case Journal` for
-    Inquisitor/Seeker, `Death Mark` for Assassin/Ninja, and `Stolen Charge`
-    for Spell Stealer/Arcane Trickster.
+  - Expected: Post-confirmation help popups show the matching post-promotion
+    class mechanic tab: `Fortune` for Thief/Rogue, `Case Journal` for
+    Inquisitor/Seeker, and `Death Mark` for Assassin/Ninja.
+  - Expected: Spell Stealer/Arcane Trickster receive no Character Menu tab
+    help popup because Stolen Charge is combat/HUD status only; class-mechanic
+    guidance belongs in Thieves Guild backroom content after membership.
 - [ ] Promote through the Healer tree in pygame.
-  - Expected: The promotion preview shows the matching post-promotion class
-    mechanic tab: `Devotion` for Cleric/Templar, `Ki` for Monk/Master Monk,
-    `Prayer` for Priest/Archbishop, and `Crescendo` for Bard/Troubadour.
+  - Expected: Post-confirmation help popups show the matching post-promotion
+    class mechanic tab: `Devotion` for Cleric/Templar, `Ki` for
+    Monk/Master Monk, `Prayer` for Priest/Archbishop, and `Crescendo` for
+    Bard/Troubadour.
 - [ ] Fight as a Weapon Master with each supported weapon type equipped.
   - Expected: Successful main-hand/offhand hits grant Weapon Discipline XP to the matching weapon type.
   - Expected: Combat logs show per-hit Weapon Discipline XP without parenthesized progress, and the victory completion text shows the bonus Weapon Discipline XP for weapon types used in the fight.
@@ -276,13 +286,27 @@ remain the prompts; the evidence ledger is the running decision record.
   - Expected: Current aspect, active benefits, and selection state are readable without relying on combat-log memory.
 - [ ] Try to find all four elemental communion locations without reading the map data.
   - Expected: The locations are discoverable enough for exploration without becoming quest-log objectives.
-- [ ] Visit the Old Warehouse as a Rogue, Seeker, Ninja, or Arcane Trickster with a dormant Class Ring equipped or stored.
-  - Expected: The Old Warehouse guards offer the matching job: `Loaded Game`, `Cartographer's Proof`, `No-Trace Contract`, or `Impossible Theft`.
+- [ ] Visit the Thieves Guild backroom as a member Rogue, Seeker, Ninja, or Arcane Trickster with a dormant Class Ring equipped or stored.
+  - Expected: The Gray Broker offers the matching job: `Loaded Game`, `Cartographer's Proof`, `No-Trace Contract`, or `Impossible Theft`.
   - Expected: Completing the job awakens the ring and applies the expected equipped mod.
-- [ ] Visit the Old Warehouse for a Footpad-branch job with the Class Ring only in inventory.
-  - Expected: The guards still deny access until the ring is equipped or stored.
-- [ ] Unlock Warp Point while a Footpad-branch Class Ring job is available.
-  - Expected: The town menu still includes both `Warp Point` and `Old Warehouse`.
+- [ ] Visit the Thieves Guild backroom for a Footpad-branch job with the Class Ring only in inventory.
+  - Expected: The job is available because stored dormant rings are visible to the guild.
+- [ ] Visit `Shops` before level 10.
+  - Expected: `Thieves Guild` is listed with the other shop destinations, but Mara Vale's counter is closed until level 10.
+- [ ] Visit `Shops -> Thieves Guild` as a level 10+ non-Footpad-line character and as a base Footpad.
+  - Expected: The public shop is available, but Mara says only: "The wares are for all but the backroom is for a select few."
+  - Expected: Keys, Blank Scrolls, Lockpick Kits, Smoke Bombs, and future tool items appear together under one tools tab; spell scrolls and the Oculus do not appear in the Thieves Guild shop.
+- [ ] Visit `Shops -> Magic Shop`.
+  - Expected: Seraphine Voss appears as the shopkeeper; design notes frame her as a failed academy lecturer turned practical hedge-magus.
+  - Expected: Spell scrolls, staves, tomes, rods, musical instruments, and the expensive Oculus appear there; Blank Scrolls do not appear in the spell-scroll tab.
+- [ ] Visit `Shops -> Alchemist`.
+  - Expected: Health potions, mana potions, and status items are separated into their own tabs.
+- [ ] Start Thieves Guild initiation as each promoted Footpad-line branch.
+  - Expected: The Gray Broker assigns the correct branch trial and gives an allusive level 2 / north-approach clue without exact coordinates; the fake wall at `15,1,2` and level 2 trial boss at `15,2,2` stay inert and Oculus-hidden before the promoted Footpad-line candidate talks to the Gray Broker.
+  - Expected: Winning the matching upgraded Bandit-style boss grants the `Thieves Guild Signet`, which can be turned in for membership.
+  - Expected: Members receive 2 Keys, 2 Blank Scrolls, a 25% guild-shop discount, class-specific guidance, and Spell Stealer guidance explains stolen-scroll casting from the combat `Spells` picker.
+- [ ] Unlock Warp Point after the Thieves Guild has opened.
+  - Expected: The town menu still includes `Warp Point` and `Shops`; the Thieves Guild remains inside `Shops`, and `Old Warehouse` no longer remains solely for guild or Footpad Class Ring access.
 
 ### Combat Architecture And Balance
 - [x] Dry-run the remaining-improvement balance baseline wrapper.
@@ -484,13 +508,15 @@ remain the prompts; the evidence ledger is the running decision record.
   - Expected: On success, one `Blank Scroll` is consumed and a usable `Stolen <Spell> Scroll` appears in inventory.
   - Expected: Class Ring trial enemies cannot have spells stolen.
 - [ ] Use a stolen-spell scroll in combat.
-  - Expected: It follows normal scroll target rules, charges decrement, and the saved stolen spell identity persists after save/load.
+  - Expected: It appears in the `Spells` picker with scroll labeling, uses the
+    saved stolen spell identity, decrements charges, and persists after
+    save/load.
 - [ ] Build `Stolen Charge` as Spell Stealer and Arcane Trickster.
   - Expected: Successful `Steal Spell`, successful `Steal Spell 2`, and casting an inscribed stolen-spell scroll each grant 1 Charge, capped at 2 for Spell Stealer and 3 for Arcane Trickster.
   - Expected: Item theft from `Steal As Well` does not independently grant Charge.
 - [ ] Spend `Stolen Charge` with representative spell, weapon, and weapon-tagged trickster actions.
-  - Expected: The next eligible damaging spell, standard weapon hit, or weapon-tagged trickster skill spends all Charge and applies a modest arcane payoff on success.
-  - Expected: Misses or fully negated actions consume Charge but do not apply the payoff.
+  - Expected: The next successful eligible damaging spell, standard weapon hit, or weapon-tagged trickster skill spends all Charge and adds bonus arcane damage equal to 20% of base damage per stored Charge, minimum 5 per stored Charge.
+  - Expected: Misses or fully negated actions do not apply the payoff.
 - [ ] End combat, flee, save/load, or change class with `Stolen Charge` active.
   - Expected: Charge clears because it is combat-only and has no persistent save field.
 - [ ] Complete `Impossible Theft`, then successfully steal a spell as Arcane Trickster with the awakened ring equipped.
@@ -585,7 +611,7 @@ remain the prompts; the evidence ledger is the running decision record.
 - [x] Face a blocking center wall while one side corridor or side opening remains visible.
   - Expected: The center wall remains the dominant forward face, while the visible side opening still shows its side wall, door, corridor face, or floor/ceiling lane cue.
 - [x] Face an unvisited FakeWall/Fake Path from the dungeon view.
-  - Expected: The fake path is not visually revealed and renders like an ordinary wall until discovered.
+  - Expected: The fake path is not visually revealed and renders like an ordinary wall until discovered; `Keen Eye` or a carried `Oculus` can surface the suspicious-wall text nearby.
 - [x] Step through or revisit a discovered FakeWall/Fake Path.
   - Expected: The revealed fake path behaves like an open passage and shows a translucent normal wall panel rather than a tiny wall sprite or unrelated marker.
 - [x] Revisit a room after moving through side corridors and backtracking.
@@ -812,6 +838,7 @@ remain the prompts; the evidence ledger is the running decision record.
 - [ ] Check fixed and special encounters such as Green Slime, Mimic, Red Dragon, Funhouse enemies, and the Realm of Cambion terminal alarm.
   - Expected: Coarse locations are readable, such as `Early Dungeon`, `Chests`, `Funhouse`, boss-room labels, or realm labels, without exact coordinates.
   - Expected: Quest-only inactive material drops are not shown as normal possible drops.
+  - Expected: Ordinary level 5+ chests can become Mimics at a noticeable bounded rate; Funhouse Mimic Chests remain guaranteed Mimics.
 
 ### Shops
 - [x] Buy from blacksmith categories that now use item-list tabs.
@@ -971,8 +998,9 @@ remain the prompts; the evidence ledger is the running decision record.
   - Expected: Scrolls request cast audio, while potions and elixirs request the recovery cue.
 - [ ] Accept the underground spring interaction prompt.
   - Expected: The staged `underground_spring` SFX is requested once the prompt is accepted.
-- [ ] Unlock/open a dungeon door through Master Key, Master Lockpick, Cryptic Key, or Old Key flow.
+- [ ] Unlock/open a dungeon door through Master Key, Master Lockpick plus Lockpick Kit, Cryptic Key, or Old Key flow.
   - Expected: The staged `open_door` SFX is requested only when the door actually opens.
+  - Expected: Lockpick Kits lose durability and can break after successful picks; Master Lockpick lowers the break chance.
 - [ ] Export a battle log JSON file during a debug run or test.
   - Expected: The file is created with metadata, events, and summary sections.
 - [ ] Generate a compact battle-log summary during a debug/tooling check.
@@ -1039,11 +1067,11 @@ remain the prompts; the evidence ledger is the running decision record.
 
 ### NPC Story Artwork
 - [ ] Review the generated NPC portrait sheet after the story portrait batch.
-  - Expected: `src/ui_pygame/assets/npc_art/npc_art_review_sheet.png` shows recurring town NPCs, Old Warehouse Guard, Warp Point Scientist, Acolyte, Reflection, and Vesperion.
+  - Expected: `src/ui_pygame/assets/npc_art/npc_art_review_sheet.png` shows recurring town NPCs, Seraphine Voss, Mara Vale, The Gray Broker, Old Warehouse Guard, Warp Point Scientist, Acolyte, Reflection, and Vesperion.
   - Expected: Portraits have transparent edges, no rectangular backgrounds, no labels or watermarks, consistent dark fantasy painterly style, and readable silhouettes.
-- [ ] Inspect Old Warehouse Guard and Warp Point Scientist portrait aliases.
+- [ ] Inspect Seraphine Voss, Mara Vale, The Gray Broker, Old Warehouse Guard, and Warp Point Scientist portrait aliases.
   - Expected: Their assets appear in the NPC review sheet and resolve through `NpcArtManager` without appearing in unrelated shop, combat, bounty, or town hover panels.
-- [ ] Visit the Old Warehouse before the Footpad-branch Class Ring rite is available.
+- [ ] Visit the Old Warehouse after the Thieves Guild has unlocked.
   - Expected: The off-limits warning uses the split dialogue popup with the Old Warehouse Guard portrait instead of a plain text-only popup.
 - [ ] Review `src/ui_pygame/assets/npc_art/npc_art_review_sheet.png` after the V3 diversity replacements.
   - Expected: Alchemist, Barkeep, Jeweler, Priest, Soldier, Waitress, and Warp Point Scientist use the approved replacement portraits.

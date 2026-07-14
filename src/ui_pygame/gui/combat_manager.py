@@ -15,7 +15,7 @@ import pygame
 
 from src.core import enemies, main_story
 from src.core.classes import astromancer, demonologist, grandmaster, promotion_kits
-from src.core.combat.battle_engine import BattleEngine
+from src.core.combat.battle_engine import BattleEngine, STOLEN_SCROLL_CHOICE_PREFIX
 from src.core.character import Character
 from src.core.combat.battle_logger import BattleLogger
 from src.core.player import LIMINAL_GAP_ENTRY_FACING, LIMINAL_GAP_ENTRY_POS, Player
@@ -548,6 +548,7 @@ class GUICombatManager:
     @staticmethod
     def _fit_text_to_width(font: pygame.font.Font, text: str, max_width: int) -> str:
         """Trim text to the rendered width available for compact combat overlays."""
+        text = " ".join(str(text or "").split())
         if max_width <= 0 or font.size(text)[0] <= max_width:
             return text
 
@@ -1620,10 +1621,9 @@ class GUICombatManager:
     
     def _select_item(self, player_char, enemy, *, support_only=False):
         """Show item selection menu and return selected item."""
-        usable_types = ['Health', 'Mana', 'Elixir', 'Status'] if support_only else ['Health', 'Mana', 'Elixir', 'Status', 'Scroll']
         items = []
         for item_name, item_list in player_char.inventory.items():
-            if item_list and item_list[0].subtyp in usable_types:
+            if item_list and self._combat_item_is_usable(item_list[0], support_only=support_only):
                 items.append((item_name, item_list[0], len(item_list)))
         
         if not items:
@@ -1680,16 +1680,45 @@ class GUICombatManager:
                     )
                     if confirmed:
                         return items[selected][1]
+
+    @staticmethod
+    def _combat_item_is_usable(item, *, support_only=False) -> bool:
+        """Return whether an inventory item belongs in the combat item picker."""
+        subtyp = getattr(item, "subtyp", "")
+        if subtyp in {"Health", "Mana", "Elixir", "Status"}:
+            return True
+        if support_only:
+            return False
+        if subtyp == "Scroll":
+            return hasattr(item, "spell")
+        return False
     
     def _select_spell(self, player_char, enemy):
         """Show spell selection menu and return selected spell name."""
-        spells = [
-            name for name, spell in player_char.spellbook['Spells'].items()
+        from src.core import items as core_items
+
+        spell_entries = [
+            (
+                name,
+                f"{name} (MP: {getattr(spell, 'cost', 0)})",
+                getattr(spell, "description", ""),
+            )
+            for name, spell in player_char.spellbook['Spells'].items()
             if not getattr(spell, 'passive', False)
             and (getattr(spell, "subtyp", None) != "Movement" or name == "Volitation")
         ]
+        scroll_entries = [
+            (
+                f"{STOLEN_SCROLL_CHOICE_PREFIX}{item_name}",
+                f"{item_name} (Scroll)",
+                getattr(item_list[0], "description", ""),
+            )
+            for item_name, item_list in player_char.inventory.items()
+            if item_list and isinstance(item_list[0], core_items.InscribedSpellScroll)
+        ]
+        entries = spell_entries + scroll_entries
         
-        if not spells:
+        if not entries:
             self.combat_view.add_combat_message("No spells learned!")
             self._pause_with_events(500)
             return None
@@ -1700,15 +1729,8 @@ class GUICombatManager:
         frame_player = self._selection_frame_player(player_char)
         while True:
             self._render_combat_frame(frame_player, enemy, [], -1)
-            spell_options = []
-            for spell_name in spells:
-                spell = player_char.spellbook['Spells'][spell_name]
-                cost = spell.cost
-                spell_options.append(f"{spell_name} (MP: {cost})")
-            spell_descriptions = [
-                getattr(player_char.spellbook['Spells'][spell_name], "description", "")
-                for spell_name in spells
-            ]
+            spell_options = [label for _choice, label, _description in entries]
+            spell_descriptions = [description for _choice, _label, description in entries]
             
             self._render_described_selection_menu(
                 "Select Spell", spell_options, selected, scroll_offset, spell_descriptions
@@ -1727,15 +1749,15 @@ class GUICombatManager:
                     if event.key in [pygame.K_ESCAPE, pygame.K_BACKSPACE]:
                         return None  # Cancel
                     elif event.key in [pygame.K_UP, pygame.K_w]:
-                        selected = (selected - 1) % len(spells)
+                        selected = (selected - 1) % len(entries)
                     elif event.key in [pygame.K_DOWN, pygame.K_s]:
-                        selected = (selected + 1) % len(spells)
+                        selected = (selected + 1) % len(entries)
                     elif event.key == pygame.K_PAGEUP:
                         selected = max(0, selected - 10)
                     elif event.key == pygame.K_PAGEDOWN:
-                        selected = min(len(spells) - 1, selected + 10)
+                        selected = min(len(entries) - 1, selected + 10)
                     elif event.key in [pygame.K_RETURN, pygame.K_SPACE]:
-                        return spells[selected]
+                        return entries[selected][0]
                     scroll_offset = self._scroll_offset_for_selection(selected, scroll_offset)
                 elif event.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN):
                     selected, scroll_offset, confirmed = self._selection_menu_mouse_update(
@@ -1746,7 +1768,7 @@ class GUICombatManager:
                         input_armed,
                     )
                     if confirmed:
-                        return spells[selected]
+                        return entries[selected][0]
     
     def _select_skill(self, player_char, enemy, *, allowed_names=None):
         """Show skill selection menu and return selected skill name."""

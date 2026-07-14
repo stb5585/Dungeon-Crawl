@@ -510,7 +510,7 @@ def _consume_weapon_payoffs(actor: Any, target: Any, amount: int, damage_type: s
 
     stolen = int(state.get("stolen_charge", 0) or 0)
     if cls in {"Spell Stealer", "Arcane Trickster"} and stolen:
-        burst = max(1, int(amount * (0.08 * stolen)))
+        burst = max(5 * stolen, int(amount * (0.20 * stolen)))
         extra += burst
         state["stolen_charge"] = 0
         lines.append(f"Stolen Charge releases for {burst} arcane damage.\n")

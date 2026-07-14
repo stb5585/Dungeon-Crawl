@@ -479,7 +479,7 @@ additional visual presentation, and playtest follow-up.
   risky actions, Misfortune severity payoff after clean risky successes, and
   `Cheat Death`; when awakened and equipped, `Loaded Dice` preserves 1 point of
   a spent meter once per combat after a clean Fortune or Misfortune payoff.
-  - Status: playable at the Old Warehouse when a dormant Rogue Class Ring is
+  - Status: playable in the Thieves Guild backroom when a dormant Rogue Class Ring is
     equipped or stored.
 - `Seeker`: `Cartographer's Proof` awakens `Hidden Cache`, one depth-weighted
   cache per sufficiently mapped dungeon level. The promotion-kit V1 pass adds
@@ -487,7 +487,7 @@ additional visual presentation, and playtest follow-up.
   progress, combat-only `Revelation`, and Seeker `Wayfinding`; when awakened
   and equipped, `Hidden Cache` keeps its cache identity while adding small
   insight smoothing after clean `Inspect` or telegraph reads.
-  - Status: playable at the Old Warehouse when a dormant Seeker Class Ring is
+  - Status: playable in the Thieves Guild backroom when a dormant Seeker Class Ring is
     equipped or stored.
 - `Ninja`: `No-Trace Contract` awakens `No-Trace Opener`, preserving the
   legacy internal `First Strike Plus` hook while doubling the first standard
@@ -495,7 +495,7 @@ additional visual presentation, and playtest follow-up.
   combat-only `Death Mark`; when awakened and equipped, `No-Trace Opener` can
   apply 1 opener mark with initiative and preserve 1 spent mark once per combat
   after a clean marked payoff.
-  - Status: playable at the Old Warehouse when a dormant Ninja Class Ring is
+  - Status: playable in the Thieves Guild backroom when a dormant Ninja Class Ring is
     equipped or stored.
 - `Arcane Trickster`: `Impossible Theft` awakens `Arcane Larceny`, preserving
   the legacy internal `Spell Steal Buff` hook while granting +20% Magic damage
@@ -504,12 +504,12 @@ additional visual presentation, and playtest follow-up.
   `Arcane Larceny` preserves 1 Charge once per combat after a clean charged
   payoff.
   - `Steal Spell`: available to `Spell Stealer` and `Arcane Trickster`. It
-    requires a concrete `Blank Scroll` from the Alchemist/scroll loot table.
+    requires a concrete `Blank Scroll` from the Thieves Guild shop/scroll loot table.
     On success, the blank is consumed and replaced with a usable stolen-spell
     scroll that preserves the stolen spell identity and normal scroll targeting
     rules. Class Ring trial enemies are immune.
-  - Status: playable at the Old Warehouse when a dormant Arcane Trickster Class
-    Ring is equipped or stored.
+  - Status: playable in the Thieves Guild backroom when a dormant Arcane Trickster
+    Class Ring is equipped or stored.
 
 ### Healer And Pathfinder Branches
 

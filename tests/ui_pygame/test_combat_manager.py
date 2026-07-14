@@ -8,7 +8,7 @@ from types import SimpleNamespace
 import pygame
 import pytest
 
-from src.core import abilities, enemies, main_story
+from src.core import abilities, enemies, items, main_story
 from src.core.classes import class_rings
 from src.ui_pygame.gui import combat_manager
 
@@ -1068,7 +1068,8 @@ def test_select_item_spell_and_skill_cover_empty_cancel_and_selection_paths(monk
     player.inventory = {
         "Potion": [SimpleNamespace(name="Potion", subtyp="Health") for _ in range(2)],
         "Bomb": [SimpleNamespace(name="Bomb", subtyp="Throwing")],
-        "Scroll": [SimpleNamespace(name="Scroll of Ice", subtyp="Scroll")],
+        "Blank Scroll": [SimpleNamespace(name="Blank Scroll", subtyp="Scroll")],
+        "Scroll": [SimpleNamespace(name="Scroll of Ice", subtyp="Scroll", spell=SimpleNamespace(name="Ice"))],
     }
     pressed_states = iter([[1], [], [], []])
     monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: next(pressed_states, []))
@@ -1081,6 +1082,7 @@ def test_select_item_spell_and_skill_cover_empty_cancel_and_selection_paths(monk
     selected_item = manager._select_item(player, enemy)
     assert selected_item.name == "Scroll of Ice"
     assert menu_calls[-2][1] == ("Potion (2)", "Scroll (1)")
+    assert "Blank Scroll (1)" not in menu_calls[-2][1]
     assert menu_calls[-1][2] == 1
 
     monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
@@ -1117,6 +1119,27 @@ def test_select_item_spell_and_skill_cover_empty_cancel_and_selection_paths(monk
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, []))
     assert manager._select_spell(player, enemy) == "Ice"
     assert any(call[0] == "Select Spell" for call in menu_calls)
+
+    stolen_scroll = items.InscribedSpellScroll("Firebolt", charges=2)
+    player.inventory = {stolen_scroll.name: [stolen_scroll]}
+    event_batches = iter([
+        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_PAGEDOWN)],
+        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+    ])
+    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, []))
+    assert manager._select_spell(player, enemy) == f"{combat_manager.STOLEN_SCROLL_CHOICE_PREFIX}{stolen_scroll.name}"
+    assert menu_calls[-1][1] == (
+        "Fireball (MP: 4)",
+        "Ice (MP: 2)",
+        f"{stolen_scroll.name} (Scroll)",
+    )
+
+    click_pos = manager._selection_menu_option_rects(menu_calls[-1][1], 0)[2][1].center
+    event_batches = iter([
+        [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=click_pos)],
+    ])
+    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, []))
+    assert manager._select_spell(player, enemy) == f"{combat_manager.STOLEN_SCROLL_CHOICE_PREFIX}{stolen_scroll.name}"
 
     player.spellbook["Skills"] = {}
     assert manager._select_skill(player, enemy) is None

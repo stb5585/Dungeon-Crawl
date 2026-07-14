@@ -7,8 +7,6 @@ import textwrap
 
 import pygame
 
-from src.core.classes import promotion_mechanic_guidance, promotion_mechanic_tab_label
-
 from .confirmation_popup import ConfirmationPopup
 from .mouse_helpers import hit_index, is_left_click, mouse_position
 from .town_base import TownScreenBase
@@ -77,46 +75,6 @@ class PromotionScreen(TownScreenBase):
             self.screen.blit(text, (x, y))
             y += line_height
         return y
-
-    def _draw_character_tab_preview(self, rect, cls_name, y):
-        header = self.normal_font.render("Character Menu Preview", True, self.colors.GOLD)
-        self.screen.blit(header, (rect.left + 18, y))
-        y += header.get_height() + 8
-
-        mechanic_tab = promotion_mechanic_tab_label(cls_name)
-        tabs = ["Character"]
-        if mechanic_tab:
-            tabs.append(mechanic_tab)
-        tabs.append("Equipment")
-
-        gap = 8
-        tab_width = max(110, min(190, (rect.width - 36 - gap * (len(tabs) - 1)) // len(tabs)))
-        tab_height = 34
-        x = rect.left + 18
-        for tab in tabs:
-            tab_rect = pygame.Rect(x, y, tab_width, tab_height)
-            highlighted = bool(mechanic_tab and tab == mechanic_tab)
-            pygame.draw.rect(self.screen, self.colors.HIGHLIGHT_BG if highlighted else (14, 14, 19), tab_rect)
-            pygame.draw.rect(self.screen, self.colors.GOLD if highlighted else self.colors.BORDER_COLOR, tab_rect, 2 if highlighted else 1)
-            color = self.colors.GOLD if highlighted else self.colors.WHITE
-            label = self.small_font.render(tab, True, color)
-            self.screen.blit(label, label.get_rect(center=tab_rect.center))
-            x += tab_width + gap
-        y += tab_height + 10
-
-        guidance = promotion_mechanic_guidance(cls_name).strip()
-        if not guidance:
-            guidance = "Open the Character Menu after promotion to review your class and equipment."
-        guidance = guidance.replace("Character Menu tab available: ", "New tab: ")
-        guide_lines = self._wrap_lines(guidance, 78)
-        return self._draw_wrapped_lines(
-            guide_lines[:3],
-            self.small_font,
-            self.colors.WHITE if mechanic_tab else self.colors.GRAY,
-            rect.left + 28,
-            y,
-            self.small_font.get_height() + 3,
-        )
 
     def _draw_promotion_stat_grid(self, rect, cls_instance, y):
         header = self.normal_font.render("Promotion Impact", True, self.colors.GOLD)
@@ -237,9 +195,6 @@ class PromotionScreen(TownScreenBase):
 
         # Reserve a fixed block for descriptions so lower sections stay aligned
         y = desc_start_y + (line_height * 4) + 10
-
-        y = self._draw_character_tab_preview(left_rect, cls_instance.name, y)
-        y += 14
 
         y = self._draw_promotion_stat_grid(left_rect, cls_instance, y)
         y += 10

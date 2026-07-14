@@ -13,6 +13,8 @@ from src.core.classes import (
     classes_dict,
     apply_promotion_ability_rules,
     grant_summoner_initial_summon,
+    promotion_mechanic_guidance,
+    promotion_mechanic_tab_label,
     class_rings,
     demonologist,
     paladin,
@@ -735,9 +737,24 @@ class ChurchManager(TownScreenBase):
 
             popup = ConfirmationPopup(self.presenter, f"Congratulations! You are now a {chosen_name}.", show_buttons=False)
             popup.show(**self.popup_show_kwargs())
+            self._show_promotion_mechanic_help(chosen_name)
         except Exception as e:
             popup = ConfirmationPopup(self.presenter, f"Promotion failed: {e}", show_buttons=False)
             popup.show(**self.popup_show_kwargs())
+
+    def _show_promotion_mechanic_help(self, class_name: str) -> None:
+        """Show Character Menu tab guidance after a promotion is actually chosen."""
+        mechanic_tab = promotion_mechanic_tab_label(class_name)
+        if not mechanic_tab:
+            return
+        guidance = promotion_mechanic_guidance(class_name).strip()
+        if guidance:
+            guidance = guidance.replace("Character Menu tab available: ", "")
+        else:
+            guidance = f"Open the Character Menu to review {mechanic_tab}."
+        message = f"New Character Menu tab: {mechanic_tab}\n\n{guidance}"
+        popup = ConfirmationPopup(self.presenter, message, show_buttons=False)
+        popup.show(**self.popup_show_kwargs())
 
     def visit_hidden_crypt(self):
         """Manage Demonologist contracts and Class Ring awakening."""

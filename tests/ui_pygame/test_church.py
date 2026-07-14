@@ -274,12 +274,31 @@ def test_handle_promotion_success_and_cancel(monkeypatch):
     assert "Promotion rules updated." not in FakePopup.messages
     assert not any("Character Menu tab available" in message for message in FakePopup.messages)
     assert "Congratulations! You are now a Weapon Master." in FakePopup.messages
+    assert any("New Character Menu tab: Weapon Discipline" in message for message in FakePopup.messages)
 
     player.cls = BaseClass()
     player.level.level = 30
     player.level.pro_level = 1
     manager.handle_promotion()
     assert "Promotion cancelled." in FakePopup.messages[-1]
+
+
+def test_promotion_mechanic_help_only_shows_for_extra_tabs(monkeypatch):
+    FakePopup.messages = []
+    FakePopup.show_kwargs = []
+    player = _make_player()
+    presenter = _make_presenter()
+    monkeypatch.setattr(church.ChurchManager, "_load_background", lambda self: setattr(self, "background", None))
+    monkeypatch.setattr("src.ui_pygame.gui.church.ConfirmationPopup", FakePopup)
+    manager = church.ChurchManager(presenter, player)
+
+    manager._show_promotion_mechanic_help("Weapon Master")
+    assert "New Character Menu tab: Weapon Discipline" in FakePopup.messages[-1]
+    assert "Intelligence helps" in FakePopup.messages[-1]
+
+    message_count = len(FakePopup.messages)
+    manager._show_promotion_mechanic_help("Spell Stealer")
+    assert len(FakePopup.messages) == message_count
 
 
 def test_handle_promotion_keeps_legal_gear_removes_illegal_and_grants_no_defaults(monkeypatch):

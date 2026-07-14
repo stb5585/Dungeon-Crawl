@@ -820,8 +820,8 @@ def test_modern_character_class_mechanic_tabs_include_footpad_branches():
         ("Seeker", ["Character", "Case Journal", "Equipment"]),
         ("Assassin", ["Character", "Death Mark", "Equipment"]),
         ("Ninja", ["Character", "Death Mark", "Equipment"]),
-        ("Spell Stealer", ["Character", "Stolen Charge", "Equipment"]),
-        ("Arcane Trickster", ["Character", "Stolen Charge", "Equipment"]),
+        ("Spell Stealer", ["Character", "Equipment"]),
+        ("Arcane Trickster", ["Character", "Equipment"]),
     ):
         player.cls = SimpleNamespace(name=class_name)
         player.summons = {}

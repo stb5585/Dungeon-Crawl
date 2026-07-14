@@ -4,7 +4,7 @@
 import random
 from textwrap import wrap
 
-from . import companions, enemies, items, town
+from . import companions, enemies, items, thieves_guild, town
 from .classes import dragoon
 from .player import DIRECTIONS, REALM_OF_CAMBION_LEVEL, actions_dict
 
@@ -16,12 +16,41 @@ USE_ENHANCED_COMBAT = True
 def check_fake_wall(tile, game):
     for dx, dy in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
         try:
-            if "FakeWall" in str(game.player_char.world_dict[(tile.x + dx, tile.y + dy, tile.z)]) and \
-                not game.player_char.world_dict[(tile.x + dx, tile.y + dy, tile.z)].visited:
+            wall = game.player_char.world_dict[(tile.x + dx, tile.y + dy, tile.z)]
+            detectable = getattr(wall, "detectable_for", None)
+            if callable(detectable) and not detectable(game.player_char):
+                continue
+            if "FakeWall" in str(wall) and not wall.visited:
                 return "Something seems off but you aren't quite sure what...\n"
         except KeyError:
             continue
     return ""
+
+
+def ordinary_chest_mimic_chance(player_char, *, locked: int = 0, plus: int = 0) -> float:
+    """Return the non-funhouse chest mimic chance for the current player."""
+    level_fn = getattr(player_char, "player_level", None)
+    try:
+        player_level = int(level_fn() if callable(level_fn) else getattr(getattr(player_char, "level", None), "level", 1))
+    except (TypeError, ValueError):
+        player_level = 1
+    if player_level < 5:
+        return 0.0
+    luck_mod = 0
+    try:
+        luck_mod = int(player_char.check_mod("luck", luck_factor=3))
+    except Exception:
+        luck_mod = 0
+    chance = 0.12 + (0.05 * int(bool(locked))) + (0.03 * int(bool(plus))) - min(0.07, max(0, luck_mod) * 0.01)
+    return max(0.05, min(0.25, chance))
+
+
+def ordinary_chest_spawns_mimic(player_char, *, locked: int = 0, plus: int = 0, roll: float | None = None) -> bool:
+    """Return whether a non-funhouse chest becomes a mimic."""
+    chance = ordinary_chest_mimic_chance(player_char, locked=locked, plus=plus)
+    if chance <= 0:
+        return False
+    return (random.random() if roll is None else float(roll)) < chance
 
 
 CHALICE_QUEST_NAME = "The Holy Grail of Quests"
@@ -554,7 +583,7 @@ class MapTile:
 
     def intro_text(self, game):
         intro_str = ""
-        if 'Keen Eye' in game.player_char.spellbook['Skills']:
+        if items.can_detect_fake_walls(game.player_char):
             intro_str += check_fake_wall(self, game)
         return intro_str
 
@@ -728,6 +757,39 @@ class FakeWall(Wall):
 
     def available_actions(self, player_char):
         return self.adjacent_moves(player_char, [actions_dict['CharacterMenu']])
+
+
+class ThievesGuildTrialFakeWall(FakeWall):
+    """False wall that only opens once the Thieves Guild initiation is active."""
+
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+        self.enter = False
+
+    def detectable_for(self, player_char):
+        state = thieves_guild.ensure_state(player_char)
+        return bool(state.get("trial_started") and state.get("trial_branch"))
+
+    def sync_for_player(self, player_char):
+        self.enter = self.detectable_for(player_char)
+
+    def available_actions(self, player_char):
+        self.sync_for_player(player_char)
+        if not self.enter:
+            return []
+        return super().available_actions(player_char)
+
+    def intro_text(self, game):
+        self.sync_for_player(game.player_char)
+        if not self.enter:
+            return ""
+        return super().intro_text(game)
+
+    def modify_player(self, game):
+        self.sync_for_player(game.player_char)
+        if not self.enter:
+            return
+        super().modify_player(game)
 
 
 class CavePath(MapTile):
@@ -1475,6 +1537,57 @@ class BossRoom(SpecialTile):
                 pass
 
 
+class ThievesGuildTrialBossRoom(BossRoom):
+    """Hidden initiation fight for promoted Footpad-line guild candidates."""
+
+    BOSS_BY_BRANCH = {
+        "cutpurse": enemies.GuildCutpurseBoss,
+        "inquest": enemies.GuildInquestBoss,
+        "contract": enemies.GuildContractBoss,
+        "arcane": enemies.GuildArcaneBoss,
+    }
+
+    def __init__(self, x, y, z):
+        super().__init__(x, y, z)
+        self.enemy = enemies.GuildCutpurseBoss
+
+    def _branch_for(self, player_char):
+        if thieves_guild.member(player_char) or thieves_guild.has_signet(player_char):
+            return ""
+        state = thieves_guild.ensure_state(player_char)
+        if not state.get("trial_started"):
+            return ""
+        branch = state.get("trial_branch", "")
+        return branch if branch in self.BOSS_BY_BRANCH else ""
+
+    def modify_player(self, game):
+        branch = self._branch_for(game.player_char)
+        if not branch:
+            self.defeated = True
+            self.enemy = None
+            self.visited = True
+            self.adjacent_visited(game.player_char)
+            return
+        self.enemy = self.BOSS_BY_BRANCH[branch]
+        state = thieves_guild.ensure_state(game.player_char)
+        state["trial_branch"] = branch
+        super().modify_player(game)
+
+    def intro_text(self, game):
+        branch = self._branch_for(game.player_char)
+        if not branch:
+            return (
+                "An empty room waits behind the false wall.\n\n"
+                "Whatever test belongs here has not been written into the guild ledger yet."
+            )
+        label = thieves_guild.branch_label(branch)
+        return (
+            f"{label}\n\n"
+            "A masked guild examiner waits behind the false wall, a blackened signet "
+            "hanging from one gloved hand. Win the trial and bring the signet home."
+        )
+
+
 class MinotaurBossRoom(BossRoom):
     def __init__(self, x, y, z):
         super().__init__(x, y, z)
@@ -1780,10 +1893,15 @@ class LockedChestRoom(ChestRoom):
                 if textbox:
                     textbox.print_text_in_rectangle("You open the chest with the Master key.\n")
             elif any(["Lockpick" in game.player_char.spellbook["Skills"],
-                      "Master Lockpick" in game.player_char.spellbook["Skills"]]):
+                      "Master Lockpick" in game.player_char.spellbook["Skills"]]) and items.has_lockpick_kit(game.player_char):
                 self.locked = False
+                _used, kit_message = items.use_lockpick_kit(
+                    game.player_char,
+                    master="Master Lockpick" in game.player_char.spellbook["Skills"],
+                )
                 if textbox:
                     textbox.print_text_in_rectangle(f"{game.player_char.name} skillfully unlocks the chest.\n")
+                    textbox.print_text_in_rectangle(f"{kit_message}\n")
             elif "Key" in game.player_char.inventory and confirm_popup and confirm_popup.navigate_popup():
                 self.locked = False
                 game.player_char.modify_inventory(game.player_char.inventory["Key"][0], subtract=True)
@@ -1838,10 +1956,12 @@ class LockedDoor(MapTile):
                 self.locked = False
                 if textbox:
                     textbox.print_text_in_rectangle("You open the door with the Master key.\n")
-            elif 'Master Lockpick' in game.player_char.spellbook['Skills']:
+            elif 'Master Lockpick' in game.player_char.spellbook['Skills'] and items.has_lockpick_kit(game.player_char):
                 self.locked = False
+                _used, kit_message = items.use_lockpick_kit(game.player_char, master=True)
                 if textbox:
                     textbox.print_text_in_rectangle(f"{game.player_char.name} skillfully unlocks the chest.\n")
+                    textbox.print_text_in_rectangle(f"{kit_message}\n")
             elif "Old Key" in game.player_char.inventory and confirm_popup and confirm_popup.navigate_popup():
                 self.locked = False
                 game.player_char.modify_inventory(game.player_char.inventory['Old Key'][0], subtract=True)
@@ -1959,12 +2079,20 @@ class OreVaultDoor(Wall):
                 self.enter = True
                 if textbox:
                     textbox.print_text_in_rectangle("You open the hidden door with the Master Key.\n")
-            elif 'Master Lockpick' in game.player_char.spellbook['Skills'] and 'Keen Eye' in game.player_char.spellbook['Skills'] and confirm_popup and confirm_popup.navigate_popup():
+            elif (
+                'Master Lockpick' in game.player_char.spellbook['Skills']
+                and 'Keen Eye' in game.player_char.spellbook['Skills']
+                and items.has_lockpick_kit(game.player_char)
+                and confirm_popup
+                and confirm_popup.navigate_popup()
+            ):
                 self.locked = False
                 self.open = True
                 self.enter = True
+                _used, kit_message = items.use_lockpick_kit(game.player_char, master=True)
                 if textbox:
                     textbox.print_text_in_rectangle(f"{game.player_char.name} skillfully unlocks the hidden door.\n")
+                    textbox.print_text_in_rectangle(f"{kit_message}\n")
 
     def available_actions(self, player_char):
         # If open, allow normal movement

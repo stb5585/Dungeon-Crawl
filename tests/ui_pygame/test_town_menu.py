@@ -101,11 +101,11 @@ def test_town_menu_draws_selected_location_detail(monkeypatch):
     monkeypatch.setattr(screen, "draw_semi_transparent_panel", lambda rect, alpha=180: panel_calls.append((rect, alpha)))
     monkeypatch.setattr("src.ui_pygame.gui.town_menu.pygame.draw.rect", lambda *_args, **_kwargs: None)
 
-    screen.draw_menu_panel(["Old Warehouse", "Warp Point", "Quit to Main Menu"])
+    screen.draw_menu_panel(["Old Warehouse", "Shops", "Quit to Main Menu"])
 
     assert any(alpha == 170 for _rect, alpha in panel_calls)
-    assert "Warp Point" in presenter.normal_font.render_calls
-    assert any("field scientists" in text for text in presenter.small_font.render_calls)
+    assert "Shops" in presenter.normal_font.render_calls
+    assert any("Griswold" in text for text in presenter.small_font.render_calls)
 
 
 def test_town_menu_navigation_and_debug_level(monkeypatch):

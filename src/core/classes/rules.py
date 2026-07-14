@@ -170,12 +170,13 @@ PROMOTION_MECHANIC_GUIDANCE: dict[str, str] = {
         "finisher readiness, and No-Trace Opener pressure."
     ),
     "Spell Stealer": (
-        "Character Menu tab available: Stolen Charge. Use it to review stolen "
-        "spell charge and magical theft payoff readiness."
+        "Stolen spell scrolls are cast from the combat Spells menu. "
+        "Stolen Charge remains a combat rhythm, not a Character Menu tab."
     ),
     "Arcane Trickster": (
-        "Character Menu tab available: Stolen Charge. Use it to review stolen "
-        "spell charge, Arcane Larceny, and hybrid payoff readiness."
+        "Stolen spell scrolls are cast from the combat Spells menu. "
+        "Arcane Larceny and Stolen Charge remain combat rhythms, not a "
+        "Character Menu tab."
     ),
     "Cleric": (
         "Character Menu tab available: Devotion. Use it to review holy defender "
@@ -279,8 +280,6 @@ PROMOTION_MECHANIC_TABS: dict[str, str] = {
     "Seeker": "Case Journal",
     "Assassin": "Death Mark",
     "Ninja": "Death Mark",
-    "Spell Stealer": "Stolen Charge",
-    "Arcane Trickster": "Stolen Charge",
     "Cleric": "Devotion",
     "Templar": "Devotion",
     "Monk": "Ki",

@@ -1,5 +1,5 @@
 """
-Shop system for GUI - handles blacksmith, alchemist, and jeweler.
+Shop system for GUI - handles blacksmith, alchemist, jeweler, and magic shops.
 Implements the core shop logic from town.py adapted for Pygame presenter.
 """
 
@@ -13,11 +13,15 @@ from .town_base import TownScreenBase
 
 class ShopManager(TownScreenBase):
     """Manages all shop interactions with pygame presenter."""
+
+    MAGIC_SHOPKEEPER = "Seraphine Voss"
+    MAGIC_SHOP_MESSAGE = "Seraphine Voss's Magic Shop"
     
     def __init__(self, presenter, player_char):
         super().__init__(presenter)
         self.player_char = player_char
         self._active_shopkeeper_portrait: str | None = None
+        self._active_price_multiplier = 1.0
 
     def _set_shopkeeper_portrait(self, shop_screen: ShopScreen) -> None:
         if self._active_shopkeeper_portrait:
@@ -194,6 +198,26 @@ class ShopManager(TownScreenBase):
                 if dragoon.can_craft_draconite_pendant(self.player_char):
                     options.insert(3, "Craft Draconite Pendant")
                 shop_screen.set_options(options)
+
+    def visit_magic_shop(self):
+        """Visit the Magic Shop - scrolls and arcane implements."""
+        shop_screen = ShopScreen(self.presenter, self.player_char, self.MAGIC_SHOP_MESSAGE)
+        self._active_shopkeeper_portrait = self.MAGIC_SHOPKEEPER
+        self._set_shopkeeper_portrait(shop_screen)
+        shop_screen.set_options(["Buy", "Sell", "Leave"])
+
+        while True:
+            choice = shop_screen.navigate_options()
+
+            if choice is None or choice == "Leave":
+                popup = ConfirmationPopup(self.presenter, "Mind the candles on your way out.", show_buttons=False)
+                popup.show(flush_events=True, require_key_release=True)
+                break
+            elif choice == "Buy":
+                self.buy_magic_shop_goods()
+                shop_screen.shop_message = self.MAGIC_SHOP_MESSAGE
+            elif choice == "Sell":
+                self.sell_items()
     
     def buy_weapons(self):
         """Buy weapons - choose handedness first, then browse subtype tabs."""
@@ -208,7 +232,10 @@ class ShopManager(TownScreenBase):
             return
         
         handed = handed_choice
-        weapon_tabs = self._available_item_groups(items_module.items_dict["Weapon"][handed])
+        weapon_groups = dict(items_module.items_dict["Weapon"][handed])
+        if handed == "2-Handed":
+            weapon_groups.pop("Staff", None)
+        weapon_tabs = self._available_item_groups(weapon_groups)
         if not weapon_tabs:
             return
 
@@ -270,47 +297,93 @@ class ShopManager(TownScreenBase):
     def buy_potions(self, background_image="town.png"):
         """Buy potions from alchemist with level-based availability."""
         potion_dict = {
-            "Restorative": self._potion_item_classes(),
+            "Health Potions": self._health_potion_item_classes(),
+            "Mana Potions": self._mana_potion_item_classes(),
             "Status Items": self._status_item_classes(),
         }
         self._buy_with_shop_screen(potion_dict, "Potions", background_image=background_image)
 
     def buy_alchemist_goods(self):
         """Buy alchemist stock from one tabbed browser."""
-        misc_dict = dict(items_module.items_dict.get("Misc", {}))
-        scrolls = misc_dict.pop("Scroll", [])
         alchemist_tabs = {
-            "Potions": self._potion_item_classes(),
+            "Health Potions": self._health_potion_item_classes(),
+            "Mana Potions": self._mana_potion_item_classes(),
             "Status Items": self._status_item_classes(),
-            "Scrolls": scrolls,
-            **self._available_item_groups(misc_dict),
         }
         self._buy_with_shop_screen(alchemist_tabs, "Alchemist Goods")
+
+    def buy_thieves_guild_goods(self):
+        """Buy keys, blank scrolls, and miscellaneous contraband from the Thieves Guild."""
+        misc_dict = dict(items_module.items_dict.get("Misc", {}))
+        tools = list(misc_dict.get("Key", []))
+        tools.extend(cls for cls in misc_dict.get("Scroll", []) if cls is items_module.BlankScroll)
+        for label, item_classes in misc_dict.items():
+            if label in {"Key", "Scroll", "Magic Tool"}:
+                continue
+            tools.extend(item_classes)
+        guild_tabs = {"Tools": tools} if self._has_available_items(tools) else {}
+        self._buy_with_shop_screen(guild_tabs, "Thieves Guild Goods")
+
+    def buy_magic_shop_goods(self):
+        """Buy spell scrolls, staves, tomes, rods, and musical instruments."""
+        spell_scrolls = [
+            cls for cls in items_module.items_dict["Misc"].get("Scroll", [])
+            if cls is not items_module.BlankScroll
+        ]
+        magic_tabs = {
+            "Spell Scrolls": spell_scrolls,
+            "Staves": items_module.items_dict["Weapon"]["2-Handed"].get("Staff", []),
+            "Tomes": items_module.items_dict["OffHand"].get("Tome", []),
+            "Rods": items_module.items_dict["OffHand"].get("Rod", []),
+            "Musical Instruments": self._musical_instrument_item_classes(),
+            "Magic Items": items_module.items_dict["Misc"].get("Magic Tool", []),
+        }
+        self._buy_with_shop_screen(
+            {label: item_classes for label, item_classes in magic_tabs.items() if item_classes},
+            "Magic Shop Goods",
+        )
 
     def _status_item_classes(self):
         """Return status-curing consumable classes sold by alchemists."""
         return list(items_module.items_dict.get("Potion", {}).get("Status", []))
 
-    def _potion_item_classes(self):
-        """Return level-appropriate restorative potion classes."""
-        # Get potion items from items_dict
-        potion_classes = []
+    def _health_potion_item_classes(self):
+        """Return level-appropriate health potion classes."""
+        potion_classes = [items_module.HealthPotion]
         player_level = self.player_char.player_level()
-        
-        # Basic potions
-        potion_classes.append(items_module.HealthPotion)
-        potion_classes.append(items_module.ManaPotion)
-        
-        # Better potions at higher levels
         if player_level >= 10:
             potion_classes.append(items_module.GreatHealthPotion)
-            potion_classes.append(items_module.GreatManaPotion)
-        
         if player_level >= 30:
             potion_classes.append(items_module.SuperHealthPotion)
-            potion_classes.append(items_module.SuperManaPotion)
-
         return potion_classes
+
+    def _mana_potion_item_classes(self):
+        """Return level-appropriate mana potion classes."""
+        potion_classes = [items_module.ManaPotion]
+        player_level = self.player_char.player_level()
+        if player_level >= 10:
+            potion_classes.append(items_module.GreatManaPotion)
+        if player_level >= 30:
+            potion_classes.append(items_module.SuperManaPotion)
+        return potion_classes
+
+    def _potion_item_classes(self):
+        """Return level-appropriate restorative potion classes."""
+        return self._health_potion_item_classes() + self._mana_potion_item_classes()
+
+    def _musical_instrument_item_classes(self):
+        """Return musical instruments sold by the Magic Shop."""
+        return [
+            items_module.Lute,
+            items_module.Mbira,
+            items_module.Lyre,
+            items_module.Tambourine,
+            items_module.Accordina,
+            items_module.Didgeridoo,
+            items_module.Sitar,
+            items_module.Bagpipes,
+            items_module.Shamisen,
+        ]
     
     def buy_equipment(self, item_list, category_name, background_image="town.png"):
         """Generic equipment buying interface using ShopScreen."""
@@ -320,7 +393,14 @@ class ShopManager(TownScreenBase):
         # Use the new shop screen
         self._buy_with_shop_screen(itemdict, category_name, background_image=background_image)
     
-    def _buy_with_shop_screen(self, itemdict, category_name, background_image="town.png"):
+    def _buy_with_shop_screen(
+        self,
+        itemdict,
+        category_name,
+        background_image="town.png",
+        *,
+        ignore_rarity_filter: bool = False,
+    ):
         """Use the new ShopScreen interface for buying items."""
         from .confirmation_popup import QuantityPopup
 
@@ -328,6 +408,8 @@ class ShopManager(TownScreenBase):
             return
         
         shop_screen = ShopScreen(self.presenter, self.player_char, f"Buy {category_name}", background_image=background_image, options_list=[])
+        shop_screen.price_multiplier = self._active_price_multiplier
+        shop_screen.ignore_rarity_filter = ignore_rarity_filter
         self._set_shopkeeper_portrait(shop_screen)
         shop_screen.update_item_list(itemdict, "Buy")
         

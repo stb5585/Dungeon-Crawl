@@ -5,11 +5,11 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from src.core import abilities
+from src.core import abilities, items
 from src.core.classes import class_rings, promotion_kits
-from src.core.combat.battle_engine import BattleEngine
+from src.core.combat.battle_engine import BattleEngine, STOLEN_SCROLL_CHOICE_PREFIX
 from src.core.data.data_driven_abilities import DataDrivenSpell
-from src.core.enemies import Barghest, Goblin
+from src.core.enemies import Barghest, Goblin, GuildArcaneBoss
 from tests.test_framework import TestGameState
 
 
@@ -204,6 +204,20 @@ def test_shapeshifted_barghest_victory_credits_original_enemy(monkeypatch):
     assert "Barghest dropped loot" in msg
 
 
+def test_thieves_guild_trial_victory_uses_guild_wording_and_awards_signet():
+    player = TestGameState.create_player(name="Shade", class_name="Spell Stealer", race_name="Human")
+    enemy = GuildArcaneBoss()
+    engine = BattleEngine(player, enemy, DummyCombatTile())
+
+    outcome = engine.end_battle()
+
+    assert outcome.result == "victory"
+    assert "Class Ring" not in outcome.message
+    assert "Spell-Sealed Cutpurse" in outcome.message
+    assert "Thieves Guild Signet" in outcome.message
+    assert "Thieves Guild Signet" in player.special_inventory
+
+
 def test_boss_battle_blocks_enemy_detail_vision():
     engine, player = _make_engine_with_player_attacking()
     player.cls.name = "Seeker"
@@ -302,3 +316,75 @@ def test_execute_spell_accepts_data_driven_spell_with_engine_context():
     result = engine.execute_action("Cast Spell", "Test Flame")
 
     assert "TestHero casts Test Flame" in result.message
+
+
+def test_execute_spell_accepts_stolen_scroll_choice_token():
+    player = TestGameState.create_player(name="TestHero", class_name="Spell Stealer", race_name="Human")
+    enemy = Goblin()
+    engine = BattleEngine(player, enemy, DummyCombatTile())
+    engine.attacker = player
+    engine.defender = enemy
+    scroll = items.InscribedSpellScroll("Firebolt", charges=2)
+    player.inventory[scroll.name] = [scroll]
+
+    result = engine.execute_action("Cast Spell", f"{STOLEN_SCROLL_CHOICE_PREFIX}{scroll.name}")
+
+    assert f"TestHero uses {scroll.name}" in result.message
+    assert "Stolen Charge" in result.message
+    assert scroll.charges == 1
+
+
+def test_execute_spell_consumes_stolen_scroll_when_charges_run_out():
+    player = TestGameState.create_player(name="TestHero", class_name="Spell Stealer", race_name="Human")
+    enemy = Goblin()
+    engine = BattleEngine(player, enemy, DummyCombatTile())
+    engine.attacker = player
+    engine.defender = enemy
+    scroll = items.InscribedSpellScroll("Firebolt", charges=1)
+    player.inventory[scroll.name] = [scroll]
+
+    result = engine.execute_action("Cast Spell", f"{STOLEN_SCROLL_CHOICE_PREFIX}{scroll.name}")
+
+    assert "crumbles to dust" in result.message
+    assert scroll.name not in player.inventory
+
+
+def test_execute_spell_rejects_non_stolen_scroll_choice_token():
+    engine, player = _make_engine_with_player_attacking()
+    player.inventory["Potion"] = [SimpleNamespace(name="Potion")]
+
+    result = engine.execute_action("Cast Spell", f"{STOLEN_SCROLL_CHOICE_PREFIX}Potion")
+
+    assert result.message == "Potion is not a stolen spell scroll.\n"
+
+
+def test_execute_spell_still_casts_learned_spell_with_matching_scroll_inventory():
+    engine, player = _make_engine_with_player_attacking()
+    spell = abilities.Firebolt()
+    player.spellbook["Spells"] = {"Firebolt": spell}
+    player.inventory["Stolen Firebolt Scroll"] = [items.InscribedSpellScroll("Firebolt", charges=2)]
+
+    result = engine.execute_action("Cast Spell", "Firebolt")
+
+    assert "TestHero casts Firebolt" in result.message
+    assert player.inventory["Stolen Firebolt Scroll"][0].charges == 2
+
+
+def test_smoke_screen_requires_and_consumes_smoke_bomb():
+    engine, player = _make_engine_with_player_attacking()
+    player.spellbook["Skills"] = {"Smoke Screen": abilities.SmokeScreen()}
+    player.flee = lambda _enemy, smoke=False: (True, "TestHero vanishes into smoke.\n")
+
+    missing_result = engine.execute_action("Use Skill", "Smoke Screen")
+
+    assert missing_result.message == "Smoke Screen requires a Smoke Bomb.\n"
+    assert missing_result.fled is False
+
+    player.inventory["Smoke Bomb"] = [items.SmokeBomb()]
+    result = engine.execute_action("Use Skill", "Smoke Screen")
+
+    assert "TestHero uses Smoke Screen." in result.message
+    assert "A Smoke Bomb bursts open." in result.message
+    assert "TestHero vanishes into smoke." in result.message
+    assert "Smoke Bomb" not in player.inventory
+    assert result.fled is True

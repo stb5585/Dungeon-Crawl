@@ -245,7 +245,7 @@ class Astromancer(Job):
             magic_def_plus=4,
             restrictions={
                 "Weapon": ["Dagger", "Staff"],
-                "OffHand": ["Tome", "Rod"],
+                "OffHand": ["Rod"],
                 "Armor": ["Cloth"],
             },
             pro_level=3,

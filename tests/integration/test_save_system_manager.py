@@ -10,7 +10,7 @@ from types import SimpleNamespace
 
 sys.path.insert(0, str(Path(__file__).parents[2]))
 
-from src.core import abilities, companions, enemies, items
+from src.core import abilities, companions, enemies, items, thieves_guild
 from src.core.save_system import (
     AbilitySerializer,
     EnemyStateSerializer,
@@ -49,6 +49,24 @@ def test_item_serializer_uses_canonical_name_not_cosmetic_theme_name():
     assert items.stat_themed_item_name(item) == "Mighty Power Ring"
     assert item.name == "Power Ring"
     assert ItemSerializer.serialize(item)["name"] == "Power Ring"
+
+
+def test_item_serializer_round_trips_charge_based_tools():
+    lockpick_kit = items.LockpickKit(charges=2)
+    stolen_scroll = items.InscribedSpellScroll("Firebolt", charges=2)
+
+    serialized_kit = ItemSerializer.serialize(lockpick_kit)
+    serialized_scroll = ItemSerializer.serialize(stolen_scroll)
+    restored_kit = ItemSerializer.deserialize(serialized_kit)
+    restored_scroll = ItemSerializer.deserialize(serialized_scroll)
+
+    assert serialized_kit["charges"] == 2
+    assert restored_kit.name == "Lockpick Kit"
+    assert restored_kit.charges == 2
+    assert "Durability: 2" in restored_kit.description
+    assert serialized_scroll["charges"] == 2
+    assert restored_scroll.name == "Stolen Firebolt Scroll"
+    assert restored_scroll.charges == 2
 
 
 def test_ability_serializer_supports_class_name_display_name_and_yaml_override():
@@ -321,6 +339,27 @@ def test_save_manager_round_trip_preserves_old_key_counts(monkeypatch, tmp_path)
     assert "Old Key" in restored.inventory
     assert len(restored.inventory["Old Key"]) == 5
     assert all(item.name == "Old Key" for item in restored.inventory["Old Key"])
+
+
+def test_player_data_preserves_and_defaults_thieves_guild_state():
+    player = TestGameState.create_player(name="GuildSaver", class_name="Rogue", race_name="Human", level=10)
+    player.thieves_guild = {
+        "member": True,
+        "trial_started": True,
+        "trial_branch": "cutpurse",
+        "starter_kit_claimed": True,
+    }
+
+    serialized = PlayerDataSerializer.serialize(player)
+    restored = PlayerDataSerializer.deserialize(serialized, skip_tiles=True)
+
+    assert restored.thieves_guild == player.thieves_guild
+
+    legacy_data = dict(serialized)
+    legacy_data.pop("thieves_guild")
+    legacy_restored = PlayerDataSerializer.deserialize(legacy_data, skip_tiles=True)
+
+    assert legacy_restored.thieves_guild == thieves_guild.default_state()
 
 
 def test_load_player_fills_missing_equipment_slots(monkeypatch, tmp_path):

@@ -38,6 +38,11 @@ def _is_funhouse_theme_tile(tile) -> bool:
     return "Funhouse" in tile_type or tile_type in ("JesterBossRoom", "MirrorWall")
 
 
+def is_fake_wall(tile) -> bool:
+    tile_type = type(tile).__name__ if tile is not None else ""
+    return tile_type == "FakeWall" or tile_type.endswith("FakeWall")
+
+
 def is_wall(tile) -> bool:
     """Return whether a tile should be rendered as a blocking wall."""
     if tile is None:
@@ -45,7 +50,7 @@ def is_wall(tile) -> bool:
 
     tile_type = type(tile).__name__
 
-    if tile_type == "FakeWall":
+    if is_fake_wall(tile):
         return not getattr(tile, "visited", False)
 
     if tile_type in ("FunhouseWall", "MirrorWall"):

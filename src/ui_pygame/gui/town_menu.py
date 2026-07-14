@@ -21,7 +21,7 @@ class TownMenuScreen(TownScreenBase):
             "Sergeant's maps, casualty ledgers, and the quartermaster's storage lockers crowd the command room."
         ),
         "Shops": (
-            "Lanterns burn over the counters while Griswold, the Alchemist, and the Jeweler prepare their wares."
+            "Lanterns burn over the counters while Griswold, the Alchemist, the Jeweler, Seraphine Voss, and Mara Vale prepare their wares."
         ),
         "The Thirsty Dog Tavern": (
             "Patrons trade rumors in low voices, and the Busboy hears more than anyone realizes."
@@ -33,7 +33,7 @@ class TownMenuScreen(TownScreenBase):
             "The dungeon mouth waits beyond town, cold air spilling from the stairwell below."
         ),
         "Old Warehouse": (
-            "Guards block the reinforced doors while machines hum somewhere behind the walls."
+            "Guards watch the reinforced doors and turn away anyone without warehouse business."
         ),
         "Warp Point": (
             "Two field scientists watch the brass-ringed platform, hands never far from the lever bank."

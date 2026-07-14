@@ -17,7 +17,7 @@ from src.core.data.data_loader import get_intro_story, get_special_events
 from src.core.player import summarize_gameplay_stat_groups
 from src.core.races import races_dict
 from src.core.save_system import SaveManager
-from src.core import items
+from src.core import items, thieves_guild
 from src.ui_pygame.assets.npc_art_manager import get_npc_art_manager
 from .presentation.pygame_presenter import PygamePresenter
 
@@ -38,6 +38,7 @@ from .gui.confirmation_popup import ConfirmationPopup, confirm_yes_no
 from .gui.town_menu import TownMenuScreen
 from .gui.town_navigation import TownNavigationScreen
 from .gui.shop_selection import ShopSelectionScreen
+from .gui.shop_screen import ShopScreen
 
 # Use enhanced combat by default
 USE_ENHANCED_COMBAT = True
@@ -633,8 +634,6 @@ class PygameGame:
         # Add Warp Point or Old Warehouse based on player progress
         if getattr(self.player_char, 'warp_point', False):
             options.append("Warp Point")
-            if self._footpad_class_ring_rite_available():
-                options.append("Old Warehouse")
         else:
             options.append("Old Warehouse")
 
@@ -847,19 +846,51 @@ class PygameGame:
             and not class_rings.is_awakened(self.player_char, class_name)
         )
 
-    def visit_old_warehouse(self, background_draw_func=None):
-        """Handle Old Warehouse entry and Footpad-branch Class Ring jobs."""
-        if not self._footpad_class_ring_rite_available():
-            self._show_town_npc_dialogue(
-                'A warehouse guard steps into your path.\n\n"Authorized personnel only. Please leave."',
-                title="Old Warehouse Guard",
-                npc_name="Old Warehouse Guard",
-                background_draw_func=background_draw_func,
-            )
-            return False
+    def _thieves_guild_guidance(self, class_name: str) -> str:
+        """Return backroom advice for the current promoted Footpad-line path."""
+        guidance = {
+            "Thief": (
+                "Thieves keep the old tricks and learn to turn risk into money.\n\n"
+                "Watch Fortune and Misfortune in combat. Steal and Mug feed the rhythm; risky hits cash it in."
+            ),
+            "Rogue": (
+                "Rogues win by making luck look rehearsed.\n\n"
+                "Use Fortune and Misfortune deliberately, then let Loaded Dice smooth the one swing that matters."
+            ),
+            "Inquisitor": (
+                "Inquisitors trade shadows for evidence.\n\n"
+                "Inspect, Reveal, and Exploit Weakness build the case. You gave up stealth because the answer is supposed to stand in daylight."
+            ),
+            "Seeker": (
+                "Seekers turn evidence into routes.\n\n"
+                "Case Journal progress and Revelation make enemies readable, while Wayfinding keeps the dungeon from owning your path."
+            ),
+            "Assassin": (
+                "Assassins prepare the end before anyone notices the beginning.\n\n"
+                "Death Mark is your setup. Incapacitate, poison, and finish before the fight becomes fair."
+            ),
+            "Ninja": (
+                "Ninjas turn initiative into disappearance.\n\n"
+                "Death Mark still matters, but No-Trace Opener rewards striking first and leaving as little for the enemy to answer as possible."
+            ),
+            "Spell Stealer": (
+                "Spell Stealers do not memorize what they can steal.\n\n"
+                "Carry Blank Scrolls, use Steal Spell on enemies with magic, then cast inscribed stolen-spell scrolls from the combat Spells menu. "
+                "Each successful stolen-magic action builds Stolen Charge, capped at 2. Your next successful damaging spell, weapon hit, or weapon-tagged trickster skill spends all Charge for bonus arcane damage: 20% of base damage per Charge, minimum 5 per Charge."
+            ),
+            "Arcane Trickster": (
+                "Arcane Tricksters keep the scroll racket and learn the deeper con.\n\n"
+                "Blank Scroll theft still matters. Steal Spell 2 can permanently bind a new enemy spell, while stolen-scroll casting from the Spells menu feeds Stolen Charge. "
+                "Stolen Charge caps at 3 and releases on your next successful damaging spell, weapon hit, or weapon-tagged trickster skill for bonus arcane damage: 20% of base damage per Charge, minimum 5 per Charge. Awakened Arcane Larceny can preserve 1 Charge once per combat after a clean payoff."
+            ),
+        }
+        return guidance.get(class_name, "The Gray Broker has no branch ledger for your current path.")
 
+    def _run_footpad_class_ring_rite(self, background_draw_func=None):
         class_name = class_rings.class_name(self.player_char)
         config = self._footpad_class_ring_rite_config()
+        if not config:
+            return False
         popup = ConfirmationPopup(self.presenter, config["intro"], show_buttons=False)
         popup.show(
             background_draw_func=background_draw_func,
@@ -882,6 +913,155 @@ class PygameGame:
             require_key_release=True,
         )
         return success
+
+    def _grant_thieves_guild_starter_kit(self):
+        state = thieves_guild.ensure_state(self.player_char)
+        if state.get("starter_kit_claimed"):
+            return ""
+        self.player_char.modify_inventory(items.Key(), num=2)
+        self.player_char.modify_inventory(items.BlankScroll(), num=2)
+        state["starter_kit_claimed"] = True
+        return "\n\nMara slides over a starter kit: 2 Keys and 2 Blank Scrolls."
+
+    def _offer_thieves_guild_membership(self, background_draw_func=None):
+        if thieves_guild.member(self.player_char):
+            self._visit_thieves_guild_backroom(background_draw_func=background_draw_func)
+            return
+
+        if not thieves_guild.can_join(self.player_char):
+            self._show_town_npc_dialogue(
+                "Mara Vale keeps the public ledger open and the backroom door shut.\n\n"
+                "\"The wares are for all but the backroom is for a select few.\"",
+                title="Mara Vale",
+                npc_name="Mara Vale",
+                background_draw_func=background_draw_func,
+            )
+            return
+
+        if thieves_guild.has_signet(self.player_char):
+            success, message = thieves_guild.complete_membership(self.player_char)
+            if success:
+                self.player_char.modify_inventory(items.ThievesGuildSignet(), subtract=True, rare=True)
+                message += self._grant_thieves_guild_starter_kit()
+                message += "\n\nGuild prices are now 25% lower at Mara's counter."
+            self._show_town_npc_dialogue(
+                message,
+                title="The Gray Broker",
+                npc_name="The Gray Broker",
+                background_draw_func=background_draw_func,
+            )
+            return
+
+        state = thieves_guild.ensure_state(self.player_char)
+        if not state.get("trial_started"):
+            _ok, branch = thieves_guild.start_trial(self.player_char)
+            trial_wall = getattr(self.player_char, "world_dict", {}).get(thieves_guild.TRIAL_FAKE_WALL_POS)
+            sync_wall = getattr(trial_wall, "sync_for_player", None)
+            if callable(sync_wall):
+                sync_wall(self.player_char)
+            label = thieves_guild.branch_label(branch)
+            message = (
+                f"The Gray Broker writes one line in the black ledger: {label}.\n\n"
+                "Below the old stone, a false face waits where a narrow northward approach "
+                "makes liars of walls. Find the marked silence, pass through it, and bring "
+                "back the Thieves Guild Signet from the examiner inside."
+            )
+        else:
+            label = thieves_guild.branch_label(state.get("trial_branch", ""))
+            message = (
+                f"Your initiation remains open: {label}.\n\n"
+                "Keep to the second depth. Look for the passage that denies itself from the north, "
+                "and return with the Thieves Guild Signet when the examiner yields."
+            )
+        self._show_town_npc_dialogue(
+            message,
+            title="The Gray Broker",
+            npc_name="The Gray Broker",
+            background_draw_func=background_draw_func,
+        )
+
+    def _visit_thieves_guild_backroom(self, background_draw_func=None):
+        if not thieves_guild.member(self.player_char):
+            self._offer_thieves_guild_membership(background_draw_func=background_draw_func)
+            return
+        options = ["Class Guide", "Leave"]
+        if self._footpad_class_ring_rite_available():
+            options.insert(1, self._footpad_class_ring_rite_label())
+        choice = 0
+        if hasattr(self.presenter, "render_menu"):
+            choice = self.presenter.render_menu(
+                "Thieves Guild Backroom",
+                options,
+                split_layout=True,
+                background_draw_func=background_draw_func,
+            )
+        selected = options[choice] if choice is not None and 0 <= choice < len(options) else "Leave"
+        if selected == "Class Guide":
+            class_name = getattr(getattr(self.player_char, "cls", None), "name", "")
+            self._show_town_npc_dialogue(
+                self._thieves_guild_guidance(class_name),
+                title="The Gray Broker",
+                npc_name="The Gray Broker",
+                background_draw_func=background_draw_func,
+            )
+        elif selected == self._footpad_class_ring_rite_label():
+            self._run_footpad_class_ring_rite(background_draw_func=background_draw_func)
+
+    def visit_thieves_guild(self, background_draw_func=None):
+        """Visit the public Thieves Guild shop and member backroom."""
+        if self.player_char.player_level() < 10:
+            popup = ConfirmationPopup(
+                self.presenter,
+                "Mara Vale's ledger is closed for now. Try again later.",
+                show_buttons=False,
+            )
+            popup.show(flush_events=True, require_key_release=True)
+            return
+
+        self._play_location_music("shop")
+        shop_screen = ShopScreen(self.presenter, self.player_char, "Mara Vale's Counter")
+        shop_screen.set_location_portrait("Mara Vale")
+        shop_screen.set_options(["Buy", "Sell", "Ask About Backroom", "Leave"])
+        bg_func = lambda: shop_screen.draw_all(do_flip=False)
+        while True:
+            choice = shop_screen.navigate_options()
+            if choice is None or choice == "Leave":
+                popup = ConfirmationPopup(self.presenter, "Keep your keys close.", show_buttons=False)
+                popup.show(background_draw_func=bg_func, flush_events=True, require_key_release=True)
+                return
+            if choice == "Buy":
+                self.shop_manager._active_shopkeeper_portrait = "Mara Vale"
+                self.shop_manager._active_price_multiplier = (
+                    thieves_guild.DISCOUNT_MULTIPLIER if thieves_guild.member(self.player_char) else 1.0
+                )
+                self.shop_manager.buy_thieves_guild_goods()
+                self.shop_manager._active_price_multiplier = 1.0
+                shop_screen.shop_message = "Mara Vale's Counter"
+            elif choice == "Sell":
+                self.shop_manager._active_shopkeeper_portrait = "Mara Vale"
+                self.shop_manager._active_price_multiplier = 1.0
+                self.shop_manager.sell_items()
+                shop_screen.shop_message = "Mara Vale's Counter"
+            elif choice == "Ask About Backroom":
+                if not thieves_guild.member(self.player_char) and not thieves_guild.can_join(self.player_char):
+                    shop_screen.display_quest_text(
+                        "Mara Vale keeps the public ledger open and the backroom door shut.\n\n"
+                        "\"The wares are for all but the backroom is for a select few.\"",
+                        title="Mara Vale",
+                    )
+                    shop_screen.draw_all()
+                    continue
+                self._offer_thieves_guild_membership(background_draw_func=background_draw_func or bg_func)
+
+    def visit_old_warehouse(self, background_draw_func=None):
+        """Handle Old Warehouse entry guard dialogue."""
+        self._show_town_npc_dialogue(
+            'A warehouse guard steps into your path.\n\n"Authorized personnel only. Please leave."',
+            title="Old Warehouse Guard",
+            npc_name="Old Warehouse Guard",
+            background_draw_func=background_draw_func,
+        )
+        return False
 
     def use_warp_point(self, background_draw_func=None):
         """Use the warp point to teleport to dungeon level 5."""
@@ -944,7 +1124,8 @@ class PygameGame:
     def visit_shop(self):
         """Visit the town shop - routes to appropriate shop via ShopManager."""
         self._play_location_music("shop")
-        shop_options = ["Blacksmith", "Alchemist", "Jeweler", "Go Back"]
+        shop_options = ["Blacksmith", "Alchemist", "Jeweler", "Magic Shop", "Thieves Guild"]
+        shop_options.append("Go Back")
         
         # Create shop selection screen
         shop_screen = ShopSelectionScreen(self.presenter)
@@ -956,15 +1137,20 @@ class PygameGame:
                 require_key_release=True,
             )
             
-            if choice is None or choice == 3:  # Go Back
+            if choice is None or choice == len(shop_options) - 1:  # Go Back
                 break
-                
-            elif choice == 0:  # Blacksmith
+            choice_label = shop_options[choice]
+
+            if choice_label == "Blacksmith":
                 self.shop_manager.visit_blacksmith()
-            elif choice == 1:  # Alchemist
+            elif choice_label == "Alchemist":
                 self.shop_manager.visit_alchemist()
-            elif choice == 2:  # Jeweler
+            elif choice_label == "Jeweler":
                 self.shop_manager.visit_jeweler()
+            elif choice_label == "Magic Shop":
+                self.shop_manager.visit_magic_shop()
+            elif choice_label == "Thieves Guild":
+                self.visit_thieves_guild()
     
     def visit_church(self):
         """Visit the Church - managed by ChurchManager."""

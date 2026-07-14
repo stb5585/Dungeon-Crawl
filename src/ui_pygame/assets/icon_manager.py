@@ -169,6 +169,10 @@ class IconManager:
         if typ in self.NON_ITEM_TYPES:
             return "generic_item"
 
+        subtyp = str(getattr(item, "subtyp", "") or "")
+        if typ == "Misc" and subtyp == "Scroll" and name.startswith("Stolen "):
+            return "scroll"
+
         if name:
             logger.warning("Item icon mapping missing for %s", name)
         inferred = self.infer_icon_key(item)

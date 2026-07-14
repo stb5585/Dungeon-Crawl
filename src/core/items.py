@@ -3248,6 +3248,35 @@ class CodexEternity(OffHand):
 
 
 # Rod items
+class WillowDiviningRod(OffHand):
+
+    def __init__(self):
+        super().__init__(name="Willow Divining Rod", description="A fresh willow switch wrapped in copper thread. "
+                                                                 "It is humble work, but the forked tip answers "
+                                                                 "many questions.",
+                         value=12000, rarity=0.6, mod=30, subtyp='Rod', unequip=False)
+        self.weight = 1
+
+
+class CopperLeyRod(OffHand):
+
+    def __init__(self):
+        super().__init__(name="Copper Ley Rod", description="A straight copper rod etched with ley-line marks. "
+                                                            "It steadies minor omens and strengthens early rune work.",
+                         value=19000, rarity=0.5, mod=38, subtyp='Rod', unequip=False)
+        self.weight = 2
+
+
+class MoonlitHazelRod(OffHand):
+
+    def __init__(self):
+        super().__init__(name="Moonlit Hazel Rod", description="Hazel harvested under a clear moon and capped with "
+                                                               "silver. It answers elemental signs with a quieter, "
+                                                               "stronger pulse.",
+                         value=45000, rarity=0.4, mod=45, subtyp='Rod', unequip=False)
+        self.weight = 2
+
+
 class DowsingRod(OffHand):
 
     def __init__(self):
@@ -4686,6 +4715,128 @@ class CrypticKey(Misc):
                          value=0, rarity=0, subtyp='Key')
 
 
+class LockpickKit(Misc):
+    """
+    Reusable tools required for Lockpick and Master Lockpick skills.
+    """
+
+    def __init__(self, charges: int = 3):
+        self.charges = max(1, int(charges))
+        super().__init__(
+            name="Lockpick Kit",
+            description=(
+                "A compact set of picks, tension wrenches, and shims required to use "
+                f"lockpicking skills. Durability: {self.charges}."
+            ),
+            value=1500,
+            rarity=0.55,
+            subtyp="Tool",
+        )
+
+
+class SmokeBomb(Misc):
+    """
+    One-use tool required for Smoke Screen.
+    """
+
+    def __init__(self):
+        super().__init__(
+            name="Smoke Bomb",
+            description="A packed clay pellet that bursts into concealing smoke. Required and consumed by Smoke Screen.",
+            value=750,
+            rarity=0.65,
+            subtyp="Tool",
+        )
+
+
+class Oculus(Misc):
+    """
+    Expensive magic lens that reveals fake walls.
+    """
+
+    def __init__(self):
+        super().__init__(
+            name="Oculus",
+            description="An expensive arcane lens that reveals the telltale shimmer of fake walls.",
+            value=35000,
+            rarity=0.25,
+            subtyp="Magic Tool",
+        )
+
+
+def _inventory_stack(character, item_name: str):
+    inventory = getattr(character, "inventory", {}) or {}
+    stack = inventory.get(item_name, [])
+    return stack if isinstance(stack, list) else []
+
+
+def has_lockpick_kit(character) -> bool:
+    """Return whether a character carries the reusable lockpicking tools."""
+    return bool(_inventory_stack(character, "Lockpick Kit"))
+
+
+def has_smoke_bomb(character) -> bool:
+    """Return whether a character carries a Smoke Bomb."""
+    return bool(_inventory_stack(character, "Smoke Bomb"))
+
+
+def has_oculus(character) -> bool:
+    """Return whether a character carries an Oculus."""
+    return bool(_inventory_stack(character, "Oculus"))
+
+
+def can_detect_fake_walls(character) -> bool:
+    """Return whether passive dungeon perception reveals nearby fake walls."""
+    skills = getattr(character, "spellbook", {}).get("Skills", {})
+    return "Keen Eye" in skills or has_oculus(character)
+
+
+def lockpick_break_chance(character, *, master: bool = False) -> float:
+    """Chance that a Lockpick Kit breaks after a successful lockpick use."""
+    stats = getattr(character, "stats", None)
+    dex = getattr(stats, "dex", getattr(stats, "dexterity", 10))
+    try:
+        dex_score = int(dex)
+    except (TypeError, ValueError):
+        dex_score = 10
+    base = 0.18 if master else 0.35
+    floor = 0.04 if master else 0.08
+    chance = base - max(0, dex_score - 10) * 0.01
+    return max(floor, min(base, chance))
+
+
+def use_lockpick_kit(character, *, master: bool = False, roll: float | None = None) -> tuple[bool, str]:
+    """Spend durability on a Lockpick Kit and possibly break it."""
+    stack = _inventory_stack(character, "Lockpick Kit")
+    if not stack:
+        return False, "You need a Lockpick Kit."
+
+    kit = stack[0]
+    charges = int(getattr(kit, "charges", 3) or 3)
+    kit.charges = max(0, charges - 1)
+    if hasattr(kit, "description"):
+        kit.description = (
+            "A compact set of picks, tension wrenches, and shims required to use "
+            f"lockpicking skills. Durability: {kit.charges}."
+        )
+
+    chance = lockpick_break_chance(character, master=master)
+    break_roll = random.random() if roll is None else float(roll)
+    if kit.charges <= 0 or break_roll < chance:
+        character.modify_inventory(kit, subtract=True)
+        return True, "The Lockpick Kit breaks."
+    return True, f"The Lockpick Kit holds together. Durability: {kit.charges}."
+
+
+def consume_smoke_bomb(character) -> tuple[bool, str]:
+    """Consume one Smoke Bomb for Smoke Screen."""
+    stack = _inventory_stack(character, "Smoke Bomb")
+    if not stack:
+        return False, "Smoke Screen requires a Smoke Bomb.\n"
+    character.modify_inventory(stack[0], subtract=True)
+    return True, "A Smoke Bomb bursts open.\n"
+
+
 class JesterToken(Misc):
     """
     A shimmering token from the funhouse; collect all four to unlock the Jester's chamber
@@ -5011,7 +5162,7 @@ class UltimaScroll(Scroll):
 # Reagents
 class SheetMusic(Misc):
     """
-    Base sheet music item  TODO
+    Base sheet music item; sheet music is not purchasable, only created
     """
 
     def __init__(self, name: str, description: str, value: int, rarity: float, subtyp: str) -> None:
@@ -5035,47 +5186,47 @@ class SheetMusic(Misc):
 
 class BattleHymnSheet(SheetMusic):
     def __init__(self):
-        super().__init__("Sheet Music: Battle Hymn", "A martial hymn for battle.", 2500, 0.35, "Scroll")
+        super().__init__("Sheet Music: Battle Hymn", "A martial hymn for battle.", 2500, 0, "Scroll")
 
 
 class RampartsOdeSheet(SheetMusic):
     def __init__(self):
-        super().__init__("Sheet Music: Ode to the Ramparts", "A protective ode.", 2500, 0.35, "Scroll")
+        super().__init__("Sheet Music: Ode to the Ramparts", "A protective ode.", 2500, 0, "Scroll")
 
 
 class DysfunctionSymphonySheet(SheetMusic):
     def __init__(self):
-        super().__init__("Sheet Music: Symphony of Disfunction", "A discordant enemy-breaking score.", 2500, 0.35, "Scroll")
+        super().__init__("Sheet Music: Symphony of Disfunction", "A discordant enemy-breaking score.", 2500, 0, "Scroll")
 
 
 class LowDefenseRhapsodySheet(SheetMusic):
     def __init__(self):
-        super().__init__("Sheet Music: Low-defense-ian Rhapsody", "A tune that lowers defenses.", 2500, 0.35, "Scroll")
+        super().__init__("Sheet Music: Low-defense-ian Rhapsody", "A tune that lowers defenses.", 2500, 0, "Scroll")
 
 
 class SlowRideSheet(SheetMusic):
     def __init__(self):
-        super().__init__("Sheet Music: Slow Ride", "A dragging song.", 2500, 0.35, "Scroll")
+        super().__init__("Sheet Music: Slow Ride", "A dragging song.", 2500, 0, "Scroll")
 
 
 class BonesThugsHarmonySheet(SheetMusic):
     def __init__(self):
-        super().__init__("Sheet Music: Bones, Thugs, and Harmony", "A graveyard harmony.", 2500, 0.35, "Scroll")
+        super().__init__("Sheet Music: Bones, Thugs, and Harmony", "A graveyard harmony.", 2500, 0, "Scroll")
 
 
 class ScoresAndScoresScoreSheet(SheetMusic):
     def __init__(self):
-        super().__init__("Sheet Music: Scores and Scores Score", "A score about scoring.", 2500, 0.35, "Scroll")
+        super().__init__("Sheet Music: Scores and Scores Score", "A score about scoring.", 2500, 0, "Scroll")
 
 
 class GoldTriggerSheet(SheetMusic):
     def __init__(self):
-        super().__init__("Sheet Music: Gold Trigger", "A glittering trigger phrase.", 2500, 0.35, "Scroll")
+        super().__init__("Sheet Music: Gold Trigger", "A glittering trigger phrase.", 2500, 0, "Scroll")
 
 
 class ChorusTimeSheet(SheetMusic):
     def __init__(self):
-        super().__init__("Sheet Music: Chorus Time", "A looping chorus.", 2500, 0.35, "Scroll")
+        super().__init__("Sheet Music: Chorus Time", "A looping chorus.", 2500, 0, "Scroll")
 
 
 class BlankScroll(Misc):
@@ -5115,16 +5266,23 @@ class InscribedSpellScroll(Scroll):
         spell_cls = getattr(abilities, spell_class_name, abilities.MagicMissile)
         self.spell = spell_cls()
         self.name = f"Stolen {self.spell.name} Scroll"
-        self.description = "\n".join(wrap(
-            f"Scroll inscribed with a stolen copy of {self.spell.name}. "
-            "The scroll will be consumed when it is out of charges.",
-            35,
-            break_on_hyphens=False,
-        ))
-        self.value = max(3000, int(getattr(self.spell, "cost", 0) or 0) * 1000)
-        self.rarity = 0.2
         if charges is not None:
             self.charges = max(1, int(charges))
+        self._refresh_description()
+        self.value = max(3000, int(getattr(self.spell, "cost", 0) or 0) * 1000)
+        self.rarity = 0.2
+
+    def _refresh_description(self) -> None:
+        self.description = (
+            f"Scroll inscribed with a stolen copy of {self.spell.name}. "
+            f"Charges: {self.charges}. The scroll crumbles when its charges run out."
+        )
+
+    def use(self, user: Character, target: Character | None = None, tile: Any = None) -> str:
+        use_str = super().use(user, target=target, tile=tile)
+        if self.charges > 0:
+            self._refresh_description()
+        return use_str
 
 
 # Enemy quest items
@@ -5274,6 +5432,21 @@ class BrassKey(Misc):
         super().__init__(name="Brass Key", description="A brass key, similar to the key for your storage locker in the"
                                                        " barracks.",
                          value=0, rarity=0, subtyp="Special")
+
+
+class ThievesGuildSignet(Misc):
+    """
+    Proof recovered from the Thieves Guild initiation trial.
+    """
+
+    def __init__(self):
+        super().__init__(
+            name="Thieves Guild Signet",
+            description="A blackened silver signet taken from the guild's hidden initiation trial.",
+            value=0,
+            rarity=1,
+            subtyp="Special",
+        )
 
 
 class JoffreysLetter(Misc):
@@ -5580,7 +5753,7 @@ items_dict = {
         'Shield': [Buckler, Aspis, Targe, Glagwa, KiteShield, Pavise, Svalinn], 
         'Tome': [Book, TomeKnowledge, InfernalGrimoire, ElementalPrimer, TreatiseBalance, DragonRouge,
                  Vedas, CompendiumAncients, Necronomicon],
-        'Rod': [DowsingRod, ScepterIfrit, GaiasBranch, Zephyruswand]},
+        'Rod': [WillowDiviningRod, CopperLeyRod, MoonlitHazelRod, DowsingRod, ScepterIfrit, GaiasBranch, Zephyruswand]},
     'Armor': {
         'Cloth': [Tunic, ClothCloak, SilverCloak, GoldCloak, CloakEnchantment, WizardRobe, Tarnkappe],
         'Light': [PaddedArmor, LeatherArmor, Cuirboulli, StuddedLeather, StuddedCuirboulli, MithrilCoat],
@@ -5610,6 +5783,8 @@ items_dict = {
         'Status': [Antidote, EyeDrop, EchoScreen, Bandage, PhoenixDown]},
     'Misc': {
         'Key': [Key, OldKey],
+        'Tool': [LockpickKit, SmokeBomb],
+        'Magic Tool': [Oculus],
         'Scroll': [BlankScroll, BlessScroll, SleepScroll, FireScroll, IceScroll, ElectricScroll, WaterScroll,
                    EarthScroll, WindScroll, ShadowScroll, HolyScroll, CleanseScroll, BoostScroll,
                    ShellScroll, SilenceScroll, DispelScroll, DeathScroll, SanctuaryScroll, UltimaScroll,

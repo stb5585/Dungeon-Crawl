@@ -44,7 +44,7 @@ from typing import TYPE_CHECKING
 from .battle_logger import BattleLogger
 from .initiative import determine_initiative
 from ..constants import SPECIAL_ATTACK_LUCK_FACTOR, SPECIAL_ATTACK_ROLL_MAX
-from .. import items
+from .. import items, thieves_guild
 from ..enemy_identity import remember_defeat_identity, restore_defeat_identity
 from ..events.event_bus import get_event_bus, create_combat_event, EventType
 from ..classes import astromancer, bard, berserker, class_rings, dragoon, grandmaster, lycan, nature_totems, ability_mechanics, paladin, promotion_kits, wizard
@@ -54,6 +54,9 @@ if TYPE_CHECKING:
 
     from ..character import Character
     from ..player import Player
+
+
+STOLEN_SCROLL_CHOICE_PREFIX = "__scroll__:"
 
 
 # ── Result dataclasses ───────────────────────────────────────────────
@@ -159,8 +162,15 @@ class BattleEngine:
             or getattr(self.enemy, "class_ring_trial_enemy", False)
         )
 
+    def _is_thieves_guild_trial_enemy(self) -> bool:
+        """Return whether this fight is a Thieves Guild initiation trial."""
+        return bool(getattr(self.enemy, "thieves_guild_trial_enemy", False))
+
     def _class_ring_trial_name(self) -> str:
         return str(getattr(self.enemy, "class_ring_trial_name", "Class Ring trial"))
+
+    def _thieves_guild_trial_name(self) -> str:
+        return str(getattr(self.enemy, "thieves_guild_trial_name", getattr(self.enemy, "name", "initiation trial")))
 
     def _no_healing_duel_active(self) -> bool:
         return bool(getattr(self.enemy, "class_ring_no_healing_duel", False))
@@ -563,6 +573,7 @@ class BattleEngine:
 
         elif action == "Use Skill":
             result.message = self._execute_skill(choice, slot_machine_callback)
+            result.fled = bool(self.flee)
 
         elif action == "Use Item":
             result.message = self._execute_item(choice)
@@ -817,6 +828,8 @@ class BattleEngine:
             outcome.winner = self.player.name
             if getattr(self.enemy, "grandmaster_trial_enemy", False):
                 outcome.message = self._process_grandmaster_trial_victory()
+            elif self._is_thieves_guild_trial_enemy():
+                outcome.message = self._process_thieves_guild_trial_victory()
             elif self._is_class_ring_trial_enemy():
                 outcome.message = self._process_class_ring_trial_victory()
             else:
@@ -829,7 +842,10 @@ class BattleEngine:
             outcome.winner = self.enemy.name
             outcome.message = f"{self.player.name} was slain by {self.enemy.name}.\n"
             outcome.message += promotion_kits.end_combat(self.player, victory=False, enemy=self.enemy)
-            if self._is_class_ring_trial_enemy():
+            if self._is_thieves_guild_trial_enemy():
+                outcome.message = f"{self.player.name} yields the guild initiation bout.\n"
+                self._process_class_ring_trial_defeat()
+            elif self._is_class_ring_trial_enemy():
                 outcome.message = f"{self.player.name} yields the trial bout.\n"
                 self._process_class_ring_trial_defeat()
             else:
@@ -939,6 +955,9 @@ class BattleEngine:
             reason = "the anti-magic field" if getattr(self.attacker, "anti_magic_active", False) else "silence"
             return f"{self.attacker.name} cannot cast spells because of {reason}!\n"
 
+        if choice and choice.startswith(STOLEN_SCROLL_CHOICE_PREFIX):
+            return self._execute_stolen_scroll_spell(choice)
+
         if not choice or choice not in self.attacker.spellbook.get('Spells', {}):
             return f"{self.attacker.name} fumbles the spell.\n"
 
@@ -971,6 +990,33 @@ class BattleEngine:
                 message += self._record_player_natural_spell_kill(spell)
             if astromancer.is_astromancer(self.player) and astromancer.sign_for_spell(spell):
                 astromancer.advance_constellation(self.player)
+        return message
+
+    def _execute_stolen_scroll_spell(self, choice: str) -> str:
+        """Cast an inscribed stolen-spell scroll selected from the Spells menu."""
+        scroll_name = choice.removeprefix(STOLEN_SCROLL_CHOICE_PREFIX)
+        if not scroll_name:
+            return f"{self.attacker.name} fumbles the spell.\n"
+        if scroll_name not in self.attacker.inventory or not self.attacker.inventory[scroll_name]:
+            return f"{self.attacker.name} can't find {scroll_name}.\n"
+
+        scroll = self.attacker.inventory[scroll_name][0]
+        if not isinstance(scroll, items.InscribedSpellScroll):
+            return f"{scroll_name} is not a stolen spell scroll.\n"
+
+        self._event_bus.emit(create_combat_event(
+            EventType.ITEM_USE,
+            actor=self.attacker,
+            target=self.defender,
+            item_name=scroll.name,
+            item_type=getattr(scroll, "typ", ""),
+            item_subtype=getattr(scroll, "subtyp", ""),
+            source="stolen_spell_scroll",
+        ))
+
+        message = str(scroll.use(self.attacker, target=self.defender))
+        if self.attacker == self.player:
+            message += promotion_kits.gain_stolen_charge(self.player, "stolen spell scroll")
         return message
 
     def _record_player_natural_spell_kill(self, spell: object) -> str:
@@ -1127,6 +1173,11 @@ class BattleEngine:
 
         # ── Special skill handling ───────────────────────────────────
         if skill.name == "Smoke Screen":
+            if self.attacker is self.player:
+                consumed, smoke_message = items.consume_smoke_bomb(self.attacker)
+                if not consumed:
+                    return smoke_message
+                message += smoke_message
             message += skill.use(self.attacker, target=self.defender)
             self.flee, flee_str = self.attacker.flee(self.defender, smoke=True)
             message += flee_str
@@ -1452,6 +1503,17 @@ class BattleEngine:
         self.player.effects(end=True)
         self.enemy.effects(end=True)
         return f"You complete the {self._class_ring_trial_name()}.\n"
+
+    def _process_thieves_guild_trial_victory(self) -> str:
+        """Handle Thieves Guild initiation victory without normal combat rewards."""
+        self.player.state = 'normal'
+        if hasattr(self.player, 'transform_type') and self.player.cls != self.player.transform_type:
+            self.player.transform(back=True)
+        self.player.effects(end=True)
+        self.enemy.effects(end=True)
+        if not thieves_guild.has_signet(self.player):
+            self.player.modify_inventory(items.ThievesGuildSignet(), rare=True)
+        return f"You complete the {self._thieves_guild_trial_name()} and recover the Thieves Guild Signet.\n"
 
     def _process_class_ring_trial_defeat(self) -> None:
         """Handle Class Ring trial defeat without normal death rules."""

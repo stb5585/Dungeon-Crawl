@@ -117,8 +117,8 @@ pruning change unless an implemented rule is called out.
 | Inquisitor -> Seeker | Keep | Retain reveal/inspection identity, Case Journal progress, and Revelation while adding Wayfinding and cartography/cache identity. |
 | Footpad -> Assassin | Keep | Retain stealth skills and add poison/lethal pressure, including Death Mark setup. |
 | Assassin -> Ninja | Keep | Retain assassin kit and Death Mark setup while adding Ninja Blade execution pressure and No-Trace Opener payoff. |
-| Footpad -> Spell Stealer | Keep | Retain dexterous theft identity while adding spell theft and the Stolen Charge loop. |
-| Spell Stealer -> Arcane Trickster | Keep | Retain spell theft, Stolen Charge, and permanent stolen-spell learning while adding Arcane Larceny payoff. |
+| Footpad -> Spell Stealer | Keep | Retain dexterous theft identity while adding spell theft and the combat-only Stolen Charge loop; stolen-spell scrolls are selected from the combat `Spells` picker rather than a Character Menu tab. |
+| Spell Stealer -> Arcane Trickster | Keep | Retain spell theft, Stolen Charge, and permanent stolen-spell learning while adding Arcane Larceny payoff; no dedicated Character Menu mechanic tab is added for this path. |
 
 ### Healer Branch
 

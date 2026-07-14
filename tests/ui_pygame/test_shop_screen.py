@@ -195,6 +195,20 @@ def test_update_item_list_builds_buy_and_sell_lists_with_filters(monkeypatch):
     assert screen.scroll_offset == 0
 
 
+def test_level_one_diviner_magic_shop_rods_use_town_rarity_filter(monkeypatch):
+    screen = _make_shop(monkeypatch, in_town=True, level=1)
+    screen.player_char.cls.name = "Diviner"
+
+    screen.update_item_list({"Rods": items.items_dict["OffHand"]["Rod"]}, "Buy")
+
+    names = [name for name, _item, _cost, _owned in screen.item_list]
+    assert "Willow Divining Rod" not in names
+    assert "Copper Ley Rod" not in names
+    assert "Moonlit Hazel Rod" not in names
+    assert "Dowsing Rod" not in names
+    assert names == []
+
+
 def test_update_item_list_keeps_preserved_selection_visible_after_shrink(monkeypatch):
     screen = _make_shop(monkeypatch)
     screen.buy_or_sell = "Sell"
@@ -348,6 +362,25 @@ def test_draw_all_accepts_popup_parent_screen_call_signature(monkeypatch):
     screen.draw_all(False)
     assert called == ["background", "top", "options", "list", "desc", "mod", "gold"]
     assert flip_calls == []
+
+
+def test_shop_screen_draws_location_note_outside_item_browsing(monkeypatch):
+    screen = _make_shop(monkeypatch)
+    called = []
+    screen.draw_background = lambda: called.append("background")
+    screen.draw_top = lambda: called.append("top")
+    screen.draw_options = lambda: called.append("options")
+    screen.draw_shop_list = lambda: called.append("list")
+    screen.draw_item_desc = lambda: called.append("desc")
+    screen.draw_mod = lambda: called.append("mod")
+    screen.draw_gold = lambda: called.append("gold")
+
+    screen.display_quest_text("A quiet answer in the ledger.", title="Mara Vale")
+    screen.draw_all(do_flip=False)
+
+    assert screen.location_note == "A quiet answer in the ledger."
+    assert screen.location_note_title == "Mara Vale"
+    assert called == ["background", "top", "options", "list", "desc"]
 
 
 def test_draw_item_desc_includes_element_and_resistance_metadata(monkeypatch):

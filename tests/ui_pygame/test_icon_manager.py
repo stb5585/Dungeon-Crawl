@@ -9,6 +9,7 @@ from types import SimpleNamespace
 
 import pygame
 
+from src.core import items
 from src.ui_pygame.assets import icon_manager
 from src.ui_pygame.assets.icon_manager import IconManager
 
@@ -113,6 +114,26 @@ def test_default_item_icon_map_resolves_leather_cap_without_warning(caplog):
         assert manager.icon_key_for_item(item) == "helmet"
 
     assert "Item icon mapping missing for Leather Cap" not in caplog.text
+
+
+def test_default_item_icon_map_resolves_dynamic_stolen_scrolls_without_warning(caplog):
+    manager = IconManager()
+    scroll = items.InscribedSpellScroll("MagicMissile", charges=2)
+
+    with caplog.at_level("WARNING"):
+        assert manager.icon_key_for_item(scroll) == "scroll"
+
+    assert "Item icon mapping missing" not in caplog.text
+
+
+def test_default_item_icon_map_resolves_new_tools_without_warning(caplog):
+    manager = IconManager()
+
+    with caplog.at_level("WARNING"):
+        assert manager.icon_key_for_item(items.SmokeBomb()) == "consumable"
+        assert manager.icon_key_for_item(items.Oculus()) == "gem"
+
+    assert "Item icon mapping missing" not in caplog.text
 
 
 def test_icon_manager_slot_and_generic_fallbacks(tmp_path):

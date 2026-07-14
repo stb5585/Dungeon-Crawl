@@ -80,7 +80,7 @@ combat math, or numeric balance.
 | Rogue | Fortune, Misfortune, `Jinx`, risky-action readiness. | Meter gain/spend/cap, Fortune smoothing, Misfortune payoff, `Cheat Death`, preservation. | Loot finds exclude invalid item categories and log as extra ordinary finds. | Show awakened/equipped `Loaded Dice` and once-per-combat preservation readiness. | Spend both meters and verify `Loaded Dice` status/logs. |
 | Seeker | Case Journal progress/rank, Revelation/cap, sight/detail state where available. | Case progress, milestone, Revelation gain/spend, telegraph prediction, mobility smoothing. | `Hidden Cache` and movement tools report claim/failure/smoothing clearly. | Show awakened/equipped `Hidden Cache` availability/readiness. | Gain Case progress, build Revelation, and inspect status/logs. |
 | Ninja | Death Mark/cap on current target when available, opener readiness. | Mark application/cap/spend, miss consumption, immunity/boss/trial downgrade, preservation. | Stealth/opener surfaces keep initiative requirements clear. | Show awakened/equipped `No-Trace Opener` readiness. | Apply marks, spend a finisher, and verify downgrade/preservation lines. |
-| Arcane Trickster | Stolen Charge/cap, `Arcane Larceny` buff/preservation readiness. | Charge gain/spend/cap, stolen-scroll contribution, miss/negated consumption, preservation. | Spell-steal menus fail clearly without `Blank Scroll` or against trial enemies. | Show awakened/equipped `Arcane Larceny` readiness. | Steal/cast stolen magic, spend Charge, and inspect status/logs. |
+| Arcane Trickster | Stolen Charge/cap, `Arcane Larceny` buff/preservation readiness through combat/HUD status, not a dedicated Character Menu tab. | Charge gain/spend/cap, stolen-scroll contribution, miss/negated consumption, preservation. | Spell-steal menus fail clearly without `Blank Scroll` or against trial enemies; stolen-spell scrolls appear in the combat `Spells` picker. | Show awakened/equipped `Arcane Larceny` readiness. | Steal/cast stolen magic from `Spells`, spend Charge, and inspect status/logs. |
 | Templar | Devotion/cap, active ward, `Holy Retribution`, next blessing. | Devotion gain/cap/spend, ward strength, `Pious Bounty`, blessing rotation, preservation. | Shield/offhand requirements for `Relic Aegis` fail clearly. | Show awakened/equipped `Ordered Blessings` preservation readiness. | Spend Devotion before and after ring awakening. |
 | Archbishop | Prayer/cap, support/Benediction effects, `Great Gospel`, Intervention readiness. | Prayer gain/cap/spend, `Doublecast` boundary, Benediction, Gospel reset, Intervention, preservation. | Resurrection/support menus keep MP and target failures clear. | Show awakened/equipped `Divine Intervention` readiness and preservation state. | Use `Supplication`/`Great Benediction` and inspect logs/status. |
 | Master Monk | Ki/cap, `Dim Mak` readiness, weapon penalty/exception state where relevant. | Ki gain/spend/cap, `Dim Mak` weapon penalty, staff drop/disarm, ultimate-staff exception. | Blacksmith ultimate selection shows `Ruyi Jingu Bang` when eligible. | Show awakened/equipped `Martial Master` readiness. | Build full Ki, use `Dim Mak`, and inspect weapon/ring messages. |
@@ -224,6 +224,18 @@ implementation:
   unrestricted instant-death scaling.
 - Spell Stealer/Arcane Trickster: stolen-spell mastery, free-scroll generation,
   and scroll-economy redesign.
+- Thieves Guild V1: a town `Shops` menu option from the start, closed until
+  level 10 like other gated shops. Once open, it is available to everyone for
+  keys, Blank Scrolls, Lockpick Kits, Smoke Bombs, and future tool/contraband
+  items in one tools tab. Spell scrolls, staves, tomes, rods, musical
+  instruments, and the expensive fake-wall-revealing `Oculus` belong to
+  Seraphine Voss's Magic Shop; Seraphine is a failed academy lecturer turned
+  practical hedge-magus who sells spellwork that survives the dungeon. Promoted
+  Footpad-line classes can join through a branch-themed hidden level 2
+  initiation trial, then use the backroom for class guidance, Footpad-line
+  Class Ring jobs, a guild-shop discount, and a one-time starter kit.
+  Non-members hear from Mara Vale: "The wares are for all but the backroom is
+  for a select few."
 
 Future P6 class ability work needs a one-page decision block covering trigger,
 class eligibility, storage/save migration, combat and exploration behavior,
@@ -944,7 +956,11 @@ identity through `Scavenger's Eye`; Rogue carries that forward with
 improves odds and failure fuels bigger eventual payoffs.
 
 - Preserve current identity: Footpad stealth/toolkit carry-forward remains
-  intact. `Lockpick`, `Master Lockpick`, `Steal`, `Mug`, `Gold Toss`,
+  intact. `Lockpick` and `Master Lockpick` require a carried `Lockpick Kit`
+  with limited durability; each successful use can break the kit, with higher
+  Dexterity and `Master Lockpick` lowering the break chance. `Smoke Screen`
+  requires and consumes one `Smoke Bomb`.
+  `Steal`, `Mug`, `Gold Toss`,
   `Poison Strike`, `Sneak Attack`, `Slot Machine`, `Triple Strike`,
   `Stroke of Luck`, and awakened `Loaded Dice` remain valid.
 - New passive skills: add `Scavenger's Eye` for Thief, modestly improving enemy
@@ -1155,11 +1171,12 @@ that loop through the awakened `Arcane Larceny` ring identity.
   casting an inscribed stolen-spell scroll each grant `+1` Charge, capped. Item
   theft from `Steal As Well` does not independently grant Charge; Charge comes
   from stolen magic sources only.
-- Hybrid payoff: the next damaging spell, standard weapon hit, or weapon-tagged
-  trickster skill spends all Charge before resolving. On a successful hit or
-  damaging spell, each stack adds conservative arcane pressure: a small damage
-  boost plus modest crit, status, or reliability pressure. Misses or fully
-  negated actions consume Charge but apply no rider.
+- Hybrid payoff: the next successful damaging spell, standard weapon hit, or
+  weapon-tagged trickster skill spends all Charge and adds bonus arcane damage
+  equal to `20%` of the base damage per stored Charge, with a minimum of `5`
+  per stored Charge.
+  The current implementation releases only after a successful damaging result;
+  missed or fully negated actions do not apply the payoff.
 - Class Ring display: show the awakened Arcane Trickster effect as
   `Arcane Larceny`, while preserving existing internal `Spell Steal Buff`
   compatibility for saves and tests. Awakened/equipped `Arcane Larceny` keeps
@@ -1169,10 +1186,13 @@ that loop through the awakened `Arcane Larceny` ring identity.
   awakened/equipped `Arcane Larceny` preserves `1` Stolen Charge. It should not
   create free Blank Scrolls, bypass trial immunity, or make stolen spells
   permanent beyond the existing `Steal Spell 2` behavior.
-- UI text/surfaces: class status should show `Stolen Charge`, cap, and
-  `Arcane Larceny` preservation readiness. Combat logs should report Charge
-  gain, capped Charge, spend, miss consumption, charged payoff, stolen-scroll
-  contribution, and ring preservation.
+- UI text/surfaces: combat/HUD status should show `Stolen Charge`, cap, and
+  `Arcane Larceny` preservation readiness; `Spell Stealer` and
+  `Arcane Trickster` do not receive a dedicated Character Menu mechanic tab.
+  Inscribed stolen-spell scrolls are selected from the combat `Spells` picker
+  with scroll labeling. Combat logs should report Charge gain, capped Charge,
+  spend, miss consumption, charged payoff, stolen-scroll contribution, and ring
+  preservation.
 - Tests: cover `Steal Spell` Blank Scroll consumption, stolen-scroll creation,
   and immunity; `Steal Spell 2` permanent learning plus Charge gain; Charge
   caps, gain sources, spend-all behavior, miss consumption, and combat-end or

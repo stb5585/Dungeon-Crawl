@@ -35,6 +35,10 @@ class FakeWall:
         self.visited = visited
 
 
+class ThievesGuildTrialFakeWall(FakeWall):
+    pass
+
+
 class LockedDoor:
     enter = False
     open = False
@@ -614,6 +618,7 @@ def test_wall_overlay_key_is_stable_for_same_map_tile_at_different_depths():
 def test_wall_overlay_key_hides_sconces_on_fake_walls():
     assert SceneRenderer._get_wall_overlay_key(FakeWall(visited=False), depth=1) is None
     assert SceneRenderer._get_wall_overlay_key(FakeWall(visited=True), depth=3) is None
+    assert SceneRenderer._get_wall_overlay_key(ThievesGuildTrialFakeWall(visited=False), depth=2) is None
 
 
 def test_rookie_body_sprite_respects_player_quest_gate():
@@ -2057,6 +2062,43 @@ def test_scene_renderer_keeps_hidden_fake_wall_as_wall_without_marker():
     world = {
         (0, 0, 1): OpenTile(),
         (1, 0, 1): FakeWall(visited=False),
+        (0, -1, 1): OpenTile(),
+        (0, 1, 1): OpenTile(),
+    }
+
+    projected_calls = []
+    special_calls = []
+    original_get_projected_surface = scene_renderer.textures.get_projected_surface
+    original_get_special_texture = scene_renderer.textures.get_special_texture
+
+    def recording_get_projected_surface(panel_id, texture_key, quad, darkness, view_size):
+        projected_calls.append((panel_id, texture_key))
+        return original_get_projected_surface(panel_id, texture_key, quad, darkness, view_size)
+
+    def recording_get_special_texture(texture_key, size=None):
+        special_calls.append((texture_key, size))
+        return original_get_special_texture(texture_key, size)
+
+    scene_renderer.textures.get_projected_surface = recording_get_projected_surface
+    scene_renderer.textures.get_special_texture = recording_get_special_texture
+
+    scene_renderer.render(player, world)
+
+    assert ("d1:back_wall", "wall") in projected_calls
+    assert special_calls == []
+
+    pygame.quit()
+
+
+def test_scene_renderer_keeps_hidden_fake_wall_subclass_as_wall_without_marker():
+    pygame.init()
+    screen = pygame.display.set_mode((640, 480))
+    presenter = DummyPresenter(width=640, height=480, screen=screen)
+    scene_renderer = SceneRenderer(presenter, TextureLibrary())
+    player = DummyPlayer()
+    world = {
+        (0, 0, 1): OpenTile(),
+        (1, 0, 1): ThievesGuildTrialFakeWall(visited=False),
         (0, -1, 1): OpenTile(),
         (0, 1, 1): OpenTile(),
     }

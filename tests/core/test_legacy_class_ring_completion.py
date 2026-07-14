@@ -2,7 +2,7 @@
 
 from types import SimpleNamespace
 
-from src.core import abilities, items
+from src.core import abilities, enemies, items
 from src.core.character import Combat, Resource, Stats
 from src.core.classes import bard, berserker, class_rings, lycan, spell_stealer, wizard
 from src.core.companions import Summons
@@ -79,6 +79,19 @@ def test_spell_steal_trial_enemy_is_immune():
     assert success is False
     assert "no stealable spell" in message
     assert "Blank Scroll" in player.inventory
+
+
+def test_spell_steal_allows_thieves_guild_arcane_trial_enemy():
+    player = TestGameState.create_player(class_name="Arcane Trickster")
+    player.modify_inventory(items.BlankScroll())
+    enemy = enemies.GuildArcaneBoss()
+
+    success, message = spell_stealer.steal_spell(player, enemy, rng=_Always())
+
+    assert success is True
+    assert "steals" in message
+    assert "Blank Scroll" not in player.inventory
+    assert any(name.startswith("Stolen ") for name in player.inventory)
 
 
 def test_wizard_affinity_hex_opposites_and_save_load():

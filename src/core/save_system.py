@@ -19,7 +19,7 @@ import os
 from dataclasses import dataclass, asdict
 from typing import TYPE_CHECKING
 
-from . import abilities, enemies, items, main_story, town as town_core
+from . import abilities, enemies, items, main_story, thieves_guild, town as town_core
 from .classes import promotion_kits
 from .character import Resource, Stats, Combat, Level
 
@@ -89,6 +89,8 @@ class ItemSerializer:
         if item.__class__.__name__ == "InscribedSpellScroll":
             data["spell_class_name"] = getattr(item, "spell_class_name", "MagicMissile")
             data["charges"] = int(getattr(item, "charges", 1) or 1)
+        elif item.__class__.__name__ == "LockpickKit":
+            data["charges"] = int(getattr(item, "charges", 3) or 3)
         return data
     
     @staticmethod
@@ -121,6 +123,8 @@ class ItemSerializer:
                             data.get("spell_class_name", "MagicMissile"),
                             charges=data.get("charges"),
                         )
+                    if item_class_name == "LockpickKit":
+                        return item_class(charges=data.get("charges", 3))
                     return item_class()
             except Exception:
                 pass
@@ -935,6 +939,7 @@ class PlayerDataSerializer:
             'wizard_affinity': getattr(player, 'wizard_affinity', None),
             'wizard_affinity_version': getattr(player, 'wizard_affinity_version', 1),
             'main_story': main_story.normalize_state(getattr(player, 'main_story', None)),
+            'thieves_guild': thieves_guild.normalize_state(getattr(player, 'thieves_guild', None)),
             'liminal_gap_return': getattr(player, 'liminal_gap_return', None),
             'gameplay_stats': normalize_gameplay_stats(
                 getattr(player, 'gameplay_stats', None),
@@ -1184,6 +1189,9 @@ class PlayerDataSerializer:
         player.main_story = data.get('main_story', getattr(player, 'main_story', None))
         if hasattr(player, "ensure_main_story_state"):
             player.ensure_main_story_state()
+        player.thieves_guild = data.get('thieves_guild', getattr(player, 'thieves_guild', None))
+        if hasattr(player, "ensure_thieves_guild_state"):
+            player.ensure_thieves_guild_state()
         liminal_gap_return = data.get('liminal_gap_return', getattr(player, 'liminal_gap_return', None))
         if isinstance(liminal_gap_return, (list, tuple)) and len(liminal_gap_return) >= 4:
             liminal_gap_return = tuple(liminal_gap_return[:4])

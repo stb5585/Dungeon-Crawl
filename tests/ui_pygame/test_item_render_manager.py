@@ -207,6 +207,44 @@ def test_default_item_render_map_covers_instantiable_catalog_items():
     assert missing == []
 
 
+def test_default_item_render_map_uses_dedicated_art_for_new_tools_and_signet():
+    manager = ItemRenderManager(enhance_artwork=False)
+    expected = {
+        items.LockpickKit().name: "tools/lockpick_kit",
+        items.SmokeBomb().name: "tools/smoke_bomb",
+        items.Oculus().name: "magic_tools/oculus",
+        items.ThievesGuildSignet().name: "accessories/rings/thieves_guild_signet",
+    }
+
+    for item_name, render_key in expected.items():
+        path = manager.art_path_for_key(render_key)
+        surface = pygame.image.load(str(path))
+        width, height = surface.get_size()
+
+        assert manager.get_render_key_for_item(item_name) == render_key
+        assert path.exists()
+        assert surface.get_at((0, 0)).a == 0
+        assert surface.get_at((width - 1, 0)).a == 0
+        assert surface.get_at((0, height - 1)).a == 0
+        assert surface.get_at((width - 1, height - 1)).a == 0
+        assert pygame.mask.from_surface(surface, 8).count() > 1000
+
+
+def test_default_item_render_map_uses_individual_art_for_diviner_rods():
+    manager = ItemRenderManager(enhance_artwork=False)
+    expected = {
+        items.WillowDiviningRod().name: "offhand/rods/willow_divining_rod",
+        items.CopperLeyRod().name: "offhand/rods/copper_ley_rod",
+        items.MoonlitHazelRod().name: "offhand/rods/moonlit_hazel_rod",
+    }
+
+    assert len(set(expected.values())) == len(expected)
+    for item_name, render_key in expected.items():
+        path = manager.art_path_for_key(render_key)
+        assert manager.get_render_key_for_item(item_name) == render_key
+        assert path.exists()
+
+
 def test_default_item_render_map_uses_individual_art_for_helmet_catalog():
     manager = ItemRenderManager()
     generic_keys = {"helmet", "armor", "generic_item"}

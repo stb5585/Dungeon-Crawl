@@ -4,6 +4,7 @@
 import inspect
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 sys.path.insert(0, str(Path(__file__).parents[2]))
 
@@ -246,6 +247,11 @@ def test_base_item_classes_and_helper_utilities(monkeypatch):
     misc = items.Misc("Quest Scrap", "A tiny scrap.", 0, 1.0, "Quest")
     sheet_music = items.SheetMusic("Song Sheet", "Sheet music.", 0, 0.5, "Special")
     blank_scroll = items.BlankScroll("Blank Scroll", "A writable scroll.", 0, 0.5, "Special")
+    guild_signet = items.ThievesGuildSignet()
+    lockpick_kit = items.LockpickKit()
+    smoke_bomb = items.SmokeBomb()
+    oculus = items.Oculus()
+    stolen_scroll = items.InscribedSpellScroll("MagicMissile", charges=2)
 
     assert fist_weapon.disarm is False
     assert sword_weapon.disarm is True
@@ -262,6 +268,47 @@ def test_base_item_classes_and_helper_utilities(monkeypatch):
     assert "Sub-type: Quest" in str(misc)
     assert sheet_music.typ == "Misc"
     assert blank_scroll.typ == "Misc"
+    assert guild_signet.name == "Thieves Guild Signet"
+    assert guild_signet.subtyp == "Special"
+    assert lockpick_kit.name == "Lockpick Kit"
+    assert lockpick_kit.subtyp == "Tool"
+    assert lockpick_kit.charges == 3
+    assert "Durability: 3" in lockpick_kit.description
+    assert items.LockpickKit in items.items_dict["Misc"]["Tool"]
+    assert smoke_bomb.name == "Smoke Bomb"
+    assert smoke_bomb.subtyp == "Tool"
+    assert items.SmokeBomb in items.items_dict["Misc"]["Tool"]
+    assert oculus.name == "Oculus"
+    assert oculus.subtyp == "Magic Tool"
+    assert items.Oculus in items.items_dict["Misc"]["Magic Tool"]
+    assert items.has_lockpick_kit(SimpleNamespace(inventory={})) is False
+    assert items.has_lockpick_kit(SimpleNamespace(inventory={"Lockpick Kit": [lockpick_kit]})) is True
+    assert items.has_smoke_bomb(SimpleNamespace(inventory={"Smoke Bomb": [smoke_bomb]})) is True
+    assert items.has_oculus(SimpleNamespace(inventory={"Oculus": [oculus]})) is True
+    assert items.can_detect_fake_walls(SimpleNamespace(inventory={"Oculus": [oculus]}, spellbook={"Skills": {}})) is True
+    assert items.can_detect_fake_walls(SimpleNamespace(inventory={}, spellbook={"Skills": {"Keen Eye": object()}})) is True
+
+    utility_player = TestGameState.create_player(stats={"dex": 18})
+    utility_player.inventory = {"Lockpick Kit": [lockpick_kit], "Smoke Bomb": [smoke_bomb]}
+    normal_break_chance = items.lockpick_break_chance(utility_player)
+    master_break_chance = items.lockpick_break_chance(utility_player, master=True)
+    assert master_break_chance < normal_break_chance
+    used, kit_message = items.use_lockpick_kit(utility_player, roll=0.99)
+    assert used is True
+    assert "Durability: 2" in kit_message
+    assert utility_player.inventory["Lockpick Kit"][0].charges == 2
+    used, kit_message = items.use_lockpick_kit(utility_player, master=True, roll=0.0)
+    assert used is True
+    assert kit_message == "The Lockpick Kit breaks."
+    assert "Lockpick Kit" not in utility_player.inventory
+    consumed, smoke_message = items.consume_smoke_bomb(utility_player)
+    assert consumed is True
+    assert smoke_message == "A Smoke Bomb bursts open.\n"
+    assert "Smoke Bomb" not in utility_player.inventory
+    assert stolen_scroll.name == "Stolen Magic Missile Scroll"
+    assert stolen_scroll.charges == 2
+    assert "\n" not in stolen_scroll.description
+    assert "Charges: 2" in stolen_scroll.description
 
     monkeypatch.setattr(items, "_rarity_table_cache", None)
     monkeypatch.setattr("src.core.items.random.choice", lambda seq: seq[0])

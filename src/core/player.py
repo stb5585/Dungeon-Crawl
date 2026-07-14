@@ -25,7 +25,7 @@ from .enemy_identity import restore_defeat_identity
 
 import numpy
 
-from . import abilities, enemies, items, town
+from . import abilities, enemies, items, thieves_guild, town
 from .classes import (
     archdruid,
     bard,
@@ -398,6 +398,7 @@ class Player(Character):
         self.wizard_affinity = wizard.default_affinity()
         self.wizard_affinity_version = 2
         self.main_story = main_story.default_state()
+        self.thieves_guild = thieves_guild.default_state()
         self.warp_point = False
         self.quit = False
         self.teleport = None
@@ -527,6 +528,11 @@ class Player(Character):
         """Normalize main-story progression state for current and legacy saves."""
         self.main_story = main_story.ensure_state(self)
         return self.main_story
+
+    def ensure_thieves_guild_state(self):
+        """Normalize Thieves Guild state for current and legacy saves."""
+        self.thieves_guild = thieves_guild.ensure_state(self)
+        return self.thieves_guild
 
     def can_enter_true_final(self):
         """Return whether the main-story route has unlocked Vesperion's true final."""
@@ -808,6 +814,15 @@ class Player(Character):
         wind_pos = getattr(map_tiles, "WIND_COMMUNION_POS", None)
         if wind_pos and wind_pos in world_dict:
             world_dict[wind_pos] = map_tiles.StrangeDraftTile(*wind_pos)
+
+        if thieves_guild.TRIAL_ENTRY_POS in world_dict:
+            world_dict[thieves_guild.TRIAL_ENTRY_POS] = map_tiles.CavePath0(*thieves_guild.TRIAL_ENTRY_POS)
+        if thieves_guild.TRIAL_FAKE_WALL_POS in world_dict:
+            guild_wall = map_tiles.ThievesGuildTrialFakeWall(*thieves_guild.TRIAL_FAKE_WALL_POS)
+            guild_wall.sync_for_player(self)
+            world_dict[thieves_guild.TRIAL_FAKE_WALL_POS] = guild_wall
+        if thieves_guild.TRIAL_BOSS_POS in world_dict:
+            world_dict[thieves_guild.TRIAL_BOSS_POS] = map_tiles.ThievesGuildTrialBossRoom(*thieves_guild.TRIAL_BOSS_POS)
 
         self.world_dict = world_dict
         map_tiles.sync_rookie_body_drop_marker(self)
@@ -1419,7 +1434,8 @@ class Player(Character):
             gold = random.randint(5, 50) * (self.location_z + locked + plus) * self.stats.charisma
             # FunhouseMimicChest always spawns a Mimic (level 4 difficulty); other chests have a random chance
             is_funhouse_mimic = 'FunhouseMimicChest' in str(tile)
-            if is_funhouse_mimic or (not random.randint(0, 9 + self.check_mod('luck', luck_factor=3)) and self.level.level >= 10):
+            from . import map_tiles
+            if is_funhouse_mimic or map_tiles.ordinary_chest_spawns_mimic(self, locked=locked, plus=plus):
                 # For funhouse mimic chest, spawn level 4 mimic; for other chests use normal scaling
                 mimic_level = 4 if is_funhouse_mimic else (self.location_z + locked + plus)
                 enemy = enemies.Mimic(mimic_level, player_level=self.player_level())

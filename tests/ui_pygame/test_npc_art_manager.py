@@ -19,13 +19,16 @@ V1_NPC_KEYS = {
     "griswold",
     "hooded_figure",
     "jeweler",
+    "mara_vale",
     "nimue",
     "old_warehouse_guard",
     "priest",
     "sergeant",
+    "seraphine_voss",
     "soldier",
     "waitress",
     "warp_point_scientist",
+    "gray_broker",
 }
 
 V2_NPC_KEYS = {
@@ -34,9 +37,27 @@ V2_NPC_KEYS = {
     "vesperion",
 }
 
+OPAQUE_BACKGROUND_REPLACEMENT_KEYS = {
+    "gray_broker",
+    "mara_vale",
+    "seraphine_voss",
+}
+
 
 def _write_png(path):
     Image.new("RGBA", (32, 48), (180, 120, 80, 255)).save(path)
+
+
+def _edge_transparency_ratio(alpha) -> float:
+    width, height = alpha.size
+    edge_values = []
+    for x in range(width):
+        edge_values.append(alpha.getpixel((x, 0)))
+        edge_values.append(alpha.getpixel((x, height - 1)))
+    for y in range(height):
+        edge_values.append(alpha.getpixel((0, y)))
+        edge_values.append(alpha.getpixel((width - 1, y)))
+    return sum(value == 0 for value in edge_values) / len(edge_values)
 
 
 def test_npc_art_manager_resolves_mapped_paths_and_aliases(tmp_path):
@@ -85,6 +106,9 @@ def test_default_npc_art_map_covers_v1_dialogue_npcs():
     assert manager.get_image_path("Warehouse Guard").endswith("old_warehouse_guard.png")
     assert manager.get_image_path("Warp Point Scientist").endswith("warp_point_scientist.png")
     assert manager.get_image_path("Staffed Warp Point Scientist").endswith("warp_point_scientist.png")
+    assert manager.get_image_path("Mara Vale").endswith("mara_vale.png")
+    assert manager.get_image_path("The Gray Broker").endswith("gray_broker.png")
+    assert manager.get_image_path("Seraphine Voss").endswith("seraphine_voss.png")
 
 
 def test_default_npc_art_map_covers_v2_story_npcs():
@@ -99,6 +123,31 @@ def test_default_npc_art_map_covers_v2_story_npcs():
     assert manager.get_image_path("Reflection").endswith("reflection.png")
     assert manager.get_image_path("Reflection Psychopomp").endswith("reflection.png")
     assert manager.get_image_path("Vesperion").endswith("vesperion.png")
+
+
+def test_default_npc_portraits_use_transparent_cutout_assets():
+    art_root = build_npc_art_sheet.DEFAULT_ART_ROOT
+    map_path = art_root / "npc_art_map.json"
+    data = json.loads(map_path.read_text(encoding="utf-8"))
+
+    for key in set(data.values()):
+        path = art_root / f"{key}.png"
+        assert path.exists(), key
+        with Image.open(path) as image:
+            assert image.mode == "RGBA", key
+            assert image.size == (512, 768), key
+            alpha = image.getchannel("A")
+            assert alpha.getbbox() != (0, 0, image.width, image.height), key
+            assert _edge_transparency_ratio(alpha) >= 0.5, key
+
+            if key in OPAQUE_BACKGROUND_REPLACEMENT_KEYS:
+                corners = [
+                    alpha.getpixel((0, 0)),
+                    alpha.getpixel((image.width - 1, 0)),
+                    alpha.getpixel((0, image.height - 1)),
+                    alpha.getpixel((image.width - 1, image.height - 1)),
+                ]
+                assert corners == [0, 0, 0, 0], key
 
 
 def test_npc_art_manager_ignores_archived_art_subfolders(tmp_path):

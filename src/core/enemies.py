@@ -7,7 +7,7 @@ import os
 import random
 from textwrap import wrap
 
-from . import abilities, items
+from . import abilities, items, thieves_guild
 from .character import Character, Combat, Resource, Stats, StatusEffect
 from .combat.action_queue import ActionPriority
 from .constants import ENEMY_LOW_HEALTH_THRESHOLD
@@ -1999,6 +1999,103 @@ class Bandit2(Bandit):
              "priority_if": {"self_status": "Shapeshifted",
                               "priority": ActionPriority.SKIP,
                               "else": ActionPriority.NORMAL}}
+        ]
+
+
+class ThievesGuildTrialBoss(Bandit2):
+    """Base upgraded Bandit used for Thieves Guild initiation branches."""
+
+    branch = "cutpurse"
+    trial_name = "Guild Cutpurse"
+
+    def __init__(self):
+        super().__init__()
+        self.name = self.trial_name
+        self.combat_sprite_archetype = "bandit"
+        self.render_archetype = "bandit"
+        self.boss = True
+        self.is_boss = True
+        self.thieves_guild_trial_enemy = True
+        self.thieves_guild_trial_name = self.trial_name
+        self.class_ring_trial_enemy = True
+        self.health = Resource(90, 90)
+        self.mana = Resource(40, 40)
+        self.stats = Stats(34, 16, 14, 28, 20, 28)
+        self.combat = Combat(48, 45, 32, 38)
+        self.gold = random.randint(250, 450)
+        self.inventory = {thieves_guild.SIGNET_NAME: [items.ThievesGuildSignet]}
+        self.spellbook = {
+            "Spells": {},
+            "Skills": {
+                "Steal": abilities.Steal(),
+                "Smoke Screen": abilities.SmokeScreen(),
+                "Backstab": abilities.Backstab(),
+            },
+        }
+        self.action_stack = [
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
+            {"ability": "Steal", "priority": ActionPriority.NORMAL},
+            {"ability": "Smoke Screen", "priority": ActionPriority.LOW},
+            {"ability": "Backstab", "priority": ActionPriority.NORMAL},
+        ]
+
+
+class GuildCutpurseBoss(ThievesGuildTrialBoss):
+    branch = "cutpurse"
+    trial_name = "Guild Cutpurse"
+
+    def __init__(self):
+        super().__init__()
+        self.stats = Stats(32, 14, 14, 26, 26, 34)
+        self.combat = Combat(50, 42, 30, 38)
+
+
+class GuildInquestBoss(ThievesGuildTrialBoss):
+    branch = "inquest"
+    trial_name = "False-Ledger Broker"
+
+    def __init__(self):
+        super().__init__()
+        self.stats = Stats(30, 24, 28, 28, 20, 24)
+        self.combat = Combat(44, 48, 38, 46)
+        self.spellbook["Skills"]["Disarm"] = abilities.Disarm()
+        self.action_stack = [
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
+            {"ability": "Disarm", "priority": ActionPriority.NORMAL},
+            {"ability": "Smoke Screen", "priority": ActionPriority.LOW},
+        ]
+
+
+class GuildContractBoss(ThievesGuildTrialBoss):
+    branch = "contract"
+    trial_name = "Silent Contract Knife"
+
+    def __init__(self):
+        super().__init__()
+        self.stats = Stats(38, 14, 14, 26, 20, 38)
+        self.combat = Combat(56, 40, 30, 36)
+        self.spellbook["Skills"]["Sneak Attack"] = abilities.SneakAttack()
+        self.action_stack = [
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
+            {"ability": "Backstab", "priority": ActionPriority.NORMAL},
+            {"ability": "Sneak Attack", "priority": ActionPriority.NORMAL},
+        ]
+
+
+class GuildArcaneBoss(ThievesGuildTrialBoss):
+    branch = "arcane"
+    trial_name = "Spell-Sealed Cutpurse"
+
+    def __init__(self):
+        super().__init__()
+        self.stats = Stats(28, 30, 20, 26, 22, 30)
+        self.combat = Combat(42, 40, 48, 44)
+        self.spellbook["Spells"] = {"Firebolt": abilities.Firebolt(), "Shock": abilities.Shock()}
+        self.action_stack = [
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
+            {"ability": "Firebolt", "priority": ActionPriority.NORMAL},
+            {"ability": "Shock", "priority": ActionPriority.NORMAL},
+            {"ability": "Smoke Screen", "priority": ActionPriority.LOW},
         ]
 
 

@@ -861,6 +861,8 @@ class DungeonHUD:
         for tile_y in y_values:
             for tile_x in x_values:
                 tile = player_char.world_dict.get((tile_x, tile_y, player_char.location_z))
+                if tile and self._is_concealed_trial_room(player_char, tile_x, tile_y, tile):
+                    tile = None
 
                 if full_level:
                     screen_x = origin_x + (tile_x - min_x) * tile_size
@@ -873,15 +875,18 @@ class DungeonHUD:
                 if tile:
                     tile_type = type(tile).__name__
                     is_funhouse_wall = tile_type in ('FunhouseWall', 'MirrorWall')
+                    is_fake_wall = self._is_fake_wall_tile(tile)
                     is_directly_visible = (tile_x, tile_y) in visible_adjacent
                     is_discovered_explorable = bool(
                         getattr(tile, 'near', False)
                         and getattr(tile, 'enter', True)
-                        and tile_type not in ('FakeWall', 'FunhouseWall', 'MirrorWall')
+                        and not is_fake_wall
+                        and not is_funhouse_wall
                     )
                     is_wall_tile = bool(
                         not getattr(tile, 'enter', True)
-                        or tile_type in ('FakeWall', 'FunhouseWall', 'MirrorWall')
+                        or is_fake_wall
+                        or is_funhouse_wall
                     )
                     is_discovered_special = bool(
                         getattr(tile, 'near', False) and (
@@ -923,7 +928,7 @@ class DungeonHUD:
                         is_visited = getattr(tile, 'visited', False)
                         is_near = getattr(tile, 'near', False)
                         is_fire_path = tile_type in ('FirePath', 'FirePathSpecial')
-                        if tile_type == 'FakeWall':
+                        if is_fake_wall:
                             # Keep FakeWall hidden unless actually visited
                             if is_visited:
                                 pygame.draw.rect(self.screen, (150, 100, 150), tile_rect)
@@ -1142,10 +1147,15 @@ class DungeonHUD:
 
     @staticmethod
     def _minimap_tile_is_revealed(player_char, tile_x: int, tile_y: int, tile, visible_adjacent: set[tuple[int, int]]) -> bool:
+        if DungeonHUD._is_concealed_trial_room(player_char, tile_x, tile_y, tile):
+            return False
         tile_type = type(tile).__name__
+        is_fake_wall = DungeonHUD._is_fake_wall_tile(tile)
+        is_funhouse_wall = tile_type in ('FunhouseWall', 'MirrorWall')
         tile_is_wall = bool(
             not getattr(tile, 'enter', True)
-            or tile_type in ('FakeWall', 'FunhouseWall', 'MirrorWall')
+            or is_fake_wall
+            or is_funhouse_wall
         )
         if getattr(tile, 'visited', False):
             return True
@@ -1154,7 +1164,8 @@ class DungeonHUD:
         if (
             getattr(tile, 'near', False)
             and getattr(tile, 'enter', True)
-            and tile_type not in ('FakeWall', 'FunhouseWall', 'MirrorWall')
+            and not is_fake_wall
+            and not is_funhouse_wall
         ):
             return True
         if not getattr(tile, 'near', False):
@@ -1266,13 +1277,35 @@ class DungeonHUD:
             if not self._is_direction_visible_from_tile(current_tile, direction, adjacent_tile):
                 continue
             tile_type = type(adjacent_tile).__name__
-            if tile_type in ('FakeWall', 'FunhouseWall', 'MirrorWall') and not getattr(adjacent_tile, 'visited', False):
+            if (
+                self._is_fake_wall_tile(adjacent_tile)
+                or tile_type in ('FunhouseWall', 'MirrorWall')
+            ) and not getattr(adjacent_tile, 'visited', False):
                 continue
             if not getattr(adjacent_tile, 'enter', True):
                 continue
             visible.add((tile_x, tile_y))
 
         return visible
+
+    @staticmethod
+    def _is_fake_wall_tile(tile) -> bool:
+        tile_type = type(tile).__name__ if not isinstance(tile, str) else tile
+        return tile_type == 'FakeWall' or tile_type.endswith('FakeWall')
+
+    @staticmethod
+    def _is_concealed_trial_room(player_char, tile_x: int, tile_y: int, tile) -> bool:
+        if type(tile).__name__ != 'ThievesGuildTrialBossRoom':
+            return False
+        if getattr(tile, 'visited', False):
+            return False
+        world = getattr(player_char, "world_dict", {})
+        z = getattr(player_char, "location_z", 0)
+        for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            wall = world.get((tile_x + dx, tile_y + dy, z))
+            if type(wall).__name__ == 'ThievesGuildTrialFakeWall' and not getattr(wall, 'visited', False):
+                return True
+        return False
 
     def _is_direction_visible_from_tile(self, current_tile, direction, adjacent_tile=None):
         """Return whether a cardinal direction is visible from the current tile."""

@@ -354,9 +354,7 @@ def test_promotion_screen_draw_helpers(monkeypatch):
     assert "Choose your path" in presenter.normal_font.render_calls
     assert "Warrior -> Knight" in presenter.large_font.render_calls
     assert "Promotion Impact" in presenter.normal_font.render_calls
-    assert "Character Menu Preview" in presenter.normal_font.render_calls
-    assert "Character" in presenter.small_font.render_calls
-    assert "Equipment" in presenter.small_font.render_calls
+    assert "Character Menu Preview" not in presenter.normal_font.render_calls
     assert "Class Gear Profile" not in presenter.normal_font.render_calls
     assert any("Existing legal gear is kept" in call for call in presenter.small_font.render_calls)
     assert "Equipment Restrictions" in presenter.normal_font.render_calls
@@ -376,7 +374,7 @@ def test_promotion_screen_draw_helpers(monkeypatch):
     assert flip_calls
 
 
-def test_promotion_screen_previews_new_mechanic_tab(monkeypatch):
+def test_promotion_screen_does_not_embed_character_menu_help(monkeypatch):
     presenter = _make_presenter()
     player = _make_player()
     monkeypatch.setattr(promotion_screen.PromotionScreen, "_load_background", lambda self: setattr(self, "background", None))
@@ -399,17 +397,17 @@ def test_promotion_screen_previews_new_mechanic_tab(monkeypatch):
     screen.draw_all()
 
     assert "Warrior -> Weapon Master" in presenter.large_font.render_calls
-    assert "Weapon Discipline" in presenter.small_font.render_calls
-    assert any("New tab: Weapon Discipline" in call for call in presenter.small_font.render_calls)
-    assert any("Intelligence helps" in call for call in presenter.small_font.render_calls)
+    assert "Character Menu Preview" not in presenter.normal_font.render_calls
+    assert not any("New tab:" in call for call in presenter.small_font.render_calls)
+    assert not any("Intelligence helps" in call for call in presenter.small_font.render_calls)
     assert draw_rect_calls
 
 
 def test_promotion_screen_previews_warrior_branch_mechanics(monkeypatch):
-    for option, cls_ctor, expected_tab in (
-        ("Paladin", PaladinClass, "Oath Conviction"),
-        ("Lancer", LancerClass, "Aerial Tempo"),
-        ("Sentinel", SentinelClass, "Resolve"),
+    for option, cls_ctor in (
+        ("Paladin", PaladinClass),
+        ("Lancer", LancerClass),
+        ("Sentinel", SentinelClass),
     ):
         presenter = _make_presenter()
         player = _make_player()
@@ -431,21 +429,20 @@ def test_promotion_screen_previews_warrior_branch_mechanics(monkeypatch):
         screen.draw_all()
 
         assert f"Warrior -> {option}" in presenter.large_font.render_calls
-        assert expected_tab in presenter.small_font.render_calls
-        assert any(f"New tab: {expected_tab}" in call for call in presenter.small_font.render_calls)
+        assert not any("New tab:" in call for call in presenter.small_font.render_calls)
 
 
 def test_promotion_screen_previews_mage_branch_mechanics(monkeypatch):
-    for current_class, option, cls_ctor, expected_tab in (
-        ("Mage", "Sorcerer", SorcererClass, "School Affinity"),
-        ("Sorcerer", "Wizard", WizardClass, "School Affinity"),
-        ("Mage", "Warlock", WarlockClass, "Familiar"),
-        ("Warlock", "Shadowcaster", ShadowcasterClass, "Umbral Debt"),
-        ("Warlock", "Demonologist", DemonologistClass, "Contracts"),
-        ("Mage", "Spellblade", SpellbladeClass, "Blade Charge"),
-        ("Spellblade", "Knight Enchanter", KnightEnchanterClass, "Arcane Tempo"),
-        ("Mage", "Summoner", SummonerClass, "Summons"),
-        ("Summoner", "Grand Summoner", GrandSummonerClass, "Summons"),
+    for current_class, option, cls_ctor in (
+        ("Mage", "Sorcerer", SorcererClass),
+        ("Sorcerer", "Wizard", WizardClass),
+        ("Mage", "Warlock", WarlockClass),
+        ("Warlock", "Shadowcaster", ShadowcasterClass),
+        ("Warlock", "Demonologist", DemonologistClass),
+        ("Mage", "Spellblade", SpellbladeClass),
+        ("Spellblade", "Knight Enchanter", KnightEnchanterClass),
+        ("Mage", "Summoner", SummonerClass),
+        ("Summoner", "Grand Summoner", GrandSummonerClass),
     ):
         presenter = _make_presenter()
         player = _make_player()
@@ -467,20 +464,19 @@ def test_promotion_screen_previews_mage_branch_mechanics(monkeypatch):
         screen.draw_all()
 
         assert f"{current_class} -> {option}" in presenter.large_font.render_calls
-        assert expected_tab in presenter.small_font.render_calls
-        assert any(f"New tab: {expected_tab}" in call for call in presenter.small_font.render_calls)
+        assert not any("New tab:" in call for call in presenter.small_font.render_calls)
 
 
 def test_promotion_screen_previews_footpad_branch_mechanics(monkeypatch):
-    for current_class, option, cls_ctor, expected_tab in (
-        ("Footpad", "Thief", ThiefClass, "Fortune"),
-        ("Thief", "Rogue", RogueClass, "Fortune"),
-        ("Footpad", "Inquisitor", InquisitorClass, "Case Journal"),
-        ("Inquisitor", "Seeker", SeekerClass, "Case Journal"),
-        ("Footpad", "Assassin", AssassinClass, "Death Mark"),
-        ("Assassin", "Ninja", NinjaClass, "Death Mark"),
-        ("Footpad", "Spell Stealer", SpellStealerClass, "Stolen Charge"),
-        ("Spell Stealer", "Arcane Trickster", ArcaneTricksterClass, "Stolen Charge"),
+    for current_class, option, cls_ctor in (
+        ("Footpad", "Thief", ThiefClass),
+        ("Thief", "Rogue", RogueClass),
+        ("Footpad", "Inquisitor", InquisitorClass),
+        ("Inquisitor", "Seeker", SeekerClass),
+        ("Footpad", "Assassin", AssassinClass),
+        ("Assassin", "Ninja", NinjaClass),
+        ("Footpad", "Spell Stealer", SpellStealerClass),
+        ("Spell Stealer", "Arcane Trickster", ArcaneTricksterClass),
     ):
         presenter = _make_presenter()
         player = _make_player()
@@ -502,20 +498,19 @@ def test_promotion_screen_previews_footpad_branch_mechanics(monkeypatch):
         screen.draw_all()
 
         assert f"{current_class} -> {option}" in presenter.large_font.render_calls
-        assert expected_tab in presenter.small_font.render_calls
-        assert any(f"New tab: {expected_tab}" in call for call in presenter.small_font.render_calls)
+        assert not any("New tab:" in call for call in presenter.small_font.render_calls)
 
 
 def test_promotion_screen_previews_healer_branch_mechanics(monkeypatch):
-    for current_class, option, cls_ctor, expected_tab in (
-        ("Healer", "Cleric", ClericClass, "Devotion"),
-        ("Cleric", "Templar", TemplarClass, "Devotion"),
-        ("Healer", "Monk", MonkClass, "Ki"),
-        ("Monk", "Master Monk", MasterMonkClass, "Ki"),
-        ("Healer", "Priest", PriestClass, "Prayer"),
-        ("Priest", "Archbishop", ArchbishopClass, "Prayer"),
-        ("Healer", "Bard", BardClass, "Crescendo"),
-        ("Bard", "Troubadour", TroubadourClass, "Crescendo"),
+    for current_class, option, cls_ctor in (
+        ("Healer", "Cleric", ClericClass),
+        ("Cleric", "Templar", TemplarClass),
+        ("Healer", "Monk", MonkClass),
+        ("Monk", "Master Monk", MasterMonkClass),
+        ("Healer", "Priest", PriestClass),
+        ("Priest", "Archbishop", ArchbishopClass),
+        ("Healer", "Bard", BardClass),
+        ("Bard", "Troubadour", TroubadourClass),
     ):
         presenter = _make_presenter()
         player = _make_player()
@@ -537,15 +532,14 @@ def test_promotion_screen_previews_healer_branch_mechanics(monkeypatch):
         screen.draw_all()
 
         assert f"{current_class} -> {option}" in presenter.large_font.render_calls
-        assert expected_tab in presenter.small_font.render_calls
-        assert any(f"New tab: {expected_tab}" in call for call in presenter.small_font.render_calls)
+        assert not any("New tab:" in call for call in presenter.small_font.render_calls)
 
 
 def test_promotion_screen_previews_pathfinder_branch_mechanics(monkeypatch):
-    for option, cls_ctor, expected_tab in (
-        ("Diviner", DivinerClass, "Runes"),
-        ("Shaman", ShamanClass, "Totems"),
-        ("Ranger", RangerClass, "Companion"),
+    for option, cls_ctor in (
+        ("Diviner", DivinerClass),
+        ("Shaman", ShamanClass),
+        ("Ranger", RangerClass),
     ):
         presenter = _make_presenter()
         player = _make_player()
@@ -567,8 +561,7 @@ def test_promotion_screen_previews_pathfinder_branch_mechanics(monkeypatch):
         screen.draw_all()
 
         assert f"Pathfinder -> {option}" in presenter.large_font.render_calls
-        assert expected_tab in presenter.small_font.render_calls
-        assert any(f"New tab: {expected_tab}" in call for call in presenter.small_font.render_calls)
+        assert not any("New tab:" in call for call in presenter.small_font.render_calls)
 
 
 def test_promotion_screen_navigation(monkeypatch):

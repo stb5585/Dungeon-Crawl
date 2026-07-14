@@ -41,6 +41,10 @@ class ShopScreen(TownScreenBase):
         self._itemdict_source = {}
         self.item_render_manager = get_item_render_manager()
         self.location_portrait_name: str | None = None
+        self.location_note: str = ""
+        self.location_note_title: str = ""
+        self.price_multiplier = 1.0
+        self.ignore_rarity_filter = False
 
         # Caching for equip_diff to prevent recalculation on every blit
         self.cached_item_index = -1
@@ -81,6 +85,11 @@ class ShopScreen(TownScreenBase):
     def set_location_portrait(self, npc_name: str | None) -> None:
         """Set a persistent shopkeeper portrait for the main shop menu."""
         self.location_portrait_name = npc_name
+
+    def display_quest_text(self, text: str, *, title: str = "") -> None:
+        """Show location guidance in the shop description panel."""
+        self.location_note = text
+        self.location_note_title = title
 
     def option_rects(self) -> list[pygame.Rect]:
         """Return clickable rectangles for the main shop option rows."""
@@ -208,6 +217,26 @@ class ShopScreen(TownScreenBase):
         """Draw the description of the currently highlighted item."""
         self.draw_semi_transparent_panel(self.desc_rect)
         pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, self.desc_rect, 2)
+
+        if not self.is_item_browsing() and self.location_note:
+            text_left = self.desc_rect.left + 18
+            text_width = self.desc_rect.width - 36
+            y = self.desc_rect.top + 18
+            if self.location_note_title:
+                title = self.normal_font.render(self.location_note_title, True, self.colors.GOLD)
+                self.screen.blit(title, (text_left, y))
+                y += title.get_height() + 10
+            wrap_width = max(24, text_width // 8)
+            line_height = self.normal_font.get_height() + 4
+            for paragraph in self.location_note.splitlines():
+                if not paragraph.strip():
+                    y += line_height // 2
+                    continue
+                for line in wrap(paragraph, wrap_width, break_on_hyphens=False):
+                    text = self.normal_font.render(line, True, self.colors.WHITE)
+                    self.screen.blit(text, (text_left, y))
+                    y += line_height
+            return
         
         if self.item_list and 0 <= self.current_item < len(self.item_list):
             display_str, item, _, _ = self.item_list[self.current_item]
@@ -481,6 +510,8 @@ class ShopScreen(TownScreenBase):
             self.draw_item_desc()
             self.draw_mod()
             self.draw_gold()
+        elif self.location_note:
+            self.draw_item_desc()
         if do_flip:
             pygame.display.flip()
 
@@ -644,7 +675,7 @@ class ShopScreen(TownScreenBase):
                 continue
 
             # Check rarity for town shops
-            if self.player_char.in_town():
+            if self.player_char.in_town() and not self.ignore_rarity_filter:
                 min_rarity = max(0.4, (1.0 - (0.02 * self.player_char.player_level())))
                 if item.rarity < min_rarity:
                     continue
@@ -656,7 +687,7 @@ class ShopScreen(TownScreenBase):
             
             # Calculate adjusted cost based on charisma (race-aware).
             adj_scale = self.player_char.shop_price_scale()
-            adj_cost = max(1, int(item.value * adj_scale))
+            adj_cost = max(1, int(item.value * adj_scale * self.price_multiplier))
             
             # Count owned items
             owned = 0

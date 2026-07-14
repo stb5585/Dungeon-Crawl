@@ -96,10 +96,10 @@ def test_promotion_mechanic_guidance_points_to_relevant_character_tab():
     assert classes.promotion_mechanic_tab_label("Assassin") == "Death Mark"
     assert "No-Trace Opener" in classes.promotion_mechanic_guidance("Ninja")
     assert classes.promotion_mechanic_tab_label("Ninja") == "Death Mark"
-    assert "Stolen Charge" in classes.promotion_mechanic_guidance("Spell Stealer")
-    assert classes.promotion_mechanic_tab_label("Spell Stealer") == "Stolen Charge"
+    assert "combat Spells menu" in classes.promotion_mechanic_guidance("Spell Stealer")
+    assert classes.promotion_mechanic_tab_label("Spell Stealer") == ""
     assert "Arcane Larceny" in classes.promotion_mechanic_guidance("Arcane Trickster")
-    assert classes.promotion_mechanic_tab_label("Arcane Trickster") == "Stolen Charge"
+    assert classes.promotion_mechanic_tab_label("Arcane Trickster") == ""
 
     assert "Sanctuary Ward" in classes.promotion_mechanic_guidance("Cleric")
     assert classes.promotion_mechanic_tab_label("Cleric") == "Devotion"

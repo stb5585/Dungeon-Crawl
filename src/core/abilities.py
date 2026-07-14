@@ -1528,7 +1528,7 @@ class KidneyPunch:
 
 
 class SmokeScreen:
-    """Data-driven (smoke_screen.yaml)"""
+    """Data-driven (smoke_screen.yaml); player use consumes a Smoke Bomb."""
     def __new__(cls):
         return _load_yaml_ability("smoke_screen.yaml", cls_name="SmokeScreen")
 
@@ -1557,7 +1557,10 @@ class Lockpick(Stealth):
     """
 
     def __init__(self):
-        super().__init__(name="Lockpick", description="Unlock a locked chest.")
+        super().__init__(
+            name="Lockpick",
+            description="Unlock a locked chest while carrying a Lockpick Kit. The kit may lose durability or break.",
+        )
         self.passive = True
 
 
@@ -1569,7 +1572,10 @@ class MasterLockpick(Lockpick):
     def __init__(self):
         super().__init__()
         self.name = "Master Lockpick"
-        self.description = "Unlock a locked chest or door."
+        self.description = (
+            "Unlock a locked chest or door while carrying a Lockpick Kit. "
+            "Master technique lowers the kit's break chance."
+        )
         self.passive = True
 
 

@@ -268,6 +268,25 @@ def test_case_revelation_death_mark_stolen_charge_and_summon_bond():
     assert "invokes Patagon" in abilities.InvokePatagon().use(summoner, target)
 
 
+def test_stolen_charge_payoff_has_meaningful_damage_floor():
+    trickster = _player("Arcane Trickster")
+    target = enemies.Goblin()
+    target.health.current = 100
+    state = promotion_kits.combat_state(trickster)
+    state["stolen_charge"] = 3
+
+    promotion_kits.record_damage_event(
+        trickster,
+        target,
+        6,
+        "Physical",
+        metadata={"attack_source": "weapon"},
+    )
+
+    assert target.health.current == 85
+    assert state["stolen_charge"] == 0
+
+
 def test_summon_bond_gain_uses_level_span_scaled_roll(monkeypatch):
     from src.core import companions
 

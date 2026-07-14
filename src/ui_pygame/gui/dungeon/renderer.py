@@ -13,7 +13,7 @@ from src.ui_pygame.assets.enemy_combat_sprite_manager import get_enemy_combat_sp
 from .assets import TextureLibrary
 from .geometry import Quad, build_depth_rect, build_next_depth_rect, build_zone_geometry
 from .projector import project_texture_to_quad
-from .scene import extract_visible_scene, is_wall
+from .scene import extract_visible_scene, is_fake_wall, is_wall
 
 
 @dataclass(frozen=True)
@@ -1506,7 +1506,7 @@ class SceneRenderer:
             zone is not None
             and next_zone is not None
             and self._is_floor_sprite_tile(tile, getattr(self, "player_char", None))
-            and type(tile).__name__ != "FakeWall"
+            and not is_fake_wall(tile)
             and "BossRoom" not in type(tile).__name__
         ):
             render_depth = depth + 1
@@ -1740,7 +1740,7 @@ class SceneRenderer:
         if "FunhouseTeleporter" in tile_type:
             return
 
-        if tile_type == "FakeWall" and bool(getattr(tile, "visited", False)):
+        if is_fake_wall(tile) and bool(getattr(tile, "visited", False)):
             self._render_translucent_fake_wall_panel(
                 tile,
                 rect,
@@ -2551,7 +2551,7 @@ class SceneRenderer:
         blood_key = SceneRenderer._get_blood_overlay_key(tile, "wall")
         if blood_key is not None:
             return blood_key
-        if type(tile).__name__ in {"FakeWall", "FunhouseWall", "MirrorWall"}:
+        if is_fake_wall(tile) or type(tile).__name__ in {"FunhouseWall", "MirrorWall"}:
             return None
         z = getattr(tile, "z", 1)
         seed = (getattr(tile, "x", 0) * 31) + (getattr(tile, "y", 0) * 17) + (z * 13)

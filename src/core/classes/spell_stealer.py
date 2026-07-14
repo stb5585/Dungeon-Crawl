@@ -48,7 +48,7 @@ class SpellStealer(Job):
 
 
 def eligible_spell_classes(target: Any) -> list[type]:
-    if getattr(target, "class_ring_trial_enemy", False):
+    if getattr(target, "class_ring_trial_enemy", False) and not getattr(target, "thieves_guild_trial_enemy", False):
         return []
     spells = getattr(target, "spellbook", {}).get("Spells", {})
     classes: list[type] = []

@@ -8,7 +8,7 @@ from types import SimpleNamespace
 import pygame
 import pytest
 
-from src.core import items, main_story
+from src.core import enemies, items, main_story
 from src.core.classes import class_rings
 from src.core.player import LIMINAL_GAP_ENTRY_FACING, LIMINAL_GAP_ENTRY_POS
 from src.ui_pygame.gui import dungeon_manager
@@ -386,6 +386,14 @@ def test_boss_intro_uses_split_dialogue_and_jester_defeat_returns_to_funhouse_te
     assert shown[-1][1]["image_path"].endswith("jester.png")
     assert boss_tile.read is True
 
+    guild_enemy = enemies.GuildCutpurseBoss()
+    guild_tile = dungeon_manager.map_tiles.ThievesGuildTrialBossRoom(15, 2, 2)
+    manager._show_boss_intro_dialogue(guild_tile, guild_enemy)
+    assert shown[-1][1]["title"] == "Guild Cutpurse"
+    assert shown[-1][1]["split_layout"] is True
+    assert shown[-1][1]["image_path"].endswith("enemy_combat_sprites/guild_cutpurse.png")
+    assert guild_tile.read is True
+
     player.location_z = 7
     player.funhouse_return = (1, 2, 0, "east")
     teleporter = dungeon_manager.map_tiles.FunhouseTeleporter(11, 0, 4)
@@ -651,7 +659,12 @@ def test_interact_chest_covers_unlock_mimic_loot_and_empty_cases(monkeypatch):
 
     monkeypatch.setattr("src.core.enemies.Mimic", MimicEnemy)
     monkeypatch.setattr("src.core.items.JesterToken", lambda: SimpleNamespace(name="Jester Token"))
-    monkeypatch.setattr(dungeon_manager.random, "randint", lambda *_args: 0)
+    mimic_rolls = [True, False]
+    monkeypatch.setattr(
+        dungeon_manager.map_tiles,
+        "ordinary_chest_spawns_mimic",
+        lambda *_args, **_kwargs: mimic_rolls.pop(0),
+    )
 
     player.inventory["Key"] = [SimpleNamespace(name="Key")]
     chest = SimpleNamespace(
@@ -714,6 +727,38 @@ def test_interact_chest_covers_unlock_mimic_loot_and_empty_cases(monkeypatch):
 
     manager._interact_chest(empty, "Chest")
     assert "This chest has already been opened." in manager.messages
+
+
+def test_interact_chest_requires_lockpick_kit_for_lockpick_skill(monkeypatch):
+    manager, _presenter, player, _game = _make_manager(monkeypatch)
+    loot_calls = []
+    manager.loot_popup = SimpleNamespace(
+        show_unlock_prompt=lambda *_args, **_kwargs: False,
+        show_loot=lambda loot, label, **_kwargs: loot_calls.append((getattr(loot, "name", loot), label)),
+    )
+    manager._refresh_cached_frame = lambda: None
+    monkeypatch.setattr(dungeon_manager.map_tiles, "ordinary_chest_spawns_mimic", lambda *_args, **_kwargs: False)
+    monkeypatch.setattr("src.core.items.random.random", lambda: 0.99)
+    player.spellbook["Skills"]["Lockpick"] = SimpleNamespace(name="Lockpick")
+    chest = SimpleNamespace(
+        open=False,
+        locked=True,
+        loot=None,
+        generate_loot=lambda: setattr(chest, "loot", lambda: SimpleNamespace(name="Picked Loot")),
+    )
+
+    manager._interact_chest(chest, "LockedChest")
+
+    assert chest.locked is True
+    assert chest.open is False
+    assert "Lockpick Kit with the Lockpick skill" in " ".join(manager.messages)
+
+    player.inventory["Lockpick Kit"] = [items.LockpickKit()]
+    manager._interact_chest(chest, "LockedChest")
+
+    assert chest.locked is False
+    assert chest.open is True
+    assert loot_calls[-1] == ("Picked Loot", "Locked Chest")
 
 
 def test_relic_discovery_text_mapping_and_fallback():
@@ -831,6 +876,30 @@ def test_interact_door_relic_warp_terminal_and_room_pickups(monkeypatch):
     manager._interact_dead_body(body_tile)
     assert player.quest_dict["Main"]["A Bad Dream"]["Completed"] is True
     assert body_tile.read is True
+
+
+def test_interact_door_requires_lockpick_kit_for_master_lockpick(monkeypatch):
+    manager, presenter, player, _game = _make_manager(monkeypatch)
+    sfx_calls = []
+    presenter.sound_manager = SimpleNamespace(play_sfx=lambda name: sfx_calls.append(name))
+    manager._mark_view_dirty = lambda: None
+    monkeypatch.setattr("src.core.items.random.random", lambda: 0.99)
+    player.spellbook["Skills"]["Master Lockpick"] = SimpleNamespace(name="Master Lockpick")
+    door = DoorTile(enter=False, locked=True)
+
+    manager._interact_door(door)
+
+    assert door.locked is True
+    assert door.open is False
+    assert "Lockpick Kit with the Master Lockpick skill" in " ".join(manager.messages)
+    assert sfx_calls == []
+
+    player.inventory["Lockpick Kit"] = [items.LockpickKit()]
+    manager._interact_door(door)
+
+    assert door.locked is False
+    assert door.open is True
+    assert sfx_calls == ["open_door"]
 
 
 def test_dead_body_waitress_hook_uses_existing_sprite_and_missing_safe_sfx(monkeypatch):
@@ -1183,6 +1252,26 @@ def test_dungeon_popup_menu_guard_accepts_fresh_key_without_keyup(monkeypatch):
     for key in (pygame.K_w, pygame.K_a, pygame.K_d, pygame.K_s, pygame.K_u, pygame.K_j, pygame.K_o, pygame.K_PAGEUP, pygame.K_PAGEDOWN, pygame.K_l, pygame.K_ESCAPE):
         manager._handle_keypress(key)
     assert move_calls[:11] == ["forward", "left", "right", "around", "up", "down", "interact", -1, 1, "debug", "menu"]
+
+
+def test_stair_transition_suppresses_buffered_navigation_input(monkeypatch):
+    manager, _presenter, _player, _game = _make_manager(monkeypatch)
+    now = {"ticks": 1000}
+    clear_calls = []
+    monkeypatch.setattr(dungeon_manager.pygame.time, "get_ticks", lambda: now["ticks"])
+    monkeypatch.setattr(dungeon_manager.pygame.event, "clear", lambda events: clear_calls.append(events))
+    move_calls = []
+    manager.move_forward = lambda: move_calls.append("forward")
+    manager.scroll_message_log = lambda delta: move_calls.append(delta)
+
+    manager._suppress_navigation_input(ms=300)
+    manager._handle_keypress(pygame.K_UP)
+    manager._handle_keypress(pygame.K_PAGEUP)
+    now["ticks"] = 1301
+    manager._handle_keypress(pygame.K_UP)
+
+    assert clear_calls == [(pygame.KEYDOWN, pygame.KEYUP)]
+    assert move_calls == [-1, "forward"]
 
 
 def test_final_room_incubus_and_golden_chalice_branches(monkeypatch):

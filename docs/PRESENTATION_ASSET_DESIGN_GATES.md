@@ -154,9 +154,11 @@ surfaces where the NPC is the subject. The approved runtime keys are:
 - `barkeep`;
 - `busboy`;
 - `drunkard`;
+- `gray_broker`;
 - `griswold`;
 - `hooded_figure`;
 - `jeweler`;
+- `mara_vale`;
 - `nimue`;
 - `old_warehouse_guard`;
 - `priest`;
@@ -201,7 +203,8 @@ V3 improves fantasy-town ensemble variety for approved grounded town-human
 portraits while respecting story anchors such as the Waitress/Joffrey tragedy,
 town guard roles, shop identities, and approved supernatural/story portraits.
 The shipped replacement portraits are Alchemist, Barkeep, Jeweler, Priest,
-Soldier, Waitress, and Warp Point Scientist. Busboy, Drunkard, Griswold, Old
+Soldier, Waitress, and Warp Point Scientist. New shop/story portraits include
+Seraphine Voss, Mara Vale, and The Gray Broker. Busboy, Drunkard, Griswold, Old
 Warehouse Guard, and Sergeant keep their prior approved portraits for now.
 
 The reviewed candidate batch and replaced originals are archived under

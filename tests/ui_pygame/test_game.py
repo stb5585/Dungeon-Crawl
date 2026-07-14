@@ -269,6 +269,7 @@ def test_top_level_flows_request_location_music(monkeypatch):
         visit_blacksmith=lambda: None,
         visit_alchemist=lambda: None,
         visit_jeweler=lambda: None,
+        visit_magic_shop=lambda: None,
     )
     game.church_manager = SimpleNamespace(visit_church=lambda: None)
     game.barracks_manager = SimpleNamespace(visit_barracks=lambda: None)
@@ -280,8 +281,8 @@ def test_top_level_flows_request_location_music(monkeypatch):
         def __init__(self, _presenter):
             pass
 
-        def navigate(self, _options, **_kwargs):
-            return 3
+        def navigate(self, options, **_kwargs):
+            return len(options) - 1
 
     monkeypatch.setattr(pygame_game, "ShopSelectionScreen", FakeShopSelection)
 
@@ -838,7 +839,7 @@ def test_old_warehouse_footpad_ring_jobs_require_visible_dormant_ring(monkeypatc
     assert game._footpad_class_ring_rite_available() is False
 
 
-def test_old_warehouse_footpad_ring_jobs_awaken_mods(monkeypatch):
+def test_thieves_guild_backroom_ring_jobs_awaken_mods(monkeypatch):
     popup_messages = []
     popup_kwargs = []
 
@@ -873,7 +874,7 @@ def test_old_warehouse_footpad_ring_jobs_awaken_mods(monkeypatch):
         )
         game.player_char = player
 
-        assert game.visit_old_warehouse(background_draw_func=lambda: None) is True
+        assert game._run_footpad_class_ring_rite(background_draw_func=lambda: None) is True
         assert player.class_ring_awakening["awakened"][class_name] is True
         assert player.equipment["Ring"].mod == expected_mod
         assert any(expected_label in message for message in popup_messages)
@@ -882,7 +883,183 @@ def test_old_warehouse_footpad_ring_jobs_awaken_mods(monkeypatch):
     assert all(call.get("require_key_release") for call in popup_kwargs)
 
 
-def test_town_menu_keeps_old_warehouse_for_eligible_footpad_after_warp(monkeypatch):
+def test_thieves_guild_backroom_guidance_for_members(monkeypatch):
+    shown_messages = []
+    menu_calls = []
+    monkeypatch.setattr(
+        pygame_game,
+        "get_npc_art_manager",
+        lambda: SimpleNamespace(get_image_path=lambda name: f"npc:{name}" if name == "The Gray Broker" else ""),
+    )
+
+    game = pygame_game.PygameGame.__new__(pygame_game.PygameGame)
+    game.presenter = SimpleNamespace(
+        render_menu=lambda prompt, options, **kwargs: menu_calls.append((prompt, tuple(options), kwargs)) or 0,
+        show_message=lambda message, **kwargs: shown_messages.append((message, kwargs)),
+    )
+    game.player_char = SimpleNamespace(
+        cls=SimpleNamespace(name="Spell Stealer"),
+        level=SimpleNamespace(level=1, pro_level=2),
+        thieves_guild={"member": True, "trial_started": True, "trial_branch": "arcane", "starter_kit_claimed": True},
+        class_ring_awakening=class_rings.default_state(),
+        equipment={},
+        storage={},
+    )
+
+    game._visit_thieves_guild_backroom(background_draw_func=lambda: None)
+    assert menu_calls[-1][0] == "Thieves Guild Backroom"
+    assert menu_calls[-1][1] == ("Class Guide", "Leave")
+    assert "combat Spells menu" in shown_messages[-1][0]
+    assert "spends all Charge for bonus arcane damage" in shown_messages[-1][0]
+    assert shown_messages[-1][1]["title"] == "The Gray Broker"
+    assert shown_messages[-1][1]["image_path"] == "npc:The Gray Broker"
+
+
+def test_thieves_guild_membership_turn_in_grants_discount_state_and_kit(monkeypatch):
+    shown_messages = []
+    inventory_calls = []
+    monkeypatch.setattr(
+        pygame_game,
+        "get_npc_art_manager",
+        lambda: SimpleNamespace(get_image_path=lambda name: f"npc:{name}"),
+    )
+
+    game = pygame_game.PygameGame.__new__(pygame_game.PygameGame)
+    game.presenter = SimpleNamespace(
+        show_message=lambda message, **kwargs: shown_messages.append((message, kwargs)),
+    )
+    game.player_char = SimpleNamespace(
+        cls=SimpleNamespace(name="Arcane Trickster"),
+        thieves_guild={"member": False, "trial_started": True, "trial_branch": "arcane", "starter_kit_claimed": False},
+        special_inventory={"Thieves Guild Signet": [items.ThievesGuildSignet()]},
+        inventory={},
+        modify_inventory=lambda item, num=1, subtract=False, rare=False: inventory_calls.append((item.name, num, subtract, rare)),
+    )
+
+    game._offer_thieves_guild_membership(background_draw_func=lambda: None)
+
+    assert game.player_char.thieves_guild["member"] is True
+    assert game.player_char.thieves_guild["starter_kit_claimed"] is True
+    assert ("Thieves Guild Signet", 1, True, True) in inventory_calls
+    assert ("Key", 2, False, False) in inventory_calls
+    assert ("Blank Scroll", 2, False, False) in inventory_calls
+    assert "25% lower" in shown_messages[-1][0]
+
+
+def test_thieves_guild_membership_starts_branch_trial_for_promoted_footpad(monkeypatch):
+    shown_messages = []
+    monkeypatch.setattr(
+        pygame_game,
+        "get_npc_art_manager",
+        lambda: SimpleNamespace(get_image_path=lambda name: f"npc:{name}"),
+    )
+    game = pygame_game.PygameGame.__new__(pygame_game.PygameGame)
+    game.presenter = SimpleNamespace(
+        show_message=lambda message, **kwargs: shown_messages.append((message, kwargs)),
+    )
+    game.player_char = SimpleNamespace(
+        cls=SimpleNamespace(name="Ninja"),
+        thieves_guild={},
+        special_inventory={},
+    )
+
+    game._offer_thieves_guild_membership(background_draw_func=lambda: None)
+
+    assert game.player_char.thieves_guild["trial_started"] is True
+    assert game.player_char.thieves_guild["trial_branch"] == "contract"
+    assert "Silent Contract Trial" in shown_messages[-1][0]
+    assert "false face" in shown_messages[-1][0]
+    assert "narrow northward approach" in shown_messages[-1][0]
+    assert "15,0,2" not in shown_messages[-1][0]
+    assert "17,16,2" not in shown_messages[-1][0]
+
+
+def test_thieves_guild_backroom_denial_keeps_requirements_private(monkeypatch):
+    shown_messages = []
+    monkeypatch.setattr(
+        pygame_game,
+        "get_npc_art_manager",
+        lambda: SimpleNamespace(get_image_path=lambda name: f"npc:{name}"),
+    )
+    game = pygame_game.PygameGame.__new__(pygame_game.PygameGame)
+    game.presenter = SimpleNamespace(
+        show_message=lambda message, **kwargs: shown_messages.append((message, kwargs)),
+    )
+    game.player_char = SimpleNamespace(
+        cls=SimpleNamespace(name="Warrior"),
+        thieves_guild={},
+        special_inventory={},
+    )
+
+    game._offer_thieves_guild_membership(background_draw_func=lambda: None)
+
+    assert "The wares are for all but the backroom is for a select few." in shown_messages[-1][0]
+    assert "Footpad" not in shown_messages[-1][0]
+    assert shown_messages[-1][1]["title"] == "Mara Vale"
+
+
+def test_thieves_guild_backroom_denial_from_shop_uses_shop_note(monkeypatch):
+    notes = []
+    shown_messages = []
+
+    class FakeShopScreen:
+        def __init__(self, *_args, **_kwargs):
+            self.choices = iter(["Ask About Backroom", "Leave"])
+
+        def set_location_portrait(self, _npc_name):
+            pass
+
+        def set_options(self, _options):
+            pass
+
+        def draw_all(self, do_flip=True):
+            pass
+
+        def navigate_options(self):
+            return next(self.choices)
+
+        def display_quest_text(self, text, *, title=""):
+            notes.append((text, title))
+
+    class FakePopup:
+        def __init__(self, *_args, **_kwargs):
+            pass
+
+        def show(self, **_kwargs):
+            pass
+
+    game = pygame_game.PygameGame.__new__(pygame_game.PygameGame)
+    game.presenter = SimpleNamespace(show_message=lambda message, **kwargs: shown_messages.append((message, kwargs)))
+    game.player_char = SimpleNamespace(
+        cls=SimpleNamespace(name="Warrior"),
+        player_level=lambda: 10,
+        thieves_guild={},
+        special_inventory={},
+    )
+    game._play_location_music = lambda *_args, **_kwargs: None
+    game.shop_manager = SimpleNamespace(
+        _active_shopkeeper_portrait=None,
+        _active_price_multiplier=1.0,
+        buy_thieves_guild_goods=lambda: None,
+        sell_items=lambda: None,
+    )
+
+    monkeypatch.setattr(pygame_game, "ShopScreen", FakeShopScreen)
+    monkeypatch.setattr(pygame_game, "ConfirmationPopup", FakePopup)
+
+    game.visit_thieves_guild()
+
+    assert notes == [
+        (
+            'Mara Vale keeps the public ledger open and the backroom door shut.\n\n'
+            '"The wares are for all but the backroom is for a select few."',
+            "Mara Vale",
+        )
+    ]
+    assert shown_messages == []
+
+
+def test_town_menu_keeps_thieves_guild_under_shops_after_level_10(monkeypatch):
     game = pygame_game.PygameGame.__new__(pygame_game.PygameGame)
     game.presenter = SimpleNamespace()
     game.player_char = SimpleNamespace(
@@ -891,6 +1068,8 @@ def test_town_menu_keeps_old_warehouse_for_eligible_footpad_after_warp(monkeypat
         class_ring_awakening=class_rings.default_state(),
         equipment={"Ring": items.ClassRing()},
         storage={},
+        level=SimpleNamespace(level=10, pro_level=1),
+        player_level=lambda: 10,
         town_heal=lambda: None,
         _suppress_heal_message=True,
         special_inventory={},
@@ -926,7 +1105,117 @@ def test_town_menu_keeps_old_warehouse_for_eligible_footpad_after_warp(monkeypat
     monkeypatch.setattr(pygame_game, "ConfirmationPopup", FakePopup)
 
     assert game.town_menu() == "quit"
-    assert any("Warp Point" in options and "Old Warehouse" in options for options in options_seen)
+    assert any("Warp Point" in options for options in options_seen)
+    assert all("Thieves Guild" not in options for options in options_seen)
+    assert all("Old Warehouse" not in options for options in options_seen)
+
+
+def test_town_menu_keeps_base_footpad_thieves_guild_under_shops(monkeypatch):
+    game = pygame_game.PygameGame.__new__(pygame_game.PygameGame)
+    game.presenter = SimpleNamespace()
+    game.player_char = SimpleNamespace(
+        name="Shade",
+        cls=SimpleNamespace(name="Footpad"),
+        level=SimpleNamespace(level=10, pro_level=1),
+        player_level=lambda: 10,
+        class_ring_awakening=class_rings.default_state(),
+        equipment={},
+        storage={},
+        town_heal=lambda: None,
+        _suppress_heal_message=True,
+        special_inventory={},
+        quest_dict={"Side": {}},
+        warp_point=True,
+        quit=False,
+    )
+    options_seen = []
+
+    class FakeTownMenu:
+        def __init__(self, _presenter):
+            pass
+
+        def draw_background(self):
+            return None
+
+        def draw_menu_panel(self, _options):
+            return None
+
+        def navigate(self, options, **_kwargs):
+            options_seen.append(tuple(options))
+            return len(options) - 1
+
+    class FakePopup:
+        def __init__(self, *_args, **_kwargs):
+            pass
+
+        def show(self, **_kwargs):
+            return True
+
+    monkeypatch.setattr(pygame_game, "TownMenuScreen", FakeTownMenu)
+    monkeypatch.setattr(pygame_game, "ConfirmationPopup", FakePopup)
+
+    assert game.town_menu() == "quit"
+    assert any("Warp Point" in options for options in options_seen)
+    assert all("Thieves Guild" not in options for options in options_seen)
+    assert all("Old Warehouse" not in options for options in options_seen)
+
+
+def test_visit_shop_lists_magic_shop_and_thieves_guild_from_start(monkeypatch):
+    game = pygame_game.PygameGame.__new__(pygame_game.PygameGame)
+    calls = []
+    options_seen = []
+    game.presenter = SimpleNamespace()
+    game.player_char = SimpleNamespace(player_level=lambda: 1)
+    game._play_location_music = lambda location, **_kwargs: calls.append(("music", location))
+    game.shop_manager = SimpleNamespace(
+        visit_blacksmith=lambda: calls.append("blacksmith"),
+        visit_alchemist=lambda: calls.append("alchemist"),
+        visit_jeweler=lambda: calls.append("jeweler"),
+        visit_magic_shop=lambda: calls.append("magic"),
+    )
+    game.visit_thieves_guild = lambda: calls.append("guild")
+
+    class FakeShopSelection:
+        def __init__(self, _presenter):
+            self.calls = 0
+
+        def navigate(self, options, **_kwargs):
+            options_seen.append(tuple(options))
+            self.calls += 1
+            if self.calls == 1:
+                return options.index("Thieves Guild")
+            return len(options) - 1
+
+    monkeypatch.setattr(pygame_game, "ShopSelectionScreen", FakeShopSelection)
+
+    game.visit_shop()
+
+    assert options_seen[0] == ("Blacksmith", "Alchemist", "Jeweler", "Magic Shop", "Thieves Guild", "Go Back")
+    assert calls == [("music", "shop"), "guild"]
+
+
+def test_thieves_guild_shop_is_closed_before_level_10(monkeypatch):
+    popup_messages = []
+    popup_calls = []
+
+    class FakePopup:
+        def __init__(self, _presenter, message, show_buttons=False, **_kwargs):
+            popup_messages.append((message, show_buttons))
+
+        def show(self, **kwargs):
+            popup_calls.append(kwargs)
+
+    game = pygame_game.PygameGame.__new__(pygame_game.PygameGame)
+    game.presenter = SimpleNamespace()
+    game.player_char = SimpleNamespace(player_level=lambda: 9)
+    game._play_location_music = lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("should not open"))
+    monkeypatch.setattr(pygame_game, "ConfirmationPopup", FakePopup)
+
+    game.visit_thieves_guild()
+
+    assert "closed for now" in popup_messages[-1][0]
+    assert popup_messages[-1][1] is False
+    assert popup_calls[-1]["flush_events"] is True
 
 
 def test_special_event_message_override_uses_popup_text(monkeypatch):

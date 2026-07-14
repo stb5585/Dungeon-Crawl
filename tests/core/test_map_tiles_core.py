@@ -9,7 +9,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parents[2]))
 
-from src.core import items, map_tiles
+from src.core import enemies, items, map_tiles, thieves_guild
 from tests.test_framework import TestGameState
 
 
@@ -85,6 +85,97 @@ class TestMapTileHelpers:
 
         assert "Something seems off" in direct
         assert intro == direct
+
+        oculus_player = _make_player()
+        oculus_player.inventory["Oculus"] = [items.Oculus()]
+        oculus_player.world_dict[(2, 1, 0)] = map_tiles.FakeWall(2, 1, 0)
+        oculus_intro = tile.intro_text(_make_game(oculus_player))
+
+        assert "Something seems off" in oculus_intro
+
+    def test_ordinary_chest_mimic_chance_is_bounded_and_roll_driven(self):
+        low_level_player = _make_player(level=4)
+        player = _make_player(level=10)
+        player.check_mod = lambda *_args, **_kwargs: 0
+
+        assert map_tiles.ordinary_chest_mimic_chance(low_level_player) == 0.0
+        assert map_tiles.ordinary_chest_mimic_chance(player) == pytest.approx(0.12)
+        assert map_tiles.ordinary_chest_mimic_chance(player, locked=1) == pytest.approx(0.17)
+        assert map_tiles.ordinary_chest_mimic_chance(player, locked=1, plus=1) == pytest.approx(0.20)
+        assert map_tiles.ordinary_chest_spawns_mimic(player, roll=0.11) is True
+        assert map_tiles.ordinary_chest_spawns_mimic(player, roll=0.12) is False
+        assert map_tiles.ordinary_chest_spawns_mimic(player, locked=1, plus=1, roll=0.19) is True
+
+    def test_thieves_guild_hidden_trial_room_is_injected_and_selects_branch_boss(self):
+        player = _make_player(class_name="Arcane Trickster", level=1, pro_level=3)
+        player.thieves_guild = {
+            "member": False,
+            "trial_started": True,
+            "trial_branch": "arcane",
+            "starter_kit_claimed": False,
+        }
+
+        player.load_tiles()
+
+        assert isinstance(player.world_dict[thieves_guild.TRIAL_HINT_POS], map_tiles.CavePath0)
+        assert isinstance(player.world_dict[thieves_guild.TRIAL_FAKE_WALL_POS], map_tiles.ThievesGuildTrialFakeWall)
+        assert player.world_dict[thieves_guild.TRIAL_FAKE_WALL_POS].enter is True
+        assert thieves_guild.TRIAL_HINT_POS == (15, 0, 2)
+        assert thieves_guild.TRIAL_FAKE_WALL_POS == (15, 1, 2)
+        assert thieves_guild.TRIAL_BOSS_POS == (15, 2, 2)
+        trial_room = player.world_dict[thieves_guild.TRIAL_BOSS_POS]
+        assert isinstance(trial_room, map_tiles.ThievesGuildTrialBossRoom)
+
+        game = _make_game(player)
+        trial_room.modify_player(game)
+
+        assert isinstance(trial_room.enemy, enemies.GuildArcaneBoss)
+        assert player.state == "fight"
+        assert player.thieves_guild["trial_branch"] == "arcane"
+
+    def test_thieves_guild_trial_room_stays_inert_after_signet_recovered(self):
+        player = _make_player(class_name="Arcane Trickster", level=1, pro_level=3)
+        player.thieves_guild = {
+            "member": False,
+            "trial_started": True,
+            "trial_branch": "arcane",
+            "starter_kit_claimed": False,
+        }
+        player.special_inventory["Thieves Guild Signet"] = [items.ThievesGuildSignet()]
+        player.load_tiles()
+
+        trial_room = player.world_dict[thieves_guild.TRIAL_BOSS_POS]
+        trial_room.modify_player(_make_game(player))
+
+        assert trial_room.defeated is True
+        assert trial_room.enemy is None
+        assert player.state == "normal"
+
+    def test_thieves_guild_trial_room_is_inert_until_backroom_trial_starts(self):
+        player = _make_player(class_name="Footpad", level=10)
+        player.thieves_guild = {
+            "member": False,
+            "trial_started": False,
+            "trial_branch": "",
+            "starter_kit_claimed": False,
+        }
+        player.load_tiles()
+
+        trial_room = player.world_dict[thieves_guild.TRIAL_BOSS_POS]
+        game = _make_game(player)
+        intro = trial_room.intro_text(game)
+        trial_room.modify_player(game)
+
+        assert "has not been written into the guild ledger yet" in intro
+        assert player.state == "normal"
+        assert player.thieves_guild["trial_started"] is False
+        assert player.thieves_guild["trial_branch"] == ""
+        trial_wall = player.world_dict[thieves_guild.TRIAL_FAKE_WALL_POS]
+        assert isinstance(trial_wall, map_tiles.ThievesGuildTrialFakeWall)
+        assert trial_wall.enter is False
+        assert trial_wall.detectable_for(player) is False
+        player.inventory["Oculus"] = [items.Oculus()]
+        assert map_tiles.check_fake_wall(player.world_dict[thieves_guild.TRIAL_HINT_POS], game) == ""
 
     def test_chalice_progress_description_preview_and_reveal_helpers(self):
         player = _make_player()
@@ -816,6 +907,12 @@ class TestSpecialTiles:
 
         player.spellbook["Skills"]["Keen Eye"] = SimpleNamespace(name="Keen Eye")
         player.spellbook["Skills"]["Master Lockpick"] = SimpleNamespace(name="Master Lockpick")
+        untooled = map_tiles.OreVaultDoor(0, 0, 0)
+        untooled.modify_player(game, confirm_popup=_popup(True), textbox=textbox)
+        assert untooled.open is False
+
+        monkeypatch.setattr("src.core.items.random.random", lambda: 0.99)
+        player.inventory["Lockpick Kit"] = [items.LockpickKit()]
         picked = map_tiles.OreVaultDoor(0, 0, 0)
         picked.modify_player(game, confirm_popup=_popup(True), textbox=textbox)
         assert picked.open is True

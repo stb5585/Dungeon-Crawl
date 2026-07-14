@@ -39,14 +39,26 @@ Future interaction mechanics should attach to the existing tile classes:
 Any new per-tile state must default safely for old saves. Missing state should
 behave like the current decorative hook: traversable, readable, and inert.
 
+Hidden passages remain opt-in discovery beats. `Keen Eye` and the Magic Shop
+`Oculus` can reveal the suspicious shimmer of nearby unvisited fake walls, but
+the wall still behaves as map-authored terrain until the player moves through
+or otherwise visits it. Quest-gated false walls, such as the Thieves Guild
+trial wall, must remain non-enterable and non-detectable until their quest state
+explicitly opens them.
+
 ## Chest Policy
 
 V1 chest policy is that opened chests stay open and do not respawn. Existing
 authored behavior remains the compatibility baseline:
 
 - locked chest unlock flow;
-- Master Key, Key, and Lockpick skill behavior;
-- mimic chance for ordinary chests;
+- Master Key, Key, and Lockpick/Master Lockpick skill behavior, including the
+  required limited-durability Lockpick Kit. Lockpick Kits lose durability on
+  successful picks and can break early; Dexterity lowers break chance, and
+  Master Lockpick lowers it further;
+- mimic chance for ordinary chests, currently an explicit bounded chance for
+  level 5+ players with higher odds on locked/enhanced chests and a modest Luck
+  reduction;
 - guaranteed Funhouse Mimic Chest behavior;
 - loot popup presentation;
 - inventory grant timing;
@@ -117,6 +129,22 @@ content engine:
 Reactive tavern gameplay tips and broader Barracks adventurer flavor remain
 content-table additions unless they require new state.
 
+## Additional Improvements
+
+- Create casino/gambling hall/backroom poker/blackjack/etc.
+- Remove auto-heal when entering town
+  - Add resting at the Tavern/Inn
+    - Amount to heal affects the cost
+  - Allow resting in the dungeon
+    - Bedrolls make it more efficient for healing
+    - Resting in general can trigger combat
+    - There should be items to reduce encounter chance
+      - Firestarter Kit
+  - Make status effects last outside of battle
+    - Healing status effects requires item, spell, or cleansing from Priest
+- Implement traps throughout the dungeon
+  - they need to be random so they are not predictable
+
 ## Low-Health Navigation
 
 Low-health presentation should persist outside combat while the player is
@@ -132,7 +160,8 @@ Focused regression coverage now covers:
 
 - decorative dungeon tiles remain traversable and continue to show intro text;
 - opened chests stay open and do not regenerate loot;
-- locked chest, Funhouse Mimic Chest, mimic reward, and empty chest behavior;
+- locked chest, ordinary chest mimic chance, Funhouse Mimic Chest, mimic reward,
+  and empty chest behavior;
 - encounter bias can choose an active quest target with seeded RNG;
 - encounter bias falls back when the target is absent or the soft roll fails;
 - fixed and special encounters continue to bypass encounter bias;

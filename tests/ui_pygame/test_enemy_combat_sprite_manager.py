@@ -12,6 +12,7 @@ from PIL import Image
 import pygame
 import pytest
 
+from src.core import enemies
 from src.ui_pygame.assets.enemy_combat_sprite_manager import EnemyCombatSpriteManager
 from tools.build_enemy_combat_sprites import mapped_sprite_keys
 
@@ -241,6 +242,25 @@ def test_default_jester_form_combat_sprites_exist_and_resolve():
         key = Path(picture).stem
         assert key in manager.available_keys
         assert manager.get_sprite_key_for_enemy(SimpleNamespace(name="Jester", picture=picture)) == key
+
+
+def test_default_guild_trial_bosses_resolve_expected_combat_art():
+    manager = EnemyCombatSpriteManager()
+
+    cutpurse = enemies.GuildCutpurseBoss()
+    assert manager.get_sprite_key_for_enemy(cutpurse) == "guild_cutpurse"
+    assert manager.sprite_map[cutpurse.name] == "guild_cutpurse"
+    assert "guild_cutpurse" in manager.available_keys
+    sprite = manager.get_sprite_by_name(cutpurse.name)
+    assert sprite.get_at((0, 0)).a == 0
+
+    arcane = enemies.GuildArcaneBoss()
+    assert manager.get_sprite_key_for_enemy(arcane) == "guild_cutpurse"
+    assert manager.sprite_map[arcane.name] == "guild_cutpurse"
+
+    for enemy in (enemies.GuildInquestBoss(), enemies.GuildContractBoss()):
+        assert manager.get_sprite_key_for_enemy(enemy) == "bandit"
+        assert manager.sprite_map[enemy.name] == "bandit"
 
 
 def test_default_vesperion_combat_sprite_uses_separate_full_body_asset():

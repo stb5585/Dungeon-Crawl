@@ -9,7 +9,7 @@ class Diviner(Job):
     """
     Promotion: Pathfinder -> Diviner -> Astromancer
     Pros: Increased intel and wisdom gain; gain access to time magic
-    Cons: loses access to shields and some weapon choices; lower dex gain
+    Cons: loses access to shields, tomes, and some weapon choices; lower dex gain
     Special Mechanic: similar to a Blue Mage, gains spells from enemy use
     """
 
@@ -33,7 +33,7 @@ class Diviner(Job):
             magic_def_plus=3,
             restrictions={
                 "Weapon": ["Dagger", "Staff"],
-                "OffHand": ["Tome", "Rod"],
+                "OffHand": ["Rod"],
                 "Armor": ["Cloth"],
             },
             pro_level=2,

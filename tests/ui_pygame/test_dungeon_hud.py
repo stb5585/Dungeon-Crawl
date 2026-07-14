@@ -531,11 +531,21 @@ def test_visible_adjacent_positions_require_enterable_and_hide_undiscovered_fake
         visited = False
         blocked = None
 
+    class ThievesGuildTrialFakeWall(FakeWall):
+        near = True
+
+    class ThievesGuildTrialBossRoom:
+        enter = True
+        visited = False
+        near = True
+        blocked = None
+
     player = SimpleNamespace(location_x=2, location_y=2, location_z=1, facing="north")
     player.world_dict = {
         (2, 2, 1): Floor(),
         (2, 1, 1): Floor(),
-        (2, 3, 1): FakeWall(),
+        (2, 3, 1): ThievesGuildTrialFakeWall(),
+        (2, 4, 1): ThievesGuildTrialBossRoom(),
         (3, 2, 1): Wall(),
     }
 
@@ -546,6 +556,7 @@ def test_visible_adjacent_positions_require_enterable_and_hide_undiscovered_fake
     assert (3, 2) not in visible
     assert hud._minimap_tile_is_revealed(player, 3, 2, player.world_dict[(3, 2, 1)], visible) is False
     assert hud._minimap_tile_is_revealed(player, 2, 3, player.world_dict[(2, 3, 1)], visible) is False
+    assert hud._minimap_tile_is_revealed(player, 2, 4, player.world_dict[(2, 4, 1)], visible) is False
 
     hud._render_minimap(player, 120)
     minimap_colors = [args[1] for args, _kwargs in bundle.draw_rect_calls if len(args) > 1]

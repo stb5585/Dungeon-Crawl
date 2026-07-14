@@ -323,6 +323,41 @@ def test_blacksmith_buy_submenu_keeps_griswold_portrait(monkeypatch):
     assert FakeShopScreen.instances[0].location_portrait_name == "Griswold"
 
 
+def test_blacksmith_two_handed_weapons_exclude_staves(monkeypatch):
+    manager = _manager(monkeypatch, level=20)
+    item_calls = []
+    monkeypatch.setattr(shops, "ShopScreen", FakeShopScreen)
+    monkeypatch.setattr(manager, "_has_available_items", lambda _item_list: True)
+    monkeypatch.setattr(
+        manager,
+        "_buy_with_shop_screen",
+        lambda itemdict, category_name, **_kwargs: item_calls.append((itemdict, category_name)),
+    )
+
+    FakeShopScreen.option_sequences = [["2-Handed"]]
+    manager.buy_weapons()
+
+    assert item_calls[-1][1] == "2-Handed Weapons"
+    assert "Staff" not in item_calls[-1][0]
+
+
+def test_visit_magic_shop_handles_buy_sell_and_leave(monkeypatch):
+    manager = _manager(monkeypatch, level=12)
+    calls = []
+    monkeypatch.setattr(shops, "ShopScreen", FakeShopScreen)
+    monkeypatch.setattr(shops, "ConfirmationPopup", FakePopup)
+    monkeypatch.setattr(manager, "buy_magic_shop_goods", lambda: calls.append("buy"))
+    monkeypatch.setattr(manager, "sell_items", lambda: calls.append("sell"))
+
+    FakeShopScreen.option_sequences = [["Buy", "Sell", "Leave"]]
+    manager.visit_magic_shop()
+
+    assert calls == ["buy", "sell"]
+    assert FakeShopScreen.instances[0].set_calls[0] == ["Buy", "Sell", "Leave"]
+    assert FakeShopScreen.instances[0].shop_message == shops.ShopManager.MAGIC_SHOP_MESSAGE
+    assert FakeShopScreen.instances[0].location_portrait_name == "Seraphine Voss"
+
+
 def test_visit_blacksmith_crafts_master_monk_ultimate_staff(monkeypatch):
     from src.core.classes.master_monk import MasterMonk
 
@@ -423,7 +458,13 @@ def test_buy_helpers_route_to_expected_equipment_methods(monkeypatch):
     item_calls = []
 
     monkeypatch.setattr(manager, "buy_equipment", lambda item_list, category_name, background_image="town.png": item_calls.append((item_list, category_name, background_image)))
-    monkeypatch.setattr(manager, "_buy_with_shop_screen", lambda itemdict, category_name, background_image="town.png": item_calls.append((itemdict, category_name, background_image)))
+    monkeypatch.setattr(
+        manager,
+        "_buy_with_shop_screen",
+        lambda itemdict, category_name, background_image="town.png", **_kwargs: item_calls.append(
+            (itemdict, category_name, background_image)
+        ),
+    )
 
     FakeShopScreen.option_sequences = [["1-Handed"]]
     monkeypatch.setattr(shops, "ShopScreen", FakeShopScreen)
@@ -440,6 +481,8 @@ def test_buy_helpers_route_to_expected_equipment_methods(monkeypatch):
     manager.buy_misc()
     manager.buy_potions(background_image="dungeon.png")
     manager.buy_alchemist_goods()
+    manager.buy_thieves_guild_goods()
+    manager.buy_magic_shop_goods()
 
     assert item_calls[0][1] == "1-Handed Weapons"
     assert set(item_calls[0][0]) >= {"Fist", "Dagger", "Sword"}
@@ -458,8 +501,48 @@ def test_buy_helpers_route_to_expected_equipment_methods(monkeypatch):
     assert item_calls[9][1] == "Potions"
     assert item_calls[9][2] == "dungeon.png"
     assert item_calls[10][1] == "Alchemist Goods"
-    assert "Potions" in item_calls[10][0]
-    assert "Scrolls" in item_calls[10][0]
+    assert "Health Potions" in item_calls[10][0]
+    assert "Mana Potions" in item_calls[10][0]
+    assert "Scrolls" not in item_calls[10][0]
+    assert item_calls[11][1] == "Thieves Guild Goods"
+    assert set(item_calls[11][0]) == {"Tools"}
+    assert items.Key in item_calls[11][0]["Tools"]
+    assert items.BlankScroll in item_calls[11][0]["Tools"]
+    assert items.LockpickKit in item_calls[11][0]["Tools"]
+    assert items.SmokeBomb in item_calls[11][0]["Tools"]
+    assert items.Oculus not in item_calls[11][0]["Tools"]
+    assert items.FireScroll not in item_calls[11][0]["Tools"]
+    assert item_calls[12][1] == "Magic Shop Goods"
+    assert "Spell Scrolls" in item_calls[12][0]
+    assert "Staves" in item_calls[12][0]
+    assert "Tomes" in item_calls[12][0]
+    assert "Rods" in item_calls[12][0]
+    assert "Musical Instruments" in item_calls[12][0]
+    assert "Magic Items" in item_calls[12][0]
+    assert items.BlankScroll not in item_calls[12][0]["Spell Scrolls"]
+    assert items.Oculus in item_calls[12][0]["Magic Items"]
+
+
+def test_magic_shop_uses_town_rarity_filter_and_includes_diviner_starter_rods(monkeypatch):
+    manager = _manager(monkeypatch, level=1)
+    manager.player_char.cls.name = "Diviner"
+    captured = []
+    monkeypatch.setattr(
+        manager,
+        "_buy_with_shop_screen",
+        lambda itemdict, category_name, background_image="town.png", **kwargs: captured.append(
+            (itemdict, category_name, background_image, kwargs)
+        ),
+    )
+
+    manager.buy_magic_shop_goods()
+
+    itemdict, category_name, _background, kwargs = captured[-1]
+    assert category_name == "Magic Shop Goods"
+    assert "Rods" in itemdict
+    assert shops.items_module.WillowDiviningRod in itemdict["Rods"]
+    assert shops.items_module.DowsingRod in itemdict["Rods"]
+    assert "ignore_rarity_filter" not in kwargs
 
 
 def test_buy_helpers_return_early_for_back_and_unavailable_items(monkeypatch):
@@ -546,17 +629,45 @@ def test_buy_with_shop_screen_equips_purchased_weapon_to_chosen_slot(monkeypatch
 
 
 def test_alchemist_and_secret_consumables_include_status_items(monkeypatch):
-    manager = _manager(monkeypatch, gold=120)
+    manager = _manager(monkeypatch, level=30, gold=120)
     captured = []
     manager._buy_with_shop_screen = lambda itemdict, category_name, **kwargs: captured.append((category_name, itemdict, kwargs))
 
     manager.buy_potions()
     manager.buy_alchemist_goods()
+    manager.buy_thieves_guild_goods()
+    manager.buy_magic_shop_goods()
     manager._buy_secret_consumables(SimpleNamespace())
 
     assert captured[0][1]["Status Items"] == items.items_dict["Potion"]["Status"]
+    assert "Health Potions" in captured[0][1]
+    assert "Mana Potions" in captured[0][1]
     assert captured[1][1]["Status Items"] == items.items_dict["Potion"]["Status"]
-    assert captured[2][1]["Status Items"] == items.items_dict["Potion"]["Status"]
+    assert "Health Potions" in captured[1][1]
+    assert "Mana Potions" in captured[1][1]
+    assert "Scrolls" not in captured[1][1]
+    assert set(captured[2][1]) == {"Tools"}
+    assert items.BlankScroll in captured[2][1]["Tools"]
+    assert items.LockpickKit in captured[2][1]["Tools"]
+    assert items.FireScroll not in captured[2][1]["Tools"]
+    assert "Spell Scrolls" in captured[3][1]
+    assert items.FireScroll in captured[3][1]["Spell Scrolls"]
+    assert items.BlankScroll not in captured[3][1]["Spell Scrolls"]
+    assert captured[4][1]["Status Items"] == items.items_dict["Potion"]["Status"]
+
+
+def test_buy_with_shop_screen_applies_active_price_multiplier(monkeypatch):
+    manager = _manager(monkeypatch, gold=120)
+    itemdict = {"Scrolls": [items.BlankScroll]}
+    manager._active_price_multiplier = 0.75
+
+    monkeypatch.setattr(shops, "ShopScreen", FakeShopScreen)
+
+    FakeShopScreen.item_sequences = [[None]]
+    manager._buy_with_shop_screen(itemdict, "Thieves Guild Goods")
+
+    screen = FakeShopScreen.instances[-1]
+    assert screen.price_multiplier == 0.75
 
 
 def test_shop_item_info_separates_main_hand_and_offhand_comparisons(monkeypatch):

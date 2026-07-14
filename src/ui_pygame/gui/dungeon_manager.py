@@ -80,6 +80,7 @@ class DungeonManager:
 
         # Control state
         self.running = True
+        self._navigation_input_suppressed_until = 0
 
         # --- Render throttling / caching ---
         # The 3D view is expensive; only redraw it when something actually changes.
@@ -374,6 +375,16 @@ class DungeonManager:
         picture = getattr(enemy, "picture", "")
         if isinstance(picture, str) and picture.lower().endswith(".png"):
             return self._enemy_combat_sprite_image_path(os.path.basename(picture))
+        try:
+            from src.ui_pygame.assets.enemy_combat_sprite_manager import get_enemy_combat_sprite_manager
+
+            manager = get_enemy_combat_sprite_manager()
+            sprite_key = manager.get_sprite_key_for_enemy(enemy)
+            sprite_path = manager.sprite_root / f"{sprite_key}.png"
+            if sprite_path.exists():
+                return os.path.relpath(sprite_path, start=os.getcwd())
+        except Exception:
+            pass
         name = str(getattr(enemy, "name", "boss")).lower().replace(" ", "_")
         return self._enemy_combat_sprite_image_path(f"{name}.png")
 
@@ -558,6 +569,9 @@ class DungeonManager:
             return False
 
         tile_type = type(tile_ahead).__name__
+        sync_tile = getattr(tile_ahead, "sync_for_player", None)
+        if callable(sync_tile):
+            sync_tile(self.player_char)
 
         # Impassable tiles (walls, undetected hidden doors, etc.)
         if not getattr(tile_ahead, "enter", True):
@@ -700,6 +714,7 @@ class DungeonManager:
         if 'StairsUp' in tile_type:
             self._move_to_adjacent_from_stairs()
         self._mark_view_dirty()
+        self._suppress_navigation_input()
         self.add_message(f"You climb the stairs upward...")
 
         # Check if returned to town
@@ -730,10 +745,34 @@ class DungeonManager:
         if 'StairsDown' in tile_type:
             self._move_to_adjacent_from_stairs()
         self._mark_view_dirty()
+        self._suppress_navigation_input()
         self.add_message(f"You descend the stairs deeper into the dungeon...")
         self.add_message(f"Now on dungeon level {self.player_char.location_z}")
 
         return True
+
+    def _suppress_navigation_input(self, ms: int = 250) -> None:
+        """Briefly discard buffered movement after a floor transition."""
+        self._navigation_input_suppressed_until = pygame.time.get_ticks() + ms
+        try:
+            pygame.event.clear((pygame.KEYDOWN, pygame.KEYUP))
+        except pygame.error:
+            pass
+
+    def _navigation_input_suppressed(self, key) -> bool:
+        navigation_keys = {
+            pygame.K_w,
+            pygame.K_UP,
+            pygame.K_a,
+            pygame.K_LEFT,
+            pygame.K_d,
+            pygame.K_RIGHT,
+            pygame.K_s,
+            pygame.K_DOWN,
+            pygame.K_u,
+            pygame.K_j,
+        }
+        return key in navigation_keys and pygame.time.get_ticks() < self._navigation_input_suppressed_until
 
     def _is_walkable_spawn_tile(self, tile):
         """Check if tile can be used as a post-stairs spawn location."""
@@ -927,9 +966,11 @@ class DungeonManager:
             if "Master Key" in self.player_char.special_inventory:
                 chest_tile.locked = False
                 self.add_message("You unlock the chest with the Master Key!")
-            elif "Lockpick" in self.player_char.spellbook.get("Skills", []):
+            elif "Lockpick" in self.player_char.spellbook.get("Skills", []) and items.has_lockpick_kit(self.player_char):
                 chest_tile.locked = False
                 self.add_message("You skillfully pick the lock!")
+                _used, kit_message = items.use_lockpick_kit(self.player_char)
+                self.add_message(kit_message)
             elif "Key" in self.player_char.inventory:
                 # Ask if they want to use a key with visual popup
                 self._refresh_cached_frame()
@@ -950,15 +991,14 @@ class DungeonManager:
                     self.add_message("The chest remains locked.")
                     return
             else:
-                self.add_message("The chest is locked! You need a Key or Lockpick skill.")
+                self.add_message("The chest is locked! You need a Key or Lockpick Kit with the Lockpick skill.")
                 return
 
         # Check for Mimic (FunhouseMimicChest always spawns one; other chests have random chance)
         locked = int('Locked' in tile_type)
         plus = int('ChestRoom2' in tile_type)
         is_funhouse_mimic = 'FunhouseMimicChest' in tile_type
-        if is_funhouse_mimic or (not random.randint(0, 9 + self.player_char.check_mod('luck', luck_factor=3)) and self.player_char.level.level >= 10):
-            print("[DEBUG] Mimic encounter triggered in chest interaction.")
+        if is_funhouse_mimic or map_tiles.ordinary_chest_spawns_mimic(self.player_char, locked=locked, plus=plus):
             from src.core import enemies
             # For funhouse mimic chest, spawn level 4 mimic; for other chests use normal scaling
             mimic_level = 4 if is_funhouse_mimic else (self.player_char.location_z + locked + plus)
@@ -1063,13 +1103,18 @@ class DungeonManager:
                     self._mark_view_dirty()
                     return
             # Master Lockpick works if player has Keen Eye
-            elif 'Master Lockpick' in self.player_char.spellbook.get('Skills', []):
+            elif (
+                'Master Lockpick' in self.player_char.spellbook.get('Skills', [])
+                and items.has_lockpick_kit(self.player_char)
+            ):
                 if 'Keen Eye' in self.player_char.spellbook.get('Skills', []):
                     door_tile.locked = False
                     door_tile.open = True
                     door_tile.enter = True
                     door_tile.detected = True
+                    _used, kit_message = items.use_lockpick_kit(self.player_char, master=True)
                     self.add_message("You skillfully pick the hidden door's lock!")
+                    self.add_message(kit_message)
                     self._play_sfx("open_door")
                     self._mark_view_dirty()
                     return
@@ -1085,11 +1130,16 @@ class DungeonManager:
             door_tile.blocked = None
             self.add_message("You unlock and open the door with the Master Key!")
             self._play_sfx("open_door")
-        elif "Master Lockpick" in self.player_char.spellbook.get("Skills", []):
+        elif (
+            "Master Lockpick" in self.player_char.spellbook.get("Skills", [])
+            and items.has_lockpick_kit(self.player_char)
+        ):
             door_tile.locked = False
             door_tile.open = True
             door_tile.blocked = None
+            _used, kit_message = items.use_lockpick_kit(self.player_char, master=True)
             self.add_message("You skillfully pick the lock and open the door!")
+            self.add_message(kit_message)
             self._play_sfx("open_door")
         elif "Old Key" in self.player_char.inventory:
             self._refresh_cached_frame()
@@ -1112,7 +1162,7 @@ class DungeonManager:
             else:
                 self.add_message("The door remains locked.")
         else:
-            self.add_message("The door is locked! You need an Old Key or Master Lockpick skill.")
+            self.add_message("The door is locked! You need an Old Key or Lockpick Kit with the Master Lockpick skill.")
 
     def _interact_relic(self, relic_tile):
         """Handle relic room interaction."""
@@ -2620,6 +2670,9 @@ class DungeonManager:
 
     def _handle_keypress(self, key):
         """Handle keyboard input for dungeon navigation."""
+        if self._navigation_input_suppressed(key):
+            return
+
         # Movement and turning
         if key in (pygame.K_w, pygame.K_UP):
             self.move_forward()
