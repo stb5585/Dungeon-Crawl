@@ -255,6 +255,13 @@ class TemplarClass(KnightClass):
         self.description = "Turns Devotion into ordered blessings."
 
 
+class HierophantClass(KnightClass):
+    def __init__(self):
+        super().__init__()
+        self.name = "Hierophant"
+        self.description = "Channels Devotion through staff and shield."
+
+
 class MonkClass(KnightClass):
     def __init__(self):
         super().__init__()
@@ -505,6 +512,7 @@ def test_promotion_screen_previews_healer_branch_mechanics(monkeypatch):
     for current_class, option, cls_ctor in (
         ("Healer", "Cleric", ClericClass),
         ("Cleric", "Templar", TemplarClass),
+        ("Cleric", "Hierophant", HierophantClass),
         ("Healer", "Monk", MonkClass),
         ("Monk", "Master Monk", MasterMonkClass),
         ("Healer", "Priest", PriestClass),

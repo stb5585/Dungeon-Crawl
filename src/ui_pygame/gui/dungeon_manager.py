@@ -1195,6 +1195,10 @@ class DungeonManager:
             # Restore HP and MP
             self.player_char.health.current = self.player_char.health.max
             self.player_char.mana.current = self.player_char.mana.max
+            quest_message = self.player_char.quests()
+            if quest_message:
+                for line in quest_message.strip().splitlines():
+                    self.add_message(line)
             self.add_message("Your health and mana have been fully restored!")
         else:
             self.add_message("The pedestal is empty.")

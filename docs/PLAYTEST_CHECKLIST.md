@@ -92,7 +92,7 @@ remain the prompts; the evidence ledger is the running decision record.
 - [ ] Visit the Church as a Grand Summoner with a dormant Class Ring equipped or stored.
   - Expected: The Church menu includes `Conduit Ritual`.
   - Expected: Completing the rite awakens the ring, applies `+30% Summons`, and permanently sacrifices 5% max HP.
-- [ ] Visit the Church as a Templar, Master Monk, Archbishop, Troubadour, Lycan, Astromancer, Soulcatcher, or Beast Master with a dormant Class Ring equipped or stored.
+- [ ] Visit the Church as a Templar, Hierophant, Master Monk, Archbishop, Troubadour, Lycan, Astromancer, Soulcatcher, or Beast Master with a dormant Class Ring equipped or stored.
   - Expected: The Church menu includes the matching rite: `Relic Defense`, `Purity Rite`, `Miracle Vigil`, `Lost Ballad`, `Control Rite`, `Star Chart`, `Ancestral Totem Rite`, or `Pack Trial`.
   - Expected: Completing the rite awakens the ring and applies the expected equipped mod.
 - [ ] Promote a Warrior-line character to Paladin in pygame and curses.
@@ -193,9 +193,13 @@ remain the prompts; the evidence ledger is the running decision record.
     guidance belongs in Thieves Guild backroom content after membership.
 - [ ] Promote through the Healer tree in pygame.
   - Expected: Post-confirmation help popups show the matching post-promotion
-    class mechanic tab: `Devotion` for Cleric/Templar, `Ki` for
-    Monk/Master Monk, `Prayer` for Priest/Archbishop, and `Crescendo` for
-    Bard/Troubadour.
+    class mechanic tab for `Ki` on Monk/Master Monk, `Prayer` on
+    Priest/Archbishop, and `Crescendo` on Bard/Troubadour.
+  - Expected: Newly learned level-1 promotion spells and skills are announced
+    after promotion, including Cleric's `Sanctuary Ward`.
+  - Expected: Cleric/Templar/Hierophant Devotion does not require a Character
+    Menu mechanic tab; it should remain legible through combat logs, status
+    rows, and skill text.
 - [ ] Fight as a Weapon Master with each supported weapon type equipped.
   - Expected: Successful main-hand/offhand hits grant Weapon Discipline XP to the matching weapon type.
   - Expected: Combat logs show per-hit Weapon Discipline XP without parenthesized progress, and the victory completion text shows the bonus Weapon Discipline XP for weapon types used in the fight.
@@ -242,6 +246,7 @@ remain the prompts; the evidence ledger is the running decision record.
   - Expected: Active-sign Runic Boost uses the 100% fate floor only while the awakened Class Ring is equipped.
   - Expected: Unequipping the ring leaves rune drops and the cycle available but returns Runic Boost to the baseline 75% floor.
 - [ ] Gain the Astromancer Power Core skill and use `Astral Judgment` on each active sign.
+- [ ] Gain the Hierophant Power Core skill and use `Sacred Overchannel` before staff, Holy, and `Consecrated Conduit` payoffs.
   - Expected: `Astral Judgment` resolves the current sign, applies the matching first-pass rider, and then randomly spins to a new sign.
   - Expected: Kills from `Astral Judgment` do not award runes.
 - [ ] Play through several Diviner combats before Astromancer promotion while spending runes normally.
@@ -427,14 +432,22 @@ remain the prompts; the evidence ledger is the running decision record.
 
 ### Legacy Class-Kit Mechanics
 - [ ] Build `Devotion` as Cleric through healing, Holy pressure, shield actions, and `Turn Undead`.
-  - Expected: Cleric caps at 3 stacks, gains at most once per player action, and clears Devotion on combat end, flee, save/load, death, or class change.
-  - Expected: `Pious Bounty` remains a modest reward accent, still does not appear on Priest, and can grant Devotion on qualifying `Turn Undead` kills.
-- [ ] Spend Devotion with `Sanctuary Ward` as Cleric or Templar.
-  - Expected: The skill requires MP and at least 1 Devotion, spends all stacks, and applies a stronger barrier/mitigation pulse at higher stacks.
+  - Expected: Cleric caps at 3 stacks, gains only after the enemy survives the
+    action resolution, and clears Devotion on combat end, flee, save/load,
+    death, or class change.
+  - Expected: Held Devotion provides light incoming-damage reduction, creating a visible hold-versus-spend choice.
+  - Expected: `Pious Bounty` remains a modest reward accent, still does not
+    appear on Priest, and `Turn Undead` kills can mark bounty gold without
+    granting Devotion from the lethal action.
+- [ ] Spend Devotion with `Sanctuary Ward` as Cleric, Templar, or Hierophant.
+  - Expected: Cleric receives the skill immediately on promotion; it requires MP and at least 1 Devotion, spends all stacks, and applies a stronger barrier/mitigation pulse at higher stacks.
+  - Expected: `Sanctuary Ward` is hidden from the combat Skills picker until at
+    least 1 Devotion has been built.
   - Expected: The cleanse/Regen rider remains conservative and logs clearly when it triggers.
 - [ ] Spend Devotion with `Relic Aegis` as Templar.
-  - Expected: The skill requires MP, at least 2 Devotion, and a shield/offhand defensive setup.
-  - Expected: It spends all stacks for stronger mitigation plus a brief holy counter or guard pulse.
+- [ ] Spend Devotion with `Consecrated Conduit` as Hierophant, then land a staff, Smite, or Holy payoff.
+  - Expected: The skill requires MP, at least 1 Devotion, and a staff.
+  - Expected: It spends all stacks to empower the next staff, Smite, or Holy payoff with bonus holy damage, modest warding, and small mana return.
 - [ ] Use `Holy Retribution` and awakened `Ordered Blessings` with Devotion.
   - Expected: `Holy Retribution` keeps its holy-fire attack window while improving Devotion gain from holy/shield actions once per round.
   - Expected: `Ordered Blessings` keeps the Regen/Defense/Holy Damage rotation and preserves 1 Devotion once per combat after a clean matching payoff.

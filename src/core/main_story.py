@@ -44,7 +44,7 @@ GUARDIAN_VIGNETTE_SUMMARIES = {
 CLASS_VOLUNTAS_ARCHETYPES = {
     "martial": ("Grandmaster of Arms", "Berserker", "Dragoon", "Stalwart Defender", "Master Monk"),
     "mystic": ("Wizard", "Archbishop", "Astromancer", "Archdruid"),
-    "hybrid": ("Crusader", "Knight Enchanter", "Seeker", "Arcane Trickster", "Templar"),
+    "hybrid": ("Crusader", "Knight Enchanter", "Seeker", "Arcane Trickster", "Templar", "Hierophant"),
     "companion": ("Grand Summoner", "Troubadour", "Beast Master"),
     "shadow": ("Demonologist", "Shadowcaster", "Rogue", "Ninja", "Lycan", "Soulcatcher"),
 }
@@ -66,6 +66,7 @@ CLASS_VOLUNTAS_BRIDGE_CLASSES = (
     "Ninja",
     "Arcane Trickster",
     "Templar",
+    "Hierophant",
     "Master Monk",
     "Archbishop",
     "Troubadour",

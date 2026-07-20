@@ -281,6 +281,13 @@ class ChurchManager(TownScreenBase):
                 "it, and the Class Ring will learn ordered blessings from your defense."
             ),
         },
+        "Hierophant": {
+            "label": "Consecration Rite",
+            "intro": (
+                "A staff is laid across the altar beside an old shield. Hold the channel steady, "
+                "and the Class Ring will remember how devotion can pass through both."
+            ),
+        },
         "Master Monk": {
             "label": "Purity Rite",
             "intro": (
@@ -673,12 +680,17 @@ class ChurchManager(TownScreenBase):
             apply_promotion_ability_rules(self.player_char, chosen_name)
 
             # Grant level 1 abilities for the new class
+            learned_abilities = []
             for spell_cls in ability_classes_for_level(spell_dict, chosen_name, self.player_char.level.level):
                 spell_gain = spell_cls()
+                if spell_gain.name not in self.player_char.spellbook["Spells"]:
+                    learned_abilities.append(f"Spell: {spell_gain.name}")
                 self.player_char.spellbook["Spells"][spell_gain.name] = spell_gain
             
             for skill_cls in ability_classes_for_level(skill_dict, chosen_name, self.player_char.level.level):
                 skill_gain = skill_cls()
+                if skill_gain.name not in self.player_char.spellbook["Skills"]:
+                    learned_abilities.append(f"Skill: {skill_gain.name}")
                 self.player_char.spellbook["Skills"][skill_gain.name] = skill_gain
                 if skill_gain.name in ["Transform", "Reveal", "Purity of Body"]:
                     skill_gain.use(self.player_char)
@@ -737,6 +749,10 @@ class ChurchManager(TownScreenBase):
 
             popup = ConfirmationPopup(self.presenter, f"Congratulations! You are now a {chosen_name}.", show_buttons=False)
             popup.show(**self.popup_show_kwargs())
+            if learned_abilities:
+                learned_text = "Learned abilities:\n" + "\n".join(learned_abilities)
+                popup = ConfirmationPopup(self.presenter, learned_text, show_buttons=False)
+                popup.show(**self.popup_show_kwargs())
             self._show_promotion_mechanic_help(chosen_name)
         except Exception as e:
             popup = ConfirmationPopup(self.presenter, f"Promotion failed: {e}", show_buttons=False)

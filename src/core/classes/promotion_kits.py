@@ -195,6 +195,12 @@ def combat_state(character: Any) -> dict[str, Any]:
         "death_marks": {},
         "stolen_charge": 0,
         "devotion": 0,
+        "pending_devotion_gains": [],
+        "defer_devotion_until_survival": False,
+        "consecrated_conduit": None,
+        "action_token": 0,
+        "hierophant_devotion_token": None,
+        "pending_hierophant_devotion_token": None,
         "prayer": 0,
         "ki": 0,
         "crescendo": 0,
@@ -291,6 +297,26 @@ def _has_skill(character: Any, skill_name: str) -> bool:
     return skill_name in getattr(character, "spellbook", {}).get("Skills", {})
 
 
+def _hierophant_overchannel_active(character: Any) -> bool:
+    effect = getattr(character, "class_effects", {}).get("Power Up")
+    return bool(
+        class_name(character) == "Hierophant"
+        and getattr(character, "power_up", False)
+        and _has_skill(character, "Sacred Overchannel")
+        and effect is not None
+        and getattr(effect, "active", False)
+    )
+
+
+def begin_action(character: Any, *, defer_devotion: bool = False) -> None:
+    state = combat_state(character)
+    state["action_token"] = int(state.get("action_token", 0) or 0) + 1
+    state["hierophant_devotion_token"] = None
+    state["pending_hierophant_devotion_token"] = None
+    state["pending_devotion_gains"] = []
+    state["defer_devotion_until_survival"] = bool(defer_devotion)
+
+
 def _is_weapon_hit(metadata: dict[str, Any] | None) -> bool:
     if not isinstance(metadata, dict):
         return False
@@ -335,7 +361,7 @@ def cap_for(character: Any, key: str) -> int:
     if key == "stolen_charge":
         return 3 if cls == "Arcane Trickster" else 2 if cls == "Spell Stealer" else 0
     if key == "devotion":
-        return 5 if cls == "Templar" else 3 if cls == "Cleric" else 0
+        return 5 if cls in {"Templar", "Hierophant"} else 3 if cls == "Cleric" else 0
     if key == "prayer":
         return 7 if cls == "Archbishop" else 4 if cls == "Priest" else 0
     if key == "ki":
@@ -373,11 +399,118 @@ def gain_meter(character: Any, key: str, amount: int = 1, reason: str = "") -> s
     return f"{character.name} gains {after - before} {label}{suffix} ({after}/{cap}).\n"
 
 
+def _gain_or_queue_devotion(character: Any, amount: int, reason: str) -> str:
+    state = combat_state(character)
+    if not state.get("defer_devotion_until_survival"):
+        return gain_meter(character, "devotion", amount, reason)
+    pending = state.get("pending_devotion_gains")
+    if not isinstance(pending, list):
+        pending = []
+        state["pending_devotion_gains"] = pending
+    pending.append({"amount": max(0, int(amount or 0)), "reason": reason})
+    return ""
+
+
+def finish_action(character: Any, *, defender_survived: bool) -> str:
+    state = combat_state(character)
+    pending = state.get("pending_devotion_gains")
+    state["defer_devotion_until_survival"] = False
+    state["pending_devotion_gains"] = []
+    state["pending_hierophant_devotion_token"] = None
+    if not defender_survived or not isinstance(pending, list):
+        return ""
+    msg = ""
+    for entry in pending:
+        msg += gain_meter(
+            character,
+            "devotion",
+            int(entry.get("amount", 0) or 0),
+            str(entry.get("reason") or ""),
+        )
+    return msg
+
+
 def spend_meter(character: Any, key: str) -> int:
     state = combat_state(character)
     value = int(state.get(key, 0) or 0)
     state[key] = 0
     return max(0, value)
+
+
+def _gain_hierophant_devotion_once(actor: Any, reason: str) -> str:
+    state = combat_state(actor)
+    token = state.get("action_token")
+    if token is not None and (
+        state.get("hierophant_devotion_token") == token
+        or state.get("pending_hierophant_devotion_token") == token
+    ):
+        return ""
+    amount = 2 if _hierophant_overchannel_active(actor) else 1
+    msg = _gain_or_queue_devotion(actor, amount, reason)
+    if msg:
+        state["hierophant_devotion_token"] = token
+    elif state.get("defer_devotion_until_survival"):
+        state["pending_hierophant_devotion_token"] = token
+    return msg
+
+
+def _is_hierophant_staff_hit(actor: Any, metadata: dict[str, Any] | None) -> bool:
+    if not isinstance(metadata, dict):
+        return False
+    if metadata.get("attack_source") not in {"weapon", "special_attack"}:
+        return False
+    weapon_type = metadata.get("weapon_type")
+    if weapon_type:
+        return weapon_type == "Staff"
+    slot = metadata.get("weapon_slot") or "Weapon"
+    weapon = getattr(actor, "equipment", {}).get(slot)
+    return getattr(weapon, "subtyp", None) == "Staff"
+
+
+def _consume_consecrated_conduit(
+    actor: Any,
+    target: Any,
+    amount: int,
+    damage_type: str,
+    metadata: dict[str, Any] | None,
+) -> None:
+    state = combat_state(actor)
+    conduit = state.get("consecrated_conduit")
+    if class_name(actor) != "Hierophant" or not isinstance(conduit, dict):
+        return
+    staff_hit = _is_hierophant_staff_hit(actor, metadata)
+    ability_name = str((metadata or {}).get("ability_name") or "")
+    holy_action = damage_type == "Holy" or ability_name.lower().startswith(("smite", "holy"))
+    if not (staff_hit or holy_action):
+        return
+    stacks = max(1, int(conduit.get("stacks", 1) or 1))
+    multiplier = 0.12 + (0.03 * stacks)
+    if _hierophant_overchannel_active(actor):
+        multiplier += 0.08
+    if _ring_awakened_equipped(actor, "Hierophant") and staff_hit:
+        multiplier += 0.05
+    bonus = max(2 * stacks, int(amount * multiplier))
+    if target is not None:
+        target.health.current = max(0, target.health.current - bonus)
+    state["consecrated_conduit"] = None
+    ward = getattr(actor, "magic_effects", {}).get("Nature Shield")
+    if ward is not None:
+        ward.active = True
+        ward.duration = max(int(getattr(ward, "duration", 0) or 0), 2)
+        ward.extra = max(int(getattr(ward, "extra", 0) or 0), max(8, stacks * 6))
+    mana = getattr(actor, "mana", None)
+    if mana is not None:
+        return_floor = stacks if _hierophant_overchannel_active(actor) else max(1, stacks // 2)
+        returned = min(int(getattr(mana, "max", 0) or 0) - int(getattr(mana, "current", 0) or 0), max(1, return_floor))
+        if returned > 0:
+            mana.current += returned
+    lines = [
+        f"Consecrated Conduit releases for {bonus} holy damage.\n",
+        "A modest ward settles around the Hierophant.\n",
+    ]
+    _maybe_preserve(actor, "devotion", "Hierophant", "Sacred Conduit", lines)
+    for line in lines:
+        _message(actor, line)
 
 
 def record_damage_event(
@@ -424,7 +557,14 @@ def record_damage_event(
         _message(actor, gain_meter(actor, "fortune", 1, "critical risky hit"))
 
     if cls in {"Cleric", "Templar"} and (damage_type == "Holy" or weapon_hit):
-        _message(actor, gain_meter(actor, "devotion", 1, "holy or shield pressure"))
+        _message(actor, _gain_or_queue_devotion(actor, 1, "holy or shield pressure"))
+    if cls == "Hierophant":
+        staff_hit = _is_hierophant_staff_hit(actor, metadata)
+        turn_undead = str((metadata or {}).get("ability_name") or "").lower().startswith("turn undead")
+        if damage_type == "Holy" or staff_hit or turn_undead:
+            reason = "staff conduit" if staff_hit else "holy action"
+            _message(actor, _gain_hierophant_devotion_once(actor, reason))
+        _consume_consecrated_conduit(actor, target, amount, damage_type, metadata)
 
     if cls in {"Priest", "Archbishop"} and damage_type == "Holy":
         _message(actor, gain_meter(actor, "prayer", 1, "Holy spell"))
@@ -465,7 +605,9 @@ def record_healing_done(actor: Any, amount: int) -> str:
     cls = class_name(actor)
     msg = ""
     if cls in {"Cleric", "Templar"}:
-        msg += gain_meter(actor, "devotion", 1, "meaningful healing")
+        msg += _gain_or_queue_devotion(actor, 1, "meaningful healing")
+    if cls == "Hierophant":
+        msg += _gain_hierophant_devotion_once(actor, "meaningful healing")
     if cls in {"Priest", "Archbishop"}:
         msg += gain_meter(actor, "prayer", 1, "meaningful healing")
     if cls in {"Monk", "Master Monk"} and _has_skill(actor, "Chi Heal"):
@@ -1187,9 +1329,34 @@ def gain_stolen_charge(character: Any, reason: str) -> str:
     return gain_meter(character, "stolen_charge", 1, reason)
 
 
+def devotion_guard_reduction(character: Any, damage: int) -> tuple[int, str]:
+    """Apply held Devotion's passive incoming-damage reduction."""
+    if damage <= 0 or class_name(character) not in {"Cleric", "Templar", "Hierophant"}:
+        return damage, ""
+    stacks = min(
+        cap_for(character, "devotion"),
+        max(0, int(combat_state(character).get("devotion", 0) or 0)),
+    )
+    if stacks <= 0:
+        return damage, ""
+    reduced = int(damage * (0.03 * stacks))
+    if reduced <= 0:
+        return damage, ""
+    damage = max(0, damage - reduced)
+    return damage, f"{character.name}'s Devotion guard reduces damage by {reduced}.\n"
+
+
+def combat_skill_visible(character: Any, skill: Any) -> bool:
+    """Return whether a promotion-kit skill should be visible in combat menus."""
+    name = str(getattr(skill, "name", "") or "")
+    if name == "Sanctuary Ward":
+        return int(combat_state(character).get("devotion", 0) or 0) > 0
+    return True
+
+
 def sanctuary_ward(character: Any) -> str:
-    if class_name(character) not in {"Cleric", "Templar"}:
-        return "Sanctuary Ward belongs to the Cleric and Templar track.\n"
+    if class_name(character) not in {"Cleric", "Templar", "Hierophant"}:
+        return "Sanctuary Ward belongs to the Cleric, Templar, and Hierophant track.\n"
     stacks = int(combat_state(character).get("devotion", 0) or 0)
     if stacks <= 0:
         return "Sanctuary Ward requires Devotion.\n"
@@ -1224,6 +1391,22 @@ def relic_aegis(character: Any) -> str:
     effect.extra = max(20, spent * 18)
     msg = f"{character.name} spends {spent} Devotion on Relic Aegis.\n"
     return _preserve_spent_meter(character, "devotion", "Templar", "Ordered Blessings", msg)
+
+
+def consecrated_conduit(character: Any) -> str:
+    if class_name(character) != "Hierophant":
+        return "Consecrated Conduit requires Hierophant training.\n"
+    weapon = getattr(character, "equipment", {}).get("Weapon")
+    if getattr(weapon, "subtyp", None) != "Staff":
+        return "Consecrated Conduit requires a staff.\n"
+    stacks = int(combat_state(character).get("devotion", 0) or 0)
+    if stacks <= 0:
+        return "Consecrated Conduit requires Devotion.\n"
+    if not _spend_mp(character, 10):
+        return "Not enough MP for Consecrated Conduit.\n"
+    spent = spend_meter(character, "devotion")
+    combat_state(character)["consecrated_conduit"] = {"stacks": spent}
+    return f"{character.name} spends {spent} Devotion on Consecrated Conduit.\n"
 
 
 def supplication(character: Any, target: Any | None = None) -> str:
@@ -1731,6 +1914,7 @@ PRESERVATION_METERS = {
     "Ninja": ("death_marks",),
     "Arcane Trickster": ("stolen_charge",),
     "Templar": ("devotion",),
+    "Hierophant": ("devotion",),
     "Archbishop": ("prayer",),
     "Troubadour": ("crescendo",),
 }
@@ -1890,10 +2074,17 @@ def status_summary_rows(character: Any) -> list[tuple[str, str]]:
     if cls in {"Spell Stealer", "Arcane Trickster"}:
         stolen = int(state.get('stolen_charge', 0) or 0)
         rows.append(("Stolen Charge", _meter_hint(stolen, cap_for(character, 'stolen_charge'), ready="Charge ready", empty="Steal first")))
-    if cls in {"Cleric", "Templar"}:
+    if cls in {"Cleric", "Templar", "Hierophant"}:
         devotion = int(state.get('devotion', 0) or 0)
-        hint = "Aegis ready" if cls == "Templar" and devotion >= 2 else "Ward ready"
+        if cls == "Templar" and devotion >= 2:
+            hint = "Aegis ready"
+        elif cls == "Hierophant" and devotion >= 1:
+            hint = "Conduit ready"
+        else:
+            hint = "Ward ready"
         rows.append(("Devotion", _meter_hint(devotion, cap_for(character, 'devotion'), ready=hint)))
+        if cls == "Hierophant" and state.get("consecrated_conduit"):
+            rows.append(("Conduit", "Pending payoff"))
     if cls in {"Priest", "Archbishop"}:
         prayer = int(state.get('prayer', 0) or 0)
         hint = "Benediction ready" if cls == "Archbishop" and prayer >= 3 else "Supplication ready"

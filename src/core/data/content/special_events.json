@@ -834,6 +834,12 @@
             "Voluntas holds where faith protects without demanding obedience."
         ]
     },
+    "Class Voluntas Bridge Hierophant": {
+        "Text": [
+            "Staff-light and shield-shadow cross inside the ring without forcing one another aside.",
+            "Voluntas holds where devotion becomes a chosen channel, not a hand closing around the self."
+        ]
+    },
     "Class Voluntas Bridge Master Monk": {
         "Text": [
             "Ki settles in the ring like breath returning after a strike.",
@@ -1110,8 +1116,8 @@
     "Relic Room": {
         "Text": [
             "A bright column of light highlights a pedestal at the center of the room.",
-            "You instantly realize the significance of the finding, sure that this is one of the six relics you seek.",
-            "You eagerly take the relic and instantly feel rejuvenated.",
+            "The object resting there feels older than the chamber around it, important in a way you cannot yet name.",
+            "You take the relic and instantly feel rejuvenated.",
             "You have obtained a relic!"
             ]
     },
@@ -1175,10 +1181,10 @@
         "Text": [
             "The sacred chamber hums with an ominous energy as you step forward, the air growing cold with each breath.",
             "A deep growl reverberates through the hall, and from the shadows emerges a large wolf-like beast.",
-            "This must be the Barghest, a tricky shapeshifter that is also the guardian of the first Holy Relic.",
+            "This must be the Barghest from the Sergeant's reports, a tricky shapeshifter guarding whatever rests in this sealed chamber.",
             "Its spectral eyes burn with a ghostly light, and its jagged fangs gleam with menace.",
             "Its black fur bristles like shadowy flames and its claws carve furrows into the stone floor as it prowls.",
-            "With a chilling snarl, it lunges, its voice echoing, “None shall desecrate the relics!”"
+            "With a chilling snarl, it lunges, its voice echoing, “None shall desecrate the altar!”"
         ]
     },
     "Pseudodragon": {

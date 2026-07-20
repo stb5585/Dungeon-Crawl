@@ -41,6 +41,7 @@ from .arcane_trickster import ArcaneTrickster
 from .healer import Healer
 from .cleric import Cleric
 from .templar import Templar
+from .hierophant import Hierophant
 from .priest import Priest
 from .archbishop import Archbishop
 from .monk import Monk
@@ -99,6 +100,7 @@ __all__ = [
     "Healer",
     "Cleric",
     "Templar",
+    "Hierophant",
     "Priest",
     "Archbishop",
     "Monk",

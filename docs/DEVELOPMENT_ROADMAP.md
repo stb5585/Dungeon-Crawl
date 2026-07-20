@@ -1,6 +1,6 @@
 # The Forsaken Tenet Development Roadmap
 
-*Updated: June 28, 2026*
+*Updated: July 20, 2026*
 
 This roadmap tracks remaining work for **The Forsaken Tenet**. Completed P0-P6
 roadmap history has been consolidated into `CHANGELOG.md`; this file is now
@@ -38,12 +38,25 @@ appropriate design-gate document before coding.
   stat tuning, the Sorcerer/Wizard 0-based School Affinity progression, the
   promotion ability transition decision matrix, and the V1 promotion class-kit
   track implementation.
+- Cleric now has a second level-3 fork: `Templar` remains the heavy shield
+  defender, while `Hierophant` is the staff/shield/light-armor divine
+  battle-caster with `Staff Conduit`, `Consecrated Conduit`, Devotion support,
+  Church Class Ring awakening, and Voluntas bridge coverage.
+- Cleric Devotion now has immediate post-promotion value: `Sanctuary Ward` is
+  granted at Cleric level 1, held Devotion grants light incoming-damage
+  reduction, `Sanctuary Ward` is hidden from combat skills until Devotion
+  exists, and Devotion gain waits until the enemy survives the action.
+- The relic quest opening now stages the mystery through `Uncertain Reports`
+  before creating `The Holy Relics`, with old-save migration and shared curses
+  and pygame quest-progress handling.
 - Current planning references:
   - `docs/CLASS_KIT_DESIGN_GATES.md` for promotion class-kit behavior and
     follow-up tuning gates.
   - `docs/COMBAT_BALANCE_DESIGN_GATES.md` for combat/balance gates.
   - `docs/STORY_AND_ENDGAME_DESIGN.md` for Vesperion, Voluntas, Liminal Gap,
     Reflection, and true-final story direction.
+  - `docs/QUEST_STORY_INTEGRATION_DESIGN.md` for shipped quest-system staging
+    that keeps early story objectives aligned with Forsaken Tenet mystery.
   - `docs/CLASS_RING_SYSTEM.md` for implemented class-ring activation
     behavior and follow-up tuning context.
   - `docs/PRESENTATION_ASSET_DESIGN_GATES.md` for presentation, generated
@@ -86,6 +99,58 @@ Triage bands:
 | Story/endgame expansion | Bespoke Guardian rooms, mini-bosses, stronger consequences, deeper per-class Voluntas quests, deeper Reflection mechanics, Vesperion tuning/presentation, legacy Devil retirement. | `Needs Spec` | Story-content decision block defines beat, trigger, flags, UI surface, fallback, and tests. | `STORY_AND_ENDGAME_DESIGN.md` | One story-only vignette or one Guardian room spec, not route replacement. |
 | Audio/event/meta systems | Final audio replacement, dynamic music, spatial audio, profiles, event payload enrichment, account-wide Bestiary, achievements, run summaries, persistent statistics. | `Needs Spec` | Concrete consumer, privacy/profile-storage decision, or asset-content need exists. | `SOUND_SYSTEM.md`, `EVENT_EMISSIONS.md`, Systems/Audio/Meta roadmap section | Source-specific event payload or audio route for an existing consumer. |
 | UI/core boundary cleanup | Moving mechanics or data ownership out of `ui_*` modules into core services. | `Do Not Promote As Cleanup` | A concrete duplicated rule, save-critical behavior, or testability blocker is identified with owner module and compatibility behavior. | Systems/Audio/Meta roadmap section and the affected domain gate | One rule extraction with parity tests, not a broad UI-module refactor. |
+
+## Active Priority - P8 Playtest Readiness And Polish
+
+Status: `Active`
+
+P8 should convert the current shipped systems into a cleaner playtest baseline.
+It is not a broad feature pass. The work should close obvious usability gaps,
+add focused regressions around recent changes, and collect enough play evidence
+to decide which larger gate deserves promotion next.
+
+### Implementation Sequence
+
+1. **Cleric/Hierophant Devotion closure**
+   - Lock down the recent Devotion refactor with focused tests for immediate
+     `Sanctuary Ward` grants, learned-ability promotion messaging, hidden skill
+     visibility at 0 Devotion, held-stack damage reduction, and enemy-survival
+     Devotion gain.
+   - Manually smoke-test Cleric, Templar, and Hierophant Devotion in pygame
+     combat, including `Relic Aegis`, `Consecrated Conduit`, and
+     `Sacred Overchannel`.
+2. **High-signal UI bugfixes**
+   - Pin the Race selection `Virtue/Sin` section so two-line descriptions fit
+     predictably, including the longest Dwarf description.
+   - Verify Smoke Screen from invalid or non-fleeing states does not leak stale
+     smoke, hidden-enemy, or flee-transition state into the next battle.
+   - Verify promotion with mixed legal/illegal gear keeps legal gear equipped,
+     moves illegal gear to inventory, and does not grant promoted-class default
+     gear.
+3. **Quest and story-route regression pass**
+   - Re-run the staged relic opening checks: new game starts with
+     `Uncertain Reports`, `Cry Havoc!` stays spoiler-light, Triangulus updates
+     report-back state, and reporting creates `The Holy Relics`.
+   - Add or refresh tests if any path still duplicates quest staging,
+     old-save migration, or relic-count logic between frontends.
+4. **Class Ring and class-kit readability pass**
+   - Inspect Class Ring wording across absent, inventory-only, stored,
+     equipped-dormant, and equipped-awakened states.
+   - Use `docs/CLASS_KIT_EVIDENCE_NOTES.md` to record manual findings for at
+     least one martial meter, one caster/support meter, one persistent-progress
+     track, and two awakened-ring preservation cases before numeric tuning.
+5. **Playtest checklist triage**
+   - Split `docs/PLAYTEST_CHECKLIST.md` into current playtest, deferred-spec,
+     and shipped-regression groups so the unchecked list stays actionable.
+   - Keep checklist edits documentation-only unless the route being checked
+     exposes a reproducible bug.
+6. **Next promotable implementation candidate**
+   - Prefer a small concrete polish item after the readiness pass, such as dead
+     boss body renderings replacing generic rock-pile presentation, curses shop
+     prompt parity, or one story-scene art batch with a review sheet.
+   - Do not promote durability, identification, multi-enemy combat, broader
+     divine economy, account-wide Bestiary, or final-battle tuning without the
+     owner-doc spec and evidence requirements.
 
 ## Active Priority - P7 Additional Improvements
 
@@ -180,7 +245,7 @@ deferred until their contracts are promoted.
 
 ## Class, Ability, And Combat Gates
 
-Status: `Spec Map, UI/Log Polish Batch Active`
+Status: `Spec Map, UI/Log Polish Batch Active, P8 Playtest Readiness`
 
 Class, ability, and combat planning is split across durable owner docs rather
 than a single umbrella spec:
@@ -203,6 +268,10 @@ menu/status hints across all shipped promotion tracks. This batch may add
 status/log text and evidence notes, but mechanics and numeric tuning should
 remain unchanged until playtest or simulator evidence promotes a specific
 balance change.
+
+P8 narrows the immediate class/ability work to playtest readiness: finish
+Devotion regression coverage, verify promotion messaging, check combat skill
+visibility, and collect evidence before tuning class-kit numbers.
 
 ## Story And Endgame Gates
 
@@ -265,6 +334,14 @@ Systems, audio, and meta planning is split across durable owner docs:
   consumer-driven event policy.
 - `docs/COMBAT_BALANCE_DESIGN_GATES.md` owns balance-suite tooling notes and
   numeric combat tuning gates.
+
+## Other Bugfixes and Improvements
+
+### Playtest Findings
+
+- The "Virtue/Sin" section at the bottom of the Race selection for a new character
+  needs to be pinned at the level to allow for 2 lines per description; the
+  Dwarf race description is the longest and fits this spacing
 
 Account-wide Bestiary history, Bestiary rewards, achievements, titles,
 gameplay bonuses, run summaries, and persistent statistics remain deferred

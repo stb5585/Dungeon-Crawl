@@ -22,6 +22,10 @@ def _is_two_handed_polearm(item: Any) -> bool:
     return getattr(item, "subtyp", None) == "Polearm" and getattr(item, "handed", 1) == 2
 
 
+def _is_two_handed_staff(item: Any) -> bool:
+    return getattr(item, "subtyp", None) == "Staff" and getattr(item, "handed", 1) == 2
+
+
 def can_keep_polearm_shield(character: Any, weapon: Any, offhand: Any) -> bool:
     """Return whether a class skill lets a polearm stay paired with a shield."""
     if not _is_two_handed_polearm(weapon) or getattr(offhand, "subtyp", None) != "Shield":
@@ -31,6 +35,13 @@ def can_keep_polearm_shield(character: Any, weapon: Any, offhand: Any) -> bool:
         skill_name in skills
         for skill_name in ("Polearm Proficiency", "Polearm Excellence", "Polearm Mastery")
     )
+
+
+def can_keep_staff_shield(character: Any, weapon: Any, offhand: Any) -> bool:
+    """Return whether Staff Conduit lets a two-handed staff stay paired with a shield."""
+    if not _is_two_handed_staff(weapon) or getattr(offhand, "subtyp", None) != "Shield":
+        return False
+    return has_skill(character, "Staff Conduit")
 
 
 def can_keep_berserker_heavy_offhand(character: Any, weapon: Any, offhand: Any) -> bool:

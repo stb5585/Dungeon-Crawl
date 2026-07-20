@@ -83,6 +83,164 @@ def test_representative_active_spends_and_status_text():
     assert "Ki:" in monk._class_kit_status_str()
 
 
+def test_held_devotion_reduces_incoming_damage_until_spent():
+    cleric = _player("Cleric", mana=(100, 100))
+    attacker = enemies.Goblin()
+
+    hit, message, damage = cleric.damage_reduction(100, attacker, typ="Physical")
+    assert hit is True
+    assert damage == 100
+    assert "Devotion guard" not in message
+
+    promotion_kits.gain_meter(cleric, "devotion", 3, "test")
+    hit, message, damage = cleric.damage_reduction(100, attacker, typ="Physical")
+    assert hit is True
+    assert damage == 91
+    assert "Devotion guard reduces damage by 9" in message
+
+    assert "spends 3 Devotion" in abilities.SanctuaryWard().use(cleric)
+    hit, message, damage = cleric.damage_reduction(100, attacker, typ="Physical")
+    assert hit is True
+    assert damage == 100
+    assert "Devotion guard" not in message
+
+    templar = _player("Templar", mana=(100, 100))
+    promotion_kits.gain_meter(templar, "devotion", 5, "test")
+    _hit, message, damage = templar.damage_reduction(100, attacker, typ="Physical")
+    assert damage == 85
+    assert "Devotion guard reduces damage by 15" in message
+
+
+def test_deferred_devotion_only_applies_when_defender_survives_action():
+    cleric = _player("Cleric")
+    target = enemies.Goblin()
+
+    promotion_kits.begin_action(cleric, defer_devotion=True)
+    promotion_kits.record_damage_event(
+        cleric,
+        target,
+        12,
+        "Holy",
+        metadata={"attack_source": "weapon", "weapon_type": "Club"},
+    )
+    assert promotion_kits.combat_state(cleric)["devotion"] == 0
+    assert promotion_kits.finish_action(cleric, defender_survived=False) == ""
+    assert promotion_kits.combat_state(cleric)["devotion"] == 0
+
+    promotion_kits.begin_action(cleric, defer_devotion=True)
+    promotion_kits.record_damage_event(
+        cleric,
+        target,
+        12,
+        "Holy",
+        metadata={"attack_source": "weapon", "weapon_type": "Club"},
+    )
+    message = promotion_kits.finish_action(cleric, defender_survived=True)
+
+    assert "gains 1 Devotion" in message
+    assert promotion_kits.combat_state(cleric)["devotion"] == 1
+
+
+def test_hierophant_devotion_and_consecrated_conduit_payoff():
+    hierophant = _player("Hierophant", mana=(100, 100), health=(100, 100))
+    hierophant.equipment["Weapon"] = items.Quarterstaff()
+    hierophant.spellbook["Skills"]["Staff Conduit"] = abilities.StaffConduit()
+    target = enemies.Goblin()
+
+    promotion_kits.begin_action(hierophant)
+    promotion_kits.record_healing_done(hierophant, 20)
+    promotion_kits.record_damage_event(
+        hierophant,
+        target,
+        12,
+        "Physical",
+        metadata={"attack_source": "weapon", "weapon_slot": "Weapon", "weapon_type": "Staff"},
+    )
+    assert promotion_kits.combat_state(hierophant)["devotion"] == 1
+
+    promotion_kits.begin_action(hierophant)
+    promotion_kits.record_damage_event(
+        hierophant,
+        target,
+        12,
+        "Physical",
+        metadata={"attack_source": "weapon", "weapon_slot": "Weapon", "weapon_type": "Staff"},
+    )
+    assert promotion_kits.combat_state(hierophant)["devotion"] == 2
+
+    message = abilities.ConsecratedConduit().use(hierophant)
+    assert "spends 2 Devotion" in message
+    before_hp = target.health.current
+    promotion_kits.record_damage_event(
+        hierophant,
+        target,
+        20,
+        "Physical",
+        metadata={"attack_source": "weapon", "weapon_slot": "Weapon", "weapon_type": "Staff"},
+    )
+    assert target.health.current < before_hp
+    assert promotion_kits.combat_state(hierophant)["consecrated_conduit"] is None
+    assert hierophant.magic_effects["Nature Shield"].active is True
+
+
+def test_hierophant_conduit_gates_and_ring_preserves_after_payoff():
+    cleric = _player("Cleric", mana=(100, 100))
+    assert "requires Hierophant" in abilities.ConsecratedConduit().use(cleric)
+
+    hierophant = _player("Hierophant", mana=(100, 100))
+    assert "requires a staff" in abilities.ConsecratedConduit().use(hierophant)
+
+    hierophant.equipment["Weapon"] = items.Quarterstaff()
+    assert "requires Devotion" in abilities.ConsecratedConduit().use(hierophant)
+
+    _awaken_ring(hierophant, "Hierophant")
+    promotion_kits.gain_meter(hierophant, "devotion", 3, "test")
+    assert "spends 3 Devotion" in abilities.ConsecratedConduit().use(hierophant)
+    target = enemies.Goblin()
+    promotion_kits.record_damage_event(
+        hierophant,
+        target,
+        24,
+        "Physical",
+        metadata={"attack_source": "weapon", "weapon_slot": "Weapon", "weapon_type": "Staff"},
+    )
+    assert promotion_kits.combat_state(hierophant)["devotion"] == 1
+    assert "Sacred Conduit preserves 1 spent devotion" in promotion_kits.pop_messages(hierophant)
+
+
+def test_sacred_overchannel_boosts_hierophant_devotion_and_payoff():
+    hierophant = _player("Hierophant", mana=(100, 80))
+    hierophant.equipment["Weapon"] = items.Quarterstaff()
+    hierophant.spellbook["Skills"]["Sacred Overchannel"] = abilities.SacredOverchannel()
+    hierophant.power_up = True
+    hierophant.class_effects["Power Up"].active = True
+    hierophant.class_effects["Power Up"].duration = 5
+    target = enemies.Goblin()
+
+    promotion_kits.begin_action(hierophant)
+    promotion_kits.record_damage_event(
+        hierophant,
+        target,
+        12,
+        "Physical",
+        metadata={"attack_source": "weapon", "weapon_slot": "Weapon", "weapon_type": "Staff"},
+    )
+    assert promotion_kits.combat_state(hierophant)["devotion"] == 2
+
+    before_mana = hierophant.mana.current
+    assert "spends 2 Devotion" in abilities.ConsecratedConduit().use(hierophant)
+    after_cost_mana = hierophant.mana.current
+    assert after_cost_mana == before_mana - 10
+    promotion_kits.record_damage_event(
+        hierophant,
+        target,
+        20,
+        "Physical",
+        metadata={"attack_source": "weapon", "weapon_slot": "Weapon", "weapon_type": "Staff"},
+    )
+    assert hierophant.mana.current == after_cost_mana + 2
+
+
 def test_ui_log_polish_status_matrix_surfaces():
     astro = _player("Astromancer", mana=(100, 100))
     _awaken_ring(astro, "Astromancer")

@@ -1484,6 +1484,14 @@ class Character:
                 damage = max(0, damage - reduced)
                 msg += f"{defender.name}'s evasive guard reduces damage by {reduced}.\n"
 
+        try:
+            from .classes import promotion_kits
+
+            damage, devotion_message = promotion_kits.devotion_guard_reduction(defender, damage)
+            msg += devotion_message
+        except Exception:
+            pass
+
         return damage, msg
 
     def _build_damage_message(
@@ -1703,6 +1711,14 @@ class Character:
         if resist > 0 and final_damage < damage:
             reduction = damage - final_damage
             message += f"{self.name}'s resistance reduces damage by {reduction}.\n"
+
+        try:
+            from .classes import promotion_kits
+
+            final_damage, devotion_message = promotion_kits.devotion_guard_reduction(self, final_damage)
+            message += devotion_message
+        except Exception:
+            pass
         
         return True, message, final_damage
 

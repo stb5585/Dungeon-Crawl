@@ -285,7 +285,13 @@ def test_p4a_content_hooks_load_tavern_sergeant_and_warp_flavor():
 
     assert any("boss fight" in line for line in patrons["Barkeep"][25])
     assert any("stable descent field" in line for line in tavern_flavor)
-    assert "tracking the guardians" in quests["Sergeant"]["Main"]["1"]["The Holy Relics"]["Help Text"]
+    sergeant_level_1 = quests["Sergeant"]["Main"]["1"]
+    assert "Uncertain Reports" in sergeant_level_1
+    assert "The Holy Relics" not in sergeant_level_1
+    assert "old symbols" in sergeant_level_1["Uncertain Reports"]["Help Text"]
+    delayed_relics = quests["Sergeant"]["Main"]["21"]["The Holy Relics"]
+    assert delayed_relics["Requires"] == "Uncertain Reports"
+    assert delayed_relics["What"] == "Relics"
     warp_quest = quests["Sergeant"]["Main"]["60"]["In the Day of Our Lord"]
     assert "staffed warp point" in warp_quest["End Text"]
     assert "scientists" in warp_quest["Help Text"]

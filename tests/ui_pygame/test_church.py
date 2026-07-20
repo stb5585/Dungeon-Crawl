@@ -283,6 +283,39 @@ def test_handle_promotion_success_and_cancel(monkeypatch):
     assert "Promotion cancelled." in FakePopup.messages[-1]
 
 
+def test_handle_promotion_grants_cleric_sanctuary_ward_immediately(monkeypatch):
+    FakePopup.messages = []
+    FakePopup.show_kwargs = []
+    player = _make_player()
+    player.cls = SimpleNamespace(name="Healer", equipment={})
+    player.level.level = 30
+    presenter = _make_presenter()
+
+    monkeypatch.setattr(church.ChurchManager, "_load_background", lambda self: setattr(self, "background", None))
+    monkeypatch.setattr("src.ui_pygame.gui.church.ConfirmationPopup", FakePopup)
+    monkeypatch.setattr("src.ui_pygame.gui.church.remove_equipment", lambda slot: f"default-{slot}")
+
+    class FakePromotionScreen:
+        def __init__(self, *_args, **_kwargs):
+            pass
+
+        def navigate(self):
+            return "Cleric"
+
+    monkeypatch.setattr("src.ui_pygame.gui.church.PromotionScreen", FakePromotionScreen)
+
+    manager = church.ChurchManager(presenter, player)
+    manager.handle_promotion()
+
+    assert player.cls.name == "Cleric"
+    assert player.level.pro_level == 2
+    assert player.level.level == 1
+    assert "Sanctuary Ward" in player.spellbook["Skills"]
+    assert "Smite" in player.spellbook["Spells"]
+    assert any("Learned abilities:" in message for message in FakePopup.messages)
+    assert any("Skill: Sanctuary Ward" in message for message in FakePopup.messages)
+
+
 def test_promotion_mechanic_help_only_shows_for_extra_tabs(monkeypatch):
     FakePopup.messages = []
     FakePopup.show_kwargs = []
@@ -592,6 +625,7 @@ def test_arcane_class_ring_rites_awaken_ring_and_apply_mods(monkeypatch):
         ("Knight Enchanter", "Arcane Tempo", "Arcane Duel"),
         ("Grand Summoner", "+30% Summons", "Conduit Ritual"),
         ("Templar", "Ordered Blessings", "Relic Defense"),
+        ("Hierophant", "Sacred Conduit", "Consecration Rite"),
         ("Master Monk", "Martial Master", "Purity Rite"),
         ("Archbishop", "Divine Intervention", "Miracle Vigil"),
         ("Troubadour", "Encore", "Lost Ballad"),

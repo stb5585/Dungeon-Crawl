@@ -11,7 +11,7 @@ from src.core.save_system import SaveManager
 from src.core.character import scaled_decay_function
 from src.core import map_tiles
 from src.core import items as items_module
-from src.core.classes import astromancer, grandmaster
+from src.core.classes import astromancer, grandmaster, promotion_kits
 
 
 # functions
@@ -1463,6 +1463,10 @@ class CombatPopupMenu(PopupMenu):
             for entry in self.game.player_char.spellbook['Skills']:
                 if self.game.player_char.spellbook['Skills'][entry].cost <= self.game.player_char.mana.current:
                     if any([self.game.player_char.spellbook['Skills'][entry].passive,
+                            not promotion_kits.combat_skill_visible(
+                                self.game.player_char,
+                                self.game.player_char.spellbook['Skills'][entry],
+                            ),
                             self.game.player_char.spellbook['Skills'][entry].name == 'Smoke Screen' and \
                                 'Boss' in str(tile),
                             self.game.player_char.spellbook['Skills'][entry].name == 'Lockpick',

@@ -6,6 +6,7 @@ from __future__ import annotations
 from copy import deepcopy
 from types import SimpleNamespace
 
+from src.core import items as core_items, quest_progress
 from src.core.data.data_loader import get_quests
 from src.ui_pygame.gui import quest_manager
 
@@ -131,6 +132,49 @@ def _content_quest(giver: str, category: str, quest_name: str) -> dict:
             quest_data["Turned In"] = False
             return quest_data
     raise AssertionError(f"Missing quest fixture: {giver} {category} {quest_name}")
+
+
+def test_sergeant_starts_with_uncertain_reports_not_holy_relics():
+    player = _make_player(level=1)
+    rendered = []
+    manager = _manager(
+        player,
+        quest_text_renderer=lambda text: rendered.append(text),
+        quest_choice_renderer=lambda _prompt, _options: 0,
+    )
+
+    acted, showed = manager.check_and_offer("Sergeant")
+
+    assert (acted, showed) == (True, True)
+    assert quest_progress.UNCERTAIN_REPORTS in player.quest_dict["Main"]
+    assert quest_progress.HOLY_RELICS not in player.quest_dict["Main"]
+    offered_text = "\n".join(rendered)
+    assert "six relics" not in offered_text.lower()
+    assert "vesperion" not in offered_text.lower()
+    assert "voluntas" not in offered_text.lower()
+
+
+def test_first_relic_report_turn_in_creates_holy_relics(monkeypatch):
+    player = _make_player(level=20)
+    player.quest_dict["Main"][quest_progress.UNCERTAIN_REPORTS] = _content_quest(
+        "Sergeant", "Main", quest_progress.UNCERTAIN_REPORTS
+    )
+    player.quest_dict["Main"][quest_progress.UNCERTAIN_REPORTS]["Completed"] = False
+    player.special_inventory["Triangulus"] = [core_items.Relic1()]
+    rendered = []
+    manager = _manager(player, quest_text_renderer=lambda text: rendered.append(text))
+
+    FakeLevelUpScreen.calls = []
+    monkeypatch.setattr(quest_manager, "LevelUpScreen", FakeLevelUpScreen)
+
+    acted, showed = manager.check_and_offer("Sergeant")
+
+    assert (acted, showed) == (True, True)
+    assert player.quest_dict["Main"][quest_progress.UNCERTAIN_REPORTS]["Turned In"] is True
+    holy = player.quest_dict["Main"][quest_progress.HOLY_RELICS]
+    assert holy["Completed"] is False
+    assert holy["Stage"] == "collecting"
+    assert "Recovered 1/6 relics" in holy["Help Text"]
 
 
 def test_formatting_and_chalice_hint_helpers(monkeypatch):

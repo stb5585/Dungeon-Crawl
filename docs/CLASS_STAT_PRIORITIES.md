@@ -70,6 +70,7 @@ Ties mean the class wants both stats about equally.
 | Healer | `WIS`, `INT/CON/CHA`, `DEX/STR` |
 | Cleric | `WIS/CON`, `STR/CHA`, `DEX/INT` |
 | Templar | `STR/CON`, `WIS/DEX/CHA`, `INT` |
+| Hierophant | `WIS/INT`, `CON/CHA`, `STR/DEX` |
 | Monk | `STR`, `WIS/CON/DEX/CHA`, `INT` |
 | Master Monk | `STR/CON`, `WIS/DEX/CHA`, `INT` |
 | Priest | `WIS`, `INT`, `CHA`, `CON/DEX/STR` |

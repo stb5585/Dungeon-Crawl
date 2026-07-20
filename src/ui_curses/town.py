@@ -5,7 +5,7 @@ import random
 import time
 from textwrap import wrap
 
-from src.core import classes, items
+from src.core import classes, items, quest_progress
 from src.core.classes import dragoon
 from src.core.town import (
     PATRON_DIALOGUES,
@@ -80,7 +80,9 @@ def turn_in_quest(game, quest, typ):
     quest_pad.clear_popup()
     game.player_char.quest_dict[typ][quest]['Turned In'] = True
     reward = game.player_char.quest_dict[typ][quest]['Reward']
-    if len(reward) == 1:
+    if len(reward) == 0:
+        reward = None
+    elif len(reward) == 1:
         reward = reward[0] if isinstance(reward[0], str) else reward[0]()
     elif "Izulu" in reward:
         reward = reward[0] if "Summoner" in game.player_char.cls.name else reward[1]()
@@ -112,6 +114,8 @@ def turn_in_quest(game, quest, typ):
         summon.initialize_stats(game.player_char)
         game.player_char.summons[summon.name] = summon
         reward_message = f"You received {exp} experience and have gained the summon Izulu.\n"
+    elif reward is None:
+        reward_message = f"You received {exp} experience.\n"
     else:
         num = game.player_char.quest_dict[typ][quest]['Reward Number']
         game.player_char.modify_inventory(reward, num=num)
@@ -127,7 +131,8 @@ def turn_in_quest(game, quest, typ):
     turninbox.clear_rectangle()
     if game.player_char.quest_dict[typ][quest]['Type'] == 'Collect':
         item = game.player_char.quest_dict[typ][quest]['What']
-        del game.player_char.special_inventory[item().name]
+        if item != "Relics":
+            del game.player_char.special_inventory[item().name]
     if not game.player_char.max_level():
         while game.player_char.level.exp_to_gain <= 0:
             textbox = menus.TextBox(game)
@@ -159,6 +164,7 @@ def turn_in_quest(game, quest, typ):
                 game.player_char.quest_dict["Side"]["Where's the Beef?"]["End Text"] = end_text
                 help_text = "You can get meat from pretty much any animal. Not really a time to be picky..."
                 game.player_char.quest_dict["Side"]["Where's the Beef?"]["Help Text"] = help_text
+    quest_progress.handle_quest_turn_in(game.player_char, quest)
                 
 
 
@@ -244,6 +250,7 @@ def accept_quest(game, quest, typ):
 
 
 def check_quests(game, quest_giver):
+    quest_progress.sync_relic_story_progress(game.player_char)
 
     player_mains = list(game.player_char.quest_dict['Main'])
     player_sides = list(game.player_char.quest_dict['Side'])

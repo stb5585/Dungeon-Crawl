@@ -3540,6 +3540,7 @@ class ClassRing(Accessory):
             "Ninja": "A ring that grants first round standard attack double damage if you have initiative when worn by a Ninja.",
             "Arcane Trickster": "A ring that grants a buff increasing Magic damage and dodge chance when a spell is stolen, when worn by an Arcane Trickster.",
             "Templar": "A ring that provides random blessings in combat (health/mana regen, attack/defense boost) when worn by a Templar.",
+            "Hierophant": "A ring that preserves Devotion after a clean Consecrated Conduit payoff and improves staff-conduit holy damage when worn by a Hierophant.",
             "Master Monk": "A ring that increases damage and armor by 50% when unarmed and not wearing armor when worn by a Master Monk.",
             "Archbishop": "A ring that grants a random chance to heal 25% of health when below 50% health when worn by an Archbishop.",
             "Troubadour": "A ring that doubles the intelligence bonus to all songs when worn by a Troubadour.",

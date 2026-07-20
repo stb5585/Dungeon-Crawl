@@ -12,7 +12,7 @@ from src.ui_pygame.assets.companion_art_manager import get_companion_art_manager
 from src.ui_pygame.assets.item_render_manager import get_item_render_manager
 from src.ui_pygame.assets.portrait_manager import PortraitManager
 from src.core import items
-from src.core.classes import grandmaster, paladin, promotion_kits, promotion_mechanic_tab_label
+from src.core.classes import ability_mechanics, grandmaster, paladin, promotion_kits, promotion_mechanic_tab_label
 
 from .confirmation_popup import ConfirmationPopup, draw_popup_close_button, popup_close_clicked
 from .input_guards import prepare_guarded_input, release_guard_allows_input, update_input_armed_from_event
@@ -1016,6 +1016,12 @@ class ModernCharacterScreen(TownScreenBase):
         cls = getattr(player_char, "cls", None)
         cls_name = self._attr_name(cls, "")
         if cls_name in {"Lancer", "Dragoon"} and str(getattr(weapon, "subtyp", "") or "") == "Polearm":
+            return True
+        if str(getattr(weapon, "subtyp", "") or "") == "Staff" and ability_mechanics.has_skill(player_char, "Staff Conduit"):
+            return True
+        equipment = getattr(player_char, "equipment", {}) or {}
+        offhand = equipment.get("OffHand")
+        if ability_mechanics.can_keep_staff_shield(player_char, weapon, offhand):
             return True
         try:
             return bool(cls.equip_check(weapon, "OffHand"))

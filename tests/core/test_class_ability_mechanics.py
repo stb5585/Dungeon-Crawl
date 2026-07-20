@@ -267,6 +267,7 @@ def test_composable_song_effects_apply_in_combat_and_exploration(monkeypatch):
     from src.core.classes import bard
 
     player = TestGameState.create_player(class_name="Troubadour", level=30)
+    player.equipment["OffHand"] = items.Lute()
     enemy = enemies.Goblin()
     tile = _Tile()
     tile.enemy = enemy
@@ -353,6 +354,29 @@ def test_class_power_ups_have_runtime_effects():
     state["disciplines"]["Sword"]["rank"] = 10
     grandmaster_pc.grandmaster_discipline = state
     assert grandmaster_pc.check_mod("weapon") > TestGameState.create_player(class_name="Grandmaster of Arms", level=30).check_mod("weapon")
+
+    hierophant = TestGameState.create_player(class_name="Hierophant", level=30)
+    hierophant.equipment["Weapon"] = items.Quarterstaff()
+    hierophant.spellbook["Skills"]["Sacred Overchannel"] = abilities.SacredOverchannel()
+    hierophant.power_up = True
+    hierophant.class_effects["Power Up"].active = True
+    hierophant.class_effects["Power Up"].duration = 3
+    base_hierophant = TestGameState.create_player(class_name="Hierophant", level=30)
+    base_hierophant.equipment["Weapon"] = items.Quarterstaff()
+    assert hierophant.check_mod("magic") > base_hierophant.check_mod("magic")
+    assert hierophant.check_mod("heal") > base_hierophant.check_mod("heal")
+
+
+def test_hierophant_power_core_grants_sacred_overchannel():
+    player = TestGameState.create_player(class_name="Hierophant", level=30)
+    events = []
+
+    message = player.special_power(SimpleNamespace(special_event=lambda event: events.append(event)))
+
+    assert events == ["Power Up"]
+    assert "Sacred Overchannel" in player.spellbook["Skills"]
+    assert player.power_up is True
+    assert "Sacred Overchannel" in message
 
 
 def test_passive_power_ups_support_defender_troubadour_and_beast_master():

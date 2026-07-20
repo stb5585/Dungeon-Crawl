@@ -10,7 +10,7 @@ from types import SimpleNamespace
 
 sys.path.insert(0, str(Path(__file__).parents[2]))
 
-from src.core import abilities, companions, enemies, items, thieves_guild
+from src.core import abilities, companions, enemies, items, quest_progress, thieves_guild
 from src.core.save_system import (
     AbilitySerializer,
     EnemyStateSerializer,
@@ -293,6 +293,58 @@ def test_player_data_deserialize_migrates_jester_tokens_to_special_inventory():
 
     assert "Jester Token" not in restored.inventory
     assert len(restored.special_inventory["Jester Token"]) == 2
+
+
+def test_player_data_deserialize_replaces_legacy_holy_relics_by_relic_count():
+    relic_items = [
+        ("Triangulus", items.Relic1()),
+        ("Quadrata", items.Relic2()),
+        ("Hexagonum", items.Relic3()),
+        ("Luna", items.Relic4()),
+        ("Polaris", items.Relic5()),
+        ("Infinitas", items.Relic6()),
+    ]
+    cases = [
+        (0, False, False, quest_progress.UNCERTAIN_REPORTS, False, False),
+        (1, False, False, quest_progress.HOLY_RELICS, False, False),
+        (5, False, False, quest_progress.HOLY_RELICS, False, False),
+        (6, False, False, quest_progress.HOLY_RELICS, True, False),
+        (6, True, True, quest_progress.HOLY_RELICS, True, True),
+    ]
+
+    for count, old_completed, old_turned_in, expected_name, expected_completed, expected_turned_in in cases:
+        player = TestGameState.create_player(
+            name=f"Relic{count}",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+        )
+        player.special_inventory = {
+            name: [item]
+            for name, item in relic_items[:count]
+        }
+        player.quest_dict["Main"][quest_progress.HOLY_RELICS] = {
+            "Who": "Sergeant",
+            "Type": "Collect",
+            "What": "Relics",
+            "Total": 6,
+            "Reward": [],
+            "Reward Number": 1,
+            "Experience": 500000,
+            "Completed": old_completed,
+            "Turned In": old_turned_in,
+        }
+
+        restored = PlayerDataSerializer.deserialize(PlayerDataSerializer.serialize(player), skip_tiles=True)
+
+        assert list(restored.quest_dict["Main"]) == [expected_name]
+        restored_quest = restored.quest_dict["Main"][expected_name]
+        assert restored_quest["Completed"] is expected_completed
+        assert restored_quest["Turned In"] is expected_turned_in
+        if expected_name == quest_progress.HOLY_RELICS:
+            assert restored_quest["Stage"] == "collecting"
+        else:
+            assert restored_quest["Stage"] == "investigate"
 
 
 def test_save_manager_round_trip_list_and_delete(monkeypatch, tmp_path):

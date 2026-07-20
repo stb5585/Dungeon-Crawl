@@ -1239,6 +1239,20 @@ class RelicAegis(_PromotionActive):
         return promotion_kits.relic_aegis(user)
 
 
+class ConsecratedConduit(_PromotionActive):
+    def __init__(self):
+        super().__init__(
+            "Consecrated Conduit",
+            "Spend Hierophant Devotion to empower the next staff or holy attack.",
+            10,
+        )
+
+    def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        from .classes import promotion_kits
+
+        return promotion_kits.consecrated_conduit(user)
+
+
 class Supplication(_PromotionActive):
     def __init__(self):
         super().__init__("Supplication", "Spend Prayer on a targeted divine support pulse.", 10)
@@ -2068,6 +2082,19 @@ class PiousBounty(Class):
         self.passive = True
 
 
+class StaffConduit(Class):
+    """
+    Passive marker allowing Hierophants to channel a staff while bracing a shield.
+    """
+
+    def __init__(self):
+        super().__init__(
+            name="Staff Conduit",
+            description="You can wield a two-handed staff with a shield and focus Devotion through staff strikes.",
+        )
+        self.passive = True
+
+
 # Luck
 class GoldToss:
     """Data-driven (gold_toss.yaml) - gold-based unblockable damage."""
@@ -2281,6 +2308,12 @@ class HolyRetribution(PowerUp):
     """Skill — data-driven (holy_retribution.yaml)"""
     def __new__(cls):
         return _load_yaml_ability("holy_retribution.yaml", cls_name="HolyRetribution")
+
+
+class SacredOverchannel(PowerUp):
+    """Skill — data-driven (sacred_overchannel.yaml)"""
+    def __new__(cls):
+        return _load_yaml_ability("sacred_overchannel.yaml", cls_name="SacredOverchannel")
 
 
 class GreatGospel(PowerUp):
@@ -4201,11 +4234,11 @@ skill_dict = {
     "Arcane Trickster": {
         "1": StealSpell2,
         "4": ThirdEye,
-        },
+    },
     "Healer": {},
     "Cleric": {
+        "1": SanctuaryWard,
         "6": ShieldSlam,
-        "8": SanctuaryWard,
         "12": ShieldBlock,
         "24": PiousBounty,
         "27": TrueStrike,
@@ -4218,6 +4251,10 @@ skill_dict = {
         "14": Charge,
         "22": DoubleStrike,
         "30": TruePiercingStrike,
+    },
+    "Hierophant": {
+        "1": StaffConduit,
+        "8": ConsecratedConduit,
     },
     "Priest": {
         "4": DefensiveRegen,
@@ -4435,6 +4472,11 @@ spell_dict = {
     "Templar": {
         "6": Regen2,
         "10": Smite3,
+        "18": Dispel,
+        },
+    "Hierophant": {
+        "4": Holy2,
+        "12": Regen2,
         "18": Dispel,
         },
     "Priest": {

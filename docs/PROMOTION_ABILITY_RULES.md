@@ -126,6 +126,7 @@ pruning change unless an implemented rule is called out.
 | --- | --- | --- |
 | Healer -> Cleric | Keep | Retain healing foundation and add shield/holy utility. |
 | Cleric -> Templar | Keep | Retain cleric defense/holy identity and add ordered blessings. |
+| Cleric -> Hierophant | Keep | Retain cleric defense/holy identity and add staff-shield battle-casting through Devotion. |
 | Healer -> Monk | Identity Trade | Trade spellcasting for martial chi. Current rule clears learned spells. |
 | Monk -> Master Monk | Keep | Retain chi/martial kit and deepen Ki mastery, `Dim Mak`, and late-game martial weapon identity. |
 | Healer -> Priest | Keep | Retain and deepen spellcasting support through the Prayer support loop. |

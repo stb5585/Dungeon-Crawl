@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from src.core import abilities, classes, items
+from src.core import abilities, classes, items, races
 
 
 def _promotion_player(*, spells=None, skills=None):
@@ -55,7 +55,7 @@ def test_promotion_rules_ignore_unknown_class_without_mutating_spellbook():
     assert set(player.spellbook["Skills"]) == {"Feint"}
 
 
-def test_promotion_mechanic_guidance_points_to_relevant_character_tab():
+def test_promotion_mechanic_guidance_points_to_relevant_character_surface():
     weapon_guidance = classes.promotion_mechanic_guidance("Weapon Master")
     assert "Weapon Discipline" in weapon_guidance
     assert "Intelligence" in weapon_guidance
@@ -102,9 +102,12 @@ def test_promotion_mechanic_guidance_points_to_relevant_character_tab():
     assert classes.promotion_mechanic_tab_label("Arcane Trickster") == ""
 
     assert "Sanctuary Ward" in classes.promotion_mechanic_guidance("Cleric")
-    assert classes.promotion_mechanic_tab_label("Cleric") == "Devotion"
+    assert "Character Menu tab" not in classes.promotion_mechanic_guidance("Cleric")
+    assert classes.promotion_mechanic_tab_label("Cleric") == ""
     assert "Ordered Blessings" in classes.promotion_mechanic_guidance("Templar")
-    assert classes.promotion_mechanic_tab_label("Templar") == "Devotion"
+    assert classes.promotion_mechanic_tab_label("Templar") == ""
+    assert "Consecrated Conduit" in classes.promotion_mechanic_guidance("Hierophant")
+    assert classes.promotion_mechanic_tab_label("Hierophant") == ""
     assert "Dim Mak" in classes.promotion_mechanic_guidance("Monk")
     assert classes.promotion_mechanic_tab_label("Monk") == "Ki"
     assert "Martial Mastery" in classes.promotion_mechanic_guidance("Master Monk")
@@ -138,6 +141,36 @@ def test_promotion_mechanic_guidance_points_to_relevant_character_tab():
 
     assert classes.promotion_mechanic_guidance("Knight") == ""
     assert classes.promotion_mechanic_tab_label("Knight") == ""
+
+
+def test_cleric_promotes_to_templar_and_hierophant():
+    cleric_promotions = classes.classes_dict["Healer"]["pro"]["Cleric"]["pro"]
+
+    assert set(cleric_promotions) == {"Templar", "Hierophant"}
+    assert cleric_promotions["Hierophant"]["class"] is classes.Hierophant
+
+
+def test_hierophant_available_to_all_templar_races():
+    for race_cls in (races.Human, races.HalfElf, races.Gnome, races.Dwarf):
+        second_promotions = race_cls().cls_res["Second"]
+        assert "Templar" in second_promotions
+        assert "Hierophant" in second_promotions
+
+
+def test_hierophant_restrictions_and_stats_match_staff_caster_path():
+    hierophant = classes.Hierophant()
+
+    assert hierophant.pro_level == 3
+    assert hierophant.restrictions["Weapon"] == ["Club", "Staff"]
+    assert hierophant.restrictions["OffHand"] == ["Shield"]
+    assert hierophant.restrictions["Armor"] == ["Cloth", "Light"]
+    assert hierophant.restrictions["Helmet"] == ["Cloth", "Light"]
+    assert hierophant.wis_plus == 3
+    assert hierophant.magic_plus == 3
+    assert hierophant.equip_check(items.Quarterstaff(), "Weapon") is True
+    assert hierophant.equip_check(items.Sledgehammer(), "Weapon") is False
+    assert hierophant.equip_check(items.LeatherArmor(), "Armor") is True
+    assert hierophant.equip_check(items.ChainMail(), "Armor") is False
 
 
 def test_weapon_discipline_classes_include_intelligence_promotion_bonus():

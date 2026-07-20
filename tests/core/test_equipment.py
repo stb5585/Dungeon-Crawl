@@ -16,7 +16,7 @@ from types import SimpleNamespace
 
 sys.path.insert(0, str(Path(__file__).parents[2]))
 
-from src.core import items
+from src.core import abilities, items
 from tests.test_framework import TestGameState
 
 
@@ -134,6 +134,33 @@ class TestTwoHandedWeaponLogic:
         # Shield should still be equipped
         assert player.equipment['OffHand'].name == 'Buckler'
         assert player.equipment['Weapon'].name == 'Framea'
+
+    def test_hierophant_can_equip_two_handed_staff_with_shield(self):
+        """Verify Staff Conduit lets Hierophant keep a shield with a two-handed staff."""
+        player = TestGameState.create_player(name="TestPlayer", class_name="Hierophant", race_name="Human")
+        player.spellbook["Skills"]["Staff Conduit"] = abilities.StaffConduit()
+        player.equipment['OffHand'] = items.Buckler()
+        staff = items.Quarterstaff()
+        player.inventory[staff.name] = [staff]
+
+        result = player.equip('Weapon', staff)
+
+        assert result is True
+        assert player.equipment['OffHand'].name == 'Buckler'
+        assert player.equipment['Weapon'].name == 'Quarterstaff'
+
+    def test_non_hierophant_staff_user_loses_offhand_to_two_handed_staff(self):
+        """Verify two-handed staff/offhand compatibility is gated by Staff Conduit."""
+        player = TestGameState.create_player(name="TestPlayer", class_name="Cleric", race_name="Human")
+        player.equipment['OffHand'] = items.Buckler()
+        staff = items.Quarterstaff()
+        player.inventory[staff.name] = [staff]
+
+        result = player.equip('Weapon', staff)
+
+        assert result is True
+        assert player.equipment['OffHand'].name == 'No OffHand'
+        assert player.equipment['Weapon'].name == 'Quarterstaff'
     
     def test_berserker_2h_weapon_logic(self):
         """Verify Berserker is not Lancer/Dragoon for 2H polearm exception."""

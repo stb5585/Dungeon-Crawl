@@ -25,7 +25,7 @@ from .enemy_identity import restore_defeat_identity
 
 import numpy
 
-from . import abilities, enemies, items, thieves_guild, town
+from . import abilities, enemies, items, quest_progress, thieves_guild, town
 from .classes import (
     archdruid,
     bard,
@@ -1762,6 +1762,8 @@ class Player(Character):
             if item.handed == 2:
                 can_keep_offhand = ability_mechanics.can_keep_polearm_shield(
                     self, item, self.equipment["OffHand"]
+                ) or ability_mechanics.can_keep_staff_shield(
+                    self, item, self.equipment["OffHand"]
                 ) or ability_mechanics.can_keep_berserker_heavy_offhand(
                     self, item, self.equipment["OffHand"]
                 )
@@ -1775,6 +1777,8 @@ class Player(Character):
         if equip_slot == "OffHand":
             if self.equipment["Weapon"].handed == 2:
                 can_keep_weapon = ability_mechanics.can_keep_polearm_shield(
+                    self, self.equipment["Weapon"], item
+                ) or ability_mechanics.can_keep_staff_shield(
                     self, self.equipment["Weapon"], item
                 ) or ability_mechanics.can_keep_berserker_heavy_offhand(
                     self, self.equipment["Weapon"], item
@@ -1895,6 +1899,8 @@ class Player(Character):
             # Handle two-handed weapon conflicts with offhand items (preview only)
             if equip_slot == "Weapon" and item.handed == 2:
                 can_keep_offhand = ability_mechanics.can_keep_polearm_shield(
+                    self, item, self.equipment["OffHand"]
+                ) or ability_mechanics.can_keep_staff_shield(
                     self, item, self.equipment["OffHand"]
                 ) or ability_mechanics.can_keep_berserker_heavy_offhand(
                     self, item, self.equipment["OffHand"]
@@ -2629,10 +2635,7 @@ class Player(Character):
                 except (AttributeError, TypeError):
                     pass
         else:
-            if self.has_relics():
-                if 'The Holy Relics' in self.quest_dict['Main']:
-                    quest_message += "You have completed the quest The Holy Relics!\n"
-                    self.quest_dict['Main']['The Holy Relics']['Completed'] = True
+            quest_message += quest_progress.sync_relic_story_progress(self)
         return quest_message
 
     def quests_screen(self, game, popup):
@@ -2664,6 +2667,13 @@ class Player(Character):
                 class_mod += self.class_effects["Power Up"].active * self.class_effects["Power Up"].extra
             if self.cls.name == "Templar" and self.power_up and self.class_effects["Power Up"].active:
                 class_mod += (self.player_level() // 5)
+            if (
+                self.cls.name == "Hierophant"
+                and self.power_up
+                and self.class_effects["Power Up"].active
+                and self.equipment["Weapon"].subtyp == "Staff"
+            ):
+                class_mod += max(1, self.stats.wisdom // 3)
             if self.cls.name == "Lycan" and self.power_up:
                 class_mod += ((self.player_level() // 10) * self.class_effects["Power Up"].duration)
             if 'Physical Damage' in self.equipment['Ring'].mod:
@@ -2765,6 +2775,8 @@ class Player(Character):
             abyssal = ability_mechanics.abyssal_covenant_magic_bonus(self)
             if abyssal:
                 class_mod += int((magic_mod + self.combat.magic) * abyssal)
+            if ability_mechanics.power_up_active(self, "Sacred Overchannel", "Hierophant"):
+                class_mod += int((magic_mod + self.combat.magic) * 0.15)
             astro = class_rings.constellation_bonus(self, typ)
             if astro:
                 class_mod += int((magic_mod + self.combat.magic) * astro)
@@ -2812,6 +2824,8 @@ class Player(Character):
             harmony = archdruid.harmony_bonus(self)
             if harmony:
                 class_mod += int((heal_mod + self.combat.magic) * harmony)
+            if ability_mechanics.power_up_active(self, "Sacred Overchannel", "Hierophant"):
+                class_mod += int((heal_mod + self.combat.magic) * 0.15)
             total_heal = heal_mod + class_mod + self.combat.magic
             total_heal = int(total_heal * ability_mechanics.primal_ascendance_multiplier(self, "Growth"))
             return max(0, total_heal)
@@ -2912,6 +2926,8 @@ class Player(Character):
             Ninja - Blade of Fatalities: sacrifice percentage of health to imbue blade with the spirit of Muramasa, increasing
                 damage dealt and absorbing it into the user
             Arcane Trickster - Trickster's Gambit: stolen-magic momentum improves magic, critical chance, and dodge.
+            Hierophant - Sacred Overchannel: open the staff-and-shield channel fully; staff and holy actions build
+                Devotion faster, and Consecrated Conduit payoffs strike harder while returning more mana
             Templar - Holy Retribution: a radiant shield envelopes the Templar, reflecting damage back at the attacker; while
                 the shield is active, attack damage and chance to dodge/parry increase
             Archbishop - Great Gospel: regens health and mana over time, and restores status; increases magic resistance and
@@ -2949,6 +2965,7 @@ class Player(Character):
                     "Seeker": abilities.EyesUnseen,
                     "Ninja": abilities.BladeFatalities,
                     "Arcane Trickster": abilities.TrickstersGambit,
+                    "Hierophant": abilities.SacredOverchannel,
                     "Templar": abilities.HolyRetribution,
                     "Archbishop": abilities.GreatGospel,
                     "Master Monk": abilities.DimMak,

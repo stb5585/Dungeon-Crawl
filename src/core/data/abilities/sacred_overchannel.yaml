@@ -1,0 +1,15 @@
+name: Sacred Overchannel
+type: Skill
+subtype: Power Up
+description: >-
+  Open the staff-and-shield channel fully. For 5 rounds, Hierophant staff and
+  holy actions build Devotion faster, and Consecrated Conduit payoffs strike
+  harder while returning more mana.
+cost: 24
+self_target: true
+effects:
+  - type: power_up_activate
+    duration: 5
+    message: >-
+      {actor} opens a sacred overchannel. For 5 rounds, staff and holy actions
+      feed Devotion more strongly.

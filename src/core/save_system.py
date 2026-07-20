@@ -19,7 +19,7 @@ import os
 from dataclasses import dataclass, asdict
 from typing import TYPE_CHECKING
 
-from . import abilities, enemies, items, main_story, thieves_guild, town as town_core
+from . import abilities, enemies, items, main_story, quest_progress, thieves_guild, town as town_core
 from .classes import promotion_kits
 from .character import Resource, Stats, Combat, Level
 
@@ -1106,6 +1106,7 @@ class PlayerDataSerializer:
         
         # Restore quest/kill dicts
         player.quest_dict = QuestDataSerializer.deserialize_quest_dict(data.get('quest_dict', {'Bounty': {}, 'Main': {}, 'Side': {}}))
+        quest_progress.migrate_relic_story_quests(player)
         player.bounty_board_state = town_core.normalize_bounty_board_state(
             data.get('bounty_board_state')
         )

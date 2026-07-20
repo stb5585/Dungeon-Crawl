@@ -21,6 +21,7 @@ LEGACY_CLASS_NAMES = (
     "Ninja",
     "Arcane Trickster",
     "Templar",
+    "Hierophant",
     "Master Monk",
     "Archbishop",
     "Troubadour",
@@ -128,6 +129,14 @@ CLASS_RING_SPECS: dict[str, dict[str, str]] = {
             "relevant actions"
         ),
     },
+    "Hierophant": {
+        "activation": "Consecration Rite",
+        "mod": "Sacred Conduit",
+        "description": (
+            "once per combat after a clean Consecrated Conduit payoff, preserves "
+            "1 Devotion and slightly improves staff-conduit holy damage"
+        ),
+    },
     "Master Monk": {
         "activation": "Purity Rite",
         "mod": "Martial Master",
@@ -205,6 +214,7 @@ def default_state() -> dict[str, Any]:
             "Ninja": {"first_strike_spent": False},
             "Arcane Trickster": {"buff_turns": 0},
             "Templar": {"blessing_index": 0},
+            "Hierophant": {},
             "Master Monk": {},
             "Archbishop": {"intervention_used": False},
             "Troubadour": {},

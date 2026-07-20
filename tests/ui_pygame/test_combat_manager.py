@@ -9,7 +9,7 @@ import pygame
 import pytest
 
 from src.core import abilities, enemies, items, main_story
-from src.core.classes import class_rings
+from src.core.classes import class_rings, promotion_kits
 from src.ui_pygame.gui import combat_manager
 
 
@@ -1175,6 +1175,12 @@ def test_select_item_spell_and_skill_cover_empty_cancel_and_selection_paths(monk
     assert manager._select_skill(player, enemy) == "Smoke Screen"
     assert menu_calls[-1][1] == ("Smoke Screen (MP: 1)",)
     player.is_disarmed = lambda: False
+
+    player.cls = SimpleNamespace(name="Cleric")
+    player.spellbook["Skills"] = {"Sanctuary Ward": abilities.SanctuaryWard()}
+    assert manager._available_skill_names(player, enemy) == []
+    promotion_kits.gain_meter(player, "devotion", 1, "test")
+    assert manager._available_skill_names(player, enemy) == ["Sanctuary Ward"]
 
     player.equipment = {
         "Weapon": SimpleNamespace(subtyp="Polearm"),

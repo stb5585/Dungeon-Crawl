@@ -523,6 +523,7 @@ class BattleEngine:
         hp_before = self.player.health.current
         if self.attacker == self.player and not (action == "Cast Spell" and choice == "Rewind"):
             ability_mechanics.store_rewind_snapshot(self)
+            promotion_kits.begin_action(self.player, defer_devotion=True)
 
         if action == "Nothing" or action == "Cancelled":
             result.message = f"{self.attacker.name} does nothing.\n"
@@ -600,6 +601,13 @@ class BattleEngine:
         if duel_text:
             result.message = f"{result.message}{duel_text}"
         self._record_failed_enemy_debuff(self.attacker, choice, self.defender, debuff_snapshot)
+        if self.attacker == self.player:
+            result.message += promotion_kits.finish_action(
+                self.player,
+                defender_survived=bool(self.defender and self.defender.is_alive()),
+            )
+            result.message += promotion_kits.pop_messages(self.player)
+            result.message += promotion_kits.pop_messages(self.defender)
 
         # Log the action
         self.logger.log_event(

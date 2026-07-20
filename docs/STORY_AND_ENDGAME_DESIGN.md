@@ -23,6 +23,13 @@ both frontends. It adds setting, premise, tone, and early stakes while avoiding
 major endgame spoilers: do not reveal Vesperion, Voluntas, the busboy twist,
 the Hooded Figure truth, or true-final route mechanics in the intro.
 
+Early quest staging for the relic arc has shipped and is owned by
+`QUEST_STORY_INTEGRATION_DESIGN.md`. The opening flow begins with `Uncertain
+Reports`, delays `The Holy Relics` until the first relic report, preserves
+uncertainty around the relic pattern, and does not reveal Vesperion, Voluntas,
+the busboy twist, the Hooded Figure truth, or true-final route mechanics before
+the existing late-game route earns those reveals.
+
 Class identity and Class Ring ties to Voluntas have a shipped V2: after
 Voluntas is revealed, a visible Class Ring can receive an optional Liminal guide
 affirmation, an archetype scene, a follow-up, per-class bridge prose, and

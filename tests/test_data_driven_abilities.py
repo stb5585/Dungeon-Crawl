@@ -356,7 +356,7 @@ class TestYAMLLoading:
         from src.core.data.ability_loader import AbilityFactory
 
         yaml_paths = sorted(self.ABILITIES_DIR.glob("*.yaml"))
-        assert len(yaml_paths) == 194
+        assert len(yaml_paths) == 195
 
         loaded_names = []
         for path in yaml_paths:
@@ -3664,6 +3664,7 @@ class TestBatch7YAMLLoading:
         ("holy_retribution.yaml", "Holy Retribution", "Power Up", 25),
         ("divine_aegis.yaml", "Divine Aegis", "Power Up", 20),
         ("blade_fatalities.yaml", "Blade of Fatalities", "Power Up", 0),
+        ("sacred_overchannel.yaml", "Sacred Overchannel", "Power Up", 24),
         ("great_gospel.yaml", "Great Gospel", "Power Up", 35),
         ("chi_heal.yaml", "Chi Heal", "Chi Strike", 16),
         ("health_drain.yaml", "Health Drain", "Drain", 10),
@@ -3689,7 +3690,7 @@ class TestBatch7YAMLLoading:
         from src.core.data.data_driven_abilities import DataDrivenSkill
 
         for cls_name in [
-            "HolyRetribution", "DivineAegis", "BladeFatalities", "GreatGospel",
+            "HolyRetribution", "DivineAegis", "BladeFatalities", "SacredOverchannel", "GreatGospel",
             "ChiHeal", "HealthDrain", "ManaDrain", "HealthManaDrain",
             "ManaShield", "ManaShield2",
         ]:
@@ -3792,6 +3793,18 @@ class TestBatch7PowerUpAbilities:
         # Cleanse should have removed negative statuses
         assert not user.status_effects["Poison"].active
         assert not user.status_effects["Blind"].active
+
+    def test_sacred_overchannel_activates_power_up(self):
+        from src.core import abilities
+        user, target = self._make_combatants()
+        skill = abilities.SacredOverchannel()
+        mana_before = user.mana.current
+        result = skill.use(user, target)
+        assert user.class_effects["Power Up"].active
+        assert user.class_effects["Power Up"].duration == 5
+        assert user.power_up is True
+        assert user.mana.current == mana_before - 24
+        assert "sacred overchannel" in result.lower()
 
     def test_holy_retribution_special_skips_mana(self):
         from src.core import abilities
@@ -4076,7 +4089,7 @@ class TestBatch7SaveSystem:
         from src.core.save_system import AbilitySerializer
 
         for name in [
-            "HolyRetribution", "DivineAegis", "BladeFatalities", "GreatGospel",
+            "HolyRetribution", "DivineAegis", "BladeFatalities", "SacredOverchannel", "GreatGospel",
             "ChiHeal", "HealthDrain", "ManaDrain", "HealthManaDrain",
             "ManaShield", "ManaShield2",
         ]:
@@ -9268,8 +9281,18 @@ class TestClassAbilityMechanicsSlice:
         assert abilities.skill_dict["Seeker"]["5"] is abilities.ThirdEye
         assert "Third Eye" not in [skill().name for skill in abilities.skill_dict["Inquisitor"].values()]
         assert "Pious Bounty" not in [skill().name for skill in abilities.skill_dict["Priest"].values()]
+        assert abilities.skill_dict["Cleric"]["1"] is abilities.SanctuaryWard
+        assert "8" not in abilities.skill_dict["Cleric"]
         assert abilities.skill_dict["Cleric"]["24"] is abilities.PiousBounty
         assert abilities.skill_dict["Templar"]["1"] is abilities.Parry
+        assert abilities.skill_dict["Hierophant"]["1"] is abilities.StaffConduit
+        assert abilities.skill_dict["Hierophant"]["8"] is abilities.ConsecratedConduit
+        assert abilities.spell_dict["Hierophant"]["4"] is abilities.Holy2
+        assert abilities.spell_dict["Hierophant"]["12"] is abilities.Regen2
+        assert abilities.spell_dict["Hierophant"]["18"] is abilities.Dispel
+        assert abilities.Heal3 not in abilities.spell_dict["Hierophant"].values()
+        assert abilities.Holy3 not in abilities.spell_dict["Hierophant"].values()
+        assert abilities.Resurrection not in abilities.spell_dict["Hierophant"].values()
         assert list(abilities.skill_dict["Bard"].values()) == [
             abilities.SongValor,
             abilities.SongShelter,

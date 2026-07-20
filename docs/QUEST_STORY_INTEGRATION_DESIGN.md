@@ -1,0 +1,86 @@
+# Quest Story Integration Design
+
+Status: `Holy Relics Staged Mystery Chain Implemented`
+
+This document owns quest-system changes whose purpose is to stage story
+information, preserve mystery, and keep quest guidance aligned with the
+Forsaken Tenet canon. It complements `STORY_AND_ENDGAME_DESIGN.md`, which owns
+the late-game Vesperion, Voluntas, Liminal Gap, and true-final route.
+
+## Holy Relics Staged Mystery Chain
+
+The level-1 main quest no longer tells the player to collect all six Holy
+Relics immediately. That framing is mechanically useful but narratively too
+certain: early NPCs should not understand the ultimate goal, the relic pattern,
+or the identities behind the conflict.
+
+The shipped chain starts with Sergeant-led uncertainty:
+
+1. `Uncertain Reports` introduces patrol losses, sealed rooms, old symbols, and
+   contradictory witness accounts.
+2. `Cry Havoc!` points at the Barghest as a dangerous lead near one sealed
+   chamber, not as the confirmed first guardian of six relics.
+3. Finding the first relic updates `Uncertain Reports` to a report-back stage.
+4. Turning in `Uncertain Reports` creates `The Holy Relics` as the long
+   collection quest.
+5. `The Holy Relics` then preserves the existing six-relic collection and final
+   threshold gating behavior.
+
+Early-game copy must not name Vesperion, Voluntas, the busboy identity, the
+Hooded Figure truth, or true-final route mechanics. It may hint at old
+principles, relic-light, sealed chambers, and incomplete reports.
+
+## Quest System Contract
+
+Quest records may optionally define staged metadata:
+
+- `Stage`: the current stage key saved on the player's accepted quest.
+- `Stages`: stage definitions containing display text, objective/help text, and
+  trigger identifiers.
+
+Non-staged quests remain valid and ignore these fields.
+
+Shared core quest-progress helpers own story quest synchronization so curses and
+pygame do not duplicate relic or staged-objective rules. The helper is
+responsible for:
+
+- syncing staged quest progress after relic pickup;
+- syncing aggregate relic collection completion;
+- creating `The Holy Relics` after `Uncertain Reports` is turned in;
+- migrating old saves with the previous immediate `The Holy Relics` quest.
+
+## Save Migration
+
+Old saves with the pre-staging `The Holy Relics` entry are replaced on load:
+
+- `0` relics becomes active `Uncertain Reports`.
+- `1-5` relics becomes active staged `The Holy Relics`.
+- `6` relics becomes completed staged `The Holy Relics`.
+- old turned-in relic quests remain turned in after migration.
+
+Migration happens after special inventory and quest data are restored, so the
+relic count reflects the actual saved inventory.
+
+## Implementation Notes
+
+- Quest content lives in `src/core/data/content/quests.json`.
+- Staged relic quest synchronization and old-save migration live in
+  `src/core/quest_progress.py`.
+- Save-load migration is called from `src/core/save_system.py` after special
+  inventory restoration.
+- Curses and pygame quest turn-in paths call the shared quest-progress helper.
+- Relic discovery copy uses `src/core/map_tiles.py` so pygame and core/curses
+  surfaces share the same mapping and fallback.
+
+## Regression Targets
+
+- A new game offers `Uncertain Reports`, not `The Holy Relics`, at level 1.
+- `Uncertain Reports` contains no six-relic, Vesperion, or Voluntas spoiler.
+- `Cry Havoc!` remains the Barghest quest and keeps its existing level, target,
+  reward, and completion behavior.
+- Finding Triangulus marks `Uncertain Reports` ready to report without naming
+  late-game identities.
+- Turning in `Uncertain Reports` creates active `The Holy Relics`.
+- The six-relic count and completion behavior remain correct in curses and
+  pygame quest menus.
+- Old-save migration covers 0, 1, 5, 6, completed, and turned-in relic states.

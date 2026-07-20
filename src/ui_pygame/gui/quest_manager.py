@@ -9,7 +9,7 @@ import random
 import textwrap
 from typing import Any
 
-from src.core import items
+from src.core import items, quest_progress
 from src.core.town import (
     RESPONSE_MAP,
     already_defeated_enemy,
@@ -441,6 +441,7 @@ class QuestManager:
         
         # Quest-specific post-turn-in events
         self._handle_quest_events(quest_name)
+        quest_progress.handle_quest_turn_in(self.player_char, quest_name)
 
     def _remove_lucky_locket_for_bad_dream(self) -> None:
         """Remove Joffrey's locket when the Waitress takes it during turn-in."""
@@ -589,6 +590,7 @@ class QuestManager:
         did_action: quest turned in or accepted.
         showed_message: any popup/help/no-quest message was shown.
         """
+        quest_progress.sync_relic_story_progress(self.player_char)
         did_action = False
         showed_message = False
         quest_was_offered = False

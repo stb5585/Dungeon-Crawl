@@ -35,6 +35,7 @@ def _player_with_ring(class_name):
         ("Ninja", "Dormant No-Trace Opener", "No-Trace Contract"),
         ("Arcane Trickster", "Dormant Arcane Larceny", "Impossible Theft"),
         ("Templar", "Dormant Ordered Blessings", "Relic Defense"),
+        ("Hierophant", "Dormant Sacred Conduit", "Consecration Rite"),
         ("Master Monk", "Dormant Martial Master", "Purity Rite"),
         ("Archbishop", "Dormant Divine Intervention", "Miracle Vigil"),
         ("Troubadour", "Dormant Encore", "Lost Ballad"),

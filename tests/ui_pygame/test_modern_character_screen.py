@@ -324,6 +324,12 @@ def test_modern_character_summary_helpers_cover_xp_equipment_resistances_and_eff
     lancer_offhand = next(slot for slot in screen.build_equipment_slots(player) if slot.slot == "OffHand")
     assert lancer_offhand.item_name == "(empty)"
 
+    player.cls = SimpleNamespace(name="Hierophant", equip_check=lambda _item, _slot: False)
+    player.spellbook = {"Skills": {"Staff Conduit": object()}}
+    player.equipment["Weapon"].subtyp = "Staff"
+    hierophant_offhand = next(slot for slot in screen.build_equipment_slots(player) if slot.slot == "OffHand")
+    assert hierophant_offhand.item_name == "(empty)"
+
     player.equipment["Weapon"] = SimpleNamespace(name="Sword", typ="Weapon", subtyp="Sword", damage=12, crit_chance=0.15, weight=4)
     player.equipment["OffHand"] = None
     player.equipment["Pendant"] = SimpleNamespace(name="Pendant of Sight", typ="Accessory", subtyp="Pendant", mod="Vision", weight=0.2)
@@ -835,8 +841,9 @@ def test_modern_character_class_mechanic_tabs_include_healer_branches():
     player = _make_player()
 
     for class_name, expected_tabs in (
-        ("Cleric", ["Character", "Devotion", "Equipment"]),
-        ("Templar", ["Character", "Devotion", "Equipment"]),
+        ("Cleric", ["Character", "Equipment"]),
+        ("Templar", ["Character", "Equipment"]),
+        ("Hierophant", ["Character", "Equipment"]),
         ("Monk", ["Character", "Ki", "Equipment"]),
         ("Master Monk", ["Character", "Ki", "Equipment"]),
         ("Priest", ["Character", "Prayer", "Equipment"]),

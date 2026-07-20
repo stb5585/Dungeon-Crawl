@@ -179,12 +179,17 @@ PROMOTION_MECHANIC_GUIDANCE: dict[str, str] = {
         "Character Menu tab."
     ),
     "Cleric": (
-        "Character Menu tab available: Devotion. Use it to review holy defender "
-        "stacks, Sanctuary Ward readiness, and shield-support rhythm."
+        "Build Devotion through holy defender actions for passive protection, "
+        "then spend it with Sanctuary Ward when you need a larger ward."
     ),
     "Templar": (
-        "Character Menu tab available: Devotion. Use it to review holy defender "
-        "stacks, Relic Aegis readiness, and Ordered Blessings."
+        "Build Devotion through holy defender actions for passive protection, "
+        "then spend it with Relic Aegis or Ordered Blessings payoffs when the "
+        "front line needs a stronger stand."
+    ),
+    "Hierophant": (
+        "Build Devotion through holy battle-caster actions for passive protection, "
+        "then spend it with Consecrated Conduit when a staff or holy payoff is ready."
     ),
     "Monk": (
         "Character Menu tab available: Ki. Use it to review martial focus, Ki "
@@ -280,8 +285,6 @@ PROMOTION_MECHANIC_TABS: dict[str, str] = {
     "Seeker": "Case Journal",
     "Assassin": "Death Mark",
     "Ninja": "Death Mark",
-    "Cleric": "Devotion",
-    "Templar": "Devotion",
     "Monk": "Ki",
     "Master Monk": "Ki",
     "Priest": "Prayer",

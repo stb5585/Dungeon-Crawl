@@ -11,8 +11,9 @@ Class Ring activation now has two implementation tiers:
 - Fully playable activation flows: `Grandmaster of Arms`, `Demonologist`,
   `Archdruid`, `Berserker`, `Dragoon`, `Stalwart Defender`, `Wizard`,
   `Shadowcaster`, `Knight Enchanter`, `Grand Summoner`, `Rogue`, `Seeker`,
-  `Ninja`, `Arcane Trickster`, `Crusader`, `Templar`, `Master Monk`, `Archbishop`,
-  `Troubadour`, `Lycan`, `Astromancer`, `Soulcatcher`, and `Beast Master`.
+  `Ninja`, `Arcane Trickster`, `Crusader`, `Templar`, `Hierophant`,
+  `Master Monk`, `Archbishop`, `Troubadour`, `Lycan`, `Astromancer`,
+  `Soulcatcher`, and `Beast Master`.
 - Legacy second-promotion class-kit pass: supporting class mechanics, saved
   state, status text, and Class Ring hooks are implemented for the legacy
   classes listed below. Radar-style Wizard visualization can be added later;
@@ -527,6 +528,14 @@ additional visual presentation, and playtest follow-up.
     `1` Devotion once per combat.
   - Status: playable in the Church when a dormant Templar Class Ring is equipped
     or stored.
+- `Hierophant`: `Consecration Rite` awakens `Sacred Conduit`, preserving `1`
+  Devotion once per combat after a clean `Consecrated Conduit` payoff and
+  lightly improving staff-conduit holy damage.
+  - The promotion-kit pass adds Hierophant as the magical Cleric fork:
+    staff/shield/light armor, `Staff Conduit`, late combat-caster spells, and
+    a Devotion spender that rewards staff, Smite, and Holy follow-through.
+  - Status: playable in the Church when a dormant Hierophant Class Ring is
+    equipped or stored.
 - `Master Monk`: `Purity Rite` awakens `Martial Master`, granting +50% damage
   and armor while unarmed and unarmored.
   - The promotion-kit V1 pass adds combat-only `Ki`, redesigns `Dim Mak` as a

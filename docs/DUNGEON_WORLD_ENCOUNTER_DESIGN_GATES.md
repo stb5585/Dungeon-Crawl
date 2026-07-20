@@ -100,8 +100,8 @@ work starts.
 
 ## Relic Discovery Text
 
-Relic rooms should use relic-specific discovery text instead of the generic
-`You found a relic` message. This is narrative-only. It must not change:
+Relic rooms use relic-specific discovery text instead of the generic `You found
+a relic` message. This is narrative-only. It must not change:
 
 - relic item classes;
 - special inventory behavior;
@@ -114,7 +114,7 @@ Missing text mappings fall back to a readable generic message.
 
 Runtime relic discovery text is owned by `src/core/map_tiles.py` and reused by
 the pygame dungeon manager. Both pygame interaction and core/curses
-`RelicRoom.special_text()` should use the same mapping and fallback.
+`RelicRoom.special_text()` use the same mapping and fallback.
 
 ## Town Hint Flavor
 

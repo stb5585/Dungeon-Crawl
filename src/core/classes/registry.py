@@ -34,6 +34,7 @@ from .arcane_trickster import ArcaneTrickster
 from .healer import Healer
 from .cleric import Cleric
 from .templar import Templar
+from .hierophant import Hierophant
 from .priest import Priest
 from .archbishop import Archbishop
 from .monk import Monk
@@ -127,7 +128,10 @@ classes_dict = {
         "pro": {
             "Cleric": {
                 "class": Cleric,
-                "pro": {"Templar": {"class": Templar}}
+                "pro": {
+                    "Templar": {"class": Templar},
+                    "Hierophant": {"class": Hierophant},
+                }
             },
             "Monk": {
                 "class": Monk,

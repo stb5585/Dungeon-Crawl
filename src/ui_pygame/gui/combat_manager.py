@@ -2185,6 +2185,8 @@ class GUICombatManager:
         """Return whether a learned skill should be shown in the combat skill list."""
         if getattr(skill, 'passive', False):
             return False
+        if not promotion_kits.combat_skill_visible(player_char, skill):
+            return False
 
         if getattr(skill, 'name', None) == "Shield Slam":
             offhand = getattr(player_char, 'equipment', {}).get('OffHand')

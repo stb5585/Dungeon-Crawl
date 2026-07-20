@@ -405,17 +405,30 @@
   "Sergeant": {
     "Main": {
       "1": {
-        "The Holy Relics": {
+        "Uncertain Reports": {
           "Who": "Sergeant",
-          "Type": "Collect",
-          "What": "Relics",
-          "Total": 6,
-          "Start Text": "So you think you have what it takes, huh? Some of my best men have died in that dungeon and here you are, barely old enough to wipe your own ass...very well, it's your funeral. Maybe you have something those men didn't have. We don't have all the details but we believe the key to vanquishing the prime evil is to collect all 6 of the holy relics. Do that and you might just stand a chance. Don't blame me for not holding my breath...",
-          "End Text": "Well I'll be, you crazy son of a bitch, you did it!...I shouldn't get to excited, there's still work to be done. But this is huge! Hopefully one of these will help in your quest to destroy what plagues this town.",
-          "Help Text": "Each relic is protected by a powerful creature. Bring back every relic you find; the Sergeant is tracking the guardians, their wounds, and the order the relics awaken.",
-          "Reward": ["MedusaShield", "Magus", "RainbowRod", "AardBeing"],
+          "Type": "Story",
+          "What": "First Relic Report",
+          "Total": 1,
+          "Stage": "investigate",
+          "Stages": {
+            "investigate": {
+              "Title": "Investigate the patrol reports",
+              "Help Text": "Follow the Sergeant's leads into the dungeon and watch for sealed chambers, old symbols, or anything the patrol ledgers cannot explain.",
+              "Trigger": "accept"
+            },
+            "report_first_relic": {
+              "Title": "Report the strange relic",
+              "Help Text": "Bring the strange relic back to the Sergeant. He may be able to match it against the old patrol reports.",
+              "Trigger": "first_relic_found"
+            }
+          },
+          "Start Text": "So you think you have what it takes, huh? Some of my best men have died in that dungeon chasing reports that don't agree with each other. Sealed rooms. Old symbols. Patrols swearing they heard something guarding an altar, then forgetting half the story by morning. I don't know what any of it means yet, and I don't trust anyone who says they do. Start by following the reports. Bring me proof, not campfire stories.",
+          "End Text": "This is proof, all right. The markings match fragments from three different patrol ledgers, and every one of those men thought they were describing a different place. Maybe they weren't. I still don't know what these things are for, but I believe there is a pattern now. If more of these relics exist, we need them here before the final threshold answers for us.",
+          "Help Text": "Follow the Sergeant's leads into the dungeon and watch for sealed chambers, old symbols, or anything the patrol ledgers cannot explain.",
+          "Reward": [],
           "Reward Number": 1,
-          "Experience": 500000,
+          "Experience": 500,
           "Completed": false,
           "Turned In": false
         }
@@ -426,12 +439,37 @@
           "Type": "Defeat",
           "What": "Barghest",
           "Total": 1,
-          "Start Text": "We believe we've identified where the first relic is but it's guarded by a nasty, dog-like beast, a Barghest. This thing can shapeshift and can be fairly nasty if you are not prepared. Destroy it and find the first of the 6 relics. I'll have something for you when you return.",
+          "Start Text": "One report keeps surviving every rewrite: a dog-like thing near a sealed chamber, changing shape whenever the witness gets too certain. Barghest, if the old bestiaries are worth a damn. I don't know what it is guarding, but I know it is killing people who get close. Put it down and search the chamber.",
           "End Text": "Glad to hear you took care of that beast, soldier. Take this ring, it will make your physical attacks more powerful.",
-          "Help Text": "The Barghest has 3 forms: a Goblin, a Direwolf, and its natural hybrid form. Search for it behind the locked door to the south of town.",
+          "Help Text": "The Barghest has 3 forms: a Goblin, a Direwolf, and its natural hybrid form. Search for the sealed chamber behind the locked door to the south of town.",
           "Reward": ["PowerRing"],
           "Reward Number": 1,
           "Experience": 500,
+          "Completed": false,
+          "Turned In": false
+        }
+      },
+      "21": {
+        "The Holy Relics": {
+          "Who": "Sergeant",
+          "Type": "Collect",
+          "What": "Relics",
+          "Total": 6,
+          "Stage": "collecting",
+          "Stages": {
+            "collecting": {
+              "Title": "Recover the related relics",
+              "Help Text": "The first relic matches old reports of related sealed chambers. Recover each relic you find and bring proof back to the Sergeant.",
+              "Trigger": "uncertain_reports_turned_in"
+            }
+          },
+          "Requires": "Uncertain Reports",
+          "Start Text": "I've matched your relic against the old ledgers. The names and shapes are damaged, but the pattern is too consistent to ignore. Six reports. Six sealed chambers. Six objects that made wounded soldiers sound like priests and liars at the same time. I won't pretend I understand what they are, but the final threshold reacts to this kind of power. Recover the rest before something down there decides the pattern for us.",
+          "End Text": "Six relics, six reports, and somehow the ledgers make less sense than when we started. Still, the final threshold answers to them. I don't know if they are weapons, keys, or warnings, but they are the only proof we have that the way ahead can be opened and survived.",
+          "Help Text": "The relics appear tied to sealed chambers and powerful guardians. Recover each one you find; the Sergeant is comparing their markings against old patrol reports.",
+          "Reward": ["MedusaShield", "Magus", "RainbowRod", "AardBeing"],
+          "Reward Number": 1,
+          "Experience": 500000,
           "Completed": false,
           "Turned In": false
         }

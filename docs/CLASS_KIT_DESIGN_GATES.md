@@ -82,6 +82,7 @@ combat math, or numeric balance.
 | Ninja | Death Mark/cap on current target when available, opener readiness. | Mark application/cap/spend, miss consumption, immunity/boss/trial downgrade, preservation. | Stealth/opener surfaces keep initiative requirements clear. | Show awakened/equipped `No-Trace Opener` readiness. | Apply marks, spend a finisher, and verify downgrade/preservation lines. |
 | Arcane Trickster | Stolen Charge/cap, `Arcane Larceny` buff/preservation readiness through combat/HUD status, not a dedicated Character Menu tab. | Charge gain/spend/cap, stolen-scroll contribution, miss/negated consumption, preservation. | Spell-steal menus fail clearly without `Blank Scroll` or against trial enemies; stolen-spell scrolls appear in the combat `Spells` picker. | Show awakened/equipped `Arcane Larceny` readiness. | Steal/cast stolen magic from `Spells`, spend Charge, and inspect status/logs. |
 | Templar | Devotion/cap, active ward, `Holy Retribution`, next blessing. | Devotion gain/cap/spend, ward strength, `Pious Bounty`, blessing rotation, preservation. | Shield/offhand requirements for `Relic Aegis` fail clearly. | Show awakened/equipped `Ordered Blessings` preservation readiness. | Spend Devotion before and after ring awakening. |
+| Hierophant | Devotion/cap, pending `Consecrated Conduit`, staff+shield state, `Sacred Overchannel`. | Devotion gain/cap/spend, staff/holy payoff, warding, mana return, preservation, Power Core overchannel boost. | Staff-required action fails clearly; two-handed staff and shield compatibility displays correctly. | Show awakened/equipped `Sacred Conduit` preservation readiness. | Spend Devotion into `Consecrated Conduit`, land staff/Holy payoff, and inspect status/logs. |
 | Archbishop | Prayer/cap, support/Benediction effects, `Great Gospel`, Intervention readiness. | Prayer gain/cap/spend, `Doublecast` boundary, Benediction, Gospel reset, Intervention, preservation. | Resurrection/support menus keep MP and target failures clear. | Show awakened/equipped `Divine Intervention` readiness and preservation state. | Use `Supplication`/`Great Benediction` and inspect logs/status. |
 | Master Monk | Ki/cap, `Dim Mak` readiness, weapon penalty/exception state where relevant. | Ki gain/spend/cap, `Dim Mak` weapon penalty, staff drop/disarm, ultimate-staff exception. | Blacksmith ultimate selection shows `Ruyi Jingu Bang` when eligible. | Show awakened/equipped `Martial Master` readiness. | Build full Ki, use `Dim Mak`, and inspect weapon/ring messages. |
 | Troubadour | Active song, turns/steps, Crescendo, repertoire count/progress. | Practice XP, clean finish, mastery, Crescendo gain/spend, coda, route coda, preservation. | Composition/performance menus distinguish sheet use from mastered repertoire. | Show awakened/equipped `Encore` preservation readiness. | Let a song expire naturally and inspect coda/preservation lines. |
@@ -212,7 +213,7 @@ implementation:
   quest arcs.
 - Weapon Master/Berserker: forced berserk/loss-of-control and broader scar
   milestone trees.
-- Cleric/Templar: full divine economy redesign, relic quest expansion, and
+- Cleric/Templar/Hierophant: full divine economy redesign, relic quest expansion, and
   loot-centered Pious Bounty progression.
 - Priest/Archbishop: party-healer systems, morality gates, and resurrection
   economy redesign.
@@ -1205,37 +1206,52 @@ that loop through the awakened `Arcane Larceny` ring identity.
   second Wizard progression path. Numeric tuning starts conservative and should
   be adjusted after playtest.
 
-### Cleric/Templar Devotion Ward
+### Cleric/Templar/Hierophant Devotion Ward
 
-V1 implementation spec: make Cleric and Templar the holy defender branch through
-combat-only `Devotion`. Cleric starts a modest healing, holy, shield, and
-`Pious Bounty` rhythm, while Templar carries that forward with a higher cap,
-stronger ward spends, `Holy Retribution` as a Devotion window, and awakened
-`Ordered Blessings` smoothing the loop.
+V1 implementation spec: make Cleric, Templar, and Hierophant the holy defender
+branch through combat-only `Devotion`. Cleric starts a modest healing, holy,
+shield, and `Pious Bounty` rhythm; Templar carries that forward with heavier
+armor, stronger ward spends, `Holy Retribution`, and awakened `Ordered
+Blessings`; Hierophant carries it toward staff-and-shield divine battle-casting
+through `Staff Conduit`, `Consecrated Conduit`, and awakened `Sacred Conduit`.
 
 - Preserve current behavior: Healer spell carry-forward; Cleric shield/holy
   utility; `Shield Slam`, `Shield Block`, `Pious Bounty`, and `True Strike`;
   Templar shield/offhand identity; `Parry`, `Piercing Strike`, `Goad`,
-  `Charge`, `Double Strike`, `True Piercing Strike`, `Holy Retribution`; and
-  awakened `Ordered Blessings`.
+  `Charge`, `Double Strike`, `True Piercing Strike`, `Holy Retribution`;
+  Hierophant staff/shield/light-armor identity; `Staff Conduit`,
+  `Consecrated Conduit`, `Holy 2`, `Regen 2`, `Dispel`; and awakened
+  `Ordered Blessings`/`Sacred Conduit`.
 - Devotion storage: no persistent save field in V1. Devotion is combat-only,
   starts at 0, and clears on combat end, flee, death, save/load restore, class
-  change, or leaving the Cleric/Templar track. Cleric caps at `3`; Templar caps
-  at `5`.
+  change, or leaving the Cleric/Templar/Hierophant track. Cleric caps at `3`;
+  Templar and Hierophant cap at `5`.
+- Held Devotion now gives defense-first value before a spend: each held stack
+  reduces incoming damage by `3%` when that reduction removes at least 1 damage.
+  This gives Cleric a build-or-spend decision immediately after promotion.
 - Devotion gain: meaningful healing, Holy damage, successful `Turn Undead`,
   shield-tactic actions, and successful defensive blocks can grant `+1`
-  Devotion, limited to once per player action.
+  Devotion after the enemy survives the action resolution.
 - `Pious Bounty`: remains a reward accent, not the central economy loop.
   Righteous or undead-victory hooks can grant modest extra gold and should log
-  providence clearly. A qualifying `Turn Undead` kill can also grant `+1`
-  Devotion during combat.
-- `Sanctuary Ward`: new Cleric/Templar active skill. It costs MP, requires at
-  least `1` Devotion, and spends all stacks for a short barrier or next-hit
-  mitigation pulse. More stacks improve mitigation and add a small cleanse or
-  Regen chance.
+  providence clearly. A qualifying `Turn Undead` kill can mark bounty rewards,
+  but the lethal action should not grant Devotion.
+- `Sanctuary Ward`: Cleric/Templar/Hierophant active skill granted to Cleric at
+  level `1`. It costs MP, requires at least `1` Devotion, and spends all stacks
+  for a short barrier or next-hit mitigation pulse. More stacks improve
+  mitigation and add a small cleanse or Regen chance. It should not appear in
+  the combat Skills picker while the character has `0` Devotion.
 - `Relic Aegis`: new Templar active skill. It costs MP, requires at least `2`
   Devotion and a shield/offhand defensive setup, and spends all stacks for
   stronger mitigation plus a brief holy counter or guard pulse.
+- `Consecrated Conduit`: new Hierophant active skill. It costs MP, requires a
+  staff and at least `1` Devotion, spends all stacks, and empowers the next
+  staff strike, Smite, or Holy action with bonus holy damage, a modest self-ward,
+  and small mana return.
+- `Sacred Overchannel`: Hierophant Power Core active skill. It costs MP and
+  opens the staff-and-shield channel for several rounds, improving staff/heal
+  spell math, making staff or Holy actions build `2` Devotion once per action,
+  and strengthening `Consecrated Conduit` payoffs with better mana return.
 - `Holy Retribution`: keep the existing name, cost, and 5-round window. While
   active, physical attacks keep their holy-fire flavor, Devotion gain from
   holy/shield actions improves once per round, and Devotion ward spends gain a
@@ -1247,13 +1263,20 @@ stronger ward spends, `Holy Retribution` as a Devotion window, and awakened
   matching Devotion payoff and preserves `1` Devotion once per combat after a
   clean ward or holy-retaliation payoff. Do not replace the rotation with
   manual blessing choice in V1.
-- UI text/surfaces: class status should show Devotion stacks/cap, active ward,
-  `Holy Retribution` window, next `Ordered Blessing`, and once-per-combat
-  preservation readiness. Combat logs should report Devotion gain, cap, spend,
-  ward strength, `Pious Bounty` providence, `Holy Retribution` riders, blessing
+- `Sacred Conduit`: while awakened and equipped, the Hierophant ring slightly
+  improves staff-conduit holy damage and preserves `1` Devotion once per combat
+  after a clean `Consecrated Conduit` payoff.
+- UI text/surfaces: Devotion should remain legible through combat logs, HUD or
+  status rows, and skill text rather than requiring a dedicated Character Menu
+  mechanic tab. Promotion should announce newly learned level-1 spells and
+  skills. Surfaces should show stacks/cap, active ward, `Holy Retribution`
+  window, next `Ordered Blessing`, and once-per-combat preservation readiness
+  where relevant. Combat logs should report Devotion gain, cap, spend, ward
+  strength, `Pious Bounty` providence, `Holy Retribution` riders, blessing
   rotation, and ring preservation.
-- Tests: cover Healer -> Cleric and Cleric -> Templar ability carry-forward,
-  Devotion caps/gain sources/once-per-action limit/cleanup, `Pious Bounty`
+- Tests: cover Healer -> Cleric, Cleric -> Templar, and Cleric -> Hierophant
+  ability carry-forward, immediate `Sanctuary Ward` grant, Devotion caps/gain
+  sources/once-per-action limit/cleanup, held-stack mitigation, `Pious Bounty`
   reward boundaries and Priest exclusion, `Sanctuary Ward` and `Relic Aegis`
   gating/MP/spend-all/mitigation/riders, `Holy Retribution` Devotion-window
   behavior, and awakened/equipped `Ordered Blessings` rotation plus once-per-
