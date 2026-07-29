@@ -7,8 +7,18 @@ from types import SimpleNamespace
 
 import pygame
 
-from src.core import abilities
-from src.core.classes import class_rings, grandmaster, promotion_kits
+from src.core import abilities, companions
+from src.core.classes import (
+    ability_mechanics,
+    archdruid,
+    astromancer,
+    bard,
+    class_rings,
+    demonologist,
+    grandmaster,
+    promotion_kits,
+    wizard,
+)
 from src.ui_pygame import game as pygame_game
 from src.ui_pygame.gui.dungeon_manager import DungeonManager
 from src.ui_pygame.gui.modern_character_screen import (
@@ -111,6 +121,23 @@ class FakeJumpSkill:
         return True, ""
 
 
+class FakeTotemSkill:
+    name = "Totem"
+    active_aspect = "Fire"
+    aspects = {
+        "Fire": {"cost": 6, "description": "Calls a flame totem."},
+        "Water": {"cost": 6, "description": "Calls a water totem."},
+        "Soul": {"cost": 10, "description": "Calls a soul totem."},
+    }
+
+    def get_unlocked_aspects(self, _player):
+        return ["Fire", "Water", "Soul"]
+
+    def set_active_aspect(self, aspect):
+        self.active_aspect = aspect
+        return True, ""
+
+
 def _make_player():
     player = SimpleNamespace(
         name="Longnamed Hero of the Northern Gate",
@@ -177,6 +204,16 @@ def _make_player():
     return player
 
 
+def _stub_character_screen_drawing(monkeypatch, screen):
+    monkeypatch.setattr(screen, "draw_semi_transparent_panel", lambda rect, alpha=180: DummySurface((rect.width, rect.height)))
+    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.rect", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.line", lambda *_args, **_kwargs: None)
+
+
+def _rendered_text(presenter):
+    return set(presenter.large_font.render_calls + presenter.normal_font.render_calls + presenter.small_font.render_calls)
+
+
 def test_modern_character_tabs_are_generic_and_switchable():
     screen = ModernCharacterScreen(_make_presenter())
     player = _make_player()
@@ -194,9 +231,9 @@ def test_modern_character_tabs_are_generic_and_switchable():
     assert screen.equipment_selector_active is False
 
     player.cls = SimpleNamespace(name="Weapon Master")
-    assert [tab.label for tab in screen.visible_tabs(player)] == ["Character", "Weapon Discipline", "Equipment"]
+    assert [tab.label for tab in screen.visible_tabs(player)] == ["Character", "Equipment", "Weapon Discipline"]
     screen.move_tab(1, player)
-    assert screen.active_tab.key == "class"
+    assert screen.active_tab.key == "equipment"
 
 
 def test_modern_character_summary_helpers_cover_xp_equipment_resistances_and_effects():
@@ -512,6 +549,272 @@ def test_modern_character_warlock_class_tab_uses_familiar_label(monkeypatch):
     assert "C: Select summon" not in rendered_text
 
 
+def test_modern_character_ranger_companion_tab_shows_bond_form_and_special(monkeypatch):
+    presenter = _make_presenter()
+    screen = ModernCharacterScreen(presenter)
+    player = _make_player()
+    companion = SimpleNamespace(
+        name="Giant Rat",
+        species="Rat",
+        spec="Tamed",
+        evolution="Tunnel Rat",
+        special_ability="Pounce",
+        bond=25,
+        health=SimpleNamespace(current=20, max=20),
+        mana=SimpleNamespace(current=1, max=1),
+        combat=SimpleNamespace(attack=4, defense=5, magic=1, magic_def=3),
+        level=SimpleNamespace(level=1),
+        is_alive=lambda: True,
+    )
+    player.cls = SimpleNamespace(name="Ranger", description="Tames companions.")
+    player.familiar = companion
+    player.kill_dict = {"Animal": {"Giant Rat": 8}}
+    player.tamed_companion = {
+        "active": True,
+        "enemy_class": "GiantRat",
+        "name": "Giant Rat",
+        "species": "Rat",
+        "bond": 25,
+        "evolution": "Tunnel Rat",
+        "special_ability": "Pounce",
+        "active_index": 0,
+        "companions": [
+            {
+                "active": True,
+                "enemy_class": "GiantRat",
+                "name": "Giant Rat",
+                "species": "Rat",
+                "bond": 25,
+                "evolution": "Tunnel Rat",
+                "special_ability": "Pounce",
+            },
+            {
+                "active": False,
+                "enemy_class": "Direwolf",
+                "name": "Direwolf",
+                "species": "Direwolf",
+                "bond": 5,
+                "evolution": "Wolf Pup",
+                "special_ability": "Pounce",
+            },
+        ],
+    }
+
+    _stub_character_screen_drawing(monkeypatch, screen)
+
+    screen.draw_class_tab(player)
+
+    entries = screen.class_companion_entries(player)
+    assert [(kind, entry.name) for kind, entry in entries] == [
+        ("Companion", "Giant Rat"),
+        ("Held Companion", "Direwolf"),
+    ]
+
+    rendered_text = _rendered_text(presenter)
+    assert {
+        "Companion",
+        "Giant Rat",
+        "Favored Enemy",
+        "None",
+        "Tracking Mastery",
+        "No marked quarry",
+        "0/100 Use Favored Enemy in combat",
+        "Type",
+        "Form",
+        "Tunnel Rat",
+        "Special",
+        "Pounce",
+        "Bond",
+        "25/100",
+        "Held",
+        "2/6",
+    }.issubset(rendered_text)
+    assert {"Level", "HP", "MP", "Attack", "Defense", "Magic", "XP", "0/0 XP"}.isdisjoint(rendered_text)
+    assert ("Level", "1") not in screen.companion_summary_rows("Companion", player.familiar)
+    detail_rows = screen.companion_detail_rows("Companion", player.familiar)
+    assert all(label not in {"HP", "MP", "Attack", "Defense", "Magic", "Magic Defense"} for label, _value in detail_rows)
+
+
+def test_modern_character_ranger_companion_tab_shows_empty_stable_and_favored_enemy(monkeypatch):
+    presenter = _make_presenter()
+    screen = ModernCharacterScreen(presenter)
+    player = _make_player()
+    player.cls = SimpleNamespace(name="Ranger", description="Tames companions.")
+    player.familiar = None
+    player.tamed_companion = None
+    player.kill_dict = {"Animal": {"Giant Rat": 12}, "Undead": {"Skeleton": 5}}
+
+    _stub_character_screen_drawing(monkeypatch, screen)
+
+    screen.draw_class_tab(player)
+
+    rendered_text = _rendered_text(presenter)
+    assert {
+        "Favored Enemy",
+        "None",
+        "Tracking Mastery",
+        "No marked quarry",
+        "0/100 Use Favored Enemy in combat",
+        "Held",
+        "0/6",
+        "Companion Stable",
+        "Tame a wounded Animal to fill a slot.",
+        "Empty Slot 1",
+        "Empty Slot 6",
+        "Available",
+    }.issubset(rendered_text)
+
+
+def test_modern_character_ranger_companion_tab_shows_marked_quarry_mastery(monkeypatch):
+    presenter = _make_presenter()
+    screen = ModernCharacterScreen(presenter)
+    player = _make_player()
+    player.cls = SimpleNamespace(name="Ranger", description="Tames companions.")
+    player.familiar = None
+    player.tamed_companion = None
+    player.promotion_kit_state = promotion_kits.default_state()
+    player.promotion_kit_state["favored_enemy"] = {"type": "Undead", "practice": 16, "switches": 1}
+
+    _stub_character_screen_drawing(monkeypatch, screen)
+
+    screen.draw_class_tab(player)
+
+    rendered_text = _rendered_text(presenter)
+    assert {
+        "Favored Enemy",
+        "Undead",
+        "Tracking Mastery",
+        "16/100 Known Trail - 16 practice",
+        "Quarry changes: 1",
+    }.issubset(rendered_text)
+    assert "Undead +4 Known Trail" not in rendered_text
+
+
+def test_modern_character_ranger_companion_tab_can_switch_and_release_tamed_roster(monkeypatch):
+    presenter = _make_presenter()
+    screen = ModernCharacterScreen(presenter)
+    player = _make_player()
+    player.cls = SimpleNamespace(name="Ranger", description="Tames companions.")
+    player.tamed_companion = {
+        "active": True,
+        "enemy_class": "GiantRat",
+        "name": "Giant Rat",
+        "species": "Rat",
+        "bond": 25,
+        "evolution": "Tunnel Rat",
+        "special_ability": "Pounce",
+        "active_index": 0,
+        "companions": [
+            {
+                "active": True,
+                "enemy_class": "GiantRat",
+                "name": "Giant Rat",
+                "species": "Rat",
+                "bond": 25,
+                "evolution": "Tunnel Rat",
+                "special_ability": "Pounce",
+            },
+            {
+                "active": False,
+                "enemy_class": "Direwolf",
+                "name": "Direwolf",
+                "species": "Direwolf",
+                "bond": 5,
+                "evolution": "Wolf Pup",
+                "special_ability": "Pounce",
+            },
+        ],
+    }
+    player.tamed_companion = ability_mechanics.normalize_tamed_companion(player.tamed_companion)
+    player.familiar = companions.tamed_companion_from_state(player.tamed_companion)
+
+    screen.selected_class_companion_index = 1
+    screen._activate_selected_tamed_companion(player)
+    assert player.tamed_companion["enemy_class"] == "Direwolf"
+    assert player.familiar.name == "Direwolf"
+
+    popup_messages = []
+
+    class FakePopup:
+        def __init__(self, _presenter, message, show_buttons=True):
+            popup_messages.append((message, show_buttons))
+
+        def show(self, **kwargs):
+            popup_messages.append(("shown", kwargs))
+            return True
+
+    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.ConfirmationPopup", FakePopup)
+    screen.selected_class_companion_index = 0
+    screen._release_selected_tamed_companion(player)
+    assert popup_messages[0] == ("Release Giant Rat?", True)
+    assert popup_messages[1][1].get("flush_events") is True
+    assert len(player.tamed_companion["companions"]) == 1
+    assert player.tamed_companion["enemy_class"] == "Direwolf"
+
+    player.tamed_companion = ability_mechanics.normalize_tamed_companion({
+        "active": True,
+        "enemy_class": "GiantRat",
+        "name": "Giant Rat",
+        "species": "Rat",
+        "bond": 25,
+        "companions": [
+            {
+                "active": True,
+                "enemy_class": "GiantRat",
+                "name": "Giant Rat",
+                "species": "Rat",
+                "bond": 25,
+            }
+        ],
+    })
+    screen.selected_class_companion_index = 0
+    popup_messages.clear()
+
+    class CancelPopup(FakePopup):
+        def show(self, **kwargs):
+            popup_messages.append(("shown", kwargs))
+            return False
+
+    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.ConfirmationPopup", CancelPopup)
+    screen._release_selected_tamed_companion(player)
+    assert len(player.tamed_companion["companions"]) == 1
+
+
+def test_modern_character_ranger_tamed_roster_rebuilds_random_animals_stably():
+    presenter = _make_presenter()
+    screen = ModernCharacterScreen(presenter)
+    player = _make_player()
+    player.cls = SimpleNamespace(name="Ranger", description="Tames companions.")
+    player.tamed_companion = {
+        "active": True,
+        "enemy_class": "GiantHornet",
+        "name": "Giant Hornet",
+        "species": "Hornet",
+        "bond": 25,
+        "evolution": "Amber Hornet",
+        "special_ability": "Wingbeat",
+        "active_index": 0,
+        "companions": [
+            {
+                "active": True,
+                "enemy_class": "GiantHornet",
+                "name": "Giant Hornet",
+                "species": "Hornet",
+                "bond": 25,
+                "evolution": "Amber Hornet",
+                "special_ability": "Wingbeat",
+            },
+        ],
+    }
+
+    first = screen.class_companion_entries(player)[0][1]
+    second = screen.class_companion_entries(player)[0][1]
+
+    assert first.health.max == second.health.max
+    assert first.mana.max == second.mana.max
+    assert first.combat.attack == second.combat.attack
+
+
 def test_modern_character_oath_conviction_tab_shows_vow_details(monkeypatch):
     presenter = _make_presenter()
     screen = ModernCharacterScreen(presenter)
@@ -756,15 +1059,347 @@ def test_modern_character_weapon_discipline_popup_uses_selected_row(monkeypatch)
     assert popup_kwargs[0]["flush_events"] is True
 
 
+def test_modern_character_school_affinity_tab_shows_affinity_grid(monkeypatch):
+    presenter = _make_presenter()
+    screen = ModernCharacterScreen(presenter)
+    player = _make_player()
+    player.cls = SimpleNamespace(name="Wizard", description="Arcane scholar.")
+    player.wizard_affinity = wizard.default_affinity()
+    player.wizard_affinity["Fire"] = 82
+    player.wizard_affinity["Ice"] = 50
+    player.wizard_affinity_version = 2
+    player.spellbook["Spells"] = {"Fireball": SimpleNamespace(name="Fireball"), "Ice Lance": SimpleNamespace(name="Ice Lance")}
+    _stub_character_screen_drawing(monkeypatch, screen)
+
+    screen.select_tab("class")
+    screen.draw_class_tab(player)
+
+    rendered_text = _rendered_text(presenter)
+    assert {"School Affinity", "Fire", "82/100 Fireball", "Wizard Ring"}.issubset(rendered_text)
+    assert {"Affinity Cap 100", "Sorcerer Upgrade", "Wizard Upgrade", "Opposite Drift", "Ring Acceleration", "Affinity Notes"}.isdisjoint(rendered_text)
+    assert "Promotion Tier" not in rendered_text
+
+
+def test_modern_character_school_affinity_tab_hides_wizard_details_for_sorcerer(monkeypatch):
+    presenter = _make_presenter()
+    screen = ModernCharacterScreen(presenter)
+    player = _make_player()
+    player.cls = SimpleNamespace(name="Sorcerer", description="Elemental scholar.")
+    player.wizard_affinity = wizard.default_affinity()
+    player.wizard_affinity["Fire"] = 12
+    player.wizard_affinity_version = 2
+    player.spellbook["Spells"] = {"Firebolt": SimpleNamespace(name="Firebolt")}
+    _stub_character_screen_drawing(monkeypatch, screen)
+
+    screen.select_tab("class")
+    screen.draw_class_tab(player)
+
+    rendered_text = _rendered_text(presenter)
+    assert {"School Affinity", "Fire", "12/50 Firebolt"}.issubset(rendered_text)
+    assert {"Affinity Cap 50", "Wizard Ring", "Not visible"}.isdisjoint(rendered_text)
+
+
+def test_modern_character_contracts_tab_shows_patron_state(monkeypatch):
+    presenter = _make_presenter()
+    screen = ModernCharacterScreen(presenter)
+    player = _make_player()
+    player.cls = SimpleNamespace(name="Demonologist", description="Bargains with patrons.")
+    player.demonologist_contracts = demonologist.default_state()
+    player.demonologist_contracts.update(
+        {
+            "crypt_unlocked": True,
+            "unlocked_contracts": ["Imp", "Quasit"],
+            "active_patron": "Imp",
+            "corruption": 55,
+            "imprisoned_familiar": {"name": "Aster", "spec": "Arcane"},
+            "contract_history": [{"patron": "Imp", "intent": "Harm", "gold": 160}],
+        }
+    )
+    player.demonologist_contracts["patron_moods"]["Imp"] = 30
+    _stub_character_screen_drawing(monkeypatch, screen)
+
+    screen.select_tab("class")
+    screen.draw_class_tab(player)
+
+    rendered_text = _rendered_text(presenter)
+    assert {"Contracts", "Corruption", "55/100 Tier 2", "Active Patron", "Imp", "Recent Contracts", "Imp - Harm", "Echo"}.issubset(rendered_text)
+    assert {"Available Intents", "Withheld Intents", "Cost 160"}.isdisjoint(rendered_text)
+    assert "Promotion Tier" not in rendered_text
+
+
+def test_modern_character_runes_tab_shows_constellation_and_boosts(monkeypatch):
+    presenter = _make_presenter()
+    screen = ModernCharacterScreen(presenter)
+    player = _make_player()
+    player.cls = SimpleNamespace(name="Astromancer", description="Reads signs.")
+    player.astromancer_state = astromancer.default_state()
+    player.astromancer_state["runes"]["Ember"] = 2
+    player.astromancer_state["active_constellation_index"] = 0
+    player.spellbook["Spells"] = {"Firebolt": SimpleNamespace(name="Firebolt", subtyp="Fire", passive=False, cost=1)}
+    _stub_character_screen_drawing(monkeypatch, screen)
+
+    screen.select_tab("class")
+    screen.draw_class_tab(player)
+
+    rendered_text = _rendered_text(presenter)
+    assert {"Runes", "Active Constellation: Ember", "Ember", "2/3 Fire active", "Boostable Spells", "Firebolt"}.issubset(rendered_text)
+    assert {"Runic Boost Floor", "Active Ring Floor", "Rune Source", "75%", "Rune Notes"}.isdisjoint(rendered_text)
+    assert "Promotion Tier" not in rendered_text
+
+
+def test_modern_character_runes_tab_hides_astromancer_details_for_diviner(monkeypatch):
+    presenter = _make_presenter()
+    screen = ModernCharacterScreen(presenter)
+    player = _make_player()
+    player.cls = SimpleNamespace(name="Diviner", description="Reads runes.")
+    player.astromancer_state = astromancer.default_state()
+    player.astromancer_state["runes"]["Tide"] = 1
+    player.spellbook["Spells"] = {"Water Jet": SimpleNamespace(name="Water Jet", subtyp="Water", passive=False, cost=1)}
+    _stub_character_screen_drawing(monkeypatch, screen)
+
+    screen.select_tab("class")
+    screen.draw_class_tab(player)
+
+    rendered_text = _rendered_text(presenter)
+    assert {"Runes", "Tide", "1/3 Water", "Boostable Spells", "Water Jet"}.issubset(rendered_text)
+    assert {"Active Constellation: Ember", "Ring", "Not visible"}.isdisjoint(rendered_text)
+
+
+def test_modern_character_totems_tab_shows_review_and_selector(monkeypatch):
+    presenter = _make_presenter()
+    screen = ModernCharacterScreen(presenter)
+    player = _make_player()
+    player.cls = SimpleNamespace(name="Soulcatcher", description="Binds nature.")
+    player.spellbook["Skills"]["Totem"] = FakeTotemSkill()
+    player.spellbook["Spells"] = {"Fireball": SimpleNamespace(name="Fireball"), "Tsunami": SimpleNamespace(name="Tsunami"), "Soul Drain": SimpleNamespace(name="Soul Drain")}
+    player.magic_effects["Totem"] = _effect(True, 3, {"aspect": "Fire", "resonance": 2})
+    promotion_kits.combat_state(player)["totem_resonance"] = 2
+    _stub_character_screen_drawing(monkeypatch, screen)
+
+    screen.select_tab("class")
+    screen.draw_class_tab(player)
+
+    rendered_text = _rendered_text(presenter)
+    assert {"Totems", "Totem Resonance", "2/3 Pulse strength", "Active Aspect", "Fire", "Unlocked Aspects", "Fire, Water, Soul", "Staff Bond", "Unfocused", "Select", "C/Enter: Totem Aspects", "Communions", "Soul", "Unlocked - Soul Drain"}.issubset(rendered_text)
+    assert {"Pulse Chance", "Staff Bonus", "+20% matching cast"}.isdisjoint(rendered_text)
+    assert "Promotion Tier" not in rendered_text
+
+    opened = []
+
+    class FakePopup:
+        def __init__(self, _presenter, _screen, title="Totem Aspects"):
+            opened.append(title)
+
+        def show(self, **kwargs):
+            opened.append(kwargs["player_char"].cls.name)
+
+    import src.ui_pygame.gui.modern_character_screen as modern_module
+
+    monkeypatch.setattr(modern_module, "TotemAspectsPopupMenu", FakePopup)
+    screen._open_totem_aspects_popup(player)
+    assert opened == ["Totem Aspects", "Soulcatcher"]
+
+
+def test_modern_character_totems_tab_c_opens_existing_aspect_popup(monkeypatch):
+    presenter = _make_presenter()
+    screen = ModernCharacterScreen(presenter)
+    player = _make_player()
+    player.cls = SimpleNamespace(name="Shaman", description="Binds nature.")
+    player.spellbook["Skills"]["Totem"] = FakeTotemSkill()
+    screen.select_tab("class")
+    opened = []
+
+    class FakePopup:
+        def __init__(self, _presenter, _screen, title="Totem Aspects"):
+            opened.append(title)
+
+        def show(self, **kwargs):
+            opened.append(kwargs["player_char"].cls.name)
+
+    import src.ui_pygame.gui.modern_character_screen as modern_module
+
+    monkeypatch.setattr(modern_module, "TotemAspectsPopupMenu", FakePopup)
+    monkeypatch.setattr(screen, "draw_all", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
+    event_batches = iter([
+        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_c)],
+        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE)],
+    ])
+    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.event.get", lambda: next(event_batches, []))
+
+    assert screen.navigate(player) == "Exit Menu"
+    assert opened == ["Totem Aspects", "Shaman"]
+    assert screen.class_companion_selector_active is False
+
+
+def test_modern_character_totems_tab_hides_soulcatcher_soul_for_shaman(monkeypatch):
+    presenter = _make_presenter()
+    screen = ModernCharacterScreen(presenter)
+    player = _make_player()
+    player.cls = SimpleNamespace(name="Shaman", description="Binds nature.")
+    player.spellbook["Skills"]["Totem"] = FakeTotemSkill()
+    player.spellbook["Spells"] = {"Soul Drain": SimpleNamespace(name="Soul Drain")}
+    _stub_character_screen_drawing(monkeypatch, screen)
+
+    screen.select_tab("class")
+    screen.draw_class_tab(player)
+
+    rendered_text = _rendered_text(presenter)
+    assert {"Totems", "Unlocked Aspects", "Fire, Water"}.issubset(rendered_text)
+    assert {"Soul", "Unlocked - Soul Drain"}.isdisjoint(rendered_text)
+
+
+def test_modern_character_case_journal_tab_shows_progress_and_wayfinding(monkeypatch):
+    presenter = _make_presenter()
+    screen = ModernCharacterScreen(presenter)
+    player = _make_player()
+    player.cls = SimpleNamespace(name="Seeker", description="Follows evidence.")
+    player.promotion_kit_state = promotion_kits.default_state()
+    player.promotion_kit_state["case_journal"] = {"Fiend": 80, "Beast": 25}
+    promotion_kits.combat_state(player)["revelation"] = {"target": 2}
+    _stub_character_screen_drawing(monkeypatch, screen)
+
+    screen.select_tab("class")
+    screen.draw_class_tab(player)
+
+    rendered_text = _rendered_text(presenter)
+    assert {"Case Journal", "Best Case", "Fiend 80/100", "Best Rank", "Pattern Lock", "Revelation", "2/3", "Wayfinding", "Aligned", "Enemy-Type Progress", "Fiend", "80/100 Pattern Lock"}.issubset(rendered_text)
+    assert "5%" not in rendered_text
+    assert "Promotion Tier" not in rendered_text
+
+
+def test_modern_character_case_journal_tab_hides_seeker_tools_for_inquisitor(monkeypatch):
+    presenter = _make_presenter()
+    screen = ModernCharacterScreen(presenter)
+    player = _make_player()
+    player.cls = SimpleNamespace(name="Inquisitor", description="Studies enemies.")
+    player.promotion_kit_state = promotion_kits.default_state()
+    player.promotion_kit_state["case_journal"] = {"Beast": 25}
+    _stub_character_screen_drawing(monkeypatch, screen)
+
+    screen.select_tab("class")
+    screen.draw_class_tab(player)
+
+    rendered_text = _rendered_text(presenter)
+    assert {"Case Journal", "Best Case", "Beast 25/100", "Known Tells"}.issubset(rendered_text)
+    assert {"Wayfinding", "Hidden Cache", "Not visible"}.isdisjoint(rendered_text)
+
+
+def test_modern_character_crescendo_tab_shows_song_and_repertoire(monkeypatch):
+    presenter = _make_presenter()
+    screen = ModernCharacterScreen(presenter)
+    player = _make_player()
+    player.cls = SimpleNamespace(name="Troubadour", description="Masters songs.")
+    player.bard_song = {"active": "Valor", "turns": 2, "encore": "Shelter"}
+    player.bard_exploration_song = {"active": "Gold Trigger", "steps": 40, "effect": "loot_rate_up"}
+    player.promotion_kit_state = promotion_kits.default_state()
+    player.promotion_kit_state["bard_repertoire"]["Battle Hymn"] = {"known": True, "practice_xp": 18, "clean_finishes": 3}
+    player.promotion_kit_state["bard_repertoire"]["Chorus Time"] = {"known": False, "practice_xp": 9, "clean_finishes": 1}
+    promotion_kits.combat_state(player)["crescendo"] = 3
+    _stub_character_screen_drawing(monkeypatch, screen)
+
+    screen.select_tab("class")
+    screen.draw_class_tab(player)
+
+    rendered_text = _rendered_text(presenter)
+    assert {"Crescendo", "3/3 Coda", "Combat Song", "Valor", "Exploration Song", "Gold Trigger", "Encore", "Shelter", "Advanced Repertoire", "Battle Hymn", "Mastered - Complete"}.issubset(rendered_text)
+    assert {"Exploration Effect", "loot_rate_up", "Mastered - 18/18 XP - 3/3 clean"}.isdisjoint(rendered_text)
+    assert "Promotion Tier" not in rendered_text
+
+
+def test_modern_character_crescendo_tab_hides_troubadour_repertoire_for_bard(monkeypatch):
+    presenter = _make_presenter()
+    screen = ModernCharacterScreen(presenter)
+    player = _make_player()
+    player.cls = SimpleNamespace(name="Bard", description="Performs songs.")
+    player.bard_song = {"active": "Valor", "turns": 1, "encore": None}
+    promotion_kits.combat_state(player)["crescendo"] = 1
+    _stub_character_screen_drawing(monkeypatch, screen)
+
+    screen.select_tab("class")
+    screen.draw_class_tab(player)
+
+    rendered_text = _rendered_text(presenter)
+    assert {"Crescendo", "1/3 Coda", "Combat Song", "Valor"}.issubset(rendered_text)
+    assert {"Encore", "Mastered", "Advanced Repertoire", "Battle Hymn", "Not visible"}.isdisjoint(rendered_text)
+
+
+def test_modern_character_forms_tab_shows_lycan_control(monkeypatch):
+    presenter = _make_presenter()
+    screen = ModernCharacterScreen(presenter)
+    player = _make_player()
+    player.cls = SimpleNamespace(name="Lycan", description="Changes shape.")
+    player.transform_type = SimpleNamespace(name="Lycan")
+    player.lycan_state = {"moon_phase": "Full", "moon_steps": 60, "frenzy_turns": 2, "dragon_essence": True}
+    player.promotion_kit_state = promotion_kits.default_state()
+    player.promotion_kit_state["lycan_control"] = {
+        "rank": "Tethered",
+        "stress_events": 7,
+        "dragon_essence": True,
+        "rank_progress": {"full_moon": 2},
+    }
+    _stub_character_screen_drawing(monkeypatch, screen)
+
+    screen.select_tab("class")
+    screen.draw_class_tab(player)
+
+    rendered_text = _rendered_text(presenter)
+    assert {"Forms", "Current Form", "Humanoid", "Stored Form", "Lycan", "Moon Cycle", "60/120 Full", "Frenzy Lock", "2 turn(s)", "Control Rank", "Tethered", "Dragon Essence", "Yes"}.issubset(rendered_text)
+    assert "Full_Moon Gate" not in rendered_text
+    assert "Promotion Tier" not in rendered_text
+
+
+def test_modern_character_forms_tab_hides_lycan_details_for_druid(monkeypatch):
+    presenter = _make_presenter()
+    screen = ModernCharacterScreen(presenter)
+    player = _make_player()
+    player.cls = SimpleNamespace(name="Druid", description="Changes shape.")
+    player.transform_type = SimpleNamespace(name="Druid")
+    _stub_character_screen_drawing(monkeypatch, screen)
+
+    screen.select_tab("class")
+    screen.draw_class_tab(player)
+
+    rendered_text = _rendered_text(presenter)
+    assert {"Forms", "Current Form", "Humanoid", "Stored Form", "Druid"}.issubset(rendered_text)
+    assert {"Ring", "Moon Cycle", "Frenzy Lock", "Control Rank", "Dragon Essence", "Lycan only", "Not visible"}.isdisjoint(rendered_text)
+
+
+def test_modern_character_aspects_tab_shows_attunement_and_harmony(monkeypatch):
+    presenter = _make_presenter()
+    screen = ModernCharacterScreen(presenter)
+    player = _make_player()
+    player.cls = SimpleNamespace(name="Archdruid", description="Balances nature.")
+    player.archdruid_attunement = archdruid.default_state()
+    player.archdruid_attunement["grove_unlocked"] = True
+    player.archdruid_attunement["attunement"]["Venom"] = 75
+    player.archdruid_attunement["aspects"]["Venom"] = True
+    player.archdruid_attunement["catalysts"]["Venom"] = True
+    player.archdruid_attunement["progress"]["Storm"]["storm_damage_dealt"] = 42
+    promotion_kits.combat_state(player)["aspect_harmony"] = {"Venom", "Storm"}
+    _stub_character_screen_drawing(monkeypatch, screen)
+
+    screen.select_tab("class")
+    screen.draw_class_tab(player)
+
+    rendered_text = _rendered_text(presenter)
+    assert {"Aspects", "Venom", "75/100 Awake, catalyst", "Grove", "Unlocked", "Aspect Harmony", "Storm, Venom", "Fourfold Surge", "Ready", "Catalyst Progress", "Stirring"}.issubset(rendered_text)
+    assert {"Harmony Bonus", "storm_damage_dealt 42"}.isdisjoint(rendered_text)
+    assert "Promotion Tier" not in rendered_text
+
+
 def test_modern_character_class_mechanic_tabs_include_pathfinder_branches():
     presenter = _make_presenter()
     screen = ModernCharacterScreen(presenter)
     player = _make_player()
 
     for class_name, expected_tabs in (
-        ("Diviner", ["Character", "Runes", "Equipment"]),
-        ("Shaman", ["Character", "Totems", "Equipment"]),
-        ("Ranger", ["Character", "Companion", "Equipment"]),
+        ("Druid", ["Character", "Equipment", "Forms"]),
+        ("Lycan", ["Character", "Equipment", "Forms"]),
+        ("Archdruid", ["Character", "Equipment", "Aspects"]),
+        ("Diviner", ["Character", "Equipment", "Runes"]),
+        ("Shaman", ["Character", "Equipment", "Totems"]),
+        ("Ranger", ["Character", "Equipment", "Companion & Hunt"]),
     ):
         player.cls = SimpleNamespace(name=class_name)
         player.summons = {}
@@ -778,12 +1413,12 @@ def test_modern_character_class_mechanic_tabs_include_warrior_branches():
     player = _make_player()
 
     for class_name, expected_tabs in (
-        ("Paladin", ["Character", "Oath Conviction", "Equipment"]),
-        ("Crusader", ["Character", "Oath Conviction", "Equipment"]),
-        ("Lancer", ["Character", "Aerial Tempo", "Equipment"]),
-        ("Dragoon", ["Character", "Aerial Tempo", "Equipment"]),
-        ("Sentinel", ["Character", "Resolve", "Equipment"]),
-        ("Stalwart Defender", ["Character", "Resolve", "Equipment"]),
+        ("Paladin", ["Character", "Equipment", "Oath Conviction"]),
+        ("Crusader", ["Character", "Equipment", "Oath Conviction"]),
+        ("Lancer", ["Character", "Equipment", "Aerial Tempo"]),
+        ("Dragoon", ["Character", "Equipment", "Aerial Tempo"]),
+        ("Sentinel", ["Character", "Equipment", "Resolve"]),
+        ("Stalwart Defender", ["Character", "Equipment", "Resolve"]),
     ):
         player.cls = SimpleNamespace(name=class_name)
         player.summons = {}
@@ -798,15 +1433,15 @@ def test_modern_character_class_mechanic_tabs_include_mage_branches():
     familiar = SimpleNamespace(name="Aster", is_alive=lambda: True)
 
     for class_name, expected_tabs, has_familiar in (
-        ("Sorcerer", ["Character", "School Affinity", "Equipment"], False),
-        ("Wizard", ["Character", "School Affinity", "Equipment"], False),
-        ("Warlock", ["Character", "Familiar", "Equipment"], True),
-        ("Shadowcaster", ["Character", "Umbral Debt", "Equipment"], True),
-        ("Demonologist", ["Character", "Contracts", "Equipment"], True),
-        ("Spellblade", ["Character", "Blade Charge", "Equipment"], False),
-        ("Knight Enchanter", ["Character", "Arcane Tempo", "Equipment"], False),
-        ("Summoner", ["Character", "Summons", "Equipment"], False),
-        ("Grand Summoner", ["Character", "Summons", "Equipment"], False),
+        ("Sorcerer", ["Character", "Equipment", "School Affinity"], False),
+        ("Wizard", ["Character", "Equipment", "School Affinity"], False),
+        ("Warlock", ["Character", "Equipment", "Familiar"], True),
+        ("Shadowcaster", ["Character", "Equipment"], True),
+        ("Demonologist", ["Character", "Equipment", "Contracts"], True),
+        ("Spellblade", ["Character", "Equipment"], False),
+        ("Knight Enchanter", ["Character", "Equipment"], False),
+        ("Summoner", ["Character", "Equipment", "Summons"], False),
+        ("Grand Summoner", ["Character", "Equipment", "Summons"], False),
     ):
         player.cls = SimpleNamespace(name=class_name)
         player.summons = {}
@@ -820,12 +1455,12 @@ def test_modern_character_class_mechanic_tabs_include_footpad_branches():
     player = _make_player()
 
     for class_name, expected_tabs in (
-        ("Thief", ["Character", "Fortune", "Equipment"]),
-        ("Rogue", ["Character", "Fortune", "Equipment"]),
-        ("Inquisitor", ["Character", "Case Journal", "Equipment"]),
-        ("Seeker", ["Character", "Case Journal", "Equipment"]),
-        ("Assassin", ["Character", "Death Mark", "Equipment"]),
-        ("Ninja", ["Character", "Death Mark", "Equipment"]),
+        ("Thief", ["Character", "Equipment"]),
+        ("Rogue", ["Character", "Equipment"]),
+        ("Inquisitor", ["Character", "Equipment", "Case Journal"]),
+        ("Seeker", ["Character", "Equipment", "Case Journal"]),
+        ("Assassin", ["Character", "Equipment"]),
+        ("Ninja", ["Character", "Equipment"]),
         ("Spell Stealer", ["Character", "Equipment"]),
         ("Arcane Trickster", ["Character", "Equipment"]),
     ):
@@ -844,12 +1479,12 @@ def test_modern_character_class_mechanic_tabs_include_healer_branches():
         ("Cleric", ["Character", "Equipment"]),
         ("Templar", ["Character", "Equipment"]),
         ("Hierophant", ["Character", "Equipment"]),
-        ("Monk", ["Character", "Ki", "Equipment"]),
-        ("Master Monk", ["Character", "Ki", "Equipment"]),
-        ("Priest", ["Character", "Prayer", "Equipment"]),
-        ("Archbishop", ["Character", "Prayer", "Equipment"]),
-        ("Bard", ["Character", "Crescendo", "Equipment"]),
-        ("Troubadour", ["Character", "Crescendo", "Equipment"]),
+        ("Monk", ["Character", "Equipment"]),
+        ("Master Monk", ["Character", "Equipment"]),
+        ("Priest", ["Character", "Equipment"]),
+        ("Archbishop", ["Character", "Equipment"]),
+        ("Bard", ["Character", "Equipment", "Crescendo"]),
+        ("Troubadour", ["Character", "Equipment", "Crescendo"]),
     ):
         player.cls = SimpleNamespace(name=class_name)
         player.summons = {}
@@ -903,6 +1538,7 @@ def test_modern_character_class_tab_supports_multiple_summon_tiles_and_popup(mon
     assert len(screen.class_companion_tile_rects(screen.class_companion_entries(player))) == 3
     rendered_text = set(presenter.small_font.render_calls + presenter.normal_font.render_calls)
     assert {"Patagon", "Dilong", "Agloolik", "XP", "25/100 XP", "Bond", "15/100"}.issubset(rendered_text)
+    assert "Calls allies from distant realms." not in rendered_text
 
     screen.selected_class_companion_index = 1
     screen._open_class_companion_popup(player)
@@ -1017,6 +1653,59 @@ def test_class_companion_details_popup_uses_character_tab_style_and_art(monkeypa
     }.issubset(rendered_text)
     assert "14.9" not in rendered_text
     assert "8.2" not in rendered_text
+
+
+def test_tamed_companion_details_popup_uses_flavor_instead_of_stats(monkeypatch):
+    presenter = _make_presenter()
+    screen = ModernCharacterScreen(presenter)
+    player = _make_player()
+    companion = SimpleNamespace(
+        name="Needle (Giant Hornet)",
+        race="Needle (Giant Hornet)",
+        enemy_class="GiantHornet",
+        spec="Tamed",
+        evolution="Stingwing",
+        special_ability="Wingbeat",
+        health=SimpleNamespace(current=6, max=6),
+        mana=SimpleNamespace(current=0, max=0),
+        stats=SimpleNamespace(strength=9, intel=1, wisdom=1, con=5, charisma=1, dex=12),
+        combat=SimpleNamespace(attack=8, defense=4, magic=1, magic_def=1),
+        resistance={},
+        spellbook={"Skills": {}, "Spells": {}},
+        inspect=lambda: "Needle (Giant Hornet) is a Stingwing tamed companion with Wingbeat.",
+        is_alive=lambda: True,
+    )
+    calls = []
+    screen.companion_art_manager = SimpleNamespace(
+        get_scaled_sprite=lambda entity, size: calls.append((entity, size)) or DummySurface(size)
+    )
+
+    monkeypatch.setattr(screen, "draw_semi_transparent_panel", lambda rect, alpha=180: DummySurface((rect.width, rect.height)))
+    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.rect", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.line", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.draw_popup_close_button", lambda *_args, **_kwargs: pygame.Rect(0, 0, 20, 20))
+    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.display.flip", lambda: None)
+
+    popup = ClassCompanionDetailsPopup(presenter, screen, player, "Companion", companion)
+    popup.draw("background")
+
+    assert calls and calls[0][0] is companion
+    rendered_text = set(
+        presenter.title_font.render_calls
+        + presenter.large_font.render_calls
+        + presenter.normal_font.render_calls
+        + presenter.small_font.render_calls
+    )
+    assert {
+        "Needle (Giant Hornet) Details",
+        "Bond & Form",
+        "Companion Notes",
+        "Stingwing",
+        "Wingbeat",
+        "The animal acts through bond and instinct rather than a",
+        "visible resource pool.",
+    }.issubset(rendered_text)
+    assert {"Core Attributes", "Combat Stats", "HP", "MP", "Strength", "Attack"}.isdisjoint(rendered_text)
 
 
 def test_modern_character_draw_all_renders_active_tabs(monkeypatch):
@@ -1249,7 +1938,7 @@ def test_modern_character_c_toggles_class_summon_focus_and_opens_popup(monkeypat
     monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
     event_batches = iter([
         [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_c)],
-        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_2)],
+        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_3)],
         [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_c)],
         [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_DOWN)],
         [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN)],

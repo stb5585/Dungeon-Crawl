@@ -670,13 +670,6 @@ class ChurchManager(TownScreenBase):
             except Exception:
                 removed_gear = []
 
-            if removed_gear:
-                lines = ["Some equipped gear no longer fits your promoted class:"]
-                lines.extend(f"{slot}: {name}" for slot, name in removed_gear)
-                lines.append("Check your inventory and equip replacement gear before returning to the dungeon.")
-                popup = ConfirmationPopup(self.presenter, "\n".join(lines), show_buttons=False)
-                popup.show(**self.popup_show_kwargs())
-
             apply_promotion_ability_rules(self.player_char, chosen_name)
 
             # Grant level 1 abilities for the new class
@@ -747,28 +740,45 @@ class ChurchManager(TownScreenBase):
             if chosen_name == "Demonologist":
                 self.player_char.ensure_demonologist_contracts()
 
-            popup = ConfirmationPopup(self.presenter, f"Congratulations! You are now a {chosen_name}.", show_buttons=False)
+            summary = self._promotion_summary_message(chosen_name, learned_abilities, removed_gear)
+            popup = ConfirmationPopup(self.presenter, summary, show_buttons=False)
             popup.show(**self.popup_show_kwargs())
-            if learned_abilities:
-                learned_text = "Learned abilities:\n" + "\n".join(learned_abilities)
-                popup = ConfirmationPopup(self.presenter, learned_text, show_buttons=False)
-                popup.show(**self.popup_show_kwargs())
-            self._show_promotion_mechanic_help(chosen_name)
         except Exception as e:
             popup = ConfirmationPopup(self.presenter, f"Promotion failed: {e}", show_buttons=False)
             popup.show(**self.popup_show_kwargs())
 
-    def _show_promotion_mechanic_help(self, class_name: str) -> None:
-        """Show Character Menu tab guidance after a promotion is actually chosen."""
+    def _promotion_mechanic_help_message(self, class_name: str) -> str:
+        """Return Character Menu tab guidance for a promoted class."""
         mechanic_tab = promotion_mechanic_tab_label(class_name)
         if not mechanic_tab:
-            return
+            return ""
         guidance = promotion_mechanic_guidance(class_name).strip()
         if guidance:
             guidance = guidance.replace("Character Menu tab available: ", "")
         else:
             guidance = f"Open the Character Menu to review {mechanic_tab}."
-        message = f"New Character Menu tab: {mechanic_tab}\n\n{guidance}"
+        return f"New Character Menu tab: {mechanic_tab}\n{guidance}"
+
+    def _promotion_summary_message(self, class_name: str, learned_abilities: list[str], removed_gear: list[tuple[str, str]]) -> str:
+        """Build one post-promotion summary popup."""
+        sections = [f"Congratulations! You are now a {class_name}."]
+        if learned_abilities:
+            sections.append("Learned abilities:\n" + "\n".join(learned_abilities))
+        mechanic_help = self._promotion_mechanic_help_message(class_name)
+        if mechanic_help:
+            sections.append(mechanic_help)
+        if removed_gear:
+            lines = ["Some equipped gear no longer fits your promoted class:"]
+            lines.extend(f"{slot}: {name}" for slot, name in removed_gear)
+            lines.append("Check your inventory and equip replacement gear before returning to the dungeon.")
+            sections.append("\n".join(lines))
+        return "\n\n".join(sections)
+
+    def _show_promotion_mechanic_help(self, class_name: str) -> None:
+        """Show Character Menu tab guidance after a promotion is actually chosen."""
+        message = self._promotion_mechanic_help_message(class_name)
+        if not message:
+            return
         popup = ConfirmationPopup(self.presenter, message, show_buttons=False)
         popup.show(**self.popup_show_kwargs())
 

@@ -91,6 +91,67 @@ combat math, or numeric balance.
 | Beast Master | Companion name/species, bond/rank, Favored Enemy, pending command. | Bond gain/milestone, command use/expiration, hunt synergy, Shared Recovery echo. | Tame/replacement messaging makes one-companion scope clear. | Show awakened/equipped `Shared Recovery` bond-scaling readiness. | Tame/command companion, gain bond, and inspect healing echo logs. |
 | Soulcatcher | Active Totem aspect, Resonance/cap, Soul harvest count. | Resonance gain/cap/spend, forced pulse, Soul nonlethal contribution, ring cap/output. | Totem aspect menu shows active aspect and communion availability. | Show awakened/equipped `Aspect Evolution` resonance cap/readiness. | Build Resonance, use `Totem Surge`, and inspect status/logs. |
 
+## Class Mechanic Tab Triage
+
+Status: `Decision Record, Implementation Follow-Up Needed`
+
+The pygame Character Menu now supports a middle mechanic tab, but not every
+class kit deserves one. Use this triage when deciding whether to add bespoke tab
+content, keep a label backed by compact summary rows, or remove/demote a tab to
+combat HUD/status/log presentation.
+
+Tab decision bands:
+
+- `Required`: the kit has persistent progression, roster/detail inspection,
+  selectable configuration, or a town/menu-adjacent review need. A tab should
+  exist and should eventually have bespoke content if the current generic
+  summary does not explain the mechanic.
+- `Not Needed`: the kit is combat-only or already has a better action/menu
+  surface. Do not add a Character Menu tab unless a future spec adds persistent
+  progression or configuration.
+- `Too General`: the idea is an expansion concept, not a tab decision. Promote
+  a one-page spec before deciding UI.
+
+| Track/class | Current tab behavior | Tab decision | Additional implementation needed | Reasoning |
+| --- | --- | --- | --- | --- |
+| Weapon Master/Berserker/Grandmaster of Arms | `Weapon Discipline` bespoke tab exists. | `Required` | `No` for tab baseline; tune/readability evidence only. | Persistent per-weapon ranks, XP, equipped highlighting, and art unlocks need a durable review surface. |
+| Paladin/Crusader | `Oath Conviction` bespoke tab exists. | `Required` | `No` for tab baseline; future only for oath-respec specs. | Permanent vow, signature skill, aura, mark, and Conviction rhythm need a stable review surface. |
+| Lancer/Dragoon | `Aerial Tempo` bespoke tab exists with Jump Mod controls. | `Required` | `No` for tab baseline. | Jump modifications are selectable configuration and should live outside the combat action list. |
+| Sentinel/Stalwart Defender | `Resolve` bespoke tab exists. | `Required` | `No` for tab baseline. | Resolve spends and Stalwart Surges are class-owned actions/payoffs with enough structure for a tab. |
+| Summoner/Grand Summoner | `Summons` tab exists with roster/detail support. | `Required` | `Partial`: keep improving bond milestone/readiness and active-summon support text. | Multiple summons, bond values, invoke unlocks, and details are too dense for HUD-only presentation. |
+| Ranger/Beast Master | `Companion & Hunt` tab exists with companion roster/detail and quarry-tracking support. | `Required` | `Partial`: future tuning for evolution payoff/stable scope only. | A persistent named companion, bond progression, and disciplined quarry tracking need inspection outside combat. |
+| Warlock | `Familiar` tab exists through companion display. | `Required` | `Partial`: keep familiar growth/effect details readable. | Familiar identity persists and should be inspectable like other companions. |
+| Demonologist | `Contracts` bespoke tab exists. | `Required` | `No` for tab baseline; tune hidden/revealed copy only. | Contract choice and patron state are menu/town-adjacent and too important to leave only in Crypt dialogue. |
+| Sorcerer/Wizard | `School Affinity` bespoke tab exists. | `Required` | `No` for tab baseline; keep under-the-hood thresholds hidden. | Persistent affinity progression needs review and is not combat-only. |
+| Diviner/Astromancer | `Runes` bespoke tab exists. | `Required` | `No` for tab baseline; keep advanced formula detail hidden. | Runes persist per save and are spent through spell empowerment, so a tab should explain inventory-like state. |
+| Shaman/Soulcatcher | `Totems` bespoke tab exists plus separate Totem Aspects popup. | `Required` | `No` for tab baseline. | Totems have persistent communion unlocks plus active aspect configuration. |
+| Inquisitor/Seeker | `Case Journal` bespoke tab exists. | `Required` | `No` for tab baseline. | Persistent Case Journal progress and route tools need an out-of-combat review surface. |
+| Bard/Troubadour | `Crescendo` bespoke tab exists. | `Required` | `No` for tab baseline. | Song repertoire is persistent progression and advanced songs need readable mastery state. |
+| Druid/Lycan | `Forms` bespoke tab exists for Druid/Lycan. | `Required` for Druid/Lycan | `No` for tab baseline. | Persistent transformation and Lycan control are identity systems, not just combat buffs. |
+| Archdruid | `Aspects` bespoke tab exists. | `Required` | `No` for tab baseline. | Archdruid has both persistent attunement and combat-only aspect representation. |
+| Shadowcaster | No mechanic tab; Umbral Debt appears in HUD/status/log surfaces. | `Not Needed` | `No` for a tab; keep debt/backlash/Eclipse readable through combat HUD, status rows, logs, and skill text. | The live decision is combat-only and resets, so a tab would mostly duplicate combat state. |
+| Spellblade/Knight Enchanter | No mechanic tab; Blade Charge and Arcane Tempo appear in HUD/status/log surfaces. | `Not Needed` | `No` for a tab; explain compatible spell schools and alternation rhythm through promotion guidance, action text, HUD, and logs. | Charges and Tempo are combat-only and reset; the combat surface is the correct source of truth. |
+| Thief/Rogue | No mechanic tab; Fortune/Misfortune appear in HUD/status/log/result surfaces. | `Not Needed` | `No` for a tab; solve risky-action eligibility through HUD/status hints, combat logs, action descriptions, and loot/result messages. | Manual evidence found clarity issues, but the strict tab rule keeps combat-only luck meters out of Character Menu. |
+| Assassin/Ninja | No mechanic tab; Death Mark appears in HUD/status/log surfaces. | `Not Needed` | `No` for a tab; explain setup, finisher readiness, and No-Trace pressure through combat HUD, logs, and skill text. | Marks are combat-only and target-specific, so a persistent menu surface has limited value. |
+| Monk/Master Monk | No mechanic tab; Ki appears in HUD/status/log/skill surfaces. | `Not Needed` | `No` for a tab; keep `Dim Mak`, weapon penalties, and ultimate-staff exception readable through combat and equipment messaging. | Ki is combat-only and the Master Monk equipment exceptions belong with skill/equipment feedback. |
+| Priest/Archbishop | No mechanic tab; Prayer appears in HUD/status/log/skill surfaces. | `Not Needed` | `No` for a tab; keep Supplication, Benediction, Gospel, and Intervention readable through combat and support skill text. | Prayer is combat-only and largely action-driven. |
+| Cleric/Templar/Hierophant | No mechanic tab; Devotion appears in status/log/skill text. | `Not Needed` | `No` for a tab; keep improving HUD/status/log/skill text. | Devotion is combat-only and the spec explicitly says it should not require a Character Menu mechanic tab. |
+| Spell Stealer/Arcane Trickster | No mechanic tab; stolen scrolls live in combat `Spells`, Charge in HUD/status. | `Not Needed` | `No` for a tab; use Thieves Guild/backroom content for broader guidance. | Stolen Charge is combat-only and the spell inventory already has a primary action surface. |
+| Broad expansions such as combo chains, sentient/leveling weapons, Maestro progression, summon bond death penalties, pet evolution/stables, Grove questlines, oath drift, heist caches, stealth rewrite, and scroll-economy redesign | No stable UI contract. | `Too General` | `Spec first` | These change mechanics, save state, economy, progression, or content scope; tab decisions should follow a promoted one-page spec. |
+
+Implementation posture:
+
+1. The bespoke tab baseline has shipped for `School Affinity`, `Contracts`,
+   `Runes`, `Totems`, `Case Journal`, `Crescendo`, `Forms`, and `Aspects`.
+   Future work should tune readability, hidden/revealed copy, and per-kit
+   polish rather than reintroducing generic class summaries.
+2. Do not add Character Menu tabs for combat-only meters unless a future spec
+   adds persistent progression, configuration, roster/detail, or town/menu
+   review needs.
+3. Preserve the explicit no-tab decisions for Devotion and Stolen Charge until
+   their specs change.
+4. Treat broad expansion ideas as design gates, not implementation backlog.
+
 ## Class-Kit Balance Thresholds
 
 Status: `Watch-First Thresholds`
@@ -161,7 +222,7 @@ promoted one-page tuning spec.
 | Track/class | Current progression rule | Expected ordinary cadence | Fast or narrow cadence | Watch trigger |
 | --- | --- | --- | --- | --- |
 | Bard/Troubadour | Crescendo gains `+1` per maintained combat song turn, caps at `3`, and spends only on natural expiration. Troubadour repertoire mastery requires `18` practice XP and `3` clean finishes. | Combat-only mastery should take `3` clean full 3-turn performances: each gives `+3` turn XP plus `+3` completion XP. | Exploration mastery can also take `3` clean full performances: each can give up to `+4` step XP plus `+3` completion XP. Composition `+1` XP buffers progress but never removes the `3` clean-finish requirement. | Watch if clean completions do not visibly move mastery, if interruption costs are unclear, or if codas/Encore make song loops win with low player input. |
-| Beast Master | Companion bond caps at `100`; milestones are `25` `Trusted`, `50` `Battle-Trained`, `75` `Packmate`, and `100` `True Bond`. | With one companion action and an active living victory, bond gains about `+5/combat`; milestones land near `5/10/15/20` combats. | Favored Enemy active victories gain about `+7/combat`; milestones land near `4/8/11/15` combats. | Watch if `Trusted` is not reachable around 5-6 ordinary active wins, if replacement/tame state hides the pacing cost, or if command output regularly dominates direct player turns. |
+| Beast Master | Companion bond caps at `100`; milestones are `25` `Trusted`, `50` `Battle-Trained`, `75` `Packmate`, and `100` `True Bond`. | Victory bond uses an inverse curve: low-bond companions usually gain larger chunks, while high-bond companions gain smaller chunks less often. | Favored Enemy active victories add an extra inverse-scaled practice opportunity rather than a guaranteed flat bump. | Watch if `Trusted` is not reachable after a handful of ordinary active wins, if high-bond growth still feels automatic, if replacement/tame state hides the pacing cost, or if command output regularly dominates direct player turns. |
 | Summoner/Grand Summoner | Each summon has its own bond cap of `100`; milestones are `25`, `50`, `75`, and `100`. | Bond starts at summon level `2`; victory rolls a chance equal to enemy XP divided by that summon level's full XP span. A successful roll grants scaled `+1` to `+5` bond. | Low-XP fights often give no bond, while meaningful fights advance bond in proportion to their leveling value. Support actions do not add separate action bond. | Watch if low-level or low-threat fights become the best bond farm, if focused bond `50` feels unreachable, or if the chance-based cadence feels too opaque in logs/playtest notes. |
 | Inquisitor/Seeker | Case Journal progress is per broad enemy type, caps at `100`, and milestones are `25` `Known Tells`, `50` `Weakness Brief`, `75` `Pattern Lock`, and `100` `Closed Case`. | `Inspect` plus visible-detail victory gains about `+7/combat`; milestones land near `4/8/11/15` combats against one enemy type. | Rich evidence loops with `Inspect`, `Exploit Weakness`, a visible telegraph, and victory gain about `+10/combat`; milestones land near `3/5/8/10` combats. Victory-only visible-detail progress gains `+4/combat`, or about `7/13/19/25` combats. | Watch if one enemy type cannot reach `Known Tells` after focused evidence gathering, or if spreading fights across many enemy types does not feel intentionally slower and readable. |
 | Lycan | Control ranks are behavior-only. Each gate requires `3` matching successful stress records: `survive`, `dismiss`, `resist`, then `full_moon`. | Minimum full path is `12` phase-correct records: `Feral -> Muzzled`, `Muzzled -> Restive`, `Restive -> Tethered`, then `Tethered -> Tame`. | Real pacing depends on eligible stress opportunities, moon timing, and whether the player survives or resolves the correct behavior at the current gate. | Watch if a gate does not reasonably progress after 6-8 eligible opportunities, if the needed behavior is unclear, or if Class Ring/Dragon Essence appears to advance control rank. |
@@ -1630,30 +1691,57 @@ balance through `Fourfold Surge`.
 
 Class Design Inspirations: Pokemon, WoW
 
-V1 implementation spec: center Ranger and Beast Master on one persistent tamed
-companion. Ranger keeps `Tame` and `Favored Enemy`, gains companion bond and
-conservative companion growth, while Beast Master carries that bond forward with
-direct companion commands and stronger awakened-ring `Shared Recovery`.
+V1 implementation spec: center Ranger and Beast Master on one active tamed
+companion drawn from a small held roster. Ranger keeps `Tame` and `Favored
+Enemy`, gains companion bond and conservative companion growth, while Beast
+Master carries the active companion bond forward with direct companion commands
+and stronger awakened-ring `Shared Recovery`.
 
 - Preserve current scope: keep one active tamed companion, compact save state,
-  replacement on new tame, existing companion-as-`familiar` behavior, `Tame`,
-  `Favored Enemy`, `Pack Bond`, and awakened `Shared Recovery`.
+  a six-companion held roster, existing active companion-as-`familiar` behavior,
+  `Tame`, `Favored Enemy`, `Pack Bond`, and awakened `Shared Recovery`.
 - Storage: extend existing `tamed_companion` save state with `bond` from `0` to
-  `100`, defaulting to `0`, and combat-only `pending_command`, cleared on combat
-  end and save/load. Clamp invalid values on load; legacy saves without bond
-  default cleanly.
-- Replacement: a new tame replaces the old companion and starts a fresh bond.
-  Do not add stable, roster, inactive bond memory, or species collection rules
-  in V1.
-- Bond gain: gain `+1` when the tamed companion completes a combat action, `+4`
-  when combat is won with the companion active and alive, and `+2` extra when
-  the defeated enemy type matches current `Favored Enemy`. Bond caps at `100`.
-- Bond scaling: companion HP, damage, and defense scale conservatively with bond
-  up to `+15%` at bond 100. Milestones are bond 25 `Trusted`, bond 50
-  `Battle-Trained`, bond 75 `Packmate`, and bond 100 `True Bond`.
-- Favored Enemy hunt synergy: keep Ranger's current personal bonus from kill
-  history. Against current Favored Enemy targets, the companion gains a small
-  accuracy/damage pressure bonus and bond grows faster on victory.
+  `100`, `species`, `evolution`, `special_ability`, `active_index`, and a
+  bounded `companions` list, plus combat-only `pending_command`, cleared on
+  combat end and save/load. Clamp invalid values on load; legacy saves without
+  roster/flavor fields default cleanly.
+- Tame flavor: a successful Ranger `Tame` starts the new companion at a small
+  fresh bond with a species-derived special ability. The special should feel
+  like a monster-training trait, not a separate command menu. The tame flow
+  resolves combat first, skips enemy death/fade animation, then offers a
+  dungeon-background nickname prompt with confirmation. Renamed companions
+  display as `Nickname (Enemy Name)` so the original animal class remains
+  visible.
+- Tame action surface: `Tame` appears as a top-level combat option only for
+  Ranger/Beast Master while there is no active living tamed companion. It is not
+  shown in the normal `Skills` submenu.
+- Roster limit: `Tame` adds a new species to the held roster and makes it active
+  while room remains. Retaming an already held species strengthens that bond and
+  makes it active. A full roster blocks new species with release-required
+  messaging instead of silently overwriting an older companion.
+- Bond gain: victory with an active living tamed companion creates an
+  inverse-scaled bond opportunity. Low-bond companions usually gain larger
+  chunks; higher-bond companions gain less and less often. Defeating the current
+  `Favored Enemy` creates a smaller extra bond opportunity on the same inverse
+  curve. Bond caps at `100`.
+- Bond scaling: companion output scales conservatively with bond. Bond also
+  updates visible species-family evolution forms. Evolution is currently flavor
+  and identity/readability first; deeper evolution-specific stat/action
+  differentiation remains a later tuning pass. Generic fallback ranks remain
+  `Wild Form`, `Trusted Form`, `Battle Form`, `Pack Form`, and `Apex Form`;
+  defined animal families use cleaner themed names such as Rat, Hornet, Bat,
+  Spider, Panther, Toad, Snake, Owl, Direwolf, Scorpion, Direbear, Viper,
+  Alligator, Eagle, and Antlion ladders.
+- Special abilities: V1 tamed specials are compact automatic traits such as
+  `Pounce`, `Guard Hide`, `Wingbeat`, `Primal Spark`, and `Keen Scent`. They
+  unlock their small combat rider only after the first bond milestone and
+  should be described by name in companion inspection rather than as formulas.
+- Favored Enemy tracking mastery: `Favored Enemy` is an active combat skill that
+  marks the current enemy type as the Ranger's quarry. Keeping the same mark
+  through repeated hunts grows a persistent practice benefit; changing quarry
+  carries over only a small amount of discipline. Against current Favored Enemy
+  targets, the companion gains a small accuracy/damage pressure bonus and bond
+  grows faster on victory.
 - Beast Master commands: Ranger gets bond/stat growth; Beast Master adds direct
   orders for the next companion action. Add `Pack Strike`, `Guard Partner`,
   `Harry Prey`, and `Mend Wounds`.
@@ -1668,26 +1756,40 @@ direct companion commands and stronger awakened-ring `Shared Recovery`.
   with bond up to 35% at `True Bond`. The ring also improves command reliability,
   such as stronger `Guard Partner` reduction or better `Mend Wounds` value,
   without adding dual companion turns.
-- UI text/surfaces: class/status text should show companion name/species, bond
-  value/rank, current Favored Enemy, and active pending command. Ring text
+- UI text/surfaces: class/status text should show active companion name/species,
+  bond value/rank, evolution form, special ability, held roster count, current
+  Favored Enemy, and active pending command without showing `Promotion Tier` in
+  class tabs. The `Companion & Hunt` tab may show held inactive companions as
+  compact review rows, but only one active tamed companion contributes combat
+  actions. Release requires confirmation. Tamed companion Inspect/detail views
+  resolve art by original enemy class before nickname/name and show form, trait,
+  bond, and flavor notes instead of targetable HP/MP/stat sheets. Ring text
   should describe `Shared Recovery` as bond-scaling healing echo for Beast
-  Master and companion. Combat logs should report bond gain, milestone reach,
-  command use/expiration, Favored Enemy hunt synergy, and Shared Recovery echo.
-- Tests: cover tamed companion normalization, legacy save compatibility, bond
-  clamping, save/load, new tame replacement resetting bond, bond gain from
-  companion action/victory/Favored Enemy victory, 100 cap, bond stat scaling at
-  25/50/75/100, Beast Master command requirements/effects/expiration, Favored
-  Enemy personal bonus preservation, hunt synergy, and bond-scaling Shared
-  Recovery without recursive healing.
-- Balance assumptions: this is a V1 bond-and-command spec, not a stable, monster
-  collection, or multi-companion combat redesign. Companion progression should
-  be visible but conservative; player agency comes mainly from Beast Master
-  commands.
+  Master and companion. Combat logs should report bond gain as a single general
+  increase line, evolution, special-trigger flavor, command use/expiration,
+  general Favored Enemy bonus triggers, full-roster tame blocks, and Shared
+  Recovery echo.
+- Tests: cover tamed companion normalization, legacy save compatibility, flavor
+  field defaults, bond clamping, save/load, new species tames adding to the
+  bounded roster, duplicate species retames growing/switching bond, full-roster
+  release-required blocks, species special assignment, evolution on bond
+  thresholds, inverse-scaled bond gain from victory/Favored Enemy victory,
+  100 cap, bond stat scaling at 25/50/75/100, Beast Master command requirements/
+  effects/expiration, Favored Enemy mark/switch/practice persistence, hunt synergy,
+  and bond-scaling Shared Recovery without recursive healing.
+- Balance assumptions: this is a V1 held-roster bond-and-command spec, not a
+  town stable, collection-reward, or multi-companion combat redesign. Companion
+  progression should be visible but conservative; player agency comes mainly
+  from choosing the active companion and Beast Master commands.
 
-#### Improvements
+#### Future Improvements
 
-- Add collection flavor a la Pokemon; pets evolve instead of leveling
-- Collection will be stored in a stable-esque style location
+- Add a Ranger/Beast Master town stable unlock for storing inactive tamed
+  companions. In that model the Character Menu `Companion & Hunt` tab should
+  list only the active companion and tracking practice, while stable management
+  owns stored companion review, rename, release, and lead selection.
+- Species collection rewards and multi-companion combat routing remain future
+  specs outside V1.
 
 ### Shaman/Soulcatcher Totem Resonance
 

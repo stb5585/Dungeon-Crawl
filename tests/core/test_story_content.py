@@ -2,7 +2,7 @@
 """Coverage for shared story content loaded from core data."""
 
 from src.core import main_story
-from src.core.data.data_loader import clear_cache, get_intro_story, get_special_events
+from src.core.data.data_loader import clear_cache, get_intro_story, get_quests, get_special_events
 
 
 def test_new_game_intro_story_content_is_shared_and_spoiler_safe():
@@ -93,3 +93,34 @@ def test_story_polish_content_keys_are_present_and_spoiler_scoped():
     assert "Vesperion" in endgame_tragedy_text
     assert "Joffrey" in endgame_tragedy_text
     assert "Waitress" in endgame_tragedy_text
+
+    ending_text = "\n".join(
+        line
+        for key in (
+            "Vesperion True Final Victory",
+            "The Forsaken Tenet Ending",
+            "The Thirsty Dog Epilogue",
+        )
+        for line in events[key]["Text"]
+    )
+    assert "The final chamber does not crown you" in ending_text
+    assert "ordinary work" in ending_text
+
+
+def test_red_dragon_continuity_copy_separates_route_meanings():
+    clear_cache()
+
+    events = get_special_events()
+    red_dragon_text = "\n".join(events["Red Dragon"]["Text"])
+    zahhak_text = "\n".join(events["Zahhak"]["Text"])
+    dracarys = get_quests()["Hooded Figure"]["Main"]["60"]["Dracarys"]
+    dracarys_text = "\n".join(
+        dracarys[field] for field in ("Start Text", "End Text", "Help Text")
+    )
+
+    assert "Whatever truths the dragon carries" in red_dragon_text
+    assert "not Kaelenon's restored self" in zahhak_text
+    assert "draconic spirit" in zahhak_text
+    assert "progression victory is complete for every hero" in dracarys_text
+    for legacy_final_boss_framing in ("ultimate challenge...me", "futility", "my wrath"):
+        assert legacy_final_boss_framing not in dracarys_text

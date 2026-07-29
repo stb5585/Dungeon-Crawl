@@ -55,7 +55,7 @@ class CompanionArtManager:
     def companion_name(companion: Any) -> str:
         if isinstance(companion, str):
             return companion
-        for attr in ("race", "name", "spec", "cls"):
+        for attr in ("enemy_class", "race", "name", "spec", "cls"):
             value = getattr(companion, attr, None)
             if value:
                 return str(value)
@@ -70,7 +70,7 @@ class CompanionArtManager:
         if isinstance(companion, str):
             return [companion]
         candidates = []
-        for attr in ("race", "name", "spec", "cls"):
+        for attr in ("enemy_class", "race", "name", "spec", "cls"):
             value = getattr(companion, attr, None)
             if value:
                 candidates.append(str(value))

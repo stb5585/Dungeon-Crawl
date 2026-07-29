@@ -52,6 +52,11 @@ STUN_LEVEL_DIFF_MULT_MIN = 0.70
 STUN_LEVEL_DIFF_MULT_MAX = 1.30
 
 
+def _class_name(ch: object) -> str:
+    cls = getattr(ch, "cls", None)
+    return str(getattr(cls, "name", cls) or "")
+
+
 def _combat_level(ch: object) -> int:
     """
     Best-effort combat level accessor.
@@ -801,7 +806,8 @@ class Character:
             dex = int(getattr(self.stats, "dex", 10))
             # +0.00 at DEX<=10, up to +0.15 at DEX>=25
             chance += min(0.15, max(0.0, (dex - 10) / 100))
-        if self.cls.name == "Seeker" or (self.cls.name == "Templar" and self.class_effects["Power Up"].active):
+        cls_name = _class_name(self)
+        if cls_name == "Seeker" or (cls_name == "Templar" and self.class_effects["Power Up"].active):
             chance += (0.25 * self.power_up)
         try:
             from .classes import class_rings
@@ -844,7 +850,7 @@ class Character:
             weapon = self.equipment[att]
             weapon_crit = getattr(weapon, "crit_chance", getattr(weapon, "crit", 0.0))
             crit_chance += float(weapon_crit or 0.0) * WEAPON_CRIT_WEIGHT
-        if self.cls.name == "Seeker":
+        if _class_name(self) == "Seeker":
             crit_chance += (SEEKER_CRIT_BONUS * self.power_up)
         try:
             from .classes import class_rings
@@ -1119,11 +1125,11 @@ class Character:
                 weapon_dam_str += self._apply_equipment_effects(
                     defender, att, damage, crits[i]
                 )
-                if self.cls.name == "Dragoon" and self.power_up:
+                if _class_name(self) == "Dragoon" and self.power_up:
                     self.class_effects["Power Up"].active = True
                     self.class_effects["Power Up"].duration += 1
             else:
-                if self.cls.name == "Dragoon" and self.power_up:
+                if _class_name(self) == "Dragoon" and self.power_up:
                     self.class_effects["Power Up"].active = False
                     self.class_effects["Power Up"].duration = 0
 
@@ -1277,7 +1283,7 @@ class Character:
             (defender.equipment['OffHand'].subtyp == 'Shield' or
              'Dodge' in defender.equipment['Ring'].mod) and
             not defender.magic_effects["Mana Shield"].active and
-            not (defender.cls.name == "Crusader" and defender.power_up and
+            not (_class_name(defender) == "Crusader" and defender.power_up and
                  defender.class_effects["Power Up"].active) and
             not defender.incapacitated()
         )
@@ -1331,13 +1337,13 @@ class Character:
             return damage, msg + shield_msg, absorbed
 
         # Crusader absorb shield
-        if (defender.cls.name == "Crusader" and defender.power_up and
+        if (_class_name(defender) == "Crusader" and defender.power_up and
                 defender.class_effects["Power Up"].active):
             damage, shield_msg, absorbed = self._apply_crusader_shield(defender, damage)
             return damage, msg + shield_msg, absorbed
 
         # Templar reflect
-        if (defender.cls.name == "Templar" and defender.power_up and
+        if (_class_name(defender) == "Templar" and defender.power_up and
                 defender.class_effects["Power Up"].active):
             ref_dam = int(0.25 * damage)
             damage -= ref_dam
@@ -1542,7 +1548,7 @@ class Character:
             defender.status_effects["Sleep"].duration = 0
 
         # Ninja life steal
-        if self.cls.name == "Ninja" and self.power_up:
+        if _class_name(self) == "Ninja" and self.power_up:
             dam_abs = self.class_effects["Power Up"].active * damage
             dam_abs = int(dam_abs * self.healing_received_multiplier())
             dam_abs = min(dam_abs, self.health.max - self.health.current)
@@ -1553,7 +1559,7 @@ class Character:
             msg += f"{self.name} absorbs {dam_abs} from {defender.name}.\n"
 
         # Lycan life steal
-        if self.cls.name == "Lycan" and self.power_up:
+        if _class_name(self) == "Lycan" and self.power_up:
             dam_abs = damage // 2
             dam_abs = int(dam_abs * self.healing_received_multiplier())
             dam_abs = min(dam_abs, self.health.max - self.health.current)
@@ -2068,20 +2074,20 @@ class Character:
                     status_text += "Regeneration spell ends.\n"
                     default(effect="Regen")
             if self.class_effects["Power Up"].active:
-                if self.cls.name == "Lycan":
+                if _class_name(self) == "Lycan":
                     self.class_effects["Power Up"].duration += 1
-                elif self.cls.name == "Dragoon":
+                elif _class_name(self) == "Dragoon":
                     pass
                 else:
                     self.class_effects["Power Up"].duration -= 1
-                if self.cls.name == "Knight Enchanter" and self.power_up:
+                if _class_name(self) == "Knight Enchanter" and self.power_up:
                     missing_mana = self.mana.max - self.mana.current
                     mana_regen = max(1, min(self.class_effects["Power Up"].extra, missing_mana)) if missing_mana > 0 else 0
                     self.mana.current += mana_regen
                     status_text += f"{self.name} regens {mana_regen} mana.\n"
                     if mana_regen > 0:
                         self._emit_status_tick_event(self, "Power Up", mana_regen, "mana", source="Power Up")
-                if self.cls.name == "Archbishop" and self.power_up:
+                if _class_name(self) == "Archbishop" and self.power_up:
                     health_regen = min(int(self.health.max * 0.10), self.health.max - self.health.current)
                     health_regen = int(health_regen * self.healing_received_multiplier())
                     mana_regen = min(int(self.mana.max * 0.10), self.mana.max - self.mana.current)
@@ -2093,7 +2099,7 @@ class Character:
                     if mana_regen > 0:
                         self._emit_status_tick_event(self, "Power Up", mana_regen, "mana", source="Power Up")
                 if not self.class_effects["Power Up"].duration:
-                    if self.cls.name == "Crusader" and self.power_up:
+                    if _class_name(self) == "Crusader" and self.power_up:
                         status_text += (f"The shield around {self.name} explodes, dealing "
                                         f"{self.class_effects['Power Up'].extra} damage to the enemy.\n")
                     default(effect="Power Up")
@@ -2194,7 +2200,7 @@ class Character:
                 res_mod += 0.5
             try:
                 data = self.class_ring_awakening["data"]["Shadowcaster"]
-                if self.cls.name == "Shadowcaster" and typ == "Holy" and int(data.get("eclipse_turns", 0) or 0) > 0:
+                if _class_name(self) == "Shadowcaster" and typ == "Holy" and int(data.get("eclipse_turns", 0) or 0) > 0:
                     penalty = 0.20 if getattr(getattr(self, "familiar", None), "spec", "") == "Defense" else 0.25
                     res_mod -= penalty
             except Exception:
@@ -2213,7 +2219,7 @@ class Character:
                 from .classes import promotion_kits
 
                 data = self.class_ring_awakening["data"]["Shadowcaster"]
-                if self.cls.name == "Shadowcaster" and int(data.get("eclipse_turns", 0) or 0) > 0:
+                if _class_name(self) == "Shadowcaster" and int(data.get("eclipse_turns", 0) or 0) > 0:
                     speed_mod = int(speed_mod * 1.10)
             except Exception:
                 pass

@@ -17,6 +17,7 @@ def test_promotion_kit_state_normalizes_and_round_trips():
         "case_journal": {"Fiend": 250, "": 20},
         "bard_repertoire": {"Battle Hymn": {"known": True, "practice_xp": 99, "clean_finishes": 4}},
         "lycan_control": {"rank": "Tethered", "stress_events": 3, "dragon_essence": True},
+        "favored_enemy": {"type": "Animal", "practice": 1000, "switches": 2},
     }
 
     state = player.ensure_promotion_kit_state()
@@ -26,9 +27,11 @@ def test_promotion_kit_state_normalizes_and_round_trips():
     assert state["case_journal"] == {"Fiend": 100}
     assert state["bard_repertoire"]["Battle Hymn"]["known"] is True
     assert state["lycan_control"]["rank"] == "Tethered"
+    assert state["favored_enemy"] == {"type": "Animal", "practice": 999, "switches": 2}
 
     restored = PlayerDataSerializer.deserialize(PlayerDataSerializer.serialize(player), skip_tiles=True)
     assert restored.promotion_kit_state["case_journal"]["Fiend"] == 100
+    assert restored.promotion_kit_state["favored_enemy"]["type"] == "Animal"
     assert promotion_kits.combat_state(restored)["foresight_threads"] == 0
 
 
@@ -272,7 +275,8 @@ def test_ui_log_polish_status_matrix_surfaces():
 
     beast = _player("Beast Master")
     beast.tamed_companion = {"active": True, "name": "Wolf", "bond": 50}
-    beast.familiar = SimpleNamespace(name="Wolf", is_alive=lambda: True)
+    beast.familiar = SimpleNamespace(name="Wolf", spec="Tamed", is_alive=lambda: True)
+    beast.spellbook["Skills"]["Pack Strike"] = abilities.PackStrike()
     abilities.PackStrike().use(beast)
     beast_status = beast._class_kit_status_str()
     assert "Companion:" in beast_status
@@ -404,7 +408,8 @@ def test_resolve_aerial_aspect_totem_and_beast_commands():
     assert "force Fireball" in abilities.TotemSurge().use(shaman, target)
 
     beast = _player("Beast Master")
-    beast.familiar = SimpleNamespace(name="Companion", is_alive=lambda: True)
+    beast.tamed_companion = {"active": True, "name": "Companion", "bond": 50}
+    beast.familiar = SimpleNamespace(name="Companion", spec="Tamed", is_alive=lambda: True)
     assert "Pack Strike" in abilities.PackStrike().use(beast)
 
 

@@ -1091,6 +1091,7 @@
             "For the first time, his mercy has no command inside it.",
             "'Then choose,' he whispers, no longer triumphant. 'Choose all of it. Even the pain.'",
             "The light breaks, and the hollow where Voluntas was erased begins to remember its own name.",
+            "The final chamber does not crown you. It opens.",
             "You do not take Voluntas. You leave it free."
         ]
     },
@@ -1110,6 +1111,7 @@
             "For a moment, memory returns to the tavern where so many choices first tangled.",
             "The bar is quieter now. One table remains unset, and no busboy comes to clear it.",
             "No miracle gives Joffrey back to the Waitress, and no ending makes grief harmless.",
+            "Some patrons speak more softly. Some do not speak at all. The ordinary work of cups, chairs, and surviving continues.",
             "But the silence is no longer command. It is a place where the living may choose what to do with love, loss, and morning."
         ]
     },
@@ -1279,10 +1281,10 @@
             "After several minutes exploring an empty corridor, you exit into a massive sanctum riddled with fissures.",
             "The cavern trembles as the ground beneath you grows unbearably hot.",
             "A deafening roar erupts from the shadows, and the Red Dragon steps forward.",
-            "Its scales gleam like molten metal and its eyes burn with a primal fury.",
+            "Its scales gleam like molten metal and its eyes burn with a primal fury, but something older than rage moves beneath the heat.",
             "'You've come this far,' it growls, its voice reverberating like thunder.",
             "'But you will go no further. Prove your worth... or be reduced to ashes where you stand.'",
-            "Its wings spread wide, blocking your path as your next trial begins."
+            "Its wings spread wide, blocking your path. Whatever truths the dragon carries, this battle will decide whether the road below opens."
         ]
     },
     "Cerberus": {
@@ -1421,6 +1423,8 @@
     },
     "Zahhak": {
         "Text": [
+            "The Red Dragon's defeat leaves an echo in the scorched air: not Kaelenon's restored self, but an ancient draconic spirit answering to the name Zahhak.",
+            "The pact takes shape around your call.",
             "You have gained the summon Zahhak."
         ]
     },

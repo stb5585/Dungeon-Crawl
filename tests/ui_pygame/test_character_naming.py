@@ -238,6 +238,56 @@ def test_character_naming_allows_m_and_f_as_name_characters(monkeypatch):
     assert screen.sex == "Male"
 
 
+def test_companion_naming_uses_background_and_confirmation(monkeypatch):
+    presenter = _make_presenter()
+    screen = character_naming.CompanionNamingScreen(
+        presenter,
+        "Giant Hornet",
+        species="Hornet",
+        form="Stingwing",
+        special="Wingbeat",
+    )
+    background = pygame.Surface((1000, 760))
+    background.fill((12, 34, 56))
+    monkeypatch.setattr("src.ui_pygame.gui.character_naming.pygame.draw.rect", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr("src.ui_pygame.gui.character_naming.pygame.display.flip", lambda: None)
+    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
+    draw_backgrounds = []
+    original_draw = screen.draw
+
+    def draw_spy(background_surface=None):
+        draw_backgrounds.append(background_surface)
+        original_draw(background_surface)
+
+    screen.draw = draw_spy
+
+    class FakePopup:
+        def __init__(self, _presenter, message, show_buttons=True):
+            assert message == "Keep the name Needle (Giant Hornet)?"
+            assert show_buttons is True
+
+        def show(self, **kwargs):
+            kwargs["background_draw_func"]()
+            return True
+
+    monkeypatch.setattr("src.ui_pygame.gui.character_naming.ConfirmationPopup", FakePopup)
+    event_batches = iter([
+        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_n, unicode="N")],
+        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_e, unicode="e")],
+        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_e, unicode="e")],
+        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_d, unicode="d")],
+        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_l, unicode="l")],
+        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_e, unicode="e")],
+        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+    ])
+    monkeypatch.setattr("src.ui_pygame.gui.character_naming.pygame.event.get", lambda: next(event_batches, []))
+
+    assert screen.navigate(background_surface=background) == "Needle"
+    assert background in draw_backgrounds
+    assert "Tame Complete" in presenter.normal_font.render_calls
+    assert "Known as Needle (Giant Hornet)" in presenter.normal_font.render_calls
+
+
 def test_character_naming_quit_exits(monkeypatch):
     presenter = _make_presenter()
     screen = character_naming.CharacterNamingScreen(presenter, "Human", "Warrior", sex="Male")

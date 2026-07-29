@@ -446,6 +446,11 @@ def test_visibility_helpers_minimap_compass_and_combat_indicator(monkeypatch):
         visited = True
         near = True
 
+    class FirePath:
+        enter = True
+        visited = False
+        near = True
+
     class WallTile:
         enter = False
         visited = True
@@ -463,6 +468,7 @@ def test_visibility_helpers_minimap_compass_and_combat_indicator(monkeypatch):
         (4, 6, 2): UndergroundSpringTile(),
         (6, 6, 2): StairsDownTile(),
         (4, 8, 2): RelicRoom(),
+        (4, 9, 2): FirePath(),
         (6, 8, 2): GoldenChaliceRoom(),
         (3, 7, 2): WallTile(),
         (28, 30, 2): ChestTile(),
@@ -495,6 +501,7 @@ def test_visibility_helpers_minimap_compass_and_combat_indicator(monkeypatch):
     assert (130, 130, 120) in minimap_colors
     assert (95, 170, 120) in minimap_colors
     assert (139, 69, 19) in minimap_colors
+    assert (175, 55, 55) in minimap_colors
 
     y2 = hud._render_compass(player, y)
     assert y2 > y
@@ -633,7 +640,27 @@ def test_combat_focus_panel_shows_familiar_summons_and_totem(monkeypatch):
     assert sum(1 for label, _value, _color in lines if label == "Totem") == 1
     assert any(label == "Benefit" and "+25% ATK" in value and "Elemental" in value for label, value, _color in lines)
     assert all(label != "Evasive Guard" for label, _value, _color in lines)
+
+    player.cls = SimpleNamespace(name="Ranger")
+    player.familiar = SimpleNamespace(name="Giant Spider", spec="Tamed", level=SimpleNamespace(level=1))
+    player.tamed_companion = {"active": True, "name": "Giant Spider", "bond": 5, "evolution": "Web Scout"}
+    player.magic_effects["Totem"] = _effect(active=False)
+    lines = hud._combat_feature_lines(player, enemy=SimpleNamespace(name="Jester"))
+    labels = [label for label, _value, _color in lines]
+    assert "Familiar" not in labels
+    assert ("Companion", "Giant Spider", (170, 210, 255)) in lines
+    assert ("Form", "Web Scout", hud.text_color) in lines
+    assert any(label == "Bond" and value.startswith("5/100") for label, value, _color in lines)
+    assert labels.index("Companion") < labels.index("Form") < labels.index("Bond")
     assert hud._truncate_text(bundle.small_font, "A very long class-kit readiness value", 48).endswith("...")
+
+    player.familiar = None
+    player.tamed_companion = {"active": False, "name": None, "bond": 0, "evolution": "Wild Form"}
+    lines = hud._combat_feature_lines(player, enemy=SimpleNamespace(name="Jester"))
+    labels = [label for label, _value, _color in lines]
+    assert "Companion" not in labels
+    assert "Form" not in labels
+    assert "Bond" not in labels
 
     player.cls = SimpleNamespace(name="Rogue")
     player._promotion_kit_combat = {"fortune": 2, "misfortune": 1}
@@ -660,7 +687,8 @@ def test_combat_focus_panel_shows_familiar_summons_and_totem(monkeypatch):
     player.tamed_companion = {"active": True, "name": "Wolf", "bond": 50}
     promotion_kits.combat_state(player)["pending_companion_command"] = "Pack Strike"
     lines = hud._combat_feature_lines(player, enemy=SimpleNamespace(name="Jester"))
-    assert any(label == "Companion" and "Battle-Trained" in value for label, value, _color in lines)
+    assert ("Companion", "Wolf", (170, 210, 255)) in lines
+    assert any(label == "Bond" and "Battle-Trained" in value for label, value, _color in lines)
     assert ("Command", "Pack Strike Pending", (170, 210, 255)) in lines
 
     idle_summoner = _make_player()
@@ -692,7 +720,6 @@ def test_combat_focus_panel_shows_familiar_summons_and_totem(monkeypatch):
     assert y > 120
     assert "Combat Focus" in bundle.stat_font.render_calls
     assert "Ring Preserve:" in bundle.small_font.render_calls
-    assert bundle.draw_circle_calls
 
     bundle.screen.blit_calls = []
     coin_player = _make_player()

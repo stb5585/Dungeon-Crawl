@@ -9304,8 +9304,7 @@ class TestClassAbilityMechanicsSlice:
         assert abilities.spell_dict["Diviner"]["8"] is abilities.Haste
         assert "Steal As Well" not in [skill().name for skill in abilities.skill_dict["Arcane Trickster"].values()]
         assert abilities.skill_dict["Spell Stealer"]["12"] is abilities.StealAsWell
-        assert abilities.skill_dict["Ranger"]["1"] is abilities.Tame
-        assert abilities.skill_dict["Ranger"]["10"] is abilities.FavoredEnemy
+        assert abilities.skill_dict["Ranger"]["1"] == [abilities.Tame, abilities.FavoredEnemy]
         assert abilities.skill_dict["Beast Master"] == {
             "5": abilities.Cover,
             "7": abilities.Zephyrstrike,

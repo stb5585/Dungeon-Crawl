@@ -144,21 +144,50 @@ remain the prompts; the evidence ledger is the running decision record.
   - Expected: The bridge uses the class recorded at affirmation even if the current class, equipment, or ring state changes later.
   - Expected: HP, MP, XP, loot, Class Ring mechanics, true-final gates, Reflection mechanics, and route rewards do not change from viewing the bridge.
 
+### Story And Endgame Route
+- [ ] Enter the final chamber before true-final unlock and trigger the Vesperion false-final route.
+  - Expected: Vesperion uses the Vesperion identity and `Choose Fate` framing, not Devil/Balor copy.
+  - Expected: The scripted transition sends the player to the Liminal Gap without normal town resurrection, XP, loot, quest turn-in, or boss-room victory handling.
+- [ ] In the Liminal Gap, interact with the Hooded Figure guide before and after completing Guardian trials.
+  - Expected: The guide reveal stays distinct from Vesperion, guide save access works only from approved Liminal surfaces, and clue review never completes missing trials.
+  - Expected: Incomplete Guardian trials play threshold/choice vignettes once, while completed older-save trials can recall unseen vignettes without re-awarding consequences.
+- [ ] Complete all six Guardian clues, then visit the Seventh Seat, Acolyte, and Reflection gates in order.
+  - Expected: Six clues open the Seventh Seat; Voluntas reveal does not unlock the true final by itself.
+  - Expected: The Acolyte scene is non-combat, repeat-safe, and presents a failed-hero mirror rather than a boss.
+  - Expected: Reflection remains locked until Voluntas is remembered and the Acolyte warning has been faced.
+- [ ] Lose to the Reflection/Psychopomp, then retry and win.
+  - Expected: Defeat returns to the Liminal hub at the route-specific recovery state without town death flow, XP, loot, or boss-tile victory routing.
+  - Expected: Attempts/failures save and reload correctly, retry copy remains readable, and victory sets `reflection_defeated` plus `true_final_unlocked`.
+- [ ] Enter the true-final Vesperion battle after Reflection victory.
+  - Expected: The true-final choice argument and tragedy reframing play once, acknowledge the busboy disguise and Waitress/Joffrey grief, and do not change Vesperion tuning or route gates.
+  - Expected: Completed Guardian trials blunt or cancel their matching `Choose Fate` and phase-pressure consequences with clear combat-log text.
+- [ ] Defeat true-final Vesperion and view the complete ending sequence.
+  - Expected: Victory grants no normal XP, loot, quest completion, death-cost routing, or boss-tile reward.
+  - Expected: `Vesperion True Final Victory`, `The Forsaken Tenet Ending`, and `The Thirsty Dog Epilogue` play in a coherent order with usable continue/skip input.
+  - Expected: The ending preserves Voluntas as free choice and does not imply that grief, Joffrey's death, or the Acolyte's loss were erased.
+- [ ] Save/load after `main_story_complete`, then re-enter the final chamber and visit town/tavern surfaces.
+  - Expected: `vesperion_true_final_defeated` and `main_story_complete` persist.
+  - Expected: The final room shows a reminder instead of restarting Vesperion or duplicating ending rewards.
+  - Expected: Any postgame town dialogue is local, repeat-safe, and does not mutate quests, shops, bounties, church, inn, barracks, storage, or NPC availability.
+- [ ] Run the Red Dragon route as a Lancer/Dragoon with `Recover`, as a Grand Summoner pursuing Zahhak, and as another class.
+  - Expected: Copy distinguishes Red Dragon boss defeat, Kaelenon restoration, and Zahhak binding without declaring ordinary victories invalid.
+  - Expected: Red Dragon floor gates, boss-room state, `Dragon's Fury`, summon unlock behavior, class rewards, and old-save compatibility remain unchanged.
+
 ### Weapon Discipline And School Affinity
 - [ ] Promote a Warrior to Weapon Master.
   - Expected: The pygame promotion preview shows `Warrior -> Weapon Master`
-    and highlights promotion stat deltas without embedding a Character Menu
-    tab preview.
+    and highlights promotion stat deltas with a compact `Weapon Discipline`
+    Character Menu note in the class details.
   - Expected: Weapon Master promotion stat deltas include `+2 STR`, `+1 INT`, and `+2 DEX`.
   - Expected: Confirming promotion applies the class change and stat bonuses,
-    increases current HP/MP by the same amount as max HP/MP bonuses, shows one
-    concise congratulations popup, then shows a separate `Weapon Discipline`
-    Character Menu help popup.
+    increases current HP/MP by the same amount as max HP/MP bonuses, and shows
+    one concise summary popup with learned abilities, gear removals, and
+    `Weapon Discipline` guidance when applicable.
 - [ ] Promote a Warrior to Paladin, Lancer, and Sentinel.
-  - Expected: The pygame promotion preview does not embed Character Menu tab
-    help; after confirmation, a separate help popup names the matching
-    post-promotion tab: `Oath Conviction` for Paladin, `Aerial Tempo` for
-    Lancer, and `Resolve` for Sentinel.
+  - Expected: The pygame promotion preview embeds compact Character Menu notes,
+    and the post-confirmation summary names the matching post-promotion tab:
+    `Oath Conviction` for Paladin, `Aerial Tempo` for Lancer, and `Resolve` for
+    Sentinel.
   - Expected: Paladin's final vow confirmation repeats only the vow question;
     detailed vow descriptions stay in the selection popup.
   - Expected: `Oath Conviction` shows the sworn vow, signature skill, aura,
@@ -177,29 +206,48 @@ remain the prompts; the evidence ledger is the running decision record.
 - [ ] Promote a Pathfinder to Diviner, Shaman, and Ranger.
   - Expected: Post-confirmation help popups name the matching post-promotion
     class mechanic tab: `Runes` for Diviner, `Totems` for Shaman, and
-    `Companion` for Ranger.
+    `Companion & Hunt` for Ranger.
 - [ ] Promote through the Mage tree in pygame.
   - Expected: Post-confirmation help popups show the matching post-promotion
     class mechanic tab: `School Affinity` for Sorcerer/Wizard, `Familiar` for
-    Warlock, `Umbral Debt` for Shadowcaster, `Contracts` for Demonologist,
-    `Blade Charge` for Spellblade, `Arcane Tempo` for Knight Enchanter, and
-    `Summons` for Summoner/Grand Summoner.
+    Warlock, `Contracts` for Demonologist, and `Summons` for
+    Summoner/Grand Summoner.
+  - Expected: Shadowcaster, Spellblade, and Knight Enchanter receive no
+    Character Menu tab help popup; Umbral Debt, Blade Charge, and Arcane Tempo
+    remain readable through combat HUD/status/log/action surfaces.
 - [ ] Promote through the Footpad tree in pygame.
   - Expected: Post-confirmation help popups show the matching post-promotion
-    class mechanic tab: `Fortune` for Thief/Rogue, `Case Journal` for
-    Inquisitor/Seeker, and `Death Mark` for Assassin/Ninja.
+    class mechanic tab: `Case Journal` for Inquisitor/Seeker.
+  - Expected: Thief/Rogue and Assassin/Ninja receive no Character Menu tab help
+    popup; Fortune/Misfortune and Death Mark remain readable through combat
+    HUD/status/log/action surfaces.
   - Expected: Spell Stealer/Arcane Trickster receive no Character Menu tab
     help popup because Stolen Charge is combat/HUD status only; class-mechanic
     guidance belongs in Thieves Guild backroom content after membership.
 - [ ] Promote through the Healer tree in pygame.
   - Expected: Post-confirmation help popups show the matching post-promotion
-    class mechanic tab for `Ki` on Monk/Master Monk, `Prayer` on
-    Priest/Archbishop, and `Crescendo` on Bard/Troubadour.
+    class mechanic tab for `Crescendo` on Bard/Troubadour.
+  - Expected: Monk/Master Monk and Priest/Archbishop receive no Character Menu
+    tab help popup; Ki and Prayer remain readable through combat
+    HUD/status/log/action surfaces.
   - Expected: Newly learned level-1 promotion spells and skills are announced
     after promotion, including Cleric's `Sanctuary Ward`.
   - Expected: Cleric/Templar/Hierophant Devotion does not require a Character
     Menu mechanic tab; it should remain legible through combat logs, status
     rows, and skill text.
+- [ ] Review the class mechanic tab triage in `docs/CLASS_KIT_DESIGN_GATES.md`
+  against the pygame Character Menu.
+  - Expected: Required tabs with bespoke implementations remain usable:
+    `Weapon Discipline`, `Oath Conviction`, `Aerial Tempo`, `Resolve`,
+    `Summons`, `Companion & Hunt`, and `Familiar`.
+  - Expected: Required tabs that are still mostly generic are tracked as
+    implementation follow-up: `School Affinity`, `Contracts`, `Runes`,
+    `Totems`, `Case Journal`, `Crescendo`, `Forms`, and `Aspects`.
+  - Expected: Devotion and Stolen Charge continue to avoid Character Menu
+    tabs, using HUD/status/log/action surfaces instead.
+  - Expected: Umbral Debt, Blade Charge, Arcane Tempo, Fortune,
+    Death Mark, Ki, and Prayer do not appear as Character Menu tabs; their
+    readiness remains readable through HUD/status/log/action surfaces.
 - [ ] Fight as a Weapon Master with each supported weapon type equipped.
   - Expected: Successful main-hand/offhand hits grant Weapon Discipline XP to the matching weapon type.
   - Expected: Combat logs show per-hit Weapon Discipline XP without parenthesized progress, and the victory completion text shows the bonus Weapon Discipline XP for weapon types used in the fight.
@@ -366,8 +414,8 @@ remain the prompts; the evidence ledger is the running decision record.
   - Expected: Combat-only mastery takes about 3 clean full 3-turn performances, or exploration mastery takes about 3 clean full exploration performances. Composition XP may buffer progress, but 3 clean finishes are still required.
   - Record: song, performance count, combat or exploration route, interruptions, ring state, and whether cadence felt `Pass`, `Watch`, or `Tuning Gate`.
 - [ ] Raise a Beast Master companion to at least `Trusted` bond while it remains active.
-  - Expected: One companion action plus active living victory gives about `+5/combat`, reaching `Trusted` near 5 ordinary active wins. Favored Enemy wins can be faster, near 4 active wins.
-  - Record: companion name/species, combat count, companion actions, Favored Enemy state, ring state, replacement/tame interruptions, and cadence band.
+  - Expected: A new tame starts with a small fresh bond; active living victories create inverse-scaled bond opportunities, so early bond rises visibly while higher bond slows into smaller or less frequent gains. Favored Enemy wins can add an extra smaller opportunity without guaranteeing a flat bump.
+  - Record: companion name/species, evolution form, special ability, combat count, companion actions, Favored Enemy state, ring state, roster swaps/tame interruptions, and cadence band.
 - [ ] Raise one Summoner or Grand Summoner bond to at least `50` without switching summons.
   - Expected: Bond does not increase before the active summon reaches level `2`. After that, victory bond is chance-based from enemy XP divided by the summon level's full XP span; low-XP fights often give no bond, while meaningful fights can grant scaled `+1` to `+5`.
   - Record: summon name, summon level, level-span XP, enemy XP, combat count, successful bond rolls, no-bond victories, recall/death interruptions, ring state, and cadence band.
@@ -397,8 +445,17 @@ remain the prompts; the evidence ledger is the running decision record.
   - Expected: Kidney Punch costs exactly 18 MP and never leaves the caster below 0 MP.
   - Expected: Backstab is hidden from the skill list unless the target is incapacitated.
 - [ ] Use Ranger `Tame` and `Favored Enemy`.
-  - Expected: Tame works only on eligible wounded Animal enemies, saves one compact companion, and replaces the prior companion clearly.
-  - Expected: Favored Enemy uses kill history and applies bonuses against the most-killed enemy type.
+  - Expected: Tame works only on eligible wounded Animal enemies, saves a compact held roster, starts new species with a small fresh bond, assigns a species-flavored special ability, makes the new tame active while roster space remains, and ends the fight without EXP, gold, loot, kill credit, or extra victory bond.
+  - Expected: Retaming an already held species strengthens that bond and switches it active; a full roster blocks new species with release-required messaging instead of silently replacing an older companion.
+  - Expected: Successful tame skips enemy attack/death/fade animations, shows combat resolution first, then opens a dungeon-background companion naming screen with a confirmation step. Blank/cancel keeps the original animal name; nicknames display as `Nickname (Enemy Name)`.
+  - Expected: Bond growth updates the species-family evolution form and the `Companion & Hunt` tab shows bond, form, special ability, held count, and Favored Enemy without exposing hidden formulas or `Promotion Tier`.
+  - Expected: Before the first tame, the `Companion & Hunt` tab shows empty held-companion slots instead of a blank panel.
+  - Expected: In the `Companion & Hunt` tab selector, `S` makes the selected tamed companion lead and `R` asks for confirmation before releasing the selected tamed companion.
+  - Expected: Favored Enemy is a combat skill that marks the current enemy type as quarry, persists beyond combat, grows with disciplined repeated hunts, gives up most practice when switching to a different quarry, and emits only a general combat-log note when its bonus contributes.
+- [ ] Use Beast Master `Companion` combat commands.
+  - Expected: Ranger companion actions remain subtle automated log events with bond-scaled frequency, while Beast Master gains a top-level `Companion` action when a living tamed companion is active.
+  - Expected: `Companion` opens `Pack Strike`, `Guard Partner`, `Harry Prey`, and `Mend Wounds`; the command consumes the player action, appears as pending in HUD/status, resolves on the companion action, and clears afterward.
+  - Expected: Low-bond commands still produce a weaker useful result; higher bond improves damage, guard, debuff, or healing strength without granting extra companion turns.
 - [ ] Use `Steal As Well` and `Steal Spell 2`.
   - Expected: Steal As Well lets Spell Stealer cast a damaging spell and then attempts item theft only on damaging results.
   - Expected: Steal Spell 2 can permanently learn an eligible enemy spell without consuming a Blank Scroll.
@@ -583,6 +640,8 @@ remain the prompts; the evidence ledger is the running decision record.
   - Expected: Distinct harvested type count increases and appears in status text.
 - [ ] Heal a Beast Master with awakened `Shared Recovery` while a familiar/companion is present.
   - Expected: The companion receives a 25% echo of actual healing without recursive extra healing.
+- [ ] Fight with a bonded tamed companion at `Trusted Form` or above.
+  - Expected: The companion keeps its single automatic action, but its named special ability can add a small readable rider such as `Pounce`, `Guard Hide`, `Wingbeat`, `Primal Spark`, or `Keen Scent`.
 
 ### Dungeon Rendering
 - [ ] Enter upper, middle, and deep dungeon levels.
@@ -1107,8 +1166,9 @@ remain the prompts; the evidence ledger is the running decision record.
 - [ ] View at least one familiar, one tamed companion, and one summon in pygame companion-art surfaces.
   - Expected: The Class tab companion/summon list is compact, does not show art thumbnails, and uses stacked full-width rows instead of a square grid.
   - Expected: A Grand Summoner with all 11 summons shows all 11 companion/summon rows without clipping or hiding the last rows.
-  - Expected: Selecting a companion or summon opens a Character-tab-style details popup with the large companion artwork, identity, core attributes, combat stats, abilities, weaknesses, and resistances.
-  - Expected: Familiars and summons resolve through `CompanionArtManager` from `companion_art/`; tamed companions still fall back through enemy combat sprites when no bespoke companion art exists.
+  - Expected: Selecting a familiar or summon opens a Character-tab-style details popup with the large companion artwork, identity, core attributes, combat stats, abilities, weaknesses, and resistances.
+  - Expected: Selecting a tamed companion opens a Character-tab-style details popup with large artwork, identity, form/special/bond rows, and flavor notes instead of targetable HP/MP/stat-sheet detail.
+  - Expected: Familiars and summons resolve through `CompanionArtManager` from `companion_art/`; renamed tamed companions resolve artwork from their original enemy class first, then fall back through enemy combat sprites when no bespoke companion art exists.
   - Expected: Save/load data is unchanged.
 
 ### Enemy Sprite Artwork

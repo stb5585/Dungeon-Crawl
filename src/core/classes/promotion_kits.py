@@ -106,6 +106,11 @@ def default_state() -> dict[str, Any]:
             "dragon_essence": False,
             "rank_progress": {},
         },
+        "favored_enemy": {
+            "type": None,
+            "practice": 0,
+            "switches": 0,
+        },
     }
 
 
@@ -161,6 +166,15 @@ def normalize_state(state: Any) -> dict[str, Any]:
                 str(key): _clamp_int(value, 0, 999)
                 for key, value in progress.items()
             } if isinstance(progress, dict) else {},
+        }
+
+    favored = state.get("favored_enemy", {})
+    if isinstance(favored, dict):
+        marked = favored.get("type")
+        normalized["favored_enemy"] = {
+            "type": str(marked) if marked else None,
+            "practice": _clamp_int(favored.get("practice", 0), 0, 999),
+            "switches": _clamp_int(favored.get("switches", 0), 0, 999),
         }
 
     return normalized
@@ -249,13 +263,34 @@ def end_combat(
     enemy: Any | None = None,
     exp_gain: int | None = None,
     boss: bool = False,
+    show_progress_messages: bool = False,
 ) -> str:
     msg = ""
     if victory and enemy is not None:
-        msg += gain_case_progress(character, getattr(enemy, "enemy_typ", None), 4, "victory")
-        msg += gain_companion_bond(character, 4, reason="victory")
+        case_msg = gain_case_progress(character, getattr(enemy, "enemy_typ", None), 4, "victory")
+        if show_progress_messages:
+            msg += case_msg
+        companion_bond_before = None
+        companion_state = getattr(character, "tamed_companion", None)
+        if isinstance(companion_state, dict):
+            companion_bond_before = _clamp_int(companion_state.get("bond", 0), 0, 100)
+        companion_bond_msg = gain_companion_bond(character, 4, reason="victory", announce=False)
         if getattr(enemy, "enemy_typ", None) == favorite_enemy_type(character):
-            msg += gain_companion_bond(character, 2, reason="Favored Enemy hunt")
+            companion_bond_msg += gain_companion_bond(character, 2, reason="Favored Enemy hunt", announce=False)
+            try:
+                from . import ability_mechanics
+
+                practice_msg = ability_mechanics.gain_favored_enemy_practice(character, enemy, 1, "the hunt")
+                if show_progress_messages:
+                    msg += practice_msg
+            except Exception:
+                pass
+        companion_state = getattr(character, "tamed_companion", None)
+        if isinstance(companion_state, dict) and companion_bond_before is not None:
+            companion_bond_after = _clamp_int(companion_state.get("bond", 0), 0, 100)
+            if companion_bond_after > companion_bond_before:
+                msg += f"{companion_state.get('name') or 'Companion'} bond increased.\n"
+                msg += companion_bond_msg
         msg += gain_summon_bond_for_active(
             character,
             summon_bond_gain_for_victory(
@@ -1729,18 +1764,58 @@ def companion_bond_rank(bond: int) -> str:
     return "New Bond"
 
 
-def gain_companion_bond(character: Any, amount: int, reason: str) -> str:
+def companion_bond_gain_roll(current_bond: int, amount: int, *, rng: Any = random) -> int:
+    """Return inverse-scaled tamed companion bond gain for this opportunity."""
+    current = _clamp_int(current_bond, 0, 100)
+    base = max(0, int(amount or 0))
+    if base <= 0 or current >= 100:
+        return 0
+    chance = max(0.15, 1.0 - (current / 110.0))
+    if rng.random() >= chance:
+        return 0
+    scale = max(0.25, 1.0 - (current / 125.0))
+    return max(1, min(base, int(round(base * scale))))
+
+
+def gain_companion_bond(character: Any, amount: int, reason: str, *, rng: Any = random, announce: bool = True) -> str:
     if class_name(character) not in {"Ranger", "Beast Master"}:
         return ""
     state = getattr(character, "tamed_companion", None)
     if not isinstance(state, dict) or not state.get("active"):
         return ""
     before = _clamp_int(state.get("bond", 0), 0, 100)
-    after = min(100, before + max(0, int(amount)))
+    gain = companion_bond_gain_roll(before, amount, rng=rng)
+    if gain <= 0:
+        return ""
+    after = min(100, before + gain)
     state["bond"] = after
     if after == before:
         return ""
-    return f"{state.get('name') or 'Companion'} bond grows by {after - before} from {reason} ({after}/100, {companion_bond_rank(after)}).\n"
+    evolution_msg = ""
+    try:
+        from . import ability_mechanics
+
+        enemy_class = state.get("enemy_class")
+        species = state.get("species")
+        before_evolution = ability_mechanics.tamed_companion_evolution_for_bond(before, enemy_class, species)
+        after_evolution = ability_mechanics.tamed_companion_evolution_for_bond(after, enemy_class, species)
+        state["evolution"] = after_evolution
+        roster = state.get("companions", [])
+        active_index = state.get("active_index")
+        if isinstance(roster, list) and isinstance(active_index, int) and 0 <= active_index < len(roster):
+            roster[active_index]["bond"] = after
+            roster[active_index]["evolution"] = after_evolution
+            roster[active_index]["active"] = True
+        familiar = getattr(character, "familiar", None)
+        if familiar is not None and getattr(familiar, "spec", "") == "Tamed":
+            familiar.bond = after
+            familiar.evolution = after_evolution
+        if after_evolution != before_evolution:
+            evolution_msg = f"{state.get('name') or 'Companion'} evolves into {after_evolution}.\n"
+    except Exception:
+        pass
+    bond_msg = f"{state.get('name') or 'Companion'} bond increased.\n" if announce else ""
+    return f"{bond_msg}{evolution_msg}"
 
 
 def companion_bond_multiplier(character: Any) -> float:
@@ -1842,10 +1917,16 @@ def complete_song(character: Any, song: str) -> str:
 
 
 def beast_command(character: Any, command: str) -> str:
+    from . import ability_mechanics
+
     if class_name(character) != "Beast Master":
         return f"{command} requires Beast Master training.\n"
-    if getattr(character, "familiar", None) is None:
+    if command not in ability_mechanics.BEAST_COMPANION_COMMANDS:
+        return f"{command} is not a known companion command.\n"
+    if not ability_mechanics.has_living_tamed_companion(character):
         return f"{command} requires a living tamed companion.\n"
+    if command not in ability_mechanics.available_beast_companion_commands(character):
+        return f"{character.name} has not learned {command}.\n"
     combat_state(character)["pending_companion_command"] = command
     return f"{character.name} orders their companion: {command}.\n"
 
@@ -2118,11 +2199,27 @@ def status_summary_rows(character: Any) -> list[tuple[str, str]]:
             harmony_value += " Surge ready"
         rows.append(("Harmony", harmony_value))
     if cls in {"Ranger", "Beast Master"}:
+        try:
+            from . import ability_mechanics
+
+            rows.append(("Favored Enemy", ability_mechanics.favored_enemy_label(character)))
+        except Exception:
+            pass
         companion = getattr(character, "tamed_companion", {}) or {}
-        bond = _clamp_int(companion.get("bond", 0), 0, 100)
-        rows.append(("Companion", f"{companion.get('name') or 'None'} {bond}/100 {companion_bond_rank(bond)}"))
+        active_companion = bool(isinstance(companion, dict) and companion.get("active") and companion.get("name"))
+        if active_companion:
+            bond = _clamp_int(companion.get("bond", 0), 0, 100)
+            try:
+                companion_name = ability_mechanics.tamed_companion_display_name(companion)
+            except Exception:
+                companion_name = f"{companion.get('name') or 'None'}"
+            rows.append(("Companion", companion_name))
+            evolution = str(companion.get("evolution") or "")
+            if evolution:
+                rows.append(("Form", evolution))
+            rows.append(("Bond", f"{bond}/100 {companion_bond_rank(bond)}"))
         command = state.get("pending_companion_command")
-        if command:
+        if command and active_companion:
             rows.append(("Command", f"{command} Pending"))
     if cls in {"Summoner", "Grand Summoner"}:
         name, bond = _best_summon_bond(character)

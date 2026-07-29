@@ -2373,6 +2373,23 @@ class Player(Character):
         if self.familiar:
             special = None
             target = enemy
+            if getattr(self.familiar, "spec", "") == "Tamed":
+                command_text = ability_mechanics.resolve_tamed_companion_command(self, target)
+                if command_text:
+                    return command_text
+                if not ability_mechanics.tamed_companion_should_auto_act(self):
+                    return ""
+                familiar_str += f"{self.familiar.name} attacks {target.name}.\n"
+                attack_str, _hit, _crit = self.familiar.weapon_damage(target, dmg_mod=0.75)
+                familiar_str += attack_str
+                familiar_str += ability_mechanics.tamed_companion_special_turn(
+                    self,
+                    target,
+                    hit=_hit,
+                    crit=_crit,
+                )
+                return familiar_str
+
             if not random.randint(0, 3):
                 if self.familiar.spec == "Defense":  # skills and spells
                     while True:
@@ -2442,10 +2459,6 @@ class Player(Character):
                     elif special.typ == 'Spell':
                         familiar_str += f"{self.familiar.name} casts {special.name}.\n"
                         familiar_str += special.cast(self, target=target, fam=True)
-                if self.familiar.spec == "Tamed":
-                    familiar_str += f"{self.familiar.name} attacks {target.name}.\n"
-                    attack_str, _hit, _crit = self.familiar.weapon_damage(target, dmg_mod=0.75)
-                    familiar_str += attack_str
         return familiar_str
 
     def transform(self, back=False):
@@ -2514,6 +2527,13 @@ class Player(Character):
         self.effects(end=True)
         if all([self.is_alive(), not flee]):
             restore_defeat_identity(enemy)
+            if getattr(enemy, "tamed_by_player", False) or getattr(enemy, "no_victory_rewards", False):
+                endcombat_str = f"{enemy.name} leaves the fight as a companion.\n"
+                endcombat_str += promotion_kits.end_combat(self, victory=False, enemy=enemy)
+                if textbox:
+                    textbox.print_text_in_rectangle(endcombat_str)
+                return endcombat_str
+
             exp_gain = int(enemy.experience)
             try:
                 exp_gain = max(0, int(exp_gain * float(self.exp_gain_multiplier())))

@@ -600,7 +600,7 @@ class DungeonHUD:
         persistent_rows: list[tuple[str, str, tuple[int, int, int]]] = []
 
         familiar = getattr(player_char, "familiar", None)
-        if familiar:
+        if familiar and getattr(familiar, "spec", "") != "Tamed":
             familiar_name = getattr(familiar, "name", "Familiar")
             spec = getattr(familiar, "spec", "")
             level = self._level_value(familiar)
@@ -937,8 +937,8 @@ class DungeonHUD:
                         elif is_funhouse_wall:
                             wall_color = (130, 90, 145) if is_visited else (85, 70, 95)
                             pygame.draw.rect(self.screen, wall_color, tile_rect)
-                        elif is_fire_path and is_visited:
-                            # Discovered FirePath tiles render as red heat zones on the minimap
+                        elif is_fire_path:
+                            # FirePath stays visually distinct as soon as it is discovered.
                             pygame.draw.rect(self.screen, (175, 55, 55), tile_rect)
                         elif is_discovered_special and not is_visited:
                             # Persist discovered special tiles without re-enabling broad near-tile shading

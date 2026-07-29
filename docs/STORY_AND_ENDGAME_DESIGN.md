@@ -110,6 +110,23 @@ log context. Phase tuning, bespoke relic-counter interactions beyond
 balance require a promoted spec. Numeric combat changes should wait for
 simulator or playtest evidence where relevant.
 
+Safe presentation-only follow-up can be promoted before numeric tuning if it
+does all of the following:
+
+- uses existing special-event/story-card/dialogue surfaces;
+- preserves Vesperion stats, AI, phase thresholds, `Choose Fate`, Guardian
+  counters, route gates, rewards, and death/victory bookkeeping;
+- makes the false-final, Liminal return, true-final prelude, victory, ending,
+  and final-room reminder read as one coherent sequence;
+- keeps the ending focused on preserving Voluntas rather than claiming a new
+  object, title, relic, or power.
+
+Preferred first slice: final-room and ending presentation polish. Add a short
+pre-combat state recap, a clearer transition from true-final victory into the
+Voluntas ending, and a post-completion final-room reminder variant that
+acknowledges the road is closed without pretending Vesperion's tragedy erased
+ordinary grief.
+
 ### Town Tragedy Route
 
 Initial shared-content polish has shipped for Waitress, Joffrey, and busboy
@@ -117,6 +134,13 @@ adjacent beats. Broader rewrites must preserve the human grief of the tragedy
 and the existing true-final reframing. Vesperion may pressure, observe, and
 exploit choices around the tragedy, but the pain remains real and should not be
 erased by later scenes.
+
+Postgame town fallout remains a strong story-polish candidate. It should be
+reactive and local rather than a second ending: after `main_story_complete`,
+selected tavern/town dialogue may acknowledge the Busboy's absence, the
+Waitress/Joffrey grief, and the changed air around Silvana. This must not
+rewrite completed quests, remove NPCs from functional menus, change shop or
+bounty behavior, or imply that Voluntas repairs all suffering.
 
 ### Hooded Figure Polish
 
@@ -132,12 +156,76 @@ Bundle V3 audits this boundary only: legacy Devil class, event, ability data,
 and tests remain present, while the implemented final route remains Vesperion.
 Balor owns the old demonic visual direction.
 
+### Red Dragon Continuity
+
+The Red Dragon currently supports several late-game and class-story meanings:
+the Hooded Figure's Red Dragon progression quest, the Lancer/Dragoon
+`Recover` route that restores Kaelenon, `Dragon's Fury`/Dracarys-style class
+progression, and the Grand Summoner Zahhak unlock. This is valid mechanically
+but needs narrative continuity before more dragon content is added.
+
+Continuity correction should explain why one Red Dragon encounter can carry
+multiple story outcomes without making any class route canonically invalid.
+The preferred interpretation is layered rather than exclusive:
+
+- the dungeon Red Dragon is a real boss encounter and progression barrier;
+- Kaelenon is a trapped identity or transformed consciousness that only the
+  Lancer/Dragoon `Recover` route can restore;
+- Zahhak is a summonable draconic echo, pact, or spirit claimed from the
+  encounter aftermath rather than a second living Red Dragon;
+- ordinary non-Lancer/Dragoon victories remain complete victories and should
+  not be framed as "wrong."
+
+The first safe slice is copy-only: update quest, victory, and class unlock
+messaging to distinguish boss defeat, Kaelenon restoration, and Zahhak binding.
+Do not change Red Dragon stats, floor gates, summon availability, class-kit
+mechanics, boss-room state, old saves, or reward eligibility without a separate
+mechanical spec.
+
+### Postgame And Harder Replay
+
+A post-final save/replay feature remains deferred behind a save/profile spec.
+The story direction is sound: after the Voluntas ending and tavern epilogue,
+the player may be offered a postgame save at a stable threshold such as The
+Thirsty Dog, the Liminal exit, or the final-room aftermath. That save can mark
+the character as a completed-game hero for future harder replay modes.
+
+The feature must define:
+
+- whether completion is stored per save, per profile, or both;
+- whether a completed hero can keep inventory, gold, level, class, ring state,
+  Bestiary, quest state, and main-story flags;
+- whether up to three completed characters are selected into a new harder run,
+  and how duplicate quest-critical items, relics, Class Rings, companions,
+  summons, and unique rewards are handled;
+- how harder difficulty scales enemies, rewards, shops, bounties, and bosses
+  without invalidating existing solo saves;
+- how curses and pygame expose the selection, warning, and save confirmation
+  flow.
+
+Do not implement this as a loose post-ending autosave. It touches save
+compatibility, party composition, difficulty, economy, quest reset policy, and
+endgame story framing.
+
 ## Story-Content Decision Block
 
 Future story work should define the content beat, trigger, prerequisites, repeat
 behavior, save flags, special-event keys, UI surface, spoiler boundaries,
 affected NPCs/tiles/enemies, fallback behavior for old saves, regression tests,
 and playtest checklist entry.
+
+For endgame polish, the block should also state whether the work is:
+
+- story-state-only presentation;
+- asset/audio presentation;
+- route-gating;
+- reward/economy;
+- combat tuning;
+- save/profile/postgame progression.
+
+Only the first two categories can usually be promoted without simulator or
+save-migration evidence. The others need explicit old-save behavior, frontend
+parity, and regression coverage before code changes.
 
 ## Core Direction
 

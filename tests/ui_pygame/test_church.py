@@ -273,8 +273,11 @@ def test_handle_promotion_success_and_cancel(monkeypatch):
     assert player.combat.magic_def == 12
     assert "Promotion rules updated." not in FakePopup.messages
     assert not any("Character Menu tab available" in message for message in FakePopup.messages)
-    assert "Congratulations! You are now a Weapon Master." in FakePopup.messages
+    assert any("Congratulations! You are now a Weapon Master." in message for message in FakePopup.messages)
     assert any("New Character Menu tab: Weapon Discipline" in message for message in FakePopup.messages)
+    first_promotion_messages = list(FakePopup.messages)
+    assert len(first_promotion_messages) == 1
+    assert "New Character Menu tab: Weapon Discipline" in first_promotion_messages[0]
 
     player.cls = BaseClass()
     player.level.level = 30
@@ -312,8 +315,44 @@ def test_handle_promotion_grants_cleric_sanctuary_ward_immediately(monkeypatch):
     assert player.level.level == 1
     assert "Sanctuary Ward" in player.spellbook["Skills"]
     assert "Smite" in player.spellbook["Spells"]
-    assert any("Learned abilities:" in message for message in FakePopup.messages)
-    assert any("Skill: Sanctuary Ward" in message for message in FakePopup.messages)
+    assert len(FakePopup.messages) == 1
+    assert "Congratulations! You are now a Cleric." in FakePopup.messages[0]
+    assert "Learned abilities:" in FakePopup.messages[0]
+    assert "Skill: Sanctuary Ward" in FakePopup.messages[0]
+    assert "Sanctuary Ward" in FakePopup.messages[0]
+
+
+def test_handle_promotion_grants_ranger_tame_and_favored_enemy_immediately(monkeypatch):
+    FakePopup.messages = []
+    FakePopup.show_kwargs = []
+    player = _make_player()
+    player.cls = SimpleNamespace(name="Pathfinder", equipment={})
+    player.level.level = 30
+    presenter = _make_presenter()
+
+    monkeypatch.setattr(church.ChurchManager, "_load_background", lambda self: setattr(self, "background", None))
+    monkeypatch.setattr("src.ui_pygame.gui.church.ConfirmationPopup", FakePopup)
+    monkeypatch.setattr("src.ui_pygame.gui.church.remove_equipment", lambda slot: f"default-{slot}")
+
+    class FakePromotionScreen:
+        def __init__(self, *_args, **_kwargs):
+            pass
+
+        def navigate(self):
+            return "Ranger"
+
+    monkeypatch.setattr("src.ui_pygame.gui.church.PromotionScreen", FakePromotionScreen)
+
+    manager = church.ChurchManager(presenter, player)
+    manager.handle_promotion()
+
+    assert player.cls.name == "Ranger"
+    assert player.level.pro_level == 2
+    assert player.level.level == 1
+    assert "Tame" in player.spellbook["Skills"]
+    assert "Favored Enemy" in player.spellbook["Skills"]
+    assert "Skill: Tame" in FakePopup.messages[0]
+    assert "Skill: Favored Enemy" in FakePopup.messages[0]
 
 
 def test_promotion_mechanic_help_only_shows_for_extra_tabs(monkeypatch):
@@ -331,6 +370,22 @@ def test_promotion_mechanic_help_only_shows_for_extra_tabs(monkeypatch):
 
     message_count = len(FakePopup.messages)
     manager._show_promotion_mechanic_help("Spell Stealer")
+    assert len(FakePopup.messages) == message_count
+
+    for demoted_class in (
+        "Shadowcaster",
+        "Spellblade",
+        "Knight Enchanter",
+        "Thief",
+        "Rogue",
+        "Assassin",
+        "Ninja",
+        "Monk",
+        "Master Monk",
+        "Priest",
+        "Archbishop",
+    ):
+        manager._show_promotion_mechanic_help(demoted_class)
     assert len(FakePopup.messages) == message_count
 
 

@@ -181,9 +181,10 @@ Completed follow-up posture:
      polish before promotion.
    - Decision: defer until core gameplay is complete, then re-evaluate need and
      scope.
-3. Broader companion-management UI, summon action previews, and combat-side
-   companion art placement remain deferred until playtest confirms the
-   Character Menu presentation needs expansion.
+3. Town stable management, deeper evolution-specific companion behavior,
+   summon action previews, and combat-side companion art placement remain
+   deferred until playtest confirms the Character Menu presentation needs
+   expansion.
 
 ## Presentation And Asset Gates
 
@@ -315,12 +316,22 @@ promoted.
 
 ### Additional Storyline/Endgame Content
 
-- Currently Red Dragon feeds multiple class storylines (Kaelenon and Zahhak);
-  there needs to be a continuity correction or an explanation for the varying
-  storylines
-- Add a post final boss/end game save spot; the user can now replay the game on
-  much harder difficulty using up to 3 characters that have also completed the
-  game
+Storyline follow-up should be promoted as small slices with one owner doc, one
+trigger, and one validation target. Current candidates:
+
+| Candidate | Status | First safe slice | Do not change without spec |
+| --- | --- | --- | --- |
+| Final-room and ending presentation polish | `Promote Soon` | Add story-card/dialogue polish that connects true-final prelude, victory, Voluntas ending, tavern epilogue, and final-room reminder. | Vesperion stats, AI, phase thresholds, `Choose Fate`, rewards, death/victory bookkeeping, or true-final gates. |
+| Postgame town fallout | `Promote Soon` | Add local post-`main_story_complete` tavern/town acknowledgement for Busboy absence, Waitress/Joffrey grief, and Silvana after Voluntas. | Shop access, bounties, NPC availability, quest completion, rewards, or town routing. |
+| Red Dragon continuity correction | `Ready` | Copy-only continuity pass that distinguishes Red Dragon boss defeat, Kaelenon restoration, and Zahhak binding without declaring non-Dragoon wins invalid. | Red Dragon floor gate, boss-room state, summon unlocks, Lancer/Dragoon mechanics, `Dragon's Fury`, rewards, or old saves. |
+| Post-final save and harder replay | `Needs Spec` | One-page save/profile/difficulty spec for a completed-game marker and up to three completed heroes in harder replay. | Autosave behavior, inventory carryover, quest reset rules, profile storage, difficulty scaling, economy, or party composition. |
+| Endgame asset/audio polish | `Needs Evidence` | Review existing Vesperion/Reflection/Acolyte portraits, Vesperion combat sprite, story-card timing, and final-combat audio routing before generating or tuning assets. | Combat mechanics, route gates, or dialogue availability. |
+
+Near-term preference is the first two `Promote Soon` slices because they are
+story-state-only and can be validated through special-event/dialogue checks plus
+manual endgame playtest. The post-final save/replay idea is larger than story
+copy; it needs save/load, profile, party, difficulty, economy, and old-save
+contracts before implementation.
 
 ## Systems, Audio, And Meta Gates
 
@@ -336,6 +347,16 @@ Systems, audio, and meta planning is split across durable owner docs:
   numeric combat tuning gates.
 
 ## Other Bugfixes and Improvements
+
+### Improvements
+
+- Refactor ability system; determine how and when to earn/learn abilities
+  - makes gameplay more immersive; prevents the need to remove abilities that do no fit the class design
+  - allows player to select what they learn
+  - design questions
+    - should abilities stay level-based?
+    - add stat requirements
+    - make abilities purchasable instead
 
 ### Playtest Findings
 

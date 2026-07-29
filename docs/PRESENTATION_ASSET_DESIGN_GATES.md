@@ -44,6 +44,35 @@ Shop screen mouse support has shipped for main shop options, item rows, subtype
 tabs, and item-list wheel scrolling while preserving keyboard behavior and
 guarded input.
 
+## Endgame Story Presentation Polish
+
+Endgame presentation polish should reuse the existing story-card, dialogue, and
+special-event surfaces before adding new UI. The target sequence is:
+
+1. false-final Vesperion transition into the Liminal Gap;
+2. Guardian clue completion and Seventh Seat reveal;
+3. Acolyte warning and Reflection/Psychopomp prelude;
+4. return from The Liminal Gap;
+5. true-final Vesperion prelude, choice argument, and tragedy reframing;
+6. true-final victory, Voluntas ending, tavern epilogue, and final-room
+   reminder.
+
+Presentation polish may improve pacing, page breaks, title text, portrait
+routing, continue/skip behavior, and audio cue timing. It must not change
+story flags, combat stats, rewards, inventory, quest state, save state, death
+flow, or true-final gates.
+
+Preferred first slice: review and polish page breaks/title treatment for the
+true-final victory, `The Forsaken Tenet Ending`, and `The Thirsty Dog Epilogue`
+so they feel like a deliberate ending sequence rather than three unrelated
+popups. Keep curses parity by preserving shared content text and fallback
+plain-text rendering.
+
+Endgame story-card polish should be validated on both fresh endgame state and a
+post-`main_story_complete` save. Re-entering the final room after completion
+should show a concise reminder, not replay the final boss or duplicate the
+ending.
+
 ## Combat Status Art
 
 Evasive Guard now uses the approved `evasive_guard.png` status icon through the
@@ -226,6 +255,12 @@ text unless that future pass explicitly adds a matching runtime surface.
 - `waitress_grief`: Waitress locket/Joffrey grief scene or variant.
 - `waitress_mad`: optional hostile grief-transformed variant, separate from
   the existing Mad Waitress enemy sprite.
+- `vesperion_true_final_victory`: optional final-room story card art, distinct
+  from the full-body combat sprite and dialogue portrait.
+- `voluntas_ending`: optional abstract ending-card art; `Voluntas` must remain
+  a principle, not a person or portrait target.
+- `thirsty_dog_epilogue`: optional tavern aftermath art after
+  `main_story_complete`, focused on absence and aftermath rather than triumph.
 
 Venue-wide scenes and location-panel art remain deferred to a separate future
 batch.
@@ -247,7 +282,9 @@ screens.
 
 Familiar and summon artwork uses `CompanionArtManager` and
 `src/ui_pygame/assets/companion_art/companion_art_map.json`. Runtime companion
-PNGs must remain transparent 512x512 sprites. Tamed companions and any future
+PNGs must remain transparent 512x512 sprites. Renamed tamed companions resolve
+art from their original enemy class before nickname/name so `Nickname (Enemy
+Name)` still finds the correct animal sprite. Tamed companions and any future
 unmapped companion continue to fall back through `EnemyCombatSpriteManager`;
 do not remove that fallback path when adding new companion art.
 
@@ -255,12 +292,16 @@ In the Character Menu, the Class tab should keep companion and summon rows
 compact and text-first. The companion/summon overview roster uses stacked
 full-width rows, not a square grid, and must fit all 11 summon creatures without
 requiring hidden rows. Companion/summon artwork belongs in the selected
-companion details popup, which should follow the Character tab's visual pattern:
-art/identity/core attributes on the left and combat stats, abilities, and
-resistance groups on the right.
+companion details popup, which should follow the Character tab's visual pattern.
+Familiars and summons show art/identity/core attributes on the left and combat
+stats, abilities, and resistance groups on the right. Tamed companions are not
+targetable/resource-managed actors in the current UI, so their details popup
+shows art/identity, form, trait, bond, and flavor notes instead of HP/MP/stat
+sheet rows.
 
 For classes with non-companion usage mechanics, the middle Character Menu tab
-is renamed to that mechanic instead of showing a generic Class tab. Weapon
+is renamed to that mechanic instead of showing a generic Class tab or
+`Promotion Tier` summary. Weapon
 Master, Berserker, and Grandmaster of Arms use the `Weapon Discipline` tab,
 with a full-width per-weapon board, item icons, rank/XP progress bars, and
 equipped-weapon highlighting. Classes without a class-usage mechanic hide the

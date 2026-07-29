@@ -30,6 +30,53 @@ Early-game copy must not name Vesperion, Voluntas, the busboy identity, the
 Hooded Figure truth, or true-final route mechanics. It may hint at old
 principles, relic-light, sealed chambers, and incomplete reports.
 
+## Late-Game Quest Continuity Hooks
+
+Late-game quest copy can acknowledge story truths only after the relevant route
+has earned them. This document owns quest-facing continuity language; the
+larger Vesperion/Voluntas route still belongs to
+`STORY_AND_ENDGAME_DESIGN.md`.
+
+### Red Dragon Continuity
+
+The Red Dragon encounter currently feeds ordinary progression, Lancer/Dragoon
+Kaelenon restoration, and Grand Summoner Zahhak binding. Quest text should
+separate those meanings without making one route invalidate another.
+
+Allowed copy direction:
+
+- Hooded Figure/Red Dragon progression can describe the boss as a dangerous
+  barrier and source of draconic power.
+- Lancer/Dragoon `Recover` text can reveal Kaelenon as a trapped or restored
+  identity inside the encounter.
+- Zahhak unlock text can frame the summon as a draconic echo, spirit, pact, or
+  aftermath binding rather than the same restored person.
+- Non-Lancer/Dragoon victories remain narratively complete and should not be
+  described as failed rescues.
+
+Any copy-only continuity pass must preserve current quest names, boss target,
+floor gate, rewards, summon unlock behavior, class unlock behavior, and
+boss-room state. Mechanical changes require a promoted class/story spec.
+
+### Postgame Town Dialogue
+
+After `main_story_complete`, selected NPCs may receive lightweight reactive
+dialogue about the Busboy's absence, the Waitress/Joffrey tragedy, the changed
+town atmosphere, or the hero's return from the final threshold. This should be
+local flavor and closure, not a hidden quest chain.
+
+Postgame dialogue must not:
+
+- reopen completed quests;
+- create new required objectives;
+- remove town services;
+- alter bounties, shops, church, inn, barracks, or storage behavior;
+- imply that Voluntas erases grief or reverses deaths.
+
+The preferred first slice is a tavern-focused postgame dialogue pass for the
+Barkeep, Waitress, and one neutral town witness, gated only by
+`main_story_complete` and repeat-safe across saves.
+
 ## Quest System Contract
 
 Quest records may optionally define staged metadata:
@@ -84,3 +131,7 @@ relic count reflects the actual saved inventory.
 - The six-relic count and completion behavior remain correct in curses and
   pygame quest menus.
 - Old-save migration covers 0, 1, 5, 6, completed, and turned-in relic states.
+- Red Dragon continuity copy distinguishes progression victory, Kaelenon
+  restoration, and Zahhak binding without changing quest gates or rewards.
+- Postgame town dialogue appears only after `main_story_complete`, is
+  repeat-safe, and does not mutate quest/shop/bounty/town service state.

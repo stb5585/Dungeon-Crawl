@@ -14,12 +14,13 @@ import sys
 import pygame
 
 from src.core import enemies, main_story
-from src.core.classes import astromancer, demonologist, grandmaster, promotion_kits
+from src.core.classes import ability_mechanics, astromancer, demonologist, grandmaster, promotion_kits
 from src.core.combat.battle_engine import BattleEngine, STOLEN_SCROLL_CHOICE_PREFIX
 from src.core.character import Character
 from src.core.combat.battle_logger import BattleLogger
 from src.core.player import LIMINAL_GAP_ENTRY_FACING, LIMINAL_GAP_ENTRY_POS, Player
 from .combat_view import CombatView
+from .character_naming import CompanionNamingScreen
 from .input_guards import prepare_guarded_input, release_guard_allows_input, update_input_armed_from_event
 from .level_up import LevelUpScreen
 from .mouse_helpers import hit_index, is_left_click, mouse_position
@@ -69,6 +70,16 @@ def _battle_log_slug(value: object) -> str:
     text = str(value or "unknown").strip().lower()
     slug = "".join(char if char.isalnum() else "-" for char in text)
     return "-".join(part for part in slug.split("-") if part) or "unknown"
+
+
+def _player_facing_victory_line(line: str, *, debug_mode: bool) -> str:
+    """Return a less diagnostic victory-popup line outside debug mode."""
+    if debug_mode:
+        return line
+    if " bond grows by " in line and " from " in line:
+        name = line.split(" bond grows by ", 1)[0].strip()
+        return f"{name}'s bond grows stronger."
+    return line
 
 
 class GUICombatManager:
@@ -522,6 +533,10 @@ class GUICombatManager:
             allowed = {"Surface"} if allowed is None else allowed & {"Surface"}
         names = []
         for name, skill in getattr(player_char, "spellbook", {}).get("Skills", {}).items():
+            if allowed is None and name in ability_mechanics.BEAST_COMPANION_COMMANDS:
+                continue
+            if allowed is None and name == "Tame":
+                continue
             is_resolve = self._is_resolve_skill(skill)
             if resolve is not None and is_resolve != resolve:
                 continue
@@ -870,7 +885,8 @@ class GUICombatManager:
                 if not enemy.is_alive():
                     if vesperion_false_final:
                         return self._handle_vesperion_false_final(player_char, enemy)
-                    self.combat_view.enemy_dies(enemy)
+                    if not getattr(enemy, "tamed_by_player", False):
+                        self.combat_view.enemy_dies(enemy)
                     break
 
                 if vesperion_false_final and self._vesperion_false_final_hp_threshold_met(enemy):
@@ -1395,6 +1411,18 @@ class GUICombatManager:
                 return None
             choice = selected_spell
 
+        elif action == "Companion":
+            if player_char.abilities_suppressed():
+                reason = "the anti-magic field" if getattr(player_char, "anti_magic_active", False) else "silence"
+                self.combat_view.add_combat_message(
+                    f"{player_char.name} cannot command their companion because of {reason}!"
+                )
+                return None
+            selected_command = self._select_companion_command(player_char, enemy)
+            if not selected_command:
+                return None
+            choice = selected_command
+
         elif action == "Skills":
             if actor.abilities_suppressed():
                 reason = "the anti-magic field" if getattr(actor, "anti_magic_active", False) else "silence"
@@ -1470,6 +1498,10 @@ class GUICombatManager:
         for line in result.message.strip().split('\n'):
             if line.strip():
                 self.combat_view.add_combat_message(line)
+        favored_msg = ability_mechanics.consume_favored_enemy_bonus_message(player_char)
+        for line in favored_msg.strip().split('\n'):
+            if line.strip():
+                self.combat_view.add_combat_message(line)
 
         action_fled = result.fled or bool(getattr(self.engine, "flee", False))
         if engine_action == "Use Skill" and choice == "Smoke Screen" and action_fled:
@@ -1480,12 +1512,14 @@ class GUICombatManager:
         # Show damage flash for enemy damage
         damage_to_enemy = max(0, enemy_hp_before - enemy.health.current)
         showed_damage_effect = False
-        if damage_to_enemy > 0:
+        tamed_result = bool(getattr(enemy, "tamed_by_player", False))
+        if damage_to_enemy > 0 and not tamed_result:
             self.combat_view.enemy_take_damage(enemy)
             self._show_combat_damage_effect("enemy", action, choice, result.message, damage_to_enemy)
             showed_damage_effect = True
         else:
-            self._show_combat_heal_text("enemy", max(0, enemy.health.current - enemy_hp_before))
+            if not tamed_result:
+                self._show_combat_heal_text("enemy", max(0, enemy.health.current - enemy_hp_before))
 
         # Show damage flash for player damage (from reflected/self-damage skills)
         active_hp_after = getattr(getattr(actor, "health", None), "current", actor_hp_before)
@@ -1516,6 +1550,32 @@ class GUICombatManager:
             self._refresh_display_actions()
             return "continue_turn"
         return "action_taken"
+
+    def _prompt_for_tamed_companion_name(self, player_char, enemy, background_surface=None) -> None:
+        """Ask for an optional nickname after a successful tame."""
+        state = ability_mechanics.normalize_tamed_companion(getattr(player_char, "tamed_companion", None))
+        companion_name = str(state.get("name") or getattr(enemy, "name", "Companion"))
+        screen = CompanionNamingScreen(
+            self.presenter,
+            companion_name,
+            species=str(state.get("species") or ""),
+            form=str(state.get("evolution") or ""),
+            special=str(state.get("special_ability") or ""),
+        )
+        nickname = screen.navigate(
+            default="",
+            flush_events=True,
+            require_key_release=True,
+            background_surface=background_surface,
+        )
+        nickname = str(nickname or "").strip()
+        if not nickname:
+            return
+        ability_mechanics.rename_tamed_companion(player_char, nickname)
+        display_name = ability_mechanics.tamed_companion_display_name(getattr(player_char, "tamed_companion", None))
+        original_name = getattr(enemy, "name", "companion")
+        if display_name and display_name != original_name:
+            self.combat_view.add_combat_message(f"{original_name} answers to {display_name}.")
 
     def _select_summoner_support_action(self, player_char, enemy):
         """Show the active-summon support menu and return display/action/choice seeds."""
@@ -1841,6 +1901,67 @@ class GUICombatManager:
                     )
                     if confirmed:
                         return skills[selected]
+
+    def _select_companion_command(self, player_char, enemy):
+        """Show Beast Master companion command selection and return command name."""
+        commands = ability_mechanics.available_beast_companion_commands(player_char)
+        if not commands:
+            self.combat_view.add_combat_message("No companion commands available!")
+            self._pause_with_events(500)
+            return None
+
+        selected = 0
+        scroll_offset = 0
+        input_armed = self._clear_pending_input()
+        frame_player = self._selection_frame_player(player_char)
+        while True:
+            self._render_combat_frame(frame_player, enemy, [], -1)
+            command_options = list(commands)
+            descriptions = [
+                getattr(player_char.spellbook["Skills"].get(name), "description", "")
+                for name in commands
+            ]
+            self._render_described_selection_menu(
+                "Command Companion",
+                command_options,
+                selected,
+                scroll_offset,
+                descriptions,
+            )
+            pygame.display.flip()
+
+            input_armed = release_guard_allows_input(True, input_armed)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit(0)
+                input_armed = self._arm_guarded_input(event, input_armed)
+                if event.type == pygame.KEYDOWN and not input_armed:
+                    continue
+                elif event.type == pygame.KEYDOWN:
+                    if event.key in [pygame.K_ESCAPE, pygame.K_BACKSPACE]:
+                        return None
+                    elif event.key in [pygame.K_UP, pygame.K_w]:
+                        selected = (selected - 1) % len(commands)
+                    elif event.key in [pygame.K_DOWN, pygame.K_s]:
+                        selected = (selected + 1) % len(commands)
+                    elif event.key == pygame.K_PAGEUP:
+                        selected = max(0, selected - 10)
+                    elif event.key == pygame.K_PAGEDOWN:
+                        selected = min(len(commands) - 1, selected + 10)
+                    elif event.key in [pygame.K_RETURN, pygame.K_SPACE]:
+                        return commands[selected]
+                    scroll_offset = self._scroll_offset_for_selection(selected, scroll_offset)
+                elif event.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN):
+                    selected, scroll_offset, confirmed = self._selection_menu_mouse_update(
+                        event,
+                        command_options,
+                        selected,
+                        scroll_offset,
+                        input_armed,
+                    )
+                    if confirmed:
+                        return commands[selected]
 
     def _select_resolve_ability(self, player_char, enemy):
         """Show Resolve ability selection menu and return selected skill name."""
@@ -2622,30 +2743,41 @@ class GUICombatManager:
             return False
 
         elif outcome.result == "victory":
+            tamed_victory = bool(getattr(enemy, "tamed_by_player", False))
             # Build end messages from outcome
-            end_messages = [f"Victory! {enemy.name} defeated!"]
+            end_messages = [f"{enemy.name} tamed!" if tamed_victory else f"Victory! {enemy.name} defeated!"]
             # Parse the outcome message for display lines
             for line in outcome.message.strip().split('\n'):
                 if line.strip():
-                    end_messages.append(line)
+                    end_messages.append(
+                        _player_facing_victory_line(
+                            line,
+                            debug_mode=self._debug_mode_enabled(),
+                        )
+                    )
 
             if outcome.level_up:
                 end_messages.append("\nLEVEL UP!")
 
-            # Render final combat state and let death animation complete.
-            clock = pygame.time.Clock()
-            for _ in range(70):
-                self._render_combat_frame(player_char, enemy, [], -1)
-                pygame.display.flip()
-                clock.tick(60)
-                for event in pygame.event.get():
-                    if event.type == pygame.QUIT:
-                        pygame.quit()
-                        sys.exit(0)
-                    self._handle_combat_log_scroll_event(event)
+            if not tamed_victory:
+                # Render final combat state and let death animation complete.
+                clock = pygame.time.Clock()
+                for _ in range(70):
+                    self._render_combat_frame(player_char, enemy, [], -1)
+                    pygame.display.flip()
+                    clock.tick(60)
+                    for event in pygame.event.get():
+                        if event.type == pygame.QUIT:
+                            pygame.quit()
+                            sys.exit(0)
+                        self._handle_combat_log_scroll_event(event)
 
-            self._pause_with_events(900)
+                self._pause_with_events(900)
+            else:
+                self._refresh_combat_background(player_char, enemy)
             _show_end_popup("\n".join(end_messages))
+            if tamed_victory:
+                self._prompt_for_tamed_companion_name(player_char, enemy, self._combat_background)
 
             if outcome.level_up:
                 self.level_up_screen.show_level_up(player_char, self.game)

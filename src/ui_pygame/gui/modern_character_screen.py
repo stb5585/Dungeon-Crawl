@@ -12,7 +12,20 @@ from src.ui_pygame.assets.companion_art_manager import get_companion_art_manager
 from src.ui_pygame.assets.item_render_manager import get_item_render_manager
 from src.ui_pygame.assets.portrait_manager import PortraitManager
 from src.core import items
-from src.core.classes import ability_mechanics, grandmaster, paladin, promotion_kits, promotion_mechanic_tab_label
+from src.core.classes import (
+    ability_mechanics,
+    archdruid,
+    astromancer,
+    bard,
+    demonologist,
+    grandmaster,
+    lycan,
+    nature_totems,
+    paladin,
+    promotion_kits,
+    promotion_mechanic_tab_label,
+    wizard,
+)
 
 from .confirmation_popup import ConfirmationPopup, draw_popup_close_button, popup_close_clicked
 from .input_guards import prepare_guarded_input, release_guard_allows_input, update_input_armed_from_event
@@ -147,7 +160,8 @@ class ClassCompanionDetailsPopup:
         identity_rows = self.parent_screen.companion_summary_rows(self.kind, self.companion)
         identity_rows = [row for row in identity_rows if row[0] != "Companion"]
         identity_rows.insert(0, ("Name", name))
-        identity_rows.append(("XP", self.parent_screen._companion_xp_label(self.companion)))
+        if getattr(self.companion, "spec", "") != "Tamed":
+            identity_rows.append(("XP", self.parent_screen._companion_xp_label(self.companion)))
         bond = self.parent_screen._summon_bond_label(self.player_char, self.companion)
         if bond is not None:
             identity_rows.append(("Bond", bond))
@@ -235,6 +249,43 @@ class ClassCompanionDetailsPopup:
             max_lines=available_lines,
         )
 
+    def _draw_tamed_companion_flavor(self, rect: pygame.Rect, y: int) -> None:
+        self.parent_screen._draw_text("Companion Notes", self.large_font, self.colors.GOLD, rect.left + 16, y, rect.width - 32)
+        y += self.large_font.get_height() + 10
+        notes = [
+            getattr(self.companion, "inspect", lambda: "")(),
+            "The animal acts through bond and instinct rather than a visible resource pool.",
+            "Evolution reflects growing trust and battlefield temperament; deeper effects are a future tuning pass.",
+        ]
+        for note in notes:
+            if not str(note).strip():
+                continue
+            y = self.parent_screen._draw_wrapped_text(
+                str(note).strip(),
+                self.normal_font,
+                self.colors.WHITE,
+                rect.left + 16,
+                y,
+                rect.width - 32,
+                max_lines=3,
+            )
+            y += 12
+
+    def _draw_tamed_companion_bond_panel(self, rect: pygame.Rect, y: int) -> None:
+        rows = self.parent_screen.companion_summary_rows(self.kind, self.companion)
+        rows = [(label, value) for label, value in rows if label not in {"Companion", "Type"}]
+        if not rows:
+            rows = [("Bond", "New")]
+        self.parent_screen._draw_key_values(
+            rows,
+            rect,
+            y,
+            font=self.normal_font,
+            row_gap=8,
+            right_align_values=False,
+            bottom_limit=rect.bottom - 16,
+        )
+
     def draw(self, background_surface) -> None:
         self._draw_overlay(background_surface)
         name = self.parent_screen._attr_name(self.companion, self.kind)
@@ -249,48 +300,54 @@ class ClassCompanionDetailsPopup:
         y = self.parent_screen._draw_panel(left_rect, self.kind)
         y = self._draw_art_and_identity(left_rect, y)
         y += 16
-        self.parent_screen._draw_divider(left_rect, y - 8)
-        self.parent_screen._draw_text("Core Attributes", self.large_font, self.colors.GOLD, left_rect.left + 16, y, left_rect.width - 32)
-        y += self.large_font.get_height() + 8
-        self.parent_screen._draw_key_values(
-            self._core_attribute_rows(),
-            left_rect,
-            y,
-            font=self.small_font,
-            label_padding=36,
-            right_align_values=True,
-            row_gap=2,
-            bottom_limit=left_rect.bottom - 16,
-        )
+        if getattr(self.companion, "spec", "") == "Tamed":
+            self.parent_screen._draw_divider(left_rect, y - 8)
+            self._draw_tamed_companion_flavor(left_rect, y)
+            right_y = self.parent_screen._draw_panel(right_rect, "Bond & Form")
+            self._draw_tamed_companion_bond_panel(right_rect, right_y)
+        else:
+            self.parent_screen._draw_divider(left_rect, y - 8)
+            self.parent_screen._draw_text("Core Attributes", self.large_font, self.colors.GOLD, left_rect.left + 16, y, left_rect.width - 32)
+            y += self.large_font.get_height() + 8
+            self.parent_screen._draw_key_values(
+                self._core_attribute_rows(),
+                left_rect,
+                y,
+                font=self.small_font,
+                label_padding=36,
+                right_align_values=True,
+                row_gap=2,
+                bottom_limit=left_rect.bottom - 16,
+            )
 
-        y = self.parent_screen._draw_panel(right_rect, "Combat Stats")
-        resistance_height = min(
-            190,
-            self.large_font.get_height() + 8 + (6 * (self.small_font.get_height() + 2)),
-        )
-        resistance_top = right_rect.bottom - resistance_height - 16
-        y = self.parent_screen._draw_key_values(
-            self._combat_rows(),
-            right_rect,
-            y,
-            font=self.small_font,
-            row_gap=2,
-            right_align_values=True,
-            bottom_limit=resistance_top - 14,
-        )
-        y = self._draw_abilities(right_rect, y + 18, resistance_top - 14)
-        groups = self.parent_screen.group_resistances(self.companion)
-        y = max(y + 12, resistance_top)
-        self.parent_screen._draw_divider(right_rect, y - 10)
-        column_gap = 12
-        column_width = (right_rect.width - 32 - column_gap) // 2
-        weakness_rect = pygame.Rect(right_rect.left + 16, y, column_width, right_rect.bottom - y - 16)
-        resistance_rect = pygame.Rect(weakness_rect.right + column_gap, y, column_width, weakness_rect.height)
-        self.parent_screen._draw_text("Weaknesses", self.large_font, self.colors.RED, weakness_rect.left, y, weakness_rect.width)
-        self.parent_screen._draw_text("Resistances", self.large_font, self.colors.GREEN, resistance_rect.left, y, resistance_rect.width)
-        group_y = y + self.large_font.get_height() + 6
-        self.parent_screen._draw_resistance_group(groups["weaknesses"], weakness_rect, group_y, self.colors.RED, font=self.small_font, row_gap=2)
-        self.parent_screen._draw_resistance_group(groups["resistances"], resistance_rect, group_y, self.colors.GREEN, font=self.small_font, row_gap=2)
+            y = self.parent_screen._draw_panel(right_rect, "Combat Stats")
+            resistance_height = min(
+                190,
+                self.large_font.get_height() + 8 + (6 * (self.small_font.get_height() + 2)),
+            )
+            resistance_top = right_rect.bottom - resistance_height - 16
+            y = self.parent_screen._draw_key_values(
+                self._combat_rows(),
+                right_rect,
+                y,
+                font=self.small_font,
+                row_gap=2,
+                right_align_values=True,
+                bottom_limit=resistance_top - 14,
+            )
+            y = self._draw_abilities(right_rect, y + 18, resistance_top - 14)
+            groups = self.parent_screen.group_resistances(self.companion)
+            y = max(y + 12, resistance_top)
+            self.parent_screen._draw_divider(right_rect, y - 10)
+            column_gap = 12
+            column_width = (right_rect.width - 32 - column_gap) // 2
+            weakness_rect = pygame.Rect(right_rect.left + 16, y, column_width, right_rect.bottom - y - 16)
+            resistance_rect = pygame.Rect(weakness_rect.right + column_gap, y, column_width, weakness_rect.height)
+            self.parent_screen._draw_text("Weaknesses", self.large_font, self.colors.RED, weakness_rect.left, y, weakness_rect.width)
+            self.parent_screen._draw_text("Resistances", self.large_font, self.colors.GREEN, resistance_rect.left, y, resistance_rect.width)
+            group_y = y + self.large_font.get_height() + 6
+            self.parent_screen._draw_resistance_group(groups["weaknesses"], weakness_rect, group_y, self.colors.RED, font=self.small_font, row_gap=2)
+            self.parent_screen._draw_resistance_group(groups["resistances"], resistance_rect, group_y, self.colors.GREEN, font=self.small_font, row_gap=2)
 
         footer = "Esc/Enter: Close"
         footer_text = self.small_font.render(footer, True, self.colors.GRAY)
@@ -408,21 +465,19 @@ class ModernCharacterScreen(TownScreenBase):
         if class_name in {"Summoner", "Grand Summoner"} or summons:
             return CharacterTab("class", "Summons")
         if class_name in {"Ranger", "Beast Master"}:
-            return CharacterTab("class", "Companion")
+            return CharacterTab("class", "Companion & Hunt")
         if mechanic_label:
             return CharacterTab("class", mechanic_label)
-        if familiar is not None:
-            return CharacterTab("class", "Companion")
         return None
 
     def visible_tabs(self, player_char=None) -> tuple[CharacterTab, ...]:
         if player_char is None:
             return self.tabs
-        tabs = [self.tabs[0]]
+        equipment_tab = next((tab for tab in self.tabs if tab.key == "equipment"), self.tabs[-1])
+        tabs = [self.tabs[0], equipment_tab]
         mechanic_tab = self.class_mechanic_tab(player_char)
         if mechanic_tab is not None:
             tabs.append(mechanic_tab)
-        tabs.append(self.tabs[-1])
         return tuple(tabs)
 
     def ensure_active_tab_visible(self, player_char) -> None:
@@ -565,7 +620,8 @@ class ModernCharacterScreen(TownScreenBase):
         """Return the companion that should be visually highlighted."""
         familiar = getattr(player_char, "familiar", None)
         if familiar is not None and self._is_living_companion(familiar):
-            return "Familiar", familiar
+            kind = "Companion" if getattr(familiar, "spec", "") == "Tamed" else "Familiar"
+            return kind, familiar
 
         summons = getattr(player_char, "summons", {}) or {}
         for summon in summons.values():
@@ -577,7 +633,8 @@ class ModernCharacterScreen(TownScreenBase):
         """Return compact Character Menu rows for the selected companion."""
         name = str(getattr(companion, "name", "") or kind)
         identity = (
-            getattr(companion, "race", None)
+            getattr(companion, "species", None)
+            or getattr(companion, "race", None)
             or getattr(companion, "spec", None)
             or getattr(companion, "cls", None)
             or kind
@@ -587,12 +644,20 @@ class ModernCharacterScreen(TownScreenBase):
         if identity == name:
             identity = kind
         rows = [("Companion", name), ("Type", str(identity))]
-        level = getattr(companion, "level", None)
-        for attr in ("level", "pro_level"):
-            value = getattr(level, attr, None)
-            if value is not None:
-                rows.append(("Level", str(value)))
-                break
+        if getattr(companion, "spec", "") == "Tamed":
+            evolution = str(getattr(companion, "evolution", "") or "")
+            special = str(getattr(companion, "special_ability", "") or "")
+            if evolution:
+                rows.append(("Form", evolution))
+            if special:
+                rows.append(("Special", special))
+        if getattr(companion, "spec", "") != "Tamed":
+            level = getattr(companion, "level", None)
+            for attr in ("level", "pro_level"):
+                value = getattr(level, attr, None)
+                if value is not None:
+                    rows.append(("Level", str(value)))
+                    break
         return rows
 
     def companion_detail_rows(self, kind: str, companion: Any) -> list[tuple[str, str]]:
@@ -601,34 +666,104 @@ class ModernCharacterScreen(TownScreenBase):
         health = getattr(companion, "health", None)
         mana = getattr(companion, "mana", None)
         combat = getattr(companion, "combat", None)
-        rows.extend(
-            [
-                ("HP", f"{getattr(health, 'current', 0)}/{getattr(health, 'max', 0)}"),
-                ("MP", f"{getattr(mana, 'current', 0)}/{getattr(mana, 'max', 0)}"),
-                ("Attack", _whole_stat_text(getattr(combat, "attack", 0))),
-                ("Defense", _whole_stat_text(getattr(combat, "defense", 0))),
-                ("Magic", _whole_stat_text(getattr(combat, "magic", 0))),
-                ("Magic Defense", _whole_stat_text(getattr(combat, "magic_def", 0))),
-            ]
-        )
+        if getattr(companion, "spec", "") != "Tamed":
+            rows.extend(
+                [
+                    ("HP", f"{getattr(health, 'current', 0)}/{getattr(health, 'max', 0)}"),
+                    ("MP", f"{getattr(mana, 'current', 0)}/{getattr(mana, 'max', 0)}"),
+                    ("Attack", _whole_stat_text(getattr(combat, "attack", 0))),
+                    ("Defense", _whole_stat_text(getattr(combat, "defense", 0))),
+                    ("Magic", _whole_stat_text(getattr(combat, "magic", 0))),
+                    ("Magic Defense", _whole_stat_text(getattr(combat, "magic_def", 0))),
+                ]
+            )
         return rows
 
     def class_summary_rows(self, player_char) -> list[tuple[str, str]]:
         """Return class-specific summary rows for the Class tab."""
         if grandmaster.is_weapon_discipline_class(player_char):
             return []
-        level = getattr(player_char, "level", None)
-        pro_level = self._non_negative_int(getattr(level, "pro_level", 1), 1)
         summons = getattr(player_char, "summons", {}) or {}
         familiar = getattr(player_char, "familiar", None)
-        rows = [
-            ("Promotion Tier", str(pro_level)),
-        ]
+        class_name = self._attr_name(getattr(player_char, "cls", None), "")
+        rows = []
+        if class_name in {"Ranger", "Beast Master"}:
+            try:
+                favored = ability_mechanics.favored_enemy_label(player_char)
+            except Exception:
+                favored = "None"
+            rows.append(("Favored Enemy", favored))
+            tamed_state = ability_mechanics.normalize_tamed_companion(getattr(player_char, "tamed_companion", None))
+            roster = tamed_state.get("companions", [])
+            if isinstance(roster, list):
+                rows.append(("Held", f"{len(roster)}/{ability_mechanics.TAMED_COMPANION_ROSTER_LIMIT}"))
         if summons:
             rows.append(("Known Summons", str(len(summons))))
         if familiar is not None:
-            rows.append(("Familiar", self._attr_name(familiar, "Familiar")))
+            if getattr(familiar, "spec", "") == "Tamed":
+                rows.append(("Companion", self._attr_name(familiar, "Companion")))
+                tamed = getattr(player_char, "tamed_companion", {}) or {}
+                bond = getattr(familiar, "bond", 0)
+                evolution = str(getattr(familiar, "evolution", "") or "")
+                special = str(getattr(familiar, "special_ability", "") or "")
+                if isinstance(tamed, dict):
+                    bond = tamed.get("bond", bond)
+                    evolution = str(tamed.get("evolution") or evolution)
+                    special = str(tamed.get("special_ability") or special)
+                rows.append(("Bond", f"{self._non_negative_int(bond)}/100"))
+                if evolution:
+                    rows.append(("Form", evolution))
+                if special:
+                    rows.append(("Special", special))
+                roster = tamed.get("companions", []) if isinstance(tamed, dict) else []
+                if class_name not in {"Ranger", "Beast Master"} and isinstance(roster, list) and roster:
+                    rows.append(("Held", f"{len(roster)}/{ability_mechanics.TAMED_COMPANION_ROSTER_LIMIT}"))
+            else:
+                rows.append(("Familiar", self._attr_name(familiar, "Familiar")))
         return rows
+
+    def favored_enemy_progress_rows(self, player_char) -> list[tuple[str, int, int, str]]:
+        """Return the marked enemy-type practice row for Ranger/Beast Master."""
+        try:
+            state = ability_mechanics.favored_enemy_state(player_char)
+        except Exception:
+            state = {"type": None, "practice": 0, "switches": 0}
+        marked = state.get("type")
+        practice = self._non_negative_int(state.get("practice", 0))
+        if not marked:
+            return [("No marked quarry", 0, 100, "Use Favored Enemy in combat")]
+        return [
+            (
+                str(marked),
+                min(100, practice),
+                100,
+                f"{ability_mechanics.favored_enemy_rank(practice)} - {practice} practice",
+            )
+        ]
+
+    def _draw_favored_enemy_progress_panel(self, player_char, rect: pygame.Rect, y: int) -> int:
+        """Draw Ranger/Beast Master enemy-type tracking mastery progress."""
+        self._draw_text("Tracking Mastery", self.normal_font, self.colors.GOLD, rect.left, y, rect.width)
+        y += self.normal_font.get_height() + 10
+        for label, value, cap, detail in self.favored_enemy_progress_rows(player_char):
+            if y + 54 > rect.bottom:
+                break
+            y = self._draw_progress_row(rect, label, value, cap, y, detail=detail, color=self.colors.GREEN)
+        try:
+            switches = ability_mechanics.favored_enemy_state(player_char).get("switches", 0)
+        except Exception:
+            switches = 0
+        if y + self.small_font.get_height() <= rect.bottom:
+            self._draw_text(
+                f"Quarry changes: {self._non_negative_int(switches)}",
+                self.small_font,
+                self.colors.GRAY,
+                rect.left,
+                y,
+                rect.width,
+            )
+            y += self.small_font.get_height() + 10
+        return y
 
     def _weapon_discipline_progress_label(self, xp: float, rank: int) -> str:
         if rank >= grandmaster.MAX_RANK:
@@ -1417,8 +1552,26 @@ class ModernCharacterScreen(TownScreenBase):
         """Return all companions worth showing on the Class tab."""
         entries: list[tuple[str, Any]] = []
         familiar = getattr(player_char, "familiar", None)
-        if familiar is not None:
-            entries.append(("Familiar", familiar))
+        tamed_state = ability_mechanics.normalize_tamed_companion(getattr(player_char, "tamed_companion", None))
+        tamed_roster = tamed_state.get("companions", [])
+        if isinstance(tamed_roster, list) and tamed_roster:
+            try:
+                from src.core import companions
+
+                for index, entry in enumerate(tamed_roster):
+                    display_entry = dict(entry)
+                    display_entry["active"] = True
+                    companion = companions.tamed_companion_from_state(display_entry)
+                    if companion is None:
+                        continue
+                    kind = "Companion" if index == tamed_state.get("active_index") else "Held Companion"
+                    entries.append((kind, companion))
+            except Exception:
+                if familiar is not None:
+                    entries.append(("Companion", familiar))
+        elif familiar is not None:
+            kind = "Companion" if getattr(familiar, "spec", "") == "Tamed" else "Familiar"
+            entries.append((kind, familiar))
 
         summons = getattr(player_char, "summons", {}) or {}
         for summon in summons.values():
@@ -1438,6 +1591,8 @@ class ModernCharacterScreen(TownScreenBase):
 
     def _summon_bond_label(self, player_char, companion: Any) -> str | None:
         name = self._attr_name(companion, "")
+        if getattr(companion, "spec", "") == "Tamed":
+            return f"{self._non_negative_int(getattr(companion, 'bond', 0))}/100"
         state = getattr(player_char, "promotion_kit_state", {}) or {}
         bonds = state.get("summon_bonds", {}) if isinstance(state, dict) else {}
         if name not in bonds:
@@ -1540,14 +1695,21 @@ class ModernCharacterScreen(TownScreenBase):
         name_width = max(90, min(text_width // 2, self.normal_font.size(name)[0] + 8))
         self._draw_text(name, self.normal_font, self.colors.GOLD, text_x, y, name_width)
 
-        level = getattr(getattr(companion, "level", None), "level", "?")
-        health = getattr(companion, "health", None)
-        fields = [
-            ("Type", kind),
-            ("Level", str(level)),
-            ("HP", f"{getattr(health, 'current', 0)}/{getattr(health, 'max', 0)}"),
-            ("XP", self._companion_xp_label(companion)),
-        ]
+        fields = [("Type", kind)]
+        if getattr(companion, "spec", "") != "Tamed":
+            level = getattr(getattr(companion, "level", None), "level", "?")
+            fields.append(("Level", str(level)))
+        if getattr(companion, "spec", "") == "Tamed":
+            evolution = str(getattr(companion, "evolution", "") or "")
+            special = str(getattr(companion, "special_ability", "") or "")
+            if evolution:
+                fields.append(("Form", evolution))
+            if special:
+                fields.append(("Special", special))
+        if getattr(companion, "spec", "") != "Tamed":
+            health = getattr(companion, "health", None)
+            fields.append(("HP", f"{getattr(health, 'current', 0)}/{getattr(health, 'max', 0)}"))
+            fields.append(("XP", self._companion_xp_label(companion)))
         bond = self._summon_bond_label(player_char, companion)
         if bond is not None:
             fields.append(("Bond", bond))
@@ -1569,6 +1731,58 @@ class ModernCharacterScreen(TownScreenBase):
             selected=selected,
         )
 
+    def _draw_empty_companion_slots(self, rect: pygame.Rect, y: int) -> None:
+        """Draw Ranger/Beast Master stable placeholders before any tame exists."""
+        self._draw_text("Companion Stable", self.normal_font, self.colors.GOLD, rect.left, y, rect.width)
+        prompt = "Tame a wounded Animal to fill a slot."
+        prompt_width = self.small_font.size(prompt)[0]
+        self._draw_text(
+            prompt,
+            self.small_font,
+            self.colors.GRAY,
+            rect.right - min(prompt_width, rect.width),
+            self.details_rect.top + 18,
+            rect.width,
+        )
+
+        slot_count = ability_mechanics.TAMED_COMPANION_ROSTER_LIMIT
+        columns = 2
+        gap = 8
+        top = y + self.normal_font.get_height() + 14
+        available_height = max(1, rect.bottom - top)
+        rows = max(1, (slot_count + columns - 1) // columns)
+        slot_width = max(1, (rect.width - gap * (columns - 1)) // columns)
+        slot_height = min(58, max(36, (available_height - gap * (rows - 1)) // rows))
+        for index in range(slot_count):
+            col = index % columns
+            row = index // columns
+            slot_rect = pygame.Rect(
+                rect.left + col * (slot_width + gap),
+                top + row * (slot_height + gap),
+                slot_width,
+                slot_height,
+            )
+            if slot_rect.bottom > rect.bottom:
+                break
+            pygame.draw.rect(self.screen, (14, 14, 19), slot_rect)
+            pygame.draw.rect(self.screen, self.colors.DARK_GRAY, slot_rect, 1)
+            self._draw_text(
+                f"Empty Slot {index + 1}",
+                self.normal_font,
+                self.colors.GRAY,
+                slot_rect.left + 10,
+                slot_rect.top + 8,
+                slot_rect.width - 20,
+            )
+            self._draw_text(
+                "Available",
+                self.small_font,
+                self.colors.GRAY,
+                slot_rect.left + 10,
+                slot_rect.top + 8 + self.normal_font.get_height(),
+                slot_rect.width - 20,
+            )
+
     def _open_class_companion_popup(self, player_char) -> None:
         entries = self.class_companion_entries(player_char)
         if not entries:
@@ -1585,6 +1799,62 @@ class ModernCharacterScreen(TownScreenBase):
             flush_events=True,
             require_key_release=True,
         )
+
+    def _selected_tamed_roster_index(self, player_char) -> int | None:
+        entries = self.class_companion_entries(player_char)
+        if not entries:
+            return None
+        selected_index = max(0, min(self.selected_class_companion_index, len(entries) - 1))
+        kind, companion = entries[selected_index]
+        if kind not in {"Companion", "Held Companion"} or getattr(companion, "spec", "") != "Tamed":
+            return None
+        roster_index = 0
+        for entry_kind, entry_companion in entries[: selected_index + 1]:
+            if entry_kind in {"Companion", "Held Companion"} and getattr(entry_companion, "spec", "") == "Tamed":
+                if entry_companion is companion:
+                    return roster_index
+                roster_index += 1
+        return None
+
+    def _activate_selected_tamed_companion(self, player_char) -> None:
+        roster_index = self._selected_tamed_roster_index(player_char)
+        if roster_index is None:
+            return
+        ability_mechanics.activate_tamed_companion(player_char, roster_index)
+        self.selected_class_companion_index = roster_index
+
+    def _release_selected_tamed_companion(self, player_char) -> None:
+        roster_index = self._selected_tamed_roster_index(player_char)
+        if roster_index is None:
+            return
+        entries = self.class_companion_entries(player_char)
+        companion_name = "this companion"
+        tamed_index = -1
+        for kind, companion in entries:
+            if kind in {"Companion", "Held Companion"} and getattr(companion, "spec", "") == "Tamed":
+                tamed_index += 1
+                if tamed_index == roster_index:
+                    companion_name = getattr(companion, "name", companion_name)
+                    break
+        background = self.screen.copy()
+        popup = ConfirmationPopup(
+            self.presenter,
+            f"Release {companion_name}?",
+            show_buttons=True,
+        )
+        if not popup.show(
+            background_draw_func=lambda: self.screen.blit(background, (0, 0)),
+            flush_events=True,
+            require_key_release=True,
+        ):
+            return
+        ability_mechanics.release_tamed_companion(player_char, roster_index)
+        entries = self.class_companion_entries(player_char)
+        self.selected_class_companion_index = max(
+            0,
+            min(self.selected_class_companion_index, max(0, len(entries) - 1)),
+        )
+        self.class_companion_selector_active = bool(entries)
 
     def _open_weapon_discipline_popup(self, player_char) -> None:
         if not grandmaster.is_weapon_discipline_class(player_char):
@@ -1997,6 +2267,358 @@ class ModernCharacterScreen(TownScreenBase):
                 break
             detail_y = self._draw_mechanic_note_card(right_rect, title, body, detail_y)
 
+    def _split_mechanic_content(self, y: int) -> tuple[pygame.Rect, pygame.Rect]:
+        content = self.details_rect.inflate(-32, -64)
+        content.top = y
+        left_width = max(320, (content.width * 2) // 5)
+        left_rect = pygame.Rect(content.left, content.top, left_width, content.height)
+        right_rect = pygame.Rect(left_rect.right + 18, content.top, content.right - left_rect.right - 18, content.height)
+        return left_rect, right_rect
+
+    def _draw_progress_row(
+        self,
+        rect: pygame.Rect,
+        label: str,
+        value: int | float,
+        cap: int | float,
+        y: int,
+        *,
+        detail: str = "",
+        color=None,
+    ) -> int:
+        cap = max(1, float(cap or 1))
+        value = max(0.0, min(cap, float(value or 0)))
+        self._draw_text(label, self.normal_font, self.colors.WHITE, rect.left, y, rect.width)
+        value_text = f"{value:g}/{cap:g}" if detail == "" else f"{value:g}/{cap:g} {detail}"
+        self._draw_text(value_text, self.small_font, self.colors.GRAY, rect.left, y + self.normal_font.get_height() + 2, rect.width)
+        bar_rect = pygame.Rect(rect.left, y + self.normal_font.get_height() + self.small_font.get_height() + 8, rect.width, 12)
+        self._draw_meter_bar(bar_rect, int(value), int(cap), color=color or self.colors.GOLD)
+        return bar_rect.bottom + 12
+
+    def _ring_state_text(self, player_char, class_name: str) -> str:
+        try:
+            from src.core.classes import class_rings
+
+            if class_rings.is_awakened(player_char, class_name):
+                return "Awakened, equipped" if class_rings.has_equipped_class_ring(player_char) else "Awakened, unequipped"
+            if class_rings.has_visible_class_ring(player_char):
+                return "Dormant"
+        except Exception:
+            pass
+        return "Not visible"
+
+    def _draw_school_affinity_tab(self, player_char, y: int) -> None:
+        self.class_companion_selector_active = False
+        self.weapon_discipline_selector_active = False
+        self._jump_mod_row_rects = []
+        left_rect, right_rect = self._split_mechanic_content(y)
+        class_name = self._attr_name(getattr(player_char, "cls", None), "")
+        affinity = wizard.ensure_affinity(player_char)
+        cap = wizard.cap_for(player_char)
+
+        row_y = y
+        spells = getattr(player_char, "spellbook", {}).get("Spells", {})
+        for school in wizard.AFFINITY_SCHOOLS:
+            chain = wizard.SPELL_UPGRADES.get(school, ())
+            known = next((name for name in reversed(chain) if name in spells), chain[0] if chain else "None")
+            detail = f"{known}"
+            row_y = self._draw_progress_row(left_rect, school, affinity.get(school, 0), cap, row_y, detail=detail)
+            if row_y > left_rect.bottom - 40:
+                break
+
+        if class_name == "Wizard":
+            self._draw_key_values(
+                [("Wizard Ring", self._ring_state_text(player_char, "Wizard"))],
+                right_rect,
+                y,
+                font=self.normal_font,
+                row_gap=8,
+            )
+
+    def _draw_contracts_tab(self, player_char, y: int) -> None:
+        self.class_companion_selector_active = False
+        self.weapon_discipline_selector_active = False
+        self._jump_mod_row_rects = []
+        left_rect, right_rect = self._split_mechanic_content(y)
+        state = demonologist.ensure_state(player_char)
+        patron = state.get("active_patron") or "None"
+        mood = int(state.get("patron_moods", {}).get(patron, 0) or 0) if patron != "None" else 0
+        corruption = int(state.get("corruption", 0) or 0)
+        unlocked = list(state.get("unlocked_contracts", []))
+        echo = state.get("imprisoned_familiar") or {}
+
+        row_y = self._draw_progress_row(left_rect, "Corruption", corruption, 100, y, detail=f"Tier {demonologist.corruption_tier(player_char)}", color=self.colors.RED)
+        rows = [
+            ("Crypt", "Unlocked" if state.get("crypt_unlocked") else "Hidden"),
+            ("Active Patron", patron),
+            ("Patron Mood", str(mood)),
+            ("Unlocked", ", ".join(unlocked) if unlocked else "None"),
+            ("Echo", str(echo.get("name") or echo.get("spec") or "None")),
+            ("Ring", "Awakened" if state.get("ring_awakened") else self._ring_state_text(player_char, "Demonologist")),
+        ]
+        self._draw_key_values(rows, left_rect, row_y, font=self.normal_font, row_gap=8)
+
+        self._draw_text("Recent Contracts", self.normal_font, self.colors.GOLD, right_rect.left, y, right_rect.width)
+        history_y = y + self.normal_font.get_height() + 12
+        history = list(state.get("contract_history", []))[-5:]
+        if not history:
+            self._draw_text("No contract history", self.normal_font, self.colors.GRAY, right_rect.left, history_y, right_rect.width)
+            return
+        for entry in reversed(history):
+            patron_text = str(entry.get("patron") or "?")
+            intent_text = str(entry.get("intent") or "?")
+            self._draw_text(f"{patron_text} - {intent_text}", self.normal_font, self.colors.WHITE, right_rect.left, history_y, right_rect.width)
+            history_y += self.normal_font.get_height() + self.small_font.get_height() + 12
+            if history_y > right_rect.bottom - 24:
+                break
+
+    def _draw_runes_tab(self, player_char, y: int) -> None:
+        self.class_companion_selector_active = False
+        self.weapon_discipline_selector_active = False
+        self._jump_mod_row_rects = []
+        left_rect, right_rect = self._split_mechanic_content(y)
+        class_name = self._attr_name(getattr(player_char, "cls", None), "")
+        state = astromancer.ensure_state(player_char)
+        active = astromancer.active_constellation(player_char) if class_name == "Astromancer" else ""
+
+        row_y = y
+        if active:
+            self._draw_text(f"Active Constellation: {active}", self.normal_font, self.colors.GOLD, left_rect.left, y, left_rect.width)
+            row_y += self.normal_font.get_height() + 14
+        for sign in astromancer.CONSTELLATIONS:
+            count = int(state["runes"].get(sign, 0) or 0)
+            element = astromancer.SIGN_TO_ELEMENT.get(sign, "")
+            detail = f"{element}"
+            if sign == active and astromancer.is_astromancer(player_char):
+                detail += " active"
+            row_y = self._draw_progress_row(left_rect, sign, count, astromancer.RUNE_CAP, row_y, detail=detail)
+
+        boostable = astromancer.boostable_spells(player_char)
+        rows = [
+            ("Boostable Spells", ", ".join(boostable) if boostable else "None"),
+        ]
+        if class_name == "Astromancer":
+            rows.insert(0, ("Ring", self._ring_state_text(player_char, "Astromancer")))
+        self._draw_key_values(rows, right_rect, y, font=self.normal_font, row_gap=10)
+
+    def _get_totem_skill(self, player_char):
+        skills = getattr(player_char, "spellbook", {}).get("Skills", {})
+        if "Totem" in skills:
+            return skills["Totem"]
+        for skill in skills.values():
+            if getattr(skill, "name", "") == "Totem":
+                return skill
+        return None
+
+    def _totem_unlocked_aspects(self, player_char, totem_skill) -> list[str]:
+        if totem_skill and hasattr(totem_skill, "get_unlocked_aspects"):
+            try:
+                return list(totem_skill.get_unlocked_aspects(player_char))
+            except TypeError:
+                return list(totem_skill.get_unlocked_aspects())
+        return []
+
+    def _open_totem_aspects_popup(self, player_char) -> None:
+        popup = TotemAspectsPopupMenu(self.presenter, self, title="Totem Aspects")
+        popup.show(player_char=player_char, flush_events=True)
+
+    def _draw_totems_tab(self, player_char, y: int) -> None:
+        self.class_companion_selector_active = False
+        self.weapon_discipline_selector_active = False
+        self._jump_mod_row_rects = []
+        left_rect, right_rect = self._split_mechanic_content(y)
+        class_name = self._attr_name(getattr(player_char, "cls", None), "")
+        totem_skill = self._get_totem_skill(player_char)
+        unlocked = self._totem_unlocked_aspects(player_char, totem_skill)
+        if class_name != "Soulcatcher":
+            unlocked = [aspect for aspect in unlocked if aspect != "Soul"]
+        active = nature_totems.active_totem_aspect(player_char) or getattr(totem_skill, "active_aspect", "") or "None"
+        if active == "Soul" and class_name != "Soulcatcher":
+            active = "None"
+        resonance = promotion_kits.totem_resonance(player_char)
+        cap = promotion_kits.cap_for(player_char, "totem_resonance")
+
+        row_y = self._draw_progress_row(left_rect, "Totem Resonance", resonance, cap, y, detail="Pulse strength", color=self.colors.GREEN)
+        rows = [
+            ("Active Aspect", str(active)),
+            ("Unlocked Aspects", ", ".join(unlocked) if unlocked else "None"),
+            ("Staff Bond", "Aligned" if nature_totems.has_staff_equipped(player_char) else "Unfocused"),
+            ("Select", "C/Enter: Totem Aspects"),
+        ]
+        self._draw_key_values(rows, left_rect, row_y, font=self.normal_font, row_gap=8)
+
+        self._draw_text("Communions", self.normal_font, self.colors.GOLD, right_rect.left, y, right_rect.width)
+        list_y = y + self.normal_font.get_height() + 12
+        aspects = list(nature_totems.ELEMENTAL_ASPECTS)
+        if class_name == "Soulcatcher" and "Soul" in unlocked:
+            aspects.append("Soul")
+        for aspect in aspects:
+            spell_name = nature_totems.highest_unlocked_spell_name(player_char, aspect) or nature_totems.communion_spell_name(aspect) or "None"
+            status = "Unlocked" if aspect in unlocked or spell_name in getattr(player_char, "spellbook", {}).get("Spells", {}) else "Locked"
+            self._draw_text(aspect, self.normal_font, self.colors.WHITE, right_rect.left, list_y, 110)
+            self._draw_text(f"{status} - {spell_name}", self.small_font, self.colors.GRAY, right_rect.left + 118, list_y + 2, right_rect.width - 118)
+            list_y += self.normal_font.get_height() + 12
+            if list_y > right_rect.bottom - 24:
+                break
+
+    def _draw_case_journal_tab(self, player_char, y: int) -> None:
+        self.class_companion_selector_active = False
+        self.weapon_discipline_selector_active = False
+        self._jump_mod_row_rects = []
+        left_rect, right_rect = self._split_mechanic_content(y)
+        class_name = self._attr_name(getattr(player_char, "cls", None), "")
+        state = promotion_kits.ensure_state(player_char)
+        journal = state["case_journal"]
+        combat = promotion_kits.combat_state(player_char)
+        revelation = combat.get("revelation", {})
+        current_revelation = max((int(value or 0) for value in revelation.values()), default=0) if isinstance(revelation, dict) else 0
+        best_type, best_progress = max(journal.items(), key=lambda item: (int(item[1]), item[0]), default=("None", 0))
+
+        rows = [
+            ("Best Case", f"{best_type} {int(best_progress)}/100"),
+            ("Best Rank", promotion_kits.case_rank(best_progress)),
+            ("Revelation", f"{current_revelation}/{promotion_kits.cap_for(player_char, 'revelation')}"),
+        ]
+        if class_name == "Seeker":
+            rows.extend(
+                [
+                    ("Wayfinding", "Aligned" if promotion_kits.wayfinding_discount(player_char) > 0 else "Quiet"),
+                    ("Hidden Cache", self._ring_state_text(player_char, "Seeker")),
+                ]
+            )
+        self._draw_key_values(rows, left_rect, y, font=self.normal_font, row_gap=10)
+
+        self._draw_text("Enemy-Type Progress", self.normal_font, self.colors.GOLD, right_rect.left, y, right_rect.width)
+        list_y = y + self.normal_font.get_height() + 12
+        entries = sorted(journal.items(), key=lambda item: (-int(item[1]), item[0]))
+        if not entries:
+            self._draw_text("No cases recorded", self.normal_font, self.colors.GRAY, right_rect.left, list_y, right_rect.width)
+            return
+        for enemy_type, progress in entries[:8]:
+            detail = promotion_kits.case_rank(progress)
+            list_y = self._draw_progress_row(right_rect, str(enemy_type), int(progress), 100, list_y, detail=detail, color=self.colors.GREEN)
+            if list_y > right_rect.bottom - 40:
+                break
+
+    def _draw_crescendo_tab(self, player_char, y: int) -> None:
+        self.class_companion_selector_active = False
+        self.weapon_discipline_selector_active = False
+        self._jump_mod_row_rects = []
+        left_rect, right_rect = self._split_mechanic_content(y)
+        class_name = self._attr_name(getattr(player_char, "cls", None), "")
+        song_state = bard.ensure_song_state(player_char)
+        exploration = bard.ensure_exploration_song_state(player_char)
+        combat = promotion_kits.combat_state(player_char)
+        crescendo = int(combat.get("crescendo", 0) or 0)
+        repertoire = promotion_kits.ensure_state(player_char)["bard_repertoire"]
+        mastered = sum(1 for entry in repertoire.values() if entry.get("known"))
+
+        row_y = self._draw_progress_row(left_rect, "Crescendo", crescendo, 3, y, detail="Coda", color=self.colors.GOLD)
+        rows = [
+            ("Combat Song", str(song_state.get("active") or "None")),
+            ("Song Turns", str(song_state.get("turns", 0))),
+            ("Exploration Song", str(exploration.get("active") or "None")),
+            ("Exploration Steps", str(exploration.get("steps", 0))),
+        ]
+        if class_name == "Troubadour":
+            rows.extend(
+                [
+                    ("Encore", str(song_state.get("encore") or self._ring_state_text(player_char, "Troubadour"))),
+                    ("Mastered", f"{mastered}/{len(repertoire)}"),
+                ]
+            )
+        self._draw_key_values(rows, left_rect, row_y, font=self.normal_font, row_gap=8)
+
+        if class_name != "Troubadour":
+            return
+
+        self._draw_text("Advanced Repertoire", self.normal_font, self.colors.GOLD, right_rect.left, y, right_rect.width)
+        list_y = y + self.normal_font.get_height() + 12
+        for song, entry in repertoire.items():
+            known = "Mastered" if entry.get("known") else "Practice"
+            xp = int(entry.get("practice_xp", 0) or 0)
+            finishes = int(entry.get("clean_finishes", 0) or 0)
+            self._draw_text(song, self.normal_font, self.colors.WHITE, right_rect.left, list_y, right_rect.width)
+            practice = "Complete" if known == "Mastered" else "Growing" if xp or finishes else "Unstarted"
+            self._draw_text(f"{known} - {practice}", self.small_font, self.colors.GRAY, right_rect.left, list_y + self.normal_font.get_height() + 2, right_rect.width)
+            list_y += self.normal_font.get_height() + self.small_font.get_height() + 12
+            if list_y > right_rect.bottom - 24:
+                break
+
+    def _draw_forms_tab(self, player_char, y: int) -> None:
+        self.class_companion_selector_active = False
+        self.weapon_discipline_selector_active = False
+        self._jump_mod_row_rects = []
+        left_rect, right_rect = self._split_mechanic_content(y)
+        class_name = self._attr_name(getattr(player_char, "cls", None), "")
+        transform_type = getattr(player_char, "transform_type", None)
+        base_form = self._attr_name(transform_type, class_name or "Unknown")
+        shifted = lycan.is_transformed(player_char) if class_name == "Lycan" or base_form == "Lycan" else bool(transform_type and self._attr_name(transform_type, "") != class_name)
+        rows = [
+            ("Current Form", "Shifted" if shifted else "Humanoid"),
+            ("Stored Form", base_form),
+            ("Transform", "Available" if transform_type else "Unavailable"),
+            ("Dismiss", "Available" if shifted else "Unavailable"),
+        ]
+        if class_name == "Lycan" or base_form == "Lycan":
+            rows.append(("Ring", self._ring_state_text(player_char, "Lycan")))
+        self._draw_key_values(rows, left_rect, y, font=self.normal_font, row_gap=10)
+
+        if class_name == "Lycan" or base_form == "Lycan":
+            lycan_state = lycan.ensure_state(player_char)
+            control = promotion_kits.lycan_control_state(player_char)
+            list_y = self._draw_progress_row(right_rect, "Moon Cycle", lycan_state.get("moon_steps", 0), lycan.STEPS_PER_PHASE, y, detail=str(lycan_state.get("moon_phase", "New")), color=self.colors.GOLD)
+            rows = [
+                ("Frenzy Lock", f"{int(lycan_state.get('frenzy_turns', 0) or 0)} turn(s)"),
+                ("Control Rank", str(control.get("rank", "Feral"))),
+                ("Stress Records", str(control.get("stress_events", 0))),
+                ("Dragon Essence", "Yes" if control.get("dragon_essence") or lycan_state.get("dragon_essence") else "No"),
+            ]
+            self._draw_key_values(rows, right_rect, list_y, font=self.normal_font, row_gap=8)
+        else:
+            return
+
+    def _draw_aspects_tab(self, player_char, y: int) -> None:
+        self.class_companion_selector_active = False
+        self.weapon_discipline_selector_active = False
+        self._jump_mod_row_rects = []
+        left_rect, right_rect = self._split_mechanic_content(y)
+        state = archdruid.ensure_state(player_char)
+        combat = promotion_kits.combat_state(player_char)
+        harmony = combat.get("aspect_harmony", set())
+        if not isinstance(harmony, set):
+            harmony = set(harmony)
+
+        row_y = y
+        for affinity in archdruid.AFFINITIES:
+            attunement = int(state["attunement"].get(affinity, 0) or 0)
+            status = "Awake" if state["aspects"].get(affinity) else "Sealed"
+            if state["catalysts"].get(affinity):
+                status += ", catalyst"
+            row_y = self._draw_progress_row(left_rect, affinity, attunement, archdruid.MASTERY_THRESHOLD, row_y, detail=status, color=self.colors.GREEN)
+            if row_y > left_rect.bottom - 40:
+                break
+
+        harmony_text = ", ".join(sorted(harmony)) if harmony else "None"
+        rows = [
+            ("Grove", "Unlocked" if state.get("grove_unlocked") else "Hidden"),
+            ("Aspect Harmony", harmony_text),
+            ("Fourfold Surge", "Ready" if len(harmony) >= 2 else "Building"),
+            ("Ring", "Awakened" if state.get("ring_awakened") else self._ring_state_text(player_char, "Archdruid")),
+        ]
+        self._draw_key_values(rows, right_rect, y, font=self.normal_font, row_gap=8)
+        detail_y = y + self.normal_font.get_height() * 6 + 64
+        self._draw_text("Catalyst Progress", self.normal_font, self.colors.GOLD, right_rect.left, detail_y, right_rect.width)
+        detail_y += self.normal_font.get_height() + 10
+        for affinity in archdruid.AFFINITIES:
+            progress = state["progress"].get(affinity, {})
+            text = "Stirring" if any(int(value or 0) > 0 for value in progress.values()) else "Quiet"
+            self._draw_text(affinity, self.small_font, self.colors.GRAY, right_rect.left, detail_y, 90)
+            self._draw_text(text, self.small_font, self.colors.WHITE, right_rect.left + 96, detail_y, right_rect.width - 96)
+            detail_y += self.small_font.get_height() + 8
+            if detail_y > right_rect.bottom - 12:
+                break
+
     def draw_class_tab(self, player_char):
         mechanic_tab = self.class_mechanic_tab(player_char)
         panel_title = mechanic_tab.label if mechanic_tab is not None else "Class"
@@ -2026,6 +2648,38 @@ class ModernCharacterScreen(TownScreenBase):
             self._draw_resolve_tab(player_char, y)
             return
 
+        if mechanic_tab is not None and mechanic_tab.label == "School Affinity":
+            self._draw_school_affinity_tab(player_char, y)
+            return
+
+        if mechanic_tab is not None and mechanic_tab.label == "Contracts":
+            self._draw_contracts_tab(player_char, y)
+            return
+
+        if mechanic_tab is not None and mechanic_tab.label == "Runes":
+            self._draw_runes_tab(player_char, y)
+            return
+
+        if mechanic_tab is not None and mechanic_tab.label == "Totems":
+            self._draw_totems_tab(player_char, y)
+            return
+
+        if mechanic_tab is not None and mechanic_tab.label == "Case Journal":
+            self._draw_case_journal_tab(player_char, y)
+            return
+
+        if mechanic_tab is not None and mechanic_tab.label == "Crescendo":
+            self._draw_crescendo_tab(player_char, y)
+            return
+
+        if mechanic_tab is not None and mechanic_tab.label == "Forms":
+            self._draw_forms_tab(player_char, y)
+            return
+
+        if mechanic_tab is not None and mechanic_tab.label == "Aspects":
+            self._draw_aspects_tab(player_char, y)
+            return
+
         self._jump_mod_row_rects = []
         self.weapon_discipline_selector_active = False
         gap = 14
@@ -2052,30 +2706,17 @@ class ModernCharacterScreen(TownScreenBase):
             row_gap=8,
             bottom_limit=overview_rect.bottom - 16,
         )
-
-        description = getattr(getattr(player_char, "cls", None), "description", "")
-        if description:
+        class_name = self._attr_name(getattr(player_char, "cls", None), "")
+        if class_name in {"Ranger", "Beast Master"}:
             overview_y += 8
-            self._draw_divider(overview_rect, overview_y)
-            overview_y += 12
-            available_lines = max(
-                3,
-                (overview_rect.bottom - overview_y - 8) // (self.small_font.get_height() + 4),
-            )
-            self._draw_wrapped_text(
-                description,
-                self.small_font,
-                self.colors.WHITE,
-                overview_rect.left + 16,
-                overview_y,
-                overview_rect.width - 32,
-                max_lines=available_lines,
-            )
+            overview_y = self._draw_favored_enemy_progress_panel(player_char, overview_rect, overview_y)
 
         entries = self.class_companion_entries(player_char)
         if not entries:
             self.class_companion_selector_active = False
             self._class_roster_rect = roster_rect
+            if class_name in {"Ranger", "Beast Master"}:
+                self._draw_empty_companion_slots(roster_rect, y)
             return
 
         self.selected_class_companion_index = max(
@@ -2083,17 +2724,29 @@ class ModernCharacterScreen(TownScreenBase):
             min(self.selected_class_companion_index, max(0, len(entries) - 1)),
         )
         self._class_roster_rect = roster_rect
-        heading = mechanic_tab.label if mechanic_tab is not None else "Companions"
+        heading = (
+            "Companion Stable"
+            if class_name in {"Ranger", "Beast Master"}
+            else mechanic_tab.label if mechanic_tab is not None else "Companions"
+        )
         self._draw_text(heading, self.normal_font, self.colors.GOLD, roster_rect.left, y, roster_rect.width)
         singular_label = {
             "Familiar": "familiar",
             "Companion": "companion",
+            "Companion Stable": "companion",
         }.get(heading, "summon")
-        helper = (
-            "Arrows: Select  Enter: Inspect  C/Esc: Back"
-            if self.class_companion_selector_active
-            else f"C: Select {singular_label}"
+        has_tamed_roster = any(
+            kind in {"Companion", "Held Companion"} and getattr(companion, "spec", "") == "Tamed"
+            for kind, companion in entries
         )
+        if self.class_companion_selector_active:
+            helper = (
+                "Arrows: Select  Enter: Inspect  S: Lead  R: Release  C/Esc: Back"
+                if has_tamed_roster
+                else "Arrows: Select  Enter: Inspect  C/Esc: Back"
+            )
+        else:
+            helper = f"C: Select {singular_label}"
         helper_width = self.small_font.size(helper)[0]
         self._draw_text(
             helper,
@@ -2442,7 +3095,9 @@ class ModernCharacterScreen(TownScreenBase):
                 elif event.key == pygame.K_e and self.active_tab.key == "equipment":
                     self.equipment_selector_active = not self.equipment_selector_active
                 elif event.key == pygame.K_c and self.active_tab.key == "class":
-                    if not grandmaster.is_weapon_discipline_class(player_char):
+                    if self.active_mechanic_label(player_char) == "Totems":
+                        self._open_totem_aspects_popup(player_char)
+                    elif not grandmaster.is_weapon_discipline_class(player_char):
                         entries = self.class_companion_entries(player_char)
                         self.class_companion_selector_active = bool(entries) and not self.class_companion_selector_active
                 elif event.key in (pygame.K_TAB, pygame.K_RIGHT):
@@ -2474,8 +3129,7 @@ class ModernCharacterScreen(TownScreenBase):
                 elif event.key == pygame.K_2:
                     self.select_visible_tab_index(1, player_char)
                 elif event.key == pygame.K_3:
-                    if any(tab.key == "equipment" for tab in self.visible_tabs(player_char)):
-                        self.select_tab("equipment")
+                    self.select_visible_tab_index(2, player_char)
                 elif event.key == pygame.K_UP:
                     if self.active_tab.key == "equipment" and self.equipment_selector_active:
                         self.move_equipment_selector(player_char, "up")
@@ -2508,6 +3162,10 @@ class ModernCharacterScreen(TownScreenBase):
                 elif event.key == pygame.K_d and self.active_tab.key == "class" and self.class_companion_selector_active and self.class_companion_entries(player_char):
                     entries = self.class_companion_entries(player_char)
                     self.selected_class_companion_index = min(len(entries) - 1, self.selected_class_companion_index + 1)
+                elif event.key == pygame.K_s and self.active_tab.key == "class" and self.class_companion_selector_active:
+                    self._activate_selected_tamed_companion(player_char)
+                elif event.key == pygame.K_r and self.active_tab.key == "class" and self.class_companion_selector_active:
+                    self._release_selected_tamed_companion(player_char)
                 elif event.key in (pygame.K_RETURN, pygame.K_SPACE):
                     if self.active_tab.key == "equipment" and self.equipment_selector_active:
                         self.open_selected_equipment_change(player_char)
@@ -2517,6 +3175,8 @@ class ModernCharacterScreen(TownScreenBase):
                         and self._has_jump_mods(player_char)
                     ):
                         self._toggle_selected_jump_mod(player_char)
+                    elif self.active_tab.key == "class" and self.active_mechanic_label(player_char) == "Totems":
+                        self._open_totem_aspects_popup(player_char)
                     elif self.active_tab.key == "class" and self.class_companion_selector_active and self.class_companion_entries(player_char):
                         self._open_class_companion_popup(player_char)
                     elif self.active_tab.key == "class" and grandmaster.is_weapon_discipline_class(player_char):

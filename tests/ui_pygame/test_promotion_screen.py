@@ -381,7 +381,7 @@ def test_promotion_screen_draw_helpers(monkeypatch):
     assert flip_calls
 
 
-def test_promotion_screen_does_not_embed_character_menu_help(monkeypatch):
+def test_promotion_screen_embeds_compact_character_menu_help(monkeypatch):
     presenter = _make_presenter()
     player = _make_player()
     monkeypatch.setattr(promotion_screen.PromotionScreen, "_load_background", lambda self: setattr(self, "background", None))
@@ -406,7 +406,8 @@ def test_promotion_screen_does_not_embed_character_menu_help(monkeypatch):
     assert "Warrior -> Weapon Master" in presenter.large_font.render_calls
     assert "Character Menu Preview" not in presenter.normal_font.render_calls
     assert not any("New tab:" in call for call in presenter.small_font.render_calls)
-    assert not any("Intelligence helps" in call for call in presenter.small_font.render_calls)
+    assert any("Character Menu: Weapon Discipline" in call for call in presenter.small_font.render_calls)
+    assert any("Intelligence helps" in call for call in presenter.small_font.render_calls)
     assert draw_rect_calls
 
 

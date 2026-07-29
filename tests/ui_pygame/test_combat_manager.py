@@ -9,7 +9,7 @@ import pygame
 import pytest
 
 from src.core import abilities, enemies, items, main_story
-from src.core.classes import class_rings, promotion_kits
+from src.core.classes import ability_mechanics, class_rings, promotion_kits
 from src.ui_pygame.gui import combat_manager
 
 
@@ -149,9 +149,15 @@ class DummyPresenter:
         self.normal_font = RecordingFont()
         self.small_font = RecordingFont()
         self._background = "presenter-background"
+        self.text_inputs = []
+        self.next_text_input = ""
 
     def get_background_surface(self):
         return self._background
+
+    def get_text_input(self, prompt, default=""):
+        self.text_inputs.append((prompt, default))
+        return self.next_text_input
 
 
 class DummyClock:
@@ -608,6 +614,27 @@ def test_capture_background_scroll_handling_and_action_deduplication(monkeypatch
         "Auto Kill",
     ]
 
+    beast = _make_player()
+    manager.game.debug_mode = False
+    beast.cls = SimpleNamespace(name="Beast Master")
+    beast.equipment = {"OffHand": SimpleNamespace(subtyp="None")}
+    beast.tamed_companion = {"active": True, "name": "Wolf", "bond": 50}
+    beast.familiar = SimpleNamespace(name="Wolf", spec="Tamed", is_alive=lambda: True)
+    beast.spellbook["Skills"] = {
+        "Pack Strike": SimpleNamespace(name="Pack Strike", cost=0, passive=False),
+        "Guard Partner": SimpleNamespace(name="Guard Partner", cost=0, passive=False),
+        "Quick Strike": SimpleNamespace(name="Quick Strike", cost=0, passive=False),
+    }
+    manager.engine = SimpleNamespace(
+        available_actions=["Attack", "Companion", "Use Skill", "Use Item"],
+        player=beast,
+        attacker=beast,
+        defender=_make_enemy(),
+    )
+    assert manager._build_display_actions() == ["Attack", "Defend", "Companion", "Skills", "Items"]
+    assert manager._available_skill_names(beast, manager.engine.defender) == ["Quick Strike"]
+    assert ability_mechanics.available_beast_companion_commands(beast) == ["Pack Strike", "Guard Partner"]
+
 
 def test_combat_damage_effect_classifies_actions_and_elements(monkeypatch):
     manager = _make_manager(monkeypatch)
@@ -870,6 +897,104 @@ def test_execute_action_handles_suppression_and_slot_machine_skill(monkeypatch):
     assert manager._execute_action("Summon", player, enemy) == "action_taken"
     assert manager.combat_view.messages[-1] == "Hero summons Patagon."
 
+    manager.combat_view.messages.clear()
+    manager._select_companion_command = lambda _player, _enemy: "Pack Strike"
+
+    def execute_companion(action, choice=None, slot_machine_callback=None):
+        assert action == "Companion"
+        assert choice == "Pack Strike"
+        assert slot_machine_callback is None
+        return SimpleNamespace(message="Hero orders their companion: Pack Strike.", fled=False)
+
+    manager.engine = SimpleNamespace(execute_action=execute_companion)
+    assert manager._execute_action("Companion", player, enemy) == "action_taken"
+    assert manager.combat_view.messages[-1] == "Hero orders their companion: Pack Strike."
+
+    manager.combat_view.messages.clear()
+    promotion_kits.combat_state(player)["favored_enemy_bonus_logged"] = True
+
+    def execute_favored_attack(action, choice=None, slot_machine_callback=None):
+        assert action == "Attack"
+        return SimpleNamespace(message="Hero attacks Goblin.", fled=False)
+
+    manager.engine = SimpleNamespace(execute_action=execute_favored_attack)
+    assert manager._execute_action("Attack", player, enemy) == "action_taken"
+    assert manager.combat_view.messages == [
+        "Hero attacks Goblin.",
+        "Favored Enemy pressure guides the strike.",
+    ]
+
+
+def test_execute_action_tame_skips_damage_animation_and_defers_nickname(monkeypatch):
+    manager = _make_manager(monkeypatch)
+    player = _make_player()
+    enemy = _make_enemy("Giant Hornet", hp=(3, 10))
+    manager._render_combat_frame = lambda *args, **kwargs: None
+    manager._flush_result_frame = lambda *args, **kwargs: None
+    damage_effects = []
+    manager._show_combat_damage_effect = lambda *args, **kwargs: damage_effects.append((args, kwargs))
+    manager._show_combat_heal_text = lambda *args, **kwargs: None
+    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.display.flip", lambda: None)
+
+    def execute_action(action, choice=None, slot_machine_callback=None):
+        assert action == "Tame"
+        enemy.tamed_by_player = True
+        enemy.health.current = 0
+        player.tamed_companion = {
+            "active": True,
+            "name": "Giant Hornet",
+            "enemy_class": "GiantHornet",
+            "bond": 5,
+            "companions": [
+                {
+                    "active": True,
+                    "name": "Giant Hornet",
+                    "enemy_class": "GiantHornet",
+                    "bond": 5,
+                }
+            ],
+            "active_index": 0,
+        }
+        return SimpleNamespace(message="Hero tames Giant Hornet.", fled=False, summon_started=False)
+
+    manager.engine = SimpleNamespace(execute_action=execute_action)
+
+    assert manager._execute_action("Tame", player, enemy) == "action_taken"
+    assert damage_effects == []
+    assert manager.combat_view.enemy_damage_calls == []
+    assert player.tamed_companion.get("custom_name") is None
+    assert manager.combat_view.messages == ["Hero tames Giant Hornet."]
+
+
+def test_select_companion_command_shows_beast_master_orders(monkeypatch):
+    manager = _make_manager(monkeypatch)
+    player = _make_player()
+    enemy = _make_enemy()
+    player.cls = SimpleNamespace(name="Beast Master")
+    player.tamed_companion = {"active": True, "name": "Wolf", "bond": 75}
+    player.familiar = SimpleNamespace(name="Wolf", spec="Tamed", is_alive=lambda: True)
+    player.spellbook["Skills"] = {
+        name: SimpleNamespace(name=name, cost=0, passive=False, description=f"{name} desc")
+        for name in ability_mechanics.BEAST_COMPANION_COMMANDS
+    }
+
+    rendered = []
+    manager._clear_pending_input = lambda: True
+    manager._render_combat_frame = lambda *_args, **_kwargs: None
+    manager._render_described_selection_menu = (
+        lambda title, options, selected, scroll_offset, descriptions:
+        rendered.append((title, list(options), list(descriptions)))
+    )
+    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.release_guard_allows_input", lambda *_args, **_kwargs: True)
+    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.display.flip", lambda: None)
+    event_batches = iter([[pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN)]])
+    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, []))
+
+    assert manager._select_companion_command(player, enemy) == "Pack Strike"
+    assert rendered
+    assert rendered[-1][0] == "Command Companion"
+    assert rendered[-1][1] == list(ability_mechanics.BEAST_COMPANION_COMMANDS)
+
 
 def test_execute_spell_flushes_result_log_before_damage_effect(monkeypatch):
     manager = _make_manager(monkeypatch)
@@ -938,10 +1063,16 @@ def test_handle_combat_end_victory_defeat_and_flee_paths(monkeypatch):
 
     manager.engine = SimpleNamespace(
         flee=False,
-        end_battle=lambda: SimpleNamespace(result="victory", message="Gold +5\nQuest updated", level_up=True),
+        end_battle=lambda: SimpleNamespace(
+            result="victory",
+            message="Gold +5\nGiant Spider bond increased.\nQuest updated",
+            level_up=True,
+        ),
     )
     assert manager._handle_combat_end(player, enemy, fled=False) is True
     assert popup_messages[0].startswith("Victory! Goblin defeated!")
+    assert "Giant Spider bond increased." in popup_messages[0]
+    assert "bond grows by" not in popup_messages[0]
     assert manager.level_up_screen.calls == [(player, manager.game)]
     assert manager.combat_view.reset_calls == 1
     assert manager._combat_background is None
@@ -971,6 +1102,89 @@ def test_handle_combat_end_victory_defeat_and_flee_paths(monkeypatch):
     assert manager._handle_combat_end(player, enemy, fled=True) is False
     assert manager.engine.flee is True
     assert popup_messages[0] == "You fled from combat!"
+
+    popup_messages.clear()
+    manager.combat_view.reset_calls = 0
+    manager.game.debug_mode = True
+    manager.engine = SimpleNamespace(
+        flee=False,
+        end_battle=lambda: SimpleNamespace(
+            result="victory",
+            message="Giant Spider bond increased.",
+            level_up=False,
+        ),
+    )
+    assert manager._handle_combat_end(player, enemy, fled=False) is True
+    assert "Giant Spider bond increased." in popup_messages[0]
+
+
+def test_tamed_combat_end_skips_death_fade_then_names_companion(monkeypatch):
+    manager = _make_manager(monkeypatch)
+    player = _make_player()
+    enemy = _make_enemy("Giant Hornet", hp=(0, 10))
+    enemy.tamed_by_player = True
+    player.tamed_companion = {
+        "active": True,
+        "name": "Giant Hornet",
+        "enemy_class": "GiantHornet",
+        "species": "Hornet",
+        "evolution": "Needle Drone",
+        "special_ability": "Wingbeat",
+        "bond": 5,
+        "companions": [
+            {
+                "active": True,
+                "name": "Giant Hornet",
+                "enemy_class": "GiantHornet",
+                "species": "Hornet",
+                "evolution": "Needle Drone",
+                "special_ability": "Wingbeat",
+                "bond": 5,
+            }
+        ],
+        "active_index": 0,
+    }
+    popup_messages = []
+
+    class FakePopup:
+        def __init__(self, _presenter, message, show_buttons=False):
+            popup_messages.append(message)
+
+        def show(self, **_kwargs):
+            popup_messages.append("shown")
+
+    class FakeCompanionNamingScreen:
+        def __init__(self, _presenter, companion_name, species="", form="", special=""):
+            popup_messages.append(f"name-screen:{companion_name}:{species}:{form}:{special}")
+
+        def navigate(self, **_kwargs):
+            popup_messages.append("name-screen-shown")
+            return "Needle"
+
+    monkeypatch.setattr("src.ui_pygame.gui.confirmation_popup.ConfirmationPopup", FakePopup)
+    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.CompanionNamingScreen", FakeCompanionNamingScreen)
+    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.display.flip", lambda: None)
+    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: [])
+    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.time.Clock", lambda: DummyClock())
+    render_calls = []
+    monkeypatch.setattr(manager, "_render_combat_frame", lambda *args, **kwargs: render_calls.append((args, kwargs)))
+    monkeypatch.setattr(manager, "_pause_with_events", lambda _ms: None)
+    manager.engine = SimpleNamespace(
+        flee=False,
+        end_battle=lambda: SimpleNamespace(
+            result="victory",
+            message="Giant Hornet leaves the fight as a companion.",
+            level_up=False,
+        ),
+    )
+
+    assert manager._handle_combat_end(player, enemy, fled=False) is True
+    assert popup_messages[0].startswith("Giant Hornet tamed!")
+    assert "name-screen:Giant Hornet:Hornet:Stingwing:Wingbeat" in popup_messages
+    assert popup_messages.index("shown") < popup_messages.index("name-screen-shown")
+    assert player.familiar.name == "Needle (Giant Hornet)"
+    assert len(render_calls) == 2
+    assert manager.combat_view.reset_calls == 1
 
 
 def test_jester_victory_runs_death_fade_before_dungeon_end_event(monkeypatch):
@@ -1181,6 +1395,13 @@ def test_select_item_spell_and_skill_cover_empty_cancel_and_selection_paths(monk
     assert manager._available_skill_names(player, enemy) == []
     promotion_kits.gain_meter(player, "devotion", 1, "test")
     assert manager._available_skill_names(player, enemy) == ["Sanctuary Ward"]
+
+    player.cls = SimpleNamespace(name="Ranger")
+    player.spellbook["Skills"] = {
+        "Tame": abilities.Tame(),
+        "Favored Enemy": abilities.FavoredEnemy(),
+    }
+    assert manager._available_skill_names(player, enemy) == ["Favored Enemy"]
 
     player.equipment = {
         "Weapon": SimpleNamespace(subtyp="Polearm"),

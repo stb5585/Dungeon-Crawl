@@ -10,6 +10,7 @@ import pygame
 
 from src.ui_pygame.assets.portrait_manager import PORTRAIT_ROOT, PortraitManager
 
+from .confirmation_popup import ConfirmationPopup
 from .input_guards import prepare_guarded_input, release_guard_allows_input, update_input_armed_from_event
 from .town_base import TownColors
 
@@ -307,4 +308,144 @@ class CharacterNamingScreen:
                 if text_input and text_input.isprintable() and len(self.text) < MAX_NAME_LENGTH:
                     self.text += text_input
 
+            self.presenter.clock.tick(30)
+
+
+class CompanionNamingScreen:
+    """Name-entry screen for newly tamed companions."""
+
+    def __init__(self, presenter, companion_name: str, species: str = "", form: str = "", special: str = ""):
+        self.presenter = presenter
+        self.screen = presenter.screen
+        self.width = presenter.width
+        self.height = presenter.height
+        self.companion_name = str(companion_name or "Companion")
+        self.species = str(species or "")
+        self.form = str(form or "")
+        self.special = str(special or "")
+        self.colors = TownColors
+        self.title_font = presenter.title_font
+        self.large_font = presenter.large_font
+        self.normal_font = presenter.normal_font
+        self.small_font = presenter.small_font
+        self.text = ""
+        self.calculate_rects()
+
+    def calculate_rects(self) -> None:
+        header_height = self.height // 12
+        self.header_rect = pygame.Rect(0, 0, self.width, header_height)
+        margin = max(24, self.width // 28)
+        self.panel_rect = pygame.Rect(
+            margin,
+            self.header_rect.bottom + margin,
+            self.width - margin * 2,
+            self.height - self.header_rect.height - margin * 2,
+        )
+
+    def draw_header(self) -> None:
+        pygame.draw.rect(self.screen, self.colors.BLACK, self.header_rect)
+        pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, self.header_rect, 2)
+        title = self.normal_font.render("Tame Complete", True, self.colors.GOLD)
+        self.screen.blit(title, title.get_rect(centerx=self.width // 2, centery=self.header_rect.centery))
+
+    def draw(self, background_surface: pygame.Surface | None = None) -> None:
+        if background_surface is not None:
+            self.screen.blit(background_surface, (0, 0))
+            overlay = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+            overlay.fill((0, 0, 0, 170))
+            self.screen.blit(overlay, (0, 0))
+        else:
+            self.screen.fill(self.colors.BLACK)
+        self.draw_header()
+        pygame.draw.rect(self.screen, (8, 8, 12), self.panel_rect)
+        pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, self.panel_rect, 2)
+
+        x = self.panel_rect.left + 48
+        y = self.panel_rect.top + 46
+        title = self.title_font.render("Name Your Companion", True, self.colors.GOLD)
+        self.screen.blit(title, (x, y))
+        y += title.get_height() + 22
+
+        details = [("Animal", self.companion_name)]
+        if self.species:
+            details.append(("Family", self.species))
+        if self.form:
+            details.append(("Form", self.form))
+        if self.special:
+            details.append(("Trait", self.special))
+        for label, value in details:
+            label_text = self.normal_font.render(label, True, self.colors.GRAY)
+            value_text = self.normal_font.render(value, True, self.colors.WHITE)
+            self.screen.blit(label_text, (x, y))
+            self.screen.blit(value_text, (x + 150, y))
+            y += self.normal_font.get_height() + 12
+
+        input_rect = pygame.Rect(x, y + 18, self.panel_rect.width - 96, max(62, self.large_font.get_height() + 26))
+        pygame.draw.rect(self.screen, self.colors.DARK_GRAY, input_rect)
+        pygame.draw.rect(self.screen, self.colors.GOLD, input_rect, 2)
+
+        display_text = f"{self.text}_" if self.text else "_"
+        entry_font = self.large_font
+        available_width = input_rect.width - 36
+        if entry_font.render(display_text, True, self.colors.WHITE).get_width() > available_width:
+            entry_font = self.normal_font
+        if entry_font.render(display_text, True, self.colors.WHITE).get_width() > available_width:
+            entry_font = self.small_font
+        surface = entry_font.render(display_text, True, self.colors.WHITE)
+        self.screen.blit(surface, surface.get_rect(left=input_rect.left + 18, centery=input_rect.centery))
+
+        preview_name = self.text.strip() or self.companion_name
+        if preview_name != self.companion_name:
+            preview_name = f"{preview_name} ({self.companion_name})"
+        preview = self.normal_font.render(f"Known as {preview_name}", True, self.colors.GOLD)
+        self.screen.blit(preview, preview.get_rect(left=x, top=input_rect.bottom + 24))
+
+        hint = self.small_font.render("ENTER: Confirm   BACKSPACE: Delete   ESC: Keep original name", True, self.colors.GRAY)
+        self.screen.blit(hint, hint.get_rect(left=x, bottom=self.panel_rect.bottom - 36))
+
+    def navigate(
+        self,
+        default: str = "",
+        flush_events: bool = False,
+        require_key_release: bool = False,
+        background_surface: pygame.Surface | None = None,
+    ) -> str | None:
+        input_armed = prepare_guarded_input(
+            flush_events=flush_events,
+            require_key_release=require_key_release,
+        )
+
+        while True:
+            self.draw(background_surface)
+            pygame.display.flip()
+            input_armed = release_guard_allows_input(require_key_release, input_armed)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                input_armed = update_input_armed_from_event(event, require_key_release, input_armed)
+                if event.type != pygame.KEYDOWN or not input_armed:
+                    continue
+                if event.key == pygame.K_RETURN:
+                    chosen = self.text.strip() or default
+                    display_name = chosen or self.companion_name
+                    if chosen and chosen != self.companion_name:
+                        display_name = f"{chosen} ({self.companion_name})"
+                    confirm = ConfirmationPopup(self.presenter, f"Keep the name {display_name}?", show_buttons=True)
+                    if confirm.show(
+                        background_draw_func=lambda: self.draw(background_surface),
+                        flush_events=True,
+                        require_key_release=True,
+                    ):
+                        return chosen
+                    input_armed = prepare_guarded_input(flush_events=True, require_key_release=True)
+                    continue
+                if event.key == pygame.K_ESCAPE:
+                    return default
+                if event.key == pygame.K_BACKSPACE:
+                    self.text = self.text[:-1]
+                    continue
+                text_input = getattr(event, "unicode", "")
+                if text_input and text_input.isprintable() and len(self.text) < MAX_NAME_LENGTH:
+                    self.text += text_input
             self.presenter.clock.tick(30)

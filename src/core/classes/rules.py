@@ -130,28 +130,28 @@ PROMOTION_MECHANIC_GUIDANCE: dict[str, str] = {
         "as it grows beside you."
     ),
     "Shadowcaster": (
-        "Character Menu tab available: Umbral Debt. Use it to review debt, "
-        "backlash, Eclipse readiness, and shadow-form pressure."
+        "Umbral Debt is shown in combat HUD/status rows and logs. Watch debt, "
+        "backlash, Eclipse readiness, and shadow-form pressure during combat."
     ),
     "Demonologist": (
         "Character Menu tab available: Contracts. Use it to review corruption, "
         "patron mood, contracts, and familiar echo identity."
     ),
     "Spellblade": (
-        "Character Menu tab available: Blade Charge. Use it to review spell-to-blade "
-        "charge readiness and hybrid combat flow."
+        "Blade Charge is shown in combat HUD/status rows and logs. Alternate "
+        "compatible damage spells with weapon actions to drive the hybrid flow."
     ),
     "Knight Enchanter": (
-        "Character Menu tab available: Arcane Tempo. Use it to review blade charge, "
-        "Arcane Tempo stacks, and burst readiness."
+        "Blade Charge and Arcane Tempo are shown in combat HUD/status rows and "
+        "logs. Alternate spells and weapon actions to build burst readiness."
     ),
     "Thief": (
-        "Character Menu tab available: Fortune. Use it to review Fortune, "
-        "Misfortune, and risky-action payoff readiness."
+        "Fortune and Misfortune are shown in combat HUD/status rows, logs, and "
+        "risky-action results. Use theft, luck, and setup actions to create payoffs."
     ),
     "Rogue": (
-        "Character Menu tab available: Fortune. Use it to review Fortune, "
-        "Misfortune, Cheat Death, and Loaded Dice payoff readiness."
+        "Fortune, Misfortune, Cheat Death, and Loaded Dice readiness are shown "
+        "through combat HUD/status rows, logs, and loot/result messages."
     ),
     "Inquisitor": (
         "Character Menu tab available: Case Journal. Use it to review enemy-type "
@@ -162,12 +162,13 @@ PROMOTION_MECHANIC_GUIDANCE: dict[str, str] = {
         "evidence, Revelation stacks, and Wayfinding progress."
     ),
     "Assassin": (
-        "Character Menu tab available: Death Mark. Use it to review mark setup "
-        "and finisher readiness."
+        "Death Mark is shown in combat HUD/status rows and logs. Use setup "
+        "actions to mark targets, then spend marks through finishers."
     ),
     "Ninja": (
-        "Character Menu tab available: Death Mark. Use it to review mark setup, "
-        "finisher readiness, and No-Trace Opener pressure."
+        "Death Mark and No-Trace Opener pressure are shown in combat HUD/status "
+        "rows and logs. Use setup actions to mark targets, then spend marks "
+        "through finishers."
     ),
     "Spell Stealer": (
         "Stolen spell scrolls are cast from the combat Spells menu. "
@@ -192,20 +193,21 @@ PROMOTION_MECHANIC_GUIDANCE: dict[str, str] = {
         "then spend it with Consecrated Conduit when a staff or holy payoff is ready."
     ),
     "Monk": (
-        "Character Menu tab available: Ki. Use it to review martial focus, Ki "
-        "stacks, and Dim Mak readiness."
+        "Ki is shown in combat HUD/status rows and logs. Build martial focus "
+        "through combat actions, then spend it when Dim Mak is ready."
     ),
     "Master Monk": (
-        "Character Menu tab available: Ki. Use it to review martial focus, Ki "
-        "stacks, Dim Mak readiness, and Martial Mastery."
+        "Ki, Dim Mak readiness, and Martial Mastery cues are shown in combat "
+        "HUD/status rows, logs, skill text, and equipment messages."
     ),
     "Priest": (
-        "Character Menu tab available: Prayer. Use it to review divine support "
-        "stacks and Supplication readiness."
+        "Prayer is shown in combat HUD/status rows and logs. Build divine "
+        "support stacks through meaningful support actions, then spend them "
+        "with Supplication."
     ),
     "Archbishop": (
-        "Character Menu tab available: Prayer. Use it to review divine support "
-        "stacks, Benediction readiness, and Divine Intervention."
+        "Prayer, Benediction readiness, and Divine Intervention cues are shown "
+        "in combat HUD/status rows, logs, and support skill text."
     ),
     "Bard": (
         "Character Menu tab available: Crescendo. Use it to review song momentum "
@@ -216,8 +218,8 @@ PROMOTION_MECHANIC_GUIDANCE: dict[str, str] = {
         "repertoire mastery, Encore, and coda payoff readiness."
     ),
     "Beast Master": (
-        "Character Menu tab available: Companion. Use it to review your companion "
-        "as it grows beside you."
+        "Character Menu tab available: Companion & Hunt. Use it to review your "
+        "companion and disciplined quarry tracking."
     ),
     "Summoner": (
         "Character Menu tab available: Summons. Use it to review summoned allies "
@@ -256,8 +258,8 @@ PROMOTION_MECHANIC_GUIDANCE: dict[str, str] = {
         "Soul Aspect, and harvest scaling."
     ),
     "Ranger": (
-        "Character Menu tab available: Companion. Use it to review your tamed "
-        "companion and Favored Enemy hunt identity."
+        "Character Menu tab available: Companion & Hunt. Use it to review your "
+        "tamed companion and Favored Enemy hunt identity."
     ),
 }
 
@@ -275,23 +277,12 @@ PROMOTION_MECHANIC_TABS: dict[str, str] = {
     "Sorcerer": "School Affinity",
     "Wizard": "School Affinity",
     "Warlock": "Familiar",
-    "Shadowcaster": "Umbral Debt",
     "Demonologist": "Contracts",
-    "Spellblade": "Blade Charge",
-    "Knight Enchanter": "Arcane Tempo",
-    "Thief": "Fortune",
-    "Rogue": "Fortune",
     "Inquisitor": "Case Journal",
     "Seeker": "Case Journal",
-    "Assassin": "Death Mark",
-    "Ninja": "Death Mark",
-    "Monk": "Ki",
-    "Master Monk": "Ki",
-    "Priest": "Prayer",
-    "Archbishop": "Prayer",
     "Bard": "Crescendo",
     "Troubadour": "Crescendo",
-    "Beast Master": "Companion",
+    "Beast Master": "Companion & Hunt",
     "Summoner": "Summons",
     "Grand Summoner": "Summons",
     "Druid": "Forms",
@@ -301,7 +292,7 @@ PROMOTION_MECHANIC_TABS: dict[str, str] = {
     "Astromancer": "Runes",
     "Shaman": "Totems",
     "Soulcatcher": "Totems",
-    "Ranger": "Companion",
+    "Ranger": "Companion & Hunt",
 }
 
 

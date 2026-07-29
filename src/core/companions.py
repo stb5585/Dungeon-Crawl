@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import random
 
 from . import abilities, items
@@ -60,7 +61,9 @@ class TamedCompanion(Familiar):
         self.equipment = getattr(enemy, "equipment", self.equipment)
 
     def inspect(self) -> str:
-        return f"{self.name} is a tamed animal companion bonded to its ranger."
+        evolution = getattr(self, "evolution", "Wild Form")
+        special = getattr(self, "special_ability", "Keen Scent")
+        return f"{self.name} is a {evolution} tamed companion with {special}."
 
 
 def tamed_companion_from_state(state):
@@ -74,12 +77,53 @@ def tamed_companion_from_state(state):
     enemy_cls = getattr(enemies, normalized["enemy_class"], None)
     if enemy_cls is None:
         return None
+    seed_parts = (
+        str(normalized.get("enemy_class") or ""),
+        str(normalized.get("name") or ""),
+        str(normalized.get("species") or ""),
+        str(normalized.get("level") or 1),
+    )
+    seed = int(hashlib.sha256("|".join(seed_parts).encode("utf-8")).hexdigest()[:16], 16)
+    random_state = random.getstate()
     try:
-        enemy = enemy_cls()
-    except TypeError:
-        enemy = enemy_cls(normalized.get("level", 1))
+        random.seed(seed)
+        try:
+            enemy = enemy_cls()
+        except TypeError:
+            enemy = enemy_cls(normalized.get("level", 1))
+    finally:
+        random.setstate(random_state)
     companion = TamedCompanion(enemy)
-    companion.name = normalized.get("name") or companion.name
+    base = normalized.get("base")
+    if isinstance(base, dict) and base:
+        companion.health = Resource(
+            max(1, int(base.get("health_max", companion.health.max) or companion.health.max)),
+            max(1, int(base.get("health_max", companion.health.max) or companion.health.max)),
+        )
+        companion.mana = Resource(
+            max(0, int(base.get("mana_max", companion.mana.max) or companion.mana.max)),
+            max(0, int(base.get("mana_max", companion.mana.max) or companion.mana.max)),
+        )
+        stats = base.get("stats", {})
+        if isinstance(stats, dict):
+            companion.stats = Stats(
+                strength=max(1, int(stats.get("strength", companion.stats.strength) or companion.stats.strength)),
+                intel=max(1, int(stats.get("intel", companion.stats.intel) or companion.stats.intel)),
+                wisdom=max(1, int(stats.get("wisdom", companion.stats.wisdom) or companion.stats.wisdom)),
+                con=max(1, int(stats.get("con", companion.stats.con) or companion.stats.con)),
+                charisma=max(1, int(stats.get("charisma", companion.stats.charisma) or companion.stats.charisma)),
+                dex=max(1, int(stats.get("dex", companion.stats.dex) or companion.stats.dex)),
+            )
+        combat = base.get("combat", {})
+        if isinstance(combat, dict):
+            companion.combat = Combat(
+                attack=max(1, int(combat.get("attack", companion.combat.attack) or companion.combat.attack)),
+                defense=max(1, int(combat.get("defense", companion.combat.defense) or companion.combat.defense)),
+                magic=max(1, int(combat.get("magic", companion.combat.magic) or companion.combat.magic)),
+                magic_def=max(1, int(combat.get("magic_def", companion.combat.magic_def) or companion.combat.magic_def)),
+            )
+    companion.name = ability_mechanics.tamed_companion_display_name(normalized)
+    ability_mechanics.apply_tamed_companion_growth(companion, normalized)
     return companion
 
 

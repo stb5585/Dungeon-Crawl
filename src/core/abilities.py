@@ -734,9 +734,21 @@ class AnvilStrike(_WeaponArt):
         )
 
 
-class FavoredEnemy(_PassiveSkill):
+class FavoredEnemy(Class):
     def __init__(self):
-        super().__init__("Favored Enemy", "You fight your most hunted enemy type with practiced precision.")
+        super().__init__(
+            "Favored Enemy",
+            "Mark the current enemy type as your quarry. Keeping the same mark "
+            "builds tracking mastery; changing quarry carries over only some practice.",
+        )
+        self.cost = 0
+
+    def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        from .classes import ability_mechanics
+
+        super().use(user, target, **kwargs)
+        user.mana.current -= self.cost
+        return ability_mechanics.mark_favored_enemy(user, target)
 
 
 class FinalAssault(_PassiveSkill):
@@ -4339,8 +4351,7 @@ skill_dict = {
         "29": TruePiercingStrike,
     },
     "Ranger": {
-        "1": Tame,
-        "10": FavoredEnemy,
+        "1": [Tame, FavoredEnemy],
     },
     "Beast Master": {
         "5": Cover,

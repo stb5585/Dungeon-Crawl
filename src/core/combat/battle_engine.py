@@ -185,6 +185,23 @@ class BattleEngine:
         if astromancer.boostable_spells(self.player) and "Runic Boost" not in actions:
             insert_at = actions.index("Cast Spell") + 1 if "Cast Spell" in actions else len(actions)
             actions.insert(insert_at, "Runic Boost")
+        if (
+            self.attacker == self.player
+            and "Tame" in getattr(self.player, "spellbook", {}).get("Skills", {})
+            and not ability_mechanics.has_living_tamed_companion(self.player)
+            and not self.player.abilities_suppressed()
+            and "Tame" not in actions
+        ):
+            insert_at = actions.index("Attack") + 1 if "Attack" in actions else len(actions)
+            actions.insert(insert_at, "Tame")
+        if (
+            self.attacker == self.player
+            and ability_mechanics.available_beast_companion_commands(self.player)
+            and not self.player.abilities_suppressed()
+            and "Companion" not in actions
+        ):
+            insert_at = actions.index("Attack") + 1 if "Attack" in actions else len(actions)
+            actions.insert(insert_at, "Companion")
         return actions
 
     def summoner_support_actions(self) -> list[str]:
@@ -271,6 +288,7 @@ class BattleEngine:
         self.player._rewind_snapshot = None
         promotion_kits.start_combat(self.player)
         self.attacker, self.defender = determine_initiative(self.player, self.enemy)
+        self.available_actions = self._available_actions()
 
         self._event_bus.emit(create_combat_event(
             EventType.COMBAT_START,
@@ -576,6 +594,16 @@ class BattleEngine:
             result.message = self._execute_skill(choice, slot_machine_callback)
             result.fled = bool(self.flee)
 
+        elif action == "Tame":
+            result.message = self._execute_skill("Tame", slot_machine_callback)
+            result.fled = bool(self.flee)
+
+        elif action == "Companion":
+            if not choice:
+                result.message = f"{self.attacker.name} needs to choose a companion command.\n"
+            else:
+                result.message = promotion_kits.beast_command(self.player, choice)
+
         elif action == "Use Item":
             result.message = self._execute_item(choice)
 
@@ -696,6 +724,13 @@ class BattleEngine:
 
     def companion_turn(self) -> str:
         """Process the attacker's familiar/companion turn. Returns message text."""
+        if (
+            self.defender is None
+            or not self.defender.is_alive()
+            or getattr(self.defender, "tamed_by_player", False)
+            or getattr(self.defender, "no_victory_rewards", False)
+        ):
+            return ""
         familiar_text = self.attacker.familiar_turn(self.defender)
         if familiar_text:
             self.logger.log_event(
@@ -1354,6 +1389,15 @@ class BattleEngine:
     def _process_victory(self) -> str:
         """Handle victory bookkeeping: exp, loot, quests, kill tracking."""
         restore_defeat_identity(self.enemy)
+        if getattr(self.enemy, "tamed_by_player", False) or getattr(self.enemy, "no_victory_rewards", False):
+            self.player.state = 'normal'
+            if hasattr(self.player, 'transform_type') and self.player.cls != self.player.transform_type:
+                self.player.transform(back=True)
+            self.player.effects(end=True)
+            msg = f"{self.enemy.name} leaves the fight as a companion.\n"
+            msg += promotion_kits.end_combat(self.player, victory=False, enemy=self.enemy)
+            return msg
+
         mercy = bool(getattr(self.enemy, "paladin_mercy_victory", False))
         exp_gain = int(self.enemy.experience)
         try:
