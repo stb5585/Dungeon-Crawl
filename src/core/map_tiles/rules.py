@@ -1,12 +1,14 @@
 ###########################################
 """ map manager """
 
-from functools import lru_cache
 import random
+from functools import lru_cache
 from textwrap import wrap
 
+from src.paths import PYGAME_ASSETS_DIR
 from .. import enemies
 from ..player import DIRECTIONS, REALM_OF_CAMBION_LEVEL
+
 
 # Feature flag: Set to True to use enhanced combat with action queue
 USE_ENHANCED_COMBAT = True
@@ -84,7 +86,7 @@ CAMBION_PORTAL_PAIRS = [
 ]
 # This is the dungeon/location reveal image. The selected inventory item uses
 # the painterly item-art render mapped from item_render_map.json.
-CHALICE_ALTAR_IMAGE_PATH = "src/ui_pygame/assets/key_items/chalice_map.png"
+CHALICE_ALTAR_IMAGE_PATH = str(PYGAME_ASSETS_DIR / "key_items" / "chalice_map.png")
 CHALICE_MAP_BLANK_DESC = "A weathered map whose ink appears almost completely faded."
 CHALICE_MAP_METHOD_DESC = (
     "A weathered map with barely visible marks. The hidden adventurer showed you a trick to reveal it—"

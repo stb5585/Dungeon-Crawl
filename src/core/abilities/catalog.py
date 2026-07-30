@@ -480,8 +480,8 @@ skill_dict = {
         "8": ConsecratedConduit,
     },
     "Priest": {
+        "1": Supplication,
         "4": DefensiveRegen,
-        "6": Supplication,
         "10": ManaShield,
         },
     "Archbishop": {

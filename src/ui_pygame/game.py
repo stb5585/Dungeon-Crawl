@@ -5,40 +5,38 @@ Uses Pygame for graphical presentation instead of curses text interface.
 """
 
 import math
-import random
 import signal
 import sys
 
 import pygame
 
+from src.core import items, thieves_guild
 from src.core.character import Combat, Level, Resource, Stats
 from src.core.classes import archdruid, class_rings, classes_dict
 from src.core.data.data_loader import get_intro_story, get_special_events
 from src.core.player import summarize_gameplay_stat_groups
 from src.core.races import races_dict
 from src.core.save_system import SaveManager
-from src.core import items, thieves_guild
 from src.ui_pygame.assets.npc_art_manager import get_npc_art_manager
-from .presentation.pygame_presenter import PygamePresenter
-
-# GUI modules
-from .gui.shops import ShopManager
-from .gui.church import ChurchManager
-from .gui.inn import InnManager
 from .gui.barracks import BarracksManager
-from .gui.dungeon_manager import DungeonManager
-from .gui.modern_character_screen import ModernCharacterScreen
-from .gui.main_menu import MainMenuScreen
-from .gui.load_game import LoadGameScreen
-from .gui.race_selection import RaceSelectionScreen
-from .gui.class_selection import ClassSelectionScreen
 from .gui.character_naming import CharacterNamingScreen
-from .gui.presentation_asset_screens import CharacterCreatedScreen, StoryCardSequence
+from .gui.church import ChurchManager
+from .gui.class_selection import ClassSelectionScreen
 from .gui.confirmation_popup import ConfirmationPopup, confirm_yes_no
+from .gui.dungeon_manager import DungeonManager
+from .gui.inn import InnManager
+from .gui.load_game import LoadGameScreen
+from .gui.main_menu import MainMenuScreen
+from .gui.modern_character_screen import ModernCharacterScreen
+from .gui.presentation_asset_screens import CharacterCreatedScreen, StoryCardSequence
+from .gui.race_selection import RaceSelectionScreen
+from .gui.shop_screen import ShopScreen
+from .gui.shop_selection import ShopSelectionScreen
+from .gui.shops import ShopManager
 from .gui.town_menu import TownMenuScreen
 from .gui.town_navigation import TownNavigationScreen
-from .gui.shop_selection import ShopSelectionScreen
-from .gui.shop_screen import ShopScreen
+from .presentation.pygame_presenter import PygamePresenter
+
 
 # Use enhanced combat by default
 USE_ENHANCED_COMBAT = True

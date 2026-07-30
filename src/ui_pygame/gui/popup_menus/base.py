@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pygame
 
+from src.paths import PYGAME_ASSETS_DIR
 from src.ui_pygame.assets.icon_manager import IconManager
 from src.ui_pygame.assets.item_render_manager import get_item_render_manager
 from ..confirmation_popup import draw_popup_close_button, popup_close_clicked
@@ -15,7 +16,7 @@ from ..input_guards import (
 from ..mouse_helpers import is_left_click, mouse_position
 
 
-ITEM_ART_DIR = Path(__file__).resolve().parents[2] / "assets" / "item_art"
+ITEM_ART_DIR = PYGAME_ASSETS_DIR / "item_art"
 RELIC_ART_FILES = {"Triangulus":Path("special/relics/triangulus.png"),"Quadrata":Path("special/relics/quadrata.png"),"Hexagonum":Path("special/relics/hexagonum.png"),"Luna":Path("special/relics/luna.png"),"Polaris":Path("special/relics/polaris.png"),"Infinitas":Path("special/relics/infinitas.png"),"Golden Chalice":Path("special/story/golden_chalice.png")}
 
 

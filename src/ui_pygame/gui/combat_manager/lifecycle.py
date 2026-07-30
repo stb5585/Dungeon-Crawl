@@ -716,12 +716,15 @@ class CombatLifecycleMixin:
         else:
             result = self.engine.execute_action(engine_action, choice=choice, slot_machine_callback=slot_cb)
 
+        damage_to_enemy = max(0, enemy_hp_before - enemy.health.current)
+        favored_msg = ability_mechanics.consume_favored_enemy_bonus_message(player_char)
+        if damage_to_enemy > 0:
+            for line in favored_msg.strip().split('\n'):
+                if line.strip():
+                    self.combat_view.add_combat_message(line)
+
         # Display result messages
         for line in result.message.strip().split('\n'):
-            if line.strip():
-                self.combat_view.add_combat_message(line)
-        favored_msg = ability_mechanics.consume_favored_enemy_bonus_message(player_char)
-        for line in favored_msg.strip().split('\n'):
             if line.strip():
                 self.combat_view.add_combat_message(line)
 
@@ -732,7 +735,6 @@ class CombatLifecycleMixin:
             self._flush_result_frame(player_char, enemy)
 
         # Show damage flash for enemy damage
-        damage_to_enemy = max(0, enemy_hp_before - enemy.health.current)
         showed_damage_effect = False
         tamed_result = bool(getattr(enemy, "tamed_by_player", False))
         if damage_to_enemy > 0 and not tamed_result:

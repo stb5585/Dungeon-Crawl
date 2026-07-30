@@ -6,7 +6,11 @@ import sys
 
 import pygame
 
+from ..combat_view.animator import DEATH_ANIMATION_FRAMES
 from .helpers import _player_facing_victory_line
+
+
+POST_DEATH_PAUSE_MS = 150
 
 
 class CombatOutcomeMixin:
@@ -354,7 +358,7 @@ class CombatOutcomeMixin:
             if not tamed_victory:
                 # Render final combat state and let death animation complete.
                 clock = pygame.time.Clock()
-                for _ in range(70):
+                for _ in range(DEATH_ANIMATION_FRAMES):
                     self._render_combat_frame(player_char, enemy, [], -1)
                     pygame.display.flip()
                     clock.tick(60)
@@ -364,7 +368,7 @@ class CombatOutcomeMixin:
                             sys.exit(0)
                         self._handle_combat_log_scroll_event(event)
 
-                self._pause_with_events(900)
+                self._pause_with_events(POST_DEATH_PAUSE_MS)
             else:
                 self._refresh_combat_background(player_char, enemy)
             _show_end_popup("\n".join(end_messages))

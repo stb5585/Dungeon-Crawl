@@ -2335,7 +2335,7 @@ class TestBatch4StatusSkillExtensions:
             physical=True,
             check_disarmable=True,
             actor_stat="strength",
-            actor_lo_divisor=0,
+            actor_lo_divisor=1,
             actor_hi_divisor=1,
             target_stat="con",
             target_lo_divisor=2,

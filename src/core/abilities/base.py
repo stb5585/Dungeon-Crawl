@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 from textwrap import wrap
 from typing import TYPE_CHECKING
 
+from src.paths import CORE_DATA_DIR
 from ..combat.combat_result import CombatResult
+
 
 if TYPE_CHECKING:
     from typing import Any
@@ -15,7 +16,7 @@ if TYPE_CHECKING:
 
 
 # ── YAML ability loader helper ──────────────────────────────────────────
-_YAML_DIR = Path(__file__).parents[1] / "data" / "abilities"
+_YAML_DIR = CORE_DATA_DIR / "abilities"
 
 
 def _load_yaml_ability(filename: str, cls_name: str | None = None) -> Ability:

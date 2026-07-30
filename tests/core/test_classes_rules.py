@@ -55,6 +55,13 @@ def test_promotion_rules_ignore_unknown_class_without_mutating_spellbook():
     assert set(player.spellbook["Skills"]) == {"Feint"}
 
 
+def test_priest_learns_supplication_at_promotion_level():
+    granted_skills = abilities.ability_classes_for_level(abilities.skill_dict, "Priest", 1)
+
+    assert granted_skills == [abilities.Supplication]
+    assert abilities.ability_classes_for_level(abilities.skill_dict, "Priest", 6) == []
+
+
 def test_promotion_mechanic_guidance_points_to_relevant_character_surface():
     weapon_guidance = classes.promotion_mechanic_guidance("Weapon Master")
     assert "Weapon Discipline" in weapon_guidance
@@ -138,8 +145,12 @@ def test_promotion_mechanic_guidance_points_to_relevant_character_surface():
     assert classes.promotion_mechanic_tab_label("Shaman") == "Totems"
     assert "Companion" in classes.promotion_mechanic_guidance("Ranger")
     assert classes.promotion_mechanic_tab_label("Ranger") == "Companion & Hunt"
+    ranger_details = classes.promotion_mechanic_details("Ranger")
+    assert ranger_details.startswith("Use it to review")
+    assert "Companion & Hunt" not in ranger_details
 
     assert classes.promotion_mechanic_guidance("Knight") == ""
+    assert classes.promotion_mechanic_details("Knight") == ""
     assert classes.promotion_mechanic_tab_label("Knight") == ""
 
 

@@ -51,6 +51,16 @@ def test_enemy_combat_sprite_manager_loads_mapping_and_exact_sprite(tmp_path):
     assert manager.get_sprite_by_key("goblin") is manager.get_sprite_by_key("goblin")
 
 
+def test_enemy_combat_sprite_manager_uses_tamed_species_after_rename():
+    manager = EnemyCombatSpriteManager()
+
+    hornet = SimpleNamespace(name="Needle (Giant Hornet)", enemy_class="GiantHornet")
+    wolf = SimpleNamespace(name="Scout (Direwolf)", enemy_class="Direwolf")
+
+    assert manager.get_sprite_key_for_enemy(hornet) == "giant_hornet"
+    assert manager.get_sprite_key_for_enemy(wolf) == "dire_wolf"
+
+
 def test_enemy_combat_sprite_manager_scaled_cache_fallbacks_and_aspect_ratio(tmp_path):
     sprite_root = tmp_path / "enemy_combat_sprites"
     sprite_root.mkdir()

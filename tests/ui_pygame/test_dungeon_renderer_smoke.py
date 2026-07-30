@@ -621,6 +621,52 @@ def test_wall_overlay_key_hides_sconces_on_fake_walls():
     assert SceneRenderer._get_wall_overlay_key(ThievesGuildTrialFakeWall(visited=False), depth=2) is None
 
 
+def test_wall_overlays_stop_at_blocking_center_wall():
+    pygame.init()
+    screen = pygame.Surface((640, 480))
+    presenter = DummyPresenter(width=640, height=480, screen=screen)
+    scene_renderer = SceneRenderer(presenter, TextureLibrary())
+    zones = {
+        depth: build_zone_geometry(
+            build_depth_rect(416, 480, depth),
+            build_next_depth_rect(build_depth_rect(416, 480, depth)),
+            depth=depth,
+        )
+        for depth in (1, 2)
+    }
+    near_center = WallTile()
+    scene = SimpleNamespace(
+        depths=(
+            SimpleNamespace(
+                depth=1,
+                center=near_center,
+                left=WallTile(),
+                right=WallTile(),
+            ),
+            SimpleNamespace(
+                depth=2,
+                center=WallTile(),
+                left=WallTile(),
+                right=WallTile(),
+            ),
+        )
+    )
+    calls = []
+    scene_renderer._render_wall_overlay_for_tile = (
+        lambda tile, rect, darkness, depth, side=None: calls.append(
+            (tile, rect, darkness, depth, side)
+        )
+    )
+
+    scene_renderer._render_wall_overlays(scene, zones)
+
+    assert len(calls) == 1
+    assert calls[0][0] is near_center
+    assert calls[0][3:] == (1, None)
+
+    pygame.quit()
+
+
 def test_rookie_body_sprite_respects_player_quest_gate():
     pygame.init()
     screen = pygame.display.set_mode((640, 480))

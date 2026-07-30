@@ -4,6 +4,7 @@ import random
 
 import pygame
 
+import src.ui_pygame.gui.dungeon_manager as dungeon_manager
 from src.core import (
     companions,
     enemies,
@@ -11,7 +12,7 @@ from src.core import (
     map_tiles,
 )
 from src.core.player import DIRECTIONS
-import src.ui_pygame.gui.dungeon_manager as dungeon_manager
+from src.paths import PYGAME_ASSETS_DIR
 from .helpers import relic_discovery_text
 
 
@@ -90,7 +91,12 @@ class DungeonInteractionMixin:
                     "You've discovered a secret shop!\n\n"
                     "A mysterious merchant appears from the shadows...\n\n"
                     "\"Welcome, traveler. I have rare goods for sale.\"",
-                    image_path="src/ui_pygame/assets/dungeon_tiles/special_tiles/secret_shop.png"
+                    image_path=str(
+                        PYGAME_ASSETS_DIR
+                        / "dungeon_tiles"
+                        / "special_tiles"
+                        / "secret_shop.png"
+                    ),
                 )
                 shop_tile.read = True
 

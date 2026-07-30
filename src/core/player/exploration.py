@@ -6,6 +6,7 @@ import random
 
 import numpy
 
+from src.paths import MAP_FILES_DIR
 from .. import thieves_guild
 from ..constants import TOWN_LOCATION
 from .config import (
@@ -15,7 +16,7 @@ from .config import (
     LIMINAL_GAP_LEVEL,
     REALM_OF_CAMBION_LEVEL,
 )
-from .maps import MAP_FILES_DIR, _load_tiled_map
+from .maps import _load_tiled_map
 
 
 class PlayerExplorationMixin:

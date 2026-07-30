@@ -3,20 +3,21 @@
 from __future__ import annotations
 
 import datetime
-from pathlib import Path
 import random
 import sys
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pygame
 
+import src.ui_pygame.gui.combat_manager as combat_manager
 from src.core import enemies, main_story
 from src.core.character import Character
 from src.core.classes import ability_mechanics, promotion_kits
 from src.core.combat.battle_engine import BattleEngine
 from src.core.combat.battle_logger import BattleLogger
 from src.core.player import LIMINAL_GAP_ENTRY_FACING, LIMINAL_GAP_ENTRY_POS, Player
-import src.ui_pygame.gui.combat_manager as combat_manager
+from src.paths import DEBUG_LOGS_DIR
 from ..input_guards import (
     prepare_guarded_input,
     release_guard_allows_input,
@@ -207,7 +208,7 @@ class CombatManagerCoreMixin:
             f"{_battle_log_slug(result)}.json"
         )
         try:
-            return self.logger.export_json_file(Path("debug_logs") / "battles" / filename)
+            return self.logger.export_json_file(DEBUG_LOGS_DIR / "battles" / filename)
         except Exception:
             return None
 

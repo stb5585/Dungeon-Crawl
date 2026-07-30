@@ -3,11 +3,6 @@
 import json
 import os
 import xml.etree.ElementTree as ET
-from pathlib import Path
-
-
-PROJECT_ROOT = Path(__file__).resolve().parents[3]
-MAP_FILES_DIR = PROJECT_ROOT / "map_files"
 
 
 def _parse_tiled_properties(props):

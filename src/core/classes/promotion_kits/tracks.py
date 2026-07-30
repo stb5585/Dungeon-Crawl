@@ -264,8 +264,6 @@ def supplication(character: Any, target: Any | None = None) -> str:
     stacks = int(combat_state(character).get("prayer", 0) or 0)
     if stacks <= 0:
         return "Supplication requires Prayer.\n"
-    if not _spend_mp(character, 10):
-        return "Not enough MP for Supplication.\n"
     target = target or character
     spent = spend_meter(character, "prayer")
     heal = min(target.health.max - target.health.current, max(1, 12 * spent + character.stats.wisdom // 2))

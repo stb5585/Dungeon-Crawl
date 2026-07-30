@@ -6,12 +6,14 @@ player sprite loading, effect/icon loading, and easy sprite retrieval.
 """
 from __future__ import annotations
 
-import os
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pygame
 
+from src.paths import PYGAME_ASSETS_DIR
 from src.ui_pygame.assets.enemy_combat_sprite_manager import get_enemy_combat_sprite_manager
+
 
 if TYPE_CHECKING:
     from src.core.character import Character
@@ -48,9 +50,9 @@ PLAYER_SPRITE_MAP = {
 class SpriteManager:
     """Manages sprite loading, caching, and retrieval."""
     
-    def __init__(self, assets_dir: str = "src/ui_pygame/assets"):
+    def __init__(self, assets_dir: str | Path = PYGAME_ASSETS_DIR):
         """Initialize sprite manager."""
-        self.assets_dir = assets_dir
+        self.assets_dir = Path(assets_dir)
         self.sprite_cache: dict[str, pygame.Surface] = {}
         self.effect_cache: dict[str, pygame.Surface] = {}
         self.icon_cache: dict[str, pygame.Surface] = {}
@@ -64,10 +66,10 @@ class SpriteManager:
             return self.sprite_cache[cache_key]
         
         # Build file path
-        filepath = os.path.join(self.assets_dir, category, f"{name}.png")
+        filepath = self.assets_dir / category / f"{name}.png"
         
         # Check if file exists
-        if not os.path.exists(filepath):
+        if not filepath.exists():
             print(f"Warning: Sprite not found: {filepath}")
             return None
         

@@ -11,6 +11,7 @@ from pathlib import Path
 import pygame.mixer
 
 from src.core.events.event_bus import EventBus, EventType
+from src.paths import PYGAME_ASSETS_DIR
 
 
 logger = logging.getLogger(__name__)
@@ -82,7 +83,7 @@ class SoundManager:
 
     def __init__(
         self,
-        assets_dir: str = "src/ui_pygame/assets",
+        assets_dir: str | Path = PYGAME_ASSETS_DIR,
         event_bus: EventBus | None = None,
     ):
         """
@@ -566,7 +567,7 @@ _sound_manager: SoundManager | None = None
 
 
 def get_sound_manager(
-    assets_dir: str = "src/ui_pygame/assets",
+    assets_dir: str | Path = PYGAME_ASSETS_DIR,
     event_bus: EventBus | None = None,
 ) -> SoundManager:
     """Get or create the singleton sound manager instance."""

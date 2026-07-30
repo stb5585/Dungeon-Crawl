@@ -4,6 +4,7 @@ Implementation, behavior mixins, and support helpers live in focused
 submodules. Existing imports from ``src.core.player`` remain supported.
 """
 
+from src.paths import MAP_FILES_DIR, PROJECT_ROOT
 from .. import abilities
 from ..constants import TOWN_LOCATION
 from .actions import actions_dict
@@ -18,8 +19,6 @@ from .config import (
 )
 from .core import Player
 from .maps import (
-    MAP_FILES_DIR,
-    PROJECT_ROOT,
     _extract_tile_type,
     _load_tiled_map,
     _load_tiled_tileset,

@@ -599,16 +599,19 @@ def test_modern_character_ranger_companion_tab_shows_bond_form_and_special(monke
             },
         ],
     }
+    screen.companion_art_manager = SimpleNamespace(
+        get_scaled_sprite=lambda _entity, size: DummySurface(size)
+    )
 
     _stub_character_screen_drawing(monkeypatch, screen)
 
     screen.draw_class_tab(player)
 
     entries = screen.class_companion_entries(player)
-    assert [(kind, entry.name) for kind, entry in entries] == [
-        ("Companion", "Giant Rat"),
-        ("Held Companion", "Direwolf"),
-    ]
+    assert [(kind, entry.name) for kind, entry in entries] == [("Companion", "Giant Rat")]
+    active_slot = screen.class_companion_tile_rects(entries)[0]
+    assert active_slot.height == screen._class_companion_large_slot_rect().height
+    assert active_slot.height > 100
 
     rendered_text = _rendered_text(presenter)
     assert {
@@ -626,16 +629,15 @@ def test_modern_character_ranger_companion_tab_shows_bond_form_and_special(monke
         "Pounce",
         "Bond",
         "25/100",
-        "Held",
-        "2/6",
     }.issubset(rendered_text)
+    assert {"Held", "2/6", "Held Companion"}.isdisjoint(rendered_text)
     assert {"Level", "HP", "MP", "Attack", "Defense", "Magic", "XP", "0/0 XP"}.isdisjoint(rendered_text)
     assert ("Level", "1") not in screen.companion_summary_rows("Companion", player.familiar)
     detail_rows = screen.companion_detail_rows("Companion", player.familiar)
     assert all(label not in {"HP", "MP", "Attack", "Defense", "Magic", "Magic Defense"} for label, _value in detail_rows)
 
 
-def test_modern_character_ranger_companion_tab_shows_empty_stable_and_favored_enemy(monkeypatch):
+def test_modern_character_ranger_without_companion_shows_one_large_empty_slot(monkeypatch):
     presenter = _make_presenter()
     screen = ModernCharacterScreen(presenter)
     player = _make_player()
@@ -655,6 +657,13 @@ def test_modern_character_ranger_companion_tab_shows_empty_stable_and_favored_en
         "Tracking Mastery",
         "No marked quarry",
         "0/100 Use Favored Enemy in combat",
+        "Companion",
+        "No Active Companion",
+        "Tame a wounded Animal to form a bond.",
+    }.issubset(rendered_text)
+    empty_slot = screen._class_companion_large_slot_rect()
+    assert empty_slot.height > 100
+    assert {
         "Held",
         "0/6",
         "Companion Stable",
@@ -662,7 +671,7 @@ def test_modern_character_ranger_companion_tab_shows_empty_stable_and_favored_en
         "Empty Slot 1",
         "Empty Slot 6",
         "Available",
-    }.issubset(rendered_text)
+    }.isdisjoint(rendered_text)
 
 
 def test_modern_character_ranger_companion_tab_shows_marked_quarry_mastery(monkeypatch):
@@ -690,7 +699,7 @@ def test_modern_character_ranger_companion_tab_shows_marked_quarry_mastery(monke
     assert "Undead +4 Known Trail" not in rendered_text
 
 
-def test_modern_character_ranger_companion_tab_can_switch_and_release_tamed_roster(monkeypatch):
+def test_modern_character_ranger_companion_tab_releases_active_companion(monkeypatch):
     presenter = _make_presenter()
     screen = ModernCharacterScreen(presenter)
     player = _make_player()
@@ -727,11 +736,6 @@ def test_modern_character_ranger_companion_tab_can_switch_and_release_tamed_rost
     }
     player.tamed_companion = ability_mechanics.normalize_tamed_companion(player.tamed_companion)
     player.familiar = companions.tamed_companion_from_state(player.tamed_companion)
-
-    screen.selected_class_companion_index = 1
-    screen._activate_selected_tamed_companion(player)
-    assert player.tamed_companion["enemy_class"] == "Direwolf"
-    assert player.familiar.name == "Direwolf"
 
     popup_messages = []
 

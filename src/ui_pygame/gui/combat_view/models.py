@@ -1,11 +1,11 @@
 """Models behavior for the combat view package."""
 
 from dataclasses import dataclass
-from pathlib import Path
+
+from src.paths import PYGAME_ASSETS_DIR
 
 
-ASSETS_BASE_DIR=Path(__file__).resolve().parents[2]/"assets"
-
+ASSETS_BASE_DIR = PYGAME_ASSETS_DIR
 
 @dataclass
 class CombatImpactEffect:

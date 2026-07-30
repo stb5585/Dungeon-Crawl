@@ -2,10 +2,9 @@
 Main menu screen for Pygame GUI - matches curses terminal layout.
 """
 
-from pathlib import Path
-
 import pygame
 
+from src.paths import PYGAME_ASSETS_DIR
 from .input_guards import prepare_guarded_input, release_guard_allows_input, update_input_armed_from_event
 from .mouse_helpers import hit_index, is_left_click, mouse_position
 
@@ -15,7 +14,7 @@ class MainMenuScreen:
     Main menu that matches the curses terminal style.
     """
 
-    BACKGROUND_PATH = Path(__file__).resolve().parents[1] / "assets" / "backgrounds" / "main_menu.png"
+    BACKGROUND_PATH = PYGAME_ASSETS_DIR / "backgrounds" / "main_menu.png"
     
     def __init__(self, presenter):
         self.presenter = presenter

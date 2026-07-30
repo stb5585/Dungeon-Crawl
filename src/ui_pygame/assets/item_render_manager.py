@@ -2,23 +2,24 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import json
 import logging
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 import numpy as np
 import pygame
 
+from src.paths import PYGAME_ASSETS_DIR
 from src.ui_pygame.assets.icon_manager import IconManager
 
 
 logger = logging.getLogger(__name__)
 
-ITEM_RENDER_ROOT = Path(__file__).resolve().parent
-ITEM_ART_ROOT = Path(__file__).resolve().parent / "item_art"
-ICON_MAP_PATH = Path(__file__).resolve().parent / "item_icons" / "item_icon_map.json"
+ITEM_RENDER_ROOT = PYGAME_ASSETS_DIR
+ITEM_ART_ROOT = PYGAME_ASSETS_DIR / "item_art"
+ICON_MAP_PATH = PYGAME_ASSETS_DIR / "item_icons" / "item_icon_map.json"
 _SHARED_ITEM_RENDER_MANAGER: ItemRenderManager | None = None
 
 

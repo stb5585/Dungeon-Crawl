@@ -221,7 +221,7 @@ class ConsecratedConduit(_PromotionActive):
 
 class Supplication(_PromotionActive):
     def __init__(self):
-        super().__init__("Supplication", "Spend Prayer on a targeted divine support pulse.", 10)
+        super().__init__("Supplication", "Spend Prayer on a targeted divine support pulse.", 0)
 
     def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
         from ..classes import promotion_kits

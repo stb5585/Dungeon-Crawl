@@ -218,13 +218,18 @@ class RendererOverlayMixin:
                     surface="ceiling",
                 )
 
-            if is_wall(visible_depth.center) and not self._is_door_tile(visible_depth.center):
-                self._render_wall_overlay_for_tile(
-                    visible_depth.center,
-                    pygame.Rect(zone.back_wall_rect.to_int_tuple()),
-                    darkness=darkness,
-                    depth=depth,
-                )
+            if is_wall(visible_depth.center):
+                if not self._is_door_tile(visible_depth.center):
+                    self._render_wall_overlay_for_tile(
+                        visible_depth.center,
+                        pygame.Rect(zone.back_wall_rect.to_int_tuple()),
+                        darkness=darkness,
+                        depth=depth,
+                    )
+                # A center wall occludes its side surfaces and every deeper wall.
+                # Wall decorations are a late rendering pass, so continuing here
+                # would otherwise paint sconces through the blocking wall.
+                break
 
             if is_wall(visible_depth.left) and not self._is_door_tile(visible_depth.left):
                 self._render_wall_overlay_for_tile(

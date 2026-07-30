@@ -7,6 +7,7 @@ import os
 
 import pygame
 
+from src.paths import PYGAME_ASSETS_DIR
 from src.ui_pygame.assets.npc_art_manager import get_npc_art_manager
 
 from .mouse_helpers import is_left_click
@@ -78,7 +79,7 @@ class TownScreenBase:
     
     def _load_background(self):
         """Load and scale the town background image."""
-        bg_path = os.path.join("src", "ui_pygame", "assets", "backgrounds", "town.png")
+        bg_path = PYGAME_ASSETS_DIR / "backgrounds" / "town.png"
         if os.path.exists(bg_path):
             try:
                 bg_image = pygame.image.load(bg_path)

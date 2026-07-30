@@ -355,6 +355,20 @@ def promotion_mechanic_guidance(new_class_name: str) -> str:
     return f"{guidance}\n" if guidance else ""
 
 
+def promotion_mechanic_details(new_class_name: str) -> str:
+    """Return mechanic guidance without repeating its Character Menu tab label."""
+    guidance = PROMOTION_MECHANIC_GUIDANCE.get(new_class_name, "").strip()
+    mechanic_tab = PROMOTION_MECHANIC_TABS.get(new_class_name, "")
+    if not guidance or not mechanic_tab:
+        return guidance
+
+    guidance = guidance.removeprefix("Character Menu tab available: ").strip()
+    if guidance.startswith(mechanic_tab):
+        guidance = guidance[len(mechanic_tab):].lstrip()
+        guidance = guidance.removeprefix(".").lstrip()
+    return guidance
+
+
 def promotion_mechanic_tab_label(new_class_name: str) -> str:
     """Return the Character Menu mechanic tab unlocked by a promoted class."""
     return PROMOTION_MECHANIC_TABS.get(new_class_name, "")

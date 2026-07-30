@@ -10,23 +10,24 @@ import pygame
 from src.core import companions
 from src.core.abilities import ability_classes_for_level, spell_dict, skill_dict
 from src.core.classes import (
-    classes_dict,
     apply_promotion_ability_rules,
-    grant_summoner_initial_summon,
-    promotion_mechanic_guidance,
-    promotion_mechanic_tab_label,
     class_rings,
+    classes_dict,
     demonologist,
+    grant_summoner_initial_summon,
     paladin,
+    promotion_mechanic_details,
+    promotion_mechanic_tab_label,
 )
 from src.core.items import remove_equipment
-from .quest_manager import QuestManager
+
 from .confirmation_popup import ConfirmationPopup
+from .input_guards import prepare_guarded_input, release_guard_allows_input
 from .location_menu import LocationMenuScreen
 from .mouse_helpers import hit_index, is_left_click, mouse_position
 from .promotion_screen import PromotionScreen
+from .quest_manager import QuestManager
 from .town_base import TownColors, TownScreenBase, wrap_text_to_pixel_width
-from .input_guards import prepare_guarded_input, release_guard_allows_input
 
 
 class PaladinVowSelectionPopup:
@@ -748,14 +749,12 @@ class ChurchManager(TownScreenBase):
             popup.show(**self.popup_show_kwargs())
 
     def _promotion_mechanic_help_message(self, class_name: str) -> str:
-        """Return Character Menu tab guidance for a promoted class."""
+        """Return mechanic guidance for a promoted class."""
         mechanic_tab = promotion_mechanic_tab_label(class_name)
+        guidance = promotion_mechanic_details(class_name)
         if not mechanic_tab:
-            return ""
-        guidance = promotion_mechanic_guidance(class_name).strip()
-        if guidance:
-            guidance = guidance.replace("Character Menu tab available: ", "")
-        else:
+            return guidance
+        if not guidance:
             guidance = f"Open the Character Menu to review {mechanic_tab}."
         return f"New Character Menu tab: {mechanic_tab}\n{guidance}"
 
@@ -775,7 +774,7 @@ class ChurchManager(TownScreenBase):
         return "\n\n".join(sections)
 
     def _show_promotion_mechanic_help(self, class_name: str) -> None:
-        """Show Character Menu tab guidance after a promotion is actually chosen."""
+        """Show class-mechanic guidance after a promotion is actually chosen."""
         message = self._promotion_mechanic_help_message(class_name)
         if not message:
             return

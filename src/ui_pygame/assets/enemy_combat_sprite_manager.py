@@ -4,15 +4,18 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from pathlib import Path
 from typing import Any
 
 import pygame
 
+from src.paths import PYGAME_ASSETS_DIR
+
 
 logger = logging.getLogger(__name__)
 
-ENEMY_COMBAT_SPRITE_ROOT = Path(__file__).resolve().parent / "enemy_combat_sprites"
+ENEMY_COMBAT_SPRITE_ROOT = PYGAME_ASSETS_DIR / "enemy_combat_sprites"
 _SHARED_ENEMY_COMBAT_SPRITE_MANAGER: EnemyCombatSpriteManager | None = None
 
 
@@ -267,6 +270,14 @@ class EnemyCombatSpriteManager:
         picture_key = self._picture_key(enemy)
         if picture_key and picture_key in self.available_keys:
             return picture_key
+
+        enemy_class = self._attribute_key(enemy, "enemy_class")
+        if enemy_class:
+            if enemy_class in self.sprite_map:
+                return self._valid_key(self.sprite_map[enemy_class])
+            class_key = self.normalize_key(re.sub(r"(?<!^)(?=[A-Z])", " ", enemy_class))
+            if class_key in self.available_keys:
+                return class_key
 
         if name in self.sprite_map:
             return self._valid_key(self.sprite_map[name], prefer_boss=self._is_boss(enemy))

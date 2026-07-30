@@ -5,6 +5,9 @@ import math
 import pygame
 
 
+DEATH_ANIMATION_FRAMES = 36
+
+
 class SpriteAnimator:
     """Handles sprite animations (idle, bob, damage, death)."""
 
@@ -41,7 +44,7 @@ class SpriteAnimator:
 
         # Death animation progress
         if self.animation_type == 'death':
-            self.death_progress = min(1.0, self.animation_time / 60)  # 1 second to complete
+            self.death_progress = min(1.0, self.animation_time / DEATH_ANIMATION_FRAMES)
             if self.death_progress >= 1.0:
                 self.is_dead = True
 

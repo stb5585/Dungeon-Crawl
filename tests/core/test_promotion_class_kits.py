@@ -75,8 +75,12 @@ def test_representative_active_spends_and_status_text():
     assert "Sanctuary Ward" in abilities.SanctuaryWard().use(cleric)
 
     priest = _player("Priest", mana=(100, 100), health=(120, 40))
-    promotion_kits.gain_meter(priest, "prayer", 2, "test")
-    assert "Supplication restores" in abilities.Supplication().use(priest, priest)
+    promotion_kits.gain_meter(priest, "prayer", 4, "test")
+    mana_before = priest.mana.current
+    assert abilities.Supplication().cost == 0
+    assert "spends 4 Prayer" in abilities.Supplication().use(priest, priest)
+    assert priest.mana.current == mana_before
+    assert priest.health.current > 40
 
     monk = _player("Master Monk", mana=(100, 100))
     target = enemies.Goblin()

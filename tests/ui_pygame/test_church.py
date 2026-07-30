@@ -322,6 +322,46 @@ def test_handle_promotion_grants_cleric_sanctuary_ward_immediately(monkeypatch):
     assert "Sanctuary Ward" in FakePopup.messages[0]
 
 
+def test_handle_promotion_grants_priest_supplication_and_explains_prayer(monkeypatch):
+    FakePopup.messages = []
+    FakePopup.show_kwargs = []
+    player = _make_player()
+    player.cls = SimpleNamespace(name="Healer", equipment={})
+    player.level.level = 30
+    presenter = _make_presenter()
+
+    monkeypatch.setattr(
+        church.ChurchManager,
+        "_load_background",
+        lambda self: setattr(self, "background", None),
+    )
+    monkeypatch.setattr("src.ui_pygame.gui.church.ConfirmationPopup", FakePopup)
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.church.remove_equipment",
+        lambda slot: f"default-{slot}",
+    )
+
+    class FakePromotionScreen:
+        def __init__(self, *_args, **_kwargs):
+            pass
+
+        def navigate(self):
+            return "Priest"
+
+    monkeypatch.setattr("src.ui_pygame.gui.church.PromotionScreen", FakePromotionScreen)
+
+    manager = church.ChurchManager(presenter, player)
+    manager.handle_promotion()
+
+    assert player.cls.name == "Priest"
+    assert player.level.pro_level == 2
+    assert player.level.level == 1
+    assert "Supplication" in player.spellbook["Skills"]
+    assert len(FakePopup.messages) == 1
+    assert "Skill: Supplication" in FakePopup.messages[0]
+    assert "Prayer" in FakePopup.messages[0]
+
+
 def test_handle_promotion_grants_ranger_tame_and_favored_enemy_immediately(monkeypatch):
     FakePopup.messages = []
     FakePopup.show_kwargs = []
@@ -355,7 +395,7 @@ def test_handle_promotion_grants_ranger_tame_and_favored_enemy_immediately(monke
     assert "Skill: Favored Enemy" in FakePopup.messages[0]
 
 
-def test_promotion_mechanic_help_only_shows_for_extra_tabs(monkeypatch):
+def test_promotion_mechanic_help_shows_tab_and_combat_guidance(monkeypatch):
     FakePopup.messages = []
     FakePopup.show_kwargs = []
     player = _make_player()
@@ -368,24 +408,18 @@ def test_promotion_mechanic_help_only_shows_for_extra_tabs(monkeypatch):
     assert "New Character Menu tab: Weapon Discipline" in FakePopup.messages[-1]
     assert "Intelligence helps" in FakePopup.messages[-1]
 
-    message_count = len(FakePopup.messages)
     manager._show_promotion_mechanic_help("Spell Stealer")
-    assert len(FakePopup.messages) == message_count
+    assert "Stolen spell scrolls" in FakePopup.messages[-1]
 
-    for demoted_class in (
-        "Shadowcaster",
-        "Spellblade",
-        "Knight Enchanter",
-        "Thief",
-        "Rogue",
-        "Assassin",
-        "Ninja",
-        "Monk",
-        "Master Monk",
-        "Priest",
-        "Archbishop",
-    ):
-        manager._show_promotion_mechanic_help(demoted_class)
+    manager._show_promotion_mechanic_help("Priest")
+    assert "Prayer" in FakePopup.messages[-1]
+    assert "Supplication" in FakePopup.messages[-1]
+
+    manager._show_promotion_mechanic_help("Ranger")
+    assert FakePopup.messages[-1].count("Companion & Hunt") == 1
+
+    message_count = len(FakePopup.messages)
+    manager._show_promotion_mechanic_help("Knight")
     assert len(FakePopup.messages) == message_count
 
 

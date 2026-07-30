@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import os
 import json
+import os
 import re
 from collections import OrderedDict
 from dataclasses import dataclass
@@ -10,6 +10,7 @@ from pathlib import Path
 
 import pygame
 
+from src.paths import MAP_FILES_DIR, PROJECT_ROOT, PYGAME_ASSETS_DIR
 from .geometry import Quad
 from .projector import ProjectedSurface, project_texture_to_quad
 
@@ -50,7 +51,9 @@ DEFAULT_SPECIAL_TEXTURE_PATHS = {
     "boulder": "special_tiles/boulder.png",
     "boulder_sword": "special_tiles/boulder_sword.png",
     "dead_body": "special_tiles/dead_body.png",
-    "dead_soldier_item": "src/ui_pygame/assets/item_art/special/quest/dead_soldier.png",
+    "dead_soldier_item": str(
+        PYGAME_ASSETS_DIR / "item_art" / "special" / "quest" / "dead_soldier.png"
+    ),
     "burial_site": "special_tiles/burial_site.png",
     "blood_floor_overlay": "special_tiles/blood_floor_overlay.png",
     "blood_wall_overlay": "special_tiles/blood_wall_overlay.png",
@@ -66,7 +69,7 @@ DEFAULT_SPECIAL_TEXTURE_PATHS = {
     "empty_golden_chalice_altar": "special_tiles/empty_golden_chalice_altar.png",
     "secret_shop": "special_tiles/secret_shop.png",
     "unobtainium": "special_tiles/unobtainium.png",
-    "rotator": "map_files/tileset/rotator.png",
+    "rotator": str(MAP_FILES_DIR / "tileset" / "rotator.png"),
 }
 
 SPECIAL_TEXTURE_PATHS = dict(DEFAULT_SPECIAL_TEXTURE_PATHS)
@@ -130,8 +133,7 @@ SPECIAL_FALLBACK_COLORS = {
     "sconce_broken": (70, 66, 62),
 }
 
-PROJECT_ROOT = Path(__file__).resolve().parents[4]
-DEFAULT_ASSETS_BASE = Path(__file__).resolve().parents[2] / "assets"
+DEFAULT_ASSETS_BASE = PYGAME_ASSETS_DIR
 DEFAULT_TILESET_BASE = DEFAULT_ASSETS_BASE / "dungeon_tiles"
 
 

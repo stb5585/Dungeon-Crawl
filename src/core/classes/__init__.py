@@ -6,6 +6,7 @@ from .rules import (
     PromotionRule,
     apply_promotion_ability_rules,
     grant_summoner_initial_summon,
+    promotion_mechanic_details,
     promotion_mechanic_guidance,
     promotion_mechanic_tab_label,
 )
@@ -66,6 +67,7 @@ __all__ = [
     "PromotionRule",
     "apply_promotion_ability_rules",
     "grant_summoner_initial_summon",
+    "promotion_mechanic_details",
     "promotion_mechanic_guidance",
     "promotion_mechanic_tab_label",
     "Warrior",

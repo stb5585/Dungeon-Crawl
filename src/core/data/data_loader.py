@@ -4,14 +4,16 @@ Data loader utility for loading JSON game data files.
 from __future__ import annotations
 
 import json
-from pathlib import Path
 from typing import TYPE_CHECKING
+
+from src.paths import CORE_DATA_DIR
+
 
 if TYPE_CHECKING:
     from typing import Any
 
-# Get the content directory relative to this file's location
-CONTENT_DIR = Path(__file__).parent / 'content'
+
+CONTENT_DIR = CORE_DATA_DIR / "content"
 # Cache for loaded data to avoid repeated file reads
 _data_cache: dict[str, Any] = {}
 

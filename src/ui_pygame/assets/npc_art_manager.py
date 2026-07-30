@@ -7,10 +7,12 @@ import logging
 from pathlib import Path
 from typing import Any
 
+from src.paths import PYGAME_ASSETS_DIR
+
 
 logger = logging.getLogger(__name__)
 
-NPC_ART_ROOT = Path(__file__).resolve().parent / "npc_art"
+NPC_ART_ROOT = PYGAME_ASSETS_DIR / "npc_art"
 _SHARED_NPC_ART_MANAGER: NpcArtManager | None = None
 
 

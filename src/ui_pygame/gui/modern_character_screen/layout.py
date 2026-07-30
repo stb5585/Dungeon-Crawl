@@ -234,13 +234,22 @@ class CharacterLayoutMixin:
         """Return all companions worth showing on the Class tab."""
         entries: list[tuple[str, Any]] = []
         familiar = getattr(player_char, "familiar", None)
+        class_name = self._attr_name(getattr(player_char, "cls", None), "")
         tamed_state = ability_mechanics.normalize_tamed_companion(getattr(player_char, "tamed_companion", None))
         tamed_roster = tamed_state.get("companions", [])
         if isinstance(tamed_roster, list) and tamed_roster:
             try:
                 from src.core import companions
 
-                for index, entry in enumerate(tamed_roster):
+                indexed_roster = list(enumerate(tamed_roster))
+                if class_name in {"Ranger", "Beast Master"}:
+                    active_index = tamed_state.get("active_index")
+                    indexed_roster = [
+                        (index, entry)
+                        for index, entry in indexed_roster
+                        if index == active_index
+                    ]
+                for index, entry in indexed_roster:
                     display_entry = dict(entry)
                     display_entry["active"] = True
                     companion = companions.tamed_companion_from_state(display_entry)
@@ -309,10 +318,47 @@ class CharacterLayoutMixin:
             bottom_limit=rect.bottom - 10,
         )
 
+    def _class_companion_large_slot_rect(self) -> pygame.Rect:
+        """Return the shared large slot geometry for a tamed companion."""
+        roster_rect = self._class_roster_rect
+        top = roster_rect.top + self.normal_font.get_height() + 10
+        available_height = max(1, roster_rect.bottom - top)
+        return pygame.Rect(
+            roster_rect.left,
+            top,
+            roster_rect.width,
+            min(180, available_height),
+        )
+
+    def _draw_empty_companion_slot(self) -> None:
+        """Draw one large placeholder for a Ranger without a companion."""
+        rect = self._class_companion_large_slot_rect()
+        pygame.draw.rect(self.screen, (14, 14, 19), rect)
+        pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, rect, 1)
+        label_y = rect.centery - self.normal_font.get_height() - 4
+        self._draw_text(
+            "No Active Companion",
+            self.normal_font,
+            self.colors.GRAY,
+            rect.left + 16,
+            label_y,
+            rect.width - 32,
+        )
+        self._draw_text(
+            "Tame a wounded Animal to form a bond.",
+            self.small_font,
+            self.colors.GRAY,
+            rect.left + 16,
+            label_y + self.normal_font.get_height() + 8,
+            rect.width - 32,
+        )
+
     def class_companion_tile_rects(self, entries: list[tuple[str, Any]]) -> list[pygame.Rect]:
         """Return stacked clickable companion row rectangles for the Class tab."""
         if not entries or not hasattr(self, "_class_roster_rect"):
             return []
+        if len(entries) == 1 and getattr(entries[0][1], "spec", "") == "Tamed":
+            return [self._class_companion_large_slot_rect()]
 
         roster_rect = self._class_roster_rect
         gap = 6
@@ -367,6 +413,16 @@ class CharacterLayoutMixin:
         selected: bool,
         player_char,
     ) -> None:
+        if rect.height > 100:
+            self._draw_class_companion_card(kind, companion, rect)
+            pygame.draw.rect(
+                self.screen,
+                self.colors.GOLD if selected else self.colors.BORDER_COLOR,
+                rect,
+                2 if selected else 1,
+            )
+            return
+
         pygame.draw.rect(self.screen, self.colors.HIGHLIGHT_BG if selected else (14, 14, 19), rect)
         pygame.draw.rect(self.screen, self.colors.GOLD if selected else self.colors.BORDER_COLOR, rect, 2 if selected else 1)
 
@@ -413,58 +469,6 @@ class CharacterLayoutMixin:
             selected=selected,
         )
 
-    def _draw_empty_companion_slots(self, rect: pygame.Rect, y: int) -> None:
-        """Draw Ranger/Beast Master stable placeholders before any tame exists."""
-        self._draw_text("Companion Stable", self.normal_font, self.colors.GOLD, rect.left, y, rect.width)
-        prompt = "Tame a wounded Animal to fill a slot."
-        prompt_width = self.small_font.size(prompt)[0]
-        self._draw_text(
-            prompt,
-            self.small_font,
-            self.colors.GRAY,
-            rect.right - min(prompt_width, rect.width),
-            self.details_rect.top + 18,
-            rect.width,
-        )
-
-        slot_count = ability_mechanics.TAMED_COMPANION_ROSTER_LIMIT
-        columns = 2
-        gap = 8
-        top = y + self.normal_font.get_height() + 14
-        available_height = max(1, rect.bottom - top)
-        rows = max(1, (slot_count + columns - 1) // columns)
-        slot_width = max(1, (rect.width - gap * (columns - 1)) // columns)
-        slot_height = min(58, max(36, (available_height - gap * (rows - 1)) // rows))
-        for index in range(slot_count):
-            col = index % columns
-            row = index // columns
-            slot_rect = pygame.Rect(
-                rect.left + col * (slot_width + gap),
-                top + row * (slot_height + gap),
-                slot_width,
-                slot_height,
-            )
-            if slot_rect.bottom > rect.bottom:
-                break
-            pygame.draw.rect(self.screen, (14, 14, 19), slot_rect)
-            pygame.draw.rect(self.screen, self.colors.DARK_GRAY, slot_rect, 1)
-            self._draw_text(
-                f"Empty Slot {index + 1}",
-                self.normal_font,
-                self.colors.GRAY,
-                slot_rect.left + 10,
-                slot_rect.top + 8,
-                slot_rect.width - 20,
-            )
-            self._draw_text(
-                "Available",
-                self.small_font,
-                self.colors.GRAY,
-                slot_rect.left + 10,
-                slot_rect.top + 8 + self.normal_font.get_height(),
-                slot_rect.width - 20,
-            )
-
     def _open_class_companion_popup(self, player_char) -> None:
         entries = self.class_companion_entries(player_char)
         if not entries:
@@ -490,6 +494,13 @@ class CharacterLayoutMixin:
         kind, companion = entries[selected_index]
         if kind not in {"Companion", "Held Companion"} or getattr(companion, "spec", "") != "Tamed":
             return None
+        class_name = self._attr_name(getattr(player_char, "cls", None), "")
+        if class_name in {"Ranger", "Beast Master"}:
+            state = ability_mechanics.normalize_tamed_companion(
+                getattr(player_char, "tamed_companion", None)
+            )
+            active_index = state.get("active_index")
+            return active_index if isinstance(active_index, int) else None
         roster_index = 0
         for entry_kind, entry_companion in entries[: selected_index + 1]:
             if entry_kind in {"Companion", "Held Companion"} and getattr(entry_companion, "spec", "") == "Tamed":

@@ -2,18 +2,20 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import json
 import logging
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 import pygame
 
+from src.paths import PYGAME_ASSETS_DIR
+
 
 logger = logging.getLogger(__name__)
 
-ICON_ROOT = Path(__file__).resolve().parent / "item_icons"
+ICON_ROOT = PYGAME_ASSETS_DIR / "item_icons"
 
 
 @dataclass(frozen=True)

@@ -165,10 +165,6 @@ class CharacterDataMixin:
             except Exception:
                 favored = "None"
             rows.append(("Favored Enemy", favored))
-            tamed_state = ability_mechanics.normalize_tamed_companion(getattr(player_char, "tamed_companion", None))
-            roster = tamed_state.get("companions", [])
-            if isinstance(roster, list):
-                rows.append(("Held", f"{len(roster)}/{ability_mechanics.TAMED_COMPANION_ROSTER_LIMIT}"))
         if summons:
             rows.append(("Known Summons", str(len(summons))))
         if familiar is not None:

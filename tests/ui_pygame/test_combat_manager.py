@@ -11,6 +11,8 @@ import pytest
 from src.core import abilities, enemies, items, main_story
 from src.core.classes import ability_mechanics, class_rings, promotion_kits
 from src.ui_pygame.gui import combat_manager
+from src.ui_pygame.gui.combat_manager.outcomes import POST_DEATH_PAUSE_MS
+from src.ui_pygame.gui.combat_view.animator import DEATH_ANIMATION_FRAMES
 
 
 @pytest.fixture(autouse=True)
@@ -119,8 +121,8 @@ class DummyCombatView:
         self.enemy_deaths.append(enemy)
 
 
-def test_fast_combat_entry_and_turn_delay_constants():
-    assert combat_manager.COMBAT_START_TRANSITION_FRAMES == 0
+def test_combat_entry_and_turn_delay_constants():
+    assert combat_manager.COMBAT_START_TRANSITION_FRAMES == 24
     assert combat_manager.POST_TURN_DELAY_FRAMES == 6
 
 
@@ -919,9 +921,23 @@ def test_execute_action_handles_suppression_and_slot_machine_skill(monkeypatch):
 
     manager.engine = SimpleNamespace(execute_action=execute_favored_attack)
     assert manager._execute_action("Attack", player, enemy) == "action_taken"
-    assert manager.combat_view.messages == [
-        "Hero attacks Goblin.",
+    assert manager.combat_view.messages == ["Hero attacks Goblin."]
+    assert "favored_enemy_bonus_logged" not in promotion_kits.combat_state(player)
+
+    manager.combat_view.messages.clear()
+    promotion_kits.combat_state(player)["favored_enemy_bonus_logged"] = True
+
+    def execute_favored_hit(action, choice=None, slot_machine_callback=None):
+        assert action == "Attack"
+        enemy.health.current -= 5
+        return SimpleNamespace(message="Hero attacks Goblin.\nGoblin takes 5 damage.", fled=False)
+
+    manager.engine = SimpleNamespace(execute_action=execute_favored_hit)
+    assert manager._execute_action("Attack", player, enemy) == "action_taken"
+    assert manager.combat_view.messages[:3] == [
         "Favored Enemy pressure guides the strike.",
+        "Hero attacks Goblin.",
+        "Goblin takes 5 damage.",
     ]
 
 
@@ -1208,7 +1224,8 @@ def test_jester_victory_runs_death_fade_before_dungeon_end_event(monkeypatch):
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.time.Clock", lambda: DummyClock())
     render_calls = []
     monkeypatch.setattr(manager, "_render_combat_frame", lambda *args, **kwargs: render_calls.append((args, kwargs)))
-    monkeypatch.setattr(manager, "_pause_with_events", lambda _ms: None)
+    pauses = []
+    monkeypatch.setattr(manager, "_pause_with_events", lambda ms: pauses.append(ms))
     popup_messages = []
 
     manager.current_tile = JesterBossRoom()
@@ -1220,7 +1237,8 @@ def test_jester_victory_runs_death_fade_before_dungeon_end_event(monkeypatch):
     assert manager._handle_combat_end(player, enemy, fled=False) is True
     assert popup_messages[0].startswith("Victory! Jester defeated!")
     assert "Gold +5" in popup_messages[0]
-    assert len(render_calls) == 71
+    assert len(render_calls) == DEATH_ANIMATION_FRAMES + 1
+    assert pauses == [POST_DEATH_PAUSE_MS]
     assert manager.combat_view.reset_calls == 1
     assert manager._combat_background is None
 

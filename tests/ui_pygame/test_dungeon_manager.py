@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from types import SimpleNamespace
 
 import pygame
@@ -11,6 +12,7 @@ import pytest
 from src.core import enemies, items, main_story
 from src.core.classes import class_rings
 from src.core.player import LIMINAL_GAP_ENTRY_FACING, LIMINAL_GAP_ENTRY_POS
+from src.paths import PYGAME_ASSETS_DIR
 from src.ui_pygame.gui import dungeon_manager
 
 
@@ -415,7 +417,6 @@ def test_background_loading_loading_screen_and_popup_background(monkeypatch, cap
 
     source = DummySurface((200, 100))
     scaled_sizes = []
-    monkeypatch.setattr("os.path.exists", lambda _path: True)
     monkeypatch.setattr("src.ui_pygame.gui.dungeon_manager.pygame.image.load", lambda _path: source)
     monkeypatch.setattr(
         "src.ui_pygame.gui.dungeon_manager.pygame.transform.scale",
@@ -434,7 +435,7 @@ def test_background_loading_loading_screen_and_popup_background(monkeypatch, cap
     assert manager._get_popup_background() == "screen-copy"
 
     manager._dungeon_background_loaded = False
-    monkeypatch.setattr("os.path.exists", lambda _path: False)
+    monkeypatch.setattr(Path, "exists", lambda _path: False)
     assert dungeon_manager.DungeonManager._load_dungeon_background(manager) is None
     assert "Dungeon background not found" in capsys.readouterr().out
 
@@ -932,7 +933,7 @@ def test_dead_body_waitress_hook_uses_existing_sprite_and_missing_safe_sfx(monke
     assert dialogues == [(
         "Waitress",
         "Waitress",
-        "src/ui_pygame/assets/enemy_combat_sprites/mad_waitress.png",
+        str(PYGAME_ASSETS_DIR / "enemy_combat_sprites" / "mad_waitress.png"),
     )]
     assert combats and combats[0][0] is player and combats[0][2] is body_tile
     assert player.quest_dict["Main"]["A Bad Dream"]["Waitress Defeated"] is True

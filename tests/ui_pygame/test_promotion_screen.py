@@ -542,6 +542,9 @@ def test_promotion_screen_previews_healer_branch_mechanics(monkeypatch):
 
         assert f"{current_class} -> {option}" in presenter.large_font.render_calls
         assert not any("New tab:" in call for call in presenter.small_font.render_calls)
+        if option == "Priest":
+            assert any("Prayer is shown" in call for call in presenter.small_font.render_calls)
+            assert any("Supplication" in call for call in presenter.small_font.render_calls)
 
 
 def test_promotion_screen_previews_pathfinder_branch_mechanics(monkeypatch):
@@ -571,6 +574,9 @@ def test_promotion_screen_previews_pathfinder_branch_mechanics(monkeypatch):
 
         assert f"Pathfinder -> {option}" in presenter.large_font.render_calls
         assert not any("New tab:" in call for call in presenter.small_font.render_calls)
+        if option == "Ranger":
+            preview_text = " ".join(presenter.small_font.render_calls)
+            assert preview_text.count("Companion & Hunt") == 1
 
 
 def test_promotion_screen_navigation(monkeypatch):

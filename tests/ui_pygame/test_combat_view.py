@@ -3,17 +3,18 @@
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 from types import SimpleNamespace
-import sys
 
 import pygame
 import pytest
 
 sys.path.insert(0, str(Path(__file__).parents[2]))
 
-from src.ui_pygame.gui import combat_view
 from src.ui_pygame.assets.enemy_combat_sprite_manager import EnemyCombatSpriteManager
+from src.ui_pygame.gui import combat_view
+from src.ui_pygame.gui.combat_view.animator import DEATH_ANIMATION_FRAMES
 from src.ui_pygame.gui.status_icons import (
     STATUS_ICON_COLORS,
     combine_duplicate_status_icons,
@@ -161,7 +162,7 @@ def test_sprite_animator_lifecycle_and_tint():
 
     animator.trigger_death()
     assert animator.animation_type == "death"
-    animator.update(60)
+    animator.update(DEATH_ANIMATION_FRAMES)
     assert animator.is_dead is True
     assert animator.death_progress == 1.0
 

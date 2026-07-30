@@ -2,19 +2,21 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import json
 import logging
-from pathlib import Path
 import re
+from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Iterable
 
 import pygame
 
+from src.paths import PYGAME_ASSETS_DIR
+
 
 logger = logging.getLogger(__name__)
 
-PORTRAIT_ROOT = Path(__file__).resolve().parent / "portraits"
+PORTRAIT_ROOT = PYGAME_ASSETS_DIR / "portraits"
 
 
 @dataclass(frozen=True)

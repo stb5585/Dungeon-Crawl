@@ -1,11 +1,10 @@
 """Models behavior for the modern character screen package."""
 
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any
 
 from src.core import items
-
+from src.paths import PYGAME_ASSETS_DIR
 
 @dataclass(frozen=True)
 class CharacterTab:
@@ -50,7 +49,7 @@ EQUIPMENT_SLOT_ORDER = ("Weapon", "Armor", "Helmet", "OffHand", "Ring", "Pendant
 TWO_HANDED_WEAPON_SUBTYPES = frozenset({"Longsword", "Battle Axe", "Hammer"})
 RESISTANCE_ORDER = ("Fire", "Electric", "Earth", "Shadow", "Poison", "Ice", "Water", "Wind", "Holy", "Physical")
 RESISTANCE_SLOT_COUNT = len(RESISTANCE_ORDER)
-PORTRAIT_DIR = Path(__file__).resolve().parents[1] / "assets" / "portraits"
+PORTRAIT_DIR = PYGAME_ASSETS_DIR / "portraits"
 WEAPON_DISCIPLINE_ICON_FACTORIES = {
     "Fist": items.BrassKnuckles,
     "Dagger": items.Dirk,

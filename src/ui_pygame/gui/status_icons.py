@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-from pathlib import Path
+from src.paths import PYGAME_ASSETS_DIR
+
 
 StatusIcon = tuple[str, bool | None]
 
-STATUS_ICON_ASSET_DIR = Path(__file__).resolve().parents[1] / "assets" / "effects"
+STATUS_ICON_ASSET_DIR = PYGAME_ASSETS_DIR / "effects"
 STATUS_ICON_ASSETS = {
     "AST": "astral_shift.png",
     "BLD": "blind.png",

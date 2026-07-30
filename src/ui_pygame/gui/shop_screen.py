@@ -11,6 +11,7 @@ from textwrap import wrap
 import pygame
 
 from src.core import items as items_module
+from src.paths import PYGAME_ASSETS_DIR
 from src.ui_pygame.assets.item_render_manager import get_item_render_manager
 
 from .input_guards import prepare_guarded_input, release_guard_allows_input, update_input_armed_from_event
@@ -55,11 +56,9 @@ class ShopScreen(TownScreenBase):
 
     def _load_background(self):
         """Load and scale the background image (town or dungeon)."""
-        import os
-        bg_path = os.path.join("src", "ui_pygame", "assets", "backgrounds", self.background_image)
-        if os.path.exists(bg_path):
+        bg_path = PYGAME_ASSETS_DIR / "backgrounds" / self.background_image
+        if bg_path.exists():
             try:
-                import pygame
                 bg_image = pygame.image.load(bg_path)
                 # Scale to fit screen while maintaining aspect ratio
                 bg_width, bg_height = bg_image.get_size()

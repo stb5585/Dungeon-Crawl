@@ -13,6 +13,9 @@ from pathlib import Path
 
 import pygame
 
+from src.paths import PROJECT_ROOT
+
+
 # ASCII character to brightness mapping
 # Space is transparent (None), others map 0-255
 ASCII_BRIGHTNESS_MAP = {
@@ -292,8 +295,8 @@ def convert_ascii_files_to_sprites(ascii_dir, output_dir, size=128):
 
 if __name__ == "__main__":
     # Convert all ASCII files
-    ascii_directory = "ascii_files"
-    sprite_output = "old_assets/retired_enemy_sprites/generated_reference"
+    ascii_directory = PROJECT_ROOT / "ascii_files"
+    sprite_output = PROJECT_ROOT / "old_assets" / "retired_enemy_sprites" / "generated_reference"
     
     if os.path.exists(ascii_directory):
         converted, failed = convert_ascii_files_to_sprites(ascii_directory, sprite_output)

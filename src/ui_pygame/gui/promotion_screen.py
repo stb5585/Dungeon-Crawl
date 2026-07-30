@@ -7,7 +7,7 @@ import textwrap
 
 import pygame
 
-from src.core.classes import promotion_mechanic_guidance, promotion_mechanic_tab_label
+from src.core.classes import promotion_mechanic_details, promotion_mechanic_tab_label
 
 from .confirmation_popup import ConfirmationPopup
 from .mouse_helpers import hit_index, is_left_click, mouse_position
@@ -199,12 +199,13 @@ class PromotionScreen(TownScreenBase):
         y = desc_start_y + (line_height * 4) + 10
 
         mechanic_tab = promotion_mechanic_tab_label(cls_instance.name)
-        mechanic_guidance = promotion_mechanic_guidance(cls_instance.name).strip()
-        if mechanic_tab:
-            note = f"Character Menu: {mechanic_tab}"
-            if mechanic_guidance:
-                guidance = mechanic_guidance.replace("Character Menu tab available: ", "")
-                note = f"{note} - {guidance}"
+        mechanic_guidance = promotion_mechanic_details(cls_instance.name)
+        if mechanic_tab or mechanic_guidance:
+            note = mechanic_guidance
+            if mechanic_tab:
+                note = f"Character Menu: {mechanic_tab}"
+            if mechanic_tab and mechanic_guidance:
+                note = f"{note} - {mechanic_guidance}"
             note_lines = self._wrap_lines(note, 88)[:2]
             y = self._draw_wrapped_lines(
                 note_lines,

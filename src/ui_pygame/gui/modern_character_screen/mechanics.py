@@ -728,7 +728,15 @@ class CharacterMechanicsMixin:
             self.class_companion_selector_active = False
             self._class_roster_rect = roster_rect
             if class_name in {"Ranger", "Beast Master"}:
-                self._draw_empty_companion_slots(roster_rect, y)
+                self._draw_text(
+                    "Companion",
+                    self.normal_font,
+                    self.colors.GOLD,
+                    roster_rect.left,
+                    y,
+                    roster_rect.width,
+                )
+                self._draw_empty_companion_slot()
             return
 
         self.selected_class_companion_index = max(
@@ -737,7 +745,7 @@ class CharacterMechanicsMixin:
         )
         self._class_roster_rect = roster_rect
         heading = (
-            "Companion Stable"
+            "Companion"
             if class_name in {"Ranger", "Beast Master"}
             else mechanic_tab.label if mechanic_tab is not None else "Companions"
         )
@@ -752,11 +760,12 @@ class CharacterMechanicsMixin:
             for kind, companion in entries
         )
         if self.class_companion_selector_active:
-            helper = (
-                "Arrows: Select  Enter: Inspect  S: Lead  R: Release  C/Esc: Back"
-                if has_tamed_roster
-                else "Arrows: Select  Enter: Inspect  C/Esc: Back"
-            )
+            if has_tamed_roster and class_name in {"Ranger", "Beast Master"}:
+                helper = "Enter: Inspect  R: Release  C/Esc: Back"
+            elif has_tamed_roster:
+                helper = "Arrows: Select  Enter: Inspect  S: Lead  R: Release  C/Esc: Back"
+            else:
+                helper = "Arrows: Select  Enter: Inspect  C/Esc: Back"
         else:
             helper = f"C: Select {singular_label}"
         helper_width = self.small_font.size(helper)[0]

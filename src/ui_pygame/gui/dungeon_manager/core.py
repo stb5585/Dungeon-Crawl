@@ -1,13 +1,18 @@
 """Core behavior for the dungeon manager package."""
 
-import os
+import logging
 import random
 import sys
+from pathlib import Path
 
 import pygame
 
-from src.core import map_tiles
 import src.ui_pygame.gui.dungeon_manager as dungeon_manager
+from src.core import map_tiles
+from src.paths import PYGAME_ASSETS_DIR
+
+
+logger = logging.getLogger(__name__)
 
 
 class DungeonCoreMixin:
@@ -211,13 +216,9 @@ class DungeonCoreMixin:
 
     def _animate_nimue_materialization(self):
         """Animate Nimue's sprite materializing from the spring."""
-        # Try to load Nimue sprite
-        nimue_path = os.path.join(
-            os.path.dirname(__file__), "..", "assets", "sprites", "npcs", "nimue.png"
-        )
-        nimue_path = os.path.abspath(nimue_path)
+        nimue_path = PYGAME_ASSETS_DIR / "sprites" / "npcs" / "nimue.png"
 
-        if not os.path.exists(nimue_path):
+        if not nimue_path.exists():
             # Sprite not found, skip animation
             return
 
@@ -334,18 +335,18 @@ class DungeonCoreMixin:
         )
 
     def _npc_image_path(self, filename: str) -> str:
-        """Return the repo-relative path for an NPC portrait asset."""
-        return os.path.join("src", "ui_pygame", "assets", "sprites", "npcs", filename)
+        """Return the stable absolute path for an NPC portrait asset."""
+        return str(PYGAME_ASSETS_DIR / "sprites" / "npcs" / filename)
 
     def _enemy_combat_sprite_image_path(self, filename: str) -> str:
-        """Return the repo-relative path for an enemy combat sprite asset."""
-        return os.path.join("src", "ui_pygame", "assets", "enemy_combat_sprites", filename)
+        """Return the stable absolute path for an enemy combat sprite asset."""
+        return str(PYGAME_ASSETS_DIR / "enemy_combat_sprites" / filename)
 
     def _enemy_dialogue_image_path(self, enemy) -> str:
         """Return the best available combat sprite path for boss dialogue."""
         picture = getattr(enemy, "picture", "")
         if isinstance(picture, str) and picture.lower().endswith(".png"):
-            return self._enemy_combat_sprite_image_path(os.path.basename(picture))
+            return self._enemy_combat_sprite_image_path(Path(picture).name)
         try:
             from src.ui_pygame.assets.enemy_combat_sprite_manager import get_enemy_combat_sprite_manager
 
@@ -353,7 +354,7 @@ class DungeonCoreMixin:
             sprite_key = manager.get_sprite_key_for_enemy(enemy)
             sprite_path = manager.sprite_root / f"{sprite_key}.png"
             if sprite_path.exists():
-                return os.path.relpath(sprite_path, start=os.getcwd())
+                return str(sprite_path)
         except Exception:
             pass
         name = str(getattr(enemy, "name", "boss")).lower().replace(" ", "_")
@@ -417,11 +418,9 @@ class DungeonCoreMixin:
             return self._dungeon_background
 
         self._dungeon_background_loaded = True
-        # Assets are now in src/ui_pygame/assets/
-        bg_path = os.path.join(os.path.dirname(__file__), "..", "assets", "backgrounds", "dungeon.png")
-        bg_path = os.path.abspath(bg_path)
+        bg_path = PYGAME_ASSETS_DIR / "backgrounds" / "dungeon.png"
 
-        if os.path.exists(bg_path):
+        if bg_path.exists():
             try:
                 bg_image = pygame.image.load(bg_path).convert()
                 bg_width, bg_height = bg_image.get_size()
