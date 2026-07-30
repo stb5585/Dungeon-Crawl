@@ -130,7 +130,7 @@ class TestPlayerTopLevelHelpers:
         load_calls = []
         removed = []
         monkeypatch.setattr(
-            player_module.SaveManager,
+            player_module.persistence.SaveManager,
             "load_player",
             lambda filename, is_tmp=False, skip_tiles=False: load_calls.append((filename, is_tmp, skip_tiles)) or loaded,
         )
@@ -303,8 +303,8 @@ class TestPlayerTopLevelHelpers:
         def fake_load_tiled_map(path, z, _map_tiles):
             return {(99, z, z): SimpleNamespace(source=Path(path).name, z=z)}
 
-        monkeypatch.setattr(player_module, "_load_tiled_map", fake_load_tiled_map)
-        monkeypatch.setattr(player_module, "MAP_FILES_DIR", map_dir)
+        monkeypatch.setattr(player_module.exploration, "_load_tiled_map", fake_load_tiled_map)
+        monkeypatch.setattr(player_module.exploration, "MAP_FILES_DIR", map_dir)
         monkeypatch.chdir(tmp_path)
 
         player = TestGameState.create_player(class_name="Warrior", race_name="Human")
@@ -578,7 +578,7 @@ class TestPlayerProgressionAndMenus:
         popup_calls = []
 
         monkeypatch.setattr(
-            player_module.SaveManager,
+            player_module.inventory.SaveManager,
             "save_player",
             lambda player_obj, filename, is_tmp=False: save_calls.append((player_obj.name, filename, is_tmp)),
         )
@@ -689,7 +689,7 @@ class TestPlayerProgressionAndMenus:
         player.world_dict[(1, 2, 7)] = chest_tile
         monkeypatch.setattr(player_module.random, "randint", lambda _a, _b: 10)
         monkeypatch.setattr(
-            player_module.enemies,
+            player_module.inventory.enemies,
             "Mimic",
             lambda level, player_level=None: SimpleNamespace(name=f"Mimic-{level}", anti_magic_active=None),
         )

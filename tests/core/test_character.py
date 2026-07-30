@@ -22,7 +22,7 @@ from tests.test_framework import TestGameState
 
 class TestCharacterCreation:
     """Test basic character creation and initialization."""
-    
+
     def test_create_basic_character(self):
         """Test creating a basic character."""
         char = TestGameState.create_player(
@@ -34,11 +34,11 @@ class TestCharacterCreation:
         assert char.race.name == "Human"
         assert char.cls.name == "Warrior"
         assert char.is_alive()
-    
+
     def test_character_has_required_attributes(self):
         """Verify character has all required attributes for combat."""
         char = TestGameState.create_player(name="Test", class_name="Warrior", race_name="Human")
-        
+
         # Core attributes
         assert hasattr(char, 'name')
         assert hasattr(char, 'health')
@@ -46,13 +46,13 @@ class TestCharacterCreation:
         assert hasattr(char, 'stats')
         assert hasattr(char, 'combat')
         assert hasattr(char, 'equipment')
-        
+
         # Combat attributes
         assert hasattr(char, 'magic_effects')
         assert hasattr(char, 'status_effects')
         assert hasattr(char, 'physical_effects')
         assert hasattr(char, 'stat_effects')
-        
+
         # Methods
         assert hasattr(char, 'is_alive')
         assert hasattr(char, 'weapon_damage')
@@ -71,21 +71,21 @@ class TestCharacterCreation:
 
 class TestCharacterMethods:
     """Test character methods exist and have correct signatures."""
-    
+
     def test_check_active_method(self):
         """Test default active-state behavior."""
         char = TestGameState.create_player(name="Test", class_name="Warrior", race_name="Human")
         active, message = char.check_active()
         assert active is True
         assert message == ""
-    
+
     def test_incapacitated_method(self):
         """Test incapacitated method."""
         char = TestGameState.create_player(name="Test", class_name="Warrior", race_name="Human")
         assert hasattr(char, 'incapacitated')
         result = char.incapacitated()
         assert isinstance(result, bool)
-    
+
     def test_weapon_damage_signature(self):
         """Verify weapon_damage has the expected signature."""
         char = TestGameState.create_player(name="Attacker", class_name="Warrior", race_name="Human")
@@ -173,11 +173,11 @@ class TestCharacterMethods:
 
 class TestCombatAPIContract:
     """Test the API contract between combat systems and character."""
-    
+
     def test_enemy_has_combat_attributes(self):
         """Verify enemies have all required combat attributes."""
         from src.core.enemies import Goblin
-        
+
         enemy = Goblin()
         assert hasattr(enemy, 'name')
         assert hasattr(enemy, 'health')
@@ -187,17 +187,17 @@ class TestCombatAPIContract:
         assert hasattr(enemy, 'is_alive')
         assert hasattr(enemy, 'weapon_damage')
         assert hasattr(enemy, 'dodge_chance')
-    
+
     def test_player_has_combat_attributes(self):
         """Verify player has all required combat attributes."""
         # Use TestGameState to properly create a player
         player = TestGameState.create_player(name="TestPlayer", class_name="Warrior", race_name="Human")
-        
+
         # Basic attributes
         assert hasattr(player, 'name')
         assert hasattr(player, 'health')
         assert hasattr(player, 'cls')
-        
+
         # Combat methods
         assert hasattr(player, 'weapon_damage')
         assert hasattr(player, 'is_alive')
@@ -205,7 +205,7 @@ class TestCombatAPIContract:
 
 class TestEnhancedCombatRequirements:
     """Test requirements for enhanced combat system."""
-    
+
     def test_character_needs_check_active(self):
         """check_active should report incapacitated actors correctly."""
         char = TestGameState.create_player(name="Test", class_name="Warrior", race_name="Human")
@@ -224,11 +224,11 @@ class TestEnhancedCombatRequirements:
 
         assert active is False
         assert "encased in ice" in msg.lower()
-    
+
     def test_character_has_speed_stat(self):
         """Verify characters have speed/dex stat for turn order."""
         char = TestGameState.create_player(name="Test", class_name="Warrior", race_name="Human")
-        
+
         # Check for speed or dexterity stat
         assert hasattr(char, 'stats')
         assert hasattr(char.stats, 'dex') or hasattr(char.stats, 'speed')
@@ -901,7 +901,7 @@ class TestPlayerUtilityBehaviors:
             resistance=player.resistance,
             transform_type=player.transform_type,
         )
-        monkeypatch.setattr("src.core.player.load_char", lambda char=None: restored)
+        monkeypatch.setattr("src.core.player.combat.load_char", lambda char=None: restored)
 
         backward = player.transform(back=True)
 
@@ -912,7 +912,7 @@ class TestPlayerUtilityBehaviors:
 
     def test_transform_back_returns_empty_when_no_saved_form(self, monkeypatch):
         player = TestGameState.create_player(class_name="Warrior", race_name="Human")
-        monkeypatch.setattr("src.core.player.load_char", lambda char=None: None)
+        monkeypatch.setattr("src.core.player.combat.load_char", lambda char=None: None)
 
         assert player.transform(back=True) == ""
 
@@ -1217,7 +1217,7 @@ def run_tests():
     print("CHARACTER AND COMBAT SYSTEM TESTS")
     print("=" * 70)
     print()
-    
+
     # Run pytest with verbose output
     import pytest
     exit_code = pytest.main([
@@ -1226,7 +1226,7 @@ def run_tests():
         '--tb=short',
         '--color=yes'
     ])
-    
+
     return exit_code
 
 

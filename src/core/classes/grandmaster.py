@@ -69,8 +69,8 @@ class GrandmasterOfArms(Job):
     Promotion: Warrior -> Weapon Master -> GrandMaster of Arms
     Additional Pros: Higher dexterity and constitution gain
     Additional Cons: Lower strength gain
-    Special Mechanic: Weapon Specialty - weapon types that gain max level now trigger certain
-        abilities/buffs  TODO
+    Special Mechanic: Weapon Specialty - mastered weapon disciplines reveal weapon arts
+        and passive bonuses.
     """
 
     def __init__(self):

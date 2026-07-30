@@ -1,0 +1,343 @@
+"""Promotion-specific resource spends and class-track actions."""
+
+from __future__ import annotations
+
+from typing import Any
+
+from .meters import (
+    _maybe_preserve,
+    _set_target_stacks,
+    _spend_mp,
+    _target_stacks,
+    cap_for,
+    gain_meter,
+    spend_meter,
+)
+from .state import (
+    CASE_MILESTONES,
+    _ring_awakened_equipped,
+    class_name,
+    combat_state,
+    ensure_state,
+)
+
+
+def conviction_action(character: Any, action_name: str, *, clean: bool = False) -> str:
+    if class_name(character) not in {"Paladin", "Crusader"}:
+        return ""
+    state = combat_state(character)
+    spent = spend_meter(character, "oath_conviction")
+    msg = ""
+    if spent:
+        msg += f"Oath Conviction empowers {action_name} with {spent} stack(s).\n"
+    msg += gain_meter(character, "oath_conviction", 1, action_name)
+    if clean:
+        msg += gain_meter(character, "oath_conviction", 1, "clean vow outcome")
+        marker = "Crusader:oath_conviction"
+        if spent and _ring_awakened_equipped(character, "Crusader") and marker not in state["ring_preserved"]:
+            state["ring_preserved"].add(marker)
+            state["oath_conviction"] = max(1, int(state.get("oath_conviction", 0) or 0))
+            msg += "Vow Affirmation preserves 1 Oath Conviction.\n"
+    return msg
+
+
+def add_fortune(character: Any, success: bool, reason: str) -> str:
+    if class_name(character) not in {"Thief", "Rogue"}:
+        return ""
+    return gain_meter(character, "fortune" if success else "misfortune", 1, reason)
+
+
+def _preserve_spent_meter(character: Any, key: str, ring_class: str, label: str, msg: str) -> str:
+    lines: list[str] = []
+    _maybe_preserve(character, key, ring_class, label, lines)
+    return msg + "".join(lines)
+
+
+def consume_fortune_for_risky_action(character: Any, reason: str) -> tuple[bool, str]:
+    if class_name(character) not in {"Thief", "Rogue"}:
+        return False, ""
+    state = combat_state(character)
+    spent = int(state.get("fortune", 0) or 0)
+    if spent <= 0:
+        return False, ""
+    state["fortune"] = 0
+    force_hit = False
+    try:
+        import random
+
+        force_hit = random.random() < min(0.25, 0.05 * spent)
+    except Exception:
+        force_hit = False
+    msg = f"{character.name} spends {spent} Fortune smoothing {reason}."
+    msg += " The risky line opens cleanly.\n" if force_hit else "\n"
+    return force_hit, _preserve_spent_meter(character, "fortune", "Rogue", "Loaded Dice", msg)
+
+
+def resolve_misfortune_payoff(character: Any, target: Any | None, base_damage: int, reason: str) -> str:
+    if class_name(character) not in {"Thief", "Rogue"}:
+        return ""
+    state = combat_state(character)
+    spent = int(state.get("misfortune", 0) or 0)
+    if spent <= 0:
+        return ""
+    state["misfortune"] = 0
+    bonus = max(1, int(max(1, base_damage) * (0.08 * spent)))
+    if target is not None and base_damage > 0:
+        target.health.current = max(0, target.health.current - bonus)
+        msg = f"{character.name} cashes in {spent} Misfortune through {reason} for {bonus} extra pressure.\n"
+    else:
+        msg = f"{character.name} cashes in {spent} Misfortune through {reason} for a stronger payoff.\n"
+    return _preserve_spent_meter(character, "misfortune", "Rogue", "Loaded Dice", msg)
+
+
+def cheat_death(character: Any) -> str:
+    if class_name(character) != "Rogue":
+        return ""
+    state = combat_state(character)
+    if state.get("cheat_death_used"):
+        return ""
+    state["cheat_death_used"] = True
+    misfortune = int(state.get("misfortune", 0) or 0)
+    chance = min(0.65, 0.25 + (0.10 * misfortune))
+    try:
+        import random
+
+        success = random.random() < chance
+    except Exception:
+        success = False
+    if not success:
+        return f"Cheat Death fails at {int(chance * 100)}% odds.\n"
+    state["misfortune"] = 0
+    state["jinx_turns"] = 2
+    character.health.current = 1
+    msg = f"Cheat Death spends {misfortune} Misfortune and leaves {character.name} standing at 1 HP.\n"
+    return _preserve_spent_meter(character, "misfortune", "Rogue", "Loaded Dice", msg)
+
+
+def apply_death_mark(character: Any, target: Any, reason: str = "setup") -> str:
+    cap = cap_for(character, "death_marks")
+    if cap <= 0 or target is None:
+        return ""
+    state = combat_state(character)
+    marks = state.setdefault("death_marks", {})
+    before = _target_stacks(marks, target)
+    after = min(cap, before + 1)
+    _set_target_stacks(marks, target, after)
+    if after == before:
+        return f"Death Mark is capped at {cap}.\n"
+    return f"{target.name} gains a Death Mark from {reason} ({after}/{cap}).\n"
+
+
+def add_revelation(character: Any, target: Any, amount: int = 1, reason: str = "insight") -> str:
+    cap = cap_for(character, "revelation")
+    if cap <= 0 or target is None:
+        return ""
+    state = combat_state(character)
+    mapping = state.setdefault("revelation", {})
+    before = _target_stacks(mapping, target)
+    after = min(cap, before + amount)
+    _set_target_stacks(mapping, target, after)
+    if after == before:
+        return f"Revelation is capped at {cap}.\n"
+    return f"{character.name} gains Revelation on {target.name} from {reason} ({after}/{cap}).\n"
+
+
+def gain_case_progress(character: Any, enemy_type: Any, amount: int, reason: str) -> str:
+    if class_name(character) not in {"Inquisitor", "Seeker"} or not enemy_type:
+        return ""
+    state = ensure_state(character)
+    key = str(enemy_type)
+    before = int(state["case_journal"].get(key, 0) or 0)
+    after = min(100, before + max(0, int(amount)))
+    state["case_journal"][key] = after
+    if after == before:
+        return ""
+    milestone = case_rank(after)
+    suffix = f" ({milestone})" if milestone else ""
+    return f"Case Journal records {key} +{after - before} from {reason}: {after}/100{suffix}.\n"
+
+
+def case_rank(progress: int) -> str:
+    for threshold, name in CASE_MILESTONES:
+        if int(progress or 0) >= threshold:
+            return name
+    return "Unstudied"
+
+
+def wayfinding_discount(character: Any) -> float:
+    if class_name(character) != "Seeker":
+        return 0.0
+    best = max((int(v or 0) for v in ensure_state(character)["case_journal"].values()), default=0)
+    discount = 0.10 if best >= 100 else 0.05 if best >= 50 else 0.0
+    if _ring_awakened_equipped(character, "Seeker"):
+        discount += 0.05
+    return min(0.20, discount)
+
+
+def gain_stolen_charge(character: Any, reason: str) -> str:
+    return gain_meter(character, "stolen_charge", 1, reason)
+
+
+def devotion_guard_reduction(character: Any, damage: int) -> tuple[int, str]:
+    """Apply held Devotion's passive incoming-damage reduction."""
+    if damage <= 0 or class_name(character) not in {"Cleric", "Templar", "Hierophant"}:
+        return damage, ""
+    stacks = min(
+        cap_for(character, "devotion"),
+        max(0, int(combat_state(character).get("devotion", 0) or 0)),
+    )
+    if stacks <= 0:
+        return damage, ""
+    reduced = int(damage * (0.03 * stacks))
+    if reduced <= 0:
+        return damage, ""
+    damage = max(0, damage - reduced)
+    return damage, f"{character.name}'s Devotion guard reduces damage by {reduced}.\n"
+
+
+def combat_skill_visible(character: Any, skill: Any) -> bool:
+    """Return whether a promotion-kit skill should be visible in combat menus."""
+    name = str(getattr(skill, "name", "") or "")
+    if name == "Sanctuary Ward":
+        return int(combat_state(character).get("devotion", 0) or 0) > 0
+    return True
+
+
+def sanctuary_ward(character: Any) -> str:
+    if class_name(character) not in {"Cleric", "Templar", "Hierophant"}:
+        return "Sanctuary Ward belongs to the Cleric, Templar, and Hierophant track.\n"
+    stacks = int(combat_state(character).get("devotion", 0) or 0)
+    if stacks <= 0:
+        return "Sanctuary Ward requires Devotion.\n"
+    if not _spend_mp(character, 8):
+        return "Not enough MP for Sanctuary Ward.\n"
+    spent = spend_meter(character, "devotion")
+    effect = character.magic_effects["Nature Shield"]
+    effect.active = True
+    effect.duration = 2
+    effect.extra = max(10, spent * 12)
+    msg = f"{character.name} spends {spent} Devotion on Sanctuary Ward.\n"
+    if spent >= 3 and character.status_effects["Poison"].active:
+        character.status_effects["Poison"].active = False
+        msg += "Sanctuary Ward cleanses poison.\n"
+    return _preserve_spent_meter(character, "devotion", "Templar", "Ordered Blessings", msg)
+
+
+def relic_aegis(character: Any) -> str:
+    if class_name(character) != "Templar":
+        return "Relic Aegis requires Templar training.\n"
+    if getattr(character.equipment.get("OffHand"), "subtyp", None) != "Shield":
+        return "Relic Aegis requires a shield.\n"
+    stacks = int(combat_state(character).get("devotion", 0) or 0)
+    if stacks < 2:
+        return "Relic Aegis requires at least 2 Devotion.\n"
+    if not _spend_mp(character, 12):
+        return "Not enough MP for Relic Aegis.\n"
+    spent = spend_meter(character, "devotion")
+    effect = character.magic_effects["Nature Shield"]
+    effect.active = True
+    effect.duration = 3
+    effect.extra = max(20, spent * 18)
+    msg = f"{character.name} spends {spent} Devotion on Relic Aegis.\n"
+    return _preserve_spent_meter(character, "devotion", "Templar", "Ordered Blessings", msg)
+
+
+def consecrated_conduit(character: Any) -> str:
+    if class_name(character) != "Hierophant":
+        return "Consecrated Conduit requires Hierophant training.\n"
+    weapon = getattr(character, "equipment", {}).get("Weapon")
+    if getattr(weapon, "subtyp", None) != "Staff":
+        return "Consecrated Conduit requires a staff.\n"
+    stacks = int(combat_state(character).get("devotion", 0) or 0)
+    if stacks <= 0:
+        return "Consecrated Conduit requires Devotion.\n"
+    if not _spend_mp(character, 10):
+        return "Not enough MP for Consecrated Conduit.\n"
+    spent = spend_meter(character, "devotion")
+    combat_state(character)["consecrated_conduit"] = {"stacks": spent}
+    return f"{character.name} spends {spent} Devotion on Consecrated Conduit.\n"
+
+
+def supplication(character: Any, target: Any | None = None) -> str:
+    if class_name(character) not in {"Priest", "Archbishop"}:
+        return "Supplication belongs to the Priest and Archbishop track.\n"
+    stacks = int(combat_state(character).get("prayer", 0) or 0)
+    if stacks <= 0:
+        return "Supplication requires Prayer.\n"
+    if not _spend_mp(character, 10):
+        return "Not enough MP for Supplication.\n"
+    target = target or character
+    spent = spend_meter(character, "prayer")
+    heal = min(target.health.max - target.health.current, max(1, 12 * spent + character.stats.wisdom // 2))
+    target.health.current += heal
+    msg = f"{character.name} spends {spent} Prayer; Supplication restores {heal} HP.\n"
+    if target.status_effects["Poison"].active and spent >= 2:
+        target.status_effects["Poison"].active = False
+        msg += "Supplication cleanses poison.\n"
+    return _preserve_spent_meter(character, "prayer", "Archbishop", "Divine Intervention", msg)
+
+
+def great_benediction(character: Any) -> str:
+    if class_name(character) != "Archbishop":
+        return "Great Benediction requires Archbishop training.\n"
+    stacks = int(combat_state(character).get("prayer", 0) or 0)
+    if stacks < 3:
+        return "Great Benediction requires at least 3 Prayer.\n"
+    if not _spend_mp(character, 18):
+        return "Not enough MP for Great Benediction.\n"
+    spent = spend_meter(character, "prayer")
+    character.stat_effects["Magic Defense"].active = True
+    character.stat_effects["Magic Defense"].duration = 4
+    character.stat_effects["Magic Defense"].extra = max(int(character.stat_effects["Magic Defense"].extra or 0), spent * 4)
+    character.magic_effects["Regen"].active = True
+    character.magic_effects["Regen"].duration = 4
+    character.magic_effects["Regen"].extra = max(int(character.magic_effects["Regen"].extra or 0), spent * 5)
+    msg = f"{character.name} spends {spent} Prayer on Great Benediction.\n"
+    return _preserve_spent_meter(character, "prayer", "Archbishop", "Divine Intervention", msg)
+
+
+def great_gospel_prayer(character: Any) -> str:
+    if class_name(character) != "Archbishop":
+        return ""
+    cap = cap_for(character, "prayer")
+    state = combat_state(character)
+    state["prayer"] = max(int(state.get("prayer", 0) or 0), cap // 2)
+    return f"Great Gospel raises Prayer to {state['prayer']}/{cap}.\n"
+
+
+def dim_mak(character: Any, target: Any | None) -> str:
+    if class_name(character) != "Master Monk":
+        return "Dim Mak requires Master Monk training.\n"
+    cap = cap_for(character, "ki")
+    if int(combat_state(character).get("ki", 0) or 0) < cap:
+        return "Dim Mak requires full Ki.\n"
+    if target is None:
+        return "There is no target for Dim Mak.\n"
+    if not _spend_mp(character, 18):
+        return "Not enough MP for Dim Mak.\n"
+    spent = spend_meter(character, "ki")
+    weapon = character.equipment.get("Weapon")
+    subtyp = getattr(weapon, "subtyp", None)
+    weapon_name = getattr(weapon, "name", "")
+    penalty = 1.0
+    drop_msg = ""
+    if subtyp == "Fist" or subtyp == "None":
+        penalty = 1.0
+    elif subtyp == "Staff" and weapon_name == "Ruyi Jingu Bang":
+        penalty = 1.0
+    elif subtyp == "Staff":
+        penalty = 0.80
+        drop_msg = "The ordinary staff cannot hold the finisher and is disarmed.\n"
+        character.equipment["Weapon"] = type("NoWeapon", (), {"name": "None", "subtyp": "None", "typ": "Weapon", "damage": 0, "crit": 0, "ignore": False, "element": None, "ultimate": False})()
+    else:
+        penalty = 0.90
+    damage = max(1, int((character.check_mod("weapon", enemy=target) + character.stats.wisdom) * (1.5 + spent * 0.12) * penalty))
+    target.health.current = max(0, target.health.current - damage)
+    if not target.has_status_protection("Stun"):
+        target.status_effects["Stun"].active = True
+        target.status_effects["Stun"].duration = max(target.status_effects["Stun"].duration, 2)
+    msg = f"{character.name} spends {spent} Ki on Dim Mak for {damage} damage.\n{drop_msg}"
+    if _ring_awakened_equipped(character, "Master Monk"):
+        combat_state(character)["ki"] = 1
+        msg += "Martial Master refunds 1 Ki after the finisher.\n"
+    return msg

@@ -26,13 +26,18 @@ dependencies = [
     "pyyaml>=6.0.2",
     "pygame>=2.5.0",  # For GUI and asset/sprite rendering
     "Pillow>=10.0.0",  # For perspective transforms and image processing
-    "scipy==1.17.0",
 ]
 
 [project.optional-dependencies]
 dev = [
+    "black>=24.0.0",
+    "isort>=5.13.0",
+    "mypy>=1.10.0",
     "pytest>=7.4.2",
     "pytest-cov>=4.1.0",
+]
+tools = [
+    "scipy==1.17.0",
 ]
 
 [project.urls]
@@ -41,11 +46,11 @@ Repository = "https://github.com/stb5585/Dungeon-Crawl"
 Issues = "https://github.com/stb5585/Dungeon-Crawl/issues"
 
 [project.scripts]
-forsaken-tenet-curses = "game_curses:main"
-forsaken-tenet-pygame = "game_pygame:main"
+forsaken-tenet-curses = "src.ui_curses.game:main"
+forsaken-tenet-pygame = "src.ui_pygame.game:main"
 # Backward-compatible aliases for existing local/dev workflows.
-dungeon-crawl-curses = "game_curses:main"
-dungeon-crawl-pygame = "game_pygame:main"
+dungeon-crawl-curses = "src.ui_curses.game:main"
+dungeon-crawl-pygame = "src.ui_pygame.game:main"
 
 [tool.setuptools.packages.find]
 where = ["."]

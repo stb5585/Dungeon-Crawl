@@ -1,8 +1,2 @@
-numpy==2.2.3
-
-Pillow>=10.0.0
-pygame>=2.5.0
-pytest==7.4.2
-pyyaml==6.0.2
-
-scipy==1.17.0
+# Editable development install, including optional asset-generation tools.
+-e .[dev,tools]

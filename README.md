@@ -15,8 +15,8 @@ roadmap pass:
 - Pygame UI lives under `src/ui_pygame/`.
 - Ability data is substantially migrated to YAML under
   `src/core/data/abilities/`.
-- Current P4-P6 content slices are completed; P7 additional improvements are
-  the next active roadmap lane.
+- Current P4-P7 content slices are completed; P8 playtest readiness and
+  evidence collection are the active roadmap lane.
 - Completed class-kit scope and deferred deep-kit gates are tracked in
   [docs/CLASS_KIT_DESIGN_GATES.md](docs/CLASS_KIT_DESIGN_GATES.md).
 - Combat architecture and balance decisions are specified in

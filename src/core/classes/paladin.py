@@ -15,8 +15,8 @@ class Paladin(Job):
     Pros: Can cast healing spells; additional wisdom and charisma gain
     Cons: Cannot equip 2-handed weapons except hammers and cannot equip light armor; no dex
         and lower strength gain
-    Special Mechanic: Oathbringer - choose a path of devotion that grants unique abilities
-        and buffs  TODO
+    Special Mechanic: Oath Conviction - swear a path and build conviction through
+        path-aligned combat actions.
     """
 
     def __init__(self):

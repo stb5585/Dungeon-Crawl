@@ -1,6 +1,6 @@
 # Quest Story Integration Design
 
-Status: `Holy Relics Staged Mystery Chain Implemented`
+Status: `Holy Relics Staging And Postgame Tavern V1 Implemented`
 
 This document owns quest-system changes whose purpose is to stage story
 information, preserve mystery, and keep quest guidance aligned with the
@@ -73,9 +73,9 @@ Postgame dialogue must not:
 - alter bounties, shops, church, inn, barracks, or storage behavior;
 - imply that Voluntas erases grief or reverses deaths.
 
-The preferred first slice is a tavern-focused postgame dialogue pass for the
-Barkeep, Waitress, and one neutral town witness, gated only by
-`main_story_complete` and repeat-safe across saves.
+The first slice is implemented for the Barkeep, Waitress, and Soldier. It is
+gated only by `main_story_complete`, remains repeat-safe across saves, and uses
+the shared reactive-hint path consumed by both frontends.
 
 ## Quest System Contract
 
@@ -113,11 +113,13 @@ relic count reflects the actual saved inventory.
 - Quest content lives in `src/core/data/content/quests.json`.
 - Staged relic quest synchronization and old-save migration live in
   `src/core/quest_progress.py`.
-- Save-load migration is called from `src/core/save_system.py` after special
+- Save-load migration is called from `src/core/save_system/player.py` after special
   inventory restoration.
 - Curses and pygame quest turn-in paths call the shared quest-progress helper.
-- Relic discovery copy uses `src/core/map_tiles.py` so pygame and core/curses
+- Relic discovery copy uses `src/core/map_tiles/rules.py` so pygame and core/curses
   surfaces share the same mapping and fallback.
+- Postgame tavern fallout lives in `src/core/town.py`; curses and pygame use
+  the same non-mutating reactive-hint source.
 
 ## Regression Targets
 

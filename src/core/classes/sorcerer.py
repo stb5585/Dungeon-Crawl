@@ -10,7 +10,7 @@ class Sorcerer(Job):
     Promotion: Mage -> Sorcerer -> Wizard
     Pros: Earlier access to spells and access to higher level spells
     Cons: None
-    Special Mechanic: Elemental Affinity Wheel TODO
+    Special Mechanic: School Affinity - casting grows one school while opposing affinities drift.
     """
 
     def __init__(self):

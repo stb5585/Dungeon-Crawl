@@ -303,9 +303,33 @@ def _quest_state_hints(player_char, speaker: str) -> list[str]:
     return hints
 
 
+def _postgame_town_hints(player_char, speaker: str) -> list[str]:
+    """Return non-mutating tavern fallout after the main story is complete."""
+    main_story = getattr(player_char, "main_story", {})
+    if not isinstance(main_story, dict) or not main_story.get("main_story_complete"):
+        return []
+
+    dialogue = {
+        "Barkeep": [
+            "You came back, and the work still needs doing. That is the strange mercy of ordinary days.",
+            "The room is quieter without the busboy. We keep his place clear, though nobody remembers deciding to.",
+        ],
+        "Waitress": [
+            "Joffrey should have lived to hear the ending. Some victories leave the chairs just as empty.",
+            "People keep asking whether it is over. I tell them grief does not obey quest logs.",
+        ],
+        "Soldier": [
+            "The patrol roster calls this peace. We still count everyone twice before closing the gate.",
+            "You saved what could be saved. The rest of us have to learn how to live inside that answer.",
+        ],
+    }
+    return dialogue.get(speaker, [])
+
+
 def get_reactive_town_hints(player_char, speaker: str) -> list[str]:
-    """Return repeatable town hints based on existing boss, relic, and quest state."""
-    hints = get_holy_grail_rotation_hints(player_char, speaker)
+    """Return repeatable town hints based on existing story and progression state."""
+    hints = _postgame_town_hints(player_char, speaker)
+    hints.extend(get_holy_grail_rotation_hints(player_char, speaker))
     hints.extend(_relic_progress_hints(_collected_relic_names(player_char), speaker))
     hints.extend(_boss_progress_hints(_defeated_boss_names(player_char), speaker))
     hints.extend(_quest_state_hints(player_char, speaker))
@@ -359,13 +383,12 @@ class BountyBoard:
         return set(game.player_char.quest_dict.get('Bounty', {})) | set(self.bounty_options())
 
     def _catalog_bounty_enemy(self, level, existing_names):
-        catalog = enemies.random_enemy_catalog()
-        if level not in catalog:
-            level = max(catalog, key=int)
-        candidates = [enemy for enemy in catalog[level] if enemy.name not in existing_names]
+        catalog = enemies.random_enemy_candidates(level)
+        candidates = [entry for entry in catalog if entry[0] not in existing_names]
         if not candidates:
-            candidates = catalog[level]
-        return random.choice(candidates)
+            candidates = list(catalog)
+        _name, enemy_factory = random.choice(candidates)
+        return enemy_factory()
 
     def create_bounty(self, game):
         bounty = {"reward": None}

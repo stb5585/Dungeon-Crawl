@@ -10,7 +10,7 @@ class StalwartDefender(Job):
     Promotion: Warrior -> Sentinel -> Stalwart Defender
     Additional Pros: Additional constitution gain
     Additional Cons: None
-    Special Mechanic:  TODO
+    Special Mechanic: Resolve Surges - master full-bar defensive and counterattack payoffs.
     """
 
     def __init__(self):

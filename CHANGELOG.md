@@ -1,6 +1,70 @@
 # The Forsaken Tenet - Changelog
 
-## [Unreleased] - 2026-06-26
+## [Unreleased]
+
+### Playtest Readiness And Maintenance
+
+- Split the 6,230-line composite effect module into focused common, enemy,
+  skill, special, and summon modules while preserving legacy imports through a
+  compatibility façade.
+- Replaced the 5,822-line item module with a focused `src/core/items/` package
+  for base types, weapons, armor, off-hands, accessories, consumables, and
+  miscellaneous items while keeping rarity, shop-catalog, ultimate-weapon, and
+  legacy APIs in `src.core.items`.
+- Replaced the 5,325-line enemy module with a focused `src/core/enemies/`
+  package for shared behavior, progression-grouped implementations, encounter
+  selection, Bestiary helpers, defeat identity, and constructor-free metadata.
+- Optimized random-enemy selection and Bestiary location lookup so only the
+  selected enemy is instantiated.
+- Replaced the 4,568-line ability module with a focused
+  `src/core/abilities/` package for shared types, skills, promotions, power-ups,
+  enemy abilities, spells, and progression catalogs, and removed an unreachable
+  duplicate `DimMak` definition.
+- Replaced the 3,114-line player module with a focused `src/core/player/`
+  package that composes state, exploration, presentation, inventory,
+  progression, and combat behavior while preserving the public `Player` API
+  through an export-only package façade.
+- Replaced the 2,704-line map-tile module with a focused
+  `src/core/map_tiles/` package for shared rules, paths, interactive tiles,
+  boss rooms, event rooms, and endgame tiles.
+- Replaced the 2,366-line data-driven ability module with a focused
+  `src/core/data/data_driven_abilities/` package for base spells, skills,
+  spell families, charging abilities, Magic Missile, Jump, and movement.
+- Replaced the 2,252-line character module with a composed
+  `src/core/character/` package for models, events, statuses, offense, defense,
+  and utility behavior.
+- Replaced the 2,243-line promotion-kit module with a focused
+  `src/core/classes/promotion_kits/` package for persistent state, combat
+  meters, Resolve, class tracks, companion progression, and presentation.
+- Replaced the 1,464-line save-system module with a focused
+  `src/core/save_system/` package for value objects, item, ability, summon,
+  tile, enemy, quest, and player serialization plus filesystem persistence.
+- Replaced the 1,518-line ability-loader module with a focused
+  `src/core/data/ability_loader/` package for YAML caching, grouped effect
+  constructors, ability construction, and example exports.
+- Replaced the 1,307-line class ability-mechanics module with a focused
+  `src/core/classes/ability_mechanics/` package for equipment, passive,
+  companion, exploration, rewind, and summon mechanics.
+- Replaced the 1,597-line battle-engine module with a composed
+  `src/core/combat/battle_engine/` package for turn flow, action execution,
+  outcome processing, and shared result models.
+- Replaced seven large frontend modules with focused packages: pygame character
+  screens, dungeon and combat managers, combat rendering, dungeon scene
+  rendering, popup menus, and curses menus. Stateful screens now compose
+  behavior mixins, menu collections are grouped by responsibility, and all
+  legacy import paths remain available through export-only façades.
+- Removed unused imports across the new frontend implementation modules and
+  retained façade-level collaborator hooks used by tests and integrations.
+- Cached parsed ability YAML by path and modification time while preserving
+  fresh, isolated ability definitions for every caller.
+- Kept all package initializers limited to public exports, with regression
+  coverage enforcing export-only initializers across the source tree.
+- Restored packaged curses and pygame entry points, added the canonical curses
+  launcher, and moved SciPy from runtime dependencies into the tooling extra.
+- Added repeat-safe postgame tavern dialogue for the Barkeep, Waitress, and
+  Soldier after `main_story_complete`, shared by both frontends.
+- Normalized the Gray Broker portrait to a transparent cutout and repaired
+  stale documentation, class-mechanic descriptions, and regression fixtures.
 
 ### Design Gate Spec Maps
 
@@ -473,7 +537,7 @@ deferred, or decision-gated work.
 ### Documentation
 - Updated `docs/DEVELOPMENT_ROADMAP.md` with the completed Pygame polish items and current follow-up notes.
 
-## [Unreleased] - 2026-02-22
+## [2.1.0] - 2026-02-22
 
 ### Added
 
@@ -520,7 +584,7 @@ deferred, or decision-gated work.
   - `tools/sprite_sheet_extractor.py` - Extracts sprites from sheets
   - `tools/sprite_merger.py` - Combines sprites into composite images
 
-## [Unreleased] - 2026-01-28
+## [2.0.0] - 2026-01-28
 
 ### Major Reorganization - Code Structure Overhaul ✅
 

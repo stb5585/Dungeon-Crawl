@@ -12,7 +12,7 @@ class WeaponMaster(Job):
                                         -> Grandmaster of Arms
     Pros: Can dual wield some one handed weapons; higher dexterity gain
     Cons: Cannot use shields or heavy armor; lower constitution gain
-    Special Mechanic: Weapon Discipline - gain proficiency with a weapon type as it's used  TODO
+    Special Mechanic: Weapon Discipline - gain proficiency with weapon types in worthy battles.
     """
 
     def __init__(self):
@@ -21,7 +21,7 @@ class WeaponMaster(Job):
             description="Weapon Masters focus on the mastery of weapons and their"
             " skill with them. They can equip many weapons and learn "
             "the ability to dual wield one-handed weapons. Since Weapon"
-            " Masters really on agility, they lose the ability to "
+            " Masters rely on agility, they lose the ability to "
             "wear heavy armor and shields.",
             str_plus=2,
             int_plus=1,

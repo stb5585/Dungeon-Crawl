@@ -285,7 +285,11 @@ def test_default_vesperion_combat_sprite_uses_separate_full_body_asset():
 
 
 def _concrete_enemy_names() -> set[str]:
-    enemies_source = (PROJECT_ROOT / "src" / "core" / "enemies.py").read_text(encoding="utf-8")
+    enemy_package = PROJECT_ROOT / "src" / "core" / "enemies"
+    enemies_source = "\n".join(
+        (enemy_package / filename).read_text(encoding="utf-8")
+        for filename in ("early.py", "midgame.py", "endgame.py")
+    )
     class_pattern = re.compile(r"^class\s+\w+\([^)]*\):", re.MULTILINE)
     starts = [match.start() for match in class_pattern.finditer(enemies_source)]
     names: set[str] = set()

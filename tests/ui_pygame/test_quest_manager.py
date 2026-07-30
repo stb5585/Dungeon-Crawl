@@ -261,6 +261,19 @@ def test_random_help_hint_uses_reactive_town_hints_when_no_quest_help(monkeypatc
     assert manager.get_random_help_hint("Guide") == "Reactive warning"
 
 
+def test_random_help_hint_exposes_postgame_tavern_dialogue(monkeypatch):
+    player = _make_player(level=10)
+    player.main_story = {"main_story_complete": True}
+    manager = _manager(player)
+
+    monkeypatch.setattr(quest_manager.random, "choice", lambda seq: seq[0])
+
+    hint = manager.get_random_help_hint("Barkeep")
+
+    assert hint is not None
+    assert "ordinary days" in hint
+
+
 def test_can_offer_and_already_killed_helpers():
     player = _make_player()
     player.quest_dict["Main"]["Earlier"] = {"Turned In": True}

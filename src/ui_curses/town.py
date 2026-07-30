@@ -22,7 +22,7 @@ def upgrade(game):
     """
     function handles special attack upgrade for Find Chisolm quest
 
-    
+
     """
     message = ""
     return message
@@ -136,7 +136,7 @@ def turn_in_quest(game, quest, typ):
     if not game.player_char.max_level():
         while game.player_char.level.exp_to_gain <= 0:
             textbox = menus.TextBox(game)
-            stat_menu = menus.SelectionPopupMenu(game, 
+            stat_menu = menus.SelectionPopupMenu(game,
                                                  "Pick the stat you would like to increase.",
                                                  [f'Strength - {game.player_char.stats.strength}',
                                                   f'Intelligence - {game.player_char.stats.intel}',
@@ -165,12 +165,14 @@ def turn_in_quest(game, quest, typ):
                 help_text = "You can get meat from pretty much any animal. Not really a time to be picky..."
                 game.player_char.quest_dict["Side"]["Where's the Beef?"]["Help Text"] = help_text
     quest_progress.handle_quest_turn_in(game.player_char, quest)
-                
+
 
 
 def accept_quest(game, quest, typ):
     """
-    Quest givers and information; additional quests to be added and rewards need to be optimized TODO
+    Accept a quest and apply its giver-specific setup and dialogue.
+
+    Legacy quest routing reference:
     - Tavern -
     Barkeep
       Main: Level 10, defeat Minotaur, rewards Old Key and 200 exp
@@ -260,7 +262,7 @@ def check_quests(game, quest_giver):
     side_quests = [sides[x] for x in sides if game.player_char.player_level() >= int(x)]
     quest = False
     responses = [["I have no new quests for you at this time."]]
-    
+
     def can_offer_quest(quest_key, quest_data):
         """Check if quest can be offered based on prerequisites."""
         required_quest = quest_data.get('Requires')
@@ -277,7 +279,7 @@ def check_quests(game, quest_giver):
             return False
         # No requirements, can offer
         return True
-    
+
     if len(main_quests) > 0:
         for main_quest in main_quests:
             key = list(main_quest)[0]
@@ -497,7 +499,7 @@ def tavern(game):
                 if not game.player_char.max_level():
                     while game.player_char.level.exp_to_gain <= 0:
                         textbox = menus.TextBox(game)
-                        stat_menu = menus.SelectionPopupMenu(game, 
+                        stat_menu = menus.SelectionPopupMenu(game,
                                                              "Pick the stat you would like to increase.",
                                                              [f'Strength - {game.player_char.stats.strength}',
                                                               f'Intelligence - {game.player_char.stats.intel}',
@@ -883,7 +885,7 @@ def ultimate_armor_repo(game):
     if "He Ain't Heavy" in game.player_char.quest_dict['Side']:
         if not game.player_char.quest_dict['Side']["He Ain't Heavy"]['Completed']:
             game.player_char.quest_dict['Side']["He Ain't Heavy"]['Completed'] = True
-            quest_texts = ["Hmmm, I see my big brother sent you to look for me.", 
+            quest_texts = ["Hmmm, I see my big brother sent you to look for me.",
                            "Tell him do not worry about me and that I will not return",
                            " until the ultimate evil has been vanquished."]
             ultimate_pad = menus.QuestPopupMenu(game, box_height=len(quest_texts)+2, box_width=len(max(quest_texts, key=len))+4)

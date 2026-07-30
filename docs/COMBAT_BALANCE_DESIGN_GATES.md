@@ -8,16 +8,16 @@ and gates future combat or balance changes behind explicit one-page specs.
 
 ### Combat Architecture
 
-- `src/core/combat/battle_engine.py` owns UI-agnostic combat flow:
+- the `src/core/combat/battle_engine/` package owns UI-agnostic combat flow:
   initiative setup, pre-turn checks, forced actions, action execution,
   companion/Totem/post-turn handling, turn swapping, and battle-end rewards.
-- `src/core/character.py` owns status and effect ticking through
+- `src/core/character/status.py` owns status and effect ticking through
   `Character.effects()`.
   - Status ticks happen at the active actor's start of turn.
   - Poison, DOT, Bleed, Doom, Ice Block, Prone, Silence, Stun, Sleep, Defend,
     Reflect, Totem, and related effects are resolved there.
   - A status tick can defeat the active actor before they act.
-- Enemies use `action_stack` priority rules in `src/core/enemies.py` when
+- Enemies use `action_stack` priority rules in the `src/core/enemies/` package when
   configured, falling back to legacy random action selection otherwise.
   - `ActionPriority` currently supports `HIGH`, `NORMAL`, `LOW`,
     `LOW_HP_ONLY`, and `SKIP` style AI decisions.

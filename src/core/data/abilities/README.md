@@ -1,18 +1,18 @@
 # Ability YAML Definitions
 
-This directory contains **180 YAML files** defining every active ability in the game. Each file is loaded at runtime by `ability_loader.py` and instantiated as one of **12 DataDriven classes** from `data_driven_abilities.py`. The original Python classes in `abilities.py` are thin `__new__` wrappers that delegate to the YAML loader.
+This directory contains **195 YAML files** defining active abilities in the game. Definitions are loaded on first use by `ability_loader.py`; parsed YAML is cached by file path and modification time, while each call still receives a deep-copied definition and a fresh ability instance. Abilities are instantiated as one of **12 DataDriven classes** from `data_driven_abilities.py`. Wrapper classes in the `abilities/` package delegate to the YAML loader.
 
 ## Quick Reference — Ability Types
 
 | YAML `type:` | DataDriven Class | Count | Description |
 |---|---|---:|---|
-| `Skill` | `DataDrivenSkill` | 77 | Physical/weapon abilities, fallback for unknown types |
-| `Spell` | `DataDrivenSpell` | 42 | Offensive magic (elemental, arcane) |
-| `Support` | `DataDrivenSupportSpell` | 14 | Buff/utility spells (Bless, Protect, Shell, etc.) |
+| `Skill` | `DataDrivenSkill` | 81 | Physical/weapon abilities, fallback for unknown types |
+| `Spell` | `DataDrivenSpell` | 46 | Offensive magic (elemental, arcane) |
+| `Support` | `DataDrivenSupportSpell` | 18 | Buff/utility spells (Bless, Protect, Shell, etc.) |
 | `Status` | `DataDrivenStatusSpell` | 14 | Debuff/status-inflicting spells (Doom, Blind, etc.) |
 | `StatusSkill` | `DataDrivenStatusSkill` | 7 | Physical-stat-based status infliction (Disarm, Goad) |
-| `Heal` | `DataDrivenHealSpell` | 7 | Healing spells (Heal, Cure, Raise, etc.) |
-| `CustomSpell` | `DataDrivenCustomSpell` | 4 | Abilities with unique execution logic (Disintegrate, etc.) |
+| `Heal` | `DataDrivenHealSpell` | 8 | Healing spells (Heal, Cure, Raise, etc.) |
+| `CustomSpell` | `DataDrivenCustomSpell` | 5 | Abilities with unique execution logic (Disintegrate, etc.) |
 | `WeaponSpell` | `DataDrivenWeaponSpell` | 3 | Hybrid weapon+spell attacks (Smite, Dispel Slash) |
 | `MagicMissile` | `DataDrivenMagicMissileSpell` | 3 | Multi-projectile spells with configurable missile count |
 | `ChargingSkill` | `DataDrivenChargingSkill` | 7 | Multi-turn charge abilities (Charge, Crushing Blow, Shadow Strike, Dragon Breath ×3) |
@@ -295,7 +295,7 @@ The `telegraph_message` YAML field provides the detailed version.
 ### Loading Pipeline
 
 ```
-abilities.py (class Foo)
+abilities/<domain>.py (class Foo)
   → __new__ → ability_loader._load_yaml_ability("foo.yaml")
     → parse YAML → EffectFactory.create_effect(effect_data)
     → AbilityFactory routes type → DataDriven* class
@@ -308,16 +308,22 @@ abilities.py (class Foo)
 |---|---|
 | `ability_loader.py` | YAML parsing, `EffectFactory`, `AbilityFactory`, type routing |
 | `data_driven_abilities.py` | 12 `DataDriven*` classes that implement ability behavior |
-| `effects/composite.py` | 93 composable effect types (`Effect` subclasses) |
+| `effects/common.py` | Reusable conditional, status, resource, and scaling effects |
+| `effects/enemy.py` | Enemy- and spell-specific effects |
+| `effects/skills.py` | Equipment and player skill effects |
+| `effects/special.py` | Advanced and bespoke ability effects |
+| `effects/summon.py` | Summon companion ultimate effects |
+| `effects/composite.py` | Backward-compatible re-exports for legacy imports |
 | `effects/__init__.py` | Public effect exports |
-| `abilities.py` | Thin `__new__` wrappers — delegate to YAML loader |
+| `abilities/` | Ability base types, focused wrapper modules, and progression catalogs |
+| `abilities/__init__.py` | Public ability exports only |
 
 ### Adding a New Ability
 
 1. Create `ability_name.yaml` in this directory
 2. Set `type:` to match an existing DataDriven class (see type table)
 3. Define `effects:` using available effect types from `EffectFactory`
-4. Add a wrapper class in `abilities.py` if the ability needs to be referenced by name:
+4. Add a wrapper class in the appropriate `abilities/` implementation module if the ability needs to be referenced by name:
    ```python
    class MyAbility:
        def __new__(cls):
@@ -357,9 +363,9 @@ Candidates: Dim Mak, Arcane Blast, Disintegrate, Detonate, ultimates.
 
 ## Notes
 
-- All 180 YAML files are loaded and validated at startup
+- YAML files are parsed on first use and cached until their modification time changes
 - Effect composition allows complex behavior without Python code changes
 - YAML format enables balance tuning without touching source
 - The `DataDrivenSkill` fallback handles types without explicit routing
-- 613 data-driven ability tests in `tests/test_data_driven_abilities.py`
+- Data-driven ability behavior is covered by `tests/test_data_driven_abilities.py`
 - Event system emits `SPELL_CAST`/`SKILL_USE` events for analytics and UI

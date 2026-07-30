@@ -810,6 +810,7 @@ def test_interact_door_relic_warp_terminal_and_room_pickups(monkeypatch):
     monkeypatch.setattr("src.core.items.Relic4", lambda: SimpleNamespace(name="Relic 4"))
     monkeypatch.setattr("src.core.items.Relic5", lambda: SimpleNamespace(name="Relic 5"))
     monkeypatch.setattr("src.core.items.Relic6", lambda: SimpleNamespace(name="Relic 6"))
+    player.quests = lambda: ""
     special_events = []
     game.special_event = lambda name, **kwargs: special_events.append((name, kwargs))
     manager._interact_relic(relic_tile)

@@ -370,6 +370,29 @@ class TestYAMLLoading:
         assert "Jump" in loaded_names
         assert "Cataclysm" in loaded_names
 
+    def test_yaml_definition_cache_reuses_parse_but_returns_isolated_data(self, monkeypatch):
+        from src.core.data import ability_loader
+
+        ability_loader.clear_ability_definition_cache()
+        original_safe_load = ability_loader.yaml.safe_load
+        parse_calls = []
+
+        def tracked_safe_load(stream):
+            parse_calls.append(stream.name)
+            return original_safe_load(stream)
+
+        monkeypatch.setattr(ability_loader.yaml, "safe_load", tracked_safe_load)
+        path = self.ABILITIES_DIR / "fireball.yaml"
+
+        first = ability_loader.AbilityFactory.create_from_yaml(path)
+        first._raw_data["name"] = "Mutated locally"
+        second = ability_loader.AbilityFactory.create_from_yaml(path)
+
+        assert parse_calls == [str(path.resolve())]
+        assert second.name == "Fireball"
+        assert second._raw_data["name"] == "Fireball"
+        assert first._raw_data is not second._raw_data
+
     def test_builtin_yaml_abilities_do_not_use_primitive_damage_effects(self):
         import yaml
 
@@ -823,11 +846,11 @@ class TestBatch1YAMLLoading:
 
 
 # ---------------------------------------------------------------------------
-# Batch 1 — abilities.py Factory Functions
+# Batch 1 — ability wrapper factory functions
 # ---------------------------------------------------------------------------
 
 class TestBatch1AbilityFactories:
-    """Test that abilities.py factory classes produce DataDrivenSpell instances."""
+    """Test that ability wrapper classes produce DataDrivenSpell instances."""
 
     def test_water_spells(self):
         from src.core import abilities
@@ -3379,7 +3402,7 @@ class TestBatch6YAMLLoading:
 
 
 class TestBatch6AbilityFactories:
-    """Test that the abilities.py wrapper classes produce correct instances."""
+    """Test that the ability package wrapper classes produce correct instances."""
 
     def test_desoul_factory(self):
         from src.core import abilities
@@ -6951,7 +6974,11 @@ class TestBatch14SlotMachine:
         from src.core import abilities
         user, target = self._make_combatants()
         mana_before = user.mana.current
-        abilities.SlotMachine().use(user, target)
+        abilities.SlotMachine().use(
+            user,
+            target,
+            slot_machine_callback=lambda _user, _target: "3H,4D,5C",
+        )
         assert user.mana.current == mana_before - 15
 
     def test_slot_machine_death_spin(self):
@@ -8339,7 +8366,7 @@ class TestBatch19DragonBreathYAML:
 
 
 class TestBatch19DragonBreathWrappers:
-    """Wrapper classes in abilities.py load correctly."""
+    """Wrapper classes in the abilities package load correctly."""
 
     def test_dragon_breath_fire(self):
         from src.core import abilities

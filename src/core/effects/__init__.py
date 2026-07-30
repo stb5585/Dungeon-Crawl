@@ -16,7 +16,7 @@ from .buffs import (
     MultiStatBuffEffect,
     ResistanceEffect,
 )
-from .composite import (
+from .common import (
     ConditionalEffect,
     CompositeEffect,
     ChanceEffect,
@@ -42,6 +42,8 @@ from .composite import (
     SetFlagEffect,
     InstantKillEffect,
     StatReduceEffect,
+)
+from .enemy import (
     PowerUpActivateEffect,
     AbilityChainEffect,
     DrainEffect,
@@ -56,6 +58,8 @@ from .composite import (
     VulcanizeEffect,
     HolyFollowupEffect,
     TurnUndeadEffect,
+)
+from .skills import (
     ShieldSlamEffect,
     KidneyPunchEffect,
     PoisonStrikeEffect,
@@ -80,6 +84,8 @@ from .composite import (
     CounterspellEffect,
     ElementalStrikeEffect,
     BlackjackEffect,
+)
+from .special import (
     DoublecastEffect,
     ChooseFateEffect,
     VesperionChooseFateEffect,
@@ -95,6 +101,8 @@ from .composite import (
     ArcaneBlastEffect,
     JumpEffect,
     ShadowStrikeEffect,
+)
+from .summon import (
     TitanicSlamEffect,
     DevourEffect,
     AbsoluteZeroEffect,

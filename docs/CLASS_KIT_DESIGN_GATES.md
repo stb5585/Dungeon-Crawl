@@ -9,8 +9,8 @@ used for deeper class-kit work. Balance validation lives in
 
 Status: `V1 Implemented, Tuning/Open Polish`
 
-The promotion class-track V1 pass is implemented through
-`src/core/classes/promotion_kits.py` and runtime hooks in player state,
+The promotion class-track V1 pass is implemented through the
+`src/core/classes/promotion_kits/` package and runtime hooks in player state,
 save/load, combat, data-driven abilities, class rings, Demonologist contracts,
 nature Totems, Beast Master companion state, and class skill grants.
 

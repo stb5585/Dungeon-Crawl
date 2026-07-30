@@ -469,3 +469,43 @@ def test_reactive_town_hints_include_cambion_quest_readiness():
 
     assert any("Chalice is found" in hint for hint in hints)
     assert any("Cambion" in hint for hint in hints)
+
+
+def test_postgame_tavern_hints_are_state_gated_repeatable_and_non_mutating():
+    from copy import deepcopy
+
+    from src.core.town import get_reactive_town_hints
+
+    player = SimpleNamespace(
+        main_story={"main_story_complete": False},
+        quest_dict={"Main": {}, "Side": {}, "Bounty": {}},
+        special_inventory={},
+        kill_dict={},
+        world_dict={},
+    )
+
+    assert get_reactive_town_hints(player, "Barkeep") == []
+
+    player.main_story["main_story_complete"] = True
+    state_before = deepcopy(player.__dict__)
+    first = get_reactive_town_hints(player, "Barkeep")
+    second = get_reactive_town_hints(player, "Barkeep")
+
+    assert first == second
+    assert any("busboy" in hint for hint in first)
+    assert player.__dict__ == state_before
+
+
+def test_postgame_tavern_hints_cover_grief_and_a_neutral_witness():
+    from src.core.town import get_reactive_town_hints
+
+    player = SimpleNamespace(
+        main_story={"main_story_complete": True},
+        quest_dict={"Main": {}, "Side": {}, "Bounty": {}},
+        special_inventory={},
+        kill_dict={},
+        world_dict={},
+    )
+
+    assert any("Joffrey" in hint for hint in get_reactive_town_hints(player, "Waitress"))
+    assert any("patrol roster" in hint for hint in get_reactive_town_hints(player, "Soldier"))

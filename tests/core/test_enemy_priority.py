@@ -229,8 +229,8 @@ def test_priority_action_stack_can_explicitly_request_pickup_weapon(monkeypatch)
 
 def test_priority_if_list_supports_magic_effect_conditions(monkeypatch):
     """
-    action_stack configs in enemies.py sometimes use list-style priority_if rules and refer
-    to magic effects (e.g. Regen) via "self_status". Ensure those are respected.
+    Enemy action stacks sometimes use list-style priority_if rules and refer to
+    magic effects (e.g. Regen) via "self_status". Ensure those are respected.
     """
     enemy = _make_enemy()
     target = _make_target(True)

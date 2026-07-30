@@ -2,8 +2,8 @@
 
 This is a gameplay-facing guide to what each core stat does and which stats
 each class cares about most. It is based on the current class definitions in
-`src/core/classes/` and shared stat formulas in `src/core/character.py` and
-`src/core/player.py`.
+`src/core/classes/` and shared stat formulas in the `src/core/character/` and
+the `src/core/player/` package.
 
 Registry check: `src/core/classes/registry.py` currently exposes 48 playable
 classes through the promotion tree, including the Pathfinder branches

@@ -112,7 +112,7 @@ a relic` message. This is narrative-only. It must not change:
 
 Missing text mappings fall back to a readable generic message.
 
-Runtime relic discovery text is owned by `src/core/map_tiles.py` and reused by
+Runtime relic discovery text is owned by `src/core/map_tiles/rules.py` and reused by
 the pygame dungeon manager. Both pygame interaction and core/curses
 `RelicRoom.special_text()` use the same mapping and fallback.
 

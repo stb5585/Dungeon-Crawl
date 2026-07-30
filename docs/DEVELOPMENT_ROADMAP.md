@@ -1,6 +1,6 @@
 # The Forsaken Tenet Development Roadmap
 
-*Updated: July 20, 2026*
+*Updated: July 29, 2026*
 
 This roadmap tracks remaining work for **The Forsaken Tenet**. Completed P0-P6
 roadmap history has been consolidated into `CHANGELOG.md`; this file is now
@@ -49,6 +49,10 @@ appropriate design-gate document before coding.
 - The relic quest opening now stages the mystery through `Uncertain Reports`
   before creating `The Holy Relics`, with old-save migration and shared curses
   and pygame quest-progress handling.
+- P8 automated closure now covers Devotion grants/visibility/survival rules,
+  Race selection layout, Smoke Screen cleanup, promotion gear routing, staged
+  relic progression, and shared postgame tavern dialogue. Manual play evidence
+  remains the active readiness task.
 - Current planning references:
   - `docs/CLASS_KIT_DESIGN_GATES.md` for promotion class-kit behavior and
     follow-up tuning gates.
@@ -102,7 +106,7 @@ Triage bands:
 
 ## Active Priority - P8 Playtest Readiness And Polish
 
-Status: `Active`
+Status: `Active - Automated Closure Complete; Manual Evidence Pending`
 
 P8 should convert the current shipped systems into a cleaner playtest baseline.
 It is not a broad feature pass. The work should close obvious usability gaps,
@@ -112,7 +116,7 @@ to decide which larger gate deserves promotion next.
 ### Implementation Sequence
 
 1. **Cleric/Hierophant Devotion closure**
-   - Lock down the recent Devotion refactor with focused tests for immediate
+   - Automated: complete. Focused tests cover immediate
      `Sanctuary Ward` grants, learned-ability promotion messaging, hidden skill
      visibility at 0 Devotion, held-stack damage reduction, and enemy-survival
      Devotion gain.
@@ -120,19 +124,22 @@ to decide which larger gate deserves promotion next.
      combat, including `Relic Aegis`, `Consecrated Conduit`, and
      `Sacred Overchannel`.
 2. **High-signal UI bugfixes**
-   - Pin the Race selection `Virtue/Sin` section so two-line descriptions fit
+   - Automated: complete. The Race selection `Virtue/Sin` section is pinned so
+     two-line descriptions fit
      predictably, including the longest Dwarf description.
-   - Verify Smoke Screen from invalid or non-fleeing states does not leak stale
+   - Automated: complete. Smoke Screen from invalid or non-fleeing states does
+     not leak stale
      smoke, hidden-enemy, or flee-transition state into the next battle.
-   - Verify promotion with mixed legal/illegal gear keeps legal gear equipped,
+   - Automated: complete. Promotion with mixed legal/illegal gear keeps legal
+     gear equipped,
      moves illegal gear to inventory, and does not grant promoted-class default
      gear.
 3. **Quest and story-route regression pass**
-   - Re-run the staged relic opening checks: new game starts with
+   - Automated: complete. Staged relic opening checks confirm a new game starts with
      `Uncertain Reports`, `Cry Havoc!` stays spoiler-light, Triangulus updates
      report-back state, and reporting creates `The Holy Relics`.
-   - Add or refresh tests if any path still duplicates quest staging,
-     old-save migration, or relic-count logic between frontends.
+   - Shared quest-progress logic and frontend regressions cover quest staging,
+     old-save migration, and relic-count behavior.
 4. **Class Ring and class-kit readability pass**
    - Inspect Class Ring wording across absent, inventory-only, stored,
      equipped-dormant, and equipped-awakened states.
@@ -140,14 +147,14 @@ to decide which larger gate deserves promotion next.
      least one martial meter, one caster/support meter, one persistent-progress
      track, and two awakened-ring preservation cases before numeric tuning.
 5. **Playtest checklist triage**
-   - Split `docs/PLAYTEST_CHECKLIST.md` into current playtest, deferred-spec,
-     and shipped-regression groups so the unchecked list stays actionable.
+   - Complete. `docs/PLAYTEST_CHECKLIST.md` indexes current playtest,
+     deferred-spec, and shipped-regression groups.
    - Keep checklist edits documentation-only unless the route being checked
      exposes a reproducible bug.
 6. **Next promotable implementation candidate**
-   - Prefer a small concrete polish item after the readiness pass, such as dead
-     boss body renderings replacing generic rock-pile presentation, curses shop
-     prompt parity, or one story-scene art batch with a review sheet.
+   - Complete: shipped a shared postgame tavern dialogue slice for the Barkeep,
+     Waitress, and Soldier. The next content candidate should be scoped only
+     after the remaining manual evidence pass.
    - Do not promote durability, identification, multi-enemy combat, broader
      divine economy, account-wide Bestiary, or final-battle tuning without the
      owner-doc spec and evidence requirements.

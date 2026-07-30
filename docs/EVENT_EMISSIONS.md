@@ -28,14 +28,15 @@ Audio, and Meta gates.
 
 ## Current Emitters
 
-- `src/core/combat/battle_engine.py`
+- the focused modules under `src/core/combat/battle_engine/`
   - combat start/end;
   - attack, spell, skill, item, defend, and flee action events.
-- `src/core/character.py`
+- the focused modules under `src/core/character/`
   - damage, healing, status application/removal/tick, dodge, block, and critical
     hit helpers.
-- `src/core/abilities.py`, `src/core/data/data_driven_abilities.py`, and
-  `src/core/effects/composite.py`
+- the focused modules under `src/core/abilities/`,
+  `src/core/data/data_driven_abilities/`, and the
+  focused modules under `src/core/effects/`
   - ability/effect-specific damage, healing, and status event helpers.
 - `src/ui_curses/enhanced_manager.py`
   - curses enhanced turn start/end events.

@@ -18,7 +18,7 @@ Combat sprites must be transparent, full-body creature images with no frame, no 
 
 The retired `assets/sprites/enemies/` PNG set is not a runtime fallback. Missing or failed enemy combat sprites should fall back through `EnemyCombatSpriteManager` to `generic_enemy`, not to legacy generated sprites.
 
-Current combat-sprite coverage is complete for concrete enemy display names in `src/core/enemies.py`, excluding the development `Test` enemy and the base `Myrmidon` template. Upgraded variants that share a display name use the same sprite mapping.
+Current combat-sprite coverage is complete for concrete enemy display names in the `src/core/enemies/` package, excluding the development `Test` enemy and the base `Myrmidon` template. Upgraded variants that share a display name use the same sprite mapping.
 
 Enemies that intentionally change `picture` to a PNG during combat can use form-specific combat sprites. `EnemyCombatSpriteManager` prefers a matching explicit `picture` stem before the display-name map. The Jester uses this for `jester.png`, `jester1.png`, `jester2.png`, `jester3.png`, and `jester4.png`, giving the player a color clue when his combat strategy changes forms.
 

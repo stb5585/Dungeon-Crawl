@@ -310,7 +310,7 @@ def test_base_item_classes_and_helper_utilities(monkeypatch):
     assert "\n" not in stolen_scroll.description
     assert "Charges: 2" in stolen_scroll.description
 
-    monkeypatch.setattr(items, "_rarity_table_cache", None)
+    monkeypatch.setattr(items.catalog, "_rarity_table_cache", None)
     monkeypatch.setattr("src.core.items.random.choice", lambda seq: seq[0])
     rarity_table = items._build_rarity_table()
     assert items._build_rarity_table() is rarity_table

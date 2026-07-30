@@ -5,8 +5,8 @@
 This directory contains the automated regression suite for The Forsaken Tenet.
 
 Current snapshot:
-- Last full-suite run confirmed by the user: `1398` tests passing
-- Current repo-wide `src/` coverage confirmed by the user: `81%`
+- The July 29, 2026 full-suite validation collected and passed `2412` tests
+- Coverage is measured on demand rather than copied here as a stale percentage
 - The suite covers core combat/content systems, integration and persistence flows, pygame-facing UI helpers, curses UI helpers, dungeon rendering/math, and balance/simulator workflows
 - Most day-to-day focused work should use targeted pytest runs inside the project venv
 

@@ -10,7 +10,7 @@ class Summoner(Job):
     Promotion: Mage -> Summoner -> Grand Summoner
     Pros: Increased charisma and dominion over powerful allies
     Cons: No longer gains attack spells and lower intelligence
-    Special Mechanic: gains spells from Summon creatures when used enough times  TODO
+    Special Mechanic: Summon Bonds - summoned allies grow stronger as they fight beside you.
     """
 
     def __init__(self):

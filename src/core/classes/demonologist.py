@@ -57,19 +57,21 @@ FAVOR_UNLOCKS = {
 RESENTMENT_WITHHOLD_PRIORITY = ("Desperate Aid", "Restore", "Protect", "Curse")
 
 
-class Demonologist(Job):  # TODO
+class Demonologist(Job):
     """
     Promotion: Mage -> Warlock -> Demonologist
     Additional Pros: Increased wisdom and defense
     Additional Cons: Decreased magic gain
-    Special Mechanic: can obtain contracts from fiends that grant unique abilities and buffs
-        but also have drawbacks  TODO
+    Special Mechanic: Fiend Contracts - bargain for intent-specific powers while managing
+        patron favor, resentment, and corruption.
     """
 
     def __init__(self):
         super().__init__(
             name="Demonologist",
-            description="",
+            description="Demonologists bind fiendish patrons through dangerous contracts. "
+            "Their bargains offer flexible harm, protection, and recovery, but every "
+            "favor risks resentment and corruption.",
             str_plus=0,
             int_plus=2,
             wis_plus=2,

@@ -80,7 +80,7 @@ class Game:
                     - difficulty level
                         - _difficulty_rating
                     - hardcore mode (perma-death)
-                    - 
+                    -
                     """
                     pass
                 else:
@@ -106,11 +106,11 @@ class Game:
             self.stdscr.getch()
             textbox.clear_rectangle()
             return
-        
+
         # Add the experience needed to level up and reset exp_to_gain
         self.player_char.level.exp += self.player_char.level.exp_to_gain
         self.player_char.level.exp_to_gain = 0
-        
+
         textbox = menus.TextBox(self)
         stat_menu = menus.SelectionPopupMenu(
             self,
@@ -165,7 +165,7 @@ class Game:
                     if confirm.navigate_popup():
                         break
                     menu.page = 1
-            
+
             # Select the class of the character
             menu.update_options()
             while True:
@@ -248,7 +248,7 @@ class Game:
         player_char = SaveManager.load_player(filename)
         if player_char is None:
             return
-        
+
         # Reset state to normal when loading to prevent immediate combat
         player_char.state = 'normal'
         # Clear enemy from current room if any
@@ -257,7 +257,7 @@ class Game:
         )
         if current_room and hasattr(current_room, 'enemy'):
             current_room.enemy = None
-        
+
         # Clear screen after loading to ensure clean state
         self.stdscr.clear()
         self.stdscr.refresh()
@@ -277,13 +277,13 @@ class Game:
             room.special_text(self)
         except AttributeError:
             pass
-        
+
         # Special handling for UndergroundSpring to provide UI components
         if isinstance(room, map_tiles.UndergroundSpring):
             confirm_message = "The water looks refreshing. Do you want to drink from the spring?"
             confirm_popup = menus.ConfirmPopupMenu(self, header_message=confirm_message, box_height=8)
             textbox = menus.TextBox(self)
-            
+
             def battle_handler(game, enemy):
                 """Handle Fuath battle in curses UI"""
                 battle_ui = menus.CombatMenu(game)
@@ -296,7 +296,7 @@ class Game:
                     battle = BattleManager(game, enemy,
                                           battle_ui=battle_ui, battle_popup=battle_popup, textbox=textbox_inner)
                 battle.execute_battle()
-            
+
             room.modify_player(self, confirm_popup=confirm_popup, textbox=textbox, battle_manager=battle_handler)
             wizard_folly = self.player_char.quest_dict.get("Side", {}).get("The Wizard's Folly")
             if wizard_folly and not wizard_folly.get("Completed") and not wizard_folly.get("Turned In"):
@@ -388,7 +388,7 @@ class Game:
                 battle_ui = menus.CombatMenu(self)
                 battle_popup = menus.CombatPopupMenu(self)
                 textbox = menus.TextBox(self)
-                
+
                 if USE_ENHANCED_COMBAT:
                     battle = EnhancedBattleManager(self, room.enemy, use_queue=True,
                                                    battle_ui=battle_ui, battle_popup=battle_popup, textbox=textbox)
@@ -443,8 +443,11 @@ class Game:
         pad.clear_popup()
 
 
+def main():
+    """Entry point for the terminal game."""
+    debug_mode = len(sys.argv) > 1 and sys.argv[1] in {"debug", "--debug"}
+    curses.wrapper(Game, **{"debug_mode": debug_mode})
+
+
 if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        if sys.argv[1] == "debug":
-            curses.wrapper(Game, **{'debug_mode': True})
-    curses.wrapper(Game)
+    main()

@@ -10,10 +10,10 @@ The Forsaken Tenet sound system provides immersive audio feedback through sound 
 
 ```bash
 # Install dependencies
-pip install numpy scipy
+./.venv/bin/python -m pip install -e '.[tools]'
 
 # Generate all placeholder sounds
-python3 tools/generate_placeholder_sounds.py
+./.venv/bin/python tools/generate_placeholder_sounds.py
 ```
 
 This creates simple beep sounds in `src/ui_pygame/assets/sounds/` for development.
@@ -91,7 +91,7 @@ If you prefer to play without sound, the system gracefully handles missing audio
 ## For More Information
 
 See full documentation:
-- [Sound System Documentation](../docs/SOUND_SYSTEM.md)
+- [Sound System Documentation](../../../docs/SOUND_SYSTEM.md)
 - [Sound Effects README](sounds/README.md)
 - [Background Music README](music/README.md)
 

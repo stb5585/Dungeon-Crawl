@@ -18,17 +18,17 @@ from types import SimpleNamespace
 
 class TestBattleManagerAPI:
     """Test BattleManager API and integration."""
-    
+
     def test_battle_manager_import(self):
         """Test that BattleManager can be imported."""
         from src.ui_curses.battle import BattleManager
         assert BattleManager is not None
-    
+
     def test_enhanced_battle_manager_import(self):
         """Test that EnhancedBattleManager can be imported."""
         from src.ui_curses.enhanced_manager import EnhancedBattleManager
         assert EnhancedBattleManager is not None
-    
+
     def test_battle_manager_creation(self):
         """Test basic BattleManager instantiation with minimal game context."""
         from src.ui_curses.battle import BattleManager
@@ -75,25 +75,25 @@ class TestBattleManagerAPI:
 
 class TestCombatResultAPI:
     """Test CombatResult dataclass API."""
-    
+
     def test_combat_result_creation(self):
         """Test creating CombatResult objects."""
         from src.core.combat.combat_result import CombatResult
-        
+
         # Test with minimal args (actor and target should be optional)
         result = CombatResult(action="Attack")
         assert result.action == "Attack"
         assert result.actor is None
         assert result.target is None
-    
+
     def test_combat_result_with_characters(self):
         """Test CombatResult with character references."""
         from src.core.combat.combat_result import CombatResult
         from tests.test_framework import TestGameState
-        
+
         attacker = TestGameState.create_player(name="Attacker", class_name="Warrior", race_name="Human")
         defender = TestGameState.create_player(name="Defender", class_name="Warrior", race_name="Human")
-        
+
         result = CombatResult(
             action="Attack",
             actor=attacker,
@@ -101,19 +101,19 @@ class TestCombatResultAPI:
             hit=True,
             damage=10
         )
-        
+
         assert result.actor == attacker
         assert result.target == defender
         assert result.hit is True
         assert result.damage == 10
-    
+
     def test_combat_result_group(self):
         """Test CombatResultGroup functionality."""
         from src.core.combat.combat_result import CombatResult, CombatResultGroup
-        
+
         group = CombatResultGroup()
         assert len(group.results) == 0
-        
+
         result = CombatResult(action="Test")
         group.add(result)
         assert len(group.results) == 1
@@ -121,11 +121,11 @@ class TestCombatResultAPI:
 
 class TestAbilitiesAPI:
     """Test that abilities can create CombatResult objects."""
-    
+
     def test_ability_initialization(self):
         """Test that abilities can initialize without errors."""
         from src.core.abilities import Ability
-        
+
         # Abilities should be able to create empty CombatResult
         try:
             # This might fail if CombatResult requires actor/target
@@ -189,7 +189,7 @@ class TestBattleEngineBasics:
         engine, player, enemy, _tile = self._make_engine()
 
         monkeypatch.setattr(
-            battle_engine,
+            battle_engine.core,
             "determine_initiative",
             lambda _p, _e: (player, enemy),
         )
@@ -1354,7 +1354,7 @@ def run_tests():
     print("BATTLE SYSTEM TESTS")
     print("=" * 70)
     print()
-    
+
     import pytest
     exit_code = pytest.main([
         __file__,
@@ -1362,7 +1362,7 @@ def run_tests():
         '--tb=short',
         '--color=yes'
     ])
-    
+
     return exit_code
 
 

@@ -120,7 +120,7 @@ sound_manager.play_music("boss_battle", fade_ms=2000)
 
 ### Example: Adding a New Spell Sound
 
-1. Add `spell_explosion.wav` to `assets/sounds/`
+1. Add `spell_explosion.wav` to `src/ui_pygame/assets/sounds/`
 2. Update the `_on_spell_cast` or `_on_skill_use` event handler in `sound_manager.py`:
 
 ```python

@@ -388,7 +388,10 @@ class TestBasicTiles:
         game = _make_game(player)
         game._random_combat = True
         called = []
-        monkeypatch.setattr("src.core.map_tiles.reveal_cambion_code_clue", lambda player_char, pos: called.append((player_char, pos)))
+        monkeypatch.setattr(
+            "src.core.map_tiles.paths.reveal_cambion_code_clue",
+            lambda player_char, pos: called.append((player_char, pos)),
+        )
         monkeypatch.setattr("src.core.map_tiles.random.randint", lambda _a, _b: 1)
 
         tile.modify_player(game)

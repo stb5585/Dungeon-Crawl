@@ -4,8 +4,8 @@ Entry point for The Forsaken Tenet - Pygame GUI Version
 Run the game with: python game_pygame.py
 """
 
-from src.ui_pygame.game import main as pygame_main
+from src.ui_pygame.game import main
 
 
 if __name__ == "__main__":
-    pygame_main()
+    main()

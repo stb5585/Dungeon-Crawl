@@ -46,8 +46,6 @@ test_suite.py
 modify_save.py
 fixes.txt
 notes.txt
-launch.sh
-launch*.sh
 composition_patterns.py
 
 # ignore save_files

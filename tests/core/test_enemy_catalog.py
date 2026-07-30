@@ -13,6 +13,11 @@ sys.path.insert(0, str(Path(__file__).parents[2]))
 
 from src.core import abilities, enemies, items
 from src.core.combat.battle_engine import BattleEngine
+from src.core.enemies.catalog import (
+    FUNHOUSE_ENEMY_SPECS,
+    RANDOM_ENEMY_SPECS,
+    resolve_enemy_specs,
+)
 from tests.test_framework import TestGameState
 
 
@@ -73,6 +78,62 @@ def test_random_enemy_and_funhouse_enemy_follow_expected_catalog_edges(monkeypat
     assert isinstance(enemies.random_enemy("999"), enemies.BrainGorger)
     assert isinstance(enemies.funhouse_enemy(), enemies.Copycat)
     assert isinstance(enemies.funhouse_enemy_catalog()[-1], enemies.Copycat)
+
+
+def test_static_enemy_specs_resolve_to_the_compatibility_catalogs():
+    expected_random = {
+        level: tuple((display_name, class_name) for display_name, class_name in specs)
+        for level, specs in RANDOM_ENEMY_SPECS.items()
+    }
+    resolved_random = {
+        level: tuple((display_name, factory.__name__) for display_name, factory in specs)
+        for level, specs in enemies._RANDOM_ENEMY_CATALOG.items()
+    }
+    resolved_funhouse = tuple(
+        (display_name, factory.__name__)
+        for display_name, factory in enemies._FUNHOUSE_ENEMY_CATALOG
+    )
+
+    assert resolved_random == expected_random
+    assert resolved_funhouse == FUNHOUSE_ENEMY_SPECS
+
+
+def test_enemy_spec_resolution_rejects_an_unknown_class():
+    with pytest.raises(RuntimeError, match="MissingEnemy"):
+        resolve_enemy_specs((("Missing", "MissingEnemy"),), {})
+
+
+def test_random_enemy_instantiates_only_the_selected_catalog_entry(monkeypatch):
+    calls = []
+
+    def build_first():
+        calls.append("first")
+        return SimpleNamespace(name="First")
+
+    def build_second():
+        calls.append("second")
+        return SimpleNamespace(name="Second")
+
+    class LastChoiceRng:
+        @staticmethod
+        def choice(sequence):
+            return sequence[-1]
+
+        @staticmethod
+        def random():
+            return 1.0
+
+    monkeypatch.delenv("DUNGEON_FORCE_ENEMY", raising=False)
+    monkeypatch.setattr(
+        enemies.encounters,
+        "_RANDOM_ENEMY_CATALOG",
+        {"0": (("First", build_first), ("Second", build_second))},
+    )
+
+    selected = enemies.random_enemy("0", rng=LastChoiceRng())
+
+    assert selected.name == "Second"
+    assert calls == ["second"]
 
 
 def test_bestiary_practical_info_helpers_use_broad_labels():

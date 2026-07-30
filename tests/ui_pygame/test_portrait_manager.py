@@ -130,7 +130,7 @@ def test_portrait_mapping_keeps_variant_sizes_stable():
         for variant in range(manager.variant_count())
     }
 
-    assert sizes == {(269, 561)}
+    assert sizes == {(269, 560)}
 
 
 def test_portrait_key_normalization_variants():

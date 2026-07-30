@@ -299,7 +299,11 @@ def test_ultimate_crafts_selected_weapon(monkeypatch):
         def __init__(self):
             self.name = "Moon Staff"
 
-    monkeypatch.setattr(curses_town.items, "ultimate_weapons", {"Sword": WeaponA, "Staff": (WeaponB, WeaponA)})
+    monkeypatch.setattr(
+        curses_town.items.catalog,
+        "ultimate_weapons",
+        {"Sword": WeaponA, "Staff": (WeaponB, WeaponA)},
+    )
     monkeypatch.setattr(curses_town.time, "sleep", lambda _secs: None)
 
     game = SimpleNamespace(player_char=player)
@@ -435,6 +439,22 @@ def test_tavern_patrons_includes_reactive_boss_hint_pool(monkeypatch):
     curses_town.tavern_patrons(game)
 
     assert any("Jester" in str(message) for message in FakeTextBox.messages)
+
+
+def test_tavern_patrons_includes_postgame_dialogue_pool(monkeypatch):
+    _install_fake_menus(monkeypatch)
+    FakeLocationMenu.responses = [0, 4]
+    FakeTextBox.messages = []
+    player = _build_player(level=10)
+    player.main_story = {"main_story_complete": True}
+    game = SimpleNamespace(player_char=player)
+
+    monkeypatch.setattr(curses_town, "check_quests", lambda game, who: (False, [["no quest"]]))
+    monkeypatch.setattr(curses_town.random, "choice", lambda seq: seq[-1])
+
+    curses_town.tavern_patrons(game)
+
+    assert any("busboy" in str(message) for message in FakeTextBox.messages)
 
 
 def test_barracks_handles_brass_key_and_storage_store_flow(monkeypatch):
