@@ -215,7 +215,7 @@ def test_bounty_accept_turn_in_and_view(monkeypatch):
     assert player.gold == 60
     assert player.level.exp == 5
     assert added_items == ["Goblin Ear"]
-    assert level_up_calls == [True]
+    assert level_up_calls == []
     assert "Goblin Hunt" not in player.quest_dict["Bounty"]
     assert "Goblin Hunt" not in presenter.game.bounties
 

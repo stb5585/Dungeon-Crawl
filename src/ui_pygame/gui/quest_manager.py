@@ -225,7 +225,7 @@ class QuestManager:
                 self._show_popup(popup)
 
         # Rewards
-        exp = qdata.get('Experience', 0) * max(1, getattr(self.player_char.level, 'pro_level', 1))
+        exp = qdata.get('Experience', 0)
         reward = qdata.get('Reward', [])
         reward_num = qdata.get('Reward Number', 1)
 
@@ -358,13 +358,15 @@ class QuestManager:
             popup = ConfirmationPopup(self.presenter, combined_msg, show_buttons=False)
             self._show_popup(popup)
 
-        # Then apply experience and trigger level-up(s)
-        self.player_char.level.exp += exp
-        if not self.player_char.max_level():
-            try:
-                self.player_char.level.exp_to_gain -= exp
-            except Exception:
-                pass
+        # Then apply experience through the shared flat progression service.
+        from src.core.progression import award_experience
+
+        level_result = award_experience(self.player_char, exp)
+        self.player_char._pending_level_up_result = (
+            level_result
+            if level_result.new_level > level_result.old_level
+            else None
+        )
 
         # Remove collected items if this is a Collect type quest
         if qdata.get('Type') == 'Collect':
@@ -435,7 +437,7 @@ class QuestManager:
                     pass
 
         level_up_screen = LevelUpScreen(self.presenter.screen, self.presenter)
-        while not self.player_char.max_level() and self.player_char.level.exp_to_gain <= 0:
+        if level_result.new_level > level_result.old_level:
             level_up_screen.show_level_up(self.player_char, None)
         qdata['Turned In'] = True
         

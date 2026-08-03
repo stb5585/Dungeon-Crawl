@@ -29,6 +29,7 @@ class DataDrivenSkill(Skill):
       - ``ice_block_check`` → pre-execution immunity check
       - ``self_target`` → effects apply to user (BattleCry)
       - ``use_out_enabled`` → supports out-of-combat use
+      - ``target_status_damage_multiplier`` → conditional weapon damage
     """
 
     def __init__(
@@ -54,6 +55,7 @@ class DataDrivenSkill(Skill):
         ice_block_check: bool = False,
         self_target: bool = False,
         use_out_enabled: bool = False,
+        target_status_damage_multiplier: dict[str, Any] | None = None,
     ):
         super().__init__(name, description, weapon=weapon)
         self.cost = cost
@@ -74,6 +76,7 @@ class DataDrivenSkill(Skill):
         self._ice_block_check = ice_block_check
         self._self_target = self_target
         self._use_out_enabled = use_out_enabled
+        self._target_status_damage_multiplier = target_status_damage_multiplier
 
     def use(
         self,
@@ -116,8 +119,15 @@ class DataDrivenSkill(Skill):
                 fortune_force_hit = False
 
         if self.weapon:
+            damage_mod = self.dmg_mod
+            status_bonus = self._target_status_damage_multiplier or {}
+            status_name = str(status_bonus.get("status", ""))
+            target_status = getattr(target, "status_effects", {}).get(status_name)
+            if status_name and getattr(target_status, "active", False):
+                damage_mod *= float(status_bonus.get("multiplier", 1.0))
+
             # Build weapon_damage kwargs
-            wd_kwargs: dict[str, Any] = {"cover": cover, "dmg_mod": self.dmg_mod}
+            wd_kwargs: dict[str, Any] = {"cover": cover, "dmg_mod": damage_mod}
             if self._ignore_armor:
                 wd_kwargs["ignore"] = True
             if self._guaranteed_hit or fortune_force_hit:
@@ -153,7 +163,9 @@ class DataDrivenSkill(Skill):
         if hit:
             result.extra["last_damage"] = result.damage
             result.extra["last_crit"] = crit
-            result.extra["dmg_mod"] = self.dmg_mod
+            result.extra["dmg_mod"] = (
+                wd_kwargs["dmg_mod"] if self.weapon else self.dmg_mod
+            )
             effect_target = user if self._self_target else target
             for effect in self._effects:
                 try:
@@ -415,6 +427,11 @@ class DataDrivenStatusSkill(Skill):
             # the YAML entry didn't explicitly opt into luck-based resistance.
             # (Luck is derived from WIS/CHA via Character.check_mod("luck").)
             target_val += target.check_mod("luck", enemy=user, luck_factor=20)
+        if (
+            self._status_name == "Blind"
+            and "Blind Fighting" in target.spellbook.get("Skills", {})
+        ):
+            target_val += max(3, int(getattr(target.stats, "wisdom", 10)) // 2)
 
         contest_success = actor_val > target_val
         if (self._status_name == "Stun") and (not self._physical):
@@ -452,6 +469,18 @@ class DataDrivenStatusSkill(Skill):
             except Exception:
                 pass
 
-            return prefix + self._messages.get("success", "").format(**fmt)
+            message = prefix + self._messages.get("success", "").format(**fmt)
+            if self.name == "Goad":
+                try:
+                    from ...classes import promotion_kits
+
+                    message += promotion_kits.build_resolve(
+                        user,
+                        5,
+                        "Goad",
+                    )
+                except Exception:
+                    pass
+            return message
 
         return prefix + self._messages.get("fail", "").format(**fmt)

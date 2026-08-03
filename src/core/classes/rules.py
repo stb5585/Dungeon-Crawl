@@ -4,16 +4,12 @@ from __future__ import annotations
 
 from typing import Any
 
-from .. import abilities
-
-
 PromotionRule = dict[str, Any]
 
 
-# Promotion rules: Define ability/spell/skill transitions during class promotion
+# Archived promotion transition data retained for external compatibility.
 # ================================================================================
-# When characters promote, some classes trade abilities to reflect their new identity.
-# This dict defines those transitions in a clear, maintainable way.
+# Flat progression does not execute these pruning rules.
 #
 # Keys: Target class name (the class being promoted TO)
 #
@@ -297,56 +293,17 @@ PROMOTION_MECHANIC_TABS: dict[str, str] = {
 
 
 def apply_promotion_ability_rules(promoted_player: Any, new_class_name: str) -> str:
-    """Apply ability transition rules for a promotion.
+    """Compatibility no-op; flat progression retains all learned abilities.
 
     Args:
         promoted_player: Character object being promoted
         new_class_name: Name of the new class
 
     Returns:
-        str: Message describing ability changes, or empty string if none
+        An empty string. Ability pruning was retired by flat progression.
     """
-    rules = PROMOTION_ABILITY_RULES.get(new_class_name, {})
-    message = ""
-
-    if not rules:
-        return message
-
-    # Handle spell transitions
-    if rules.get("clear_spells"):
-        promoted_player.spellbook["Spells"] = {}
-        if rules.get("description"):
-            message += rules["description"] + "\n"
-    else:
-        # Keep only specified spells
-        keep_spells = rules.get("keep_spells", [])
-        if keep_spells:
-            new_spells = {}
-            for spell_name in keep_spells:
-                if spell_name in promoted_player.spellbook["Spells"]:
-                    new_spells[spell_name] = promoted_player.spellbook["Spells"][spell_name]
-                else:
-                    # Spell not in current spellbook, create it if it's in the keep list
-                    spell_class = getattr(abilities, spell_name, None)
-                    if spell_class:
-                        new_spells[spell_name] = spell_class()
-            promoted_player.spellbook["Spells"] = new_spells
-            if rules.get("description"):
-                message += rules["description"] + "\n"
-
-        # Remove specific spells
-        remove_spells = rules.get("remove_spells", [])
-        for spell_name in remove_spells:
-            if spell_name in promoted_player.spellbook["Spells"]:
-                del promoted_player.spellbook["Spells"][spell_name]
-
-    # Handle skill transitions
-    remove_skills = rules.get("remove_skills", [])
-    for skill_name in remove_skills:
-        if skill_name in promoted_player.spellbook["Skills"]:
-            del promoted_player.spellbook["Skills"][skill_name]
-
-    return message
+    del promoted_player, new_class_name
+    return ""
 
 
 def promotion_mechanic_guidance(new_class_name: str) -> str:

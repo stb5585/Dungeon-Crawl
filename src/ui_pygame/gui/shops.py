@@ -16,6 +16,7 @@ class ShopManager(TownScreenBase):
 
     MAGIC_SHOPKEEPER = "Seraphine Voss"
     MAGIC_SHOP_MESSAGE = "Seraphine Voss's Magic Shop"
+    MAGIC_SHOP_MIN_LEVEL = 3
     
     def __init__(self, presenter, player_char):
         super().__init__(presenter)
@@ -201,6 +202,17 @@ class ShopManager(TownScreenBase):
 
     def visit_magic_shop(self):
         """Visit the Magic Shop - scrolls and arcane implements."""
+        if self.player_char.player_level() < self.MAGIC_SHOP_MIN_LEVEL:
+            popup = ConfirmationPopup(
+                self.presenter,
+                (
+                    "The Magic Shop is currently closed. "
+                    f"Seraphine opens her doors at level {self.MAGIC_SHOP_MIN_LEVEL}."
+                ),
+                show_buttons=False,
+            )
+            popup.show(flush_events=True, require_key_release=True)
+            return
         shop_screen = ShopScreen(self.presenter, self.player_char, self.MAGIC_SHOP_MESSAGE)
         self._active_shopkeeper_portrait = self.MAGIC_SHOPKEEPER
         self._set_shopkeeper_portrait(shop_screen)

@@ -155,6 +155,80 @@ class DeflectSpell(_ResolveActive):
         return promotion_kits.deflect_spell(user)
 
 
+class SpellReflection(_ResolveActive):
+    def __init__(self):
+        super().__init__(
+            "Spell Reflection",
+            "Spend Resolve to reflect the next compatible hostile spell.",
+            25,
+        )
+
+    def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        from ..classes import promotion_kits
+
+        return promotion_kits.prepare_spell_reflection(user)
+
+
+class OathsJudgment(_PromotionActive):
+    def __init__(self):
+        super().__init__(
+            "Oath's Judgment",
+            "Spend all Oath Conviction on a weapon technique shaped by the sworn vow.",
+            0,
+        )
+        self.resource_type = "Oath Conviction"
+
+    def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        from ..classes import paladin
+
+        return paladin.oaths_judgment(user, target)
+
+
+class OathsShelter(_PromotionActive):
+    def __init__(self):
+        super().__init__(
+            "Oath's Shelter",
+            "Spend all Oath Conviction on protection shaped by the sworn vow.",
+            0,
+        )
+        self.resource_type = "Oath Conviction"
+
+    def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        from ..classes import paladin
+
+        return paladin.oaths_shelter(user)
+
+
+class Condemnation(_PromotionActive):
+    """Crusader weapon judgment that can condemn wicked creatures."""
+
+    def __init__(self):
+        super().__init__(
+            "Condemnation",
+            (
+                "Strike with holy vengeance for weapon and Holy damage, with "
+                "a chance to condemn fiends and undead to disintegration by "
+                "Repel the Wicked."
+            ),
+            10,
+        )
+        self.weapon = True
+
+    def use(
+        self,
+        user: Character,
+        target: Character | None = None,
+        **kwargs: Any,
+    ) -> str:
+        from ..classes import paladin
+
+        return paladin.condemnation(
+            user,
+            target,
+            rng=kwargs.get("rng"),
+        )
+
+
 class CitadelAegis(_ResolveActive):
     def __init__(self):
         super().__init__("Citadel Aegis", "Consume full Resolve for a fortress barrier and defensive stance.", "Full")

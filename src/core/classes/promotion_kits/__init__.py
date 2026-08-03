@@ -31,6 +31,7 @@ from .state import (
 )
 from .meters import (
     cap_for,
+    _talent_cap_bonus,
     _class_ring_data,
     gain_meter,
     _gain_or_queue_devotion,
@@ -81,6 +82,11 @@ from .resolve import (
     brace_wall,
     covering_guard,
     deflect_spell,
+    prepare_spell_reflection,
+    spell_reflection_ready,
+    spell_reflection_compatible,
+    consume_spell_reflection,
+    tick_spell_reflection,
     bulwark,
     shield_riposte,
     _use_resolve_surge,
@@ -155,3 +161,15 @@ from .presentation import (
 
 from .companions import math, random
 from .state import deepcopy
+from .aerial import (
+    LEGAL_AERIAL_WEAPONS,
+    AUTOMATIC_FOLLOW_THROUGH_EXCLUSIONS,
+    current_aerial_tempo,
+    spend_aerial_tempo,
+    record_clean_jump_landing,
+    arm_aerial_follow_through,
+    aerial_accuracy_bonus,
+    record_aerial_weapon_damage,
+    finish_aerial_follow_through,
+    grounded_landing_reduction,
+)

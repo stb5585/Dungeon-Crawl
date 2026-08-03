@@ -1,229 +1,204 @@
-# Promotion Ability Transition Rules
+# Promotion Ability-Tree Rules
 
-## Overview
+Promotion is a permanent purchase in the current class ability tree: two
+points for a first promotion and three points for a second promotion.
+`src/core/progression.py` is the runtime authority and
+`src/core/progression_manifest.py` owns authored paths, icon semantics, stage
+sizes, and structured stat groups. Trees may have multiple independent
+first-tier nodes; there is no mandatory lineage root.
 
-When characters promote to new classes, some abilities are lost while others may be retained or gained. This system provides clear, maintainable rules for these transitions.
+All 49 registered classes now use authored paths. Named talent nodes are
+permanent purchases that may grant a small combat bonus and modify a
+class-specific meter cap without adding a fake ability to the spellbook.
+Their stable keys are part of the version-5 save contract.
 
-## Why Ability Transitions?
+Progression bonuses use one shared tier scale. Attack, Defense, Magic, and
+Magic Defense nodes grant `+10/+20/+30` on base, first-promotion, and terminal
+trees; HP and MP nodes grant `+25/+50/+100`. Named class talents use that same
+rating amount for every rating they improve, in addition to their bespoke
+mechanic.
 
-Certain promotions represent a fundamental shift in how a character operates:
+## Eligibility
 
-- **Mage → Warlock**: Shifts from Arcane magic to Shadow magic. Loses access to elemental spells but retains Enfeeble as it applies to both magic disciplines.
-- **Healer → Monk**: Abandons magical training to focus on physical chi. Loses all spells entirely.
-- **Footpad → Inquisitor**: Abandons stealth in favor of investigation. Loses all stealth-based skills.
-- **Warrior → Weapon Master**: Specializes in dual-wielding weapons. Loses the Shield Slam ability since shields are no longer used.
+A promotion node is available only when:
 
-## Implementation
+- every declared path and cross-path prerequisite is owned (an authored
+  either/or join may accept one of multiple prerequisites);
+- global level 30 is reached for a first promotion, or level 60 for a second;
+- the target class's permanent primary and secondary stat requirements pass;
+- the player's race allows the first-promotion target; and
+- two progression points are available for a first promotion, or three for a
+  second promotion.
 
-All rules are defined in `src/core/classes/rules.py` using the
-`PROMOTION_ABILITY_RULES` dictionary.
+Equipment and temporary transformations do not satisfy stat requirements.
+Authored target-specific overrides may balance the total cost of a complete
+path. Warrior's Weapon Master and Lancer routes share `Piercing Strike ->
+Charge -> Weapon Focus` before splitting. Charge is level 5, Weapon Focus is
+level 10, and the Weapon Master `+10 Attack` node sits opposite Driving
+Thrust. The tree sets Weapon Master Strength/Dexterity/Intelligence to
+`15/12/11`, Lancer Strength to `13`, Sentinel Constitution to `16`, and
+Paladin Wisdom to `13`; all four first-promotion routes cost 13 points from
+the baseline Human Warrior under the former combined-budget accounting. With
+separate currencies, Weapon Master/Sentinel/Paladin each cost eight progression
+and five attribute points, while Lancer costs ten progression and three
+attribute points.
 
-### Rule Structure
+Other route-specific gates follow the same eventual-affordability contract
+rather than forced symmetry. Level 30/60 is a minimum gate; a character whose
+race/class starting attributes need more stored training may satisfy the stat
+gate at a later fourth-level attribute award.
 
-```python
-"TargetClassName": {
-    "clear_spells": bool,           # Clear all spells? True/False
-    "keep_spells": ["Spell1", ...], # Which spells to preserve (if clear_spells=True)
-    "remove_spells": ["Spell1", ...], # Which spells to remove (if clear_spells=False)
-    "remove_skills": ["Skill1", ...], # Which skills to remove
-    "description": "Message..."      # What to tell the player
-}
-```
+Weapon Master is intentionally asymmetric. Double Strike and Parry entry nodes
+have no global-level gate and adopt retained Warrior ownership without charging
+again. Combat-rating nodes also have no level gate in any tree and scale by
+tree tier: `+10` in base trees, `+20` in first-promotion trees, and `+30` in
+terminal trees. The Grandmaster route permanently closes either Dual Wield or
+Duelist when the competing style is chosen, and True Piercing Strike accepts
+the terminal node from either style. Each independent weapon art checks
+matching Weapon Discipline rank 1; its child upgrade checks rank 5 and replaces
+the lower form. These art nodes have no global-level gate. Reaching either rank
+makes the corresponding node purchasable but never grants it automatically.
+The Berserker route places level-35 Two-Handed Weapon Proficiency between
+Attack and Mortal Strike, with a visual gap before level-45 Mortal Strike. The
+Grandmaster style gates are Dual Wield/Duelist at 35, Honed Attack/Blind
+Fighting at 40, Momentum/Retort at 45, Cross Block/Maim at 50, and True
+Piercing Strike at 55. Selecting Dual Wield or Duelist permanently closes every
+descendant on the competing path, not only its entry node.
 
-### Parameters
+Berserker exposes only two-handed disciplines and owns eight rank-1/rank-5 art
+nodes in four centered rows. Final Assault and Frenzy are immediately available
+after promotion, because the promotion itself enforces level 60. Its left paths
+include terminal-tier `+30 Attack` and `+100 HP` development nodes; the center
+column contains inherited Parry, level-65 Pain Tolerance, and level-70
+Hemorrhage Thirst. Hemorrhage Thirst converts enemy bleed-tick damage into
+equal healing; triggering on a third consecutive enemy turn makes the Berserker
+unconscious for two turns and resets the streak. Level-70 Reckless Onslaught
+sits between `+30 Attack` and Monkey Grip 2 in the Survival path, replaces Final
+Assault, and stacks its Attack-up and Defense-down tradeoff when refreshed.
+Both left paths use five vertically centered rows, while the center column uses
+three.
 
-| Parameter | Type | Purpose |
-|-----------|------|---------|
-| `clear_spells` | bool | If `True`, wipes all spells and only keeps those in `keep_spells`. If `False`, retains all spells but can remove specific ones. |
-| `keep_spells` | list | Spells to preserve/restore after promotion. If a spell isn't in the current spellbook, it will be created from the abilities module. |
-| `remove_spells` | list | Specific spells to remove (only applies if `clear_spells=False`). |
-| `remove_skills` | list | Skills to remove from the character's skill list. |
-| `description` | str | Message displayed to the player describing what abilities were lost. |
+Grandmaster of Arms exposes all 16 inherited rank-1/rank-5 nodes plus eight
+rank-10 level-3 replacements. Ungated Double Strike sits between Perfect Form
+and Adaptive Arsenal in the fourth column. Both floating talents have no level
+gate and scale from the currently equipped weapon's discipline.
 
-## Current Promotion Rules
+Lancer uses three independent paths below Jump and one polearm development
+line. The defensive path is `Defend -> Acrobat -> Grounded Landing`; the
+middle path is `+20 Defense -> +20 Attack -> Promote: Dragoon`; and the
+offensive path is `Aerial Footwork -> Quick Dive -> Thrust -> Rend`. Polearm
+Proficiency sits in column 5 and owns a single line through Lance Sweep,
+`+50 HP`, and Zephyrstrike. Ungated inherited-or-purchased Parry and True
+Strike occupy the final column. Modifier nodes never create spellbook entries.
+Acrobat unlocks at level 40, Thrust at level 45, and Rend at level 50.
+Promote: Dragoon additionally requires global level 60, `STR 17`, and
+`DEX 13`; neither optional modifier path is required.
 
-### Warlock (from Mage)
-- **Action**: Keep only Enfeeble spell
-- **Reason**: Enfeeble works with both Arcane and Shadow magic disciplines
-- **Message**: "You lose all previously learned attack spells."
+Dragoon retains all 16 Lancer development nodes in the same positions and adds
+11 class-specific nodes. The Lancer promotion node is the only omitted node.
+The historical Lancer tab becomes read-only, but its purchased node IDs remain
+owned and its unpurchased nodes remain editable in the Dragoon tree. The three
+inherited Jump paths preserve the same independent prerequisites. Shield Block
+is not repeated because reaching Lancer already requires it. Ungated Polearm
+Excellence starts the Dragoon polearm line at row 5 and connects into
+`+30 Attack -> True Piercing Strike`; level-70 True Piercing Strike no longer
+requires True Strike. The middle `+20 Attack` node
+unlocks Dragon's Ascent, which has no separate level gate and gates
+`+30 Defense`. Grounded Landing unlocks level-65 Retribution, which continues
+to level-70 Unstoppable. Rend extends through Quake and Soaring Strike.
+Level-80 Dragon Dive requires Dragon's Ascent, Soaring Strike, and Unstoppable.
+Lancer fits in rows 0-6; Dragoon uses compact spacing across rows 0-7 without
+progression-panel scrolling.
 
-### Shadowcaster (from Warlock)
-- **Action**: No changes to spells
-- **Reason**: Shadowcaster inherits Warlock's spellbook
+Sentinel uses three authored columns. Counter runs from ungated Goad through
+level-35 Shield Check, level-40 Retaliate, level-45 Shield Riposte, and
+level-50 Watchful Reprisal. Wall runs from ungated Hold the Line through Brace
+Wall, Covering Guard, Bulwark, and level-50 Resolute Guard. Anti-magic runs
+from ungated Deflect Spell to level-45 Spell Reflection and two optional
+durability nodes. Goad and Retaliate adopt known ownership. The level-60
+Stalwart Defender promotion requires Watchful Reprisal, Resolute Guard,
+`CON 20`, and three points. Its ten-node Human core plus one Constitution
+increase leaves four points.
 
-### Monk (from Healer)
-- **Action**: Clear all spells
-- **Reason**: Monks channel chi, not magic
-- **Message**: "You lose all previously learned spells."
+Stalwart Defender contains 11 new development nodes and no inherited-tree
+duplicates. Last Stand and Punishing Guard start independent defense and
+counter paths. Fortified Citadel, Crushing Reprisal, and Final Redoubt are
+point-purchased Surge modifiers; Citadel Aegis, Ironwall Reprisal, and Last
+Bastion themselves remain mastery rewards at thresholds 0, 4, and 8 and are
+granted as action wrappers during promotion. Mirror Bastion checks learned
+Spell Reflection rather than requiring ownership of a closed Sentinel node.
 
-### Ranger (from Pathfinder)
-- **Action**: Clear all spells
-- **Reason**: Rangers use physical abilities, not magic
-- **Message**: "You lose all previously learned spells."
+Paladin begins with independent ungated Oath's Judgment `(1, 0)` and Oath's
+Shelter `(4, 0)` roots. Judgment branches through the column-0 `Double Strike
+-> +20 Attack -> Tempered Conviction -> True Strike` path and the column-2
+`Smite -> Repel the Wicked -> +20 Magic -> Hallowed Ground` path. Shelter branches
+through column 3's `Heal -> +50 MP -> Sworn Purpose -> Blessed Light` and
+column 5's Bless branch. Magic Defense and level-45 Resist Shadow are detached
+from the Oath's Shelter connector. Magic Defense instead gates Parry at
+`(5, 3)`, followed by `+20 Defense -> Divine Protection`. Tempered Conviction grants `+20
+Defense` and one Conviction capacity;
+Sworn Purpose grants `+20 Magic` and `+20 Magic Defense`. Blessed Light turns
+successful combat healing spells into a three-turn `+10 Attack` buff. The
+level-60 Crusader promotion is centered at `(2.5, 7)`, requires either Oath
+root, `STR 15`, `CON 17`, `WIS 16`, `CHA 13`, and three progression points.
+Its two prerequisite connectors descend to the promotion row before joining.
+Six required Human attribute increases use the separate attribute pool,
+leaving 14 progression points and nine attribute points on the shortest route.
 
-### Weapon Master (from Warrior)
-- **Action**: Remove Shield Slam skill
-- **Reason**: Weapon Masters dual-wield without shields
-- **Message**: "You lose the skill Shield Slam."
+Crusader contains only its 19 new nodes across Melee, Spells, Healing, and
+Protection. Ungated Condemnation splits into mutually exclusive Two-Handed
+Weapon Proficiency and Sword & Board styles. The former continues through
+`+30 Attack`, level-75 Mortal Strike, and Righteous Advance; the latter
+continues through level-70 True Piercing Strike and level-85 Triple Strike.
+True Piercing Strike has no True Strike prerequisite. Smite II/III and Heal II
+retain replacement ownership. Repel the Wicked is retained or purchasable
+from the Spells path without a Turn Undead II node. Consecrated Bulwark leads
+through Parry and level-65 Posturing
+to the protection ratings. Unpurchased Sentinel and Paladin nodes close at
+promotion; all already learned actions, talents, Resolve mastery, and the
+permanent Paladin vow remain.
 
-### Inquisitor (from Footpad)
-- **Action**: Remove all stealth skills (Backstab, Smoke Screen, Pocket Sand, Kidney Punch, Steal, Sleeping Powder)
-- **Reason**: Inquisitors investigate openly, not through stealth
-- **Message**: "You lose all stealth skills."
+## Staging and Atomic Change
 
-## Promotion Decision Matrix
+Both frontends stage promotion nodes with other point purchases and commit the
+distribution through one Spend action. Promotion details show the target,
+requirements, and permanent branch-closure warning. Spending a distribution
+containing a promotion opens a final benefit preview with its one-time bonuses
+and equipment conflicts. Paladin vows and Warlock familiars are selected before
+mutation.
 
-This matrix is the complete documentation baseline for current first- and
-second-promotion ability transitions. `Keep` means no pruning rule is planned.
-`Identity Trade` means an implemented rule removes abilities that no longer
-match the promotion. The matrix itself is documentation rather than a runtime
-pruning change unless an implemented rule is called out.
+A successful purchase:
 
-### Warrior Branch
+- changes class without resetting global level, total XP, or XP carryover;
+- applies the promoted class's one-time primary and resource bonuses, plus
+  combat bonuses scaled to `2x` for first promotions and `3x` for second
+  promotions;
+- initializes vows, familiars, summons, contracts, teleport state, and other
+  special class hooks in the same transaction;
+- moves newly illegal gear to inventory;
+- retains every learned spell and skill;
+- marks the previous tree completed and read-only; and
+- closes competing promotions and every unpurchased node in that tree.
 
-| Promotion Path | Classification | Intended Ability Transition |
-| --- | --- | --- |
-| Warrior -> Weapon Master | Identity Trade | Remove shield-centered skills that conflict with dual-wield discipline. Current rule removes `Shield Slam`. |
-| Weapon Master -> Berserker | Keep | Retain Weapon Master weapon discipline and weapon arts; Berserker adds Bloodied Momentum and heavy-weapon mutation. |
-| Weapon Master -> Grandmaster of Arms | Keep | Retain and deepen Weapon Discipline; Grandmaster Class Ring expands the chosen bound art. |
-| Warrior -> Paladin | Keep | Retain Warrior basics while adding permanent vow, holy identity, and Oath Conviction. |
-| Paladin -> Crusader | Keep | Retain Paladin vow identity and deepen Oath Conviction through Vow Affirmation. |
-| Warrior -> Lancer | Keep | Retain core martial skills while adding Jump, polearm identity, and Aerial Tempo. |
-| Lancer -> Dragoon | Keep | Retain Jump/polearm progression and deepen Aerial Tempo through Aerial Supremacy follow-through. |
-| Warrior -> Sentinel | Keep | Retain core martial skills while adding shield/guard identity. |
-| Sentinel -> Stalwart Defender | Keep | Retain shield/guard identity and deepen Resolve with full-bar Resolve Surges. |
+Lancer-to-Dragoon is the explicit exception to the last rule: the old Lancer
+tab is read-only, while the same development nodes remain available inside the
+current Dragoon tree.
 
-### Mage Branch
+Cancellation changes nothing. An exception during application restores the
+snapshotted class, stats, resources, combat ratings, equipment, inventory,
+spellbook, companions, summons, and progression state.
 
-| Promotion Path | Classification | Intended Ability Transition |
-| --- | --- | --- |
-| Mage -> Sorcerer | Keep | Retain elemental Mage spells; Sorcerer starts the 0-50 School Affinity wheel and tier-2 upgrade path. |
-| Sorcerer -> Wizard | Keep | Retain Sorcerer affinity progress and expand the cap to 100 for tier-3/final mastery. |
-| Mage -> Warlock | Identity Trade | Trade elemental attack magic for shadow magic while preserving `Enfeeble`. Current rule keeps only `Enfeeble`. |
-| Warlock -> Shadowcaster | Keep | Retain Warlock shadow spellbook and familiar identity. |
-| Warlock -> Demonologist | Keep | Retain Warlock/familiar identity; Demonologist contracts, corruption, patron mood, and ring echo deepen that identity. |
-| Mage -> Spellblade | Keep | Retain arcane training while adding weapon-channeling identity. |
-| Spellblade -> Knight Enchanter | Keep | Retain Spellblade hybrid kit and deepen enchantment/mana-tap identity. |
-| Mage -> Summoner | Keep | Retain Mage spell context and add summon identity; the V1 bond spec does not require spell pruning. |
-| Summoner -> Grand Summoner | Keep | Retain summon kit and add sacrifice/conduit scaling. |
+## Retired Behavior
 
-### Footpad Branch
+Promotion never resets a local class level, prunes abilities, or grants the
+new class's former level-one catalog entries. `PROMOTION_ABILITY_RULES` and
+`apply_promotion_ability_rules()` remain compatibility surfaces only; they are
+not part of the canonical progression path. Church no longer offers class
+promotion.
 
-| Promotion Path | Classification | Intended Ability Transition |
-| --- | --- | --- |
-| Footpad -> Thief | Keep | Retain stealth/toolkit skills and add loot economy identity, including Scavenger's Eye and Fortune/Misfortune. |
-| Thief -> Rogue | Keep | Retain thief utility, Fortune/Misfortune, and loot identity while adding Finders Keepers, Cheat Death, and Loaded Dice payoff. |
-| Footpad -> Inquisitor | Identity Trade | Remove stealth skills that conflict with open investigation, then add Case Journal and Revelation counterplay. Current rule removes the stealth suite. |
-| Inquisitor -> Seeker | Keep | Retain reveal/inspection identity, Case Journal progress, and Revelation while adding Wayfinding and cartography/cache identity. |
-| Footpad -> Assassin | Keep | Retain stealth skills and add poison/lethal pressure, including Death Mark setup. |
-| Assassin -> Ninja | Keep | Retain assassin kit and Death Mark setup while adding Ninja Blade execution pressure and No-Trace Opener payoff. |
-| Footpad -> Spell Stealer | Keep | Retain dexterous theft identity while adding spell theft and the combat-only Stolen Charge loop; stolen-spell scrolls are selected from the combat `Spells` picker rather than a Character Menu tab. |
-| Spell Stealer -> Arcane Trickster | Keep | Retain spell theft, Stolen Charge, and permanent stolen-spell learning while adding Arcane Larceny payoff; no dedicated Character Menu mechanic tab is added for this path. |
+## Ability Retention and Upgrades
 
-### Healer Branch
-
-| Promotion Path | Classification | Intended Ability Transition |
-| --- | --- | --- |
-| Healer -> Cleric | Keep | Retain healing foundation and add shield/holy utility. |
-| Cleric -> Templar | Keep | Retain cleric defense/holy identity and add ordered blessings. |
-| Cleric -> Hierophant | Keep | Retain cleric defense/holy identity and add staff-shield battle-casting through Devotion. |
-| Healer -> Monk | Identity Trade | Trade spellcasting for martial chi. Current rule clears learned spells. |
-| Monk -> Master Monk | Keep | Retain chi/martial kit and deepen Ki mastery, `Dim Mak`, and late-game martial weapon identity. |
-| Healer -> Priest | Keep | Retain and deepen spellcasting support through the Prayer support loop. |
-| Priest -> Archbishop | Keep | Retain priest spell identity and add Prayer-powered Benediction plus intervention smoothing. |
-| Healer -> Bard | Identity Trade | Trade full divine spellcasting for light support and music. Bard keeps only known `Heal`, `Regen`, and `Cleanse`; divine offense and higher divine progression should be removed. |
-| Bard -> Troubadour | Keep | Retain song identity and add Encore/music mastery. |
-
-### Pathfinder Branch
-
-| Promotion Path | Classification | Intended Ability Transition |
-| --- | --- | --- |
-| Pathfinder -> Druid | Keep | Retain nature magic and add transformation/nature rites. |
-| Druid -> Lycan | Keep | Retain form/nature identity and add moon/frenzy behavior. |
-| Druid -> Archdruid | Keep | Retain nature magic, deepen Fourfold Balance, and add combat Aspect Harmony. |
-| Pathfinder -> Diviner | Keep | Retain exploration/nature context while adding learned-spell/rune identity; Diviner does not gain Foresight Threads in V1. |
-| Diviner -> Astromancer | Keep | Retain runes and expand constellation/time identity through combat-only Foresight Threads and `Threaded Cast`. |
-| Pathfinder -> Shaman | Keep | Retain nature spell context and add Totem communion. |
-| Shaman -> Soulcatcher | Keep | Retain Totem identity and add Soul Aspect/Soul Drain. |
-| Pathfinder -> Ranger | Identity Trade | Trade spellcasting for physical beastcraft. Current rule clears learned spells. |
-| Ranger -> Beast Master | Keep | Retain taming/favored-enemy identity and add shared recovery. |
-
-## Adding New Promotion Rules
-
-To add a promotion rule for a class that's missing one:
-
-1. **Identify the transition**: What abilities should be lost? Why?
-2. **Add to `PROMOTION_ABILITY_RULES`** in `src/core/classes/rules.py`:
-
-```python
-"NewClassName": {
-    "clear_spells": True,  # or False
-    "keep_spells": ["SpellName"],  # if clear_spells=True
-    "remove_spells": [],
-    "remove_skills": ["SkillName"],
-    "description": "You lose [description of loss]."
-}
-```
-
-3. **Test promotion** in both:
-   - Text-based version: `town.py` promotion system
-   - Pygame version: `gui/church.py` ChurchManager
-
-## Implementation Details
-
-### Text Version (town.py)
-The text promotion flow calls:
-```python
-ability_change_msg = apply_promotion_ability_rules(promoted_player, new_class.name)
-promo_str += ability_change_msg
-```
-
-### Pygame Version (gui/church.py)
-The `ChurchManager.handle_promotion()` method calls:
-```python
-apply_promotion_ability_rules(self.player_char, chosen_name)
-```
-
-The pygame promotion preview now carries the class-change, stat-delta, and
-class-mechanic education. After confirmation, pygame applies the promotion,
-adds class stat/resource/combat bonuses, increases current HP/MP by the same
-amount as max HP/MP bonuses, and shows one concise congratulations popup. It no
-longer emits separate ability-change/tutorial popups for the normal success
-path.
-
-Both versions use the same underlying `apply_promotion_ability_rules()` function
-for consistency.
-
-## Function Reference
-
-### `apply_promotion_ability_rules(promoted_player, new_class_name)`
-
-**Purpose**: Apply ability transition rules when a character is promoted.
-
-**Parameters**:
-- `promoted_player` (Character): The character being promoted
-- `new_class_name` (str): Name of the new class being promoted to
-
-**Returns**:
-- `str`: Message describing changes, empty string if none
-
-**Behavior**:
-1. Looks up rules in `PROMOTION_ABILITY_RULES`
-2. If `clear_spells=True`: Removes all spells, then adds only those in `keep_spells`
-3. If `clear_spells=False`: Keeps existing spells but removes those in `remove_spells` and/or `keep_spells` (overwrite)
-4. Removes all skills listed in `remove_skills`
-5. Returns the description message
-
-**Note**: Spells are created on-demand from the abilities module if not currently in the spellbook.
-
-## Expansion Gate
-
-The current transition matrix is the compatibility baseline. Future promotion
-ability changes must define spell and skill gain rules, class-specific
-retention variants, ability-history restoration behavior, UI messages for text
-and pygame flows, save compatibility, and focused tests before implementation.
-
-Do not add broad ability-history restoration, alternate retention policies, or
-new promotion spell/skill grants as roadmap cleanup. Promote them through this
-doc first so `town.py`, `ChurchManager`, save/load, and regression tests stay
-aligned.
+Purchased abilities stay active across promotions. Upgrade nodes require the
+earlier ability and replace it atomically in the active spellbook. Quest,
+Class Ring, Power Core, vow, contract, summon-bond, and Weapon Discipline
+rewards remain owned by their existing systems and do not become tree nodes.

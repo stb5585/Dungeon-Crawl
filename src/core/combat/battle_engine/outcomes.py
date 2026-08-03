@@ -16,6 +16,22 @@ class BattleOutcomeMixin:
     def _process_victory(self) -> str:
         """Handle victory bookkeeping: exp, loot, quests, kill tracking."""
         restore_defeat_identity(self.enemy)
+        if getattr(self.enemy, "paladin_repelled", False):
+            self.player.state = "normal"
+            if (
+                hasattr(self.player, "transform_type")
+                and self.player.cls != self.player.transform_type
+            ):
+                self.player.transform(back=True)
+            self.player.effects(end=True)
+            self.enemy.effects(end=True)
+            msg = f"{self.enemy.name} flees from the battle.\n"
+            msg += promotion_kits.end_combat(
+                self.player,
+                victory=False,
+                enemy=self.enemy,
+            )
+            return msg
         if getattr(self.enemy, "tamed_by_player", False) or getattr(self.enemy, "no_victory_rewards", False):
             self.player.state = 'normal'
             if hasattr(self.player, 'transform_type') and self.player.cls != self.player.transform_type:
@@ -102,16 +118,21 @@ class BattleOutcomeMixin:
             if quest_msg:
                 msg += quest_msg
 
-        # Experience and levelling
-        self.player.level.exp += exp_gain
-        if not self.player.max_level():
-            self.player.level.exp_to_gain -= exp_gain
-
         # Clear effects
         self.player.state = 'normal'
         if hasattr(self.player, 'transform_type') and self.player.cls != self.player.transform_type:
             self.player.transform(back=True)
         self.player.effects(end=True)
+
+        # Experience growth uses permanent post-transformation stats.
+        from ...progression import award_experience
+
+        level_result = award_experience(self.player, exp_gain)
+        self.player._pending_level_up_result = (
+            level_result
+            if level_result.new_level > level_result.old_level
+            else None
+        )
         if hasattr(self.player, "award_grandmaster_victory_xp"):
             msg += self._grandmaster_victory_xp_text()
 

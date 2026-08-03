@@ -188,6 +188,7 @@ class CharacterEquipmentMixin:
             self._draw_text(option, self.small_font, self.colors.GOLD if index == self.current_selection else self.colors.WHITE, rect.left + 8, rect.centery - self.small_font.get_height() // 2, rect.width - 16)
 
     def draw_all(self, player_char, do_flip=True):
+        self._progression_player = player_char
         self.ensure_active_tab_visible(player_char)
         self.draw_background()
         self.draw_tabs(player_char)
@@ -198,6 +199,8 @@ class CharacterEquipmentMixin:
             self.draw_class_tab(player_char)
         elif self.active_tab.key == "equipment":
             self.draw_equipment_tab(player_char)
+        elif self.active_tab.key == "progression":
+            self.progression_view.draw_embedded(player_char, self.content_rect)
         self.draw_menu()
         if do_flip:
             pygame.display.flip()
@@ -245,7 +248,17 @@ class CharacterEquipmentMixin:
                 popup.on_select(player_char, entry)
                 return
 
+    def _confirm_progression_departure(self, target_key: str | None = None) -> bool:
+        """Guard tab/menu exits while a point distribution is uncommitted."""
+        if self.active_tab.key != "progression":
+            return True
+        if target_key == "progression":
+            return True
+        return self.progression_view.confirm_discard_pending()
+
     def navigate(self, player_char, flush_events=True, require_key_release=True):
+        self._progression_player = player_char
+        self.progression_view.player_char = player_char
         menu_options = self._base_menu_options()
         if self._has_totem_aspects(player_char):
             menu_options.insert(-1, "Totem Aspects")
@@ -273,6 +286,12 @@ class CharacterEquipmentMixin:
                 input_armed = update_input_armed_from_event(event, True, input_armed)
 
                 if event.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN):
+                    if (
+                        self.active_tab.key == "progression"
+                        and self.content_rect.collidepoint(mouse_position(event))
+                        and self.progression_view.handle_event(event)
+                    ):
+                        continue
                     pos = mouse_position(event)
                     tab_index = hit_index(self.tab_button_rects(player_char), pos)
                     action_index = hit_index(self.action_rects(), pos)
@@ -280,6 +299,9 @@ class CharacterEquipmentMixin:
                         self.current_selection = action_index
                     elif tab_index is not None and is_left_click(event):
                         if input_armed:
+                            target_key = self.visible_tabs(player_char)[tab_index].key
+                            if not self._confirm_progression_departure(target_key):
+                                continue
                             self.select_visible_tab_index(tab_index, player_char)
                             if self.active_tab.key != "equipment":
                                 self.equipment_selector_active = False
@@ -289,7 +311,13 @@ class CharacterEquipmentMixin:
                     elif action_index is not None and is_left_click(event):
                         if input_armed:
                             self.current_selection = action_index
-                            result = self._open_menu_choice(self.menu_options[self.current_selection], player_char)
+                            chosen = self.menu_options[self.current_selection]
+                            if (
+                                chosen == "Exit Menu"
+                                and not self._confirm_progression_departure()
+                            ):
+                                continue
+                            result = self._open_menu_choice(chosen, player_char)
                             if result:
                                 return result
                         continue
@@ -335,11 +363,19 @@ class CharacterEquipmentMixin:
                 if event.type != pygame.KEYDOWN:
                     continue
 
+                if (
+                    self.active_tab.key == "progression"
+                    and self.progression_view.handle_event(event)
+                ):
+                    continue
+
                 if event.key == pygame.K_ESCAPE and self.equipment_selector_active:
                     self.equipment_selector_active = False
                 elif event.key == pygame.K_ESCAPE and self.class_companion_selector_active:
                     self.class_companion_selector_active = False
                 elif event.key == pygame.K_ESCAPE:
+                    if not self._confirm_progression_departure():
+                        continue
                     return "Exit Menu"
                 elif event.key == pygame.K_e and self.active_tab.key == "equipment":
                     self.equipment_selector_active = not self.equipment_selector_active
@@ -361,6 +397,18 @@ class CharacterEquipmentMixin:
                         entries = self.class_companion_entries(player_char)
                         self.selected_class_companion_index = min(len(entries) - 1, self.selected_class_companion_index + 1)
                     else:
+                        visible = self.visible_tabs(player_char)
+                        active_index = next(
+                            (
+                                index
+                                for index, tab in enumerate(visible)
+                                if tab.key == self.active_tab.key
+                            ),
+                            0,
+                        )
+                        target_key = visible[(active_index + 1) % len(visible)].key
+                        if not self._confirm_progression_departure(target_key):
+                            continue
                         self.move_tab(1, player_char)
                 elif event.key == pygame.K_LEFT:
                     if self.active_tab.key == "equipment" and self.equipment_selector_active:
@@ -372,12 +420,36 @@ class CharacterEquipmentMixin:
                     ):
                         self.selected_class_companion_index = max(0, self.selected_class_companion_index - 1)
                     else:
+                        visible = self.visible_tabs(player_char)
+                        active_index = next(
+                            (
+                                index
+                                for index, tab in enumerate(visible)
+                                if tab.key == self.active_tab.key
+                            ),
+                            0,
+                        )
+                        target_key = visible[(active_index - 1) % len(visible)].key
+                        if not self._confirm_progression_departure(target_key):
+                            continue
                         self.move_tab(-1, player_char)
                 elif event.key == pygame.K_1:
+                    target_key = self.visible_tabs(player_char)[0].key
+                    if not self._confirm_progression_departure(target_key):
+                        continue
                     self.select_visible_tab_index(0, player_char)
                 elif event.key == pygame.K_2:
+                    target_key = self.visible_tabs(player_char)[1].key
+                    if not self._confirm_progression_departure(target_key):
+                        continue
                     self.select_visible_tab_index(1, player_char)
                 elif event.key == pygame.K_3:
+                    visible = self.visible_tabs(player_char)
+                    if len(visible) <= 2:
+                        continue
+                    target_key = visible[2].key
+                    if not self._confirm_progression_departure(target_key):
+                        continue
                     self.select_visible_tab_index(2, player_char)
                 elif event.key == pygame.K_UP:
                     if self.active_tab.key == "equipment" and self.equipment_selector_active:
@@ -400,8 +472,11 @@ class CharacterEquipmentMixin:
                         entries = self.class_companion_entries(player_char)
                         self.selected_class_companion_index = min(len(entries) - 1, self.selected_class_companion_index + 1)
                     elif self.active_tab.key == "class" and grandmaster.is_weapon_discipline_class(player_char):
+                        weapon_types = grandmaster.weapon_discipline_types(
+                            player_char,
+                        )
                         self.selected_weapon_discipline_index = min(
-                            len(grandmaster.WEAPON_TYPES) - 1,
+                            len(weapon_types) - 1,
                             self.selected_weapon_discipline_index + 1,
                         )
                     else:
@@ -431,7 +506,13 @@ class CharacterEquipmentMixin:
                     elif self.active_tab.key == "class" and grandmaster.is_weapon_discipline_class(player_char):
                         self._open_weapon_discipline_popup(player_char)
                     else:
-                        result = self._open_menu_choice(self.menu_options[self.current_selection], player_char)
+                        chosen = self.menu_options[self.current_selection]
+                        if (
+                            chosen == "Exit Menu"
+                            and not self._confirm_progression_departure()
+                        ):
+                            continue
+                        result = self._open_menu_choice(chosen, player_char)
                         if result:
                             return result
 

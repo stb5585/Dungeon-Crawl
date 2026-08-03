@@ -119,8 +119,11 @@ bonuses, trading one point from their prior pure martial peak stat.
 ### Weapon Arts
 
 Weapon Discipline also unlocks active MP-cost weapon arts. Each art requires
-the matching weapon type, unlocks at rank 1, improves at rank 5, and masters at
-rank 10:
+the matching weapon type. Its tree node unlocks at rank 1, a second tree node
+at rank 5 replaces it with a stronger level-2 form, and discipline mechanics
+reach mastery at rank 10. Grandmaster of Arms can then purchase a level-3 form
+that replaces level 2. Weapon-art nodes use only these discipline-rank gates,
+not global level:
 
 - `Fist`: `Iron Palm`.
 - `Dagger`: `Hemorrhage`.
@@ -130,6 +133,11 @@ rank 10:
 - `Battle Axe`: `Reaver's Mark`.
 - `Polearm`: `Brace`.
 - `Hammer`: `Anvil Strike`.
+
+Berserker's tab and tree show only Longsword, Battle Axe, Polearm, and Hammer.
+Grandmaster of Arms retains all eight weapon types. Perfect Form adds `1%`
+damage and `0.5%` hit per equipped discipline rank; Adaptive Arsenal adds
+`0.5%` parry and `1%` counterattack critical chance per rank.
 
 ### Class Ring Binding
 
@@ -373,11 +381,13 @@ additional visual presentation, and playtest follow-up.
     is equipped, aura benefits are multiplied by 1.5 and mark penalties or
     durations are multiplied by 0.5.
   - The promotion-kit V1 pass adds combat-only `Oath Conviction` to the
-    Paladin/Crusader vow loop. Vow-aligned actions build
-    Conviction, the next matching vow action spends it for a conservative
-    path-specific rider, and awakened/equipped `Vow Affirmation` preserves
-    `1` Conviction once per combat after a clean empowered payoff. Conviction
-    never cleanses, shortens, or disables mark drawbacks.
+    Paladin/Crusader vow loop. Signature-vow actions and their clean outcomes
+    build Conviction; the separate `Oath's Judgment` and `Oath's Shelter`
+    techniques consume all stacks for vow-specific offense or defense.
+    Required Tempered Conviction makes the effective Paladin/Crusader caps
+    `3/4`. Awakened/equipped `Vow Affirmation` preserves `1` Conviction once
+    per combat after an empowered technique applies its primary effect.
+    Conviction never cleanses, shortens, or disables mark drawbacks.
   - Bosses and Class Ring trial enemies are immune to mercy-victory effects.
   - `Redemption` grants `Redeem`, which attempts a boss-immune mercy victory.
     Success grants normal XP and gold, no item loot, and no kill, bounty, or
@@ -409,9 +419,12 @@ additional visual presentation, and playtest follow-up.
     compatibility remains accepted internally, but the ring no longer grants
     extra active Jump modification capacity.
   - `Aerial Supremacy` enhances the automatic Aerial Tempo follow-through after
-    a clean Jump landing and rolls the defensive landing shield into the same
-    offensive/defensive identity instead of presenting `Meteor Guard` as a
-    separate ring payoff.
+    a clean Jump landing from `+6%` damage and `+3` accuracy points per stack
+    to `+8%` damage and `+4` accuracy points per stack. A clean damaging Jump
+    creates a two-turn Landing Shield equal to 15% of actual Jump damage,
+    minimum one. A new landing refreshes the larger shield; it does not stack.
+    Incoming damage depletes it, and status presentation uses only `Aerial
+    Supremacy` and `Landing Shield`, never a separate Meteor Guard payoff.
   - Status: playable in the Barracks when a dormant Dragoon Class Ring is
     equipped or stored.
   - The trial has no normal XP, gold, loot, quest, kill-count, or death penalty
@@ -427,9 +440,13 @@ additional visual presentation, and playtest follow-up.
   - The promotion-kit V1 pass makes Resolve a baseline Sentinel/Stalwart
     resource. Sentinel owns the shield stance and normal Resolve spends such as
     `Bulwark`, `Shield Riposte`, `Shield Check`, `Brace Wall`,
-    `Covering Guard`, and `Deflect Spell`; Stalwart keeps those actions and
-    adds full-bar `Resolve Surges`. Awakened/equipped `Shield Mastery` remains
-    the strongest automation layer for major-hit mitigation.
+    `Covering Guard`, `Deflect Spell`, and `Spell Reflection`; Stalwart keeps
+    those actions and adds full-bar `Resolve Surges`. Spell Reflection spends
+    25 Resolve and redirects the first compatible hostile targeted spell
+    during its two-turn preparation. Mirror Bastion rewards a trigger with 20
+    Resolve and `+6 Magic Defense` for two turns. Awakened/equipped `Shield
+    Mastery` remains the strongest automation layer for major-hit mitigation
+    and reads/spends this same Resolve value without a duplicate gain path.
   - Status: playable in the Barracks when a dormant Stalwart Defender Class
     Ring is equipped or stored.
   - The trial has no normal XP, gold, loot, quest, kill-count, or death penalty

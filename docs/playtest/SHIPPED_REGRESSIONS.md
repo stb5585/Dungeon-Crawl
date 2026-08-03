@@ -99,7 +99,10 @@ remain the prompts; the evidence ledger is the running decision record.
   - Expected: Promotion requires choosing one permanent vow: `Redemption`, `Conquest`, `Protection`, or `Retribution`.
   - Expected: The pygame vow picker uses the styled selection popup and updates
     signature skill, aura, mark, and broad playstyle details while each vow is
-    highlighted, without revealing percentage or duration tuning.
+    highlighted over the existing progression background, without revealing
+    percentage or duration tuning.
+  - Expected: Selecting a vow opens an explicit `Swear the Vow` confirmation;
+    declining it returns without committing the promotion.
   - Expected: Canceling the vow choice cancels promotion.
   - Expected: Completing promotion grants the matching vow skill: `Redeem`, `Challenge`, `Interpose`, or `Judgment Riposte`.
 - [ ] Load or create a legacy Paladin/Crusader save with no vow, then visit the Church.

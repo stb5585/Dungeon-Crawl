@@ -11,6 +11,7 @@ from src.core.classes import (
     astromancer,
     demonologist,
     grandmaster,
+    paladin,
     promotion_kits,
 )
 from src.core.combat.battle_engine import STOLEN_SCROLL_CHOICE_PREFIX
@@ -234,6 +235,7 @@ class CombatSelectionMixin:
             )
             for name, spell in player_char.spellbook['Spells'].items()
             if not getattr(spell, 'passive', False)
+            and not getattr(spell, "exploration_cast", False)
             and (getattr(spell, "subtyp", None) != "Movement" or name == "Volitation")
         ]
         scroll_entries = [
@@ -320,11 +322,33 @@ class CombatSelectionMixin:
             for skill_name in skills:
                 skill = player_char.spellbook['Skills'][skill_name]
                 cost = skill.cost
-                skill_options.append(f"{skill_name} (MP: {cost})")
-            skill_descriptions = [
-                getattr(player_char.spellbook['Skills'][skill_name], "description", "")
-                for skill_name in skills
-            ]
+                if getattr(skill, "resource_type", None) == "Oath Conviction":
+                    conviction = int(
+                        promotion_kits.combat_state(player_char).get(
+                            "oath_conviction",
+                            0,
+                        )
+                        or 0
+                    )
+                    skill_options.append(
+                        f"{skill_name} (Conviction: all {conviction})"
+                    )
+                else:
+                    skill_options.append(f"{skill_name} (MP: {cost})")
+            skill_descriptions = []
+            for skill_name in skills:
+                skill = player_char.spellbook['Skills'][skill_name]
+                if getattr(skill, "resource_type", None) == "Oath Conviction":
+                    skill_descriptions.append(
+                        paladin.oath_technique_description(
+                            player_char,
+                            skill_name,
+                        )
+                    )
+                else:
+                    skill_descriptions.append(
+                        getattr(skill, "description", "")
+                    )
 
             self._render_described_selection_menu(
                 "Select Skill", skill_options, selected, scroll_offset, skill_descriptions
@@ -450,7 +474,17 @@ class CombatSelectionMixin:
             for skill_name in skills:
                 skill = player_char.spellbook["Skills"][skill_name]
                 display_name = self._canonical_resolve_skill_name(getattr(skill, "name", skill_name))
-                resolve_options.append(f"{display_name} ({self._resolve_skill_cost_label(skill)})")
+                cost = getattr(skill, "resolve_cost", 0)
+                current = promotion_kits.current_resolve(player_char)
+                if str(cost).lower() == "full":
+                    readiness = "Ready"
+                else:
+                    missing = max(0, int(cost or 0) - current)
+                    readiness = "Ready" if missing == 0 else f"Need {missing}"
+                resolve_options.append(
+                    f"{display_name} "
+                    f"({self._resolve_skill_cost_label(skill)}; {readiness})"
+                )
             descriptions = [
                 getattr(player_char.spellbook["Skills"][skill_name], "description", "")
                 for skill_name in skills

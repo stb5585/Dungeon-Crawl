@@ -137,7 +137,7 @@ class DataDrivenJumpSkill(Skill):
     def get_max_active_modifications(
         self, user: Character | None = None
     ) -> int:
-        """Max active mods: 1 + (level // 15), cap 5, +1 for ClassRing."""
+        """Return the global-level active-mod capacity, capped at five."""
         if user is None:
             return 5
 
@@ -150,21 +150,8 @@ class DataDrivenJumpSkill(Skill):
         else:
             base_level = 99
 
-        if hasattr(user, "cls") and hasattr(user.cls, "name"):
-            if "Dragoon" in user.cls.name:
-                user_level = 30 + int(base_level)
-            else:
-                user_level = int(base_level)
-        else:
-            user_level = int(base_level)
-
+        user_level = int(base_level)
         max_mods = min(1 + user_level // 15, 5)
-
-        if hasattr(user, "equipment") and "Ring" in user.equipment:
-            ring = user.equipment["Ring"]
-            if hasattr(ring, "mod") and ring.mod == "+1 Jump Mod":
-                max_mods += 1
-
         return max_mods
 
     def unlock_modification(self, mod_name: str) -> bool:
@@ -264,14 +251,7 @@ class DataDrivenJumpSkill(Skill):
                         if hasattr(user.level, "level")
                         else user.level
                     )
-                    if (
-                        hasattr(user, "cls")
-                        and hasattr(user.cls, "name")
-                        and "Dragoon" in user.cls.name
-                    ):
-                        user_level = 30 + int(base_level)
-                    else:
-                        user_level = int(base_level)
+                    user_level = int(base_level)
                 else:
                     user_level = "?"
                 return (

@@ -10,15 +10,15 @@ class JumpModsPopupMenu(PopupMenu):
     """Popup menu for toggling Jump modifications."""
 
     MOD_DESCRIPTIONS = {
-        "Crit": "Increases critical factor but reduces damage to 1.5x weapon damage.",
-        "Thrust": "After landing, thrust for 3/4 weapon damage if the target survives.",
+        "Crit": "Increases critical factor but reduces weapon damage.",
+        "Thrust": "After landing, thrust with reduced weapon damage if the target survives.",
         "Defend": "Increased damage reduction while preparing to Jump.",
         "Rend": "Chance to apply Bleed, dealing damage over time.",
         "Quake": "Chance to stun the enemy upon landing.",
         "Acrobat": "Gain an evasion bonus while preparing to Jump.",
         "Dragon's Fury": "Deals additional random elemental damage.",
         "Soaring Strike": "Takes two turns to charge, but deals increased damage.",
-        "Quick Dive": "Removes charge time but reduces damage to 0.75x.",
+        "Quick Dive": "Removes charge time but reduces weapon damage.",
         "Retribution": "Taking damage while charging boosts the Jump damage.",
         "Unstoppable": "Jump cannot be interrupted once started.",
         "Recover": "Regain a small amount of health and mana upon landing.",

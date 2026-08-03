@@ -552,11 +552,12 @@ class CharacterLayoutMixin:
     def _open_weapon_discipline_popup(self, player_char) -> None:
         if not grandmaster.is_weapon_discipline_class(player_char):
             return
+        weapon_types = grandmaster.weapon_discipline_types(player_char)
         self.selected_weapon_discipline_index = max(
             0,
-            min(self.selected_weapon_discipline_index, len(grandmaster.WEAPON_TYPES) - 1),
+            min(self.selected_weapon_discipline_index, len(weapon_types) - 1),
         )
-        weapon_type = grandmaster.WEAPON_TYPES[self.selected_weapon_discipline_index]
+        weapon_type = weapon_types[self.selected_weapon_discipline_index]
         background = self.screen.copy()
         popup = character_screen.ConfirmationPopup(
             self.presenter,
@@ -638,9 +639,10 @@ class CharacterLayoutMixin:
         if show_heading:
             self._draw_text("Weapon Discipline", self.normal_font, self.colors.GOLD, rect.left, y, rect.width)
             y += self.normal_font.get_height() + 10
+        weapon_types = grandmaster.weapon_discipline_types(player_char)
         self.selected_weapon_discipline_index = max(
             0,
-            min(self.selected_weapon_discipline_index, len(grandmaster.WEAPON_TYPES) - 1),
+            min(self.selected_weapon_discipline_index, len(weapon_types) - 1),
         )
         helper = "Arrows: Select  Enter: Details"
         helper_width = self.small_font.size(helper)[0]
@@ -664,9 +666,17 @@ class CharacterLayoutMixin:
         }
         row_gap = 6
         available_height = max(1, rect.bottom - y - 4)
-        row_height = min(54, max(42, (available_height - row_gap * (len(grandmaster.WEAPON_TYPES) - 1)) // len(grandmaster.WEAPON_TYPES)))
+        row_height = min(
+            54,
+            max(
+                42,
+                (
+                    available_height - row_gap * (len(weapon_types) - 1)
+                ) // len(weapon_types),
+            ),
+        )
         self._weapon_discipline_row_rects = []
-        for index, weapon_type in enumerate(grandmaster.WEAPON_TYPES):
+        for index, weapon_type in enumerate(weapon_types):
             row_rect = pygame.Rect(rect.left, y + index * (row_height + row_gap), rect.width, row_height)
             if row_rect.bottom > rect.bottom:
                 break

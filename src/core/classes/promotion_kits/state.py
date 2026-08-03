@@ -199,7 +199,13 @@ def combat_state(character: Any) -> dict[str, Any]:
         "momentum_preserved": False,
         "oath_conviction": 0,
         "aerial_tempo": 0,
+        "pending_aerial_follow_through": None,
         "hold_the_line": 0,
+        "spell_reflection_turns": 0,
+        "spell_reflection_skip_tick": False,
+        "oath_judgment_counter": None,
+        "oath_protection_guard": None,
+        "oath_retribution_shelter": None,
         "fortune": 0,
         "misfortune": 0,
         "cheat_death_used": False,
@@ -241,8 +247,35 @@ def clear_combat_state(character: Any) -> None:
 
 
 def tick_combat_state(character: Any) -> str:
+    from .. import class_rings
+    from .resolve import tick_spell_reflection
+
     state = combat_state(character)
-    msg = ""
+    msg = class_rings.tick_aerial_supremacy_shield(character)
+    msg += tick_spell_reflection(character)
+    hold_turns = int(state.get("hold_the_line", 0) or 0)
+    if hold_turns > 0:
+        state["hold_the_line"] = max(0, hold_turns - 1)
+        if state["hold_the_line"] <= 0:
+            msg += f"{character.name} is no longer holding the line.\n"
+    for key in (
+        "oath_judgment_counter",
+        "oath_protection_guard",
+        "oath_retribution_shelter",
+    ):
+        payload = state.get(key)
+        if not isinstance(payload, dict):
+            continue
+        turns = max(0, int(payload.get("turns", 0) or 0) - 1)
+        payload["turns"] = turns
+        if turns <= 0:
+            state[key] = None
+            label = {
+                "oath_judgment_counter": "Oath's Judgment counter",
+                "oath_protection_guard": "Oath's Shelter guard",
+                "oath_retribution_shelter": "Oath's Shelter reprisal",
+            }[key]
+            msg += f"{character.name}'s {label} expires.\n"
     jinx = int(state.get("jinx_turns", 0) or 0)
     if jinx > 0:
         state["jinx_turns"] = max(0, jinx - 1)
@@ -252,7 +285,10 @@ def tick_combat_state(character: Any) -> str:
 
 
 def start_combat(character: Any) -> str:
+    from .. import class_rings
+
     clear_combat_state(character)
+    class_rings.reset_combat_flags(character)
     return ""
 
 
@@ -322,6 +358,9 @@ def end_combat(
                 pass
     msg += convert_shadow_backlash(character, fraction=0.05, reason="combat end")
     clear_combat_state(character)
+    from .. import class_rings
+
+    class_rings.reset_combat_flags(character)
     return msg
 
 
@@ -352,13 +391,23 @@ def _hierophant_overchannel_active(character: Any) -> bool:
     )
 
 
-def begin_action(character: Any, *, defer_devotion: bool = False) -> None:
+def begin_action(
+    character: Any,
+    *,
+    defer_devotion: bool = False,
+    action: str | None = None,
+    choice: str | None = None,
+) -> None:
     state = combat_state(character)
     state["action_token"] = int(state.get("action_token", 0) or 0) + 1
     state["hierophant_devotion_token"] = None
     state["pending_hierophant_devotion_token"] = None
     state["pending_devotion_gains"] = []
     state["defer_devotion_until_survival"] = bool(defer_devotion)
+    if action is not None:
+        from .aerial import arm_aerial_follow_through
+
+        arm_aerial_follow_through(character, action, choice)
 
 
 def _is_weapon_hit(metadata: dict[str, Any] | None) -> bool:

@@ -404,11 +404,15 @@ class BountyBoard:
             enemy = self._catalog_bounty_enemy(level, existing_names)
         bounty["enemy"] = enemy
         bounty["num"] = random.randint(3, 8)
-        bounty["exp"] = random.randint(enemy.experience*bounty["num"] // 2, enemy.experience*bounty["num"]) * \
-            game.player_char.level.pro_level
+        bounty["exp"] = random.randint(
+            enemy.experience * bounty["num"] // 2,
+            enemy.experience * bounty["num"],
+        )
         bounty["gold"] = random.randint(25*bounty["num"], 50*bounty["num"]) * game.player_char.player_level()
         if random.randint(0, game.player_char.check_mod('luck', luck_factor=10)):
-            item_level = min(8, game.player_char.level.pro_level + random.randint(0, game.player_char.level.pro_level))
+            global_level = game.player_char.player_level()
+            item_band = min(8, 1 + ((global_level - 1) // 15))
+            item_level = min(8, item_band + random.randint(0, item_band))
             bounty["reward"] = items.random_item(item_level)
         return bounty
 

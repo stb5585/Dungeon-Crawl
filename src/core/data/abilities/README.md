@@ -1,6 +1,29 @@
 # Ability YAML Definitions
 
-This directory contains **195 YAML files** defining active abilities in the game. Definitions are loaded on first use by `ability_loader.py`; parsed YAML is cached by file path and modification time, while each call still receives a deep-copied definition and a fresh ability instance. Abilities are instantiated as one of **12 DataDriven classes** from `data_driven_abilities.py`. Wrapper classes in the `abilities/` package delegate to the YAML loader.
+This directory contains **196 YAML files** defining active abilities in the game. Definitions are loaded on first use by `ability_loader.py`; parsed YAML is cached by file path and modification time, while each call still receives a deep-copied definition and a fresh ability instance. Abilities are instantiated as one of **12 DataDriven classes** from `data_driven_abilities.py`. Wrapper classes in the `abilities/` package delegate to the YAML loader.
+
+## Progression Ownership
+
+Combat YAML defines what an ability does; it does not define when a player
+learns it. `src/core/progression_manifest.py` and
+`src/core/progression.py` own class-authored specialization paths,
+prerequisites, talents, rating nodes, promotion gates, point costs, explicit
+positions, and semantic icon keys. Trees can expose multiple independent
+first-tier nodes. Ordinary abilities, talents, combat ratings, and primary
+attributes cost one point; first promotions cost two points and second
+promotions cost three. Combat-rating nodes grant `+10` in base trees, `+20`
+in first-promotion trees, and `+30` in terminal trees, while primary attributes
+grant `+1`.
+Combat-rating nodes are deliberately ungated by global level. Authored
+inherited entry abilities may also omit a level gate. Weapon Discipline arts
+are gated only by discipline ranks 1, 5, and 10.
+Ability upgrades require their earlier form and atomically replace it in the
+active spellbook.
+
+Quest, Class Ring, Power Core, vow, contract, summon-bond, and Weapon
+Discipline rewards remain outside ability trees. Pathfinder's runtime
+`NaturalAttunement` Skill grants `+3 Defense` and `+3 Magic Defense` for three
+turns at a cost of 5 MP.
 
 ## Quick Reference — Ability Types
 
@@ -44,6 +67,9 @@ self_target: true       # Targets caster instead of enemy
 ignore_armor: true      # Bypasses target defense
 school: Arcane          # Magic school for resistance checks
 combat: false           # Cannot be used in combat (Movement spells)
+target_status_damage_multiplier:
+  status: Stun          # Optional conditional multiplier for weapon skills
+  multiplier: 1.5
 ```
 
 ### Charging Fields

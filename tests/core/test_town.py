@@ -45,7 +45,7 @@ def test_create_bounty_skips_existing_targets_and_can_grant_reward(monkeypatch):
 
     assert bounty["enemy"].name == "Fresh Target"
     assert bounty["num"] == 4
-    assert bounty["exp"] == 30 * game.player_char.level.pro_level
+    assert bounty["exp"] == 30
     assert bounty["gold"] == 160 * game.player_char.player_level()
     assert bounty["reward"] == "Reward-3"
 

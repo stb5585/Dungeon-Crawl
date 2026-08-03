@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from ...progression_manifest import TALENT_KIT_EFFECTS as _TALENT_KIT_EFFECTS
 from .state import (
     _has_skill,
     _hierophant_overchannel_active,
@@ -15,38 +16,51 @@ from .state import (
 )
 
 
+def _talent_cap_bonus(character: Any, key: str) -> int:
+    from ...progression import has_talent
+
+    effect_key = "fortune" if key == "misfortune" else key
+    return sum(
+        int(effect[2])
+        for talent_key, effect in _TALENT_KIT_EFFECTS.items()
+        if effect[:2] == ("meter_cap", effect_key)
+        and has_talent(character, talent_key)
+    )
+
+
 def cap_for(character: Any, key: str) -> int:
     cls = class_name(character)
+    base = 0
     if key == "foresight_threads":
-        return 3 if cls == "Astromancer" else 0
-    if key == "bloodied_momentum":
+        base = 3 if cls == "Astromancer" else 0
+    elif key == "bloodied_momentum":
         scars = _class_ring_data(character, "Berserker").get("battle_scars", 0)
-        return 5 if scars >= 20 else 4 if scars >= 10 else 3
-    if key == "oath_conviction":
-        return 3 if cls == "Crusader" else 2 if cls == "Paladin" else 0
-    if key == "aerial_tempo":
-        return 3 if cls == "Dragoon" else 2 if cls == "Lancer" else 0
-    if key in {"fortune", "misfortune"}:
-        return 3 if cls == "Rogue" else 2 if cls == "Thief" else 0
-    if key == "revelation":
-        return 3 if cls == "Seeker" else 2 if cls == "Inquisitor" else 0
-    if key == "death_marks":
-        return 3 if cls == "Ninja" else 1 if cls == "Assassin" else 0
-    if key == "stolen_charge":
-        return 3 if cls == "Arcane Trickster" else 2 if cls == "Spell Stealer" else 0
-    if key == "devotion":
-        return 5 if cls in {"Templar", "Hierophant"} else 3 if cls == "Cleric" else 0
-    if key == "prayer":
-        return 7 if cls == "Archbishop" else 4 if cls == "Priest" else 0
-    if key == "ki":
-        return 5 if cls == "Master Monk" else 3 if cls == "Monk" else 0
-    if key == "crescendo":
-        return 3 if cls in {"Bard", "Troubadour"} else 0
-    if key == "aspect_harmony":
-        return 5 if _ring_awakened_equipped(character, "Archdruid") else 4
-    if key == "totem_resonance":
-        return 4 if _ring_awakened_equipped(character, "Soulcatcher") else 3
-    return 0
+        base = 5 if scars >= 20 else 4 if scars >= 10 else 3
+    elif key == "oath_conviction":
+        base = 3 if cls == "Crusader" else 2 if cls == "Paladin" else 0
+    elif key == "aerial_tempo":
+        base = 3 if cls == "Dragoon" else 2 if cls == "Lancer" else 0
+    elif key in {"fortune", "misfortune"}:
+        base = 3 if cls == "Rogue" else 2 if cls == "Thief" else 0
+    elif key == "revelation":
+        base = 3 if cls == "Seeker" else 2 if cls == "Inquisitor" else 0
+    elif key == "death_marks":
+        base = 3 if cls == "Ninja" else 1 if cls == "Assassin" else 0
+    elif key == "stolen_charge":
+        base = 3 if cls == "Arcane Trickster" else 2 if cls == "Spell Stealer" else 0
+    elif key == "devotion":
+        base = 5 if cls in {"Templar", "Hierophant"} else 3 if cls == "Cleric" else 0
+    elif key == "prayer":
+        base = 7 if cls == "Archbishop" else 4 if cls == "Priest" else 0
+    elif key == "ki":
+        base = 5 if cls == "Master Monk" else 3 if cls == "Monk" else 0
+    elif key == "crescendo":
+        base = 3 if cls in {"Bard", "Troubadour"} else 0
+    elif key == "aspect_harmony":
+        base = 5 if _ring_awakened_equipped(character, "Archdruid") else 4
+    elif key == "totem_resonance":
+        base = 4 if _ring_awakened_equipped(character, "Soulcatcher") else 3
+    return base + _talent_cap_bonus(character, key) if base else 0
 
 
 def _class_ring_data(character: Any, class_value: str) -> dict[str, Any]:
@@ -86,21 +100,22 @@ def _gain_or_queue_devotion(character: Any, amount: int, reason: str) -> str:
 
 
 def finish_action(character: Any, *, defender_survived: bool) -> str:
+    from .aerial import finish_aerial_follow_through
+
     state = combat_state(character)
     pending = state.get("pending_devotion_gains")
     state["defer_devotion_until_survival"] = False
     state["pending_devotion_gains"] = []
     state["pending_hierophant_devotion_token"] = None
-    if not defender_survived or not isinstance(pending, list):
-        return ""
-    msg = ""
-    for entry in pending:
-        msg += gain_meter(
-            character,
-            "devotion",
-            int(entry.get("amount", 0) or 0),
-            str(entry.get("reason") or ""),
-        )
+    msg = finish_aerial_follow_through(character)
+    if defender_survived and isinstance(pending, list):
+        for entry in pending:
+            msg += gain_meter(
+                character,
+                "devotion",
+                int(entry.get("amount", 0) or 0),
+                str(entry.get("reason") or ""),
+            )
     return msg
 
 
@@ -202,6 +217,9 @@ def record_damage_event(
     cls = class_name(actor)
     damage_type = str(damage_type or "Physical")
     weapon_hit = _is_weapon_hit(metadata)
+    from .aerial import record_aerial_weapon_damage
+
+    record_aerial_weapon_damage(actor, target, amount, metadata)
     if isinstance(metadata, dict):
         critical_hit = bool(metadata.get("is_critical"))
         if not critical_hit:
@@ -224,10 +242,6 @@ def record_damage_event(
     if cls == "Berserker" and weapon_hit and _hp_ratio(actor) < 0.50:
         bonus = 2 if _hp_ratio(actor) < 0.25 else 1
         _message(actor, gain_meter(actor, "bloodied_momentum", bonus, "bloodied weapon hit"))
-
-    if cls in {"Lancer", "Dragoon"} and getattr(actor, "_jump_landed_cleanly", False):
-        _message(actor, gain_meter(actor, "aerial_tempo", 1, "clean Jump landing"))
-        actor._jump_landed_cleanly = False
 
     if cls in {"Thief", "Rogue"} and critical_hit:
         _message(actor, gain_meter(actor, "fortune", 1, "critical risky hit"))
@@ -271,12 +285,41 @@ def record_damage_taken(defender: Any, amount: int, damage_type: str) -> None:
     if cls == "Berserker" and _hp_ratio(defender) < 0.50:
         bonus = 2 if _hp_ratio(defender) < 0.25 else 1
         _message(defender, gain_meter(defender, "bloodied_momentum", bonus, "bloodied incoming damage"))
-    if cls in {"Sentinel", "Stalwart Defender"}:
-        build_resolve(defender, max(1, amount // 5), "mitigated pressure")
+    if (
+        cls in {"Sentinel", "Stalwart Defender"}
+        and damage_type in {"Physical", "Melee"}
+    ):
+        _message(
+            defender,
+            build_resolve(
+                defender,
+                max(1, amount // 5),
+                "mitigated pressure",
+            ),
+        )
     if cls == "Archdruid" and damage_type == "Physical":
         _message(defender, add_aspect(defender, "Stone"))
     if cls == "Rogue" and int(getattr(getattr(defender, "health", None), "current", 1) or 0) <= 0:
         _message(defender, cheat_death(defender))
+    if (
+        cls in {"Lancer", "Dragoon"}
+        and int(getattr(getattr(defender, "health", None), "current", 1) or 0) <= 0
+    ):
+        state = combat_state(defender)
+        state["aerial_tempo"] = 0
+        state["pending_aerial_follow_through"] = None
+        from .. import class_rings
+
+        class_rings.reset_combat_flags(defender)
+    if (
+        cls in {"Paladin", "Crusader"}
+        and int(getattr(getattr(defender, "health", None), "current", 1) or 0) <= 0
+    ):
+        state = combat_state(defender)
+        state["oath_conviction"] = 0
+        state["oath_judgment_counter"] = None
+        state["oath_protection_guard"] = None
+        state["oath_retribution_shelter"] = None
 
 
 def record_healing_done(actor: Any, amount: int) -> str:
@@ -319,18 +362,6 @@ def _consume_weapon_payoffs(actor: Any, target: Any, amount: int, damage_type: s
                 extra += burst
                 state["arcane_tempo"] = 0
                 lines.append(f"Arcane Tempo bursts for {burst} arcane damage.\n")
-
-    aerial = int(state.get("aerial_tempo", 0) or 0)
-    if cls in {"Lancer", "Dragoon"} and aerial:
-        burst = max(1, int(amount * (0.06 * aerial)))
-        extra += burst
-        state["aerial_tempo"] = 0
-        lines.append(f"Aerial Tempo drives a follow-through for {burst} damage.\n")
-        if cls == "Dragoon" and _ring_awakened_equipped(actor, "Dragoon"):
-            shield = _class_ring_data(actor, "Dragoon")
-            shield["meteor_guard_shield"] = max(int(shield.get("meteor_guard_shield", 0) or 0), burst)
-            shield["meteor_guard_turns"] = 2
-            lines.append("Aerial Supremacy forms a landing shield.\n")
 
     stolen = int(state.get("stolen_charge", 0) or 0)
     if cls in {"Spell Stealer", "Arcane Trickster"} and stolen:

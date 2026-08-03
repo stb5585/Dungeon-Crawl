@@ -124,6 +124,57 @@ class SimpleListPopupMenu(BasePopupMenu):
 
     def on_select(self, player_char, item):
         value = item.get("value") if isinstance(item, dict) else item
+        if (
+            getattr(value, "exploration_cast", False)
+            and callable(getattr(value, "cast_out", None))
+        ):
+            from . import ConfirmationPopup
+
+            menu_background = self._capture_menu_surface(player_char)
+            if player_char.mana.current < int(getattr(value, "cost", 0) or 0):
+                notice = ConfirmationPopup(
+                    self.presenter,
+                    f"{player_char.name} does not have enough mana.",
+                    show_buttons=False,
+                )
+                notice.show(
+                    background_draw_func=lambda: self.screen.blit(
+                        menu_background,
+                        (0, 0),
+                    ),
+                    flush_events=True,
+                    require_key_release=True,
+                )
+                return None
+            confirm = ConfirmationPopup(
+                self.presenter,
+                f"Cast {value.name}?",
+                show_buttons=True,
+            )
+            if not confirm.show(
+                background_draw_func=lambda: self.screen.blit(
+                    menu_background,
+                    (0, 0),
+                ),
+                flush_events=True,
+                require_key_release=True,
+            ):
+                return None
+            result = value.cast_out(player_char)
+            result_popup = ConfirmationPopup(
+                self.presenter,
+                result,
+                show_buttons=False,
+            )
+            result_popup.show(
+                background_draw_func=lambda: self.screen.blit(
+                    menu_background,
+                    (0, 0),
+                ),
+                flush_events=True,
+                require_key_release=True,
+            )
+            return None
         if getattr(value, "name", "") == "Chalice Map":
             try:
                 map_tiles.reveal_chalice_map_on_inspect(player_char, value)
@@ -157,15 +208,15 @@ class JumpModsPopupMenu(BasePopupMenu):
     """Popup menu for toggling Jump ability modifications."""
 
     MOD_DESCRIPTIONS = {
-        "Crit": "Increases critical factor but reduces damage to 1.5x weapon damage.",
-        "Thrust": "After landing, thrust for 3/4 weapon damage if the target survives.",
+        "Crit": "Increases critical factor but reduces weapon damage.",
+        "Thrust": "After landing, thrust with reduced weapon damage if the target survives.",
         "Defend": "Increased damage reduction while preparing to Jump.",
         "Rend": "Chance to apply Bleed, dealing damage over time.",
         "Quake": "Chance to stun the enemy upon landing.",
         "Acrobat": "Gain an evasion bonus while preparing to Jump.",
         "Dragon's Fury": "Deals additional random elemental damage.",
         "Soaring Strike": "Takes two turns to charge, but deals increased damage.",
-        "Quick Dive": "Removes charge time but reduces damage to 0.75x.",
+        "Quick Dive": "Removes charge time but reduces weapon damage.",
         "Retribution": "Taking damage while charging boosts the Jump damage.",
         "Unstoppable": "Jump cannot be interrupted once started.",
         "Recover": "Regain a small amount of health and mana upon landing.",

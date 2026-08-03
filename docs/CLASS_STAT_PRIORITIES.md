@@ -5,7 +5,7 @@ each class cares about most. It is based on the current class definitions in
 `src/core/classes/` and shared stat formulas in the `src/core/character/` and
 the `src/core/player/` package.
 
-Registry check: `src/core/classes/registry.py` currently exposes 48 playable
+Registry check: `src/core/classes/registry.py` currently exposes 49 playable
 classes through the promotion tree, including the Pathfinder branches
 `Diviner`, `Shaman`, and `Ranger`.
 
@@ -32,6 +32,27 @@ priority guide unless a promoted combat-balance spec explicitly updates both
 the mechanic and the affected class priorities.
 
 ## Class Priorities
+
+The first two groups in this table are also structured progression data in
+`src/core/progression_manifest.py`. Promotion nodes use current permanent
+attributes (including class bonuses, training, consumables, and permanent
+events; excluding equipment and temporary transformations):
+
+- First promotion: primary `17` for one stat, `14` each for two, or `13` each
+  for three or more; secondary `13` for one or `10` each for multiple.
+- Second promotion: primary `24` for one stat, `20` each for two, or `18` each
+  for three or more; secondary `19` for one or `15` each for multiple.
+
+Authored promotion exceptions balance complete route cost and race
+reachability rather than forcing identical gates. Warrior retains its documented
+Weapon Master, Sentinel, and Paladin exceptions; Mage, Footpad, Pathfinder,
+and all second-promotion targets also declare route-specific values in
+`src/core/progression_manifest.py`.
+
+These stat requirements complement the global level 30/60 promotion gates.
+Every fourth global level grants one stored attribute point. Attribute points
+cost one per permanent `+1`, have no cap, are spent from the Progression tab,
+and cannot be respecced. Progression points cannot purchase attributes.
 
 Stats are ordered from most important to least important for typical play.
 Ties mean the class wants both stats about equally.
@@ -92,6 +113,13 @@ Weapon Discipline class bonuses now include Intelligence as technical mastery:
 Weapon Master uses `+2 STR / +1 INT / +2 DEX`, and Grandmaster of Arms uses
 `+2 STR / +1 INT / +2 DEX`. This keeps the branch martial while making INT a
 visible promotion reward rather than only a hidden insight chance.
+Weapon Master's Brutish Strength further rewards matching Weapon Discipline:
+it increases only the bonus portion of critical damage by `5%` per rank.
+Two-Handed Weapon Proficiency independently grants `+10%` accuracy and damage
+while a two-handed weapon is used.
+Grandmaster Perfect Form converts each equipped discipline rank into `+1%`
+weapon damage and `+0.5%` hit chance. Adaptive Arsenal converts each rank into
+`+0.5%` parry chance and `+1%` counterattack critical chance.
 
 ## Elemental Spell Secondary Effects
 

@@ -89,7 +89,9 @@ class Character(
                                           "Peaceful": StatusEffect(False, 0),
                                           "Shapeshifted": StatusEffect(False, 0)}
         self.physical_effects: EffectMap = {"Bleed": StatusEffect(False, 0, 0),
+                                            "Cripple": StatusEffect(False, 0, 0),
                                             "Disarm": StatusEffect(False, 0),
+                                            "Maim": StatusEffect(False, 0),
                                             "Prone": StatusEffect(False, 0)}
         self.stat_effects: EffectMap = {"Attack": StatusEffect(False, 0, 0),
                                         "Defense": StatusEffect(False, 0, 0),
@@ -108,6 +110,8 @@ class Character(
                                          "Resist Water": StatusEffect(False, 0, 0),
                                          "Resist Earth": StatusEffect(False, 0, 0),
                                          "Resist Wind": StatusEffect(False, 0, 0),
+                                         "Resist Shadow": StatusEffect(False, 0, 0),
+                                         "Hallowed Ground": StatusEffect(False, 0, 0),
                                          "Stone Skin": StatusEffect(False, 0),
                                          "Nature Shield": StatusEffect(False, 0, 0),
                                          "Tree of Life": StatusEffect(False, 0),

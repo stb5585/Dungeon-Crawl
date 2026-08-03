@@ -247,6 +247,7 @@ class CharacterStatusMixin:
         """
         from ..classes import ability_mechanics
 
+        self._last_bleed_tick_damage = 0
         effect_dicts = [self.status_effects,
                         self.physical_effects,
                         self.stat_effects,
@@ -279,6 +280,7 @@ class CharacterStatusMixin:
                             if hasattr(skill, "charge_target"):
                                 skill.charge_target = None
                 self.grandmaster_technique_stacks = {}
+                self._hemorrhage_thirst_streak = 0
             else:
                 effect_dict = self.effect_handler(effect=effect)
                 if effect_dict[effect].active:
@@ -290,6 +292,7 @@ class CharacterStatusMixin:
 
         if end:
             default(end_combat=True)
+            ability_mechanics.sync_exploration_flags(self)
         else:
             from ..classes import grandmaster
 
@@ -381,11 +384,64 @@ class CharacterStatusMixin:
                             status_text += f"The flames around {self.name} burn out.\n"
                         else:
                             status_text += f"The magic affecting {self.name} has worn off.\n"
+            hallowed_ground = self.magic_effects.get("Hallowed Ground")
+            if hallowed_ground is not None and hallowed_ground.active:
+                hallowed_ground.duration -= 1
+                payload = (
+                    hallowed_ground.extra
+                    if isinstance(hallowed_ground.extra, dict)
+                    else {}
+                )
+                if payload.get("mode") == "damage":
+                    damage = max(1, int(payload.get("amount", 0) or 0))
+                    self.health.current -= damage
+                    status_text += (
+                        f"Sacred light damages {self.name} for {damage} "
+                        "holy damage.\n"
+                    )
+                    self._emit_status_tick_event(
+                        self,
+                        "Hallowed Ground",
+                        damage,
+                        "damage",
+                        source="Hallowed Ground",
+                    )
+                elif payload.get("mode") == "healing":
+                    healing = max(1, int(payload.get("amount", 0) or 0))
+                    healing = int(healing * self.healing_received_multiplier())
+                    healing = max(
+                        0,
+                        min(healing, self.health.max - self.health.current),
+                    )
+                    self.health.current += healing
+                    status_text += (
+                        f"Hallowed Ground heals {self.name} for {healing} "
+                        "hit points.\n"
+                    )
+                    if healing > 0:
+                        self._emit_status_tick_event(
+                            self,
+                            "Hallowed Ground",
+                            healing,
+                            "healing",
+                            source="Hallowed Ground",
+                        )
+                if hallowed_ground.duration <= 0:
+                    status_text += "The sacred light fades from the ground.\n"
+                    default(effect="Hallowed Ground")
             if self.physical_effects["Bleed"].active:
                 self.physical_effects["Bleed"].duration -= 1
                 bleed_damage = max(1, int(self.physical_effects["Bleed"].extra * 0.75))
+                bleed_damage = max(
+                    1,
+                    int(
+                        bleed_damage
+                        * ability_mechanics.pain_tolerance_bleed_multiplier(self)
+                    ),
+                )
                 if not random.randint(0, self.stats.con // 10):
                     self.health.current -= bleed_damage
+                    self._last_bleed_tick_damage = bleed_damage
                     status_text += f"{self.name} bleeds for {bleed_damage} health points.\n"
                     self._emit_status_tick_event(self, "Bleed", bleed_damage, "damage", source="Bleed")
                 else:
@@ -393,6 +449,17 @@ class CharacterStatusMixin:
                 if not self.physical_effects["Bleed"].duration:
                     default(effect="Bleed")
                     status_text += f"{self.name}'s wounds have healed and is no longer bleeding.\n"
+            for effect_name, expiry_message in (
+                ("Cripple", f"{self.name}'s weapon arm recovers.\n"),
+                ("Maim", f"{self.name} can use their main hand again.\n"),
+            ):
+                effect = self.physical_effects.get(effect_name)
+                if effect is None or not effect.active or effect.duration < 0:
+                    continue
+                effect.duration -= 1
+                if not effect.duration:
+                    default(effect=effect_name)
+                    status_text += expiry_message
             if self.status_effects["Blind"].active:
                 self.status_effects["Blind"].duration -= 1
                 if not self.status_effects["Blind"].duration:

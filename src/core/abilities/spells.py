@@ -412,6 +412,36 @@ class TurnUndead2:
         return _load_yaml_ability("turn_undead_2.yaml", cls_name="TurnUndead2")
 
 
+class RepelTheWicked(Spell):
+    """Drive fiends and undead from combat with sacred authority."""
+
+    def __init__(self):
+        super().__init__(
+            "Repel the Wicked",
+            (
+                "Attempt to drive a fiend or undead foe from combat. A foe "
+                "marked by Condemnation is disintegrated on a successful cast."
+            ),
+            school="Holy",
+        )
+        self.cost = 12
+        self.subtyp = "Holy"
+
+    def cast(
+        self,
+        user: Character,
+        target: Character | None = None,
+        **kwargs: Any,
+    ) -> str:
+        from ..classes import paladin
+
+        return paladin.repel_the_wicked(
+            user,
+            target,
+            rng=kwargs.get("rng"),
+        )
+
+
 # Heal spells
 class Heal:
     def __new__(cls):

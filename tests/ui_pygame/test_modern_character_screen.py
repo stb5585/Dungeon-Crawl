@@ -19,6 +19,7 @@ from src.core.classes import (
     promotion_kits,
     wizard,
 )
+from src.core.progression import ProgressionState
 from src.ui_pygame import game as pygame_game
 from src.ui_pygame.gui.dungeon_manager import DungeonManager
 from src.ui_pygame.gui.modern_character_screen import (
@@ -144,7 +145,8 @@ def _make_player():
         race=SimpleNamespace(name="Human"),
         sex="Female",
         cls=SimpleNamespace(name="Warrior"),
-        level=SimpleNamespace(level=7, exp=1250, exp_to_gain=50),
+        level=SimpleNamespace(level=7, pro_level=1, exp=1250, exp_to_gain=50),
+        progression=ProgressionState(level=7, total_xp=1250, unspent_points=6),
         gold=321,
         location_z=0,
         health=SimpleNamespace(current=45, max=60),
@@ -218,8 +220,17 @@ def test_modern_character_tabs_are_generic_and_switchable():
     screen = ModernCharacterScreen(_make_presenter())
     player = _make_player()
 
-    assert [tab.label for tab in screen.tabs] == ["Character", "Class", "Equipment"]
-    assert [tab.label for tab in screen.visible_tabs(player)] == ["Character", "Equipment"]
+    assert [tab.label for tab in screen.tabs] == [
+        "Character",
+        "Class",
+        "Equipment",
+        "Progression",
+    ]
+    assert [tab.label for tab in screen.visible_tabs(player)] == [
+        "Character",
+        "Equipment",
+        "Progression",
+    ]
     assert screen.active_tab.key == "character"
     assert abs((screen.character_panel_rect.width * 2) - (screen.combat_panel_rect.width * 3)) <= 3
 
@@ -227,13 +238,55 @@ def test_modern_character_tabs_are_generic_and_switchable():
     assert screen.active_tab.key == "equipment"
 
     screen.move_tab(1, player)
-    assert screen.active_tab.key == "character"
+    assert screen.active_tab.key == "progression"
     assert screen.equipment_selector_active is False
 
+    screen.move_tab(1, player)
+    assert screen.active_tab.key == "character"
+
     player.cls = SimpleNamespace(name="Weapon Master")
-    assert [tab.label for tab in screen.visible_tabs(player)] == ["Character", "Equipment", "Weapon Discipline"]
+    assert [tab.label for tab in screen.visible_tabs(player)] == [
+        "Character",
+        "Equipment",
+        "Weapon Discipline",
+        "Progression",
+    ]
     screen.move_tab(1, player)
     assert screen.active_tab.key == "equipment"
+
+
+def test_progression_tab_draws_tree_inside_character_menu(monkeypatch):
+    presenter = _make_presenter()
+    screen = ModernCharacterScreen(presenter)
+    player = _make_player()
+    screen.select_tab("progression")
+    monkeypatch.setattr(
+        screen.progression_view,
+        "draw_semi_transparent_panel",
+        lambda *_args, **_kwargs: None,
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.progression_screen.pygame.draw.rect",
+        lambda *_args, **_kwargs: None,
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.progression_screen.pygame.draw.line",
+        lambda *_args, **_kwargs: None,
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.progression_screen.pygame.draw.lines",
+        lambda *_args, **_kwargs: None,
+    )
+
+    screen.draw_all(player, do_flip=False)
+
+    rendered = set(
+        presenter.normal_font.render_calls
+        + presenter.small_font.render_calls
+    )
+    assert not any(text.startswith("Progression  |  Level") for text in rendered)
+    assert "Available Points: 6" in rendered
+    assert "Warrior Ability Tree" in rendered
 
 
 def test_modern_character_summary_helpers_cover_xp_equipment_resistances_and_effects():
@@ -1063,6 +1116,23 @@ def test_modern_character_weapon_discipline_popup_uses_selected_row(monkeypatch)
     assert popup_kwargs[0]["flush_events"] is True
 
 
+def test_berserker_weapon_discipline_tab_hides_one_handed_entries():
+    presenter = _make_presenter()
+    screen = ModernCharacterScreen(presenter)
+    player = _make_player()
+    player.cls = SimpleNamespace(name="Berserker")
+    player.grandmaster_discipline = grandmaster.default_state()
+
+    rows = screen.weapon_discipline_rows(player)
+
+    assert [weapon_type for weapon_type, _progress in rows] == [
+        "Longsword",
+        "Battle Axe",
+        "Polearm",
+        "Hammer",
+    ]
+
+
 def test_modern_character_school_affinity_tab_shows_affinity_grid(monkeypatch):
     presenter = _make_presenter()
     screen = ModernCharacterScreen(presenter)
@@ -1408,7 +1478,10 @@ def test_modern_character_class_mechanic_tabs_include_pathfinder_branches():
         player.cls = SimpleNamespace(name=class_name)
         player.summons = {}
         player.familiar = None
-        assert [tab.label for tab in screen.visible_tabs(player)] == expected_tabs
+        assert [tab.label for tab in screen.visible_tabs(player)] == [
+            *expected_tabs,
+            "Progression",
+        ]
 
 
 def test_modern_character_class_mechanic_tabs_include_warrior_branches():
@@ -1427,7 +1500,10 @@ def test_modern_character_class_mechanic_tabs_include_warrior_branches():
         player.cls = SimpleNamespace(name=class_name)
         player.summons = {}
         player.familiar = None
-        assert [tab.label for tab in screen.visible_tabs(player)] == expected_tabs
+        assert [tab.label for tab in screen.visible_tabs(player)] == [
+            *expected_tabs,
+            "Progression",
+        ]
 
 
 def test_modern_character_class_mechanic_tabs_include_mage_branches():
@@ -1450,7 +1526,10 @@ def test_modern_character_class_mechanic_tabs_include_mage_branches():
         player.cls = SimpleNamespace(name=class_name)
         player.summons = {}
         player.familiar = familiar if has_familiar else None
-        assert [tab.label for tab in screen.visible_tabs(player)] == expected_tabs
+        assert [tab.label for tab in screen.visible_tabs(player)] == [
+            *expected_tabs,
+            "Progression",
+        ]
 
 
 def test_modern_character_class_mechanic_tabs_include_footpad_branches():
@@ -1471,7 +1550,10 @@ def test_modern_character_class_mechanic_tabs_include_footpad_branches():
         player.cls = SimpleNamespace(name=class_name)
         player.summons = {}
         player.familiar = None
-        assert [tab.label for tab in screen.visible_tabs(player)] == expected_tabs
+        assert [tab.label for tab in screen.visible_tabs(player)] == [
+            *expected_tabs,
+            "Progression",
+        ]
 
 
 def test_modern_character_class_mechanic_tabs_include_healer_branches():
@@ -1493,7 +1575,10 @@ def test_modern_character_class_mechanic_tabs_include_healer_branches():
         player.cls = SimpleNamespace(name=class_name)
         player.summons = {}
         player.familiar = None
-        assert [tab.label for tab in screen.visible_tabs(player)] == expected_tabs
+        assert [tab.label for tab in screen.visible_tabs(player)] == [
+            *expected_tabs,
+            "Progression",
+        ]
 
 
 def test_modern_character_class_tab_supports_multiple_summon_tiles_and_popup(monkeypatch):
@@ -1851,7 +1936,7 @@ def test_modern_character_navigation_switches_tabs_and_exits(monkeypatch):
     monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.event.get", lambda: next(event_batches, []))
 
     assert screen.navigate(player) == "Exit Menu"
-    assert screen.active_tab.key == "equipment"
+    assert screen.active_tab.key == "progression"
 
 
 def test_modern_equipment_selector_requires_explicit_toggle(monkeypatch):
@@ -1860,9 +1945,9 @@ def test_modern_equipment_selector_requires_explicit_toggle(monkeypatch):
     player = _make_player()
 
     event_batches = iter([
-        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_3)],
+        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_2)],
         [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RIGHT)],
-        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_3)],
+        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_2)],
         [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_e)],
         [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RIGHT)],
         [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE)],

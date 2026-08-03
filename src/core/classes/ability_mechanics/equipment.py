@@ -125,6 +125,75 @@ def has_skill(character: Any, skill_name: str) -> bool:
     return skill_name in _skills(character)
 
 
+def duelist_style_active(character: Any) -> bool:
+    """Return whether Duelist's single-weapon stance is currently valid."""
+    if not has_skill(character, "Duelist"):
+        return False
+    weapon = getattr(character, "equipment", {}).get("Weapon")
+    offhand = getattr(character, "equipment", {}).get("OffHand")
+    return bool(
+        getattr(weapon, "typ", None) == "Weapon"
+        and int(getattr(weapon, "handed", 1) or 1) == 1
+        and getattr(offhand, "subtyp", None) == "None"
+    )
+
+
+def duelist_accuracy_bonus(character: Any) -> float:
+    """Return Duelist's accuracy bonus for a valid stance."""
+    return 0.10 if duelist_style_active(character) else 0.0
+
+
+def duelist_critical_bonus(character: Any) -> float:
+    """Return Duelist's critical chance bonus for a valid stance."""
+    return 0.10 if duelist_style_active(character) else 0.0
+
+
+def duelist_damage_multiplier(character: Any) -> float:
+    """Return Duelist's melee damage multiplier for a valid stance."""
+    return 1.10 if duelist_style_active(character) else 1.0
+
+
+def cross_block_profile(character: Any) -> tuple[float, float] | None:
+    """Return Cross Block chance and mitigation for a valid dual-wield setup."""
+    if not has_skill(character, "Cross Block"):
+        return None
+    equipment = getattr(character, "equipment", {})
+    main = equipment.get("Weapon")
+    offhand = equipment.get("OffHand")
+    if (
+        getattr(main, "typ", None) != "Weapon"
+        or getattr(offhand, "typ", None) != "Weapon"
+    ):
+        return None
+    strength = max(0, int(getattr(getattr(character, "stats", None), "strength", 0)))
+    weapon_strength = sum(
+        max(0, int(getattr(item, "damage", 0) or 0))
+        for item in (main, offhand)
+    )
+    chance = min(0.75, 0.10 + ((strength + weapon_strength) / 200))
+    mitigation = min(1.0, 0.25 + ((strength + weapon_strength) / 100))
+    return chance, mitigation
+
+
+def can_dual_wield_item(character: Any, item: Any, slot: str) -> bool:
+    """Return whether Dual Wield unlocks this off-hand weapon."""
+    return (
+        slot == "OffHand"
+        and getattr(getattr(character, "cls", None), "name", None)
+        in {"Weapon Master", "Berserker", "Grandmaster of Arms"}
+        and has_skill(character, "Dual Wield")
+        and "weapon-master.ability.dual-wield"
+        in getattr(
+            getattr(character, "progression", None),
+            "purchased_node_ids",
+            set(),
+        )
+        and getattr(item, "typ", None) == "Weapon"
+        and int(getattr(item, "handed", 1) or 1) == 1
+        and getattr(item, "subtyp", None) in {"Fist", "Dagger", "Sword", "Club"}
+    )
+
+
 def _is_two_handed_polearm(item: Any) -> bool:
     return getattr(item, "subtyp", None) == "Polearm" and getattr(item, "handed", 1) == 2
 

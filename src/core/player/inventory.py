@@ -287,7 +287,13 @@ class PlayerInventoryMixin:
             raise ValueError(f"'equip_slot' must be one of {equip_slots}. Got {equip_slot} instead.")
 
         # Check if the class allows this item type (allow unequip items)
-        if item.subtyp != "None" and not self.cls.equip_check(item, equip_slot):
+        allowed = self.cls.equip_check(item, equip_slot)
+        allowed = allowed or ability_mechanics.can_dual_wield_item(
+            self,
+            item,
+            equip_slot,
+        )
+        if item.subtyp != "None" and not allowed:
             return False
 
         if self.equipment[equip_slot].subtyp != 'None' and not check:
@@ -374,7 +380,11 @@ class PlayerInventoryMixin:
         for slot in slots:
             if slot not in {"Weapon", "OffHand", "Armor", "Helmet", "Ring", "Pendant"}:
                 continue
-            if getattr(item, "subtyp", None) == "None" or equip_check(item, slot):
+            if (
+                getattr(item, "subtyp", None) == "None"
+                or equip_check(item, slot)
+                or ability_mechanics.can_dual_wield_item(self, item, slot)
+            ):
                 return True
         return False
 
@@ -417,7 +427,13 @@ class PlayerInventoryMixin:
             diff_dict = {}
 
             # return empty if item is not equipable by player
-            if not self.cls.equip_check(item, equip_slot) and item.subtyp not in ["Ring", "Pendant", 'None']:
+            allowed = self.cls.equip_check(item, equip_slot)
+            allowed = allowed or ability_mechanics.can_dual_wield_item(
+                self,
+                item,
+                equip_slot,
+            )
+            if not allowed and item.subtyp not in ["Ring", "Pendant", 'None']:
                 return ""
 
             # Temporarily equip new item - directly modify equipment dict

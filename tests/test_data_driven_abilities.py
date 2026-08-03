@@ -356,7 +356,7 @@ class TestYAMLLoading:
         from src.core.data.ability_loader import AbilityFactory
 
         yaml_paths = sorted(self.ABILITIES_DIR.glob("*.yaml"))
-        assert len(yaml_paths) == 195
+        assert len(yaml_paths) == 196
 
         loaded_names = []
         for path in yaml_paths:
@@ -9299,11 +9299,28 @@ class TestClassAbilityMechanicsSlice:
     def test_class_grants_are_registered(self):
         from src.core import abilities
 
-        assert abilities.skill_dict["Lancer"]["1"] == [abilities.Jump, abilities.PolearmProficiency]
+        assert abilities.skill_dict["Lancer"]["1"] == [
+            abilities.Jump,
+            abilities.PolearmProficiency,
+            abilities.LanceSweep,
+            abilities.Parry,
+            abilities.TrueStrike,
+        ]
         assert abilities.skill_dict["Lancer"]["12"] is abilities.Zephyrstrike
-        assert abilities.skill_dict["Dragoon"]["1"] is abilities.PolearmExcellence
+        assert abilities.skill_dict["Dragoon"]["1"] == [
+            abilities.PolearmExcellence,
+            abilities.PolearmMastery,
+            abilities.DragonDive,
+        ]
+        assert "10" not in abilities.skill_dict["Dragoon"]
         assert abilities.skill_dict["Sentinel"]["9"] is abilities.Retaliate
-        assert abilities.skill_dict["Crusader"]["1"] is abilities.Posturing
+        assert abilities.skill_dict["Crusader"]["1"] == [
+            abilities.Condemnation,
+            abilities.Parry,
+            abilities.Posturing,
+            abilities.SwordAndBoard,
+            abilities.TwoHandedWeaponProficiency,
+        ]
         assert abilities.skill_dict["Stalwart Defender"]["18"] is abilities.LastStand
         assert abilities.skill_dict["Seeker"]["5"] is abilities.ThirdEye
         assert "Third Eye" not in [skill().name for skill in abilities.skill_dict["Inquisitor"].values()]

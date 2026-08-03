@@ -2,8 +2,18 @@
 
 import json
 import os
+from dataclasses import dataclass
 
-from .player import PlayerDataSerializer
+from .player import PlayerDataSerializer, UnsupportedSaveVersionError
+
+
+@dataclass(frozen=True)
+class SaveLoadResult:
+    """Explicit save-load outcome for UI error reporting."""
+
+    player: object | None
+    error: str | None = None
+    unsupported_version: bool = False
 
 
 class SaveManager:
@@ -11,6 +21,7 @@ class SaveManager:
 
     SAVE_DIR = "save_files"
     TMP_DIR = "tmp_files"
+    last_load_result = SaveLoadResult(None)
 
     @staticmethod
     def is_valid_save_filename(filename: object) -> bool:
@@ -77,11 +88,27 @@ class SaveManager:
             is_tmp: Whether to load from tmp directory
             skip_tiles: If True, skip loading world tiles (for transform feature)
         """
+        result = SaveManager.load_player_result(
+            filename,
+            is_tmp=is_tmp,
+            skip_tiles=skip_tiles,
+        )
+        return result.player
+
+    @staticmethod
+    def load_player_result(
+        filename: str,
+        is_tmp: bool = False,
+        skip_tiles: bool = False,
+    ) -> SaveLoadResult:
+        """Load a player and retain a clear unsupported-version outcome."""
         try:
             filepath = SaveManager._resolve_save_path(filename, is_tmp=is_tmp)
 
             if not os.path.isfile(filepath):
-                return None
+                result = SaveLoadResult(None, "Save file not found.")
+                SaveManager.last_load_result = result
+                return result
 
             # Load JSON
             with open(filepath, 'r') as f:
@@ -89,10 +116,18 @@ class SaveManager:
 
             # Deserialize player
             player = PlayerDataSerializer.deserialize(data, skip_tiles=skip_tiles)
-            return player
+            result = SaveLoadResult(player)
+            SaveManager.last_load_result = result
+            return result
+        except UnsupportedSaveVersionError as error:
+            result = SaveLoadResult(None, str(error), unsupported_version=True)
+            SaveManager.last_load_result = result
+            return result
         except Exception as e:
             print(f"Error loading player: {e}")
-            return None
+            result = SaveLoadResult(None, f"Unable to load save: {e}")
+            SaveManager.last_load_result = result
+            return result
 
     @staticmethod
     def list_saves() -> list[str]:

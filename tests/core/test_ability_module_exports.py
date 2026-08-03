@@ -49,7 +49,7 @@ def test_abilities_facade_preserves_all_split_class_exports():
         for name, implementation in _module_ability_classes(module).items()
     }
 
-    assert len(direct_exports) == 383
+    assert len(direct_exports) == 434
     for name, implementation in direct_exports.items():
         assert getattr(abilities, name) is implementation
 

@@ -107,7 +107,12 @@ def test_character_created_screen_draws_summary_and_accepts_keyboard(monkeypatch
 
     screen.draw()
 
-    rendered = presenter.title_font.render_calls + presenter.large_font.render_calls + presenter.normal_font.render_calls
+    rendered = (
+        presenter.title_font.render_calls
+        + presenter.large_font.render_calls
+        + presenter.normal_font.render_calls
+        + presenter.small_font.render_calls
+    )
     assert "Character Created" in rendered
     assert "Ready for Silvana" in rendered
     assert "Ada" in rendered
@@ -116,6 +121,7 @@ def test_character_created_screen_draws_summary_and_accepts_keyboard(monkeypatch
     assert "Mage" in rendered
     assert "42" in rendered
     assert "31" in rendered
+    assert any("1 Progression Point" in text for text in rendered)
 
     event_batches = iter([[SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)]])
     monkeypatch.setattr("src.ui_pygame.gui.presentation_asset_screens.pygame.event.get", lambda: next(event_batches, []))

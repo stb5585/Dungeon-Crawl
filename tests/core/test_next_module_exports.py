@@ -72,7 +72,7 @@ def test_save_system_facade_preserves_all_serializer_classes():
         for name, implementation in _owned_classes(module).items()
     }
 
-    assert len(exports) == 13
+    assert len(exports) == 15
     for name, implementation in exports.items():
         assert getattr(save_system, name) is implementation
 
@@ -97,7 +97,7 @@ def test_ability_mechanics_facade_preserves_all_split_functions():
         for name, implementation in _owned_functions(module).items()
     }
 
-    assert len(exports) == 93
+    assert len(exports) == 105
     for name, implementation in exports.items():
         assert getattr(ability_mechanics, name) is implementation
 

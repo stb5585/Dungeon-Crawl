@@ -36,6 +36,19 @@ class CharacterEventsMixin:
                 if reduced_damage < damage:
                     target.health.current = min(target.health.max, target.health.current + (damage - reduced_damage))
                     damage = reduced_damage
+                shielded_damage, shield_message = (
+                    class_rings.absorb_aerial_supremacy_shield(target, damage)
+                )
+                if shielded_damage < damage:
+                    target.health.current = min(
+                        target.health.max,
+                        target.health.current + (damage - shielded_damage),
+                    )
+                    damage = shielded_damage
+                if shield_message:
+                    from ..classes import promotion_kits
+
+                    promotion_kits._message(target, shield_message)
             except Exception:
                 pass
             if hasattr(self, "record_damage_dealt"):
@@ -50,7 +63,6 @@ class CharacterEventsMixin:
                 from ..classes import class_rings, promotion_kits
 
                 class_rings.record_damage_dealt(self, damage, damage_type)
-                class_rings.build_guard_meter(target, damage)
                 class_rings.trigger_umbral_debt(self)
                 class_rings.divine_intervention(target)
                 promotion_kits.record_damage_event(
@@ -106,6 +118,12 @@ class CharacterEventsMixin:
         if amount and amount > 0 and hasattr(self, "record_archdruid_healing_done"):
             self.record_archdruid_healing_done(amount)
         if amount and amount > 0:
+            try:
+                from ..classes import ability_mechanics
+
+                ability_mechanics.trigger_blessed_light(self, amount, source)
+            except Exception:
+                pass
             try:
                 from ..classes import class_rings
 

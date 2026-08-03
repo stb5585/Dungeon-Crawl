@@ -1342,6 +1342,11 @@ def test_select_item_spell_and_skill_cover_empty_cancel_and_selection_paths(monk
         "Passive Aura": SimpleNamespace(cost=0, passive=True),
         "Fireball": SimpleNamespace(cost=4, passive=False),
         "Ice": SimpleNamespace(cost=2, passive=False),
+        "Resist Shadow": SimpleNamespace(
+            cost=1,
+            passive=False,
+            exploration_cast=True,
+        ),
     }
     monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
     event_batches = iter([
@@ -1395,7 +1400,25 @@ def test_select_item_spell_and_skill_cover_empty_cancel_and_selection_paths(monk
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, []))
     assert manager._select_resolve_ability(player, enemy) == "Shield Check"
     assert menu_calls[-1][0] == "Select Resolve"
-    assert menu_calls[-1][1] == ("Shield Check (Resolve: 10)",)
+    assert menu_calls[-1][1] == ("Shield Check (Resolve: 10; Need 10)",)
+
+    player.cls = SimpleNamespace(name="Paladin")
+    player.paladin_vow = "Conquest"
+    player.spellbook["Skills"] = {
+        "Oath's Judgment": abilities.OathsJudgment(),
+    }
+    promotion_kits.combat_state(player)["oath_conviction"] = 2
+    event_batches = iter([
+        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+    ])
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.combat_manager.pygame.event.get",
+        lambda: next(event_batches, []),
+    )
+    assert manager._select_skill(player, enemy) == "Oath's Judgment"
+    assert menu_calls[-1][1] == (
+        "Oath's Judgment (Conviction: all 2)",
+    )
 
     player.is_disarmed = lambda: True
     player.spellbook["Skills"] = {

@@ -95,7 +95,7 @@ def turn_in_quest(game, quest, typ):
             reward_options, box_height=6+len(reward), rewards=reward, confirm=True)
         reward_idx = popup.navigate_popup()
         reward = reward[reward_idx]()
-    exp = game.player_char.quest_dict[typ][quest]['Experience'] * game.player_char.level.pro_level
+    exp = game.player_char.quest_dict[typ][quest]['Experience']
     if reward == 'Gold':
         game.player_char.gold += game.player_char.quest_dict[typ][quest]['Reward Number']
         reward_message = f"You received {game.player_char.quest_dict[typ][quest]['Reward Number']} gold and {exp} experience.\n"
@@ -123,9 +123,9 @@ def turn_in_quest(game, quest, typ):
             reward_message = f"You received {reward.name} and {exp} experience.\n"
         else:
             reward_message = f"You received {reward.name} x{num} and {exp} experience.\n"
-    game.player_char.level.exp += exp
-    if not game.player_char.max_level():
-        game.player_char.level.exp_to_gain -= exp
+    from src.core.progression import award_experience, level_up_message
+
+    level_result = award_experience(game.player_char, exp)
     turninbox = menus.TextBox(game)
     turninbox.print_text_in_rectangle(reward_message)
     turninbox.clear_rectangle()
@@ -133,21 +133,9 @@ def turn_in_quest(game, quest, typ):
         item = game.player_char.quest_dict[typ][quest]['What']
         if item != "Relics":
             del game.player_char.special_inventory[item().name]
-    if not game.player_char.max_level():
-        while game.player_char.level.exp_to_gain <= 0:
-            textbox = menus.TextBox(game)
-            stat_menu = menus.SelectionPopupMenu(game,
-                                                 "Pick the stat you would like to increase.",
-                                                 [f'Strength - {game.player_char.stats.strength}',
-                                                  f'Intelligence - {game.player_char.stats.intel}',
-                                                  f'Wisdom - {game.player_char.stats.wisdom}',
-                                                  f'Constitution - {game.player_char.stats.con}',
-                                                  f'Charisma - {game.player_char.stats.charisma}',
-                                                  f'Dexterity - {game.player_char.stats.dex}'],
-                                                 box_height=12, confirm=False)
-            game.player_char.level_up(game, textbox=textbox, menu=stat_menu)
-            if game.player_char.level.exp_to_gain == "MAX":
-                break
+    if level_result.new_level > level_result.old_level:
+        turninbox.print_text_in_rectangle(level_up_message(level_result))
+        turninbox.clear_rectangle()
     if quest == "A Bad Dream":
         try:
             game.player_char.modify_inventory(items.LuckyLocket(), subtract=True, rare=True)
@@ -484,9 +472,9 @@ def tavern(game):
                 gold = bounty["gold"]
                 game.player_char.gold += gold
                 exp = bounty["exp"]
-                game.player_char.level.exp += exp
-                if not game.player_char.max_level():
-                    game.player_char.level.exp_to_gain -= exp
+                from src.core.progression import award_experience, level_up_message
+
+                level_result = award_experience(game.player_char, exp)
                 bounty_gain = (f"You have completed a bounty on {turn_in_choice}s.\n"
                                 f"You gain {gold} gold and {exp} experience.\n")
                 if bounty["reward"]:
@@ -496,21 +484,9 @@ def tavern(game):
                 tavernbox.print_text_in_rectangle(bounty_gain)
                 tavernbox.clear_rectangle()
                 del game.player_char.quest_dict['Bounty'][turn_in_choice]
-                if not game.player_char.max_level():
-                    while game.player_char.level.exp_to_gain <= 0:
-                        textbox = menus.TextBox(game)
-                        stat_menu = menus.SelectionPopupMenu(game,
-                                                             "Pick the stat you would like to increase.",
-                                                             [f'Strength - {game.player_char.stats.strength}',
-                                                              f'Intelligence - {game.player_char.stats.intel}',
-                                                              f'Wisdom - {game.player_char.stats.wisdom}',
-                                                              f'Constitution - {game.player_char.stats.con}',
-                                                              f'Charisma - {game.player_char.stats.charisma}',
-                                                              f'Dexterity - {game.player_char.stats.dex}'],
-                                                             box_height=12, confirm=False)
-                        game.player_char.level_up(game, textbox=textbox, menu=stat_menu)
-                        if game.player_char.level.exp_to_gain == "MAX":
-                            break
+                if level_result.new_level > level_result.old_level:
+                    tavernbox.print_text_in_rectangle(level_up_message(level_result))
+                    tavernbox.clear_rectangle()
                 if not any(x[2] for x in game.player_char.quest_dict['Bounty'].values()) and \
                     "Turn In Bounty" in  tavern_options:
                     tavern_options.pop(1)
@@ -805,23 +781,12 @@ def jeweler(game):
 
 def church(game):
     church_message = "Come in my child. You are always welcome in the arms of Elysia. How can we be of service?"
-    church_options = ['Promotion', 'Save', 'Quests', 'Quit Game', 'Leave']
+    church_options = ['Save', 'Quests', 'Quit Game', 'Leave']
     menu = menus.LocationMenu(game, church_message, church_options)
     churchbox = menus.TextBox(game)
     while True:
         church_idx = menu.navigate_menu()
-        if church_options[church_idx] == 'Promotion':
-            if game.player_char.level.level == 30 and game.player_char.level.pro_level < 3:
-                classes.promotion(game)
-            else:
-                if game.player_char.level.pro_level == 3:
-                    churchbox.print_text_in_rectangle(
-                        "You are at max promotion level and can no longer be promoted.\n")
-                else:
-                    churchbox.print_text_in_rectangle(
-                        "You need to be level 30 before you can promote your character.\n")
-                churchbox.clear_rectangle()
-        elif church_options[church_idx] == 'Save':
+        if church_options[church_idx] == 'Save':
             confirm = menus.ConfirmPopupMenu(game, "A save file under this name already exists. Are you sure you want to overwrite it?", box_height=8)
             game.player_char.save(game=game, confirm_popup=confirm, save_popup=menus.save_file_popup)
         elif church_options[church_idx] == 'Quests':
@@ -842,6 +807,324 @@ def church(game):
         else:
             raise AssertionError("You shouldn't reach here.")
         menu.update_options(church_options, reset_current=False)
+
+
+def progression(game):
+    """Open the curses tree/list progression interface outside combat."""
+    from src.core.progression import (
+        PRIMARY_ATTRIBUTES,
+        TREE_NODES,
+        NodeKind,
+        NodeState,
+        apply_progression_plan,
+        available_nodes,
+        promotion_preview,
+    )
+    from src.ui_curses.classes import choose_familiar, choose_paladin_vow
+
+    player = game.player_char
+    textbox = menus.TextBox(game)
+    pending_nodes = []
+    pending_attributes = {}
+
+    def pending_node_cost():
+        return sum(TREE_NODES[node_id].cost for node_id in pending_nodes)
+
+    def pending_attribute_cost():
+        return sum(pending_attributes.values())
+
+    def has_pending_distribution():
+        return pending_node_cost() + pending_attribute_cost() > 0
+
+    def stat_display_name(stat_name):
+        return {
+            "strength": "Strength",
+            "intel": "Intelligence",
+            "wisdom": "Wisdom",
+            "con": "Constitution",
+            "charisma": "Charisma",
+            "dex": "Dexterity",
+        }.get(stat_name, stat_name.title())
+
+    while True:
+        statuses = available_nodes(
+            player,
+            planned_node_ids=pending_nodes,
+            planned_attributes=pending_attributes,
+        )
+        options = ["Train Attribute"]
+        options.extend(
+            status.node.name
+            for status in statuses
+        )
+        options.append("Reset Distribution")
+        options.append("Spend Distribution")
+        options.extend(
+            f"Review {tree_name}"
+            for tree_name in sorted(player.progression.completed_trees)
+        )
+        options.append("Leave")
+        header = (
+            f"{player.cls.name} Progression | Level {player.progression.level} | "
+            f"Progression Points "
+            f"{player.progression.unspent_points - pending_node_cost()} | "
+            f"Attribute Points "
+            f"{player.progression.unspent_attribute_points - pending_attribute_cost()}"
+        )
+        popup = menus.PopupMenu(
+            game,
+            header,
+            box_height=min(40, len(options) + 7),
+            box_width=90,
+        )
+        popup.options_list = options
+        choice = popup.navigate_popup()
+        popup.clear_popup()
+        selected = options[choice]
+        if selected == "Leave":
+            if has_pending_distribution():
+                confirm = menus.ConfirmPopupMenu(
+                    game,
+                    (
+                        "Leave Progression? Distributed points will not be "
+                        "spent."
+                    ),
+                )
+                if not confirm.navigate_popup():
+                    continue
+            return
+        if selected == "Train Attribute":
+            while True:
+                stat_options = []
+                for name in PRIMARY_ATTRIBUTES:
+                    label = stat_display_name(name)
+                    staged = pending_attributes.get(name, 0)
+                    value = getattr(player.stats, name) + staged
+                    stat_options.extend((
+                        f"+ {label}: {value} (+{staged})",
+                        f"- {label}: {value} (+{staged})",
+                    ))
+                stat_options.append("Go Back")
+                stat_popup = menus.PopupMenu(
+                    game,
+                    (
+                        "Primary Attributes | Available: "
+                        f"{player.progression.unspent_attribute_points - pending_attribute_cost()}"
+                    ),
+                    box_height=min(30, len(stat_options) + 5),
+                    box_width=64,
+                )
+                stat_popup.options_list = stat_options
+                stat_choice = stat_popup.navigate_popup()
+                stat_popup.clear_popup()
+                if stat_options[stat_choice] == "Go Back":
+                    break
+                stat_name = PRIMARY_ATTRIBUTES[stat_choice // 2]
+                if stat_choice % 2 == 0:
+                    if (
+                        player.progression.unspent_attribute_points
+                        - pending_attribute_cost()
+                        > 0
+                    ):
+                        pending_attributes[stat_name] = (
+                            pending_attributes.get(stat_name, 0) + 1
+                        )
+                elif pending_attributes.get(stat_name, 0) > 0:
+                    pending_attributes[stat_name] -= 1
+                    if pending_attributes[stat_name] == 0:
+                        pending_attributes.pop(stat_name)
+            continue
+        if selected == "Reset Distribution":
+            pending_nodes.clear()
+            pending_attributes.clear()
+            continue
+        if selected == "Spend Distribution":
+            if not has_pending_distribution():
+                continue
+            choices = {}
+            cancelled = False
+            for node_id in pending_nodes:
+                node = TREE_NODES[node_id]
+                if node.kind != NodeKind.PROMOTION:
+                    continue
+                preview = promotion_preview(player, node_id)
+                target_job = node.payload["target_class_ctor"]()
+                benefits = ", ".join(
+                    f"+{amount} {name.title()}"
+                    for name, amount in preview.bonuses.items()
+                    if amount
+                )
+                requirements = ", ".join(
+                    (
+                        f"{name.replace('intel', 'intelligence').title()} "
+                        f"{amount}"
+                    )
+                    for name, amount in preview.requirements.items()
+                )
+                conflicts = ", ".join(preview.equipment_conflicts) or "None"
+                confirm = menus.ConfirmPopupMenu(
+                    game,
+                    (
+                        f"{preview.source_class} -> {preview.target_class}. "
+                        f"{target_job.description} One-time benefits: "
+                        f"{benefits}. Requirements: Level "
+                        f"{preview.level_requirement}; {requirements}. "
+                        f"Equipment conflicts: {conflicts}. "
+                        f"{preview.warning}"
+                    ),
+                    box_height=18,
+                )
+                if not confirm.navigate_popup():
+                    cancelled = True
+                    break
+                target_class = node.payload["target_class"]
+                if target_class == "Paladin":
+                    vow = choose_paladin_vow(game)
+                    if not vow:
+                        cancelled = True
+                        break
+                    choices[node_id] = {"vow": vow}
+                elif target_class == "Warlock":
+                    familiar = choose_familiar(game)
+                    if not familiar:
+                        cancelled = True
+                        break
+                    choices[node_id] = {"familiar": familiar}
+            if cancelled:
+                continue
+            result = apply_progression_plan(
+                player,
+                pending_nodes,
+                pending_attributes,
+                promotion_choices=choices,
+            )
+            if result.success:
+                pending_nodes.clear()
+                pending_attributes.clear()
+            textbox.print_text_in_rectangle(result.message)
+            textbox.clear_rectangle()
+            continue
+        if selected.startswith("Review "):
+            tree_name = selected.removeprefix("Review ")
+            review_lines = [
+                status.node.name
+                for status in available_nodes(player, tree_name)
+            ]
+            textbox.print_text_in_rectangle("\n".join(review_lines))
+            textbox.clear_rectangle()
+            continue
+
+        status = statuses[choice - 1]
+        detail = [
+            status.node.name,
+            (
+                f"{status.node.cost} "
+                f"{'Point' if status.node.cost == 1 else 'Points'}"
+            ),
+        ]
+        implied_prerequisites = {
+            f"Requires {TREE_NODES[node_id].name}."
+            for node_id in status.node.prerequisites
+        }
+        point_noun = "point" if status.node.cost == 1 else "points"
+        implied_cost_reasons = {
+            f"Requires {status.node.cost} {point_noun}.",
+            f"Requires {status.node.cost} progression {point_noun}.",
+        }
+        if status.node.kind == NodeKind.PROMOTION:
+            detail.extend((
+                f"Required level: {status.node.payload['level_requirement']}",
+                (
+                    "Required Stats: "
+                    + ", ".join(
+                        f"{stat_display_name(name)} {value}"
+                        for name, value
+                        in status.node.payload["requirements"].items()
+                    )
+                ),
+            ))
+        elif status.node.payload.get("level_requirement"):
+            detail.append(
+                f"Required level: {status.node.payload['level_requirement']}"
+            )
+        specialization = status.node.payload.get("weapon_specialization")
+        if specialization:
+            weapon_type, rank = specialization
+            detail.append(
+                f"Required {weapon_type} specialization level: {rank}"
+            )
+        detail.extend(
+            reason.split(" (current ", 1)[0]
+            for reason in status.reasons
+            if (
+                reason not in implied_prerequisites
+                and reason not in implied_cost_reasons
+                and not (
+                    status.node.payload.get("level_requirement")
+                    and (
+                        reason.startswith("Requires global level ")
+                        or reason.startswith("Requires level ")
+                    )
+                )
+                and not (
+                    status.node.kind == NodeKind.PROMOTION
+                    and any(
+                        any(
+                            reason.startswith(f"Requires {display_name} ")
+                            for display_name in {
+                                stat_display_name(stat_name),
+                                stat_name.replace(
+                                    "intel",
+                                    "intelligence",
+                                ).title(),
+                            }
+                        )
+                        for stat_name
+                        in status.node.payload["requirements"]
+                    )
+                )
+            )
+        )
+        description = status.node.payload.get("description")
+        if description:
+            detail.append(description)
+        textbox.print_text_in_rectangle("\n".join(detail))
+        textbox.clear_rectangle()
+        if status.node.id in pending_nodes:
+            removed = {status.node.id}
+            changed = True
+            while changed:
+                changed = False
+                for node_id in pending_nodes:
+                    if node_id in removed:
+                        continue
+                    pending_node = TREE_NODES[node_id]
+                    remaining = (
+                        set(pending_nodes)
+                        | player.progression.purchased_node_ids
+                    ) - removed
+                    loses_requirement = (
+                        not any(
+                            prerequisite in remaining
+                            for prerequisite in pending_node.prerequisites
+                        )
+                        if pending_node.payload.get("prerequisite_mode") == "any"
+                        else any(
+                            prerequisite in removed
+                            for prerequisite in pending_node.prerequisites
+                        )
+                    )
+                    if loses_requirement:
+                        removed.add(node_id)
+                        changed = True
+            pending_nodes[:] = [
+                node_id
+                for node_id in pending_nodes
+                if node_id not in removed
+            ]
+            continue
+        if status.state == NodeState.AVAILABLE:
+            pending_nodes.append(status.node.id)
 
 
 def secret_shop(game):
@@ -1148,7 +1431,8 @@ def town(game):
                 'Popup': menus.PopupMenu,
                 'EquipmentPopup': menus.EquipPopupMenu,
                 'SpecialsPopup': menus.AbilitiesPopupMenu,
-                'QuestsPopup': menus.QuestListPopupMenu
+                'QuestsPopup': menus.QuestListPopupMenu,
+                'Progression': lambda: progression(game),
             }
             game.player_char.character_menu(game, menu=char_menu, textbox=menus.TextBox(game), actions_dict=actions_dict, ui_factory=ui_factory)
         elif options[town_idx] == 'Old Warehouse':

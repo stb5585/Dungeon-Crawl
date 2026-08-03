@@ -11,6 +11,7 @@ from src.core.classes import grandmaster, promotion_mechanic_tab_label
 from src.ui_pygame.assets.companion_art_manager import get_companion_art_manager
 from src.ui_pygame.assets.item_render_manager import get_item_render_manager
 from src.ui_pygame.assets.portrait_manager import PortraitManager
+from ..progression_screen import ProgressionScreen
 from .models import CharacterTab, DEFAULT_CHARACTER_TABS, PORTRAIT_DIR
 
 
@@ -33,6 +34,12 @@ class CharacterCoreMixin:
         self.current_selection = 0
         self.menu_options: list[str] = []
         super().__init__(presenter)
+        self.progression_view = ProgressionScreen(presenter, None)
+        self.progression_view.background_draw_func = lambda: self.draw_all(
+            self._progression_player,
+            do_flip=False,
+        )
+        self._progression_player = None
         self.calculate_rects()
 
     def calculate_rects(self):
@@ -100,11 +107,13 @@ class CharacterCoreMixin:
     def visible_tabs(self, player_char=None) -> tuple[CharacterTab, ...]:
         if player_char is None:
             return self.tabs
-        equipment_tab = next((tab for tab in self.tabs if tab.key == "equipment"), self.tabs[-1])
+        equipment_tab = next(tab for tab in self.tabs if tab.key == "equipment")
+        progression_tab = next(tab for tab in self.tabs if tab.key == "progression")
         tabs = [self.tabs[0], equipment_tab]
         mechanic_tab = self.class_mechanic_tab(player_char)
         if mechanic_tab is not None:
             tabs.append(mechanic_tab)
+        tabs.append(progression_tab)
         return tuple(tabs)
 
     def ensure_active_tab_visible(self, player_char) -> None:

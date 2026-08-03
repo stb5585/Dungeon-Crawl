@@ -531,8 +531,13 @@ class Bandage(Status):
         user.physical_effects[self.status].extra = 0
         use_str += f"You have been cured of {self.status.lower()}.\n"
         if user.health.current < user.health.max:
+            from ..classes import ability_mechanics
+
             heal = int(0.1 * user.health.max)
             heal = random.randint(heal // 2, heal)
+            heal = int(
+                heal * ability_mechanics.bandage_healing_multiplier(user)
+            )
             heal = min(heal, user.health.max - user.health.current)
             user.health.current += heal
             use_str += f"You have been healed for {heal} health.\n"

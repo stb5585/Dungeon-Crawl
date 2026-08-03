@@ -299,10 +299,6 @@ class PygameGame:
             self.presenter.show_message("Already at max level.")
             return
         
-        # Add the experience needed to level up and reset exp_to_gain
-        self.player_char.level.exp += self.player_char.level.exp_to_gain
-        self.player_char.level.exp_to_gain = 0
-        
         from .gui.level_up import LevelUpScreen
 
         level_up_screen = LevelUpScreen(self.presenter.screen, self.presenter)
@@ -367,12 +363,12 @@ class PygameGame:
         player_char.portrait_variant = int(portrait_variant or 0)
         player_char.race = race
         player_char.cls = char_class
+        player_char.transform_type = char_class
         player_char.equipment = char_class.equipment
 
-        from ..core import abilities
-        if "1" in abilities.spell_dict.get(char_class.name, {}):
-            spell_gain = abilities.spell_dict[char_class.name]["1"]()
-            player_char.spellbook['Spells'][spell_gain.name] = spell_gain
+        from ..core.progression import initialize_progression
+
+        initialize_progression(player_char)
 
         player_char.storage["Health Potion"] = [items.HealthPotion() for _ in range(5)]
         player_char.load_tiles()
@@ -534,6 +530,9 @@ class PygameGame:
         def load_selected_game():
             player_char = SaveManager.load_player(selected_file)
             if player_char is None:
+                load_result = SaveManager.last_load_result
+                if load_result.error:
+                    self.presenter.show_message(load_result.error)
                 return None
 
             # Reset quit flag - player is loading to continue playing

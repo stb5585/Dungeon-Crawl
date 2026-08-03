@@ -679,7 +679,7 @@ class TestBattleEngineBasics:
 
         assert "Meteor!\n" in result.messages
 
-    def test_end_battle_victory_marks_boss_tile_and_level_up(self, monkeypatch):
+    def test_end_battle_victory_marks_boss_tile_without_legacy_level_flag(self, monkeypatch):
         engine, player, enemy, tile = self._make_engine()
         engine.boss = True
         player.level.exp_to_gain = 0
@@ -690,7 +690,7 @@ class TestBattleEngineBasics:
 
         assert outcome.result == "victory"
         assert outcome.winner == player.name
-        assert outcome.level_up is True
+        assert outcome.level_up is False
         assert tile.defeated is True
         assert tile.enemy is None
 

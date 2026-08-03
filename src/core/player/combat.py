@@ -180,6 +180,18 @@ class PlayerCombatMixin:
         self.effects(end=True)
         if all([self.is_alive(), not flee]):
             restore_defeat_identity(enemy)
+            if getattr(enemy, "paladin_repelled", False):
+                enemy.effects(end=True)
+                endcombat_str = f"{enemy.name} flees from the battle.\n"
+                endcombat_str += promotion_kits.end_combat(
+                    self,
+                    victory=False,
+                    enemy=enemy,
+                )
+                paladin.clear_condemnation(enemy)
+                if textbox:
+                    textbox.print_text_in_rectangle(endcombat_str)
+                return endcombat_str
             if getattr(enemy, "tamed_by_player", False) or getattr(enemy, "no_victory_rewards", False):
                 endcombat_str = f"{enemy.name} leaves the fight as a companion.\n"
                 endcombat_str += promotion_kits.end_combat(self, victory=False, enemy=enemy)
@@ -234,24 +246,29 @@ class PlayerCombatMixin:
             endcombat_str += self.quests(enemy=enemy)
             if textbox:
                 textbox.print_text_in_rectangle(endcombat_str)
-            self.level.exp += exp_gain
+            from ..progression import award_experience
+
+            level_result = award_experience(self, exp_gain)
+            if (
+                level_result.new_level > level_result.old_level
+                and textbox
+            ):
+                from ..progression import level_up_message
+
+                textbox.print_text_in_rectangle(level_up_message(level_result))
             upgrade_message = self.class_upgrades(game, enemy)
             if upgrade_message and textbox:
                 textbox.print_text_in_rectangle(upgrade_message)
-            if not self.max_level():
-                self.level.exp_to_gain -= exp_gain
-                while self.level.exp_to_gain <= 0:
-                    self.level_up(game)
-                    if self.max_level():
-                        break
+            paladin.clear_condemnation(enemy)
         elif flee:
-            pass
+            paladin.clear_condemnation(enemy)
         else:
             if textbox:
                 textbox.print_text_in_rectangle(f"{self.name} was slain by {enemy.name}.")
             enemy.effects(end=True)
             enemy.health.current = enemy.health.max
             enemy.mana.current = enemy.mana.max
+            paladin.clear_condemnation(enemy)
             self.death()
 
     def check_mod(self, mod, enemy=None, typ=None, luck_factor=1, ultimate=False, ignore=False):
@@ -303,6 +320,11 @@ class PlayerCombatMixin:
             total_mod *= 1 + ability_mechanics.melody_inspiration_bonus(self)
             total_mod *= 1 + lycan.phase_damage_bonus(self) + lycan.frenzy_damage_bonus(self)
             total_mod *= paladin.conquest_damage_multiplier(self, enemy)
+            if (
+                self.stat_effects["Attack"].active
+                and self.stat_effects["Attack"].source == "Dishearten"
+            ):
+                total_mod *= 0.75
             return max(0, int(total_mod * (1 + berserk_per)))
         if mod == 'shield':
             if int(getattr(self, "_guard_suppressed", 0) or 0) > 0:
@@ -314,6 +336,25 @@ class PlayerCombatMixin:
                 block_mod += 25
             block_mod += ability_mechanics.last_stand_block_bonus(self)
             block_mod += ability_mechanics.shield_mastery_block_bonus(self)
+            try:
+                from ..classes import promotion_kits
+                from ..progression import has_talent
+
+                if (
+                    int(
+                        promotion_kits.combat_state(self).get(
+                            "hold_the_line",
+                            0,
+                        )
+                        or 0
+                    )
+                    > 0
+                ):
+                    block_mod += 10
+                    if has_talent(self, "sentinel.resolute-guard"):
+                        block_mod += 5
+            except Exception:
+                pass
             return max(0, block_mod)
         if mod == 'offhand':
             if 'Monk' in self.cls.name:
@@ -331,6 +372,11 @@ class PlayerCombatMixin:
                 total_offhand *= ability_mechanics.monkey_grip_damage_multiplier(self, "OffHand")
                 total_offhand *= ability_mechanics.arsenal_mastery_weapon_multiplier(self)
                 total_offhand *= ability_mechanics.pack_bond_multiplier(self)
+                if (
+                    self.stat_effects["Attack"].active
+                    and self.stat_effects["Attack"].source == "Dishearten"
+                ):
+                    total_offhand *= 0.75
                 return max(0, int(total_offhand))
             except AttributeError:
                 return 0

@@ -39,6 +39,7 @@ class BattleEngine(BattleTurnMixin, BattleActionMixin, BattleOutcomeMixin):
         logger: BattleLogger | None = None,
     ):
         self.player: Player = player
+        self.player._active_combat = True
         self.enemy: Character = enemy
         self.tile: Any = tile
         self.game: Any = game

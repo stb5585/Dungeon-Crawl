@@ -60,6 +60,13 @@ class BattleTurnMixin:
                     result.shield_explosion_damage = dmg
                 except (ValueError, IndexError):
                     pass
+        if self.attacker == self.enemy:
+            thirst_text = ability_mechanics.trigger_hemorrhage_thirst(
+                self.player,
+                getattr(self.enemy, "_last_bleed_tick_damage", 0),
+            )
+            if thirst_text:
+                result.effects_text = f"{result.effects_text or ''}{thirst_text}"
 
         if self.attacker == self.player:
             song_text = bard.tick_song(self.player)
@@ -238,7 +245,12 @@ class BattleTurnMixin:
         hp_before = self.player.health.current
         if self.attacker == self.player and not (action == "Cast Spell" and choice == "Rewind"):
             ability_mechanics.store_rewind_snapshot(self)
-            promotion_kits.begin_action(self.player, defer_devotion=True)
+            promotion_kits.begin_action(
+                self.player,
+                defer_devotion=True,
+                action=action,
+                choice=choice,
+            )
 
         if action == "Nothing" or action == "Cancelled":
             result.message = f"{self.attacker.name} does nothing.\n"
@@ -577,7 +589,11 @@ class BattleTurnMixin:
             else:
                 outcome.message = self._process_victory()
             # Check for level up possibility
-            if not self.player.max_level() and self.player.level.exp_to_gain <= 0:
+            pending_level = getattr(self.player, "_pending_level_up_result", None)
+            if (
+                pending_level is not None
+                and pending_level.new_level > pending_level.old_level
+            ):
                 outcome.level_up = True
         else:
             outcome.result = "defeat"
@@ -601,6 +617,7 @@ class BattleTurnMixin:
         self.logger.end_battle(
             result=outcome.result, winner=outcome.winner, boss=self.boss
         )
+        paladin.clear_condemnation(self.enemy)
 
         # Emit combat end event
         self._event_bus.emit(create_combat_event(
@@ -612,4 +629,5 @@ class BattleTurnMixin:
             enemy_alive=self.enemy.is_alive(),
         ))
 
+        self.player._active_combat = False
         return outcome

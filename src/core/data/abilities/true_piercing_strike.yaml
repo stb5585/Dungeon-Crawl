@@ -3,7 +3,7 @@ type: Skill
 subtype: Offensive
 description: >-
   Attack that is guaranteed to hit and that pierces the enemy's defenses,
-  ignoring armor and defenses. However it only deals 0.75x weapon damage.
+  ignoring armor and defenses but reduces weapon damage.
 cost: 15
 weapon: true
 damage_mod: 0.75

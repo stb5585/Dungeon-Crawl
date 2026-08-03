@@ -324,7 +324,11 @@ class LoadGameMenu:
 
     def config_desc_str(self, player_obj):
         if player_obj is None:
-            return "Corrupted save"
+            return getattr(
+                SaveManager.last_load_result,
+                "error",
+                None,
+            ) or "Corrupted save"
         desc_str = f"{getattr(player_obj, 'name', 'Unknown')}\n"
         level = getattr(getattr(player_obj, 'level', None), 'level', '?')
         race_name = getattr(getattr(player_obj, 'race', None), 'name', 'Unknown')

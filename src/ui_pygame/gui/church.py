@@ -20,6 +20,7 @@ from src.core.classes import (
     promotion_mechanic_tab_label,
 )
 from src.core.items import remove_equipment
+from src.core.progression import promotion_combat_bonuses
 
 from .confirmation_popup import ConfirmationPopup
 from .input_guards import prepare_guarded_input, release_guard_allows_input
@@ -32,29 +33,6 @@ from .town_base import TownColors, TownScreenBase, wrap_text_to_pixel_width
 
 class PaladinVowSelectionPopup:
     """Styled vow selector with detail text for the highlighted Paladin path."""
-
-    DETAIL_LINES = {
-        "Redemption": (
-            "Mercy path focused on Redeem.",
-            "Mercy still pays, but turns away from trophies and kill claims.",
-            "Conviction makes mercy more persuasive and more rewarding.",
-        ),
-        "Conquest": (
-            "Challenge path focused on naming a foe.",
-            "Clean victories against chosen or hunted enemies feed your aura.",
-            "Conviction sharpens the pressure on your chosen target.",
-        ),
-        "Protection": (
-            "Guardian path focused on Interpose.",
-            "Well-timed blocks turn defense into protective momentum.",
-            "Conviction reinforces your next guarded stand.",
-        ),
-        "Retribution": (
-            "Counter path focused on Judgment Riposte.",
-            "Enemy aggression can be answered with holy retaliation.",
-            "Conviction makes reprisal feel more certain and punishing.",
-        ),
-    }
 
     def __init__(self, presenter, *, title: str = "Choose Paladin Vow"):
         self.presenter = presenter
@@ -115,13 +93,6 @@ class PaladinVowSelectionPopup:
             for index, _option in enumerate(self.options)
         ]
 
-    def _detail_rows(self, vow: str) -> list[tuple[str, str]]:
-        return [
-            ("Signature", paladin.SKILL_NAMES[vow]),
-            ("Aura", paladin.AURA_NAMES[vow]),
-            ("Mark", paladin.MARK_NAMES[vow]),
-        ]
-
     def draw(self, background_draw_func=None):
         if background_draw_func is not None:
             background_draw_func()
@@ -173,20 +144,50 @@ class PaladinVowSelectionPopup:
         x = detail_rect.left + 20
         y = detail_rect.top + 20
         y = self._draw_text(f"Vow of {vow}", self.large_font, self.colors.GOLD, x, y, detail_rect.width - 40)
-        y += 12
-        for label, value in self._detail_rows(vow):
-            label_surface = self.small_font.render(label, True, self.colors.GRAY)
-            value_surface = self.normal_font.render(value, True, self.colors.WHITE)
-            self.screen.blit(label_surface, (x, y + 3))
-            self.screen.blit(value_surface, (x + 104, y))
-            y += self.normal_font.get_height() + 10
-        pygame.draw.line(self.screen, self.colors.BORDER_COLOR, (x, y), (detail_rect.right - 20, y), 1)
-        y += 14
-        y = self._draw_wrapped(paladin.DESCRIPTIONS[vow], self.normal_font, self.colors.WHITE, x, y, detail_rect.width - 40, max_lines=4)
-        y += 10
-        for line in self.DETAIL_LINES.get(vow, ()):
-            y = self._draw_wrapped(line, self.small_font, self.colors.GRAY, x, y, detail_rect.width - 40, max_lines=2)
-            y += 4
+        y += 8
+        y = self._draw_wrapped(
+            paladin.DESCRIPTIONS[vow],
+            self.small_font,
+            self.colors.WHITE,
+            x,
+            y,
+            detail_rect.width - 40,
+            max_lines=3,
+        )
+        sections = (
+            (
+                f"Learned Ability — {paladin.SKILL_NAMES[vow]}",
+                paladin.SIGNATURE_DESCRIPTIONS[vow],
+            ),
+            (
+                paladin.AURA_NAMES[vow],
+                paladin.AURA_DESCRIPTIONS[vow],
+            ),
+            (
+                paladin.MARK_NAMES[vow],
+                paladin.MARK_DESCRIPTIONS[vow],
+            ),
+        )
+        for heading, description in sections:
+            y += 7
+            y = self._draw_text(
+                heading,
+                self.small_font,
+                self.colors.GOLD,
+                x,
+                y,
+                detail_rect.width - 40,
+            )
+            y += 2
+            y = self._draw_wrapped(
+                description,
+                self.small_font,
+                self.colors.GRAY,
+                x,
+                y,
+                detail_rect.width - 40,
+                max_lines=3,
+            )
 
         instructions = "UP/DOWN: Navigate   ENTER: Select   ESC: Cancel"
         instruction_surface = self.small_font.render(instructions, True, self.colors.GRAY)
@@ -346,7 +347,7 @@ class ChurchManager(TownScreenBase):
     
     def visit_church(self):
         """Visit the Church of Elysia."""
-        church_options = ["Promotion", "Save Game", "Quests"]
+        church_options = ["Save Game", "Quests"]
         if self._legacy_paladin_vow_available():
             church_options.append("Swear Paladin Vow")
         if self._crusader_vow_trial_available():
@@ -373,9 +374,6 @@ class ChurchManager(TownScreenBase):
                 popup = ConfirmationPopup(self.presenter, "Let the light of Elysia guide you.", show_buttons=False)
                 popup.show(**self.popup_show_kwargs())
                 break
-            
-            elif church_options[choice_idx] == "Promotion":
-                self.handle_promotion()
             
             elif church_options[choice_idx] == "Save Game":
                 self.save_game()
@@ -479,10 +477,11 @@ class ChurchManager(TownScreenBase):
                 self.player_char.mana.max,
                 getattr(self.player_char.mana, "current", 0) + mana_bonus,
             )
-        self.player_char.combat.attack += getattr(new_class, "att_plus", 0)
-        self.player_char.combat.defense += getattr(new_class, "def_plus", 0)
-        self.player_char.combat.magic += getattr(new_class, "magic_plus", 0)
-        self.player_char.combat.magic_def += getattr(new_class, "magic_def_plus", 0)
+        combat_bonuses = promotion_combat_bonuses(new_class)
+        self.player_char.combat.attack += combat_bonuses["attack"]
+        self.player_char.combat.defense += combat_bonuses["defense"]
+        self.player_char.combat.magic += combat_bonuses["magic"]
+        self.player_char.combat.magic_def += combat_bonuses["magic defense"]
 
     def _legacy_paladin_vow_available(self):
         return paladin.is_paladin_lineage(self.player_char) and not paladin.path(self.player_char)

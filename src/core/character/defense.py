@@ -40,16 +40,22 @@ class CharacterDefenseMixin:
             return 0, msg, False  # damage zeroed but hit still counts
 
         # Shield block
+        cross_block = ability_mechanics.cross_block_profile(defender)
         can_block = (
             (defender.equipment['OffHand'].subtyp == 'Shield' or
-             'Dodge' in defender.equipment['Ring'].mod) and
+             'Dodge' in defender.equipment['Ring'].mod or
+             cross_block is not None) and
             not defender.magic_effects["Mana Shield"].active and
             not (_class_name(defender) == "Crusader" and defender.power_up and
                  defender.class_effects["Power Up"].active) and
             not defender.incapacitated()
         )
         if can_block:
-            blk_chance = defender.check_mod('shield', enemy=self) / 100
+            blk_chance = (
+                cross_block[0]
+                if cross_block is not None
+                else defender.check_mod('shield', enemy=self) / 100
+            )
             try:
                 from ..classes import paladin
 
@@ -57,7 +63,16 @@ class CharacterDefenseMixin:
             except Exception:
                 pass
             if blk_chance > random.random():
-                blk_per = blk_chance + ((defender.stats.strength - self.stats.strength) / damage) if damage else 0
+                blk_per = (
+                    cross_block[1]
+                    if cross_block is not None
+                    else (
+                        blk_chance
+                        + ((defender.stats.strength - self.stats.strength) / damage)
+                        if damage
+                        else 0
+                    )
+                )
                 if 'Shield Block' in defender.spellbook['Skills']:
                     blk_per *= 1.25
                 try:
@@ -68,13 +83,15 @@ class CharacterDefenseMixin:
                     pass
                 if blk_per > 0:
                     blk_per = min(1, blk_per)
+                    incoming_damage = damage
                     damage = int(damage * (1 - blk_per))
+                    blocked_damage = max(0, incoming_damage - damage)
                     try:
                         from ..events.event_bus import get_event_bus, create_combat_event, EventType
                         event_bus = get_event_bus()
                         event_bus.emit(create_combat_event(
                             EventType.BLOCK, actor=defender, target=self,
-                            damage_blocked=int(raw_dmg * crit_per * blk_per),
+                            damage_blocked=blocked_damage,
                             **self._weapon_event_metadata(att),
                         ))
                     except Exception:
@@ -83,6 +100,33 @@ class CharacterDefenseMixin:
                     if blocked_pct > 0:
                         msg += (f"{defender.name} blocks {self.name}'s attack and mitigates "
                                 f"{blocked_pct} percent of the damage.\n")
+                        try:
+                            from ..classes import promotion_kits
+
+                            resolve_gain = max(
+                                5,
+                                min(15, blocked_damage // 5),
+                            )
+                            msg += promotion_kits.build_resolve(
+                                defender,
+                                resolve_gain,
+                                "a successful block",
+                            )
+                        except Exception:
+                            pass
+                    if (
+                        cross_block is not None
+                        and damage <= 0
+                        and getattr(self, "can_be_disarmed", lambda: False)()
+                    ):
+                        disarm = self.physical_effects["Disarm"]
+                        disarm.active = True
+                        disarm.duration = max(2, int(disarm.duration or 0))
+                        disarm.source = "Cross Block"
+                        msg += (
+                            f"{defender.name}'s Cross Block completely stops the "
+                            f"attack and disarms {self.name}.\n"
+                        )
                     msg += ability_mechanics.retaliate_after_block(defender, self)
                     try:
                         from ..classes import paladin
@@ -175,6 +219,8 @@ class CharacterDefenseMixin:
         self, defender: Character, damage: int, att: str, ignore: bool
     ) -> DamageReductionResult:
         """Apply resistance, armor, defensive stance, and astral shift reductions."""
+        from ..classes import ability_mechanics
+
         msg = ""
 
         # Elemental + physical resistance
@@ -204,7 +250,17 @@ class CharacterDefenseMixin:
             and defender.physical_effects.get("Bleed")
             and defender.physical_effects["Bleed"].active
         ):
-            bonus = max(1, int(damage * (BLEED_MELEE_DAMAGE_TAKEN_MULTIPLIER - 1.0)))
+            bleed_multiplier = ability_mechanics.pain_tolerance_bleed_multiplier(
+                defender,
+            )
+            bonus = max(
+                1,
+                int(
+                    damage
+                    * (BLEED_MELEE_DAMAGE_TAKEN_MULTIPLIER - 1.0)
+                    * bleed_multiplier
+                ),
+            )
             damage += bonus
             msg += f"{defender.name}'s bleeding leaves them vulnerable (+{bonus} damage).\n"
 
@@ -256,6 +312,23 @@ class CharacterDefenseMixin:
 
             damage, devotion_message = promotion_kits.devotion_guard_reduction(defender, damage)
             msg += devotion_message
+            damage, landing_message = promotion_kits.grounded_landing_reduction(
+                defender,
+                damage,
+            )
+            msg += landing_message
+        except Exception:
+            pass
+        try:
+            from ..classes import paladin
+
+            damage, shelter_message = paladin.oath_shelter_damage_reduction(
+                defender,
+                self,
+                damage,
+            )
+            msg += shelter_message
+            msg += paladin.resolve_oath_judgment_counter(defender, self)
         except Exception:
             pass
 
@@ -271,7 +344,15 @@ class CharacterDefenseMixin:
         msg += ".\n"
         return msg
 
-    def _apply_on_hit_effects(self, defender: Character, damage: int, crit: int, att: str = 'Weapon') -> str:
+    def _apply_on_hit_effects(
+        self,
+        defender: Character,
+        damage: int,
+        crit: int,
+        att: str = 'Weapon',
+        *,
+        damage_type_override: str | None = None,
+    ) -> str:
         """Apply post-damage triggers: Maelstrom tracking, sleep wakeup, life steal."""
         msg = ""
 
@@ -282,8 +363,8 @@ class CharacterDefenseMixin:
             self.maelstrom_hits += 1
 
         # Emit damage event
-        damage_type = "Physical"
-        if self.equipment[att].element:
+        damage_type = damage_type_override or "Physical"
+        if damage_type_override is None and self.equipment[att].element:
             damage_type = self.equipment[att].element
         self._emit_damage_event(
             defender,
@@ -484,6 +565,24 @@ class CharacterDefenseMixin:
 
             final_damage, devotion_message = promotion_kits.devotion_guard_reduction(self, final_damage)
             message += devotion_message
+            final_damage, landing_message = promotion_kits.grounded_landing_reduction(
+                self,
+                final_damage,
+            )
+            message += landing_message
+        except Exception:
+            pass
+        try:
+            from ..classes import paladin
+
+            final_damage, shelter_message = (
+                paladin.oath_shelter_damage_reduction(
+                    self,
+                    attacker,
+                    final_damage,
+                )
+            )
+            message += shelter_message
         except Exception:
             pass
 

@@ -3,12 +3,9 @@ Level Up GUI for Pygame.
 Displays level up bonuses and allows stat selection.
 """
 
-import random
-
 import pygame
 
 from .level_up_popup import LevelUpPopup
-from .stat_selection_popup import StatSelectionPopup
 
 
 def _upgrade_source_name(ability_cls) -> str | None:
@@ -75,14 +72,63 @@ class LevelUpScreen:
             require_key_release=True,
         )
         
-        # Handle stat selection every 4 levels
-        if player_char.level.level % 4 == 0:
-            self._select_stat_increase(player_char)
-        
         return level_info
     
     def _calculate_level_up(self, player_char):
         """Calculate all level up bonuses."""
+        from src.core.progression import (
+            award_experience,
+            cumulative_experience_for_level,
+            ensure_progression,
+        )
+
+        result = getattr(player_char, "_pending_level_up_result", None)
+        if result is not None:
+            player_char._pending_level_up_result = None
+        else:
+            state = ensure_progression(player_char)
+            if state.level >= 100:
+                growth = ()
+                points_awarded = 0
+                attribute_points_awarded = 0
+            else:
+                target_xp = cumulative_experience_for_level(state.level + 1)
+                result = award_experience(
+                    player_char,
+                    max(0, target_xp - state.total_xp),
+                )
+                growth = result.growth
+                points_awarded = result.points_awarded
+                attribute_points_awarded = result.attribute_points_awarded
+        if result is not None:
+            growth = result.growth
+            points_awarded = result.points_awarded
+            attribute_points_awarded = result.attribute_points_awarded
+        point_messages = []
+        if points_awarded:
+            point_messages.append(
+                f"+{points_awarded} progression point"
+                f"{'s' if points_awarded != 1 else ''}"
+            )
+        if attribute_points_awarded:
+            point_messages.append(
+                f"+{attribute_points_awarded} attribute point"
+                f"{'s' if attribute_points_awarded != 1 else ''}"
+            )
+        return {
+            "new_level": player_char.level.level,
+            "health_gain": sum(item.health for item in growth),
+            "mana_gain": sum(item.mana for item in growth),
+            "attack_gain": sum(item.attack for item in growth),
+            "defense_gain": sum(item.defense for item in growth),
+            "magic_gain": sum(item.magic for item in growth),
+            "magic_def_gain": sum(item.magic_defense for item in growth),
+            "new_abilities": point_messages,
+            "spell_upgrades": [],
+            "skill_upgrades": [],
+        }
+
+        # The point service above owns all current leveling behavior.
         from src.core import abilities
         
         dv = max(1, 5 - player_char.check_mod('luck', luck_factor=8))
@@ -202,20 +248,6 @@ class LevelUpScreen:
                 if new_max > old_max:
                     new_abilities.append(f"Jump: Can now equip {new_max} modifications (was {old_max})")
             
-            # Check for newly unlocked modifications
-            newly_unlocked = []
-            if hasattr(jump_skill, "check_and_unlock_level_modifications"):
-                newly_unlocked = jump_skill.check_and_unlock_level_modifications(
-                    player_char.level.level, player_char.cls.name
-                )
-            elif hasattr(jump_skill, "check_and_unlock_level_modification"):
-                newly_unlocked = jump_skill.check_and_unlock_level_modification(
-                    player_char.level.level, player_char.cls.name
-                )
-            if newly_unlocked:
-                for mod_name in newly_unlocked:
-                    new_abilities.append(f"Jump Modification: {mod_name}")
-
         # Unlock Totem aspects (Shaman)
         totem_skill = None
         skills = player_char.spellbook.get("Skills", {})

@@ -328,46 +328,12 @@ class TestPlayerTopLevelHelpers:
 
 
 class TestPlayerProgressionAndMenus:
-    def test_level_up_adds_spell_skill_jump_totem_and_stat_choice(self, monkeypatch):
+    def test_level_up_awards_a_point_without_abilities_or_stat_choice(self, monkeypatch):
         player = TestGameState.create_player(class_name="Warrior", race_name="Human", level=3)
         player.to_town()
         player.health.current = 1
         player.mana.current = 1
         player.check_mod = lambda mod, enemy=None, typ=None, luck_factor=1, **_kwargs: 0
-
-        class BaseSpell:
-            def __init__(self):
-                self.name = "Old Flare"
-                self.passive = False
-                self.cost = 0
-
-        class DummySpell(BaseSpell):
-            def __init__(self):
-                super().__init__()
-                self.name = "Flare"
-
-        class BaseSkill:
-            def __init__(self):
-                self.name = "Old Totem"
-                self.passive = False
-                self.cost = 0
-
-        class DummyTotem(BaseSkill):
-            def __init__(self):
-                super().__init__()
-                self.name = "Totem"
-
-            def check_and_unlock_aspects(self, _level):
-                return ["Soul", "Storm"]
-
-        jump_unlocks = []
-        player.spellbook["Skills"]["Jump"] = SimpleNamespace(
-            name="Jump",
-            check_and_unlock_level_modifications=lambda level, cls_name: jump_unlocks.append((level, cls_name)) or ["Dive"],
-        )
-
-        monkeypatch.setattr(player_module.abilities, "spell_dict", {"Warrior": {"4": DummySpell}})
-        monkeypatch.setattr(player_module.abilities, "skill_dict", {"Warrior": {"4": DummyTotem}})
         rolls = iter([5, 4, 2, 1, 3, 1])
         monkeypatch.setattr(player_module.random, "randint", lambda _a, _b: next(rolls))
 
@@ -375,29 +341,25 @@ class TestPlayerProgressionAndMenus:
         getch_calls = []
         game = SimpleNamespace(stdscr=SimpleNamespace(getch=lambda: getch_calls.append(True)))
 
-        old_exp_to_gain = player.level.exp_to_gain
         old_strength = player.stats.strength
+        old_spells = dict(player.spellbook["Spells"])
+        old_skills = dict(player.spellbook["Skills"])
+        old_points = player.progression.unspent_points
         player.level_up(game=game, textbox=textbox, menu=_menu_choice(0))
 
         joined_messages = "\n".join(textbox.messages)
         assert player.level.level == 4
         assert player.health.current == player.health.max
         assert player.mana.current == player.mana.max
-        assert player.stats.strength == old_strength + 1
-        assert player.level.exp_to_gain > old_exp_to_gain
-        assert "Flare" in player.spellbook["Spells"]
-        assert "Totem" in player.spellbook["Skills"]
-        assert "gained the ability to cast Flare" in joined_messages
-        assert "gained the ability to use Totem" in joined_messages
-        assert "New Jump modifications unlocked: Dive." in joined_messages
-        assert "Totem aspects unlocked: Soul, Storm." in joined_messages
-        assert "New Totem aspects unlocked: Soul, Storm." in joined_messages
-        assert "strength" in textbox.messages[-1].lower()
-        assert jump_unlocks == [(4, "Warrior")]
-        assert textbox.clear_count == 2
-        assert len(getch_calls) == 2
+        assert player.stats.strength == old_strength
+        assert player.spellbook["Spells"] == old_spells
+        assert player.spellbook["Skills"] == old_skills
+        assert player.progression.unspent_points == old_points + 1
+        assert "+1 progression point" in joined_messages
+        assert textbox.clear_count == 1
+        assert len(getch_calls) == 1
 
-    def test_level_up_handles_upgrades_and_skill_side_effect_branches(self, monkeypatch):
+    def test_level_up_does_not_apply_catalog_upgrades_automatically(self, monkeypatch):
         player = TestGameState.create_player(class_name="Warrior", race_name="Human", level=1)
         player.check_mod = lambda mod, enemy=None, typ=None, luck_factor=1, **_kwargs: 0
 
@@ -437,15 +399,14 @@ class TestPlayerProgressionAndMenus:
         player.level_up(game=game, textbox=textbox)
 
         joined_messages = "\n".join(textbox.messages)
-        assert "Spark" not in player.spellbook["Spells"]
-        assert "Spark II" in player.spellbook["Spells"]
-        assert "True Strike" not in player.spellbook["Skills"]
-        assert "Piercing Strike" not in player.spellbook["Skills"]
-        assert "True Piercing Strike" in player.spellbook["Skills"]
-        assert "Spark is upgraded to Spark II." in joined_messages
-        assert "True Strike is upgraded to True Piercing Strike." in joined_messages
+        assert "Spark" in player.spellbook["Spells"]
+        assert "Spark II" not in player.spellbook["Spells"]
+        assert "True Strike" in player.spellbook["Skills"]
+        assert "Piercing Strike" in player.spellbook["Skills"]
+        assert "True Piercing Strike" not in player.spellbook["Skills"]
+        assert "progression point" in joined_messages
 
-    def test_level_up_transform_and_drain_skill_paths(self, monkeypatch):
+    def test_level_up_does_not_trigger_catalog_skill_side_effects(self, monkeypatch):
         player = TestGameState.create_player(class_name="Warrior", race_name="Human", level=1)
         player.check_mod = lambda mod, enemy=None, typ=None, luck_factor=1, **_kwargs: 0
 
@@ -470,7 +431,7 @@ class TestPlayerProgressionAndMenus:
         textbox = RecordingTextBox()
         game = SimpleNamespace(stdscr=SimpleNamespace(getch=lambda: None))
         player.level_up(game=game, textbox=textbox)
-        assert "Wild shape awakened." in textbox.messages[0]
+        assert "Wild shape awakened." not in textbox.messages[0]
 
         drain_player = TestGameState.create_player(class_name="Warrior", race_name="Human", level=1)
         drain_player.check_mod = lambda mod, enemy=None, typ=None, luck_factor=1, **_kwargs: 0
@@ -491,11 +452,11 @@ class TestPlayerProgressionAndMenus:
         monkeypatch.setattr(player_module.abilities, "skill_dict", {"Warrior": {"2": DrainFusion}})
         drain_player.level_up()
 
-        assert "Health Drain" not in drain_player.spellbook["Skills"]
-        assert "Mana Drain" not in drain_player.spellbook["Skills"]
-        assert "Health/Mana Drain" in drain_player.spellbook["Skills"]
+        assert "Health Drain" in drain_player.spellbook["Skills"]
+        assert "Mana Drain" in drain_player.spellbook["Skills"]
+        assert "Health/Mana Drain" not in drain_player.spellbook["Skills"]
 
-    def test_level_up_handles_non_named_parent_ability(self, monkeypatch):
+    def test_level_up_ignores_catalog_entries_until_purchased(self, monkeypatch):
         player = TestGameState.create_player(class_name="Warrior", race_name="Human", level=1)
         player.check_mod = lambda mod, enemy=None, typ=None, luck_factor=1, **_kwargs: 0
 
@@ -513,8 +474,8 @@ class TestPlayerProgressionAndMenus:
         player.level_up(game=game, textbox=textbox)
 
         joined_messages = "\n".join(textbox.messages)
-        assert "You have gained the ability to cast Sunburst." in joined_messages
-        assert "Sunburst" in player.spellbook["Spells"]
+        assert "You have gained the ability to cast Sunburst." not in joined_messages
+        assert "Sunburst" not in player.spellbook["Spells"]
 
     def test_inventory_and_screen_helpers_cover_errors_and_navigation(self):
         player = TestGameState.create_player(class_name="Warrior", race_name="Human")
@@ -763,4 +724,4 @@ class TestPlayerProgressionAndMenus:
             "Infinitas": [items.Relic6()],
         }
         assert player.has_relics() is True
-        assert player.level_exp() == (player.exp_scale ** player.level.pro_level) * player.level.level
+        assert player.level_exp() == 1137

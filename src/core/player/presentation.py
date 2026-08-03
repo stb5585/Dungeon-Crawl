@@ -59,6 +59,10 @@ class PlayerPresentationMixin:
             character_options.append(actions_dict.get("TotemAspects"))
             options.append("Totem Aspects")
 
+        if ui_factory and callable(ui_factory.get("Progression")):
+            character_options.append("Progression")
+            options.append("Progression")
+
         character_options.extend(["Exit Menu", actions_dict.get('Quit')])
         options.extend(["Exit Menu", "Quit Game"])
         menu.set_options(options)
@@ -68,6 +72,11 @@ class PlayerPresentationMixin:
             action = character_options[character_idx]
             if action == "Exit Menu":
                 break
+            if action == "Progression":
+                ui_factory["Progression"]()
+                menu.draw_all()
+                menu.refresh_all()
+                continue
             if action is None and textbox:
                 textbox.print_text_in_rectangle("Your class does not have a special menu.\n")
             elif isinstance(action, dict) and 'method' in action:

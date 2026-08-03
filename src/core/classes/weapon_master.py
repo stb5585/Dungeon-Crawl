@@ -10,7 +10,7 @@ class WeaponMaster(Job):
     Promotion: Warrior -> Weapon Master -> Berserker
                                         |
                                         -> Grandmaster of Arms
-    Pros: Can dual wield some one handed weapons; higher dexterity gain
+    Pros: Can specialize in dual wielding or one-handed dueling; higher dexterity gain
     Cons: Cannot use shields or heavy armor; lower constitution gain
     Special Mechanic: Weapon Discipline - gain proficiency with weapon types in worthy battles.
     """
@@ -18,11 +18,11 @@ class WeaponMaster(Job):
     def __init__(self):
         super().__init__(
             name="Weapon Master",
-            description="Weapon Masters focus on the mastery of weapons and their"
-            " skill with them. They can equip many weapons and learn "
-            "the ability to dual wield one-handed weapons. Since Weapon"
-            " Masters rely on agility, they lose the ability to "
-            "wear heavy armor and shields.",
+            description="Weapon Masters focus on disciplined weapon technique. "
+            "They can pursue forceful two-handed attacks, specialize in "
+            "dual wielding, or perfect one-handed dueling. Since Weapon "
+            "Masters rely on agility, they lose the ability to wear heavy "
+            "armor and shields.",
             str_plus=2,
             int_plus=1,
             wis_plus=0,
@@ -44,7 +44,8 @@ class WeaponMaster(Job):
                     "Polearm",
                     "Hammer",
                 ],
-                "OffHand": ["Fist", "Dagger", "Sword", "Club"],
+                # Off-hand weapons are unlocked by the Dual Wield tree node.
+                "OffHand": [],
                 "Armor": ["Light", "Medium"],
             },
             pro_level=2,

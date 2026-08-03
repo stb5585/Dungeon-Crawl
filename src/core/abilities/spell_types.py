@@ -48,6 +48,19 @@ class Attack(Spell):
         if any([target.magic_effects["Ice Block"].active, target.tunnel]):
             return "It has no effect.\n"
         reflect = target.magic_effects["Reflect"].active
+        if not reflect:
+            try:
+                from ..classes import promotion_kits
+
+                reflection_message = promotion_kits.consume_spell_reflection(
+                    target,
+                    self.name,
+                    spell=self,
+                )
+                reflect = bool(reflection_message)
+                cast_message += reflection_message
+            except Exception:
+                pass
         spell_mod = caster.check_mod("magic", enemy=target)
         dodge = target.dodge_chance(caster, spell=True)
         hit = caster.hit_chance(target, typ="magic")
@@ -588,6 +601,132 @@ class ResistEarth(_ResistElement):
 
 class ResistWind(_ResistElement):
     def __init__(self): super().__init__("Resist Wind", "Wind")
+
+
+class ResistShadow(Spell):
+    """Long-lived exploration ward against Shadow damage."""
+
+    exploration_cast = True
+
+    def __init__(self):
+        super().__init__(
+            "Resist Shadow",
+            (
+                "Increase Shadow resistance outside battle for 100 steps of "
+                "game time."
+            ),
+            school="Abjuration",
+        )
+        self.cost = 15
+        self.combat = False
+        self.subtyp = "Support"
+
+    def cast(
+        self,
+        user: Character,
+        target: Character | None = None,
+        **kwargs: Any,
+    ) -> str:
+        return "Resist Shadow must be cast outside battle.\n"
+
+    def cast_out(self, game_or_user) -> str:
+        from ..classes import ability_mechanics
+
+        user = getattr(game_or_user, "player_char", game_or_user)
+        if user.mana.current < self.cost:
+            return f"{user.name} does not have enough mana to cast Resist Shadow.\n"
+        user.mana.current -= self.cost
+        ability_mechanics.apply_exploration_effect(
+            user,
+            "resist_shadow",
+            100,
+        )
+        return (
+            f"{user.name} gains 50% Shadow resistance for 100 steps of "
+            "game time.\n"
+        )
+
+
+class HallowedGround(Spell):
+    """Three-turn holy field that harms foes and restores its caster."""
+
+    def __init__(self):
+        super().__init__(
+            "Hallowed Ground",
+            (
+                "The ground around you glows with sacred light, damaging "
+                "nearby enemies and healing you for 3 turns."
+            ),
+            school="Holy",
+        )
+        self.cost = 20
+        self.subtyp = "Holy"
+
+    @staticmethod
+    def _apply_field(target: Character, *, mode: str, amount: int) -> None:
+        effect = target.magic_effects["Hallowed Ground"]
+        effect.active = True
+        effect.duration = max(3, int(effect.duration or 0))
+        prior = effect.extra if isinstance(effect.extra, dict) else {}
+        effect.extra = {
+            "mode": mode,
+            "amount": max(amount, int(prior.get("amount", 0) or 0)),
+        }
+        effect.source = "Hallowed Ground"
+
+    def cast(
+        self,
+        user: Character,
+        target: Character | None = None,
+        **kwargs: Any,
+    ) -> str:
+        super().cast(user, target, **kwargs)
+        user.mana.current -= self.cost
+        targets = list(kwargs.get("targets") or ())
+        if target is not None:
+            targets.append(target)
+        unique_targets = []
+        seen = set()
+        for candidate in targets:
+            if candidate is None or candidate is user or id(candidate) in seen:
+                continue
+            seen.add(id(candidate))
+            unique_targets.append(candidate)
+        if not unique_targets:
+            return "There are no nearby enemies to consecrate.\n"
+
+        for enemy in unique_targets:
+            raw_damage = max(
+                1,
+                int(user.check_mod("magic", enemy=enemy) * 0.5),
+            )
+            resistance = float(enemy.check_mod("resist", typ="Holy"))
+            damage = max(1, int(raw_damage * (1.0 - resistance)))
+            self._apply_field(enemy, mode="damage", amount=damage)
+            user._emit_status_event(
+                enemy,
+                "Hallowed Ground",
+                applied=True,
+                duration=3,
+                source=self.name,
+            )
+
+        healing = max(
+            1,
+            int(user.health.max * 0.05) + user.check_mod("heal") // 10,
+        )
+        self._apply_field(user, mode="healing", amount=healing)
+        user._emit_status_event(
+            user,
+            "Hallowed Ground",
+            applied=True,
+            duration=3,
+            source=self.name,
+        )
+        names = ", ".join(enemy.name for enemy in unique_targets)
+        return (
+            f"{user.name} hallows the ground beneath {names} for 3 turns.\n"
+        )
 
 
 class Corruption2(Spell):

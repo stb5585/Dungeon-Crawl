@@ -812,24 +812,39 @@ awakened `Vow Affirmation` smoothing the loop without erasing mark drawbacks.
 - Oath Conviction storage: add no persistent save field. Store Conviction as
   transient combat state, not persistent `paladin_vow` data. Clear on combat
   end, flee, death, save/load restore, class change, or invalid/missing vow.
-  Paladin caps at `2`; Crusader caps at `3`.
-- Conviction flow: if Conviction exists at action start, the next matching vow
-  action spends all stacks before resolving. After resolution, valid vow action
-  attempts gain `+1`; clean defining outcomes gain another `+1`, capped.
+  Base caps are Paladin `2` and Crusader `3`; required Tempered Conviction
+  raises their effective inherited caps to `3` and `4`.
+- Conviction flow: a valid `Redeem`, `Challenge`, `Interpose`, or `Judgment Riposte`
+  use grants one stack. Its clean defining outcome grants one
+  additional stack. Signature actions generate and never automatically spend.
+- `Blessed Light`: this level-55 Paladin passive turns a successful
+  healing-spell cast during combat into `+10 Attack` for three turns. Repeated
+  healing refreshes the duration instead of stacking; out-of-combat and
+  zero-healing casts do not trigger it.
 - Clean outcomes: successful `Redeem`, defeating a challenged or bounty foe for
   `Challenge`, successful guarded block for `Interpose`, and triggered
   `Judgment Riposte`.
-- Vow-specific spend riders: `Redeem` gains `+5` percentage points mercy chance
-  per stack, and successful mercy gains `+5%` XP/gold per stack while still
-  granting no loot/kill/bounty credit. `Challenge` improves challenged-foe
-  pressure by `+5%` accuracy/damage per stack for the challenge duration.
-  `Interpose` improves the next guarded block by `+5` percentage points block
-  chance and `+5%` mitigation per stack. `Judgment Riposte` gains `+10%` Holy
-  counter damage per stack plus modest reliability or crit pressure, while
-  respecting boss/immunity boundaries.
+- `Oath's Judgment`: requires one stack, costs no MP, works under Silence, and
+  spends all stacks after weapon, target, vow, and shield validation. A miss
+  still spends. Redemption is a `0.9x` Holy strike with `+3` accuracy and `5%`
+  maximum-HP healing per stack. Conquest is `1.0x + 0.15x` damage and `+5`
+  accuracy per stack. Protection requires a shield, strikes at `0.75x`, lowers
+  Attack by two per stack, and grants ten barrier per stack. Retribution is a
+  `1.0x` Holy strike with `+3` accuracy per stack and prepares a `0.25x`
+  per-stack Holy counter.
+- `Oath's Shelter`: also spends all stacks after validation and works under
+  Silence. Redemption heals `10%` maximum HP per stack and cleanses Poison at
+  two. Conquest grants three Attack and Speed per stack. Protection grants 15
+  barrier and five percentage points of block and mitigation per stack.
+  Retribution reduces the next damaging hit by `8%` per stack and returns the
+  prevented amount as Holy damage.
+- Crusader talents: Righteous Advance adds `0.10x` direct Judgment damage and
+  improves every vow rider by `25%`. Consecrated Bulwark adds one turn to
+  Shelter effects and improves healing, barriers, mitigation, reflection, and
+  rating values by `25%`.
 - `Vow Affirmation`: keep current aura benefits at `1.5x` and mark
   penalties/durations at `0.5x`. While awakened/equipped, after a clean
-  matching empowered vow payoff, preserve `1` Conviction once per combat.
+  primary Judgment or Shelter effect, preserve `1` Conviction once per combat.
   Marks stay separate: Conviction never cleanses, shortens, or disables mark
   drawbacks.
 - UI text/surfaces: class/status text should show sworn vow, active aura/mark,
@@ -882,14 +897,20 @@ landing protection.
   polearm-and-shield legality, `Polearm Proficiency`, `Polearm Excellence`,
   `Zephyrstrike`, `Recover`, `Dragon's Fury`, `Skyfall`, Kaelenon restoration,
   `Draconite`, and `Draconite Pendant`.
-- Aerial Tempo storage: no persistent save state in V1. Lancer caps at `2`;
-  Dragoon caps at `3`. Gain `+1` when Jump resolves without being interrupted.
+- Aerial Tempo storage: no persistent save state in V1. Base caps are Lancer
+  `2` and Dragoon `3`; purchased and retained Aerial Footwork raises the
+  effective caps to `3` and `4`. Gain `+1` when Jump resolves without being
+  interrupted, hit or miss. Dragon's Ascent raises a clean Soaring Strike
+  landing to `+2`. Jump never consumes stored Tempo, permitting consecutive
+  landings.
   Clear on combat end, flee, death, save/load restore, class change, or after
   the next eligible follow-through action consumes it.
-- Automatic follow-through: the next standard weapon attack or weapon-tagged
-  polearm skill consumes all Aerial Tempo. Each stack adds a conservative
-  damage and accuracy push; Dragoon also gets a small control rider chance such
-  as brief Speed pressure. Misses consume Tempo but do not apply damage riders.
+- Automatic follow-through: the next standard attack or weapon-tagged skill
+  using a class-legal Sword or Polearm consumes all Aerial Tempo at action
+  start. Jump and Dragon Dive are excluded. Each stack grants `+6%` total
+  successful weapon damage and `+3` accuracy points. Compute the bonus once
+  from all successful weapon damage in the action; misses still consume.
+  Successful Dragoon payoffs reduce Speed by one per stack for two turns.
 - Jump modification scope: do not add persistent Jump mastery state or extra
   active Jump modification capacity in V1. Existing modification unlocks,
   conflicts, save/load, and execution rules remain intact.
@@ -897,9 +918,12 @@ landing protection.
   `Aerial Supremacy`. Preserve old `+1 Jump Mod` compatibility internally for
   legacy saves/tests, but the redesign should no longer grant extra active Jump
   modification capacity.
-- `Aerial Supremacy`: while the awakened ring is equipped, enhance the automatic
-  follow-through after Jump and grant a reduced landing shield under the same
-  identity, replacing separate `+1 Jump Mod` and `Meteor Guard` presentation.
+- `Aerial Supremacy`: while the awakened ring is equipped, each spent stack
+  grants `+8%` total weapon damage and `+4` accuracy points. A clean damaging
+  Jump creates a two-turn Landing Shield equal to 15% of actual Jump damage,
+  minimum one, refreshing to the larger value rather than stacking. The shield
+  absorbs real incoming damage. This replaces separate `+1 Jump Mod` and
+  `Meteor Guard` presentation.
 - UI text/surfaces: class/status text should show Aerial Tempo stacks, cap,
   and pending follow-through in combat/status surfaces. The pygame Character
   Menu manages Jump Mods inline from the `Aerial Tempo` tab rather than the
@@ -909,7 +933,8 @@ landing protection.
   legacy ring migration/display.
 - Tests: cover Aerial Tempo cap, clean-landing gain, no gain on interrupted
   Jump, follow-through consumption, miss behavior, combat-end/save-load
-  cleanup, Lancer cap `2`, Dragoon cap `3`, eligible follow-through action
+  cleanup, effective Lancer cap `3`, effective Dragoon cap `4`, eligible
+  follow-through action
   boundaries, Jump modification compatibility, `Aerial Supremacy` replacing
   extra mod capacity, legacy `+1 Jump Mod` compatibility, and unchanged
   Kaelenon/Recover/Dragon's Fury/Draconite behavior.
@@ -939,8 +964,10 @@ as the second-promotion identity.
   Surges. Normalize invalid or missing values on load and clamp to the current
   class cap.
 - Resolve gain: `Defend`, successful blocks, mitigated physical hits, and
-  shield-tactic actions such as `Goad` build Resolve. Log gains clearly and
-  report when Resolve is capped.
+  shield-tactic actions build Resolve. The locked values are Defend `10`;
+  successful block `clamp(damage blocked // 5, 5, 15)`; physical damage taken
+  after mitigation `max(1, damage // 5)`; and successful Goad or Hold the Line
+  `5`. There is one gain path per event.
 - Sentinel shield loop: add `Hold the Line`, a shield-required stance that
   improves block/mitigation and pressures the current enemy to engage.
   `Retaliate` remains the counter identity: successful blocks can trigger a
@@ -961,13 +988,28 @@ as the second-promotion identity.
   - `Deflect Spell`: spend Resolve with a shield equipped to raise Magic Defense
     and brace against hostile spell pressure without becoming a full anti-mage
     class.
+  - `Spell Reflection`: spend `25` Resolve with a shield to prepare for two
+    enemy spell opportunities. The first hostile, targeted, reflect-compatible
+    spell returns to its caster. Generic Reflect takes priority; beneficial,
+    area, and unreflectable spells do not consume the preparation.
 - Stalwart Defender mechanic: add `Resolve Surges` as full-bar ultimate-style
   shield payoffs. Stalwart keeps all Sentinel spends, but can also save the
   larger Resolve bar for a Surge.
 - Initial Surge set:
-  - `Citadel Aegis`: full-bar defensive barrier/major-hit answer.
-  - `Ironwall Reprisal`: full-bar retaliation/counter discharge.
-  - `Last Bastion`: full-bar survival/emergency recovery payoff.
+  - `Citadel Aegis`: mastery 0. Fortified Citadel raises its barrier from 100
+    to 125 and stance duration from three turns to four.
+  - `Ironwall Reprisal`: mastery 4. Crushing Reprisal raises damage from
+    `1.35x` to `1.60x` and lowers Attack and Speed by three for two turns.
+  - `Last Bastion`: mastery 8. Final Redoubt raises healing from `30%` to `40%`
+    maximum HP, barrier from 50 to 75, and stance from two turns to three.
+- Counter and wall talents: Watchful Reprisal grants `+20 Attack` and ten
+  percentage points of Retaliate chance. Resolute Guard grants `+20 Defense`
+  and adds five percentage points to Hold the Line block and mitigation.
+  Punishing Guard grants `+30 Attack` and raises Shield Riposte from `0.75x` to
+  `1.0x`. Unbroken Wall grants `+30 Defense`; during Last Stand it adds ten
+  block points and raises Resolve gains by `50%`. Mirror Bastion makes a
+  triggered Spell Reflection grant 20 Resolve and `+6 Magic Defense` for two
+  turns.
 - Surge unlock source: Resolve mastery progress from real combat behavior such
   as spending Resolve, blocking, mitigating hits, using `Hold the Line`, and
   other shield-tactic actions. Locked Surges are visible as grayed/question-mark

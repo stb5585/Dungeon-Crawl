@@ -1,0 +1,12 @@
+name: Driving Thrust
+type: Skill
+subtype: Offensive
+description: >-
+  Drive your weapon into the enemy, dealing greatly increased damage while
+  the target is stunned.
+cost: 7
+weapon: true
+damage_mod: 1.0
+target_status_damage_multiplier:
+  status: Stun
+  multiplier: 1.5

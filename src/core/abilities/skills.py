@@ -10,6 +10,7 @@ from .base import (
     Defensive,
     MartialArts,
     Offensive,
+    Skill,
     _load_yaml_ability,
 )
 
@@ -105,11 +106,537 @@ class Charge(Offensive):
         return _load_yaml_ability("charge.yaml", cls_name="Charge")
 
 
+class DrivingThrust:
+    """Data-driven thrust that exploits a stunned target."""
+
+    def __new__(cls):
+        return _load_yaml_ability("driving_thrust.yaml", cls_name="DrivingThrust")
+
+
+class Cripple(Skill):
+    """Damage a foe's weapon arm and temporarily reduce its melee damage."""
+
+    def __init__(self):
+        super().__init__(
+            "Cripple",
+            (
+                "Launch a less accurate attack against the target's main hand. "
+                "On hit, reduce its melee damage based on damage dealt."
+            ),
+            weapon=True,
+        )
+        self.cost = 6
+        self.subtyp = "Offensive"
+
+    def use(self, user, target=None, **kwargs):
+        result = super().use(user, target, **kwargs)
+        if target is None:
+            result.message = "Cripple needs a target.\n"
+            return result
+        if user.mana.current < self.cost:
+            result.message = f"{user.name} does not have enough mana to use Cripple.\n"
+            return result
+        if not getattr(target, "can_be_disarmed", lambda: False)():
+            result.message = f"{target.name} has no vulnerable main-hand weapon.\n"
+            return result
+
+        user.mana.current -= self.cost
+        before = int(target.health.current)
+        message, hit, crit = user.weapon_damage(
+            target,
+            dmg_mod=0.90,
+            use_offhand=False,
+            accuracy_modifier=-0.20,
+        )
+        damage = max(0, before - int(target.health.current))
+        result.hit = hit
+        result.crit = crit if crit > 1 else None
+        result.damage = damage
+        if hit:
+            effect = target.physical_effects["Cripple"]
+            effect.active = True
+            effect.duration = max(3, int(effect.duration or 0))
+            effect.extra = max(
+                float(effect.extra or 0),
+                min(0.50, max(0.05, damage / max(1, target.health.max))),
+            )
+            effect.source = self.name
+            message += (
+                f"{target.name}'s weapon arm is crippled, reducing melee "
+                f"damage by {round(effect.extra * 100)} percent.\n"
+            )
+        result.message = message
+        return result
+
+
+class DevastatingThrow(Skill):
+    """Throw the main-hand weapon for massive damage and become disarmed."""
+
+    def __init__(self):
+        super().__init__(
+            "Devastating Throw",
+            (
+                "Throw your main-hand weapon at the enemy for massive damage, "
+                "disarming yourself afterward."
+            ),
+            weapon=True,
+        )
+        self.cost = 15
+        self.subtyp = "Offensive"
+
+    def use(self, user, target=None, **kwargs):
+        result = super().use(user, target, **kwargs)
+        if target is None:
+            result.message = "Devastating Throw needs a target.\n"
+            return result
+        if user.mana.current < self.cost:
+            result.message = (
+                f"{user.name} does not have enough mana to use Devastating Throw.\n"
+            )
+            return result
+        if not getattr(user, "can_be_disarmed", lambda: False)():
+            result.message = f"{user.name} has no throwable main-hand weapon.\n"
+            return result
+
+        user.mana.current -= self.cost
+        before = int(target.health.current)
+        skills = getattr(user, "spellbook", {}).get("Skills", {})
+        if "Boomerang Toss" in skills:
+            messages: list[str] = []
+            hits: list[bool] = []
+            crits: list[int] = []
+            for _strike in range(3):
+                message, hit, crit = user.weapon_damage(
+                    target,
+                    dmg_mod=1.10,
+                    use_offhand=False,
+                )
+                messages.append(message)
+                hits.append(hit)
+                crits.append(crit)
+                if not target.is_alive():
+                    break
+            messages.append(
+                f"{user.name}'s weapon completes its arc and returns to hand.\n"
+            )
+            message = "".join(messages)
+            hit = any(hits)
+            crit = max(crits, default=1)
+        else:
+            message, hit, crit = user.weapon_damage(
+                target,
+                dmg_mod=2.50,
+                use_offhand=False,
+            )
+            disarm = user.physical_effects["Disarm"]
+            disarm.active = True
+            disarm.duration = -1
+            disarm.source = self.name
+            message += (
+                f"{user.name} is disarmed after throwing the main-hand weapon.\n"
+            )
+        result.hit = hit
+        result.crit = crit if crit > 1 else None
+        result.damage = max(0, before - int(target.health.current))
+        result.message = message
+        return result
+
+
+class Momentum(Skill):
+    """Chain two weapon hits into a combined dual-wield finisher."""
+
+    def __init__(self):
+        super().__init__(
+            "Momentum",
+            (
+                "Attack with both weapons. If both connect, finish with a "
+                "two-handed strike using their combined strength."
+            ),
+            weapon=True,
+        )
+        self.cost = 12
+        self.subtyp = "Offensive"
+
+    def use(self, user, target=None, **kwargs):
+        result = super().use(user, target, **kwargs)
+        if target is None:
+            result.message = "Momentum needs a target.\n"
+            return result
+        main = user.equipment.get("Weapon")
+        offhand = user.equipment.get("OffHand")
+        if (
+            getattr(main, "typ", None) != "Weapon"
+            or getattr(offhand, "typ", None) != "Weapon"
+        ):
+            result.message = "Momentum requires a weapon in each hand.\n"
+            return result
+        if user.mana.current < self.cost:
+            result.message = f"{user.name} does not have enough mana to use Momentum.\n"
+            return result
+
+        user.mana.current -= self.cost
+        before = int(target.health.current)
+        main_message, main_hit, main_crit = user.weapon_damage(
+            target,
+            use_offhand=False,
+            attack_slots=("Weapon",),
+        )
+        message = main_message
+        offhand_hit = False
+        offhand_crit = 1
+        if target.is_alive():
+            offhand_message, offhand_hit, offhand_crit = user.weapon_damage(
+                target,
+                use_offhand=True,
+                attack_slots=("OffHand",),
+            )
+            message += offhand_message
+        if main_hit and offhand_hit and target.is_alive():
+            main_strength = max(0, int(getattr(main, "damage", 0) or 0))
+            offhand_strength = max(0, int(getattr(offhand, "damage", 0) or 0))
+            baseline = max(1, main_strength + int(user.combat.attack))
+            combined = main_strength + offhand_strength + int(user.combat.attack)
+            finisher_message, _finisher_hit, finisher_crit = user.weapon_damage(
+                target,
+                dmg_mod=max(1.0, combined / baseline),
+                hit=True,
+                use_offhand=False,
+                attack_slots=("Weapon",),
+            )
+            message += f"{user.name}'s momentum becomes a two-handed finisher!\n"
+            message += finisher_message
+            offhand_crit = max(offhand_crit, finisher_crit)
+        result.hit = bool(main_hit or offhand_hit)
+        result.crit = max(main_crit, offhand_crit)
+        result.damage = max(0, before - int(target.health.current))
+        result.message = message
+        return result
+
+
+class Maim(Skill):
+    """Cripple upgrade that temporarily makes a foe's main hand unusable."""
+
+    replaces = "Cripple"
+
+    def __init__(self):
+        super().__init__(
+            "Maim",
+            (
+                "Target the foe's main hand, rendering it unusable. A critical "
+                "hit deals triple damage."
+            ),
+            weapon=True,
+        )
+        self.cost = 10
+        self.subtyp = "Offensive"
+
+    def use(self, user, target=None, **kwargs):
+        result = super().use(user, target, **kwargs)
+        if target is None:
+            result.message = "Maim needs a target.\n"
+            return result
+        if user.mana.current < self.cost:
+            result.message = f"{user.name} does not have enough mana to use Maim.\n"
+            return result
+        if not getattr(target, "can_be_disarmed", lambda: False)():
+            result.message = f"{target.name} has no main hand that can be maimed.\n"
+            return result
+
+        user.mana.current -= self.cost
+        before = int(target.health.current)
+        message, hit, crit = user.weapon_damage(
+            target,
+            use_offhand=False,
+            critical_multiplier=3,
+        )
+        result.hit = hit
+        result.crit = crit if crit > 1 else None
+        result.damage = max(0, before - int(target.health.current))
+        if hit:
+            effect = target.physical_effects["Maim"]
+            effect.active = True
+            effect.duration = max(3, int(effect.duration or 0))
+            effect.source = self.name
+            message += f"{target.name}'s main hand is maimed and unusable.\n"
+        result.message = message
+        return result
+
+
 class _PassiveSkill(Class):
     def __init__(self, name: str, description: str) -> None:
         super().__init__(name=name, description=description)
         self.passive = True
         self.cost = 0
+
+
+class DualWield(_PassiveSkill):
+    """Unlock one-handed weapons in the off-hand slot."""
+
+    def __init__(self):
+        super().__init__(
+            name="Dual Wield",
+            description=(
+                "Passive: Equip a fist weapon, dagger, sword, or club in the "
+                "off-hand slot."
+            ),
+        )
+
+
+class Duelist(_PassiveSkill):
+    """Reward fighting with one one-handed weapon and an empty off hand."""
+
+    def __init__(self):
+        super().__init__(
+            "Duelist",
+            (
+                "Passive: Gain accuracy, critical chance, and melee damage while "
+                "wielding a one-handed weapon without a shield."
+            ),
+        )
+
+
+class CrossBlock(_PassiveSkill):
+    """Let a dual wielder cross weapons to block attacks."""
+
+    def __init__(self):
+        super().__init__(
+            "Cross Block",
+            (
+                "Passive: Cross two weapons to block attacks. A complete block "
+                "can disarm the attacker."
+            ),
+        )
+
+
+class BlindFighting(_PassiveSkill):
+    """Reduce both the application chance and accuracy penalty of Blind."""
+
+    def __init__(self):
+        super().__init__(
+            "Blind Fighting",
+            (
+                "Passive: Reduce Blind's accuracy penalty and make Blind less "
+                "likely to be inflicted."
+            ),
+        )
+
+
+class Retort(_PassiveSkill):
+    """Use Intelligence to improve Parry chance and counter damage."""
+
+    def __init__(self):
+        super().__init__(
+            "Retort",
+            (
+                "Passive: Add your Intelligence modifier to Parry chance and "
+                "counterattack damage."
+            ),
+        )
+
+
+class TwoHandedWeaponProficiency(_PassiveSkill):
+    """Improve attacks made with two-handed weapons."""
+
+    def __init__(self):
+        super().__init__(
+            "Two-Handed Weapon Proficiency",
+            "Passive: Increase accuracy and damage while wielding a two-handed weapon.",
+        )
+
+
+class SwordAndBoard(_PassiveSkill):
+    """Improve one-handed weapon attacks made while carrying a shield."""
+
+    def __init__(self):
+        super().__init__(
+            "Sword & Board",
+            (
+                "Passive: Gain accuracy and weapon damage while wielding a "
+                "one-handed weapon and a shield."
+            ),
+        )
+
+
+class BrutishStrength(_PassiveSkill):
+    """Scale critical damage with the equipped weapon discipline."""
+
+    def __init__(self):
+        super().__init__(
+            "Brutish Strength",
+            (
+                "Passive: Increase critical damage based on the equipped weapon's "
+                "discipline rank."
+            ),
+        )
+
+
+class BlessedLight(_PassiveSkill):
+    """Turn successful combat healing into a brief offensive blessing."""
+
+    def __init__(self):
+        super().__init__(
+            "Blessed Light",
+            (
+                "Passive: Successfully casting a healing spell in combat "
+                "grants +10 Attack for three turns."
+            ),
+        )
+
+
+class Frenzy(Skill):
+    """Enter a controlled three-turn Berserk state."""
+
+    def __init__(self):
+        super().__init__(
+            "Frenzy",
+            (
+                "Enter a controlled Berserk state for three turns. You can only "
+                "attack, but gain increased weapon damage and critical chance."
+            ),
+        )
+        self.cost = 10
+        self.subtyp = "Enhance"
+
+    def use(self, user, target=None, **kwargs):
+        result = super().use(user, user, **kwargs)
+        if user.mana.current < self.cost:
+            result.message = f"{user.name} does not have enough mana to use Frenzy.\n"
+            return result
+        user.mana.current -= self.cost
+        effect = user.status_effects["Berserk"]
+        effect.active = True
+        effect.duration = 3
+        effect.extra = 1
+        effect.source = self.name
+        result.message = (
+            f"{user.name} enters a controlled frenzy for three turns and can "
+            "only attack.\n"
+        )
+        return result
+
+
+class RecklessOnslaught(Skill):
+    """Trade mounting defense for offense with a parry vulnerability."""
+
+    replaces = "Final Assault"
+
+    def __init__(self):
+        super().__init__(
+            "Reckless Onslaught",
+            (
+                "Unleash an all-out attack for double weapon damage. Gain "
+                "stacking Attack Up and Defense Down; being parried knocks "
+                "you prone."
+            ),
+            weapon=True,
+        )
+        self.cost = 14
+        self.subtyp = "Offensive"
+
+    def use(self, user, target=None, **kwargs):
+        result = super().use(user, target, **kwargs)
+        if target is None:
+            result.message = "Reckless Onslaught needs a target.\n"
+            return result
+        if user.mana.current < self.cost:
+            result.message = (
+                f"{user.name} does not have enough mana to use "
+                "Reckless Onslaught.\n"
+            )
+            return result
+        if getattr(user.equipment.get("Weapon"), "typ", None) != "Weapon":
+            result.message = (
+                f"{user.name} needs a main-hand weapon to use "
+                "Reckless Onslaught.\n"
+            )
+            return result
+
+        user.mana.current -= self.cost
+        before = int(target.health.current)
+        message, hit, crit = user.weapon_damage(
+            target,
+            dmg_mod=2.0,
+            use_offhand=False,
+            attack_slots=("Weapon",),
+        )
+        for stat_name, modifier in (("Attack", 5), ("Defense", -5)):
+            effect = user.stat_effects[stat_name]
+            effect.extra = (
+                int(effect.extra or 0) + modifier
+                if effect.active
+                else modifier
+            )
+            effect.active = True
+            effect.duration = max(3, int(effect.duration or 0))
+            effect.source = self.name
+            result.effects_applied["Stat"].append(
+                f"{stat_name} {'Buff' if modifier > 0 else 'Debuff'}"
+            )
+        message += (
+            f"{user.name}'s attack rises as their defense falls.\n"
+        )
+        if getattr(user, "_last_attack_parried", False):
+            prone = user.physical_effects["Prone"]
+            prone.active = True
+            prone.duration = max(2, int(prone.duration or 0))
+            prone.source = self.name
+            result.effects_applied["Physical"].append("Prone")
+            message += f"{user.name} is knocked prone by the parry.\n"
+        result.hit = hit
+        result.crit = crit if crit > 1 else None
+        result.damage = max(0, before - int(target.health.current))
+        result.message = message
+        return result
+
+
+class PainTolerance(_PassiveSkill):
+    """Resist bleeding and gain more healing from bandages."""
+
+    def __init__(self):
+        super().__init__(
+            "Pain Tolerance",
+            (
+                "Passive: Halve bleed damage and its melee vulnerability. "
+                "Bandages heal twice as much as normal."
+            ),
+        )
+
+
+class HemorrhageThirst(_PassiveSkill):
+    """Feed on an enemy's bleeding at the risk of a bloodlust crash."""
+
+    def __init__(self):
+        super().__init__(
+            "Hemorrhage Thirst",
+            (
+                "Passive: Enemy bleed damage restores the same amount of "
+                "health. Triggering this on more than two consecutive turns "
+                "causes two turns of unconsciousness."
+            ),
+        )
+
+
+class BoomerangToss(_PassiveSkill):
+    """Return Devastating Throw after a multi-hit attack."""
+
+    def __init__(self):
+        super().__init__(
+            "Boomerang Toss",
+            (
+                "Passive: Devastating Throw hits three times and returns the "
+                "main-hand weapon instead of disarming you."
+            ),
+        )
+
+
+class WeaponFocus(_PassiveSkill):
+    """Warrior passive that improves weapon accuracy."""
+
+    def __init__(self):
+        super().__init__(
+            "Weapon Focus",
+            "Focused weapon practice increases weapon hit chance.",
+        )
 
 
 class MonkeyGrip(_PassiveSkill):
@@ -137,6 +664,8 @@ class PolearmProficiency(_PassiveSkill):
 
 
 class PolearmExcellence(_PassiveSkill):
+    replaces = "Polearm Proficiency"
+
     def __init__(self):
         super().__init__(
             "Polearm Excellence",
@@ -145,6 +674,8 @@ class PolearmExcellence(_PassiveSkill):
 
 
 class PolearmMastery(_PassiveSkill):
+    replaces = "Polearm Excellence"
+
     def __init__(self):
         super().__init__(
             "Polearm Mastery",
@@ -152,9 +683,128 @@ class PolearmMastery(_PassiveSkill):
         )
 
 
+class LanceSweep(Skill):
+    """Sweep a polearm across the target to suppress its speed."""
+
+    def __init__(self):
+        super().__init__(
+            "Lance Sweep",
+            (
+                "Sweep a polearm through the target for normal weapon damage, "
+                "reducing its Speed for two turns."
+            ),
+            weapon=True,
+        )
+        self.cost = 8
+        self.subtyp = "Offensive"
+
+    def use(self, user, target=None, **kwargs):
+        result = super().use(user, target, **kwargs)
+        if target is None:
+            result.message = "Lance Sweep needs a target.\n"
+            return result
+        weapon = user.equipment.get("Weapon")
+        if getattr(weapon, "subtyp", None) != "Polearm":
+            result.message = "Lance Sweep requires a main-hand polearm.\n"
+            return result
+        if user.mana.current < self.cost:
+            result.message = (
+                f"{user.name} does not have enough mana to use Lance Sweep.\n"
+            )
+            return result
+
+        user.mana.current -= self.cost
+        before = int(target.health.current)
+        message, hit, crit = user.weapon_damage(
+            target,
+            dmg_mod=1.0,
+            use_offhand=False,
+            attack_slots=("Weapon",),
+        )
+        result.hit = hit
+        result.crit = crit if crit > 1 else None
+        result.damage = max(0, before - int(target.health.current))
+        if hit:
+            speed = target.stat_effects["Speed"]
+            penalty = max(2, int(getattr(user.stats, "dex", 0) or 0) // 10)
+            speed.active = True
+            speed.duration = max(2, int(speed.duration or 0))
+            speed.extra = min(int(speed.extra or 0), -penalty)
+            message += (
+                f"{target.name}'s Speed falls by {penalty} for two turns.\n"
+            )
+        result.message = message
+        return result
+
+
+class DragonDive(Skill):
+    """Spend Aerial Tempo on a scaling aerial weapon strike."""
+
+    def __init__(self):
+        super().__init__(
+            "Dragon Dive",
+            (
+                "Consume all Aerial Tempo in a decisive aerial strike. Each "
+                "stack increases weapon damage and accuracy."
+            ),
+            weapon=True,
+        )
+        self.cost = 18
+        self.subtyp = "Offensive"
+
+    def use(self, user, target=None, **kwargs):
+        from ..classes import promotion_kits
+
+        result = super().use(user, target, **kwargs)
+        if target is None:
+            result.message = "Dragon Dive needs a target.\n"
+            return result
+        weapon = user.equipment.get("Weapon")
+        if getattr(weapon, "subtyp", None) not in {"Sword", "Polearm"}:
+            result.message = "Dragon Dive requires a main-hand Sword or Polearm.\n"
+            return result
+        stacks = promotion_kits.current_aerial_tempo(user)
+        if stacks <= 0:
+            result.message = "Dragon Dive requires Aerial Tempo.\n"
+            return result
+        if user.mana.current < self.cost:
+            result.message = (
+                f"{user.name} does not have enough mana to use Dragon Dive.\n"
+            )
+            return result
+
+        user.mana.current -= self.cost
+        stacks = promotion_kits.spend_aerial_tempo(user)
+        before = int(target.health.current)
+        message, hit, crit = user.weapon_damage(
+            target,
+            dmg_mod=1.25 + (0.25 * stacks),
+            use_offhand=False,
+            accuracy_modifier=0.05 * stacks,
+            attack_slots=("Weapon",),
+        )
+        result.hit = hit
+        result.crit = crit if crit > 1 else None
+        result.damage = max(0, before - int(target.health.current))
+        message = (
+            f"{user.name} spends {stacks} Aerial Tempo on Dragon Dive.\n"
+            f"{message}"
+        )
+        if not hit:
+            message += "Dragon Dive misses, but its Aerial Tempo is spent.\n"
+        result.message = message
+        return result
+
+
 class _WeaponArt(Class):
     def __init__(self, name: str, weapon_type: str, description: str):
-        super().__init__(name=name, description=f"Requires: {weapon_type}. {description}")
+        super().__init__(name=name, description=description)
+        art_level = (
+            int(name[-1])
+            if len(name) >= 2 and name[-2] == " " and name[-1] in {"2", "3"}
+            else 1
+        )
+        base_name = name[:-2] if art_level > 1 else name
         self.cost = {
             "Iron Palm": 6,
             "Hemorrhage": 7,
@@ -164,7 +814,9 @@ class _WeaponArt(Class):
             "Reaver's Mark": 9,
             "Brace": 8,
             "Anvil Strike": 10,
-        }.get(name, 0)
+        }.get(base_name, 0)
+        self.cost += 2 * (art_level - 1)
+        self.art_level = art_level
         self.weapon = True
         self.required_weapon_type = weapon_type
 
@@ -251,6 +903,182 @@ class AnvilStrike(_WeaponArt):
             "Anvil Strike",
             "Hammer",
             "A hammer discipline art that crushes defense and can suppress guard at mastery.",
+        )
+
+
+class IronPalm2(_WeaponArt):
+    replaces = "Iron Palm"
+
+    def __init__(self):
+        super().__init__(
+            "Iron Palm 2",
+            "Fist",
+            "A mastered palm strike with greater force and discipline scaling.",
+        )
+
+
+class Hemorrhage2(_WeaponArt):
+    replaces = "Hemorrhage"
+
+    def __init__(self):
+        super().__init__(
+            "Hemorrhage 2",
+            "Dagger",
+            "A mastered dagger cut with greater force before it opens a deep wound.",
+        )
+
+
+class RiposteLine2(_WeaponArt):
+    replaces = "Riposte Line"
+
+    def __init__(self):
+        super().__init__(
+            "Riposte Line 2",
+            "Sword",
+            "A mastered sword counter-line with greater damage and precision.",
+        )
+
+
+class LowSweep2(_WeaponArt):
+    replaces = "Low Sweep"
+
+    def __init__(self):
+        super().__init__(
+            "Low Sweep 2",
+            "Club",
+            "A mastered sweep with greater impact against the target's footing.",
+        )
+
+
+class GuardCleaver2(_WeaponArt):
+    replaces = "Guard Cleaver"
+
+    def __init__(self):
+        super().__init__(
+            "Guard Cleaver 2",
+            "Longsword",
+            "A mastered longsword blow with greater force against an enemy's guard.",
+        )
+
+
+class ReaversMark2(_WeaponArt):
+    replaces = "Reaver's Mark"
+
+    def __init__(self):
+        super().__init__(
+            "Reaver's Mark 2",
+            "Battle Axe",
+            "A mastered reaping strike that deepens the mark left on its target.",
+        )
+
+
+class Brace2(_WeaponArt):
+    replaces = "Brace"
+
+    def __init__(self):
+        super().__init__(
+            "Brace 2",
+            "Polearm",
+            "A mastered defensive brace with greater force behind its answering strike.",
+        )
+
+
+class AnvilStrike2(_WeaponArt):
+    replaces = "Anvil Strike"
+
+    def __init__(self):
+        super().__init__(
+            "Anvil Strike 2",
+            "Hammer",
+            "A mastered hammer blow with greater impact against armor and balance.",
+        )
+
+
+class IronPalm3(_WeaponArt):
+    replaces = "Iron Palm 2"
+
+    def __init__(self):
+        super().__init__(
+            "Iron Palm 3",
+            "Fist",
+            "A perfected palm strike backed by complete unarmed mastery.",
+        )
+
+
+class Hemorrhage3(_WeaponArt):
+    replaces = "Hemorrhage 2"
+
+    def __init__(self):
+        super().__init__(
+            "Hemorrhage 3",
+            "Dagger",
+            "A perfected dagger cut that opens a devastating wound.",
+        )
+
+
+class RiposteLine3(_WeaponArt):
+    replaces = "Riposte Line 2"
+
+    def __init__(self):
+        super().__init__(
+            "Riposte Line 3",
+            "Sword",
+            "A perfected sword counter-line with masterful precision.",
+        )
+
+
+class LowSweep3(_WeaponArt):
+    replaces = "Low Sweep 2"
+
+    def __init__(self):
+        super().__init__(
+            "Low Sweep 3",
+            "Club",
+            "A perfected sweep that overwhelms the target's footing.",
+        )
+
+
+class GuardCleaver3(_WeaponArt):
+    replaces = "Guard Cleaver 2"
+
+    def __init__(self):
+        super().__init__(
+            "Guard Cleaver 3",
+            "Longsword",
+            "A perfected longsword blow that tears through an enemy's guard.",
+        )
+
+
+class ReaversMark3(_WeaponArt):
+    replaces = "Reaver's Mark 2"
+
+    def __init__(self):
+        super().__init__(
+            "Reaver's Mark 3",
+            "Battle Axe",
+            "A perfected reaping strike that leaves an inescapable mark.",
+        )
+
+
+class Brace3(_WeaponArt):
+    replaces = "Brace 2"
+
+    def __init__(self):
+        super().__init__(
+            "Brace 3",
+            "Polearm",
+            "A perfected brace that turns defense into a masterful counter.",
+        )
+
+
+class AnvilStrike3(_WeaponArt):
+    replaces = "Anvil Strike 2"
+
+    def __init__(self):
+        super().__init__(
+            "Anvil Strike 3",
+            "Hammer",
+            "A perfected hammer blow that crushes armor and balance.",
         )
 
 
@@ -382,8 +1210,7 @@ class ShieldBlock(Defensive):
         super().__init__(
             name="Shield Block",
             description="You are much more proficient with a shield than most, "
-            "increasing the amount of damage blocked by 25% when using "
-            "a shield.",
+            "increasing the amount of damage blocked.",
         )
         self.passive = True
 

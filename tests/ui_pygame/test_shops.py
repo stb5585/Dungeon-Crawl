@@ -358,6 +358,19 @@ def test_visit_magic_shop_handles_buy_sell_and_leave(monkeypatch):
     assert FakeShopScreen.instances[0].location_portrait_name == "Seraphine Voss"
 
 
+def test_magic_shop_is_closed_until_level_three(monkeypatch):
+    manager = _manager(monkeypatch, level=2)
+    monkeypatch.setattr(shops, "ShopScreen", FakeShopScreen)
+    monkeypatch.setattr(shops, "ConfirmationPopup", FakePopup)
+    FakePopup.messages = []
+    instance_count = len(FakeShopScreen.instances)
+
+    manager.visit_magic_shop()
+
+    assert len(FakeShopScreen.instances) == instance_count
+    assert "level 3" in FakePopup.messages[-1][0]
+
+
 def test_visit_blacksmith_crafts_master_monk_ultimate_staff(monkeypatch):
     from src.core.classes.master_monk import MasterMonk
 

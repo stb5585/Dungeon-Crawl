@@ -43,6 +43,7 @@ DEFAULT_CHARACTER_TABS = (
     CharacterTab("character", "Character"),
     CharacterTab("class", "Class"),
     CharacterTab("equipment", "Equipment"),
+    CharacterTab("progression", "Progression"),
 )
 
 EQUIPMENT_SLOT_ORDER = ("Weapon", "Armor", "Helmet", "OffHand", "Ring", "Pendant")

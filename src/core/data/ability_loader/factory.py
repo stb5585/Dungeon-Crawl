@@ -277,6 +277,9 @@ class AbilityFactory:
                 ice_block_check=ability_data.get('ice_block_check', False),
                 self_target=ability_data.get('self_target', False),
                 use_out_enabled=ability_data.get('use_out_enabled', False),
+                target_status_damage_multiplier=ability_data.get(
+                    'target_status_damage_multiplier'
+                ),
             )
 
         # Stash raw data for inspection / analytics

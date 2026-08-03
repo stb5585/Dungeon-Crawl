@@ -155,6 +155,19 @@ class DataDrivenSpell(Spell):
 
         # ── 3. Reflect ──────────────────────────────────────────────
         reflect = target.magic_effects["Reflect"].active
+        if not reflect:
+            try:
+                from ...classes import promotion_kits
+
+                reflection_message = promotion_kits.consume_spell_reflection(
+                    target,
+                    self.name,
+                    spell=self,
+                )
+                reflect = bool(reflection_message)
+                msg += reflection_message
+            except Exception:
+                pass
 
         # ── 4. Dodge / hit rolls ────────────────────────────────────
         spell_mod = caster.check_mod("magic", enemy=target)

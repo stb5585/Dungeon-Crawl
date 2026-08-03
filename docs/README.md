@@ -37,6 +37,11 @@ only as historical context.
 
 ## Current Implementation References
 
+- [PROGRESSION_REFACTOR_CHECKPOINT.md](PROGRESSION_REFACTOR_CHECKPOINT.md) -
+  complete implementation record and pause boundary for the version-5 flat
+  progression and authored-tree refactor.
+- [ABILITY_TREE_DESIGN.md](ABILITY_TREE_DESIGN.md) - canonical authored tree
+  identities, Warrior-line graphs, ownership boundaries, and stable-ID rules.
 - [DUNGEON_TILE_ART.md](DUNGEON_TILE_ART.md) - dungeon texture manifest,
   decorative tile authoring, and render-asset rebuild notes.
 - [ENEMY_VISUAL_SYSTEM.md](ENEMY_VISUAL_SYSTEM.md) - enemy combat sprites,

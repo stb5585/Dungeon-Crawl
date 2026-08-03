@@ -372,8 +372,8 @@ def test_turn_in_handles_gold_collect_cleanup_and_levelup(monkeypatch):
     manager._turn_in("Collect Quest", "Main")
 
     assert player.gold == 30
-    assert player.level.exp == 10
-    assert FakeLevelUpScreen.calls == [10]
+    assert player.level.exp == 5
+    assert FakeLevelUpScreen.calls == []
     assert "QuestGem" not in player.inventory
     assert player.quest_dict["Main"]["Collect Quest"]["Turned In"] is True
     assert events == ["Collect Quest"]

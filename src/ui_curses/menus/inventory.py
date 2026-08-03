@@ -211,7 +211,20 @@ class EquipPopupMenu(PopupMenu):
                 return
             self.options_list = []
             for item in self.game.player_char.inventory.values():
-                if self.game.player_char.cls.equip_check(item[0], self.equip_type):
+                can_equip = getattr(
+                    self.game.player_char,
+                    "can_equip_item",
+                    None,
+                )
+                allowed = (
+                    can_equip(item[0], self.equip_type)
+                    if callable(can_equip)
+                    else self.game.player_char.cls.equip_check(
+                        item[0],
+                        self.equip_type,
+                    )
+                )
+                if allowed:
                     self.options_list.append(item[0].name)
             if self.game.player_char.equipment[self.equip_type] != self.game.player_char.unequip(self.equip_type):
                 self.options_list.append("Unequip")

@@ -1,21 +1,21 @@
-"""
-Promotion selection screen with the updated town aesthetic.
-Shows detailed class previews, stat changes, and equipment restrictions.
-"""
-
-import textwrap
+"""Promotion selection screen with detailed class-impact previews."""
 
 import pygame
 
 from src.core.classes import promotion_mechanic_details, promotion_mechanic_tab_label
+from src.core.progression import promotion_combat_bonuses
 
 from .confirmation_popup import ConfirmationPopup
 from .mouse_helpers import hit_index, is_left_click, mouse_position
-from .town_base import TownScreenBase
+from .town_base import TownScreenBase, wrap_text_to_pixel_width
 
 
 class PromotionScreen(TownScreenBase):
     """Promotion selection UI styled like the other town menus."""
+
+    MECHANIC_TEXT_COLOR = (105, 185, 225)
+    STAT_LABEL_COLOR = (210, 190, 145)
+    ZERO_DELTA_COLOR = (175, 185, 210)
 
     def __init__(self, presenter, player_char, options, option_map, current_class, pro_level):
         super().__init__(presenter)
@@ -36,30 +36,69 @@ class PromotionScreen(TownScreenBase):
         y = int(self.height * 0.14)
         return pygame.Rect(x, y, width, height)
 
-    def _wrap_lines(self, text, width):
+    def _wrap_lines(self, text, font, max_width):
+        """Wrap paragraphs to the available rendered width."""
         lines = []
         for paragraph in text.splitlines():
             if not paragraph.strip():
                 lines.append("")
                 continue
-            lines.extend(textwrap.wrap(paragraph, width, break_on_hyphens=False))
+            lines.extend(wrap_text_to_pixel_width(paragraph, font, max_width))
         return lines
+
+    def _restriction_changes(self, cls_instance):
+        """Return equipment allowances added or removed by a promotion."""
+        current_class = getattr(self.player_char, "cls", None)
+        current = getattr(current_class, "restrictions", {}) or {}
+        target = cls_instance.restrictions
+        changes = []
+        for slot in dict.fromkeys((*current, *target)):
+            current_allowed = list(current.get(slot, ()))
+            target_allowed = list(target.get(slot, ()))
+            gained = [
+                item_type
+                for item_type in target_allowed
+                if item_type not in current_allowed
+            ]
+            lost = [
+                item_type
+                for item_type in current_allowed
+                if item_type not in target_allowed
+            ]
+            if gained or lost:
+                changes.append((slot, gained, lost))
+        return changes
+
+    @staticmethod
+    def _restriction_change_text(slot, gained, lost):
+        """Describe changed equipment allowances without repeating unchanged ones."""
+        parts = []
+        if gained:
+            parts.append(f"allows {', '.join(gained)}")
+        if lost:
+            parts.append(f"no longer allows {', '.join(lost)}")
+        return f"{slot}: {'; '.join(parts)}"
 
     def _stat_pairs(self, cls_instance):
         pc = self.player_char
+        combat_bonuses = promotion_combat_bonuses(cls_instance)
         return [
             (("Strength", pc.stats.strength + cls_instance.str_plus, cls_instance.str_plus),
              ("Health", pc.health.max + (cls_instance.con_plus * 2), cls_instance.con_plus * 2)),
             (("Intelligence", pc.stats.intel + cls_instance.int_plus, cls_instance.int_plus),
              ("Mana", pc.mana.max + (cls_instance.int_plus * 2), cls_instance.int_plus * 2)),
             (("Wisdom", pc.stats.wisdom + cls_instance.wis_plus, cls_instance.wis_plus),
-             ("Attack", pc.combat.attack + cls_instance.att_plus, cls_instance.att_plus)),
+             ("Attack", pc.combat.attack + combat_bonuses["attack"], combat_bonuses["attack"])),
             (("Constitution", pc.stats.con + cls_instance.con_plus, cls_instance.con_plus),
-             ("Defense", pc.combat.defense + cls_instance.def_plus, cls_instance.def_plus)),
+             ("Defense", pc.combat.defense + combat_bonuses["defense"], combat_bonuses["defense"])),
             (("Charisma", pc.stats.charisma + cls_instance.cha_plus, cls_instance.cha_plus),
-             ("Magic", pc.combat.magic + cls_instance.magic_plus, cls_instance.magic_plus)),
+             ("Magic", pc.combat.magic + combat_bonuses["magic"], combat_bonuses["magic"])),
             (("Dexterity", pc.stats.dex + cls_instance.dex_plus, cls_instance.dex_plus),
-             ("Magic Defense", pc.combat.magic_def + cls_instance.magic_def_plus, cls_instance.magic_def_plus)),
+             (
+                 "Magic Defense",
+                 pc.combat.magic_def + combat_bonuses["magic defense"],
+                 combat_bonuses["magic defense"],
+             )),
         ]
 
     def _stat_delta_color(self, delta):
@@ -67,7 +106,7 @@ class PromotionScreen(TownScreenBase):
             return self.colors.GREEN
         if delta < 0:
             return self.colors.RED
-        return self.colors.GRAY
+        return self.ZERO_DELTA_COLOR
 
     def _draw_wrapped_lines(self, lines, font, color, x, y, line_height, *, max_y=None):
         for line in lines:
@@ -90,7 +129,11 @@ class PromotionScreen(TownScreenBase):
         for left, right in self._stat_pairs(cls_instance):
             for x, row in ((col1_x, left), (col2_x, right)):
                 label, value, delta = row
-                label_text = self.small_font.render(label, True, self.colors.GRAY)
+                label_text = self.small_font.render(
+                    label,
+                    True,
+                    self.STAT_LABEL_COLOR,
+                )
                 self.screen.blit(label_text, (x, y))
 
                 value_x = x + min(120, max(88, col_width // 2))
@@ -108,7 +151,7 @@ class PromotionScreen(TownScreenBase):
         self.draw_semi_transparent_panel(top_rect)
         pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, top_rect, 2)
 
-        title = self.normal_font.render("Church of Elysia - Promotion", True, self.colors.GOLD)
+        title = self.normal_font.render("Class Promotion", True, self.colors.GOLD)
         title_rect = title.get_rect(center=(self.width // 2, top_rect.centery - 12))
         self.screen.blit(title, title_rect)
 
@@ -183,14 +226,21 @@ class PromotionScreen(TownScreenBase):
         self.screen.blit(name_text, name_rect)
         y = name_rect.bottom + 8
 
-        desc_lines = self._wrap_lines(cls_instance.description, 92)
+        content_x = left_rect.left + 18
+        content_width = left_rect.right - content_x - 18
+        description = " ".join(cls_instance.description.splitlines())
+        desc_lines = self._wrap_lines(
+            description,
+            self.small_font,
+            content_width,
+        )
         line_height = self.small_font.get_height() + 4
         desc_start_y = y
         y = self._draw_wrapped_lines(
             desc_lines[:4],
             self.small_font,
             self.colors.WHITE,
-            left_rect.left + 18,
+            content_x,
             y,
             line_height,
         )
@@ -206,12 +256,16 @@ class PromotionScreen(TownScreenBase):
                 note = f"Character Menu: {mechanic_tab}"
             if mechanic_tab and mechanic_guidance:
                 note = f"{note} - {mechanic_guidance}"
-            note_lines = self._wrap_lines(note, 88)[:2]
+            note_lines = self._wrap_lines(
+                note,
+                self.small_font,
+                content_width,
+            )[:3]
             y = self._draw_wrapped_lines(
                 note_lines,
                 self.small_font,
-                self.colors.GRAY,
-                left_rect.left + 18,
+                self.MECHANIC_TEXT_COLOR,
+                content_x,
                 y,
                 line_height,
             )
@@ -225,11 +279,21 @@ class PromotionScreen(TownScreenBase):
 
         line_height = self.small_font.get_height() + 5
         max_restriction_y = left_rect.bottom - 48
-        for slot, allowed in cls_instance.restrictions.items():
-            if not allowed:
-                continue
-            line = f"{slot}: {', '.join(allowed)}"
-            for wrapped in self._wrap_lines(line, 80):
+        restriction_changes = self._restriction_changes(cls_instance)
+        if not restriction_changes:
+            restriction_changes = [
+                ("", ["No equipment restrictions change."], []),
+            ]
+        for slot, gained, lost in restriction_changes:
+            if slot:
+                line = self._restriction_change_text(slot, gained, lost)
+            else:
+                line = gained[0]
+            for wrapped in self._wrap_lines(
+                line,
+                self.small_font,
+                content_width - 10,
+            ):
                 if y + line_height > max_restriction_y:
                     break
                 text = self.small_font.render(wrapped, True, self.colors.WHITE)
@@ -237,7 +301,11 @@ class PromotionScreen(TownScreenBase):
                 y += line_height
 
         note = "Existing legal gear is kept; illegal gear moves to inventory."
-        note_lines = self._wrap_lines(note, 80)
+        note_lines = self._wrap_lines(
+            note,
+            self.small_font,
+            content_width - 10,
+        )
         note_y = left_rect.bottom - 18 - (len(note_lines) * line_height)
         for wrapped in note_lines:
             text = self.small_font.render(wrapped, True, self.colors.GRAY)

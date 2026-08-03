@@ -17,6 +17,7 @@ from types import SimpleNamespace
 sys.path.insert(0, str(Path(__file__).parents[2]))
 
 from src.core import abilities, items
+from src.core.progression import ensure_progression
 from tests.test_framework import TestGameState
 
 
@@ -229,6 +230,22 @@ class TestOffHandEquipment:
         offhand = items.Buckler()
         result = player.equip('OffHand', offhand, check=True)
         assert result is True
+
+    def test_dual_wield_skill_unlocks_one_handed_offhand_weapon(self):
+        player = TestGameState.create_player(
+            name="TestPlayer",
+            class_name="Weapon Master",
+            race_name="Human",
+        )
+        dagger = items.Dirk()
+
+        assert player.equip("OffHand", dagger, check=True) is False
+        player.spellbook["Skills"]["Dual Wield"] = abilities.DualWield()
+        ensure_progression(player).purchased_node_ids.add(
+            "weapon-master.ability.dual-wield"
+        )
+
+        assert player.equip("OffHand", dagger, check=True) is True
     
     def test_shield_in_offhand_slot(self):
         """Verify shields can be equipped in off-hand."""

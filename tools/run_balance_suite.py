@@ -171,12 +171,26 @@ def _primary_stat_for_class(cls_obj) -> str:
     return max(order, key=lambda k: (pluses.get(k, 0), -order.index(k)))
 
 
-def _apply_auto_stat_ups(player, target_level: int) -> None:
-    """Apply deterministic stat-ups (every 4 levels) to approximate real play."""
+def _apply_auto_stat_ups(
+    player,
+    target_level: int,
+    *,
+    point_build: str = "focus",
+) -> None:
+    """Spend roughly half of earned progression points on a focus attribute."""
     if not getattr(player, "cls", None):
         return
-    stat = _primary_stat_for_class(player.cls)
-    ups = max(0, int(target_level) // 4)
+    stat = (
+        "strength"
+        if point_build == "one-stat"
+        else _primary_stat_for_class(player.cls)
+    )
+    ups = max(
+        0,
+        int(target_level) - 1
+        if point_build == "one-stat"
+        else (int(target_level) - 1) // 2,
+    )
     if hasattr(player, "stats") and hasattr(player.stats, stat):
         setattr(player.stats, stat, int(getattr(player.stats, stat)) + ups)
 
@@ -256,87 +270,23 @@ def _promotion_lineage(class_name: str) -> list[str]:
 
 
 def _max_level_for_pro_level(pro_level: int) -> int:
-    # Mirrors Player.max_level() semantics:
-    # pro_level 1/2 cap at 30; pro_level 3 cap at 50.
-    return 50 if int(pro_level) >= 3 else 30
+    """Return the flat player cap; class tier does not change it."""
+    del pro_level
+    return 100
 
 
 def _total_player_level_for(class_name: str, class_level: int, *, progression: str) -> int:
     """
     Compute Player.player_level() equivalent without requiring a Player instance.
     """
-    if progression != "on":
-        return int(class_level)
-    try:
-        pro_level = int(_get_class_obj_by_name(class_name).pro_level)
-    except Exception:
-        pro_level = 1
-    if pro_level == 1:
-        return int(class_level)
-    if pro_level == 2:
-        return 30 + int(class_level)
-    return 60 + int(class_level)
+    del class_name, progression
+    return int(class_level)
 
 
 def _apply_expected_combat_scaling_progression(player, class_name: str, class_level: int) -> None:
-    """
-    Apply expected combat scaling across promotion tiers.
-
-    For promoted classes, we assume previous tiers were fully leveled
-    (base=30, first=30) and add expected gains tier-by-tier.
-    """
-    lineage = _promotion_lineage(class_name)
-    if class_name not in lineage:
-        lineage = [class_name]
-    idx = lineage.index(class_name)
-    tier_names = lineage[: idx + 1]
-
-    # Determine per-tier levels: previous tiers at cap, current tier at class_level.
-    tier_levels: list[int] = []
-    for i, nm in enumerate(tier_names):
-        if i < len(tier_names) - 1:
-            try:
-                pro = int(_get_class_obj_by_name(nm).pro_level)
-            except Exception:
-                pro = 1
-            tier_levels.append(_max_level_for_pro_level(pro))
-        else:
-            tier_levels.append(int(class_level))
-
-    from src.core.constants import LEVELUP_STAT_DIVISOR
-
-    def _expected(stat_val: int, cls_plus: int, n_levels: int) -> int:
-        n = max(0, int(n_levels) - 1)
-        if n <= 0:
-            return 0
-        max_gain = (int(stat_val) // LEVELUP_STAT_DIVISOR) + max(1, int(cls_plus) // 2)
-        return int((max_gain * 0.5) * n)
-
-    # Start from current combat baseline (race baselines + gear will be applied elsewhere).
-    base_attack = int(getattr(player.combat, "attack", 0) or 0)
-    base_def = int(getattr(player.combat, "defense", 0) or 0)
-    base_magic = int(getattr(player.combat, "magic", 0) or 0)
-    base_mdef = int(getattr(player.combat, "magic_def", 0) or 0)
-
-    att = base_attack
-    deff = base_def
-    mag = base_magic
-    mdef = base_mdef
-
-    for nm, lv in zip(tier_names, tier_levels, strict=False):
-        try:
-            cls = _get_class_obj_by_name(nm)
-        except Exception:
-            continue
-        att += _expected(player.stats.strength, cls.att_plus, lv)
-        deff += _expected(player.stats.con, cls.def_plus, lv)
-        mag += _expected(player.stats.intel, cls.int_plus, lv)
-        mdef += _expected(player.stats.wisdom, cls.wis_plus, lv)
-
-    player.combat.attack = att
-    player.combat.defense = deff
-    player.combat.magic = mag
-    player.combat.magic_def = mdef
+    """Apply expected growth over global levels using the active class."""
+    del class_name
+    _apply_expected_combat_scaling(player, class_level)
 
 
 def _populate_spellbook_for_level(player, class_name: str, target_level: int) -> None:
@@ -405,48 +355,39 @@ def _populate_spellbook_for_level(player, class_name: str, target_level: int) ->
         player.spellbook["Skills"][nm] = gain
 
 
-def _populate_spellbook_for_progression(player, class_name: str, class_level: int) -> None:
-    """
-    Populate spellbook across promotion tiers, applying promotion ability rules.
-
-    Assumes prior tiers are maxed (base=30, first=30) when class_name is promoted.
-    """
-    from src.core.classes import apply_promotion_ability_rules
+def _populate_spellbook_for_progression(
+    player,
+    class_name: str,
+    class_level: int,
+    *,
+    point_build: str = "focus",
+) -> None:
+    """Populate a representative point-bought spellbook across its lineage."""
+    from src.core.progression import ABILITY_TREES, NodeKind, _grant_ability
 
     lineage = _promotion_lineage(class_name)
     if class_name not in lineage:
-        _populate_spellbook_for_level(player, class_name, class_level)
-        return
+        lineage = [class_name]
+    tier_names = lineage[: lineage.index(class_name) + 1]
 
-    idx = lineage.index(class_name)
-    tier_names = lineage[: idx + 1]
-
-    tier_levels: list[int] = []
-    for i, nm in enumerate(tier_names):
-        if i < len(tier_names) - 1:
-            try:
-                pro = int(_get_class_obj_by_name(nm).pro_level)
-            except Exception:
-                pro = 1
-            tier_levels.append(_max_level_for_pro_level(pro))
-        else:
-            tier_levels.append(int(class_level))
-
-    # Start clean so we don't double-count starter loadouts.
     player.spellbook = {"Spells": {}, "Skills": {}}
-
-    for i, (nm, lv) in enumerate(zip(tier_names, tier_levels, strict=False)):
-        _populate_spellbook_for_level(player, nm, lv)
-        if i < len(tier_names) - 1:
-            apply_promotion_ability_rules(player, tier_names[i + 1])
-
-        # Keep parity with Player.level_up() cleanup rules.
-        if nm == "Health/Mana Drain":
-            for drop in ["Health Drain", "Mana Drain"]:
-                player.spellbook["Skills"].pop(drop, None)
-        elif nm == "True Piercing Strike":
-            for drop in ["Piercing Strike", "True Strike"]:
-                player.spellbook["Skills"].pop(drop, None)
+    ability_budget = (
+        1
+        if point_build == "one-stat"
+        else max(1, (int(class_level) + 1) // 2)
+    )
+    for tree_name in tier_names:
+        tree = ABILITY_TREES.get(tree_name)
+        if tree is None:
+            continue
+        for node in tree.nodes:
+            if node.kind != NodeKind.ABILITY or ability_budget <= 0:
+                continue
+            try:
+                _grant_ability(player, node)
+            except Exception:
+                continue
+            ability_budget -= 1
 
 
 def _apply_meta_progression_loadouts(player, target_level: int) -> None:
@@ -852,7 +793,7 @@ def main() -> int:
         "--delta-score",
         choices=["off", "on"],
         default="on",
-        help="If enabled, compute a simple 'penalty score' from win-rate drops weighted by baseline win% (delta mode).",
+        help="If enabled, compute a simple penalty score from win-rate drops weighted by baseline wins (delta mode).",
     )
     ap.add_argument(
         "--enemy-weighting",
@@ -870,7 +811,16 @@ def main() -> int:
         "--profile",
         choices=["simple", "leveled"],
         default="leveled",
-        help="Player build profile: simple=static stub; leveled=auto stat-ups + expected combat scaling + ability grants",
+        help="Player build profile: simple=static stub; leveled=point allocation + expected combat scaling + tree purchases",
+    )
+    ap.add_argument(
+        "--point-build",
+        choices=["focus", "one-stat"],
+        default="focus",
+        help=(
+            "Progression allocation: focus splits points between a class focus "
+            "and tree abilities; one-stat puts every free point into Strength."
+        ),
     )
     ap.add_argument(
         "--gear",
@@ -888,7 +838,7 @@ def main() -> int:
         "--progression",
         choices=["off", "on"],
         default="on",
-        help="If on, promoted classes are modeled as having fully completed previous tiers (base=30, first=30) for total-level scaling and spellbook population.",
+        help="If on, use global levels and representative point-bought lineage abilities.",
     )
     args = ap.parse_args()
 
@@ -1163,7 +1113,7 @@ def main() -> int:
             player_level=(
                 args.level
                 if args.progression != "on" else
-                (args.level if args.tier == "base" else (30 + args.level if args.tier == "first" else 60 + args.level))
+                args.level
             ),
         )),
     ]
@@ -1222,10 +1172,19 @@ def main() -> int:
             player.combat.magic_def = int(getattr(race_obj, "base_magic_def", 0) or player.combat.magic_def)
 
             if args.profile == "leveled":
-                _apply_auto_stat_ups(player, total_lvl)
-                if args.progression == "on" and int(getattr(player.level, "pro_level", 1) or 1) > 1:
+                _apply_auto_stat_ups(
+                    player,
+                    total_lvl,
+                    point_build=args.point_build,
+                )
+                if args.progression == "on":
                     _apply_expected_combat_scaling_progression(player, cls_name, args.level)
-                    _populate_spellbook_for_progression(player, cls_name, args.level)
+                    _populate_spellbook_for_progression(
+                        player,
+                        cls_name,
+                        args.level,
+                        point_build=args.point_build,
+                    )
                 else:
                     _apply_expected_combat_scaling(player, args.level)
                     _populate_spellbook_for_level(player, cls_name, args.level)

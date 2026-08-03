@@ -94,7 +94,13 @@ class BattleActionMixin:
         ))
         message = self.attacker.enter_defensive_stance(duration=1, source="Defend")
         if self.attacker == self.player:
-            class_rings.build_guard_meter(self.player, 25)
+            from ...classes import promotion_kits
+
+            message += promotion_kits.build_resolve(
+                self.player,
+                10,
+                "Defend",
+            )
         return message
 
     def _execute_spell(self, choice: str | None) -> str:
@@ -302,11 +308,23 @@ class BattleActionMixin:
         # voice or spellcasting focus, so silence should not suppress them.
         already_charging = bool(getattr(skill, "charging", False))
         is_resolve_skill = self._skill_uses_resolve(skill)
-        if self.attacker.abilities_suppressed() and not already_charging and not is_resolve_skill:
+        is_class_resource_skill = (
+            is_resolve_skill
+            or getattr(skill, "resource_type", None) == "Oath Conviction"
+        )
+        if (
+            self.attacker.abilities_suppressed()
+            and not already_charging
+            and not is_class_resource_skill
+        ):
             reason = "the anti-magic field" if getattr(self.attacker, "anti_magic_active", False) else "silence"
             return f"{self.attacker.name} cannot use skills because of {reason}!\n"
 
-        if not already_charging and not is_resolve_skill and self.attacker.mana.current < skill.cost:
+        if (
+            not already_charging
+            and not is_class_resource_skill
+            and self.attacker.mana.current < skill.cost
+        ):
             return f"{self.attacker.name} does not have enough mana to use {choice}!\n"
 
         self._event_bus.emit(create_combat_event(

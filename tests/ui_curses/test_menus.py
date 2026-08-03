@@ -7,6 +7,7 @@ import io
 from types import SimpleNamespace
 
 from src.core import items
+from src.core.classes import promotion_kits
 from src.ui_curses import menus as curses_menus
 
 
@@ -196,6 +197,7 @@ def test_load_game_menu_config_and_navigation(monkeypatch):
         stats=SimpleNamespace(strength=1, intel=2, wisdom=3, con=4, charisma=5, dex=6),
     )
     monkeypatch.setattr(curses_menus.SaveManager, "load_player", staticmethod(lambda _name: player_obj))
+    monkeypatch.setattr(curses_menus.SaveManager, "last_load_result", None)
 
     menu = curses_menus.LoadGameMenu(game, ["Ada", "Go Back"])
     assert "Level 7 Elf Mage" in menu.config_desc_str(player_obj)
@@ -256,15 +258,37 @@ def test_combat_popup_and_helpers(monkeypatch):
         "Spells": {
             "Fire": SimpleNamespace(subtyp="Attack", cost=3),
             "Jump": SimpleNamespace(subtyp="Movement", cost=1),
+            "Resist Shadow": SimpleNamespace(
+                subtyp="Support",
+                cost=1,
+                exploration_cast=True,
+            ),
         },
         "Skills": {
             "Slash": SimpleNamespace(cost=2, passive=False, name="Slash", weapon=False),
+            "Oath's Shelter": SimpleNamespace(
+                cost=0,
+                passive=False,
+                name="Oath's Shelter",
+                weapon=False,
+                resource_type="Oath Conviction",
+            ),
+            "Shield Check": SimpleNamespace(
+                cost=0,
+                passive=False,
+                name="Shield Check",
+                weapon=False,
+                resource_type="Resolve",
+                resolve_cost=10,
+            ),
             "Smoke Screen": SimpleNamespace(cost=1, passive=False, name="Smoke Screen", weapon=False),
             "Lockpick": SimpleNamespace(cost=0, passive=False, name="Lockpick", weapon=False),
             "Reaver's Mark": SimpleNamespace(cost=4, passive=False, name="Reaver's Mark", weapon=True),
             "Brace": SimpleNamespace(cost=4, passive=False, name="Brace", weapon=True),
         },
     }
+    game.player_char.paladin_vow = "Protection"
+    promotion_kits.combat_state(game.player_char)["oath_conviction"] = 2
     tile = SimpleNamespace(enemy=SimpleNamespace(incapacitated=lambda: True))
 
     combat_popup = curses_menus.CombatPopupMenu(game, "Combat")
@@ -274,6 +298,15 @@ def test_combat_popup_and_helpers(monkeypatch):
     assert "Slash  2" in combat_popup.options_list
     assert "Brace  4" in combat_popup.options_list
     assert "Reaver's Mark  4" not in combat_popup.options_list
+    assert (
+        "Oath's Shelter  Protection; all 2 Conviction"
+        in combat_popup.options_list
+    )
+    assert not any("Shield Check" in option for option in combat_popup.options_list)
+
+    game.player_char.cls = SimpleNamespace(name="Sentinel")
+    combat_popup.update_options("Resolve", tile=tile)
+    assert "Shield Check  10 Resolve; Need 10" in combat_popup.options_list
 
     game.player_char.world_dict = {(0, 0, 1): SimpleNamespace(enemy=None, intro_text=lambda game: "Room")}
     game.player_char.minimap = lambda: "Map"

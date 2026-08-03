@@ -294,10 +294,14 @@ class InnManager(TownScreenBase):
         gold = bounty.get("gold", 0)
         exp = bounty.get("exp", 0)
         self.player_char.gold += gold
-        self.player_char.level.exp += exp
+        from src.core.progression import award_experience
 
-        if not self.player_char.max_level():
-            self.player_char.level.exp_to_gain -= exp
+        level_result = award_experience(self.player_char, exp)
+        self.player_char._pending_level_up_result = (
+            level_result
+            if level_result.new_level > level_result.old_level
+            else None
+        )
 
         reward_lines = [
             f"Bounty Complete: {bounty_name}",
@@ -320,12 +324,8 @@ class InnManager(TownScreenBase):
         del self.player_char.quest_dict['Bounty'][bounty_name]
         self._remove_board_bounty(bounty_name)
 
-        # Check for level up
-        if not self.player_char.max_level():
-            while self.player_char.level.exp_to_gain <= 0:
-                self.level_up()
-                if self.player_char.level.exp_to_gain == "MAX":
-                    break
+        if level_result.new_level > level_result.old_level:
+            self.level_up()
 
     def _remove_board_bounty(self, bounty_name):
         """Remove an accepted or completed bounty from the current board."""

@@ -2,6 +2,31 @@
 
 ## [Unreleased]
 
+### Flat Progression And Authored Ability Trees
+
+- Replaced local class-level promotion with a shared global-level progression
+  runtime, stored progression points every two levels, and separately stored
+  primary-attribute points every four levels.
+- Added version-5 authored tree manifests, stable node IDs, atomic staged
+  purchases, promotion previews, branch closure, equipment cleanup, ability
+  retention, save/load normalization, and validation for all 49 playable
+  classes.
+- Added a pygame Progression tab with authored graph geometry, an ability icon
+  atlas, compact connectors, completed-tree navigation, staged node/attribute
+  distribution, full Primary Attribute names, and promotion confirmation.
+- Completed bespoke Warrior, Weapon Master, Berserker, Grandmaster of Arms,
+  Lancer, Dragoon, Sentinel, Stalwart Defender, Paladin, and Crusader trees.
+- Added Aerial Tempo, Landing Shield, Resolve, Spell Reflection, Resolve
+  Surges, Oath Conviction, shared Oath techniques, Hallowed Ground, Resist
+  Shadow, Blessed Light, Condemnation, Repel the Wicked, Sword & Board, and the
+  accompanying battle/frontend integration.
+- Preserved externally owned quest, item, boss, Class Ring, Power Core,
+  contract, companion, Weapon Discipline, and Jump-modification rewards.
+- Fixed inherited gated abilities so they adopt only their matching node and
+  added compatibility repair for recursively adopted phantom Paladin nodes.
+- Added `docs/PROGRESSION_REFACTOR_CHECKPOINT.md` as the complete implementation
+  record and pause boundary before the next fundamental progression redesign.
+
 ### Playtest Readiness And Maintenance
 
 - Split the 6,230-line composite effect module into focused common, enemy,

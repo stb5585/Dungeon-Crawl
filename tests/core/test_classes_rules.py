@@ -16,7 +16,7 @@ def _promotion_player(*, spells=None, skills=None):
     )
 
 
-def test_promotion_rules_keep_clear_and_remove_spellbook_entries():
+def test_promotion_rules_retain_all_spellbook_entries():
     enfeeble = abilities.Enfeeble()
     player = _promotion_player(
         spells={
@@ -28,21 +28,24 @@ def test_promotion_rules_keep_clear_and_remove_spellbook_entries():
 
     message = classes.apply_promotion_ability_rules(player, "Warlock")
 
-    assert message == "You lose all previously learned attack spells.\n"
-    assert player.spellbook["Spells"] == {"Enfeeble": enfeeble}
+    assert message == ""
+    assert player.spellbook["Spells"] == {
+        "Enfeeble": enfeeble,
+        "Fireball": player.spellbook["Spells"]["Fireball"],
+    }
     assert "Shield Slam" in player.spellbook["Skills"]
 
     message = classes.apply_promotion_ability_rules(player, "Weapon Master")
 
     assert message == ""
-    assert "Shield Slam" not in player.spellbook["Skills"]
+    assert "Shield Slam" in player.spellbook["Skills"]
     assert "Double Strike" in player.spellbook["Skills"]
 
     player.spellbook["Spells"]["Heal"] = object()
     message = classes.apply_promotion_ability_rules(player, "Monk")
 
-    assert message == "You lose all previously learned spells.\n"
-    assert player.spellbook["Spells"] == {}
+    assert message == ""
+    assert set(player.spellbook["Spells"]) == {"Enfeeble", "Fireball", "Heal"}
 
 
 def test_promotion_rules_ignore_unknown_class_without_mutating_spellbook():

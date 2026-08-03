@@ -87,15 +87,15 @@ class CharacterMechanicsMixin:
 
     def _jump_mod_description(self, mod_name: str) -> str:
         descriptions = {
-            "Crit": "Increases critical factor but reduces damage to 1.5x weapon damage.",
-            "Thrust": "After landing, thrust for 3/4 weapon damage if the target survives.",
+            "Crit": "Increases critical factor but reduces weapon damage.",
+            "Thrust": "After landing, thrust with reduced weapon damage if the target survives.",
             "Defend": "Increased damage reduction while preparing to Jump.",
             "Rend": "Chance to apply Bleed, dealing damage over time.",
             "Quake": "Chance to stun the enemy upon landing.",
             "Acrobat": "Gain an evasion bonus while preparing to Jump.",
             "Dragon's Fury": "Deals additional random elemental damage.",
             "Soaring Strike": "Takes two turns to charge, but deals increased damage.",
-            "Quick Dive": "Removes charge time but reduces damage to 0.75x.",
+            "Quick Dive": "Removes charge time but reduces weapon damage.",
             "Retribution": "Taking damage while charging boosts the Jump damage.",
             "Unstoppable": "Jump cannot be interrupted once started.",
             "Recover": "Regain a small amount of health and mana upon landing.",
@@ -272,7 +272,11 @@ class CharacterMechanicsMixin:
         detail_y += self.normal_font.get_height() + 12
         for title, body in (
             ("Build", "Use your sworn vow skill and complete its clean payoff to build Conviction."),
-            ("Spend", "Your next matching vow action spends stored Conviction to strengthen that vow's defining moment."),
+            (
+                "Spend",
+                "Oath's Judgment and Oath's Shelter consume all stored "
+                "Conviction for vow-specific offense or defense.",
+            ),
             ("Risk", "Aura and mark pressure still matter; Conviction reinforces the oath without erasing its drawback."),
         ):
             if detail_y + 80 > right_rect.bottom:

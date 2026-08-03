@@ -89,17 +89,19 @@ def test_paladin_vow_selection_popup_draws_details_and_selects_highlighted(monke
     assert popup.detail_rect is not None
     assert popup.instruction_rect is not None
     assert popup.instruction_rect.top > popup.detail_rect.bottom
-    assert popup._detail_rows("Conquest") == [
-        ("Signature", "Challenge"),
-        ("Aura", "Conquest Aura"),
-        ("Mark", "Mark of the Craven"),
-    ]
     popup_copy = " ".join(
         list(paladin.DESCRIPTIONS.values())
-        + [" ".join(lines) for lines in popup.DETAIL_LINES.values()]
+        + list(paladin.SIGNATURE_DESCRIPTIONS.values())
+        + list(paladin.AURA_DESCRIPTIONS.values())
+        + list(paladin.MARK_DESCRIPTIONS.values())
     )
-    for exact_mechanic in ("normal XP", "three turns", "two turns", "+5", "percentage"):
-        assert exact_mechanic not in popup_copy
+    for documented_mechanic in (
+        "three encounters",
+        "two-turn",
+        "+5%",
+        "percentage points",
+    ):
+        assert documented_mechanic in popup_copy
 
     pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_DOWN))
     pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN))
@@ -127,7 +129,7 @@ def test_visit_church_routes_actions(monkeypatch):
     manager.handle_promotion = lambda: calls.append("promotion")
     manager.save_game = lambda: calls.append("save")
 
-    selections = iter([0, 1, 2, 3])
+    selections = iter([0, 1, 2])
     rendered = []
     draw_frame_calls = []
 
@@ -159,7 +161,7 @@ def test_visit_church_routes_actions(monkeypatch):
 
     manager.visit_church()
 
-    assert calls == ["promotion", "save"]
+    assert calls == ["save"]
     assert rendered == [("Priest quest", "Priest")]
     assert "Let the light of Elysia guide you." in FakePopup.messages
     assert FakePopup.show_kwargs[-1]["flush_events"] is True

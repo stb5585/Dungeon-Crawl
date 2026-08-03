@@ -174,7 +174,10 @@ def test_init_build_character_and_default_character(monkeypatch):
     assert player.race.name == "Human"
     assert player.cls.name == "Warrior"
     assert player.portrait_variant == 0
-    assert player.spellbook["Spells"]["Spark"].name == "Spark"
+    assert "Spark" not in player.spellbook["Spells"]
+    assert player.spellbook["Skills"] == {}
+    assert player.progression.unspent_points == 1
+    assert player.progression.purchased_node_ids == set()
     assert player.storage["Health Potion"] == ["potion"] * 5
     assert player.loaded_tiles is True
     assert game.create_default_character(name="Bob").name == "Bob"
@@ -204,8 +207,8 @@ def test_debug_level_up_initialize_managers_and_update_bounties(monkeypatch):
     calls = []
     monkeypatch.setattr("src.ui_pygame.gui.level_up.LevelUpScreen", FakeLevelUpScreen)
     game.debug_level_up()
-    assert game.player_char.level.exp == 30
-    assert game.player_char.level.exp_to_gain == 0
+    assert game.player_char.level.exp == 10
+    assert game.player_char.level.exp_to_gain == 20
     assert calls == [(game.player_char, game)]
 
     game.player_char.max_level = lambda: True
@@ -785,6 +788,7 @@ def test_gameplay_statistics_popup_and_town_menu_entry(monkeypatch):
     assert game.town_menu() == "quit"
     assert stats_calls
     assert any("Statistics" in options for options in options_seen)
+    assert all("Progression" not in options for options in options_seen)
     assert all("Explore Town" not in options for options in options_seen)
     assert popup_kwargs[-1]["flush_events"] is True
     assert popup_kwargs[-1]["require_key_release"] is True

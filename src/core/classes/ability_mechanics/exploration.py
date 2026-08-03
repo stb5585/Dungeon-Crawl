@@ -6,7 +6,12 @@ from typing import Any
 
 
 def default_exploration_effects() -> dict[str, int]:
-    return {"invisibility": 0, "volitation": 0, "enter_wall": 0}
+    return {
+        "invisibility": 0,
+        "volitation": 0,
+        "enter_wall": 0,
+        "resist_shadow": 0,
+    }
 
 
 def normalize_exploration_effects(state: Any) -> dict[str, int]:
@@ -35,6 +40,11 @@ def sync_exploration_flags(character: Any) -> None:
         character.flying = True
     if state["enter_wall"] > 0:
         character.enter_wall = True
+    if state["resist_shadow"] > 0:
+        effect = character.magic_effects.get("Resist Shadow")
+        if effect is not None:
+            effect.active = True
+            effect.extra = max(0.5, float(effect.extra or 0))
 
 
 def apply_exploration_effect(character: Any, key: str, turns: int) -> None:
@@ -62,6 +72,12 @@ def tick_exploration_effects(character: Any, steps: int) -> None:
             character.flying = False
         if state["enter_wall"] <= 0:
             character.enter_wall = False
+        if state["resist_shadow"] <= 0:
+            effect = character.magic_effects.get("Resist Shadow")
+            if effect is not None:
+                effect.active = False
+                effect.duration = 0
+                effect.extra = 0
 
 
 def favorite_enemy_type(character: Any) -> str | None:

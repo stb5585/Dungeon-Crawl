@@ -281,7 +281,13 @@ class InventoryPopupMenu(BasePopupMenu):
 
         # Enforce class equip restrictions
         if hasattr(player_char, "cls") and hasattr(player_char.cls, "equip_check"):
-            if not player_char.cls.equip_check(item, slot):
+            can_equip = getattr(player_char, "can_equip_item", None)
+            allowed = (
+                can_equip(item, slot)
+                if callable(can_equip)
+                else player_char.cls.equip_check(item, slot)
+            )
+            if not allowed:
                 self._show_inventory_notice(player_char, f"You cannot equip {getattr(item, 'name', 'that item')}.", background_surface)
                 return
         equip_method = getattr(player_char, "equip", None)

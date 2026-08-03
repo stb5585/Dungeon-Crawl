@@ -18,6 +18,22 @@ if TYPE_CHECKING:
     from typing import Any
 
 
+SAVE_VERSION = 5
+
+
+class UnsupportedSaveVersionError(ValueError):
+    """Raised when a save is incompatible with current flat progression."""
+
+    def __init__(self, actual_version: object):
+        super().__init__(
+            f"Unsupported save version {actual_version!r}; "
+            f"authored ability trees require version {SAVE_VERSION}. "
+            "Pre-release version-4 progression cannot be migrated safely."
+        )
+        self.actual_version = actual_version
+        self.required_version = SAVE_VERSION
+
+
 class PlayerDataSerializer:
     """Serializes/deserializes player character."""
 
@@ -52,7 +68,7 @@ class PlayerDataSerializer:
 
         # Basic attributes
         data = {
-            'version': 3,
+            'version': SAVE_VERSION,
             'name': player.name,
             'location': (player.location_x, player.location_y, player.location_z),
             'facing': player.facing,
@@ -70,6 +86,7 @@ class PlayerDataSerializer:
                 player.level.level, player.level.pro_level,
                 player.level.exp, player.level.exp_to_gain
             )),
+            'progression': player.progression.to_dict(),
             'gold': player.gold,
             'resistance': dict(player.resistance),
 
@@ -193,7 +210,13 @@ class PlayerDataSerializer:
             data: Serialized player data dictionary
             skip_tiles: If True, skip loading world tiles (for transform feature)
         """
+        if data.get("version") != SAVE_VERSION:
+            raise UnsupportedSaveVersionError(data.get("version"))
+        if not isinstance(data.get("progression"), dict):
+            raise UnsupportedSaveVersionError(data.get("version"))
+
         from ..player import Player, normalize_gameplay_stats
+        from ..progression import ProgressionState, award_experience
         from .. import races
         from .. import classes
 
@@ -266,6 +289,10 @@ class PlayerDataSerializer:
                     except Exception:
                         pass
 
+        player.transform_type = player.cls
+        player.progression = ProgressionState.from_dict(data["progression"])
+        award_experience(player, 0)
+
         # Restore equipment
         for slot, item_data in data['equipment'].items():
             player.equipment[slot] = ItemSerializer.deserialize(item_data)
@@ -300,6 +327,10 @@ class PlayerDataSerializer:
             name: AbilitySerializer.deserialize(ability_name)
             for name, ability_name in data['spellbook']['Skills'].items()
         }
+        for name, rank in player.progression.ability_ranks.items():
+            ability = player.spellbook["Skills"].get(name)
+            if ability is not None:
+                ability.ranks = rank
 
         # Restore stateful skill data (e.g., Jump modifications, Totem aspects)
         spellbook_state = data.get('spellbook_state', {})
@@ -317,6 +348,9 @@ class PlayerDataSerializer:
                         skill.unlocked_aspects = state['unlocked_aspects']
                     if 'active_aspect' in state and state['active_aspect'] is not None:
                         skill.active_aspect = state['active_aspect']
+        from ..progression import ensure_progression
+
+        ensure_progression(player)
 
         # Restore quest/kill dicts
         player.quest_dict = QuestDataSerializer.deserialize_quest_dict(data.get('quest_dict', {'Bounty': {}, 'Main': {}, 'Side': {}}))
@@ -355,6 +389,9 @@ class PlayerDataSerializer:
         if hasattr(player, "ensure_promotion_kit_state"):
             player.ensure_promotion_kit_state()
         promotion_kits.clear_combat_state(player)
+        from ..classes import class_rings
+
+        class_rings.reset_combat_flags(player)
         player.astromancer_state = data.get(
             'astromancer_state',
             getattr(player, 'astromancer_state', None),

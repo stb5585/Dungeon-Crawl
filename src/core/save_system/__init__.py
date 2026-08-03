@@ -6,9 +6,9 @@ modules. Existing imports from the save-system package remain supported.
 
 from .enemy import EnemyStateSerializer
 from .item_serialization import AbilitySerializer, ItemSerializer
-from .manager import SaveManager
+from .manager import SaveLoadResult, SaveManager
 from .models import CombatData, LevelData, ResourceData, StatsData, StatusEffectData
-from .player import PlayerDataSerializer
+from .player import PlayerDataSerializer, UnsupportedSaveVersionError
 from .quests import QuestDataSerializer
 from .summons import SummonSerializer
 from .tiles import TileStateSerializer

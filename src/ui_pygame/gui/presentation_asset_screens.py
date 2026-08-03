@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from typing import Iterable
 import sys
+import textwrap
+from typing import Iterable
 
 import pygame
 
@@ -208,6 +209,16 @@ class CharacterCreatedScreen(_PresentationScreenBase):
             self.screen.blit(label_surface, (label_x, y))
             self.screen.blit(value_surface, value_surface.get_rect(right=value_x, top=y))
             y += self._font_height(self.normal_font) + row_gap
+
+        progression_note = (
+            "You begin with 1 Progression Point. Spend it at any time in "
+            "Character → Progression on a tree node or primary attribute. "
+            "You gain another point at level 2 and every even level after."
+        )
+        for line in textwrap.wrap(progression_note, 48):
+            note_surface = self.small_font.render(line, True, self.colors.GOLD)
+            self.screen.blit(note_surface, (label_x, y))
+            y += self._font_height(self.small_font) + 3
 
         self._draw_continue_button("Begin Adventure")
 

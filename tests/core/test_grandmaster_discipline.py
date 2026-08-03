@@ -5,6 +5,12 @@ from src.core.classes import grandmaster
 from src.core.combat.battle_engine import BattleEngine
 from src.core.enemies import Enemy, Goblin
 from src.core.map_tiles import actions_dict
+from src.core.progression import (
+    NodeState,
+    available_nodes,
+    ensure_progression,
+    purchase_node,
+)
 from src.core.save_system import PlayerDataSerializer
 from tests.test_framework import TestGameState
 
@@ -43,6 +49,29 @@ def _weapon_master():
     return player
 
 
+def _unlock_weapon_art(player, weapon_type, node_id, xp):
+    grandmaster.add_discipline_xp(player, weapon_type, xp)
+    if player.cls.name == "Weapon Master":
+        state = ensure_progression(player)
+        state.level = max(35, state.level)
+        state.unspent_points = max(1, state.unspent_points)
+        result = purchase_node(player, node_id)
+        assert result.success
+    else:
+        art_name = grandmaster.WEAPON_ARTS[weapon_type]
+        art_class = {
+            "Iron Palm": abilities.IronPalm,
+            "Hemorrhage": abilities.Hemorrhage,
+            "Riposte Line": abilities.RiposteLine,
+            "Low Sweep": abilities.LowSweep,
+            "Guard Cleaver": abilities.GuardCleaver,
+            "Reaver's Mark": abilities.ReaversMark,
+            "Brace": abilities.Brace,
+            "Anvil Strike": abilities.AnvilStrike,
+        }[art_name]
+        player.spellbook["Skills"][art_name] = art_class()
+
+
 def test_grandmaster_discipline_state_defaults_and_ranks():
     player = _grandmaster()
 
@@ -57,30 +86,41 @@ def test_grandmaster_discipline_state_defaults_and_ranks():
     assert grandmaster.proc_chance(player, "Sword") == 0.10
 
 
-def test_weapon_master_starts_discipline_and_unlocks_rank_one_art():
+def test_weapon_master_rank_one_makes_tree_art_available_without_auto_learning():
     player = _weapon_master()
     player.equipment["Weapon"] = items.BrassKnuckles()
 
     player.grandmaster_discipline["disciplines"]["Fist"]["xp"] = grandmaster.XP_THRESHOLDS[0]
     player.ensure_grandmaster_discipline()
+    ensure_progression(player).level = 35
 
     assert grandmaster.discipline_rank(player, "Fist") == 1
-    assert "Iron Palm" in player.spellbook["Skills"]
-    assert player.spellbook["Skills"]["Iron Palm"].cost == grandmaster.ART_COSTS["Fist"]
+    assert "Iron Palm" not in player.spellbook["Skills"]
+    status = next(
+        status
+        for status in available_nodes(player, "Weapon Master")
+        if status.node.name == "Iron Palm"
+    )
+    assert status.state == NodeState.AVAILABLE
 
 
-def test_weapon_art_descriptions_include_required_weapon_type():
+def test_weapon_art_descriptions_do_not_duplicate_tree_weapon_requirement():
     art = abilities.ReaversMark()
 
     assert art.required_weapon_type == "Battle Axe"
-    assert art.description.startswith("Requires: Battle Axe.")
+    assert not art.description.startswith("Requires:")
 
 
 def test_weapon_art_requires_matching_weapon_and_applies_effect(monkeypatch):
     player = _weapon_master()
     player.equipment["Weapon"] = items.BrassKnuckles()
     enemy = Goblin()
-    grandmaster.add_discipline_xp(player, "Fist", grandmaster.XP_THRESHOLDS[4])
+    _unlock_weapon_art(
+        player,
+        "Fist",
+        "weapon-master.ability.iron-palm",
+        grandmaster.XP_THRESHOLDS[4],
+    )
     monkeypatch.setattr(grandmaster.random, "random", lambda: 1.0)
 
     message = player.spellbook["Skills"]["Iron Palm"].use(player, enemy)
@@ -95,7 +135,12 @@ def test_perfect_bound_art_adds_grandmaster_ring_bonus(monkeypatch):
     player = _grandmaster()
     player.equipment["Weapon"] = items.BrassKnuckles()
     enemy = Goblin()
-    grandmaster.add_discipline_xp(player, "Fist", grandmaster.XP_THRESHOLDS[-1])
+    _unlock_weapon_art(
+        player,
+        "Fist",
+        "weapon-master.ability.iron-palm",
+        grandmaster.XP_THRESHOLDS[-1],
+    )
     grandmaster.bind_weapon(player, "Fist")
     monkeypatch.setattr(grandmaster.random, "random", lambda: 1.0)
 
@@ -193,7 +238,7 @@ def test_weapon_master_battle_axe_hits_show_rank_progression_text(monkeypatch):
     assert "Battle Axe Discipline +1 XP" in message
     assert f"{grandmaster.XP_THRESHOLDS[0]}/{grandmaster.XP_THRESHOLDS[1]} XP" not in message
     assert "Battle Axe Discipline reached rank 1" in message
-    assert "Learned Reaver's Mark" in message
+    assert "Reaver's Mark is now available in the Weapon Master ability tree" in message
 
 
 def test_weapon_art_can_grant_discipline_insight(monkeypatch):
@@ -201,7 +246,12 @@ def test_weapon_art_can_grant_discipline_insight(monkeypatch):
     player.equipment["Weapon"] = items.BrassKnuckles()
     enemy = Goblin()
     enemy.level.pro_level = 2
-    grandmaster.add_discipline_xp(player, "Fist", grandmaster.XP_THRESHOLDS[0])
+    _unlock_weapon_art(
+        player,
+        "Fist",
+        "weapon-master.ability.iron-palm",
+        grandmaster.XP_THRESHOLDS[0],
+    )
     before_xp = player.grandmaster_discipline["disciplines"]["Fist"]["xp"]
     monkeypatch.setattr(player, "weapon_damage", lambda *_args, **_kwargs: ("Iron Palm lands.\n", True, 1))
     monkeypatch.setattr(grandmaster.random, "random", lambda: 0.0)

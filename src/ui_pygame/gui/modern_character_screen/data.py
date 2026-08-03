@@ -251,7 +251,7 @@ class CharacterDataMixin:
         """Return per-weapon Weapon Discipline progression rows."""
         state = grandmaster.normalize_state(getattr(player_char, "grandmaster_discipline", None))
         rows: list[tuple[str, str]] = []
-        for weapon_type in grandmaster.WEAPON_TYPES:
+        for weapon_type in grandmaster.weapon_discipline_types(player_char):
             entry = state["disciplines"][weapon_type]
             xp = self._non_negative_float(entry.get("xp", 0))
             rank = self._non_negative_int(entry.get("rank", 0))
@@ -284,8 +284,11 @@ class CharacterDataMixin:
             "",
             "Unlocks:",
             f"Rank 1: {'Unlocked' if unlocked else 'Locked'} - learn {art_name}.",
-            f"Rank 5: {'Unlocked' if improved else 'Locked'} - improved art effect.",
-            f"Rank {grandmaster.MAX_RANK}: {'Unlocked' if mastered else 'Locked'} - mastered art effect.",
+            f"Rank 5: {'Unlocked' if improved else 'Locked'} - learn {art_name} 2.",
+            (
+                f"Rank {grandmaster.MAX_RANK}: "
+                f"{'Unlocked' if mastered else 'Locked'} - learn {art_name} 3."
+            ),
         ]
         if rank < grandmaster.MAX_RANK:
             next_threshold = grandmaster.XP_THRESHOLDS[rank]

@@ -243,6 +243,55 @@ def test_base_popup_supports_mouse_hover_click_and_wheel(monkeypatch):
     assert popup.show(player) == ("selected", "Beta")
 
 
+def test_specials_popup_casts_exploration_spells_with_confirmation(monkeypatch):
+    presenter = _make_presenter()
+    parent = _make_parent()
+    player = _make_player()
+    player.name = "Hero"
+    player.mana = SimpleNamespace(current=20)
+    cast_calls = []
+    spell = SimpleNamespace(
+        name="Resist Shadow",
+        description="Ward against shadow.",
+        cost=15,
+        exploration_cast=True,
+        cast_out=lambda caster: (
+            cast_calls.append(caster)
+            or setattr(caster.mana, "current", caster.mana.current - 15)
+            or "Shadow ward applied."
+        ),
+    )
+    popup = popup_menus.SimpleListPopupMenu(
+        presenter,
+        parent,
+        "Special Abilities",
+        lambda _player: [spell],
+    )
+    popup._capture_menu_surface = lambda _player: "menu-background"
+    confirmations = []
+
+    class FakeConfirmation:
+        def __init__(self, _presenter, message, show_buttons=True):
+            confirmations.append((message, show_buttons))
+
+        def show(self, **kwargs):
+            kwargs["background_draw_func"]()
+            return True
+
+    monkeypatch.setattr(popup_menus, "ConfirmationPopup", FakeConfirmation)
+
+    assert popup.on_select(
+        player,
+        {"is_header": False, "text": spell.name, "value": spell},
+    ) is None
+    assert cast_calls == [player]
+    assert player.mana.current == 5
+    assert confirmations == [
+        ("Cast Resist Shadow?", True),
+        ("Shadow ward applied.", False),
+    ]
+
+
 def test_base_popup_ignores_header_click_and_keeps_open_on_none(monkeypatch):
     _patch_visuals(monkeypatch)
     presenter = _make_presenter()

@@ -1484,17 +1484,18 @@ class JumpEffect(Effect):
         result.hit = hit
         result.crit = actual_crit if actual_crit > 1 else None
         jump_damage = max(0, target_hp_before - target.health.current)
-        if hit and jump_damage > 0:
-            try:
-                from ..classes import class_rings
+        try:
+            from ..classes import promotion_kits
 
-                shield = class_rings.apply_meteor_guard(actor, jump_damage)
-                if shield:
-                    messages.append(
-                        f"Meteor Guard forms a {shield}-point shield around {actor.name}!\n"
-                    )
-            except Exception:
-                pass
+            landing_message = promotion_kits.record_clean_jump_landing(
+                actor,
+                jump_damage,
+                mods,
+            )
+            if landing_message:
+                messages.append(landing_message)
+        except Exception:
+            pass
 
         if hit and target.is_alive():
             # ── Quake (stun chance) ─────────────────────────────────

@@ -5,7 +5,7 @@ import random
 from textwrap import wrap
 import time
 
-from src.core.classes import grandmaster, promotion_kits
+from src.core.classes import grandmaster, paladin, promotion_kits
 import src.ui_curses.menus as menus
 from .foundation import PopupMenu
 
@@ -121,15 +121,27 @@ class CombatPopupMenu(PopupMenu):
             self.options_list = options
         if action == "Cast Spell":
             for entry in self.game.player_char.spellbook['Spells']:
-                if self.game.player_char.spellbook['Spells'][entry].subtyp == "Movement" and entry not in {"Volitation"}:
+                spell = self.game.player_char.spellbook['Spells'][entry]
+                if getattr(spell, "exploration_cast", False):
                     continue
-                if self.game.player_char.spellbook['Spells'][entry].cost <= self.game.player_char.mana.current:
+                if spell.subtyp == "Movement" and entry not in {"Volitation"}:
+                    continue
+                if spell.cost <= self.game.player_char.mana.current:
                     self.options_list.append(
-                        f"{str(entry)}  {str(self.game.player_char.spellbook['Spells'][entry].cost)}"
+                        f"{str(entry)}  {str(spell.cost)}"
                         )
-        elif action == 'Use Skill':
+        elif action in {'Use Skill', 'Resolve'}:
+            resolve_only = action == 'Resolve'
             for entry in self.game.player_char.spellbook['Skills']:
-                if self.game.player_char.spellbook['Skills'][entry].cost <= self.game.player_char.mana.current:
+                skill = self.game.player_char.spellbook['Skills'][entry]
+                is_resolve = getattr(skill, "resource_type", None) == "Resolve"
+                if is_resolve != resolve_only:
+                    continue
+                can_pay = (
+                    is_resolve
+                    or skill.cost <= self.game.player_char.mana.current
+                )
+                if can_pay:
                     if any([self.game.player_char.spellbook['Skills'][entry].passive,
                             not promotion_kits.combat_skill_visible(
                                 self.game.player_char,
@@ -156,9 +168,38 @@ class CombatPopupMenu(PopupMenu):
                         self.options_list.append(
                             f"Remove Shield  {str(self.game.player_char.spellbook['Skills'][entry].cost)}"
                             )
-                    else:
+                    elif is_resolve:
+                        display_name = getattr(skill, "name", entry)
+                        cost = getattr(skill, "resolve_cost", skill.cost)
+                        cost_label = (
+                            "Full Resolve"
+                            if str(cost).lower() == "full"
+                            else f"{cost} Resolve"
+                        )
+                        current = promotion_kits.current_resolve(
+                            self.game.player_char
+                        )
+                        ready = "Ready"
+                        if str(cost).lower() != "full" and current < int(cost):
+                            ready = f"Need {int(cost) - current}"
                         self.options_list.append(
-                            f"{str(entry)}  {str(self.game.player_char.spellbook['Skills'][entry].cost)}"
+                            f"{display_name}  {cost_label}; {ready}"
+                        )
+                    else:
+                        if getattr(skill, "resource_type", None) == "Oath Conviction":
+                            vow = paladin.path(self.game.player_char) or "No vow"
+                            conviction = int(
+                                promotion_kits.combat_state(
+                                    self.game.player_char
+                                ).get("oath_conviction", 0)
+                                or 0
+                            )
+                            self.options_list.append(
+                                f"{entry}  {vow}; all {conviction} Conviction"
+                            )
+                            continue
+                        self.options_list.append(
+                            f"{str(entry)}  {str(skill.cost)}"
                             )
         elif action == "Use Item":
             cat_options = ['Health', 'Mana', 'Elixir', 'Status', 'Scroll']

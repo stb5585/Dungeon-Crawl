@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from src.core.classes import astromancer
+from src.core.classes import promotion_kits
 from src.core.combat.battle_engine import BattleEngine
 from src.core.combat.battle_logger import BattleLogger
 
@@ -91,7 +92,24 @@ class BattleManager:
 
     @property
     def available_actions(self) -> list:
-        return self.engine.available_actions
+        actions = list(self.engine.available_actions)
+        skills = getattr(self.player_char, "spellbook", {}).get("Skills", {})
+        has_resolve = any(
+            getattr(skill, "resource_type", None) == "Resolve"
+            and promotion_kits.combat_skill_visible(self.player_char, skill)
+            for skill in skills.values()
+        )
+        has_standard = any(
+            not getattr(skill, "passive", False)
+            and getattr(skill, "resource_type", None) != "Resolve"
+            and promotion_kits.combat_skill_visible(self.player_char, skill)
+            for skill in skills.values()
+        )
+        if has_resolve and "Use Skill" in actions and "Resolve" not in actions:
+            actions.insert(actions.index("Use Skill"), "Resolve")
+        if has_resolve and not has_standard and "Use Skill" in actions:
+            actions.remove("Use Skill")
+        return actions
 
     @available_actions.setter
     def available_actions(self, value: list) -> None:
@@ -252,9 +270,17 @@ class BattleManager:
         while True:
             choice = False
             action = self.battle_ui.navigate_menu()
-            if action in ["Cast Spell", "Use Skill", "Use Item", "Steal As Well"]:
+            if action in [
+                "Cast Spell",
+                "Use Skill",
+                "Resolve",
+                "Use Item",
+                "Steal As Well",
+            ]:
                 self.battle_popup.update_options(action, tile=self.tile)
                 choice = self.battle_popup.navigate_popup().split('  ')[0]
+                if action == "Resolve":
+                    action = "Use Skill"
             elif action == "Runic Boost":
                 options = []
                 for spell_name in astromancer.boostable_spells(self.player_char):

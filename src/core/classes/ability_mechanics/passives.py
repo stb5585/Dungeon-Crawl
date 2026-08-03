@@ -58,6 +58,29 @@ def trigger_zephyrstrike(character: Any) -> str:
     return f"Zephyrstrike quickens {character.name}.\n"
 
 
+def trigger_blessed_light(character: Any, amount: int, source: str) -> str:
+    """Apply Blessed Light after a successful healing-spell cast in combat."""
+    if amount <= 0 or not getattr(character, "_active_combat", False):
+        return ""
+    if not has_skill(character, "Blessed Light"):
+        return ""
+    spell = (
+        getattr(character, "spellbook", {})
+        .get("Spells", {})
+        .get(source)
+    )
+    if spell is None or getattr(spell, "subtyp", None) != "Heal":
+        return ""
+    attack = getattr(character, "stat_effects", {}).get("Attack")
+    if attack is None:
+        return ""
+    attack.active = True
+    attack.duration = max(int(attack.duration or 0), 3)
+    attack.extra = max(int(attack.extra or 0), 10)
+    attack.source = "Blessed Light"
+    return f"Blessed Light grants {character.name} +10 Attack for three turns.\n"
+
+
 def power_up_active(character: Any, skill_name: str | None = None, class_name: str | None = None) -> bool:
     if class_name and getattr(getattr(character, "cls", None), "name", None) != class_name:
         return False
@@ -145,7 +168,22 @@ def last_stand_defense_bonus(character: Any) -> int:
 
 
 def last_stand_block_bonus(character: Any) -> int:
-    return 25 if has_skill(character, "Last Stand") else 0
+    if not has_skill(character, "Last Stand"):
+        return 0
+    bonus = 25
+    try:
+        from ...progression import has_talent
+
+        last_stand = getattr(character, "class_effects", {}).get("Last Stand")
+        if (
+            has_talent(character, "stalwart.unbroken-wall")
+            and last_stand is not None
+            and last_stand.active
+        ):
+            bonus += 10
+    except Exception:
+        pass
+    return bonus
 
 
 def activate_last_stand(character: Any) -> str:
@@ -172,10 +210,77 @@ def posturing_parry_bonus(character: Any) -> float:
     return 0.20 if defend is not None and defend.active else 0.0
 
 
+def retort_parry_bonus(character: Any) -> float:
+    """Add the positive Intelligence modifier to Parry chance."""
+    if not has_skill(character, "Retort"):
+        return 0.0
+    intelligence = int(getattr(getattr(character, "stats", None), "intel", 10) or 10)
+    return max(0.0, (intelligence - 10) * 0.01)
+
+
+def retort_counter_multiplier(character: Any) -> float:
+    """Add the positive Intelligence modifier to Parry counter damage."""
+    if not has_skill(character, "Retort"):
+        return 1.0
+    intelligence = int(getattr(getattr(character, "stats", None), "intel", 10) or 10)
+    return 1.0 + max(0.0, (intelligence - 10) * 0.03)
+
+
+def pain_tolerance_bleed_multiplier(character: Any) -> float:
+    """Halve bleed damage and bleed-driven vulnerability."""
+    return 0.50 if has_skill(character, "Pain Tolerance") else 1.0
+
+
+def bandage_healing_multiplier(character: Any) -> float:
+    """Double Bandage healing for a character with Pain Tolerance."""
+    return 2.0 if has_skill(character, "Pain Tolerance") else 1.0
+
+
+def trigger_hemorrhage_thirst(character: Any, bleed_damage: int) -> str:
+    """Resolve healing and consecutive-turn bloodlust from enemy bleed damage."""
+    if not has_skill(character, "Hemorrhage Thirst"):
+        character._hemorrhage_thirst_streak = 0
+        return ""
+    damage = max(0, int(bleed_damage or 0))
+    if damage <= 0:
+        character._hemorrhage_thirst_streak = 0
+        return ""
+
+    healed = min(
+        damage,
+        max(0, int(character.health.max) - int(character.health.current)),
+    )
+    character.health.current += healed
+    streak = int(getattr(character, "_hemorrhage_thirst_streak", 0) or 0) + 1
+    character._hemorrhage_thirst_streak = streak
+    message = (
+        f"{character.name}'s Hemorrhage Thirst restores {healed} health "
+        "from the enemy's bleeding.\n"
+    )
+    if streak > 2:
+        sleep = character.status_effects["Sleep"]
+        sleep.active = True
+        sleep.duration = max(2, int(sleep.duration or 0))
+        sleep.source = "Hemorrhage Thirst"
+        character._hemorrhage_thirst_streak = 0
+        message += (
+            f"{character.name}'s bloodlust becomes overwhelming, leaving "
+            "them unconscious for two turns.\n"
+        )
+    return message
+
+
 def retaliate_after_block(defender: Any, attacker: Any, *, rng: Any = random) -> str:
     if not has_skill(defender, "Retaliate"):
         return ""
     chance = min(0.75, 0.20 + (int(getattr(defender.stats, "dex", 0)) * 0.01))
+    try:
+        from ...progression import has_talent
+
+        if has_talent(defender, "sentinel.watchful-reprisal"):
+            chance = min(0.85, chance + 0.10)
+    except Exception:
+        pass
     if rng.random() >= chance:
         return ""
     msg = f"{defender.name} retaliates after the block!\n"

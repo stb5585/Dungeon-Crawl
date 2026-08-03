@@ -39,6 +39,14 @@ if TYPE_CHECKING:
 
 
 class CharacterOffenseMixin:
+    def _honed_attack_critical_multiplier(self, multiplier: float) -> float:
+        """Increase only the bonus portion of weapon critical damage."""
+        honed_attack = self.spellbook.get("Skills", {}).get("Honed Attack")
+        if multiplier > 1 and honed_attack is not None:
+            ranks = max(1, int(getattr(honed_attack, "ranks", 1) or 1))
+            return 1 + ((multiplier - 1) * (1 + (0.25 * ranks)))
+        return multiplier
+
     def hit_chance(self, defender: Character, typ: str = 'weapon') -> float:
         """
         Calculate hit chance based on various factors.
@@ -48,6 +56,7 @@ class CharacterOffenseMixin:
                 accessory bonuses, difference in pro level
             Spell attack: enemy status effects
         """
+        from ..classes import ability_mechanics, paladin
 
         # Defensive guard: speed stats can be 0 in synthetic/summon test states.
         a_speed = self.check_mod("speed", enemy=defender)
@@ -63,6 +72,8 @@ class CharacterOffenseMixin:
                     blind_pen *= ELF_BLIND_PENALTY_MULTIPLIER
             except Exception:
                 pass
+            if ability_mechanics.has_skill(self, "Blind Fighting"):
+                blind_pen *= 0.50
             hit_mod *= 1 - (blind_pen * self.status_effects["Blind"].active)
             hit_mod *= 1 - FLYING_ACCURACY_PENALTY * defender.flying
             hit_mod *= 1 - (DISARM_HIT_PENALTY * self.is_disarmed())
@@ -86,6 +97,11 @@ class CharacterOffenseMixin:
                         hit_mod *= GNOME_ENCUMBERED_HIT_MULTIPLIER
                 except Exception:
                     pass
+        if typ == "weapon" and "Weapon Focus" in self.spellbook.get("Skills", {}):
+            hit_mod += 0.05
+        if typ == "weapon":
+            hit_mod += ability_mechanics.duelist_accuracy_bonus(self)
+            hit_mod += paladin.sword_and_board_accuracy_bonus(self)
         return max(0, hit_mod)
 
     def dodge_chance(self, attacker: Character, spell: bool = False) -> float:
@@ -182,6 +198,14 @@ class CharacterOffenseMixin:
         crit_chance += ability_mechanics.third_eye_crit_bonus(self)
         crit_chance += ability_mechanics.drunken_brawler_crit_bonus(self)
         crit_chance += ability_mechanics.tricksters_gambit_crit_bonus(self)
+        crit_chance += ability_mechanics.duelist_critical_bonus(self)
+        berserk = self.status_effects.get("Berserk")
+        if (
+            berserk is not None
+            and berserk.active
+            and int(getattr(berserk, "extra", 0) or 0) == 1
+        ):
+            crit_chance += 0.15
 
         return max(0.0, min(MAX_CRIT_CHANCE, crit_chance))
 
@@ -194,6 +218,10 @@ class CharacterOffenseMixin:
         cover: bool = False,
         hit: bool = False,
         use_offhand: bool = True,
+        attack_slots: tuple[str, ...] | None = None,
+        accuracy_modifier: float = 0.0,
+        critical_multiplier: int | None = None,
+        damage_type_override: str | None = None,
     ) -> WeaponDamageResult:
         """
         Function that controls melee attacks during combat
@@ -205,8 +233,9 @@ class CharacterOffenseMixin:
         hit(bool): guarantees hit if target doesn't dodge
         """
         from ..combat.combat_result import CombatResult, CombatResultGroup
-        from ..classes import grandmaster, ability_mechanics
+        from ..classes import ability_mechanics, grandmaster, paladin
 
+        self._last_attack_parried = False
         if defender.magic_effects["Ice Block"].active or defender.tunnel:
             return f"{self.name}'s attack has no effect.\n", False, crit
         if getattr(self, "_twist_fate_success", False):
@@ -214,9 +243,17 @@ class CharacterOffenseMixin:
             self._twist_fate_success = False
         hits = []  # indicates if the attack was successful for means of ability/weapon affects
         crits = []
-        attacks = ['Weapon']
-        if use_offhand and self.equipment['OffHand'].typ == 'Weapon':
-            attacks.append('OffHand')
+        if attack_slots is not None:
+            attacks = list(attack_slots)
+        else:
+            attacks = []
+            maim = self.physical_effects.get("Maim")
+            if maim is None or not maim.active:
+                attacks.append("Weapon")
+            if use_offhand and self.equipment['OffHand'].typ == 'Weapon':
+                attacks.append('OffHand')
+        if not attacks:
+            return f"{self.name} cannot use their main-hand weapon.\n", False, crit
         weapon_dam_str = ""
         for i, att in enumerate(attacks):
             hits.append(hit)
@@ -238,9 +275,44 @@ class CharacterOffenseMixin:
                     self.equipment[att].special_effect(results)
                     weapon_dam_str += f"{self.name} leers at {defender.name}.\n"
                     break
-            crits[i] = 2 if crit == 1 and self.critical_chance(att) > random.random() else crit
-            dmg = max(1, int(dmg_mod * self.check_mod(att.lower(), enemy=defender)))
+            natural_crit = crit == 1 and self.critical_chance(att) > random.random()
+            crits[i] = (
+                int(critical_multiplier or 2)
+                if natural_crit
+                else crit
+            )
+            weapon_type = getattr(self.equipment[att], "subtyp", None)
+            style_modifier = (
+                ability_mechanics.duelist_damage_multiplier(self)
+                * grandmaster.two_handed_damage_multiplier(self, att)
+                * paladin.sword_and_board_damage_multiplier(self)
+                * grandmaster.perfect_form_damage_multiplier(
+                    self,
+                    weapon_type,
+                )
+            )
+            cripple = self.physical_effects.get("Cripple")
+            cripple_modifier = (
+                1.0 - min(0.90, max(0.0, float(cripple.extra or 0)))
+                if cripple is not None and cripple.active
+                else 1.0
+            )
+            dmg = max(
+                1,
+                int(
+                    dmg_mod
+                    * style_modifier
+                    * cripple_modifier
+                    * self.check_mod(att.lower(), enemy=defender)
+                ),
+            )
             crit_per = random.uniform(1, crits[i])
+            crit_per = self._honed_attack_critical_multiplier(crit_per)
+            crit_per = grandmaster.brutish_critical_multiplier(
+                self,
+                weapon_type,
+                crit_per,
+            )
             if crit_per > 1:
                 try:
                     from ..classes import paladin
@@ -248,7 +320,6 @@ class CharacterOffenseMixin:
                     crit_per *= paladin.retribution_crit_damage_multiplier(self)
                 except Exception:
                     pass
-            weapon_type = getattr(self.equipment[att], "subtyp", None)
             if weapon_type == "Sword":
                 precision = getattr(self, "grandmaster_technique_stacks", {}).get("Sword Precision", {})
                 stacks = int(precision.get("stacks", 0) or 0)
@@ -266,9 +337,18 @@ class CharacterOffenseMixin:
             if not hit:
                 dodge = defender.dodge_chance(self) > random.random()
                 hit_per = self.hit_chance(defender, typ='weapon')
+                hit_per += accuracy_modifier
                 hit_per += grandmaster.accuracy_bonus(self, weapon_type)
+                hit_per += grandmaster.two_handed_accuracy_bonus(self, att)
+                hit_per += grandmaster.perfect_form_accuracy_bonus(
+                    self,
+                    weapon_type,
+                )
                 hit_per += ability_mechanics.polearm_accuracy_modifier(self, weapon_type)
                 hit_per += ability_mechanics.monkey_grip_accuracy_modifier(self, att)
+                from ..classes import promotion_kits
+
+                hit_per += promotion_kits.aerial_accuracy_bonus(self)
                 hits[i] = hit_per > random.random()
             else:
                 dodge = False
@@ -407,7 +487,13 @@ class CharacterOffenseMixin:
                             before_rank,
                             after_rank,
                         )
-                    weapon_dam_str += self._apply_on_hit_effects(defender, damage, crits[i], att)
+                    weapon_dam_str += self._apply_on_hit_effects(
+                        defender,
+                        damage,
+                        crits[i],
+                        att,
+                        damage_type_override=damage_type_override,
+                    )
                     weapon_dam_str += grandmaster.apply_weapon_technique(self, defender, weapon_type)
                 # Evasive Guard: build stacks when you get hit; capped at 3.
                 # This encourages "stay in the fight" play without altering race resistances.
@@ -473,16 +559,33 @@ class CharacterOffenseMixin:
         if "Evasive Guard" in defender.spellbook.get("Skills", {}):
             defender.evasive_guard_stacks = 0
         if 'Parry' in defender.spellbook['Skills']:
-            from ..classes import ability_mechanics
+            from ..classes import ability_mechanics, grandmaster
 
             # Parry counter-attack chance scales with defender DEX.
             # This makes high-DEX archetypes more resilient without changing race resistances.
             dex = int(getattr(defender.stats, "dex", 10))
             parry_chance = max(0.10, min(0.85, 0.25 + (dex - 10) * 0.03))
-            parry_chance = min(0.95, parry_chance + ability_mechanics.posturing_parry_bonus(defender))
+            parry_chance = min(
+                0.95,
+                parry_chance
+                + ability_mechanics.posturing_parry_bonus(defender)
+                + ability_mechanics.retort_parry_bonus(defender)
+                + grandmaster.adaptive_arsenal_parry_bonus(defender),
+            )
             if random.random() < parry_chance:
+                self._last_attack_parried = True
                 msg += f"{defender.name} parries {self.name}'s attack and counterattacks!\n"
-                counter_str, _, _ = defender.weapon_damage(self)
+                counter_crit = (
+                    2
+                    if random.random()
+                    < grandmaster.adaptive_arsenal_counter_crit_chance(defender)
+                    else 1
+                )
+                counter_str, _, _ = defender.weapon_damage(
+                    self,
+                    dmg_mod=ability_mechanics.retort_counter_multiplier(defender),
+                    crit=counter_crit,
+                )
                 msg += counter_str
                 if not self.is_alive():
                     return msg, True

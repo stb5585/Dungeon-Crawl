@@ -32,14 +32,19 @@ class DummySurface:
 class RecordingFont:
     def __init__(self, height=24):
         self.render_calls = []
+        self.render_color_calls = []
         self._height = height
 
-    def render(self, text, _aa, _color):
+    def render(self, text, _aa, color):
         self.render_calls.append(text)
+        self.render_color_calls.append((text, color))
         return DummySurface((max(8, len(text) * 8), self._height), text=text)
 
     def get_height(self):
         return self._height
+
+    def size(self, text):
+        return max(8, len(text) * 8), self._height
 
 
 class RecordingScreen:
@@ -69,6 +74,14 @@ def _make_presenter():
 
 def _make_player():
     return SimpleNamespace(
+        cls=SimpleNamespace(
+            restrictions={
+                "Weapon": ["Sword", "Mace"],
+                "OffHand": ["Shield"],
+                "Armor": ["Light", "Medium", "Heavy"],
+                "Helmet": ["Light", "Medium", "Heavy"],
+            },
+        ),
         stats=SimpleNamespace(strength=10, intel=9, wisdom=8, con=7, charisma=6, dex=5),
         health=SimpleNamespace(max=40),
         mana=SimpleNamespace(max=20),
@@ -346,7 +359,7 @@ def test_promotion_screen_draw_helpers(monkeypatch):
     monkeypatch.setattr("src.ui_pygame.gui.promotion_screen.pygame.draw.rect", lambda *_a, **_k: draw_rect_calls.append(True))
     monkeypatch.setattr("src.ui_pygame.gui.promotion_screen.pygame.display.flip", lambda: flip_calls.append(True))
 
-    assert screen._wrap_lines("alpha beta\ngamma", 5)
+    assert screen._wrap_lines("alpha beta\ngamma", presenter.small_font, 40)
 
     stat_pairs = screen._stat_pairs(KnightClass())
     assert stat_pairs[0][0][0] == "Strength"
@@ -357,7 +370,11 @@ def test_promotion_screen_draw_helpers(monkeypatch):
     screen._draw_instructions()
     screen.draw_all()
 
-    assert "Church of Elysia - Promotion" in presenter.normal_font.render_calls
+    assert "Class Promotion" in presenter.normal_font.render_calls
+    assert not any(
+        "Church" in text
+        for text in presenter.normal_font.render_calls
+    )
     assert "Choose your path" in presenter.normal_font.render_calls
     assert "Warrior -> Knight" in presenter.large_font.render_calls
     assert "Promotion Impact" in presenter.normal_font.render_calls
@@ -408,7 +425,49 @@ def test_promotion_screen_embeds_compact_character_menu_help(monkeypatch):
     assert not any("New tab:" in call for call in presenter.small_font.render_calls)
     assert any("Character Menu: Weapon Discipline" in call for call in presenter.small_font.render_calls)
     assert any("Intelligence helps" in call for call in presenter.small_font.render_calls)
+    mechanic_colors = {
+        color
+        for text, color in presenter.small_font.render_color_calls
+        if text.startswith("Character Menu:") or "Intelligence helps" in text
+    }
+    assert mechanic_colors == {screen.MECHANIC_TEXT_COLOR}
+    stat_label_colors = {
+        color
+        for text, color in presenter.small_font.render_color_calls
+        if text in {"Strength", "Health", "Intelligence", "Mana"}
+    }
+    assert stat_label_colors == {screen.STAT_LABEL_COLOR}
     assert draw_rect_calls
+
+
+def test_promotion_screen_lists_only_equipment_restriction_changes(monkeypatch):
+    presenter = _make_presenter()
+    player = _make_player()
+    monkeypatch.setattr(
+        promotion_screen.PromotionScreen,
+        "_load_background",
+        lambda self: setattr(self, "background", None),
+    )
+    screen = promotion_screen.PromotionScreen(
+        presenter,
+        player,
+        options=["Weapon Master"],
+        option_map={"Weapon Master": WeaponMasterClass},
+        current_class="Warrior",
+        pro_level=1,
+    )
+
+    changes = screen._restriction_changes(WeaponMasterClass())
+
+    assert changes == [
+        ("Weapon", ["Fist", "Dagger"], ["Mace"]),
+        ("OffHand", [], ["Shield"]),
+        ("Armor", [], ["Heavy"]),
+        ("Helmet", [], ["Light", "Medium", "Heavy"]),
+    ]
+    assert screen._restriction_change_text(*changes[0]) == (
+        "Weapon: allows Fist, Dagger; no longer allows Mace"
+    )
 
 
 def test_promotion_screen_previews_warrior_branch_mechanics(monkeypatch):

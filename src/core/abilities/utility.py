@@ -11,6 +11,7 @@ from .base import (
     Enhance,
     MartialArts,
     Offensive,
+    Skill,
     Stealth,
     Truth,
     _load_yaml_ability,
@@ -48,6 +49,129 @@ class Quickstep(Defensive):
         super().__init__(
             name="Quickstep",
             description="You fight light on your feet, improving your ability to evade attacks.",
+        )
+        self.passive = True
+
+
+class NaturalAttunement(Skill):
+    """Neutral Pathfinder support skill for both martial and arcane paths."""
+
+    def __init__(self):
+        super().__init__(
+            name="Natural Attunement",
+            description=(
+                "Attune to nature, increasing Defense and Magic Defense."
+            ),
+        )
+        self.subtyp = "Enhance"
+        self.cost = 5
+        self.target_self = True
+
+    def use(self, user, target=None, **kwargs):
+        result = super().use(user, user, **kwargs)
+        if user.mana.current < self.cost:
+            result.message = f"{user.name} does not have enough mana.\n"
+            return result
+        user.mana.current -= self.cost
+        level = int(getattr(user.level, "level", user.level))
+        extra = level // 2 + 1
+        for stat_name in ("Defense", "Magic Defense"):
+            effect = user.stat_effects[stat_name]
+            effect.active = True
+            effect.duration = max(effect.duration, 3)
+            effect.extra = max(effect.extra, extra)
+            result.effects_applied["Stat"].append(f"{stat_name} Buff")
+        result.message = (
+            f"{user.name} attunes to nature, gaining Defense and "
+            "Magic Defense for three turns.\n"
+        )
+        return result
+
+
+class Rally(Skill):
+    """Warrior support skill that briefly fortifies both defenses."""
+
+    def __init__(self):
+        super().__init__(
+            name="Rally",
+            description=(
+                "Steel your resolve, increasing Defense and Magic Defense."
+            ),
+        )
+        self.subtyp = "Enhance"
+        self.cost = 5
+        self.target_self = True
+
+    def use(self, user, target=None, **kwargs):
+        result = super().use(user, user, **kwargs)
+        if user.mana.current < self.cost:
+            result.message = f"{user.name} does not have enough mana.\n"
+            return result
+        user.mana.current -= self.cost
+        level = int(getattr(user.level, "level", user.level))
+        extra = level // 2 + 1
+        for stat_name in ("Defense", "Magic Defense"):
+            effect = user.stat_effects[stat_name]
+            effect.active = True
+            effect.duration = max(effect.duration, 3)
+            effect.extra = max(effect.extra, extra)
+            result.effects_applied["Stat"].append(f"{stat_name} Buff")
+        result.message = (
+            f"{user.name} rallies, gaining Defense and Magic Defense for three turns.\n"
+        )
+        return result
+
+
+class Adrenaline(Skill):
+    """Emergency self-heal usable only below ten percent health."""
+
+    def __init__(self):
+        super().__init__(
+            name="Adrenaline",
+            description=(
+                "When in dire need, trigger the body's reserves to restore up "
+                "to 20% of maximum health while below 10% health."
+            ),
+        )
+        self.subtyp = "Enhance"
+        self.cost = 0
+        self.target_self = True
+
+    def use(self, user, target=None, **kwargs):
+        result = super().use(user, user, **kwargs)
+        maximum = max(1, int(user.health.max))
+        if int(user.health.current) * 10 >= maximum:
+            result.message = (
+                f"{user.name} can only trigger Adrenaline below 10% health.\n"
+            )
+            return result
+        healing = max(1, int(maximum * 0.20))
+        healing_multiplier = getattr(user, "healing_received_multiplier", None)
+        if callable(healing_multiplier):
+            healing = int(healing * healing_multiplier())
+        actual = max(
+            0,
+            min(healing, maximum - int(user.health.current)),
+        )
+        user.health.current += actual
+        if hasattr(user, "_emit_healing_event"):
+            user._emit_healing_event(actual, source=self.name)
+        result.healing = actual
+        result.message = (
+            f"{user.name}'s adrenaline surges, restoring {actual} health.\n"
+        )
+        return result
+
+
+class HonedAttack(Class):
+    """Passive training that increases the bonus damage of critical hits."""
+
+    def __init__(self):
+        super().__init__(
+            name="Honed Attack",
+            description=(
+                "Passive: Increase the damage bonus from critical hits by 25%."
+            ),
         )
         self.passive = True
 
@@ -93,6 +217,40 @@ class Goad:
     """Data-driven (goad.yaml)"""
     def __new__(cls):
         return _load_yaml_ability("goad.yaml", cls_name="Goad")
+
+
+class Dishearten(Skill):
+    """Timed shout that reduces an enemy's melee damage."""
+
+    def __init__(self):
+        super().__init__(
+            name="Dishearten",
+            description=(
+                "Shout at an enemy, reducing the melee damage they deal by 25% "
+                "for three turns."
+            ),
+        )
+        self.subtyp = "Defensive"
+        self.cost = 5
+
+    def use(self, user, target=None, **kwargs):
+        target = target or user
+        result = super().use(user, target, **kwargs)
+        if user.mana.current < self.cost:
+            result.message = f"{user.name} does not have enough mana.\n"
+            return result
+        user.mana.current -= self.cost
+        effect = target.stat_effects["Attack"]
+        effect.active = True
+        effect.duration = max(int(effect.duration or 0), 3)
+        effect.extra = min(int(effect.extra or 0), 0)
+        effect.source = "Dishearten"
+        result.effects_applied["Stat"].append("Attack Debuff")
+        result.message = (
+            f"{user.name} disheartens {target.name}, reducing their melee "
+            "damage for three turns.\n"
+        )
+        return result
 
 
 # Stealth skills
@@ -397,6 +555,17 @@ class Retaliate(Defensive):
         super().__init__(
             name="Retaliate",
             description="Your skill with a shield makes quick responses your forte.",
+        )
+        self.passive = True
+
+
+class Chastise(Class):
+    """Passive training that empowers Shield Slam."""
+
+    def __init__(self):
+        super().__init__(
+            name="Chastise",
+            description="Passive: Shield Slam deals 25% more damage.",
         )
         self.passive = True
 

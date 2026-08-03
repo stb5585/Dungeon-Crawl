@@ -40,6 +40,12 @@ RESOLVE_SPEND_ABILITIES: tuple[dict[str, Any], ...] = (
         "description": "Raise Magic Defense and brace against hostile spell pressure.",
     },
     {
+        "name": "Spell Reflection",
+        "role": "Anti-magic",
+        "cost": 25,
+        "description": "Prepare to reflect the next compatible hostile spell.",
+    },
+    {
         "name": "Bulwark",
         "role": "Barrier",
         "cost": 25,
@@ -172,7 +178,18 @@ def build_resolve(character: Any, amount: int, reason: str = "") -> str:
     cap = resolve_cap(character)
     data = _resolve_data(character)
     before = int(data.get("guard_meter", 0) or 0)
-    data["guard_meter"] = min(cap, before + max(0, int(amount)))
+    gain = max(0, int(amount))
+    try:
+        from ...progression import has_talent
+
+        if (
+            has_talent(character, "stalwart.unbroken-wall")
+            and getattr(character.class_effects.get("Last Stand"), "active", False)
+        ):
+            gain = max(1, int(round(gain * 1.5)))
+    except Exception:
+        pass
+    data["guard_meter"] = min(cap, before + gain)
     if data["guard_meter"] == before:
         return "Resolve is capped.\n"
     msg = f"{character.name} gains {data['guard_meter'] - before} Resolve from {reason} ({data['guard_meter']}/{cap}).\n"
@@ -188,8 +205,22 @@ def hold_the_line(character: Any) -> str:
     if shield:
         return shield
     combat_state(character)["hold_the_line"] = 3
-    character.enter_defensive_stance(duration=3)
-    return f"{character.name} holds the line behind their shield.\n" + gain_resolve_mastery(character, 1, "Hold the Line")
+    reduction = float(getattr(character, "defensive_stance_reduction", 0.5))
+    try:
+        from ...progression import has_talent
+
+        if has_talent(character, "sentinel.resolute-guard"):
+            reduction += 0.05
+    except Exception:
+        pass
+    character.enter_defensive_stance(
+        duration=3,
+        reduction=min(0.75, reduction),
+        source="Hold the Line",
+    )
+    msg = f"{character.name} holds the line behind their shield.\n"
+    msg += build_resolve(character, 5, "Hold the Line")
+    return msg
 
 
 def shield_check(character: Any, target: Any | None) -> str:
@@ -277,6 +308,108 @@ def deflect_spell(character: Any) -> str:
     return f"{character.name} spends 20 Resolve to deflect hostile magic.\n"
 
 
+def prepare_spell_reflection(character: Any) -> str:
+    """Spend Resolve to prepare a one-shot hostile-spell reflection."""
+    training = _require_resolve_training(character, "Spell Reflection")
+    if training:
+        return training
+    shield = _require_shield(character, "Spell Reflection")
+    if shield:
+        return shield
+    ok, msg, _data = _spend_resolve(character, 25, "Spell Reflection")
+    if not ok:
+        return msg
+    state = combat_state(character)
+    state["spell_reflection_turns"] = 2
+    state["spell_reflection_skip_tick"] = True
+    return (
+        f"{character.name} spends 25 Resolve and prepares Spell Reflection "
+        "for two turns.\n"
+    )
+
+
+def spell_reflection_ready(character: Any) -> bool:
+    """Return whether a prepared one-shot reflection can trigger."""
+    return (
+        class_name(character) in {"Sentinel", "Stalwart Defender"}
+        and int(combat_state(character).get("spell_reflection_turns", 0) or 0)
+        > 0
+        and _has_shield(character)
+    )
+
+
+def spell_reflection_compatible(spell: Any) -> bool:
+    """Return whether a hostile, targeted spell may consume the preparation."""
+    if spell is None:
+        return True
+    if bool(getattr(spell, "unreflectable", False)):
+        return False
+    if getattr(spell, "reflectable", True) is False:
+        return False
+    if bool(getattr(spell, "area", False) or getattr(spell, "area_effect", False)):
+        return False
+    target_mode = str(
+        getattr(spell, "target_mode", getattr(spell, "target_type", "target"))
+        or "target"
+    ).lower()
+    if target_mode in {"all", "all_enemies", "area", "aoe", "self"}:
+        return False
+    return str(getattr(spell, "subtyp", "") or "") not in {
+        "Healing",
+        "Movement",
+        "Support",
+    }
+
+
+def consume_spell_reflection(
+    character: Any,
+    spell_name: str = "The spell",
+    *,
+    spell: Any = None,
+) -> str:
+    """Consume a prepared reflection after a compatible spell targets it."""
+    if (
+        not spell_reflection_ready(character)
+        or not spell_reflection_compatible(spell)
+    ):
+        return ""
+    state = combat_state(character)
+    state["spell_reflection_turns"] = 0
+    state["spell_reflection_skip_tick"] = False
+    msg = (
+        f"{character.name}'s Spell Reflection turns {spell_name} back on "
+        "its caster.\n"
+    )
+    try:
+        from ...progression import has_talent
+
+        if has_talent(character, "stalwart.mirror-bastion"):
+            msg += build_resolve(character, 20, "Mirror Bastion")
+            effect = character.stat_effects["Magic Defense"]
+            effect.active = True
+            effect.duration = max(int(effect.duration or 0), 2)
+            effect.extra = max(int(effect.extra or 0), 6)
+            msg += "Mirror Bastion raises Magic Defense by 6 for two turns.\n"
+    except Exception:
+        pass
+    return msg
+
+
+def tick_spell_reflection(character: Any) -> str:
+    """Advance prepared Spell Reflection without consuming its setup turn."""
+    state = combat_state(character)
+    turns = int(state.get("spell_reflection_turns", 0) or 0)
+    if turns <= 0:
+        return ""
+    if state.get("spell_reflection_skip_tick"):
+        state["spell_reflection_skip_tick"] = False
+        return ""
+    state["spell_reflection_turns"] = max(0, turns - 1)
+    if state["spell_reflection_turns"] <= 0:
+        return f"{character.name}'s Spell Reflection expires.\n"
+    return ""
+
+
 def bulwark(character: Any) -> str:
     training = _require_resolve_training(character, "Bulwark")
     if training:
@@ -310,7 +443,19 @@ def shield_riposte(character: Any, target: Any | None) -> str:
     ok, msg, _data = _spend_resolve(character, 20, "Shield Riposte")
     if not ok:
         return msg
-    msg, _hit, _crit = character.weapon_damage(target, dmg_mod=0.75, use_offhand=False)
+    damage_mod = 0.75
+    try:
+        from ...progression import has_talent
+
+        if has_talent(character, "stalwart.punishing-guard"):
+            damage_mod = 1.0
+    except Exception:
+        pass
+    msg, _hit, _crit = character.weapon_damage(
+        target,
+        dmg_mod=damage_mod,
+        use_offhand=False,
+    )
     return f"{character.name} spends 20 Resolve on Shield Riposte.\n{msg}"
 
 
@@ -332,25 +477,71 @@ def _use_resolve_surge(character: Any, surge_name: str, target: Any | None = Non
     gain_resolve_mastery(character, 1, surge_name)
 
     if surge_name == "Citadel Aegis":
+        barrier = cap
+        duration = 3
+        try:
+            from ...progression import has_talent
+
+            if has_talent(character, "stalwart.fortified-citadel"):
+                barrier = 125
+                duration = 4
+        except Exception:
+            pass
         effect = character.magic_effects["Nature Shield"]
         effect.active = True
-        effect.duration = 3
-        effect.extra = max(int(effect.extra or 0), cap)
-        character.enter_defensive_stance(duration=3)
+        effect.duration = duration
+        effect.extra = max(int(effect.extra or 0), barrier)
+        character.enter_defensive_stance(duration=duration)
         return f"{character.name} unleashes Citadel Aegis, emptying Resolve into a fortress barrier.\n"
 
     if surge_name == "Ironwall Reprisal":
-        msg, _hit, _crit = character.weapon_damage(target, dmg_mod=1.35, use_offhand=False)
+        damage_mod = 1.35
+        crushing = False
+        try:
+            from ...progression import has_talent
+
+            crushing = has_talent(character, "stalwart.crushing-reprisal")
+            if crushing:
+                damage_mod = 1.60
+        except Exception:
+            pass
+        msg, hit, _crit = character.weapon_damage(
+            target,
+            dmg_mod=damage_mod,
+            use_offhand=False,
+        )
+        if crushing and hit:
+            for name in ("Attack", "Speed"):
+                effect = target.stat_effects[name]
+                effect.active = True
+                effect.duration = max(int(effect.duration or 0), 2)
+                effect.extra = min(int(effect.extra or 0), -3)
+            msg += (
+                "Crushing Reprisal lowers the enemy's Attack and Speed by 3 "
+                "for two turns.\n"
+            )
         return f"{character.name} unleashes Ironwall Reprisal, emptying Resolve into a crushing counter.\n{msg}"
 
     if surge_name == "Last Bastion":
-        heal = max(1, int(character.health.max * 0.30))
+        heal_ratio = 0.30
+        barrier = cap // 2
+        duration = 2
+        try:
+            from ...progression import has_talent
+
+            if has_talent(character, "stalwart.final-redoubt"):
+                heal_ratio = 0.40
+                barrier = 75
+                duration = 3
+        except Exception:
+            pass
+        heal = max(1, int(character.health.max * heal_ratio))
         character.health.current = min(character.health.max, character.health.current + heal)
         effect = character.magic_effects["Nature Shield"]
         effect.active = True
-        effect.duration = max(int(effect.duration or 0), 2)
-        effect.extra = max(int(effect.extra or 0), cap // 2)
-        character.enter_defensive_stance(duration=2)
+        effect.duration = max(int(effect.duration or 0), duration)
+        effect.extra = max(int(effect.extra or 0), barrier)
+        character.enter_defensive_stance(duration=duration)
         return f"{character.name} unleashes Last Bastion, emptying Resolve to recover {heal} health and reset their guard.\n"
 
     return f"{surge_name} is not a recognized Resolve Surge.\n"

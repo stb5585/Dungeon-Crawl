@@ -123,9 +123,9 @@ def test_debug_level_up_and_bounty_helpers(monkeypatch):
         level_up=lambda game_obj, textbox=None, menu=None: outputs.append(("level_up", textbox is not None, menu is not None)),
     )
     game.debug_level_up()
-    assert game.player_char.level.exp == 15
-    assert game.player_char.level.exp_to_gain == 0
-    assert outputs[-1] == ("level_up", True, True)
+    assert game.player_char.level.exp == 10
+    assert game.player_char.level.exp_to_gain == 5
+    assert outputs[-1] == ("level_up", True, False)
 
     outputs.clear()
     game.player_char.max_level = lambda: True
@@ -285,7 +285,13 @@ def test_new_game_builds_player_and_load_game_restores_clean_state(monkeypatch):
     assert player_char.name == "Ada"
     assert player_char.race.name == "Elf"
     assert player_char.cls.name == "Mage"
-    assert player_char.spellbook["Spells"]["Spark"].name == "Spark"
+    assert "Spark" not in player_char.spellbook["Spells"]
+    assert player_char.progression.unspent_points == 1
+    assert player_char.spellbook["Spells"] == {}
+    assert any(
+        isinstance(message, str) and "1 Progression Point" in message
+        for message in sleep_calls
+    )
     assert player_char.storage["Health Potion"] == ["potion"] * 5
     assert created["loaded_tiles"] is True
 

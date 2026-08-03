@@ -2,17 +2,7 @@
 
 import random
 
-from .. import abilities, quest_progress
-from ..constants import (
-    LEVELUP_ATK_LUCK_FACTOR,
-    LEVELUP_DEF_LUCK_FACTOR,
-    LEVELUP_LUCK_DIVISOR_BASE,
-    LEVELUP_LUCK_FACTOR_HP_MP,
-    LEVELUP_MAG_LUCK_FACTOR,
-    LEVELUP_MDEF_LUCK_FACTOR,
-    LEVELUP_STAT_DIVISOR,
-)
-from .stats import _upgrade_source_name
+from .. import quest_progress
 
 
 class PlayerProgressionMixin:
@@ -24,166 +14,27 @@ class PlayerProgressionMixin:
             textbox: Optional TextBox UI component
             menu: Optional SelectionPopupMenu UI component
         """
-        dv = max(1, LEVELUP_LUCK_DIVISOR_BASE - self.check_mod('luck', luck_factor=LEVELUP_LUCK_FACTOR_HP_MP))
-        health_gain = random.randint(self.stats.con // dv, self.stats.con)
-        self.health.max += health_gain
-        mana_gain = random.randint(self.stats.intel // dv, self.stats.intel)
-        self.mana.max += mana_gain
-        if self.in_town():
-            self.health.current = self.health.max
-            self.mana.current = self.mana.max
-        self.level.level += 1
-        self.refresh_highest_level()
-        level_str = (f"You have gained a level.\n"
-                     f"You are now level {self.level.level}.\n"
-                     f"You have gained {health_gain} health points and {mana_gain} mana points.\n")
-        attack_gain = random.randint(0, self.check_mod("luck", luck_factor=LEVELUP_ATK_LUCK_FACTOR) +
-                                    (self.stats.strength // LEVELUP_STAT_DIVISOR) + max(1, self.cls.att_plus // 2))
-        self.combat.attack += attack_gain
-        defense_gain = random.randint(0, self.check_mod("luck", luck_factor=LEVELUP_DEF_LUCK_FACTOR) +
-                                    (self.stats.con // LEVELUP_STAT_DIVISOR) + max(1, self.cls.def_plus // 2))
-        self.combat.defense += defense_gain
-        magic_gain = random.randint(0, self.check_mod("luck", luck_factor=LEVELUP_MAG_LUCK_FACTOR) +
-                                    (self.stats.intel // LEVELUP_STAT_DIVISOR) + max(1, self.cls.int_plus // 2))
-        self.combat.magic += magic_gain
-        magic_def_gain = random.randint(0, self.check_mod("luck", luck_factor=LEVELUP_MDEF_LUCK_FACTOR) +
-                                    (self.stats.wisdom // LEVELUP_STAT_DIVISOR) + max(1, self.cls.wis_plus // 2))
-        self.combat.magic_def += magic_def_gain
-        if attack_gain > 0:
-            level_str += f"You have gained {attack_gain} attack.\n"
-        if defense_gain > 0:
-            level_str += f"You have gained {defense_gain} defense.\n"
-        if magic_gain > 0:
-            level_str += f"You have gained {magic_gain} magic.\n"
-        if magic_def_gain > 0:
-            level_str += f"You have gained {magic_def_gain} magic defense.\n"
-        for spell in abilities.ability_classes_for_level(abilities.spell_dict, self.cls.name, self.level.level):
-            spell_gain = spell()
-            spell_name = spell_gain.name
-            if spell_name in self.spellbook['Spells']:
-                level_str += f"{spell_name} goes up a level.\n"
-            else:
-                old_name = _upgrade_source_name(spell)
-                if old_name and old_name in self.spellbook['Spells']:
-                    level_str += f"{old_name} is upgraded to {spell_name}."
-                    del self.spellbook['Spells'][old_name]
-                else:
-                    level_str += f"You have gained the ability to cast {spell_name}.\n"
-            self.spellbook['Spells'][spell_name] = spell_gain
-        for skill in abilities.ability_classes_for_level(abilities.skill_dict, self.cls.name, self.level.level):
-            skill_gain = skill()
-            skill_name = skill_gain.name
-            if skill_name in self.spellbook['Skills']:
-                level_str += f"{skill_name} goes up a level.\n"
-            else:
-                old_name = _upgrade_source_name(skill)
-                if old_name and old_name in self.spellbook['Skills']:
-                    level_str += f"{old_name} is upgraded to {skill_name}."
-                    del self.spellbook['Skills'][old_name]
-                else:
-                    level_str += f"You have gained the ability to use {skill_name}.\n"
-            self.spellbook['Skills'][skill_name] = skill_gain
-            if skill_name == 'Health/Mana Drain':
-                for skill in ["Health Drain", "Mana Drain"]:
-                    if skill in self.spellbook["Skills"]:
-                        del self.spellbook['Skills'][skill]
-            elif skill_name == "True Piercing Strike":
-                for skill in ["Piercing Strike", "True Strike"]:
-                    if skill in self.spellbook["Skills"]:
-                        del self.spellbook['Skills'][skill]
-            elif skill_name == 'Familiar':
-                level_str += self.familiar.level_up()
-            elif skill_name in ["Transform", "Purity of Body"]:
-                level_str += skill_gain.use(self)
-            elif skill_name == 'Totem':
-                # Initialize aspect unlocking for new Totem
-                newly_unlocked = skill_gain.check_and_unlock_aspects(self.level.level)
-                if newly_unlocked:
-                    aspects_str = ", ".join(newly_unlocked)
-                    level_str += f"Totem aspects unlocked: {aspects_str}.\n"
-        # Unlock Jump modifications (Lancer/Dragoon)
-        jump_skill = None
-        skills = self.spellbook.get("Skills", {})
-        if "Jump" in skills:
-            jump_skill = skills["Jump"]
-        else:
-            for sk in skills.values():
-                if getattr(sk, "name", "") == "Jump":
-                    jump_skill = sk
-                    break
-        if jump_skill is not None:
-            newly_unlocked = []
-            if hasattr(jump_skill, "check_and_unlock_level_modifications"):
-                newly_unlocked = jump_skill.check_and_unlock_level_modifications(
-                    self.level.level, self.cls.name
-                )
-            elif hasattr(jump_skill, "check_and_unlock_level_modification"):
-                newly_unlocked = jump_skill.check_and_unlock_level_modification(
-                    self.level.level, self.cls.name
-                )
-            if newly_unlocked:
-                mods_str = ", ".join(newly_unlocked)
-                level_str += f"New Jump modifications unlocked: {mods_str}.\n"
+        from ..progression import (
+            award_experience,
+            cumulative_experience_for_level,
+            ensure_progression,
+            level_up_message,
+        )
 
-        # Unlock Totem aspects (Shaman)
-        totem_skill = None
-        skills = self.spellbook.get("Skills", {})
-        if "Totem" in skills:
-            totem_skill = skills["Totem"]
-        else:
-            for sk in skills.values():
-                if getattr(sk, "name", "") == "Totem":
-                    totem_skill = sk
-                    break
-        if totem_skill is not None:
-            newly_unlocked = []
-            if hasattr(totem_skill, "check_and_unlock_aspects"):
-                newly_unlocked = totem_skill.check_and_unlock_aspects(self.level.level)
-            if newly_unlocked:
-                aspects_str = ", ".join(newly_unlocked)
-                level_str += f"New Totem aspects unlocked: {aspects_str}.\n"
-        if not self.max_level():
-            self.level.exp_to_gain += (self.exp_scale ** self.level.pro_level) * self.level.level
-        else:
-            self.level.exp_to_gain = "MAX"
-
-        # Only show UI if components are provided
+        progression = ensure_progression(self)
+        if progression.level >= 100:
+            return None
+        required_total = cumulative_experience_for_level(progression.level + 1)
+        result = award_experience(
+            self,
+            max(0, required_total - progression.total_xp),
+            rng=random,
+        )
         if textbox and game:
-            textbox.print_text_in_rectangle(level_str)
+            textbox.print_text_in_rectangle(level_up_message(result))
             game.stdscr.getch()
             textbox.clear_rectangle()
-
-        if self.level.level % 4 == 0:
-            stat_options = [f'Strength - {self.stats.strength}',
-                            f'Intelligence - {self.stats.intel}',
-                            f'Wisdom - {self.stats.wisdom}',
-                            f'Constitution - {self.stats.con}',
-                            f'Charisma - {self.stats.charisma}',
-                            f'Dexterity - {self.stats.dex}']
-            # Only show stat selection if menu is provided
-            if menu and game:
-                stat_idx = menu.navigate_popup()
-                if 'Strength' in stat_options[stat_idx]:
-                    self.stats.strength += 1
-                    statup_message = f"You are now at {self.stats.strength} strength."
-                if 'Intelligence' in stat_options[stat_idx]:
-                    self.stats.intel += 1
-                    statup_message = f"You are now at {self.stats.intel} intelligence."
-                if 'Wisdom' in stat_options[stat_idx]:
-                    self.stats.wisdom += 1
-                    statup_message = f"You are now at {self.stats.wisdom} wisdom."
-                if 'Constitution' in stat_options[stat_idx]:
-                    self.stats.con += 1
-                    statup_message = f"You are now at {self.stats.con} constitution."
-                if 'Charisma' in stat_options[stat_idx]:
-                    self.stats.charisma += 1
-                    statup_message = f"You are now at {self.stats.charisma} charisma."
-                if 'Dexterity' in stat_options[stat_idx]:
-                    self.stats.dex += 1
-                    statup_message = f"You are now at {self.stats.dex} dexterity."
-                textbox.print_text_in_rectangle(statup_message)
-                game.stdscr.getch()
-                textbox.clear_rectangle()
+        return result
 
     def class_upgrades(self, game, enemy):
         upgrade_str = ""
@@ -291,8 +142,6 @@ class PlayerProgressionMixin:
                         state['level_gains'] < self.ABSORB_ESSENCE_MAX_LEVEL_GAINS and \
                         not self.max_level():
                     upgrade_str += "Gain enough experience to level.\n"
-                    self.level.exp += self.level.exp_to_gain
-                    self.level.exp_to_gain = 0
                     self.level_up(game)
                     state['level_gains'] += 1
                     applied = True

@@ -436,7 +436,13 @@ class ShopScreen(TownScreenBase):
                 equip_slot = item.subtyp
 
             # Show not equippable message
-            if not self.player_char.cls.equip_check(item, equip_slot):
+            can_equip = getattr(self.player_char, "can_equip_item", None)
+            allowed = (
+                can_equip(item, equip_slot)
+                if callable(can_equip)
+                else self.player_char.cls.equip_check(item, equip_slot)
+            )
+            if not allowed:
                 cant_text = self.normal_font.render("Can't Equip", True, self.colors.RED)
                 cant_rect = cant_text.get_rect(center=(self.mod_rect.centerx, self.mod_rect.centery))
                 self.screen.blit(cant_text, cant_rect)

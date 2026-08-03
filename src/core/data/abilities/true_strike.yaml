@@ -1,7 +1,7 @@
 name: True Strike
 type: Skill
 subtype: Offensive
-description: Attack that is guaranteed to hit but deals 0.75x weapon damage.
+description: Attack that is guaranteed to hit at the cost of damage.
 cost: 12
 weapon: true
 damage_mod: 0.75

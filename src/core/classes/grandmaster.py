@@ -52,6 +52,27 @@ WEAPON_ARTS = {
     "Hammer": "Anvil Strike",
 }
 ART_WEAPON_TYPES = {art: weapon_type for weapon_type, art in WEAPON_ARTS.items()}
+WEAPON_ART_UPGRADES = {
+    f"{art_name} 2": art_name
+    for art_name in WEAPON_ARTS.values()
+}
+WEAPON_ART_MASTERIES = {
+    f"{art_name} 3": f"{art_name} 2"
+    for art_name in WEAPON_ARTS.values()
+}
+ART_WEAPON_TYPES.update({
+    upgraded_name: ART_WEAPON_TYPES[base_name]
+    for upgraded_name, base_name in WEAPON_ART_UPGRADES.items()
+})
+ART_WEAPON_TYPES.update({
+    mastered_name: ART_WEAPON_TYPES[WEAPON_ART_UPGRADES[upgraded_name]]
+    for mastered_name, upgraded_name in WEAPON_ART_MASTERIES.items()
+})
+WEAPON_ART_LEVELS = {
+    **{art_name: 1 for art_name in WEAPON_ARTS.values()},
+    **{art_name: 2 for art_name in WEAPON_ART_UPGRADES},
+    **{art_name: 3 for art_name in WEAPON_ART_MASTERIES},
+}
 ART_COSTS = {
     "Fist": 6,
     "Dagger": 7,
@@ -77,8 +98,8 @@ class GrandmasterOfArms(Job):
         super().__init__(
             name="Grandmaster of Arms",
             description="Grandmasters of Arms are the pinnacle of weapon expertise, "
-            "mastering the art of dual-wielding and wielding powerful "
-            "blades with unmatched skill.",
+            "perfecting their chosen weapon style and wielding an adaptable "
+            "arsenal with unmatched skill.",
             str_plus=2,
             int_plus=1,
             wis_plus=0,
@@ -100,7 +121,9 @@ class GrandmasterOfArms(Job):
                     "Polearm",
                     "Hammer",
                 ],
-                "OffHand": ["Fist", "Dagger", "Sword", "Club"],
+                # Grandmasters retain an off-hand weapon only after choosing
+                # the Weapon Master tree's Dual Wield style.
+                "OffHand": [],
                 "Armor": ["Light", "Medium"],
             },
             pro_level=3,
@@ -172,6 +195,17 @@ def is_weapon_discipline_class(character: Any) -> bool:
         "Berserker",
         "Grandmaster of Arms",
     }
+
+
+def weapon_discipline_types(character: Any) -> tuple[str, ...]:
+    """Return weapon disciplines visible to the current class."""
+    if getattr(getattr(character, "cls", None), "name", None) == "Berserker":
+        return tuple(
+            weapon_type
+            for weapon_type in WEAPON_TYPES
+            if weapon_type in TWO_HANDED_WEAPONS
+        )
+    return WEAPON_TYPES
 
 
 def has_equipped_class_ring(character: Any) -> bool:
@@ -288,7 +322,18 @@ def discipline_xp_text(
         text += f"{weapon_type} Discipline reached rank {after_rank}.\n"
         art_name = WEAPON_ARTS.get(weapon_type)
         if art_name and before_rank < 1 <= after_rank:
-            text += f"Learned {art_name}.\n"
+            text += (
+                f"{art_name} is now available in the Weapon Master ability tree.\n"
+            )
+        if art_name and before_rank < 5 <= after_rank:
+            text += (
+                f"{art_name} 2 is now available in the Weapon Master ability tree.\n"
+            )
+        if art_name and before_rank < 10 <= after_rank:
+            text += (
+                f"{art_name} 3 is now available in the Grandmaster of Arms "
+                "ability tree.\n"
+            )
     return text
 
 
@@ -328,6 +373,88 @@ def proc_chance(character: Any, weapon_type: str | None) -> float:
     return rank * BASE_PROC_PER_RANK * bound_multiplier(character, weapon_type)
 
 
+def _has_skill(character: Any, skill_name: str) -> bool:
+    skills = getattr(character, "spellbook", {}).get("Skills", {})
+    return isinstance(skills, dict) and skill_name in skills
+
+
+def two_handed_accuracy_bonus(character: Any, slot: str) -> float:
+    """Return the passive accuracy bonus for a two-handed weapon attack."""
+    weapon_type = get_weapon_type(character, slot)
+    if (
+        weapon_type in TWO_HANDED_WEAPONS
+        and _has_skill(character, "Two-Handed Weapon Proficiency")
+    ):
+        return 0.10
+    return 0.0
+
+
+def two_handed_damage_multiplier(character: Any, slot: str) -> float:
+    """Return the passive damage multiplier for a two-handed weapon attack."""
+    weapon_type = get_weapon_type(character, slot)
+    if (
+        weapon_type in TWO_HANDED_WEAPONS
+        and _has_skill(character, "Two-Handed Weapon Proficiency")
+    ):
+        return 1.10
+    return 1.0
+
+
+def brutish_critical_multiplier(
+    character: Any,
+    weapon_type: str | None,
+    multiplier: float,
+) -> float:
+    """Increase critical bonus damage by five percent per discipline rank."""
+    if multiplier <= 1 or not _has_skill(character, "Brutish Strength"):
+        return multiplier
+    rank = discipline_rank(character, weapon_type)
+    return 1 + ((multiplier - 1) * (1 + (0.05 * rank)))
+
+
+def _has_talent(character: Any, talent_key: str) -> bool:
+    try:
+        from ..progression import has_talent
+
+        return has_talent(character, talent_key)
+    except (ImportError, AttributeError):
+        return False
+
+
+def perfect_form_accuracy_bonus(
+    character: Any,
+    weapon_type: str | None,
+) -> float:
+    """Grant 0.5 percent hit chance per equipped discipline rank."""
+    if not _has_talent(character, "grandmaster.perfect-form"):
+        return 0.0
+    return discipline_rank(character, weapon_type) * 0.005
+
+
+def perfect_form_damage_multiplier(
+    character: Any,
+    weapon_type: str | None,
+) -> float:
+    """Grant one percent weapon damage per equipped discipline rank."""
+    if not _has_talent(character, "grandmaster.perfect-form"):
+        return 1.0
+    return 1.0 + (discipline_rank(character, weapon_type) * 0.01)
+
+
+def adaptive_arsenal_parry_bonus(character: Any) -> float:
+    """Grant 0.5 percent parry chance per main-hand discipline rank."""
+    if not _has_talent(character, "grandmaster.adaptive-arsenal"):
+        return 0.0
+    return discipline_rank(character, get_weapon_type(character)) * 0.005
+
+
+def adaptive_arsenal_counter_crit_chance(character: Any) -> float:
+    """Grant one percent counterattack critical chance per discipline rank."""
+    if not _has_talent(character, "grandmaster.adaptive-arsenal"):
+        return 0.0
+    return discipline_rank(character, get_weapon_type(character)) * 0.01
+
+
 def should_proc(character: Any, weapon_type: str | None) -> bool:
     chance = proc_chance(character, weapon_type)
     return chance > 0 and random.random() < chance
@@ -338,7 +465,12 @@ def art_rank(character: Any, art_name: str) -> int:
 
 
 def art_unlocked(character: Any, art_name: str) -> bool:
-    return art_rank(character, art_name) >= 1
+    required_rank = {
+        1: 1,
+        2: 5,
+        3: 10,
+    }.get(WEAPON_ART_LEVELS.get(art_name, 1), 1)
+    return art_rank(character, art_name) >= required_rank
 
 
 def perfect_bound_art(character: Any, weapon_type: str | None) -> bool:
@@ -353,6 +485,7 @@ def perfect_bound_art(character: Any, weapon_type: str | None) -> bool:
 
 
 def sync_weapon_art_skills(character: Any) -> list[str]:
+    """Remove legacy auto-granted arts; tree purchases now own acquisition."""
     if not is_weapon_discipline_class(character):
         return []
     spellbook = getattr(character, "spellbook", None)
@@ -361,24 +494,19 @@ def sync_weapon_art_skills(character: Any) -> list[str]:
     skills = spellbook.setdefault("Skills", {})
     if not isinstance(skills, dict):
         return []
-    from .. import abilities
-
-    gained: list[str] = []
-    class_map = {
-        "Iron Palm": abilities.IronPalm,
-        "Hemorrhage": abilities.Hemorrhage,
-        "Riposte Line": abilities.RiposteLine,
-        "Low Sweep": abilities.LowSweep,
-        "Guard Cleaver": abilities.GuardCleaver,
-        "Reaver's Mark": abilities.ReaversMark,
-        "Brace": abilities.Brace,
-        "Anvil Strike": abilities.AnvilStrike,
-    }
-    for weapon_type, art_name in WEAPON_ARTS.items():
-        if discipline_rank(character, weapon_type) >= 1 and art_name not in skills:
-            skills[art_name] = class_map[art_name]()
-            gained.append(art_name)
-    return gained
+    purchased = getattr(getattr(character, "progression", None), "purchased_node_ids", set())
+    for art_name in (
+        *WEAPON_ARTS.values(),
+        *WEAPON_ART_UPGRADES,
+        *WEAPON_ART_MASTERIES,
+    ):
+        node_suffix = (
+            ".ability."
+            + art_name.lower().replace("'", "").replace(" ", "-")
+        )
+        if not any(node_id.endswith(node_suffix) for node_id in purchased):
+            skills.pop(art_name, None)
+    return []
 
 
 def _matching_weapon_equipped(character: Any, weapon_type: str) -> bool:
@@ -400,11 +528,18 @@ def _set_status(effect: Any, *, duration: int, extra: int) -> None:
 def perform_weapon_art(character: Any, target: Any, art_name: str) -> str:
     weapon_type = ART_WEAPON_TYPES.get(art_name)
     rank = discipline_rank(character, weapon_type)
-    if weapon_type not in WEAPON_TYPES or rank < 1:
+    art_level = WEAPON_ART_LEVELS.get(art_name, 1)
+    required_rank = {1: 1, 2: 5, 3: 10}[art_level]
+    if weapon_type not in WEAPON_TYPES or rank < required_rank:
+        if weapon_type in WEAPON_TYPES and art_level > 1:
+            return (
+                f"{art_name} requires {weapon_type} specialization level "
+                f"{required_rank}.\n"
+            )
         return f"{character.name} has not learned {art_name}.\n"
     if not _matching_weapon_equipped(character, weapon_type):
         return f"{art_name} requires an equipped {weapon_type}.\n"
-    cost = ART_COSTS[weapon_type]
+    cost = ART_COSTS[weapon_type] + (2 * (art_level - 1))
     if getattr(character.mana, "current", 0) < cost:
         return f"{character.name} does not have enough mana to use {art_name}.\n"
     character.mana.current -= cost
@@ -414,7 +549,8 @@ def perform_weapon_art(character: Any, target: Any, art_name: str) -> str:
     perfect = perfect_bound_art(character, weapon_type)
     msg, hit, crit = character.weapon_damage(
         target,
-        dmg_mod=_art_damage_mod(weapon_type, rank, perfect),
+        dmg_mod=_art_damage_mod(weapon_type, rank, perfect)
+        + (0.15 * (art_level - 1)),
         crit=2 if (weapon_type in {"Sword", "Battle Axe"} and mastered) else 1,
         ignore=weapon_type in {"Longsword", "Hammer"} and improved,
         cover=False,

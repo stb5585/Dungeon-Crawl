@@ -819,6 +819,8 @@ class FullDispelEffect(Effect):
         "Resist Water",
         "Resist Earth",
         "Resist Wind",
+        "Resist Shadow",
+        "Hallowed Ground",
         "Totem",
     ]
 

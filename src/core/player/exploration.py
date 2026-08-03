@@ -200,7 +200,9 @@ class PlayerExplorationMixin:
         """
         total experience required to level up for current level; different from exp_to_gain
         """
-        return (self.exp_scale ** self.level.pro_level) * self.level.level
+        from ..progression import experience_for_level
+
+        return experience_for_level(self.level.level)
 
     def player_level(self):
         """
@@ -209,16 +211,10 @@ class PlayerExplorationMixin:
         First promotion: levels 31-60 (reset to 1, gain 30 more)
         Second promotion: levels 61-110 (reset to 1, gain 50 more)
         """
-        if self.level.pro_level == 1:
-            return self.level.level
-        elif self.level.pro_level == 2:
-            return 30 + self.level.level
-        else:  # pro_level == 3
-            return 60 + self.level.level
+        return self.level.level
 
     def max_level(self):
-        return any([(self.level.level == 50 and self.level.pro_level == 3),
-                    (self.level.level == 30 and self.level.pro_level < 3)])
+        return self.level.level >= 100
 
     def in_town(self):
         return (self.location_x, self.location_y, self.location_z) == TOWN_LOCATION

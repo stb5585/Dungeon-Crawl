@@ -1,6 +1,6 @@
 # The Forsaken Tenet Development Roadmap
 
-*Updated: July 29, 2026*
+*Updated: August 2, 2026*
 
 This roadmap tracks remaining work for **The Forsaken Tenet**. Completed P0-P6
 roadmap history has been consolidated into `CHANGELOG.md`; this file is now
@@ -9,6 +9,149 @@ work.
 
 Some legacy module names, archived docs, repository paths, and compatibility
 aliases may still refer to the earlier Dungeon Crawl working title.
+
+## Shipped - Flat Level and Authored Ability-Tree Progression
+
+Player progression is one global level track from 1 through 100. New
+characters begin with one permanent progression point, level 2 supplies the
+second, and every even-numbered level thereafter supplies one more. New
+primary-attribute points are a separate stored currency: every fourth global
+level grants one, and they may be spent later from the Progression tab.
+Progression points purchase tree nodes only; attribute points purchase
+permanent `+1` primary-stat increases only. New
+characters have no purchased nodes and no automatically learned progression
+ability. The shared `src/core/progression.py` service owns XP
+carryover, random growth, attribute training, ability/rating purchases,
+promotion previews, branch closure, and class changes for both frontends.
+
+Ability trees use class-authored specialization branches instead of universal
+lanes. Base lineages lead to one terminal promotion per branch; promoted
+classes only expose combat paths relevant to their catalogs. First promotions
+cost two points and second promotions cost three; both are governed by path
+prerequisites, permanent-stat gates, race eligibility, and global level 30/60
+gates.
+Learned abilities survive class changes; all unpurchased nodes in the prior
+tree close. Church promotion and automatic level-based ability/stat awards
+are retired. Progression is a Character Menu tab rather than a Town option.
+
+Warrior was the first fully authored talent-tree prototype. Its ordered paths lead
+through Arms to Weapon Master, Vanguard to Lancer, Bulwark to Sentinel, and
+Command to Paladin. Weapon Master and Lancer share `Piercing Strike -> Charge
+-> Weapon Focus` before splitting. Charge is level 5; Weapon Focus is level 10.
+Weapon Master continues through `+10 Attack -> Cripple -> True Strike`, while
+Lancer continues through `Driving Thrust -> +10 Defense -> Retaliate`.
+Cripple is a level-20, less-accurate attack that weakens melee damage based on
+damage dealt. The defensive spine is `Shield Slam -> Shield Block -> Rally`,
+then Sentinel branches through Defense and
+Paladin branches directly through Goad. Lancer joins Shield Block at
+Retaliate. Cross-column connectors enter node sides instead of merging into
+their vertical prerequisite lines. Disarm, Battle Cry, Adrenaline, Honed
+Attack, Double Strike, and Parry are unbound talents in the fifth column.
+Adrenaline is level 10, Honed Attack level 15, Double Strike level 20, and
+Parry level 25; Battle Cry has no level gate. Weapon Master requires Strength
+15, Dexterity 12, and Intelligence 11; Sentinel requires Constitution 16; and
+Paladin requires Wisdom 13. Each first-promotion route costs 13 points from
+the baseline Human Warrior under the former combined-budget accounting. With
+separate currencies, Weapon Master/Sentinel/Paladin each cost eight progression
+and five attribute points, while Lancer costs ten progression and three
+attribute points. Warrior off-hand equipment remains shield-only;
+Dual Wield is now an exclusive Weapon Master style. Combat-rating nodes grant
+`+10` in base trees, `+20` in first-promotion trees, and `+30` in terminal
+trees, while primary-attribute training remains `+1`.
+
+Point distribution is transactional. Players may stage and remove tree nodes
+or primary-attribute increments, inspect the remaining session budget, and
+commit the entire distribution with one Spend action. Leaving with an
+uncommitted distribution warns that those changes will be discarded, while
+Reset clears it immediately. Spending a promotion first previews its class
+description, one-time benefits, requirements, equipment conflicts, and branch
+closure. One-time combat-rating bonuses use the promoted class's normal values
+at `2x` for first promotions and `3x` for second promotions. The pygame tree
+uses explicit top-to-bottom placement, semantic
+ability icons, and prerequisite connectors without path headings or textual
+availability labels.
+The same declarative contract now covers all 49 class trees. Mage, Footpad,
+Healer, and Pathfinder retain independent specialization roots, while every
+promoted and terminal class uses named identity paths and class-kit talents
+instead of generic four-lane rating padding. Exact branch ownership is recorded
+in `docs/ABILITY_TREE_DESIGN.md`. Weapon Master is the first deliberately
+asymmetric promoted tree: Berserker and Grandmaster routes use different node
+types, Grandmaster forks permanently between Dual Wield and Duelist, and eight
+independent weapon arts branch into rank-5 replacement upgrades instead of
+being learned automatically. Its ungated inherited entry nodes and rating
+nodes remain immediately available; the extended Berserker route adds
+two-handed proficiency and discipline-scaled critical damage while keeping
+both second-promotion nodes aligned.
+
+The authored terminal follow-up replaces Berserker's generated talents with
+Survival, Fury, and independent center columns plus eight centered two-handed
+discipline arts. Its promotion-level entries are ungated, its stat development
+uses `+30 Attack` and `+100 HP`, and Reckless Onslaught replaces Final Assault
+with a stacking offensive tradeoff. Hemorrhage Thirst turns enemy bleed damage
+into healing at the risk of a two-turn bloodlust crash. Grandmaster of Arms now
+owns all three levels of every weapon art plus ungated Double Strike positioned
+between two ungated, discipline-scaled mastery talents.
+
+Lancer and Dragoon now use authored Aerial Tempo trees instead of generated
+catalog lanes. Lancer places Jump in column 2 and Polearm Proficiency in column
+5, with independent defensive-modifier, middle-stat/promotion, and
+offensive-modifier Jump paths, a `Lance Sweep -> +50 HP -> Zephyrstrike`
+polearm line, and unbound Parry/True Strike in the final column. The middle
+path is `Jump -> +20 Defense -> +20 Attack -> Promote: Dragoon`; promotion
+also requires level 60, `STR 17`, and `DEX 13`. Dragoon retains all 16 Lancer
+development nodes with the same independent prerequisites, omits the promotion
+node, and adds 11 mastery nodes, so promotion never prevents later Lancer
+training. Shield Block is not repeated; ungated Polearm Excellence starts its
+Dragoon line at row 5; True Piercing Strike no longer requires True Strike; and Dragon
+Dive joins Dragon's Ascent, Soaring Strike, and the Unstoppable landing path.
+Dragon's Ascent follows the middle `+20 Attack` without a redundant level gate;
+Quake and Soaring Strike extend Rend; and Retribution extends Grounded Landing
+rather than the `+30 Defense` node, which is gated by Dragon's Ascent. Acrobat
+unlocks at level 40, Thrust at 45, Rend at 50, Retribution at 65, True Piercing
+Strike and Unstoppable at 70, and Dragon Dive at 80. Lancer fits within rows
+0-6; Dragoon uses compact spacing across rows 0-7 without scrolling.
+Jump modifiers synchronize with progression without becoming spellbook
+actions, while Recover, Dragon's Fury, Skyfall, the Kaelenon route, and
+polearm-and-shield equipment remain externally owned. Combat-only Aerial Tempo
+resolves once per weapon action, and awakened Aerial Supremacy supplies the
+tuned Landing Shield rather than a duplicate Meteor Guard payoff.
+
+Sentinel, Stalwart Defender, Paladin, and Crusader now complete the authored
+Warrior promotion set. Sentinel uses compact Counter, Wall, and Anti-magic
+columns and closes its leftovers when the level-60, `CON 20` Stalwart
+promotion is purchased. Stalwart contains only 11 new nodes: Last Stand and
+counter mastery, three Surge modifiers, and the Spell Reflection/Mirror
+Bastion path. Resolve uses the legacy `guard_meter` field as one value with
+caps 50/100, explicit Defend/block/physical-damage/Goad/Hold gains, and no
+duplicate Class Ring accumulation. Spell Reflection spends 25 Resolve and
+shares compatibility and cleanup rules across legacy and data-driven spells.
+The Stalwart promotion grants all three Surge wrappers, while mastery 0/4/8
+continues controlling their availability.
+
+Paladin now begins with ungated Oath's Judgment and Oath's Shelter roots.
+Judgment branches left through `Double Strike -> +20 Attack -> Tempered
+Conviction -> True Strike` and right through `Smite -> Repel the Wicked -> +20
+Magic -> Hallowed Ground`. Shelter branches through `Heal -> +50 MP -> Sworn
+Purpose -> Blessed Light` and `Bless -> +20 Magic Defense -> +20 Defense ->
+Divine Protection`; Magic Defense and level-45 Resist Shadow are detached
+from the Shelter connector, while Magic Defense gates Parry and the remaining
+protection chain.
+The centered level-60 Crusader promotion requires either Oath root plus its
+existing stats and three-point cost. It sits at `(2.5, 7)`, with each Oath
+connector descending to its row before joining. Because attributes use their own
+currency, a baseline Human retains 14 progression points and nine attribute
+points after the shortest promotion route. Crusader contains 19 new nodes
+across Melee, Spells, Healing, and Protection. Ungated Condemnation splits
+into exclusive Two-Handed Weapon Proficiency and Sword & Board routes.
+Repel the Wicked replaces Turn Undead in the Paladin path and remains
+retained-or-purchasable in the Crusader Spells path without an upgrade node.
+Signature-vow actions now
+generate combat-only Conviction. Oath's
+Judgment and Oath's Shelter explicitly spend all stacks for one of four vow
+payloads; required Tempered Conviction produces effective caps 3/4. Righteous
+Advance, Consecrated Bulwark, and awakened/equipped Vow Affirmation apply their
+locked upgrade and one-preservation rules without changing permanent vows,
+auras, marks, Church recovery, or equipment legality.
 
 ## Planning Model
 
@@ -33,11 +176,11 @@ appropriate design-gate document before coding.
   Pygame dungeon/town/combat flows, selected-item artwork, enemy combat sprites,
   dungeon tile art, and non-asset audio routing are implemented.
 - Recent class-mechanic follow-up shipped Weapon Master/Berserker/Grandmaster
-  Weapon Discipline and weapon arts, the `Weapon Discipline` Character Menu
-  tab, pygame promotion preview/stat-delta education, INT-backed promotion
-  stat tuning, the Sorcerer/Wizard 0-based School Affinity progression, the
-  promotion ability transition decision matrix, and the V1 promotion class-kit
-  track implementation.
+  Weapon Discipline and tree-purchased weapon arts, the `Weapon Discipline`
+  Character Menu tab, pygame promotion preview/stat-delta education, INT-backed
+  promotion stat tuning, the Sorcerer/Wizard 0-based School Affinity
+  progression, the promotion ability transition decision matrix, and the V1
+  promotion class-kit track implementation.
 - Cleric now has a second level-3 fork: `Templar` remains the heavy shield
   defender, while `Hierophant` is the staff/shield/light-armor divine
   battle-caster with `Staff Conduit`, `Consecrated Conduit`, Devotion support,
@@ -54,6 +197,11 @@ appropriate design-gate document before coding.
   relic progression, and shared postgame tavern dialogue. Manual play evidence
   remains the active readiness task.
 - Current planning references:
+  - `docs/PROGRESSION_REFACTOR_CHECKPOINT.md` for the complete version-5
+    progression implementation record and the explicit pause boundary before
+    the next game-design change.
+  - `docs/ABILITY_TREE_DESIGN.md` for authored tree identities, exact
+    Warrior-line graphs, and stable ownership rules.
   - `docs/CLASS_KIT_DESIGN_GATES.md` for promotion class-kit behavior and
     follow-up tuning gates.
   - `docs/COMBAT_BALANCE_DESIGN_GATES.md` for combat/balance gates.
@@ -357,13 +505,11 @@ Systems, audio, and meta planning is split across durable owner docs:
 
 ### Improvements
 
-- Refactor ability system; determine how and when to earn/learn abilities
-  - makes gameplay more immersive; prevents the need to remove abilities that do no fit the class design
-  - allows player to select what they learn
-  - design questions
-    - should abilities stay level-based?
-    - add stat requirements
-    - make abilities purchasable instead
+- [PAUSED] The version-5 flat-level and point-purchased ability-tree refactor
+  is preserved in `docs/PROGRESSION_REFACTOR_CHECKPOINT.md`. Do not extend the
+  current trees until the next fundamental game-design direction defines its
+  progression, ability-ownership, and promotion model.
+- Separate passive and usable abilities in the spellbook
 
 ### Playtest Findings
 
@@ -397,8 +543,10 @@ backgrounds, Pathfinder-branch promotion-preview tabs, and Warrior-line class
 mechanic tabs has shipped and is tracked in `CHANGELOG.md`. Mage-tree mechanic
 tabs are also wired, including Warlock's `Familiar` tab wording, and Footpad-tree
 and Healer-tree tabs now announce their matching class-kit tracks. The pygame
-Paladin vow picker now uses the current styled selection popup with highlighted
-vow details before oath confirmation.
+Paladin vow picker now uses the current styled selection popup over the
+progression background. Each highlighted choice documents its learned
+signature ability, Aura benefits, Mark trigger and drawback, and then requires
+an explicit oath confirmation before promotion commits.
 
 ### 2026-07-03 Roadmap Triage Implementation Note
 

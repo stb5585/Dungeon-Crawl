@@ -17,6 +17,11 @@ from ..classes import (
     wizard,
 )
 from ..constants import EXP_SCALE_BASE, TOWN_LOCATION
+from ..progression import (
+    ProgressionState,
+    attribute_points_through_level,
+    progression_points_through_level,
+)
 from .combat import PlayerCombatMixin
 from .exploration import PlayerExplorationMixin
 from .inventory import PlayerInventoryMixin
@@ -62,6 +67,14 @@ class Player(
         self.exp_scale = EXP_SCALE_BASE
         self.gold = gold
         self.level = level
+        self.progression = ProgressionState(
+            level=max(1, min(100, int(level.level))),
+            total_xp=max(0, int(level.exp)),
+            unspent_points=progression_points_through_level(level.level),
+            unspent_attribute_points=attribute_points_through_level(
+                level.level,
+            ),
+        )
         self.resistance = resistance
         self.sex = "Male"
         self.portrait_variant = 0

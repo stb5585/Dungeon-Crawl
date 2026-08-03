@@ -40,6 +40,10 @@ class ShieldSlamEffect(Effect):
 
         # Damage = strength + shield weight
         damage = max(1, actor.stats.strength + getattr(offhand, "weight", 0))
+        from src.core.classes import ability_mechanics
+
+        if ability_mechanics.has_skill(actor, "Chastise"):
+            damage = max(1, int(damage * 1.25))
         variance = _rng.uniform(DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH)
         damage = int(damage * variance)
         target.health.current -= damage

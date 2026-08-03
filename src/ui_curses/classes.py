@@ -49,8 +49,8 @@ def choose_paladin_vow(game):
     vow = choices[vow_idx]
     confirm = utils.ConfirmPopupMenu(
         game,
-        f"Swear the Vow of {vow}? {paladin.DESCRIPTIONS[vow]}",
-        box_height=10,
+        f"Swear the Vow of {vow}? {paladin.vow_selection_summary(vow)}",
+        box_height=20,
     )
     return vow if confirm.navigate_popup() else None
 
@@ -64,6 +64,7 @@ def promotion(game):
         grant_summoner_initial_summon,
         promotion_mechanic_guidance,
     )
+    from src.core.progression import promotion_combat_bonuses
 
     pro_message = "Choose your path"
     pro1_dict = {
@@ -137,10 +138,11 @@ def promotion(game):
             promoted_player.stats.dex += new_class.dex_plus
             promoted_player.health.max += new_class.con_plus * 2
             promoted_player.mana.max += new_class.int_plus * 2
-            promoted_player.combat.attack += new_class.att_plus
-            promoted_player.combat.defense += new_class.def_plus
-            promoted_player.combat.magic += new_class.magic_plus
-            promoted_player.combat.magic_def += new_class.magic_def_plus
+            combat_bonuses = promotion_combat_bonuses(new_class)
+            promoted_player.combat.attack += combat_bonuses["attack"]
+            promoted_player.combat.defense += combat_bonuses["defense"]
+            promoted_player.combat.magic += combat_bonuses["magic"]
+            promoted_player.combat.magic_def += combat_bonuses["magic defense"]
             for slot in ("Weapon", "Armor", "Helmet", "OffHand"):
                 if slot in new_class.equipment:
                     promoted_player.equipment[slot] = new_class.equipment[slot]

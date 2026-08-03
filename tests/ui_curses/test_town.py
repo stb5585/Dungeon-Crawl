@@ -486,7 +486,7 @@ def test_barracks_handles_brass_key_and_storage_store_flow(monkeypatch):
 
 def test_church_handles_promotion_save_quest_quit_and_leave(monkeypatch):
     _install_fake_menus(monkeypatch)
-    FakeLocationMenu.responses = [0, 1, 2, 3]
+    FakeLocationMenu.responses = [0, 1, 2]
     FakeConfirmPopupMenu.responses = [True]
     FakeTextBox.messages = []
     player = _build_player(level=30)
@@ -500,7 +500,7 @@ def test_church_handles_promotion_save_quest_quit_and_leave(monkeypatch):
 
     curses_town.church(game)
 
-    assert promoted == ["promoted"]
+    assert promoted == []
     assert len(player.saved) == 1
     assert player.quit is True
     assert any("quest help" in str(message) for message in FakeTextBox.messages)
@@ -762,7 +762,7 @@ def test_jeweler_crafts_draconite_pendant(monkeypatch):
 
 def test_church_handles_unavailable_promotion_and_leave(monkeypatch):
     _install_fake_menus(monkeypatch)
-    FakeLocationMenu.responses = [0, 4]
+    FakeLocationMenu.responses = [3]
     FakeTextBox.messages = []
     player = _build_player(level=15)
     player.level.pro_level = 1
@@ -770,7 +770,7 @@ def test_church_handles_unavailable_promotion_and_leave(monkeypatch):
 
     curses_town.church(game)
 
-    assert any("need to be level 30" in str(message) for message in FakeTextBox.messages)
+    assert not any("need to be level 30" in str(message) for message in FakeTextBox.messages)
     assert any("Let the light of Elysia guide you." in str(message) for message in FakeTextBox.messages)
 
 

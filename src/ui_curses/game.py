@@ -107,24 +107,8 @@ class Game:
             textbox.clear_rectangle()
             return
 
-        # Add the experience needed to level up and reset exp_to_gain
-        self.player_char.level.exp += self.player_char.level.exp_to_gain
-        self.player_char.level.exp_to_gain = 0
-
         textbox = menus.TextBox(self)
-        stat_menu = menus.SelectionPopupMenu(
-            self,
-            "Pick the stat you would like to increase.",
-            [f'Strength - {self.player_char.stats.strength}',
-             f'Intelligence - {self.player_char.stats.intel}',
-             f'Wisdom - {self.player_char.stats.wisdom}',
-             f'Constitution - {self.player_char.stats.con}',
-             f'Charisma - {self.player_char.stats.charisma}',
-             f'Dexterity - {self.player_char.stats.dex}'],
-            box_height=12,
-            confirm=False
-        )
-        self.player_char.level_up(self, textbox=textbox, menu=stat_menu)
+        self.player_char.level_up(self, textbox=textbox)
 
     def run(self):
         self.update_bounties()
@@ -201,7 +185,13 @@ class Game:
                     break
         menu.erase()
 
-        created = f"Welcome {name}, the {race.name} {cls.name}.\nReport to the barracks for your orders."
+        created = (
+            f"Welcome {name}, the {race.name} {cls.name}.\n"
+            "You begin with 1 Progression Point. Spend it at any time in "
+            "Character → Progression on a tree node or primary attribute.\n"
+            "You gain another point at level 2 and every even level after.\n"
+            "Report to the barracks for your orders."
+        )
         enternamebox.print_text_in_rectangle(created)
         enternamebox.clear_rectangle()
 
@@ -224,10 +214,11 @@ class Game:
         player_char.name = name
         player_char.race = race
         player_char.cls = cls
+        player_char.transform_type = cls
         player_char.equipment = cls.equipment
-        if "1" in abilities.spell_dict[cls.name]:
-            spell_gain = abilities.spell_dict[cls.name]["1"]()
-            player_char.spellbook['Spells'][spell_gain.name] = spell_gain
+        from src.core.progression import initialize_progression
+
+        initialize_progression(player_char)
         player_char.storage["Health Potion"] = [items.HealthPotion() for _ in range(5)]  # care package
         player_char.load_tiles()
 
@@ -247,6 +238,11 @@ class Game:
         filename = self.load_files[selected_idx]
         player_char = SaveManager.load_player(filename)
         if player_char is None:
+            error = getattr(SaveManager.last_load_result, "error", None)
+            if error:
+                textbox = menus.TextBox(self)
+                textbox.print_text_in_rectangle(error)
+                textbox.clear_rectangle()
             return
 
         # Reset state to normal when loading to prevent immediate combat

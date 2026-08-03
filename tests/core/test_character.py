@@ -355,7 +355,7 @@ class TestGameplayStatistics:
         assert player.gameplay_stats["highest_damage_dealt"] == 0
         assert player.gameplay_stats["highest_damage_taken"] == 0
 
-    def test_promoted_player_initializes_highest_level_with_total_level(self):
+    def test_promoted_player_initializes_highest_level_with_global_level(self):
         player = TestGameState.create_player(
             name="PromotedStatsHero",
             class_name="Warrior",
@@ -364,8 +364,8 @@ class TestGameplayStatistics:
             pro_level=2,
         )
 
-        assert player.player_level() == 45
-        assert player.gameplay_stats["highest_level_reached"] == 45
+        assert player.player_level() == 15
+        assert player.gameplay_stats["highest_level_reached"] == 15
 
     def test_player_move_and_stairs_update_gameplay_stats(self):
         player = TestGameState.create_player(
@@ -421,7 +421,7 @@ class TestGameplayStatistics:
 
         restored = PlayerDataSerializer.deserialize(serialized, skip_tiles=True)
 
-        assert restored.gameplay_stats["highest_level_reached"] == 39
+        assert restored.gameplay_stats["highest_level_reached"] == 9
         assert restored.gameplay_stats["steps_taken"] == 0
 
     def test_player_data_serializer_round_trips_bounty_board_state(self):
@@ -598,7 +598,7 @@ class TestPlayerUtilityBehaviors:
 
         assert player.gameplay_stats["highest_damage_dealt"] == 55
         assert player.gameplay_stats["highest_damage_taken"] == 22
-        assert player.gameplay_stats["highest_level_reached"] == 48
+        assert player.gameplay_stats["highest_level_reached"] == 18
 
     def test_exp_gain_multiplier_matches_race(self):
         from src.core.constants import HUMAN_EXP_MULTIPLIER, HALF_GIANT_EXP_MULTIPLIER
@@ -611,19 +611,19 @@ class TestPlayerUtilityBehaviors:
         assert half_giant.exp_gain_multiplier() == HALF_GIANT_EXP_MULTIPLIER
         assert other.exp_gain_multiplier() == 1.0
 
-    def test_player_level_and_max_level_reflect_promotions(self):
+    def test_player_level_and_max_level_use_flat_global_level(self):
         base = TestGameState.create_player(level=20, pro_level=1)
         promoted = TestGameState.create_player(level=15, pro_level=2)
         final = TestGameState.create_player(level=7, pro_level=3)
 
         assert base.player_level() == 20
-        assert promoted.player_level() == 45
-        assert final.player_level() == 67
+        assert promoted.player_level() == 15
+        assert final.player_level() == 7
 
-        assert TestGameState.create_player(level=30, pro_level=1).max_level() is True
-        assert TestGameState.create_player(level=30, pro_level=2).max_level() is True
-        assert TestGameState.create_player(level=50, pro_level=3).max_level() is True
-        assert TestGameState.create_player(level=29, pro_level=1).max_level() is False
+        assert TestGameState.create_player(level=100, pro_level=1).max_level() is True
+        assert TestGameState.create_player(level=100, pro_level=2).max_level() is True
+        assert TestGameState.create_player(level=50, pro_level=3).max_level() is False
+        assert TestGameState.create_player(level=99, pro_level=1).max_level() is False
 
     def test_town_and_realm_location_helpers(self):
         from src.core.player import REALM_OF_CAMBION_LEVEL, TOWN_LOCATION

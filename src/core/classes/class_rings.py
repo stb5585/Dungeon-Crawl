@@ -486,7 +486,7 @@ def _description_extra(character: Any, current: str) -> str:
         return " A Paladin vow must exist before this ring can be fully affirmed."
     if current == "Dragoon" and is_awakened(character, current):
         shield = int(data.get("meteor_guard_shield", 0) or 0)
-        return f" Meteor Guard shield: {shield}."
+        return f" Landing Shield: {shield}."
     if current == "Berserker":
         scars = int(data.get("battle_scars", 0) or 0)
         return f" Battle Scars: {scars}/20."
@@ -821,11 +821,61 @@ def shared_recovery_amount(character: Any, healing: int) -> int:
     return max(1, int(healing * rate)) if healing > 0 else 0
 
 
-def apply_meteor_guard(character: Any, jump_damage: int) -> int:
+def apply_aerial_supremacy_shield(character: Any, jump_damage: int) -> int:
+    """Create or refresh Aerial Supremacy's two-turn Landing Shield."""
     if not (is_awakened(character, "Dragoon") and has_equipped_class_ring(character)):
         return 0
-    shield = max(1, int(jump_damage * 0.25)) if jump_damage > 0 else 0
+    shield = max(1, int(jump_damage * 0.15)) if jump_damage > 0 else 0
+    if not shield:
+        return 0
     state = ensure_state(character)
-    state["data"]["Dragoon"]["meteor_guard_shield"] = shield
-    state["data"]["Dragoon"]["meteor_guard_turns"] = 2 if shield else 0
-    return shield
+    data = state["data"]["Dragoon"]
+    data["meteor_guard_shield"] = max(
+        int(data.get("meteor_guard_shield", 0) or 0),
+        shield,
+    )
+    data["meteor_guard_turns"] = 2
+    return int(data["meteor_guard_shield"])
+
+
+def apply_meteor_guard(character: Any, jump_damage: int) -> int:
+    """Compatibility alias for the renamed Aerial Supremacy shield."""
+    return apply_aerial_supremacy_shield(character, jump_damage)
+
+
+def absorb_aerial_supremacy_shield(character: Any, amount: int) -> tuple[int, str]:
+    """Absorb incoming damage with an active Landing Shield."""
+    amount = max(0, int(amount or 0))
+    if amount <= 0:
+        return amount, ""
+    if not (is_awakened(character, "Dragoon") and has_equipped_class_ring(character)):
+        return amount, ""
+    data = ensure_state(character)["data"]["Dragoon"]
+    shield = max(0, int(data.get("meteor_guard_shield", 0) or 0))
+    turns = max(0, int(data.get("meteor_guard_turns", 0) or 0))
+    if shield <= 0 or turns <= 0:
+        return amount, ""
+    absorbed = min(amount, shield)
+    remaining = shield - absorbed
+    data["meteor_guard_shield"] = remaining
+    if remaining <= 0:
+        data["meteor_guard_turns"] = 0
+    message = f"{character.name}'s Landing Shield absorbs {absorbed} damage.\n"
+    if remaining <= 0:
+        message += f"{character.name}'s Landing Shield is depleted.\n"
+    return amount - absorbed, message
+
+
+def tick_aerial_supremacy_shield(character: Any) -> str:
+    """Advance and expire the combat-only Landing Shield."""
+    data = ensure_state(character)["data"]["Dragoon"]
+    shield = max(0, int(data.get("meteor_guard_shield", 0) or 0))
+    turns = max(0, int(data.get("meteor_guard_turns", 0) or 0))
+    if shield <= 0 or turns <= 0:
+        return ""
+    turns -= 1
+    data["meteor_guard_turns"] = turns
+    if turns > 0:
+        return ""
+    data["meteor_guard_shield"] = 0
+    return f"{character.name}'s Landing Shield expires.\n"

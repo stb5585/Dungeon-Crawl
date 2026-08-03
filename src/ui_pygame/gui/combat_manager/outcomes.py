@@ -340,8 +340,14 @@ class CombatOutcomeMixin:
 
         elif outcome.result == "victory":
             tamed_victory = bool(getattr(enemy, "tamed_by_player", False))
+            repelled_victory = bool(getattr(enemy, "paladin_repelled", False))
             # Build end messages from outcome
-            end_messages = [f"{enemy.name} tamed!" if tamed_victory else f"Victory! {enemy.name} defeated!"]
+            if tamed_victory:
+                end_messages = [f"{enemy.name} tamed!"]
+            elif repelled_victory:
+                end_messages = [f"{enemy.name} fled from battle!"]
+            else:
+                end_messages = [f"Victory! {enemy.name} defeated!"]
             # Parse the outcome message for display lines
             for line in outcome.message.strip().split('\n'):
                 if line.strip():
@@ -355,7 +361,7 @@ class CombatOutcomeMixin:
             if outcome.level_up:
                 end_messages.append("\nLEVEL UP!")
 
-            if not tamed_victory:
+            if not tamed_victory and not repelled_victory:
                 # Render final combat state and let death animation complete.
                 clock = pygame.time.Clock()
                 for _ in range(DEATH_ANIMATION_FRAMES):
