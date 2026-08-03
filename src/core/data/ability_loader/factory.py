@@ -5,6 +5,7 @@ from __future__ import annotations
 from copy import deepcopy
 from pathlib import Path
 
+from ...combat.targeting import TargetLossPolicy, TargetScope
 from .cache import _load_yaml_definition
 from .effects import EffectFactory
 
@@ -51,6 +52,8 @@ class AbilityFactory:
         notes = ability_data.get('notes')
         school = ability_data.get('school')
         weapon = ability_data.get('weapon', False)
+        raw_target_scope = ability_data.get('target_scope')
+        raw_target_loss_policy = ability_data.get('target_loss_policy')
 
         # Create Effect objects
         effects = []
@@ -284,10 +287,44 @@ class AbilityFactory:
 
         # Stash raw data for inspection / analytics
         ability._raw_data = ability_data
+        ability.target_scope = AbilityFactory._target_scope(
+            ability_data,
+            raw_target_scope,
+        )
+        ability.target_loss_policy = AbilityFactory._target_loss_policy(
+            name,
+            raw_target_loss_policy,
+        )
         # Carry over passive flag from YAML
         if ability_data.get('passive', False):
             ability.passive = True
         return ability
+
+    @staticmethod
+    def _target_scope(ability_data: dict, raw_scope: str | None) -> TargetScope:
+        """Load explicit targeting metadata or apply the migration default."""
+        if raw_scope is not None:
+            return TargetScope(str(raw_scope).lower())
+        if ability_data.get("passive", False) or not ability_data.get("combat", True):
+            return TargetScope.NONE
+        ability_type = ability_data.get("type", "Skill")
+        if ability_type in {"Heal", "Support", "Movement"}:
+            return TargetScope.SELF
+        if ability_data.get("self_target", False):
+            return TargetScope.SELF
+        return TargetScope.SINGLE_ENEMY
+
+    @staticmethod
+    def _target_loss_policy(
+        name: str,
+        raw_policy: str | None,
+    ) -> TargetLossPolicy:
+        """Load explicit target retention or map known legacy charges."""
+        if raw_policy is not None:
+            return TargetLossPolicy(str(raw_policy).lower())
+        if name in {"Shadow Strike", "Arcane Blast"}:
+            return TargetLossPolicy.RETARGET_FOCUS
+        return TargetLossPolicy.LOCKED
 
     @staticmethod
     def _create_simple(ability_data: dict, effects: list):
@@ -311,6 +348,8 @@ class AbilityFactory:
             prone_while_charging: bool | None = None
             notes: str | None = None
             raw_data: dict = field(default_factory=dict)
+            target_scope: TargetScope = TargetScope.SINGLE_ENEMY
+            target_loss_policy: TargetLossPolicy = TargetLossPolicy.LOCKED
 
         return SimpleAbility(
             name=ability_data.get('name', 'Unknown'),
@@ -327,6 +366,14 @@ class AbilityFactory:
             prone_while_charging=ability_data.get('prone_while_charging'),
             notes=ability_data.get('notes'),
             raw_data=ability_data,
+            target_scope=AbilityFactory._target_scope(
+                ability_data,
+                ability_data.get("target_scope"),
+            ),
+            target_loss_policy=AbilityFactory._target_loss_policy(
+                ability_data.get("name", "Unknown"),
+                ability_data.get("target_loss_policy"),
+            ),
         )
 
     @staticmethod

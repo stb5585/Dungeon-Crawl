@@ -2,14 +2,21 @@
 
 ## Status
 
-Status: `Implemented - Slices 0 and 1 (singleton roster only)`
+Status: `Implemented - Slices 0 through 3 (headless pairs, provisional rewards)`
 
 This document promotes the multi-enemy combat item from
 `COMBAT_BALANCE_DESIGN_GATES.md` into a concrete architecture proposal.
-Architecture decisions 1-12 are approved for Slices 0 and 1. Content,
-frontend, and balance decisions 13-21 remain deferred until their rollout
-slices. Slice 1 introduces only a runtime roster with singleton parity; it
-does not authorize two-enemy battle execution or generation.
+Architecture decisions 1-12 are implemented through the headless engine.
+Content, frontend, and balance decisions 13-21 remain deferred until their
+rollout slices. Two-enemy execution is intentionally available only to
+headless callers; generation and Pygame targeting remain disabled.
+
+Slices 2 and 3 add the public `TargetScope`, `TargetLossPolicy`,
+`ActionIntent`, structured `CombatResultGroup`, fixed actor-cycle diagnostics,
+and provisional `BattleOutcome.rewards_settled` contracts. Invalid target
+intents do not commit or advance the actor cycle. During pair combat,
+`engine.enemy` is available only inside an individual target-resolution
+context.
 
 The first stable release is intentionally limited to one player-facing combat
 slot against one or two enemies. The architecture should not impose a permanent
@@ -650,6 +657,12 @@ multi-enemy generation disabled.
 Exit condition: two enemies can complete a headless battle with correct status
 ticks, turns, target validation, and mixed death order.
 
+Implemented. The fixed order contains the dynamic `"player"` slot and stable
+enemy combatant IDs. It is rolled once by priority tier and weighted sampling,
+then reused with dead/resolved actors skipped. `ROUND_START`, `ROUND_END`,
+`TURN_START`, and `TURN_END` carry encounter, actor, round, and actor-turn
+identity. Pairs remain rejected for bosses, trials, and scripted combat.
+
 ### Slice 3 - Multi-Target Ability Contract
 
 - Use `CombatResultGroup` and per-target event emission.
@@ -659,6 +672,22 @@ ticks, turns, target validation, and mixed death order.
 
 Exit condition: single-target and all-enemy actions share one validated engine
 path and are deterministic under seeded tests.
+
+Implemented. Every canonical engine action exposes a result group. Hallowed
+Ground produces one ordered enemy field result and one tagged self-healing
+field result. Earthquake is the first direct-damage `ALL_ENEMIES` ability: it
+retains its 26 MP cost and 2.5 damage modifier, pays once, rolls each target
+independently, and includes flying targets as explicit grounded no-effect
+portions. Multi-enemy victory, flee, and defeat finalize logs and transient
+state but intentionally settle no rewards or tile persistence; their outcomes
+return `rewards_settled=False`.
+
+The same seeded singleton balance command completed after Slices 2 and 3 and
+wrote `reports/balance_baselines/multi_enemy_slice3_post_refactor.txt`. Its
+117-line output is byte-for-byte identical to the Slice 0 report (`cmp` exit
+0), with SHA-256
+`edccb0d62fecdf1d350189421aa9d5d9a2004a388c9bde2664df3896b7993fbe`.
+The full repository validation completed with 2,533 passing tests.
 
 ### Slice 4 - Frontend Targeting
 

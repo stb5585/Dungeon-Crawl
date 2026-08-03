@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 
 from src.paths import CORE_DATA_DIR
 from ..combat.combat_result import CombatResult
+from ..combat.targeting import TargetLossPolicy, TargetScope
 
 
 if TYPE_CHECKING:
@@ -66,6 +67,8 @@ class Ability:
             typ: str = "",
             subtyp: str = "",
             dmg_mod: float = 1.0,
+            target_scope: TargetScope = TargetScope.SINGLE_ENEMY,
+            target_loss_policy: TargetLossPolicy = TargetLossPolicy.LOCKED,
             ) -> None:
         """
         Args:
@@ -87,6 +90,8 @@ class Ability:
         self.typ = typ
         self.subtyp = subtyp
         self.dmg_mod = dmg_mod
+        self.target_scope = target_scope
+        self.target_loss_policy = target_loss_policy
         self.result = CombatResult(
             action=name,
             extra={'cost': cost, "type": self.typ, "subtype": self.subtyp}
@@ -137,6 +142,8 @@ class Ability:
         }
         result.extra = {"cost": self.cost, "type": self.typ, "subtype": self.subtyp}
         result.message = ""
+        result.actor_id = None
+        result.target_id = None
         return result
 
     def __str__(self) -> str:

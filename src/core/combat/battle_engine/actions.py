@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
 import inspect
 import random
 import re
@@ -11,6 +12,8 @@ from ... import items
 from ...classes import ability_mechanics, astromancer, class_rings, promotion_kits, wizard
 from ...constants import SPECIAL_ATTACK_LUCK_FACTOR, SPECIAL_ATTACK_ROLL_MAX
 from ...events.event_bus import EventType, create_combat_event
+from ..actor_cycle import initiative_rating
+from ..combat_result import CombatResult
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -72,18 +75,40 @@ class BattleActionMixin:
             except NotImplementedError:
                 pass
 
-        message, _hit, _damage = self.attacker.weapon_damage(self.defender)
+        message, hit, damage = self.attacker.weapon_damage(self.defender)
+        self._last_combat_result = CombatResult(
+            action="Attack",
+            actor=self.attacker,
+            target=self.defender,
+            hit=hit,
+            damage=damage,
+            message=message,
+        )
         return message
 
     def _execute_flee(self) -> tuple[str, bool]:
         """Attempt to flee. Returns (message, success)."""
+        hostile = self._fastest_living_hostile()
         self._event_bus.emit(create_combat_event(
             EventType.FLEE_ATTEMPT,
             actor=self.attacker,
-            target=self.defender,
+            target=hostile,
         ))
-        success, message = self.attacker.flee(self.defender)
+        success, message = self.attacker.flee(hostile)
         return message, success
+
+    def _fastest_living_hostile(self):
+        """Return the fastest hostile, resolving equal ratings by authored slot."""
+        living = self.encounter.living_members
+        if not living:
+            return self.encounter.primary_enemy
+        return max(
+            living,
+            key=lambda member: (
+                initiative_rating(member.enemy, self.player),
+                -member.slot,
+            ),
+        ).enemy
 
     def _execute_defend(self) -> str:
         """Enter defensive stance."""
@@ -130,7 +155,14 @@ class BattleActionMixin:
 
         defender_was_alive = self.defender.is_alive()
         message = f"{self.attacker.name} casts {choice}.\n"
-        message += str(self._cast_spell_with_context(spell, self.attacker, self.defender))
+        cast_result = self._cast_spell_with_context(
+            spell,
+            self.attacker,
+            self.defender,
+        )
+        if isinstance(cast_result, CombatResult):
+            self._last_combat_result = deepcopy(cast_result)
+        message += str(cast_result)
         if self.attacker == self.player:
             if (
                 choice in {"Turn Undead", "TurnUndead", "Turn Undead 2", "TurnUndead2"}
@@ -345,8 +377,23 @@ class BattleActionMixin:
                 if not consumed:
                     return smoke_message
                 message += smoke_message
-            message += skill.use(self.attacker, target=self.defender)
-            self.flee, flee_str = self.attacker.flee(self.defender, smoke=True)
+            hostile = self._fastest_living_hostile()
+            message += skill.use(self.attacker, target=hostile)
+            perceived = any(
+                getattr(member.enemy, "sight", False)
+                and not member.enemy.status_effects["Blind"].active
+                for member in self.encounter.living_members
+            )
+            attempted, flee_str = self.attacker.flee(hostile, smoke=True)
+            if not perceived:
+                self.flee = True
+                if not attempted:
+                    flee_str = (
+                        f"{self.attacker.name} disappears in a cloud of smoke."
+                    )
+            else:
+                self.flee = False
+                flee_str = f"{hostile.name} sees through the smoke."
             message += flee_str
             if self.flee and hasattr(self.player, "record_flee"):
                 self.player.record_flee()
@@ -372,15 +419,37 @@ class BattleActionMixin:
                 message = ""
             message += skill.use(self.attacker, target=self.defender)
             self.attacker.class_effects["Jump"].active = bool(getattr(skill, "charging", False))
+            owner_id = self._actor_id_for(self.attacker)
+            if getattr(skill, "charging", False):
+                member = self._member_for_character(self.defender)
+                self.pending_actions[owner_id] = {
+                    "action": "Use Skill",
+                    "choice": choice,
+                    "ability": skill,
+                    "target_id": member.combatant_id if member else None,
+                    "policy": getattr(skill, "target_loss_policy", "locked"),
+                }
+            else:
+                self.pending_actions.pop(owner_id, None)
 
         elif hasattr(skill, 'get_charge_time') and skill.get_charge_time() > 0:
             # Charging abilities (Charge, Crushing Blow, etc.)
             message += skill.use(self.attacker, target=self.defender)
             if getattr(skill, 'charging', False):
                 self.charging_ability = (self.attacker, choice, skill)
+                member = self._member_for_character(self.defender)
+                owner_id = self._actor_id_for(self.attacker)
+                self.pending_actions[owner_id] = {
+                    "action": "Use Skill",
+                    "choice": choice,
+                    "ability": skill,
+                    "target_id": member.combatant_id if member else None,
+                    "policy": getattr(skill, "target_loss_policy", "locked"),
+                }
             else:
                 # Charge completed this turn
                 self.charging_ability = None
+                self.pending_actions.pop(self._actor_id_for(self.attacker), None)
 
         else:
             message += str(skill.use(self.attacker, target=self.defender))
@@ -445,7 +514,7 @@ class BattleActionMixin:
         self.summon_active = True
         self.player.active_summon_name = summon.name
         self.attacker = summon
-        self.defender = self.enemy
+        self.defender = self._focused_enemy()
         self.available_actions = self._available_actions()
         costs = []
         if mana_cost:
@@ -491,7 +560,7 @@ class BattleActionMixin:
         self.summon = None
         self.player.active_summon_name = None
         self.attacker = self.player
-        self.defender = self.enemy
+        self.defender = self._focused_enemy()
         self.available_actions = self._available_actions()
         return message, True
 

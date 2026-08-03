@@ -13,11 +13,13 @@ works transparently with the existing battle engine code.
 
 from __future__ import annotations
 
+from copy import deepcopy
 import random
 from typing import TYPE_CHECKING
 
 from src.core.abilities import Spell
-from src.core.combat.combat_result import CombatResult
+from src.core.combat.combat_result import CombatResult, CombatResultGroup
+from src.core.combat.targeting import TargetScope
 from src.core.constants import (
     DAMAGE_VARIANCE_HIGH,
     DAMAGE_VARIANCE_LOW,
@@ -126,14 +128,14 @@ class DataDrivenSpell(Spell):
         cover: bool = False,
         special: bool = False,
         fam: bool = False,
-        **_kwargs: Any,
+        **kwargs: Any,
     ) -> CombatResult:
         result = self._reset_result(actor=caster, target=target)
         result.extra['cost'] = self.cost
         msg = ""
 
         # ── 1. Mana cost ────────────────────────────────────────────
-        if not (
+        if not kwargs.get("_skip_cost", False) and not (
             special
             or fam
             or (
@@ -150,10 +152,12 @@ class DataDrivenSpell(Spell):
             return result
         if self._grounded_damage and getattr(target, "flying", False):
             result.hit = False
-            result.message = "It has no effect.\n"
+            result.extra["no_effect_reason"] = "flying"
+            result.message = f"{target.name} is airborne; the grounded spell has no effect.\n"
             return result
 
         # ── 3. Reflect ──────────────────────────────────────────────
+        reaction_owner = target
         reflect = target.magic_effects["Reflect"].active
         if not reflect:
             try:
@@ -320,13 +324,13 @@ class DataDrivenSpell(Spell):
 
             # ── 13. Counterspell check ──────────────────────────────
             if (
-                "Counterspell" in target.spellbook.get("Spells", {})
+                "Counterspell" in reaction_owner.spellbook.get("Spells", {})
                 and not random.randint(0, 4)
             ):
                 from src.core.abilities import Counterspell
 
-                msg += f"{target.name} uses Counterspell.\n"
-                msg += Counterspell().use(target, caster)
+                msg += f"{reaction_owner.name} uses Counterspell.\n"
+                msg += Counterspell().use(reaction_owner, caster)
         else:
             msg += f"The spell misses {target.name}.\n"
 
@@ -343,6 +347,58 @@ class DataDrivenSpell(Spell):
 
         result.message = msg
         return result
+
+    def cast_group(
+        self,
+        caster: Character,
+        targets: list[tuple[str, Character]],
+        *,
+        battle_engine: Any,
+    ) -> CombatResultGroup:
+        """Resolve one paid cast independently against an authored target snapshot."""
+        group = CombatResultGroup(
+            action=self.name,
+            actor_id=battle_engine.current_actor_id,
+            target_scope=TargetScope.ALL_ENEMIES,
+            target_ids=tuple(target_id for target_id, _target in targets),
+        )
+        for index, (target_id, target) in enumerate(targets):
+            member = battle_engine.encounter.member_by_id(target_id)
+            if not member.is_living_hostile:
+                result = CombatResult(
+                    action=self.name,
+                    actor=caster,
+                    target=target,
+                    actor_id=battle_engine.current_actor_id,
+                    target_id=target_id,
+                    hit=False,
+                    extra={
+                        "skipped": True,
+                        "reason": "target_unavailable",
+                        "display_label": member.display_label,
+                    },
+                    message=f"{member.display_label} is no longer a valid target.\n",
+                )
+            else:
+                with battle_engine._target_resolution_context(
+                    member,
+                    TargetScope.ALL_ENEMIES,
+                    group.target_ids,
+                ):
+                    result = deepcopy(
+                        self.cast(
+                            caster,
+                            target=target,
+                            _skip_cost=index > 0,
+                        )
+                    )
+                result.actor_id = battle_engine.current_actor_id
+                result.target_id = target_id
+                result.extra["display_label"] = member.display_label
+                battle_engine._attempt_member_resurrection(member)
+                battle_engine._record_final_enemy_resolutions()
+            group.add(result)
+        return group
 
     # ------------------------------------------------------------------
     # Effect execution - replaces the per-subtype special_effect()

@@ -2,11 +2,11 @@
 
 ## Status
 
-Status: `Slice 0 baseline`
+Status: `Implemented through Slice 3`
 
-This inventory records targeting and trigger contracts before runtime target
-metadata is added in Slice 2. It is descriptive documentation only: no ability
-cost, coefficient, or current singleton behavior changes in Slices 0 or 1.
+This inventory records the targeting and trigger contracts now represented by
+runtime metadata. Abilities without explicit migrated YAML metadata continue
+through the documented legacy inference defaults.
 
 ## Defaults
 
@@ -37,11 +37,12 @@ these migration defaults:
 | Arcane Blast | Charged magical power-up attack | `SINGLE_ENEMY` | 0 MP | 1 turn | `RETARGET_FOCUS` | Reflect/Counterspell for resolved target | charge once; hit/kill per target |
 | Wormhole | Sends another spell two turns forward | inherited from stored spell | 10 MP plus stored spell cost | 2 turns | `LOCKED` for single target; `SNAPSHOT_ROSTER` for future all-enemy spells | inherited per resolved target | both costs once; stored cast once |
 | Hallowed Ground | Applies a three-turn field to supplied foes and healing field to caster | `ALL_ENEMIES` reference field | 20 MP | field ticks 3 owner turns | roster resolved at cast | status application and field damage per enemy | cast once; field portion per enemy; healing once |
+| Earthquake | Direct earth damage and independent Prone checks | `ALL_ENEMIES` | 26 MP; full 2.5 modifier per target | none | `SNAPSHOT_ROSTER` | Reflect and Counterspell independently per enemy; flying is explicit no-effect | cost/cast once; damage, defense, effect, and reaction per enemy |
 | Windswept | Attempts to remove one foe or lifts its user | `SINGLE_ENEMY`, or `SELF` when explicitly self-cast | 15 MP | none | n/a | target portion only | cast once; ejection ledger once |
 | Smoke Screen | Consumes its resource to attempt encounter flee | `NONE` | 5 MP plus Smoke Bomb rule | none | n/a | fastest perceiving-hostile flee contest | once per attempt |
 | Reflect | Places a spell-reflection ward on its user | `SELF` | 14 MP | duration effect | n/a | reflects only that target portion | once per reflected portion |
 | Counterspell | Enemy retaliation after a spell portion | `SELF` reaction | 0 MP | reactive | n/a | retaliates independently per target portion; never cancels whole cast | at most once per eligible portion |
-| Rewind | Restores the previous player choice-point snapshot | `NONE` | 40 MP | snapshot | encounter snapshot contract deferred to Slice 2 | no direct reaction | once per cast |
+| Rewind | Restores the previous player choice-point snapshot | `NONE` | 40 MP | full encounter snapshot | restores roster, ledger, cycle, focus, pending/delayed actions, summon slot, and character effects | no direct reaction | once per cast |
 | Foretell | Inspects the current enemy's next action | `SINGLE_ENEMY` | ability-defined | none | n/a | none | once per chosen target |
 | Tame | Converts one eligible animal into a companion | `SINGLE_ENEMY` | ability-defined | none | n/a | target validation only | one `tamed` resolution; no normal kill rewards |
 | Redeem / Mercy | Offers one eligible foe mercy | `SINGLE_ENEMY` | ability-defined | none | n/a | target validation only | one `mercy` resolution and restitution |
@@ -70,9 +71,9 @@ these migration defaults:
 
 ## Slice Gates
 
-- Slice 2 adds the target-scope and target-loss enums plus explicit action
-  intent; this inventory remains the migration checklist.
-- Slice 3 validates Hallowed Ground as the reference `ALL_ENEMIES` field and
-  converts reactions to per-target portions.
+- Slice 2 target-scope, target-loss, explicit-intent, actor-cycle, focus, and
+  pending-target contracts are implemented for headless singleton/pair combat.
+- Slice 3 structured Hallowed Ground and full-damage Earthquake resolution is
+  implemented with ordered, per-combatant portions.
 - Slice 5 implements ledger-based reward cadence. Until then, singleton reward
   code remains unchanged.

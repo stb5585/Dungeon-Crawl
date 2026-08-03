@@ -2,14 +2,22 @@
 
 from __future__ import annotations
 
+from contextlib import contextmanager
+import random
 from typing import TYPE_CHECKING
 
+from ..actor_cycle import ActorCycle, PLAYER_ACTOR_ID, build_actor_order
 from ..battle_logger import BattleLogger
 from ..encounter import CombatEncounter
 from ..initiative import determine_initiative
 from ...classes import ability_mechanics, astromancer, bard, paladin, promotion_kits
 from ...enemies.identity import remember_defeat_identity
-from ...events.event_bus import EventType, create_combat_event, get_event_bus
+from ...events.event_bus import (
+    EventType,
+    combat_event_context,
+    create_combat_event,
+    get_event_bus,
+)
 from .actions import BattleActionMixin
 from .models import ActionResult
 from .outcomes import BattleOutcomeMixin
@@ -40,6 +48,7 @@ class BattleEngine(BattleTurnMixin, BattleActionMixin, BattleOutcomeMixin):
         logger: BattleLogger | None = None,
         *,
         encounter: CombatEncounter | None = None,
+        rng: Any | None = None,
     ):
         if (enemy is None) == (encounter is None):
             raise ValueError("Supply exactly one of enemy or encounter.")
@@ -57,6 +66,8 @@ class BattleEngine(BattleTurnMixin, BattleActionMixin, BattleOutcomeMixin):
         self.tile: Any = tile
         self.game: Any = game
         self.logger: BattleLogger = logger if logger else BattleLogger()
+        self._rng = rng or random
+        self._rng_explicit = rng is not None
         for member in self.encounter.members:
             remember_defeat_identity(member.enemy)
 
@@ -69,9 +80,18 @@ class BattleEngine(BattleTurnMixin, BattleActionMixin, BattleOutcomeMixin):
 
         self.attacker: Character | None = None
         self.defender: Character | None = None
+        self._actor_cycle: ActorCycle | None = None
+        self._focus_target_id: str = self.encounter.primary_member.combatant_id
+        self._active_target_member = None
+        self._active_target_character: Character | None = None
+        self._active_target_scope = None
+        self._active_expanded_target_ids: tuple[str, ...] = ()
+        self._current_actor_turn_id = 0
+        self._turn_action_committed = True
 
         # Track charging abilities across turns
         self.charging_ability: tuple[Character, str, Any] | None = None  # (owner, name, skill_obj)
+        self.pending_actions: dict[str, dict[str, Any]] = {}
         self.delayed_spells: list[dict[str, Any]] = []
 
         # Available actions refreshed each turn
@@ -81,8 +101,132 @@ class BattleEngine(BattleTurnMixin, BattleActionMixin, BattleOutcomeMixin):
 
     @property
     def enemy(self) -> Character:
-        """Return the primary enemy during the singleton compatibility slice."""
+        """Return the singleton or action-context enemy compatibility target."""
+        if len(self.encounter.members) == 1 and not self._rng_explicit:
+            return self.encounter.primary_enemy
+        if self._active_target_character is not None:
+            return self._active_target_character
+        raise RuntimeError(
+            "engine.enemy is ambiguous in multi-enemy combat outside target resolution."
+        )
+
+    @property
+    def fixed_turn_order(self) -> tuple[str, ...]:
+        """Return the immutable actor order rolled at battle start."""
+        return self._actor_cycle.order if self._actor_cycle else ()
+
+    @property
+    def current_actor_id(self) -> str | None:
+        """Return the scheduled actor slot ID."""
+        return self._actor_cycle.current_actor_id if self._actor_cycle else None
+
+    @property
+    def round_number(self) -> int:
+        """Return the current one-based encounter round."""
+        return self._actor_cycle.round_number if self._actor_cycle else 0
+
+    @property
+    def total_started_actor_turns(self) -> int:
+        """Return the number of actor turns begun by the cycle."""
+        return self._actor_cycle.total_started_actor_turns if self._actor_cycle else 0
+
+    @property
+    def focus_target_id(self) -> str:
+        """Return the sticky player focus, falling back when necessary."""
+        self._refresh_focus()
+        return self._focus_target_id
+
+    @property
+    def active_player_character(self) -> Character:
+        """Return the character currently occupying the player-side slot."""
+        if self.summon_active and self.summon and self.summon.is_alive():
+            return self.summon
+        return self.player
+
+    def _refresh_focus(self) -> None:
+        try:
+            member = self.encounter.member_by_id(self._focus_target_id)
+        except KeyError:
+            member = None
+        if member is None or not member.is_living_hostile:
+            living = self.encounter.living_members
+            if living:
+                self._focus_target_id = living[0].combatant_id
+
+    def _focused_enemy(self) -> Character:
+        """Return the valid focus enemy for internal automatic targeting."""
+        self._refresh_focus()
+        if self.encounter.living_members:
+            return self.encounter.member_by_id(self._focus_target_id).enemy
         return self.encounter.primary_enemy
+
+    def _member_for_character(self, character: Character | None):
+        for member in self.encounter.members:
+            if member.enemy is character:
+                return member
+        return None
+
+    def _actor_id_for(self, character: Character | None) -> str | None:
+        if character is self.player or character is self.summon:
+            return PLAYER_ACTOR_ID
+        member = self._member_for_character(character)
+        return member.combatant_id if member else None
+
+    def _valid_actor_ids(self) -> set[str]:
+        valid = set()
+        if self.active_player_character.is_alive():
+            valid.add(PLAYER_ACTOR_ID)
+        valid.update(member.combatant_id for member in self.encounter.living_members)
+        return valid
+
+    def _sync_actor_aliases(self) -> None:
+        if not self._actor_cycle:
+            return
+        actor_id = self._actor_cycle.current_actor_id
+        self._refresh_focus()
+        if actor_id == PLAYER_ACTOR_ID:
+            self.attacker = self.active_player_character
+            living = self.encounter.living_members
+            self.defender = (
+                self.encounter.member_by_id(self._focus_target_id).enemy
+                if living
+                else self.encounter.primary_enemy
+            )
+        else:
+            self.attacker = self.encounter.member_by_id(actor_id).enemy
+            self.defender = self.active_player_character
+
+    @contextmanager
+    def _target_resolution_context(self, member, scope, target_ids):
+        previous = self._active_target_member
+        previous_character = self._active_target_character
+        self._active_target_member = member
+        if member is not None:
+            self._active_target_character = member.enemy
+        elif getattr(scope, "value", scope) in {"self", "single_enemy"}:
+            self._active_target_character = self.defender
+        else:
+            self._active_target_character = None
+        if member is not None:
+            target_id = member.combatant_id
+        elif getattr(scope, "value", scope) == "self":
+            target_id = self._actor_id_for(self.attacker)
+        elif getattr(scope, "value", scope) == "single_enemy":
+            target_id = PLAYER_ACTOR_ID
+        else:
+            target_id = None
+        try:
+            with combat_event_context(
+                encounter_id=self.encounter.encounter_id,
+                actor_id=self._actor_id_for(self.attacker),
+                target_id=target_id,
+                target_scope=scope.value,
+                expanded_target_ids=list(target_ids),
+            ):
+                yield
+        finally:
+            self._active_target_member = previous
+            self._active_target_character = previous_character
 
     def _is_class_ring_trial_enemy(self) -> bool:
         """Return whether this fight should use Class Ring trial bookkeeping."""
@@ -102,7 +246,13 @@ class BattleEngine(BattleTurnMixin, BattleActionMixin, BattleOutcomeMixin):
         return str(getattr(self.enemy, "thieves_guild_trial_name", getattr(self.enemy, "name", "initiation trial")))
 
     def _no_healing_duel_active(self) -> bool:
-        return bool(getattr(self.enemy, "class_ring_no_healing_duel", False))
+        return bool(
+            getattr(
+                self.encounter.primary_enemy,
+                "class_ring_no_healing_duel",
+                False,
+            )
+        )
 
     def _available_actions(self) -> list:
         if self.summon_active and self.attacker == self.summon and self.summon:
@@ -175,18 +325,21 @@ class BattleEngine(BattleTurnMixin, BattleActionMixin, BattleOutcomeMixin):
         original_attacker = self.attacker
         original_defender = self.defender
         self.attacker = self.player
-        self.defender = self.enemy
+        self.defender = self._focused_enemy()
         try:
             result = self.execute_action(action, choice, slot_machine_callback)
         finally:
             if self.summon_active and self.summon:
                 self.attacker = self.summon
-                self.defender = self.enemy
+                self.defender = self._focused_enemy()
             else:
                 self.attacker = self.player
-                self.defender = self.enemy
+                self.defender = self._focused_enemy()
             self.available_actions = self._available_actions()
-            if not self.summon_active and original_attacker is self.enemy:
+            if (
+                not self.summon_active
+                and self._member_for_character(original_attacker) is not None
+            ):
                 self.attacker = original_attacker
                 self.defender = original_defender
         return result
@@ -209,25 +362,57 @@ class BattleEngine(BattleTurnMixin, BattleActionMixin, BattleOutcomeMixin):
         Returns:
             (first_actor, second_actor) — the initiative order.
         """
-        if len(self.encounter.members) != 1:
+        if len(self.encounter.members) > 2:
             raise NotImplementedError(
-                "Multi-enemy battles require the Slice 2 actor-cycle implementation."
+                "Multi-enemy combat currently supports at most two enemies."
+            )
+        if len(self.encounter.members) > 1 and (
+            self.boss
+            or any(
+                getattr(member.enemy, flag, False)
+                for member in self.encounter.members
+                for flag in (
+                    "grandmaster_trial_enemy",
+                    "class_ring_trial_enemy",
+                    "thieves_guild_trial_enemy",
+                    "scripted_combat_enemy",
+                )
+            )
+        ):
+            raise NotImplementedError(
+                "Boss, trial, and scripted multi-enemy encounters are not supported."
             )
 
         self._clear_stale_charging_actions(self.player)
-        self._clear_stale_charging_actions(self.enemy)
+        for member in self.encounter.members:
+            self._clear_stale_charging_actions(member.enemy)
         self.player._final_assault_used = False
         self.player._last_stand_used = False
         self.player._foretell_snapshot = None
         self.player._rewind_snapshot = None
         promotion_kits.start_combat(self.player)
-        self.attacker, self.defender = determine_initiative(self.player, self.enemy)
+        if len(self.encounter.members) == 1:
+            first, _second = determine_initiative(
+                self.player,
+                self.encounter.primary_enemy,
+            )
+            enemy_id = self.encounter.primary_member.combatant_id
+            order = (
+                (PLAYER_ACTOR_ID, enemy_id)
+                if first is self.player
+                else (enemy_id, PLAYER_ACTOR_ID)
+            )
+        else:
+            order = build_actor_order(self.player, self.encounter, rng=self._rng)
+        self._actor_cycle = ActorCycle(order)
+        self._sync_actor_aliases()
+        self._current_actor_turn_id = self._actor_cycle.start_current_turn()
         self.available_actions = self._available_actions()
 
         self._event_bus.emit(create_combat_event(
             EventType.COMBAT_START,
             actor=self.player,
-            target=self.enemy,
+            target=self.encounter.primary_enemy,
             initiative=self.attacker == self.player,
             boss=self.boss,
             encounter_id=self.encounter.encounter_id,
@@ -236,20 +421,48 @@ class BattleEngine(BattleTurnMixin, BattleActionMixin, BattleOutcomeMixin):
 
         self.logger.start_battle(
             self.player,
-            self.enemy,
+            self.encounter.primary_enemy,
             initiative=self.attacker == self.player,
             boss=self.boss,
             encounter=self.encounter,
         )
 
-        if hasattr(self.player, "record_bestiary_encounter"):
-            self.player.record_bestiary_encounter(self.enemy, getattr(self.enemy, "enemy_typ", None))
+        self._event_bus.emit(create_combat_event(
+            EventType.ROUND_START,
+            actor=self.attacker,
+            target=self.defender,
+            encounter_id=self.encounter.encounter_id,
+            actor_id=self.current_actor_id,
+            round=self.round_number,
+            actor_turn_id=self._current_actor_turn_id,
+        ))
+        self._event_bus.emit(create_combat_event(
+            EventType.TURN_START,
+            actor=self.attacker,
+            target=self.defender,
+            encounter_id=self.encounter.encounter_id,
+            actor_id=self.current_actor_id,
+            round=self.round_number,
+            actor_turn_id=self._current_actor_turn_id,
+        ))
 
         paladin.advance_encounter(self.player)
         paladin.clear_transient_marks(self.player)
-        debuff_text = bard.apply_enemy_opening_debuffs(self.player, self.enemy)
-        if debuff_text:
-            self.logger.log_event("Bard Song", self.player, target=self.enemy, outcome=debuff_text)
+        for member in self.encounter.members:
+            enemy = member.enemy
+            if hasattr(self.player, "record_bestiary_encounter"):
+                self.player.record_bestiary_encounter(
+                    enemy,
+                    getattr(enemy, "enemy_typ", None),
+                )
+            debuff_text = bard.apply_enemy_opening_debuffs(self.player, enemy)
+            if debuff_text:
+                self.logger.log_event(
+                    "Bard Song",
+                    self.player,
+                    target=enemy,
+                    outcome=debuff_text,
+                )
         return self.attacker, self.defender
 
     def battle_continues(self) -> bool:

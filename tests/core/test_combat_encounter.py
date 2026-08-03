@@ -208,15 +208,19 @@ def test_engine_rejects_invalid_enemy_and_encounter_combinations():
         BattleEngine(player, enemy)
 
 
-def test_engine_blocks_multi_enemy_battle_start_until_slice_two():
-    encounter = CombatEncounter.from_enemies([Goblin(), GreenSlime()])
+def test_engine_allows_pairs_but_rejects_larger_rosters():
+    pair = CombatEncounter.from_enemies([Goblin(), GreenSlime()])
     engine = BattleEngine(
         _player(),
         tile=DummyCombatTile(),
-        encounter=encounter,
+        encounter=pair,
     )
 
-    with pytest.raises(NotImplementedError, match="Slice 2"):
+    engine.start_battle()
+
+    trio = CombatEncounter.from_enemies([Goblin(), GreenSlime(), Goblin()])
+    engine = BattleEngine(_player(), tile=DummyCombatTile(), encounter=trio)
+    with pytest.raises(NotImplementedError, match="at most two"):
         engine.start_battle()
 
 

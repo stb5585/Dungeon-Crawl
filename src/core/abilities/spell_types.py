@@ -6,6 +6,9 @@ import random
 from typing import TYPE_CHECKING
 
 from ..constants import DAMAGE_VARIANCE_HIGH, DAMAGE_VARIANCE_LOW
+from ..combat.combat_result import CombatResult, CombatResultGroup
+from ..combat.targeting import TargetLossPolicy, TargetScope
+from ..events.event_bus import combat_event_context
 from .base import Skill, Spell
 from .enemy import Counterspell
 
@@ -508,7 +511,15 @@ class Wormhole(Spell):
         if user.mana.current < getattr(spell, "cost", 0):
             return f"{user.name} does not have enough mana to send {spell_name} through time.\n"
         user.mana.current -= getattr(spell, "cost", 0)
-        engine.delayed_spells.append({"turns": 2, "caster": user, "spell": spell})
+        target_member = engine._member_for_character(target)
+        engine.delayed_spells.append({
+            "turns": 2,
+            "caster": user,
+            "spell": spell,
+            "owner_id": engine._actor_id_for(user),
+            "target_id": target_member.combatant_id if target_member else None,
+            "skip_next_owner_tick": True,
+        })
         return f"{user.name} sends {spell_name} two turns into the future.\n"
 
 
@@ -661,6 +672,8 @@ class HallowedGround(Spell):
         )
         self.cost = 20
         self.subtyp = "Holy"
+        self.target_scope = TargetScope.ALL_ENEMIES
+        self.target_loss_policy = TargetLossPolicy.SNAPSHOT_ROSTER
 
     @staticmethod
     def _apply_field(target: Character, *, mode: str, amount: int) -> None:
@@ -727,6 +740,97 @@ class HallowedGround(Spell):
         return (
             f"{user.name} hallows the ground beneath {names} for 3 turns.\n"
         )
+
+    def cast_group(
+        self,
+        user: Character,
+        targets: list[tuple[str, Character]],
+        *,
+        battle_engine: Any,
+    ) -> CombatResultGroup:
+        """Apply one paid field cast to each living enemy and the player slot."""
+        group = CombatResultGroup(
+            action=self.name,
+            actor_id=battle_engine.current_actor_id,
+            target_scope=TargetScope.ALL_ENEMIES,
+            target_ids=tuple(target_id for target_id, _target in targets),
+        )
+        user.mana.current -= self.cost
+        for target_id, enemy in targets:
+            member = battle_engine.encounter.member_by_id(target_id)
+            if not member.is_living_hostile:
+                group.add(CombatResult(
+                    action=self.name,
+                    actor=user,
+                    target=enemy,
+                    actor_id=battle_engine.current_actor_id,
+                    target_id=target_id,
+                    hit=False,
+                    extra={"skipped": True},
+                    message=f"{member.display_label} is no longer a valid target.\n",
+                ))
+                continue
+            raw_damage = max(1, int(user.check_mod("magic", enemy=enemy) * 0.5))
+            resistance = float(enemy.check_mod("resist", typ="Holy"))
+            damage = max(1, int(raw_damage * (1.0 - resistance)))
+            with battle_engine._target_resolution_context(
+                member,
+                TargetScope.ALL_ENEMIES,
+                group.target_ids,
+            ):
+                self._apply_field(enemy, mode="damage", amount=damage)
+                user._emit_status_event(
+                    enemy,
+                    "Hallowed Ground",
+                    applied=True,
+                    duration=3,
+                    source=self.name,
+                )
+            group.add(CombatResult(
+                action=self.name,
+                actor=user,
+                target=enemy,
+                actor_id=battle_engine.current_actor_id,
+                target_id=target_id,
+                hit=True,
+                extra={
+                    "field": "damage",
+                    "tick_amount": damage,
+                    "display_label": member.display_label,
+                },
+                message=(
+                    f"{user.name} hallows the ground beneath "
+                    f"{member.display_label} for 3 turns.\n"
+                ),
+            ))
+
+        healing = max(1, int(user.health.max * 0.05) + user.check_mod("heal") // 10)
+        self._apply_field(user, mode="healing", amount=healing)
+        with combat_event_context(
+            encounter_id=battle_engine.encounter.encounter_id,
+            actor_id=battle_engine.current_actor_id,
+            target_id="player",
+            target_scope=TargetScope.ALL_ENEMIES.value,
+            expanded_target_ids=list(group.target_ids),
+        ):
+            user._emit_status_event(
+                user,
+                "Hallowed Ground",
+                applied=True,
+                duration=3,
+                source=self.name,
+            )
+        group.add(CombatResult(
+            action=self.name,
+            actor=user,
+            target=user,
+            actor_id=battle_engine.current_actor_id,
+            target_id="player",
+            healing=0,
+            extra={"field": "healing", "tick_amount": healing, "self_result": True},
+            message=f"Hallowed Ground will restore {user.name} on their turns.\n",
+        ))
+        return group
 
 
 class Corruption2(Spell):

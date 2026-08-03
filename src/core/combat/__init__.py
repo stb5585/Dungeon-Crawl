@@ -22,14 +22,22 @@ from .encounter import (
     EnemyResolution,
     EnemyResolutionRecord,
 )
+from .targeting import (
+    ActionIntent,
+    ActionValidationCode,
+    TargetLossPolicy,
+    TargetScope,
+)
 
 # Note: EnhancedBattleManager imports are deferred to avoid circular dependencies
 # Import it directly: from combat.enhanced_manager import EnhancedBattleManager
 
 __all__ = [
     'ActionQueue',
+    'ActionIntent',
     'ActionPriority',
     'ActionType',
+    'ActionValidationCode',
     'ScheduledAction',
     'TurnManager',
     'create_attack_action',
@@ -38,4 +46,6 @@ __all__ = [
     'EncounterEnemy',
     'EnemyResolution',
     'EnemyResolutionRecord',
+    'TargetLossPolicy',
+    'TargetScope',
 ]

@@ -107,12 +107,41 @@ def capture_battle_snapshot(engine: Any) -> dict[str, Any]:
             "tunnel": getattr(character, "tunnel", False),
         }
 
+    members = {
+        member.combatant_id: {
+            "character": character_state(member.enemy),
+            "resolution": member.resolution,
+            "resolution_cause": member.resolution_cause,
+        }
+        for member in engine.encounter.members
+    }
+    cycle = getattr(engine, "_actor_cycle", None)
+    summon = getattr(engine, "summon", None)
     return {
         "player": character_state(engine.player),
-        "enemy": character_state(engine.enemy),
-        "attacker": "player" if engine.attacker == engine.player else "enemy",
-        "defender": "player" if engine.defender == engine.player else "enemy",
+        "enemy": character_state(engine.encounter.primary_enemy),
+        "members": members,
+        "resolution_ledger": deepcopy(engine.encounter.resolution_ledger),
+        "attacker": engine._actor_id_for(engine.attacker),
+        "defender": engine._actor_id_for(engine.defender),
         "summon_active": bool(getattr(engine, "summon_active", False)),
+        "summon": summon,
+        "summon_state": character_state(summon) if summon is not None else None,
+        "focus_target_id": getattr(engine, "_focus_target_id", None),
+        "cycle": {
+            "order": tuple(cycle.order),
+            "cursor": cycle.cursor,
+            "round_number": cycle.round_number,
+            "total_started_actor_turns": cycle.total_started_actor_turns,
+            "current_actor_turn_id": getattr(engine, "_current_actor_turn_id", 0),
+        } if cycle else None,
+        "pending_actions": {
+            key: dict(value)
+            for key, value in getattr(engine, "pending_actions", {}).items()
+        },
+        "delayed_spells": [
+            dict(entry) for entry in getattr(engine, "delayed_spells", [])
+        ],
     }
 
 
@@ -137,10 +166,57 @@ def restore_battle_snapshot(engine: Any, snapshot: dict[str, Any]) -> str:
         character.tunnel = state["tunnel"]
 
     restore(engine.player, snapshot["player"])
-    restore(engine.enemy, snapshot["enemy"])
-    engine.attacker = engine.player if snapshot.get("attacker") == "player" else engine.enemy
-    engine.defender = engine.player if snapshot.get("defender") == "player" else engine.enemy
+    member_states = snapshot.get("members")
+    if member_states:
+        for member in engine.encounter.members:
+            state = member_states[member.combatant_id]
+            restore(member.enemy, state["character"])
+            member.resolution = state["resolution"]
+            member.resolution_cause = state["resolution_cause"]
+        engine.encounter._resolution_ledger = list(
+            deepcopy(snapshot.get("resolution_ledger", ()))
+        )
+    else:
+        restore(engine.encounter.primary_enemy, snapshot["enemy"])
     engine.summon_active = bool(snapshot.get("summon_active", False))
+    engine.summon = snapshot.get("summon")
+    if engine.summon is not None and snapshot.get("summon_state"):
+        restore(engine.summon, snapshot["summon_state"])
+    cycle_state = snapshot.get("cycle")
+    if cycle_state and getattr(engine, "_actor_cycle", None):
+        engine._actor_cycle.order = tuple(cycle_state["order"])
+        engine._actor_cycle.cursor = cycle_state["cursor"]
+        engine._actor_cycle.round_number = cycle_state["round_number"]
+        engine._actor_cycle.total_started_actor_turns = cycle_state[
+            "total_started_actor_turns"
+        ]
+        engine._current_actor_turn_id = cycle_state["current_actor_turn_id"]
+    engine._focus_target_id = snapshot.get(
+        "focus_target_id",
+        engine.encounter.primary_member.combatant_id,
+    )
+    engine.pending_actions = {
+        key: dict(value)
+        for key, value in snapshot.get("pending_actions", {}).items()
+    }
+    engine.delayed_spells = [
+        dict(entry) for entry in snapshot.get("delayed_spells", [])
+    ]
+    if getattr(engine, "_actor_cycle", None):
+        engine._sync_actor_aliases()
+    else:
+        attacker_id = snapshot.get("attacker")
+        engine.attacker = (
+            engine.player
+            if attacker_id == "player"
+            else engine.encounter.primary_enemy
+        )
+        defender_id = snapshot.get("defender")
+        engine.defender = (
+            engine.player
+            if defender_id == "player"
+            else engine.encounter.primary_enemy
+        )
     engine.player._foretell_snapshot = None
     return "Time folds back to the foretold moment.\n"
 

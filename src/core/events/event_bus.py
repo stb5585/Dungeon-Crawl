@@ -9,6 +9,8 @@ Events are emitted by the game engine and can be consumed by different presenter
 from __future__ import annotations
 
 from collections import Counter
+from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import dataclass, field
 from enum import Enum, auto
 from typing import TYPE_CHECKING, Any, Callable
@@ -16,6 +18,24 @@ from typing import TYPE_CHECKING, Any, Callable
 if TYPE_CHECKING:
     from character import Character
     from src.core.combat.combat_result import CombatResult
+
+
+_COMBAT_EVENT_CONTEXT: ContextVar[dict[str, Any]] = ContextVar(
+    "combat_event_context",
+    default={},
+)
+
+
+@contextmanager
+def combat_event_context(**data: Any):
+    """Attach encounter/action identity to combat events emitted in this scope."""
+    merged = dict(_COMBAT_EVENT_CONTEXT.get())
+    merged.update(data)
+    token = _COMBAT_EVENT_CONTEXT.set(merged)
+    try:
+        yield
+    finally:
+        _COMBAT_EVENT_CONTEXT.reset(token)
 
 
 class EventType(Enum):
@@ -36,6 +56,7 @@ class EventType(Enum):
     ITEM_USE = auto()
     DEFEND = auto()
     FLEE_ATTEMPT = auto()
+    ACTION_RESULT = auto()
     
     # Damage Events
     DAMAGE_DEALT = auto()
@@ -308,13 +329,15 @@ def create_combat_event(
         CombatEvent instance
     """
     import time
+    data = dict(_COMBAT_EVENT_CONTEXT.get())
+    data.update(kwargs)
     return CombatEvent(
         type=event_type,
         timestamp=time.time(),
         actor=actor,
         target=target,
         result=result,
-        data=kwargs
+        data=data,
     )
 
 

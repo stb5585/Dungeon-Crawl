@@ -2,13 +2,34 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
 import random
 from typing import TYPE_CHECKING
 
-from ...classes import ability_mechanics, bard, lycan, nature_totems, paladin, promotion_kits
-from ...events.event_bus import EventType, create_combat_event
+from ...classes import (
+    ability_mechanics,
+    astromancer,
+    bard,
+    lycan,
+    nature_totems,
+    paladin,
+    promotion_kits,
+    wizard,
+)
+from ...events.event_bus import combat_event_context, EventType, create_combat_event
+from ..actor_cycle import PLAYER_ACTOR_ID
+from ..combat_result import CombatResult, CombatResultGroup
 from ..encounter import EnemyResolution
-from .models import ActionResult, BattleOutcome, ForcedAction, PostTurnResult, PreTurnResult
+from ..targeting import TargetScope
+from .models import (
+    ActionIntent,
+    ActionResult,
+    ActionValidationCode,
+    BattleOutcome,
+    ForcedAction,
+    PostTurnResult,
+    PreTurnResult,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -49,7 +70,14 @@ class BattleTurnMixin:
         hp_before = self.player.health.current if self.attacker == self.player else 0
 
         # Process status effects (poison ticks, bleed, regen, etc.)
-        effects_text = self.attacker.effects()
+        with combat_event_context(
+            encounter_id=self.encounter.encounter_id,
+            actor_id=self.current_actor_id,
+            target_id=self.current_actor_id,
+            target_scope=TargetScope.SELF.value,
+            expanded_target_ids=[self.current_actor_id],
+        ):
+            effects_text = self.attacker.effects()
         if effects_text:
             result.effects_text = effects_text
 
@@ -61,10 +89,11 @@ class BattleTurnMixin:
                     result.shield_explosion_damage = dmg
                 except (ValueError, IndexError):
                     pass
-        if self.attacker == self.enemy:
+        enemy_member = self._member_for_character(self.attacker)
+        if enemy_member is not None:
             thirst_text = ability_mechanics.trigger_hemorrhage_thirst(
                 self.player,
-                getattr(self.enemy, "_last_bleed_tick_damage", 0),
+                getattr(self.attacker, "_last_bleed_tick_damage", 0),
             )
             if thirst_text:
                 result.effects_text = f"{result.effects_text or ''}{thirst_text}"
@@ -91,11 +120,11 @@ class BattleTurnMixin:
             result.can_act = False
             return result
 
-        if self.attacker == self.enemy and bard.active_song(self.player) == "Chorus Time":
+        if enemy_member is not None and bard.active_song(self.player) == "Chorus Time":
             performer_stat = int(getattr(self.player.stats, "charisma", 0)) + int(getattr(self.player.stats, "intel", 0)) // 2
-            enemy_con = max(1, int(getattr(self.enemy.stats, "con", 1) or 1))
+            enemy_con = max(1, int(getattr(self.attacker.stats, "con", 1) or 1))
             if random.randint(1, max(2, performer_stat)) > random.randint(1, enemy_con * 2):
-                result.effects_text = f"{result.effects_text or ''}{self.enemy.name} is dumbfounded by Chorus Time and loses the turn.\n"
+                result.effects_text = f"{result.effects_text or ''}{self.attacker.name} is dumbfounded by Chorus Time and loses the turn.\n"
                 result.can_act = False
                 result.inactive_reason = "Dumbfounded by Chorus Time."
                 return result
@@ -215,7 +244,11 @@ class BattleTurnMixin:
     def get_enemy_action(self) -> tuple[str, str | None]:
         """Ask the enemy AI for its chosen action. Returns (action, choice)."""
         try:
-            return self.enemy.options(self.player, self.available_actions, self.tile)
+            return self.attacker.options(
+                self.active_player_character,
+                self.available_actions,
+                self.tile,
+            )
         except Exception:
             return "Attack", None
 
@@ -231,8 +264,435 @@ class BattleTurnMixin:
         choice: str | None = None,
         slot_machine_callback: Callable | None = None,
     ) -> ActionResult:
+        """Compatibility adapter for callers that do not construct intents."""
+        scope = self._target_scope_for_action(action, choice)
+        target_ids: tuple[str, ...] = ()
+        player_side = (
+            self.current_actor_id == PLAYER_ACTOR_ID
+            or (self.current_actor_id is None and self.is_player_turn())
+        )
+        if (
+            scope == TargetScope.SINGLE_ENEMY
+            and player_side
+            and len(self.encounter.members) == 1
+            and len(self.encounter.living_members) == 1
+        ):
+            target_ids = (self.encounter.living_members[0].combatant_id,)
+        elif scope == TargetScope.SINGLE_ENEMY and player_side:
+            pending = self.pending_actions.get(PLAYER_ACTOR_ID)
+            if pending:
+                target_id = pending.get("target_id")
+                try:
+                    member = self.encounter.member_by_id(target_id)
+                except KeyError:
+                    member = None
+                policy = pending.get("policy")
+                if member is not None and member.is_living_hostile:
+                    target_ids = (member.combatant_id,)
+                elif getattr(policy, "value", policy) == "retarget_focus":
+                    self._refresh_focus()
+                    if self.encounter.living_members:
+                        member = self.encounter.member_by_id(self._focus_target_id)
+                        target_ids = (member.combatant_id,)
+                        skill = pending.get("ability")
+                        if skill is not None and hasattr(skill, "charge_target"):
+                            skill.charge_target = member.enemy
+                else:
+                    skill = pending.get("ability")
+                    if skill is not None:
+                        skill.charging = False
+                        if hasattr(skill, "charge_turns"):
+                            skill.charge_turns = 0
+                        if hasattr(skill, "charge_target"):
+                            skill.charge_target = None
+                    self.pending_actions.pop(PLAYER_ACTOR_ID, None)
+                    message = (
+                        f"{getattr(skill, 'name', 'The charged action')} fizzles "
+                        "because its locked target is gone.\n"
+                    )
+                    group = CombatResultGroup(
+                        action=getattr(skill, "name", action),
+                        actor_id=PLAYER_ACTOR_ID,
+                        target_scope=TargetScope.SINGLE_ENEMY,
+                        message=message,
+                    )
+                    return ActionResult(message=message, combat_results=group)
+            elif self.attacker.status_effects["Berserk"].active:
+                self._refresh_focus()
+                if self.encounter.living_members:
+                    target_ids = (self._focus_target_id,)
+        return self.execute_intent(
+            ActionIntent(action=action, choice=choice, target_ids=target_ids),
+            slot_machine_callback=slot_machine_callback,
+        )
+
+    def _ability_for_action(self, action: str, choice: str | None):
+        if not choice:
+            return None
+        if action in {"Cast Spell", "Runic Boost"}:
+            return self.attacker.spellbook.get("Spells", {}).get(choice)
+        if action in {"Use Skill", "Tame"}:
+            return self.attacker.spellbook.get("Skills", {}).get(
+                choice if action == "Use Skill" else "Tame"
+            )
+        return None
+
+    def _target_scope_for_action(
+        self,
+        action: str,
+        choice: str | None,
+    ) -> TargetScope:
+        """Derive the canonical target scope for a legacy action."""
+        if action in {
+            "Nothing",
+            "Cancelled",
+            "Pickup Weapon",
+            "Flee",
+            "Recall",
+            "Companion",
+            "Totem",
+            "Transform",
+            "Untransform",
+        }:
+            return TargetScope.NONE
+        if action in {"Defend", "Summon"}:
+            return TargetScope.SELF
+        if action == "Use Item":
+            if choice:
+                import re
+
+                item_key = re.split(r"\s{2,}", choice)[0]
+                items = self.attacker.inventory.get(item_key, [])
+                item = items[0] if items else None
+                if isinstance(item, type):
+                    item = item()
+                spell = getattr(item, "spell", None)
+                if (
+                    getattr(item, "subtyp", None) == "Scroll"
+                    and getattr(spell, "subtyp", None) != "Support"
+                ):
+                    return TargetScope.SINGLE_ENEMY
+            return TargetScope.SELF
+        ability = self._ability_for_action(action, choice)
+        if ability is not None:
+            declared = getattr(ability, "target_scope", TargetScope.SINGLE_ENEMY)
+            raw_data = getattr(ability, "_raw_data", {})
+            if isinstance(raw_data, dict) and "target_scope" in raw_data:
+                return declared
+            if declared in {TargetScope.NONE, TargetScope.ALL_ENEMIES}:
+                return declared
+            if getattr(ability, "passive", False):
+                return TargetScope.NONE
+            if (
+                getattr(ability, "subtyp", None) in {"Heal", "Support"}
+                or getattr(ability, "self_target", False)
+            ):
+                return TargetScope.SELF
+            return declared
+        return TargetScope.SINGLE_ENEMY
+
+    def _reject_intent(
+        self,
+        code: ActionValidationCode,
+        message: str,
+    ) -> ActionResult:
+        self._turn_action_committed = False
+        return ActionResult(
+            message=message,
+            committed=False,
+            validation_code=code,
+            combat_results=CombatResultGroup(message=message),
+        )
+
+    def _validated_intent_targets(
+        self,
+        intent: ActionIntent,
+        scope: TargetScope,
+    ):
+        supplied = intent.target_ids
+        if scope in {TargetScope.NONE, TargetScope.SELF, TargetScope.ALL_ENEMIES}:
+            if supplied:
+                return self._reject_intent(
+                    ActionValidationCode.WRONG_TARGET_SCOPE,
+                    f"{scope.value} actions do not accept explicit target IDs.\n",
+                )
+            if scope == TargetScope.ALL_ENEMIES:
+                return list(self.encounter.living_members)
+            return []
+
+        player_side = (
+            self.current_actor_id == PLAYER_ACTOR_ID
+            or (self.current_actor_id is None and self.is_player_turn())
+        )
+        if not player_side:
+            if supplied:
+                return self._reject_intent(
+                    ActionValidationCode.WRONG_TARGET_SCOPE,
+                    "Enemy actions target the active player-side combatant.\n",
+                )
+            return []
+        if not supplied:
+            return self._reject_intent(
+                ActionValidationCode.MISSING_TARGET,
+                "Choose one enemy target.\n",
+            )
+        if len(supplied) != 1:
+            return self._reject_intent(
+                ActionValidationCode.WRONG_TARGET_COUNT,
+                "Single-enemy actions require exactly one target.\n",
+            )
+        try:
+            member = self.encounter.member_by_id(supplied[0])
+        except KeyError:
+            return self._reject_intent(
+                ActionValidationCode.UNKNOWN_TARGET,
+                "That target is not part of this encounter.\n",
+            )
+        if not member.is_living_hostile:
+            return self._reject_intent(
+                ActionValidationCode.UNAVAILABLE_TARGET,
+                "That target is dead or has already left the encounter.\n",
+            )
+        return [member]
+
+    def execute_intent(
+        self,
+        intent: ActionIntent,
+        *,
+        slot_machine_callback: Callable | None = None,
+    ) -> ActionResult:
+        """Validate and execute an action for the engine-owned active actor."""
+        scope = self._target_scope_for_action(intent.action, intent.choice)
+        actor_id = self.current_actor_id or self._actor_id_for(self.attacker)
+        targets = self._validated_intent_targets(intent, scope)
+        if isinstance(targets, ActionResult):
+            return targets
+        if scope == TargetScope.ALL_ENEMIES and actor_id != PLAYER_ACTOR_ID:
+            return self._reject_intent(
+                ActionValidationCode.ENEMY_AREA_UNSUPPORTED,
+                "Enemy-authored all-enemy actions are not supported yet.\n",
+            )
+        self._turn_action_committed = True
+
+        target_ids = tuple(member.combatant_id for member in targets)
+        if scope == TargetScope.SELF:
+            target_ids = (actor_id or PLAYER_ACTOR_ID,)
+        elif (
+            scope == TargetScope.SINGLE_ENEMY
+            and actor_id != PLAYER_ACTOR_ID
+        ):
+            target_ids = (PLAYER_ACTOR_ID,)
+        group = CombatResultGroup(
+            action=intent.choice or intent.action,
+            actor_id=actor_id,
+            target_scope=scope,
+            target_ids=target_ids,
+        )
+
+        if scope == TargetScope.ALL_ENEMIES:
+            return self._execute_all_enemy_intent(intent, targets, group)
+
+        member = targets[0] if targets else None
+        original_defender = self.defender
+        if member is not None:
+            self.defender = member.enemy
+        elif scope == TargetScope.SELF:
+            self.defender = self.attacker
+        resolved_target = self.defender
+        try:
+            with self._target_resolution_context(member, scope, target_ids):
+                result = self._execute_committed_action(
+                    intent.action,
+                    intent.choice,
+                    slot_machine_callback,
+                )
+        finally:
+            if member is None:
+                self.defender = original_defender
+
+        target_id = member.combatant_id if member else (
+            actor_id
+            if scope == TargetScope.SELF
+            else PLAYER_ACTOR_ID
+            if scope == TargetScope.SINGLE_ENEMY
+            else None
+        )
+        raw_portion = getattr(self, "_last_combat_result", None)
+        if isinstance(raw_portion, CombatResult):
+            portion = deepcopy(raw_portion)
+            portion.action = intent.choice or intent.action
+            portion.actor = self.attacker
+            portion.target = member.enemy if member else resolved_target
+            portion.actor_id = actor_id
+            portion.target_id = target_id
+            portion.message = result.message
+        else:
+            portion = CombatResult(
+                action=intent.choice or intent.action,
+                actor=self.attacker,
+                target=member.enemy if member else resolved_target,
+                actor_id=actor_id,
+                target_id=target_id,
+                message=result.message,
+            )
+        group.add(portion)
+        self._event_bus.emit(create_combat_event(
+            EventType.ACTION_RESULT,
+            actor=self.attacker,
+            target=portion.target,
+            result=portion,
+            encounter_id=self.encounter.encounter_id,
+            actor_id=actor_id,
+            target_id=target_id,
+            target_scope=scope.value,
+            expanded_target_ids=list(target_ids),
+        ))
+        result.combat_results = group
+        if (
+            member is not None
+            and actor_id == PLAYER_ACTOR_ID
+            and bool(intent.target_ids)
+        ):
+            self._focus_target_id = member.combatant_id
+        return result
+
+    def _execute_all_enemy_intent(
+        self,
+        intent: ActionIntent,
+        targets,
+        group: CombatResultGroup,
+    ) -> ActionResult:
+        """Resolve a committed all-enemy cast in authored order."""
+        ability = self._ability_for_action(intent.action, intent.choice)
+        if intent.action != "Cast Spell" or ability is None:
+            return self._reject_intent(
+                ActionValidationCode.WRONG_TARGET_SCOPE,
+                "This all-enemy action has no multi-target resolver.\n",
+            )
+        if self.attacker.mana.current < ability.cost:
+            message = (
+                f"{self.attacker.name} does not have enough mana to cast "
+                f"{intent.choice}!\n"
+            )
+            group.add(CombatResult(
+                action=intent.choice or intent.action,
+                actor=self.attacker,
+                actor_id=self.current_actor_id,
+                message=message,
+            ))
+            return ActionResult(message=message, combat_results=group)
+
+        hp_before = self.player.health.current
+        if self.attacker == self.player:
+            ability_mechanics.store_rewind_snapshot(self)
+            promotion_kits.begin_action(
+                self.player,
+                defer_devotion=True,
+                action=intent.action,
+                choice=intent.choice,
+            )
+        self._event_bus.emit(create_combat_event(
+            EventType.SPELL_CAST,
+            actor=self.attacker,
+            target=targets[0].enemy if targets else None,
+            spell_name=intent.choice,
+            ability_name=intent.choice,
+            source="spell",
+            encounter_id=self.encounter.encounter_id,
+            actor_id=self.current_actor_id,
+            target_scope=TargetScope.ALL_ENEMIES.value,
+            expanded_target_ids=list(group.target_ids),
+        ))
+        prefix = f"{self.attacker.name} casts {intent.choice}.\n"
+        group.message = prefix
+        if hasattr(ability, "cast_group"):
+            resolved = ability.cast_group(
+                self.attacker,
+                [(member.combatant_id, member.enemy) for member in targets],
+                battle_engine=self,
+            )
+            for portion in resolved.results:
+                group.add(portion)
+                self._event_bus.emit(create_combat_event(
+                    EventType.ACTION_RESULT,
+                    actor=self.attacker,
+                    target=portion.target,
+                    result=portion,
+                    encounter_id=self.encounter.encounter_id,
+                    actor_id=self.current_actor_id,
+                    target_id=portion.target_id,
+                    target_scope=TargetScope.ALL_ENEMIES.value,
+                    expanded_target_ids=list(group.target_ids),
+                ))
+        else:
+            ability_result = ability.cast(
+                self.attacker,
+                target=targets[0].enemy if targets else None,
+                targets=[member.enemy for member in targets],
+                battle_engine=self,
+            )
+            for member in targets:
+                group.add(CombatResult(
+                    action=intent.choice or intent.action,
+                    actor=self.attacker,
+                    target=member.enemy,
+                    actor_id=self.current_actor_id,
+                    target_id=member.combatant_id,
+                    message=str(ability_result) if member is targets[0] else "",
+                ))
+        self._record_final_enemy_resolutions()
+        if self.attacker == self.player:
+            primary_target = targets[0].enemy if targets else None
+            group.message += wizard.process_cast(
+                self.player,
+                ability,
+                primary_target,
+            )
+            if len(self.encounter.members) == 1 and targets:
+                member = targets[0]
+                if not member.enemy.is_alive():
+                    with self._target_resolution_context(
+                        member,
+                        TargetScope.ALL_ENEMIES,
+                        group.target_ids,
+                    ):
+                        group.message += self._record_player_natural_spell_kill(
+                            ability
+                        )
+            if astromancer.is_astromancer(self.player) and astromancer.sign_for_spell(
+                ability
+            ):
+                astromancer.advance_constellation(self.player)
+            group.message += promotion_kits.finish_action(
+                self.player,
+                defender_survived=bool(self.encounter.living_members),
+            )
+            group.message += promotion_kits.pop_messages(self.player)
+            for member in targets:
+                group.message += promotion_kits.pop_messages(member.enemy)
+        duel_text = self._fail_no_healing_duel_if_healed(hp_before)
+        if duel_text:
+            group.message += duel_text
+        result = ActionResult(message=group.message, combat_results=group)
+        self.logger.log_event(
+            "Action",
+            self.attacker,
+            target=targets[0].enemy if targets else None,
+            action=intent.action,
+            outcome=result.message,
+            actor_id=self.current_actor_id,
+            target_id=targets[0].combatant_id if targets else None,
+        )
+        return result
+
+    def _execute_committed_action(
+        self,
+        action: str,
+        choice: str | None = None,
+        slot_machine_callback: Callable | None = None,
+    ) -> ActionResult:
         """
-        Execute a combat action for the current attacker.
+        Execute a validated combat action for the current attacker.
 
         Args:
             action: The action type string (Attack, Cast Spell, Use Skill, etc.)
@@ -243,6 +703,7 @@ class BattleTurnMixin:
             ActionResult with the message text and status flags.
         """
         result = ActionResult()
+        self._last_combat_result = None
         hp_before = self.player.health.current
         if self.attacker == self.player and not (action == "Cast Spell" and choice == "Rewind"):
             ability_mechanics.store_rewind_snapshot(self)
@@ -354,6 +815,8 @@ class BattleTurnMixin:
             target=self.defender,
             action=action,
             outcome=result.message,
+            actor_id=self.current_actor_id,
+            target_id=self._actor_id_for(self.defender),
         )
 
         return result
@@ -426,7 +889,7 @@ class BattleTurnMixin:
         return True
 
     def _record_failed_enemy_debuff(self, actor, ability_name: str | None, target, snapshot: dict | None) -> None:
-        if snapshot is None or actor is not self.enemy:
+        if snapshot is None or self._member_for_character(actor) is None:
             return
         if self._debuff_snapshot_gained_effect(snapshot, target):
             return
@@ -436,6 +899,13 @@ class BattleTurnMixin:
 
     def companion_turn(self) -> str:
         """Process the attacker's familiar/companion turn. Returns message text."""
+        if self.current_actor_id == PLAYER_ACTOR_ID and self.encounter.living_members:
+            focused = self._focused_enemy()
+            if (
+                self._member_for_character(self.defender) is None
+                or not self._member_for_character(self.defender).is_living_hostile
+            ):
+                self.defender = focused
         if (
             self.defender is None
             or not self.defender.is_alive()
@@ -454,6 +924,12 @@ class BattleTurnMixin:
         messages: list[str] = []
         remaining: list[dict[str, Any]] = []
         for entry in self.delayed_spells:
+            if entry.get("owner_id") not in {None, self.current_actor_id}:
+                remaining.append(entry)
+                continue
+            if entry.pop("skip_next_owner_tick", False):
+                remaining.append(entry)
+                continue
             entry["turns"] = int(entry.get("turns", 0) or 0) - 1
             if entry["turns"] > 0:
                 remaining.append(entry)
@@ -462,9 +938,28 @@ class BattleTurnMixin:
             spell = entry.get("spell")
             if caster is None or spell is None:
                 continue
-            target = self.enemy if self.enemy.is_alive() else self.defender
+            target_id = entry.get("target_id")
+            try:
+                member = self.encounter.member_by_id(target_id) if target_id else None
+            except KeyError:
+                member = None
+            if member is not None and member.is_living_hostile:
+                target = member.enemy
+            elif len(self.encounter.members) == 1 and self.encounter.living_members:
+                target = self.encounter.primary_enemy
+            else:
+                messages.append(
+                    f"{getattr(spell, 'name', 'A delayed spell')} emerges, "
+                    "but its locked target is gone.\n"
+                )
+                continue
             messages.append(f"{getattr(spell, 'name', 'A delayed spell')} emerges from the wormhole.\n")
-            messages.append(str(self._cast_spell_with_context(spell, caster, target)))
+            with self._target_resolution_context(
+                member,
+                TargetScope.SINGLE_ENEMY,
+                (member.combatant_id,) if member else (),
+            ):
+                messages.append(str(self._cast_spell_with_context(spell, caster, target)))
         self.delayed_spells = remaining
         return messages
 
@@ -475,6 +970,8 @@ class BattleTurnMixin:
         Call after execute_action and companion_turn.
         """
         result = PostTurnResult()
+        if not self._turn_action_committed:
+            return result
 
         if not self.flee:
             # Defender's passive special effects (e.g. thorns, counter-attack)
@@ -492,12 +989,10 @@ class BattleTurnMixin:
             # Refresh available actions
             self.available_actions = self._available_actions()
 
-            if (
-                self.attacker == self.player
-                and self.defender == self.enemy
-                and self.defender.is_alive()
-            ):
-                pulse_msg = nature_totems.resolve_totem_pulse(self.player, self.enemy)
+            if self.attacker == self.player and self.encounter.living_members:
+                self._refresh_focus()
+                focus_enemy = self.encounter.member_by_id(self._focus_target_id).enemy
+                pulse_msg = nature_totems.resolve_totem_pulse(self.player, focus_enemy)
                 if pulse_msg:
                     result.messages.append(pulse_msg)
                 resonance_msg = promotion_kits.pop_messages(self.player)
@@ -535,11 +1030,15 @@ class BattleTurnMixin:
                     if special:
                         result.messages.append(special)
 
-            if self.attacker == self.enemy and self.defender == self.player:
-                riposte = paladin.resolve_riposte(self.player, self.enemy)
+            if (
+                self._member_for_character(self.attacker) is not None
+                and self.defender == self.player
+            ):
+                riposte = paladin.resolve_riposte(self.player, self.attacker)
                 if riposte:
                     result.messages.append(riposte)
 
+        self._record_final_enemy_resolutions()
         paladin.tick_turn(self.player)
         if self.defender == self.player and self.player.is_alive():
             hp_max = max(1, int(self.player.health.max or 1))
@@ -548,16 +1047,66 @@ class BattleTurnMixin:
                 if triggered:
                     result.messages.append(frenzy_msg)
         paladin.clear_transient_marks(self.player)
+        self._event_bus.emit(create_combat_event(
+            EventType.TURN_END,
+            actor=self.attacker,
+            target=self.defender,
+            encounter_id=self.encounter.encounter_id,
+            actor_id=self.current_actor_id,
+            round=self.round_number,
+            actor_turn_id=self._current_actor_turn_id,
+        ))
         self.logger.next_turn()
         return result
 
     def swap_turns(self) -> None:
-        """Swap attacker/defender for the next turn."""
-        active_user = self.summon if self.summon_active else self.player
-        if self.attacker == active_user:
-            self.attacker, self.defender = self.enemy, active_user
-        else:
-            self.attacker, self.defender = active_user, self.enemy
+        """Advance the fixed actor cycle while preserving legacy aliases."""
+        if not self._turn_action_committed:
+            self._turn_action_committed = True
+            return
+        if not self._actor_cycle:
+            active_user = self.summon if self.summon_active else self.player
+            if self.attacker == active_user:
+                self.attacker = self.encounter.primary_enemy
+                self.defender = active_user
+            else:
+                self.attacker = active_user
+                self.defender = self.encounter.primary_enemy
+            self.available_actions = self._available_actions()
+            return
+        old_round = self.round_number
+        wrapped, _actor_id = self._actor_cycle.advance(self._valid_actor_ids())
+        if wrapped:
+            self.logger.next_round()
+            self._event_bus.emit(create_combat_event(
+                EventType.ROUND_END,
+                actor=self.attacker,
+                target=self.defender,
+                encounter_id=self.encounter.encounter_id,
+                round=old_round,
+                actor_turn_id=self._current_actor_turn_id,
+            ))
+        self._sync_actor_aliases()
+        self._current_actor_turn_id = self._actor_cycle.start_current_turn()
+        if wrapped:
+            self._event_bus.emit(create_combat_event(
+                EventType.ROUND_START,
+                actor=self.attacker,
+                target=self.defender,
+                encounter_id=self.encounter.encounter_id,
+                actor_id=self.current_actor_id,
+                round=self.round_number,
+                actor_turn_id=self._current_actor_turn_id,
+            ))
+        self._event_bus.emit(create_combat_event(
+            EventType.TURN_START,
+            actor=self.attacker,
+            target=self.defender,
+            encounter_id=self.encounter.encounter_id,
+            actor_id=self.current_actor_id,
+            round=self.round_number,
+            actor_turn_id=self._current_actor_turn_id,
+        ))
         self.available_actions = self._available_actions()
 
     def end_battle(self) -> BattleOutcome:
@@ -568,6 +1117,9 @@ class BattleTurnMixin:
         display (popups, animations, level-up screens) based on the returned
         BattleOutcome.
         """
+        if len(self.encounter.members) > 1:
+            return self._end_provisional_multi_battle()
+
         outcome = BattleOutcome(boss=self.boss)
 
         if self.flee:
@@ -638,6 +1190,101 @@ class BattleTurnMixin:
 
         self.player._active_combat = False
         return outcome
+
+    def _end_provisional_multi_battle(self) -> BattleOutcome:
+        """Finalize a development-only multi battle without settling rewards."""
+        if not self.flee and self.player.is_alive():
+            for member in self.encounter.members:
+                self._attempt_member_resurrection(member)
+            self._record_final_enemy_resolutions()
+        if self.flee:
+            result = "flee"
+            winner = None
+            message = f"{self.player.name} fled from combat.\n"
+        elif self.player.is_alive():
+            result = "victory"
+            winner = self.player.name
+            message = f"{self.player.name} survived the multi-enemy encounter.\n"
+        else:
+            result = "defeat"
+            winner = self.encounter.primary_enemy.name
+            message = f"{self.player.name} was defeated in the multi-enemy encounter.\n"
+
+        if result in {"flee", "defeat"}:
+            self.encounter.clear_resolutions()
+        for character in [self.player, *[member.enemy for member in self.encounter.members]]:
+            character.effects(end=True)
+        message += (
+            "Development-only multi-enemy outcome: rewards and world "
+            "persistence were not settled.\n"
+        )
+        outcome = BattleOutcome(
+            result=result,
+            winner=winner,
+            message=message,
+            boss=False,
+            rewards_settled=False,
+        )
+        self.logger.end_battle(
+            result=result,
+            winner=winner,
+            boss=False,
+            encounter=self.encounter,
+        )
+        self._event_bus.emit(create_combat_event(
+            EventType.COMBAT_END,
+            actor=self.player,
+            target=self.encounter.primary_enemy,
+            fled=self.flee,
+            player_alive=self.player.is_alive(),
+            enemy_alive=bool(self.encounter.living_members),
+            encounter_id=self.encounter.encounter_id,
+            enemies=self.encounter.roster_summary(),
+            rewards_settled=False,
+        ))
+        self.player._active_combat = False
+        return outcome
+
+    def _record_final_enemy_resolutions(self) -> None:
+        """Record terminal enemy states after action/resurrection handling."""
+        for member in self.encounter.members:
+            enemy = member.enemy
+            if member.resolution is not None or enemy.is_alive():
+                continue
+            resolution = EnemyResolution.DEFEATED
+            cause = None
+            if getattr(enemy, "paladin_mercy_victory", False):
+                resolution = EnemyResolution.MERCY
+                cause = "paladin_mercy"
+            elif getattr(enemy, "tamed_by_player", False):
+                resolution = EnemyResolution.TAMED
+                cause = "tame"
+            elif getattr(enemy, "windswept_ejected", False):
+                resolution = EnemyResolution.EJECTED
+                cause = "windswept"
+            elif getattr(enemy, "paladin_repelled", False):
+                resolution = EnemyResolution.ESCAPED
+                cause = "paladin_repel"
+            elif getattr(enemy, "no_victory_rewards", False):
+                resolution = EnemyResolution.ESCAPED
+                cause = "no_victory_rewards"
+            self.encounter.resolve_enemy(
+                member.combatant_id,
+                resolution,
+                cause=cause,
+            )
+
+    @staticmethod
+    def _attempt_member_resurrection(member) -> bool:
+        """Resolve a member's resurrection before recording terminal state."""
+        enemy = member.enemy
+        if enemy.is_alive():
+            return False
+        spell = enemy.spellbook.get("Spells", {}).get("Resurrection")
+        if spell is None or abs(enemy.health.current) > enemy.mana.current:
+            return False
+        message = spell.cast(enemy)
+        return bool(message) and enemy.is_alive()
 
     def _record_singleton_resolution(self) -> None:
         """Record the existing singleton outcome without changing its rewards."""

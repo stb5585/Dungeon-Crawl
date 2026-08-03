@@ -24,6 +24,7 @@ class BattleLogger:
         self.events = []
         self.metadata = {}
         self.turn_counter = 0
+        self.round_counter = 0
 
     @staticmethod
     def _serialize_value(value):
@@ -129,6 +130,8 @@ class BattleLogger:
             flags: list=None,
             status_changes: dict=None,
             notes: str=None,
+            actor_id: str | None = None,
+            target_id: str | None = None,
             ) -> None:
         """
         Logs a combat event with details about the action taken.
@@ -149,6 +152,8 @@ class BattleLogger:
             "event_type": event_type,
             "actor": actor.name if actor else None,
             "target": target.name if target else None,
+            "actor_id": actor_id,
+            "target_id": target_id,
             "action": action,
             "outcome": outcome,
             "damage": damage,
@@ -164,6 +169,10 @@ class BattleLogger:
 
     def next_turn(self) -> None:
         self.turn_counter += 1
+
+    def next_round(self) -> None:
+        """Count a completed encounter round independently from actor turns."""
+        self.round_counter += 1
 
     def end_battle(
         self,
@@ -187,6 +196,7 @@ class BattleLogger:
             "winner": winner,
             "boss": boss,
             "turns": self.turn_counter,
+            "rounds": self.round_counter,
             "end_time": datetime.datetime.now().isoformat(),
         })
 

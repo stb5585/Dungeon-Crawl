@@ -229,3 +229,10 @@ class CombatEncounter:
     def roster_summary(self) -> list[dict[str, object]]:
         """Return authored-order lifecycle summaries for every member."""
         return [member.summary() for member in self.members]
+
+    def clear_resolutions(self) -> None:
+        """Discard partial resolution progress after flee or player defeat."""
+        self._resolution_ledger.clear()
+        for member in self.members:
+            member.resolution = None
+            member.resolution_cause = None

@@ -5,6 +5,9 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
+from ..combat_result import CombatResultGroup
+from ..targeting import ActionIntent, ActionValidationCode
+
 if TYPE_CHECKING:
     from ...character import Character
 
@@ -37,6 +40,9 @@ class ActionResult:
     summon_started: bool = False
     summon_recalled: bool = False
     summon: Character | None = None
+    committed: bool = True
+    validation_code: ActionValidationCode | None = None
+    combat_results: CombatResultGroup | None = None
 
 
 @dataclass
@@ -56,3 +62,4 @@ class BattleOutcome:
     message: str = ""         # Summary text (exp, loot, quests, etc.)
     level_up: bool = False
     boss: bool = False
+    rewards_settled: bool = True

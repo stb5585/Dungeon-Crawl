@@ -10,6 +10,8 @@ crit: 8
 school: Elemental
 rank: 2
 grounded_damage: true
+target_scope: all_enemies
+target_loss_policy: snapshot_roster
 effects:
   - type: physical_effect_apply
     effect_name: Prone
