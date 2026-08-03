@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 GUI Game Launcher for The Forsaken Tenet
-Uses Pygame for graphical presentation instead of curses text interface.
+Uses Pygame for graphical presentation.
 """
 
 import math
@@ -114,33 +114,6 @@ class PygameGame:
         
         self.presenter.debug_mode = debug_mode  # Propagate debug mode to presenter
 
-        # Provide a minimal curses-compatible shim for legacy code paths
-        class _PygameStdscr:
-            def __init__(self, presenter):
-                self.presenter = presenter
-
-            def getch(self):
-                """Wait briefly for any key event and return a dummy value.
-
-                Many legacy calls just block on `getch()` to pause until the user presses a key
-                after a popup. Our GUI popups already block, so this can return immediately.
-                """
-                # Drain pending events to keep window responsive
-                for event in pygame.event.get():
-                    if event.type == pygame.QUIT:
-                        pygame.quit()
-                        sys.exit()
-                    if event.type == pygame.KEYDOWN:
-                        return 13  # Enter key
-                # No strict blocking required; return quickly
-                return 13
-
-            def getmaxyx(self):
-                # Provide screen size for code that queries it
-                return (self.presenter.height, self.presenter.width)
-
-        # Attach shim so existing code using `game.stdscr.getch()` works in GUI mode
-        self.stdscr = _PygameStdscr(self.presenter)
         self._play_location_music("town")
 
     def refresh_load_files(self):
@@ -547,7 +520,7 @@ class PygameGame:
             self.initialize_managers()
             return player_char
 
-        # Show loading popup similar to curses UI while the save and managers restore.
+        # Show a loading popup while the save and managers restore.
         player_char = self.presenter.show_progress_popup(
             header="Load Game",
             message="Loading game file...",

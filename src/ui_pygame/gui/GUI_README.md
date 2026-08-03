@@ -2,7 +2,8 @@
 
 ## Overview
 
-The GUI version of The Forsaken Tenet uses Pygame to provide a graphical interface for combat instead of the traditional curses text interface.
+The supported frontend for The Forsaken Tenet uses Pygame to provide its
+graphical combat and exploration interface.
 
 ## Features
 

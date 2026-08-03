@@ -22,7 +22,8 @@ permanent `+1` primary-stat increases only. New
 characters have no purchased nodes and no automatically learned progression
 ability. The shared `src/core/progression.py` service owns XP
 carryover, random growth, attribute training, ability/rating purchases,
-promotion previews, branch closure, and class changes for both frontends.
+promotion previews, branch closure, and class changes for Pygame and headless
+validation.
 
 Ability trees use class-authored specialization branches instead of universal
 lanes. Base lineages lead to one terminal promotion per branch; promoted
@@ -169,8 +170,9 @@ appropriate design-gate document before coding.
 
 ## Current Baseline
 
-- Core game logic is split under `src/core/`; curses and pygame presentation
-  layers live under `src/ui_curses/` and `src/ui_pygame/`.
+- Core game logic is split under `src/core/`; the supported presentation layer
+  lives under `src/ui_pygame/`. The retired curses frontend is archived at
+  `curses-ui-final`.
 - The shared BattleEngine, EventBus, data-driven abilities, diagnostics,
   gameplay statistics, save/load hardening, Bestiary, class-ring systems,
   Pygame dungeon/town/combat flows, selected-item artwork, enemy combat sprites,
@@ -190,8 +192,8 @@ appropriate design-gate document before coding.
   reduction, `Sanctuary Ward` is hidden from combat skills until Devotion
   exists, and Devotion gain waits until the enemy survives the action.
 - The relic quest opening now stages the mystery through `Uncertain Reports`
-  before creating `The Holy Relics`, with old-save migration and shared curses
-  and pygame quest-progress handling.
+  before creating `The Holy Relics`, with old-save migration and shared core
+  quest-progress handling.
 - P8 automated closure now covers Devotion grants/visibility/survival rules,
   Race selection layout, Smoke Screen cleanup, promotion gear routing, staged
   relic progression, and shared postgame tavern dialogue. Manual play evidence
@@ -244,7 +246,7 @@ Triage bands:
 | Class-kit track expansions | Combo chains, Maestro progression, Beast Master stables, Grove questlines, Jump mastery, multi-vow systems, broader scar trees, divine economy, loot redesign, Seeker pathing, stealth rewrite, stolen-spell mastery. | `Needs Evidence` | Class-kit UI/log, pacing, and balance-threshold evidence identifies one specific track. | `CLASS_KIT_DESIGN_GATES.md` | One track's one-page spec, not a multi-track mechanics batch. |
 | Class-ring tuning/presentation | Wizard radar visualization, ring status polish, and ring effect tuning. | `Needs Evidence` | Manual UI/readability notes or class-kit balance threshold findings. | `CLASS_RING_SYSTEM.md` | Presentation-only ring readability before numeric tuning. |
 | Promotion ability transition expansions | Ability-history restoration, alternate retention policies, and new promotion spell/skill grants. | `Do Not Promote As Cleanup` | Explicit transition-rule spec with save/load and UI message behavior. | `PROMOTION_ABILITY_RULES.md` | One promotion path with save/load and text/pygame message coverage. |
-| Combat semantics and architecture | Multi-enemy combat, speed-based combat stacks, dice conversion, always-hit flags, ignore-defense order, unlockable race/class/difficulty strategy, and XP scaling. | `Hold` | Full combat spec with simulator plan and balance assumptions. | `COMBAT_BALANCE_DESIGN_GATES.md` | Tooling/report cleanup or one isolated semantic rule, not architecture conversion. |
+| Combat semantics and architecture | Multi-enemy combat, speed-based combat stacks, dice conversion, always-hit flags, ignore-defense order, unlockable race/class/difficulty strategy, and XP scaling. | `Draft Decisions Required` | Approve the required decisions in `MULTI_ENEMY_COMBAT_DESIGN.md`; other combat expansions still require their own full spec. | `MULTI_ENEMY_COMBAT_DESIGN.md`, `COMBAT_BALANCE_DESIGN_GATES.md` | Multi-enemy characterization/decision work or one isolated semantic rule, not an architecture conversion before approval. |
 | Equipment/economy save-heavy systems | Durability, identification, item modification, equipment actives, armor mobility, Tome effects, ultimate helmets, rarity semantics. | `Needs Spec` | Serializer, UI, economy, old-save, and balance contracts are defined. | `EQUIPMENT_ITEMS_ECONOMY_DESIGN_GATES.md` | Shop polish or one inert P6-adjacent item, not durability plus modification. |
 | Dungeon/world interaction expansion | Harvestable roots/fungus, rubble clearing, crystal interaction, bone/gear salvage, deeper Realm of Cambion rooms, rewards, and encounter variants. | `Needs Spec` | Content beat, tile state, reward, and save behavior are defined. | `DUNGEON_WORLD_ENCOUNTER_DESIGN_GATES.md` | One decorative tile interaction with old-save inert fallback. |
 | Presentation and asset expansions | Jump/Charge animation, Warp Point art, town/NPC/venue art, status-effect artwork, enemy identity presentation, website. | `Needs Evidence` | Target list and review-sheet workflow are approved, or UX evidence identifies a readability need. | `PRESENTATION_ASSET_DESIGN_GATES.md` | One generated bitmap batch or one readability layer with fallback behavior. |
@@ -383,7 +385,7 @@ dungeon interaction, chest policy, encounter bias, Realm of Cambion deferrals,
 relic discovery text, town hint flavor, and low-health dungeon navigation
 presentation. V1 quick wins have shipped and are locked by focused regression
 coverage: opened chests stay open, relic rooms use relic-specific discovery
-text through shared pygame and core/curses handling, random encounters can
+text through shared Pygame and core handling, random encounters can
 receive a soft active-quest target nudge, and pygame dungeon navigation keeps a
 persistent low-health cue visible.
 
@@ -440,7 +442,7 @@ work should deepen or polish that route rather than replace it unless a new
 story spec explicitly changes the baseline.
 
 New Game intro story copy expansion has shipped through shared content data and
-is reflected in both pygame and curses. The Story Polish Epic has also shipped:
+is reflected in Pygame. The Story Polish Epic has also shipped:
 Guardian trial definitions now live in core, Triangulus and Infinitas use
 retry-safe Liminal trial echoes, Reflection presentation has martial/mystic/
 hybrid copy, the Hooded Figure has a one-time post-Reflection angelic

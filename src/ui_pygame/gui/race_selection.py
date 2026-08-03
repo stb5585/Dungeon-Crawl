@@ -1,5 +1,5 @@
 """
-Character creation screen for race selection - matches curses terminal layout.
+Character creation screen for race selection.
 """
 
 import pygame

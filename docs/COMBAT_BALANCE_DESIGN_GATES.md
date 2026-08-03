@@ -206,8 +206,10 @@ tests, and balance assumptions.
 
 ### Architecture Expansions
 
-- Multi-enemy combat, including targeting, encounter generation, UI layout,
-  loot/XP allocation, AI, simulator support, and balance expectations.
+- Multi-enemy combat now has a draft promoted design in
+  `docs/MULTI_ENEMY_COMBAT_DESIGN.md`, including targeting, encounter
+  generation, UI layout, loot/XP allocation, AI, simulator support, rollout
+  boundaries, and the decisions required before implementation.
 - Speed-based combat stacks, including initiative/action-queue rules,
   multiple-turn caps, UI messaging, simulator impact, and save compatibility.
 

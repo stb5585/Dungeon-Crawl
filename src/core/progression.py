@@ -103,7 +103,7 @@ class NodeKind(str, Enum):
 
 
 class NodeState(str, Enum):
-    """Availability state rendered by both frontends."""
+    """Availability state rendered by Pygame and inspected by headless tools."""
 
     OWNED = "owned"
     AVAILABLE = "available"

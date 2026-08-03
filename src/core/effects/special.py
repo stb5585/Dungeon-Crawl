@@ -600,8 +600,7 @@ class DestroyMetalEffect(Effect):
 class SlotMachineEffect(Effect):
     """Slot Machine: deal 3 cards and resolve poker-style outcomes.
 
-    The UI may pass a ``slot_machine_callback`` and/or ``textbox_callback``
-    via ``use_kwargs``.
+    The UI may pass a ``slot_machine_callback`` via ``use_kwargs``.
 
     Modern outcomes: Straight Flush, Three of a Kind, Straight, Flush, Pair,
     Chance. Legacy 3-digit spins are still accepted for older callers/tests.
@@ -881,7 +880,6 @@ class SlotMachineEffect(Effect):
 
         use_kw = result.extra.get("use_kwargs", {})
         slot_machine_callback = use_kw.get("slot_machine_callback")
-        textbox_callback = use_kw.get("textbox_callback")
 
         user_chance = actor.check_mod("luck", enemy=target, luck_factor=10)
         target_chance = target.check_mod("luck", enemy=actor, luck_factor=10)
@@ -1101,8 +1099,6 @@ class SlotMachineEffect(Effect):
 
             else:
                 if _rng.randint(0, user_chance) and retries < 2:
-                    if textbox_callback is not None:
-                        textbox_callback("No luck, try again.")
                     retries += 1
                 else:
                     success = True

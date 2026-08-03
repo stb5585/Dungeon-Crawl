@@ -944,40 +944,6 @@ class TestPlayerUtilityBehaviors:
         assert player.lycan_state["dragon_essence"] is True
         assert "Transform" not in player.spellbook["Skills"]
 
-    def test_end_combat_victory_and_defeat_paths(self, monkeypatch):
-        player = TestGameState.create_player(class_name="Warrior", race_name="Human")
-        enemy = enemies.Goblin()
-        enemy.enemy_typ = "Goblin"
-        enemy.experience = 10
-        tile = SimpleNamespace()
-
-        printed = []
-        textbox = SimpleNamespace(print_text_in_rectangle=lambda msg: printed.append(msg))
-
-        monkeypatch.setattr(player, "effects", lambda end=False: "")
-        monkeypatch.setattr(player, "transform", lambda back=False: "")
-        monkeypatch.setattr(player, "loot", lambda _enemy, _tile: "Loot!\n")
-        monkeypatch.setattr(player, "quests", lambda enemy=None: "Quest!\n")
-        monkeypatch.setattr(player, "class_upgrades", lambda game, enemy: "Upgrade!\n")
-        monkeypatch.setattr(player, "level_up", lambda game: None)
-
-        player.end_combat(game=None, enemy=enemy, tile=tile, flee=False, summon=None, textbox=textbox)
-
-        assert any("killed Goblin" in msg for msg in printed)
-        assert any("Loot!" in msg for msg in printed)
-        assert any("Upgrade!" in msg for msg in printed)
-        assert player.kill_dict["Goblin"]["Goblin"] == 1
-
-        printed.clear()
-        death_called = []
-        monkeypatch.setattr(player, "death", lambda textbox=None: death_called.append(True))
-        player.health.current = 0
-        player.end_combat(game=None, enemy=enemy, tile=tile, flee=False, summon=None, textbox=textbox)
-
-        assert any("was slain by Goblin" in msg for msg in printed)
-        assert death_called == [True]
-
-
 class TestSaveSystemQuestCompatibility:
     def test_collect_quest_legacy_string_is_deserialized_to_item_instance(self):
         quest_dict = {

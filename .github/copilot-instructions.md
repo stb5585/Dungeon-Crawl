@@ -4,10 +4,13 @@ You are an expert Python developer familiar with The Forsaken Tenet / Dungeon Cr
 
 ## Big-picture architecture
 - `src/core/` is the UI-agnostic game engine (combat, characters, items, data, events). Keep core logic here.
-- `src/ui_curses/` and `src/ui_pygame/` are the two UI layers; they own battle managers and presentation logic.
+- `src/ui_pygame/` is the supported player-facing UI and owns presentation
+  logic. The retired curses frontend is archived at Git tag
+  `curses-ui-final`.
 - Combat is event-driven: `src/core/events/event_bus.py` defines `EventBus` + `EventType`. Shared combat flow lives in `src/core/combat/battle_engine.py`; character and ability code emit supporting events from `src/core/character.py`, `src/core/abilities.py`, and data-driven effect helpers.
 - Event emissions are non-breaking and wrapped in try/except, so logic must still work if no subscribers exist.
-- UI-specific presentation lives in `src/ui_curses/` and `src/ui_pygame/`; UIs should adapt core APIs instead of moving mechanics out of `src/core/`.
+- UI-specific presentation lives in `src/ui_pygame/`; it should adapt core
+  APIs instead of moving mechanics out of `src/core/`.
 
 ## Data-driven systems
 - Ability definitions live in `src/core/data/abilities/` and load via `src/core/data/ability_loader.py`.
@@ -16,12 +19,14 @@ You are an expert Python developer familiar with The Forsaken Tenet / Dungeon Cr
 
 ## Combat specifics
 - Shared combat uses `src/core/combat/battle_engine.py`, with priority/action-queue helpers in `src/core/combat/action_queue.py` and `src/core/combat/initiative.py`.
-- Battle analytics are centralized in `src/core/combat/battle_logger.py` and used by both UIs.
+- Battle analytics are centralized in `src/core/combat/battle_logger.py`.
 - Charging abilities use `delay`/`charge_time` + telegraph messages; the Seeker/Inquisitor sees detailed telegraphs.
 
 ## Workflow & commands
-- Run terminal game: `./launch.sh` or `./.venv/bin/python game_curses.py`.
-- Run pygame game: `./launch_gui.sh` or `./.venv/bin/python game_pygame.py`.
+- Run the game: `./launch.sh`, `./launch_gui.sh`, or
+  `./.venv/bin/python game_pygame.py`.
+- Terminal-only development uses pytest, `tools/dev_tools.py`, combat
+  simulators, and balance reports.
 - Dev tools: `./.venv/bin/python tools/dev_tools.py [effects|queue|events|abilities|balance]`.
 - Tests: `./.venv/bin/python -m pytest tests/ -q` (see `tests/README.md` for patterns).
 

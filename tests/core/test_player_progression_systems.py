@@ -25,32 +25,6 @@ from src.core.player import (
 from tests.test_framework import TestGameState
 
 
-class RecordingTextBox:
-    def __init__(self):
-        self.messages = []
-        self.clear_count = 0
-
-    def print_text_in_rectangle(self, message):
-        self.messages.append(message)
-
-    def clear_rectangle(self):
-        self.clear_count += 1
-
-
-class SequencePopup:
-    def __init__(self, selections):
-        self.selections = list(selections)
-        self.calls = 0
-
-    def navigate_popup(self):
-        self.calls += 1
-        return self.selections.pop(0)
-
-
-def _menu_choice(index):
-    return SimpleNamespace(navigate_popup=lambda: index)
-
-
 def _confirm(result):
     return SimpleNamespace(navigate_popup=lambda: result)
 
@@ -327,7 +301,7 @@ class TestPlayerTopLevelHelpers:
         assert (5, 10, 1) in player.world_dict
 
 
-class TestPlayerProgressionAndMenus:
+class TestPlayerProgression:
     def test_level_up_awards_a_point_without_abilities_or_stat_choice(self, monkeypatch):
         player = TestGameState.create_player(class_name="Warrior", race_name="Human", level=3)
         player.to_town()
@@ -337,17 +311,13 @@ class TestPlayerProgressionAndMenus:
         rolls = iter([5, 4, 2, 1, 3, 1])
         monkeypatch.setattr(player_module.random, "randint", lambda _a, _b: next(rolls))
 
-        textbox = RecordingTextBox()
-        getch_calls = []
-        game = SimpleNamespace(stdscr=SimpleNamespace(getch=lambda: getch_calls.append(True)))
-
         old_strength = player.stats.strength
         old_spells = dict(player.spellbook["Spells"])
         old_skills = dict(player.spellbook["Skills"])
         old_points = player.progression.unspent_points
-        player.level_up(game=game, textbox=textbox, menu=_menu_choice(0))
+        result = player.level_up()
 
-        joined_messages = "\n".join(textbox.messages)
+        assert result.new_level == 4
         assert player.level.level == 4
         assert player.health.current == player.health.max
         assert player.mana.current == player.mana.max
@@ -355,9 +325,6 @@ class TestPlayerProgressionAndMenus:
         assert player.spellbook["Spells"] == old_spells
         assert player.spellbook["Skills"] == old_skills
         assert player.progression.unspent_points == old_points + 1
-        assert "+1 progression point" in joined_messages
-        assert textbox.clear_count == 1
-        assert len(getch_calls) == 1
 
     def test_level_up_does_not_apply_catalog_upgrades_automatically(self, monkeypatch):
         player = TestGameState.create_player(class_name="Warrior", race_name="Human", level=1)
@@ -394,17 +361,15 @@ class TestPlayerProgressionAndMenus:
         rolls = iter([1, 1, 0, 0, 0, 0])
         monkeypatch.setattr(player_module.random, "randint", lambda _a, _b: next(rolls))
 
-        textbox = RecordingTextBox()
-        game = SimpleNamespace(stdscr=SimpleNamespace(getch=lambda: None))
-        player.level_up(game=game, textbox=textbox)
+        old_points = player.progression.unspent_points
+        player.level_up()
 
-        joined_messages = "\n".join(textbox.messages)
         assert "Spark" in player.spellbook["Spells"]
         assert "Spark II" not in player.spellbook["Spells"]
         assert "True Strike" in player.spellbook["Skills"]
         assert "Piercing Strike" in player.spellbook["Skills"]
         assert "True Piercing Strike" not in player.spellbook["Skills"]
-        assert "progression point" in joined_messages
+        assert player.progression.unspent_points == old_points + 1
 
     def test_level_up_does_not_trigger_catalog_skill_side_effects(self, monkeypatch):
         player = TestGameState.create_player(class_name="Warrior", race_name="Human", level=1)
@@ -428,10 +393,8 @@ class TestPlayerProgressionAndMenus:
         monkeypatch.setattr(player_module.abilities, "skill_dict", {"Warrior": {"2": TransformSkill}})
         monkeypatch.setattr(player_module.random, "randint", lambda _a, _b: 0)
 
-        textbox = RecordingTextBox()
-        game = SimpleNamespace(stdscr=SimpleNamespace(getch=lambda: None))
-        player.level_up(game=game, textbox=textbox)
-        assert "Wild shape awakened." not in textbox.messages[0]
+        player.level_up()
+        assert "Transform" not in player.spellbook["Skills"]
 
         drain_player = TestGameState.create_player(class_name="Warrior", race_name="Human", level=1)
         drain_player.check_mod = lambda mod, enemy=None, typ=None, luck_factor=1, **_kwargs: 0
@@ -469,74 +432,13 @@ class TestPlayerProgressionAndMenus:
         rolls = iter([1, 1, 0, 0, 0, 0])
         monkeypatch.setattr(player_module.random, "randint", lambda _a, _b: next(rolls))
 
-        textbox = RecordingTextBox()
-        game = SimpleNamespace(stdscr=SimpleNamespace(getch=lambda: None))
-        player.level_up(game=game, textbox=textbox)
+        player.level_up()
 
-        joined_messages = "\n".join(textbox.messages)
-        assert "You have gained the ability to cast Sunburst." not in joined_messages
         assert "Sunburst" not in player.spellbook["Spells"]
 
-    def test_inventory_and_screen_helpers_cover_errors_and_navigation(self):
-        player = TestGameState.create_player(class_name="Warrior", race_name="Human")
-        game = SimpleNamespace()
-        player.change_location(1, 1, 1)
-
-        with pytest.raises(ValueError):
-            player.inventory_screen(game)
-
-        potion = SimpleNamespace(name="Health Potion", subtyp="Health", use=lambda _user: "Used.\n")
-        with pytest.raises(ValueError):
-            player.inventory_screen(game, inv_popup=SequencePopup([potion]))
-
-        with pytest.raises(ValueError):
-            player.inventory_screen(
-                game,
-                inv_popup=SequencePopup([potion]),
-                confirm_popup=lambda *_args, **_kwargs: _confirm(True),
-            )
-
-        sanctuary = SimpleNamespace(name="Sanctuary Draft", subtyp="Health", use=lambda _user: "Safe.\n")
-        use_box = RecordingTextBox()
-        player.inventory_screen(
-            game,
-            inv_popup=SequencePopup([sanctuary]),
-            confirm_popup=lambda *_args, **_kwargs: _confirm(True),
-            useitembox=use_box,
-        )
-        assert use_box.messages == ["Safe.\n"]
-        assert use_box.clear_count == 1
-
-        with pytest.raises(ValueError):
-            player.key_item_screen(game)
-
-        key_popup = SequencePopup(["Go Back"])
-        player.key_item_screen(game, inv_popup=key_popup)
-        assert key_popup.calls == 1
-
-        nav_calls = []
-        popup = SimpleNamespace(navigate_popup=lambda: nav_calls.append("popup"))
-        player.equipment_screen(game, popup)
-        player.abilities_screen(game, popup)
-        assert nav_calls == ["popup", "popup"]
-
-        with pytest.raises(ValueError):
-            player.jump_mods_menu(game)
-        with pytest.raises(ValueError):
-            player.totem_aspects_menu(game)
-
-        jump_popup = SequencePopup([None])
-        totem_popup = SequencePopup([None])
-        player.jump_mods_menu(game, jump_popup=jump_popup)
-        player.totem_aspects_menu(game, totem_popup=totem_popup)
-        assert jump_popup.calls == 1
-        assert totem_popup.calls == 1
-
-    def test_save_wrapper_covers_direct_tmp_and_confirmed_interactive_paths(self, monkeypatch):
+    def test_save_wrapper_covers_direct_tmp_and_default_paths(self, monkeypatch):
         player = TestGameState.create_player(name="Saver", class_name="Warrior", race_name="Human")
         save_calls = []
-        mkdir_calls = []
-        popup_calls = []
 
         monkeypatch.setattr(
             player_module.inventory.SaveManager,
@@ -546,23 +448,11 @@ class TestPlayerProgressionAndMenus:
 
         player.save(filepath="/tmp/custom_name.save")
         player.save(tmp=True)
-
-        monkeypatch.setattr(player_module.os.path, "isdir", lambda _path: False)
-        monkeypatch.setattr(player_module.os, "mkdir", lambda path: mkdir_calls.append(path))
-        monkeypatch.setattr(player_module.os.path, "exists", lambda _path: True)
-
-        player.save(game=SimpleNamespace(), confirm_popup=_confirm(False))
-        player.save(
-            game=SimpleNamespace(),
-            confirm_popup=_confirm(True),
-            save_popup=lambda _game: popup_calls.append("popup"),
-        )
+        player.save()
 
         assert ("Saver", "custom_name.save", False) in save_calls
         assert ("Saver", "saver.save", True) in save_calls
         assert save_calls.count(("Saver", "saver.save", False)) == 1
-        assert mkdir_calls == ["save_files", "save_files"]
-        assert popup_calls == ["popup"]
 
     def test_equip_branches_handle_validation_two_handed_conflicts_and_jump_limits(self, monkeypatch):
         player = TestGameState.create_player(class_name="Warrior", race_name="Human")
@@ -619,63 +509,6 @@ class TestPlayerProgressionAndMenus:
 
         player.equip("Pendant", SimpleNamespace(name="Levitation Necklace", subtyp="Pendant", handed=0))
         assert player.flying is True
-
-    def test_open_up_handles_funhouse_mimic_chest_and_door(self, monkeypatch):
-        player = TestGameState.create_player(class_name="Warrior", race_name="Human", level=12)
-        player.location_x, player.location_y, player.location_z = (1, 2, 7)
-        player.check_mod = lambda mod, enemy=None, typ=None, luck_factor=1, **_kwargs: 0
-        calls = []
-        player.modify_inventory = lambda item, num=1, subtract=False, **kwargs: calls.append((item.name, subtract, kwargs.get("rare", False)))
-        battle_calls = []
-
-        class FunhouseMimicChestTile:
-            def __init__(self):
-                self.open = False
-                self.enemy = None
-                self.loot = lambda: SimpleNamespace(name="Treasure")
-
-            def __str__(self):
-                return "FunhouseMimicChest"
-
-        class DoorTile:
-            def __init__(self):
-                self.open = False
-                self.locked = True
-                self.enter = False
-
-            def __str__(self):
-                return "LockedDoor"
-
-        chest_tile = FunhouseMimicChestTile()
-        player.world_dict[(1, 2, 7)] = chest_tile
-        monkeypatch.setattr(player_module.random, "randint", lambda _a, _b: 10)
-        monkeypatch.setattr(
-            player_module.inventory.enemies,
-            "Mimic",
-            lambda level, player_level=None: SimpleNamespace(name=f"Mimic-{level}", anti_magic_active=None),
-        )
-
-        textbox = RecordingTextBox()
-        player.open_up(
-            game=SimpleNamespace(),
-            textbox=textbox,
-            battle_manager=lambda _game, enemy: battle_calls.append(enemy.name),
-        )
-
-        assert player.state == "fight"
-        assert chest_tile.open is True
-        assert any(name == "Treasure" and rare is False for name, _subtract, rare in calls)
-        assert any(name == "Jester Token" and rare is True for name, _subtract, rare in calls)
-        assert battle_calls == ["Mimic-4"]
-        assert player.gold > 0
-
-        door_tile = DoorTile()
-        player.world_dict[(1, 2, 7)] = door_tile
-        player.open_up(game=SimpleNamespace(), textbox=textbox)
-        assert door_tile.open is True
-        assert door_tile.locked is False
-        assert door_tile.enter is True
-        assert textbox.messages[-1].endswith("opens the door.")
 
     def test_action_and_movement_helpers_cover_transform_move_forward_and_stairs(self):
         player = TestGameState.create_player(class_name="Lycan", race_name="Human", level=12)

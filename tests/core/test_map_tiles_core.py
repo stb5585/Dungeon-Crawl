@@ -13,22 +13,6 @@ from src.core import enemies, items, map_tiles, thieves_guild
 from tests.test_framework import TestGameState
 
 
-class RecordingTextBox:
-    def __init__(self):
-        self.messages = []
-        self.clear_count = 0
-
-    def print_text_in_rectangle(self, message):
-        self.messages.append(message)
-
-    def clear_rectangle(self):
-        self.clear_count += 1
-
-
-def _popup(result=True):
-    return SimpleNamespace(navigate_popup=lambda: result)
-
-
 def _make_player(*, class_name="Warrior", race_name="Human", level=10, pro_level=None):
     player = TestGameState.create_player(
         class_name=class_name,
@@ -355,9 +339,7 @@ class TestBasicTiles:
         assert expected_text in intro.lower()
         assert tile.visited is True
         assert player.world_dict[(1, 0, 0)].near is True
-        assert map_tiles.actions_dict[action_key] in actions
-        assert map_tiles.actions_dict["CharacterMenu"] in actions
-        assert map_tiles.actions_dict["MoveForward"] in actions
+        assert actions == []
 
     def test_adjacent_visited_respects_locked_door_blocker(self):
         player = _make_player()
@@ -419,12 +401,10 @@ class TestBasicTiles:
         player.health.current = 100
         player.flying = False
         player.check_mod = lambda mod, typ=None: 0 if mod == "resist" else 0
-        textbox = RecordingTextBox()
         monkeypatch.setattr("src.core.map_tiles.random.randint", lambda low, high: high)
 
-        fire_path.modify_player(game, textbox=textbox)
+        fire_path.modify_player(game)
         assert player.health.current == 90
-        assert "dealing 10 damage" in textbox.messages[0]
 
         special = map_tiles.FirePathSpecial(1, 1, 0)
         player.special_inventory = {"Vulcan's Hammer": [items.BlacksmithsHammer()]}
@@ -468,13 +448,13 @@ class TestBasicTiles:
         game = _make_game(player)
 
         blocked_actions = blocker.available_actions(player)
-        assert map_tiles.actions_dict["MoveForward"] in blocked_actions
+        assert blocked_actions == []
         assert "blocks your path" in blocker.intro_text(game).lower()
 
         player.has_relics = lambda: True
         open_actions = blocker.available_actions(player)
         blocker.special_text(game)
-        assert map_tiles.actions_dict["MoveForward"] in open_actions
+        assert open_actions == []
         assert "Final Blocker" in game.events
 
         moves = []
@@ -504,7 +484,7 @@ class TestSpecialTiles:
 
         player.facing = "north"
         actions = tile.available_actions(player)
-        assert map_tiles.actions_dict["MoveForward"] not in actions
+        assert actions == []
         assert "force field" in tile.intro_text(game).lower()
         assert "force field" in tile.special_text(game).lower()
 
@@ -512,7 +492,7 @@ class TestSpecialTiles:
             items.JesterToken() for _ in range(map_tiles.JESTER_TOKENS_REQUIRED)
         ]
         actions = tile.available_actions(player)
-        assert map_tiles.actions_dict["MoveForward"] in actions
+        assert actions == []
         assert "fades" in tile.intro_text(game).lower()
         assert "drops" in tile.special_text(game).lower()
 
@@ -530,33 +510,6 @@ class TestSpecialTiles:
         boss.defeated = True
         player.special_inventory.clear()
         assert map_tiles.jester_force_field_blocks_entry(boss, player) is False
-
-    def test_underground_spring_handles_naivete_drink_nimue_and_excalibur(self):
-        player = _make_player(class_name="Summoner", pro_level=1)
-        player.quest_dict["Side"]["Naivete"] = {"Completed": False}
-        player.special_inventory = {"Excaliper": [SimpleNamespace(name="Excaliper")]}
-        player.inventory = {"Excalibur": [items.Excalibur()]}
-        calls = []
-        player.modify_inventory = lambda item, subtract=False, rare=False, quest=False, **_kwargs: calls.append(
-            (item.name, subtract, rare, quest)
-        )
-        spring = map_tiles.UndergroundSpring(4, 9, 3)
-        game = _make_game(player)
-        textbox = RecordingTextBox()
-
-        spring.modify_player(game, confirm_popup=_popup(True), textbox=textbox)
-
-        assert player.quest_dict["Side"]["Naivete"]["Completed"] is True
-        assert spring.drink is True
-        assert spring.nimue is True
-        assert getattr(spring, "nimue_met_before", False) is True
-        assert "Nimue" in game.events
-        assert "Excalibur" in game.events
-        assert ("Empty Vial", True, True, False) in calls
-        assert ("Spring Water", False, True, False) in calls
-        assert ("Excaliper", True, True, False) in calls
-        assert ("Excalibur", False, False, False) in calls
-        assert ("Excalibur", True, False, False) in calls
 
     def test_boulder_special_text_awards_excaliper_and_chalice_map(self):
         player = _make_player()
@@ -625,7 +578,6 @@ class TestSpecialTiles:
             (0, 1, 0): SimpleNamespace(enter=True, near=False),
         }
         game = _make_game(player)
-        textbox = RecordingTextBox()
         calls = []
         player.modify_inventory = lambda item, subtract=False, rare=False, quest=False, **_kwargs: calls.append(
             (item.name, subtract, rare, quest)
@@ -635,29 +587,27 @@ class TestSpecialTiles:
 
         chest = map_tiles.LockedChestRoom(0, 0, 1)
         assert chest.loot.name == "Loot-2"
-        chest.modify_player(game, confirm_popup=_popup(True), textbox=textbox)
+        chest.modify_player(game)
         assert chest.locked is True
         player.special_inventory["Master Key"] = [SimpleNamespace(name="Master Key")]
-        chest.modify_player(game, confirm_popup=_popup(True), textbox=textbox)
+        chest.modify_player(game)
         assert chest.locked is False
-        assert map_tiles.actions_dict["Open"] in chest.available_actions(player)
+        assert chest.available_actions(player) == []
 
         player.special_inventory = {}
         door = map_tiles.LockedDoor(0, 0, 0)
-        player.inventory["Old Key"] = [items.OldKey()]
-        door.modify_player(game, confirm_popup=_popup(True), textbox=textbox)
+        player.special_inventory["Master Key"] = [SimpleNamespace(name="Master Key")]
+        door.modify_player(game)
         assert door.locked is False
-        assert ("Old Key", True, False, False) in calls
         assert door.blocked == "North"
 
         ore_door = map_tiles.OreVaultDoor(1, 1, 1)
         player.inventory["Cryptic Key"] = [SimpleNamespace(name="Cryptic Key")]
         intro = ore_door.intro_text(game)
-        ore_door.modify_player(game, confirm_popup=_popup(True), textbox=textbox)
+        ore_door.modify_player(game)
         assert "hidden door" in intro.lower()
-        assert ore_door.open is True
-        assert ore_door.enter is True
-        assert ("Cryptic Key", True, False, False) in calls
+        assert ore_door.detected is True
+        assert ore_door.open is False
 
         chalice_room = map_tiles.GoldenChaliceRoom(*map_tiles.CHALICE_LOCATION_POS)
         player.quest_dict["Side"][map_tiles.CHALICE_QUEST_NAME] = {"Completed": False}
@@ -673,7 +623,6 @@ class TestSpecialTiles:
         player = _make_player()
         player.warp_point = True
         game = _make_game(player)
-        textbox = RecordingTextBox()
         calls = []
         player.modify_inventory = lambda item, subtract=False, rare=False, quest=False, **_kwargs: calls.append(
             (item.name, subtract, rare, quest)
@@ -683,21 +632,17 @@ class TestSpecialTiles:
         player.location_z = 1
         player.health.current = 10
         player.mana.current = 5
-        relic_room.special_text(game, textbox=textbox)
+        relic_message = relic_room.special_text(game)
         assert relic_room.read is True
         assert player.health.current == player.health.max
         assert player.mana.current == player.mana.max
-        assert any("old oath" in message for message in textbox.messages)
-        assert any("health and mana" in message for message in textbox.messages)
-        assert textbox.clear_count == 1
+        assert "old oath" in relic_message
+        assert "health and mana" in relic_message
         assert any(name == "Triangulus" for name, *_rest in calls)
 
         warp = map_tiles.WarpPoint(1, 1, 1)
-        monkeypatch.setattr(map_tiles.town, "town", lambda _game: game.events.append("Town"), raising=False)
-        player.to_town = lambda: game.events.append("to_town")
-        warp.modify_player(game, confirm_popup=_popup(True))
-        assert "to_town" in game.events
-        assert "Town" in game.events
+        warp.modify_player(game)
+        assert warp.visited is True
 
         teleporter = map_tiles.FunhouseTeleporter(2, 2, 2)
         player.location_x, player.location_y, player.location_z = (3, 4, 5)
@@ -787,17 +732,13 @@ class TestSpecialTiles:
             "Turned In": False,
         }
         game = _make_game(player)
-        textbox = RecordingTextBox()
-
         rookie_tile = map_tiles.CavePath1(8, 8, 1)
-        rookie_tile.modify_player(game, textbox=textbox)
+        rookie_tile.modify_player(game)
 
         assert game.events == ["Rookie"]
         assert "Dead Soldier" in player.special_inventory
         assert player.quest_dict["Side"]["Rookie Mistake"]["Completed"] is True
         assert player.quest_dict["Side"]["Rookie Mistake"]["Turned In"] is False
-        assert "You found the rookie" in textbox.messages[-1]
-        assert "You have completed the quest Rookie Mistake." in textbox.messages[-1]
         assert type(rookie_tile.enemy).__name__ == "Zombie"
         assert player.state == "fight"
         assert rookie_tile.read is True
@@ -880,16 +821,14 @@ class TestSpecialTiles:
         assert dropped_tile.dropped_rookie_body is True
 
         game = _make_game(player)
-        textbox = RecordingTextBox()
         player.location_x, player.location_y, player.location_z = (4, 5, 1)
-        dropped_tile.modify_player(game, textbox=textbox)
+        dropped_tile.modify_player(game)
 
         assert "Dead Soldier" in player.special_inventory
         assert quest["Completed"] is True
         assert "Body Dropped At" not in quest
         assert dropped_tile.dropped_rookie_body is False
         assert game.events == []
-        assert textbox.messages == ["You recover the rookie's body.\n"]
 
     def test_ore_vault_hidden_branch_warp_idle_branch_and_funhouse_return_guard(self, monkeypatch):
         player = _make_player()
@@ -900,31 +839,27 @@ class TestSpecialTiles:
             (0, 1, 0): SimpleNamespace(near=False),
         }
         game = _make_game(player)
-        textbox = RecordingTextBox()
-
         hidden = map_tiles.OreVaultDoor(0, 0, 0)
         assert hidden.intro_text(game) == ""
-        hidden.modify_player(game, confirm_popup=_popup(True), textbox=textbox)
+        hidden.modify_player(game)
         assert hidden.open is False
         assert hidden.available_actions(player) == []
 
         player.spellbook["Skills"]["Keen Eye"] = SimpleNamespace(name="Keen Eye")
         player.spellbook["Skills"]["Master Lockpick"] = SimpleNamespace(name="Master Lockpick")
         untooled = map_tiles.OreVaultDoor(0, 0, 0)
-        untooled.modify_player(game, confirm_popup=_popup(True), textbox=textbox)
+        untooled.modify_player(game)
         assert untooled.open is False
 
-        monkeypatch.setattr("src.core.items.random.random", lambda: 0.99)
         player.inventory["Lockpick Kit"] = [items.LockpickKit()]
         picked = map_tiles.OreVaultDoor(0, 0, 0)
-        picked.modify_player(game, confirm_popup=_popup(True), textbox=textbox)
-        assert picked.open is True
-        assert picked.enter is True
-        assert map_tiles.actions_dict["CharacterMenu"] in picked.available_actions(player)
+        picked.modify_player(game)
+        assert picked.open is False
+        assert picked.enter is False
 
         warp = map_tiles.WarpPoint(1, 1, 1)
         player.warp_point = False
-        warp.modify_player(game, confirm_popup=_popup(True))
+        warp.modify_player(game)
         assert warp.visited is True
 
         teleporter = map_tiles.FunhouseTeleporter(2, 2, 2)

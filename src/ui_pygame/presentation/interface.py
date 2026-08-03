@@ -2,7 +2,8 @@
 Presentation Layer Interface
 
 This module defines the abstract interface that all presenters must implement.
-This allows the game logic to remain independent of the UI technology (curses, pygame, web, etc.)
+This allows game logic to remain independent of Pygame or future presentation
+technologies.
 """
 
 from __future__ import annotations

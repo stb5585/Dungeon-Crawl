@@ -1,5 +1,5 @@
 """
-Main menu screen for Pygame GUI - matches curses terminal layout.
+Main menu screen for the Pygame GUI.
 """
 
 import pygame
@@ -11,7 +11,7 @@ from .mouse_helpers import hit_index, is_left_click, mouse_position
 
 class MainMenuScreen:
     """
-    Main menu that matches the curses terminal style.
+    Main menu for starting, loading, and configuring the visual game.
     """
 
     BACKGROUND_PATH = PYGAME_ASSETS_DIR / "backgrounds" / "main_menu.png"

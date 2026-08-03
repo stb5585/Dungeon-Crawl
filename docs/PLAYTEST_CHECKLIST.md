@@ -256,7 +256,7 @@ second implementation backlog.
   separate stored attribute point at every fourth level and confirm neither
   currency forces an immediate selection popup.
 - [ ] Stage and remove an attribute, ordinary ability, upgrade, and rating node
-  in both frontends. Verify no character state changes before Spend, the entire
+  in Pygame. Verify no character state changes before Spend, the entire
   valid distribution commits atomically, combat-rating details say they are
   permanent, attributes consume only attribute points, nodes consume only
   progression points, a first promotion consumes two progression points, and
@@ -264,7 +264,7 @@ second implementation backlog.
 - [ ] Compare promotion previews and applied combat bonuses. First-promotion
   Attack/Defense/Magic/Magic Defense bonuses must be `2x` class values and
   second-promotion bonuses `3x`; primary and HP/MP bonuses remain unscaled.
-- [ ] Review every Paladin vow in both frontends. Confirm the selector preserves
+- [ ] Review every Paladin vow in Pygame. Confirm the selector preserves
   its background, documents the learned signature ability, Aura benefits, and
   Mark trigger/drawback, and requires confirmation before committing.
 - [ ] Use Reset and verify all distributed-but-unspent nodes and attributes

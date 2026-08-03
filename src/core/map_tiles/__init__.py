@@ -6,7 +6,7 @@ imports from ``src.core.map_tiles`` remain supported.
 
 from .. import companions, enemies, items, thieves_guild, town
 from ..classes import dragoon
-from ..player import DIRECTIONS, REALM_OF_CAMBION_LEVEL, actions_dict
+from ..player import DIRECTIONS, REALM_OF_CAMBION_LEVEL
 from .rules import (
     USE_ENHANCED_COMBAT,
     check_fake_wall,

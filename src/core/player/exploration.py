@@ -338,28 +338,6 @@ class PlayerExplorationMixin:
             weight += item[0].weight * len(item)
         return round(weight, 1)
 
-    def game_quit(self, game=None, confirm_popup=None, textbox=None):
-        """
-        Function that allows for exiting the game. UI logic must be provided by the frontend.
-        Args:
-            game: Game instance (optional, for UI context)
-            confirm_popup: Optional ConfirmPopupMenu UI component or factory
-            textbox: Optional TextBox UI component
-        Returns True if quit confirmed, else None.
-        """
-        confirm_str = "Are you sure you want to quit? Any unsaved data will be lost."
-        popup = None
-        # If confirm_popup is a class/factory, instantiate with message; else assume it's already an instance
-        if confirm_popup and callable(confirm_popup):
-            popup = confirm_popup(game, header_message=confirm_str)
-        elif confirm_popup:
-            popup = confirm_popup
-        if popup and popup.navigate_popup():
-            if textbox:
-                textbox.print_text_in_rectangle(f"Goodbye, {self.name}!")
-            self.quit = True
-            return True
-
     def move(self, dx, dy):
         """Moves the character by dx, dy if the target tile allows entry."""
         self.previous_location = (self.location_x, self.location_y, self.location_z)
@@ -444,14 +422,8 @@ class PlayerExplorationMixin:
         self.location_y = y
         self.location_z = z
 
-    def death(self, textbox=None):
-        """
-        Controls what happens when you die; no negative affect will occur for players under level 10.
-        UI logic must be provided by the frontend.
-
-        Args:
-            textbox: Optional TextBox UI component
-        """
+    def death(self):
+        """Resolve death penalties, return the result message, and move the player to town."""
         self.record_death()
         death_message = ""
         stat_list = ['strength', 'intelligence', 'wisdom', 'constitution', 'charisma', 'dexterity']
@@ -483,8 +455,6 @@ class PlayerExplorationMixin:
         death_message += self._drop_rookie_body_on_death()
         self.to_town()
         death_message += "You wake up in town.\n"
-        if textbox:
-            textbox.print_text_in_rectangle(death_message)
         return death_message
 
     def _drop_rookie_body_on_death(self):

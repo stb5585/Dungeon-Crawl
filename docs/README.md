@@ -18,6 +18,12 @@ only as historical context.
 - [COMBAT_BALANCE_DESIGN_GATES.md](COMBAT_BALANCE_DESIGN_GATES.md) - combat
   architecture, balance decision gates, current behavior decisions, and report
   plan.
+- [MULTI_ENEMY_COMBAT_DESIGN.md](MULTI_ENEMY_COMBAT_DESIGN.md) - proposed
+  one-or-two-enemy combat architecture, targeting contract, rollout plan, and
+  required pre-implementation decisions.
+- [CURSES_UI_RETIREMENT.md](CURSES_UI_RETIREMENT.md) - decision record for the
+  archived terminal frontend and the continuing headless terminal-development
+  contract.
 - [CLASS_STAT_PRIORITIES.md](CLASS_STAT_PRIORITIES.md) - gameplay-facing stat
   impact reference and class-by-class stat priority guide.
 - [PLAYTEST_CHECKLIST.md](PLAYTEST_CHECKLIST.md) - index for the focused current

@@ -8,15 +8,11 @@ from ..classes import (
     ability_mechanics,
     archdruid,
     bard,
-    berserker,
     class_rings,
-    dragoon,
     lycan,
     paladin,
-    promotion_kits,
     wizard,
 )
-from ..enemies.identity import restore_defeat_identity
 from .persistence import load_char
 
 
@@ -161,115 +157,6 @@ class PlayerCombatMixin:
                 self.class_effects["Power Up"].active = True
                 self.class_effects["Power Up"].duration = 1
         return transform_str
-
-    def end_combat(self, game, enemy, tile, flee=False, summon=None, textbox=None):
-        """
-        Handles end of combat. UI logic must be provided by the frontend.
-        Args:
-            game: Game instance (optional, for UI context)
-            enemy: Enemy instance
-            tile: Tile instance
-            flee: Whether the player fled
-            summon: Summon instance (optional)
-            textbox: Optional TextBox UI component
-        """
-        self.state = 'normal'
-        # Only transform back if character is currently transformed
-        if self.cls != self.transform_type:
-            self.transform(back=True)
-        self.effects(end=True)
-        if all([self.is_alive(), not flee]):
-            restore_defeat_identity(enemy)
-            if getattr(enemy, "paladin_repelled", False):
-                enemy.effects(end=True)
-                endcombat_str = f"{enemy.name} flees from the battle.\n"
-                endcombat_str += promotion_kits.end_combat(
-                    self,
-                    victory=False,
-                    enemy=enemy,
-                )
-                paladin.clear_condemnation(enemy)
-                if textbox:
-                    textbox.print_text_in_rectangle(endcombat_str)
-                return endcombat_str
-            if getattr(enemy, "tamed_by_player", False) or getattr(enemy, "no_victory_rewards", False):
-                endcombat_str = f"{enemy.name} leaves the fight as a companion.\n"
-                endcombat_str += promotion_kits.end_combat(self, victory=False, enemy=enemy)
-                if textbox:
-                    textbox.print_text_in_rectangle(endcombat_str)
-                return endcombat_str
-
-            exp_gain = int(enemy.experience)
-            try:
-                exp_gain = max(0, int(exp_gain * float(self.exp_gain_multiplier())))
-            except Exception:
-                pass
-            red_dragon_text = dragoon.red_dragon_victory_text(enemy)
-            if red_dragon_text:
-                endcombat_str = (
-                    f"{red_dragon_text}"
-                    f"{self.name} gained {exp_gain} experience.\n"
-                )
-            else:
-                endcombat_str = (f"{self.name} killed {enemy.name}.\n"
-                                 f"{self.name} gained {exp_gain} experience.\n")
-            if summon:
-                summon.effects(end=True)
-                summon.level.exp += exp_gain
-                if summon.level.level < 10:
-                    summon.level.exp_to_gain -= exp_gain
-                    while summon.level.exp_to_gain <= 0:
-                        endcombat_str += summon.level_up(self)
-                        if summon.level.level == 10:
-                            break
-                if summon.level.level >= 10:
-                    endcombat_str += f"{summon.name} gained {exp_gain} experience (MAX level).\n"
-                else:
-                    endcombat_str += f"{summon.name} gained {exp_gain} experience.\n"
-            if enemy.enemy_typ not in self.kill_dict:
-                self.kill_dict[enemy.enemy_typ] = {}
-            if enemy.name not in self.kill_dict[enemy.enemy_typ]:
-                self.kill_dict[enemy.enemy_typ][enemy.name] = 0
-            self.kill_dict[enemy.enemy_typ][enemy.name] += 1
-            if hasattr(self, "record_enemy_defeat"):
-                self.record_enemy_defeat()
-            if hasattr(self, "refresh_demonologist_contracts"):
-                self.refresh_demonologist_contracts()
-            class_rings.record_soul_harvest(self, getattr(enemy, "enemy_typ", None))
-            _scar_gained, scar_text = berserker.record_battle_scar(self)
-            if scar_text:
-                endcombat_str += scar_text
-            frenzy_triggered, frenzy_text = lycan.maybe_trigger_frenzy(self, reason="kill")
-            if frenzy_triggered:
-                endcombat_str += frenzy_text
-            endcombat_str += self.loot(enemy, tile)
-            endcombat_str += self.quests(enemy=enemy)
-            if textbox:
-                textbox.print_text_in_rectangle(endcombat_str)
-            from ..progression import award_experience
-
-            level_result = award_experience(self, exp_gain)
-            if (
-                level_result.new_level > level_result.old_level
-                and textbox
-            ):
-                from ..progression import level_up_message
-
-                textbox.print_text_in_rectangle(level_up_message(level_result))
-            upgrade_message = self.class_upgrades(game, enemy)
-            if upgrade_message and textbox:
-                textbox.print_text_in_rectangle(upgrade_message)
-            paladin.clear_condemnation(enemy)
-        elif flee:
-            paladin.clear_condemnation(enemy)
-        else:
-            if textbox:
-                textbox.print_text_in_rectangle(f"{self.name} was slain by {enemy.name}.")
-            enemy.effects(end=True)
-            enemy.health.current = enemy.health.max
-            enemy.mana.current = enemy.mana.max
-            paladin.clear_condemnation(enemy)
-            self.death()
 
     def check_mod(self, mod, enemy=None, typ=None, luck_factor=1, ultimate=False, ignore=False):
         class_mod = 0

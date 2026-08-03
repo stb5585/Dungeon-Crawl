@@ -78,7 +78,7 @@ MAX_FLEE_CHANCE: float = 0.95           # cap on flee probability
 # ── Enemy AI thresholds ─────────────────────────────────────────────
 ENEMY_LOW_HEALTH_THRESHOLD: float = 0.25  # AI uses defensive / flee at 25% HP
 
-# ── Special attack chance (shared by both UIs) ──────────────────────
+# ── Special attack chance shared by gameplay consumers ───────────────
 SPECIAL_ATTACK_ROLL_MAX: int = 9        # randint(0, ROLL_MAX - luck_mod)
 SPECIAL_ATTACK_LUCK_FACTOR: int = 20    # luck_factor used in the roll
 

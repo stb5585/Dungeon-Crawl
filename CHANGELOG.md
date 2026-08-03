@@ -2,6 +2,22 @@
 
 ## [Unreleased]
 
+### Pygame-Only Frontend And Headless Development
+
+- Retired the unplaytested curses frontend from the active codebase and
+  preserved its final committed revision at the annotated Git tag
+  `curses-ui-final`.
+- Removed the curses source, entry point, dedicated tests, package commands,
+  and the last direct core-to-curses import.
+- Made `launch.sh`, `launch_debug.sh`, and the primary `forsaken-tenet` package
+  command start the supported Pygame frontend.
+- Kept terminal development through core and integration tests, combat
+  simulators, balance reports, debug encounter overrides, and diagnostic
+  tools.
+- Preserved JSON save compatibility through the shared `SaveManager` and
+  updated active design, playtest, packaging, and contributor contracts to no
+  longer require curses parity.
+
 ### Flat Progression And Authored Ability Trees
 
 - Replaced local class-level promotion with a shared global-level progression
@@ -84,8 +100,8 @@
   fresh, isolated ability definitions for every caller.
 - Kept all package initializers limited to public exports, with regression
   coverage enforcing export-only initializers across the source tree.
-- Restored packaged curses and pygame entry points, added the canonical curses
-  launcher, and moved SciPy from runtime dependencies into the tooling extra.
+- Consolidated packaged game entry points around the supported Pygame
+  frontend and moved SciPy from runtime dependencies into the tooling extra.
 - Added repeat-safe postgame tavern dialogue for the Barkeep, Waitress, and
   Soldier after `main_story_complete`, shared by both frontends.
 - Normalized the Gray Broker portrait to a transparent cutout and repaired

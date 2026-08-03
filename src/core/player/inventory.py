@@ -3,7 +3,7 @@
 import os
 import random
 
-from .. import enemies, items
+from .. import items
 from ..classes import ability_mechanics, archdruid, bard, paladin
 from ..constants import BASE_CRIT_PER_POINT
 from ..items import remove_equipment
@@ -12,61 +12,6 @@ from .config import BASIC_BESTIARY_ACTIONS, RESISTANCE_DISPLAY_ORDER
 
 
 class PlayerInventoryMixin:
-    def open_up(self, game=None, textbox=None, battle_manager=None):
-        """
-        Handles opening chests and doors. UI and combat logic must be provided by the frontend.
-        Args:
-            game: Game instance (optional, for UI context)
-            textbox: Optional TextBox UI component
-            battle_manager: Optional callable/class for handling battles
-        """
-        tile = self.world_dict[(self.location_x, self.location_y, self.location_z)]
-        if 'Chest' in str(tile):
-            locked = int('Locked' in str(tile))
-            plus = int('ChestRoom2' in str(tile))
-            gold = random.randint(5, 50) * (self.location_z + locked + plus) * self.stats.charisma
-            # FunhouseMimicChest always spawns a Mimic (level 4 difficulty); other chests have a random chance
-            is_funhouse_mimic = 'FunhouseMimicChest' in str(tile)
-            from .. import map_tiles
-            if is_funhouse_mimic or map_tiles.ordinary_chest_spawns_mimic(self, locked=locked, plus=plus):
-                # For funhouse mimic chest, spawn level 4 mimic; for other chests use normal scaling
-                mimic_level = 4 if is_funhouse_mimic else (self.location_z + locked + plus)
-                enemy = enemies.Mimic(mimic_level, player_level=self.player_level())
-                enemy.anti_magic_active = self.anti_magic_active
-                tile.enemy = enemy
-                if textbox:
-                    textbox.print_text_in_rectangle("There is a Mimic in the chest!")
-                self.state = 'fight'
-                if battle_manager:
-                    battle_manager(game, enemy)
-            if self.is_alive():
-                tile.open = True
-                loot = tile.loot()
-                if textbox:
-                    textbox.print_text_in_rectangle(
-                        f"{self.name} opens the chest, containing {gold} gold and a {loot.name}.")
-                self.modify_inventory(loot, 1)
-                self.gold += gold
-
-                # Funhouse Mimic Chest also drops a Jester Token
-                if is_funhouse_mimic:
-                    from src.core.items import JesterToken
-                    token = JesterToken()
-                    self.modify_inventory(token, 1, rare=True)
-                    if textbox:
-                        textbox.print_text_in_rectangle(
-                            f"A shimmering {token.name} manifests as the Mimic dissolves!")
-        elif 'Door' in str(tile):
-            tile.open = True
-            if hasattr(tile, "locked"):
-                tile.locked = False
-            if hasattr(tile, "enter"):
-                tile.enter = True
-            if textbox:
-                textbox.print_text_in_rectangle(f"{self.name} opens the door.")
-        else:
-            raise AssertionError("Something is not working. Check code.")
-
     def loot(self, enemy, tile):
         loot_message = ""
         items = sum(enemy.inventory.values(), [])
@@ -222,16 +167,12 @@ class PlayerInventoryMixin:
             loot_message += f"{enemy.name} dropped a {catalyst_name}.\n"
         return loot_message
 
-    def save(self, game=None, tmp=False, filepath=None, confirm_popup=None, save_popup=None):
-        """
-        Save the player state using the new data-driven save system.
+    def save(self, tmp=False, filepath=None):
+        """Save player state directly or under the player's default filename.
 
         Args:
-            game: Game instance (for UI prompts)
-            tmp: If True, save to tmp_files
-            filepath: Direct filepath (bypasses all prompts)
-            confirm_popup: Optional ConfirmPopupMenu component for overwrite confirmation
-            save_popup: Optional function to show save file popup (e.g., menus.save_file_popup)
+            tmp: If True, save to the temporary save directory.
+            filepath: Optional path whose basename becomes the save filename.
         """
         if filepath:
             # Direct save to specified path
@@ -242,26 +183,10 @@ class PlayerInventoryMixin:
             # Save to tmp_files with player name
             filename = f"{str(self.name).lower()}.save"
             SaveManager.save_player(self, filename, is_tmp=True)
-        else:
-            # Interactive save with UI
-            filename = f"{str(self.name).lower()}.save"
+            return
 
-            if not os.path.isdir("save_files"):
-                os.mkdir("save_files")
-
-            filepath = f"save_files/{filename}"
-
-            if os.path.exists(filepath):
-                confirm_str = "A save file under this name already exists. Are you sure you want to overwrite it?"
-                # Only show confirmation if popup component is provided
-                if confirm_popup and game:
-                    if not confirm_popup.navigate_popup():
-                        return
-
-            if game and save_popup:
-                save_popup(game)
-
-            SaveManager.save_player(self, filename, is_tmp=False)
+        filename = f"{str(self.name).lower()}.save"
+        SaveManager.save_player(self, filename, is_tmp=False)
 
     def equip(self, equip_slot: str, item, check: bool = False) -> bool:
         """

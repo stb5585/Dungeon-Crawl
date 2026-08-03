@@ -5,14 +5,14 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "the-forsaken-tenet"
 version = "2.0.0"
-description = "A dungeon-crawl RPG with terminal and Pygame frontends"
+description = "A visual dungeon-crawl RPG built with Pygame"
 readme = "README.md"
 requires-python = ">=3.12"
 license = "MIT"
 authors = [
     {name = "stb5585"}
 ]
-keywords = ["game", "rpg", "dungeon-crawler", "roguelike", "pygame", "terminal"]
+keywords = ["game", "rpg", "dungeon-crawler", "roguelike", "pygame"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: End Users/Desktop",
@@ -46,10 +46,9 @@ Repository = "https://github.com/stb5585/Dungeon-Crawl"
 Issues = "https://github.com/stb5585/Dungeon-Crawl/issues"
 
 [project.scripts]
-forsaken-tenet-curses = "src.ui_curses.game:main"
+forsaken-tenet = "src.ui_pygame.game:main"
 forsaken-tenet-pygame = "src.ui_pygame.game:main"
-# Backward-compatible aliases for existing local/dev workflows.
-dungeon-crawl-curses = "src.ui_curses.game:main"
+# Backward-compatible alias for existing local/dev workflows.
 dungeon-crawl-pygame = "src.ui_pygame.game:main"
 
 [tool.setuptools.packages.find]

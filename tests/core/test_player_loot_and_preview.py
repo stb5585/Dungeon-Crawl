@@ -88,11 +88,6 @@ class CaveTile:
         return "CavePath"
 
 
-class UnknownTile:
-    def __str__(self):
-        return "UnknownTile"
-
-
 class TestPlayerLootCoverage:
     def test_loot_handles_gnome_gold_quest_ability_and_non_summoner_summon_skip(self, monkeypatch):
         player = TestGameState.create_player(class_name="Warrior", race_name="Human")
@@ -324,7 +319,7 @@ class TestPlayerPreviewCoverage:
         assert player.equipment["OffHand"].name == "Buckler"
         assert ("Great Pike", False) in captured
 
-    def test_unequip_promo_and_open_up_unknown_tile_branch(self):
+    def test_unequip_promo_and_missing_slot_branch(self):
         player = TestGameState.create_player(class_name="Warrior", race_name="Human")
         captured = []
         player.modify_inventory = lambda item, num=1, subtract=False, **_kwargs: captured.append((item.name, subtract))
@@ -336,7 +331,3 @@ class TestPlayerPreviewCoverage:
         assert any(name == player.cls.equipment["Weapon"].name for name, _subtract in captured)
         with pytest.raises(NotImplementedError):
             player.unequip()
-
-        player.world_dict[(player.location_x, player.location_y, player.location_z)] = UnknownTile()
-        with pytest.raises(AssertionError):
-            player.open_up(game=SimpleNamespace())

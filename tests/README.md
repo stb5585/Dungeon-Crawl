@@ -5,9 +5,12 @@
 This directory contains the automated regression suite for The Forsaken Tenet.
 
 Current snapshot:
-- The July 29, 2026 full-suite validation collected and passed `2412` tests
+- The August 2, 2026 Pygame-only validation passed the full suite plus the
+  final launcher/packaging regressions, for `2516` current tests.
 - Coverage is measured on demand rather than copied here as a stale percentage
-- The suite covers core combat/content systems, integration and persistence flows, pygame-facing UI helpers, curses UI helpers, dungeon rendering/math, and balance/simulator workflows
+- The suite covers core combat/content systems, integration and persistence
+  flows, pygame-facing UI helpers, dungeon rendering/math, and
+  balance/simulator workflows.
 - Most day-to-day focused work should use targeted pytest runs inside the project venv
 
 ## Run Tests
@@ -23,7 +26,6 @@ Run a module/domain slice:
 ```bash
 ./.venv/bin/python -m pytest tests/core -q
 ./.venv/bin/python -m pytest tests/integration -q
-./.venv/bin/python -m pytest tests/ui_curses -q
 ./.venv/bin/python -m pytest tests/ui_pygame -q
 ```
 
@@ -31,7 +33,6 @@ Run a specific file:
 
 ```bash
 ./.venv/bin/python -m pytest tests/core/test_character.py -q
-./.venv/bin/python -m pytest tests/ui_curses/test_menus.py -q
 ./.venv/bin/python -m pytest tests/ui_pygame/test_pygame_sound_manager.py -q
 ```
 
@@ -70,8 +71,6 @@ Current layout:
   - currently includes battle-system API/flow coverage, combat integration smoke tests, and save-system round-trip coverage
 - `tests/ui_pygame/`: focused tests for `src/ui_pygame/*`
   - currently includes presenter, sound, shop, popup, town, dungeon, combat-manager/view, and menu/helper coverage
-- `tests/ui_curses/`: focused tests for `src/ui_curses/*`
-  - currently includes battle, classes, enhanced-manager, game, town, and shared `menus.py` coverage
 - top-level `tests/` still holds a smaller set of legacy or cross-cutting files such as `test_data_driven_abilities.py`, `test_core.py`, `test_balance_tuning.py`, and framework helpers
 - bucket directories now include `__init__.py` markers so duplicate basenames like `test_battle.py` can coexist without pytest import collisions
 
@@ -90,8 +89,8 @@ Recent test-debt cleanup completed:
 
 - Use the project venv for all pytest runs: `./.venv/bin/python -m pytest ...`
 - Some tests exercise pygame/PIL asset paths but are written to complete without interactive loops
-- `basic_tests.py` is a lightweight legacy smoke helper and is not a major source of coverage
-- The most active regression surfaces are the shared core systems, the pygame helper/presenter layer, and the curses shared menu layer
+- The most active regression surfaces are the shared core systems, the Pygame
+  helper/presenter layer, and headless combat and balance tooling.
 
 ## Next Useful Additions
 

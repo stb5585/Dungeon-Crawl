@@ -19,7 +19,7 @@ story cards and screen polish remain owned by
 `PRESENTATION_ASSET_DESIGN_GATES.md`.
 
 The New Game intro copy expansion has shipped through shared content data and
-both frontends. It adds setting, premise, tone, and early stakes while avoiding
+Pygame. It adds setting, premise, tone, and early stakes while avoiding
 major endgame spoilers: do not reveal Vesperion, Voluntas, the busboy twist,
 the Hooded Figure truth, or true-final route mechanics in the intro.
 
@@ -44,7 +44,7 @@ implementation unless it is pure copy polish inside an already-approved surface.
 ### New Game Intro Story
 
 Shipped. Future intro edits should remain in shared content data, preserve
-pygame story-card presentation, preserve curses parity, and keep late-game
+Pygame story-card presentation, and keep late-game
 identities and true-final route mechanics hidden.
 
 ### Character Creation Fate Questions
@@ -55,7 +55,7 @@ setting fit, spoiler boundaries, and how answers are remembered or echoed.
 
 No fate-question implementation is authorized until a promoted spec defines the
 mechanical contract for any stat, resource, item, class, race, or starting-route
-effect. The spec must preserve pygame/curses parity, define save fields and
+effect. The spec must preserve Pygame presentation, define save fields and
 old-save fallback behavior before adding fields, and state whether answers can
 be changed, replayed, or surfaced later in story text.
 
@@ -66,7 +66,7 @@ affirm the player's visible Class Ring after Voluntas is revealed, records the
 current class, dormant/awakened ring state, and class archetype, and lets the
 Reflection echo that chosen class path. The affirmation must never gate
 true-final access or change Class Ring power, combat balance, rewards, or
-curses parity.
+presentation behavior outside the approved Pygame flow.
 
 Narrative Systems Bundle V3 adds a one-time `Revisit Class Path` follow-up from
 the Hooded Figure guide after affirmation. It remains story-state-only and uses
@@ -200,8 +200,7 @@ The feature must define:
   summons, and unique rewards are handled;
 - how harder difficulty scales enemies, rewards, shops, bounties, and bosses
   without invalidating existing solo saves;
-- how curses and pygame expose the selection, warning, and save confirmation
-  flow.
+- how Pygame exposes the selection, warning, and save confirmation flow.
 
 Do not implement this as a loose post-ending autosave. It touches save
 compatibility, party composition, difficulty, economy, quest reset policy, and

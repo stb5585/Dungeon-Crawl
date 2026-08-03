@@ -1,5 +1,5 @@
 """
-Shared combat utility functions used by both the curses and pygame UIs.
+Shared combat utility functions used by Pygame and headless combat tools.
 
 Centralises initiative determination and other combat-flow helpers so
 that changes only need to be made once.

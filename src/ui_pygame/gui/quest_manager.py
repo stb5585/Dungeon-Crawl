@@ -1,6 +1,6 @@
 """
 GUI Quest Manager: offers and turns in quests using Pygame presenter.
-Adapts core quest data from town.quest_dict without relying on curses.
+Adapts core quest data from town.quest_dict for Pygame presentation.
 """
 from __future__ import annotations
 
@@ -552,7 +552,7 @@ class QuestManager:
                 except Exception:
                     pass
 
-            # If quest grants an initial item (e.g., Naivete empty vial in curses version),
+            # If the quest grants an initial item (for example Naivete's empty vial),
             # replicate minimal cases here if needed.
             if quest_name == 'Naivete':
                 try:

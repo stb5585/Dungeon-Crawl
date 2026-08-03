@@ -1,7 +1,6 @@
 """Boss-room tiles and their encounter rules."""
 
 from .. import companions, enemies, thieves_guild
-from ..player import actions_dict
 from .paths import SpecialTile
 from .rules import (
     JESTER_TOKENS_REQUIRED,
@@ -29,7 +28,7 @@ class BossRoom(SpecialTile):
                     action_list.insert(1, "Use Skill")
             action_list = player_char.additional_actions(action_list)
             return action_list
-        return self.adjacent_moves(player_char, [actions_dict['CharacterMenu']])
+        return []
 
     def modify_player(self, game):
         self.visited = True

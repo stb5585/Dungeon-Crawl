@@ -3,7 +3,6 @@
 import random
 
 from .. import companions, enemies, items, thieves_guild
-from ..player import DIRECTIONS, actions_dict
 from .rules import (
     JESTER_TOKENS_REQUIRED,
     REALM_OF_CAMBION_LEVEL,
@@ -37,26 +36,6 @@ class MapTile:
 
     def modify_player(self, game):
         raise NotImplementedError()
-
-    def adjacent_moves(self, player_char, append_list: list = None, blocked=None):
-        """Returns available move actions: moving forward and turning around."""
-        if append_list is None:
-            append_list = []
-
-        moves = [actions_dict["TurnLeft"], actions_dict["TurnRight"], actions_dict["TurnAround"]]
-
-        # Forward movement based on player's facing direction
-        facing = player_char.facing
-        dx, dy = DIRECTIONS[facing]["move"]
-        new_pos = (self.x + dx, self.y + dy, self.z)
-
-        # If moving forward is possible, add it
-        tile = player_char.world_dict.get(new_pos)
-        if tile and getattr(tile, "enter", False) and blocked != facing:
-            moves.append(actions_dict["MoveForward"])
-
-        moves.extend(append_list)
-        return moves
 
     def available_actions(self, player_char):
         """Returns all the available actions in this room."""
@@ -113,7 +92,7 @@ class StairsUp(MapTile):
         self.adjacent_visited(game.player_char)
 
     def available_actions(self, player_char):
-        return self.adjacent_moves(player_char, [actions_dict['StairsUp'], actions_dict['CharacterMenu']])
+        return []
 
 
 class StairsDown(MapTile):
@@ -129,7 +108,7 @@ class StairsDown(MapTile):
         self.adjacent_visited(game.player_char)
 
     def available_actions(self, player_char):
-        return self.adjacent_moves(player_char, [actions_dict['StairsDown'], actions_dict['CharacterMenu']])
+        return []
 
 
 class LadderUp(MapTile):
@@ -145,7 +124,7 @@ class LadderUp(MapTile):
         self.adjacent_visited(game.player_char)
 
     def available_actions(self, player_char):
-        return self.adjacent_moves(player_char, [actions_dict['StairsUp'], actions_dict['CharacterMenu']])
+        return []
 
 
 class LadderDown(MapTile):
@@ -161,7 +140,7 @@ class LadderDown(MapTile):
         self.adjacent_visited(game.player_char)
 
     def available_actions(self, player_char):
-        return self.adjacent_moves(player_char, [actions_dict['StairsDown'], actions_dict['CharacterMenu']])
+        return []
 
 
 class SpecialTile(MapTile):
@@ -179,7 +158,7 @@ class SpecialTile(MapTile):
         raise NotImplementedError
 
     def available_actions(self, player_char):
-        return self.adjacent_moves(player_char, [actions_dict['CharacterMenu']])
+        return []
 
 
 class Wall(MapTile):
@@ -204,7 +183,7 @@ class FakeWall(Wall):
         self.enter = True
 
     def available_actions(self, player_char):
-        return self.adjacent_moves(player_char, [actions_dict['CharacterMenu']])
+        return []
 
 
 class ThievesGuildTrialFakeWall(FakeWall):
@@ -246,7 +225,7 @@ class CavePath(MapTile):
         super().__init__(x, y, z)
         self.enemy = None
 
-    def modify_player(self, game, textbox=None):
+    def modify_player(self, game):
         self.visited = True
         self.adjacent_visited(game.player_char)
         if self.z == REALM_OF_CAMBION_LEVEL:
@@ -256,8 +235,6 @@ class CavePath(MapTile):
                 if not random.randint(0, int(20 - game.player_char.check_mod('luck', luck_factor=10))):
                     rand_item = items.random_item(self.z)
                     game.player_char.modify_inventory(rand_item, 1)
-                    if textbox:
-                        textbox.print_text_in_rectangle(f"{game.player_char.familiar.name} finds {rand_item.name} and gives it to {game.player_char.name}.")
         # Scale random encounter rate down if player greatly outlevels the area
         try:
             if hasattr(game.player_char, "player_level") and callable(game.player_char.player_level):
@@ -300,7 +277,7 @@ class CavePath(MapTile):
                 action_list.insert(2, "Pickup Weapon")
             action_list = player_char.additional_actions(action_list)
             return action_list
-        return self.adjacent_moves(player_char, [actions_dict['CharacterMenu']])
+        return []
 
     def enter_combat(self, player_char):
         raise NotImplementedError
@@ -311,8 +288,8 @@ class EmptyCavePath(CavePath):
     Cave Path with no random enemies
     """
 
-    def modify_player(self, game, textbox=None):
-        return super().modify_player(game, textbox)
+    def modify_player(self, game):
+        return super().modify_player(game)
 
     def enter_combat(self, player_char):
         pass
@@ -372,8 +349,8 @@ class StrangeDraftTile(EmptyCavePath):
 
 class CavePath0(CavePath):
 
-    def modify_player(self, game, textbox=None, popup_class=None):
-        super().modify_player(game, textbox=textbox)
+    def modify_player(self, game, popup_class=None):
+        super().modify_player(game)
         if 'Bring Him Home' in game.player_char.quest_dict['Side']:
             if not game.player_char.quest_dict['Side']['Bring Him Home']['Completed']:
                 if not random.randint(0, 20 - game.player_char.check_mod('luck', luck_factor=10)):
@@ -386,9 +363,7 @@ class CavePath0(CavePath):
                     quest_message = f"You find a piece of the raffle ticket.\n"
                     game.player_char.modify_inventory(items.TicketPiece(), rare=True)
                     quest_message += game.player_char.quests(item=items.TicketPiece())
-                    if textbox:
-                        textbox.print_text_in_rectangle(quest_message)
-                    elif popup_class and game.presenter is not None:
+                    if popup_class and game.presenter is not None:
                         # Pygame version - show quest notification as a popup
                         dungeon_bg = game.presenter.screen.copy()
                         popup = popup_class(game.presenter, quest_message, show_buttons=False)
@@ -426,7 +401,7 @@ class CavePath1(CavePath):
             and not rookie_quest.get("Body Dropped At")
         )
 
-    def modify_player(self, game, textbox=None, popup_class=None):
+    def modify_player(self, game, popup_class=None):
         if self._dropped_rookie_body_here(game.player_char):
             self.visited = True
             self.adjacent_visited(game.player_char)
@@ -437,8 +412,6 @@ class CavePath1(CavePath):
             rookie_quest.pop("Body Dropped At", None)
             self.dropped_rookie_body = False
             self.read = True
-            if textbox:
-                textbox.print_text_in_rectangle("You recover the rookie's body.\n")
             return
         if self._should_trigger_rookie_event(game.player_char):
             self.visited = True
@@ -449,12 +422,10 @@ class CavePath1(CavePath):
             quest_message = "You found the rookie! He's dead...\n"
             game.player_char.quest_dict['Side']['Rookie Mistake']['Completed'] = True
             quest_message += "You have completed the quest Rookie Mistake.\n"
-            if textbox:
-                textbox.print_text_in_rectangle(quest_message)
             self.read = True
             self._enter_rookie_combat(game.player_char)
             return
-        super().modify_player(game, textbox=textbox)
+        super().modify_player(game)
 
     def _enter_rookie_combat(self, player_char):
         self.enemy = enemies.Zombie()
@@ -505,7 +476,7 @@ class FunhouseEmptyPath(EmptyCavePath):
     def available_actions(self, player_char):
         blocked = self._boss_direction(player_char)
         if blocked and jester_token_count(player_char) < JESTER_TOKENS_REQUIRED:
-            return self.adjacent_moves(player_char, [actions_dict["CharacterMenu"]], blocked=blocked.lower())
+            return []
         return super().available_actions(player_char)
 
     def special_text(self, game):
@@ -554,7 +525,7 @@ class FunhouseWall(FakeWall):
         game.player_char.facing = reverse_map.get(original_facing, original_facing)
 
     def available_actions(self, player_char):
-        return self.adjacent_moves(player_char, [actions_dict['CharacterMenu']])
+        return []
 
 
 class FunhouseBoundaryWall(Wall):
@@ -589,18 +560,13 @@ class SandwormLair(EmptyCavePath):
 
 class FirePath(EmptyCavePath):
 
-    def modify_player(self, game, textbox=None):
-        super().modify_player(game, textbox=textbox)
+    def modify_player(self, game):
+        super().modify_player(game)
         if not game.player_char.flying:
             resist = game.player_char.check_mod("resist", typ="Fire")
             health_10per = max(0, int(game.player_char.health.max * 0.1 * (1 - resist)))
             damage = random.randint(health_10per // 2, health_10per)
             game.player_char.health.current -= damage
-            if damage > 0:
-                if textbox:
-                    textbox.print_text_in_rectangle(
-                        f"The heat sears {game.player_char.name}, dealing {damage} damage!"
-                    )
 
 
 class FirePathSpecial(FirePath):
@@ -611,7 +577,7 @@ class FirePathSpecial(FirePath):
     def special_text(self, game):
         return nature_communion_text(game.player_char, "Fire")
 
-    def modify_player(self, game, textbox=None):
+    def modify_player(self, game):
         if "Vulcan's Hammer" in game.player_char.special_inventory:
             game.special_event("Cacus")
             summon = companions.Cacus()
@@ -619,4 +585,4 @@ class FirePathSpecial(FirePath):
             game.player_char.modify_inventory(items.BlacksmithsHammer(), subtract=True, rare=True)
             game.player_char.summons[summon.name] = summon
         else:
-            super().modify_player(game, textbox=textbox)
+            super().modify_player(game)

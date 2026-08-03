@@ -7,7 +7,6 @@ submodules. Existing imports from ``src.core.player`` remain supported.
 from src.paths import MAP_FILES_DIR, PROJECT_ROOT
 from .. import abilities
 from ..constants import TOWN_LOCATION
-from .actions import actions_dict
 from .config import (
     BASIC_BESTIARY_ACTIONS,
     DIRECTIONS,

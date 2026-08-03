@@ -6,35 +6,23 @@ from .. import quest_progress
 
 
 class PlayerProgressionMixin:
-    def level_up(self, game=None, textbox=None, menu=None):
-        """Level up the player character.
-
-        Args:
-            game: Game instance (for UI interactions, optional)
-            textbox: Optional TextBox UI component
-            menu: Optional SelectionPopupMenu UI component
-        """
+    def level_up(self):
+        """Award enough experience to reach the next character level."""
         from ..progression import (
             award_experience,
             cumulative_experience_for_level,
             ensure_progression,
-            level_up_message,
         )
 
         progression = ensure_progression(self)
         if progression.level >= 100:
             return None
         required_total = cumulative_experience_for_level(progression.level + 1)
-        result = award_experience(
+        return award_experience(
             self,
             max(0, required_total - progression.total_xp),
             rng=random,
         )
-        if textbox and game:
-            textbox.print_text_in_rectangle(level_up_message(result))
-            game.stdscr.getch()
-            textbox.clear_rectangle()
-        return result
 
     def class_upgrades(self, game, enemy):
         upgrade_str = ""
@@ -142,7 +130,7 @@ class PlayerProgressionMixin:
                         state['level_gains'] < self.ABSORB_ESSENCE_MAX_LEVEL_GAINS and \
                         not self.max_level():
                     upgrade_str += "Gain enough experience to level.\n"
-                    self.level_up(game)
+                    self.level_up()
                     state['level_gains'] += 1
                     applied = True
 

@@ -3,7 +3,7 @@
 Image -> ASCII + Sprite converter
 
 Takes a source image and generates:
-1) ASCII art text file (for curses)
+1) ASCII art text file for terminal/reference use
 2) Pixel sprite PNG (for pygame)
 
 Designed for artist images so sprites keep more detail than ASCII-based generation.

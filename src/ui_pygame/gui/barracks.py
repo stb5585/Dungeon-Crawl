@@ -18,7 +18,7 @@ class GrandmasterTrialTile(map_tiles.MapTile):
         self.visited = True
 
     def available_actions(self, player_char):
-        return [map_tiles.actions_dict["CharacterMenu"]]
+        return []
 
 
 class BarracksManager(TownScreenBase):
@@ -140,7 +140,7 @@ class BarracksManager(TownScreenBase):
 
         self._grant_milestone_storage_rewards(draw_barracks_background)
 
-        # Curses parity: if player has Brass Key, resolve Joffrey's Key handoff.
+        # If the player has the Brass Key, resolve Joffrey's Key handoff.
         if "Brass Key" in self.player_char.special_inventory:
             # Show special event text over barracks background.
             try:

@@ -75,7 +75,7 @@ Postgame dialogue must not:
 
 The first slice is implemented for the Barkeep, Waitress, and Soldier. It is
 gated only by `main_story_complete`, remains repeat-safe across saves, and uses
-the shared reactive-hint path consumed by both frontends.
+the shared reactive-hint path consumed by Pygame.
 
 ## Quest System Contract
 
@@ -87,9 +87,9 @@ Quest records may optionally define staged metadata:
 
 Non-staged quests remain valid and ignore these fields.
 
-Shared core quest-progress helpers own story quest synchronization so curses and
-pygame do not duplicate relic or staged-objective rules. The helper is
-responsible for:
+Shared core quest-progress helpers own story quest synchronization so Pygame
+does not duplicate relic or staged-objective rules. The helper is responsible
+for:
 
 - syncing staged quest progress after relic pickup;
 - syncing aggregate relic collection completion;
@@ -115,11 +115,11 @@ relic count reflects the actual saved inventory.
   `src/core/quest_progress.py`.
 - Save-load migration is called from `src/core/save_system/player.py` after special
   inventory restoration.
-- Curses and pygame quest turn-in paths call the shared quest-progress helper.
-- Relic discovery copy uses `src/core/map_tiles/rules.py` so pygame and core/curses
-  surfaces share the same mapping and fallback.
-- Postgame tavern fallout lives in `src/core/town.py`; curses and pygame use
-  the same non-mutating reactive-hint source.
+- Pygame quest turn-in paths call the shared quest-progress helper.
+- Relic discovery copy uses `src/core/map_tiles/rules.py` so presentation and
+  core validation share the same mapping and fallback.
+- Postgame tavern fallout lives in `src/core/town.py`; Pygame uses the shared
+  non-mutating reactive-hint source.
 
 ## Regression Targets
 
@@ -130,8 +130,8 @@ relic count reflects the actual saved inventory.
 - Finding Triangulus marks `Uncertain Reports` ready to report without naming
   late-game identities.
 - Turning in `Uncertain Reports` creates active `The Holy Relics`.
-- The six-relic count and completion behavior remain correct in curses and
-  pygame quest menus.
+- The six-relic count and completion behavior remain correct in Pygame quest
+  menus and headless core validation.
 - Old-save migration covers 0, 1, 5, 6, completed, and turned-in relic states.
 - Red Dragon continuity copy distinguishes progression victory, Kaelenon
   restoration, and Zahhak binding without changing quest gates or rewards.

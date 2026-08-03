@@ -40,7 +40,7 @@ are about play feel and presentation.
 ## Postgame Tavern
 
 - [ ] After `main_story_complete`, talk repeatedly to the Barkeep, Waitress,
-  and Soldier in curses and pygame; confirm the new fallout copy appears
+  and Soldier in Pygame; confirm the new fallout copy appears
   naturally and does not alter quests, bounties, shops, or town services.
 
 ## Exit Criteria

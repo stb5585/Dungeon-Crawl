@@ -61,8 +61,8 @@ class DataDrivenMovementSpell(_get_movement_spell_class()):
 
         **Sanctuary** callers pass ``user`` (the Character).
         **Teleport** callers pass ``selection_callback`` and ``game``.
-        The curses UI passes ``(self.game)`` as a single positional arg,
-        so we accept that flexibly.
+        Legacy callers may pass ``(game)`` as a single positional argument, so
+        the compatibility path accepts that flexibly.
         """
         if self._movement_type == "sanctuary":
             return self._cast_sanctuary(user)

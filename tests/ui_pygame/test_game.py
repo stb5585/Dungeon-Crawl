@@ -88,11 +88,6 @@ def test_init_build_character_and_default_character(monkeypatch):
     assert game.load_files == ["hero.save"]
     assert game.event_bus == "bus"
     assert game.presenter.debug_mode is True
-    assert game.stdscr.getmaxyx() == (480, 640)
-
-    event_batches = iter([[SimpleNamespace(type=pygame_game.pygame.KEYDOWN)] if False else []])
-    monkeypatch.setattr("src.ui_pygame.game.pygame.event.get", lambda: [SimpleNamespace(type=pygame_game.pygame.KEYDOWN)])
-    assert game.stdscr.getch() == 13
 
     class FakeRace:
         def __init__(self):

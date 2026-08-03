@@ -1,5 +1,9 @@
 # Progression Refactor Implementation Checkpoint
 
+> Historical note: the curses frontend referenced in this checkpoint was
+> retired after the checkpoint and is archived at Git tag `curses-ui-final`.
+> Pygame is now the only supported player-facing frontend.
+
 ## Status
 
 This document records the complete progression and Warrior-line implementation

@@ -7,7 +7,7 @@ large playtest campaign.
 | Area | Why deferred | Owner document |
 | --- | --- | --- |
 | Durability, identification, item modification, and rarity changes | Save, UI, economy, and old-save contracts are not approved. | [`EQUIPMENT_ITEMS_ECONOMY_DESIGN_GATES.md`](../EQUIPMENT_ITEMS_ECONOMY_DESIGN_GATES.md) |
-| Multi-enemy combat and combat-stack architecture | Targeting, action order, AI, balance, and simulator assumptions need a complete spec. | [`COMBAT_BALANCE_DESIGN_GATES.md`](../COMBAT_BALANCE_DESIGN_GATES.md) |
+| Multi-enemy combat and combat-stack architecture | The multi-enemy draft exists, but its required turn, targeting, reward, save, and balance decisions are not approved. | [`MULTI_ENEMY_COMBAT_DESIGN.md`](../MULTI_ENEMY_COMBAT_DESIGN.md) |
 | Account-wide Bestiary, profiles, achievements, and persistent meta statistics | Profile ownership, storage, migration, and privacy decisions are open. | [`DEVELOPMENT_ROADMAP.md`](../DEVELOPMENT_ROADMAP.md) |
 | Broader divine economy and deep class-kit expansions | Manual cadence, readability, preservation, and action-economy evidence is still pending. | [`CLASS_KIT_DESIGN_GATES.md`](../CLASS_KIT_DESIGN_GATES.md) |
 | Vesperion/final-battle tuning and deeper Reflection mechanics | Story triggers, failure/retry behavior, and balance targets need a promoted slice. | [`STORY_AND_ENDGAME_DESIGN.md`](../STORY_AND_ENDGAME_DESIGN.md) |

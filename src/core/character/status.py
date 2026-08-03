@@ -105,7 +105,7 @@ class CharacterStatusMixin:
             pass
         return mult
 
-    # ── Economy helpers (used by both UIs) ────────────────────────────
+    # ── Economy helpers shared by presentation and headless tools ─────
     def shop_price_scale(self) -> float:
         """Return multiplicative scale applied to shop buy prices based on charisma (race-aware)."""
         cha = int(getattr(self.stats, "charisma", 0) or 0)

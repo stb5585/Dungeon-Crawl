@@ -1,1 +1,0 @@
-"""Curses UI test bucket."""

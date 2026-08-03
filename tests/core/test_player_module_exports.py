@@ -41,7 +41,7 @@ def test_player_composes_every_split_behavior_method():
     }
     player_methods = _defined_methods(player.Player)
 
-    assert len(mixin_methods) == 106
+    assert len(mixin_methods) == 94
     assert set(player_methods) == {"__init__", "__str__"}
     for name, implementation in mixin_methods.items():
         assert getattr(player.Player, name) is implementation
@@ -52,10 +52,3 @@ def test_player_facade_preserves_support_helpers():
     assert player.summarize_gameplay_stats is player.stats.summarize_gameplay_stats
     assert player.load_char is player.persistence.load_char
     assert player._load_tiled_map is player.maps._load_tiled_map
-
-
-def test_action_catalog_references_composed_player_methods():
-    assert player.actions_dict
-    for action in player.actions_dict.values():
-        method = action["method"]
-        assert getattr(player.Player, method.__name__) is method

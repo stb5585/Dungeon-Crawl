@@ -366,8 +366,7 @@ changes this scope.
 ### UI Acceptance
 
 - Combat must continue to show the current sign and compact four-sign rune grid.
-- Curses and pygame views may differ visually, but both must expose the same
-  readable state.
+- Pygame must expose the complete readable state supplied by the shared core.
 - Richer constellation presentation is future polish unless promoted by a
   dedicated UI/readability pass.
 

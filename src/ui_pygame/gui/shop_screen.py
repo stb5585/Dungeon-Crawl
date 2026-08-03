@@ -1,5 +1,5 @@
 """
-Shop screen that mimics the curses terminal shop layout for Pygame.
+Shop screen for the Pygame frontend.
 Layout structure:
 - Top: Shop header message
 - Below: Two boxes side-by-side (menu options left, item description right)
@@ -21,7 +21,7 @@ from .town_base import TownScreenBase
 
 class ShopScreen(TownScreenBase):
     """
-    Pygame shop interface that matches the curses terminal layout.
+    Pygame shop interface with inventory, item detail, and transaction panels.
     """
     
     def __init__(self, presenter, player_char, shop_message, background_image="town.png", options_list=None):
@@ -51,7 +51,7 @@ class ShopScreen(TownScreenBase):
         self.cached_item_index = -1
         self.cached_diff_str = ""
         
-        # Calculate window positions (matching curses layout)
+        # Calculate window positions for the multi-panel shop layout.
         self.calculate_window_rects()
 
     def _load_background(self):
@@ -110,7 +110,7 @@ class ShopScreen(TownScreenBase):
         return rects
     
     def calculate_window_rects(self):
-        """Calculate the rectangles for each UI section matching curses layout."""
+        """Calculate the rectangles for each shop UI section."""
         # Top window: 1/12 of height
         top_height = self.height // 12
         self.top_rect = pygame.Rect(0, 0, self.width, top_height)

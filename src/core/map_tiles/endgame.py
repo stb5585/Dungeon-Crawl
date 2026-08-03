@@ -1,7 +1,6 @@
 """Liminal, endgame, shop, warp, and funhouse tiles."""
 
 from .. import items, town
-from ..player import actions_dict
 from .paths import MapTile, SpecialTile
 from .rooms import ChestRoom
 from .rules import jester_defeated
@@ -23,8 +22,8 @@ class FinalBlocker(SpecialTile):
 
     def available_actions(self, player_char):
         if not player_char.has_relics():
-            return self.adjacent_moves(player_char, [actions_dict['CharacterMenu']], blocked=self.blocked)
-        return self.adjacent_moves(player_char, [actions_dict['CharacterMenu']])
+            return []
+        return []
 
     def special_text(self, game):
         if game.player_char.has_relics() and not self.read:
@@ -230,28 +229,14 @@ class WarpPoint(MapTile):
         super().__init__(x, y, z)
         self.warped = False
 
-    def modify_player(self, game, confirm_popup=None):
-        """
-        Handles player interaction with the warp point. UI logic must be provided by the frontend.
-        Args:
-            game: Game instance (for context)
-            confirm_popup: Optional ConfirmPopupMenu UI component
-        """
-        if not game.player_char.warp_point:
-            self.visited = True
-            self.adjacent_visited(game.player_char)
-            return
-        if not self.warped:
-            if confirm_popup and confirm_popup.navigate_popup():
-                game.player_char.to_town()
-                town.town(game)
-                return
+    def modify_player(self, game):
+        """Mark the warp tile visited; the frontend owns travel confirmation."""
         self.warped = False
         self.visited = True
         self.adjacent_visited(game.player_char)
 
     def available_actions(self, player_char):
-        return self.adjacent_moves(player_char, [actions_dict['CharacterMenu']])
+        return []
 
 
 class FunhouseTeleporter(SpecialTile):
@@ -321,8 +306,8 @@ class FunhouseMimicChest(ChestRoom):
                     action_list.insert(2, "Pickup Weapon")
                 action_list = player_char.additional_actions(action_list)
                 return action_list
-            return self.adjacent_moves(player_char, [actions_dict['Open'], actions_dict['CharacterMenu']])
-        return self.adjacent_moves(player_char, [actions_dict['CharacterMenu']])
+            return []
+        return []
 
     def generate_loot(self):
         """Generate level 4 loot for the funhouse chest (not scaled to z=7)."""

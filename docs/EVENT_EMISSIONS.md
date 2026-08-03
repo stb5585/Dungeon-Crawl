@@ -38,8 +38,6 @@ Audio, and Meta gates.
   `src/core/data/data_driven_abilities/`, and the
   focused modules under `src/core/effects/`
   - ability/effect-specific damage, healing, and status event helpers.
-- `src/ui_curses/enhanced_manager.py`
-  - curses enhanced turn start/end events.
 
 ## Current Consumers
 

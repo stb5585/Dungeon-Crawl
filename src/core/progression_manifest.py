@@ -95,7 +95,7 @@ ABILITY_ICON_OVERRIDES = {
 # The Warrior tree is the first fully authored talent graph. Each tuple is:
 # path name, promotion target, then ordered node specs of
 # (kind, payload identifier, icon key). Path names remain useful metadata for
-# curses but are intentionally not rendered above Pygame columns.
+# diagnostics but are intentionally not rendered above Pygame columns.
 WARRIOR_TREE_PATHS = (
     (
         "Arms",

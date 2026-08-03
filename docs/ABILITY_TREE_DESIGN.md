@@ -5,7 +5,7 @@
 All 49 playable classes own a declarative tree in
 `src/core/progression_manifest.py`. `src/core/progression.py` builds and
 validates those declarations, applies purchases atomically, and remains the
-public runtime facade for both frontends.
+public runtime facade for Pygame and headless validation.
 
 Development nodes cost one point. First promotions cost two points and second
 promotions cost three. Rating nodes scale with their tree tier: base trees

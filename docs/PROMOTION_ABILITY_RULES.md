@@ -160,7 +160,7 @@ permanent Paladin vow remain.
 
 ## Staging and Atomic Change
 
-Both frontends stage promotion nodes with other point purchases and commit the
+The Pygame frontend stages promotion nodes with other point purchases and commits the
 distribution through one Spend action. Promotion details show the target,
 requirements, and permanent branch-closure warning. Spending a distribution
 containing a promotion opens a final benefit preview with its one-time bonuses

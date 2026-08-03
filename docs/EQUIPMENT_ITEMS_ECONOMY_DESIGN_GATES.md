@@ -35,10 +35,9 @@ The compatibility baseline remains the existing `ShopManager`, `ShopScreen`,
 item metadata helpers, `equipment_slots_for_item`, `Player.equip`, and
 `Player.equip_diff`.
 
-Shipped coverage includes pygame prompt copy for replacement slots, stat/no-stat
+Shipped coverage includes Pygame prompt copy for replacement slots, stat/no-stat
 comparisons, dual-wield copy requirements, cancel behavior, preflight equip
-failure, and rollback after partial equip failure. Curses prompt parity remains
-a later polish pass unless promoted separately.
+failure, and rollback after partial equip failure.
 
 ## Shop Stock Reveal Pacing
 
@@ -51,7 +50,7 @@ Future work must define:
 - which shop families, rarity bands, player levels, or dungeon milestones
   control reveal timing;
 - whether basic items remain visible while deeper stock is delayed;
-- how unavailable stock is described in pygame and curses;
+- how unavailable stock is described in Pygame;
 - how reveal pacing interacts with existing level, rarity, and secret-shop
   filters;
 - tests that prove prices, item ownership, inventory, gold, and equip legality

@@ -9,7 +9,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parents[2]))
 
 from src.core.combat import ActionPriority, ActionQueue, ActionType
-from src.ui_curses.enhanced_manager import EnhancedBattleManager
 
 
 class MockClass:
@@ -32,10 +31,6 @@ class MockCharWithStats:
     def __init__(self, name, dex):
         self.name = name
         self.stats = MockStats(dex)
-
-
-def test_enhanced_battle_manager_import():
-    assert EnhancedBattleManager is not None
 
 
 def test_action_queue_components_import():

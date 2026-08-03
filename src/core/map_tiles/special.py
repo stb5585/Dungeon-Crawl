@@ -4,7 +4,6 @@ import random
 
 from .. import companions, enemies, items
 from ..classes import dragoon
-from ..player import actions_dict
 from .paths import EmptyCavePath, SpecialTile
 from .rules import (
     CAMBION_ALARM_ENEMY,
@@ -42,99 +41,8 @@ class UndergroundSpring(SpecialTile):
         self.enemy = None
         self.defeated = False
 
-    def modify_player(self, game, confirm_popup=None, textbox=None, battle_manager=None):
-        """
-        Handles player interaction with the underground spring. UI and combat logic must be provided by the frontend.
-        Args:
-            game: Game instance (for context)
-            confirm_popup: Optional ConfirmPopupMenu UI component
-            textbox: Optional TextBox UI component
-            battle_manager: Optional callable/class for handling battles
-        """
-        self.visited = True
-        player_char = game.player_char
-        water_message = nature_communion_text(player_char, "Water")
-        if water_message and textbox:
-            textbox.print_text_in_rectangle(water_message)
-        # UI hook: confirm with player about drinking from spring
-        # UI hook: show quest completion message for Naivete
-        if "Naivete" in player_char.quest_dict["Side"] and \
-            not player_char.quest_dict["Side"]["Naivete"]["Completed"]:
-            player_char.modify_inventory(items.EmptyVial(), subtract=True, rare=True)
-            player_char.modify_inventory(items.SpringWater(), rare=True)
-            player_char.quest_dict["Side"]["Naivete"]["Completed"] = True
-            if textbox:
-                textbox.print_text_in_rectangle(
-                    "You fill the empty vial with water from the spring. "
-                    "You feel a strange sense of clarity as you do so."
-                )
-        if confirm_popup and confirm_popup.navigate_popup():
-            if player_char.level.pro_level > 1 and not random.randint(0, 1):
-                if not self.defeated:
-                    self.generate_enemy()
-                    if self.enemy.is_alive():
-                        game.special_event("Fuath1")
-                        self.enter_combat(player_char)
-                        if battle_manager:
-                            battle_manager(game, self.enemy)
-                    if all(["Summoner" in player_char.cls.name,
-                            "Fuath" not in player_char.summons,
-                            player_char.is_alive()]):
-                        game.special_event("Fuath2")
-                        summon = companions.Fuath()
-                        summon.initialize_stats(player_char)
-                        player_char.summons[summon.name] = summon
-                if not player_char.is_alive():
-                    return
-                self.defeated = True
-            if not self.drink:
-                message = "You drank water from the underground spring...nothing seems to have changed."
-                if textbox:
-                    textbox.print_text_in_rectangle(message)
-                self.drink = True
-            if not self.nimue and "Excaliper" in player_char.special_inventory:
-                game.special_event("Nimue")
-                player_char.modify_inventory(items.Excaliper(), subtract=True, rare=True)
-                self.nimue = True
-                # Track this as first meeting - don't offer quests yet
-                if not hasattr(self, 'nimue_met_before'):
-                    self.nimue_met_before = False
-
-            if self.nimue:
-                if "Excalibur" in player_char.inventory or \
-                    "Excalibur" == player_char.equipment['Weapon'].name:
-                    game.special_event("Excalibur")
-                    if "Excalibur" in player_char.inventory:
-                        player_char.modify_inventory(items.Excalibur2())
-                        player_char.modify_inventory(items.Excalibur(), subtract=True)
-                    else:
-                        player_char.equipment['Weapon'] = items.Excalibur2()
-
-                # Offer Nimue quests only on subsequent visits (curses UI)
-                if textbox:
-                    # Check if this is a return visit (not the first meeting)
-                    if hasattr(self, 'nimue_met_before') and self.nimue_met_before:
-                        # Import here to avoid circular dependency
-                        from src.ui_curses import town as curses_town
-                        quest, responses = curses_town.check_quests(game, "Nimue")
-                        if not quest:
-                            import random
-                            response = random.choice(random.choice(responses))
-                            textbox.print_text_in_rectangle(response)
-                            textbox.clear_rectangle()
-
-                    # Mark that we've met Nimue before for next visit
-                    self.nimue_met_before = True
-
-    def enter_combat(self, player_char):
-        player_char.state = "fight"
-
     def special_text(self, game):
         pass
-
-    def generate_enemy(self):
-        if self.visited:
-            self.enemy = enemies.Fuath()
 
     def available_actions(self, player_char):
         if player_char.state == 'fight':
@@ -149,7 +57,7 @@ class UndergroundSpring(SpecialTile):
                 action_list.insert(2, "Pickup Weapon")
             action_list = player_char.additional_actions(action_list)
             return action_list
-        return self.adjacent_moves(player_char, [actions_dict['CharacterMenu']])
+        return []
 
 
 class Boulder(SpecialTile):

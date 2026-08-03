@@ -16,63 +16,6 @@ from dataclasses import dataclass
 from types import SimpleNamespace
 
 
-class TestBattleManagerAPI:
-    """Test BattleManager API and integration."""
-
-    def test_battle_manager_import(self):
-        """Test that BattleManager can be imported."""
-        from src.ui_curses.battle import BattleManager
-        assert BattleManager is not None
-
-    def test_enhanced_battle_manager_import(self):
-        """Test that EnhancedBattleManager can be imported."""
-        from src.ui_curses.enhanced_manager import EnhancedBattleManager
-        assert EnhancedBattleManager is not None
-
-    def test_battle_manager_creation(self):
-        """Test basic BattleManager instantiation with minimal game context."""
-        from src.ui_curses.battle import BattleManager
-        from tests.test_framework import TestGameState
-
-        class MockGame:
-            def __init__(self, player):
-                self.screen = None
-                self.level = 1
-                self.player_char = player
-
-        class MockTile:
-            def __init__(self, enemy):
-                self.enemy = enemy
-                self.defeated = False
-
-            def available_actions(self, _player):
-                return ["Attack", "Flee"]
-
-        player = TestGameState.create_player(
-            name="Hero",
-            class_name="Warrior",
-            race_name="Human",
-            level=5,
-        )
-        enemy = TestGameState.create_player(
-            name="Goblin",
-            class_name="Warrior",
-            race_name="Human",
-            level=3,
-        )
-        enemy.enemy_typ = "TestEnemy"
-
-        tile = MockTile(enemy)
-        player.world_dict[(player.location_x, player.location_y, player.location_z)] = tile
-        game = MockGame(player)
-
-        manager = BattleManager(game, enemy)
-
-        assert manager.player_char == player
-        assert manager.enemy == enemy
-        assert manager.tile == tile
-
-
 class TestCombatResultAPI:
     """Test CombatResult dataclass API."""
 

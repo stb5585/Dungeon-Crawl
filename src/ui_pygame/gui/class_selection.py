@@ -1,5 +1,5 @@
 """
-Character creation screen for class selection - matches curses terminal layout.
+Character creation screen for class selection.
 """
 
 import pygame

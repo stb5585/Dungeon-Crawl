@@ -4,7 +4,6 @@ from src.core import abilities, items
 from src.core.classes import grandmaster
 from src.core.combat.battle_engine import BattleEngine
 from src.core.enemies import Enemy, Goblin
-from src.core.map_tiles import actions_dict
 from src.core.progression import (
     NodeState,
     available_nodes,
@@ -22,7 +21,7 @@ class DummyTrialTile:
         return "GrandmasterTrialTile"
 
     def available_actions(self, _player):
-        return [actions_dict["CharacterMenu"]]
+        return []
 
 
 def _grandmaster():

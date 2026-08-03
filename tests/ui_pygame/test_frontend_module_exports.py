@@ -2,7 +2,6 @@
 
 from pathlib import Path
 
-from src.ui_curses import menus as curses_menus
 from src.ui_pygame.gui import (
     combat_manager,
     combat_view,
@@ -14,7 +13,6 @@ from src.ui_pygame.gui.dungeon import renderer
 
 
 FRONTEND_PACKAGES = (
-    curses_menus,
     combat_manager,
     combat_view,
     dungeon_manager,
@@ -30,7 +28,6 @@ def test_refactored_frontend_facades_are_packages():
 
 
 def test_refactored_frontend_facades_preserve_primary_exports():
-    assert curses_menus.MainMenu.__name__ == "MainMenu"
     assert combat_manager.GUICombatManager.__name__ == "GUICombatManager"
     assert combat_view.CombatView.__name__ == "CombatView"
     assert dungeon_manager.DungeonManager.__name__ == "DungeonManager"

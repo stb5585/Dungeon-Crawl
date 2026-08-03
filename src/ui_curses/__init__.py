@@ -1,1 +1,0 @@
-"""Curses (terminal) UI implementation"""

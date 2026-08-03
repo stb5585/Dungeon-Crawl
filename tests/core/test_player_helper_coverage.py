@@ -15,50 +15,7 @@ from src.core.player import Player
 from tests.test_framework import TestGameState
 
 
-class RecordingTextBox:
-    def __init__(self):
-        self.messages = []
-
-    def print_text_in_rectangle(self, message):
-        self.messages.append(message)
-
-
-class LabelMenu:
-    def __init__(self, selections):
-        self.selections = list(selections)
-        self.options = []
-        self.draw_calls = 0
-        self.refresh_calls = 0
-
-    def set_options(self, options):
-        self.options = list(options)
-
-    def draw_all(self):
-        self.draw_calls += 1
-
-    def refresh_all(self):
-        self.refresh_calls += 1
-
-    def navigate_menu(self):
-        label = self.selections.pop(0)
-        return self.options.index(label)
-
-
-def _popup(result):
-    return SimpleNamespace(navigate_popup=lambda: result)
-
-
 class TestPlayerHelperCoverage:
-    def test_game_quit_declined_instance_popup_keeps_running(self):
-        player = TestGameState.create_player(class_name="Warrior", race_name="Human")
-        textbox = RecordingTextBox()
-
-        result = player.game_quit(confirm_popup=_popup(False), textbox=textbox)
-
-        assert result is None
-        assert player.quit is False
-        assert textbox.messages == []
-
     def test_bestiary_observation_records_stable_enemy_details_and_abilities(self):
         player = TestGameState.create_player(class_name="Warrior", race_name="Human")
         enemy = SimpleNamespace(
@@ -104,95 +61,6 @@ class TestPlayerHelperCoverage:
         player.record_bestiary_enemy(enemy)
         assert player.bestiary["Wraith"]["seen_count"] == 2
         assert "Blind" in player.bestiary["Wraith"]["features"]
-
-    def test_character_menu_dispatches_ui_actions_and_quit_flow(self):
-        player = TestGameState.create_player(class_name="Warrior", race_name="Human")
-        player.spellbook["Skills"]["Jump"] = SimpleNamespace(name="Jump", modifications=["Long"])
-        player.spellbook["Skills"]["Totem"] = SimpleNamespace(
-            name="Totem",
-            get_unlocked_aspects=lambda: ["Soul"],
-        )
-
-        action_calls = []
-        menu_textbox = RecordingTextBox()
-        quit_textboxes = []
-
-        def record_inventory(self, game, inv_popup=None, confirm_popup=None, useitembox=None):
-            action_calls.append(("inventory", getattr(inv_popup, "name", None), useitembox is not None))
-
-        def record_quests(self, game, popup=None):
-            action_calls.append(("quests", getattr(popup, "name", None)))
-
-        def record_jump(self, game, jump_popup=None):
-            action_calls.append(("jump", getattr(jump_popup, "name", None)))
-
-        def record_totem(self, game, totem_popup=None):
-            action_calls.append(("totem", getattr(totem_popup, "name", None)))
-
-        ui_factory = {
-            "InventoryPopup": lambda game, name: SimpleNamespace(name=name),
-            "QuestsPopup": lambda game, name: SimpleNamespace(name=name),
-            "JumpModsPopup": lambda game, name: SimpleNamespace(name=name),
-            "TotemAspectsPopup": lambda game, name: SimpleNamespace(name=name),
-            "ConfirmPopup": lambda game, header_message=None: _popup(True),
-            "TextBox": lambda game: quit_textboxes.append(RecordingTextBox()) or quit_textboxes[-1],
-        }
-        actions_dict = {
-            "ViewInventory": {"name": "Inventory", "method": record_inventory},
-            "ViewKeyItems": {"name": "Key Items", "method": lambda *_args, **_kwargs: None},
-            "Equipment": {"name": "Equipment", "method": lambda *_args, **_kwargs: None},
-            "Specials": None,
-            "ViewQuests": {"name": "Quests", "method": record_quests},
-            "JumpMods": {"name": "Jump Mods", "method": record_jump},
-            "TotemAspects": {"name": "Totem Aspects", "method": record_totem},
-            "Quit": {"name": "Quit", "method": Player.game_quit},
-        }
-        menu = LabelMenu(["Specials", "Inventory", "Quests", "Jump Mods", "Totem Aspects", "Quit Game"])
-
-        result = player.character_menu(
-            game=SimpleNamespace(),
-            menu=menu,
-            textbox=menu_textbox,
-            actions_dict=actions_dict,
-            ui_factory=ui_factory,
-        )
-
-        assert result is True
-        assert "Jump Mods" in menu.options
-        assert "Totem Aspects" in menu.options
-        assert any("does not have a special menu" in message for message in menu_textbox.messages)
-        assert action_calls == [
-            ("inventory", "Inventory", True),
-            ("quests", "Quests"),
-            ("jump", "Jump Mods"),
-            ("totem", "Totem Aspects"),
-        ]
-        assert any(textbox.messages == [f"Goodbye, {player.name}!"] for textbox in quit_textboxes)
-
-    def test_quests_screen_and_summon_menu_delegate_to_ui_components(self):
-        player = TestGameState.create_player(class_name="Warrior", race_name="Human")
-        popup_calls = []
-        player.quests_screen(game=None, popup=SimpleNamespace(navigate_popup=lambda: popup_calls.append("quests")))
-
-        player.summons = {
-            "Patagon": SimpleNamespace(inspect=lambda: "A towering summon.")
-        }
-        summon_messages = []
-        summon_box = SimpleNamespace(
-            print_text_in_rectangle=lambda message: summon_messages.append(message),
-            clear_rectangle=lambda: summon_messages.append("<cleared>"),
-        )
-        summon_popup = SimpleNamespace(navigate_popup=lambda: 0)
-        player.summon_menu(game=None, summonpopup=summon_popup, summonbox=summon_box)
-
-        assert popup_calls == ["quests"]
-        assert summon_messages == ["A towering summon.", "<cleared>"]
-
-    def test_summon_menu_requires_ui_components(self):
-        player = TestGameState.create_player(class_name="Warrior", race_name="Human")
-
-        with pytest.raises(ValueError):
-            player.summon_menu(game=None)
 
     def test_quests_tracks_bounty_and_named_enemy_completion(self):
         player = TestGameState.create_player(class_name="Warrior", race_name="Human")

@@ -1,7 +1,6 @@
 """Chest, door, quest, and event-room tiles."""
 
 from .. import enemies, items
-from ..player import actions_dict
 from .bosses import BossRoom
 from .paths import CavePath, MapTile, SpecialTile, Wall
 from .rules import chalice_altar_visible, relic_discovery_text
@@ -59,8 +58,8 @@ class UnlockedChestRoom(ChestRoom):
                     action_list.insert(2, "Pickup Weapon")
                 action_list = player_char.additional_actions(action_list)
                 return action_list
-            return self.adjacent_moves(player_char, [actions_dict['Open'], actions_dict['CharacterMenu']])
-        return self.adjacent_moves(player_char, [actions_dict['CharacterMenu']])
+            return []
+        return []
 
 
 class UnlockedChestRoom2(UnlockedChestRoom):
@@ -89,7 +88,7 @@ class LockedChestRoom(ChestRoom):
     def available_actions(self, player_char):
         if not self.open:
             if self.locked:
-                return self.adjacent_moves(player_char, [actions_dict['CharacterMenu']])
+                return []
             if player_char.state == 'fight':
                 action_list = ["Attack", "Use Item", "Flee"]
                 if not player_char.abilities_suppressed():
@@ -102,17 +101,11 @@ class LockedChestRoom(ChestRoom):
                     action_list.insert(2, "Pickup Weapon")
                 action_list = player_char.additional_actions(action_list)
                 return action_list
-            return self.adjacent_moves(player_char, [actions_dict['Open'], actions_dict['CharacterMenu']])
-        return self.adjacent_moves(player_char, [actions_dict['CharacterMenu']])
+            return []
+        return []
 
-    def modify_player(self, game, confirm_popup=None, textbox=None):
-        """
-        Handles player interaction with a locked chest. UI logic must be provided by the frontend.
-        Args:
-            game: Game instance (for context)
-            confirm_popup: Optional ConfirmPopupMenu UI component
-            textbox: Optional TextBox UI component
-        """
+    def modify_player(self, game):
+        """Apply automatic locked-chest effects when the tile is entered."""
         self.visited = True
         self.adjacent_visited(game.player_char)
         self.generate_loot()
@@ -121,21 +114,13 @@ class LockedChestRoom(ChestRoom):
             # UI hook: show unlock success/failure messages
             if "Master Key" in game.player_char.special_inventory:
                 self.locked = False
-                if textbox:
-                    textbox.print_text_in_rectangle("You open the chest with the Master key.\n")
             elif any(["Lockpick" in game.player_char.spellbook["Skills"],
                       "Master Lockpick" in game.player_char.spellbook["Skills"]]) and items.has_lockpick_kit(game.player_char):
                 self.locked = False
-                _used, kit_message = items.use_lockpick_kit(
+                items.use_lockpick_kit(
                     game.player_char,
                     master="Master Lockpick" in game.player_char.spellbook["Skills"],
                 )
-                if textbox:
-                    textbox.print_text_in_rectangle(f"{game.player_char.name} skillfully unlocks the chest.\n")
-                    textbox.print_text_in_rectangle(f"{kit_message}\n")
-            elif "Key" in game.player_char.inventory and confirm_popup and confirm_popup.navigate_popup():
-                self.locked = False
-                game.player_char.modify_inventory(game.player_char.inventory["Key"][0], subtract=True)
 
 
 class LockedChestRoom2(LockedChestRoom):
@@ -166,14 +151,8 @@ class LockedDoor(MapTile):
             intro_str += "There is an open door.\n"
         return intro_str
 
-    def modify_player(self, game, confirm_popup=None, textbox=None):
-        """
-        Handles player interaction with a locked door. UI logic must be provided by the frontend.
-        Args:
-            game: Game instance (for context)
-            confirm_popup: Optional ConfirmPopupMenu UI component
-            textbox: Optional TextBox UI component
-        """
+    def modify_player(self, game):
+        """Apply automatic locked-door effects when the tile is entered."""
         self.visited = True
         self.which_blocked(game)
         self.adjacent_visited(game.player_char)
@@ -185,30 +164,16 @@ class LockedDoor(MapTile):
             # UI hook: show unlock success/failure messages
             if "Master Key" in game.player_char.special_inventory:
                 self.locked = False
-                if textbox:
-                    textbox.print_text_in_rectangle("You open the door with the Master key.\n")
             elif 'Master Lockpick' in game.player_char.spellbook['Skills'] and items.has_lockpick_kit(game.player_char):
                 self.locked = False
-                _used, kit_message = items.use_lockpick_kit(game.player_char, master=True)
-                if textbox:
-                    textbox.print_text_in_rectangle(f"{game.player_char.name} skillfully unlocks the chest.\n")
-                    textbox.print_text_in_rectangle(f"{kit_message}\n")
-            elif "Old Key" in game.player_char.inventory and confirm_popup and confirm_popup.navigate_popup():
-                self.locked = False
-                game.player_char.modify_inventory(game.player_char.inventory['Old Key'][0], subtract=True)
+                items.use_lockpick_kit(game.player_char, master=True)
 
     def available_actions(self, player_char):
         if not self.open:
             if self.locked:
-                return self.adjacent_moves(
-                    player_char,
-                    [actions_dict['CharacterMenu']],
-                    blocked=self.blocked)
-            return self.adjacent_moves(
-                player_char,
-                [actions_dict['Open'], actions_dict['CharacterMenu']],
-                blocked=self.blocked)
-        return self.adjacent_moves(player_char, [actions_dict['CharacterMenu']])
+                return []
+            return []
+        return []
 
     def which_blocked(self, game):
         if self.x == game.player_char.previous_location[0] + 1:
@@ -268,14 +233,8 @@ class OreVaultDoor(Wall):
 
         return intro_str
 
-    def modify_player(self, game, confirm_popup=None, textbox=None):
-        """
-        Handles player interaction with the Ore Vault hidden door. UI logic must be provided by the frontend.
-        Args:
-            game: Game instance (for context)
-            confirm_popup: Optional ConfirmPopupMenu UI component
-            textbox: Optional TextBox UI component
-        """
+    def modify_player(self, game):
+        """Update discovery and traversal state for the hidden vault door."""
         self.visited = True
         self.which_blocked(game)
         self.adjacent_visited(game.player_char)
@@ -293,42 +252,10 @@ class OreVaultDoor(Wall):
             self.enter = True
             return
 
-        # If locked, check for ways to unlock
-        if self.locked:
-            # UI hook: prompt player to unlock hidden door (Cryptic Key, Master Key, or Master Lockpick)
-            # UI hook: show unlock success/failure messages
-            if "Cryptic Key" in game.player_char.inventory and confirm_popup and confirm_popup.navigate_popup():
-                self.locked = False
-                self.open = True
-                self.enter = True
-                if textbox:
-                    textbox.print_text_in_rectangle("The Cryptic Key turns smoothly in the hidden lock.\nThe door swings open, revealing the vault beyond!\n")
-                game.player_char.modify_inventory(game.player_char.inventory['Cryptic Key'][0], subtract=True)
-            elif "Master Key" in game.player_char.special_inventory and 'Keen Eye' in game.player_char.spellbook['Skills'] and confirm_popup and confirm_popup.navigate_popup():
-                self.locked = False
-                self.open = True
-                self.enter = True
-                if textbox:
-                    textbox.print_text_in_rectangle("You open the hidden door with the Master Key.\n")
-            elif (
-                'Master Lockpick' in game.player_char.spellbook['Skills']
-                and 'Keen Eye' in game.player_char.spellbook['Skills']
-                and items.has_lockpick_kit(game.player_char)
-                and confirm_popup
-                and confirm_popup.navigate_popup()
-            ):
-                self.locked = False
-                self.open = True
-                self.enter = True
-                _used, kit_message = items.use_lockpick_kit(game.player_char, master=True)
-                if textbox:
-                    textbox.print_text_in_rectangle(f"{game.player_char.name} skillfully unlocks the hidden door.\n")
-                    textbox.print_text_in_rectangle(f"{kit_message}\n")
-
     def available_actions(self, player_char):
         # If open, allow normal movement
         if self.open:
-            return self.adjacent_moves(player_char, [actions_dict['CharacterMenu']])
+            return []
         # If closed, acts like a wall (blocks movement)
         return []
 
@@ -400,22 +327,18 @@ class RelicRoom(SpecialTile):
         self.adjacent_visited(game.player_char)
         self.visited = True
 
-    def special_text(self, game, textbox=None):
+    def special_text(self, game):
         if not self.read:
             game.special_event("Relic Room")
             relics = [items.Relic1(), items.Relic2(), items.Relic3(), items.Relic4(), items.Relic5(), items.Relic6()]
             relic = relics[game.player_char.location_z - 1]
-            if textbox:
-                textbox.print_text_in_rectangle(relic_discovery_text(relic))
             game.player_char.modify_inventory(relic, rare=True, quest=True)
             self.read = True
-            if textbox:
-                textbox.print_text_in_rectangle("Your health and mana have been restored to full!\n")
             game.player_char.health.current = game.player_char.health.max
             game.player_char.mana.current = game.player_char.mana.max
             game.player_char.quests()
-            if textbox:
-                textbox.clear_rectangle()
+            return f"{relic_discovery_text(relic)}Your health and mana have been restored to full!\n"
+        return ""
 
 
 class IncubusLair(BossRoom):
@@ -486,7 +409,7 @@ class IncubusLair(BossRoom):
                     action_list.insert(1, "Use Skill")
             action_list = player_char.additional_actions(action_list)
             return action_list
-        return self.adjacent_moves(player_char, [actions_dict['CharacterMenu']])
+        return []
 
 
 class GoldenChaliceRoom(SpecialTile):
@@ -606,4 +529,4 @@ class DeadBody(SpecialTile):
                 action_list.insert(2, "Pickup Weapon")
             action_list = player_char.additional_actions(action_list)
             return action_list
-        return self.adjacent_moves(player_char, [actions_dict['CharacterMenu']])
+        return []

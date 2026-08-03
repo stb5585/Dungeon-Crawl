@@ -65,8 +65,8 @@ flow, or true-final gates.
 Preferred first slice: review and polish page breaks/title treatment for the
 true-final victory, `The Forsaken Tenet Ending`, and `The Thirsty Dog Epilogue`
 so they feel like a deliberate ending sequence rather than three unrelated
-popups. Keep curses parity by preserving shared content text and fallback
-plain-text rendering.
+popups. Preserve shared content text so presentation polish does not own story
+state or canonical copy.
 
 Endgame story-card polish should be validated on both fresh endgame state and a
 post-`main_story_complete` save. Re-entering the final room after completion

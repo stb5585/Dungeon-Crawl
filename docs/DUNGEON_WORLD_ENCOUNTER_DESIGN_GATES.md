@@ -16,7 +16,7 @@ require new maps, generated art, or broad content rewrites:
 - Persistent low-health presentation while navigating the dungeon.
 - Chest behavior formalized as one-and-done in V1.
 - A small random-encounter nudge toward active quest enemy targets.
-- Shared relic discovery copy for pygame and core/curses relic-room flows.
+- Shared relic discovery copy for Pygame and core relic-room validation.
 
 Heavier dungeon interaction systems and deeper Realm of Cambion content remain
 deferred until their content beats are chosen.
@@ -112,9 +112,9 @@ a relic` message. This is narrative-only. It must not change:
 
 Missing text mappings fall back to a readable generic message.
 
-Runtime relic discovery text is owned by `src/core/map_tiles/rules.py` and reused by
-the pygame dungeon manager. Both pygame interaction and core/curses
-`RelicRoom.special_text()` use the same mapping and fallback.
+Runtime relic discovery text is owned by `src/core/map_tiles/rules.py` and
+reused by the Pygame dungeon manager. Core `RelicRoom.special_text()`
+validation uses the same mapping and fallback.
 
 ## Town Hint Flavor
 
@@ -166,6 +166,6 @@ Focused regression coverage now covers:
 - encounter bias falls back when the target is absent or the soft roll fails;
 - fixed and special encounters continue to bypass encounter bias;
 - shared relic text mappings, generic fallback, inventory grant, `read` state,
-  and full HP/MP restore in pygame and core/curses relic-room paths;
+  and full HP/MP restore in Pygame and core relic-room validation;
 - low-health overlay visibility at or below 25% HP and absence above the
   threshold.
