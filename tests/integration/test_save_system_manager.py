@@ -95,6 +95,25 @@ def test_enemy_state_serializer_round_trips_class_and_instance_state():
     assert EnemyStateSerializer.deserialize({"class_type": "MissingEnemy"}) is None
 
 
+def test_tile_state_keeps_legacy_enemy_state_without_runtime_encounter_state():
+    tile = SimpleNamespace(
+        visited=True,
+        near=False,
+        open=False,
+        read=False,
+        blocked=None,
+        warped=False,
+        defeated=False,
+        enemy=enemies.Goblin(),
+    )
+
+    payload = TileStateSerializer.serialize_tile_state({(1, 2, 3): tile})
+    state = payload["(1, 2, 3)"]
+
+    assert state["enemy_state"]["class_type"] == "Goblin"
+    assert "encounter_state" not in state
+
+
 def test_tile_state_restore_ignores_invalid_or_executable_position_keys(tmp_path):
     marker = tmp_path / "should_not_exist.txt"
     world = {

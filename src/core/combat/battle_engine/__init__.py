@@ -8,6 +8,7 @@ from .core import BattleEngine
 from .models import ActionResult, BattleOutcome, ForcedAction, PostTurnResult, PreTurnResult
 
 from ..battle_logger import BattleLogger
+from ..encounter import CombatEncounter, EncounterEnemy, EnemyResolution, EnemyResolutionRecord
 from ..initiative import determine_initiative
 from ... import items, thieves_guild
 from ...constants import SPECIAL_ATTACK_LUCK_FACTOR, SPECIAL_ATTACK_ROLL_MAX

@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 
 from ...classes import ability_mechanics, bard, lycan, nature_totems, paladin, promotion_kits
 from ...events.event_bus import EventType, create_combat_event
+from ..encounter import EnemyResolution
 from .models import ActionResult, BattleOutcome, ForcedAction, PostTurnResult, PreTurnResult
 
 if TYPE_CHECKING:
@@ -580,6 +581,7 @@ class BattleTurnMixin:
         elif self.player.is_alive():
             outcome.result = "victory"
             outcome.winner = self.player.name
+            self._record_singleton_resolution()
             if getattr(self.enemy, "grandmaster_trial_enemy", False):
                 outcome.message = self._process_grandmaster_trial_victory()
             elif self._is_thieves_guild_trial_enemy():
@@ -615,7 +617,10 @@ class BattleTurnMixin:
             self.tile.enemy = None
 
         self.logger.end_battle(
-            result=outcome.result, winner=outcome.winner, boss=self.boss
+            result=outcome.result,
+            winner=outcome.winner,
+            boss=self.boss,
+            encounter=self.encounter,
         )
         paladin.clear_condemnation(self.enemy)
 
@@ -627,7 +632,39 @@ class BattleTurnMixin:
             fled=self.flee,
             player_alive=self.player.is_alive(),
             enemy_alive=self.enemy.is_alive(),
+            encounter_id=self.encounter.encounter_id,
+            enemies=self.encounter.roster_summary(),
         ))
 
         self.player._active_combat = False
         return outcome
+
+    def _record_singleton_resolution(self) -> None:
+        """Record the existing singleton outcome without changing its rewards."""
+        member = self.encounter.primary_member
+        if member.resolution is not None:
+            return
+
+        resolution = EnemyResolution.DEFEATED
+        cause = None
+        if getattr(self.enemy, "paladin_mercy_victory", False):
+            resolution = EnemyResolution.MERCY
+            cause = "paladin_mercy"
+        elif getattr(self.enemy, "tamed_by_player", False):
+            resolution = EnemyResolution.TAMED
+            cause = "tame"
+        elif getattr(self.enemy, "windswept_ejected", False):
+            resolution = EnemyResolution.EJECTED
+            cause = "windswept"
+        elif getattr(self.enemy, "paladin_repelled", False):
+            resolution = EnemyResolution.ESCAPED
+            cause = "paladin_repel"
+        elif getattr(self.enemy, "no_victory_rewards", False):
+            resolution = EnemyResolution.ESCAPED
+            cause = "no_victory_rewards"
+
+        self.encounter.resolve_enemy(
+            member.combatant_id,
+            resolution,
+            cause=cause,
+        )

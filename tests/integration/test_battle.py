@@ -888,6 +888,9 @@ class TestBattleLogger:
         payload = logger.export_payload()
 
         assert payload["metadata"]["player"]["name"] == "Hero"
+        assert payload["metadata"]["encounter_id"] is None
+        assert payload["metadata"]["enemy"]["name"] == "Goblin"
+        assert payload["metadata"]["enemies"][0]["name"] == "Goblin"
         assert payload["events"][0]["damage"] == 12
         assert payload["summary"]["event_count"] == 1
         assert payload["summary"]["total_damage_logged"] == 12
@@ -986,6 +989,8 @@ class TestBattleLogger:
         assert "events" not in payload
         assert payload["metadata"]["player"]["name"] == "Hero"
         assert payload["metadata"]["enemy"]["name"] == "Slime"
+        assert payload["metadata"]["enemies"][0]["name"] == "Slime"
+        assert payload["metadata"]["encounter_id"] is None
         assert payload["metadata"]["result"] == "victory"
         assert payload["summary"]["event_count"] == 2
         assert payload["summary"]["damage_event_count"] == 2

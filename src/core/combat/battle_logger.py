@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     from ..enemies import Enemy
     from ..character import Character
     from ..player import Player
+    from .encounter import CombatEncounter
 
 
 class BattleLogger:
@@ -46,15 +47,60 @@ class BattleLogger:
             }
         return str(value)
 
-    def start_battle(self, player: Player, enemy: Enemy, initiative: bool, boss: bool) -> None:
+    @classmethod
+    def _enemy_metadata(cls, enemy: Enemy) -> dict:
+        """Return the legacy detailed metadata for one enemy."""
+        return {
+            "name": enemy.name,
+            "type": enemy.enemy_typ,
+            "level": cls._serialize_value(enemy.level),
+            "attributes": cls._serialize_value(enemy.stats),
+            "combat stats": cls._serialize_value(enemy.combat),
+            "hp": enemy.health.current,
+            "mp": enemy.mana.current,
+            "resistances": cls._serialize_value(enemy.resistance),
+        }
+
+    def start_battle(
+        self,
+        player: Player,
+        enemy: Enemy,
+        initiative: bool,
+        boss: bool,
+        *,
+        encounter: CombatEncounter | None = None,
+    ) -> None:
         """
         Initializes the battle logger with metadata about the battle.
         Args:
             player: The player character.
             enemy: The enemy character.
         """
+        legacy_enemy = self._enemy_metadata(enemy)
+        legacy_enemy["boss"] = boss
+        if encounter is None:
+            enemies = [{
+                **legacy_enemy,
+                "combatant_id": None,
+                "canonical_name": enemy.name,
+                "display_label": enemy.name,
+                "slot": 0,
+                "resolution": None,
+                "cause": None,
+            }]
+            encounter_id = None
+        else:
+            enemies = []
+            for member in encounter.members:
+                member_metadata = self._enemy_metadata(member.enemy)
+                member_metadata.update(member.summary())
+                member_metadata["boss"] = boss
+                enemies.append(member_metadata)
+            encounter_id = encounter.encounter_id
+
         self.metadata = {
             "start_time": datetime.datetime.now().isoformat(),
+            "encounter_id": encounter_id,
             "player": {
                 "name": player.name,
                 "cls": player.cls.name,
@@ -68,17 +114,8 @@ class BattleLogger:
                 "dungeon level": player.location_z,
                 "initiative": initiative,
             },
-            "enemy": {
-                "name": enemy.name,
-                "type": enemy.enemy_typ,
-                "level": self._serialize_value(enemy.level),
-                "attributes": self._serialize_value(enemy.stats),
-                "combat stats": self._serialize_value(enemy.combat),
-                "hp": enemy.health.current,
-                "mp": enemy.mana.current,
-                "resistances": self._serialize_value(enemy.resistance),
-                "boss": boss,
-            }
+            "enemy": legacy_enemy,
+            "enemies": enemies,
         }
 
     def log_event(
@@ -128,7 +165,23 @@ class BattleLogger:
     def next_turn(self) -> None:
         self.turn_counter += 1
 
-    def end_battle(self, result: str, winner: str | None, boss: bool) -> None:
+    def end_battle(
+        self,
+        result: str,
+        winner: str | None,
+        boss: bool,
+        *,
+        encounter: CombatEncounter | None = None,
+    ) -> None:
+        if encounter is not None:
+            summaries = {
+                summary["combatant_id"]: summary
+                for summary in encounter.roster_summary()
+            }
+            for enemy_metadata in self.metadata.get("enemies", []):
+                summary = summaries.get(enemy_metadata.get("combatant_id"))
+                if summary:
+                    enemy_metadata.update(summary)
         self.metadata.update({
             "result": result,
             "winner": winner,
@@ -210,6 +263,8 @@ class BattleLogger:
             "metadata": {
                 "player": metadata.get("player"),
                 "enemy": metadata.get("enemy"),
+                "enemies": metadata.get("enemies"),
+                "encounter_id": metadata.get("encounter_id"),
                 "boss": metadata.get("boss"),
                 "result": metadata.get("result"),
                 "winner": metadata.get("winner"),

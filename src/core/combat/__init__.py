@@ -16,6 +16,12 @@ from .action_queue import (
     create_attack_action,
     create_spell_action,
 )
+from .encounter import (
+    CombatEncounter,
+    EncounterEnemy,
+    EnemyResolution,
+    EnemyResolutionRecord,
+)
 
 # Note: EnhancedBattleManager imports are deferred to avoid circular dependencies
 # Import it directly: from combat.enhanced_manager import EnhancedBattleManager
@@ -28,4 +34,8 @@ __all__ = [
     'TurnManager',
     'create_attack_action',
     'create_spell_action',
+    'CombatEncounter',
+    'EncounterEnemy',
+    'EnemyResolution',
+    'EnemyResolutionRecord',
 ]

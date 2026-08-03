@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from ..battle_logger import BattleLogger
+from ..encounter import CombatEncounter
 from ..initiative import determine_initiative
 from ...classes import ability_mechanics, astromancer, bard, paladin, promotion_kits
 from ...enemies.identity import remember_defeat_identity
@@ -33,18 +34,31 @@ class BattleEngine(BattleTurnMixin, BattleActionMixin, BattleOutcomeMixin):
     def __init__(
         self,
         player: Player,
-        enemy: Character,
-        tile: Any,
+        enemy: Character | None = None,
+        tile: Any | None = None,
         game: Any | None = None,
         logger: BattleLogger | None = None,
+        *,
+        encounter: CombatEncounter | None = None,
     ):
+        if (enemy is None) == (encounter is None):
+            raise ValueError("Supply exactly one of enemy or encounter.")
+        if tile is None:
+            raise ValueError("BattleEngine requires a combat tile.")
+        if encounter is not None and not isinstance(encounter, CombatEncounter):
+            raise TypeError("encounter must be a CombatEncounter.")
+
         self.player: Player = player
         self.player._active_combat = True
-        self.enemy: Character = enemy
+        if encounter is None:
+            assert enemy is not None
+            encounter = CombatEncounter.singleton(enemy)
+        self.encounter: CombatEncounter = encounter
         self.tile: Any = tile
         self.game: Any = game
         self.logger: BattleLogger = logger if logger else BattleLogger()
-        remember_defeat_identity(self.enemy)
+        for member in self.encounter.members:
+            remember_defeat_identity(member.enemy)
 
         self.flee: bool = False
         self.boss: bool = "Boss" in str(tile)
@@ -64,6 +78,11 @@ class BattleEngine(BattleTurnMixin, BattleActionMixin, BattleOutcomeMixin):
         self.available_actions: list = self._available_actions()
 
         self._event_bus = get_event_bus()
+
+    @property
+    def enemy(self) -> Character:
+        """Return the primary enemy during the singleton compatibility slice."""
+        return self.encounter.primary_enemy
 
     def _is_class_ring_trial_enemy(self) -> bool:
         """Return whether this fight should use Class Ring trial bookkeeping."""
@@ -190,6 +209,11 @@ class BattleEngine(BattleTurnMixin, BattleActionMixin, BattleOutcomeMixin):
         Returns:
             (first_actor, second_actor) — the initiative order.
         """
+        if len(self.encounter.members) != 1:
+            raise NotImplementedError(
+                "Multi-enemy battles require the Slice 2 actor-cycle implementation."
+            )
+
         self._clear_stale_charging_actions(self.player)
         self._clear_stale_charging_actions(self.enemy)
         self.player._final_assault_used = False
@@ -206,6 +230,8 @@ class BattleEngine(BattleTurnMixin, BattleActionMixin, BattleOutcomeMixin):
             target=self.enemy,
             initiative=self.attacker == self.player,
             boss=self.boss,
+            encounter_id=self.encounter.encounter_id,
+            enemies=self.encounter.roster_summary(),
         ))
 
         self.logger.start_battle(
@@ -213,6 +239,7 @@ class BattleEngine(BattleTurnMixin, BattleActionMixin, BattleOutcomeMixin):
             self.enemy,
             initiative=self.attacker == self.player,
             boss=self.boss,
+            encounter=self.encounter,
         )
 
         if hasattr(self.player, "record_bestiary_encounter"):
@@ -227,4 +254,8 @@ class BattleEngine(BattleTurnMixin, BattleActionMixin, BattleOutcomeMixin):
 
     def battle_continues(self) -> bool:
         """Return True while both combatants are alive and nobody fled."""
-        return self.player.is_alive() and self.enemy.is_alive() and not self.flee
+        return (
+            self.player.is_alive()
+            and bool(self.encounter.living_members)
+            and not self.flee
+        )
