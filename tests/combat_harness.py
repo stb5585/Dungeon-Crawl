@@ -151,10 +151,11 @@ class BattleEngineHarness:
         if self._force_initiative is None:
             return self.engine.start_battle()
 
+        enemy = self.engine.encounter.primary_enemy
         if self._force_initiative == "player":
-            first, second = self.engine.player, self.engine.enemy
+            first, second = self.engine.player, enemy
         else:
-            first, second = self.engine.enemy, self.engine.player
+            first, second = enemy, self.engine.player
 
         self.engine.attacker, self.engine.defender = first, second
 
@@ -162,14 +163,14 @@ class BattleEngineHarness:
         self.engine._event_bus.emit(create_combat_event(
             EventType.COMBAT_START,
             actor=self.engine.player,
-            target=self.engine.enemy,
+            target=enemy,
             initiative=self.engine.attacker == self.engine.player,
             boss=self.engine.boss,
         ))
         try:
             self.engine.logger.start_battle(
                 self.engine.player,
-                self.engine.enemy,
+                enemy,
                 initiative=self.engine.attacker == self.engine.player,
                 boss=self.engine.boss,
             )
@@ -201,7 +202,11 @@ class BattleEngineHarness:
         if not self._assert_invariants:
             return
 
-        for ch in [self.engine.player, self.engine.enemy, self.engine.summon]:
+        for ch in [
+            self.engine.player,
+            *[member.enemy for member in self.engine.encounter.members],
+            self.engine.summon,
+        ]:
             if ch is None:
                 continue
             if ch.health.max < 0 or ch.mana.max < 0:

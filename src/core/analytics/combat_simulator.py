@@ -153,7 +153,19 @@ class CombatStats:
     action_economy_events: dict[str, int] = field(default_factory=dict)
     critical_hits: int = 0
     misses: int = 0
-    
+    rounds: int = 0
+    actor_turns: int = 0
+    roster: tuple[str, ...] = ()
+    enemy_hp_remaining: dict[str, int] = field(default_factory=dict)
+    player_mana_remaining: int = 0
+    player_hp_remaining: int = 0
+    player_hp_max: int = 0
+    resolutions: tuple[str | None, ...] = ()
+    consumables_used: int = 0
+    damage_by_combatant: dict[str, int] = field(default_factory=dict)
+    reward_experience: int = 0
+    reward_gold: int = 0
+
     @property
     def hp_remaining_percent(self) -> float:
         """Percentage of HP remaining for winner."""
@@ -420,9 +432,10 @@ class CombatSimulator:
     def simulate_battle(
         self,
         char1: Player,
-        char2: Character,
+        char2: Character | None = None,
         max_turns: int = 200,
         *,
+        encounter=None,
         seed: int | None = None,
         char1_policy: Callable | None = None,
         char2_policy: Callable | None = None,
@@ -433,7 +446,8 @@ class CombatSimulator:
 
         Args:
             char1: Player-side combatant (BattleEngine expects a Player)
-            char2: Enemy-side combatant (any Character)
+            char2: Legacy singleton enemy-side combatant.
+            encounter: Optional runtime hostile roster.
             max_turns: Maximum turns before declaring a draw
             seed: Optional RNG seed for determinism
             char1_policy: Optional policy(engine) -> (action, choice)
@@ -445,11 +459,21 @@ class CombatSimulator:
         """
         import random
 
+        from src.core.combat import ActionIntent, CombatEncounter, TargetScope
         from src.core.combat.battle_engine import BattleEngine
         from src.core.events.event_bus import EventType, get_event_bus, reset_event_bus
 
         if seed is not None:
             random.seed(seed)
+        using_legacy_enemy = encounter is None
+        if (char2 is None) == (encounter is None):
+            raise ValueError("Supply exactly one of char2 or encounter.")
+        if encounter is None:
+            assert char2 is not None
+            encounter = CombatEncounter.singleton(char2)
+        elif not isinstance(encounter, CombatEncounter):
+            raise TypeError("encounter must be a CombatEncounter.")
+        primary_enemy = encounter.primary_enemy
 
         # Isolate global event bus per simulation to avoid cross-test pollution.
         reset_event_bus()
@@ -460,14 +484,24 @@ class CombatSimulator:
         crits = 0
         misses = 0
         damage_by_actor: dict[str, int] = defaultdict(int)
+        damage_by_combatant: dict[str, int] = defaultdict(int)
         class_kit_events: dict[str, int] = defaultdict(int)
         action_economy_events: dict[str, int] = defaultdict(int)
+        consumables_used = 0
+        member_labels = {
+            member.combatant_id: member.display_label
+            for member in encounter.members
+        }
 
         def record_analytics_text(value: object) -> None:
             _merge_counts(class_kit_events, _classify_class_kit_text(value))
             _merge_counts(action_economy_events, _classify_action_economy_text(value))
 
         def record_action_selection(action: object, choice: object = None) -> None:
+            nonlocal consumables_used
+            action_name = getattr(action, "action", action)
+            if action_name == "Use Item":
+                consumables_used += 1
             record_analytics_text(action)
             if choice:
                 record_analytics_text(choice)
@@ -496,10 +530,16 @@ class CombatSimulator:
                 elif ev.type == EventType.MISS:
                     misses += 1
                 elif ev.type == EventType.DAMAGE_DEALT:
-                    actor = ev.data.get("actor")
+                    actor = getattr(ev, "actor", None) or ev.data.get("actor")
                     dmg = int(ev.data.get("damage", 0) or 0)
                     if actor and dmg > 0:
                         damage_by_actor[str(actor)] += dmg
+                    target_id = (
+                        ev.data.get("target_combatant_id")
+                        or ev.data.get("target_id")
+                    )
+                    if target_id in member_labels and dmg > 0:
+                        damage_by_combatant[member_labels[target_id]] += dmg
             except Exception:
                 return
 
@@ -516,7 +556,7 @@ class CombatSimulator:
 
         class _SimTile:
             def __init__(self):
-                self.enemy = char2
+                self.enemy = primary_enemy
                 self.defeated = False
 
             def available_actions(self, _player):
@@ -544,7 +584,18 @@ class CombatSimulator:
                 return "SimTile"
 
         tile = _SimTile()
-        engine = BattleEngine(player=char1, enemy=char2, tile=tile)
+        if using_legacy_enemy:
+            engine = BattleEngine(
+                player=char1,
+                enemy=primary_enemy,
+                tile=tile,
+            )
+        else:
+            engine = BattleEngine(
+                player=char1,
+                encounter=encounter,
+                tile=tile,
+            )
         engine.start_battle()
 
         def default_policy(_engine: BattleEngine):
@@ -805,7 +856,11 @@ class CombatSimulator:
                     if engine.is_player_turn():
                         policy = char1_policy or default_policy
                         try:
-                            action, choice = policy(engine)
+                            selected = policy(engine)
+                            if isinstance(selected, ActionIntent):
+                                action, choice = selected, selected.choice
+                            else:
+                                action, choice = selected
                         except Exception:
                             action, choice = "Attack", None
                     else:
@@ -813,13 +868,31 @@ class CombatSimulator:
                         # rather than the player-centric default_policy.
                         if char2_policy is not None:
                             try:
-                                action, choice = char2_policy(engine)
+                                selected = char2_policy(engine)
+                                if isinstance(selected, ActionIntent):
+                                    action, choice = selected, selected.choice
+                                else:
+                                    action, choice = selected
                             except Exception:
                                 action, choice = "Attack", None
                         else:
                             action, choice = engine.get_enemy_action()
                 record_action_selection(action, choice)
-                action_result = engine.execute_action(action, choice)
+                if not hasattr(engine, "execute_intent"):
+                    action_result = engine.execute_action(action, choice)
+                elif isinstance(action, ActionIntent):
+                    intent = action
+                    action_result = engine.execute_intent(intent)
+                else:
+                    scope = engine.target_scope_for_action(action, choice)
+                    target_ids = (
+                        (engine.focus_target_id,)
+                        if engine.is_player_turn()
+                        and scope == TargetScope.SINGLE_ENEMY
+                        else ()
+                    )
+                    intent = ActionIntent(action, choice, target_ids)
+                    action_result = engine.execute_intent(intent)
                 record_analytics_text(getattr(action_result, "message", ""))
             companion_text = engine.companion_turn()
             record_analytics_text(companion_text)
@@ -829,31 +902,41 @@ class CombatSimulator:
             engine.swap_turns()
 
         # Outcome (avoid engine.end_battle bookkeeping for analytics)
-        if turns >= max_turns and char1.is_alive() and char2.is_alive():
+        living_enemies = [member.enemy for member in encounter.living_members]
+        roster_name = " / ".join(
+            member.display_label for member in encounter.members
+        )
+        if turns >= max_turns and char1.is_alive() and living_enemies:
             winner = "draw"
             loser = "draw"
             winner_obj = char1
-            loser_obj = char2
-        elif not char1.is_alive() and not char2.is_alive():
+            loser_obj = primary_enemy
+        elif not char1.is_alive() and not living_enemies:
             winner = "draw"
             loser = "draw"
             winner_obj = char1
-            loser_obj = char2
+            loser_obj = primary_enemy
         elif char1.is_alive():
             winner = char1.name
-            loser = char2.name
+            loser = roster_name
             winner_obj = char1
-            loser_obj = char2
+            loser_obj = primary_enemy
         else:
-            winner = char2.name
+            winner = roster_name
             loser = char1.name
-            winner_obj = char2
+            winner_obj = primary_enemy
             loser_obj = char1
 
         winner_class = winner_obj.cls.name if hasattr(winner_obj, "cls") and winner_obj.cls else "Unknown"
         loser_class = loser_obj.cls.name if hasattr(loser_obj, "cls") and loser_obj.cls else "Unknown"
         winner_hp = max(0, winner_obj.health.current)
         winner_max = winner_obj.health.max
+        outcome = None
+        if turns < max_turns or not char1.is_alive() or not living_enemies:
+            outcome = engine.end_battle()
+        settlements = tuple(
+            getattr(outcome, "member_settlements", ()) or ()
+        )
 
         return CombatStats(
             winner=winner,
@@ -873,14 +956,45 @@ class CombatSimulator:
             action_economy_events=dict(action_economy_events),
             critical_hits=crits,
             misses=misses,
+            rounds=int(getattr(engine, "round_number", 0) or 0),
+            actor_turns=int(
+                getattr(engine, "total_started_actor_turns", turns) or turns
+            ),
+            roster=tuple(
+                member.display_label for member in encounter.members
+            ),
+            enemy_hp_remaining={
+                member.combatant_id: max(
+                    0,
+                    int(member.enemy.health.current),
+                )
+                for member in encounter.members
+            },
+            player_mana_remaining=max(0, int(char1.mana.current)),
+            player_hp_remaining=max(0, int(char1.health.current)),
+            player_hp_max=max(1, int(char1.health.max)),
+            resolutions=tuple(
+                member.resolution.value if member.resolution else None
+                for member in encounter.members
+            ),
+            consumables_used=consumables_used,
+            damage_by_combatant=dict(damage_by_combatant),
+            reward_experience=int(
+                getattr(outcome, "total_experience", 0) or 0
+            ),
+            reward_gold=sum(
+                int(getattr(settlement, "gold_delta", 0) or 0)
+                for settlement in settlements
+            ),
         )
     
     def run_simulations(
         self,
         char1: Player | Callable[[], Player],
-        char2: Character | Callable[[], Character],
+        char2: Character | Callable[[], Character] | None = None,
         iterations: int = 1000,
         *,
+        encounter=None,
         seed: int | None = None,
     ) -> BalanceReport:
         """
@@ -888,13 +1002,16 @@ class CombatSimulator:
         
         Args:
             char1: First combatant
-            char2: Second combatant
+            char2: Legacy singleton combatant or factory.
+            encounter: Encounter instance or zero-argument factory.
             iterations: Number of battles to simulate
             
         Returns:
             Balance report with aggregated statistics
         """
         results = []
+        if (char2 is None) == (encounter is None):
+            raise ValueError("Supply exactly one of char2 or encounter.")
 
         base_seed = seed if seed is not None else None
         for i in range(iterations):
@@ -911,16 +1028,38 @@ class CombatSimulator:
                 except Exception:
                     c1 = char1
 
-            if callable(char2):
-                c2 = char2()
+            if char2 is not None:
+                if callable(char2):
+                    c2 = char2()
+                else:
+                    try:
+                        c2 = copy.deepcopy(char2)
+                    except Exception:
+                        c2 = char2
+                runtime_encounter = None
             else:
-                try:
-                    c2 = copy.deepcopy(char2)
-                except Exception:
-                    c2 = char2
+                c2 = None
+                if callable(encounter):
+                    runtime_encounter = encounter()
+                else:
+                    try:
+                        runtime_encounter = copy.deepcopy(encounter)
+                    except Exception:
+                        runtime_encounter = encounter
 
             sim_seed = None if base_seed is None else (base_seed + i)
-            result = self.simulate_battle(c1, c2, seed=sim_seed)
+            if c2 is not None:
+                result = self.simulate_battle(
+                    c1,
+                    c2,
+                    seed=sim_seed,
+                )
+            else:
+                result = self.simulate_battle(
+                    c1,
+                    encounter=runtime_encounter,
+                    seed=sim_seed,
+                )
             results.append(result)
         
         self.results.extend(results)

@@ -221,14 +221,54 @@ class CombatOutcomeMixin:
         if self.engine is not None and getattr(self.engine, "attacker", None) is not None:
             current_actor = self.engine.attacker
             current_turn = "player" if self.engine.is_player_turn() else "enemy"
-        show_enemy_details = None
-        if self.engine is not None and hasattr(self.engine, "show_enemy_details"):
-            show_enemy_details = self.engine.show_enemy_details()
-        if show_enemy_details and hasattr(player_char, "record_bestiary_enemy"):
-            player_char.record_bestiary_enemy(enemy, getattr(enemy, "enemy_typ", None))
+        encounter = getattr(self.engine, "encounter", None)
+        if encounter is not None:
+            focus_id = self.engine.focus_target_id
+            focused_member = encounter.member_by_id(focus_id)
+            enemy = focused_member.enemy
+            details_by_id = {
+                member.combatant_id: self.engine.show_enemy_details(member.enemy)
+                for member in encounter.members
+            }
+            show_enemy_details = details_by_id[focus_id]
+            for member in encounter.members:
+                if (
+                    details_by_id[member.combatant_id]
+                    and hasattr(player_char, "record_bestiary_enemy")
+                ):
+                    player_char.record_bestiary_enemy(
+                        member.enemy,
+                        getattr(member.enemy, "enemy_typ", None),
+                    )
+        else:
+            focus_id = ""
+            details_by_id = {}
+            show_enemy_details = None
+            if self.engine is not None and hasattr(self.engine, "show_enemy_details"):
+                show_enemy_details = self.engine.show_enemy_details()
+            if (
+                show_enemy_details
+                and hasattr(player_char, "record_bestiary_enemy")
+            ):
+                player_char.record_bestiary_enemy(
+                    enemy,
+                    getattr(enemy, "enemy_typ", None),
+                )
 
         # Render enemy in the dungeon (in front of player)
-        self.combat_view.render_enemy_in_dungeon(player_char, enemy, show_enemy_details=show_enemy_details)
+        if encounter is not None:
+            self.combat_view.render_encounter_in_dungeon(
+                player_char,
+                encounter,
+                focus_target_id=focus_id,
+                details_by_id=details_by_id,
+            )
+        else:
+            self.combat_view.render_enemy_in_dungeon(
+                player_char,
+                enemy,
+                show_enemy_details=show_enemy_details,
+            )
 
         # Render combat HUD overlay (action menu and combat log)
         self.combat_view.render_combat_overlay(
@@ -339,10 +379,29 @@ class CombatOutcomeMixin:
             return False
 
         elif outcome.result == "victory":
-            tamed_victory = bool(getattr(enemy, "tamed_by_player", False))
+            encounter = getattr(self.engine, "encounter", None)
+            tamed_members = (
+                [
+                    member
+                    for member in encounter.members
+                    if getattr(member.enemy, "tamed_by_player", False)
+                ]
+                if encounter is not None
+                else []
+            )
+            if (
+                encounter is None
+                and getattr(enemy, "tamed_by_player", False)
+            ):
+                tamed_members = [type("_TamedMember", (), {"enemy": enemy})()]
+            tamed_victory = bool(tamed_members) and len(
+                encounter.members if encounter is not None else [enemy]
+            ) == 1
             repelled_victory = bool(getattr(enemy, "paladin_repelled", False))
             # Build end messages from outcome
-            if tamed_victory:
+            if encounter is not None and len(encounter.members) > 1:
+                end_messages = ["Victory! Encounter complete!"]
+            elif tamed_victory:
                 end_messages = [f"{enemy.name} tamed!"]
             elif repelled_victory:
                 end_messages = [f"{enemy.name} fled from battle!"]
@@ -378,8 +437,12 @@ class CombatOutcomeMixin:
             else:
                 self._refresh_combat_background(player_char, enemy)
             _show_end_popup("\n".join(end_messages))
-            if tamed_victory:
-                self._prompt_for_tamed_companion_name(player_char, enemy, self._combat_background)
+            if tamed_members:
+                self._prompt_for_tamed_companion_name(
+                    player_char,
+                    tamed_members[-1].enemy,
+                    self._combat_background,
+                )
 
             if outcome.level_up:
                 self.level_up_screen.show_level_up(player_char, self.game)

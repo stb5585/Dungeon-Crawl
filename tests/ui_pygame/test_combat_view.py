@@ -12,6 +12,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parents[2]))
 
+from src.core.combat import CombatEncounter
 from src.ui_pygame.assets.enemy_combat_sprite_manager import EnemyCombatSpriteManager
 from src.ui_pygame.gui import combat_view
 from src.ui_pygame.gui.combat_view.animator import DEATH_ANIMATION_FRAMES
@@ -22,6 +23,7 @@ from src.ui_pygame.gui.status_icons import (
     prioritize_status_icons,
     status_icon_color,
 )
+from tests.test_framework import TestGameState
 
 
 @pytest.fixture(autouse=True)
@@ -118,6 +120,40 @@ class DummyClock:
 
     def get_time(self):
         return self.frame_ms
+
+
+@pytest.mark.parametrize("size", [(1024, 720), (1024, 768)])
+def test_two_enemy_cards_fit_supported_layout_and_expose_hitboxes(size):
+    screen = pygame.Surface(size)
+    view = combat_view.CombatView(screen, SimpleNamespace())
+    player = TestGameState.create_player(name="Hero")
+    first = TestGameState.create_player(name="Goblin")
+    second = TestGameState.create_player(name="Goblin")
+    encounter = CombatEncounter.from_enemies(
+        [first, second],
+        combatant_ids=("first", "second"),
+    )
+
+    view.render_encounter_in_dungeon(
+        player,
+        encounter,
+        focus_target_id="second",
+        details_by_id={"first": False, "second": False},
+    )
+
+    assert set(view._enemy_card_rects) == {"first", "second"}
+    assert all(rect.bottom <= size[1] - 158 for rect in view._enemy_card_rects.values())
+    assert view.enemy_card_at(view._enemy_card_rects["first"].center) == "first"
+    assert encounter.members[0].display_label == "Goblin A"
+
+
+def test_hidden_enemy_health_uses_approved_approximate_bands():
+    enemy = SimpleNamespace(health=SimpleNamespace(current=90, max=100))
+    assert combat_view.CombatView._approximate_health_label(enemy) == "Healthy"
+    enemy.health.current = 50
+    assert combat_view.CombatView._approximate_health_label(enemy) == "Wounded"
+    enemy.health.current = 20
+    assert combat_view.CombatView._approximate_health_label(enemy) == "Critical"
 
 
 def _make_view():

@@ -81,6 +81,8 @@ class CombatViewCoreMixin:
             240,
             240,
         )
+        self._enemy_target_rects: dict[str, pygame.Rect] = {}
+        self._enemy_card_rects: dict[str, pygame.Rect] = {}
         self._last_player_target_rect = pygame.Rect(
             28,
             self.screen_height - 270,
@@ -111,6 +113,13 @@ class CombatViewCoreMixin:
         animator = self._get_sprite_animator(enemy)
         animator.trigger_damage()
         self._enemy_recoil_until_ms = max(self._enemy_recoil_until_ms, pygame.time.get_ticks() + 220)
+
+    def enemy_card_at(self, position) -> str | None:
+        """Return the living-card combatant ID under a mouse position."""
+        for combatant_id, rect in self._enemy_card_rects.items():
+            if rect.collidepoint(position):
+                return combatant_id
+        return None
 
     def trigger_impact_effect(
         self,
@@ -267,6 +276,8 @@ class CombatViewCoreMixin:
     def _target_rect_for_effect(self, target: str) -> pygame.Rect:
         if target == "player":
             return self._last_player_target_rect.copy()
+        if target in self._enemy_target_rects:
+            return self._enemy_target_rects[target].copy()
         return self._last_enemy_target_rect.copy()
 
     def _render_active_impact_effects(self) -> None:

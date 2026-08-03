@@ -65,6 +65,19 @@ def test_create_bounty_force_enemy_collision_falls_back_to_catalog(monkeypatch):
     assert bounty["enemy"].name != "Goblin"
 
 
+def test_create_bounty_ignores_curated_encounter_override(monkeypatch):
+    from src.core import town
+
+    board = town.BountyBoard()
+    game = _make_game(player_level=30, luck=0)
+    monkeypatch.setenv("DUNGEON_FORCE_ENCOUNTER", "carrion_crawl")
+    monkeypatch.setattr("src.core.town.random.randint", lambda a, _b: a)
+
+    bounty = board.create_bounty(game)
+
+    assert not hasattr(bounty["enemy"], "_runtime_combat_encounter")
+
+
 def test_generate_bounties_force_enemy_can_fill_multiple_slots(monkeypatch):
     from src.core import town
 

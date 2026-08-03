@@ -8,6 +8,178 @@ import src.ui_pygame.gui.combat_view as combat_view
 
 
 class CombatOverlayMixin:
+    @staticmethod
+    def _approximate_health_label(enemy) -> str:
+        """Return a coarse health band for hidden-information cards."""
+        maximum = max(1, int(getattr(enemy.health, "max", 1) or 1))
+        ratio = max(0.0, float(enemy.health.current) / maximum)
+        if ratio > (2 / 3):
+            return "Healthy"
+        if ratio >= (1 / 3):
+            return "Wounded"
+        return "Critical"
+
+    def render_encounter_in_dungeon(
+        self,
+        player_char,
+        encounter,
+        *,
+        focus_target_id: str,
+        details_by_id: dict[str, bool],
+    ) -> None:
+        """Render a two-member encounter as compact independent target cards."""
+        if len(encounter.members) == 1:
+            enemy = encounter.primary_enemy
+            self._enemy_card_rects = {}
+            self._enemy_target_rects = {}
+            self.render_enemy_in_dungeon(
+                player_char,
+                enemy,
+                show_enemy_details=details_by_id.get(
+                    encounter.primary_member.combatant_id,
+                    False,
+                ),
+            )
+            return
+
+        self.update_animations()
+        view_width = int(self.screen_width * 0.65)
+        gap = 18
+        margin = 18
+        top = 178
+        bottom = self.screen_height - 158
+        card_height = max(250, bottom - top)
+        card_width = max(230, (view_width - (margin * 2) - gap) // 2)
+        self._enemy_card_rects = {}
+        self._enemy_target_rects = {}
+
+        for index, member in enumerate(encounter.members):
+            enemy = member.enemy
+            card = pygame.Rect(
+                margin + index * (card_width + gap),
+                top,
+                card_width,
+                card_height,
+            )
+            self._enemy_card_rects[member.combatant_id] = card
+            focused = member.combatant_id == focus_target_id
+            living = member.is_living_hostile
+            fill = (22, 22, 28, 225 if living else 170)
+            panel = pygame.Surface(card.size, pygame.SRCALPHA)
+            panel.fill(fill)
+            self.screen.blit(panel, card.topleft)
+            border = self.colors["panel_accent"] if focused else (92, 92, 104)
+            pygame.draw.rect(
+                self.screen,
+                border,
+                card,
+                4 if focused else 2,
+                border_radius=8,
+            )
+
+            title_font = pygame.font.Font(None, 28)
+            body_font = pygame.font.Font(None, 20)
+            label = self._truncate_text(
+                title_font,
+                member.display_label,
+                card.width - 24,
+            )
+            title = title_font.render(label, True, self.colors["text"])
+            self.screen.blit(
+                title,
+                title.get_rect(center=(card.centerx, card.top + 24)),
+            )
+            if focused:
+                marker = body_font.render("TARGET", True, self.colors["panel_accent"])
+                self.screen.blit(
+                    marker,
+                    marker.get_rect(center=(card.centerx, card.top + 48)),
+                )
+
+            has_sight = bool(details_by_id.get(member.combatant_id, False))
+            sprite_area = pygame.Rect(
+                card.left + 14,
+                card.top + 58,
+                card.width - 28,
+                max(110, card.height - 142),
+            )
+            animator = self._get_sprite_animator(enemy)
+            sprite = None
+            if has_sight:
+                try:
+                    sprite = self.enemy_combat_sprite_manager.get_scaled_sprite(
+                        enemy,
+                        sprite_area.size,
+                    )
+                except Exception:
+                    sprite = None
+            if sprite is not None:
+                if animator.damage_flash > 0:
+                    sprite = animator.apply_tint(
+                        sprite,
+                        (255, 100, 100),
+                        animator.damage_flash,
+                    )
+                if not living:
+                    sprite = sprite.copy()
+                    sprite.set_alpha(85)
+                sprite_rect = sprite.get_rect(center=sprite_area.center)
+                self.screen.blit(sprite, sprite_rect)
+                self._enemy_target_rects[member.combatant_id] = sprite_rect
+            else:
+                silhouette = pygame.Rect(
+                    sprite_area.centerx - 42,
+                    sprite_area.centery - 62,
+                    84,
+                    124,
+                )
+                pygame.draw.ellipse(
+                    self.screen,
+                    (42, 42, 50) if living else (30, 30, 34),
+                    silhouette,
+                )
+                self._enemy_target_rects[member.combatant_id] = silhouette
+
+            info_y = card.bottom - 68
+            if member.resolution is not None:
+                resolution_labels = {
+                    "defeated": "Defeated",
+                    "mercy": "Spared",
+                    "tamed": "Tamed",
+                    "ejected": "Ejected",
+                    "escaped": "Escaped",
+                }
+                text = resolution_labels.get(
+                    member.resolution.value,
+                    member.resolution.value.title(),
+                )
+            elif has_sight:
+                text = f"HP {enemy.health.current}/{enemy.health.max}"
+            else:
+                text = self._approximate_health_label(enemy)
+            info = body_font.render(text, True, self.colors["text"])
+            self.screen.blit(
+                info,
+                info.get_rect(center=(card.centerx, info_y)),
+            )
+            if has_sight and living:
+                icons = self._collect_status_icons(enemy)
+                if icons:
+                    self._render_status_icons(
+                        icons,
+                        card.left + 12,
+                        card.bottom - 38,
+                        max_width=card.width - 24,
+                        max_rows=1,
+                    )
+
+        self._last_enemy_target_rect = self._enemy_target_rects.get(
+            focus_target_id,
+            self._last_enemy_target_rect,
+        ).copy()
+        self._render_active_impact_effects()
+        self._render_floating_texts()
+
     def render_enemy_in_dungeon(self, player_char, enemy, show_enemy_details=None):
         """Render the enemy as if it's standing in the dungeon ahead of the player."""
         if self._hide_enemy_for_flee:

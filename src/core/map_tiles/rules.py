@@ -373,6 +373,7 @@ def quest_biased_random_enemy(player_char, level: str, rng=random):
         preferred_names=active_random_encounter_quest_targets(player_char),
         preferred_chance=random_encounter_quest_bias_chance(player_char),
         rng=rng,
+        allow_curated_encounter=True,
     )
 
 

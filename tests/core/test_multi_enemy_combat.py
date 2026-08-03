@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 from src.core import abilities
-from src.core.combat import CombatEncounter, TargetScope
+from src.core.combat import CombatEncounter, EnemyResolution, TargetScope
 from src.core.combat.battle_engine import (
     ActionIntent,
     ActionValidationCode,
@@ -125,13 +125,34 @@ def test_invalid_intents_do_not_commit_or_change_focus():
     assert engine.logger.turn_counter == turns
 
 
-def test_explicit_target_updates_focus_and_enemy_bridge_is_contextual(monkeypatch):
+def test_focus_controls_cycle_living_members_without_consuming_turn():
+    engine, _player, enemies, _tile = _engine()
+    engine.start_battle()
+    actor_id = engine.current_actor_id
+    actor_turns = engine.total_started_actor_turns
+
+    assert engine.cycle_focus(1) == "enemy-b"
+    assert engine.defender is enemies[1]
+    assert engine.cycle_focus(-1) == "enemy-a"
+    enemies[0].health.current = 0
+    engine._record_final_enemy_resolutions()
+
+    assert engine.cycle_focus(1) == "enemy-b"
+    assert engine.current_actor_id == actor_id
+    assert engine.total_started_actor_turns == actor_turns
+    with pytest.raises(ValueError, match="not a living target"):
+        engine.set_focus_target("enemy-a")
+    with pytest.raises(KeyError):
+        engine.set_focus_target("foreign")
+
+
+def test_explicit_target_updates_focus_without_enemy_compatibility_bridge(monkeypatch):
     engine, player, enemies, _tile = _engine()
     engine.start_battle()
     seen = []
 
     def weapon_damage(target, **_kwargs):
-        seen.append(engine.enemy)
+        seen.append(target)
         target.health.current -= 7
         return "Hit.\n", True, 7
 
@@ -147,8 +168,7 @@ def test_explicit_target_updates_focus_and_enemy_bridge_is_contextual(monkeypatc
     assert enemies[1].health.current == 43
     assert engine.focus_target_id == "enemy-b"
     assert seen == [enemies[1]]
-    with pytest.raises(RuntimeError, match="ambiguous"):
-        _ = engine.enemy
+    assert not hasattr(engine, "enemy")
 
 
 def test_dead_enemy_is_skipped_without_changing_fixed_order():
@@ -256,7 +276,7 @@ def test_rewind_restores_roster_ledger_cycle_focus_and_pending_actions():
     assert engine.pending_actions["player"]["target_id"] == "enemy-b"
 
 
-def test_multi_victory_is_provisional_and_does_not_mutate_tile_or_rewards():
+def test_multi_victory_settles_rewards_once_without_mutating_tile():
     engine, player, enemies, tile = _engine()
     engine.start_battle()
     for enemy in enemies:
@@ -267,11 +287,18 @@ def test_multi_victory_is_provisional_and_does_not_mutate_tile_or_rewards():
     outcome = engine.end_battle()
 
     assert outcome.result == "victory"
-    assert outcome.rewards_settled is False
-    assert "Development-only" in outcome.message
-    assert player.level.exp == experience_before
+    assert outcome.rewards_settled is True
+    assert outcome.total_experience == 220
+    assert len(outcome.member_settlements) == 2
+    assert player.level.exp > experience_before
     assert tile.enemy == "authored"
     assert tile.defeated is False
+    exp_after = player.level.exp
+
+    repeated = engine.end_battle()
+
+    assert repeated is outcome
+    assert player.level.exp == exp_after
 
 
 def test_multi_flee_discards_partial_resolution_ledger():
@@ -284,7 +311,42 @@ def test_multi_flee_discards_partial_resolution_ledger():
     outcome = engine.end_battle()
 
     assert outcome.result == "flee"
-    assert outcome.rewards_settled is False
+    assert outcome.rewards_settled is True
+    assert outcome.member_settlements == ()
     assert engine.encounter.resolution_ledger == ()
     assert all(member.resolution is None for member in engine.encounter.members)
+    assert all(enemy.health.current == enemy.health.max for enemy in enemies)
     assert tile.enemy == "authored"
+
+
+def test_mixed_mercy_and_ejection_settle_only_approved_rewards():
+    engine, player, enemies, _tile = _engine()
+    engine.start_battle()
+    for enemy in enemies:
+        enemy.health.current = 0
+        enemy.gold = 40
+        enemy.inventory = {}
+    engine.encounter.resolve_enemy(
+        "enemy-a",
+        EnemyResolution.MERCY,
+        cause="test_mercy",
+    )
+    engine.encounter.resolve_enemy(
+        "enemy-b",
+        EnemyResolution.EJECTED,
+        cause="test_ejection",
+    )
+
+    outcome = engine.end_battle()
+
+    mercy, ejection = outcome.member_settlements
+    assert mercy.resolution == EnemyResolution.MERCY
+    assert mercy.experience == 110
+    assert mercy.gold == 40
+    assert mercy.kill_credit is False
+    assert ejection.resolution == EnemyResolution.EJECTED
+    assert ejection.experience == 55
+    assert ejection.gold == 0
+    assert ejection.loot_eligible is False
+    assert outcome.total_experience == 165
+    assert player.kill_dict.get("TestEnemy", {}) == {}

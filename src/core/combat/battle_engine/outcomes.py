@@ -7,6 +7,8 @@ from typing import TYPE_CHECKING
 from ... import items, thieves_guild
 from ...classes import berserker, class_rings, dragoon, grandmaster, lycan, paladin, promotion_kits
 from ...enemies.identity import restore_defeat_identity
+from ..encounter import EnemyResolution
+from .models import EnemySettlement
 
 if TYPE_CHECKING:
     from ...character import Character
@@ -15,8 +17,9 @@ if TYPE_CHECKING:
 class BattleOutcomeMixin:
     def _process_victory(self) -> str:
         """Handle victory bookkeeping: exp, loot, quests, kill tracking."""
-        restore_defeat_identity(self.enemy)
-        if getattr(self.enemy, "paladin_repelled", False):
+        enemy = self.encounter.primary_enemy
+        restore_defeat_identity(enemy)
+        if getattr(enemy, "paladin_repelled", False):
             self.player.state = "normal"
             if (
                 hasattr(self.player, "transform_type")
@@ -24,30 +27,30 @@ class BattleOutcomeMixin:
             ):
                 self.player.transform(back=True)
             self.player.effects(end=True)
-            self.enemy.effects(end=True)
-            msg = f"{self.enemy.name} flees from the battle.\n"
+            enemy.effects(end=True)
+            msg = f"{enemy.name} flees from the battle.\n"
             msg += promotion_kits.end_combat(
                 self.player,
                 victory=False,
-                enemy=self.enemy,
+                enemy=enemy,
             )
             return msg
-        if getattr(self.enemy, "tamed_by_player", False) or getattr(self.enemy, "no_victory_rewards", False):
+        if getattr(enemy, "tamed_by_player", False) or getattr(enemy, "no_victory_rewards", False):
             self.player.state = 'normal'
             if hasattr(self.player, 'transform_type') and self.player.cls != self.player.transform_type:
                 self.player.transform(back=True)
             self.player.effects(end=True)
-            msg = f"{self.enemy.name} leaves the fight as a companion.\n"
-            msg += promotion_kits.end_combat(self.player, victory=False, enemy=self.enemy)
+            msg = f"{enemy.name} leaves the fight as a companion.\n"
+            msg += promotion_kits.end_combat(self.player, victory=False, enemy=enemy)
             return msg
 
-        mercy = bool(getattr(self.enemy, "paladin_mercy_victory", False))
-        exp_gain = int(self.enemy.experience)
+        mercy = bool(getattr(enemy, "paladin_mercy_victory", False))
+        exp_gain = int(enemy.experience)
         try:
             exp_gain = max(0, int(exp_gain * float(self.player.exp_gain_multiplier())))
         except Exception:
             pass
-        msg = dragoon.red_dragon_victory_text(self.enemy)
+        msg = dragoon.red_dragon_victory_text(enemy)
         msg += f"{self.player.name} gained {exp_gain} experience.\n"
 
         # Handle summon experience
@@ -70,11 +73,11 @@ class BattleOutcomeMixin:
             msg += self._award_mercy_gold()
         else:
             # Kill tracking
-            if self.enemy.enemy_typ not in self.player.kill_dict:
-                self.player.kill_dict[self.enemy.enemy_typ] = {}
-            if self.enemy.name not in self.player.kill_dict[self.enemy.enemy_typ]:
-                self.player.kill_dict[self.enemy.enemy_typ][self.enemy.name] = 0
-            self.player.kill_dict[self.enemy.enemy_typ][self.enemy.name] += 1
+            if enemy.enemy_typ not in self.player.kill_dict:
+                self.player.kill_dict[enemy.enemy_typ] = {}
+            if enemy.name not in self.player.kill_dict[enemy.enemy_typ]:
+                self.player.kill_dict[enemy.enemy_typ][enemy.name] = 0
+            self.player.kill_dict[enemy.enemy_typ][enemy.name] += 1
             if hasattr(self.player, "record_enemy_defeat"):
                 self.player.record_enemy_defeat()
             if hasattr(self.player, "refresh_demonologist_contracts"):
@@ -82,7 +85,7 @@ class BattleOutcomeMixin:
 
             vow_text = paladin.on_enemy_defeated(
                 self.player,
-                self.enemy,
+                enemy,
                 bounty_target=self._enemy_is_active_bounty(),
                 mercy=False,
             )
@@ -92,8 +95,8 @@ class BattleOutcomeMixin:
             _scar_gained, scar_text = berserker.record_battle_scar(self.player)
             if scar_text:
                 msg += scar_text
-            class_rings.record_soul_harvest(self.player, getattr(self.enemy, "enemy_typ", None))
-            msg += promotion_kits.end_combat(self.player, victory=True, enemy=self.enemy, exp_gain=exp_gain, boss=self.boss)
+            class_rings.record_soul_harvest(self.player, getattr(enemy, "enemy_typ", None))
+            msg += promotion_kits.end_combat(self.player, victory=True, enemy=enemy, exp_gain=exp_gain, boss=self.boss)
             try:
                 from ...classes import demonologist
 
@@ -106,15 +109,15 @@ class BattleOutcomeMixin:
                 msg += frenzy_text
 
             # Loot
-            if getattr(self.enemy, "windswept_ejected", False):
-                msg += f"{self.enemy.name} is too far away to loot.\n"
+            if getattr(enemy, "windswept_ejected", False):
+                msg += f"{enemy.name} is too far away to loot.\n"
             else:
-                loot_msg = self.player.loot(self.enemy, self.tile)
+                loot_msg = self.player.loot(enemy, self.tile)
                 if loot_msg:
                     msg += loot_msg
 
             # Quest progress
-            quest_msg = self.player.quests(enemy=self.enemy)
+            quest_msg = self.player.quests(enemy=enemy)
             if quest_msg:
                 msg += quest_msg
 
@@ -139,18 +142,7 @@ class BattleOutcomeMixin:
         return msg
 
     def _grandmaster_victory_xp_text(self) -> str:
-        if not hasattr(self.player, "award_grandmaster_victory_xp"):
-            return ""
-        text = ""
-        for weapon_type, (before, after, amount) in self.player.award_grandmaster_victory_xp(self.enemy).items():
-            text += grandmaster.discipline_xp_text(
-                self.player,
-                weapon_type,
-                amount,
-                before,
-                after,
-            )
-        return text
+        return self._grandmaster_victory_xp_text_for(self.encounter.primary_enemy)
 
     @staticmethod
     @staticmethod
@@ -161,7 +153,8 @@ class BattleOutcomeMixin:
         return f"{summon.name} gained {exp_gain} experience.\n"
 
     def _award_mercy_gold(self) -> str:
-        gold = max(0, int(getattr(self.enemy, "gold", 0) or 0))
+        enemy = self.encounter.primary_enemy
+        gold = max(0, int(getattr(enemy, "gold", 0) or 0))
         if not gold:
             return ""
         try:
@@ -169,20 +162,236 @@ class BattleOutcomeMixin:
         except Exception:
             pass
         self.player.gold += gold
-        return f"{self.enemy.name} offers {gold} gold in restitution.\n"
+        return f"{enemy.name} offers {gold} gold in restitution.\n"
 
     def _enemy_is_active_bounty(self) -> bool:
+        return self._enemy_is_active_bounty_for(self.encounter.primary_enemy)
+
+    def _enemy_is_active_bounty_for(self, enemy) -> bool:
+        """Return whether one encounter member matches an active bounty."""
         try:
             bounties = self.player.quest_dict.get("Bounty", {})
             if not isinstance(bounties, dict):
                 return False
-            return self.enemy.name in bounties or any(
-                getattr(data.get("enemy", None), "name", None) == self.enemy.name
+            return enemy.name in bounties or any(
+                getattr(data.get("enemy", None), "name", None) == enemy.name
                 for data in bounties.values()
                 if isinstance(data, dict)
             )
         except Exception:
             return False
+
+    def _process_multi_victory(
+        self,
+    ) -> tuple[str, tuple[EnemySettlement, ...], int, bool]:
+        """Settle a completed multi-enemy ledger exactly once."""
+        settlements = []
+        total_exp = 0
+        defeated_members = []
+        multiplier = 1.0
+        try:
+            multiplier = float(self.player.exp_gain_multiplier())
+        except Exception:
+            pass
+
+        for member in self.encounter.members:
+            enemy = member.enemy
+            resolution = member.resolution or EnemyResolution.ESCAPED
+            restore_defeat_identity(enemy)
+            exp_factor = {
+                EnemyResolution.DEFEATED: 1.0,
+                EnemyResolution.MERCY: 1.0,
+                EnemyResolution.EJECTED: 0.5,
+            }.get(resolution, 0.0)
+            exp_gain = max(
+                0,
+                int(int(getattr(enemy, "experience", 0) or 0) * exp_factor * multiplier),
+            )
+            total_exp += exp_gain
+            gold_before = int(getattr(self.player, "gold", 0) or 0)
+            member_message = ""
+            loot_eligible = resolution == EnemyResolution.DEFEATED
+            kill_credit = loot_eligible
+            quest_credit = loot_eligible
+            bounty_credit = loot_eligible and self._enemy_is_active_bounty_for(enemy)
+            bestiary_credit = loot_eligible
+
+            if resolution == EnemyResolution.DEFEATED:
+                defeated_members.append(member)
+                member_message += dragoon.red_dragon_victory_text(enemy)
+                enemy_type = getattr(enemy, "enemy_typ", None)
+                if enemy_type not in self.player.kill_dict:
+                    self.player.kill_dict[enemy_type] = {}
+                self.player.kill_dict[enemy_type][enemy.name] = (
+                    self.player.kill_dict[enemy_type].get(enemy.name, 0) + 1
+                )
+                if hasattr(self.player, "record_enemy_defeat"):
+                    self.player.record_enemy_defeat()
+                if hasattr(self.player, "refresh_demonologist_contracts"):
+                    self.player.refresh_demonologist_contracts()
+                vow_text = paladin.on_enemy_defeated(
+                    self.player,
+                    enemy,
+                    bounty_target=bounty_credit,
+                    mercy=False,
+                )
+                member_message += vow_text or ""
+                class_rings.record_soul_harvest(
+                    self.player,
+                    enemy_type,
+                )
+                frenzy_triggered, frenzy_text = lycan.maybe_trigger_frenzy(
+                    self.player,
+                    reason="kill",
+                )
+                if frenzy_triggered:
+                    member_message += frenzy_text
+                loot_text = self.player.loot(enemy, self.tile)
+                member_message += loot_text or ""
+                quest_text = self.player.quests(enemy=enemy)
+                member_message += quest_text or ""
+            elif resolution == EnemyResolution.MERCY:
+                gold = max(0, int(getattr(enemy, "gold", 0) or 0))
+                try:
+                    gold = max(
+                        0,
+                        int(gold * paladin.redemption_reward_multiplier(self.player)),
+                    )
+                except Exception:
+                    pass
+                self.player.gold += gold
+                member_message += (
+                    f"{member.display_label} offers {gold} gold in restitution.\n"
+                    if gold
+                    else f"{member.display_label} yields to mercy.\n"
+                )
+            elif resolution == EnemyResolution.TAMED:
+                member_message += f"{member.display_label} leaves as a companion.\n"
+            elif resolution == EnemyResolution.EJECTED:
+                member_message += (
+                    f"{member.display_label} was ejected and grants half experience only.\n"
+                )
+            else:
+                member_message += f"{member.display_label} escaped the encounter.\n"
+
+            if exp_gain:
+                member_message = (
+                    f"{member.display_label}: {exp_gain} experience.\n"
+                    + member_message
+                )
+            settlements.append(
+                EnemySettlement(
+                    combatant_id=member.combatant_id,
+                    display_label=member.display_label,
+                    resolution=resolution,
+                    experience=exp_gain,
+                    gold=max(0, int(self.player.gold) - gold_before),
+                    loot_eligible=loot_eligible,
+                    kill_credit=kill_credit,
+                    bestiary_credit=bestiary_credit,
+                    quest_credit=quest_credit,
+                    bounty_credit=bounty_credit,
+                    message=member_message,
+                )
+            )
+
+        message = "".join(settlement.message for settlement in settlements)
+
+        if self.summon:
+            try:
+                self.player._active_summon_bond_level_span_xp = (
+                    promotion_kits.summon_level_span_xp(self.summon)
+                )
+            except Exception:
+                pass
+            self.summon.effects(end=True)
+            self.summon.level.exp += total_exp
+            if self.summon.level.level < 10:
+                self.summon.level.exp_to_gain -= total_exp
+                while self.summon.level.exp_to_gain <= 0:
+                    message += self.summon.level_up(self.player)
+                    if self.summon.level.level == 10:
+                        break
+            message += self._summon_experience_text(self.summon, total_exp)
+
+        if defeated_members:
+            _scar_gained, scar_text = berserker.record_battle_scar(self.player)
+            message += scar_text or ""
+            representative = max(
+                defeated_members,
+                key=lambda member: (
+                    int(getattr(getattr(member.enemy, "level", None), "pro_level", 0) or 0),
+                    -member.slot,
+                ),
+            ).enemy
+            message += promotion_kits.end_combat(
+                self.player,
+                victory=True,
+                enemy=representative,
+                exp_gain=total_exp,
+                boss=False,
+            )
+            try:
+                from ...classes import demonologist
+
+                if self.player.cls.name == "Demonologist":
+                    message += demonologist.cool_corruption(
+                        self.player,
+                        2,
+                        "combat victory",
+                    )
+            except Exception:
+                pass
+            message += self._grandmaster_victory_xp_text_for(representative)
+        else:
+            message += promotion_kits.end_combat(
+                self.player,
+                victory=False,
+                enemy=self.encounter.primary_enemy,
+            )
+
+        self.player.state = "normal"
+        if (
+            hasattr(self.player, "transform_type")
+            and self.player.cls != self.player.transform_type
+        ):
+            self.player.transform(back=True)
+        self.player.effects(end=True)
+        for member in self.encounter.members:
+            member.enemy.effects(end=True)
+
+        from ...progression import award_experience
+
+        level_result = award_experience(self.player, total_exp)
+        self.player._pending_level_up_result = (
+            level_result
+            if level_result.new_level > level_result.old_level
+            else None
+        )
+        message += f"Encounter total: {total_exp} experience.\n"
+        return (
+            message,
+            tuple(settlements),
+            total_exp,
+            level_result.new_level > level_result.old_level,
+        )
+
+    def _grandmaster_victory_xp_text_for(self, enemy) -> str:
+        """Award one Grandmaster victory roll using a representative enemy."""
+        if not hasattr(self.player, "award_grandmaster_victory_xp"):
+            return ""
+        text = ""
+        for weapon_type, (before, after, amount) in (
+            self.player.award_grandmaster_victory_xp(enemy).items()
+        ):
+            text += grandmaster.discipline_xp_text(
+                self.player,
+                weapon_type,
+                amount,
+                before,
+                after,
+            )
+        return text
 
     def _process_grandmaster_trial_victory(self) -> str:
         """Handle Secret Master trial victory without normal combat rewards."""
@@ -190,7 +399,7 @@ class BattleOutcomeMixin:
         if hasattr(self.player, 'transform_type') and self.player.cls != self.player.transform_type:
             self.player.transform(back=True)
         self.player.effects(end=True)
-        self.enemy.effects(end=True)
+        self.encounter.primary_enemy.effects(end=True)
 
         msg = "You complete this Secret Master bout.\n"
         msg += self._grandmaster_victory_xp_text()
@@ -202,7 +411,7 @@ class BattleOutcomeMixin:
         if hasattr(self.player, 'transform_type') and self.player.cls != self.player.transform_type:
             self.player.transform(back=True)
         self.player.effects(end=True)
-        self.enemy.effects(end=True)
+        self.encounter.primary_enemy.effects(end=True)
         return f"You complete the {self._class_ring_trial_name()}.\n"
 
     def _process_thieves_guild_trial_victory(self) -> str:
@@ -211,7 +420,7 @@ class BattleOutcomeMixin:
         if hasattr(self.player, 'transform_type') and self.player.cls != self.player.transform_type:
             self.player.transform(back=True)
         self.player.effects(end=True)
-        self.enemy.effects(end=True)
+        self.encounter.primary_enemy.effects(end=True)
         if not thieves_guild.has_signet(self.player):
             self.player.modify_inventory(items.ThievesGuildSignet(), rare=True)
         return f"You complete the {self._thieves_guild_trial_name()} and recover the Thieves Guild Signet.\n"
@@ -225,9 +434,10 @@ class BattleOutcomeMixin:
         if hasattr(self.player, "_grandmaster_battle_hit_types"):
             self.player._grandmaster_battle_hit_types.clear()
         self.player.health.current = max(1, self.player.health.current)
-        self.enemy.effects(end=True)
-        self.enemy.health.current = self.enemy.health.max
-        self.enemy.mana.current = self.enemy.mana.max
+        enemy = self.encounter.primary_enemy
+        enemy.effects(end=True)
+        enemy.health.current = enemy.health.max
+        enemy.mana.current = enemy.mana.max
 
     def _process_defeat(self) -> None:
         """Handle defeat bookkeeping: reset enemy, player death."""
@@ -239,8 +449,9 @@ class BattleOutcomeMixin:
             self.player._grandmaster_battle_hit_types.clear()
 
         # Reset enemy for potential re-fight
-        self.enemy.effects(end=True)
-        self.enemy.health.current = self.enemy.health.max
-        self.enemy.mana.current = self.enemy.mana.max
+        enemy = self.encounter.primary_enemy
+        enemy.effects(end=True)
+        enemy.health.current = enemy.health.max
+        enemy.mana.current = enemy.mana.max
 
         self.player.death()

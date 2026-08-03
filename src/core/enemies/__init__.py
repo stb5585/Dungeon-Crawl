@@ -154,12 +154,16 @@ from .endgame import (
 )
 from .encounters import (
     AbilityFactory,
+    CuratedEncounterSpec,
     EnemyFactory,
     RandomEnemyOverride,
     EnemyCandidate,
     _RANDOM_ENEMY_CATALOG,
     _FUNHOUSE_ENEMY_CATALOG,
     clear_random_enemy_override,
+    build_curated_encounter,
+    curated_encounter_spec,
+    curated_encounter_specs,
     funhouse_enemy,
     funhouse_enemy_catalog,
     random,

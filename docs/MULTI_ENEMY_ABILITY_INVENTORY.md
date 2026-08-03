@@ -2,7 +2,7 @@
 
 ## Status
 
-Status: `Implemented through Slice 3`
+Status: `Implemented through Slice 6 development pilot`
 
 This inventory records the targeting and trigger contracts now represented by
 runtime metadata. Abilities without explicit migrated YAML metadata continue
@@ -75,5 +75,7 @@ these migration defaults:
   pending-target contracts are implemented for headless singleton/pair combat.
 - Slice 3 structured Hallowed Ground and full-damage Earthquake resolution is
   implemented with ordered, per-combatant portions.
-- Slice 5 implements ledger-based reward cadence. Until then, singleton reward
-  code remains unchanged.
+- Slice 4 exposes explicit focus and combatant-ID presentation in Pygame.
+- Slice 5 implements ledger-based reward cadence and encounter simulation.
+- Slice 6 provides three development-only curated pairs. No additional
+  abilities or enemy area actions are promoted by that pilot.

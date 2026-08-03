@@ -10,6 +10,7 @@ from .models import (
     ActionResult,
     ActionValidationCode,
     BattleOutcome,
+    EnemySettlement,
     ForcedAction,
     PostTurnResult,
     PreTurnResult,

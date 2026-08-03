@@ -228,7 +228,7 @@ def test_beast_master_companion_action_gates_and_command_resolution(monkeypatch)
     abilities.Tame().use(ranger, rat2)
     ranger_engine = BattleEngine(ranger, enemies.Goblin(), _Tile())
     ranger_engine.attacker = ranger
-    ranger_engine.defender = ranger_engine.enemy
+    ranger_engine.defender = ranger_engine.encounter.primary_enemy
     assert "Companion" not in ranger_engine._available_actions()
     assert "Tame" not in ranger_engine._available_actions()
 
@@ -236,7 +236,7 @@ def test_beast_master_companion_action_gates_and_command_resolution(monkeypatch)
     empty_beast.spellbook["Skills"]["Tame"] = abilities.Tame()
     empty_engine = BattleEngine(empty_beast, enemies.Goblin(), _Tile())
     empty_engine.attacker = empty_beast
-    empty_engine.defender = empty_engine.enemy
+    empty_engine.defender = empty_engine.encounter.primary_enemy
     assert "Companion" not in empty_engine._available_actions()
     assert "Tame" in empty_engine._available_actions()
 

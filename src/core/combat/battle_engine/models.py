@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 from ..combat_result import CombatResultGroup
+from ..encounter import EnemyResolution
 from ..targeting import ActionIntent, ActionValidationCode
 
 if TYPE_CHECKING:
@@ -63,3 +64,22 @@ class BattleOutcome:
     level_up: bool = False
     boss: bool = False
     rewards_settled: bool = True
+    member_settlements: tuple[EnemySettlement, ...] = ()
+    total_experience: int = 0
+
+
+@dataclass(frozen=True)
+class EnemySettlement:
+    """Immutable reward summary for one resolved encounter member."""
+
+    combatant_id: str
+    display_label: str
+    resolution: EnemyResolution
+    experience: int = 0
+    gold: int = 0
+    loot_eligible: bool = False
+    kill_credit: bool = False
+    bestiary_credit: bool = False
+    quest_credit: bool = False
+    bounty_credit: bool = False
+    message: str = ""

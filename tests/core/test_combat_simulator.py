@@ -65,6 +65,39 @@ def test_combat_stats_properties_cover_zero_and_close_fights():
     assert safe_win.was_close is False
 
 
+def test_simulator_accepts_explicit_encounter_and_reports_roster_metrics():
+    from src.core.analytics.combat_simulator import CombatSimulator
+    from src.core.enemies import build_curated_encounter
+    from tests.test_framework import TestGameState
+
+    player = TestGameState.create_player(
+        name="Warrior",
+        class_name="Warrior",
+        race_name="Human",
+        level=10,
+        health=(500, 500),
+        mana=(200, 200),
+    )
+    stats = CombatSimulator().simulate_battle(
+        player,
+        encounter=build_curated_encounter("carrion_crawl"),
+        max_turns=100,
+        seed=1337,
+    )
+
+    assert stats.roster == ("Giant Centipede", "Zombie")
+    assert stats.actor_turns >= stats.turns
+    assert stats.rounds >= 1
+    assert len(stats.enemy_hp_remaining) == 2
+    assert stats.player_hp_max == 500
+    assert set(stats.damage_by_combatant).issubset(
+        {"Giant Centipede", "Zombie"}
+    )
+    assert stats.consumables_used >= 0
+    assert stats.reward_experience >= 0
+    assert stats.reward_gold >= 0
+
+
 def test_balance_report_empty_results_return_zero_metrics():
     from src.core.analytics.combat_simulator import BalanceReport
 

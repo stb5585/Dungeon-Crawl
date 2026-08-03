@@ -2,26 +2,26 @@
 
 ## Status
 
-Status: `Implemented - Slices 0 through 3 (headless pairs, provisional rewards)`
+Status: `Implemented - Slices 0 through 6 (development-only curated pilot)`
 
 This document promotes the multi-enemy combat item from
 `COMBAT_BALANCE_DESIGN_GATES.md` into a concrete architecture proposal.
-Architecture decisions 1-12 are implemented through the headless engine.
-Content, frontend, and balance decisions 13-21 remain deferred until their
-rollout slices. Two-enemy execution is intentionally available only to
-headless callers; generation and Pygame targeting remain disabled.
+Architecture decisions 1-12 and content, frontend, and balance decisions
+13-21 are implemented through the development pilot. Two-enemy execution is
+available to headless callers and Pygame only through direct APIs or the
+explicit development override; ordinary random generation remains singleton.
 
 Slices 2 and 3 add the public `TargetScope`, `TargetLossPolicy`,
 `ActionIntent`, structured `CombatResultGroup`, fixed actor-cycle diagnostics,
 and provisional `BattleOutcome.rewards_settled` contracts. Invalid target
-intents do not commit or advance the actor cycle. During pair combat,
-`engine.enemy` is available only inside an individual target-resolution
-context.
+intents do not commit or advance the actor cycle. Slices 2 and 3 used a
+contextual `engine.enemy` migration bridge; Slice 6 removed it after reward,
+UI, logger, and test consumers moved to encounter members or action context.
 
-The first stable release is intentionally limited to one player-facing combat
-slot against one or two enemies. The architecture should not impose a permanent
-two-enemy ceiling, but content generation and UI acceptance must enforce that
-ceiling until playtest and simulator evidence support expanding it.
+The first stable release remains intentionally limited to one player-facing
+combat slot against one or two enemies. The architecture does not impose a
+permanent two-enemy ceiling, but content generation and UI acceptance enforce
+that ceiling until playtest and simulator evidence support expanding it.
 
 ## Motivation
 
@@ -202,11 +202,11 @@ During migration, `BattleEngine(player, enemy, tile, ...)` remains supported
 and creates a singleton encounter. A new `encounter=` entry point accepts the
 roster model. Supplying both is an error.
 
-The legacy `engine.enemy` property may temporarily return
-`selected_target.character` so old singleton callers continue to work, but new
-engine code must use `encounter`, `primary_enemy`, or `selected_target`
-explicitly. It must never use the compatibility property for reward iteration,
-encounter completion, or story identity.
+The migration temporarily allowed a legacy `engine.enemy` property to return
+`selected_target.character` for old singleton callers. It was never permitted
+for reward iteration, encounter completion, or story identity and was removed
+in Slice 6 after callers moved to `encounter`, `primary_enemy`, or explicit
+action targets.
 
 `attacker` and `defender` may remain as action-resolution aliases during the
 migration. They are not sufficient to represent the encounter and should not
@@ -699,6 +699,12 @@ Exit condition: singleton presentation remains readable, Pygame can finish a
 curated two-enemy debug encounter, and the same encounter completes through
 the headless engine harness.
 
+Implemented. Singleton combat retains its existing composition. Pair combat
+uses two compact battlefield cards, a focused detail panel, duplicate-safe
+labels, combatant-ID effects, `Q`/`E` focus cycling, and clickable living
+cards. Hidden information is evaluated per member and exposes only
+Healthy/Wounded/Critical health bands without Sight.
+
 ### Slice 5 - Outcomes, Save State, And Simulation
 
 - Settle ledger-based XP, loot, quest, bounty, class-kit, and removal results.
@@ -709,6 +715,14 @@ the headless engine harness.
 
 Exit condition: no duplicate encounter rewards/cleanup and old saves load.
 
+Implemented. Multi-enemy outcomes settle immutable per-member summaries in
+authored order and cache the final outcome to prevent duplicate rewards.
+Defeat and flee discard the ledger and restore the authored roster. The
+simulator accepts runtime encounters and records roster, round, actor-turn,
+remaining-resource, consumable, per-combatant damage, resolution, and reward
+metadata. Pair reports also measure each member's singleton actor-turn
+baseline. Saves remain unchanged.
+
 ### Slice 6 - Curated Content Pilot
 
 - Author a very small opt-in pair catalog.
@@ -718,6 +732,23 @@ Exit condition: no duplicate encounter rewards/cleanup and old saves load.
 
 Exit condition: stable crash-free playtests, acceptable balance evidence, and
 no unresolved blocker from the special-mechanic audit.
+
+Implemented as a development-only pilot. `DUNGEON_FORCE_ENCOUNTER` accepts
+`carrion_crawl`, `wing_and_mattock`, or `fang_and_spear` at their authored
+floors. Ordinary random probabilities remain singleton-only. Promotion to
+normal generation remains blocked on the evidence gate below.
+The override is opted into only by ordinary dungeon tile generation; bounty
+generation and other random-enemy utility consumers continue using the
+singleton catalog and therefore cannot receive or validate a curated roster.
+
+The 2026-08-03 automated pilot completed 500 pair battles per encounter with
+zero crashes or invalid actor/target states. Carrion Crawl measured 100.0%
+wins, a 2.11x actor-turn ratio, and 81.8% median winning HP; Wing and Mattock
+measured 80.0%, 1.49x, and 74.6%; Fang and Spear measured 85.8%, 2.07x, and
+58.9%. No pair passed every band, and the 20-battle manual gate remains open.
+See `MULTI_ENEMY_PILOT_EVIDENCE.md`; no balance values were changed.
+Final repository validation completed with 2,544 passing tests, and the
+post-Slice 6 singleton report remained byte-identical to the Slice 0 baseline.
 
 ## Approved Architecture Decisions
 
@@ -783,60 +814,50 @@ belonging to later slices remains deferred even though its contract is fixed.
 11. **Compatibility API:** During Slice 1, `engine.enemy` returns the singleton
     primary enemy. In multi-enemy migration it may return the selected target
     only during an active action context and must raise on ambiguous access.
-    Production core uses are removed by the end of Slice 3 and the bridge is
-    deleted before curated-pair enablement in Slice 6.
+    Production core uses were removed and the bridge was deleted in Slice 6.
+    Callers now use the encounter primary member, current actor, explicit
+    focus, or action target as appropriate.
 
 12. **Persistence:** Encounters and their IDs, order, focus, ledger, and
     charges remain runtime-only. Continue reading and writing legacy
     `enemy_state`; do not add `encounter_state` or mid-combat save/resume.
 
-## Deferred Content And Balance Decisions
+## Approved Content And Balance Decisions
 
-The following questions remain required before the affected later slice.
+13. **Difficulty budget:** The pilot is moderately harder than an ordinary
+    same-floor singleton. Its aggregate target is 55-75% player wins, roughly
+    1.25-2.0 times the harder member's singleton actor-turn count, and 20-60%
+    median remaining HP on wins.
 
-13. **What is the intended difficulty budget for a pair?**
-    Is a pair expected to be harder than a same-floor singleton, equivalent
-    through weaker members, or a rare elite encounter? Define target win rate,
-    action count, and resource-pressure bands before tuning.
+14. **Occurrence:** Pairs are development-only on floors 1-2. They have no
+    random chance and cannot replace tutorial, chest, quest, boss, trial, or
+    scripted encounters.
 
-14. **How often do pairs appear and where?**
-    Decide eligible floors, encounter chance, safe/tutorial exclusions, and
-    whether pairs can guard chests or quest objectives.
+15. **Compositions:** The first catalog uses distinct mixed enemies and avoids
+    double hard control, double invisibility, healer loops, and extreme burst.
 
-15. **Which compositions are legal?**
-    Decide duplicate species, mixed species, hard-control caps, healer/support
-    roles, high-burst pairings, and whether authored synergy is desirable in
-    the pilot.
+16. **Reward budget:** Sum eligible member XP without an encounter multiplier
+    and process loot/gold/quest hooks in authored order. Ejection remains half
+    XP only.
 
-16. **How is total XP and loot budgeted?**
-    Recommendation: sum eligible member XP and process member loot in slot
-    order, then tune individual pair specs. Confirm inventory-full floor drops,
-    gold, bounty rewards, and whether a pair receives an encounter-level reward
-    multiplier.
+17. **Area power:** Earthquake retains full current damage per target. No
+    broader coefficient change is authorized without simulator and playtest
+    evidence.
 
-17. **How should single-target and all-enemy ability power compare?**
-    Define whether area damage uses reduced per-target coefficients, higher
-    cost/cooldown, target-count scaling, or full damage. Do not retrofit
-    coefficients without simulator and playtest evidence.
+18. **Initial multi-target abilities:** Hallowed Ground and Earthquake remain
+    the bounded reference set.
 
-18. **Which existing abilities become multi-target first?**
-    Hallowed Ground is the reference field but not necessarily the first
-    direct-damage ability. Approve a small ability list before resuming broad
-    ability-tree authoring.
+19. **Enemy area actions:** Deferred. V1 retains one active player-side slot.
 
-19. **Are enemy all-target abilities part of V1?**
-    With one active player slot they add little targeting value, but they affect
-    summons/companions if those become independent targets. Keep them deferred
-    unless the ally-side decision requires them.
+20. **Frontend:** Support at least 1024x720. Both compact cards remain visible,
+    only focus receives the detail panel, and hidden enemies expose only an
+    approximate health band.
 
-20. **What is the frontend minimum resolution and information density?**
-    Approve Pygame slot/card sizes, detailed-panel behavior, and whether exact
-    HP remains hidden without Sight for each enemy independently.
-
-21. **What metrics authorize expansion beyond two enemies or curated pairs?**
-    Define crash-free playtest volume, simulator bands, UI readability checks,
-    and regression thresholds. More than two enemies requires a separate
-    promoted scope decision even if the roster model technically supports it.
+21. **Promotion evidence:** Require 500 seeded simulations per pair across the
+    five base classes, 20 manual battles with at least five per pair, zero
+    crashes/invalid target states, and no unexplained singleton drift. Passing
+    evidence may recommend normal 1v2 rollout but never authorizes rosters
+    larger than two.
 
 ## Acceptance Criteria
 

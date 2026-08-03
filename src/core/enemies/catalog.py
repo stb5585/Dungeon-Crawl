@@ -14,6 +14,25 @@ EnemySpec = tuple[str, str]
 ResolvedEnemySpec = tuple[str, Callable[[], object]]
 
 
+CURATED_PAIR_SPECS: dict[str, tuple[str, int, tuple[str, str]]] = {
+    "carrion_crawl": (
+        "Carrion Crawl",
+        1,
+        ("GiantCentipede", "Zombie"),
+    ),
+    "wing_and_mattock": (
+        "Wing and Mattock",
+        1,
+        ("GiantHornet", "TwistedDwarf"),
+    ),
+    "fang_and_spear": (
+        "Fang and Spear",
+        2,
+        ("Gnoll", "GiantSnake"),
+    ),
+}
+
+
 RANDOM_ENEMY_SPECS: dict[str, tuple[EnemySpec, ...]] = {
     "0": (
         ("Green Slime", "GreenSlime"),

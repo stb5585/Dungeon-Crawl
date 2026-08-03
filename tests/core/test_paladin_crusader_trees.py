@@ -10,6 +10,7 @@ from src.core import items
 from src.core.classes import class_rings
 from src.core.classes import paladin
 from src.core.classes import promotion_kits
+from src.core.combat import CombatEncounter
 from src.core.combat.battle_engine.outcomes import BattleOutcomeMixin
 from src.core.progression import ABILITY_TREES
 from src.core.progression import NodeKind
@@ -559,7 +560,7 @@ def test_repel_the_wicked_can_end_combat_without_victory_rewards():
     )
     engine = BattleOutcomeMixin()
     engine.player = player
-    engine.enemy = target
+    engine.encounter = CombatEncounter.singleton(target)
     engine.summon = None
     outcome = engine._process_victory()
 

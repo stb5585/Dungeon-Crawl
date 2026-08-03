@@ -67,7 +67,6 @@ class BattleEngine(BattleTurnMixin, BattleActionMixin, BattleOutcomeMixin):
         self.game: Any = game
         self.logger: BattleLogger = logger if logger else BattleLogger()
         self._rng = rng or random
-        self._rng_explicit = rng is not None
         for member in self.encounter.members:
             remember_defeat_identity(member.enemy)
 
@@ -83,11 +82,11 @@ class BattleEngine(BattleTurnMixin, BattleActionMixin, BattleOutcomeMixin):
         self._actor_cycle: ActorCycle | None = None
         self._focus_target_id: str = self.encounter.primary_member.combatant_id
         self._active_target_member = None
-        self._active_target_character: Character | None = None
         self._active_target_scope = None
         self._active_expanded_target_ids: tuple[str, ...] = ()
         self._current_actor_turn_id = 0
         self._turn_action_committed = True
+        self._completed_outcome = None
 
         # Track charging abilities across turns
         self.charging_ability: tuple[Character, str, Any] | None = None  # (owner, name, skill_obj)
@@ -98,17 +97,6 @@ class BattleEngine(BattleTurnMixin, BattleActionMixin, BattleOutcomeMixin):
         self.available_actions: list = self._available_actions()
 
         self._event_bus = get_event_bus()
-
-    @property
-    def enemy(self) -> Character:
-        """Return the singleton or action-context enemy compatibility target."""
-        if len(self.encounter.members) == 1 and not self._rng_explicit:
-            return self.encounter.primary_enemy
-        if self._active_target_character is not None:
-            return self._active_target_character
-        raise RuntimeError(
-            "engine.enemy is ambiguous in multi-enemy combat outside target resolution."
-        )
 
     @property
     def fixed_turn_order(self) -> tuple[str, ...]:
@@ -135,6 +123,41 @@ class BattleEngine(BattleTurnMixin, BattleActionMixin, BattleOutcomeMixin):
         """Return the sticky player focus, falling back when necessary."""
         self._refresh_focus()
         return self._focus_target_id
+
+    def set_focus_target(self, combatant_id: str) -> str:
+        """Select a living hostile without committing the current actor's turn.
+
+        Args:
+            combatant_id: Stable encounter-member ID to focus.
+
+        Returns:
+            The selected combatant ID.
+
+        Raises:
+            KeyError: If the ID does not belong to this encounter.
+            ValueError: If the member is dead or already resolved.
+        """
+        member = self.encounter.member_by_id(combatant_id)
+        if not member.is_living_hostile:
+            raise ValueError(f"Combatant {combatant_id!r} is not a living target.")
+        self._focus_target_id = member.combatant_id
+        if self.current_actor_id == PLAYER_ACTOR_ID:
+            self.defender = member.enemy
+        return self._focus_target_id
+
+    def cycle_focus(self, direction: int = 1) -> str:
+        """Cycle focus through living members in authored order."""
+        living = self.encounter.living_members
+        if not living:
+            raise ValueError("The encounter has no living hostile targets.")
+        ids = [member.combatant_id for member in living]
+        self._refresh_focus()
+        try:
+            current = ids.index(self._focus_target_id)
+        except ValueError:
+            current = 0
+        step = -1 if direction < 0 else 1
+        return self.set_focus_target(ids[(current + step) % len(ids)])
 
     @property
     def active_player_character(self) -> Character:
@@ -199,14 +222,7 @@ class BattleEngine(BattleTurnMixin, BattleActionMixin, BattleOutcomeMixin):
     @contextmanager
     def _target_resolution_context(self, member, scope, target_ids):
         previous = self._active_target_member
-        previous_character = self._active_target_character
         self._active_target_member = member
-        if member is not None:
-            self._active_target_character = member.enemy
-        elif getattr(scope, "value", scope) in {"self", "single_enemy"}:
-            self._active_target_character = self.defender
-        else:
-            self._active_target_character = None
         if member is not None:
             target_id = member.combatant_id
         elif getattr(scope, "value", scope) == "self":
@@ -226,24 +242,32 @@ class BattleEngine(BattleTurnMixin, BattleActionMixin, BattleOutcomeMixin):
                 yield
         finally:
             self._active_target_member = previous
-            self._active_target_character = previous_character
 
     def _is_class_ring_trial_enemy(self) -> bool:
         """Return whether this fight should use Class Ring trial bookkeeping."""
         return bool(
-            getattr(self.enemy, "grandmaster_trial_enemy", False)
-            or getattr(self.enemy, "class_ring_trial_enemy", False)
+            getattr(self.encounter.primary_enemy, "grandmaster_trial_enemy", False)
+            or getattr(self.encounter.primary_enemy, "class_ring_trial_enemy", False)
         )
 
     def _is_thieves_guild_trial_enemy(self) -> bool:
         """Return whether this fight is a Thieves Guild initiation trial."""
-        return bool(getattr(self.enemy, "thieves_guild_trial_enemy", False))
+        return bool(getattr(self.encounter.primary_enemy, "thieves_guild_trial_enemy", False))
 
     def _class_ring_trial_name(self) -> str:
-        return str(getattr(self.enemy, "class_ring_trial_name", "Class Ring trial"))
+        return str(
+            getattr(self.encounter.primary_enemy, "class_ring_trial_name", "Class Ring trial")
+        )
 
     def _thieves_guild_trial_name(self) -> str:
-        return str(getattr(self.enemy, "thieves_guild_trial_name", getattr(self.enemy, "name", "initiation trial")))
+        enemy = self.encounter.primary_enemy
+        return str(
+            getattr(
+                enemy,
+                "thieves_guild_trial_name",
+                getattr(enemy, "name", "initiation trial"),
+            )
+        )
 
     def _no_healing_duel_active(self) -> bool:
         return bool(

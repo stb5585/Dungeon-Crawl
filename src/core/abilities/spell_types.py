@@ -444,15 +444,21 @@ class Foretell(Spell):
         if engine is None:
             return "There is no combat thread to foretell.\n"
         user.mana.current -= self.cost
+        enemy = target
+        if enemy is None:
+            focused = getattr(engine, "_focused_enemy", None)
+            enemy = focused() if callable(focused) else None
+        if enemy is None:
+            return "There is no hostile thread to foretell.\n"
         action = "Attack"
-        stack = getattr(getattr(engine, "enemy", None), "action_stack", []) or []
+        stack = getattr(enemy, "action_stack", []) or []
         if stack:
             entry = stack[0]
             if isinstance(entry, dict):
                 action = str(entry.get("ability") or entry.get("action") or action)
             else:
                 action = str(entry)
-        return f"{user.name} foresees {engine.enemy.name}'s next action: {action}.\n"
+        return f"{user.name} foresees {enemy.name}'s next action: {action}.\n"
 
 
 class Rewind(Spell):

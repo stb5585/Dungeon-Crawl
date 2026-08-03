@@ -32,7 +32,9 @@ class BattleLogger:
         if value is None or isinstance(value, (str, int, float, bool)):
             return value
         if is_dataclass(value):
-            return asdict(value)
+            return BattleLogger._serialize_value(asdict(value))
+        if hasattr(value, "value") and isinstance(value.value, str):
+            return value.value
         if isinstance(value, dict):
             return {
                 str(key): BattleLogger._serialize_value(val)
@@ -181,6 +183,8 @@ class BattleLogger:
         boss: bool,
         *,
         encounter: CombatEncounter | None = None,
+        settlements: object | None = None,
+        total_experience: int = 0,
     ) -> None:
         if encounter is not None:
             summaries = {
@@ -198,6 +202,8 @@ class BattleLogger:
             "turns": self.turn_counter,
             "rounds": self.round_counter,
             "end_time": datetime.datetime.now().isoformat(),
+            "settlements": self._serialize_value(settlements or ()),
+            "total_experience": int(total_experience),
         })
 
     def get_event_type_counts(self) -> dict[str, int]:

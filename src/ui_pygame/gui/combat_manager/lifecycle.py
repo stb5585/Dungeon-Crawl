@@ -10,6 +10,7 @@ import pygame
 from src.core import enemies
 from src.core.character import Character
 from src.core.classes import ability_mechanics
+from src.core.combat import ActionIntent, CombatEncounter, TargetScope
 from src.core.player import Player
 import src.ui_pygame.gui.combat_manager as combat_manager
 from ..input_guards import release_guard_allows_input
@@ -27,7 +28,34 @@ if TYPE_CHECKING:
 
 
 class CombatLifecycleMixin:
-    def start_combat(self, player_char: Player, enemy: Character, tile: MapTile) -> bool:
+    def _focused_combat_enemy(self, fallback):
+        """Return engine focus while retaining compatibility with test adapters."""
+        focused = getattr(self.engine, "_focused_enemy", None)
+        if callable(focused):
+            return focused()
+        encounter = getattr(self.engine, "encounter", None)
+        if encounter is not None:
+            try:
+                return encounter.member_by_id(self.engine.focus_target_id).enemy
+            except (AttributeError, KeyError, ValueError):
+                pass
+        return fallback
+
+    def _current_enemy_actor(self, fallback):
+        """Return the scheduled hostile actor or a singleton fallback."""
+        actor = getattr(self.engine, "attacker", None)
+        if actor is not None and actor is not getattr(self.engine, "player", None):
+            return actor
+        return fallback
+
+    def start_combat(
+        self,
+        player_char: Player,
+        enemy: Character | None = None,
+        tile: MapTile | None = None,
+        *,
+        encounter: CombatEncounter | None = None,
+    ) -> bool:
         """
         Initiate combat between player and enemy.
 
@@ -39,6 +67,23 @@ class CombatLifecycleMixin:
         Returns:
             bool: True if player won, False if player fled/died
         """
+        if tile is None:
+            raise ValueError("CombatManager requires a combat tile.")
+        runtime_encounter = getattr(
+            enemy,
+            "_runtime_combat_encounter",
+            None,
+        )
+        if encounter is None and isinstance(runtime_encounter, CombatEncounter):
+            encounter = runtime_encounter
+            enemy = None
+        if (enemy is None) == (encounter is None):
+            raise ValueError("Supply exactly one of enemy or encounter.")
+        if encounter is None:
+            assert enemy is not None
+            encounter = CombatEncounter.singleton(enemy)
+        primary_enemy = encounter.primary_enemy
+
         # Store tile for loot drops
         self.current_tile = tile
 
@@ -49,10 +94,10 @@ class CombatLifecycleMixin:
         # Create the core engine (handles initiative, actions, bookkeeping)
         self.engine = combat_manager.BattleEngine(
             player=player_char,
-            enemy=enemy,
             tile=tile,
             game=self.game,
             logger=self.logger,
+            encounter=encounter,
         )
 
         # Build display-friendly action list from the engine's available actions
@@ -61,9 +106,11 @@ class CombatLifecycleMixin:
         # Initialize combat state
         self.running = True
         self.combat_view.reset_combat_log()
-        self.combat_view.add_combat_message(f"Combat started with {enemy.name}!")
+        labels = ", ".join(member.display_label for member in encounter.members)
+        self.combat_view.add_combat_message(f"Combat started with {labels}!")
         self._combat_background = self._capture_background()
-        self._prepare_enemy_combat_assets(enemy)
+        for member in encounter.members:
+            self._prepare_enemy_combat_assets(member.enemy)
 
         # Show initial combat screen with brief transition delay (with animation updates)
         init_clock = pygame.time.Clock()
@@ -73,7 +120,12 @@ class CombatLifecycleMixin:
                     pygame.quit()
                     sys.exit(0)
                 self._handle_combat_log_scroll_event(event)
-            self._render_combat_frame(self._selection_frame_player(player_char), enemy, [], -1)
+            self._render_combat_frame(
+                self._selection_frame_player(player_char),
+                primary_enemy,
+                [],
+                -1,
+            )
             pygame.display.flip()
             init_clock.tick(60)
 
@@ -85,17 +137,24 @@ class CombatLifecycleMixin:
         if first == player_char:
             self.combat_view.add_combat_message(f"{player_char.name} has the initiative!")
         else:
-            self.combat_view.add_combat_message(f"{enemy.name} has the initiative!")
+            self.combat_view.add_combat_message(f"{first.name} has the initiative!")
 
         clock = pygame.time.Clock()
         fled = False
-        vesperion_false_final = self._is_vesperion_false_final_combat(player_char, enemy)
+        singleton = len(encounter.members) == 1
+        vesperion_false_final = (
+            singleton
+            and self._is_vesperion_false_final_combat(player_char, primary_enemy)
+        )
         vesperion_enemy_turns = 0
 
         # Main combat loop
         while self.running and self.engine.battle_continues() and not player_char.in_town():
             if self.engine.is_player_turn():
-                action_result = self._player_turn(player_char, enemy)
+                action_result = self._player_turn(
+                    player_char,
+                    self._focused_combat_enemy(primary_enemy),
+                )
                 if action_result == "flee":
                     fled = True
                     break
@@ -104,25 +163,36 @@ class CombatLifecycleMixin:
                     break
 
                 # Check if enemy died from special effects (e.g., self-healing that prevents death)
-                if not enemy.is_alive():
+                if singleton and not primary_enemy.is_alive():
                     if vesperion_false_final:
-                        return self._handle_vesperion_false_final(player_char, enemy)
-                    if not getattr(enemy, "tamed_by_player", False):
-                        self.combat_view.enemy_dies(enemy)
+                        return self._handle_vesperion_false_final(
+                            player_char,
+                            primary_enemy,
+                        )
+                    if not getattr(primary_enemy, "tamed_by_player", False):
+                        self.combat_view.enemy_dies(primary_enemy)
                     break
 
-                if vesperion_false_final and self._vesperion_false_final_hp_threshold_met(enemy):
-                    return self._handle_vesperion_false_final(player_char, enemy)
+                if (
+                    vesperion_false_final
+                    and self._vesperion_false_final_hp_threshold_met(primary_enemy)
+                ):
+                    return self._handle_vesperion_false_final(
+                        player_char,
+                        primary_enemy,
+                    )
 
                 # Check for Mad Waitress form change (below 10% health)
-                self._check_enemy_form_change(player_char, enemy)
+                if singleton:
+                    self._check_enemy_form_change(player_char, primary_enemy)
             else:
+                current_enemy = self._current_enemy_actor(primary_enemy)
                 # Double-check enemy is still alive before their turn
-                if not enemy.is_alive():
-                    self.combat_view.enemy_dies(enemy)
-                    break
+                if not current_enemy.is_alive():
+                    self.combat_view.enemy_dies(current_enemy)
+                    continue
 
-                enemy_result = self._enemy_turn(player_char, enemy)
+                enemy_result = self._enemy_turn(player_char, current_enemy)
                 if enemy_result == "flee":
                     fled = True
                     break
@@ -132,35 +202,51 @@ class CombatLifecycleMixin:
                     if (
                         not player_char.is_alive()
                         or vesperion_enemy_turns >= VESPERION_FALSE_FINAL_ENEMY_TURNS
-                        or self._vesperion_false_final_hp_threshold_met(enemy)
+                        or self._vesperion_false_final_hp_threshold_met(primary_enemy)
                     ):
-                        return self._handle_vesperion_false_final(player_char, enemy)
+                        return self._handle_vesperion_false_final(
+                            player_char,
+                            primary_enemy,
+                        )
 
                 # Check if player died
                 if not player_char.is_alive():
                     break
 
                 # Prevent Mad Waitress from dying before her forced transition
-                self._preserve_waitress_for_transition(enemy)
-                self._check_enemy_form_change(player_char, enemy)
+                if singleton:
+                    self._preserve_waitress_for_transition(primary_enemy)
+                    self._check_enemy_form_change(player_char, primary_enemy)
 
                 # Check if enemy died (e.g., from self-damaging skills like Widow's Wail)
-                if not enemy.is_alive():
+                if singleton and not primary_enemy.is_alive():
                     if vesperion_false_final:
-                        return self._handle_vesperion_false_final(player_char, enemy)
-                    self.combat_view.enemy_dies(enemy)
+                        return self._handle_vesperion_false_final(
+                            player_char,
+                            primary_enemy,
+                        )
+                    self.combat_view.enemy_dies(primary_enemy)
                     break
 
             # Advance turn: post-turn processing + swap
-            self._post_turn_processing(player_char, enemy)
+            self._post_turn_processing(
+                player_char,
+                getattr(self.engine, "defender", primary_enemy),
+            )
             if vesperion_false_final and (
                 not player_char.is_alive()
-                or not enemy.is_alive()
-                or self._vesperion_false_final_hp_threshold_met(enemy)
+                or not primary_enemy.is_alive()
+                or self._vesperion_false_final_hp_threshold_met(primary_enemy)
             ):
-                return self._handle_vesperion_false_final(player_char, enemy)
+                return self._handle_vesperion_false_final(
+                    player_char,
+                    primary_enemy,
+                )
             self.engine.swap_turns()
-            self._refresh_combat_background(player_char, enemy)
+            self._refresh_combat_background(
+                player_char,
+                self._focused_combat_enemy(primary_enemy),
+            )
 
             # Refresh available actions for next turn
             self.available_actions = self._build_display_actions()
@@ -172,12 +258,17 @@ class CombatLifecycleMixin:
                         pygame.quit()
                         sys.exit(0)
                     self._handle_combat_log_scroll_event(event)
-                self._render_combat_frame(player_char, enemy, [], -1)
+                self._render_combat_frame(
+                    player_char,
+                    self._focused_combat_enemy(primary_enemy),
+                    [],
+                    -1,
+                )
                 pygame.display.flip()
                 clock.tick(60)
 
         # Combat ended - show result
-        return self._handle_combat_end(player_char, enemy, fled)
+        return self._handle_combat_end(player_char, primary_enemy, fled)
 
     def _prepare_enemy_combat_assets(self, enemy: Character) -> None:
         """Warm the current enemy's combat sprites before the first combat frame."""
@@ -412,7 +503,13 @@ class CombatLifecycleMixin:
                     current_col = selected_action % actions_per_row
                     num_rows = (len(actions) + actions_per_row - 1) // actions_per_row
 
-                    if event.key == pygame.K_UP or event.key == pygame.K_w:
+                    if event.key == pygame.K_q:
+                        self.engine.cycle_focus(-1)
+                        enemy = self.engine._focused_enemy()
+                    elif event.key == pygame.K_e:
+                        self.engine.cycle_focus(1)
+                        enemy = self.engine._focused_enemy()
+                    elif event.key == pygame.K_UP or event.key == pygame.K_w:
                         # Move up one row
                         if current_row > 0:
                             selected_action -= actions_per_row
@@ -466,6 +563,20 @@ class CombatLifecycleMixin:
                             elif action_result is not None:
                                 action_taken = True
                 elif event.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN):
+                    if is_left_click(event) and input_armed:
+                        card_at = getattr(self.combat_view, "enemy_card_at", None)
+                        target_id = (
+                            card_at(mouse_position(event))
+                            if callable(card_at)
+                            else None
+                        )
+                        if target_id is not None:
+                            try:
+                                self.engine.set_focus_target(target_id)
+                                enemy = self.engine._focused_enemy()
+                            except (KeyError, ValueError):
+                                pass
+                            continue
                     hovered = hit_index(self._combat_action_rects(actions), mouse_position(event))
                     if hovered is None:
                         continue
@@ -700,6 +811,15 @@ class CombatLifecycleMixin:
 
         # Record HP before execution for damage flash
         enemy_hp_before = enemy.health.current
+        encounter = getattr(self.engine, "encounter", None)
+        enemy_hp_by_id = (
+            {
+                member.combatant_id: member.enemy.health.current
+                for member in encounter.members
+            }
+            if encounter is not None
+            else {}
+        )
         player_hp_before = player_char.health.current
         actor_hp_before = getattr(getattr(actor, "health", None), "current", 0)
         enemy_name_before = enemy.name
@@ -713,8 +833,26 @@ class CombatLifecycleMixin:
 
         if support_mode:
             result = self.engine.execute_summoner_support_action(engine_action, choice=choice, slot_machine_callback=slot_cb)
+        elif encounter is not None and hasattr(
+            self.engine,
+            "target_scope_for_action",
+        ):
+            scope = self.engine.target_scope_for_action(engine_action, choice)
+            target_ids = (
+                (self.engine.focus_target_id,)
+                if scope == TargetScope.SINGLE_ENEMY
+                else ()
+            )
+            result = self.engine.execute_intent(
+                ActionIntent(engine_action, choice, target_ids),
+                slot_machine_callback=slot_cb,
+            )
         else:
-            result = self.engine.execute_action(engine_action, choice=choice, slot_machine_callback=slot_cb)
+            result = self.engine.execute_action(
+                engine_action,
+                choice=choice,
+                slot_machine_callback=slot_cb,
+            )
 
         damage_to_enemy = max(0, enemy_hp_before - enemy.health.current)
         favored_msg = ability_mechanics.consume_favored_enemy_bonus_message(player_char)
@@ -737,9 +875,35 @@ class CombatLifecycleMixin:
         # Show damage flash for enemy damage
         showed_damage_effect = False
         tamed_result = bool(getattr(enemy, "tamed_by_player", False))
-        if damage_to_enemy > 0 and not tamed_result:
+        damaged_members = []
+        for member in encounter.members if encounter is not None else ():
+            before = enemy_hp_by_id.get(
+                member.combatant_id,
+                member.enemy.health.current,
+            )
+            damage = max(0, before - member.enemy.health.current)
+            if damage > 0 and not getattr(member.enemy, "tamed_by_player", False):
+                damaged_members.append((member, damage))
+        if damaged_members:
+            for member, damage in damaged_members:
+                self.combat_view.enemy_take_damage(member.enemy)
+                self._show_combat_damage_effect(
+                    member.combatant_id,
+                    action,
+                    choice,
+                    result.message,
+                    damage,
+                )
+            showed_damage_effect = True
+        elif damage_to_enemy > 0 and not tamed_result:
             self.combat_view.enemy_take_damage(enemy)
-            self._show_combat_damage_effect("enemy", action, choice, result.message, damage_to_enemy)
+            self._show_combat_damage_effect(
+                "enemy",
+                action,
+                choice,
+                result.message,
+                damage_to_enemy,
+            )
             showed_damage_effect = True
         else:
             if not tamed_result:

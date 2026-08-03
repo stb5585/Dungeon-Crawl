@@ -130,8 +130,8 @@ def test_engine_wraps_legacy_enemy_in_singleton_encounter():
     enemy = Goblin()
     engine = BattleEngine(_player(), enemy, DummyCombatTile())
 
-    assert engine.enemy is enemy
     assert engine.encounter.primary_enemy is enemy
+    assert not hasattr(engine, "enemy")
     assert len(engine.encounter.members) == 1
     assert engine.available_actions == ["Attack", "Flee"]
 
@@ -150,7 +150,7 @@ def test_engine_accepts_explicit_singleton_encounter():
     )
 
     assert engine.encounter is encounter
-    assert engine.enemy is enemy
+    assert engine.encounter.primary_enemy is enemy
 
 
 def test_explicit_singleton_matches_legacy_start_behavior(monkeypatch):

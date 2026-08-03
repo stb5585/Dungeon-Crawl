@@ -391,6 +391,14 @@ class BattleTurnMixin:
             return declared
         return TargetScope.SINGLE_ENEMY
 
+    def target_scope_for_action(
+        self,
+        action: str,
+        choice: str | None = None,
+    ) -> TargetScope:
+        """Return the canonical target scope for a prospective action."""
+        return self._target_scope_for_action(action, choice)
+
     def _reject_intent(
         self,
         code: ActionValidationCode,
@@ -1117,16 +1125,20 @@ class BattleTurnMixin:
         display (popups, animations, level-up screens) based on the returned
         BattleOutcome.
         """
+        if self._completed_outcome is not None:
+            return self._completed_outcome
         if len(self.encounter.members) > 1:
-            return self._end_provisional_multi_battle()
+            self._completed_outcome = self._end_multi_battle()
+            return self._completed_outcome
 
+        enemy = self.encounter.primary_enemy
         outcome = BattleOutcome(boss=self.boss)
 
         if self.flee:
             outcome.result = "flee"
             outcome.winner = None
             outcome.message = f"{self.player.name} fled from combat.\n"
-            outcome.message += promotion_kits.end_combat(self.player, victory=False, enemy=self.enemy)
+            outcome.message += promotion_kits.end_combat(self.player, victory=False, enemy=enemy)
             if hasattr(self.player, "_grandmaster_battle_hit_types"):
                 self.player._grandmaster_battle_hit_types.clear()
             self.tile.enemy = None
@@ -1134,7 +1146,7 @@ class BattleTurnMixin:
             outcome.result = "victory"
             outcome.winner = self.player.name
             self._record_singleton_resolution()
-            if getattr(self.enemy, "grandmaster_trial_enemy", False):
+            if getattr(enemy, "grandmaster_trial_enemy", False):
                 outcome.message = self._process_grandmaster_trial_victory()
             elif self._is_thieves_guild_trial_enemy():
                 outcome.message = self._process_thieves_guild_trial_victory()
@@ -1151,9 +1163,9 @@ class BattleTurnMixin:
                 outcome.level_up = True
         else:
             outcome.result = "defeat"
-            outcome.winner = self.enemy.name
-            outcome.message = f"{self.player.name} was slain by {self.enemy.name}.\n"
-            outcome.message += promotion_kits.end_combat(self.player, victory=False, enemy=self.enemy)
+            outcome.winner = enemy.name
+            outcome.message = f"{self.player.name} was slain by {enemy.name}.\n"
+            outcome.message += promotion_kits.end_combat(self.player, victory=False, enemy=enemy)
             if self._is_thieves_guild_trial_enemy():
                 outcome.message = f"{self.player.name} yields the guild initiation bout.\n"
                 self._process_class_ring_trial_defeat()
@@ -1174,25 +1186,26 @@ class BattleTurnMixin:
             boss=self.boss,
             encounter=self.encounter,
         )
-        paladin.clear_condemnation(self.enemy)
+        paladin.clear_condemnation(enemy)
 
         # Emit combat end event
         self._event_bus.emit(create_combat_event(
             EventType.COMBAT_END,
             actor=self.player,
-            target=self.enemy,
+            target=enemy,
             fled=self.flee,
             player_alive=self.player.is_alive(),
-            enemy_alive=self.enemy.is_alive(),
+            enemy_alive=enemy.is_alive(),
             encounter_id=self.encounter.encounter_id,
             enemies=self.encounter.roster_summary(),
         ))
 
         self.player._active_combat = False
+        self._completed_outcome = outcome
         return outcome
 
-    def _end_provisional_multi_battle(self) -> BattleOutcome:
-        """Finalize a development-only multi battle without settling rewards."""
+    def _end_multi_battle(self) -> BattleOutcome:
+        """Finalize a multi-member encounter with atomic ledger settlement."""
         if not self.flee and self.player.is_alive():
             for member in self.encounter.members:
                 self._attempt_member_resurrection(member)
@@ -1204,7 +1217,7 @@ class BattleTurnMixin:
         elif self.player.is_alive():
             result = "victory"
             winner = self.player.name
-            message = f"{self.player.name} survived the multi-enemy encounter.\n"
+            message, settlements, total_exp, level_up = self._process_multi_victory()
         else:
             result = "defeat"
             winner = self.encounter.primary_enemy.name
@@ -1212,24 +1225,47 @@ class BattleTurnMixin:
 
         if result in {"flee", "defeat"}:
             self.encounter.clear_resolutions()
-        for character in [self.player, *[member.enemy for member in self.encounter.members]]:
-            character.effects(end=True)
-        message += (
-            "Development-only multi-enemy outcome: rewards and world "
-            "persistence were not settled.\n"
-        )
+            settlements = ()
+            total_exp = 0
+            level_up = False
+            message += promotion_kits.end_combat(
+                self.player,
+                victory=False,
+                enemy=self.encounter.primary_enemy,
+            )
+            if hasattr(self.player, "_grandmaster_battle_hit_types"):
+                self.player._grandmaster_battle_hit_types.clear()
+            for member in self.encounter.members:
+                enemy = member.enemy
+                enemy.effects(end=True)
+                enemy.health.current = enemy.health.max
+                enemy.mana.current = enemy.mana.max
+            self.player.state = "normal"
+            if (
+                hasattr(self.player, "transform_type")
+                and self.player.cls != self.player.transform_type
+            ):
+                self.player.transform(back=True)
+            self.player.effects(end=True)
+            if result == "defeat":
+                self.player.death()
         outcome = BattleOutcome(
             result=result,
             winner=winner,
             message=message,
             boss=False,
-            rewards_settled=False,
+            rewards_settled=True,
+            member_settlements=settlements,
+            total_experience=total_exp,
+            level_up=level_up,
         )
         self.logger.end_battle(
             result=result,
             winner=winner,
             boss=False,
             encounter=self.encounter,
+            settlements=settlements,
+            total_experience=total_exp,
         )
         self._event_bus.emit(create_combat_event(
             EventType.COMBAT_END,
@@ -1240,7 +1276,17 @@ class BattleTurnMixin:
             enemy_alive=bool(self.encounter.living_members),
             encounter_id=self.encounter.encounter_id,
             enemies=self.encounter.roster_summary(),
-            rewards_settled=False,
+            rewards_settled=True,
+            settlements=[
+                {
+                    "combatant_id": settlement.combatant_id,
+                    "resolution": settlement.resolution.value,
+                    "experience": settlement.experience,
+                    "gold": settlement.gold,
+                }
+                for settlement in settlements
+            ],
+            total_experience=total_exp,
         ))
         self.player._active_combat = False
         return outcome
@@ -1289,24 +1335,25 @@ class BattleTurnMixin:
     def _record_singleton_resolution(self) -> None:
         """Record the existing singleton outcome without changing its rewards."""
         member = self.encounter.primary_member
+        enemy = member.enemy
         if member.resolution is not None:
             return
 
         resolution = EnemyResolution.DEFEATED
         cause = None
-        if getattr(self.enemy, "paladin_mercy_victory", False):
+        if getattr(enemy, "paladin_mercy_victory", False):
             resolution = EnemyResolution.MERCY
             cause = "paladin_mercy"
-        elif getattr(self.enemy, "tamed_by_player", False):
+        elif getattr(enemy, "tamed_by_player", False):
             resolution = EnemyResolution.TAMED
             cause = "tame"
-        elif getattr(self.enemy, "windswept_ejected", False):
+        elif getattr(enemy, "windswept_ejected", False):
             resolution = EnemyResolution.EJECTED
             cause = "windswept"
-        elif getattr(self.enemy, "paladin_repelled", False):
+        elif getattr(enemy, "paladin_repelled", False):
             resolution = EnemyResolution.ESCAPED
             cause = "paladin_repel"
-        elif getattr(self.enemy, "no_victory_rewards", False):
+        elif getattr(enemy, "no_victory_rewards", False):
             resolution = EnemyResolution.ESCAPED
             cause = "no_victory_rewards"
 

@@ -13,6 +13,7 @@ Example:
 from __future__ import annotations
 
 import argparse
+from collections import Counter, defaultdict
 import datetime as _dt
 import statistics
 from dataclasses import dataclass
@@ -754,6 +755,15 @@ def main() -> int:
     ap.add_argument("--seed", type=int, default=1337)
     ap.add_argument("--classes", nargs="*", default=None)
     ap.add_argument(
+        "--encounters",
+        nargs="*",
+        default=None,
+        help=(
+            "Run only the named development curated encounters instead of "
+            "the singleton baseline catalog."
+        ),
+    )
+    ap.add_argument(
         "--tier",
         choices=["all", "base", "first", "second"],
         default="all",
@@ -1020,8 +1030,6 @@ def main() -> int:
 
         if args.delta_summary == "class":
             # Aggregate per (race, class) across enemies for quick scanning.
-            from collections import defaultdict
-
             agg: dict[tuple[str, str], list[tuple[str, float, float]]] = defaultdict(list)
             base_by_class: dict[str, list[float]] = defaultdict(list)
             base_by_class_enemy: dict[tuple[str, str], dict[str, float]] = defaultdict(dict)
@@ -1117,9 +1125,38 @@ def main() -> int:
             ),
         )),
     ]
+    pair_mode = args.encounters is not None
+    pair_keys_by_label: dict[str, str] = {}
+    pair_specs_by_label = {}
+    if pair_mode:
+        from src.core.enemies import (
+            build_curated_encounter,
+            curated_encounter_spec,
+        )
+
+        requested = list(dict.fromkeys(args.encounters or []))
+        if not requested:
+            raise SystemExit("--encounters requires at least one curated key.")
+        enemy_factories = [
+            (
+                curated_encounter_spec(key).display_name,
+                lambda key=key: build_curated_encounter(key),
+            )
+            for key in requested
+        ]
+        pair_keys_by_label = {
+            curated_encounter_spec(key).display_name: key
+            for key in requested
+        }
+        pair_specs_by_label = {
+            curated_encounter_spec(key).display_name: curated_encounter_spec(key)
+            for key in requested
+        }
 
     sim = CombatSimulator()
     summaries: list[MatchupSummary] = []
+    pair_results_by_key = defaultdict(list)
+    pair_actor_ratios_by_key = defaultdict(list)
 
     _progress(
         f"# Running suite: race={args.race} tier={args.tier} level={args.level} "
@@ -1221,16 +1258,171 @@ def main() -> int:
             return player
 
         for enemy_label, enemy_factory in enemy_factories:
-            report = sim.run_simulations(
-                make_player,
-                enemy_factory,
-                iterations=args.iters,
-                seed=args.seed,
-            )
+            if pair_mode:
+                report = sim.run_simulations(
+                    make_player,
+                    encounter=enemy_factory,
+                    iterations=args.iters,
+                    seed=args.seed,
+                )
+            else:
+                report = sim.run_simulations(
+                    make_player,
+                    enemy_factory,
+                    iterations=args.iters,
+                    seed=args.seed,
+                )
             wins = sum(1 for r in report.results if r.winner == cls_name)
             win_rate = (wins / max(1, len(report.results))) * 100.0
             avg_turns = statistics.mean(r.turns for r in report.results) if report.results else 0.0
             summaries.append(MatchupSummary(cls_name, enemy_label, win_rate, avg_turns))
+            if pair_mode and report.results:
+                pair_key = pair_keys_by_label[enemy_label]
+                pair_results_by_key[pair_key].extend(report.results)
+                wins_list = [
+                    result
+                    for result in report.results
+                    if result.winner == cls_name
+                ]
+                losses = sum(
+                    1
+                    for result in report.results
+                    if result.winner not in {cls_name, "draw"}
+                )
+                draws = len(report.results) - len(wins_list) - losses
+                avg_rounds = statistics.mean(
+                    result.rounds for result in report.results
+                )
+                avg_actor_turns = statistics.mean(
+                    result.actor_turns for result in report.results
+                )
+                singleton_actor_turns = []
+                for member_factory in pair_specs_by_label[
+                    enemy_label
+                ].member_factories:
+                    member_report = CombatSimulator().run_simulations(
+                        make_player,
+                        member_factory,
+                        iterations=args.iters,
+                        seed=args.seed,
+                    )
+                    singleton_actor_turns.append(
+                        statistics.mean(
+                            result.actor_turns
+                            for result in member_report.results
+                        )
+                    )
+                harder_singleton_turns = max(singleton_actor_turns)
+                actor_turn_ratio = (
+                    avg_actor_turns / harder_singleton_turns
+                    if harder_singleton_turns
+                    else 0.0
+                )
+                pair_actor_ratios_by_key[pair_key].append(actor_turn_ratio)
+                avg_hp = statistics.mean(
+                    (
+                        result.player_hp_remaining
+                        / max(1, result.player_hp_max)
+                    )
+                    * 100
+                    for result in report.results
+                )
+                winning_hp_median = (
+                    statistics.median(
+                        (
+                            result.player_hp_remaining
+                            / max(1, result.player_hp_max)
+                        )
+                        * 100
+                        for result in wins_list
+                    )
+                    if wins_list
+                    else 0.0
+                )
+                avg_mp = statistics.mean(
+                    result.player_mana_remaining
+                    for result in report.results
+                )
+                avg_consumables = statistics.mean(
+                    result.consumables_used for result in report.results
+                )
+                avg_reward_xp = statistics.mean(
+                    result.reward_experience for result in report.results
+                )
+                avg_reward_gold = statistics.mean(
+                    result.reward_gold for result in report.results
+                )
+                damage_totals: dict[str, int] = defaultdict(int)
+                resolution_counts: Counter[str] = Counter()
+                for result in report.results:
+                    for label, damage in result.damage_by_combatant.items():
+                        damage_totals[label] += damage
+                    resolution_counts.update(
+                        resolution or "unresolved"
+                        for resolution in result.resolutions
+                    )
+                damage_summary = ",".join(
+                    f"{label}:{damage / len(report.results):.1f}"
+                    for label, damage in damage_totals.items()
+                ) or "none"
+                resolution_summary = ",".join(
+                    f"{resolution}:{count}"
+                    for resolution, count in sorted(resolution_counts.items())
+                ) or "none"
+                roster = "/".join(report.results[0].roster)
+                print(
+                    "# PairMetrics "
+                    f"key={pair_key} "
+                    f"class={cls_name} encounter={enemy_label!r} "
+                    f"roster={roster!r} "
+                    f"results={len(wins_list)}W/{losses}L/{draws}D "
+                    f"rounds={avg_rounds:.2f} "
+                    f"actor_turns={avg_actor_turns:.2f} "
+                    f"harder_singleton_actor_turns="
+                    f"{harder_singleton_turns:.2f} "
+                    f"actor_turn_ratio={actor_turn_ratio:.2f} "
+                    f"player_hp_pct={avg_hp:.1f} "
+                    f"winning_hp_median_pct={winning_hp_median:.1f} "
+                    f"player_mp={avg_mp:.1f} "
+                    f"consumables={avg_consumables:.2f} "
+                    f"damage={damage_summary!r} "
+                    f"resolutions={resolution_summary!r} "
+                    f"reward_xp={avg_reward_xp:.1f} "
+                    f"reward_gold={avg_reward_gold:.1f}"
+                )
+
+    if pair_mode:
+        player_names = set(class_names)
+        for key in requested:
+            results = pair_results_by_key[key]
+            wins = [
+                result
+                for result in results
+                if result.winner in player_names
+            ]
+            winning_hp_median = (
+                statistics.median(
+                    (
+                        result.player_hp_remaining
+                        / max(1, result.player_hp_max)
+                    )
+                    * 100
+                    for result in wins
+                )
+                if wins
+                else 0.0
+            )
+            win_rate = (len(wins) / max(1, len(results))) * 100
+            mean_actor_turn_ratio = statistics.mean(
+                pair_actor_ratios_by_key[key]
+            )
+            print(
+                "# PairAggregate "
+                f"key={key} battles={len(results)} "
+                f"wins={len(wins)} win_rate={win_rate:.1f} "
+                f"winning_hp_median_pct={winning_hp_median:.1f} "
+                f"mean_actor_turn_ratio={mean_actor_turn_ratio:.2f}"
+            )
 
     # Print a simple, grep-friendly table.
     print(f"Balance Suite: level={args.level} iters={args.iters} seed={args.seed}")

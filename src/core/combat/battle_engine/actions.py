@@ -33,12 +33,13 @@ class BattleActionMixin:
             getattr(self.player, "sight", False),
         ])
 
-    def show_enemy_details(self) -> bool:
-        """Return True if enemy details should be visible (has sight + not boss/waitress)."""
+    def show_enemy_details(self, enemy=None) -> bool:
+        """Return whether details for one enemy should be visible."""
+        enemy = enemy or self._focused_enemy()
         return all([
             self.player_has_sight(),
             not self.boss,
-            self.enemy.name != "Waitress",
+            enemy.name != "Waitress",
         ])
 
     # ── Private action helpers ───────────────────────────────────────
@@ -208,7 +209,11 @@ class BattleActionMixin:
     def _record_player_natural_spell_kill(self, spell: object) -> str:
         if not astromancer.has_rune_system(self.player):
             return ""
-        gained, sign, _chance = astromancer.maybe_award_rune(self.player, self.enemy, spell)
+        gained, sign, _chance = astromancer.maybe_award_rune(
+            self.player,
+            self.defender,
+            spell,
+        )
         if gained and sign:
             return f"{self.player.name} claims an {sign} rune.\n"
         return ""
