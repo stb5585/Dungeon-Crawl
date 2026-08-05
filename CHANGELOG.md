@@ -42,6 +42,18 @@
   added compatibility repair for recursively adopted phantom Paladin nodes.
 - Added `docs/PROGRESSION_REFACTOR_CHECKPOINT.md` as the complete implementation
   record and pause boundary before the next fundamental progression redesign.
+- Made all three Weapon Master styles mutually exclusive, enforced Mortal
+  Strike's two-handed requirement, and made Triple Strike and Flurry of Blades
+  replace their learned predecessors.
+- Rebalanced first-promotion gates so Druid no longer requires Strength and
+  Monk is Dexterity/Wisdom-forward, split the long Monk path, and made Monks
+  immune to Disarm through unarmed training.
+- Fixed transformed characters opening Progression, added explicit Panther or
+  Direbear selection, removed Transform from the Skills submenu, and exposed
+  transformed and invisible character states in Pygame.
+- Replaced Warlock's bare familiar selector with an artwork-backed descriptive
+  popup, added familiar naming, improved familiar identity/ability details,
+  and removed meaningless zero-stat presentation.
 
 ### Playtest Readiness And Maintenance
 
@@ -257,6 +269,12 @@
 - Closed Multi-Enemy Pilot 2 after seven successful manual battles, including
   dedicated Hallowed Ground and `ALL_ENEMIES` coverage, and identified
   deeper-floor curated encounters as the next validation phase.
+- Added three development-only deeper-floor pair candidates across floors 3
+  and 4, extended pair tuning to promoted-class matrices, and documented the
+  separate floor-5 class-tier and enemy-area-action gate.
+- Completed Pilot 3 automated screening: Ghoul & Golden Eagle passed every
+  aggregate band, while Night Hag & Pit Viper and Antlion & Troll remained
+  stable but blocked on duration and other balance metrics.
 - Matched paired-enemy presentation to singleton combat scaling for ordinary
   enemies and grounded non-flying sprites at the battlefield floor.
 - Labeled the upgraded base-Healer progression node as Heal II so it is

@@ -86,6 +86,9 @@ def test_weapon_master_layout_uses_distinct_routes_and_independent_weapon_arts()
     assert by_name["Two-Handed Weapon Proficiency"].payload[
         "level_requirement"
     ] == 35
+    assert by_name["Two-Handed Weapon Proficiency"].payload[
+        "exclusive_group"
+    ] == "weapon-master.style"
     assert by_name["Mortal Strike"].position == (0, 4)
     assert by_name["Brutish Strength"].lane == "Berserker"
     assert by_name["Brutish Strength"].prerequisites == (
@@ -176,6 +179,34 @@ def test_duelist_choice_closes_dual_wield_and_rejoins_at_true_piercing_strike():
     ).success
     assert "Cripple" not in player.spellbook["Skills"]
     assert "Maim" in player.spellbook["Skills"]
+
+
+def test_two_handed_choice_closes_both_other_weapon_master_styles():
+    player = _player()
+    player.spellbook["Skills"]["Double Strike"] = abilities.DoubleStrike()
+    available_nodes(player)
+
+    assert purchase_node(player, "weapon-master.rating.attack-1").success
+    assert purchase_node(
+        player,
+        "weapon-master.ability.two-handed-weapon-proficiency",
+    ).success
+
+    statuses = {
+        status.node.name: status
+        for status in available_nodes(player, "Weapon Master")
+    }
+    for name in (
+        "Dual Wield",
+        "Honed Attack",
+        "Momentum",
+        "Cross Block",
+        "Duelist",
+        "Blind Fighting",
+        "Retort",
+        "Maim",
+    ):
+        assert statuses[name].state == NodeState.CLOSED
 
 
 def test_weapon_art_requires_discipline_rank_and_is_not_auto_learned():

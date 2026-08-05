@@ -52,6 +52,7 @@ from src.core.progression import (
     progression_points_through_level,
     promotion_combat_bonuses,
     promotion_preview,
+    progression_class_name,
     purchase_node,
     validate_trees,
 )
@@ -77,6 +78,16 @@ def _player(class_type=Pathfinder, stats=30):
     player.race = Human()
     player.equipment = dict(player.cls.equipment)
     return player
+
+
+def test_transformed_character_uses_permanent_progression_tree():
+    player = _player()
+    player._normal_class_name = "Pathfinder"
+    player._transformed = True
+    player.cls = type("DirebearForm", (), {"name": "Direbear"})()
+
+    assert progression_class_name(player) == "Pathfinder"
+    assert available_nodes(player)
 
 
 def test_all_tree_manifests_validate_and_scale_rating_values_by_stage():
@@ -853,7 +864,7 @@ def test_all_eligible_races_can_reach_first_promotions_at_level_thirty():
                     or target_class not in race.cls_res.get("First", ())
                 ):
                     continue
-                node_cost, _attribute_cost, _stats = _promotion_path_cost(
+                node_cost, attribute_cost, _stats = _promotion_path_cost(
                     ABILITY_TREES[base_class],
                     target_class,
                     _race_class_stats(race, base_class),
@@ -864,6 +875,13 @@ def test_all_eligible_races_can_reach_first_promotions_at_level_thirty():
                     target_class,
                     node_cost,
                 )
+                if target_class in {"Druid", "Monk"}:
+                    assert attribute_cost <= attribute_points_through_level(30), (
+                        race.name,
+                        base_class,
+                        target_class,
+                        attribute_cost,
+                    )
 
 
 def test_all_eligible_races_can_reach_second_promotions_at_level_sixty():
@@ -985,7 +1003,7 @@ def test_extreme_one_stat_training_has_no_cap_but_does_not_bypass_other_gates():
         confirm_promotion=True,
     )
     assert not blocked.success
-    assert "Intelligence 12" in blocked.message
+    assert "Intelligence 11" in blocked.message
 
 
 def test_promotion_retains_abilities_does_not_reset_level_and_closes_branch():

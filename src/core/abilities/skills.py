@@ -36,12 +36,16 @@ class DoubleStrike:
 
 class TripleStrike:
     """Data-driven (triple_strike.yaml)"""
+    replaces = "Double Strike"
+
     def __new__(cls):
         return _load_yaml_ability("triple_strike.yaml", cls_name="TripleStrike")
 
 
 class FlurryBlades:
     """Data-driven (flurry_blades.yaml)"""
+    replaces = "Triple Strike"
+
     def __new__(cls):
         return _load_yaml_ability("flurry_blades.yaml", cls_name="FlurryBlades")
 

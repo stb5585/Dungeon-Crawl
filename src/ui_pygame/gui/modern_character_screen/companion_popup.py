@@ -64,8 +64,6 @@ class ClassCompanionDetailsPopup:
         art_width = min(max(170, rect.width // 3), rect.width // 2)
         art_height = min(max(190, (rect.height * 9) // 20), rect.height - 180)
         art_rect = pygame.Rect(rect.left + 16, y, art_width, art_height)
-        pygame.draw.rect(self.screen, self.colors.DARK_GRAY, art_rect)
-        pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, art_rect, 2)
         sprite = self.parent_screen.companion_art_manager.get_scaled_sprite(self.companion, art_rect.size)
         self.screen.blit(sprite, art_rect)
         pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, art_rect, 2)
@@ -166,6 +164,65 @@ class ClassCompanionDetailsPopup:
             max_lines=available_lines,
         )
 
+    def _draw_familiar_details(self, left_rect, right_rect, y):
+        """Draw only meaningful familiar identity and ability information."""
+        spec = str(getattr(self.companion, "spec", "General"))
+        self.parent_screen._draw_divider(left_rect, y - 8)
+        self.parent_screen._draw_text(
+            "Specialization",
+            self.large_font,
+            self.colors.GOLD,
+            left_rect.left + 16,
+            y,
+            left_rect.width - 32,
+        )
+        y += self.large_font.get_height() + 8
+        self.parent_screen._draw_text(
+            spec,
+            self.normal_font,
+            self.colors.WHITE,
+            left_rect.left + 16,
+            y,
+            left_rect.width - 32,
+        )
+        y += self.normal_font.get_height() + 12
+        inspect_text = getattr(self.companion, "inspect", lambda: "")()
+        self.parent_screen._draw_wrapped_text(
+            inspect_text,
+            self.small_font,
+            self.colors.LIGHT_GRAY,
+            left_rect.left + 16,
+            y,
+            left_rect.width - 32,
+            max_lines=8,
+        )
+
+        right_y = self.parent_screen._draw_panel(right_rect, "Abilities")
+        spellbook = getattr(self.companion, "spellbook", {}) or {}
+        for bucket in ("Skills", "Spells"):
+            for name, ability in spellbook.get(bucket, {}).items():
+                if right_y + self.normal_font.get_height() > right_rect.bottom - 20:
+                    return
+                self.parent_screen._draw_text(
+                    name,
+                    self.normal_font,
+                    self.colors.GOLD,
+                    right_rect.left + 16,
+                    right_y,
+                    right_rect.width - 32,
+                )
+                right_y += self.normal_font.get_height() + 2
+                right_y = self.parent_screen._draw_wrapped_text(
+                    getattr(ability, "description", ""),
+                    self.small_font,
+                    self.colors.WHITE,
+                    right_rect.left + 24,
+                    right_y,
+                    right_rect.width - 40,
+                    max_lines=2,
+                )
+                right_y += 8
+
     def _draw_tamed_companion_flavor(self, rect: pygame.Rect, y: int) -> None:
         self.parent_screen._draw_text("Companion Notes", self.large_font, self.colors.GOLD, rect.left + 16, y, rect.width - 32)
         y += self.large_font.get_height() + 10
@@ -222,6 +279,8 @@ class ClassCompanionDetailsPopup:
             self._draw_tamed_companion_flavor(left_rect, y)
             right_y = self.parent_screen._draw_panel(right_rect, "Bond & Form")
             self._draw_tamed_companion_bond_panel(right_rect, right_y)
+        elif self.kind == "Familiar":
+            self._draw_familiar_details(left_rect, right_rect, y)
         else:
             self.parent_screen._draw_divider(left_rect, y - 8)
             self.parent_screen._draw_text("Core Attributes", self.large_font, self.colors.GOLD, left_rect.left + 16, y, left_rect.width - 32)

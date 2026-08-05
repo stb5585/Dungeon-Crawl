@@ -26,9 +26,13 @@ that ceiling until playtest and simulator evidence support expanding it.
 Pilot 1 closed with its 20-battle evidence pass. Pilot 2 closed with seven
 targeted manual battles, including a dedicated Hallowed Ground
 `ALL_ENEMIES` run, after automated screening selected three additional
-development-only pairs. Deeper-floor curated encounters are the next content
-validation phase. Ordinary random pair generation remains disabled pending
-its separate promotion decision.
+development-only pairs. Pilot 3's six-run manual acceptance is complete for
+three development-only pairs across floors 3 and 4. Its promoted-class balance
+remains provisional until the ability-tree refactor is complete: one pair
+passes the current aggregate gates and two remain blocked. Floor 5 is deferred
+behind that rebenchmark, a second-promotion benchmark, and an
+enemy-area-action gate. Ordinary random pair generation remains disabled
+pending its separate promotion decision.
 
 ## Motivation
 

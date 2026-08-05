@@ -203,6 +203,8 @@ class DungeonHUD:
         }
 
         icons.extend(totem_status_icons(character))
+        if getattr(character, "invisible", False):
+            icons.append(("INV", True))
 
         dot_effect = character.magic_effects.get("DOT")
         if dot_effect and dot_effect.active:

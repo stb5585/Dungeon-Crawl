@@ -21,6 +21,60 @@ from .constants import _DISPLAY_TO_ENGINE
 
 
 class CombatSelectionMixin:
+    def _select_transform_form(self, player_char, enemy, forms):
+        """Prompt for one of the Druid's unlocked combat forms."""
+        descriptions = {
+            "Panther": "A fast predator suited to accurate physical attacks.",
+            "Direbear": "A durable bruiser with greater health and raw strength.",
+        }
+        selected = 0
+        input_armed = self._clear_pending_input()
+        frame_player = self._selection_frame_player(player_char)
+        options = list(forms)
+        while True:
+            self._render_combat_frame(frame_player, enemy, [], -1)
+            self._render_described_selection_menu(
+                "Choose Form",
+                options,
+                selected,
+                0,
+                [descriptions.get(form, "") for form in options],
+            )
+            pygame.display.flip()
+
+            input_armed = release_guard_allows_input(True, input_armed)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit(0)
+                input_armed = self._arm_guarded_input(event, input_armed)
+                if event.type == pygame.KEYDOWN and not input_armed:
+                    continue
+                if event.type == pygame.KEYDOWN:
+                    if event.key in (pygame.K_ESCAPE, pygame.K_BACKSPACE):
+                        return None
+                    if event.key in (pygame.K_UP, pygame.K_w, pygame.K_LEFT, pygame.K_a):
+                        selected = (selected - 1) % len(options)
+                    elif event.key in (
+                        pygame.K_DOWN,
+                        pygame.K_s,
+                        pygame.K_RIGHT,
+                        pygame.K_d,
+                    ):
+                        selected = (selected + 1) % len(options)
+                    elif event.key in (pygame.K_RETURN, pygame.K_SPACE):
+                        return options[selected]
+                elif event.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN):
+                    selected, _offset, confirmed = self._selection_menu_mouse_update(
+                        event,
+                        options,
+                        selected,
+                        0,
+                        input_armed,
+                    )
+                    if confirmed:
+                        return options[selected]
+
     def _prompt_for_tamed_companion_name(self, player_char, enemy, background_surface=None) -> None:
         """Ask for an optional nickname after a successful tame."""
         state = ability_mechanics.normalize_tamed_companion(getattr(player_char, "tamed_companion", None))
@@ -210,6 +264,9 @@ class CombatSelectionMixin:
                     )
                     if confirmed:
                         return items[selected][1]
+            clock = getattr(self.presenter, "clock", None)
+            if clock is not None:
+                clock.tick(60)
 
     @staticmethod
     def _combat_item_is_usable(item, *, support_only=False) -> bool:
@@ -843,12 +900,22 @@ class CombatSelectionMixin:
             offhand = getattr(player_char, 'equipment', {}).get('OffHand')
             return getattr(offhand, 'subtyp', None) == "Shield"
 
+        if getattr(skill, "name", None) == "Mortal Strike":
+            weapon = getattr(player_char, "equipment", {}).get("Weapon")
+            if int(getattr(weapon, "handed", 0) or 0) != 2:
+                return False
+
         if is_resolve_skill:
             offhand = getattr(player_char, 'equipment', {}).get('OffHand')
             if getattr(offhand, 'subtyp', None) != "Shield":
                 return False
 
-        if getattr(skill, 'weapon', False) and player_char.is_disarmed():
+        class_name = getattr(getattr(player_char, "cls", None), "name", "")
+        if (
+            getattr(skill, 'weapon', False)
+            and player_char.is_disarmed()
+            and "Monk" not in class_name
+        ):
             return False
 
         availability = getattr(skill, "is_available", None)

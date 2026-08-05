@@ -176,6 +176,8 @@ class CombatStatusMixin:
 
         if self._vision_icon_active(character):
             icons.append(("VIS", True))
+        if getattr(character, "invisible", False):
+            icons.append(("INV", True))
 
         if self._timed_art_state_active(character, "_reavers_mark"):
             icons.append(("RMK", False))

@@ -231,6 +231,9 @@ class CharacterStatusMixin:
     def can_be_disarmed(self) -> bool:
         if "Disarm" in getattr(self, "status_immunity", []):
             return False
+        class_name = getattr(getattr(self, "cls", None), "name", "")
+        if "Monk" in class_name:
+            return False
         weapon = self.equipment.get("Weapon") if isinstance(self.equipment, dict) else None
         if weapon is None:
             return False

@@ -185,13 +185,14 @@ def _evaluate(
     level: int,
     iterations: int,
     seed: int,
+    classes: tuple[str, ...] = BASE_CLASSES,
     health_multiplier: float = 1.0,
     offense_multiplier: float = 1.0,
     singleton_cache: dict[tuple[object, ...], float] | None = None,
 ) -> dict[str, object]:
     results = []
     ratios = []
-    for class_name in BASE_CLASSES:
+    for class_name in classes:
         make_player = lambda name=class_name: _make_player(name, level)
         pair_report = CombatSimulator().run_simulations(
             make_player,
@@ -237,7 +238,7 @@ def _evaluate(
         )
         ratios.append(pair_turns / max(singleton_turns))
 
-    winners = set(BASE_CLASSES)
+    winners = set(classes)
     wins = [result for result in results if result.winner in winners]
     win_rate = len(wins) * 100 / max(1, len(results))
     turn_ratio = statistics.mean(ratios)
@@ -281,6 +282,12 @@ def main() -> int:
     parser.add_argument("--iters", type=int, default=5)
     parser.add_argument("--seed", type=int, default=1337)
     parser.add_argument("--top", type=int, default=10)
+    parser.add_argument(
+        "--classes",
+        nargs="+",
+        default=list(BASE_CLASSES),
+        help="Class names used for pair and singleton benchmarks.",
+    )
     parser.add_argument("--modifier-search", action="store_true")
     parser.add_argument(
         "--members",
@@ -329,6 +336,7 @@ def main() -> int:
                 level=args.level,
                 iterations=args.iters,
                 seed=args.seed,
+                classes=tuple(args.classes),
                 singleton_cache=singleton_cache,
             )
         )
@@ -350,6 +358,7 @@ def main() -> int:
                     level=args.level,
                     iterations=args.iters,
                     seed=args.seed,
+                    classes=tuple(args.classes),
                     health_multiplier=health,
                     offense_multiplier=offense,
                     singleton_cache=singleton_cache,
@@ -362,6 +371,7 @@ def main() -> int:
         "level": args.level,
         "iterations_per_class": args.iters,
         "seed": args.seed,
+        "classes": args.classes,
         "candidate_count": len(candidates),
         "top_candidates": results[:args.top],
         "top_modifier_results": modifier_results[:args.top],

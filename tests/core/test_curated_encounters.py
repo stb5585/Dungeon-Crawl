@@ -22,6 +22,9 @@ def test_curated_pair_catalog_is_stable_and_builds_fresh_rosters():
         ("grave_web", "Zombie & Quasit", 1),
         ("lesser_conspiracy", "Battle Toad & Satyr", 1),
         ("hoof_and_howl", "Twisted Dwarf & Xorn", 2),
+        ("rot_and_raptor", "Ghoul & Golden Eagle", 3),
+        ("venomous_dream", "Night Hag & Pit Viper", 3),
+        ("burrow_and_bone", "Antlion & Troll", 4),
     ]
 
     first = enemies.build_curated_encounter("carrion_crawl")
@@ -46,6 +49,14 @@ def test_curated_pair_catalog_is_stable_and_builds_fresh_rosters():
         by_key["hoof_and_howl"].health_multiplier,
         by_key["hoof_and_howl"].offense_multiplier,
     ) == (0.9, 1.1)
+    assert (
+        by_key["venomous_dream"].health_multiplier,
+        by_key["venomous_dream"].offense_multiplier,
+    ) == (0.8, 1.2)
+    assert (
+        by_key["burrow_and_bone"].health_multiplier,
+        by_key["burrow_and_bone"].offense_multiplier,
+    ) == (0.9, 0.95)
 
 
 def test_curated_override_applies_only_through_random_enemy(monkeypatch):
@@ -92,6 +103,29 @@ def test_pilot_two_overrides_build_authored_fresh_rosters(
             second.members,
         )
     )
+
+
+@pytest.mark.parametrize(
+    ("key", "floor", "member_names"),
+    (
+        ("rot_and_raptor", "3", ("Ghoul", "Golden Eagle")),
+        ("venomous_dream", "3", ("Night Hag", "Pit Viper")),
+        ("burrow_and_bone", "4", ("Antlion", "Troll")),
+    ),
+)
+def test_deeper_floor_pilot_overrides_build_authored_fresh_rosters(
+    monkeypatch,
+    key,
+    floor,
+    member_names,
+):
+    monkeypatch.setenv("DUNGEON_FORCE_ENCOUNTER", key)
+
+    selected = enemies.random_enemy(floor, allow_curated_encounter=True)
+    encounter = selected._runtime_combat_encounter
+
+    assert tuple(member.enemy.name for member in encounter.members) == member_names
+    assert all(member.enemy.health.current > 0 for member in encounter.members)
 
 
 def test_curated_override_validates_floor_and_override_conflicts(monkeypatch):

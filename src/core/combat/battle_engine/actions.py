@@ -351,6 +351,13 @@ class BattleActionMixin:
             return f"{self.attacker.name} does not know {choice}.\n"
 
         skill = skills[choice]
+        if skill.name == "Mortal Strike":
+            weapon = self.attacker.equipment.get("Weapon")
+            if int(getattr(weapon, "handed", 0) or 0) != 2:
+                return (
+                    f"{self.attacker.name} needs a two-handed weapon to use "
+                    "Mortal Strike.\n"
+                )
         # Charging skills deduct mana at start, then must be allowed to continue
         # even when the user is at 0 mana or becomes silenced (otherwise the
         # charge can never resolve). Resolve actions spend shield pressure, not

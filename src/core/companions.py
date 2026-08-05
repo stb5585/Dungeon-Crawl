@@ -138,6 +138,7 @@ class Homunculus(Familiar):
     def __init__(self) -> None:
         super().__init__(name="", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat())
         self.race = 'Homunculus'
+        self.name = self.race
         self.spellbook = {"Spells": {'Stupefy': abilities.Stupefy()},
                           "Skills": {"Disarm": abilities.Disarm(),
                                      'Pocket Sand': abilities.PocketSand()}}
@@ -177,6 +178,7 @@ class Fairy(Familiar):
     def __init__(self) -> None:
         super().__init__(name="", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat())
         self.race = 'Fairy'
+        self.name = self.race
         self.spellbook = {"Spells": {'Heal': abilities.Heal(),
                                      "Regen": abilities.Regen(),
                                      'Bless': abilities.Bless()},
@@ -218,6 +220,7 @@ class Mephit(Familiar):
     def __init__(self) -> None:
         super().__init__(name="", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat())
         self.race = 'Mephit'
+        self.name = self.race
         self.spellbook = {"Spells": {'Firebolt': abilities.Firebolt(),
                                      'Ice Lance': abilities.IceLance(),
                                      'Shock': abilities.Shock(),
@@ -269,6 +272,7 @@ class Jinkin(Familiar):
     def __init__(self) -> None:
         super().__init__(name="", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat())
         self.race = 'Jinkin'
+        self.name = self.race
         self.spellbook = {"Spells": {'Corruption': abilities.Corruption()},
                           "Skills": {'Gold Toss': abilities.GoldToss(),
                                      'Steal': abilities.Steal()}}

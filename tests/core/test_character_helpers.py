@@ -102,6 +102,27 @@ class TestCharacterHelpers:
         with pytest.raises(NotImplementedError):
             player.effect_handler("Unknown Effect")
 
+    def test_monk_cannot_be_disarmed_from_unarmed_training(self):
+        monk = TestGameState.create_player(class_name="Monk", race_name="Human")
+        monk.physical_effects["Disarm"].active = True
+
+        assert monk.can_be_disarmed() is False
+        assert monk.is_disarmed() is False
+
+    def test_druid_can_choose_panther_and_later_direbear_forms(self):
+        druid = TestGameState.create_player(class_name="Druid", race_name="Human")
+        druid.level.pro_level = 1
+
+        assert druid.available_transform_forms() == ("Panther",)
+        assert druid.select_transform_form("Direbear") is False
+        assert druid.select_transform_form("Panther") is True
+        assert druid.transform_type.name == "Panther"
+
+        druid.level.pro_level = 15
+        assert druid.available_transform_forms() == ("Panther", "Direbear")
+        assert druid.select_transform_form("Direbear") is True
+        assert druid.transform_type.name == "Direbear"
+
     def test_hit_chance_reacts_to_accuracy_penalties_and_bonuses(self, monkeypatch):
         attacker = TestGameState.create_player(class_name="Warrior", race_name="Human")
         defender = TestGameState.create_player(class_name="Warrior", race_name="Human")

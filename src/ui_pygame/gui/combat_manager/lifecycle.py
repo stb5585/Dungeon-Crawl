@@ -882,6 +882,17 @@ class CombatLifecycleMixin:
                 return None
             choice = selected_summon
 
+        elif action == "Transform":
+            forms = tuple(
+                getattr(player_char, "available_transform_forms", lambda: ())()
+            )
+            if len(forms) > 1:
+                choice = self._select_transform_form(player_char, enemy, forms)
+                if not choice:
+                    return None
+            elif forms:
+                choice = forms[0]
+
         elif action == "Pickup Weapon":
             is_disarmed = getattr(actor, "is_disarmed", None)
             if not callable(is_disarmed) or not is_disarmed():

@@ -16,13 +16,16 @@ from src.core.progression import (
     NodeState,
     apply_progression_plan,
     available_nodes,
+    progression_class_name,
 )
 from src.ui_pygame.assets.ability_icon_manager import (
     get_ability_icon_manager,
 )
 
 from .church import PaladinVowSelectionPopup
+from .character_naming import CompanionNamingScreen
 from .confirmation_popup import ConfirmationPopup
+from .familiar_selection_popup import FamiliarSelectionPopup
 from .mouse_helpers import hit_index, is_left_click, mouse_position
 from .promotion_screen import PromotionScreen
 from .town_base import TownScreenBase, wrap_text_to_pixel_width
@@ -145,7 +148,7 @@ class ProgressionScreen(TownScreenBase):
         self.pending_attributes.clear()
 
     def _tree_ids(self):
-        current = self.player_char.cls.name
+        current = progression_class_name(self.player_char)
         completed = sorted(self.player_char.progression.completed_trees)
         return [current, *(tree for tree in completed if tree != current)]
 
@@ -790,13 +793,40 @@ class ProgressionScreen(TownScreenBase):
                 companions.Mephit,
                 companions.Jinkin,
             ]
-            choice = self.presenter.render_menu(
-                "Choose a familiar",
-                [familiar().race for familiar in familiar_types],
+            familiar = FamiliarSelectionPopup(
+                self.presenter,
+                self,
+                familiar_types,
+            ).show(
+                self.player_char,
+                flush_events=True,
+                require_key_release=True,
             )
-            if choice is None:
+            if familiar is None:
                 return None
-            return {"familiar": familiar_types[choice]()}
+            familiar.name = familiar.race
+            naming = CompanionNamingScreen(
+                self.presenter,
+                familiar.race,
+                species=familiar.race,
+                form=familiar.spec,
+                special=", ".join(
+                    [
+                        *familiar.spellbook.get("Skills", {}),
+                        *familiar.spellbook.get("Spells", {}),
+                    ]
+                ),
+            )
+            nickname = naming.navigate(
+                default=familiar.race,
+                flush_events=True,
+                require_key_release=True,
+                background_surface=self.screen.copy(),
+            )
+            if nickname is None:
+                return None
+            familiar.name = str(nickname).strip() or familiar.race
+            return {"familiar": familiar}
         return {}
 
     def _toggle_selected_node(self):

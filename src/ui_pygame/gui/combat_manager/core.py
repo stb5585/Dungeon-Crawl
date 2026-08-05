@@ -494,6 +494,8 @@ class CombatManagerCoreMixin:
                 continue
             if allowed is None and name == "Tame":
                 continue
+            if allowed is None and name == "Transform":
+                continue
             is_resolve = self._is_resolve_skill(skill)
             if resolve is not None and is_resolve != resolve:
                 continue

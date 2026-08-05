@@ -2,7 +2,7 @@
 
 import random
 
-from .. import abilities
+from .. import abilities, enemies
 from ..character import armor_resistance_modifier, armor_spell_modifier
 from ..classes import (
     ability_mechanics,
@@ -17,6 +17,31 @@ from .persistence import load_char
 
 
 class PlayerCombatMixin:
+    def available_transform_forms(self) -> tuple[str, ...]:
+        """Return the forms currently available to the permanent class."""
+        class_name = (
+            getattr(self, "_normal_class_name", "")
+            if getattr(self, "_transformed", False)
+            else getattr(getattr(self, "cls", None), "name", "")
+        )
+        if class_name != "Druid":
+            return ()
+        forms = ["Panther"]
+        if int(getattr(getattr(self, "level", None), "pro_level", 1) or 1) >= 15:
+            forms.append("Direbear")
+        return tuple(forms)
+
+    def select_transform_form(self, form_name: str) -> bool:
+        """Select an unlocked Druid form without transforming immediately."""
+        constructors = {
+            "Panther": enemies.Panther,
+            "Direbear": enemies.Direbear,
+        }
+        if form_name not in self.available_transform_forms():
+            return False
+        self.transform_type = constructors[form_name]()
+        return True
+
     def familiar_turn(self, enemy):
         familiar_str = ""
         if self.familiar:
@@ -137,6 +162,7 @@ class PlayerCombatMixin:
                 pass
         else:
             self.save(tmp=True)
+            self._normal_class_name = self.cls.name
             transform_str = f"{self.name} transforms into a {self.transform_type.name}."
             self.cls = self.transform_type
             self.health.current += self.transform_type.health.max

@@ -78,6 +78,15 @@ PRIMARY_ATTRIBUTES = (
     "charisma",
     "dex",
 )
+
+
+def progression_class_name(player: Any) -> str:
+    """Return the permanent class whose progression tree should be displayed."""
+    if getattr(player, "_transformed", False):
+        permanent_name = getattr(player, "_normal_class_name", None)
+        if permanent_name in ABILITY_TREES:
+            return permanent_name
+    return player.cls.name
 RATING_PAYLOADS = {
     "Attack": "attack",
     "Magic": "magic",
@@ -2317,7 +2326,7 @@ def available_nodes(
 ) -> list[NodeStatus]:
     """Return owned, available, blocked, and closed nodes for one tree."""
     state = ensure_progression(player)
-    selected_tree = tree_id or player.cls.name
+    selected_tree = tree_id or progression_class_name(player)
     tree = ABILITY_TREES[selected_tree]
     is_closed = selected_tree in state.completed_trees
     planned = {
@@ -2449,6 +2458,10 @@ def _grant_ability(player: Any, node: AbilityTreeNode) -> str:
     elif ability.name == "True Piercing Strike":
         for old_name in ("Piercing Strike", "True Strike"):
             player.spellbook["Skills"].pop(old_name, None)
+    elif ability.name == "Triple Strike":
+        player.spellbook["Skills"].pop("Double Strike", None)
+    elif ability.name == "Flurry of Blades":
+        player.spellbook["Skills"].pop("Triple Strike", None)
     book[ability.name] = ability
     if node.payload.get("stack_if_known"):
         ensure_progression(player).ability_ranks.setdefault(ability.name, 1)

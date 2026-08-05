@@ -833,6 +833,13 @@ class BattleTurnMixin:
             result.message = self.attacker.transform(back=True)
 
         elif action == "Transform":
+            if choice:
+                select_form = getattr(self.attacker, "select_transform_form", None)
+                if not callable(select_form) or not select_form(choice):
+                    result.message = (
+                        f"{self.attacker.name} cannot transform into {choice}.\n"
+                    )
+                    return result
             result.message = self.attacker.transform()
 
         else:

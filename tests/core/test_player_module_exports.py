@@ -41,7 +41,7 @@ def test_player_composes_every_split_behavior_method():
     }
     player_methods = _defined_methods(player.Player)
 
-    assert len(mixin_methods) == 94
+    assert len(mixin_methods) == 96
     assert set(player_methods) == {"__init__", "__str__"}
     for name, implementation in mixin_methods.items():
         assert getattr(player.Player, name) is implementation

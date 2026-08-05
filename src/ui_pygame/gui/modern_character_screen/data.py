@@ -135,6 +135,16 @@ class CharacterDataMixin:
     def companion_detail_rows(self, kind: str, companion: Any) -> list[tuple[str, str]]:
         """Return stat rows for a familiar, companion, or summon."""
         rows = self.companion_summary_rows(kind, companion)
+        if kind == "Familiar":
+            abilities = [
+                *getattr(companion, "spellbook", {}).get("Skills", {}),
+                *getattr(companion, "spellbook", {}).get("Spells", {}),
+            ]
+            rows.append(
+                ("Specialization", str(getattr(companion, "spec", "General")))
+            )
+            rows.append(("Abilities", ", ".join(abilities) or "None"))
+            return rows
         health = getattr(companion, "health", None)
         mana = getattr(companion, "mana", None)
         combat = getattr(companion, "combat", None)
@@ -444,10 +454,15 @@ class CharacterDataMixin:
 
     def build_portrait_details(self, player_char) -> list[tuple[str, str]]:
         gold = self._non_negative_int(getattr(player_char, "gold", 0))
-        return [
+        rows = [
             ("Gold", f"{gold}G"),
             ("Location", self.location_label(player_char)),
         ]
+        if getattr(player_char, "_transformed", False):
+            rows.append(
+                ("Form", self._attr_name(getattr(player_char, "cls", None), "Transformed"))
+            )
+        return rows
 
     def _draw_portrait_details(self, rows: list[tuple[str, str]], rect: pygame.Rect, y: int) -> int:
         font = self.small_font

@@ -209,7 +209,6 @@ class CharacterLayoutMixin:
         pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, rect, 1)
         art_size = max(54, min(84, rect.height - 20, rect.width // 4))
         art_rect = pygame.Rect(rect.left + 10, rect.top + (rect.height - art_size) // 2, art_size, art_size)
-        self._draw_item_art_backdrop(art_rect)
         sprite = self.companion_art_manager.get_scaled_sprite(companion, art_rect.size)
         self.screen.blit(sprite, art_rect)
 
@@ -271,6 +270,8 @@ class CharacterLayoutMixin:
 
     def _companion_xp_label(self, companion: Any) -> str:
         level = getattr(companion, "level", None)
+        if getattr(companion, "cls", None) == "Familiar":
+            return f"Level {int(getattr(level, 'pro_level', 1) or 1)}"
         if getattr(level, "level", 1) >= 10:
             return "MAX"
         exp = self._non_negative_int(getattr(level, "exp", 0))
@@ -295,7 +296,6 @@ class CharacterLayoutMixin:
         pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, rect, 1)
         art_size = max(72, min(116, rect.height - 22, rect.width // 5))
         art_rect = pygame.Rect(rect.left + 12, rect.top + (rect.height - art_size) // 2, art_size, art_size)
-        self._draw_item_art_backdrop(art_rect)
         sprite = self.companion_art_manager.get_scaled_sprite(companion, art_rect.size)
         self.screen.blit(sprite, art_rect)
 

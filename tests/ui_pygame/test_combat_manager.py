@@ -318,6 +318,22 @@ def test_adrenaline_is_hidden_until_health_is_below_threshold(monkeypatch):
     assert manager._skill_available_for_selection(player, skill)
 
 
+def test_mortal_strike_requires_a_two_handed_weapon_in_skill_menu(monkeypatch):
+    manager = _make_manager(monkeypatch)
+    player = _make_player()
+    player.cls = SimpleNamespace(name="Weapon Master")
+    player.status_effects = {"Silence": SimpleNamespace(active=False)}
+    player.equipment = {
+        "Weapon": SimpleNamespace(handed=1),
+        "OffHand": SimpleNamespace(subtyp="None"),
+    }
+    skill = abilities.MortalStrike()
+
+    assert not manager._skill_available_for_selection(player, skill)
+    player.equipment["Weapon"].handed = 2
+    assert manager._skill_available_for_selection(player, skill)
+
+
 def _patch_fast_start_combat(monkeypatch, manager):
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda *_args: [])
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.display.flip", lambda: None)

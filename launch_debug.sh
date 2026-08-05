@@ -12,7 +12,7 @@
 
     # Force a specific encounter for debugging purposes.
     # export DUNGEON_FORCE_ENEMY=InvisibleStalker
-    export DUNGEON_FORCE_ENCOUNTER=hoof_and_howl
+    export DUNGEON_FORCE_ENCOUNTER=burrow_and_bone
 
     # Set DUNGEON_FORCE_ENEMY before launch when a deterministic encounter is useful.
     exec ./.venv/bin/python game_pygame.py --debug "$@"

@@ -251,6 +251,7 @@ WEAPON_MASTER_TREE_NODE_SPECS = (
         "position": (0, 2),
         "level": 35,
         "prerequisites": ("attack-1",),
+        "exclusive_group": "weapon-master.style",
     },
     {
         "id": "mortal-strike",
@@ -2145,13 +2146,18 @@ PROMOTED_TREE_PATHS = {
         (
             "Ki",
             (
-                "ChiHeal",
                 "DoubleStrike",
                 "LegSweep",
                 "TrueStrike",
                 "Uppercut",
-                "MirrorBreath",
                 "Headbutt",
+            ),
+        ),
+        (
+            "Ki Discipline",
+            (
+                "ChiHeal",
+                "MirrorBreath",
                 "PurgingKata",
             ),
         ),
@@ -2289,16 +2295,13 @@ CLASS_STAT_GROUPS = {
     "Cleric": (("wisdom", "con"), ("strength", "charisma")),
     "Templar": (("strength", "con"), ("wisdom", "dex", "charisma")),
     "Hierophant": (("wisdom", "intel"), ("con", "charisma")),
-    "Monk": (("strength",), ("wisdom", "con", "dex", "charisma")),
-    "Master Monk": (("strength", "con"), ("wisdom", "dex", "charisma")),
+    "Monk": (("dex", "wisdom"), ("con",)),
+    "Master Monk": (("dex", "wisdom"), ("con",)),
     "Priest": (("wisdom",), ("intel",)),
     "Archbishop": (("wisdom", "intel"), ("charisma",)),
     "Bard": (("charisma", "wisdom", "intel", "dex"), ("con", "strength")),
     "Troubadour": (("dex",), ("charisma", "wisdom", "intel", "con", "strength")),
-    "Druid": (
-        ("strength", "intel", "wisdom", "con", "charisma", "dex"),
-        (),
-    ),
+    "Druid": (("wisdom", "dex"), ("intel", "con")),
     "Lycan": (("con", "dex"), ("strength", "wisdom", "charisma")),
     "Archdruid": (("intel",), ("wisdom",)),
     "Diviner": (("intel", "wisdom"), ("con", "charisma")),
@@ -2330,12 +2333,16 @@ FIRST_PROMOTION_STAT_REQUIREMENT_OVERRIDES = {
         "charisma": 10,
     },
     "Druid": {
-        "strength": 12,
-        "intel": 12,
-        "wisdom": 12,
-        "con": 12,
-        "charisma": 12,
+        "intel": 11,
+        "wisdom": 13,
+        "con": 10,
+        "charisma": 10,
         "dex": 13,
+    },
+    "Monk": {
+        "dex": 13,
+        "wisdom": 12,
+        "con": 10,
     },
 }
 

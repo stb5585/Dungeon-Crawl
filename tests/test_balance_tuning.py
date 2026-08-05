@@ -54,6 +54,16 @@ def test_pair_modifier_ranking_prefers_nearest_passing_configuration():
     assert ranked[:2] == [nearer_pass, farther_pass]
 
 
+def test_pair_tuning_builds_promoted_class_benchmarks():
+    from tools.search_curated_pair_tuning import _make_player
+
+    player = _make_player("Weapon Master", 45)
+
+    assert player.cls.name == "Weapon Master"
+    assert player.level.level == 45
+    assert any(player.spellbook.values())
+
+
 def test_crit_chance_is_capped():
     from tests.test_framework import TestGameState
     from src.core.constants import MAX_CRIT_CHANCE

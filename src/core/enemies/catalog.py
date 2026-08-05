@@ -53,6 +53,23 @@ CURATED_PAIR_SPECS: dict[
         ("TwistedDwarf", "Xorn"),
         (0.9, 1.1),
     ),
+    "rot_and_raptor": (
+        "Ghoul & Golden Eagle",
+        3,
+        ("Ghoul", "GoldenEagle"),
+    ),
+    "venomous_dream": (
+        "Night Hag & Pit Viper",
+        3,
+        ("NightHag", "PitViper"),
+        (0.8, 1.2),
+    ),
+    "burrow_and_bone": (
+        "Antlion & Troll",
+        4,
+        ("Antlion", "Troll"),
+        (0.9, 0.95),
+    ),
 }
 
 
