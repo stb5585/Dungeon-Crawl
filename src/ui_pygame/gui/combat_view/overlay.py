@@ -5,6 +5,7 @@ from __future__ import annotations
 import pygame
 
 import src.ui_pygame.gui.combat_view as combat_view
+from ..enemy_presentation import presented_enemy_name
 
 
 class CombatOverlayMixin:
@@ -27,7 +28,7 @@ class CombatOverlayMixin:
         focus_target_id: str,
         details_by_id: dict[str, bool],
     ) -> None:
-        """Render a two-member encounter as compact independent target cards."""
+        """Render two stable battlefield lanes with independently animated enemies."""
         if len(encounter.members) == 1:
             enemy = encounter.primary_enemy
             self._enemy_card_rects = {}
@@ -44,75 +45,69 @@ class CombatOverlayMixin:
 
         self.update_animations()
         view_width = int(self.screen_width * 0.65)
-        gap = 18
-        margin = 18
-        top = 178
+        gap = 12
+        margin = 12
+        top = 230
         bottom = self.screen_height - 158
-        card_height = max(250, bottom - top)
-        card_width = max(230, (view_width - (margin * 2) - gap) // 2)
+        lane_height = max(250, bottom - top)
+        lane_width = max(230, (view_width - (margin * 2) - gap) // 2)
         self._enemy_card_rects = {}
         self._enemy_target_rects = {}
 
         for index, member in enumerate(encounter.members):
             enemy = member.enemy
-            card = pygame.Rect(
-                margin + index * (card_width + gap),
+            lane = pygame.Rect(
+                margin + index * (lane_width + gap),
                 top,
-                card_width,
-                card_height,
+                lane_width,
+                lane_height,
             )
-            self._enemy_card_rects[member.combatant_id] = card
             focused = member.combatant_id == focus_target_id
             living = member.is_living_hostile
-            fill = (22, 22, 28, 225 if living else 170)
-            panel = pygame.Surface(card.size, pygame.SRCALPHA)
-            panel.fill(fill)
-            self.screen.blit(panel, card.topleft)
-            border = self.colors["panel_accent"] if focused else (92, 92, 104)
-            pygame.draw.rect(
-                self.screen,
-                border,
-                card,
-                4 if focused else 2,
-                border_radius=8,
+            animator = self._get_sprite_animator(enemy)
+            if member.resolution is not None and not animator.is_dead:
+                animator.trigger_death()
+            removing = (
+                member.resolution is not None
+                and animator.animation_type == "death"
+                and not animator.is_dead
             )
+            if not living and not removing:
+                continue
+            if living:
+                self._enemy_card_rects[member.combatant_id] = lane
 
-            title_font = pygame.font.Font(None, 28)
+            title_font = pygame.font.Font(None, 25)
             body_font = pygame.font.Font(None, 20)
+            has_sight = bool(details_by_id.get(member.combatant_id, False))
+            hidden_by_invisibility = self._enemy_hidden_by_invisibility(
+                enemy,
+                has_sight,
+            )
+            presented_label = (
+                "Unseen force"
+                if hidden_by_invisibility
+                else member.display_label
+            )
             label = self._truncate_text(
                 title_font,
-                member.display_label,
-                card.width - 24,
+                presented_label,
+                lane.width - 20,
             )
-            title = title_font.render(label, True, self.colors["text"])
-            self.screen.blit(
-                title,
-                title.get_rect(center=(card.centerx, card.top + 24)),
-            )
-            if focused:
-                marker = body_font.render("TARGET", True, self.colors["panel_accent"])
-                self.screen.blit(
-                    marker,
-                    marker.get_rect(center=(card.centerx, card.top + 48)),
-                )
-
-            has_sight = bool(details_by_id.get(member.combatant_id, False))
             sprite_area = pygame.Rect(
-                card.left + 14,
-                card.top + 58,
-                card.width - 28,
-                max(110, card.height - 142),
+                lane.left + 10,
+                lane.top + 42,
+                lane.width - 20,
+                max(120, lane.height - 50),
             )
-            animator = self._get_sprite_animator(enemy)
-            sprite = None
-            if has_sight:
-                try:
-                    sprite = self.enemy_combat_sprite_manager.get_scaled_sprite(
-                        enemy,
-                        sprite_area.size,
-                    )
-                except Exception:
-                    sprite = None
+            sprite = self._enemy_sprite_surface(
+                enemy,
+                self._enemy_encounter_sprite_size(
+                    enemy,
+                    (sprite_area.width, lane.height),
+                ),
+                has_sight=has_sight,
+            )
             if sprite is not None:
                 if animator.damage_flash > 0:
                     sprite = animator.apply_tint(
@@ -120,58 +115,138 @@ class CombatOverlayMixin:
                         (255, 100, 100),
                         animator.damage_flash,
                     )
-                if not living:
-                    sprite = sprite.copy()
-                    sprite.set_alpha(85)
-                sprite_rect = sprite.get_rect(center=sprite_area.center)
+                if animator.animation_type == "death":
+                    scale = 1.0 - (animator.death_progress * 0.7)
+                    sprite = pygame.transform.scale(
+                        sprite,
+                        (
+                            max(1, int(sprite.get_width() * scale)),
+                            max(1, int(sprite.get_height() * scale)),
+                        ),
+                    )
+                    sprite.set_alpha(int(255 * (1.0 - animator.death_progress)))
+                else:
+                    sprite = self._fade_sprite_for_smoke_screen(
+                        sprite,
+                        enemy,
+                        "enemy",
+                    )
+                try:
+                    visible_bounds = sprite.get_bounding_rect(min_alpha=1)
+                except (AttributeError, TypeError):
+                    visible_bounds = sprite.get_rect()
+                if getattr(enemy, "flying", False):
+                    sprite_left = (
+                        sprite_area.centerx
+                        - visible_bounds.centerx
+                    )
+                    sprite_top = (
+                        lane.centery
+                        - 10
+                        + animator.bob_offset
+                        - visible_bounds.centery
+                    )
+                else:
+                    sprite_left = (
+                        sprite_area.centerx
+                        + animator.sway_offset
+                        - visible_bounds.centerx
+                    )
+                    sprite_top = (
+                        sprite_area.bottom
+                        - visible_bounds.bottom
+                    )
+                sprite_rect = sprite.get_rect(
+                    topleft=(sprite_left, sprite_top),
+                )
+                visible_rect = visible_bounds.move(sprite_rect.topleft)
                 self.screen.blit(sprite, sprite_rect)
-                self._enemy_target_rects[member.combatant_id] = sprite_rect
-            else:
-                silhouette = pygame.Rect(
-                    sprite_area.centerx - 42,
-                    sprite_area.centery - 62,
-                    84,
-                    124,
-                )
-                pygame.draw.ellipse(
-                    self.screen,
-                    (42, 42, 50) if living else (30, 30, 34),
-                    silhouette,
-                )
-                self._enemy_target_rects[member.combatant_id] = silhouette
+                self._enemy_target_rects[member.combatant_id] = visible_rect
+                if focused and living:
+                    pygame.draw.rect(
+                        self.screen,
+                        self.colors["panel_accent"],
+                        visible_rect.inflate(12, 12),
+                        3,
+                        border_radius=8,
+                    )
+            elif self._enemy_hidden_by_invisibility(enemy, has_sight):
+                self._enemy_target_rects[member.combatant_id] = lane.copy()
 
-            info_y = card.bottom - 68
-            if member.resolution is not None:
-                resolution_labels = {
-                    "defeated": "Defeated",
-                    "mercy": "Spared",
-                    "tamed": "Tamed",
-                    "ejected": "Ejected",
-                    "escaped": "Escaped",
-                }
-                text = resolution_labels.get(
-                    member.resolution.value,
-                    member.resolution.value.title(),
-                )
-            elif has_sight:
-                text = f"HP {enemy.health.current}/{enemy.health.max}"
+            if not living:
+                continue
+            plate = pygame.Rect(lane.left + 8, lane.top, lane.width - 16, 58)
+            panel = pygame.Surface(plate.size)
+            panel.fill((18, 18, 24))
+            self.screen.blit(panel, plate.topleft)
+            pygame.draw.rect(
+                self.screen,
+                self.colors["panel_accent"] if focused else (92, 92, 104),
+                plate,
+                3 if focused else 1,
+                border_radius=6,
+            )
+            title = title_font.render(label, True, self.colors["text"])
+            self.screen.blit(title, title.get_rect(center=(lane.centerx, plate.top + 16)))
+            if has_sight:
+                mana = getattr(enemy, "mana", None)
+                if mana is not None and getattr(mana, "max", 0) > 0:
+                    hp_info = body_font.render(
+                        f"HP {enemy.health.current}/{enemy.health.max}",
+                        True,
+                        self.colors["text"],
+                    )
+                    mp_info = body_font.render(
+                        f"MP {mana.current}/{mana.max}",
+                        True,
+                        self.colors["text"],
+                    )
+                    self.screen.blit(
+                        hp_info,
+                        hp_info.get_rect(
+                            center=(lane.left + lane.width // 4, plate.top + 39),
+                        ),
+                    )
+                    self.screen.blit(
+                        mp_info,
+                        mp_info.get_rect(
+                            center=(lane.left + (lane.width * 3) // 4, plate.top + 39),
+                        ),
+                    )
+                    text = None
+                else:
+                    text = f"HP {enemy.health.current}/{enemy.health.max}"
             else:
                 text = self._approximate_health_label(enemy)
-            info = body_font.render(text, True, self.colors["text"])
-            self.screen.blit(
-                info,
-                info.get_rect(center=(card.centerx, info_y)),
-            )
-            if has_sight and living:
+            if text is not None:
+                info = body_font.render(text, True, self.colors["text"])
+                self.screen.blit(info, info.get_rect(center=(lane.centerx, plate.top + 39)))
+            if focused:
+                marker_y = plate.bottom + 4
+                pygame.draw.polygon(
+                    self.screen,
+                    self.colors["panel_accent"],
+                    (
+                        (lane.centerx - 7, marker_y),
+                        (lane.centerx + 7, marker_y),
+                        (lane.centerx, marker_y + 8),
+                    ),
+                )
+            if has_sight:
                 icons = self._collect_status_icons(enemy)
                 if icons:
                     self._render_status_icons(
                         icons,
-                        card.left + 12,
-                        card.bottom - 38,
-                        max_width=card.width - 24,
+                        lane.left + 12,
+                        lane.bottom - 28,
+                        max_width=lane.width - 24,
                         max_rows=1,
                     )
+            self._render_ability_status_visuals(
+                enemy,
+                member.combatant_id,
+                include_duplicates=False,
+            )
 
         self._last_enemy_target_rect = self._enemy_target_rects.get(
             focus_target_id,
@@ -280,15 +355,20 @@ class CombatOverlayMixin:
 
         self._render_ability_status_visuals(enemy, "enemy", include_duplicates=False)
 
-        # Enemy name label at top of sprite
-        font = pygame.font.Font(None, 36)
-        name_surf = font.render(enemy.name, True, (255, 255, 255))
-        # Add shadow for better readability
-        shadow_surf = font.render(enemy.name, True, (0, 0, 0))
-        name_rect = name_surf.get_rect(center=(center_x, center_y - enemy_size - 40))
-        shadow_rect = shadow_surf.get_rect(center=(center_x + 2, center_y - enemy_size - 38))
-        self.screen.blit(shadow_surf, shadow_rect)
-        self.screen.blit(name_surf, name_rect)
+        hidden_by_invisibility = self._enemy_hidden_by_invisibility(
+            enemy,
+            has_sight,
+        )
+        if not hidden_by_invisibility:
+            # Enemy name label at top of sprite
+            font = pygame.font.Font(None, 36)
+            name_surf = font.render(enemy.name, True, (255, 255, 255))
+            # Add shadow for better readability
+            shadow_surf = font.render(enemy.name, True, (0, 0, 0))
+            name_rect = name_surf.get_rect(center=(center_x, center_y - enemy_size - 40))
+            shadow_rect = shadow_surf.get_rect(center=(center_x + 2, center_y - enemy_size - 38))
+            self.screen.blit(shadow_surf, shadow_rect)
+            self.screen.blit(name_surf, name_rect)
 
         # Enemy HP/MP bars above name (only visible with sight)
         if has_sight:
@@ -479,7 +559,20 @@ class CombatOverlayMixin:
         text_left = token_size + 26
         min_height = 64
         label = "Your Turn" if current_turn == "player" else "Enemy Turn"
-        sublabel = getattr(turn_actor, "name", "Player" if current_turn == "player" else "Enemy")
+        hidden_enemy = (
+            current_turn == "enemy"
+            and self._enemy_hidden_by_invisibility(
+                turn_actor,
+                self._has_sight(player_char),
+            )
+        )
+        if current_turn == "enemy":
+            sublabel = presented_enemy_name(
+                turn_actor,
+                self._has_sight(player_char),
+            )
+        else:
+            sublabel = getattr(turn_actor, "name", "Player")
         color = self.colors["turn_player" if current_turn == "player" else "turn_enemy"]
 
         font = pygame.font.Font(None, 26)
@@ -490,7 +583,8 @@ class CombatOverlayMixin:
         width = min(max(label_surf.get_width() + text_left + 14, small_font.size(sublabel)[0] + text_left + 14, 180), max_width)
         sublabel = self._truncate_text(small_font, sublabel, width - text_left - 14)
         sublabel_surf = small_font.render(sublabel, True, (220, 220, 220))
-        rect = pygame.Rect(15, 170 if overlay else 12, width, min_height)
+        x = max(15, (view_width - width) // 2)
+        rect = pygame.Rect(x, 164 if overlay else 12, width, min_height)
 
         if overlay:
             panel = pygame.Surface(rect.size)
@@ -511,11 +605,15 @@ class CombatOverlayMixin:
                 print(f"Failed to render player-side token for {getattr(turn_actor, 'name', turn_actor)}: {exc}")
                 token = None
         else:
-            try:
-                token = self.enemy_token_manager.get_scaled_token(enemy, (token_size, token_size))
-            except Exception as exc:  # pragma: no cover - defensive runtime fallback for external art failures
-                print(f"Failed to render enemy token for {getattr(enemy, 'name', enemy)}: {exc}")
-                token = None
+            token = None
+            if not hidden_enemy:
+                try:
+                    token = self.enemy_token_manager.get_scaled_token(
+                        turn_actor,
+                        (token_size, token_size),
+                    )
+                except Exception as exc:  # pragma: no cover - defensive runtime fallback for external art failures
+                    print(f"Failed to render enemy token for {getattr(enemy, 'name', enemy)}: {exc}")
         if token is not None:
             self.screen.blit(token, (rect.left + 8, rect.centery - token_size // 2))
         self.screen.blit(label_surf, (rect.left + text_left, rect.top + 8))

@@ -14,21 +14,44 @@ EnemySpec = tuple[str, str]
 ResolvedEnemySpec = tuple[str, Callable[[], object]]
 
 
-CURATED_PAIR_SPECS: dict[str, tuple[str, int, tuple[str, str]]] = {
+CURATED_PAIR_SPECS: dict[
+    str,
+    tuple[str, int, tuple[str, str]]
+    | tuple[str, int, tuple[str, str], tuple[float, float]],
+] = {
     "carrion_crawl": (
-        "Carrion Crawl",
+        "Giant Hornet & Battle Toad",
         1,
-        ("GiantCentipede", "Zombie"),
+        ("GiantHornet", "BattleToad"),
+        (0.95, 1.0),
     ),
     "wing_and_mattock": (
-        "Wing and Mattock",
+        "Electric Bat & Battle Toad",
         1,
-        ("GiantHornet", "TwistedDwarf"),
+        ("ElectricBat", "BattleToad"),
     ),
     "fang_and_spear": (
-        "Fang and Spear",
+        "Twisted Dwarf & Vampire Bat",
         2,
-        ("Gnoll", "GiantSnake"),
+        ("TwistedDwarf", "VampireBat"),
+    ),
+    "grave_web": (
+        "Zombie & Quasit",
+        1,
+        ("Zombie", "Quasit"),
+        (0.85, 1.2),
+    ),
+    "lesser_conspiracy": (
+        "Battle Toad & Satyr",
+        1,
+        ("BattleToad", "Satyr"),
+        (0.8, 1.1),
+    ),
+    "hoof_and_howl": (
+        "Twisted Dwarf & Xorn",
+        2,
+        ("TwistedDwarf", "Xorn"),
+        (0.9, 1.1),
     ),
 }
 

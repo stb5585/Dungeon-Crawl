@@ -283,10 +283,9 @@ Judgment branches into:
 - Double Strike, Attack, Tempered Conviction, and True Strike;
 - Smite, Repel the Wicked, Magic, and Hallowed Ground.
 
-Shelter branches into Heal, MP, Sworn Purpose, and Blessed Light, while Bless
-remains its own Shelter branch. Magic Defense and Resist Shadow are detached
-from the Shelter connector. The protection chain is Magic Defense, Parry,
-Defense, and Divine Protection.
+Shelter branches through Heal, MP, Resist Shadow, Sworn Purpose, and Blessed
+Light, while Bless remains its own Shelter branch. The protection chain is
+Magic Defense, Parry, Defense, and Divine Protection.
 
 Crusader promotion is centered on row 8. Either Oath root satisfies its path
 requirement; the prerequisite connectors descend to the promotion row before

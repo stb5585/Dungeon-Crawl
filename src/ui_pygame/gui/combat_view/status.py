@@ -161,6 +161,19 @@ class CombatStatusMixin:
 
         icons.extend(totem_status_icons(character))
 
+        charging_skills = [
+            name
+            for name, skill in getattr(character, "spellbook", {})
+            .get("Skills", {})
+            .items()
+            if getattr(skill, "charging", False)
+        ]
+        jump_effect = character.class_effects.get("Jump")
+        if charging_skills or (
+            jump_effect is not None and jump_effect.active
+        ):
+            icons.append(("CHG", True))
+
         if self._vision_icon_active(character):
             icons.append(("VIS", True))
 

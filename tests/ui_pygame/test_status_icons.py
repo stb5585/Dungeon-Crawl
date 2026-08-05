@@ -93,6 +93,10 @@ def test_compact_status_icons_and_colors():
 def test_stat_effect_status_icon_skips_inactive_and_zero_value_changes():
     assert stat_effect_status_icon("ATK", SimpleNamespace(active=False, extra=4)) is None
     assert stat_effect_status_icon("ATK", SimpleNamespace(active=True, extra=0)) is None
+    assert stat_effect_status_icon(
+        "ATK",
+        SimpleNamespace(active=True, extra=0, source="Dishearten"),
+    ) == ("ATK", False)
     assert stat_effect_status_icon("ATK", SimpleNamespace(active=True, extra=3)) == ("ATK", True)
     assert stat_effect_status_icon("DEF", SimpleNamespace(active=True, extra=-2)) == ("DEF", False)
     assert stat_effect_status_icon("MYS", SimpleNamespace(active=True)) is None

@@ -32,6 +32,7 @@ from .progression_manifest import (
     ABILITY_BRANCH_OVERRIDES,
     ABILITY_ICON_KEYS,
     ABILITY_ICON_OVERRIDES,
+    ABILITY_NODE_NAME_OVERRIDES,
     AUTHORED_TREE_CLASSES,
     BASE_TREE_BRANCHES,
     BASE_TREE_RATING_NODES,
@@ -164,12 +165,17 @@ class ProgressionState:
                 max(0, int(data.get("unspent_points", 0)))
                 + legacy_training_cost
             )
+        purchased_node_ids = set(data.get("purchased_node_ids", ()))
+        legacy_reflection_id = "sentinel.ability.spell-reflection"
+        if legacy_reflection_id in purchased_node_ids:
+            purchased_node_ids.discard(legacy_reflection_id)
+            purchased_node_ids.add("sentinel.ability.deflect-spell")
         return cls(
             level=level,
             total_xp=max(0, int(data.get("total_xp", 0))),
             unspent_points=unspent_points,
             unspent_attribute_points=unspent_attribute_points,
-            purchased_node_ids=set(data.get("purchased_node_ids", ())),
+            purchased_node_ids=purchased_node_ids,
             trained_attributes=trained_attributes,
             ability_ranks={
                 str(name): max(1, int(rank))
@@ -447,7 +453,6 @@ def _ability_lane(book: str, ability: Any) -> str:
         "Bulwark",
         "Centered Guard",
         "Covering Guard",
-        "Deflect Spell",
         "Evasion",
         "Evasive Guard",
         "Goad",
@@ -461,6 +466,7 @@ def _ability_lane(book: str, ability: Any) -> str:
         "Retaliate",
         "Shield Block",
         "Shield Riposte",
+        "Spell Reflection",
     }
     if ability.name in defensive_names or getattr(ability, "passive", False):
         return "Defense"
@@ -1403,7 +1409,10 @@ def _build_authored_tree(class_name: str) -> AbilityTree:
             icon_key=_ability_icon_key(book, ability),
             prerequisites=prerequisites,
             payload={
-                "name": ability.name,
+                "name": ABILITY_NODE_NAME_OVERRIDES.get(
+                    ability_ctor.__name__,
+                    ability.name,
+                ),
                 "book": book,
                 "ability_class": ability_ctor,
                 "description": getattr(ability, "description", ""),
@@ -1897,6 +1906,7 @@ def validate_trees() -> tuple[str, ...]:
 
 def ensure_progression(player: Any) -> ProgressionState:
     """Return the player's state, creating an unallocated state if needed."""
+    _migrate_spell_reflection_ability(player)
     current = getattr(player, "progression", None)
     if isinstance(current, ProgressionState):
         _adopt_known_ability_nodes(player, current)
@@ -1913,6 +1923,15 @@ def ensure_progression(player: Any) -> ProgressionState:
     _adopt_known_ability_nodes(player, state)
     _sync_level(player)
     return state
+
+
+def _migrate_spell_reflection_ability(player: Any) -> None:
+    """Replace the retired Deflect Spell skill with merged Spell Reflection."""
+    skills = getattr(player, "spellbook", {}).setdefault("Skills", {})
+    if "Deflect Spell" not in skills:
+        return
+    skills.pop("Deflect Spell", None)
+    skills.setdefault("Spell Reflection", abilities.SpellReflection())
 
 
 def _adopt_known_ability_nodes(player: Any, state: ProgressionState) -> None:
@@ -2377,9 +2396,28 @@ def available_nodes(
                     *blockers,
                     "Another promotion is already distributed.",
                 )
+            permanently_unavailable_promotion = (
+                node.kind == NodeKind.PROMOTION
+                and (
+                    not _race_allows(
+                        player,
+                        node.payload["target_class"],
+                    )
+                    or (
+                        bool(planned_promotions)
+                        and node.id not in planned_promotions
+                    )
+                )
+            )
             statuses.append(NodeStatus(
                 node,
-                NodeState.BLOCKED if blockers else NodeState.AVAILABLE,
+                (
+                    NodeState.CLOSED
+                    if permanently_unavailable_promotion
+                    else NodeState.BLOCKED
+                    if blockers
+                    else NodeState.AVAILABLE
+                ),
                 blockers,
             ))
     return statuses

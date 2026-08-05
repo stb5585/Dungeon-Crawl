@@ -70,7 +70,7 @@ def test_sentinel_tree_has_authored_paths_and_compact_geometry():
         node for node in tree.nodes if node.kind != NodeKind.PROMOTION
     ]
 
-    assert len(development) == 16
+    assert len(development) == 15
     assert max(node.position[1] for node in tree.nodes) == 6
     assert "Shield Block" not in nodes
     assert nodes["Goad"].position == (0, 0)
@@ -80,9 +80,9 @@ def test_sentinel_tree_has_authored_paths_and_compact_geometry():
     assert nodes["Hold the Line"].position == (2, 0)
     assert nodes["Resolute Guard"].position == (2, 4)
     assert nodes["Spell Reflection"].id == (
-        "sentinel.ability.spell-reflection"
+        "sentinel.ability.deflect-spell"
     )
-    assert nodes["Spell Reflection"].position == (4, 1)
+    assert nodes["Spell Reflection"].position == (4, 0)
     promotion = nodes["Promote: Stalwart Defender"]
     assert promotion.position == (1, 6)
     assert promotion.prerequisites == (
@@ -118,6 +118,9 @@ def test_human_sentinel_second_promotion_uses_separate_point_pools():
     player.stats.con = 19
     player.progression.unspent_points = 18
     player.progression.unspent_attribute_points = 15
+    player.spellbook["Skills"]["Spell Reflection"] = (
+        abilities.SpellReflection()
+    )
 
     route = set(_closure("Sentinel", "Promote: Stalwart Defender"))
     result = apply_progression_plan(player, tuple(route), {"con": 1})
@@ -132,6 +135,8 @@ def test_human_sentinel_second_promotion_uses_separate_point_pools():
         "Ironwall Reprisal",
         "Last Bastion",
     } <= set(player.spellbook["Skills"])
+    assert "Spell Reflection" in player.spellbook["Skills"]
+    assert "Deflect Spell" not in player.spellbook["Skills"]
 
 
 def test_resolve_sources_use_one_backing_value_and_locked_gain_amounts(
@@ -139,6 +144,7 @@ def test_resolve_sources_use_one_backing_value_and_locked_gain_amounts(
 ):
     player = _player("Sentinel")
     player.equipment["OffHand"] = items.KiteShield()
+    player.spellbook["Skills"]["Hold the Line"] = abilities.HoldTheLine()
     engine = SimpleNamespace(
         attacker=player,
         player=player,
@@ -146,9 +152,12 @@ def test_resolve_sources_use_one_backing_value_and_locked_gain_amounts(
         _event_bus=SimpleNamespace(emit=lambda *_args, **_kwargs: None),
     )
 
-    assert "10 Resolve" in BattleActionMixin._execute_defend(engine)
-    assert promotion_kits.current_resolve(player) == 10
+    assert "holds the line" in BattleActionMixin._execute_defend(engine)
+    assert promotion_kits.current_resolve(player) == 5
+    assert "already active" in BattleActionMixin._execute_defend(engine)
+    assert promotion_kits.current_resolve(player) == 5
 
+    promotion_kits.combat_state(player)["hold_the_line"] = 0
     class_rings.ensure_state(player)["data"]["Stalwart Defender"][
         "guard_meter"
     ] = 0
@@ -199,6 +208,9 @@ def test_spell_reflection_spends_once_expires_and_mirror_bastion_rewards():
 
     message = abilities.SpellReflection().use(player)
     assert "spends 25 Resolve" in message
+    assert player.stat_effects["Magic Defense"].active
+    assert player.stat_effects["Magic Defense"].duration == 3
+    assert player.stat_effects["Magic Defense"].extra == 6
     assert promotion_kits.current_resolve(player) == 75
     reflected = promotion_kits.consume_spell_reflection(player, "Firebolt")
     assert "turns Firebolt back" in reflected
@@ -314,6 +326,28 @@ def test_known_sentinel_actions_are_adopted_but_leftovers_close():
         confirm_promotion=True,
     )
     assert result.success
-    blocked = purchase_node(player, "sentinel.ability.spell-reflection")
+    blocked = purchase_node(player, "sentinel.ability.deflect-spell")
     assert not blocked.success
     assert "current class tree" in blocked.message
+
+
+def test_legacy_reflection_node_and_deflect_skill_migrate():
+    from src.core.progression import ProgressionState, ensure_progression
+
+    state = ProgressionState.from_dict({
+        "purchased_node_ids": ["sentinel.ability.spell-reflection"],
+    })
+    assert "sentinel.ability.spell-reflection" not in state.purchased_node_ids
+    assert "sentinel.ability.deflect-spell" in state.purchased_node_ids
+
+    player = _player("Sentinel")
+    player.spellbook["Skills"] = {
+        "Deflect Spell": abilities.DeflectSpell(),
+    }
+    ensure_progression(player)
+
+    assert "Deflect Spell" not in player.spellbook["Skills"]
+    assert isinstance(
+        player.spellbook["Skills"]["Spell Reflection"],
+        abilities.SpellReflection,
+    )

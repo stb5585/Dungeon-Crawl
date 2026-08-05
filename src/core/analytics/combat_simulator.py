@@ -165,6 +165,11 @@ class CombatStats:
     damage_by_combatant: dict[str, int] = field(default_factory=dict)
     reward_experience: int = 0
     reward_gold: int = 0
+    action_sequence: tuple[str, ...] = ()
+    repeated_non_progress_actions: int = 0
+    max_non_progress_streak: int = 0
+    invalid_intents: int = 0
+    max_turns_reached: bool = False
 
     @property
     def hp_remaining_percent(self) -> float:
@@ -474,6 +479,7 @@ class CombatSimulator:
         elif not isinstance(encounter, CombatEncounter):
             raise TypeError("encounter must be a CombatEncounter.")
         primary_enemy = encounter.primary_enemy
+        paired_policy = len(encounter.members) > 1
 
         # Isolate global event bus per simulation to avoid cross-test pollution.
         reset_event_bus()
@@ -488,6 +494,12 @@ class CombatSimulator:
         class_kit_events: dict[str, int] = defaultdict(int)
         action_economy_events: dict[str, int] = defaultdict(int)
         consumables_used = 0
+        action_sequence: list[str] = []
+        repeated_non_progress_actions = 0
+        max_non_progress_streak = 0
+        non_progress_streak = 0
+        prior_non_progress_action = None
+        invalid_intents = 0
         member_labels = {
             member.combatant_id: member.display_label
             for member in encounter.members
@@ -623,7 +635,7 @@ class CombatSimulator:
                     and "Totem" in _engine.available_actions
                     and not (attacker.magic_effects.get("Totem") and attacker.magic_effects["Totem"].active)
                 ):
-                    return "Totem", None
+                    return "Totem", "Earth"
             except Exception:
                 pass
 
@@ -758,7 +770,11 @@ class CombatSimulator:
                             best_key = key
                     return best_key
 
-                if "Use Item" in _engine.available_actions and inv:
+                if (
+                    (not paired_policy or turns <= max(1, int(max_turns * 0.6)))
+                    and "Use Item" in _engine.available_actions
+                    and inv
+                ):
                     # If both HP/MP are critical and we have an elixir, prefer it.
                     if hp_pct <= 0.25 and mp_pct <= 0.20:
                         el = _best_item("Elixir")
@@ -777,6 +793,10 @@ class CombatSimulator:
                 pass
 
             if (
+                not paired_policy
+                or turns < int(max_turns * 0.6)
+                or max_turns == 1
+            ) and (
                 hp_pct < 0.35
                 and "Spells" in attacker.spellbook
                 and not attacker.status_effects["Silence"].active
@@ -795,11 +815,11 @@ class CombatSimulator:
                     if _is_combat_offense(sp) and _is_damage_ability(sp):
                         if attacker.mana.current >= getattr(sp, "cost", 0):
                             return "Cast Spell", nm
-                for nm, sp in attacker.spellbook["Spells"].items():
-                    if _is_combat_offense(sp):
-                        if attacker.mana.current >= getattr(sp, "cost", 0):
-                            return "Cast Spell", nm
-
+                if not paired_policy:
+                    for nm, sp in attacker.spellbook["Spells"].items():
+                        if _is_combat_offense(sp):
+                            if attacker.mana.current >= getattr(sp, "cost", 0):
+                                return "Cast Spell", nm
             # Offensive skill if affordable
             if "Skills" in attacker.spellbook:
                 def _skill_score(name: str, ab) -> float:
@@ -826,6 +846,8 @@ class CombatSimulator:
                     # Prefer status/control over pure utility when it's the best available.
                     if name in {"Pocket Sand", "Sleeping Powder", "Disarm"}:
                         score += 10.0
+                    if name == "Conduit Command":
+                        score += 25.0
                     return score
 
                 best = None
@@ -833,13 +855,20 @@ class CombatSimulator:
                 for nm, sk in attacker.spellbook["Skills"].items():
                     if not _is_combat_offense(sk):
                         continue
+                    if paired_policy and bool(getattr(sk, "weapon", False)):
+                        is_disarmed = getattr(attacker, "is_disarmed", None)
+                        if callable(is_disarmed) and is_disarmed():
+                            continue
                     if attacker.mana.current < getattr(sk, "cost", 0):
                         continue
                     sc = _skill_score(nm, sk)
                     if sc > best_score:
                         best_score = sc
                         best = nm
-                if best is not None and best_score > -1e8:
+                if best is not None and (
+                    best_score > 0
+                    or (not paired_policy and best_score > -1e8)
+                ):
                     return "Use Skill", best
 
             return "Attack", None
@@ -849,6 +878,13 @@ class CombatSimulator:
             turns += 1
             pre = engine.pre_turn()
             if pre.can_act:
+                hp_before = (
+                    int(char1.health.current),
+                    tuple(
+                        int(member.enemy.health.current)
+                        for member in encounter.members
+                    ),
+                )
                 forced = engine.get_forced_action()
                 if forced:
                     action, choice = forced.action, forced.choice
@@ -878,6 +914,26 @@ class CombatSimulator:
                         else:
                             action, choice = engine.get_enemy_action()
                 record_action_selection(action, choice)
+                action_name = (
+                    action.action
+                    if isinstance(action, ActionIntent)
+                    else str(action)
+                )
+                action_choice = (
+                    action.choice
+                    if isinstance(action, ActionIntent)
+                    else choice
+                )
+                action_label = (
+                    f"{action_name}:{action_choice}"
+                    if action_choice
+                    else action_name
+                )
+                action_label = (
+                    f"{getattr(engine, 'current_actor_id', None) or 'unknown'}="
+                    f"{action_label}"
+                )
+                action_sequence.append(action_label)
                 if not hasattr(engine, "execute_intent"):
                     action_result = engine.execute_action(action, choice)
                 elif isinstance(action, ActionIntent):
@@ -893,6 +949,29 @@ class CombatSimulator:
                     )
                     intent = ActionIntent(action, choice, target_ids)
                     action_result = engine.execute_intent(intent)
+                if not getattr(action_result, "committed", True):
+                    invalid_intents += 1
+                hp_after = (
+                    int(char1.health.current),
+                    tuple(
+                        int(member.enemy.health.current)
+                        for member in encounter.members
+                    ),
+                )
+                if hp_after == hp_before and action_label == prior_non_progress_action:
+                    repeated_non_progress_actions += 1
+                    non_progress_streak += 1
+                elif hp_after == hp_before:
+                    non_progress_streak = 1
+                else:
+                    non_progress_streak = 0
+                prior_non_progress_action = (
+                    action_label if hp_after == hp_before else None
+                )
+                max_non_progress_streak = max(
+                    max_non_progress_streak,
+                    non_progress_streak,
+                )
                 record_analytics_text(getattr(action_result, "message", ""))
             companion_text = engine.companion_turn()
             record_analytics_text(companion_text)
@@ -983,8 +1062,17 @@ class CombatSimulator:
                 getattr(outcome, "total_experience", 0) or 0
             ),
             reward_gold=sum(
-                int(getattr(settlement, "gold_delta", 0) or 0)
+                int(getattr(settlement, "gold", 0) or 0)
                 for settlement in settlements
+            ),
+            action_sequence=tuple(action_sequence[-80:]),
+            repeated_non_progress_actions=repeated_non_progress_actions,
+            max_non_progress_streak=max_non_progress_streak,
+            invalid_intents=invalid_intents,
+            max_turns_reached=(
+                turns >= max_turns
+                and char1.is_alive()
+                and bool(living_enemies)
             ),
         )
     

@@ -49,12 +49,21 @@ class CuratedEncounterSpec:
     display_name: str
     floor: int
     member_factories: tuple[EnemyFactory, EnemyFactory]
+    health_multiplier: float = 1.0
+    offense_multiplier: float = 1.0
 
     def build(self) -> CombatEncounter:
         """Build a fresh runtime encounter in authored member order."""
-        return CombatEncounter.from_enemies(
-            [factory() for factory in self.member_factories]
-        )
+        members = [factory() for factory in self.member_factories]
+        for enemy in members:
+            enemy._curated_base_health_max = enemy.health.max
+            enemy.health.max = max(
+                1,
+                int(enemy._curated_base_health_max * self.health_multiplier),
+            )
+            enemy.health.current = enemy.health.max
+            enemy._encounter_offense_multiplier = self.offense_multiplier
+        return CombatEncounter.from_enemies(members)
 
 
 def set_random_enemy_override(enemy: RandomEnemyOverride | None) -> None:
@@ -75,7 +84,11 @@ def clear_random_enemy_override() -> None:
 def curated_encounter_specs() -> tuple[CuratedEncounterSpec, ...]:
     """Return the development-only pair catalog in authored order."""
     specs = []
-    for key, (display_name, floor, class_names) in CURATED_PAIR_SPECS.items():
+    for key, raw_spec in CURATED_PAIR_SPECS.items():
+        display_name, floor, class_names, *modifiers = raw_spec
+        health_multiplier, offense_multiplier = (
+            modifiers[0] if modifiers else (1.0, 1.0)
+        )
         factories = tuple(_ENEMY_NAMESPACE[name] for name in class_names)
         specs.append(
             CuratedEncounterSpec(
@@ -83,6 +96,8 @@ def curated_encounter_specs() -> tuple[CuratedEncounterSpec, ...]:
                 display_name=display_name,
                 floor=floor,
                 member_factories=factories,
+                health_multiplier=health_multiplier,
+                offense_multiplier=offense_multiplier,
             )
         )
     return tuple(specs)

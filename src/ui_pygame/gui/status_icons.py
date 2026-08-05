@@ -90,7 +90,11 @@ def stat_effect_status_icon(label: str, effect) -> StatusIcon | None:
         extra = effect.extra
     except AttributeError:
         return None
-    if not getattr(effect, "active", False) or extra == 0:
+    if not getattr(effect, "active", False):
+        return None
+    if extra == 0:
+        if getattr(effect, "source", None) == "Dishearten":
+            return (label, False)
         return None
     return (label, extra > 0)
 

@@ -76,6 +76,7 @@ from .resolve import (
     resolve_spend_rows,
     _spend_resolve,
     build_resolve,
+    hold_the_line_active,
     hold_the_line,
     shield_check,
     shield_bash,

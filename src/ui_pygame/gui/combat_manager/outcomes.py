@@ -7,10 +7,17 @@ import sys
 import pygame
 
 from ..combat_view.animator import DEATH_ANIMATION_FRAMES
+from ..enemy_presentation import is_invisible_target, player_has_sight
+from .constants import (
+    DEFEAT_PAUSE_MS,
+    ENEMY_PRE_ACTION_HOLD_FRAMES,
+    ENEMY_RESULT_HOLD_FRAMES,
+    FLEE_PAUSE_MS,
+)
 from .helpers import _player_facing_victory_line
 
 
-POST_DEATH_PAUSE_MS = 150
+POST_DEATH_PAUSE_MS = 75
 
 
 class CombatOutcomeMixin:
@@ -35,7 +42,7 @@ class CombatOutcomeMixin:
 
         # Render current state and pause before enemy acts (with animation updates)
         enemy_clock = pygame.time.Clock()
-        for _ in range(30):  # 500ms at 60fps
+        for _ in range(ENEMY_PRE_ACTION_HOLD_FRAMES):
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
@@ -64,6 +71,7 @@ class CombatOutcomeMixin:
             player_stun_before = bool(player_char.status_effects["Stun"].active)
 
             result = self.engine.execute_action(forced.action, choice=forced.choice)
+            self._announce_new_resolutions(result)
             self._record_bestiary_ability_if_visible(player_char, enemy, forced.choice or forced.action)
             for line in result.message.strip().split('\n'):
                 if line.strip():
@@ -114,6 +122,7 @@ class CombatOutcomeMixin:
                     slot_cb = lambda _u, _t: self._show_slot_machine_reveal(player_char, enemy)
 
             result = self.engine.execute_action(action_name, choice=choice_name, slot_machine_callback=slot_cb)
+            self._announce_new_resolutions(result)
             self._record_bestiary_ability_if_visible(player_char, enemy, choice_name or action_name)
             is_smoke_screen = (
                 action_name == "Use Skill"
@@ -154,7 +163,7 @@ class CombatOutcomeMixin:
             if pause_after:
                 # Render updated state and show result (with animation updates)
                 result_clock = pygame.time.Clock()
-                for _ in range(48):  # 800ms at 60fps
+                for _ in range(ENEMY_RESULT_HOLD_FRAMES):
                     for event in pygame.event.get():
                         if event.type == pygame.QUIT:
                             pygame.quit()
@@ -223,6 +232,18 @@ class CombatOutcomeMixin:
             current_turn = "player" if self.engine.is_player_turn() else "enemy"
         encounter = getattr(self.engine, "encounter", None)
         if encounter is not None:
+            has_sight = player_has_sight(player_char)
+            identity_setter = getattr(
+                self.combat_view,
+                "set_hidden_enemy_identities",
+                None,
+            )
+            if callable(identity_setter):
+                identity_setter(
+                    member.enemy.name
+                    for member in encounter.members
+                    if is_invisible_target(member.enemy) and not has_sight
+                )
             focus_id = self.engine.focus_target_id
             focused_member = encounter.member_by_id(focus_id)
             enemy = focused_member.enemy
@@ -367,7 +388,7 @@ class CombatOutcomeMixin:
         self._persist_debug_battle_log(outcome.result)
 
         if outcome.result == "defeat":
-            self._pause_with_events(900)
+            self._pause_with_events(DEFEAT_PAUSE_MS)
 
             _show_end_popup(
                 "You have been defeated!",
@@ -407,15 +428,48 @@ class CombatOutcomeMixin:
                 end_messages = [f"{enemy.name} fled from battle!"]
             else:
                 end_messages = [f"Victory! {enemy.name} defeated!"]
-            # Parse the outcome message for display lines
-            for line in outcome.message.strip().split('\n'):
-                if line.strip():
+            if encounter is not None and len(encounter.members) > 1:
+                count_labels = {
+                    "defeated": "defeated",
+                    "mercy": "spared",
+                    "tamed": "tamed",
+                    "ejected": "ejected",
+                    "escaped": "escaped",
+                }
+                counts = ", ".join(
+                    f"{count} {count_labels[resolution.value]}"
+                    for resolution, count in outcome.resolution_counts
+                )
+                if counts:
+                    end_messages.append(counts)
+                end_messages.append(f"Total XP: {outcome.total_experience}")
+                end_messages.append(f"Total gold: {outcome.total_gold}")
+                if outcome.loot_awards:
+                    loot = ", ".join(
+                        (
+                            f"{award.item_name} x{award.quantity}"
+                            if award.quantity != 1
+                            else award.item_name
+                        )
+                        for award in outcome.loot_awards
+                    )
+                    end_messages.append(f"Acquired: {loot}")
+                for notice in outcome.notices:
                     end_messages.append(
                         _player_facing_victory_line(
-                            line,
+                            notice,
                             debug_mode=self._debug_mode_enabled(),
                         )
                     )
+            else:
+                for line in outcome.message.strip().split('\n'):
+                    if line.strip():
+                        end_messages.append(
+                            _player_facing_victory_line(
+                                line,
+                                debug_mode=self._debug_mode_enabled(),
+                            )
+                        )
 
             if outcome.level_up:
                 end_messages.append("\nLEVEL UP!")
@@ -454,7 +508,7 @@ class CombatOutcomeMixin:
         elif outcome.result == "flee":
             self._render_combat_frame(player_char, enemy, [], -1)
             pygame.display.flip()
-            self._pause_with_events(700)
+            self._pause_with_events(FLEE_PAUSE_MS)
 
             _show_end_popup("You fled from combat!")
             self.combat_view.reset_combat_log()

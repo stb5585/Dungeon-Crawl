@@ -589,10 +589,14 @@ class CombatManagerCoreMixin:
         if amount:
             color = self.combat_view.colors.get("log_damage", (235, 120, 105))
             self.combat_view.trigger_floating_text(target, f"-{amount}", color)
-        self.combat_view.show_damage_flash(
-            target == "player",
-            event_handler=self._handle_combat_log_scroll_event,
-        )
+        # Enemy sprites already provide a localized tint, recoil, impact, and
+        # floating text. A second full-battlefield snapshot flash could briefly
+        # replace the live lane rendering and make the target appear to blink.
+        if target == "player":
+            self.combat_view.show_damage_flash(
+                True,
+                event_handler=self._handle_combat_log_scroll_event,
+            )
 
     def _show_combat_heal_text(self, target: str, amount: int) -> None:
         if amount <= 0:

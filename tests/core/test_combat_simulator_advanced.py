@@ -282,7 +282,7 @@ def test_simulate_battle_records_class_kit_and_action_economy_smoke(monkeypatch)
                 tile.actions.append("Totem"),
             ),
             "Totem",
-            None,
+            "Earth",
         ),
         (
             "item",

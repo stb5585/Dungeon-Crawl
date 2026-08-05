@@ -77,6 +77,8 @@ class ProgressionScreen(TownScreenBase):
         self.pending_node_ids: list[str] = []
         self.pending_attributes: dict[str, int] = {}
         self.background_draw_func = None
+        self.show_embedded_navigation_helper = False
+        self.embedded_navigation_active = False
         self.tree_scroll_row = 0
         self._tree_viewport: pygame.Rect | None = None
         self.icon_manager = get_ability_icon_manager()
@@ -323,22 +325,8 @@ class ProgressionScreen(TownScreenBase):
     def _draw_tree(self, rect):
         self.draw_semi_transparent_panel(rect)
         pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, rect, 2)
-        heading = self.normal_font.render(
-            (
-                f"{self._selected_tree_id()} Ability Tree"
-                + (
-                    " (read-only)"
-                    if self._selected_tree_id()
-                    in self.player_char.progression.completed_trees
-                    else ""
-                )
-            ),
-            True,
-            self.colors.GOLD,
-        )
-        self.screen.blit(heading, (rect.left + 16, rect.top + 12))
         points_text = (
-            "Available Points: "
+            "Available Progression Points: "
             f"{self._remaining_points()}"
         )
         points_surface = self.normal_font.render(
@@ -348,8 +336,26 @@ class ProgressionScreen(TownScreenBase):
         )
         self.screen.blit(
             points_surface,
-            (rect.right - points_surface.get_width() - 16, rect.top + 12),
+            (rect.left + 16, rect.top + 12),
         )
+        if getattr(self, "show_embedded_navigation_helper", False):
+            helper = (
+                "Arrows: Navigate  Enter: Select  P/Esc: Back"
+                if getattr(self, "embedded_navigation_active", False)
+                else "P: Navigate tree"
+            )
+            helper_surface = self.small_font.render(
+                helper,
+                True,
+                self.colors.GRAY,
+            )
+            self.screen.blit(
+                helper_surface,
+                (
+                    rect.right - helper_surface.get_width() - 16,
+                    rect.top + 15,
+                ),
+            )
         statuses = self._statuses()
         tree = ABILITY_TREES[self._selected_tree_id()]
         self.node_rects = self._layout_node_rects(
@@ -1043,7 +1049,23 @@ class ProgressionScreen(TownScreenBase):
                     self.current_attribute - 1
                 ) % len(PRIMARY_ATTRIBUTES)
             return True
+        if event.key == pygame.K_LEFT:
+            if self.focus == "nodes":
+                self.current_node = (self.current_node - 1) % len(self._statuses())
+            else:
+                self.current_attribute = (
+                    self.current_attribute - 1
+                ) % len(PRIMARY_ATTRIBUTES)
+            return True
         if event.key == pygame.K_DOWN:
+            if self.focus == "nodes":
+                self.current_node = (self.current_node + 1) % len(self._statuses())
+            else:
+                self.current_attribute = (
+                    self.current_attribute + 1
+                ) % len(PRIMARY_ATTRIBUTES)
+            return True
+        if event.key == pygame.K_RIGHT:
             if self.focus == "nodes":
                 self.current_node = (self.current_node + 1) % len(self._statuses())
             else:

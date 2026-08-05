@@ -132,9 +132,8 @@ Paladin begins with independent ungated Oath's Judgment `(1, 0)` and Oath's
 Shelter `(4, 0)` roots. Judgment branches through the column-0 `Double Strike
 -> +20 Attack -> Tempered Conviction -> True Strike` path and the column-2
 `Smite -> Repel the Wicked -> +20 Magic -> Hallowed Ground` path. Shelter branches
-through column 3's `Heal -> +50 MP -> Sworn Purpose -> Blessed Light` and
-column 5's Bless branch. Magic Defense and level-45 Resist Shadow are detached
-from the Oath's Shelter connector. Magic Defense instead gates Parry at
+through column 3's `Heal -> +50 MP -> Resist Shadow -> Sworn Purpose -> Blessed
+Light` and column 5's Bless branch. Magic Defense gates Parry at
 `(5, 3)`, followed by `+20 Defense -> Divine Protection`. Tempered Conviction grants `+20
 Defense` and one Conviction capacity;
 Sworn Purpose grants `+20 Magic` and `+20 Magic Defense`. Blessed Light turns

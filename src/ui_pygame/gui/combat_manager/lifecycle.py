@@ -9,10 +9,14 @@ import pygame
 
 from src.core import enemies
 from src.core.character import Character
-from src.core.classes import ability_mechanics
+from src.core.classes import ability_mechanics, promotion_kits
 from src.core.combat import ActionIntent, CombatEncounter, TargetScope
 from src.core.player import Player
 import src.ui_pygame.gui.combat_manager as combat_manager
+from src.ui_pygame.gui.enemy_presentation import (
+    is_invisible_target,
+    player_has_sight,
+)
 from ..input_guards import release_guard_allows_input
 from ..mouse_helpers import hit_index, is_left_click, mouse_position
 from .constants import (
@@ -106,6 +110,19 @@ class CombatLifecycleMixin:
         # Initialize combat state
         self.running = True
         self.combat_view.reset_combat_log()
+        has_sight = player_has_sight(player_char)
+        hidden_names = [
+            member.enemy.name
+            for member in encounter.members
+            if is_invisible_target(member.enemy) and not has_sight
+        ]
+        identity_setter = getattr(
+            self.combat_view,
+            "set_hidden_enemy_identities",
+            None,
+        )
+        if callable(identity_setter):
+            identity_setter(hidden_names)
         labels = ", ".join(member.display_label for member in encounter.members)
         self.combat_view.add_combat_message(f"Combat started with {labels}!")
         self._combat_background = self._capture_background()
@@ -311,14 +328,51 @@ class CombatLifecycleMixin:
         actor = getattr(self.engine, "attacker", None) or getattr(self.engine, "player", None)
 
         target = getattr(self.engine, "defender", None)
-        if actor is not None and "Skills" in deduped:
-            has_resolve = bool(self._available_skill_names(actor, target, resolve=True))
+        if actor is not None:
+            resolve_names = self._available_skill_names(actor, target, resolve=True)
+            surge_names = {
+                entry["name"]
+                for entry in promotion_kits.RESOLVE_SURGES
+            }
+            has_resolve = any(
+                name != "Hold the Line" and name not in surge_names
+                for name in resolve_names
+            )
+            has_bursts = any(name in surge_names for name in resolve_names)
             has_standard_skills = bool(self._available_skill_names(actor, target, resolve=False))
             if has_resolve and "Resolve" not in deduped:
-                skill_index = deduped.index("Skills")
+                skill_index = (
+                    deduped.index("Skills")
+                    if "Skills" in deduped
+                    else deduped.index("Items") if "Items" in deduped else len(deduped)
+                )
                 deduped.insert(skill_index, "Resolve")
-            if has_resolve and not has_standard_skills and "Skills" in deduped:
+            if has_bursts and "Bursts" not in deduped:
+                skill_index = (
+                    deduped.index("Skills")
+                    if "Skills" in deduped
+                    else deduped.index("Items") if "Items" in deduped else len(deduped)
+                )
+                deduped.insert(skill_index, "Bursts")
+            if (has_resolve or has_bursts) and not has_standard_skills and "Skills" in deduped:
                 deduped.remove("Skills")
+
+        if actor is not None and "Defend" in deduped:
+            skills = getattr(actor, "spellbook", {}).get("Skills", {})
+            hold_the_line = skills.get("Hold the Line")
+            class_name = getattr(getattr(actor, "cls", None), "name", "")
+            if (
+                class_name in {"Sentinel", "Stalwart Defender"}
+                and hold_the_line is not None
+            ):
+                defend_index = deduped.index("Defend")
+                deduped.pop(defend_index)
+                if self._skill_available_for_selection(
+                    actor,
+                    hold_the_line,
+                    target,
+                ):
+                    deduped.insert(defend_index, "Hold the Line")
 
         # Add Pickup Weapon if the active actor is disarmed
         is_disarmed = getattr(actor, "is_disarmed", None)
@@ -342,6 +396,7 @@ class CombatLifecycleMixin:
         """Handle engine post-turn + display any messages."""
         visual_before = (getattr(enemy, "name", None), getattr(enemy, "picture", None))
         post = self.engine.post_turn()
+        self._announce_new_resolutions(post)
         visual_after = (getattr(enemy, "name", None), getattr(enemy, "picture", None))
         added_message = False
         for msg in post.messages:
@@ -354,6 +409,29 @@ class CombatLifecycleMixin:
             self._flush_result_frame(player_char, enemy)
         if visual_after != visual_before:
             self._play_enemy_visual_transition(player_char, enemy, visual_before, visual_after)
+
+    def _announce_new_resolutions(self, result) -> None:
+        """Log and animate each terminal member attached to one engine result."""
+        encounter = getattr(self.engine, "encounter", None)
+        if encounter is None:
+            return
+        labels = {
+            "defeated": "defeated",
+            "mercy": "spared",
+            "tamed": "tamed",
+            "ejected": "ejected",
+            "escaped": "escaped",
+        }
+        for record in getattr(result, "new_resolutions", ()):
+            try:
+                member = encounter.member_by_id(record.combatant_id)
+            except KeyError:
+                continue
+            resolution = labels.get(record.resolution.value, record.resolution.value)
+            self.combat_view.add_combat_message(
+                f"{member.display_label} {resolution}."
+            )
+            self.combat_view.enemy_dies(member.enemy)
 
     def _flush_result_frame(self, player_char, enemy) -> None:
         """Draw result log text before any impact animation or turn transition starts."""
@@ -451,6 +529,7 @@ class CombatLifecycleMixin:
             # Execute the forced action via engine
             enemy_hp_before = enemy.health.current
             result = self.engine.execute_action(forced.action, choice=forced.choice)
+            self._announce_new_resolutions(result)
 
             for line in result.message.strip().split('\n'):
                 if line.strip():
@@ -757,12 +836,6 @@ class CombatLifecycleMixin:
             choice = selected_command
 
         elif action == "Skills":
-            if actor.abilities_suppressed():
-                reason = "the anti-magic field" if getattr(actor, "anti_magic_active", False) else "silence"
-                self.combat_view.add_combat_message(
-                    f"{actor.name} cannot use skills because of {reason}!"
-                )
-                return None
             allowed_skill_names = None
             if support_mode and self.engine is not None:
                 allowed_skill_names = self.engine.summoner_support_skill_names()
@@ -783,6 +856,16 @@ class CombatLifecycleMixin:
 
         elif action == "Resolve":
             selected_skill = self._select_resolve_ability(actor, enemy)
+            if not selected_skill:
+                return None
+            choice = selected_skill
+
+        elif action == "Bursts":
+            selected_skill = self._select_resolve_ability(
+                actor,
+                enemy,
+                bursts=True,
+            )
             if not selected_skill:
                 return None
             choice = selected_skill
@@ -826,7 +909,7 @@ class CombatLifecycleMixin:
 
         # Delegate to engine (handles attack rolls, spell casts, skill use, etc.)
         slot_cb = None
-        if action in {"Skills", "Resolve"} and choice:
+        if action in {"Skills", "Resolve", "Bursts"} and choice:
             skill_obj = actor.spellbook.get('Skills', {}).get(choice)
             if skill_obj and skill_obj.name == "Slot Machine":
                 slot_cb = lambda _u, _t: self._show_slot_machine_reveal(actor, enemy)
@@ -853,6 +936,7 @@ class CombatLifecycleMixin:
                 choice=choice,
                 slot_machine_callback=slot_cb,
             )
+        self._announce_new_resolutions(result)
 
         damage_to_enemy = max(0, enemy_hp_before - enemy.health.current)
         favored_msg = ability_mechanics.consume_favored_enemy_bonus_message(player_char)

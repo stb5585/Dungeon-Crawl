@@ -8,6 +8,7 @@ import pygame
 from src.core import map_tiles
 from src.core.classes import promotion_kits
 from src.core.player import LIMINAL_GAP_LEVEL, REALM_OF_CAMBION_LEVEL
+from .enemy_presentation import player_has_sight, presented_enemy_name
 from .status_icons import (
     STATUS_ICON_COLORS,
     combine_duplicate_status_icons,
@@ -72,6 +73,7 @@ class DungeonHUD:
         
         # Combat mode indicator (if in combat)
         if combat_mode:
+            self._combat_indicator_player_char = player_char
             y_offset = self._render_combat_indicator(enemy, y_offset)
             y_offset += 15
         
@@ -1444,7 +1446,14 @@ class DungeonHUD:
         # Enemy name below
         if enemy:
             enemy_font = pygame.font.Font(None, 24)
-            enemy_text = enemy_font.render(f"vs. {enemy.name}", True, (255, 200, 200))
+            player_char = getattr(self, "_combat_indicator_player_char", None)
+            has_sight = player_char is not None and player_has_sight(player_char)
+            enemy_name = presented_enemy_name(enemy, has_sight)
+            enemy_text = enemy_font.render(
+                f"vs. {enemy_name}",
+                True,
+                (255, 200, 200),
+            )
             enemy_rect = enemy_text.get_rect(center=(self.hud_x + self.hud_width // 2, y_offset + 32))
             self.screen.blit(enemy_text, enemy_rect)
         

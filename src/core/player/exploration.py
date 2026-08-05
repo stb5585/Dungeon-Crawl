@@ -175,7 +175,11 @@ class PlayerExplorationMixin:
         if self.transform_type:
             if self.cls.name in ["Druid", "Lycan"]:
                 action_list.insert(1, "Transform")
-            if self.transform_type == self.cls and self.class_effects["Power Up"].duration < 5:
+            if (
+                getattr(self, "_transformed", False)
+                and self.transform_type == self.cls
+                and self.class_effects["Power Up"].duration < 5
+            ):
                 action_list.append("Untransform")
                 for action in ["Flee", "Use Item"]:
                     if action in action_list:

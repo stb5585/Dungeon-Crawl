@@ -50,11 +50,15 @@ class SpriteAnimator:
 
     def trigger_damage(self):
         """Trigger damage flash animation."""
+        if self.animation_type == "death":
+            return
         self.damage_flash = 1.0
         self.animation_type = None
 
     def trigger_death(self):
         """Trigger death animation."""
+        if self.animation_type == "death" or self.is_dead:
+            return
         self.animation_type = 'death'
         self.animation_time = 0
         self.death_progress = 0

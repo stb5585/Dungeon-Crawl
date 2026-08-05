@@ -103,6 +103,30 @@ def test_resolve_skill_ignores_silence_and_spends_resolve():
     assert promotion_kits.current_resolve(player) == 0
 
 
+def test_zero_mana_skill_ignores_silence_but_mana_skill_does_not():
+    engine, player = _make_engine_with_player_attacking()
+    player.status_effects["Silence"].active = True
+    player.spellbook["Skills"]["Free Technique"] = SimpleNamespace(
+        name="Free Technique",
+        cost=0,
+        passive=False,
+        use=lambda _user, target=None: f"{target.name} is pressured.\n",
+    )
+    player.spellbook["Skills"]["Mana Technique"] = SimpleNamespace(
+        name="Mana Technique",
+        cost=3,
+        passive=False,
+        use=lambda _user, target=None: f"{target.name} is struck.\n",
+    )
+
+    free_result = engine.execute_action("Use Skill", "Free Technique")
+    mana_result = engine.execute_action("Use Skill", "Mana Technique")
+
+    assert "uses Free Technique" in free_result.message
+    assert "Goblin is pressured" in free_result.message
+    assert "cannot use skills because of silence" in mana_result.message
+
+
 def test_pre_turn_duration_one_sleep_still_skips_current_turn():
     engine, player = _make_engine_with_player_attacking()
     player.status_effects["Sleep"].active = True

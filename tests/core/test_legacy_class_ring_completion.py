@@ -214,6 +214,7 @@ def test_lycan_moon_cycle_and_frenzy_state_persist():
 
     player.transform_type = SimpleNamespace(name="Lycan")
     player.cls = SimpleNamespace(name="Wolf")
+    player._transformed = True
     triggered, message = lycan.maybe_trigger_frenzy(player, reason="kill", rng=_Always())
     assert triggered is True
     assert "frenzy" in message

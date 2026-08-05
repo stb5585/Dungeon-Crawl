@@ -1370,6 +1370,16 @@ def main() -> int:
                     for resolution, count in sorted(resolution_counts.items())
                 ) or "none"
                 roster = "/".join(report.results[0].roster)
+                invalid_intents = sum(
+                    result.invalid_intents for result in report.results
+                )
+                max_turn_loops = sum(
+                    result.max_turns_reached for result in report.results
+                )
+                repeated_non_progress = sum(
+                    result.repeated_non_progress_actions
+                    for result in report.results
+                )
                 print(
                     "# PairMetrics "
                     f"key={pair_key} "
@@ -1388,8 +1398,30 @@ def main() -> int:
                     f"damage={damage_summary!r} "
                     f"resolutions={resolution_summary!r} "
                     f"reward_xp={avg_reward_xp:.1f} "
-                    f"reward_gold={avg_reward_gold:.1f}"
+                    f"reward_gold={avg_reward_gold:.1f} "
+                    f"invalid_intents={invalid_intents} "
+                    f"max_turn_loops={max_turn_loops} "
+                    f"repeated_non_progress={repeated_non_progress}"
                 )
+                diagnostic = next(
+                    (
+                        result
+                        for result in report.results
+                        if result.max_turns_reached
+                        or result.invalid_intents
+                        or not result.damage_by_combatant
+                    ),
+                    None,
+                )
+                if diagnostic is not None:
+                    print(
+                        "# PairDiagnostic "
+                        f"key={pair_key} class={cls_name} "
+                        f"max_turns={diagnostic.max_turns_reached} "
+                        f"invalid_intents={diagnostic.invalid_intents} "
+                        f"damage={diagnostic.damage_by_combatant!r} "
+                        f"actions={' > '.join(diagnostic.action_sequence)!r}"
+                    )
 
     if pair_mode:
         player_names = set(class_names)
@@ -1416,12 +1448,20 @@ def main() -> int:
             mean_actor_turn_ratio = statistics.mean(
                 pair_actor_ratios_by_key[key]
             )
+            invalid_intents = sum(result.invalid_intents for result in results)
+            max_turn_loops = sum(result.max_turns_reached for result in results)
+            repeated_non_progress = sum(
+                result.repeated_non_progress_actions for result in results
+            )
             print(
                 "# PairAggregate "
                 f"key={key} battles={len(results)} "
                 f"wins={len(wins)} win_rate={win_rate:.1f} "
                 f"winning_hp_median_pct={winning_hp_median:.1f} "
-                f"mean_actor_turn_ratio={mean_actor_turn_ratio:.2f}"
+                f"mean_actor_turn_ratio={mean_actor_turn_ratio:.2f} "
+                f"invalid_intents={invalid_intents} "
+                f"max_turn_loops={max_turn_loops} "
+                f"repeated_non_progress={repeated_non_progress}"
             )
 
     # Print a simple, grep-friendly table.

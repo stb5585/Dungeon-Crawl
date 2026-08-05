@@ -8,7 +8,10 @@ import sys
 import pygame
 
 from src.core.classes import astromancer
-from ..enemy_presentation import invisible_target_note
+from ..enemy_presentation import (
+    invisible_target_note,
+    presented_enemy_name,
+)
 
 
 class CombatRenderingMixin:
@@ -131,9 +134,13 @@ class CombatRenderingMixin:
 
         self._render_ability_status_visuals(enemy, "enemy", include_duplicates=False)
 
-        # Enemy name (always visible)
+        # Enemy identity is concealed while genuine invisibility defeats Sight.
         font = pygame.font.Font(None, 32)
-        name_surf = font.render(enemy.name, True, self.colors['text'])
+        name_surf = font.render(
+            presented_enemy_name(enemy, has_sight),
+            True,
+            self.colors['text'],
+        )
         name_rect = name_surf.get_rect(center=(center_x, center_y - enemy_size - 30))
         self.screen.blit(name_surf, name_rect)
 
@@ -203,7 +210,15 @@ class CombatRenderingMixin:
         title_font = pygame.font.Font(None, 26)
         body_font = pygame.font.Font(None, 18)
 
-        name = self._truncate_text(title_font, getattr(enemy, "name", "Enemy"), panel_w - (pad * 2))
+        hidden_by_invisibility = self._enemy_hidden_by_invisibility(
+            enemy,
+            has_sight,
+        )
+        name = self._truncate_text(
+            title_font,
+            presented_enemy_name(enemy, has_sight),
+            panel_w - (pad * 2),
+        )
         name_surf = title_font.render(name, True, self.colors["text"])
         self.screen.blit(name_surf, (panel_rect.left + pad, panel_rect.top + pad))
 
@@ -235,7 +250,11 @@ class CombatRenderingMixin:
             self.screen.blit(hp_surf, (panel_rect.left + pad, y))
             y += 22
 
-        enemy_type = getattr(enemy, "enemy_typ", "")
+        enemy_type = (
+            ""
+            if hidden_by_invisibility
+            else getattr(enemy, "enemy_typ", "")
+        )
         if enemy_type:
             type_surf = body_font.render(f"Type {enemy_type}", True, (205, 197, 176))
             self.screen.blit(type_surf, (panel_rect.left + pad, y))
@@ -244,7 +263,7 @@ class CombatRenderingMixin:
         if has_sight:
             y = self._render_enemy_resistance_summary(enemy, panel_rect, y, body_font)
 
-        icons = self._collect_status_icons(enemy)
+        icons = [] if hidden_by_invisibility else self._collect_status_icons(enemy)
         if icons and y + 20 < panel_rect.bottom:
             self._render_status_icons(icons, panel_rect.left + pad, y + 4, max_width=panel_w - (pad * 2), max_rows=2)
 

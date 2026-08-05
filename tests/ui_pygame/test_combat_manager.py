@@ -122,8 +122,8 @@ class DummyCombatView:
 
 
 def test_combat_entry_and_turn_delay_constants():
-    assert combat_manager.COMBAT_START_TRANSITION_FRAMES == 24
-    assert combat_manager.POST_TURN_DELAY_FRAMES == 6
+    assert combat_manager.COMBAT_START_TRANSITION_FRAMES == 12
+    assert combat_manager.POST_TURN_DELAY_FRAMES == 3
 
 
 class DummyLevelUpScreen:
@@ -258,6 +258,64 @@ def test_resolve_surges_are_hidden_until_mastery_unlocks(monkeypatch):
 
     class_rings.ensure_state(player)["data"]["Stalwart Defender"]["guard_meter"] = 100
     assert manager._skill_available_for_selection(player, abilities.IronwallReprisal())
+
+
+def test_silence_keeps_resolve_and_zero_mana_skills_available(monkeypatch):
+    manager = _make_manager(monkeypatch)
+    player = _make_player()
+    enemy = _make_enemy()
+    player.cls = SimpleNamespace(name="Sentinel")
+    player.equipment = {
+        "OffHand": SimpleNamespace(subtyp="Shield"),
+    }
+    player.status_effects = {
+        "Silence": SimpleNamespace(active=True),
+    }
+    player.spellbook["Skills"] = {
+        "Shield Check": abilities.ShieldBash(),
+        "Free Technique": SimpleNamespace(
+            name="Free Technique",
+            cost=0,
+            passive=False,
+        ),
+        "Mana Technique": SimpleNamespace(
+            name="Mana Technique",
+            cost=4,
+            passive=False,
+        ),
+    }
+    manager.engine = SimpleNamespace(
+        available_actions=["Attack", "Use Skill", "Use Item"],
+        player=player,
+        attacker=player,
+        defender=enemy,
+    )
+
+    assert manager._available_skill_names(player, enemy, resolve=True) == [
+        "Shield Check",
+    ]
+    assert manager._available_skill_names(player, enemy, resolve=False) == [
+        "Free Technique",
+    ]
+    assert manager._build_display_actions() == [
+        "Attack",
+        "Defend",
+        "Resolve",
+        "Skills",
+        "Items",
+    ]
+
+
+def test_adrenaline_is_hidden_until_health_is_below_threshold(monkeypatch):
+    manager = _make_manager(monkeypatch)
+    player = _make_player()
+    skill = abilities.Adrenaline()
+
+    player.health.current = 5
+    assert not manager._skill_available_for_selection(player, skill)
+
+    player.health.current = 4
+    assert manager._skill_available_for_selection(player, skill)
 
 
 def _patch_fast_start_combat(monkeypatch, manager):
@@ -599,6 +657,29 @@ def test_capture_background_scroll_handling_and_action_deduplication(monkeypatch
     player.spellbook["Skills"].pop("Shield Slam")
     assert manager._build_display_actions() == ["Attack", "Defend", "Resolve", "Items"]
 
+    player.cls = SimpleNamespace(name="Sentinel")
+    player.spellbook["Skills"]["Hold the Line"] = abilities.HoldTheLine()
+    assert manager._build_display_actions() == [
+        "Attack",
+        "Hold the Line",
+        "Resolve",
+        "Items",
+    ]
+    promotion_kits.combat_state(player)["hold_the_line"] = 2
+    assert manager._build_display_actions() == ["Attack", "Resolve", "Items"]
+
+    player.cls = SimpleNamespace(name="Stalwart Defender")
+    player.spellbook["Skills"]["Citadel Aegis"] = abilities.CitadelAegis()
+    state = class_rings.ensure_state(player)["data"]["Stalwart Defender"]
+    state["guard_meter"] = 100
+    state["resolve_mastery"] = 0
+    assert manager._build_display_actions() == [
+        "Attack",
+        "Resolve",
+        "Bursts",
+        "Items",
+    ]
+
     player = _make_player()
     player.is_disarmed = lambda: True
     manager.engine = SimpleNamespace(
@@ -667,7 +748,7 @@ def test_combat_damage_effect_classifies_actions_and_elements(monkeypatch):
         ("enemy", "status", None, False),
         ("float", "enemy", "-3", (235, 120, 105)),
     ]
-    assert [call[0] for call in manager.combat_view.flash_calls] == [False, True, False, True, False]
+    assert [call[0] for call in manager.combat_view.flash_calls] == [True, True]
 
 
 def test_post_turn_and_special_effect_helpers(monkeypatch):
@@ -880,7 +961,7 @@ def test_execute_action_handles_suppression_and_slot_machine_skill(monkeypatch):
     assert result == "action_taken"
     assert manager.combat_view.messages[-2:] == ["Big hit!", "Jackpot!"]
     assert manager.combat_view.enemy_damage_calls == [enemy]
-    assert manager.combat_view.flash_calls[-1][0] is False
+    assert manager.combat_view.flash_calls == []
     assert manager.combat_view.reload_calls[-1] == enemy
     assert frame_calls[-1][0] == (player, enemy, [], -1)
 
@@ -1051,7 +1132,7 @@ def test_debug_auto_kill_action_requires_debug_mode(monkeypatch):
     assert enemy.health.current == 0
     assert manager.combat_view.messages[-1] == "Debug: Goblin defeated."
     assert manager.combat_view.enemy_damage_calls == [enemy]
-    assert manager.combat_view.flash_calls[-1][0] is False
+    assert manager.combat_view.flash_calls == []
 
 
 def test_handle_combat_end_victory_defeat_and_flee_paths(monkeypatch):
@@ -1400,7 +1481,29 @@ def test_select_item_spell_and_skill_cover_empty_cancel_and_selection_paths(monk
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, []))
     assert manager._select_resolve_ability(player, enemy) == "Shield Check"
     assert menu_calls[-1][0] == "Select Resolve"
-    assert menu_calls[-1][1] == ("Shield Check (Resolve: 10; Need 10)",)
+    assert menu_calls[-1][1] == ("Shield Check (Resolve: 10)",)
+
+    player.cls = SimpleNamespace(name="Stalwart Defender")
+    player.spellbook["Skills"]["Citadel Aegis"] = abilities.CitadelAegis()
+    state = class_rings.ensure_state(player)["data"]["Stalwart Defender"]
+    state["guard_meter"] = 100
+    state["resolve_mastery"] = 0
+    event_batches = iter([
+        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+    ])
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.combat_manager.pygame.event.get",
+        lambda: next(event_batches, []),
+    )
+    assert manager._select_resolve_ability(
+        player,
+        enemy,
+        bursts=True,
+    ) == "Citadel Aegis"
+    assert menu_calls[-1][0] == "Select Resolve Burst"
+    assert menu_calls[-1][1] == (
+        "Citadel Aegis (Full Resolve)",
+    )
 
     player.cls = SimpleNamespace(name="Paladin")
     player.paladin_vow = "Conquest"

@@ -200,6 +200,10 @@ class CharacterEquipmentMixin:
         elif self.active_tab.key == "equipment":
             self.draw_equipment_tab(player_char)
         elif self.active_tab.key == "progression":
+            self.progression_view.show_embedded_navigation_helper = True
+            self.progression_view.embedded_navigation_active = (
+                self.progression_selector_active
+            )
             self.progression_view.draw_embedded(player_char, self.content_rect)
         self.draw_menu()
         if do_flip:
@@ -289,9 +293,10 @@ class CharacterEquipmentMixin:
                     if (
                         self.active_tab.key == "progression"
                         and self.content_rect.collidepoint(mouse_position(event))
-                        and self.progression_view.handle_event(event)
                     ):
-                        continue
+                        self.progression_selector_active = True
+                        if self.progression_view.handle_event(event):
+                            continue
                     pos = mouse_position(event)
                     tab_index = hit_index(self.tab_button_rects(player_char), pos)
                     action_index = hit_index(self.action_rects(), pos)
@@ -363,8 +368,15 @@ class CharacterEquipmentMixin:
                 if event.type != pygame.KEYDOWN:
                     continue
 
+                if self.active_tab.key == "progression" and event.key == pygame.K_p:
+                    self.progression_selector_active = (
+                        not self.progression_selector_active
+                    )
+                    continue
+
                 if (
                     self.active_tab.key == "progression"
+                    and self.progression_selector_active
                     and self.progression_view.handle_event(event)
                 ):
                     continue
@@ -373,6 +385,11 @@ class CharacterEquipmentMixin:
                     self.equipment_selector_active = False
                 elif event.key == pygame.K_ESCAPE and self.class_companion_selector_active:
                     self.class_companion_selector_active = False
+                elif (
+                    event.key == pygame.K_ESCAPE
+                    and self.progression_selector_active
+                ):
+                    self.progression_selector_active = False
                 elif event.key == pygame.K_ESCAPE:
                     if not self._confirm_progression_departure():
                         continue

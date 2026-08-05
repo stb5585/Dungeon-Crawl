@@ -12,7 +12,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parents[2]))
 
-from src.core.combat import CombatEncounter
+from src.core.combat import CombatEncounter, EnemyResolution
 from src.ui_pygame.assets.enemy_combat_sprite_manager import EnemyCombatSpriteManager
 from src.ui_pygame.gui import combat_view
 from src.ui_pygame.gui.combat_view.animator import DEATH_ANIMATION_FRAMES
@@ -147,6 +147,36 @@ def test_two_enemy_cards_fit_supported_layout_and_expose_hitboxes(size):
     assert encounter.members[0].display_label == "Goblin A"
 
 
+def test_two_enemy_resource_plates_block_dungeon_geometry():
+    screen = pygame.Surface((1024, 720))
+    screen.fill((210, 160, 20))
+    view = combat_view.CombatView(screen, SimpleNamespace())
+    player = TestGameState.create_player(name="Hero")
+    encounter = CombatEncounter.from_enemies(
+        [
+            TestGameState.create_player(name="Goblin"),
+            TestGameState.create_player(name="Zombie"),
+        ],
+        combatant_ids=("first", "second"),
+    )
+
+    view.render_encounter_in_dungeon(
+        player,
+        encounter,
+        focus_target_id="second",
+        details_by_id={"first": True, "second": True},
+    )
+
+    second_lane = view._enemy_card_rects["second"]
+    plate_sample = (
+        second_lane.centerx,
+        second_lane.top + 50,
+    )
+    assert screen.get_at(plate_sample)[:3] == (18, 18, 24)
+    marker_sample = (second_lane.centerx, second_lane.top + 66)
+    assert screen.get_at(marker_sample)[:3] == view.colors["panel_accent"]
+
+
 def test_hidden_enemy_health_uses_approved_approximate_bands():
     enemy = SimpleNamespace(health=SimpleNamespace(current=90, max=100))
     assert combat_view.CombatView._approximate_health_label(enemy) == "Healthy"
@@ -154,6 +184,69 @@ def test_hidden_enemy_health_uses_approved_approximate_bands():
     assert combat_view.CombatView._approximate_health_label(enemy) == "Wounded"
     enemy.health.current = 20
     assert combat_view.CombatView._approximate_health_label(enemy) == "Critical"
+
+
+def test_resolved_enemy_lane_disappears_without_shifting_survivor():
+    screen = pygame.Surface((1024, 720))
+    view = combat_view.CombatView(screen, SimpleNamespace())
+    player = TestGameState.create_player(name="Hero")
+    encounter = CombatEncounter.from_enemies(
+        [
+            TestGameState.create_player(name="Goblin"),
+            TestGameState.create_player(name="Zombie"),
+        ],
+        combatant_ids=("first", "second"),
+    )
+    details = {"first": True, "second": True}
+    view.render_encounter_in_dungeon(
+        player,
+        encounter,
+        focus_target_id="second",
+        details_by_id=details,
+    )
+    survivor_x = view._enemy_card_rects["second"].x
+    assert (
+        view._enemy_target_rects["second"].bottom
+        == view._enemy_card_rects["second"].bottom - 8
+    )
+
+    encounter.resolve_enemy("first", EnemyResolution.MERCY)
+    view.render_encounter_in_dungeon(
+        player,
+        encounter,
+        focus_target_id="second",
+        details_by_id=details,
+    )
+
+    assert "first" not in view._enemy_card_rects
+    assert "first" in view._enemy_target_rects
+    first_animator = view._get_sprite_animator(encounter.members[0].enemy)
+    assert first_animator.animation_type == "death"
+    first_animator.update(DEATH_ANIMATION_FRAMES)
+    view.render_encounter_in_dungeon(
+        player,
+        encounter,
+        focus_target_id="second",
+        details_by_id=details,
+    )
+    assert "first" not in view._enemy_target_rects
+    assert view._enemy_card_rects["second"].x == survivor_x
+
+
+def test_multi_enemy_sprite_sizes_preserve_relative_stature():
+    view = _make_view()
+    view._enemy_combat_sprite_scale = lambda enemy: enemy.presentation_scale
+    available = (320, 380)
+    dwarf = SimpleNamespace(presentation_scale=0.85)
+    vampire = SimpleNamespace(presentation_scale=1.15)
+
+    dwarf_size = view._enemy_encounter_sprite_size(dwarf, available)
+    vampire_size = view._enemy_encounter_sprite_size(vampire, available)
+
+    assert dwarf_size == view._enemy_dungeon_combat_sprite_size(dwarf)
+    assert vampire_size == view._enemy_dungeon_combat_sprite_size(vampire)
+    assert dwarf_size[1] < vampire_size[1]
+    assert vampire_size[1] <= available[1]
 
 
 def _make_view():
@@ -198,7 +291,13 @@ def test_sprite_animator_lifecycle_and_tint():
 
     animator.trigger_death()
     assert animator.animation_type == "death"
-    animator.update(DEATH_ANIMATION_FRAMES)
+    animator.update(4)
+    death_time = animator.animation_time
+    animator.trigger_death()
+    assert animator.animation_time == death_time
+    animator.trigger_damage()
+    assert animator.animation_type == "death"
+    animator.update(DEATH_ANIMATION_FRAMES - death_time)
     assert animator.is_dead is True
     assert animator.death_progress == 1.0
 
@@ -212,11 +311,18 @@ def test_sprite_animator_lifecycle_and_tint():
 def test_combat_log_filters_scrolls_and_status_helpers():
     view = _make_view()
 
+    view.set_hidden_enemy_identities(["Invisible Stalker"])
+    view.add_combat_message("Invisible Stalker attacks Hero.")
+    assert view.combat_log == ["Unseen force attacks Hero."]
+    view.combat_log.clear()
+
     view.add_combat_message("Hero attacks!\nHero is affected by poison\nAlready stunned\nEnemy resists the spell\nNext line")
     assert view.combat_log == ["Hero attacks!", "Next line"]
 
     view.combat_log = [f"Line {i}" for i in range(8)]
     view.log_scroll_offset = 3
+    enemy = SimpleNamespace(name="Goblin")
+    view._get_sprite_animator(enemy).trigger_death()
     view.scroll_log(-10)
     assert view.log_scroll_offset == 0
     view.scroll_log(99)
@@ -224,6 +330,8 @@ def test_combat_log_filters_scrolls_and_status_helpers():
     view.reset_combat_log()
     assert view.combat_log == []
     assert view.log_scroll_offset == 0
+    assert view.sprite_animators == {}
+    assert view._hidden_enemy_names == set()
 
     assert view._effect_label("Resist Fire") == "RF"
     assert view._effect_label("Mystery") == "MYS"
@@ -477,6 +585,58 @@ def test_turn_indicator_skips_incapacitated_actor(monkeypatch):
 
     assert player_token_calls == []
     assert view.screen.blit_calls == []
+
+
+def test_turn_indicator_conceals_invisible_enemy_without_sight(monkeypatch):
+    view = _make_view()
+    player = SimpleNamespace(
+        name="Hero",
+        cls=SimpleNamespace(name="Warrior"),
+        equipment={},
+        sight=False,
+        incapacitated=lambda: False,
+    )
+    enemy = SimpleNamespace(
+        name="Invisible Stalker",
+        invisible=True,
+        incapacitated=lambda: False,
+    )
+    token_calls = []
+    view.enemy_token_manager = SimpleNamespace(
+        get_scaled_token=lambda target, size: (
+            token_calls.append((target.name, size))
+            or DummySurface(size, text="enemy-token")
+        ),
+    )
+    fonts = iter([RecordingFont(), RecordingFont()])
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.combat_view.pygame.font.Font",
+        lambda *_args, **_kwargs: next(fonts),
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.combat_view.pygame.draw.rect",
+        lambda *_args, **_kwargs: None,
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.combat_view.pygame.Surface",
+        lambda size, *_args, **_kwargs: DummySurface(size),
+    )
+
+    view._render_turn_indicator(
+        player,
+        enemy,
+        current_turn="enemy",
+        overlay=True,
+    )
+
+    rendered_text = [
+        getattr(surface, "text", "")
+        for surface, _pos, _args, _kwargs in view.screen.blit_calls
+        if getattr(surface, "text", "")
+    ]
+    assert "Unseen force" in rendered_text
+    assert "Invisible Stalker" not in rendered_text
+    assert token_calls == []
 
 
 def test_flying_enemy_renders_higher_than_grounded(monkeypatch):
@@ -1015,6 +1175,8 @@ def test_enemy_info_panel_adds_invisible_notes_and_preserves_sight_gate(monkeypa
         for surface, _pos, _args, _kwargs in view.screen.blit_calls
         if getattr(surface, "text", "")
     ]
+    assert "Unseen force" in rendered_text
+    assert "Invisible Stalker" not in rendered_text
     assert any(text.startswith("Invisible: details hidden") for text in rendered_text)
     assert "HP 12 / 24" not in rendered_text
     assert not any(text.startswith("Weak Fire") for text in rendered_text)
@@ -1064,6 +1226,10 @@ def test_invisible_stalker_dungeon_combat_does_not_draw_fallback_without_sight(m
     assert calls == []
     assert circle_calls == []
     assert not any(getattr(surface, "text", "") == "enemy-combat-sprite" for surface, *_rest in view.screen.blit_calls)
+    assert not any(
+        getattr(surface, "text", "") == "Invisible Stalker"
+        for surface, *_rest in view.screen.blit_calls
+    )
 
 
 def test_collect_status_icons_includes_vision_and_weapon_art_states():
@@ -1080,6 +1246,18 @@ def test_collect_status_icons_includes_vision_and_weapon_art_states():
     assert ("RMK", False) in icons
     assert ("BRC", True) in icons
     assert ("RIP", True) in icons
+
+
+def test_collect_status_icons_marks_player_charge_in_progress():
+    view = _make_view()
+    character = _make_character()
+    character.spellbook["Skills"]["Charge"] = SimpleNamespace(charging=True)
+
+    assert ("CHG", True) in view._collect_status_icons(character)
+
+    character.spellbook["Skills"]["Charge"].charging = False
+    character.class_effects["Jump"] = _effect(active=True)
+    assert ("CHG", True) in view._collect_status_icons(character)
 
 
 def test_construct_bleed_uses_oil_leak_presentation_without_changing_effect():

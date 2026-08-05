@@ -79,6 +79,8 @@ def record_steps(character: Any, steps: int = 1) -> dict[str, Any]:
 
 
 def is_transformed(character: Any) -> bool:
+    if hasattr(character, "_transformed"):
+        return bool(character._transformed)
     transform_type = getattr(character, "transform_type", None)
     current_cls = getattr(getattr(character, "cls", None), "name", None)
     original_cls = getattr(transform_type, "name", None)

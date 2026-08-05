@@ -18,7 +18,18 @@ from src.core.classes import (
     promotion_kits,
     wizard,
 )
+from src.ui_pygame.assets.ability_icon_manager import get_ability_icon_manager
 import src.ui_pygame.gui.modern_character_screen as character_screen
+
+
+SCHOOL_AFFINITY_ICON_KEYS = {
+    "Fire": "spell_fire",
+    "Ice": "spell_ice",
+    "Water": "spell_water",
+    "Electric": "spell_lightning",
+    "Earth": "spell_earth",
+    "Wind": "spell_wind",
+}
 
 
 class CharacterMechanicsMixin:
@@ -191,7 +202,6 @@ class CharacterMechanicsMixin:
         role = str(entry.get("role", ""))
         description = str(entry.get("description", ""))
         if not unlocked:
-            title = "???"
             description = "Locked"
         cost = "Full bar" if surge else f"{int(entry.get('cost', 0) or 0)} Resolve"
 
@@ -207,7 +217,7 @@ class CharacterMechanicsMixin:
         content = self.details_rect.inflate(-32, -64)
         content.top = y
         meter_width = min(700, max(360, (content.width * 3) // 4))
-        bar_rect = pygame.Rect(content.centerx - meter_width // 2, y + 58, meter_width, 28)
+        bar_rect = pygame.Rect(content.centerx - meter_width // 2, y + 16, meter_width, 28)
         self._draw_meter_bar(bar_rect, resolve, cap, color=self.colors.RED)
         value_text = f"{resolve}/{cap}"
         value_surface = self.normal_font.render(value_text, True, self.colors.WHITE)
@@ -338,7 +348,27 @@ class CharacterMechanicsMixin:
             chain = wizard.SPELL_UPGRADES.get(school, ())
             known = next((name for name in reversed(chain) if name in spells), chain[0] if chain else "None")
             detail = f"{known}"
-            row_y = self._draw_progress_row(left_rect, school, affinity.get(school, 0), cap, row_y, detail=detail)
+            icon = get_ability_icon_manager().get_icon(
+                SCHOOL_AFFINITY_ICON_KEYS[school],
+            )
+            self.screen.blit(
+                icon,
+                icon.get_rect(left=left_rect.left, top=row_y + 2),
+            )
+            row_rect = pygame.Rect(
+                left_rect.left + 42,
+                left_rect.top,
+                left_rect.width - 42,
+                left_rect.height,
+            )
+            row_y = self._draw_progress_row(
+                row_rect,
+                school,
+                affinity.get(school, 0),
+                cap,
+                row_y,
+                detail=detail,
+            )
             if row_y > left_rect.bottom - 40:
                 break
 
@@ -638,6 +668,8 @@ class CharacterMechanicsMixin:
     def draw_class_tab(self, player_char):
         mechanic_tab = self.class_mechanic_tab(player_char)
         panel_title = mechanic_tab.label if mechanic_tab is not None else "Class"
+        if mechanic_tab is not None and mechanic_tab.label == "Resolve":
+            panel_title = None
         y = self._draw_panel(self.details_rect, panel_title)
 
         if grandmaster.is_weapon_discipline_class(player_char):

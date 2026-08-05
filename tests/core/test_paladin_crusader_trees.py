@@ -113,6 +113,9 @@ def test_paladin_tree_has_oath_roots_and_compact_four_branch_geometry():
     assert nodes["+50 MP"].position == (3, 2)
     assert nodes["+50 MP"].prerequisites == (nodes["Heal"].id,)
     assert nodes["Sworn Purpose"].position == (3, 5)
+    assert nodes["Sworn Purpose"].prerequisites == (
+        nodes["Resist Shadow"].id,
+    )
     assert nodes["Blessed Light"].position == (3, 6)
     assert nodes["Blessed Light"].payload["level_requirement"] == 55
     assert nodes["Blessed Light"].prerequisites == (
@@ -125,7 +128,7 @@ def test_paladin_tree_has_oath_roots_and_compact_four_branch_geometry():
     assert nodes["+20 Magic Defense"].prerequisites == ()
     assert nodes["Resist Shadow"].position == (3, 4)
     assert nodes["Resist Shadow"].payload["level_requirement"] == 45
-    assert nodes["Resist Shadow"].prerequisites == ()
+    assert nodes["Resist Shadow"].prerequisites == (nodes["+50 MP"].id,)
     assert nodes["Parry"].position == (5, 3)
     assert nodes["Parry"].prerequisites == (
         nodes["+20 Magic Defense"].id,
@@ -319,6 +322,7 @@ def test_paladin_mana_and_sworn_purpose_nodes_apply_both_support_bonuses():
             "paladin.ability.heal",
             "paladin.mana.mana-1",
             "paladin.ability.oath-shelter",
+            "paladin.ability.resist-shadow",
             "paladin.talent.sworn-purpose",
         ),
         {},
@@ -330,6 +334,29 @@ def test_paladin_mana_and_sworn_purpose_nodes_apply_both_support_bonuses():
     )
     assert player.combat.magic == old_magic + 20
     assert player.combat.magic_def == old_magic_defense + 20
+
+
+def test_resist_shadow_requires_the_preceding_shelter_path():
+    player = _player("Paladin")
+
+    blocked = apply_progression_plan(
+        player,
+        ("paladin.ability.resist-shadow",),
+        {},
+    )
+
+    assert not blocked.success
+    assert "Requires +50 MP" in blocked.message
+    assert apply_progression_plan(
+        player,
+        (
+            "paladin.ability.oath-shelter",
+            "paladin.ability.heal",
+            "paladin.mana.mana-1",
+            "paladin.ability.resist-shadow",
+        ),
+        {},
+    ).success
 
 
 def test_hallowed_ground_damages_and_heals_for_three_turns(monkeypatch):

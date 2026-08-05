@@ -515,6 +515,7 @@ class TestPlayerProgression:
         player.world_dict[(5, 9, 0)] = SimpleNamespace(enter=True)
         player.facing = "north"
         player.transform_type = player.cls
+        player._transformed = True
         player.class_effects["Power Up"].duration = 3
         player.physical_effects["Disarm"].active = False
 
@@ -558,3 +559,13 @@ class TestPlayerProgression:
         }
         assert player.has_relics() is True
         assert player.level_exp() == 1137
+
+    def test_untransform_is_absent_until_a_transform_is_active(self):
+        player = TestGameState.create_player(
+            class_name="Warrior",
+            race_name="Human",
+        )
+
+        actions = player.additional_actions(["Attack", "Use Item", "Flee"])
+
+        assert "Untransform" not in actions

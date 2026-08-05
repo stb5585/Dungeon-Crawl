@@ -131,6 +131,7 @@ class PlayerCombatMixin:
                 self.spellbook = player_char_dict.spellbook
                 self.resistance = player_char_dict.resistance
                 self.transform_type = player_char_dict.transform_type
+                self._transformed = False
                 transform_str = f"{self.name} transforms back into their normal self."
             except FileNotFoundError:
                 pass
@@ -153,6 +154,7 @@ class PlayerCombatMixin:
             self.equipment['OffHand'] = self.transform_type.equipment['OffHand']
             self.spellbook = self.transform_type.spellbook
             self.resistance = self.transform_type.resistance
+            self._transformed = True
             if self.power_up:
                 self.class_effects["Power Up"].active = True
                 self.class_effects["Power Up"].duration = 1

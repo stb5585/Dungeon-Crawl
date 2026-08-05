@@ -84,7 +84,8 @@ class CharacterUtilityMixin:
             weapon_mod = (self.equipment['Weapon'].damage * int(not self.is_disarmed()))
             weapon_mod += self.stat_effects["Attack"].extra * self.stat_effects["Attack"].active
             total_mod = (weapon_mod + class_mod + self.combat.attack) * disarm_damage_multiplier
-            return max(0, int(total_mod * (1 + berserk_per) * totem_bonus))
+            offense_multiplier = float(getattr(self, "_encounter_offense_multiplier", 1.0))
+            return max(0, int(total_mod * (1 + berserk_per) * totem_bonus * offense_multiplier))
         if mod == 'shield':
             block_mod = 0
             if self.equipment['OffHand'].subtyp == 'Shield':
@@ -96,7 +97,15 @@ class CharacterUtilityMixin:
             try:
                 off_mod = self.equipment['OffHand'].damage
                 off_mod += self.stat_effects["Attack"].extra * self.stat_effects["Attack"].active
-                return max(0, int((off_mod + class_mod + self.combat.attack) * (0.75 + berserk_per)))
+                offense_multiplier = float(getattr(self, "_encounter_offense_multiplier", 1.0))
+                return max(
+                    0,
+                    int(
+                        (off_mod + class_mod + self.combat.attack)
+                        * (0.75 + berserk_per)
+                        * offense_multiplier
+                    ),
+                )
             except AttributeError:
                 return 0
         if mod == 'armor':
@@ -113,7 +122,11 @@ class CharacterUtilityMixin:
                 magic_mod += int(self.equipment['Weapon'].damage * 0.75)
             magic_mod += armor_spell_modifier(self.equipment.get("Armor"))
             magic_mod += self.stat_effects["Magic"].extra * self.stat_effects["Magic"].active
-            return max(0, magic_mod + class_mod + self.combat.magic)
+            offense_multiplier = float(getattr(self, "_encounter_offense_multiplier", 1.0))
+            return max(
+                0,
+                int((magic_mod + class_mod + self.combat.magic) * offense_multiplier),
+            )
         if mod == 'magic def':
             # Wisdom is the primary magic-defense stat; charisma provides a secondary
             # willpower component so "dump CHA/WIS" has a tangible downside.

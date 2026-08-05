@@ -456,11 +456,26 @@ class CombatSelectionMixin:
                     if confirmed:
                         return commands[selected]
 
-    def _select_resolve_ability(self, player_char, enemy):
-        """Show Resolve ability selection menu and return selected skill name."""
+    def _select_resolve_ability(self, player_char, enemy, *, bursts=False):
+        """Show a Resolve spend or full-bar burst selection menu."""
         skills = self._available_skill_names(player_char, enemy, resolve=True)
+        burst_names = {
+            entry["name"]
+            for entry in promotion_kits.RESOLVE_SURGES
+        }
+        if bursts:
+            skills = [name for name in skills if name in burst_names]
+        else:
+            skills = [
+                name
+                for name in skills
+                if name != "Hold the Line" and name not in burst_names
+            ]
         if not skills:
-            self.combat_view.add_combat_message("No Resolve abilities available!")
+            label = "bursts" if bursts else "abilities"
+            self.combat_view.add_combat_message(
+                f"No Resolve {label} available!"
+            )
             self._pause_with_events(500)
             return None
 
@@ -474,23 +489,19 @@ class CombatSelectionMixin:
             for skill_name in skills:
                 skill = player_char.spellbook["Skills"][skill_name]
                 display_name = self._canonical_resolve_skill_name(getattr(skill, "name", skill_name))
-                cost = getattr(skill, "resolve_cost", 0)
-                current = promotion_kits.current_resolve(player_char)
-                if str(cost).lower() == "full":
-                    readiness = "Ready"
-                else:
-                    missing = max(0, int(cost or 0) - current)
-                    readiness = "Ready" if missing == 0 else f"Need {missing}"
                 resolve_options.append(
-                    f"{display_name} "
-                    f"({self._resolve_skill_cost_label(skill)}; {readiness})"
+                    f"{display_name} ({self._resolve_skill_cost_label(skill)})"
                 )
             descriptions = [
                 getattr(player_char.spellbook["Skills"][skill_name], "description", "")
                 for skill_name in skills
             ]
             self._render_described_selection_menu(
-                "Select Resolve", resolve_options, selected, scroll_offset, descriptions
+                "Select Resolve Burst" if bursts else "Select Resolve",
+                resolve_options,
+                selected,
+                scroll_offset,
+                descriptions,
             )
             pygame.display.flip()
 
@@ -812,16 +823,36 @@ class CombatSelectionMixin:
         if not promotion_kits.combat_skill_visible(player_char, skill):
             return False
 
+        is_resolve_skill = self._is_resolve_skill(skill)
+        if (
+            getattr(player_char, "anti_magic_active", False)
+            and not is_resolve_skill
+            and getattr(skill, "resource_type", None) != "Oath Conviction"
+        ):
+            return False
+        silence = getattr(player_char, "status_effects", {}).get("Silence")
+        if (
+            getattr(silence, "active", False)
+            and not is_resolve_skill
+            and getattr(skill, "resource_type", None) != "Oath Conviction"
+            and int(getattr(skill, "cost", 0) or 0) > 0
+        ):
+            return False
+
         if getattr(skill, 'name', None) == "Shield Slam":
             offhand = getattr(player_char, 'equipment', {}).get('OffHand')
             return getattr(offhand, 'subtyp', None) == "Shield"
 
-        if self._is_resolve_skill(skill):
+        if is_resolve_skill:
             offhand = getattr(player_char, 'equipment', {}).get('OffHand')
             if getattr(offhand, 'subtyp', None) != "Shield":
                 return False
 
         if getattr(skill, 'weapon', False) and player_char.is_disarmed():
+            return False
+
+        availability = getattr(skill, "is_available", None)
+        if callable(availability) and not availability(player_char, target):
             return False
 
         art_name = getattr(skill, 'name', None)

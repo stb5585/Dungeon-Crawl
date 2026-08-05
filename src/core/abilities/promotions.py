@@ -94,6 +94,13 @@ class HoldTheLine(_ResolveActive):
 
         return promotion_kits.hold_the_line(user)
 
+    def is_available(self, user: Character, target: Character | None = None) -> bool:
+        """Return whether the stance is not already active."""
+        del target
+        from ..classes import promotion_kits
+
+        return not promotion_kits.hold_the_line_active(user)
+
 
 class ShieldBash(_ResolveActive):
     def __init__(self):
@@ -159,7 +166,10 @@ class SpellReflection(_ResolveActive):
     def __init__(self):
         super().__init__(
             "Spell Reflection",
-            "Spend Resolve to reflect the next compatible hostile spell.",
+            (
+                "Spend Resolve to raise Magic Defense and reflect the next "
+                "compatible hostile spell."
+            ),
             25,
         )
 

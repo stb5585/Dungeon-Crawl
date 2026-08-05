@@ -34,16 +34,13 @@ RESOLVE_SPEND_ABILITIES: tuple[dict[str, Any], ...] = (
         "description": "Prepare a shield ward against the next dangerous hit.",
     },
     {
-        "name": "Deflect Spell",
-        "role": "Anti-magic",
-        "cost": 20,
-        "description": "Raise Magic Defense and brace against hostile spell pressure.",
-    },
-    {
         "name": "Spell Reflection",
         "role": "Anti-magic",
         "cost": 25,
-        "description": "Prepare to reflect the next compatible hostile spell.",
+        "description": (
+            "Raise Magic Defense and prepare to reflect the next compatible "
+            "hostile spell."
+        ),
     },
     {
         "name": "Bulwark",
@@ -197,6 +194,11 @@ def build_resolve(character: Any, amount: int, reason: str = "") -> str:
     return msg
 
 
+def hold_the_line_active(character: Any) -> bool:
+    """Return whether Hold the Line still has an active turn window."""
+    return int(combat_state(character).get("hold_the_line", 0) or 0) > 0
+
+
 def hold_the_line(character: Any) -> str:
     training = _require_resolve_training(character, "Hold the Line")
     if training:
@@ -204,6 +206,8 @@ def hold_the_line(character: Any) -> str:
     shield = _require_shield(character, "Hold the Line")
     if shield:
         return shield
+    if hold_the_line_active(character):
+        return "Hold the Line is already active.\n"
     combat_state(character)["hold_the_line"] = 3
     reduction = float(getattr(character, "defensive_stance_reduction", 0.5))
     try:
@@ -309,7 +313,7 @@ def deflect_spell(character: Any) -> str:
 
 
 def prepare_spell_reflection(character: Any) -> str:
-    """Spend Resolve to prepare a one-shot hostile-spell reflection."""
+    """Raise Magic Defense and prepare a one-shot hostile-spell reflection."""
     training = _require_resolve_training(character, "Spell Reflection")
     if training:
         return training
@@ -322,9 +326,13 @@ def prepare_spell_reflection(character: Any) -> str:
     state = combat_state(character)
     state["spell_reflection_turns"] = 2
     state["spell_reflection_skip_tick"] = True
+    effect = character.stat_effects["Magic Defense"]
+    effect.active = True
+    effect.duration = max(int(effect.duration or 0), 3)
+    effect.extra = max(int(effect.extra or 0), 6)
     return (
-        f"{character.name} spends 25 Resolve and prepares Spell Reflection "
-        "for two turns.\n"
+        f"{character.name} spends 25 Resolve, raises Magic Defense, and "
+        "prepares Spell Reflection for two turns.\n"
     )
 
 
@@ -517,7 +525,7 @@ def _use_resolve_surge(character: Any, surge_name: str, target: Any | None = Non
                 effect.duration = max(int(effect.duration or 0), 2)
                 effect.extra = min(int(effect.extra or 0), -3)
             msg += (
-                "Crushing Reprisal lowers the enemy's Attack and Speed by 3 "
+                "Crushing Reprisal lowers the enemy's Attack and Speed "
                 "for two turns.\n"
             )
         return f"{character.name} unleashes Ironwall Reprisal, emptying Resolve into a crushing counter.\n{msg}"

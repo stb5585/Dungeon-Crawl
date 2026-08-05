@@ -108,6 +108,11 @@ class Ability:
                 extra={'cost': self.cost, "type": self.typ, "subtype": self.subtyp}
             )
 
+    def is_available(self, user: Character, target: Character | None = None) -> bool:
+        """Return whether current combat state permits selecting the ability."""
+        del user, target
+        return True
+
     def _reset_result(
         self,
         *,

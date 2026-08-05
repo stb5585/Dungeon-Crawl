@@ -118,6 +118,18 @@ class BattleActionMixin:
             actor=self.attacker,
             target=self.defender,
         ))
+        skills = getattr(self.attacker, "spellbook", {}).get("Skills", {})
+        hold_the_line = skills.get("Hold the Line")
+        class_name = getattr(getattr(self.attacker, "cls", None), "name", "")
+        if (
+            self.attacker == self.player
+            and class_name in {"Sentinel", "Stalwart Defender"}
+            and hold_the_line is not None
+        ):
+            from ...classes import promotion_kits
+
+            return promotion_kits.hold_the_line(self.attacker)
+
         message = self.attacker.enter_defensive_stance(duration=1, source="Defend")
         if self.attacker == self.player:
             from ...classes import promotion_kits
@@ -349,12 +361,19 @@ class BattleActionMixin:
             is_resolve_skill
             or getattr(skill, "resource_type", None) == "Oath Conviction"
         )
+        abilities_suppressed = self.attacker.abilities_suppressed()
+        anti_magic_active = bool(getattr(self.attacker, "anti_magic_active", False))
+        requires_mana = (
+            int(getattr(skill, "cost", 0) or 0) > 0
+            and not is_class_resource_skill
+        )
         if (
-            self.attacker.abilities_suppressed()
+            abilities_suppressed
             and not already_charging
             and not is_class_resource_skill
+            and (anti_magic_active or requires_mana)
         ):
-            reason = "the anti-magic field" if getattr(self.attacker, "anti_magic_active", False) else "silence"
+            reason = "the anti-magic field" if anti_magic_active else "silence"
             return f"{self.attacker.name} cannot use skills because of {reason}!\n"
 
         if (
@@ -569,7 +588,7 @@ class BattleActionMixin:
         self.available_actions = self._available_actions()
         return message, True
 
-    def _execute_totem(self) -> str:
+    def _execute_totem(self, aspect: str | None = None) -> str:
         """Use the Totem skill."""
         skills = self.attacker.spellbook.get("Skills", {})
         totem_skill = skills.get("Totem")
@@ -580,6 +599,12 @@ class BattleActionMixin:
                     break
 
         if totem_skill:
-            return str(totem_skill.use(self.attacker, target=self.defender))
+            return str(
+                totem_skill.use(
+                    self.attacker,
+                    target=self.defender,
+                    active_aspect=aspect or "Earth",
+                )
+            )
         else:
             return f"{self.attacker.name} does not know how to summon a totem.\n"

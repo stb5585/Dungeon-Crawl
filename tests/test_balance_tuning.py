@@ -4,6 +4,56 @@
 import random
 
 
+def test_pair_modifier_ranking_uses_score_when_no_configuration_passes():
+    from tools.search_curated_pair_tuning import _rank_modifier_results
+
+    near_one = {
+        "passes": False,
+        "score": 0.4,
+        "health_multiplier": 1.0,
+        "offense_multiplier": 1.0,
+    }
+    lower_score = {
+        "passes": False,
+        "score": 0.1,
+        "health_multiplier": 0.8,
+        "offense_multiplier": 1.2,
+    }
+
+    ranked = _rank_modifier_results([near_one, lower_score])
+
+    assert ranked[0] is lower_score
+
+
+def test_pair_modifier_ranking_prefers_nearest_passing_configuration():
+    from tools.search_curated_pair_tuning import _rank_modifier_results
+
+    farther_pass = {
+        "passes": True,
+        "score": 0.0,
+        "health_multiplier": 0.8,
+        "offense_multiplier": 1.2,
+    }
+    nearer_pass = {
+        "passes": True,
+        "score": 0.0,
+        "health_multiplier": 0.9,
+        "offense_multiplier": 1.1,
+    }
+    failing = {
+        "passes": False,
+        "score": 0.01,
+        "health_multiplier": 1.0,
+        "offense_multiplier": 1.0,
+    }
+
+    ranked = _rank_modifier_results(
+        [farther_pass, failing, nearer_pass],
+    )
+
+    assert ranked[:2] == [nearer_pass, farther_pass]
+
+
 def test_crit_chance_is_capped():
     from tests.test_framework import TestGameState
     from src.core.constants import MAX_CRIT_CHANCE

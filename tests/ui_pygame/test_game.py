@@ -181,11 +181,7 @@ def test_init_build_character_and_default_character(monkeypatch):
 def test_debug_level_up_initialize_managers_and_update_bounties(monkeypatch):
     game = pygame_game.PygameGame.__new__(pygame_game.PygameGame)
     game.debug_mode = True
-    game.presenter = SimpleNamespace(
-        screen="screen",
-        show_message=lambda message: messages.append(message),
-    )
-    messages = []
+    game.presenter = SimpleNamespace(screen="screen")
     game.player_char = SimpleNamespace(
         level=SimpleNamespace(level=5, exp=10, exp_to_gain=20),
         max_level=lambda: False,
@@ -207,8 +203,21 @@ def test_debug_level_up_initialize_managers_and_update_bounties(monkeypatch):
     assert calls == [(game.player_char, game)]
 
     game.player_char.max_level = lambda: True
+    popup_calls = []
+
+    class FakeConfirmationPopup:
+        def __init__(self, presenter, message, show_buttons=True):
+            popup_calls.append((presenter, message, show_buttons))
+
+        def show(self, **kwargs):
+            popup_calls.append(kwargs)
+
+    monkeypatch.setattr(pygame_game, "ConfirmationPopup", FakeConfirmationPopup)
     game.debug_level_up()
-    assert messages == ["Already at max level."]
+    assert popup_calls == [
+        (game.presenter, "Already at max level.", False),
+        {"flush_events": True, "require_key_release": True},
+    ]
 
     manager_calls = []
     monkeypatch.setattr(pygame_game, "ShopManager", lambda presenter, player: manager_calls.append(("shop", player)) or "shop")

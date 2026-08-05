@@ -27,6 +27,7 @@ from .models import (
     ActionValidationCode,
     BattleOutcome,
     ForcedAction,
+    LootAward,
     PostTurnResult,
     PreTurnResult,
 )
@@ -469,6 +470,21 @@ class BattleTurnMixin:
         *,
         slot_machine_callback: Callable | None = None,
     ) -> ActionResult:
+        """Execute an intent and report terminal resolutions produced by it."""
+        result = self._execute_intent(
+            intent,
+            slot_machine_callback=slot_machine_callback,
+        )
+        if result.committed:
+            result.new_resolutions = self._consume_new_resolution_records()
+        return result
+
+    def _execute_intent(
+        self,
+        intent: ActionIntent,
+        *,
+        slot_machine_callback: Callable | None = None,
+    ) -> ActionResult:
         """Validate and execute an action for the engine-owned active actor."""
         scope = self._target_scope_for_action(intent.action, intent.choice)
         actor_id = self.current_actor_id or self._actor_id_for(self.attacker)
@@ -517,6 +533,24 @@ class BattleTurnMixin:
         finally:
             if member is None:
                 self.defender = original_defender
+
+        # Multi-enemy rendering depends on the ledger to distinguish a newly
+        # defeated member that should fade out from a merely dead, unresolved
+        # combatant. Finalize the target before returning the action so pygame
+        # never renders an intermediate "dead but unresolved" frame.
+        if len(self.encounter.members) > 1:
+            if member is not None and not member.enemy.is_alive():
+                resurrection = member.enemy.spellbook.get("Spells", {}).get(
+                    "Resurrection"
+                )
+                if (
+                    resurrection is not None
+                    and abs(member.enemy.health.current) <= member.enemy.mana.current
+                ):
+                    resurrection_message = resurrection.cast(member.enemy)
+                    if resurrection_message:
+                        result.message += str(resurrection_message)
+            self._record_final_enemy_resolutions()
 
         target_id = member.combatant_id if member else (
             actor_id
@@ -793,7 +827,7 @@ class BattleTurnMixin:
             result.message, result.summon_recalled = self._execute_recall()
 
         elif action == "Totem":
-            result.message = self._execute_totem()
+            result.message = self._execute_totem(choice)
 
         elif action == "Untransform":
             result.message = self.attacker.transform(back=True)
@@ -1047,6 +1081,7 @@ class BattleTurnMixin:
                     result.messages.append(riposte)
 
         self._record_final_enemy_resolutions()
+        result.new_resolutions = self._consume_new_resolution_records()
         paladin.tick_turn(self.player)
         if self.defender == self.player and self.player.is_alive():
             hp_max = max(1, int(self.player.health.max or 1))
@@ -1217,7 +1252,13 @@ class BattleTurnMixin:
         elif self.player.is_alive():
             result = "victory"
             winner = self.player.name
-            message, settlements, total_exp, level_up = self._process_multi_victory()
+            (
+                message,
+                settlements,
+                total_exp,
+                level_up,
+                notices,
+            ) = self._process_multi_victory()
         else:
             result = "defeat"
             winner = self.encounter.primary_enemy.name
@@ -1228,6 +1269,7 @@ class BattleTurnMixin:
             settlements = ()
             total_exp = 0
             level_up = False
+            notices = ()
             message += promotion_kits.end_combat(
                 self.player,
                 victory=False,
@@ -1249,6 +1291,23 @@ class BattleTurnMixin:
             self.player.effects(end=True)
             if result == "defeat":
                 self.player.death()
+        combined_loot = {}
+        for settlement in settlements:
+            for award in settlement.loot_awards:
+                key = (award.destination, award.item_name)
+                combined_loot[key] = combined_loot.get(key, 0) + award.quantity
+        loot_awards = tuple(
+            LootAward(item_name=name, quantity=quantity, destination=destination)
+            for (destination, name), quantity in sorted(combined_loot.items())
+        )
+        resolution_counts = tuple(
+            (resolution, sum(
+                settlement.resolution == resolution
+                for settlement in settlements
+            ))
+            for resolution in EnemyResolution
+            if any(settlement.resolution == resolution for settlement in settlements)
+        )
         outcome = BattleOutcome(
             result=result,
             winner=winner,
@@ -1257,6 +1316,10 @@ class BattleTurnMixin:
             rewards_settled=True,
             member_settlements=settlements,
             total_experience=total_exp,
+            total_gold=sum(settlement.gold for settlement in settlements),
+            loot_awards=loot_awards,
+            resolution_counts=resolution_counts,
+            notices=notices,
             level_up=level_up,
         )
         self.logger.end_battle(
@@ -1319,6 +1382,18 @@ class BattleTurnMixin:
                 resolution,
                 cause=cause,
             )
+
+    def _consume_new_resolution_records(self):
+        """Return terminal records not yet attached to an action/turn result."""
+        reported = getattr(self, "_reported_resolution_ids", set())
+        records = tuple(
+            record
+            for record in self.encounter.resolution_ledger
+            if record.combatant_id not in reported
+        )
+        reported.update(record.combatant_id for record in records)
+        self._reported_resolution_ids = reported
+        return records
 
     @staticmethod
     def _attempt_member_resurrection(member) -> bool:

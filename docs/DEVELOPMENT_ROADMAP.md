@@ -134,9 +134,9 @@ Judgment branches left through `Double Strike -> +20 Attack -> Tempered
 Conviction -> True Strike` and right through `Smite -> Repel the Wicked -> +20
 Magic -> Hallowed Ground`. Shelter branches through `Heal -> +50 MP -> Sworn
 Purpose -> Blessed Light` and `Bless -> +20 Magic Defense -> +20 Defense ->
-Divine Protection`; Magic Defense and level-45 Resist Shadow are detached
-from the Shelter connector, while Magic Defense gates Parry and the remaining
-protection chain.
+Divine Protection`; level-45 Resist Shadow now sits between `+50 MP` and Sworn
+Purpose so the Grace path cannot be entered midway, while Magic Defense gates
+Parry and the remaining protection chain.
 The centered level-60 Crusader promotion requires either Oath root plus its
 existing stats and three-point cost. It sits at `(2.5, 7)`, with each Oath
 connector descending to its row before joining. Because attributes use their own
@@ -246,7 +246,7 @@ Triage bands:
 | Class-kit track expansions | Combo chains, Maestro progression, Beast Master stables, Grove questlines, Jump mastery, multi-vow systems, broader scar trees, divine economy, loot redesign, Seeker pathing, stealth rewrite, stolen-spell mastery. | `Needs Evidence` | Class-kit UI/log, pacing, and balance-threshold evidence identifies one specific track. | `CLASS_KIT_DESIGN_GATES.md` | One track's one-page spec, not a multi-track mechanics batch. |
 | Class-ring tuning/presentation | Wizard radar visualization, ring status polish, and ring effect tuning. | `Needs Evidence` | Manual UI/readability notes or class-kit balance threshold findings. | `CLASS_RING_SYSTEM.md` | Presentation-only ring readability before numeric tuning. |
 | Promotion ability transition expansions | Ability-history restoration, alternate retention policies, and new promotion spell/skill grants. | `Do Not Promote As Cleanup` | Explicit transition-rule spec with save/load and UI message behavior. | `PROMOTION_ABILITY_RULES.md` | One promotion path with save/load and text/pygame message coverage. |
-| Combat semantics and architecture | Multi-enemy combat, speed-based combat stacks, dice conversion, always-hit flags, ignore-defense order, unlockable race/class/difficulty strategy, and XP scaling. | `Draft Decisions Required` | Approve the required decisions in `MULTI_ENEMY_COMBAT_DESIGN.md`; other combat expansions still require their own full spec. | `MULTI_ENEMY_COMBAT_DESIGN.md`, `COMBAT_BALANCE_DESIGN_GATES.md` | Multi-enemy characterization/decision work or one isolated semantic rule, not an architecture conversion before approval. |
+| Combat semantics and architecture | Deeper-floor multi-enemy content, speed-based combat stacks, dice conversion, always-hit flags, ignore-defense order, unlockable race/class/difficulty strategy, and XP scaling. | `Needs Evidence` | Select floor-appropriate ordinary-enemy catalogs and benchmarks for a deeper-floor curated pilot; other combat expansions still require their own full spec. | `MULTI_ENEMY_COMBAT_DESIGN.md`, `MULTI_ENEMY_PILOT_2_PLAN.md`, `COMBAT_BALANCE_DESIGN_GATES.md` | Development-only curated pairs for deeper floors, not random rollout or rosters larger than two. |
 | Equipment/economy save-heavy systems | Durability, identification, item modification, equipment actives, armor mobility, Tome effects, ultimate helmets, rarity semantics. | `Needs Spec` | Serializer, UI, economy, old-save, and balance contracts are defined. | `EQUIPMENT_ITEMS_ECONOMY_DESIGN_GATES.md` | Shop polish or one inert P6-adjacent item, not durability plus modification. |
 | Dungeon/world interaction expansion | Harvestable roots/fungus, rubble clearing, crystal interaction, bone/gear salvage, deeper Realm of Cambion rooms, rewards, and encounter variants. | `Needs Spec` | Content beat, tile state, reward, and save behavior are defined. | `DUNGEON_WORLD_ENCOUNTER_DESIGN_GATES.md` | One decorative tile interaction with old-save inert fallback. |
 | Presentation and asset expansions | Jump/Charge animation, Warp Point art, town/NPC/venue art, status-effect artwork, enemy identity presentation, website. | `Needs Evidence` | Target list and review-sheet workflow are approved, or UX evidence identifies a readability need. | `PRESENTATION_ASSET_DESIGN_GATES.md` | One generated bitmap batch or one readability layer with fallback behavior. |
@@ -511,7 +511,32 @@ Systems, audio, and meta planning is split across durable owner docs:
   is preserved in `docs/PROGRESSION_REFACTOR_CHECKPOINT.md`. Do not extend the
   current trees until the next fundamental game-design direction defines its
   progression, ability-ownership, and promotion model.
+- Refactor ability menus in combat
+  - Change to an action shortcut bar with (limited?) slots that can be rearranged
 - Separate passive and usable abilities in the spellbook
+  - create new tab for abilities; could be integrated with refactor ability bar
+- Change how invisibility works in combat
+  - invisible enemies are not singularly targetable but can be hit by AoE abilities
+  - Do not draw sprite in combat unless Sight; possibly add reveal mechanic (high wisdom,
+  combat awareness, etc.)
+- Amplify charged abilities to make them more useful
+  - add abilities for cancellation
+- Add class-specific resource meters to the navigation and combat view
+  - currently things like Resolve are included in the Combat Focus but should
+    show up under HP and MP meters
+  - use a different fill color for each different meter gauge
+    - for Resolve, use dark purple
+- Implement new combat view to allow for more realistic enemy sprite locations
+  - allow expansion of multi-enemy combat beyond 2 enemies
+  - make sure there is room for a combat stack for speed-based combat
+- Resolve takes a long time to build up in order to use Bursts
+  - increase generation for skills and/or lower cost for Resolve abilities
+- Add popup helpers with descriptions for the Primary Attributes in the Progression
+  tab
+- Ability Improvements
+  - `Ironwall Reprisal` should rarely miss, should do more damage, and hit
+    all enemies; perhaps it is better described as a shockwave instead of
+    a melee attack
 
 ### Playtest Findings
 

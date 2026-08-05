@@ -101,7 +101,6 @@ from .promotions import (
     ConsecratedConduit,
     CoveringGuard,
     DeathMark,
-    DeflectSpell,
     Eclipse,
     FindersKeepers,
     FourfoldSurge,
@@ -481,9 +480,8 @@ skill_dict = {
         "9": Retaliate,
         "10": ShieldRiposte,
         "12": CoveringGuard,
-        "14": DeflectSpell,
+        "14": SpellReflection,
         "16": Bulwark,
-        "18": SpellReflection,
         },
     "Stalwart Defender": {
         "1": [CitadelAegis,

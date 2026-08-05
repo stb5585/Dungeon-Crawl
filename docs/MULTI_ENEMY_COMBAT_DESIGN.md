@@ -2,7 +2,7 @@
 
 ## Status
 
-Status: `Implemented - Slices 0 through 6 (development-only curated pilot)`
+Status: `Implemented - Slices 0 through 6; early-floor curated pilots complete`
 
 This document promotes the multi-enemy combat item from
 `COMBAT_BALANCE_DESIGN_GATES.md` into a concrete architecture proposal.
@@ -22,6 +22,13 @@ The first stable release remains intentionally limited to one player-facing
 combat slot against one or two enemies. The architecture does not impose a
 permanent two-enemy ceiling, but content generation and UI acceptance enforce
 that ceiling until playtest and simulator evidence support expanding it.
+
+Pilot 1 closed with its 20-battle evidence pass. Pilot 2 closed with seven
+targeted manual battles, including a dedicated Hallowed Ground
+`ALL_ENEMIES` run, after automated screening selected three additional
+development-only pairs. Deeper-floor curated encounters are the next content
+validation phase. Ordinary random pair generation remains disabled pending
+its separate promotion decision.
 
 ## Motivation
 
@@ -734,7 +741,8 @@ Exit condition: stable crash-free playtests, acceptable balance evidence, and
 no unresolved blocker from the special-mechanic audit.
 
 Implemented as a development-only pilot. `DUNGEON_FORCE_ENCOUNTER` accepts
-`carrion_crawl`, `wing_and_mattock`, or `fang_and_spear` at their authored
+`carrion_crawl`, `wing_and_mattock`, `fang_and_spear`, `grave_web`,
+`lesser_conspiracy`, or `hoof_and_howl` at their authored
 floors. Ordinary random probabilities remain singleton-only. Promotion to
 normal generation remains blocked on the evidence gate below.
 The override is opted into only by ordinary dungeon tile generation; bounty
@@ -849,9 +857,13 @@ belonging to later slices remains deferred even though its contract is fixed.
 
 19. **Enemy area actions:** Deferred. V1 retains one active player-side slot.
 
-20. **Frontend:** Support at least 1024x720. Both compact cards remain visible,
-    only focus receives the detail panel, and hidden enemies expose only an
-    approximate health band.
+20. **Frontend:** Support at least 1024x720. Two stable battlefield lanes use
+    free-standing independently animated sprites, compact resource plates,
+    focus outlines, and lane-sized hitboxes. A resolved member animates out
+    and leaves no corpse or terminal card. Without Sight, ordinary enemies
+    retain their sprite but expose only a health band; genuinely invisible
+    enemies hide their sprite. Sight reveals exact HP, MP, statuses,
+    resistances, and focused details.
 
 21. **Promotion evidence:** Require 500 seeded simulations per pair across the
     five base classes, 20 manual battles with at least five per pair, zero

@@ -98,13 +98,14 @@ or stat requirements differ.
     level 45, and Hallowed Ground level 55. Tempered Conviction grants `+20
     Defense` and one Conviction capacity.
   - Ungated Oath's Shelter begins at `(4, 0)`. Its left branch is `Heal -> +50
-    MP -> Sworn Purpose -> Blessed Light` in column 3. Sworn Purpose is level
+    MP -> Resist Shadow -> Sworn Purpose -> Blessed Light` in column 3.
+    Resist Shadow is level 45 and cannot be purchased without the preceding
+    Shelter-path nodes. Sworn Purpose is level
     50 and grants both `+20 Magic` and `+20 Magic
     Defense`. Blessed Light makes a successful healing-spell cast in combat
     grant `+10 Attack` for three turns, refreshing without stacking.
-  - Its right branch begins with ungated Bless at `(5, 1)`. Magic Defense and
-    level-45 Resist Shadow are detached from the Oath's Shelter connector.
-    Magic Defense begins the protection chain through Parry, `+20 Defense`,
+  - Its right branch begins with ungated Bless at `(5, 1)`. Magic Defense
+    begins the protection chain through Parry, `+20 Defense`,
     and level-50 Divine Protection. Parry adopts prior ownership but never
     backfills Magic Defense or any other prerequisite.
   - Promote: Crusader is centered at `(2.5, 7)`: it requires either Oath root,

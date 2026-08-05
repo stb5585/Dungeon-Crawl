@@ -8,13 +8,36 @@ from ... import items, thieves_guild
 from ...classes import berserker, class_rings, dragoon, grandmaster, lycan, paladin, promotion_kits
 from ...enemies.identity import restore_defeat_identity
 from ..encounter import EnemyResolution
-from .models import EnemySettlement
+from .models import EnemySettlement, LootAward
 
 if TYPE_CHECKING:
     from ...character import Character
 
 
 class BattleOutcomeMixin:
+    @staticmethod
+    def _inventory_counts(player) -> dict[tuple[str, str], int]:
+        """Snapshot acquired item counts by inventory destination and name."""
+        counts = {}
+        for destination, attribute in (
+            ("normal", "inventory"),
+            ("special", "special_inventory"),
+        ):
+            inventory = getattr(player, attribute, {}) or {}
+            for item_name, stack in inventory.items():
+                counts[(destination, str(item_name))] = len(stack)
+        return counts
+
+    @staticmethod
+    def _inventory_awards(before, after) -> tuple[LootAward, ...]:
+        """Return positive inventory changes in stable destination/name order."""
+        return tuple(
+            LootAward(item_name=name, quantity=after[key] - before.get(key, 0), destination=destination)
+            for key in sorted(after, key=lambda value: (value[0], value[1]))
+            for destination, name in (key,)
+            if after[key] > before.get(key, 0)
+        )
+
     def _process_victory(self) -> str:
         """Handle victory bookkeeping: exp, loot, quests, kill tracking."""
         enemy = self.encounter.primary_enemy
@@ -183,7 +206,13 @@ class BattleOutcomeMixin:
 
     def _process_multi_victory(
         self,
-    ) -> tuple[str, tuple[EnemySettlement, ...], int, bool]:
+    ) -> tuple[
+        str,
+        tuple[EnemySettlement, ...],
+        int,
+        bool,
+        tuple[str, ...],
+    ]:
         """Settle a completed multi-enemy ledger exactly once."""
         settlements = []
         total_exp = 0
@@ -209,6 +238,7 @@ class BattleOutcomeMixin:
             )
             total_exp += exp_gain
             gold_before = int(getattr(self.player, "gold", 0) or 0)
+            inventory_before = self._inventory_counts(self.player)
             member_message = ""
             loot_eligible = resolution == EnemyResolution.DEFEATED
             kill_credit = loot_eligible
@@ -291,6 +321,10 @@ class BattleOutcomeMixin:
                     bestiary_credit=bestiary_credit,
                     quest_credit=quest_credit,
                     bounty_credit=bounty_credit,
+                    loot_awards=self._inventory_awards(
+                        inventory_before,
+                        self._inventory_counts(self.player),
+                    ),
                     message=member_message,
                 )
             )
@@ -369,11 +403,27 @@ class BattleOutcomeMixin:
             else None
         )
         message += f"Encounter total: {total_exp} experience.\n"
+        reward_fragments = (
+            " experience.",
+            " dropped ",
+            " offers ",
+            " yields to mercy",
+            " leaves as a companion",
+            " was ejected ",
+            " escaped the encounter",
+            "Encounter total:",
+        )
+        notices = tuple(
+            line
+            for line in message.splitlines()
+            if line and not any(fragment in line for fragment in reward_fragments)
+        )
         return (
             message,
             tuple(settlements),
             total_exp,
             level_result.new_level > level_result.old_level,
+            notices,
         )
 
     def _grandmaster_victory_xp_text_for(self, enemy) -> str:

@@ -137,6 +137,12 @@ class Adrenaline(Skill):
         self.cost = 0
         self.target_self = True
 
+    def is_available(self, user, target=None) -> bool:
+        """Return whether the user is below Adrenaline's health threshold."""
+        del target
+        maximum = max(1, int(user.health.max))
+        return int(user.health.current) * 10 < maximum
+
     def use(self, user, target=None, **kwargs):
         result = super().use(user, user, **kwargs)
         maximum = max(1, int(user.health.max))

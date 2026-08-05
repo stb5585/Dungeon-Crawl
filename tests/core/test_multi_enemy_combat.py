@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from src.core import abilities
+from src.core import abilities, items
 from src.core.combat import CombatEncounter, EnemyResolution, TargetScope
 from src.core.combat.battle_engine import (
     ActionIntent,
@@ -169,6 +169,64 @@ def test_explicit_target_updates_focus_without_enemy_compatibility_bridge(monkey
     assert engine.focus_target_id == "enemy-b"
     assert seen == [enemies[1]]
     assert not hasattr(engine, "enemy")
+
+
+def test_lethal_single_target_intent_records_resolution_before_return(monkeypatch):
+    engine, player, enemies, _tile = _engine()
+    engine.start_battle()
+
+    def lethal_weapon_damage(target, **_kwargs):
+        damage = target.health.current
+        target.health.current = 0
+        return "Lethal hit.\n", True, damage
+
+    monkeypatch.setattr(player, "weapon_damage", lethal_weapon_damage)
+
+    result = engine.execute_intent(
+        ActionIntent("Attack", target_ids=("enemy-a",))
+    )
+
+    assert result.new_resolutions == (
+        engine.encounter.resolution_ledger[0],
+    )
+    assert result.new_resolutions[0].combatant_id == "enemy-a"
+    assert result.new_resolutions[0].resolution == EnemyResolution.DEFEATED
+    assert engine.encounter.member_by_id("enemy-a").resolution == (
+        EnemyResolution.DEFEATED
+    )
+    assert engine.focus_target_id == "enemy-b"
+    assert enemies[0].health.current == 0
+
+
+def test_single_target_resurrection_precedes_terminal_resolution(monkeypatch):
+    engine, player, enemies, _tile = _engine()
+    engine.start_battle()
+
+    def resurrect(caster):
+        caster.health.current = 1
+        return f"{caster.name} rises again.\n"
+
+    enemies[0].spellbook["Spells"]["Resurrection"] = type(
+        "_Resurrection",
+        (),
+        {"cast": staticmethod(resurrect)},
+    )()
+
+    def lethal_weapon_damage(target, **_kwargs):
+        damage = target.health.current
+        target.health.current = 0
+        return "Lethal hit.\n", True, damage
+
+    monkeypatch.setattr(player, "weapon_damage", lethal_weapon_damage)
+
+    result = engine.execute_intent(
+        ActionIntent("Attack", target_ids=("enemy-a",))
+    )
+
+    assert "Goblin rises again" in result.message
+    assert result.new_resolutions == ()
+    assert engine.encounter.resolution_ledger == ()
+    assert enemies[0].health.current == 1
 
 
 def test_dead_enemy_is_skipped_without_changing_fixed_order():
@@ -349,4 +407,54 @@ def test_mixed_mercy_and_ejection_settle_only_approved_rewards():
     assert ejection.gold == 0
     assert ejection.loot_eligible is False
     assert outcome.total_experience == 165
+    assert outcome.total_gold == 40
+    assert outcome.resolution_counts == (
+        (EnemyResolution.MERCY, 1),
+        (EnemyResolution.EJECTED, 1),
+    )
     assert player.kill_dict.get("TestEnemy", {}) == {}
+
+
+def test_post_turn_reports_each_new_resolution_once():
+    engine, _player, enemies, _tile = _engine()
+    engine.start_battle()
+    enemies[0].health.current = 0
+
+    first = engine.post_turn()
+    second = engine.post_turn()
+
+    assert [
+        (record.combatant_id, record.resolution)
+        for record in first.new_resolutions
+    ] == [("enemy-a", EnemyResolution.DEFEATED)]
+    assert second.new_resolutions == ()
+
+
+def test_multi_settlement_aggregates_normal_and_special_loot():
+    engine, player, enemies, _tile = _engine()
+    engine.start_battle()
+
+    def award_test_loot(enemy, _tile):
+        player.gold += enemy.gold
+        player.modify_inventory(items.HealthPotion())
+        player.modify_inventory(items.JesterToken(), rare=True)
+        return f"{enemy.name} dropped test loot.\n"
+
+    player.loot = award_test_loot
+    for enemy in enemies:
+        enemy.health.current = 0
+        enemy.gold = 7
+        enemy.inventory = {}
+    engine._record_final_enemy_resolutions()
+
+    outcome = engine.end_battle()
+
+    assert outcome.total_gold == 14
+    assert {
+        (award.item_name, award.quantity, award.destination)
+        for award in outcome.loot_awards
+    } == {
+        ("Health Potion", 2, "normal"),
+        ("Jester Token", 2, "special"),
+    }
+    assert all(len(settlement.loot_awards) == 2 for settlement in outcome.member_settlements)

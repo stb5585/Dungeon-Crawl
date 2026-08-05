@@ -883,6 +883,7 @@ class TestPlayerUtilityBehaviors:
         assert player.health.max == original_health_max + 20
         assert player.mana.max == original_mana_max + 5
         assert player.stats.strength == original_strength + 2
+        assert player._transformed is True
 
         restored = SimpleNamespace(
             cls=original_cls,
@@ -909,6 +910,7 @@ class TestPlayerUtilityBehaviors:
         assert player.cls == original_cls
         assert player.health.max == original_health_max
         assert player.mana.max == original_mana_max
+        assert player._transformed is False
 
     def test_transform_back_returns_empty_when_no_saved_form(self, monkeypatch):
         player = TestGameState.create_player(class_name="Warrior", race_name="Human")

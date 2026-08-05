@@ -29,6 +29,7 @@ class CharacterCoreMixin:
         self.equipment_selector_active = False
         self.class_companion_selector_active = False
         self.weapon_discipline_selector_active = False
+        self.progression_selector_active = False
         self.selected_jump_mod_index = 0
         self._jump_mod_row_rects: list[pygame.Rect] = []
         self.current_selection = 0
@@ -86,6 +87,8 @@ class CharacterCoreMixin:
                 if key != "class":
                     self.class_companion_selector_active = False
                     self.weapon_discipline_selector_active = False
+                if key != "progression":
+                    self.progression_selector_active = False
                 return
         raise ValueError(f"Unknown character tab: {key}")
 

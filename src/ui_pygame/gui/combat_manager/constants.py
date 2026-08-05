@@ -7,6 +7,8 @@ _DISPLAY_TO_ENGINE = {
     "Spells": "Cast Spell",
     "Skills": "Use Skill",
     "Resolve": "Use Skill",
+    "Bursts": "Use Skill",
+    "Hold the Line": "Defend",
     "Items": "Use Item",
 }
 
@@ -33,5 +35,9 @@ SLOT_CARD_VALUES = {
 VESPERION_FALSE_FINAL_HP_RATIO = 0.70
 VESPERION_FALSE_FINAL_ENEMY_TURNS = 3
 # Hold the opening combat frame briefly so encounters have a readable handoff.
-COMBAT_START_TRANSITION_FRAMES = 24
-POST_TURN_DELAY_FRAMES = 6
+COMBAT_START_TRANSITION_FRAMES = 12
+ENEMY_PRE_ACTION_HOLD_FRAMES = 15
+ENEMY_RESULT_HOLD_FRAMES = 24
+POST_TURN_DELAY_FRAMES = 3
+DEFEAT_PAUSE_MS = 450
+FLEE_PAUSE_MS = 350

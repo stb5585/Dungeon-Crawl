@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 from ..combat_result import CombatResultGroup
-from ..encounter import EnemyResolution
+from ..encounter import EnemyResolution, EnemyResolutionRecord
 from ..targeting import ActionIntent, ActionValidationCode
 
 if TYPE_CHECKING:
@@ -44,6 +44,7 @@ class ActionResult:
     committed: bool = True
     validation_code: ActionValidationCode | None = None
     combat_results: CombatResultGroup | None = None
+    new_resolutions: tuple[EnemyResolutionRecord, ...] = ()
 
 
 @dataclass
@@ -53,6 +54,16 @@ class PostTurnResult:
     defender_died: bool = False
     resurrected: bool = False
     summon_died: bool = False
+    new_resolutions: tuple[EnemyResolutionRecord, ...] = ()
+
+
+@dataclass(frozen=True)
+class LootAward:
+    """One acquired item stack and its inventory destination."""
+
+    item_name: str
+    quantity: int
+    destination: str
 
 
 @dataclass
@@ -66,6 +77,10 @@ class BattleOutcome:
     rewards_settled: bool = True
     member_settlements: tuple[EnemySettlement, ...] = ()
     total_experience: int = 0
+    total_gold: int = 0
+    loot_awards: tuple[LootAward, ...] = ()
+    resolution_counts: tuple[tuple[EnemyResolution, int], ...] = ()
+    notices: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -82,4 +97,5 @@ class EnemySettlement:
     bestiary_credit: bool = False
     quest_credit: bool = False
     bounty_credit: bool = False
+    loot_awards: tuple[LootAward, ...] = ()
     message: str = ""

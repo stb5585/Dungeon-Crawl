@@ -16,20 +16,36 @@ def test_curated_pair_catalog_is_stable_and_builds_fresh_rosters():
         (spec.key, spec.display_name, spec.floor)
         for spec in specs
     ] == [
-        ("carrion_crawl", "Carrion Crawl", 1),
-        ("wing_and_mattock", "Wing and Mattock", 1),
-        ("fang_and_spear", "Fang and Spear", 2),
+        ("carrion_crawl", "Giant Hornet & Battle Toad", 1),
+        ("wing_and_mattock", "Electric Bat & Battle Toad", 1),
+        ("fang_and_spear", "Twisted Dwarf & Vampire Bat", 2),
+        ("grave_web", "Zombie & Quasit", 1),
+        ("lesser_conspiracy", "Battle Toad & Satyr", 1),
+        ("hoof_and_howl", "Twisted Dwarf & Xorn", 2),
     ]
 
     first = enemies.build_curated_encounter("carrion_crawl")
     second = enemies.build_curated_encounter("carrion_crawl")
 
     assert [member.enemy.name for member in first.members] == [
-        "Giant Centipede",
-        "Zombie",
+        "Giant Hornet",
+        "Battle Toad",
     ]
     assert first.encounter_id != second.encounter_id
     assert first.primary_enemy is not second.primary_enemy
+    by_key = {spec.key: spec for spec in specs}
+    assert (
+        by_key["grave_web"].health_multiplier,
+        by_key["grave_web"].offense_multiplier,
+    ) == (0.85, 1.2)
+    assert (
+        by_key["lesser_conspiracy"].health_multiplier,
+        by_key["lesser_conspiracy"].offense_multiplier,
+    ) == (0.8, 1.1)
+    assert (
+        by_key["hoof_and_howl"].health_multiplier,
+        by_key["hoof_and_howl"].offense_multiplier,
+    ) == (0.9, 1.1)
 
 
 def test_curated_override_applies_only_through_random_enemy(monkeypatch):
@@ -39,9 +55,43 @@ def test_curated_override_applies_only_through_random_enemy(monkeypatch):
     encounter = selected._runtime_combat_encounter
     assert encounter.primary_enemy is selected
     assert [member.enemy.name for member in encounter.members] == [
-        "Gnoll",
-        "Giant Snake",
+        "Twisted Dwarf",
+        "Vampire Bat",
     ]
+
+
+@pytest.mark.parametrize(
+    ("key", "floor", "member_names"),
+    (
+        ("grave_web", "1", ("Zombie", "Quasit")),
+        ("lesser_conspiracy", "1", ("Battle Toad", "Satyr")),
+        ("hoof_and_howl", "2", ("Twisted Dwarf", "Xorn")),
+    ),
+)
+def test_pilot_two_overrides_build_authored_fresh_rosters(
+    monkeypatch,
+    key,
+    floor,
+    member_names,
+):
+    monkeypatch.setenv("DUNGEON_FORCE_ENCOUNTER", key)
+
+    first = enemies.random_enemy(floor, allow_curated_encounter=True)
+    first_encounter = first._runtime_combat_encounter
+    second = enemies.build_curated_encounter(key)
+
+    assert tuple(
+        member.enemy.name
+        for member in first_encounter.members
+    ) == member_names
+    assert first_encounter.encounter_id != second.encounter_id
+    assert all(
+        first_member.enemy is not second_member.enemy
+        for first_member, second_member in zip(
+            first_encounter.members,
+            second.members,
+        )
+    )
 
 
 def test_curated_override_validates_floor_and_override_conflicts(monkeypatch):
@@ -78,7 +128,7 @@ def test_curated_override_remains_enabled_for_ordinary_dungeon_tiles(monkeypatch
     assert [
         member.enemy.name
         for member in selected._runtime_combat_encounter.members
-    ] == ["Giant Centipede", "Zombie"]
+    ] == ["Giant Hornet", "Battle Toad"]
 
 
 def test_unknown_curated_pair_is_explicit_error():
@@ -96,3 +146,26 @@ def test_curated_runtime_metadata_is_not_written_to_enemy_state():
 
     assert "encounter_state" not in state
     assert "_runtime_combat_encounter" not in state
+
+
+def test_curated_multipliers_apply_only_to_fresh_pair_members():
+    from src.core.enemies.encounters import CuratedEncounterSpec
+
+    baseline = enemies.GiantCentipede()
+    spec = CuratedEncounterSpec(
+        key="scaled",
+        display_name="Scaled",
+        floor=1,
+        member_factories=(enemies.GiantCentipede, enemies.Zombie),
+        health_multiplier=0.8,
+        offense_multiplier=1.2,
+    )
+
+    encounter = spec.build()
+
+    assert encounter.primary_enemy.health.max == int(
+        encounter.primary_enemy._curated_base_health_max * 0.8
+    )
+    assert encounter.primary_enemy.health.current == encounter.primary_enemy.health.max
+    assert encounter.primary_enemy._encounter_offense_multiplier == 1.2
+    assert not hasattr(baseline, "_encounter_offense_multiplier")

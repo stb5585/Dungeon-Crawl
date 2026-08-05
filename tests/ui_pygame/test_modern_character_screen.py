@@ -285,8 +285,13 @@ def test_progression_tab_draws_tree_inside_character_menu(monkeypatch):
         + presenter.small_font.render_calls
     )
     assert not any(text.startswith("Progression  |  Level") for text in rendered)
-    assert "Available Points: 6" in rendered
-    assert "Warrior Ability Tree" in rendered
+    assert "Available Progression Points: 6" in rendered
+    assert "Warrior Ability Tree" not in rendered
+    assert "P: Navigate tree" in rendered
+    assert not any(
+        "Tree Navigation" in text
+        for text in presenter.large_font.render_calls
+    )
 
 
 def test_modern_character_summary_helpers_cover_xp_equipment_resistances_and_effects():
@@ -956,7 +961,7 @@ def test_modern_character_resolve_tab_shows_meter_progression(monkeypatch):
         "Brace Wall": abilities.BraceWall(),
         "Shield Riposte": abilities.ShieldRiposte(),
         "Covering Guard": abilities.CoveringGuard(),
-        "Deflect Spell": abilities.DeflectSpell(),
+        "Spell Reflection": abilities.SpellReflection(),
         "Bulwark": abilities.Bulwark(),
     }
     class_rings.ensure_state(player)["data"]["Stalwart Defender"]["guard_meter"] = 25
@@ -977,16 +982,16 @@ def test_modern_character_resolve_tab_shows_meter_progression(monkeypatch):
         presenter.large_font.render_calls + presenter.normal_font.render_calls + presenter.small_font.render_calls
     )
     assert {
-        "Resolve",
         "25/50",
         "Resolve Spends",
         "Shield Check",
         "Brace Wall",
         "Shield Riposte",
         "Covering Guard",
-        "Deflect Spell",
+        "Spell Reflection",
         "Bulwark",
     }.issubset(rendered_text)
+    assert "Resolve" not in presenter.large_font.render_calls
     assert "Resolve Surges" not in rendered_text
     assert "Resolve 25/50" not in rendered_text
     meter_rects = [rect for _color, rect in rect_calls if rect.height == 28]
@@ -1010,7 +1015,7 @@ def test_modern_character_resolve_tab_shows_stalwart_surges(monkeypatch):
         "Brace Wall": abilities.BraceWall(),
         "Shield Riposte": abilities.ShieldRiposte(),
         "Covering Guard": abilities.CoveringGuard(),
-        "Deflect Spell": abilities.DeflectSpell(),
+        "Spell Reflection": abilities.SpellReflection(),
         "Bulwark": abilities.Bulwark(),
         "Citadel Aegis": abilities.CitadelAegis(),
         "Ironwall Reprisal": abilities.IronwallReprisal(),
@@ -1030,9 +1035,16 @@ def test_modern_character_resolve_tab_shows_stalwart_surges(monkeypatch):
     rendered_text = set(
         presenter.large_font.render_calls + presenter.normal_font.render_calls + presenter.small_font.render_calls
     )
-    assert {"100/100", "Resolve Spends", "Resolve Surges", "Citadel Aegis", "???"}.issubset(rendered_text)
-    assert "Ironwall Reprisal" not in rendered_text
-    assert "Last Bastion" not in rendered_text
+    assert {
+        "100/100",
+        "Resolve Spends",
+        "Resolve Surges",
+        "Citadel Aegis",
+        "Ironwall Reprisal",
+        "Last Bastion",
+    }.issubset(rendered_text)
+    assert "Resolve" not in presenter.large_font.render_calls
+    assert "???" not in rendered_text
     assert any("Full bar" in str(text) for text in rendered_text)
     assert not any("class ring" in str(text).lower() or "ring identity" in str(text).lower() for text in rendered_text)
 
@@ -1143,6 +1155,17 @@ def test_modern_character_school_affinity_tab_shows_affinity_grid(monkeypatch):
     player.wizard_affinity["Ice"] = 50
     player.wizard_affinity_version = 2
     player.spellbook["Spells"] = {"Fireball": SimpleNamespace(name="Fireball"), "Ice Lance": SimpleNamespace(name="Ice Lance")}
+    icon_keys = []
+    icon_manager = SimpleNamespace(
+        get_icon=lambda key: (
+            icon_keys.append(key)
+            or DummySurface((32, 32), text=f"icon:{key}")
+        ),
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.modern_character_screen.mechanics.get_ability_icon_manager",
+        lambda: icon_manager,
+    )
     _stub_character_screen_drawing(monkeypatch, screen)
 
     screen.select_tab("class")
@@ -1152,6 +1175,14 @@ def test_modern_character_school_affinity_tab_shows_affinity_grid(monkeypatch):
     assert {"School Affinity", "Fire", "82/100 Fireball", "Wizard Ring"}.issubset(rendered_text)
     assert {"Affinity Cap 100", "Sorcerer Upgrade", "Wizard Upgrade", "Opposite Drift", "Ring Acceleration", "Affinity Notes"}.isdisjoint(rendered_text)
     assert "Promotion Tier" not in rendered_text
+    assert icon_keys == [
+        "spell_fire",
+        "spell_ice",
+        "spell_water",
+        "spell_lightning",
+        "spell_earth",
+        "spell_wind",
+    ]
 
 
 def test_modern_character_school_affinity_tab_hides_wizard_details_for_sorcerer(monkeypatch):
@@ -1937,6 +1968,53 @@ def test_modern_character_navigation_switches_tabs_and_exits(monkeypatch):
 
     assert screen.navigate(player) == "Exit Menu"
     assert screen.active_tab.key == "progression"
+
+
+def test_progression_tree_requires_shortcut_before_arrow_navigation(monkeypatch):
+    presenter = _make_presenter()
+    screen = ModernCharacterScreen(presenter)
+    player = _make_player()
+    screen.select_tab("progression")
+    screen.current_selection = 0
+    handled_keys = []
+    original_handle_event = screen.progression_view.handle_event
+
+    def record_progression_event(event):
+        handled_keys.append(event.key)
+        return original_handle_event(event)
+
+    monkeypatch.setattr(
+        screen.progression_view,
+        "handle_event",
+        record_progression_event,
+    )
+    monkeypatch.setattr(screen, "draw_all", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.input_guards.pygame.key.get_pressed",
+        lambda: [],
+    )
+    event_batches = iter([
+        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_DOWN)],
+        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_p)],
+        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RIGHT)],
+        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_LEFT)],
+        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_DOWN)],
+        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_p)],
+        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE)],
+    ])
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.modern_character_screen.pygame.event.get",
+        lambda: next(event_batches, []),
+    )
+
+    assert screen.navigate(player) == "Exit Menu"
+    assert screen.current_selection == 1
+    assert handled_keys == [
+        pygame.K_RIGHT,
+        pygame.K_LEFT,
+        pygame.K_DOWN,
+    ]
+    assert screen.progression_selector_active is False
 
 
 def test_modern_equipment_selector_requires_explicit_toggle(monkeypatch):

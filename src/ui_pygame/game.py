@@ -269,7 +269,12 @@ class PygameGame:
         if not self.debug_mode or not self.player_char:
             return
         if self.player_char.max_level():
-            self.presenter.show_message("Already at max level.")
+            popup = ConfirmationPopup(
+                self.presenter,
+                "Already at max level.",
+                show_buttons=False,
+            )
+            popup.show(flush_events=True, require_key_release=True)
             return
         
         from .gui.level_up import LevelUpScreen

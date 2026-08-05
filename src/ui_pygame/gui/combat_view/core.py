@@ -10,7 +10,10 @@ from src.core.classes import promotion_kits
 from src.ui_pygame.assets.enemy_combat_sprite_manager import get_enemy_combat_sprite_manager
 from src.ui_pygame.assets.enemy_token_manager import get_enemy_token_manager
 from src.ui_pygame.assets.player_token_manager import get_player_token_manager
-from ..enemy_presentation import present_status_log_line
+from ..enemy_presentation import (
+    present_status_log_line,
+    redact_hidden_enemy_identities,
+)
 from ..status_icons import STATUS_ICON_COLORS
 from .animator import SpriteAnimator
 from .models import CombatImpactEffect, CombatLogLine, FloatingCombatText
@@ -90,6 +93,7 @@ class CombatViewCoreMixin:
             110,
         )
         self._hide_enemy_for_flee = False
+        self._hidden_enemy_names: set[str] = set()
         self.enemy_combat_sprite_manager = get_enemy_combat_sprite_manager()
         self.enemy_token_manager = get_enemy_token_manager()
         self.player_token_manager = get_player_token_manager()
@@ -182,9 +186,21 @@ class CombatViewCoreMixin:
         animator = self._get_sprite_animator(enemy)
         animator.trigger_death()
 
+    def set_hidden_enemy_identities(self, enemy_names) -> None:
+        """Set canonical enemy names that current combat text must conceal."""
+        self._hidden_enemy_names = {
+            str(name)
+            for name in enemy_names
+            if str(name)
+        }
+
     def add_combat_message(self, message):
         """Add a message to the combat log."""
-        cleaned_lines = self._filter_status_message(str(message))
+        presented_message = redact_hidden_enemy_identities(
+            str(message),
+            self._hidden_enemy_names,
+        )
+        cleaned_lines = self._filter_status_message(presented_message)
         if not cleaned_lines:
             return
         has_telegraph_line = any(self._is_telegraph_message(line) for line in cleaned_lines)
@@ -216,12 +232,20 @@ class CombatViewCoreMixin:
         self.log_scroll_offset = max(0, min(self._max_log_scroll(), self.log_scroll_offset + delta))
 
     def reset_combat_log(self):
-        """Clear combat log history and reset scrolling."""
+        """Clear combat log history and transient presentation state."""
         self.combat_log.clear()
         self.log_scroll_offset = 0
         self._active_telegraph_line = None
         self._suppress_logged_telegraph_banner = False
         self._hide_enemy_for_flee = False
+        self._hidden_enemy_names.clear()
+        self.sprite_animators.clear()
+        self._active_impact_effects.clear()
+        self._active_float_texts.clear()
+        self._transient_smoke_visuals.clear()
+        self._enemy_recoil_until_ms = 0
+        self._enemy_target_rects.clear()
+        self._enemy_card_rects.clear()
         self._invalidate_combat_log_wrap_cache()
 
     def _prune_impact_effects(self) -> None:

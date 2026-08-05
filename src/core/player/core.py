@@ -109,6 +109,7 @@ class Player(
         self.familiar = None
         self.summons = {}
         self.transform_type = self.cls
+        self._transformed = False
         self.encumbered = False
         self.power_up = False
         self.inventory_sort_mode = "Name"

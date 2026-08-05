@@ -7,6 +7,7 @@ import math
 import pygame
 
 from src.ui_pygame.assets.enemy_combat_sprite_manager import EnemyCombatSpriteManager
+from ..enemy_presentation import is_invisible_target, player_has_sight
 
 
 class CombatSpriteMixin:
@@ -26,25 +27,11 @@ class CombatSpriteMixin:
         - Pendant of Vision equipped
         - Reveal spell effect (sets sight = True)
         """
-        # Check class
-        if getattr(getattr(player_char, "cls", None), "name", None) in ["Inquisitor", "Seeker"]:
-            return True
-
-        # Check equipment
-        equipment = getattr(player_char, "equipment", {})
-        pendant = equipment.get("Pendant") if isinstance(equipment, dict) else None
-        if getattr(pendant, "mod", None) == "Vision":
-            return True
-
-        # Check sight attribute (set by Reveal spell or other effects)
-        if hasattr(player_char, 'sight') and player_char.sight:
-            return True
-
-        return False
+        return player_has_sight(player_char)
 
     @staticmethod
     def _enemy_hidden_by_invisibility(enemy, has_sight: bool) -> bool:
-        return not has_sight and getattr(enemy, "name", "") == "Invisible Stalker"
+        return not has_sight and is_invisible_target(enemy)
 
     def _enemy_details_visible(self, player_char, enemy, show_enemy_details=None) -> bool:
         """Return whether sight-based enemy details should be displayed."""
@@ -116,6 +103,31 @@ class CombatSpriteMixin:
         """Return the foreground combat sprite size for the dungeon-backed combat view."""
         edge = max(1, int(320 * self._enemy_combat_sprite_scale(enemy)))
         return (edge, edge)
+
+    def _enemy_encounter_sprite_size(
+        self,
+        enemy,
+        available_size: tuple[int, int],
+    ) -> tuple[int, int]:
+        """Use singleton combat scale, shrinking only genuinely oversized art."""
+        desired_width, desired_height = self._enemy_dungeon_combat_sprite_size(
+            enemy,
+        )
+        # A sprite may extend slightly beyond its lane because its transparent
+        # square contains substantial padding. This preserves the singleton
+        # scale for ordinary enemies while still containing unusually large
+        # presentation scales.
+        maximum_width = max(1, int(available_size[0] * 1.25))
+        maximum_height = max(1, int(available_size[1]))
+        fit = min(
+            1.0,
+            maximum_width / desired_width,
+            maximum_height / desired_height,
+        )
+        return (
+            max(1, int(desired_width * fit)),
+            max(1, int(desired_height * fit)),
+        )
 
     @staticmethod
     def _magic_effect_active(character, name: str) -> bool:

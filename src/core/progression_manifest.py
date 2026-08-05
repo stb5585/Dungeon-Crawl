@@ -92,6 +92,13 @@ ABILITY_ICON_OVERRIDES = {
     "Weapon Focus": "skill_passive",
 }
 
+# Some upgraded ability classes intentionally retain their predecessor's
+# runtime name for spellbook compatibility. Progression still needs to
+# distinguish those purchases visually.
+ABILITY_NODE_NAME_OVERRIDES = {
+    "Heal2": "Heal II",
+}
+
 # The Warrior tree is the first fully authored talent graph. Each tuple is:
 # path name, promotion target, then ordered node specs of
 # (kind, payload identifier, icon key). Path names remain useful metadata for
@@ -1059,34 +1066,26 @@ SENTINEL_TREE_NODE_SPECS = (
     {
         "id": "deflect-spell",
         "kind": "ability",
-        "identifier": "DeflectSpell",
+        "identifier": "SpellReflection",
         "lane": "Spell Defense",
         "position": (4, 0),
         "available_on_promotion": True,
-    },
-    {
-        "id": "spell-reflection",
-        "kind": "ability",
-        "identifier": "SpellReflection",
-        "lane": "Spell Defense",
-        "position": (4, 1),
-        "level": 45,
-        "prerequisites": ("deflect-spell",),
+        "owned_if_known": True,
     },
     {
         "id": "magic-defense-1",
         "kind": "rating",
         "identifier": "Magic Defense",
         "lane": "Spell Defense",
-        "position": (4, 2),
-        "prerequisites": ("spell-reflection",),
+        "position": (4, 1),
+        "prerequisites": ("deflect-spell",),
     },
     {
         "id": "health-1",
         "kind": "health",
         "identifier": "Health",
         "lane": "Spell Defense",
-        "position": (4, 3),
+        "position": (4, 2),
         "prerequisites": ("magic-defense-1",),
     },
 )
@@ -1175,8 +1174,8 @@ STALWART_DEFENDER_TREE_NODE_SPECS = (
         "position": (3, 1),
         "level": 70,
         "description": (
-            "Ironwall Reprisal deals 1.60x weapon damage and lowers enemy "
-            "Attack and Speed by 3 for two turns."
+            "Ironwall Reprisal deals heavy weapon damage and lowers enemy "
+            "Attack and Speed for two turns."
         ),
     },
     {
@@ -1339,7 +1338,7 @@ PALADIN_TREE_NODE_SPECS = (
         "lane": "Grace",
         "position": (3, 5),
         "level": 50,
-        "prerequisites": ("mana-1",),
+        "prerequisites": ("resist-shadow",),
         "description": (
             "Permanently increase Magic and Magic Defense by 20."
         ),
@@ -1401,6 +1400,7 @@ PALADIN_TREE_NODE_SPECS = (
         "lane": "Sanctity",
         "position": (3, 4),
         "level": 45,
+        "prerequisites": ("mana-1",),
     },
     {
         "id": "parry",
@@ -2015,7 +2015,7 @@ PROMOTED_TREE_PATHS = {
                 "Retaliate",
                 "ShieldRiposte",
                 "CoveringGuard",
-                "DeflectSpell",
+                "SpellReflection",
                 "Bulwark",
             ),
         ),

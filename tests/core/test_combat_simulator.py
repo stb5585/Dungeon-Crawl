@@ -85,13 +85,13 @@ def test_simulator_accepts_explicit_encounter_and_reports_roster_metrics():
         seed=1337,
     )
 
-    assert stats.roster == ("Giant Centipede", "Zombie")
+    assert stats.roster == ("Giant Hornet", "Battle Toad")
     assert stats.actor_turns >= stats.turns
     assert stats.rounds >= 1
     assert len(stats.enemy_hp_remaining) == 2
     assert stats.player_hp_max == 500
     assert set(stats.damage_by_combatant).issubset(
-        {"Giant Centipede", "Zombie"}
+        {"Giant Hornet", "Battle Toad"}
     )
     assert stats.consumables_used >= 0
     assert stats.reward_experience >= 0

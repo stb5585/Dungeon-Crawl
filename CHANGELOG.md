@@ -129,6 +129,45 @@
 
 ### Roadmap Polish And Bugfixes
 
+- Moved the embedded Progression navigation helper into the tree's upper-right
+  corner, moved available Progression Points to the upper-left, removed the
+  redundant class-tree heading, and kept left/right tree navigation from
+  switching Character tabs while tree input is active.
+- Tightened the Resolve class-tab layout by removing its redundant panel
+  heading and moving its meter and ability sections upward.
+- Replaced the debug auto-level max-level blackout message with the standard
+  in-context popup.
+- Made Hold the Line replace Defend for trained Sentinels and Stalwart
+  Defenders, removed it from the Resolve-spend menu, and prevented it from
+  refreshing itself or generating Resolve while already active.
+- Added a separate Bursts combat menu that appears when an unlocked
+  full-bar ability is ready.
+- Simplified Resolve ability labels to show their resource cost without
+  transient `Need` or `Ready` suffixes.
+- Made Dishearten display its Attack-down status in pygame while preserving
+  its dedicated percentage-based damage penalty.
+- Limited Silence skill suppression to techniques that require MP, leaving
+  Resolve spends, Resolve Bursts, and zero-MP techniques usable.
+- Revealed all Stalwart Defender Resolve Burst names immediately on promotion
+  while retaining locked styling until each Burst is available.
+- Rendered multi-enemy HP and MP as independent resource labels to avoid
+  unsupported separator glyphs in enemy plates.
+- Made multi-enemy resource plates opaque so bright dungeon geometry cannot
+  resemble a stray character between HP and MP.
+- Recorded lethal single-target resolutions before returning the committed
+  action, eliminating the dead-but-unresolved frame that hid a sprite before
+  its death fade began.
+- Added a reusable combat-availability hook for abilities, hid Adrenaline
+  until its health condition is met, and added the `CHG` combat-status
+  indicator for active player charge-up abilities.
+- Combined Deflect Spell and Spell Reflection into Spell Reflection, retaining
+  compatible single-target reflection while also raising Magic Defense, with
+  compatibility migration for old skills and progression node IDs.
+- Corrected Lycan transformation state so Untransform is not offered to
+  classes that have not transformed.
+- Made race-ineligible and mutually excluded promotion choices render closed,
+  and preserved learned Sentinel Resolve abilities through promotion to
+  Stalwart Defender.
 - Fixed pygame character naming so printable `m` and `f` key presses enter the
   name field instead of being swallowed by sex-selection shortcuts.
 - Fixed the stairs-up ceiling-void placement so the missing ceiling tile stays
@@ -197,6 +236,33 @@
   over the Bounty Board submenu instead of the main tavern menu.
 - Fixed Invisible Stalker combat presentation so it does not draw the generic
   fallback body when the player lacks Vision or another sight source.
+- Concealed invisible-enemy identity from the battlefield label, combat HUD,
+  and player-facing combat log until Sight reveals it, using `Unseen force`
+  rather than leaking the canonical enemy name.
+- Fixed failed multi-enemy encounter retries so restored members also discard
+  stale death-animation state and render normally on re-entry.
+- Replaced the unsupported multi-enemy focus glyph with a procedural target
+  marker and added elemental ability icons to School Affinity rows.
+- Gated Paladin's Resist Shadow behind Heal and the preceding MP node, then
+  made it the prerequisite for Sworn Purpose so the Grace path must be
+  purchased in order.
+- Registered the three Pilot 2 screening pairs as development-only forced
+  encounters for automated and manual validation, without changing normal
+  random encounter generation.
+- Completed Pilot 2 automated screening: Twisted Dwarf & Xorn passed after
+  encounter-local tuning, while Zombie & Quasit and Battle Toad & Satyr remain
+  development-only and blocked on excessive duration.
+- Clarified Pilot 2 manual evidence as six total battles (two per pair) with
+  explicit targeting, presentation, cleanup, reward, and duration checks.
+- Closed Multi-Enemy Pilot 2 after seven successful manual battles, including
+  dedicated Hallowed Ground and `ALL_ENEMIES` coverage, and identified
+  deeper-floor curated encounters as the next validation phase.
+- Matched paired-enemy presentation to singleton combat scaling for ordinary
+  enemies and grounded non-flying sprites at the battlefield floor.
+- Labeled the upgraded base-Healer progression node as Heal II so it is
+  distinguishable from the initial Heal purchase.
+- Extended the pair-tuning tool with focused member selection and corrected
+  no-pass ranking so bounded grids retain the lowest-score fallback.
 - Added compact combat indicators for Vision/sight and Weapon Art states such
   as Reaver's Mark, Brace, and Riposte Line.
 - Improved Weapon Discipline presentation with required-weapon text in Weapon

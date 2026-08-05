@@ -399,6 +399,7 @@ def test_healer_upgrade_order_preserves_regen_before_heal_two():
 
     assert regen.position[1] < heal_two.position[1]
     assert heal_two.prerequisites == (regen.id,)
+    assert heal_two.name == "Heal II"
 
 
 def test_natural_attunement_cost_duration_and_defenses():
@@ -654,6 +655,40 @@ def test_warrior_rating_cross_requirement_and_promotion_point_cost():
     assert promoted.success
     assert promoted.points_remaining == 12
     assert player.cls.name == "Weapon Master"
+
+
+def test_race_and_staged_promotion_exclusions_are_closed():
+    player = _player(Warrior)
+    player.race = races_dict["Half Giant"]()
+    initialize_progression(player)
+    player.progression.level = 30
+    player.progression.unspent_points = 20
+
+    statuses = {
+        status.node.name: status
+        for status in available_nodes(player, "Warrior")
+        if status.node.kind == NodeKind.PROMOTION
+    }
+
+    assert statuses["Promote: Paladin"].state == NodeState.CLOSED
+    assert statuses["Promote: Lancer"].state == NodeState.CLOSED
+
+    weapon_master = statuses["Promote: Weapon Master"].node.id
+    staged = {
+        status.node.name: status
+        for status in available_nodes(
+            player,
+            "Warrior",
+            planned_node_ids=(weapon_master,),
+        )
+        if status.node.kind == NodeKind.PROMOTION
+    }
+
+    assert staged["Promote: Weapon Master"].state == NodeState.OWNED
+    assert staged["Promote: Sentinel"].state == NodeState.CLOSED
+    assert "Another promotion is already distributed." in (
+        staged["Promote: Sentinel"].reasons
+    )
 
 
 def test_human_warrior_can_reach_every_first_promotion_at_level_thirty():
