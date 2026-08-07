@@ -270,6 +270,7 @@ from .misc import (
     SleepScroll,
     SlowRideSheet,
     SmokeBomb,
+    RealityFragment,
     UltimaScroll,
     WaterScroll,
     WindScroll,
@@ -416,7 +417,7 @@ items_dict = {
                    BattleHymnSheet, RampartsOdeSheet, DysfunctionSymphonySheet,
                    LowDefenseRhapsodySheet, SlowRideSheet, BonesThugsHarmonySheet,
                    ScoresAndScoresScoreSheet, GoldTriggerSheet, ChorusTimeSheet],
-        'Reagents': []}
+        'Reagents': [RealityFragment]}
 }
 
 

@@ -14,7 +14,6 @@ from src.core.classes import (
     class_rings,
     classes_dict,
     demonologist,
-    grant_summoner_initial_summon,
     paladin,
     promotion_mechanic_details,
     promotion_mechanic_tab_label,
@@ -269,11 +268,11 @@ class ChurchManager(TownScreenBase):
                 "answer together before the ring accepts Mana Tap+."
             ),
         },
-        "Grand Summoner": {
+        "Thaumaturgist": {
             "label": "Conduit Ritual",
             "intro": (
-                "The priest marks a summoning circle around the Class Ring. A permanent sliver "
-                "of life is offered so every summoned ally can carry more of your will."
+                "The priest marks a Calling circle around the Class Ring. A permanent sliver "
+                "of life is offered so every Xenid can carry more of your will."
             ),
         },
         "Templar": {
@@ -733,9 +732,6 @@ class ChurchManager(TownScreenBase):
                                 fam_confirmed = True
                                 familiar.name = fam_name
                                 self.player_char.familiar = familiar
-
-            if chosen_name == "Summoner":
-                grant_summoner_initial_summon(self.player_char)
 
             if chosen_name == "Demonologist":
                 self.player_char.ensure_demonologist_contracts()

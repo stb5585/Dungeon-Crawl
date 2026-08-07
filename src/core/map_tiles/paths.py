@@ -251,9 +251,14 @@ class CavePath(MapTile):
 
         encounter_roll_max = 4 + extra_roll
         try:
-            from ..classes import paladin
+            from ..classes import mage_mechanics, paladin
 
-            multiplier = paladin.encounter_rate_multiplier(game.player_char)
+            multiplier = (
+                paladin.encounter_rate_multiplier(game.player_char)
+                * mage_mechanics.torchlight_encounter_multiplier(
+                    game.player_char
+                )
+            )
             encounter_slots = max(1, int(round((encounter_roll_max + 1) / multiplier)))
             encounter_roll_max = max(0, encounter_slots - 1)
         except Exception:
@@ -548,14 +553,6 @@ class SandwormLair(EmptyCavePath):
 
     def modify_player(self, game):
         super().modify_player(game)
-        if all(["Summoner" in game.player_char.cls.name,
-                "Chiryu Koma" in game.player_char.special_inventory,
-                "Dilong" not in game.player_char.summons]):
-            game.special_event("Dilong")
-            summon = companions.Dilong()
-            summon.initialize_stats(game.player_char)
-            game.player_char.modify_inventory(items.ChiryuKoma(), subtract=True, rare=True)
-            game.player_char.summons[summon.name] = summon
 
 
 class FirePath(EmptyCavePath):
@@ -570,19 +567,10 @@ class FirePath(EmptyCavePath):
 
 
 class FirePathSpecial(FirePath):
-    """
-    Cacus summon can be obtained by Summoner class once Vulcan's Hammer is obtained
-    """
+    """A fire path containing a nature-communion interaction."""
 
     def special_text(self, game):
         return nature_communion_text(game.player_char, "Fire")
 
     def modify_player(self, game):
-        if "Vulcan's Hammer" in game.player_char.special_inventory:
-            game.special_event("Cacus")
-            summon = companions.Cacus()
-            summon.initialize_stats(game.player_char)
-            game.player_char.modify_inventory(items.BlacksmithsHammer(), subtract=True, rare=True)
-            game.player_char.summons[summon.name] = summon
-        else:
-            super().modify_player(game)
+        super().modify_player(game)

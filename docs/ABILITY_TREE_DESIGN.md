@@ -7,6 +7,12 @@ All 49 playable classes own a declarative tree in
 validates those declarations, applies purchases atomically, and remains the
 public runtime facade for Pygame and headless validation.
 
+Cross-reference diagrams for every playable class are indexed in
+[`ability_trees/README.md`](ability_trees/README.md). They are generated from
+the runtime graphs; regenerate them after tree edits with
+`./.venv/bin/python tools/generate_ability_tree_diagrams.py`. A regression test
+fails if any checked-in diagram drifts from its class tree.
+
 Development nodes cost one point. First promotions cost two points and second
 promotions cost three. Rating nodes scale with their tree tier: base trees
 grant `+10`, first-promotion trees grant `+20`, and terminal trees grant `+30`.
@@ -24,6 +30,13 @@ are never level-gated, and an authored inherited entry may also be ungated:
 - Terminal trees: levels `60`, `65`, `70`, `75`, `80`, `85`, `90`, and `95`.
 - Promotion gates remain levels `30` and `60`.
 
+Ability gates below the level already required to enter a promoted class are
+redundant and are suppressed universally in that promoted tree. They impose no
+runtime rule and show no `Required level` text there, while retaining their
+authored gate in an earlier tree where it can still matter. This applies to
+carried abilities such as Mage elemental spells, Lancer development in
+Dragoon, and Mage/Conjurer Callings in Thaumaturgist.
+
 Human routes retain at least three optional points at both promotion gates.
 Every race/class combination allowed by the race registry can reach its legal
 promotion at the gate. Route costs intentionally differ where class identity
@@ -36,7 +49,8 @@ or stat requirements differ.
 - Warrior: a shared Piercing Strike, Charge, and Weapon Focus trunk leading
   into Arms and Vanguard, plus Bulwark, Command, and independent martial
   talents.
-- Mage: Elementalism, Occultism, Battlemagic, and Conjuration.
+- Mage: a bespoke Elemental, Enhancement, Arcana, Occultism, Conjuration, and
+  Universal graph described below.
 - Footpad: Subterfuge, Vigilance, Assassination, and Spellcraft.
 - Healer: Devotion, Discipline, Restoration, and Inspiration.
 - Pathfinder: Wilds, Divination, Totemism, and Huntsmanship.
@@ -183,8 +197,12 @@ or stat requirements differ.
     Watchful Reprisal`, followed by optional `+20 Attack`.
   - Wall is `Hold the Line -> Brace Wall -> Covering Guard -> Bulwark ->
     Resolute Guard`, followed by optional `+20 Defense`.
-  - Anti-magic is `Deflect Spell -> Spell Reflection -> +20 Magic Defense ->
-    +50 HP`. Shield Block is omitted because the Warrior route requires it.
+  - Anti-magic is the single merged `Spell Reflection -> +20 Magic Defense ->
+    +50 HP` branch. Spell Reflection is ungated at `(4, 0)` and retains the
+    compatibility node ID `sentinel.ability.deflect-spell`. The retired
+    Deflect Spell ability and `sentinel.ability.spell-reflection` node ID
+    migrate to this behavior. Shield Block is omitted because the Warrior
+    route requires it.
   - Promote: Stalwart Defender sits at `(1, 6)` and requires Watchful Reprisal,
     Resolute Guard, global level 60, `CON 20`, and three points. The mandatory
     Human route leaves four points. Known Goad and Retaliate are adopted.
@@ -201,13 +219,117 @@ or stat requirements differ.
 
 ### Mage Lineage
 
-- Sorcerer/Wizard: School Affinity, Metamagic, Arcane Mastery, and
-  Countermagic.
-- Warlock/Shadowcaster/Demonologist: Umbral Magic, Sacrifice, Pacts, Umbral
-  Debt, Deep Shadow, Contracts, and Corruption.
-- Spellblade/Knight Enchanter: Channeling, Spellguard, Arcane Tempo, and
-  Enchantment.
-- Summoner/Grand Summoner: Summon Bond, Conjuration, Conduit, and True Names.
+- Mage uses six visible columns: `0=Elemental spells`, `1=Enhancements`,
+  `2=Arcana`, `3=Occultism`, `4=Conjuration`, and `5=Universal`.
+- Elemental spells are six independent level-1 roots:
+  `Firebolt/Ice Lance/Shock/Gust/Water Jet/Tremor` at rows `0-5`. Each has a
+  level-20 Enhancement directly beside it: `Fire Inside/Frozen Armor/
+  Electrified/Wind Currents/Refreshment/Terra Firma`. A successful matching
+  spell has a 20% non-stacking, refresh-only proc chance.
+  - Fire Inside grants `+25` percentage points of critical chance to the next
+    attack; the charge lasts three turns and that attack consumes it regardless
+    of hit or result.
+  - Frozen Armor grants `+10 Defense` and `+25% Ice resistance` for one turn.
+  - Electrified lasts three turns and jolts an attacker once per enemy action
+    after a successful incoming melee hit; jolt damage scales from Intelligence.
+  - Wind Currents grants `+3 Speed` and `+10` percentage points of melee hit
+    chance for three turns.
+  - Refreshment immediately restores `5%` of maximum HP and MP.
+  - Terra Firma multiplies melee damage by `1.5` for three turns.
+- Arcana is `Magic Missile -> Arcane Fundamentals -> +25 MP -> Polymorph ->
+  Mana Shield -> Imbue Weapon`. Gates are `1/5/path-only/15/20/25`.
+  Arcane Fundamentals grants `+10 Magic` and increases only the bonus portion
+  of Arcane critical damage by 10%. Polymorph denies the target two turns and
+  replaces its combat sprite with the bunny asset for the duration. Mana
+  Shield redirects at most 25% of physical damage from each attack into MP;
+  Mana Shield 2 raises that cap to 50%. Imbue Weapon retains its existing
+  mechanic. This route leads to Spellblade.
+- Occultism is `Enfeeble -> Blinding Fog -> Shadow Bolt -> Inflate Health ->
+  Enliven Dead -> Forbidden Studies` at levels `1/5/10/15/20/25`, then
+  Warlock. Blinding Fog targets all enemies. Enliven Dead uses the last
+  defeated non-boss enemy and a Charisma/Luck check. Inflate Health grants a
+  three-turn temporary-HP pool that absorbs post-mitigation damage before real
+  HP. Forbidden Studies increases Shadow Bolt damage by `20%` and raised
+  undead companion duration by `50%`.
+- Conjuration is `Conjure Blade -> +25 MP -> Conjure Animal -> Binding Circle
+  -> Conjure Shackles -> Conjure Potion` at levels
+  `1/path-only/10/15/20/25`, then Conjurer. Binding Circle grants `+10 Defense`
+  and `+10%` health/damage to conjured or summoned allies. Conjure Blade uses
+  Intelligence and caster level instead of Strength; Conjure Animal selects
+  only implemented `Animal` enemies, preferring those on the current dungeon
+  floor before searching the nearest floor. Shackles first contests Dexterity, holds the
+  enemy prone for up to three turns, and permits a Strength escape roll each
+  turn. Conjure Potion creates a depth-scaled random HP or MP potion, has a
+  50-step cooldown, works in combat or a dungeon, and is disabled in town.
+- Universal roots are Reflect `(5,1)` at level 10, Sleep `(5,2)` at 15,
+  Boost `(5,3)` at 20, and Mirror Image `(5,4)` at 25.
+- Sorcerer requires either Classical Force `(0.5,6)` after any Enhancement or
+  Esotericism `(1.5,6)` after Arcane Fundamentals; its promotion is `(1,7)`.
+  Enhancement connectors converge at the `0.5` midpoint and enter Classical
+  Force from above; Arcane Fundamentals routes through the `1.5` midpoint and
+  enters Esotericism from above.
+  The choice is permanent:
+  Classical Force tracks Elemental School Affinity and applies 50% potency to
+  Arcane damage/control/barriers/enhancements; Esotericism tracks Arcane
+  School Affinity, applies 50% elemental damage, and halves Enhancement proc
+  chances. Learning spells remains unrestricted.
+- First-promotion route costs, including the two-point promotion node, are
+  `5/8/8/8` for Sorcerer/Spellblade/Warlock/Conjurer. All require level 30.
+  Stat gates are Sorcerer `INT 15/WIS 13`; Warlock
+  `INT 14/CHA 14/WIS 10/CON 10`; Spellblade
+  `STR 10/CON 11/INT 14/CHA 12`; and Conjurer
+  `CHA 13/INT 13/WIS 12/CON 10/DEX 10` (no Strength requirement).
+- Every learned Mage spell remains owned after promotion. Unpurchased
+  non-elemental development and competing promotions close. Sorcerer and
+  Wizard retain the existing partial carry-forward: Arcane Fundamentals plus
+  the six elemental spells remain purchasable in the current editable tree;
+  the historical Mage tab stays read-only.
+- Conjurer has four authored disciplines. Constructs are
+  `Floating Crystal (30) -> Torchlight (35) -> +20 Magic (path-only) ->
+  Conjure Elixir (45) -> Barrier Wall (55)`; Binding is
+  `Sleep (30) -> Silence (35) -> Banish (40) -> Weaken Mind (45) ->
+  Mana Barbs (55)`; Illusion/Movement is
+  `Mirror Image (30) -> Nightmare Fuel (35) -> Volitation (45) ->
+  Teleport (50) -> Explosive Decoy (55)`;
+  and Calling is `Conjure Humanoid (30) -> Monster (35) -> Spirit (40) ->
+  Fiend (45) -> Celestial (50) -> Dragon (55)`. The level-60,
+  three-point Thaumaturgist promotion accepts the terminal node of any
+  discipline.
+- Floating Crystal siphons `10%` of maximum MP after each caster turn, bursts
+  after storing `30%` of maximum MP, and multiplies the stored mana by
+  `1 + spell power / 100` for its damage. Torchlight halves the random
+  encounter rate for 50 exploration steps.
+- A Conjurer Calling creates an ordinary 50-step transient companion. It
+  chooses an implemented enemy of the requested creature category from the
+  current floor when possible, then the nearest matching floor; the ally acts
+  independently after the player and never gains roster or bond state.
+  Thaumaturgist adds Conjure Animal and replaces ordinary results with one
+  permanently selected Xenid from each corresponding pair: Hodag/Caladrius,
+  Patagon/Kobalos, Dilong/Cacus,
+  Agloolik/Izulu, Hala/Lamashtu, Seraphim/Bardi, or Tiamat/Zahhak. These
+  fourteen named creatures are the complete Xenid roster. All six Calling nodes retain
+  their Conjurer IDs and remain purchasable in the editable Thaumaturgist tree;
+  the historical Conjurer tab is read-only. Fuath remains the Underground
+  Spring boss and is not a Xenid.
+- Thaumaturgist uses five explicit columns: seven Callings; seven permanent
+  paired-Xenid choices; seven matching ultimate unlocks; `Heal Summon
+  (65) -> Conduit Command (70) -> Raise Summon (75) -> Conduit Mastery (80)`;
+  and the Miracles chain `Miracle Blade (65) -> Miracle Shackles (70) ->
+  Miracle Potion (75) -> Miracle Crystal (80)`. The four Miracles each consume
+  one extremely rare `Reality Fragment` reagent. Respectively, they bypass all
+  ordinary attack protection, impose an inescapable three-turn restraint,
+  create both maximum-tier Health and Mana potions without ordinary location
+  or cooldown limits, and create mana from nothing before damaging every
+  enemy. The obsolete `Summon` and `Summon 2` training passives are removed;
+  the combat Summon action is available directly to Thaumaturgists with a
+  living bound Xenid.
+  Xenids do not gain XP. Their per-Xenid conduit value drives stat scaling and
+  ability tiers, while every chosen Xenid contributes a themed caster effect.
+  Conduit Mastery amplifies these reciprocal caster effects by 50%. If the
+  active Xenid dies, its conduit falls by 25. `Raise Summon` is combat-only,
+  costs 100 MP, restores only that combat's just-fallen active Xenid at 25% HP,
+  and refunds 10 of the conduit lost to that death; it cannot raise roster-wide
+  or historical deaths.
 
 ### Footpad Lineage
 
@@ -237,7 +359,8 @@ or stat requirements differ.
 ## Ownership Boundaries
 
 Promotion still initializes mandatory identity access: Paladin vows, Warlock
-familiars, Summoner summon access, Demonologist contracts, and Ranger taming.
+familiars, Thaumaturgist Calling choices and Xenid conduits, Demonologist
+contracts, and Ranger taming.
 Quest, Class Ring, Power Core, contract reward, summon-bond reward, and
 Weapon Discipline reward abilities remain externally owned.
 
@@ -245,9 +368,11 @@ Optional kit actions remain ability nodes. Named talent nodes can raise a
 class-kit meter cap or grant a smaller permanent combat bonus. Talent effects
 are queried by stable talent key and survive later promotions.
 
-The normal branch-closure rule has one authored exception: promoting from
-Lancer to Dragoon closes the historical Lancer tab but carries every Lancer
-development node into the editable Dragoon tree.
+The normal branch-closure rule has two authored carry-forward families.
+Promoting from Lancer to Dragoon closes the historical Lancer tab but carries
+every Lancer development node into the editable Dragoon tree. Mage to Sorcerer
+and Sorcerer to Wizard keep only the declared elemental nodes editable in the
+current tree; other historical development stays closed.
 
 Version-5 node and talent IDs are persistent save API. Renaming one requires a
 save migration or alias.

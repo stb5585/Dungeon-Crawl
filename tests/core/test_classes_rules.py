@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from src.core import abilities, classes, items, races
+from src.core import abilities, classes, companions, items, races
 
 
 def _promotion_player(*, spells=None, skills=None):
@@ -71,10 +71,10 @@ def test_promotion_mechanic_guidance_points_to_relevant_character_surface():
     assert "Intelligence" in weapon_guidance
     assert classes.promotion_mechanic_tab_label("Weapon Master") == "Weapon Discipline"
 
-    summoner_guidance = classes.promotion_mechanic_guidance("Summoner")
-    assert "Summons" in summoner_guidance
-    assert "bond growth" in summoner_guidance
-    assert classes.promotion_mechanic_tab_label("Summoner") == "Summons"
+    thaumaturgist_guidance = classes.promotion_mechanic_guidance("Thaumaturgist")
+    assert "Xenids" in thaumaturgist_guidance
+    assert "conduit growth" in thaumaturgist_guidance
+    assert classes.promotion_mechanic_tab_label("Thaumaturgist") == "Xenids"
 
     familiar_guidance = classes.promotion_mechanic_guidance("Warlock")
     assert "Familiar" in familiar_guidance
@@ -200,7 +200,7 @@ def test_weapon_discipline_classes_include_intelligence_promotion_bonus():
     assert grandmaster.dex_plus == 2
 
 
-def test_grant_summoner_initial_summon_initializes_patagon(monkeypatch):
+def test_choose_xenid_initializes_patagon_and_closes_its_pair(monkeypatch):
     initialized = []
 
     class FakePatagon:
@@ -212,11 +212,17 @@ def test_grant_summoner_initial_summon_initializes_patagon(monkeypatch):
     monkeypatch.setattr("src.core.companions.Patagon", FakePatagon)
     player = SimpleNamespace(summons={})
 
-    message = classes.grant_summoner_initial_summon(player)
-    repeat_message = classes.grant_summoner_initial_summon(player)
+    success, message = companions.choose_xenid(player, "Humanoid", "Patagon")
+    repeat_success, repeat_message = companions.choose_xenid(
+        player,
+        "Humanoid",
+        "Kobalos",
+    )
 
-    assert message == "You have gained the summon Patagon.\n"
-    assert repeat_message == ""
+    assert success
+    assert "permanently bound" in message
+    assert not repeat_success
+    assert "already bound" in repeat_message
     assert "Patagon" in player.summons
     assert initialized == [player]
 

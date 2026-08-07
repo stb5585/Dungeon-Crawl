@@ -225,7 +225,7 @@ def test_default_enemy_combat_sprite_assets_cover_render_archetypes():
         "Alligator",
         "Werewolf",
         "Troll",
-        "Conjurer",
+        "Necromancer",
         "Water Myrmidon",
         "Dragonkin",
         "Warforged",
@@ -292,6 +292,20 @@ def test_default_vesperion_combat_sprite_uses_separate_full_body_asset():
     assert sprite.get_width() > 0
     assert sprite.get_height() > 0
     assert sprite.get_at((0, 0)).a == 0
+
+
+def test_polymorph_uses_transparent_bunny_combat_sprite():
+    manager = EnemyCombatSpriteManager()
+    enemy = SimpleNamespace(
+        name="Goblin",
+        status_effects={"Polymorph": SimpleNamespace(active=True)},
+    )
+
+    assert manager.get_sprite_key_for_enemy(enemy) == "polymorph_bunny"
+    path = manager.sprite_root / "polymorph_bunny.png"
+    with Image.open(path) as image:
+        assert image.mode == "RGBA"
+        assert image.getchannel("A").getextrema() == (0, 255)
 
 
 def _concrete_enemy_names() -> set[str]:

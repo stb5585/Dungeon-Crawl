@@ -169,6 +169,8 @@ def test_default_companion_art_assets_cover_core_familiars():
 def test_default_companion_art_assets_cover_summons():
     manager = CompanionArtManager()
     summon_art = {
+        "Hodag": "hodag",
+        "Caladrius": "caladrius",
         "Patagon": "patagon",
         "Dilong": "dilong",
         "Agloolik": "agloolik",
@@ -176,7 +178,9 @@ def test_default_companion_art_assets_cover_summons():
         "Fuath": "fuath",
         "Izulu": "izulu",
         "Hala": "hala",
-        "Grigori": "grigori",
+        "Seraphim": "grigori",
+        "Lamashtu": "lamashtu",
+        "Tiamat": "tiamat",
         "Bardi": "bardi",
         "Kobalos": "kobalos",
         "Zahhak": "zahhak",

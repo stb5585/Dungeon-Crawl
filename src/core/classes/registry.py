@@ -20,8 +20,8 @@ from .shadowcaster import Shadowcaster
 from .demonologist import Demonologist
 from .spellblade import Spellblade
 from .knight_enchanter import KnightEnchanter
-from .summoner import Summoner
-from .grand_summoner import GrandSummoner
+from .conjurer import Conjurer
+from .thaumaturgist import Thaumaturgist
 from .footpad import Footpad
 from .thief import Thief
 from .rogue import Rogue
@@ -96,9 +96,9 @@ classes_dict = {
                 "class": Spellblade,
                 "pro": {"Knight Enchanter": {"class": KnightEnchanter}},
             },
-            "Summoner": {
-                "class": Summoner,
-                "pro": {"Grand Summoner": {"class": GrandSummoner}},
+            "Conjurer": {
+                "class": Conjurer,
+                "pro": {"Thaumaturgist": {"class": Thaumaturgist}},
             },
         },
     },

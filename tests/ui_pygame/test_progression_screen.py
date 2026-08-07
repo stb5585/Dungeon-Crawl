@@ -3,6 +3,7 @@
 from types import SimpleNamespace
 
 import pygame
+import pytest
 
 from src.core.progression import (
     ABILITY_TREES,
@@ -185,6 +186,48 @@ def test_spend_button_commits_entire_distribution_once(monkeypatch):
     assert redraws == [True]
     assert screen.pending_node_ids == []
     assert screen.pending_attributes == {}
+
+
+def test_spend_distribution_confirms_permanent_node_closures(monkeypatch):
+    screen = progression_screen.ProgressionScreen.__new__(
+        progression_screen.ProgressionScreen
+    )
+    screen.player_char = SimpleNamespace(
+        cls=SimpleNamespace(name="Mage"),
+        progression=SimpleNamespace(unspent_points=5),
+    )
+    screen.pending_node_ids = ["mage.ability.esotericism"]
+    screen.pending_attributes = {}
+    screen.presenter = object()
+    screen._popup_background = lambda: None
+    screen._selected_tree_id = lambda: "Mage"
+    popup_messages = []
+    applied = []
+
+    class FakePopup:
+        def __init__(self, _presenter, message, show_buttons=False):
+            popup_messages.append((message, show_buttons))
+
+        def show(self, **_kwargs):
+            return False
+
+    monkeypatch.setattr(progression_screen, "ConfirmationPopup", FakePopup)
+    monkeypatch.setattr(
+        progression_screen,
+        "permanent_closures_for_plan",
+        lambda *_args, **_kwargs: ("Classical Force",),
+    )
+    monkeypatch.setattr(
+        progression_screen,
+        "apply_progression_plan",
+        lambda *_args, **_kwargs: applied.append(True),
+    )
+
+    screen._spend_pending()
+
+    assert "Classical Force" in popup_messages[0][0]
+    assert popup_messages[0][1] is True
+    assert applied == []
 
 
 def test_attribute_incrementer_adds_and_subtracts_without_mutating_player():
@@ -476,6 +519,36 @@ def test_eight_row_paladin_tree_fits_standard_panel_without_scrolling():
     assert all(rect.bottom <= screen._tree_viewport.bottom for rect in rects)
 
 
+@pytest.mark.parametrize(
+    "class_name",
+    ("Mage", "Sorcerer", "Wizard", "Conjurer", "Thaumaturgist"),
+)
+def test_mage_line_trees_fit_standard_panel_without_overlap_or_scrolling(
+    class_name,
+):
+    screen = progression_screen.ProgressionScreen.__new__(
+        progression_screen.ProgressionScreen
+    )
+    tree = ABILITY_TREES[class_name]
+    statuses = [
+        NodeStatus(node, NodeState.AVAILABLE)
+        for node in tree.nodes
+    ]
+    panel = pygame.Rect(24, 100, 716, 525)
+    screen.current_node = 0
+    screen.tree_scroll_row = 0
+
+    rects = screen._layout_node_rects(panel, statuses, tree.branches)
+
+    assert screen.tree_scroll_row == 0
+    assert all(rect.bottom <= screen._tree_viewport.bottom for rect in rects)
+    assert all(
+        not left.colliderect(right)
+        for index, left in enumerate(rects)
+        for right in rects[index + 1:]
+    )
+
+
 def test_cross_column_connectors_enter_the_side_of_target_nodes(monkeypatch):
     source = _node()
     target = AbilityTreeNode(
@@ -547,6 +620,64 @@ def test_authored_cross_connector_uses_manifest_channel(monkeypatch):
     expected_channel_x = int(114 + 1.5 * 141)
     assert line_points[0][1][0] == expected_channel_x
     assert line_points[0][2][0] == expected_channel_x
+
+
+@pytest.mark.parametrize(
+    ("source_id", "target_id", "channel_column"),
+    (
+        (
+            "mage.ability.fire-inside",
+            "mage.ability.classical-force",
+            0.5,
+        ),
+        (
+            "mage.talent.arcane-fundamentals",
+            "mage.ability.esotericism",
+            1.5,
+        ),
+    ),
+)
+def test_mage_specialization_connectors_use_midpoint_and_enter_from_top(
+    monkeypatch,
+    source_id,
+    target_id,
+    channel_column,
+):
+    source = progression_screen.TREE_NODES[source_id]
+    target = progression_screen.TREE_NODES[target_id]
+    screen = progression_screen.ProgressionScreen.__new__(
+        progression_screen.ProgressionScreen
+    )
+    screen.screen = object()
+    source_rect = pygame.Rect(300, 100, 32, 32)
+    target_rect = pygame.Rect(
+        int(100 + channel_column * 120) - 16,
+        360,
+        32,
+        32,
+    )
+    screen.node_icon_rects = [source_rect, target_rect]
+    screen._tree_viewport = pygame.Rect(0, 0, 800, 600)
+    screen._tree_column_origin = 100
+    screen._tree_lane_width = 120
+    line_points = []
+    monkeypatch.setattr(
+        progression_screen.pygame.draw,
+        "lines",
+        lambda _screen, _color, _closed, points, _width: (
+            line_points.append(points)
+        ),
+    )
+
+    screen._draw_connectors([
+        NodeStatus(source, NodeState.AVAILABLE),
+        NodeStatus(target, NodeState.BLOCKED),
+    ])
+
+    expected_channel_x = int(100 + channel_column * 120)
+    assert line_points[0][1][0] == expected_channel_x
+    assert line_points[0][2][0] == expected_channel_x
+    assert line_points[0][-1] == target_rect.midtop
 
 
 def test_paladin_oath_connectors_drop_to_promotion_row_before_joining(

@@ -146,7 +146,7 @@ RANDOM_ENEMY_SPECS: dict[str, tuple[EnemySpec, ...]] = {
         ("Giant", "Giant"),
         ("Owlbear", "Owlbear"),
         ("Gargoyle", "Gargoyle"),
-        ("Conjurer", "Conjurer"),
+        ("Necromancer", "Necromancer"),
         ("Chimera", "Chimera"),
         ("Dragonkin", "Dragonkin"),
         ("Griffin", "Griffin"),

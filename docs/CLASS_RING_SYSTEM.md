@@ -10,7 +10,7 @@ Class Ring activation now has two implementation tiers:
 
 - Fully playable activation flows: `Grandmaster of Arms`, `Demonologist`,
   `Archdruid`, `Berserker`, `Dragoon`, `Stalwart Defender`, `Wizard`,
-  `Shadowcaster`, `Knight Enchanter`, `Grand Summoner`, `Rogue`, `Seeker`,
+  `Shadowcaster`, `Knight Enchanter`, `Thaumaturgist`, `Rogue`, `Seeker`,
   `Ninja`, `Arcane Trickster`, `Crusader`, `Templar`, `Hierophant`,
   `Master Monk`, `Archbishop`, `Troubadour`, `Lycan`, `Astromancer`,
   `Soulcatcher`, and `Beast Master`.
@@ -440,13 +440,18 @@ additional visual presentation, and playtest follow-up.
   - The promotion-kit V1 pass makes Resolve a baseline Sentinel/Stalwart
     resource. Sentinel owns the shield stance and normal Resolve spends such as
     `Bulwark`, `Shield Riposte`, `Shield Check`, `Brace Wall`,
-    `Covering Guard`, `Deflect Spell`, and `Spell Reflection`; Stalwart keeps
-    those actions and adds full-bar `Resolve Surges`. Spell Reflection spends
+    `Covering Guard`, and the merged `Spell Reflection`; Stalwart keeps those
+    actions and adds full-bar `Resolve Surges`. Spell Reflection is the
+    ungated `(4, 0)` root of
+    `Spell Reflection -> +20 Magic Defense -> +50 HP` and uses compatibility
+    node ID `sentinel.ability.deflect-spell`. The retired learned Deflect Spell
+    and old `sentinel.ability.spell-reflection` node ID migrate to it. It spends
     25 Resolve and redirects the first compatible hostile targeted spell
     during its two-turn preparation. Mirror Bastion rewards a trigger with 20
-    Resolve and `+6 Magic Defense` for two turns. Awakened/equipped `Shield
-    Mastery` remains the strongest automation layer for major-hit mitigation
-    and reads/spends this same Resolve value without a duplicate gain path.
+    Resolve and `+6 Magic Defense` for two turns. Awakened/equipped
+    `Shield Mastery` remains the strongest automation layer for major-hit
+    mitigation and reads/spends this same Resolve value without a duplicate
+    gain path.
   - Status: playable in the Barracks when a dormant Stalwart Defender Class
     Ring is equipped or stored.
   - The trial has no normal XP, gold, loot, quest, kill-count, or death penalty
@@ -457,15 +462,17 @@ additional visual presentation, and playtest follow-up.
 - `Sorcerer`/`Wizard`: `Four Formulae` awakens `School Streak`. Failed spell
   riders for the same school add +15% rider chance; four stacks guarantee the
   next eligible rider.
-  - `School Affinity`: six-school hexagon state tracks `Fire`, `Ice`, `Water`,
-    `Electric`, `Earth`, and `Wind`, starting at 0 each. Sorcerer affinity caps
-    at 50; Wizard affinity caps at 100. Casting a school raises that school by
-    2, lowers its opposite by 1, and drifts other schools down by 0.2.
+  - `School Affinity` is specialization-aware. Classical Force tracks the six
+    elemental schools; Esotericism tracks Arcane affinity and presents only
+    that school in the mechanic panel. Sorcerer affinity caps at 50; Wizard
+    affinity caps at 100. Matching casts raise affinity by 2. Elemental
+    specialization lowers the opposite by 1 and drifts other elemental schools
+    down by 0.2.
     Opposites are `Fire`/`Ice`, `Water`/`Electric`, and `Earth`/`Wind`.
     Matching affinity grants +1% matching spell damage per full 10 affinity.
-  - Sorcerer unlocks tier-2 elemental spell upgrades at 30 affinity and mastery
-    rider support at 50. Wizard unlocks tier-3 upgrades at 80 affinity and
-    final mastery at 100.
+  - Sorcerer unlocks the matching tier-2 elemental or Arcane spell upgrade at
+    30 affinity and mastery support at 50. Wizard unlocks tier-3 upgrades at
+    80 and final mastery at 100.
   - Awakened, equipped Wizard Class Ring raises matching affinity gain to +3 and
     enables final-mastery 3-stack school buffs on matching casts.
   - Status: playable in the Church when a dormant Wizard Class Ring is equipped
@@ -482,11 +489,11 @@ additional visual presentation, and playtest follow-up.
   existing `Mana Tap+` ring hook internally for compatibility.
   - Status: playable in the Church when a dormant Knight Enchanter Class Ring is
     equipped or stored.
-- `Grand Summoner`: `Conduit Ritual` permanently sacrifices 5% max HP and
-  awakens +30% HP and damage for current and future summons.
-  - Future summons apply the awakened multiplier when their combat stats are
-    initialized.
-  - Status: playable in the Church when a dormant Grand Summoner Class Ring is
+- `Thaumaturgist`: `Conduit Ritual` permanently sacrifices 5% max HP and
+  awakens +30% HP and damage for any of the 12 named Xenids.
+  - A newly chosen member of the fixed roster applies the awakened multiplier
+    when its combat stats are initialized.
+  - Status: playable in the Church when a dormant Thaumaturgist Class Ring is
     equipped or stored.
 
 ### Footpad Branch

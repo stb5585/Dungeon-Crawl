@@ -335,6 +335,7 @@ from .misc import (
     CrypticKey,
     LockpickKit,
     SmokeBomb,
+    RealityFragment,
     Oculus,
     has_lockpick_kit,
     has_smoke_bomb,

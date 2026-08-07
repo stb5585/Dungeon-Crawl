@@ -16,6 +16,8 @@ from src.core.progression import (
     NodeState,
     apply_progression_plan,
     available_nodes,
+    effective_node_level_requirement,
+    permanent_closures_for_plan,
     progression_class_name,
 )
 from src.ui_pygame.assets.ability_icon_manager import (
@@ -27,6 +29,7 @@ from .character_naming import CompanionNamingScreen
 from .confirmation_popup import ConfirmationPopup
 from .familiar_selection_popup import FamiliarSelectionPopup
 from .mouse_helpers import hit_index, is_left_click, mouse_position
+from .popup_menus import SelectionPopup
 from .promotion_screen import PromotionScreen
 from .town_base import TownScreenBase, wrap_text_to_pixel_width
 
@@ -244,6 +247,38 @@ class ProgressionScreen(TownScreenBase):
                     continue
                 source_rect = self.node_icon_rects[source_index]
                 if not self._tree_viewport.colliderect(source_rect):
+                    continue
+                if status.node.payload.get("connector_enter_from_top"):
+                    source_is_left = source_rect.centerx < target_rect.centerx
+                    source_side = (
+                        source_rect.midright
+                        if source_is_left
+                        else source_rect.midleft
+                    )
+                    channel_column = status.node.payload.get(
+                        "connector_channel_columns",
+                        {},
+                    ).get(prerequisite)
+                    channel_x = (
+                        target_rect.centerx
+                        if channel_column is None
+                        else int(
+                            self._tree_column_origin
+                            + channel_column * self._tree_lane_width
+                        )
+                    )
+                    pygame.draw.lines(
+                        self.screen,
+                        self.CONNECTOR_COLOR,
+                        False,
+                        (
+                            source_side,
+                            (channel_x, source_side[1]),
+                            (channel_x, target_rect.top),
+                            target_rect.midtop,
+                        ),
+                        1,
+                    )
                     continue
                 if status.node.payload.get("connector_join_at_target_row"):
                     source_is_left = source_rect.centerx < target_rect.centerx
@@ -580,6 +615,15 @@ class ProgressionScreen(TownScreenBase):
         ]
         warning_lines = set()
         content_width = rect.width - 28
+        displayed_class = (
+            self._selected_tree_id()
+            if hasattr(self, "player_char")
+            else status.node.tree_id
+        )
+        required_level = effective_node_level_requirement(
+            status.node,
+            displayed_class,
+        )
         description = status.node.payload.get("description", "")
         if description:
             lines.extend(
@@ -611,10 +655,10 @@ class ProgressionScreen(TownScreenBase):
                 self.small_font,
                 content_width,
             ))
-        elif status.node.payload.get("level_requirement"):
+        elif required_level:
             lines.append(
                 "Required level: "
-                f"{status.node.payload['level_requirement']}"
+                f"{required_level}"
             )
         specialization = status.node.payload.get("weapon_specialization")
         if specialization:
@@ -638,7 +682,7 @@ class ProgressionScreen(TownScreenBase):
                 reason not in implied_prerequisites
                 and reason not in implied_cost_reasons
                 and not (
-                    status.node.payload.get("level_requirement")
+                    required_level
                     and (
                         reason.startswith("Requires global level ")
                         or reason.startswith("Requires level ")
@@ -934,9 +978,63 @@ class ProgressionScreen(TownScreenBase):
     def _spend_pending(self):
         if not self.has_pending_changes():
             return
-        choices: dict[str, dict] = {}
+        closures = ()
+        if (
+            getattr(self.player_char, "cls", None) is not None
+            and getattr(self.player_char, "progression", None) is not None
+        ):
+            closures = permanent_closures_for_plan(
+                self.player_char,
+                self._selected_tree_id(),
+                self.pending_node_ids,
+            )
+        if closures:
+            names = "\n".join(f"- {name}" for name in closures)
+            confirmed = ConfirmationPopup(
+                self.presenter,
+                (
+                    "Confirm Permanent Choice?\n\n"
+                    "Spending this distribution will permanently close:\n"
+                    f"{names}\n\nThese abilities cannot be learned later."
+                ),
+                show_buttons=True,
+            ).show(background_draw_func=self._popup_background)
+            if not confirmed:
+                return
+        promotion_choices_by_node: dict[str, dict] = {}
+        node_choices: dict[str, dict] = {}
         for node_id in self.pending_node_ids:
             node = TREE_NODES[node_id]
+            category = node.payload.get("xenid_category")
+            if category:
+                options = list(node.payload.get(
+                    "xenid_options",
+                    companions.XENID_PAIRS.get(str(category), ()),
+                ))
+                result = SelectionPopup(
+                    self.presenter,
+                    self,
+                    title=f"Choose {category} Xenid",
+                    header_message=(
+                        "This choice is permanent. Select the Xenid that will "
+                        "answer this Calling."
+                    ),
+                    options=options,
+                ).show(self.player_char)
+                if not result or result[0] != "selection":
+                    return
+                selected = result[1]
+                confirmed = ConfirmationPopup(
+                    self.presenter,
+                    (
+                        f"Permanently bind {selected} to the {category} "
+                        "Calling?"
+                    ),
+                    show_buttons=True,
+                ).show(background_draw_func=self._popup_background)
+                if not confirmed:
+                    return
+                node_choices[node_id] = {"xenid": selected}
             if node.kind != NodeKind.PROMOTION:
                 continue
             if not self._confirm_staged_promotion(node):
@@ -946,12 +1044,13 @@ class ProgressionScreen(TownScreenBase):
             )
             if promotion_choices is None:
                 return
-            choices[node_id] = promotion_choices
+            promotion_choices_by_node[node_id] = promotion_choices
         result = apply_progression_plan(
             self.player_char,
             self.pending_node_ids,
             self.pending_attributes,
-            promotion_choices=choices,
+            promotion_choices=promotion_choices_by_node,
+            node_choices=node_choices,
         )
         if result.success:
             self._clear_pending()

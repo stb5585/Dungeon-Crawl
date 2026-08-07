@@ -93,6 +93,22 @@ class SmokeBomb(Misc):
         )
 
 
+class RealityFragment(Misc):
+    """Extremely rare reagent consumed by Thaumaturgist Miracles."""
+
+    def __init__(self):
+        super().__init__(
+            name="Reality Fragment",
+            description=(
+                "A splinter of impossible matter. Thaumaturgists consume it "
+                "to force a Miracle past the ordinary laws of conjuration."
+            ),
+            value=100000,
+            rarity=0.01,
+            subtyp="Reagent",
+        )
+
+
 class Oculus(Misc):
     """
     Expensive magic lens that reveals fake walls.
@@ -1006,7 +1022,7 @@ class Joker(Misc):
     def __init__(self):
         super().__init__(name="Joker", description="They say that Joker's are wild; you'll see how wild this one is.",
                          value=0, rarity=1, subtyp="Special")
-        self.restricted_classes = ["Summoner", "Grand Summoner", "Spell Stealer", "Arcane Trickster"]
+        self.restricted_classes = ["Thaumaturgist", "Spell Stealer", "Arcane Trickster"]
 
 
 class ChiryuKoma(Misc):
@@ -1017,7 +1033,7 @@ class ChiryuKoma(Misc):
     def __init__(self):
         super().__init__(name="Chiryu Koma", description="A game piece used for shogi, depicting an earth dragon.",
                          value=0, rarity=0.1, subtyp="Summon - Dilong")
-        self.restricted_classes = ["Summoner", "Grand Summoner"]
+        self.restricted_classes = ["Thaumaturgist"]
 
 
 class BlacksmithsHammer(Misc):
@@ -1030,7 +1046,7 @@ class BlacksmithsHammer(Misc):
         super().__init__(name="Blacksmith's Hammer", description="It looks like a normal blacksmithing hammer but "
                                                                  "something seems...special about this one.",
                          value=0, rarity=0, subtyp="Summon - Cacus")
-        self.restricted_classes = ["Summoner", "Grand Summoner"]
+        self.restricted_classes = ["Thaumaturgist"]
 
 
 class DragonTear(Misc):

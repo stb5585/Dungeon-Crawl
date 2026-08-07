@@ -29,7 +29,8 @@ PLAYER_SPRITE_MAP = {
     'Wizard': 'player_mage',
     'Sorcerer': 'player_mage',
     'Warlock': 'player_mage',
-    'Summoner': 'player_mage',
+    'Conjurer': 'player_mage',
+    'Thaumaturgist': 'player_mage',
     
     'Rogue': 'player_rogue',
     'Thief': 'player_rogue',

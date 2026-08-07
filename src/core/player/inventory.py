@@ -78,7 +78,7 @@ class PlayerInventoryMixin:
                             matches_item = item.name == quest_item_name or item_class_name == quest_item_class_name
                             if matches_item and not is_completed:
                                 rarity = item.rarity
-                                if item.name == "Bird Fat" and "Summoner" not in self.cls.name:
+                                if item.name == "Bird Fat" and "Thaumaturgist" not in self.cls.name:
                                     rarity = 0.75
                                 rarity_roll = random.random()
                                 rare[i] = True
@@ -112,7 +112,7 @@ class PlayerInventoryMixin:
                         except ValueError:
                             summon, name = None, None
                             summon_drop = False
-                        if summon and "Summoner" not in self.cls.name:
+                        if summon and "Thaumaturgist" not in self.cls.name:
                             continue
                         drop[i] = True if not summon_drop else False
                         rare[i] = True if summon else False

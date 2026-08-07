@@ -222,8 +222,8 @@ class MagicEffectToggleEffect:
     Toggle a magic effect on the actor.  When the effect is already active,
     it is deactivated (no mana cost).  When inactive, mana is deducted and
     the effect is activated with ``duration`` set to *reduction* (used by
-    ``_apply_mana_shield`` as the damage-reduction divisor, not a turn
-    count).
+    ``_apply_mana_shield`` as the maximum redirected physical-damage
+    percentage, not a turn count).
 
     The ``cost`` is only charged on activation.  Set the parent skill's
     cost to 0 so the ``DataDrivenSkill`` pipeline does not double-charge.
@@ -884,7 +884,11 @@ class HolyFollowupEffect:
         # Mana Shield / Crusader Shield
         hit = True
         if target.magic_effects["Mana Shield"].active:
-            damage, shield_msg, absorbed = actor._apply_mana_shield(target, damage)
+            damage, shield_msg, absorbed = actor._apply_mana_shield(
+                target,
+                damage,
+                physical=False,
+            )
             hit = not absorbed
             messages.append(shield_msg)
         elif (

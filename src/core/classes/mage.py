@@ -16,7 +16,7 @@ class Mage(Job):
                     |
                     -> Spellblade  -> Knight Enchanter
                     |
-                    -> Summoner    -> Grand Summoner
+                    -> Conjurer    -> Thaumaturgist
     """
 
     def __init__(self):

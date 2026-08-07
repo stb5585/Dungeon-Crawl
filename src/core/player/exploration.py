@@ -186,9 +186,11 @@ class PlayerExplorationMixin:
                         action_list.pop(action_list.index(action))
         if self.is_disarmed():
             action_list.insert(1, "Pickup Weapon")
-        if "Summon" in self.spellbook["Skills"] and \
-            any([x.is_alive() for x in self.summons.values()]) and \
-                not self.abilities_suppressed():
+        if (
+            getattr(getattr(self, "cls", None), "name", "") == "Thaumaturgist"
+            and any(x.is_alive() for x in self.summons.values())
+            and not self.abilities_suppressed()
+        ):
             action_list.insert(1, "Summon")
         if "Steal As Well" in self.spellbook["Skills"] and not self.abilities_suppressed():
             action_list.insert(1, "Steal As Well")

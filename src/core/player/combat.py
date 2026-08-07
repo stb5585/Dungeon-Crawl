@@ -11,6 +11,7 @@ from ..classes import (
     class_rings,
     lycan,
     paladin,
+    promotion_kits,
     wizard,
 )
 from .persistence import load_char
@@ -196,6 +197,10 @@ class PlayerCombatMixin:
         class_mod += ability_mechanics.favored_enemy_bonus(self, enemy)
         if mod == 'weapon':
             weapon_mod = (self.equipment['Weapon'].damage * int(not self.is_disarmed()))
+            class_mod += promotion_kits.xenid_caster_attribute_bonus(
+                self,
+                "strength",
+            )
             if 'Monk' in self.cls.name:
                 class_mod += self.stats.wisdom
             # Footpad-line weapon damage is DEX-forward.
@@ -235,6 +240,7 @@ class PlayerCombatMixin:
             total_mod *= 1 + ability_mechanics.melody_inspiration_bonus(self)
             total_mod *= 1 + lycan.phase_damage_bonus(self) + lycan.frenzy_damage_bonus(self)
             total_mod *= paladin.conquest_damage_multiplier(self, enemy)
+            total_mod *= promotion_kits.xenid_caster_multiplier(self, "melee")
             if (
                 self.stat_effects["Attack"].active
                 and self.stat_effects["Attack"].source == "Dishearten"
@@ -252,7 +258,6 @@ class PlayerCombatMixin:
             block_mod += ability_mechanics.last_stand_block_bonus(self)
             block_mod += ability_mechanics.shield_mastery_block_bonus(self)
             try:
-                from ..classes import promotion_kits
                 from ..progression import has_talent
 
                 if (
@@ -279,6 +284,10 @@ class PlayerCombatMixin:
             if self.cls.name in ['Thief', 'Rogue', 'Assassin', 'Ninja', 'Druid', 'Lycan']:
                 class_mod += (self.stats.dex // 2)
             try:
+                class_mod += promotion_kits.xenid_caster_attribute_bonus(
+                    self,
+                    "strength",
+                )
                 off_mod = self.equipment['OffHand'].damage
                 if self.equipment['Ring'] is not None and 'Physical Damage' in self.equipment['Ring'].mod:
                     off_mod += int(self.equipment['Ring'].mod.split(' ')[0])
@@ -287,6 +296,10 @@ class PlayerCombatMixin:
                 total_offhand *= ability_mechanics.monkey_grip_damage_multiplier(self, "OffHand")
                 total_offhand *= ability_mechanics.arsenal_mastery_weapon_multiplier(self)
                 total_offhand *= ability_mechanics.pack_bond_multiplier(self)
+                total_offhand *= promotion_kits.xenid_caster_multiplier(
+                    self,
+                    "melee",
+                )
                 if (
                     self.stat_effects["Attack"].active
                     and self.stat_effects["Attack"].source == "Dishearten"
@@ -320,12 +333,20 @@ class PlayerCombatMixin:
             armor_total *= class_rings.armor_multiplier(self)
             armor_total *= ability_mechanics.primal_ascendance_multiplier(self, "Stone")
             armor_total *= ability_mechanics.pack_bond_multiplier(self)
+            armor_total *= promotion_kits.xenid_caster_multiplier(
+                self,
+                "armor",
+            )
             armor_total *= 1 + ability_mechanics.melody_inspiration_bonus(self)
             if self.magic_effects.get("Tree of Life") and self.magic_effects["Tree of Life"].active:
                 armor_total *= 1.75
             return max(0, int(armor_total))
         if mod == 'magic':
-            magic_mod = int(self.stats.intel // 4) * self.level.pro_level
+            conduit_intel = promotion_kits.xenid_caster_attribute_bonus(
+                self,
+                "intel",
+            )
+            magic_mod = int((self.stats.intel + conduit_intel) // 4) * self.level.pro_level
             if self.equipment['OffHand'] is not None and self.equipment['OffHand'].subtyp == 'Tome':
                 magic_mod += self.equipment['OffHand'].mod
             if self.equipment['Weapon'] is not None and self.equipment['Weapon'].subtyp == 'Staff':
@@ -366,11 +387,27 @@ class PlayerCombatMixin:
                 total_magic = int(total_magic * ability_mechanics.primal_ascendance_multiplier(self, "Storm"))
             total_magic = int(total_magic * (1 + ability_mechanics.melody_inspiration_bonus(self)))
             total_magic *= paladin.conquest_damage_multiplier(self, enemy)
+            total_magic *= promotion_kits.xenid_caster_multiplier(
+                self,
+                "magic",
+            )
             return max(0, int(total_magic))
         if mod == 'magic def':
             # Wisdom is the primary magic-defense stat; charisma provides a secondary
             # willpower component so low-CHA physical builds have a tangible downside.
-            m_def_mod = (self.stats.wisdom + (self.stats.charisma // 2)) * self.level.pro_level
+            conduit_wisdom = promotion_kits.xenid_caster_attribute_bonus(
+                self,
+                "wisdom",
+            )
+            conduit_charisma = promotion_kits.xenid_caster_attribute_bonus(
+                self,
+                "charisma",
+            )
+            m_def_mod = (
+                self.stats.wisdom
+                + conduit_wisdom
+                + ((self.stats.charisma + conduit_charisma) // 2)
+            ) * self.level.pro_level
             if self.equipment['Pendant'] is not None and "Magic Defense" in self.equipment['Pendant'].mod:
                 m_def_mod += int(self.equipment['Pendant'].mod.split(' ')[0])
             m_def_mod += self.stat_effects["Magic Defense"].extra * self.stat_effects["Magic Defense"].active
@@ -386,9 +423,20 @@ class PlayerCombatMixin:
             total_magic_def = int(total_magic_def * (1 + ability_mechanics.melody_inspiration_bonus(self)))
             if self.magic_effects.get("Tree of Life") and self.magic_effects["Tree of Life"].active:
                 total_magic_def = int(total_magic_def * 1.75)
+            total_magic_def = int(
+                total_magic_def
+                * promotion_kits.xenid_caster_multiplier(
+                    self,
+                    "magic_defense",
+                )
+            )
             return max(0, total_magic_def)
         if mod == 'heal':
-            heal_mod = self.stats.wisdom * self.level.pro_level
+            conduit_wisdom = promotion_kits.xenid_caster_attribute_bonus(
+                self,
+                "wisdom",
+            )
+            heal_mod = (self.stats.wisdom + conduit_wisdom) * self.level.pro_level
             if self.equipment['OffHand'] is not None and self.equipment['OffHand'].subtyp == 'Tome':
                 heal_mod += self.equipment['OffHand'].mod
             elif self.equipment['Weapon'] is not None and self.equipment['Weapon'].subtyp == 'Staff':
@@ -401,6 +449,10 @@ class PlayerCombatMixin:
                 class_mod += int((heal_mod + self.combat.magic) * 0.15)
             total_heal = heal_mod + class_mod + self.combat.magic
             total_heal = int(total_heal * ability_mechanics.primal_ascendance_multiplier(self, "Growth"))
+            total_heal = int(
+                total_heal
+                * promotion_kits.xenid_caster_multiplier(self, "healing")
+            )
             return max(0, total_heal)
         if mod == 'resist':
             res_mod = 0
@@ -489,9 +541,8 @@ class PlayerCombatMixin:
             Demonologist - Abyssal Covenant: sacrifice health to empower spell damage and fiend contract scaling.
             Knight Enchanter - Arcane Blast: blast the enemy with a powerful attack, draining all remaining mana points; mana
                 will regen in full over the next 4 turns (25% per turn)
-            Grand Summoner - Eternal Conduit (passive): The Summoner's bond with their summons is so strong that they gain a
-                portion of all healing and buffs their summons receive, and their summons gain a portion of all healing and
-                buffs the Summoner receives.
+            Thaumaturgist - Eternal Conduit (passive): The Thaumaturgist's bond with their Xenids shares a portion
+                of healing and buffs in either direction.
             Rogue - Stroke of Luck(passive): the Rogue is incredibly lucky, gaining bonuses to all luck-based checks, including
                 dodge and critical chance
             Seeker - Eyes of the Unseen(passive): gain increased awareness of battle situations, increasing critical chance as
@@ -532,8 +583,7 @@ class PlayerCombatMixin:
                     "Shadowcaster": abilities.VeilShadows,
                     "Demonologist": abilities.AbyssalCovenant,
                     "Knight Enchanter": abilities.ArcaneBlast,
-                    "Summoner": abilities.EternalConduit,
-                    "Grand Summoner": abilities.EternalConduit,
+                    "Thaumaturgist": abilities.EternalConduit,
                     "Rogue": abilities.StrokeLuck,
                     "Seeker": abilities.EyesUnseen,
                     "Ninja": abilities.BladeFatalities,

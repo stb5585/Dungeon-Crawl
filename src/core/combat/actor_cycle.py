@@ -110,6 +110,11 @@ class ActorCycle:
         self.total_started_actor_turns += 1
         return self.total_started_actor_turns
 
+    def add_actor(self, actor_id: str) -> None:
+        """Append a reinforcement to the current round's fixed actor cycle."""
+        if actor_id not in self.order:
+            self.order = (*self.order, actor_id)
+
     def advance(self, valid_actor_ids: set[str]) -> tuple[bool, str]:
         """Advance to the next valid actor, returning round transition state."""
         if not self.order:

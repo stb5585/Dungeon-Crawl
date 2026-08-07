@@ -40,7 +40,7 @@ larger Vesperion/Voluntas route still belongs to
 ### Red Dragon Continuity
 
 The Red Dragon encounter currently feeds ordinary progression, Lancer/Dragoon
-Kaelenon restoration, and Grand Summoner Zahhak binding. Quest text should
+Kaelenon restoration, and Thaumaturgist Dragon Calling. Quest text should
 separate those meanings without making one route invalidate another.
 
 Allowed copy direction:

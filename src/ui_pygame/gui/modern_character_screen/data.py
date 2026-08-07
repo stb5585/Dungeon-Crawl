@@ -98,7 +98,7 @@ class CharacterDataMixin:
         summons = getattr(player_char, "summons", {}) or {}
         for summon in summons.values():
             if self._is_living_companion(summon):
-                return "Summon", summon
+                return "Xenid", summon
         return None
 
     def companion_summary_rows(self, kind: str, companion: Any) -> list[tuple[str, str]]:
@@ -176,7 +176,7 @@ class CharacterDataMixin:
                 favored = "None"
             rows.append(("Favored Enemy", favored))
         if summons:
-            rows.append(("Known Summons", str(len(summons))))
+            rows.append(("Known Xenids", str(len(summons))))
         if familiar is not None:
             if getattr(familiar, "spec", "") == "Tamed":
                 rows.append(("Companion", self._attr_name(familiar, "Companion")))

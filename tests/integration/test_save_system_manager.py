@@ -212,8 +212,8 @@ def test_player_data_serializer_round_trips_bestiary_records():
 
 def test_player_data_serializer_round_trips_summons():
     player = TestGameState.create_player(
-        name="Summoner",
-        class_name="Summoner",
+        name="Thaumaturgist",
+        class_name="Thaumaturgist",
         race_name="Human",
         level=12,
     )
@@ -238,30 +238,30 @@ def test_player_data_serializer_round_trips_summons():
     assert restored_summon.level.exp == 123
 
 
-def test_player_data_serializer_round_trips_malformed_single_ability_summon_sections():
+def test_player_data_serializer_round_trips_xenid_spellbook_sections():
     player = TestGameState.create_player(
-        name="Summoner",
-        class_name="Summoner",
+        name="Thaumaturgist",
+        class_name="Thaumaturgist",
         race_name="Human",
         level=12,
     )
-    summon = companions.Fuath()
+    summon = companions.Seraphim()
     summon.initialize_stats(player)
-    player.summons["Fuath"] = summon
+    player.summons["Seraphim"] = summon
 
     restored = PlayerDataSerializer.deserialize(
         PlayerDataSerializer.serialize(player),
         skip_tiles=True,
     )
 
-    assert "Water Jet" in restored.summons["Fuath"].spellbook["Spells"]
-    assert "Screech" in restored.summons["Fuath"].spellbook["Skills"]
+    assert "Smite" in restored.summons["Seraphim"].spellbook["Spells"]
+    assert "Shield Slam" in restored.summons["Seraphim"].spellbook["Skills"]
 
 
-def test_player_data_deserialize_grants_patagon_for_legacy_summoner_save():
+def test_player_data_deserialize_does_not_grant_an_unselected_xenid():
     player = TestGameState.create_player(
-        name="LegacySummoner",
-        class_name="Summoner",
+        name="Thaumaturgist",
+        class_name="Thaumaturgist",
         race_name="Human",
         level=12,
     )
@@ -270,7 +270,7 @@ def test_player_data_deserialize_grants_patagon_for_legacy_summoner_save():
 
     restored = PlayerDataSerializer.deserialize(serialized, skip_tiles=True)
 
-    assert "Patagon" in restored.summons
+    assert restored.summons == {}
 
 
 def test_player_data_deserialize_deactivates_funhouse_teleporter_for_existing_jester_save(monkeypatch):

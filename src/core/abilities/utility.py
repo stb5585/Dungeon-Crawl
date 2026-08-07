@@ -631,24 +631,6 @@ class Familiar3(Familiar):
         self.description = "The warlock's familiar gains additional strength, unlocking even more abilities."
 
 
-class Summon(Class):
-
-    def __init__(self):
-        super().__init__(
-            name="Summon",
-            description="Call forth powerful allies to fight for you in combat. These "
-            "creatures learn a variety of abilities and increase in power "
-            "based on the Summoner's intel and charisma.",
-        )
-        self.passive = True
-
-
-class Summon2(Summon):
-
-    def __init__(self):
-        super().__init__()
-
-
 class Tame(Class):
 
     def __init__(self):
@@ -686,19 +668,30 @@ class HealSummon(Class):
 
 class RaiseSummon(Class):
     def __init__(self):
-        super().__init__("Raise Summon", "Revive all fallen owned summons.")
-        self.cost = 30
+        super().__init__(
+            "Raise Summon",
+            "In combat, restore the Xenid that just fell. The rite refunds "
+            "part of the conduit lost on death.",
+        )
+        self.cost = 100
+        self.combat = True
 
     def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
-        from ..classes import ability_mechanics
+        del target
+        from ..classes import promotion_kits
 
-        super().use(user, target, **kwargs)
-        user.mana.current -= self.cost
-        return ability_mechanics.raise_all_summons(user)
+        battle_engine = kwargs.get("battle_engine")
+        success, message = promotion_kits.raise_fallen_xenid(
+            user,
+            battle_engine,
+        )
+        if success:
+            user.mana.current -= self.cost
+        return message
 
     def use_out(self, game_or_user) -> str:
-        user = getattr(game_or_user, "player_char", game_or_user)
-        return self.use(user)
+        del game_or_user
+        return "Raise Summon can only be used during combat.\n"
 
 
 class AbsorbEssence(Class):

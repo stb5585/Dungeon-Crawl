@@ -442,6 +442,13 @@ class BattleActionMixin:
         elif skill.name in ["Doublecast", "Triplecast"]:
             message += skill.use(self.attacker, self.defender, game=self.game)
 
+        elif skill.name == "Raise Summon":
+            message += skill.use(
+                self.attacker,
+                target=self.defender,
+                battle_engine=self,
+            )
+
         elif "Jump" in skill.name:
             charge_time = skill.get_charge_time() if hasattr(skill, "get_charge_time") else 1
             continuing_charge = already_charging and int(getattr(skill, "charge_turns", 0) or 0) > 1
@@ -544,6 +551,9 @@ class BattleActionMixin:
         self.summon = summon
         self.summon_active = True
         self.player.active_summon_name = summon.name
+        combat = promotion_kits.combat_state(summoner)
+        combat["fallen_xenid"] = None
+        combat["fallen_xenid_conduit_loss"] = 0
         self.attacker = summon
         self.defender = self._focused_enemy()
         self.available_actions = self._available_actions()

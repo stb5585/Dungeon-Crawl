@@ -4,6 +4,24 @@
 > retired after the checkpoint and is archived at Git tag `curses-ui-final`.
 > Pygame is now the only supported player-facing frontend.
 
+> Post-checkpoint scoped continuation (August 5, 2026): the bespoke Mage base
+> tree and Sorcerer/Wizard elemental carry-forward are approved under this
+> preserved version-5 baseline. This does not reopen general lineage expansion;
+> other lineage redesigns remain paused until separately approved.
+
+> Post-checkpoint errata (August 6, 2026): Mage was rebaselined again before
+> distribution. Its current graph is the Elemental/Enhancement/Arcana/
+> Occultism/Conjuration/Universal design in `ABILITY_TREE_DESIGN.md`;
+> Warded Casting was retired; Conjurer replaces tier-2 Summoner; and the former
+> Summoner/Grand Summoner systems are combined in terminal Thaumaturgist.
+> Conjurer uses its six Callings for location-aware ordinary transients;
+> Thaumaturgist adds Conjure Animal, paired choices, and ultimate unlocks for
+> the fixed 14-Xenid roster. Xenid XP was replaced by conduit-driven growth and
+> reciprocal caster effects. No save migration is required. Numeric
+> rating/HP/MP nodes now have no independent
+> level gates, and permanent node closures require Spend Distribution
+> confirmation. The checkpoint below remains historical.
+
 ## Status
 
 This document records the complete progression and Warrior-line implementation
@@ -270,6 +288,14 @@ two turns of Magic Defense after a trigger.
 Stalwart promotion grants the Surge wrappers without purchasing nodes.
 Mastery thresholds remain 0/4/8, and the three authored modifier talents apply
 their documented barrier, damage, control, healing, and duration upgrades.
+
+Post-checkpoint errata: the Anti-magic description above records the historical
+checkpoint. Current Sentinel implements one merged
+`Spell Reflection -> +20 Magic Defense -> +50 HP` branch. Spell Reflection is
+ungated at `(4, 0)` and uses compatibility ID
+`sentinel.ability.deflect-spell`. The retired learned Deflect Spell ability and
+the old `sentinel.ability.spell-reflection` node ID migrate to this merged
+behavior.
 
 ## Paladin And Crusader
 

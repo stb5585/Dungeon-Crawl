@@ -175,6 +175,14 @@ class DataDrivenSpell(Spell):
 
         # ── 4. Dodge / hit rolls ────────────────────────────────────
         spell_mod = caster.check_mod("magic", enemy=target)
+        fire_inside_bonus = 0.0
+        try:
+            from ...classes import mage_mechanics
+
+            fire_inside_bonus = mage_mechanics.fire_inside_critical_bonus(caster)
+            mage_mechanics.consume_fire_inside(caster)
+        except Exception:
+            pass
         dodge = target.dodge_chance(caster, spell=True)
         hit = caster.hit_chance(target, typ="magic")
         if target.incapacitated():
@@ -198,7 +206,16 @@ class DataDrivenSpell(Spell):
         crit = 1
         if not random.randint(0, self.crit):
             crit = 2
+        if fire_inside_bonus and random.random() < fire_inside_bonus:
+            crit = 2
         crit_per = _floor_uniform(caster, random.uniform(1, crit), 1, crit)
+        try:
+            from ...classes import mage_mechanics
+
+            if mage_mechanics.school_from_ability(self) == "Arcane":
+                crit_per = mage_mechanics.arcane_critical_multiplier(caster, crit_per)
+        except Exception:
+            pass
         result.crit = crit_per if crit > 1 else None
 
         # ── 6. Base damage ──────────────────────────────────────────
@@ -243,6 +260,20 @@ class DataDrivenSpell(Spell):
                     from src.core.classes import nature_totems
 
                     damage = int(damage * nature_totems.spell_output_multiplier(caster, self))
+                except Exception:
+                    pass
+                try:
+                    from src.core.classes import mage_mechanics, wizard
+
+                    damage = int(damage * mage_mechanics.spell_potency_multiplier(caster, self))
+                    damage = int(
+                        damage
+                        * mage_mechanics.spell_damage_multiplier(caster, self)
+                    )
+                    school = mage_mechanics.school_from_ability(self)
+                    damage = int(
+                        damage * (1 + wizard.affinity_damage_bonus(caster, school))
+                    )
                 except Exception:
                     pass
                 try:

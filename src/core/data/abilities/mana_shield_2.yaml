@@ -2,14 +2,14 @@ name: Mana Shield 2
 type: Skill
 subtype: Enhance
 description: >-
-  Toggle an enhanced mana shield that absorbs more physical damage than the
-  basic version, redirecting energy to your mana pool.
+  Toggle an enhanced mana shield that redirects up to 50% of each physical
+  attack's damage into your mana pool.
 cost: 0
 self_target: true
 effects:
   - type: magic_effect_toggle
     effect_name: Mana Shield
     cost: 4
-    reduction: 4
+    reduction: 50
     activate_message: "Mana Shield has been activated.\n"
     deactivate_message: "Mana Shield has been deactivated.\n"

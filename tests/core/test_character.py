@@ -741,7 +741,7 @@ class TestPlayerUtilityBehaviors:
         assert player.current_weight() > 0
 
         player.physical_effects["Disarm"].active = True
-        player.spellbook["Skills"]["Summon"] = abilities.Summon()
+        player.cls.name = "Thaumaturgist"
         alive_summon = TestGameState.create_player(name="Summon", class_name="Warrior", race_name="Human")
         player.summons["Summon"] = alive_summon
         player.abilities_suppressed = lambda: False

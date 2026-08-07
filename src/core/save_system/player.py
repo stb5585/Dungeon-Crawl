@@ -148,6 +148,18 @@ class PlayerDataSerializer:
                 getattr(player, 'bounty_board_state', None)
             ),
             'kill_dict': player.kill_dict,
+            'last_defeated_enemy': getattr(player, 'last_defeated_enemy', None),
+            'transient_companion': getattr(player, 'transient_companion', None),
+            'conjure_potion_cooldown': int(
+                getattr(player, 'conjure_potion_cooldown', 0) or 0
+            ),
+            'conjure_elixir_cooldown': int(
+                getattr(player, 'conjure_elixir_cooldown', 0) or 0
+            ),
+            'torchlight_steps': int(
+                getattr(player, 'torchlight_steps', 0) or 0
+            ),
+            'xenid_choices': dict(getattr(player, 'xenid_choices', {}) or {}),
             'bestiary': getattr(player, 'bestiary', {}),
             'absorb_essence_state': getattr(player, 'absorb_essence_state', {}),
             'grandmaster_discipline': getattr(player, 'grandmaster_discipline', None),
@@ -359,6 +371,18 @@ class PlayerDataSerializer:
             data.get('bounty_board_state')
         )
         player.kill_dict = data.get('kill_dict', {})
+        player.last_defeated_enemy = data.get('last_defeated_enemy')
+        player.transient_companion = data.get('transient_companion')
+        player.conjure_potion_cooldown = max(
+            0, int(data.get('conjure_potion_cooldown', 0) or 0)
+        )
+        player.conjure_elixir_cooldown = max(
+            0, int(data.get('conjure_elixir_cooldown', 0) or 0)
+        )
+        player.torchlight_steps = max(
+            0, int(data.get('torchlight_steps', 0) or 0)
+        )
+        player.xenid_choices = dict(data.get('xenid_choices', {}) or {})
         player.bestiary = data.get('bestiary', {})
         player.absorb_essence_state = data.get('absorb_essence_state', getattr(player, 'absorb_essence_state', {}))
         player.grandmaster_discipline = data.get('grandmaster_discipline', getattr(player, 'grandmaster_discipline', None))
@@ -414,11 +438,6 @@ class PlayerDataSerializer:
         if hasattr(player, "ensure_bard_song"):
             player.ensure_bard_song()
         player.summons = SummonSerializer.deserialize_summons(data.get('summons', {}))
-        if (
-            "Patagon" not in player.summons
-            and getattr(getattr(player, "cls", None), "name", "") == "Summoner"
-        ):
-            classes.grant_summoner_initial_summon(player)
         player.tamed_companion = data.get('tamed_companion', getattr(player, 'tamed_companion', None))
         if hasattr(player, "ensure_tamed_companion"):
             player.ensure_tamed_companion()

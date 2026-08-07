@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1382" height="496" viewBox="0 0 1382 496">
+<style>
+text{font-family:DejaVu Sans,Arial,sans-serif}
+.title{fill:#f4bf2a;font-size:24px;font-weight:700}
+.meta{fill:#aab2bf;font-size:12px}
+.name{fill:#f4f6fa;font-size:13px;font-weight:700}
+.detail{fill:#c5ccd6;font-size:11px}
+.edge{fill:none;stroke:#7f8998;stroke-width:2}
+</style>
+<rect width="1382" height="496" fill="#10131a"/>
+<text class="title" x="42" y="38">Stalwart Defender Ability Tree</text>
+<text class="meta" x="42" y="62">Tier 3 · 11 nodes · Last Stand · Counter Mastery · Surge Mastery · Spell Defense</text>
+<path class="edge" d="M 136.0 123.0 V 173.0 H 136.0 V 223.0"/>
+<path class="edge" d="M 136.0 223.0 V 273.0 H 136.0 V 323.0"/>
+<path class="edge" d="M 136.0 323.0 V 373.0 H 136.0 V 423.0"/>
+<path class="edge" d="M 580.0 123.0 V 173.0 H 580.0 V 223.0"/>
+<path class="edge" d="M 1246.0 123.0 V 173.0 H 1246.0 V 223.0"/>
+<rect x="42.0" y="92.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<text class="name" x="52.0" y="116.0">Last Stand</text>
+<text class="detail" x="52.0" y="137.0">Ability · Cost 1</text>
+<rect x="42.0" y="192.0" width="188" height="62" rx="8" fill="#30254a" stroke="#ae84e8" stroke-width="2"/>
+<text class="name" x="52.0" y="216.0">Unbroken Wall</text>
+<text class="detail" x="52.0" y="237.0">Talent · Cost 1 · Level 65</text>
+<rect x="42.0" y="292.0" width="188" height="62" rx="8" fill="#3b3218" stroke="#e3bc48" stroke-width="2"/>
+<text class="name" x="52.0" y="316.0">+30 Defense</text>
+<text class="detail" x="52.0" y="337.0">Rating · Cost 1</text>
+<rect x="42.0" y="392.0" width="188" height="62" rx="8" fill="#401d25" stroke="#e46b78" stroke-width="2"/>
+<text class="name" x="52.0" y="416.0">+100 HP</text>
+<text class="detail" x="52.0" y="437.0">Health · Cost 1</text>
+<rect x="486.0" y="92.0" width="188" height="62" rx="8" fill="#30254a" stroke="#ae84e8" stroke-width="2"/>
+<text class="name" x="496.0" y="116.0">Punishing Guard</text>
+<text class="detail" x="496.0" y="137.0">Talent · Cost 1</text>
+<rect x="486.0" y="192.0" width="188" height="62" rx="8" fill="#3b3218" stroke="#e3bc48" stroke-width="2"/>
+<text class="name" x="496.0" y="216.0">+30 Attack</text>
+<text class="detail" x="496.0" y="237.0">Rating · Cost 1</text>
+<rect x="708.0" y="92.0" width="188" height="62" rx="8" fill="#30254a" stroke="#ae84e8" stroke-width="2"/>
+<text class="name" x="718.0" y="116.0">Fortified Citadel</text>
+<text class="detail" x="718.0" y="137.0">Talent · Cost 1 · Level 65</text>
+<rect x="708.0" y="192.0" width="188" height="62" rx="8" fill="#30254a" stroke="#ae84e8" stroke-width="2"/>
+<text class="name" x="718.0" y="216.0">Crushing Reprisal</text>
+<text class="detail" x="718.0" y="237.0">Talent · Cost 1 · Level 70</text>
+<rect x="708.0" y="292.0" width="188" height="62" rx="8" fill="#30254a" stroke="#ae84e8" stroke-width="2"/>
+<text class="name" x="718.0" y="316.0">Final Redoubt</text>
+<text class="detail" x="718.0" y="337.0">Talent · Cost 1 · Level 80</text>
+<rect x="1152.0" y="92.0" width="188" height="62" rx="8" fill="#30254a" stroke="#ae84e8" stroke-width="2"/>
+<text class="name" x="1162.0" y="116.0">Mirror Bastion</text>
+<text class="detail" x="1162.0" y="137.0">Talent · Cost 1 · Level 65</text>
+<rect x="1152.0" y="192.0" width="188" height="62" rx="8" fill="#3b3218" stroke="#e3bc48" stroke-width="2"/>
+<text class="name" x="1162.0" y="216.0">+30 Magic Defense</text>
+<text class="detail" x="1162.0" y="237.0">Rating · Cost 1</text>
+</svg>

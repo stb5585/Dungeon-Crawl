@@ -76,6 +76,14 @@ class DataDrivenMagicMissileSpell(Spell):
             return "It has no effect.\n"
 
         spell_mod = caster.check_mod("magic", enemy=target)
+        fire_inside_bonus = 0.0
+        try:
+            from src.core.classes import mage_mechanics
+
+            fire_inside_bonus = mage_mechanics.fire_inside_critical_bonus(caster)
+            mage_mechanics.consume_fire_inside(caster)
+        except Exception:
+            pass
         hits: list[bool] = []
 
         # ── 3. Per-missile loop ─────────────────────────────────────
@@ -100,6 +108,9 @@ class DataDrivenMagicMissileSpell(Spell):
                 crit = 1
                 if not random.randint(0, self.crit):
                     crit = 2
+                if fire_inside_bonus and random.random() < fire_inside_bonus:
+                    crit = 2
+                fire_inside_bonus = 0.0
 
                 # Duplicates (Mirror Image) interception
                 if hits[i] and target.magic_effects["Duplicates"].active:
@@ -112,12 +123,30 @@ class DataDrivenMagicMissileSpell(Spell):
 
                 if hits[i]:
                     crit_per = random.uniform(1, crit)
+                    try:
+                        from src.core.classes import mage_mechanics
+
+                        crit_per = mage_mechanics.arcane_critical_multiplier(caster, crit_per)
+                    except Exception:
+                        pass
                     damage = int(self.dmg_mod * spell_mod * crit_per)
+                    try:
+                        from src.core.classes import mage_mechanics, wizard
+
+                        damage = int(damage * mage_mechanics.spell_potency_multiplier(caster, self))
+                        school = mage_mechanics.school_from_ability(self)
+                        damage = int(
+                            damage * (1 + wizard.affinity_damage_bonus(caster, school))
+                        )
+                    except Exception:
+                        pass
 
                     # Mana Shield
                     if target.magic_effects["Mana Shield"].active:
                         damage, message, absorbed = caster._apply_mana_shield(
-                            target, damage
+                            target,
+                            damage,
+                            physical=False,
                         )
                         hits[i] = not absorbed
                         cast_message += message

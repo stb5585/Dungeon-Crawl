@@ -480,7 +480,11 @@ class DetonateEffect(Effect):
 
         # Shield absorption
         if target.magic_effects["Mana Shield"].active:
-            damage, message, _absorbed = actor._apply_mana_shield(target, damage)
+            damage, message, _absorbed = actor._apply_mana_shield(
+                target,
+                damage,
+                physical=True,
+            )
             messages.append(message)
         elif (
             hasattr(target, "cls")
@@ -871,7 +875,11 @@ class StompEffect(Effect):
 
             # Mana Shield
             if target.magic_effects["Mana Shield"].active:
-                damage, message, absorbed = actor._apply_mana_shield(target, damage)
+                damage, message, absorbed = actor._apply_mana_shield(
+                    target,
+                    damage,
+                    physical=True,
+                )
                 hit = not absorbed
                 messages.append(message)
             elif (
@@ -993,7 +1001,11 @@ class ThrowRockEffect(Effect):
 
             # Mana Shield
             if target.magic_effects["Mana Shield"].active:
-                damage, message, absorbed = actor._apply_mana_shield(target, damage)
+                damage, message, absorbed = actor._apply_mana_shield(
+                    target,
+                    damage,
+                    physical=True,
+                )
                 hit = not absorbed
                 messages.append(message)
             elif (

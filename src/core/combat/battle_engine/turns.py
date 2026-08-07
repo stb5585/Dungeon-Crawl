@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+import math
 import random
 from typing import TYPE_CHECKING
 
@@ -471,11 +472,28 @@ class BattleTurnMixin:
         slot_machine_callback: Callable | None = None,
     ) -> ActionResult:
         """Execute an intent and report terminal resolutions produced by it."""
+        mana_before = max(0, int(getattr(self.attacker.mana, "current", 0) or 0))
         result = self._execute_intent(
             intent,
             slot_machine_callback=slot_machine_callback,
         )
         if result.committed:
+            barbs = getattr(self.attacker, "mana_barbs", None)
+            if isinstance(barbs, dict) and int(barbs.get("turns", 0) or 0) > 0:
+                mana_after = max(
+                    0,
+                    int(getattr(self.attacker.mana, "current", 0) or 0),
+                )
+                spent = max(0, mana_before - mana_after)
+                if spent:
+                    self.attacker.health.current -= spent
+                    result.message += (
+                        f"Mana Barbs deal {spent} damage back to "
+                        f"{self.attacker.name}.\n"
+                    )
+                barbs["turns"] = int(barbs["turns"]) - 1
+                if barbs["turns"] <= 0:
+                    self.attacker.mana_barbs = None
             result.new_resolutions = self._consume_new_resolution_records()
         return result
 
@@ -1047,6 +1065,84 @@ class BattleTurnMixin:
                 resonance_msg = promotion_kits.pop_messages(self.player)
                 if resonance_msg:
                     result.messages.append(resonance_msg)
+                from ...classes import mage_mechanics
+
+                companion_message = mage_mechanics.transient_companion_action(
+                    self.player,
+                    [member.enemy for member in self.encounter.living_members],
+                )
+                if companion_message:
+                    result.messages.append(companion_message)
+                    self._record_final_enemy_resolutions()
+                crystal = getattr(self.player, "floating_crystal", None)
+                if isinstance(crystal, dict) and self.encounter.living_members:
+                    maximum_mana = max(
+                        1,
+                        int(getattr(self.player.mana, "max", 1) or 1),
+                    )
+                    miracle = bool(crystal.get("miracle", False))
+                    if miracle:
+                        siphoned = max(
+                            1,
+                            int(crystal.get("generated_per_turn", 1) or 1),
+                        )
+                    else:
+                        siphon_percent = max(
+                            0.0,
+                            float(crystal.get("siphon_percent", 0.10) or 0.10),
+                        )
+                        siphoned = min(
+                            max(1, math.ceil(maximum_mana * siphon_percent)),
+                            max(0, int(self.player.mana.current)),
+                        )
+                        self.player.mana.current -= siphoned
+                    crystal["mana"] = int(crystal.get("mana", 0) or 0) + siphoned
+                    if int(crystal["mana"]) >= int(crystal.get("threshold", 30) or 30):
+                        target = self.encounter.living_members[0].enemy
+                        spell_power = max(
+                            0,
+                            int(self.player.check_mod("magic", enemy=target)),
+                        )
+                        damage = max(
+                            1,
+                            int(
+                                int(crystal["mana"])
+                                * (1.0 + spell_power / 100.0)
+                            ),
+                        )
+                        targets = (
+                            [member.enemy for member in self.encounter.living_members]
+                            if miracle
+                            else [target]
+                        )
+                        for crystal_target in targets:
+                            crystal_target.health.current -= damage
+                        if miracle:
+                            names = ", ".join(target.name for target in targets)
+                            result.messages.append(
+                                f"The miraculous crystal creates {crystal['mana']} "
+                                f"MP from nothing and ruptures reality for {damage} "
+                                f"damage to every enemy ({names}).\n"
+                            )
+                        else:
+                            result.messages.append(
+                                f"The floating crystal amplifies {crystal['mana']} "
+                                f"stored MP with {spell_power} spell power and "
+                                f"explodes for {damage} damage to {target.name}.\n"
+                            )
+                        self.player.floating_crystal = None
+                        self._record_final_enemy_resolutions()
+                    elif siphoned:
+                        result.messages.append(
+                            (
+                                f"The miraculous crystal creates {siphoned} MP "
+                                f"from nothing ({crystal['mana']}/"
+                                f"{crystal.get('threshold', 30)}).\n"
+                            )
+                            if miracle
+                            else f"The floating crystal siphons {siphoned} MP "
+                            f"({crystal['mana']}/{crystal.get('threshold', 30)}).\n"
+                        )
 
             # Manage summon state
             if self.summon_active:
@@ -1055,6 +1151,11 @@ class BattleTurnMixin:
                         self.available_actions.append("Recall")
                 else:
                     msg = f"{self.summon.name} has been slain.\n" if self.summon else ""
+                    if self.summon is not None:
+                        msg += promotion_kits.record_xenid_death(
+                            self.player,
+                            self.summon.name,
+                        )
                     result.messages.append(msg)
                     result.summon_died = True
                     self.summon_active = False
@@ -1169,6 +1270,8 @@ class BattleTurnMixin:
         """
         if self._completed_outcome is not None:
             return self._completed_outcome
+        self.player.floating_crystal = None
+        self.player.barrier_wall_hp = 0
         if len(self.encounter.members) > 1:
             self._completed_outcome = self._end_multi_battle()
             return self._completed_outcome

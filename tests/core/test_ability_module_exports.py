@@ -6,6 +6,7 @@ from src.core import abilities
 from src.core.abilities import (
     base,
     enemy,
+    mage,
     powerups,
     promotions,
     skills,
@@ -21,6 +22,7 @@ ABILITY_MODULES = (
     promotions,
     utility,
     powerups,
+    mage,
     enemy,
     spell_types,
     spells,
@@ -49,7 +51,7 @@ def test_abilities_facade_preserves_all_split_class_exports():
         for name, implementation in _module_ability_classes(module).items()
     }
 
-    assert len(direct_exports) == 434
+    assert len(direct_exports) == 468
     for name, implementation in direct_exports.items():
         assert getattr(abilities, name) is implementation
 

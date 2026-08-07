@@ -18,6 +18,12 @@ trees; HP and MP nodes grant `+25/+50/+100`. Named class talents use that same
 rating amount for every rating they improve, in addition to their bespoke
 mechanic.
 
+Any staged purchase that would permanently close another node or descendant
+path requires a generic `Spend Distribution` confirmation. The warning names
+every newly closed ability before the distribution commits; canceling leaves
+the pending distribution intact and spends nothing. This rule applies to all
+current and future exclusive paths, not only Mage specializations.
+
 ## Eligibility
 
 A promotion node is available only when:
@@ -29,6 +35,12 @@ A promotion node is available only when:
 - the player's race allows the first-promotion target; and
 - two progression points are available for a first promotion, or three for a
   second promotion.
+
+An ability's authored level gate is ignored and hidden when it is lower than
+the level required to enter the class whose tree currently displays it. This
+is a universal promoted-tree rule: the promotion itself has already satisfied
+that gate. The same carried ability retains its original gate in an earlier
+tree where the requirement is not redundant.
 
 Equipment and temporary transformations do not satisfy stat requirements.
 Authored target-specific overrides may balance the total cost of a complete
@@ -48,11 +60,68 @@ rather than forced symmetry. Level 30/60 is a minimum gate; a character whose
 race/class starting attributes need more stored training may satisfy the stat
 gate at a later fourth-level attribute award.
 
+Mage is the second bespoke base graph and uses six columns. All six elemental
+spells are independent level-1 roots in column 0; their matching level-20
+Enhancements occupy column 1. Arcana, Occultism, and Conjuration are six-node
+paths in columns 2-4. Reflect/Sleep/Boost/Mirror Image are independent
+level-10/15/20/25 Universal nodes in column 5.
+
+- Sorcerer, five points: buy either an elemental spell, its Enhancement, and
+  Classical Force, or `Magic Missile -> Arcane Fundamentals -> Esotericism`,
+  then the two-point promotion. Classical Force and Esotericism are mutually
+  exclusive and Spend Distribution warns before the competing specialization
+  closes.
+- Spellblade, eight points:
+  `Magic Missile -> Arcane Fundamentals -> +25 MP -> Polymorph -> Mana Shield
+  -> Imbue Weapon -> Promote: Spellblade`.
+- Warlock, eight points:
+  `Enfeeble -> Blinding Fog -> Shadow Bolt -> Inflate Health -> Enliven Dead
+  -> Forbidden Studies -> Promote: Warlock`.
+- Conjurer, eight points:
+  `Conjure Blade -> +25 MP -> Conjure Animal -> Binding Circle -> Conjure
+  Shackles -> Conjure Potion -> Promote: Conjurer`.
+
+All four promotions require level 30 and two points. Stat gates are Sorcerer
+`INT 15/WIS 13`; Warlock `INT 14/CHA 14/WIS 10/CON 10`; Spellblade
+`STR 10/CON 11/INT 14/CHA 12`; and Conjurer
+`CHA 13/INT 13/WIS 12/CON 10/DEX 10` with no Strength requirement.
+
+Learned Mage spells survive every promotion. Normally, unpurchased Mage nodes
+and competing promotions close. Mage-to-Sorcerer remains a partial exception:
+Arcane Fundamentals and the six elemental spells keep their Mage IDs and
+remain purchasable in Sorcerer and Wizard. The historical Mage tab is
+read-only. Conjurer has an authored four-discipline tree: Constructs, Binding,
+Illusion/Movement, and Calling. Its level-60 three-point Thaumaturgist
+promotion accepts Barrier Wall, Mana Barbs, Explosive Decoy, or Conjure Dragon.
+As Conjurer, each Calling selects a standard enemy of its category nearest the
+current location and creates a 50-step transient companion; it does not create
+or select a Xenid. Conjure Animal plus all six Calling nodes appear in the
+editable Thaumaturgist tree. Each Calling connects to a permanent choice
+between two Xenids and then an ultimate unlock for that chosen Xenid.
+The roster is fixed to 14 declared names, including Animal pair
+Hodag/Caladrius. Thaumaturgist combines the former Summoner and Grand Summoner
+permanent-roster tiers, but replaces summon XP with conduit-driven stats and
+ability acquisition. Chosen Xenids also shape caster progression through
+themed reciprocal effects; Conduit Mastery amplifies those effects. No direct
+permanent-summon system is inherited at the Mage-to-Conjurer promotion.
+Thaumaturgist compresses this terminal graph into five columns by adding a
+four-node Miracles lane beside Calling, paired choice, ultimate, and conduit
+development. `Miracle Blade (65) -> Miracle Shackles (70) -> Miracle Potion
+(75) -> Miracle Crystal (80)` each consume a `Reality Fragment` and deliberately
+break one ordinary combat or inventory rule. The former `Summon`/`Summon 2`
+passive nodes no longer exist; a Thaumaturgist with a living Xenid receives the
+combat Summon action from class state. A Xenid death removes 25 conduit, while
+the 100-MP, combat-only `Raise Summon` restores only the just-fallen active
+Xenid at 25% HP and refunds 10 of that loss.
+
 Weapon Master is intentionally asymmetric. Double Strike and Parry entry nodes
 have no global-level gate and adopt retained Warrior ownership without charging
-again. Combat-rating nodes also have no level gate in any tree and scale by
-tree tier: `+10` in base trees, `+20` in first-promotion trees, and `+30` in
-terminal trees. The Grandmaster route permanently closes either Dual Wield or
+again. Numeric rating, HP, and MP nodes have no independent level gate in any
+tree; prerequisites alone unlock them. Ratings scale by tree tier: `+10` in
+base trees, `+20` in first-promotion trees, and `+30` in terminal trees. New
+class-specific nodes must include at least one basic class mechanic; do not add
+new class-specific nodes whose entire identity is a plain numeric stat or
+resource increase. The Grandmaster route permanently closes either Dual Wield or
 Duelist when the competing style is chosen, and True Piercing Strike accepts
 the terminal node from either style. Each independent weapon art checks
 matching Weapon Discipline rank 1; its child upgrade checks rank 5 and replaces
@@ -113,9 +182,12 @@ progression-panel scrolling.
 Sentinel uses three authored columns. Counter runs from ungated Goad through
 level-35 Shield Check, level-40 Retaliate, level-45 Shield Riposte, and
 level-50 Watchful Reprisal. Wall runs from ungated Hold the Line through Brace
-Wall, Covering Guard, Bulwark, and level-50 Resolute Guard. Anti-magic runs
-from ungated Deflect Spell to level-45 Spell Reflection and two optional
-durability nodes. Goad and Retaliate adopt known ownership. The level-60
+Wall, Covering Guard, Bulwark, and level-50 Resolute Guard. Anti-magic is the
+single `Spell Reflection -> +20 Magic Defense -> +50 HP` branch. Spell
+Reflection is ungated at `(4, 0)` and uses the compatibility ID
+`sentinel.ability.deflect-spell`; the retired Deflect Spell ability and old
+`sentinel.ability.spell-reflection` node ID migrate into the merged behavior.
+Goad and Retaliate adopt known ownership. The level-60
 Stalwart Defender promotion requires Watchful Reprisal, Resolute Guard,
 `CON 20`, and three points. Its ten-node Human core plus one Constitution
 increase leaves four points.
@@ -182,6 +254,11 @@ A successful purchase:
 Lancer-to-Dragoon is the explicit exception to the last rule: the old Lancer
 tab is read-only, while the same development nodes remain available inside the
 current Dragoon tree.
+
+Mage-to-Sorcerer and Sorcerer-to-Wizard are the partial exception: old tree
+tabs remain read-only, while Arcane Fundamentals and the six declared
+elemental spell nodes remain available inside the current tree. Promotion
+previews and results identify this partial carry-forward.
 
 Cancellation changes nothing. An exception during application restores the
 snapshotted class, stats, resources, combat ratings, equipment, inventory,

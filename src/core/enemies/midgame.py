@@ -557,7 +557,7 @@ class Ankheg(Monster):
 
 class Fuath(Monster):
     """
-    Summoner Boss; must defeat to obtain Fuath summon
+    Unique Underground Spring boss; Fuath is not part of the Xenid roster.
     """
 
     def __init__(self):
@@ -698,41 +698,35 @@ class Gargoyle(Elemental):
         self.picture = "gargoyle.txt"
 
 
-class Conjurer(Humanoid):
+class Necromancer(Humanoid):
 
     def __init__(self):
-        super().__init__(name='Conjurer', health=random.randint(40, 65), mana=150, strength=14, intel=22, wisdom=18,
+        super().__init__(name='Necromancer', health=random.randint(40, 65), mana=150, strength=14, intel=22, wisdom=18,
                          con=14, charisma=12, dex=13, attack=26, defense=27, magic=50, magic_def=45,
                          exp=random.randint(415, 540))
         self.equipment = {'Weapon': items.RuneStaff(), 'Armor': items.GoldCloak(), 'OffHand': items.NoOffHand(),
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
         self.gold = random.randint(40, 65)
-        self.spellbook = {"Spells": {'Fireball': abilities.Fireball(),
-                                     "Ice Block": abilities.IceBlock(),
-                                     'Lightning': abilities.Lightning(),
-                                     'Aqualung': abilities.Aqualung(),
-                                     'Boost': abilities.Boost()},
+        self.spellbook = {"Spells": {'Raise Dead': abilities.RaiseUndeadAlly(),
+                                     'Shadow Bolt': abilities.ShadowBolt(),
+                                     'Enfeeble': abilities.Enfeeble(),
+                                     'Inflate Health': abilities.InflateHealth()},
                           "Skills": {"Mana Shield": abilities.ManaShield()}}
         self.action_stack = [
             {"ability": "Attack", "priority": ActionPriority.NORMAL},
-            {"ability": "Fireball", "priority": ActionPriority.NORMAL},
-            {"ability": "Lightning", "priority": ActionPriority.NORMAL},
-            {"ability": "Aqualung", "priority": ActionPriority.NORMAL},
-            {"ability": "Ice Block", "priority": ActionPriority.LOW, "priority_if": [
-                {"condition": "self_hp_pct_lt", "value": 0.1, "priority": ActionPriority.HIGH},
-                {"condition": "self_mana_pct_lt", "value": 0.1, "priority": ActionPriority.HIGH},
-                {"condition": "self_hp_pct_lt", "value": 0.5, "priority": ActionPriority.NORMAL},
-                {"condition": "self_mana_pct_lt", "value": 0.5, "priority": ActionPriority.NORMAL}
-            ]},
-            {"ability": "Boost", "priority": ActionPriority.NORMAL,
-             "priority_if": {"self_stat": "Magic",
-                              "priority": ActionPriority.LOW,
-                              "else": ActionPriority.NORMAL}},
+            {"ability": "Raise Dead", "priority": ActionPriority.HIGH},
+            {"ability": "Shadow Bolt", "priority": ActionPriority.NORMAL},
+            {"ability": "Enfeeble", "priority": ActionPriority.NORMAL},
+            {"ability": "Inflate Health", "priority": ActionPriority.LOW,
+             "priority_if": {"self_hp_pct_lt": 0.5,
+                             "priority": ActionPriority.HIGH,
+                             "else": ActionPriority.LOW}},
             {"ability": "Mana Shield", "priority": ActionPriority.HIGH,
              "priority_if": {"self_mana_pct_lt": 0.25,
                               "priority": ActionPriority.SKIP,
                               "else": ActionPriority.HIGH}}
         ]
+        self.single_use_abilities = {"Raise Dead"}
         self.level.pro_level = 4
         self.picture = "disciple.txt"
 

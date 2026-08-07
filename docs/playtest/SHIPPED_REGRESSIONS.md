@@ -89,9 +89,9 @@ remain the prompts; the evidence ledger is the running decision record.
 - [ ] Visit the Church as a Wizard, Shadowcaster, or Knight Enchanter with a dormant Class Ring equipped or stored.
   - Expected: The Church menu includes the matching rite: `Four Formulae`, `Debt Cap Trial`, or `Arcane Duel`.
   - Expected: Completing the rite awakens the ring and applies the expected equipped mod.
-- [ ] Visit the Church as a Grand Summoner with a dormant Class Ring equipped or stored.
+- [ ] Visit the Church as a Thaumaturgist with a dormant Class Ring equipped or stored.
   - Expected: The Church menu includes `Conduit Ritual`.
-  - Expected: Completing the rite awakens the ring, applies `+30% Summons`, and permanently sacrifices 5% max HP.
+  - Expected: Completing the rite awakens the ring, applies `+30% Xenids`, and permanently sacrifices 5% max HP.
 - [ ] Visit the Church as a Templar, Hierophant, Master Monk, Archbishop, Troubadour, Lycan, Astromancer, Soulcatcher, or Beast Master with a dormant Class Ring equipped or stored.
   - Expected: The Church menu includes the matching rite: `Relic Defense`, `Purity Rite`, `Miracle Vigil`, `Lost Ballad`, `Control Rite`, `Star Chart`, `Ancestral Totem Rite`, or `Pack Trial`.
   - Expected: Completing the rite awakens the ring and applies the expected equipped mod.
@@ -172,7 +172,7 @@ remain the prompts; the evidence ledger is the running decision record.
   - Expected: `vesperion_true_final_defeated` and `main_story_complete` persist.
   - Expected: The final room shows a reminder instead of restarting Vesperion or duplicating ending rewards.
   - Expected: Any postgame town dialogue is local, repeat-safe, and does not mutate quests, shops, bounties, church, inn, barracks, storage, or NPC availability.
-- [ ] Run the Red Dragon route as a Lancer/Dragoon with `Recover`, as a Grand Summoner pursuing Zahhak, and as another class.
+- [ ] Run the Red Dragon route as a Lancer/Dragoon with `Recover`, as a Thaumaturgist choosing a Dragon Xenid, and as another class.
   - Expected: Copy distinguishes Red Dragon boss defeat, Kaelenon restoration, and Zahhak binding without declaring ordinary victories invalid.
   - Expected: Red Dragon floor gates, boss-room state, `Dragon's Fury`, summon unlock behavior, class rewards, and old-save compatibility remain unchanged.
 
@@ -214,7 +214,7 @@ remain the prompts; the evidence ledger is the running decision record.
   - Expected: Post-confirmation help popups show the matching post-promotion
     class mechanic tab: `School Affinity` for Sorcerer/Wizard, `Familiar` for
     Warlock, `Contracts` for Demonologist, and `Summons` for
-    Summoner/Grand Summoner.
+    Thaumaturgist.
   - Expected: Shadowcaster, Spellblade, and Knight Enchanter receive no
     Character Menu tab help popup; Umbral Debt, Blade Charge, and Arcane Tempo
     remain readable through combat HUD/status/log/action surfaces.
@@ -419,9 +419,9 @@ remain the prompts; the evidence ledger is the running decision record.
 - [ ] Raise a Beast Master companion to at least `Trusted` bond while it remains active.
   - Expected: A new tame starts with a small fresh bond; active living victories create inverse-scaled bond opportunities, so early bond rises visibly while higher bond slows into smaller or less frequent gains. Favored Enemy wins can add an extra smaller opportunity without guaranteeing a flat bump.
   - Record: companion name/species, evolution form, special ability, combat count, companion actions, Favored Enemy state, ring state, roster swaps/tame interruptions, and cadence band.
-- [ ] Raise one Summoner or Grand Summoner bond to at least `50` without switching summons.
-  - Expected: Bond does not increase before the active summon reaches level `2`. After that, victory bond is chance-based from enemy XP divided by the summon level's full XP span; low-XP fights often give no bond, while meaningful fights can grant scaled `+1` to `+5`.
-  - Record: summon name, summon level, level-span XP, enemy XP, combat count, successful bond rolls, no-bond victories, recall/death interruptions, ring state, and cadence band.
+- [ ] Raise one Thaumaturgist Xenid bond to at least `50` without switching Xenids.
+  - Expected: The Xenid is eligible from its first victory. Conduit gain is chance-based from enemy XP divided by a global-player-level span; low-XP fights often give no conduit, while meaningful fights can grant scaled `+1` to `+5`.
+  - Record: Xenid name, global level, enemy XP, combat count, successful conduit rolls, no-gain victories, recall/death interruptions, ring state, and cadence band.
 - [ ] Raise one Inquisitor or Seeker Case Journal enemy type to at least `Known Tells`.
   - Expected: `Inspect` plus visible-detail victory gives about `+7/combat`, reaching `Known Tells` near 4 focused combats. Rich evidence loops can be faster; victory-only visible-detail progress can be slower.
   - Record: enemy type, combat count, evidence actions, visible-detail state, ring state, spread across other enemy types, and cadence band.
@@ -476,7 +476,7 @@ remain the prompts; the evidence ledger is the running decision record.
   - Expected: Current meter value, cap, pending payoff or stance, and awakened/equipped Class Ring readiness appear without duplicate or stale labels.
 - [ ] Inspect shared class/status text for one caster or support meter track, such as Astromancer, Shadowcaster, Templar, Archbishop, Archdruid, or Soulcatcher.
   - Expected: Current meter/resource value, cap or represented state, pending payoff, and ring readiness/preservation state are readable in the same status surface.
-- [ ] Inspect a persistent-progress class track, such as Demonologist, Grand Summoner, Seeker, Troubadour, Lycan, or Beast Master.
+- [ ] Inspect a persistent-progress class track, such as Demonologist, Thaumaturgist, Seeker, Troubadour, Lycan, or Beast Master.
   - Expected: Persistent progress rank/value and relevant temporary combat state appear together without implying new progression, rewards, or tuning.
 - [ ] Trigger representative class-kit combat messages for gain, cap, spend, miss/negated payoff, expiration/cleanup, and ring preservation.
   - Expected: Pygame and curses combat logs keep the class-kit message visible, wrap long lines cleanly, and do not suppress important failure, immunity, downgrade, or preservation text as generic status noise.
@@ -624,16 +624,27 @@ remain the prompts; the evidence ledger is the running decision record.
 - [ ] Use Defend and take physical pressure as Stalwart Defender with awakened ring.
   - Expected: Resolve/Guard Meter builds to 100 and appears in status text.
   - Expected: A major incoming hit spends 100 Resolve to reduce damage by 40%.
-- [ ] Summon creatures before and after awakening Grand Summoner `Conduit Ritual`.
+- [ ] Call Xenids before and after awakening Thaumaturgist `Conduit Ritual`.
   - Expected: Future summons initialize with the awakened +30% HP and attack/magic scaling.
 - [ ] Summon Patagon and Kobalos in pygame combat.
   - Expected: Summons spend MP when called; Kobalos also spends gold and refuses
-    to appear if the Summoner lacks the fee.
+    to appear if the Thaumaturgist lacks the fee.
   - Expected: Active summon action log lines use a distinct color from player
     and enemy log lines.
 - [ ] Use `Support` while a summon creature is active.
-  - Expected: The summon remains the single active actor, but `Support` lets the Summoner spend the turn on restorative/support items, `Recall`, `Heal Summon`, `Raise Summon`, `Conduit Command`, or unlocked `Invoke <Summon>` skills.
-  - Expected: Direct Summoner attacks, ordinary offensive spells, ordinary offensive skills, fleeing, and starting another summon are not available through `Support`.
+  - Expected: The Xenid remains the single active actor, but `Support` lets the Thaumaturgist spend the turn on restorative/support items, `Recall`, `Heal Summon`, `Raise Summon`, `Conduit Command`, or unlocked `Invoke <Xenid>` skills.
+  - Expected: Direct Thaumaturgist attacks, ordinary offensive spells, ordinary offensive skills, fleeing, and starting another Xenid are not available through `Support`.
+- [ ] Let an active Xenid die, then use `Raise Summon` during the same combat.
+  - Expected: Death removes 25 conduit. Raise costs 100 MP, returns only that
+    just-fallen active Xenid at 25% HP, and restores 10 of the lost conduit.
+    Other dead Xenids remain dead, and Raise is unavailable outside combat or
+    after another Xenid is called.
+- [ ] Cast each Thaumaturgist Miracle with and without a Reality Fragment.
+  - Expected: Missing reagent prevents the cast without spending MP. A valid
+    cast consumes exactly one fragment. Miracle Blade bypasses protection;
+    Miracle Shackles cannot be escaped before its three turns; Miracle Potion
+    creates one Master Health and one Master Mana potion; Miracle Crystal does
+    not siphon player MP and bursts against every living enemy after four turns.
 - [ ] Defeat a boss with an eligible level 2+ active summon alive.
   - Expected: Boss victory guarantees summon bond gain and awards double the
     normal scaled gain, capped by the 100 bond maximum.
@@ -1164,11 +1175,12 @@ remain the prompts; the evidence ledger is the running decision record.
 
 ### Companion And Summon Artwork
 - [x] Review the generated summon companion-art sheet.
-  - Expected: `src/ui_pygame/assets/companion_art/summon_companion_art_review_sheet.png` shows Patagon, Dilong, Agloolik, Cacus, Fuath, Izulu, Hala, Grigori, Bardi, Kobalos, and Zahhak.
+  - Expected: the Xenid review sheet shows Patagon, Kobalos, Dilong, Cacus,
+    Agloolik, Izulu, Hala, Lamashtu, Seraphim, Bardi, Tiamat, and Zahhak.
   - Expected: Sprites have transparent backgrounds, clean silhouettes, no rectangular cards, no labels, and no clipping.
 - [ ] View at least one familiar, one tamed companion, and one summon in pygame companion-art surfaces.
   - Expected: The Class tab companion/summon list is compact, does not show art thumbnails, and uses stacked full-width rows instead of a square grid.
-  - Expected: A Grand Summoner with all 11 summons shows all 11 companion/summon rows without clipping or hiding the last rows.
+  - Expected: A Thaumaturgist with seven chosen Xenids shows all seven rows without clipping.
   - Expected: Selecting a familiar or summon opens a Character-tab-style details popup with the large companion artwork, identity, core attributes, combat stats, abilities, weaknesses, and resistances.
   - Expected: Selecting a tamed companion opens a Character-tab-style details popup with large artwork, identity, form/special/bond rows, and flavor notes instead of targetable HP/MP/stat-sheet detail.
   - Expected: Familiars and summons resolve through `CompanionArtManager` from `companion_art/`; renamed tamed companions resolve artwork from their original enemy class first, then fall back through enemy combat sprites when no bespoke companion art exists.

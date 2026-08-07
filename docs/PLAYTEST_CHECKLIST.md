@@ -55,7 +55,88 @@ second implementation backlog.
 - [ ] Verify connector lines are muted, remain behind opaque node and label
   backings, and never bleed through icons or talent names. Use each attribute
   row's minus/plus controls and confirm its staged total appears in parentheses.
-- [ ] Verify Mage, Footpad, Healer, and Pathfinder expose their four authored
+- [ ] Verify Mage uses Elemental spell, Enhancement, Arcana, Occultism,
+  Conjuration, and Universal columns. Confirm the six elemental spells are
+  independent level-1 roots and their matching Enhancements require only that
+  spell and level 20.
+- [ ] Complete the `5/8/8/8` Sorcerer/Spellblade/Warlock/Conjurer routes.
+  Confirm the exact `5/10/15/20/25` named gates, path-only MP nodes,
+  level-`10/15/20/25` Universal roots, and two-point level-30 promotions.
+- [ ] Select Classical Force and Esotericism separately. Confirm either gates
+  Sorcerer from `(0.5,6)` or `(1.5,6)` through promotion `(1,7)`, selecting one
+  permanently closes the other, and Spend Distribution
+  lists the closure before committing. Verify Elemental versus Arcane School
+  Affinity, the agreed 50% off-school potency nerfs, and Esotericism's halved
+  Enhancement proc chance.
+- [ ] Trigger all six 20% Enhancements and verify refresh-only behavior: Fire
+  Inside next-attack critical chance; Frozen Armor one-turn Defense/Ice
+  resistance; Electrified melee jolts; Wind Currents Speed/melee accuracy;
+  Refreshment 5% max HP/MP; and Terra Firma 50% melee damage.
+- [ ] Verify Polymorph action denial and bunny artwork, all-enemy Blinding Fog,
+  temporary-HP ordering, Shackles Dexterity/Strength checks, and the documented
+  Arcane Fundamentals and Binding Circle bonuses. Confirm Forbidden Studies
+  gives Shadow Bolt `+20%` damage and undead companions `+50%` duration.
+- [ ] Verify Mana Shield redirects at most 25% of physical damage from each
+  attack and Mana Shield 2 raises the cap to 50%; neither redirects magical
+  damage.
+- [ ] Verify the Sorcerer gate is `INT 15/WIS 13`, Warlock
+  `INT 14/CHA 14/WIS 10/CON 10`, Spellblade
+  `STR 10/CON 11/INT 14/CHA 12`, and Conjurer
+  `CHA 13/INT 13/WIS 12/CON 10/DEX 10`, with no Strength gate.
+- [ ] Promote Mage along all four routes. Confirm every learned spell survives;
+  non-elemental Mage nodes and competing promotions close; and unrelated
+  classes cannot purchase Mage nodes. For Sorcerer and Wizard only, confirm
+  unpurchased Arcane Fundamentals, Firebolt, Shock, Tremor, Water Jet, Ice
+  Lance, and Gust appear in the current editable tree while the historical
+  Mage tab remains read-only. Verify the promotion warning/result explains
+  this partial carry-forward and save/load preserves ownership, talents,
+  completed trees, and later elemental purchases.
+- [ ] Conjure an animal and enliven the last defeated non-boss enemy. Confirm
+  the Charisma/Luck check, one transient companion, an independent random
+  follow-up after the player, replacement by a later summon, dissolution after
+  50 exploration steps, save/load persistence, and no companion XP, bond,
+  loot, quest, or permanent-roster entry. Confirm Conjurer does not inherit
+  permanent Xenid systems merely by promotion.
+- [ ] Verify the Conjurer tree contains Constructs, Binding,
+  Illusion/Movement, and Calling with exact authored rows and level gates:
+  Floating Crystal/Torchlight/Magic/Elixir/Barrier Wall,
+  Sleep/Silence/Banish/Weaken Mind/Mana Barbs, Mirror Image/Nightmare
+  Fuel/Volitation/Teleport/Explosive Decoy, and the six Callings. Confirm
+  already-known Sleep and Mirror Image display as owned. Confirm Barrier Wall,
+  Mana Barbs, Explosive Decoy, or Conjure Dragon can gate the level-60 three-point
+  Thaumaturgist promotion.
+- [ ] As Conjurer, cast every Calling on floors with and without a local exact
+  type. Confirm it prioritizes an ordinary matching enemy from the current
+  floor, falls back to the nearest matching floor, creates only the 50-step
+  transient companion, and never prompts for or adds a Xenid.
+- [ ] Promote to Thaumaturgist through a non-Calling discipline. Confirm
+  Conjure Animal and all six unpurchased Calling nodes appear in the current
+  tree while the historical Conjurer tree is read-only. Buy each paired choice,
+  choose exactly one
+  Xenid from each pair, and confirm the choice persists through save/load
+  while the competing Xenid remains unavailable: Hodag/Caladrius, Patagon/Kobalos,
+  Dilong/Cacus, Agloolik/Izulu, Hala/Lamashtu, Seraphim/Bardi, and
+  Tiamat/Zahhak. Confirm no other summon is labeled a Xenid and Fuath remains
+  only the Underground Spring boss.
+- [ ] Raise several Xenid conduit values. Confirm Xenids gain stats and
+  abilities from conduit rather than XP, each chosen Xenid adds its documented
+  caster effect, the paired ultimate node grants only the selected Xenid's
+  ultimate, and level-80 Conduit Mastery amplifies caster-side effects.
+- [ ] Exercise Floating Crystal, Conjure Elixir, Barrier Wall, Banish, Mana
+  Barbs, Torchlight, and all six Calling spells. Confirm Floating Crystal
+  siphons 10% maximum MP per caster turn, bursts at 30%, and scales damage by
+  spell power; Torchlight halves encounter rate for 50 steps. Confirm the
+  Necromancer enemy raises one rewardless undead reinforcement that
+  participates in the multi-enemy turn order.
+- [ ] Conjure Animal on several floors. Confirm every result is an existing
+  `Animal` enemy, current-floor Animals are preferred, and the nearest floor
+  is used only when no local Animal is defined.
+- [ ] At the standard Pygame resolution, confirm Mage, Sorcerer, and Wizard
+  fit their progression panels without node overlap, scrolling, or clipped
+  connectors. Confirm the Enhancement merge runs down the `0.5` midpoint into
+  the top of Classical Force and the Arcane Fundamentals line runs down the
+  `1.5` midpoint into the top of Esotericism.
+- [ ] Verify Footpad, Healer, and Pathfinder expose their four authored
   independent first-tier choices. Confirm Pathfinder may choose Natural
   Attunement or Tremor and receives neither automatically.
 - [ ] Inspect every promoted tree and confirm its branch labels match
@@ -84,8 +165,8 @@ second implementation backlog.
   Grandmaster route begins with Parry, forks permanently between Dual Wield and
   Duelist, and rejoins at True Piercing Strike after either Cross Block or Maim.
 - [ ] Verify Warrior-learned Double Strike and Parry are pre-owned without
-  spending another point, and that both entries and all combat-rating nodes
-  have no level requirement. Verify rating nodes grant `+10`, `+20`, and `+30`
+  spending another point, and that both entries and all numeric rating/HP/MP
+  nodes have no independent level requirement. Verify rating nodes grant `+10`, `+20`, and `+30`
   in base, first-promotion, and terminal trees respectively. Verify Weapon
   Master's Honed Attack purchase stacks its critical bonus from 25% to 50%
   when the Warrior rank was retained.
@@ -175,10 +256,13 @@ second implementation backlog.
   `+8%/+4` per-stack payoff tuning and a real two-turn 15% Landing Shield that
   refreshes to the larger value, absorbs damage, and expires. Confirm a
   dormant/unequipped or legacy `+1 Jump Mod` ring grants no extra capacity.
-- [ ] Verify Sentinel has 16 development nodes within rows 0-5 plus Promote:
+- [ ] Verify Sentinel has 15 development nodes within rows 0-5 plus Promote:
   Stalwart Defender at `(1, 6)`. Confirm Counter, Wall, and Anti-magic
   prerequisites and level gates; Shield Block must be absent, while known Goad
-  and Retaliate adopt without another point.
+  and Retaliate adopt without another point. Anti-magic must be the single
+  ungated `Spell Reflection (4, 0) -> +20 Magic Defense -> +50 HP` line using
+  compatibility ID `sentinel.ability.deflect-spell`; retired Deflect Spell
+  ownership and `sentinel.ability.spell-reflection` saves must migrate to it.
 - [ ] Complete the ten-node Sentinel core, raise a Human's Constitution once,
   and promote for three points at level 60. Confirm four points remain,
   unpurchased Sentinel nodes close, learned nodes remain, and the Stalwart tree

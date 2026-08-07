@@ -97,10 +97,9 @@ class CharacterCoreMixin:
             return CharacterTab("class", "Weapon Discipline")
         class_name = self._attr_name(getattr(player_char, "cls", None), "")
         mechanic_label = promotion_mechanic_tab_label(class_name)
-        summons = getattr(player_char, "summons", {}) or {}
         familiar = getattr(player_char, "familiar", None)
-        if class_name in {"Summoner", "Grand Summoner"} or summons:
-            return CharacterTab("class", "Summons")
+        if class_name == "Thaumaturgist":
+            return CharacterTab("class", "Xenids")
         if class_name in {"Ranger", "Beast Master"}:
             return CharacterTab("class", "Companion & Hunt")
         if mechanic_label:

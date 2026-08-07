@@ -29,6 +29,7 @@ SCHOOL_AFFINITY_ICON_KEYS = {
     "Electric": "spell_lightning",
     "Earth": "spell_earth",
     "Wind": "spell_wind",
+    "Arcane": "spell_arcane",
 }
 
 
@@ -341,10 +342,20 @@ class CharacterMechanicsMixin:
         class_name = self._attr_name(getattr(player_char, "cls", None), "")
         affinity = wizard.ensure_affinity(player_char)
         cap = wizard.cap_for(player_char)
+        from src.core.classes import mage_mechanics
+
+        specialization = mage_mechanics.specialization(player_char)
+        schools = (
+            ("Arcane",)
+            if specialization == "Arcane"
+            else tuple(
+                school for school in wizard.AFFINITY_SCHOOLS if school != "Arcane"
+            )
+        )
 
         row_y = y
         spells = getattr(player_char, "spellbook", {}).get("Spells", {})
-        for school in wizard.AFFINITY_SCHOOLS:
+        for school in schools:
             chain = wizard.SPELL_UPGRADES.get(school, ())
             known = next((name for name in reversed(chain) if name in spells), chain[0] if chain else "None")
             detail = f"{known}"
@@ -374,7 +385,18 @@ class CharacterMechanicsMixin:
 
         if class_name == "Wizard":
             self._draw_key_values(
-                [("Wizard Ring", self._ring_state_text(player_char, "Wizard"))],
+                [
+                    ("Specialization", specialization or "Unselected"),
+                    ("Wizard Ring", self._ring_state_text(player_char, "Wizard")),
+                ],
+                right_rect,
+                y,
+                font=self.normal_font,
+                row_gap=8,
+            )
+        else:
+            self._draw_key_values(
+                [("Specialization", specialization or "Unselected")],
                 right_rect,
                 y,
                 font=self.normal_font,

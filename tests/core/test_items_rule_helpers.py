@@ -30,7 +30,7 @@ def _player_with_ring(class_name):
         ("Wizard", "Dormant School Streak", "Four Formulae"),
         ("Shadowcaster", "Dormant Umbral Debt", "Debt Cap Trial"),
         ("Knight Enchanter", "Dormant Arcane Tempo", "Arcane Duel"),
-        ("Grand Summoner", "Dormant +30% Summons", "Conduit Ritual"),
+        ("Thaumaturgist", "Dormant +30% Xenids", "Conduit Ritual"),
         ("Seeker", "Dormant Hidden Cache", "Cartographer's Proof"),
         ("Ninja", "Dormant No-Trace Opener", "No-Trace Contract"),
         ("Arcane Trickster", "Dormant Arcane Larceny", "Impossible Theft"),

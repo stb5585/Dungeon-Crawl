@@ -226,6 +226,30 @@ class CombatEncounter:
         self._resolution_ledger.append(record)
         return record
 
+    def add_enemy(self, enemy: Character) -> EncounterEnemy:
+        """Append a runtime reinforcement with a stable encounter identity."""
+        from ..enemies.identity import defeat_credit_name, remember_defeat_identity
+
+        remember_defeat_identity(enemy)
+        slot = len(self.members)
+        canonical_name = defeat_credit_name(enemy) or enemy.__class__.__name__
+        same_name_count = sum(
+            member.canonical_name == canonical_name
+            for member in self.members
+        )
+        display_label = canonical_name
+        if same_name_count:
+            display_label = f"{canonical_name} {self._alpha_suffix(same_name_count)}"
+        member = EncounterEnemy(
+            enemy=enemy,
+            combatant_id=f"{self.encounter_id}:enemy:{slot}",
+            slot=slot,
+            canonical_name=canonical_name,
+            display_label=display_label,
+        )
+        self.members.append(member)
+        return member
+
     def roster_summary(self) -> list[dict[str, object]]:
         """Return authored-order lifecycle summaries for every member."""
         return [member.summary() for member in self.members]

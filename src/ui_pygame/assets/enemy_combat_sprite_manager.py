@@ -266,6 +266,13 @@ class EnemyCombatSpriteManager:
         return surface
 
     def get_sprite_key_for_enemy(self, enemy: Any) -> str:
+        polymorph = getattr(enemy, "status_effects", {}).get("Polymorph")
+        if (
+            polymorph is not None
+            and getattr(polymorph, "active", False)
+            and "polymorph_bunny" in self.available_keys
+        ):
+            return "polymorph_bunny"
         name = self.enemy_name(enemy)
         picture_key = self._picture_key(enemy)
         if picture_key and picture_key in self.available_keys:

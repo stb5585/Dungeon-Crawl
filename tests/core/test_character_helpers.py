@@ -223,33 +223,45 @@ class TestCharacterHelpers:
         )
 
         defender.magic_effects["Mana Shield"].active = True
-        defender.magic_effects["Mana Shield"].duration = 2
+        defender.magic_effects["Mana Shield"].duration = 25
         defender.mana.current = 5
 
-        hit, message, damage = defender.handle_defenses(attacker, damage=8)
-        assert hit is False
-        assert "absorbs 8 damage" in message
-        assert damage == 0
-        assert defender.mana.current == 1
+        hit, message, damage = defender.handle_defenses(
+            attacker,
+            damage=8,
+            typ="Physical",
+        )
+        assert hit is True
+        assert "redirects 2 physical damage" in message
+        assert damage == 6
+        assert defender.mana.current == 3
 
         defender.magic_effects["Mana Shield"].active = True
-        defender.magic_effects["Mana Shield"].duration = 3
+        defender.magic_effects["Mana Shield"].duration = 25
         defender.mana.current = 2
 
-        hit, message, damage = defender.handle_defenses(attacker, damage=10)
+        hit, message, damage = defender.handle_defenses(
+            attacker,
+            damage=10,
+            typ="Physical",
+        )
         assert hit is True
-        assert "absorbs 6 damage" in message
+        assert "redirects 2 physical damage" in message
         assert "mana shield dissolves" in message
-        assert damage == 4
+        assert damage == 8
         assert defender.mana.current == 0
         assert defender.magic_effects["Mana Shield"].active is False
         assert status_events[-1][1]["source"] == "Mana Depleted"
 
         defender.magic_effects["Mana Shield"].active = True
-        defender.magic_effects["Mana Shield"].duration = 2
+        defender.magic_effects["Mana Shield"].duration = 25
         defender.mana.current = -4
 
-        hit, message, damage = defender.handle_defenses(attacker, damage=8)
+        hit, message, damage = defender.handle_defenses(
+            attacker,
+            damage=8,
+            typ="Physical",
+        )
         assert hit is True
         assert "absorbs -" not in message
         assert "mana shield dissolves" in message

@@ -10,6 +10,22 @@ from . import abilities, items
 from .character import Character, Combat, Resource, Stats
 
 
+XENID_PAIRS = {
+    "Animal": ("Hodag", "Caladrius"),
+    "Humanoid": ("Patagon", "Kobalos"),
+    "Monster": ("Dilong", "Cacus"),
+    "Spirit": ("Agloolik", "Izulu"),
+    "Fiend": ("Hala", "Lamashtu"),
+    "Celestial": ("Seraphim", "Bardi"),
+    "Dragon": ("Tiamat", "Zahhak"),
+}
+XENID_NAMES = tuple(
+    name
+    for pair in XENID_PAIRS.values()
+    for name in pair
+)
+
+
 # familiars
 class Familiar(Character):
     """
@@ -337,16 +353,33 @@ class Summons(Character):
         combat_stats = [int(x * stat_adj) for x in self._starting_combat_values()]
         self.combat = Combat(*combat_stats)
         try:
-            from .classes import class_rings
+            from .classes import class_rings, mage_mechanics
 
-            multiplier = class_rings.summon_multiplier(player_char)
-            if multiplier != 1.0:
-                self.health.max = max(1, int(self.health.max * multiplier))
+            ring_multiplier = class_rings.summon_multiplier(player_char)
+            health_multiplier, damage_multiplier = (
+                mage_mechanics.permanent_summon_multipliers(player_char)
+            )
+            if ring_multiplier != 1.0 or health_multiplier != 1.0:
+                self.health.max = max(
+                    1, int(self.health.max * ring_multiplier * health_multiplier)
+                )
                 self.health.current = self.health.max
-                self.combat.attack = int(self.combat.attack * multiplier)
-                self.combat.magic = int(self.combat.magic * multiplier)
+            if ring_multiplier != 1.0 or damage_multiplier != 1.0:
+                self.combat.attack = int(
+                    self.combat.attack * ring_multiplier * damage_multiplier
+                )
+                self.combat.magic = int(
+                    self.combat.magic * ring_multiplier * damage_multiplier
+                )
         except Exception:
             pass
+        self._conduit_base = {
+            "health": self.health.max,
+            "mana": self.mana.max,
+            "stats": dict(self.stats.__dict__),
+            "combat": dict(self.combat.__dict__),
+        }
+        sync_xenid_conduit(player_char, self.name)
 
     def level_up(self, player_char: Character) -> str:
         self.level.level += 1
@@ -403,10 +436,222 @@ class Summons(Character):
         return inspect_str
 
 
+Xenid = Summons
+
+
+def _conduit_level(conduit: int) -> int:
+    """Map conduit strength to the legacy level slots used by ability tables."""
+    conduit = max(0, min(100, int(conduit)))
+    return (1, 3, 5, 7, 9, 10)[min(5, conduit // 20)]
+
+
+def sync_xenid_conduit(
+    player_char: Character,
+    summon_name: str,
+    conduit: int | None = None,
+) -> None:
+    """Apply conduit-driven stats and ability unlocks to one bound Xenid."""
+    roster = getattr(player_char, "summons", {})
+    xenid = roster.get(summon_name) if isinstance(roster, dict) else None
+    if not isinstance(xenid, Summons):
+        return
+    if conduit is None:
+        from .classes import promotion_kits
+
+        conduit = promotion_kits.ensure_state(player_char)["summon_bonds"].get(
+            summon_name,
+            0,
+        )
+    conduit = max(0, min(100, int(conduit or 0)))
+    base = getattr(xenid, "_conduit_base", None)
+    if not isinstance(base, dict):
+        base = {
+            "health": xenid.health.max,
+            "mana": xenid.mana.max,
+            "stats": dict(xenid.stats.__dict__),
+            "combat": dict(xenid.combat.__dict__),
+        }
+        xenid._conduit_base = base
+    was_alive = xenid.health.current > 0
+    health_ratio = (
+        xenid.health.current / xenid.health.max
+        if xenid.health.max
+        else 1.0
+    )
+    mana_ratio = (
+        xenid.mana.current / xenid.mana.max
+        if xenid.mana.max
+        else 1.0
+    )
+    resource_scale = 1.0 + 0.50 * conduit / 100
+    rating_scale = 1.0 + 0.35 * conduit / 100
+    xenid.health.max = max(1, int(base["health"] * resource_scale))
+    xenid.health.current = (
+        max(1, min(
+            xenid.health.max,
+            int(xenid.health.max * health_ratio),
+        ))
+        if was_alive
+        else 0
+    )
+    xenid.mana.max = max(0, int(base["mana"] * resource_scale))
+    xenid.mana.current = max(0, min(
+        xenid.mana.max,
+        int(xenid.mana.max * mana_ratio),
+    ))
+    xenid.stats = Stats(**{
+        key: max(1, int(value * rating_scale))
+        for key, value in base["stats"].items()
+    })
+    xenid.combat = Combat(**{
+        key: max(1, int(value * rating_scale))
+        for key, value in base["combat"].items()
+    })
+    xenid.level.level = _conduit_level(conduit)
+    xenid.level.exp = 0
+    xenid.level.exp_to_gain = 0
+    ultimate_node = (
+        f"thaumaturgist.talent."
+        f"{next((category.lower() for category, names in XENID_PAIRS.items() if summon_name in names), '')}"
+        "-ultimate"
+    )
+    purchased = getattr(
+        getattr(player_char, "progression", None),
+        "purchased_node_ids",
+        set(),
+    )
+    for book, entries in summon_abilities.get(summon_name, {}).items():
+        for level_text, ability_ctor in entries.items():
+            level = int(level_text)
+            if level > xenid.level.level or (level == 10 and ultimate_node not in purchased):
+                continue
+            ability = ability_ctor()
+            xenid.spellbook[book][ability.name] = ability
+
+
+def unlock_xenid_ultimate(
+    player_char: Character,
+    category: str,
+) -> tuple[bool, str]:
+    """Grant the selected Xenid's level-10 ultimate ability."""
+    name = chosen_xenid(player_char, category)
+    if not name:
+        return False, f"Choose a {category.lower()} Xenid first."
+    entries = summon_abilities.get(name, {})
+    for book, abilities_by_level in entries.items():
+        ability_ctor = abilities_by_level.get("10")
+        if ability_ctor is None:
+            continue
+        ability = ability_ctor()
+        player_char.summons[name].spellbook[book][ability.name] = ability
+        return True, f"{name} unlocks its ultimate ability, {ability.name}."
+    return False, f"{name} has no ultimate ability configured."
+
+
+def chosen_xenid(player_char: Character, category: str) -> str | None:
+    """Return the permanent Xenid choice for one Calling category."""
+    choices = getattr(player_char, "xenid_choices", {})
+    if not isinstance(choices, dict):
+        return None
+    choice = choices.get(category)
+    if choice not in XENID_PAIRS.get(category, ()):
+        return None
+    return choice
+
+
+def choose_xenid(player_char: Character, category: str, name: str) -> tuple[bool, str]:
+    """Make one permanent paired Xenid choice and initialize its roster entry."""
+    if name not in XENID_PAIRS.get(category, ()):
+        return False, f"{name} is not a {category.lower()} Xenid."
+    existing = chosen_xenid(player_char, category)
+    if existing:
+        if existing == name:
+            return True, f"{name} is already the chosen {category.lower()} Xenid."
+        return False, f"{existing} is already bound to the {category.lower()} Calling."
+
+    xenid_type = globals().get(name)
+    if xenid_type is None:
+        return False, f"{name} is not available."
+    xenid = xenid_type()
+    xenid.initialize_stats(player_char)
+    choices = getattr(player_char, "xenid_choices", None)
+    if not isinstance(choices, dict):
+        choices = {}
+        player_char.xenid_choices = choices
+    roster = getattr(player_char, "summons", None)
+    if not isinstance(roster, dict):
+        roster = {}
+        player_char.summons = roster
+    choices[category] = name
+    roster[name] = xenid
+    sync_xenid_conduit(player_char, name)
+    return True, f"{name} is permanently bound to the {category.lower()} Calling."
+
+
+class Hodag(Summons):
+    """Bull-horned animal Xenid built for charging physical offense."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            name="Hodag",
+            health=Resource(),
+            mana=Resource(),
+            stats=Stats(),
+            combat=Combat(),
+        )
+        self.level.pro_level = 2
+        self.start_stats = [245, 55, 27, 5, 10, 24, 8, 17]
+        self.start_combat = [118, 82, 28, 58]
+        self.equipment = {
+            "Weapon": items.Claw2(),
+            "Armor": items.NoArmor(),
+            "OffHand": items.NoOffHand(),
+            "Ring": items.NoRing(),
+            "Pendant": items.NoPendant(),
+        }
+        self.spellbook["Skills"]["Charge"] = abilities.Charge()
+        self.spellbook["Skills"]["Crush"] = abilities.Crush()
+        self.resistance["Physical"] = 0.25
+        self.description = (
+            "A massive bull-horned carnivore protected by curved dorsal spines.\n\n"
+        )
+
+
+class Caladrius(Summons):
+    """Snow-white healing bird that draws sickness into itself."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            name="Caladrius",
+            health=Resource(),
+            mana=Resource(),
+            stats=Stats(),
+            combat=Combat(),
+        )
+        self.level.pro_level = 2
+        self.start_stats = [175, 220, 10, 19, 27, 14, 19, 24]
+        self.start_combat = [62, 70, 105, 112]
+        self.equipment = {
+            "Weapon": items.NoWeapon(),
+            "Armor": items.NoArmor(),
+            "OffHand": items.NoOffHand(),
+            "Ring": items.NoRing(),
+            "Pendant": items.NoPendant(),
+        }
+        self.spellbook["Spells"]["Heal"] = abilities.Heal2()
+        self.spellbook["Spells"]["Cleanse"] = abilities.Cleanse()
+        self.resistance["Holy"] = 0.75
+        self.resistance["Poison"] = 0.75
+        self.flying = True
+        self.description = (
+            "A snow-white bird that absorbs sickness and disperses it in flight.\n\n"
+        )
+
+
 class Patagon(Summons):
     """
     Level 1 Summon creature
-    Giant mountain man with a giant club; gained when player is promoted to Summoner
+    Giant mountain man with a giant club; one Humanoid Calling choice.
 
     Abilities:
     Level 1 (start)
@@ -549,43 +794,6 @@ class Cacus(Summons):
         self.description = "A fire-breathing monster and the son of the fire god Vulcan.\n\n"
 
 
-class Fuath(Summons):
-    """
-    Summon creature
-    Malevolent water spirit; unlocked by defeating it at the UndergroundSpring at 3:E10
-
-    Abilities:
-    Level 1 (start)
-    - Water Jet
-    - Screech
-    Level 3
-    - Terrify
-    Level 5
-    - Aqualung
-    Level 7
-    - Weaken Mind
-    Level 9
-    - Tsunami
-    Level 10
-    - Maelstrom Vortex
-    """
-
-    def __init__(self) -> None:
-        super().__init__(name="Fuath", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat())
-        self.level.pro_level = 2
-        self.start_stats = [202, 147, 19, 14, 18, 14, 11, 15]
-        self.start_combat = [90, 55, 92, 72]
-        self.equipment = {'Weapon': items.Pincers2(), 'Armor': items.NoArmor(), 'OffHand': items.Pincers2(),
-                          'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
-        self.spellbook["Spells"] = abilities.WaterJet()
-        self.spellbook["Skills"] = abilities.Screech()
-        self.resistance["Electric"] = -0.75
-        self.resistance["Water"] = 1.25
-        self.resistance["Shadow"] = 0.25
-        self.resistance["Holy"] = -0.25
-        self.description = "A malevolent water spirit that can drive its victims mad.\n\n"
-
-
 class Izulu(Summons):
     """
     Summon creature
@@ -663,7 +871,38 @@ class Hala(Summons):
         self.description = "A female demon that can harness the power of the wind for devious purposes.\n\n"
 
 
-class Grigori(Summons):
+class Lamashtu(Summons):
+    """Grotesque fiend Xenid specializing in curses and poison."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            name="Lamashtu",
+            health=Resource(),
+            mana=Resource(),
+            stats=Stats(),
+            combat=Combat(),
+        )
+        self.level.pro_level = 4
+        self.start_stats = [330, 290, 24, 27, 20, 28, 22, 17]
+        self.start_combat = [135, 85, 145, 110]
+        self.equipment = {
+            "Weapon": items.Claw2(),
+            "Armor": items.DemonArmor2(),
+            "OffHand": items.DemonClaw(),
+            "Ring": items.NoRing(),
+            "Pendant": items.NoPendant(),
+        }
+        self.spellbook["Spells"]["Corruption"] = abilities.Corruption()
+        self.spellbook["Spells"]["Enfeeble"] = abilities.Enfeeble()
+        self.spellbook["Skills"]["Screech"] = abilities.Screech()
+        self.resistance["Shadow"] = 1.0
+        self.resistance["Holy"] = -1.0
+        self.resistance["Poison"] = 1.0
+        self.status_immunity = ["Death", "Poison"]
+        self.description = "A grotesque demoness who spreads disease, curses, and terror.\n\n"
+
+
+class Seraphim(Summons):
     """
     Summon creature
     An angelic spirit known as the Watcher 
@@ -686,7 +925,7 @@ class Grigori(Summons):
     """
 
     def __init__(self) -> None:
-        super().__init__(name="Grigori", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat())
+        super().__init__(name="Seraphim", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat())
         self.level.pro_level = 3
         self.start_stats = [280, 205, 29, 12, 18, 30, 14, 12]
         self.start_combat = [130, 90, 115, 105]
@@ -699,7 +938,7 @@ class Grigori(Summons):
         self.resistance["Holy"] = 1.25
         self.status_immunity = ["Death"]
         self.flying = True
-        self.description = "An angelic spirit, also known as the Watcher, that serves Elysia without question.\n\n"
+        self.description = "A radiant high angel that serves Elysia without question.\n\n"
 
 
 class Bardi(Summons):
@@ -794,6 +1033,37 @@ class Kobalos(Summons):
         self.description = "A filthy little trickster. Watch your back with this guy around.\n\n"
 
 
+class Tiamat(Summons):
+    """Massive sea-dragon Xenid specializing in water magic."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            name="Tiamat",
+            health=Resource(),
+            mana=Resource(),
+            stats=Stats(),
+            combat=Combat(),
+        )
+        self.level.pro_level = 5
+        self.start_stats = [485, 420, 35, 31, 30, 38, 24, 20]
+        self.start_combat = [195, 125, 175, 145]
+        self.equipment = {
+            "Weapon": items.DragonClaw2(),
+            "Armor": items.DragonScale(),
+            "OffHand": items.DragonTail2(),
+            "Ring": items.NoRing(),
+            "Pendant": items.NoPendant(),
+        }
+        self.spellbook["Spells"]["Water Jet"] = abilities.WaterJet()
+        self.spellbook["Spells"]["Tsunami"] = abilities.Tsunami()
+        self.spellbook["Skills"]["Slam"] = abilities.Slam()
+        self.resistance["Water"] = 1.25
+        self.resistance["Electric"] = -0.75
+        self.resistance["Physical"] = 0.25
+        self.status_immunity = ["Poison"]
+        self.description = "A massive sea dragon whose coils churn entire oceans.\n\n"
+
+
 class Zahhak(Summons):
     """
     Summon creature
@@ -847,6 +1117,18 @@ class Zahhak(Summons):
 
 
 summon_abilities = {
+    "Hodag": {"Skills": {"3": abilities.MortalStrike,
+                          "5": abilities.Stomp,
+                          "7": abilities.MortalStrike2,
+                          "9": abilities.Crush,
+                          "10": abilities.TitanicSlam},
+              "Spells": {}},
+    "Caladrius": {"Skills": {},
+                   "Spells": {"3": abilities.Reflect,
+                              "5": abilities.Heal3,
+                              "7": abilities.Regen3,
+                              "9": abilities.DivineProtection,
+                              "10": abilities.Resurrection}},
     "Patagon": {"Skills": {"3": abilities.PiercingStrike,
                            "5": abilities.Stomp,
                            "7": abilities.MortalStrike,
@@ -868,12 +1150,6 @@ summon_abilities = {
                          "5": abilities.MoltenRock,
                          "9": abilities.Volcano,
                          "10": abilities.Eruption}},
-    "Fuath": {"Skills": {},
-              "Spells": {"3": abilities.Terrify,
-                         "5": abilities.Aqualung,
-                         "7": abilities.WeakenMind,
-                         "9": abilities.Tsunami,
-                         "10": abilities.MaelstromVortex}},
     "Izulu": {"Skills": {"7": abilities.TruePiercingStrike},
               "Spells": {"3": abilities.Berserk,
                          "5": abilities.Lightning,
@@ -884,12 +1160,18 @@ summon_abilities = {
                          "7": abilities.WindSpeed,
                          "9": abilities.Tornado,
                          "10": abilities.WindShrapnel}},
-    "Grigori": {"Skills": {},
-                "Spells": {"3": abilities.DivineProtection,
-                           "5": abilities.Regen2,
-                           "7": abilities.Holy3,
-                           "9": abilities.Resurrection,
-                           "10": abilities.DivineJudgment}},
+    "Lamashtu": {"Skills": {},
+                 "Spells": {"3": abilities.Terrify,
+                            "5": abilities.PoisonBreath,
+                            "7": abilities.WeakenMind,
+                            "9": abilities.Corruption2,
+                            "10": abilities.Oblivion}},
+    "Seraphim": {"Skills": {},
+                 "Spells": {"3": abilities.DivineProtection,
+                            "5": abilities.Regen2,
+                            "7": abilities.Holy3,
+                            "9": abilities.Resurrection,
+                            "10": abilities.DivineJudgment}},
     "Bardi": {"Skills": {"5": abilities.SleepingPowder},
               "Spells": {"3": abilities.Corruption,
                          "7": abilities.Ruin,
@@ -901,6 +1183,11 @@ summon_abilities = {
                            "9": abilities.SlotMachine,
                            "10": abilities.GrandHeist},
                 "Spells": {}},
+    "Tiamat": {"Skills": {"3": abilities.PiercingStrike,
+                          "7": abilities.TruePiercingStrike},
+               "Spells": {"5": abilities.Hydration,
+                          "9": abilities.Tsunami,
+                          "10": abilities.MaelstromVortex}},
     "Zahhak": {"Skills": {},
                "Spells": {"3": abilities.MagicMissile3,
                           "5": abilities.Ultima,

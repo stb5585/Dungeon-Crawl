@@ -373,18 +373,19 @@ Candidates: Dim Mak, Arcane Blast, Disintegrate, Detonate, ultimates.
 
 11 summon companions each learn an ultimate ability at level 10:
 
-| Summon | Ultimate | Type | Element | Key Mechanic |
+| Xenid | Ultimate | Type | Element | Key Mechanic |
 |---|---|---|---|---|
 | Patagon | Titanic Slam | Skill | Physical | 4× weapon damage + guaranteed stun |
 | Dilong | Devour | Skill | Earth | 3 bites at (STR+CON)×1.5 each |
 | Agloolik | Absolute Zero | Spell | Ice | 3× intel + 3-turn stun + permanent defense reduction |
 | Cacus | Eruption | Spell | Fire | 3.5× (STR+INT) + Burn DOT + self defense buff |
-| Fuath | Maelstrom Vortex | Spell | Water | 3× intel + Blind/Silence/Terrify |
 | Izulu | Thunderstrike | Spell | Electric | 3× intel + 2 chain hits + stun |
 | Hala | Wind Shrapnel | Spell | Wind | 5 hits at 1.2× intel, 25% crit each |
-| Grigori | Divine Judgment | Spell | Holy | 3× wisdom (2× vs undead) + heal summoner + cleanse |
+| Lamashtu | Oblivion | Spell | Shadow | 4× intel + 20% instant kill + stat drain |
+| Seraphim | Divine Judgment | Spell | Holy | 3× wisdom (2× vs undead) + heal owner + cleanse |
 | Bardi | Oblivion | Spell | Shadow | 4× intel + 20% instant kill + stat drain |
 | Kobalos | Grand Heist | Skill | — | Steal gold + random debuff + Gold Toss finisher |
+| Tiamat | Maelstrom Vortex | Spell | Water | 3× intel + Blind/Silence/Terrify |
 | Zahhak | Cataclysm | Spell | Non-elemental | Cast 3 random spells + dragon breath + self power up |
 
 ## Notes

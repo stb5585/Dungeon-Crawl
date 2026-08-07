@@ -17,6 +17,12 @@ STAGE_SIZE_RANGES = {
 }
 
 TREE_SIZE_OVERRIDES = {
+    # Six authored Mage columns plus the mutually exclusive Sorcerer fork.
+    "Mage": (36, 36),
+    # Four authored Conjurer disciplines plus the terminal promotion.
+    "Conjurer": (21, 21),
+    # Seven Calling groups, seven choices, seven ultimates, utility, and Miracles.
+    "Thaumaturgist": (29, 29),
     # Eight independent discipline-gated weapon arts sit beside the two
     # ordinary Weapon Master routes.
     "Weapon Master": (33, 33),
@@ -222,6 +228,603 @@ WARRIOR_NODE_PREREQUISITE_OVERRIDES = {
 # Promotion nodes only require their completed authored path. Cross-path gates
 # occur at the exact development node where the paths join.
 WARRIOR_PROMOTION_CROSS_REQUIREMENTS = {}
+
+# Mage is the second fully authored base tree. This is a pre-release content
+# rebaseline: node IDs are stable within this graph, but retired experiments do
+# not require save aliases or migrations.
+MAGE_TREE_NODE_SPECS = (
+    {
+        "id": "mage.ability.firebolt",
+        "kind": "ability",
+        "identifier": "Firebolt",
+        "lane": "Elementalism",
+        "position": (0, 0),
+    },
+    {
+        "id": "mage.ability.icelance",
+        "kind": "ability",
+        "identifier": "IceLance",
+        "lane": "Elementalism",
+        "position": (0, 1),
+    },
+    {
+        "id": "mage.ability.shock",
+        "kind": "ability",
+        "identifier": "Shock",
+        "lane": "Elementalism",
+        "position": (0, 2),
+    },
+    {
+        "id": "mage.ability.gust",
+        "kind": "ability",
+        "identifier": "Gust",
+        "lane": "Elementalism",
+        "position": (0, 3),
+    },
+    {
+        "id": "mage.ability.waterjet",
+        "kind": "ability",
+        "identifier": "WaterJet",
+        "lane": "Elementalism",
+        "position": (0, 4),
+    },
+    {
+        "id": "mage.ability.tremor",
+        "kind": "ability",
+        "identifier": "Tremor",
+        "lane": "Elementalism",
+        "position": (0, 5),
+    },
+    {
+        "id": "mage.ability.fire-inside",
+        "kind": "ability",
+        "identifier": "FireInside",
+        "lane": "Elementalism",
+        "position": (1, 0),
+        "level": 20,
+        "prerequisites": ("mage.ability.firebolt",),
+    },
+    {
+        "id": "mage.ability.frozen-armor",
+        "kind": "ability",
+        "identifier": "FrozenArmor",
+        "lane": "Elementalism",
+        "position": (1, 1),
+        "level": 20,
+        "prerequisites": ("mage.ability.icelance",),
+    },
+    {
+        "id": "mage.ability.electrified",
+        "kind": "ability",
+        "identifier": "Electrified",
+        "lane": "Elementalism",
+        "position": (1, 2),
+        "level": 20,
+        "prerequisites": ("mage.ability.shock",),
+    },
+    {
+        "id": "mage.ability.wind-currents",
+        "kind": "ability",
+        "identifier": "WindCurrents",
+        "lane": "Elementalism",
+        "position": (1, 3),
+        "level": 20,
+        "prerequisites": ("mage.ability.gust",),
+    },
+    {
+        "id": "mage.ability.refreshment",
+        "kind": "ability",
+        "identifier": "Refreshment",
+        "lane": "Elementalism",
+        "position": (1, 4),
+        "level": 20,
+        "prerequisites": ("mage.ability.waterjet",),
+    },
+    {
+        "id": "mage.ability.terra-firma",
+        "kind": "ability",
+        "identifier": "TerraFirma",
+        "lane": "Elementalism",
+        "position": (1, 5),
+        "level": 20,
+        "prerequisites": ("mage.ability.tremor",),
+    },
+    {
+        "id": "mage.ability.magicmissile",
+        "kind": "ability",
+        "identifier": "MagicMissile",
+        "lane": "Arcana",
+        "position": (2, 0),
+    },
+    {
+        "id": "mage.talent.arcane-fundamentals",
+        "kind": "talent",
+        "identifier": "mage.arcane-fundamentals",
+        "name": "Arcane Fundamentals",
+        "lane": "Arcana",
+        "position": (2, 1),
+        "level": 5,
+        "prerequisites": ("mage.ability.magicmissile",),
+        "description": (
+            "Permanently increase Magic by 10 and Arcane critical-strike "
+            "damage by 10%."
+        ),
+        "bonuses": {"ratings": {"Magic": 10}, "arcane_critical_damage": 0.10},
+    },
+    {
+        "id": "mage.mana.arcane-reserve",
+        "kind": "mana",
+        "identifier": "Mana",
+        "lane": "Arcana",
+        "position": (2, 2),
+        "prerequisites": ("mage.talent.arcane-fundamentals",),
+    },
+    {
+        "id": "mage.ability.polymorph",
+        "kind": "ability",
+        "identifier": "Polymorph",
+        "lane": "Arcana",
+        "position": (2, 3),
+        "level": 15,
+        "prerequisites": ("mage.mana.arcane-reserve",),
+    },
+    {
+        "id": "mage.ability.manashield",
+        "kind": "ability",
+        "identifier": "ManaShield",
+        "lane": "Arcana",
+        "position": (2, 4),
+        "level": 20,
+        "prerequisites": ("mage.ability.polymorph",),
+    },
+    {
+        "id": "mage.ability.imbue-weapon",
+        "kind": "ability",
+        "identifier": "ImbueWeapon",
+        "lane": "Arcana",
+        "position": (2, 5),
+        "level": 25,
+        "prerequisites": ("mage.ability.manashield",),
+    },
+    {
+        "id": "mage.ability.enfeeble",
+        "kind": "ability",
+        "identifier": "Enfeeble",
+        "lane": "Occultism",
+        "position": (3, 0),
+    },
+    {
+        "id": "mage.ability.blinding-fog",
+        "kind": "ability",
+        "identifier": "BlindingFog",
+        "lane": "Occultism",
+        "position": (3, 1),
+        "level": 5,
+        "prerequisites": ("mage.ability.enfeeble",),
+    },
+    {
+        "id": "mage.ability.shadow-bolt",
+        "kind": "ability",
+        "identifier": "ShadowBolt",
+        "lane": "Occultism",
+        "position": (3, 2),
+        "level": 10,
+        "prerequisites": ("mage.ability.blinding-fog",),
+    },
+    {
+        "id": "mage.ability.inflate-health",
+        "kind": "ability",
+        "identifier": "InflateHealth",
+        "lane": "Occultism",
+        "position": (3, 3),
+        "level": 15,
+        "prerequisites": ("mage.ability.shadow-bolt",),
+    },
+    {
+        "id": "mage.ability.enliven-dead",
+        "kind": "ability",
+        "identifier": "EnlivenDead",
+        "lane": "Occultism",
+        "position": (3, 4),
+        "level": 20,
+        "prerequisites": ("mage.ability.inflate-health",),
+    },
+    {
+        "id": "mage.talent.forbidden-studies",
+        "kind": "talent",
+        "identifier": "mage.forbidden-studies",
+        "name": "Forbidden Studies",
+        "lane": "Occultism",
+        "position": (3, 5),
+        "level": 25,
+        "prerequisites": ("mage.ability.enliven-dead",),
+        "description": (
+            "Shadow Bolt spells deal 20% more damage, and raised undead "
+            "companions remain for 50% longer."
+        ),
+        "bonuses": {
+            "shadow_bolt_damage": 0.20,
+            "raised_companion_duration": 0.50,
+        },
+    },
+    {
+        "id": "mage.ability.conjure-blade",
+        "kind": "ability",
+        "identifier": "ConjureBlade",
+        "lane": "Conjuration",
+        "position": (4, 0),
+    },
+    {
+        "id": "mage.mana.conjuration-reserve",
+        "kind": "mana",
+        "identifier": "Mana",
+        "lane": "Conjuration",
+        "position": (4, 1),
+        "prerequisites": ("mage.ability.conjure-blade",),
+    },
+    {
+        "id": "mage.ability.conjure-animal",
+        "kind": "ability",
+        "identifier": "ConjureAnimal",
+        "lane": "Conjuration",
+        "position": (4, 2),
+        "level": 10,
+        "prerequisites": ("mage.mana.conjuration-reserve",),
+    },
+    {
+        "id": "mage.talent.binding-circle",
+        "kind": "talent",
+        "identifier": "mage.binding-circle",
+        "name": "Binding Circle",
+        "lane": "Conjuration",
+        "position": (4, 3),
+        "level": 15,
+        "prerequisites": ("mage.ability.conjure-animal",),
+        "description": (
+            "Permanently increase Defense by 10; conjured and summoned allies "
+            "gain 10% health and damage."
+        ),
+        "bonuses": {
+            "ratings": {"Defense": 10},
+            "conjured_ally_health": 0.10,
+            "conjured_ally_damage": 0.10,
+        },
+    },
+    {
+        "id": "mage.ability.conjure-shackles",
+        "kind": "ability",
+        "identifier": "ConjureShackles",
+        "lane": "Conjuration",
+        "position": (4, 4),
+        "level": 20,
+        "prerequisites": ("mage.talent.binding-circle",),
+    },
+    {
+        "id": "mage.ability.conjure-potion",
+        "kind": "ability",
+        "identifier": "ConjurePotion",
+        "lane": "Conjuration",
+        "position": (4, 5),
+        "level": 25,
+        "prerequisites": ("mage.ability.conjure-shackles",),
+    },
+    {
+        "id": "mage.ability.reflect",
+        "kind": "ability",
+        "identifier": "Reflect",
+        "lane": "Universal",
+        "position": (5, 1),
+        "level": 10,
+    },
+    {
+        "id": "mage.ability.sleep",
+        "kind": "ability",
+        "identifier": "Sleep",
+        "lane": "Universal",
+        "position": (5, 2),
+        "level": 15,
+    },
+    {
+        "id": "mage.ability.boost",
+        "kind": "ability",
+        "identifier": "Boost",
+        "lane": "Universal",
+        "position": (5, 3),
+        "level": 20,
+    },
+    {
+        "id": "mage.ability.mirror-image",
+        "kind": "ability",
+        "identifier": "MirrorImage",
+        "lane": "Universal",
+        "position": (5, 4),
+        "level": 25,
+    },
+    {
+        "id": "mage.ability.classical-force",
+        "kind": "ability",
+        "identifier": "ClassicalForce",
+        "lane": "Elementalism",
+        "position": (0.5, 6),
+        "level": 25,
+        "prerequisites": (
+            "mage.ability.fire-inside",
+            "mage.ability.frozen-armor",
+            "mage.ability.electrified",
+            "mage.ability.wind-currents",
+            "mage.ability.refreshment",
+            "mage.ability.terra-firma",
+        ),
+        "prerequisite_mode": "any",
+        "exclusive_group": "mage.sorcerer-specialization",
+        "connector_enter_from_top": True,
+        "connector_channel_columns": {
+            "mage.ability.fire-inside": 0.5,
+            "mage.ability.frozen-armor": 0.5,
+            "mage.ability.electrified": 0.5,
+            "mage.ability.wind-currents": 0.5,
+            "mage.ability.refreshment": 0.5,
+            "mage.ability.terra-firma": 0.5,
+        },
+    },
+    {
+        "id": "mage.ability.esotericism",
+        "kind": "ability",
+        "identifier": "Esotericism",
+        "lane": "Arcana",
+        "position": (1.5, 6),
+        "level": 25,
+        "prerequisites": ("mage.talent.arcane-fundamentals",),
+        "exclusive_group": "mage.sorcerer-specialization",
+        "connector_enter_from_top": True,
+        "connector_channel_columns": {
+            "mage.talent.arcane-fundamentals": 1.5,
+        },
+    },
+)
+
+MAGE_PROMOTION_SPECS = (
+    ("Sorcerer", "Elementalism", (
+        "mage.ability.classical-force",
+        "mage.ability.esotericism",
+    ), (1, 7), "any"),
+    ("Spellblade", "Arcana", ("mage.ability.imbue-weapon",), (2, 7), "all"),
+    ("Warlock", "Occultism", ("mage.talent.forbidden-studies",), (3, 7), "all"),
+    ("Conjurer", "Conjuration", ("mage.ability.conjure-potion",), (4, 7), "all"),
+)
+
+MAGE_CARRIED_NODE_IDS = frozenset({
+    "mage.talent.arcane-fundamentals",
+    "mage.ability.firebolt",
+    "mage.ability.shock",
+    "mage.ability.tremor",
+    "mage.ability.waterjet",
+    "mage.ability.icelance",
+    "mage.ability.gust",
+})
+
+MAGE_CARRIED_NODE_POSITIONS = {
+    "mage.ability.magicmissile": (2, 0),
+    "mage.talent.arcane-fundamentals": (3, 0),
+    "mage.ability.firebolt": (2, 1),
+    "mage.ability.shock": (2, 2),
+    "mage.ability.tremor": (3, 1),
+    "mage.ability.waterjet": (3, 2),
+    "mage.ability.icelance": (4, 1),
+    "mage.ability.gust": (4, 2),
+}
+
+
+CONJURER_TREE_NODE_SPECS = (
+    {
+        "id": "floating-crystal",
+        "kind": "ability",
+        "identifier": "FloatingCrystal",
+        "lane": "Constructs",
+        "position": (3, 1),
+        "available_on_promotion": True,
+    },
+    {
+        "id": "torchlight",
+        "kind": "ability",
+        "identifier": "Torchlight",
+        "lane": "Constructs",
+        "position": (3, 2),
+        "level": 35,
+        "prerequisites": ("floating-crystal",),
+    },
+    {
+        "id": "magic-1",
+        "kind": "rating",
+        "identifier": "Magic",
+        "lane": "Constructs",
+        "position": (3, 3),
+        "prerequisites": ("torchlight",),
+    },
+    {
+        "id": "conjure-elixir",
+        "kind": "ability",
+        "identifier": "ConjureElixir",
+        "lane": "Constructs",
+        "position": (3, 4),
+        "level": 45,
+        "prerequisites": ("magic-1",),
+    },
+    {
+        "id": "barrier-wall",
+        "kind": "ability",
+        "identifier": "BarrierWall",
+        "lane": "Constructs",
+        "position": (3, 6),
+        "level": 55,
+        "prerequisites": ("conjure-elixir",),
+    },
+    {
+        "id": "sleep",
+        "kind": "ability",
+        "identifier": "Sleep",
+        "lane": "Binding",
+        "position": (1, 1),
+        "available_on_promotion": True,
+        "owned_if_known": True,
+    },
+    {
+        "id": "silence",
+        "kind": "ability",
+        "identifier": "Silence",
+        "lane": "Binding",
+        "position": (1, 2),
+        "level": 35,
+        "prerequisites": ("sleep",),
+    },
+    {
+        "id": "banish",
+        "kind": "ability",
+        "identifier": "Banish",
+        "lane": "Binding",
+        "position": (1, 3),
+        "level": 40,
+        "prerequisites": ("silence",),
+    },
+    {
+        "id": "weaken-mind",
+        "kind": "ability",
+        "identifier": "WeakenMind",
+        "lane": "Binding",
+        "position": (1, 4),
+        "level": 45,
+        "prerequisites": ("banish",),
+    },
+    {
+        "id": "mana-barbs",
+        "kind": "ability",
+        "identifier": "ManaBarbs",
+        "lane": "Binding",
+        "position": (1, 6),
+        "level": 55,
+        "prerequisites": ("weaken-mind",),
+    },
+    {
+        "id": "mirror-image",
+        "kind": "ability",
+        "identifier": "MirrorImage",
+        "lane": "Illusion / Movement",
+        "position": (2, 1),
+        "available_on_promotion": True,
+        "owned_if_known": True,
+    },
+    {
+        "id": "nightmare-fuel",
+        "kind": "ability",
+        "identifier": "NightmareFuel",
+        "lane": "Illusion / Movement",
+        "position": (2, 2),
+        "level": 35,
+        "prerequisites": ("mirror-image",),
+    },
+    {
+        "id": "volitation",
+        "kind": "ability",
+        "identifier": "Volitation",
+        "lane": "Illusion / Movement",
+        "position": (2, 4),
+        "level": 45,
+        "prerequisites": ("nightmare-fuel",),
+    },
+    {
+        "id": "teleport",
+        "kind": "ability",
+        "identifier": "Teleport",
+        "lane": "Illusion / Movement",
+        "position": (2, 5),
+        "level": 50,
+        "prerequisites": ("volitation",),
+    },
+    {
+        "id": "explosive-decoy",
+        "kind": "ability",
+        "identifier": "ExplosiveDecoy",
+        "lane": "Illusion / Movement",
+        "position": (2, 6),
+        "level": 55,
+        "prerequisites": ("teleport",),
+    },
+    {
+        "id": "conjure-humanoid",
+        "kind": "ability",
+        "identifier": "ConjureHumanoid",
+        "lane": "Calling",
+        "position": (0, 1),
+        "available_on_promotion": True,
+    },
+    {
+        "id": "conjure-monster",
+        "kind": "ability",
+        "identifier": "ConjureMonster",
+        "lane": "Calling",
+        "position": (0, 2),
+        "level": 35,
+        "prerequisites": ("conjure-humanoid",),
+    },
+    {
+        "id": "conjure-spirit",
+        "kind": "ability",
+        "identifier": "ConjureSpirit",
+        "lane": "Calling",
+        "position": (0, 3),
+        "level": 40,
+        "prerequisites": ("conjure-monster",),
+    },
+    {
+        "id": "conjure-fiend",
+        "kind": "ability",
+        "identifier": "ConjureFiend",
+        "lane": "Calling",
+        "position": (0, 4),
+        "level": 45,
+        "prerequisites": ("conjure-spirit",),
+    },
+    {
+        "id": "conjure-celestial",
+        "kind": "ability",
+        "identifier": "ConjureCelestial",
+        "lane": "Calling",
+        "position": (0, 5),
+        "level": 50,
+        "prerequisites": ("conjure-fiend",),
+    },
+    {
+        "id": "conjure-dragon",
+        "kind": "ability",
+        "identifier": "ConjureDragon",
+        "lane": "Calling",
+        "position": (0, 6),
+        "level": 55,
+        "prerequisites": ("conjure-celestial",),
+    },
+)
+
+CONJURER_CARRIED_NODE_IDS = frozenset({
+    "conjurer.ability.conjure-humanoid",
+    "conjurer.ability.conjure-monster",
+    "conjurer.ability.conjure-spirit",
+    "conjurer.ability.conjure-fiend",
+    "conjurer.ability.conjure-celestial",
+    "conjurer.ability.conjure-dragon",
+})
+
+CONJURER_CARRIED_NODE_POSITIONS = {
+    node_id: (2, row)
+    for row, node_id in enumerate((
+        "conjurer.ability.conjure-humanoid",
+        "conjurer.ability.conjure-monster",
+        "conjurer.ability.conjure-spirit",
+        "conjurer.ability.conjure-fiend",
+        "conjurer.ability.conjure-celestial",
+        "conjurer.ability.conjure-dragon",
+    ))
+}
+
 
 # Weapon Master is intentionally asymmetric. The weapon-art column is
 # independent of both promotion routes, while the Grandmaster route forks into
@@ -1606,17 +2209,6 @@ CRUSADER_TREE_NODE_SPECS = (
 # use constructor names so upgraded abilities with the same display name remain
 # distinct and preserve their catalog order.
 BASE_TREE_BRANCHES = {
-    "Mage": (
-        (
-            "Elementalism",
-            "Sorcerer",
-            ("Firebolt", "Tremor", "MagicMissile", "IceLance", "Shock", "WaterJet", "Gust"),
-            "Magic",
-        ),
-        ("Occultism", "Warlock", ("Enfeeble",), "Magic"),
-        ("Battlemagic", "Spellblade", ("ManaShield",), "Defense"),
-        ("Conjuration", "Summoner", (), "Magic Defense"),
-    ),
     "Footpad": (
         (
             "Subterfuge",
@@ -1655,10 +2247,6 @@ BASE_TREE_BRANCHES = {
 # Base-tree rating nodes are authored explicitly. Repeated entries represent
 # distinct purchases and preserve stable numbered node IDs.
 BASE_TREE_RATING_NODES = {
-    "Mage": (
-        ("Battlemagic", "Defense"),
-        ("Conjuration", "Magic Defense"),
-    ),
     "Footpad": (
         ("Subterfuge", "Magic Defense"),
         ("Vigilance", "Defense"),
@@ -1705,10 +2293,6 @@ CLASS_KIT_TALENTS = {
         ("Unbroken Wall", "stalwart.unbroken-wall", "Defense"),
         ("Last Bastion", "stalwart.last-bastion", "Magic Defense"),
     ),
-    "Mage": (
-        ("Arcane Fundamentals", "mage.arcane-fundamentals", "Magic"),
-        ("Warded Casting", "mage.warded-casting", "Magic Defense"),
-    ),
     "Sorcerer": (
         ("Elemental Affinity", "sorcerer.elemental-affinity", "Magic"),
         ("Reactive Ward", "sorcerer.reactive-ward", "Magic Defense"),
@@ -1737,14 +2321,8 @@ CLASS_KIT_TALENTS = {
         ("Charged Blade", "knight-enchanter.charged-blade", "Attack"),
         ("Runic Plate", "knight-enchanter.runic-plate", "Defense"),
     ),
-    "Summoner": (
-        ("Shared Focus", "summoner.shared-focus", "Magic"),
-        ("Bonded Shelter", "summoner.bonded-shelter", "Magic Defense"),
-    ),
-    "Grand Summoner": (
-        ("Conduit Mastery", "grand-summoner.conduit-mastery", "Magic"),
-        ("True Name Ward", "grand-summoner.true-name-ward", "Magic Defense"),
-    ),
+    "Conjurer": (),
+    "Thaumaturgist": (),
     "Footpad": (
         ("Cunning Footwork", "footpad.cunning-footwork", "Defense"),
         ("Opportunist", "footpad.opportunist", "Attack"),
@@ -1894,6 +2472,7 @@ TALENT_KIT_EFFECTS = {
 # it owns named kit talents. This set intentionally covers the complete
 # registry; adding a class now requires adding progression identity here.
 AUTHORED_TREE_CLASSES = frozenset({
+    "Mage",
     "Warrior",
     *BASE_TREE_BRANCHES,
     *CLASS_KIT_TALENTS,
@@ -2027,13 +2606,13 @@ PROMOTED_TREE_PATHS = {
         ("Unbroken Guard", ()),
     ),
     "Sorcerer": (
-        ("School Affinity", ("Sleep", "Dispel", "WeakenMind", "FrozenArmor")),
-        ("Metamagic", ("Doublecast", "MirrorImage", "Reflect", "IceBlock")),
+        ("School Affinity", ("Dispel", "WeakenMind")),
+        ("Metamagic", ("Doublecast", "IceBlock")),
     ),
     "Wizard": (
         (
             "Arcane Mastery",
-            ("ManaShield2", "Triplecast", "MirrorImage2", "Volitation", "Teleport", "Boost"),
+            ("ManaShield2", "Triplecast", "MirrorImage2", "Volitation", "Teleport"),
         ),
         ("Countermagic", ()),
     ),
@@ -2061,10 +2640,48 @@ PROMOTED_TREE_PATHS = {
         ),
         ("Enchantment", ("EnhanceArmor",)),
     ),
-    "Summoner": (("Summon Bond", ("HealSummon",)), ("Conjuration", ())),
-    "Grand Summoner": (
-        ("Conduit", ("ConduitCommand", "RaiseSummon")),
-        ("True Names", ()),
+    "Conjurer": (
+        (
+            "Constructs",
+            ("FloatingCrystal", "Torchlight", "ConjureElixir", "BarrierWall"),
+        ),
+        ("Binding", ("Sleep", "Silence", "Banish", "WeakenMind", "ManaBarbs")),
+        (
+            "Illusion / Movement",
+            (
+                "MirrorImage",
+                "NightmareFuel",
+                "Volitation",
+                "Teleport",
+                "ExplosiveDecoy",
+            ),
+        ),
+        (
+            "Calling",
+            (
+                "ConjureHumanoid",
+                "ConjureMonster",
+                "ConjureSpirit",
+                "ConjureFiend",
+                "ConjureCelestial",
+                "ConjureDragon",
+            ),
+        ),
+    ),
+    "Thaumaturgist": (
+        ("Calling", ()),
+        ("Xenid Choice", ()),
+        ("Xenid Ultimate", ()),
+        ("Conduit", ("HealSummon", "ConduitCommand", "RaiseSummon")),
+        (
+            "Miracles",
+            (
+                "MiracleBlade",
+                "MiracleShackles",
+                "MiraclePotion",
+                "MiracleCrystal",
+            ),
+        ),
     ),
     "Thief": (
         ("Fortune", ("GoldToss", "Mug", "PoisonStrike", "ScavengersEye")),
@@ -2238,7 +2855,7 @@ PROMOTED_TREE_PROMOTION_PATHS = {
     "Sorcerer": {"Wizard": "School Affinity"},
     "Warlock": {"Shadowcaster": "Umbral Magic", "Demonologist": "Pacts"},
     "Spellblade": {"Knight Enchanter": "Channeling"},
-    "Summoner": {"Grand Summoner": "Summon Bond"},
+    "Conjurer": {"Thaumaturgist": "Calling"},
     "Thief": {"Rogue": "Fortune"},
     "Inquisitor": {"Seeker": "Case Journal"},
     "Assassin": {"Ninja": "Death Mark"},
@@ -2282,8 +2899,8 @@ CLASS_STAT_GROUPS = {
     "Demonologist": (("charisma", "intel", "wisdom"), ("con",)),
     "Spellblade": (("strength", "con"), ("intel", "charisma")),
     "Knight Enchanter": (("strength", "con"), ("intel", "dex", "charisma")),
-    "Summoner": (("charisma", "intel", "wisdom"), ("con", "dex", "strength")),
-    "Grand Summoner": (("charisma",), ("intel", "wisdom")),
+    "Conjurer": (("charisma", "intel", "wisdom"), ("con", "dex")),
+    "Thaumaturgist": (("charisma",), ("intel", "wisdom")),
     "Thief": (("dex", "charisma"), ("con", "intel")),
     "Rogue": (("dex",), ("charisma",)),
     "Inquisitor": (("strength", "con"), ("dex", "charisma")),
@@ -2321,11 +2938,12 @@ FIRST_PROMOTION_STAT_REQUIREMENT_OVERRIDES = {
     "Paladin": {"wisdom": 13},
     "Sorcerer": {"intel": 15, "wisdom": 13},
     "Spellblade": {
-        "strength": 13,
-        "con": 13,
-        "intel": 10,
-        "charisma": 10,
+        "strength": 10,
+        "con": 11,
+        "intel": 14,
+        "charisma": 12,
     },
+    "Conjurer": {"wisdom": 12},
     "Inquisitor": {
         "strength": 12,
         "con": 13,
@@ -2365,7 +2983,7 @@ SECOND_PROMOTION_STAT_REQUIREMENT_OVERRIDES = {
         "dex": 11,
         "charisma": 12,
     },
-    "Grand Summoner": {"charisma": 17, "intel": 16, "wisdom": 16},
+    "Thaumaturgist": {"charisma": 17, "intel": 16, "wisdom": 16},
     "Rogue": {"dex": 18, "charisma": 17},
     "Seeker": {
         "strength": 17,
@@ -2398,15 +3016,15 @@ EXTERNAL_ACQUISITION_ABILITIES = frozenset({
     "Invoke Bardi",
     "Invoke Cacus",
     "Invoke Dilong",
-    "Invoke Fuath",
-    "Invoke Grigori",
     "Invoke Hala",
     "Invoke Izulu",
     "Invoke Kobalos",
+    "Invoke Lamashtu",
     "Invoke Patagon",
+    "Invoke Seraphim",
+    "Invoke Tiamat",
     "Invoke Zahhak",
     "Ironwall Reprisal",
     "Last Bastion",
-    "Summon",
     "Tame",
 })

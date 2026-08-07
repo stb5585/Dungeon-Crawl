@@ -2,10 +2,49 @@
 
 from __future__ import annotations
 
-from .base import Skill, _load_yaml_ability
+from typing import Any
+
+from .base import Skill, Spell, _load_yaml_ability
 
 
 # Enemy skills
+class RaiseUndeadAlly(Spell):
+    """Raise a rewardless Ghoul reinforcement into a multi-enemy encounter."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            "Raise Dead",
+            "Raise a Ghoul that fights beside the necromancer.",
+            school="Shadow",
+        )
+        self.cost = 28
+        self.subtyp = "Shadow"
+
+    def cast(
+        self,
+        user: Any,
+        target: Any | None = None,
+        *,
+        battle_engine: Any | None = None,
+        **kwargs: Any,
+    ) -> str:
+        del target, kwargs
+        if battle_engine is None:
+            return "The grave answers, but no battle can hold the corpse.\n"
+        from ..enemies.midgame import Ghoul
+
+        ghoul = Ghoul()
+        ghoul.name = "Raised Ghoul"
+        ghoul.gold = 0
+        ghoul.level.exp = 0
+        ghoul.inventory = {}
+        ghoul._raised_reinforcement = True
+        if battle_engine.add_enemy_reinforcement(ghoul) is None:
+            return "There is no room for another undead ally.\n"
+        user.mana.current -= self.cost
+        return "A Raised Ghoul claws its way into the battle.\n"
+
+
 class Lick:
     """Data-driven (lick.yaml) - weapon hit + random status."""
     def __new__(cls):
@@ -225,7 +264,7 @@ class WindShrapnel:
 
 
 class DivineJudgment:
-    """Data-driven (divine_judgment.yaml) - Grigori ultimate."""
+    """Data-driven (divine_judgment.yaml) - Seraphim ultimate."""
     def __new__(cls):
         return _load_yaml_ability("divine_judgment.yaml", cls_name="DivineJudgment")
 

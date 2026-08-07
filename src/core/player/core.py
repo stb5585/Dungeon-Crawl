@@ -84,6 +84,12 @@ class Player(
         self.quest_dict = {'Bounty': {}, 'Main': {}, 'Side': {}}
         self.bounty_board_state = town.default_bounty_board_state()
         self.kill_dict = {}
+        self.last_defeated_enemy = None
+        self.transient_companion = None
+        self.conjure_potion_cooldown = 0
+        self.conjure_elixir_cooldown = 0
+        self.torchlight_steps = 0
+        self.xenid_choices = {}
         self.bestiary = {}
         self.storage = {}
         self.grandmaster_discipline = grandmaster.default_state()

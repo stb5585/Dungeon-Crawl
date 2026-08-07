@@ -491,7 +491,7 @@ def test_handle_promotion_advanced_branches(monkeypatch):
     FakePopup.show_kwargs = []
     player = _make_player()
     player.level.level = 30
-    player.race = SimpleNamespace(cls_res={"First": ["Warlock", "Summoner"]})
+    player.race = SimpleNamespace(cls_res={"First": ["Warlock", "Thaumaturgist"]})
     presenter = _make_presenter()
     menu_choices = iter([1, 0, 0, 0, None])
     shown_messages = []
@@ -514,9 +514,9 @@ def test_handle_promotion_advanced_branches(monkeypatch):
             self.str_plus = self.int_plus = self.wis_plus = self.con_plus = self.cha_plus = self.dex_plus = 0
             self.att_plus = self.def_plus = self.magic_plus = self.magic_def_plus = 0
 
-    class SummonerClass:
+    class ThaumaturgistClass:
         def __init__(self):
-            self.name = "Summoner"
+            self.name = "Thaumaturgist"
             self.equipment = {"Weapon": "staff", "Armor": "cloak"}
             self.str_plus = self.int_plus = self.wis_plus = self.con_plus = self.cha_plus = self.dex_plus = 0
             self.att_plus = self.def_plus = self.magic_plus = self.magic_def_plus = 0
@@ -563,7 +563,7 @@ def test_handle_promotion_advanced_branches(monkeypatch):
                 "class": BaseClass,
                 "pro": {
                     "Warlock": {"class": WarlockClass},
-                    "Summoner": {"class": SummonerClass},
+                    "Thaumaturgist": {"class": ThaumaturgistClass},
                 },
             },
             "Mage": {
@@ -591,7 +591,7 @@ def test_handle_promotion_advanced_branches(monkeypatch):
         def navigate(self):
             return selections.pop(0)
 
-    selections = ["Missing", "Warlock", "Summoner", "Archmage"]
+    selections = ["Missing", "Warlock", "Thaumaturgist", "Archmage"]
     monkeypatch.setattr("src.ui_pygame.gui.church.PromotionScreen", FakePromotionScreen)
 
     manager = church.ChurchManager(presenter, player)
@@ -619,9 +619,9 @@ def test_handle_promotion_advanced_branches(monkeypatch):
     player.level.pro_level = 1
     player.summons = {}
     manager.handle_promotion()
-    assert "Patagon" in player.summons
+    assert player.cls.name == "Thaumaturgist"
+    assert player.summons == {}
     assert not any("learned to summon Patagon" in message for message in FakePopup.messages)
-    assert not any("Character Menu tab available: Summons" in message for message in FakePopup.messages)
 
     player.cls = WarlockClass()
     player.level.level = 30
@@ -714,7 +714,7 @@ def test_arcane_class_ring_rites_awaken_ring_and_apply_mods(monkeypatch):
         ("Wizard", "School Streak", "Four Formulae"),
         ("Shadowcaster", "Umbral Debt", "Debt Cap Trial"),
         ("Knight Enchanter", "Arcane Tempo", "Arcane Duel"),
-        ("Grand Summoner", "+30% Summons", "Conduit Ritual"),
+        ("Thaumaturgist", "+30% Xenids", "Conduit Ritual"),
         ("Templar", "Ordered Blessings", "Relic Defense"),
         ("Hierophant", "Sacred Conduit", "Consecration Rite"),
         ("Master Monk", "Martial Master", "Purity Rite"),
@@ -741,7 +741,7 @@ def test_arcane_class_ring_rites_awaken_ring_and_apply_mods(monkeypatch):
         assert player.class_ring_awakening["awakened"][class_name] is True
         assert player.equipment["Ring"].mod == expected_mod
         assert any(expected_label in message for message in FakePopup.messages)
-        if class_name == "Grand Summoner":
+        if class_name == "Thaumaturgist":
             assert player.health.max == 190
             assert player.health.current == 190
 

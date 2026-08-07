@@ -184,18 +184,18 @@ class KnightEnchanterClass(KnightClass):
         self.description = "Converts blade charges into Arcane Tempo."
 
 
-class SummonerClass(KnightClass):
+class ConjurerClass(KnightClass):
     def __init__(self):
         super().__init__()
-        self.name = "Summoner"
-        self.description = "Builds bonds with summoned allies."
+        self.name = "Conjurer"
+        self.description = "Calls transient allies through short-lived apertures."
 
 
-class GrandSummonerClass(KnightClass):
+class ThaumaturgistClass(KnightClass):
     def __init__(self):
         super().__init__()
-        self.name = "Grand Summoner"
-        self.description = "Deepens summon bonds into conduit power."
+        self.name = "Thaumaturgist"
+        self.description = "Builds permanent Xenid bonds and conduit power."
 
 
 class ThiefClass(KnightClass):
@@ -508,8 +508,8 @@ def test_promotion_screen_previews_mage_branch_mechanics(monkeypatch):
         ("Warlock", "Demonologist", DemonologistClass),
         ("Mage", "Spellblade", SpellbladeClass),
         ("Spellblade", "Knight Enchanter", KnightEnchanterClass),
-        ("Mage", "Summoner", SummonerClass),
-        ("Summoner", "Grand Summoner", GrandSummonerClass),
+        ("Mage", "Conjurer", ConjurerClass),
+        ("Conjurer", "Thaumaturgist", ThaumaturgistClass),
     ):
         presenter = _make_presenter()
         player = _make_player()

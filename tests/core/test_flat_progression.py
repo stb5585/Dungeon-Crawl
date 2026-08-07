@@ -114,6 +114,10 @@ def test_all_tree_manifests_validate_and_scale_rating_values_by_stage():
             == expected_resources[CLASS_DETAILS[node.tree_id][1]]
             for node in resource_nodes
         )
+        assert all(
+            "level_requirement" not in node.payload
+            for node in resource_nodes
+        )
         talent_nodes = [
             node
             for node in tree.nodes
@@ -121,7 +125,11 @@ def test_all_tree_manifests_validate_and_scale_rating_values_by_stage():
         ]
         if (
             tree.stage > 1
-            and tree.class_name not in {"Weapon Master", "Berserker"}
+            and tree.class_name not in {
+                "Weapon Master",
+                "Berserker",
+                "Conjurer",
+            }
         ):
             assert talent_nodes
         for node in talent_nodes:
@@ -139,6 +147,24 @@ def test_all_tree_manifests_validate_and_scale_rating_values_by_stage():
                     30 if tree.stage == 1 else 60
                 )
                 assert node.cost == (2 if tree.stage == 1 else 3)
+
+
+def test_conjurer_has_four_authored_disciplines_and_terminal_promotion():
+    tree = ABILITY_TREES["Conjurer"]
+
+    assert set(tree.branches) == {
+        "Constructs",
+        "Binding",
+        "Illusion / Movement",
+        "Calling",
+    }
+    promotion = next(
+        node for node in tree.nodes if node.kind == NodeKind.PROMOTION
+    )
+    assert promotion.payload["target_class"] == "Thaumaturgist"
+    assert promotion.payload["floating_promotion"] is False
+    assert promotion.payload["prerequisite_mode"] == "any"
+    assert len(promotion.prerequisites) == 4
 
 
 def test_talent_purchase_applies_bonus_and_modifies_class_kit_cap():
@@ -197,7 +223,24 @@ def test_new_character_starts_with_one_freely_allocatable_point(class_type):
                 "Double Strike",
             },
         ),
-        (Mage, {"Firebolt", "Enfeeble", "Mana Shield", "+10 Magic Defense"}),
+        (
+            Mage,
+            {
+                "Firebolt",
+                "Ice Lance",
+                "Shock",
+                "Gust",
+                "Water Jet",
+                "Tremor",
+                "Magic Missile",
+                "Enfeeble",
+                "Conjure Blade",
+                "Reflect",
+                "Sleep",
+                "Boost",
+                "Mirror Image",
+            },
+        ),
         (Footpad, {"Quickstep", "Disarm", "Pocket Sand", "+10 Magic"}),
         (Healer, {"Holy", "+10 Defense", "Heal", "+10 Magic Defense"}),
         (

@@ -202,6 +202,16 @@ class BattleEngine(BattleTurnMixin, BattleActionMixin, BattleOutcomeMixin):
         valid.update(member.combatant_id for member in self.encounter.living_members)
         return valid
 
+    def add_enemy_reinforcement(self, enemy: Character):
+        """Add one enemy reinforcement to the live encounter and actor cycle."""
+        if len(self.encounter.living_members) >= 2:
+            return None
+        member = self.encounter.add_enemy(enemy)
+        remember_defeat_identity(enemy)
+        if self._actor_cycle is not None:
+            self._actor_cycle.add_actor(member.combatant_id)
+        return member
+
     def _sync_actor_aliases(self) -> None:
         if not self._actor_cycle:
             return
@@ -340,7 +350,7 @@ class BattleEngine(BattleTurnMixin, BattleActionMixin, BattleOutcomeMixin):
         choice: str | None = None,
         slot_machine_callback: Callable | None = None,
     ) -> ActionResult:
-        """Execute a constrained Summoner intervention during an active summon turn."""
+        """Execute a constrained Thaumaturgist intervention during an active Xenid turn."""
         if not self.summon_active or not self.summon:
             result = ActionResult()
             result.message = "No active summon can be supported.\n"

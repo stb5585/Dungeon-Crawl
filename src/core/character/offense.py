@@ -102,6 +102,12 @@ class CharacterOffenseMixin:
         if typ == "weapon":
             hit_mod += ability_mechanics.duelist_accuracy_bonus(self)
             hit_mod += paladin.sword_and_board_accuracy_bonus(self)
+            try:
+                from ..classes import mage_mechanics
+
+                hit_mod += mage_mechanics.melee_accuracy_bonus(self)
+            except Exception:
+                pass
         return max(0, hit_mod)
 
     def dodge_chance(self, attacker: Character, spell: bool = False) -> float:
@@ -206,6 +212,12 @@ class CharacterOffenseMixin:
             and int(getattr(berserk, "extra", 0) or 0) == 1
         ):
             crit_chance += 0.15
+        try:
+            from ..classes import mage_mechanics
+
+            crit_chance += mage_mechanics.fire_inside_critical_bonus(self)
+        except Exception:
+            pass
 
         return max(0.0, min(MAX_CRIT_CHANCE, crit_chance))
 
@@ -235,6 +247,16 @@ class CharacterOffenseMixin:
         from ..combat.combat_result import CombatResult, CombatResultGroup
         from ..classes import ability_mechanics, grandmaster, paladin
 
+        try:
+            from ..classes import mage_mechanics
+
+            dmg_mod *= mage_mechanics.melee_damage_multiplier(self)
+            fire_inside_active = (
+                random.random() < mage_mechanics.fire_inside_critical_bonus(self)
+            )
+            mage_mechanics.consume_fire_inside(self)
+        except Exception:
+            fire_inside_active = False
         self._last_attack_parried = False
         if defender.magic_effects["Ice Block"].active or defender.tunnel:
             return f"{self.name}'s attack has no effect.\n", False, crit
@@ -255,6 +277,7 @@ class CharacterOffenseMixin:
         if not attacks:
             return f"{self.name} cannot use their main-hand weapon.\n", False, crit
         weapon_dam_str = ""
+        electrified_triggered = False
         for i, att in enumerate(attacks):
             hits.append(hit)
             crits.append(1)
@@ -275,7 +298,9 @@ class CharacterOffenseMixin:
                     self.equipment[att].special_effect(results)
                     weapon_dam_str += f"{self.name} leers at {defender.name}.\n"
                     break
-            natural_crit = crit == 1 and self.critical_chance(att) > random.random()
+            natural_crit = crit == 1 and (
+                fire_inside_active or self.critical_chance(att) > random.random()
+            )
             crits[i] = (
                 int(critical_multiplier or 2)
                 if natural_crit
@@ -434,6 +459,11 @@ class CharacterOffenseMixin:
                         damage = max(0, int(damage * HALF_ORC_CRIT_DAMAGE_TAKEN_MULTIPLIER))
                 except Exception:
                     pass
+                damage, temporary_health_message = defender._apply_temporary_health(
+                    defender,
+                    damage,
+                )
+                weapon_dam_str += temporary_health_message
                 lethal_msg = ""
                 try:
                     from ..classes import paladin
@@ -454,6 +484,17 @@ class CharacterOffenseMixin:
                     weapon_dam_str += self._build_damage_message(
                         defender, damage, typ, crits[i], att
                     )
+                    try:
+                        from ..classes import mage_mechanics
+
+                        if not electrified_triggered:
+                            retaliation = mage_mechanics.electrified_retaliation(
+                                self, defender, damage
+                            )
+                            weapon_dam_str += retaliation
+                            electrified_triggered = bool(retaliation)
+                    except Exception:
+                        pass
                     riposte = getattr(defender, "_riposte_line", None)
                     if (
                         isinstance(riposte, dict)

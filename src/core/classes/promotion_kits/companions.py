@@ -19,6 +19,69 @@ from .state import (
 from .tracks import _preserve_spent_meter
 
 
+XENID_CASTER_EFFECTS = {
+    "Hodag": {"strength": 4, "melee": 0.10},
+    "Caladrius": {"wisdom": 4, "healing": 0.12},
+    "Patagon": {"strength": 3, "melee": 0.10},
+    "Kobalos": {"dexterity": 3, "melee": 0.06},
+    "Dilong": {"constitution": 3, "armor": 0.08},
+    "Cacus": {"strength": 5, "melee": 0.15},
+    "Agloolik": {"wisdom": 2, "magic_defense": 0.08},
+    "Izulu": {"dexterity": 3, "magic": 0.06},
+    "Hala": {"dexterity": 3, "melee": 0.06},
+    "Lamashtu": {"charisma": 3, "magic": 0.10},
+    "Seraphim": {"wisdom": 4, "healing": 0.12},
+    "Bardi": {"intelligence": 4, "magic": 0.10},
+    "Tiamat": {"constitution": 4, "armor": 0.08, "magic_defense": 0.08},
+    "Zahhak": {"intelligence": 5, "magic": 0.12},
+}
+XENID_DEATH_CONDUIT_LOSS = 25
+XENID_RAISE_CONDUIT_REFUND = 10
+
+
+def xenid_caster_effects(character: Any) -> dict[str, float]:
+    """Return cumulative caster bonuses produced by all chosen Xenid conduits."""
+    if class_name(character) != "Thaumaturgist":
+        return {}
+    state = ensure_state(character)
+    choices = getattr(character, "xenid_choices", {})
+    if not isinstance(choices, dict):
+        return {}
+    mastery = False
+    progression = getattr(character, "progression", None)
+    if progression is not None:
+        mastery = (
+            "thaumaturgist.talent.conduit-mastery"
+            in getattr(progression, "purchased_node_ids", set())
+        )
+    mastery_scale = 1.5 if mastery else 1.0
+    totals: dict[str, float] = {}
+    for name in choices.values():
+        conduit = int(state["summon_bonds"].get(name, 0) or 0)
+        scale = conduit / 100 * mastery_scale
+        for effect, maximum in XENID_CASTER_EFFECTS.get(name, {}).items():
+            totals[effect] = totals.get(effect, 0.0) + float(maximum) * scale
+    return totals
+
+
+def xenid_caster_attribute_bonus(character: Any, stat_name: str) -> int:
+    """Return the conduit-derived virtual primary-attribute bonus."""
+    aliases = {
+        "strength": "strength",
+        "intel": "intelligence",
+        "wisdom": "wisdom",
+        "con": "constitution",
+        "charisma": "charisma",
+        "dex": "dexterity",
+    }
+    return int(xenid_caster_effects(character).get(aliases[stat_name], 0.0))
+
+
+def xenid_caster_multiplier(character: Any, effect: str) -> float:
+    """Return a conduit-derived multiplier for one combat result."""
+    return 1.0 + xenid_caster_effects(character).get(effect, 0.0)
+
+
 def add_aspect(character: Any, aspect: str) -> str:
     if class_name(character) != "Archdruid":
         return ""
@@ -124,6 +187,74 @@ def gain_summon_bond_for_active(character: Any, amount: int, reason: str) -> str
     return gain_summon_bond(character, str(summon), amount, reason)
 
 
+def record_xenid_death(character: Any, summon_name: str) -> str:
+    """Apply one conduit penalty and remember the fallen active Xenid."""
+    if class_name(character) != "Thaumaturgist" or summon_name not in SUMMON_NAMES:
+        return ""
+    combat = combat_state(character)
+    if combat.get("fallen_xenid") == summon_name:
+        return ""
+    state = ensure_state(character)
+    before = int(state["summon_bonds"].get(summon_name, 0) or 0)
+    after = max(0, before - XENID_DEATH_CONDUIT_LOSS)
+    loss = before - after
+    state["summon_bonds"][summon_name] = after
+    combat["fallen_xenid"] = summon_name
+    combat["fallen_xenid_conduit_loss"] = loss
+    from ... import companions
+
+    companions.sync_xenid_conduit(character, summon_name, after)
+    return (
+        f"{summon_name}'s death weakens its conduit by {loss} "
+        f"({after}/100).\n"
+        if loss
+        else f"{summon_name}'s conduit cannot weaken any further.\n"
+    )
+
+
+def raise_fallen_xenid(
+    character: Any,
+    battle_engine: Any | None,
+    *,
+    health_fraction: float = 0.25,
+) -> tuple[bool, str]:
+    """Raise only the Xenid that fell while active in the current combat."""
+    if class_name(character) != "Thaumaturgist":
+        return False, "Raise Summon requires Thaumaturgist training.\n"
+    if battle_engine is None or not bool(getattr(character, "_active_combat", False)):
+        return False, "Raise Summon can only be used during combat.\n"
+    combat = combat_state(character)
+    summon_name = str(combat.get("fallen_xenid", "") or "")
+    summons = getattr(character, "summons", {}) or {}
+    summon = summons.get(summon_name)
+    if summon is None or summon.health.current > 0:
+        return False, "No fallen active Xenid can be raised.\n"
+
+    state = ensure_state(character)
+    loss = max(0, int(combat.get("fallen_xenid_conduit_loss", 0) or 0))
+    refund = min(XENID_RAISE_CONDUIT_REFUND, loss)
+    conduit = int(state["summon_bonds"].get(summon_name, 0) or 0)
+    conduit = min(100, conduit + refund)
+    state["summon_bonds"][summon_name] = conduit
+    from ... import companions
+
+    companions.sync_xenid_conduit(character, summon_name, conduit)
+    summon.health.current = max(
+        1,
+        int(summon.health.max * max(0.01, float(health_fraction))),
+    )
+    battle_engine.summon = summon
+    battle_engine.summon_active = True
+    character.active_summon_name = summon_name
+    combat["fallen_xenid"] = None
+    combat["fallen_xenid_conduit_loss"] = 0
+    battle_engine.available_actions = battle_engine._available_actions()
+    return True, (
+        f"{summon_name} returns with {summon.health.current} HP. The rite "
+        f"restores {refund} of the lost conduit ({conduit}/100).\n"
+    )
+
+
 def summon_level_span_xp(summon: Any) -> int:
     level = getattr(summon, "level", None)
     try:
@@ -149,16 +280,6 @@ def summon_bond_gain_for_victory(
     multiplier: int = 1,
 ) -> int:
     summon_name = getattr(character, "active_summon_name", None)
-    summons = getattr(character, "summons", {}) or {}
-    summon = summons.get(summon_name) if summon_name else None
-    level = getattr(getattr(summon, "level", None), "level", 1)
-    try:
-        level = max(1, int(level))
-    except (TypeError, ValueError):
-        level = 1
-    if level < 2:
-        setattr(character, "_active_summon_bond_note", f"{summon_name or 'Summon'} bond needs level 2.")
-        return 0
     try:
         exp_gain = max(0, int(exp_gain))
     except (TypeError, ValueError):
@@ -166,18 +287,19 @@ def summon_bond_gain_for_victory(
     if exp_gain <= 0:
         setattr(character, "_active_summon_bond_note", f"{summon_name or 'Summon'} bond sees no eligible XP.")
         return 0
-    level_span = getattr(character, "_active_summon_bond_level_span_xp", None)
-    try:
-        level_span = max(1, int(level_span))
-    except (TypeError, ValueError):
-        level_span = summon_level_span_xp(summon)
+    global_level = getattr(
+        getattr(character, "progression", None),
+        "level",
+        getattr(getattr(character, "level", None), "level", 1),
+    )
+    level_span = max(50, int(global_level or 1) * 20)
     ratio = max(0.0, float(exp_gain) / float(level_span))
     chance = min(1.0, ratio)
     if chance < 1.0 and not guaranteed and random.random() >= chance:
         setattr(
             character,
             "_active_summon_bond_note",
-            f"{summon_name or 'Summon'} bond holds steady after a low-XP victory.",
+            f"{summon_name or 'Summon'} conduit holds steady after a low-XP victory.",
         )
         return 0
     gain = max(1, min(5, int(math.ceil(ratio * 5))))
@@ -190,41 +312,44 @@ def summon_bond_gain_for_victory(
 
 
 def gain_summon_bond(character: Any, summon_name: str, amount: int, reason: str) -> str:
-    if class_name(character) not in {"Summoner", "Grand Summoner"} or summon_name not in SUMMON_NAMES:
+    if class_name(character) != "Thaumaturgist" or summon_name not in SUMMON_NAMES:
         return ""
     state = ensure_state(character)
     before = int(state["summon_bonds"].get(summon_name, 0) or 0)
     after = min(100, before + max(0, int(amount)))
     state["summon_bonds"][summon_name] = after
+    from ... import companions
+
+    companions.sync_xenid_conduit(character, summon_name, after)
     if after == before:
         note = str(getattr(character, "_active_summon_bond_note", "") or "")
-        return f"Summon Bond: {note}\n" if note else ""
-    return f"{summon_name} bond grows by {after - before} from {reason} ({after}/100).\n"
+        return f"Xenid Conduit: {note}\n" if note else ""
+    return (
+        f"{summon_name}'s conduit grows by {after - before} from {reason} "
+        f"({after}/100).\n"
+    )
 
 
 def summon_bond_multiplier(character: Any, summon_name: str) -> float:
     bond = int(ensure_state(character)["summon_bonds"].get(summon_name, 0) or 0)
-    if bond >= 75:
-        return 1.10
-    if bond >= 25:
-        return 1.05
-    return 1.0
+    return 1.0 + 0.25 * bond / 100
 
 
 def invoke_summon(character: Any, target: Any | None, summon_name: str) -> str:
-    if class_name(character) not in {"Summoner", "Grand Summoner"}:
-        return "Only a Summoner can borrow an invocation.\n"
+    if class_name(character) != "Thaumaturgist":
+        return "Only a Thaumaturgist can borrow a Xenid invocation.\n"
     bond = int(ensure_state(character)["summon_bonds"].get(summon_name, 0) or 0)
     if bond < 50:
-        return f"Invoke {summon_name} requires bond 50.\n"
+        return f"Invoke {summon_name} requires conduit 50.\n"
     if target is None:
         return "There is no invocation target.\n"
     if not _spend_mp(character, 12):
         return "Not enough MP for the invocation.\n"
     element = {
         "Patagon": "Earth", "Dilong": "Earth", "Agloolik": "Ice", "Cacus": "Fire",
-        "Fuath": "Water", "Izulu": "Electric", "Hala": "Wind", "Grigori": "Holy",
-        "Bardi": "Shadow", "Kobalos": "Poison", "Zahhak": "Arcane",
+        "Izulu": "Electric", "Hala": "Wind", "Lamashtu": "Shadow",
+        "Seraphim": "Holy", "Bardi": "Shadow", "Kobalos": "Poison",
+        "Tiamat": "Water", "Zahhak": "Arcane",
     }.get(summon_name, "Physical")
     damage = max(1, int(character.check_mod("magic", enemy=target) * 0.55))
     target.health.current = max(0, target.health.current - damage)
@@ -232,14 +357,14 @@ def invoke_summon(character: Any, target: Any | None, summon_name: str) -> str:
 
 
 def conduit_command(character: Any) -> str:
-    if class_name(character) != "Grand Summoner":
-        return "Conduit Command requires Grand Summoner training.\n"
+    if class_name(character) != "Thaumaturgist":
+        return "Conduit Command requires Thaumaturgist training.\n"
     if getattr(character, "familiar", None) is None and not getattr(character, "active_summon_name", None):
-        return "Conduit Command requires an active living summon.\n"
+        return "Conduit Command requires an active living Xenid.\n"
     if not _spend_mp(character, 10):
         return "Not enough MP for Conduit Command.\n"
     combat_state(character)["conduit_command"] = True
-    return f"{character.name} empowers the active summon's next action with Conduit Command.\n"
+    return f"{character.name} empowers the active Xenid's next action with Conduit Command.\n"
 
 
 def companion_bond_rank(bond: int) -> str:

@@ -692,7 +692,7 @@ def test_combat_focus_panel_shows_familiar_summons_and_totem(monkeypatch):
     assert ("Command", "Pack Strike Pending", (170, 210, 255)) in lines
 
     idle_summoner = _make_player()
-    idle_summoner.cls = SimpleNamespace(name="Summoner")
+    idle_summoner.cls = SimpleNamespace(name="Thaumaturgist")
     idle_summoner.familiar = None
     idle_summoner.summons = {
         "Patagon": SimpleNamespace(name="Patagon", is_alive=lambda: True),
@@ -702,7 +702,7 @@ def test_combat_focus_panel_shows_familiar_summons_and_totem(monkeypatch):
     idle_summoner._promotion_kit_combat = {}
     promotion_kits.ensure_state(idle_summoner)["summon_bonds"]["Patagon"] = 50
     lines = hud._combat_feature_lines(idle_summoner, enemy=SimpleNamespace(name="Jester"))
-    assert all(label != "Summon Bond" for label, _value, _color in lines)
+    assert all(label != "Xenid Conduit" for label, _value, _color in lines)
     assert ("Focus", "No active combat focuses", (145, 145, 155)) in lines
 
     player.cls = SimpleNamespace(name="Templar")

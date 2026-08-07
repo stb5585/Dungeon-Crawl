@@ -178,13 +178,7 @@ class WendigoBossRoom(BossRoom):
         return super().intro_text(game)
 
     def special_text(self, game):
-        super().special_text(game)
-        if not self.enemy and "Summoner" in game.player_char.cls.name and \
-            "Agloolik" not in game.player_char.summons:
-            game.special_event("Agloolik")
-            summons = companions.Agloolik()
-            summons.initialize_stats(game.player_char)
-            game.player_char.summons["Agloolik"] = summons
+        return super().special_text(game)
 
 
 class IronGolemBossRoom(BossRoom):

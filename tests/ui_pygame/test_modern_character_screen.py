@@ -536,7 +536,7 @@ def test_modern_character_companion_display_prefers_familiar_then_living_summon(
     spent = SimpleNamespace(name="Spent", is_alive=lambda: False)
     living = SimpleNamespace(name="Fuath", race="Spirit", level=SimpleNamespace(pro_level=2), is_alive=lambda: True)
     player.summons = {"Spent": spent, "Fuath": living}
-    assert screen.active_companion_for_display(player) == ("Summon", living)
+    assert screen.active_companion_for_display(player) == ("Xenid", living)
     assert ("Type", "Spirit") in screen.companion_summary_rows("Summon", living)
 
     patagon = SimpleNamespace(name="Patagon", cls=None, level=SimpleNamespace(level=1), is_alive=lambda: True)
@@ -559,7 +559,7 @@ def test_modern_character_class_tab_lists_companions_without_art(monkeypatch):
         level=SimpleNamespace(level=1),
         is_alive=lambda: True,
     )
-    player.cls = SimpleNamespace(name="Summoner", description="Calls allies from distant realms.")
+    player.cls = SimpleNamespace(name="Thaumaturgist", description="Calls Xenids from distant realms.")
     player.summons = {"Patagon": companion}
     calls = []
     screen.companion_art_manager = SimpleNamespace(
@@ -574,7 +574,7 @@ def test_modern_character_class_tab_lists_companions_without_art(monkeypatch):
 
     assert calls == []
     rendered_text = set(presenter.small_font.render_calls + presenter.normal_font.render_calls)
-    assert {"Summons", "Patagon", "Type", "Summon", "HP", "40/50"}.issubset(rendered_text)
+    assert {"Xenids", "Patagon", "Type", "Xenid", "HP", "40/50"}.issubset(rendered_text)
     assert "Companions & Summons" not in rendered_text
 
 
@@ -1551,8 +1551,8 @@ def test_modern_character_class_mechanic_tabs_include_mage_branches():
         ("Demonologist", ["Character", "Equipment", "Contracts"], True),
         ("Spellblade", ["Character", "Equipment"], False),
         ("Knight Enchanter", ["Character", "Equipment"], False),
-        ("Summoner", ["Character", "Equipment", "Summons"], False),
-        ("Grand Summoner", ["Character", "Equipment", "Summons"], False),
+        ("Conjurer", ["Character", "Equipment"], False),
+        ("Thaumaturgist", ["Character", "Equipment", "Xenids"], False),
     ):
         player.cls = SimpleNamespace(name=class_name)
         player.summons = {}
@@ -1629,7 +1629,7 @@ def test_modern_character_class_tab_supports_multiple_summon_tiles_and_popup(mon
             is_alive=lambda: True,
         )
 
-    player.cls = SimpleNamespace(name="Summoner", description="Calls allies from distant realms. " * 12)
+    player.cls = SimpleNamespace(name="Thaumaturgist", description="Calls Xenids from distant realms. " * 12)
     player.promotion_kit_state = {"summon_bonds": {"Patagon": 15, "Dilong": 0, "Agloolik": 0}}
     player.summons = {"Patagon": summon("Patagon"), "Dilong": summon("Dilong"), "Agloolik": summon("Agloolik")}
     screen.companion_art_manager = SimpleNamespace(get_scaled_sprite=lambda _entity, size: DummySurface(size))
@@ -1664,7 +1664,7 @@ def test_modern_character_class_tab_supports_multiple_summon_tiles_and_popup(mon
     screen._open_class_companion_popup(player)
 
     assert popups
-    assert popups[-1].kind == "Summon"
+    assert popups[-1].kind == "Xenid"
     assert popups[-1].companion is player.summons["Dilong"]
     assert callable(popups[-1].show_kwargs["background_draw_func"])
 
@@ -1681,7 +1681,7 @@ def test_modern_character_class_tab_stacks_all_eleven_summons(monkeypatch):
         "Fuath",
         "Izulu",
         "Hala",
-        "Grigori",
+        "Seraphim",
         "Bardi",
         "Kobalos",
         "Zahhak",
@@ -1699,7 +1699,7 @@ def test_modern_character_class_tab_stacks_all_eleven_summons(monkeypatch):
             is_alive=lambda: True,
         )
 
-    player.cls = SimpleNamespace(name="Grand Summoner", description="Calls every ally.")
+    player.cls = SimpleNamespace(name="Thaumaturgist", description="Calls every Xenid.")
     player.promotion_kit_state = {"summon_bonds": {name: 0 for name in summon_names}}
     player.summons = {name: summon(name) for name in summon_names}
 
@@ -2087,7 +2087,7 @@ def test_modern_character_c_toggles_class_summon_focus_and_opens_popup(monkeypat
             is_alive=lambda: True,
         )
 
-    player.cls = SimpleNamespace(name="Summoner", description="")
+    player.cls = SimpleNamespace(name="Thaumaturgist", description="")
     player.summons = {"Patagon": summon("Patagon"), "Dilong": summon("Dilong")}
     opened = []
 
@@ -2116,7 +2116,7 @@ def test_modern_character_c_toggles_class_summon_focus_and_opens_popup(monkeypat
 
     assert screen.navigate(player) == "Exit Menu"
     assert screen.active_tab.key == "class"
-    assert opened == [("Summon", "Dilong")]
+    assert opened == [("Xenid", "Dilong")]
     assert screen.class_companion_selector_active is False
 
 

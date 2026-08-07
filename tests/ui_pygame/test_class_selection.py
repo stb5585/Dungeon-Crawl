@@ -104,7 +104,7 @@ def _make_race():
         base_defense=3,
         base_magic=4,
         base_magic_def=5,
-        cls_res={"Base": ["Warrior", "Mage"], "First": ["Paladin", "Warlock", "Summoner"]},
+        cls_res={"Base": ["Warrior", "Mage"], "First": ["Paladin", "Warlock", "Conjurer"]},
     )
 
 
@@ -121,7 +121,7 @@ def test_class_selection_draw_and_set_classes(monkeypatch):
     assert screen.available_classes == ["Warrior", "Mage"]
     assert screen.class_data["Warrior"]["stats"]["strength"]["base"] == 14
     assert screen.class_data["Warrior"]["promotions"] == ["Paladin"]
-    assert screen.class_data["Mage"]["promotions"] == ["Warlock", "Summoner"]
+    assert screen.class_data["Mage"]["promotions"] == ["Warlock", "Conjurer"]
 
     screen.draw_header()
     screen.draw_class_details()

@@ -4062,7 +4062,7 @@ class TestBatch7ManaShield:
         skill = abilities.ManaShield()
         result = skill.use(user, user)
         assert user.magic_effects["Mana Shield"].active
-        assert user.magic_effects["Mana Shield"].duration == 2  # reduction value
+        assert user.magic_effects["Mana Shield"].duration == 25
         assert user.mana.current == mana_before - 4
         assert "activated" in result.lower()
 
@@ -4071,7 +4071,7 @@ class TestBatch7ManaShield:
         user, _ = self._make_combatants()
         # Activate first
         user.magic_effects["Mana Shield"].active = True
-        user.magic_effects["Mana Shield"].duration = 2
+        user.magic_effects["Mana Shield"].duration = 25
         mana_before = user.mana.current
         skill = abilities.ManaShield()
         result = skill.use(user, user)
@@ -4101,7 +4101,7 @@ class TestBatch7ManaShield:
         skill = abilities.ManaShield2()
         skill.use(user, user)
         assert user.magic_effects["Mana Shield"].active
-        assert user.magic_effects["Mana Shield"].duration == 4  # Enhanced reduction
+        assert user.magic_effects["Mana Shield"].duration == 50
 
 
 class TestBatch7SaveSystem:
@@ -6677,11 +6677,11 @@ class TestBatch8SmiteFamily:
         assert isinstance(result, str)
         assert len(result) > 0
 
-    def test_smite_followup_uses_mana_shield_absorption(self, monkeypatch):
+    def test_smite_followup_bypasses_physical_only_mana_shield(self, monkeypatch):
         from src.core import abilities
         user, target = self._make_combatants()
         target.magic_effects["Mana Shield"].active = True
-        target.magic_effects["Mana Shield"].duration = 2
+        target.magic_effects["Mana Shield"].duration = 25
         target.mana.current = 100
         user.weapon_damage = lambda _target, **_kwargs: (
             "Paladin hits Enemy.\n",
@@ -6695,9 +6695,10 @@ class TestBatch8SmiteFamily:
 
         result = abilities.Smite().cast(user, target, special=True)
 
-        assert "mana shield around Enemy absorbs 30 damage" in result
+        assert "mana shield" not in result.lower()
         assert target.magic_effects["Mana Shield"].active is True
-        assert target.mana.current == 85
+        assert target.mana.current == 100
+        assert target.health.current < target.health.max
 
 
 class TestBatch8TurnUndeadFamily:
@@ -8448,8 +8449,8 @@ class TestBatch19DragonBreathCharging:
         ab.use(user, target)  # charge_turns 1 -> 0 -> execute
         assert target.health.current < hp_before
 
-    def test_breath_respects_mana_shield(self):
-        """Dragon Breath should route through Mana Shield before damage lands."""
+    def test_breath_bypasses_physical_only_mana_shield(self):
+        """Elemental Dragon Breath does not spend a physical-only Mana Shield."""
         from src.core import abilities
 
         ab = abilities.DragonBreathFire()
@@ -8457,7 +8458,7 @@ class TestBatch19DragonBreathCharging:
         target.mana.max = 500
         target.mana.current = 500
         target.magic_effects["Mana Shield"].active = True
-        target.magic_effects["Mana Shield"].duration = 2
+        target.magic_effects["Mana Shield"].duration = 25
 
         ab.use(user, target)
         ab.use(user, target)
@@ -8465,10 +8466,10 @@ class TestBatch19DragonBreathCharging:
         mana_before = target.mana.current
         message = ab.use(user, target)
 
-        assert target.health.current == hp_before
-        assert target.mana.current < mana_before
+        assert target.health.current < hp_before
+        assert target.mana.current == mana_before
         assert target.magic_effects["Mana Shield"].active is True
-        assert "mana shield" in message.lower()
+        assert "mana shield" not in message.lower()
 
 
 class TestBatch19EnemySpellbooks:
@@ -8575,18 +8576,19 @@ SUMMON_ABILITY_MAP = {
     "Dilong": ("Skills", "Devour"),
     "Agloolik": ("Spells", "AbsoluteZero"),
     "Cacus": ("Spells", "Eruption"),
-    "Fuath": ("Spells", "MaelstromVortex"),
     "Izulu": ("Spells", "Thunderstrike"),
     "Hala": ("Spells", "WindShrapnel"),
-    "Grigori": ("Spells", "DivineJudgment"),
+    "Lamashtu": ("Spells", "Oblivion"),
+    "Seraphim": ("Spells", "DivineJudgment"),
     "Bardi": ("Spells", "Oblivion"),
     "Kobalos": ("Skills", "GrandHeist"),
+    "Tiamat": ("Spells", "MaelstromVortex"),
     "Zahhak": ("Spells", "Cataclysm"),
 }
 
 
 class TestCompanionUltimateYAMLLoading:
-    """All 11 companion ultimate YAMLs load correctly."""
+    """All Xenid ultimate YAMLs load correctly."""
 
     @pytest.mark.parametrize("cls_name,yaml_info", list(ULTIMATE_YAML_MAP.items()))
     def test_yaml_loads(self, cls_name, yaml_info):
@@ -8620,7 +8622,7 @@ class TestCompanionUltimateYAMLLoading:
 
 
 class TestCompanionUltimateSummonWiring:
-    """All 11 ultimates are wired at level 10 in summon_abilities."""
+    """All Xenid ultimates are wired at level 10."""
 
     @pytest.mark.parametrize("summon_name,info", list(SUMMON_ABILITY_MAP.items()))
     def test_summon_has_level_10(self, summon_name, info):
@@ -9008,13 +9010,13 @@ class TestWindShrapnelEffect:
 
 
 class TestDivineJudgmentEffect:
-    """Grigori ultimate: holy damage + heal owner + cleanse."""
+    """Seraphim ultimate: holy damage + heal owner + cleanse."""
 
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
         user = TestGameState.create_player(
-            name="Grigori", class_name="Cleric", race_name="Human",
+            name="Seraphim", class_name="Cleric", race_name="Human",
             level=30, health=(400, 400), mana=(200, 200),
             stats={"strength": 10, "intel": 15, "wisdom": 30,
                    "con": 15, "charisma": 15, "dex": 10},

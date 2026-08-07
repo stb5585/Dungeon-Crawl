@@ -975,11 +975,6 @@ def test_underground_spring_intro_and_tile_effect_branches(monkeypatch):
     monkeypatch.setattr("src.ui_pygame.gui.quest_manager.QuestManager", FakeQuestManager)
     monkeypatch.setattr(dungeon_manager.random, "randint", lambda *_args: 0)
     monkeypatch.setattr("src.core.enemies.Fuath", lambda: SimpleNamespace(name="Fuath"))
-    monkeypatch.setattr(
-        dungeon_manager.companions,
-        "Fuath",
-        lambda: SimpleNamespace(name="Fuath", initialize_stats=lambda player_char: None),
-    )
     monkeypatch.setattr("src.core.items.EmptyVial", lambda: SimpleNamespace(name="Empty Vial"))
     monkeypatch.setattr("src.core.items.SpringWater", lambda: SimpleNamespace(name="Spring Water"))
     monkeypatch.setattr("src.core.items.Excaliper", lambda: SimpleNamespace(name="Excaliper"))
@@ -987,7 +982,7 @@ def test_underground_spring_intro_and_tile_effect_branches(monkeypatch):
     monkeypatch.setattr(dungeon_manager.map_tiles, "enter_realm_of_cambion", lambda _player: manager.messages.append("entered-realm"))
 
     player.level.pro_level = 2
-    player.cls.name = "Summoner"
+    player.cls.name = "Thaumaturgist"
     player.quest_dict["Side"]["Naivete"] = {"Completed": False}
     player.quest_dict["Side"]["The Wizard's Folly"] = {"Completed": False, "Turned In": False}
     player.special_inventory["Excaliper"] = [SimpleNamespace(name="Excaliper")]
@@ -1001,7 +996,7 @@ def test_underground_spring_intro_and_tile_effect_branches(monkeypatch):
     assert spring.drink is True
     assert spring.defeated is True
     assert spring.nimue is True
-    assert "Fuath" in player.summons
+    assert "Fuath" not in player.summons
     assert any(call[0] == "Spring Water" for call in player.inventory_calls)
     assert "entered-realm" in manager.messages
     assert "Seek the hidden path." in manager.messages

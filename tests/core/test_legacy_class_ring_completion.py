@@ -169,19 +169,16 @@ def test_wizard_mastery_ring_proc_adds_stacking_school_buff(monkeypatch):
     assert enemy.health.current < 100
 
 
-def test_frozen_armor_requires_sorcerer_ice_mastery():
+def test_frozen_armor_is_a_mage_enhancement_proc(monkeypatch):
     player = TestGameState.create_player(class_name="Sorcerer")
     player.spellbook["Skills"]["Frozen Armor"] = abilities.FrozenArmor()
+    monkeypatch.setattr("src.core.classes.mage_mechanics.random.random", lambda: 0.0)
 
-    damage, message = wizard.frozen_armor_reduction(player, 100)
-    assert damage == 100
-    assert message == ""
+    message = wizard.process_cast(player, abilities.IceLance())
 
-    player.wizard_affinity["Ice"] = 50
-    damage, message = wizard.frozen_armor_reduction(player, 100)
-
-    assert damage == 90
-    assert "Frozen Armor absorbs 10 damage" in message
+    assert "Frozen Armor protects" in message
+    assert player.mage_enhancement_state["frozen_armor"] == 1
+    assert player.stat_effects["Defense"].extra == 10
 
 
 def test_bard_songs_require_instrument_and_tick_renewal():
@@ -224,8 +221,8 @@ def test_lycan_moon_cycle_and_frenzy_state_persist():
     assert restored.lycan_state["moon_phase"] == "Waning"
 
 
-def test_grand_summoner_awakened_ring_scales_future_summons():
-    player = TestGameState.create_player(class_name="Grand Summoner")
+def test_thaumaturgist_awakened_ring_scales_future_xenids():
+    player = TestGameState.create_player(class_name="Thaumaturgist")
     player.equipment["Ring"] = items.ClassRing()
     ok, _message = player.awaken_class_ring()
     assert ok is True

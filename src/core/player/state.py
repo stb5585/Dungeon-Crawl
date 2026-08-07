@@ -11,6 +11,7 @@ from ..classes import (
     dragoon,
     grandmaster,
     lycan,
+    mage_mechanics,
     paladin,
     promotion_kits,
     wizard,
@@ -205,6 +206,7 @@ class PlayerStateMixin:
         lycan.record_steps(self, step_count)
         bard.tick_exploration_song(self, step_count)
         ability_mechanics.tick_exploration_effects(self, step_count)
+        mage_mechanics.tick_exploration(self, step_count)
 
     def record_stairs_used(self, count=1):
         stats = self.ensure_gameplay_stats()

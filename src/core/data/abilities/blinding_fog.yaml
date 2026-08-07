@@ -4,6 +4,7 @@ subtype: Status
 description: "The enemy is surrounding in a thick fog, lowering the chance to hit on a melee attack."
 cost: 7
 rank: 1
+target_scope: all_enemies
 effects:
   - type: stat_contest
     actor_stat: intel

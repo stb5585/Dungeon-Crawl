@@ -556,7 +556,7 @@ class WindShrapnelEffect(Effect):
 
 class DivineJudgmentEffect(Effect):
     """
-    Grigori ultimate: holy damage (3x, double vs undead) + heal the
+    Seraphim ultimate: holy damage (3x, double vs undead) + heal the
     summoner + cleanse all status effects on the summoner.
 
     The angelic Watcher passes divine judgment on the enemy.

@@ -11,7 +11,7 @@ from .mouse_helpers import hit_index, is_left_click, mouse_position
 # This defines the class progression paths
 PROMOTION_PATHS = {
     'Warrior': ['Weapon Master', 'Paladin', 'Lancer', 'Sentinel'],
-    'Mage': ['Sorcerer', 'Warlock', 'Spellblade', 'Summoner'],
+    'Mage': ['Sorcerer', 'Warlock', 'Spellblade', 'Conjurer'],
     'Footpad': ['Thief', 'Inquisitor', 'Assassin', 'Spell Stealer'],
     'Healer': ['Cleric', 'Priest', 'Monk', 'Bard'],
     'Pathfinder': ['Druid', 'Diviner', 'Shaman', 'Ranger'],

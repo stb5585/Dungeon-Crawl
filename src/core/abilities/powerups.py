@@ -29,18 +29,6 @@ class BloodRage(PowerUp):
         self.passive = True
 
 
-class FrozenArmor(PowerUp):
-    """Sorcerer passive: Ice mastery hardens into a small defensive ward."""
-
-    def __init__(self):
-        super().__init__(
-            name="Frozen Armor",
-            description="Ice mastery sheaths the Sorcerer in a thin frost ward, "
-            "slightly reducing incoming damage while Ice affinity is mastered.",
-        )
-        self.passive = True
-
-
 class ArsenalMastery(PowerUp):
     """Skill — data-driven (arsenal_mastery.yaml)"""
     def __new__(cls):
@@ -133,19 +121,19 @@ class ArcaneBlast(PowerUp):
         return _load_yaml_ability("arcane_blast.yaml", cls_name="ArcaneBlast")
 
 
-# Passive ability for Summoner
+# Passive ability for Thaumaturgist
 class EternalConduit(Ability):
     """
-    Eternal Conduit (Passive): The Summoner's bond with their summons is so strong that they gain a portion of all
-    healing and buffs their summons receive, and their summons gain a portion of all healing and buffs the Summoner
+    Eternal Conduit (Passive): The Thaumaturgist's bond with their Xenids is so strong that they gain a portion of all
+    healing and buffs their Xenids receive, and their Xenids gain a portion of all healing and buffs the Thaumaturgist
     receives.
     """
     def __init__(self):
         super().__init__(
             name="Eternal Conduit",
-            description="The Summoner's bond with their summons is so strong that "
-            "they gain a portion of all healing and buffs their summons receive, "
-            "and their summons gain a portion of all healing and buffs the Summoner"
+            description="The Thaumaturgist's bond with their Xenids is so strong that "
+            "they gain a portion of all healing and buffs their Xenids receive, "
+            "and their Xenids gain a portion of all healing and buffs the Thaumaturgist"
             " receives.",
             passive=True,
             typ="Skill",

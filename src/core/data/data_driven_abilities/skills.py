@@ -136,6 +136,16 @@ class DataDrivenSkill(Skill):
                 wd_kwargs["crit"] = self._crit_override
             if self._intel_dmg_mod:
                 wd_kwargs["dmg_mod"] = max(self.dmg_mod, user.stats.intel / 15)
+                if self.name == "Imbue Weapon":
+                    try:
+                        from src.core.classes import mage_mechanics
+
+                        potency = mage_mechanics.arcane_potency_multiplier(user)
+                        wd_kwargs["dmg_mod"] = 1 + (
+                            (wd_kwargs["dmg_mod"] - 1) * potency
+                        )
+                    except Exception:
+                        pass
 
             hit = False
             crit = 1

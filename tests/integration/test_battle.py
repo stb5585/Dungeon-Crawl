@@ -594,6 +594,60 @@ class TestBattleEngineBasics:
         assert result.summon_died is True
         assert engine.summon_active is False
 
+    def test_raise_summon_only_restores_the_active_fallen_xenid_and_conduit(self):
+        from src.core import abilities, classes, companions
+        from src.core.classes import promotion_kits
+
+        engine, player, enemy, _tile = self._make_engine()
+        player.cls = classes.Thaumaturgist()
+        player.mana.max = 150
+        player.mana.current = 150
+        player.spellbook["Skills"]["Raise Summon"] = abilities.RaiseSummon()
+        assert companions.choose_xenid(player, "Humanoid", "Patagon")[0]
+        assert companions.choose_xenid(player, "Monster", "Cacus")[0]
+        promotion_kits.gain_summon_bond(player, "Patagon", 60, "test")
+        engine.start_battle()
+        engine.attacker = player
+        engine.defender = enemy
+        engine.execute_action("Summon", choice="Patagon")
+        mana_after_calling = player.mana.current
+        patagon = player.summons["Patagon"]
+        cacus = player.summons["Cacus"]
+        cacus.health.current = 0
+        patagon.health.current = 0
+
+        death = engine.post_turn()
+
+        assert any("weakens its conduit by 25 (35/100)" in line for line in death.messages)
+        assert promotion_kits.combat_state(player)["fallen_xenid"] == "Patagon"
+        assert patagon.health.current == 0
+        assert cacus.health.current == 0
+
+        engine.attacker = player
+        engine.defender = enemy
+        raised = engine.execute_action("Use Skill", choice="Raise Summon")
+
+        assert "Patagon returns" in raised.message
+        assert player.mana.current == mana_after_calling - 100
+        assert patagon.health.current == max(1, int(patagon.health.max * 0.25))
+        assert cacus.health.current == 0
+        assert engine.summon is patagon
+        assert engine.summon_active is True
+        assert player.active_summon_name == "Patagon"
+        assert player.promotion_kit_state["summon_bonds"]["Patagon"] == 45
+
+    def test_raise_summon_cannot_be_used_outside_combat(self):
+        from src.core import abilities
+
+        _engine, player, _enemy, _tile = self._make_engine()
+        player._active_combat = False
+        player.mana.current = 150
+
+        message = abilities.RaiseSummon().use_out(player)
+
+        assert "only be used during combat" in message
+        assert player.mana.current == 150
+
     def test_post_turn_handles_defender_resurrection(self):
         engine, player, enemy, _tile = self._make_engine()
         engine.attacker = player
@@ -681,7 +735,7 @@ class TestBattleEngineBasics:
         from src.core import classes, companions
 
         engine, player, enemy, _tile = self._make_engine()
-        player.cls = classes.Summoner()
+        player.cls = classes.Thaumaturgist()
         engine.attacker = player
         engine.defender = enemy
         summon = companions.Patagon()
@@ -698,7 +752,7 @@ class TestBattleEngineBasics:
         enemy.health.current = 0
         outcome = engine.end_battle()
 
-        assert "Patagon gained" in outcome.message
+        assert "Patagon's growth is driven by its conduit" in outcome.message
         assert "to next" not in outcome.message
         assert "Patagon bond grows" not in outcome.message
         assert player.promotion_kit_state["summon_bonds"]["Patagon"] == 0
@@ -707,7 +761,7 @@ class TestBattleEngineBasics:
         from src.core import classes, companions
 
         engine, player, enemy, _tile = self._make_engine()
-        player.cls = classes.Summoner()
+        player.cls = classes.Thaumaturgist()
         engine.attacker = player
         engine.defender = enemy
         enemy.experience = 500
@@ -722,14 +776,14 @@ class TestBattleEngineBasics:
         enemy.health.current = 0
         outcome = engine.end_battle()
 
-        assert "Patagon bond grows by 2 from victory (2/100)." in outcome.message
-        assert player.promotion_kit_state["summon_bonds"]["Patagon"] == 2
+        assert "Patagon's conduit grows by 5 from victory (5/100)." in outcome.message
+        assert player.promotion_kit_state["summon_bonds"]["Patagon"] == 5
 
     def test_summon_costs_require_mana_and_kobalos_gold(self):
         from src.core import classes, companions
 
         engine, player, _enemy, _tile = self._make_engine()
-        player.cls = classes.Summoner()
+        player.cls = classes.Thaumaturgist()
         engine.attacker = player
         player.summons["Patagon"] = companions.Patagon()
         player.summons["Patagon"].initialize_stats(player)
@@ -758,7 +812,7 @@ class TestBattleEngineBasics:
         from src.core import classes, companions
 
         engine, player, enemy, _tile = self._make_engine()
-        player.cls = classes.Summoner()
+        player.cls = classes.Thaumaturgist()
         engine.boss = True
         engine.attacker = player
         enemy.experience = 10
@@ -773,14 +827,14 @@ class TestBattleEngineBasics:
         enemy.health.current = 0
         outcome = engine.end_battle()
 
-        assert "Patagon bond grows by 2 from boss victory (2/100)." in outcome.message
+        assert "Patagon's conduit grows by 2 from boss victory (2/100)." in outcome.message
         assert player.promotion_kit_state["summon_bonds"]["Patagon"] == 2
 
     def test_active_summon_support_actions_exclude_defend_and_advance_turn(self):
         from src.core import classes, companions
 
         engine, player, enemy, _tile = self._make_engine()
-        player.cls = classes.Summoner()
+        player.cls = classes.Thaumaturgist()
         engine.attacker = player
         engine.defender = enemy
         summon = companions.Patagon()
@@ -802,7 +856,7 @@ class TestBattleEngineBasics:
         from src.core import classes, companions
 
         engine, player, enemy, _tile = self._make_engine()
-        player.cls = classes.Summoner()
+        player.cls = classes.Thaumaturgist()
         engine.attacker = player
         engine.defender = enemy
         summon = companions.Patagon()
@@ -820,7 +874,7 @@ class TestBattleEngineBasics:
         from src.core import classes, companions
 
         engine, player, enemy, _tile = self._make_engine()
-        player.cls = classes.Summoner()
+        player.cls = classes.Thaumaturgist()
         engine.attacker = player
         engine.defender = enemy
         summon = companions.Patagon()
@@ -844,7 +898,7 @@ class TestBattleEngineBasics:
         from src.core import classes, companions
 
         engine, player, enemy, _tile = self._make_engine()
-        player.cls = classes.Summoner()
+        player.cls = classes.Thaumaturgist()
         engine.attacker = player
         engine.defender = enemy
         player.mana.current = 50

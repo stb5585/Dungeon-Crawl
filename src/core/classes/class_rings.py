@@ -15,7 +15,7 @@ LEGACY_CLASS_NAMES = (
     "Wizard",
     "Shadowcaster",
     "Knight Enchanter",
-    "Grand Summoner",
+    "Thaumaturgist",
     "Rogue",
     "Seeker",
     "Ninja",
@@ -85,11 +85,11 @@ CLASS_RING_SPECS: dict[str, dict[str, str]] = {
         "mod": "Arcane Tempo",
         "description": "builds Tempo from consumed blade charges and bursts at three stacks",
     },
-    "Grand Summoner": {
+    "Thaumaturgist": {
         "activation": "Conduit Ritual",
-        "mod": "+30% Summons",
+        "mod": "+30% Xenids",
         "description": (
-            "permanently sacrifices 5% max HP so all current and future summons "
+            "permanently sacrifices 5% max HP so all current and future Xenids "
             "gain +30% HP and damage"
         ),
     },
@@ -208,7 +208,7 @@ def default_state() -> dict[str, Any]:
                 "familiar_echo_used": False,
             },
             "Knight Enchanter": {"mana_tap_used": False},
-            "Grand Summoner": {"hp_sacrificed": 0},
+            "Thaumaturgist": {"hp_sacrificed": 0},
             "Rogue": {},
             "Seeker": {"claimed_caches": []},
             "Ninja": {"first_strike_spent": False},
@@ -539,13 +539,14 @@ def activate(character: Any, class_name_value: str | None = None, **kwargs: Any)
             return False, "The Vow Trial requires a sworn Paladin vow.\n"
         state["data"]["Crusader"]["vow"] = vow
 
-    if target == "Grand Summoner":
+    if target == "Thaumaturgist":
         max_hp = max(1, int(getattr(getattr(character, "health", None), "max", 1) or 1))
         sacrifice = max(1, int(max_hp * 0.05))
         character.health.max = max(1, character.health.max - sacrifice)
         character.health.current = min(character.health.current, character.health.max)
-        state["data"]["Grand Summoner"]["hp_sacrificed"] = (
-            int(state["data"]["Grand Summoner"].get("hp_sacrificed", 0) or 0) + sacrifice
+        state["data"]["Thaumaturgist"]["hp_sacrificed"] = (
+            int(state["data"]["Thaumaturgist"].get("hp_sacrificed", 0) or 0)
+            + sacrifice
         )
 
     state["awakened"][target] = True
@@ -671,7 +672,12 @@ def record_wizard_rider(character: Any, school: str, triggered: bool) -> float:
 
 
 def summon_multiplier(character: Any) -> float:
-    return 1.30 if is_awakened(character, "Grand Summoner") and has_equipped_class_ring(character) else 1.0
+    return (
+        1.30
+        if is_awakened(character, "Thaumaturgist")
+        and has_equipped_class_ring(character)
+        else 1.0
+    )
 
 
 def loaded_dice_succeeds(character: Any, rng: Any = random) -> bool:

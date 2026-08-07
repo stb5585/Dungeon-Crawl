@@ -114,12 +114,12 @@ PROMOTION_MECHANIC_GUIDANCE: dict[str, str] = {
         "readiness, inherited shield actions, and full-bar Resolve Surges."
     ),
     "Sorcerer": (
-        "Character Menu tab available: School Affinity. Use it to review six-school "
-        "affinity growth and tier-2 elemental upgrade progress."
+        "Character Menu tab available: School Affinity. Use it to review the "
+        "Elemental or Arcane specialization selected on the Mage tree."
     ),
     "Wizard": (
-        "Character Menu tab available: School Affinity. Use it to review six-school "
-        "affinity mastery, tier-3 upgrades, and Wizard ring acceleration."
+        "Character Menu tab available: School Affinity. Use it to review "
+        "specialization-aware mastery, tier-3 upgrades, and ring acceleration."
     ),
     "Warlock": (
         "Character Menu tab available: Familiar. Use it to review your familiar "
@@ -217,13 +217,14 @@ PROMOTION_MECHANIC_GUIDANCE: dict[str, str] = {
         "Character Menu tab available: Companion & Hunt. Use it to review your "
         "companion and disciplined quarry tracking."
     ),
-    "Summoner": (
-        "Character Menu tab available: Summons. Use it to review summoned allies "
-        "and their bond growth as they fight beside you."
+    "Conjurer": (
+        "Transient companions act independently after the player and dissolve "
+        "after 50 exploration steps. They do not gain XP, bond, loot, or roster status."
     ),
-    "Grand Summoner": (
-        "Character Menu tab available: Summons. Use it to review summoned allies "
-        "and their bond growth as they fight beside you."
+    "Thaumaturgist": (
+        "Character Menu tab available: Xenids. Use it to review called allies "
+        "and their conduit growth through the complete permanent invocation, revival, "
+        "and conduit system."
     ),
     "Druid": (
         "Character Menu tab available: Forms. Use it to review stable wild-shape "
@@ -279,8 +280,7 @@ PROMOTION_MECHANIC_TABS: dict[str, str] = {
     "Bard": "Crescendo",
     "Troubadour": "Crescendo",
     "Beast Master": "Companion & Hunt",
-    "Summoner": "Summons",
-    "Grand Summoner": "Summons",
+    "Thaumaturgist": "Xenids",
     "Druid": "Forms",
     "Lycan": "Forms",
     "Archdruid": "Aspects",
@@ -329,23 +329,6 @@ def promotion_mechanic_details(new_class_name: str) -> str:
 def promotion_mechanic_tab_label(new_class_name: str) -> str:
     """Return the Character Menu mechanic tab unlocked by a promoted class."""
     return PROMOTION_MECHANIC_TABS.get(new_class_name, "")
-
-
-def grant_summoner_initial_summon(promoted_player: Any) -> str:
-    """Grant Patagon, the starting summon for new Summoners."""
-    from .. import companions
-
-    summons = getattr(promoted_player, "summons", None)
-    if summons is None:
-        summons = {}
-        promoted_player.summons = summons
-    if "Patagon" in summons:
-        return ""
-
-    summon = companions.Patagon()
-    summon.initialize_stats(promoted_player)
-    summons[summon.name] = summon
-    return "You have gained the summon Patagon.\n"
 
 
 # Classes

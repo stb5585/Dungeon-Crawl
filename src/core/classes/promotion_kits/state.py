@@ -14,8 +14,8 @@ from typing import Any
 
 
 SUMMON_NAMES = (
-    "Patagon", "Dilong", "Agloolik", "Cacus", "Fuath", "Izulu",
-    "Hala", "Grigori", "Bardi", "Kobalos", "Zahhak",
+    "Hodag", "Caladrius", "Patagon", "Kobalos", "Dilong", "Cacus", "Agloolik", "Izulu",
+    "Hala", "Lamashtu", "Seraphim", "Bardi", "Tiamat", "Zahhak",
 )
 
 ADVANCED_SONGS = (

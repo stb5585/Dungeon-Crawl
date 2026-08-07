@@ -429,9 +429,9 @@ def test_case_revelation_death_mark_stolen_charge_and_summon_bond():
     trickster = _player("Arcane Trickster")
     assert "Stolen Charge" in promotion_kits.gain_stolen_charge(trickster, "test")
 
-    summoner = _player("Grand Summoner", mana=(100, 100))
-    assert "Patagon bond" in promotion_kits.gain_summon_bond(summoner, "Patagon", 50, "test")
-    assert ("Summon Bond", "Patagon 50/100 Invoke ready") in promotion_kits.status_summary_rows(summoner)
+    summoner = _player("Thaumaturgist", mana=(100, 100))
+    assert "Patagon's conduit" in promotion_kits.gain_summon_bond(summoner, "Patagon", 50, "test")
+    assert ("Xenid Conduit", "Patagon 50/100 Invoke ready") in promotion_kits.status_summary_rows(summoner)
     assert "invokes Patagon" in abilities.InvokePatagon().use(summoner, target)
 
 
@@ -454,45 +454,44 @@ def test_stolen_charge_payoff_has_meaningful_damage_floor():
     assert state["stolen_charge"] == 0
 
 
-def test_summon_bond_gain_uses_level_span_scaled_roll(monkeypatch):
+def test_summon_conduit_gain_uses_global_level_scaled_roll(monkeypatch):
     from src.core import companions
 
-    summoner = _player("Summoner")
+    summoner = _player("Thaumaturgist")
     summon = companions.Patagon()
     summon.level.level = 2
     summon.level.pro_level = 1
     summon.exp_scale = 250
     summoner.summons = {"Patagon": summon}
     summoner.active_summon_name = "Patagon"
-    monkeypatch.setattr("src.core.classes.promotion_kits.random.random", lambda: 0.09)
+    monkeypatch.setattr("src.core.classes.promotion_kits.random.random", lambda: 0.01)
 
-    assert promotion_kits.summon_level_span_xp(summon) == 500
-    assert promotion_kits.summon_bond_gain_for_victory(summoner, 50) == 1
+    assert promotion_kits.summon_bond_gain_for_victory(summoner, 50) > 0
 
 
-def test_summon_bond_gain_blocks_low_level_and_failed_roll(monkeypatch):
+def test_summon_conduit_gain_allows_new_xenids_and_can_fail_roll(monkeypatch):
     from src.core import companions
 
-    summoner = _player("Summoner")
+    summoner = _player("Thaumaturgist")
     summon = companions.Patagon()
     summoner.summons = {"Patagon": summon}
     summoner.active_summon_name = "Patagon"
 
-    assert promotion_kits.summon_bond_gain_for_victory(summoner, 9999) == 0
-    message = promotion_kits.gain_summon_bond_for_active(summoner, 0, "victory")
-    assert "Summon Bond: Patagon bond needs level 2." in message
-
-    summon.level.level = 2
+    assert promotion_kits.summon_bond_gain_for_victory(
+        summoner,
+        9999,
+        guaranteed=True,
+    ) > 0
     monkeypatch.setattr("src.core.classes.promotion_kits.random.random", lambda: 0.99)
     assert promotion_kits.summon_bond_gain_for_victory(summoner, 50) == 0
     message = promotion_kits.gain_summon_bond_for_active(summoner, 0, "victory")
-    assert "Summon Bond: Patagon bond holds steady after a low-XP victory." in message
+    assert "Xenid Conduit: Patagon conduit holds steady" in message
 
 
 def test_summon_defaults_and_dilong_starting_stats(monkeypatch):
     from src.core import companions
 
-    player = _player("Summoner")
+    player = _player("Thaumaturgist")
     dilong = companions.Dilong()
     monkeypatch.setattr("src.core.companions.random.randint", lambda _low, _high: 15)
     dilong.initialize_stats(player)

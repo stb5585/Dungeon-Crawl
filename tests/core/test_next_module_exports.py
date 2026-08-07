@@ -97,7 +97,7 @@ def test_ability_mechanics_facade_preserves_all_split_functions():
         for name, implementation in _owned_functions(module).items()
     }
 
-    assert len(exports) == 105
+    assert len(exports) == 104
     for name, implementation in exports.items():
         assert getattr(ability_mechanics, name) is implementation
 
@@ -111,6 +111,6 @@ def test_battle_engine_composes_every_split_behavior_method():
     }
 
     assert len(methods) == 66
-    assert len(_defined_methods(battle_engine.BattleEngine)) == 22
+    assert len(_defined_methods(battle_engine.BattleEngine)) == 23
     for name, implementation in methods.items():
         assert getattr(battle_engine.BattleEngine, name) is implementation

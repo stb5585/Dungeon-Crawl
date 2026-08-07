@@ -161,7 +161,7 @@ Balor owns the old demonic visual direction.
 The Red Dragon currently supports several late-game and class-story meanings:
 the Hooded Figure's Red Dragon progression quest, the Lancer/Dragoon
 `Recover` route that restores Kaelenon, `Dragon's Fury`/Dracarys-style class
-progression, and the Grand Summoner Zahhak unlock. This is valid mechanically
+progression, and the Conjurer/Thaumaturgist Dragon Calling. This is valid mechanically
 but needs narrative continuity before more dragon content is added.
 
 Continuity correction should explain why one Red Dragon encounter can carry

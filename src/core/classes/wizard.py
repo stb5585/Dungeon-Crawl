@@ -7,7 +7,7 @@ from typing import Any
 
 from .base import Job
 
-AFFINITY_SCHOOLS = ("Fire", "Ice", "Water", "Electric", "Earth", "Wind")
+AFFINITY_SCHOOLS = ("Fire", "Ice", "Water", "Electric", "Earth", "Wind", "Arcane")
 OPPOSITES = {
     "Fire": "Ice",
     "Ice": "Fire",
@@ -29,7 +29,6 @@ SORCERER_UNLOCK_THRESHOLD = 30.0
 SORCERER_MASTERY_THRESHOLD = 50.0
 WIZARD_UNLOCK_THRESHOLD = 80.0
 WIZARD_MASTERY_THRESHOLD = 100.0
-FROZEN_ARMOR_REDUCTION = 0.10
 
 SPELL_UPGRADES: dict[str, tuple[str, str, str]] = {
     "Fire": ("Firebolt", "Fireball", "Firestorm"),
@@ -38,6 +37,7 @@ SPELL_UPGRADES: dict[str, tuple[str, str, str]] = {
     "Water": ("Water Jet", "Aqualung", "Tsunami"),
     "Earth": ("Tremor", "Mudslide", "Earthquake"),
     "Wind": ("Gust", "Hurricane", "Tornado"),
+    "Arcane": ("Magic Missile", "Magic Missile 2", "Magic Missile 3"),
 }
 
 
@@ -127,6 +127,8 @@ def record_cast(character: Any, school: str | None) -> dict[str, float]:
     cap = cap_for(character)
     step = RING_AFFINITY_STEP if _wizard_ring_accelerates(character) else AFFINITY_STEP
     affinity[school] = min(cap, affinity[school] + step)
+    if school == "Arcane":
+        return affinity
     opposite = OPPOSITES[school]
     affinity[opposite] = max(float(AFFINITY_MIN), affinity[opposite] - OPPOSITE_DRIFT)
     for other in AFFINITY_SCHOOLS:
@@ -145,27 +147,26 @@ def affinity_damage_bonus(character: Any, damage_type: str | None) -> float:
 
 
 def frozen_armor_reduction(character: Any, damage: int) -> tuple[int, str]:
-    """Apply the Sorcerer-line Frozen Armor passive when Ice is mastered."""
-    if damage <= 0:
-        return damage, ""
-    if getattr(getattr(character, "cls", None), "name", None) not in {"Sorcerer", "Wizard"}:
-        return damage, ""
-    if "Frozen Armor" not in getattr(character, "spellbook", {}).get("Skills", {}):
-        return damage, ""
-    if ensure_affinity(character).get("Ice", 0) < SORCERER_MASTERY_THRESHOLD:
-        return damage, ""
-    reduced = max(1, int(damage * FROZEN_ARMOR_REDUCTION))
-    return max(0, damage - reduced), f"{character.name}'s Frozen Armor absorbs {reduced} damage.\n"
+    """Retain the legacy hook; Frozen Armor now reduces only incoming Ice."""
+    return damage, ""
 
 
 def process_cast(character: Any, spell: Any, target: Any | None = None) -> str:
+    from . import mage_mechanics
+
+    message = mage_mechanics.process_cast(character, spell, target)
     if getattr(getattr(character, "cls", None), "name", None) not in {"Sorcerer", "Wizard"}:
-        return ""
-    school = school_from_ability(spell)
+        return message
+    school = mage_mechanics.school_from_ability(spell)
     if school not in AFFINITY_SCHOOLS:
-        return ""
+        return message
+    chosen = mage_mechanics.specialization(character)
+    if chosen == "Arcane" and school != "Arcane":
+        return message
+    if chosen == "Elemental" and school == "Arcane":
+        return message
     record_cast(character, school)
-    message = _upgrade_spellbook(character, school)
+    message += _upgrade_spellbook(character, school)
     message += _apply_mastery_proc(character, school, target)
     return message
 
@@ -205,6 +206,9 @@ def _spell_class_by_name(spell_name: str):
         "Gust": "Gust",
         "Hurricane": "Hurricane",
         "Tornado": "Tornado",
+        "Magic Missile": "MagicMissile",
+        "Magic Missile 2": "MagicMissile2",
+        "Magic Missile 3": "MagicMissile3",
     }
     return getattr(abilities, class_names.get(spell_name, spell_name.replace(" ", "")), None)
 
@@ -246,6 +250,8 @@ def _buff_state(character: Any) -> dict[str, int]:
 
 
 def _apply_mastery_proc(character: Any, school: str, target: Any | None) -> str:
+    if school == "Arcane":
+        return ""
     affinity = ensure_affinity(character)[school]
     class_name = getattr(getattr(character, "cls", None), "name", None)
     if class_name not in {"Sorcerer", "Wizard"}:

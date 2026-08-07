@@ -73,7 +73,8 @@ class TestGameState:
             race_name: Character race (e.g., "Human")
             level: Player level
             pro_level: Promotion level (auto-determined from class if None)
-                Mage line: Mage=1, Sorcerer/Warlock/Spellblade/Summoner=2, Wizard/Shadowcaster/Knight Enchanter/Grand Summoner=3
+                Mage line: Mage=1, Sorcerer/Warlock/Spellblade/Conjurer=2,
+                Wizard/Shadowcaster/Knight Enchanter/Thaumaturgist=3
             health: (max, current) tuple
             mana: (max, current) tuple
             stats: Dict of stats (str, int, wis, con, cha, dex)

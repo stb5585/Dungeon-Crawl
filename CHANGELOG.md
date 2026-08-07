@@ -32,6 +32,77 @@
   distribution, full Primary Attribute names, and promotion confirmation.
 - Completed bespoke Warrior, Weapon Master, Berserker, Grandmaster of Arms,
   Lancer, Dragoon, Sentinel, Stalwart Defender, Paladin, and Crusader trees.
+- Rebaselined Mage as a six-column Elemental/Enhancement/Arcana/Occultism/
+  Conjuration/Universal graph with `5/8/8/8` Sorcerer/Spellblade/Warlock/
+  Conjurer route costs and registry-affordable stat gates.
+- Added six matching elemental Enhancements, Classical Force versus
+  Esotericism specialization-aware School Affinity, Polymorph and its
+  transparent bunny combat sprite, Inflate Health, all-enemy Blinding Fog,
+  Enliven Dead, and the four Conjure spells.
+- Replaced tier-2 Summoner with Conjurer and combined the former Summoner and
+  Grand Summoner permanent-roster systems into terminal Thaumaturgist.
+  Conjurer now has authored Constructs, Binding, Illusion/Movement, and
+  Calling disciplines. Conjurer Callings create location-aware ordinary
+  transient companions; the six nodes carry into Thaumaturgist, where each
+  Calling instead permanently selects one of two Xenids.
+- Rebuilt the Xenid roster as Patagon/Kobalos, Dilong/Cacus,
+  Agloolik/Izulu, Hala/Lamashtu, Seraphim/Bardi, and Tiamat/Zahhak. Fuath
+  remains the Underground Spring boss, and Grigori was renamed Seraphim.
+- Replaced the enemy Conjurer with a Necromancer whose Raise Dead action adds
+  a rewardless undead ally to the live multi-enemy turn order.
+- Capped Mana Shield physical redirection at 25% per attack and Mana Shield 2
+  at 50%, limited Conjure Potion to Health/Mana potions, removed Conjurer's
+  Strength promotion gate, and changed Forbidden Studies to `+20%` Shadow
+  Bolt damage and `+50%` raised-undead duration.
+- Mage transient companions still act independently, use one slot, persist
+  for 50 exploration steps, and carry no XP/bond/loot/quest/roster
+  progression.
+- Expanded the Conjurer graph with Torchlight, an ungated path-only Magic
+  node, Sleep, and Nightmare Fuel; shifted the remaining authored rows and the
+  Thaumaturgist promotion to preserve the four-discipline layout. Torchlight
+  halves random encounters for 50 steps.
+- Finalized the revised Conjurer layout: Calling and Constructs swap outer
+  lanes, development begins one row below the header, inherited Sleep and
+  Mirror Image display as owned, and Explosive Decoy consumes one remaining
+  image for a level-55 attack.
+- Rebuilt Thaumaturgist as a 29-node, five-column
+  Calling/choice/ultimate/conduit/Miracles graph.
+  Conjure Animal adds the Hodag/Caladrius pair; the other six Callings retain
+  their Conjurer IDs. Xenid conduit now replaces XP leveling, controls stat and
+  ability growth, and grants entity-specific caster effects amplified by the
+  reworked level-80 Conduit Mastery.
+- Removed the obsolete Summon and Summon 2 training passives; living Xenids now
+  expose the combat Summon action directly from Thaumaturgist class state.
+- Added Reality Fragments as extremely rare reagents and the level-65/70/75/80
+  Miracle Blade, Miracle Shackles, Miracle Potion, and Miracle Crystal chain.
+  These effects deliberately bypass normal protection, restraint, item
+  creation, and mana-generation rules.
+- Reworked Raise Summon into a 100-MP combat-only recovery for the just-fallen
+  active Xenid. Xenid death removes 25 conduit; raising at 25% HP refunds 10 of
+  that loss without reviving the rest of the roster.
+- Suppressed redundant carried-ability level gates throughout promoted trees:
+  any ability requirement below that class's level-30 or level-60 promotion
+  floor now has no runtime check or `Required level` display in that tree.
+- Added original transparent combat portraits for Hodag, Caladrius, Tiamat,
+  and Lamashtu, plus generated SVG reference diagrams for every class ability
+  tree with an automated runtime-drift regression.
+- Changed Floating Crystal to siphon 10% maximum MP per caster turn, burst at
+  30%, and scale stored-mana damage by spell power. Conjure Animal now selects
+  only implemented Animal enemies and prioritizes the current floor.
+- Corrected Mage specialization connector routing so both half-column
+  specialization nodes receive their prerequisite lines from above through
+  their authored midpoint channels.
+- Removed Warded Casting, added confirmation for staged choices that
+  permanently close abilities, and made all numeric rating/HP/MP nodes
+  path-gated without independent level gates. Recorded that future
+  class-specific nodes must include a basic class mechanic rather than plain
+  stat padding.
+- Kept all learned Mage spells through promotion and carried only Arcane
+  Fundamentals plus the six elemental-school nodes into the editable Sorcerer
+  and Wizard trees, while leaving completed historical tabs read-only.
+- Corrected the progression documentation to match Sentinel's implemented
+  single-node Spell Reflection branch, compatibility node ID, and migration
+  from the retired Deflect Spell ability and old Spell Reflection node ID.
 - Added Aerial Tempo, Landing Shield, Resolve, Spell Reflection, Resolve
   Surges, Oath Conviction, shared Oath techniques, Hallowed Ground, Resist
   Shadow, Blessed Light, Condemnation, Repel the Wicked, Sword & Board, and the
@@ -310,8 +381,8 @@
   with Resolve-cost labels, and reworked the low-cost shield control action as
   `Shield Check` so it no longer overlaps `Shield Slam`.
 - Wired Mage-tree promotion mechanic tabs so Sorcerer/Wizard, Warlock,
-  Shadowcaster, Demonologist, Spellblade/Knight Enchanter, and Summoner/Grand
-  Summoner previews and Character Menu tabs announce School Affinity, Familiar,
+  Shadowcaster, Demonologist, Spellblade/Knight Enchanter, and Summoner
+  previews and Character Menu tabs announce School Affinity, Familiar,
   Umbral Debt, Contracts, Blade Charge, Arcane Tempo, and Summons.
 - Wired Footpad-tree promotion mechanic tabs so Thief/Rogue, Inquisitor/Seeker,
   Assassin/Ninja, and Spell Stealer/Arcane Trickster previews and Character

@@ -29,7 +29,7 @@ from .rules import (
 class UndergroundSpring(SpecialTile):
     """
     Drinking from the spring unlocks the sword Excaliper 2:B19
-    Fuath summon can be obtained by Summoner class after defeating enemy
+    Fuath remains the unique boss of the spring and is not a Xenid choice.
     Retrieve Excaliper item to summon Maid of the Spring, Nimue (quest giver)
     Special interaction (maybe reward?) if you craft Excalibur and return
     """

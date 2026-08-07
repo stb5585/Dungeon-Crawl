@@ -72,7 +72,7 @@ combat math, or numeric balance.
 | Demonologist | Corruption, active patron/mood, familiar echo, contract history summary where available. | Corruption gain/cooling, mood changes, twist/lucky-twist, withheld/unlocked intent notes. | Contract quote and Church Crypt review show costs, risk, patron, echo, and unlocked/withheld intent state. | Show contract echo/ring awakening state as contract shaping, not a generic stat boost. | Quote and resolve one contract, then inspect status and crypt review. |
 | Shadowcaster | Umbral Debt with cap, backlash, Eclipse turns. | Debt gain, cap/backlash, Eclipse activation/expiration, auto-heal spend, backlash conversion. | None beyond normal skill availability. | Show awakened/equipped `Umbral Debt` cap/stability readiness. | Store debt, enter Eclipse, overcap into backlash, and verify lines stay visible. |
 | Knight Enchanter | Blade Charge, Arcane Tempo, pending burst. | Charge store/overwrite/spend, miss consumption, Tempo gain, three-stack burst. | `Arcane Duel` text uses `Arcane Tempo` display identity. | Preserve legacy `Mana Tap+` compatibility while displaying `Arcane Tempo`. | Cast spell, attack with charge, and inspect Tempo status/logs. |
-| Grand Summoner | Known summon bond values or best bond, Conduit readiness. | Bond gain, borrowed invocation, `Conduit Command`, True Name rider, expiration. | Summon menus keep current recall/summon behavior and show valid borrowed invocation availability. | Show awakened/equipped `Conduit Ritual` as summon scaling plus conduit rider readiness. | Gain bond, invoke a summon, prime conduit, and inspect status/logs. |
+| Thaumaturgist | Known Xenid bond values or best bond, Conduit readiness. | Bond gain, borrowed invocation, `Conduit Command`, True Name rider, expiration. | Xenid menus keep current recall/calling behavior and show valid borrowed invocation availability. | Show awakened/equipped `Conduit Ritual` as Xenid scaling plus conduit rider readiness. | Gain bond, invoke a Xenid, prime conduit, and inspect status/logs. |
 | Berserker | Battle Scars, Bloodied Momentum/cap, bloodied threshold state where relevant. | Momentum gain/cap/spend, miss preservation, heavy-art mutation, `Final Assault` use. | None beyond existing weapon-art menus. | Show awakened/equipped `Bloodied Crits` and preservation readiness when relevant. | Build Momentum below 50% HP and spend it on a heavy art. |
 | Crusader | Vow, aura/mark, Oath Conviction/cap. | Conviction gain/spend, clean-outcome bonus, vow rider, mark/aura changes, preservation. | Vow Trial text remains explicit when no vow exists. | Show awakened/equipped `Vow Affirmation` preservation readiness. | Use sworn-vow action before and after ring awakening. |
 | Dragoon | Aerial Tempo/cap, pending follow-through, landing shield if active. | Clean Jump gain, interruption cleanup, spend, follow-through, landing shield. | Jump modification UI keeps existing capacity and no longer promises extra active mod capacity. | Show awakened/equipped `Aerial Supremacy` readiness. | Land a clean Jump, follow through, and inspect shield/readiness text. |
@@ -118,7 +118,7 @@ Tab decision bands:
 | Paladin/Crusader | `Oath Conviction` bespoke tab exists. | `Required` | `No` for tab baseline; future only for oath-respec specs. | Permanent vow, signature skill, aura, mark, and Conviction rhythm need a stable review surface. |
 | Lancer/Dragoon | `Aerial Tempo` bespoke tab exists with Jump Mod controls. | `Required` | `No` for tab baseline. | Jump modifications are selectable configuration and should live outside the combat action list. |
 | Sentinel/Stalwart Defender | `Resolve` bespoke tab exists. | `Required` | `No` for tab baseline. | Resolve spends and Stalwart Surges are class-owned actions/payoffs with enough structure for a tab. |
-| Summoner/Grand Summoner | `Summons` tab exists with roster/detail support. | `Required` | `Partial`: keep improving bond milestone/readiness and active-summon support text. | Multiple summons, bond values, invoke unlocks, and details are too dense for HUD-only presentation. |
+| Thaumaturgist | `Xenids` tab exists with roster/detail support. | `Required` | `Partial`: keep improving conduit milestone/readiness and active-Xenid support text. | Up to seven chosen Xenids, conduit values, invoke unlocks, and details are too dense for HUD-only presentation. |
 | Ranger/Beast Master | `Companion & Hunt` tab exists with companion roster/detail and quarry-tracking support. | `Required` | `Partial`: future tuning for evolution payoff/stable scope only. | A persistent named companion, bond progression, and disciplined quarry tracking need inspection outside combat. |
 | Warlock | `Familiar` tab exists through companion display. | `Required` | `Partial`: keep familiar growth/effect details readable. | Familiar identity persists and should be inspectable like other companions. |
 | Demonologist | `Contracts` bespoke tab exists. | `Required` | `No` for tab baseline; tune hidden/revealed copy only. | Contract choice and patron state are menu/town-adjacent and too important to leave only in Crypt dialogue. |
@@ -212,7 +212,7 @@ Status: `Watch-First Pacing Reference`
 
 These tables describe the current expected cadence for shipped persistent
 class-kit progression on Bard/Troubadour, Beast Master, Lycan,
-Summoner/Grand Summoner, and Inquisitor/Seeker. They are manual playtest and
+Thaumaturgist, and Inquisitor/Seeker. They are manual playtest and
 review references only. They do not authorize balance changes, meter
 gain/spend changes, rank-gate changes, simulator analytics changes, save-schema
 changes, class-ring changes, or action-economy changes by themselves. Numeric
@@ -223,7 +223,7 @@ promoted one-page tuning spec.
 | --- | --- | --- | --- | --- |
 | Bard/Troubadour | Crescendo gains `+1` per maintained combat song turn, caps at `3`, and spends only on natural expiration. Troubadour repertoire mastery requires `18` practice XP and `3` clean finishes. | Combat-only mastery should take `3` clean full 3-turn performances: each gives `+3` turn XP plus `+3` completion XP. | Exploration mastery can also take `3` clean full performances: each can give up to `+4` step XP plus `+3` completion XP. Composition `+1` XP buffers progress but never removes the `3` clean-finish requirement. | Watch if clean completions do not visibly move mastery, if interruption costs are unclear, or if codas/Encore make song loops win with low player input. |
 | Beast Master | Companion bond caps at `100`; milestones are `25` `Trusted`, `50` `Battle-Trained`, `75` `Packmate`, and `100` `True Bond`. | Victory bond uses an inverse curve: low-bond companions usually gain larger chunks, while high-bond companions gain smaller chunks less often. | Favored Enemy active victories add an extra inverse-scaled practice opportunity rather than a guaranteed flat bump. | Watch if `Trusted` is not reachable after a handful of ordinary active wins, if high-bond growth still feels automatic, if replacement/tame state hides the pacing cost, or if command output regularly dominates direct player turns. |
-| Summoner/Grand Summoner | Each summon has its own bond cap of `100`; milestones are `25`, `50`, `75`, and `100`. | Bond starts at summon level `2`; victory rolls a chance equal to enemy XP divided by that summon level's full XP span. A successful roll grants scaled `+1` to `+5` bond. | Low-XP fights often give no bond, while meaningful fights advance bond in proportion to their leveling value. Support actions do not add separate action bond. | Watch if low-level or low-threat fights become the best bond farm, if focused bond `50` feels unreachable, or if the chance-based cadence feels too opaque in logs/playtest notes. |
+| Thaumaturgist | Each Xenid has its own conduit cap of `100`; milestones are `25`, `50`, `75`, and `100`. | A living active Xenid is eligible from its first victory; enemy XP is compared with the global-player-level span. A successful roll grants scaled `+1` to `+5` conduit. | Low-XP fights often give no conduit, while meaningful fights advance it in proportion to global progression. Death removes 25; a successful Raise refunds 10. | Watch if low-threat fights become the best conduit farm, if focused conduit `50` feels unreachable, or if death recovery is too punitive or opaque. |
 | Inquisitor/Seeker | Case Journal progress is per broad enemy type, caps at `100`, and milestones are `25` `Known Tells`, `50` `Weakness Brief`, `75` `Pattern Lock`, and `100` `Closed Case`. | `Inspect` plus visible-detail victory gains about `+7/combat`; milestones land near `4/8/11/15` combats against one enemy type. | Rich evidence loops with `Inspect`, `Exploit Weakness`, a visible telegraph, and victory gain about `+10/combat`; milestones land near `3/5/8/10` combats. Victory-only visible-detail progress gains `+4/combat`, or about `7/13/19/25` combats. | Watch if one enemy type cannot reach `Known Tells` after focused evidence gathering, or if spreading fights across many enemy types does not feel intentionally slower and readable. |
 | Lycan | Control ranks are behavior-only. Each gate requires `3` matching successful stress records: `survive`, `dismiss`, `resist`, then `full_moon`. | Minimum full path is `12` phase-correct records: `Feral -> Muzzled`, `Muzzled -> Restive`, `Restive -> Tethered`, then `Tethered -> Tame`. | Real pacing depends on eligible stress opportunities, moon timing, and whether the player survives or resolves the correct behavior at the current gate. | Watch if a gate does not reasonably progress after 6-8 eligible opportunities, if the needed behavior is unclear, or if Class Ring/Dragon Essence appears to advance control rank. |
 
@@ -345,7 +345,7 @@ Current shipped Totem behavior:
 These effects are implemented and visible through existing runtime hooks:
 
 - Sentinel `Resolve` with Stalwart Defender legacy `Guard Meter` compatibility.
-- Grand Summoner future summon scaling.
+- Thaumaturgist scaling for the fixed 14-Xenid roster.
 - Soulcatcher harvest tracking and Soul Aspect scaling.
 - Beast Master shared recovery.
 - Class status text for the legacy class-kit hooks.
@@ -642,33 +642,66 @@ identity.
 
 - Ultimate weapon can be made sentient, allowing interaction and weapon can level
 
-### Summoner/Grand Summoner
+### Conjurer
+
+Conjurer is the tier-2 four-discipline path. Constructs is Floating Crystal,
+Torchlight, `+20 Magic`, Conjure Elixir, and Barrier Wall. Binding is Sleep,
+Silence, Banish, Weaken Mind, and Mana Barbs. Illusion/Movement is Mirror
+Image, Nightmare Fuel, Volitation, Teleport, and Explosive Decoy. Calling contains the six creature-category
+spells. The level-60, three-point Thaumaturgist promotion accepts the terminal
+node of any discipline.
+
+Mage transient companions remain separate: one acts randomly after the
+player, lasts 50 exploration steps, is replaced by a later transient summon,
+and gains no XP, bond, loot, quest credit, or permanent-roster state.
+`Enliven Dead` uses the last defeated non-boss enemy and a Charisma/Luck check;
+Forbidden Studies increases Shadow Bolt damage by 20% and raised-undead
+duration by 50%.
+
+Conjurer Callings use ordinary enemy definitions, prioritizing the matching
+creature type on the current floor and then the nearest floor, to create a
+50-step transient companion. Thaumaturgist replaces those ordinary results
+after the player buys an explicit paired choice node. Conjure Animal joins the
+six carried Conjurer Callings. Hodag/Caladrius, Patagon/Kobalos, Dilong/Cacus,
+Agloolik/Izulu, Hala/Lamashtu, Seraphim/Bardi, and Tiamat/Zahhak are the
+complete 14-Xenid roster. Fuath remains a special
+Underground Spring boss.
+
+### Thaumaturgist
 
 Class design inspiration: FFX
 
-V1 implementation spec: add per-summon bond progression that lets Summoners borrow
-limited invocations from trusted summons, while Grand Summoner keeps the
-existing `Conduit Ritual` sacrifice and `+30% Summons` ring scaling.
+Thaumaturgist is the terminal tier-3 class and combines the former tier-2
+Summoner and tier-3 Grand Summoner permanent-summon systems. It owns conduit
+progression, paired choices, Xenid ultimates, borrowed invocations, revival,
+and the `Conduit Ritual`
+sacrifice with `+30% Xenids` ring scaling.
 
 - Preserve existing scope: keep the current single-active-summon combat model,
-  summon leveling, recall behavior, Silence/anti-magic suppression, roster
-  acquisition, `Heal Summon`, `Raise Summon`, and Grand Summoner ring scaling.
+  recall behavior, Silence/anti-magic suppression, roster
+  paired Calling acquisition, `Heal Summon`, `Raise Summon`, and
+  Thaumaturgist ring scaling.
 - Storage: add persistent per-save `summon_bonds`, keyed by known summon name
   and capped at 100. Normalize missing or invalid state to 0 and ignore unknown
-  summon keys.
-- Bond gain: an active, living summon is eligible for victory bond only at
-  summon level `2+`. Use the enemy XP divided by the summon level's full XP span
-  (`level.pro_level * summon.exp_scale * level.level`) as the roll chance. On a
-  successful roll, grant scaled `+1` to `+5` bond from that same ratio. Bond
-  gains clamp at 100. Boss victories guarantee the eligible bond roll succeeds
-  and double the resulting gain. Do not grant separate per-action bond in this
-  pass.
-- Summon costs: calling a summon spends Summoner MP based on the summon tier;
-  Kobalos also requires gold.
-- Bond milestones: 25 grants `Attuned Bond`, adding +5% HP and damage when that
-  summon initializes; 50 unlocks the owner-cast `Invoke <Summon>` borrowed
-  invocation; 75 grants `Deep Bond`, raising the initialization bonus to +10%;
-  100 grants `True Name`, enabling the Grand Summoner ring conduit rider.
+  summon keys. The storage key remains for compatibility, but player-facing
+  text calls the value conduit.
+- Conduit gain: an active, living Xenid is eligible from its first battle.
+  Victory XP is compared with a global-player-level span; successful rolls add
+  scaled conduit, bosses guarantee the roll and double the gain, and values
+  clamp at 100. Xenids receive no XP.
+- Conduit growth: thresholds map to the former `1/3/5/7/9/10` ability slots,
+  scale HP/MP and combat ratings, and never grant the level-10 ultimate by
+  themselves. The matching tree ultimate node grants that ability.
+- Reciprocal effects: each chosen Xenid contributes themed virtual attributes
+  and/or melee, magic, armor, magic-defense, or healing multipliers in
+  proportion to its conduit. Cacus, for example, reaches `+5 Strength` and
+  `+15%` melee damage at conduit 100. Conduit Mastery multiplies caster-side
+  effects by `1.5`.
+- Calling costs: each Conjure spell spends its authored MP cost; Kobalos also
+  retains its gold requirement.
+- Conduit milestone 50 unlocks the owner-cast `Invoke <Summon>` borrowed
+  invocation. Other thresholds primarily drive the Xenid's stats and ability
+  tiers; the tree owns ultimate acquisition.
 - Borrowed invocations: owner-cast MP-cost class skills, not permanent copies of
   summon spellbooks. They require bond 50 with the named summon and do not
   require that summon to be active.
@@ -677,52 +710,67 @@ existing `Conduit Ritual` sacrifice and `+30% Summons` ring scaling.
   - `Invoke Dilong`: Earth hit with small Defense down.
   - `Invoke Agloolik`: Ice hit with brief self Defense up.
   - `Invoke Cacus`: Fire hit with light Burn pressure.
-  - `Invoke Fuath`: Water hit with small Weaken Mind chance.
   - `Invoke Izulu`: Electric hit with small HP siphon.
   - `Invoke Hala`: Wind hit with brief Speed or dodge support.
-  - `Invoke Grigori`: Holy hit plus small self heal.
+  - `Invoke Lamashtu`: Shadow hit with curse pressure.
+  - `Invoke Seraphim`: Holy hit plus small self heal.
   - `Invoke Bardi`: Shadow hit with small Blind chance.
   - `Invoke Kobalos`: Physical/Poison hit with brief dodge support.
+  - `Invoke Tiamat`: Water hit with defensive pressure.
   - `Invoke Zahhak`: non-elemental arcane hit with small Magic Defense up.
-- `Conduit Command`: Grand Summoner active skill that requires an active, living
+- `Conduit Command`: Thaumaturgist active skill that requires an active, living
   summon. It costs MP and empowers that summon's next non-Recall action by +25%
   damage or healing.
-- `True Name` rider: at bond 100, while the awakened Grand Summoner Class Ring
-  is equipped, `Conduit Command` also adds the active summon's lesser signature
+- Miracles: the fifth tree column is `Miracle Blade (65) -> Miracle Shackles
+  (70) -> Miracle Potion (75) -> Miracle Crystal (80)`. Every cast consumes one
+  `Reality Fragment`, an extremely rare ordinary-loot reagent. The four effects
+  respectively bypass defense/evasion/shields/resistance, apply an unbreakable
+  three-turn prone restraint, create both Master Health and Master Mana
+  potions without normal location/cooldown limits, and generate stored mana
+  from nothing for four turns before damaging every living enemy.
+- `Raise Summon`: costs 100 MP and is combat-only. Xenid death immediately
+  removes 25 conduit and records only the active Xenid that fell in that
+  combat. Raise restores that Xenid at 25% HP and refunds 10 conduit; it does
+  not affect other dead roster members and cannot recover deaths from earlier
+  combats. Calling a different Xenid clears the pending resurrection target.
+- `True Name` rider: at bond 100, while the awakened Thaumaturgist Class Ring
+  is equipped, `Conduit Command` also adds the active Xenid's lesser signature
   rider to the empowered action.
 - Expiration: conduit empowerment expires after the summon takes its next
   non-Recall action, is recalled, dies, or combat ends.
 - Active-summon support: while a summon is active, the summon remains the
-  single player-side actor, but the visible `Support` action lets the Summoner
+  single player-side actor, but the visible `Support` action lets the Thaumaturgist
   spend that turn on limited intervention: restorative/support items, `Recall`,
   `Heal Summon`, `Raise Summon`, `Conduit Command`, or unlocked
-  `Invoke <Summon>` skills. Do not expose Summoner `Defend`, full attacks,
+  `Invoke <Xenid>` skills. Do not expose Thaumaturgist `Defend`, full attacks,
   ordinary offensive spells, ordinary offensive skills, flee, or starting
   another summon through this support lane.
 - Dilong/Tunnel: Dilong starts with explicit nonzero Magic and Magic Defense and
   learns `Surface`. Tunneling hides normal summon offense until `Surface` or
   `Recall` is chosen.
 - UI text/surfaces: class/ring status text should show known summon bond values
-  and Grand Summoner conduit readiness. Combat Focus omits the persistent
-  `Summon Bond` row and, while a summon is active, shows active summon level,
+  and Thaumaturgist conduit readiness. Combat Focus omits the persistent
+  `Xenid Bond` row and, while a Xenid is active, shows active Xenid level,
   XP, HP, MP, and status icons. Combat logs should clearly report bond gain,
   borrowed invocation use, conduit empowerment, and True Name riders, with
   active summon action lines colored separately from player and enemy lines.
-- Save migration: old saves default to empty/zero bond state. Existing Grand
-  Summoner awakening state and `hp_sacrificed` data remain compatible.
+- Save baseline: this pre-release lineage rebaseline requires no legacy class
+  alias or migration. New Thaumaturgist state starts with empty/zero bonds and
+  `hp_sacrificed` at zero.
 - Tests: cover bond normalization/save-load, level-gated XP-ratio victory bond
   gain, failed/successful bond rolls, 100 cap, 25/75 initialization bonuses
-  stacking with `+30% Summons`, invocation unlock gates and representative
+  stacking with `+30% Xenids`, invocation unlock gates and representative
   riders, `Conduit Command` requirements, support action turn flow, Dilong
   `Tunnel`/`Surface`, empowerment expiration, and bond-100 ring-only True Name
   rider behavior.
 - Balance assumptions: start conservative; this is a v1 progression layer, not
   a full summon economy redesign or dual-summon combat rewrite.
 
-Additional Improvements:
+Implemented continuation:
 
-- Dying reduces the bond level by 50% for Summoner, reduce to 25% for Grand
-  Summoner; once bond reaches 100, dying no longer reduces bond
+- The obsolete `Summon` and `Summon 2` class passives are removed. The combat
+  Summon action is derived directly from Thaumaturgist class state plus a
+  living Xenid roster entry.
 
 Open follow-up gates:
 
@@ -984,13 +1032,15 @@ as the second-promotion identity.
     for the next exchange.
   - `Covering Guard`: spend Resolve to prepare a short shield ward against the
     next dangerous hit.
-  - `Deflect Spell`: spend Resolve with a shield equipped to raise Magic Defense
-    and brace against hostile spell pressure without becoming a full anti-mage
-    class.
-  - `Spell Reflection`: spend `25` Resolve with a shield to prepare for two
-    enemy spell opportunities. The first hostile, targeted, reflect-compatible
-    spell returns to its caster. Generic Reflect takes priority; beneficial,
-    area, and unreflectable spells do not consume the preparation.
+  - `Spell Reflection`: the single merged anti-magic action is ungated at tree
+    coordinate `(4, 0)` and uses compatibility node ID
+    `sentinel.ability.deflect-spell`. It spends `25` Resolve with a shield to
+    prepare for two enemy spell opportunities. The first hostile, targeted,
+    reflect-compatible spell returns to its caster. Generic Reflect takes
+    priority; beneficial, area, and unreflectable spells do not consume the
+    preparation. The retired learned Deflect Spell ability and old
+    `sentinel.ability.spell-reflection` node ID migrate to this behavior; they
+    are not separate actions or nodes.
 - Stalwart Defender mechanic: add `Resolve Surges` as full-bar ultimate-style
   shield payoffs. Stalwart keeps all Sentinel spends, but can also save the
   larger Resolve bar for a Surge.

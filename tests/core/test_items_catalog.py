@@ -91,6 +91,16 @@ def test_no_arg_item_catalog_instantiates_and_renders_cleanly():
     assert saw_summon_misc is True
 
 
+def test_reality_fragment_is_an_extremely_rare_miracle_reagent():
+    fragment = items.RealityFragment()
+
+    assert fragment.typ == "Misc"
+    assert fragment.subtyp == "Reagent"
+    assert fragment.rarity == 0.01
+    assert items.RealityFragment in items.items_dict["Misc"]["Reagents"]
+    assert items.RealityFragment in items.catalog._build_rarity_table()["8"]
+
+
 def test_helmet_catalog_matches_equipment_table():
     helmet_names = {
         subtyp: [helmet_cls().name for helmet_cls in helmet_classes]

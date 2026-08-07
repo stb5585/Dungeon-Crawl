@@ -151,7 +151,7 @@ class TestPlayerLootCoverage:
 
     def test_loot_skips_duplicate_summon_items_and_restricted_ability_items(self, monkeypatch):
         player = TestGameState.create_player(class_name="Warrior", race_name="Human")
-        player.cls.name = "Summoner"
+        player.cls.name = "Thaumaturgist"
         player.special_inventory = {"Spirit Sigil": [SimpleNamespace(name="Spirit Sigil")]}
         player.check_mod = lambda mod, enemy=None, typ=None, luck_factor=1, **_kwargs: 4 if mod == "luck" else 0
         captured = []

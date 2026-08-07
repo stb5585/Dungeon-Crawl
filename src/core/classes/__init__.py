@@ -5,7 +5,6 @@ from .rules import (
     PROMOTION_ABILITY_RULES,
     PromotionRule,
     apply_promotion_ability_rules,
-    grant_summoner_initial_summon,
     promotion_mechanic_details,
     promotion_mechanic_guidance,
     promotion_mechanic_tab_label,
@@ -28,8 +27,8 @@ from .shadowcaster import Shadowcaster
 from .demonologist import Demonologist
 from .spellblade import Spellblade
 from .knight_enchanter import KnightEnchanter
-from .summoner import Summoner
-from .grand_summoner import GrandSummoner
+from .conjurer import Conjurer
+from .thaumaturgist import Thaumaturgist
 from .footpad import Footpad
 from .thief import Thief
 from .rogue import Rogue
@@ -66,7 +65,6 @@ __all__ = [
     "PROMOTION_ABILITY_RULES",
     "PromotionRule",
     "apply_promotion_ability_rules",
-    "grant_summoner_initial_summon",
     "promotion_mechanic_details",
     "promotion_mechanic_guidance",
     "promotion_mechanic_tab_label",
@@ -88,8 +86,8 @@ __all__ = [
     "Demonologist",
     "Spellblade",
     "KnightEnchanter",
-    "Summoner",
-    "GrandSummoner",
+    "Conjurer",
+    "Thaumaturgist",
     "Footpad",
     "Thief",
     "Rogue",

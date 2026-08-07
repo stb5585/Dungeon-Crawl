@@ -803,6 +803,19 @@ class CombatLifecycleMixin:
             selected_spell = self._select_spell(actor, enemy)
             if not selected_spell:
                 return None
+            spell = actor.spellbook.get("Spells", {}).get(selected_spell)
+            calling_category = getattr(spell, "category", "")
+            class_name = str(getattr(getattr(actor, "cls", None), "name", ""))
+            if (
+                calling_category
+                and class_name == "Thaumaturgist"
+                and not self._choose_calling_xenid(
+                    actor,
+                    enemy,
+                    calling_category,
+                )
+            ):
+                return None
             choice = selected_spell
 
         elif action == "Runic Boost":

@@ -21,6 +21,83 @@ from .constants import _DISPLAY_TO_ENGINE
 
 
 class CombatSelectionMixin:
+    def _choose_calling_xenid(self, player_char, enemy, category):
+        """Make the permanent paired choice required by a Calling spell."""
+        from src.core import companions
+
+        existing = companions.chosen_xenid(player_char, category)
+        if existing:
+            return existing
+        options = list(companions.XENID_PAIRS.get(category, ()))
+        if not options:
+            return None
+        selected = 0
+        input_armed = self._clear_pending_input()
+        frame_player = self._selection_frame_player(player_char)
+        descriptions = [
+            (
+                f"Permanently bind {name} to Conjure {category}. "
+                f"The other {category.lower()} Xenid will become unavailable."
+            )
+            for name in options
+        ]
+        while True:
+            self._render_combat_frame(frame_player, enemy, [], -1)
+            self._render_described_selection_menu(
+                f"Choose {category} Xenid",
+                options,
+                selected,
+                0,
+                descriptions,
+            )
+            pygame.display.flip()
+            input_armed = release_guard_allows_input(True, input_armed)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit(0)
+                input_armed = self._arm_guarded_input(event, input_armed)
+                if event.type == pygame.KEYDOWN and not input_armed:
+                    continue
+                if event.type == pygame.KEYDOWN:
+                    if event.key in (pygame.K_ESCAPE, pygame.K_BACKSPACE):
+                        return None
+                    if event.key in (pygame.K_UP, pygame.K_w, pygame.K_LEFT, pygame.K_a):
+                        selected = (selected - 1) % len(options)
+                    elif event.key in (
+                        pygame.K_DOWN,
+                        pygame.K_s,
+                        pygame.K_RIGHT,
+                        pygame.K_d,
+                    ):
+                        selected = (selected + 1) % len(options)
+                    elif event.key in (pygame.K_RETURN, pygame.K_SPACE):
+                        chosen = options[selected]
+                        success, message = companions.choose_xenid(
+                            player_char,
+                            category,
+                            chosen,
+                        )
+                        self.combat_view.add_combat_message(message)
+                        return chosen if success else None
+                elif event.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN):
+                    selected, _offset, confirmed = self._selection_menu_mouse_update(
+                        event,
+                        options,
+                        selected,
+                        0,
+                        input_armed,
+                    )
+                    if confirmed:
+                        chosen = options[selected]
+                        success, message = companions.choose_xenid(
+                            player_char,
+                            category,
+                            chosen,
+                        )
+                        self.combat_view.add_combat_message(message)
+                        return chosen if success else None
+
     def _select_transform_form(self, player_char, enemy, forms):
         """Prompt for one of the Druid's unlocked combat forms."""
         descriptions = {
@@ -118,7 +195,7 @@ class CombatSelectionMixin:
         input_armed = self._clear_pending_input()
         while True:
             self._render_combat_frame(player_char, enemy, [], -1)
-            self._render_selection_menu("Summoner Support", display_actions, selected)
+            self._render_selection_menu("Xenid Support", display_actions, selected)
             pygame.display.flip()
 
             input_armed = release_guard_allows_input(True, input_armed)

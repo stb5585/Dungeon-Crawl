@@ -416,10 +416,6 @@ class InvokeCacus(_InvokeSummon):
     def __init__(self): super().__init__("Cacus")
 
 
-class InvokeFuath(_InvokeSummon):
-    def __init__(self): super().__init__("Fuath")
-
-
 class InvokeIzulu(_InvokeSummon):
     def __init__(self): super().__init__("Izulu")
 
@@ -428,8 +424,12 @@ class InvokeHala(_InvokeSummon):
     def __init__(self): super().__init__("Hala")
 
 
-class InvokeGrigori(_InvokeSummon):
-    def __init__(self): super().__init__("Grigori")
+class InvokeLamashtu(_InvokeSummon):
+    def __init__(self): super().__init__("Lamashtu")
+
+
+class InvokeSeraphim(_InvokeSummon):
+    def __init__(self): super().__init__("Seraphim")
 
 
 class InvokeBardi(_InvokeSummon):
@@ -442,6 +442,10 @@ class InvokeKobalos(_InvokeSummon):
 
 class InvokeZahhak(_InvokeSummon):
     def __init__(self): super().__init__("Zahhak")
+
+
+class InvokeTiamat(_InvokeSummon):
+    def __init__(self): super().__init__("Tiamat")
 
 
 class _BeastCommand(_PromotionActive):

@@ -5,7 +5,16 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from ... import items, thieves_guild
-from ...classes import berserker, class_rings, dragoon, grandmaster, lycan, paladin, promotion_kits
+from ...classes import (
+    berserker,
+    class_rings,
+    dragoon,
+    grandmaster,
+    lycan,
+    mage_mechanics,
+    paladin,
+    promotion_kits,
+)
 from ...enemies.identity import restore_defeat_identity
 from ..encounter import EnemyResolution
 from .models import EnemySettlement, LootAward
@@ -78,19 +87,21 @@ class BattleOutcomeMixin:
 
         # Handle summon experience
         if self.summon:
-            try:
-                self.player._active_summon_bond_level_span_xp = promotion_kits.summon_level_span_xp(self.summon)
-            except Exception:
-                pass
             self.summon.effects(end=True)
-            self.summon.level.exp += exp_gain
-            if self.summon.level.level < 10:
-                self.summon.level.exp_to_gain -= exp_gain
-                while self.summon.level.exp_to_gain <= 0:
-                    msg += self.summon.level_up(self.player)
-                    if self.summon.level.level == 10:
-                        break
-            msg += self._summon_experience_text(self.summon, exp_gain)
+            if getattr(getattr(self.player, "cls", None), "name", "") == "Thaumaturgist":
+                msg += (
+                    f"{self.summon.name}'s growth is driven by its conduit, "
+                    "not experience.\n"
+                )
+            else:
+                self.summon.level.exp += exp_gain
+                if self.summon.level.level < 10:
+                    self.summon.level.exp_to_gain -= exp_gain
+                    while self.summon.level.exp_to_gain <= 0:
+                        msg += self.summon.level_up(self.player)
+                        if self.summon.level.level == 10:
+                            break
+                msg += self._summon_experience_text(self.summon, exp_gain)
 
         if mercy:
             msg += self._award_mercy_gold()
@@ -103,6 +114,7 @@ class BattleOutcomeMixin:
             self.player.kill_dict[enemy.enemy_typ][enemy.name] += 1
             if hasattr(self.player, "record_enemy_defeat"):
                 self.player.record_enemy_defeat()
+            mage_mechanics.record_last_enemy(self.player, enemy, boss=self.boss)
             if hasattr(self.player, "refresh_demonologist_contracts"):
                 self.player.refresh_demonologist_contracts()
 
@@ -257,6 +269,11 @@ class BattleOutcomeMixin:
                 )
                 if hasattr(self.player, "record_enemy_defeat"):
                     self.player.record_enemy_defeat()
+                mage_mechanics.record_last_enemy(
+                    self.player,
+                    enemy,
+                    boss=bool(self.boss),
+                )
                 if hasattr(self.player, "refresh_demonologist_contracts"):
                     self.player.refresh_demonologist_contracts()
                 vow_text = paladin.on_enemy_defeated(
@@ -332,21 +349,21 @@ class BattleOutcomeMixin:
         message = "".join(settlement.message for settlement in settlements)
 
         if self.summon:
-            try:
-                self.player._active_summon_bond_level_span_xp = (
-                    promotion_kits.summon_level_span_xp(self.summon)
-                )
-            except Exception:
-                pass
             self.summon.effects(end=True)
-            self.summon.level.exp += total_exp
-            if self.summon.level.level < 10:
-                self.summon.level.exp_to_gain -= total_exp
-                while self.summon.level.exp_to_gain <= 0:
-                    message += self.summon.level_up(self.player)
-                    if self.summon.level.level == 10:
-                        break
-            message += self._summon_experience_text(self.summon, total_exp)
+            if getattr(getattr(self.player, "cls", None), "name", "") == "Thaumaturgist":
+                message += (
+                    f"{self.summon.name}'s growth is driven by its conduit, "
+                    "not experience.\n"
+                )
+            else:
+                self.summon.level.exp += total_exp
+                if self.summon.level.level < 10:
+                    self.summon.level.exp_to_gain -= total_exp
+                    while self.summon.level.exp_to_gain <= 0:
+                        message += self.summon.level_up(self.player)
+                        if self.summon.level.level == 10:
+                            break
+                message += self._summon_experience_text(self.summon, total_exp)
 
         if defeated_members:
             _scar_gained, scar_text = berserker.record_battle_scar(self.player)

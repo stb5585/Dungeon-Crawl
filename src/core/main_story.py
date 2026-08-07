@@ -45,7 +45,7 @@ CLASS_VOLUNTAS_ARCHETYPES = {
     "martial": ("Grandmaster of Arms", "Berserker", "Dragoon", "Stalwart Defender", "Master Monk"),
     "mystic": ("Wizard", "Archbishop", "Astromancer", "Archdruid"),
     "hybrid": ("Crusader", "Knight Enchanter", "Seeker", "Arcane Trickster", "Templar", "Hierophant"),
-    "companion": ("Grand Summoner", "Troubadour", "Beast Master"),
+    "companion": ("Thaumaturgist", "Troubadour", "Beast Master"),
     "shadow": ("Demonologist", "Shadowcaster", "Rogue", "Ninja", "Lycan", "Soulcatcher"),
 }
 
@@ -60,7 +60,7 @@ CLASS_VOLUNTAS_BRIDGE_CLASSES = (
     "Wizard",
     "Shadowcaster",
     "Knight Enchanter",
-    "Grand Summoner",
+    "Thaumaturgist",
     "Rogue",
     "Seeker",
     "Ninja",

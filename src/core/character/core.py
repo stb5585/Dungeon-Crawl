@@ -84,6 +84,7 @@ class Character(
                                           "Silence": StatusEffect(False, 0),
                                           "Sleep": StatusEffect(False, 0),
                                           "Stun": StatusEffect(False, 0),
+                                          "Polymorph": StatusEffect(False, 0),
                                           "Defend": StatusEffect(False, 0, 0),
                                           "Steal Success": StatusEffect(False, 0),
                                           "Peaceful": StatusEffect(False, 0),

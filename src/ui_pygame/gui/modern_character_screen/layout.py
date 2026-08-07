@@ -265,7 +265,7 @@ class CharacterLayoutMixin:
 
         summons = getattr(player_char, "summons", {}) or {}
         for summon in summons.values():
-            entries.append(("Summon", summon))
+            entries.append(("Xenid", summon))
         return entries
 
     def _companion_xp_label(self, companion: Any) -> str:

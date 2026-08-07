@@ -24,17 +24,3 @@ def heal_all_summons(character: Any, pct: float = 0.35) -> str:
             f"and {summon.mana.current - before_mp} MP."
         )
     return "\n".join(lines) + "\n"
-
-
-def raise_all_summons(character: Any, pct: float = 0.25) -> str:
-    summons = getattr(character, "summons", {}) or {}
-    if not summons:
-        return f"{character.name} has no summons to raise.\n"
-    raised = []
-    for summon in summons.values():
-        if summon.health.current <= 0:
-            summon.health.current = max(1, int(summon.health.max * pct))
-            raised.append(summon.name)
-    if not raised:
-        return "No fallen summons answer the call.\n"
-    return "Raised summons: " + ", ".join(raised) + ".\n"

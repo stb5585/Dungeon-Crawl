@@ -119,7 +119,7 @@ class ClassRing(Accessory):
             "Shadowcaster": "A ring that grants Shadow Bolt a special effect that heals the caster based on damage dealt when worn by a Shadowcaster.",
             "Demonologist": self._demonologist_description(player_char),
             "Knight Enchanter": "A ring that increases Mana Tap effectiveness (turns 10% mana into 20% heal) when worn by a Knight Enchanter.",
-            "Grand Summoner": "A ring that increases HP and damage of summoned creatures by 30% when worn by a Grand Summoner.",
+            "Thaumaturgist": "A ring that increases Xenid HP and damage by 30% when worn by a Thaumaturgist.",
             "Rogue": "A ring that grants +2 Luck bonus when worn by a Rogue.",
             "Seeker": "A ring that grants a chance to find rare items based on dungeon level when worn by a Seeker.",
             "Ninja": "A ring that grants first round standard attack double damage if you have initiative when worn by a Ninja.",
@@ -296,9 +296,9 @@ class ClassRing(Accessory):
             # Increase effectiveness of Mana Tap (10% mana → 20% heal)
             player_char.equipment["Ring"].mod = "Mana Tap+"
 
-        elif cls_name == "Grand Summoner":
-            # Increase HP and damage of summoned creatures by 30%
-            player_char.equipment["Ring"].mod = "+30% Summons"
+        elif cls_name == "Thaumaturgist":
+            # Increase HP and damage of Xenids by 30%
+            player_char.equipment["Ring"].mod = "+30% Xenids"
 
         # Footpad Branch
         elif cls_name == "Rogue":

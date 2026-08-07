@@ -61,6 +61,8 @@ class CharacterStatusMixin:
 
     def incapacitated(self) -> bool:
         return any([self.status_effects["Sleep"].active,
+                    self.status_effects.get("Polymorph") and
+                    self.status_effects["Polymorph"].active,
                     self.physical_effects["Prone"].active,
                     self.status_effects["Stun"].active])
 
@@ -295,6 +297,13 @@ class CharacterStatusMixin:
 
         if end:
             default(end_combat=True)
+            try:
+                from ..classes import mage_mechanics
+
+                mage_mechanics.tick_combat_state(self, end=True)
+            except Exception:
+                pass
+            self.temporary_health = None
             ability_mechanics.sync_exploration_flags(self)
         else:
             from ..classes import grandmaster
@@ -306,6 +315,26 @@ class CharacterStatusMixin:
                 status_text += promotion_kits.tick_combat_state(self)
             except Exception:
                 pass
+            try:
+                from ..classes import mage_mechanics
+
+                mage_mechanics.tick_combat_state(self)
+            except Exception:
+                pass
+            temporary_health = getattr(self, "temporary_health", None)
+            if isinstance(temporary_health, dict):
+                temporary_health["turns"] = max(
+                    0, int(temporary_health.get("turns", 0) or 0) - 1
+                )
+                if temporary_health["turns"] <= 0:
+                    status_text += f"{self.name}'s inflated health dissolves.\n"
+                    self.temporary_health = None
+            polymorph = self.status_effects.get("Polymorph")
+            if polymorph is not None and polymorph.active:
+                polymorph.duration -= 1
+                if polymorph.duration <= 0:
+                    status_text += f"{self.name} returns to their true form.\n"
+                    default(effect="Polymorph")
             for expired in grandmaster.tick_technique_stacks(self):
                 status_text += f"{self.name}'s {expired} technique fades.\n"
             if self.status_effects["Doom"].active:
@@ -330,7 +359,38 @@ class CharacterStatusMixin:
                     default(effect="Ice Block")
                 else:
                     return status_text
-            if self.physical_effects["Prone"].active and all([not self.status_effects["Stun"].active,
+            shackles = getattr(self, "conjured_shackles", None)
+            if isinstance(shackles, dict) and self.physical_effects["Prone"].active:
+                shackles["turns"] = max(0, int(shackles.get("turns", 0) or 0) - 1)
+                unbreakable = bool(shackles.get("unbreakable", False))
+                strength_roll = (
+                    -1
+                    if unbreakable
+                    else random.randint(
+                        max(0, self.stats.strength // 2),
+                        max(1, self.stats.strength),
+                    )
+                )
+                if (
+                    not unbreakable
+                    and strength_roll >= int(shackles.get("difficulty", 1) or 1)
+                ):
+                    self.physical_effects["Prone"].active = False
+                    self.conjured_shackles = None
+                    status_text += f"{self.name} breaks free of the conjured shackles.\n"
+                elif shackles["turns"] <= 0:
+                    self.physical_effects["Prone"].active = False
+                    self.conjured_shackles = None
+                    status_text += f"The shackles around {self.name} disappear.\n"
+                else:
+                    status_text += (
+                        f"Reality itself keeps {self.name} shackled.\n"
+                        if unbreakable
+                        else f"{self.name} struggles against the conjured shackles.\n"
+                    )
+            if self.physical_effects["Prone"].active and not isinstance(
+                getattr(self, "conjured_shackles", None), dict
+            ) and all([not self.status_effects["Stun"].active,
                                                               not self.status_effects["Sleep"].active]):
                 if not random.randint(0, self.physical_effects["Prone"].duration) or \
                     random.randint(0, self.check_mod("luck", luck_factor=10)):

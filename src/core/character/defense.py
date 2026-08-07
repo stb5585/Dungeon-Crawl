@@ -136,9 +136,30 @@ class CharacterDefenseMixin:
                         pass
             return damage, msg, False
 
+        # Barrier Wall
+        wall_hp = max(0, int(getattr(defender, "barrier_wall_hp", 0) or 0))
+        if wall_hp and damage > 0:
+            absorbed = min(wall_hp, damage)
+            defender.barrier_wall_hp = wall_hp - absorbed
+            damage -= absorbed
+            msg += (
+                f"{defender.name}'s barrier wall absorbs {absorbed} damage"
+                + (
+                    " and shatters.\n"
+                    if defender.barrier_wall_hp <= 0
+                    else f" ({defender.barrier_wall_hp} HP remains).\n"
+                )
+            )
+            if damage <= 0:
+                return 0, msg, True
+
         # Mana Shield
         if defender.magic_effects["Mana Shield"].active:
-            damage, shield_msg, absorbed = self._apply_mana_shield(defender, damage)
+            damage, shield_msg, absorbed = self._apply_mana_shield(
+                defender,
+                damage,
+                physical=True,
+            )
             return damage, msg + shield_msg, absorbed
 
         # Crusader absorb shield
@@ -170,13 +191,53 @@ class CharacterDefenseMixin:
 
         return damage, msg, False
 
-    def _apply_mana_shield(self, defender: Character, damage: int) -> AbsorptionResult:
-        """Handle Mana Shield absorption. Returns (damage, msg, fully_absorbed)."""
+    @staticmethod
+    def _apply_temporary_health(
+        defender: Character,
+        damage: int,
+    ) -> tuple[int, str]:
+        """Consume temporary HP after mitigation and before real health."""
+        temporary_health = getattr(defender, "temporary_health", None)
+        if not isinstance(temporary_health, dict) or damage <= 0:
+            return damage, ""
+        available = max(0, int(temporary_health.get("amount", 0) or 0))
+        absorbed = min(available, damage)
+        temporary_health["amount"] = available - absorbed
+        if temporary_health["amount"] <= 0:
+            defender.temporary_health = None
+        return (
+            damage - absorbed,
+            f"{defender.name}'s inflated health absorbs {absorbed} damage.\n",
+        )
+
+    def _apply_mana_shield(
+        self,
+        defender: Character,
+        damage: int,
+        *,
+        physical: bool = False,
+    ) -> AbsorptionResult:
+        """Redirect a capped share of physical damage into the defender's MP."""
         msg = ""
-        if damage <= 0:
+        if damage <= 0 or not physical:
             return damage, msg, False
 
-        duration = max(1, int(defender.magic_effects["Mana Shield"].duration or 1))
+        redirect_percent = max(
+            0.0,
+            min(
+                1.0,
+                float(defender.magic_effects["Mana Shield"].duration or 0)
+                / 100.0,
+            ),
+        )
+        try:
+            from ..classes import mage_mechanics
+
+            redirect_percent *= mage_mechanics.arcane_potency_multiplier(
+                defender
+            )
+        except Exception:
+            pass
         available_mana = max(0, int(defender.mana.current))
         if available_mana <= 0:
             self._emit_status_event(defender, "Mana Shield", applied=False, source="Mana Depleted")
@@ -184,21 +245,23 @@ class CharacterDefenseMixin:
             msg += f"The mana shield dissolves around {defender.name}.\n"
             return damage, msg, False
 
-        mana_loss = damage // duration
-        if mana_loss > available_mana:
-            abs_dam = available_mana * duration
-            if abs_dam > 0:
-                msg += f"The mana shield around {defender.name} absorbs {abs_dam} damage.\n"
-            damage -= abs_dam
-            defender.mana.current = 0
+        redirected = min(
+            available_mana,
+            max(0, int(damage * redirect_percent)),
+        )
+        if redirected <= 0:
+            return damage, msg, False
+        defender.mana.current = max(0, available_mana - redirected)
+        damage -= redirected
+        msg += (
+            f"The mana shield around {defender.name} redirects "
+            f"{redirected} physical damage into MP.\n"
+        )
+        if defender.mana.current <= 0:
             self._emit_status_event(defender, "Mana Shield", applied=False, source="Mana Depleted")
             defender.magic_effects["Mana Shield"].active = False
             msg += f"The mana shield dissolves around {defender.name}.\n"
-            return damage, msg, False
-        else:
-            msg += f"The mana shield around {defender.name} absorbs {damage} damage.\n"
-            defender.mana.current = max(0, defender.mana.current - mana_loss)
-            return 0, msg, True
+        return damage, msg, damage <= 0
 
     def _apply_crusader_shield(self, defender: Character, damage: int) -> AbsorptionResult:
         """Handle Crusader Power Up absorb shield. Returns (damage, msg, fully_absorbed)."""
@@ -478,7 +541,9 @@ class CharacterDefenseMixin:
         # Handle Mana Shield
         if self.magic_effects["Mana Shield"].active:
             damage, shield_message, fully_absorbed = attacker._apply_mana_shield(
-                self, damage
+                self,
+                damage,
+                physical=typ == "Physical",
             )
             message += shield_message
             hit = not fully_absorbed
@@ -526,6 +591,15 @@ class CharacterDefenseMixin:
         resist = 0
         if typ in self.resistance:
             resist = self.check_mod('resist', enemy=attacker, typ=typ)
+        try:
+            from ..classes import mage_mechanics
+
+            resist = min(
+                0.95,
+                resist + mage_mechanics.ice_resistance_bonus(self, typ),
+            )
+        except Exception:
+            pass
 
         message = ""
         final_damage = int(damage * (1 - resist))
@@ -585,5 +659,11 @@ class CharacterDefenseMixin:
             message += shelter_message
         except Exception:
             pass
+
+        final_damage, temporary_health_message = self._apply_temporary_health(
+            self,
+            final_damage,
+        )
+        message += temporary_health_message
 
         return True, message, final_damage

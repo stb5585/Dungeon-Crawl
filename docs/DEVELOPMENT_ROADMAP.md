@@ -1,6 +1,6 @@
 # The Forsaken Tenet Development Roadmap
 
-*Updated: August 2, 2026*
+*Updated: August 7, 2026*
 
 This roadmap tracks remaining work for **The Forsaken Tenet**. Completed P0-P6
 roadmap history has been consolidated into `CHANGELOG.md`; this file is now
@@ -84,6 +84,40 @@ nodes remain immediately available; the extended Berserker route adds
 two-handed proficiency and discipline-scaled critical damage while keeping
 both second-promotion nodes aligned.
 
+Mage is now the second bespoke base graph. Its six columns define independent
+Elemental roots, matching Enhancements, Arcana, Occultism, Conjuration, and
+Universal utility. Promotion route costs are `5/8/8/8` for
+Sorcerer/Spellblade/Warlock/Conjurer. Sorcerer permanently chooses Classical
+Force or Esotericism, making School Affinity Elemental- or Arcane-focused and
+severely nerfing the competing school. Learned spells survive promotion;
+Arcane Fundamentals and the six elemental spell nodes retain the existing
+Sorcerer/Wizard partial carry-forward.
+
+Conjurer replaces the former tier-2 Summoner with authored Constructs, Binding,
+Illusion/Movement, and Calling development. As Conjurer, the six Callings
+create location-aware ordinary-enemy transients; the Calling nodes carry into
+terminal Thaumaturgist, where each instead binds one permanent choice from its
+two-Xenid pair. Conjure Animal becomes a seventh Calling and the fixed roster
+contains exactly 14 named Xenids, including Hodag and Caladrius.
+Thaumaturgist combines the former Summoner and Grand Summoner systems around
+conduit progression: conduit replaces summon XP, unlocks Xenid ability tiers,
+strengthens Xenid stats, and scales entity-specific caster effects. Mage
+transient companions still act independently after the player,
+use one transient slot, last 50 exploration steps, and never gain XP, bond,
+loot, quest, or roster state. Numeric rating/HP/MP nodes are globally
+path-gated without independent level gates; future class-specific nodes must
+include a basic class mechanic instead of plain stat padding. This remains an
+approved scoped continuation of the preserved baseline; unrelated lineage
+expansions remain paused.
+
+The terminal tree now uses five columns. Its Miracles lane contains Miracle
+Blade, Miracle Shackles, Miracle Potion, and Miracle Crystal at levels
+65/70/75/80; each consumes an extremely rare Reality Fragment to violate an
+ordinary protection, restraint, item-creation, or mana/damage rule. The old
+Summon/Summon 2 training passives are retired. Active Xenid death costs 25
+conduit, and the combat-only 100-MP Raise Summon restores only that just-fallen
+Xenid at 25% HP while refunding 10 conduit.
+
 The authored terminal follow-up replaces Berserker's generated talents with
 Survival, Fury, and independent center columns plus eight centered two-handed
 discipline arts. Its promotion-level entries are ungated, its stat development
@@ -124,8 +158,12 @@ promotion is purchased. Stalwart contains only 11 new nodes: Last Stand and
 counter mastery, three Surge modifiers, and the Spell Reflection/Mirror
 Bastion path. Resolve uses the legacy `guard_meter` field as one value with
 caps 50/100, explicit Defend/block/physical-damage/Goad/Hold gains, and no
-duplicate Class Ring accumulation. Spell Reflection spends 25 Resolve and
-shares compatibility and cleanup rules across legacy and data-driven spells.
+duplicate Class Ring accumulation. Sentinel's anti-magic branch is the single
+`Spell Reflection -> +20 Magic Defense -> +50 HP` line; its ungated root at
+`(4, 0)` uses compatibility ID `sentinel.ability.deflect-spell` and absorbs
+the retired Deflect Spell behavior and old Spell Reflection node ID. Spell
+Reflection spends 25 Resolve and shares compatibility and cleanup rules across
+legacy and data-driven spells.
 The Stalwart promotion grants all three Surge wrappers, while mastery 0/4/8
 continues controlling their availability.
 

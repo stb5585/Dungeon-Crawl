@@ -384,7 +384,7 @@ class TestBasicTiles:
         assert actions == ["Attack", "Defend", "Pickup Weapon", "Use Skill", "Cast Spell", "Use Item", "Flee", "Summon"]
 
     def test_funhouse_wall_and_fire_paths_cover_behavioral_branches(self, monkeypatch):
-        player = _make_player(class_name="Summoner")
+        player = _make_player(class_name="Thaumaturgist")
         player.facing = "north"
         game = _make_game(player)
 
@@ -417,8 +417,8 @@ class TestBasicTiles:
 
         special.modify_player(game)
 
-        assert "Cacus" in player.summons
-        assert ("Blacksmith's Hammer", True, True) in calls
+        assert "Cacus" not in player.summons
+        assert ("Blacksmith's Hammer", True, True) not in calls
 
     def test_rotator_and_warning_tile_cover_edge_case_branches(self):
         player = _make_player()
@@ -679,7 +679,7 @@ class TestSpecialTiles:
         assert mimic.loot.name == "Loot-4"
 
     def test_dead_body_incubus_lair_and_shop_tiles_cover_story_branches(self, monkeypatch):
-        player = _make_player(class_name="Summoner")
+        player = _make_player(class_name="Thaumaturgist")
         player.quest_dict["Side"]["Something to Cry About"] = {"Completed": False}
         player.quest_dict["Side"]["Oedipal Complex"] = {"Completed": False}
         player.quest_dict["Main"]["A Bad Dream"] = {"Completed": False}

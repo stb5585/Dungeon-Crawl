@@ -558,7 +558,14 @@ class DungeonHUD:
             return (220, 150, 150)
         if label in {"Aerial Tempo", "Arcane Tempo", "Revelation", "Stolen Charge", "Conduit"}:
             return (170, 210, 255)
-        if label in {"Companion", "Summon Bond", "Command", "Patron", "Echo"}:
+        if label in {
+            "Companion",
+            "Xenid Bond",
+            "Xenid Conduit",
+            "Command",
+            "Patron",
+            "Echo",
+        }:
             return (170, 210, 255)
         return self.text_color
 
@@ -626,7 +633,7 @@ class DungeonHUD:
 
         rich_labels = {label for label, _value, _color in rich_rows}
         for label, value in promotion_kits.status_summary_rows(player_char):
-            if label == "Summon Bond":
+            if label in {"Xenid Bond", "Xenid Conduit"}:
                 continue
             if label in rich_labels:
                 continue

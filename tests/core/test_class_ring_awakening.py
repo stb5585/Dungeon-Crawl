@@ -243,8 +243,8 @@ def test_knight_enchanter_arcane_tempo_replaces_mana_tap_plus_display():
     assert player.equipment["Ring"].mod == "Arcane Tempo"
 
 
-def test_grand_summoner_conduit_ritual_sacrifices_hp_and_empowers_summons():
-    player, ring = _player_with_class_ring("Grand Summoner", health=(200, 200))
+def test_thaumaturgist_conduit_ritual_sacrifices_hp_and_empowers_xenids():
+    player, ring = _player_with_class_ring("Thaumaturgist", health=(200, 200))
 
     ok, _ = player.awaken_class_ring()
     ring.class_mod(player)
@@ -252,7 +252,7 @@ def test_grand_summoner_conduit_ritual_sacrifices_hp_and_empowers_summons():
     assert ok is True
     assert player.health.max == 190
     assert player.health.current == 190
-    assert player.equipment["Ring"].mod == "+30% Summons"
+    assert player.equipment["Ring"].mod == "+30% Xenids"
     assert class_rings.summon_multiplier(player) == 1.30
 
 

@@ -77,8 +77,8 @@ Ties mean the class wants both stats about equally.
 | Demonologist | `CHA/INT/WIS`, `CON`, `DEX/STR` |
 | Spellblade | `STR/CON`, `INT/CHA`, `DEX/WIS` |
 | Knight Enchanter | `STR/CON`, `INT/DEX/CHA`, `WIS` |
-| Summoner | `CHA/INT/WIS`, `CON/DEX/STR` |
-| Grand Summoner | `CHA`, `INT/WIS`, `CON/DEX/STR` |
+| Conjurer | `CHA/INT/WIS`, `CON/DEX` |
+| Thaumaturgist | `CHA`, `INT/WIS`, `CON/DEX` |
 | Footpad | `DEX/CHA`, `CON`, `INT/WIS/STR` |
 | Thief | `DEX/CHA`, `CON/INT`, `WIS/STR` |
 | Rogue | `DEX`, `CHA`, `CON/INT`, `WIS/STR` |

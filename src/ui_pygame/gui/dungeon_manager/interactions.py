@@ -500,19 +500,11 @@ class DungeonInteractionMixin:
 
                 # Start combat
                 self._refresh_cached_frame()
-                combat_won = self.combat_manager.start_combat(
+                self.combat_manager.start_combat(
                     self.player_char,
                     enemy,
                     spring_tile
                 )
-
-                if combat_won and "Summoner" in self.player_char.cls.name:
-                    if "Fuath" not in self.player_char.summons:
-                        self.game.special_event("Fuath")
-                        self.add_message("The Fuath pledges loyalty to you!")
-                        summon = companions.Fuath()
-                        summon.initialize_stats(self.player_char)
-                        self.player_char.summons[summon.name] = summon
 
                 spring_tile.defeated = True
 

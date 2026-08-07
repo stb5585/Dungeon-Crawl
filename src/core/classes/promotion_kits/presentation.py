@@ -87,10 +87,8 @@ def _active_summon_bond_hint(character: Any, summon_name: str, bond: int) -> str
         level_value = int(level)
     except (TypeError, ValueError):
         level_value = None
-    if level_value is not None and level_value < 2:
-        return "Needs level 2"
     if bond >= 100:
-        return "True Name"
+        return "Perfected"
     if bond >= 50:
         return "Invoke ready"
     if bond >= 25:
@@ -242,11 +240,11 @@ def status_summary_rows(character: Any) -> list[tuple[str, str]]:
         command = state.get("pending_companion_command")
         if command and active_companion:
             rows.append(("Command", f"{command} Pending"))
-    if cls in {"Summoner", "Grand Summoner"}:
+    if cls == "Thaumaturgist":
         name, bond = _best_summon_bond(character)
-        rows.append(("Summon Bond", f"{name} {int(bond)}/100 {_active_summon_bond_hint(character, name, int(bond))}"))
+        rows.append(("Xenid Conduit", f"{name} {int(bond)}/100 {_active_summon_bond_hint(character, name, int(bond))}"))
         if state.get("conduit_command"):
-            rows.append(("Conduit", "Primed next summon action"))
+            rows.append(("Conduit", "Primed next Xenid action"))
     if cls in {"Shaman", "Soulcatcher"}:
         totem_row = _totem_status_row(character)
         if totem_row:

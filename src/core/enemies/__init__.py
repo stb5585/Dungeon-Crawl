@@ -97,7 +97,7 @@ from .midgame import (
     Wendigo,
     BrownSlime,
     Gargoyle,
-    Conjurer,
+    Necromancer,
     Chimera,
     Dragonkin,
     Griffin,

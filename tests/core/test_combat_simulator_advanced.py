@@ -246,7 +246,7 @@ def test_simulate_battle_records_all_event_accounting_branches(monkeypatch):
 def test_simulate_battle_records_class_kit_and_action_economy_smoke(monkeypatch):
     from src.core.analytics import combat_simulator as sim_mod
 
-    player = _make_player(class_name="Grand Summoner")
+    player = _make_player(class_name="Thaumaturgist")
     enemy = _make_player(name="Goblin")
     tile = _make_tile()
     player.spellbook["Skills"]["Conduit Command"] = _make_skill("Conduit Command")

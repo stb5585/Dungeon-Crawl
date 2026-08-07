@@ -798,9 +798,9 @@
             "Voluntas holds where a divided art becomes a chosen rhythm."
         ]
     },
-    "Class Voluntas Bridge Grand Summoner": {
+    "Class Voluntas Bridge Thaumaturgist": {
         "Text": [
-            "Summoned names echo through the ring as bonds, not possessions.",
+            "Xenid names echo through the ring as bonds, not possessions.",
             "Voluntas holds where command remains partnership."
         ]
     },
@@ -1406,9 +1406,19 @@
             "You have gained the summon Hala."
         ]
     },
-    "Grigori": {
+    "Seraphim": {
         "Text": [
-            "You have gained the summon Grigori."
+            "Seraphim answers the Celestial Calling."
+        ]
+    },
+    "Lamashtu": {
+        "Text": [
+            "Lamashtu answers the Fiend Calling."
+        ]
+    },
+    "Tiamat": {
+        "Text": [
+            "Tiamat answers the Dragon Calling."
         ]
     },
     "Bardi": {

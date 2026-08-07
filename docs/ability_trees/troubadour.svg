@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="494" height="596" viewBox="0 0 494 596">
+<style>
+text{font-family:DejaVu Sans,Arial,sans-serif}
+.title{fill:#f4bf2a;font-size:24px;font-weight:700}
+.meta{fill:#aab2bf;font-size:12px}
+.name{fill:#f4f6fa;font-size:13px;font-weight:700}
+.detail{fill:#c5ccd6;font-size:11px}
+.edge{fill:none;stroke:#7f8998;stroke-width:2}
+</style>
+<rect width="494" height="596" fill="#10131a"/>
+<text class="title" x="42" y="38">Troubadour Ability Tree</text>
+<text class="meta" x="42" y="62">Tier 3 · 10 nodes · Finale · Mastery</text>
+<path class="edge" d="M 136.0 123.0 V 173.0 H 136.0 V 223.0"/>
+<path class="edge" d="M 358.0 123.0 V 173.0 H 358.0 V 223.0"/>
+<path class="edge" d="M 136.0 223.0 V 273.0 H 136.0 V 323.0"/>
+<path class="edge" d="M 358.0 223.0 V 273.0 H 358.0 V 323.0"/>
+<path class="edge" d="M 136.0 323.0 V 373.0 H 136.0 V 423.0"/>
+<path class="edge" d="M 358.0 323.0 V 373.0 H 358.0 V 423.0"/>
+<path class="edge" d="M 136.0 423.0 V 473.0 H 136.0 V 523.0"/>
+<path class="edge" d="M 358.0 423.0 V 473.0 H 358.0 V 523.0"/>
+<rect x="42.0" y="92.0" width="188" height="62" rx="8" fill="#30254a" stroke="#ae84e8" stroke-width="2"/>
+<text class="name" x="52.0" y="116.0">Resonant Finale</text>
+<text class="detail" x="52.0" y="137.0">Talent · Cost 1 · Level 65</text>
+<rect x="264.0" y="92.0" width="188" height="62" rx="8" fill="#30254a" stroke="#ae84e8" stroke-width="2"/>
+<text class="name" x="274.0" y="116.0">Sustained Chorus</text>
+<text class="detail" x="274.0" y="137.0">Talent · Cost 1 · Level 65</text>
+<rect x="42.0" y="192.0" width="188" height="62" rx="8" fill="#30254a" stroke="#ae84e8" stroke-width="2"/>
+<text class="name" x="52.0" y="216.0">Resonant Finale 2</text>
+<text class="detail" x="52.0" y="237.0">Talent · Cost 1 · Level 70</text>
+<rect x="264.0" y="192.0" width="188" height="62" rx="8" fill="#30254a" stroke="#ae84e8" stroke-width="2"/>
+<text class="name" x="274.0" y="216.0">Sustained Chorus 2</text>
+<text class="detail" x="274.0" y="237.0">Talent · Cost 1 · Level 70</text>
+<rect x="42.0" y="292.0" width="188" height="62" rx="8" fill="#30254a" stroke="#ae84e8" stroke-width="2"/>
+<text class="name" x="52.0" y="316.0">Resonant Finale 3</text>
+<text class="detail" x="52.0" y="337.0">Talent · Cost 1 · Level 75</text>
+<rect x="264.0" y="292.0" width="188" height="62" rx="8" fill="#30254a" stroke="#ae84e8" stroke-width="2"/>
+<text class="name" x="274.0" y="316.0">Sustained Chorus 3</text>
+<text class="detail" x="274.0" y="337.0">Talent · Cost 1 · Level 75</text>
+<rect x="42.0" y="392.0" width="188" height="62" rx="8" fill="#30254a" stroke="#ae84e8" stroke-width="2"/>
+<text class="name" x="52.0" y="416.0">Resonant Finale 4</text>
+<text class="detail" x="52.0" y="437.0">Talent · Cost 1 · Level 80</text>
+<rect x="264.0" y="392.0" width="188" height="62" rx="8" fill="#30254a" stroke="#ae84e8" stroke-width="2"/>
+<text class="name" x="274.0" y="416.0">Sustained Chorus 4</text>
+<text class="detail" x="274.0" y="437.0">Talent · Cost 1 · Level 80</text>
+<rect x="42.0" y="492.0" width="188" height="62" rx="8" fill="#30254a" stroke="#ae84e8" stroke-width="2"/>
+<text class="name" x="52.0" y="516.0">Resonant Finale 5</text>
+<text class="detail" x="52.0" y="537.0">Talent · Cost 1 · Level 85</text>
+<rect x="264.0" y="492.0" width="188" height="62" rx="8" fill="#30254a" stroke="#ae84e8" stroke-width="2"/>
+<text class="name" x="274.0" y="516.0">Sustained Chorus 5</text>
+<text class="detail" x="274.0" y="537.0">Talent · Cost 1 · Level 85</text>
+</svg>
