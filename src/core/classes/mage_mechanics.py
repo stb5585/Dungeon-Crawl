@@ -46,11 +46,35 @@ def has_talent(character: Any, key: str) -> bool:
         return False
 
 
+def enhance_blade_bonus(character: Any) -> int:
+    """Return Tome-warrior bonus damage from current mana percentage."""
+    if not has_skill(character, "Enhance Blade"):
+        return 0
+    weapon = getattr(character, "equipment", {}).get("Weapon")
+    base_damage = max(0, int(getattr(weapon, "damage", 0) or 0))
+    mana = getattr(character, "mana", None)
+    maximum = max(1, int(getattr(mana, "max", 1) or 1))
+    current = max(0, min(maximum, int(getattr(mana, "current", 0) or 0)))
+    return int(base_damage * (current / maximum))
+
+
+def enhance_armor_bonus(character: Any) -> int:
+    """Return bonus physical armor from the character's missing mana."""
+    if not has_skill(character, "Enhance Armor"):
+        return 0
+    armor = getattr(character, "equipment", {}).get("Armor")
+    base_armor = max(0, int(getattr(armor, "armor", 0) or 0))
+    mana = getattr(character, "mana", None)
+    maximum = max(1, int(getattr(mana, "max", 1) or 1))
+    current = max(0, min(maximum, int(getattr(mana, "current", 0) or 0)))
+    return int(base_armor * (1.0 - (current / maximum)))
+
+
 def specialization(character: Any) -> str | None:
     """Return the selected Sorcerer specialization, if any."""
     if has_skill(character, "Classical Force"):
         return "Elemental"
-    if has_skill(character, "Esotericism"):
+    if has_skill(character, "Arcane Tradition"):
         return "Arcane"
     return None
 
@@ -132,20 +156,23 @@ def process_cast(
     rng: Any = random,
 ) -> str:
     """Attempt the learned matching Enhancement after a successful spell cast."""
+    from . import promotion_kits
+
+    message = promotion_kits.record_spell_signature(character, ability)
     school = school_from_ability(ability)
     passive = ENHANCEMENT_BY_SCHOOL.get(str(school))
     if passive is None or not has_skill(character, passive):
-        return ""
+        return message
     chance = ENHANCEMENT_PROC_CHANCE
     if specialization(character) == "Arcane":
         chance *= 0.50
     if rng.random() >= chance:
-        return ""
+        return message
 
     state = _combat_state(character)
     if school == "Fire":
         state["fire_inside"] = 3
-        return f"{character.name}'s Fire Inside primes the next attack.\n"
+        return message + f"{character.name}'s Fire Inside primes the next attack.\n"
     if school == "Ice":
         state["frozen_armor"] = 1
         character.stat_effects["Defense"].active = True
@@ -155,10 +182,10 @@ def process_cast(
         character.stat_effects["Defense"].extra = max(
             character.stat_effects["Defense"].extra, 10
         )
-        return f"Frozen Armor protects {character.name} for one turn.\n"
+        return message + f"Frozen Armor protects {character.name} for one turn.\n"
     if school == "Electric":
         state["electrified"] = 3
-        return f"{character.name} becomes Electrified for three turns.\n"
+        return message + f"{character.name} becomes Electrified for three turns.\n"
     if school == "Wind":
         state["wind_currents"] = 3
         character.stat_effects["Speed"].active = True
@@ -168,7 +195,7 @@ def process_cast(
         character.stat_effects["Speed"].extra = max(
             character.stat_effects["Speed"].extra, 3
         )
-        return f"Wind Currents quicken {character.name} for three turns.\n"
+        return message + f"Wind Currents quicken {character.name} for three turns.\n"
     if school == "Water":
         hp = max(1, int(character.health.max * 0.05))
         mp = max(1, int(character.mana.max * 0.05))
@@ -176,11 +203,11 @@ def process_cast(
         mp = min(mp, character.mana.max - character.mana.current)
         character.health.current += max(0, hp)
         character.mana.current += max(0, mp)
-        return f"Refreshment restores {hp} HP and {mp} MP to {character.name}.\n"
+        return message + f"Refreshment restores {hp} HP and {mp} MP to {character.name}.\n"
     if school == "Earth":
         state["terra_firma"] = 3
-        return f"Terra Firma empowers {character.name}'s melee attacks.\n"
-    return ""
+        return message + f"Terra Firma empowers {character.name}'s melee attacks.\n"
+    return message
 
 
 def tick_combat_state(character: Any, *, end: bool = False) -> None:

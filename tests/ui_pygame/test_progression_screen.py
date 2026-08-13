@@ -196,7 +196,7 @@ def test_spend_distribution_confirms_permanent_node_closures(monkeypatch):
         cls=SimpleNamespace(name="Mage"),
         progression=SimpleNamespace(unspent_points=5),
     )
-    screen.pending_node_ids = ["mage.ability.esotericism"]
+    screen.pending_node_ids = ["mage.ability.arcane-tradition"]
     screen.pending_attributes = {}
     screen.presenter = object()
     screen._popup_background = lambda: None
@@ -632,7 +632,7 @@ def test_authored_cross_connector_uses_manifest_channel(monkeypatch):
         ),
         (
             "mage.talent.arcane-fundamentals",
-            "mage.ability.esotericism",
+            "mage.ability.arcane-tradition",
             1.5,
         ),
     ),
@@ -730,6 +730,60 @@ def test_paladin_oath_connectors_drop_to_promotion_row_before_joining(
             shelter_rect.midbottom,
             (shelter_rect.centerx, promotion_rect.centery),
             promotion_rect.midright,
+        ),
+    ]
+
+
+def test_lancer_promotion_connectors_stay_in_their_source_columns(monkeypatch):
+    vigilant = progression_screen.TREE_NODES[
+        "lancer.ability.vigilant-landing"
+    ]
+    excellence = progression_screen.TREE_NODES[
+        "lancer.ability.polearm-excellence"
+    ]
+    promotion = progression_screen.TREE_NODES["lancer.promotion.dragoon"]
+    screen = progression_screen.ProgressionScreen.__new__(
+        progression_screen.ProgressionScreen
+    )
+    screen.screen = object()
+    vigilant_rect = pygame.Rect(184, 220, 32, 32)
+    excellence_rect = pygame.Rect(544, 390, 32, 32)
+    promotion_rect = pygame.Rect(424, 500, 32, 32)
+    screen.node_icon_rects = [
+        vigilant_rect,
+        excellence_rect,
+        promotion_rect,
+    ]
+    screen._tree_viewport = pygame.Rect(0, 0, 800, 600)
+    screen._tree_column_origin = 80
+    screen._tree_lane_width = 120
+    line_points = []
+    monkeypatch.setattr(
+        progression_screen.pygame.draw,
+        "lines",
+        lambda _screen, _color, _closed, points, _width: (
+            line_points.append(points)
+        ),
+    )
+
+    screen._draw_connectors([
+        NodeStatus(vigilant, NodeState.AVAILABLE),
+        NodeStatus(excellence, NodeState.AVAILABLE),
+        NodeStatus(promotion, NodeState.BLOCKED),
+    ])
+
+    assert line_points == [
+        (
+            vigilant_rect.midright,
+            (200, vigilant_rect.centery),
+            (200, promotion_rect.top),
+            promotion_rect.midtop,
+        ),
+        (
+            excellence_rect.midleft,
+            (560, excellence_rect.centery),
+            (560, promotion_rect.top),
+            promotion_rect.midtop,
         ),
     ]
 

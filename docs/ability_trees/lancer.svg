@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="1382" height="796" viewBox="0 0 1382 796">
+<svg xmlns="http://www.w3.org/2000/svg" width="1604" height="896" viewBox="0 0 1604 896">
 <style>
 text{font-family:DejaVu Sans,Arial,sans-serif}
 .title{fill:#f4bf2a;font-size:24px;font-weight:700}
@@ -8,22 +8,30 @@ text{font-family:DejaVu Sans,Arial,sans-serif}
 .detail{fill:#c5ccd6;font-size:11px}
 .edge{fill:none;stroke:#7f8998;stroke-width:2}
 </style>
-<rect width="1382" height="796" fill="#10131a"/>
+<rect width="1604" height="896" fill="#10131a"/>
 <text class="title" x="42" y="38">Lancer Ability Tree</text>
-<text class="meta" x="42" y="62">Tier 2 · 17 nodes · Jump Core · Assault Mods · Guard Mods · Polearm Discipline · Unbound</text>
+<text class="meta" x="42" y="62">Tier 2 · 24 nodes · Jump Core · Assault Mods · Guard Mods · Polearm Discipline · Polearm Assault · Polearm Guard · Unbound</text>
 <path class="edge" d="M 358.0 123.0 V 173.0 H 580.0 V 223.0"/>
 <path class="edge" d="M 136.0 323.0 V 373.0 H 136.0 V 423.0"/>
-<path class="edge" d="M 1024.0 123.0 V 173.0 H 1024.0 V 223.0"/>
-<path class="edge" d="M 1024.0 323.0 V 373.0 H 1024.0 V 423.0"/>
-<path class="edge" d="M 1024.0 223.0 V 273.0 H 1024.0 V 323.0"/>
+<path class="edge" d="M 1024.0 123.0 V 173.0 H 802.0 V 223.0"/>
+<path class="edge" d="M 802.0 223.0 V 273.0 H 802.0 V 323.0"/>
+<path class="edge" d="M 802.0 323.0 V 373.0 H 802.0 V 423.0"/>
+<path class="edge" d="M 802.0 423.0 V 473.0 H 802.0 V 523.0"/>
+<path class="edge" d="M 1024.0 123.0 V 373.0 H 1024.0 V 623.0"/>
+<path class="edge" d="M 1024.0 123.0 V 173.0 H 1246.0 V 223.0"/>
+<path class="edge" d="M 1246.0 223.0 V 273.0 H 1246.0 V 323.0"/>
+<path class="edge" d="M 1246.0 323.0 V 373.0 H 1246.0 V 423.0"/>
+<path class="edge" d="M 1246.0 423.0 V 473.0 H 1246.0 V 523.0"/>
 <path class="edge" d="M 358.0 123.0 V 223.0 H 358.0 V 323.0"/>
 <path class="edge" d="M 358.0 123.0 V 173.0 H 136.0 V 223.0"/>
 <path class="edge" d="M 136.0 223.0 V 273.0 H 136.0 V 323.0"/>
 <path class="edge" d="M 580.0 223.0 V 273.0 H 580.0 V 323.0"/>
+<path class="edge" d="M 358.0 123.0 V 173.0 H 358.0 V 223.0"/>
 <path class="edge" d="M 358.0 323.0 V 373.0 H 358.0 V 423.0"/>
 <path class="edge" d="M 580.0 323.0 V 373.0 H 580.0 V 423.0"/>
 <path class="edge" d="M 580.0 423.0 V 473.0 H 580.0 V 523.0"/>
-<path class="edge" d="M 358.0 423.0 V 573.0 H 358.0 V 723.0"/>
+<path class="edge" d="M 452.0 423.0 H 358.0 V 792.0 H 802.0"/>
+<path class="edge" d="M 930.0 623.0 H 1024.0 V 792.0 H 802.0"/>
 <rect x="264.0" y="92.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
 <text class="name" x="274.0" y="116.0">Jump</text>
 <text class="detail" x="274.0" y="137.0">Ability · Cost 1</text>
@@ -36,15 +44,33 @@ text{font-family:DejaVu Sans,Arial,sans-serif}
 <rect x="930.0" y="92.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
 <text class="name" x="940.0" y="116.0">Polearm Proficiency</text>
 <text class="detail" x="940.0" y="137.0">Ability · Cost 1</text>
-<rect x="930.0" y="192.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
-<text class="name" x="940.0" y="216.0">Lance Sweep</text>
-<text class="detail" x="940.0" y="237.0">Ability · Cost 1 · Level 35</text>
-<rect x="930.0" y="392.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
-<text class="name" x="940.0" y="416.0">Zephyrstrike</text>
-<text class="detail" x="940.0" y="437.0">Ability · Cost 1 · Level 40</text>
-<rect x="930.0" y="292.0" width="188" height="62" rx="8" fill="#401d25" stroke="#e46b78" stroke-width="2"/>
-<text class="name" x="940.0" y="316.0">+50 HP</text>
-<text class="detail" x="940.0" y="337.0">Health · Cost 1</text>
+<rect x="708.0" y="192.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<text class="name" x="718.0" y="216.0">Lance Sweep</text>
+<text class="detail" x="718.0" y="237.0">Ability · Cost 1 · Level 35</text>
+<rect x="708.0" y="292.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<text class="name" x="718.0" y="316.0">Extended Reach</text>
+<text class="detail" x="718.0" y="337.0">Ability · Cost 1 · Level 40</text>
+<rect x="708.0" y="392.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<text class="name" x="718.0" y="416.0">Zephyrstrike</text>
+<text class="detail" x="718.0" y="437.0">Ability · Cost 1 · Level 45</text>
+<rect x="708.0" y="492.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<text class="name" x="718.0" y="516.0">Swing &amp; Bash</text>
+<text class="detail" x="718.0" y="537.0">Ability · Cost 1 · Level 50</text>
+<rect x="930.0" y="592.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<text class="name" x="940.0" y="616.0">Polearm Excellence</text>
+<text class="detail" x="940.0" y="637.0">Ability · Cost 2 · Level 55</text>
+<rect x="1152.0" y="192.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<text class="name" x="1162.0" y="216.0">Phalanx</text>
+<text class="detail" x="1162.0" y="237.0">Ability · Cost 1 · Level 35</text>
+<rect x="1152.0" y="292.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<text class="name" x="1162.0" y="316.0">Critical Vigor</text>
+<text class="detail" x="1162.0" y="337.0">Ability · Cost 1 · Level 40</text>
+<rect x="1152.0" y="392.0" width="188" height="62" rx="8" fill="#401d25" stroke="#e46b78" stroke-width="2"/>
+<text class="name" x="1162.0" y="416.0">+50 HP</text>
+<text class="detail" x="1162.0" y="437.0">Health · Cost 1 · Level 45</text>
+<rect x="1152.0" y="492.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<text class="name" x="1162.0" y="516.0">Dragon Soul</text>
+<text class="detail" x="1162.0" y="537.0">Ability · Cost 1 · Level 50</text>
 <rect x="264.0" y="292.0" width="188" height="62" rx="8" fill="#3b3218" stroke="#e3bc48" stroke-width="2"/>
 <text class="name" x="274.0" y="316.0">+20 Defense</text>
 <text class="detail" x="274.0" y="337.0">Rating · Cost 1</text>
@@ -57,22 +83,25 @@ text{font-family:DejaVu Sans,Arial,sans-serif}
 <rect x="486.0" y="292.0" width="188" height="62" rx="8" fill="#30254a" stroke="#ae84e8" stroke-width="2"/>
 <text class="name" x="496.0" y="316.0">Quick Dive</text>
 <text class="detail" x="496.0" y="337.0">Talent · Cost 1 · Level 40</text>
-<rect x="264.0" y="392.0" width="188" height="62" rx="8" fill="#3b3218" stroke="#e3bc48" stroke-width="2"/>
-<text class="name" x="274.0" y="416.0">+20 Attack</text>
-<text class="detail" x="274.0" y="437.0">Rating · Cost 1</text>
+<rect x="264.0" y="192.0" width="188" height="62" rx="8" fill="#3b3218" stroke="#e3bc48" stroke-width="2"/>
+<text class="name" x="274.0" y="216.0">+20 Attack</text>
+<text class="detail" x="274.0" y="237.0">Rating · Cost 1</text>
+<rect x="264.0" y="392.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<text class="name" x="274.0" y="416.0">Vigilant Landing</text>
+<text class="detail" x="274.0" y="437.0">Ability · Cost 2 · Level 45</text>
 <rect x="486.0" y="392.0" width="188" height="62" rx="8" fill="#30254a" stroke="#ae84e8" stroke-width="2"/>
 <text class="name" x="496.0" y="416.0">Thrust</text>
 <text class="detail" x="496.0" y="437.0">Talent · Cost 1 · Level 45</text>
 <rect x="486.0" y="492.0" width="188" height="62" rx="8" fill="#30254a" stroke="#ae84e8" stroke-width="2"/>
 <text class="name" x="496.0" y="516.0">Rend</text>
 <text class="detail" x="496.0" y="537.0">Talent · Cost 1 · Level 50</text>
-<rect x="1152.0" y="292.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
-<text class="name" x="1162.0" y="316.0">Parry</text>
-<text class="detail" x="1162.0" y="337.0">Ability · Cost 1</text>
-<rect x="1152.0" y="392.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
-<text class="name" x="1162.0" y="416.0">True Strike</text>
-<text class="detail" x="1162.0" y="437.0">Ability · Cost 1</text>
-<rect x="264.0" y="692.0" width="188" height="62" rx="8" fill="#3b2d12" stroke="#f4bf2a" stroke-width="2"/>
-<text class="name" x="274.0" y="716.0">Promote: Dragoon</text>
-<text class="detail" x="274.0" y="737.0">Promotion · Cost 3 · Level 60</text>
+<rect x="1374.0" y="292.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<text class="name" x="1384.0" y="316.0">Parry</text>
+<text class="detail" x="1384.0" y="337.0">Ability · Cost 1</text>
+<rect x="1374.0" y="392.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<text class="name" x="1384.0" y="416.0">True Strike</text>
+<text class="detail" x="1384.0" y="437.0">Ability · Cost 1</text>
+<rect x="708.0" y="792.0" width="188" height="62" rx="8" fill="#3b2d12" stroke="#f4bf2a" stroke-width="2"/>
+<text class="name" x="718.0" y="816.0">Promote: Dragoon</text>
+<text class="detail" x="718.0" y="837.0">Promotion · Cost 3 · Level 60</text>
 </svg>

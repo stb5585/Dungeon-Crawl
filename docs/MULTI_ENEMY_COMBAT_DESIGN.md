@@ -473,10 +473,10 @@ decisions, not architecture constants.
 
 - Render two enemy slots horizontally in the current combat area, with smaller
   maximum sprite bounds than the singleton layout.
-- Give each slot its own name, HP/MP, status icons, Sight state, animator,
+- Give each slot its own name, Sight-gated HP/MP and status icons, animator,
   target rectangle, recoil/death state, floating text anchor, and telegraph.
-- Use a bright focus border and target arrow; do not communicate selection by
-  color alone.
+- Use a single bright arrow above the focused enemy; omit focus borders and
+  selection plates so paired and singleton combat share the same composition.
 - Keyboard target navigation uses left/right or A/D; confirm uses the existing
   confirm inputs; Escape/Backspace cancels.
 - Mouse selection uses the enemy slot/card target rectangle.
@@ -711,10 +711,10 @@ curated two-enemy debug encounter, and the same encounter completes through
 the headless engine harness.
 
 Implemented. Singleton combat retains its existing composition. Pair combat
-uses two compact battlefield cards, a focused detail panel, duplicate-safe
-labels, combatant-ID effects, `Q`/`E` focus cycling, and clickable living
-cards. Hidden information is evaluated per member and exposes only
-Healthy/Wounded/Critical health bands without Sight.
+uses two free-standing battlefield sprites, a focused detail panel,
+duplicate-safe labels, combatant-ID effects, `Q`/`E` focus cycling, and
+clickable living lanes. Hidden information is evaluated per member; without
+Sight the presentation omits exact resources and approximate health labels.
 
 ### Slice 5 - Outcomes, Save State, And Simulation
 
@@ -862,10 +862,10 @@ belonging to later slices remains deferred even though its contract is fixed.
 19. **Enemy area actions:** Deferred. V1 retains one active player-side slot.
 
 20. **Frontend:** Support at least 1024x720. Two stable battlefield lanes use
-    free-standing independently animated sprites, compact resource plates,
-    focus outlines, and lane-sized hitboxes. A resolved member animates out
-    and leaves no corpse or terminal card. Without Sight, ordinary enemies
-    retain their sprite but expose only a health band; genuinely invisible
+    free-standing independently animated sprites, a single focus arrow, and
+    lane-sized hitboxes. A resolved member animates out and leaves no corpse
+    or terminal card. Without Sight, ordinary enemies retain their sprite but
+    expose no resource or approximate-health label; genuinely invisible
     enemies hide their sprite. Sight reveals exact HP, MP, statuses,
     resistances, and focused details.
 
@@ -920,3 +920,10 @@ Focused implementation validation should grow by slice, beginning with:
 Every implementation slice should also run `git diff --check`. A full core,
 integration, and frontend regression run is required before curated pairs are
 enabled outside debug mode.
+
+## Improvements
+
+- Add new target scopes `COMBO`, which should be used for some multi-hit,
+  sequential abilities that allows automatic target switching if the enemy is
+  felled before completion and `MULTI`, which applies to multi-hit abilities
+  that have an area-of-effect

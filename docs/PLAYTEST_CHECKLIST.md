@@ -62,23 +62,73 @@ second implementation backlog.
 - [ ] Complete the `5/8/8/8` Sorcerer/Spellblade/Warlock/Conjurer routes.
   Confirm the exact `5/10/15/20/25` named gates, path-only MP nodes,
   level-`10/15/20/25` Universal roots, and two-point level-30 promotions.
-- [ ] Select Classical Force and Esotericism separately. Confirm either gates
+- [ ] Select Classical Force and Arcane Tradition separately. Confirm either gates
   Sorcerer from `(0.5,6)` or `(1.5,6)` through promotion `(1,7)`, selecting one
   permanently closes the other, and Spend Distribution
   lists the closure before committing. Verify Elemental versus Arcane School
-  Affinity, the agreed 50% off-school potency nerfs, and Esotericism's halved
+  Affinity, the agreed 50% off-school potency nerfs, and Arcane Tradition's halved
   Enhancement proc chance.
 - [ ] Trigger all six 20% Enhancements and verify refresh-only behavior: Fire
   Inside next-attack critical chance; Frozen Armor one-turn Defense/Ice
   resistance; Electrified melee jolts; Wind Currents Speed/melee accuracy;
   Refreshment 5% max HP/MP; and Terra Firma 50% melee damage.
-- [ ] Verify Polymorph action denial and bunny artwork, all-enemy Blinding Fog,
-  temporary-HP ordering, Shackles Dexterity/Strength checks, and the documented
-  Arcane Fundamentals and Binding Circle bonuses. Confirm Forbidden Studies
+- [ ] Verify Polymorph action denial, its smaller confused-pacing bunny artwork,
+  and the 10% boss success chance without boss immunity. Verify all-enemy
+  Blinding Fog, temporary-HP ordering, Shackles Dexterity/Strength checks, and
+  the documented Arcane Fundamentals and Binding Circle bonuses. Confirm
+  Forbidden Studies
   gives Shadow Bolt `+20%` damage and undead companions `+50%` duration.
 - [ ] Verify Mana Shield redirects at most 25% of physical damage from each
   attack and Mana Shield 2 raises the cap to 50%; neither redirects magical
   damage.
+- [ ] Cast Enfeeble across low, equal, and high Intelligence-versus-Constitution
+  matchups. Confirm its `20-95%` hit-chance clamp and four-turn `20%` reductions
+  from the target's base Attack and Defense.
+- [ ] Verify Spellblade uses the four Weapon, Armor, Spell, and Universal
+  columns, with Imbue Weapon absent because it gates the promotion from Mage.
+  Confirm Counter Charge, Reflect, and Boost share ungated row 2; rows 3-7
+  represent levels 35-55 in five-level steps; and the Knight Enchanter
+  promotion occupies row 8. Verify Reflect
+  leads through +20 Magic Defense, Novel Shielding, and +20 Defense to Enhance
+  Armor, while Boost sits immediately above Kinetic Explosion. Verify True
+  Strike, Parry, and Double Strike at levels 35, 40, and 45. Confirm
+  Breakdown stacks to five and is consumed after benefiting a
+  damaging spell; Novel Shielding requires a Tome, snapshots twice its power,
+  refreshes for full cost, and absorbs direct weapon/spell damage before
+  temporary HP while ignoring DOT, reflected, field, and environmental damage;
+  and Kinetic Explosion damages every enemy for one charge per cast.
+- [ ] With Storage Capacity, fill both the two-charge Arcane and two-charge
+  Elemental pools and confirm categories accumulate independently.
+  Confirm both typed icons remain visible at zero, are dark while empty, and
+  light independently as their pools gain charges.
+  Verify Counter Charge gains at most one charge per incoming spell action;
+  Counter Charge uses the incoming spell category; each Amplify doubles only
+  its matching pool; broad Arcane/elemental resistance applies; misses preserve
+  charges; and combat end clears all Spellblade state.
+- [ ] At full and empty mana, verify Enhance Blade adds respectively 100% and
+  0% of base weapon damage before multipliers, while Enhance Armor adds 0% and
+  100% of equipped armor to physical armor.
+- [ ] Learn Knight Enchanter Third Eye at level 70 through Aegis Release. Confirm
+  Intelligence increases critical chance and both weapon and spell dodge
+  chance, while changing Intelligence without Third Eye does not grant those
+  additions.
+- [ ] As Knight Enchanter, cast Element, Force, Protection, and Conjuration
+  spells and verify the first signature remains the Foundation while the latest
+  different signature replaces only the Accent. Repeated signatures must not
+  add slots, and mixed spell categories must never replace typed charges.
+- [ ] Release each Foundation and Accent through an ordinary charged weapon
+  hit, Aegis Weave, and Spellbind. Verify all charges are consumed, Spellbind
+  waits up to three turns for a positive-damage spell hit, applicable damage is
+  Non-elemental, and combat end clears pattern, pending Spellbind, and charges.
+- [ ] Exercise Cleaving Edge, Resonant Strike, Echoing Blade, Arcane Riposte,
+  Weave Reservoir, Re-debuff, Defensive Release, and Quick Recharge. Confirm
+  Defend is replaced, preparation caps at three stacks, adjacent targeting
+  follows encounter slots, and a multi-hit weapon release repeats on every
+  successful hit without surviving the action. Verify Storage Capacity II
+  supports three charges per type alone and four when stacked with Storage
+  Capacity, and that all pending release state clears at combat end.
+- [ ] Awaken and equip Arcane Duel. Confirm Weave Memory preserves a spent
+  Accent as the next Foundation without creating or displaying Arcane Tempo.
 - [ ] Verify the Sorcerer gate is `INT 15/WIS 13`, Warlock
   `INT 14/CHA 14/WIS 10/CON 10`, Spellblade
   `STR 10/CON 11/INT 14/CHA 12`, and Conjurer
@@ -135,7 +185,7 @@ second implementation backlog.
   fit their progression panels without node overlap, scrolling, or clipped
   connectors. Confirm the Enhancement merge runs down the `0.5` midpoint into
   the top of Classical Force and the Arcane Fundamentals line runs down the
-  `1.5` midpoint into the top of Esotericism.
+  `1.5` midpoint into the top of Arcane Tradition.
 - [ ] Verify Footpad, Healer, and Pathfinder expose their four authored
   independent first-tier choices. Confirm Pathfinder may choose Natural
   Attunement or Tremor and receives neither automatically.
@@ -215,37 +265,48 @@ second implementation backlog.
   ungated Adaptive Arsenal scales parry/counter-critical chance by `0.5%/1%`
   per rank. Confirm all three floating entries and all three art columns remain
   inside the tree panel, and long specialization requirements wrap in Details.
-- [ ] Verify Lancer shows 16 development nodes in a six-column layout. Jump
+- [ ] Verify Lancer shows 23 development nodes in a seven-column layout. Jump
   must be the top skill in column 2 and own three independent paths: defensive
-  Defend/Acrobat/Grounded Landing, middle `+20 Defense`/`+20 Attack`/promotion,
+  Defend/Acrobat/Grounded Landing, independent middle Defense/Vigilant Landing
+  and Attack nodes,
   and offensive Aerial Footwork/Quick Dive/Thrust/Rend. Polearm Proficiency
-  must be the top skill in column 5 with Lance Sweep, `+50 HP`, and
-  Zephyrstrike below it. Confirm Acrobat requires level 40, Thrust level 45,
+  must be the top skill in column 5, with two-point Polearm Excellence below
+  it. Confirm Acrobat requires level 40, Thrust level 45,
   and Rend level 50.
   Confirm unbound Parry and True Strike occupy the final column and adopt
   retained ownership without another point.
-- [ ] Confirm the connector to Promote: Dragoon follows Jump through both
-  middle rating nodes. It must also require global level 60, `STR 17`, and
-  `DEX 13`, but neither optional modifier branch.
-- [ ] After promotion, verify Dragoon shows the same 16 Lancer nodes in the
+- [ ] Confirm Promote: Dragoon in column 4 has a left connector running `Jump
+  -> +20 Defense -> Vigilant Landing -> promotion` and separately requires
+  two-point Polearm Excellence. It must also require global level 60, `STR 17`,
+  and `DEX 13`, but neither optional modifier branch. The Vigilant Landing
+  connector must descend in column 2 and must not pass behind Thrust or Rend.
+- [ ] After promotion, verify Dragoon shows the same 23 Lancer nodes in the
   same positions, omits only Promote: Dragoon, and adds all 11 Dragoon nodes.
   Confirm prior purchases remain owned and every unpurchased Lancer node can
   still be purchased from the Dragoon tree. Confirm all three inherited Jump
   paths remain independent. Confirm Shield Block is absent because it was
   required on the Warrior-to-Lancer route.
-- [ ] Confirm Polearm Excellence is ungated at row 5 and connects through
-  `+30 Attack` to True Piercing Strike, with a second connector from True
-  Strike. Confirm `+20 Attack` connects to Dragon's Ascent; Grounded Landing
+- [ ] Confirm Polearm Proficiency in column 5 feeds Polearm Assault in column 4
+  and Polearm Guard in column 6, while Parry/True Strike use column 7.
+  Exercise Extended Reach, Swing & Bash, Phalanx, Critical
+  Vigor, Dragon Soul, and Vigilant Landing. Confirm `+20 Attack` connects to
+  Dragon's Ascent; Grounded Landing
   connects through Retribution and Unstoppable; and Rend connects through
   Quake and Soaring Strike. Dragon's Ascent must gate `+30 Defense`; that
   Defense node must not connect to Retribution.
   Dragon Dive must require Dragon's Ascent, Soaring Strike, and Unstoppable.
 - [ ] Confirm Parry and True Strike occupy final-column rows 2 and 3. Confirm
-  all new Dragoon nodes except Polearm Excellence are shifted down one row.
+  Dragoon extends column 5 with Attack and level-80 Polearm Mastery, adds
+  two-point level-75 Dragonheart to Guard, and moves level-75 True Piercing Strike to
+  column 7 behind True Strike. Vigilant Landing must also cost two points.
   Verify Dragon's Ascent has no separate level gate, Retribution requires 65,
-  True Piercing Strike and Unstoppable 70, and Dragon Dive 80.
-- [ ] Confirm Lancer remains within rows 0-6 and Dragoon fits rows 0-7 without
+  Unstoppable 70 and Dragon Dive 80.
+- [ ] Confirm Lancer and Dragoon fit rows 0-7 without
   scrolling at the standard progression-screen resolution.
+- [ ] Open the Aerial Tempo tab with every Jump modification unlocked. Confirm
+  the tab explains how clean Jump landings build Tempo and how weapon actions
+  spend it, displays every modification at once in two columns, and uses a
+  compact selected-modification description panel without scrolling.
 - [ ] Land clean and missed Jumps and verify each grants Tempo, consecutive
   Jumps stack to effective caps 3/4, and interruptions grant none. Spend Tempo
   with eligible Sword/Polearm actions and verify misses consume, multi-hit
@@ -256,30 +317,31 @@ second implementation backlog.
   `+8%/+4` per-stack payoff tuning and a real two-turn 15% Landing Shield that
   refreshes to the larger value, absorbs damage, and expires. Confirm a
   dormant/unequipped or legacy `+1 Jump Mod` ring grants no extra capacity.
-- [ ] Verify Sentinel has 15 development nodes within rows 0-5 plus Promote:
-  Stalwart Defender at `(1, 6)`. Confirm Counter, Wall, and Anti-magic
-  prerequisites and level gates; Shield Block must be absent, while known Goad
-  and Retaliate adopt without another point. Anti-magic must be the single
-  ungated `Spell Reflection (4, 0) -> +20 Magic Defense -> +50 HP` line using
-  compatibility ID `sentinel.ability.deflect-spell`; retired Deflect Spell
-  ownership and `sentinel.ability.spell-reflection` saves must migrate to it.
-- [ ] Complete the ten-node Sentinel core, raise a Human's Constitution once,
-  and promote for three points at level 60. Confirm four points remain,
-  unpurchased Sentinel nodes close, learned nodes remain, and the Stalwart tree
-  contains exactly 11 new development nodes within rows 0-3.
+- [ ] Verify Sentinel has 24 development nodes across six columns, all shifted
+  down one row, plus Promote: Stalwart Defender at `(2, 8)`. Confirm Assault, Bulwark, Resistance, and
+  Support gates; Adrenaline's split; and independent inherited Goad, Charge,
+  and Double Strike. Any one of the four level-55 talents must qualify.
+- [ ] Promote for three points at level 60 with `CON 20`. Confirm unpurchased
+  Sentinel nodes close and the Stalwart tree contains exactly 20 development
+  nodes across Assault, Bulwark, Resistance, and Support in rows 1-6. Confirm
+  every column is a continuous prerequisite chain, including Repercussion to
+  Focused Assault, Hold the Line to Brace Wall, Spell Block to Bulwark Guard
+  to Spell Reflection, and Purge Weakness to Boast. Confirm Punishing Guard,
+  Unbroken Wall, Fortified Citadel, and Final Redoubt cost two points.
 - [ ] Build Resolve from Defend, blocks, physical damage after mitigation,
   Goad, and Hold the Line. Verify caps 50/100, no duplicate ring gain, legacy
   `guard_meter` load compatibility, full-bar major-hit reduction, mastery
-  persistence, and Surge thresholds 0/4/8.
-- [ ] Prepare Spell Reflection for 25 Resolve. Verify a compatible hostile
-  targeted spell reflects once across both legacy and data-driven execution;
-  generic Reflect has priority, beneficial/area/unreflectable spells do not
-  consume it, Mirror Bastion grants 20 Resolve and `+6 Magic Defense`, and
-  expiry/combat/save/death/class cleanup works.
-- [ ] Exercise Fortified Citadel at barrier 125/four turns, Crushing Reprisal
-  at `1.60x` with two-turn `-3 Attack/-3 Speed`, and Final Redoubt at 40%
-  healing/barrier 75/three turns. Verify Punishing Guard, Unbroken Wall,
-  Watchful Reprisal, and Resolute Guard only alter their documented effects.
+  persistence, and immediate access to all four full-bar Bursts.
+- [ ] Exercise all eight Resolve actions in the 4-by-2 class-tab grid. Verify
+  Spell Block scales with spell/shield strength, Shielding Ward halves the
+  remainder, passive Spell Reflection can return blocked damage, and Mirror
+  Bastion grants `+50 Magic Defense`.
+- [ ] Exercise Citadel Aegis at 50% magic absorption, three/four-hit Ironwall
+  Revenge, Last Bastion, and Stronghold's 30% melee/block modifiers. Verify
+  Fortified Citadel, Crushing Vengeance, Double Payback, Iron Maiden,
+  Punishing Guard, Braggadocious, and Final Redoubt alter only their documented
+  effects. Bursts must be absent from ordinary Specials and unlocked in the
+  Resolve tab.
 - [ ] Verify Paladin has 20 development nodes within rows 0-6 plus Promote:
   Crusader at `(2.5, 7)`. Confirm both Oath connectors descend to row 7 before
   joining the promotion. Confirm ungated Oath's Judgment `(1, 0)` splits into
@@ -288,8 +350,8 @@ second implementation backlog.
   `(4, 0)` splits into column-3 Heal/MP/Sworn Purpose/Blessed Light and
   column-5 Bless/Magic Defense/Defense/Divine Protection. Resist Shadow must
   sit at `(3, 4)` with level 45 and Parry must sit at `(5, 3)`.
-  Confirm Magic Defense and Resist Shadow have no connectors from Oath's
-  Shelter, while Magic Defense gates Parry and Parry gates Defense. Divine
+  Confirm Bless connects to Magic Defense while Magic Defense gates Parry and
+  Parry gates Defense. Divine
   Protection must sit at `(5, 5)` with level 50. Verify promotion accepts either Oath root,
   then complete the six Human stat increases, promote for three progression
   points, and confirm 14 progression points and nine attribute points remain
@@ -303,16 +365,14 @@ second implementation backlog.
   outside battle for 15 MP and verify 50% Shadow resistance lasts for 100
   steps of game time, survives combat cleanup, expires naturally, and never
   appears in either frontend's combat spell selector.
-- [ ] Verify Crusader has exactly 19 new nodes within rows 0-5, grouped as
-  Melee, Spells, Healing, and Protection. Confirm Condemnation is ungated and
-  splits into mutually exclusive Two-Handed Weapon Proficiency and Sword &
-  Board paths. Verify the two-handed route reaches level-75 Mortal Strike then
-  Righteous Advance, while Sword & Board reaches level-70 True Piercing Strike
-  then level-85 Triple Strike. Confirm no True Strike prerequisite or node and
-  no Turn Undead II node remain. Verify Smite II -> Smite III and Heal II ->
-  Cleanse -> Dispel replacements, retained-or-purchased Repel the Wicked in
-  the Spells path, plus Consecrated Bulwark -> Parry ->
-  Posturing protection training.
+- [ ] Verify Crusader has 23 nodes and uses rows 0-7 for ungated through level
+  95. Confirm the two melee style entries cost two points. Exercise Censure
+  against a charging enemy and Shield Ricochet against multiple enemies. Verify
+  `Repel the Wicked -> Smite II -> Sanctification -> Smite III`, including the
+  50% Holy bonus and level-90 Smite III; verify `Dispel -> Cleanse -> Heal II ->
+  Prayer of Faith`, including all three below-10%-HP outcomes. Confirm an
+  inherited middle-path ability does not unlock its successor until the full
+  preceding path is purchased.
 - [ ] Cast Repel the Wicked on fiends and undead. Confirm failure leaves the
   target in combat, ordinary success makes it flee without kill rewards, and a
   successful cast against a Condemnation-marked target disintegrates it.

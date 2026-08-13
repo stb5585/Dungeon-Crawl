@@ -7,6 +7,7 @@ from ..popup_menus import (
     BestiaryPopupMenu,
     EquipmentPopupMenu,
     InventoryPopupMenu,
+    QuestPopupMenu,
     SimpleListPopupMenu,
     TotemAspectsPopupMenu,
 )
@@ -42,6 +43,7 @@ __all__ = [
     "RESISTANCE_ORDER",
     "RESISTANCE_SLOT_COUNT",
     "ResistanceSummary",
+    "QuestPopupMenu",
     "SimpleListPopupMenu",
     "TotemAspectsPopupMenu",
 ]

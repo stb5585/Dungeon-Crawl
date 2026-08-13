@@ -24,12 +24,13 @@ text{font-family:DejaVu Sans,Arial,sans-serif}
 <path class="edge" d="M 802.0 523.0 V 573.0 H 802.0 V 623.0"/>
 <path class="edge" d="M 802.0 623.0 V 673.0 H 802.0 V 723.0"/>
 <path class="edge" d="M 1024.0 123.0 V 173.0 H 1246.0 V 223.0"/>
+<path class="edge" d="M 1246.0 223.0 V 273.0 H 1246.0 V 323.0"/>
 <path class="edge" d="M 1246.0 523.0 V 573.0 H 1246.0 V 623.0"/>
 <path class="edge" d="M 1246.0 423.0 V 473.0 H 1246.0 V 523.0"/>
 <path class="edge" d="M 802.0 323.0 V 423.0 H 802.0 V 523.0"/>
 <path class="edge" d="M 1246.0 323.0 V 373.0 H 1246.0 V 423.0"/>
-<path class="edge" d="M 358.0 123.0 V 473.0 H 691.0 V 823.0"/>
-<path class="edge" d="M 1024.0 123.0 V 473.0 H 691.0 V 823.0"/>
+<path class="edge" d="M 358.0 123.0 V 823.0 H 691.0 V 823.0"/>
+<path class="edge" d="M 1024.0 123.0 V 823.0 H 691.0 V 823.0"/>
 <rect x="264.0" y="92.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
 <text class="name" x="274.0" y="116.0">Oath&#x27;s Judgment</text>
 <text class="detail" x="274.0" y="137.0">Ability · Cost 1</text>

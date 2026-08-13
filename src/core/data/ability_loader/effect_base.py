@@ -204,6 +204,10 @@ class BaseEffectFactoryMixin:
             target_hi_divisor=data.get('target_hi_divisor', 1),
             actor_lo_divisor=data.get('actor_lo_divisor'),
             use_crit_multiplier=data.get('use_crit_multiplier', False),
+            base_chance=data.get('base_chance'),
+            chance_per_point=data.get('chance_per_point', 0.0),
+            minimum_chance=data.get('minimum_chance', 0.0),
+            maximum_chance=data.get('maximum_chance', 1.0),
         )
 
     @staticmethod

@@ -3,6 +3,8 @@ Dungeon HUD (Heads-Up Display)
 Displays character stats, minimap, inventory quick-access, and other UI elements.
 """
 
+import re
+
 import pygame
 
 from src.core import map_tiles
@@ -556,7 +558,16 @@ class DungeonHUD:
             return (230, 205, 120)
         if label in {"Misfortune", "Backlash", "Death Mark", "Corruption"}:
             return (220, 150, 150)
-        if label in {"Aerial Tempo", "Arcane Tempo", "Revelation", "Stolen Charge", "Conduit"}:
+        if label in {
+            "Aerial Tempo",
+            "Foundation",
+            "Accent",
+            "Weave",
+            "Spellbind",
+            "Revelation",
+            "Stolen Charge",
+            "Conduit",
+        }:
             return (170, 210, 255)
         if label in {
             "Companion",
@@ -570,6 +581,108 @@ class DungeonHUD:
         return self.text_color
 
     @staticmethod
+    def _blade_charge_counts(value: str) -> tuple[int, int]:
+        """Parse stable typed Blade Charge status text for the HUD meter."""
+        arcane_match = re.search(r"Arcane\s+×(\d+)", value)
+        elemental_match = re.search(r"Elemental\s+×(\d+)", value)
+        return (
+            int(arcane_match.group(1)) if arcane_match else 0,
+            int(elemental_match.group(1)) if elemental_match else 0,
+        )
+
+    def _render_blade_charge_glyph(
+        self,
+        center: tuple[int, int],
+        charge_type: str,
+        active: bool,
+        maxed: bool = False,
+    ) -> None:
+        """Render a lit or dormant Arcane/Elemental charge glyph."""
+        if charge_type == "Arcane":
+            bright = (160, 116, 255)
+            dim = (52, 43, 66)
+        else:
+            bright = (245, 152, 54)
+            dim = (64, 48, 35)
+        color = bright if active else dim
+        outline = tuple(min(255, component + (38 if active else 15)) for component in color)
+        if maxed:
+            pulse = (pygame.time.get_ticks() // 180) % 2
+            pygame.draw.circle(
+                self.screen,
+                (255, 232, 145) if pulse else outline,
+                center,
+                12,
+                2,
+            )
+        if active:
+            pygame.draw.circle(self.screen, (*bright, 42), center, 11)
+        pygame.draw.circle(self.screen, (18, 18, 24), center, 9)
+        pygame.draw.circle(self.screen, color, center, 8)
+        pygame.draw.circle(self.screen, outline, center, 8, 1)
+        if charge_type == "Arcane":
+            points = [
+                (center[0], center[1] - 5),
+                (center[0] + 2, center[1] - 1),
+                (center[0] + 5, center[1]),
+                (center[0] + 2, center[1] + 1),
+                (center[0], center[1] + 5),
+                (center[0] - 2, center[1] + 1),
+                (center[0] - 5, center[1]),
+                (center[0] - 2, center[1] - 1),
+            ]
+            pygame.draw.polygon(self.screen, (224, 211, 255) if active else (88, 78, 102), points)
+        else:
+            flame = [
+                (center[0], center[1] - 6),
+                (center[0] + 5, center[1] + 3),
+                (center[0], center[1] + 6),
+                (center[0] - 5, center[1] + 3),
+            ]
+            pygame.draw.polygon(self.screen, (255, 223, 112) if active else (92, 75, 53), flame)
+
+    @staticmethod
+    def _blade_charge_capacity(player_char) -> int:
+        skills = getattr(player_char, "spellbook", {}).get("Skills", {})
+        return 2 if "Storage Capacity" in skills else 1
+
+    def _render_blade_charge_meter(
+        self,
+        value: str,
+        x: int,
+        y: int,
+        max_width: int,
+        *,
+        capacity: int = 1,
+    ) -> None:
+        """Render both typed Blade Charge pools, including empty pools."""
+        arcane, elemental = self._blade_charge_counts(value)
+        segment_width = max(72, max_width // 2)
+        entries = (
+            ("Arcane", arcane, x),
+            ("Elemental", elemental, x + segment_width),
+        )
+        for charge_type, count, entry_x in entries:
+            self._render_blade_charge_glyph(
+                (entry_x + 9, y + 9),
+                charge_type,
+                count > 0,
+                count >= capacity,
+            )
+            text_color = (220, 220, 238) if count > 0 else (100, 100, 112)
+            available_width = max(42, segment_width - 23)
+            text = self._truncate_text(
+                self.small_font,
+                f"{charge_type} ×{count}",
+                available_width,
+            )
+            surface = self.small_font.render(text, True, text_color)
+            self.screen.blit(surface, (entry_x + 22, y))
+            if count >= capacity:
+                max_surface = self.small_font.render("MAX", True, (255, 225, 135))
+                self.screen.blit(max_surface, (entry_x + 22, y + 15))
+
+    @staticmethod
     def _class_kit_row_bucket(label: str) -> int:
         if label == "Ring Preserve":
             return 0
@@ -581,7 +694,10 @@ class DungeonHUD:
             "Backlash",
             "Eclipse",
             "Blade Charge",
-            "Arcane Tempo",
+            "Foundation",
+            "Accent",
+            "Weave",
+            "Spellbind",
             "Momentum",
             "Conviction",
             "Aerial Tempo",
@@ -754,6 +870,7 @@ class DungeonHUD:
         for label, value, color in visible_lines:
             if y + 20 > panel_rect.bottom - 12:
                 break
+            row_height = 22
             label_surf = self.small_font.render(f"{label}:", True, (170, 170, 180))
             self.screen.blit(label_surf, (panel_rect.left + 12, y))
             value_x = panel_rect.left + 12 + label_w
@@ -761,11 +878,20 @@ class DungeonHUD:
                 self._render_coin_meter(label, str(value), value_x, y + 10, max_value_w)
             elif label == "Resolve":
                 self._render_focus_meter(str(value), value_x, y + 10, max_value_w, fill_color=(190, 55, 55))
+            elif label == "Blade Charge":
+                self._render_blade_charge_meter(
+                    str(value),
+                    panel_rect.left + 12,
+                    y + 20,
+                    panel_rect.width - 24,
+                    capacity=self._blade_charge_capacity(player_char),
+                )
+                row_height = 42
             else:
                 value_text = self._truncate_text(self.small_font, str(value), max_value_w)
                 value_surf = self.small_font.render(value_text, True, color)
                 self.screen.blit(value_surf, (value_x, y))
-            y += 22
+            y += row_height
 
         totem = self._totem_effect(player_char)
         if totem:

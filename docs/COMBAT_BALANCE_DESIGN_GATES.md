@@ -122,9 +122,10 @@ tasks. Before changing any numbers, run
   manual evidence show multi-hit skills are outperforming single-hit peers
   without enough miss risk. The spec must name affected skills and whether
   accuracy decays per extra hit, per target, or per repeated use.
-- Enfeeble strength: tune only after measuring application rate, debuff size,
-  duration, enemy priority usage, and whether the current effect is weak for
-  players, enemies, or both.
+- Enfeeble baseline: application chance is `70% + 2%` per point of caster
+  Intelligence minus target Constitution, clamped to `20-95%`. A hit lowers
+  base Attack and Defense by `20%` for four turns. Further tuning still requires
+  application-rate, duration, and enemy-priority evidence for both sides.
 - Dilong damage: after the Earth/flying correction, use focused combat evidence
   before changing Dilong's physical attack, Earth Maw, or the global physical
   damage curve. Flying targets are not blanket immune to Earth; only grounded

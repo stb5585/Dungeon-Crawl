@@ -144,11 +144,14 @@ from .promotions import (
     Bulwark,
     ShieldRiposte,
     CoveringGuard,
-    DeflectSpell,
     SpellReflection,
     OathsJudgment,
     OathsShelter,
     Condemnation,
+    Censure,
+    PrayerOfFaith,
+    Sanctification,
+    ShieldRicochet,
     CitadelAegis,
     IronwallReprisal,
     LastBastionSurge,
@@ -182,6 +185,44 @@ from .promotions import (
     HarryPrey,
     MendWounds,
     WingedPounce,
+)
+
+from .defender import (
+    Boast,
+    Braggadocious,
+    BulwarkGuard,
+    CriticalVigor,
+    CrushingVengeance,
+    DoublePayback,
+    Dragonheart,
+    DragonSoul,
+    ExtendedReach,
+    FocusedAssault,
+    IronMaiden,
+    Phalanx,
+    PurgeWeakness,
+    Repercussion,
+    ShieldingWard,
+    ShieldRiposte,
+    SpellBlock,
+    SpellReflection,
+    Stronghold,
+    SwingAndBash,
+    VigilantLanding,
+)
+
+from .knight_enchanter import (
+    AegisWeave,
+    ArcaneRiposte,
+    CleavingEdge,
+    DefensiveRelease,
+    EchoingBlade,
+    QuickRecharge,
+    ReDebuff,
+    ResonantStrike,
+    Spellbind,
+    StorageCapacity2,
+    WeaveReservoir,
 )
 
 from .utility import (
@@ -308,7 +349,7 @@ from .mage import (
     ConjureSpirit,
     Electrified,
     EnlivenDead,
-    Esotericism,
+    ArcaneTradition,
     ExplosiveDecoy,
     FireInside,
     FloatingCrystal,
@@ -324,6 +365,16 @@ from .mage import (
     TerraFirma,
     Torchlight,
     WindCurrents,
+)
+
+from .spellblade import (
+    AmplifyArcane,
+    AmplifyElemental,
+    Breakdown,
+    CounterCharge,
+    KineticExplosion,
+    NovelShielding,
+    StorageCapacity,
 )
 
 from .enemy import (

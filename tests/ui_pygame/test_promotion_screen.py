@@ -181,7 +181,7 @@ class KnightEnchanterClass(KnightClass):
     def __init__(self):
         super().__init__()
         self.name = "Knight Enchanter"
-        self.description = "Converts blade charges into Arcane Tempo."
+        self.description = "Weaves spell signatures through blade charges."
 
 
 class ConjurerClass(KnightClass):

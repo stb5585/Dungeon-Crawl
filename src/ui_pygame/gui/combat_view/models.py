@@ -28,6 +28,7 @@ class FloatingCombatText:
     color: tuple[int, int, int]
     start_ms: int
     duration_ms: int = 760
+    stack_index: int = 0
 
 
 @dataclass(frozen=True)

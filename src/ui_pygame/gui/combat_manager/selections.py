@@ -360,12 +360,13 @@ class CombatSelectionMixin:
     def _select_spell(self, player_char, enemy):
         """Show spell selection menu and return selected spell name."""
         from src.core import items as core_items
+        from src.core.abilities.descriptions import described_selection_text
 
         spell_entries = [
             (
                 name,
                 f"{name} (MP: {getattr(spell, 'cost', 0)})",
-                getattr(spell, "description", ""),
+                described_selection_text(player_char, spell),
             )
             for name, spell in player_char.spellbook['Spells'].items()
             if not getattr(spell, 'passive', False)
@@ -437,6 +438,7 @@ class CombatSelectionMixin:
 
     def _select_skill(self, player_char, enemy, *, allowed_names=None):
         """Show skill selection menu and return selected skill name."""
+        from src.core.abilities.descriptions import described_selection_text
         # Filter out passive and currently unusable equipment-dependent skills.
         skills = self._available_skill_names(player_char, enemy, allowed_names=allowed_names, resolve=False)
 
@@ -481,7 +483,7 @@ class CombatSelectionMixin:
                     )
                 else:
                     skill_descriptions.append(
-                        getattr(skill, "description", "")
+                        described_selection_text(player_char, skill)
                     )
 
             self._render_described_selection_menu(
@@ -603,7 +605,7 @@ class CombatSelectionMixin:
             skills = [
                 name
                 for name in skills
-                if name != "Hold the Line" and name not in burst_names
+                if name not in burst_names
             ]
         if not skills:
             label = "bursts" if bursts else "abilities"

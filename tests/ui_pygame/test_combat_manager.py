@@ -234,7 +234,7 @@ def _make_enemy(name="Goblin", hp=(20, 20)):
     return enemy
 
 
-def test_resolve_surges_are_hidden_until_mastery_unlocks(monkeypatch):
+def test_resolve_bursts_require_a_full_bar_but_not_mastery(monkeypatch):
     manager = _make_manager(monkeypatch)
     player = _make_player()
     player.cls = SimpleNamespace(name="Stalwart Defender")
@@ -247,8 +247,9 @@ def test_resolve_surges_are_hidden_until_mastery_unlocks(monkeypatch):
     assert not manager._skill_available_for_selection(player, abilities.CitadelAegis())
     class_rings.ensure_state(player)["data"]["Stalwart Defender"]["guard_meter"] = 100
     assert manager._skill_available_for_selection(player, abilities.CitadelAegis())
-    assert not manager._skill_available_for_selection(player, abilities.IronwallReprisal())
-    assert not manager._skill_available_for_selection(player, abilities.LastBastionSurge())
+    assert manager._skill_available_for_selection(player, abilities.IronwallReprisal())
+    assert manager._skill_available_for_selection(player, abilities.LastBastionSurge())
+    assert manager._skill_available_for_selection(player, abilities.Stronghold())
     assert manager._skill_available_for_selection(player, abilities.Bulwark())
 
     state = class_rings.ensure_state(player)["data"]["Stalwart Defender"]
@@ -684,7 +685,20 @@ def test_capture_background_scroll_handling_and_action_deduplication(monkeypatch
     promotion_kits.combat_state(player)["hold_the_line"] = 2
     assert manager._build_display_actions() == ["Attack", "Resolve", "Items"]
 
+    sentinel_skills = player.spellbook["Skills"]
+    player.cls = SimpleNamespace(name="Knight Enchanter")
+    player.spellbook["Skills"] = {
+        "Defensive Release": abilities.DefensiveRelease(),
+    }
+    assert manager._build_display_actions() == [
+        "Attack",
+        "Defensive Release",
+        "Skills",
+        "Items",
+    ]
+
     player.cls = SimpleNamespace(name="Stalwart Defender")
+    player.spellbook["Skills"] = sentinel_skills
     player.spellbook["Skills"]["Citadel Aegis"] = abilities.CitadelAegis()
     state = class_rings.ensure_state(player)["data"]["Stalwart Defender"]
     state["guard_meter"] = 100
@@ -765,6 +779,67 @@ def test_combat_damage_effect_classifies_actions_and_elements(monkeypatch):
         ("float", "enemy", "-3", (235, 120, 105)),
     ]
     assert [call[0] for call in manager.combat_view.flash_calls] == [True, True]
+
+
+def test_floating_damage_uses_recorded_primary_damage_not_total_hp_loss():
+    result = SimpleNamespace(
+        combat_results=SimpleNamespace(
+            results=[
+                SimpleNamespace(target_id="goblin", damage=40),
+                SimpleNamespace(target_id="orc", damage=25),
+            ]
+        )
+    )
+
+    assert combat_manager.GUICombatManager._recorded_floating_damage(
+        result,
+        45,
+        target_id="goblin",
+    ) == 40
+    assert combat_manager.GUICombatManager._recorded_floating_damage(
+        result,
+        30,
+        target_id="orc",
+    ) == 25
+    assert (
+        combat_manager.GUICombatManager._recorded_floating_damage(
+            SimpleNamespace(),
+            45,
+        )
+        == 45
+    )
+
+    missile_result = SimpleNamespace(
+        combat_results=SimpleNamespace(
+            results=[
+                SimpleNamespace(
+                    target_id="goblin",
+                    damage=33,
+                    extra={"damage_instances": [15, 18]},
+                )
+            ]
+        )
+    )
+    assert combat_manager.GUICombatManager._recorded_floating_damage(
+        missile_result,
+        33,
+        target_id="goblin",
+    ) == (15, 18)
+
+
+def test_combat_damage_effect_renders_each_recorded_damage_instance(monkeypatch):
+    manager = _make_manager(monkeypatch)
+
+    manager._show_combat_damage_effect(
+        "enemy",
+        "Cast Spell",
+        "Magic Missile",
+        "",
+        (15, 18),
+    )
+
+    assert ("float", "enemy", "-15", (235, 120, 105)) in manager.combat_view.impact_calls
+    assert ("float", "enemy", "-18", (235, 120, 105)) in manager.combat_view.impact_calls
 
 
 def test_post_turn_and_special_effect_helpers(monkeypatch):

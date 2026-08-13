@@ -437,18 +437,15 @@ additional visual presentation, and playtest follow-up.
   - `Resolve` / `Guard Meter`: max 100. Defending, blocking, and mitigated
     physical damage build Resolve. While the awakened ring is equipped, a major
     incoming hit automatically spends 100 Resolve to reduce that hit by 40%.
-  - The promotion-kit V1 pass makes Resolve a baseline Sentinel/Stalwart
-    resource. Sentinel owns the shield stance and normal Resolve spends such as
-    `Bulwark`, `Shield Riposte`, `Shield Check`, `Brace Wall`,
-    `Covering Guard`, and the merged `Spell Reflection`; Stalwart keeps those
-    actions and adds full-bar `Resolve Surges`. Spell Reflection is the
-    ungated `(4, 0)` root of
-    `Spell Reflection -> +20 Magic Defense -> +50 HP` and uses compatibility
-    node ID `sentinel.ability.deflect-spell`. The retired learned Deflect Spell
-    and old `sentinel.ability.spell-reflection` node ID migrate to it. It spends
-    25 Resolve and redirects the first compatible hostile targeted spell
-    during its two-turn preparation. Mirror Bastion rewards a trigger with 20
-    Resolve and `+6 Magic Defense` for two turns. Awakened/equipped
+  - Resolve is a baseline Sentinel/Stalwart resource. Sentinel spends it on
+    eight shield and tempo actions: Hold the Line, Brace Wall, Spell Block,
+    Bulwark Guard, Purge Weakness, Repercussion, Boast, and Focused Assault.
+    Shield Riposte and Spell Reflection are passive modifiers. Spell Block
+    absorbs compatible hostile projectile spells using spell and shield
+    strength; Spell Reflection may return the blocked damage. Stalwart keeps
+    those actions and adds the full-bar Resolve Bursts Citadel Aegis, Ironwall
+    Revenge, Last Bastion, and Stronghold. Mirror Bastion raises Magic Defense
+    by 50 while its spell-defense payoff is active. Awakened/equipped
     `Shield Mastery` remains the strongest automation layer for major-hit
     mitigation and reads/spends this same Resolve value without a duplicate
     gain path.
@@ -463,7 +460,7 @@ additional visual presentation, and playtest follow-up.
   riders for the same school add +15% rider chance; four stacks guarantee the
   next eligible rider.
   - `School Affinity` is specialization-aware. Classical Force tracks the six
-    elemental schools; Esotericism tracks Arcane affinity and presents only
+    elemental schools; Arcane Tradition tracks Arcane affinity and presents only
     that school in the mechanic panel. Sorcerer affinity caps at 50; Wizard
     affinity caps at 100. Matching casts raise affinity by 2. Elemental
     specialization lowers the opposite by 1 and drifts other elemental schools
@@ -485,8 +482,17 @@ additional visual presentation, and playtest follow-up.
     Eclipse backlash conversion.
   - Status: playable in the Church when a dormant Shadowcaster Class Ring is
     equipped or stored.
-- `Knight Enchanter`: `Arcane Duel` awakens `Arcane Tempo`, preserving the
+- `Knight Enchanter`: `Arcane Duel` awakens `Weave Memory`, preserving the
   existing `Mana Tap+` ring hook internally for compatibility.
+  - Knight Enchanter inherits Spellblade's combat-only Arcane and Elemental
+    pools: one charge per damaging spell action, one slot per pool or two each
+    with Storage Capacity, and full release on the next damaging weapon hit.
+    Counter Charge uses the incoming spell category, misses preserve both pools,
+    and each matching Amplify doubles its pool from 12% to 24% per charge.
+  - Knight Enchanter casts also establish a two-slot Foundation/Accent pattern.
+    Enchanted Assault, Aegis Weave, and Spellbind consume that pattern with the
+    same typed charge pools. An awakened, equipped Arcane Duel ring preserves
+    the spent Accent as the next Foundation. It does not add another meter.
   - Status: playable in the Church when a dormant Knight Enchanter Class Ring is
     equipped or stored.
 - `Thaumaturgist`: `Conduit Ritual` permanently sacrifices 5% max HP and

@@ -75,7 +75,14 @@ class CharacterOffenseMixin:
             if ability_mechanics.has_skill(self, "Blind Fighting"):
                 blind_pen *= 0.50
             hit_mod *= 1 - (blind_pen * self.status_effects["Blind"].active)
-            hit_mod *= 1 - FLYING_ACCURACY_PENALTY * defender.flying
+            extended_reach = bool(
+                defender.flying
+                and getattr(self.equipment.get("Weapon"), "subtyp", None) == "Polearm"
+                and "Extended Reach" in self.spellbook.get("Skills", {})
+            )
+            hit_mod *= 1 - FLYING_ACCURACY_PENALTY * (
+                defender.flying and not extended_reach
+            )
             hit_mod *= 1 - (DISARM_HIT_PENALTY * self.is_disarmed())
             hit_mod *= 1 - (BERSERK_HIT_PENALTY * (self.status_effects['Berserk'].active))
             hit_mod *= 1 - (BLIND_RAGE_HIT_PENALTY * (self.status_effects["Blind Rage"].active))
@@ -115,12 +122,12 @@ class CharacterOffenseMixin:
 
         a_stat = attacker.check_mod("speed", enemy=self)
         d_stat = self.check_mod("speed", enemy=attacker)
-        d_stat += int(getattr(self.stats, "intel", 0)) if ability_mechanics.has_skill(self, "Third Eye") else 0
         if spell:
             a_stat = attacker.stats.intel
             # Spells are avoided via mental defense; low CHA/WIS should matter.
             cha_term = max(-5, min(5, int(self.stats.charisma) - 10))
             d_stat = max(0, int(self.stats.wisdom) + cha_term)
+        d_stat += ability_mechanics.third_eye_intelligence(self)
         armor_factor = {"None": 1, "Natural": 1, "Cloth": 1, "Light": 2, "Medium": 3, "Heavy": 4}
         a_chance = random.randint(a_stat // 2, a_stat) + \
             attacker.check_mod('luck', enemy=self, luck_factor=10)
@@ -172,7 +179,6 @@ class CharacterOffenseMixin:
                         chance *= GNOME_ENCUMBERED_DODGE_MULTIPLIER
                 except Exception:
                     pass
-        chance += ability_mechanics.third_eye_dodge_bonus(self)
         return min(MAX_DODGE_CHANCE, chance)
 
     def critical_chance(self, att: str) -> float:
@@ -180,6 +186,7 @@ class CharacterOffenseMixin:
 
         base_crit = BASE_CRIT_PER_POINT * (
             self.check_mod("speed") + self.check_mod("luck", luck_factor=10)
+            + ability_mechanics.third_eye_intelligence(self)
         )
         crit_chance = base_crit
         if self.equipment.get(att) is not None:
@@ -201,7 +208,6 @@ class CharacterOffenseMixin:
             maelstrom_hits = int(getattr(self, "maelstrom_hits", 0) or 0)
             maelstrom_bonus = maelstrom_hits * MAELSTROM_CRIT_PER_HIT
             crit_chance += maelstrom_bonus
-        crit_chance += ability_mechanics.third_eye_crit_bonus(self)
         crit_chance += ability_mechanics.drunken_brawler_crit_bonus(self)
         crit_chance += ability_mechanics.tricksters_gambit_crit_bonus(self)
         crit_chance += ability_mechanics.duelist_critical_bonus(self)
@@ -258,6 +264,8 @@ class CharacterOffenseMixin:
         except Exception:
             fire_inside_active = False
         self._last_attack_parried = False
+        self._last_weapon_primary_damage = 0
+        self._last_weapon_primary_damage_instances = []
         if defender.magic_effects["Ice Block"].active or defender.tunnel:
             return f"{self.name}'s attack has no effect.\n", False, crit
         if getattr(self, "_twist_fate_success", False):
@@ -333,6 +341,15 @@ class CharacterOffenseMixin:
             )
             crit_per = random.uniform(1, crits[i])
             crit_per = self._honed_attack_critical_multiplier(crit_per)
+            try:
+                from ..classes import promotion_kits
+
+                crit_per = promotion_kits.focused_assault_critical_multiplier(
+                    self,
+                    crit_per,
+                )
+            except Exception:
+                pass
             crit_per = grandmaster.brutish_critical_multiplier(
                 self,
                 weapon_type,
@@ -374,6 +391,7 @@ class CharacterOffenseMixin:
                 from ..classes import promotion_kits
 
                 hit_per += promotion_kits.aerial_accuracy_bonus(self)
+                hit_per += promotion_kits.focused_assault_accuracy(self)
                 hits[i] = hit_per > random.random()
             else:
                 dodge = False
@@ -424,7 +442,6 @@ class CharacterOffenseMixin:
                     defender, damage, att, ignore
                 )
                 weapon_dam_str += msg
-
             # --- Phase 6: Apply damage and on-hit effects ---
             if damage > 0:
                 mark = getattr(defender, "_reavers_mark", None)
@@ -459,6 +476,27 @@ class CharacterOffenseMixin:
                         damage = max(0, int(damage * HALF_ORC_CRIT_DAMAGE_TAKEN_MULTIPLIER))
                 except Exception:
                     pass
+                if damage > 0:
+                    try:
+                        from ..classes import promotion_kits
+
+                        damage, msg, fully_absorbed = (
+                            promotion_kits.absorb_novel_shield(
+                                defender,
+                                damage,
+                                source="weapon",
+                            )
+                        )
+                        weapon_dam_str += msg
+                        if fully_absorbed:
+                            hits[i] = False
+                            self._reset_maelstrom()
+                            if _class_name(self) == "Dragoon" and self.power_up:
+                                self.class_effects["Power Up"].active = False
+                                self.class_effects["Power Up"].duration = 0
+                            continue
+                    except Exception:
+                        pass
                 damage, temporary_health_message = defender._apply_temporary_health(
                     defender,
                     damage,
@@ -481,6 +519,8 @@ class CharacterOffenseMixin:
                         hits[i] = True
                         continue
                     defender.health.current -= damage
+                    self._last_weapon_primary_damage += damage
+                    self._last_weapon_primary_damage_instances.append(damage)
                     weapon_dam_str += self._build_damage_message(
                         defender, damage, typ, crits[i], att
                     )
@@ -622,11 +662,22 @@ class CharacterOffenseMixin:
                     < grandmaster.adaptive_arsenal_counter_crit_chance(defender)
                     else 1
                 )
+                arcane_riposte = (
+                    "Arcane Riposte"
+                    in getattr(defender, "spellbook", {}).get("Skills", {})
+                )
+                if arcane_riposte:
+                    from ..classes import promotion_kits
+
+                    arcane_riposte = promotion_kits.weave_release_available(defender)
                 counter_str, _, _ = defender.weapon_damage(
                     self,
                     dmg_mod=ability_mechanics.retort_counter_multiplier(defender),
                     crit=counter_crit,
+                    hit=arcane_riposte,
                 )
+                if arcane_riposte:
+                    msg += f"{defender.name}'s Arcane Riposte releases the stored weave.\n"
                 msg += counter_str
                 if not self.is_alive():
                     return msg, True

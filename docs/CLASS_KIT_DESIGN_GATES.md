@@ -16,8 +16,8 @@ nature Totems, Beast Master companion state, and class skill grants.
 
 Implemented V1 coverage includes:
 
-- Combat-only promotion meters for Foresight Threads, blade charge/Arcane
-  Tempo, Bloodied Momentum, Oath Conviction, Aerial Tempo, Resolve,
+- Combat-only promotion state for Foresight Threads, Blade Charges,
+  Foundation/Accent weaves, Bloodied Momentum, Oath Conviction, Aerial Tempo, Resolve,
   Fortune/Misfortune, Revelation, Death Mark, Stolen Charge, Devotion, Prayer,
   Ki, Crescendo, Aspect Harmony, Beast Master commands, and Totem Resonance.
 - Persistent promotion state for summon bonds, Case Journal, Bard repertoire,
@@ -29,7 +29,7 @@ Implemented V1 coverage includes:
   `Fourfold Surge`, `Totem Surge`, `Conduit Command`, borrowed summon
   invocations, Beast Master commands, `Winged Pounce`, and the Footpad-track
   passive identities.
-- Display identity updates for `Aerial Supremacy`, `Arcane Tempo`,
+- Display identity updates for `Aerial Supremacy`, `Weave Memory`,
   `No-Trace Opener`, and `Arcane Larceny` while preserving legacy internal
   compatibility hooks.
 - Master Monk-only `Ruyi Jingu Bang` ultimate-staff content through the
@@ -71,12 +71,12 @@ combat math, or numeric balance.
 | Astromancer | Constellation, rune grid, Foresight Threads, pending `Threaded Cast`. | Thread gain/cap/spend, pending cast, negated payoff, Rewind snapshot, active-sign enhancement. | `Runic Boost` and `Threaded Cast` remain selectable only when valid. | Show awakened/equipped `Constellation Cycle` readiness without implying manual sign control. | Build Threads, prepare `Threaded Cast`, and verify status/log state in combat. |
 | Demonologist | Corruption, active patron/mood, familiar echo, contract history summary where available. | Corruption gain/cooling, mood changes, twist/lucky-twist, withheld/unlocked intent notes. | Contract quote and Church Crypt review show costs, risk, patron, echo, and unlocked/withheld intent state. | Show contract echo/ring awakening state as contract shaping, not a generic stat boost. | Quote and resolve one contract, then inspect status and crypt review. |
 | Shadowcaster | Umbral Debt with cap, backlash, Eclipse turns. | Debt gain, cap/backlash, Eclipse activation/expiration, auto-heal spend, backlash conversion. | None beyond normal skill availability. | Show awakened/equipped `Umbral Debt` cap/stability readiness. | Store debt, enter Eclipse, overcap into backlash, and verify lines stay visible. |
-| Knight Enchanter | Blade Charge, Arcane Tempo, pending burst. | Charge store/overwrite/spend, miss consumption, Tempo gain, three-stack burst. | `Arcane Duel` text uses `Arcane Tempo` display identity. | Preserve legacy `Mana Tap+` compatibility while displaying `Arcane Tempo`. | Cast spell, attack with charge, and inspect Tempo status/logs. |
+| Knight Enchanter | Arcane/Elemental Blade Charges, Foundation, Accent, Defensive Release stacks, pending Echo/Spellbind. | Typed charge gain/spend, signature changes, all three releases and their release talents, and ring memory. | `Arcane Duel` text uses `Weave Memory` display identity. | Preserve legacy `Mana Tap+` compatibility while displaying `Weave Memory`. | Build and replace an Accent, route both charge types through all three releases, and inspect pattern/status/log feedback. |
 | Thaumaturgist | Known Xenid bond values or best bond, Conduit readiness. | Bond gain, borrowed invocation, `Conduit Command`, True Name rider, expiration. | Xenid menus keep current recall/calling behavior and show valid borrowed invocation availability. | Show awakened/equipped `Conduit Ritual` as Xenid scaling plus conduit rider readiness. | Gain bond, invoke a Xenid, prime conduit, and inspect status/logs. |
 | Berserker | Battle Scars, Bloodied Momentum/cap, bloodied threshold state where relevant. | Momentum gain/cap/spend, miss preservation, heavy-art mutation, `Final Assault` use. | None beyond existing weapon-art menus. | Show awakened/equipped `Bloodied Crits` and preservation readiness when relevant. | Build Momentum below 50% HP and spend it on a heavy art. |
 | Crusader | Vow, aura/mark, Oath Conviction/cap. | Conviction gain/spend, clean-outcome bonus, vow rider, mark/aura changes, preservation. | Vow Trial text remains explicit when no vow exists. | Show awakened/equipped `Vow Affirmation` preservation readiness. | Use sworn-vow action before and after ring awakening. |
 | Dragoon | Aerial Tempo/cap, pending follow-through, landing shield if active. | Clean Jump gain, interruption cleanup, spend, follow-through, landing shield. | Jump modification UI keeps existing capacity and no longer promises extra active mod capacity. | Show awakened/equipped `Aerial Supremacy` readiness. | Land a clean Jump, follow through, and inspect shield/readiness text. |
-| Sentinel/Stalwart Defender | Sentinel Resolve/cap/spends; Stalwart full-bar Resolve Surges. | Resolve gain/cap/spend, block, barrier, riposte, Surge unlock/progress, automatic major-hit mitigation. | Shield-required actions fail clearly when shield/offhand setup is invalid. | Show awakened/equipped `Guard Meter` auto-spend readiness without making it the only Stalwart identity. | Build Resolve as Sentinel, spend it on shield actions, then promote and inspect Resolve Surges. |
+| Sentinel/Stalwart Defender | Sentinel Resolve/cap/spends; Stalwart full-bar Resolve Bursts. | Resolve gain/cap/spend, block, barrier, riposte, Burst use, automatic major-hit mitigation. | Shield-required actions fail clearly when shield/offhand setup is invalid. | Show awakened/equipped `Guard Meter` auto-spend readiness without making it the only Stalwart identity. | Build Resolve as Sentinel, spend it on shield actions, then promote and inspect Resolve Bursts. |
 | Rogue | Fortune, Misfortune, `Jinx`, risky-action readiness. | Meter gain/spend/cap, Fortune smoothing, Misfortune payoff, `Cheat Death`, preservation. | Loot finds exclude invalid item categories and log as extra ordinary finds. | Show awakened/equipped `Loaded Dice` and once-per-combat preservation readiness. | Spend both meters and verify `Loaded Dice` status/logs. |
 | Seeker | Case Journal progress/rank, Revelation/cap, sight/detail state where available. | Case progress, milestone, Revelation gain/spend, telegraph prediction, mobility smoothing. | `Hidden Cache` and movement tools report claim/failure/smoothing clearly. | Show awakened/equipped `Hidden Cache` availability/readiness. | Gain Case progress, build Revelation, and inspect status/logs. |
 | Ninja | Death Mark/cap on current target when available, opener readiness. | Mark application/cap/spend, miss consumption, immunity/boss/trial downgrade, preservation. | Stealth/opener surfaces keep initiative requirements clear. | Show awakened/equipped `No-Trace Opener` readiness. | Apply marks, spend a finisher, and verify downgrade/preservation lines. |
@@ -117,7 +117,7 @@ Tab decision bands:
 | Weapon Master/Berserker/Grandmaster of Arms | `Weapon Discipline` bespoke tab exists. | `Required` | `No` for tab baseline; tune/readability evidence only. | Persistent per-weapon ranks, XP, equipped highlighting, and art unlocks need a durable review surface. |
 | Paladin/Crusader | `Oath Conviction` bespoke tab exists. | `Required` | `No` for tab baseline; future only for oath-respec specs. | Permanent vow, signature skill, aura, mark, and Conviction rhythm need a stable review surface. |
 | Lancer/Dragoon | `Aerial Tempo` bespoke tab exists with Jump Mod controls. | `Required` | `No` for tab baseline. | Jump modifications are selectable configuration and should live outside the combat action list. |
-| Sentinel/Stalwart Defender | `Resolve` bespoke tab exists. | `Required` | `No` for tab baseline. | Resolve spends and Stalwart Surges are class-owned actions/payoffs with enough structure for a tab. |
+| Sentinel/Stalwart Defender | `Resolve` bespoke tab exists. | `Required` | `No` for tab baseline. | Resolve spends and Stalwart Bursts are class-owned actions/payoffs with enough structure for a tab. |
 | Thaumaturgist | `Xenids` tab exists with roster/detail support. | `Required` | `Partial`: keep improving conduit milestone/readiness and active-Xenid support text. | Up to seven chosen Xenids, conduit values, invoke unlocks, and details are too dense for HUD-only presentation. |
 | Ranger/Beast Master | `Companion & Hunt` tab exists with companion roster/detail and quarry-tracking support. | `Required` | `Partial`: future tuning for evolution payoff/stable scope only. | A persistent named companion, bond progression, and disciplined quarry tracking need inspection outside combat. |
 | Warlock | `Familiar` tab exists through companion display. | `Required` | `Partial`: keep familiar growth/effect details readable. | Familiar identity persists and should be inspectable like other companions. |
@@ -130,7 +130,7 @@ Tab decision bands:
 | Druid/Lycan | `Forms` bespoke tab exists for Druid/Lycan. | `Required` for Druid/Lycan | `No` for tab baseline. | Persistent transformation and Lycan control are identity systems, not just combat buffs. |
 | Archdruid | `Aspects` bespoke tab exists. | `Required` | `No` for tab baseline. | Archdruid has both persistent attunement and combat-only aspect representation. |
 | Shadowcaster | No mechanic tab; Umbral Debt appears in HUD/status/log surfaces. | `Not Needed` | `No` for a tab; keep debt/backlash/Eclipse readable through combat HUD, status rows, logs, and skill text. | The live decision is combat-only and resets, so a tab would mostly duplicate combat state. |
-| Spellblade/Knight Enchanter | No mechanic tab; Blade Charge and Arcane Tempo appear in HUD/status/log surfaces. | `Not Needed` | `No` for a tab; explain compatible spell schools and alternation rhythm through promotion guidance, action text, HUD, and logs. | Charges and Tempo are combat-only and reset; the combat surface is the correct source of truth. |
+| Spellblade/Knight Enchanter | No mechanic tab; typed Blade Charges and the Foundation/Accent pattern appear in HUD/status/log surfaces. | `Not Needed` | `No` for a tab; explain Arcane/Elemental charge buildup and the three weave releases through promotion guidance, action text, HUD, and logs. The HUD always shows both typed charge icons, dark at zero and lit while charged. | Charges, signatures, release preparation, and echoes are combat-only; the combat surface is the source of truth. |
 | Thief/Rogue | No mechanic tab; Fortune/Misfortune appear in HUD/status/log/result surfaces. | `Not Needed` | `No` for a tab; solve risky-action eligibility through HUD/status hints, combat logs, action descriptions, and loot/result messages. | Manual evidence found clarity issues, but the strict tab rule keeps combat-only luck meters out of Character Menu. |
 | Assassin/Ninja | No mechanic tab; Death Mark appears in HUD/status/log surfaces. | `Not Needed` | `No` for a tab; explain setup, finisher readiness, and No-Trace pressure through combat HUD, logs, and skill text. | Marks are combat-only and target-specific, so a persistent menu surface has limited value. |
 | Monk/Master Monk | No mechanic tab; Ki appears in HUD/status/log/skill surfaces. | `Not Needed` | `No` for a tab; keep `Dim Mak`, weapon penalties, and ultimate-staff exception readable through combat and equipment messaging. | Ki is combat-only and the Master Monk equipment exceptions belong with skill/equipment feedback. |
@@ -599,57 +599,121 @@ and Eclipse stability.
 
 ### Spellblade/Knight Enchanter
 
-Class Design Inspirations: Tales of Destiny
-
 V1 implementation spec: make Spellblade a spell-to-blade hybrid whose first
-promotion loop carries forward into Knight Enchanter's awakened `Arcane Tempo`
-identity.
+promotion loop carries forward into Knight Enchanter's Foundation and Accent
+weaving identity.
 
-- Trigger: casting a compatible damage spell creates one combat-only blade
-  charge using that spell's school. The next eligible standard weapon attack or
-  weapon-tagged skill consumes the charge.
-- Element source: the charge uses the last compatible spell school. Casting
-  another compatible damage spell overwrites the pending charge.
-- Spell scope: elemental and arcane damage spells create charges. Support,
+- Trigger: any spell action that damages at least one target creates
+  one combat-only blade charge. Multi-target and multi-missile spells still
+  create at most one charge per action. The next damaging standard weapon
+  attack or weapon-tagged skill consumes both stored pools; misses preserve them.
+- Charge types: Elemental spells create Elemental charges. Every other damaging
+  spell creates an Arcane charge, including Arcane Force, Magic Missile, and
+  other non-elemental Arcana. Arcane and Elemental pools accumulate independently,
+  so alternating categories never replaces prior charges.
+- Charge storage: each pool holds one charge by default. `Storage Capacity`
+  adds one slot to each pool. Knight Enchanter's `Storage Capacity II` adds two
+  slots to each pool, reaching three per type alone or four per type when both
+  passives are learned. `Counter Charge` grants an Arcane or Elemental charge
+  based on the damaging incoming spell.
+- Spell scope: all damaging spells create charges. Support,
   healing, movement, and status-only spells do not.
-- Charge payoff: a charged hit adds a conservative school-matched magic
-  follow-up with clear combat-log/status text. Misses do not apply follow-up
-  damage. Charges do not persist after combat.
+- Charge payoff: each charge adds 12% of the triggering post-mitigation weapon
+  damage. `Amplify Arcane` doubles each Arcane charge to 24%; `Amplify Elemental`
+  does the same for Elemental charges. Arcane resistance applies to Arcane
+  releases; Elemental releases use the target's average resistance across Fire,
+  Ice, Electric, Wind, Water, and Earth. Magic Defense does not apply. Charges
+  do not persist after combat.
 - Promotion carry-forward: Spellblade gets the basic spell-to-blade charge
-  loop. Knight Enchanter keeps it and adds `Arcane Tempo`.
-- Class Ring redesign: the awakened Knight Enchanter ring should display
-  `Arcane Tempo` while preserving old `Mana Tap+` compatibility internally for
-  existing saves/tests.
-- `Arcane Tempo`: while the awakened ring is equipped, consuming a blade charge
-  grants 1 combat-only Tempo stack, max 3. At 3 stacks, the next charged weapon
-  hit spends all stacks for an extra arcane burst.
-- Mana Tap remains usable as sustain, but the Class Ring identity should read
-  as `Arcane Tempo` rather than a basic conversion upgrade.
+  loop. Knight Enchanter keeps it and adds a two-slot spell-signature pattern.
+- Third Eye: the level-70 Aegis Release passive adds the Knight Enchanter's
+  Intelligence to critical-hit calculations and to both weapon and spell
+  dodge calculations. Existing Seeker and Arcane Trickster access is retained.
+- Signature grammar: the first Element, Force, Protection, or Conjuration
+  signature after a release becomes the Foundation. The latest different
+  signature becomes or replaces the Accent. Repeated categories reinforce the
+  existing slot. Signatures shape releases but never replace or invalidate
+  either Blade Charge pool.
+- Releases: a charged weapon hit uses Enchanted Assault. `Aegis Weave` converts
+  the pattern and charges into temporary HP and pattern-shaped buffs.
+  `Spellbind` arms the next positive-damage spell hit for three turns.
+  Each release consumes the entire charge stack and pattern.
+- Enchanted Assault numeric contract: Element Foundation adds 6% triggering
+  weapon damage per charge; Force lowers Defense by 4 per charge for two turns;
+  Protection grants 5% maximum HP per charge as a two-turn ward; Conjuration
+  adds 4% weapon damage per charge. Accents add Element 3% weapon damage,
+  Force another 2 Defense reduction, Protection 3% maximum HP as ward, or
+  Conjuration half of the pattern damage (3% when no prior pattern damage exists).
+- Aegis numeric contract: base ward is 8% maximum HP per charge for three turns.
+  Element adds Attack, Force adds Magic Defense, Protection multiplies the ward
+  by 1.5, and Conjuration adds one turn. Accent rules add a smaller Attack bonus,
+  Defense bonus, 1.25 ward multiplier, or another turn respectively.
+- Spellbind numeric contract: the next damaging spell gains 8% trigger damage
+  per charge. Element adds damage; Force lowers Magic Defense; Protection heals;
+  Conjuration restores MP. Accent rules add damage, deepen the Magic Defense
+  reduction, grant a ward, or repeat half the bonus damage respectively.
+- Release talents: `Cleaving Edge` applies offensive release effects to adjacent
+  hostile slots. `Resonant Strike` preserves one spent charge, preferring the
+  Foundation's matching type (Element -> Elemental; every other Foundation ->
+  Arcane) and falling back to the other spent type. `Echoing Blade` has a 25%
+  chance to snapshot a release and repeat its effects at the start of the next
+  Knight Enchanter turn. `Arcane Riposte` makes a successful Parry counterattack
+  guarantee the prepared weapon release. `Re-debuff` refreshes active finite
+  negative effects on every offensive-release target to at least three turns.
+  `Quick Recharge` snapshots a Weave released during a multi-hit weapon action
+  and reapplies its charge and pattern effects on every later successful hit in
+  that same action; misses do not receive or consume a repetition.
+- Defensive release talents: `Defensive Release` replaces the combat Defend
+  action. It grants +25% potency to the next Weave Release per use, stacks three
+  times, and consumes all stacks on release. `Weave Reservoir` restores 3% of
+  maximum HP and MP at the start of the Knight Enchanter's turn while both typed
+  pools are at their current maximum.
+- Tree contract: the terminal tree has Assault Release, Aegis Release,
+  Spellbind Release, and Universal / Extra Abilities columns. Quick Recharge,
+  Third Eye, and Storage Capacity II cost two points; the other 17 nodes cost
+  one. Assault is `Double Strike -> Cleaving Edge (65) -> Re-debuff (70)
+  -> Resonant Strike (75) -> Mana Slice II (85) -> Quick Recharge (90)`.
+  Mana Slice II and Quick Recharge are placed at visual rows 6 and 7 so their
+  level gates align with the terminal-tree row standard.
+  Aegis is `Enhance Armor -> Defensive Release (65) -> Third Eye (70) -> Aegis
+  Weave (75) -> Weave Reservoir (80) -> Arcane Riposte (85)`. Spellbind is
+  `Mana Tap -> Dispel Slash (65) -> Storage Capacity II (75) -> Spellbind (80)
+  -> Echoing Blade (85)`, placed at visual rows 1, 2, 4, 5, and 6. Parry is an
+  ungated inherited independent node; True Piercing Strike (75) and Triple
+  Strike (85) occupy visual rows 4 and 6 and are also independent.
+- Class Ring redesign: the awakened Knight Enchanter ring displays `Weave
+  Memory` while preserving old `Mana Tap+` compatibility internally. It keeps
+  the spent Accent as the next Foundation instead of building another meter.
+- Mana Tap remains usable as sustain, but the Class Ring identity reads as
+  `Weave Memory` rather than a basic conversion upgrade.
 - Storage: v1 uses temporary combat state only. Do not add persistent save state
-  for blade charges or Tempo.
-- UI text/surfaces: combat log, class/ring status text, and current Arcane Duel
-  awakening text. Equipment previews do not need new enchantment previews in
-  v1.
-- Tests: Spellblade charge creation/overwrite/consumption, non-damage spell
-  exclusion, hit/miss behavior, combat-end reset, Knight Enchanter Tempo stack
-  and burst behavior, awakened display rename, and legacy `Mana Tap+`
-  compatibility.
+  for blade charges, signatures, Defensive Release, Echoing Blade, or Spellbind.
+- UI text/surfaces: show both typed pools, Foundation, Accent, preview, pending
+  Spellbind/Echo, and Defensive Release stacks in combat status and logs.
+- Ability presentation: learned modifier/upgrade nodes may remain progression
+  nodes, but modifier entries such as `Fire Inside` do not appear as standalone
+  skills in the Special Abilities menu. Each affected ability card keeps its
+  base description intact and presents every learned upgrade in a separate,
+  multi-entry `Modifications` section. Combat-selection details use the same
+  section label, and modifier metadata supports either named abilities or a
+  spell school so future upgrades use the same rule.
+- Tests: typed charge creation/stacking/consumption, Counter Charge category,
+  matching Amplify and broad resistance, signature classification/replacement,
+  all three release paths and eight release talents, pending expiration/echo,
+  combat reset, multi-modification card presentation, Weave Memory preservation,
+  awakened display rename, and legacy `Mana Tap+` compatibility.
 - Balance assumptions: start conservative; the loop should reward alternating
   spell and weapon actions without making pure weapon turns or pure spell turns
   obsolete.
-
-#### Improvements
-
-- Ultimate weapon can be made sentient, allowing interaction and weapon can level
 
 ### Conjurer
 
 Conjurer is the tier-2 four-discipline path. Constructs is Floating Crystal,
 Torchlight, `+20 Magic`, Conjure Elixir, and Barrier Wall. Binding is Sleep,
 Silence, Banish, Weaken Mind, and Mana Barbs. Illusion/Movement is Mirror
-Image, Nightmare Fuel, Volitation, Teleport, and Explosive Decoy. Calling contains the six creature-category
-spells. The level-60, three-point Thaumaturgist promotion accepts the terminal
-node of any discipline.
+Image, Nightmare Fuel, Volitation, Teleport, and Explosive Decoy. Calling contains
+the six creature-category spells. The level-60, three-point Thaumaturgist promotion
+accepts the terminal node of any discipline.
 
 Mage transient companions remain separate: one acts randomly after the
 player, lasts 50 exploration steps, is replaced by a later transient summon,
@@ -889,6 +953,11 @@ awakened `Vow Affirmation` smoothing the loop without erasing mark drawbacks.
   improves every vow rider by `25%`. Consecrated Bulwark adds one turn to
   Shelter effects and improves healing, barriers, mitigation, reflection, and
   rating values by `25%`.
+- Crusader development: Censure can interrupt an active charged ability;
+  Shield Ricochet attacks every enemy and independently rolls a one-turn stun;
+  Sanctification multiplies all outgoing Holy damage by `1.5`; and Prayer of
+  Faith is usable below 10% HP to randomly heal to full, grant a two-turn
+  all-damage barrier, or unleash a high-power all-enemy Holy judgment.
 - `Vow Affirmation`: keep current aura benefits at `1.5x` and mark
   penalties/durations at `0.5x`. While awakened/equipped, after a clean
   primary Judgment or Shelter effect, preserve `1` Conviction once per combat.
@@ -974,8 +1043,10 @@ landing protection.
 - UI text/surfaces: class/status text should show Aerial Tempo stacks, cap,
   and pending follow-through in combat/status surfaces. The pygame Character
   Menu manages Jump Mods inline from the `Aerial Tempo` tab rather than the
-  general action row or a separate popup, and class-tab copy should avoid
-  class-ring details. Combat logs should report Tempo gain, interruption
+  general action row or a separate popup. The tab explains Tempo build/spend,
+  fits all 13 recognized modifications in a non-scrolling two-column grid,
+  and uses a compact selected-modification detail card; class-tab copy should
+  avoid class-ring details. Combat logs should report Tempo gain, interruption
   cleanup, Tempo spend, follow-through damage/control, landing shield, and
   legacy ring migration/display.
 - Tests: cover Aerial Tempo cap, clean-landing gain, no gain on interrupted
@@ -990,115 +1061,53 @@ landing protection.
   payoff. Numeric tuning starts conservative and should be adjusted after
   playtest.
 
-### Sentinel/Stalwart Defender Resolve And Surges
+### Sentinel/Stalwart Defender Resolve And Bursts
 
 Class Design Inspirations: FFVII, WoW, D&D
 
-Implementation target: center Sentinel on baseline `Resolve`, shield
-stances, and controlled counterattacks. Sentinel should feel complete at first
-promotion: it builds Resolve through defensive pressure and spends it on
-shield-only tactical abilities. Stalwart Defender inherits the Sentinel Resolve
-kit, raises the cap to support full-bar payoffs, and adds `Resolve Surges`
-as the second-promotion identity.
+Implementation target: Sentinel builds Resolve from defensive pressure and
+spends it through eight dedicated actions. Stalwart Defender inherits those
+actions, raises the cap from `50` to `100`, and gains four full-bar Bursts.
 
-- Preserve current identity: keep the shield/offhand requirement, heavy armor
-  identity, `Shield Block`, `Goad`, `Retaliate`, `Last Stand`,
-  `Shield Mastery`, and awakened Stalwart `Guard Meter` compatibility.
-- Resolve storage: use the existing Stalwart `guard_meter` save shape as the
-  compatibility key where practical, but present the resource as `Resolve`.
-  Sentinel caps at `50`. Stalwart Defender raises the inherited cap to `100`
-  so it can either keep using Sentinel shield spends or hold the full bar for
-  Surges. Normalize invalid or missing values on load and clamp to the current
-  class cap.
-- Resolve gain: `Defend`, successful blocks, mitigated physical hits, and
-  shield-tactic actions build Resolve. The locked values are Defend `10`;
-  successful block `clamp(damage blocked // 5, 5, 15)`; physical damage taken
-  after mitigation `max(1, damage // 5)`; and successful Goad or Hold the Line
-  `5`. There is one gain path per event.
-- Sentinel shield loop: add `Hold the Line`, a shield-required stance that
-  improves block/mitigation and pressures the current enemy to engage.
-  `Retaliate` remains the counter identity: successful blocks can trigger a
-  modest weapon counter, with stronger reliability while `Hold the Line` is
-  active.
-- Sentinel Resolve spends: move `Bulwark` and `Shield Riposte` into the
-  Sentinel kit. `Bulwark` spends Resolve for a short barrier or next-hit
-  mitigation pulse. `Shield Riposte` spends Resolve after blocking or while
-  guarded for a controlled counter with light Attack or Speed pressure.
-- Additional Sentinel Resolve-only abilities:
-  - `Shield Check`: spend a small amount of Resolve to batter the enemy with
-    your shield, lowering their Attack and Speed without overlapping the direct
-    damage/stun role of `Shield Slam`.
-  - `Brace Wall`: spend Resolve to refresh `Hold the Line` and raise Defense
-    for the next exchange.
-  - `Covering Guard`: spend Resolve to prepare a short shield ward against the
-    next dangerous hit.
-  - `Spell Reflection`: the single merged anti-magic action is ungated at tree
-    coordinate `(4, 0)` and uses compatibility node ID
-    `sentinel.ability.deflect-spell`. It spends `25` Resolve with a shield to
-    prepare for two enemy spell opportunities. The first hostile, targeted,
-    reflect-compatible spell returns to its caster. Generic Reflect takes
-    priority; beneficial, area, and unreflectable spells do not consume the
-    preparation. The retired learned Deflect Spell ability and old
-    `sentinel.ability.spell-reflection` node ID migrate to this behavior; they
-    are not separate actions or nodes.
-- Stalwart Defender mechanic: add `Resolve Surges` as full-bar ultimate-style
-  shield payoffs. Stalwart keeps all Sentinel spends, but can also save the
-  larger Resolve bar for a Surge.
-- Initial Surge set:
-  - `Citadel Aegis`: mastery 0. Fortified Citadel raises its barrier from 100
-    to 125 and stance duration from three turns to four.
-  - `Ironwall Reprisal`: mastery 4. Crushing Reprisal raises damage from
-    `1.35x` to `1.60x` and lowers Attack and Speed by three for two turns.
-  - `Last Bastion`: mastery 8. Final Redoubt raises healing from `30%` to `40%`
-    maximum HP, barrier from 50 to 75, and stance from two turns to three.
-- Counter and wall talents: Watchful Reprisal grants `+20 Attack` and ten
-  percentage points of Retaliate chance. Resolute Guard grants `+20 Defense`
-  and adds five percentage points to Hold the Line block and mitigation.
-  Punishing Guard grants `+30 Attack` and raises Shield Riposte from `0.75x` to
-  `1.0x`. Unbroken Wall grants `+30 Defense`; during Last Stand it adds ten
-  block points and raises Resolve gains by `50%`. Mirror Bastion makes a
-  triggered Spell Reflection grant 20 Resolve and `+6 Magic Defense` for two
-  turns.
-- Surge unlock source: Resolve mastery progress from real combat behavior such
-  as spending Resolve, blocking, mitigating hits, using `Hold the Line`, and
-  other shield-tactic actions. Locked Surges are visible as grayed/question-mark
-  boxes until mastery reveals them on the class tab. In combat, Surges should
-  stay out of the `Resolve` action menu until the Stalwart is at full Resolve.
-- `Last Stand` synergy: keep the attack tradeoff, but improve low-HP block
-  reliability, Resolve gain, and Surge readiness so the skill reinforces
-  the wall-and-counter loop instead of acting as a disconnected passive.
-- Class Ring enhancement: awakened/equipped `Shield Mastery` keeps the current
-  automatic major-hit reduction through legacy `Guard Meter` compatibility.
-  The class tab should describe Stalwart identity through Resolve and Surges,
-  not through ring terminology. The ring can modestly improve block chance,
-  spell-block eligibility, and counter reliability without replacing active
-  Sentinel Resolve spends or Stalwart Resolve Surges.
-- UI text/surfaces: class status should show Resolve and cap; the pygame
-  Character Menu class tab should center a large red Resolve progress bar with
-  `current/cap` inside it, then list Sentinel Resolve-spending abilities as
-  ability boxes. Stalwart Defender should add a `Resolve Surges` section with
-  locked/unlocked boxes and full-bar requirement text. Combat should expose
-  Resolve actions through a separate `Resolve` menu rather than the general
-  `Skills` menu, and that menu should show Resolve costs instead of MP costs.
-  Resolve actions are shield-pressure techniques, so Silence should not block
-  their use.
-  Combat Focus should render Resolve as a red charge bar with the `current/cap`
-  value centered inside it rather than plain text. Combat logs should report Resolve
-  gain/spend, capped Resolve, Surge use, blocks, barriers, ripostes, and
-  automatic ring mitigation.
-- Tests: cover Sentinel Resolve cap, gain sources, clamping, save/load
-  normalization, legacy Stalwart `guard_meter` compatibility, `Hold the Line`
-  shield requirements and expiration, `Retaliate` counter behavior, all
-  Sentinel Resolve spend costs/gates/effects/failure text, Stalwart
-  inherited-spend behavior, Surge lock/unlock/use/UI, `Last Stand` low-HP
-  defensive benefits and attack tradeoff, and awakened/equipped ring auto-spend
-  compatibility.
-- Balance assumptions: this is a V1 shield-depth spec, not a party-tank or
-  multi-target threat rewrite. Sentinel/Stalwart should feel like
-  `Wall + Counter`: Sentinel survives pressure and spends Resolve on shield
-  actions; Stalwart Defender layers full-bar Surges and stronger reactions
-  onto that foundation. Numeric tuning starts conservative and should be
-  adjusted after playtest.
+- Resolve gain remains Defend `10`, successful block
+  `clamp(blocked damage // 5, 5, 15)`, and physical damage taken
+  `max(1, damage // 5)`. Boast multiplies generated Resolve by `1.5` for three
+  turns and refunds `5` Resolve if combat ends while active.
+- The eight Resolve actions are Hold the Line (`0`), Brace Wall (`15`), Spell
+  Block (`25`), Bulwark Guard (`25`), Purge Weakness (`40`), Repercussion
+  (`30`), Boast (`20`), and Focused Assault (`15`). They render four per row in
+  the bespoke Resolve tab and use the separate combat Resolve menu.
+- Spell Block consumes its preparation only for a compatible targeted
+  projectile. Its absorbed amount scales from spell cost/power and equipped
+  shield strength. Shielding Ward adds `+20 Magic Defense` and halves damage
+  left after the block. Spell Reflection is a passive modifier that rolls to
+  return blocked damage to the caster; Mirror Bastion changes its triggered
+  Magic Defense bonus to `+50`.
+- Shield Riposte is passive: a complete weapon block immediately rolls to knock
+  the attacker prone. Bulwark Guard replaces the overlapping Bulwark/Covering
+  Guard actions with a strong one-turn barrier. Purge Weakness removes active
+  negative effects and grants two turns of status immunity. Repercussion hits
+  all enemies. Focused Assault grants `+15%` accuracy and increases the bonus
+  portion of critical damage by `30%` for three turns.
+- Boast grants temporary HP equal to `15%` maximum HP. Braggadocious adds
+  `+50 HP` and converts the unused fraction of that pool into Resolve when it
+  expires.
+- All four Stalwart Bursts unlock on promotion and require a full Resolve bar:
+  Citadel Aegis absorbs `50%` of incoming magic damage; Ironwall Revenge makes
+  three `1.35x` weapon attacks; Last Bastion retains its recovery/barrier
+  behavior; Stronghold grants three turns of `30%` melee reduction and `+30%`
+  block amount. They appear only in the dedicated Bursts menu, never as
+  ordinary Specials or locked Resolve-tab entries.
+- Punishing Guard adds `25%` Repercussion damage and a `35%` prone chance.
+  Crushing Vengeance raises every Ironwall Revenge attack to `1.60x` and
+  applies its Attack/Speed penalties. Double Payback adds a fourth attack.
+  Iron Maiden damages melee attackers during Stronghold. Fortified Citadel
+  evenly distributes Citadel's accumulated absorbed damage among living
+  enemies when it ends. Final Redoubt retains Last Bastion's `40%` heal,
+  75-point barrier, and three-turn stance.
+- Keep `guard_meter` save compatibility and the awakened Shield Mastery ring's
+  automatic major-hit mitigation. Combat-only preparations and temporary
+  pools reset at combat boundaries.
 
 ### Thief/Rogue Fortune And Misfortune
 

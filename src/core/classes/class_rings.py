@@ -82,8 +82,10 @@ CLASS_RING_SPECS: dict[str, dict[str, str]] = {
     },
     "Knight Enchanter": {
         "activation": "Arcane Duel",
-        "mod": "Arcane Tempo",
-        "description": "builds Tempo from consumed blade charges and bursts at three stacks",
+        "mod": "Weave Memory",
+        "description": (
+            "preserves a spent Accent as the next weave Foundation"
+        ),
     },
     "Thaumaturgist": {
         "activation": "Conduit Ritual",

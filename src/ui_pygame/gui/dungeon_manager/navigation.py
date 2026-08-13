@@ -205,15 +205,25 @@ class DungeonNavigationMixin:
         return True
 
     def _suppress_navigation_input(self, ms: int = 250) -> None:
-        """Briefly discard buffered movement after a floor transition."""
+        """Discard buffered movement and block held keys until release."""
         self._navigation_input_suppressed_until = pygame.time.get_ticks() + ms
+        navigation_keys = self._navigation_keys()
+        try:
+            pressed = pygame.key.get_pressed()
+            self._navigation_keys_awaiting_release.update(
+                key for key in navigation_keys if pressed[key]
+            )
+        except (IndexError, pygame.error):
+            pass
         try:
             pygame.event.clear((pygame.KEYDOWN, pygame.KEYUP))
         except pygame.error:
             pass
 
-    def _navigation_input_suppressed(self, key) -> bool:
-        navigation_keys = {
+    @staticmethod
+    def _navigation_keys() -> set[int]:
+        """Return keys that can change dungeon position or facing."""
+        return {
             pygame.K_w,
             pygame.K_UP,
             pygame.K_a,
@@ -225,7 +235,18 @@ class DungeonNavigationMixin:
             pygame.K_u,
             pygame.K_j,
         }
-        return key in navigation_keys and pygame.time.get_ticks() < self._navigation_input_suppressed_until
+
+    def _release_navigation_input(self, key: int) -> None:
+        """Re-arm a transition-held navigation key after its key-up event."""
+        self._navigation_keys_awaiting_release.discard(key)
+
+    def _navigation_input_suppressed(self, key) -> bool:
+        if key in self._navigation_keys_awaiting_release:
+            return True
+        return (
+            key in self._navigation_keys()
+            and pygame.time.get_ticks() < self._navigation_input_suppressed_until
+        )
 
     def _is_walkable_spawn_tile(self, tile):
         """Check if tile can be used as a post-stairs spawn location."""

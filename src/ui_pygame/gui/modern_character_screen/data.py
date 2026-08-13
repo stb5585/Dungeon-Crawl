@@ -355,14 +355,16 @@ class CharacterDataMixin:
 
         spellbook = getattr(player_char, "spellbook", None)
         if spellbook and isinstance(spellbook, dict):
-            spells = spellbook.get("Spells", {}) or {}
-            skills = spellbook.get("Skills", {}) or {}
+            from src.core.abilities.descriptions import presented_abilities
+
+            spells = presented_abilities(player_char, "Spells")
+            skills = presented_abilities(player_char, "Skills")
             if spells:
                 result.append("--- SPELLS ---")
-                result.extend(spells.values())
+                result.extend(spells)
             if skills:
                 result.append("--- SKILLS ---")
-                result.extend(skills.values())
+                result.extend(skills)
 
         return result if result else ["No special abilities"]
 
@@ -747,7 +749,11 @@ class CharacterDataMixin:
 
         subtyp = str(getattr(item, "subtyp", "") or "")
         mod = str(getattr(item, "mod", "") or "")
-        if mod and mod not in {"0", "No Mod", "None"} and not (subtyp == "Shield" and self._is_number(mod)):
+        if (
+            mod
+            and mod not in {"0", "No Mod", "None"}
+            and not self._is_number(mod)
+        ):
             if mod.startswith("Resist-"):
                 buffs.append(f"+50% {mod.removeprefix('Resist-')} Resistance")
             elif mod.startswith("Immune-"):

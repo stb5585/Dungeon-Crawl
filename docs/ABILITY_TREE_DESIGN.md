@@ -9,12 +9,15 @@ public runtime facade for Pygame and headless validation.
 
 Cross-reference diagrams for every playable class are indexed in
 [`ability_trees/README.md`](ability_trees/README.md). They are generated from
-the runtime graphs; regenerate them after tree edits with
+the runtime graphs except for Mage's authoritative hand-routed connectors;
+regenerate them after tree edits with
 `./.venv/bin/python tools/generate_ability_tree_diagrams.py`. A regression test
-fails if any checked-in diagram drifts from its class tree.
+fails if any generated diagram drifts from its class tree, while Mage is
+checked for runtime-node coverage and preserved during regeneration.
 
-Development nodes cost one point. First promotions cost two points and second
-promotions cost three. Rating nodes scale with their tree tier: base trees
+Development nodes cost one point unless an authored advanced terminal talent
+explicitly costs two. First promotions cost two points and second promotions
+cost three. Rating nodes scale with their tree tier: base trees
 grant `+10`, first-promotion trees grant `+20`, and terminal trees grant `+30`.
 HP and MP nodes likewise scale by tier at `+25`, `+50`, and `+100`. Named
 talents grant the full rating amount for their tier for every rating they
@@ -23,7 +26,8 @@ spellbook. Active and passive ability nodes still instantiate the canonical
 ability class.
 
 Ability milestones are global for gated abilities and talents. Rating nodes
-are never level-gated, and an authored inherited entry may also be ungated:
+are normally path-gated rather than level-gated; Spellblade's level-band rows
+are the explicit exception. An authored inherited entry may also be ungated:
 
 - Base trees: levels `1`, `5`, `10`, `15`, `20`, and `25`.
 - First-promotion trees: levels `35`, `40`, `45`, `50`, and `55`.
@@ -93,17 +97,18 @@ or stat requirements differ.
     entries use three vertically centered rows beside the weapon-art block.
   - Only the four two-handed disciplines appear in its class tab. Their eight
     rank-1/rank-5 art nodes form four centered rows independent of the three
-    development columns.
+    development columns. Monkey Grip 2 and all four rank-5 arts cost two
+    progression points.
 - Grandmaster of Arms:
   - Every weapon discipline has rank-1, rank-5, and rank-10 art nodes; each
-    higher form replaces the previous form.
-  - Perfect Form is a floating talent granting `+1%` weapon damage and `+0.5%`
-    hit chance per equipped discipline rank, with no level gate.
+    higher form replaces the previous form. Every rank-10 art costs two points.
+  - Perfect Form is a two-point floating talent granting `+1%` weapon damage
+    and `+0.5%` hit chance per equipped discipline rank, with no level gate.
   - Double Strike is an ungated, inherited-or-purchased floating entry between
     Perfect Form and Adaptive Arsenal in the fourth column.
-  - Adaptive Arsenal is a floating talent granting `+0.5%` parry chance and
-    `+1%` counterattack critical chance per equipped discipline rank, with no
-    level gate.
+  - Adaptive Arsenal is a two-point floating talent granting `+0.5%` parry
+    chance and `+1%` counterattack critical chance per equipped discipline
+    rank, with no level gate.
 - Paladin:
   - Ungated Oath's Judgment begins at `(1, 0)`. Its left branch is `Double
     Strike -> +20 Attack -> Tempered Conviction -> True Strike` in column 0;
@@ -118,8 +123,8 @@ or stat requirements differ.
     50 and grants both `+20 Magic` and `+20 Magic
     Defense`. Blessed Light makes a successful healing-spell cast in combat
     grant `+10 Attack` for three turns, refreshing without stacking.
-  - Its right branch begins with ungated Bless at `(5, 1)`. Magic Defense
-    begins the protection chain through Parry, `+20 Defense`,
+  - Its right branch begins with ungated Bless at `(5, 1)`. Bless connects to
+    Magic Defense, which continues through Parry, `+20 Defense`,
     and level-50 Divine Protection. Parry adopts prior ownership but never
     backfills Magic Defense or any other prerequisite.
   - Promote: Crusader is centered at `(2.5, 7)`: it requires either Oath root,
@@ -133,53 +138,63 @@ or stat requirements differ.
     15 MP, is cast outside battle, and grants 50% Shadow resistance for 100
     steps of game time.
 - Crusader:
-  - Melee begins with ungated Condemnation. Its mutually exclusive branches
-    are `Two-Handed Weapon Proficiency -> +30 Attack -> Mortal Strike ->
-    Righteous Advance` and `Sword & Board -> True Piercing Strike -> Triple
-    Strike`. Mortal Strike is level 75, True Piercing Strike level 70, and
-    Triple Strike level 85. True Piercing Strike no longer requires True
-    Strike.
-  - Spells contains ungated Smite II, retained-or-purchased Repel the Wicked,
-    and level-70 Smite III. An inherited Repel node does not backfill Smite II;
-    there is no Turn Undead upgrade node.
-  - Healing contains ungated Heal II, level-65 Cleanse, and level-70 Dispel.
-  - Protection contains ungated Consecrated Bulwark, then Parry, level-65
-    Posturing, `+30 Magic Defense`, and `+100 HP`. Smite II/III and Heal II use
-    replacement ownership.
+  - Rows 0-7 represent ungated, 65, 70, 75, 80, 85, 90, and 95. Melee begins
+    with ungated Condemnation. Its mutually exclusive two-point style nodes
+    lead through `Two-Handed Weapon Proficiency -> +30 Attack -> Mortal Strike
+    (75) -> Righteous Advance (80)` or `Sword & Board -> Censure (70) -> True
+    Piercing Strike (75) -> Shield Ricochet (80) -> Triple Strike (85)`.
+  - Spells is `Repel the Wicked -> Smite II (65) -> Sanctification (70) ->
+    Smite III (90)`. Sanctification increases all Holy damage by 50%.
+  - Healing is `Dispel -> Cleanse (65) -> Heal II (70) -> Prayer of Faith
+    (85)`. Prayer of Faith costs two points and, below 10% HP, randomly heals
+    to full, grants a two-turn all-damage barrier, or damages every enemy.
+  - Protection is `Consecrated Bulwark -> Parry (65) -> Posturing (70) -> +30
+    Magic Defense (75) -> +100 HP (80)`. Upgraded spells retain replacement
+    ownership without bypassing incomplete prerequisite chains.
   - Condemnation deals weapon and Holy damage and can mark fiends or undead.
     Repel the Wicked normally drives a valid target from combat without kill
     rewards; a successful cast against a Condemnation-marked target
     disintegrates it.
 - Lancer:
-  - The six-column layout places ungated Jump at column 2 and ungated Polearm
-    Proficiency at column 5.
+  - The seven-column layout places ungated Jump at column 2 and Polearm
+    Proficiency at column 5. Polearm Assault occupies column 4, Polearm Guard
+    occupies column 6, and inherited universal attacks occupy column 7.
   - Jump owns three independent paths: defensive modifiers (`Defend -> Acrobat
-    -> Grounded Landing`), middle progression (`+20 Defense -> +20 Attack ->
-    Promote: Dragoon`), and offensive modifiers (`Aerial Footwork -> Quick
+    -> Grounded Landing`), middle progression (`+20 Attack` directly below
+    Jump plus `+20 Defense -> Vigilant Landing (45)`), and offensive modifiers (`Aerial Footwork -> Quick
     Dive -> Thrust -> Rend`). Acrobat unlocks at level 40, Thrust at level 45,
     and Rend at level 50. Aerial Footwork grants `+20 Attack` and one Aerial
     Tempo capacity; Grounded Landing grants `+20 Defense` and 10% final
     incoming damage reduction while Jump charges.
-  - Polearm Proficiency owns one vertical line through level-35 Lance Sweep,
-    `+50 HP`, then level-40 Zephyrstrike.
+  - Polearm Assault is `Lance Sweep (35) -> Extended Reach (40) ->
+    Zephyrstrike (45) -> Swing & Bash (50)`. Polearm Excellence (55) sits in
+    column 5 and requires Polearm Proficiency directly.
+    Polearm Guard is `Phalanx (35) -> Critical Vigor (40) -> +50 HP (45) ->
+    Dragon Soul (50)`.
   - Ungated, inherited-or-purchased Parry and True Strike occupy the final
     column at rows 2 and 3 so either can be recovered if missed on the Warrior
     tree.
   - Jump-modification IDs remain stable under `lancer.jump-mod.*` and unlock
     configuration without creating spellbook entries.
-  - Promote: Dragoon sits directly below Jump in column 2. Its connector runs
-    through the two middle rating nodes, and it additionally requires global
-    level 60, `STR 17`, and `DEX 13`. Neither modifier path is required.
+  - Promote: Dragoon sits in column 4. Its left prerequisite runs `Jump -> +20
+    Defense -> Vigilant Landing -> Promote: Dragoon`; Polearm Excellence is
+    the second prerequisite. Promotion also requires global level 60, `STR
+    17`, and `DEX 13`. The connector descends in Vigilant Landing's column
+    before turning toward promotion so it does not cross the Thrust/Rend path.
+    Neither Jump modifier path is required.
+  - Polearm Excellence and Vigilant Landing each cost two points.
 - Dragoon:
-  - The Dragoon tree retains all 16 Lancer development nodes in the same
+  - The Dragoon tree retains all 23 Lancer development nodes in the same
     positions, omits only the promotion node, and adds 11 Dragoon nodes.
     Previously purchased nodes remain owned; any unpurchased Lancer skill,
     talent, rating, or Jump modification remains purchasable as a Dragoon.
     The three inherited Jump paths retain the same independent prerequisites.
-  - Ungated Polearm Excellence starts the Dragoon polearm mastery line at row
-    5, followed by `+30 Attack`, True Piercing Strike, and Polearm Mastery.
-    True Piercing Strike unlocks at level 70 without a True Strike
-    prerequisite, and each proficiency replaces its prior form.
+  - Column 5 extends Polearm Excellence through `+30 Attack -> Polearm Mastery
+    (80)`.
+    Polearm Guard gains two-point Dragonheart at level 75. True Piercing Strike
+    moves to column 7 at level 75 and requires True Strike. Each proficiency replaces
+    its prior form. Polearm
+    Mastery and Dragon Dive each cost two points.
   - Assault mastery extends Rend through Quake and Soaring Strike into Dragon
     Dive. The middle `+20 Attack` node separately unlocks Dragon's Ascent,
     which has no redundant level gate after Dragoon promotion.
@@ -187,35 +202,36 @@ or stat requirements differ.
     requires it. Grounded Landing starts level-65 Retribution and level-70
     Unstoppable. Dragon's Ascent gates the `+30 Defense` node. Level-80 Dragon
     Dive requires Dragon's Ascent, Soaring Strike, and Unstoppable.
-  - Lancer remains within rows 0-6. Dragoon uses rows 0-7 with compact vertical
+  - Lancer and Dragoon use rows 0-7 with compact vertical
     spacing so the standard progression panel does not need to scroll.
   - Dragon's Ascent grants `+30 Attack`; a clean Soaring Strike landing grants
     two Aerial Tempo. Dragoon Jump modifiers use stable `dragoon.jump-mod.*`
     IDs.
 - Sentinel:
-  - Counter is `Goad -> Shield Check -> Retaliate -> Shield Riposte ->
-    Watchful Reprisal`, followed by optional `+20 Attack`.
-  - Wall is `Hold the Line -> Brace Wall -> Covering Guard -> Bulwark ->
-    Resolute Guard`, followed by optional `+20 Defense`.
-  - Anti-magic is the single merged `Spell Reflection -> +20 Magic Defense ->
-    +50 HP` branch. Spell Reflection is ungated at `(4, 0)` and retains the
-    compatibility node ID `sentinel.ability.deflect-spell`. The retired
-    Deflect Spell ability and `sentinel.ability.spell-reflection` node ID
-    migrate to this behavior. Shield Block is omitted because the Warrior
-    route requires it.
-  - Promote: Stalwart Defender sits at `(1, 6)` and requires Watchful Reprisal,
-    Resolute Guard, global level 60, `CON 20`, and three points. The mandatory
-    Human route leaves four points. Known Goad and Retaliate are adopted.
+  - Assault is `Retaliate -> Swing & Bash (35) -> +20 Attack (40) -> Focused
+    Assault (45) -> Repercussion (50) -> Watchful Reprisal (55)`.
+  - Bulwark is `Hold the Line -> Shield Riposte (35) -> +20 Defense (40) ->
+    Brace Wall (45) -> Resolute Guard (55)`.
+  - Adrenaline splits into Resistance (`Spell Block -> +20 Magic Defense ->
+    Bulwark Guard -> Spell Reflection -> Shielding Ward`) and Support (`Purge
+    Weakness -> +50 HP -> Boast -> Braggadocious`). Goad, Charge, and Double
+    Strike are independent inherited nodes in column 6.
+  - The complete Sentinel tree is shifted to rows 1-8. Promote: Stalwart
+    Defender sits at `(2, 8)` and accepts any of Watchful
+    Reprisal, Resolute Guard, Shielding Ward, or Braggadocious at level 60 with
+    `CON 20` and a three-point cost.
 - Stalwart Defender:
-  - Last Stand continues through level-65 Unbroken Wall, `+30 Defense`, and
-    `+100 HP`; Punishing Guard independently leads to `+30 Attack`.
-  - Fortified Citadel, Crushing Reprisal, and Final Redoubt are independent
-    modifier talents at levels 65, 70, and 80. The three Surges remain
-    mastery-granted actions and are not progression nodes.
-  - Level-65 Mirror Bastion requires learned Spell Reflection and leads to
-    `+30 Magic Defense`.
-  - Sentinel and Stalwart fit within rows 0-6 and 0-3 respectively. Sentinel
-    leftovers close on promotion; the terminal tree contains only new nodes.
+  - Four terminal disciplines contain 20 nodes: Assault, Bulwark, Resistance,
+    and Support. Each column is one continuous prerequisite chain. Inherited
+    Resolve actions remain ungated catch-up nodes within those chains.
+  - Assault culminates in Punishing Guard (70), Crushing Vengeance (75), and
+    Double Payback (80). Bulwark culminates in Last Stand (70), +30 Defense
+    (75), Unbroken Wall (80), and Iron Maiden (85).
+  - Resistance adds Mirror Bastion (75) and Fortified Citadel (80); Support
+    adds +100 HP (70) and Final Redoubt (75). Citadel Aegis, Ironwall Revenge,
+    Last Bastion, and Stronghold are full-Resolve Bursts, not tree nodes.
+  - The complete Stalwart tree occupies rows 1-6. Punishing Guard, Unbroken
+    Wall, Fortified Citadel, and Final Redoubt each cost two points.
 
 ### Mage Lineage
 
@@ -240,13 +256,17 @@ or stat requirements differ.
   Mana Shield -> Imbue Weapon`. Gates are `1/5/path-only/15/20/25`.
   Arcane Fundamentals grants `+10 Magic` and increases only the bonus portion
   of Arcane critical damage by 10%. Polymorph denies the target two turns and
-  replaces its combat sprite with the bunny asset for the duration. Mana
+  replaces its combat sprite with a small, confused-pacing bunny for the
+  duration. Bosses are not immune, but resist 90% of Polymorph attempts. Mana
   Shield redirects at most 25% of physical damage from each attack into MP;
   Mana Shield 2 raises that cap to 50%. Imbue Weapon retains its existing
   mechanic. This route leads to Spellblade.
 - Occultism is `Enfeeble -> Blinding Fog -> Shadow Bolt -> Inflate Health ->
   Enliven Dead -> Forbidden Studies` at levels `1/5/10/15/20/25`, then
-  Warlock. Blinding Fog targets all enemies. Enliven Dead uses the last
+  Warlock. Enfeeble has a `70% + 2% per Intelligence-minus-Constitution point`
+  hit chance, clamped to `20-95%`, and lowers the target's base Attack and
+  Defense by `20%` for four turns. Blinding Fog targets all enemies. Enliven
+  Dead uses the last
   defeated non-boss enemy and a Charisma/Luck check. Inflate Health grants a
   three-turn temporary-HP pool that absorbs post-mitigation damage before real
   HP. Forbidden Studies increases Shadow Bolt damage by `20%` and raised
@@ -264,13 +284,13 @@ or stat requirements differ.
 - Universal roots are Reflect `(5,1)` at level 10, Sleep `(5,2)` at 15,
   Boost `(5,3)` at 20, and Mirror Image `(5,4)` at 25.
 - Sorcerer requires either Classical Force `(0.5,6)` after any Enhancement or
-  Esotericism `(1.5,6)` after Arcane Fundamentals; its promotion is `(1,7)`.
+  Arcane Tradition `(1.5,6)` after Arcane Fundamentals; its promotion is `(1,7)`.
   Enhancement connectors converge at the `0.5` midpoint and enter Classical
   Force from above; Arcane Fundamentals routes through the `1.5` midpoint and
-  enters Esotericism from above.
+  enters Arcane Tradition from above.
   The choice is permanent:
   Classical Force tracks Elemental School Affinity and applies 50% potency to
-  Arcane damage/control/barriers/enhancements; Esotericism tracks Arcane
+  Arcane damage/control/barriers/enhancements; Arcane Tradition tracks Arcane
   School Affinity, applies 50% elemental damage, and halves Enhancement proc
   chances. Learning spells remains unrestricted.
 - First-promotion route costs, including the two-point promotion node, are
@@ -284,6 +304,77 @@ or stat requirements differ.
   Wizard retain the existing partial carry-forward: Arcane Fundamentals plus
   the six elemental spells remain purchasable in the current editable tree;
   the historical Mage tab stays read-only.
+- Spellblade replaces the current two-column Channeling/Spellguard graph with
+  four explicit columns: `0=Weapon Enhancements`, `1=Armor Enhancements`,
+  `2=Spell Enhancements`, and `3=Universal / Extra Abilities`. Imbue Weapon is
+  already required for Mage-to-Spellblade promotion and is not repeated here;
+  Arcane Edge, Spellguard, and Elemental Strike are also absent from this tree.
+  Row `2` holds the three ungated roots, rows `3/4/5/6/7` represent levels
+  `35/40/45/50/55`, and row `8` contains the promotion.
+  - Weapon Enhancements is `Counter Charge -> +20 Attack -> Breakdown -> Mana
+    Slice -> Enhance Blade`. Counter Charge is an ungated passive that grants
+    one blade charge after the Spellblade takes damage from a spell. The Attack
+    rating is level 35. Breakdown is a level-40 passive: each damaging melee
+    hit lowers that target's Magic Defense by 4, up to five stacks. The next
+    spell to damage that target benefits from and then consumes every stack.
+    Mana Slice and Enhance Blade unlock at levels 45 and 50. Enhance Blade
+    adds base weapon damage multiplied by current mana percentage before
+    weapon-skill and critical multipliers.
+  - Armor Enhancements is `Reflect -> +20 Magic Defense -> Novel Shielding ->
+    +20 Defense -> Enhance Armor`. Reflect is the ungated root and Magic
+    Defense is level 35. Level-40 Novel Shielding costs 20 MP, requires a Tome, and
+    creates a refresh-only three-turn absorption pool equal to twice that
+    Tome's power. It blocks post-mitigation direct melee and spell damage; full
+    absorption also prevents on-hit effects. The Defense node is level 45.
+    Enhance Armor unlocks at level 55 and adds equipped armor multiplied by
+    missing mana percentage to physical armor.
+  - Spell Enhancements begins `Boost -> Kinetic Explosion -> +20 Magic -> Mana
+    Tap`. Boost is the ungated row-2 root. Kinetic Explosion unlocks at level 35,
+    costs 18 MP, and sends a `1.5x`
+    Arcane-damage explosion across all enemies. Mana Tap unlocks at level 45, then
+    branches into level-50 Amplify Arcane and Amplify Elemental. Neither
+    Amplify choice excludes the other: they double the release power of the
+    matching Arcane or Elemental pool respectively. The branches
+    rejoin at level-55 Storage Capacity, which requires either Amplify and
+    increases each typed pool's capacity from one to two.
+  - Universal / Extra Abilities contains independent True Strike, Parry, and
+    Double Strike nodes at levels 35, 40, and 45. They adopt existing ownership
+    without backfilling any other Spellblade prerequisite.
+  - One damaging spell action stores one Arcane or Elemental charge. Each pool
+    holds one by default or two with Storage Capacity, and categories stack
+    independently. The next damaging weapon hit releases both pools for 12%
+    of that hit per charge, or 24% for a pool with its matching Amplify.
+    Arcane resistance or averaged elemental resistance applies; Magic Defense
+    does not. Misses preserve charges.
+  - Promote: Knight Enchanter is `(1.5,7)` (visual row 8), costs three points,
+    requires `STR 16/CON 16/INT 15/DEX 11`, and accepts
+    Enhance Blade, Enhance Armor, or Storage Capacity as an either/or capstone.
+    Knight Enchanter retains Mana Tap and Enhance Armor as catch-up nodes:
+    each is automatically owned when learned as Spellblade and otherwise
+    follows its normal Knight Enchanter purchase path.
+- Knight Enchanter has four authored columns: Assault Release, Aegis Release,
+  Spellbind Release, and Universal / Extra Abilities. Quick Recharge, Third
+  Eye, and Storage Capacity II cost two points; its other 17 development nodes
+  cost one. Double Strike, Enhance Armor, Mana Tap, and Parry are
+  ungated entries that adopt prior ownership. The universal Parry, True
+  Piercing Strike, and Triple Strike nodes are independent. Mana Slice II and
+  Quick Recharge occupy rows 6 and 7; Storage Capacity II, Spellbind, and
+  Echoing Blade occupy rows 4-6; True Piercing Strike and Triple Strike occupy
+  their level-75 and level-85 rows. See
+  `CLASS_KIT_DESIGN_GATES.md` for the exact geometry, release-talent rules, and
+  numeric contract.
+- Every Knight Enchanter combat cast records one of four broad signatures:
+  Element, Force, Protection, or Conjuration. The first signature after a
+  release becomes the Foundation; the latest different signature becomes or
+  replaces the Accent. Repeating either signature reinforces it without adding
+  another slot. Signatures do not alter or replace typed Blade Charges.
+- A charged weapon hit remains the default release and becomes Enchanted
+  Assault when a Foundation exists. Aegis Weave consumes the charges and
+  pattern for temporary HP plus pattern-shaped buffs. Spellbind consumes them
+  to empower the next damaging spell hit within three turns. Release effects
+  use Non-elemental damage where applicable and reset the pattern. The awakened
+  Arcane Duel ring's Weave Memory preserves a spent Accent as the next
+  Foundation; Arcane Tempo no longer exists as a separate meter.
 - Conjurer has four authored disciplines. Constructs are
   `Floating Crystal (30) -> Torchlight (35) -> +20 Magic (path-only) ->
   Conjure Elixir (45) -> Barrier Wall (55)`; Binding is
@@ -316,7 +407,8 @@ or stat requirements differ.
   (65) -> Conduit Command (70) -> Raise Summon (75) -> Conduit Mastery (80)`;
   and the Miracles chain `Miracle Blade (65) -> Miracle Shackles (70) ->
   Miracle Potion (75) -> Miracle Crystal (80)`. The four Miracles each consume
-  one extremely rare `Reality Fragment` reagent. Respectively, they bypass all
+  two progression points and one extremely rare `Reality Fragment` reagent;
+  Conduit Mastery also costs two points. Respectively, the Miracles bypass all
   ordinary attack protection, impose an inescapable three-turn restraint,
   create both maximum-tier Health and Mana potions without ordinary location
   or cooldown limits, and create mana from nothing before damaging every

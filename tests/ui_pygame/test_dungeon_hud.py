@@ -759,6 +759,39 @@ def test_combat_status_icons_prefer_defend_over_defense_down(monkeypatch):
     assert ("DEF", False) not in icons
 
 
+def test_blade_charge_meter_always_renders_both_typed_icons(monkeypatch):
+    bundle = _make_hud(monkeypatch)
+    hud = bundle.hud
+    player = _make_player()
+    player.cls = SimpleNamespace(name="Spellblade")
+    player._promotion_kit_combat = {"blade_charge": None}
+
+    lines = hud._combat_feature_lines(player)
+    assert ("Blade Charge", "Arcane ×0 · Elemental ×0", hud.text_color) in lines
+
+    hud._render_combat_features(player, None, 120, feature_height=190)
+    assert "Arcane ×0" in bundle.small_font.render_calls
+    assert "Elemental ×0" in bundle.small_font.render_calls
+    dormant_colors = [args[1] for args, _kwargs in bundle.draw_circle_calls]
+    assert (52, 43, 66) in dormant_colors
+    assert (64, 48, 35) in dormant_colors
+
+    bundle.small_font.render_calls.clear()
+    bundle.draw_circle_calls.clear()
+    player._promotion_kit_combat["blade_charge"] = {"Arcane": 1, "Elemental": 2}
+    player.spellbook["Skills"]["Storage Capacity"] = object()
+    hud._render_combat_features(player, None, 120, feature_height=190)
+    active_colors = [args[1] for args, _kwargs in bundle.draw_circle_calls]
+    assert (160, 116, 255) in active_colors
+    assert (245, 152, 54) in active_colors
+    assert bundle.small_font.render_calls.count("MAX") == 1
+
+    bundle.small_font.render_calls.clear()
+    player._promotion_kit_combat["blade_charge"] = {"Arcane": 2, "Elemental": 2}
+    hud._render_combat_features(player, None, 120, feature_height=190)
+    assert bundle.small_font.render_calls.count("MAX") == 2
+
+
 def test_render_hud_full_flow(monkeypatch):
     bundle = _make_hud(monkeypatch)
     hud = bundle.hud

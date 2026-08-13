@@ -57,6 +57,7 @@ class DungeonCoreMixin:
         # Control state
         self.running = True
         self._navigation_input_suppressed_until = 0
+        self._navigation_keys_awaiting_release: set[int] = set()
 
         # --- Render throttling / caching ---
         # The 3D view is expensive; only redraw it when something actually changes.

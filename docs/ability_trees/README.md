@@ -1,6 +1,8 @@
 # Ability Tree Diagrams
 
 These SVGs are generated directly from the runtime progression graphs.
+The Mage SVG has manually authored connector routing and is preserved
+when diagrams are regenerated; its nodes still track the runtime tree.
 Run `./.venv/bin/python tools/generate_ability_tree_diagrams.py` after
 changing any tree. The drift test fails when these references are stale.
 

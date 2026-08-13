@@ -1271,6 +1271,28 @@ def test_stair_transition_suppresses_buffered_navigation_input(monkeypatch):
     assert move_calls == [-1, "forward"]
 
 
+def test_loading_suppression_waits_for_held_navigation_key_release(monkeypatch):
+    manager, _presenter, _player, _game = _make_manager(monkeypatch)
+    now = {"ticks": 1000}
+
+    class PressedKeys:
+        def __getitem__(self, key):
+            return key == pygame.K_w
+
+    monkeypatch.setattr(dungeon_manager.pygame.time, "get_ticks", lambda: now["ticks"])
+    monkeypatch.setattr(dungeon_manager.pygame.key, "get_pressed", PressedKeys)
+    monkeypatch.setattr(dungeon_manager.pygame.event, "clear", lambda _events: None)
+    moves = []
+    manager.move_forward = lambda: moves.append("forward")
+
+    manager._suppress_navigation_input(ms=0)
+    manager._handle_keypress(pygame.K_w)
+    manager._release_navigation_input(pygame.K_w)
+    manager._handle_keypress(pygame.K_w)
+
+    assert moves == ["forward"]
+
+
 def test_final_room_incubus_and_golden_chalice_branches(monkeypatch):
     manager, presenter, player, _game = _make_manager(monkeypatch)
     manager._refresh_cached_frame = lambda: manager.messages.append("refresh")
@@ -2400,8 +2422,10 @@ def test_explore_dungeon_loop_and_render_paths(monkeypatch):
     player.world_dict[(player.location_x, player.location_y, player.location_z)].intro_text = lambda _game: ""
     game.debug_mode = False
     loading_calls = []
+    suppressed = []
     handled_keys = []
     manager._show_dungeon_loading_screen = lambda msg, duration=1.25: loading_calls.append(msg)
+    manager._suppress_navigation_input = lambda ms=250: suppressed.append(ms)
     manager._handle_keypress = lambda key: handled_keys.append(key) or setattr(manager, "running", False)
     manager._check_random_cry = lambda: manager.messages.append("cry-check")
     original_render = dungeon_manager.DungeonManager._render.__get__(manager, dungeon_manager.DungeonManager)
@@ -2419,6 +2443,7 @@ def test_explore_dungeon_loop_and_render_paths(monkeypatch):
 
     assert manager.explore_dungeon() is True
     assert loading_calls == ["Entering the dungeon..."]
+    assert suppressed == [350]
     assert handled_keys == [pygame.K_w]
     assert "You enter the dungeon..." in manager.messages
     assert "Facing: north" in manager.messages

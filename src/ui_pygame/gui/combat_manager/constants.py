@@ -9,6 +9,7 @@ _DISPLAY_TO_ENGINE = {
     "Resolve": "Use Skill",
     "Bursts": "Use Skill",
     "Hold the Line": "Defend",
+    "Defensive Release": "Defend",
     "Items": "Use Item",
 }
 

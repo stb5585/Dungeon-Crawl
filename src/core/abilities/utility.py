@@ -374,10 +374,7 @@ class DispelSlash:
 
 
 class EnhanceBlade(Enhance):
-    """
-    Enhance your weapon with arcane energy, amplifying its strength in proportion to your mana reserves.
-    - mod = weapon damage * int(4 * (mana.current / mana.max))
-    """
+    """Add base weapon damage scaled by the user's current mana percentage."""
 
     def __init__(self):
         super().__init__(
@@ -386,17 +383,13 @@ class EnhanceBlade(Enhance):
             "strength in proportion to your mana reserves. With each "
             "strike, you channel your magic into raw power, adding "
             "bonus damage equal to your weapon's base damage multiplied"
-            " by your mana percentage. The greater your mana, the more "
-            "devastating your attacks.",
+            " by your mana percentage.",
         )
         self.passive = True
 
 
 class EnhanceArmor(Enhance):
-    """
-    Enhance your armor with arcane energy, fortifying its strength in proportion to your health.
-    - mod = armor rating * max(5, health.max / health.current)
-    """
+    """Add equipped armor scaled by the user's missing mana percentage."""
 
     def __init__(self):
         super().__init__(
@@ -584,7 +577,8 @@ class DefensiveRegen(Defensive):
     def __init__(self):
         super().__init__(
             name="Defensive Regen",
-            description="You recover best when holding a defensive line.",
+            description="You recover best when holding a defensive line; Regen is "
+            "increased when defending.",
         )
         self.passive = True
 
@@ -597,7 +591,8 @@ class Posturing(Defensive):
     def __init__(self):
         super().__init__(
             name="Posturing",
-            description="You know how to present an impossible target.",
+            description="You know how to present an impossible target; increased "
+            "chance of parrying when defending.",
         )
         self.passive = True
 
@@ -753,14 +748,15 @@ class KeenEye(Truth):
 
 
 class ThirdEye(Truth):
-    """
-    Passive insight marker for future Seeker/Inquisitor perception tuning.
-    """
+    """Apply Intelligence to critical-hit and dodge calculations."""
 
     def __init__(self):
         super().__init__(
             name="Third Eye",
-            description="You sense threats and hidden truths before they fully reveal themselves.",
+            description=(
+                "Passive: Add Intelligence to critical-hit and dodge chance "
+                "calculations."
+            ),
         )
         self.passive = True
 

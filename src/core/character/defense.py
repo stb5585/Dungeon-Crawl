@@ -81,6 +81,19 @@ class CharacterDefenseMixin:
                     blk_per += paladin.protection_mitigation_bonus(defender)
                 except Exception:
                     pass
+                try:
+                    from ..classes import promotion_kits
+
+                    if int(
+                        promotion_kits.combat_state(defender).get(
+                            "stronghold_turns",
+                            0,
+                        )
+                        or 0
+                    ):
+                        blk_per += 0.30
+                except Exception:
+                    pass
                 if blk_per > 0:
                     blk_per = min(1, blk_per)
                     incoming_damage = damage
@@ -128,6 +141,16 @@ class CharacterDefenseMixin:
                             f"attack and disarms {self.name}.\n"
                         )
                     msg += ability_mechanics.retaliate_after_block(defender, self)
+                    if damage <= 0:
+                        try:
+                            from ..classes import promotion_kits
+
+                            msg += promotion_kits.shield_riposte_after_full_block(
+                                defender,
+                                self,
+                            )
+                        except Exception:
+                            pass
                     try:
                         from ..classes import paladin
 
@@ -200,14 +223,18 @@ class CharacterDefenseMixin:
         temporary_health = getattr(defender, "temporary_health", None)
         if not isinstance(temporary_health, dict) or damage <= 0:
             return damage, ""
+        if temporary_health.get("blocks_all_damage"):
+            source = str(temporary_health.get("source") or "protective barrier")
+            return 0, f"{defender.name}'s {source} blocks {damage} damage.\n"
         available = max(0, int(temporary_health.get("amount", 0) or 0))
         absorbed = min(available, damage)
         temporary_health["amount"] = available - absorbed
+        source = str(temporary_health.get("source") or "inflated health")
         if temporary_health["amount"] <= 0:
             defender.temporary_health = None
         return (
             damage - absorbed,
-            f"{defender.name}'s inflated health absorbs {absorbed} damage.\n",
+            f"{defender.name}'s {source} absorbs {absorbed} damage.\n",
         )
 
     def _apply_mana_shield(
@@ -380,6 +407,17 @@ class CharacterDefenseMixin:
                 damage,
             )
             msg += landing_message
+            damage, phalanx_message = promotion_kits.phalanx_reduction(
+                defender,
+                damage,
+            )
+            msg += phalanx_message
+            damage, stronghold_message = promotion_kits.stronghold_melee_reduction(
+                defender,
+                damage,
+                self,
+            )
+            msg += stronghold_message
         except Exception:
             pass
         try:
@@ -584,6 +622,14 @@ class CharacterDefenseMixin:
                     healing = max(1, int(damage * 0.5))
                     self.health.current = min(self.health.max, self.health.current + healing)
                     return False, f"A Nature Shield orb intercepts the spell and heals {self.name} for {healing}.\n", 0
+            except Exception:
+                pass
+
+        if typ == "Holy" and damage > 0:
+            try:
+                from ..classes import paladin
+
+                damage = int(damage * paladin.holy_damage_multiplier(attacker))
             except Exception:
                 pass
 

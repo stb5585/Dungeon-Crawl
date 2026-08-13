@@ -251,24 +251,17 @@ remains deferred.
 
 ## Sentinel And Stalwart Defender
 
-Sentinel was rebuilt around three authored paths:
+Sentinel was rebuilt as a six-column tree with authored Assault, Bulwark,
+Resistance, and Support paths plus independent inherited combat techniques.
+Its eight Resolve actions are Hold the Line, Brace Wall, Spell Block, Bulwark
+Guard, Purge Weakness, Repercussion, Boast, and Focused Assault. Shield Riposte
+and Spell Reflection are passive modifiers; Shield Check and Covering Guard
+are retired from the playable kit.
 
-- Counter: Goad, Shield Check, Retaliate, Shield Riposte, Watchful Reprisal,
-  and optional Attack.
-- Wall: Hold the Line, Brace Wall, Covering Guard, Bulwark, Resolute Guard,
-  and optional Defense.
-- Anti-magic: Deflect Spell, Spell Reflection, Magic Defense, and HP.
-
-Shield Block is omitted because the Warrior route already requires it. Known
-Goad and Retaliate are adopted. Promotion requires Watchful Reprisal,
-Resolute Guard, level 60, Constitution 20, and three points.
-
-Stalwart Defender contains only new terminal development:
-
-- Last Stand, Unbroken Wall, Defense, and HP;
-- Punishing Guard and Attack;
-- Fortified Citadel, Crushing Reprisal, and Final Redoubt Surge modifiers;
-- Mirror Bastion and Magic Defense.
+Stalwart Defender extends the four main paths with Punishing Guard, Crushing
+Vengeance, Double Payback, Last Stand, Unbroken Wall, Iron Maiden, Mirror
+Bastion, Fortified Citadel, and Final Redoubt. Its full-bar Resolve Bursts are
+Citadel Aegis, Ironwall Revenge, Last Bastion, and Stronghold.
 
 Resolve uses the legacy `guard_meter` backing value:
 
@@ -279,10 +272,10 @@ Resolve uses the legacy `guard_meter` backing value:
 - Goad and Hold the Line grant 5.
 - Duplicate promotion-kit and Class Ring gains were removed.
 
-Spell Reflection spends 25 Resolve, requires a shield, ignores Silence, waits
-for two enemy spell opportunities, and redirects the first compatible hostile
-targeted spell. Generic Reflect has priority. Beneficial, area, and explicitly
-unreflectable spells do not consume it. Mirror Bastion grants 20 Resolve and
+Spell Block spends 25 Resolve, requires a shield, and prepares a block against
+a compatible hostile projectile spell. Spell Reflection passively adds a
+chance to return blocked spell damage to its caster. Beneficial, area, and
+explicitly unblockable spells do not consume it. Mirror Bastion grants 20 Resolve and
 two turns of Magic Defense after a trigger.
 
 Stalwart promotion grants the Surge wrappers without purchasing nodes.

@@ -67,8 +67,8 @@ paths in columns 2-4. Reflect/Sleep/Boost/Mirror Image are independent
 level-10/15/20/25 Universal nodes in column 5.
 
 - Sorcerer, five points: buy either an elemental spell, its Enhancement, and
-  Classical Force, or `Magic Missile -> Arcane Fundamentals -> Esotericism`,
-  then the two-point promotion. Classical Force and Esotericism are mutually
+  Classical Force, or `Magic Missile -> Arcane Fundamentals -> Arcane Tradition`,
+  then the two-point promotion. Classical Force and Arcane Tradition are mutually
   exclusive and Spend Distribution warns before the competing specialization
   closes.
 - Spellblade, eight points:
@@ -104,6 +104,26 @@ permanent-roster tiers, but replaces summon XP with conduit-driven stats and
 ability acquisition. Chosen Xenids also shape caster progression through
 themed reciprocal effects; Conduit Mastery amplifies those effects. No direct
 permanent-summon system is inherited at the Mage-to-Conjurer promotion.
+
+Spellblade uses Weapon Enhancements, Armor Enhancements, Spell Enhancements,
+and Universal / Extra Abilities. Its level-60, three-point Knight Enchanter
+promotion accepts Enhance Blade, Enhance Armor, or Storage Capacity at row 8.
+Imbue Weapon is already required to become a Spellblade and has no repeated
+Spellblade node. Counter Charge, Reflect, and Boost share ungated row 2. True
+Strike, Parry, and Double Strike occupy levels 35, 40, and 45. Reflect, Boost,
+True Strike, Parry, and Double Strike adopt prior ownership without backfilling
+their prerequisites. Knight Enchanter requires `STR 16/CON 16/INT 15/DEX 11`
+and has no Charisma requirement. Mana Tap and Enhance Armor remain in
+Knight Enchanter as catch-up purchases and become automatically owned there
+when already learned as Spellblade. Knight Enchanter's four authored columns
+organize Assault, Aegis, Spellbind, and independent universal talents. Quick
+Recharge, Third Eye, and Storage Capacity II cost two points; every other node
+costs one. Third Eye is a level-70 Aegis option that adds
+Intelligence to critical-hit and dodge calculations. Storage Capacity II adds
+two slots to each typed charge pool and stacks with Storage Capacity. Aegis
+Weave and Spellbind consume the same typed Blade Charges as Enchanted Assault
+and never create a second class resource.
+
 Thaumaturgist compresses this terminal graph into five columns by adding a
 four-node Miracles lane beside Calling, paired choice, ultimate, and conduit
 development. `Miracle Blade (65) -> Miracle Shackles (70) -> Miracle Potion
@@ -116,9 +136,11 @@ Xenid at 25% HP and refunds 10 of that loss.
 
 Weapon Master is intentionally asymmetric. Double Strike and Parry entry nodes
 have no global-level gate and adopt retained Warrior ownership without charging
-again. Numeric rating, HP, and MP nodes have no independent level gate in any
-tree; prerequisites alone unlock them. Ratings scale by tree tier: `+10` in
-base trees, `+20` in first-promotion trees, and `+30` in terminal trees. New
+again. Numeric rating, HP, and MP nodes normally have no independent level
+gate; prerequisites alone unlock them. Spellblade's level-band layout is the
+explicit exception, so its row-4 Magic and row-5 Defense ratings enforce levels
+40 and 45. Ratings scale by tree tier: `+10` in base trees, `+20` in
+first-promotion trees, and `+30` in terminal trees. New
 class-specific nodes must include at least one basic class mechanic; do not add
 new class-specific nodes whose entire identity is a plain numeric stat or
 resource increase. The Grandmaster route permanently closes either Dual Wield or
@@ -152,53 +174,57 @@ rank-10 level-3 replacements. Ungated Double Strike sits between Perfect Form
 and Adaptive Arsenal in the fourth column. Both floating talents have no level
 gate and scale from the currently equipped weapon's discipline.
 
-Lancer uses three independent paths below Jump and one polearm development
+Lancer uses three independent paths below Jump and two polearm development
 line. The defensive path is `Defend -> Acrobat -> Grounded Landing`; the
-middle path is `+20 Defense -> +20 Attack -> Promote: Dragoon`; and the
+middle nodes are `+20 Attack` directly below Jump and `+20 Defense -> Vigilant
+Landing`; and the
 offensive path is `Aerial Footwork -> Quick Dive -> Thrust -> Rend`. Polearm
-Proficiency sits in column 5 and owns a single line through Lance Sweep,
-`+50 HP`, and Zephyrstrike. Ungated inherited-or-purchased Parry and True
+Proficiency sits in column 5 and feeds the authored Assault and Guard
+paths. Ungated inherited-or-purchased Parry and True
 Strike occupy the final column. Modifier nodes never create spellbook entries.
 Acrobat unlocks at level 40, Thrust at level 45, and Rend at level 50.
-Promote: Dragoon additionally requires global level 60, `STR 17`, and
-`DEX 13`; neither optional modifier path is required.
+Polearm Excellence requires Polearm Proficiency directly. Promote: Dragoon in
+column 4 requires both Vigilant Landing and Polearm Excellence, plus global
+level 60, `STR 17`, and `DEX 13`; its left connector therefore runs from Jump
+through Defense and Vigilant Landing, then descends in that column before
+turning into promotion rather than crossing Thrust or Rend. Neither optional
+modifier path is required.
 
-Dragoon retains all 16 Lancer development nodes in the same positions and adds
+Dragoon retains all 23 Lancer development nodes in the same positions and adds
 11 class-specific nodes. The Lancer promotion node is the only omitted node.
 The historical Lancer tab becomes read-only, but its purchased node IDs remain
 owned and its unpurchased nodes remain editable in the Dragoon tree. The three
 inherited Jump paths preserve the same independent prerequisites. Shield Block
-is not repeated because reaching Lancer already requires it. Ungated Polearm
-Excellence starts the Dragoon polearm line at row 5 and connects into
-`+30 Attack -> True Piercing Strike`; level-70 True Piercing Strike no longer
-requires True Strike. The middle `+20 Attack` node
+is not repeated because reaching Lancer already requires it. Polearm
+Proficiency sits in column 5, with Polearm Assault in column 4, Polearm Guard
+in column 6, and universal attacks in column 7. Polearm Excellence (55) sits
+under Proficiency as a direct dependency; Guard ends in Dragon Soul (50).
+Vigilant Landing (45) follows Defense independently of Attack.
+Dragoon extends column 5 through `+30 Attack -> Polearm Mastery (80)`, adds
+Dragonheart (75) to Guard, and places level-75 True Piercing Strike in column 7
+behind True Strike. The middle `+20 Attack` node
 unlocks Dragon's Ascent, which has no separate level gate and gates
 `+30 Defense`. Grounded Landing unlocks level-65 Retribution, which continues
 to level-70 Unstoppable. Rend extends through Quake and Soaring Strike.
 Level-80 Dragon Dive requires Dragon's Ascent, Soaring Strike, and Unstoppable.
-Lancer fits in rows 0-6; Dragoon uses compact spacing across rows 0-7 without
+Lancer and Dragoon use rows 0-7 without
 progression-panel scrolling.
 
-Sentinel uses three authored columns. Counter runs from ungated Goad through
-level-35 Shield Check, level-40 Retaliate, level-45 Shield Riposte, and
-level-50 Watchful Reprisal. Wall runs from ungated Hold the Line through Brace
-Wall, Covering Guard, Bulwark, and level-50 Resolute Guard. Anti-magic is the
-single `Spell Reflection -> +20 Magic Defense -> +50 HP` branch. Spell
-Reflection is ungated at `(4, 0)` and uses the compatibility ID
-`sentinel.ability.deflect-spell`; the retired Deflect Spell ability and old
-`sentinel.ability.spell-reflection` node ID migrate into the merged behavior.
-Goad and Retaliate adopt known ownership. The level-60
-Stalwart Defender promotion requires Watchful Reprisal, Resolute Guard,
-`CON 20`, and three points. Its ten-node Human core plus one Constitution
-increase leaves four points.
+Sentinel uses six authored columns. Assault and Bulwark occupy columns 1 and 2;
+Adrenaline at column 4.5 splits into Resistance and Support in columns 4 and 5;
+Goad, Charge, and Double Strike are independent in column 6. Every node is
+shifted down one row; the level-60 Stalwart Defender promotion at `(2, 8)`
+accepts Watchful Reprisal, Resolute
+Guard, Shielding Ward, or Braggadocious and otherwise retains `CON 20` and its
+three-point cost.
 
-Stalwart Defender contains 11 new development nodes and no inherited-tree
-duplicates. Last Stand and Punishing Guard start independent defense and
-counter paths. Fortified Citadel, Crushing Reprisal, and Final Redoubt are
-point-purchased Surge modifiers; Citadel Aegis, Ironwall Reprisal, and Last
-Bastion themselves remain mastery rewards at thresholds 0, 4, and 8 and are
-granted as action wrappers during promotion. Mirror Bastion checks learned
-Spell Reflection rather than requiring ownership of a closed Sentinel node.
+Stalwart Defender contains 20 nodes across Assault, Bulwark, Resistance, and
+Support. All nodes form continuous top-to-bottom prerequisite chains within
+their four columns. Its full-bar Bursts are Citadel Aegis, Ironwall Revenge, Last Bastion,
+and Stronghold; all four are immediately unlocked on promotion and remain out
+of the ordinary Specials list. Point-purchased talents modify those Bursts and
+the eight inherited Resolve actions. The tree occupies rows 1-6; Punishing
+Guard, Unbroken Wall, Fortified Citadel, and Final Redoubt cost two points.
 
 Paladin begins with independent ungated Oath's Judgment `(1, 0)` and Oath's
 Shelter `(4, 0)` roots. Judgment branches through the column-0 `Double Strike
@@ -216,18 +242,17 @@ Its two prerequisite connectors descend to the promotion row before joining.
 Six required Human attribute increases use the separate attribute pool,
 leaving 14 progression points and nine attribute points on the shortest route.
 
-Crusader contains only its 19 new nodes across Melee, Spells, Healing, and
-Protection. Ungated Condemnation splits into mutually exclusive Two-Handed
-Weapon Proficiency and Sword & Board styles. The former continues through
-`+30 Attack`, level-75 Mortal Strike, and Righteous Advance; the latter
-continues through level-70 True Piercing Strike and level-85 Triple Strike.
-True Piercing Strike has no True Strike prerequisite. Smite II/III and Heal II
-retain replacement ownership. Repel the Wicked is retained or purchasable
-from the Spells path without a Turn Undead II node. Consecrated Bulwark leads
-through Parry and level-65 Posturing
-to the protection ratings. Unpurchased Sentinel and Paladin nodes close at
-promotion; all already learned actions, talents, Resolve mastery, and the
-permanent Paladin vow remain.
+Crusader contains 23 nodes across Melee, Spells, Healing, and Protection, using
+the standard tier-3 row gates from ungated through level 95. Ungated
+Condemnation splits into mutually exclusive two-point Two-Handed Weapon
+Proficiency and Sword & Board styles. The shield route adds Censure, Shield
+Ricochet, and the moved level-75 True Piercing Strike. Spells run from retained
+Repel the Wicked through Smite II, Sanctification, and level-90 Smite III;
+Healing runs from ungated Dispel through Cleanse, Heal II, and two-point Prayer
+of Faith. Known inherited nodes remain owned but do not satisfy downstream
+nodes until their preceding path is purchased. Unpurchased Sentinel and
+Paladin nodes close at promotion; all already learned actions, talents, Resolve
+mastery, and the permanent Paladin vow remain.
 
 ## Staging and Atomic Change
 

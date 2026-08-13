@@ -942,6 +942,37 @@ def test_simple_list_key_item_details_use_large_art_layout(monkeypatch):
     assert "Weight: 0" not in presenter.normal_font.render_calls
 
 
+def test_simple_list_ability_card_renders_multiple_modifications_separately(monkeypatch):
+    _patch_visuals(monkeypatch)
+    presenter = _make_presenter()
+    ability = SimpleNamespace(
+        name="Firebolt",
+        description="A mote of fire propelled at the foe.",
+        subtyp="Fire",
+        cost=2,
+        passive=False,
+        presentation_modifications=(
+            SimpleNamespace(name="Fire Inside", description="Grants a critical charge."),
+            SimpleNamespace(name="Focused Flame", description="Improves focused casting."),
+        ),
+    )
+    popup = popup_menus.SimpleListPopupMenu(
+        presenter,
+        _make_parent(),
+        "Special Abilities",
+        lambda _player: [ability],
+    )
+    popup.build_items(_make_player())
+
+    popup.draw_details(_make_player())
+
+    rendered = presenter.normal_font.render_calls
+    assert "Modifications" in rendered
+    assert any(text.startswith("Fire Inside:") for text in rendered)
+    assert any(text.startswith("Focused Flame:") for text in rendered)
+    assert all("Fire Inside" not in text for text in rendered[:1])
+
+
 def test_simple_list_relic_key_item_details_use_relic_sprite(monkeypatch):
     _patch_visuals(monkeypatch)
     presenter = _make_presenter()

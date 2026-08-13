@@ -9,8 +9,10 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parents[2]))
 
+from src.core import abilities
 from src.core import items
 from src.core.constants import (
+    BASE_CRIT_PER_POINT,
     ELF_HEALING_RECEIVED_MULTIPLIER,
     HALF_ELF_HEALING_RECEIVED_MULTIPLIER,
     MAX_CRIT_CHANCE,
@@ -178,6 +180,31 @@ class TestCharacterHelpers:
         seeker.stats.charisma = 999
         seeker.stats.wisdom = 999
         assert seeker.critical_chance("Weapon") == MAX_CRIT_CHANCE
+
+    def test_third_eye_adds_intelligence_to_critical_and_both_dodge_calculations(
+        self,
+        monkeypatch,
+    ):
+        knight = TestGameState.create_player(
+            class_name="Knight Enchanter",
+            race_name="Human",
+        )
+        attacker = TestGameState.create_player(class_name="Warrior", race_name="Human")
+        knight.stats.intel = 20
+        attacker.stats.dex = 1
+        attacker.stats.intel = 1
+        monkeypatch.setattr("src.core.character.random.randint", _fixed_randint)
+
+        base_crit = knight.critical_chance("Weapon")
+        base_weapon_dodge = knight.dodge_chance(attacker, spell=False)
+        base_spell_dodge = knight.dodge_chance(attacker, spell=True)
+        knight.spellbook["Skills"]["Third Eye"] = abilities.ThirdEye()
+
+        assert knight.critical_chance("Weapon") == pytest.approx(
+            base_crit + 20 * BASE_CRIT_PER_POINT
+        )
+        assert knight.dodge_chance(attacker, spell=False) > base_weapon_dodge
+        assert knight.dodge_chance(attacker, spell=True) > base_spell_dodge
 
     def test_handle_duplicates_consumes_last_duplicate(self, monkeypatch):
         attacker = TestGameState.create_player(class_name="Warrior", race_name="Human")

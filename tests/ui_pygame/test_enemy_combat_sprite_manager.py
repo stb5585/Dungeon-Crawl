@@ -13,7 +13,10 @@ import pygame
 import pytest
 
 from src.core import enemies
-from src.ui_pygame.assets.enemy_combat_sprite_manager import EnemyCombatSpriteManager
+from src.ui_pygame.assets.enemy_combat_sprite_manager import (
+    POLYMORPH_SPRITE_SCALE,
+    EnemyCombatSpriteManager,
+)
 from tools.build_enemy_combat_sprites import mapped_sprite_keys
 
 
@@ -302,6 +305,8 @@ def test_polymorph_uses_transparent_bunny_combat_sprite():
     )
 
     assert manager.get_sprite_key_for_enemy(enemy) == "polymorph_bunny"
+    assert manager.get_combat_scale_for_enemy(enemy) == POLYMORPH_SPRITE_SCALE
+    assert manager.get_dungeon_scale_for_enemy(enemy) == POLYMORPH_SPRITE_SCALE
     path = manager.sprite_root / "polymorph_bunny.png"
     with Image.open(path) as image:
         assert image.mode == "RGBA"

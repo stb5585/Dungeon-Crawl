@@ -740,6 +740,11 @@ class TestSpecialTiles:
         assert player.quest_dict["Side"]["Rookie Mistake"]["Completed"] is True
         assert player.quest_dict["Side"]["Rookie Mistake"]["Turned In"] is False
         assert type(rookie_tile.enemy).__name__ == "Zombie"
+        encounter = rookie_tile.enemy._runtime_combat_encounter
+        assert [member.display_label for member in encounter.members] == [
+            "Zombie A",
+            "Zombie B",
+        ]
         assert player.state == "fight"
         assert rookie_tile.read is True
 

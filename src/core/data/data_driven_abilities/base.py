@@ -159,19 +159,6 @@ class DataDrivenSpell(Spell):
         # ── 3. Reflect ──────────────────────────────────────────────
         reaction_owner = target
         reflect = target.magic_effects["Reflect"].active
-        if not reflect:
-            try:
-                from ...classes import promotion_kits
-
-                reflection_message = promotion_kits.consume_spell_reflection(
-                    target,
-                    self.name,
-                    spell=self,
-                )
-                reflect = bool(reflection_message)
-                msg += reflection_message
-            except Exception:
-                pass
 
         # ── 4. Dodge / hit rolls ────────────────────────────────────
         spell_mod = caster.check_mod("magic", enemy=target)
@@ -327,6 +314,27 @@ class DataDrivenSpell(Spell):
                             damage_msg += " (Critical hit!)"
                         msg += damage_msg + ".\n"
 
+                try:
+                    from src.core.classes import promotion_kits
+
+                    damage, block_message = promotion_kits.apply_spell_block(
+                        target,
+                        caster,
+                        damage,
+                        spell=self,
+                    )
+                    msg += block_message
+                    damage, shield_message, _fully_absorbed = (
+                        promotion_kits.absorb_novel_shield(
+                            target,
+                            damage,
+                            source="reflected" if reflect else "spell",
+                        )
+                    )
+                    msg += shield_message
+                except Exception:
+                    pass
+
                 # ── 11. Apply damage ────────────────────────────────
                 target.health.current -= damage
                 caster._emit_damage_event(
@@ -335,6 +343,8 @@ class DataDrivenSpell(Spell):
                     damage_type=self.subtyp,
                     is_critical=(crit > 1),
                     ability_name=self.name,
+                    attack_source="spell",
+                    source="spell",
                 )
                 try:
                     from src.core.classes import promotion_kits

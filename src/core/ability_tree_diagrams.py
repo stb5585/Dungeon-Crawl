@@ -14,6 +14,7 @@ from .progression import (
 
 
 OUTPUT_DIRECTORY = Path(__file__).parents[2] / "docs" / "ability_trees"
+MANUALLY_AUTHORED_DIAGRAM_CLASSES = frozenset({"Mage"})
 NODE_WIDTH = 188
 NODE_HEIGHT = 62
 COLUMN_GAP = 34
@@ -93,7 +94,32 @@ def render_tree_svg(class_name: str) -> str:
             if prerequisite not in centers:
                 continue
             source_x, source_y = centers[prerequisite]
-            middle_y = (source_y + target_y) / 2
+            if node.payload.get("connector_enter_from_top"):
+                source_is_left = source_x < target_x
+                source_side_x = source_x + (
+                    NODE_WIDTH / 2 if source_is_left else -NODE_WIDTH / 2
+                )
+                channel_column = node.payload.get(
+                    "connector_channel_columns",
+                    {},
+                ).get(prerequisite)
+                channel_x = (
+                    target_x
+                    if channel_column is None
+                    else _node_xy((channel_column, 0))[0] + NODE_WIDTH / 2
+                )
+                target_top = target_y - NODE_HEIGHT / 2
+                lines.append(
+                    f'<path class="edge" d="M {source_side_x:.1f} '
+                    f'{source_y:.1f} H {channel_x:.1f} V {target_top:.1f} '
+                    f'H {target_x:.1f}"/>'
+                )
+                continue
+            middle_y = (
+                target_y
+                if node.payload.get("connector_join_at_target_row")
+                else (source_y + target_y) / 2
+            )
             lines.append(
                 f'<path class="edge" d="M {source_x:.1f} {source_y:.1f} '
                 f'V {middle_y:.1f} H {target_x:.1f} V {target_y:.1f}"/>'
@@ -133,6 +159,8 @@ def render_index() -> str:
         "# Ability Tree Diagrams",
         "",
         "These SVGs are generated directly from the runtime progression graphs.",
+        "The Mage SVG has manually authored connector routing and is preserved",
+        "when diagrams are regenerated; its nodes still track the runtime tree.",
         "Run `./.venv/bin/python tools/generate_ability_tree_diagrams.py` after",
         "changing any tree. The drift test fails when these references are stale.",
         "",
@@ -147,6 +175,8 @@ def write_all(output_directory: Path = OUTPUT_DIRECTORY) -> None:
     output_directory.mkdir(parents=True, exist_ok=True)
     for class_name in ABILITY_TREES:
         path = output_directory / f"{class_slug(class_name)}.svg"
+        if class_name in MANUALLY_AUTHORED_DIAGRAM_CLASSES and path.exists():
+            continue
         path.write_text(render_tree_svg(class_name), encoding="utf-8")
     (output_directory / "README.md").write_text(
         render_index(),

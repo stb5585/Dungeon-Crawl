@@ -10,6 +10,7 @@ from ..classes import (
     bard,
     class_rings,
     lycan,
+    mage_mechanics,
     paladin,
     promotion_kits,
     wizard,
@@ -197,6 +198,7 @@ class PlayerCombatMixin:
         class_mod += ability_mechanics.favored_enemy_bonus(self, enemy)
         if mod == 'weapon':
             weapon_mod = (self.equipment['Weapon'].damage * int(not self.is_disarmed()))
+            weapon_mod += mage_mechanics.enhance_blade_bonus(self)
             class_mod += promotion_kits.xenid_caster_attribute_bonus(
                 self,
                 "strength",
@@ -206,8 +208,6 @@ class PlayerCombatMixin:
             # Footpad-line weapon damage is DEX-forward.
             if self.cls.name in ["Footpad", "Thief", "Rogue", "Assassin", "Ninja"]:
                 class_mod += self.stats.dex
-            if self.cls.name in ['Spellblade', 'Knight Enchanter']:
-                class_mod += weapon_mod * int(2 * (self.mana.current / self.mana.max))
             if self.cls.name == "Berserker" and self.power_up:
                 class_mod += int(min(self.health.max / self.health.current, 10) * (self.player_level() // 11))
             if self.cls.name in ['Dragoon', "Shadowcaster"] and self.power_up:
@@ -310,11 +310,10 @@ class PlayerCombatMixin:
                 return 0
         if mod == 'armor':
             armor_mod = self.equipment['Armor'].armor
+            armor_mod += mage_mechanics.enhance_armor_bonus(self)
             helmet = self.equipment.get("Helmet")
             if helmet is not None and getattr(helmet, "subtyp", "None") != "None":
                 armor_mod += getattr(helmet, "armor", 0)
-            if self.cls.name == 'Knight Enchanter':
-                class_mod += int(armor_mod * max(0, min(5, self.mana.max / (self.mana.current + 1))))
             if self.cls.name in ['Warlock', 'Shadowcaster']:
                 if self.familiar and self.familiar.spec == 'Homunculus' and random.randint(0, 1) and self.familiar.level.pro_level > 1:
                     fam_mod = random.randint(0, 3) ** self.familiar.level.pro_level

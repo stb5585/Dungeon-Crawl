@@ -77,6 +77,9 @@ class CharacterStatusMixin:
         """
         if self.status_effects["Sleep"].active:
             return False, f"{self.name} is asleep and cannot act."
+        polymorph = self.status_effects.get("Polymorph")
+        if polymorph is not None and polymorph.active:
+            return False, f"{self.name} is polymorphed and cannot act."
         if self.physical_effects["Prone"].active:
             return False, f"{self.name} is prone and cannot act."
         if self.status_effects["Stun"].active:
@@ -174,6 +177,16 @@ class CharacterStatusMixin:
             return True
         if "Status-All" in getattr(self, "status_immunity", []):
             return True
+        try:
+            from ..classes import promotion_kits
+
+            if int(
+                promotion_kits.combat_state(self).get("purge_immunity_turns", 0)
+                or 0
+            ):
+                return True
+        except Exception:
+            pass
         if self.magic_effects.get("Tree of Life") and self.magic_effects["Tree of Life"].active:
             return True
         if normalized == "Berserk" and self.status_effects.get("Peaceful") and self.status_effects["Peaceful"].active:
@@ -327,7 +340,10 @@ class CharacterStatusMixin:
                     0, int(temporary_health.get("turns", 0) or 0) - 1
                 )
                 if temporary_health["turns"] <= 0:
-                    status_text += f"{self.name}'s inflated health dissolves.\n"
+                    source = str(
+                        temporary_health.get("source") or "inflated health"
+                    )
+                    status_text += f"{self.name}'s {source} dissolves.\n"
                     self.temporary_health = None
             polymorph = self.status_effects.get("Polymorph")
             if polymorph is not None and polymorph.active:

@@ -364,23 +364,39 @@ def test_draw_all_accepts_popup_parent_screen_call_signature(monkeypatch):
     assert flip_calls == []
 
 
-def test_shop_screen_draws_location_note_outside_item_browsing(monkeypatch):
+def test_shop_screen_quest_text_uses_blocking_town_dialogue(monkeypatch):
     screen = _make_shop(monkeypatch)
-    called = []
-    screen.draw_background = lambda: called.append("background")
-    screen.draw_top = lambda: called.append("top")
-    screen.draw_options = lambda: called.append("options")
-    screen.draw_shop_list = lambda: called.append("list")
-    screen.draw_item_desc = lambda: called.append("desc")
-    screen.draw_mod = lambda: called.append("mod")
-    screen.draw_gold = lambda: called.append("gold")
+    calls = []
+    monkeypatch.setattr(
+        shop_screen.TownScreenBase,
+        "display_quest_text",
+        lambda _self, text, **kwargs: calls.append((text, kwargs)),
+    )
 
     screen.display_quest_text("A quiet answer in the ledger.", title="Mara Vale")
-    screen.draw_all(do_flip=False)
 
-    assert screen.location_note == "A quiet answer in the ledger."
-    assert screen.location_note_title == "Mara Vale"
-    assert called == ["background", "top", "options", "list", "desc"]
+    assert calls == [
+        (
+            "====== Mara Vale ======\nA quiet answer in the ledger.",
+            {"npc_name": "Mara Vale"},
+        )
+    ]
+
+
+def test_shop_screen_quest_text_accepts_npc_name_keyword(monkeypatch):
+    screen = _make_shop(monkeypatch)
+    calls = []
+    monkeypatch.setattr(
+        shop_screen.TownScreenBase,
+        "display_quest_text",
+        lambda _self, text, **kwargs: calls.append((text, kwargs)),
+    )
+
+    screen.display_quest_text("A new commission awaits.", npc_name="Griswold")
+
+    assert calls == [
+        ("A new commission awaits.", {"npc_name": "Griswold"})
+    ]
 
 
 def test_draw_item_desc_includes_element_and_resistance_metadata(monkeypatch):

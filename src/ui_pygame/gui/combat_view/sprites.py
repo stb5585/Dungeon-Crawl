@@ -81,9 +81,15 @@ class CombatSpriteMixin:
             or name in EnemyCombatSpriteManager.BOSS_NAMES
         )
 
+    @staticmethod
+    def _enemy_is_polymorphed(enemy) -> bool:
+        """Return whether the enemy should use bunny scale and movement."""
+        polymorph = getattr(enemy, "status_effects", {}).get("Polymorph")
+        return bool(polymorph is not None and getattr(polymorph, "active", False))
+
     def _enemy_combat_sprite_size(self, enemy) -> tuple[int, int]:
         """Return the combat sprite box size after optional per-enemy scaling."""
-        if self._is_boss_enemy(enemy):
+        if self._is_boss_enemy(enemy) and not self._enemy_is_polymorphed(enemy):
             base_edge = max(256, int(min(self.combat_width, self.combat_height)))
         else:
             base_edge = 256
@@ -168,7 +174,45 @@ class CombatSpriteMixin:
             ghost_rect = ghost.get_rect(center=(center[0] + offset_x, center[1] + offset_y))
             self.screen.blit(ghost, ghost_rect)
 
-    def _render_mana_shield_visual(self, rect: pygame.Rect) -> None:
+    def _render_mana_shield_visual(
+        self,
+        rect: pygame.Rect,
+        *,
+        encompass_view: bool = False,
+    ) -> None:
+        if encompass_view:
+            margin = 10
+            log_bottom = 160
+            menu_top = self.combat_height - 150
+            shield_rect = pygame.Rect(
+                margin,
+                log_bottom + margin,
+                max(1, self.combat_width - (margin * 2)),
+                max(1, menu_top - log_bottom - (margin * 2)),
+            )
+            surface = pygame.Surface(shield_rect.size, pygame.SRCALPHA)
+            pulse = (math.sin(pygame.time.get_ticks() / 180) + 1) / 2
+            alpha = int(95 + pulse * 70)
+            surface.fill((35, 105, 190, 12))
+            outer = surface.get_rect().inflate(-2, -2)
+            inner = outer.inflate(-12, -12)
+            pygame.draw.rect(
+                surface,
+                (80, 170, 255, alpha),
+                outer,
+                5,
+                border_radius=18,
+            )
+            pygame.draw.rect(
+                surface,
+                (145, 215, 255, max(40, alpha // 2)),
+                inner,
+                2,
+                border_radius=14,
+            )
+            self.screen.blit(surface, shield_rect.topleft)
+            return
+
         padding = 30
         shield_rect = rect.inflate(padding, padding)
         surface = pygame.Surface(shield_rect.size, pygame.SRCALPHA)
@@ -250,7 +294,10 @@ class CombatSpriteMixin:
     def _render_ability_status_visuals(self, character, target: str, *, include_duplicates: bool = True) -> None:
         rect = self._target_rect_for_effect(target)
         if self._magic_effect_active(character, "Mana Shield"):
-            self._render_mana_shield_visual(rect)
+            self._render_mana_shield_visual(
+                rect,
+                encompass_view=target == "player",
+            )
         if self._smoke_screen_active_for(character, target):
             self._render_smoke_screen_visual(rect)
 

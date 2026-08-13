@@ -216,8 +216,8 @@ remain the prompts; the evidence ledger is the running decision record.
     Warlock, `Contracts` for Demonologist, and `Summons` for
     Thaumaturgist.
   - Expected: Shadowcaster, Spellblade, and Knight Enchanter receive no
-    Character Menu tab help popup; Umbral Debt, Blade Charge, and Arcane Tempo
-    remain readable through combat HUD/status/log/action surfaces.
+    Character Menu tab help popup; Umbral Debt, Blade Charge, Foundation, and
+    Accent remain readable through combat HUD/status/log/action surfaces.
 - [ ] Promote through the Footpad tree in pygame.
   - Expected: Post-confirmation help popups show the matching post-promotion
     class mechanic tab: `Case Journal` for Inquisitor/Seeker.
@@ -248,7 +248,7 @@ remain the prompts; the evidence ledger is the running decision record.
     `Totems`, `Case Journal`, `Crescendo`, `Forms`, and `Aspects`.
   - Expected: Devotion and Stolen Charge continue to avoid Character Menu
     tabs, using HUD/status/log/action surfaces instead.
-  - Expected: Umbral Debt, Blade Charge, Arcane Tempo, Fortune,
+  - Expected: Umbral Debt, Blade Charge, Foundation, Accent, Fortune,
     Death Mark, Ki, and Prayer do not appear as Character Menu tabs; their
     readiness remains readable through HUD/status/log/action surfaces.
 - [ ] Fight as a Weapon Master with each supported weapon type equipped.

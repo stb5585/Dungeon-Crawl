@@ -41,24 +41,27 @@ CASE_MILESTONES = (
 
 CLASS_KIT_LOG_TERMS = (
     "aerial",
+    "arcane riposte",
     "arcane larceny",
-    "arcane tempo",
     "aspect harmony",
     "beast command",
     "blade charge",
     "bloodied momentum",
     "case journal",
     "class ring",
+    "cleaving edge",
     "companion bond",
     "companion command",
     "conduit",
     "corruption",
     "crescendo",
     "death mark",
+    "defensive release",
     "devotion",
     "divine intervention",
     "dragon essence",
     "echo",
+    "echoing blade",
     "encore",
     "foresight",
     "fortune",
@@ -72,8 +75,10 @@ CLASS_KIT_LOG_TERMS = (
     "ordered blessings",
     "patron",
     "prayer",
+    "re-debuff",
     "revelation",
     "resolve",
+    "resonant strike",
     "ring preserve",
     "ring ready",
     "scavenger",
@@ -82,6 +87,8 @@ CLASS_KIT_LOG_TERMS = (
     "threaded cast",
     "totem resonance",
     "umbral",
+    "weave",
+    "weave reservoir",
     "vow affirmation",
 )
 
@@ -194,7 +201,15 @@ def combat_state(character: Any) -> dict[str, Any]:
         "threaded_cast_pending": False,
         "rewind_thread_granted": False,
         "blade_charge": None,
-        "arcane_tempo": 0,
+        "blade_charge_action_token": None,
+        "counter_charge_action_token": None,
+        "breakdown_stacks": {},
+        "novel_shield": None,
+        "weave_foundation": None,
+        "weave_accent": None,
+        "spellbind": None,
+        "defensive_release": 0,
+        "echoing_weave": None,
         "bloodied_momentum": 0,
         "momentum_preserved": False,
         "oath_conviction": 0,
@@ -248,11 +263,17 @@ def clear_combat_state(character: Any) -> None:
 
 def tick_combat_state(character: Any) -> str:
     from .. import class_rings
-    from .resolve import tick_spell_reflection
+    from .resolve import tick_resolve_effects, tick_spell_reflection
 
     state = combat_state(character)
     msg = class_rings.tick_aerial_supremacy_shield(character)
     msg += tick_spell_reflection(character)
+    msg += tick_resolve_effects(character)
+    if class_name(character) == "Knight Enchanter":
+        from .weaves import resolve_echoing_blade, weave_reservoir_regeneration
+
+        msg += resolve_echoing_blade(character)
+        msg += weave_reservoir_regeneration(character)
     hold_turns = int(state.get("hold_the_line", 0) or 0)
     if hold_turns > 0:
         state["hold_the_line"] = max(0, hold_turns - 1)
@@ -281,6 +302,20 @@ def tick_combat_state(character: Any) -> str:
         state["jinx_turns"] = max(0, jinx - 1)
         if state["jinx_turns"] <= 0:
             msg += f"{character.name}'s Jinx fades.\n"
+    novel_shield = state.get("novel_shield")
+    if isinstance(novel_shield, dict):
+        turns = max(0, int(novel_shield.get("turns", 0) or 0) - 1)
+        novel_shield["turns"] = turns
+        if turns <= 0:
+            state["novel_shield"] = None
+            msg += f"{character.name}'s Novel Shielding fades.\n"
+    spellbind = state.get("spellbind")
+    if isinstance(spellbind, dict):
+        turns = max(0, int(spellbind.get("turns", 0) or 0) - 1)
+        spellbind["turns"] = turns
+        if turns <= 0:
+            state["spellbind"] = None
+            msg += f"{character.name}'s Spellbind fades.\n"
     return msg
 
 
@@ -356,6 +391,10 @@ def end_combat(
                 delattr(character, "_active_summon_bond_note")
             except Exception:
                 pass
+    if int(combat_state(character).get("boast_turns", 0) or 0) > 0:
+        from .resolve import build_resolve
+
+        msg += build_resolve(character, 5, "Boast's combat-end refund")
     msg += convert_shadow_backlash(character, fraction=0.05, reason="combat end")
     clear_combat_state(character)
     from .. import class_rings

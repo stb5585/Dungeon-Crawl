@@ -111,7 +111,7 @@ PROMOTION_MECHANIC_GUIDANCE: dict[str, str] = {
     ),
     "Stalwart Defender": (
         "Character Menu tab available: Resolve. Use it to review shield guard "
-        "readiness, inherited shield actions, and full-bar Resolve Surges."
+        "readiness, inherited shield actions, and full-bar Resolve Bursts."
     ),
     "Sorcerer": (
         "Character Menu tab available: School Affinity. Use it to review the "
@@ -135,11 +135,12 @@ PROMOTION_MECHANIC_GUIDANCE: dict[str, str] = {
     ),
     "Spellblade": (
         "Blade Charge is shown in combat HUD/status rows and logs. Alternate "
-        "compatible damage spells with weapon actions to drive the hybrid flow."
+        "any damaging spells with weapon actions to drive the hybrid flow."
     ),
     "Knight Enchanter": (
-        "Blade Charge and Arcane Tempo are shown in combat HUD/status rows and "
-        "logs. Alternate spells and weapon actions to build burst readiness."
+        "Blade Charge, Foundation, and Accent are shown in combat HUD/status "
+        "rows and logs. Cast across spell categories to shape an Enchanted "
+        "Assault, Aegis Weave, or Spellbind release."
     ),
     "Thief": (
         "Fortune and Misfortune are shown in combat HUD/status rows, logs, and "

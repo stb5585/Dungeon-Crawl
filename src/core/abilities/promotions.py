@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from ..combat.targeting import TargetLossPolicy, TargetScope
 from .base import Class
 from .skills import _PassiveSkill
 
@@ -114,7 +115,7 @@ class ShieldBash(_ResolveActive):
 
 class BraceWall(_ResolveActive):
     def __init__(self):
-        super().__init__("Brace Wall", "Spend Resolve to refresh Hold the Line and raise Defense.", 15)
+        super().__init__("Brace Wall", "Spend Resolve to raise Defense; also refreshes Hold the Line.", 15)
 
     def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
         from ..classes import promotion_kits
@@ -150,16 +151,6 @@ class CoveringGuard(_ResolveActive):
         from ..classes import promotion_kits
 
         return promotion_kits.covering_guard(user)
-
-
-class DeflectSpell(_ResolveActive):
-    def __init__(self):
-        super().__init__("Deflect Spell", "Spend Resolve to raise Magic Defense against hostile spells.", 20)
-
-    def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
-        from ..classes import promotion_kits
-
-        return promotion_kits.deflect_spell(user)
 
 
 class SpellReflection(_ResolveActive):
@@ -239,19 +230,108 @@ class Condemnation(_PromotionActive):
         )
 
 
+class Censure(_PromotionActive):
+    """Shield-style weapon strike that can interrupt a charged action."""
+
+    def __init__(self):
+        super().__init__(
+            "Censure",
+            "Attack with a chance to interrupt an enemy charge ability.",
+            12,
+        )
+        self.weapon = True
+
+    def use(self, user, target=None, **kwargs):
+        from ..classes import paladin
+
+        return paladin.censure(
+            user,
+            target,
+            battle_engine=kwargs.get("battle_engine"),
+            rng=kwargs.get("rng"),
+        )
+
+
+class ShieldRicochet(_PromotionActive):
+    """Strike every enemy with a thrown shield."""
+
+    def __init__(self):
+        super().__init__(
+            "Shield Ricochet",
+            "Throw your shield through all enemies, dealing physical damage "
+            "with a chance to stun each target for 1 turn.",
+            16,
+        )
+        self.target_scope = TargetScope.ALL_ENEMIES
+        self.target_loss_policy = TargetLossPolicy.SNAPSHOT_ROSTER
+
+    def use_group(self, user, targets, *, battle_engine, rng=None):
+        from ..classes import paladin
+
+        return paladin.shield_ricochet(
+            user,
+            targets,
+            battle_engine=battle_engine,
+            rng=rng,
+        )
+
+
+class PrayerOfFaith(_PromotionActive):
+    """Invoke one of three desperate protective miracles."""
+
+    def __init__(self):
+        super().__init__(
+            "Prayer of Faith",
+            "Below 10% health, invoke a random miracle: heal to full, gain a "
+            "brief all-damage barrier, or unleash Holy damage on all enemies.",
+            20,
+        )
+        self.target_scope = TargetScope.ALL_ENEMIES
+        self.target_loss_policy = TargetLossPolicy.SNAPSHOT_ROSTER
+
+    def is_available(self, user, target=None):
+        del target
+        return user.health.current * 10 < user.health.max
+
+    def use_group(self, user, targets, *, battle_engine, rng=None):
+        from ..classes import paladin
+
+        return paladin.prayer_of_faith(
+            user,
+            targets,
+            battle_engine=battle_engine,
+            rng=rng,
+        )
+
+
+class Sanctification(_PromotionPassive):
+    """Increase all outgoing Holy damage."""
+
+    def __init__(self):
+        super().__init__(
+            "Sanctification",
+            "Passive: Increase Holy damage by 50%.",
+        )
+
+
 class CitadelAegis(_ResolveActive):
     def __init__(self):
         super().__init__("Citadel Aegis", "Consume full Resolve for a fortress barrier and defensive stance.", "Full")
+        self.specials_hidden = True
 
     def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
         from ..classes import promotion_kits
 
-        return promotion_kits.citadel_aegis(user)
+        return promotion_kits.citadel_aegis(
+            user,
+            battle_engine=kwargs.get("battle_engine"),
+        )
 
 
 class IronwallReprisal(_ResolveActive):
     def __init__(self):
-        super().__init__("Ironwall Reprisal", "Consume full Resolve for a crushing counterattack.", "Full")
+        super().__init__("Ironwall Revenge", "Consume full Resolve for a three-hit counterattack.", "Full")
+        self.specials_hidden = True
 
     def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
         from ..classes import promotion_kits
@@ -262,6 +342,7 @@ class IronwallReprisal(_ResolveActive):
 class LastBastionSurge(_ResolveActive):
     def __init__(self):
         super().__init__("Last Bastion", "Consume full Resolve to recover and rebuild your guard.", "Full")
+        self.specials_hidden = True
 
     def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
         from ..classes import promotion_kits

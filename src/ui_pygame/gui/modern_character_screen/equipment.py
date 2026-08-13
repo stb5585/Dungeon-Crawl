@@ -214,8 +214,7 @@ class CharacterEquipmentMixin:
             popup = character_screen.InventoryPopupMenu(self.presenter, self)
             popup.show(player_char, flush_events=True, require_key_release=True)
         elif chosen == "Quests":
-            from .popup_menus import QuestPopupMenu
-            popup = QuestPopupMenu(self.presenter, self)
+            popup = character_screen.QuestPopupMenu(self.presenter, self)
             _ = popup.show(player_char, flush_events=True, require_key_release=True)
         elif chosen == "Key Items":
             special_inv = getattr(player_char, "special_inventory", {})

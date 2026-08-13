@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 import pytest
 
 from src.core import abilities
@@ -125,7 +127,7 @@ def test_paladin_tree_has_oath_roots_and_compact_four_branch_geometry():
     assert nodes["Bless"].prerequisites == (nodes["Oath's Shelter"].id,)
     assert "level_requirement" not in nodes["Bless"].payload
     assert nodes["Bless"].payload["available_on_promotion"]
-    assert nodes["+20 Magic Defense"].prerequisites == ()
+    assert nodes["+20 Magic Defense"].prerequisites == (nodes["Bless"].id,)
     assert nodes["Resist Shadow"].position == (3, 4)
     assert nodes["Resist Shadow"].payload["level_requirement"] == 45
     assert nodes["Resist Shadow"].prerequisites == (nodes["+50 MP"].id,)
@@ -175,8 +177,8 @@ def test_crusader_tree_has_four_authored_paths_and_exclusive_melee_styles():
     tree = ABILITY_TREES["Crusader"]
     nodes = _nodes("Crusader")
 
-    assert len(tree.nodes) == 19
-    assert max(node.position[1] for node in tree.nodes) == 5
+    assert len(tree.nodes) == 23
+    assert max(node.position[1] for node in tree.nodes) == 6
     assert tree.branches == ("Melee", "Spells", "Healing", "Protection")
     assert nodes["Condemnation"].position == (1, 0)
     assert nodes["Condemnation"].prerequisites == ()
@@ -194,34 +196,44 @@ def test_crusader_tree_has_four_authored_paths_and_exclusive_melee_styles():
         nodes["Sword & Board"].payload["exclusive_group"]
         == "crusader.melee-style"
     )
+    assert nodes["Two-Handed Weapon Proficiency"].cost == 2
+    assert nodes["Sword & Board"].cost == 2
     assert nodes["Mortal Strike"].position == (0, 3)
     assert nodes["Mortal Strike"].payload["level_requirement"] == 75
     assert nodes["Righteous Advance"].prerequisites == (
         nodes["Mortal Strike"].id,
     )
-    assert nodes["True Piercing Strike"].position == (2, 2)
-    assert nodes["True Piercing Strike"].payload["level_requirement"] == 70
+    assert nodes["Censure"].position == (2, 2)
+    assert nodes["Censure"].payload["level_requirement"] == 70
+    assert nodes["Censure"].prerequisites == (nodes["Sword & Board"].id,)
+    assert nodes["True Piercing Strike"].position == (2, 3)
+    assert nodes["True Piercing Strike"].payload["level_requirement"] == 75
     assert nodes["True Piercing Strike"].prerequisites == (
-        nodes["Sword & Board"].id,
+        nodes["Censure"].id,
     )
+    assert nodes["Shield Ricochet"].position == (2, 4)
+    assert nodes["Shield Ricochet"].payload["level_requirement"] == 80
     assert nodes["Triple Strike"].position == (2, 5)
     assert nodes["Triple Strike"].payload["level_requirement"] == 85
     assert nodes["Triple Strike"].prerequisites == (
-        nodes["True Piercing Strike"].id,
+        nodes["Shield Ricochet"].id,
     )
     assert nodes["Parry"].prerequisites == (
         nodes["Consecrated Bulwark"].id,
     )
     assert nodes["Posturing"].prerequisites == (nodes["Parry"].id,)
-    assert nodes["Smite II"].prerequisites == ()
-    assert nodes["Repel the Wicked"].position == (3, 1)
-    assert nodes["Repel the Wicked"].prerequisites == (
-        nodes["Smite II"].id,
-    )
+    assert nodes["Repel the Wicked"].position == (3, 0)
+    assert nodes["Repel the Wicked"].prerequisites == ()
     assert nodes["Repel the Wicked"].payload["owned_if_known"] is True
-    assert nodes["Smite III"].prerequisites == (nodes["Smite II"].id,)
-    assert nodes["Heal II"].prerequisites == ()
-    assert nodes["Cleanse"].prerequisites == (nodes["Heal II"].id,)
+    assert nodes["Smite II"].payload["level_requirement"] == 65
+    assert nodes["Sanctification"].payload["level_requirement"] == 70
+    assert nodes["Smite III"].payload["level_requirement"] == 90
+    assert nodes["Smite III"].prerequisites == (nodes["Sanctification"].id,)
+    assert nodes["Dispel"].prerequisites == ()
+    assert nodes["Heal II"].payload["level_requirement"] == 70
+    assert nodes["Cleanse"].prerequisites == (nodes["Dispel"].id,)
+    assert nodes["Prayer of Faith"].payload["level_requirement"] == 85
+    assert nodes["Prayer of Faith"].cost == 2
     assert "Turn Undead II" not in nodes
     assert "True Strike" not in nodes
 
@@ -240,6 +252,8 @@ def test_known_gated_abilities_adopt_only_their_matching_nodes():
     assert statuses["True Strike"].state == NodeState.OWNED
     assert statuses["Oath's Judgment"].state == NodeState.AVAILABLE
     assert statuses["Tempered Conviction"].state != NodeState.OWNED
+    assert statuses["+20 Attack"].state == NodeState.BLOCKED
+    assert "Requires Double Strike." in statuses["+20 Attack"].reasons
     assert player.progression.purchased_node_ids == {
         "paladin.ability.double-strike",
         "paladin.ability.true-strike",
@@ -749,6 +763,9 @@ def test_crusader_upgrades_replace_inherited_spells():
         player,
         (
             "crusader.ability.smite-2",
+            "crusader.ability.sanctification",
+            "crusader.ability.dispel",
+            "crusader.ability.cleanse",
             "crusader.ability.heal-2",
             "crusader.ability.smite-3",
         ),
@@ -757,3 +774,174 @@ def test_crusader_upgrades_replace_inherited_spells():
     assert player.spellbook["Spells"]["Smite"].cost == 32
     assert player.spellbook["Spells"]["Heal"].cost == 12
     assert player.spellbook["Spells"]["Repel the Wicked"].cost == 12
+
+
+class _CertainRng:
+    def __init__(self, outcome="heal"):
+        self.outcome = outcome
+
+    def random(self):
+        return 0.0
+
+    def choice(self, _options):
+        return self.outcome
+
+
+def test_censure_interrupts_an_active_charge(monkeypatch):
+    player = _player("Crusader")
+    target = _player("Warrior")
+    charge = SimpleNamespace(
+        name="Crushing Blow",
+        charging=True,
+        cancel_charge=lambda actor: setattr(charge, "charging", False)
+        or f"{actor.name}'s Crushing Blow was interrupted!\n",
+    )
+    target.spellbook["Skills"][charge.name] = charge
+    engine = SimpleNamespace(
+        charging_ability=(target, charge.name, charge),
+        pending_actions={"enemy": object()},
+        _actor_id_for=lambda _actor: "enemy",
+    )
+    monkeypatch.setattr(
+        player,
+        "weapon_damage",
+        lambda _target, **_kwargs: ("Censure hits.\n", True, 1),
+    )
+
+    message = abilities.Censure().use(
+        player,
+        target,
+        battle_engine=engine,
+        rng=_CertainRng(),
+    )
+
+    assert "was interrupted" in message
+    assert charge.charging is False
+    assert engine.charging_ability is None
+    assert engine.pending_actions == {}
+
+
+def test_shield_ricochet_hits_and_stuns_every_enemy(monkeypatch):
+    player = _player("Crusader")
+    targets = [_player("Warrior"), _player("Warrior")]
+    for target in targets:
+        target.health.current = target.health.max = 500
+        monkeypatch.setattr(
+            target,
+            "handle_defenses",
+            lambda _attacker, damage, _cover=False, typ="Physical": (
+                True,
+                "",
+                damage,
+            ),
+        )
+        monkeypatch.setattr(
+            target,
+            "damage_reduction",
+            lambda damage, _attacker, typ="Physical": (True, "", damage),
+        )
+    engine = SimpleNamespace(current_actor_id="player")
+
+    group = abilities.ShieldRicochet().use_group(
+        player,
+        [("a", targets[0]), ("b", targets[1])],
+        battle_engine=engine,
+        rng=_CertainRng(),
+    )
+
+    assert [result.target_id for result in group.results] == ["a", "b"]
+    assert all(result.damage > 0 for result in group.results)
+    assert all(target.status_effects["Stun"].duration == 1 for target in targets)
+
+
+@pytest.mark.parametrize("outcome", ("heal", "barrier", "judgment"))
+def test_prayer_of_faith_resolves_each_random_protection(outcome, monkeypatch):
+    player = _player("Crusader")
+    player.health.current = 40
+    targets = [_player("Warrior"), _player("Warrior")]
+    for target in targets:
+        target.health.current = target.health.max = 500
+        monkeypatch.setattr(
+            target,
+            "damage_reduction",
+            lambda damage, _attacker, typ="Holy": (True, "", damage),
+        )
+    group = abilities.PrayerOfFaith().use_group(
+        player,
+        [("a", targets[0]), ("b", targets[1])],
+        battle_engine=SimpleNamespace(current_actor_id="player"),
+        rng=_CertainRng(outcome),
+    )
+
+    if outcome == "heal":
+        assert player.health.current == player.health.max
+    elif outcome == "barrier":
+        assert player.temporary_health["blocks_all_damage"] is True
+        damage, _message = player._apply_temporary_health(player, 999)
+        assert damage == 0
+    else:
+        assert len(group.results) == 2
+        assert all(target.health.current < 500 for target in targets)
+
+
+def test_sanctification_increases_shared_holy_damage_by_half(monkeypatch):
+    player = _player("Crusader")
+    target = _player("Warrior")
+    monkeypatch.setattr(target, "check_mod", lambda *_args, **_kwargs: 0)
+
+    _hit, _message, normal = target.damage_reduction(100, player, typ="Holy")
+    player.spellbook["Skills"]["Sanctification"] = abilities.Sanctification()
+    _hit, _message, sanctified = target.damage_reduction(
+        100,
+        player,
+        typ="Holy",
+    )
+
+    assert normal == 100
+    assert sanctified == 150
+
+
+def test_selected_terminal_nodes_cost_two_points():
+    expected = {
+        "Berserker": {
+            "Monkey Grip 2",
+            "Guard Cleaver 2",
+            "Reaver's Mark 2",
+            "Brace 2",
+            "Anvil Strike 2",
+        },
+        "Crusader": {
+            "Two-Handed Weapon Proficiency",
+            "Sword & Board",
+            "Prayer of Faith",
+        },
+        "Dragoon": {"Dragon Dive", "Polearm Mastery"},
+        "Knight Enchanter": {
+            "Quick Recharge",
+            "Third Eye",
+            "Storage Capacity II",
+        },
+        "Thaumaturgist": {
+            "Conduit Mastery",
+            "Miracle Blade",
+            "Miracle Shackles",
+            "Miracle Potion",
+            "Miracle Crystal",
+        },
+    }
+    for class_name, names in expected.items():
+        nodes = _nodes(class_name)
+        assert {name: nodes[name].cost for name in names} == {
+            name: 2 for name in names
+        }
+
+    grandmaster = _nodes("Grandmaster of Arms")
+    level_three = {
+        name
+        for name in grandmaster
+        if name.endswith(" 3")
+    }
+    assert len(level_three) == 8
+    assert all(grandmaster[name].cost == 2 for name in level_three)
+    assert grandmaster["Perfect Form"].cost == 2
+    assert grandmaster["Adaptive Arsenal"].cost == 2

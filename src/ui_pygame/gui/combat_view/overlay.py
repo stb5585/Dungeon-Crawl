@@ -9,17 +9,6 @@ from ..enemy_presentation import presented_enemy_name
 
 
 class CombatOverlayMixin:
-    @staticmethod
-    def _approximate_health_label(enemy) -> str:
-        """Return a coarse health band for hidden-information cards."""
-        maximum = max(1, int(getattr(enemy.health, "max", 1) or 1))
-        ratio = max(0.0, float(enemy.health.current) / maximum)
-        if ratio > (2 / 3):
-            return "Healthy"
-        if ratio >= (1 / 3):
-            return "Wounded"
-        return "Critical"
-
     def render_encounter_in_dungeon(
         self,
         player_char,
@@ -147,9 +136,15 @@ class CombatOverlayMixin:
                         - visible_bounds.centery
                     )
                 else:
+                    pace_offset = (
+                        animator.confused_pace_offset()
+                        if self._enemy_is_polymorphed(enemy)
+                        else 0
+                    )
                     sprite_left = (
                         sprite_area.centerx
                         + animator.sway_offset
+                        + pace_offset
                         - visible_bounds.centerx
                     )
                     sprite_top = (
@@ -162,74 +157,49 @@ class CombatOverlayMixin:
                 visible_rect = visible_bounds.move(sprite_rect.topleft)
                 self.screen.blit(sprite, sprite_rect)
                 self._enemy_target_rects[member.combatant_id] = visible_rect
-                if focused and living:
-                    pygame.draw.rect(
-                        self.screen,
-                        self.colors["panel_accent"],
-                        visible_rect.inflate(12, 12),
-                        3,
-                        border_radius=8,
-                    )
             elif self._enemy_hidden_by_invisibility(enemy, has_sight):
                 self._enemy_target_rects[member.combatant_id] = lane.copy()
 
             if not living:
                 continue
-            plate = pygame.Rect(lane.left + 8, lane.top, lane.width - 16, 58)
-            panel = pygame.Surface(plate.size)
-            panel.fill((18, 18, 24))
-            self.screen.blit(panel, plate.topleft)
-            pygame.draw.rect(
-                self.screen,
-                self.colors["panel_accent"] if focused else (92, 92, 104),
-                plate,
-                3 if focused else 1,
-                border_radius=6,
-            )
             title = title_font.render(label, True, self.colors["text"])
-            self.screen.blit(title, title.get_rect(center=(lane.centerx, plate.top + 16)))
+            title_shadow = title_font.render(label, True, (0, 0, 0))
+            title_center = (lane.centerx, lane.top + 16)
+            self.screen.blit(
+                title_shadow,
+                title_shadow.get_rect(center=(title_center[0] + 2, title_center[1] + 2)),
+            )
+            self.screen.blit(title, title.get_rect(center=title_center))
             if has_sight:
                 mana = getattr(enemy, "mana", None)
                 if mana is not None and getattr(mana, "max", 0) > 0:
-                    hp_info = body_font.render(
-                        f"HP {enemy.health.current}/{enemy.health.max}",
-                        True,
-                        self.colors["text"],
+                    detail_text = (
+                        f"HP {enemy.health.current}/{enemy.health.max} · "
+                        f"MP {mana.current}/{mana.max}"
                     )
-                    mp_info = body_font.render(
-                        f"MP {mana.current}/{mana.max}",
-                        True,
-                        self.colors["text"],
-                    )
-                    self.screen.blit(
-                        hp_info,
-                        hp_info.get_rect(
-                            center=(lane.left + lane.width // 4, plate.top + 39),
-                        ),
-                    )
-                    self.screen.blit(
-                        mp_info,
-                        mp_info.get_rect(
-                            center=(lane.left + (lane.width * 3) // 4, plate.top + 39),
-                        ),
-                    )
-                    text = None
                 else:
-                    text = f"HP {enemy.health.current}/{enemy.health.max}"
+                    detail_text = f"HP {enemy.health.current}/{enemy.health.max}"
             else:
-                text = self._approximate_health_label(enemy)
-            if text is not None:
-                info = body_font.render(text, True, self.colors["text"])
-                self.screen.blit(info, info.get_rect(center=(lane.centerx, plate.top + 39)))
+                detail_text = None
+            if detail_text is not None:
+                info = body_font.render(detail_text, True, self.colors["text"])
+                self.screen.blit(
+                    info,
+                    info.get_rect(center=(lane.centerx, lane.top + 36)),
+                )
             if focused:
-                marker_y = plate.bottom + 4
+                target_rect = self._enemy_target_rects.get(
+                    member.combatant_id,
+                    lane,
+                )
+                marker_y = max(lane.top + 44, target_rect.top - 18)
                 pygame.draw.polygon(
                     self.screen,
                     self.colors["panel_accent"],
                     (
-                        (lane.centerx - 7, marker_y),
-                        (lane.centerx + 7, marker_y),
-                        (lane.centerx, marker_y + 8),
+                        (target_rect.centerx - 8, marker_y),
+                        (target_rect.centerx + 8, marker_y),
+                        (target_rect.centerx, marker_y + 10),
                     ),
                 )
             if has_sight:
@@ -273,6 +243,7 @@ class CombatOverlayMixin:
         center_y = int(self.screen_height * 0.65) + visual_offset_y
 
         is_flying = getattr(enemy, "flying", False)
+        polymorphed = self._enemy_is_polymorphed(enemy)
         if is_flying:
             center_y -= min(56, max(28, int(self.screen_height * 0.05)))
 
@@ -312,7 +283,12 @@ class CombatOverlayMixin:
 
             # Calculate Y position with bob animation
             bob_y = center_y + animator.bob_offset if is_flying else center_y
-            bob_x = center_x if is_flying else center_x + animator.sway_offset
+            pace_offset = animator.confused_pace_offset() if polymorphed else 0
+            bob_x = (
+                center_x
+                if is_flying
+                else center_x + animator.sway_offset + pace_offset
+            )
 
             if animator.animation_type != 'death':
                 self._draw_mirror_images(

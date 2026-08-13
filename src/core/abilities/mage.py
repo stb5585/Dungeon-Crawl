@@ -17,58 +17,73 @@ class _MagePassive(PowerUp):
         self.passive = True
 
 
-class FireInside(_MagePassive):
+class _SchoolEnhancement(_MagePassive):
+    """Mage passive presented inside every spell of one school."""
+
+    def __init__(self, name: str, description: str, school: str) -> None:
+        super().__init__(name, description)
+        self.presentation_modifier = True
+        self.modifies_school = school
+
+
+class FireInside(_SchoolEnhancement):
     def __init__(self) -> None:
         super().__init__(
             "Fire Inside",
             "Fire spells have a 20% chance to grant +25% critical chance to "
             "the next attack. The charge expires after 3 turns and is consumed "
             "by the next attack regardless of its result.",
+            "Fire",
         )
 
 
-class FrozenArmor(_MagePassive):
+class FrozenArmor(_SchoolEnhancement):
     def __init__(self) -> None:
         super().__init__(
             "Frozen Armor",
             "Ice spells have a 20% chance to grant +10 Defense and 25% Ice "
             "resistance for one turn.",
+            "Ice",
         )
 
 
-class Electrified(_MagePassive):
+class Electrified(_SchoolEnhancement):
     def __init__(self) -> None:
         super().__init__(
             "Electrified",
             "Electric spells have a 20% chance to electrify the caster for 3 "
             "turns; successful melee attacks against them trigger an "
             "Intelligence-scaled jolt.",
+            "Electric",
         )
 
 
-class WindCurrents(_MagePassive):
+class WindCurrents(_SchoolEnhancement):
     def __init__(self) -> None:
         super().__init__(
             "Wind Currents",
             "Wind spells have a 20% chance to grant +3 Speed and +10% melee "
             "accuracy for 3 turns.",
+            "Wind",
         )
 
 
-class Refreshment(_MagePassive):
+class Refreshment(_SchoolEnhancement):
     def __init__(self) -> None:
         super().__init__(
             "Refreshment",
             "Water spells have a 20% chance to restore 5% of maximum HP and MP.",
+            "Water",
         )
 
 
-class TerraFirma(_MagePassive):
+class TerraFirma(_SchoolEnhancement):
     def __init__(self) -> None:
         super().__init__(
             "Terra Firma",
             "Earth spells have a 20% chance to increase melee damage by 50% "
             "for 3 turns.",
+            "Earth",
         )
 
 
@@ -81,20 +96,25 @@ class ClassicalForce(_MagePassive):
         )
 
 
-class Esotericism(_MagePassive):
+class ArcaneTradition(_MagePassive):
     def __init__(self) -> None:
         super().__init__(
-            "Esotericism",
+            "Arcane Tradition",
             "Specialize School Affinity in Arcane magic. Elemental spell "
             "damage operates at 50% potency and Enhancement proc chances are halved.",
         )
 
 
 class Polymorph(Spell):
+    """Temporarily transform a target, with bosses strongly resisting it."""
+
+    BOSS_SUCCESS_CHANCE = 0.10
+
     def __init__(self) -> None:
         super().__init__(
             "Polymorph",
-            "Transform an enemy into a harmless bunny for 2 turns.",
+            "Transform an enemy into a harmless bunny that cannot act for 2 "
+            "turns. Bosses resist the transformation 90% of the time.",
             school="Arcane",
         )
         self.cost = 12
@@ -105,6 +125,10 @@ class Polymorph(Spell):
         if target is None:
             return "There is no target to polymorph.\n"
         user.mana.current -= self.cost
+        from ..enemies.catalog import is_boss_enemy
+
+        if is_boss_enemy(target) and random.random() >= self.BOSS_SUCCESS_CHANCE:
+            return f"{target.name} resists the polymorph.\n"
         duration = 2
         try:
             from ..classes import mage_mechanics
@@ -219,6 +243,13 @@ class ConjureBlade(Spell):
             user,
             typ="Magic",
         )
+        from ..classes import promotion_kits
+
+        damage, shield_message, _fully_absorbed = promotion_kits.absorb_novel_shield(
+            target,
+            damage,
+            source="spell",
+        )
         target.health.current -= damage
         user._emit_damage_event(
             target,
@@ -231,6 +262,7 @@ class ConjureBlade(Spell):
         critical_text = " (Critical hit!)" if critical else ""
         return (
             reduction_message
+            + shield_message
             + f"A conjured blade strikes {target.name} for {damage} damage"
             f"{critical_text}, then vanishes.\n"
         )
@@ -437,6 +469,13 @@ class ExplosiveDecoy(Spell):
             effect.active = False
             effect.duration = 0
         damage = max(1, int(user.check_mod("magic", enemy=target) * 1.25))
+        from ..classes import promotion_kits
+
+        damage, shield_message, _fully_absorbed = promotion_kits.absorb_novel_shield(
+            target,
+            damage,
+            source="spell",
+        )
         target.health.current -= damage
         user._emit_damage_event(
             target,
@@ -446,7 +485,8 @@ class ExplosiveDecoy(Spell):
             ability_name=self.name,
         )
         return (
-            f"One of {user.name}'s mirror images rushes {target.name} and "
+            shield_message
+            + f"One of {user.name}'s mirror images rushes {target.name} and "
             f"explodes for {damage} Arcane damage.\n"
         )
 
@@ -495,6 +535,13 @@ class MiracleBlade(_MiracleSpell):
             spell_power * 2,
             int(max(1, target.health.max) * 0.25),
         )
+        from ..classes import promotion_kits
+
+        damage, shield_message, _fully_absorbed = promotion_kits.absorb_novel_shield(
+            target,
+            damage,
+            source="spell",
+        )
         target.health.current = max(0, target.health.current - damage)
         user._emit_damage_event(
             target,
@@ -504,7 +551,8 @@ class MiracleBlade(_MiracleSpell):
             ability_name=self.name,
         )
         return (
-            f"An impossible blade cuts through every protection around "
+            shield_message
+            + f"An impossible blade cuts through every protection around "
             f"{target.name} for {damage} reality damage.\n"
         )
 

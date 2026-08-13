@@ -245,6 +245,26 @@ BOSS_DROP_ENEMY_NAMES = frozenset(
     }
 )
 
+BOSS_ENEMY_NAMES = frozenset(
+    name
+    for name, locations in FIXED_LOCATION_HINTS.items()
+    if any(
+        marker in location
+        for location in locations
+        for marker in ("Boss Room", "Lair", "Final Chamber", "Liminal Gap")
+    )
+)
+
+
+def is_boss_enemy(enemy: object) -> bool:
+    """Return whether an enemy is a boss for gameplay-rule purposes."""
+    if bool(getattr(enemy, "boss", False) or getattr(enemy, "is_boss", False)):
+        return True
+    class_name = type(enemy).__name__
+    if class_name.endswith("Boss"):
+        return True
+    return str(getattr(enemy, "name", "") or "") in BOSS_ENEMY_NAMES
+
 
 def resolve_enemy_specs(
     specs: Sequence[EnemySpec],

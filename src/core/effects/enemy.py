@@ -880,6 +880,12 @@ class HolyFollowupEffect:
 
         damage = int(dmg_mod * spell_mod)
         damage *= crit
+        try:
+            from src.core.classes import paladin
+
+            damage = int(damage * paladin.holy_damage_multiplier(actor))
+        except Exception:
+            pass
 
         # Mana Shield / Crusader Shield
         hit = True

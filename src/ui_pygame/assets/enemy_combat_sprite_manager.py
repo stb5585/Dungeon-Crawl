@@ -16,6 +16,7 @@ from src.paths import PYGAME_ASSETS_DIR
 logger = logging.getLogger(__name__)
 
 ENEMY_COMBAT_SPRITE_ROOT = PYGAME_ASSETS_DIR / "enemy_combat_sprites"
+POLYMORPH_SPRITE_SCALE = 0.42
 _SHARED_ENEMY_COMBAT_SPRITE_MANAGER: EnemyCombatSpriteManager | None = None
 
 
@@ -198,6 +199,9 @@ class EnemyCombatSpriteManager:
         return self._scale_for_enemy(enemy, self.dungeon_scale_map)
 
     def _scale_for_enemy(self, enemy: Any, scale_map: dict[str, float]) -> float:
+        polymorph = getattr(enemy, "status_effects", {}).get("Polymorph")
+        if polymorph is not None and getattr(polymorph, "active", False):
+            return POLYMORPH_SPRITE_SCALE
         name = self.enemy_name(enemy)
         if name in scale_map:
             return scale_map[name]

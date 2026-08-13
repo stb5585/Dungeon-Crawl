@@ -1,6 +1,7 @@
 """Animator behavior for the combat view package."""
 
 import math
+import random
 
 import pygame
 
@@ -20,6 +21,9 @@ class SpriteAnimator:
         self.damage_flash = 0  # 0-1, fades over time
         self.is_dead = False
         self.death_progress = 0  # 0-1, for scale/dissolve animation
+        self.pace_span = random.uniform(16.0, 34.0)
+        self.pace_period = random.uniform(105.0, 165.0)
+        self.pace_phase = random.uniform(0.0, self.pace_period)
 
     def update(self, dt=1):
         """Update animation state. dt is frame time."""
@@ -47,6 +51,21 @@ class SpriteAnimator:
             self.death_progress = min(1.0, self.animation_time / DEATH_ANIMATION_FRAMES)
             if self.death_progress >= 1.0:
                 self.is_dead = True
+
+    def confused_pace_offset(self) -> float:
+        """Return a randomized back-and-forth offset with uncertain pauses."""
+        cycle = ((self.animation_time + self.pace_phase) / self.pace_period) % 1.0
+        if cycle < 0.14:
+            position = -1.0
+        elif cycle < 0.43:
+            position = -1.0 + (cycle - 0.14) / 0.29 * 2.0
+        elif cycle < 0.61:
+            position = 1.0
+        elif cycle < 0.90:
+            position = 1.0 - (cycle - 0.61) / 0.29 * 2.0
+        else:
+            position = -1.0
+        return position * self.pace_span
 
     def trigger_damage(self):
         """Trigger damage flash animation."""

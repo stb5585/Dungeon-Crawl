@@ -27,10 +27,21 @@ class FakePopup:
 
 class FakeQuantityPopup:
     responses = []
+    created = []
 
-    def __init__(self, _presenter, _name, unit_cost=0, max_quantity=1, action="store"):
+    def __init__(
+        self,
+        _presenter,
+        _name,
+        unit_cost=0,
+        max_quantity=1,
+        action="store",
+        default_quantity=0,
+    ):
         self.max_quantity = max_quantity
         self.action = action
+        self.default_quantity = default_quantity
+        self.created.append((action, max_quantity, default_quantity))
 
     def show(self, **_kwargs):
         return FakeQuantityPopup.responses.pop(0)
@@ -305,6 +316,7 @@ def test_manage_storage_store_and_retrieve(monkeypatch):
     FakePopup.messages = []
     FakePopup.calls = []
     FakeQuantityPopup.responses = [2, 1]
+    FakeQuantityPopup.created = []
     player = _make_player()
     player.inventory = {"Potion": [SimpleNamespace(name="Potion"), SimpleNamespace(name="Potion"), SimpleNamespace(name="Potion")]}
     player.storage = {"Elixir": [SimpleNamespace(name="Elixir"), SimpleNamespace(name="Elixir")]}
@@ -347,6 +359,7 @@ def test_manage_storage_store_and_retrieve(monkeypatch):
     assert ("Elixir", 1, True, False, False) in player.inventory_calls
     assert any("Stored 2x Potion" in message for message in FakePopup.messages)
     assert any("Retrieved 1x Elixir" in message for message in FakePopup.messages)
+    assert ("retrieve", 2, 2) in FakeQuantityPopup.created
     assert any(call.get("flush_events") for call in FakePopup.calls)
 
 

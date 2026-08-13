@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from typing import Any
 
 import pygame
@@ -120,37 +121,139 @@ class CharacterMechanicsMixin:
         self.weapon_discipline_selector_active = False
         content = self.details_rect.inflate(-32, -64)
         content.top = y
-        left_width = max(300, (content.width * 9) // 20)
-        list_rect = pygame.Rect(content.left, content.top, left_width, content.height)
-        detail_rect = pygame.Rect(list_rect.right + 18, content.top, content.right - list_rect.right - 18, content.height)
 
         jump_skill = self._get_jump_skill(player_char)
         entries = self.jump_mod_entries(player_char)
-        self.selected_jump_mod_index = max(0, min(self.selected_jump_mod_index, max(0, len(entries) - 1)))
+        self.selected_jump_mod_index = max(
+            0,
+            min(self.selected_jump_mod_index, max(0, len(entries) - 1)),
+        )
         active_count, max_count = self._jump_mod_counts(player_char)
 
-        header = f"Jump Modifications ({active_count}/{max_count} active)" if jump_skill else "Jump not learned"
-        self._draw_text(header, self.normal_font, self.colors.GOLD, list_rect.left, list_rect.top, list_rect.width)
+        tempo = promotion_kits.current_aerial_tempo(player_char)
+        tempo_cap = promotion_kits.cap_for(player_char, "aerial_tempo")
+        summary_rect = pygame.Rect(content.left, content.top, content.width, 76)
+        pygame.draw.rect(self.screen, (14, 14, 19), summary_rect)
+        pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, summary_rect, 1)
+        self._draw_text(
+            f"Aerial Tempo: {tempo}/{tempo_cap}",
+            self.normal_font,
+            self.colors.GOLD,
+            summary_rect.left + 12,
+            summary_rect.top + 8,
+            summary_rect.width - 24,
+        )
+        self._draw_wrapped_text(
+            "Build with clean Jump landings. Your next Sword or Polearm attack "
+            "spends all stacks for accuracy and follow-through damage.",
+            self.small_font,
+            self.colors.WHITE,
+            summary_rect.left + 12,
+            summary_rect.top + 40,
+            summary_rect.width - 24,
+            max_lines=2,
+        )
+
+        section_top = summary_rect.bottom + 12
+        list_width = max(560, (content.width * 2) // 3)
+        list_rect = pygame.Rect(
+            content.left,
+            section_top,
+            list_width,
+            content.bottom - section_top,
+        )
+        detail_rect = pygame.Rect(
+            list_rect.right + 16,
+            section_top + 44,
+            content.right - list_rect.right - 16,
+            190,
+        )
+
+        header = (
+            f"Jump Modifications ({active_count}/{max_count} active)"
+            if jump_skill
+            else "Jump not learned"
+        )
+        self._draw_text(
+            header,
+            self.normal_font,
+            self.colors.GOLD,
+            list_rect.left,
+            list_rect.top,
+            list_rect.width,
+        )
         helper = "UP/DOWN: Select  ENTER: Toggle"
         helper_width = self.small_font.size(helper)[0]
-        self._draw_text(helper, self.small_font, self.colors.GRAY, list_rect.right - min(helper_width, list_rect.width), list_rect.top + self.normal_font.get_height() + 2, list_rect.width)
+        self._draw_text(
+            helper,
+            self.small_font,
+            self.colors.GRAY,
+            list_rect.right - min(helper_width, list_rect.width),
+            list_rect.top + self.normal_font.get_height() + 2,
+            list_rect.width,
+        )
 
-        y_cursor = list_rect.top + self.normal_font.get_height() + self.small_font.get_height() + 14
-        row_height = 42
-        row_gap = 6
+        y_cursor = (
+            list_rect.top
+            + self.normal_font.get_height()
+            + self.small_font.get_height()
+            + 10
+        )
+        columns = 2
+        column_gap = 10
+        row_gap = 5
+        row_width = (list_rect.width - column_gap) // columns
+        rows_per_column = max(1, math.ceil(len(entries) / columns))
+        available_height = list_rect.bottom - y_cursor
+        row_height = min(
+            36,
+            max(
+                26,
+                (available_height - (rows_per_column - 1) * row_gap)
+                // rows_per_column,
+            ),
+        )
         self._jump_mod_row_rects = []
         for index, mod_name in enumerate(entries):
-            row_rect = pygame.Rect(list_rect.left, y_cursor + index * (row_height + row_gap), list_rect.width, row_height)
-            if row_rect.bottom > list_rect.bottom:
-                break
+            row = index % rows_per_column
+            column = index // rows_per_column
+            row_rect = pygame.Rect(
+                list_rect.left + column * (row_width + column_gap),
+                y_cursor + row * (row_height + row_gap),
+                row_width,
+                row_height,
+            )
             self._jump_mod_row_rects.append(row_rect)
             selected = index == self.selected_jump_mod_index
             active = bool(getattr(jump_skill, "modifications", {}).get(mod_name, False))
-            pygame.draw.rect(self.screen, self.colors.HIGHLIGHT_BG if selected else (14, 14, 19), row_rect)
-            pygame.draw.rect(self.screen, self.colors.GOLD if selected else self.colors.BORDER_COLOR, row_rect, 2 if selected else 1)
+            pygame.draw.rect(
+                self.screen,
+                self.colors.HIGHLIGHT_BG if selected else (14, 14, 19),
+                row_rect,
+            )
+            pygame.draw.rect(
+                self.screen,
+                self.colors.GOLD if selected else self.colors.BORDER_COLOR,
+                row_rect,
+                2 if selected else 1,
+            )
             marker = "[X]" if active else "[ ]"
-            self._draw_text(marker, self.normal_font, self.colors.GOLD if active else self.colors.GRAY, row_rect.left + 12, row_rect.top + 10, 40)
-            self._draw_text(mod_name, self.normal_font, self.colors.WHITE, row_rect.left + 58, row_rect.top + 10, row_rect.width - 70)
+            self._draw_text(
+                marker,
+                self.small_font,
+                self.colors.GOLD if active else self.colors.GRAY,
+                row_rect.left + 10,
+                row_rect.top + 8,
+                34,
+            )
+            self._draw_text(
+                mod_name,
+                self.small_font,
+                self.colors.WHITE,
+                row_rect.left + 48,
+                row_rect.top + 8,
+                row_rect.width - 58,
+            )
 
         pygame.draw.rect(self.screen, (14, 14, 19), detail_rect)
         pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, detail_rect, 1)
@@ -158,23 +261,51 @@ class CharacterMechanicsMixin:
             mod_name = entries[self.selected_jump_mod_index]
             active = bool(jump_skill.modifications.get(mod_name, False))
             detail_y = detail_rect.top + 16
-            self._draw_text(mod_name, self.large_font, self.colors.GOLD, detail_rect.left + 16, detail_y, detail_rect.width - 32)
-            detail_y += self.large_font.get_height() + 12
-            self._draw_text(f"Status: {'Active' if active else 'Inactive'}", self.normal_font, self.colors.WHITE, detail_rect.left + 16, detail_y, detail_rect.width - 32)
+            self._draw_text(
+                mod_name,
+                self.normal_font,
+                self.colors.GOLD,
+                detail_rect.left + 12,
+                detail_y,
+                detail_rect.width - 24,
+            )
             detail_y += self.normal_font.get_height() + 8
-            self._draw_text(self._jump_mod_unlock_text(jump_skill, mod_name), self.small_font, self.colors.GRAY, detail_rect.left + 16, detail_y, detail_rect.width - 32)
-            detail_y += self.small_font.get_height() + 14
+            self._draw_text(
+                f"Status: {'Active' if active else 'Inactive'}",
+                self.small_font,
+                self.colors.WHITE,
+                detail_rect.left + 12,
+                detail_y,
+                detail_rect.width - 24,
+            )
+            detail_y += self.small_font.get_height() + 6
+            self._draw_text(
+                self._jump_mod_unlock_text(jump_skill, mod_name),
+                self.small_font,
+                self.colors.GRAY,
+                detail_rect.left + 12,
+                detail_y,
+                detail_rect.width - 24,
+            )
+            detail_y += self.small_font.get_height() + 10
             self._draw_wrapped_text(
                 self._jump_mod_description(mod_name),
-                self.normal_font,
+                self.small_font,
                 self.colors.WHITE,
-                detail_rect.left + 16,
+                detail_rect.left + 12,
                 detail_y,
-                detail_rect.width - 32,
-                max_lines=5,
+                detail_rect.width - 24,
+                max_lines=4,
             )
         else:
-            self._draw_text("Jump has not been learned.", self.normal_font, self.colors.GRAY, detail_rect.left + 16, detail_rect.top + 16, detail_rect.width - 32)
+            self._draw_text(
+                "Jump has not been learned.",
+                self.normal_font,
+                self.colors.GRAY,
+                detail_rect.left + 12,
+                detail_rect.top + 12,
+                detail_rect.width - 24,
+            )
 
     def _resolve_value_and_cap(self, player_char) -> tuple[int, int]:
         cap = promotion_kits.resolve_cap(player_char)
@@ -227,10 +358,10 @@ class CharacterMechanicsMixin:
         section_y = bar_rect.bottom + 36
         self._draw_text("Resolve Spends", self.normal_font, self.colors.GOLD, content.left, section_y, content.width)
         box_top = section_y + self.normal_font.get_height() + 14
-        columns = 3
+        columns = 4
         gap = 12
         box_width = (content.width - gap * (columns - 1)) // columns
-        box_height = 92
+        box_height = 88
         for index, entry in enumerate(self.resolve_spend_rows(player_char)):
             col = index % columns
             row = index // columns
@@ -240,7 +371,7 @@ class CharacterMechanicsMixin:
         class_name = self._attr_name(getattr(player_char, "cls", None), "")
         if class_name == "Stalwart Defender":
             surge_y = box_top + 2 * (box_height + gap) + 22
-            self._draw_text("Resolve Surges", self.normal_font, self.colors.GOLD, content.left, surge_y, content.width)
+            self._draw_text("Resolve Bursts", self.normal_font, self.colors.GOLD, content.left, surge_y, content.width)
             for index, entry in enumerate(promotion_kits.resolve_surge_rows(player_char)):
                 rect = pygame.Rect(
                     content.left + index * (box_width + gap),

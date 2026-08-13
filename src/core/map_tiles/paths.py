@@ -3,6 +3,7 @@
 import random
 
 from .. import companions, enemies, items, thieves_guild
+from ..combat import CombatEncounter
 from .rules import (
     JESTER_TOKENS_REQUIRED,
     REALM_OF_CAMBION_LEVEL,
@@ -433,8 +434,12 @@ class CavePath1(CavePath):
         super().modify_player(game)
 
     def _enter_rookie_combat(self, player_char):
-        self.enemy = enemies.Zombie()
-        _apply_cambion_antimagic(self, player_char, self.enemy)
+        zombies = [enemies.Zombie(), enemies.Zombie()]
+        encounter = CombatEncounter.from_enemies(zombies)
+        self.enemy = encounter.primary_enemy
+        self.enemy._runtime_combat_encounter = encounter
+        for zombie in zombies:
+            _apply_cambion_antimagic(self, player_char, zombie)
         player_char.state = 'fight'
 
     def enter_combat(self, player_char):

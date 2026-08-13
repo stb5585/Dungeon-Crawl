@@ -29,7 +29,7 @@ PROMOTION_ROUTES = {
     "Sorcerer": (
         "mage.ability.magicmissile",
         "mage.talent.arcane-fundamentals",
-        "mage.ability.esotericism",
+        "mage.ability.arcane-tradition",
         "mage.promotion.sorcerer",
     ),
     "Spellblade": (
@@ -166,7 +166,7 @@ def test_mage_tree_has_exact_ids_coordinates_gates_and_prerequisites():
         "mage.ability.boost": (5, 3),
         "mage.ability.mirror-image": (5, 4),
         "mage.ability.classical-force": (0.5, 6),
-        "mage.ability.esotericism": (1.5, 6),
+        "mage.ability.arcane-tradition": (1.5, 6),
     }
     development = {
         node.id: node for node in tree.nodes if node.kind != NodeKind.PROMOTION
@@ -211,7 +211,7 @@ def test_mage_tree_has_exact_ids_coordinates_gates_and_prerequisites():
         "mage.ability.boost": 20,
         "mage.ability.mirror-image": 25,
         "mage.ability.classical-force": 25,
-        "mage.ability.esotericism": 25,
+        "mage.ability.arcane-tradition": 25,
     }
     assert {
         node_id: node.payload.get("level_requirement")
@@ -254,7 +254,7 @@ def test_mage_tree_has_exact_ids_coordinates_gates_and_prerequisites():
         "mage.ability.boost": "spell_support",
         "mage.ability.mirror-image": "spell_illusion",
         "mage.ability.classical-force": "skill_passive",
-        "mage.ability.esotericism": "skill_passive",
+        "mage.ability.arcane-tradition": "skill_passive",
     }
 
 
@@ -267,7 +267,7 @@ def test_promotions_have_exact_terminals_costs_and_stat_gates():
     assert set(promotions) == {"Sorcerer", "Spellblade", "Warlock", "Conjurer"}
     assert promotions["Sorcerer"].prerequisites == (
         "mage.ability.classical-force",
-        "mage.ability.esotericism",
+        "mage.ability.arcane-tradition",
     )
     assert promotions["Sorcerer"].payload["prerequisite_mode"] == "any"
     assert promotions["Spellblade"].prerequisites == ("mage.ability.imbue-weapon",)
@@ -292,9 +292,9 @@ def test_sorcerer_specializations_are_exclusive_and_warn_before_closure():
         {},
     ).success
     assert permanent_closures_for_plan(
-        player, "Mage", ("mage.ability.esotericism",)
+        player, "Mage", ("mage.ability.arcane-tradition",)
     ) == ("Classical Force",)
-    assert purchase_node(player, "mage.ability.esotericism").success
+    assert purchase_node(player, "mage.ability.arcane-tradition").success
     classical = next(
         status for status in available_nodes(player)
         if status.node.id == "mage.ability.classical-force"
@@ -950,8 +950,9 @@ def test_new_abilities_are_owned_by_the_mage_catalog():
         "Conjure Shackles",
         "Conjure Potion",
         "Classical Force",
-        "Esotericism",
+        "Arcane Tradition",
     }.issubset(names)
+    assert hasattr(abilities, "ArcaneTradition")
 
 
 def test_obsolete_summon_training_abilities_are_removed():

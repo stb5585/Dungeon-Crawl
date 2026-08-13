@@ -162,6 +162,7 @@ class BattleTurnMixin:
             "is no longer stunned",
             "is no longer asleep",
             "is no longer prone",
+            "returns to their true form",
         )
         effects_lower = (effects_text or "").lower()
         if any(term in effects_lower for term in recovery_terms):
@@ -624,7 +625,7 @@ class BattleTurnMixin:
     ) -> ActionResult:
         """Resolve a committed all-enemy cast in authored order."""
         ability = self._ability_for_action(intent.action, intent.choice)
-        if intent.action != "Cast Spell" or ability is None:
+        if intent.action not in {"Cast Spell", "Use Skill"} or ability is None:
             return self._reject_intent(
                 ActionValidationCode.WRONG_TARGET_SCOPE,
                 "This all-enemy action has no multi-target resolver.\n",
@@ -651,22 +652,37 @@ class BattleTurnMixin:
                 action=intent.action,
                 choice=intent.choice,
             )
+        event_type = (
+            EventType.SPELL_CAST
+            if intent.action == "Cast Spell"
+            else EventType.SKILL_USE
+        )
         self._event_bus.emit(create_combat_event(
-            EventType.SPELL_CAST,
+            event_type,
             actor=self.attacker,
             target=targets[0].enemy if targets else None,
-            spell_name=intent.choice,
+            **(
+                {"spell_name": intent.choice}
+                if intent.action == "Cast Spell"
+                else {"skill_name": intent.choice}
+            ),
             ability_name=intent.choice,
-            source="spell",
+            source="spell" if intent.action == "Cast Spell" else "skill",
             encounter_id=self.encounter.encounter_id,
             actor_id=self.current_actor_id,
             target_scope=TargetScope.ALL_ENEMIES.value,
             expanded_target_ids=list(group.target_ids),
         ))
-        prefix = f"{self.attacker.name} casts {intent.choice}.\n"
+        verb = "casts" if intent.action == "Cast Spell" else "uses"
+        prefix = f"{self.attacker.name} {verb} {intent.choice}.\n"
         group.message = prefix
-        if hasattr(ability, "cast_group"):
-            resolved = ability.cast_group(
+        group_resolver = getattr(
+            ability,
+            "cast_group" if intent.action == "Cast Spell" else "use_group",
+            None,
+        )
+        if callable(group_resolver):
+            resolved = group_resolver(
                 self.attacker,
                 [(member.combatant_id, member.enemy) for member in targets],
                 battle_engine=self,
@@ -703,26 +719,28 @@ class BattleTurnMixin:
         self._record_final_enemy_resolutions()
         if self.attacker == self.player:
             primary_target = targets[0].enemy if targets else None
-            group.message += wizard.process_cast(
-                self.player,
-                ability,
-                primary_target,
-            )
-            if len(self.encounter.members) == 1 and targets:
-                member = targets[0]
-                if not member.enemy.is_alive():
-                    with self._target_resolution_context(
-                        member,
-                        TargetScope.ALL_ENEMIES,
-                        group.target_ids,
-                    ):
-                        group.message += self._record_player_natural_spell_kill(
-                            ability
-                        )
-            if astromancer.is_astromancer(self.player) and astromancer.sign_for_spell(
-                ability
-            ):
-                astromancer.advance_constellation(self.player)
+            if intent.action == "Cast Spell":
+                group.message += wizard.process_cast(
+                    self.player,
+                    ability,
+                    primary_target,
+                )
+                if len(self.encounter.members) == 1 and targets:
+                    member = targets[0]
+                    if not member.enemy.is_alive():
+                        with self._target_resolution_context(
+                            member,
+                            TargetScope.ALL_ENEMIES,
+                            group.target_ids,
+                        ):
+                            group.message += self._record_player_natural_spell_kill(
+                                ability
+                            )
+                if (
+                    astromancer.is_astromancer(self.player)
+                    and astromancer.sign_for_spell(ability)
+                ):
+                    astromancer.advance_constellation(self.player)
             group.message += promotion_kits.finish_action(
                 self.player,
                 defender_survived=bool(self.encounter.living_members),
@@ -1226,6 +1244,15 @@ class BattleTurnMixin:
             self.available_actions = self._available_actions()
             return
         old_round = self.round_number
+        dragon_soul_turn = bool(
+            promotion_kits.combat_state(self.player).pop(
+                "dragon_soul_immediate_turn",
+                False,
+            )
+        )
+        if dragon_soul_turn and PLAYER_ACTOR_ID in self._actor_cycle.order:
+            player_index = self._actor_cycle.order.index(PLAYER_ACTOR_ID)
+            self._actor_cycle.cursor = (player_index - 1) % len(self._actor_cycle.order)
         wrapped, _actor_id = self._actor_cycle.advance(self._valid_actor_ids())
         if wrapped:
             self.logger.next_round()
@@ -1346,6 +1373,7 @@ class BattleTurnMixin:
         ))
 
         self.player._active_combat = False
+        self.player._combat_encounter = None
         self._completed_outcome = outcome
         return outcome
 
@@ -1462,6 +1490,7 @@ class BattleTurnMixin:
             total_experience=total_exp,
         ))
         self.player._active_combat = False
+        self.player._combat_encounter = None
         return outcome
 
     def _record_final_enemy_resolutions(self) -> None:

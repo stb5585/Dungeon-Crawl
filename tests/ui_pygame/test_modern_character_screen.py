@@ -365,6 +365,21 @@ def test_modern_character_summary_helpers_cover_xp_equipment_resistances_and_eff
     assert shield.details == ("Type: Shield", "Block: 10%")
     assert shield.buffs == ()
 
+    player.equipment["OffHand"] = SimpleNamespace(
+        name="Apprentice Tome",
+        typ="OffHand",
+        subtyp="Tome",
+        mod=12,
+        weight=2,
+    )
+    tome = next(
+        slot
+        for slot in screen.build_equipment_slots(player)
+        if slot.slot == "OffHand"
+    )
+    assert tome.details == ("Type: Tome", "Spell Mod: 12")
+    assert tome.buffs == ()
+
     player.equipment["OffHand"] = SimpleNamespace(name="Svalinn", typ="OffHand", subtyp="Shield", mod=0.35, weight=18)
     svalinn = next(slot for slot in screen.build_equipment_slots(player) if slot.slot == "OffHand")
     assert svalinn.details == ("Type: Shield", "Block: 35%")
@@ -935,6 +950,7 @@ def test_modern_character_aerial_tempo_tab_owns_jump_mods(monkeypatch):
     )
     assert {
         "Aerial Tempo",
+        "Aerial Tempo: 1/2",
         "Jump Modifications (2/3 active)",
         "UP/DOWN: Select  ENTER: Toggle",
         "[X]",
@@ -945,10 +961,66 @@ def test_modern_character_aerial_tempo_tab_owns_jump_mods(monkeypatch):
         "Initial modification",
     }.issubset(rendered_text)
     assert screen.jump_mod_row_rects()
+    assert len(screen.jump_mod_row_rects()) == 3
     assert "Lancer" not in rendered_text
-    assert "Building Tempo" not in rendered_text
+    assert any(
+        "Build with clean Jump landings" in str(text)
+        for text in rendered_text
+    )
     assert "Ring Identity" not in rendered_text
     assert not any("class ring" in str(text).lower() or "ring identity" in str(text).lower() for text in rendered_text)
+
+
+def test_aerial_tempo_tab_fits_every_jump_mod_without_scrolling(monkeypatch):
+    presenter = _make_presenter()
+    screen = ModernCharacterScreen(presenter)
+    player = _make_player()
+    player.cls = SimpleNamespace(name="Dragoon", description="Rules the sky.")
+    jump_skill = FakeJumpSkill()
+    mod_names = (
+        "Crit",
+        "Thrust",
+        "Defend",
+        "Rend",
+        "Quake",
+        "Acrobat",
+        "Dragon's Fury",
+        "Soaring Strike",
+        "Quick Dive",
+        "Retribution",
+        "Unstoppable",
+        "Recover",
+        "Skyfall",
+    )
+    jump_skill.modifications = {name: False for name in mod_names}
+    jump_skill.get_unlocked_modifications = lambda: list(mod_names)
+    player.spellbook["Skills"]["Jump"] = jump_skill
+    drawn_rects = []
+
+    monkeypatch.setattr(
+        screen,
+        "draw_semi_transparent_panel",
+        lambda rect, alpha=180: DummySurface((rect.width, rect.height)),
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.modern_character_screen.pygame.draw.rect",
+        lambda _surface, _color, rect, *_args, **_kwargs: (
+            drawn_rects.append(rect.copy()) if isinstance(rect, pygame.Rect) else None
+        ),
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.modern_character_screen.pygame.draw.line",
+        lambda *_args, **_kwargs: None,
+    )
+
+    screen.select_tab("class")
+    screen.draw_class_tab(player)
+
+    row_rects = screen.jump_mod_row_rects()
+    assert len(row_rects) == len(mod_names)
+    assert len({rect.left for rect in row_rects}) == 2
+    assert max(rect.bottom for rect in row_rects) <= screen.details_rect.bottom
+    assert any(rect.height == 190 for rect in drawn_rects)
 
 
 def test_modern_character_resolve_tab_shows_meter_progression(monkeypatch):
@@ -957,12 +1029,14 @@ def test_modern_character_resolve_tab_shows_meter_progression(monkeypatch):
     player = _make_player()
     player.cls = SimpleNamespace(name="Sentinel", description="Holds the line.")
     player.spellbook["Skills"] = {
-        "Shield Check": abilities.ShieldBash(),
+        "Hold the Line": abilities.HoldTheLine(),
         "Brace Wall": abilities.BraceWall(),
-        "Shield Riposte": abilities.ShieldRiposte(),
-        "Covering Guard": abilities.CoveringGuard(),
-        "Spell Reflection": abilities.SpellReflection(),
-        "Bulwark": abilities.Bulwark(),
+        "Spell Block": abilities.SpellBlock(),
+        "Bulwark Guard": abilities.BulwarkGuard(),
+        "Purge Weakness": abilities.PurgeWeakness(),
+        "Repercussion": abilities.Repercussion(),
+        "Boast": abilities.Boast(),
+        "Focused Assault": abilities.FocusedAssault(),
     }
     class_rings.ensure_state(player)["data"]["Stalwart Defender"]["guard_meter"] = 25
     promotion_kits.combat_state(player)["hold_the_line"] = 1
@@ -984,15 +1058,17 @@ def test_modern_character_resolve_tab_shows_meter_progression(monkeypatch):
     assert {
         "25/50",
         "Resolve Spends",
-        "Shield Check",
+        "Hold the Line",
         "Brace Wall",
-        "Shield Riposte",
-        "Covering Guard",
-        "Spell Reflection",
-        "Bulwark",
+        "Spell Block",
+        "Bulwark Guard",
+        "Purge Weakness",
+        "Repercussion",
+        "Boast",
+        "Focused Assault",
     }.issubset(rendered_text)
     assert "Resolve" not in presenter.large_font.render_calls
-    assert "Resolve Surges" not in rendered_text
+    assert "Resolve Bursts" not in rendered_text
     assert "Resolve 25/50" not in rendered_text
     meter_rects = [rect for _color, rect in rect_calls if rect.height == 28]
     assert meter_rects
@@ -1011,15 +1087,18 @@ def test_modern_character_resolve_tab_shows_stalwart_surges(monkeypatch):
     player = _make_player()
     player.cls = SimpleNamespace(name="Stalwart Defender", description="Holds the line.")
     player.spellbook["Skills"] = {
-        "Shield Check": abilities.ShieldBash(),
+        "Hold the Line": abilities.HoldTheLine(),
         "Brace Wall": abilities.BraceWall(),
-        "Shield Riposte": abilities.ShieldRiposte(),
-        "Covering Guard": abilities.CoveringGuard(),
-        "Spell Reflection": abilities.SpellReflection(),
-        "Bulwark": abilities.Bulwark(),
+        "Spell Block": abilities.SpellBlock(),
+        "Bulwark Guard": abilities.BulwarkGuard(),
+        "Purge Weakness": abilities.PurgeWeakness(),
+        "Repercussion": abilities.Repercussion(),
+        "Boast": abilities.Boast(),
+        "Focused Assault": abilities.FocusedAssault(),
         "Citadel Aegis": abilities.CitadelAegis(),
-        "Ironwall Reprisal": abilities.IronwallReprisal(),
+        "Ironwall Revenge": abilities.IronwallReprisal(),
         "Last Bastion": abilities.LastBastionSurge(),
+        "Stronghold": abilities.Stronghold(),
     }
     data = class_rings.ensure_state(player)["data"]["Stalwart Defender"]
     data["guard_meter"] = 100
@@ -1038,10 +1117,11 @@ def test_modern_character_resolve_tab_shows_stalwart_surges(monkeypatch):
     assert {
         "100/100",
         "Resolve Spends",
-        "Resolve Surges",
+        "Resolve Bursts",
         "Citadel Aegis",
-        "Ironwall Reprisal",
+        "Ironwall Revenge",
         "Last Bastion",
+        "Stronghold",
     }.issubset(rendered_text)
     assert "Resolve" not in presenter.large_font.render_calls
     assert "???" not in rendered_text
@@ -2222,6 +2302,27 @@ def test_modern_character_menu_opens_bestiary(monkeypatch):
     monkeypatch.setattr(modern_module, "BestiaryPopupMenu", FakeBestiaryPopup)
 
     assert screen._open_menu_choice("Bestiary", player) is None
+    assert opened == ["created", (True, True)]
+
+
+def test_modern_character_menu_opens_quest_popup(monkeypatch):
+    presenter = _make_presenter()
+    screen = ModernCharacterScreen(presenter)
+    player = _make_player()
+    opened = []
+
+    class FakeQuestPopup:
+        def __init__(self, _presenter, _parent):
+            opened.append("created")
+
+        def show(self, _player, **kwargs):
+            opened.append((kwargs.get("flush_events"), kwargs.get("require_key_release")))
+
+    import src.ui_pygame.gui.modern_character_screen as modern_module
+
+    monkeypatch.setattr(modern_module, "QuestPopupMenu", FakeQuestPopup)
+
+    assert screen._open_menu_choice("Quests", player) is None
     assert opened == ["created", (True, True)]
 
 

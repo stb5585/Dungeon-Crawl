@@ -88,10 +88,18 @@ Mage is now the second bespoke base graph. Its six columns define independent
 Elemental roots, matching Enhancements, Arcana, Occultism, Conjuration, and
 Universal utility. Promotion route costs are `5/8/8/8` for
 Sorcerer/Spellblade/Warlock/Conjurer. Sorcerer permanently chooses Classical
-Force or Esotericism, making School Affinity Elemental- or Arcane-focused and
-severely nerfing the competing school. Learned spells survive promotion;
+Force or Arcane Tradition, making School Affinity Elemental- or Arcane-focused
+and severely nerfing the competing school. Learned spells survive promotion;
 Arcane Fundamentals and the six elemental spell nodes retain the existing
 Sorcerer/Wizard partial carry-forward.
+
+Spellblade now uses explicit Weapon, Armor, Spell, and Universal development.
+Its combat loop stores independent Arcane and Elemental charge pools from
+damaging spells; Storage Capacity adds a slot to each pool, and matching
+Amplify talents double their release. Counter Charge uses the incoming spell's
+broad category. Breakdown prepares spell-defense openings, while Novel
+Shielding and the two Enhance passives make the equipped Tome, weapon, armor,
+and current mana state part of the hybrid rotation.
 
 Conjurer replaces the former tier-2 Summoner with authored Constructs, Binding,
 Illusion/Movement, and Calling development. As Conjurer, the six Callings
@@ -127,45 +135,52 @@ into healing at the risk of a two-turn bloodlust crash. Grandmaster of Arms now
 owns all three levels of every weapon art plus ungated Double Strike positioned
 between two ungated, discipline-scaled mastery talents.
 
-Lancer and Dragoon now use authored Aerial Tempo trees instead of generated
-catalog lanes. Lancer places Jump in column 2 and Polearm Proficiency in column
-5, with independent defensive-modifier, middle-stat/promotion, and
-offensive-modifier Jump paths, a `Lance Sweep -> +50 HP -> Zephyrstrike`
-polearm line, and unbound Parry/True Strike in the final column. The middle
-path is `Jump -> +20 Defense -> +20 Attack -> Promote: Dragoon`; promotion
-also requires level 60, `STR 17`, and `DEX 13`. Dragoon retains all 16 Lancer
-development nodes with the same independent prerequisites, omits the promotion
-node, and adds 11 mastery nodes, so promotion never prevents later Lancer
-training. Shield Block is not repeated; ungated Polearm Excellence starts its
-Dragoon line at row 5; True Piercing Strike no longer requires True Strike; and Dragon
-Dive joins Dragon's Ascent, Soaring Strike, and the Unstoppable landing path.
+Knight Enchanter now evolves Spellblade's typed Blade Charges through a
+combat-only Foundation/Accent grammar instead of Arcane Tempo. Element, Force,
+Protection, and Conjuration spell signatures shape Enchanted Assault, Aegis
+Weave, and Spellbind without adding another resource.
+The Arcane Duel ring's Weave Memory preserves a spent Accent as the next
+Foundation. Its authored 20-node terminal tree uses one-point Assault, Aegis,
+Spellbind, and independent universal columns. Storage Capacity II expands both
+typed pools, while Quick Recharge carries a weapon-triggered release across a
+multi-hit attack.
+
+Lancer and Dragoon use authored Aerial Tempo trees. Lancer places Jump in
+column 2, Polearm Assault in column 4, Polearm Proficiency and Excellence in
+column 5, Polearm Guard in column 6, and universal attacks in column 7. Attack
+sits directly below Jump; Defense leads independently to Vigilant Landing.
+The polearm paths add Extended Reach, Swing & Bash, Phalanx, Critical Vigor,
+Dragon Soul, and Polearm Excellence. Promotion sits in column 4 and requires
+Vigilant Landing and Polearm Excellence plus level 60, `STR 17`, and `DEX 13`.
+Dragoon retains all 23 Lancer
+development nodes, adds Dragonheart, extends Polearm Excellence through Attack
+to level-80 Polearm Mastery, and moves level-75 True Piercing Strike behind
+True Strike in column 7. Dragon Dive joins Dragon's Ascent, Soaring Strike,
+and the Unstoppable landing path.
+The Aerial Tempo character tab presents its build/spend rules and every
+unlocked Jump modification in a compact, non-scrolling two-column grid.
 Dragon's Ascent follows the middle `+20 Attack` without a redundant level gate;
 Quake and Soaring Strike extend Rend; and Retribution extends Grounded Landing
 rather than the `+30 Defense` node, which is gated by Dragon's Ascent. Acrobat
 unlocks at level 40, Thrust at 45, Rend at 50, Retribution at 65, True Piercing
-Strike and Unstoppable at 70, and Dragon Dive at 80. Lancer fits within rows
-0-6; Dragoon uses compact spacing across rows 0-7 without scrolling.
+Strike at 75, Unstoppable at 70, and Dragon Dive at 80. Both trees fit within
+rows 0-7 without scrolling.
 Jump modifiers synchronize with progression without becoming spellbook
 actions, while Recover, Dragon's Fury, Skyfall, the Kaelenon route, and
 polearm-and-shield equipment remain externally owned. Combat-only Aerial Tempo
 resolves once per weapon action, and awakened Aerial Supremacy supplies the
 tuned Landing Shield rather than a duplicate Meteor Guard payoff.
 
-Sentinel, Stalwart Defender, Paladin, and Crusader now complete the authored
-Warrior promotion set. Sentinel uses compact Counter, Wall, and Anti-magic
-columns and closes its leftovers when the level-60, `CON 20` Stalwart
-promotion is purchased. Stalwart contains only 11 new nodes: Last Stand and
-counter mastery, three Surge modifiers, and the Spell Reflection/Mirror
-Bastion path. Resolve uses the legacy `guard_meter` field as one value with
+Sentinel, Stalwart Defender, Paladin, and Crusader complete the authored
+Warrior promotion set. Sentinel uses six columns across Assault, Bulwark,
+Resistance, Support, and independent inherited actions. Its centered promotion
+accepts any of four level-55 talents. Stalwart contains 20 nodes in the same
+four disciplines. Resolve uses the legacy `guard_meter` field as one value with
 caps 50/100, explicit Defend/block/physical-damage/Goad/Hold gains, and no
-duplicate Class Ring accumulation. Sentinel's anti-magic branch is the single
-`Spell Reflection -> +20 Magic Defense -> +50 HP` line; its ungated root at
-`(4, 0)` uses compatibility ID `sentinel.ability.deflect-spell` and absorbs
-the retired Deflect Spell behavior and old Spell Reflection node ID. Spell
-Reflection spends 25 Resolve and shares compatibility and cleanup rules across
-legacy and data-driven spells.
-The Stalwart promotion grants all three Surge wrappers, while mastery 0/4/8
-continues controlling their availability.
+duplicate Class Ring accumulation. Spell Block is the active anti-projectile
+action and Spell Reflection is its passive reflection modifier. Stalwart grants
+Citadel Aegis, Ironwall Revenge, Last Bastion, and Stronghold as immediately
+unlocked full-bar Bursts.
 
 Paladin now begins with ungated Oath's Judgment and Oath's Shelter roots.
 Judgment branches left through `Double Strike -> +20 Attack -> Tempered
@@ -179,9 +194,13 @@ The centered level-60 Crusader promotion requires either Oath root plus its
 existing stats and three-point cost. It sits at `(2.5, 7)`, with each Oath
 connector descending to its row before joining. Because attributes use their own
 currency, a baseline Human retains 14 progression points and nine attribute
-points after the shortest promotion route. Crusader contains 19 new nodes
+points after the shortest promotion route. Crusader contains 23 new nodes
 across Melee, Spells, Healing, and Protection. Ungated Condemnation splits
 into exclusive Two-Handed Weapon Proficiency and Sword & Board routes.
+The shield route adds Censure, True Piercing Strike, Shield Ricochet, and
+Triple Strike. The spell route runs Repel the Wicked into Smite II,
+Sanctification, and Smite III; Dispel begins the healing route through Cleanse,
+Heal II, and Prayer of Faith.
 Repel the Wicked replaces Turn Undead in the Paladin path and remains
 retained-or-purchasable in the Crusader Spells path without an upgrade node.
 Signature-vow actions now
@@ -571,10 +590,49 @@ Systems, audio, and meta planning is split across durable owner docs:
   - increase generation for skills and/or lower cost for Resolve abilities
 - Add popup helpers with descriptions for the Primary Attributes in the Progression
   tab
+- Add quests for the Magic Shop and Thieves Guild
+- Items to include in the Settings menu
+  - menu index reset or lock (stay on the menu option or default to top)
+  - text print speed
+  - combat speed
 - Ability Improvements
-  - `Ironwall Reprisal` should rarely miss, should do more damage, and hit
-    all enemies; perhaps it is better described as a shockwave instead of
-    a melee attack
+  - Continue playtesting Ironwall Revenge's three-hit reliability against
+    high-dodge enemies and Repercussion's all-enemy tuning.
+- Create and organize the spells and skills into coherent definitions
+  - "Magic is organized into a coherent taxonomy that classifies spells according to their origin, mechanism, and intent. These classifications are designed to reflect how practitioners understand and manipulate magic within the world, ensuring that class identity, lore, and gameplay mechanics remain internally consistent."
+  - differentiate ability types and schools; emphasize a clear philosophical origin
+    - Innate arcane manipulation
+    - Divine blessing
+    - Natural forces
+    - Spiritual communion
+    - Extraplanar pacts
+  - every ability should have a consistent mechanism or methodology
+    - Manifesting
+    - Binding
+    - Transformation
+    - Channeling
+    - Projecting
+  - every ability should have a clear intent
+    - Damage
+    - Protection
+    - Restoration
+    - Control
+    - Mobility
+    - Information
+    - Summoning
+  - classes should interact with them differently through altering reality
+    - Spellblade channels magic through steel.
+    - Conjurer brings entities into reality.
+    - Thaumaturgist bends the rules governing reality.
+    - Shaman negotiates with spirits.
+    - Paladin invokes divine authority.
+  - mechanics should reinforce philosophy
+    - Resolve teaches perseverance.
+    - Conduit teaches partnership.
+    - Souls teach harvesting.
+    - Oaths teach conviction.
+  - similar effects do not require similar explanations
+  - categories should explain, not just classify
 
 ### Playtest Findings
 

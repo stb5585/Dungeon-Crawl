@@ -638,6 +638,7 @@ def condemnation(
         int(
             magic
             * 0.50
+            * holy_damage_multiplier(character)
             * max(0.0, 1.0 - resistance)
             * (100 / (100 + magic_defense))
         ),
@@ -658,6 +659,267 @@ def condemnation(
                 "Repel the Wicked will disintegrate it.\n"
             )
     return message
+
+
+def holy_damage_multiplier(character: Any) -> float:
+    """Return the Crusader's outgoing Holy-damage multiplier."""
+    skills = getattr(character, "spellbook", {}).get("Skills", {})
+    return 1.5 if "Sanctification" in skills else 1.0
+
+
+def _shield_equipped(character: Any) -> bool:
+    shield = getattr(character, "equipment", {}).get("OffHand")
+    return str(getattr(shield, "subtyp", "") or "") == "Shield"
+
+
+def _cancel_charged_action(target: Any, battle_engine: Any | None) -> str:
+    """Cancel a target's live charge state in both ability and engine state."""
+    interrupted = ""
+    charging_entry = getattr(battle_engine, "charging_ability", None)
+    if charging_entry and charging_entry[0] is target:
+        skill = charging_entry[2]
+        cancel = getattr(skill, "cancel_charge", None)
+        interrupted = (
+            cancel(target)
+            if callable(cancel)
+            else f"{target.name}'s {getattr(skill, 'name', 'charge')} was interrupted!\n"
+        )
+        battle_engine.charging_ability = None
+        actor_id = battle_engine._actor_id_for(target)
+        battle_engine.pending_actions.pop(actor_id, None)
+        return interrupted
+    for skill in getattr(target, "spellbook", {}).get("Skills", {}).values():
+        if not getattr(skill, "charging", False):
+            continue
+        cancel = getattr(skill, "cancel_charge", None)
+        interrupted = (
+            cancel(target)
+            if callable(cancel)
+            else f"{target.name}'s {getattr(skill, 'name', 'charge')} was interrupted!\n"
+        )
+        if battle_engine is not None:
+            actor_id = battle_engine._actor_id_for(target)
+            battle_engine.pending_actions.pop(actor_id, None)
+        break
+    return interrupted
+
+
+def censure(
+    character: Any,
+    target: Any | None,
+    *,
+    battle_engine: Any | None = None,
+    rng: Any | None = None,
+) -> str:
+    """Attack and attempt to interrupt an enemy's charged ability."""
+    if target is None:
+        return "There is no foe to censure.\n"
+    if not _shield_equipped(character):
+        return "Censure requires an equipped shield.\n"
+    character.mana.current -= 12
+    message, hit, _crit = character.weapon_damage(
+        target,
+        dmg_mod=1.0,
+        use_offhand=False,
+        attack_slots=("Weapon",),
+    )
+    if not hit or not target.is_alive():
+        return message
+    charging = bool(
+        getattr(battle_engine, "charging_ability", None)
+        and battle_engine.charging_ability[0] is target
+    ) or any(
+        getattr(skill, "charging", False)
+        for skill in getattr(target, "spellbook", {}).get("Skills", {}).values()
+    )
+    if not charging:
+        return message + f"{target.name} has no charged ability to interrupt.\n"
+    generator = rng or random
+    chance = max(
+        0.25,
+        min(
+            0.90,
+            0.50 + (int(character.stats.strength) - int(target.stats.con)) * 0.02,
+        ),
+    )
+    if generator.random() < chance:
+        return message + _cancel_charged_action(target, battle_engine)
+    return message + f"{target.name} maintains the charged ability.\n"
+
+
+def _shield_ricochet_damage(character: Any, target: Any) -> tuple[int, str]:
+    """Apply one shield impact through physical defenses."""
+    raw_damage = max(1, int(character.check_mod("attack", enemy=target) * 0.8))
+    hit, message, damage = target.handle_defenses(
+        character,
+        raw_damage,
+        False,
+        typ="Physical",
+    )
+    if not hit:
+        return 0, message
+    hit, reduction_message, damage = target.damage_reduction(
+        damage,
+        character,
+        typ="Physical",
+    )
+    message += reduction_message
+    if not hit:
+        return 0, message
+    damage, ward_message = target._apply_temporary_health(target, damage)
+    message += ward_message
+    target.health.current = max(0, target.health.current - damage)
+    return damage, message
+
+
+def shield_ricochet(
+    character: Any,
+    targets: list[tuple[str, Any]],
+    *,
+    battle_engine: Any,
+    rng: Any | None = None,
+):
+    """Damage every living enemy and independently roll a one-turn stun."""
+    from ..combat.combat_result import CombatResult, CombatResultGroup
+    from ..combat.targeting import TargetScope
+
+    group = CombatResultGroup(
+        action="Shield Ricochet",
+        actor_id=battle_engine.current_actor_id,
+        target_scope=TargetScope.ALL_ENEMIES,
+        target_ids=tuple(target_id for target_id, _target in targets),
+    )
+    if not _shield_equipped(character):
+        group.add(CombatResult(
+            action="Shield Ricochet",
+            actor=character,
+            actor_id=battle_engine.current_actor_id,
+            message="Shield Ricochet requires an equipped shield.\n",
+        ))
+        return group
+    character.mana.current -= 16
+    generator = rng or random
+    for target_id, target in targets:
+        damage, defense_message = _shield_ricochet_damage(character, target)
+        stun_chance = max(
+            0.10,
+            min(
+                0.75,
+                0.35 + (int(character.stats.strength) - int(target.stats.con)) * 0.015,
+            ),
+        )
+        stunned = damage > 0 and generator.random() < stun_chance
+        if stunned:
+            target.status_effects["Stun"].active = True
+            target.status_effects["Stun"].duration = max(
+                1,
+                int(target.status_effects["Stun"].duration or 0),
+            )
+        message = defense_message
+        message += f"The shield ricochets into {target.name} for {damage} damage.\n"
+        if stunned:
+            message += f"{target.name} is stunned for 1 turn.\n"
+        group.add(CombatResult(
+            action="Shield Ricochet",
+            actor=character,
+            target=target,
+            actor_id=battle_engine.current_actor_id,
+            target_id=target_id,
+            hit=damage > 0,
+            damage=damage,
+            effects_applied={
+                "Status": ["Stun"] if stunned else [],
+                "Physical": [],
+                "Stat": [],
+                "Magic": [],
+                "Class": [],
+            },
+            message=message,
+        ))
+    return group
+
+
+def prayer_of_faith(
+    character: Any,
+    targets: list[tuple[str, Any]],
+    *,
+    battle_engine: Any,
+    rng: Any | None = None,
+):
+    """Resolve one of Prayer of Faith's three equally likely miracles."""
+    from ..combat.combat_result import CombatResult, CombatResultGroup
+    from ..combat.targeting import TargetScope
+
+    group = CombatResultGroup(
+        action="Prayer of Faith",
+        actor_id=battle_engine.current_actor_id,
+        target_scope=TargetScope.ALL_ENEMIES,
+        target_ids=tuple(target_id for target_id, _target in targets),
+    )
+    if character.health.current * 10 >= character.health.max:
+        group.add(CombatResult(
+            action="Prayer of Faith",
+            actor=character,
+            actor_id=battle_engine.current_actor_id,
+            message="Prayer of Faith requires health below 10%.\n",
+        ))
+        return group
+    character.mana.current -= 20
+    generator = rng or random
+    outcome = generator.choice(("heal", "barrier", "judgment"))
+    if outcome == "heal":
+        healing = max(0, character.health.max - character.health.current)
+        character.health.current = character.health.max
+        group.add(CombatResult(
+            action="Prayer of Faith",
+            actor=character,
+            target=character,
+            actor_id=battle_engine.current_actor_id,
+            target_id="player",
+            healing=healing,
+            message=f"Faith restores {character.name} to full health ({healing} HP).\n",
+        ))
+    elif outcome == "barrier":
+        character.temporary_health = {
+            "amount": 1,
+            "turns": 2,
+            "source": "Prayer of Faith barrier",
+            "blocks_all_damage": True,
+        }
+        group.add(CombatResult(
+            action="Prayer of Faith",
+            actor=character,
+            target=character,
+            actor_id=battle_engine.current_actor_id,
+            target_id="player",
+            message=(
+                f"A Prayer of Faith barrier surrounds {character.name} for 2 turns.\n"
+            ),
+        ))
+    else:
+        for target_id, target in targets:
+            raw_damage = max(
+                1,
+                int(character.check_mod("magic", enemy=target) * 3),
+            )
+            _hit, message, damage = target.damage_reduction(
+                raw_damage,
+                character,
+                typ="Holy",
+            )
+            target.health.current = max(0, target.health.current - damage)
+            message += f"Faith judges {target.name} for {damage} Holy damage.\n"
+            group.add(CombatResult(
+                action="Prayer of Faith",
+                actor=character,
+                target=target,
+                actor_id=battle_engine.current_actor_id,
+                target_id=target_id,
+                hit=damage > 0,
+                damage=damage,
+                message=message,
+            ))
+    return group
 
 
 def repel_the_wicked(

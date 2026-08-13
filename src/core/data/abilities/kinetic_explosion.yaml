@@ -1,0 +1,10 @@
+name: Kinetic Explosion
+type: Spell
+subtype: Arcane
+description: Send forth a concussive orb that explodes across the enemy ranks.
+cost: 18
+damage_mod: 1.5
+crit: 10
+school: Arcane
+target_scope: all_enemies
+target_loss_policy: snapshot_roster

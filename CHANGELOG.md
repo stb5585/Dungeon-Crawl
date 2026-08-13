@@ -36,9 +36,74 @@
   Conjuration/Universal graph with `5/8/8/8` Sorcerer/Spellblade/Warlock/
   Conjurer route costs and registry-affordable stat gates.
 - Added six matching elemental Enhancements, Classical Force versus
-  Esotericism specialization-aware School Affinity, Polymorph and its
+  Arcane Tradition specialization-aware School Affinity, Polymorph and its
   transparent bunny combat sprite, Inflate Health, all-enemy Blinding Fog,
   Enliven Dead, and the four Conjure spells.
+- Rebuilt Spellblade around independent Arcane and Elemental Blade Charge
+  pools and evolved Knight Enchanter with two-slot Foundation/Accent weaving.
+  Enchanted Assault, Aegis Weave, and Spellbind spend both pools through
+  offensive, defensive, and spell-shaping releases.
+- Reorganized Knight Enchanter into three connected release lanes and an
+  independent universal column. Quick Recharge, Third Eye, and Storage
+  Capacity II cost two points; the other 17 development nodes cost one point;
+  Storage Capacity II adds two slots to each typed pool, and Quick Recharge
+  repeats a weapon-triggered Weave across every hit of a multi-hit attack.
+- Added two-point decision pressure to selected tier-3 capstones and advanced
+  nodes across Berserker, Crusader, Dragoon, Grandmaster of Arms, Knight
+  Enchanter, and Thaumaturgist.
+- Expanded Crusader with Censure, Shield Ricochet, Sanctification, and Prayer
+  of Faith; standardized its row gates and reordered its spell/healing paths.
+- Made inherited middle-path nodes require an unbroken purchased prerequisite
+  chain before unlocking successors, and connected Bless into Paladin's Magic
+  Defense path.
+- Realigned Knight Enchanter's late Assault, Spellbind, and universal nodes to
+  the terminal-tree level rows.
+- Expanded Lancer and Dragoon with split polearm Assault/Guard paths, Vigilant
+  Landing, Extended Reach, Swing & Bash, Phalanx, Critical Vigor, Dragon Soul,
+  and Dragonheart.
+- Rebuilt Sentinel around eight Resolve actions and four promotion capstones;
+  made Shield Riposte and Spell Reflection passive reactions and replaced the
+  overlapping shield actions with Spell Block and Bulwark Guard.
+- Rebuilt Stalwart Defender around four disciplines and four immediately
+  available full-Resolve Bursts: Citadel Aegis, Ironwall Revenge, Last Bastion,
+  and Stronghold. Burst wrappers no longer appear in ordinary Specials.
+- Removed redundant numeric Tome buffs from Equipment cards when the same
+  value is already presented as the Tome's Spell Mod.
+- Moved learned spell/ability modifiers such as Fire Inside out of the base
+  description and into a dedicated multi-entry `Modifications` section on the
+  affected ability card; modifier nodes remain hidden as standalone Special
+  Abilities.
+- Made Polymorph deny actions through the shared turn gate, gave bosses a 90%
+  resistance chance instead of immunity, and reduced and animated the bunny
+  combat presentation with randomized confused pacing.
+- Replaced Blade Charge's conditional text-only HUD line with persistent,
+  lit/dormant Arcane and Elemental indicators, including visible zero states.
+- Accepted NPC names in shop quest text routing so blacksmith, alchemist, and
+  jeweler quest offers can open their in-shop dialogue panels.
+- Restored shop quests to the shared blocking dialogue presentation so their
+  typewriter text appears before confirmation and clears after dismissal.
+- Made combat floating damage use structured per-hit damage for attacks,
+  weapon skills such as Imbue Weapon, and Magic Missile instead of combining
+  separately logged damage into an unmatched HP-loss total.
+- Reworked Enfeeble to use a stat-adjusted application chance and a static
+  four-turn, 20% Attack/Defense reduction that scales from target ratings.
+- Repaired the modern Character screen's Quests action to use the public popup
+  package instead of importing a nonexistent nested module.
+- Cleared and briefly suppressed buffered movement after dungeon-entry loading
+  so transition key presses cannot move the player or trigger combat.
+- Expanded the player's Mana Shield visual across the battlefield between the
+  combat log and action menu, and added pulsing `MAX` feedback to full Arcane
+  and Elemental Blade Charge pools.
+- Simplified multi-enemy targeting to a single arrow above the focused enemy;
+  removed selection plates, focus boxes, and approximate health-state labels.
+- Corrected dungeon relic altars to the Triangulus-through-Infinitas floor
+  order and prevented wall sconces from rendering on invalid surfaces or over
+  foreground stairs and altar fixtures.
+- Upgraded the Rookie Mistake body encounter to two Zombies and made storage
+  retrieval quantity prompts default to the entire stored stack.
+- Replaced Knight Enchanter Arcane Tempo with the Arcane Duel ring's Weave
+  Memory, which preserves a spent Accent as the next Foundation. Third Eye now
+  adds Intelligence to critical-hit and weapon/spell dodge calculations.
 - Replaced tier-2 Summoner with Conjurer and combined the former Summoner and
   Grand Summoner permanent-roster systems into terminal Thaumaturgist.
   Conjurer now has authored Constructs, Binding, Illusion/Movement, and
@@ -100,10 +165,7 @@
 - Kept all learned Mage spells through promotion and carried only Arcane
   Fundamentals plus the six elemental-school nodes into the editable Sorcerer
   and Wizard trees, while leaving completed historical tabs read-only.
-- Corrected the progression documentation to match Sentinel's implemented
-  single-node Spell Reflection branch, compatibility node ID, and migration
-  from the retired Deflect Spell ability and old Spell Reflection node ID.
-- Added Aerial Tempo, Landing Shield, Resolve, Spell Reflection, Resolve
+- Added Aerial Tempo, Landing Shield, Resolve, Spell Block/Reflection, Resolve
   Surges, Oath Conviction, shared Oath techniques, Hallowed Ground, Resist
   Shadow, Blessed Light, Condemnation, Repel the Wicked, Sword & Board, and the
   accompanying battle/frontend integration.
@@ -378,8 +440,8 @@
   Resolve spending, Stalwart Defender inherits those shield actions, and
   Stalwart adds full-bar `Resolve Surges`.
 - Split Sentinel/Stalwart Resolve actions into their own pygame combat menu
-  with Resolve-cost labels, and reworked the low-cost shield control action as
-  `Shield Check` so it no longer overlaps `Shield Slam`.
+  with Resolve-cost labels; the later redesign retired Shield Check in favor
+  of the eight-action Resolve set.
 - Wired Mage-tree promotion mechanic tabs so Sorcerer/Wizard, Warlock,
   Shadowcaster, Demonologist, Spellblade/Knight Enchanter, and Summoner
   previews and Character Menu tabs announce School Affinity, Familiar,

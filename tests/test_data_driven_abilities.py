@@ -356,7 +356,7 @@ class TestYAMLLoading:
         from src.core.data.ability_loader import AbilityFactory
 
         yaml_paths = sorted(self.ABILITIES_DIR.glob("*.yaml"))
-        assert len(yaml_paths) == 196
+        assert len(yaml_paths) == 197
 
         loaded_names = []
         for path in yaml_paths:
@@ -1616,6 +1616,63 @@ class TestBatch2CombatIntegration:
                 assert target.stat_effects["Attack"].extra < 0
                 break
         assert debuffed, "Enfeeble should have applied Attack debuff"
+
+    def test_enfeeble_uses_stat_hit_chance_and_static_percentage_debuff(
+        self,
+        monkeypatch,
+    ):
+        from src.core import abilities
+
+        caster = self._make_char()
+        caster.stats.intel = 20
+        caster.mana.current = 100
+        target = self._make_char()
+        target.stats.con = 20
+        target.combat.attack = 101
+        target.combat.defense = 81
+        spell = abilities.Enfeeble()
+
+        monkeypatch.setattr("random.random", lambda: 0.69)
+        message = spell.cast(caster, target)
+
+        assert "attack is lowered by 20% (21) for 4 turns" in message
+        assert "defense is lowered by 20% (17) for 4 turns" in message
+        assert target.stat_effects["Attack"].extra == -21
+        assert target.stat_effects["Defense"].extra == -17
+        assert target.stat_effects["Attack"].duration == 4
+
+        target.stat_effects["Attack"].active = False
+        target.stat_effects["Attack"].extra = 0
+        target.stat_effects["Defense"].active = False
+        target.stat_effects["Defense"].extra = 0
+        monkeypatch.setattr("random.random", lambda: 0.70)
+
+        assert spell.cast(caster, target) == f"{target.name} resists the spell.\n"
+        assert not target.stat_effects["Attack"].active
+
+    def test_enfeeble_hit_chance_scales_with_intelligence_against_constitution(
+        self,
+        monkeypatch,
+    ):
+        from src.core import abilities
+
+        caster = self._make_char()
+        caster.stats.intel = 25
+        target = self._make_char()
+        target.stats.con = 20
+        spell = abilities.Enfeeble()
+
+        monkeypatch.setattr("random.random", lambda: 0.79)
+        spell.cast(caster, target)
+        assert target.stat_effects["Attack"].active
+
+        target.stat_effects["Attack"].active = False
+        target.stat_effects["Defense"].active = False
+        caster.stats.intel = 15
+        caster.mana.current = caster.mana.max
+        monkeypatch.setattr("random.random", lambda: 0.61)
+        spell.cast(caster, target)
+        assert not target.stat_effects["Attack"].active
 
     def test_dispel_removes_buffs(self):
         from src.core import abilities
@@ -7536,6 +7593,8 @@ class TestBatch15MagicMissile:
         result = mm.cast(caster, target)
         assert isinstance(result, str)
         assert len(result) > 0
+        assert mm.result.damage == sum(mm.result.extra["damage_instances"])
+        assert mm.result.damage > 0
 
     def test_magic_missile_ice_block_immunity(self):
         from src.core import abilities
@@ -9302,24 +9361,52 @@ class TestClassAbilityMechanicsSlice:
         from src.core import abilities
 
         assert abilities.skill_dict["Lancer"]["1"] == [
+            abilities.CriticalVigor,
+            abilities.DragonSoul,
+            abilities.ExtendedReach,
             abilities.Jump,
-            abilities.PolearmProficiency,
             abilities.LanceSweep,
             abilities.Parry,
+            abilities.Phalanx,
+            abilities.PolearmExcellence,
+            abilities.PolearmProficiency,
+            abilities.SwingAndBash,
             abilities.TrueStrike,
+            abilities.VigilantLanding,
         ]
         assert abilities.skill_dict["Lancer"]["12"] is abilities.Zephyrstrike
         assert abilities.skill_dict["Dragoon"]["1"] == [
-            abilities.PolearmExcellence,
             abilities.PolearmMastery,
             abilities.DragonDive,
+            abilities.Dragonheart,
         ]
         assert "10" not in abilities.skill_dict["Dragoon"]
-        assert abilities.skill_dict["Sentinel"]["9"] is abilities.Retaliate
+        assert abilities.skill_dict["Sentinel"]["1"] == [
+            abilities.Adrenaline,
+            abilities.Boast,
+            abilities.BraceWall,
+            abilities.BulwarkGuard,
+            abilities.Charge,
+            abilities.DoubleStrike,
+            abilities.FocusedAssault,
+            abilities.Goad,
+            abilities.HoldTheLine,
+            abilities.PurgeWeakness,
+            abilities.Repercussion,
+            abilities.Retaliate,
+            abilities.ShieldRiposte,
+            abilities.SpellBlock,
+            abilities.SpellReflection,
+            abilities.SwingAndBash,
+        ]
         assert abilities.skill_dict["Crusader"]["1"] == [
+            abilities.Censure,
             abilities.Condemnation,
             abilities.Parry,
             abilities.Posturing,
+            abilities.PrayerOfFaith,
+            abilities.Sanctification,
+            abilities.ShieldRicochet,
             abilities.SwordAndBoard,
             abilities.TwoHandedWeaponProficiency,
         ]

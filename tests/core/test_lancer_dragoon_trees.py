@@ -75,7 +75,7 @@ def test_authored_lancer_tree_has_locked_graph_and_stable_ids():
     nodes = _tree_by_name("Lancer")
     development = [node for node in tree.nodes if node.kind != NodeKind.PROMOTION]
 
-    assert len(development) == 16
+    assert len(development) == 23
     assert nodes["Jump"].id == "lancer.ability.jump"
     assert nodes["Aerial Footwork"].prerequisites == (nodes["Jump"].id,)
     assert nodes["Aerial Footwork"].payload["level_requirement"] == 35
@@ -83,13 +83,25 @@ def test_authored_lancer_tree_has_locked_graph_and_stable_ids():
     assert nodes["Grounded Landing"].payload["level_requirement"] == 45
     assert nodes["Polearm Proficiency"].prerequisites == ()
     assert nodes["Lance Sweep"].payload["level_requirement"] == 35
-    assert nodes["+50 HP"].prerequisites == (nodes["Lance Sweep"].id,)
-    assert nodes["+50 HP"].position == (4, 2)
-    assert nodes["Zephyrstrike"].prerequisites == (nodes["+50 HP"].id,)
-    assert nodes["Zephyrstrike"].payload["level_requirement"] == 40
+    assert nodes["Extended Reach"].prerequisites == (nodes["Lance Sweep"].id,)
+    assert nodes["Zephyrstrike"].prerequisites == (nodes["Extended Reach"].id,)
+    assert nodes["Zephyrstrike"].payload["level_requirement"] == 45
+    assert nodes["Swing & Bash"].payload["level_requirement"] == 50
+    assert nodes["Polearm Excellence"].position == (4, 5)
+    assert nodes["Polearm Excellence"].payload["level_requirement"] == 55
+    assert nodes["Polearm Excellence"].cost == 2
+    assert nodes["Polearm Excellence"].prerequisites == (
+        nodes["Polearm Proficiency"].id,
+    )
+    assert nodes["Phalanx"].position == (5, 1)
+    assert nodes["Critical Vigor"].position == (5, 2)
+    assert nodes["+50 HP"].position == (5, 3)
+    assert nodes["Dragon Soul"].position == (5, 4)
     assert "level_requirement" not in nodes["+20 Defense"].payload
     assert nodes["+20 Defense"].prerequisites == (nodes["Jump"].id,)
-    assert nodes["+20 Attack"].prerequisites == (nodes["+20 Defense"].id,)
+    assert nodes["Vigilant Landing"].prerequisites == (nodes["+20 Defense"].id,)
+    assert nodes["+20 Attack"].prerequisites == (nodes["Jump"].id,)
+    assert nodes["Vigilant Landing"].cost == 2
     assert nodes["Thrust"].prerequisites == (nodes["Quick Dive"].id,)
     assert nodes["Defend"].id == "lancer.jump-mod.defend"
     assert nodes["Acrobat"].id == "lancer.jump-mod.acrobat"
@@ -104,22 +116,29 @@ def test_authored_lancer_tree_has_locked_graph_and_stable_ids():
     assert nodes["Jump"].position == (1, 0)
     assert nodes["Polearm Proficiency"].position == (4, 0)
     assert nodes["+20 Defense"].position == (1, 2)
-    assert nodes["+20 Attack"].position == (1, 3)
-    assert nodes["Parry"].position == (5, 2)
+    assert nodes["Vigilant Landing"].position == (1, 3)
+    assert nodes["+20 Attack"].position == (1, 1)
+    assert nodes["Parry"].position == (6, 2)
     assert nodes["Parry"].prerequisites == ()
-    assert nodes["True Strike"].position == (5, 3)
+    assert nodes["True Strike"].position == (6, 3)
     assert nodes["True Strike"].prerequisites == ()
-    assert nodes["Promote: Dragoon"].position == (1, 6)
+    assert nodes["Promote: Dragoon"].position == (3, 7)
     assert nodes["Promote: Dragoon"].prerequisites == (
-        nodes["+20 Attack"].id,
+        nodes["Vigilant Landing"].id,
+        nodes["Polearm Excellence"].id,
     )
     assert nodes["Promote: Dragoon"].payload["level_requirement"] == 60
+    assert nodes["Promote: Dragoon"].payload["connector_enter_from_top"] is True
+    assert nodes["Promote: Dragoon"].payload["connector_channel_columns"] == {
+        nodes["Vigilant Landing"].id: 1,
+        nodes["Polearm Excellence"].id: 4,
+    }
     assert nodes["Promote: Dragoon"].payload["requirements"] == {
         "strength": 17,
         "dex": 13,
     }
     assert nodes["Promote: Dragoon"].cost == 3
-    assert max(node.position[1] for node in tree.nodes) == 6
+    assert max(node.position[1] for node in tree.nodes) == 7
 
 
 def test_authored_dragoon_tree_has_locked_graph_and_stable_ids():
@@ -131,29 +150,31 @@ def test_authored_dragoon_tree_has_locked_graph_and_stable_ids():
         if node.kind != NodeKind.PROMOTION
     }
 
-    assert len(tree.nodes) == 27
+    assert len(tree.nodes) == 34
     assert lancer_development_ids <= {node.id for node in tree.nodes}
     assert "lancer.promotion.dragoon" not in {
         node.id
         for node in tree.nodes
     }
     assert nodes["Polearm Excellence"].position == (4, 5)
-    assert nodes["Polearm Excellence"].prerequisites == ()
     assert nodes["Grounded Landing"].prerequisites == (nodes["Acrobat"].id,)
     assert nodes["+20 Defense"].prerequisites == (nodes["Jump"].id,)
-    assert nodes["+20 Attack"].prerequisites == (nodes["+20 Defense"].id,)
+    assert nodes["+20 Attack"].prerequisites == (nodes["Jump"].id,)
     assert nodes["Thrust"].prerequisites == (nodes["Quick Dive"].id,)
     assert nodes["+30 Attack"].prerequisites == (
         nodes["Polearm Excellence"].id,
     )
-    assert nodes["True Piercing Strike"].position == (4, 7)
-    assert nodes["True Piercing Strike"].payload["level_requirement"] == 70
+    assert nodes["True Piercing Strike"].position == (6, 7)
+    assert nodes["True Piercing Strike"].payload["level_requirement"] == 75
     assert nodes["True Piercing Strike"].prerequisites == (
-        nodes["+30 Attack"].id,
+        nodes["True Strike"].id,
     )
     assert nodes["+30 Attack"].position == (4, 6)
-    assert nodes["Polearm Mastery"].payload["level_requirement"] == 75
-    assert nodes["Polearm Mastery"].position == (5, 7)
+    assert nodes["Polearm Mastery"].payload["level_requirement"] == 80
+    assert nodes["Polearm Mastery"].position == (4, 7)
+    assert nodes["Dragonheart"].position == (5, 7)
+    assert nodes["Dragonheart"].payload["level_requirement"] == 75
+    assert nodes["Dragonheart"].cost == 2
     assert nodes["Quake"].id == "dragoon.jump-mod.quake"
     assert nodes["Quake"].position == (2, 6)
     assert nodes["Quake"].prerequisites == (nodes["Rend"].id,)
@@ -203,7 +224,8 @@ def test_dragoon_promotion_requires_middle_path_level_and_authored_stats():
     )
 
     assert status.reasons == (
-        "Requires +20 Attack.",
+        "Requires Vigilant Landing.",
+        "Requires Polearm Excellence.",
         "Requires level 60 (current 59).",
         "Requires Strength 17 (current 16).",
         "Requires Dex 13 (current 12).",
@@ -215,7 +237,9 @@ def test_dragoon_promotion_requires_middle_path_level_and_authored_stats():
     player.stats.dex = 13
     assert purchase_node(player, "lancer.ability.jump").success
     assert purchase_node(player, "lancer.rating.defense-1").success
-    assert purchase_node(player, "lancer.rating.attack-1").success
+    assert purchase_node(player, "lancer.ability.vigilant-landing").success
+    assert purchase_node(player, "lancer.ability.polearm-proficiency").success
+    assert purchase_node(player, "lancer.ability.polearm-excellence").success
     status = next(
         status
         for status in available_nodes(player)
@@ -271,7 +295,7 @@ def test_human_can_promote_at_60_and_continue_lancer_training_as_dragoon():
 
     assert second.success
     assert player.cls.name == "Dragoon"
-    assert player.progression.unspent_points == 15
+    assert player.progression.unspent_points == 11
     assert player.progression.unspent_attribute_points == 9
     assert "Lancer" in player.progression.completed_trees
     assert promotion_kits.current_aerial_tempo(player) == 0
@@ -290,7 +314,7 @@ def test_human_can_promote_at_60_and_continue_lancer_training_as_dragoon():
         {},
     )
     assert optional.success
-    assert player.progression.unspent_points == 13
+    assert player.progression.unspent_points == 9
     assert (
         player.spellbook["Skills"]["Jump"]
         .unlocked_modifications["Quick Dive"]
@@ -366,16 +390,12 @@ def test_dragoon_keeps_required_shield_block_off_tree_and_adopts_lancer_mods():
 
 def test_polearm_abilities_replace_their_previous_forms():
     player = _player("Dragoon")
-    player.spellbook["Skills"]["Polearm Proficiency"] = (
-        abilities.PolearmProficiency()
+    player.spellbook["Skills"]["Polearm Excellence"] = abilities.PolearmExcellence()
+    player.progression.purchased_node_ids.update(
+        _prerequisite_closure("Dragoon", "Polearm Excellence")
     )
-    player.progression.purchased_node_ids.add(
-        "lancer.ability.polearm-proficiency"
-    )
-
-    assert purchase_node(player, "dragoon.ability.polearm-excellence").success
+    player.progression.purchased_node_ids.add("lancer.ability.true-strike")
     assert purchase_node(player, "dragoon.rating.attack-1").success
-    assert "Polearm Proficiency" not in player.spellbook["Skills"]
     assert "Polearm Excellence" in player.spellbook["Skills"]
     assert purchase_node(player, "dragoon.ability.true-piercing-strike").success
     assert purchase_node(player, "dragoon.ability.polearm-mastery").success
@@ -392,6 +412,63 @@ def test_aerial_footwork_produces_effective_lancer_and_dragoon_caps():
 
     assert promotion_kits.cap_for(lancer, "aerial_tempo") == 3
     assert promotion_kits.cap_for(dragoon, "aerial_tempo") == 4
+
+
+def test_new_lancer_passives_apply_their_combat_rules(monkeypatch):
+    player = _player("Lancer")
+    target = _player("Warrior")
+    player.equipment["Weapon"] = items.Halberd()
+    target.flying = True
+    monkeypatch.setattr(
+        "src.core.character.offense.random.randint",
+        lambda _low, high: high,
+    )
+    penalized = player.hit_chance(target)
+    player.spellbook["Skills"]["Extended Reach"] = abilities.ExtendedReach()
+    assert player.hit_chance(target) > penalized
+
+    player.spellbook["Skills"]["Phalanx"] = abilities.Phalanx()
+    reduced, message = promotion_kits.phalanx_reduction(player, 100)
+    assert reduced == 90
+    assert "Phalanx" in message
+
+    player.health.current = 400
+    player.spellbook["Skills"]["Critical Vigor"] = abilities.CriticalVigor()
+    monkeypatch.setattr(
+        "src.core.classes.promotion_kits.aerial.random.random",
+        lambda: 0.0,
+    )
+    assert "restores 25 HP" in promotion_kits.critical_vigor(player)
+    assert player.health.current == 425
+
+    player.spellbook["Skills"]["Vigilant Landing"] = abilities.VigilantLanding()
+    assert "vigilant defensive stance" in promotion_kits.record_clean_jump_landing(
+        player,
+        10,
+    )
+    assert player.get_defensive_reduction() > 0
+
+
+def test_dragon_soul_and_dragonheart_stabilize_and_request_the_next_turn(
+    monkeypatch,
+):
+    player = _player("Dragoon")
+    player.spellbook["Skills"]["Dragon Soul"] = abilities.DragonSoul()
+    monkeypatch.setattr(
+        "src.core.classes.promotion_kits.aerial.random.random",
+        lambda: 0.0,
+    )
+
+    player.health.current = 0
+    assert "stabilizes" in promotion_kits.try_dragon_soul(player)
+    assert player.health.current == 1
+    assert promotion_kits.combat_state(player)["dragon_soul_immediate_turn"]
+
+    promotion_kits.clear_combat_state(player)
+    player.spellbook["Skills"]["Dragonheart"] = abilities.Dragonheart()
+    player.health.current = 0
+    assert "Dragonheart" in promotion_kits.try_dragon_soul(player)
+    assert player.health.current == 125
 
 
 def test_completed_jump_gains_tempo_on_hit_or_miss_and_consecutive_jumps_stack():

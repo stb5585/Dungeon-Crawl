@@ -230,17 +230,17 @@ def test_dragoon_jump_mod_stays_dormant_until_guard_the_fall():
     assert jump.get_max_active_modifications(player) == dormant_max
 
 
-def test_knight_enchanter_arcane_tempo_replaces_mana_tap_plus_display():
+def test_knight_enchanter_weave_memory_replaces_mana_tap_plus_display():
     player, ring = _player_with_class_ring("Knight Enchanter")
 
     ring.class_mod(player)
-    assert player.equipment["Ring"].mod == "Dormant Arcane Tempo"
+    assert player.equipment["Ring"].mod == "Dormant Weave Memory"
 
     ok, _ = player.awaken_class_ring()
     ring.class_mod(player)
 
     assert ok is True
-    assert player.equipment["Ring"].mod == "Arcane Tempo"
+    assert player.equipment["Ring"].mod == "Weave Memory"
 
 
 def test_thaumaturgist_conduit_ritual_sacrifices_hp_and_empowers_xenids():

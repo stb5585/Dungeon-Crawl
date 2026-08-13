@@ -141,11 +141,11 @@ class RendererOverlayMixin:
 
         relic_num = getattr(getattr(self, "player_char", None), "location_z", 1)
         return {
-            1: "luna_altar",
-            2: "polaris_altar",
-            3: "triangulus_altar",
-            4: "quadrata_altar",
-            5: "hexagonum_altar",
+            1: "triangulus_altar",
+            2: "quadrata_altar",
+            3: "hexagonum_altar",
+            4: "luna_altar",
+            5: "polaris_altar",
             6: "infinitas_altar",
         }.get(relic_num, "empty_altar")
 
@@ -249,6 +249,23 @@ class RendererOverlayMixin:
                     side="right",
                 )
 
+            if self._center_tile_blocks_deeper_wall_overlays(visible_depth.center):
+                break
+
+    @staticmethod
+    def _center_tile_blocks_deeper_wall_overlays(tile) -> bool:
+        """Return whether a foreground fixture hides deeper wall decorations."""
+        tile_type = type(tile).__name__ if tile is not None else ""
+        return any(
+            marker in tile_type
+            for marker in (
+                "StairsUp",
+                "RelicRoom",
+                "GoldenChaliceRoom",
+                "Boulder",
+            )
+        )
+
     def _render_surface_blood_overlay(
         self,
         tile,
@@ -326,6 +343,8 @@ class RendererOverlayMixin:
         if blood_key is not None:
             return blood_key
         if is_fake_wall(tile) or type(tile).__name__ in {"FunhouseWall", "MirrorWall"}:
+            return None
+        if not is_wall(tile) or RendererOverlayMixin._is_door_tile(tile):
             return None
         z = getattr(tile, "z", 1)
         seed = (getattr(tile, "x", 0) * 31) + (getattr(tile, "y", 0) * 17) + (z * 13)

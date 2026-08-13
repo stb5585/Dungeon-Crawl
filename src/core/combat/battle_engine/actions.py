@@ -76,13 +76,24 @@ class BattleActionMixin:
             except NotImplementedError:
                 pass
 
-        message, hit, damage = self.attacker.weapon_damage(self.defender)
+        message, hit, crit = self.attacker.weapon_damage(self.defender)
+        damage = getattr(self.attacker, "_last_weapon_primary_damage", None)
+        if damage is None:
+            # Test doubles and legacy combatants may still return damage in the
+            # third tuple position instead of the Character critical multiplier.
+            damage = crit
+        damage_instances = list(
+            getattr(self.attacker, "_last_weapon_primary_damage_instances", ())
+            or ()
+        )
         self._last_combat_result = CombatResult(
             action="Attack",
             actor=self.attacker,
             target=self.defender,
             hit=hit,
+            crit=crit,
             damage=damage,
+            extra={"damage_instances": damage_instances},
             message=message,
         )
         return message
@@ -121,6 +132,14 @@ class BattleActionMixin:
         skills = getattr(self.attacker, "spellbook", {}).get("Skills", {})
         hold_the_line = skills.get("Hold the Line")
         class_name = getattr(getattr(self.attacker, "cls", None), "name", "")
+        if (
+            self.attacker == self.player
+            and class_name == "Knight Enchanter"
+            and skills.get("Defensive Release") is not None
+        ):
+            from ...classes import promotion_kits
+
+            return promotion_kits.defensive_release(self.attacker)
         if (
             self.attacker == self.player
             and class_name in {"Sentinel", "Stalwart Defender"}
@@ -175,6 +194,14 @@ class BattleActionMixin:
         )
         if isinstance(cast_result, CombatResult):
             self._last_combat_result = deepcopy(cast_result)
+        else:
+            recorded_result = getattr(spell, "result", None)
+            if (
+                isinstance(recorded_result, CombatResult)
+                and recorded_result.actor is self.attacker
+                and recorded_result.target is self.defender
+            ):
+                self._last_combat_result = deepcopy(recorded_result)
         message += str(cast_result)
         if self.attacker == self.player:
             if (
@@ -449,6 +476,13 @@ class BattleActionMixin:
                 battle_engine=self,
             )
 
+        elif skill.name == "Censure":
+            message += skill.use(
+                self.attacker,
+                target=self.defender,
+                battle_engine=self,
+            )
+
         elif "Jump" in skill.name:
             charge_time = skill.get_charge_time() if hasattr(skill, "get_charge_time") else 1
             continuing_charge = already_charging and int(getattr(skill, "charge_turns", 0) or 0) > 1
@@ -491,6 +525,14 @@ class BattleActionMixin:
 
         else:
             message += str(skill.use(self.attacker, target=self.defender))
+
+        recorded_result = getattr(skill, "result", None)
+        if (
+            isinstance(recorded_result, CombatResult)
+            and recorded_result.actor is self.attacker
+            and recorded_result.target is self.defender
+        ):
+            self._last_combat_result = deepcopy(recorded_result)
 
         return message
 

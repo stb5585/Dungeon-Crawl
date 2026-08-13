@@ -73,28 +73,32 @@ class SimpleListPopupMenu(BasePopupMenu):
     def draw_details_extra(self, player_char, item, x, y):
         # Render description text for abilities if present; otherwise show a fallback
         desc = getattr(item, "description", None) or ""
+        max_width = self.details_rect.width - 32
 
         if desc:
-            max_width = self.details_rect.width - 32
-            words = str(desc).split()
-            line = ""
-            for w in words:
-                test = f"{line} {w}".strip()
-                if self.normal_font.size(test)[0] <= max_width:
-                    line = test
-                else:
-                    text = self.normal_font.render(line, True, self.WHITE)
-                    self.screen.blit(text, (x, y))
-                    y += self.line_height
-                    line = w
-            if line:
-                text = self.normal_font.render(line, True, self.WHITE)
-                self.screen.blit(text, (x, y))
-                y += self.line_height
+            y = self._draw_wrapped_detail_text(str(desc), x, y, max_width)
         else:
             text = self.normal_font.render("No description available.", True, self.GRAY)
             self.screen.blit(text, (x, y))
             y += self.line_height
+
+        modifications = tuple(getattr(item, "presentation_modifications", ()) or ())
+        if modifications:
+            y += 8
+            heading = self.normal_font.render("Modifications", True, self.GOLD)
+            self.screen.blit(heading, (x, y))
+            y += self.line_height
+            for modification in modifications:
+                name = str(getattr(modification, "name", "Modification") or "Modification")
+                description = str(getattr(modification, "description", "") or "")
+                y = self._draw_wrapped_detail_text(
+                    f"{name}: {description}",
+                    x,
+                    y,
+                    max_width,
+                    color=self.LIGHT_GRAY,
+                )
+                y += 4
 
         # Add spacing
         y += 8
@@ -121,6 +125,27 @@ class SimpleListPopupMenu(BasePopupMenu):
                 else:
                     cost_text = self.normal_font.render("Mana Cost: —", True, self.LIGHT_GRAY)
             self.screen.blit(cost_text, (x, y))
+
+    def _draw_wrapped_detail_text(self, text, x, y, max_width, *, color=None):
+        """Draw wrapped ability-card text and return the next vertical position."""
+        words = str(text).split()
+        line = ""
+        color = color or self.WHITE
+        for word in words:
+            candidate = f"{line} {word}".strip()
+            if self.normal_font.size(candidate)[0] <= max_width:
+                line = candidate
+                continue
+            if line:
+                surface = self.normal_font.render(line, True, color)
+                self.screen.blit(surface, (x, y))
+                y += self.line_height
+            line = word
+        if line:
+            surface = self.normal_font.render(line, True, color)
+            self.screen.blit(surface, (x, y))
+            y += self.line_height
+        return y
 
     def on_select(self, player_char, item):
         value = item.get("value") if isinstance(item, dict) else item

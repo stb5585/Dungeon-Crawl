@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from typing import TYPE_CHECKING, Callable
 
 from .base import Effect
@@ -94,6 +95,10 @@ class StatContestEffect(Effect):
     When ``actor_lo_divisor`` is set, the actor's low roll is
     ``actor_stat // actor_lo_divisor`` instead of 0.
 
+    When ``base_chance`` is set, the contest instead uses a direct chance
+    adjusted by the actor-target stat difference and clamped to the configured
+    minimum and maximum.
+
     Example: Fire DOT triggers on ``intel//2 > wisdom//4..wisdom``
     Example: Corruption DOT uses ``(charisma*crit)//2..(charisma*crit) > wisdom//2..wisdom``
     """
@@ -108,6 +113,10 @@ class StatContestEffect(Effect):
         target_hi_divisor: int = 1,
         actor_lo_divisor: int | None = None,
         use_crit_multiplier: bool = False,
+        base_chance: float | None = None,
+        chance_per_point: float = 0.0,
+        minimum_chance: float = 0.0,
+        maximum_chance: float = 1.0,
     ):
         self.effect = effect
         self.actor_stat = actor_stat
@@ -117,6 +126,10 @@ class StatContestEffect(Effect):
         self.target_hi_divisor = target_hi_divisor
         self.actor_lo_divisor = actor_lo_divisor
         self.use_crit_multiplier = use_crit_multiplier
+        self.base_chance = base_chance
+        self.chance_per_point = chance_per_point
+        self.minimum_chance = minimum_chance
+        self.maximum_chance = maximum_chance
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
         import random
@@ -127,6 +140,17 @@ class StatContestEffect(Effect):
         if self.use_crit_multiplier:
             crit = result.extra.get("last_crit", 1)
             a_val = int(a_val * crit)
+
+        if self.base_chance is not None:
+            chance = self.base_chance + ((a_val - t_val) * self.chance_per_point)
+            chance = max(self.minimum_chance, min(self.maximum_chance, chance))
+            result.extra["stat_contest_chance"] = chance
+            if random.random() < chance:
+                self.effect.apply(actor, target, result)
+                result.extra["stat_contest_won"] = True
+            else:
+                result.extra["stat_contest_won"] = False
+            return
 
         if self.actor_lo_divisor is not None:
             roll_lo = max(0, a_val // self.actor_lo_divisor)
@@ -737,10 +761,9 @@ class DynamicStatBuffEffect(Effect):
 
 class DynamicMultiDebuffEffect(Effect):
     """
-    Applies multi-stat debuffs whose amounts scale with both target and caster
-    stats.  Used by WeakenMind and Enfeeble.
+    Apply multi-stat debuffs using legacy dynamic scaling or a fixed percentage.
 
-    Formula per stat:
+    Legacy formula per stat:
         amount   = target.combat.<combat_attr> // amount_divisor
         dv       = actor.stats.<scaling_stat> // scaling_divisor
         lo       = amount // max(2, 9 - dv)
@@ -756,38 +779,60 @@ class DynamicMultiDebuffEffect(Effect):
         scaling_divisor: int = 10,
         amount_divisor: int = 10,
         duration_min: int = 3,
+        percentage: float | None = None,
+        duration: int | None = None,
     ):
         self.stats = stats
         self.scaling_stat = scaling_stat
         self.scaling_divisor = scaling_divisor
         self.amount_divisor = amount_divisor
         self.duration_min = duration_min
+        self.percentage = percentage
+        self.duration = duration
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
         import random as _rng
         dv = getattr(actor.stats, self.scaling_stat, 10) // self.scaling_divisor
-        dur = max(self.duration_min, dv)
+        dur = self.duration if self.duration is not None else max(self.duration_min, dv)
 
         for spec in self.stats:
             stat_name = spec["stat_name"]
             combat_attr = spec["combat_attr"]
-            amount = getattr(target.combat, combat_attr, 10) // self.amount_divisor
-            if amount <= 0:
+            base_amount = max(0, int(getattr(target.combat, combat_attr, 10) or 0))
+            if base_amount <= 0:
                 continue
-            lo = amount // max(2, 9 - dv)
-            hi = amount // max(1, 5 - dv)
-            stat_mod = _rng.randint(max(0, lo), max(0, hi))
+            if self.percentage is not None:
+                stat_mod = max(1, math.ceil(base_amount * self.percentage))
+            else:
+                amount = base_amount // self.amount_divisor
+                if amount <= 0:
+                    continue
+                lo = amount // max(2, 9 - dv)
+                hi = amount // max(1, 5 - dv)
+                stat_mod = _rng.randint(max(0, lo), max(0, hi))
             if stat_mod <= 0:
                 continue
 
             target.stat_effects[stat_name].active = True
-            target.stat_effects[stat_name].duration = dur
-            target.stat_effects[stat_name].extra = -stat_mod
+            target.stat_effects[stat_name].duration = max(
+                dur,
+                int(target.stat_effects[stat_name].duration or 0),
+            )
+            target.stat_effects[stat_name].extra = min(
+                -stat_mod,
+                int(target.stat_effects[stat_name].extra or 0),
+            )
 
             result.effects_applied["Stat"].append(f"{stat_name} Debuff")
-            result.extra.setdefault("messages", []).append(
-                f"{target.name}'s {stat_name.lower()} is lowered by {stat_mod}."
-            )
+            if self.percentage is not None:
+                percent = round(self.percentage * 100)
+                message = (
+                    f"{target.name}'s {stat_name.lower()} is lowered by "
+                    f"{percent}% ({stat_mod}) for {dur} turns."
+                )
+            else:
+                message = f"{target.name}'s {stat_name.lower()} is lowered by {stat_mod}."
+            result.extra.setdefault("messages", []).append(message)
 
 
 class CleanseEffect(Effect):

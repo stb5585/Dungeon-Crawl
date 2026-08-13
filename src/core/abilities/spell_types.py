@@ -51,19 +51,6 @@ class Attack(Spell):
         if any([target.magic_effects["Ice Block"].active, target.tunnel]):
             return "It has no effect.\n"
         reflect = target.magic_effects["Reflect"].active
-        if not reflect:
-            try:
-                from ..classes import promotion_kits
-
-                reflection_message = promotion_kits.consume_spell_reflection(
-                    target,
-                    self.name,
-                    spell=self,
-                )
-                reflect = bool(reflection_message)
-                cast_message += reflection_message
-            except Exception:
-                pass
         spell_mod = caster.check_mod("magic", enemy=target)
         dodge = target.dodge_chance(caster, spell=True)
         hit = caster.hit_chance(target, typ="magic")
@@ -124,12 +111,35 @@ class Attack(Spell):
                         if crit > 1:
                             damage_msg += " (Critical hit!)"
                         cast_message += damage_msg + ".\n"
+                    try:
+                        from ..classes import promotion_kits
+
+                        damage, block_message = promotion_kits.apply_spell_block(
+                            target,
+                            caster,
+                            damage,
+                            spell=self,
+                        )
+                        cast_message += block_message
+                        damage, shield_message, _fully_absorbed = (
+                            promotion_kits.absorb_novel_shield(
+                                target,
+                                damage,
+                                source="reflected" if reflect else "spell",
+                            )
+                        )
+                        cast_message += shield_message
+                    except Exception:
+                        pass
                     target.health.current -= damage
                     caster._emit_damage_event(
                         target,
                         damage,
                         damage_type=self.subtyp,
                         is_critical=(crit > 1),
+                        ability_name=self.name,
+                        attack_source="spell",
+                        source="spell",
                     )
                     if target.is_alive() and damage > 0 and not reflect:
                         cast_message += self.special_effect(
@@ -311,6 +321,17 @@ def _simple_spell_damage(caster: Character, target: Character, *, dmg_mod: float
         return msg, 0
     variance = random.uniform(DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH)
     damage = max(0, int(damage * variance))
+    try:
+        from ..classes import promotion_kits
+
+        damage, shield_message, _fully_absorbed = promotion_kits.absorb_novel_shield(
+            target,
+            damage,
+            source="spell",
+        )
+        msg += shield_message
+    except Exception:
+        pass
     target.health.current -= damage
     return msg + f"{caster.name} damages {target.name} for {damage} hit points.\n", damage
 
@@ -699,6 +720,8 @@ class HallowedGround(Spell):
         target: Character | None = None,
         **kwargs: Any,
     ) -> str:
+        from ..classes import paladin
+
         super().cast(user, target, **kwargs)
         user.mana.current -= self.cost
         targets = list(kwargs.get("targets") or ())
@@ -717,7 +740,11 @@ class HallowedGround(Spell):
         for enemy in unique_targets:
             raw_damage = max(
                 1,
-                int(user.check_mod("magic", enemy=enemy) * 0.5),
+                int(
+                    user.check_mod("magic", enemy=enemy)
+                    * 0.5
+                    * paladin.holy_damage_multiplier(user)
+                ),
             )
             resistance = float(enemy.check_mod("resist", typ="Holy"))
             damage = max(1, int(raw_damage * (1.0 - resistance)))
@@ -755,6 +782,8 @@ class HallowedGround(Spell):
         battle_engine: Any,
     ) -> CombatResultGroup:
         """Apply one paid field cast to each living enemy and the player slot."""
+        from ..classes import paladin
+
         group = CombatResultGroup(
             action=self.name,
             actor_id=battle_engine.current_actor_id,
@@ -776,7 +805,14 @@ class HallowedGround(Spell):
                     message=f"{member.display_label} is no longer a valid target.\n",
                 ))
                 continue
-            raw_damage = max(1, int(user.check_mod("magic", enemy=enemy) * 0.5))
+            raw_damage = max(
+                1,
+                int(
+                    user.check_mod("magic", enemy=enemy)
+                    * 0.5
+                    * paladin.holy_damage_multiplier(user)
+                ),
+            )
             resistance = float(enemy.check_mod("resist", typ="Holy"))
             damage = max(1, int(raw_damage * (1.0 - resistance)))
             with battle_engine._target_resolution_context(

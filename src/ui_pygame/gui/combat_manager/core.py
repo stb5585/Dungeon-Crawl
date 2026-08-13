@@ -577,7 +577,7 @@ class CombatManagerCoreMixin:
         action: str,
         choice: str | None,
         message: str,
-        amount: int | None = None,
+        amount: int | tuple[int, ...] | None = None,
     ) -> None:
         kind = self._combat_effect_kind(action, choice, message)
         element = self._combat_effect_element(choice, message)
@@ -590,7 +590,14 @@ class CombatManagerCoreMixin:
         )
         if amount:
             color = self.combat_view.colors.get("log_damage", (235, 120, 105))
-            self.combat_view.trigger_floating_text(target, f"-{amount}", color)
+            amounts = amount if isinstance(amount, tuple) else (amount,)
+            for damage in amounts:
+                if damage > 0:
+                    self.combat_view.trigger_floating_text(
+                        target,
+                        f"-{damage}",
+                        color,
+                    )
         # Enemy sprites already provide a localized tint, recoil, impact, and
         # floating text. A second full-battlefield snapshot flash could briefly
         # replace the live lane rendering and make the target appear to blink.
@@ -599,6 +606,46 @@ class CombatManagerCoreMixin:
                 True,
                 event_handler=self._handle_combat_log_scroll_event,
             )
+
+    @staticmethod
+    def _recorded_floating_damage(
+        action_result: object,
+        fallback: int,
+        *,
+        target_id: str | None = None,
+    ) -> int | tuple[int, ...]:
+        """Return logged damage instances instead of aggregate HP loss."""
+        group = getattr(action_result, "combat_results", None)
+        portions = list(getattr(group, "results", ()) or ())
+        if target_id is not None:
+            portions = [
+                portion
+                for portion in portions
+                if getattr(portion, "target_id", None) == target_id
+            ]
+        amounts = []
+        for portion in portions:
+            instances = getattr(portion, "extra", {}).get("damage_instances")
+            if isinstance(instances, (list, tuple)):
+                for instance in instances:
+                    try:
+                        amount = int(instance or 0)
+                    except (TypeError, ValueError):
+                        continue
+                    if amount > 0:
+                        amounts.append(amount)
+                continue
+            try:
+                amount = int(getattr(portion, "damage", 0) or 0)
+            except (TypeError, ValueError):
+                continue
+            if amount > 0:
+                amounts.append(amount)
+        if len(amounts) > 1:
+            return tuple(amounts)
+        if amounts:
+            return amounts[0]
+        return max(0, int(fallback or 0))
 
     def _show_combat_heal_text(self, target: str, amount: int) -> None:
         if amount <= 0:

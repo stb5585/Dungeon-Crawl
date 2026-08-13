@@ -713,7 +713,7 @@ def test_arcane_class_ring_rites_awaken_ring_and_apply_mods(monkeypatch):
     for class_name, expected_mod, expected_label in (
         ("Wizard", "School Streak", "Four Formulae"),
         ("Shadowcaster", "Umbral Debt", "Debt Cap Trial"),
-        ("Knight Enchanter", "Arcane Tempo", "Arcane Duel"),
+        ("Knight Enchanter", "Weave Memory", "Arcane Duel"),
         ("Thaumaturgist", "+30% Xenids", "Conduit Ritual"),
         ("Templar", "Ordered Blessings", "Relic Defense"),
         ("Hierophant", "Sacred Conduit", "Consecration Rite"),

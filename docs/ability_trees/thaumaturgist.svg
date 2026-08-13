@@ -110,17 +110,17 @@ text{font-family:DejaVu Sans,Arial,sans-serif}
 <text class="detail" x="718.0" y="537.0">Ability · Cost 1 · Level 75</text>
 <rect x="708.0" y="592.0" width="188" height="62" rx="8" fill="#30254a" stroke="#ae84e8" stroke-width="2"/>
 <text class="name" x="718.0" y="616.0">Conduit Mastery</text>
-<text class="detail" x="718.0" y="637.0">Talent · Cost 1 · Level 80</text>
+<text class="detail" x="718.0" y="637.0">Talent · Cost 2 · Level 80</text>
 <rect x="930.0" y="292.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
 <text class="name" x="940.0" y="316.0">Miracle Blade</text>
-<text class="detail" x="940.0" y="337.0">Ability · Cost 1 · Level 65</text>
+<text class="detail" x="940.0" y="337.0">Ability · Cost 2 · Level 65</text>
 <rect x="930.0" y="392.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
 <text class="name" x="940.0" y="416.0">Miracle Shackles</text>
-<text class="detail" x="940.0" y="437.0">Ability · Cost 1 · Level 70</text>
+<text class="detail" x="940.0" y="437.0">Ability · Cost 2 · Level 70</text>
 <rect x="930.0" y="492.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
 <text class="name" x="940.0" y="516.0">Miracle Potion</text>
-<text class="detail" x="940.0" y="537.0">Ability · Cost 1 · Level 75</text>
+<text class="detail" x="940.0" y="537.0">Ability · Cost 2 · Level 75</text>
 <rect x="930.0" y="592.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
 <text class="name" x="940.0" y="616.0">Miracle Crystal</text>
-<text class="detail" x="940.0" y="637.0">Ability · Cost 1 · Level 80</text>
+<text class="detail" x="940.0" y="637.0">Ability · Cost 2 · Level 80</text>
 </svg>

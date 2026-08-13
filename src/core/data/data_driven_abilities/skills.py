@@ -150,21 +150,64 @@ class DataDrivenSkill(Skill):
             hit = False
             crit = 1
             total_damage = 0
-            for _ in range(self._strikes):
-                hp_before = target.health.current if target is not None else 0
-                use_str, h, c = user.weapon_damage(target, **wd_kwargs)
-                msg += use_str
-                if h:
-                    hit = True
-                    crit = max(crit, c)
-                    if target is not None:
-                        total_damage += max(0, hp_before - target.health.current)
-                if target is not None and not target.is_alive():
-                    break
+            damage_instances = []
+            quick_recharge_started = False
+            try:
+                from src.core.classes import promotion_kits
+
+                quick_recharge_started = promotion_kits.begin_multi_hit_weave(
+                    user,
+                    self._strikes,
+                )
+            except Exception:
+                quick_recharge_started = False
+            try:
+                for _ in range(self._strikes):
+                    hp_before = target.health.current if target is not None else 0
+                    user._last_weapon_primary_damage = None
+                    user._last_weapon_primary_damage_instances = []
+                    use_str, h, c = user.weapon_damage(target, **wd_kwargs)
+                    msg += use_str
+                    if h:
+                        hit = True
+                        crit = max(crit, c)
+                        if target is not None:
+                            primary_damage = getattr(
+                                user,
+                                "_last_weapon_primary_damage",
+                                None,
+                            )
+                            if primary_damage is None:
+                                primary_damage = max(
+                                    0,
+                                    hp_before - target.health.current,
+                                )
+                            total_damage += max(0, int(primary_damage))
+                            strike_instances = list(
+                                getattr(
+                                    user,
+                                    "_last_weapon_primary_damage_instances",
+                                    (),
+                                )
+                                or ()
+                            )
+                            if strike_instances:
+                                for value in strike_instances:
+                                    instance_damage = max(0, int(value))
+                                    if instance_damage > 0:
+                                        damage_instances.append(instance_damage)
+                            elif primary_damage > 0:
+                                damage_instances.append(int(primary_damage))
+                    if target is not None and not target.is_alive():
+                        break
+            finally:
+                if quick_recharge_started:
+                    promotion_kits.end_multi_hit_weave(user)
 
             result.hit = hit
             result.crit = crit if crit > 1 else None
             result.damage = total_damage
+            result.extra["damage_instances"] = damage_instances
         else:
             hit = True
             crit = 1

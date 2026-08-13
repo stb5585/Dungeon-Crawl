@@ -91,7 +91,8 @@ def test_promotion_mechanic_guidance_points_to_relevant_character_surface():
     assert classes.promotion_mechanic_tab_label("Demonologist") == "Contracts"
     assert "Blade Charge" in classes.promotion_mechanic_guidance("Spellblade")
     assert classes.promotion_mechanic_tab_label("Spellblade") == ""
-    assert "Arcane Tempo" in classes.promotion_mechanic_guidance("Knight Enchanter")
+    assert "Foundation" in classes.promotion_mechanic_guidance("Knight Enchanter")
+    assert "Accent" in classes.promotion_mechanic_guidance("Knight Enchanter")
     assert classes.promotion_mechanic_tab_label("Knight Enchanter") == ""
 
     assert "Misfortune" in classes.promotion_mechanic_guidance("Thief")

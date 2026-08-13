@@ -162,6 +162,28 @@ class TestBattleEngineBasics:
         result = engine.execute_action("Attack")
         assert "Hit for 7 damage" in result.message
         assert enemy.health.current == 13
+        assert result.combat_results.results[0].damage == 7
+
+    def test_execute_attack_records_primary_damage_before_blade_charge(self, monkeypatch):
+        import src.core.combat.battle_engine as battle_engine
+
+        engine, player, enemy, _tile = self._make_engine()
+        engine.attacker = player
+        engine.defender = enemy
+
+        monkeypatch.setattr(battle_engine.random, "randint", lambda _a, _b: 1)
+
+        def weapon_damage(target, **_kwargs):
+            target.health.current -= 12
+            player._last_weapon_primary_damage = 10
+            return "Hit for 10 damage.\nBlade Charge releases for 2 damage.\n", True, 1
+
+        monkeypatch.setattr(player, "weapon_damage", weapon_damage)
+
+        result = engine.execute_action("Attack")
+
+        assert enemy.health.current == 8
+        assert result.combat_results.results[0].damage == 10
 
     def test_execute_flee_sets_flee_flag(self, monkeypatch):
         engine, player, enemy, _tile = self._make_engine()
@@ -397,6 +419,62 @@ class TestBattleEngineBasics:
         assert "uses Test Skill" in result.message
         assert "Skill used" in result.message
 
+    def test_execute_imbue_weapon_preserves_structured_weapon_damage(
+        self,
+        monkeypatch,
+    ):
+        from src.core import abilities
+
+        engine, player, enemy, _tile = self._make_engine()
+        engine.attacker = player
+        engine.defender = enemy
+        player.mana.current = 100
+
+        def weapon_damage(target, **_kwargs):
+            target.health.current -= 16
+            player._last_weapon_primary_damage = 13
+            player._last_weapon_primary_damage_instances = [13]
+            return "Weapon deals 13 damage; rider deals 3 damage.\n", True, 1
+
+        monkeypatch.setattr(player, "weapon_damage", weapon_damage)
+        player.spellbook["Skills"]["Imbue Weapon"] = abilities.ImbueWeapon()
+
+        result = engine.execute_action("Use Skill", choice="Imbue Weapon")
+
+        assert result.combat_results.results[0].damage == 13
+        assert result.combat_results.results[0].extra["damage_instances"] == [13]
+        assert enemy.health.current == 4
+
+    def test_execute_magic_missile_preserves_each_logged_hit(self, monkeypatch):
+        from src.core import abilities
+
+        engine, player, enemy, _tile = self._make_engine()
+        engine.attacker = player
+        engine.defender = enemy
+        player.mana.current = 100
+        player.mana.max = 100
+        enemy.health.current = 500
+        enemy.health.max = 500
+        enemy.dodge_chance = lambda *_args, **_kwargs: False
+        enemy.incapacitated = lambda: False
+        player.hit_chance = lambda *_args, **_kwargs: True
+        player.check_mod = lambda *_args, **_kwargs: 30
+        player.spellbook["Spells"]["Magic Missile"] = abilities.MagicMissile2()
+        monkeypatch.setattr(
+            "src.core.data.data_driven_abilities.missile.random.randint",
+            lambda low, high: high,
+        )
+        monkeypatch.setattr(
+            "src.core.data.data_driven_abilities.missile.random.uniform",
+            lambda low, high: low,
+        )
+
+        result = engine.execute_action("Cast Spell", choice="Magic Missile")
+        portion = result.combat_results.results[0]
+
+        assert len(portion.extra["damage_instances"]) == 2
+        assert portion.damage == sum(portion.extra["damage_instances"])
+
     def test_execute_cancelled_action_does_nothing(self):
         engine, player, enemy, _tile = self._make_engine()
         engine.attacker = player
@@ -426,6 +504,24 @@ class TestBattleEngineBasics:
         result = engine.execute_action("Defend")
 
         assert result.message == "Defend:1"
+
+    def test_knight_enchanter_defend_builds_defensive_release(self):
+        from src.core import abilities
+
+        engine, player, enemy, _tile = self._make_engine()
+        engine.attacker = player
+        engine.defender = enemy
+        player.cls.name = "Knight Enchanter"
+        player.spellbook["Skills"]["Defensive Release"] = (
+            abilities.DefensiveRelease()
+        )
+
+        first = engine.execute_action("Defend")
+        second = engine.execute_action("Defend")
+
+        assert "(1/3)" in first.message
+        assert "(2/3)" in second.message
+        assert not player.status_effects["Defend"].active
 
     def test_execute_spell_handles_suppressed_invalid_and_successful_casts(self):
         engine, player, enemy, _tile = self._make_engine()
@@ -731,8 +827,16 @@ class TestBattleEngineBasics:
         assert engine.attacker is summon
         assert "Hero summons Patagon" in result.message
 
-    def test_summon_replaces_available_actions_and_level_one_victory_awards_no_bond(self):
+    def test_summon_replaces_available_actions_and_level_one_victory_awards_no_bond(
+        self,
+        monkeypatch,
+    ):
         from src.core import classes, companions
+
+        monkeypatch.setattr(
+            "src.core.classes.promotion_kits.companions.random.random",
+            lambda: 1.0,
+        )
 
         engine, player, enemy, _tile = self._make_engine()
         player.cls = classes.Thaumaturgist()

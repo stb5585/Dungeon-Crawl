@@ -15,9 +15,11 @@ class KnightEnchanter(Job):
     def __init__(self):
         super().__init__(
             name="Knight Enchanter",
-            description="The Knight Enchanter uses their arcane powers to imbue"
-            " weapons and armor with magical enchantments that can "
-            "rival the most powerful fighter.",
+            description=(
+                "The Knight Enchanter weaves spell signatures through Arcane "
+                "and Elemental Blade Charges, then shapes the pattern into "
+                "weapon, ward, or bound-spell releases."
+            ),
             str_plus=2,
             int_plus=1,
             wis_plus=0,

@@ -6,10 +6,10 @@ from types import SimpleNamespace
 
 from src.core import abilities
 from src.core import items
+from src.core.abilities.descriptions import presented_abilities
 from src.core.classes import class_rings
 from src.core.classes import promotion_kits
 from src.core.combat.battle_engine.actions import BattleActionMixin
-from src.core.data.data_driven_abilities.base import DataDrivenSpell
 from src.core.progression import ABILITY_TREES
 from src.core.progression import NodeKind
 from src.core.progression import ProgressionState
@@ -70,25 +70,34 @@ def test_sentinel_tree_has_authored_paths_and_compact_geometry():
         node for node in tree.nodes if node.kind != NodeKind.PROMOTION
     ]
 
-    assert len(development) == 15
-    assert max(node.position[1] for node in tree.nodes) == 6
-    assert "Shield Block" not in nodes
-    assert nodes["Goad"].position == (0, 0)
-    assert nodes["Shield Check"].prerequisites == (nodes["Goad"].id,)
-    assert nodes["Retaliate"].payload["level_requirement"] == 40
-    assert nodes["Watchful Reprisal"].position == (0, 4)
-    assert nodes["Hold the Line"].position == (2, 0)
-    assert nodes["Resolute Guard"].position == (2, 4)
-    assert nodes["Spell Reflection"].id == (
-        "sentinel.ability.deflect-spell"
-    )
-    assert nodes["Spell Reflection"].position == (4, 0)
+    assert len(development) == 24
+    assert max(node.position[1] for node in tree.nodes) == 8
+    assert "Shield Check" not in nodes
+    assert nodes["Retaliate"].position == (0, 1)
+    assert nodes["Swing & Bash"].position == (0, 2)
+    assert nodes["Focused Assault"].position == (0, 4)
+    assert nodes["Repercussion"].position == (0, 5)
+    assert nodes["Watchful Reprisal"].position == (0, 6)
+    assert nodes["Hold the Line"].position == (1, 1)
+    assert nodes["Shield Riposte"].position == (1, 2)
+    assert nodes["Resolute Guard"].position == (1, 6)
+    assert nodes["Adrenaline"].position == (3.5, 1)
+    assert nodes["Spell Block"].position == (3, 2)
+    assert nodes["Spell Reflection"].position == (3, 5)
+    assert nodes["Purge Weakness"].position == (4, 2)
+    assert nodes["Boast"].position == (4, 4)
+    assert nodes["Goad"].position == (5, 1)
+    assert nodes["Charge"].prerequisites == ()
+    assert nodes["Double Strike"].prerequisites == ()
     promotion = nodes["Promote: Stalwart Defender"]
-    assert promotion.position == (1, 6)
+    assert promotion.position == (2, 8)
     assert promotion.prerequisites == (
         nodes["Watchful Reprisal"].id,
         nodes["Resolute Guard"].id,
+        nodes["Shielding Ward"].id,
+        nodes["Braggadocious"].id,
     )
+    assert promotion.payload["prerequisite_mode"] == "any"
     assert promotion.payload["requirements"] == {"con": 20}
 
 
@@ -96,21 +105,66 @@ def test_stalwart_tree_keeps_surges_out_of_progression_nodes():
     tree = ABILITY_TREES["Stalwart Defender"]
     nodes = _nodes("Stalwart Defender")
 
-    assert len(tree.nodes) == 11
-    assert max(node.position[1] for node in tree.nodes) == 3
+    assert len(tree.nodes) == 20
+    assert max(node.position[1] for node in tree.nodes) == 6
     assert not {
         "Citadel Aegis",
-        "Ironwall Reprisal",
+        "Ironwall Revenge",
         "Last Bastion",
+        "Stronghold",
     } & set(nodes)
     assert nodes["Fortified Citadel"].id == (
         "stalwart-defender.talent.fortified-citadel"
     )
-    assert nodes["Crushing Reprisal"].payload["level_requirement"] == 70
-    assert nodes["Final Redoubt"].payload["level_requirement"] == 80
-    assert nodes["Mirror Bastion"].payload["requires_known_ability"] == (
-        "Spell Reflection"
+    assert nodes["Punishing Guard"].payload["level_requirement"] == 70
+    assert nodes["Crushing Vengeance"].payload["level_requirement"] == 75
+    assert nodes["Double Payback"].payload["level_requirement"] == 80
+    assert nodes["Final Redoubt"].payload["level_requirement"] == 75
+    assert nodes["Mirror Bastion"].payload["level_requirement"] == 75
+    assert nodes["Focused Assault"].prerequisites == (
+        nodes["Repercussion"].id,
     )
+    assert nodes["Brace Wall"].prerequisites == (
+        nodes["Hold the Line"].id,
+    )
+    assert nodes["Bulwark Guard"].prerequisites == (
+        nodes["Spell Block"].id,
+    )
+    assert nodes["Spell Reflection"].prerequisites == (
+        nodes["Bulwark Guard"].id,
+    )
+    assert nodes["Boast"].prerequisites == (
+        nodes["Purge Weakness"].id,
+    )
+    assert nodes["Punishing Guard"].cost == 2
+    assert nodes["Unbroken Wall"].cost == 2
+    assert nodes["Fortified Citadel"].cost == 2
+    assert nodes["Final Redoubt"].cost == 2
+    assert nodes["Repercussion"].position == (0, 1)
+    assert nodes["Iron Maiden"].position == (1, 6)
+    assert nodes["Fortified Citadel"].position == (2, 5)
+    assert nodes["Final Redoubt"].position == (3, 4)
+
+
+def test_stalwart_bursts_are_hidden_from_ordinary_specials():
+    player = _player("Stalwart Defender")
+    for ability_type in (
+        abilities.CitadelAegis,
+        abilities.IronwallReprisal,
+        abilities.LastBastionSurge,
+        abilities.Stronghold,
+    ):
+        ability = ability_type()
+        player.spellbook["Skills"][ability.name] = ability
+
+    assert {
+        ability.name for ability in presented_abilities(player, "Skills")
+    }.isdisjoint({
+        "Citadel Aegis",
+        "Ironwall Revenge",
+        "Last Bastion",
+        "Stronghold",
+    })
 
 
 def test_human_sentinel_second_promotion_uses_separate_point_pools():
@@ -122,18 +176,20 @@ def test_human_sentinel_second_promotion_uses_separate_point_pools():
         abilities.SpellReflection()
     )
 
-    route = set(_closure("Sentinel", "Promote: Stalwart Defender"))
+    route = set(_closure("Sentinel", "Watchful Reprisal"))
+    route.add(_nodes("Sentinel")["Promote: Stalwart Defender"].id)
     result = apply_progression_plan(player, tuple(route), {"con": 1})
 
     assert result.success
     assert player.cls.name == "Stalwart Defender"
-    assert player.progression.unspent_points == 5
+    assert player.progression.unspent_points == 9
     assert player.progression.unspent_attribute_points == 14
     assert "Sentinel" in player.progression.completed_trees
     assert {
         "Citadel Aegis",
-        "Ironwall Reprisal",
+        "Ironwall Revenge",
         "Last Bastion",
+        "Stronghold",
     } <= set(player.spellbook["Skills"])
     assert "Spell Reflection" in player.spellbook["Skills"]
     assert "Deflect Spell" not in player.spellbook["Skills"]
@@ -198,72 +254,162 @@ def test_resolve_sources_use_one_backing_value_and_locked_gain_amounts(
     assert promotion_kits.current_resolve(defender) == 5
 
 
-def test_spell_reflection_spends_once_expires_and_mirror_bastion_rewards():
+def test_spell_block_spends_once_and_reflection_modifies_it(monkeypatch):
     player = _player("Stalwart Defender")
+    caster = _player("Paladin")
     player.equipment["OffHand"] = items.KiteShield()
+    player.spellbook["Skills"]["Spell Reflection"] = abilities.SpellReflection()
     player.progression.purchased_node_ids.add(
         "stalwart-defender.talent.mirror-bastion"
     )
     promotion_kits.build_resolve(player, 100, "setup")
+    monkeypatch.setattr(
+        "src.core.classes.promotion_kits.resolve.random.random",
+        lambda: 0.0,
+    )
 
-    message = abilities.SpellReflection().use(player)
-    assert "spends 25 Resolve" in message
-    assert player.stat_effects["Magic Defense"].active
-    assert player.stat_effects["Magic Defense"].duration == 3
-    assert player.stat_effects["Magic Defense"].extra == 6
+    message = abilities.SpellBlock().use(player)
+    assert "prepares to block" in message
     assert promotion_kits.current_resolve(player) == 75
-    reflected = promotion_kits.consume_spell_reflection(player, "Firebolt")
-    assert "turns Firebolt back" in reflected
-    assert "Mirror Bastion" in reflected
-    assert promotion_kits.current_resolve(player) == 95
-    assert promotion_kits.consume_spell_reflection(player, "Shock") == ""
+    spell = SimpleNamespace(cost=10, subtyp="Fire", reflectable=True)
+    caster_before = caster.health.current
+    remaining, block_message = promotion_kits.apply_spell_block(
+        player,
+        caster,
+        100,
+        spell=spell,
+    )
+    assert remaining < 100
+    assert "Spell Block" in block_message
+    assert "Spell Reflection" in block_message
+    assert caster.health.current < caster_before
+    assert player.stat_effects["Magic Defense"].extra == 50
+    assert not promotion_kits.spell_block_ready(player)
 
-    promotion_kits.build_resolve(player, 5, "setup")
-    abilities.SpellReflection().use(player)
-    assert promotion_kits.tick_spell_reflection(player) == ""
-    assert promotion_kits.tick_spell_reflection(player) == ""
-    assert "expires" in promotion_kits.tick_spell_reflection(player)
 
-
-def test_spell_reflection_honors_priority_compatibility_and_both_spell_paths():
+def test_spell_block_honors_projectile_compatibility_and_expires():
     player = _player("Stalwart Defender")
     caster = _player("Paladin")
     player.equipment["OffHand"] = items.KiteShield()
     promotion_kits.build_resolve(player, 100, "setup")
-    abilities.SpellReflection().use(player)
-
-    legacy_spell = abilities.FireSpell(
-        "Test Flame",
-        "A focused hostile spell.",
-        0,
-        0.25,
-        1,
+    abilities.SpellBlock().use(player)
+    area_spell = SimpleNamespace(
+        cost=10,
+        subtyp="Fire",
+        area=True,
     )
-    player.magic_effects["Reflect"].active = True
-    legacy_spell.cast(caster, player, special=True)
-    assert promotion_kits.spell_reflection_ready(player)
-
-    player.magic_effects["Reflect"].active = False
-    legacy_spell.unreflectable = True
-    legacy_spell.cast(caster, player, special=True)
-    assert promotion_kits.spell_reflection_ready(player)
-
-    legacy_spell.unreflectable = False
-    legacy_spell.cast(caster, player, special=True)
-    assert not promotion_kits.spell_reflection_ready(player)
-
-    promotion_kits.build_resolve(player, 25, "setup")
-    abilities.SpellReflection().use(player)
-    data_spell = DataDrivenSpell(
-        name="Test Spark",
-        description="A focused hostile data-driven spell.",
-        cost=0,
-        dmg_mod=0.25,
-        crit=1,
-        subtyp="Electric",
+    remaining, _message = promotion_kits.apply_spell_block(
+        player,
+        caster,
+        50,
+        spell=area_spell,
     )
-    data_spell.cast(caster, player, special=True)
-    assert not promotion_kits.spell_reflection_ready(player)
+    assert remaining == 50
+    assert promotion_kits.spell_block_ready(player)
+    assert promotion_kits.tick_resolve_effects(player) == ""
+    assert promotion_kits.tick_resolve_effects(player) == ""
+    assert "expires" in promotion_kits.tick_resolve_effects(player)
+
+
+def test_new_resolve_spends_cover_cleanse_barrier_focus_and_passive_riposte(
+    monkeypatch,
+):
+    player = _player("Sentinel")
+    attacker = _player("Warrior")
+    player.equipment["OffHand"] = items.KiteShield()
+    promotion_kits.build_resolve(player, 50, "setup")
+    player.status_effects["Poison"].active = True
+    player.status_effects["Poison"].duration = 3
+
+    assert "becomes immune" in abilities.PurgeWeakness().use(player)
+    assert not player.status_effects["Poison"].active
+    assert player.has_status_protection("Stun")
+
+    promotion_kits.build_resolve(player, 40, "setup")
+    assert "temporary health" in abilities.Boast().use(player)
+    assert player.temporary_health["amount"] == 75
+    before = promotion_kits.current_resolve(player)
+    promotion_kits.build_resolve(player, 10, "pressure")
+    assert promotion_kits.current_resolve(player) - before == 15
+
+    assert "focuses" in abilities.FocusedAssault().use(player)
+    assert promotion_kits.focused_assault_accuracy(player) == 0.15
+    assert promotion_kits.focused_assault_critical_multiplier(player, 2.0) == 2.3
+
+    promotion_kits.build_resolve(player, 50, "setup")
+    assert "Bulwark Guard" in abilities.BulwarkGuard().use(player)
+    assert player.temporary_health["turns"] == 1
+
+    player.spellbook["Skills"]["Shield Riposte"] = abilities.ShieldRiposte()
+    monkeypatch.setattr(
+        "src.core.classes.promotion_kits.resolve.random.random",
+        lambda: 0.0,
+    )
+    assert "knocks" in promotion_kits.shield_riposte_after_full_block(
+        player,
+        attacker,
+    )
+    assert attacker.physical_effects["Prone"].active
+
+
+def test_stalwart_citadel_absorbs_magic_and_fortified_release_returns_it():
+    player = _player("Stalwart Defender")
+    caster = _player("Paladin")
+    enemy = _player("Warrior")
+    player.equipment["OffHand"] = items.KiteShield()
+    player.progression.purchased_node_ids.add(
+        "stalwart-defender.talent.fortified-citadel"
+    )
+    promotion_kits.build_resolve(player, 100, "setup")
+    member = SimpleNamespace(enemy=enemy)
+    engine = SimpleNamespace(encounter=SimpleNamespace(living_members=(member,)))
+
+    assert "half of incoming magic" in promotion_kits.citadel_aegis(
+        player,
+        battle_engine=engine,
+    )
+    remaining, message = promotion_kits.apply_spell_block(
+        player,
+        caster,
+        100,
+        spell=SimpleNamespace(cost=10, subtyp="Fire"),
+    )
+    assert remaining == 50
+    assert "absorbs 50" in message
+    enemy_before = enemy.health.current
+    assert promotion_kits.tick_resolve_effects(player) == ""
+    promotion_kits.tick_resolve_effects(player)
+    promotion_kits.tick_resolve_effects(player)
+    expiry = promotion_kits.tick_resolve_effects(player)
+    assert "Fortified Citadel" in expiry
+    assert enemy.health.current == enemy_before - 50
+
+
+def test_repercussion_hits_every_target_and_punishing_guard_can_knock_down(
+    monkeypatch,
+):
+    player = _player("Stalwart Defender")
+    enemies = (_player("Warrior"), _player("Warrior"))
+    player.progression.purchased_node_ids.add(
+        "stalwart-defender.talent.punishing-guard"
+    )
+    promotion_kits.build_resolve(player, 100, "setup")
+    monkeypatch.setattr(
+        "src.core.classes.promotion_kits.resolve.random.random",
+        lambda: 0.0,
+    )
+    engine = SimpleNamespace(current_actor_id="player")
+
+    group = abilities.Repercussion().use_group(
+        player,
+        [(f"enemy-{index}", enemy) for index, enemy in enumerate(enemies)],
+        battle_engine=engine,
+    )
+
+    assert len(group.results) == 2
+    assert all(result.damage > 0 for result in group.results)
+    assert all(enemy.physical_effects["Prone"].active for enemy in enemies)
+    assert promotion_kits.current_resolve(player) == 70
 
 
 def test_surge_modifiers_apply_locked_tuning(monkeypatch):
@@ -274,9 +420,10 @@ def test_surge_modifiers_apply_locked_tuning(monkeypatch):
     target.equipment["OffHand"] = items.KiteShield()
     player.progression.purchased_node_ids.update({
         "stalwart-defender.talent.fortified-citadel",
-        "stalwart-defender.talent.crushing-reprisal",
         "stalwart-defender.talent.final-redoubt",
     })
+    player.spellbook["Skills"]["Crushing Vengeance"] = abilities.CrushingVengeance()
+    player.spellbook["Skills"]["Double Payback"] = abilities.DoublePayback()
     monkeypatch.setattr(
         "src.core.character.offense.random.random",
         lambda: 0.0,
@@ -284,15 +431,17 @@ def test_surge_modifiers_apply_locked_tuning(monkeypatch):
 
     promotion_kits.build_resolve(player, 100, "setup")
     assert "Citadel Aegis" in promotion_kits.citadel_aegis(player)
-    assert player.magic_effects["Nature Shield"].extra == 125
-    assert player.magic_effects["Nature Shield"].duration == 4
+    assert promotion_kits.combat_state(player)["citadel_aegis"]["turns"] == 3
 
     promotion_kits.gain_resolve_mastery(player, 8, "setup")
     promotion_kits.build_resolve(player, 100, "setup")
-    assert "Crushing Reprisal" in promotion_kits.ironwall_reprisal(
+    revenge = promotion_kits.ironwall_reprisal(
         player,
         target,
     )
+    assert "Ironwall Revenge" in revenge
+    assert "4 strikes" in revenge
+    assert "Crushing Vengeance" in revenge
     assert target.stat_effects["Attack"].extra == -3
     assert target.stat_effects["Speed"].extra == -3
 
@@ -301,6 +450,16 @@ def test_surge_modifiers_apply_locked_tuning(monkeypatch):
     assert "Last Bastion" in promotion_kits.last_bastion(player)
     assert player.health.current >= 1 + int(player.health.max * 0.40)
     assert player.magic_effects["Nature Shield"].extra >= 75
+
+    promotion_kits.build_resolve(player, 100, "setup")
+    assert "Stronghold" in promotion_kits.stronghold(player)
+    reduced, message = promotion_kits.stronghold_melee_reduction(
+        player,
+        100,
+        target,
+    )
+    assert reduced == 70
+    assert "reduces melee damage by 30" in message
 
 
 def test_known_sentinel_actions_are_adopted_but_leftovers_close():
@@ -317,7 +476,7 @@ def test_known_sentinel_actions_are_adopted_but_leftovers_close():
 
     promotion_id = "sentinel.promotion.stalwart-defender"
     player.progression.purchased_node_ids.update(
-        set(_closure("Sentinel", "Promote: Stalwart Defender")) - {promotion_id}
+        set(_closure("Sentinel", "Watchful Reprisal"))
     )
     player.stats.con = 20
     result = purchase_node(
@@ -326,28 +485,6 @@ def test_known_sentinel_actions_are_adopted_but_leftovers_close():
         confirm_promotion=True,
     )
     assert result.success
-    blocked = purchase_node(player, "sentinel.ability.deflect-spell")
+    blocked = purchase_node(player, "sentinel.ability.spell-block")
     assert not blocked.success
     assert "current class tree" in blocked.message
-
-
-def test_legacy_reflection_node_and_deflect_skill_migrate():
-    from src.core.progression import ProgressionState, ensure_progression
-
-    state = ProgressionState.from_dict({
-        "purchased_node_ids": ["sentinel.ability.spell-reflection"],
-    })
-    assert "sentinel.ability.spell-reflection" not in state.purchased_node_ids
-    assert "sentinel.ability.deflect-spell" in state.purchased_node_ids
-
-    player = _player("Sentinel")
-    player.spellbook["Skills"] = {
-        "Deflect Spell": abilities.DeflectSpell(),
-    }
-    ensure_progression(player)
-
-    assert "Deflect Spell" not in player.spellbook["Skills"]
-    assert isinstance(
-        player.spellbook["Skills"]["Spell Reflection"],
-        abilities.SpellReflection,
-    )

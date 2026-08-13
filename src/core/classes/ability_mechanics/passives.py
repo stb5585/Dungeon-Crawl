@@ -8,16 +8,11 @@ from typing import Any
 from .equipment import has_skill
 
 
-def third_eye_crit_bonus(character: Any) -> float:
+def third_eye_intelligence(character: Any) -> int:
+    """Return Intelligence contributed to avoidance and critical calculations."""
     if not has_skill(character, "Third Eye"):
-        return 0.0
-    return min(0.10, max(0.0, int(getattr(character.stats, "intel", 0)) * 0.002))
-
-
-def third_eye_dodge_bonus(character: Any) -> float:
-    if not has_skill(character, "Third Eye"):
-        return 0.0
-    return min(0.10, max(0.0, int(getattr(character.stats, "intel", 0)) * 0.002))
+        return 0
+    return max(0, int(getattr(character.stats, "intel", 0)))
 
 
 def drunken_brawler_damage_bonus(character: Any) -> float:

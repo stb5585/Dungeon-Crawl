@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from types import SimpleNamespace
 
 import pygame
+import pytest
 
 from src.core import map_tiles
 from src.ui_pygame.gui.dungeon.assets import TEXTURE_PATHS, TextureLibrary
@@ -609,6 +610,7 @@ def test_wall_overlay_key_is_stable_for_same_map_tile_at_different_depths():
         x = 3
         y = 5
         z = 2
+        enter = False
 
     tile = WallWithPosition()
 
@@ -619,6 +621,66 @@ def test_wall_overlay_key_hides_sconces_on_fake_walls():
     assert SceneRenderer._get_wall_overlay_key(FakeWall(visited=False), depth=1) is None
     assert SceneRenderer._get_wall_overlay_key(FakeWall(visited=True), depth=3) is None
     assert SceneRenderer._get_wall_overlay_key(ThievesGuildTrialFakeWall(visited=False), depth=2) is None
+    assert SceneRenderer._get_wall_overlay_key(StairsUp(), depth=1) is None
+
+
+@pytest.mark.parametrize(
+    ("level", "sprite_key"),
+    (
+        (1, "triangulus_altar"),
+        (2, "quadrata_altar"),
+        (3, "hexagonum_altar"),
+        (4, "luna_altar"),
+        (5, "polaris_altar"),
+        (6, "infinitas_altar"),
+    ),
+)
+def test_relic_altar_sprite_follows_relic_floor_order(level, sprite_key):
+    renderer = object.__new__(SceneRenderer)
+    renderer.player_char = SimpleNamespace(location_z=level)
+
+    assert renderer._get_relic_altar_sprite_key(RelicRoom(read=False)) == sprite_key
+    assert renderer._get_relic_altar_sprite_key(RelicRoom(read=True)) == "empty_altar"
+
+
+def test_wall_overlays_stop_behind_foreground_stairs():
+    pygame.init()
+    screen = pygame.Surface((640, 480))
+    presenter = DummyPresenter(width=640, height=480, screen=screen)
+    scene_renderer = SceneRenderer(presenter, TextureLibrary())
+    zones = {
+        depth: build_zone_geometry(
+            build_depth_rect(416, 480, depth),
+            build_next_depth_rect(build_depth_rect(416, 480, depth)),
+            depth=depth,
+        )
+        for depth in (1, 2)
+    }
+    scene = SimpleNamespace(
+        depths=(
+            SimpleNamespace(
+                depth=1,
+                center=StairsUp(),
+                left=OpenTile(),
+                right=OpenTile(),
+            ),
+            SimpleNamespace(
+                depth=2,
+                center=WallTile(),
+                left=WallTile(),
+                right=WallTile(),
+            ),
+        )
+    )
+    calls = []
+    scene_renderer._render_wall_overlay_for_tile = lambda *args, **kwargs: calls.append(
+        (args, kwargs)
+    )
+
+    scene_renderer._render_wall_overlays(scene, zones)
+
+    assert calls == []
+    pygame.quit()
 
 
 def test_wall_overlays_stop_at_blocking_center_wall():
@@ -3479,7 +3541,7 @@ def test_scene_renderer_renders_migrated_special_tile_sprites():
     assert ("dead_body", 86) in special_calls
     assert ("burial_site", 86) in special_calls
     assert ("dead_soldier_item", 67) in special_calls
-    assert ("triangulus_altar", 96) in special_calls
+    assert ("hexagonum_altar", 96) in special_calls
     assert ("empty_altar", 96) in special_calls
     assert ("golden_chalice_altar", 96) in special_calls
     assert ("empty_golden_chalice_altar", 96) in special_calls

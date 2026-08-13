@@ -34,8 +34,7 @@ from .equipment import (
     monkey_grip_accuracy_modifier,
 )
 from .passives import (
-    third_eye_crit_bonus,
-    third_eye_dodge_bonus,
+    third_eye_intelligence,
     drunken_brawler_damage_bonus,
     drunken_brawler_crit_bonus,
     trigger_drunken_brawler,

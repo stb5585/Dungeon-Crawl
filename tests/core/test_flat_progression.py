@@ -102,7 +102,11 @@ def test_all_tree_manifests_validate_and_scale_rating_values_by_stage():
             node.payload["description"].startswith("Permanently increase")
             for node in rating_nodes
         )
-        assert all("level_requirement" not in node.payload for node in rating_nodes)
+        assert all(
+            "level_requirement" not in node.payload
+            or node.payload.get("level_band_gate") is True
+            for node in rating_nodes
+        )
         resource_nodes = [
             node
             for node in tree.nodes
@@ -116,6 +120,7 @@ def test_all_tree_manifests_validate_and_scale_rating_values_by_stage():
         )
         assert all(
             "level_requirement" not in node.payload
+            or node.payload.get("level_band_gate") is True
             for node in resource_nodes
         )
         talent_nodes = [
@@ -129,6 +134,8 @@ def test_all_tree_manifests_validate_and_scale_rating_values_by_stage():
                 "Weapon Master",
                 "Berserker",
                 "Conjurer",
+                "Knight Enchanter",
+                "Spellblade",
             }
         ):
             assert talent_nodes
@@ -1013,6 +1020,7 @@ def test_health_node_permanently_increases_maximum_and_current_hp():
     player.progression.purchased_node_ids.update({
         "warrior.ability.shieldblock",
         "warrior.ability.shieldslam",
+        "warrior.ability.rally",
         "warrior.rating.defense.2",
         "warrior.ability.dishearten",
     })

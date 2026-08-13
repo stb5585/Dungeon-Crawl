@@ -29,7 +29,7 @@ def _player_with_ring(class_name):
         ("Stalwart Defender", "Dormant Guard Meter", "Siege Trial"),
         ("Wizard", "Dormant School Streak", "Four Formulae"),
         ("Shadowcaster", "Dormant Umbral Debt", "Debt Cap Trial"),
-        ("Knight Enchanter", "Dormant Arcane Tempo", "Arcane Duel"),
+        ("Knight Enchanter", "Dormant Weave Memory", "Arcane Duel"),
         ("Thaumaturgist", "Dormant +30% Xenids", "Conduit Ritual"),
         ("Seeker", "Dormant Hidden Cache", "Cartographer's Proof"),
         ("Ninja", "Dormant No-Trace Opener", "No-Trace Contract"),

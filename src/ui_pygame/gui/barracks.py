@@ -687,7 +687,14 @@ class BarracksManager(TownScreenBase):
             item, count = storage_data_list[choice]
             
             # Use QuantityPopup for quantity selection
-            qty_popup = QuantityPopup(self.presenter, item.name, unit_cost=0, max_quantity=count, action="retrieve")
+            qty_popup = QuantityPopup(
+                self.presenter,
+                item.name,
+                unit_cost=0,
+                max_quantity=count,
+                action="retrieve",
+                default_quantity=count,
+            )
             quantity = qty_popup.show(flush_events=True, require_key_release=True)
             
             if quantity is None or quantity == 0:

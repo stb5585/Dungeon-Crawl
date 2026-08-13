@@ -132,10 +132,46 @@ def status_summary_rows(character: Any) -> list[tuple[str, str]]:
             rows.append(("Eclipse", f"{eclipse} turn(s)"))
     if cls in {"Spellblade", "Knight Enchanter"}:
         charge = state.get('blade_charge')
-        rows.append(("Blade Charge", f"{charge} Ready" if charge else "None, cast first"))
+        if isinstance(charge, dict):
+            arcane = int(charge.get("Arcane", 0) or 0)
+            elemental = int(charge.get("Elemental", 0) or 0)
+        else:
+            arcane = 0
+            elemental = 0
+        charge_text = f"Arcane ×{arcane} · Elemental ×{elemental}"
+        rows.append(("Blade Charge", charge_text))
+        novel_shield = state.get("novel_shield")
+        if isinstance(novel_shield, dict):
+            rows.append((
+                "Novel Shielding",
+                (
+                    f"{int(novel_shield.get('remaining', 0) or 0)} / "
+                    f"{int(novel_shield.get('maximum', 0) or 0)} · "
+                    f"{int(novel_shield.get('turns', 0) or 0)} turn(s)"
+                ),
+            ))
+        breakdown = state.get("breakdown_stacks", {})
+        if isinstance(breakdown, dict) and breakdown:
+            rows.append(("Breakdown", f"{max(int(value or 0) for value in breakdown.values())}/5"))
         if cls == "Knight Enchanter":
-            tempo = int(state.get('arcane_tempo', 0) or 0)
-            rows.append(("Arcane Tempo", _meter_hint(tempo, 3, ready="Burst at 3")))
+            from .weaves import weave_preview
+
+            foundation = state.get("weave_foundation") or "Open"
+            accent = state.get("weave_accent") or "Open"
+            rows.append(("Foundation", str(foundation)))
+            rows.append(("Accent", str(accent)))
+            rows.append(("Weave", weave_preview(character)))
+            if isinstance(state.get("spellbind"), dict):
+                turns = int(state["spellbind"].get("turns", 0) or 0)
+                rows.append(("Spellbind", f"Ready · {turns} turn(s)"))
+            defensive_stacks = int(state.get("defensive_release", 0) or 0)
+            if defensive_stacks:
+                rows.append((
+                    "Defensive Release",
+                    f"{defensive_stacks}/3 · +{defensive_stacks * 25}%",
+                ))
+            if isinstance(state.get("echoing_weave"), dict):
+                rows.append(("Echoing Blade", "Repeats next turn"))
     if cls == "Berserker":
         momentum = int(state.get('bloodied_momentum', 0) or 0)
         rows.append(("Momentum", _meter_hint(momentum, cap_for(character, 'bloodied_momentum'), ready="Heavy art")))

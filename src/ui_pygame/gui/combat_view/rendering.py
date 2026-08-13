@@ -22,7 +22,8 @@ class CombatRenderingMixin:
 
         visual_offset_x, visual_offset_y = self.enemy_visual_offset
         center_x = self.combat_width // 2 + visual_offset_x + self._enemy_recoil_offset()
-        boss_enemy = self._is_boss_enemy(enemy)
+        polymorphed = self._enemy_is_polymorphed(enemy)
+        boss_enemy = self._is_boss_enemy(enemy) and not polymorphed
         center_y = (int(self.combat_height * 0.42) if boss_enemy else self.combat_height // 3) + visual_offset_y
 
         is_flying = getattr(enemy, "flying", False)
@@ -91,7 +92,12 @@ class CombatRenderingMixin:
 
             # Calculate Y position with bob animation
             bob_y = center_y + animator.bob_offset if is_flying else center_y
-            bob_x = center_x if is_flying else center_x + animator.sway_offset
+            pace_offset = animator.confused_pace_offset() if polymorphed else 0
+            bob_x = (
+                center_x
+                if is_flying
+                else center_x + animator.sway_offset + pace_offset
+            )
 
             if animator.animation_type != 'death':
                 self._draw_mirror_images(

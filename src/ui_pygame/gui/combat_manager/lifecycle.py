@@ -359,9 +359,13 @@ class CombatLifecycleMixin:
 
         if actor is not None and "Defend" in deduped:
             skills = getattr(actor, "spellbook", {}).get("Skills", {})
+            defensive_release = skills.get("Defensive Release")
             hold_the_line = skills.get("Hold the Line")
             class_name = getattr(getattr(actor, "cls", None), "name", "")
-            if (
+            if class_name == "Knight Enchanter" and defensive_release is not None:
+                defend_index = deduped.index("Defend")
+                deduped[defend_index] = "Defensive Release"
+            elif (
                 class_name in {"Sentinel", "Stalwart Defender"}
                 and hold_the_line is not None
             ):
@@ -541,7 +545,17 @@ class CombatLifecycleMixin:
             damage_to_enemy = max(0, enemy_hp_before - enemy.health.current)
             if damage_to_enemy > 0:
                 self.combat_view.enemy_take_damage(enemy)
-                self._show_combat_damage_effect("enemy", forced.action, forced.choice, result.message, damage_to_enemy)
+                floating_damage = self._recorded_floating_damage(
+                    result,
+                    damage_to_enemy,
+                )
+                self._show_combat_damage_effect(
+                    "enemy",
+                    forced.action,
+                    forced.choice,
+                    result.message,
+                    floating_damage,
+                )
                 self._flush_result_frame(player_char, enemy)
 
             self._preserve_waitress_for_transition(enemy)
@@ -995,22 +1009,31 @@ class CombatLifecycleMixin:
         if damaged_members:
             for member, damage in damaged_members:
                 self.combat_view.enemy_take_damage(member.enemy)
+                floating_damage = self._recorded_floating_damage(
+                    result,
+                    damage,
+                    target_id=member.combatant_id,
+                )
                 self._show_combat_damage_effect(
                     member.combatant_id,
                     action,
                     choice,
                     result.message,
-                    damage,
+                    floating_damage,
                 )
             showed_damage_effect = True
         elif damage_to_enemy > 0 and not tamed_result:
             self.combat_view.enemy_take_damage(enemy)
+            floating_damage = self._recorded_floating_damage(
+                result,
+                damage_to_enemy,
+            )
             self._show_combat_damage_effect(
                 "enemy",
                 action,
                 choice,
                 result.message,
-                damage_to_enemy,
+                floating_damage,
             )
             showed_damage_effect = True
         else:

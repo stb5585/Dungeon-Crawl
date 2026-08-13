@@ -1,7 +1,9 @@
 name: Enfeeble
 type: Status
 subtype: Status
-description: "Cripple your foe, reducing their attack and defense rating."
+description: >-
+  Cripple your foe for 4 turns, reducing Attack and Defense by 20%. Hit chance
+  scales with the caster's Intelligence against the target's Constitution.
 cost: 12
 wizard_free_cast: true
 messages:
@@ -9,11 +11,11 @@ messages:
 effects:
   - type: stat_contest
     actor_stat: intel
-    actor_divisor: 1
-    actor_lo_divisor: 2
     target_stat: con
-    target_lo_divisor: 2
-    target_hi_divisor: 2
+    base_chance: 0.70
+    chance_per_point: 0.02
+    minimum_chance: 0.20
+    maximum_chance: 0.95
     effect:
       type: dynamic_multi_debuff
       stats:
@@ -21,7 +23,5 @@ effects:
           combat_attr: attack
         - stat_name: Defense
           combat_attr: defense
-      scaling_stat: intel
-      scaling_divisor: 10
-      amount_divisor: 10
-      duration_min: 3
+      percentage: 0.20
+      duration: 4

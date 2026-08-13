@@ -229,15 +229,46 @@ def record_damage_event(
                 critical_hit = False
     else:
         critical_hit = False
+    if critical_hit and _is_weapon_hit(metadata):
+        from .aerial import critical_vigor
+
+        _message(actor, critical_vigor(actor))
 
     if cls == "Astromancer" and not weapon_hit:
         _message(actor, gain_meter(actor, "foresight_threads", 1, "successful spell thread"))
 
-    if cls in {"Spellblade", "Knight Enchanter"} and not weapon_hit and damage_type in {
-        "Fire", "Ice", "Electric", "Water", "Earth", "Wind", "Non-elemental", "Arcane",
-    }:
-        combat_state(actor)["blade_charge"] = damage_type
-        _message(actor, f"{actor.name}'s blade stores a {damage_type} charge.\n")
+    spell_hit = bool(
+        not weapon_hit
+        and isinstance(metadata, dict)
+        and (metadata.get("ability_name") or metadata.get("source") == "spell")
+    )
+    if cls in {"Spellblade", "Knight Enchanter"} and spell_hit:
+        if cls == "Knight Enchanter":
+            from .weaves import resolve_spellbind
+
+            _message(actor, resolve_spellbind(actor, target, amount))
+        _store_blade_charge(
+            actor,
+            charge_type=_blade_charge_type(damage_type),
+        )
+    if (
+        spell_hit
+        and target is not None
+        and class_name(target) in {"Spellblade", "Knight Enchanter"}
+        and _has_skill(target, "Counter Charge")
+    ):
+        source_state = combat_state(actor)
+        source_token = int(source_state.get("action_token", 0) or 0)
+        marker = (id(actor), source_token) if source_token > 0 else None
+        target_state = combat_state(target)
+        if marker is None or target_state.get("counter_charge_action_token") != marker:
+            _store_blade_charge(
+                target,
+                charge_type=_blade_charge_type(damage_type),
+                deduplicate=False,
+            )
+            target_state["counter_charge_action_token"] = marker
+            _message(target, f"{target.name}'s Counter Charge answers the spell.\n")
 
     if cls == "Berserker" and weapon_hit and _hp_ratio(actor) < 0.50:
         bonus = 2 if _hp_ratio(actor) < 0.25 else 1
@@ -271,7 +302,10 @@ def record_damage_event(
             _message(actor, add_aspect(actor, "Stone"))
 
     if weapon_hit:
+        _apply_breakdown_stack(actor, target)
         _consume_weapon_payoffs(actor, target, amount, damage_type)
+    elif spell_hit:
+        _clear_breakdown_stacks(actor, target)
 
 
 def record_damage_taken(defender: Any, amount: int, damage_type: str) -> None:
@@ -301,6 +335,13 @@ def record_damage_taken(defender: Any, amount: int, damage_type: str) -> None:
         _message(defender, add_aspect(defender, "Stone"))
     if cls == "Rogue" and int(getattr(getattr(defender, "health", None), "current", 1) or 0) <= 0:
         _message(defender, cheat_death(defender))
+    if (
+        cls in {"Lancer", "Dragoon"}
+        and int(getattr(getattr(defender, "health", None), "current", 1) or 0) <= 0
+    ):
+        from .aerial import try_dragon_soul
+
+        _message(defender, try_dragon_soul(defender))
     if (
         cls in {"Lancer", "Dragoon"}
         and int(getattr(getattr(defender, "health", None), "current", 1) or 0) <= 0
@@ -348,20 +389,20 @@ def _consume_weapon_payoffs(actor: Any, target: Any, amount: int, damage_type: s
     extra = 0
     lines: list[str] = []
 
-    charge = state.get("blade_charge")
-    if cls in {"Spellblade", "Knight Enchanter"} and charge:
-        extra += max(1, int(amount * 0.12))
-        lines.append(f"{actor.name}'s {charge} blade charge follows through for {extra} magic damage.\n")
+    charge = _normalized_blade_charge(state.get("blade_charge"))
+    quick_recharge = ""
+    if cls == "Knight Enchanter":
+        from .weaves import resolve_quick_recharge_hit
+
+        quick_recharge = resolve_quick_recharge_hit(actor, target, amount)
+        lines.append(quick_recharge)
+    if not quick_recharge and cls in {"Spellblade", "Knight Enchanter"} and charge:
+        lines.append(_release_blade_charge_damage(actor, target, amount, charge))
         state["blade_charge"] = None
-        if cls == "Knight Enchanter" and _ring_awakened_equipped(actor, "Knight Enchanter"):
-            tempo = min(3, int(state.get("arcane_tempo", 0) or 0) + 1)
-            state["arcane_tempo"] = tempo
-            lines.append(f"Arcane Tempo rises to {tempo}/3.\n")
-            if tempo >= 3:
-                burst = max(1, int(amount * 0.20))
-                extra += burst
-                state["arcane_tempo"] = 0
-                lines.append(f"Arcane Tempo bursts for {burst} arcane damage.\n")
+        if cls == "Knight Enchanter":
+            from .weaves import resolve_enchanted_assault
+
+            lines.append(resolve_enchanted_assault(actor, target, amount, charge))
 
     stolen = int(state.get("stolen_charge", 0) or 0)
     if cls in {"Spell Stealer", "Arcane Trickster"} and stolen:
@@ -383,6 +424,232 @@ def _consume_weapon_payoffs(actor: Any, target: Any, amount: int, damage_type: s
         target.health.current = max(0, target.health.current - extra)
     for line in lines:
         _message(actor, line)
+
+
+_ELEMENTAL_CHARGE_TYPES = frozenset({
+    "Earth",
+    "Electric",
+    "Fire",
+    "Ice",
+    "Lightning",
+    "Water",
+    "Wind",
+})
+_ELEMENTAL_RESISTANCE_TYPES = (
+    "Earth",
+    "Electric",
+    "Fire",
+    "Ice",
+    "Water",
+    "Wind",
+)
+
+
+def _normalized_blade_charge(value: Any) -> dict[str, Any] | None:
+    """Return canonical Arcane and Elemental blade-charge pools."""
+    if not isinstance(value, dict):
+        return None
+    arcane = max(0, int(value.get("Arcane", 0) or 0))
+    elemental = max(0, int(value.get("Elemental", 0) or 0))
+    count = arcane + elemental
+    if not count:
+        return None
+    return {"Arcane": arcane, "Elemental": elemental, "count": count}
+
+
+def _blade_charge_type(damage_type: str) -> str:
+    """Collapse damaging spell types into Arcane or Elemental charges."""
+    return (
+        "Elemental"
+        if str(damage_type or "") in _ELEMENTAL_CHARGE_TYPES
+        else "Arcane"
+    )
+
+
+def _blade_charge_capacity(actor: Any) -> int:
+    """Return each typed pool's capacity."""
+    capacity = 1
+    if _has_skill(actor, "Storage Capacity"):
+        capacity += 1
+    if _has_skill(actor, "Storage Capacity II"):
+        capacity += 2
+    return capacity
+
+
+def _blade_charge_resistance(
+    target: Any,
+    actor: Any,
+    charge_type: str,
+) -> float:
+    """Return resistance for one broad charge category."""
+    if target is None:
+        return 0.0
+    if charge_type == "Arcane":
+        return float(target.check_mod("resist", enemy=actor, typ="Arcane"))
+    values = [
+        float(target.check_mod("resist", enemy=actor, typ=element))
+        for element in _ELEMENTAL_RESISTANCE_TYPES
+    ]
+    return sum(values) / len(values)
+
+
+def _release_blade_charge_damage(
+    actor: Any,
+    target: Any,
+    amount: int,
+    charge: dict[str, Any],
+) -> str:
+    """Apply both typed charge pools to one release target."""
+    lines = []
+    for charge_type in ("Arcane", "Elemental"):
+        count = int(charge.get(charge_type, 0) or 0)
+        if count <= 0:
+            continue
+        amplified = _has_skill(actor, f"Amplify {charge_type}")
+        percent = 0.24 if amplified else 0.12
+        raw_damage = int(amount * percent) * count
+        resistance = _blade_charge_resistance(target, actor, charge_type)
+        charge_damage = int(raw_damage * (1.0 - resistance))
+        if target is not None:
+            if charge_damage >= 0:
+                target.health.current = max(
+                    0,
+                    int(target.health.current) - charge_damage,
+                )
+            else:
+                target.health.current = min(
+                    int(target.health.max),
+                    int(target.health.current) + abs(charge_damage),
+                )
+        qualifier = " amplified" if amplified else ""
+        if charge_damage >= 0:
+            lines.append(
+                f"{actor.name}'s {count}{qualifier} {charge_type} blade "
+                f"charge(s) release on {target.name} for {charge_damage} bonus damage.\n"
+            )
+        else:
+            lines.append(
+                f"{target.name} absorbs the {charge_type} blade charge and "
+                f"recovers {abs(charge_damage)} health.\n"
+            )
+    return "".join(lines)
+
+
+def _store_blade_charge(
+    actor: Any,
+    *,
+    charge_type: str = "Arcane",
+    deduplicate: bool = True,
+) -> None:
+    """Store one typed charge, normally at most once per combat action."""
+    state = combat_state(actor)
+    action_token = int(state.get("action_token", 0) or 0)
+    if (
+        deduplicate
+        and action_token > 0
+        and state.get("blade_charge_action_token") == action_token
+    ):
+        return
+    current = _normalized_blade_charge(state.get("blade_charge"))
+    capacity = _blade_charge_capacity(actor)
+    normalized_type = "Elemental" if charge_type == "Elemental" else "Arcane"
+    pools = {
+        "Arcane": current["Arcane"] if current else 0,
+        "Elemental": current["Elemental"] if current else 0,
+    }
+    pools[normalized_type] = min(capacity, pools[normalized_type] + 1)
+    state["blade_charge"] = pools
+    if deduplicate:
+        state["blade_charge_action_token"] = (
+            action_token if action_token > 0 else None
+        )
+    _message(
+        actor,
+        f"{actor.name}'s blade stores {normalized_type} "
+        f"{pools[normalized_type]}/{capacity} "
+        f"(Arcane {pools['Arcane']}, Elemental {pools['Elemental']}).\n",
+    )
+
+
+def _apply_breakdown_stack(actor: Any, target: Any) -> None:
+    """Apply one per-target Breakdown stack after a damaging weapon hit."""
+    if not _has_skill(actor, "Breakdown") or target is None:
+        return
+    stacks = combat_state(actor).setdefault("breakdown_stacks", {})
+    current = _target_stacks(stacks, target)
+    updated = min(5, current + 1)
+    _set_target_stacks(stacks, target, updated)
+    _message(
+        actor,
+        f"Breakdown lowers {target.name}'s Magic Defense ({updated}/5).\n",
+    )
+
+
+def breakdown_magic_defense_penalty(actor: Any, target: Any) -> int:
+    """Return the Magic Defense penalty built by the actor on one target."""
+    if actor is None or target is None or not _has_skill(actor, "Breakdown"):
+        return 0
+    stacks = combat_state(actor).get("breakdown_stacks", {})
+    return 4 * min(5, _target_stacks(stacks, target))
+
+
+def _clear_breakdown_stacks(actor: Any, target: Any) -> None:
+    """Clear Breakdown after a spell deals positive damage to its target."""
+    if target is None:
+        return
+    stacks = combat_state(actor).setdefault("breakdown_stacks", {})
+    count = _target_stacks(stacks, target)
+    if count <= 0:
+        return
+    _set_target_stacks(stacks, target, 0)
+    _message(actor, f"{actor.name}'s spell consumes {count} Breakdown stack(s).\n")
+
+
+def activate_novel_shield(character: Any, capacity: int) -> str:
+    """Refresh a three-turn Novel Shielding absorption pool."""
+    pool = max(0, int(capacity))
+    combat_state(character)["novel_shield"] = {
+        "remaining": pool,
+        "maximum": pool,
+        "turns": 3,
+    }
+    return f"{character.name} raises Novel Shielding with {pool} absorption.\n"
+
+
+def absorb_novel_shield(
+    defender: Any,
+    damage: int,
+    *,
+    source: str,
+) -> tuple[int, str, bool]:
+    """Absorb post-mitigation direct damage with Novel Shielding."""
+    if source not in {"spell", "weapon"}:
+        return max(0, int(damage)), "", False
+    state = combat_state(defender)
+    shield = state.get("novel_shield")
+    incoming = max(0, int(damage))
+    if not isinstance(shield, dict) or incoming <= 0:
+        return incoming, "", False
+    remaining = max(0, int(shield.get("remaining", 0) or 0))
+    turns = max(0, int(shield.get("turns", 0) or 0))
+    if remaining <= 0 or turns <= 0:
+        state["novel_shield"] = None
+        return incoming, "", False
+    absorbed = min(remaining, incoming)
+    shield["remaining"] = remaining - absorbed
+    resulting_damage = incoming - absorbed
+    broken = shield["remaining"] <= 0
+    if broken:
+        state["novel_shield"] = None
+    message = (
+        f"{defender.name}'s Novel Shielding absorbs {absorbed} damage"
+        + (
+            " and shatters.\n"
+            if broken
+            else f" ({shield['remaining']} remains).\n"
+        )
+    )
+    return resulting_damage, message, resulting_damage <= 0
 
 
 def _maybe_preserve(

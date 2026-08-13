@@ -339,6 +339,7 @@ class DungeonExplorationMixin:
         else:
             msg = "Entering the dungeon..."
         self._show_dungeon_loading_screen(msg, duration=1.25)
+        self._suppress_navigation_input(ms=350)
 
         # Initial message
         current_tile = self.get_current_tile()
@@ -389,6 +390,9 @@ class DungeonExplorationMixin:
 
                 elif event.type == pygame.KEYDOWN:
                     self._handle_keypress(event.key)
+
+                elif event.type == pygame.KEYUP:
+                    self._release_navigation_input(event.key)
 
             if self.player_char.in_town():
                 self.running = False

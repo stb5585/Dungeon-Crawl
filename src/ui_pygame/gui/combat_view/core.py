@@ -153,12 +153,19 @@ class CombatViewCoreMixin:
         """Start a brief floating combat result label."""
         if not text:
             return
+        now = pygame.time.get_ticks()
+        stack_index = sum(
+            1
+            for active in self._active_float_texts
+            if active.target == target and now - active.start_ms < 100
+        )
         self._active_float_texts.append(
             FloatingCombatText(
                 target=target,
                 text=str(text),
                 color=color or self.colors["text"],
-                start_ms=pygame.time.get_ticks(),
+                start_ms=now,
+                stack_index=stack_index,
             )
         )
 
@@ -345,7 +352,10 @@ class CombatViewCoreMixin:
             shadow = font.render(text.text, True, (0, 0, 0))
             shadow.set_alpha(max(0, alpha - 50))
             y_offset = int(34 * progress)
-            text_rect = surf.get_rect(center=(rect.centerx, rect.top - 18 - y_offset))
+            stack_y = text.stack_index * 24
+            text_rect = surf.get_rect(
+                center=(rect.centerx, rect.top - 18 - y_offset - stack_y)
+            )
             shadow_rect = shadow.get_rect(center=(text_rect.centerx + 2, text_rect.centery + 2))
             self.screen.blit(shadow, shadow_rect)
             self.screen.blit(surf, text_rect)

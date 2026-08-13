@@ -147,7 +147,7 @@ def test_two_enemy_cards_fit_supported_layout_and_expose_hitboxes(size):
     assert encounter.members[0].display_label == "Goblin A"
 
 
-def test_two_enemy_resource_plates_block_dungeon_geometry():
+def test_two_enemy_target_uses_arrow_without_selection_plate():
     screen = pygame.Surface((1024, 720))
     screen.fill((210, 160, 20))
     view = combat_view.CombatView(screen, SimpleNamespace())
@@ -168,22 +168,35 @@ def test_two_enemy_resource_plates_block_dungeon_geometry():
     )
 
     second_lane = view._enemy_card_rects["second"]
-    plate_sample = (
-        second_lane.centerx,
-        second_lane.top + 50,
-    )
-    assert screen.get_at(plate_sample)[:3] == (18, 18, 24)
-    marker_sample = (second_lane.centerx, second_lane.top + 66)
+    plate_sample = (second_lane.left + 10, second_lane.top + 5)
+    assert screen.get_at(plate_sample)[:3] != (18, 18, 24)
+    target_rect = view._enemy_target_rects["second"]
+    marker_y = max(second_lane.top + 44, target_rect.top - 18)
+    marker_sample = (target_rect.centerx, marker_y + 4)
     assert screen.get_at(marker_sample)[:3] == view.colors["panel_accent"]
 
 
-def test_hidden_enemy_health_uses_approved_approximate_bands():
-    enemy = SimpleNamespace(health=SimpleNamespace(current=90, max=100))
-    assert combat_view.CombatView._approximate_health_label(enemy) == "Healthy"
-    enemy.health.current = 50
-    assert combat_view.CombatView._approximate_health_label(enemy) == "Wounded"
-    enemy.health.current = 20
-    assert combat_view.CombatView._approximate_health_label(enemy) == "Critical"
+def test_polymorph_animator_paces_within_its_randomized_span():
+    animator = combat_view.SpriteAnimator()
+    offsets = []
+    for _ in range(220):
+        animator.update()
+        offsets.append(animator.confused_pace_offset())
+
+    assert min(offsets) < 0 < max(offsets)
+    assert max(abs(offset) for offset in offsets) <= animator.pace_span
+
+
+def test_polymorphed_boss_uses_small_bunny_combat_box():
+    view = combat_view.CombatView(pygame.Surface((1024, 720)), SimpleNamespace())
+    enemy = SimpleNamespace(
+        name="Minotaur",
+        status_effects={"Polymorph": SimpleNamespace(active=True)},
+    )
+
+    assert view._is_boss_enemy(enemy)
+    assert view._enemy_combat_sprite_size(enemy) == (107, 107)
+    assert view._enemy_dungeon_combat_sprite_size(enemy) == (134, 134)
 
 
 def test_resolved_enemy_lane_disappears_without_shifting_survivor():
@@ -809,14 +822,14 @@ def test_class_kit_log_filter_keeps_required_failure_messages():
     view.add_combat_message("Death Mark is immune to execution and downgrades to pressure.")
     view.add_combat_message("Threaded Cast is immune to the negated rider.")
     view.add_combat_message("Class Ring resists the failed payoff and Ring Preserve remains ready.")
-    view.add_combat_message("Arcane Tempo fails to trigger because the blade charge was lost.")
+    view.add_combat_message("Spellbind fails because the blade charge was lost.")
     view.add_combat_message("Summon Bond: Patagon bond holds steady after a low-XP victory.")
     view.add_combat_message("Scavenger's Eye spots ordinary loot: Iron Dagger.")
 
     assert "Death Mark is immune to execution and downgrades to pressure." in view.combat_log
     assert "Threaded Cast is immune to the negated rider." in view.combat_log
     assert "Class Ring resists the failed payoff and Ring Preserve remains ready." in view.combat_log
-    assert "Arcane Tempo fails to trigger because the blade charge was lost." in view.combat_log
+    assert "Spellbind fails because the blade charge was lost." in view.combat_log
     assert "Summon Bond: Patagon bond holds steady after a low-XP victory." in view.combat_log
     assert "Scavenger's Eye spots ordinary loot: Iron Dagger." in view.combat_log
 
@@ -1405,7 +1418,16 @@ def test_ability_status_visuals_draw_shield_and_rising_smoke_without_duplicate_o
     view._last_player_target_rect = pygame.Rect(30, 320, 220, 110)
     view._render_ability_status_visuals(character, "player")
 
-    assert not rect_calls
+    shield_blits = [
+        (surface, position)
+        for surface, position, _args, _kwargs in view.screen.blit_calls[blit_count:]
+        if position == (10, 170)
+    ]
+    assert any(
+        surface.get_width() >= view.combat_width - 24
+        and surface.get_height() <= view.combat_height - 320
+        for surface, _position in shield_blits
+    )
     assert ellipse_calls
     assert circle_calls
     assert len(view.screen.blit_calls) > blit_count

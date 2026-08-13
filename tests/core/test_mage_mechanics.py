@@ -7,6 +7,11 @@ from types import SimpleNamespace
 import pytest
 
 from src.core import abilities, enemies
+from src.core.abilities.descriptions import (
+    ability_modifications,
+    composed_description,
+    presented_abilities,
+)
 from src.core.character import Resource
 from src.core.classes import mage_mechanics, wizard
 from src.core.progression import ProgressionState
@@ -45,7 +50,7 @@ def test_specialization_nerfs_only_the_competing_school():
     elemental = _player()
     elemental.spellbook["Skills"]["Classical Force"] = abilities.ClassicalForce()
     arcane = _player()
-    arcane.spellbook["Skills"]["Esotericism"] = abilities.Esotericism()
+    arcane.spellbook["Skills"]["Arcane Tradition"] = abilities.ArcaneTradition()
 
     assert mage_mechanics.spell_potency_multiplier(
         elemental, abilities.MagicMissile()
@@ -174,7 +179,7 @@ def test_torchlight_halves_encounter_rate_for_fifty_steps():
 
 def test_arcane_specialization_tracks_arcane_affinity_only():
     player = _player("Sorcerer")
-    player.spellbook["Skills"]["Esotericism"] = abilities.Esotericism()
+    player.spellbook["Skills"]["Arcane Tradition"] = abilities.ArcaneTradition()
 
     wizard.process_cast(player, abilities.Firebolt())
     wizard.process_cast(player, abilities.MagicMissile())
@@ -212,6 +217,9 @@ def test_polymorph_controls_for_two_turns_and_inflate_health_absorbs_damage():
     assert target.status_effects["Polymorph"].active
     assert target.status_effects["Polymorph"].duration == 2
     assert target.incapacitated()
+    active, reason = target.check_active()
+    assert not active
+    assert "polymorphed" in reason
 
     abilities.InflateHealth().cast(target)
     temporary_hp = target.temporary_health["amount"]
@@ -223,6 +231,22 @@ def test_polymorph_controls_for_two_turns_and_inflate_health_absorbs_damage():
     assert "inflated health absorbs" in message
     assert remaining > 0
     assert target.temporary_health is None
+
+
+def test_bosses_strongly_resist_polymorph_without_immunity(monkeypatch):
+    caster = _player()
+    boss = enemies.Minotaur()
+    spell = abilities.Polymorph()
+    mana_before = caster.mana.current
+
+    monkeypatch.setattr("src.core.abilities.mage.random.random", lambda: 0.99)
+    assert spell.cast(caster, boss) == "Minotaur resists the polymorph.\n"
+    assert not boss.status_effects["Polymorph"].active
+    assert caster.mana.current == mana_before - spell.cost
+
+    monkeypatch.setattr("src.core.abilities.mage.random.random", lambda: 0.05)
+    assert "transformed into a harmless bunny" in spell.cast(caster, boss)
+    assert boss.status_effects["Polymorph"].active
 
 
 def test_enliven_dead_uses_last_nonboss_enemy_and_forbidden_studies(monkeypatch):
@@ -329,3 +353,32 @@ def test_classical_force_halves_mana_shield_and_imbue_weapon_bonus(monkeypatch):
     defender.stats.intel = 30
     abilities.ImbueWeapon().use(defender, attacker)
     assert recorded["dmg_mod"] == pytest.approx(1.5)
+
+
+def test_school_modifiers_are_separate_from_spell_descriptions_and_support_multiple():
+    player = _player()
+    firebolt = abilities.Firebolt()
+    player.spellbook["Spells"][firebolt.name] = firebolt
+    player.spellbook["Skills"]["Fire Inside"] = abilities.FireInside()
+    focused_flame = SimpleNamespace(
+        name="Focused Flame",
+        description="Firebolt gains a second focused modifier.",
+        presentation_modifier=True,
+        modifies_abilities=("Firebolt",),
+    )
+    player.spellbook["Skills"][focused_flame.name] = focused_flame
+
+    description = composed_description(player, firebolt)
+    modifications = ability_modifications(player, firebolt)
+    presented_firebolt = presented_abilities(player, "Spells")[0]
+    skill_names = [ability.name for ability in presented_abilities(player, "Skills")]
+
+    assert description == firebolt.description
+    assert "Fire Inside" not in description
+    assert [modifier.name for modifier in modifications] == [
+        "Fire Inside",
+        "Focused Flame",
+    ]
+    assert presented_firebolt.presentation_modifications == modifications
+    assert "Fire Inside" not in skill_names
+    assert "Focused Flame" not in skill_names

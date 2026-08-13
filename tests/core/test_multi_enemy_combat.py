@@ -259,6 +259,43 @@ def test_earthquake_resolves_each_enemy_for_one_mana_cost():
     assert all(enemy.health.current < enemy.health.max for enemy in enemies)
 
 
+def test_shield_ricochet_resolves_as_an_all_enemy_skill(monkeypatch):
+    engine, player, enemies, _tile = _engine()
+    player.cls.name = "Crusader"
+    player.equipment["OffHand"] = items.KiteShield()
+    player.spellbook["Skills"]["Shield Ricochet"] = (
+        abilities.ShieldRicochet()
+    )
+    for enemy in enemies:
+        monkeypatch.setattr(
+            enemy,
+            "handle_defenses",
+            lambda _attacker, damage, _cover=False, typ="Physical": (
+                True,
+                "",
+                damage,
+            ),
+        )
+        monkeypatch.setattr(
+            enemy,
+            "damage_reduction",
+            lambda damage, _attacker, typ="Physical": (True, "", damage),
+        )
+    engine.start_battle()
+
+    result = engine.execute_intent(
+        ActionIntent("Use Skill", "Shield Ricochet")
+    )
+
+    assert player.mana.current == 84
+    assert result.combat_results.target_scope == TargetScope.ALL_ENEMIES
+    assert [portion.target_id for portion in result.combat_results.results] == [
+        "enemy-a",
+        "enemy-b",
+    ]
+    assert all(portion.damage > 0 for portion in result.combat_results.results)
+
+
 def test_earthquake_includes_flying_enemy_as_explicit_no_effect():
     engine, player, enemies, _tile = _engine()
     player.spellbook["Spells"]["Earthquake"] = abilities.Earthquake()

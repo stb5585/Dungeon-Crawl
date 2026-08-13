@@ -42,8 +42,6 @@ class ShopScreen(TownScreenBase):
         self._itemdict_source = {}
         self.item_render_manager = get_item_render_manager()
         self.location_portrait_name: str | None = None
-        self.location_note: str = ""
-        self.location_note_title: str = ""
         self.price_multiplier = 1.0
         self.ignore_rarity_filter = False
 
@@ -85,10 +83,24 @@ class ShopScreen(TownScreenBase):
         """Set a persistent shopkeeper portrait for the main shop menu."""
         self.location_portrait_name = npc_name
 
-    def display_quest_text(self, text: str, *, title: str = "") -> None:
-        """Show location guidance in the shop description panel."""
-        self.location_note = text
-        self.location_note_title = title
+    def display_quest_text(
+        self,
+        text: str,
+        *,
+        title: str = "",
+        npc_name: str | None = None,
+    ) -> None:
+        """Show blocking quest dialogue using the shared town presentation."""
+        speaker = npc_name or title or self.location_portrait_name
+        dialogue = str(text)
+        first_line = dialogue.split("\n", 1)[0].strip()
+        has_header = (
+            (first_line.startswith("======") and first_line.endswith("======"))
+            or first_line.startswith(("Quest: ", "Quest Complete: "))
+        )
+        if title and not has_header:
+            dialogue = f"====== {title} ======\n{dialogue}"
+        super().display_quest_text(dialogue, npc_name=speaker)
 
     def option_rects(self) -> list[pygame.Rect]:
         """Return clickable rectangles for the main shop option rows."""
@@ -217,26 +229,6 @@ class ShopScreen(TownScreenBase):
         self.draw_semi_transparent_panel(self.desc_rect)
         pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, self.desc_rect, 2)
 
-        if not self.is_item_browsing() and self.location_note:
-            text_left = self.desc_rect.left + 18
-            text_width = self.desc_rect.width - 36
-            y = self.desc_rect.top + 18
-            if self.location_note_title:
-                title = self.normal_font.render(self.location_note_title, True, self.colors.GOLD)
-                self.screen.blit(title, (text_left, y))
-                y += title.get_height() + 10
-            wrap_width = max(24, text_width // 8)
-            line_height = self.normal_font.get_height() + 4
-            for paragraph in self.location_note.splitlines():
-                if not paragraph.strip():
-                    y += line_height // 2
-                    continue
-                for line in wrap(paragraph, wrap_width, break_on_hyphens=False):
-                    text = self.normal_font.render(line, True, self.colors.WHITE)
-                    self.screen.blit(text, (text_left, y))
-                    y += line_height
-            return
-        
         if self.item_list and 0 <= self.current_item < len(self.item_list):
             display_str, item, _, _ = self.item_list[self.current_item]
             
@@ -515,8 +507,6 @@ class ShopScreen(TownScreenBase):
             self.draw_item_desc()
             self.draw_mod()
             self.draw_gold()
-        elif self.location_note:
-            self.draw_item_desc()
         if do_flip:
             pygame.display.flip()
 

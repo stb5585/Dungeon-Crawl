@@ -82,6 +82,12 @@ class CharacterUtilityMixin:
 
         if mod == 'weapon':
             weapon_mod = (self.equipment['Weapon'].damage * int(not self.is_disarmed()))
+            try:
+                from ..classes import mage_mechanics
+
+                weapon_mod += mage_mechanics.enhance_blade_bonus(self)
+            except Exception:
+                pass
             weapon_mod += self.stat_effects["Attack"].extra * self.stat_effects["Attack"].active
             total_mod = (weapon_mod + class_mod + self.combat.attack) * disarm_damage_multiplier
             offense_multiplier = float(getattr(self, "_encounter_offense_multiplier", 1.0))
@@ -110,6 +116,12 @@ class CharacterUtilityMixin:
                 return 0
         if mod == 'armor':
             armor_mod = self.equipment['Armor'].armor
+            try:
+                from ..classes import mage_mechanics
+
+                armor_mod += mage_mechanics.enhance_armor_bonus(self)
+            except Exception:
+                pass
             if self.turtle:
                 class_mod += 99
             armor_mod += self.stat_effects["Defense"].extra * self.stat_effects["Defense"].active
@@ -135,6 +147,15 @@ class CharacterUtilityMixin:
                 class_mod += 99
             m_def_mod += self.stat_effects["Magic Defense"].extra * self.stat_effects["Magic Defense"].active
             total_magic_def = m_def_mod + class_mod + self.combat.magic_def
+            try:
+                from ..classes import promotion_kits
+
+                total_magic_def -= promotion_kits.breakdown_magic_defense_penalty(
+                    enemy,
+                    self,
+                )
+            except Exception:
+                pass
             try:
                 from src.core.classes import nature_totems
 

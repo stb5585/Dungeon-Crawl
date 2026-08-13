@@ -58,7 +58,10 @@ class DataDrivenMagicMissileSpell(Spell):
         fam: bool = False,
         **_kwargs: Any,
     ) -> str:
+        result = self._reset_result(actor=caster, target=target)
         cast_message = ""
+        damage_instances: list[int] = []
+        highest_crit = 1
 
         # ── 1. Mana cost (free with Wizard Power Up) ────────────────
         if not (
@@ -73,7 +76,8 @@ class DataDrivenMagicMissileSpell(Spell):
 
         # ── 2. Immunity check ───────────────────────────────────────
         if any([target.magic_effects["Ice Block"].active, target.tunnel]):
-            return "It has no effect.\n"
+            result.message = "It has no effect.\n"
+            return result.message
 
         spell_mod = caster.check_mod("magic", enemy=target)
         fire_inside_bonus = 0.0
@@ -210,12 +214,31 @@ class DataDrivenMagicMissileSpell(Spell):
                             damage_msg += " (Critical hit!)"
                         cast_message += damage_msg + ".\n"
 
+                    try:
+                        from src.core.classes import promotion_kits
+
+                        damage, shield_message, _fully_absorbed = (
+                            promotion_kits.absorb_novel_shield(
+                                target,
+                                damage,
+                                source="spell",
+                            )
+                        )
+                        cast_message += shield_message
+                    except Exception:
+                        pass
                     target.health.current -= damage
+                    if damage > 0:
+                        damage_instances.append(int(damage))
+                        highest_crit = max(highest_crit, crit)
                     caster._emit_damage_event(
                         target,
                         damage,
                         damage_type=self.subtyp,
                         is_critical=(crit > 1),
+                        ability_name=self.name,
+                        attack_source="spell",
+                        source="spell",
                     )
                     if not target.is_alive():
                         break
@@ -244,4 +267,9 @@ class DataDrivenMagicMissileSpell(Spell):
                 cast_message += f"{target.name} uses Counterspell.\n"
                 cast_message += Counterspell().use(target, target=caster)
 
+        result.hit = any(hits)
+        result.crit = highest_crit if highest_crit > 1 else None
+        result.damage = sum(damage_instances)
+        result.extra["damage_instances"] = damage_instances
+        result.message = cast_message
         return cast_message

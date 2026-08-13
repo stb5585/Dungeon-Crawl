@@ -137,8 +137,9 @@ actions, and non-damaging actions must not play hit/spell particle effects.
     - Hurricane
     - Tornado
 - Existing Ability Effects
-  - Player Mana Shield effect should be removed; new effect should cover screen with
-    blue hue that "vibrates" between blue and purple on a hit
+  - Player Mana Shield effect should cover the visible battlefield between the
+    combat log and action menu with a blue hue that "vibrates" between blue and
+    purple on a hit.
 
 ### Jump And Charge Visuals
 

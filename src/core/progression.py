@@ -48,6 +48,7 @@ from .progression_manifest import (
     CRUSADER_TREE_NODE_SPECS,
     GRANDMASTER_TREE_NODE_SPECS,
     LANCER_TREE_NODE_SPECS,
+    KNIGHT_ENCHANTER_TREE_NODE_SPECS,
     MAGE_CARRIED_NODE_IDS,
     MAGE_CARRIED_NODE_POSITIONS,
     MAGE_PROMOTION_SPECS,
@@ -57,6 +58,7 @@ from .progression_manifest import (
     PROMOTED_TREE_PROMOTION_PATHS,
     SECOND_PROMOTION_STAT_REQUIREMENT_OVERRIDES,
     SENTINEL_TREE_NODE_SPECS,
+    SPELLBLADE_TREE_NODE_SPECS,
     STAGE_SIZE_RANGES,
     STALWART_DEFENDER_TREE_NODE_SPECS,
     TALENT_KIT_EFFECTS,
@@ -1038,6 +1040,7 @@ def _build_weapon_master_tree() -> AbilityTree:
                 for prerequisite in spec.get("prerequisites", ())
             ),
             payload=payload,
+            cost=int(spec.get("cost", 1)),
         ))
 
     promotions = (
@@ -1140,6 +1143,7 @@ def _build_terminal_weapon_tree(
             payload["level_requirement"] = int(spec["level"])
         for key in (
             "available_on_promotion",
+            "level_band_gate",
             "owned_if_known",
             "weapon_specialization",
         ):
@@ -1157,6 +1161,7 @@ def _build_terminal_weapon_tree(
                 for prerequisite in spec.get("prerequisites", ())
             ),
             payload=payload,
+            cost=int(spec.get("cost", 1)),
         ))
 
     return AbilityTree(
@@ -1256,6 +1261,7 @@ def _build_lancer_dragoon_tree(
             payload["level_requirement"] = int(spec["level"])
         for key in (
             "available_on_promotion",
+            "level_band_gate",
             "owned_if_known",
             "requires_known_ability",
         ):
@@ -1273,6 +1279,7 @@ def _build_lancer_dragoon_tree(
                 for prerequisite in spec.get("prerequisites", ())
             ),
             payload=payload,
+            cost=int(spec.get("cost", 1)),
         ))
 
     stage = 2 if class_name == "Lancer" else 3
@@ -1282,15 +1289,23 @@ def _build_lancer_dragoon_tree(
             tree_id=class_name,
             kind=NodeKind.PROMOTION,
             lane="Jump Core",
-            position=(1, 6),
+            position=(3, 7),
             icon_key="promotion",
-            prerequisites=("lancer.rating.attack-1",),
+            prerequisites=(
+                "lancer.ability.vigilant-landing",
+                "lancer.ability.polearm-excellence",
+            ),
             payload={
                 "name": "Promote: Dragoon",
                 "target_class": "Dragoon",
                 "target_class_ctor": CLASS_DETAILS["Dragoon"][0],
                 "requirements": _promotion_requirements("Dragoon", 3),
                 "level_requirement": 60,
+                "connector_enter_from_top": True,
+                "connector_channel_columns": {
+                    "lancer.ability.vigilant-landing": 1,
+                    "lancer.ability.polearm-excellence": 4,
+                },
             },
             cost=3,
         ))
@@ -1407,6 +1422,7 @@ def _build_authored_kit_tree(
         for key in (
             "available_on_promotion",
             "exclusive_group",
+            "level_band_gate",
             "owned_if_known",
             "prerequisite_mode",
             "requires_known_ability",
@@ -1425,6 +1441,7 @@ def _build_authored_kit_tree(
                 for prerequisite in spec.get("prerequisites", ())
             ),
             payload=payload,
+            cost=int(spec.get("cost", 1)),
         ))
 
     if promotion_target:
@@ -1622,6 +1639,7 @@ def _build_thaumaturgist_tree() -> AbilityTree:
                 "on the caster."
             ),
         },
+        cost=2,
     ))
     previous_id = None
     for row, (identifier, level) in enumerate((
@@ -1647,6 +1665,7 @@ def _build_thaumaturgist_tree() -> AbilityTree:
                 "description": getattr(ability, "description", ""),
                 "level_requirement": level,
             },
+            cost=2,
         ))
         previous_id = node_id
     return AbilityTree(
@@ -1693,11 +1712,15 @@ def _build_authored_tree(class_name: str) -> AbilityTree:
             class_name,
             SENTINEL_TREE_NODE_SPECS,
             promotion_target="Stalwart Defender",
-            promotion_position=(1, 6),
+            promotion_position=(2, 8),
             promotion_prerequisites=(
                 "watchful-reprisal",
                 "resolute-guard",
+                "shielding-ward",
+                "braggadocious",
             ),
+            promotion_prerequisite_mode="any",
+            promotion_connector_join_at_target_row=True,
         )
     if class_name == "Stalwart Defender":
         return _build_authored_kit_tree(
@@ -1721,6 +1744,25 @@ def _build_authored_tree(class_name: str) -> AbilityTree:
         return _build_authored_kit_tree(
             class_name,
             CRUSADER_TREE_NODE_SPECS,
+        )
+    if class_name == "Spellblade":
+        return _build_authored_kit_tree(
+            class_name,
+            SPELLBLADE_TREE_NODE_SPECS,
+            promotion_target="Knight Enchanter",
+            promotion_position=(1.5, 7),
+            promotion_prerequisites=(
+                "enhance-blade",
+                "enhance-armor",
+                "storage-capacity",
+            ),
+            promotion_prerequisite_mode="any",
+            promotion_connector_join_at_target_row=True,
+        )
+    if class_name == "Knight Enchanter":
+        return _build_authored_kit_tree(
+            class_name,
+            KNIGHT_ENCHANTER_TREE_NODE_SPECS,
         )
     if class_name == "Conjurer":
         return _build_authored_kit_tree(
@@ -1757,6 +1799,25 @@ def _build_authored_tree(class_name: str) -> AbilityTree:
             prerequisites = ()
         row = len(lane_nodes[lane])
         level_requirement = _development_level_requirement(stage, row)
+        payload = {
+            "name": ABILITY_NODE_NAME_OVERRIDES.get(
+                ability_ctor.__name__,
+                ability.name,
+            ),
+            "book": book,
+            "ability_class": ability_ctor,
+            "description": getattr(ability, "description", ""),
+            **(
+                {"level_requirement": level_requirement}
+                if level_requirement
+                else {}
+            ),
+        }
+        if (
+            class_name == "Knight Enchanter"
+            and ability.name in {"Mana Tap", "Enhance Armor"}
+        ):
+            payload["owned_if_known"] = True
         node = AbilityTreeNode(
             id=node_id,
             tree_id=class_name,
@@ -1765,20 +1826,7 @@ def _build_authored_tree(class_name: str) -> AbilityTree:
             position=(branches.index(lane), row),
             icon_key=_ability_icon_key(book, ability),
             prerequisites=prerequisites,
-            payload={
-                "name": ABILITY_NODE_NAME_OVERRIDES.get(
-                    ability_ctor.__name__,
-                    ability.name,
-                ),
-                "book": book,
-                "ability_class": ability_ctor,
-                "description": getattr(ability, "description", ""),
-                **(
-                    {"level_requirement": level_requirement}
-                    if level_requirement
-                    else {}
-                ),
-            },
+            payload=payload,
         )
         lane_nodes[lane].append(node)
         all_nodes.append(node)
@@ -2014,6 +2062,7 @@ def _remove_numeric_node_level_gates(tree: AbilityTree) -> AbilityTree:
         if (
             node.kind in {NodeKind.RATING, NodeKind.HEALTH, NodeKind.MANA}
             and "level_requirement" in node.payload
+            and not node.payload.get("level_band_gate")
         ):
             payload = dict(node.payload)
             payload.pop("level_requirement", None)
@@ -2246,7 +2295,11 @@ def validate_trees() -> tuple[str, ...]:
                     or bool(node.payload.get("owned_if_known"))
                     or bool(node.payload.get("weapon_specialization"))
                 )
-                if node.kind == NodeKind.RATING and required_level:
+                if (
+                    node.kind == NodeKind.RATING
+                    and required_level
+                    and not node.payload.get("level_band_gate")
+                ):
                     errors.append(
                         f"{node.id}: rating node must not have a level gate"
                     )
@@ -2366,6 +2419,7 @@ def _adopt_known_ability_nodes(player: Any, state: ProgressionState) -> None:
             abilities.CitadelAegis,
             abilities.IronwallReprisal,
             abilities.LastBastionSurge,
+            abilities.Stronghold,
         ):
             ability = ability_ctor()
             player.spellbook.setdefault("Skills", {}).setdefault(
@@ -2638,8 +2692,28 @@ def _node_blockers(
         noun = "point" if node.cost == 1 else "points"
         blockers.append(f"Requires {node.cost} {noun}.")
     prerequisite_mode = node.payload.get("prerequisite_mode", "all")
+
+    def prerequisite_path_satisfied(node_id: str, visiting: set[str]) -> bool:
+        """Require an unbroken purchased path through inherited nodes."""
+        if node_id not in purchased or node_id in visiting:
+            return False
+        prerequisite_node = TREE_NODES[node_id]
+        if not prerequisite_node.prerequisites:
+            return True
+        next_visiting = {*visiting, node_id}
+        satisfied = [
+            prerequisite_path_satisfied(prerequisite, next_visiting)
+            for prerequisite in prerequisite_node.prerequisites
+        ]
+        if prerequisite_node.payload.get("prerequisite_mode", "all") == "any":
+            return any(satisfied)
+        return all(satisfied)
+
     if prerequisite_mode == "any" and node.prerequisites:
-        if not any(prerequisite in purchased for prerequisite in node.prerequisites):
+        if not any(
+            prerequisite_path_satisfied(prerequisite, set())
+            for prerequisite in node.prerequisites
+        ):
             names = " or ".join(
                 TREE_NODES[prerequisite].name
                 for prerequisite in node.prerequisites
@@ -2647,7 +2721,7 @@ def _node_blockers(
             blockers.append(f"Requires {names}.")
     else:
         for prerequisite in node.prerequisites:
-            if prerequisite not in purchased:
+            if not prerequisite_path_satisfied(prerequisite, set()):
                 blockers.append(f"Requires {TREE_NODES[prerequisite].name}.")
     required_level = effective_node_level_requirement(
         node,
@@ -3132,6 +3206,7 @@ def _apply_promotion(
             abilities.CitadelAegis,
             abilities.IronwallReprisal,
             abilities.LastBastionSurge,
+            abilities.Stronghold,
         ):
             ability = ability_ctor()
             player.spellbook["Skills"][ability.name] = ability

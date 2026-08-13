@@ -98,6 +98,8 @@ class DynamicEffectFactoryMixin:
             scaling_divisor=data.get('scaling_divisor', 10),
             amount_divisor=data.get('amount_divisor', 10),
             duration_min=data.get('duration_min', 3),
+            percentage=data.get('percentage'),
+            duration=data.get('duration'),
         )
 
     @staticmethod

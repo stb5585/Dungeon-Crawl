@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import random
 from typing import Any
 
 from .state import _ring_awakened_equipped, class_name, combat_state
@@ -68,7 +69,68 @@ def record_clean_jump_landing(
             f"Aerial Supremacy forms a {shield}-point Landing Shield around "
             f"{character.name}.\n"
         )
+    if "Vigilant Landing" in getattr(character, "spellbook", {}).get("Skills", {}):
+        chance = min(0.85, 0.15 + int(character.stats.dex) / 100)
+        if random.random() < chance:
+            character.enter_defensive_stance(duration=2)
+            message += f"{character.name} lands in a vigilant defensive stance.\n"
     return message
+
+
+def critical_vigor(character: Any) -> str:
+    """Attempt Critical Vigor healing after a critical weapon hit."""
+    if "Critical Vigor" not in getattr(character, "spellbook", {}).get("Skills", {}):
+        return ""
+    chance = min(0.75, 0.10 + int(character.stats.dex) / 100)
+    if random.random() >= chance:
+        return ""
+    healing = max(1, int(character.health.max * 0.05))
+    healing = min(healing, character.health.max - character.health.current)
+    character.health.current += healing
+    if healing <= 0:
+        return ""
+    character._emit_healing_event(healing, source="Critical Vigor")
+    return f"Critical Vigor restores {healing} HP to {character.name}.\n"
+
+
+def try_dragon_soul(character: Any) -> str:
+    """Attempt to survive lethal damage and request the next combat turn."""
+    if character.health.current > 0:
+        return ""
+    skills = getattr(character, "spellbook", {}).get("Skills", {})
+    if "Dragon Soul" not in skills:
+        return ""
+    state = combat_state(character)
+    if state.get("dragon_soul_used"):
+        return ""
+    improved = "Dragonheart" in skills
+    chance = min(0.90, 0.20 + int(character.stats.dex) / 100 + (0.25 if improved else 0))
+    if random.random() >= chance:
+        return ""
+    state["dragon_soul_used"] = True
+    state["dragon_soul_immediate_turn"] = True
+    character.health.current = (
+        max(1, int(character.health.max * 0.25)) if improved else 1
+    )
+    return (
+        f"{character.name}'s {'Dragonheart' if improved else 'Dragon Soul'} "
+        f"stabilizes them at {character.health.current} HP and seizes the next turn.\n"
+    )
+
+
+def phalanx_reduction(character: Any, damage: int) -> tuple[int, str]:
+    """Reduce weapon damage while trained and holding a main-hand polearm."""
+    if (
+        damage <= 0
+        or "Phalanx" not in getattr(character, "spellbook", {}).get("Skills", {})
+        or getattr(character.equipment.get("Weapon"), "subtyp", None) != "Polearm"
+    ):
+        return damage, ""
+    reduced = max(1, int(damage * 0.10))
+    return (
+        max(0, damage - reduced),
+        f"{character.name}'s Phalanx stance reduces damage by {reduced}.\n",
+    )
 
 
 def _eligible_aerial_action(

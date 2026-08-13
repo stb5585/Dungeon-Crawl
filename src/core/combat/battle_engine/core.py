@@ -63,6 +63,7 @@ class BattleEngine(BattleTurnMixin, BattleActionMixin, BattleOutcomeMixin):
             assert enemy is not None
             encounter = CombatEncounter.singleton(enemy)
         self.encounter: CombatEncounter = encounter
+        self.player._combat_encounter = encounter
         self.tile: Any = tile
         self.game: Any = game
         self.logger: BattleLogger = logger if logger else BattleLogger()
