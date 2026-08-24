@@ -24,7 +24,7 @@ text{font-family:DejaVu Sans,Arial,sans-serif}
 <rect x="264.0" y="92.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
 <text class="name" x="274.0" y="116.0">Vulcanize</text>
 <text class="detail" x="274.0" y="137.0">Ability · Cost 1 · Level 65</text>
-<rect x="264.0" y="192.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<rect x="264.0" y="192.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
 <text class="name" x="274.0" y="216.0">Learn Spell</text>
 <text class="detail" x="274.0" y="237.0">Ability · Cost 1 · Level 70</text>
 <rect x="42.0" y="92.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
@@ -51,10 +51,10 @@ text{font-family:DejaVu Sans,Arial,sans-serif}
 <rect x="42.0" y="492.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
 <text class="name" x="52.0" y="516.0">Rewind</text>
 <text class="detail" x="52.0" y="537.0">Ability · Cost 1 · Level 85</text>
-<rect x="42.0" y="592.0" width="188" height="62" rx="8" fill="#30254a" stroke="#ae84e8" stroke-width="2"/>
+<rect x="42.0" y="592.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
 <text class="name" x="52.0" y="616.0">Threaded Fate</text>
 <text class="detail" x="52.0" y="637.0">Talent · Cost 1 · Level 90</text>
-<rect x="264.0" y="592.0" width="188" height="62" rx="8" fill="#30254a" stroke="#ae84e8" stroke-width="2"/>
+<rect x="264.0" y="592.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
 <text class="name" x="274.0" y="616.0">Celestial Shelter</text>
 <text class="detail" x="274.0" y="637.0">Talent · Cost 1 · Level 90</text>
 </svg>

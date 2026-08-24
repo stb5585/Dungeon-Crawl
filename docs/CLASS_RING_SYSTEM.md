@@ -467,8 +467,8 @@ additional visual presentation, and playtest follow-up.
     down by 0.2.
     Opposites are `Fire`/`Ice`, `Water`/`Electric`, and `Earth`/`Wind`.
     Matching affinity grants +1% matching spell damage per full 10 affinity.
-  - Sorcerer unlocks the matching tier-2 elemental or Arcane spell upgrade at
-    30 affinity and mastery support at 50. Wizard unlocks tier-3 upgrades at
+  - Sorcerer can purchase the matching tier-2 elemental or Arcane spell upgrade at
+    30 affinity and gains mastery support at 50. Wizard unlocks tier-3 upgrades at
     80 and final mastery at 100.
   - Awakened, equipped Wizard Class Ring raises matching affinity gain to +3 and
     enables final-mastery 3-stack school buffs on matching casts.
@@ -477,9 +477,9 @@ additional visual presentation, and playtest follow-up.
 - `Shadowcaster`: `Debt Cap Trial` awakens `Umbral Debt`. Shadow damage stores
   healing reserve, while overcapping creates backlash.
   - The promotion-kit V1 pass makes Umbral Debt a baseline Shadowcaster reserve
-    and adds `Eclipse` as a debt-spending shadow form. The awakened, equipped
+    and adds `Shade of Ahool` as a debt-spending shadow form. The awakened, equipped
     Class Ring raises the debt cap, preserves low-HP auto-healing, and reduces
-    Eclipse backlash conversion.
+    Shade of Ahool backlash conversion.
   - Status: playable in the Church when a dormant Shadowcaster Class Ring is
     equipped or stored.
 - `Knight Enchanter`: `Arcane Duel` awakens `Weave Memory`, preserving the

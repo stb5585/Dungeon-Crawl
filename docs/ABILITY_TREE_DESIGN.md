@@ -19,11 +19,12 @@ Development nodes cost one point unless an authored advanced terminal talent
 explicitly costs two. First promotions cost two points and second promotions
 cost three. Rating nodes scale with their tree tier: base trees
 grant `+10`, first-promotion trees grant `+20`, and terminal trees grant `+30`.
-HP and MP nodes likewise scale by tier at `+25`, `+50`, and `+100`. Named
-talents grant the full rating amount for their tier for every rating they
-increase, in addition to their class-specific effect, without appearing in the
-spellbook. Active and passive ability nodes still instantiate the canonical
-ability class.
+HP and MP nodes likewise scale by tier at `+25`, `+50`, and `+100`. These plain
+rating and resource nodes are the only nodes that grant fixed stat amounts.
+Named custom talents instead increase their affected ratings by `10%`, `20%`,
+or `30%` according to tree tier, in addition to their class-specific effect,
+without appearing in the spellbook. Active and passive ability nodes still
+instantiate the canonical ability class.
 
 Ability milestones are global for gated abilities and talents. Rating nodes
 are normally path-gated rather than level-gated; Spellblade's level-band rows
@@ -114,13 +115,13 @@ or stat requirements differ.
     Strike -> +20 Attack -> Tempered Conviction -> True Strike` in column 0;
     its right branch is `Smite -> Repel the Wicked -> +20 Magic -> Hallowed
     Ground` in column 2. Repel the Wicked is level 40, Tempered Conviction
-    level 45, and Hallowed Ground level 55. Tempered Conviction grants `+20
+    level 45, and Hallowed Ground level 55. Tempered Conviction grants `+20%
     Defense` and one Conviction capacity.
   - Ungated Oath's Shelter begins at `(4, 0)`. Its left branch is `Heal -> +50
     MP -> Resist Shadow -> Sworn Purpose -> Blessed Light` in column 3.
     Resist Shadow is level 45 and cannot be purchased without the preceding
     Shelter-path nodes. Sworn Purpose is level
-    50 and grants both `+20 Magic` and `+20 Magic
+    50 and grants both `+20% Magic` and `+20% Magic
     Defense`. Blessed Light makes a successful healing-spell cast in combat
     grant `+10 Attack` for three turns, refreshing without stacking.
   - Its right branch begins with ungated Bless at `(5, 1)`. Bless connects to
@@ -163,8 +164,8 @@ or stat requirements differ.
     -> Grounded Landing`), middle progression (`+20 Attack` directly below
     Jump plus `+20 Defense -> Vigilant Landing (45)`), and offensive modifiers (`Aerial Footwork -> Quick
     Dive -> Thrust -> Rend`). Acrobat unlocks at level 40, Thrust at level 45,
-    and Rend at level 50. Aerial Footwork grants `+20 Attack` and one Aerial
-    Tempo capacity; Grounded Landing grants `+20 Defense` and 10% final
+    and Rend at level 50. Aerial Footwork grants `+20% Attack` and one Aerial
+    Tempo capacity; Grounded Landing grants `+20% Defense` and 10% final
     incoming damage reduction while Jump charges.
   - Polearm Assault is `Lance Sweep (35) -> Extended Reach (40) ->
     Zephyrstrike (45) -> Swing & Bash (50)`. Polearm Excellence (55) sits in
@@ -204,7 +205,7 @@ or stat requirements differ.
     Dive requires Dragon's Ascent, Soaring Strike, and Unstoppable.
   - Lancer and Dragoon use rows 0-7 with compact vertical
     spacing so the standard progression panel does not need to scroll.
-  - Dragon's Ascent grants `+30 Attack`; a clean Soaring Strike landing grants
+  - Dragon's Ascent grants `+30% Attack`; a clean Soaring Strike landing grants
     two Aerial Tempo. Dragoon Jump modifiers use stable `dragoon.jump-mod.*`
     IDs.
 - Sentinel:
@@ -252,10 +253,12 @@ or stat requirements differ.
     chance for three turns.
   - Refreshment immediately restores `5%` of maximum HP and MP.
   - Terra Firma multiplies melee damage by `1.5` for three turns.
-- Arcana is `Magic Missile -> Arcane Fundamentals -> +25 MP -> Polymorph ->
+- Arcana is `Magic Missile -> Guidance Upgrade -> Mana Rupture -> Polymorph ->
   Mana Shield -> Imbue Weapon`. Gates are `1/5/path-only/15/20/25`.
-  Arcane Fundamentals grants `+10 Magic` and increases only the bonus portion
-  of Arcane critical damage by 10%. Polymorph denies the target two turns and
+  Guidance Upgrade increases only Magic Missile projectile critical bonus
+  damage by 20%; it grants no static Magic increase. Mana Rupture deals damage
+  based on the target's remaining MP. Polymorph denies
+  the target two turns and
   replaces its combat sprite with a small, confused-pacing bunny for the
   duration. Bosses are not immune, but resist 90% of Polymorph attempts. Mana
   Shield redirects at most 25% of physical damage from each attack into MP;
@@ -284,26 +287,80 @@ or stat requirements differ.
 - Universal roots are Reflect `(5,1)` at level 10, Sleep `(5,2)` at 15,
   Boost `(5,3)` at 20, and Mirror Image `(5,4)` at 25.
 - Sorcerer requires either Classical Force `(0.5,6)` after any Enhancement or
-  Arcane Tradition `(1.5,6)` after Arcane Fundamentals; its promotion is `(1,7)`.
+  Arcane Tradition `(1.5,6)` after Mana Rupture; its promotion is `(1,7)`.
   Enhancement connectors converge at the `0.5` midpoint and enter Classical
-  Force from above; Arcane Fundamentals routes through the `1.5` midpoint and
+  Force from above; Mana Rupture routes through the `1.5` midpoint and
   enters Arcane Tradition from above.
   The choice is permanent:
-  Classical Force tracks Elemental School Affinity and applies 50% potency to
+  Classical Force tracks Elemental School Affinity and applies 75% potency to
   Arcane damage/control/barriers/enhancements; Arcane Tradition tracks Arcane
-  School Affinity, applies 50% elemental damage, and halves Enhancement proc
-  chances. Learning spells remains unrestricted.
+  School Affinity, applies 75% elemental damage, and halves Enhancement proc
+  chances. Mage spell learning remains unrestricted before promotion.
 - First-promotion route costs, including the two-point promotion node, are
-  `5/8/8/8` for Sorcerer/Spellblade/Warlock/Conjurer. All require level 30.
+  `6/8/8/8` for Sorcerer/Spellblade/Warlock/Conjurer. All require level 30.
   Stat gates are Sorcerer `INT 15/WIS 13`; Warlock
   `INT 14/CHA 14/WIS 10/CON 10`; Spellblade
   `STR 10/CON 11/INT 14/CHA 12`; and Conjurer
   `CHA 13/INT 13/WIS 12/CON 10/DEX 10` (no Strength requirement).
-- Every learned Mage spell remains owned after promotion. Unpurchased
-  non-elemental development and competing promotions close. Sorcerer and
-  Wizard retain the existing partial carry-forward: Arcane Fundamentals plus
-  the six elemental spells remain purchasable in the current editable tree;
-  the historical Mage tab stays read-only.
+- Every learned Mage spell remains owned after promotion. Unpurchased Mage
+  development and competing promotions close. Sorcerer does not carry the six
+  level-one elemental spells, Magic Missile, or Guidance Upgrade into its
+  editable tree; the historical Mage tab stays read-only.
+- Sorcerer has five full columns plus two half-column specialization nodes.
+  Column 1 contains the six tier-two elemental spells, each gated only by 30
+  matching School Affinity. Their six level-35 modifiers occupy column 2 and
+  feed Classical Enrichment `(0.5,6)` after any complete spell/modifier pair.
+  Classical Enrichment unlocks at level 55 and lowers Arcane potency by another
+  25 percentage points. Magic Missile II at 30 Arcane Affinity leads to Force
+  Multiplier in column 3; the continuous branch then runs through Mana Rupture,
+  Mana Leak, level-50 Kinetic Explosion, and Arcane Empowerment. Arcane Ritual
+  `(1.5,6)` requires that entire Arcane branch at level 55 and lowers elemental potency by another 25
+  percentage points. The level-60 Wizard promotion `(1,7)` accepts Classical
+  Enrichment or Arcane Ritual. Spell Enhancements is `Boost -> Dispel -> +20
+  Magic -> Refueling -> Doublecast`; Illusion is `Mirror Image -> Slow -> Ice
+  Block -> Illusory Link`.
+- Wizard has five authored columns and does not repeat Mage level-one spells,
+  Magic Missile, Guidance Upgrade, Perfected Formula, or Layered Countermagic.
+  Six affinity-gated tier-three elemental spells pair with Inferno, Subzero,
+  Electrical Burns, Divine Wind, Unrelenting Waves, and Aftershock. Their
+  cross-school reactions are intentionally undocumented in player-facing text.
+  Grand Arcana is `Magic Missile III -> Fragmentation -> Mana Splinters ->
+  Detonation Cascade (75)`. Mana Rupture, Kinetic Explosion, and Arcane
+  Empowerment are inherited prerequisites and are not repeated in this tree.
+  Photon Sphere is represented only as Unknown until Domingo casts it on the
+  Wizard; the resulting investigation requires six distinct late-game arcane
+  proofs and rewards the 150-MP, four-hit, all-enemy spell, 50 maximum MP, and
+  three progression points. Prismatic Cataclysm is the parallel elemental
+  ultimate: witness Circe, master all six affinities, and defeat all six
+  Myrmidon schools; its Elemental Convergence modifier is revealed beneath it.
+  Spaghettification sits beneath Photon Sphere and remains hidden until that
+  reveal. Master Control includes Counterspell, Gravitational Pull (65), and
+  Petrify (80). Spatial Illusion is Volitation -> Mirror Image II (65) ->
+  Multiplicity (70) -> Teleport (75), with Triplecast at row 7 and level 90.
+- Warlock uses six authored columns covering shadow control, drains, umbral
+  offense, curses, corruption, and familiar development. Eclipse is a Warlock
+  Shadow spell, Curse of Swarms propagates afflictions between nearby enemies,
+  Hemorrhaging Curse adds persistent bleeding, and the independent familiar
+  modifiers sit between Familiar Bond I and II. Columns one through five begin
+  one row lower; the advanced curse sequence begins another row lower.
+  Shadowcaster requires Doom and Mana Drain; Demonologist requires Curse of
+  Hemorrhaging Curse and Life Tap.
+- Shadowcaster has three terminal paths. Umbral Debt is `Mana Tap ->
+  Health/Mana Drain (70) -> +30 Defense`. Deep Shadow is `Shadow Bolt
+  III -> Night Terror (65) -> Nightmare (70) -> Desoul (80) -> +30 Magic`;
+  Night Terror damages every enemy and independently attempts to apply Sleep
+  for two turns. Veilcraft is `Invisibility -> Alacrity (65)`, with Alacrity
+  increasing Speed by 25% only while invisible.
+  Shade of Ahool is the class promotion action and spends Umbral Debt to enter
+  its three-turn flying shadow-beast form.
+- Demonologist has five authored paths: Contagion, Contract Mastery, Hellfire,
+  Soul Harvest, and Demonic Curses. Contagion combines Life Tap mana economy
+  with Corruption II, fire-triggered explosions, and persistent DOT growth.
+  Hellfire combines grease-coated Shadow Bolts with Firebolt, Netherchar, and
+  Napalm. Soul Harvest uses Doom for temporary undead and Desoul for Soul Gems,
+  while Soul Vessel provides a Soul-Gem-funded death safeguard. Demonic Curses
+  restores Elijah and Dysarthria at this tier and adds Flammable Affliction,
+  Monkey's Paw, and Demon Eyes.
 - Spellblade replaces the current two-column Channeling/Spellguard graph with
   four explicit columns: `0=Weapon Enhancements`, `1=Armor Enhancements`,
   `2=Spell Enhancements`, and `3=Universal / Extra Abilities`. Imbue Weapon is
@@ -352,10 +409,12 @@ or stat requirements differ.
     Knight Enchanter retains Mana Tap and Enhance Armor as catch-up nodes:
     each is automatically owned when learned as Spellblade and otherwise
     follows its normal Knight Enchanter purchase path.
-- Knight Enchanter has four authored columns: Assault Release, Aegis Release,
-  Spellbind Release, and Universal / Extra Abilities. Quick Recharge, Third
-  Eye, and Storage Capacity II cost two points; its other 17 development nodes
-  cost one. Double Strike, Enhance Armor, Mana Tap, and Parry are
+- Knight Enchanter has five authored columns: Advanced Spells, Assault Release,
+  Aegis Release, Spellbind Release, and Universal / Extra Abilities. Advanced
+  Spells contains the six tier-two elemental spells and Magic Missile II as
+  seven independent level-70, one-point nodes. Quick Recharge, Third Eye, and
+  Storage Capacity II cost two points; its other 24 development nodes cost one.
+  Double Strike, Enhance Armor, Mana Tap, and Parry are
   ungated entries that adopt prior ownership. The universal Parry, True
   Piercing Strike, and Triple Strike nodes are independent. Mana Slice II and
   Quick Recharge occupy rows 6 and 7; Storage Capacity II, Spellbind, and

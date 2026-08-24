@@ -43,7 +43,7 @@ text{font-family:DejaVu Sans,Arial,sans-serif}
 <rect x="42.0" y="192.0" width="188" height="62" rx="8" fill="#3b3218" stroke="#e3bc48" stroke-width="2"/>
 <text class="name" x="52.0" y="216.0">+20 Attack</text>
 <text class="detail" x="52.0" y="237.0">Rating · Cost 1</text>
-<rect x="42.0" y="292.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<rect x="42.0" y="292.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
 <text class="name" x="52.0" y="316.0">Two-Handed Weapon Prof...</text>
 <text class="detail" x="52.0" y="337.0">Ability · Cost 1 · Level 35</text>
 <rect x="42.0" y="492.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
@@ -52,7 +52,7 @@ text{font-family:DejaVu Sans,Arial,sans-serif}
 <rect x="42.0" y="592.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
 <text class="name" x="52.0" y="616.0">Devastating Throw</text>
 <text class="detail" x="52.0" y="637.0">Ability · Cost 1 · Level 50</text>
-<rect x="42.0" y="692.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<rect x="42.0" y="692.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
 <text class="name" x="52.0" y="716.0">Brutish Strength</text>
 <text class="detail" x="52.0" y="737.0">Ability · Cost 1 · Level 55</text>
 <rect x="375.0" y="92.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
@@ -61,10 +61,10 @@ text{font-family:DejaVu Sans,Arial,sans-serif}
 <rect x="375.0" y="192.0" width="188" height="62" rx="8" fill="#3b3218" stroke="#e3bc48" stroke-width="2"/>
 <text class="name" x="385.0" y="216.0">+20 Defense</text>
 <text class="detail" x="385.0" y="237.0">Rating · Cost 1</text>
-<rect x="264.0" y="292.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<rect x="264.0" y="292.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
 <text class="name" x="274.0" y="316.0">Dual Wield</text>
 <text class="detail" x="274.0" y="337.0">Ability · Cost 1 · Level 35</text>
-<rect x="264.0" y="392.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<rect x="264.0" y="392.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
 <text class="name" x="274.0" y="416.0">Honed Attack</text>
 <text class="detail" x="274.0" y="437.0">Ability · Cost 1 · Level 40</text>
 <rect x="264.0" y="492.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
@@ -73,13 +73,13 @@ text{font-family:DejaVu Sans,Arial,sans-serif}
 <rect x="264.0" y="592.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
 <text class="name" x="274.0" y="616.0">Cross Block</text>
 <text class="detail" x="274.0" y="637.0">Ability · Cost 1 · Level 50</text>
-<rect x="486.0" y="292.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<rect x="486.0" y="292.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
 <text class="name" x="496.0" y="316.0">Duelist</text>
 <text class="detail" x="496.0" y="337.0">Ability · Cost 1 · Level 35</text>
-<rect x="486.0" y="392.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<rect x="486.0" y="392.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
 <text class="name" x="496.0" y="416.0">Blind Fighting</text>
 <text class="detail" x="496.0" y="437.0">Ability · Cost 1 · Level 40</text>
-<rect x="486.0" y="492.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<rect x="486.0" y="492.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
 <text class="name" x="496.0" y="516.0">Retort</text>
 <text class="detail" x="496.0" y="537.0">Ability · Cost 1 · Level 45</text>
 <rect x="486.0" y="592.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>

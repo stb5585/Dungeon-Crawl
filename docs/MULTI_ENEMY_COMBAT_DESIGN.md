@@ -923,7 +923,8 @@ enabled outside debug mode.
 
 ## Improvements
 
-- Add new target scopes `COMBO`, which should be used for some multi-hit,
+- Add new target scopes `COMBO` (used for some multi-hit,
   sequential abilities that allows automatic target switching if the enemy is
-  felled before completion and `MULTI`, which applies to multi-hit abilities
-  that have an area-of-effect
+  felled before completion), `SPLASH` (for abilities that have an added effect
+  when the main effect hits), `MULTI` (applies to multi-hit abilities
+  that have an area-of-effect) and `MULTI-ALL` (reserved for Photon Sphere)

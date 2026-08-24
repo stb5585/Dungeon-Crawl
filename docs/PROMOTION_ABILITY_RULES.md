@@ -66,13 +66,14 @@ Enhancements occupy column 1. Arcana, Occultism, and Conjuration are six-node
 paths in columns 2-4. Reflect/Sleep/Boost/Mirror Image are independent
 level-10/15/20/25 Universal nodes in column 5.
 
-- Sorcerer, five points: buy either an elemental spell, its Enhancement, and
-  Classical Force, or `Magic Missile -> Arcane Fundamentals -> Arcane Tradition`,
+- Sorcerer, six points on the Arcane route: buy either an elemental spell, its
+  Enhancement, and Classical Force, or `Magic Missile -> Guidance Upgrade ->
+  Mana Rupture -> Arcane Tradition`,
   then the two-point promotion. Classical Force and Arcane Tradition are mutually
   exclusive and Spend Distribution warns before the competing specialization
   closes.
 - Spellblade, eight points:
-  `Magic Missile -> Arcane Fundamentals -> +25 MP -> Polymorph -> Mana Shield
+  `Magic Missile -> Guidance Upgrade -> Mana Rupture -> Polymorph -> Mana Shield
   -> Imbue Weapon -> Promote: Spellblade`.
 - Warlock, eight points:
   `Enfeeble -> Blinding Fog -> Shadow Bolt -> Inflate Health -> Enliven Dead
@@ -86,11 +87,10 @@ All four promotions require level 30 and two points. Stat gates are Sorcerer
 `STR 10/CON 11/INT 14/CHA 12`; and Conjurer
 `CHA 13/INT 13/WIS 12/CON 10/DEX 10` with no Strength requirement.
 
-Learned Mage spells survive every promotion. Normally, unpurchased Mage nodes
-and competing promotions close. Mage-to-Sorcerer remains a partial exception:
-Arcane Fundamentals and the six elemental spells keep their Mage IDs and
-remain purchasable in Sorcerer and Wizard. The historical Mage tab is
-read-only. Conjurer has an authored four-discipline tree: Constructs, Binding,
+Learned Mage spells survive every promotion. Unpurchased Mage nodes and
+competing promotions close. Sorcerer replaces the old Mage carry-forward with
+affinity-gated tier-two elemental and Arcane spell nodes. The historical Mage
+tab is read-only. Conjurer has an authored four-discipline tree: Constructs, Binding,
 Illusion/Movement, and Calling. Its level-60 three-point Thaumaturgist
 promotion accepts Barrier Wall, Mana Barbs, Explosive Decoy, or Conjure Dragon.
 As Conjurer, each Calling selects a standard enemy of its category nearest the
@@ -232,9 +232,9 @@ Shelter `(4, 0)` roots. Judgment branches through the column-0 `Double Strike
 `Smite -> Repel the Wicked -> +20 Magic -> Hallowed Ground` path. Shelter branches
 through column 3's `Heal -> +50 MP -> Resist Shadow -> Sworn Purpose -> Blessed
 Light` and column 5's Bless branch. Magic Defense gates Parry at
-`(5, 3)`, followed by `+20 Defense -> Divine Protection`. Tempered Conviction grants `+20
+`(5, 3)`, followed by `+20 Defense -> Divine Protection`. Tempered Conviction grants `+20%
 Defense` and one Conviction capacity;
-Sworn Purpose grants `+20 Magic` and `+20 Magic Defense`. Blessed Light turns
+Sworn Purpose grants `+20% Magic` and `+20% Magic Defense`. Blessed Light turns
 successful combat healing spells into a three-turn `+10 Attack` buff. The
 level-60 Crusader promotion is centered at `(2.5, 7)`, requires either Oath
 root, `STR 15`, `CON 17`, `WIS 16`, `CHA 13`, and three progression points.
@@ -280,10 +280,10 @@ Lancer-to-Dragoon is the explicit exception to the last rule: the old Lancer
 tab is read-only, while the same development nodes remain available inside the
 current Dragoon tree.
 
-Mage-to-Sorcerer and Sorcerer-to-Wizard are the partial exception: old tree
-tabs remain read-only, while Arcane Fundamentals and the six declared
-elemental spell nodes remain available inside the current tree. Promotion
-previews and results identify this partial carry-forward.
+Mage-to-Sorcerer and Sorcerer-to-Wizard retain learned abilities in the
+spellbook, but their current trees do not repeat unpurchased Mage roots.
+Tier-two and tier-three elemental spells instead use their matching School
+Affinity gates.
 
 Cancellation changes nothing. An exception during application restores the
 snapshotted class, stats, resources, combat ratings, equipment, inventory,

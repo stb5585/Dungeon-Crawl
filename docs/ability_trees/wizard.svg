@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="1160" height="596" viewBox="0 0 1160 596">
+<svg xmlns="http://www.w3.org/2000/svg" width="1160" height="896" viewBox="0 0 1160 896">
 <style>
 text{font-family:DejaVu Sans,Arial,sans-serif}
 .title{fill:#f4bf2a;font-size:24px;font-weight:700}
@@ -8,70 +8,108 @@ text{font-family:DejaVu Sans,Arial,sans-serif}
 .detail{fill:#c5ccd6;font-size:11px}
 .edge{fill:none;stroke:#7f8998;stroke-width:2}
 </style>
-<rect width="1160" height="596" fill="#10131a"/>
+<rect width="1160" height="896" fill="#10131a"/>
 <text class="title" x="42" y="38">Wizard Ability Tree</text>
-<text class="meta" x="42" y="62">Tier 3 · 18 nodes · Arcane Mastery · Countermagic · Elementalism · Arcana</text>
-<path class="edge" d="M 136.0 123.0 V 173.0 H 136.0 V 223.0"/>
-<path class="edge" d="M 136.0 223.0 V 273.0 H 136.0 V 323.0"/>
-<path class="edge" d="M 136.0 323.0 V 373.0 H 136.0 V 423.0"/>
-<path class="edge" d="M 136.0 423.0 V 473.0 H 136.0 V 523.0"/>
-<path class="edge" d="M 358.0 123.0 V 173.0 H 358.0 V 223.0"/>
-<path class="edge" d="M 358.0 223.0 V 273.0 H 358.0 V 323.0"/>
-<path class="edge" d="M 358.0 323.0 V 373.0 H 358.0 V 423.0"/>
-<path class="edge" d="M 358.0 423.0 V 473.0 H 358.0 V 523.0"/>
-<path class="edge" d="M 580.0 123.0 V 123.0 H 802.0 V 123.0"/>
+<text class="meta" x="42" y="62">Tier 3 · 28 nodes · Master Elemental Spells · Master Modifiers · Grand Arcana · Master Control · Spatial Illusion</text>
+<path class="edge" d="M 136.0 123.0 V 123.0 H 358.0 V 123.0"/>
+<path class="edge" d="M 136.0 223.0 V 223.0 H 358.0 V 223.0"/>
+<path class="edge" d="M 136.0 323.0 V 323.0 H 358.0 V 323.0"/>
+<path class="edge" d="M 136.0 423.0 V 423.0 H 358.0 V 423.0"/>
+<path class="edge" d="M 136.0 523.0 V 523.0 H 358.0 V 523.0"/>
+<path class="edge" d="M 136.0 623.0 V 623.0 H 358.0 V 623.0"/>
+<path class="edge" d="M 580.0 123.0 V 173.0 H 580.0 V 223.0"/>
+<path class="edge" d="M 580.0 223.0 V 273.0 H 580.0 V 323.0"/>
+<path class="edge" d="M 580.0 323.0 V 373.0 H 580.0 V 423.0"/>
+<path class="edge" d="M 247.0 723.0 V 773.0 H 247.0 V 823.0"/>
+<path class="edge" d="M 580.0 723.0 V 773.0 H 580.0 V 823.0"/>
+<path class="edge" d="M 802.0 123.0 V 173.0 H 802.0 V 223.0"/>
+<path class="edge" d="M 802.0 223.0 V 373.0 H 802.0 V 523.0"/>
+<path class="edge" d="M 1024.0 123.0 V 173.0 H 1024.0 V 223.0"/>
+<path class="edge" d="M 1024.0 223.0 V 273.0 H 1024.0 V 323.0"/>
+<path class="edge" d="M 1024.0 323.0 V 373.0 H 1024.0 V 423.0"/>
+<path class="edge" d="M 1024.0 423.0 V 573.0 H 1024.0 V 723.0"/>
 <rect x="42.0" y="92.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
-<text class="name" x="52.0" y="116.0">Mana Shield 2</text>
-<text class="detail" x="52.0" y="137.0">Ability · Cost 1 · Level 65</text>
+<text class="name" x="52.0" y="116.0">Firestorm</text>
+<text class="detail" x="52.0" y="137.0">Ability · Cost 1</text>
 <rect x="42.0" y="192.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
-<text class="name" x="52.0" y="216.0">Triplecast</text>
-<text class="detail" x="52.0" y="237.0">Ability · Cost 1 · Level 70</text>
+<text class="name" x="52.0" y="216.0">Blizzard</text>
+<text class="detail" x="52.0" y="237.0">Ability · Cost 1</text>
 <rect x="42.0" y="292.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
-<text class="name" x="52.0" y="316.0">Volitation</text>
-<text class="detail" x="52.0" y="337.0">Ability · Cost 1 · Level 75</text>
+<text class="name" x="52.0" y="316.0">Electrocution</text>
+<text class="detail" x="52.0" y="337.0">Ability · Cost 1</text>
 <rect x="42.0" y="392.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
-<text class="name" x="52.0" y="416.0">Teleport</text>
-<text class="detail" x="52.0" y="437.0">Ability · Cost 1 · Level 80</text>
+<text class="name" x="52.0" y="416.0">Tornado</text>
+<text class="detail" x="52.0" y="437.0">Ability · Cost 1</text>
 <rect x="42.0" y="492.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
-<text class="name" x="52.0" y="516.0">Mirror Image</text>
-<text class="detail" x="52.0" y="537.0">Ability · Cost 1 · Level 85</text>
-<rect x="264.0" y="92.0" width="188" height="62" rx="8" fill="#30254a" stroke="#ae84e8" stroke-width="2"/>
-<text class="name" x="274.0" y="116.0">Perfected Formula</text>
-<text class="detail" x="274.0" y="137.0">Talent · Cost 1 · Level 65</text>
-<rect x="264.0" y="192.0" width="188" height="62" rx="8" fill="#30254a" stroke="#ae84e8" stroke-width="2"/>
-<text class="name" x="274.0" y="216.0">Layered Countermagic</text>
-<text class="detail" x="274.0" y="237.0">Talent · Cost 1 · Level 70</text>
-<rect x="264.0" y="292.0" width="188" height="62" rx="8" fill="#30254a" stroke="#ae84e8" stroke-width="2"/>
-<text class="name" x="274.0" y="316.0">Perfected Formula 2</text>
-<text class="detail" x="274.0" y="337.0">Talent · Cost 1 · Level 75</text>
-<rect x="264.0" y="392.0" width="188" height="62" rx="8" fill="#30254a" stroke="#ae84e8" stroke-width="2"/>
-<text class="name" x="274.0" y="416.0">Layered Countermagic 2</text>
-<text class="detail" x="274.0" y="437.0">Talent · Cost 1 · Level 80</text>
-<rect x="264.0" y="492.0" width="188" height="62" rx="8" fill="#30254a" stroke="#ae84e8" stroke-width="2"/>
-<text class="name" x="274.0" y="516.0">Perfected Formula 3</text>
-<text class="detail" x="274.0" y="537.0">Talent · Cost 1 · Level 85</text>
-<rect x="486.0" y="192.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
-<text class="name" x="496.0" y="216.0">Firebolt</text>
-<text class="detail" x="496.0" y="237.0">Ability · Cost 1</text>
-<rect x="930.0" y="192.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
-<text class="name" x="940.0" y="216.0">Ice Lance</text>
-<text class="detail" x="940.0" y="237.0">Ability · Cost 1</text>
-<rect x="486.0" y="292.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
-<text class="name" x="496.0" y="316.0">Shock</text>
-<text class="detail" x="496.0" y="337.0">Ability · Cost 1</text>
-<rect x="930.0" y="292.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
-<text class="name" x="940.0" y="316.0">Gust</text>
-<text class="detail" x="940.0" y="337.0">Ability · Cost 1</text>
-<rect x="708.0" y="292.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
-<text class="name" x="718.0" y="316.0">Water Jet</text>
-<text class="detail" x="718.0" y="337.0">Ability · Cost 1</text>
-<rect x="708.0" y="192.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
-<text class="name" x="718.0" y="216.0">Tremor</text>
-<text class="detail" x="718.0" y="237.0">Ability · Cost 1</text>
+<text class="name" x="52.0" y="516.0">Tsunami</text>
+<text class="detail" x="52.0" y="537.0">Ability · Cost 1</text>
+<rect x="42.0" y="592.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<text class="name" x="52.0" y="616.0">Earthquake</text>
+<text class="detail" x="52.0" y="637.0">Ability · Cost 1</text>
+<rect x="264.0" y="92.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
+<text class="name" x="274.0" y="116.0">Inferno</text>
+<text class="detail" x="274.0" y="137.0">Ability · Cost 1 · Level 65</text>
+<rect x="264.0" y="192.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
+<text class="name" x="274.0" y="216.0">Subzero</text>
+<text class="detail" x="274.0" y="237.0">Ability · Cost 1 · Level 65</text>
+<rect x="264.0" y="292.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
+<text class="name" x="274.0" y="316.0">Electrical Burns</text>
+<text class="detail" x="274.0" y="337.0">Ability · Cost 1 · Level 65</text>
+<rect x="264.0" y="392.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
+<text class="name" x="274.0" y="416.0">Divine Wind</text>
+<text class="detail" x="274.0" y="437.0">Ability · Cost 1 · Level 65</text>
+<rect x="264.0" y="492.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
+<text class="name" x="274.0" y="516.0">Unrelenting Waves</text>
+<text class="detail" x="274.0" y="537.0">Ability · Cost 1 · Level 65</text>
+<rect x="264.0" y="592.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
+<text class="name" x="274.0" y="616.0">Aftershock</text>
+<text class="detail" x="274.0" y="637.0">Ability · Cost 1 · Level 65</text>
 <rect x="486.0" y="92.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
-<text class="name" x="496.0" y="116.0">Magic Missile</text>
+<text class="name" x="496.0" y="116.0">Magic Missile III</text>
 <text class="detail" x="496.0" y="137.0">Ability · Cost 1</text>
-<rect x="708.0" y="92.0" width="188" height="62" rx="8" fill="#30254a" stroke="#ae84e8" stroke-width="2"/>
-<text class="name" x="718.0" y="116.0">Arcane Fundamentals</text>
-<text class="detail" x="718.0" y="137.0">Talent · Cost 1 · Level 5</text>
+<rect x="486.0" y="192.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
+<text class="name" x="496.0" y="216.0">Fragmentation</text>
+<text class="detail" x="496.0" y="237.0">Ability · Cost 1 · Level 65</text>
+<rect x="486.0" y="292.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
+<text class="name" x="496.0" y="316.0">Mana Splinters</text>
+<text class="detail" x="496.0" y="337.0">Ability · Cost 1 · Level 70</text>
+<rect x="486.0" y="392.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
+<text class="name" x="496.0" y="416.0">Detonation Cascade</text>
+<text class="detail" x="496.0" y="437.0">Ability · Cost 1 · Level 75</text>
+<rect x="486.0" y="692.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<text class="name" x="496.0" y="716.0">Photon Sphere</text>
+<text class="detail" x="496.0" y="737.0">Ability · Cost 1</text>
+<rect x="153.0" y="692.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<text class="name" x="163.0" y="716.0">Prismatic Cataclysm</text>
+<text class="detail" x="163.0" y="737.0">Ability · Cost 1</text>
+<rect x="153.0" y="792.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
+<text class="name" x="163.0" y="816.0">Elemental Convergence</text>
+<text class="detail" x="163.0" y="837.0">Ability · Cost 1</text>
+<rect x="486.0" y="792.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
+<text class="name" x="496.0" y="816.0">Spaghettification</text>
+<text class="detail" x="496.0" y="837.0">Ability · Cost 1</text>
+<rect x="708.0" y="92.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<text class="name" x="718.0" y="116.0">Counterspell</text>
+<text class="detail" x="718.0" y="137.0">Ability · Cost 1</text>
+<rect x="708.0" y="192.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<text class="name" x="718.0" y="216.0">Gravitational Pull</text>
+<text class="detail" x="718.0" y="237.0">Ability · Cost 1 · Level 65</text>
+<rect x="708.0" y="492.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<text class="name" x="718.0" y="516.0">Petrify</text>
+<text class="detail" x="718.0" y="537.0">Ability · Cost 1 · Level 80</text>
+<rect x="930.0" y="92.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<text class="name" x="940.0" y="116.0">Volitation</text>
+<text class="detail" x="940.0" y="137.0">Ability · Cost 1</text>
+<rect x="930.0" y="192.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<text class="name" x="940.0" y="216.0">Mirror Image II</text>
+<text class="detail" x="940.0" y="237.0">Ability · Cost 1 · Level 65</text>
+<rect x="930.0" y="292.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
+<text class="name" x="940.0" y="316.0">Multiplicity</text>
+<text class="detail" x="940.0" y="337.0">Ability · Cost 1 · Level 70</text>
+<rect x="930.0" y="392.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<text class="name" x="940.0" y="416.0">Teleport</text>
+<text class="detail" x="940.0" y="437.0">Ability · Cost 1 · Level 75</text>
+<rect x="930.0" y="692.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<text class="name" x="940.0" y="716.0">Triplecast</text>
+<text class="detail" x="940.0" y="737.0">Ability · Cost 1 · Level 90</text>
 </svg>

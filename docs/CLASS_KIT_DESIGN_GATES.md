@@ -23,7 +23,7 @@ Implemented V1 coverage includes:
 - Persistent promotion state for summon bonds, Case Journal, Bard repertoire,
   Lycan control/Dragon Essence, Demonologist corruption/patron mood, and Beast
   Master companion bond.
-- Named V1 active/passive abilities such as `Threaded Cast`, `Eclipse`,
+- Named V1 active/passive abilities such as `Threaded Cast`, `Shade of Ahool`,
   `Hold the Line`, `Bulwark`, `Shield Riposte`, `Sanctuary Ward`,
   `Relic Aegis`, `Supplication`, `Great Benediction`, `Dim Mak`,
   `Fourfold Surge`, `Totem Surge`, `Conduit Command`, borrowed summon
@@ -70,7 +70,7 @@ combat math, or numeric balance.
 | --- | --- | --- | --- | --- | --- |
 | Astromancer | Constellation, rune grid, Foresight Threads, pending `Threaded Cast`. | Thread gain/cap/spend, pending cast, negated payoff, Rewind snapshot, active-sign enhancement. | `Runic Boost` and `Threaded Cast` remain selectable only when valid. | Show awakened/equipped `Constellation Cycle` readiness without implying manual sign control. | Build Threads, prepare `Threaded Cast`, and verify status/log state in combat. |
 | Demonologist | Corruption, active patron/mood, familiar echo, contract history summary where available. | Corruption gain/cooling, mood changes, twist/lucky-twist, withheld/unlocked intent notes. | Contract quote and Church Crypt review show costs, risk, patron, echo, and unlocked/withheld intent state. | Show contract echo/ring awakening state as contract shaping, not a generic stat boost. | Quote and resolve one contract, then inspect status and crypt review. |
-| Shadowcaster | Umbral Debt with cap, backlash, Eclipse turns. | Debt gain, cap/backlash, Eclipse activation/expiration, auto-heal spend, backlash conversion. | None beyond normal skill availability. | Show awakened/equipped `Umbral Debt` cap/stability readiness. | Store debt, enter Eclipse, overcap into backlash, and verify lines stay visible. |
+| Shadowcaster | Umbral Debt with cap, backlash, Shade turns. | Debt gain, cap/backlash, Shade activation/expiration, auto-heal spend, backlash conversion. | None beyond normal skill availability. | Show awakened/equipped `Umbral Debt` cap/stability readiness. | Store debt, transform, overcap into backlash, and verify lines stay visible. |
 | Knight Enchanter | Arcane/Elemental Blade Charges, Foundation, Accent, Defensive Release stacks, pending Echo/Spellbind. | Typed charge gain/spend, signature changes, all three releases and their release talents, and ring memory. | `Arcane Duel` text uses `Weave Memory` display identity. | Preserve legacy `Mana Tap+` compatibility while displaying `Weave Memory`. | Build and replace an Accent, route both charge types through all three releases, and inspect pattern/status/log feedback. |
 | Thaumaturgist | Known Xenid bond values or best bond, Conduit readiness. | Bond gain, borrowed invocation, `Conduit Command`, True Name rider, expiration. | Xenid menus keep current recall/calling behavior and show valid borrowed invocation availability. | Show awakened/equipped `Conduit Ritual` as Xenid scaling plus conduit rider readiness. | Gain bond, invoke a Xenid, prime conduit, and inspect status/logs. |
 | Berserker | Battle Scars, Bloodied Momentum/cap, bloodied threshold state where relevant. | Momentum gain/cap/spend, miss preservation, heavy-art mutation, `Final Assault` use. | None beyond existing weapon-art menus. | Show awakened/equipped `Bloodied Crits` and preservation readiness when relevant. | Build Momentum below 50% HP and spend it on a heavy art. |
@@ -129,7 +129,7 @@ Tab decision bands:
 | Bard/Troubadour | `Crescendo` bespoke tab exists. | `Required` | `No` for tab baseline. | Song repertoire is persistent progression and advanced songs need readable mastery state. |
 | Druid/Lycan | `Forms` bespoke tab exists for Druid/Lycan. | `Required` for Druid/Lycan | `No` for tab baseline. | Persistent transformation and Lycan control are identity systems, not just combat buffs. |
 | Archdruid | `Aspects` bespoke tab exists. | `Required` | `No` for tab baseline. | Archdruid has both persistent attunement and combat-only aspect representation. |
-| Shadowcaster | No mechanic tab; Umbral Debt appears in HUD/status/log surfaces. | `Not Needed` | `No` for a tab; keep debt/backlash/Eclipse readable through combat HUD, status rows, logs, and skill text. | The live decision is combat-only and resets, so a tab would mostly duplicate combat state. |
+| Shadowcaster | No mechanic tab; Umbral Debt appears in HUD/status/log surfaces. | `Not Needed` | `No` for a tab; keep debt/backlash/Shade of Ahool readable through combat HUD, status rows, logs, and skill text. | The live decision is combat-only and resets, so a tab would mostly duplicate combat state. |
 | Spellblade/Knight Enchanter | No mechanic tab; typed Blade Charges and the Foundation/Accent pattern appear in HUD/status/log surfaces. | `Not Needed` | `No` for a tab; explain Arcane/Elemental charge buildup and the three weave releases through promotion guidance, action text, HUD, and logs. The HUD always shows both typed charge icons, dark at zero and lit while charged. | Charges, signatures, release preparation, and echoes are combat-only; the combat surface is the source of truth. |
 | Thief/Rogue | No mechanic tab; Fortune/Misfortune appear in HUD/status/log/result surfaces. | `Not Needed` | `No` for a tab; solve risky-action eligibility through HUD/status hints, combat logs, action descriptions, and loot/result messages. | Manual evidence found clarity issues, but the strict tab rule keeps combat-only luck meters out of Character Menu. |
 | Assassin/Ninja | No mechanic tab; Death Mark appears in HUD/status/log surfaces. | `Not Needed` | `No` for a tab; explain setup, finisher readiness, and No-Trace pressure through combat HUD, logs, and skill text. | Marks are combat-only and target-specific, so a persistent menu surface has limited value. |
@@ -248,7 +248,7 @@ Status locks to preserve unless a later spec explicitly changes them:
   remains loadable for old saves/tests, while Lycan Red Dragon victories set
   Dragon Essence state for the transformed-only `Winged Pounce` action.
 - `Frozen Armor` is implemented as a Sorcerer-line Ice mastery passive.
-- `Eclipse` is covered by the Shadowcaster Umbral Debt spec.
+- `Shade of Ahool` is covered by the Shadowcaster Umbral Debt spec.
 - Diviner/Astromancer Foresight Threads and `Threaded Cast` are implemented
   while preserving the current per-save rune and spell-empowerment scope.
 - Shaman/Soulcatcher Totem Resonance and `Totem Surge` are implemented while
@@ -537,15 +537,15 @@ familiar into a permanent contract-shaping echo.
   and familiar imprisonment remain intact. Corruption tier bonuses and patron
   mood thresholds should be tuned after playtest.
 
-### Shadowcaster Umbral Debt And Eclipse
+### Shadowcaster Umbral Debt And Shade of Ahool
 
 Class Design Inspirations: WoW
 
 V1 implementation spec: carry Warlock forward through shadow spells and familiar
 identity, then make `Umbral Debt` the baseline Shadowcaster mechanic. Shadow
-damage builds a spendable reserve, `Eclipse` spends that reserve for a short
+damage builds a spendable reserve, `Shade of Ahool` spends that reserve for a short
 shadow form, and the awakened Class Ring improves debt capacity, auto-healing,
-and Eclipse stability.
+and transformation stability.
 
 - Storage: use existing `class_ring_awakening["data"]["Shadowcaster"]` state
   even before ring awakening. Track `debt`, `backlash`, `eclipse_turns`, and
@@ -556,39 +556,37 @@ and Eclipse stability.
   final damage as `Umbral Debt`. Baseline cap is `30%` of max HP. An awakened,
   equipped Shadowcaster Class Ring raises the cap to `45%` of max HP. Overcap
   becomes `backlash` instead of being lost.
-- Active debt use: add active skill `Eclipse`. It requires at least `20` debt,
+- Active debt use: add active skill `Shade of Ahool`. It requires at least `20` debt,
   spends `20` debt, lasts `3` turns, and does not persist after combat.
   Recasting while active refreshes duration and spends the debt again.
-- Eclipse effect: while active, shadow damage gains `+15%`, Speed gains `+10%`,
+- Shade effect: while active, shadow damage gains `+15%`, Speed gains `+10%`,
   and Holy resistance drops by `0.25`. The Holy weakness is direct but should
   not apply any additional self-damage by itself.
 - Ring enhancement: existing `Umbral Debt` ring identity remains. When awakened
   and equipped, low-HP auto-heal remains active below `35%` HP, spending debt
-  to heal as currently implemented. The ring also reduces Eclipse backlash
+  to heal as currently implemented. The ring also reduces Shade backlash
   conversion by `25%`.
-- Backlash: overcap stores `backlash`. When Eclipse ends or low-HP auto-heal
+- Backlash: overcap stores `backlash`. When Shade of Ahool ends or low-HP auto-heal
   triggers, convert up to `10%` max HP of backlash into nonlethal self Shadow
   damage and remove that amount from backlash. If combat ends with backlash
   remaining, convert up to `5%` max HP into nonlethal self Shadow damage and
   leave the rest stored.
-- `Veil of Shadows`: keep the existing Shadowcaster passive power-up,
-  invisibility, and surprise-opener behavior. If surprise activates Veil while
-  Eclipse is active, the first Shadow/Dark hit gains an extra `+10%` damage and
-  then consumes that one-opener bonus.
+- `Shade of Ahool` replaces Veil of Shadows as the Shadowcaster promotion
+  power-up and performs the Umbral Debt transformation.
 - Familiar carry-forward: familiar behavior remains otherwise unchanged.
-  `Homunculus` reduces the Eclipse Holy penalty to `0.20`; `Fairy` makes
-  low-HP auto-heal and Eclipse-end backlash conversion heal an extra `5%` of
+  `Homunculus` reduces the Shade Holy penalty to `0.20`; `Fairy` makes
+  low-HP auto-heal and Shade-end backlash conversion heal an extra `5%` of
   debt spent, capped conservatively; `Mephit` raises Shadow/Dark debt
   generation to `25%`; `Jinkin` gets one combat-only `30%` chance per fight for
   backlash conversion to ignore half of the converted backlash.
 - UI text/surfaces: class status should show Umbral Debt, cap, backlash, and
-  Eclipse turns when relevant. Ring text should describe `Umbral Debt` as
-  awakened debt capacity, low-HP auto-heal, and Eclipse stabilization. Combat
-  logs should report debt gain, Eclipse activation/expiration, auto-heal
+  Shade turns when relevant. Ring text should describe `Umbral Debt` as
+  awakened debt capacity, low-HP auto-heal, and Shade stabilization. Combat
+  logs should report debt gain, Shade activation/expiration, auto-heal
   spending, and backlash conversion.
 - Tests: cover debt normalization, legacy state compatibility, cap calculation,
   debt generation from Shadow/Dark damage only, overcap-to-backlash behavior,
-  `Eclipse` gating/spend/refresh/duration/reset, shadow damage and Speed boosts,
+  `Shade of Ahool` gating/spend/refresh/duration/reset, shadow damage and Speed boosts,
   Holy resistance penalty, awakened ring cap and auto-heal, reduced backlash
   conversion, Veil surprise opener compatibility, and representative familiar
   hooks.
@@ -1079,7 +1077,7 @@ actions, raises the cap from `50` to `100`, and gains four full-bar Bursts.
   the bespoke Resolve tab and use the separate combat Resolve menu.
 - Spell Block consumes its preparation only for a compatible targeted
   projectile. Its absorbed amount scales from spell cost/power and equipped
-  shield strength. Shielding Ward adds `+20 Magic Defense` and halves damage
+  shield strength. Shielding Ward adds `+20% Magic Defense` and halves damage
   left after the block. Spell Reflection is a passive modifier that rolls to
   return blocked damage to the caster; Mirror Bastion changes its triggered
   Magic Defense bonus to `+50`.

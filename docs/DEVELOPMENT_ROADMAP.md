@@ -90,7 +90,7 @@ Universal utility. Promotion route costs are `5/8/8/8` for
 Sorcerer/Spellblade/Warlock/Conjurer. Sorcerer permanently chooses Classical
 Force or Arcane Tradition, making School Affinity Elemental- or Arcane-focused
 and severely nerfing the competing school. Learned spells survive promotion;
-Arcane Fundamentals and the six elemental spell nodes retain the existing
+Guidance Upgrade and the six elemental spell nodes retain the existing
 Sorcerer/Wizard partial carry-forward.
 
 Spellblade now uses explicit Weapon, Armor, Spell, and Universal development.
@@ -598,6 +598,9 @@ Systems, audio, and meta planning is split across durable owner docs:
 - Ability Improvements
   - Continue playtesting Ironwall Revenge's three-hit reliability against
     high-dodge enemies and Repercussion's all-enemy tuning.
+- Implement resting in the dungeon for recovery
+  - include several items/tools that make resting more efficient
+  - when resting, encounters can interrupt sleep; combat initiates with initiative lost
 - Create and organize the spells and skills into coherent definitions
   - "Magic is organized into a coherent taxonomy that classifies spells according to their origin, mechanism, and intent. These classifications are designed to reflect how practitioners understand and manipulate magic within the world, ensuring that class identity, lore, and gameplay mechanics remain internally consistent."
   - differentiate ability types and schools; emphasize a clear philosophical origin
@@ -743,3 +746,5 @@ an explicit oath confirmation before promotion commits.
    have direct focused coverage.
 5. Keep the roadmap current. Completed work should move to `CHANGELOG.md`, and
    loose ideas should be promoted behind a clear gate before implementation.
+
+## Current Changes to Implement

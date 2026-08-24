@@ -274,7 +274,7 @@ remain the prompts; the evidence ledger is the running decision record.
   - Expected: Perfect Bound Art adds the conservative bound-weapon mastered bonus only for the bound weapon type.
 - [ ] Cast Fire/Ice/Water/Electric/Earth/Wind spells as Sorcerer.
   - Expected: The matching school rises from 0, the opposite school drops, and other schools drift down without going below 0.
-  - Expected: Sorcerer affinity caps at 50, unlocks tier-2 spell upgrades at 30, and improves matching rider support at 50.
+  - Expected: Sorcerer affinity caps at 50, permits tier-2 spell purchases at 30, and improves matching rider support at 50.
 - [ ] Master Ice affinity as Sorcerer or Wizard with `Frozen Armor` learned, then take incoming damage.
   - Expected: Before Ice mastery, `Frozen Armor` has no damage-reduction effect.
   - Expected: At Ice mastery, incoming damage is modestly reduced and combat text reports the frost ward absorption.

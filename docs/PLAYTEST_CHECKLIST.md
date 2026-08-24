@@ -59,14 +59,15 @@ second implementation backlog.
   Conjuration, and Universal columns. Confirm the six elemental spells are
   independent level-1 roots and their matching Enhancements require only that
   spell and level 20.
-- [ ] Complete the `5/8/8/8` Sorcerer/Spellblade/Warlock/Conjurer routes.
+- [ ] Complete the 5-point elemental or 6-point Arcane Sorcerer route and the
+  `8/8/8` Spellblade/Warlock/Conjurer routes.
   Confirm the exact `5/10/15/20/25` named gates, path-only MP nodes,
   level-`10/15/20/25` Universal roots, and two-point level-30 promotions.
 - [ ] Select Classical Force and Arcane Tradition separately. Confirm either gates
   Sorcerer from `(0.5,6)` or `(1.5,6)` through promotion `(1,7)`, selecting one
   permanently closes the other, and Spend Distribution
   lists the closure before committing. Verify Elemental versus Arcane School
-  Affinity, the agreed 50% off-school potency nerfs, and Arcane Tradition's halved
+  Affinity, the agreed 25% off-school potency reductions, and Arcane Tradition's halved
   Enhancement proc chance.
 - [ ] Trigger all six 20% Enhancements and verify refresh-only behavior: Fire
   Inside next-attack critical chance; Frozen Armor one-turn Defense/Ice
@@ -75,7 +76,9 @@ second implementation backlog.
 - [ ] Verify Polymorph action denial, its smaller confused-pacing bunny artwork,
   and the 10% boss success chance without boss immunity. Verify all-enemy
   Blinding Fog, temporary-HP ordering, Shackles Dexterity/Strength checks, and
-  the documented Arcane Fundamentals and Binding Circle bonuses. Confirm
+  Guidance Upgrade's Magic-Missile-only 20% critical-bonus increase with no
+  static Magic gain, and Mana Rupture's remaining-MP damage,
+  and the documented Binding Circle bonuses. Confirm
   Forbidden Studies
   gives Shadow Bolt `+20%` damage and undead companions `+50%` duration.
 - [ ] Verify Mana Shield redirects at most 25% of physical damage from each
@@ -135,12 +138,11 @@ second implementation backlog.
   `CHA 13/INT 13/WIS 12/CON 10/DEX 10`, with no Strength gate.
 - [ ] Promote Mage along all four routes. Confirm every learned spell survives;
   non-elemental Mage nodes and competing promotions close; and unrelated
-  classes cannot purchase Mage nodes. For Sorcerer and Wizard only, confirm
-  unpurchased Arcane Fundamentals, Firebolt, Shock, Tremor, Water Jet, Ice
-  Lance, and Gust appear in the current editable tree while the historical
-  Mage tab remains read-only. Verify the promotion warning/result explains
-  this partial carry-forward and save/load preserves ownership, talents,
-  completed trees, and later elemental purchases.
+  classes cannot purchase Mage nodes. Confirm Sorcerer and Wizard do not repeat
+  unpurchased Guidance Upgrade or level-one Mage spells in their editable
+  trees, while learned abilities remain in the spellbook and historical tabs
+  remain read-only. Verify save/load preserves ownership, talents, completed
+  trees, and later affinity-gated spell purchases.
 - [ ] Conjure an animal and enliven the last defeated non-boss enemy. Confirm
   the Charisma/Luck check, one transient companion, an independent random
   follow-up after the player, replacement by a later summon, dissolution after
@@ -184,7 +186,7 @@ second implementation backlog.
 - [ ] At the standard Pygame resolution, confirm Mage, Sorcerer, and Wizard
   fit their progression panels without node overlap, scrolling, or clipped
   connectors. Confirm the Enhancement merge runs down the `0.5` midpoint into
-  the top of Classical Force and the Arcane Fundamentals line runs down the
+  the top of Classical Force and the Mana Rupture line runs down the
   `1.5` midpoint into the top of Arcane Tradition.
 - [ ] Verify Footpad, Healer, and Pathfinder expose their four authored
   independent first-tier choices. Confirm Pathfinder may choose Natural
