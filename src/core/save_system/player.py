@@ -164,6 +164,8 @@ class PlayerDataSerializer:
             'absorb_essence_state': getattr(player, 'absorb_essence_state', {}),
             'grandmaster_discipline': getattr(player, 'grandmaster_discipline', None),
             'demonologist_contracts': getattr(player, 'demonologist_contracts', None),
+            'persistent_curses': getattr(player, 'persistent_curses', {}),
+            'fractures': getattr(player, 'fractures', {}),
             'archdruid_attunement': getattr(player, 'archdruid_attunement', None),
             'class_ring_awakening': getattr(player, 'class_ring_awakening', None),
             'promotion_kit_state': promotion_kits.normalize_state(
@@ -177,6 +179,18 @@ class PlayerDataSerializer:
                 getattr(player, 'summons', {})
             ),
             'tamed_companion': getattr(player, 'tamed_companion', None),
+            'familiar_state': (
+                {
+                    'race': getattr(player.familiar, 'race', ''),
+                    'name': getattr(player.familiar, 'name', ''),
+                    'pro_level': getattr(player.familiar.level, 'pro_level', 1),
+                    'exp': getattr(player.familiar.level, 'exp', 0),
+                    'exp_to_gain': getattr(player.familiar.level, 'exp_to_gain', 500),
+                }
+                if getattr(player, 'familiar', None) is not None
+                and getattr(player.familiar, 'spec', '') != 'Tamed'
+                else None
+            ),
             'temporary_exploration_effects': getattr(player, 'temporary_exploration_effects', None),
             'lycan_state': getattr(player, 'lycan_state', None),
             'wizard_affinity': getattr(player, 'wizard_affinity', None),
@@ -394,6 +408,26 @@ class PlayerDataSerializer:
         )
         if hasattr(player, "ensure_demonologist_contracts"):
             player.ensure_demonologist_contracts()
+        from .. import curses
+
+        player.persistent_curses = data.get('persistent_curses', {})
+        curses.ensure_curses(player)
+        player.fractures = dict(data.get('fractures', {}) or {})
+        familiar_state = data.get('familiar_state')
+        if isinstance(familiar_state, dict):
+            from .. import companions
+
+            familiar_ctor = getattr(companions, str(familiar_state.get('race', '')), None)
+            if callable(familiar_ctor):
+                player.familiar = familiar_ctor()
+                player.familiar.name = str(familiar_state.get('name') or player.familiar.race)
+                target_level = max(1, min(3, int(familiar_state.get('pro_level', 1) or 1)))
+                while player.familiar.level.pro_level < target_level:
+                    player.familiar.level_up()
+                player.familiar.level.exp = max(0, int(familiar_state.get('exp', 0) or 0))
+                player.familiar.level.exp_to_gain = max(
+                    0, int(familiar_state.get('exp_to_gain', 0) or 0)
+                )
         player.archdruid_attunement = data.get(
             'archdruid_attunement',
             getattr(player, 'archdruid_attunement', None),

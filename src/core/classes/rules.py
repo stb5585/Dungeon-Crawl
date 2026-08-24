@@ -127,7 +127,7 @@ PROMOTION_MECHANIC_GUIDANCE: dict[str, str] = {
     ),
     "Shadowcaster": (
         "Umbral Debt is shown in combat HUD/status rows and logs. Watch debt, "
-        "backlash, Eclipse readiness, and shadow-form pressure during combat."
+        "backlash, Shade of Ahool readiness, and shadow-form pressure during combat."
     ),
     "Demonologist": (
         "Character Menu tab available: Contracts. Use it to review corruption, "

@@ -48,7 +48,7 @@ def test_third_eye_is_an_aegis_release_option_after_defensive_release():
 
     assert third_eye.kind == NodeKind.ABILITY
     assert third_eye.lane == "Aegis Release"
-    assert third_eye.position == (1, 2)
+    assert third_eye.position == (2, 2)
     assert third_eye.payload["level_requirement"] == 70
     assert third_eye.prerequisites == (nodes["Defensive Release"].id,)
     assert third_eye.payload["ability_class"] is abilities.ThirdEye
@@ -68,32 +68,40 @@ def test_tree_matches_the_authored_release_lanes_and_independent_options():
     nodes = {node.name: node for node in tree.nodes}
 
     assert tree.branches == (
+        "Advanced Spells",
         "Assault Release",
         "Aegis Release",
         "Spellbind Release",
         "Universal / Extra Abilities",
     )
     expected = {
-        "Double Strike": ((0, 0), None),
-        "Cleaving Edge": ((0, 1), 65),
-        "Re-debuff": ((0, 2), 70),
-        "Resonant Strike": ((0, 3), 75),
-        "Mana Slice II": ((0, 5), 85),
-        "Quick Recharge": ((0, 6), 90),
-        "Enhance Armor": ((1, 0), None),
-        "Defensive Release": ((1, 1), 65),
-        "Third Eye": ((1, 2), 70),
-        "Aegis Weave": ((1, 3), 75),
-        "Weave Reservoir": ((1, 4), 80),
-        "Arcane Riposte": ((1, 5), 85),
-        "Mana Tap": ((2, 0), None),
-        "Dispel Slash": ((2, 1), 65),
-        "Storage Capacity II": ((2, 3), 75),
-        "Spellbind": ((2, 4), 80),
-        "Echoing Blade": ((2, 5), 85),
-        "Parry": ((3, 0), None),
-        "True Piercing Strike": ((3, 3), 75),
-        "Triple Strike": ((3, 5), 85),
+        "Fireball": ((0, 0), 70),
+        "Icicle": ((0, 1), 70),
+        "Lightning": ((0, 2), 70),
+        "Hurricane": ((0, 3), 70),
+        "Aqualung": ((0, 4), 70),
+        "Mudslide": ((0, 5), 70),
+        "Magic Missile II": ((0, 6), 70),
+        "Double Strike": ((1, 0), None),
+        "Cleaving Edge": ((1, 1), 65),
+        "Re-debuff": ((1, 2), 70),
+        "Resonant Strike": ((1, 3), 75),
+        "Mana Slice II": ((1, 5), 85),
+        "Quick Recharge": ((1, 6), 90),
+        "Enhance Armor": ((2, 0), None),
+        "Defensive Release": ((2, 1), 65),
+        "Third Eye": ((2, 2), 70),
+        "Aegis Weave": ((2, 3), 75),
+        "Weave Reservoir": ((2, 4), 80),
+        "Arcane Riposte": ((2, 5), 85),
+        "Mana Tap": ((3, 0), None),
+        "Dispel Slash": ((3, 1), 65),
+        "Storage Capacity II": ((3, 3), 75),
+        "Spellbind": ((3, 4), 80),
+        "Echoing Blade": ((3, 5), 85),
+        "Parry": ((4, 0), None),
+        "True Piercing Strike": ((4, 3), 75),
+        "Triple Strike": ((4, 5), 85),
     }
     assert len(tree.nodes) == len(expected)
     assert {
@@ -123,6 +131,18 @@ def test_tree_matches_the_authored_release_lanes_and_independent_options():
     assert nodes["Parry"].prerequisites == ()
     assert nodes["True Piercing Strike"].prerequisites == ()
     assert nodes["Triple Strike"].prerequisites == ()
+    assert all(
+        not nodes[name].prerequisites
+        for name in {
+            "Fireball",
+            "Icicle",
+            "Lightning",
+            "Hurricane",
+            "Aqualung",
+            "Mudslide",
+            "Magic Missile II",
+        }
+    )
     assert nodes["Parry"].payload["owned_if_known"] is True
     assert {"Charged Blade", "Runic Plate"}.isdisjoint(nodes)
     assert nodes["Aegis Weave"].payload["ability_class"] is abilities.AegisWeave

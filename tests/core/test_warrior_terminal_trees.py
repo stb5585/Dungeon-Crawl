@@ -8,6 +8,7 @@ from src.core import abilities
 from src.core import items
 from src.core.classes import ability_mechanics
 from src.core.classes import grandmaster
+from src.core.combat import CombatEncounter
 from src.core.combat.battle_engine import BattleEngine
 from src.core.progression import (
     ABILITY_TREES,
@@ -49,51 +50,65 @@ def test_berserker_tree_has_centered_development_and_heavy_weapon_arts():
     tree = ABILITY_TREES["Berserker"]
     by_name = {node.name: node for node in tree.nodes}
     expected_positions = {
-        "Final Assault": (0, 1),
-        "Frenzy": (1, 1),
-        "Monkey Grip 1": (0, 2),
-        "+30 Attack": (0, 3),
-        "+100 HP": (1, 2),
-        "Mortal Strike 2": (1, 3),
-        "Reckless Onslaught": (0, 4),
-        "Boomerang Toss": (1, 4),
+        "Monkey Grip": (0, 1),
+        "Momentum": (0, 2),
+        "Tectonic Rift": (0, 4),
         "Monkey Grip 2": (0, 5),
+        "Mortal Strike 2": (1, 1),
+        "Boomerang Toss": (1, 2),
+        "+30 Attack": (1, 3),
+        "Thunderous Vault": (1, 4),
         "Triple Strike": (1, 5),
-        "Parry": (2, 2),
-        "Pain Tolerance": (2, 3),
-        "Hemorrhage Thirst": (2, 4),
+        "Frenzy": (2, 1),
+        "Hemorrhage Thirst": (2, 3),
+        "Fatality": (2, 4),
+        "Composed Wrath": (2, 5),
+        "Parry": (3, 1),
+        "Pain Tolerance": (3, 2),
+        "Final Assault": (3, 3),
+        "Reckless Onslaught": (3, 4),
     }
     expected_levels = {
-        "Monkey Grip 1": 65,
-        "Mortal Strike 2": 65,
+        "Momentum": 65,
+        "Tectonic Rift": 75,
+        "Monkey Grip 2": 80,
+        "Boomerang Toss": 65,
+        "Thunderous Vault": 75,
+        "Triple Strike": 80,
         "Pain Tolerance": 65,
+        "Final Assault": 70,
         "Hemorrhage Thirst": 70,
-        "Reckless Onslaught": 70,
-        "Boomerang Toss": 70,
-        "Monkey Grip 2": 75,
-        "Triple Strike": 75,
+        "Fatality": 75,
+        "Composed Wrath": 80,
+        "Reckless Onslaught": 75,
     }
 
     assert "Bloodied Ferocity" not in by_name
     assert "Scarred Endurance" not in by_name
     for name, position in expected_positions.items():
         assert by_name[name].position == position
-    assert "level_requirement" not in by_name["Final Assault"].payload
     assert "level_requirement" not in by_name["Frenzy"].payload
     assert "level_requirement" not in by_name["Parry"].payload
     assert by_name["Hemorrhage Thirst"].payload["ability_class"]().passive is True
     assert by_name["+30 Attack"].payload["amount"] == 30
-    assert by_name["+100 HP"].payload["amount"] == 100
     assert by_name["Reckless Onslaught"].prerequisites == (
-        by_name["+30 Attack"].id,
+        by_name["Final Assault"].id,
     )
     assert by_name["Monkey Grip 2"].prerequisites == (
-        by_name["Reckless Onslaught"].id,
+        by_name["Tectonic Rift"].id,
     )
-    assert (
-        by_name["Reckless Onslaught"].payload["ability_class"].replaces
-        == "Final Assault"
+    assert by_name["Momentum"].prerequisites == (by_name["Monkey Grip"].id,)
+    assert by_name["Tectonic Rift"].prerequisites == (by_name["Momentum"].id,)
+    assert by_name["Fatality"].prerequisites == (
+        by_name["Hemorrhage Thirst"].id,
     )
+    assert by_name["Composed Wrath"].prerequisites == (by_name["Fatality"].id,)
+    assert not hasattr(
+        by_name["Reckless Onslaught"].payload["ability_class"],
+        "replaces",
+    )
+    for name in ("Monkey Grip 2", "Triple Strike", "Composed Wrath", "Reckless Onslaught"):
+        assert by_name[name].cost == 2
     for name, level in expected_levels.items():
         assert by_name[name].payload["level_requirement"] == level
 
@@ -108,6 +123,7 @@ def test_berserker_tree_has_centered_development_and_heavy_weapon_arts():
         for node in art_nodes
     } == grandmaster.TWO_HANDED_WEAPONS
     assert all("level_requirement" not in node.payload for node in art_nodes)
+    assert {node.position[0] for node in art_nodes} == {4, 5}
     assert {node.position[1] for node in art_nodes} == {2, 3, 4, 5}
 
 
@@ -142,25 +158,29 @@ def test_grandmaster_tree_has_three_rank_gated_art_levels_and_floating_talents()
     perfect_form = by_name["Perfect Form"]
     adaptive_arsenal = by_name["Adaptive Arsenal"]
     double_strike = by_name["Double Strike"]
+    weapon_swap = by_name["Weapon Swap"]
     assert perfect_form.kind == NodeKind.TALENT
     assert adaptive_arsenal.kind == NodeKind.TALENT
     assert perfect_form.prerequisites == ()
     assert adaptive_arsenal.prerequisites == ()
-    assert "level_requirement" not in perfect_form.payload
-    assert "level_requirement" not in adaptive_arsenal.payload
+    assert perfect_form.payload["level_requirement"] == 75
+    assert adaptive_arsenal.payload["level_requirement"] == 75
+    assert weapon_swap.payload["level_requirement"] == 70
     assert "level_requirement" not in double_strike.payload
     assert double_strike.payload["owned_if_known"] is True
+    assert perfect_form.cost == 2
+    assert adaptive_arsenal.cost == 2
     assert (
         perfect_form.position[0]
         == adaptive_arsenal.position[0]
         == double_strike.position[0]
+        == weapon_swap.position[0]
         == 3
     )
-    assert (
-        perfect_form.position[1]
-        < double_strike.position[1]
-        < adaptive_arsenal.position[1]
-    )
+    assert double_strike.position == (3, 3)
+    assert weapon_swap.position == (3, 4)
+    assert perfect_form.position == (3, 5)
+    assert adaptive_arsenal.position == (3, 6)
 
 
 def test_frenzy_forces_three_turn_berserk_and_adds_critical_chance():
@@ -176,6 +196,145 @@ def test_frenzy_forces_three_turn_berserk_and_adds_critical_chance():
     assert berserk.duration == 3
     assert berserk.source == "Frenzy"
     assert player.critical_chance("Weapon") == pytest.approx(before + 0.15)
+
+
+def test_composed_wrath_restores_action_choice_during_frenzy():
+    player = _player("Berserker")
+    enemy = _player("Grandmaster of Arms")
+    engine = BattleEngine(player, enemy, _CombatTile())
+    engine.attacker = player
+    abilities.Frenzy().use(player)
+
+    assert engine.get_forced_action().action == "Attack"
+
+    player.spellbook["Skills"]["Composed Wrath"] = abilities.ComposedWrath()
+
+    assert engine.get_forced_action() is None
+
+
+def test_fatality_forces_a_surviving_target_to_counterattack(monkeypatch):
+    player = _player("Berserker")
+    target = _player("Grandmaster of Arms")
+    player.equipment["Weapon"] = items.Bastard()
+    target.equipment["Weapon"] = items.Bastard()
+    player.mana.current = 100
+    counterattacks = []
+
+    def fatality_strike(defender, **_kwargs):
+        defender.health.current -= 20
+        return "Fatality strike.\n", True, 1
+
+    def counterattack(defender, **kwargs):
+        counterattacks.append(kwargs)
+        defender.health.current -= 10
+        return "Counterattack.\n", True, 1
+
+    monkeypatch.setattr(player, "weapon_damage", fatality_strike)
+    monkeypatch.setattr(target, "weapon_damage", counterattack)
+    before_health = player.health.current
+
+    result = abilities.Fatality().use(player, target)
+
+    assert result.damage == 20
+    assert player.health.current == before_health - 10
+    assert player._last_attack_parried is True
+    assert len(counterattacks) == 1
+    assert "parries" in result.message
+
+
+def test_fatality_heals_fifteen_percent_max_health_on_a_kill(monkeypatch):
+    player = _player("Berserker")
+    target = _player("Grandmaster of Arms")
+    player.equipment["Weapon"] = items.Bastard()
+    player.mana.current = 100
+    player.health.max = 200
+    player.health.current = 100
+    target.health.current = 20
+
+    def fatality_strike(defender, **_kwargs):
+        defender.health.current -= 40
+        return "Fatality strike.\n", True, 1
+
+    monkeypatch.setattr(player, "weapon_damage", fatality_strike)
+
+    result = abilities.Fatality().use(player, target)
+
+    assert target.is_alive() is False
+    assert result.damage == 20
+    assert player.health.current == 130
+    assert "recovers 30 health" in result.message
+
+
+def test_tectonic_rift_hits_all_enemies_but_only_prones_grounded_targets():
+    player = _player("Berserker")
+    grounded = _player("Grandmaster of Arms")
+    flying = _player("Grandmaster of Arms")
+    flying.flying = True
+    player.equipment["Weapon"] = items.Bastard()
+    player.equipment["OffHand"] = items.Bastard()
+    player.mana.current = 100
+    encounter = CombatEncounter.from_enemies([grounded, flying])
+    engine = BattleEngine(player, encounter=encounter, tile=_CombatTile())
+    engine.attacker = player
+    engine.defender = grounded
+    ability = abilities.TectonicRift()
+    targets = [
+        (member.combatant_id, member.enemy)
+        for member in encounter.members
+    ]
+
+    result = ability.use_group(player, targets, battle_engine=engine)
+
+    assert len(result.results) == 2
+    assert grounded.physical_effects["Prone"].active is True
+    assert flying.physical_effects["Prone"].active is False
+    assert grounded.health.current < grounded.health.max
+    assert flying.health.current < flying.health.max
+    assert player.mana.current == 100 - ability.cost
+
+
+def test_thunderous_vault_strikes_twice_and_shocks_the_enemy_group(monkeypatch):
+    player = _player("Berserker")
+    primary = _player("Grandmaster of Arms")
+    secondary = _player("Grandmaster of Arms")
+    player.equipment["Weapon"] = items.Bastard()
+    player.equipment["OffHand"] = items.Bastard()
+    player.mana.current = 100
+    encounter = CombatEncounter.from_enemies([primary, secondary])
+    BattleEngine(player, encounter=encounter, tile=_CombatTile())
+    attack_slots = []
+
+    def attack(defender, **kwargs):
+        attack_slots.append(kwargs["attack_slots"])
+        defender.health.current -= 10
+        return "Vault strike.\n", True, 1
+
+    monkeypatch.setattr(player, "weapon_damage", attack)
+    monkeypatch.setattr("src.core.abilities.skills.random.random", lambda: 0.0)
+    ability = abilities.ThunderousVault()
+
+    result = ability.use(player, primary)
+
+    assert attack_slots == [("Weapon",), ("OffHand",)]
+    assert primary.health.current < primary.health.max - 20
+    assert secondary.health.current < secondary.health.max
+    assert primary.status_effects["Stun"].active is True
+    assert secondary.status_effects["Stun"].active is True
+    assert player.mana.current == 100 - ability.cost
+    assert result.damage > 20
+
+
+def test_weapon_swap_equips_the_selected_carried_weapon():
+    player = _player("Grandmaster of Arms")
+    player.equipment["Weapon"] = items.Bastard()
+    replacement = items.Mace()
+    player.inventory[replacement.name] = [replacement]
+
+    message = abilities.WeaponSwap().use(player, weapon=replacement)
+
+    assert player.equipment["Weapon"] is replacement
+    assert "Bastard Sword" in player.inventory
+    assert "swaps Bastard Sword for Mace" in message
 
 
 def test_reckless_onslaught_stacks_tradeoff_and_prones_user_when_parried(
@@ -213,29 +372,24 @@ def test_reckless_onslaught_stacks_tradeoff_and_prones_user_when_parried(
     assert "knocked prone" in first_message
 
 
-def test_reckless_onslaught_purchase_replaces_final_assault():
+def test_reckless_onslaught_purchase_preserves_final_assault():
     player = _player("Berserker")
 
-    assert purchase_node(
-        player,
-        "berserker.ability.final-assault",
-    ).success
-    assert "Final Assault" in player.spellbook["Skills"]
-
     for node_id in (
-        "berserker.ability.monkey-grip",
-        "berserker.rating.attack-1",
+        "berserker.ability.parry",
+        "berserker.ability.pain-tolerance",
+        "berserker.ability.final-assault",
         "berserker.ability.reckless-onslaught",
     ):
         assert purchase_node(player, node_id).success
-    assert "Final Assault" not in player.spellbook["Skills"]
+    assert "Final Assault" in player.spellbook["Skills"]
     assert "Reckless Onslaught" in player.spellbook["Skills"]
 
     restored = PlayerDataSerializer.deserialize(
         PlayerDataSerializer.serialize(player),
         skip_tiles=True,
     )
-    assert "Final Assault" not in restored.spellbook["Skills"]
+    assert "Final Assault" in restored.spellbook["Skills"]
     assert "Reckless Onslaught" in restored.spellbook["Skills"]
 
 
@@ -327,10 +481,11 @@ def test_hemorrhage_thirst_has_no_effect_before_purchase_and_survives_save():
 
     assert ability_mechanics.trigger_hemorrhage_thirst(player, 20) == ""
     assert player.health.current == 100
-    assert purchase_node(
-        player,
+    for node_id in (
+        "berserker.ability.frenzy",
         "berserker.ability.hemorrhage-thirst",
-    ).success
+    ):
+        assert purchase_node(player, node_id).success
 
     restored = PlayerDataSerializer.deserialize(
         PlayerDataSerializer.serialize(player),

@@ -28,8 +28,9 @@ class ItemSerializer:
         if item.__class__.__name__ == "InscribedSpellScroll":
             data["spell_class_name"] = getattr(item, "spell_class_name", "MagicMissile")
             data["charges"] = int(getattr(item, "charges", 1) or 1)
-        elif item.__class__.__name__ == "LockpickKit":
-            data["charges"] = int(getattr(item, "charges", 3) or 3)
+        elif item.__class__.__name__ in {"LockpickKit", "WaterBladder"}:
+            default_charges = 10 if item.__class__.__name__ == "WaterBladder" else 3
+            data["charges"] = int(getattr(item, "charges", default_charges))
         return data
 
     @staticmethod
@@ -62,8 +63,9 @@ class ItemSerializer:
                             data.get("spell_class_name", "MagicMissile"),
                             charges=data.get("charges"),
                         )
-                    if item_class_name == "LockpickKit":
-                        return item_class(charges=data.get("charges", 3))
+                    if item_class_name in {"LockpickKit", "WaterBladder"}:
+                        default_charges = 10 if item_class_name == "WaterBladder" else 3
+                        return item_class(charges=data.get("charges", default_charges))
                     return item_class()
             except Exception:
                 pass

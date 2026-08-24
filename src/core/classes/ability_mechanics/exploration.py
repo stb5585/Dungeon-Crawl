@@ -11,6 +11,7 @@ def default_exploration_effects() -> dict[str, int]:
         "volitation": 0,
         "enter_wall": 0,
         "resist_shadow": 0,
+        "resist_holy": 0,
     }
 
 
@@ -45,6 +46,11 @@ def sync_exploration_flags(character: Any) -> None:
         if effect is not None:
             effect.active = True
             effect.extra = max(0.5, float(effect.extra or 0))
+    if state["resist_holy"] > 0:
+        effect = character.magic_effects.get("Resist Holy")
+        if effect is not None:
+            effect.active = True
+            effect.extra = max(0.5, float(effect.extra or 0))
 
 
 def apply_exploration_effect(character: Any, key: str, turns: int) -> None:
@@ -74,6 +80,12 @@ def tick_exploration_effects(character: Any, steps: int) -> None:
             character.enter_wall = False
         if state["resist_shadow"] <= 0:
             effect = character.magic_effects.get("Resist Shadow")
+            if effect is not None:
+                effect.active = False
+                effect.duration = 0
+                effect.extra = 0
+        if state["resist_holy"] <= 0:
+            effect = character.magic_effects.get("Resist Holy")
             if effect is not None:
                 effect.active = False
                 effect.duration = 0

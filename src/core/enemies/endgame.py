@@ -902,7 +902,7 @@ class Domingo(Aberration):
         self.equipment = {'Weapon': items.NoWeapon(), 'Armor': items.NoArmor(), 'OffHand': items.NoOffHand(),
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
         self.gold = 25000
-        self.spellbook = {"Spells": {'Ultima': abilities.Ultima(),
+        self.spellbook = {"Spells": {'Photon Sphere': abilities.PhotonSphere(),
                                      'Desoul': abilities.Desoul(),
                                      'Boost': abilities.Boost(),
                                      "Ice Block": abilities.IceBlock()},
@@ -922,7 +922,7 @@ class Domingo(Aberration):
         self.status_immunity = ["Death", "Stone"]
         self.action_stack = [
             {"ability": "Attack", "priority": ActionPriority.LOW},
-            {"ability": "Ultima", "priority": ActionPriority.NORMAL},
+            {"ability": "Photon Sphere", "priority": ActionPriority.NORMAL},
             {"ability": "Desoul", "priority": ActionPriority.NORMAL},
             {"ability": "Doublecast", "priority": ActionPriority.NORMAL},
             {"ability": "Boost", "priority": ActionPriority.NORMAL,
@@ -961,14 +961,14 @@ class RedDragon(Dragon):
         self.inventory['Item'] = [items.random_item(7)]
         self.spellbook = {"Spells": {'Regen': abilities.Regen2(),
                                      'Volcano': abilities.Volcano(),
-                                     'Ultima': abilities.Ultima()},
+                                     'Photon Sphere': abilities.PhotonSphere()},
                           "Skills": {'Mortal Strike': abilities.MortalStrike2(),
                                      'Doublecast': abilities.Doublecast(),
                                      'Dragon Breath (Fire)': abilities.DragonBreathFire()}}
         self.action_stack = [
             {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Volcano", "priority": ActionPriority.LOW},
-            {"ability": "Ultima", "priority": ActionPriority.LOW},
+            {"ability": "Photon Sphere", "priority": ActionPriority.LOW},
             {"ability": "Regen", "priority": ActionPriority.LOW_HP_ONLY, "hp_threshold": 0.45},
             {"ability": "Mortal Strike", "priority": ActionPriority.LOW},
             {"ability": "Doublecast", "priority": ActionPriority.NORMAL},
@@ -1030,6 +1030,7 @@ class Circe(Humanoid):
                 "Enfeeble": abilities.Enfeeble(),
                 "Mirror Image": abilities.MirrorImage2(),
                 "Magic Missile": abilities.MagicMissile3(),
+                "Prismatic Cataclysm": abilities.PrismaticCataclysm(),
             },
             "Skills": {
                 "Mana Shield": abilities.ManaShield(),
@@ -1051,6 +1052,7 @@ class Circe(Humanoid):
         self.action_stack = [
             {"ability": "Attack", "priority": ActionPriority.LOW},
             {"ability": "Magic Missile", "priority": ActionPriority.NORMAL},
+            {"ability": "Prismatic Cataclysm", "priority": ActionPriority.LOW},
             {"ability": "Hex", "priority": ActionPriority.NORMAL},
             {"ability": "Sleep", "priority": ActionPriority.NORMAL,
              "priority_if": {"target_status": "Sleep",
@@ -1089,7 +1091,7 @@ class Merzhin(Humanoid):
         self.inventory['Master Key'] = [items.MasterKey]
         self.spellbook = {"Spells": {"Mirror Image": abilities.MirrorImage2(),
                                      "Magic Missile": abilities.MagicMissile3(),
-                                     "Ultima": abilities.Ultima(),
+                                     "Photon Sphere": abilities.PhotonSphere(),
                                      "Disintegrate": abilities.Disintegrate(),
                                      "Boost": abilities.Boost(),
                                      "Ruin": abilities.Ruin()},
@@ -1098,7 +1100,7 @@ class Merzhin(Humanoid):
         self.action_stack = [
             {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Magic Missile", "priority": ActionPriority.NORMAL},
-            {"ability": "Ultima", "priority": ActionPriority.NORMAL},
+            {"ability": "Photon Sphere", "priority": ActionPriority.NORMAL},
             {"ability": "Ruin", "priority": ActionPriority.NORMAL},
             {"ability": "Disintegrate", "priority": ActionPriority.NORMAL},
             {"ability": "Boost", "priority": ActionPriority.NORMAL,

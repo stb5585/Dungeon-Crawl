@@ -14,6 +14,14 @@ if TYPE_CHECKING:
     from ..character import Character
 
 
+def _hold_magical_thirst(user: Character) -> None:
+    """Let a consumed drink postpone Polydipsia for one turn."""
+    from .. import curses
+
+    if curses.has_curse(user, "Polydipsia"):
+        curses.ensure_curses(user)["Polydipsia"]["held_turns"] = 1
+
+
 class HealthPotion(Potion):
 
     def __init__(self):
@@ -67,6 +75,7 @@ class HealthPotion(Potion):
         if user.health.current >= user.health.max:
             user.health.current = user.health.max
             use_str += "You are at max health.\n"
+        _hold_magical_thirst(user)
         return use_str
 
 
@@ -151,6 +160,7 @@ class ManaPotion(Potion):
         if user.mana.current >= user.mana.max:
             user.mana.current = user.mana.max
             use_str += "You are at full mana.\n"
+        _hold_magical_thirst(user)
         return use_str
 
 
@@ -237,6 +247,7 @@ class Elixir(Potion):
         if user.mana.current >= user.mana.max:
             user.mana.current = user.mana.max
             use_str += "You are at full mana.\n"
+        _hold_magical_thirst(user)
         return use_str
 
 

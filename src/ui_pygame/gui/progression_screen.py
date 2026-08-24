@@ -301,7 +301,11 @@ class ProgressionScreen(TownScreenBase):
                     continue
                 end = target_rect.midtop
                 color = self.CONNECTOR_COLOR
-                if source_rect.centerx == target_rect.centerx:
+                channel_column = status.node.payload.get(
+                    "connector_channel_columns",
+                    {},
+                ).get(prerequisite)
+                if source_rect.centerx == target_rect.centerx and channel_column is None:
                     pygame.draw.line(
                         self.screen,
                         color,
@@ -310,7 +314,35 @@ class ProgressionScreen(TownScreenBase):
                         1,
                     )
                     continue
-                source_is_left = source_rect.centerx < target_rect.centerx
+                if source_rect.centerx == target_rect.centerx:
+                    channel_x = int(
+                        self._tree_column_origin
+                        + channel_column * self._tree_lane_width
+                    )
+                    source_side = (
+                        source_rect.midright
+                        if channel_x >= source_rect.centerx
+                        else source_rect.midleft
+                    )
+                    end = (
+                        target_rect.midright
+                        if channel_x >= target_rect.centerx
+                        else target_rect.midleft
+                    )
+                    pygame.draw.lines(
+                        self.screen,
+                        color,
+                        False,
+                        (
+                            source_side,
+                            (channel_x, source_side[1]),
+                            (channel_x, end[1]),
+                            end,
+                        ),
+                        1,
+                    )
+                    continue
+                source_is_left = source_rect.centerx <= target_rect.centerx
                 source_side = (
                     source_rect.midright
                     if source_is_left
@@ -321,10 +353,6 @@ class ProgressionScreen(TownScreenBase):
                     if source_is_left
                     else target_rect.midright
                 )
-                channel_column = status.node.payload.get(
-                    "connector_channel_columns",
-                    {},
-                ).get(prerequisite)
                 if channel_column is None:
                     channel_x = (source_side[0] + end[0]) // 2
                 else:
@@ -784,7 +812,13 @@ class ProgressionScreen(TownScreenBase):
             ),
         )
 
-    def draw_all(self, do_flip=True):
+    def draw_all(self, player_char=None, do_flip=True):
+        """Draw progression, accepting the shared popup parent-screen contract."""
+        if isinstance(player_char, bool):
+            do_flip = player_char
+            player_char = None
+        if player_char is not None:
+            self.player_char = player_char
         self.draw_background()
         self._draw_header()
         tree_rect = pygame.Rect(24, 100, int(self.width * 0.69), self.height - 280)

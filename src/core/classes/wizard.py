@@ -21,6 +21,8 @@ SORCERER_CAP = 50.0
 WIZARD_CAP = 100.0
 AFFINITY_STEP = 2.0
 RING_AFFINITY_STEP = 3.0
+ARCANE_AFFINITY_STEP = 1.0
+RING_ARCANE_AFFINITY_STEP = 1.5
 OPPOSITE_DRIFT = 1.0
 OTHER_DRIFT = 0.2
 AFFINITY_MIN = 0
@@ -29,6 +31,24 @@ SORCERER_UNLOCK_THRESHOLD = 30.0
 SORCERER_MASTERY_THRESHOLD = 50.0
 WIZARD_UNLOCK_THRESHOLD = 80.0
 WIZARD_MASTERY_THRESHOLD = 100.0
+PHOTON_SPHERE_QUEST = "The Light Beyond Domingo"
+ELEMENTAL_ULTIMATE_QUEST = "The Sixfold Calamity"
+ARCANE_EVIDENCE_ENEMIES = (
+    "Lich",
+    "Beholder",
+    "Brain Gorger",
+    "Mind Flayer",
+    "Warforged",
+    "Aboleth",
+)
+ELEMENTAL_EVIDENCE_ENEMIES = (
+    "Fire Myrmidon",
+    "Ice Myrmidon",
+    "Storm Myrmidon",
+    "Wind Myrmidon",
+    "Water Myrmidon",
+    "Earth Myrmidon",
+)
 
 SPELL_UPGRADES: dict[str, tuple[str, str, str]] = {
     "Fire": ("Firebolt", "Fireball", "Firestorm"),
@@ -37,7 +57,7 @@ SPELL_UPGRADES: dict[str, tuple[str, str, str]] = {
     "Water": ("Water Jet", "Aqualung", "Tsunami"),
     "Earth": ("Tremor", "Mudslide", "Earthquake"),
     "Wind": ("Gust", "Hurricane", "Tornado"),
-    "Arcane": ("Magic Missile", "Magic Missile 2", "Magic Missile 3"),
+    "Arcane": ("Magic Missile", "Magic Missile II", "Magic Missile III"),
 }
 
 
@@ -125,7 +145,15 @@ def record_cast(character: Any, school: str | None) -> dict[str, float]:
         return ensure_affinity(character)
     affinity = ensure_affinity(character)
     cap = cap_for(character)
-    step = RING_AFFINITY_STEP if _wizard_ring_accelerates(character) else AFFINITY_STEP
+    ring_accelerates = _wizard_ring_accelerates(character)
+    if school == "Arcane":
+        step = (
+            RING_ARCANE_AFFINITY_STEP
+            if ring_accelerates
+            else ARCANE_AFFINITY_STEP
+        )
+    else:
+        step = RING_AFFINITY_STEP if ring_accelerates else AFFINITY_STEP
     affinity[school] = min(cap, affinity[school] + step)
     if school == "Arcane":
         return affinity
@@ -165,7 +193,12 @@ def process_cast(character: Any, spell: Any, target: Any | None = None) -> str:
         return message
     if chosen == "Elemental" and school == "Arcane":
         return message
-    record_cast(character, school)
+    affinity = ensure_affinity(character)
+    previous = affinity[school]
+    affinity = record_cast(character, school)
+    mastery_threshold = cap_for(character)
+    if previous < mastery_threshold <= affinity[school]:
+        message += f"{character.name} has mastered {school} affinity!\n"
     message += _upgrade_spellbook(character, school)
     message += _apply_mastery_proc(character, school, target)
     return message
@@ -207,38 +240,244 @@ def _spell_class_by_name(spell_name: str):
         "Hurricane": "Hurricane",
         "Tornado": "Tornado",
         "Magic Missile": "MagicMissile",
-        "Magic Missile 2": "MagicMissile2",
-        "Magic Missile 3": "MagicMissile3",
+        "Magic Missile II": "MagicMissile2",
+        "Magic Missile III": "MagicMissile3",
     }
     return getattr(abilities, class_names.get(spell_name, spell_name.replace(" ", "")), None)
 
 
 def _upgrade_spellbook(character: Any, school: str) -> str:
-    spells = getattr(character, "spellbook", {}).get("Spells", {})
-    if not isinstance(spells, dict):
-        return ""
-    affinity = ensure_affinity(character)[school]
-    chain = SPELL_UPGRADES.get(school)
-    if not chain:
-        return ""
-    class_name = getattr(getattr(character, "cls", None), "name", None)
-    target_index = None
-    if affinity >= WIZARD_UNLOCK_THRESHOLD and class_name == "Wizard":
-        target_index = 2
-    elif affinity >= SORCERER_UNLOCK_THRESHOLD and class_name in {"Sorcerer", "Wizard"}:
-        target_index = 1
-    if target_index is None:
-        return ""
-    for lower_name in chain[:target_index]:
-        if lower_name in spells:
-            new_name = chain[target_index]
-            spell_cls = _spell_class_by_name(new_name)
-            if spell_cls is None or new_name in spells:
-                return ""
-            del spells[lower_name]
-            spells[new_name] = spell_cls()
-            return f"{lower_name} resonates with {school} affinity and upgrades to {new_name}.\n"
+    """Tier-two and tier-three spells are purchased from affinity-gated trees."""
+    del character, school
     return ""
+
+
+def observe_photon_sphere(observer: Any, caster: Any) -> str:
+    """Begin the Wizard-only research quest after witnessing Domingo's spell."""
+    if getattr(caster, "name", "") != "Domingo":
+        return ""
+    if getattr(getattr(observer, "cls", None), "name", "") != "Wizard":
+        return ""
+    quest_dict = getattr(observer, "quest_dict", None)
+    if not isinstance(quest_dict, dict):
+        return ""
+    side_quests = quest_dict.setdefault("Side", {})
+    if PHOTON_SPHERE_QUEST in side_quests:
+        return ""
+    side_quests[PHOTON_SPHERE_QUEST] = {
+        "Who": "Warp Point Scientists",
+        "Type": "Discovery",
+        "What": "",
+        "Total": len(ARCANE_EVIDENCE_ENEMIES),
+        "Killed": 0,
+        "Stage": "consult_scientists",
+        "Start Text": (
+            "Domingo shaped an impossible sphere of light. The spell was not "
+            "part of its designed arsenal; ask its creators how it learned it."
+        ),
+        "End Text": "The scientists reconstruct Photon Sphere from six arcane proofs.",
+        "Help Text": "Approach the scientists at Silvana's staffed warp point.",
+        "Reward": [],
+        "Reward Number": 1,
+        "Experience": 0,
+        "Completed": False,
+        "Turned In": False,
+    }
+    return (
+        "Quest started: The Light Beyond Domingo. You witnessed Domingo cast "
+        "Photon Sphere.\n"
+    )
+
+
+def observe_elemental_ultimate(observer: Any, caster: Any) -> str:
+    """Begin the elemental capstone investigation after witnessing Circe."""
+    if getattr(caster, "name", "") != "Circe":
+        return ""
+    if getattr(getattr(observer, "cls", None), "name", "") != "Wizard":
+        return ""
+    quest_dict = getattr(observer, "quest_dict", None)
+    if not isinstance(quest_dict, dict):
+        return ""
+    side_quests = quest_dict.setdefault("Side", {})
+    if ELEMENTAL_ULTIMATE_QUEST in side_quests:
+        return ""
+    side_quests[ELEMENTAL_ULTIMATE_QUEST] = {
+        "Who": "Warp Point Scientists",
+        "Type": "Discovery",
+        "What": "",
+        "Total": len(ELEMENTAL_EVIDENCE_ENEMIES),
+        "Killed": 0,
+        "Stage": "consult_scientists",
+        "Start Text": (
+            "Circe folded all six elemental schools into one catastrophic spell. "
+            "Ask the field scientists how such a pattern could remain stable."
+        ),
+        "End Text": "The six elemental proofs resolve into Prismatic Cataclysm.",
+        "Help Text": "Approach the scientists at Silvana's staffed warp point.",
+        "Reward": [],
+        "Reward Number": 1,
+        "Experience": 0,
+        "Completed": False,
+        "Turned In": False,
+    }
+    return (
+        "Quest started: The Sixfold Calamity. You witnessed Circe cast an "
+        "impossible elemental spell.\n"
+    )
+
+
+def consult_photon_sphere_scientists(character: Any) -> str:
+    """Advance the Photon Sphere investigation at the staffed warp point."""
+    quest = getattr(character, "quest_dict", {}).get("Side", {}).get(
+        PHOTON_SPHERE_QUEST
+    )
+    if not isinstance(quest, dict) or quest.get("Turned In"):
+        return ""
+    if quest.get("Stage") == "consult_scientists":
+        quest.update({
+            "Stage": "recover_arcane_proofs",
+            "Type": "Discovery",
+            "What": "",
+            "Required Enemies": list(ARCANE_EVIDENCE_ENEMIES),
+            "Defeated Enemies": [],
+            "Help Text": (
+                "Recover six distinct proofs of self-taught magic from a Lich, "
+                "Beholder, Brain Gorger, Mind Flayer, Warforged, and Aboleth."
+            ),
+        })
+        return (
+            "The scientists confirm they never taught Domingo Photon Sphere. "
+            "To explain how it invented the spell, recover six distinct proofs "
+            "of adaptive magic from the dungeon's most dangerous arcanists."
+        )
+    if not quest.get("Completed"):
+        return ""
+
+    from .. import abilities
+
+    _grant_ultimate(
+        character,
+        quest,
+        spell_name="Photon Sphere",
+        spell=abilities.PhotonSphere(),
+        node_id="wizard.ability.photon-sphere",
+    )
+    return (
+        "The six proofs reveal how Domingo taught itself to collapse raw Arcane "
+        "force. You learn Photon Sphere, gain 50 maximum MP, and earn 3 "
+        "progression points."
+    )
+
+
+def consult_elemental_ultimate_scientists(character: Any) -> str:
+    """Advance or complete the elemental ultimate investigation."""
+    quest = getattr(character, "quest_dict", {}).get("Side", {}).get(
+        ELEMENTAL_ULTIMATE_QUEST
+    )
+    if not isinstance(quest, dict) or quest.get("Turned In"):
+        return ""
+    if quest.get("Stage") == "consult_scientists":
+        quest.update({
+            "Stage": "recover_elemental_proofs",
+            "Type": "Discovery",
+            "What": "",
+            "Required Enemies": list(ELEMENTAL_EVIDENCE_ENEMIES),
+            "Defeated Enemies": [],
+            "Help Text": (
+                "Master all six elemental affinities and recover a core proof "
+                "from each of the six Myrmidon schools."
+            ),
+        })
+        return (
+            "The pattern requires complete elemental mastery and six living "
+            "proofs. Defeat one Myrmidon of every school after mastering all "
+            "six elemental affinities."
+        )
+    defeated = set(quest.get("Defeated Enemies", ()))
+    mastered = all(
+        ensure_affinity(character).get(school, 0) >= WIZARD_MASTERY_THRESHOLD
+        for school in OPPOSITES
+    )
+    quest["Completed"] = (
+        set(ELEMENTAL_EVIDENCE_ENEMIES).issubset(defeated) and mastered
+    )
+    if not quest["Completed"]:
+        return ""
+
+    from .. import abilities
+
+    _grant_ultimate(
+        character,
+        quest,
+        spell_name="Prismatic Cataclysm",
+        spell=abilities.PrismaticCataclysm(),
+        node_id="wizard.ability.prismatic-cataclysm",
+    )
+    return (
+        "The mastered schools and six Myrmidon proofs lock into a stable whole. "
+        "You learn Prismatic Cataclysm, gain 50 maximum MP, and earn 3 "
+        "progression points."
+    )
+
+
+def consult_ultimate_research(character: Any) -> str:
+    """Resolve every ultimate-spell discussion available at the scientists."""
+    return "\n\n".join(filter(None, (
+        consult_photon_sphere_scientists(character),
+        consult_elemental_ultimate_scientists(character),
+    )))
+
+
+def record_ultimate_quest_defeat(character: Any, enemy_name: str) -> str:
+    """Record one distinct late-game proof for either ultimate investigation."""
+    messages = []
+    side_quests = getattr(character, "quest_dict", {}).get("Side", {})
+    for quest_name, required in (
+        (PHOTON_SPHERE_QUEST, ARCANE_EVIDENCE_ENEMIES),
+        (ELEMENTAL_ULTIMATE_QUEST, ELEMENTAL_EVIDENCE_ENEMIES),
+    ):
+        quest = side_quests.get(quest_name)
+        if not isinstance(quest, dict) or enemy_name not in required:
+            continue
+        if not str(quest.get("Stage", "")).startswith("recover_"):
+            continue
+        defeated = set(quest.get("Defeated Enemies", ()))
+        if enemy_name in defeated:
+            continue
+        defeated.add(enemy_name)
+        quest["Defeated Enemies"] = sorted(defeated)
+        quest["Killed"] = len(defeated)
+        if quest_name == PHOTON_SPHERE_QUEST:
+            quest["Completed"] = set(required).issubset(defeated)
+        messages.append(
+            f"Recovered {enemy_name}'s proof for {quest_name} "
+            f"({len(defeated)}/{len(required)}).\n"
+        )
+    return "".join(messages)
+
+
+def _grant_ultimate(
+    character: Any,
+    quest: dict[str, Any],
+    *,
+    spell_name: str,
+    spell: Any,
+    node_id: str,
+) -> None:
+    spells = getattr(character, "spellbook", {}).setdefault("Spells", {})
+    spells.setdefault(spell_name, spell)
+    quest["Stage"] = "learned"
+    quest["Turned In"] = True
+    character.mana.max += 50
+    character.mana.current = min(character.mana.max, character.mana.current + 50)
+    try:
+        from ..progression import ensure_progression
+
+        progression = ensure_progression(character)
+        progression.purchased_node_ids.add(node_id)
+        progression.unspent_points += 3
+    except Exception:
+        pass
 
 
 def _buff_state(character: Any) -> dict[str, int]:

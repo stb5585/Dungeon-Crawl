@@ -55,6 +55,7 @@ from src.core.progression import (
     progression_class_name,
     purchase_node,
     validate_trees,
+    _grant_talent,
 )
 from src.core.races import Human, races_dict
 from src.core.save_system import PlayerDataSerializer
@@ -135,7 +136,12 @@ def test_all_tree_manifests_validate_and_scale_rating_values_by_stage():
                 "Berserker",
                 "Conjurer",
                 "Knight Enchanter",
+                "Sorcerer",
                 "Spellblade",
+                "Warlock",
+                "Wizard",
+                "Shadowcaster",
+                "Demonologist",
             }
         ):
             assert talent_nodes
@@ -154,6 +160,30 @@ def test_all_tree_manifests_validate_and_scale_rating_values_by_stage():
                     30 if tree.stage == 1 else 60
                 )
                 assert node.cost == (2 if tree.stage == 1 else 3)
+
+
+def test_only_plain_stat_nodes_use_fixed_stat_increases():
+    fixed_bonus_keys = {"ratings", "health", "mana"}
+
+    for tree in ABILITY_TREES.values():
+        for node in tree.nodes:
+            if node.kind in {NodeKind.RATING, NodeKind.HEALTH, NodeKind.MANA}:
+                continue
+            assert fixed_bonus_keys.isdisjoint(node.payload.get("bonuses", {})), node.id
+
+
+def test_custom_stat_talents_apply_percentage_based_increases():
+    player = _player(Mage)
+    player.combat.defense = 21
+    node = next(
+        node
+        for node in ABILITY_TREES["Mage"].nodes
+        if node.name == "Binding Circle"
+    )
+
+    _grant_talent(player, node)
+
+    assert player.combat.defense == 24
 
 
 def test_conjurer_has_four_authored_disciplines_and_terminal_promotion():
@@ -191,7 +221,7 @@ def test_talent_purchase_applies_bonus_and_modifies_class_kit_cap():
 
     assert result.success
     assert has_talent(player, "troubadour.resonant-finale")
-    assert player.combat.magic == before_magic + 30
+    assert player.combat.magic == before_magic + 2
     assert cap_for(player, "crescendo") == before_cap + 1
     restored = PlayerDataSerializer.deserialize(
         PlayerDataSerializer.serialize(player),

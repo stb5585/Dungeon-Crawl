@@ -83,6 +83,8 @@ class Character(
                                           "Poison": StatusEffect(False, 0, 0),
                                           "Silence": StatusEffect(False, 0),
                                           "Sleep": StatusEffect(False, 0),
+                                          "Fear": StatusEffect(False, 0),
+                                          "Fractured": StatusEffect(False, 0),
                                           "Stun": StatusEffect(False, 0),
                                           "Polymorph": StatusEffect(False, 0),
                                           "Defend": StatusEffect(False, 0, 0),
@@ -112,6 +114,7 @@ class Character(
                                          "Resist Earth": StatusEffect(False, 0, 0),
                                          "Resist Wind": StatusEffect(False, 0, 0),
                                          "Resist Shadow": StatusEffect(False, 0, 0),
+                                         "Resist Holy": StatusEffect(False, 0, 0),
                                          "Hallowed Ground": StatusEffect(False, 0, 0),
                                          "Stone Skin": StatusEffect(False, 0),
                                          "Nature Shield": StatusEffect(False, 0, 0),
@@ -123,6 +126,8 @@ class Character(
                                          "Drunken Brawler": StatusEffect(False, 0, 0),
                                          "Last Stand": StatusEffect(False, 0, 0)}
         self.status_immunity: list[str] = []
+        self.persistent_curses: dict[str, dict[str, object]] = {}
+        self.fractures: dict[str, int] = {}
         self.resistance: dict[str, float] = {'Fire': 0.,
                                              'Ice': 0.,
                                              'Electric': 0.,

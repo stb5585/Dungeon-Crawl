@@ -76,14 +76,14 @@ class ThreadedCast(_PromotionActive):
         return promotion_kits.threaded_cast(user)
 
 
-class Eclipse(_PromotionActive):
+class ShadeOfAhool(_PromotionActive):
     def __init__(self):
-        super().__init__("Eclipse", "Spend Umbral Debt to enter a short shadow form.", 0)
+        super().__init__("Shade of Ahool", "Become a flying shadow beast for three turns.", 0)
 
     def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
         from ..classes import promotion_kits
 
-        return promotion_kits.eclipse(user)
+        return promotion_kits.shade_of_ahool(user)
 
 
 class HoldTheLine(_ResolveActive):

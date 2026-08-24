@@ -308,9 +308,9 @@ class RainbowRod(OffHand):
 class UltimaScepter(OffHand):
 
     def __init__(self):
-        super().__init__(name="Ultima Scepter", description="Crafted to harness the pure, devastating power of the "
-                                                            "Ultima spell, this scepter is an artifact of forbidden "
-                                                            "magic and unparalleled potency. The Ultima Scepter "
+        super().__init__(name="Photon Sphere Scepter", description="Crafted to harness the pure, devastating power of the "
+                                                            "Photon Sphere spell, this scepter is an artifact of forbidden "
+                                                            "magic and unparalleled potency. The Photon Sphere Scepter "
                                                             "channels immense energy directly into the spell, "
                                                             "making it a weapon of unmatched finality in battle, "
                                                             "doubling the bonus to spell damage.",

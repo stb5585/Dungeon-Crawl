@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
 import random
 from typing import TYPE_CHECKING
 
@@ -685,6 +686,42 @@ class ResistShadow(Spell):
         )
 
 
+class ResistHoly(Spell):
+    """Long-lived exploration ward against Holy damage."""
+
+    exploration_cast = True
+
+    def __init__(self):
+        super().__init__(
+            "Resist Holy",
+            "Increase Holy resistance outside battle for 100 steps of game time.",
+            school="Abjuration",
+        )
+        self.cost = 15
+        self.combat = False
+        self.subtyp = "Support"
+
+    def cast(
+        self,
+        user: Character,
+        target: Character | None = None,
+        **kwargs: Any,
+    ) -> str:
+        return "Resist Holy must be cast outside battle.\n"
+
+    def cast_out(self, game_or_user) -> str:
+        from ..classes import ability_mechanics
+
+        user = getattr(game_or_user, "player_char", game_or_user)
+        if user.mana.current < self.cost:
+            return f"{user.name} does not have enough mana to cast Resist Holy.\n"
+        user.mana.current -= self.cost
+        ability_mechanics.apply_exploration_effect(user, "resist_holy", 100)
+        return (
+            f"{user.name} gains 50% Holy resistance for 100 steps of game time.\n"
+        )
+
+
 class HallowedGround(Spell):
     """Three-turn holy field that harms foes and restores its caster."""
 
@@ -888,10 +925,10 @@ class Corruption2(Spell):
         self.subtyp = "Shadow"
 
     def cast(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
-        from ..classes import ability_mechanics, demonologist
+        from ..classes import ability_mechanics, demonologist, mage_mechanics
 
         super().cast(user, target, **kwargs)
-        user.mana.current -= self.cost
+        user.mana.current -= mage_mechanics.spell_mana_cost(user, self)
         if target is None:
             return "Corruption finds no soul to cling to.\n"
         contracts = ability_mechanics.abyssal_contract_count(
@@ -904,7 +941,18 @@ class Corruption2(Spell):
             dot.active = True
             dot.duration = max(dot.duration, 3 + min(2, contracts // 2))
             dot.extra = max(int(dot.extra or 0), max(1, damage // 3 + contracts))
+            if "Persistent Corruption" in getattr(user, "spellbook", {}).get("Skills", {}):
+                dot.duration = max(dot.duration, 4)
+                dot.extra = max(1, int(dot.extra * 1.25))
             dot.source = "Corruption"
+            from ..classes import warlock
+
+            warlock.mark_corruption(
+                user,
+                target,
+                rank=2,
+                contracts=contracts,
+            )
             msg += f"{target.name} is deeply corrupted.\n"
         return msg
 

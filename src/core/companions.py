@@ -34,9 +34,26 @@ class Familiar(Character):
 
     def __init__(self, name: str, health: Resource, mana: Resource, stats: Stats, combat: Combat) -> None:
         super().__init__(name=name, health=health, mana=mana, stats=stats, combat=combat)
+        # Familiars grow twice. Their body is abstract: their Warlock supplies
+        # attributes/resources whenever they act.
+        self.level.exp_to_gain = 500
 
     def inspect(self) -> str:
         raise NotImplementedError
+
+    def gain_action_experience(self, amount: int) -> str:
+        """Award encounter experience only after this familiar took an action."""
+        if self.level.pro_level >= 3:
+            return ""
+        gained = max(0, int(amount or 0))
+        self.level.exp += gained
+        self.level.exp_to_gain -= gained
+        message = f"{self.name} gained {gained} familiar experience.\n"
+        while self.level.exp_to_gain <= 0 and self.level.pro_level < 3:
+            overflow = -self.level.exp_to_gain
+            message += self.level_up()
+            self.level.exp_to_gain = (1000 if self.level.pro_level == 2 else 0) - overflow
+        return message
 
 
 class TamedCompanion(Familiar):
@@ -147,7 +164,7 @@ class Homunculus(Familiar):
     """
     Familiar - cast helpful defensive abilities; abilities upgrade when the familiar upgrades
     Level 1: Can use Disarm, Pocket Sand, and Stupefy
-    Level 2: Gains Cover and Goad and bonus to defense
+    Level 2: Gains Cover, Goad, and Slow and bonus to defense
     Level 3: Gains Resurrection
     """
 
@@ -171,7 +188,7 @@ class Homunculus(Familiar):
         fam_level_str = f"{self.name} has leveled up!\n"
         if self.level.pro_level == 1:
             self.level.pro_level = 2
-            skill_list = [abilities.Cover(), abilities.Goad()]
+            skill_list = [abilities.Cover(), abilities.Goad(), abilities.Slow()]
             for skill in skill_list:
                 self.spellbook['Skills'][skill.name] = skill
                 fam_level_str += f"{self.name} has gain the ability {skill.name}.\n"
@@ -187,8 +204,8 @@ class Fairy(Familiar):
     """
     Familiar - cast helpful support abilities; abilities upgrade when the familiar upgrades
     Level 1: Can cast Heal, Regen, and Bless
-    Level 2: Gains Reflect and will randomly restore percentage of mana
-    Level 3: Gains Cleanse
+    Level 2: Gains level 2 spells, Reflect, and will randomly restore percentage of mana
+    Level 3: Gains level 3 spells and Cleanse
     """
 
     def __init__(self) -> None:
@@ -218,7 +235,12 @@ class Fairy(Familiar):
                 fam_level_str += f"{self.name} has gained the ability {spell.name}.\n"
         else:
             self.level.pro_level = 3
-            spell_list = [abilities.Cleanse(), abilities.Heal3(), abilities.Regen3()]
+            spell_list = [
+                abilities.Cleanse(),
+                abilities.Heal3(),
+                abilities.Regen3(),
+                abilities.ExpelCurse(),
+            ]
             for spell in spell_list:
                 self.spellbook['Spells'][spell.name] = spell
                 fam_level_str += f"{self.name} has gained the ability {spell.name}.\n"
@@ -228,49 +250,46 @@ class Fairy(Familiar):
 class Mephit(Familiar):
     """
     Familiar - cast helpful arcane abilities
-    Level 1: Can cast the 3 arcane elementals Firebolt, Ice Lance, and Shock and Magic Missile
-    Level 2: Gains Boost and sometimes provides elemental resistance
-    Level 3: Gains Ultima
+    Level 1: Can cast Magic Missile and Silence
+    Level 2: Gains level 2 spells, Boost, and sometimes provides elemental resistance
+    Level 3: Gains level 3 spells
     """
 
     def __init__(self) -> None:
         super().__init__(name="", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat())
         self.race = 'Mephit'
         self.name = self.race
-        self.spellbook = {"Spells": {'Firebolt': abilities.Firebolt(),
-                                     'Ice Lance': abilities.IceLance(),
-                                     'Shock': abilities.Shock(),
-                                     'Magic Missile': abilities.MagicMissile()},
+        self.spellbook = {"Spells": {'Magic Missile': abilities.MagicMissile(),
+                                     'Silence': abilities.Silence()},
                           "Skills": {}}
         self.spec = 'Arcane'
         self.cls = 'Familiar'
 
     def inspect(self) -> str:
-        return (f"A {self.race} is similar to an imp, except this little guy can blast arcane spells. Typically "
-                f"mephits embody a single elemental school but these are more Jack-of-all-trades than specialist, "
-                f"even gaining the ability to boost its master's magic and magic defense. Who wouldn't want a their "
+        return (f"A {self.race} is similar to an imp, except this little guy can blast arcane spells. It also "
+                f"gains some crowd control and support abilities. Who wouldn't want a their "
                 f"very own pocket caster?")
 
     def level_up(self) -> str:
         fam_level_str = f"{self.name} has leveled up!\n"
         if self.level.pro_level == 1:
             self.level.pro_level = 2
-            spell_list = [abilities.Fireball(),
-                          abilities.Icicle(),
-                          abilities.Lightning(),
-                          abilities.MagicMissile2(),
-                          abilities.Boost()]
+            spell_list = [
+                abilities.Fireball(), abilities.Icicle(), abilities.Lightning(),
+                abilities.Hurricane(), abilities.Aqualung(), abilities.Mudslide(),
+                abilities.Boost(),
+            ]
             for spell in spell_list:
                 self.spellbook['Spells'][spell.name] = spell
                 fam_level_str += f"{self.name} has gained the ability {spell.name}.\n"
             fam_level_str += f"{self.name} also increases your magic defense.\n"
         else:
             self.level.pro_level = 3
-            spell_list = [abilities.Firestorm(),
-                          abilities.IceBlizzard(),
-                          abilities.Electrocution(),
-                          abilities.MagicMissile3(),
-                          abilities.Ultima()]
+            spell_list = [
+                abilities.Firestorm(), abilities.IceBlizzard(), abilities.Electrocution(),
+                abilities.Tornado(), abilities.Tsunami(), abilities.Earthquake(),
+                abilities.Invisibility(), abilities.Polymorph(),
+            ]
             for spell in spell_list:
                 self.spellbook['Spells'][spell.name] = spell
                 fam_level_str += f"{self.name} has gained the ability {spell.name}.\n"
@@ -282,7 +301,7 @@ class Jinkin(Familiar):
     Familiar - cast (mostly) helpful luck abilities
     Level 1: Can cast Corruption and use Gold Toss (uses player_char gold) and Steal (items go to player_char inventory)
     Level 2: Gains Enfeeble and will unlock Treasure chests
-    Level 3: Gains Slot Machine and will randomly find items at the end of combat
+    Level 3: Gains Slot Machine and Twist Fate and will randomly find items at the end of combat
     """
 
     def __init__(self) -> None:
@@ -313,6 +332,8 @@ class Jinkin(Familiar):
             self.level.pro_level = 3
             self.spellbook['Skills']['Slot Machine'] = abilities.SlotMachine()
             fam_level_str += f"{self.name} has gained the ability Slot Machine.\n"
+            self.spellbook['Spells']['Twist Fate'] = abilities.TwistFate()
+            fam_level_str += f"{self.name} has gained the ability Twist Fate.\n"
         return fam_level_str
 
 
@@ -1079,7 +1100,7 @@ class Zahhak(Summons):
     Level 3
     - Magic Missile 3
     Level 5
-    - Ultima
+    - Photon Sphere
     Level 7
     - Disintegrate
     Level 9
@@ -1190,7 +1211,7 @@ summon_abilities = {
                           "10": abilities.MaelstromVortex}},
     "Zahhak": {"Skills": {},
                "Spells": {"3": abilities.MagicMissile3,
-                          "5": abilities.Ultima,
+                          "5": abilities.PhotonSphere,
                           "7": abilities.Disintegrate,
                           "9": abilities.Meteor,
                           "10": abilities.Cataclysm}}

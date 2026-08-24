@@ -649,7 +649,7 @@ class QuestManager:
                 showed_message = True  # declined quest still showed a popup
         for name, q in flatten(sides):
             # Skip debug-only pandora/ultima style special cases
-            if name == "Pandora's Box" and 'Ultima' not in self.player_char.spellbook.get('Spells', {}):
+            if name == "Pandora's Box" and 'Photon Sphere' not in self.player_char.spellbook.get('Spells', {}):
                 continue
             
             if name not in self.player_char.quest_dict.get('Side', {}):

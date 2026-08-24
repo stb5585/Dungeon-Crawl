@@ -31,6 +31,14 @@ from .state import (
 )
 from .meters import (
     cap_for,
+    _normalized_blade_charge,
+    _blade_charge_type,
+    _blade_charge_capacity,
+    _blade_charge_resistance,
+    _release_blade_charge_damage,
+    _store_blade_charge,
+    _apply_breakdown_stack,
+    _clear_breakdown_stacks,
     _talent_cap_bonus,
     _class_ring_data,
     gain_meter,
@@ -55,6 +63,7 @@ from .meters import (
     _spend_mp,
     threaded_cast,
     eclipse,
+    shade_of_ahool,
     shadowcaster_debt_cap,
     record_shadow_damage,
     _normalize_shadowcaster_data,

@@ -274,6 +274,18 @@ def tick_combat_state(character: Any) -> str:
 
         msg += resolve_echoing_blade(character)
         msg += weave_reservoir_regeneration(character)
+    if class_name(character) == "Shadowcaster":
+        from .meters import _class_ring_data, _normalize_shadowcaster_data
+
+        shadow = _class_ring_data(character, "Shadowcaster")
+        _normalize_shadowcaster_data(shadow)
+        turns = int(shadow.get("eclipse_turns", 0) or 0)
+        if turns > 0:
+            shadow["eclipse_turns"] = turns - 1
+            if turns == 1:
+                character.shade_of_ahool_turns = 0
+                character.flying = False
+                msg += f"{character.name} returns from the Shade of Ahool.\n"
     hold_turns = int(state.get("hold_the_line", 0) or 0)
     if hold_turns > 0:
         state["hold_the_line"] = max(0, hold_turns - 1)
@@ -438,6 +450,8 @@ def begin_action(
     choice: str | None = None,
 ) -> None:
     state = combat_state(character)
+    if bool(getattr(character, "mage_refueling", False)) and choice != "Refueling":
+        character.mage_refueling = False
     state["action_token"] = int(state.get("action_token", 0) or 0) + 1
     state["hierophant_devotion_token"] = None
     state["pending_hierophant_devotion_token"] = None

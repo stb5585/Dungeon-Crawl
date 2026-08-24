@@ -19,6 +19,12 @@ STAGE_SIZE_RANGES = {
 TREE_SIZE_OVERRIDES = {
     # Six authored Mage columns plus the mutually exclusive Sorcerer fork.
     "Mage": (36, 36),
+    # Six authored paths plus two mutually exclusive terminal promotions.
+    "Warlock": (29, 29),
+    # Five authored Demonologist disciplines.
+    "Demonologist": (24, 24),
+    # Five authored Shadowcaster disciplines, including four familiar masteries.
+    "Shadowcaster": (21, 21),
     # Four authored Conjurer disciplines plus the terminal promotion.
     "Conjurer": (21, 21),
     # Seven Calling groups, seven choices, seven ultimates, utility, and Miracles.
@@ -26,10 +32,10 @@ TREE_SIZE_OVERRIDES = {
     # Eight independent discipline-gated weapon arts sit beside the two
     # ordinary Weapon Master routes.
     "Weapon Master": (33, 33),
-    # Two development paths, three independent nodes, and eight art upgrades.
-    "Berserker": (21, 21),
-    # Eight three-rank weapon-art chains plus three floating mastery entries.
-    "Grandmaster of Arms": (27, 27),
+    # Four development paths and two columns of heavy weapon arts.
+    "Berserker": (25, 25),
+    # Eight three-rank weapon-art chains plus four floating mastery entries.
+    "Grandmaster of Arms": (28, 28),
     # Six Lancer disciplines with split polearm assault and guard paths.
     "Lancer": (23, 23),
     # Dragoon retains all 23 Lancer development nodes and adds 11 mastery nodes.
@@ -41,7 +47,11 @@ TREE_SIZE_OVERRIDES = {
     # Four authored terminal paths with both melee-style expansions.
     "Crusader": (23, 23),
     # Three release disciplines plus independent universal weapon techniques.
-    "Knight Enchanter": (20, 20),
+    "Knight Enchanter": (27, 27),
+    # Five authored schools of Sorcerer development with two specialization forks.
+    "Sorcerer": (29, 29),
+    # Five authored Wizard columns, including the quest-awarded ultimate spell.
+    "Wizard": (28, 28),
 }
 
 ABILITY_ICON_KEYS = frozenset({
@@ -79,6 +89,7 @@ ABILITY_ICON_KEYS = frozenset({
     "rating_defense",
     "rating_magic_defense",
     "promotion",
+    "unknown",
 })
 
 ABILITY_ICON_OVERRIDES = {
@@ -348,21 +359,20 @@ MAGE_TREE_NODE_SPECS = (
         "id": "mage.talent.arcane-fundamentals",
         "kind": "talent",
         "identifier": "mage.arcane-fundamentals",
-        "name": "Arcane Fundamentals",
+        "name": "Guidance Upgrade",
         "lane": "Arcana",
         "position": (2, 1),
         "level": 5,
         "prerequisites": ("mage.ability.magicmissile",),
         "description": (
-            "Permanently increase Magic by 10 and Arcane critical-strike "
-            "damage by 10%."
+            "Increase Magic Missile projectile critical-strike damage by 20%."
         ),
-        "bonuses": {"ratings": {"Magic": 10}, "arcane_critical_damage": 0.10},
+        "bonuses": {"magic_missile_critical_damage": 0.20},
     },
     {
-        "id": "mage.mana.arcane-reserve",
-        "kind": "mana",
-        "identifier": "Mana",
+        "id": "mage.ability.mana-rupture",
+        "kind": "ability",
+        "identifier": "ManaRupture",
         "lane": "Arcana",
         "position": (2, 2),
         "prerequisites": ("mage.talent.arcane-fundamentals",),
@@ -374,7 +384,7 @@ MAGE_TREE_NODE_SPECS = (
         "lane": "Arcana",
         "position": (2, 3),
         "level": 15,
-        "prerequisites": ("mage.mana.arcane-reserve",),
+        "prerequisites": ("mage.ability.mana-rupture",),
     },
     {
         "id": "mage.ability.manashield",
@@ -489,11 +499,11 @@ MAGE_TREE_NODE_SPECS = (
         "level": 15,
         "prerequisites": ("mage.ability.conjure-animal",),
         "description": (
-            "Permanently increase Defense by 10; conjured and summoned allies "
+            "Increase Defense by 10%; conjured and summoned allies "
             "gain 10% health and damage."
         ),
         "bonuses": {
-            "ratings": {"Defense": 10},
+            "rating_percentages": {"Defense": 0.10},
             "conjured_ally_health": 0.10,
             "conjured_ally_damage": 0.10,
         },
@@ -582,7 +592,7 @@ MAGE_TREE_NODE_SPECS = (
         "lane": "Arcana",
         "position": (1.5, 6),
         "level": 25,
-        "prerequisites": ("mage.talent.arcane-fundamentals",),
+        "prerequisites": ("mage.ability.mana-rupture",),
         "exclusive_group": "mage.sorcerer-specialization",
         "connector_enter_from_top": True,
         "connector_channel_columns": {
@@ -621,6 +631,290 @@ MAGE_CARRIED_NODE_POSITIONS = {
     "mage.ability.icelance": (4, 1),
     "mage.ability.gust": (4, 2),
 }
+
+
+SORCERER_TREE_NODE_SPECS = (
+    {
+        "id": "fireball", "kind": "ability", "identifier": "Fireball",
+        "lane": "Elemental Spells", "position": (0, 0),
+        "school_affinity": ("Fire", 30), "available_on_promotion": True,
+        "upgrade_without_source": True,
+    },
+    {
+        "id": "icicle", "kind": "ability", "identifier": "Icicle",
+        "lane": "Elemental Spells", "position": (0, 1),
+        "school_affinity": ("Ice", 30), "available_on_promotion": True,
+        "upgrade_without_source": True,
+    },
+    {
+        "id": "lightning", "kind": "ability", "identifier": "Lightning",
+        "lane": "Elemental Spells", "position": (0, 2),
+        "school_affinity": ("Electric", 30), "available_on_promotion": True,
+        "upgrade_without_source": True,
+    },
+    {
+        "id": "hurricane", "kind": "ability", "identifier": "Hurricane",
+        "lane": "Elemental Spells", "position": (0, 3),
+        "school_affinity": ("Wind", 30), "available_on_promotion": True,
+        "upgrade_without_source": True,
+    },
+    {
+        "id": "aqualung", "kind": "ability", "identifier": "Aqualung",
+        "lane": "Elemental Spells", "position": (0, 4),
+        "school_affinity": ("Water", 30), "available_on_promotion": True,
+        "upgrade_without_source": True,
+    },
+    {
+        "id": "mudslide", "kind": "ability", "identifier": "Mudslide",
+        "lane": "Elemental Spells", "position": (0, 5),
+        "school_affinity": ("Earth", 30), "available_on_promotion": True,
+        "upgrade_without_source": True,
+    },
+    {
+        "id": "classical-enrichment", "kind": "ability",
+        "identifier": "ClassicalEnrichment", "lane": "Elemental Spells",
+        "position": (0.5, 6), "level": 55,
+        "prerequisites": (
+            "combustion", "snowpiercer", "paralyzer", "ejection-gale",
+            "aspirate", "unsteady-ground",
+        ),
+        "prerequisite_mode": "any", "connector_enter_from_top": True,
+        "connector_channel_columns": {
+            "combustion": 0.5, "snowpiercer": 0.5, "paralyzer": 0.5,
+            "ejection-gale": 0.5, "aspirate": 0.5, "unsteady-ground": 0.5,
+        },
+    },
+    {
+        "id": "combustion", "kind": "ability", "identifier": "Combustion",
+        "lane": "Spell Modifiers", "position": (1, 0),
+        "level": 35, "prerequisites": ("fireball",),
+    },
+    {
+        "id": "snowpiercer", "kind": "ability", "identifier": "Snowpiercer",
+        "lane": "Spell Modifiers", "position": (1, 1),
+        "level": 35, "prerequisites": ("icicle",),
+    },
+    {
+        "id": "paralyzer", "kind": "ability", "identifier": "Paralyzer",
+        "lane": "Spell Modifiers", "position": (1, 2),
+        "level": 35, "prerequisites": ("lightning",),
+    },
+    {
+        "id": "ejection-gale", "kind": "ability", "identifier": "EjectionGale",
+        "lane": "Spell Modifiers", "position": (1, 3),
+        "level": 35, "prerequisites": ("hurricane",),
+    },
+    {
+        "id": "aspirate", "kind": "ability", "identifier": "Aspirate",
+        "lane": "Spell Modifiers", "position": (1, 4),
+        "level": 35, "prerequisites": ("aqualung",),
+    },
+    {
+        "id": "unsteady-ground", "kind": "ability", "identifier": "UnsteadyGround",
+        "lane": "Spell Modifiers", "position": (1, 5),
+        "level": 35, "prerequisites": ("mudslide",),
+    },
+    {
+        "id": "magic-missile-2", "kind": "ability", "identifier": "MagicMissile2",
+        "lane": "Arcana", "position": (2, 0),
+        "name": "Magic Missile II",
+        "school_affinity": ("Arcane", 30), "available_on_promotion": True,
+        "upgrade_without_source": True,
+    },
+    {
+        "id": "force-multiplier", "kind": "ability", "identifier": "ForceMultiplier",
+        "lane": "Arcana", "position": (2, 1), "level": 35,
+        "prerequisites": ("magic-missile-2",),
+    },
+    {
+        "id": "kinetic-explosion", "kind": "ability", "identifier": "KineticExplosion",
+        "lane": "Arcana", "position": (2, 4), "level": 50,
+        "prerequisites": ("mana-leak",),
+    },
+    {
+        "id": "arcane-empowerment", "kind": "ability",
+        "identifier": "ArcaneEmpowerment", "lane": "Arcana",
+        "position": (2, 5), "level": 50, "prerequisites": ("kinetic-explosion",),
+    },
+    {
+        "id": "mana-rupture", "kind": "ability", "identifier": "ManaRupture",
+        "lane": "Arcana", "position": (2, 2), "level": 40,
+        "available_on_promotion": True, "owned_if_known": True,
+        "prerequisites": ("force-multiplier",),
+    },
+    {
+        "id": "mana-leak", "kind": "ability", "identifier": "ManaLeak",
+        "lane": "Arcana", "position": (2, 3), "level": 45,
+        "prerequisites": ("mana-rupture",),
+    },
+    {
+        "id": "arcane-ritual", "kind": "ability", "identifier": "ArcaneRitual",
+        "lane": "Arcana", "position": (1.5, 6), "level": 55,
+        "prerequisites": ("arcane-empowerment",),
+        "connector_enter_from_top": True,
+        "connector_channel_columns": {
+            "arcane-empowerment": 1.5,
+        },
+    },
+    {
+        "id": "boost", "kind": "ability", "identifier": "Boost",
+        "lane": "Spell Enhancements", "position": (3, 0),
+        "available_on_promotion": True,
+    },
+    {
+        "id": "dispel", "kind": "ability", "identifier": "Dispel",
+        "lane": "Spell Enhancements", "position": (3, 1), "level": 35,
+        "prerequisites": ("boost",),
+    },
+    {
+        "id": "magic", "kind": "rating", "identifier": "Magic",
+        "lane": "Spell Enhancements", "position": (3, 2),
+        "prerequisites": ("dispel",),
+    },
+    {
+        "id": "refueling", "kind": "ability", "identifier": "Refueling",
+        "lane": "Spell Enhancements", "position": (3, 3), "level": 45,
+        "prerequisites": ("magic",),
+    },
+    {
+        "id": "doublecast", "kind": "ability", "identifier": "Doublecast",
+        "lane": "Spell Enhancements", "position": (3, 4), "level": 50,
+        "prerequisites": ("refueling",),
+    },
+    {
+        "id": "mirror-image", "kind": "ability", "identifier": "MirrorImage",
+        "lane": "Illusion", "position": (4, 0), "available_on_promotion": True,
+    },
+    {
+        "id": "slow", "kind": "ability", "identifier": "Slow",
+        "lane": "Illusion", "position": (4, 1), "level": 35,
+        "prerequisites": ("mirror-image",),
+    },
+    {
+        "id": "ice-block", "kind": "ability", "identifier": "IceBlock",
+        "lane": "Illusion", "position": (4, 2), "level": 40,
+        "prerequisites": ("slow",),
+    },
+    {
+        "id": "illusory-link", "kind": "ability", "identifier": "IllusoryLink",
+        "lane": "Illusion", "position": (4, 3), "level": 45,
+        "prerequisites": ("ice-block",),
+    },
+)
+
+
+WARLOCK_TREE_NODE_SPECS = (
+    {"id": "sleep", "kind": "ability", "identifier": "Sleep", "lane": "Shadow Control", "position": (0, 1), "available_on_promotion": True},
+    {"id": "dispel", "kind": "ability", "identifier": "Dispel", "lane": "Shadow Control", "position": (0, 2), "level": 35, "prerequisites": ("sleep",)},
+    {"id": "terrify", "kind": "ability", "identifier": "Terrify", "lane": "Shadow Control", "position": (0, 4), "level": 45, "prerequisites": ("dispel",)},
+    {"id": "doom", "kind": "ability", "identifier": "Doom", "lane": "Shadow Control", "position": (0, 5), "level": 50, "prerequisites": ("terrify",)},
+    {"id": "health-drain", "kind": "ability", "identifier": "HealthDrain", "lane": "Draining", "position": (1, 1), "available_on_promotion": True, "owned_if_known": True},
+    {"id": "magic-defense", "kind": "rating", "identifier": "Magic Defense", "lane": "Draining", "position": (1, 2), "prerequisites": ("health-drain",)},
+    {"id": "resist-holy", "kind": "ability", "identifier": "ResistHoly", "lane": "Draining", "position": (1, 3), "level": 40, "prerequisites": ("magic-defense",)},
+    {"id": "vim-and-rigor", "kind": "ability", "identifier": "VimAndRigor", "lane": "Draining", "position": (1, 4), "level": 45, "prerequisites": ("resist-holy",)},
+    {"id": "mana-drain", "kind": "ability", "identifier": "ManaDrain", "lane": "Draining", "position": (1, 6), "level": 55, "prerequisites": ("vim-and-rigor",)},
+    {"id": "shadow-bolt", "kind": "ability", "identifier": "ShadowBolt", "lane": "Umbral Offense", "position": (2, 1), "available_on_promotion": True, "owned_if_known": True},
+    {"id": "magic", "kind": "rating", "identifier": "Magic", "lane": "Umbral Offense", "position": (2, 2), "prerequisites": ("shadow-bolt",)},
+    {"id": "impending-demise", "kind": "ability", "identifier": "ImpendingDemise", "lane": "Umbral Offense", "position": (2, 4), "level": 45, "prerequisites": ("magic",)},
+    {"id": "eclipse", "kind": "ability", "identifier": "Eclipse", "lane": "Umbral Offense", "position": (2, 5), "level": 50, "prerequisites": ("impending-demise",)},
+    {"id": "shadow-bolt-2", "kind": "ability", "identifier": "ShadowBolt2", "name": "Shadow Bolt II", "lane": "Umbral Offense", "position": (2, 6), "level": 55, "prerequisites": ("eclipse",), "upgrade_without_source": True},
+    {"id": "curse-umbra", "kind": "ability", "identifier": "CurseUmbra", "lane": "Curses", "position": (3, 1), "available_on_promotion": True},
+    {"id": "curse-frailty", "kind": "ability", "identifier": "CurseFrailty", "lane": "Curses", "position": (3, 2), "level": 35, "prerequisites": ("curse-umbra",)},
+    {"id": "hemorrhaging-curse", "kind": "ability", "identifier": "HemorrhagingCurse", "lane": "Curses", "position": (3, 3), "level": 40, "prerequisites": ("curse-frailty",)},
+    {"id": "curse-swarms", "kind": "ability", "identifier": "CurseSwarms", "lane": "Curses", "position": (3, 5), "level": 50, "prerequisites": ("hemorrhaging-curse",)},
+    {"id": "corruption", "kind": "ability", "identifier": "Corruption", "lane": "Corruption", "position": (4, 1), "available_on_promotion": True, "owned_if_known": True},
+    {"id": "mana", "kind": "mana", "identifier": "Mana", "lane": "Corruption", "position": (4, 2), "prerequisites": ("corruption",)},
+    {"id": "hex", "kind": "ability", "identifier": "Hex", "lane": "Corruption", "position": (4, 3), "level": 40, "prerequisites": ("mana",)},
+    {"id": "festering-anguish", "kind": "ability", "identifier": "FesteringAnguish", "lane": "Corruption", "position": (4, 4), "level": 45, "prerequisites": ("hex",)},
+    {"id": "life-tap", "kind": "ability", "identifier": "LifeTap", "lane": "Corruption", "position": (4, 6), "level": 55, "prerequisites": ("festering-anguish",)},
+    {"id": "familiar-bond", "kind": "ability", "identifier": "FamiliarBond", "lane": "Familiar", "position": (5, 1), "level": 35},
+    {"id": "thorn-by-my-side", "kind": "ability", "identifier": "ThornByMySide", "lane": "Familiar", "position": (5, 2), "level": 45},
+    {"id": "restorative-barrier", "kind": "ability", "identifier": "RestorativeBarrier", "lane": "Familiar", "position": (5, 3), "level": 45},
+    {"id": "insult-to-injury", "kind": "ability", "identifier": "InsultToInjury", "lane": "Familiar", "position": (5, 4), "level": 45},
+    {"id": "master-locator", "kind": "ability", "identifier": "MasterLocator", "lane": "Familiar", "position": (5, 5), "level": 45},
+    {"id": "familiar-bond-2", "kind": "ability", "identifier": "FamiliarBond2", "name": "Familiar Bond II", "lane": "Familiar", "position": (5, 6), "level": 55, "prerequisites": ("familiar-bond",), "connector_channel_columns": {"familiar-bond": 5.5}},
+)
+
+
+SHADOWCASTER_TREE_NODE_SPECS = (
+    {"id": "mana-tap", "kind": "ability", "identifier": "ManaTap", "lane": "Umbral Debt", "position": (0, 0), "available_on_promotion": True, "owned_if_known": True},
+    {"id": "soul-binding", "kind": "ability", "identifier": "SoulBinding", "lane": "Umbral Debt", "position": (0, 1), "level": 65, "prerequisites": ("mana-tap",)},
+    {"id": "health-mana-drain", "kind": "ability", "identifier": "HealthManaDrain", "lane": "Umbral Debt", "position": (0, 2), "level": 70, "prerequisites": ("soul-binding",), "upgrade_without_source": True},
+    {"id": "resource-abuse", "kind": "ability", "identifier": "ResourceAbuse", "lane": "Umbral Debt", "position": (0, 3), "level": 75, "prerequisites": ("health-mana-drain",)},
+    {"id": "mortal-shackles", "kind": "ability", "identifier": "MortalShackles", "lane": "Umbral Debt", "position": (0, 4), "level": 80, "prerequisites": ("resource-abuse",)},
+    {"id": "top-off", "kind": "ability", "identifier": "TopOff", "lane": "Umbral Debt", "position": (0, 5), "level": 85, "prerequisites": ("mortal-shackles",), "cost": 2},
+    {"id": "shadow-bolt-3", "kind": "ability", "identifier": "ShadowBolt3", "name": "Shadow Bolt III", "lane": "Deep Shadow", "position": (1, 0), "available_on_promotion": True, "upgrade_without_source": True},
+    {"id": "penny-dreadful", "kind": "ability", "identifier": "PennyDreadful", "lane": "Deep Shadow", "position": (1, 2), "level": 70, "prerequisites": ("shadow-bolt-3",)},
+    {"id": "piercing-bolt", "kind": "ability", "identifier": "PiercingBolt", "lane": "Deep Shadow", "position": (1, 3), "level": 75, "prerequisites": ("penny-dreadful",)},
+    {"id": "invisibility", "kind": "ability", "identifier": "Invisibility", "lane": "Veilcraft", "position": (2, 0), "available_on_promotion": True, "owned_if_known": True},
+    {"id": "shadow-curtain", "kind": "ability", "identifier": "ShadowCurtain", "lane": "Veilcraft", "position": (2, 1), "level": 65, "prerequisites": ("invisibility",)},
+    {"id": "alacrity", "kind": "ability", "identifier": "Alacrity", "lane": "Veilcraft", "position": (2, 2), "level": 70, "prerequisites": ("shadow-curtain",)},
+    {"id": "sciophobia", "kind": "ability", "identifier": "Sciophobia", "lane": "Veilcraft", "position": (2, 3), "level": 75, "prerequisites": ("alacrity",)},
+    {"id": "nightmare", "kind": "ability", "identifier": "Nightmare", "lane": "Nightmares", "position": (3, 0), "available_on_promotion": True},
+    {"id": "night-terror", "kind": "ability", "identifier": "NightTerror", "lane": "Nightmares", "position": (3, 3), "level": 75, "prerequisites": ("nightmare",)},
+    {"id": "desoul", "kind": "ability", "identifier": "Desoul", "lane": "Nightmares", "position": (3, 4), "level": 80, "prerequisites": ("night-terror",)},
+    {"id": "death-becomes-us", "kind": "ability", "identifier": "DeathBecomesUs", "lane": "Nightmares", "position": (3, 5), "level": 85, "prerequisites": ("desoul",), "cost": 2},
+    {"id": "indiscriminate-provocation", "kind": "ability", "identifier": "IndiscriminateProvocation", "lane": "Familiar Mastery", "position": (4, 1), "level": 75, "cost": 2},
+    {"id": "uno-reverse-card", "kind": "ability", "identifier": "UnoReverseCard", "lane": "Familiar Mastery", "position": (4, 2), "level": 75, "cost": 2},
+    {"id": "night-moves", "kind": "ability", "identifier": "NightMoves", "lane": "Familiar Mastery", "position": (4, 3), "level": 75, "cost": 2},
+    {"id": "bullionaire", "kind": "ability", "identifier": "Bullionaire", "lane": "Familiar Mastery", "position": (4, 4), "level": 75, "cost": 2},
+)
+
+
+DEMONOLOGIST_TREE_NODE_SPECS = (
+    {"id": "mystical-vitality", "kind": "ability", "identifier": "MysticalVitality", "lane": "Contagion", "position": (0, 0), "available_on_promotion": True},
+    {"id": "contagious-blaze", "kind": "ability", "identifier": "ContagiousBlaze", "lane": "Contagion", "position": (0, 1), "level": 65, "prerequisites": ("mystical-vitality",)},
+    {"id": "corruption-2", "kind": "ability", "identifier": "Corruption2", "lane": "Contagion", "position": (0, 2), "level": 70, "prerequisites": ("contagious-blaze",), "upgrade_without_source": True},
+    {"id": "magic", "kind": "rating", "identifier": "Magic", "lane": "Contagion", "position": (0, 3), "prerequisites": ("corruption-2",)},
+    {"id": "persistent-corruption", "kind": "ability", "identifier": "PersistentCorruption", "lane": "Contagion", "position": (0, 4), "level": 80, "prerequisites": ("magic",)},
+    {
+        "id": "fine-print", "kind": "ability", "identifier": "FinePrint",
+        "lane": "Contract Mastery", "position": (1, 0),
+        "available_on_promotion": True,
+    },
+    {
+        "id": "controlled-corruption", "kind": "ability",
+        "identifier": "ControlledCorruption", "lane": "Contract Mastery",
+        "position": (1, 2), "level": 70, "prerequisites": ("fine-print",),
+    },
+    {
+        "id": "patronage", "kind": "ability", "identifier": "Patronage",
+        "lane": "Contract Mastery", "position": (1, 3), "level": 75,
+        "prerequisites": ("controlled-corruption",),
+    },
+    {
+        "id": "abyssal-authority", "kind": "ability",
+        "identifier": "AbyssalAuthority", "lane": "Contract Mastery",
+        "position": (1, 4), "level": 80, "prerequisites": ("patronage",),
+    },
+    {"id": "firebolt", "kind": "ability", "identifier": "Firebolt", "lane": "Hellfire", "position": (2, 0), "available_on_promotion": True, "owned_if_known": True},
+    {"id": "grease-missile", "kind": "ability", "identifier": "GreaseMissile", "lane": "Hellfire", "position": (2, 1), "level": 65, "prerequisites": ("firebolt",)},
+    {"id": "netherchar", "kind": "ability", "identifier": "Netherchar", "lane": "Hellfire", "position": (2, 2), "level": 70, "prerequisites": ("grease-missile",)},
+    {"id": "napalm", "kind": "ability", "identifier": "Napalm", "lane": "Hellfire", "position": (2, 3), "level": 75, "prerequisites": ("netherchar",)},
+    {"id": "soul-siphon", "kind": "ability", "identifier": "SoulSiphon", "lane": "Soul Harvest", "position": (3, 0), "available_on_promotion": True},
+    {
+        "id": "dance-of-the-dead", "kind": "ability", "identifier": "DanceOfTheDead",
+        "lane": "Soul Harvest", "position": (3, 1), "level": 65,
+        "prerequisites": ("soul-siphon",),
+    },
+    {"id": "soul-vessel", "kind": "ability", "identifier": "SoulVessel", "lane": "Soul Harvest", "position": (3, 3), "level": 75, "prerequisites": ("dance-of-the-dead",)},
+    {"id": "desoul", "kind": "ability", "identifier": "Desoul", "lane": "Soul Harvest", "position": (3, 4), "level": 80, "prerequisites": ("soul-vessel",)},
+    {
+        "id": "soul-asylum", "kind": "ability", "identifier": "SoulAsylum",
+        "lane": "Soul Harvest", "position": (3, 5), "level": 85,
+        "prerequisites": ("desoul",), "cost": 2,
+    },
+    {
+        "id": "contract-killer", "kind": "ability", "identifier": "ContractKiller",
+        "lane": "Contract Mastery", "position": (1, 5), "level": 85,
+        "prerequisites": ("abyssal-authority",), "cost": 2,
+    },
+    {"id": "flammable-affliction", "kind": "ability", "identifier": "FlammableAffliction", "lane": "Demonic Curses", "position": (4, 0), "available_on_promotion": True},
+    {"id": "curse-elijah", "kind": "ability", "identifier": "CurseElijah", "lane": "Demonic Curses", "position": (4, 1), "level": 65, "prerequisites": ("flammable-affliction",)},
+    {"id": "curse-dysarthria", "kind": "ability", "identifier": "CurseDysarthria", "lane": "Demonic Curses", "position": (4, 2), "level": 70, "prerequisites": ("curse-elijah",)},
+    {"id": "monkeys-paw", "kind": "ability", "identifier": "MonkeysPaw", "lane": "Demonic Curses", "position": (4, 3), "level": 75, "prerequisites": ("curse-dysarthria",)},
+    {"id": "demon-eyes", "kind": "ability", "identifier": "DemonEyes", "lane": "Demonic Curses", "position": (4, 4), "level": 80, "prerequisites": ("monkeys-paw",), "cost": 2},
+)
 
 
 SPELLBLADE_TREE_NODE_SPECS = (
@@ -809,13 +1103,213 @@ SPELLBLADE_TREE_NODE_SPECS = (
 )
 
 
+WIZARD_TREE_NODE_SPECS = (
+    {
+        "id": "firestorm", "kind": "ability", "identifier": "Firestorm",
+        "lane": "Master Elemental Spells", "position": (0, 0),
+        "school_affinity": ("Fire", 80), "available_on_promotion": True,
+        "upgrade_without_source": True,
+    },
+    {
+        "id": "blizzard", "kind": "ability", "identifier": "IceBlizzard",
+        "lane": "Master Elemental Spells", "position": (0, 1),
+        "school_affinity": ("Ice", 80), "available_on_promotion": True,
+        "upgrade_without_source": True,
+    },
+    {
+        "id": "electrocution", "kind": "ability",
+        "identifier": "Electrocution", "lane": "Master Elemental Spells",
+        "position": (0, 2), "school_affinity": ("Electric", 80),
+        "available_on_promotion": True, "upgrade_without_source": True,
+    },
+    {
+        "id": "tornado", "kind": "ability", "identifier": "Tornado",
+        "lane": "Master Elemental Spells", "position": (0, 3),
+        "school_affinity": ("Wind", 80), "available_on_promotion": True,
+        "upgrade_without_source": True,
+    },
+    {
+        "id": "tsunami", "kind": "ability", "identifier": "Tsunami",
+        "lane": "Master Elemental Spells", "position": (0, 4),
+        "school_affinity": ("Water", 80), "available_on_promotion": True,
+        "upgrade_without_source": True,
+    },
+    {
+        "id": "earthquake", "kind": "ability", "identifier": "Earthquake",
+        "lane": "Master Elemental Spells", "position": (0, 5),
+        "school_affinity": ("Earth", 80), "available_on_promotion": True,
+        "upgrade_without_source": True,
+    },
+    {
+        "id": "inferno", "kind": "ability",
+        "identifier": "Inferno", "lane": "Master Modifiers",
+        "position": (1, 0), "level": 65, "prerequisites": ("firestorm",),
+    },
+    {
+        "id": "subzero", "kind": "ability",
+        "identifier": "Subzero", "lane": "Master Modifiers",
+        "position": (1, 1), "level": 65, "prerequisites": ("blizzard",),
+    },
+    {
+        "id": "electrical-burns", "kind": "ability",
+        "identifier": "ElectricalBurns", "lane": "Master Modifiers",
+        "position": (1, 2), "level": 65,
+        "prerequisites": ("electrocution",),
+    },
+    {
+        "id": "divine-wind", "kind": "ability", "identifier": "DivineWind",
+        "lane": "Master Modifiers", "position": (1, 3), "level": 65,
+        "prerequisites": ("tornado",),
+    },
+    {
+        "id": "unrelenting-waves", "kind": "ability",
+        "identifier": "UnrelentingWaves", "lane": "Master Modifiers",
+        "position": (1, 4), "level": 65, "prerequisites": ("tsunami",),
+    },
+    {
+        "id": "aftershock", "kind": "ability",
+        "identifier": "Aftershock", "lane": "Master Modifiers",
+        "position": (1, 5), "level": 65, "prerequisites": ("earthquake",),
+    },
+    {
+        "id": "magic-missile-3", "kind": "ability",
+        "identifier": "MagicMissile3", "name": "Magic Missile III",
+        "lane": "Grand Arcana", "position": (2, 0),
+        "school_affinity": ("Arcane", 80), "available_on_promotion": True,
+        "upgrade_without_source": True,
+    },
+    {
+        "id": "fragmentation", "kind": "ability",
+        "identifier": "Fragmentation", "lane": "Grand Arcana",
+        "position": (2, 1), "level": 65,
+        "prerequisites": ("magic-missile-3",),
+    },
+    {
+        "id": "mana-splinters", "kind": "ability",
+        "identifier": "ManaSplinters", "lane": "Grand Arcana",
+        "position": (2, 2), "level": 70,
+        "prerequisites": ("fragmentation",),
+    },
+    {
+        "id": "detonation-cascade", "kind": "ability",
+        "identifier": "DetonationCascade", "lane": "Grand Arcana",
+        "position": (2, 3), "level": 75,
+        "prerequisites": ("mana-splinters",),
+    },
+    {
+        "id": "photon-sphere", "kind": "ability",
+        "identifier": "PhotonSphere", "lane": "Grand Arcana",
+        "name": "Unknown", "revealed_name": "Photon Sphere",
+        "position": (2, 6), "owned_if_known": True,
+        "quest_unlock": "The Light Beyond Domingo", "icon_key": "unknown",
+    },
+    {
+        "id": "prismatic-cataclysm", "kind": "ability",
+        "identifier": "PrismaticCataclysm", "lane": "Master Modifiers",
+        "name": "Unknown", "revealed_name": "Prismatic Cataclysm",
+        "position": (0.5, 6), "owned_if_known": True,
+        "quest_unlock": "The Sixfold Calamity", "icon_key": "unknown",
+    },
+    {
+        "id": "elemental-convergence", "kind": "ability",
+        "identifier": "ElementalConvergence", "lane": "Master Modifiers",
+        "position": (0.5, 7), "prerequisites": ("prismatic-cataclysm",),
+        "hidden_until_known": "Prismatic Cataclysm",
+        "available_on_promotion": True,
+    },
+    {
+        "id": "spaghettification", "kind": "ability",
+        "identifier": "Spaghettification", "lane": "Grand Arcana",
+        "position": (2, 7), "prerequisites": ("photon-sphere",),
+        "hidden_until_known": "Photon Sphere", "available_on_promotion": True,
+    },
+    {
+        "id": "counterspell", "kind": "ability", "identifier": "Counterspell",
+        "lane": "Master Control", "position": (3, 0),
+        "available_on_promotion": True,
+    },
+    {
+        "id": "gravitational-pull", "kind": "ability",
+        "identifier": "GravitationalPull", "lane": "Master Control",
+        "position": (3, 1), "level": 65, "prerequisites": ("counterspell",),
+    },
+    {
+        "id": "petrify", "kind": "ability", "identifier": "Petrify",
+        "lane": "Master Control", "position": (3, 4), "level": 80,
+        "prerequisites": ("gravitational-pull",),
+    },
+    {
+        "id": "volitation", "kind": "ability", "identifier": "Volitation",
+        "lane": "Spatial Illusion", "position": (4, 0),
+        "available_on_promotion": True,
+    },
+    {
+        "id": "mirror-image-2", "kind": "ability",
+        "identifier": "MirrorImage2", "name": "Mirror Image II",
+        "lane": "Spatial Illusion", "position": (4, 1), "level": 65,
+        "upgrade_without_source": True, "prerequisites": ("volitation",),
+    },
+    {
+        "id": "multiplicity", "kind": "ability", "identifier": "Multiplicity",
+        "lane": "Spatial Illusion", "position": (4, 2), "level": 70,
+        "prerequisites": ("mirror-image-2",),
+    },
+    {
+        "id": "teleport", "kind": "ability", "identifier": "Teleport",
+        "lane": "Spatial Illusion", "position": (4, 3), "level": 75,
+        "prerequisites": ("multiplicity",),
+    },
+    {
+        "id": "triplecast", "kind": "ability", "identifier": "Triplecast",
+        "lane": "Spatial Illusion", "position": (4, 6), "level": 90,
+        "prerequisites": ("teleport",),
+    },
+)
+
+
 KNIGHT_ENCHANTER_TREE_NODE_SPECS = (
+    {
+        "id": "fireball", "kind": "ability", "identifier": "Fireball",
+        "lane": "Advanced Spells", "position": (0, 0), "level": 70,
+        "upgrade_without_source": True,
+    },
+    {
+        "id": "icicle", "kind": "ability", "identifier": "Icicle",
+        "lane": "Advanced Spells", "position": (0, 1), "level": 70,
+        "upgrade_without_source": True,
+    },
+    {
+        "id": "lightning", "kind": "ability", "identifier": "Lightning",
+        "lane": "Advanced Spells", "position": (0, 2), "level": 70,
+        "upgrade_without_source": True,
+    },
+    {
+        "id": "hurricane", "kind": "ability", "identifier": "Hurricane",
+        "lane": "Advanced Spells", "position": (0, 3), "level": 70,
+        "upgrade_without_source": True,
+    },
+    {
+        "id": "aqualung", "kind": "ability", "identifier": "Aqualung",
+        "lane": "Advanced Spells", "position": (0, 4), "level": 70,
+        "upgrade_without_source": True,
+    },
+    {
+        "id": "mudslide", "kind": "ability", "identifier": "Mudslide",
+        "lane": "Advanced Spells", "position": (0, 5), "level": 70,
+        "upgrade_without_source": True,
+    },
+    {
+        "id": "magic-missile-2", "kind": "ability", "identifier": "MagicMissile2",
+        "lane": "Advanced Spells", "position": (0, 6), "level": 70,
+        "name": "Magic Missile II",
+        "upgrade_without_source": True,
+    },
     {
         "id": "double-strike",
         "kind": "ability",
         "identifier": "DoubleStrike",
         "lane": "Assault Release",
-        "position": (0, 0),
+        "position": (1, 0),
         "owned_if_known": True,
     },
     {
@@ -823,7 +1317,7 @@ KNIGHT_ENCHANTER_TREE_NODE_SPECS = (
         "kind": "ability",
         "identifier": "CleavingEdge",
         "lane": "Assault Release",
-        "position": (0, 1),
+        "position": (1, 1),
         "level": 65,
         "prerequisites": ("double-strike",),
     },
@@ -832,7 +1326,7 @@ KNIGHT_ENCHANTER_TREE_NODE_SPECS = (
         "kind": "ability",
         "identifier": "ReDebuff",
         "lane": "Assault Release",
-        "position": (0, 2),
+        "position": (1, 2),
         "level": 70,
         "prerequisites": ("cleaving-edge",),
     },
@@ -841,7 +1335,7 @@ KNIGHT_ENCHANTER_TREE_NODE_SPECS = (
         "kind": "ability",
         "identifier": "ResonantStrike",
         "lane": "Assault Release",
-        "position": (0, 3),
+        "position": (1, 3),
         "level": 75,
         "prerequisites": ("re-debuff",),
     },
@@ -850,7 +1344,7 @@ KNIGHT_ENCHANTER_TREE_NODE_SPECS = (
         "kind": "ability",
         "identifier": "ManaSlice2",
         "lane": "Assault Release",
-        "position": (0, 5),
+        "position": (1, 5),
         "level": 85,
         "prerequisites": ("resonant-strike",),
     },
@@ -859,7 +1353,7 @@ KNIGHT_ENCHANTER_TREE_NODE_SPECS = (
         "kind": "ability",
         "identifier": "QuickRecharge",
         "lane": "Assault Release",
-        "position": (0, 6),
+        "position": (1, 6),
         "level": 90,
         "cost": 2,
         "prerequisites": ("mana-slice-2",),
@@ -869,7 +1363,7 @@ KNIGHT_ENCHANTER_TREE_NODE_SPECS = (
         "kind": "ability",
         "identifier": "EnhanceArmor",
         "lane": "Aegis Release",
-        "position": (1, 0),
+        "position": (2, 0),
         "owned_if_known": True,
     },
     {
@@ -877,7 +1371,7 @@ KNIGHT_ENCHANTER_TREE_NODE_SPECS = (
         "kind": "ability",
         "identifier": "DefensiveRelease",
         "lane": "Aegis Release",
-        "position": (1, 1),
+        "position": (2, 1),
         "level": 65,
         "prerequisites": ("enhance-armor",),
     },
@@ -886,7 +1380,7 @@ KNIGHT_ENCHANTER_TREE_NODE_SPECS = (
         "kind": "ability",
         "identifier": "ThirdEye",
         "lane": "Aegis Release",
-        "position": (1, 2),
+        "position": (2, 2),
         "level": 70,
         "cost": 2,
         "prerequisites": ("defensive-release",),
@@ -896,7 +1390,7 @@ KNIGHT_ENCHANTER_TREE_NODE_SPECS = (
         "kind": "ability",
         "identifier": "AegisWeave",
         "lane": "Aegis Release",
-        "position": (1, 3),
+        "position": (2, 3),
         "level": 75,
         "prerequisites": ("third-eye",),
     },
@@ -905,7 +1399,7 @@ KNIGHT_ENCHANTER_TREE_NODE_SPECS = (
         "kind": "ability",
         "identifier": "WeaveReservoir",
         "lane": "Aegis Release",
-        "position": (1, 4),
+        "position": (2, 4),
         "level": 80,
         "prerequisites": ("aegis-weave",),
     },
@@ -914,7 +1408,7 @@ KNIGHT_ENCHANTER_TREE_NODE_SPECS = (
         "kind": "ability",
         "identifier": "ArcaneRiposte",
         "lane": "Aegis Release",
-        "position": (1, 5),
+        "position": (2, 5),
         "level": 85,
         "prerequisites": ("weave-reservoir",),
     },
@@ -923,7 +1417,7 @@ KNIGHT_ENCHANTER_TREE_NODE_SPECS = (
         "kind": "ability",
         "identifier": "ManaTap",
         "lane": "Spellbind Release",
-        "position": (2, 0),
+        "position": (3, 0),
         "owned_if_known": True,
     },
     {
@@ -931,7 +1425,7 @@ KNIGHT_ENCHANTER_TREE_NODE_SPECS = (
         "kind": "ability",
         "identifier": "DispelSlash",
         "lane": "Spellbind Release",
-        "position": (2, 1),
+        "position": (3, 1),
         "level": 65,
         "prerequisites": ("mana-tap",),
     },
@@ -940,7 +1434,7 @@ KNIGHT_ENCHANTER_TREE_NODE_SPECS = (
         "kind": "ability",
         "identifier": "StorageCapacity2",
         "lane": "Spellbind Release",
-        "position": (2, 3),
+        "position": (3, 3),
         "level": 75,
         "cost": 2,
         "prerequisites": ("dispel-slash",),
@@ -950,7 +1444,7 @@ KNIGHT_ENCHANTER_TREE_NODE_SPECS = (
         "kind": "ability",
         "identifier": "Spellbind",
         "lane": "Spellbind Release",
-        "position": (2, 4),
+        "position": (3, 4),
         "level": 80,
         "prerequisites": ("storage-capacity-2",),
     },
@@ -959,7 +1453,7 @@ KNIGHT_ENCHANTER_TREE_NODE_SPECS = (
         "kind": "ability",
         "identifier": "EchoingBlade",
         "lane": "Spellbind Release",
-        "position": (2, 5),
+        "position": (3, 5),
         "level": 85,
         "prerequisites": ("spellbind",),
     },
@@ -968,7 +1462,7 @@ KNIGHT_ENCHANTER_TREE_NODE_SPECS = (
         "kind": "ability",
         "identifier": "Parry",
         "lane": "Universal / Extra Abilities",
-        "position": (3, 0),
+        "position": (4, 0),
         "owned_if_known": True,
     },
     {
@@ -976,7 +1470,7 @@ KNIGHT_ENCHANTER_TREE_NODE_SPECS = (
         "kind": "ability",
         "identifier": "TruePiercingStrike",
         "lane": "Universal / Extra Abilities",
-        "position": (3, 3),
+        "position": (4, 3),
         "level": 75,
     },
     {
@@ -984,7 +1478,7 @@ KNIGHT_ENCHANTER_TREE_NODE_SPECS = (
         "kind": "ability",
         "identifier": "TripleStrike",
         "lane": "Universal / Extra Abilities",
-        "position": (3, 5),
+        "position": (4, 5),
         "level": 85,
     },
 )
@@ -1415,117 +1909,142 @@ WEAPON_DISCIPLINE_ARTS = (
 
 BERSERKER_TREE_NODE_SPECS = (
     {
-        "id": "final-assault",
+        "id": "monkey-grip",
         "kind": "ability",
-        "identifier": "FinalAssault",
-        "lane": "Survival",
+        "identifier": "MonkeyGrip",
+        "lane": "Heavy Weapons",
         "position": (0, 1),
         "available_on_promotion": True,
     },
     {
-        "id": "monkey-grip",
+        "id": "momentum",
         "kind": "ability",
-        "identifier": "MonkeyGrip",
-        "name": "Monkey Grip 1",
-        "lane": "Survival",
+        "identifier": "Momentum",
+        "lane": "Heavy Weapons",
         "position": (0, 2),
         "level": 65,
-        "prerequisites": ("final-assault",),
-    },
-    {
-        "id": "attack-1",
-        "kind": "rating",
-        "identifier": "Attack",
-        "lane": "Survival",
-        "position": (0, 3),
         "prerequisites": ("monkey-grip",),
     },
     {
-        "id": "reckless-onslaught",
+        "id": "tectonic-rift",
         "kind": "ability",
-        "identifier": "RecklessOnslaught",
-        "lane": "Survival",
+        "identifier": "TectonicRift",
+        "lane": "Heavy Weapons",
         "position": (0, 4),
-        "level": 70,
-        "prerequisites": ("attack-1",),
+        "level": 75,
+        "prerequisites": ("momentum",),
     },
     {
         "id": "monkey-grip-2",
         "kind": "ability",
         "identifier": "MonkeyGrip2",
-        "lane": "Survival",
+        "lane": "Heavy Weapons",
         "position": (0, 5),
-        "level": 75,
+        "level": 80,
         "cost": 2,
-        "prerequisites": ("reckless-onslaught",),
-    },
-    {
-        "id": "frenzy",
-        "kind": "ability",
-        "identifier": "Frenzy",
-        "lane": "Fury",
-        "position": (1, 1),
-        "available_on_promotion": True,
-    },
-    {
-        "id": "health-1",
-        "kind": "health",
-        "identifier": "Health",
-        "lane": "Fury",
-        "position": (1, 2),
-        "prerequisites": ("frenzy",),
+        "prerequisites": ("tectonic-rift",),
     },
     {
         "id": "mortal-strike-2",
         "kind": "ability",
         "identifier": "MortalStrike2",
         "name": "Mortal Strike 2",
-        "lane": "Fury",
-        "position": (1, 3),
-        "level": 65,
-        "prerequisites": ("health-1",),
+        "lane": "Two-Weapon Assault",
+        "position": (1, 1),
+        "available_on_promotion": True,
     },
     {
         "id": "boomerang-toss",
         "kind": "ability",
         "identifier": "BoomerangToss",
-        "lane": "Fury",
-        "position": (1, 4),
-        "level": 70,
+        "lane": "Two-Weapon Assault",
+        "position": (1, 2),
+        "level": 65,
         "prerequisites": ("mortal-strike-2",),
+    },
+    {
+        "id": "attack-1",
+        "kind": "rating",
+        "identifier": "Attack",
+        "lane": "Two-Weapon Assault",
+        "position": (1, 3),
+        "prerequisites": ("boomerang-toss",),
+    },
+    {
+        "id": "thunderous-vault",
+        "kind": "ability",
+        "identifier": "ThunderousVault",
+        "lane": "Two-Weapon Assault",
+        "position": (1, 4),
+        "level": 75,
+        "prerequisites": ("attack-1",),
     },
     {
         "id": "triple-strike",
         "kind": "ability",
         "identifier": "TripleStrike",
-        "lane": "Fury",
+        "lane": "Two-Weapon Assault",
         "position": (1, 5),
-        "level": 75,
-        "prerequisites": ("boomerang-toss",),
+        "level": 80,
+        "cost": 2,
+        "prerequisites": ("thunderous-vault",),
     },
     {
-        "id": "parry",
+        "id": "frenzy",
         "kind": "ability",
-        "identifier": "Parry",
-        "lane": "Independent",
-        "position": (2, 2),
-        "owned_if_known": True,
-    },
-    {
-        "id": "pain-tolerance",
-        "kind": "ability",
-        "identifier": "PainTolerance",
-        "lane": "Independent",
-        "position": (2, 3),
-        "level": 65,
+        "identifier": "Frenzy",
+        "lane": "Fury",
+        "position": (2, 1),
+        "available_on_promotion": True,
     },
     {
         "id": "hemorrhage-thirst",
         "kind": "ability",
         "identifier": "HemorrhageThirst",
-        "lane": "Independent",
-        "position": (2, 4),
+        "lane": "Fury",
+        "position": (2, 3),
         "level": 70,
+        "prerequisites": ("frenzy",),
+    },
+    {
+        "id": "fatality",
+        "kind": "ability",
+        "identifier": "Fatality",
+        "lane": "Fury",
+        "position": (2, 4),
+        "level": 75,
+        "prerequisites": ("hemorrhage-thirst",),
+    },
+    {
+        "id": "composed-wrath",
+        "kind": "ability",
+        "identifier": "ComposedWrath",
+        "lane": "Fury",
+        "position": (2, 5),
+        "level": 80,
+        "cost": 2,
+        "prerequisites": ("fatality",),
+    },
+    {
+        "id": "parry", "kind": "ability", "identifier": "Parry",
+        "lane": "Survival", "position": (3, 1),
+        "available_on_promotion": True, "owned_if_known": True,
+    },
+    {
+        "id": "pain-tolerance", "kind": "ability", "identifier": "PainTolerance",
+        "lane": "Survival", "position": (3, 2), "level": 65,
+        "prerequisites": ("parry",),
+    },
+    {
+        "id": "final-assault", "kind": "ability", "identifier": "FinalAssault",
+        "lane": "Survival", "position": (3, 3), "level": 70,
+        "prerequisites": ("pain-tolerance",),
+    },
+    {
+        "id": "reckless-onslaught", "kind": "ability",
+        "identifier": "RecklessOnslaught", "lane": "Survival",
+        "position": (3, 4), "level": 75, "cost": 2,
+        "prerequisites": ("final-assault",),
     },
     *(
         {
@@ -1533,7 +2052,7 @@ BERSERKER_TREE_NODE_SPECS = (
             "kind": "ability",
             "identifier": identifier,
             "lane": "Weapon Arts",
-            "position": (3, row + 2),
+            "position": (4, row + 2),
             "owned_if_known": True,
             "weapon_specialization": (weapon_type, 1),
         }
@@ -1547,7 +2066,7 @@ BERSERKER_TREE_NODE_SPECS = (
             "kind": "ability",
             "identifier": f"{identifier}2",
             "lane": "Weapon Arts",
-            "position": (4, row + 2),
+            "position": (5, row + 2),
             "prerequisites": (node_id,),
             "owned_if_known": True,
             "cost": 2,
@@ -1614,13 +2133,21 @@ GRANDMASTER_TREE_NODE_SPECS = (
         "owned_if_known": True,
     },
     {
+        "id": "weapon-swap",
+        "kind": "ability",
+        "identifier": "WeaponSwap",
+        "lane": "Mastery",
+        "position": (3, 4),
+        "level": 70,
+    },
+    {
         "id": "perfect-form",
         "kind": "talent",
         "identifier": "grandmaster.perfect-form",
         "name": "Perfect Form",
         "lane": "Mastery",
-        "position": (3, 2),
-        "available_on_promotion": True,
+        "position": (3, 5),
+        "level": 75,
         "cost": 2,
         "description": (
             "Increase weapon damage by 1% and hit chance by 0.5% per rank "
@@ -1633,8 +2160,8 @@ GRANDMASTER_TREE_NODE_SPECS = (
         "identifier": "grandmaster.adaptive-arsenal",
         "name": "Adaptive Arsenal",
         "lane": "Mastery",
-        "position": (3, 5),
-        "available_on_promotion": True,
+        "position": (3, 6),
+        "level": 75,
         "cost": 2,
         "description": (
             "Increase parry chance by 0.5% and counterattack critical chance "
@@ -1665,9 +2192,9 @@ LANCER_TREE_NODE_SPECS = (
         "level": 35,
         "prerequisites": ("jump",),
         "description": (
-            "Permanently increase Attack by 20 and Aerial Tempo capacity by 1."
+            "Increase Attack by 20% and Aerial Tempo capacity by 1."
         ),
-        "bonuses": {"ratings": {"Attack": 20}},
+        "bonuses": {"rating_percentages": {"Attack": 0.20}},
         "kit_effect": ("meter_cap", "aerial_tempo", 1),
     },
     {
@@ -1680,10 +2207,10 @@ LANCER_TREE_NODE_SPECS = (
         "level": 45,
         "prerequisites": ("acrobat",),
         "description": (
-            "Permanently increase Defense by 20 and reduce final incoming "
+            "Increase Defense by 20% and reduce final incoming "
             "damage by 10% while Jump is charging."
         ),
-        "bonuses": {"ratings": {"Defense": 20}},
+        "bonuses": {"rating_percentages": {"Defense": 0.20}},
     },
     {
         "id": "polearm-proficiency",
@@ -1945,10 +2472,10 @@ DRAGOON_TREE_NODE_SPECS = (
         "prerequisites": ("lancer.rating.attack-1",),
         "available_on_promotion": True,
         "description": (
-            "Permanently increase Attack by 30. A clean Soaring Strike "
+            "Increase Attack by 30%. A clean Soaring Strike "
             "landing grants 2 Aerial Tempo."
         ),
-        "bonuses": {"ratings": {"Attack": 30}},
+        "bonuses": {"rating_percentages": {"Attack": 0.30}},
     },
     {
         "id": "dragon-dive",
@@ -2056,10 +2583,10 @@ SENTINEL_TREE_NODE_SPECS = (
         "level": 55,
         "prerequisites": ("repercussion",),
         "description": (
-            "Permanently increase Attack by 20 and Retaliate chance by "
+            "Increase Attack by 20% and Retaliate chance by "
             "10 percentage points."
         ),
-        "bonuses": {"ratings": {"Attack": 20}},
+        "bonuses": {"rating_percentages": {"Attack": 0.20}},
     },
     {
         "id": "hold-the-line",
@@ -2107,10 +2634,10 @@ SENTINEL_TREE_NODE_SPECS = (
         "level": 55,
         "prerequisites": ("brace-wall",),
         "description": (
-            "Permanently increase Defense by 20 and improve Hold the Line's "
+            "Increase Defense by 20% and improve Hold the Line's "
             "block and mitigation by 5 percentage points."
         ),
-        "bonuses": {"ratings": {"Defense": 20}},
+        "bonuses": {"rating_percentages": {"Defense": 0.20}},
     },
     {
         "id": "adrenaline",
@@ -2168,10 +2695,10 @@ SENTINEL_TREE_NODE_SPECS = (
         "level": 55,
         "prerequisites": ("spell-reflection",),
         "description": (
-            "Permanently increase Magic Defense by 20 and halve damage "
+            "Increase Magic Defense by 20% and halve damage "
             "remaining after Spell Block."
         ),
-        "bonuses": {"ratings": {"Magic Defense": 20}},
+        "bonuses": {"rating_percentages": {"Magic Defense": 0.20}},
     },
     {
         "id": "purge-weakness",
@@ -2211,10 +2738,10 @@ SENTINEL_TREE_NODE_SPECS = (
         "level": 55,
         "prerequisites": ("boast",),
         "description": (
-            "Permanently increase HP by 50 and convert unused Boast health "
+            "Increase maximum HP by 10% and convert unused Boast health "
             "into Resolve when it expires in combat."
         ),
-        "bonuses": {"health": 50},
+        "bonuses": {"health_percentage": 0.10},
     },
     {
         "id": "goad",
@@ -2276,10 +2803,10 @@ STALWART_DEFENDER_TREE_NODE_SPECS = (
         "cost": 2,
         "prerequisites": ("focused-assault",),
         "description": (
-            "Permanently increase Attack by 30. Repercussion deals 25% more "
+            "Increase Attack by 30%. Repercussion deals 25% more "
             "damage and can knock enemies prone."
         ),
-        "bonuses": {"ratings": {"Attack": 30}},
+        "bonuses": {"rating_percentages": {"Attack": 0.30}},
     },
     {
         "id": "crushing-vengeance",
@@ -2348,10 +2875,10 @@ STALWART_DEFENDER_TREE_NODE_SPECS = (
         "cost": 2,
         "prerequisites": ("defense-1",),
         "description": (
-            "Permanently increase Defense by 30. Last Stand gains 10 "
+            "Increase Defense by 30%. Last Stand gains 10 "
             "percentage points of block chance and 50% more Resolve gain."
         ),
-        "bonuses": {"ratings": {"Defense": 30}},
+        "bonuses": {"rating_percentages": {"Defense": 0.30}},
     },
     {
         "id": "iron-maiden",
@@ -2500,10 +3027,10 @@ PALADIN_TREE_NODE_SPECS = (
         "level": 45,
         "prerequisites": ("attack-1",),
         "description": (
-            "Permanently increase Defense by 20 and Oath Conviction "
+            "Increase Defense by 20% and Oath Conviction "
             "capacity by 1."
         ),
-        "bonuses": {"ratings": {"Defense": 20}},
+        "bonuses": {"rating_percentages": {"Defense": 0.20}},
         "kit_effect": ("meter_cap", "oath_conviction", 1),
     },
     {
@@ -2588,12 +3115,12 @@ PALADIN_TREE_NODE_SPECS = (
         "level": 50,
         "prerequisites": ("resist-shadow",),
         "description": (
-            "Permanently increase Magic and Magic Defense by 20."
+            "Increase Magic and Magic Defense by 20%."
         ),
         "bonuses": {
-            "ratings": {
-                "Magic": 20,
-                "Magic Defense": 20,
+            "rating_percentages": {
+                "Magic": 0.20,
+                "Magic Defense": 0.20,
             },
         },
     },
@@ -2712,10 +3239,10 @@ CRUSADER_TREE_NODE_SPECS = (
         "prerequisites": ("mortal-strike",),
         "available_on_promotion": True,
         "description": (
-            "Permanently increase Attack by 30 and improve every form of "
+            "Increase Attack by 30% and improve every form of "
             "Oath's Judgment."
         ),
-        "bonuses": {"ratings": {"Attack": 30}},
+        "bonuses": {"rating_percentages": {"Attack": 0.30}},
     },
     {
         "id": "sword-and-board",
@@ -2850,10 +3377,10 @@ CRUSADER_TREE_NODE_SPECS = (
         "position": (5, 0),
         "available_on_promotion": True,
         "description": (
-            "Permanently increase Magic Defense by 30 and improve every "
+            "Increase Magic Defense by 30% and improve every "
             "form of Oath's Shelter."
         ),
-        "bonuses": {"ratings": {"Magic Defense": 30}},
+        "bonuses": {"rating_percentages": {"Magic Defense": 0.30}},
     },
     {
         "id": "parry",
@@ -2987,10 +3514,7 @@ CLASS_KIT_TALENTS = {
         ("Elemental Affinity", "sorcerer.elemental-affinity", "Magic"),
         ("Reactive Ward", "sorcerer.reactive-ward", "Magic Defense"),
     ),
-    "Wizard": (
-        ("Perfected Formula", "wizard.perfected-formula", "Magic"),
-        ("Layered Countermagic", "wizard.layered-countermagic", "Magic Defense"),
-    ),
+    "Wizard": (),
     "Warlock": (
         ("Umbral Hunger", "warlock.umbral-hunger", "Magic"),
         ("Pact Resilience", "warlock.pact-resilience", "Magic Defense"),
@@ -3371,15 +3895,25 @@ PROMOTED_TREE_PATHS = {
         ("Countermagic", ()),
     ),
     "Warlock": (
-        ("Umbral Magic", ("ShadowBolt", "Corruption", "Terrify", "ShadowBolt2", "Doom", "Dispel")),
-        ("Sacrifice", ("HealthDrain", "LifeTap", "ManaDrain")),
+        ("Umbral Magic", ("Sleep", "ShadowBolt", "Eclipse", "Corruption", "Terrify", "ShadowBolt2", "Doom", "Dispel", "Hex")),
+        ("Sacrifice", ("HealthDrain", "LifeTap", "ManaDrain", "ResistHoly")),
         ("Pacts", ()),
     ),
     "Shadowcaster": (
-        ("Umbral Debt", ("ManaTap", "Eclipse", "HealthManaDrain")),
+        ("Umbral Debt", ("ManaTap", "HealthManaDrain")),
         ("Deep Shadow", ("ShadowBolt3", "Invisibility", "Nightmare", "Desoul")),
     ),
-    "Demonologist": (("Contracts", ("Corruption2",)), ("Corruption", ())),
+    "Demonologist": (
+        (
+            "Contracts",
+            (
+                "Corruption2", "Firebolt", "Netherchar", "Napalm",
+                "SoulSiphon", "Desoul", "CurseElijah", "CurseDysarthria",
+                "DemonEyes",
+            ),
+        ),
+        ("Corruption", ()),
+    ),
     "Spellblade": (
         (
             "Weapon Enhancements",
@@ -3593,7 +4127,7 @@ PROMOTED_TREE_PATHS = {
     ),
     "Archbishop": (
         ("Benediction", ("Doublecast", "GreatBenediction", "ManaShield2", "Holy3", "Silence")),
-        ("Intervention", ("Heal3", "Regen3", "Resurrection")),
+        ("Intervention", ("Heal3", "Regen3", "Resurrection", "ExpelCurse")),
     ),
     "Bard": (
         ("Performance", ("SongValor", "SongShelter", "SongRenewal")),

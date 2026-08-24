@@ -79,6 +79,8 @@ class AbilityIconManager:
 
     def get_icon(self, icon_key: str) -> pygame.Surface:
         """Return a native 32×32 icon or a safe fallback surface."""
+        if icon_key == "unknown":
+            return self.unknown_surface()
         cached = self._icons.get(icon_key)
         if cached is not None:
             return cached
@@ -105,6 +107,21 @@ class AbilityIconManager:
             pygame.draw.line(surface, (218, 165, 32), (24, 8), (8, 24), 3)
             self._fallback = surface
         return self._fallback
+
+    def unknown_surface(self) -> pygame.Surface:
+        """Return a question-mark icon for unrevealed progression rewards."""
+        cached = self._icons.get("unknown")
+        if cached is not None:
+            return cached
+        surface = pygame.Surface((32, 32), pygame.SRCALPHA)
+        surface.fill((28, 24, 34, 235))
+        pygame.draw.rect(surface, (218, 165, 32), surface.get_rect(), 2)
+        color = (244, 191, 42)
+        pygame.draw.arc(surface, color, pygame.Rect(9, 6, 14, 13), 0, 3.4, 3)
+        pygame.draw.line(surface, color, (16, 17), (16, 22), 3)
+        pygame.draw.circle(surface, color, (16, 26), 2)
+        self._icons["unknown"] = surface
+        return surface
 
 
 _ABILITY_ICON_MANAGER: AbilityIconManager | None = None

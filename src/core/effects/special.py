@@ -978,7 +978,7 @@ class SlotMachineEffect(Effect):
                     _abilities.Tornado(),
                     _abilities.ShadowBolt3(),
                     _abilities.Holy3(),
-                    _abilities.Ultima(),
+                    _abilities.PhotonSphere(),
                 ]
                 spell = spell_list[int(spin[1])]
                 messages.append(f"{spell.name} is cast!\n")

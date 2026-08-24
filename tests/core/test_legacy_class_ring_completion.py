@@ -112,19 +112,19 @@ def test_wizard_affinity_hex_opposites_and_save_load():
     assert restored.wizard_affinity["Electric"] == 0
 
 
-def test_sorcerer_affinity_caps_and_upgrades_first_spell_tier():
+def test_sorcerer_affinity_caps_without_automatically_upgrading_spells():
     player = TestGameState.create_player(class_name="Sorcerer", spells=["Firebolt"])
     player.wizard_affinity["Fire"] = 49
 
     message = wizard.process_cast(player, abilities.Firebolt())
 
     assert player.wizard_affinity["Fire"] == 50
-    assert "Firebolt" not in player.spellbook["Spells"]
-    assert "Fireball" in player.spellbook["Spells"]
-    assert "upgrades to Fireball" in message
+    assert "Firebolt" in player.spellbook["Spells"]
+    assert "Fireball" not in player.spellbook["Spells"]
+    assert "upgrades to Fireball" not in message
 
 
-def test_wizard_affinity_unlocks_third_tier_and_ring_accelerates(monkeypatch):
+def test_wizard_ring_accelerates_affinity_without_auto_upgrading_spells(monkeypatch):
     player = TestGameState.create_player(class_name="Wizard", spells=["Fireball"])
     player.equipment["Ring"] = items.ClassRing()
     ok, _message = player.awaken_class_ring()
@@ -135,9 +135,9 @@ def test_wizard_affinity_unlocks_third_tier_and_ring_accelerates(monkeypatch):
     message = wizard.process_cast(player, abilities.Fireball())
 
     assert player.wizard_affinity["Fire"] == 81
-    assert "Fireball" not in player.spellbook["Spells"]
-    assert "Firestorm" in player.spellbook["Spells"]
-    assert "upgrades to Firestorm" in message
+    assert "Fireball" in player.spellbook["Spells"]
+    assert "Firestorm" not in player.spellbook["Spells"]
+    assert "upgrades to Firestorm" not in message
 
 
 def test_legacy_affinity_values_migrate_from_centered_model():

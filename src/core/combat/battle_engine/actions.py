@@ -9,7 +9,14 @@ import re
 from typing import TYPE_CHECKING
 
 from ... import items
-from ...classes import ability_mechanics, astromancer, class_rings, promotion_kits, wizard
+from ...classes import (
+    ability_mechanics,
+    astromancer,
+    class_rings,
+    mage_mechanics,
+    promotion_kits,
+    wizard,
+)
 from ...constants import SPECIAL_ATTACK_LUCK_FACTOR, SPECIAL_ATTACK_ROLL_MAX
 from ...events.event_bus import EventType, create_combat_event
 from ..actor_cycle import initiative_rating
@@ -162,6 +169,9 @@ class BattleActionMixin:
 
     def _execute_spell(self, choice: str | None) -> str:
         """Cast a spell. Handles silence check."""
+        fractures = getattr(self.attacker, "fractures", {})
+        if (fractures.get("Ribs") or fractures.get("Exoskeleton")) and random.random() < 0.25:
+            return f"{self.attacker.name}'s fractured body disrupts the spell.\n"
         if self.attacker.abilities_suppressed():
             reason = "the anti-magic field" if getattr(self.attacker, "anti_magic_active", False) else "silence"
             return f"{self.attacker.name} cannot cast spells because of {reason}!\n"
@@ -173,7 +183,18 @@ class BattleActionMixin:
             return f"{self.attacker.name} fumbles the spell.\n"
 
         spell = self.attacker.spellbook['Spells'][choice]
-        if self.attacker.mana.current < spell.cost:
+        from ... import curses
+
+        if curses.spell_delay(self.attacker):
+            pending = getattr(self.attacker, "_dysarthria_pending_spell", None)
+            if pending != choice:
+                self.attacker._dysarthria_pending_spell = choice
+                return f"{self.attacker.name} struggles to pronounce {choice} and begins casting.\n"
+            self.attacker._dysarthria_pending_spell = None
+        if self.attacker.mana.current < mage_mechanics.spell_mana_cost(
+            self.attacker,
+            spell,
+        ):
             return f"{self.attacker.name} does not have enough mana to cast {choice}!\n"
 
         self._event_bus.emit(create_combat_event(
@@ -203,6 +224,17 @@ class BattleActionMixin:
             ):
                 self._last_combat_result = deepcopy(recorded_result)
         message += str(cast_result)
+        if defender_was_alive and not self.defender.is_alive():
+            self.defender._killed_by_ability = choice
+            if (
+                choice == "Desoul"
+                and "Death Becomes Us" in self.attacker.spellbook.get("Skills", {})
+            ):
+                self.attacker.shadow_dungeon_darkness_steps = max(
+                    100,
+                    int(getattr(self.attacker, "shadow_dungeon_darkness_steps", 0) or 0),
+                )
+                message += "Death Becomes Us throws the dungeon into darkness.\n"
         if self.attacker == self.player:
             if (
                 choice in {"Turn Undead", "TurnUndead", "Turn Undead 2", "TurnUndead2"}
@@ -289,7 +321,10 @@ class BattleActionMixin:
         sign = astromancer.sign_for_spell(spell)
         if not sign:
             return f"{choice} cannot be empowered by the current rune lore.\n"
-        if self.player.mana.current < spell.cost:
+        if self.player.mana.current < mage_mechanics.spell_mana_cost(
+            self.player,
+            spell,
+        ):
             return f"{self.player.name} does not have enough mana to cast {choice}!\n"
         if not astromancer.consume_rune(self.player, sign):
             return f"{self.player.name} has no {sign} runes.\n"

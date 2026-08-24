@@ -102,6 +102,6 @@ def test_promotion_kit_facade_preserves_all_split_functions():
         for name, implementation in _owned_functions(module).items()
     }
 
-    assert len(exports) == 140
+    assert len(exports) == 166
     for name, implementation in exports.items():
         assert getattr(promotion_kits, name) is implementation

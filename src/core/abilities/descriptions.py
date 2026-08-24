@@ -22,6 +22,7 @@ def is_embedded_modifier(ability: Any) -> bool:
         or getattr(ability, "modifies", ())
         or getattr(ability, "modifies_abilities", ())
         or getattr(ability, "modifies_school", None)
+        or getattr(ability, "modifies_schools", ())
     )
 
 
@@ -35,15 +36,25 @@ def _modifier_applies(modifier: Any, ability: Any) -> bool:
         names = (names,)
     if str(getattr(ability, "name", "")) in names:
         return True
+    schools = getattr(modifier, "modifies_schools", ()) or ()
     school = str(getattr(modifier, "modifies_school", "") or "")
-    return bool(
-        school
-        and school
-        in {
-            str(getattr(ability, "school", "") or ""),
-            str(getattr(ability, "subtyp", "") or ""),
-        }
-    )
+    if school:
+        schools = (*schools, school)
+    if not schools:
+        return False
+    ability_schools = {
+        str(getattr(ability, "school", "") or ""),
+        str(getattr(ability, "subtyp", "") or ""),
+    }
+    try:
+        from src.core.classes import mage_mechanics
+
+        resolved_school = mage_mechanics.school_from_ability(ability)
+        if resolved_school:
+            ability_schools.add(resolved_school)
+    except Exception:
+        pass
+    return bool(set(str(value) for value in schools) & ability_schools)
 
 
 def ability_modifications(character: Any, ability: Any) -> tuple[AbilityModification, ...]:
@@ -65,6 +76,27 @@ def ability_modifications(character: Any, ability: Any) -> tuple[AbilityModifica
                     )
                 )
                 seen.add(name)
+    if str(getattr(ability, "name", "")) in {
+        "Magic Missile",
+        "Magic Missile II",
+        "Magic Missile III",
+    }:
+        try:
+            from src.core.progression import has_talent
+
+            if has_talent(character, "mage.arcane-fundamentals"):
+                modifiers.insert(
+                    0,
+                    AbilityModification(
+                        name="Guidance Upgrade",
+                        description=(
+                            "Magic Missile projectiles deal 20% more critical-strike "
+                            "bonus damage."
+                        ),
+                    ),
+                )
+        except Exception:
+            pass
     return tuple(modifiers)
 
 

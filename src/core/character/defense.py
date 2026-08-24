@@ -5,6 +5,7 @@ from __future__ import annotations
 import random
 from typing import TYPE_CHECKING
 
+from .. import curses
 from ..constants import (
     ARMOR_SCALING_FACTOR,
     ASTRAL_SHIFT_REDUCTION,
@@ -37,6 +38,13 @@ class CharacterDefenseMixin:
         if cover:
             msg += (f"{defender.familiar.name} steps in front of the attack, "
                     f"taking the damage for {defender.name}.\n")
+            if (
+                getattr(defender.familiar, "spec", "") == "Defense"
+                and "Thorn By My Side" in defender.spellbook.get("Skills", {})
+            ):
+                reflected = max(1, int(raw_dmg))
+                self.health.current = max(0, self.health.current - reflected)
+                msg += f"The Homunculus redirects {reflected} damage to {self.name}.\n"
             return 0, msg, False  # damage zeroed but hit still counts
 
         # Shield block
@@ -68,7 +76,10 @@ class CharacterDefenseMixin:
                     if cross_block is not None
                     else (
                         blk_chance
-                        + ((defender.stats.strength - self.stats.strength) / damage)
+                        + (((
+                            defender.stats.strength
+                            * curses.strength_multiplier(defender)
+                        ) - self.stats.strength) / damage)
                         if damage
                         else 0
                     )
@@ -433,6 +444,12 @@ class CharacterDefenseMixin:
         except Exception:
             pass
 
+        barrier = int(getattr(defender, "restorative_barrier", 0) or 0)
+        if barrier > 0 and damage > 0:
+            absorbed = min(barrier, damage)
+            defender.restorative_barrier = barrier - absorbed
+            damage -= absorbed
+            msg += f"{defender.name}'s restorative barrier absorbs {absorbed} damage.\n"
         return damage, msg
 
     def _build_damage_message(
@@ -637,6 +654,8 @@ class CharacterDefenseMixin:
         resist = 0
         if typ in self.resistance:
             resist = self.check_mod('resist', enemy=attacker, typ=typ)
+        if typ == "Shadow" and getattr(attacker, "_piercing_bolt_cast", False):
+            resist *= 0.5 if resist > 0 else 1.5
         try:
             from ..classes import mage_mechanics
 
@@ -649,6 +668,12 @@ class CharacterDefenseMixin:
 
         message = ""
         final_damage = int(damage * (1 - resist))
+        darkness_active = (
+            int(getattr(attacker, "shadow_dungeon_darkness_steps", 0) or 0) > 0
+            or int(getattr(self, "shadow_dungeon_darkness_steps", 0) or 0) > 0
+        )
+        if typ == "Shadow" and darkness_active:
+            final_damage = int(final_damage * 1.25)
         try:
             from ..classes import paladin
 
@@ -673,6 +698,14 @@ class CharacterDefenseMixin:
 
             final_damage, frozen_message = wizard.frozen_armor_reduction(self, final_damage)
             message += frozen_message
+        except Exception:
+            pass
+        try:
+            from ..classes import mage_mechanics
+
+            final_damage = int(
+                final_damage * mage_mechanics.incoming_damage_multiplier(self)
+            )
         except Exception:
             pass
 
@@ -712,4 +745,10 @@ class CharacterDefenseMixin:
         )
         message += temporary_health_message
 
+        barrier = int(getattr(self, "restorative_barrier", 0) or 0)
+        if barrier > 0 and final_damage > 0:
+            absorbed = min(barrier, final_damage)
+            self.restorative_barrier = barrier - absorbed
+            final_damage -= absorbed
+            message += f"{self.name}'s restorative barrier absorbs {absorbed} damage.\n"
         return True, message, final_damage

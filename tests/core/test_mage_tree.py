@@ -29,13 +29,14 @@ PROMOTION_ROUTES = {
     "Sorcerer": (
         "mage.ability.magicmissile",
         "mage.talent.arcane-fundamentals",
+        "mage.ability.mana-rupture",
         "mage.ability.arcane-tradition",
         "mage.promotion.sorcerer",
     ),
     "Spellblade": (
         "mage.ability.magicmissile",
         "mage.talent.arcane-fundamentals",
-        "mage.mana.arcane-reserve",
+        "mage.ability.mana-rupture",
         "mage.ability.polymorph",
         "mage.ability.manashield",
         "mage.ability.imbue-weapon",
@@ -145,7 +146,7 @@ def test_mage_tree_has_exact_ids_coordinates_gates_and_prerequisites():
         **{node_id: (1, row) for row, node_id in enumerate(ENHANCEMENT_IDS)},
         "mage.ability.magicmissile": (2, 0),
         "mage.talent.arcane-fundamentals": (2, 1),
-        "mage.mana.arcane-reserve": (2, 2),
+        "mage.ability.mana-rupture": (2, 2),
         "mage.ability.polymorph": (2, 3),
         "mage.ability.manashield": (2, 4),
         "mage.ability.imbue-weapon": (2, 5),
@@ -218,7 +219,7 @@ def test_mage_tree_has_exact_ids_coordinates_gates_and_prerequisites():
         for node_id, node in development.items()
         if node.payload.get("level_requirement")
     } == expected_levels
-    assert "level_requirement" not in development["mage.mana.arcane-reserve"].payload
+    assert "level_requirement" not in development["mage.ability.mana-rupture"].payload
     assert "level_requirement" not in development["mage.mana.conjuration-reserve"].payload
     assert "mage.talent.warded-casting" not in nodes
     assert {
@@ -233,7 +234,7 @@ def test_mage_tree_has_exact_ids_coordinates_gates_and_prerequisites():
         **{node_id: "skill_passive" for node_id in ENHANCEMENT_IDS},
         "mage.ability.magicmissile": "spell_arcane",
         "mage.talent.arcane-fundamentals": "skill_passive",
-        "mage.mana.arcane-reserve": "spell_arcane",
+        "mage.ability.mana-rupture": "spell_arcane",
         "mage.ability.polymorph": "spell_arcane",
         "mage.ability.manashield": "skill_support",
         "mage.ability.imbue-weapon": "skill_support",
@@ -281,14 +282,18 @@ def test_promotions_have_exact_terminals_costs_and_stat_gates():
     assert {
         target: sum(_nodes()[node_id].cost for node_id in route)
         for target, route in PROMOTION_ROUTES.items()
-    } == {"Sorcerer": 5, "Spellblade": 8, "Warlock": 8, "Conjurer": 8}
+    } == {"Sorcerer": 6, "Spellblade": 8, "Warlock": 8, "Conjurer": 8}
 
 
 def test_sorcerer_specializations_are_exclusive_and_warn_before_closure():
     player = _player(level=25)
     assert apply_progression_plan(
         player,
-        ("mage.ability.magicmissile", "mage.talent.arcane-fundamentals"),
+        (
+            "mage.ability.magicmissile",
+            "mage.talent.arcane-fundamentals",
+            "mage.ability.mana-rupture",
+        ),
         {},
     ).success
     assert permanent_closures_for_plan(
@@ -352,15 +357,13 @@ def test_promotions_retain_learned_spells_and_close_mage_development(target: str
         assert not result.success
 
 
-def test_elemental_spells_remain_trainable_only_for_sorcerer_and_wizard():
+def test_sorcerer_no_longer_carries_unpurchased_level_one_mage_spells():
     player = _promote("Sorcerer")
-    assert purchase_node(player, "mage.ability.firebolt").success
-    assert "Firebolt" in player.spellbook["Spells"]
+    result = purchase_node(player, "mage.ability.firebolt")
 
-    unrelated = _promote("Warlock")
-    result = purchase_node(unrelated, "mage.ability.firebolt")
     assert not result.success
     assert "current class tree" in result.message
+    assert "Firebolt" not in player.spellbook["Spells"]
 
 
 def test_new_mage_state_round_trips_with_version_five_saves():

@@ -8,6 +8,7 @@ than duplicate progression rules.
 from __future__ import annotations
 
 import copy
+import math
 import random
 import re
 from dataclasses import asdict
@@ -46,6 +47,7 @@ from .progression_manifest import (
     FIRST_PROMOTION_STAT_REQUIREMENT_OVERRIDES,
     DRAGOON_TREE_NODE_SPECS,
     CRUSADER_TREE_NODE_SPECS,
+    DEMONOLOGIST_TREE_NODE_SPECS,
     GRANDMASTER_TREE_NODE_SPECS,
     LANCER_TREE_NODE_SPECS,
     KNIGHT_ENCHANTER_TREE_NODE_SPECS,
@@ -57,7 +59,9 @@ from .progression_manifest import (
     PROMOTED_TREE_PATHS,
     PROMOTED_TREE_PROMOTION_PATHS,
     SECOND_PROMOTION_STAT_REQUIREMENT_OVERRIDES,
+    SHADOWCASTER_TREE_NODE_SPECS,
     SENTINEL_TREE_NODE_SPECS,
+    SORCERER_TREE_NODE_SPECS,
     SPELLBLADE_TREE_NODE_SPECS,
     STAGE_SIZE_RANGES,
     STALWART_DEFENDER_TREE_NODE_SPECS,
@@ -73,7 +77,9 @@ from .progression_manifest import (
     WARRIOR_PATH_ROW_OFFSETS,
     WARRIOR_PROMOTION_CROSS_REQUIREMENTS,
     WARRIOR_TREE_PATHS,
+    WARLOCK_TREE_NODE_SPECS,
     WEAPON_MASTER_TREE_NODE_SPECS,
+    WIZARD_TREE_NODE_SPECS,
 )
 
 
@@ -890,7 +896,7 @@ def _build_mage_tree() -> AbilityTree:
                 "ability_class": ability_ctor,
                 "description": getattr(ability, "description", ""),
             }
-            icon_key = _ability_icon_key(book, ability)
+            icon_key = str(spec.get("icon_key", _ability_icon_key(book, ability)))
         elif kind == NodeKind.TALENT:
             payload = {
                 "name": str(spec["name"]),
@@ -1106,7 +1112,9 @@ def _build_terminal_weapon_tree(
                 "ability_class": ability_ctor,
                 "description": getattr(ability, "description", ""),
             }
-            icon_key = _ability_icon_key(book, ability)
+            icon_key = str(
+                spec.get("icon_key", _ability_icon_key(book, ability))
+            )
         elif kind == NodeKind.TALENT:
             payload = {
                 "name": str(spec["name"]),
@@ -1369,7 +1377,9 @@ def _build_authored_kit_tree(
                 "ability_class": ability_ctor,
                 "description": getattr(ability, "description", ""),
             }
-            icon_key = _ability_icon_key(book, ability)
+            icon_key = str(
+                spec.get("icon_key", _ability_icon_key(book, ability))
+            )
         elif kind == NodeKind.TALENT:
             payload = {
                 "name": str(spec["name"]),
@@ -1426,9 +1436,22 @@ def _build_authored_kit_tree(
             "owned_if_known",
             "prerequisite_mode",
             "requires_known_ability",
+            "school_affinity",
+            "upgrade_without_source",
+            "hidden_until_known",
+            "quest_unlock",
+            "revealed_name",
         ):
             if key in spec:
                 payload[key] = spec[key]
+        if spec.get("connector_enter_from_top"):
+            payload["connector_enter_from_top"] = True
+        if spec.get("connector_channel_columns"):
+            payload["connector_channel_columns"] = {
+                local_ids.get(prerequisite, prerequisite): column
+                for prerequisite, column
+                in spec["connector_channel_columns"].items()
+            }
         nodes.append(AbilityTreeNode(
             id=node_id,
             tree_id=class_name,
@@ -1483,6 +1506,60 @@ def _build_authored_kit_tree(
         branches=branches,
         nodes=tuple(nodes),
     )
+
+
+def _build_warlock_tree() -> AbilityTree:
+    """Build the Warlock development paths and its two terminal promotions."""
+    base_tree = _build_authored_kit_tree("Warlock", WARLOCK_TREE_NODE_SPECS)
+    promotions = (
+        AbilityTreeNode(
+            id="warlock.promotion.shadowcaster",
+            tree_id="Warlock",
+            kind=NodeKind.PROMOTION,
+            lane="Umbral Offense",
+            position=(0.5, 7),
+            icon_key="promotion",
+            prerequisites=(
+                "warlock.ability.doom",
+                "warlock.ability.mana-drain",
+            ),
+            payload={
+                "name": "Promote: Shadowcaster",
+                "target_class": "Shadowcaster",
+                "target_class_ctor": CLASS_DETAILS["Shadowcaster"][0],
+                "floating_promotion": False,
+                "requirements": _promotion_requirements("Shadowcaster", 3),
+                "level_requirement": 60,
+                "prerequisite_mode": "any",
+                "connector_join_at_target_row": True,
+            },
+            cost=3,
+        ),
+        AbilityTreeNode(
+            id="warlock.promotion.demonologist",
+            tree_id="Warlock",
+            kind=NodeKind.PROMOTION,
+            lane="Curses",
+            position=(3.5, 7),
+            icon_key="promotion",
+            prerequisites=(
+                "warlock.ability.curse-swarms",
+                "warlock.ability.life-tap",
+            ),
+            payload={
+                "name": "Promote: Demonologist",
+                "target_class": "Demonologist",
+                "target_class_ctor": CLASS_DETAILS["Demonologist"][0],
+                "floating_promotion": False,
+                "requirements": _promotion_requirements("Demonologist", 3),
+                "level_requirement": 60,
+                "prerequisite_mode": "any",
+                "connector_join_at_target_row": True,
+            },
+            cost=3,
+        ),
+    )
+    return replace(base_tree, nodes=(*base_tree.nodes, *promotions))
 
 
 THAUMATURGIST_XENID_GROUPS = (
@@ -1759,6 +1836,36 @@ def _build_authored_tree(class_name: str) -> AbilityTree:
             promotion_prerequisite_mode="any",
             promotion_connector_join_at_target_row=True,
         )
+    if class_name == "Sorcerer":
+        return _build_authored_kit_tree(
+            class_name,
+            SORCERER_TREE_NODE_SPECS,
+            promotion_target="Wizard",
+            promotion_position=(1, 7),
+            promotion_prerequisites=(
+                "classical-enrichment",
+                "arcane-ritual",
+            ),
+            promotion_prerequisite_mode="any",
+            promotion_connector_join_at_target_row=True,
+        )
+    if class_name == "Wizard":
+        return _build_authored_kit_tree(
+            class_name,
+            WIZARD_TREE_NODE_SPECS,
+        )
+    if class_name == "Warlock":
+        return _build_warlock_tree()
+    if class_name == "Shadowcaster":
+        return _build_authored_kit_tree(
+            class_name,
+            SHADOWCASTER_TREE_NODE_SPECS,
+        )
+    if class_name == "Demonologist":
+        return _build_authored_kit_tree(
+            class_name,
+            DEMONOLOGIST_TREE_NODE_SPECS,
+        )
     if class_name == "Knight Enchanter":
         return _build_authored_kit_tree(
             class_name,
@@ -1876,7 +1983,7 @@ def _build_authored_tree(class_name: str) -> AbilityTree:
                 "talent_key": talent_key,
                 "description": (
                     f"{talent_name} permanently increases {rating_name} by "
-                    f"{talent_bonus}."
+                    f"{talent_bonus}%."
                     + talent_mechanic_text(talent_key)
                     + (
                         " It also increases the associated class-kit meter "
@@ -1885,7 +1992,11 @@ def _build_authored_tree(class_name: str) -> AbilityTree:
                         else ""
                     )
                 ),
-                "bonuses": {"ratings": {rating_name: talent_bonus}},
+                "bonuses": {
+                    "rating_percentages": {
+                        rating_name: talent_bonus / 100,
+                    },
+                },
                 **(
                     {"kit_effect": TALENT_KIT_EFFECTS[talent_key]}
                     if talent_key in TALENT_KIT_EFFECTS
@@ -1976,10 +2087,14 @@ def _build_authored_tree(class_name: str) -> AbilityTree:
                 "talent_key": f"{talent_key}.rank-{rank}",
                 "description": (
                     f"Deepen {base_name}; permanently increase "
-                    f"{rating_name} by {talent_bonus}."
+                    f"{rating_name} by {talent_bonus}%."
                     + talent_mechanic_text(talent_key)
                 ),
-                "bonuses": {"ratings": {rating_name: talent_bonus}},
+                "bonuses": {
+                    "rating_percentages": {
+                        rating_name: talent_bonus / 100,
+                    },
+                },
                 **(
                     {"level_requirement": level_requirement}
                     if level_requirement
@@ -2086,8 +2201,8 @@ CARRIED_NODE_IDS_BY_CLASS = {
         for node in ABILITY_TREES["Dragoon"].nodes
         if node.tree_id == "Lancer"
     ),
-    "Sorcerer": MAGE_CARRIED_NODE_IDS,
-    "Wizard": MAGE_CARRIED_NODE_IDS,
+    "Sorcerer": frozenset(),
+    "Wizard": frozenset(),
     "Thaumaturgist": frozenset({
         *CONJURER_CARRIED_NODE_IDS,
         "mage.ability.conjure-animal",
@@ -2739,6 +2854,25 @@ def _node_blockers(
         for book in ("Spells", "Skills")
     ):
         blockers.append(f"Requires learned ability {required_ability}.")
+    quest_unlock = str(node.payload.get("quest_unlock", "") or "")
+    if quest_unlock:
+        quest = getattr(player, "quest_dict", {}).get("Side", {}).get(
+            quest_unlock,
+            {},
+        )
+        if not bool(quest.get("Turned In")):
+            blockers.append(f"Requires completing {quest_unlock}.")
+    school_affinity = node.payload.get("school_affinity")
+    if school_affinity:
+        from .classes import wizard
+
+        school_name, required_affinity = school_affinity
+        current_affinity = wizard.ensure_affinity(player).get(str(school_name), 0)
+        if current_affinity < float(required_affinity):
+            blockers.append(
+                f"Requires {required_affinity:g} {school_name} affinity "
+                f"(current {current_affinity:g})."
+            )
     if node.kind == NodeKind.ABILITY:
         exclusive_group = node.payload.get("exclusive_group")
         if exclusive_group:
@@ -2778,6 +2912,7 @@ def _node_blockers(
         }
         if (
             source_name
+            and not node.payload.get("upgrade_without_source")
             and source_name not in planned_names
             and not any(
                 source_name in player.spellbook.get(book, {})
@@ -2865,18 +3000,35 @@ def available_nodes(
         return closed
 
     statuses: list[NodeStatus] = []
+    learned_names = {
+        name
+        for book in getattr(player, "spellbook", {}).values()
+        for name in getattr(book, "keys", lambda: ())()
+    }
     for node in tree.nodes:
+        hidden_until_known = str(
+            node.payload.get("hidden_until_known", "") or ""
+        )
+        if hidden_until_known and hidden_until_known not in learned_names:
+            continue
+        display_node = node
+        revealed_name = str(node.payload.get("revealed_name", "") or "")
+        if revealed_name and revealed_name in learned_names:
+            display_node = replace(
+                node,
+                payload={**node.payload, "name": revealed_name},
+            )
         if node.id in effective_purchased:
-            statuses.append(NodeStatus(node, NodeState.OWNED))
+            statuses.append(NodeStatus(display_node, NodeState.OWNED))
         elif is_closed:
             statuses.append(NodeStatus(
-                node,
+                display_node,
                 NodeState.CLOSED,
                 ("This completed branch is permanently closed.",),
             ))
         elif is_choice_closed(node):
             statuses.append(NodeStatus(
-                node,
+                display_node,
                 NodeState.CLOSED,
                 ("The competing style path was chosen permanently.",),
             ))
@@ -2911,7 +3063,7 @@ def available_nodes(
                 )
             )
             statuses.append(NodeStatus(
-                node,
+                display_node,
                 (
                     NodeState.CLOSED
                     if permanently_unavailable_promotion
@@ -3002,11 +3154,29 @@ def _grant_talent(player: Any, node: AbilityTreeNode) -> None:
             rating_attr,
             getattr(player.combat, rating_attr) + int(amount),
         )
+    for rating_name, percentage in bonuses.get(
+        "rating_percentages",
+        {},
+    ).items():
+        rating_attr = RATING_PAYLOADS[rating_name]
+        current = int(getattr(player.combat, rating_attr))
+        amount = max(1, math.ceil(current * float(percentage)))
+        setattr(player.combat, rating_attr, current + amount)
     for resource_name in ("health", "mana"):
         amount = int(bonuses.get(resource_name, 0) or 0)
         if not amount:
             continue
         resource = getattr(player, resource_name)
+        resource.max += amount
+        resource.current += amount
+    for resource_name in ("health", "mana"):
+        percentage = float(
+            bonuses.get(f"{resource_name}_percentage", 0) or 0
+        )
+        if not percentage:
+            continue
+        resource = getattr(player, resource_name)
+        amount = max(1, math.ceil(resource.max * percentage))
         resource.max += amount
         resource.current += amount
     jump_modification = node.payload.get("jump_modification")
@@ -3066,15 +3236,13 @@ def _promotion_closure_warning(source_class: str, target_class: str) -> str:
         )
     if (source_class, target_class) == ("Mage", "Sorcerer"):
         return (
-            "Unpurchased Arcane Fundamentals and Mage elemental-school spells "
-            "remain purchasable in the Sorcerer and Wizard trees. Other "
-            "unpurchased Mage nodes and competing promotions close permanently."
+            "Unpurchased Mage nodes and competing promotions close permanently. "
+            "Sorcerer tier-two spells unlock through matching School Affinity."
         )
     if (source_class, target_class) == ("Sorcerer", "Wizard"):
         return (
-            "Unpurchased Arcane Fundamentals and Mage elemental-school spells "
-            "remain purchasable in the Wizard tree. Other unpurchased Sorcerer "
-            "nodes close permanently."
+            "Unpurchased Sorcerer nodes close permanently. Learned spells and "
+            "passives are retained in the Wizard spellbook."
         )
     if (source_class, target_class) == ("Conjurer", "Thaumaturgist"):
         return (

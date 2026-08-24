@@ -96,6 +96,7 @@ RANDOM_ENEMY_SPECS: dict[str, tuple[EnemySpec, ...]] = {
         ("Satyr", "Satyr"),
     ),
     "2": (
+        ("Acolyte", "Acolyte"),
         ("Panther", "Panther"),
         ("Twisted Dwarf", "TwistedDwarf"),
         ("Battle Toad", "BattleToad"),
@@ -117,11 +118,12 @@ RANDOM_ENEMY_SPECS: dict[str, tuple[EnemySpec, ...]] = {
         ("Steel Predator", "SteelPredator"),
     ),
     "3": (
+        ("War Turtle", "WarTurtle"),
+        ("Wayward Priest", "WaywardPriest"),
         ("Clannfear", "Clannfear"),
         ("Ghoul", "Ghoul"),
         ("Troll", "Troll"),
         ("Direbear", "Direbear"),
-        ("Giant", "Giant"),
         ("Owlbear", "Owlbear"),
         ("Evil Crusader", "EvilCrusader"),
         ("Ogre", "Ogre"),
@@ -162,6 +164,7 @@ RANDOM_ENEMY_SPECS: dict[str, tuple[EnemySpec, ...]] = {
         ("Displacer Beast", "DisplacerBeast"),
     ),
     "5": (
+        ("Unicorn", "Unicorn"),
         ("Fire Myrmidon", "FireMyrmidon"),
         ("Ice Myrmidon", "IceMyrmidon"),
         ("Storm Myrmidon", "StormMyrmidon"),
@@ -203,6 +206,7 @@ FUNHOUSE_ENEMY_SPECS: tuple[EnemySpec, ...] = (
 )
 
 FIXED_LOCATION_HINTS: dict[str, tuple[str, ...]] = {
+    "Flame Wisp": ("Fire Path",),
     "Mimic": ("Chests", "Funhouse Mimic Chest"),
     "Fuath": ("Underground Spring",),
     "Warforged": ("Realm of Cambion Terminal",),

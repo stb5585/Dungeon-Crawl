@@ -57,13 +57,90 @@ FAVOR_UNLOCKS = {
 RESENTMENT_WITHHOLD_PRIORITY = ("Desperate Aid", "Restore", "Protect", "Curse")
 
 
+def _has_skill(character: Any, name: str) -> bool:
+    return name in getattr(character, "spellbook", {}).get("Skills", {})
+
+
+def process_spell_cast(
+    character: Any,
+    ability: Any,
+    target: Any | None,
+    *,
+    rng: Any = random,
+) -> str:
+    """Resolve Demonologist spell riders after a successful cast."""
+    if not is_demonologist(character) or target is None:
+        return ""
+    name = str(getattr(ability, "name", ""))
+    message = ""
+    if name.startswith("Shadow Bolt") and _has_skill(character, "Grease Missile"):
+        target.demon_grease_turns = 3
+        slowed = target.stat_effects["Speed"]
+        slowed.active = True
+        slowed.duration = max(3, int(slowed.duration or 0))
+        slowed.extra = min(-4, int(slowed.extra or 0))
+        if not getattr(target, "flying", False) and rng.random() < 0.25:
+            prone = target.physical_effects["Prone"]
+            prone.active = True
+            prone.duration = max(1, int(prone.duration or 0))
+            prone.source = "Grease Missile"
+        message += f"Grease Missile coats and slows {target.name}.\n"
+
+    school = str(getattr(ability, "subtyp", "") or getattr(ability, "school", ""))
+    payload = getattr(target, "_corruption_payload", None)
+    if school == "Fire" and _has_skill(character, "Contagious Blaze") and isinstance(payload, dict):
+        encounter = getattr(character, "_combat_encounter", None)
+        source_member = next(
+            (member for member in getattr(encounter, "members", ()) if member.enemy is target),
+            None,
+        )
+        adjacent = [
+            member.enemy
+            for member in getattr(encounter, "living_members", ())
+            if source_member is not None
+            and abs(int(member.slot) - int(source_member.slot)) == 1
+        ]
+        explosion = max(1, int(character.check_mod("magic", enemy=target) * 0.50))
+        for enemy in adjacent:
+            enemy.health.current = max(0, enemy.health.current - explosion)
+            if rng.random() < 0.35 and not enemy.magic_effects["DOT"].active:
+                dot = enemy.magic_effects["DOT"]
+                dot.active = True
+                dot.duration = max(1, int(payload.get("duration", 2) or 2))
+                dot.extra = max(1, int(payload.get("damage", 1) or 1))
+                dot.source = "Corruption"
+                enemy._corruption_payload = dict(payload)
+        if adjacent:
+            message += f"Contagious Blaze explodes around {target.name}.\n"
+    return message
+
+
+def try_soul_vessel(character: Any) -> bool:
+    """Consume an active Soul Vessel to recover from otherwise fatal damage."""
+    if character.health.current > 0 or int(getattr(character, "soul_vessel_turns", 0) or 0) <= 0:
+        return False
+    character.soul_vessel_turns = 0
+    character.health.current = max(1, int(character.health.max * 0.25))
+    character.mana.current = max(1, int(character.mana.max * 0.25))
+    try:
+        from . import promotion_kits
+
+        promotion_kits._message(
+            character,
+            f"{character.name}'s Soul Vessel shatters and restores their body.\n",
+        )
+    except Exception:
+        pass
+    return True
+
+
 class Demonologist(Job):
     """
     Promotion: Mage -> Warlock -> Demonologist
     Additional Pros: Increased wisdom and defense
     Additional Cons: Decreased magic gain
     Special Mechanic: Fiend Contracts - bargain for intent-specific powers while managing
-        patron favor, resentment, and corruption.
+        patron favor, resentment, and bargain taint.
     """
 
     def __init__(self):
@@ -71,7 +148,7 @@ class Demonologist(Job):
             name="Demonologist",
             description="Demonologists bind fiendish patrons through dangerous contracts. "
             "Their bargains offer flexible harm, protection, and recovery, but every "
-            "favor risks resentment and corruption.",
+            "favor risks resentment and bargain taint.",
             str_plus=0,
             int_plus=2,
             wis_plus=2,
@@ -339,6 +416,8 @@ def quote_contract(character: Any, target: Any, intent: str) -> dict[str, Any]:
     ring_mult = 1.45 if empowered(character) else 1.0
     charisma_discount = min(0.30, max(0.0, getattr(character.stats, "charisma", 0) * 0.006))
     gold = int(BASE_GOLD_COST[intent] * power * ring_mult * urgency * (1.0 - charisma_discount))
+    if _has_skill(character, "Fine Print"):
+        gold = int(gold * 0.80)
     gold = max(25, gold)
 
     costs = {"gold": gold, "item": False, "permanent": None}
@@ -412,15 +491,34 @@ def resolve_contract(character: Any, target: Any, intent: str, *, rng: Any = ran
     if not can_pay_quote(character, quote):
         return "You cannot pay the demanded price.\n"
 
+    soul_gem = None
+    soul_stack = getattr(character, "inventory", {}).get("Soul Gem", [])
+    if _has_skill(character, "Contract Killer") and soul_stack:
+        soul_gem = soul_stack[0]
+        character.modify_inventory(soul_gem, subtract=True)
+        quote["soul_gem"] = True
     msg = pay_quote(character, quote)
+    if soul_gem is not None:
+        msg += "A Soul Gem sweetens the bargain.\n"
     msg += add_corruption(character, quote)
     twisted = rng.random() < quote["misbehavior_chance"]
     severity = twist_severity(character)
     strength = contract_strength(character, quote, twisted=twisted)
+    try:
+        from .. import curses
+
+        if curses.has_curse(target, "Demon Eyes"):
+            strength = int(
+                strength
+                * (1.40 if curses.curse_is_empowered(target, "Demon Eyes") else 1.25)
+            )
+    except Exception:
+        pass
 
     msg += apply_intent(character, target, quote["intent"], strength, twisted=twisted, severity=severity)
     _record_history(character, quote, twisted)
-    msg += adjust_patron_mood(character, quote["patron"], -4 if twisted else 3)
+    mood_delta = -4 if twisted else (4 if quote.get("soul_gem") else 3)
+    msg += adjust_patron_mood(character, quote["patron"], mood_delta)
     return msg
 
 
@@ -433,6 +531,10 @@ def contract_strength(character: Any, quote: dict[str, Any], *, twisted: bool = 
     if quote.get("intent") == "Desperate Aid":
         strength = int(strength * 1.4)
     strength = int(strength * (1.0 + corruption_strength_bonus(character)))
+    if _has_skill(character, "Abyssal Authority"):
+        strength = int(strength * 1.20)
+    if quote.get("soul_gem"):
+        strength = int(strength * 1.25)
     if twisted:
         strength = int(strength * 0.65)
     return max(1, strength)
@@ -529,14 +631,20 @@ def add_corruption(character: Any, quote: dict[str, Any]) -> str:
         gain += 4
     if power_up_active(character):
         gain = max(1, gain - 2)
+    if _has_skill(character, "Controlled Corruption"):
+        gain = max(1, int(gain * 0.75))
+    if quote.get("soul_gem") and _has_skill(character, "Contract Killer"):
+        gain = max(1, gain // 2)
     state["corruption"] = max(0, min(100, int(state.get("corruption", 0) or 0) + gain))
-    return f"Corruption rises by {gain} to {state['corruption']}/100.\n"
+    return f"Bargain taint rises by {gain} to {state['corruption']}/100.\n"
 
 
 def adjust_patron_mood(character: Any, patron: str, delta: int) -> str:
     state = ensure_state(character)
     if patron not in PATRONS:
         return ""
+    if delta > 0 and _has_skill(character, "Patronage"):
+        delta += 2
     before = int(state["patron_moods"].get(patron, 0) or 0)
     after = max(-100, min(100, before + int(delta)))
     state["patron_moods"][patron] = after
@@ -551,7 +659,7 @@ def cool_corruption(character: Any, amount: int, reason: str) -> str:
     state["corruption"] = max(0, before - max(0, int(amount)))
     if state["corruption"] == before:
         return ""
-    return f"Corruption cools by {before - state['corruption']} after {reason}.\n"
+    return f"Bargain taint fades by {before - state['corruption']} after {reason}.\n"
 
 
 def _pct(resource: Any) -> float:

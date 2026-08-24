@@ -1252,15 +1252,25 @@ def test_modern_character_school_affinity_tab_shows_affinity_grid(monkeypatch):
     screen.draw_class_tab(player)
 
     rendered_text = _rendered_text(presenter)
-    assert {"School Affinity", "Fire", "82/100 Fireball", "Wizard Ring"}.issubset(rendered_text)
-    assert {"Affinity Cap 100", "Sorcerer Upgrade", "Wizard Upgrade", "Opposite Drift", "Ring Acceleration", "Affinity Notes"}.isdisjoint(rendered_text)
+    assert {"School Affinity", "82/100"}.issubset(rendered_text)
+    assert "Fire" not in rendered_text
+    assert "Wizard Ring" not in rendered_text
+    assert {"Fireball", "Ice Lance"}.isdisjoint(rendered_text)
+    assert {"Affinity Cap 100", "Sorcerer Upgrade", "Wizard Upgrade", "Opposite Drift", "Ring Acceleration", "Affinity Notes", "Specialization"}.isdisjoint(rendered_text)
     assert "Promotion Tier" not in rendered_text
+    radar_surfaces = [
+        surface
+        for surface, _position in presenter.screen.blit_calls
+        if isinstance(surface, pygame.Surface)
+    ]
+    assert radar_surfaces
+    assert radar_surfaces[0].get_width() > screen.details_rect.width // 2
     assert icon_keys == [
         "spell_fire",
-        "spell_ice",
         "spell_water",
-        "spell_lightning",
         "spell_earth",
+        "spell_ice",
+        "spell_lightning",
         "spell_wind",
     ]
 
@@ -1280,8 +1290,10 @@ def test_modern_character_school_affinity_tab_hides_wizard_details_for_sorcerer(
     screen.draw_class_tab(player)
 
     rendered_text = _rendered_text(presenter)
-    assert {"School Affinity", "Fire", "12/50 Firebolt"}.issubset(rendered_text)
-    assert {"Affinity Cap 50", "Wizard Ring", "Not visible"}.isdisjoint(rendered_text)
+    assert {"School Affinity", "12/50"}.issubset(rendered_text)
+    assert "Fire" not in rendered_text
+    assert "Firebolt" not in rendered_text
+    assert {"Affinity Cap 50", "Wizard Ring", "Not visible", "Specialization"}.isdisjoint(rendered_text)
 
 
 def test_modern_character_contracts_tab_shows_patron_state(monkeypatch):
@@ -1307,7 +1319,7 @@ def test_modern_character_contracts_tab_shows_patron_state(monkeypatch):
     screen.draw_class_tab(player)
 
     rendered_text = _rendered_text(presenter)
-    assert {"Contracts", "Corruption", "55/100 Tier 2", "Active Patron", "Imp", "Recent Contracts", "Imp - Harm", "Echo"}.issubset(rendered_text)
+    assert {"Contracts", "Bargain Taint", "55/100 Tier 2", "Active Patron", "Imp", "Recent Contracts", "Imp - Harm", "Echo"}.issubset(rendered_text)
     assert {"Available Intents", "Withheld Intents", "Cost 160"}.isdisjoint(rendered_text)
     assert "Promotion Tier" not in rendered_text
 

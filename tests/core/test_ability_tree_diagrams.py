@@ -68,3 +68,28 @@ def test_authored_promotion_connectors_join_at_the_target_row():
     assert 'M 136.0 623.0 V 823.0 H 469.0 V 823.0' in spellblade
     assert 'M 358.0 723.0 V 823.0 H 469.0 V 823.0' in spellblade
     assert 'M 580.0 723.0 V 823.0 H 469.0 V 823.0' in spellblade
+
+
+def test_sorcerer_arcane_ritual_connector_enters_from_above():
+    sorcerer = render_tree_svg("Sorcerer")
+
+    assert 'M 486.0 623.0 H 469.0 V 692.0 H 469.0' in sorcerer
+
+
+def test_passive_nodes_use_distinct_svg_colors():
+    sorcerer = render_tree_svg("Sorcerer")
+
+    assert 'fill="#263b2b" stroke="#72c987"' in sorcerer
+
+
+def test_developer_diagrams_reveal_ultimate_names():
+    wizard = render_tree_svg("Wizard")
+
+    assert ">Photon Sphere</text>" in wizard
+    assert ">Prismatic Cataclysm</text>" in wizard
+
+
+def test_warlock_familiar_bond_connector_uses_side_midpoints():
+    warlock = render_tree_svg("Warlock")
+
+    assert 'M 1340.0 223.0 H 1357.0 V 723.0 H 1340.0' in warlock

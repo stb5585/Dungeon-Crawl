@@ -45,7 +45,7 @@ def test_items_facade_preserves_all_split_class_exports():
         for name, implementation in _module_item_classes(module).items()
     }
 
-    assert len(direct_exports) == 382
+    assert len(direct_exports) == 385
     for name, implementation in direct_exports.items():
         assert getattr(items, name) is implementation
 

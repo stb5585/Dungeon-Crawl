@@ -271,6 +271,8 @@ from .misc import (
     SlowRideSheet,
     SmokeBomb,
     RealityFragment,
+    SoulGem,
+    WaterBladder,
     UltimaScroll,
     WaterScroll,
     WindScroll,
@@ -409,7 +411,7 @@ items_dict = {
         'Status': [Antidote, EyeDrop, EchoScreen, Bandage, PhoenixDown]},
     'Misc': {
         'Key': [Key, OldKey],
-        'Tool': [LockpickKit, SmokeBomb],
+        'Tool': [LockpickKit, SmokeBomb, WaterBladder],
         'Magic Tool': [Oculus],
         'Scroll': [BlankScroll, BlessScroll, SleepScroll, FireScroll, IceScroll, ElectricScroll, WaterScroll,
                    EarthScroll, WindScroll, ShadowScroll, HolyScroll, CleanseScroll, BoostScroll,
@@ -417,7 +419,7 @@ items_dict = {
                    BattleHymnSheet, RampartsOdeSheet, DysfunctionSymphonySheet,
                    LowDefenseRhapsodySheet, SlowRideSheet, BonesThugsHarmonySheet,
                    ScoresAndScoresScoreSheet, GoldTriggerSheet, ChorusTimeSheet],
-        'Reagents': [RealityFragment]}
+        'Reagents': [RealityFragment, SoulGem]}
 }
 
 

@@ -109,6 +109,56 @@ class VeilShadows(PowerUp):
         self.passive = True
 
 
+class Alacrity(PowerUp):
+    """Passive speed increase while the caster is invisible."""
+
+    def __init__(self):
+        super().__init__(
+            name="Alacrity",
+            description="While invisible, increase Speed by 25%.",
+        )
+        self.passive = True
+
+
+class _ContractModifier(PowerUp):
+    """Passive modifier displayed with Call Contract instead of Specials."""
+
+    def __init__(self, name: str, description: str):
+        super().__init__(name=name, description=description)
+        self.passive = True
+        self.presentation_modifier = True
+        self.modifies = ("Call Contract",)
+
+
+class FinePrint(_ContractModifier):
+    def __init__(self):
+        super().__init__("Fine Print", "Reduce fiend-contract gold costs by 20%.")
+
+
+class ControlledCorruption(_ContractModifier):
+    def __init__(self):
+        super().__init__(
+            "Controlled Corruption",
+            "Reduce bargain taint gained from fiend contracts by 25%.",
+        )
+
+
+class Patronage(_ContractModifier):
+    def __init__(self):
+        super().__init__(
+            "Patronage",
+            "Successful fiend contracts generate additional patron favor.",
+        )
+
+
+class AbyssalAuthority(_ContractModifier):
+    def __init__(self):
+        super().__init__(
+            "Abyssal Authority",
+            "Increase the strength of fiend-contract effects by 20%.",
+        )
+
+
 class AbyssalCovenant(PowerUp):
     """Skill — data-driven (abyssal_covenant.yaml)"""
     def __new__(cls):

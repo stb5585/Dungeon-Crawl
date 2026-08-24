@@ -71,9 +71,13 @@ from .early import (
     Nightmare,
 )
 from .midgame import (
+    Acolyte,
+    WarTurtle,
+    WaywardPriest,
     Direbear,
     Direbear2,
     Giant,
+    Unicorn,
     Owlbear,
     Ghoul,
     PitViper,
@@ -105,6 +109,7 @@ from .midgame import (
     Cyborg,
     DarkKnight,
     Myrmidon,
+    FlameWisp,
     FireMyrmidon,
     IceMyrmidon,
     StormMyrmidon,

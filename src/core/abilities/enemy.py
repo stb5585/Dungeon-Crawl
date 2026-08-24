@@ -152,6 +152,61 @@ class Turtle(Skill):
         self.passive = True
 
 
+class Gore(Skill):
+    """Drive a horn into the target and leave a bleeding wound."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            "Gore",
+            "Attempt to disembowel the target with a horn, dealing extra weapon damage and bleed.",
+            weapon=True,
+        )
+
+    def use(self, user: Any, target: Any | None = None, **kwargs: Any) -> str:
+        del kwargs
+        if target is None:
+            return "There is no target to gore.\n"
+        message, hit, _crit = user.weapon_damage(target, dmg_mod=1.5)
+        if hit and target.is_alive() and not target.has_status_protection("Bleed"):
+            bleed = target.physical_effects["Bleed"]
+            bleed.active = True
+            bleed.duration = max(3, int(bleed.duration or 0))
+            bleed.extra = max(1, int(user.stats.strength * 0.25))
+            bleed.source = "Gore"
+            message += f"{target.name} is left bleeding from the goring wound.\n"
+        return message
+
+
+class Retract(Skill):
+    """Hide permanently inside a separate, damaging spiked shell pool."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            "Retract",
+            "Retract into a spiked shell until its separate health pool is destroyed.",
+        )
+
+    def use(self, user: Any, target: Any | None = None, **kwargs: Any) -> str:
+        del target, kwargs
+        user.turtle = True
+        user.war_turtle_shell_health = max(1, int(user.health.max * 0.75))
+        return (
+            f"{user.name} retracts into its spiked shell "
+            f"({user.war_turtle_shell_health} shell health).\n"
+        )
+
+
+class DazedOrConfused(Skill):
+    """Passive rider that lets Holy damage stun or confuse its target."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            "Dazed or Confused",
+            "Holy spells may stun the target for two turns or leave it confused.",
+        )
+        self.passive = True
+
+
 class Tunnel:
     """Data-driven (tunnel.yaml)"""
     def __new__(cls):

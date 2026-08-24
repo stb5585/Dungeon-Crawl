@@ -214,6 +214,14 @@ def record_damage_event(
 
     if not amount or amount <= 0:
         return
+    try:
+        from .. import mage_mechanics
+
+        spell_metadata = dict(metadata or {})
+        spell_metadata["damage_type"] = damage_type
+        mage_mechanics.record_spell_damage_hit(actor, target, spell_metadata)
+    except Exception:
+        pass
     cls = class_name(actor)
     damage_type = str(damage_type or "Physical")
     weapon_hit = _is_weapon_hit(metadata)
@@ -722,16 +730,23 @@ def threaded_cast(character: Any) -> str:
     return f"{character.name} prepares Threaded Cast with {threads} Foresight Thread(s).\n"
 
 
-def eclipse(character: Any) -> str:
+def shade_of_ahool(character: Any) -> str:
     if class_name(character) != "Shadowcaster":
-        return "Only a Shadowcaster can enter Eclipse.\n"
+        return "Only a Shadowcaster can become the Shade of Ahool.\n"
     data = _class_ring_data(character, "Shadowcaster")
     _normalize_shadowcaster_data(data)
     if int(data.get("debt", 0) or 0) < 20:
-        return "Eclipse requires at least 20 Umbral Debt.\n"
+        return "Shade of Ahool requires at least 20 Umbral Debt.\n"
     data["debt"] -= 20
     data["eclipse_turns"] = 3
-    return f"{character.name} spends 20 Umbral Debt and enters Eclipse for 3 turns.\n"
+    character.shade_of_ahool_turns = 3
+    character.flying = True
+    return f"{character.name} spends 20 Umbral Debt and becomes the Shade of Ahool for 3 turns.\n"
+
+
+def eclipse(character: Any) -> str:
+    """Backward-compatible alias for old saves and integrations."""
+    return shade_of_ahool(character)
 
 
 def shadowcaster_debt_cap(character: Any) -> int:

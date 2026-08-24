@@ -164,6 +164,15 @@ class PlayerProgressionMixin:
         """
         quest_message = ""
         if enemy is not None:
+            try:
+                from ..classes import wizard
+
+                quest_message += wizard.record_ultimate_quest_defeat(
+                    self,
+                    enemy.name,
+                )
+            except Exception:
+                pass
             if enemy.name in self.quest_dict['Bounty']:
                 if not self.quest_dict['Bounty'][enemy.name][2]:
                     self.quest_dict['Bounty'][enemy.name][1] += 1
@@ -187,8 +196,12 @@ class PlayerProgressionMixin:
                         and quest_info.get('What') == enemy.name
                         and not quest_info.get('Completed')
                     ):
-                        quest_info['Completed'] = True
-                        quest_message += f"You have completed the quest {quest}.\n"
+                        total = max(1, int(quest_info.get('Total', 1) or 1))
+                        defeated = int(quest_info.get('Killed', 0) or 0) + 1
+                        quest_info['Killed'] = min(total, defeated)
+                        if defeated >= total:
+                            quest_info['Completed'] = True
+                            quest_message += f"You have completed the quest {quest}.\n"
         elif item is not None:
             for quest in self.quest_dict['Side']:
                 try:

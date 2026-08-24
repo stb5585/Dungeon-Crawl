@@ -332,7 +332,9 @@ class PlayerExplorationMixin:
         return False
 
     def max_weight(self):
-        return self.stats.strength * 10 * self.level.pro_level
+        from .. import curses
+
+        return int(self.stats.strength * curses.strength_multiplier(self)) * 10 * self.level.pro_level
 
     def current_weight(self):
         weight = 0

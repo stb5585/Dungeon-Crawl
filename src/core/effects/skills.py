@@ -303,14 +303,27 @@ class GoldTossEffect(Effect):
 
         gold_pool_name = "_gold_toss_pool"
         uses_private_pool = hasattr(actor, gold_pool_name)
-        available_gold = int(getattr(actor, gold_pool_name, actor.gold))
+        bullionaire = (
+            "Bullionaire" in getattr(actor, "spellbook", {}).get("Skills", {})
+            and getattr(getattr(actor, "familiar", None), "spec", "") == "Luck"
+            and bool(result.extra.get("use_kwargs", {}).get("fam", False))
+        )
+        available_gold = (
+            max(1, int(target.health.current * 2))
+            if bullionaire
+            else int(getattr(actor, gold_pool_name, actor.gold))
+        )
         if available_gold <= 0:
             messages.append("Nothing happens.\n")
             return
 
         max_thrown = min(target.health.current, available_gold)
         gold_thrown = _rng.randint(1, max_thrown)
-        if uses_private_pool:
+        if bullionaire:
+            actor.bullionaire_bonus_gold = int(
+                getattr(actor, "bullionaire_bonus_gold", 0) or 0
+            ) + max(1, gold_thrown // 4)
+        elif uses_private_pool:
             setattr(actor, gold_pool_name, available_gold - gold_thrown)
         else:
             actor.gold -= gold_thrown
@@ -321,7 +334,7 @@ class GoldTossEffect(Effect):
             messages.append("It has no effect.\n")
             return
 
-        if not _rng.randint(0, 1) and not target.incapacitated():
+        if not bullionaire and not _rng.randint(0, 1) and not target.incapacitated():
             d_chance = target.check_mod("luck", enemy=actor, luck_factor=10)
             catch = _rng.randint(min(gold_thrown, d_chance), gold_thrown)
             gold_thrown -= catch
@@ -339,6 +352,8 @@ class GoldTossEffect(Effect):
         if gold_thrown > 0:
             d_chance = target.check_mod("luck", enemy=actor, luck_factor=10)
             damage = max(1, gold_thrown // (2 + d_chance))
+            if bullionaire:
+                damage *= 2
             target.health.current -= damage
             result.damage = damage
             try:

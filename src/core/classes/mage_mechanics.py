@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import random
 from typing import Any
 
@@ -92,8 +93,10 @@ def school_from_ability(ability: Any) -> str | None:
             return "Arcane"
     if getattr(ability, "name", "") in {
         "Magic Missile",
-        "Magic Missile 2",
-        "Magic Missile 3",
+        "Magic Missile II",
+        "Magic Missile III",
+        "Mana Rupture",
+        "Gravitational Pull",
         "Polymorph",
         "Mana Shield",
         "Imbue Weapon",
@@ -103,38 +106,162 @@ def school_from_ability(ability: Any) -> str | None:
 
 
 def spell_potency_multiplier(character: Any, ability: Any) -> float:
-    """Apply the mutually exclusive specialization's severe off-school nerf."""
+    """Apply specialization and advanced off-school potency reductions."""
     chosen = specialization(character)
     school = school_from_ability(ability)
     if chosen == "Elemental" and school == "Arcane":
-        return 0.50
+        return 0.50 if has_skill(character, "Classical Enrichment") else 0.75
     if chosen == "Arcane" and school in ELEMENTAL_SCHOOLS:
-        return 0.50
+        return 0.50 if has_skill(character, "Arcane Ritual") else 0.75
     return 1.0
 
 
 def arcane_potency_multiplier(character: Any) -> float:
     """Return Arcane barrier/enhancement potency after specialization."""
-    return 0.50 if specialization(character) == "Elemental" else 1.0
+    if specialization(character) != "Elemental":
+        return 1.0
+    return 0.50 if has_skill(character, "Classical Enrichment") else 0.75
 
 
-def spell_damage_multiplier(character: Any, ability: Any) -> float:
+def spell_mana_cost(character: Any, ability: Any) -> int:
+    """Return the effective mana cost after Arcane specialization passives."""
+    cost = max(0, int(getattr(ability, "cost", 0) or 0))
+    if has_skill(character, "Force Multiplier") and _is_magic_missile(ability):
+        cost = math.ceil(cost * 1.25)
+    if int(getattr(character, "mystical_vitality_turns", 0) or 0) > 0:
+        cost = math.ceil(cost * 0.75)
+    return cost
+
+
+def spell_damage_multiplier(
+    character: Any,
+    ability: Any,
+    target: Any | None = None,
+) -> float:
     """Return authored Mage-talent damage scaling for a spell."""
+    multiplier = 1.0
     if (
         str(getattr(ability, "name", "")).startswith("Shadow Bolt")
         and has_talent(character, "mage.forbidden-studies")
     ):
-        return 1.20
+        multiplier *= 1.20
+    if (
+        str(getattr(ability, "name", "")).startswith("Shadow Bolt")
+        and has_skill(character, "Impending Demise")
+        and target is not None
+    ):
+        doom = getattr(target, "status_effects", {}).get("Doom")
+        turns = int(getattr(doom, "duration", 0) or 0)
+        if getattr(doom, "active", False) and turns > 0:
+            multiplier *= 1 + (0.50 / turns)
+    if str(getattr(ability, "name", "")) == "Terrify" and has_skill(
+        character,
+        "Night Terror",
+    ):
+        sleeping = getattr(target, "status_effects", {}).get("Sleep") if target else None
+        multiplier *= 1.50 if getattr(sleeping, "active", False) else 1.25
+    if (
+        school_from_ability(ability) == "Shadow"
+        and int(getattr(character, "warlock_eclipse_turns", 0) or 0) > 0
+    ):
+        multiplier *= 1.15
+    if (
+        has_skill(character, "Force Multiplier")
+        and _is_magic_missile(ability)
+    ):
+        multiplier *= 1.25
+    if has_skill(character, "Arcane Empowerment"):
+        stacks = min(5, max(0, int(_combat_state(character).get("arcane_empowerment", 0))))
+        multiplier *= 1 + (stacks * 0.05)
+    if (
+        school_from_ability(ability) == "Electric"
+        and has_skill(character, "Divine Wind")
+        and target is not None
+        and getattr(target.physical_effects.get("Prone"), "source", "")
+        == "Divine Wind"
+    ):
+        multiplier *= 2.0
+    return multiplier
+
+
+def consume_shadow_overheal_bonus(character: Any, ability: Any) -> int:
+    """Consume Resource Abuse's stored overheal on a damaging Shadow spell."""
+    if school_from_ability(ability) != "Shadow":
+        return 0
+    bonus = max(0, int(getattr(character, "resource_abuse_shadow_bonus", 0) or 0))
+    character.resource_abuse_shadow_bonus = 0
+    return bonus
+
+
+def record_spell_damage_hit(
+    character: Any,
+    target: Any | None = None,
+    metadata: dict[str, Any] | None = None,
+) -> None:
+    """Resolve Mage passives that react to individual spell-damage hits."""
+    if metadata is None and isinstance(target, dict):
+        metadata = target
+        target = None
+    if not isinstance(metadata, dict):
+        return
+    ability_name = str(metadata.get("ability_name") or "")
+    state = _combat_state(character)
+    if ability_name == "Kinetic Explosion" and has_skill(
+        character,
+        "Arcane Empowerment",
+    ):
+        state["arcane_empowerment"] = min(
+            5,
+            int(state.get("arcane_empowerment", 0) or 0) + 1,
+        )
+    if (
+        ability_name in {"Magic Missile", "Magic Missile II", "Magic Missile III"}
+        and has_skill(character, "Fragmentation")
+        and random.random() < 0.35
+    ):
+        state["arcane_crystal_shards"] = min(
+            24,
+            int(state.get("arcane_crystal_shards", 0) or 0) + 1,
+        )
+        state["new_arcane_crystal_shards"] = int(
+            state.get("new_arcane_crystal_shards", 0) or 0
+        ) + 1
+    if (
+        str(metadata.get("damage_type") or "") == "Electric"
+        and bool(metadata.get("is_critical"))
+        and has_skill(character, "Electrical Burns")
+        and target is not None
+    ):
+        _apply_burning(target, max(1, int(getattr(character.stats, "intel", 1) // 3)))
+
+
+def incoming_damage_multiplier(character: Any) -> float:
+    """Split damage with an active Mirror Image when Illusory Link is known."""
+    duplicates = getattr(character, "magic_effects", {}).get("Duplicates")
+    if (
+        has_skill(character, "Illusory Link")
+        and duplicates is not None
+        and bool(getattr(duplicates, "active", False))
+    ):
+        return 0.50
     return 1.0
 
 
-def arcane_critical_multiplier(character: Any, multiplier: float) -> float:
-    """Increase only the bonus portion of Arcane critical damage by 10%."""
+def arcane_critical_multiplier(
+    character: Any,
+    multiplier: float,
+    ability: Any | None = None,
+) -> float:
+    """Increase only Magic Missile projectile critical bonus damage by 20%."""
     try:
         from ..progression import has_talent
 
-        if multiplier > 1 and has_talent(character, "mage.arcane-fundamentals"):
-            return 1 + ((multiplier - 1) * 1.10)
+        if (
+            multiplier > 1
+            and _is_magic_missile(ability)
+            and has_talent(character, "mage.arcane-fundamentals")
+        ):
+            return 1 + ((multiplier - 1) * 1.20)
     except Exception:
         pass
     return multiplier
@@ -159,7 +286,16 @@ def process_cast(
     from . import promotion_kits
 
     message = promotion_kits.record_spell_signature(character, ability)
+    try:
+        from . import demonologist
+
+        message += demonologist.process_spell_cast(character, ability, target, rng=rng)
+    except Exception:
+        pass
     school = school_from_ability(ability)
+    message += _apply_sorcerer_modifier(character, ability, target, school, rng=rng)
+    message += _apply_wizard_modifier(character, ability, target, school, rng=rng)
+    message += _resolve_arcane_battlefield_effects(character, ability)
     passive = ENHANCEMENT_BY_SCHOOL.get(str(school))
     if passive is None or not has_skill(character, passive):
         return message
@@ -210,16 +346,301 @@ def process_cast(
     return message
 
 
-def tick_combat_state(character: Any, *, end: bool = False) -> None:
+def tick_combat_state(character: Any, *, end: bool = False) -> str:
     """Advance or clear temporary Mage enhancement state."""
     state = _combat_state(character)
     if end:
+        duplicates = getattr(character, "magic_effects", {}).get("Duplicates")
+        if (
+            has_skill(character, "Multiplicity")
+            and duplicates is not None
+            and bool(getattr(duplicates, "active", False))
+        ):
+            count = max(0, int(getattr(duplicates, "duration", 0) or 0))
+            healing = min(
+                character.health.max - character.health.current,
+                int(character.health.max * 0.05 * count),
+            )
+            character.health.current += max(0, healing)
         state.clear()
-        return
+        character.mage_refueling = False
+        return ""
+    message = ""
+    if bool(getattr(character, "mage_refueling", False)):
+        maximum = max(0, int(getattr(character.mana, "max", 0) or 0))
+        restored = min(
+            maximum - int(getattr(character.mana, "current", 0) or 0),
+            max(1, int(maximum * 0.20)),
+        )
+        character.mana.current += max(0, restored)
+        message += f"{character.name} refuels {max(0, restored)} MP.\n"
     for key in tuple(state):
+        if key == "arcane_empowerment":
+            continue
         state[key] = max(0, int(state[key] or 0) - 1)
         if state[key] <= 0:
             del state[key]
+    return message
+
+
+def _apply_sorcerer_modifier(
+    character: Any,
+    ability: Any,
+    target: Any | None,
+    school: str | None,
+    *,
+    rng: Any,
+) -> str:
+    """Apply a learned Sorcerer school rider after a damaging spell hit."""
+    if target is None or school not in ELEMENTAL_SCHOOLS:
+        return ""
+    result = getattr(ability, "result", None)
+    damage = max(0, int(getattr(result, "damage", 0) or 0))
+    if damage <= 0:
+        return ""
+    if hasattr(target, "is_alive") and not target.is_alive():
+        return ""
+    if school == "Fire" and has_skill(character, "Combustion"):
+        effect = target.magic_effects["DOT"]
+        effect.active = True
+        effect.duration = max(int(effect.duration or 0), 2)
+        effect.extra = max(int(effect.extra or 0), max(1, damage // 4))
+        effect.source = "Burn"
+        return f"Combustion sets {target.name} ablaze.\n"
+    if school == "Ice" and has_skill(character, "Snowpiercer"):
+        extra = max(1, damage // 4)
+        target.health.current -= extra
+        return f"Snowpiercer deals {extra} additional cold damage to {target.name}.\n"
+    if school == "Electric" and has_skill(character, "Paralyzer"):
+        if rng.random() < 0.25 and target.apply_stun(
+            1,
+            source="Paralyzer",
+            applier=character,
+        ):
+            return f"Paralyzer stuns {target.name}.\n"
+        return ""
+    if school == "Wind" and has_skill(character, "Ejection Gale"):
+        if rng.random() >= 0.25:
+            return ""
+        target.health.current = 0
+        target.windswept_ejected = True
+        return f"Ejection Gale sweeps {target.name} out of combat.\n"
+    if school == "Water" and has_skill(character, "Aspirate"):
+        effect = target.magic_effects["DOT"]
+        effect.active = True
+        effect.duration = max(int(effect.duration or 0), 2)
+        effect.extra = max(int(effect.extra or 0), max(1, damage // 5))
+        effect.source = "Drowning"
+        target.apply_stun(1, source="Aspirate", applier=character)
+        return f"Aspirate leaves {target.name} drowning and unable to act.\n"
+    if school == "Earth" and has_skill(character, "Unsteady Ground"):
+        effect = target.physical_effects["Prone"]
+        effect.active = True
+        effect.duration = max(int(effect.duration or 0), 1)
+        effect.source = "Unsteady Ground"
+        return f"Unsteady Ground knocks {target.name} prone.\n"
+    return ""
+
+
+def _is_magic_missile(ability: Any) -> bool:
+    return str(getattr(ability, "name", "")) in {
+        "Magic Missile",
+        "Magic Missile II",
+        "Magic Missile III",
+    }
+
+
+def _apply_burning(target: Any, damage: int, *, source: str = "Burn") -> None:
+    effect = target.magic_effects["DOT"]
+    effect.active = True
+    effect.duration = max(int(effect.duration or 0), 3)
+    effect.extra = max(int(effect.extra or 0), max(1, int(damage)))
+    effect.source = source
+
+
+def _encounter_targets(character: Any) -> list[Any]:
+    encounter = getattr(character, "_combat_encounter", None)
+    return [
+        member.enemy
+        for member in getattr(encounter, "living_members", ())
+        if getattr(member, "enemy", None) is not None
+    ]
+
+
+def _apply_wizard_modifier(
+    character: Any,
+    ability: Any,
+    target: Any | None,
+    school: str | None,
+    *,
+    rng: Any,
+) -> str:
+    """Apply visible Wizard riders and their intentionally undisclosed interactions."""
+    if target is None or school not in ELEMENTAL_SCHOOLS:
+        return ""
+    result = getattr(ability, "result", None)
+    damage = max(0, int(getattr(result, "damage", 0) or 0))
+    if damage <= 0:
+        return ""
+    message = ""
+    if school == "Fire" and has_skill(character, "Inferno"):
+        _apply_burning(target, max(1, damage // 4), source="Inferno")
+        state = _combat_state(character)
+        state["burning_environment"] = True
+        others = [enemy for enemy in _encounter_targets(character) if enemy is not target]
+        if others:
+            _apply_burning(others[0], max(1, damage // 6), source="Inferno")
+        message += "Inferno spreads the flames across the battlefield.\n"
+    elif school == "Ice" and has_skill(character, "Subzero") and rng.random() < 0.25:
+        target.mage_frozen = 2
+        target.mage_brittle = True
+        target.apply_stun(2, source="Subzero", applier=character)
+        message += f"{target.name} is frozen solid.\n"
+    elif school == "Electric" and has_skill(character, "Electrical Burns"):
+        if (
+            getattr(target.magic_effects.get("DOT"), "source", "") == "Drowning"
+            and has_skill(character, "Aspirate")
+        ):
+            target.health.current = 0
+            message += f"The charge courses through {target.name}'s drowning body.\n"
+    elif school == "Wind" and has_skill(character, "Divine Wind"):
+        target.flying = not bool(getattr(target, "flying", False))
+        prone = target.physical_effects["Prone"]
+        prone.active = True
+        prone.duration = max(int(prone.duration or 0), 2)
+        prone.source = "Divine Wind"
+        message += f"Fujin leaves {target.name} prone.\n"
+    elif school == "Water" and has_skill(character, "Unrelenting Waves"):
+        if rng.random() < 0.35:
+            target.mage_unrelenting_waves = 2
+            effect = target.magic_effects["DOT"]
+            effect.active = True
+            effect.duration = max(int(effect.duration or 0), 2)
+            effect.extra = max(int(effect.extra or 0), max(1, damage // 5))
+            effect.source = "Unrelenting Waves"
+            message += f"Unrelenting Waves continue around {target.name}.\n"
+    elif school == "Earth" and has_skill(character, "Aftershock"):
+        reverberating_targets = _encounter_targets(character) or [target]
+        for enemy in reverberating_targets:
+            enemy.mage_aftershock = 2
+            effect = enemy.magic_effects["DOT"]
+            effect.active = True
+            effect.duration = max(int(effect.duration or 0), 3)
+            effect.extra = max(int(effect.extra or 0), max(1, damage // 5))
+            effect.source = "Aftershock"
+        message += "The ground continues to reverberate.\n"
+
+    # These cross-school reactions are deliberately absent from descriptions.
+    if school == "Wind" and getattr(target, "windswept_ejected", False) and has_skill(
+        character,
+        "Inferno",
+    ):
+        extra = max(1, damage)
+        target.health.current -= extra
+        message += f"A vortex of flame tears through {target.name} for {extra} damage.\n"
+    if school == "Earth" and getattr(target, "mage_frozen", 0) and has_skill(
+        character,
+        "Subzero",
+    ):
+        target.health.current = 0
+        message += f"{target.name} shatters.\n"
+    if (
+        school == "Ice"
+        and getattr(target, "mage_unrelenting_waves", 0)
+        and has_skill(character, "Snowpiercer")
+    ):
+        target.mage_frozen = 2
+        target.mage_brittle = True
+        target.apply_stun(2, source="Flash Frozen", applier=character)
+        message += f"{target.name} flash-freezes and becomes brittle.\n"
+    if (
+        school == "Fire"
+        and getattr(target, "mage_aftershock", 0)
+        and has_skill(character, "Combustion")
+    ):
+        _apply_burning(target, max(1, damage // 2), source="Molten Ground")
+        message += f"The ground beneath {target.name} turns to molten lava.\n"
+    return message
+
+
+def _resolve_arcane_battlefield_effects(character: Any, ability: Any) -> str:
+    state = _combat_state(character)
+    message = ""
+    new_shards = int(state.pop("new_arcane_crystal_shards", 0) or 0)
+    if new_shards:
+        noun = "shard" if new_shards == 1 else "shards"
+        message += f"{new_shards} Arcane crystal {noun} scatter across the battlefield.\n"
+    if (
+        str(getattr(ability, "name", "")) == "Kinetic Explosion"
+        and has_skill(character, "Detonation Cascade")
+    ):
+        shards = int(state.pop("arcane_crystal_shards", 0) or 0)
+        targets = _encounter_targets(character)
+        if targets:
+            pull_damage = max(
+                1,
+                int(character.check_mod("magic", enemy=targets[0]) * 0.08),
+            )
+            for enemy in targets:
+                enemy.health.current -= pull_damage * 3
+            message += (
+                "The collapsing blast drags every enemy through three waves "
+                "of force at its center.\n"
+            )
+        if shards and targets:
+            damage = max(1, int(character.check_mod("magic", enemy=targets[0]) * 0.15))
+            for index in range(shards):
+                target = targets[index % len(targets)]
+                if target.is_alive():
+                    target.health.current -= damage
+                    if has_skill(character, "Arcane Empowerment"):
+                        state["arcane_empowerment"] = min(
+                            5,
+                            int(state.get("arcane_empowerment", 0) or 0) + 1,
+                        )
+            message += (
+                f"Detonation Cascade ignites {shards} crystal shards into "
+                f"smaller Kinetic Explosions.\n"
+            )
+    return message
+
+
+def resolve_mana_rupture(
+    character: Any,
+    target: Any,
+    *,
+    battle_engine: Any | None = None,
+) -> str:
+    """Consume Arcane resources attached to Mana Rupture's learned modifiers."""
+    del battle_engine
+    state = _combat_state(character)
+    message = ""
+    if has_skill(character, "Mana Leak"):
+        stacks = min(5, max(0, int(state.pop("arcane_empowerment", 0) or 0)))
+        if stacks:
+            depleted = min(
+                int(target.mana.current),
+                max(1, int(target.mana.max * 0.10 * stacks)),
+            )
+            target.mana.current -= depleted
+            message += f"Mana Leak drains {depleted} MP from {target.name}.\n"
+    if has_skill(character, "Mana Splinters"):
+        shards = max(0, int(state.pop("arcane_crystal_shards", 0) or 0))
+        targets = _encounter_targets(character)
+        if shards and targets:
+            damage = max(1, int(character.stats.intel * 0.10))
+            for enemy in targets:
+                enemy.health.current -= damage * shards
+            restored = min(
+                character.mana.max - character.mana.current,
+                damage * shards,
+            )
+            character.mana.current += max(0, restored)
+            message += (
+                f"Mana Splinters shatters {shards} shards for {damage * shards} "
+                f"damage to every enemy and restores {max(0, restored)} MP.\n"
+            )
+    return message
 
 
 def melee_accuracy_bonus(character: Any) -> float:

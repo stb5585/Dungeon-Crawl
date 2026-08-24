@@ -1040,6 +1040,20 @@ class PygameGame:
 
     def use_warp_point(self, background_draw_func=None):
         """Use the warp point to teleport to dungeon level 5."""
+        from src.core.classes import wizard
+
+        research_message = wizard.consult_ultimate_research(
+            self.player_char
+        )
+        if research_message:
+            research_popup = ConfirmationPopup(
+                self.presenter,
+                research_message,
+                show_buttons=False,
+            )
+            research_popup.show(
+                **self._popup_show_kwargs(background_draw_func)
+            )
         prompt = (
             "Two field scientists stand beside the brass-ringed platform, "
             "checking gauges that hum with blue light.\n\n"

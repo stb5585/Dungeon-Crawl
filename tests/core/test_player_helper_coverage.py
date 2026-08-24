@@ -243,18 +243,18 @@ class TestPlayerHelperCoverage:
 
         assert archbishop.check_mod("resist", typ="Holy") == pytest.approx(0.25)
 
-    def test_special_power_grants_shadowcaster_skill_and_invisibility(self):
+    def test_special_power_grants_shadowcaster_transformation(self):
         player = TestGameState.create_player(class_name="Shadowcaster", race_name="Human")
         events = []
         game = SimpleNamespace(special_event=lambda name: events.append(name))
 
         result = player.special_power(game)
 
-        assert result == "You gain the skill Veil of Shadows.\n"
+        assert result == "You gain the skill Shade of Ahool.\n"
         assert events == ["Power Up"]
         assert player.power_up is True
-        assert player.invisible is True
-        assert "Veil of Shadows" in player.spellbook["Skills"]
+        assert player.invisible is False
+        assert "Shade of Ahool" in player.spellbook["Skills"]
 
     def test_status_string_includes_racial_traits(self):
         player = TestGameState.create_player(class_name="Warrior", race_name="Human")

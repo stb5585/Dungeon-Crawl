@@ -347,7 +347,7 @@ def test_blade_charges_stack_by_broad_type_once_per_action():
     }
 
     promotion_kits.begin_action(player)
-    _record_spell_hit(player, first, "Non-elemental", "Ultima")
+    _record_spell_hit(player, first, "Non-elemental", "Photon Sphere")
     assert promotion_kits.combat_state(player)["blade_charge"] == {
         "Arcane": 2,
         "Elemental": 2,

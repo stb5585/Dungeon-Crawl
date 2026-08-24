@@ -531,6 +531,65 @@ class CombatSelectionMixin:
                     if confirmed:
                         return skills[selected]
 
+    def _select_combat_weapon(self, player_char, enemy, skill):
+        """Choose the carried weapon that Weapon Swap should equip."""
+        weapons = skill.available_weapons(player_char)
+        if not weapons:
+            return None
+
+        selected = 0
+        scroll_offset = 0
+        input_armed = self._clear_pending_input()
+        frame_player = self._selection_frame_player(player_char)
+        while True:
+            self._render_combat_frame(frame_player, enemy, [], -1)
+            options = [weapon.name for weapon in weapons]
+            descriptions = [getattr(weapon, "description", "") for weapon in weapons]
+            self._render_described_selection_menu(
+                "Select Weapon",
+                options,
+                selected,
+                scroll_offset,
+                descriptions,
+            )
+            pygame.display.flip()
+
+            input_armed = release_guard_allows_input(True, input_armed)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit(0)
+                input_armed = self._arm_guarded_input(event, input_armed)
+                if event.type == pygame.KEYDOWN and not input_armed:
+                    continue
+                if event.type == pygame.KEYDOWN:
+                    if event.key in (pygame.K_ESCAPE, pygame.K_BACKSPACE):
+                        return None
+                    if event.key in (pygame.K_UP, pygame.K_w):
+                        selected = (selected - 1) % len(weapons)
+                    elif event.key in (pygame.K_DOWN, pygame.K_s):
+                        selected = (selected + 1) % len(weapons)
+                    elif event.key == pygame.K_PAGEUP:
+                        selected = max(0, selected - 10)
+                    elif event.key == pygame.K_PAGEDOWN:
+                        selected = min(len(weapons) - 1, selected + 10)
+                    elif event.key in (pygame.K_RETURN, pygame.K_SPACE):
+                        return weapons[selected]
+                    scroll_offset = self._scroll_offset_for_selection(
+                        selected,
+                        scroll_offset,
+                    )
+                elif event.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN):
+                    selected, scroll_offset, confirmed = self._selection_menu_mouse_update(
+                        event,
+                        options,
+                        selected,
+                        scroll_offset,
+                        input_armed,
+                    )
+                    if confirmed:
+                        return weapons[selected]
+
     def _select_companion_command(self, player_char, enemy):
         """Show Beast Master companion command selection and return command name."""
         commands = ability_mechanics.available_beast_companion_commands(player_char)

@@ -35,7 +35,7 @@ def test_promotion_kit_state_normalizes_and_round_trips():
     assert promotion_kits.combat_state(restored)["foresight_threads"] == 0
 
 
-def test_threaded_cast_and_shadowcaster_eclipse():
+def test_threaded_cast_and_shadowcaster_shade_of_ahool():
     astro = _player("Astromancer", mana=(100, 100))
     assert "requires" in abilities.ThreadedCast().use(astro)
     assert "gains 1 Foresight" in promotion_kits.gain_meter(astro, "foresight_threads", 1, "test")
@@ -44,7 +44,9 @@ def test_threaded_cast_and_shadowcaster_eclipse():
     shadow = _player("Shadowcaster", health=(200, 200))
     holy_before = shadow.check_mod("resist", typ="Holy")
     class_rings.ensure_state(shadow)["data"]["Shadowcaster"]["debt"] = 25
-    assert "enters Eclipse" in abilities.Eclipse().use(shadow)
+    assert "becomes the Shade of Ahool" in abilities.ShadeOfAhool().use(shadow)
+    assert shadow.shade_of_ahool_turns == 3
+    assert shadow.flying
     assert class_rings.ensure_state(shadow)["data"]["Shadowcaster"]["debt"] == 5
     assert shadow.check_mod("resist", typ="Holy") == holy_before - 0.25
 
@@ -64,7 +66,7 @@ def test_demonologist_corruption_and_mood_gate_intents():
     target = enemies.Goblin()
     message = demonologist.resolve_contract(demo, target, "Protect", rng=SimpleNamespace(random=lambda: 1.0))
 
-    assert "Corruption rises" in message
+    assert "Bargain taint rises" in message
     assert demo.demonologist_contracts["corruption"] > 0
     assert demo.demonologist_contracts["patron_moods"]["Imp"] > 25
 

@@ -30,6 +30,7 @@ KIND_COLORS = {
     NodeKind.MANA: ("#182f45", "#6aa8e8"),
     NodeKind.PROMOTION: ("#3b2d12", "#f4bf2a"),
 }
+PASSIVE_COLORS = ("#263b2b", "#72c987")
 
 
 def class_slug(class_name: str) -> str:
@@ -94,15 +95,15 @@ def render_tree_svg(class_name: str) -> str:
             if prerequisite not in centers:
                 continue
             source_x, source_y = centers[prerequisite]
+            channel_column = node.payload.get(
+                "connector_channel_columns",
+                {},
+            ).get(prerequisite)
             if node.payload.get("connector_enter_from_top"):
                 source_is_left = source_x < target_x
                 source_side_x = source_x + (
                     NODE_WIDTH / 2 if source_is_left else -NODE_WIDTH / 2
                 )
-                channel_column = node.payload.get(
-                    "connector_channel_columns",
-                    {},
-                ).get(prerequisite)
                 channel_x = (
                     target_x
                     if channel_column is None
@@ -113,6 +114,21 @@ def render_tree_svg(class_name: str) -> str:
                     f'<path class="edge" d="M {source_side_x:.1f} '
                     f'{source_y:.1f} H {channel_x:.1f} V {target_top:.1f} '
                     f'H {target_x:.1f}"/>'
+                )
+                continue
+            if channel_column is not None:
+                source_is_left = source_x < target_x or source_x == target_x
+                source_side_x = source_x + (
+                    NODE_WIDTH / 2 if source_is_left else -NODE_WIDTH / 2
+                )
+                target_side_x = target_x + (
+                    NODE_WIDTH / 2 if source_is_left else -NODE_WIDTH / 2
+                )
+                channel_x = _node_xy((channel_column, 0))[0] + NODE_WIDTH / 2
+                lines.append(
+                    f'<path class="edge" d="M {source_side_x:.1f} '
+                    f'{source_y:.1f} H {channel_x:.1f} V {target_y:.1f} '
+                    f'H {target_side_x:.1f}"/>'
                 )
                 continue
             middle_y = (
@@ -126,12 +142,18 @@ def render_tree_svg(class_name: str) -> str:
             )
     for node in tree.nodes:
         x, y = _node_xy(node.position)
-        fill, stroke = KIND_COLORS[node.kind]
+        fill, stroke = (
+            PASSIVE_COLORS
+            if node.icon_key == "skill_passive"
+            else KIND_COLORS[node.kind]
+        )
         level = effective_node_level_requirement(node, class_name)
         details = [node.kind.value.title(), f"Cost {node.cost}"]
         if level:
             details.append(f"Level {level}")
-        name = node.name
+        # These diagrams are developer references, so quest-hidden nodes use
+        # their authored names even while the player-facing tree says Unknown.
+        name = str(node.payload.get("revealed_name", node.name))
         if len(name) > 25:
             name = f"{name[:22]}..."
         lines.extend((

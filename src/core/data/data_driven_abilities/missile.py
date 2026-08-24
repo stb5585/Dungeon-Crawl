@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -13,6 +14,8 @@ if TYPE_CHECKING:
 import random
 
 from src.core.abilities import Spell
+from src.core.combat.combat_result import CombatResult, CombatResultGroup
+from src.core.combat.targeting import TargetScope
 from src.core.constants import ARMOR_SCALING_FACTOR, DAMAGE_VARIANCE_HIGH, DAMAGE_VARIANCE_LOW
 
 
@@ -64,7 +67,22 @@ class DataDrivenMagicMissileSpell(Spell):
         highest_crit = 1
 
         # ── 1. Mana cost (free with Wizard Power Up) ────────────────
-        if not (
+        effective_cost = self.cost
+        try:
+            from src.core.classes import mage_mechanics
+
+            effective_cost = mage_mechanics.spell_mana_cost(caster, self)
+        except Exception:
+            pass
+        result.extra["cost"] = effective_cost
+        if self.name == "Photon Sphere":
+            try:
+                from src.core.classes import wizard
+
+                cast_message += wizard.observe_photon_sphere(target, caster)
+            except Exception:
+                pass
+        if not _kwargs.get("_skip_cost", False) and not (
             special
             or fam
             or (
@@ -72,7 +90,7 @@ class DataDrivenMagicMissileSpell(Spell):
                 and caster.class_effects["Power Up"].active
             )
         ):
-            caster.mana.current -= self.cost
+            caster.mana.current -= effective_cost
 
         # ── 2. Immunity check ───────────────────────────────────────
         if any([target.magic_effects["Ice Block"].active, target.tunnel]):
@@ -130,7 +148,11 @@ class DataDrivenMagicMissileSpell(Spell):
                     try:
                         from src.core.classes import mage_mechanics
 
-                        crit_per = mage_mechanics.arcane_critical_multiplier(caster, crit_per)
+                        crit_per = mage_mechanics.arcane_critical_multiplier(
+                            caster,
+                            crit_per,
+                            self,
+                        )
                     except Exception:
                         pass
                     damage = int(self.dmg_mod * spell_mod * crit_per)
@@ -138,6 +160,10 @@ class DataDrivenMagicMissileSpell(Spell):
                         from src.core.classes import mage_mechanics, wizard
 
                         damage = int(damage * mage_mechanics.spell_potency_multiplier(caster, self))
+                        damage = int(
+                            damage
+                            * mage_mechanics.spell_damage_multiplier(caster, self, target)
+                        )
                         school = mage_mechanics.school_from_ability(self)
                         damage = int(
                             damage * (1 + wizard.affinity_damage_bonus(caster, school))
@@ -228,6 +254,22 @@ class DataDrivenMagicMissileSpell(Spell):
                     except Exception:
                         pass
                     target.health.current -= damage
+                    if (
+                        self.name == "Photon Sphere"
+                        and target.is_alive()
+                        and random.random() < 0.05
+                    ):
+                        try:
+                            from src.core.classes import mage_mechanics
+
+                            if mage_mechanics.has_skill(caster, "Spaghettification"):
+                                target.health.current = 0
+                                cast_message += (
+                                    f"Spaghettification erases {target.name} "
+                                    "from existence.\n"
+                                )
+                        except Exception:
+                            pass
                     if damage > 0:
                         damage_instances.append(int(damage))
                         highest_crit = max(highest_crit, crit)
@@ -273,3 +315,43 @@ class DataDrivenMagicMissileSpell(Spell):
         result.extra["damage_instances"] = damage_instances
         result.message = cast_message
         return cast_message
+
+    def cast_group(
+        self,
+        caster: Character,
+        targets: list[tuple[str, Character]],
+        *,
+        battle_engine: Any,
+    ) -> CombatResultGroup:
+        """Strike every hostile target multiple times while paying mana once."""
+        group = CombatResultGroup(
+            action=self.name,
+            actor_id=battle_engine.current_actor_id,
+            target_scope=TargetScope.ALL_ENEMIES,
+            target_ids=tuple(target_id for target_id, _target in targets),
+        )
+        for index, (target_id, target) in enumerate(targets):
+            member = battle_engine.encounter.member_by_id(target_id)
+            if not member.is_living_hostile:
+                result = CombatResult(
+                    action=self.name,
+                    actor=caster,
+                    target=target,
+                    actor_id=battle_engine.current_actor_id,
+                    target_id=target_id,
+                    hit=False,
+                    message=f"{member.display_label} is no longer a valid target.\n",
+                )
+            else:
+                with battle_engine._target_resolution_context(
+                    member,
+                    TargetScope.ALL_ENEMIES,
+                    group.target_ids,
+                ):
+                    self.cast(caster, target=target, _skip_cost=index > 0)
+                    result = deepcopy(self.result)
+                    result.actor_id = battle_engine.current_actor_id
+                    result.target_id = target_id
+                    result.target_scope = TargetScope.ALL_ENEMIES
+            group.add(result)
+        return group

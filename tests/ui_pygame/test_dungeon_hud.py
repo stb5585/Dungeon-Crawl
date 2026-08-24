@@ -733,6 +733,28 @@ def test_combat_focus_panel_shows_familiar_summons_and_totem(monkeypatch):
     assert "T" in rendered_text
     assert len(bundle.draw_circle_calls) >= 12
 
+
+def test_combat_focus_includes_school_affinity_and_marks_mastery(monkeypatch):
+    bundle = _make_hud(monkeypatch)
+    hud = bundle.hud
+    player = _make_player()
+    player.cls = SimpleNamespace(name="Wizard")
+    player.wizard_affinity = {
+        "Fire": 100,
+        "Ice": 18,
+        "Water": 0,
+        "Electric": 0,
+        "Earth": 0,
+        "Wind": 0,
+        "Arcane": 42,
+    }
+    player.wizard_affinity_version = 2
+
+    lines = bundle.hud._combat_feature_lines(player)
+
+    assert ("Fire", "100/100 MASTERED", (248, 226, 142)) in lines
+    assert any(label == "Arcane" and value == "42/100" for label, value, _color in lines)
+
     bundle.screen.blit_calls = []
     sentinel = _make_player()
     sentinel.cls = SimpleNamespace(name="Sentinel")

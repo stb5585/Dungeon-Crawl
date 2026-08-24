@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import random
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -29,6 +30,72 @@ class CharacterEventsMixin:
     ) -> None:
         """Helper to emit damage dealt events."""
         if damage and damage > 0:
+            shell_health = max(0, int(getattr(target, "war_turtle_shell_health", 0) or 0))
+            if shell_health:
+                target.health.current = min(target.health.max, target.health.current + damage)
+                absorbed = min(shell_health, int(damage))
+                target.war_turtle_shell_health = shell_health - absorbed
+                if damage_type == "Physical":
+                    reflected = max(1, int(damage * 0.25))
+                    self.health.current = max(0, self.health.current - reflected)
+                if target.war_turtle_shell_health <= 0:
+                    target.turtle = False
+                    target.war_turtle_shell_health = 0
+            if (
+                damage_type == "Holy"
+                and "Dazed or Confused" in getattr(self, "spellbook", {}).get("Skills", {})
+            ):
+                if random.random() < 0.25:
+                    target.apply_stun(2, source="Dazed or Confused", applier=self)
+                elif random.random() < 0.25:
+                    target.confused_turns = max(2, int(getattr(target, "confused_turns", 0) or 0))
+                    berserk = target.status_effects.get("Berserk")
+                    if berserk is not None:
+                        berserk.active = True
+                        berserk.duration = max(2, int(berserk.duration or 0))
+                        berserk.source = "Dazed or Confused"
+            if (
+                getattr(target, "shadow_curtain_turns", 0) > 0
+                and "Sciophobia" in getattr(target, "spellbook", {}).get("Skills", {})
+                and random.random() < 0.25
+            ):
+                self.haunted_turns = max(3, int(getattr(self, "haunted_turns", 0) or 0))
+            if getattr(self, "shadow_curtain_turns", 0) > 0 and damage_type == "Physical":
+                target.health.current = max(0, target.health.current - max(1, int(damage * 0.25)))
+            if getattr(self, "shade_of_ahool_turns", 0) > 0 and damage_type == "Physical":
+                shadow = max(1, int(damage * 0.50))
+                target.health.current = max(0, target.health.current - shadow)
+                self.health.current = min(self.health.max, self.health.current + shadow)
+            try:
+                from .. import curses
+
+                fracture_chance = 0.30 if curses.curse_is_empowered(target, "Elijah") else 0.20
+                if curses.has_curse(target, "Elijah") and random.random() < fracture_chance:
+                    curses.apply_fracture(target)
+                if (
+                    curses.has_curse(target, "Demon Eyes")
+                    and str(getattr(self, "enemy_typ", "")) == "Fiend"
+                ):
+                    multiplier = 0.40 if curses.curse_is_empowered(target, "Demon Eyes") else 0.25
+                    target.health.current = max(
+                        0,
+                        target.health.current - max(1, int(damage * multiplier)),
+                    )
+            except Exception:
+                pass
+            linked = getattr(target, "soul_bound_to", None)
+            if linked is not None and linked is not target and linked.is_alive():
+                mortal_shackles = "Mortal Shackles" in getattr(
+                    linked,
+                    "spellbook",
+                    {},
+                ).get("Skills", {})
+                if mortal_shackles and getattr(target, "_soul_binding_caster", None) is linked:
+                    target.health.current = max(0, target.health.current - int(damage * 0.25))
+                    shared_damage = max(1, int(damage * 0.50))
+                else:
+                    shared_damage = int(damage)
+                linked.health.current = max(0, linked.health.current - shared_damage)
             try:
                 from ..classes import class_rings
 
@@ -118,6 +185,15 @@ class CharacterEventsMixin:
         if amount and amount > 0 and hasattr(self, "record_archdruid_healing_done"):
             self.record_archdruid_healing_done(amount)
         if amount and amount > 0:
+            familiar = getattr(self, "familiar", None)
+            skills = getattr(self, "spellbook", {}).get("Skills", {})
+            if (
+                familiar is not None
+                and getattr(familiar, "spec", "") == "Support"
+                and "Restorative Barrier" in skills
+                and not str(source).lower().startswith("regen")
+            ):
+                self.restorative_barrier = int(getattr(self, "restorative_barrier", 0) or 0) + int(amount)
             try:
                 from ..classes import ability_mechanics
 

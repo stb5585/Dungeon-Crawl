@@ -406,6 +406,10 @@ class TestBasicTiles:
         fire_path.modify_player(game)
         assert player.health.current == 90
 
+        fire_path.enter_combat(player)
+        assert isinstance(fire_path.enemy, enemies.FlameWisp)
+        assert player.state == "fight"
+
         special = map_tiles.FirePathSpecial(1, 1, 0)
         player.special_inventory = {"Vulcan's Hammer": [items.BlacksmithsHammer()]}
         calls = []

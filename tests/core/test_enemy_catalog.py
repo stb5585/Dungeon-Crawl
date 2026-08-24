@@ -209,17 +209,21 @@ def test_random_enemy_debug_override_can_come_from_environment(monkeypatch):
 def test_giant_and_owlbear_are_midgame_catalog_enemies():
     catalog = enemies.random_enemy_catalog()
 
-    assert any(isinstance(enemy, enemies.Giant) for enemy in catalog["3"])
+    assert not any(isinstance(enemy, enemies.Giant) for enemy in catalog["3"])
     assert any(isinstance(enemy, enemies.Giant) for enemy in catalog["4"])
     assert any(isinstance(enemy, enemies.Owlbear) for enemy in catalog["3"])
     assert any(isinstance(enemy, enemies.Owlbear) for enemy in catalog["4"])
 
     giant = enemies.Giant()
     assert giant.enemy_typ == "Humanoid"
-    assert giant.level.pro_level == 3
-    assert set(giant.spellbook["Skills"]) == {"Stomp", "Charge"}
+    assert giant.level.pro_level == 4
+    assert set(giant.spellbook["Skills"]) == {
+        "Charge", "Mortal Strike", "Dishearten",
+    }
     assert giant.inventory == {}
-    assert [entry["ability"] for entry in giant.action_stack] == ["Attack", "Stomp", "Charge"]
+    assert [entry["ability"] for entry in giant.action_stack] == [
+        "Attack", "Charge", "Mortal Strike", "Dishearten",
+    ]
 
     owlbear = enemies.Owlbear()
     assert owlbear.enemy_typ == "Monster"
@@ -232,6 +236,39 @@ def test_giant_and_owlbear_are_midgame_catalog_enemies():
         {"condition": "self_hp_pct_lt", "value": 50, "priority": enemies.ActionPriority.HIGH},
         {"condition": "self_status", "value": "Regen", "priority": enemies.ActionPriority.LOW},
     ]
+
+
+def test_new_holy_and_variance_enemies_have_authored_kits_and_resistances():
+    catalog = enemies.random_enemy_catalog()
+
+    assert any(isinstance(enemy, enemies.Acolyte) for enemy in catalog["2"])
+    assert any(isinstance(enemy, enemies.WarTurtle) for enemy in catalog["3"])
+    assert any(isinstance(enemy, enemies.WaywardPriest) for enemy in catalog["3"])
+    assert any(isinstance(enemy, enemies.Unicorn) for enemy in catalog["5"])
+
+    acolyte = enemies.Acolyte()
+    assert set(acolyte.spellbook["Spells"]) == {"Holy", "Heal"}
+    assert set(acolyte.spellbook["Skills"]) == {"Counterspell"}
+
+    giant = enemies.Giant()
+    assert giant.resistance["Holy"] == -0.50
+    assert giant.resistance["Poison"] == 0.50
+
+    unicorn = enemies.Unicorn()
+    assert unicorn.resistance["Holy"] == 1.50
+    assert unicorn.resistance["Shadow"] == -0.25
+    assert unicorn.status_immunity == ["Poison"]
+    assert {"Stomp", "Gore"} == set(unicorn.spellbook["Skills"])
+
+    turtle = enemies.WarTurtle()
+    assert turtle.resistance["Electric"] == -0.50
+    abilities = set(turtle.spellbook["Spells"]) | set(turtle.spellbook["Skills"])
+    assert {"Reflect", "Headbutt", "Retract"} == abilities
+
+    priest = enemies.WaywardPriest()
+    assert priest.resistance["Holy"] == 0.25
+    assert priest.resistance["Shadow"] == -0.25
+    assert "Dazed or Confused" in priest.spellbook["Skills"]
 
 
 def test_reagent_drop_sources_are_themed():
@@ -271,6 +308,16 @@ def test_enemy_options_continue_charging_skill_before_selecting_new_action():
     assert dragon.options(target, [], None) == ("Use Skill", "Dragon Breath (Fire)")
 
 
+def test_flame_wisp_has_elemental_healing_weaknesses_and_poison_immunity():
+    enemy = enemies.FlameWisp()
+
+    assert enemy.resistance["Fire"] > 1
+    assert enemy.resistance["Ice"] < 0
+    assert enemy.resistance["Water"] < 0
+    assert enemy.resistance["Poison"] == 1
+    assert "Poison" in enemy.status_immunity
+
+
 def test_red_dragon_breath_is_centerpiece_not_constant_spell_pressure():
     dragon = enemies.RedDragon()
     breath = dragon.spellbook["Skills"]["Dragon Breath (Fire)"]
@@ -281,7 +328,7 @@ def test_red_dragon_breath_is_centerpiece_not_constant_spell_pressure():
     assert dragon.combat.attack < 135
     assert dragon.combat.magic < 115
     assert ability_priorities["Volcano"] == enemies.ActionPriority.LOW
-    assert ability_priorities["Ultima"] == enemies.ActionPriority.LOW
+    assert ability_priorities["Photon Sphere"] == enemies.ActionPriority.LOW
     assert ability_priorities["Regen"] == enemies.ActionPriority.LOW_HP_ONLY
     assert ability_priorities["Doublecast"] == enemies.ActionPriority.NORMAL
 

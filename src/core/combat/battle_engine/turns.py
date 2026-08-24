@@ -12,6 +12,7 @@ from ...classes import (
     astromancer,
     bard,
     lycan,
+    mage_mechanics,
     nature_totems,
     paladin,
     promotion_kits,
@@ -239,7 +240,12 @@ class BattleTurnMixin:
 
         # Berserk forces a basic attack unless a higher-priority forced action
         # such as an active Jump or charge-up has already claimed the turn.
-        if self.attacker.status_effects["Berserk"].active:
+        berserk = self.attacker.status_effects["Berserk"]
+        composed_wrath = (
+            getattr(berserk, "source", None) == "Frenzy"
+            and "Composed Wrath" in self.attacker.spellbook.get("Skills", {})
+        )
+        if berserk.active and not composed_wrath:
             return ForcedAction(action="Attack")
 
         return None
@@ -379,6 +385,17 @@ class BattleTurnMixin:
         ability = self._ability_for_action(action, choice)
         if ability is not None:
             declared = getattr(ability, "target_scope", TargetScope.SINGLE_ENEMY)
+            if (
+                declared == TargetScope.ALL_ENEMIES
+                and self.attacker != self.player
+                and getattr(ability, "name", "") in {
+                    "Photon Sphere",
+                    "Prismatic Cataclysm",
+                }
+            ):
+                # Enemy AI still has a single player-side target. The player
+                # version expands across the hostile encounter roster.
+                return TargetScope.SINGLE_ENEMY
             raw_data = getattr(ability, "_raw_data", {})
             if isinstance(raw_data, dict) and "target_scope" in raw_data:
                 return declared
@@ -510,6 +527,21 @@ class BattleTurnMixin:
         targets = self._validated_intent_targets(intent, scope)
         if isinstance(targets, ActionResult):
             return targets
+        confused_friendly_fire = False
+        if (
+            scope == TargetScope.SINGLE_ENEMY
+            and actor_id != PLAYER_ACTOR_ID
+            and int(getattr(self.attacker, "confused_turns", 0) or 0) > 0
+        ):
+            self.attacker.confused_turns = max(0, int(self.attacker.confused_turns) - 1)
+            allies = [
+                member
+                for member in self.encounter.living_members
+                if member.enemy is not self.attacker
+            ]
+            if allies and random.random() < 0.50:
+                targets = [random.choice(allies)]
+                confused_friendly_fire = True
         if scope == TargetScope.ALL_ENEMIES and actor_id != PLAYER_ACTOR_ID:
             return self._reject_intent(
                 ActionValidationCode.ENEMY_AREA_UNSUPPORTED,
@@ -523,6 +555,7 @@ class BattleTurnMixin:
         elif (
             scope == TargetScope.SINGLE_ENEMY
             and actor_id != PLAYER_ACTOR_ID
+            and not confused_friendly_fire
         ):
             target_ids = (PLAYER_ACTOR_ID,)
         group = CombatResultGroup(
@@ -630,7 +663,12 @@ class BattleTurnMixin:
                 ActionValidationCode.WRONG_TARGET_SCOPE,
                 "This all-enemy action has no multi-target resolver.\n",
             )
-        if self.attacker.mana.current < ability.cost:
+        effective_cost = (
+            mage_mechanics.spell_mana_cost(self.attacker, ability)
+            if intent.action == "Cast Spell"
+            else ability.cost
+        )
+        if self.attacker.mana.current < effective_cost:
             message = (
                 f"{self.attacker.name} does not have enough mana to cast "
                 f"{intent.choice}!\n"
@@ -984,6 +1022,18 @@ class BattleTurnMixin:
 
     def companion_turn(self) -> str:
         """Process the attacker's familiar/companion turn. Returns message text."""
+        undead_text = ""
+        allies = list(getattr(self.attacker, "temporary_undead_allies", []))
+        if allies and self.defender is not None and self.defender.is_alive():
+            remaining = []
+            for ally in allies:
+                damage = min(self.defender.health.current, int(ally.get("damage", 1) or 1))
+                self.defender.health.current -= damage
+                undead_text += f"Undead {ally['name']} attacks {self.defender.name} for {damage} damage.\n"
+                ally["turns"] = int(ally.get("turns", 0) or 0) - 1
+                if ally["turns"] > 0:
+                    remaining.append(ally)
+            self.attacker.temporary_undead_allies = remaining
         if self.current_actor_id == PLAYER_ACTOR_ID and self.encounter.living_members:
             focused = self._focused_enemy()
             if (
@@ -997,13 +1047,13 @@ class BattleTurnMixin:
             or getattr(self.defender, "tamed_by_player", False)
             or getattr(self.defender, "no_victory_rewards", False)
         ):
-            return ""
+            return undead_text
         familiar_text = self.attacker.familiar_turn(self.defender)
         if familiar_text:
             self.logger.log_event(
                 "Familiar", self.attacker, target=self.defender, outcome=familiar_text
             )
-        return familiar_text or ""
+        return undead_text + (familiar_text or "")
 
     def _tick_delayed_spells(self) -> list[str]:
         messages: list[str] = []

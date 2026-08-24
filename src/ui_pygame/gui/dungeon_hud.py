@@ -8,7 +8,7 @@ import re
 import pygame
 
 from src.core import map_tiles
-from src.core.classes import promotion_kits
+from src.core.classes import promotion_kits, wizard
 from src.core.player import LIMINAL_GAP_LEVEL, REALM_OF_CAMBION_LEVEL
 from .enemy_presentation import player_has_sight, presented_enemy_name
 from .status_icons import (
@@ -46,6 +46,10 @@ class DungeonHUD:
         self.title_font = pygame.font.Font(None, 32)
         self.stat_font = pygame.font.Font(None, 28)
         self.small_font = pygame.font.Font(None, 20)
+        self.small_bold_font = pygame.font.Font(None, 20)
+        set_bold = getattr(self.small_bold_font, "set_bold", None)
+        if callable(set_bold):
+            set_bold(True)
         
         # Colors
         self.bg_color = (25, 25, 30)
@@ -692,7 +696,7 @@ class DungeonHUD:
             "Threads",
             "Threaded",
             "Backlash",
-            "Eclipse",
+            "Shade of Ahool",
             "Blade Charge",
             "Foundation",
             "Accent",
@@ -725,6 +729,20 @@ class DungeonHUD:
         active_rows: list[tuple[str, str, tuple[int, int, int]]] = []
         rich_rows: list[tuple[str, str, tuple[int, int, int]]] = []
         persistent_rows: list[tuple[str, str, tuple[int, int, int]]] = []
+
+        class_name = getattr(getattr(player_char, "cls", None), "name", "")
+        affinity_rows: list[tuple[str, str, tuple[int, int, int]]] = []
+        if class_name in {"Sorcerer", "Wizard"}:
+            affinity = wizard.ensure_affinity(player_char)
+            cap = wizard.cap_for(player_char)
+            for school in wizard.AFFINITY_SCHOOLS:
+                value = float(affinity.get(school, 0) or 0)
+                mastered = value >= cap
+                affinity_rows.append((
+                    school,
+                    f"{value:g}/{cap:g}" + (" MASTERED" if mastered else ""),
+                    (248, 226, 142) if mastered else self.text_color,
+                ))
 
         familiar = getattr(player_char, "familiar", None)
         if familiar and getattr(familiar, "spec", "") != "Tamed":
@@ -761,7 +779,7 @@ class DungeonHUD:
                 persistent_rows.append(row)
         active_rows.sort(key=lambda row: self._class_kit_row_bucket(row[0]))
 
-        lines = [*active_rows, *rich_rows, *persistent_rows]
+        lines = [*affinity_rows, *active_rows, *rich_rows, *persistent_rows]
         if not lines and not self._is_living_active_summon(active_summon):
             lines.append(("Focus", "No active combat focuses", self.GRAY if hasattr(self, "GRAY") else (145, 145, 155)))
         return lines
@@ -889,7 +907,12 @@ class DungeonHUD:
                 row_height = 42
             else:
                 value_text = self._truncate_text(self.small_font, str(value), max_value_w)
-                value_surf = self.small_font.render(value_text, True, color)
+                value_font = (
+                    self.small_bold_font
+                    if str(value).endswith(" MASTERED")
+                    else self.small_font
+                )
+                value_surf = value_font.render(value_text, True, color)
                 self.screen.blit(value_surf, (value_x, y))
             y += row_height
 

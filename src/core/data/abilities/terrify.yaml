@@ -17,6 +17,6 @@ effects:
     use_crit_multiplier: true
     effect:
       type: status_apply
-      status_name: Stun
+      status_name: Fear
       duration: 1
       use_crit_bonus: true

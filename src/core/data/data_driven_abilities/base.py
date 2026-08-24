@@ -131,7 +131,14 @@ class DataDrivenSpell(Spell):
         **kwargs: Any,
     ) -> CombatResult:
         result = self._reset_result(actor=caster, target=target)
-        result.extra['cost'] = self.cost
+        effective_cost = self.cost
+        try:
+            from src.core.classes import mage_mechanics
+
+            effective_cost = mage_mechanics.spell_mana_cost(caster, self)
+        except Exception:
+            pass
+        result.extra['cost'] = effective_cost
         msg = ""
 
         # ── 1. Mana cost ────────────────────────────────────────────
@@ -143,7 +150,7 @@ class DataDrivenSpell(Spell):
                 and caster.class_effects["Power Up"].active
             )
         ):
-            caster.mana.current -= self.cost
+            caster.mana.current -= effective_cost
 
         # ── 2. Immunity checks ──────────────────────────────────────
         if any([target.magic_effects["Ice Block"].active, target.tunnel]):
@@ -200,7 +207,11 @@ class DataDrivenSpell(Spell):
             from ...classes import mage_mechanics
 
             if mage_mechanics.school_from_ability(self) == "Arcane":
-                crit_per = mage_mechanics.arcane_critical_multiplier(caster, crit_per)
+                crit_per = mage_mechanics.arcane_critical_multiplier(
+                    caster,
+                    crit_per,
+                    self,
+                )
         except Exception:
             pass
         result.crit = crit_per if crit > 1 else None
@@ -213,9 +224,17 @@ class DataDrivenSpell(Spell):
             caster, damage, cover, typ="Magic"
         )
         msg += message
-        hit, message, damage = target.damage_reduction(
-            damage, caster, typ=self.subtyp
+        piercing_bolt = (
+            self.name.startswith("Shadow Bolt")
+            and "Piercing Bolt" in getattr(caster, "spellbook", {}).get("Skills", {})
         )
+        caster._piercing_bolt_cast = piercing_bolt
+        try:
+            hit, message, damage = target.damage_reduction(
+                damage, caster, typ=self.subtyp
+            )
+        finally:
+            caster._piercing_bolt_cast = False
         msg += message
 
         if hit:
@@ -249,14 +268,31 @@ class DataDrivenSpell(Spell):
                     damage = int(damage * nature_totems.spell_output_multiplier(caster, self))
                 except Exception:
                     pass
+                skills = getattr(caster, "spellbook", {}).get("Skills", {})
+                school_name = str(getattr(self, "school", "") or self.subtyp)
+                if (
+                    fam
+                    and getattr(getattr(caster, "familiar", None), "spec", "") == "Arcane"
+                    and "Insult to Injury" in skills
+                    and school_name == "Arcane"
+                    and str(getattr(target.magic_effects.get("DOT"), "source", "")).lower().startswith("corruption")
+                ):
+                    damage = int(damage * 1.50)
+                if (
+                    school_name in {"Shadow", "Dark"}
+                    and "Penny Dreadful" in skills
+                    and getattr(target.status_effects.get("Fear"), "active", False)
+                ):
+                    damage = int(damage * 1.25)
                 try:
                     from src.core.classes import mage_mechanics, wizard
 
                     damage = int(damage * mage_mechanics.spell_potency_multiplier(caster, self))
                     damage = int(
                         damage
-                        * mage_mechanics.spell_damage_multiplier(caster, self)
+                        * mage_mechanics.spell_damage_multiplier(caster, self, target)
                     )
+                    damage += mage_mechanics.consume_shadow_overheal_bonus(caster, self)
                     school = mage_mechanics.school_from_ability(self)
                     damage = int(
                         damage * (1 + wizard.affinity_damage_bonus(caster, school))

@@ -807,7 +807,7 @@ BATCH1_SPELLS = [
     ("holy.yaml", "Holy", "Holy"),
     ("holy_2.yaml", "Holy", "Holy"),
     ("holy_3.yaml", "Holy", "Holy"),
-    ("ultima.yaml", "Non-elemental", "Ultima"),
+    ("ultima.yaml", "Non-elemental", "Photon Sphere"),
     ("hellfire.yaml", "Non-elemental", "Hellfire"),
     ("poison_breath.yaml", "Poison", "Poison Breath"),
 ]
@@ -819,11 +819,19 @@ class TestBatch1YAMLLoading:
     @pytest.mark.parametrize("yaml_file,expected_subtype,expected_name", BATCH1_SPELLS)
     def test_load_batch1_spell(self, yaml_file, expected_subtype, expected_name):
         from src.core.data.ability_loader import AbilityFactory
-        from src.core.data.data_driven_abilities import DataDrivenSpell
+        from src.core.data.data_driven_abilities import (
+            DataDrivenMagicMissileSpell,
+            DataDrivenSpell,
+        )
 
         filepath = Path(__file__).parent.parent / "src" / "core" / "data" / "abilities" / yaml_file
         spell = AbilityFactory.create_from_yaml(filepath)
-        assert isinstance(spell, DataDrivenSpell)
+        expected_type = (
+            DataDrivenMagicMissileSpell
+            if yaml_file == "ultima.yaml"
+            else DataDrivenSpell
+        )
+        assert isinstance(spell, expected_type)
         assert spell.name == expected_name
         assert spell.subtyp == expected_subtype
         assert spell.typ == "Spell"
@@ -837,7 +845,7 @@ class TestBatch1YAMLLoading:
             "aqualung.yaml": 1, "tsunami.yaml": 2,
             "mudslide.yaml": 1, "earthquake.yaml": 2,
             "hurricane.yaml": 1, "tornado.yaml": 2,
-            "ultima.yaml": 2, "poison_breath.yaml": 2,
+            "ultima.yaml": 3, "poison_breath.yaml": 2,
         }
         for yaml_file, expected_rank in ranked.items():
             filepath = Path(__file__).parent.parent / "src" / "core" / "data" / "abilities" / yaml_file
@@ -938,7 +946,8 @@ class TestBatch1AbilityFactories:
 
         ult = abilities.Ultima()
         assert ult.subtyp == "Non-elemental"
-        assert ult.rank == 2
+        assert ult.name == "Photon Sphere"
+        assert ult.rank == 3
 
         hf = abilities.Hellfire()
         assert hf.name == "Hellfire"
@@ -998,9 +1007,13 @@ class TestBatch1CombatIntegration:
         caster, target = self._make_combatants()
 
         result = spell.cast(caster, target)
-        assert isinstance(result, CombatResult)
-        assert isinstance(result.message, str)
-        assert len(result.message) > 0
+        if yaml_file == "ultima.yaml":
+            assert isinstance(result, str)
+            assert result
+        else:
+            assert isinstance(result, CombatResult)
+            assert isinstance(result.message, str)
+            assert len(result.message) > 0
 
     def test_sandstorm_can_blind(self):
         """Sandstorm should sometimes apply Blind."""
@@ -1058,7 +1071,7 @@ class TestBatch1CombatIntegration:
         assert dot_applied, "DOT should have triggered at least once in 80 casts"
 
     def test_terrify_can_stun(self):
-        """Terrify should sometimes apply Stun."""
+        """Terrify should sometimes apply Fear."""
         from src.core.data.ability_loader import AbilityFactory
 
         filepath = Path(__file__).parent.parent / "src" / "core" / "data" / "abilities" / "terrify.yaml"
@@ -1070,11 +1083,11 @@ class TestBatch1CombatIntegration:
             caster.stats.charisma = 100
             target.stats.wisdom = 5
             result = spell.cast(caster, target)
-            if target.status_effects["Stun"].active:
+            if target.status_effects["Fear"].active:
                 stun_applied = True
                 break
 
-        assert stun_applied, "Stun should have triggered at least once in 80 casts"
+        assert stun_applied, "Fear should have triggered at least once in 80 casts"
 
     def test_hellfire_can_apply_dot(self):
         """Hellfire should sometimes apply DOT."""
@@ -1349,7 +1362,7 @@ class TestBatch2YAMLLoading:
         ("calming_breeze.yaml", "Calming Breeze", 18),
         ("nature_shield.yaml", "Nature Shield", 28),
         ("mirror_image.yaml", "Mirror Image", 8),
-        ("mirror_image_2.yaml", "Mirror Image", 20),
+        ("mirror_image_2.yaml", "Mirror Image II", 20),
         ("astral_shift.yaml", "Astral Shift", 18),
     ]
 
@@ -7284,8 +7297,8 @@ class TestBatch15YAMLLoading:
         ("crushing_blow.yaml", "Crushing Blow", 25),
         ("arcane_blast.yaml", "Arcane Blast", 0),
         ("magic_missile.yaml", "Magic Missile", 5),
-        ("magic_missile_2.yaml", "Magic Missile", 18),
-        ("magic_missile_3.yaml", "Magic Missile", 40),
+        ("magic_missile_2.yaml", "Magic Missile II", 18),
+        ("magic_missile_3.yaml", "Magic Missile III", 40),
     ]
 
     def test_all_yaml_files_load(self):

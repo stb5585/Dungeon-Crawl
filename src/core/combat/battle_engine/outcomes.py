@@ -24,6 +24,29 @@ if TYPE_CHECKING:
 
 
 class BattleOutcomeMixin:
+    def _warlock_soul_reward(self, enemy) -> str:
+        """Award Soul Gems and temporary undead for marked death effects."""
+        skills = self.player.spellbook.get("Skills", {})
+        marked = isinstance(getattr(enemy, "soul_siphon", None), dict)
+        doomed = bool(getattr(enemy.status_effects.get("Doom"), "active", False)) or (
+            getattr(enemy, "_killed_by_ability", "") == "Doom"
+        )
+        messages = ""
+        desouled = getattr(enemy, "_killed_by_ability", "") == "Desoul"
+        if marked or (desouled and "Soul Asylum" in skills):
+            self.player.modify_inventory(items.SoulGem())
+            messages += f"{self.player.name} captures {enemy.name}'s soul in a Soul Gem.\n"
+        if doomed and "Dance of the Dead" in skills:
+            allies = getattr(self.player, "temporary_undead_allies", [])
+            allies.append({
+                "name": enemy.name,
+                "turns": 3,
+                "damage": max(1, int(getattr(enemy.combat, "attack", 1) * 0.5)),
+            })
+            self.player.temporary_undead_allies = allies
+            messages += f"{enemy.name} rises as a temporary undead ally.\n"
+        return messages
+
     @staticmethod
     def _inventory_counts(player) -> dict[tuple[str, str], int]:
         """Snapshot acquired item counts by inventory destination and name."""
@@ -85,6 +108,12 @@ class BattleOutcomeMixin:
         msg = dragoon.red_dragon_victory_text(enemy)
         msg += f"{self.player.name} gained {exp_gain} experience.\n"
 
+        familiar = getattr(self.player, "familiar", None)
+        if familiar is not None and getattr(self.player, "_familiar_acted", False):
+            gain = getattr(familiar, "gain_action_experience", None)
+            if callable(gain):
+                msg += gain(exp_gain)
+
         # Handle summon experience
         if self.summon:
             self.summon.effects(end=True)
@@ -117,6 +146,7 @@ class BattleOutcomeMixin:
             mage_mechanics.record_last_enemy(self.player, enemy, boss=self.boss)
             if hasattr(self.player, "refresh_demonologist_contracts"):
                 self.player.refresh_demonologist_contracts()
+            msg += self._warlock_soul_reward(enemy)
 
             vow_text = paladin.on_enemy_defeated(
                 self.player,
@@ -150,6 +180,11 @@ class BattleOutcomeMixin:
                 loot_msg = self.player.loot(enemy, self.tile)
                 if loot_msg:
                     msg += loot_msg
+            bullion_gold = max(0, int(getattr(self.player, "bullionaire_bonus_gold", 0) or 0))
+            if bullion_gold:
+                self.player.gold += bullion_gold
+                self.player.bullionaire_bonus_gold = 0
+                msg += f"Bullionaire adds {bullion_gold} gold to the combat reward.\n"
 
             # Quest progress
             quest_msg = self.player.quests(enemy=enemy)
@@ -276,6 +311,7 @@ class BattleOutcomeMixin:
                 )
                 if hasattr(self.player, "refresh_demonologist_contracts"):
                     self.player.refresh_demonologist_contracts()
+                member_message += self._warlock_soul_reward(enemy)
                 vow_text = paladin.on_enemy_defeated(
                     self.player,
                     enemy,
@@ -508,6 +544,9 @@ class BattleOutcomeMixin:
 
     def _process_defeat(self) -> None:
         """Handle defeat bookkeeping: reset enemy, player death."""
+        from ... import curses
+
+        curses.cure_curses(self.player)
         self.player.state = 'normal'
         if hasattr(self.player, 'transform_type') and self.player.cls != self.player.transform_type:
             self.player.transform(back=True)

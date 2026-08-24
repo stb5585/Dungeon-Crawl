@@ -4,9 +4,13 @@ from __future__ import annotations
 
 import math
 import random
+from copy import deepcopy
 from typing import Any
 
+from ..combat.combat_result import CombatResult, CombatResultGroup
+from ..combat.targeting import TargetScope
 from .base import PowerUp, Spell
+from .spell_types import _simple_spell_damage
 
 
 class _MagePassive(PowerUp):
@@ -92,8 +96,10 @@ class ClassicalForce(_MagePassive):
         super().__init__(
             "Classical Force",
             "Specialize School Affinity in elemental magic. Arcane spell "
-            "damage, control, barriers, and enhancements operate at 50% potency.",
+            "damage, control, barriers, and enhancements operate at 75% potency.",
         )
+        self.presentation_modifier = True
+        self.modifies_school = "Arcane"
 
 
 class ArcaneTradition(_MagePassive):
@@ -101,8 +107,509 @@ class ArcaneTradition(_MagePassive):
         super().__init__(
             "Arcane Tradition",
             "Specialize School Affinity in Arcane magic. Elemental spell "
-            "damage operates at 50% potency and Enhancement proc chances are halved.",
+            "damage operates at 75% potency and Enhancement proc chances are halved.",
         )
+        self.presentation_modifier = True
+        self.modifies_schools = ("Fire", "Ice", "Electric", "Wind", "Water", "Earth")
+
+
+class ClassicalEnrichment(_MagePassive):
+    def __init__(self) -> None:
+        super().__init__(
+            "Classical Enrichment",
+            "Further specialize in elemental magic, lowering Arcane spell "
+            "potency by an additional 25%.",
+        )
+        self.presentation_modifier = True
+        self.modifies_school = "Arcane"
+
+
+class ArcaneRitual(_MagePassive):
+    def __init__(self) -> None:
+        super().__init__(
+            "Arcane Ritual",
+            "Further specialize in Arcane magic, lowering elemental spell "
+            "potency by an additional 25%.",
+        )
+        self.presentation_modifier = True
+        self.modifies_schools = ("Fire", "Ice", "Electric", "Wind", "Water", "Earth")
+
+
+class ForceMultiplier(_MagePassive):
+    def __init__(self) -> None:
+        super().__init__(
+            "Force Multiplier",
+            "Magic Missile casts cost 25% more mana. Each projectile deals "
+            "25% more damage.",
+        )
+        self.presentation_modifier = True
+        self.modifies = ("Magic Missile", "Magic Missile II", "Magic Missile III")
+
+
+class ArcaneEmpowerment(_MagePassive):
+    def __init__(self) -> None:
+        super().__init__(
+            "Arcane Empowerment",
+            "Gain 5% magic damage for every enemy hit by Kinetic Explosion, "
+            "stacking up to five times for the current combat.",
+        )
+        self.presentation_modifier = True
+        self.modifies = ("Kinetic Explosion",)
+
+
+class _SorcererSchoolModifier(_SchoolEnhancement):
+    """Sorcerer passive that adds a rider to every spell of one school."""
+
+
+class Combustion(_SorcererSchoolModifier):
+    def __init__(self) -> None:
+        super().__init__(
+            "Combustion",
+            "Fire spells also burn their targets.",
+            "Fire",
+        )
+
+
+class Snowpiercer(_SorcererSchoolModifier):
+    def __init__(self) -> None:
+        super().__init__(
+            "Snowpiercer",
+            "Ice spells also deal additional cold damage.",
+            "Ice",
+        )
+
+
+class Paralyzer(_SorcererSchoolModifier):
+    def __init__(self) -> None:
+        super().__init__(
+            "Paralyzer",
+            "Electric spells gain a chance to stun their targets.",
+            "Electric",
+        )
+
+
+class EjectionGale(_SorcererSchoolModifier):
+    def __init__(self) -> None:
+        super().__init__(
+            "Ejection Gale",
+            "Wind spells can eject their targets from combat.",
+            "Wind",
+        )
+
+
+class Aspirate(_SorcererSchoolModifier):
+    def __init__(self) -> None:
+        super().__init__(
+            "Aspirate",
+            "Water spells can drown their targets, dealing damage over time "
+            "and preventing them from acting.",
+            "Water",
+        )
+
+
+class UnsteadyGround(_SorcererSchoolModifier):
+    def __init__(self) -> None:
+        super().__init__(
+            "Unsteady Ground",
+            "Earth spells also knock their targets prone.",
+            "Earth",
+        )
+
+
+class Slow(Spell):
+    """Lower a target's speed for several turns."""
+
+    def __init__(self) -> None:
+        super().__init__("Slow", "Lower the target's speed.", school="Arcane")
+        self.cost = 14
+        self.subtyp = "Status"
+
+    def cast(self, user: Any, target: Any | None = None, **kwargs: Any) -> str:
+        del kwargs
+        if target is None:
+            return "There is no target to slow.\n"
+        user.mana.current -= self.cost
+        effect = target.stat_effects["Speed"]
+        effect.active = True
+        effect.duration = max(int(effect.duration or 0), 3)
+        effect.extra = min(int(effect.extra or 0), -3)
+        effect.source = "Slow"
+        return f"{target.name}'s speed is lowered.\n"
+
+
+class Refueling(Spell):
+    """Begin or cancel a mana-restoring channel."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            "Refueling",
+            "Channel spirit force, regaining 20% of maximum mana each turn. "
+            "Use Refueling again to cancel the channel; while channeling, the "
+            "caster is treated as prone for save rolls.",
+            school="Arcane",
+        )
+        self.cost = 0
+        self.subtyp = "Support"
+
+    def cast(self, user: Any, target: Any | None = None, **kwargs: Any) -> str:
+        del target, kwargs
+        active = bool(getattr(user, "mage_refueling", False))
+        if active:
+            return f"{user.name} continues channeling spirit force.\n"
+        user.mage_refueling = True
+        return f"{user.name} begins channeling spirit force.\n"
+
+
+class ManaRupture(Spell):
+    """Damage a target in proportion to the mana it has left."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            "Mana Rupture",
+            "Deal damage based on the target's remaining mana.",
+            school="Arcane",
+        )
+        self.cost = 20
+        self.subtyp = "Arcane"
+
+    def cast(
+        self,
+        user: Any,
+        target: Any | None = None,
+        *,
+        battle_engine: Any | None = None,
+        **kwargs: Any,
+    ) -> CombatResult:
+        result = self._reset_result(actor=user, target=target)
+        if target is None:
+            result.message = "There is no target for Mana Rupture.\n"
+            return result
+        if not kwargs.get("_skip_cost", False):
+            user.mana.current -= self.cost
+        remaining_mana = max(0, int(getattr(target.mana, "current", 0) or 0))
+        spell_power = max(1, int(user.check_mod("magic", enemy=target)))
+        raw_damage = max(1, int(remaining_mana * 0.50) + spell_power // 2)
+        hit, message, damage = target.damage_reduction(
+            raw_damage,
+            user,
+            typ="Arcane",
+        )
+        if not hit:
+            result.message = message + f"Mana Rupture misses {target.name}.\n"
+            return result
+        try:
+            from ..classes import mage_mechanics
+
+            damage = int(
+                damage * mage_mechanics.spell_potency_multiplier(user, self)
+            )
+        except Exception:
+            pass
+        damage = max(0, damage)
+        target.health.current -= damage
+        user._emit_damage_event(
+            target,
+            damage,
+            damage_type="Arcane",
+            ability_name=self.name,
+            attack_source="spell",
+            source="spell",
+        )
+        result.hit = damage > 0
+        result.damage = damage
+        result.extra["target_mana_before"] = remaining_mana
+        result.message = (
+            message
+            + f"{user.name} ruptures {target.name}'s mana for {damage} damage.\n"
+        )
+        try:
+            from ..classes import mage_mechanics
+
+            result.message += mage_mechanics.resolve_mana_rupture(
+                user,
+                target,
+                battle_engine=battle_engine,
+            )
+        except Exception:
+            pass
+        return result
+
+
+class PrismaticCataclysm(Spell):
+    """Wizard elemental capstone that strikes once with every school."""
+
+    ELEMENTS = ("Fire", "Ice", "Electric", "Wind", "Water", "Earth")
+
+    def __init__(self) -> None:
+        super().__init__(
+            "Prismatic Cataclysm",
+            "Unleash all six elemental schools across every enemy.",
+            school="Elemental",
+        )
+        self.cost = 180
+        self.subtyp = "Elemental"
+        self.target_scope = TargetScope.ALL_ENEMIES
+
+    def cast(
+        self,
+        caster: Any,
+        target: Any | None = None,
+        **kwargs: Any,
+    ) -> CombatResult:
+        result = self._reset_result(actor=caster, target=target)
+        if target is None:
+            result.message = "There is no target for Prismatic Cataclysm.\n"
+            return result
+        if not kwargs.get("_skip_cost", False):
+            caster.mana.current -= self.cost
+        message = ""
+        try:
+            from ..classes import wizard
+
+            message += wizard.observe_elemental_ultimate(target, caster)
+        except Exception:
+            pass
+        total_damage = 0
+        instances: list[int] = []
+        converging = False
+        try:
+            from ..classes import mage_mechanics
+
+            converging = mage_mechanics.has_skill(caster, "Elemental Convergence")
+        except Exception:
+            pass
+        for index, element in enumerate(self.ELEMENTS):
+            portion, damage = _simple_spell_damage(
+                caster,
+                target,
+                dmg_mod=1.15 * (1 + (0.10 * index if converging else 0)),
+                typ=element,
+            )
+            message += portion
+            instances.append(damage)
+            total_damage += damage
+            if not target.is_alive():
+                break
+        result.hit = total_damage > 0
+        result.damage = total_damage
+        result.extra["damage_instances"] = instances
+        result.message = message
+        return result
+
+    def cast_group(
+        self,
+        caster: Any,
+        targets: list[tuple[str, Any]],
+        *,
+        battle_engine: Any,
+    ) -> CombatResultGroup:
+        group = CombatResultGroup(
+            action=self.name,
+            actor_id=battle_engine.current_actor_id,
+            target_scope=TargetScope.ALL_ENEMIES,
+            target_ids=tuple(target_id for target_id, _target in targets),
+        )
+        for index, (target_id, target) in enumerate(targets):
+            result = deepcopy(self.cast(caster, target, _skip_cost=index > 0))
+            result.actor_id = battle_engine.current_actor_id
+            result.target_id = target_id
+            result.target_scope = TargetScope.ALL_ENEMIES
+            group.add(result)
+        return group
+
+
+class GravitationalPull(Spell):
+    """Crush a target beneath an intensified gravitational well."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            "Gravitational Pull",
+            "Increase the gravitational well under a target, dealing "
+            "non-elemental force damage. Grounded creatures are slowed for "
+            "two turns; flying creatures are pinned down and cannot act.",
+            school="Arcane",
+        )
+        self.cost = 28
+        self.subtyp = "Non-elemental"
+
+    def cast(self, user: Any, target: Any | None = None, **kwargs: Any) -> CombatResult:
+        result = self._reset_result(actor=user, target=target)
+        if target is None:
+            result.message = "There is no target for Gravitational Pull.\n"
+            return result
+        if not kwargs.get("_skip_cost", False):
+            user.mana.current -= self.cost
+        message, damage = _simple_spell_damage(
+            user,
+            target,
+            dmg_mod=1.65,
+            typ="Non-elemental",
+        )
+        if damage > 0 and getattr(target, "flying", False):
+            target.flying = False
+            target.apply_stun(2, source=self.name, applier=user)
+            message += f"{target.name} is pinned to the ground.\n"
+        elif damage > 0:
+            speed = target.stat_effects["Speed"]
+            speed.active = True
+            speed.duration = max(int(speed.duration or 0), 2)
+            speed.extra = min(int(speed.extra or 0), -3)
+            speed.source = self.name
+            message += f"{target.name} is slowed for two turns.\n"
+        result.hit = damage > 0
+        result.damage = damage
+        result.message = message
+        return result
+
+
+class IllusoryLink(_MagePassive):
+    def __init__(self) -> None:
+        super().__init__(
+            "Illusory Link",
+            "While Mirror Image is active, the caster and a duplicate split "
+            "incoming damage, reducing it by half.",
+        )
+        self.presentation_modifier = True
+        self.modifies = ("Mirror Image", "Mirror Image II")
+
+
+class _WizardSchoolModifier(_SchoolEnhancement):
+    """Wizard passive that adds a discoverable rider to one elemental school."""
+
+
+class Inferno(_WizardSchoolModifier):
+    def __init__(self) -> None:
+        super().__init__(
+            "Inferno",
+            "Flames feed more flames, allowing burns to spread through the "
+            "battlefield and among enemies.",
+            "Fire",
+        )
+
+
+class Subzero(_WizardSchoolModifier):
+    def __init__(self) -> None:
+        super().__init__(
+            "Subzero",
+            "Ice spells gain a chance to freeze an enemy, preventing it from "
+            "acting for two turns.",
+            "Ice",
+        )
+
+
+class ElectricalBurns(_WizardSchoolModifier):
+    def __init__(self) -> None:
+        super().__init__(
+            "Electrical Burns",
+            "Critical Electric spells can set their target on fire.",
+            "Electric",
+        )
+
+
+class DivineWind(_WizardSchoolModifier):
+    def __init__(self) -> None:
+        super().__init__(
+            "Divine Wind",
+            "Call upon Fujin to lift grounded enemies or crash flying enemies "
+            "to the ground, leaving them prone.",
+            "Wind",
+        )
+
+
+class UnrelentingWaves(_WizardSchoolModifier):
+    def __init__(self) -> None:
+        super().__init__(
+            "Unrelenting Waves",
+            "Water spells gain a chance to recur on successive turns.",
+            "Water",
+        )
+
+
+class Aftershock(_WizardSchoolModifier):
+    def __init__(self) -> None:
+        super().__init__(
+            "Aftershock",
+            "Earth spells reverberate through the ground, repeatedly damaging "
+            "one or more enemies.",
+            "Earth",
+        )
+
+
+class Fragmentation(_MagePassive):
+    def __init__(self) -> None:
+        super().__init__(
+            "Fragmentation",
+            "Each Magic Missile projectile has a chance to fragment on impact, "
+            "leaving Arcane crystal shards on the battlefield.",
+        )
+        self.presentation_modifier = True
+        self.modifies = ("Magic Missile III",)
+
+
+class DetonationCascade(_MagePassive):
+    def __init__(self) -> None:
+        super().__init__(
+            "Detonation Cascade",
+            "Kinetic Explosion detonates scattered Arcane crystal shards into "
+            "smaller explosions.",
+        )
+        self.presentation_modifier = True
+        self.modifies = ("Kinetic Explosion",)
+
+
+class ManaLeak(_MagePassive):
+    def __init__(self) -> None:
+        super().__init__(
+            "Mana Leak",
+            "Mana Rupture consumes Arcane Empowerment to deplete the target's "
+            "mana pool.",
+        )
+        self.presentation_modifier = True
+        self.modifies = ("Mana Rupture",)
+
+
+class ManaSplinters(_MagePassive):
+    def __init__(self) -> None:
+        super().__init__(
+            "Mana Splinters",
+            "Mana Rupture shatters every Arcane crystal shard, damaging all "
+            "enemies while the returning force restores the caster's mana.",
+        )
+        self.presentation_modifier = True
+        self.modifies = ("Mana Rupture",)
+
+
+class ElementalConvergence(_MagePassive):
+    def __init__(self) -> None:
+        super().__init__(
+            "Elemental Convergence",
+            "Each successive elemental strike in Prismatic Cataclysm deals "
+            "10% more damage.",
+        )
+        self.presentation_modifier = True
+        self.modifies = ("Prismatic Cataclysm",)
+
+
+class Spaghettification(_MagePassive):
+    def __init__(self) -> None:
+        super().__init__(
+            "Spaghettification",
+            "Photon Sphere gains a chance to pull a target apart, instantly "
+            "erasing it from existence.",
+        )
+        self.presentation_modifier = True
+        self.modifies = ("Photon Sphere",)
+
+
+class Multiplicity(_MagePassive):
+    def __init__(self) -> None:
+        super().__init__(
+            "Multiplicity",
+            "If combat ends while Mirror Image is active, restore 5% of "
+            "maximum health for every duplicate still active.",
+        )
+        self.presentation_modifier = True
+        self.modifies = ("Mirror Image", "Mirror Image II")
 
 
 class Polymorph(Spell):

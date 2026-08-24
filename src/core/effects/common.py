@@ -206,10 +206,21 @@ class DynamicDotEffect(Effect):
         lo = max(1, int(last_damage * self.damage_lo_fraction))
         hi = max(lo, int(last_damage * self.damage_hi_fraction))
         dmg = random.randint(lo, hi)
+        duration = self.duration
+        if result.action == "Corruption" and (
+            "Persistent Corruption" in getattr(actor, "spellbook", {}).get("Skills", {})
+        ):
+            duration = max(4, duration)
+            dmg = max(1, int(dmg * 1.25))
+        if result.action in self.FIRE_DOT_ACTIONS and int(
+            getattr(target, "demon_grease_turns", 0) or 0
+        ) > 0:
+            duration += 1
+            dmg = max(1, int(dmg * 1.50))
 
         target.magic_effects[self.dot_type].active = True
         target.magic_effects[self.dot_type].duration = max(
-            self.duration, target.magic_effects[self.dot_type].duration
+            duration, target.magic_effects[self.dot_type].duration
         )
         target.magic_effects[self.dot_type].extra = max(
             dmg, target.magic_effects[self.dot_type].extra
@@ -232,6 +243,10 @@ class DynamicDotEffect(Effect):
             )
         except Exception:
             pass
+        if result.action == "Corruption":
+            from ..classes import warlock
+
+            warlock.mark_corruption(actor, target)
 
 
 class DynamicExtraDamageEffect(Effect):
@@ -839,10 +854,27 @@ class CleanseEffect(Effect):
     """Clears all ``status_effects`` (Blind, Stun, Sleep, Poison, etc.)."""
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
+        reverse = (
+            "Uno Reverse Card" in getattr(actor, "spellbook", {}).get("Skills", {})
+            and getattr(getattr(actor, "familiar", None), "spec", "") == "Support"
+            and bool(result.extra.get("use_kwargs", {}).get("fam", False))
+        )
+        reversed_count = 0
         for name in list(target.status_effects):
             if target.status_effects[name].active:
+                duration = max(1, int(target.status_effects[name].duration or 0))
                 target.status_effects[name].active = False
                 result.effects_applied.setdefault("Cleansed", []).append(name)
+                if reverse:
+                    reversed_count += 1
+                    buff = target.stat_effects["Defense"]
+                    buff.active = True
+                    buff.duration = max(duration, int(buff.duration or 0))
+                    buff.extra = max(1, int(getattr(target.stats, "con", 10) * 0.10))
+        if reversed_count:
+            result.extra.setdefault("messages", []).append(
+                f"Uno Reverse Card turns {reversed_count} affliction(s) into protection.\n"
+            )
 
 
 class FullDispelEffect(Effect):
@@ -950,12 +982,19 @@ class ResourceConvertEffect(Effect):
         if self.ring_mod and hasattr(actor, "equipment"):
             if self.ring_mod in actor.equipment.get("Ring", type("", (), {"mod": ""})()).mod:
                 pct *= 2
+        resource_abuse = (
+            self.source == "mana"
+            and self.target_resource == "health"
+            and "Resource Abuse" in getattr(actor, "spellbook", {}).get("Skills", {})
+        )
+        if resource_abuse:
+            pct *= 2
 
         src_pool = getattr(actor, self.source)
         dst_pool = getattr(actor, self.target_resource)
 
         # Check: target resource already full
-        if dst_pool.current >= dst_pool.max:
+        if dst_pool.current >= dst_pool.max and not resource_abuse:
             result.extra["resource_full"] = True
             result.extra.setdefault("messages", []).append(
                 f"You are already at full {self.target_resource}.\n"
@@ -979,12 +1018,20 @@ class ResourceConvertEffect(Effect):
         src_pool.current -= cost
         gained = min(cost, dst_pool.max - dst_pool.current)
         dst_pool.current += gained
+        if resource_abuse and cost > gained:
+            actor.resource_abuse_shadow_bonus = int(
+                getattr(actor, "resource_abuse_shadow_bonus", 0) or 0
+            ) + (cost - gained)
 
         result.extra["converted_amount"] = cost
         result.extra["gained_amount"] = gained
         result.extra.setdefault("messages", []).append(
             f"{actor.name} sacrifices {cost} {self.source} to restore {self.target_resource}.\n"
         )
+        if resource_abuse and cost > gained:
+            result.extra.setdefault("messages", []).append(
+                f"Resource Abuse stores {cost - gained} excess healing as Shadow damage.\n"
+            )
 
 
 class PhysicalEffectApplyEffect(Effect):

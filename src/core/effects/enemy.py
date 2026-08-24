@@ -175,6 +175,15 @@ class DrainEffect:
             hi = lo
         drain = _rng.randint(lo, hi)
 
+        potency = 1.0
+        if (
+            self.resource == "health"
+            and "Vim and Rigor" in getattr(actor, "spellbook", {}).get("Skills", {})
+        ):
+            target_max = max(1, int(target.health.max or 1))
+            potency += 0.50 * (target.health.current / target_max)
+            drain = int(drain * potency)
+
         # Wisdom-vs-wisdom contest; losing halves the drain
         chance = target.check_mod("luck", enemy=actor, luck_factor=self.luck_factor)
         if not (
@@ -185,7 +194,7 @@ class DrainEffect:
 
         # Cap at percent of target's max + target's current
         if self.resource == "health":
-            cap = max(1, int(target.health.max * self.cap_percent))
+            cap = max(1, int(target.health.max * self.cap_percent * potency))
             drain = min(drain, cap, target.health.current)
             target.health.current -= drain
             actor.health.current = min(

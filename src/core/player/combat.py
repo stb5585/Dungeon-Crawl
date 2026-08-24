@@ -46,6 +46,7 @@ class PlayerCombatMixin:
 
     def familiar_turn(self, enemy):
         familiar_str = ""
+        self._familiar_acted = False
         if self.familiar:
             special = None
             target = enemy
@@ -66,7 +67,14 @@ class PlayerCombatMixin:
                 )
                 return familiar_str
 
-            if not random.randint(0, 3):
+            action_chance = 0.25
+            skills = self.spellbook.get("Skills", {})
+            if "Familiar Bond II" in skills:
+                action_chance = 0.50
+            elif "Familiar Bond" in skills:
+                action_chance = 1 / 3
+            action_denominator = 2 if action_chance >= 0.50 else 3 if action_chance >= (1 / 3) else 4
+            if not random.randint(0, action_denominator - 1):
                 if self.familiar.spec == "Defense":  # skills and spells
                     while True:
                         if not random.randint(0, 1):
@@ -129,12 +137,31 @@ class PlayerCombatMixin:
                                 special = self.familiar.spellbook['Skills'][choice]
                                 break
                 if special is not None:
+                    self._familiar_acted = True
                     if special.typ == 'Skill':
                         familiar_str += f"{self.familiar.name} uses {special.name}.\n"
                         familiar_str += special.use(self, target=target, fam=True)
+                        if special.name == "Goad" and "Indiscriminate Provocation" in skills:
+                            confused = target.status_effects.get("Berserk")
+                            if confused is not None:
+                                confused.active = True
+                                confused.duration = max(3, int(confused.duration or 0))
+                                confused.source = "Indiscriminate Provocation"
+                                target.confused_turns = 3
+                                familiar_str += f"{target.name} is goaded into confused violence.\n"
                     elif special.typ == 'Spell':
                         familiar_str += f"{self.familiar.name} casts {special.name}.\n"
                         familiar_str += special.cast(self, target=target, fam=True)
+                        if (
+                            self.familiar.spec == "Arcane"
+                            and "Night Moves" in skills
+                            and int(getattr(self, "shade_of_ahool_turns", 0) or 0) > 0
+                        ):
+                            second = self.familiar.spellbook['Spells'][random.choice(
+                                list(self.familiar.spellbook['Spells'])
+                            )]
+                            familiar_str += f"{self.familiar.name} casts {second.name} again.\n"
+                            familiar_str += second.cast(self, target=target, fam=True)
         return familiar_str
 
     def transform(self, back=False):
@@ -197,6 +224,8 @@ class PlayerCombatMixin:
                 class_mod += (sum(self.kill_dict[enemy.enemy_typ].values()) // 20)
         class_mod += ability_mechanics.favored_enemy_bonus(self, enemy)
         if mod == 'weapon':
+            if getattr(self, "fractures", {}).get("Arm"):
+                return 0
             weapon_mod = (self.equipment['Weapon'].damage * int(not self.is_disarmed()))
             weapon_mod += mage_mechanics.enhance_blade_bonus(self)
             class_mod += promotion_kits.xenid_caster_attribute_bonus(
@@ -228,7 +257,12 @@ class PlayerCombatMixin:
             if 'Physical Damage' in self.equipment['Ring'].mod:
                 weapon_mod += int(self.equipment['Ring'].mod.split(' ')[0])
             weapon_mod += self.stat_effects["Attack"].extra * self.stat_effects["Attack"].active
+            from .. import curses
+
             total_mod = (weapon_mod + class_mod + self.combat.attack) * disarm_damage_multiplier
+            total_mod *= curses.strength_multiplier(self)
+            if getattr(self, "shade_of_ahool_turns", 0) > 0:
+                total_mod *= 1.50
             total_mod *= class_rings.weapon_damage_multiplier(self)
             total_mod *= ability_mechanics.polearm_damage_multiplier(self)
             total_mod *= ability_mechanics.monkey_grip_damage_multiplier(self, "Weapon")
@@ -248,6 +282,8 @@ class PlayerCombatMixin:
                 total_mod *= 0.75
             return max(0, int(total_mod * (1 + berserk_per)))
         if mod == 'shield':
+            if getattr(self, "fractures", {}).get("Arm"):
+                return 0
             if int(getattr(self, "_guard_suppressed", 0) or 0) > 0:
                 return 0
             block_mod = 0
@@ -339,6 +375,10 @@ class PlayerCombatMixin:
             armor_total *= 1 + ability_mechanics.melody_inspiration_bonus(self)
             if self.magic_effects.get("Tree of Life") and self.magic_effects["Tree of Life"].active:
                 armor_total *= 1.75
+            from .. import curses
+
+            if curses.has_curse(self, "Elijah"):
+                armor_total *= 0.65
             return max(0, int(armor_total))
         if mod == 'magic':
             conduit_intel = promotion_kits.xenid_caster_attribute_bonus(
@@ -459,6 +499,14 @@ class PlayerCombatMixin:
                 res_mod -= 1
             if typ in self.resistance:
                 res_mod = self.resistance[typ]
+            if typ == "Shadow":
+                from .. import curses
+
+                res_mod += curses.shadow_resistance_penalty(self)
+            if typ == "Fire":
+                from .. import curses
+
+                res_mod += curses.fire_resistance_penalty(self)
             resist_effect = self.magic_effects.get(f"Resist {typ}")
             if resist_effect is not None and resist_effect.active:
                 try:
@@ -502,6 +550,8 @@ class PlayerCombatMixin:
                     res_mod -= penalty
             except Exception:
                 pass
+            if typ == "Holy" and int(getattr(self, "warlock_eclipse_turns", 0) or 0) > 0:
+                res_mod -= 0.25
             return res_mod
         if mod == 'luck':
             if self.cls.name == "Rogue" and self.power_up:
@@ -511,7 +561,13 @@ class PlayerCombatMixin:
             return max(0, (base * 2) // lf)
         if mod == "speed":
             speed_mod = self.stats.dex
+            if getattr(self, "shade_of_ahool_turns", 0) > 0:
+                speed_mod *= 1.50
+            if getattr(self, "warlock_eclipse_turns", 0) > 0:
+                speed_mod *= 1.10
             speed_mod += self.stat_effects["Speed"].extra * self.stat_effects["Speed"].active
+            if self.invisible and "Alacrity" in self.spellbook.get("Skills", {}):
+                speed_mod *= 1.25
             speed_mod *= paladin.initiative_multiplier(self)
             speed_mod *= 1 + ability_mechanics.melody_inspiration_bonus(self)
             try:
@@ -520,6 +576,8 @@ class PlayerCombatMixin:
                     speed_mod *= 1.10
             except Exception:
                 pass
+            if getattr(self, "fractures", {}).get("Leg"):
+                speed_mod *= 0.1
             return int(speed_mod)
         return 0
 
@@ -579,7 +637,7 @@ class PlayerCombatMixin:
                     "Dragoon": abilities.DraconicOnslaught,
                     "Stalwart Defender": abilities.ShieldMastery,
                     "Wizard": abilities.SpellMastery,
-                    "Shadowcaster": abilities.VeilShadows,
+                    "Shadowcaster": abilities.ShadeOfAhool,
                     "Demonologist": abilities.AbyssalCovenant,
                     "Knight Enchanter": abilities.ArcaneBlast,
                     "Thaumaturgist": abilities.EternalConduit,
@@ -602,6 +660,4 @@ class PlayerCombatMixin:
             skill = powerup_dict[self.cls.name]()
             self.spellbook['Skills'][skill.name] = skill
             self.power_up = True
-            if self.cls.name == "Shadowcaster":
-                    self.invisible = True
             return f"You gain the skill {skill.name}.\n"

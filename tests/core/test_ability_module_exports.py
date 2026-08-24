@@ -51,8 +51,12 @@ def test_abilities_facade_preserves_all_split_class_exports():
         for name, implementation in _module_ability_classes(module).items()
     }
 
-    assert len(direct_exports) == 468
+    assert len(direct_exports) == 519
     for name, implementation in direct_exports.items():
+        if name in {"ShieldRiposte", "SpellReflection"}:
+            # The defender passives intentionally supersede older promotion
+            # actives with the same public names.
+            continue
         assert getattr(abilities, name) is implementation
 
 

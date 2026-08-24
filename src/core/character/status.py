@@ -84,6 +84,15 @@ class CharacterStatusMixin:
             return False, f"{self.name} is prone and cannot act."
         if self.status_effects["Stun"].active:
             return False, f"{self.name} is stunned and cannot act."
+        fear = self.status_effects.get("Fear")
+        if fear is not None and fear.active:
+            if random.random() < 0.5:
+                return False, f"{self.name} cowers in fear and cannot act."
+            self._fear_flee_attempt = True
+            return False, f"{self.name} tries to flee in fear."
+        fractures = getattr(self, "fractures", {})
+        if fractures.get("Skull") and random.random() < 0.25:
+            return False, f"{self.name} is incapacitated by a fractured skull."
         if self.magic_effects["Ice Block"].active:
             return False, f"{self.name} is encased in ice and does nothing.\n"
         return True, ""
@@ -299,6 +308,7 @@ class CharacterStatusMixin:
                                 skill.charge_target = None
                 self.grandmaster_technique_stacks = {}
                 self._hemorrhage_thirst_streak = 0
+                self._corruption_payload = None
             else:
                 effect_dict = self.effect_handler(effect=effect)
                 if effect_dict[effect].active:
@@ -307,21 +317,45 @@ class CharacterStatusMixin:
                 effect_dict[effect].duration = 0
                 effect_dict[effect].extra = 0
                 effect_dict[effect].source = ""
+                if effect == "DOT":
+                    self._corruption_payload = None
 
         if end:
-            default(end_combat=True)
             try:
                 from ..classes import mage_mechanics
 
                 mage_mechanics.tick_combat_state(self, end=True)
             except Exception:
                 pass
+            default(end_combat=True)
             self.temporary_health = None
+            self.fractures = {}
+            if getattr(self, "shade_of_ahool_turns", 0) > 0:
+                self.flying = False
+            for attr in (
+                "soul_bound_to", "soul_siphon", "shadow_curtain_turns",
+                "shade_of_ahool_turns", "warlock_eclipse_turns",
+                "mystical_vitality_turns", "demon_grease_turns",
+                "soul_vessel_turns",
+                "temporary_undead_allies", "haunted_turns",
+                "_soul_binding_caster",
+            ):
+                if hasattr(self, attr):
+                    delattr(self, attr)
             ability_mechanics.sync_exploration_flags(self)
         else:
             from ..classes import grandmaster
 
             status_text = ""
+            haunted_turns = max(0, int(getattr(self, "haunted_turns", 0) or 0))
+            if haunted_turns:
+                self.haunted_turns = haunted_turns - 1
+                if random.randint(1, 20) > int(getattr(self.stats, "wisdom", 0) or 0):
+                    fear = self.status_effects["Fear"]
+                    fear.active = True
+                    fear.duration = max(1, int(fear.duration or 0))
+                    fear.source = "Sciophobia"
+                    status_text += f"The haunting fills {self.name} with fear.\n"
             try:
                 from ..classes import promotion_kits
 
@@ -331,7 +365,7 @@ class CharacterStatusMixin:
             try:
                 from ..classes import mage_mechanics
 
-                mage_mechanics.tick_combat_state(self)
+                status_text += mage_mechanics.tick_combat_state(self)
             except Exception:
                 pass
             temporary_health = getattr(self, "temporary_health", None)
@@ -432,6 +466,12 @@ class CharacterStatusMixin:
                 self.magic_effects["DOT"].duration -= 1
                 dot_damage = int(self.magic_effects["DOT"].extra or 0)
                 dot_source = self.magic_effects["DOT"].source
+                if dot_source.lower().startswith("corruption"):
+                    payload = getattr(self, "_corruption_payload", {})
+                    caster = payload.get("caster") if isinstance(payload, dict) else None
+                    if "Festering Anguish" in getattr(caster, "spellbook", {}).get("Skills", {}):
+                        dot_damage = max(1, int(dot_damage * 1.25))
+                        self.magic_effects["DOT"].extra = dot_damage
                 is_burn = dot_source.lower() in {"burn", "fire", "volcano", "fireball", "firestorm", "hellfire"}
                 if dot_damage <= 0:
                     # Defensive guard: DOT should always have positive damage,
@@ -457,12 +497,29 @@ class CharacterStatusMixin:
                             status_text += f"{self.name} resisted the flames.\n"
                         else:
                             status_text += f"{self.name} resisted the magic.\n"
+                    if dot_source.lower().startswith("corruption"):
+                        from ..classes import warlock
+
+                        status_text += warlock.spread_corruption(self)
                     if not self.magic_effects["DOT"].duration:
                         default(effect="DOT")
                         if is_burn:
                             status_text += f"The flames around {self.name} burn out.\n"
                         else:
                             status_text += f"The magic affecting {self.name} has worn off.\n"
+            try:
+                from .. import curses
+
+                status_text += curses.hemorrhaging_tick(self)
+                status_text += curses.swarms_tick(self)
+                status_text += curses.polydipsia_tick(self)
+            except Exception:
+                pass
+            fractures = getattr(self, "fractures", {})
+            if fractures.get("Ribs") or fractures.get("Exoskeleton"):
+                fracture_damage = max(1, int(self.health.max * 0.05))
+                self.health.current = max(0, self.health.current - fracture_damage)
+                status_text += f"{self.name}'s fracture deals {fracture_damage} damage.\n"
             hallowed_ground = self.magic_effects.get("Hallowed Ground")
             if hallowed_ground is not None and hallowed_ground.active:
                 hallowed_ground.duration -= 1
@@ -654,6 +711,19 @@ class CharacterStatusMixin:
                 value = int(getattr(self, attr, 0) or 0)
                 if value > 0:
                     setattr(self, attr, max(0, value - 1))
+            for attr in (
+                "shadow_curtain_turns",
+                "shade_of_ahool_turns",
+                "warlock_eclipse_turns",
+                "mystical_vitality_turns",
+                "demon_grease_turns",
+                "soul_vessel_turns",
+            ):
+                value = int(getattr(self, attr, 0) or 0)
+                if value > 0:
+                    setattr(self, attr, value - 1)
+                    if attr == "shade_of_ahool_turns" and value == 1:
+                        self.flying = False
             for attr in ("_reavers_mark", "_riposte_line", "_brace_art"):
                 state = getattr(self, attr, None)
                 if isinstance(state, dict):
@@ -663,6 +733,11 @@ class CharacterStatusMixin:
                             delattr(self, attr)
                         except AttributeError:
                             pass
+            soul_siphon = getattr(self, "soul_siphon", None)
+            if isinstance(soul_siphon, dict):
+                soul_siphon["turns"] = int(soul_siphon.get("turns", 0) or 0) - 1
+                if soul_siphon["turns"] <= 0:
+                    delattr(self, "soul_siphon")
             if self.magic_effects["Regen"].active:
                 self.magic_effects["Regen"].duration -= 1
                 heal = self.magic_effects["Regen"].extra

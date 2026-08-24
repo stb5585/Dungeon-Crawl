@@ -29,14 +29,20 @@ class MagicMissile2(MagicMissile):
 
 class MagicMissile3(MagicMissile):
     """Data-driven (magic_missile_3.yaml)"""
+    replaces = "Magic Missile II"
+
     def __new__(cls):
         return _load_yaml_ability("magic_missile_3.yaml", cls_name="MagicMissile3")
 
 
-class Ultima:
-    """Rank 2 Enemy Spell — data-driven (ultima.yaml)"""
+class PhotonSphere:
+    """Ultimate multi-hit non-elemental spell — data-driven (ultima.yaml)."""
     def __new__(cls):
-        return _load_yaml_ability("ultima.yaml", cls_name="Ultima")
+        return _load_yaml_ability("ultima.yaml", cls_name="PhotonSphere")
+
+
+class Ultima(PhotonSphere):
+    """Compatibility alias for saves and content authored before the rename."""
 
 
 class Maelstrom:
@@ -87,6 +93,8 @@ class Firebolt:
 
 class Fireball:
     """Data-driven (fireball.yaml)"""
+    replaces = "Firebolt"
+
     def __new__(cls):
         return _load_yaml_ability("fireball.yaml", cls_name="Fireball")
 
@@ -145,6 +153,8 @@ class IceLance:
 
 class Icicle:
     """Data-driven (icicle.yaml)"""
+    replaces = "Ice Lance"
+
     def __new__(cls):
         return _load_yaml_ability("icicle.yaml", cls_name="Icicle")
 
@@ -194,6 +204,8 @@ class Shock:
 
 class Lightning:
     """Data-driven (lightning.yaml)"""
+    replaces = "Shock"
+
     def __new__(cls):
         return _load_yaml_ability("lightning.yaml", cls_name="Lightning")
 
@@ -238,6 +250,8 @@ class WaterJet:
 
 class Aqualung:
     """Rank 1 Enemy Spell — data-driven (aqualung.yaml)"""
+    replaces = "Water Jet"
+
     def __new__(cls):
         return _load_yaml_ability("aqualung.yaml", cls_name="Aqualung")
 
@@ -261,6 +275,8 @@ class Tremor:
 
 class Mudslide:
     """Rank 1 Enemy Spell — data-driven (mudslide.yaml)"""
+    replaces = "Tremor"
+
     def __new__(cls):
         return _load_yaml_ability("mudslide.yaml", cls_name="Mudslide")
 
@@ -285,6 +301,8 @@ class Gust:
 
 class Hurricane:
     """Rank 1 Enemy Spell — data-driven (hurricane.yaml)"""
+    replaces = "Gust"
+
     def __new__(cls):
         return _load_yaml_ability("hurricane.yaml", cls_name="Hurricane")
 
@@ -636,6 +654,8 @@ class MirrorImage:
 
 
 class MirrorImage2:
+    replaces = "Mirror Image"
+
     def __new__(cls):
         return _load_yaml_ability("mirror_image_2.yaml", cls_name="MirrorImage2")
 

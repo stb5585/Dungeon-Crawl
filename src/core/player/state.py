@@ -207,6 +207,22 @@ class PlayerStateMixin:
         bard.tick_exploration_song(self, step_count)
         ability_mechanics.tick_exploration_effects(self, step_count)
         mage_mechanics.tick_exploration(self, step_count)
+        if int(getattr(self, "shadow_dungeon_darkness_steps", 0) or 0) > 0:
+            self.shadow_dungeon_darkness_steps = max(
+                0,
+                int(self.shadow_dungeon_darkness_steps) - step_count,
+            )
+        from .. import curses
+
+        if curses.has_curse(self, "Polydipsia"):
+            self._polydipsia_steps = int(getattr(self, "_polydipsia_steps", 0) or 0) + step_count
+            while self._polydipsia_steps >= 10:
+                self._polydipsia_steps -= 10
+                message = curses.polydipsia_tick(self)
+                if message:
+                    pending = getattr(self, "_exploration_messages", [])
+                    pending.append(message)
+                    self._exploration_messages = pending
 
     def record_stairs_used(self, count=1):
         stats = self.ensure_gameplay_stats()

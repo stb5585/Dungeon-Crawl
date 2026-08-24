@@ -1,8 +1,7 @@
 name: Counterspell
 type: Skill
 description: >-
-  If the Behemoth is the target of an attack spell, it will counter
-  with a spell of its own.
+  Automatically answer an incoming attack spell with a spell of your own.
 cost: 0
 passive: true
 effects:

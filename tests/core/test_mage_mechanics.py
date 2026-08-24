@@ -46,7 +46,7 @@ def _player(class_name="Mage"):
     return player
 
 
-def test_specialization_nerfs_only_the_competing_school():
+def test_specialization_reduces_only_the_competing_school_by_twenty_five_percent():
     elemental = _player()
     elemental.spellbook["Skills"]["Classical Force"] = abilities.ClassicalForce()
     arcane = _player()
@@ -54,16 +54,99 @@ def test_specialization_nerfs_only_the_competing_school():
 
     assert mage_mechanics.spell_potency_multiplier(
         elemental, abilities.MagicMissile()
-    ) == 0.50
+    ) == 0.75
     assert mage_mechanics.spell_potency_multiplier(
         elemental, abilities.Firebolt()
     ) == 1.0
     assert mage_mechanics.spell_potency_multiplier(
         arcane, abilities.Firebolt()
-    ) == 0.50
+    ) == 0.75
     assert mage_mechanics.spell_potency_multiplier(
         arcane, abilities.MagicMissile()
     ) == 1.0
+
+    elemental.spellbook["Skills"]["Classical Enrichment"] = (
+        abilities.ClassicalEnrichment()
+    )
+    arcane.spellbook["Skills"]["Arcane Ritual"] = abilities.ArcaneRitual()
+
+    assert mage_mechanics.spell_potency_multiplier(
+        elemental, abilities.MagicMissile()
+    ) == 0.50
+    assert mage_mechanics.spell_potency_multiplier(
+        arcane, abilities.Firebolt()
+    ) == 0.50
+
+
+def test_targeted_passives_are_embedded_in_affected_spell_descriptions():
+    player = _player()
+    player.spellbook["Spells"]["Magic Missile"] = abilities.MagicMissile()
+    player.spellbook["Spells"]["Mirror Image"] = abilities.MirrorImage()
+    player.spellbook["Skills"]["Classical Force"] = abilities.ClassicalForce()
+    player.spellbook["Skills"]["Illusory Link"] = abilities.IllusoryLink()
+
+    presented_spells = presented_abilities(player, "Spells")
+    presented_skills = presented_abilities(player, "Skills")
+    by_name = {spell.name: spell for spell in presented_spells}
+
+    assert [modifier.name for modifier in by_name["Magic Missile"].presentation_modifications] == [
+        "Classical Force"
+    ]
+    assert [modifier.name for modifier in by_name["Mirror Image"].presentation_modifications] == [
+        "Illusory Link"
+    ]
+    assert presented_skills == []
+
+
+def test_arcane_fundamentals_boosts_critical_bonus_by_twenty_percent_only():
+    player = _player()
+    player.progression.purchased_node_ids.add(
+        "mage.talent.arcane-fundamentals"
+    )
+    magic_before = player.combat.magic
+
+    assert mage_mechanics.arcane_critical_multiplier(
+        player,
+        2.0,
+        abilities.MagicMissile(),
+    ) == 2.2
+    assert mage_mechanics.arcane_critical_multiplier(
+        player,
+        2.0,
+        abilities.ManaRupture(),
+    ) == 2.0
+    player.spellbook["Spells"]["Magic Missile"] = abilities.MagicMissile()
+    missile = presented_abilities(player, "Spells")[0]
+    assert [
+        modifier.name for modifier in missile.presentation_modifications
+    ] == ["Guidance Upgrade"]
+    assert player.combat.magic == magic_before
+
+
+def test_affinity_mastery_is_logged_when_the_cast_reaches_the_cap():
+    player = _player("Sorcerer")
+    player.wizard_affinity = wizard.default_affinity()
+    player.wizard_affinity_version = 2
+    player.wizard_affinity["Fire"] = 49
+
+    message = wizard.process_cast(player, abilities.Fireball())
+
+    assert player.wizard_affinity["Fire"] == 50
+    assert "mastered Fire affinity" in message
+
+
+def test_multiplicity_heals_for_each_duplicate_remaining_at_combat_end():
+    player = _player("Wizard")
+    player.health.current = 50
+    player.health.max = 200
+    player.spellbook["Skills"]["Multiplicity"] = abilities.Multiplicity()
+    duplicates = player.magic_effects["Duplicates"]
+    duplicates.active = True
+    duplicates.duration = 3
+
+    mage_mechanics.tick_combat_state(player, end=True)
+
+    assert player.health.current == 80
 
 
 def test_enhancements_proc_refresh_without_stacking():
@@ -185,7 +268,7 @@ def test_arcane_specialization_tracks_arcane_affinity_only():
     wizard.process_cast(player, abilities.MagicMissile())
 
     assert player.wizard_affinity["Fire"] == 0
-    assert player.wizard_affinity["Arcane"] == 2
+    assert player.wizard_affinity["Arcane"] == 1
 
 
 def test_binding_circle_and_summoner_talents_scale_permanent_summons():
@@ -326,7 +409,9 @@ def test_conjure_shackles_and_potion_apply_first_pass_rules(monkeypatch):
     } <= {"Health", "Mana"}
 
 
-def test_classical_force_halves_mana_shield_and_imbue_weapon_bonus(monkeypatch):
+def test_classical_force_reduces_mana_shield_and_imbue_weapon_by_twenty_five_percent(
+    monkeypatch,
+):
     attacker = _player("Warlock")
     defender = _player()
     defender.spellbook["Skills"]["Classical Force"] = abilities.ClassicalForce()
@@ -352,7 +437,131 @@ def test_classical_force_halves_mana_shield_and_imbue_weapon_bonus(monkeypatch):
     monkeypatch.setattr(defender, "weapon_damage", weapon_damage)
     defender.stats.intel = 30
     abilities.ImbueWeapon().use(defender, attacker)
-    assert recorded["dmg_mod"] == pytest.approx(1.5)
+    assert recorded["dmg_mod"] == pytest.approx(1.75)
+
+
+def test_force_multiplier_increases_arcane_cost_and_damage():
+    player = _player("Sorcerer")
+    player.spellbook["Skills"]["Force Multiplier"] = abilities.ForceMultiplier()
+    spell = abilities.MagicMissile2()
+
+    assert mage_mechanics.spell_mana_cost(player, spell) == 23
+    assert mage_mechanics.spell_damage_multiplier(player, spell) == pytest.approx(1.25)
+    mana_rupture = abilities.ManaRupture()
+    assert mage_mechanics.spell_mana_cost(player, mana_rupture) == 20
+    assert mage_mechanics.spell_damage_multiplier(player, mana_rupture) == 1.0
+
+
+def test_arcane_empowerment_builds_to_five_stacks_from_kinetic_explosion_hits():
+    player = _player("Sorcerer")
+    player.spellbook["Skills"]["Arcane Empowerment"] = abilities.ArcaneEmpowerment()
+
+    for _ in range(8):
+        mage_mechanics.record_spell_damage_hit(
+            player,
+            {"ability_name": "Kinetic Explosion", "attack_source": "spell"},
+        )
+
+    assert player.mage_enhancement_state["arcane_empowerment"] == 5
+    assert mage_mechanics.spell_damage_multiplier(
+        player,
+        abilities.Fireball(),
+    ) == pytest.approx(1.25)
+
+
+def test_fragmentation_shards_persist_until_detonation_cascade(monkeypatch):
+    player = _player("Wizard")
+    target = enemies.Goblin()
+    target.health.current = target.health.max = 1000
+    player.spellbook["Skills"]["Fragmentation"] = abilities.Fragmentation()
+    player.spellbook["Skills"]["Detonation Cascade"] = (
+        abilities.DetonationCascade()
+    )
+    player.spellbook["Skills"]["Arcane Empowerment"] = (
+        abilities.ArcaneEmpowerment()
+    )
+    player._combat_encounter = SimpleNamespace(
+        living_members=[SimpleNamespace(enemy=target)]
+    )
+    monkeypatch.setattr(mage_mechanics.random, "random", lambda: 0.0)
+
+    for _index in range(3):
+        mage_mechanics.record_spell_damage_hit(
+            player,
+            target,
+            {"ability_name": "Magic Missile III", "attack_source": "spell"},
+        )
+    assert player.mage_enhancement_state["arcane_crystal_shards"] == 3
+
+    message = mage_mechanics.process_cast(
+        player,
+        abilities.KineticExplosion(),
+        target,
+    )
+
+    assert "Detonation Cascade" in message
+    assert "arcane_crystal_shards" not in player.mage_enhancement_state
+    assert player.mage_enhancement_state["arcane_empowerment"] == 3
+
+
+def test_mana_rupture_modifiers_consume_empowerment_and_shards():
+    player = _player("Wizard")
+    target = enemies.Goblin()
+    target.mana.current = target.mana.max = 100
+    player.spellbook["Skills"]["Mana Leak"] = abilities.ManaLeak()
+    player.spellbook["Skills"]["Mana Splinters"] = abilities.ManaSplinters()
+    player.mage_enhancement_state = {
+        "arcane_empowerment": 3,
+        "arcane_crystal_shards": 4,
+    }
+    player._combat_encounter = SimpleNamespace(
+        living_members=[SimpleNamespace(enemy=target)]
+    )
+    player.mana.current = 0
+
+    message = mage_mechanics.resolve_mana_rupture(player, target)
+
+    assert "Mana Leak" in message
+    assert "Mana Splinters" in message
+    assert target.mana.current == 70
+    assert player.mana.current > 0
+    assert player.mage_enhancement_state == {}
+
+
+def test_mana_rupture_damage_scales_with_target_remaining_mana():
+    player = _player("Mage")
+    low_mana_target = enemies.Goblin()
+    high_mana_target = enemies.Goblin()
+    low_mana_target.mana.current = 10
+    high_mana_target.mana.current = 100
+    low_result = abilities.ManaRupture().cast(player, low_mana_target)
+    high_result = abilities.ManaRupture().cast(player, high_mana_target)
+
+    assert high_result.damage > low_result.damage
+
+
+def test_wizard_elemental_passives_do_not_disclose_cross_school_interactions():
+    passives = (
+        abilities.Inferno(),
+        abilities.Subzero(),
+        abilities.ElectricalBurns(),
+        abilities.DivineWind(),
+        abilities.UnrelentingWaves(),
+        abilities.Aftershock(),
+    )
+
+    assert all("synergy" not in passive.description.lower() for passive in passives)
+
+
+def test_refueling_restores_twenty_percent_of_maximum_mana_each_tick():
+    player = _player("Sorcerer")
+    player.mana.current = 10
+
+    assert "begins channeling" in abilities.Refueling().cast(player)
+    message = mage_mechanics.tick_combat_state(player)
+
+    assert player.mana.current == 42
+    assert "refuels 32 MP" in message
 
 
 def test_school_modifiers_are_separate_from_spell_descriptions_and_support_multiple():

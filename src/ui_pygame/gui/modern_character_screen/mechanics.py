@@ -479,23 +479,23 @@ class CharacterMechanicsMixin:
         schools = (
             ("Arcane",)
             if specialization == "Arcane"
-            else tuple(
-                school for school in wizard.AFFINITY_SCHOOLS if school != "Arcane"
-            )
+            else ("Fire", "Water", "Earth", "Ice", "Electric", "Wind")
         )
 
-        row_y = y
         spells = getattr(player_char, "spellbook", {}).get("Spells", {})
-        for school in schools:
+        if schools == ("Arcane",):
+            school = "Arcane"
             chain = wizard.SPELL_UPGRADES.get(school, ())
-            known = next((name for name in reversed(chain) if name in spells), chain[0] if chain else "None")
-            detail = f"{known}"
+            known = next(
+                (name for name in reversed(chain) if name in spells),
+                chain[0] if chain else "None",
+            )
             icon = get_ability_icon_manager().get_icon(
                 SCHOOL_AFFINITY_ICON_KEYS[school],
             )
             self.screen.blit(
                 icon,
-                icon.get_rect(left=left_rect.left, top=row_y + 2),
+                icon.get_rect(left=left_rect.left, top=y + 2),
             )
             row_rect = pygame.Rect(
                 left_rect.left + 42,
@@ -503,36 +503,110 @@ class CharacterMechanicsMixin:
                 left_rect.width - 42,
                 left_rect.height,
             )
-            row_y = self._draw_progress_row(
+            self._draw_progress_row(
                 row_rect,
                 school,
                 affinity.get(school, 0),
                 cap,
-                row_y,
-                detail=detail,
-            )
-            if row_y > left_rect.bottom - 40:
-                break
-
-        if class_name == "Wizard":
-            self._draw_key_values(
-                [
-                    ("Specialization", specialization or "Unselected"),
-                    ("Wizard Ring", self._ring_state_text(player_char, "Wizard")),
-                ],
-                right_rect,
                 y,
-                font=self.normal_font,
-                row_gap=8,
+                detail=known,
             )
         else:
-            self._draw_key_values(
-                [("Specialization", specialization or "Unselected")],
-                right_rect,
-                y,
-                font=self.normal_font,
-                row_gap=8,
+            elemental_schools = tuple(schools)
+            chart_rect = pygame.Rect(
+                self.details_rect.left + 36,
+                y + 8,
+                self.details_rect.width - 72,
+                self.details_rect.bottom - y - 32,
             )
+            center = (
+                chart_rect.centerx,
+                chart_rect.centery,
+            )
+            radius = min(
+                210,
+                max(120, (chart_rect.height - 118) // 2),
+                max(120, (chart_rect.width - 260) // 2),
+            )
+            angles = [
+                (-math.pi / 2) + (index * math.tau / len(elemental_schools))
+                for index in range(len(elemental_schools))
+            ]
+
+            def chart_points(scale: float) -> list[tuple[int, int]]:
+                return [
+                    (
+                        round(center[0] + math.cos(angle) * radius * scale),
+                        round(center[1] + math.sin(angle) * radius * scale),
+                    )
+                    for angle in angles
+                ]
+
+            for scale in (0.25, 0.50, 0.75, 1.0):
+                points = chart_points(scale)
+                for index, start in enumerate(points):
+                    pygame.draw.line(
+                        self.screen,
+                        self.colors.GRAY,
+                        start,
+                        points[(index + 1) % len(points)],
+                        1,
+                    )
+            for endpoint in chart_points(1.0):
+                pygame.draw.line(
+                    self.screen,
+                    self.colors.GRAY,
+                    center,
+                    endpoint,
+                    1,
+                )
+
+            affinity_points = []
+            for school, angle in zip(elemental_schools, angles):
+                scale = max(0.0, min(1.0, float(affinity.get(school, 0)) / cap))
+                affinity_points.append((
+                    round(center[0] + math.cos(angle) * radius * scale),
+                    round(center[1] + math.sin(angle) * radius * scale),
+                ))
+            overlay = pygame.Surface(
+                (chart_rect.width, chart_rect.height),
+                pygame.SRCALPHA,
+            )
+            local_points = [
+                (point[0] - chart_rect.left, point[1] - chart_rect.top)
+                for point in affinity_points
+            ]
+            pygame.draw.polygon(overlay, (*self.colors.GOLD[:3], 70), local_points)
+            pygame.draw.polygon(overlay, self.colors.GOLD, local_points, 2)
+            self.screen.blit(overlay, chart_rect.topleft)
+
+            for school, angle in zip(elemental_schools, angles):
+                label_radius = radius + (
+                    30 if abs(math.sin(angle)) > 0.8 else 48
+                )
+                anchor_x = round(center[0] + math.cos(angle) * label_radius)
+                anchor_y = round(center[1] + math.sin(angle) * label_radius)
+                icon = get_ability_icon_manager().get_icon(
+                    SCHOOL_AFFINITY_ICON_KEYS[school],
+                )
+                icon_rect = icon.get_rect(center=(anchor_x, anchor_y - 12))
+                self.screen.blit(icon, icon_rect)
+                label_width = 150
+                label_x = max(
+                    chart_rect.left,
+                    min(
+                        chart_rect.right - label_width,
+                        anchor_x - label_width // 2,
+                    ),
+                )
+                self._draw_text(
+                    f"{affinity.get(school, 0):g}/{cap:g}",
+                    self.small_font,
+                    self.colors.GRAY,
+                    label_x,
+                    anchor_y + 8,
+                    label_width,
+                )
 
     def _draw_contracts_tab(self, player_char, y: int) -> None:
         self.class_companion_selector_active = False
@@ -546,7 +620,7 @@ class CharacterMechanicsMixin:
         unlocked = list(state.get("unlocked_contracts", []))
         echo = state.get("imprisoned_familiar") or {}
 
-        row_y = self._draw_progress_row(left_rect, "Corruption", corruption, 100, y, detail=f"Tier {demonologist.corruption_tier(player_char)}", color=self.colors.RED)
+        row_y = self._draw_progress_row(left_rect, "Bargain Taint", corruption, 100, y, detail=f"Tier {demonologist.corruption_tier(player_char)}", color=self.colors.RED)
         rows = [
             ("Crypt", "Unlocked" if state.get("crypt_unlocked") else "Hidden"),
             ("Active Patron", patron),

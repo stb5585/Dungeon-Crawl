@@ -128,7 +128,7 @@ class LevelUpScreen:
             "skill_upgrades": [],
         }
 
-        # The point service above owns all current leveling behavior.
+        # The point service above owns all current leveling behavior. TODO: cleanup
         from src.core import abilities
         
         dv = max(1, 5 - player_char.check_mod('luck', luck_factor=8))
@@ -371,7 +371,7 @@ class LevelUpScreen:
             ('Dexterity', player_char.stats.dex)
         ]
         
-        # Show popup to select stat
+        # Show popup to select stat  TODO: fix missing import or delete
         popup = StatSelectionPopup(self.presenter, stat_options)
         selected_stat = popup.show(
             background_draw_func=lambda: self._draw_level_up_background(player_char),

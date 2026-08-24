@@ -24,6 +24,103 @@ from .base import (
 
 
 # Level 3
+class Acolyte(Humanoid):
+    """Early holy spellcaster with healing and countermagic."""
+
+    def __init__(self):
+        super().__init__(name="Acolyte", health=random.randint(34, 46), mana=90,
+                         strength=9, intel=22, wisdom=24, con=13, charisma=18,
+                         dex=12, attack=12, defense=18, magic=28, magic_def=25,
+                         exp=random.randint(145, 210))
+        self.equipment = {
+            "Weapon": items.Kukri(), "Armor": items.WizardRobe(),
+            "OffHand": items.TomeKnowledge(), "Ring": items.NoRing(),
+            "Pendant": items.NoPendant(),
+        }
+        self.gold = random.randint(28, 48)
+        self.spellbook = {
+            "Spells": {"Holy": abilities.Holy(), "Heal": abilities.Heal()},
+            "Skills": {"Counterspell": abilities.Counterspell()},
+        }
+        self.action_stack = [
+            {"ability": "Holy", "priority": ActionPriority.NORMAL},
+            {"ability": "Heal", "priority": ActionPriority.NORMAL,
+             "priority_if": [{"condition": "self_hp_pct_lt", "value": 55,
+                              "priority": ActionPriority.HIGH}]},
+            {"ability": "Counterspell", "priority": ActionPriority.NORMAL},
+        ]
+        self.level.pro_level = 2
+        self.picture = "disciple.txt"
+
+
+class WarTurtle(Animal):
+    """Spiked turtle that can retreat into a destructible shell."""
+
+    def __init__(self):
+        super().__init__(name="War Turtle", health=random.randint(66, 84), mana=55,
+                         strength=23, intel=9, wisdom=17, con=30, charisma=8,
+                         dex=7, attack=25, defense=38, magic=14, magic_def=28,
+                         exp=random.randint(225, 310))
+        self.equipment = {
+            "Weapon": items.Bite2(), "Armor": items.AnimalHide(),
+            "OffHand": items.NoOffHand(), "Ring": items.NoRing(),
+            "Pendant": items.NoPendant(),
+        }
+        self.gold = random.randint(36, 60)
+        self.spellbook = {
+            "Spells": {"Reflect": abilities.Reflect()},
+            "Skills": {"Headbutt": abilities.Headbutt(), "Retract": abilities.Retract()},
+        }
+        self.resistance.update({
+            "Water": 0.75, "Poison": 0.25, "Physical": 0.50, "Electric": -0.50,
+        })
+        self.action_stack = [
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
+            {"ability": "Headbutt", "priority": ActionPriority.NORMAL},
+            {"ability": "Reflect", "priority": ActionPriority.NORMAL},
+            {"ability": "Retract", "priority": ActionPriority.LOW,
+             "priority_if": [{"condition": "self_hp_pct_lt", "value": 40,
+                              "priority": ActionPriority.HIGH}]},
+        ]
+        self.single_use_abilities = {"Retract"}
+        self.level.pro_level = 3
+        self.picture = "battletoad.txt"
+
+
+class WaywardPriest(Humanoid):
+    """Dungeon healer whose Holy magic destabilizes its victims."""
+
+    def __init__(self):
+        super().__init__(name="Wayward Priest", health=random.randint(48, 64), mana=125,
+                         strength=11, intel=25, wisdom=29, con=17, charisma=25,
+                         dex=13, attack=14, defense=22, magic=36, magic_def=34,
+                         exp=random.randint(245, 335))
+        self.equipment = {
+            "Weapon": items.HolyStaff(), "Armor": items.WizardRobe(),
+            "OffHand": items.NoOffHand(), "Ring": items.NoRing(),
+            "Pendant": items.NoPendant(),
+        }
+        self.gold = random.randint(48, 76)
+        self.spellbook = {
+            "Spells": {
+                "Heal II": abilities.Heal2(), "Cleanse": abilities.Cleanse(),
+                "Resist Shadow": abilities.ResistShadow(), "Holy II": abilities.Holy2(),
+            },
+            "Skills": {"Dazed or Confused": abilities.DazedOrConfused()},
+        }
+        self.resistance.update({"Holy": 0.25, "Shadow": -0.25})
+        self.action_stack = [
+            {"ability": "Holy II", "priority": ActionPriority.NORMAL},
+            {"ability": "Heal II", "priority": ActionPriority.NORMAL,
+             "priority_if": [{"condition": "self_hp_pct_lt", "value": 60,
+                              "priority": ActionPriority.HIGH}]},
+            {"ability": "Cleanse", "priority": ActionPriority.NORMAL},
+            {"ability": "Resist Shadow", "priority": ActionPriority.NORMAL},
+        ]
+        self.level.pro_level = 3
+        self.picture = "disciple.txt"
+
+
 class Direbear(Animal):
 
     def __init__(self):
@@ -68,16 +165,58 @@ class Giant(Humanoid):
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
         self.gold = random.randint(55, 85)
         self.spellbook = {"Spells": {},
-                          "Skills": {'Stomp': abilities.Stomp(),
-                                     'Charge': abilities.Charge()}}
-        self.resistance['Physical'] = 0.25
+                          "Skills": {'Charge': abilities.Charge(),
+                                     'Mortal Strike': abilities.MortalStrike(),
+                                     'Dishearten': abilities.Dishearten()}}
+        self.resistance.update({
+            "Fire": -0.25, "Ice": -0.25, "Electric": -0.25,
+            "Water": -0.25, "Earth": -0.25, "Wind": -0.25,
+            "Holy": -0.50, "Shadow": -0.20,
+            "Poison": 0.50, "Physical": 0.25,
+        })
         self.action_stack = [
             {"ability": "Attack", "priority": ActionPriority.NORMAL},
-            {"ability": "Stomp", "priority": ActionPriority.NORMAL},
-            {"ability": "Charge", "priority": ActionPriority.NORMAL}
+            {"ability": "Charge", "priority": ActionPriority.NORMAL},
+            {"ability": "Mortal Strike", "priority": ActionPriority.NORMAL},
+            {"ability": "Dishearten", "priority": ActionPriority.NORMAL},
         ]
-        self.level.pro_level = 3
+        self.level.pro_level = 4
         self.picture = "giant.txt"
+
+
+class Unicorn(Fey):
+    """Dangerous holy fey that heals from radiant magic."""
+
+    def __init__(self):
+        super().__init__(name="Unicorn", health=random.randint(92, 118), mana=165,
+                         strength=28, intel=27, wisdom=32, con=27, charisma=34,
+                         dex=28, attack=38, defense=40, magic=47, magic_def=46,
+                         exp=random.randint(440, 575))
+        self.equipment = {
+            "Weapon": items.UnicornHorn(), "Armor": items.AnimalHide(),
+            "OffHand": items.NoOffHand(), "Ring": items.NoRing(),
+            "Pendant": items.NoPendant(),
+        }
+        self.gold = random.randint(85, 130)
+        self.spellbook = {
+            "Spells": {"Holy III": abilities.Holy3(), "Regen III": abilities.Regen3()},
+            "Skills": {"Stomp": abilities.Stomp(), "Gore": abilities.Gore()},
+        }
+        self.resistance.update({
+            "Holy": 1.50, "Shadow": -0.25, "Poison": 1.0, "Physical": 0.25,
+        })
+        self.status_immunity = ["Poison"]
+        self.action_stack = [
+            {"ability": "Attack", "priority": ActionPriority.NORMAL},
+            {"ability": "Holy III", "priority": ActionPriority.NORMAL},
+            {"ability": "Regen III", "priority": ActionPriority.NORMAL,
+             "priority_if": [{"condition": "self_hp_pct_lt", "value": 65,
+                              "priority": ActionPriority.HIGH}]},
+            {"ability": "Stomp", "priority": ActionPriority.NORMAL},
+            {"ability": "Gore", "priority": ActionPriority.NORMAL},
+        ]
+        self.level.pro_level = 5
+        self.picture = "unicorn.txt"
 
 
 class Owlbear(Monster):
@@ -195,12 +334,14 @@ class BlackSlime(Slime):
         self.inventory['Fungus Spore'] = [items.FungusSpore]
         self.spellbook = {'Spells': {'Shadow Bolt': abilities.ShadowBolt(),
                                      'Corruption': abilities.Corruption(),
+                                     'Curse of Umbra': abilities.CurseUmbra(),
                                      'Stupefy': abilities.Stupefy()},
                           'Skills': {}}
         self.action_stack = [
             {"ability": "Attack", "priority": ActionPriority.LOW},
             {"ability": "Shadow Bolt", "priority": ActionPriority.NORMAL},
             {"ability": "Corruption", "priority": ActionPriority.NORMAL},
+            {"ability": "Curse of Umbra", "priority": ActionPriority.NORMAL},
             {"ability": "Stupefy", "priority": ActionPriority.NORMAL}
         ]
         self.level.pro_level = 3
@@ -301,13 +442,13 @@ class EvilCrusader(Humanoid):
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
         self.gold = random.randint(65, 90)
         self.inventory['Scrap Metal'] = [items.ScrapMetal]
-        self.spellbook = {"Spells": {'Smite': abilities.Smite(),
+        self.spellbook = {"Spells": {'Smite': abilities.Smite2(),
                                      'Bless': abilities.Bless()},
                           "Skills": {'Shield Slam': abilities.ShieldSlam(),
                                      'Shield Block': abilities.ShieldBlock(),
                                      "Goad": abilities.Goad()}}
-        self.resistance['Shadow'] = 0.5
-        self.resistance['Holy'] = -0.5
+        self.resistance['Shadow'] = -0.5
+        self.resistance['Holy'] = 0.5
         self.action_stack = [
             {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Shield Slam", "priority": ActionPriority.NORMAL},
@@ -630,6 +771,7 @@ class Wendigo(Fey):
         self.inventory['Old Key'] = [items.OldKey]
         self.spellbook = {"Spells": {"Regen": abilities.Regen2(),
                                      'Terrify': abilities.Terrify(),
+                                     'Curse of Frailty': abilities.CurseFrailty(),
                                      "Berserk": abilities.Berserk()},
                           "Skills": {'Double Strike': abilities.DoubleStrike(),
                                      'Crushing Blow': abilities.CrushingBlow()}}
@@ -642,6 +784,7 @@ class Wendigo(Fey):
             {"ability": "Double Strike", "priority": ActionPriority.NORMAL},
             {"ability": "Crushing Blow", "priority": ActionPriority.NORMAL},
             {"ability": "Terrify", "priority": ActionPriority.NORMAL},
+            {"ability": "Curse of Frailty", "priority": ActionPriority.NORMAL},
             {"ability": "Berserk", "priority": ActionPriority.NORMAL},
             {"ability": "Regen", "priority": ActionPriority.NORMAL, "priority_if": [
                 {"condition": "self_hp_pct_lt", "value": 50, "priority": ActionPriority.HIGH},
@@ -710,21 +853,14 @@ class Necromancer(Humanoid):
         self.spellbook = {"Spells": {'Raise Dead': abilities.RaiseUndeadAlly(),
                                      'Shadow Bolt': abilities.ShadowBolt(),
                                      'Enfeeble': abilities.Enfeeble(),
-                                     'Inflate Health': abilities.InflateHealth()},
-                          "Skills": {"Mana Shield": abilities.ManaShield()}}
+                                     'Curse of Polydipsia': abilities.CursePolydipsia()},
+                          "Skills": {}}
         self.action_stack = [
             {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Raise Dead", "priority": ActionPriority.HIGH},
             {"ability": "Shadow Bolt", "priority": ActionPriority.NORMAL},
             {"ability": "Enfeeble", "priority": ActionPriority.NORMAL},
-            {"ability": "Inflate Health", "priority": ActionPriority.LOW,
-             "priority_if": {"self_hp_pct_lt": 0.5,
-                             "priority": ActionPriority.HIGH,
-                             "else": ActionPriority.LOW}},
-            {"ability": "Mana Shield", "priority": ActionPriority.HIGH,
-             "priority_if": {"self_mana_pct_lt": 0.25,
-                              "priority": ActionPriority.SKIP,
-                              "else": ActionPriority.HIGH}}
+            {"ability": "Curse of Polydipsia", "priority": ActionPriority.HIGH}
         ]
         self.single_use_abilities = {"Raise Dead"}
         self.level.pro_level = 4
@@ -912,6 +1048,57 @@ class Myrmidon(Elemental):
         self.status_immunity = ["Poison"]
         self.level.pro_level = 4
         self.picture = "myrmidon.txt"
+
+
+class FlameWisp(Elemental):
+    """A volatile fire spirit found only along supernatural fire paths."""
+
+    def __init__(self):
+        super().__init__(
+            name="Flame Wisp",
+            health=random.randint(115, 155),
+            mana=120,
+            strength=8,
+            intel=30,
+            wisdom=22,
+            con=14,
+            charisma=18,
+            dex=28,
+            attack=38,
+            defense=42,
+            magic=66,
+            magic_def=54,
+            exp=random.randint(850, 1150),
+        )
+        self.equipment = {
+            "Weapon": items.NoWeapon(),
+            "Armor": items.NoArmor(),
+            "OffHand": items.NoOffHand(),
+            "Ring": items.NoRing(),
+            "Pendant": items.NoPendant(),
+        }
+        self.gold = random.randint(175, 260)
+        self.inventory["Elemental Mote"] = [items.ElementalMote]
+        self.spellbook = {
+            "Spells": {
+                "Fireball": abilities.Fireball(),
+                "Scorch": abilities.Scorch(),
+            },
+            "Skills": {},
+        }
+        # Resistance values above 1 convert part of incoming damage into healing.
+        self.resistance["Fire"] = 1.5
+        self.resistance["Ice"] = -0.5
+        self.resistance["Water"] = -0.5
+        self.resistance["Poison"] = 1.0
+        self.status_immunity = ["Poison"]
+        self.action_stack = [
+            {"ability": "Fireball", "priority": ActionPriority.NORMAL},
+            {"ability": "Scorch", "priority": ActionPriority.NORMAL},
+            {"ability": "Attack", "priority": ActionPriority.LOW},
+        ]
+        self.level.pro_level = 5
+        self.picture = "flame_wisp.txt"
 
 
 class FireMyrmidon(Myrmidon):

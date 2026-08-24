@@ -873,6 +873,12 @@ class CombatLifecycleMixin:
             if not selected_skill:
                 return None
             choice = selected_skill
+            if selected_skill == "Weapon Swap":
+                skill_obj = actor.spellbook.get("Skills", {}).get(selected_skill)
+                selected_weapon = self._select_combat_weapon(actor, enemy, skill_obj)
+                if selected_weapon is None:
+                    return None
+                skill_obj.selected_weapon = selected_weapon
             if selected_skill == "Call Contract":
                 intent = self._select_contract_intent(player_char, enemy)
                 if not intent:

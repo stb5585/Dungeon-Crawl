@@ -125,11 +125,11 @@ def status_summary_rows(character: Any) -> list[tuple[str, str]]:
     if cls == "Shadowcaster":
         data = _class_ring_data(character, "Shadowcaster")
         debt = int(data.get("debt", 0) or 0)
-        rows.append(("Umbral Debt", _meter_hint(debt, shadowcaster_debt_cap(character), ready="Eclipse ready")))
+        rows.append(("Umbral Debt", _meter_hint(debt, shadowcaster_debt_cap(character), ready="Shade ready")))
         rows.append(("Backlash", str(int(data.get('backlash', 0) or 0))))
         eclipse = int(data.get("eclipse_turns", 0) or 0)
         if eclipse:
-            rows.append(("Eclipse", f"{eclipse} turn(s)"))
+            rows.append(("Shade of Ahool", f"{eclipse} turn(s)"))
     if cls in {"Spellblade", "Knight Enchanter"}:
         charge = state.get('blade_charge')
         if isinstance(charge, dict):

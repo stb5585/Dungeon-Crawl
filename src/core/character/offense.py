@@ -211,6 +211,8 @@ class CharacterOffenseMixin:
         crit_chance += ability_mechanics.drunken_brawler_crit_bonus(self)
         crit_chance += ability_mechanics.tricksters_gambit_crit_bonus(self)
         crit_chance += ability_mechanics.duelist_critical_bonus(self)
+        if getattr(self, "shade_of_ahool_turns", 0) > 0:
+            crit_chance += 0.20
         berserk = self.status_effects.get("Berserk")
         if (
             berserk is not None

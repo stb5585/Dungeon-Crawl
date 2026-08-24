@@ -5,6 +5,8 @@ from __future__ import annotations
 import random
 from typing import TYPE_CHECKING
 
+from ..combat.combat_result import CombatResult, CombatResultGroup
+from ..combat.targeting import TargetLossPolicy, TargetScope
 from .base import (
     Class,
     Defensive,
@@ -522,8 +524,6 @@ class Frenzy(Skill):
 class RecklessOnslaught(Skill):
     """Trade mounting defense for offense with a parry vulnerability."""
 
-    replaces = "Final Assault"
-
     def __init__(self):
         super().__init__(
             "Reckless Onslaught",
@@ -618,6 +618,280 @@ class HemorrhageThirst(_PassiveSkill):
                 "causes two turns of unconsciousness."
             ),
         )
+
+
+class Fatality(Skill):
+    """Risk an immediate counterattack to attempt a lethal weapon strike."""
+
+    def __init__(self):
+        super().__init__(
+            "Fatality",
+            (
+                "Attempt to finish the enemy with double weapon damage. If the "
+                "enemy survives, they immediately parry and counterattack. If "
+                "the enemy dies, restore 15% of your maximum health."
+            ),
+            weapon=True,
+        )
+        self.cost = 16
+        self.subtyp = "Offensive"
+
+    def use(self, user, target=None, **kwargs):
+        result = super().use(user, target, **kwargs)
+        if target is None:
+            result.message = "Fatality needs a target.\n"
+            return result
+        if user.mana.current < self.cost:
+            result.message = f"{user.name} does not have enough mana to use Fatality.\n"
+            return result
+        if getattr(user.equipment.get("Weapon"), "typ", None) != "Weapon":
+            result.message = f"{user.name} needs a main-hand weapon to use Fatality.\n"
+            return result
+
+        user.mana.current -= self.cost
+        before = int(target.health.current)
+        message, hit, crit = user.weapon_damage(
+            target,
+            dmg_mod=2.0,
+            use_offhand=False,
+            attack_slots=("Weapon",),
+        )
+        result.hit = hit
+        result.crit = crit if crit > 1 else None
+        result.damage = max(0, before - int(target.health.current))
+        if target.is_alive():
+            user._last_attack_parried = True
+            message += (
+                f"{target.name} survives Fatality, parries {user.name}, "
+                "and counterattacks!\n"
+            )
+            counter_message, _counter_hit, _counter_crit = target.weapon_damage(
+                user,
+                use_offhand=False,
+            )
+            message += counter_message
+        else:
+            healing = min(
+                max(0, int(user.health.max) - int(user.health.current)),
+                max(1, int(user.health.max * 0.15)),
+            )
+            user.health.current += healing
+            user._emit_healing_event(healing, source=self.name)
+            if healing:
+                message += f"{user.name} recovers {healing} health from the fatal blow.\n"
+        result.message = message
+        return result
+
+
+class ComposedWrath(_PassiveSkill):
+    """Retain tactical control while Frenzy is active."""
+
+    def __init__(self):
+        super().__init__(
+            "Composed Wrath",
+            "Passive: You can Attack or use Skills while under the effects of Frenzy.",
+        )
+
+
+class TectonicRift(Skill):
+    """Crash two heavy weapons down to rupture the entire battlefield."""
+
+    def __init__(self):
+        super().__init__(
+            "Tectonic Rift",
+            "Slam both two-handed weapons into the ground, dealing massive Earth "
+            "damage to all enemies and knocking grounded enemies prone. Flying "
+            "enemies take partial damage from debris.",
+            weapon=True,
+        )
+        self.cost = 24
+        self.subtyp = "Offensive"
+        self.target_scope = TargetScope.ALL_ENEMIES
+        self.target_loss_policy = TargetLossPolicy.SNAPSHOT_ROSTER
+
+    @staticmethod
+    def _has_two_heavy_weapons(user) -> bool:
+        return all(
+            getattr(user.equipment.get(slot), "typ", None) == "Weapon"
+            and int(getattr(user.equipment.get(slot), "handed", 0) or 0) == 2
+            for slot in ("Weapon", "OffHand")
+        )
+
+    def is_available(self, user, target=None):
+        del target
+        return self._has_two_heavy_weapons(user)
+
+    def use_group(self, user, targets, *, battle_engine, rng=None):
+        del rng
+        group = CombatResultGroup(
+            action=self.name,
+            actor_id=battle_engine.current_actor_id,
+            target_scope=TargetScope.ALL_ENEMIES,
+            target_ids=tuple(target_id for target_id, _target in targets),
+        )
+        if not self._has_two_heavy_weapons(user):
+            group.message = "Tectonic Rift requires two two-handed weapons.\n"
+            return group
+        user.mana.current -= self.cost
+        for target_id, target in targets:
+            raw_damage = max(
+                1,
+                int(
+                    user.check_mod("weapon", enemy=target)
+                    + user.check_mod("offhand", enemy=target)
+                ),
+            )
+            if getattr(target, "flying", False):
+                raw_damage = max(1, raw_damage // 2)
+            _hit, message, damage = target.damage_reduction(
+                raw_damage,
+                user,
+                typ="Earth",
+            )
+            target.health.current -= damage
+            user._emit_damage_event(
+                target,
+                damage,
+                damage_type="Earth",
+                ability_name=self.name,
+                attack_source="skill",
+                source="skill",
+            )
+            if not getattr(target, "flying", False) and not target.has_status_protection("Prone"):
+                prone = target.physical_effects["Prone"]
+                prone.active = True
+                prone.duration = max(2, int(prone.duration or 0))
+                prone.source = self.name
+                message += f"{target.name} is knocked prone by the rupture.\n"
+            group.add(CombatResult(
+                action=self.name,
+                actor=user,
+                target=target,
+                hit=damage > 0,
+                damage=damage,
+                message=message,
+                actor_id=battle_engine.current_actor_id,
+                target_id=target_id,
+            ))
+        return group
+
+
+class ThunderousVault(Skill):
+    """Vault into a two-weapon strike that releases an electrical field."""
+
+    def __init__(self):
+        super().__init__(
+            "Thunderous Vault",
+            "Leap at an enemy and strike with both weapons in midair, releasing "
+            "an expanding electrical field on landing that may stun enemies.",
+            weapon=True,
+        )
+        self.cost = 18
+        self.subtyp = "Offensive"
+
+    def is_available(self, user, target=None):
+        del target
+        return TectonicRift._has_two_heavy_weapons(user)
+
+    def use(self, user, target=None, **kwargs):
+        del kwargs
+        result = self._reset_result(actor=user, target=target)
+        if target is None:
+            result.message = "Thunderous Vault needs a target.\n"
+            return result
+        if not TectonicRift._has_two_heavy_weapons(user):
+            result.message = "Thunderous Vault requires two two-handed weapons.\n"
+            return result
+        if user.mana.current < self.cost:
+            result.message = f"{user.name} does not have enough mana to vault.\n"
+            return result
+        user.mana.current -= self.cost
+        message = ""
+        total_damage = 0
+        for slot in ("Weapon", "OffHand"):
+            before = int(target.health.current)
+            attack_text, hit, _crit = user.weapon_damage(
+                target,
+                dmg_mod=1.0,
+                use_offhand=(slot == "OffHand"),
+                attack_slots=(slot,),
+            )
+            message += attack_text
+            if hit:
+                total_damage += max(0, before - int(target.health.current))
+        encounter = getattr(user, "_combat_encounter", None)
+        field_targets = [
+            member.enemy
+            for member in getattr(encounter, "living_members", ())
+        ] or [target]
+        for enemy in field_targets:
+            raw = max(1, int(user.stats.strength * 0.75))
+            _hit, field_message, damage = enemy.damage_reduction(
+                raw,
+                user,
+                typ="Electric",
+            )
+            enemy.health.current -= damage
+            total_damage += max(0, damage)
+            message += field_message
+            if random.random() < 0.25 and enemy.apply_stun(
+                2,
+                source=self.name,
+                applier=user,
+            ):
+                message += f"{enemy.name} is stunned by the electrical field.\n"
+            user._emit_damage_event(
+                enemy,
+                damage,
+                damage_type="Electric",
+                ability_name=self.name,
+                attack_source="skill",
+                source="skill",
+            )
+        result.hit = total_damage > 0
+        result.damage = total_damage
+        result.message = message
+        return result
+
+
+class WeaponSwap(Skill):
+    """Equip a different carried weapon without leaving combat."""
+
+    def __init__(self):
+        super().__init__(
+            "Weapon Swap",
+            "Change to a different weapon during combat.",
+        )
+        self.selected_weapon = None
+
+    def available_weapons(self, user):
+        current = user.equipment.get("Weapon")
+        return [
+            item
+            for stack in getattr(user, "inventory", {}).values()
+            for item in stack
+            if getattr(item, "typ", None) == "Weapon"
+            and getattr(item, "name", None) != getattr(current, "name", None)
+            and user.can_equip_item(item, "Weapon")
+        ]
+
+    def is_available(self, user, target=None):
+        del target
+        return bool(self.available_weapons(user))
+
+    def use(self, user, target=None, **kwargs):
+        del target
+        weapon = kwargs.get("weapon") or self.selected_weapon
+        self.selected_weapon = None
+        choices = self.available_weapons(user)
+        if weapon is None and choices:
+            weapon = choices[0]
+        if weapon not in choices:
+            return "There is no different weapon available to equip.\n"
+        old_name = user.equipment["Weapon"].name
+        if not user.equip("Weapon", weapon):
+            return f"{user.name} cannot equip {weapon.name}.\n"
+        return f"{user.name} swaps {old_name} for {weapon.name}.\n"
 
 
 class BoomerangToss(_PassiveSkill):

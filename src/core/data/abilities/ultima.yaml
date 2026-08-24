@@ -1,8 +1,10 @@
-name: Ultima
-type: Spell
+name: Photon Sphere
+type: MagicMissile
 subtype: Non-elemental
-description: Envelopes the enemy in a magical void, dealing massive non-elemental damage.
-cost: 35
-damage_mod: 2.0
+description: Collapse a sphere of light across every enemy, striking each target repeatedly with non-elemental damage.
+cost: 150
+damage_mod: 1.5
 crit: 4
-rank: 2
+rank: 3
+missiles: 4
+target_scope: all_enemies

@@ -28,6 +28,27 @@ def _node():
     )
 
 
+def test_draw_all_accepts_player_from_shared_popup_contract():
+    screen = progression_screen.ProgressionScreen.__new__(
+        progression_screen.ProgressionScreen
+    )
+    player = object()
+    screen.width = 1024
+    screen.height = 768
+    screen.colors = SimpleNamespace(GRAY=(128, 128, 128))
+    screen.screen = SimpleNamespace(blit=lambda *_args: None)
+    screen.small_font = SimpleNamespace(render=lambda *_args: object())
+    screen.draw_background = lambda: None
+    screen._draw_header = lambda: None
+    screen._draw_tree = lambda _rect: None
+    screen._draw_attributes = lambda _rect: None
+    screen._draw_details = lambda _rect: None
+
+    screen.draw_all(player, do_flip=False)
+
+    assert screen.player_char is player
+
+
 def test_blocked_node_selection_does_not_stage_or_open_popup(monkeypatch):
     screen = progression_screen.ProgressionScreen.__new__(
         progression_screen.ProgressionScreen
@@ -622,6 +643,42 @@ def test_authored_cross_connector_uses_manifest_channel(monkeypatch):
     assert line_points[0][2][0] == expected_channel_x
 
 
+def test_familiar_bond_connector_joins_both_node_side_midpoints(monkeypatch):
+    source = progression_screen.TREE_NODES["warlock.ability.familiar-bond"]
+    target = progression_screen.TREE_NODES["warlock.ability.familiar-bond-2"]
+    screen = progression_screen.ProgressionScreen.__new__(
+        progression_screen.ProgressionScreen
+    )
+    screen.screen = object()
+    source_rect = pygame.Rect(600, 100, 32, 32)
+    target_rect = pygame.Rect(600, 400, 32, 32)
+    screen.node_icon_rects = [source_rect, target_rect]
+    screen._tree_viewport = pygame.Rect(0, 0, 800, 600)
+    screen._tree_column_origin = 40
+    screen._tree_lane_width = 110
+    line_points = []
+    monkeypatch.setattr(
+        progression_screen.pygame.draw,
+        "lines",
+        lambda _screen, _color, _closed, points, _width: line_points.append(points),
+    )
+
+    screen._draw_connectors([
+        NodeStatus(source, NodeState.AVAILABLE),
+        NodeStatus(target, NodeState.BLOCKED),
+    ])
+
+    expected_channel_x = int(40 + 5.5 * 110)
+    assert line_points == [
+        (
+            source_rect.midright,
+            (expected_channel_x, source_rect.centery),
+            (expected_channel_x, target_rect.centery),
+            target_rect.midright,
+        ),
+    ]
+
+
 @pytest.mark.parametrize(
     ("source_id", "target_id", "channel_column"),
     (
@@ -631,7 +688,7 @@ def test_authored_cross_connector_uses_manifest_channel(monkeypatch):
             0.5,
         ),
         (
-            "mage.talent.arcane-fundamentals",
+            "mage.ability.mana-rupture",
             "mage.ability.arcane-tradition",
             1.5,
         ),

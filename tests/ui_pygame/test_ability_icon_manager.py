@@ -9,7 +9,8 @@ from src.ui_pygame.assets.ability_icon_manager import AbilityIconManager
 def test_ability_icon_manifest_covers_every_semantic_key():
     manager = AbilityIconManager()
 
-    assert set(manager.frames) == set(ABILITY_ICON_KEYS)
+    assert set(manager.frames) == set(ABILITY_ICON_KEYS) - {"unknown"}
+    assert manager.get_icon("unknown").get_size() == (32, 32)
 
 
 def test_ability_icon_frames_fit_inside_atlas():

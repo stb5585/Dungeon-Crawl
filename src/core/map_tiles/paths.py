@@ -231,10 +231,13 @@ class CavePath(MapTile):
         self.adjacent_visited(game.player_char)
         if self.z == REALM_OF_CAMBION_LEVEL:
             reveal_cambion_code_clue(game.player_char, (self.x, self.y, self.z))
-        if game.player_char.cls in ['Warlock', 'Shadowcaster']:
-            if game.player_char.familiar.race == 'Jinkin' and game.player_char.familiar.pro_level == 3:
+        class_name = getattr(getattr(game.player_char, "cls", None), "name", "")
+        familiar = getattr(game.player_char, "familiar", None)
+        if class_name in ['Warlock', 'Shadowcaster', 'Demonologist'] and familiar is not None:
+            if familiar.race == 'Jinkin' and familiar.level.pro_level == 3:
                 if not random.randint(0, int(20 - game.player_char.check_mod('luck', luck_factor=10))):
-                    rand_item = items.random_item(self.z)
+                    bonus = int("Master Locator" in game.player_char.spellbook.get("Skills", {}))
+                    rand_item = items.random_item(self.z + bonus)()
                     game.player_char.modify_inventory(rand_item, 1)
         # Scale random encounter rate down if player greatly outlevels the area
         try:
@@ -561,6 +564,11 @@ class SandwormLair(EmptyCavePath):
 
 
 class FirePath(EmptyCavePath):
+
+    def enter_combat(self, player_char):
+        """Begin the FirePath-exclusive Flame Wisp encounter."""
+        self.enemy = enemies.FlameWisp()
+        player_char.state = "fight"
 
     def modify_player(self, game):
         super().modify_player(game)

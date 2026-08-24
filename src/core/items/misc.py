@@ -109,6 +109,44 @@ class RealityFragment(Misc):
         )
 
 
+class SoulGem(Misc):
+    """A captured soul offered to improve a Demonologist contract."""
+
+    def __init__(self):
+        super().__init__(
+            name="Soul Gem",
+            description="A crystallized soul used to barter for stronger fiend-contract outcomes.",
+            value=5000,
+            rarity=0,
+            subtyp="Reagent",
+        )
+
+
+class WaterBladder(Misc):
+    """Reusable water container that counters magical thirst."""
+
+    def __init__(self, charges: int = 10):
+        self.charges = max(0, int(charges))
+        super().__init__(
+            name="Water Bladder",
+            description=f"Carries ten restorative sips of water. Sips remaining: {self.charges}.",
+            value=400,
+            rarity=0.8,
+            subtyp="Tool",
+        )
+
+    def use(self, user, target=None, tile=None) -> str:
+        del target, tile
+        if self.charges <= 0:
+            return "The Water Bladder is empty.\n"
+        from .. import curses
+
+        self.charges -= 1
+        message = curses.drink(user)
+        self.description = f"Carries restorative water. Sips remaining: {self.charges}."
+        return message
+
+
 class Oculus(Misc):
     """
     Expensive magic lens that reveals fake walls.
@@ -511,12 +549,12 @@ class UltimaScroll(Scroll):
 
     def __init__(self):
         super().__init__()
-        self.name = "Ultima Scroll"
+        self.name = "Photon Sphere Scroll"
         self.description = "\n".join(wrap("Scroll inscribed with an incantation allowing the user to cast the powerful"
-                                          " Ultima. The scroll will be consumed when it is out of charges.", 35, break_on_hyphens=False))
+                                          " Photon Sphere. The scroll will be consumed when it is out of charges.", 35, break_on_hyphens=False))
         self.value = 100000
         self.rarity = 0.01
-        self.spell = abilities.Ultima()
+        self.spell = abilities.PhotonSphere()
 
 
 class SheetMusic(Misc):

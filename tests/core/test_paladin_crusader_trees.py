@@ -102,7 +102,7 @@ def test_paladin_tree_has_oath_roots_and_compact_four_branch_geometry():
     )
     assert nodes["Tempered Conviction"].payload["level_requirement"] == 45
     assert nodes["Tempered Conviction"].payload["bonuses"] == {
-        "ratings": {"Defense": 20},
+        "rating_percentages": {"Defense": 0.20},
     }
     assert nodes["Hallowed Ground"].position == (2, 6)
     assert nodes["Hallowed Ground"].payload["level_requirement"] == 55
@@ -147,7 +147,7 @@ def test_paladin_tree_has_oath_roots_and_compact_four_branch_geometry():
     assert "+50 HP" not in nodes
     assert nodes["Sworn Purpose"].payload["level_requirement"] == 50
     assert nodes["Sworn Purpose"].payload["bonuses"] == {
-        "ratings": {"Magic": 20, "Magic Defense": 20},
+        "rating_percentages": {"Magic": 0.20, "Magic Defense": 0.20},
     }
     assert nodes["Double Strike"].position == (0, 1)
     assert nodes["Double Strike"].prerequisites == (
@@ -346,8 +346,8 @@ def test_paladin_mana_and_sworn_purpose_nodes_apply_both_support_bonuses():
         old_mana[0] + 50,
         old_mana[1] + 50,
     )
-    assert player.combat.magic == old_magic + 20
-    assert player.combat.magic_def == old_magic_defense + 20
+    assert player.combat.magic == old_magic + 3
+    assert player.combat.magic_def == old_magic_defense + 2
 
 
 def test_resist_shadow_requires_the_preceding_shelter_path():

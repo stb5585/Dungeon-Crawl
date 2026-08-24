@@ -1597,6 +1597,29 @@ class NightmareHoof(NaturalWeapon):
         return results
 
 
+class UnicornHorn(NaturalWeapon):
+    """
+    Natural weapon of Unicorn; additional holy damage
+    """
+
+    def __init__(self):
+        super().__init__(name="Unicorn Horn", damage=28, crit=0.2, description="", off=True)
+        self.special = True
+        self.att_name = 'attacks'
+        self.element = "Holy"
+
+    def special_effect(self, results: CombatResultGroup) -> None:
+        result = results[-1]
+        resist = result.target.check_mod('resist', enemy=result.actor, typ=self.element)
+        damage = int(random.randint(result.actor.stats.intel // 2, result.actor.stats.intel) * (1 - resist))
+        result.target.health.current -= damage
+        if damage > 0:
+            pass
+        elif damage < 0:
+            result.healing[-1] = abs(damage)
+        return results
+
+
 class ElementalBlade(NaturalWeapon):
     """
     Innate weapon possessed by Myrmidons; does elemental damage based on the enemy type

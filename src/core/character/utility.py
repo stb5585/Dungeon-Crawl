@@ -39,6 +39,13 @@ class CharacterUtilityMixin:
         return success, flee_message
 
     def is_alive(self) -> bool:
+        if self.health.current <= 0:
+            try:
+                from ..classes import demonologist
+
+                demonologist.try_soul_vessel(self)
+            except Exception:
+                pass
         return self.health.current > 0
 
     def modify_inventory(self, item: object, num: int = 1, subtract: bool = False,
@@ -81,6 +88,8 @@ class CharacterUtilityMixin:
         totem_bonus = 1.15 if (totem and getattr(totem, "active", False)) else 1.0
 
         if mod == 'weapon':
+            if getattr(self, "fractures", {}).get("Arm"):
+                return 0
             weapon_mod = (self.equipment['Weapon'].damage * int(not self.is_disarmed()))
             try:
                 from ..classes import mage_mechanics
@@ -90,9 +99,16 @@ class CharacterUtilityMixin:
                 pass
             weapon_mod += self.stat_effects["Attack"].extra * self.stat_effects["Attack"].active
             total_mod = (weapon_mod + class_mod + self.combat.attack) * disarm_damage_multiplier
+            from .. import curses
+
+            total_mod *= curses.strength_multiplier(self)
+            if getattr(self, "shade_of_ahool_turns", 0) > 0:
+                total_mod *= 1.50
             offense_multiplier = float(getattr(self, "_encounter_offense_multiplier", 1.0))
             return max(0, int(total_mod * (1 + berserk_per) * totem_bonus * offense_multiplier))
         if mod == 'shield':
+            if getattr(self, "fractures", {}).get("Arm"):
+                return 0
             block_mod = 0
             if self.equipment['OffHand'].subtyp == 'Shield':
                 block_mod = round(self.equipment['OffHand'].mod * (1 + ('Shield Block' in self.spellbook['Skills'])) * 100)
@@ -125,7 +141,12 @@ class CharacterUtilityMixin:
             if self.turtle:
                 class_mod += 99
             armor_mod += self.stat_effects["Defense"].extra * self.stat_effects["Defense"].active
-            return max(0, int((armor_mod * int(not ignore)) + class_mod + self.combat.defense) * totem_bonus)
+            total = int((armor_mod * int(not ignore)) + class_mod + self.combat.defense) * totem_bonus
+            from .. import curses
+
+            if curses.has_curse(self, "Elijah"):
+                total *= 0.65
+            return max(0, int(total))
         if mod == 'magic':
             magic_mod = int(self.stats.intel // 4) * self.level.pro_level
             if self.equipment['OffHand'].subtyp == 'Tome':
@@ -176,6 +197,14 @@ class CharacterUtilityMixin:
             if ultimate and typ == 'Physical':  # ultimate weapons bypass Physical resistance
                 return -0.25
             res_mod = self.resistance.get(typ, 0)
+            if typ == "Shadow":
+                from .. import curses
+
+                res_mod += curses.shadow_resistance_penalty(self)
+            if typ == "Fire":
+                from .. import curses
+
+                res_mod += curses.fire_resistance_penalty(self)
             resist_effect = self.magic_effects.get(f"Resist {typ}")
             if resist_effect is not None and resist_effect.active:
                 try:
@@ -196,6 +225,8 @@ class CharacterUtilityMixin:
                     res_mod -= penalty
             except Exception:
                 pass
+            if typ == "Holy" and int(getattr(self, "warlock_eclipse_turns", 0) or 0) > 0:
+                res_mod -= 0.25
             return res_mod
         if mod == 'luck':
             # "Luck" also acts as a general-purpose saving-throw modifier in many effects.
@@ -205,13 +236,30 @@ class CharacterUtilityMixin:
             return max(0, (base * 2) // lf)
         if mod == "speed":
             speed_mod = self.stats.dex
+            if (
+                enemy is not None
+                and int(getattr(enemy, "shadow_dungeon_darkness_steps", 0) or 0) > 0
+                and not getattr(self, "sight", False)
+            ):
+                speed_mod *= 0.75
+            if getattr(self, "shade_of_ahool_turns", 0) > 0:
+                speed_mod *= 1.50
+            if getattr(self, "warlock_eclipse_turns", 0) > 0:
+                speed_mod *= 1.10
             speed_mod += self.stat_effects["Speed"].extra * self.stat_effects["Speed"].active
+            if (
+                self.invisible
+                and "Alacrity" in getattr(self, "spellbook", {}).get("Skills", {})
+            ):
+                speed_mod = int(speed_mod * 1.25)
             try:
                 data = self.class_ring_awakening["data"]["Shadowcaster"]
                 if _class_name(self) == "Shadowcaster" and int(data.get("eclipse_turns", 0) or 0) > 0:
                     speed_mod = int(speed_mod * 1.10)
             except Exception:
                 pass
+            if getattr(self, "fractures", {}).get("Leg"):
+                speed_mod *= 0.1
             return speed_mod
         return 0
 
