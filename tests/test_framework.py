@@ -132,6 +132,7 @@ class TestGameState:
         )
         
         player.name = name
+        player.dungeon_trap_seed = 0xD06E0
         
         # Set class
         for cls_attr in dir(classes):

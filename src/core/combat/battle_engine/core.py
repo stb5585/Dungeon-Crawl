@@ -10,7 +10,7 @@ from ..actor_cycle import ActorCycle, PLAYER_ACTOR_ID, build_actor_order
 from ..battle_logger import BattleLogger
 from ..encounter import CombatEncounter
 from ..initiative import determine_initiative
-from ...classes import ability_mechanics, astromancer, bard, paladin, promotion_kits
+from ...classes import ability_mechanics, astromancer, bard, footpad, paladin, promotion_kits
 from ...enemies.identity import remember_defeat_identity
 from ...events.event_bus import (
     EventType,
@@ -425,12 +425,28 @@ class BattleEngine(BattleTurnMixin, BattleActionMixin, BattleOutcomeMixin):
         self.player._last_stand_used = False
         self.player._foretell_snapshot = None
         self.player._rewind_snapshot = None
+        footpad.start_combat(self.player)
+        from ...classes import healer
+
+        healer.start_combat(self.player)
+        from ...classes import pathfinder
+
+        pathfinder.start_combat(self.player)
+        from ...classes import warrior
+
+        warrior.start_combat(self.player)
         promotion_kits.start_combat(self.player)
+        forced_enemy_initiative = bool(
+            getattr(self.tile, "trap_forced_initiative", False)
+        )
         if len(self.encounter.members) == 1:
-            first, _second = determine_initiative(
-                self.player,
-                self.encounter.primary_enemy,
-            )
+            if forced_enemy_initiative:
+                first = self.encounter.primary_enemy
+            else:
+                first, _second = determine_initiative(
+                    self.player,
+                    self.encounter.primary_enemy,
+                )
             enemy_id = self.encounter.primary_member.combatant_id
             order = (
                 (PLAYER_ACTOR_ID, enemy_id)
@@ -439,6 +455,12 @@ class BattleEngine(BattleTurnMixin, BattleActionMixin, BattleOutcomeMixin):
             )
         else:
             order = build_actor_order(self.player, self.encounter, rng=self._rng)
+            if forced_enemy_initiative and PLAYER_ACTOR_ID in order:
+                order = tuple(actor for actor in order if actor != PLAYER_ACTOR_ID) + (
+                    PLAYER_ACTOR_ID,
+                )
+        if forced_enemy_initiative:
+            self.tile.trap_forced_initiative = False
         self._actor_cycle = ActorCycle(order)
         self._sync_actor_aliases()
         self._current_actor_turn_id = self._actor_cycle.start_current_turn()

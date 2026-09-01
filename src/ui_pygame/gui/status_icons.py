@@ -19,6 +19,7 @@ STATUS_ICON_ASSETS = {
     "DOT": "dot.png",
     "DUP": "mirror_image.png",
     "EG": "evasive_guard.png",
+    "FEA": "fear.png",
     "ICE": "ice_block.png",
     "MSH": "mana_shield.png",
     "MW": "maelstrom_weapon.png",
@@ -64,9 +65,10 @@ URGENT_NEGATIVE_STATUS_LABELS = {
     "BRG": 6,
     "DSA": 7,
     "DOM": 8,
-    "PSN": 9,
-    "RND": 10,
-    "OIL": 10,
+    "FEA": 9,
+    "PSN": 10,
+    "RND": 11,
+    "OIL": 11,
 }
 
 IMPORTANT_POSITIVE_STATUS_LABELS = {

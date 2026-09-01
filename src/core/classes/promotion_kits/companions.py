@@ -434,9 +434,14 @@ def gain_companion_bond(character: Any, amount: int, reason: str, *, rng: Any = 
 
 
 def companion_bond_multiplier(character: Any) -> float:
+    from ...progression import has_talent
+
     state = getattr(character, "tamed_companion", {}) or {}
     bond = _clamp_int(state.get("bond", 0), 0, 100)
-    return 1.0 + (0.15 * (bond / 100))
+    coefficient = 0.15
+    if has_talent(character, "beast-master.bonded-bulwark"):
+        coefficient += 0.10
+    return 1.0 + (coefficient * (bond / 100))
 
 
 def record_song_turn(character: Any, song: str) -> str:
@@ -560,13 +565,16 @@ def lycan_control_state(character: Any) -> dict[str, Any]:
 
 
 def record_lycan_stress(character: Any, reason: str, *, survived: bool = True) -> str:
+    from ...progression import has_talent
+
     if class_name(character) != "Lycan":
         return ""
     control = lycan_control_state(character)
     control["stress_events"] += 1
     if survived:
         progress = control["rank_progress"]
-        progress[reason] = int(progress.get(reason, 0) or 0) + 1
+        amount = 2 if has_talent(character, "lycan.tethered-instinct") else 1
+        progress[reason] = int(progress.get(reason, 0) or 0) + amount
         _maybe_advance_lycan_rank(control)
     return f"Lycan control records {reason} stress at rank {control['rank']}.\n"
 

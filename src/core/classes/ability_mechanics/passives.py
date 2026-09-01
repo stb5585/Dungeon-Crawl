@@ -214,11 +214,9 @@ def retort_parry_bonus(character: Any) -> float:
 
 
 def retort_counter_multiplier(character: Any) -> float:
-    """Add the positive Intelligence modifier to Parry counter damage."""
-    if not has_skill(character, "Retort"):
-        return 1.0
-    intelligence = int(getattr(getattr(character, "stats", None), "intel", 10) or 10)
-    return 1.0 + max(0.0, (intelligence - 10) * 0.03)
+    """Return the compatibility multiplier after Retort's damage bonus removal."""
+    del character
+    return 1.0
 
 
 def pain_tolerance_bleed_multiplier(character: Any) -> float:
@@ -279,7 +277,19 @@ def retaliate_after_block(defender: Any, attacker: Any, *, rng: Any = random) ->
     if rng.random() >= chance:
         return ""
     msg = f"{defender.name} retaliates after the block!\n"
-    counter, _hit, _crit = defender.weapon_damage(attacker, dmg_mod=0.75, use_offhand=False)
+    counter, hit, _crit = defender.weapon_damage(
+        attacker,
+        dmg_mod=0.75,
+        use_offhand=False,
+        counterattack=True,
+    )
+    if hit:
+        try:
+            from .. import promotion_kits
+
+            counter += promotion_kits.prepare_get_even(defender)
+        except (AttributeError, KeyError, TypeError, ValueError):
+            pass
     return msg + counter
 
 
@@ -294,7 +304,9 @@ def final_assault_response(defender: Any, attacker: Any, incoming_damage: int) -
     defender._final_assault_countering = True
     try:
         msg = f"{defender.name} answers lethal force with a Final Assault!\n"
-        counter, _hit, _crit = defender.weapon_damage(attacker, dmg_mod=1.25, use_offhand=True)
+        counter, _hit, _crit = defender.weapon_damage(
+            attacker, dmg_mod=1.25, use_offhand=False
+        )
         msg += counter
     finally:
         defender._final_assault_countering = False

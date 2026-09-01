@@ -283,7 +283,7 @@ class ExploitWeaknessEffect(Effect):
                     target.status_effects[effect].duration = -1
 
         # Weapon damage with calculated mod
-        wd_str, _, _ = actor.weapon_damage(target, dmg_mod=mod)
+        wd_str, _, _ = actor.weapon_damage(target, dmg_mod=mod, use_offhand=False)
         messages.append(wd_str)
 
 

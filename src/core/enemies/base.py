@@ -196,11 +196,7 @@ class Enemy(Character):
             action_list.append("Pickup Weapon")
         if self.tunnel:
             action_list.extend(["Surface", "Nothing"])
-        if all([target.level.pro_level * target.level.level >= 10,
-                target.level.pro_level > self.level.pro_level,
-                random.randint(0, max(0, target.level.pro_level - self.level.pro_level)),
-                'Boss' not in str(tile),
-                self.name != 'Mimic']):
+        if self._should_attempt_flee(target, tile):
             action_list.append("Flee")
         action = random.choice(action_list)
         if action == "Cast Spell":
@@ -225,6 +221,10 @@ class Enemy(Character):
         # Build weighted pool of available actions from action_stack
         self.last_action_stack_entry = None
         weighted_actions = []
+        if self._should_attempt_flee(target, tile):
+            weighted_actions.extend([
+                ("Flee", None, {"ability": "Flee", "reason": "outclassed"}),
+            ] * self._priority_to_weight(ActionPriority.HIGH))
         pickup_priority = self._pickup_weapon_priority()
         if pickup_priority != ActionPriority.SKIP:
             for _ in range(self._priority_to_weight(pickup_priority)):
@@ -416,11 +416,7 @@ class Enemy(Character):
             action_list.append("Pickup Weapon")
         if self.tunnel:
             action_list.extend(["Surface", "Nothing"])
-        if all([target.level.pro_level * target.level.level >= 10,
-                target.level.pro_level > self.level.pro_level,
-                random.randint(0, max(0, target.level.pro_level - self.level.pro_level)),
-                'Boss' not in str(tile),
-                self.name != 'Mimic']):
+        if self._should_attempt_flee(target, tile):
             action_list.append("Flee")
 
         action = random.choice(action_list) if action_list else "Attack"
@@ -437,6 +433,19 @@ class Enemy(Character):
         self._advance_debuff_failure_cooldowns()
 
         return action, ability
+
+    def _should_attempt_flee(self, target: Character, tile: object) -> bool:
+        """Return whether an ordinary enemy is frightened by a superior class."""
+        if (
+            target.level.pro_level * target.level.level < 10
+            or target.level.pro_level <= self.level.pro_level
+            or "Boss" in str(tile)
+            or self.name == "Mimic"
+            or getattr(self, "scripted_combat_enemy", False)
+        ):
+            return False
+        difference = max(0, target.level.pro_level - self.level.pro_level)
+        return bool(random.randint(0, difference))
 
     def _combat_item_choices(self) -> list[str]:
         """Return inventory item keys that are useful for this enemy in combat."""

@@ -505,7 +505,7 @@ class CombatManagerCoreMixin:
                 names.append(name)
         return names
 
-    def _resolve_skill_cost_label(self, skill) -> str:
+    def _resolve_skill_cost_label(self, skill, player_char=None) -> str:
         cost = getattr(skill, "resolve_cost", None)
         name = self._canonical_resolve_skill_name(getattr(skill, "name", ""))
         if cost is None:
@@ -517,6 +517,8 @@ class CombatManagerCoreMixin:
             cost = "Full"
         if str(cost).lower() == "full":
             return "Full Resolve"
+        if player_char is not None:
+            cost = promotion_kits.effective_resolve_cost(player_char, int(cost or 0))
         return f"Resolve: {int(cost or 0)}"
 
     @staticmethod

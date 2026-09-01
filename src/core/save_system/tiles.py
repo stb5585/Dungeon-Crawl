@@ -22,6 +22,8 @@ class TileStateSerializer:
             "drink",
             "nimue",
             "nimue_met_before",
+            "trap_type",
+            "trap_triggered",
         }
     )
 
@@ -55,6 +57,11 @@ class TileStateSerializer:
                 'blocked': getattr(tile, 'blocked', None),
                 'warped': getattr(tile, 'warped', False),
             }
+
+            if hasattr(tile, 'trap_type'):
+                state['trap_type'] = tile.trap_type
+            if hasattr(tile, 'trap_triggered'):
+                state['trap_triggered'] = tile.trap_triggered
 
             if hasattr(tile, 'active'):
                 state['active'] = tile.active
@@ -109,6 +116,10 @@ class TileStateSerializer:
                 tile.warped = state['warped']
             if 'active' in state and hasattr(tile, 'active'):
                 tile.active = state['active']
+            if 'trap_type' in state and hasattr(tile, 'trap_type'):
+                tile.trap_type = state['trap_type']
+            if 'trap_triggered' in state and hasattr(tile, 'trap_triggered'):
+                tile.trap_triggered = state['trap_triggered']
 
             # Restore defeated flag
             if 'defeated' in state and hasattr(tile, 'defeated'):

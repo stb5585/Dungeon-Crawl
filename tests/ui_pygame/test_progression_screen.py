@@ -608,39 +608,14 @@ def test_cross_column_connectors_enter_the_side_of_target_nodes(monkeypatch):
     assert line_points[0][-1] == target_rect.midleft
 
 
-def test_authored_cross_connector_uses_manifest_channel(monkeypatch):
-    source = progression_screen.TREE_NODES[
-        "warrior.ability.shieldblock"
-    ]
-    target = progression_screen.TREE_NODES["warrior.ability.retaliate"]
-    screen = progression_screen.ProgressionScreen.__new__(
-        progression_screen.ProgressionScreen
-    )
-    screen.screen = object()
-    screen.node_icon_rects = [
-        pygame.Rect(450, 160, 32, 32),
-        pygame.Rect(238, 390, 32, 32),
-    ]
-    screen._tree_viewport = pygame.Rect(0, 0, 800, 600)
-    screen._tree_column_origin = 114
-    screen._tree_lane_width = 141
-    line_points = []
-    monkeypatch.setattr(
-        progression_screen.pygame.draw,
-        "lines",
-        lambda _screen, _color, _closed, points, _width: (
-            line_points.append(points)
-        ),
-    )
+def test_rebuilt_warrior_branches_directly_from_shared_half_column_trunks():
+    shield_block = progression_screen.TREE_NODES["warrior.ability.shieldblock"]
+    goad = progression_screen.TREE_NODES["warrior.ability.goad"]
+    retaliate = progression_screen.TREE_NODES["warrior.ability.retaliate"]
 
-    screen._draw_connectors([
-        NodeStatus(source, NodeState.AVAILABLE),
-        NodeStatus(target, NodeState.BLOCKED),
-    ])
-
-    expected_channel_x = int(114 + 1.5 * 141)
-    assert line_points[0][1][0] == expected_channel_x
-    assert line_points[0][2][0] == expected_channel_x
+    assert goad.prerequisites == (shield_block.id,)
+    assert shield_block.id not in retaliate.prerequisites
+    assert "connector_channel_columns" not in retaliate.payload
 
 
 def test_familiar_bond_connector_joins_both_node_side_midpoints(monkeypatch):
@@ -833,14 +808,14 @@ def test_lancer_promotion_connectors_stay_in_their_source_columns(monkeypatch):
         (
             vigilant_rect.midright,
             (200, vigilant_rect.centery),
-            (200, promotion_rect.top),
-            promotion_rect.midtop,
+            (200, promotion_rect.centery),
+            promotion_rect.midleft,
         ),
         (
             excellence_rect.midleft,
             (560, excellence_rect.centery),
-            (560, promotion_rect.top),
-            promotion_rect.midtop,
+            (560, promotion_rect.centery),
+            promotion_rect.midright,
         ),
     ]
 
@@ -1129,7 +1104,7 @@ def test_promotion_details_wrap_blocker_and_omit_tree_warning(monkeypatch):
         (
             "Requires 2 points.",
             "Requires level 30.",
-            "Requires Strength 15 (current 12).",
+            "Requires Strength 14 (current 12).",
             "Requires Dex 12 (current 11).",
             "Requires Intelligence 11 (current 10).",
             "Another promotion is already distributed.",
@@ -1148,7 +1123,7 @@ def test_promotion_details_wrap_blocker_and_omit_tree_warning(monkeypatch):
     unwrapped_text = text.replace("\n", " ")
     assert "Required level: 30" in text
     assert "Required Stats:" in unwrapped_text
-    assert "Strength 15" in unwrapped_text
+    assert "Strength 14" in unwrapped_text
     assert "Dexterity 12" in unwrapped_text
     assert "Intelligence 11" in unwrapped_text
     assert "global" not in text.lower()

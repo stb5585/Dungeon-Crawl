@@ -103,6 +103,15 @@ from .paths import (
     FirePath,
     FirePathSpecial,
 )
+from .traps import (
+    ELIGIBLE_PATH_TYPES,
+    MAGIC_WARD_SPELLS,
+    STANDARD_DUNGEON_DEPTHS,
+    TRAP_CHANCE,
+    TRAP_TYPES,
+    assign_dungeon_traps,
+    trigger_tile_trap,
+)
 from .special import (
     UndergroundSpring,
     Boulder,

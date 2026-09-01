@@ -24,15 +24,29 @@ if TYPE_CHECKING:
 
 
 class Parry(Defensive):
-    """
-    Passive ability; chance to counterattack if an attack is successfully dodged
-    """
+    """Passive chance to deflect incoming melee damage without a shield."""
 
     def __init__(self):
         super().__init__(
             name="Parry",
-            description="Passive chance to counterattack if an attack is successfully "
-            "dodged.",
+            description=(
+                "Passive: Chance to deflect some or all damage from an incoming "
+                "melee attack. Cannot Parry while wielding a shield."
+            ),
+        )
+        self.passive = True
+
+
+class Riposte(Defensive):
+    """Passive chance to counterattack after a successful Parry."""
+
+    def __init__(self):
+        super().__init__(
+            name="Riposte",
+            description=(
+                "Passive: Chance to make an automatic main-hand counterattack "
+                "after a successful Parry."
+            ),
         )
         self.passive = True
 
@@ -182,6 +196,125 @@ class HonedAttack(Class):
         self.passive = True
 
 
+class Commitment(Class):
+    """Reward a Paladin-bound Warrior for focusing one opponent."""
+
+    def __init__(self):
+        super().__init__(
+            name="Commitment",
+            description=(
+                "Passive: Consecutive attacks against the same target gain "
+                "stacking accuracy and critical-strike damage. The focus ends "
+                "after another combat action, changing targets, or combat. "
+                "Choosing Commitment closes the other Warrior promotions."
+            ),
+        )
+        self.passive = True
+
+
+class ImprovedDefend(Class):
+    """Improve the damage reduction granted by the Defend action."""
+
+    def __init__(self):
+        super().__init__(
+            name="Improved Defend",
+            description="Passive: Defend grants an additional 15% damage reduction.",
+        )
+        self.passive = True
+
+
+class Upsurge(Skill):
+    """Grant the combat party short-lived temporary health."""
+
+    def __init__(self):
+        super().__init__(
+            name="Upsurge",
+            description=(
+                "Reach deep and grant all allies temporary health equal to "
+                "15% of their maximum health for three turns."
+            ),
+        )
+        self.cost = 8
+        self.subtyp = "Enhance"
+        self.target_self = True
+
+    def use(self, user, target=None, **kwargs):
+        result = super().use(user, user, **kwargs)
+        if user.mana.current < self.cost:
+            result.message = f"{user.name} does not have enough mana to use Upsurge.\n"
+            return result
+        user.mana.current -= self.cost
+        allies = [user]
+        engine = kwargs.get("battle_engine")
+        summon = getattr(engine, "summon", None) if engine is not None else None
+        if summon is not None and summon.is_alive():
+            allies.append(summon)
+        messages = []
+        for ally in allies:
+            amount = max(1, int(ally.health.max * 0.15))
+            existing = getattr(ally, "temporary_health", None)
+            if isinstance(existing, dict):
+                amount = max(amount, int(existing.get("amount", 0) or 0))
+            ally.temporary_health = {
+                "amount": amount,
+                "turns": 3,
+                "source": self.name,
+            }
+            messages.append(f"{ally.name} gains {amount} temporary health.\n")
+        result.message = "".join(messages)
+        return result
+
+
+class AchillesHeel(Skill):
+    """Slow a target and leave it vulnerable to being knocked prone."""
+
+    def __init__(self):
+        super().__init__(
+            name="Achilles Heel",
+            description=(
+                "Launch a targeted main-hand attack that cripples the target's "
+                "speed and makes it easier to knock prone."
+            ),
+            weapon=True,
+        )
+        self.cost = 7
+        self.subtyp = "Offensive"
+
+    def use(self, user, target=None, **kwargs):
+        result = super().use(user, target, **kwargs)
+        if target is None:
+            result.message = "Achilles Heel needs a target.\n"
+            return result
+        if user.mana.current < self.cost:
+            result.message = f"{user.name} does not have enough mana.\n"
+            return result
+        user.mana.current -= self.cost
+        before = int(target.health.current)
+        message, hit, crit = user.weapon_damage(
+            target,
+            dmg_mod=0.90,
+            use_offhand=False,
+            accuracy_modifier=0.10,
+        )
+        result.hit = hit
+        result.crit = crit if crit > 1 else None
+        result.damage = max(0, before - int(target.health.current))
+        if hit:
+            effect = target.stat_effects["Speed"]
+            penalty = max(2, int(target.stats.dex * 0.25))
+            effect.active = True
+            effect.duration = max(3, int(effect.duration or 0))
+            effect.extra = min(-penalty, int(effect.extra or 0))
+            effect.source = self.name
+            target._achilles_heel_turns = 3
+            result.effects_applied["Stat"].append("Speed Debuff")
+            message += (
+                f"{target.name}'s speed is crippled and their footing becomes vulnerable.\n"
+            )
+        result.message = message
+        return result
+
+
 class EvasiveGuard(Defensive):
     """
     Passive ability; stackable damage reduction against weapon hits (DEX-scaling).
@@ -197,6 +330,239 @@ class EvasiveGuard(Defensive):
                         "Stacks reset when you dodge an attack.",
         )
         self.passive = True
+
+
+class _FootpadPassive(Class):
+    """Shared implementation for passive Footpad-tree nodes."""
+
+    def __init__(self, name, description):
+        super().__init__(name=name, description=description)
+        self.passive = True
+
+
+class AvoidTraps(_FootpadPassive):
+    """Improve avoidance and mitigation when a trap triggers."""
+
+    def __init__(self):
+        super().__init__(
+            "Avoid Traps",
+            "Passive: Gain an increased chance to avoid a triggered trap's negative effect; halve it otherwise.",
+        )
+
+
+class DoOver(_FootpadPassive):
+    """Occasionally reroll one missed attack per battle."""
+
+    def __init__(self):
+        super().__init__(
+            "Do-over",
+            "Passive: A missed attack has a chance to be rerolled once per battle.",
+        )
+
+
+class Serendipity(_FootpadPassive):
+    """Increase ordinary enemy item-drop odds."""
+
+    def __init__(self):
+        super().__init__(
+            "Serendipity",
+            "Passive: Increase the chance of enemies dropping items.",
+        )
+
+
+class AggressivePursuit(_FootpadPassive):
+    """Punish an enemy that attempts to flee."""
+
+    def __init__(self):
+        super().__init__(
+            "Aggressive Pursuit",
+            "Passive: Make an advantaged main-hand attack when an enemy attempts to flee; a survivor escapes.",
+        )
+
+
+class IncantationComprehension(_FootpadPassive):
+    """Improve the effectiveness of spells cast from scrolls."""
+
+    def __init__(self):
+        super().__init__(
+            "Incantation Comprehension",
+            "Passive: Increase the effectiveness of scrolls by 25 percent.",
+        )
+
+
+class ManaDepletion(_FootpadPassive):
+    """Drain mana with successful basic attacks."""
+
+    def __init__(self):
+        super().__init__(
+            "Mana Depletion",
+            "Passive: Basic attacks deplete mana from the target based on damage dealt.",
+        )
+
+
+class MysticalEvasion(_FootpadPassive):
+    """Increase dodge chance specifically against spells."""
+
+    def __init__(self):
+        super().__init__(
+            "Mystical Evasion",
+            "Passive: Increase dodge chance against spells.",
+        )
+
+
+class StumbleUpon(Skill):
+    """Attack, then trip the foe or risk falling prone on a complete miss."""
+
+    def __init__(self):
+        super().__init__(
+            "Stumble Upon",
+            "Attack the target and follow with a trip attempt. On a complete miss, pass a DEX check or fall prone.",
+            weapon=True,
+        )
+        self.subtyp = "Offensive"
+        self.cost = 5
+
+    def use(self, user, target=None, **kwargs):
+        result = super().use(user, target, **kwargs)
+        if target is None:
+            result.message = "Stumble Upon needs a target.\n"
+            return result
+        if user.mana.current < self.cost:
+            result.message = f"{user.name} does not have enough mana.\n"
+            return result
+        user.mana.current -= self.cost
+        before = int(target.health.current)
+        message, hit, crit = user.weapon_damage(target, use_offhand=True)
+        result.hit = hit
+        result.crit = crit if crit > 1 else None
+        result.damage = max(0, before - int(target.health.current))
+        generator = kwargs.get("rng") or random
+        if hit and not getattr(target, "flying", False):
+            attack_roll = generator.randint(max(1, user.stats.dex // 2), max(1, user.stats.dex))
+            defense_roll = generator.randint(max(1, target.stats.dex // 2), max(1, target.stats.dex))
+            speed_effect = target.stat_effects.get("Speed")
+            if (
+                speed_effect is not None
+                and speed_effect.active
+                and getattr(speed_effect, "source", "") == "Achilles Heel"
+            ):
+                defense_roll = max(0, defense_roll - 5)
+            if attack_roll > defense_roll and not target.has_status_protection("Prone"):
+                prone = target.physical_effects["Prone"]
+                prone.active = True
+                prone.duration = max(2, int(prone.duration or 0))
+                prone.source = self.name
+                result.effects_applied["Physical"].append("Prone")
+                message += f"{target.name} is tripped and falls prone.\n"
+            else:
+                message += f"{target.name} keeps their footing.\n"
+        elif not hit:
+            dex_check = generator.randint(1, 20) <= int(user.stats.dex)
+            if not dex_check:
+                prone = user.physical_effects["Prone"]
+                prone.active = True
+                prone.duration = max(2, int(prone.duration or 0))
+                prone.source = self.name
+                result.effects_applied["Physical"].append("Prone")
+                message += f"{user.name} stumbles and falls prone.\n"
+            else:
+                message += f"{user.name} recovers with a DEX check.\n"
+        result.message = message
+        return result
+
+
+class Obscuration(Skill):
+    """Use a censer outside combat to obscure the surrounding area."""
+
+    def __init__(self):
+        super().__init__(
+            "Obscuration",
+            "Cast outside combat with a Censer of Choking Ash to reduce encounters and enemy accuracy for 50 steps.",
+        )
+        self.combat = False
+        self.subtyp = "Stealth"
+        self.cost = 10
+
+    def use(self, user, target=None, **kwargs):
+        result = super().use(user, user, **kwargs)
+        if "Censer of Choking Ash" not in getattr(user, "inventory", {}):
+            result.message = "Obscuration requires a Censer of Choking Ash.\n"
+            return result
+        if user.mana.current < self.cost:
+            result.message = f"{user.name} does not have enough mana.\n"
+            return result
+        from ..classes import footpad
+
+        user.mana.current -= self.cost
+        user.obscuration_steps = footpad.OBSCURATION_STEPS
+        result.message = (
+            f"{user.name} fills the surrounding area with choking ash for "
+            f"{footpad.OBSCURATION_STEPS} steps.\n"
+        )
+        return result
+
+
+class Disruption(Skill):
+    """Strike a charging target and interrupt its charged ability."""
+
+    def __init__(self):
+        super().__init__(
+            "Disruption",
+            "Attack a charging target to interrupt its spell; a critical hit also Silences it for 2 turns.",
+            weapon=True,
+        )
+        self.subtyp = "Offensive"
+        self.cost = 10
+
+    def use(self, user, target=None, **kwargs):
+        result = super().use(user, target, **kwargs)
+        if target is None:
+            result.message = "Disruption needs a target.\n"
+            return result
+        if user.mana.current < self.cost:
+            result.message = f"{user.name} does not have enough mana.\n"
+            return result
+        battle_engine = kwargs.get("battle_engine")
+        charging_entry = getattr(battle_engine, "charging_ability", None)
+        charging_skill = charging_entry[2] if charging_entry and charging_entry[0] is target else None
+        if charging_skill is None:
+            known_abilities = (
+                list(target.spellbook.get("Skills", {}).values())
+                + list(target.spellbook.get("Spells", {}).values())
+            )
+            charging_skill = next(
+                (skill for skill in known_abilities if getattr(skill, "charging", False)),
+                None,
+            )
+        if charging_skill is None:
+            result.message = f"{target.name} is not charging an ability.\n"
+            return result
+        user.mana.current -= self.cost
+        before = int(target.health.current)
+        message, hit, crit = user.weapon_damage(target, use_offhand=False)
+        result.hit = hit
+        result.crit = crit if crit > 1 else None
+        result.damage = max(0, before - int(target.health.current))
+        if hit:
+            cancel = getattr(charging_skill, "cancel_charge", None)
+            message += (
+                cancel(target)
+                if callable(cancel)
+                else f"{target.name}'s {charging_skill.name} is interrupted!\n"
+            )
+            charging_skill.charging = False
+            if battle_engine is not None:
+                battle_engine.charging_ability = None
+                battle_engine.pending_actions.pop(battle_engine._actor_id_for(target), None)
+            if crit > 1:
+                silence = target.status_effects["Silence"]
+                silence.active = True
+                silence.duration = max(2, int(silence.duration or 0))
+                silence.source = self.name
+                result.effects_applied["Status"].append("Silence")
+                message += f"{target.name} is Silenced for 2 turns.\n"
+        result.message = message
+        return result
 
 
 class Disarm:

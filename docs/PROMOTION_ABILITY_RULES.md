@@ -12,6 +12,22 @@ permanent purchases that may grant a small combat bonus and modify a
 class-specific meter cap without adding a fake ability to the spellbook.
 Their stable keys are part of the version-5 save contract.
 
+Footpad, Healer, and Pathfinder now follow the same base-route budget as the
+normal Warrior promotions: every specialization path contains six development
+nodes and costs eight points with its two-point promotion. Their first-promotion
+trees contain at least 16 development choices and terminal trees at least 14.
+Sparse legacy catalogs are expanded with four class-specific passive families
+instead of two endlessly alternating placeholder talents. Later mastery ranks
+remain real permanent purchases, while every generic terminal tree ends in a
+two-point mastery tied to its class system.
+
+Terminal meter masteries add one capacity to Fortune/Revelation/Death Mark/
+Stolen Charge, Devotion/Ki/Prayer/Crescendo, Aspect Harmony/Foresight Threads,
+or Totem Resonance. Lycan's terminal mastery doubles successful control-response
+credit, while Beast Master's raises bond-derived companion combat scaling from
+15% to 25% at full bond. These effects are declarative `kit_effect` payloads
+and are validated with the tree manifest.
+
 Progression bonuses use one shared tier scale. Attack, Defense, Magic, and
 Magic Defense nodes grant `+10/+20/+30` on base, first-promotion, and terminal
 trees; HP and MP nodes grant `+25/+50/+100`. Named class talents use that same
@@ -36,6 +52,11 @@ A promotion node is available only when:
 - two progression points are available for a first promotion, or three for a
   second promotion.
 
+Permanent stat gates of 10 or lower are omitted from promotion nodes because
+they do not represent meaningful specialization beyond an ordinary baseline.
+This normalization applies to both first and second promotions after authored
+class-specific overrides are resolved.
+
 An ability's authored level gate is ignored and hidden when it is lower than
 the level required to enter the class whose tree currently displays it. This
 is a universal promoted-tree rule: the promotion itself has already satisfied
@@ -48,7 +69,7 @@ path. Warrior's Weapon Master and Lancer routes share `Piercing Strike ->
 Charge -> Weapon Focus` before splitting. Charge is level 5, Weapon Focus is
 level 10, and the Weapon Master `+10 Attack` node sits opposite Driving
 Thrust. The tree sets Weapon Master Strength/Dexterity/Intelligence to
-`15/12/11`, Lancer Strength to `13`, Sentinel Constitution to `16`, and
+`14/12/11`, Lancer Strength to `13`, Sentinel Constitution to `15`, and
 Paladin Wisdom to `13`; all four first-promotion routes cost 13 points from
 the baseline Human Warrior under the former combined-budget accounting. With
 separate currencies, Weapon Master/Sentinel/Paladin each cost eight progression
@@ -170,9 +191,10 @@ Both left paths use five vertically centered rows, while the center column uses
 three.
 
 Grandmaster of Arms exposes all 16 inherited rank-1/rank-5 nodes plus eight
-rank-10 level-3 replacements. Ungated Double Strike sits between Perfect Form
-and Adaptive Arsenal in the fourth column. Both floating talents have no level
-gate and scale from the currently equipped weapon's discipline.
+rank-10 level-3 replacements. Its six-column mastery route runs from ungated
+Double Strike through level-65 Dual Wield Excellence and Weapon Swap, forks to
+level-75 Perfect Form and Adaptive Arsenal, and rejoins at level-80 Dual Wield
+Mastery.
 
 Lancer uses three independent paths below Jump and two polearm development
 line. The defensive path is `Defend -> Acrobat -> Grounded Landing`; the
@@ -180,8 +202,8 @@ middle nodes are `+20 Attack` directly below Jump and `+20 Defense -> Vigilant
 Landing`; and the
 offensive path is `Aerial Footwork -> Quick Dive -> Thrust -> Rend`. Polearm
 Proficiency sits in column 5 and feeds the authored Assault and Guard
-paths. Ungated inherited-or-purchased Parry and True
-Strike occupy the final column. Modifier nodes never create spellbook entries.
+paths. Ungated inherited-or-purchased True Strike occupies the final column;
+Parry is absent. Modifier nodes never create spellbook entries.
 Acrobat unlocks at level 40, Thrust at level 45, and Rend at level 50.
 Polearm Excellence requires Polearm Proficiency directly. Promote: Dragoon in
 column 4 requires both Vigilant Landing and Polearm Excellence, plus global
@@ -190,7 +212,7 @@ through Defense and Vigilant Landing, then descends in that column before
 turning into promotion rather than crossing Thrust or Rend. Neither optional
 modifier path is required.
 
-Dragoon retains all 23 Lancer development nodes in the same positions and adds
+Dragoon retains all 22 Lancer development nodes in the same positions and adds
 11 class-specific nodes. The Lancer promotion node is the only omitted node.
 The historical Lancer tab becomes read-only, but its purchased node IDs remain
 owned and its unpurchased nodes remain editable in the Dragoon tree. The three
@@ -210,29 +232,32 @@ Level-80 Dragon Dive requires Dragon's Ascent, Soaring Strike, and Unstoppable.
 Lancer and Dragoon use rows 0-7 without
 progression-panel scrolling.
 
-Sentinel uses six authored columns. Assault and Bulwark occupy columns 1 and 2;
-Adrenaline at column 4.5 splits into Resistance and Support in columns 4 and 5;
-Goad, Charge, and Double Strike are independent in column 6. Every node is
-shifted down one row; the level-60 Stalwart Defender promotion at `(2, 8)`
+Sentinel uses five authored columns. Assault and Bulwark occupy columns 1 and 2;
+Adrenaline at column 3.5 splits into Resistance and Support in columns 3 and 4.
+Parry is absent; Goad, Charge, and Double Strike remain disconnected in column
+5 at rows 3-5. The level-60 Stalwart Defender promotion at `(1.5, 8)`
 accepts Watchful Reprisal, Resolute
 Guard, Shielding Ward, or Braggadocious and otherwise retains `CON 20` and its
 three-point cost.
 
-Stalwart Defender contains 20 nodes across Assault, Bulwark, Resistance, and
-Support. All nodes form continuous top-to-bottom prerequisite chains within
-their four columns. Its full-bar Bursts are Citadel Aegis, Ironwall Revenge, Last Bastion,
+Stalwart Defender contains 25 nodes across Assault, Bulwark, Shield Offense,
+Resistance, and Support. The new third column runs from Retaliate through
+Shield Ricochet, Tower Offense, Get Even, and Generator Shield. Its full-bar
+Bursts are Citadel Aegis, Ironwall Revenge, Last Bastion,
 and Stronghold; all four are immediately unlocked on promotion and remain out
 of the ordinary Specials list. Point-purchased talents modify those Bursts and
-the eight inherited Resolve actions. The tree occupies rows 1-6; Punishing
-Guard, Unbroken Wall, Fortified Citadel, and Final Redoubt cost two points.
+the eight inherited Resolve actions. Support replaces its HP node with Battle
+Cry and continues through Battle Determination to level-80 Final Redoubt. The
+tree occupies rows 1-6; Punishing Guard, Double Payback, Unbroken Wall, Iron
+Maiden, Fortified Citadel, and Final Redoubt cost two points.
 
 Paladin begins with independent ungated Oath's Judgment `(1, 0)` and Oath's
 Shelter `(4, 0)` roots. Judgment branches through the column-0 `Double Strike
 -> +20 Attack -> Tempered Conviction -> True Strike` path and the column-2
-`Smite -> Repel the Wicked -> +20 Magic -> Hallowed Ground` path. Shelter branches
+`Smite -> Detect Undead -> Repel the Wicked -> +20 Magic -> Detect Fiend ->
+Hallowed Ground` path. Shelter branches
 through column 3's `Heal -> +50 MP -> Resist Shadow -> Sworn Purpose -> Blessed
-Light` and column 5's Bless branch. Magic Defense gates Parry at
-`(5, 3)`, followed by `+20 Defense -> Divine Protection`. Tempered Conviction grants `+20%
+Light` and column 5's Bless branch. Tempered Conviction grants `+20%
 Defense` and one Conviction capacity;
 Sworn Purpose grants `+20% Magic` and `+20% Magic Defense`. Blessed Light turns
 successful combat healing spells into a three-turn `+10 Attack` buff. The
@@ -242,17 +267,23 @@ Its two prerequisite connectors descend to the promotion row before joining.
 Six required Human attribute increases use the separate attribute pool,
 leaving 14 progression points and nine attribute points on the shortest route.
 
-Crusader contains 23 nodes across Melee, Spells, Healing, and Protection, using
+Crusader contains 26 nodes across Melee, Spells, Healing, and Protection, using
 the standard tier-3 row gates from ungated through level 95. Ungated
-Condemnation splits into mutually exclusive two-point Two-Handed Weapon
-Proficiency and Sword & Board styles. The shield route adds Censure, Shield
-Ricochet, and the moved level-75 True Piercing Strike. Spells run from retained
-Repel the Wicked through Smite II, Sanctification, and level-90 Smite III;
-Healing runs from ungated Dispel through Cleanse, Heal II, and two-point Prayer
-of Faith. Known inherited nodes remain owned but do not satisfy downstream
-nodes until their preceding path is purchased. Unpurchased Sentinel and
-Paladin nodes close at promotion; all already learned actions, talents, Resolve
-mastery, and the permanent Paladin vow remain.
+Condemnation splits into mutually exclusive, level-65 two-point Two-Handed
+Weapon Proficiency and Sword & Board styles; Beyond Reproach separately
+unlocks Condemnation marking. The two-handed route ends in Penalization, while
+the shield route adds Censure, Shield Ricochet, and level-75 True Piercing
+Strike. Spells run from retained Repel the Wicked through Smite II,
+Sanctification, Undead Hunter, and level-90 Smite III. Healing runs from
+ungated Dispel through Cleanse, Heal II, Radiant Healing, and two-point Prayer
+of Faith. Ungated Parry follows Two-Handed Weapon Proficiency. Protection runs
+from inherited-or-purchased Divine Protection through Posturing, Consecrated
+Bulwark, and replacing Divine Protection II.
+Penalization, Smite III, and Divine Protection II cost two points.
+Known inherited nodes remain owned but do not satisfy downstream nodes until
+their preceding path is purchased. Unpurchased Sentinel and Paladin nodes close
+at promotion; all already learned actions, talents, Resolve mastery, and the
+permanent Paladin vow remain.
 
 ## Staging and Atomic Change
 

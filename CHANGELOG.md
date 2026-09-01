@@ -30,8 +30,63 @@
 - Added a pygame Progression tab with authored graph geometry, an ability icon
   atlas, compact connectors, completed-tree navigation, staged node/attribute
   distribution, full Primary Attribute names, and promotion confirmation.
+- Grouped generated ability-tree SVG references by base-class lineage and
+  base/first-promotion/second-promotion tier.
 - Completed bespoke Warrior, Weapon Master, Berserker, Grandmaster of Arms,
   Lancer, Dragoon, Sentinel, Stalwart Defender, Paladin, and Crusader trees.
+- Rebuilt Warrior as six connected columns with paired shared trunks, added
+  Commitment, Improved Defend, Upsurge, and Achilles Heel, and enabled
+  outclassed enemies to flee with Aggressive Pursuit interception while Smoke
+  Screen escapes remain exempt.
+- Expanded Crusader to 26 nodes with Radiant Healing, Undead Hunter, Beyond
+  Reproach, Penalization, and Divine Protection II; separated Condemnation's
+  disintegration mark into Beyond Reproach and replaced the former Attack,
+  Magic Defense, and HP padding with active/passive class mechanics.
+- Raised Penalization, Smite III, and Divine Protection II to two-point nodes;
+  compacted Sentinel to five columns without Parry; and expanded Stalwart
+  Defender to five columns with Shield Offense and new Resolve engines.
+- Replaced Footpad, Healer, and Pathfinder's generic four-route manifests with
+  authored vertical graphs. Shared Defense, Support/Healing, Naturalism,
+  Melee, and Elemental tracks can feed multiple promotions.
+- Expanded Pathfinder into 40 nodes across Druid, Naturalism, Ranger, Melee,
+  Shaman, Elemental, and Diviner tracks. Added Ray of Moonlight, Nullify
+  Poison, Thorny Vine, Razor Talons, Call Animal, Creature Comforts, Cautious
+  Assault, Unnatural Purge, Bounce Back, Spirit Strike, Conversion, Very
+  Superstitious, Primal Trance, Fundamental Harmony, Intensify Elements,
+  Chronology, Geomancy, and Control Z, with combat and exploration hooks.
+- Added Nature as a spell damage/resistance type with multi-type ability
+  metadata, and reworked Poison Strike from a dual-wield weapon skill into a
+  main-hand Poison Druid spell.
+- Removed promotion stat requirements of 10 or lower across every class and
+  rebalanced the first-promotion gates for Pathfinder, Healer, Footpad,
+  Warrior, and Mage. Shaman now requires Dexterity 14 and Intelligence 12;
+  the complete authored requirement maps are enforced by progression tests.
+- Expanded Healer into 36 authored Bard, Support, Cleric, Healing, Priest, and
+  Monk nodes. Added Lullaby, Beginner's Luck, Mental Shard, Cacophany,
+  Tranquility, Courage, Vision, Tutelary, Safeguarding, Flash Blindness, Incite
+  Panic, Zen Accuracy, Staff Proficiency, Delayed Reaction, and Meditation,
+  including their combat, status, healing, exploration, and weapon hooks.
+- Expanded Footpad into authored Thief, Control, Assassin, Spell Stealer,
+  Defense, and Inquisitor progression. Control now gates both Thief and
+  Assassin, while Defense gates both Spell Stealer and Inquisitor;
+  implemented Stumble Upon, Avoid Traps, Do-over, Serendipity, Aggressive
+  Pursuit, Obscuration, Incantation Comprehension, Mana Depletion, Disruption,
+  and Mystical Evasion.
+- Added the reusable 5,000G Censer of Choking Ash to the Magic Shop as the
+  required implement for Obscuration.
+- Added sparse, one-use Tripwire, Magic Ward, Alert, and Red Alert traps to
+  ordinary dungeon paths. Trap state persists in saves, defenses apply to
+  damage, Alert traps force enemy initiative, and Avoid Traps can negate or
+  halve their effects.
+- Restored Grandmaster of Arms' Weapon Swap level gate to 70, removed Retort's
+  counterattack damage bonus, and unified HP, MP, and rating-node SVG colors
+  under a stat-node color distinct from promotions.
+- Expanded their 26 promoted and terminal trees to 16-20 and 14-18
+  development nodes respectively, added four path-specific passive families
+  per class, and gave every generic terminal tree a two-point class-system
+  mastery.
+- Added terminal meter-cap masteries plus Tethered Instinct's Lycan control
+  acceleration and Bonded Bulwark's bond-derived companion scaling.
 - Rebaselined Mage as a six-column Elemental/Enhancement/Arcana/Occultism/
   Conjuration/Universal graph with `5/8/8/8` Sorcerer/Spellblade/Warlock/
   Conjurer route costs and registry-affordable stat gates.
@@ -45,7 +100,7 @@
   offensive, defensive, and spell-shaping releases.
 - Reorganized Knight Enchanter into three connected release lanes and an
   independent universal column. Quick Recharge, Third Eye, and Storage
-  Capacity II cost two points; the other 17 development nodes cost one point;
+  Capacity II cost two points; the other 25 development nodes cost one point;
   Storage Capacity II adds two slots to each typed pool, and Quick Recharge
   repeats a weapon-triggered Weave across every hit of a multi-hit attack.
 - Added two-point decision pressure to selected tier-3 capstones and advanced
@@ -58,6 +113,16 @@
   Defense path.
 - Realigned Knight Enchanter's late Assault, Spellbind, and universal nodes to
   the terminal-tree level rows.
+- Added eleven timed Detect creature-family spells, with Paladin placements for
+  Detect Undead and Detect Fiend and a player choice to fight or avoid revealed
+  random encounters.
+- Standardized weapon abilities on main-hand attacks unless explicitly marked
+  for dual wielding, rebuilt Flurry of Blades as a degrading-accuracy sequence,
+  separated Parry damage deflection from Riposte counterattacks, and added the
+  Dual Wield Excellence/Mastery accuracy progression.
+- Added the five-use Monocane required by Sleeping Powder to Thieves Guild
+  stock, creature-type bonuses to Smite II/III, resource-specific SVG node
+  colors, and the Fear status icon.
 - Expanded Lancer and Dragoon with split polearm Assault/Guard paths, Vigilant
   Landing, Extended Reach, Swing & Bash, Phalanx, Critical Vigor, Dragon Soul,
   and Dragonheart.

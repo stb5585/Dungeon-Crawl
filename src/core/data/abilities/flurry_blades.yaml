@@ -1,8 +1,10 @@
 name: Flurry of Blades
 type: Skill
 subtype: Offensive
-description: Unleash a flurry of four rapid strikes.
+description: Launch progressively less accurate main-hand attacks until one misses.
 cost: 40
 weapon: true
 damage_mod: 0.75
-strikes: 4
+strikes: 20
+repeat_until_miss: true
+accuracy_penalty_per_strike: 0.08

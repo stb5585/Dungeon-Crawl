@@ -56,7 +56,7 @@ class CharacterOffenseMixin:
                 accessory bonuses, difference in pro level
             Spell attack: enemy status effects
         """
-        from ..classes import ability_mechanics, paladin
+        from ..classes import ability_mechanics, footpad, healer, paladin, warrior
 
         # Defensive guard: speed stats can be 0 in synthetic/summon test states.
         a_speed = self.check_mod("speed", enemy=defender)
@@ -96,6 +96,12 @@ class CharacterOffenseMixin:
         except Exception:
             pass
         hit_mod *= 1 - invis_pen * defender.invisible
+        hit_mod -= footpad.obscuration_accuracy_penalty(defender)
+        weapon_type = getattr(self.equipment.get("Weapon"), "subtyp", None)
+        hit_mod += healer.accuracy_bonus(
+            self,
+            weapon_type if typ == "weapon" else None,
+        )
         if hasattr(self, "encumbered"):
             if self.encumbered:
                 hit_mod *= ENCUMBERED_HIT_MULTIPLIER
@@ -109,6 +115,7 @@ class CharacterOffenseMixin:
         if typ == "weapon":
             hit_mod += ability_mechanics.duelist_accuracy_bonus(self)
             hit_mod += paladin.sword_and_board_accuracy_bonus(self)
+            hit_mod += warrior.commitment_accuracy_bonus(self)
             try:
                 from ..classes import mage_mechanics
 
@@ -142,6 +149,12 @@ class CharacterOffenseMixin:
         if spell:
             pendant_mod = getattr(self.equipment.get("Pendant"), "mod", "")
             chance += 0.25 * ("Magic Dodge" in pendant_mod)
+            try:
+                from ..classes import footpad
+
+                chance += footpad.spell_dodge_bonus(self)
+            except Exception:
+                pass
         # Footpad-line passive: scale *weapon* dodge slightly with DEX so "glass cannon"
         # races/classes have a defensive path that doesn't require changing race resistances.
         # We intentionally do not apply this to spell-avoidance, which is governed by WIS/CHA.
@@ -226,6 +239,13 @@ class CharacterOffenseMixin:
             crit_chance += mage_mechanics.fire_inside_critical_bonus(self)
         except Exception:
             pass
+        try:
+            from ..classes import paladin
+
+            crit_chance += paladin.undead_hunter_critical_bonus(self)
+            crit_chance += paladin.penalization_critical_bonus(self)
+        except Exception:
+            pass
 
         return max(0.0, min(MAX_CRIT_CHANCE, crit_chance))
 
@@ -242,6 +262,8 @@ class CharacterOffenseMixin:
         accuracy_modifier: float = 0.0,
         critical_multiplier: int | None = None,
         damage_type_override: str | None = None,
+        basic_attack: bool = False,
+        counterattack: bool = False,
     ) -> WeaponDamageResult:
         """
         Function that controls melee attacks during combat
@@ -253,7 +275,18 @@ class CharacterOffenseMixin:
         hit(bool): guarantees hit if target doesn't dodge
         """
         from ..combat.combat_result import CombatResult, CombatResultGroup
-        from ..classes import ability_mechanics, grandmaster, paladin
+        from ..classes import (
+            ability_mechanics,
+            footpad,
+            grandmaster,
+            healer,
+            paladin,
+            pathfinder,
+            warrior,
+        )
+
+        dmg_mod *= pathfinder.melee_damage_multiplier(self)
+        conversion_bonus = pathfinder.consume_conversion(self)
 
         try:
             from ..classes import mage_mechanics
@@ -270,6 +303,7 @@ class CharacterOffenseMixin:
         self._last_weapon_primary_damage_instances = []
         if defender.magic_effects["Ice Block"].active or defender.tunnel:
             return f"{self.name}'s attack has no effect.\n", False, crit
+        warrior.record_attack(self, defender)
         if getattr(self, "_twist_fate_success", False):
             hit = True
             self._twist_fate_success = False
@@ -325,6 +359,7 @@ class CharacterOffenseMixin:
                     self,
                     weapon_type,
                 )
+                * healer.staff_damage_multiplier(self, weapon_type)
             )
             cripple = self.physical_effects.get("Cripple")
             cripple_modifier = (
@@ -343,6 +378,9 @@ class CharacterOffenseMixin:
             )
             crit_per = random.uniform(1, crits[i])
             crit_per = self._honed_attack_critical_multiplier(crit_per)
+            crit_per = warrior.commitment_critical_multiplier(self, crit_per)
+            if crits[i] > 1:
+                crit_per += conversion_bonus
             try:
                 from ..classes import promotion_kits
 
@@ -379,9 +417,13 @@ class CharacterOffenseMixin:
 
             # defender variables
             if not hit:
-                dodge = defender.dodge_chance(self) > random.random()
+                dodge_chance = defender.dodge_chance(self)
+                if counterattack:
+                    dodge_chance += pathfinder.counterattack_dodge_bonus(defender)
+                dodge = dodge_chance > random.random()
                 hit_per = self.hit_chance(defender, typ='weapon')
                 hit_per += accuracy_modifier
+                hit_per += ability_mechanics.dual_wield_accuracy_modifier(self, att)
                 hit_per += grandmaster.accuracy_bonus(self, weapon_type)
                 hit_per += grandmaster.two_handed_accuracy_bonus(self, att)
                 hit_per += grandmaster.perfect_form_accuracy_bonus(
@@ -400,6 +442,10 @@ class CharacterOffenseMixin:
             if defender.incapacitated():
                 dodge = False
                 hits[i] = True
+            if (dodge or not hits[i]) and footpad.try_do_over(self):
+                dodge = defender.dodge_chance(self) > random.random()
+                hits[i] = (hit_per > random.random()) and not dodge
+                weapon_dam_str += f"{self.name} uses Do-over to reroll the missed attack.\n"
 
             # --- Phase 1: Dodge / Parry ---
             if dodge:
@@ -423,6 +469,16 @@ class CharacterOffenseMixin:
                 self._reset_maelstrom()
                 continue
 
+            damage, msg, parried, aborted = self._apply_parry(defender, damage)
+            weapon_dam_str += msg
+            if parried and damage <= 0:
+                hits[i] = False
+                self._reset_maelstrom()
+            if aborted:
+                return weapon_dam_str, any(hits), max(crits)
+            if not hits[i]:
+                continue
+
             # --- Phase 3: Critical hit event ---
             if crits[i] > 1:
                 self._emit_crit_event(defender, crits[i])
@@ -444,6 +500,15 @@ class CharacterOffenseMixin:
                     defender, damage, att, ignore
                 )
                 weapon_dam_str += msg
+                if crits[i] > 1:
+                    damage, msg = healer.delay_critical_damage(defender, damage)
+                    weapon_dam_str += msg
+                release = healer.meditation_release(self)
+                if release:
+                    damage += release
+                    weapon_dam_str += (
+                        f"{self.name} releases {release} stored meditation damage.\n"
+                    )
             # --- Phase 6: Apply damage and on-hit effects ---
             if damage > 0:
                 mark = getattr(defender, "_reavers_mark", None)
@@ -616,6 +681,14 @@ class CharacterOffenseMixin:
                     self.class_effects["Power Up"].active = False
                     self.class_effects["Power Up"].duration = 0
 
+        if basic_attack:
+            drained = footpad.drain_basic_attack_mana(
+                self,
+                defender,
+                self._last_weapon_primary_damage,
+            )
+            if drained:
+                weapon_dam_str += f"Mana Depletion drains {drained} MP from {defender.name}.\n"
         return weapon_dam_str, any(hits), max(crits)
 
     # ------------------------------------------------------------------ #
@@ -630,72 +703,69 @@ class CharacterOffenseMixin:
             self.maelstrom_hits = 0
 
     def _handle_dodge(self, defender: Character, damage: int, typ: str) -> tuple[str, bool]:
-        """
-        Handle dodge/parry outcome.
-
-        Returns:
-            (message, aborted) - *aborted* is True when the attacker died
-            from a parry counter-attack and the caller should return early.
-        """
-        msg = ""
+        """Handle a normal dodge independently of Parry."""
         # Evasive Guard stacks reset whenever the defender successfully dodges.
         if "Evasive Guard" in defender.spellbook.get("Skills", {}):
             defender.evasive_guard_stacks = 0
-        if 'Parry' in defender.spellbook['Skills']:
-            from ..classes import ability_mechanics, grandmaster
+        try:
+            from ..events.event_bus import get_event_bus, create_combat_event, EventType
+            get_event_bus().emit(create_combat_event(
+                EventType.DODGE, actor=defender, target=self, damage=damage
+            ))
+        except Exception:
+            pass
+        return f"{defender.name} evades {self.name}'s attack.\n", False
 
-            # Parry counter-attack chance scales with defender DEX.
-            # This makes high-DEX archetypes more resilient without changing race resistances.
-            dex = int(getattr(defender.stats, "dex", 10))
-            parry_chance = max(0.10, min(0.85, 0.25 + (dex - 10) * 0.03))
-            parry_chance = min(
-                0.95,
-                parry_chance
-                + ability_mechanics.posturing_parry_bonus(defender)
-                + ability_mechanics.retort_parry_bonus(defender)
-                + grandmaster.adaptive_arsenal_parry_bonus(defender),
-            )
-            if random.random() < parry_chance:
-                self._last_attack_parried = True
-                msg += f"{defender.name} parries {self.name}'s attack and counterattacks!\n"
-                counter_crit = (
-                    2
-                    if random.random()
-                    < grandmaster.adaptive_arsenal_counter_crit_chance(defender)
-                    else 1
-                )
-                arcane_riposte = (
-                    "Arcane Riposte"
-                    in getattr(defender, "spellbook", {}).get("Skills", {})
-                )
-                if arcane_riposte:
-                    from ..classes import promotion_kits
+    def _apply_parry(self, defender: Character, damage: int) -> tuple[int, str, bool, bool]:
+        """Attempt a shield-incompatible melee deflection and optional Riposte."""
+        from ..classes import ability_mechanics, grandmaster
 
-                    arcane_riposte = promotion_kits.weave_release_available(defender)
-                counter_str, _, _ = defender.weapon_damage(
-                    self,
-                    dmg_mod=ability_mechanics.retort_counter_multiplier(defender),
-                    crit=counter_crit,
-                    hit=arcane_riposte,
-                )
-                if arcane_riposte:
-                    msg += f"{defender.name}'s Arcane Riposte releases the stored weave.\n"
-                msg += counter_str
-                if not self.is_alive():
-                    return msg, True
-            else:
-                msg += f"{defender.name} evades {self.name}'s attack.\n"
-        else:
-            try:
-                from ..events.event_bus import get_event_bus, create_combat_event, EventType
-                event_bus = get_event_bus()
-                event_bus.emit(create_combat_event(
-                    EventType.DODGE, actor=defender, target=self, damage=damage
-                ))
-            except Exception:
-                pass
-            msg += f"{defender.name} evades {self.name}'s attack.\n"
-        return msg, False
+        skills = getattr(defender, "spellbook", {}).get("Skills", {})
+        offhand = getattr(defender, "equipment", {}).get("OffHand")
+        if "Parry" not in skills or getattr(offhand, "subtyp", None) == "Shield":
+            return damage, "", False, False
+        dex = int(getattr(defender.stats, "dex", 10))
+        chance = max(0.10, min(0.85, 0.25 + (dex - 10) * 0.03))
+        chance = min(
+            0.95,
+            chance
+            + ability_mechanics.posturing_parry_bonus(defender)
+            + ability_mechanics.retort_parry_bonus(defender)
+            + grandmaster.adaptive_arsenal_parry_bonus(defender),
+        )
+        if random.random() >= chance:
+            return damage, "", False, False
+        self._last_attack_parried = True
+        deflect_ratio = (
+            1.0 if random.random() < 0.20 else random.uniform(0.50, 0.85)
+        )
+        deflected = max(1, int(damage * deflect_ratio))
+        remaining = max(0, damage - deflected)
+        msg = f"{defender.name} parries and deflects {deflected} damage.\n"
+        riposte_chance = min(0.80, 0.20 + max(0, dex - 10) * 0.02)
+        if "Riposte" not in skills or random.random() >= riposte_chance:
+            return remaining, msg, True, False
+        counter_crit = (
+            2 if random.random() < grandmaster.adaptive_arsenal_counter_crit_chance(defender) else 1
+        )
+        arcane_riposte = "Arcane Riposte" in skills
+        if arcane_riposte:
+            from ..classes import promotion_kits
+
+            arcane_riposte = promotion_kits.weave_release_available(defender)
+        counter, _, _ = defender.weapon_damage(
+            self,
+            dmg_mod=1.0,
+            crit=counter_crit,
+            hit=arcane_riposte,
+            use_offhand=False,
+            counterattack=True,
+        )
+        msg += f"{defender.name} ripostes!\n"
+        if arcane_riposte:
+            msg += f"{defender.name}'s Arcane Riposte releases the stored weave.\n"
+        msg += counter
+        return remaining, msg, True, not self.is_alive()
 
     def consume_mirror_image(self, attacker: Character, rng=None, luck_factor: int = 15) -> bool:
         """Return whether an incoming hit consumes one active mirror image."""

@@ -1,6 +1,8 @@
 name: Regrowth
 type: Heal
 subtype: Heal
+school: Nature
+damage_types: [Nature]
 description: >-
   Conjure leaves from the tree of life that heal the user over time.
 cost: 8

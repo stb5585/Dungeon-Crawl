@@ -276,6 +276,52 @@ class DoublePayback(_ProgressionPassive):
         )
 
 
+class TowerOffense(_ProgressionPassive):
+    """Convert Shield Slam damage into Resolve."""
+
+    def __init__(self):
+        super().__init__(
+            "Tower Offense",
+            "Shield Slam generates Resolve based on the damage it deals.",
+        )
+
+
+class GetEven(_ProgressionPassive):
+    """Discount a Resolve action after a successful Retaliate."""
+
+    def __init__(self):
+        super().__init__(
+            "Get Even",
+            (
+                "Successful Retaliate counterattacks reduce the cost of the "
+                "next non-Surge Resolve ability."
+            ),
+        )
+
+
+class GeneratorShield(_ProgressionPassive):
+    """Generate Resolve from Shield Ricochet impacts."""
+
+    def __init__(self):
+        super().__init__(
+            "Generator Shield",
+            (
+                "Gain Resolve for each enemy hit by Shield Ricochet, doubled "
+                "when that enemy is stunned."
+            ),
+        )
+
+
+class BattleDetermination(_ProgressionPassive):
+    """Generate Resolve immediately after Battle Cry."""
+
+    def __init__(self):
+        super().__init__(
+            "Battle Determination",
+            "Battle Cry immediately generates 20 Resolve.",
+        )
+
+
 class IronMaiden(_ProgressionPassive):
     def __init__(self):
         super().__init__(

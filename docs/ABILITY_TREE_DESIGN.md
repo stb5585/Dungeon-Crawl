@@ -8,7 +8,8 @@ validates those declarations, applies purchases atomically, and remains the
 public runtime facade for Pygame and headless validation.
 
 Cross-reference diagrams for every playable class are indexed in
-[`ability_trees/README.md`](ability_trees/README.md). They are generated from
+[`ability_trees/README.md`](ability_trees/README.md) and grouped by base-class
+lineage, then base/first-promotion/second-promotion tier. They are generated from
 the runtime graphs except for Mage's authoritative hand-routed connectors;
 regenerate them after tree edits with
 `./.venv/bin/python tools/generate_ability_tree_diagrams.py`. A regression test
@@ -51,14 +52,17 @@ or stat requirements differ.
 
 ### Base Trees
 
-- Warrior: a shared Piercing Strike, Charge, and Weapon Focus trunk leading
-  into Arms and Vanguard, plus Bulwark, Command, and independent martial
-  talents.
+- Warrior: paired `Piercing Strike -> Charge` and `Shield Slam -> Shield Block`
+  trunks leading into four promotion routes, plus connected Defense and
+  Offense columns.
 - Mage: a bespoke Elemental, Enhancement, Arcana, Occultism, Conjuration, and
   Universal graph described below.
-- Footpad: Subterfuge, Vigilance, Assassination, and Spellcraft.
-- Healer: Devotion, Discipline, Restoration, and Inspiration.
-- Pathfinder: Wilds, Divination, Totemism, and Huntsmanship.
+- Footpad: Thief, shared Control, Assassin, Spell Stealer, shared Defense,
+  and Inquisitor tracks.
+- Healer: Bard, shared Support, Cleric, shared Healing, Priest, and Monk
+  tracks.
+- Pathfinder: Druid, shared Naturalism, Ranger, shared Melee, Shaman, shared
+  Elemental, and Diviner tracks.
 
 ### Warrior Lineage
 
@@ -103,18 +107,16 @@ or stat requirements differ.
 - Grandmaster of Arms:
   - Every weapon discipline has rank-1, rank-5, and rank-10 art nodes; each
     higher form replaces the previous form. Every rank-10 art costs two points.
-  - Perfect Form is a two-point floating talent granting `+1%` weapon damage
-    and `+0.5%` hit chance per equipped discipline rank, with no level gate.
-  - Double Strike is an ungated, inherited-or-purchased floating entry between
-    Perfect Form and Adaptive Arsenal in the fourth column.
-  - Adaptive Arsenal is a two-point floating talent granting `+0.5%` parry
-    chance and `+1%` counterattack critical chance per equipped discipline
-    rank, with no level gate.
+  - The six-column mastery route is `Double Strike -> Dual Wield Excellence
+    (65) -> Weapon Swap (70)`, then forks to two-point Perfect Form and
+    Adaptive Arsenal at level 75 before rejoining at Dual Wield Mastery (80).
+    Excellence removes the main-hand Dual Wield accuracy penalty; Mastery
+    removes the remaining off-hand penalty.
 - Paladin:
   - Ungated Oath's Judgment begins at `(1, 0)`. Its left branch is `Double
     Strike -> +20 Attack -> Tempered Conviction -> True Strike` in column 0;
-    its right branch is `Smite -> Repel the Wicked -> +20 Magic -> Hallowed
-    Ground` in column 2. Repel the Wicked is level 40, Tempered Conviction
+    its right branch is `Smite -> Detect Undead (35) -> Repel the Wicked ->
+    +20 Magic -> Detect Fiend (50) -> Hallowed Ground` in column 2. Repel the Wicked is level 40, Tempered Conviction
     level 45, and Hallowed Ground level 55. Tempered Conviction grants `+20%
     Defense` and one Conviction capacity.
   - Ungated Oath's Shelter begins at `(4, 0)`. Its left branch is `Heal -> +50
@@ -141,21 +143,32 @@ or stat requirements differ.
 - Crusader:
   - Rows 0-7 represent ungated, 65, 70, 75, 80, 85, 90, and 95. Melee begins
     with ungated Condemnation. Its mutually exclusive two-point style nodes
-    lead through `Two-Handed Weapon Proficiency -> +30 Attack -> Mortal Strike
-    (75) -> Righteous Advance (80)` or `Sword & Board -> Censure (70) -> True
-    Piercing Strike (75) -> Shield Ricochet (80) -> Triple Strike (85)`.
+    are level 65 and lead through `Two-Handed Weapon Proficiency -> Mortal
+    Strike (75) -> Righteous Advance (80) -> Penalization (85)` or `Sword &
+    Board -> Censure (70) -> True Piercing Strike (75) -> Shield Ricochet (80)
+    -> Triple Strike (85)`. Beyond Reproach sits beneath Condemnation at level
+    75.
   - Spells is `Repel the Wicked -> Smite II (65) -> Sanctification (70) ->
-    Smite III (90)`. Sanctification increases all Holy damage by 50%.
-  - Healing is `Dispel -> Cleanse (65) -> Heal II (70) -> Prayer of Faith
-    (85)`. Prayer of Faith costs two points and, below 10% HP, randomly heals
-    to full, grants a two-turn all-damage barrier, or damages every enemy.
-  - Protection is `Consecrated Bulwark -> Parry (65) -> Posturing (70) -> +30
-    Magic Defense (75) -> +100 HP (80)`. Upgraded spells retain replacement
-    ownership without bypassing incomplete prerequisite chains.
-  - Condemnation deals weapon and Holy damage and can mark fiends or undead.
-    Repel the Wicked normally drives a valid target from combat without kill
-    rewards; a successful cast against a Condemnation-marked target
-    disintegrates it.
+    Undead Hunter (75) -> Smite III (90)`. Sanctification increases all Holy
+    damage by 50%. While an Undead enemy remains, Undead Hunter increases Speed
+    by 20%—which also raises initiative weight—and critical chance by 10
+    percentage points.
+  - Healing is `Dispel -> Cleanse (65) -> Heal II (70) -> Radiant Healing (75)
+    -> Prayer of Faith (85)`. Radiant Healing turns 10% of actual HP restored
+    by an in-combat healing spell into Holy damage against one living hostile.
+    Prayer of Faith costs two points and, below 10% HP, randomly heals to full,
+    grants a two-turn all-damage barrier, or damages every enemy.
+  - Ungated Parry now follows Two-Handed Weapon Proficiency in the first melee
+    column. Protection is `Divine Protection -> Posturing (70) ->
+    Consecrated Bulwark (75) -> Divine Protection II (80)`. Divine Protection
+    II replaces Divine Protection, greatly raises Defense for five turns, and
+    lowers nearby enemies' Attack and Magic for three turns. Upgraded spells
+    retain replacement ownership without bypassing incomplete prerequisites.
+  - Condemnation itself now deals only weapon and Holy damage. Beyond Reproach
+    gives it a chance to mark fiends or undead; a successful Repel the Wicked
+    then disintegrates the marked target. Penalization makes a successful
+    Mortal Strike activate combat-long wrath, adding 15 percentage points of
+    critical chance and 25% Holy damage.
 - Lancer:
   - The seven-column layout places ungated Jump at column 2 and Polearm
     Proficiency at column 5. Polearm Assault occupies column 4, Polearm Guard
@@ -172,9 +185,8 @@ or stat requirements differ.
     column 5 and requires Polearm Proficiency directly.
     Polearm Guard is `Phalanx (35) -> Critical Vigor (40) -> +50 HP (45) ->
     Dragon Soul (50)`.
-  - Ungated, inherited-or-purchased Parry and True Strike occupy the final
-    column at rows 2 and 3 so either can be recovered if missed on the Warrior
-    tree.
+  - Ungated, inherited-or-purchased True Strike remains in the final column;
+    Parry is no longer part of the Lancer or inherited Dragoon tree.
   - Jump-modification IDs remain stable under `lancer.jump-mod.*` and unlock
     configuration without creating spellbook entries.
   - Promote: Dragoon sits in column 4. Its left prerequisite runs `Jump -> +20
@@ -185,7 +197,7 @@ or stat requirements differ.
     Neither Jump modifier path is required.
   - Polearm Excellence and Vigilant Landing each cost two points.
 - Dragoon:
-  - The Dragoon tree retains all 23 Lancer development nodes in the same
+  - The Dragoon tree retains all 22 Lancer development nodes in the same
     positions, omits only the promotion node, and adds 11 Dragoon nodes.
     Previously purchased nodes remain owned; any unpurchased Lancer skill,
     talent, rating, or Jump modification remains purchasable as a Dragoon.
@@ -215,24 +227,32 @@ or stat requirements differ.
     Brace Wall (45) -> Resolute Guard (55)`.
   - Adrenaline splits into Resistance (`Spell Block -> +20 Magic Defense ->
     Bulwark Guard -> Spell Reflection -> Shielding Ward`) and Support (`Purge
-    Weakness -> +50 HP -> Boast -> Braggadocious`). Goad, Charge, and Double
-    Strike are independent inherited nodes in column 6.
+    Weakness -> +50 HP -> Boast -> Braggadocious`). Parry is absent; Goad,
+    Charge, and Double Strike are disconnected in the fifth column at rows 3-5.
   - The complete Sentinel tree is shifted to rows 1-8. Promote: Stalwart
-    Defender sits at `(2, 8)` and accepts any of Watchful
+    Defender sits at `(1.5, 8)` and accepts any of Watchful
     Reprisal, Resolute Guard, Shielding Ward, or Braggadocious at level 60 with
     `CON 20` and a three-point cost.
 - Stalwart Defender:
-  - Four terminal disciplines contain 20 nodes: Assault, Bulwark, Resistance,
-    and Support. Each column is one continuous prerequisite chain. Inherited
-    Resolve actions remain ungated catch-up nodes within those chains.
+  - Five terminal disciplines contain 25 nodes: Assault, Bulwark, Shield
+    Offense, Resistance, and Support. Inherited Resolve actions remain ungated
+    catch-up nodes within those chains.
   - Assault culminates in Punishing Guard (70), Crushing Vengeance (75), and
-    Double Payback (80). Bulwark culminates in Last Stand (70), +30 Defense
-    (75), Unbroken Wall (80), and Iron Maiden (85).
+    two-point Double Payback (80). Bulwark culminates in Last Stand (70),
+    Unbroken Wall (80), and two-point Iron Maiden (85); the former Defense node
+    is removed without shifting the remaining nodes.
+  - Shield Offense is `Retaliate -> Shield Ricochet (65) -> Tower Offense (70)
+    -> Get Even (75) -> Generator Shield (80)`. Tower Offense converts one-fifth
+    of Shield Slam damage into Resolve, capped at 20. Get Even discounts the
+    next non-Surge Resolve action by 10. Generator Shield grants 5 Resolve per
+    Ricochet hit, doubled when that target is stunned.
   - Resistance adds Mirror Bastion (75) and Fortified Citadel (80); Support
-    adds +100 HP (70) and Final Redoubt (75). Citadel Aegis, Ironwall Revenge,
+    adds Battle Cry (70), Battle Determination (75), and Final Redoubt (80).
+    Battle Determination makes Battle Cry generate 20 Resolve. Citadel Aegis, Ironwall Revenge,
     Last Bastion, and Stronghold are full-Resolve Bursts, not tree nodes.
   - The complete Stalwart tree occupies rows 1-6. Punishing Guard, Unbroken
-    Wall, Fortified Citadel, and Final Redoubt each cost two points.
+    Wall, Fortified Citadel, Final Redoubt, Double Payback, and Iron Maiden each
+    cost two points.
 
 ### Mage Lineage
 
@@ -413,10 +433,10 @@ or stat requirements differ.
   Aegis Release, Spellbind Release, and Universal / Extra Abilities. Advanced
   Spells contains the six tier-two elemental spells and Magic Missile II as
   seven independent level-70, one-point nodes. Quick Recharge, Third Eye, and
-  Storage Capacity II cost two points; its other 24 development nodes cost one.
+  Storage Capacity II cost two points; its other 25 development nodes cost one.
   Double Strike, Enhance Armor, Mana Tap, and Parry are
-  ungated entries that adopt prior ownership. The universal Parry, True
-  Piercing Strike, and Triple Strike nodes are independent. Mana Slice II and
+  ungated entries that adopt prior ownership. Level-65 Riposte follows the
+  universal Parry; True Piercing Strike and Triple Strike remain independent. Mana Slice II and
   Quick Recharge occupy rows 6 and 7; Storage Capacity II, Spellbind, and
   Echoing Blade occupy rows 4-6; True Piercing Strike and Triple Strike occupy
   their level-75 and level-85 rows. See
@@ -484,28 +504,121 @@ or stat requirements differ.
 
 ### Footpad Lineage
 
-- Thief/Rogue: Fortune, Tools, Loaded Odds, and Cunning.
-- Inquisitor/Seeker: Case Journal, Judgment, Wayfinding, and Revelation.
-- Assassin/Ninja: Death Mark, Shadowcraft, Execution, and No Trace.
-- Spell Stealer/Arcane Trickster: Spell Theft, Stolen Charge, Arcane Larceny,
-  and Misdirection.
+Footpad has 34 development nodes across six vertical tracks: Thief, Control,
+Assassin, Spell Stealer, Defense, and Inquisitor. Rows advance from ungated
+roots through level 5, 10, 15, 20, and 25 gates. Control deliberately leaves
+row four blank after Smoke Screen and is required by both Thief and Assassin.
+Defense leaves row two blank after Quickstep and is required by both Spell
+Stealer and Inquisitor. The four promotion nodes sit between their identity
+and shared columns, making each combined route cost 13 progression points.
+
+The new nodes are implemented mechanics rather than labels. Avoid Traps hooks
+into triggered traps, Do-over supplies one possible attack reroll per battle,
+Serendipity improves ordinary loot rolls, and Mana Depletion drains MP only on
+the basic Attack action. Obscuration requires the reusable 5,000G Censer of
+Choking Ash sold by the Magic Shop, reduces random encounters for 50 steps,
+and lowers accuracy against the user. Incantation Comprehension increases
+scroll potency, Mystical Evasion adds spell dodge, and Disruption interrupts a
+charged ability with a two-turn Silence on a critical hit. Outclassed enemies
+can now choose to flee, and Aggressive Pursuit grants its advantaged
+interception attack. Smoke Screen escapes bypass Aggressive Pursuit.
+
+| Tree | Paths | Development nodes / total cost | Promotion route cost | Passive families |
+| --- | --- | ---: | ---: | --- |
+| Thief | Fortune, Tools | 16 / 16 | Rogue: 13 | Fortune's Favor, Escape Route, Misfortune Dividend, Hidden Pocket |
+| Rogue | Loaded Odds, Cunning | 14 / 15 | Terminal | Loaded Odds, Cheater's Guard, Jinxed Edge, two-point House Advantage |
+| Inquisitor | Case Journal, Judgment | 20 / 20 | Seeker: 9 | Methodical Inquiry, Prepared Defense, Cross Examination, Contingency File |
+| Seeker | Wayfinding, Revelation | 15 / 16 | Terminal | Revelatory Strike, Wayfinder's Ward, Pattern Lock, two-point Safe Passage |
+| Assassin | Death Mark, Shadowcraft | 16 / 16 | Ninja: 12 | Lethal Preparation, Veiled Retreat, Marked Quarry, Vanishing Point |
+| Ninja | Execution, No Trace | 14 / 17 | Terminal | No-Trace Opener, Shadow Evasion, Execution Rhythm, two-point Ghost Step |
+| Spell Stealer | Spell Theft, Stolen Charge | 16 / 16 | Arcane Trickster: 11 | Stolen Momentum, Arcane Escape, Counterfeit Casting, Blank Escape |
+| Arcane Trickster | Arcane Larceny, Misdirection | 14 / 18 | Terminal | Arcane Larceny, Misdirection, Spell Feint, two-point Vanishing Formula |
+
+House Advantage, Safe Passage, Ghost Step, and Vanishing Formula each add one
+capacity to their terminal class meter. This stacks with the earlier cap talent
+and makes the two-point terminal mastery a mechanical choice rather than a
+renamed rating node.
 
 ### Healer Lineage
 
-- Cleric/Templar/Hierophant: Devotion, Bulwark, Relic Discipline, Ordered
-  Blessings, Sacred Conduit, and Devotional Grace.
-- Monk/Master Monk: Ki, Centering, Perfected Ki, and Diamond Body.
-- Priest/Archbishop: Prayer, Grace, Benediction, and Intervention.
-- Bard/Troubadour: Performance, Composition, Finale, and Mastery.
+Healer has 36 development nodes across six full Bard, Support, Cleric,
+Healing, Priest, and Monk columns. Bard joins its performance column to the
+complete Support column; Cleric and Priest each join their identity column to
+the complete Healing column. Those three joined routes cost 14 points each,
+including promotion. Monk remains an independent six-node offensive-discipline
+route costing eight points including promotion. This makes the shared support
+and healing commitments explicit without duplicating their abilities.
+
+The Bard line progresses through Imbue Weapon, Goad, Lullaby, Beginner's Luck,
+Mental Shard, and Cacophany. Support supplies Bless, Tranquility, Courage,
+Vision, Magic Defense, and Tutelary. Cleric combines Smite, Defense, Turn
+Undead, Detect Undead, Divine Protection, and Shield Slam with Healing's Heal,
+HP, Regen, MP, Safeguarding, and Heal II. Priest builds Holy, Magic, Flash
+Blindness, Defensive Regen, Incite Panic, and Resist Shadow alongside that
+same Healing column. Monk develops Zen Accuracy, Staff Proficiency, Attack,
+Delayed Reaction, Leg Sweep, and Meditation.
+
+| Tree | Paths | Development nodes / total cost | Promotion route cost | Passive families |
+| --- | --- | ---: | ---: | --- |
+| Cleric | Devotion, Bulwark | 16 / 16 | Templar: 10; Hierophant: 12 | Devoted Guard, Consecrated Focus, Martyr's Reserve, Radiant Rebuke |
+| Templar | Relic Discipline, Ordered Blessings | 14 / 15 | Terminal | Ordered Blessing, Relic Discipline, Shielded Litany, two-point Pilgrim's Guard |
+| Hierophant | Sacred Conduit, Devotional Grace | 14 / 16 | Terminal | Sacred Conduit, Devotional Ward, Staff Testament, two-point Warding Gospel |
+| Monk | Ki, Ki Discipline, Centering | 17 / 17 | Master Monk: 10 | Centered Breath, Focused Ki, Flowing Kata, Open-Hand Focus |
+| Master Monk | Perfected Ki, Diamond Body | 15 / 16 | Terminal | Perfected Ki, Diamond Body, Hundred-Fist Rhythm, two-point Empty Mountain |
+| Priest | Prayer, Grace | 16 / 16 | Archbishop: 10 | Answered Prayer, Sheltering Litany, Reserved Benediction, Quiet Sanctuary |
+| Archbishop | Benediction, Intervention | 14 / 15 | Terminal | Benediction Mastery, Intervening Grace, Great Gospel, two-point Miracle's Margin |
+| Bard | Performance, Composition | 16 / 16 | Troubadour: 11 | Practiced Refrain, Harmonic Shelter, Improvised Verse, Resolving Cadence |
+| Troubadour | Finale, Mastery | 14 / 21 | Terminal | Resonant Finale, Sustained Chorus, Masterful Coda, two-point Endless Encore |
+
+The terminal masteries add one Devotion, Ki, Prayer, or Crescendo capacity as
+appropriate. Troubadour has no ordinary catalog abilities, so its 14-node tree
+is intentionally a deeper set of two-point performance and mastery ranks; its
+21-point full-clear cost remains below the authored martial and caster
+terminal full clears.
 
 ### Pathfinder Lineage
 
-- Druid/Lycan/Archdruid: Forms, Nature Rites, Frenzy, Control, Fourfold
-  Balance, and Aspect Harmony.
-- Diviner/Astromancer: Runes, Foresight, Foresight Threads, and
-  Constellations.
-- Shaman/Soulcatcher: Totems, Elements, Soul Communion, and Totem Resonance.
-- Ranger/Beast Master: Hunt, Companion Bond, Pack Tactics, and Commands.
+Pathfinder's 40 development nodes are split into seven vertical tracks: Druid,
+Naturalism, Ranger, Melee, Shaman, Elemental, and Diviner. Two deliberate row-4
+gaps preserve the requested Naturalism and Melee pacing. Druid joins its nature
+spells to the shared Naturalism capstone; Ranger draws from Naturalism, its full
+melee identity, and the shared Attack training; Shaman joins the same Attack
+training to its full spirit identity and elemental magic; and Diviner joins
+Elemental to its complete time/divination identity. Including promotion, the
+routes cost 13, 14, 14, and 11 points respectively, keeping every promotion
+reachable within the 16 points earned by level 30 without making the shared
+tracks identical.
+
+Nature is a first-class spell damage and resistance type. Abilities may declare
+several qualifying damage types—for example Poison Dart is Nature/Poison,
+Thorny Vine is Nature/Earth, and the reworked Poison Strike is a main-hand
+Nature spell with Physical and Poison components. Elemental-trigger passives
+inspect all declared types rather than forcing each spell into one school.
+
+| Tree | Paths | Development nodes / total cost | Promotion route cost | Passive families |
+| --- | --- | ---: | ---: | --- |
+| Druid | Forms, Nature Rites | 16 / 16 | Lycan: 11; Archdruid: 11 | Primal Balance, Living Bark, Wildshape Memory, Grove Shelter |
+| Lycan | Frenzy, Control | 14 / 15 | Terminal | Frenzy Control, Moonlit Hide, Predator's Rhythm, two-point Tethered Instinct |
+| Archdruid | Fourfold Balance, Aspect Harmony | 14 / 15 | Terminal | Aspect Harmony, Ancient Growth, Fourfold Memory, two-point Worldroot Shelter |
+| Diviner | Runes, Foresight | 16 / 16 | Astromancer: 14 | Runic Focus, Foreseen Defense, Reserved Rune, Averted Fate |
+| Astromancer | Foresight Threads, Constellations | 14 / 15 | Terminal | Threaded Fate, Celestial Shelter, Convergent Signs, two-point Event Horizon |
+| Shaman | Totems, Elements | 16 / 16 | Soulcatcher: 11 | Totemic Rhythm, Spirit Ward, Communion Pulse, Ancestor's Shelter |
+| Soulcatcher | Soul Communion, Totem Resonance | 14 / 15 | Terminal | Resonant Soul, Spirit Vessel, Harvest Echo, two-point Totemic Afterlife |
+| Ranger | Hunt, Companion Bond | 16 / 16 | Beast Master: 12 | Disciplined Hunt, Companion Guard, Quarry Coordination, Trailside Recovery |
+| Beast Master | Pack Tactics, Commands | 14 / 15 | Terminal | Pack Tactics, Shared Recovery, Alpha Command, two-point Bonded Bulwark |
+
+Worldroot Shelter, Event Horizon, and Totemic Afterlife add one capacity to
+Aspect Harmony, Foresight Threads, and Totem Resonance. Tethered Instinct makes
+each successful Lycan stress response record one extra control response.
+Bonded Bulwark raises the full-bond companion combat coefficient from 15% to
+25%, scaling proportionally at lower bond.
+
+Promoted-tree passive families use the normal `+20%` or `+30%` tier bonus and
+advance through named mastery ranks only when the class's active catalog does
+not fill the 16-node first-promotion or 14-node terminal baseline. The fourth
+terminal family is always a two-point class-system mastery. First-promotion
+route costs above include the three-point terminal promotion; total development
+costs exclude promotion nodes.
 
 ## Ownership Boundaries
 

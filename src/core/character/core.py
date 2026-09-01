@@ -136,6 +136,7 @@ class Character(
                                              'Wind': 0.,
                                              'Shadow': 0.,
                                              'Holy': 0.,
+                                             'Nature': 0.,
                                              "Poison": 0.,
                                              'Physical': 0.}
         self.anti_magic_active = False

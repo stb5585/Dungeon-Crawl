@@ -162,6 +162,154 @@ def test_all_tree_manifests_validate_and_scale_rating_values_by_stage():
                 assert node.cost == (2 if tree.stage == 1 else 3)
 
 
+def test_remaining_lineages_have_full_development_budgets_and_base_graph_parity():
+    completed_lineages = {
+        "Warrior",
+        "Weapon Master",
+        "Berserker",
+        "Grandmaster of Arms",
+        "Paladin",
+        "Crusader",
+        "Lancer",
+        "Dragoon",
+        "Sentinel",
+        "Stalwart Defender",
+        "Mage",
+        "Sorcerer",
+        "Wizard",
+        "Warlock",
+        "Shadowcaster",
+        "Demonologist",
+        "Spellblade",
+        "Knight Enchanter",
+        "Conjurer",
+        "Thaumaturgist",
+    }
+
+    expected_branches = {
+        "Footpad": (
+            "Thief",
+            "Control",
+            "Assassin",
+            "Spell Stealer",
+            "Defense",
+            "Inquisitor",
+        ),
+        "Healer": ("Bard", "Support", "Cleric", "Healing", "Priest", "Monk"),
+        "Pathfinder": (
+            "Druid",
+            "Naturalism",
+            "Ranger",
+            "Melee",
+            "Shaman",
+            "Elemental",
+            "Diviner",
+        ),
+    }
+    for class_name in ("Footpad", "Healer", "Pathfinder"):
+        tree = ABILITY_TREES[class_name]
+        by_id = {node.id: node for node in tree.nodes}
+
+        def prerequisite_closure(node):
+            closure = {node.id}
+            for prerequisite in node.prerequisites:
+                closure.update(prerequisite_closure(by_id[prerequisite]))
+            return closure
+
+        assert tree.branches == expected_branches[class_name]
+        expected_node_count = 34 if class_name == "Footpad" else 24
+        if class_name == "Healer":
+            expected_node_count = 36
+        if class_name == "Pathfinder":
+            expected_node_count = 40
+        assert sum(node.kind != NodeKind.PROMOTION for node in tree.nodes) == expected_node_count
+        for promotion in (
+            node for node in tree.nodes if node.kind == NodeKind.PROMOTION
+        ):
+            assert promotion.cost == 2
+            expected_route_cost = 13 if class_name == "Footpad" else 8
+            if class_name == "Healer" and promotion.payload["target_class"] != "Monk":
+                expected_route_cost = 14
+            if class_name == "Pathfinder":
+                expected_route_cost = {
+                    "Druid": 13,
+                    "Ranger": 14,
+                    "Shaman": 14,
+                    "Diviner": 11,
+                }[promotion.payload["target_class"]]
+            assert sum(
+                by_id[node_id].cost
+                for node_id in prerequisite_closure(promotion)
+            ) == expected_route_cost
+
+    for class_name, tree in ABILITY_TREES.items():
+        if class_name in completed_lineages or tree.stage == 1:
+            continue
+        development = [node for node in tree.nodes if node.kind != NodeKind.PROMOTION]
+        minimum = 16 if tree.stage == 2 else 14
+        assert len(development) >= minimum, class_name
+        if tree.stage == 3:
+            advanced = [node for node in development if node.cost == 2]
+            assert advanced, class_name
+            assert any(node.payload.get("kit_effect") for node in advanced), class_name
+
+
+def test_first_promotion_stat_requirements_match_rebalanced_gates():
+    expected = {
+        "Warrior": {
+            "Weapon Master": {"strength": 14, "dex": 12, "intel": 11},
+            "Lancer": {"strength": 13, "con": 14},
+            "Sentinel": {"con": 15, "strength": 13},
+            "Paladin": {"con": 14, "wisdom": 13},
+        },
+        "Mage": {
+            "Sorcerer": {"intel": 15, "wisdom": 13},
+            "Spellblade": {"con": 11, "intel": 13, "charisma": 12},
+            "Warlock": {"intel": 13, "charisma": 14},
+            "Conjurer": {"charisma": 12, "intel": 13, "wisdom": 12},
+        },
+        "Footpad": {
+            "Thief": {"dex": 14, "charisma": 13},
+            "Assassin": {"dex": 15, "charisma": 12},
+            "Spell Stealer": {"intel": 14, "dex": 13},
+            "Inquisitor": {"strength": 13, "con": 13},
+        },
+        "Healer": {
+            "Bard": {"charisma": 12, "wisdom": 12, "intel": 12, "dex": 12},
+            "Cleric": {"wisdom": 14, "con": 13},
+            "Priest": {"wisdom": 14, "intel": 13},
+            "Monk": {"dex": 13, "wisdom": 12},
+        },
+        "Pathfinder": {
+            "Druid": {"wisdom": 13, "dex": 13, "intel": 11},
+            "Ranger": {"strength": 13, "dex": 13},
+            "Shaman": {"dex": 14, "intel": 12},
+            "Diviner": {"intel": 14, "wisdom": 14},
+        },
+    }
+
+    actual = {}
+    for base_class in expected:
+        actual[base_class] = {
+            node.payload["target_class"]: node.payload["requirements"]
+            for node in ABILITY_TREES[base_class].nodes
+            if node.kind == NodeKind.PROMOTION
+        }
+
+    assert actual == expected
+
+
+def test_no_promotion_node_retains_a_requirement_of_ten_or_less():
+    for tree in ABILITY_TREES.values():
+        for node in tree.nodes:
+            if node.kind != NodeKind.PROMOTION:
+                continue
+            assert all(
+                required > 10
+                for required in node.payload["requirements"].values()
+            ), (tree.class_name, node.name, node.payload["requirements"])
+
+
 def test_only_plain_stat_nodes_use_fixed_stat_increases():
     fixed_bonus_keys = {"ratings", "health", "mana"}
 
@@ -254,10 +402,6 @@ def test_new_character_starts_with_one_freely_allocatable_point(class_type):
                 "Shield Slam",
                 "Disarm",
                 "Battle Cry",
-                "Adrenaline",
-                "Honed Attack",
-                "Parry",
-                "Double Strike",
             },
         ),
         (
@@ -278,11 +422,39 @@ def test_new_character_starts_with_one_freely_allocatable_point(class_type):
                 "Mirror Image",
             },
         ),
-        (Footpad, {"Quickstep", "Disarm", "Pocket Sand", "+10 Magic"}),
-        (Healer, {"Holy", "+10 Defense", "Heal", "+10 Magic Defense"}),
+        (
+            Footpad,
+            {
+                "Stumble Upon",
+                "Disarm",
+                "Dual Wield",
+                "Duelist",
+                "Piercing Strike",
+                "Quickstep",
+            },
+        ),
+        (
+            Healer,
+            {
+                "Imbue Weapon",
+                "Bless",
+                "Smite",
+                "Heal",
+                "Holy",
+                "Zen Accuracy",
+            },
+        ),
         (
             Pathfinder,
-            {"Natural Attunement", "Tremor", "+10 Magic Defense", "Quickstep"},
+            {
+                "Poison Dart",
+                "Natural Attunement",
+                "Stumble Upon",
+                "Piercing Strike",
+                "Spirit Strike",
+                "Tremor",
+                "Intensify Elements",
+            },
         ),
     ],
 )
@@ -319,8 +491,57 @@ def test_pathfinder_has_no_automatic_root_and_keeps_both_styles():
         "True Strike",
     ):
         assert name in statuses
-    assert statuses["Tremor"].node.lane == "Divination"
-    assert statuses["Piercing Strike"].node.lane == "Huntsmanship"
+    assert statuses["Tremor"].node.lane == "Elemental"
+    assert statuses["Piercing Strike"].node.lane == "Melee"
+
+
+def test_explicit_base_promotions_follow_authored_capstones():
+    footpad_promotions = {
+        node.payload["target_class"]: node
+        for node in ABILITY_TREES["Footpad"].nodes
+        if node.kind == NodeKind.PROMOTION
+    }
+    assert footpad_promotions["Thief"].prerequisites == (
+        "footpad.ability.serendipity",
+        "footpad.ability.sleepingpowder",
+    )
+    assert footpad_promotions["Assassin"].prerequisites == (
+        "footpad.ability.obscuration",
+        "footpad.ability.sleepingpowder",
+    )
+    assert footpad_promotions["Spell Stealer"].prerequisites == (
+        "footpad.ability.disruption",
+        "footpad.ability.mystical-evasion",
+    )
+    assert footpad_promotions["Inquisitor"].prerequisites == (
+        "footpad.ability.detect-slime",
+        "footpad.ability.mystical-evasion",
+    )
+
+    cleric = next(
+        node
+        for node in ABILITY_TREES["Healer"].nodes
+        if node.payload.get("target_class") == "Cleric"
+    )
+    assert cleric.prerequisites == (
+        "healer.ability.shield-slam",
+        "healer.ability.heal2",
+    )
+
+    pathfinder_promotions = {
+        node.payload["target_class"]: node
+        for node in ABILITY_TREES["Pathfinder"].nodes
+        if node.kind == NodeKind.PROMOTION
+    }
+    assert pathfinder_promotions["Shaman"].prerequisites == (
+        "pathfinder.rating.attack.1",
+        "pathfinder.ability.primal-trance",
+        "pathfinder.ability.gust",
+    )
+    assert pathfinder_promotions["Diviner"].prerequisites == (
+        "pathfinder.ability.gust",
+        "pathfinder.ability.control-z",
+    )
 
 
 def test_base_trees_use_authored_specializations_and_terminal_level_gates():
@@ -346,7 +567,7 @@ def test_base_trees_use_authored_specializations_and_terminal_level_gates():
         "Promote: Lancer": (
             "Piercing Strike",
             "Charge",
-            "Weapon Focus",
+            "Honed Attack",
             "Driving Thrust",
             "+10 Defense",
             "Retaliate",
@@ -357,15 +578,15 @@ def test_base_trees_use_authored_specializations_and_terminal_level_gates():
             "Rally",
             "+10 Defense",
             "Dishearten",
-            "+25 HP",
+            "Aggressive Pursuit",
         ),
         "Promote: Paladin": (
             "Shield Slam",
             "Shield Block",
-            "Rally",
             "Goad",
-            "+10 Magic Defense",
             "Chastise",
+            "+10 Magic Defense",
+            "Commitment",
         ),
     }
     for promotion_name, path_names in expected_paths.items():
@@ -385,19 +606,16 @@ def test_base_trees_use_authored_specializations_and_terminal_level_gates():
     disarm = by_name["Disarm"]
     battle_cry = by_name["Battle Cry"]
     adrenaline = by_name["Adrenaline"]
-    honed_attack = by_name["Honed Attack"]
     parry = by_name["Parry"]
     double_strike = by_name["Double Strike"]
     assert disarm.prerequisites == ()
-    assert disarm.position == (4, 1)
+    assert disarm.position == (4, 0)
     assert battle_cry.prerequisites == ()
-    assert battle_cry.position == (4, 2)
-    assert adrenaline.prerequisites == ()
-    assert adrenaline.position == (4, 3)
-    assert honed_attack.prerequisites == ()
-    assert honed_attack.position == (4, 4)
-    assert double_strike.position == (4, 5)
-    assert parry.position == (4, 6)
+    assert battle_cry.position == (5, 0)
+    assert adrenaline.prerequisites == (battle_cry.id,)
+    assert adrenaline.position == (5, 1)
+    assert double_strike.position == (5, 3)
+    assert parry.position == (4, 4)
     assert all(
         disarm.id not in node.prerequisites
         and battle_cry.id not in node.prerequisites
@@ -410,16 +628,11 @@ def test_base_trees_use_authored_specializations_and_terminal_level_gates():
     paladin = by_name["Promote: Paladin"]
     assert by_name["Charge"].prerequisites == (by_name["Piercing Strike"].id,)
     assert by_name["Weapon Focus"].prerequisites == (by_name["Charge"].id,)
-    assert by_name["Driving Thrust"].prerequisites == (
-        by_name["Weapon Focus"].id,
-    )
+    assert by_name["Honed Attack"].prerequisites == (by_name["Charge"].id,)
+    assert by_name["Driving Thrust"].prerequisites == (by_name["Honed Attack"].id,)
     assert weapon_master.prerequisites == (by_name["True Strike"].id,)
     assert lancer.prerequisites == (by_name["Retaliate"].id,)
-    assert paladin.prerequisites == (by_name["Chastise"].id,)
-    assert by_name["Shield Block"].id in by_name["Retaliate"].prerequisites
-    assert by_name["Retaliate"].payload["connector_channel_columns"] == {
-        by_name["Shield Block"].id: 1.5,
-    }
+    assert paladin.prerequisites == (by_name["Commitment"].id,)
     sentinel_defense = next(
         node
         for node in warrior.nodes
@@ -434,37 +647,44 @@ def test_base_trees_use_authored_specializations_and_terminal_level_gates():
         by_name["Shield Slam"].id,
     )
     assert by_name["Dishearten"].prerequisites == (sentinel_defense.id,)
-    assert by_name["Goad"].prerequisites == (by_name["Rally"].id,)
+    assert by_name["Goad"].prerequisites == (by_name["Shield Block"].id,)
     assert sentinel_defense.id not in by_name["Goad"].prerequisites
-    assert by_name["Shield Slam"].position == (2.5, 1)
-    assert by_name["Shield Block"].position == (2.5, 2)
-    assert sentinel_defense.position == (2, 4)
-    assert by_name["Goad"].position == (3, 4)
-    assert by_name["Driving Thrust"].position == (1, 4)
-    assert by_name["Cripple"].position == (0, 5)
-    assert by_name["True Strike"].position == (0, 6)
-    assert by_name["Retaliate"].position == (1, 6)
+    assert by_name["Shield Slam"].position == (2.5, 0)
+    assert by_name["Shield Block"].position == (2.5, 1)
+    assert sentinel_defense.position == (2, 3)
+    assert by_name["Goad"].position == (3, 2)
+    assert by_name["Driving Thrust"].position == (1, 3)
+    assert by_name["Cripple"].position == (0, 4)
+    assert by_name["True Strike"].position == (0, 5)
+    assert by_name["Retaliate"].position == (1, 5)
     assert by_name["Promote: Weapon Master"].payload["requirements"] == {
-        "strength": 15,
+        "strength": 14,
         "dex": 12,
         "intel": 11,
     }
-    assert by_name["Promote: Sentinel"].payload["requirements"]["con"] == 16
+    assert by_name["Promote: Sentinel"].payload["requirements"]["con"] == 15
     assert by_name["Promote: Paladin"].payload["requirements"]["wisdom"] == 13
     expected_levels = {
         "Charge": 5,
+        "Shield Block": 5,
         "Weapon Focus": 10,
+        "Rally": 10,
         "Goad": 10,
-        "Adrenaline": 10,
+        "Adrenaline": 5,
         "Driving Thrust": 15,
-        "Dishearten": 15,
-        "Honed Attack": 15,
-        "Chastise": 20,
+        "Dishearten": 20,
+        "Honed Attack": 10,
+        "Chastise": 15,
         "Cripple": 20,
-        "Double Strike": 20,
+        "Double Strike": 15,
         "True Strike": 25,
         "Retaliate": 25,
-        "Parry": 25,
+        "Aggressive Pursuit": 25,
+        "Commitment": 25,
+        "Improved Defend": 10,
+        "Upsurge": 15,
+        "Parry": 20,
+        "Achilles Heel": 20,
     }
     assert {
         name: by_name[name].payload["level_requirement"]
@@ -486,10 +706,14 @@ def test_base_trees_use_authored_specializations_and_terminal_level_gates():
 def test_healer_upgrade_order_preserves_regen_before_heal_two():
     healer = ABILITY_TREES["Healer"]
     regen = next(node for node in healer.nodes if node.id.endswith(".regen"))
+    safeguarding = next(
+        node for node in healer.nodes if node.id.endswith(".safeguarding")
+    )
     heal_two = next(node for node in healer.nodes if node.id.endswith(".heal2"))
 
     assert regen.position[1] < heal_two.position[1]
-    assert heal_two.prerequisites == (regen.id,)
+    assert safeguarding.prerequisites != ()
+    assert heal_two.prerequisites == (safeguarding.id,)
     assert heal_two.name == "Heal II"
 
 
@@ -858,9 +1082,9 @@ def test_human_warrior_can_reach_every_first_promotion_at_level_thirty():
         assert player.cls.name == promotion.payload["target_class"]
 
     assert totals == {
-        "Weapon Master": (8, 5),
-        "Lancer": (10, 3),
-        "Sentinel": (8, 5),
+        "Weapon Master": (8, 4),
+        "Lancer": (8, 3),
+        "Sentinel": (8, 4),
         "Paladin": (8, 5),
     }
     assert all(
@@ -1048,11 +1272,8 @@ def test_health_node_permanently_increases_maximum_and_current_hp():
     player.progression.unspent_points = 5
     player.progression.level = 15
     player.progression.purchased_node_ids.update({
-        "warrior.ability.shieldblock",
-        "warrior.ability.shieldslam",
-        "warrior.ability.rally",
-        "warrior.rating.defense.2",
-        "warrior.ability.dishearten",
+        "warrior.ability.battlecry",
+        "warrior.ability.adrenaline",
     })
     old_max = player.health.max
     old_current = player.health.current
@@ -1074,10 +1295,22 @@ def test_extreme_one_stat_training_has_no_cap_but_does_not_bypass_other_gates():
 
     assert player.stats.strength == 50
     assert player.progression.trained_attributes["strength"] == 40
-    player.progression.unspent_points = 3
+    player.progression.unspent_points = 13
     player.progression.level = 30
     assert purchase_node(player, "pathfinder.ability.naturalattunement").success
-    assert purchase_node(player, "pathfinder.rating.defense.1").success
+    for node_id in (
+        "pathfinder.ability.razor-talons",
+        "pathfinder.ability.call-animal",
+        "pathfinder.ability.detect-animal",
+        "pathfinder.ability.creature-comforts",
+        "pathfinder.ability.poison-dart",
+        "pathfinder.ability.regrowth",
+        "pathfinder.ability.ray-of-moonlight",
+        "pathfinder.ability.nullify-poison",
+        "pathfinder.ability.thorny-vine",
+        "pathfinder.ability.poison-strike",
+    ):
+        assert purchase_node(player, node_id).success
     blocked = purchase_node(
         player,
         "pathfinder.promotion.druid",
@@ -1095,12 +1328,19 @@ def test_promotion_retains_abilities_does_not_reset_level_and_closes_branch():
         cumulative_experience_for_level(30),
         rng=random.Random(3),
     )
-    player.progression.unspent_points = 11
+    player.progression.unspent_points = 20
     assert purchase_node(player, "pathfinder.ability.naturalattunement").success
-    assert purchase_node(player, "pathfinder.ability.quickstep").success
+    assert purchase_node(player, "pathfinder.ability.razor-talons").success
+    assert purchase_node(player, "pathfinder.ability.call-animal").success
+    assert purchase_node(player, "pathfinder.ability.stumble-upon").success
+    assert purchase_node(player, "pathfinder.ability.zephyrstrike").success
+    assert purchase_node(player, "pathfinder.ability.cautious-assault").success
+    assert purchase_node(player, "pathfinder.ability.honed-attack").success
+    assert purchase_node(player, "pathfinder.ability.unnatural-purge").success
+    assert purchase_node(player, "pathfinder.ability.bounce-back").success
     assert purchase_node(player, "pathfinder.ability.piercingstrike").success
-    assert purchase_node(player, "pathfinder.ability.parry").success
-    assert purchase_node(player, "pathfinder.ability.truestrike").success
+    assert purchase_node(player, "pathfinder.ability.quickstep").success
+    assert purchase_node(player, "pathfinder.rating.attack.1").success
     preview = promotion_preview(player, "pathfinder.promotion.ranger")
     old_level = player.level.level
 

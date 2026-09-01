@@ -64,14 +64,12 @@ PROMOTION_ROUTES = {
 
 PROMOTION_REQUIREMENTS = {
     "Sorcerer": {"intel": 15, "wisdom": 13},
-    "Warlock": {"intel": 14, "charisma": 14, "wisdom": 10, "con": 10},
-    "Spellblade": {"strength": 10, "con": 11, "intel": 14, "charisma": 12},
+    "Warlock": {"intel": 13, "charisma": 14},
+    "Spellblade": {"con": 11, "intel": 13, "charisma": 12},
     "Conjurer": {
-        "charisma": 13,
+        "charisma": 12,
         "intel": 13,
         "wisdom": 12,
-        "con": 10,
-        "dex": 10,
     },
 }
 

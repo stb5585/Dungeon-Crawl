@@ -1,6 +1,7 @@
 """Player state normalization, class tracking, and gameplay records."""
 
 from .. import main_story, thieves_guild
+from ..abilities import tick_detection
 from ..classes import (
     ability_mechanics,
     archdruid,
@@ -9,10 +10,12 @@ from ..classes import (
     class_rings,
     demonologist,
     dragoon,
+    footpad,
     grandmaster,
     lycan,
     mage_mechanics,
     paladin,
+    pathfinder,
     promotion_kits,
     wizard,
 )
@@ -206,7 +209,13 @@ class PlayerStateMixin:
         lycan.record_steps(self, step_count)
         bard.tick_exploration_song(self, step_count)
         ability_mechanics.tick_exploration_effects(self, step_count)
+        footpad.tick_exploration(self, step_count)
+        from ..classes import healer
+
+        healer.tick_exploration(self, step_count)
+        pathfinder.tick_exploration(self, step_count)
         mage_mechanics.tick_exploration(self, step_count)
+        tick_detection(self, step_count)
         if int(getattr(self, "shadow_dungeon_darkness_steps", 0) or 0) > 0:
             self.shadow_dungeon_darkness_steps = max(
                 0,

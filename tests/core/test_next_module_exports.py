@@ -97,7 +97,7 @@ def test_ability_mechanics_facade_preserves_all_split_functions():
         for name, implementation in _owned_functions(module).items()
     }
 
-    assert len(exports) == 103
+    assert len(exports) == 104
     for name, implementation in exports.items():
         assert getattr(ability_mechanics, name) is implementation
 

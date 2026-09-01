@@ -8,6 +8,7 @@ import re
 
 from .progression import (
     ABILITY_TREES,
+    CLASS_DETAILS,
     NodeKind,
     effective_node_level_requirement,
 )
@@ -15,6 +16,16 @@ from .progression import (
 
 OUTPUT_DIRECTORY = Path(__file__).parents[2] / "docs" / "ability_trees"
 MANUALLY_AUTHORED_DIAGRAM_CLASSES = frozenset({"Mage"})
+STAGE_DIRECTORY_NAMES = {
+    1: "base",
+    2: "first-promotion",
+    3: "second-promotion",
+}
+STAGE_HEADINGS = {
+    1: "Base class",
+    2: "First promotions",
+    3: "Second promotions",
+}
 NODE_WIDTH = 188
 NODE_HEIGHT = 62
 COLUMN_GAP = 34
@@ -25,17 +36,54 @@ HEADER_HEIGHT = 92
 KIND_COLORS = {
     NodeKind.ABILITY: ("#133047", "#54b8ed"),
     NodeKind.TALENT: ("#30254a", "#ae84e8"),
-    NodeKind.RATING: ("#3b3218", "#e3bc48"),
-    NodeKind.HEALTH: ("#401d25", "#e46b78"),
-    NodeKind.MANA: ("#182f45", "#6aa8e8"),
+    NodeKind.RATING: ("#17383a", "#63d3ca"),
+    NodeKind.HEALTH: ("#17383a", "#63d3ca"),
+    NodeKind.MANA: ("#17383a", "#63d3ca"),
     NodeKind.PROMOTION: ("#3b2d12", "#f4bf2a"),
 }
 PASSIVE_COLORS = ("#263b2b", "#72c987")
+RESOURCE_COLORS = {
+    "Resolve": ("#3d2418", "#ed8a3d"),
+    "Oath Conviction": ("#42360f", "#f0d45a"),
+}
+OTHER_RESOURCE_COLORS = ("#3b213f", "#d27adb")
+
+
+def _node_resource_type(node) -> str | None:
+    """Return a non-mana resource consumed by an ability node."""
+    ability_class = node.payload.get("ability_class")
+    if ability_class is None:
+        return None
+    try:
+        resource_type = getattr(ability_class(), "resource_type", None)
+    except Exception:
+        return None
+    if not resource_type or resource_type == "Mana":
+        return None
+    return str(resource_type)
 
 
 def class_slug(class_name: str) -> str:
     """Return the stable diagram filename stem for a class."""
     return re.sub(r"[^a-z0-9]+", "-", class_name.lower()).strip("-")
+
+
+def base_class_name(class_name: str) -> str:
+    """Return the base-class lineage containing ``class_name``."""
+    current = class_name
+    while CLASS_DETAILS[current][2] is not None:
+        current = str(CLASS_DETAILS[current][2])
+    return current
+
+
+def diagram_relative_path(class_name: str) -> Path:
+    """Return a diagram path grouped by base lineage and promotion tier."""
+    stage = int(CLASS_DETAILS[class_name][1])
+    return (
+        Path(class_slug(base_class_name(class_name)))
+        / STAGE_DIRECTORY_NAMES[stage]
+        / f"{class_slug(class_name)}.svg"
+    )
 
 
 def _node_xy(position: tuple[float, int]) -> tuple[float, float]:
@@ -142,15 +190,19 @@ def render_tree_svg(class_name: str) -> str:
             )
     for node in tree.nodes:
         x, y = _node_xy(node.position)
-        fill, stroke = (
-            PASSIVE_COLORS
-            if node.icon_key == "skill_passive"
-            else KIND_COLORS[node.kind]
-        )
+        resource_type = _node_resource_type(node)
+        if resource_type:
+            fill, stroke = RESOURCE_COLORS.get(resource_type, OTHER_RESOURCE_COLORS)
+        elif node.icon_key == "skill_passive":
+            fill, stroke = PASSIVE_COLORS
+        else:
+            fill, stroke = KIND_COLORS[node.kind]
         level = effective_node_level_requirement(node, class_name)
         details = [node.kind.value.title(), f"Cost {node.cost}"]
         if level:
             details.append(f"Level {level}")
+        if resource_type:
+            details.append(resource_type)
         # These diagrams are developer references, so quest-hidden nodes use
         # their authored names even while the player-facing tree says Unknown.
         name = str(node.payload.get("revealed_name", node.name))
@@ -172,7 +224,7 @@ def render_tree_svg(class_name: str) -> str:
             ),
         ))
     lines.append("</svg>")
-    return "\n".join(lines) + "\n"
+    return "\n".join(lines).rstrip() + "\n"
 
 
 def render_index() -> str:
@@ -185,21 +237,53 @@ def render_index() -> str:
         "when diagrams are regenerated; its nodes still track the runtime tree.",
         "Run `./.venv/bin/python tools/generate_ability_tree_diagrams.py` after",
         "changing any tree. The drift test fails when these references are stale.",
+        "Diagrams are grouped by base-class lineage and then promotion tier.",
         "",
     ]
-    for class_name in ABILITY_TREES:
-        lines.append(f"- [{class_name}]({class_slug(class_name)}.svg)")
-    return "\n".join(lines) + "\n"
+    base_classes = [
+        class_name
+        for class_name in ABILITY_TREES
+        if CLASS_DETAILS[class_name][2] is None
+    ]
+    for base_class in base_classes:
+        lines.extend((f"## {base_class} lineage", ""))
+        for stage in STAGE_DIRECTORY_NAMES:
+            members = [
+                class_name
+                for class_name, tree in ABILITY_TREES.items()
+                if tree.stage == stage
+                and base_class_name(class_name) == base_class
+            ]
+            if not members:
+                continue
+            lines.extend((f"### {STAGE_HEADINGS[stage]}", ""))
+            for class_name in members:
+                path = diagram_relative_path(class_name).as_posix()
+                lines.append(f"- [{class_name}]({path})")
+            lines.append("")
+    return "\n".join(lines).rstrip() + "\n"
 
 
 def write_all(output_directory: Path = OUTPUT_DIRECTORY) -> None:
     """Write all class diagrams and their index."""
     output_directory.mkdir(parents=True, exist_ok=True)
     for class_name in ABILITY_TREES:
-        path = output_directory / f"{class_slug(class_name)}.svg"
+        path = output_directory / diagram_relative_path(class_name)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        legacy_path = output_directory / f"{class_slug(class_name)}.svg"
+        if (
+            class_name in MANUALLY_AUTHORED_DIAGRAM_CLASSES
+            and not path.exists()
+            and legacy_path.exists()
+        ):
+            legacy_path.replace(path)
         if class_name in MANUALLY_AUTHORED_DIAGRAM_CLASSES and path.exists():
+            if legacy_path.exists():
+                legacy_path.unlink()
             continue
         path.write_text(render_tree_svg(class_name), encoding="utf-8")
+        if legacy_path.exists():
+            legacy_path.unlink()
     (output_directory / "README.md").write_text(
         render_index(),
         encoding="utf-8",

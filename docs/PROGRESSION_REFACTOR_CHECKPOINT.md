@@ -146,16 +146,17 @@ requires an explicit migration or alias.
 The Warrior graph was rebuilt as the shared foundation for four first
 promotions:
 
-- Arms begins with Piercing Strike, Charge, and Weapon Focus before continuing
+- Arms begins with Piercing Strike and Charge, then Weapon Focus before continuing
   through Attack, Cripple, and True Strike toward Weapon Master.
-- Vanguard branches after Weapon Focus through Driving Thrust, Defense, and
-  Retaliate toward Lancer.
-- Bulwark begins with Shield Slam, Shield Block, and Rally, then continues
-  through Defense, Dishearten, and HP toward Sentinel.
-- Command joins the defensive trunk through Goad, Magic Defense, and Chastise
-  toward Paladin.
-- Disarm, Battle Cry, Adrenaline, Honed Attack, Double Strike, and Parry are
-  independent martial choices.
+- Vanguard branches after Charge through Honed Attack, Driving Thrust, Defense,
+  and Retaliate toward Lancer.
+- Bulwark begins with Shield Slam and Shield Block, then continues through
+  Rally, Defense, Dishearten, and Aggressive Pursuit toward Sentinel.
+- Command branches after Shield Block through Goad, Chastise, Magic Defense,
+  and the promotion-exclusive Commitment passive toward Paladin.
+- The connected Defense column contains Disarm, Defense, Improved Defend,
+  Upsurge, and Parry. The connected Offense column contains Battle Cry,
+  Adrenaline, HP, Double Strike, and Achilles Heel.
 - Explicit cross-column connector channels keep shared requirements readable.
 - Promotion requirements and Human point routes were tuned so every legal
   Warrior route can reach its first promotion with separate attribute and
@@ -253,14 +254,18 @@ remains deferred.
 
 Sentinel was rebuilt as a six-column tree with authored Assault, Bulwark,
 Resistance, and Support paths plus independent inherited combat techniques.
+The original nodes are shifted down one row so ungated, disconnected Parry can
+occupy the top of the final column.
 Its eight Resolve actions are Hold the Line, Brace Wall, Spell Block, Bulwark
 Guard, Purge Weakness, Repercussion, Boast, and Focused Assault. Shield Riposte
 and Spell Reflection are passive modifiers; Shield Check and Covering Guard
 are retired from the playable kit.
 
-Stalwart Defender extends the four main paths with Punishing Guard, Crushing
-Vengeance, Double Payback, Last Stand, Unbroken Wall, Iron Maiden, Mirror
-Bastion, Fortified Citadel, and Final Redoubt. Its full-bar Resolve Bursts are
+Stalwart Defender extends five paths with Punishing Guard, Crushing Vengeance,
+Double Payback, Last Stand, Unbroken Wall, Iron Maiden, Mirror Bastion,
+Fortified Citadel, and Final Redoubt. Shield Offense adds Retaliate, Shield
+Ricochet, Tower Offense, Get Even, and Generator Shield. Support adds Battle
+Cry and Battle Determination. Its full-bar Resolve Bursts are
 Citadel Aegis, Ironwall Revenge, Last Bastion, and Stronghold.
 
 Resolve uses the legacy `guard_meter` backing value:
@@ -270,6 +275,11 @@ Resolve uses the legacy `guard_meter` backing value:
 - A successful block grants `clamp(blocked damage // 5, 5, 15)`.
 - Physical damage after mitigation grants `max(1, damage // 5)`.
 - Goad and Hold the Line grant 5.
+- Tower Offense grants `clamp(Shield Slam damage // 5, 1, 20)`.
+- Generator Shield grants 5 per Shield Ricochet hit, or 10 when it also stuns.
+- Battle Determination grants 20 when Battle Cry is used.
+- Get Even makes a successful Retaliate hit discount the next non-Surge
+  Resolve action by 10.
 - Duplicate promotion-kit and Class Ring gains were removed.
 
 Spell Block spends 25 Resolve, requires a shield, and prepares a block against
@@ -314,12 +324,15 @@ remain.
 Crusader contains four terminal groups:
 
 - Melee: Condemnation into mutually exclusive Two-Handed Weapon Proficiency
-  and Sword & Board styles. The two-handed route continues through Attack,
-  Mortal Strike, and Righteous Advance. Sword & Board continues through True
-  Piercing Strike and Triple Strike.
-- Spells: Smite II, retained-or-purchased Repel the Wicked, and Smite III.
-- Healing: Heal II, Cleanse, and Dispel.
-- Protection: Consecrated Bulwark, Parry, Posturing, Magic Defense, and HP.
+  and Sword & Board styles. The two-handed route continues through Mortal
+  Strike, Righteous Advance, and Penalization. Sword & Board continues through
+  Censure, True Piercing Strike, Shield Ricochet, and Triple Strike. Beyond
+  Reproach branches separately beneath Condemnation.
+- Spells: retained-or-purchased Repel the Wicked, Smite II, Sanctification,
+  Undead Hunter, and Smite III.
+- Healing: Dispel, Cleanse, Heal II, Radiant Healing, and Prayer of Faith.
+- Protection: Divine Protection, Parry, Posturing, Consecrated Bulwark, and
+  replacing Divine Protection II.
 
 The permanent Paladin vow flow now uses a styled selection popup with
 descriptions, learned signature actions, Auras, Marks, background retention,
@@ -346,12 +359,13 @@ Additional implemented abilities include:
 - Resist Shadow, an exploration-time Shadow resistance spell;
 - Blessed Light, which turns successful combat healing into a refreshing
   Attack buff;
-- Condemnation, which deals weapon and Holy damage and can mark fiends or
-  undead;
+- Condemnation, which deals weapon and Holy damage, plus Beyond Reproach to
+  unlock its fiend/undead mark;
 - Repel the Wicked, which makes eligible enemies flee without kill rewards or
   disintegrates a Condemnation-marked target;
 - Sword & Board, which improves accuracy and weapon damage with a one-handed
-  weapon and shield.
+  weapon and shield;
+- Radiant Healing, Undead Hunter, Penalization, and Divine Protection II.
 
 Turn Undead and Turn Undead II are absent from the Paladin/Crusader trees.
 True Strike is absent from Crusader and is not required by True Piercing

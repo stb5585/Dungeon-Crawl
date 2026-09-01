@@ -225,10 +225,16 @@ class CavePath(MapTile):
     def __init__(self, x, y, z):
         super().__init__(x, y, z)
         self.enemy = None
+        self.trap_type = None
+        self.trap_triggered = False
+        self.trap_forced_initiative = False
 
     def modify_player(self, game):
         self.visited = True
         self.adjacent_visited(game.player_char)
+        from .traps import trigger_tile_trap
+
+        trigger_tile_trap(self, game.player_char)
         if self.z == REALM_OF_CAMBION_LEVEL:
             reveal_cambion_code_clue(game.player_char, (self.x, self.y, self.z))
         class_name = getattr(getattr(game.player_char, "cls", None), "name", "")
@@ -255,10 +261,11 @@ class CavePath(MapTile):
 
         encounter_roll_max = 4 + extra_roll
         try:
-            from ..classes import mage_mechanics, paladin
+            from ..classes import footpad, mage_mechanics, paladin
 
             multiplier = (
                 paladin.encounter_rate_multiplier(game.player_char)
+                * footpad.encounter_rate_multiplier(game.player_char)
                 * mage_mechanics.torchlight_encounter_multiplier(
                     game.player_char
                 )
@@ -272,6 +279,18 @@ class CavePath(MapTile):
                 self.enemy is None,
                 game._random_combat]):
             self.enter_combat(game.player_char)
+            try:
+                from ..classes import pathfinder
+
+                if pathfinder.animal_avoids_encounter(
+                    game.player_char,
+                    self.enemy,
+                ):
+                    self.enemy = None
+                    game.player_char.state = "normal"
+            except Exception:
+                pass
+            self.detectable_random_encounter = self.enemy is not None
 
     def available_actions(self, player_char):
         if player_char.state == 'fight':

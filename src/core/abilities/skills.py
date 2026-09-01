@@ -382,9 +382,29 @@ class DualWield(_PassiveSkill):
         super().__init__(
             name="Dual Wield",
             description=(
-                "Passive: Equip a fist weapon, dagger, sword, or club in the "
-                "off-hand slot."
+                "Passive: Equip a one-handed weapon in the off hand, with an "
+                "accuracy penalty to attacks made by either hand."
             ),
+        )
+
+
+class DualWieldExcellence(_PassiveSkill):
+    """Remove Dual Wield's main-hand accuracy penalty."""
+
+    def __init__(self):
+        super().__init__(
+            "Dual Wield Excellence",
+            "Passive: Dual Wield no longer penalizes main-hand accuracy; the off-hand penalty remains.",
+        )
+
+
+class DualWieldMastery(_PassiveSkill):
+    """Remove all Dual Wield accuracy penalties."""
+
+    def __init__(self):
+        super().__init__(
+            "Dual Wield Mastery",
+            "Passive: Dual Wield no longer penalizes accuracy with either hand.",
         )
 
 
@@ -428,14 +448,13 @@ class BlindFighting(_PassiveSkill):
 
 
 class Retort(_PassiveSkill):
-    """Use Intelligence to improve Parry chance and counter damage."""
+    """Use Intelligence to improve Parry chance."""
 
     def __init__(self):
         super().__init__(
             "Retort",
             (
-                "Passive: Add your Intelligence modifier to Parry chance and "
-                "counterattack damage."
+                "Passive: Add your Intelligence modifier to Parry chance."
             ),
         )
 

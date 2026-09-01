@@ -344,8 +344,10 @@ class Zombie(Undead):
         self.equipment = {'Weapon': items.Bite(), 'Armor': items.NoArmor(), 'OffHand': items.NoOffHand(),
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
         self.gold = random.randint(15, 30)
-        self.spellbook = {"Spells": {},
-                          "Skills": {'Poison Strike': abilities.PoisonStrike()}}
+        self.spellbook = {
+            "Spells": {"Poison Strike": abilities.PoisonStrike()},
+            "Skills": {},
+        }
         self.action_stack = [
             {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Poison Strike", "priority": ActionPriority.NORMAL}
@@ -411,9 +413,10 @@ class Quasit(Fiend):
         self.equipment = {'Weapon': items.DemonClaw(), 'Armor': items.DemonArmor(), 'OffHand': items.Claw(),
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
         self.gold = random.randint(25, 40)
-        self.spellbook = {"Spells": {},
-                          "Skills": {'Poison Strike': abilities.PoisonStrike(),
-                                     'Shapeshift': abilities.Shapeshift()}}
+        self.spellbook = {
+            "Spells": {"Poison Strike": abilities.PoisonStrike()},
+            "Skills": {"Shapeshift": abilities.Shapeshift()},
+        }
         self.resistance["Poison"] = 1
         self.status_immunity.append("Poison")
         self.transform = [Quasit,
@@ -980,7 +983,7 @@ class GiantScorpion(Animal):
         self.gold = random.randint(40, 65)
         self.resistance["Poison"] = 0.25
         self.resistance['Physical'] = 0.25
-        self.spellbook['Skills']['Poison Strike'] = abilities.PoisonStrike()
+        self.spellbook["Spells"]["Poison Strike"] = abilities.PoisonStrike()
         self.action_stack = [
             {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Poison Strike", "priority": ActionPriority.NORMAL},
@@ -1167,12 +1170,17 @@ class Pseudodragon(Dragon):
                                      'Blinding Fog': abilities.BlindingFog(),
                                      'Dispel': abilities.Dispel()},
                           'Skills': {'Gold Toss': abilities.GoldToss(),
-                                     'Dragon Breath (Fire)': abilities.DragonBreathFire()}}
+                                     'Dragon Breath (Fire)': abilities.DragonBreathFire(),
+                                     'Goad': abilities.Goad()}}
         self.action_stack = [
             {"ability": "Attack", "priority": ActionPriority.NORMAL},
             {"ability": "Fireball", "priority": ActionPriority.NORMAL},
             {"ability": "Dragon Breath (Fire)", "priority": ActionPriority.LOW, "delay": 2,
              "telegraph": "inhaling deeply, flames flickering in its throat"},
+            {"ability": "Blinding Fog", "priority": ActionPriority.LOW},
+            {"ability": "Dispel", "priority": ActionPriority.LOW},
+            {"ability": "Gold Toss", "priority": ActionPriority.NORMAL},
+            {"ability": "Goad", "priority": ActionPriority.NORMAL},
         ]
         self.level.pro_level = 2
         self.sight = True
@@ -1196,7 +1204,8 @@ class Nightmare(Fiend):
         self.gold = 2500
         self.inventory['Item'] = [items.random_item(4)]
         self.inventory['Old Key'] = [items.OldKey]
-        self.spellbook = {'Spells': {"Sleep": abilities.Sleep()},
+        self.spellbook = {'Spells': {"Sleep": abilities.Sleep(),
+                                     'Fireball': abilities.Fireball()},
                           'Skills': {'Stomp': abilities.Stomp(),
                                      'True Strike': abilities.TrueStrike(),
                                      "Nightmare Fuel": abilities.NightmareFuel()}}
@@ -1209,6 +1218,7 @@ class Nightmare(Fiend):
             {"ability": "Stomp", "priority": ActionPriority.NORMAL},
             {"ability": "True Strike", "priority": ActionPriority.NORMAL},
             {"ability": "Sleep", "priority": ActionPriority.NORMAL},
+            {"ability": "Fireball", "priority": ActionPriority.NORMAL},
             {"ability": "Nightmare Fuel", "priority": ActionPriority.LOW,
              "priority_if": {"target_status": "Sleep",
                               "priority": ActionPriority.HIGH,

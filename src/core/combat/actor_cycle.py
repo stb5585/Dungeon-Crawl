@@ -16,10 +16,17 @@ PLAYER_ACTOR_ID = "player"
 
 def initiative_rating(actor: Character, opponent: Character) -> float:
     """Return the existing speed-plus-luck initiative weight."""
+    try:
+        from ..classes import pathfinder
+
+        chronology = pathfinder.chronology_initiative_bonus(actor)
+    except Exception:
+        chronology = 0
     return max(
         0.0,
         float(actor.check_mod("speed", enemy=opponent))
-        + float(actor.check_mod("luck", enemy=opponent, luck_factor=10)),
+        + float(actor.check_mod("luck", enemy=opponent, luck_factor=10))
+        + chronology,
     )
 
 

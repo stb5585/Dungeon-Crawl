@@ -2,12 +2,22 @@ from types import SimpleNamespace
 
 from src.core import abilities, enemies, items
 from src.core.classes import bard, class_rings, demonologist, promotion_kits
+from src.core.progression import ABILITY_TREES, ensure_progression
 from src.core.save_system import PlayerDataSerializer
 from tests.test_framework import TestGameState
 
 
 def _player(class_name, **kwargs):
     return TestGameState.create_player(class_name=class_name, race_name="Human", level=30, **kwargs)
+
+
+def _own_talent(player, class_name, talent_key):
+    node = next(
+        node
+        for node in ABILITY_TREES[class_name].nodes
+        if node.payload.get("talent_key") == talent_key
+    )
+    ensure_progression(player).purchased_node_ids.add(node.id)
 
 
 def test_promotion_kit_state_normalizes_and_round_trips():
@@ -33,6 +43,22 @@ def test_promotion_kit_state_normalizes_and_round_trips():
     assert restored.promotion_kit_state["case_journal"]["Fiend"] == 100
     assert restored.promotion_kit_state["favored_enemy"]["type"] == "Animal"
     assert promotion_kits.combat_state(restored)["foresight_threads"] == 0
+
+
+def test_terminal_masteries_deepen_meter_and_persistent_class_systems():
+    rogue = _player("Rogue")
+    _own_talent(rogue, "Rogue", "rogue.house-advantage")
+    assert promotion_kits.cap_for(rogue, "fortune") == 4
+
+    lycan = _player("Lycan")
+    _own_talent(lycan, "Lycan", "lycan.tethered-instinct")
+    promotion_kits.record_lycan_stress(lycan, "survive")
+    assert promotion_kits.lycan_control_state(lycan)["rank_progress"]["survive"] == 2
+
+    beast_master = _player("Beast Master")
+    beast_master.tamed_companion = {"active": True, "bond": 100}
+    _own_talent(beast_master, "Beast Master", "beast-master.bonded-bulwark")
+    assert promotion_kits.companion_bond_multiplier(beast_master) == 1.25
 
 
 def test_threaded_cast_and_shadowcaster_shade_of_ahool():

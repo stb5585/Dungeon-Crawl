@@ -8,6 +8,7 @@ from src.core import abilities
 from src.core import items
 from src.core.abilities.descriptions import presented_abilities
 from src.core.classes import class_rings
+from src.core.classes import ability_mechanics
 from src.core.classes import promotion_kits
 from src.core.combat.battle_engine.actions import BattleActionMixin
 from src.core.progression import ABILITY_TREES
@@ -73,24 +74,27 @@ def test_sentinel_tree_has_authored_paths_and_compact_geometry():
     assert len(development) == 24
     assert max(node.position[1] for node in tree.nodes) == 8
     assert "Shield Check" not in nodes
-    assert nodes["Retaliate"].position == (0, 1)
-    assert nodes["Swing & Bash"].position == (0, 2)
-    assert nodes["Focused Assault"].position == (0, 4)
-    assert nodes["Repercussion"].position == (0, 5)
-    assert nodes["Watchful Reprisal"].position == (0, 6)
-    assert nodes["Hold the Line"].position == (1, 1)
-    assert nodes["Shield Riposte"].position == (1, 2)
-    assert nodes["Resolute Guard"].position == (1, 6)
-    assert nodes["Adrenaline"].position == (3.5, 1)
-    assert nodes["Spell Block"].position == (3, 2)
-    assert nodes["Spell Reflection"].position == (3, 5)
-    assert nodes["Purge Weakness"].position == (4, 2)
-    assert nodes["Boast"].position == (4, 4)
-    assert nodes["Goad"].position == (5, 1)
+    assert nodes["Retaliate"].position == (0, 2)
+    assert nodes["Swing & Bash"].position == (0, 3)
+    assert nodes["Focused Assault"].position == (0, 5)
+    assert nodes["Repercussion"].position == (0, 6)
+    assert nodes["Watchful Reprisal"].position == (0, 7)
+    assert nodes["Hold the Line"].position == (1, 2)
+    assert nodes["Shield Riposte"].position == (1, 3)
+    assert nodes["Resolute Guard"].position == (1, 7)
+    assert nodes["Adrenaline"].position == (2.5, 2)
+    assert nodes["Spell Block"].position == (2, 3)
+    assert nodes["Spell Reflection"].position == (2, 6)
+    assert nodes["Purge Weakness"].position == (3, 3)
+    assert nodes["Boast"].position == (3, 5)
+    assert "Parry" not in nodes
+    assert nodes["Goad"].position == (4, 3)
+    assert nodes["Charge"].position == (4, 4)
+    assert nodes["Double Strike"].position == (4, 5)
     assert nodes["Charge"].prerequisites == ()
     assert nodes["Double Strike"].prerequisites == ()
     promotion = nodes["Promote: Stalwart Defender"]
-    assert promotion.position == (2, 8)
+    assert promotion.position == (1.5, 8)
     assert promotion.prerequisites == (
         nodes["Watchful Reprisal"].id,
         nodes["Resolute Guard"].id,
@@ -105,8 +109,9 @@ def test_stalwart_tree_keeps_surges_out_of_progression_nodes():
     tree = ABILITY_TREES["Stalwart Defender"]
     nodes = _nodes("Stalwart Defender")
 
-    assert len(tree.nodes) == 20
+    assert len(tree.nodes) == 25
     assert max(node.position[1] for node in tree.nodes) == 6
+    assert max(node.position[0] for node in tree.nodes) == 4
     assert not {
         "Citadel Aegis",
         "Ironwall Revenge",
@@ -119,7 +124,7 @@ def test_stalwart_tree_keeps_surges_out_of_progression_nodes():
     assert nodes["Punishing Guard"].payload["level_requirement"] == 70
     assert nodes["Crushing Vengeance"].payload["level_requirement"] == 75
     assert nodes["Double Payback"].payload["level_requirement"] == 80
-    assert nodes["Final Redoubt"].payload["level_requirement"] == 75
+    assert nodes["Final Redoubt"].payload["level_requirement"] == 80
     assert nodes["Mirror Bastion"].payload["level_requirement"] == 75
     assert nodes["Focused Assault"].prerequisites == (
         nodes["Repercussion"].id,
@@ -137,13 +142,32 @@ def test_stalwart_tree_keeps_surges_out_of_progression_nodes():
         nodes["Purge Weakness"].id,
     )
     assert nodes["Punishing Guard"].cost == 2
+    assert nodes["Double Payback"].cost == 2
     assert nodes["Unbroken Wall"].cost == 2
+    assert nodes["Iron Maiden"].cost == 2
     assert nodes["Fortified Citadel"].cost == 2
     assert nodes["Final Redoubt"].cost == 2
     assert nodes["Repercussion"].position == (0, 1)
+    assert "Defense" not in nodes
+    assert "Health" not in nodes
     assert nodes["Iron Maiden"].position == (1, 6)
-    assert nodes["Fortified Citadel"].position == (2, 5)
-    assert nodes["Final Redoubt"].position == (3, 4)
+    assert nodes["Retaliate"].position == (2, 1)
+    assert nodes["Retaliate"].prerequisites == ()
+    assert "level_requirement" not in nodes["Retaliate"].payload
+    assert nodes["Shield Ricochet"].position == (2, 2)
+    assert nodes["Shield Ricochet"].payload["level_requirement"] == 65
+    assert nodes["Tower Offense"].position == (2, 3)
+    assert nodes["Tower Offense"].payload["level_requirement"] == 70
+    assert nodes["Get Even"].position == (2, 4)
+    assert nodes["Get Even"].payload["level_requirement"] == 75
+    assert nodes["Generator Shield"].position == (2, 5)
+    assert nodes["Generator Shield"].payload["level_requirement"] == 80
+    assert nodes["Fortified Citadel"].position == (3, 5)
+    assert nodes["Battle Cry"].position == (4, 3)
+    assert nodes["Battle Cry"].payload["level_requirement"] == 70
+    assert nodes["Battle Determination"].position == (4, 4)
+    assert nodes["Battle Determination"].payload["level_requirement"] == 75
+    assert nodes["Final Redoubt"].position == (4, 5)
 
 
 def test_stalwart_bursts_are_hidden_from_ordinary_specials():
@@ -460,6 +484,80 @@ def test_surge_modifiers_apply_locked_tuning(monkeypatch):
     )
     assert reduced == 70
     assert "reduces melee damage by 30" in message
+
+
+def test_tower_offense_and_battle_determination_generate_resolve(monkeypatch):
+    player = _player("Stalwart Defender")
+    target = _player("Warrior")
+    player.equipment["OffHand"] = items.KiteShield()
+    player.spellbook["Skills"]["Tower Offense"] = abilities.TowerOffense()
+    player.spellbook["Skills"]["Battle Determination"] = (
+        abilities.BattleDetermination()
+    )
+    monkeypatch.setattr(target, "dodge_chance", lambda _actor: 0.0)
+
+    health_before = target.health.current
+    abilities.ShieldSlam().use(player, target)
+
+    damage = health_before - target.health.current
+    assert damage > 0
+    slam_resolve = promotion_kits.current_resolve(player)
+    assert slam_resolve == min(20, max(1, damage // 5))
+
+    abilities.BattleCry().use(player, player)
+    assert promotion_kits.current_resolve(player) == slam_resolve + 20
+
+
+def test_get_even_discounts_next_non_surge_resolve_ability():
+    player = _player("Stalwart Defender")
+    attacker = _player("Warrior")
+    player.spellbook["Skills"]["Retaliate"] = abilities.Retaliate()
+    player.spellbook["Skills"]["Get Even"] = abilities.GetEven()
+    player.weapon_damage = lambda *_args, **_kwargs: ("Counter lands.\n", True, 1)
+    rng = SimpleNamespace(random=lambda: 0.0)
+
+    message = ability_mechanics.retaliate_after_block(player, attacker, rng=rng)
+
+    assert "Get Even" in message
+    assert promotion_kits.effective_resolve_cost(player, 15) == 5
+    promotion_kits.build_resolve(player, 5, "setup")
+    assert "focuses" in abilities.FocusedAssault().use(player)
+    assert promotion_kits.current_resolve(player) == 0
+    assert promotion_kits.combat_state(player).get("get_even_discount", 0) == 0
+
+
+def test_generator_shield_rewards_each_hit_and_doubles_stuns(monkeypatch):
+    player = _player("Stalwart Defender")
+    enemies = (_player("Warrior"), _player("Warrior"))
+    player.equipment["OffHand"] = items.KiteShield()
+    player.spellbook["Skills"]["Generator Shield"] = abilities.GeneratorShield()
+    for enemy in enemies:
+        monkeypatch.setattr(
+            enemy,
+            "handle_defenses",
+            lambda *_args, **_kwargs: (True, "", 10),
+        )
+        monkeypatch.setattr(
+            enemy,
+            "damage_reduction",
+            lambda damage, *_args, **_kwargs: (True, "", damage),
+        )
+    engine = SimpleNamespace(current_actor_id="player")
+    rng = SimpleNamespace(random=lambda: 0.0)
+
+    group = abilities.ShieldRicochet().use_group(
+        player,
+        [(f"enemy-{index}", enemy) for index, enemy in enumerate(enemies)],
+        battle_engine=engine,
+        rng=rng,
+    )
+
+    assert len(group.results) == 2
+    assert all(
+        result.effects_applied["Status"] == ["Stun"]
+        for result in group.results
+    )
+    assert promotion_kits.current_resolve(player) == 20
 
 
 def test_known_sentinel_actions_are_adopted_but_leftovers_close():

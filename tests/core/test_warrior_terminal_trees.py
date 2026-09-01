@@ -161,8 +161,8 @@ def test_grandmaster_tree_has_three_rank_gated_art_levels_and_floating_talents()
     weapon_swap = by_name["Weapon Swap"]
     assert perfect_form.kind == NodeKind.TALENT
     assert adaptive_arsenal.kind == NodeKind.TALENT
-    assert perfect_form.prerequisites == ()
-    assert adaptive_arsenal.prerequisites == ()
+    assert perfect_form.prerequisites == (weapon_swap.id,)
+    assert adaptive_arsenal.prerequisites == (weapon_swap.id,)
     assert perfect_form.payload["level_requirement"] == 75
     assert adaptive_arsenal.payload["level_requirement"] == 75
     assert weapon_swap.payload["level_requirement"] == 70
@@ -170,17 +170,12 @@ def test_grandmaster_tree_has_three_rank_gated_art_levels_and_floating_talents()
     assert double_strike.payload["owned_if_known"] is True
     assert perfect_form.cost == 2
     assert adaptive_arsenal.cost == 2
-    assert (
-        perfect_form.position[0]
-        == adaptive_arsenal.position[0]
-        == double_strike.position[0]
-        == weapon_swap.position[0]
-        == 3
-    )
-    assert double_strike.position == (3, 3)
-    assert weapon_swap.position == (3, 4)
-    assert perfect_form.position == (3, 5)
-    assert adaptive_arsenal.position == (3, 6)
+    assert double_strike.position == (4, 1)
+    assert weapon_swap.position == (4, 3)
+    assert perfect_form.position == (3, 4)
+    assert adaptive_arsenal.position == (5, 4)
+    assert by_name["Dual Wield Excellence"].position == (4, 2)
+    assert by_name["Dual Wield Mastery"].position == (4, 5)
 
 
 def test_frenzy_forces_three_turn_berserk_and_adds_critical_chance():
@@ -408,13 +403,11 @@ def test_parry_outcome_is_exposed_to_reckless_onslaught(monkeypatch):
         lambda *_args, **_kwargs: ("Counterattack.\n", True, 1),
     )
 
-    message, aborted = attacker._handle_dodge(
-        defender,
-        damage=10,
-        typ="attacks",
-    )
+    remaining, message, parried, aborted = attacker._apply_parry(defender, damage=10)
 
     assert aborted is False
+    assert parried is True
+    assert remaining < 10
     assert attacker._last_attack_parried is True
     assert "parries" in message
 
@@ -539,6 +532,18 @@ def test_grandmaster_mastery_talents_scale_with_equipped_discipline():
     assert grandmaster.adaptive_arsenal_parry_bonus(player) == 0.0
     assert grandmaster.adaptive_arsenal_counter_crit_chance(player) == 0.0
 
+    assert purchase_node(
+        player,
+        "grandmaster-of-arms.ability.double-strike",
+    ).success
+    assert purchase_node(
+        player,
+        "grandmaster-of-arms.ability.dual-wield-excellence",
+    ).success
+    assert purchase_node(
+        player,
+        "grandmaster-of-arms.ability.weapon-swap",
+    ).success
     assert purchase_node(
         player,
         "grandmaster-of-arms.talent.perfect-form",

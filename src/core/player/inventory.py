@@ -4,7 +4,7 @@ import os
 import random
 
 from .. import items
-from ..classes import ability_mechanics, archdruid, bard, paladin
+from ..classes import ability_mechanics, archdruid, bard, footpad, paladin
 from ..constants import BASE_CRIT_PER_POINT
 from ..items import remove_equipment
 from ..save_system import SaveManager
@@ -105,6 +105,7 @@ class PlayerInventoryMixin:
             else:
                 chance = self.check_mod('luck', enemy=enemy, luck_factor=16) + self.level.pro_level
                 chance *= bard.loot_drop_multiplier(self)
+                chance *= footpad.loot_drop_multiplier(self)
                 if item.rarity > (random.random() / chance):
                         try:
                             summon, name = item.subtyp.split(" - ")

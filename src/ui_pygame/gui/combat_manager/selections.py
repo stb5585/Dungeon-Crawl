@@ -685,7 +685,7 @@ class CombatSelectionMixin:
                 skill = player_char.spellbook["Skills"][skill_name]
                 display_name = self._canonical_resolve_skill_name(getattr(skill, "name", skill_name))
                 resolve_options.append(
-                    f"{display_name} ({self._resolve_skill_cost_label(skill)})"
+                    f"{display_name} ({self._resolve_skill_cost_label(skill, player_char)})"
                 )
             descriptions = [
                 getattr(player_char.spellbook["Skills"][skill_name], "description", "")

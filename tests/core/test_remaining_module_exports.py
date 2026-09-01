@@ -90,7 +90,7 @@ def test_character_composes_every_split_behavior_method():
         if inspect.isfunction(implementation)
     }
 
-    assert len(methods) == 48
+    assert len(methods) == 49
     for name, implementation in methods.items():
         assert getattr(character.Character, name) is implementation
 
@@ -102,6 +102,6 @@ def test_promotion_kit_facade_preserves_all_split_functions():
         for name, implementation in _owned_functions(module).items()
     }
 
-    assert len(exports) == 166
+    assert len(exports) == 171
     for name, implementation in exports.items():
         assert getattr(promotion_kits, name) is implementation

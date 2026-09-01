@@ -3,7 +3,7 @@
 import random
 
 from .. import companions, enemies, items
-from ..classes import dragoon
+from ..classes import dragoon, footpad
 from .paths import EmptyCavePath, SpecialTile
 from .rules import (
     CAMBION_ALARM_ENEMY,
@@ -190,9 +190,12 @@ class Trap(EmptyCavePath):
         player_char = game.player_char
         reveal_cambion_code_clue(player_char, (self.x, self.y, self.z))
         damage = min(player_char.health.current - 1, random.randint(10, 28))
+        damage, avoidance_message = footpad.trap_damage(player_char, damage)
         if damage > 0:
             player_char.health.current -= damage
             _queue_cambion_message(player_char, f"A hidden trap snaps shut, dealing {damage} damage!")
+        if avoidance_message:
+            _queue_cambion_message(player_char, avoidance_message)
 
 
 class AntiMagicSwitch(EmptyCavePath):

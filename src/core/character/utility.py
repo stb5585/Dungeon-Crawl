@@ -233,7 +233,9 @@ class CharacterUtilityMixin:
             # Include wisdom so low WIS/CHA builds pay a consistent penalty in combat.
             lf = max(1, int(luck_factor))
             base = int(self.stats.charisma) + int(self.stats.wisdom)
-            return max(0, (base * 2) // lf)
+            from ..classes import healer
+
+            return max(0, (base * 2) // lf + healer.luck_bonus(self, lf))
         if mod == "speed":
             speed_mod = self.stats.dex
             if (

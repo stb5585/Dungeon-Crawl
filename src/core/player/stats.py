@@ -21,6 +21,8 @@ def _upgrade_source_name(ability_cls) -> str | None:
         bases = getattr(ability_cls, "__mro__", ())
         if len(bases) < 2:
             return None
+        if getattr(bases[1], "__name__", "") == "DetectEnemy":
+            return None
         parent_instance = bases[1]()
         return getattr(parent_instance, "name", None)
     except Exception:

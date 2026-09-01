@@ -261,6 +261,7 @@ def test_base_item_classes_and_helper_utilities(monkeypatch):
     lockpick_kit = items.LockpickKit()
     smoke_bomb = items.SmokeBomb()
     oculus = items.Oculus()
+    censer = items.CenserOfChokingAsh()
     stolen_scroll = items.InscribedSpellScroll("MagicMissile", charges=2)
 
     assert fist_weapon.disarm is False
@@ -291,6 +292,10 @@ def test_base_item_classes_and_helper_utilities(monkeypatch):
     assert oculus.name == "Oculus"
     assert oculus.subtyp == "Magic Tool"
     assert items.Oculus in items.items_dict["Misc"]["Magic Tool"]
+    assert censer.name == "Censer of Choking Ash"
+    assert censer.value == 5000
+    assert censer.subtyp == "Magic Tool"
+    assert items.CenserOfChokingAsh in items.items_dict["Misc"]["Magic Tool"]
     assert items.has_lockpick_kit(SimpleNamespace(inventory={})) is False
     assert items.has_lockpick_kit(SimpleNamespace(inventory={"Lockpick Kit": [lockpick_kit]})) is True
     assert items.has_smoke_bomb(SimpleNamespace(inventory={"Smoke Bomb": [smoke_bomb]})) is True

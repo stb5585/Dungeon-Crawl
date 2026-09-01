@@ -6,6 +6,7 @@ import traceback
 import pygame
 
 from src.core import map_tiles
+from src.core.abilities import detects_encounter
 from src.core.player import DIRECTIONS
 from ..input_guards import (
     prepare_guarded_input,
@@ -266,6 +267,23 @@ class DungeonExplorationMixin:
                 current_tile.enemy = None
                 return
 
+            if (
+                getattr(current_tile, "detectable_random_encounter", False)
+                and detects_encounter(self.player_char, enemy)
+            ):
+                from ..confirmation_popup import ConfirmationPopup
+
+                fight = ConfirmationPopup(
+                    self.presenter,
+                    f"Detect {enemy.enemy_typ} reveals {enemy.name} ahead. Fight it?",
+                ).show()
+                if not fight:
+                    current_tile.enemy = None
+                    current_tile.detectable_random_encounter = False
+                    self.player_char.state = 'normal'
+                    self.add_message(f"You avoid the {enemy.name}.")
+                    return
+
             self.add_message(f"You've encountered a {enemy.name}!")
 
             # Set player state to fight BEFORE calling start_combat
@@ -292,6 +310,7 @@ class DungeonExplorationMixin:
             if combat_won:
                 # Enemy defeated - clear from tile
                 current_tile.enemy = None
+                current_tile.detectable_random_encounter = False
                 self.add_message("You emerge victorious!")
                 self._handle_defeated_jester_boss(current_tile)
                 if 'MerzhinBossRoom' in type(current_tile).__name__:

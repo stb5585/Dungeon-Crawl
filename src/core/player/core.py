@@ -1,5 +1,7 @@
 """Concrete Player class composed from focused behavior mixins."""
 
+import random
+
 from .. import main_story, thieves_guild, town
 from ..character import Character
 from ..classes import (
@@ -81,6 +83,7 @@ class Player(
         self.inventory = {}
         self.special_inventory = {}
         self.world_dict = {}
+        self.dungeon_trap_seed = random.SystemRandom().randrange(2**32)
         self.quest_dict = {'Bounty': {}, 'Main': {}, 'Side': {}}
         self.bounty_board_state = town.default_bounty_board_state()
         self.kill_dict = {}

@@ -17,10 +17,12 @@ from ...classes import (
     promotion_kits,
     wizard,
 )
+from ...classes import footpad
 from ...constants import SPECIAL_ATTACK_LUCK_FACTOR, SPECIAL_ATTACK_ROLL_MAX
 from ...events.event_bus import EventType, create_combat_event
 from ..actor_cycle import initiative_rating
 from ..combat_result import CombatResult
+from ..encounter import EnemyResolution
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -83,7 +85,10 @@ class BattleActionMixin:
             except NotImplementedError:
                 pass
 
-        message, hit, crit = self.attacker.weapon_damage(self.defender)
+        message, hit, crit = self.attacker.weapon_damage(
+            self.defender,
+            basic_attack=True,
+        )
         damage = getattr(self.attacker, "_last_weapon_primary_damage", None)
         if damage is None:
             # Test doubles and legacy combatants may still return damage in the
@@ -107,6 +112,21 @@ class BattleActionMixin:
 
     def _execute_flee(self) -> tuple[str, bool]:
         """Attempt to flee. Returns (message, success)."""
+        if self.attacker is not self.player:
+            escaped, message = footpad.aggressive_pursuit(
+                self.player,
+                self.attacker,
+            )
+            if escaped:
+                member = self._member_for_character(self.attacker)
+                if member is not None and member.resolution is None:
+                    self.encounter.resolve_enemy(
+                        member.combatant_id,
+                        EnemyResolution.ESCAPED,
+                        cause="enemy_flee",
+                    )
+                self.attacker.state = "normal"
+            return message, escaped
         hostile = self._fastest_living_hostile()
         self._event_bus.emit(create_combat_event(
             EventType.FLEE_ATTEMPT,
@@ -236,6 +256,16 @@ class BattleActionMixin:
                 )
                 message += "Death Becomes Us throws the dungeon into darkness.\n"
         if self.attacker == self.player:
+            from ...classes import healer
+
+            if "Holy" in {
+                str(getattr(spell, "subtyp", "")),
+                str(getattr(spell, "school", "")),
+            }:
+                message += healer.flash_blindness(
+                    self.player,
+                    [member.enemy for member in self.encounter.living_members],
+                )
             if (
                 choice in {"Turn Undead", "TurnUndead", "Turn Undead 2", "TurnUndead2"}
                 and defender_was_alive
@@ -465,6 +495,20 @@ class BattleActionMixin:
 
         # ── Special skill handling ───────────────────────────────────
         if skill.name == "Smoke Screen":
+            if self.attacker is not self.player:
+                message += skill.use(self.attacker, target=self.player)
+                escaped, flee_str = self.attacker.flee(self.player, smoke=True)
+                if escaped:
+                    member = self._member_for_character(self.attacker)
+                    if member is not None and member.resolution is None:
+                        self.encounter.resolve_enemy(
+                            member.combatant_id,
+                            EnemyResolution.ESCAPED,
+                            cause="smoke_screen",
+                        )
+                    self.attacker.state = "normal"
+                message += flee_str
+                return message
             if self.attacker is self.player:
                 consumed, smoke_message = items.consume_smoke_bomb(self.attacker)
                 if not consumed:
@@ -511,7 +555,7 @@ class BattleActionMixin:
                 battle_engine=self,
             )
 
-        elif skill.name == "Censure":
+        elif skill.name in {"Cacophany", "Censure", "Disruption", "Upsurge"}:
             message += skill.use(
                 self.attacker,
                 target=self.defender,

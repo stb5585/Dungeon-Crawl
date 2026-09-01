@@ -534,6 +534,70 @@ class DivineProtection:
         return _load_yaml_ability("divine_protection.yaml", cls_name="DivineProtection")
 
 
+class DivineProtection2(Spell):
+    """Greatly fortify the caster and weaken every nearby enemy."""
+
+    replaces = "Divine Protection"
+
+    def __init__(self):
+        super().__init__(
+            "Divine Protection II",
+            (
+                "Greatly increase Defense for five turns and weaken nearby "
+                "enemies for three turns."
+            ),
+            school="Holy",
+        )
+        self.cost = 20
+        self.subtyp = "Support"
+
+    def cast(
+        self,
+        caster: Character,
+        target: Character | None = None,
+        **kwargs: Any,
+    ) -> str:
+        del target
+        if not kwargs.get("special", False) and not kwargs.get("fam", False):
+            caster.mana.current -= self.cost
+
+        base_defense = caster.check_mod("defense")
+        defense = caster.stat_effects["Defense"]
+        defense.active = True
+        defense.duration = max(int(defense.duration or 0), 5)
+        defense.extra = max(
+            int(defense.extra or 0),
+            max(1, int(base_defense * 0.75)),
+        )
+        defense.source = self.name
+
+        weakened = []
+        encounter = getattr(caster, "_combat_encounter", None)
+        for member in getattr(encounter, "living_members", ()):
+            enemy = member.enemy
+            for stat_name, mod_name in (("Attack", "attack"), ("Magic", "magic")):
+                base_rating = enemy.check_mod(mod_name, enemy=caster)
+                effect = enemy.stat_effects[stat_name]
+                penalty = max(
+                    1,
+                    int(base_rating * 0.25),
+                )
+                effect.active = True
+                effect.duration = max(int(effect.duration or 0), 3)
+                effect.extra = min(int(effect.extra or 0), -penalty)
+                effect.source = self.name
+            weakened.append(enemy.name)
+
+        message = (
+            f"Divine Protection II greatly fortifies {caster.name} for five turns.\n"
+        )
+        if weakened:
+            message += (
+                f"Sacred pressure weakens {', '.join(weakened)} for three turns.\n"
+            )
+        return message
+
+
 class IceBlock:
     def __new__(cls):
         return _load_yaml_ability("ice_block.yaml", cls_name="IceBlock")

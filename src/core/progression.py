@@ -35,8 +35,8 @@ from .progression_manifest import (
     ABILITY_ICON_OVERRIDES,
     ABILITY_NODE_NAME_OVERRIDES,
     AUTHORED_TREE_CLASSES,
-    BASE_TREE_BRANCHES,
-    BASE_TREE_RATING_NODES,
+    BASE_TREE_NODE_SPECS,
+    BASE_TREE_PROMOTION_SPECS,
     BERSERKER_TREE_NODE_SPECS,
     CLASS_KIT_TALENTS,
     CLASS_STAT_GROUPS,
@@ -435,6 +435,7 @@ def _ability_icon_key(book: str, ability: Any) -> str:
             "holy": "spell_holy",
             "ice": "spell_ice",
             "illusion": "spell_illusion",
+            "nature": "spell_earth",
             "movement": "spell_movement",
             "non-elemental": "spell_arcane",
             "offensive": "spell_arcane",
@@ -523,24 +524,29 @@ def _ability_lane(book: str, ability: Any) -> str:
 
 def _promotion_requirements(target_class: str, stage: int) -> dict[str, int]:
     if stage == 3 and target_class in SECOND_PROMOTION_STAT_REQUIREMENT_OVERRIDES:
-        return dict(SECOND_PROMOTION_STAT_REQUIREMENT_OVERRIDES[target_class])
-    primary, secondary = CLASS_STAT_GROUPS[target_class]
-    if stage == 2:
-        primary_value = 17 if len(primary) == 1 else 14 if len(primary) == 2 else 13
-        secondary_value = 13 if len(secondary) == 1 else 10
+        requirements = dict(SECOND_PROMOTION_STAT_REQUIREMENT_OVERRIDES[target_class])
     else:
-        primary_value = 24 if len(primary) == 1 else 20 if len(primary) == 2 else 18
-        secondary_value = 19 if len(secondary) == 1 else 15
-    requirements = {stat: primary_value for stat in primary}
-    requirements.update({stat: secondary_value for stat in secondary})
-    if stage == 2:
-        requirements.update(
-            FIRST_PROMOTION_STAT_REQUIREMENT_OVERRIDES.get(
-                target_class,
-                {},
+        primary, secondary = CLASS_STAT_GROUPS[target_class]
+        if stage == 2:
+            primary_value = 17 if len(primary) == 1 else 14 if len(primary) == 2 else 13
+            secondary_value = 13 if len(secondary) == 1 else 10
+        else:
+            primary_value = 24 if len(primary) == 1 else 20 if len(primary) == 2 else 18
+            secondary_value = 19 if len(secondary) == 1 else 15
+        requirements = {stat: primary_value for stat in primary}
+        requirements.update({stat: secondary_value for stat in secondary})
+        if stage == 2:
+            requirements.update(
+                FIRST_PROMOTION_STAT_REQUIREMENT_OVERRIDES.get(
+                    target_class,
+                    {},
+                )
             )
-        )
-    return requirements
+    return {
+        stat_name: required
+        for stat_name, required in requirements.items()
+        if required > 10
+    }
 
 
 def _tree_branch_specs(
@@ -548,20 +554,6 @@ def _tree_branch_specs(
     entries: list[tuple[int, int, str, type, Any]],
 ) -> tuple[tuple[str, ...], dict[str, str], dict[str, str]]:
     """Return branch order, ability assignments, and promotion assignments."""
-    authored = BASE_TREE_BRANCHES.get(class_name)
-    if authored:
-        branches = tuple(branch_name for branch_name, _target, _abilities, _rating in authored)
-        ability_branches = {
-            ability_name: branch_name
-            for branch_name, _target, ability_names, _rating in authored
-            for ability_name in ability_names
-        }
-        promotion_branches = {
-            target_name: branch_name
-            for branch_name, target_name, _abilities, _rating in authored
-        }
-        return branches, ability_branches, promotion_branches
-
     promoted_paths = PROMOTED_TREE_PATHS.get(class_name)
     if promoted_paths is not None:
         branches = tuple(branch_name for branch_name, _abilities in promoted_paths)
@@ -596,10 +588,6 @@ def _tree_branch_specs(
 
 
 def _branch_rating_focus(class_name: str, branch: str) -> str:
-    authored = BASE_TREE_BRANCHES.get(class_name, ())
-    for branch_name, _target, _abilities, rating in authored:
-        if branch_name == branch:
-            return rating
     promoted = PROMOTED_TREE_PATHS.get(class_name, ())
     for branch_name, ability_names in promoted:
         if branch_name != branch:
@@ -704,6 +692,12 @@ def _build_warrior_tree() -> AbilityTree:
                     "ability_class": ability_ctor,
                     "description": getattr(ability, "description", ""),
                 }
+                if identifier == "Commitment":
+                    payload["closes_promotions"] = (
+                        "Weapon Master",
+                        "Lancer",
+                        "Sentinel",
+                    )
                 ability_node_ids[identifier] = node_id
             elif kind_name == "rating":
                 rating_counts[identifier] = rating_counts.get(identifier, 0) + 1
@@ -804,39 +798,72 @@ def _build_warrior_tree() -> AbilityTree:
             },
         )
 
-    for kind_name, identifier, icon_key, position in WARRIOR_FLOATING_NODES:
-        if kind_name != "ability":
-            raise ValueError(f"Unknown floating Warrior node kind: {kind_name}")
-        try:
-            book, ability_ctor, ability = entries[identifier]
-        except KeyError as exc:
-            raise ValueError(
-                f"Warrior tree references unknown ability {identifier}"
-            ) from exc
-        node_id = f"warrior.ability.{_slug(identifier)}"
-        ability_node_ids[identifier] = node_id
-        all_nodes.append(AbilityTreeNode(
-            id=node_id,
-            tree_id=class_name,
-            kind=NodeKind.ABILITY,
-            lane="Independent",
-            position=position,
-            icon_key=icon_key,
-            payload={
+    floating_node_ids: dict[str, str] = {}
+    for (
+        kind_name,
+        identifier,
+        icon_key,
+        position,
+        prerequisite_identifier,
+    ) in WARRIOR_FLOATING_NODES:
+        if kind_name == "ability":
+            try:
+                book, ability_ctor, ability = entries[identifier]
+            except KeyError as exc:
+                raise ValueError(
+                    f"Warrior tree references unknown ability {identifier}"
+                ) from exc
+            node_id = f"warrior.ability.{_slug(identifier)}"
+            kind = NodeKind.ABILITY
+            payload = {
                 "name": ability.name,
                 "book": book,
                 "ability_class": ability_ctor,
                 "description": getattr(ability, "description", ""),
-                **(
-                    {
-                        "level_requirement":
-                            WARRIOR_NODE_LEVEL_REQUIREMENTS[identifier]
-                    }
-                    if identifier in WARRIOR_NODE_LEVEL_REQUIREMENTS
-                    else {}
-                ),
-            },
+            }
+            ability_node_ids[identifier] = node_id
+        elif kind_name == "rating":
+            rating_counts[identifier] = rating_counts.get(identifier, 0) + 1
+            node_id = (
+                f"warrior.rating.{_slug(identifier)}."
+                f"{rating_counts[identifier]}"
+            )
+            kind = NodeKind.RATING
+            payload = {
+                "name": f"+10 {identifier}",
+                "rating": identifier,
+                "amount": 10,
+                "description": f"Permanently increase {identifier} by 10.",
+            }
+        elif kind_name == "health":
+            node_id = "warrior.health.25"
+            kind = NodeKind.HEALTH
+            payload = {
+                "name": "+25 HP",
+                "amount": 25,
+                "description": "Permanently increase maximum HP by 25.",
+            }
+        else:
+            raise ValueError(f"Unknown floating Warrior node kind: {kind_name}")
+        level_requirement = WARRIOR_NODE_LEVEL_REQUIREMENTS.get(identifier)
+        if level_requirement:
+            payload["level_requirement"] = level_requirement
+        prerequisite = (
+            (floating_node_ids[prerequisite_identifier],)
+            if prerequisite_identifier is not None
+            else ()
+        )
+        all_nodes.append(AbilityTreeNode(
+            id=node_id,
+            tree_id=class_name,
+            kind=kind,
+            lane="Independent",
+            position=position,
+            icon_key=icon_key,
+            prerequisites=prerequisite,
+            payload=payload,
         ))
+        floating_node_ids[identifier] = node_id
 
     promotion_row = max(node.position[1] for node in all_nodes) + 1
     for column, (lane, target_name, _specs) in enumerate(WARRIOR_TREE_PATHS):
@@ -969,6 +996,145 @@ def _build_mage_tree() -> AbilityTree:
                 "requirements": _promotion_requirements(target_name, 2),
                 "level_requirement": 30,
                 "prerequisite_mode": prerequisite_mode,
+            },
+            cost=2,
+        ))
+
+    return AbilityTree(
+        id=class_name,
+        class_name=class_name,
+        stage=1,
+        branches=branches,
+        nodes=tuple(nodes),
+    )
+
+
+def _build_explicit_base_tree(class_name: str) -> AbilityTree:
+    """Build one six-track base graph with shared promotion prerequisites."""
+    specs = BASE_TREE_NODE_SPECS[class_name]
+    entries = {
+        ability_ctor.__name__: (book, ability_ctor, ability)
+        for _level, _tie, book, ability_ctor, ability
+        in _ability_entries(class_name)
+    }
+    branches = tuple(dict.fromkeys(
+        str(spec["lane"])
+        for spec in sorted(specs, key=lambda entry: tuple(entry["position"]))
+    ))
+    nodes: list[AbilityTreeNode] = []
+
+    for spec in specs:
+        kind = NodeKind(str(spec["kind"]))
+        identifier = str(spec["identifier"])
+        lane = str(spec["lane"])
+        position = tuple(spec["position"])
+        if kind == NodeKind.ABILITY:
+            try:
+                book, ability_ctor, ability = entries[identifier]
+            except KeyError as exc:
+                raise ValueError(
+                    f"{class_name} tree references unknown ability {identifier}"
+                ) from exc
+            payload = {
+                "name": ABILITY_NODE_NAME_OVERRIDES.get(
+                    identifier,
+                    ability.name,
+                ),
+                "book": book,
+                "ability_class": ability_ctor,
+                "description": getattr(ability, "description", ""),
+            }
+            icon_key = str(
+                spec.get("icon_key", _ability_icon_key(book, ability))
+            )
+        elif kind == NodeKind.TALENT:
+            rating_name = str(spec["rating"])
+            talent_name = str(spec["name"])
+            payload = {
+                "name": talent_name,
+                "talent_key": identifier,
+                "description": (
+                    f"{talent_name} deepens the {lane} track and permanently "
+                    f"increases {rating_name} by 10%."
+                ),
+                "bonuses": {
+                    "rating_percentages": {rating_name: 0.10},
+                },
+            }
+            icon_key = "skill_passive"
+        elif kind == NodeKind.RATING:
+            payload = {
+                "name": f"+10 {identifier}",
+                "rating": identifier,
+                "amount": 10,
+                "description": f"Permanently increase {identifier} by 10.",
+            }
+            icon_key = _rating_icon_key(identifier)
+        elif kind == NodeKind.MANA:
+            payload = {
+                "name": "+25 MP",
+                "amount": 25,
+                "description": "Permanently increase maximum MP by 25.",
+            }
+            icon_key = "spell_arcane"
+        elif kind == NodeKind.HEALTH:
+            payload = {
+                "name": "+25 HP",
+                "amount": 25,
+                "description": "Permanently increase maximum HP by 25.",
+            }
+            icon_key = "skill_defense"
+        else:
+            raise ValueError(
+                f"Unsupported {class_name} base node kind: {kind.value}"
+            )
+
+        if class_name in {"Footpad", "Healer", "Pathfinder"}:
+            base_levels = (None, 5, 10, 15, 20, 25)
+            level_requirement = base_levels[
+                min(max(0, int(position[1])), len(base_levels) - 1)
+            ]
+        else:
+            level_requirement = _development_level_requirement(1, int(position[1]))
+        if level_requirement:
+            payload["level_requirement"] = level_requirement
+        nodes.append(AbilityTreeNode(
+            id=str(spec["id"]),
+            tree_id=class_name,
+            kind=kind,
+            lane=lane,
+            position=position,
+            icon_key=icon_key,
+            prerequisites=tuple(spec.get("prerequisites", ())),
+            payload=payload,
+            cost=int(spec.get("cost", 1)),
+        ))
+
+    promotions = BASE_TREE_PROMOTION_SPECS[class_name]
+    declared_targets = {target for target, _lane, _position, _requirements in promotions}
+    expected_targets = set(CLASS_CHILDREN[class_name])
+    if declared_targets != expected_targets:
+        raise ValueError(
+            f"{class_name} explicit promotions mismatch registry; "
+            f"missing={sorted(expected_targets - declared_targets)}, "
+            f"extra={sorted(declared_targets - expected_targets)}"
+        )
+    for target_name, lane, position, prerequisites in promotions:
+        nodes.append(AbilityTreeNode(
+            id=f"{_slug(class_name)}.promotion.{_slug(target_name)}",
+            tree_id=class_name,
+            kind=NodeKind.PROMOTION,
+            lane=lane,
+            position=position,
+            icon_key="promotion",
+            prerequisites=tuple(prerequisites),
+            payload={
+                "name": f"Promote: {target_name}",
+                "target_class": target_name,
+                "target_class_ctor": CLASS_DETAILS[target_name][0],
+                "requirements": _promotion_requirements(target_name, 2),
+                "level_requirement": 30,
+                "connector_join_at_target_row": len(prerequisites) > 1,
             },
             cost=2,
         ))
@@ -1309,7 +1475,6 @@ def _build_lancer_dragoon_tree(
                 "target_class_ctor": CLASS_DETAILS["Dragoon"][0],
                 "requirements": _promotion_requirements("Dragoon", 3),
                 "level_requirement": 60,
-                "connector_enter_from_top": True,
                 "connector_channel_columns": {
                     "lancer.ability.vigilant-landing": 1,
                     "lancer.ability.polearm-excellence": 4,
@@ -1762,6 +1927,8 @@ def _build_authored_tree(class_name: str) -> AbilityTree:
         return _build_warrior_tree()
     if class_name == "Mage":
         return _build_mage_tree()
+    if class_name in BASE_TREE_NODE_SPECS:
+        return _build_explicit_base_tree(class_name)
     if class_name == "Weapon Master":
         return _build_weapon_master_tree()
     if class_name == "Berserker":
@@ -1789,7 +1956,7 @@ def _build_authored_tree(class_name: str) -> AbilityTree:
             class_name,
             SENTINEL_TREE_NODE_SPECS,
             promotion_target="Stalwart Defender",
-            promotion_position=(2, 8),
+            promotion_position=(1.5, 8),
             promotion_prerequisites=(
                 "watchful-reprisal",
                 "resolute-guard",
@@ -1939,10 +2106,18 @@ def _build_authored_tree(class_name: str) -> AbilityTree:
         all_nodes.append(node)
 
     minimum, maximum = _tree_size_range(class_name, stage)
-    authored_talents = (
-        CLASS_KIT_TALENTS.get(class_name, ())
-        if stage > 1
-        else ()
+    if stage == 1:
+        authored_talents = ()
+    else:
+        authored_talents = tuple(
+            (name, talent_key, rating_name, None)
+            for name, talent_key, rating_name
+            in CLASS_KIT_TALENTS.get(class_name, ())
+        )
+    advanced_talent_key = (
+        authored_talents[-1][1]
+        if stage == 3 and authored_talents
+        else None
     )
     talent_bonus = stage * 10
 
@@ -1951,12 +2126,25 @@ def _build_authored_tree(class_name: str) -> AbilityTree:
             return " It also increases permanent-summon damage by 5%."
         if talent_key == "summoner.true-name-ward":
             return " It also increases permanent-summon maximum HP by 5%."
+        effect = TALENT_KIT_EFFECTS.get(talent_key)
+        if effect and effect[0] == "meter_cap":
+            return (
+                " It also increases the associated class-kit meter cap by "
+                f"{effect[2]}."
+            )
+        if effect and effect[0] == "control_progress":
+            return " It also records one extra successful Lycan control response."
+        if effect and effect[0] == "bond_power":
+            return (
+                " It also increases the companion's bond-derived combat bonus "
+                f"by {effect[2]} percentage points."
+            )
         return ""
 
-    for talent_name, talent_key, rating_name in authored_talents[
+    for talent_name, talent_key, rating_name, authored_lane in authored_talents[
         :max(0, maximum - len(all_nodes))
     ]:
-        preferred = next(
+        preferred = authored_lane or next(
             (
                 branch
                 for branch in branches
@@ -1985,12 +2173,6 @@ def _build_authored_tree(class_name: str) -> AbilityTree:
                     f"{talent_name} permanently increases {rating_name} by "
                     f"{talent_bonus}%."
                     + talent_mechanic_text(talent_key)
-                    + (
-                        " It also increases the associated class-kit meter "
-                        f"cap by {TALENT_KIT_EFFECTS[talent_key][2]}."
-                        if talent_key in TALENT_KIT_EFFECTS
-                        else ""
-                    )
                 ),
                 "bonuses": {
                     "rating_percentages": {
@@ -2008,50 +2190,18 @@ def _build_authored_tree(class_name: str) -> AbilityTree:
                     else {}
                 ),
             },
+            cost=2 if talent_key == advanced_talent_key else 1,
         )
         lane_nodes[preferred].append(node)
         all_nodes.append(node)
 
-    rating_plan = list(BASE_TREE_RATING_NODES.get(class_name, ()))
-
-    for lane, rating_name in rating_plan:
-        amount = stage * 10
-        node_id = (
-            f"{_slug(class_name)}.rating.{_slug(rating_name)}."
-            f"{1 + sum(n.kind == NodeKind.RATING and n.payload['rating'] == rating_name for n in all_nodes)}"
-        )
-        prerequisites = (
-            (lane_nodes[lane][-1].id,)
-            if lane_nodes[lane]
-            else ()
-        )
-        node = AbilityTreeNode(
-            id=node_id,
-            tree_id=class_name,
-            kind=NodeKind.RATING,
-            lane=lane,
-            position=(branches.index(lane), len(lane_nodes[lane])),
-            icon_key=_rating_icon_key(rating_name),
-            prerequisites=prerequisites,
-            payload={
-                "name": f"+{amount} {rating_name}",
-                "rating": rating_name,
-                "amount": amount,
-                "description": (
-                    f"Permanently increase {rating_name} by {amount}."
-                ),
-            },
-        )
-        lane_nodes[lane].append(node)
-        all_nodes.append(node)
-
     talent_ranks: dict[str, int] = {
         talent_key: 1
-        for _name, talent_key, _rating in authored_talents
+        for _name, talent_key, _rating, _lane in authored_talents
     }
     talent_index = 0
     while stage > 1 and len(all_nodes) < minimum:
-        base_name, talent_key, rating_name = authored_talents[
+        base_name, talent_key, rating_name, _authored_lane = authored_talents[
             talent_index % len(authored_talents)
         ]
         talent_index += 1
@@ -2101,6 +2251,7 @@ def _build_authored_tree(class_name: str) -> AbilityTree:
                     else {}
                 ),
             },
+            cost=2 if stage == 3 and rank >= 3 else 1,
         )
         lane_nodes[lane].append(node)
         all_nodes.append(node)
@@ -2355,7 +2506,8 @@ def validate_trees() -> tuple[str, ...]:
                 if kit_effect is not None and (
                     not isinstance(kit_effect, tuple)
                     or len(kit_effect) != 3
-                    or kit_effect[0] != "meter_cap"
+                    or kit_effect[0]
+                    not in {"meter_cap", "control_progress", "bond_power"}
                     or int(kit_effect[2]) <= 0
                 ):
                     errors.append(f"{node.id}: invalid kit effect {kit_effect!r}")
@@ -3059,6 +3211,15 @@ def available_nodes(
                     or (
                         bool(planned_promotions)
                         and node.id not in planned_promotions
+                    )
+                    or any(
+                        node.payload["target_class"]
+                        in TREE_NODES[purchased_id].payload.get(
+                            "closes_promotions",
+                            (),
+                        )
+                        for purchased_id in effective_purchased
+                        if purchased_id in TREE_NODES
                     )
                 )
             )

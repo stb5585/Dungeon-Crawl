@@ -152,6 +152,14 @@ class CharacterEventsMixin:
                 promotion_kits.record_damage_taken(target, damage, damage_type)
             except Exception:
                 pass
+            try:
+                from ..classes import pathfinder
+
+                if attack_source == "spell" or source == "spell":
+                    pathfinder.record_elemental_spell_damage(self, damage_type)
+                pathfinder.record_elemental_damage_taken(target, damage_type)
+            except Exception:
+                pass
         try:
             from ..events.event_bus import get_event_bus, create_combat_event, EventType
             event_bus = get_event_bus()
@@ -239,6 +247,20 @@ class CharacterEventsMixin:
             try:
                 from ..classes import archdruid
                 archdruid.record_status_applied(self, target, status_name)
+            except Exception:
+                pass
+            try:
+                from ..classes import pathfinder
+
+                message = pathfinder.activate_superstitious_barrier(
+                    target,
+                    status_name,
+                    duration,
+                )
+                if message:
+                    from ..classes import promotion_kits
+
+                    promotion_kits._message(target, message)
             except Exception:
                 pass
         try:

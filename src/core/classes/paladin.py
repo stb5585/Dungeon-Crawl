@@ -648,7 +648,12 @@ def condemnation(
         f"Condemnation burns {target.name} for {holy_damage} Holy damage.\n"
     )
 
-    if _wicked_target(target) and target.is_alive():
+    skills = getattr(character, "spellbook", {}).get("Skills", {})
+    if (
+        "Beyond Reproach" in skills
+        and _wicked_target(target)
+        and target.is_alive()
+    ):
         generator = rng or random
         stats = int(character.stats.wisdom) + int(character.stats.charisma)
         mark_chance = max(0.25, min(0.75, 0.35 + ((stats - 20) / 200)))
@@ -664,7 +669,105 @@ def condemnation(
 def holy_damage_multiplier(character: Any) -> float:
     """Return the Crusader's outgoing Holy-damage multiplier."""
     skills = getattr(character, "spellbook", {}).get("Skills", {})
-    return 1.5 if "Sanctification" in skills else 1.0
+    multiplier = 1.5 if "Sanctification" in skills else 1.0
+    if penalization_active(character):
+        multiplier *= 1.25
+    return multiplier
+
+
+def _undead_enemy_present(character: Any) -> bool:
+    encounter = getattr(character, "_combat_encounter", None)
+    return any(
+        getattr(member.enemy, "enemy_typ", None) == "Undead"
+        for member in getattr(encounter, "living_members", ())
+    )
+
+
+def undead_hunter_speed_multiplier(character: Any) -> float:
+    """Return Undead Hunter's dynamic Speed and initiative multiplier."""
+    skills = getattr(character, "spellbook", {}).get("Skills", {})
+    if "Undead Hunter" not in skills or not _undead_enemy_present(character):
+        return 1.0
+    return 1.20
+
+
+def undead_hunter_critical_bonus(character: Any) -> float:
+    """Return Undead Hunter's critical chance against an undead encounter."""
+    return 0.10 if undead_hunter_speed_multiplier(character) > 1.0 else 0.0
+
+
+def trigger_penalization(character: Any) -> str:
+    """Activate Penalization's combat-long wrath after Mortal Strike hits."""
+    skills = getattr(character, "spellbook", {}).get("Skills", {})
+    if "Penalization" not in skills:
+        return ""
+    from . import promotion_kits
+
+    state = promotion_kits.combat_state(character)
+    if state.get("crusader_wrath"):
+        return ""
+    state["crusader_wrath"] = True
+    return (
+        f"Penalization fills {character.name} with wrath, increasing critical "
+        "strike chance and Holy damage.\n"
+    )
+
+
+def penalization_active(character: Any) -> bool:
+    """Return whether Penalization's wrath is active this combat."""
+    from . import promotion_kits
+
+    return bool(promotion_kits.combat_state(character).get("crusader_wrath"))
+
+
+def penalization_critical_bonus(character: Any) -> float:
+    """Return the critical chance granted by Penalization's wrath."""
+    return 0.15 if penalization_active(character) else 0.0
+
+
+def radiant_healing_damage(
+    character: Any,
+    amount_healed: int,
+    *,
+    source: str,
+) -> str:
+    """Damage one living hostile after a successful combat healing spell."""
+    if amount_healed <= 0 or not getattr(character, "_active_combat", False):
+        return ""
+    skills = getattr(character, "spellbook", {}).get("Skills", {})
+    if "Radiant Healing" not in skills:
+        return ""
+    spell = getattr(character, "spellbook", {}).get("Spells", {}).get(source)
+    if spell is None or getattr(spell, "subtyp", None) != "Heal":
+        return ""
+    encounter = getattr(character, "_combat_encounter", None)
+    living = tuple(getattr(encounter, "living_members", ()))
+    if not living:
+        return ""
+    target = living[0].enemy
+    raw_damage = max(1, int(amount_healed * 0.10))
+    hit, defense_message, damage = target.damage_reduction(
+        raw_damage,
+        character,
+        typ="Holy",
+    )
+    if not hit or damage <= 0:
+        return defense_message
+    damage = min(int(target.health.current), int(damage))
+    target.health.current -= damage
+    try:
+        character._emit_damage_event(
+            target,
+            damage,
+            damage_type="Holy",
+            source="Radiant Healing",
+        )
+    except Exception:
+        pass
+    return (
+        defense_message
+        + f"Radiant Healing strikes {target.name} for {damage} Holy damage.\n"
+    )
 
 
 def _shield_equipped(character: Any) -> bool:
@@ -819,6 +922,16 @@ def shield_ricochet(
         message += f"The shield ricochets into {target.name} for {damage} damage.\n"
         if stunned:
             message += f"{target.name} is stunned for 1 turn.\n"
+        try:
+            from . import promotion_kits
+
+            message += promotion_kits.generator_shield_after_ricochet(
+                character,
+                hit=damage > 0,
+                stunned=stunned,
+            )
+        except (AttributeError, KeyError, TypeError, ValueError):
+            pass
         group.add(CombatResult(
             action="Shield Ricochet",
             actor=character,

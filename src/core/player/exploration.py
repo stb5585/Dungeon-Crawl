@@ -152,6 +152,11 @@ class PlayerExplorationMixin:
                     tile = getattr(map_tiles, tile_name)(x, y, z)
                     world_dict[(x, y, z)] = tile
 
+        map_tiles.assign_dungeon_traps(
+            world_dict,
+            rng=random.Random(int(getattr(self, "dungeon_trap_seed", 0) or 0)),
+        )
+
         wind_pos = getattr(map_tiles, "WIND_COMMUNION_POS", None)
         if wind_pos and wind_pos in world_dict:
             world_dict[wind_pos] = map_tiles.StrangeDraftTile(*wind_pos)

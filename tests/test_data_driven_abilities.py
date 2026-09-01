@@ -1944,7 +1944,9 @@ class TestBatch3AbilityFactories:
         ts = abilities.TripleStrike()
         assert ts._strikes == 3
         fb = abilities.FlurryBlades()
-        assert fb._strikes == 4
+        assert fb._strikes == 20
+        assert fb._repeat_until_miss is True
+        assert fb._accuracy_penalty_per_strike == 0.08
 
     def test_piercing_flags(self):
         from src.core import abilities
@@ -2125,9 +2127,10 @@ class TestBatch3CombatIntegration:
         assert "immune" in result.lower()
 
     def test_sleeping_powder_immune_target(self):
-        from src.core import abilities
+        from src.core import abilities, items
         user, target = self._make_combatants()
         target.status_immunity.append("Sleep")
+        user.modify_inventory(items.Monocane())
         sp = abilities.SleepingPowder()
         result = sp.use(user, target)
         assert "immune" in result.lower()
@@ -5561,7 +5564,7 @@ class TestBatch9YAMLLoading:
     _YAMLS = [
         ("shield_slam.yaml", "Shield Slam", 8),
         ("kidney_punch.yaml", "Kidney Punch", 18),
-        ("poison_strike.yaml", "Poison Strike", 14),
+        ("poison_strike.yaml", "Poison Strike", 12),
         ("dim_mak.yaml", "Dim Mak", 50),
         ("exploit_weakness.yaml", "Exploit Weakness", 10),
         ("gold_toss.yaml", "Gold Toss", 0),
@@ -5726,7 +5729,7 @@ class TestBatch9KidneyPunch:
 
 
 class TestBatch9PoisonStrike:
-    """PoisonStrike - weapon hit + poison (10% target max HP)."""
+    """Poison Strike is a Nature spell with a main-hand bite and poison."""
 
     @staticmethod
     def _make_combatants():
@@ -5749,15 +5752,15 @@ class TestBatch9PoisonStrike:
         from src.core import abilities
         user, target = self._make_combatants()
         mana_before = user.mana.current
-        abilities.PoisonStrike().use(user, target)
-        assert user.mana.current == mana_before - 14
+        abilities.PoisonStrike().cast(user, target)
+        assert user.mana.current == mana_before - 12
 
     def test_poison_strike_can_poison(self):
         from src.core import abilities
         poisoned = False
         for _ in range(100):
             user, target = self._make_combatants()
-            abilities.PoisonStrike().use(user, target)
+            abilities.PoisonStrike().cast(user, target)
             if target.status_effects["Poison"].active:
                 poisoned = True
                 assert target.status_effects["Poison"].extra > 0
@@ -5769,7 +5772,7 @@ class TestBatch9PoisonStrike:
         for _ in range(100):
             user, target = self._make_combatants()
             target.status_immunity = ["Poison"]
-            abilities.PoisonStrike().use(user, target)
+            abilities.PoisonStrike().cast(user, target)
             assert not target.status_effects["Poison"].active
 
 
@@ -9379,7 +9382,6 @@ class TestClassAbilityMechanicsSlice:
             abilities.ExtendedReach,
             abilities.Jump,
             abilities.LanceSweep,
-            abilities.Parry,
             abilities.Phalanx,
             abilities.PolearmExcellence,
             abilities.PolearmProficiency,
@@ -9413,15 +9415,19 @@ class TestClassAbilityMechanicsSlice:
             abilities.SwingAndBash,
         ]
         assert abilities.skill_dict["Crusader"]["1"] == [
+            abilities.BeyondReproach,
             abilities.Censure,
             abilities.Condemnation,
             abilities.Parry,
+            abilities.Penalization,
             abilities.Posturing,
             abilities.PrayerOfFaith,
+            abilities.RadiantHealing,
             abilities.Sanctification,
             abilities.ShieldRicochet,
             abilities.SwordAndBoard,
             abilities.TwoHandedWeaponProficiency,
+            abilities.UndeadHunter,
         ]
         assert abilities.skill_dict["Stalwart Defender"]["18"] is abilities.LastStand
         assert abilities.skill_dict["Seeker"]["5"] is abilities.ThirdEye

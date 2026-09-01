@@ -16,6 +16,7 @@ from ...classes import (
     nature_totems,
     paladin,
     promotion_kits,
+    warrior,
     wizard,
 )
 from ...events.event_bus import combat_event_context, EventType, create_combat_event
@@ -682,6 +683,10 @@ class BattleTurnMixin:
             return ActionResult(message=message, combat_results=group)
 
         hp_before = self.player.health.current
+        if self.attacker != self.player:
+            from ...classes import pathfinder
+
+            pathfinder.record_incoming_action_start(self.player)
         if self.attacker == self.player:
             ability_mechanics.store_rewind_snapshot(self)
             promotion_kits.begin_action(
@@ -758,6 +763,16 @@ class BattleTurnMixin:
         if self.attacker == self.player:
             primary_target = targets[0].enemy if targets else None
             if intent.action == "Cast Spell":
+                from ...classes import healer
+
+                if "Holy" in {
+                    str(getattr(ability, "subtyp", "")),
+                    str(getattr(ability, "school", "")),
+                }:
+                    group.message += healer.flash_blindness(
+                        self.player,
+                        [member.enemy for member in self.encounter.living_members],
+                    )
                 group.message += wizard.process_cast(
                     self.player,
                     ability,
@@ -821,6 +836,8 @@ class BattleTurnMixin:
         result = ActionResult()
         self._last_combat_result = None
         hp_before = self.player.health.current
+        if self.attacker == self.player:
+            warrior.begin_action(self.player)
         if self.attacker == self.player and not (action == "Cast Spell" and choice == "Rewind"):
             ability_mechanics.store_rewind_snapshot(self)
             promotion_kits.begin_action(
@@ -832,6 +849,8 @@ class BattleTurnMixin:
 
         if action == "Nothing" or action == "Cancelled":
             result.message = f"{self.attacker.name} does nothing.\n"
+            if self.attacker == self.player:
+                warrior.finish_action(self.player)
             return result
 
         if self._tunneled_action_blocked(action, choice):
@@ -846,6 +865,8 @@ class BattleTurnMixin:
             and self.attacker.magic_effects["Tree of Life"].active
         ):
             result.message = f"{self.attacker.name} is rooted as the Tree of Life and cannot attack.\n"
+            if self.attacker == self.player:
+                warrior.finish_action(self.player)
             return result
 
         elif action == "Attack":
@@ -857,13 +878,15 @@ class BattleTurnMixin:
 
         elif action == "Flee":
             result.message, result.fled = self._execute_flee()
-            if result.fled:
+            if result.fled and self.attacker == self.player:
                 self.flee = True
                 if hasattr(self.player, "record_flee"):
                     self.player.record_flee()
                 vow_text = paladin.on_flee(self.player, success=True)
                 if vow_text:
                     result.message += vow_text
+            elif self.attacker != self.player:
+                result.fled = False
 
         elif action == "Defend":
             result.message = self._execute_defend()
@@ -924,6 +947,7 @@ class BattleTurnMixin:
             result.message = f"{result.message}{duel_text}"
         self._record_failed_enemy_debuff(self.attacker, choice, self.defender, debuff_snapshot)
         if self.attacker == self.player:
+            warrior.finish_action(self.player)
             result.message += promotion_kits.finish_action(
                 self.player,
                 defender_survived=bool(self.defender and self.defender.is_alive()),
@@ -941,6 +965,11 @@ class BattleTurnMixin:
             actor_id=self.current_actor_id,
             target_id=self._actor_id_for(self.defender),
         )
+
+        if self.attacker != self.player:
+            from ...classes import pathfinder
+
+            pathfinder.record_incoming_action_end(self.player, hp_before)
 
         return result
 

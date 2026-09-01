@@ -9,6 +9,7 @@ from ..classes import (
     archdruid,
     bard,
     class_rings,
+    healer,
     lycan,
     mage_mechanics,
     paladin,
@@ -558,7 +559,7 @@ class PlayerCombatMixin:
                 luck_factor = max(1, luck_factor // 2)
             lf = max(1, int(luck_factor))
             base = int(self.stats.charisma) + int(self.stats.wisdom)
-            return max(0, (base * 2) // lf)
+            return max(0, (base * 2) // lf) + healer.luck_bonus(self, lf)
         if mod == "speed":
             speed_mod = self.stats.dex
             if getattr(self, "shade_of_ahool_turns", 0) > 0:
@@ -569,6 +570,7 @@ class PlayerCombatMixin:
             if self.invisible and "Alacrity" in self.spellbook.get("Skills", {}):
                 speed_mod *= 1.25
             speed_mod *= paladin.initiative_multiplier(self)
+            speed_mod *= paladin.undead_hunter_speed_multiplier(self)
             speed_mod *= 1 + ability_mechanics.melody_inspiration_bonus(self)
             try:
                 data = self.class_ring_awakening["data"]["Shadowcaster"]

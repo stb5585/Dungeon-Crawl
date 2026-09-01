@@ -76,9 +76,9 @@ COMPOSITIONS = {
 class Bard(Job):
     """
     Promotion: Healer -> Bard -> Troubadour
-    Pros: Gain access to musical instruments, can dual wield daggers; gains songs that have affects in and out of
-      combat; increased strength and dex gain
-    Cons: Lose access to certain priest spells; lower wisdom gain
+    Pros: Gain access to musical instruments and can wield daggers and Swords;
+      gains songs that have affects in and out of combat; increased strength and dex gain
+    Cons: Lose access to certain priest spells and clubs; lower wisdom gain
     Special Mechanic: Plays active songs that bolster damage, shelter the Bard, or renew HP/MP.
     """
 
@@ -103,7 +103,7 @@ class Bard(Job):
             magic_def_plus=3,
             restrictions={
                 "Weapon": ["Dagger", "Sword", "Staff"],
-                "OffHand": ["Dagger", "Musical Instrument"],
+                "OffHand": ["Musical Instrument"],
                 "Armor": ["Cloth", "Light"],
             },
             pro_level=2,

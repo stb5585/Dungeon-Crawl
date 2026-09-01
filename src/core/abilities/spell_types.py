@@ -132,6 +132,17 @@ class Attack(Spell):
                         cast_message += shield_message
                     except Exception:
                         pass
+                    if crit > 1:
+                        try:
+                            from ..classes import healer
+
+                            damage, delayed_message = healer.delay_critical_damage(
+                                target,
+                                damage,
+                            )
+                            cast_message += delayed_message
+                        except Exception:
+                            pass
                     target.health.current -= damage
                     caster._emit_damage_event(
                         target,
@@ -235,6 +246,12 @@ class HealSpell(Spell):
         actual_heal = max(0, min(heal, target.health.max - target.health.current))
         target.health.current += actual_heal
         caster._emit_healing_event(actual_heal, source=self.name)
+        try:
+            from ..classes import healer
+
+            healer.apply_safeguarding(caster, target, self.name)
+        except Exception:
+            pass
         return actual_heal
 
     def cast(

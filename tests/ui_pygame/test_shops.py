@@ -534,6 +534,7 @@ def test_buy_helpers_route_to_expected_equipment_methods(monkeypatch):
     assert "Magic Items" in item_calls[12][0]
     assert items.BlankScroll not in item_calls[12][0]["Spell Scrolls"]
     assert items.Oculus in item_calls[12][0]["Magic Items"]
+    assert items.CenserOfChokingAsh in item_calls[12][0]["Magic Items"]
 
 
 def test_magic_shop_uses_town_rarity_filter_and_includes_diviner_starter_rods(monkeypatch):

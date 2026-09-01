@@ -235,7 +235,7 @@ second implementation backlog.
   only when both opening attacks hit. Use Cross Block and verify Strength and
   both weapons determine mitigation; a complete block can disarm the attacker.
   Verify Duelist bonuses require one one-handed weapon and an empty off hand,
-  Blind Fighting softens Blind, Retort adds Intelligence to Parry/counters,
+  Blind Fighting softens Blind, Retort adds Intelligence only to Parry chance,
   Maim disables the target's main hand and triples critical damage, and
   Devastating Throw disarms its user. Verify Two-Handed Weapon Proficiency adds
   `10%` accuracy and damage only with a two-handed weapon, and Brutish Strength
@@ -319,17 +319,25 @@ second implementation backlog.
   `+8%/+4` per-stack payoff tuning and a real two-turn 15% Landing Shield that
   refreshes to the larger value, absorbs damage, and expires. Confirm a
   dormant/unequipped or legacy `+1 Jump Mod` ring grants no extra capacity.
-- [ ] Verify Sentinel has 24 development nodes across six columns, all shifted
+- [ ] Verify Sentinel has 25 development nodes across six columns, with the
+  former nodes shifted
   down one row, plus Promote: Stalwart Defender at `(2, 8)`. Confirm Assault, Bulwark, Resistance, and
-  Support gates; Adrenaline's split; and independent inherited Goad, Charge,
-  and Double Strike. Any one of the four level-55 talents must qualify.
+  Support gates; Adrenaline's split; ungated disconnected Parry; and inherited
+  Goad, Charge, and Double Strike. Any one of the four level-55 talents must qualify.
 - [ ] Promote for three points at level 60 with `CON 20`. Confirm unpurchased
-  Sentinel nodes close and the Stalwart tree contains exactly 20 development
-  nodes across Assault, Bulwark, Resistance, and Support in rows 1-6. Confirm
-  every column is a continuous prerequisite chain, including Repercussion to
+  Sentinel nodes close and the Stalwart tree contains exactly 25 development
+  nodes across Assault, Bulwark, Shield Offense, Resistance, and Support in
+  rows 1-6. Confirm the former Defense and HP nodes are absent. Confirm
+  the established chains remain intact, including Repercussion to
   Focused Assault, Hold the Line to Brace Wall, Spell Block to Bulwark Guard
   to Spell Reflection, and Purge Weakness to Boast. Confirm Punishing Guard,
-  Unbroken Wall, Fortified Citadel, and Final Redoubt cost two points.
+  Double Payback, Unbroken Wall, Iron Maiden, Fortified Citadel, and Final
+  Redoubt cost two points.
+- [ ] Exercise the Stalwart Shield Offense track. Confirm Tower Offense grants
+  Resolve from Shield Slam damage, Get Even discounts only the next non-Surge
+  Resolve action after a successful Retaliate counter, and Generator Shield
+  grants 5 Resolve per Ricochet hit or 10 when the hit stuns. Use Battle Cry
+  with Battle Determination and confirm it immediately grants 20 Resolve.
 - [ ] Build Resolve from Defend, blocks, physical damage after mitigation,
   Goad, and Hold the Line. Verify caps 50/100, no duplicate ring gain, legacy
   `guard_meter` load compatibility, full-bar major-hit reduction, mastery
@@ -367,17 +375,23 @@ second implementation backlog.
   outside battle for 15 MP and verify 50% Shadow resistance lasts for 100
   steps of game time, survives combat cleanup, expires naturally, and never
   appears in either frontend's combat spell selector.
-- [ ] Verify Crusader has 23 nodes and uses rows 0-7 for ungated through level
-  95. Confirm the two melee style entries cost two points. Exercise Censure
+- [ ] Verify Crusader has 26 nodes and uses rows 0-7 for ungated through level
+  95. Confirm the two level-65 melee style entries cost two points. Exercise Censure
   against a charging enemy and Shield Ricochet against multiple enemies. Verify
-  `Repel the Wicked -> Smite II -> Sanctification -> Smite III`, including the
-  50% Holy bonus and level-90 Smite III; verify `Dispel -> Cleanse -> Heal II ->
-  Prayer of Faith`, including all three below-10%-HP outcomes. Confirm an
+  `Repel the Wicked -> Smite II -> Sanctification -> Undead Hunter -> Smite III`,
+  including Undead Hunter's Speed/initiative/critical bonuses, the 50% Holy
+  bonus, and level-90 Smite III. Verify `Dispel -> Cleanse -> Heal II -> Radiant
+  Healing -> Prayer of Faith`, including Radiant Healing's actual-healing-based
+  Holy damage and all three below-10%-HP outcomes. Confirm an
   inherited middle-path ability does not unlock its successor until the full
   preceding path is purchased.
+- [ ] Trigger Penalization with Mortal Strike and verify its critical/Holy wrath
+  lasts until combat ends. Cast Divine Protection II and verify it replaces the
+  original spell, greatly raises Defense, and weakens every living enemy.
+  Confirm Penalization, Smite III, and Divine Protection II each cost two points.
 - [ ] Cast Repel the Wicked on fiends and undead. Confirm failure leaves the
   target in combat, ordinary success makes it flee without kill rewards, and a
-  successful cast against a Condemnation-marked target disintegrates it.
+  successful cast against a Beyond Reproach Condemnation mark disintegrates it.
 - [ ] For every vow, gain Conviction from a valid signature action and its
   clean outcome. Verify effective Paladin/Crusader caps 3/4, cleanup rules, and
   no automatic spending by Redeem, Challenge, Interpose, or Judgment Riposte.

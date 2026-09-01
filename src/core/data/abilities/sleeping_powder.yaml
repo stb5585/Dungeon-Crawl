@@ -1,7 +1,7 @@
 name: Sleeping Powder
 type: StatusSkill
 subtype: Stealth
-description: Blow sleeping powder at the target.
+description: Use one of a Monocane's five charges to blow sleeping powder at the target.
 cost: 11
 status_name: Sleep
 actor_use_check_mod: speed
@@ -9,3 +9,4 @@ target_use_check_mod: "magic def"
 duration: 2
 skip_if_active: true
 ice_block_check: true
+required_item: Monocane

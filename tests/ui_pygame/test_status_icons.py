@@ -216,6 +216,7 @@ def test_status_icon_asset_path_uses_existing_effect_art_with_text_fallback():
     assert status_icon_asset_path("BRN").name == "burn.png"
     assert status_icon_asset_path("PSN").name == "poison.png"
     assert status_icon_asset_path("DOM").name == "doom.png"
+    assert status_icon_asset_path("FEA").name == "fear.png"
     assert status_icon_asset_path("DSA").name == "disarm.png"
     assert status_icon_asset_path("DUP").name == "mirror_image.png"
     assert status_icon_asset_path("EG2").name == "evasive_guard.png"

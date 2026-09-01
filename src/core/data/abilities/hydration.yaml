@@ -1,6 +1,6 @@
 name: Hydration
 type: Heal
-subtype: Heal
+subtype: Water
 description: "Bath yourself in restorative waters, healing for an initial amount then more over time."
 cost: 16
 heal: 0.3

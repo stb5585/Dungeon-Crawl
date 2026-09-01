@@ -93,6 +93,39 @@ class SmokeBomb(Misc):
         )
 
 
+class Monocane(Misc):
+    """Reusable delivery cane required to cast Sleeping Powder."""
+
+    def __init__(self, charges: int = 5):
+        self.charges = max(1, int(charges))
+        super().__init__(
+            name="Monocane",
+            description=(
+                "A hollow gentleman's cane used to cast Sleeping Powder. "
+                f"Uses remaining: {self.charges}."
+            ),
+            value=2500,
+            rarity=0.45,
+            subtyp="Tool",
+        )
+
+
+class CenserOfChokingAsh(Misc):
+    """Reusable arcane implement required to cast Obscuration."""
+
+    def __init__(self):
+        super().__init__(
+            name="Censer of Choking Ash",
+            description=(
+                "A reusable censer that blankets the surrounding area in choking "
+                "smoke. Required to cast Obscuration."
+            ),
+            value=5000,
+            rarity=0.35,
+            subtyp="Magic Tool",
+        )
+
+
 class RealityFragment(Misc):
     """Extremely rare reagent consumed by Thaumaturgist Miracles."""
 
@@ -178,6 +211,27 @@ def has_smoke_bomb(character) -> bool:
     return bool(_inventory_stack(character, "Smoke Bomb"))
 
 
+def use_reusable_tool(character, item_name: str) -> tuple[bool, str]:
+    """Spend one charge from a named tool and remove it when exhausted."""
+    stack = _inventory_stack(character, item_name)
+    if not stack:
+        return False, f"{item_name} is required.\n"
+    tool = stack[0]
+    charges = max(0, int(getattr(tool, "charges", 0) or 0))
+    if charges <= 0:
+        character.modify_inventory(tool, subtract=True)
+        return False, f"The {item_name} is used up.\n"
+    tool.charges = charges - 1
+    tool.description = (
+        f"A hollow gentleman's cane used to cast Sleeping Powder. "
+        f"Uses remaining: {tool.charges}."
+    )
+    if tool.charges <= 0:
+        character.modify_inventory(tool, subtract=True)
+        return True, f"The {item_name}'s final charge is spent.\n"
+    return True, f"The {item_name} has {tool.charges} uses remaining.\n"
+
+
 def has_oculus(character) -> bool:
     """Return whether a character carries an Oculus."""
     return bool(_inventory_stack(character, "Oculus"))
@@ -258,8 +312,17 @@ class Scroll(Misc):
         self.charges = random.randint(2, 10)
 
     def use(self, user: Character, target: Character | None = None, tile: Any = None) -> str:
+        from ..classes import footpad
+
         use_str = f"{user.name} uses {self.name}.\n"
-        use_str += str(self.spell.cast(user, target=target, special=True))
+        original_damage_modifier = getattr(self.spell, "dmg_mod", None)
+        if original_damage_modifier is not None:
+            self.spell.dmg_mod *= footpad.scroll_effectiveness_multiplier(user)
+        try:
+            use_str += str(self.spell.cast(user, target=target, special=True))
+        finally:
+            if original_damage_modifier is not None:
+                self.spell.dmg_mod = original_damage_modifier
         self.charges -= 1
         if not self.charges:
             use_str += "The scroll crumbles to dust in your hands!\n"

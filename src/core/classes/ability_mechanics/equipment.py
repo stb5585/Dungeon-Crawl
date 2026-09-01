@@ -194,6 +194,20 @@ def can_dual_wield_item(character: Any, item: Any, slot: str) -> bool:
     )
 
 
+def dual_wield_accuracy_modifier(character: Any, slot: str) -> float:
+    """Return the accuracy penalty for attacks made while dual wielding."""
+    equipment = getattr(character, "equipment", {})
+    if not has_skill(character, "Dual Wield"):
+        return 0.0
+    if any(getattr(equipment.get(key), "typ", None) != "Weapon" for key in ("Weapon", "OffHand")):
+        return 0.0
+    if has_skill(character, "Dual Wield Mastery"):
+        return 0.0
+    if slot == "Weapon" and has_skill(character, "Dual Wield Excellence"):
+        return 0.0
+    return -0.15
+
+
 def _is_two_handed_polearm(item: Any) -> bool:
     return getattr(item, "subtyp", None) == "Polearm" and getattr(item, "handed", 1) == 2
 

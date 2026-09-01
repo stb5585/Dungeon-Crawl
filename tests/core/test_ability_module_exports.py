@@ -7,6 +7,7 @@ from src.core.abilities import (
     base,
     enemy,
     mage,
+    pathfinder,
     powerups,
     promotions,
     skills,
@@ -26,6 +27,7 @@ ABILITY_MODULES = (
     enemy,
     spell_types,
     spells,
+    pathfinder,
 )
 
 
@@ -51,7 +53,7 @@ def test_abilities_facade_preserves_all_split_class_exports():
         for name, implementation in _module_ability_classes(module).items()
     }
 
-    assert len(direct_exports) == 519
+    assert len(direct_exports) == 561
     for name, implementation in direct_exports.items():
         if name in {"ShieldRiposte", "SpellReflection"}:
             # The defender passives intentionally supersede older promotion

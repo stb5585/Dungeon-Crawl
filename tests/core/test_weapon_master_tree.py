@@ -48,7 +48,7 @@ def test_warrior_replaces_dual_wield_with_level_twenty_cripple():
     warrior = _player("Warrior", 20)
 
     assert "Dual Wield" not in by_name
-    assert by_name["Cripple"].position == (0, 5)
+    assert by_name["Cripple"].position == (0, 4)
     assert by_name["Cripple"].payload["level_requirement"] == 20
     assert by_name["True Strike"].prerequisites[0] == by_name["Cripple"].id
     assert warrior.cls.restrictions["OffHand"] == ["Shield"]
@@ -419,7 +419,7 @@ def test_duelist_and_retort_bonuses_require_their_passives():
     assert ability_mechanics.retort_parry_bonus(player) == 0.0
     player.spellbook["Skills"]["Retort"] = abilities.Retort()
     assert ability_mechanics.retort_parry_bonus(player) == 0.08
-    assert ability_mechanics.retort_counter_multiplier(player) == pytest.approx(1.24)
+    assert ability_mechanics.retort_counter_multiplier(player) == 1.0
 
     player.equipment["OffHand"] = items.Buckler()
     assert ability_mechanics.duelist_style_active(player) is False

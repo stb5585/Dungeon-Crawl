@@ -198,6 +198,7 @@ class PlayerDataSerializer:
             'main_story': main_story.normalize_state(getattr(player, 'main_story', None)),
             'thieves_guild': thieves_guild.normalize_state(getattr(player, 'thieves_guild', None)),
             'liminal_gap_return': getattr(player, 'liminal_gap_return', None),
+            'dungeon_trap_seed': int(getattr(player, 'dungeon_trap_seed', 0) or 0),
             'gameplay_stats': normalize_gameplay_stats(
                 getattr(player, 'gameplay_stats', None),
                 current_level=(
@@ -503,6 +504,9 @@ class PlayerDataSerializer:
         else:
             liminal_gap_return = None
         player.liminal_gap_return = liminal_gap_return
+        player.dungeon_trap_seed = int(
+            data.get('dungeon_trap_seed', getattr(player, 'dungeon_trap_seed', 0)) or 0
+        )
         player.gameplay_stats = normalize_gameplay_stats(
             data.get('gameplay_stats'),
             current_level=(

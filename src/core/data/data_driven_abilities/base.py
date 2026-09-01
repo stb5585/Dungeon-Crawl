@@ -268,6 +268,12 @@ class DataDrivenSpell(Spell):
                     damage = int(damage * nature_totems.spell_output_multiplier(caster, self))
                 except Exception:
                     pass
+                try:
+                    from src.core.classes import pathfinder
+
+                    damage = int(damage * pathfinder.spell_output_multiplier(caster, self))
+                except Exception:
+                    pass
                 skills = getattr(caster, "spellbook", {}).get("Skills", {})
                 school_name = str(getattr(self, "school", "") or self.subtyp)
                 if (
@@ -372,6 +378,17 @@ class DataDrivenSpell(Spell):
                     pass
 
                 # ── 11. Apply damage ────────────────────────────────
+                if crit > 1:
+                    try:
+                        from src.core.classes import healer
+
+                        damage, delayed_message = healer.delay_critical_damage(
+                            target,
+                            damage,
+                        )
+                        msg += delayed_message
+                    except Exception:
+                        pass
                 target.health.current -= damage
                 caster._emit_damage_event(
                     target,

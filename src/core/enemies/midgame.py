@@ -545,10 +545,9 @@ class InvisibleStalker(Elemental):
         self.equipment = {'Weapon': items.InvisibleBlade(), 'Armor': items.NoArmor(), 'OffHand': items.InvisibleBlade(),
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
         self.gold = random.randint(65, 79)
-        self.spellbook = {"Spells": {},
+        self.spellbook = {"Spells": {"Poison Strike": abilities.PoisonStrike()},
                           "Skills": {'Backstab': abilities.Backstab(),
                                      "Kidney Punch": abilities.KidneyPunch(),
-                                     'Poison Strike': abilities.PoisonStrike(),
                                      'Smoke Screen': abilities.SmokeScreen(),
                                      "Parry": abilities.Parry()}}
         self.resistance["Poison"] = 1.0
@@ -860,7 +859,7 @@ class Necromancer(Humanoid):
             {"ability": "Raise Dead", "priority": ActionPriority.HIGH},
             {"ability": "Shadow Bolt", "priority": ActionPriority.NORMAL},
             {"ability": "Enfeeble", "priority": ActionPriority.NORMAL},
-            {"ability": "Curse of Polydipsia", "priority": ActionPriority.HIGH}
+            {"ability": "Curse of Polydipsia", "priority": ActionPriority.LOW}
         ]
         self.single_use_abilities = {"Raise Dead"}
         self.level.pro_level = 4
@@ -955,9 +954,8 @@ class DrowAssassin(Humanoid):
         self.equipment = {'Weapon': items.Rondel(), 'Armor': items.StuddedLeather(), 'OffHand': items.Rondel(),
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
         self.gold = random.randint(160, 250)
-        self.spellbook = {"Spells": {},
-                          "Skills": {'Poison Strike': abilities.PoisonStrike(),
-                                     'Backstab': abilities.Backstab(),
+        self.spellbook = {"Spells": {"Poison Strike": abilities.PoisonStrike()},
+                          "Skills": {'Backstab': abilities.Backstab(),
                                      'Kidney Punch': abilities.KidneyPunch(),
                                      'Mug': abilities.Mug(),
                                      'Parry': abilities.Parry(),
@@ -1412,8 +1410,8 @@ class Jester(Humanoid):
             "stats": {"strength": 38, "intel": 18, "wisdom": 20, "con": 34, "charisma": 99, "dex": 42},
             "combat": {"attack": 56, "defense": 42, "magic": 22, "magic_def": 26},
             "resistance": _fixed_resistances(Earth=0.20, Wind=0.20, Poison=0.50, Physical=0.30, Holy=-0.10),
-            "spells": (),
-            "skills": (abilities.TripleStrike, abilities.Mug, abilities.PoisonStrike, abilities.SleepingPowder),
+            "spells": (abilities.PoisonStrike,),
+            "skills": (abilities.TripleStrike, abilities.Mug, abilities.SleepingPowder),
             "action_stack": [
                 {"ability": "Triple Strike", "priority": ActionPriority.NORMAL},
                 {"ability": "Poison Strike", "priority": ActionPriority.HIGH},

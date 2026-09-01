@@ -201,15 +201,13 @@ class OathsShelter(_PromotionActive):
 
 
 class Condemnation(_PromotionActive):
-    """Crusader weapon judgment that can condemn wicked creatures."""
+    """Crusader weapon judgment dealing physical and Holy damage."""
 
     def __init__(self):
         super().__init__(
             "Condemnation",
             (
-                "Strike with holy vengeance for weapon and Holy damage, with "
-                "a chance to condemn fiends and undead to disintegration by "
-                "Repel the Wicked."
+                "Strike with holy vengeance for weapon and Holy damage."
             ),
             10,
         )
@@ -311,6 +309,59 @@ class Sanctification(_PromotionPassive):
         super().__init__(
             "Sanctification",
             "Passive: Increase Holy damage by 50%.",
+        )
+
+
+class RadiantHealing(_PromotionPassive):
+    """Turn successful combat healing into Holy damage."""
+
+    def __init__(self):
+        super().__init__(
+            "Radiant Healing",
+            (
+                "Passive: Healing spells cast in combat damage an enemy for "
+                "10% of the amount healed as Holy damage."
+            ),
+        )
+
+
+class UndeadHunter(_PromotionPassive):
+    """Become faster and more precise when facing undead enemies."""
+
+    def __init__(self):
+        super().__init__(
+            "Undead Hunter",
+            (
+                "Passive: The presence of Undead enemies increases Speed, "
+                "initiative, and critical strike chance."
+            ),
+        )
+
+
+class BeyondReproach(_PromotionPassive):
+    """Allow Condemnation to prepare wicked targets for disintegration."""
+
+    def __init__(self):
+        super().__init__(
+            "Beyond Reproach",
+            (
+                "Passive: Condemnation can mark undead and fiends, causing a "
+                "successful Repel the Wicked to disintegrate them."
+            ),
+        )
+
+
+class Penalization(_PromotionPassive):
+    """Enter a wrath state after Mortal Strike connects."""
+
+    def __init__(self):
+        super().__init__(
+            "Penalization",
+            (
+                "Passive: Successful Mortal Strike hits trigger wrath, "
+                "increasing critical strike chance and Holy damage for the "
+                "rest of combat."
+            ),
         )
 
 

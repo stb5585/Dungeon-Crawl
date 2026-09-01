@@ -1,6 +1,6 @@
 # The Forsaken Tenet Development Roadmap
 
-*Updated: August 7, 2026*
+*Updated: August 24, 2026*
 
 This roadmap tracks remaining work for **The Forsaken Tenet**. Completed P0-P6
 roadmap history has been consolidated into `CHANGELOG.md`; this file is now
@@ -26,8 +26,9 @@ promotion previews, branch closure, and class changes for Pygame and headless
 validation.
 
 Ability trees use class-authored specialization branches instead of universal
-lanes. Base lineages lead to one terminal promotion per branch; promoted
-classes only expose combat paths relevant to their catalogs. First promotions
+lanes. Base-lineage promotions may combine identity and shared-track
+prerequisites; promoted classes only expose combat paths relevant to their
+catalogs. First promotions
 cost two points and second promotions cost three; both are governed by path
 prerequisites, permanent-stat gates, race eligibility, and global level 30/60
 gates.
@@ -35,27 +36,25 @@ Learned abilities survive class changes; all unpurchased nodes in the prior
 tree close. Church promotion and automatic level-based ability/stat awards
 are retired. Progression is a Character Menu tab rather than a Town option.
 
-Warrior was the first fully authored talent-tree prototype. Its ordered paths lead
-through Arms to Weapon Master, Vanguard to Lancer, Bulwark to Sentinel, and
-Command to Paladin. Weapon Master and Lancer share `Piercing Strike -> Charge
--> Weapon Focus` before splitting. Charge is level 5; Weapon Focus is level 10.
+Warrior was the first fully authored talent-tree prototype. Its six-column
+graph leads through Arms to Weapon Master, Vanguard to Lancer, Bulwark to
+Sentinel, and Command to Paladin. Weapon Master and Lancer share `Piercing
+Strike -> Charge` before splitting into Weapon Focus and Honed Attack.
 Weapon Master continues through `+10 Attack -> Cripple -> True Strike`, while
 Lancer continues through `Driving Thrust -> +10 Defense -> Retaliate`.
 Cripple is a level-20, less-accurate attack that weakens melee damage based on
-damage dealt. The defensive spine is `Shield Slam -> Shield Block -> Rally`,
-then Sentinel branches through Defense and
-Paladin branches directly through Goad. Lancer joins Shield Block at
-Retaliate. Cross-column connectors enter node sides instead of merging into
-their vertical prerequisite lines. Disarm, Battle Cry, Adrenaline, Honed
-Attack, Double Strike, and Parry are unbound talents in the fifth column.
-Adrenaline is level 10, Honed Attack level 15, Double Strike level 20, and
-Parry level 25; Battle Cry has no level gate. Weapon Master requires Strength
-15, Dexterity 12, and Intelligence 11; Sentinel requires Constitution 16; and
-Paladin requires Wisdom 13. Each first-promotion route costs 13 points from
-the baseline Human Warrior under the former combined-budget accounting. With
-separate currencies, Weapon Master/Sentinel/Paladin each cost eight progression
-and five attribute points, while Lancer costs ten progression and three
-attribute points. Warrior off-hand equipment remains shield-only;
+damage dealt. The defensive trunk is `Shield Slam -> Shield Block`, then
+Sentinel branches through Rally, Defense, Dishearten, and Aggressive Pursuit
+while Paladin uses Goad, Chastise, Magic Defense, and Commitment. Commitment
+rewards repeated attacks against one target and permanently closes the other
+promotion routes. The fifth column connects Disarm, Defense, Improved Defend,
+Upsurge, and Parry; the sixth connects Battle Cry, Adrenaline, HP, Double
+Strike, and Achilles Heel. Weapon Master requires Strength 14, Dexterity 12,
+and Intelligence 11; Sentinel requires Constitution 15; and Paladin requires
+Constitution 14 and Wisdom 13. Requirements of 10 or lower are omitted from
+every promotion. With separate currencies, all four routes cost eight progression
+points; Weapon Master and Sentinel require four Human attribute points,
+Paladin five, and Lancer three. Warrior off-hand equipment remains shield-only;
 Dual Wield is now an exclusive Weapon Master style. Combat-rating nodes grant
 `+10` in base trees, `+20` in first-promotion trees, and `+30` in terminal
 trees, while primary-attribute training remains `+1`.
@@ -83,6 +82,26 @@ being learned automatically. Its ungated inherited entry nodes and rating
 nodes remain immediately available; the extended Berserker route adds
 two-handed proficiency and discipline-scaled critical damage while keeping
 both second-promotion nodes aligned.
+
+Pathfinder has 40 development nodes across seven explicit vertical tracks:
+Druid, Naturalism, Ranger, Melee, Shaman, Elemental, and Diviner. Its joined
+promotion routes cost 11-14 points including promotion, leaving meaningful
+choice within the 16 progression points available by level 30. Healer has 36 development nodes
+across six full columns, and Footpad has 34 development nodes across six
+columns. Healer's Bard, Cleric, and Priest promotions each require a complete
+six-node identity column and the complete adjacent Support or Healing column;
+their promotion routes cost 14 points including promotion. Monk remains an
+independent six-node route costing eight points including promotion.
+Footpad's Control track is required by both Thief and Assassin, while Defense
+is required by both Spell Stealer and Inquisitor; each joined promotion route
+costs 13 progression points.
+Shared tracks can feed several promotions without duplicating nodes. Their 12
+first-promotion trees provide at least 16 development choices and their 14
+terminal trees at least 14, using four class-specific passive families rather
+than alternating two placeholder ranks. Each generic terminal tree ends in a
+two-point mastery that deepens its meter or persistent class system; full
+counts, path costs, names, and generated diagrams live in
+`docs/ABILITY_TREE_DESIGN.md` and `docs/ability_trees/`.
 
 Mage is now the second bespoke base graph. Its six columns define independent
 Elemental roots, matching Enhancements, Arcana, Occultism, Conjuration, and
@@ -114,9 +133,7 @@ transient companions still act independently after the player,
 use one transient slot, last 50 exploration steps, and never gain XP, bond,
 loot, quest, or roster state. Numeric rating/HP/MP nodes are globally
 path-gated without independent level gates; future class-specific nodes must
-include a basic class mechanic instead of plain stat padding. This remains an
-approved scoped continuation of the preserved baseline; unrelated lineage
-expansions remain paused.
+include a basic class mechanic instead of plain stat padding.
 
 The terminal tree now uses five columns. Its Miracles lane contains Miracle
 Blade, Miracle Shackles, Miracle Potion, and Miracle Crystal at levels
@@ -173,14 +190,19 @@ tuned Landing Shield rather than a duplicate Meteor Guard payoff.
 
 Sentinel, Stalwart Defender, Paladin, and Crusader complete the authored
 Warrior promotion set. Sentinel uses six columns across Assault, Bulwark,
-Resistance, Support, and independent inherited actions. Its centered promotion
-accepts any of four level-55 talents. Stalwart contains 20 nodes in the same
-four disciplines. Resolve uses the legacy `guard_meter` field as one value with
+Resistance, Support, and independent inherited actions. Ungated, disconnected
+Parry now tops its last column. Its centered promotion accepts any of four
+level-55 talents. Stalwart contains 25 nodes across five disciplines, adding a
+Shield Offense column while shifting Resistance and Support right. Resolve uses
+the legacy `guard_meter` field as one value with
 caps 50/100, explicit Defend/block/physical-damage/Goad/Hold gains, and no
 duplicate Class Ring accumulation. Spell Block is the active anti-projectile
 action and Spell Reflection is its passive reflection modifier. Stalwart grants
 Citadel Aegis, Ironwall Revenge, Last Bastion, and Stronghold as immediately
 unlocked full-bar Bursts.
+Its new Tower Offense, Get Even, Generator Shield, and Battle Determination
+passives turn Shield Slam, Retaliate, Shield Ricochet, and Battle Cry into
+additional Resolve interactions.
 
 Paladin now begins with ungated Oath's Judgment and Oath's Shelter roots.
 Judgment branches left through `Double Strike -> +20 Attack -> Tempered
@@ -194,13 +216,17 @@ The centered level-60 Crusader promotion requires either Oath root plus its
 existing stats and three-point cost. It sits at `(2.5, 7)`, with each Oath
 connector descending to its row before joining. Because attributes use their own
 currency, a baseline Human retains 14 progression points and nine attribute
-points after the shortest promotion route. Crusader contains 23 new nodes
+points after the shortest promotion route. Crusader contains 26 new nodes
 across Melee, Spells, Healing, and Protection. Ungated Condemnation splits
-into exclusive Two-Handed Weapon Proficiency and Sword & Board routes.
-The shield route adds Censure, True Piercing Strike, Shield Ricochet, and
-Triple Strike. The spell route runs Repel the Wicked into Smite II,
-Sanctification, and Smite III; Dispel begins the healing route through Cleanse,
-Heal II, and Prayer of Faith.
+into level-65 exclusive Two-Handed Weapon Proficiency and Sword & Board routes;
+Beyond Reproach separately unlocks its mark/disintegration interaction. The
+two-handed route ends in Penalization, while the shield route adds Censure,
+True Piercing Strike, Shield Ricochet, and Triple Strike. The spell route runs
+Repel the Wicked into Smite II, Sanctification, Undead Hunter, and Smite III;
+Dispel begins the healing route through Cleanse, Heal II, Radiant Healing, and
+Prayer of Faith. Protection now runs from Divine Protection through Parry,
+Posturing, Consecrated Bulwark, and the replacing Divine Protection II.
+Penalization, Smite III, and Divine Protection II cost two points.
 Repel the Wicked replaces Turn Undead in the Paladin path and remains
 retained-or-purchasable in the Crusader Spells path without an upgrade node.
 Signature-vow actions now
@@ -570,12 +596,15 @@ Systems, audio, and meta planning is split across durable owner docs:
   progression, ability-ownership, and promotion model.
 - Refactor ability menus in combat
   - Change to an action shortcut bar with (limited?) slots that can be rearranged
-- Separate passive and usable abilities in the spellbook
+  - Separate passive and usable abilities in the spellbook
   - create new tab for abilities; could be integrated with refactor ability bar
-- Change how invisibility works in combat
-  - invisible enemies are not singularly targetable but can be hit by AoE abilities
-  - Do not draw sprite in combat unless Sight; possibly add reveal mechanic (high wisdom,
-  combat awareness, etc.)
+- Combat improvements
+  - Change how invisibility works in combat
+    - invisible enemies are not singularly targetable but can be hit by AoE abilities
+    - Do not draw sprite in combat unless Sight; possibly add reveal mechanic (high wisdom, combat awareness, etc.)
+  - change/improve dodge calculations
+    - speed is currently DEX-based; this makes some skills like Quickstep double-dip into DEX for dodge, making it overpowered
+    - pure speed buffs are also currently applied twice: once in the base speed calculation and again in the dodge calculation
 - Amplify charged abilities to make them more useful
   - add abilities for cancellation
 - Add class-specific resource meters to the navigation and combat view
@@ -586,18 +615,22 @@ Systems, audio, and meta planning is split across durable owner docs:
 - Implement new combat view to allow for more realistic enemy sprite locations
   - allow expansion of multi-enemy combat beyond 2 enemies
   - make sure there is room for a combat stack for speed-based combat
-- Resolve takes a long time to build up in order to use Bursts
-  - increase generation for skills and/or lower cost for Resolve abilities
 - Add popup helpers with descriptions for the Primary Attributes in the Progression
   tab
-- Add quests for the Magic Shop and Thieves Guild
+- Town Improvements
+  - Add quests for the Magic Shop and Thieves Guild
+  - Add Cure Curse in Church menu
 - Items to include in the Settings menu
   - menu index reset or lock (stay on the menu option or default to top)
   - text print speed
   - combat speed
 - Ability Improvements
+  - Organize abilities into common files by class and/or type
+    - for example, Resolve abilities are scattered in various files and even the Surges are not all in the same place
   - Continue playtesting Ironwall Revenge's three-hit reliability against
     high-dodge enemies and Repercussion's all-enemy tuning.
+  - Resolve takes a long time to build up in order to use Bursts
+    - increase generation for skills and/or lower cost for Resolve abilities
 - Implement resting in the dungeon for recovery
   - include several items/tools that make resting more efficient
   - when resting, encounters can interrupt sleep; combat initiates with initiative lost
@@ -747,4 +780,52 @@ an explicit oath confirmation before promotion commits.
 5. Keep the roadmap current. Completed work should move to `CHANGELOG.md`, and
    loose ideas should be promoted behind a clear gate before implementation.
 
-## Current Changes to Implement
+### Weapon-hand decisions to revisit
+
+- Basic attacks still use both equipped weapons; the main-hand-only rule applies
+  to weapon abilities, spells, and automatic counterattacks.
+- Sneak Attack explicitly uses both hands. Poison Strike is now a main-hand
+  Poison Druid spell whose transformed bite deals physical and poison damage.
+  Momentum and Thunderous Vault retain their authored hand-by-hand sequences.
+  Kidney Punch still requires an off-hand weapon for its special effect rather
+  than making a normal off-hand weapon-damage roll.
+- Flurry of Blades uses only the main hand and has a 20-strike safety ceiling;
+  its 8-percentage-point accuracy loss per attempt normally ends the sequence
+  much earlier. Revisit the ceiling and penalty after combat telemetry exists.
+- Decide whether future poison coatings apply separately to main- and off-hand
+  weapons.
+- Decide whether any future Riposte upgrades should explicitly enable a second
+  off-hand counterattack; base Riposte and all existing Parry/Retaliate
+  counterattacks are main-hand only.
+
+### Detect spell tuning to revisit
+
+- The eleven standard creature-family Detect spells currently last 50 travel
+  steps. A matching encounter is revealed at a 50% base chance, gaining two
+  percentage points per Wisdom above 10, capped at 90% (with a 25% floor).
+- Detect Undead and Detect Fiend are placed in Paladin; Footpad uses Detect
+  Animal, Detect Humanoid, and Detect Slime; and Pathfinder also uses Detect
+  Animal alongside Detect Elemental. Place the remaining definitions in
+  promotion trees where their creature families fit.
+
+## Future Implementations
+
+1) For Thief tree,
+-
+2) For Assassin tree,
+- a new ability Apply Toxin (Use outside of combat to apply an available toxin to a dagger)
+3) Ability updates
+- the new Apply Toxin ability requires the creation of various reagent and crafted toxin items; each toxin has a standard and severe reaction
+  - Snake Venom: Dropped by Giant Snake; used to make Mild Toxin
+  - Scorpion Venom: Dropped by Giant Scorpion; used to make Neurotoxin
+  - Viper Venom: Dropped by Pit Viper; used to make Hemotoxin
+  - Lizard Venom: Dropped by Basilisk; used to make Myotoxin
+  - Shadow Venom: Dropped by Shadow Serpent; used to make Necrotoxin
+  - Deathcap Mushroom: Rare gather find; used to make Amatoxin
+  - Mild Toxin: Created from Snake Venom; standard - mildly poisons the target; severe - moderately poisons the target
+  - Neurotoxin: Created from Scorpion Venom; standard - mildly poisons the target and can cause numbness (drops weapon); severe - moderately poisons the target and anaphylaxis (cannot breath; takes damage and silenced)
+  - Hemotoxin: Created from Viper Venom; standard - moderately poisons the target and can cause blindness; severe - severely poisons the target and can cause hemorrhaging
+  - Amatoxin: Created from Deathcap Mushroom; standard - severely poisons the target and can cause enfeeblement; critically poisons the enemy and can kill in 5 turns if not cured
+  - Myotoxin: Created from Lizard Venom; standard - severely poisons the target and can stun; severe - critically poisons the enemy and can petrify in 3 turns if not cured
+  - Necrotoxin: Created from Shadow Venom; standard - severely poisons the target and can cause incapacitation; severe - critically poisons the enemy and can kill in 2 turns if not cured
+- rework Refueling (Channel the spirit force, regaining 10% of max mana each turn and doubling each consecutive turn; at the beginning of each turn, you can choose to cancel or continue; while channeling you are considered prone for save rolls)

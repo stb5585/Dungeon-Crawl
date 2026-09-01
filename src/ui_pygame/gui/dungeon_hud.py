@@ -155,6 +155,7 @@ class DungeonHUD:
             "Blind": "BLD",
             "Blind Rage": "BRG",
             "Doom": "DOM",
+            "Fear": "FEA",
             "Poison": "PSN",
             "Silence": "SIL",
             "Sleep": "SLP",

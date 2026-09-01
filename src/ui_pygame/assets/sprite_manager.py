@@ -156,6 +156,8 @@ class SpriteManager:
             'freeze': 'icon_frozen',
             'blind': 'icon_blind',
             'blinded': 'icon_blind',
+            'fear': 'fear',
+            'afraid': 'fear',
         }
         
         # Normalize status name

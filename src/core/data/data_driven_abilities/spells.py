@@ -85,9 +85,33 @@ class DataDrivenHealSpell(_get_heal_spell_class()):
         fam: bool = False,
         **_kwargs: Any,
     ) -> str:
+        resolved_target = target if fam else caster
+        health_before = (
+            int(resolved_target.health.current)
+            if resolved_target is not None
+            else 0
+        )
         if self._instant_heal and self.turns > 0:
-            return self._cast_hybrid(caster, target, cover, special, fam)
-        return super().cast(caster, target, cover, special, fam)
+            message = self._cast_hybrid(caster, target, cover, special, fam)
+        else:
+            message = super().cast(caster, target, cover, special, fam)
+        actual_healing = (
+            max(0, int(resolved_target.health.current) - health_before)
+            if resolved_target is not None
+            else 0
+        )
+        if actual_healing:
+            try:
+                from src.core.classes import paladin
+
+                message += paladin.radiant_healing_damage(
+                    caster,
+                    actual_healing,
+                    source=self.name,
+                )
+            except (AttributeError, KeyError, TypeError, ValueError):
+                pass
+        return message
 
     def _cast_hybrid(
         self,

@@ -7,6 +7,7 @@ cost: 8
 damage_mod: 1.15
 crit: 6
 school: Nature
+damage_types: [Nature, Poison]
 effects:
   - type: dynamic_status_dot
     status_name: Poison

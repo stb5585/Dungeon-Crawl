@@ -55,6 +55,8 @@ class CharacterStatusMixin:
         reduction = 0.0
         if self.status_effects.get("Defend") and self.status_effects["Defend"].active:
             reduction += float(self.status_effects["Defend"].extra)
+            if "Improved Defend" in self.spellbook.get("Skills", {}):
+                reduction += 0.15
         if hasattr(self, "jump_defend_active") and self.jump_defend_active:
             reduction += 0.15
         return min(0.75, reduction)
@@ -80,7 +82,10 @@ class CharacterStatusMixin:
         polymorph = self.status_effects.get("Polymorph")
         if polymorph is not None and polymorph.active:
             return False, f"{self.name} is polymorphed and cannot act."
-        if self.physical_effects["Prone"].active:
+        if (
+            self.physical_effects["Prone"].active
+            and not getattr(self, "_primal_trance_active", False)
+        ):
             return False, f"{self.name} is prone and cannot act."
         if self.status_effects["Stun"].active:
             return False, f"{self.name} is stunned and cannot act."
@@ -199,6 +204,8 @@ class CharacterStatusMixin:
         if self.magic_effects.get("Tree of Life") and self.magic_effects["Tree of Life"].active:
             return True
         if normalized == "Berserk" and self.status_effects.get("Peaceful") and self.status_effects["Peaceful"].active:
+            return True
+        if normalized == "Fear" and int(getattr(self, "_courage_turns", 0) or 0) > 0:
             return True
 
         equipment = getattr(self, "equipment", {}) or {}
@@ -322,6 +329,18 @@ class CharacterStatusMixin:
 
         if end:
             try:
+                from ..classes import pathfinder
+
+                pathfinder.tick_combat_state(self, end=True)
+            except Exception:
+                pass
+            try:
+                from ..classes import healer
+
+                healer.tick_combat_state(self, end=True)
+            except Exception:
+                pass
+            try:
                 from ..classes import mage_mechanics
 
                 mage_mechanics.tick_combat_state(self, end=True)
@@ -366,6 +385,18 @@ class CharacterStatusMixin:
                 from ..classes import mage_mechanics
 
                 status_text += mage_mechanics.tick_combat_state(self)
+            except Exception:
+                pass
+            try:
+                from ..classes import healer
+
+                status_text += healer.tick_combat_state(self)
+            except Exception:
+                pass
+            try:
+                from ..classes import pathfinder
+
+                status_text += pathfinder.tick_combat_state(self)
             except Exception:
                 pass
             temporary_health = getattr(self, "temporary_health", None)
@@ -440,8 +471,20 @@ class CharacterStatusMixin:
                     )
             if self.physical_effects["Prone"].active and not isinstance(
                 getattr(self, "conjured_shackles", None), dict
-            ) and all([not self.status_effects["Stun"].active,
-                                                              not self.status_effects["Sleep"].active]):
+            ) and not getattr(self, "_primal_trance_active", False) and all([
+                not self.status_effects["Stun"].active,
+                not self.status_effects["Sleep"].active,
+            ]):
+                try:
+                    from ..classes import pathfinder
+
+                    self.physical_effects["Prone"].duration = max(
+                        0,
+                        self.physical_effects["Prone"].duration
+                        - pathfinder.bounce_back_bonus(self),
+                    )
+                except Exception:
+                    pass
                 if not random.randint(0, self.physical_effects["Prone"].duration) or \
                     random.randint(0, self.check_mod("luck", luck_factor=10)):
                     default(effect="Prone")

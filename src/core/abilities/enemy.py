@@ -166,7 +166,9 @@ class Gore(Skill):
         del kwargs
         if target is None:
             return "There is no target to gore.\n"
-        message, hit, _crit = user.weapon_damage(target, dmg_mod=1.5)
+        message, hit, _crit = user.weapon_damage(
+            target, dmg_mod=1.5, use_offhand=False
+        )
         if hit and target.is_alive() and not target.has_status_protection("Bleed"):
             bleed = target.physical_effects["Bleed"]
             bleed.active = True

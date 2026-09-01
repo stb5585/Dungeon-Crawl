@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1160" height="796" viewBox="0 0 1160 796">
+<style>
+text{font-family:DejaVu Sans,Arial,sans-serif}
+.title{fill:#f4bf2a;font-size:24px;font-weight:700}
+.meta{fill:#aab2bf;font-size:12px}
+.name{fill:#f4f6fa;font-size:13px;font-weight:700}
+.detail{fill:#c5ccd6;font-size:11px}
+.edge{fill:none;stroke:#7f8998;stroke-width:2}
+</style>
+<rect width="1160" height="796" fill="#10131a"/>
+<text class="title" x="42" y="38">Knight Enchanter Ability Tree</text>
+<text class="meta" x="42" y="62">Tier 3 · 28 nodes · Advanced Spells · Assault Release · Aegis Release · Spellbind Release · Universal / Extra Abilities</text>
+<path class="edge" d="M 358.0 123.0 V 173.0 H 358.0 V 223.0"/>
+<path class="edge" d="M 358.0 223.0 V 273.0 H 358.0 V 323.0"/>
+<path class="edge" d="M 358.0 323.0 V 373.0 H 358.0 V 423.0"/>
+<path class="edge" d="M 358.0 423.0 V 523.0 H 358.0 V 623.0"/>
+<path class="edge" d="M 358.0 623.0 V 673.0 H 358.0 V 723.0"/>
+<path class="edge" d="M 580.0 123.0 V 173.0 H 580.0 V 223.0"/>
+<path class="edge" d="M 580.0 223.0 V 273.0 H 580.0 V 323.0"/>
+<path class="edge" d="M 580.0 323.0 V 373.0 H 580.0 V 423.0"/>
+<path class="edge" d="M 580.0 423.0 V 473.0 H 580.0 V 523.0"/>
+<path class="edge" d="M 580.0 523.0 V 573.0 H 580.0 V 623.0"/>
+<path class="edge" d="M 802.0 123.0 V 173.0 H 802.0 V 223.0"/>
+<path class="edge" d="M 802.0 223.0 V 323.0 H 802.0 V 423.0"/>
+<path class="edge" d="M 802.0 423.0 V 473.0 H 802.0 V 523.0"/>
+<path class="edge" d="M 802.0 523.0 V 573.0 H 802.0 V 623.0"/>
+<path class="edge" d="M 1024.0 123.0 V 173.0 H 1024.0 V 223.0"/>
+<rect x="42.0" y="92.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<text class="name" x="52.0" y="116.0">Fireball</text>
+<text class="detail" x="52.0" y="137.0">Ability · Cost 1 · Level 70</text>
+<rect x="42.0" y="192.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<text class="name" x="52.0" y="216.0">Icicle</text>
+<text class="detail" x="52.0" y="237.0">Ability · Cost 1 · Level 70</text>
+<rect x="42.0" y="292.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<text class="name" x="52.0" y="316.0">Lightning</text>
+<text class="detail" x="52.0" y="337.0">Ability · Cost 1 · Level 70</text>
+<rect x="42.0" y="392.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<text class="name" x="52.0" y="416.0">Hurricane</text>
+<text class="detail" x="52.0" y="437.0">Ability · Cost 1 · Level 70</text>
+<rect x="42.0" y="492.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<text class="name" x="52.0" y="516.0">Aqualung</text>
+<text class="detail" x="52.0" y="537.0">Ability · Cost 1 · Level 70</text>
+<rect x="42.0" y="592.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<text class="name" x="52.0" y="616.0">Mudslide</text>
+<text class="detail" x="52.0" y="637.0">Ability · Cost 1 · Level 70</text>
+<rect x="42.0" y="692.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<text class="name" x="52.0" y="716.0">Magic Missile II</text>
+<text class="detail" x="52.0" y="737.0">Ability · Cost 1 · Level 70</text>
+<rect x="264.0" y="92.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<text class="name" x="274.0" y="116.0">Double Strike</text>
+<text class="detail" x="274.0" y="137.0">Ability · Cost 1</text>
+<rect x="264.0" y="192.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
+<text class="name" x="274.0" y="216.0">Cleaving Edge</text>
+<text class="detail" x="274.0" y="237.0">Ability · Cost 1 · Level 65</text>
+<rect x="264.0" y="292.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
+<text class="name" x="274.0" y="316.0">Re-debuff</text>
+<text class="detail" x="274.0" y="337.0">Ability · Cost 1 · Level 70</text>
+<rect x="264.0" y="392.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
+<text class="name" x="274.0" y="416.0">Resonant Strike</text>
+<text class="detail" x="274.0" y="437.0">Ability · Cost 1 · Level 75</text>
+<rect x="264.0" y="592.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<text class="name" x="274.0" y="616.0">Mana Slice II</text>
+<text class="detail" x="274.0" y="637.0">Ability · Cost 1 · Level 85</text>
+<rect x="264.0" y="692.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
+<text class="name" x="274.0" y="716.0">Quick Recharge</text>
+<text class="detail" x="274.0" y="737.0">Ability · Cost 2 · Level 90</text>
+<rect x="486.0" y="92.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<text class="name" x="496.0" y="116.0">Enhance Armor</text>
+<text class="detail" x="496.0" y="137.0">Ability · Cost 1</text>
+<rect x="486.0" y="192.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
+<text class="name" x="496.0" y="216.0">Defensive Release</text>
+<text class="detail" x="496.0" y="237.0">Ability · Cost 1 · Level 65</text>
+<rect x="486.0" y="292.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<text class="name" x="496.0" y="316.0">Third Eye</text>
+<text class="detail" x="496.0" y="337.0">Ability · Cost 2 · Level 70</text>
+<rect x="486.0" y="392.0" width="188" height="62" rx="8" fill="#3b213f" stroke="#d27adb" stroke-width="2"/>
+<text class="name" x="496.0" y="416.0">Aegis Weave</text>
+<text class="detail" x="496.0" y="437.0">Ability · Cost 1 · Level 75 · Blade Charges</text>
+<rect x="486.0" y="492.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
+<text class="name" x="496.0" y="516.0">Weave Reservoir</text>
+<text class="detail" x="496.0" y="537.0">Ability · Cost 1 · Level 80</text>
+<rect x="486.0" y="592.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
+<text class="name" x="496.0" y="616.0">Arcane Riposte</text>
+<text class="detail" x="496.0" y="637.0">Ability · Cost 1 · Level 85</text>
+<rect x="708.0" y="92.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<text class="name" x="718.0" y="116.0">Mana Tap</text>
+<text class="detail" x="718.0" y="137.0">Ability · Cost 1</text>
+<rect x="708.0" y="192.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<text class="name" x="718.0" y="216.0">Dispel Slash</text>
+<text class="detail" x="718.0" y="237.0">Ability · Cost 1 · Level 65</text>
+<rect x="708.0" y="392.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
+<text class="name" x="718.0" y="416.0">Storage Capacity II</text>
+<text class="detail" x="718.0" y="437.0">Ability · Cost 2 · Level 75</text>
+<rect x="708.0" y="492.0" width="188" height="62" rx="8" fill="#3b213f" stroke="#d27adb" stroke-width="2"/>
+<text class="name" x="718.0" y="516.0">Spellbind</text>
+<text class="detail" x="718.0" y="537.0">Ability · Cost 1 · Level 80 · Blade Charges</text>
+<rect x="708.0" y="592.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
+<text class="name" x="718.0" y="616.0">Echoing Blade</text>
+<text class="detail" x="718.0" y="637.0">Ability · Cost 1 · Level 85</text>
+<rect x="930.0" y="92.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<text class="name" x="940.0" y="116.0">Parry</text>
+<text class="detail" x="940.0" y="137.0">Ability · Cost 1</text>
+<rect x="930.0" y="192.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<text class="name" x="940.0" y="216.0">Riposte</text>
+<text class="detail" x="940.0" y="237.0">Ability · Cost 1 · Level 65</text>
+<rect x="930.0" y="392.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<text class="name" x="940.0" y="416.0">True Piercing Strike</text>
+<text class="detail" x="940.0" y="437.0">Ability · Cost 1 · Level 75</text>
+<rect x="930.0" y="592.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<text class="name" x="940.0" y="616.0">Triple Strike</text>
+<text class="detail" x="940.0" y="637.0">Ability · Cost 1 · Level 85</text>
+</svg>

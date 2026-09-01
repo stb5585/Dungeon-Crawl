@@ -33,6 +33,7 @@ class DataDrivenWeaponSpell(Spell):
         effects: list[Effect] | None = None,
         school: str | None = None,
         rank: int | None = None,
+        enemy_type_damage_modifiers: dict[str, float] | None = None,
     ):
         super().__init__(name, description, school=school)
         self.cost = cost
@@ -41,6 +42,7 @@ class DataDrivenWeaponSpell(Spell):
         self.subtyp = subtyp
         self.rank = rank
         self._effects: list[Effect] = effects or []
+        self._enemy_type_damage_modifiers = enemy_type_damage_modifiers or {}
 
     def cast(
         self,
@@ -54,8 +56,13 @@ class DataDrivenWeaponSpell(Spell):
         if not (special or fam):
             caster.mana.current -= self.cost
 
+        enemy_type = str(getattr(target, "enemy_typ", ""))
+        type_modifier = float(self._enemy_type_damage_modifiers.get(enemy_type, 1.0))
         msg, hit, crit = caster.weapon_damage(
-            target, dmg_mod=self.dmg_mod, cover=cover
+            target,
+            dmg_mod=self.dmg_mod * type_modifier,
+            cover=cover,
+            use_offhand=False,
         )
 
         if hit and target.is_alive():

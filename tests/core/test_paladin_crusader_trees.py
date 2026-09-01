@@ -14,6 +14,7 @@ from src.core.classes import paladin
 from src.core.classes import promotion_kits
 from src.core.combat import CombatEncounter
 from src.core.combat.battle_engine.outcomes import BattleOutcomeMixin
+from src.core.constants import BASE_CRIT_PER_POINT
 from src.core.progression import ABILITY_TREES
 from src.core.progression import NodeKind
 from src.core.progression import NodeState
@@ -83,7 +84,7 @@ def test_paladin_tree_has_oath_roots_and_compact_four_branch_geometry():
         node for node in tree.nodes if node.kind != NodeKind.PROMOTION
     ]
 
-    assert len(development) == 20
+    assert len(development) == 22
     assert max(node.position[1] for node in tree.nodes) == 7
     assert nodes["Oath's Judgment"].position == (1, 0)
     assert nodes["Oath's Shelter"].position == (4, 0)
@@ -93,8 +94,11 @@ def test_paladin_tree_has_oath_roots_and_compact_four_branch_geometry():
     assert nodes["Oath's Shelter"].prerequisites == ()
     assert nodes["Smite"].position == (2, 1)
     assert nodes["Smite"].prerequisites == (nodes["Oath's Judgment"].id,)
+    assert nodes["Detect Undead"].position == (2, 2)
+    assert nodes["Detect Undead"].payload["level_requirement"] == 35
+    assert nodes["Detect Undead"].prerequisites == (nodes["Smite"].id,)
     assert nodes["Repel the Wicked"].position == (2, 3)
-    assert nodes["Repel the Wicked"].prerequisites == (nodes["Smite"].id,)
+    assert nodes["Repel the Wicked"].prerequisites == (nodes["Detect Undead"].id,)
     assert nodes["Repel the Wicked"].payload["level_requirement"] == 40
     assert nodes["+20 Magic"].position == (2, 4)
     assert nodes["+20 Magic"].prerequisites == (
@@ -106,7 +110,10 @@ def test_paladin_tree_has_oath_roots_and_compact_four_branch_geometry():
     }
     assert nodes["Hallowed Ground"].position == (2, 6)
     assert nodes["Hallowed Ground"].payload["level_requirement"] == 55
-    assert nodes["Hallowed Ground"].prerequisites == (nodes["+20 Magic"].id,)
+    assert nodes["Detect Fiend"].position == (2, 5)
+    assert nodes["Detect Fiend"].payload["level_requirement"] == 50
+    assert nodes["Detect Fiend"].prerequisites == (nodes["+20 Magic"].id,)
+    assert nodes["Hallowed Ground"].prerequisites == (nodes["Detect Fiend"].id,)
     judgment_path = set(_closure("Paladin", "+20 Attack"))
     repel_path = set(_closure("Paladin", "Hallowed Ground"))
     assert judgment_path & repel_path == {nodes["Oath's Judgment"].id}
@@ -177,7 +184,7 @@ def test_crusader_tree_has_four_authored_paths_and_exclusive_melee_styles():
     tree = ABILITY_TREES["Crusader"]
     nodes = _nodes("Crusader")
 
-    assert len(tree.nodes) == 23
+    assert len(tree.nodes) == 26
     assert max(node.position[1] for node in tree.nodes) == 6
     assert tree.branches == ("Melee", "Spells", "Healing", "Protection")
     assert nodes["Condemnation"].position == (1, 0)
@@ -185,9 +192,13 @@ def test_crusader_tree_has_four_authored_paths_and_exclusive_melee_styles():
     assert nodes["Two-Handed Weapon Proficiency"].prerequisites == (
         nodes["Condemnation"].id,
     )
+    assert nodes["Two-Handed Weapon Proficiency"].position == (0, 1)
+    assert nodes["Two-Handed Weapon Proficiency"].payload["level_requirement"] == 65
     assert nodes["Sword & Board"].prerequisites == (
         nodes["Condemnation"].id,
     )
+    assert nodes["Sword & Board"].position == (2, 1)
+    assert nodes["Sword & Board"].payload["level_requirement"] == 65
     assert (
         nodes["Two-Handed Weapon Proficiency"].payload["exclusive_group"]
         == "crusader.melee-style"
@@ -200,9 +211,24 @@ def test_crusader_tree_has_four_authored_paths_and_exclusive_melee_styles():
     assert nodes["Sword & Board"].cost == 2
     assert nodes["Mortal Strike"].position == (0, 3)
     assert nodes["Mortal Strike"].payload["level_requirement"] == 75
+    assert nodes["Mortal Strike"].prerequisites == (
+        nodes["Two-Handed Weapon Proficiency"].id,
+    )
     assert nodes["Righteous Advance"].prerequisites == (
         nodes["Mortal Strike"].id,
     )
+    assert nodes["Penalization"].position == (0, 5)
+    assert nodes["Penalization"].payload["level_requirement"] == 85
+    assert nodes["Penalization"].cost == 2
+    assert nodes["Penalization"].prerequisites == (
+        nodes["Righteous Advance"].id,
+    )
+    assert nodes["Beyond Reproach"].position == (1, 3)
+    assert nodes["Beyond Reproach"].payload["level_requirement"] == 75
+    assert nodes["Beyond Reproach"].prerequisites == (
+        nodes["Condemnation"].id,
+    )
+    assert "+30 Attack" not in nodes
     assert nodes["Censure"].position == (2, 2)
     assert nodes["Censure"].payload["level_requirement"] == 70
     assert nodes["Censure"].prerequisites == (nodes["Sword & Board"].id,)
@@ -218,21 +244,47 @@ def test_crusader_tree_has_four_authored_paths_and_exclusive_melee_styles():
     assert nodes["Triple Strike"].prerequisites == (
         nodes["Shield Ricochet"].id,
     )
-    assert nodes["Parry"].prerequisites == (
+    assert nodes["Divine Protection"].position == (5, 0)
+    assert "level_requirement" not in nodes["Divine Protection"].payload
+    assert nodes["Parry"].position == (0, 2)
+    assert "level_requirement" not in nodes["Parry"].payload
+    assert nodes["Parry"].prerequisites == (nodes["Two-Handed Weapon Proficiency"].id,)
+    assert nodes["Posturing"].prerequisites == (nodes["Divine Protection"].id,)
+    assert nodes["Consecrated Bulwark"].position == (5, 3)
+    assert nodes["Consecrated Bulwark"].prerequisites == (
+        nodes["Posturing"].id,
+    )
+    assert nodes["Divine Protection II"].position == (5, 4)
+    assert nodes["Divine Protection II"].payload["level_requirement"] == 80
+    assert nodes["Divine Protection II"].cost == 2
+    assert nodes["Divine Protection II"].prerequisites == (
         nodes["Consecrated Bulwark"].id,
     )
-    assert nodes["Posturing"].prerequisites == (nodes["Parry"].id,)
+    assert "+30 Magic Defense" not in nodes
+    assert "+100 HP" not in nodes
     assert nodes["Repel the Wicked"].position == (3, 0)
     assert nodes["Repel the Wicked"].prerequisites == ()
     assert nodes["Repel the Wicked"].payload["owned_if_known"] is True
     assert nodes["Smite II"].payload["level_requirement"] == 65
     assert nodes["Sanctification"].payload["level_requirement"] == 70
+    assert nodes["Undead Hunter"].position == (3, 3)
+    assert nodes["Undead Hunter"].payload["level_requirement"] == 75
+    assert nodes["Undead Hunter"].prerequisites == (
+        nodes["Sanctification"].id,
+    )
     assert nodes["Smite III"].payload["level_requirement"] == 90
-    assert nodes["Smite III"].prerequisites == (nodes["Sanctification"].id,)
+    assert nodes["Smite III"].cost == 2
+    assert nodes["Smite III"].prerequisites == (nodes["Undead Hunter"].id,)
     assert nodes["Dispel"].prerequisites == ()
     assert nodes["Heal II"].payload["level_requirement"] == 70
     assert nodes["Cleanse"].prerequisites == (nodes["Dispel"].id,)
+    assert nodes["Radiant Healing"].position == (4, 3)
+    assert nodes["Radiant Healing"].payload["level_requirement"] == 75
+    assert nodes["Radiant Healing"].prerequisites == (nodes["Heal II"].id,)
     assert nodes["Prayer of Faith"].payload["level_requirement"] == 85
+    assert nodes["Prayer of Faith"].prerequisites == (
+        nodes["Radiant Healing"].id,
+    )
     assert nodes["Prayer of Faith"].cost == 2
     assert "Turn Undead II" not in nodes
     assert "True Strike" not in nodes
@@ -561,6 +613,7 @@ def test_condemnation_marks_wicked_targets_for_repel_disintegration(
     monkeypatch,
 ):
     player = _player("Crusader")
+    player.spellbook["Skills"]["Beyond Reproach"] = abilities.BeyondReproach()
     target = enemies.Skeleton()
     target.health.current = target.health.max = 100
     monkeypatch.setattr(
@@ -586,6 +639,26 @@ def test_condemnation_marks_wicked_targets_for_repel_disintegration(
     assert target.paladin_disintegrated
     assert not getattr(target, "paladin_repelled", False)
     assert not target.is_alive()
+
+
+def test_condemnation_does_not_mark_without_beyond_reproach(monkeypatch):
+    player = _player("Crusader")
+    target = enemies.Skeleton()
+    target.health.current = target.health.max = 100
+    monkeypatch.setattr(
+        player,
+        "weapon_damage",
+        lambda *_args, **_kwargs: ("Weapon hit.\n", True, False),
+    )
+
+    message = abilities.Condemnation().use(
+        player,
+        target,
+        rng=type("FixedRng", (), {"random": staticmethod(lambda: 0.0)})(),
+    )
+
+    assert "marked by Condemnation" not in message
+    assert not getattr(target, "condemned_by_crusader", False)
 
 
 def test_repel_the_wicked_can_end_combat_without_victory_rewards():
@@ -764,9 +837,11 @@ def test_crusader_upgrades_replace_inherited_spells():
         (
             "crusader.ability.smite-2",
             "crusader.ability.sanctification",
+            "crusader.ability.undead-hunter",
             "crusader.ability.dispel",
             "crusader.ability.cleanse",
             "crusader.ability.heal-2",
+            "crusader.ability.radiant-healing",
             "crusader.ability.smite-3",
         ),
         {},
@@ -899,6 +974,108 @@ def test_sanctification_increases_shared_holy_damage_by_half(monkeypatch):
 
     assert normal == 100
     assert sanctified == 150
+
+
+def test_radiant_healing_converts_actual_combat_healing_to_holy_damage(
+    monkeypatch,
+):
+    player = _player("Crusader")
+    target = enemies.Skeleton()
+    target.health.current = target.health.max = 500
+    player._active_combat = True
+    player._combat_encounter = CombatEncounter.singleton(target)
+    player.spellbook["Skills"]["Radiant Healing"] = abilities.RadiantHealing()
+    heal = abilities.Heal2()
+    player.spellbook["Spells"][heal.name] = heal
+    monkeypatch.setattr(
+        target,
+        "damage_reduction",
+        lambda damage, _attacker, typ="Holy": (True, "", damage),
+    )
+    health_before = player.health.current
+
+    message = heal.cast(player)
+
+    amount_healed = player.health.current - health_before
+    assert amount_healed > 0
+    assert target.health.current == 500 - max(1, int(amount_healed * 0.10))
+    assert "Radiant Healing strikes" in message
+
+
+def test_undead_hunter_raises_speed_initiative_weight_and_critical_chance():
+    player = _player("Crusader")
+    player.spellbook["Skills"]["Undead Hunter"] = abilities.UndeadHunter()
+    base_speed = player.check_mod("speed")
+    base_critical = player.critical_chance("Weapon")
+    target = enemies.Skeleton()
+    player._combat_encounter = CombatEncounter.singleton(target)
+
+    boosted_speed = player.check_mod("speed", enemy=target)
+    assert boosted_speed == int(base_speed * 1.20)
+    assert player.critical_chance("Weapon") == pytest.approx(
+        base_critical
+        + 0.10
+        + ((boosted_speed - base_speed) * BASE_CRIT_PER_POINT)
+    )
+
+    target.enemy_typ = "Fiend"
+    assert player.check_mod("speed", enemy=target) == base_speed
+    assert player.critical_chance("Weapon") == pytest.approx(base_critical)
+
+
+def test_penalization_wrath_triggers_on_successful_mortal_strike(monkeypatch):
+    player = _player("Crusader")
+    target = _player("Warrior")
+    player.spellbook["Skills"]["Penalization"] = abilities.Penalization()
+    promotion_kits.clear_combat_state(player)
+    base_critical = player.critical_chance("Weapon")
+    monkeypatch.setattr(
+        player,
+        "weapon_damage",
+        lambda *_args, **_kwargs: ("Weapon hit.\n", True, 1),
+    )
+
+    result = abilities.MortalStrike().use(player, target)
+
+    assert "Penalization fills" in str(result)
+    assert paladin.penalization_active(player)
+    assert player.critical_chance("Weapon") == pytest.approx(base_critical + 0.15)
+    assert paladin.holy_damage_multiplier(player) == pytest.approx(1.25)
+
+
+def test_divine_protection_two_replaces_source_and_weakens_all_enemies():
+    player = _player("Crusader")
+    targets = [enemies.Skeleton(), enemies.Skeleton()]
+    player._combat_encounter = CombatEncounter.from_enemies(targets)
+    spell = abilities.DivineProtection2()
+
+    message = spell.cast(player)
+
+    assert spell.replaces == "Divine Protection"
+    assert player.stat_effects["Defense"].active
+    assert player.stat_effects["Defense"].duration == 5
+    assert player.stat_effects["Defense"].extra > 0
+    assert all(target.stat_effects["Attack"].extra < 0 for target in targets)
+    assert all(target.stat_effects["Magic"].extra < 0 for target in targets)
+    assert all(target.stat_effects["Attack"].duration == 3 for target in targets)
+    assert "Sacred pressure weakens" in message
+
+
+def test_divine_protection_two_progression_replaces_divine_protection():
+    player = _player("Crusader")
+
+    result = apply_progression_plan(
+        player,
+        _closure("Crusader", "Divine Protection II"),
+        {},
+    )
+
+    assert result.success
+    assert "Divine Protection" not in player.spellbook["Spells"]
+    assert isinstance(
+        player.spellbook["Spells"]["Divine Protection II"],
+        abilities.DivineProtection2,
+    )
 
 
 def test_selected_terminal_nodes_cost_two_points():

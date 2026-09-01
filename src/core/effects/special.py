@@ -108,7 +108,9 @@ class ChooseFateEffect(Effect):
 
         mod_up = _rng.randint(10, 25)
         if options[option_index] == "Attack":
-            wd_str, _, _ = actor.weapon_damage(target, dmg_mod=self.dmg_mod)
+            wd_str, _, _ = actor.weapon_damage(
+                target, dmg_mod=self.dmg_mod, use_offhand=False
+            )
             messages.append(wd_str)
             actor.damage_mod += mod_up
             messages.append("Hahaha, my power increases!\n")
@@ -269,7 +271,24 @@ class ShapeshiftEffect(Effect):
         # With self_target the effect_target == actor (the shapeshifter)
         user = target
         messages = result.extra.setdefault("messages", [])
+        if getattr(user, "shapeshift_suppressed", False):
+            messages.append(f"Moonlight prevents {user.name} from shapeshifting.\n")
+            return
         remember_defeat_identity(user)
+
+        if not isinstance(getattr(user, "_shapeshift_original_state", None), dict):
+            user._shapeshift_original_state = {
+                "cls": user.cls,
+                "stats": user.stats,
+                "equipment": user.equipment,
+                "spellbook": user.spellbook,
+                "resistance": user.resistance,
+                "flying": user.flying,
+                "invisible": user.invisible,
+                "sight": user.sight,
+                "name": user.name,
+                "picture": getattr(user, "picture", None),
+            }
 
         while True:
             s_creature = _rng.choice(user.transform)()
@@ -869,7 +888,7 @@ class SlotMachineEffect(Effect):
         messages.append(
             f"{actor.name} gains {int(mod * 100)}% to attack.\n"
         )
-        wd_str, _, _ = actor.weapon_damage(target, dmg_mod=1 + mod)
+        wd_str, _, _ = actor.weapon_damage(target, dmg_mod=1 + mod, use_offhand=False)
         messages.append(wd_str)
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
@@ -1094,7 +1113,9 @@ class SlotMachineEffect(Effect):
                 messages.append(
                     f"{actor.name} gains {int(mod * 100)}% to attack.\n"
                 )
-                wd_str, _, _ = actor.weapon_damage(target, dmg_mod=1 + mod)
+                wd_str, _, _ = actor.weapon_damage(
+                    target, dmg_mod=1 + mod, use_offhand=False
+                )
                 messages.append(wd_str)
 
             else:
@@ -1317,7 +1338,7 @@ class ChargeEffect(Effect):
 
         # ── Weapon damage ───────────────────────────────────────────
         wd_str, hit, crit = actor.weapon_damage(
-            target, cover=cover, dmg_mod=self.dmg_mod,
+            target, cover=cover, dmg_mod=self.dmg_mod, use_offhand=False,
         )
         messages.append(wd_str)
         result.hit = hit
@@ -1350,6 +1371,7 @@ class CrushingBlowEffect(Effect):
         # ── Weapon damage ───────────────────────────────────────────
         wd_str, hit, crit = actor.weapon_damage(
             target, cover=cover, dmg_mod=self.dmg_mod, crit=self.crit_override,
+            use_offhand=False,
         )
         messages.append(wd_str)
         result.hit = hit
@@ -1474,7 +1496,7 @@ class JumpEffect(Effect):
         # ── Main weapon damage ──────────────────────────────────────
         target_hp_before = target.health.current
         wd_str, hit, actual_crit = actor.weapon_damage(
-            target, cover=cover, dmg_mod=dmg_mod, crit=crit,
+            target, cover=cover, dmg_mod=dmg_mod, crit=crit, use_offhand=False,
         )
         messages.append(wd_str)
         result.hit = hit
@@ -1597,7 +1619,7 @@ class JumpEffect(Effect):
     def _apply_thrust(actor: Character, target: Character, cover: bool, messages: list[str]) -> None:
         messages.append(f"{actor.name} thrusts their weapon forward!\n")
         thrust_str, _, _ = actor.weapon_damage(
-            target, cover=cover, dmg_mod=0.75,
+            target, cover=cover, dmg_mod=0.75, use_offhand=False,
         )
         messages.append(thrust_str)
 
@@ -1647,7 +1669,7 @@ class ShadowStrikeEffect(Effect):
             f"{actor.name} strikes from the shadows!\n"
         )
         wd_str, hit, crit = actor.weapon_damage(
-            target, cover=cover, dmg_mod=self.dmg_mod, crit=2,
+            target, cover=cover, dmg_mod=self.dmg_mod, crit=2, use_offhand=False,
         )
         messages.append(wd_str)
         result.hit = hit

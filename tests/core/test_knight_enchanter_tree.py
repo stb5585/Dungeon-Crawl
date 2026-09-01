@@ -100,6 +100,7 @@ def test_tree_matches_the_authored_release_lanes_and_independent_options():
         "Spellbind": ((3, 4), 80),
         "Echoing Blade": ((3, 5), 85),
         "Parry": ((4, 0), None),
+        "Riposte": ((4, 1), 65),
         "True Piercing Strike": ((4, 3), 75),
         "Triple Strike": ((4, 5), 85),
     }
@@ -488,15 +489,16 @@ def test_arcane_riposte_guarantees_parry_counter_releases_weave(monkeypatch):
     attacker = enemies.Goblin()
     defender.spellbook["Skills"].update({
         "Parry": abilities.Parry(),
+        "Riposte": abilities.Riposte(),
         "Arcane Riposte": abilities.ArcaneRiposte(),
     })
     _charge(defender, arcane=1, elemental=0)
     state = promotion_kits.combat_state(defender)
     state["weave_foundation"] = "Element"
-    monkeypatch.setattr(defender, "dodge_chance", lambda *_args, **_kwargs: 1.0)
+    monkeypatch.setattr(defender, "dodge_chance", lambda *_args, **_kwargs: 0.0)
     monkeypatch.setattr("src.core.character.offense.random.random", lambda: 0.0)
 
-    message, _hit, _crit = attacker.weapon_damage(defender)
+    message, _hit, _crit = attacker.weapon_damage(defender, hit=True)
 
     assert "Arcane Riposte releases the stored weave" in message
     assert state["blade_charge"] is None

@@ -147,6 +147,7 @@ class AbilityFactory:
                 messages=ability_data.get('messages'),
                 add_luck_chance=ability_data.get('add_luck_chance', False),
                 action_message=ability_data.get('action_message'),
+                required_item=ability_data.get('required_item'),
             )
         elif ability_type == 'Spell':
             ability = DataDrivenSpell(
@@ -177,6 +178,9 @@ class AbilityFactory:
                 effects=effects,
                 school=school,
                 rank=rank,
+                enemy_type_damage_modifiers=ability_data.get(
+                    'enemy_type_damage_modifiers'
+                ),
             )
         elif ability_type == 'CustomSpell':
             ability = DataDrivenCustomSpell(
@@ -283,10 +287,16 @@ class AbilityFactory:
                 target_status_damage_multiplier=ability_data.get(
                     'target_status_damage_multiplier'
                 ),
+                use_offhand=ability_data.get('use_offhand', False),
+                repeat_until_miss=ability_data.get('repeat_until_miss', False),
+                accuracy_penalty_per_strike=ability_data.get(
+                    'accuracy_penalty_per_strike', 0.0
+                ),
             )
 
         # Stash raw data for inspection / analytics
         ability._raw_data = ability_data
+        ability.damage_types = tuple(ability_data.get("damage_types", ()))
         ability.target_scope = AbilityFactory._target_scope(
             ability_data,
             raw_target_scope,

@@ -450,6 +450,27 @@ class CharacterDefenseMixin:
             defender.restorative_barrier = barrier - absorbed
             damage -= absorbed
             msg += f"{defender.name}'s restorative barrier absorbs {absorbed} damage.\n"
+        try:
+            from ..classes import healer
+
+            damage, healer_message = healer.reduce_incoming_damage(
+                defender,
+                damage,
+                melee=True,
+            )
+            msg += healer_message
+        except Exception:
+            pass
+        try:
+            from ..classes import pathfinder
+
+            damage, barrier_message = pathfinder.absorb_superstitious_barrier(
+                defender,
+                damage,
+            )
+            msg += barrier_message
+        except Exception:
+            pass
         return damage, msg
 
     def _build_damage_message(
@@ -751,4 +772,25 @@ class CharacterDefenseMixin:
             self.restorative_barrier = barrier - absorbed
             final_damage -= absorbed
             message += f"{self.name}'s restorative barrier absorbs {absorbed} damage.\n"
+        try:
+            from ..classes import healer
+
+            final_damage, healer_message = healer.reduce_incoming_damage(
+                self,
+                final_damage,
+                melee=False,
+            )
+            message += healer_message
+        except Exception:
+            pass
+        try:
+            from ..classes import pathfinder
+
+            final_damage, barrier_message = pathfinder.absorb_superstitious_barrier(
+                self,
+                final_damage,
+            )
+            message += barrier_message
+        except Exception:
+            pass
         return True, message, final_damage

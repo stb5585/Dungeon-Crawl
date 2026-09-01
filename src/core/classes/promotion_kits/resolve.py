@@ -87,6 +87,11 @@ RESOLVE_SURGES: tuple[dict[str, Any], ...] = (
     },
 )
 
+GET_EVEN_DISCOUNT = 10
+GENERATOR_SHIELD_GAIN = 5
+TOWER_OFFENSE_DAMAGE_DIVISOR = 5
+TOWER_OFFENSE_GAIN_CAP = 20
+
 
 def resolve_cap(character: Any) -> int:
     return 100 if class_name(character) == "Stalwart Defender" else 50
@@ -182,11 +187,31 @@ def _spend_resolve(
 ) -> tuple[bool, str, dict[str, Any]]:
     data = _resolve_data(character)
     resolve = int(data.get("guard_meter", 0) or 0)
-    if resolve < cost:
-        return False, f"{ability_name} requires {cost} Resolve.\n", data
-    data["guard_meter"] = resolve - cost
+    state = combat_state(character)
+    spent = effective_resolve_cost(character, cost)
+    if resolve < spent:
+        return False, f"{ability_name} requires {spent} Resolve.\n", data
+    data["guard_meter"] = resolve - spent
+    discount_used = cost - spent
+    if discount_used:
+        state["get_even_discount"] = 0
     gain_resolve_mastery(character, 1, ability_name)
-    return True, "", data
+    message = (
+        f"Get Even reduces {ability_name}'s Resolve cost by {discount_used}.\n"
+        if discount_used
+        else ""
+    )
+    message += f"{character.name} spends {spent} Resolve on {ability_name}.\n"
+    return True, message, data
+
+
+def effective_resolve_cost(character: Any, cost: int) -> int:
+    """Return an ordinary Resolve action's cost after a primed discount."""
+    discount = max(
+        0,
+        int(combat_state(character).get("get_even_discount", 0) or 0),
+    )
+    return max(0, int(cost) - discount)
 
 
 def build_resolve(character: Any, amount: int, reason: str = "") -> str:
@@ -218,6 +243,51 @@ def build_resolve(character: Any, amount: int, reason: str = "") -> str:
     )
     msg += gain_resolve_mastery(character, 1, reason)
     return msg
+
+
+def tower_offense_after_shield_slam(character: Any, damage: int) -> str:
+    """Generate damage-scaled Resolve after Shield Slam deals damage."""
+    if damage <= 0 or "Tower Offense" not in getattr(
+        character, "spellbook", {}
+    ).get("Skills", {}):
+        return ""
+    gain = min(
+        TOWER_OFFENSE_GAIN_CAP,
+        max(1, int(damage) // TOWER_OFFENSE_DAMAGE_DIVISOR),
+    )
+    return build_resolve(character, gain, "Tower Offense")
+
+
+def prepare_get_even(character: Any) -> str:
+    """Prime the next ordinary Resolve action after Retaliate connects."""
+    if "Get Even" not in getattr(character, "spellbook", {}).get("Skills", {}):
+        return ""
+    combat_state(character)["get_even_discount"] = GET_EVEN_DISCOUNT
+    return f"{character.name}'s Get Even primes a Resolve discount.\n"
+
+
+def generator_shield_after_ricochet(
+    character: Any,
+    *,
+    hit: bool,
+    stunned: bool,
+) -> str:
+    """Generate Resolve for one Shield Ricochet impact."""
+    if not hit or "Generator Shield" not in getattr(
+        character, "spellbook", {}
+    ).get("Skills", {}):
+        return ""
+    gain = GENERATOR_SHIELD_GAIN * (2 if stunned else 1)
+    return build_resolve(character, gain, "Generator Shield")
+
+
+def battle_determination_after_cry(character: Any) -> str:
+    """Generate Resolve when a trained Stalwart Defender uses Battle Cry."""
+    if "Battle Determination" not in getattr(
+        character, "spellbook", {}
+    ).get("Skills", {}):
+        return ""
+    return build_resolve(character, 20, "Battle Determination")
 
 
 def hold_the_line_active(character: Any) -> bool:
@@ -275,9 +345,8 @@ def shield_check(character: Any, target: Any | None) -> str:
         speed.active = True
         speed.duration = max(int(speed.duration or 0), 2)
         speed.extra = min(int(speed.extra or 0), -2)
-    return (
-        f"{character.name} spends 10 Resolve on Shield Check, lowering the "
-        "enemy's Attack and Speed.\n"
+    return msg + (
+        f"{character.name}'s Shield Check lowers the enemy's Attack and Speed.\n"
     )
 
 
@@ -302,7 +371,7 @@ def brace_wall(character: Any) -> str:
     defense.active = True
     defense.duration = max(int(defense.duration or 0), 2)
     defense.extra = max(int(defense.extra or 0), 3)
-    return f"{character.name} spends 15 Resolve to brace the wall.\n"
+    return msg + f"{character.name} braces the wall.\n"
 
 
 def prepare_spell_block(character: Any) -> str:
@@ -319,7 +388,7 @@ def prepare_spell_block(character: Any) -> str:
     state = combat_state(character)
     state["spell_block_turns"] = 2
     state["spell_block_skip_tick"] = True
-    return f"{character.name} prepares to block a projectile spell.\n"
+    return message + f"{character.name} prepares to block a projectile spell.\n"
 
 
 def bulwark_guard(character: Any) -> str:
@@ -339,7 +408,9 @@ def bulwark_guard(character: Any) -> str:
         "turns": 1,
         "source": "Bulwark Guard",
     }
-    return f"{character.name} raises a {barrier}-point Bulwark Guard for one turn.\n"
+    return message + (
+        f"{character.name} raises a {barrier}-point Bulwark Guard for one turn.\n"
+    )
 
 
 def purge_weakness(character: Any) -> str:
@@ -375,7 +446,7 @@ def purge_weakness(character: Any) -> str:
             effect.extra = 0
             removed += 1
     combat_state(character)["purge_immunity_turns"] = 2
-    return (
+    return message + (
         f"{character.name} purges {removed} negative effect"
         f"{'s' if removed != 1 else ''} and becomes immune for two turns.\n"
     )
@@ -395,7 +466,9 @@ def boast(character: Any) -> str:
     state = combat_state(character)
     state["boast_turns"] = 3
     state["boast_starting_pool"] = amount
-    return f"{character.name}'s Boast grants {amount} temporary health for three turns.\n"
+    return message + (
+        f"{character.name}'s Boast grants {amount} temporary health for three turns.\n"
+    )
 
 
 def focused_assault(character: Any) -> str:
@@ -404,7 +477,7 @@ def focused_assault(character: Any) -> str:
     if not ok:
         return message
     combat_state(character)["focused_assault_turns"] = 3
-    return f"{character.name} focuses their assault for three turns.\n"
+    return message + f"{character.name} focuses their assault for three turns.\n"
 
 
 def focused_assault_accuracy(character: Any) -> float:
@@ -498,7 +571,7 @@ def repercussion(
         punishing = False
     generator = rng or random
     multiplier = 1.25 if punishing else 1.0
-    for target_id, target in targets:
+    for index, (target_id, target) in enumerate(targets):
         raw = max(1, int(character.check_mod("attack", enemy=target) * multiplier))
         _hit, defense_message, damage = target.damage_reduction(
             raw,
@@ -512,7 +585,7 @@ def repercussion(
             effect = target.physical_effects["Prone"]
             effect.active = True
             effect.duration = max(1, int(effect.duration or 0))
-        hit_message = defense_message + ward_message
+        hit_message = (message if index == 0 else "") + defense_message + ward_message
         hit_message += f"Repercussion hits {target.name} for {damage} damage.\n"
         if prone:
             hit_message += f"{target.name} is knocked prone.\n"
@@ -552,7 +625,7 @@ def covering_guard(character: Any) -> str:
     effect.duration = max(int(effect.duration or 0), 1)
     effect.extra = max(int(effect.extra or 0), 20)
     combat_state(character)["covering_guard"] = 2
-    return f"{character.name} spends 20 Resolve on Covering Guard.\n"
+    return msg + f"{character.name} raises Covering Guard.\n"
 
 
 def deflect_spell(character: Any) -> str:
@@ -570,7 +643,7 @@ def deflect_spell(character: Any) -> str:
     effect.duration = max(int(effect.duration or 0), 3)
     effect.extra = max(int(effect.extra or 0), 6)
     combat_state(character)["deflect_spell"] = 2
-    return f"{character.name} spends 20 Resolve to deflect hostile magic.\n"
+    return msg + f"{character.name} prepares to deflect hostile magic.\n"
 
 
 def prepare_spell_reflection(character: Any) -> str:
@@ -591,9 +664,9 @@ def prepare_spell_reflection(character: Any) -> str:
     effect.active = True
     effect.duration = max(int(effect.duration or 0), 3)
     effect.extra = max(int(effect.extra or 0), 6)
-    return (
-        f"{character.name} spends 25 Resolve, raises Magic Defense, and "
-        "prepares Spell Reflection for two turns.\n"
+    return msg + (
+        f"{character.name} raises Magic Defense and prepares Spell Reflection "
+        "for two turns.\n"
     )
 
 
@@ -865,9 +938,9 @@ def shield_riposte(character: Any, target: Any | None) -> str:
         return shield
     if target is None:
         return "There is no target to riposte.\n"
-    ok, msg, _data = _spend_resolve(character, 20, "Shield Riposte")
+    ok, spend_message, _data = _spend_resolve(character, 20, "Shield Riposte")
     if not ok:
-        return msg
+        return spend_message
     damage_mod = 0.75
     try:
         from ...progression import has_talent
@@ -881,7 +954,10 @@ def shield_riposte(character: Any, target: Any | None) -> str:
         dmg_mod=damage_mod,
         use_offhand=False,
     )
-    return f"{character.name} spends 20 Resolve on Shield Riposte.\n{msg}"
+    return (
+        spend_message
+        + f"{character.name} launches Shield Riposte.\n{msg}"
+    )
 
 
 def _use_resolve_surge(

@@ -4,6 +4,7 @@ subtype: Stealth
 description: If the target is incapacitated, unleash a devastating attack.
 cost: 15
 weapon: true
+use_offhand: true
 damage_mod: 2.0
 ignore_armor: true
 crit_override: 2

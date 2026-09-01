@@ -1,11 +1,16 @@
 name: Poison Strike
 description: >-
-  Attack the enemy with a chance to poison.
-type: Skill
-cost: 14
-subtype: Stealth
-weapon: true
-damage_mod: 1.5
+  Partially transform, growing giant fangs to strike the target. On a
+  successful attack, deal bite and poison damage.
+type: Spell
+cost: 12
+subtype: Nature
+school: Nature
+damage_types:
+  - Nature
+  - Poison
+  - Physical
+damage_mod: 1.25
 effects:
   - type: poison_strike
     damage_pct: 0.1
