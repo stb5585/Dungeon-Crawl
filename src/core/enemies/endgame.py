@@ -31,6 +31,7 @@ class ShadowSerpent(Elemental):
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
         self.gold = random.randint(280, 485)
         self.inventory['Megalixir'] = [items.Megalixir]
+        self.inventory['Shadow Venom'] = [items.ShadowVenom]
         self.spellbook = {"Spells": {'Corruption': abilities.Corruption()},
                           "Skills": {'Double Strike': abilities.DoubleStrike()}}
         self.resistance['Shadow'] = 0.9
@@ -199,6 +200,7 @@ class Basilisk(Monster):
         self.equipment = {'Weapon': items.SnakeFang2(), 'Armor': items.SnakeScales2(), 'OffHand': items.SnakeFang2(),
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
         self.gold = random.randint(380, 520)
+        self.inventory['Lizard Venom'] = [items.LizardVenom]
         self.spellbook = {"Spells": {'Petrify': abilities.Petrify(),
                                      'Poison Breath': abilities.PoisonBreath()},
                           "Skills": {'Slam': abilities.Slam(),

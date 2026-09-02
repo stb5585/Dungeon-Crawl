@@ -652,6 +652,7 @@ class GiantSnake(Animal):
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
         self.gold = random.randint(35, 75)
         self.inventory['Snake Skin'] = [items.SnakeSkin]
+        self.inventory['Snake Venom'] = [items.SnakeVenom]
         self.spellbook = {"Spells": {},
                           "Skills": {"Slam": abilities.Slam()}}
         self.resistance["Poison"] = 0.25
@@ -818,6 +819,7 @@ class Wererat(Monster):
         self.equipment = {'Weapon': items.Bite(), 'Armor': items.AnimalHide(), 'OffHand': items.Claw(),
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
         self.gold = random.randint(40, 65)
+        self.inventory['Scorpion Venom'] = [items.ScorpionVenom]
         self.inventory["Rat Tail"] = [items.RatTail]
         self.inventory['Leather'] = [items.Leather]
         self.transform = [Wererat, Bandit2]

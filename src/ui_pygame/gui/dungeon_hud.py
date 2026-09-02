@@ -12,6 +12,7 @@ from src.core.classes import promotion_kits, wizard
 from src.core.player import LIMINAL_GAP_LEVEL, REALM_OF_CAMBION_LEVEL
 from .enemy_presentation import player_has_sight, presented_enemy_name
 from .status_icons import (
+    RESIST_STATUS_LABELS,
     STATUS_ICON_COLORS,
     combine_duplicate_status_icons,
     compact_status_icons,
@@ -173,12 +174,7 @@ class DungeonHUD:
             "Mana Shield": "MSH",
             "Reflect": "RFL",
             "Regen": "REG",
-            "Resist Fire": "RF",
-            "Resist Ice": "RI",
-            "Resist Electric": "RE",
-            "Resist Water": "RW",
-            "Resist Earth": "RTH",
-            "Resist Wind": "RWI",
+            **RESIST_STATUS_LABELS,
         }
         return labels.get(effect_name, effect_name[:3].upper())
 
@@ -201,12 +197,7 @@ class DungeonHUD:
             "Mana Shield",
             "Reflect",
             "Regen",
-            "Resist Fire",
-            "Resist Ice",
-            "Resist Electric",
-            "Resist Water",
-            "Resist Earth",
-            "Resist Wind",
+            *RESIST_STATUS_LABELS,
         }
 
         icons.extend(totem_status_icons(character))

@@ -12,7 +12,12 @@ from src.core.combat import CombatEncounter
 from src.core.combat.battle_engine.outcomes import BattleOutcomeMixin
 from src.core.combat.combat_result import CombatResult
 from src.core.effects.enemy import DrainEffect
-from src.core.progression import ABILITY_TREES
+from src.core.progression import (
+    ABILITY_TREES,
+    NodeState,
+    available_nodes,
+    ensure_progression,
+)
 from tests.test_framework import TestGameState
 
 
@@ -66,13 +71,49 @@ def test_warlock_tree_has_authored_six_column_paths():
     assert nodes["Promote: Shadowcaster"].prerequisites == (
         nodes["Doom"].id,
         nodes["Mana Drain"].id,
+        nodes["Shadow Bolt II"].id,
     )
-    assert nodes["Promote: Shadowcaster"].payload["prerequisite_mode"] == "any"
+    assert nodes["Promote: Shadowcaster"].payload["prerequisite_groups"] == (
+        (nodes["Doom"].id, nodes["Mana Drain"].id),
+        (nodes["Shadow Bolt II"].id,),
+    )
     assert nodes["Promote: Demonologist"].prerequisites == (
         nodes["Curse of Swarms"].id,
         nodes["Life Tap"].id,
     )
     assert nodes["Promote: Demonologist"].payload["prerequisite_mode"] == "any"
+
+
+def test_shadowcaster_requires_umbral_offense_and_one_control_path():
+    player = _player("Warlock")
+    state = ensure_progression(player)
+    state.unspent_points = 99
+    nodes = _nodes("Warlock")
+    by_id = {node.id: node for node in ABILITY_TREES["Warlock"].nodes}
+
+    def closure(node_id):
+        result = {node_id}
+        for prerequisite in by_id[node_id].prerequisites:
+            result.update(closure(prerequisite))
+        return result
+
+    def promotion_state():
+        return next(
+            status.state
+            for status in available_nodes(player, "Warlock")
+            if status.node.name == "Promote: Shadowcaster"
+        )
+
+    state.purchased_node_ids = closure(nodes["Shadow Bolt II"].id)
+    assert promotion_state() == NodeState.BLOCKED
+
+    state.purchased_node_ids.update(closure(nodes["Doom"].id))
+    assert promotion_state() == NodeState.AVAILABLE
+
+    state.purchased_node_ids = (
+        closure(nodes["Doom"].id) | closure(nodes["Mana Drain"].id)
+    )
+    assert promotion_state() == NodeState.BLOCKED
 
 
 def test_terminal_trees_replace_generic_padding_with_class_mechanics():

@@ -336,6 +336,18 @@ class TestStatusEffectImprovements:
 
         assert "Magic Dodge" in player.buff_str()
 
+    def test_active_resist_effects_are_reported_as_buffs(self):
+        player = TestGameState.create_player(
+            name="WardHero", class_name="Warrior", race_name="Human"
+        )
+        player.magic_effects["Resist Fire"].active = True
+        player.magic_effects["Resist Holy"].active = True
+
+        buffs = player.buff_str()
+
+        assert "Resist Fire" in buffs
+        assert "Resist Holy" in buffs
+
 
 class TestGameplayStatistics:
     def test_player_initializes_gameplay_stats_defaults(self):

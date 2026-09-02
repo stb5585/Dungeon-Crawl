@@ -487,6 +487,10 @@ def test_conjurer_tree_has_exact_authored_disciplines_and_gates():
             ("conjurer.ability.conjure-celestial",),
         ),
     }
+    expected = {
+        node_id: ((position[0], position[1] - 1), level, prerequisites)
+        for node_id, (position, level, prerequisites) in expected.items()
+    }
     development = {
         node_id: node
         for node_id, node in nodes.items()

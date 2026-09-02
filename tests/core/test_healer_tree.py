@@ -55,10 +55,10 @@ def test_healer_tree_matches_requested_columns_gates_and_promotion_joins():
             by_position[(column, row)].payload.get("level_requirement")
             for row in range(6)
         ) == EXPECTED_LEVELS[column]
-    assert by_name["Promote: Bard"].position == (0.5, 6)
-    assert by_name["Promote: Cleric"].position == (2.5, 6)
-    assert by_name["Promote: Priest"].position == (3.5, 6)
-    assert by_name["Promote: Monk"].position == (5, 6)
+    assert by_name["Promote: Bard"].position == (0.5, 7)
+    assert by_name["Promote: Cleric"].position == (2.5, 7)
+    assert by_name["Promote: Priest"].position == (3.5, 7)
+    assert by_name["Promote: Monk"].position == (5, 7)
     assert by_name["Tutelary"].id in by_name["Promote: Bard"].prerequisites
     assert by_name["Heal II"].id in by_name["Promote: Cleric"].prerequisites
     assert by_name["Heal II"].id in by_name["Promote: Priest"].prerequisites

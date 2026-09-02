@@ -347,6 +347,8 @@ def test_combat_log_filters_scrolls_and_status_helpers():
     assert view._hidden_enemy_names == set()
 
     assert view._effect_label("Resist Fire") == "RF"
+    assert view._effect_label("Resist Shadow") == "RSH"
+    assert view._effect_label("Resist Holy") == "RHO"
     assert view._effect_label("Mystery") == "MYS"
 
     icons = view._collect_status_icons(_make_character())
@@ -359,6 +361,13 @@ def test_combat_log_filters_scrolls_and_status_helpers():
     assert ("MW2", True) in icons
     assert ("EG2", True) in icons
     assert icons.index(("PRN", False)) < icons.index(("REG", True))
+
+    character = _make_character()
+    character.magic_effects["Resist Shadow"] = _effect()
+    character.magic_effects["Resist Holy"] = _effect()
+    icons = view._collect_status_icons(character)
+    assert ("RSH", True) in icons
+    assert ("RHO", True) in icons
 
     character = _make_character()
     character.status_effects["Blind Rage"] = SimpleNamespace(active=True)

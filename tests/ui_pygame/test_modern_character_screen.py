@@ -309,6 +309,11 @@ def test_modern_character_summary_helpers_cover_xp_equipment_resistances_and_eff
     summary = dict(screen.build_character_summary(player))
     assert summary["Race"] == "Human"
     assert summary["Class"] == "Warrior"
+    assert "Active Buffs" not in summary
+    player.magic_effects["Resist Fire"] = _effect()
+    player.magic_effects["Resist Holy"] = _effect()
+    summary = dict(screen.build_character_summary(player))
+    assert summary["Active Buffs"] == "Resist Fire, Resist Holy"
     assert dict(screen.build_portrait_details(player)) == {"Gold": "321G", "Location": "Town"}
     player.location_z = 3
     assert screen.location_label(player) == "Dungeon Level 3"

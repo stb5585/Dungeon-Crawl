@@ -77,6 +77,10 @@ class CharacterStatusMixin:
                   - (True, "") if character can act
                   - (False, reason) if character cannot act
         """
+        distracted = int(getattr(self, "_distracted_turns", 0) or 0)
+        if distracted > 0:
+            self._distracted_turns = distracted - 1
+            return False, f"{self.name} is distracted and cannot act."
         if self.status_effects["Sleep"].active:
             return False, f"{self.name} is asleep and cannot act."
         polymorph = self.status_effects.get("Polymorph")
@@ -424,6 +428,26 @@ class CharacterStatusMixin:
                     status_text += f"The Doom countdown has expired and so has {self.name}!\n"
                     self.health.current = 0
                     return status_text
+            from ..classes import crossbow
+
+            status_text += crossbow.tick_delayed_bolts(self)
+            if not self.is_alive():
+                return status_text
+            toxin_death = int(getattr(self, "_toxin_death_turns", 0) or 0)
+            if toxin_death > 0:
+                self._toxin_death_turns = toxin_death - 1
+                if self._toxin_death_turns <= 0:
+                    self.health.current = 0
+                    status_text += f"{self.name} succumbs to the toxin.\n"
+                    return status_text
+            toxin_petrify = int(getattr(self, "_toxin_petrify_turns", 0) or 0)
+            if toxin_petrify > 0:
+                self._toxin_petrify_turns = toxin_petrify - 1
+                if self._toxin_petrify_turns <= 0:
+                    stone = self.status_effects.get("Stone")
+                    if stone is not None:
+                        stone.active = True
+                    status_text += f"{self.name} is petrified by the toxin.\n"
             if self.magic_effects["Ice Block"].active:
                 self.magic_effects["Ice Block"].duration -= 1
                 gain_perc = 0.10 * (1 + (self.stats.intel / 30))

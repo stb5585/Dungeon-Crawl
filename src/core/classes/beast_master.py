@@ -34,7 +34,7 @@ class BeastMaster(Job):
             magic_def_plus=3,
             restrictions={
                 "Weapon": ["Dagger", "Sword", "Longsword", "Battle Axe", "Polearm"],
-                "OffHand": ["Dagger"],
+                "OffHand": ["Dagger", "Crossbow"],
                 "Armor": ["Light"],
             },
             pro_level=3,

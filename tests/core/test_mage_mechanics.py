@@ -553,14 +553,19 @@ def test_wizard_elemental_passives_do_not_disclose_cross_school_interactions():
     assert all("synergy" not in passive.description.lower() for passive in passives)
 
 
-def test_refueling_restores_twenty_percent_of_maximum_mana_each_tick():
+def test_refueling_doubles_restoration_each_consecutive_tick():
     player = _player("Sorcerer")
     player.mana.current = 10
 
     assert "begins channeling" in abilities.Refueling().cast(player)
     message = mage_mechanics.tick_combat_state(player)
 
-    assert player.mana.current == 42
+    assert player.mana.current == 26
+    assert "refuels 16 MP" in message
+
+    message = mage_mechanics.tick_combat_state(player)
+
+    assert player.mana.current == 58
     assert "refuels 32 MP" in message
 
 

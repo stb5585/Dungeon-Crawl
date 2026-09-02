@@ -243,9 +243,10 @@ class Refueling(Spell):
     def __init__(self) -> None:
         super().__init__(
             "Refueling",
-            "Channel spirit force, regaining 20% of maximum mana each turn. "
-            "Use Refueling again to cancel the channel; while channeling, the "
-            "caster is treated as prone for save rolls.",
+            "Channel spirit force, regaining 10% of maximum mana on the first turn "
+            "and twice the previous amount on every consecutive turn. At the start "
+            "of each turn, continue Refueling or choose another action to cancel; "
+            "while channeling, the caster is treated as prone for save rolls.",
             school="Arcane",
         )
         self.cost = 0
@@ -257,6 +258,7 @@ class Refueling(Spell):
         if active:
             return f"{user.name} continues channeling spirit force.\n"
         user.mage_refueling = True
+        user.mage_refueling_streak = 0
         return f"{user.name} begins channeling spirit force.\n"
 
 

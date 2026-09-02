@@ -49,10 +49,10 @@ def test_pathfinder_tree_matches_requested_columns_gaps_and_gates():
             assert (node.name if node else None) == name
             if node is not None and node.kind not in {NodeKind.RATING, NodeKind.MANA}:
                 assert node.payload.get("level_requirement") == EXPECTED_LEVELS[row]
-    assert promotions["Druid"].position == (0.5, 6)
-    assert promotions["Ranger"].position == (2, 6)
-    assert promotions["Shaman"].position == (4, 6)
-    assert promotions["Diviner"].position == (5.5, 6)
+    assert promotions["Druid"].position == (0.5, 7)
+    assert promotions["Ranger"].position == (2, 7)
+    assert promotions["Shaman"].position == (4, 7)
+    assert promotions["Diviner"].position == (5.5, 7)
 
 
 def test_nature_is_a_resistance_type_and_spells_can_have_multiple_types():

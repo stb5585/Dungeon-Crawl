@@ -35,6 +35,7 @@ from .progression_manifest import (
     ABILITY_ICON_OVERRIDES,
     ABILITY_NODE_NAME_OVERRIDES,
     AUTHORED_TREE_CLASSES,
+    ASSASSIN_TREE_NODE_SPECS,
     BASE_TREE_NODE_SPECS,
     BASE_TREE_PROMOTION_SPECS,
     BERSERKER_TREE_NODE_SPECS,
@@ -231,6 +232,19 @@ class AbilityTreeNode:
     def name(self) -> str:
         """Return the player-facing node label."""
         return str(self.payload.get("name", self.id))
+
+
+def prerequisite_groups(node: AbilityTreeNode) -> tuple[tuple[str, ...], ...]:
+    """Return conjunctive groups whose members are alternative prerequisites."""
+    authored_groups = node.payload.get("prerequisite_groups")
+    if authored_groups:
+        return tuple(
+            tuple(str(node_id) for node_id in group)
+            for group in authored_groups
+        )
+    if node.payload.get("prerequisite_mode", "all") == "any":
+        return (tuple(node.prerequisites),) if node.prerequisites else ()
+    return tuple((node_id,) for node_id in node.prerequisites)
 
 
 @dataclass(frozen=True)
@@ -1687,6 +1701,7 @@ def _build_warlock_tree() -> AbilityTree:
             prerequisites=(
                 "warlock.ability.doom",
                 "warlock.ability.mana-drain",
+                "warlock.ability.shadow-bolt-2",
             ),
             payload={
                 "name": "Promote: Shadowcaster",
@@ -1695,7 +1710,13 @@ def _build_warlock_tree() -> AbilityTree:
                 "floating_promotion": False,
                 "requirements": _promotion_requirements("Shadowcaster", 3),
                 "level_requirement": 60,
-                "prerequisite_mode": "any",
+                "prerequisite_groups": (
+                    (
+                        "warlock.ability.doom",
+                        "warlock.ability.mana-drain",
+                    ),
+                    ("warlock.ability.shadow-bolt-2",),
+                ),
                 "connector_join_at_target_row": True,
             },
             cost=3,
@@ -1965,6 +1986,14 @@ def _build_authored_tree(class_name: str) -> AbilityTree:
             ),
             promotion_prerequisite_mode="any",
             promotion_connector_join_at_target_row=True,
+        )
+    if class_name == "Assassin":
+        return _build_authored_kit_tree(
+            class_name,
+            ASSASSIN_TREE_NODE_SPECS,
+            promotion_target="Ninja",
+            promotion_position=(2, 6),
+            promotion_prerequisites=("cutthroat",),
         )
     if class_name == "Stalwart Defender":
         return _build_authored_kit_tree(
@@ -2337,8 +2366,58 @@ def _remove_numeric_node_level_gates(tree: AbilityTree) -> AbilityTree:
     return replace(tree, nodes=tuple(normalized))
 
 
+def _add_promotion_routing_row(tree: AbilityTree) -> AbilityTree:
+    """Reserve an eighth layout row beneath development in seven-row trees."""
+    if tree.class_name == "Sentinel":
+        return replace(
+            tree,
+            nodes=tuple(
+                replace(
+                    node,
+                    position=(
+                        node.position[0],
+                        (
+                            7
+                            if node.kind == NodeKind.PROMOTION
+                            else node.position[1] - 2
+                        ),
+                    ),
+                )
+                for node in tree.nodes
+            ),
+        )
+    if tree.class_name == "Conjurer":
+        return replace(
+            tree,
+            nodes=tuple(
+                node
+                if node.kind == NodeKind.PROMOTION
+                else replace(
+                    node,
+                    position=(node.position[0], node.position[1] - 1),
+                )
+                for node in tree.nodes
+            ),
+        )
+    if not tree.nodes or max(node.position[1] for node in tree.nodes) != 6:
+        return tree
+    if not any(node.kind == NodeKind.PROMOTION for node in tree.nodes):
+        return tree
+    return replace(
+        tree,
+        nodes=tuple(
+            replace(node, position=(node.position[0], 7))
+            if node.kind == NodeKind.PROMOTION and node.position[1] == 6
+            else node
+            for node in tree.nodes
+        ),
+    )
+
+
 ABILITY_TREES = {
-    name: _remove_numeric_node_level_gates(_build_authored_tree(name))
+    name: _add_promotion_routing_row(
+        _remove_numeric_node_level_gates(_build_authored_tree(name))
+    )
     for name in CLASS_DETAILS
 }
 TREE_NODES = {
@@ -2491,6 +2570,20 @@ def validate_trees() -> tuple[str, ...]:
                 errors.append(
                     f"{node.id}: any-prerequisite node needs multiple choices"
                 )
+            authored_groups = node.payload.get("prerequisite_groups")
+            if authored_groups:
+                groups = prerequisite_groups(node)
+                if any(not group for group in groups):
+                    errors.append(f"{node.id}: prerequisite group is empty")
+                grouped_ids = {
+                    prerequisite
+                    for group in groups
+                    for prerequisite in group
+                }
+                if grouped_ids != set(node.prerequisites):
+                    errors.append(
+                        f"{node.id}: prerequisite groups must cover every prerequisite"
+                    )
             if node.kind == NodeKind.TALENT:
                 talent_key = str(node.payload.get("talent_key", "")).strip()
                 if not talent_key:
@@ -2958,8 +3051,6 @@ def _node_blockers(
     if points < node.cost:
         noun = "point" if node.cost == 1 else "points"
         blockers.append(f"Requires {node.cost} {noun}.")
-    prerequisite_mode = node.payload.get("prerequisite_mode", "all")
-
     def prerequisite_path_satisfied(node_id: str, visiting: set[str]) -> bool:
         """Require an unbroken purchased path through inherited nodes."""
         if node_id not in purchased or node_id in visiting:
@@ -2968,28 +3059,21 @@ def _node_blockers(
         if not prerequisite_node.prerequisites:
             return True
         next_visiting = {*visiting, node_id}
-        satisfied = [
-            prerequisite_path_satisfied(prerequisite, next_visiting)
-            for prerequisite in prerequisite_node.prerequisites
-        ]
-        if prerequisite_node.payload.get("prerequisite_mode", "all") == "any":
-            return any(satisfied)
-        return all(satisfied)
+        return all(
+            any(
+                prerequisite_path_satisfied(prerequisite, next_visiting)
+                for prerequisite in group
+            )
+            for group in prerequisite_groups(prerequisite_node)
+        )
 
-    if prerequisite_mode == "any" and node.prerequisites:
+    for group in prerequisite_groups(node):
         if not any(
             prerequisite_path_satisfied(prerequisite, set())
-            for prerequisite in node.prerequisites
+            for prerequisite in group
         ):
-            names = " or ".join(
-                TREE_NODES[prerequisite].name
-                for prerequisite in node.prerequisites
-            )
+            names = " or ".join(TREE_NODES[prerequisite].name for prerequisite in group)
             blockers.append(f"Requires {names}.")
-    else:
-        for prerequisite in node.prerequisites:
-            if not prerequisite_path_satisfied(prerequisite, set()):
-                blockers.append(f"Requires {TREE_NODES[prerequisite].name}.")
     required_level = effective_node_level_requirement(
         node,
         progression_class_name(player),
@@ -3138,16 +3222,11 @@ def available_nodes(
         if selected is not None and selected != node.id:
             choice_closed[node.id] = True
             return True
-        closed_prerequisites = [
-            is_choice_closed(TREE_NODES[prerequisite])
-            for prerequisite in node.prerequisites
-        ]
-        if not closed_prerequisites:
-            closed = False
-        elif node.payload.get("prerequisite_mode", "all") == "any":
-            closed = all(closed_prerequisites)
-        else:
-            closed = any(closed_prerequisites)
+        groups = prerequisite_groups(node)
+        closed = any(
+            all(is_choice_closed(TREE_NODES[prerequisite]) for prerequisite in group)
+            for group in groups
+        )
         choice_closed[node.id] = closed
         return closed
 

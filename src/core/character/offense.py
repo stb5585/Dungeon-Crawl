@@ -97,6 +97,7 @@ class CharacterOffenseMixin:
             pass
         hit_mod *= 1 - invis_pen * defender.invisible
         hit_mod -= footpad.obscuration_accuracy_penalty(defender)
+        hit_mod += footpad.surprise_accuracy_bonus(self)
         weapon_type = getattr(self.equipment.get("Weapon"), "subtyp", None)
         hit_mod += healer.accuracy_bonus(
             self,
@@ -125,7 +126,7 @@ class CharacterOffenseMixin:
         return max(0, hit_mod)
 
     def dodge_chance(self, attacker: Character, spell: bool = False) -> float:
-        from ..classes import ability_mechanics
+        from ..classes import ability_mechanics, footpad
 
         a_stat = attacker.check_mod("speed", enemy=self)
         d_stat = self.check_mod("speed", enemy=attacker)
@@ -162,6 +163,8 @@ class CharacterOffenseMixin:
             dex = int(getattr(self.stats, "dex", 10))
             # +0.00 at DEX<=10, up to +0.15 at DEX>=25
             chance += min(0.15, max(0.0, (dex - 10) / 100))
+        if not spell:
+            chance += footpad.live_and_learn_dodge_bonus(self)
         cls_name = _class_name(self)
         if cls_name == "Seeker" or (cls_name == "Templar" and self.class_effects["Power Up"].active):
             chance += (0.25 * self.power_up)
@@ -195,7 +198,7 @@ class CharacterOffenseMixin:
         return min(MAX_DODGE_CHANCE, chance)
 
     def critical_chance(self, att: str) -> float:
-        from ..classes import ability_mechanics
+        from ..classes import ability_mechanics, footpad
 
         base_crit = BASE_CRIT_PER_POINT * (
             self.check_mod("speed") + self.check_mod("luck", luck_factor=10)
@@ -224,6 +227,7 @@ class CharacterOffenseMixin:
         crit_chance += ability_mechanics.drunken_brawler_crit_bonus(self)
         crit_chance += ability_mechanics.tricksters_gambit_crit_bonus(self)
         crit_chance += ability_mechanics.duelist_critical_bonus(self)
+        crit_chance += footpad.surprise_critical_bonus(self)
         if getattr(self, "shade_of_ahool_turns", 0) > 0:
             crit_chance += 0.20
         berserk = self.status_effects.get("Berserk")
@@ -286,6 +290,10 @@ class CharacterOffenseMixin:
         )
 
         dmg_mod *= pathfinder.melee_damage_multiplier(self)
+        if getattr(defender, "_distracted_turns", 0):
+            defender._distracted_turns = 0
+        self._surprise_attack = bool(getattr(self, "_surprise_ready", False))
+        self._surprise_ready = False
         conversion_bonus = pathfinder.consume_conversion(self)
 
         try:
@@ -302,6 +310,7 @@ class CharacterOffenseMixin:
         self._last_weapon_primary_damage = 0
         self._last_weapon_primary_damage_instances = []
         if defender.magic_effects["Ice Block"].active or defender.tunnel:
+            self._surprise_attack = False
             return f"{self.name}'s attack has no effect.\n", False, crit
         warrior.record_attack(self, defender)
         if getattr(self, "_twist_fate_success", False):
@@ -319,6 +328,7 @@ class CharacterOffenseMixin:
             if use_offhand and self.equipment['OffHand'].typ == 'Weapon':
                 attacks.append('OffHand')
         if not attacks:
+            self._surprise_attack = False
             return f"{self.name} cannot use their main-hand weapon.\n", False, crit
         weapon_dam_str = ""
         electrified_triggered = False
@@ -482,6 +492,7 @@ class CharacterOffenseMixin:
             # --- Phase 3: Critical hit event ---
             if crits[i] > 1:
                 self._emit_crit_event(defender, crits[i])
+                footpad.record_live_and_learn(defender)
                 self._reset_maelstrom()
                 weapon_dam_str += ability_mechanics.trigger_zephyrstrike(self)
 
@@ -673,6 +684,9 @@ class CharacterOffenseMixin:
                 weapon_dam_str += self._apply_equipment_effects(
                     defender, att, damage, crits[i]
                 )
+                weapon_dam_str += footpad.apply_coated_toxin(
+                    self, defender, att, crits[i] > 1
+                )
                 if _class_name(self) == "Dragoon" and self.power_up:
                     self.class_effects["Power Up"].active = True
                     self.class_effects["Power Up"].duration += 1
@@ -689,6 +703,9 @@ class CharacterOffenseMixin:
             )
             if drained:
                 weapon_dam_str += f"Mana Depletion drains {drained} MP from {defender.name}.\n"
+        if self._surprise_attack and not defender.is_alive():
+            defender._surprise_bonus_experience = True
+        self._surprise_attack = False
         return weapon_dam_str, any(hits), max(crits)
 
     # ------------------------------------------------------------------ #
@@ -718,7 +735,7 @@ class CharacterOffenseMixin:
 
     def _apply_parry(self, defender: Character, damage: int) -> tuple[int, str, bool, bool]:
         """Attempt a shield-incompatible melee deflection and optional Riposte."""
-        from ..classes import ability_mechanics, grandmaster
+        from ..classes import ability_mechanics, footpad, grandmaster
 
         skills = getattr(defender, "spellbook", {}).get("Skills", {})
         offhand = getattr(defender, "equipment", {}).get("OffHand")
@@ -731,7 +748,8 @@ class CharacterOffenseMixin:
             chance
             + ability_mechanics.posturing_parry_bonus(defender)
             + ability_mechanics.retort_parry_bonus(defender)
-            + grandmaster.adaptive_arsenal_parry_bonus(defender),
+            + grandmaster.adaptive_arsenal_parry_bonus(defender)
+            + footpad.main_gauche_parry_bonus(defender),
         )
         if random.random() >= chance:
             return damage, "", False, False

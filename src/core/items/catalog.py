@@ -152,13 +152,20 @@ from .offhands import (
     DragonRouge,
     ElementalPrimer,
     GaiasBranch,
+    GoldenClaw,
     Glagwa,
+    HandCrossbow,
+    HeavyCrossbow,
     InfernalGrimoire,
     KiteShield,
+    LightCrossbow,
+    MagicCrossbow,
     MoonlitHazelRod,
     Necronomicon,
     NoOffHand,
     Pavise,
+    PistolCrossbow,
+    RepeatingCrossbow,
     ScepterIfrit,
     Svalinn,
     Targe,
@@ -238,8 +245,9 @@ from .consumables import (
     SuperManaPotion,
     WisdomPotion,
 )
-
 from .misc import (
+    Amatoxin,
+    ArmorPiercingBolts,
     BattleHymnSheet,
     BlankScroll,
     BlessScroll,
@@ -248,6 +256,8 @@ from .misc import (
     ChorusTimeSheet,
     CleanseScroll,
     DeathScroll,
+    DeathcapMushroom,
+    DelayedBolts,
     DispelScroll,
     DysfunctionSymphonySheet,
     EarthScroll,
@@ -255,10 +265,19 @@ from .misc import (
     FireScroll,
     GoldTriggerSheet,
     HolyScroll,
+    Hemotoxin,
+    HeatSeekingBolts,
     IceScroll,
     Key,
+    LizardVenom,
     LockpickKit,
+    MildToxin,
+    MetalBolts,
     Monocane,
+    Myotoxin,
+    Necrotoxin,
+    NapalmBolts,
+    Neurotoxin,
     CenserOfChokingAsh,
     LowDefenseRhapsodySheet,
     Oculus,
@@ -266,18 +285,25 @@ from .misc import (
     RampartsOdeSheet,
     SanctuaryScroll,
     ScoresAndScoresScoreSheet,
+    ScorpionVenom,
     ShadowScroll,
+    ShadowVenom,
     ShellScroll,
     SilenceScroll,
     SleepScroll,
     SlowRideSheet,
     SmokeBomb,
+    SnakeVenom,
     RealityFragment,
     SoulGem,
     WaterBladder,
     UltimaScroll,
+    ThrowingDaggers,
+    ViperVenom,
     WaterScroll,
     WindScroll,
+    WoodenBolts,
+    MagicBolts,
 )
 
 
@@ -307,6 +333,8 @@ def _build_rarity_table() -> dict[str, list[type[Item]]]:
         else:
             for value in typ_dict.values():
                 for item_cls in value:
+                    if not getattr(item_cls, "random_drop", True):
+                        continue
                     rarity = np.digitize(item_cls().rarity, _RARITY_BUCKETS)
                     rarity_table[str(rarity + 1)].append(item_cls)
     _rarity_table_cache = rarity_table
@@ -381,6 +409,8 @@ items_dict = {
             'Hammer': [Sledgehammer, SpikeMaul, EarthHammer, GreatMaul, Streithammer]}},
     'OffHand': {
         'Shield': [Buckler, Aspis, Targe, Glagwa, KiteShield, Pavise, Svalinn],
+        'Crossbow': [HandCrossbow, LightCrossbow, HeavyCrossbow, PistolCrossbow,
+                     RepeatingCrossbow, MagicCrossbow, GoldenClaw],
         'Tome': [Book, TomeKnowledge, InfernalGrimoire, ElementalPrimer, TreatiseBalance, DragonRouge,
                  Vedas, CompendiumAncients, Necronomicon],
         'Rod': [WillowDiviningRod, CopperLeyRod, MoonlitHazelRod, DowsingRod, ScepterIfrit, GaiasBranch, Zephyruswand]},
@@ -421,7 +451,14 @@ items_dict = {
                    BattleHymnSheet, RampartsOdeSheet, DysfunctionSymphonySheet,
                    LowDefenseRhapsodySheet, SlowRideSheet, BonesThugsHarmonySheet,
                    ScoresAndScoresScoreSheet, GoldTriggerSheet, ChorusTimeSheet],
-        'Reagents': [RealityFragment, SoulGem]}
+        'Reagents': [RealityFragment, SoulGem],
+        'Toxin Reagent': [SnakeVenom, ScorpionVenom, ViperVenom, LizardVenom,
+                          ShadowVenom, DeathcapMushroom],
+        'Toxin': [MildToxin, Neurotoxin, Hemotoxin, Amatoxin, Myotoxin, Necrotoxin],
+        'Ammunition': [ThrowingDaggers],
+        'Crossbow Bolts': [WoodenBolts, MetalBolts, ArmorPiercingBolts, MagicBolts,
+                           HeatSeekingBolts, NapalmBolts, DelayedBolts],
+    }
 }
 
 

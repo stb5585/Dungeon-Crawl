@@ -13,6 +13,7 @@ from .rules import _queue_cambion_message, quest_biased_random_enemy
 
 
 TRAP_CHANCE = 0.06
+DEATHCAP_CHANCE = 0.015
 TRAP_TYPES = ("Tripwire", "Magic Ward", "Alert", "Red Alert")
 ELIGIBLE_PATH_TYPES = frozenset({"EmptyCavePath", "CavePath0", "CavePath1", "CavePath2"})
 STANDARD_DUNGEON_DEPTHS = frozenset(range(0, 7))
@@ -39,6 +40,8 @@ def assign_dungeon_traps(world_dict: dict, *, rng: Any | None = None) -> int:
             continue
         tile.trap_type = None
         tile.trap_triggered = False
+        tile.deathcap_available = rng.random() < DEATHCAP_CHANCE
+        tile.deathcap_gathered = False
         if rng.random() >= TRAP_CHANCE:
             continue
         tile.trap_type = rng.choices(

@@ -810,22 +810,39 @@ an explicit oath confirmation before promotion commits.
 
 ## Future Implementations
 
-1) For Thief tree,
--
-2) For Assassin tree,
-- a new ability Apply Toxin (Use outside of combat to apply an available toxin to a dagger)
-3) Ability updates
-- the new Apply Toxin ability requires the creation of various reagent and crafted toxin items; each toxin has a standard and severe reaction
-  - Snake Venom: Dropped by Giant Snake; used to make Mild Toxin
-  - Scorpion Venom: Dropped by Giant Scorpion; used to make Neurotoxin
-  - Viper Venom: Dropped by Pit Viper; used to make Hemotoxin
-  - Lizard Venom: Dropped by Basilisk; used to make Myotoxin
-  - Shadow Venom: Dropped by Shadow Serpent; used to make Necrotoxin
-  - Deathcap Mushroom: Rare gather find; used to make Amatoxin
-  - Mild Toxin: Created from Snake Venom; standard - mildly poisons the target; severe - moderately poisons the target
-  - Neurotoxin: Created from Scorpion Venom; standard - mildly poisons the target and can cause numbness (drops weapon); severe - moderately poisons the target and anaphylaxis (cannot breath; takes damage and silenced)
-  - Hemotoxin: Created from Viper Venom; standard - moderately poisons the target and can cause blindness; severe - severely poisons the target and can cause hemorrhaging
-  - Amatoxin: Created from Deathcap Mushroom; standard - severely poisons the target and can cause enfeeblement; critically poisons the enemy and can kill in 5 turns if not cured
-  - Myotoxin: Created from Lizard Venom; standard - severely poisons the target and can stun; severe - critically poisons the enemy and can petrify in 3 turns if not cured
-  - Necrotoxin: Created from Shadow Venom; standard - severely poisons the target and can cause incapacitation; severe - critically poisons the enemy and can kill in 2 turns if not cured
-- rework Refueling (Channel the spirit force, regaining 10% of max mana each turn and doubling each consecutive turn; at the beginning of each turn, you can choose to cancel or continue; while channeling you are considered prone for save rolls)
+* For Inquistor tree,
+- column 1:
+- column 2:
+- column 3:
+- column 4:
+* For Spell Stealer tree,
+- column 1:
+- column 2:
+- column 3:
+- column 4:
+* For Thief tree,
+- column 1: Find Traps
+- column 2:
+- column 3:
+- column 4:
+* For Ninja tree
+- column 1: Steal (ungated), Mug (lvl 65), a new ability Find Traps (Passive; chance to alert the player to a nearby trap, so the player can either avoid it or at least prepare for it if there is no way around; chance to find depends on player perception and trap level; lvl 70)
+- column 2: Triple Strike (ungated), Momentum (lvl 65), Flurry of Blades (lvl 75)
+- column 3: Desoul (lvl 70)
+- column 4: Haste (ungated), Invisibility (lvl 65)
+- column 5: Parry (ungated), Riposte (lvl 65),
+* For Seeker tree,
+- column 1:
+- column 2:
+- column 3:
+- column 4:
+* For Arcane Trickster tree,
+- column 1:
+- column 2:
+- column 3:
+- column 4:
+* For Rogue tree,
+- column 1: a new ability Disarm Traps (Passive; gives the player the option to disarm the trap but it is not guaranteed; certain skills and items can increase the disarm chance, with the difficulty dependent on the player's deftness and trap level)
+- column 2:
+- column 3:
+- column 4:

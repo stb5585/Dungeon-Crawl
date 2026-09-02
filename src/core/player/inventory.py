@@ -336,10 +336,19 @@ class PlayerInventoryMixin:
 
             def offhand_weapon_stats() -> tuple[bool, int, int]:
                 offhand_item = self.equipment.get("OffHand")
-                if getattr(offhand_item, "typ", None) != "Weapon":
+                if (
+                    getattr(offhand_item, "typ", None) != "Weapon"
+                    and getattr(offhand_item, "subtyp", None) != "Crossbow"
+                ):
                     return False, 0, 0
                 damage = self.check_mod('offhand')
-                crit_chance = int((offhand_item.crit + (BASE_CRIT_PER_POINT * self.check_mod("speed"))) * 100)
+                crit_chance = int(
+                    (
+                        getattr(offhand_item, "crit", 0)
+                        + (BASE_CRIT_PER_POINT * self.check_mod("speed"))
+                    )
+                    * 100
+                )
                 return True, damage, crit_chance
 
             had_offhand_weapon, off_dmg, off_crit = offhand_weapon_stats()

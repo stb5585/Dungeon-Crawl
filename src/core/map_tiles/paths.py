@@ -9,6 +9,7 @@ from .rules import (
     REALM_OF_CAMBION_LEVEL,
     _CARDINAL_DIRECTIONS,
     _apply_cambion_antimagic,
+    _queue_cambion_message,
     check_fake_wall,
     jester_token_count,
     nature_communion_text,
@@ -228,6 +229,8 @@ class CavePath(MapTile):
         self.trap_type = None
         self.trap_triggered = False
         self.trap_forced_initiative = False
+        self.deathcap_available = False
+        self.deathcap_gathered = False
 
     def modify_player(self, game):
         self.visited = True
@@ -235,6 +238,14 @@ class CavePath(MapTile):
         from .traps import trigger_tile_trap
 
         trigger_tile_trap(self, game.player_char)
+        if self.deathcap_available and not self.deathcap_gathered:
+            mushroom = items.DeathcapMushroom()
+            game.player_char.modify_inventory(mushroom)
+            self.deathcap_gathered = True
+            _queue_cambion_message(
+                game.player_char,
+                "You gather a rare Deathcap Mushroom.",
+            )
         if self.z == REALM_OF_CAMBION_LEVEL:
             reveal_cambion_code_clue(game.player_char, (self.x, self.y, self.z))
         class_name = getattr(getattr(game.player_char, "cls", None), "name", "")

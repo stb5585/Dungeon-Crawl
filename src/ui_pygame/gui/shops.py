@@ -330,10 +330,18 @@ class ShopManager(TownScreenBase):
         tools = list(misc_dict.get("Key", []))
         tools.extend(cls for cls in misc_dict.get("Scroll", []) if cls is items_module.BlankScroll)
         for label, item_classes in misc_dict.items():
-            if label in {"Key", "Scroll", "Magic Tool"}:
+            if label in {"Key", "Scroll", "Magic Tool", "Toxin Reagent", "Toxin", "Ammunition"}:
                 continue
             tools.extend(item_classes)
         guild_tabs = {"Tools": tools} if self._has_available_items(tools) else {}
+        guild_tabs["Toxins"] = [items_module.MildToxin]
+        guild_tabs["Ammunition"] = [items_module.ThrowingDaggers]
+        guild_tabs["Crossbows"] = list(
+            items_module.items_dict["OffHand"].get("Crossbow", [])
+        )
+        guild_tabs["Crossbow Bolts"] = list(
+            items_module.items_dict["Misc"].get("Crossbow Bolts", [])
+        )
         self._buy_with_shop_screen(guild_tabs, "Thieves Guild Goods")
 
     def buy_magic_shop_goods(self):

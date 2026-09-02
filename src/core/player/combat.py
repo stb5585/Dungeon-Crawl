@@ -9,6 +9,7 @@ from ..classes import (
     archdruid,
     bard,
     class_rings,
+    footpad,
     healer,
     lycan,
     mage_mechanics,
@@ -329,7 +330,10 @@ class PlayerCombatMixin:
                 if self.equipment['Ring'] is not None and 'Physical Damage' in self.equipment['Ring'].mod:
                     off_mod += int(self.equipment['Ring'].mod.split(' ')[0])
                 off_mod += self.stat_effects["Attack"].extra * self.stat_effects["Attack"].active
-                total_offhand = (off_mod + class_mod + self.combat.attack) * (0.75 + berserk_per)
+                total_offhand = (
+                    (off_mod + class_mod + self.combat.attack)
+                    * (footpad.offhand_damage_multiplier(self) + berserk_per)
+                )
                 total_offhand *= ability_mechanics.monkey_grip_damage_multiplier(self, "OffHand")
                 total_offhand *= ability_mechanics.arsenal_mastery_weapon_multiplier(self)
                 total_offhand *= ability_mechanics.pack_bond_multiplier(self)
@@ -500,6 +504,8 @@ class PlayerCombatMixin:
                 res_mod -= 1
             if typ in self.resistance:
                 res_mod = self.resistance[typ]
+            if typ == "Death" and int(getattr(self, "resist_death_steps", 0) or 0) > 0:
+                res_mod += 0.50
             if typ == "Shadow":
                 from .. import curses
 

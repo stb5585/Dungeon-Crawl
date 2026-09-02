@@ -29,6 +29,8 @@ class CharacterEventsMixin:
         item_name: str | None = None,
     ) -> None:
         """Helper to emit damage dealt events."""
+        if target is not None and int(getattr(target, "_distracted_turns", 0) or 0) > 0:
+            target._distracted_turns = 0
         if damage and damage > 0:
             shell_health = max(0, int(getattr(target, "war_turtle_shell_health", 0) or 0))
             if shell_health:

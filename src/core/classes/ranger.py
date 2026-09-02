@@ -37,7 +37,7 @@ class Ranger(Job):
             magic_def_plus=2,
             restrictions={
                 "Weapon": ["Dagger", "Sword", "Longsword", "Battle Axe", "Polearm"],
-                "OffHand": ["Dagger"],
+                "OffHand": ["Dagger", "Crossbow"],
                 "Armor": ["Light", "Medium"],
             },
             pro_level=2,

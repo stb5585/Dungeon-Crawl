@@ -126,6 +126,241 @@ class CenserOfChokingAsh(Misc):
         )
 
 
+class _ToxinItem(Misc):
+    """Crafted weapon toxin that is deliberately excluded from random loot."""
+
+    random_drop = False
+    standard_reaction = ""
+    severe_reaction = ""
+
+    def __init__(self, name: str, value: int, standard: str, severe: str):
+        self.standard_reaction = standard
+        self.severe_reaction = severe
+        super().__init__(
+            name=name,
+            description=f"Standard: {standard} Severe: {severe}",
+            value=value,
+            rarity=0,
+            subtyp="Toxin",
+        )
+
+
+class MildToxin(_ToxinItem):
+    def __init__(self):
+        super().__init__("Mild Toxin", 1000, "Mild poison.", "Moderate poison.")
+
+
+class Neurotoxin(_ToxinItem):
+    def __init__(self):
+        super().__init__(
+            "Neurotoxin", 4000,
+            "Mild poison with a chance to numb and disarm.",
+            "Moderate poison and anaphylaxis, causing damage and silence.",
+        )
+
+
+class Hemotoxin(_ToxinItem):
+    def __init__(self):
+        super().__init__(
+            "Hemotoxin", 8000,
+            "Moderate poison with a chance to blind.",
+            "Severe poison and hemorrhaging.",
+        )
+
+
+class Amatoxin(_ToxinItem):
+    def __init__(self):
+        super().__init__(
+            "Amatoxin", 15000,
+            "Severe poison with a chance to enfeeble.",
+            "Critical poison that can kill in five turns if not cured.",
+        )
+
+
+class Myotoxin(_ToxinItem):
+    def __init__(self):
+        super().__init__(
+            "Myotoxin", 20000,
+            "Severe poison with a chance to stun.",
+            "Critical poison that can petrify in three turns if not cured.",
+        )
+
+
+class Necrotoxin(_ToxinItem):
+    def __init__(self):
+        super().__init__(
+            "Necrotoxin", 30000,
+            "Severe poison with a chance to incapacitate.",
+            "Critical poison that can kill in two turns if not cured.",
+        )
+
+
+class _ToxinReagent(Misc):
+    """Enemy or exploration reagent used by Make Toxin."""
+
+    random_drop = False
+
+    def __init__(self, name: str, value: int, rarity: float, product: str):
+        self.toxin_product = product
+        super().__init__(
+            name=name,
+            description=f"A toxin reagent used to make {product}.",
+            value=value,
+            rarity=rarity,
+            subtyp="Toxin Reagent",
+        )
+
+
+class SnakeVenom(_ToxinReagent):
+    def __init__(self):
+        super().__init__("Snake Venom", 200, 0.33, "Mild Toxin")
+
+
+class ScorpionVenom(_ToxinReagent):
+    def __init__(self):
+        super().__init__("Scorpion Venom", 1000, 0.33, "Neurotoxin")
+
+
+class ViperVenom(_ToxinReagent):
+    def __init__(self):
+        super().__init__("Viper Venom", 2500, 0.25, "Hemotoxin")
+
+
+class LizardVenom(_ToxinReagent):
+    def __init__(self):
+        super().__init__("Lizard Venom", 7500, 0.15, "Myotoxin")
+
+
+class ShadowVenom(_ToxinReagent):
+    def __init__(self):
+        super().__init__("Shadow Venom", 10000, 0.1, "Necrotoxin")
+
+
+class DeathcapMushroom(_ToxinReagent):
+    def __init__(self):
+        super().__init__("Deathcap Mushroom", 5000, 0.2, "Amatoxin")
+
+
+class ThrowingDaggers(Misc):
+    """A purchasable pack of ammunition used by Hidden Blade."""
+
+    random_drop = False
+
+    def __init__(self, charges: int = 10):
+        self.charges = max(0, int(charges))
+        super().__init__(
+            name="Throwing Daggers",
+            description=f"A pack used by Hidden Blade. Daggers remaining: {self.charges}.",
+            value=1000,
+            rarity=0.7,
+            subtyp="Ammunition",
+        )
+
+
+class CrossbowBolts(Misc):
+    """Selectable ten-shot ammunition pack for off-hand crossbows."""
+
+    random_drop = False
+    recovery_chance = 0.0
+
+    def __init__(self, name, description, value, rarity, charges=10):
+        self.charges = max(0, int(charges))
+        self.ammunition_description = description
+        super().__init__(
+            name=name,
+            description=f"{description} Bolts remaining: {self.charges}.",
+            value=value,
+            rarity=rarity,
+            subtyp="Crossbow Bolts",
+        )
+
+    def use(self, user, target=None, tile=None):
+        del target, tile
+        user.selected_crossbow_bolts = self.name
+        return f"{user.name} readies {self.name}.\n"
+
+
+class WoodenBolts(CrossbowBolts):
+    """Fragile, low-recovery crossbow ammunition."""
+
+    recovery_chance = 0.10
+
+    def __init__(self, charges=10):
+        super().__init__("Wooden Bolts", "Fragile wooden crossbow ammunition.", 250, 0.75, charges)
+
+
+class MetalBolts(CrossbowBolts):
+    """Durable crossbow ammunition with a strong recovery chance."""
+
+    recovery_chance = 0.65
+
+    def __init__(self, charges=10):
+        super().__init__(
+            "Metal Bolts", "Durable ammunition with a high recovery chance.",
+            600, 0.7, charges,
+        )
+
+
+class ArmorPiercingBolts(CrossbowBolts):
+    """Crossbow ammunition that bypasses armor."""
+
+    recovery_chance = 0.55
+
+    def __init__(self, charges=10):
+        super().__init__(
+            "Armor Piercing Bolts", "Hardened bolts that ignore armor.",
+            1200, 0.6, charges,
+        )
+
+
+class MagicBolts(CrossbowBolts):
+    """Bolts that add Arcane damage when fired from a Magic Crossbow."""
+
+    recovery_chance = 0.55
+
+    def __init__(self, charges=10):
+        super().__init__(
+            "Magic Bolts", "Arcane ammunition for a Magic Crossbow.",
+            2500, 0.5, charges,
+        )
+
+
+class HeatSeekingBolts(CrossbowBolts):
+    """Bolts that improve accuracy against creatures with detectable heat."""
+
+    recovery_chance = 0.50
+
+    def __init__(self, charges=10):
+        super().__init__(
+            "Heat-Seeking Bolts", "Bolts that curve toward warm targets.",
+            6000, 0.4, charges,
+        )
+
+
+class NapalmBolts(CrossbowBolts):
+    """Explosive bolts that spread Fire damage across the enemy group."""
+
+    recovery_chance = 0.25
+
+    def __init__(self, charges=10):
+        super().__init__(
+            "Napalm Bolts", "Explosive bolts that spread burning material.",
+            15000, 0.2, charges,
+        )
+
+
+class DelayedBolts(CrossbowBolts):
+    """Bolts that attach to a target before exploding one turn later."""
+
+    recovery_chance = 0.0
+
+    def __init__(self, charges=10):
+        super().__init__(
+            "Delayed Bolts", "Bolts that explode one turn after attaching.",
+            32000, 0.1, charges,
+        )
+
+
 class RealityFragment(Misc):
     """Extremely rare reagent consumed by Thaumaturgist Miracles."""
 

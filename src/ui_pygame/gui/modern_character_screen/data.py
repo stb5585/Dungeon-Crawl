@@ -8,6 +8,7 @@ import pygame
 
 from src.core import items
 from src.core.classes import ability_mechanics, grandmaster
+from ..status_icons import active_resist_effect_names
 from .models import (
     _whole_stat_text,
     EQUIPMENT_SLOT_ORDER,
@@ -437,12 +438,16 @@ class CharacterDataMixin:
         race = self._attr_name(getattr(player_char, "race", None), "")
         cls = self._attr_name(getattr(player_char, "cls", None), "")
         level = getattr(getattr(player_char, "level", None), "level", 1)
-        return [
+        rows = [
             ("Name", str(getattr(player_char, "name", "Adventurer"))),
             ("Race", race or "Unknown"),
             ("Class", cls or "Unknown"),
             ("Level", str(level)),
         ]
+        active_resists = active_resist_effect_names(player_char)
+        if active_resists:
+            rows.append(("Active Buffs", ", ".join(active_resists)))
+        return rows
 
     def location_label(self, player_char) -> str:
         location_z = getattr(player_char, "location_z", 0)

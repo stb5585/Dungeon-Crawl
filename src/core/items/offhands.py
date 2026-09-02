@@ -323,6 +323,7 @@ class Lute(OffHand):
     def __init__(self):
         super().__init__(name="Lute", description="",
                          value=5000, rarity=0.75, mod=20, subtyp="Musical Instrument", unequip=False)
+        self.weight = 2
 
 
 class Mbira(OffHand):
@@ -330,13 +331,14 @@ class Mbira(OffHand):
     def __init__(self):
         super().__init__(name="Mbira", description="",
                          value=8000, rarity=0.6, mod=25, subtyp="Musical Instrument", unequip=False)
-
+        self.weight = 1
 
 class Lyre(OffHand):
 
     def __init__(self):
         super().__init__(name="Lyre", description="",
                          value=16000, rarity=0.5, mod=30, subtyp="Musical Instrument", unequip=False)
+        self.weight = 3
 
 
 class Tambourine(OffHand):
@@ -344,6 +346,7 @@ class Tambourine(OffHand):
     def __init__(self):
         super().__init__(name="Tambourine", description="",
                          value=55000, rarity=0.4, mod=50, subtyp="Musical Instrument", unequip=False)
+        self.weight = 1
 
 
 class Accordina(OffHand):
@@ -351,6 +354,7 @@ class Accordina(OffHand):
     def __init__(self):
         super().__init__(name="Accordina", description="",
                          value=70000, rarity=0.3, mod=75, subtyp="Musical Instrument", unequip=False)
+        self.weight = 5
 
 
 class Didgeridoo(OffHand):
@@ -358,6 +362,7 @@ class Didgeridoo(OffHand):
     def __init__(self):
         super().__init__(name="Didgeridoo", description="",
                          value=90000, rarity=0.2, mod=100, subtyp="Musical Instrument", unequip=False)
+        self.weight = 4
 
 
 class Sitar(OffHand):
@@ -365,6 +370,7 @@ class Sitar(OffHand):
     def __init__(self):
         super().__init__(name="Sitar", description="",
                          value=125000, rarity=0.1, mod=130, subtyp="Musical Instrument", unequip=False)
+        self.weight = 4
 
 
 class Bagpipes(OffHand):
@@ -372,6 +378,7 @@ class Bagpipes(OffHand):
     def __init__(self):
         super().__init__(name="Bagpipes", description="",
                          value=200000, rarity=0.05, mod=150, subtyp="Musical Instrument", unequip=False)
+        self.weight = 7
 
 
 class Shamisen(OffHand):
@@ -379,6 +386,7 @@ class Shamisen(OffHand):
     def __init__(self):
         super().__init__(name="Shamisen", description="",
                          value=300000, rarity=0.01, mod=200, subtyp="Musical Instrument", unequip=False)
+        self.weight = 6
 
 
 class GrandPiano(OffHand):
@@ -390,3 +398,104 @@ class GrandPiano(OffHand):
     def __init__(self):
         super().__init__(name="GrandPiano", description="",
                          value=0, rarity=0, mod=0, subtyp="Musical Instrument", unequip=False)
+        self.weight = 40
+
+
+class Crossbow(OffHand):
+    """Base class for off-hand crossbows fueled by bolt packs."""
+
+    shots_per_attack = 1
+
+    def __init__(self, name, description, value, rarity, damage, weight):
+        super().__init__(
+            name=name,
+            description=description,
+            value=value,
+            rarity=rarity,
+            mod=damage,
+            subtyp="Crossbow",
+            unequip=False,
+        )
+        self.damage = damage
+        self.weight = weight
+
+
+class HandCrossbow(Crossbow):
+    """Compact entry-level crossbow."""
+
+    def __init__(self):
+        super().__init__("Hand Crossbow", "A compact off-hand crossbow.", 4000, 0.75, 12, 3)
+
+
+class LightCrossbow(Crossbow):
+    """Lightweight crossbow with moderate damage."""
+
+    def __init__(self):
+        super().__init__(
+            "Light Crossbow", "A light, dependable off-hand crossbow.",
+            6000, 0.6, 16, 5,
+        )
+
+
+class HeavyCrossbow(Crossbow):
+    """Heavy crossbow with substantial stopping power."""
+
+    def __init__(self):
+        super().__init__(
+            "Heavy Crossbow", "A weighty crossbow with substantial force.",
+            12000, 0.5, 20, 12,
+        )
+
+
+class PistolCrossbow(Crossbow):
+    """Compact high-damage crossbow."""
+
+    def __init__(self):
+        super().__init__(
+            "Pistol Crossbow", "A powerful crossbow in a compact frame.",
+            48000, 0.4, 24, 6,
+        )
+
+
+class RepeatingCrossbow(Crossbow):
+    """Crossbow that fires two bolts after each basic attack."""
+
+    shots_per_attack = 2
+
+    def __init__(self):
+        super().__init__(
+            "Repeating Crossbow",
+            "Its magazine can fire two bolts after each basic attack.",
+            65000,
+            0.3,
+            30,
+            10,
+        )
+
+
+class MagicCrossbow(Crossbow):
+    """Crossbow that unlocks the Arcane payload of Magic Bolts."""
+
+    def __init__(self):
+        super().__init__(
+            "Magic Crossbow",
+            "Magic Bolts fired from this crossbow also deal Arcane damage.",
+            80000,
+            0.2,
+            35,
+            4,
+        )
+
+
+class GoldenClaw(Crossbow):
+    """Rare saintly crossbow with exceptional damage."""
+
+    def __init__(self):
+        super().__init__(
+            "Golden Claw",
+            "The Saintly Crossbow of the Supernaturally Luminous Golden Claw.",
+            150000,
+            0.01,
+            45,
+            8,
+        )

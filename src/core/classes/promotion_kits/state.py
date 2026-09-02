@@ -452,6 +452,7 @@ def begin_action(
     state = combat_state(character)
     if bool(getattr(character, "mage_refueling", False)) and choice != "Refueling":
         character.mage_refueling = False
+        character.mage_refueling_streak = 0
     state["action_token"] = int(state.get("action_token", 0) or 0) + 1
     state["hierophant_devotion_token"] = None
     state["pending_hierophant_devotion_token"] = None

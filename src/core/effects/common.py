@@ -346,6 +346,9 @@ class StatusApplyEffect(Effect):
 
             actor_roll = _rng.randint(0, max(1, a_stat)) + a_luck
             target_roll = _rng.randint(0, max(1, t_stat)) + t_luck
+            from ..classes import mage_mechanics
+
+            target_roll = int(target_roll * mage_mechanics.save_roll_multiplier(target))
             # Human Lust (sin): slightly reduced status resistance.
             try:
                 if getattr(getattr(target, "race", None), "name", None) == "Human":
@@ -897,6 +900,7 @@ class FullDispelEffect(Effect):
         "Resist Earth",
         "Resist Wind",
         "Resist Shadow",
+        "Resist Holy",
         "Hallowed Ground",
         "Totem",
     ]
@@ -1121,6 +1125,9 @@ class PhysicalEffectApplyEffect(Effect):
         target_roll = _rng.randint(
             target_val // self.target_lo_divisor, target_val // max(1, self.target_hi_divisor)
         )
+        from ..classes import mage_mechanics
+
+        target_roll = int(target_roll * mage_mechanics.save_roll_multiplier(target))
 
         if actor_roll > target_roll:
             # Calculate duration
@@ -1249,6 +1256,9 @@ class InstantKillEffect(Effect):
             )
             + chance
         )
+        from ..classes import mage_mechanics
+
+        target_roll = int(target_roll * mage_mechanics.save_roll_multiplier(target))
 
         if actor_roll > target_roll:
             target.health.current = 0
@@ -1309,6 +1319,9 @@ class StatReduceEffect(Effect):
             max(0, t_val // self.target_lo_divisor),
             max(1, t_val // self.target_hi_divisor),
         )
+        from ..classes import mage_mechanics
+
+        target_roll = int(target_roll * mage_mechanics.save_roll_multiplier(target))
 
         if actor_roll > target_roll:
             # Stage 2: secondary luck-gated chance

@@ -17,6 +17,21 @@ Save-heavy systems such as durability, identification, item modification, and
 equipment active abilities remain deferred until their serializer, UI, economy,
 and balance contracts are explicitly promoted.
 
+## Ranger Crossbows And Ammunition
+
+Ranger and Beast Master can equip the seven Crossbow-subtype off-hand items.
+The Thieves Guild sells every crossbow and ten-shot pack of every bolt type;
+Golden Claw also remains an exceptionally rare ordinary drop. Bolt packs are
+not included in random loot.
+
+Crossbows fire after a basic main-hand attack. Repeating Crossbows may fire two
+bolts, provided ammunition remains. Wooden and Metal Bolts differ chiefly in
+recovery chance; Armor Piercing Bolts bypass armor; Magic Bolts add Arcane
+damage only from a Magic Crossbow; Heat-Seeking Bolts improve accuracy except
+against Undead, Slimes, and non-Fire Elementals; Napalm damages the active enemy
+roster; and Delayed Bolts attach before dealing untyped damage on the target's
+next turn. Selected ammunition and remaining pack charges persist in saves.
+
 ## Shop Polish V1
 
 Shop Polish V1 improves clarity around the existing pygame buy-then-equip path

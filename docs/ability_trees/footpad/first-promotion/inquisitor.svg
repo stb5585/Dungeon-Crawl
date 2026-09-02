@@ -1,14 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="494" height="1596" viewBox="0 0 494 1596">
+<svg xmlns="http://www.w3.org/2000/svg" width="494" height="1618" viewBox="0 0 494 1618">
 <style>
 text{font-family:DejaVu Sans,Arial,sans-serif}
 .title{fill:#f4bf2a;font-size:24px;font-weight:700}
 .meta{fill:#aab2bf;font-size:12px}
 .name{fill:#f4f6fa;font-size:13px;font-weight:700}
 .detail{fill:#c5ccd6;font-size:11px}
+.resource{fill:#e6bfdc;font-size:9px;font-weight:700}
 .edge{fill:none;stroke:#7f8998;stroke-width:2}
+.promotion-edge{fill:none;stroke:#c59d3d;stroke-width:3}
 </style>
-<rect width="494" height="1596" fill="#10131a"/>
+<rect width="494" height="1618" fill="#10131a"/>
 <text class="title" x="42" y="38">Inquisitor Ability Tree</text>
 <text class="meta" x="42" y="62">Tier 2 · 21 nodes · Case Journal · Judgment</text>
 <path class="edge" d="M 358.0 123.0 V 173.0 H 358.0 V 223.0"/>
@@ -29,7 +31,8 @@ text{font-family:DejaVu Sans,Arial,sans-serif}
 <path class="edge" d="M 136.0 423.0 V 473.0 H 136.0 V 523.0"/>
 <path class="edge" d="M 358.0 1323.0 V 1373.0 H 358.0 V 1423.0"/>
 <path class="edge" d="M 136.0 523.0 V 573.0 H 136.0 V 623.0"/>
-<path class="edge" d="M 136.0 623.0 V 1073.0 H 136.0 V 1523.0"/>
+<path class="promotion-edge" d="M 136.0 654.0 V 662.0 H 136.0 V 1423.0 H 136.0"/>
+<path class="promotion-edge" d="M 136.0 1423.0 V 1492.0"/>
 <rect x="42.0" y="92.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
 <text class="name" x="52.0" y="116.0">Reveal</text>
 <text class="detail" x="52.0" y="137.0">Ability · Cost 1 · Level 35</text>
@@ -90,7 +93,8 @@ text{font-family:DejaVu Sans,Arial,sans-serif}
 <rect x="42.0" y="592.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
 <text class="name" x="52.0" y="616.0">Cross Examination</text>
 <text class="detail" x="52.0" y="637.0">Talent · Cost 1 · Level 55</text>
-<rect x="42.0" y="1492.0" width="188" height="62" rx="8" fill="#3b2d12" stroke="#f4bf2a" stroke-width="2"/>
+<rect x="42.0" y="1492.0" width="188" height="84" rx="8" fill="#3b2d12" stroke="#f4bf2a" stroke-width="2"/>
 <text class="name" x="52.0" y="1516.0">Promote: Seeker</text>
 <text class="detail" x="52.0" y="1537.0">Promotion · Cost 3 · Level 60</text>
+<text class="detail" x="52.0" y="1558.0">Requires ALL 1 path</text>
 </svg>

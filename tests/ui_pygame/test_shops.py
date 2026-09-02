@@ -518,13 +518,20 @@ def test_buy_helpers_route_to_expected_equipment_methods(monkeypatch):
     assert "Mana Potions" in item_calls[10][0]
     assert "Scrolls" not in item_calls[10][0]
     assert item_calls[11][1] == "Thieves Guild Goods"
-    assert set(item_calls[11][0]) == {"Tools"}
+    assert set(item_calls[11][0]) == {
+        "Tools", "Toxins", "Ammunition", "Crossbows", "Crossbow Bolts"
+    }
     assert items.Key in item_calls[11][0]["Tools"]
     assert items.BlankScroll in item_calls[11][0]["Tools"]
     assert items.LockpickKit in item_calls[11][0]["Tools"]
     assert items.SmokeBomb in item_calls[11][0]["Tools"]
     assert items.Oculus not in item_calls[11][0]["Tools"]
     assert items.FireScroll not in item_calls[11][0]["Tools"]
+    assert item_calls[11][0]["Toxins"] == [items.MildToxin]
+    assert item_calls[11][0]["Ammunition"] == [items.ThrowingDaggers]
+    assert items.HandCrossbow in item_calls[11][0]["Crossbows"]
+    assert items.GoldenClaw in item_calls[11][0]["Crossbows"]
+    assert items.WoodenBolts in item_calls[11][0]["Crossbow Bolts"]
     assert item_calls[12][1] == "Magic Shop Goods"
     assert "Spell Scrolls" in item_calls[12][0]
     assert "Staves" in item_calls[12][0]
@@ -660,7 +667,9 @@ def test_alchemist_and_secret_consumables_include_status_items(monkeypatch):
     assert "Health Potions" in captured[1][1]
     assert "Mana Potions" in captured[1][1]
     assert "Scrolls" not in captured[1][1]
-    assert set(captured[2][1]) == {"Tools"}
+    assert set(captured[2][1]) == {
+        "Tools", "Toxins", "Ammunition", "Crossbows", "Crossbow Bolts"
+    }
     assert items.BlankScroll in captured[2][1]["Tools"]
     assert items.LockpickKit in captured[2][1]["Tools"]
     assert items.FireScroll not in captured[2][1]["Tools"]

@@ -53,10 +53,10 @@ def test_footpad_tree_matches_the_six_authored_columns_and_gates():
 def test_footpad_promotions_join_identity_and_shared_tracks():
     by_name = {node.name: node for node in ABILITY_TREES["Footpad"].nodes}
 
-    assert by_name["Promote: Thief"].position == (0.5, 6)
-    assert by_name["Promote: Assassin"].position == (1.5, 6)
-    assert by_name["Promote: Spell Stealer"].position == (3.5, 6)
-    assert by_name["Promote: Inquisitor"].position == (4.5, 6)
+    assert by_name["Promote: Thief"].position == (0.5, 7)
+    assert by_name["Promote: Assassin"].position == (1.5, 7)
+    assert by_name["Promote: Spell Stealer"].position == (3.5, 7)
+    assert by_name["Promote: Inquisitor"].position == (4.5, 7)
     assert by_name["Sleeping Powder"].id in by_name["Promote: Thief"].prerequisites
     assert by_name["Sleeping Powder"].id in by_name["Promote: Assassin"].prerequisites
     assert by_name["Mystical Evasion"].id in (

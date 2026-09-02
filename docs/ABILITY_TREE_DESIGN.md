@@ -27,6 +27,24 @@ or `30%` according to tree tier, in addition to their class-specific effect,
 without appearing in the spellbook. Active and passive ability nodes still
 instantiate the canonical ability class.
 
+Promotion prerequisites are rendered as gold connector paths. Requirements
+that must all be purchased meet in the reserved buffer row before entering
+through one top-edge stem. For `choose any one` promotions, the outermost
+alternatives enter the promotion card from its left and right sides while any
+interior alternatives retain separate top-edge stems. When one endpoint feeds multiple promotions, each edge
+leaves from a distinct bottom anchor on that endpoint, preventing neighboring
+promotion graphs from forming a shared visual bus. Long connections descend
+through the gutter beside their source column instead of crossing unrelated
+nodes. Trees that formerly used seven rows reserve an eighth row for promotion
+routing; trees already using eight rows keep their authored geometry. Hovering
+over a promotion highlights every node along its required paths in violet,
+including available nodes, with brighter frames on the direct endpoints. Moving off the promotion
+clears the highlight. The detail panel lists every endpoint by lane and node
+name. In-game graph icons omit duplicate labels and rely on that detail panel
+for the full name and description. SVG names truncate at 20 characters, while
+non-Mana resource names use a separate third line below the ordinary node
+metadata. Promotion cards reserve a second line for `Requires ALL/ANY`.
+
 Ability milestones are global for gated abilities and talents. Rating nodes
 are normally path-gated rather than level-gated; Spellblade's level-band rows
 are the explicit exception. An authored inherited entry may also be ungated:
@@ -132,8 +150,8 @@ or stat requirements differ.
     backfills Magic Defense or any other prerequisite.
   - Promote: Crusader is centered at `(2.5, 7)`: it requires either Oath root,
     global level 60, `STR 15`, `CON 17`, `WIS 16`, `CHA 13`, and three
-    progression points. Each Oath connector drops straight to row 7 before
-    joining the centered node. A baseline Human taking the shortest route
+    progression points. Each Oath connector terminates independently on the
+    centered promotion node. A baseline Human taking the shortest route
     retains 14 progression points and nine attribute points. Unpurchased
     Paladin nodes close.
   - Hallowed Ground costs 20 MP and creates a three-turn Holy field that
@@ -192,8 +210,8 @@ or stat requirements differ.
   - Promote: Dragoon sits in column 4. Its left prerequisite runs `Jump -> +20
     Defense -> Vigilant Landing -> Promote: Dragoon`; Polearm Excellence is
     the second prerequisite. Promotion also requires global level 60, `STR
-    17`, and `DEX 13`. The connector descends in Vigilant Landing's column
-    before turning toward promotion so it does not cross the Thrust/Rend path.
+    17`, and `DEX 13`. Its prerequisite connectors terminate independently on
+    the promotion node so neither appears to continue through another path.
     Neither Jump modifier path is required.
   - Polearm Excellence and Vigilant Landing each cost two points.
 - Dragoon:
@@ -211,8 +229,10 @@ or stat requirements differ.
   - Assault mastery extends Rend through Quake and Soaring Strike into Dragon
     Dive. The middle `+20 Attack` node separately unlocks Dragon's Ascent,
     which has no redundant level gate after Dragoon promotion.
-  - Shield Block is absent because the Warrior-to-Lancer route already
-    requires it. Grounded Landing starts level-65 Retribution and level-70
+  - Shield Block is absent because Warrior Retaliate already requires Shield
+    Block, which itself requires Shield Slam. The shield trunk runs through the
+    gutter between the Vanguard and Bulwark columns before joining Retaliate.
+    Grounded Landing starts level-65 Retribution and level-70
     Unstoppable. Dragon's Ascent gates the `+30 Defense` node. Level-80 Dragon
     Dive requires Dragon's Ascent, Soaring Strike, and Unstoppable.
   - Lancer and Dragoon use rows 0-7 with compact vertical
@@ -229,8 +249,8 @@ or stat requirements differ.
     Bulwark Guard -> Spell Reflection -> Shielding Ward`) and Support (`Purge
     Weakness -> +50 HP -> Boast -> Braggadocious`). Parry is absent; Goad,
     Charge, and Double Strike are disconnected in the fifth column at rows 3-5.
-  - The complete Sentinel tree is shifted to rows 1-8. Promote: Stalwart
-    Defender sits at `(1.5, 8)` and accepts any of Watchful
+  - Sentinel development occupies rows 0-5, leaving row 6 as a promotion-path
+    buffer. Promote: Stalwart Defender sits at `(1.5, 7)` and accepts any of Watchful
     Reprisal, Resolute Guard, Shielding Ward, or Braggadocious at level 60 with
     `CON 20` and a three-point cost.
 - Stalwart Defender:
@@ -363,8 +383,9 @@ or stat requirements differ.
   Hemorrhaging Curse adds persistent bleeding, and the independent familiar
   modifiers sit between Familiar Bond I and II. Columns one through five begin
   one row lower; the advanced curse sequence begins another row lower.
-  Shadowcaster requires Doom and Mana Drain; Demonologist requires Curse of
-  Hemorrhaging Curse and Life Tap.
+  Shadowcaster requires the Umbral Offense path through Shadow Bolt II plus
+  either Doom or Mana Drain. Demonologist requires either Curse of Swarms or
+  Life Tap.
 - Shadowcaster has three terminal paths. Umbral Debt is `Mana Tap ->
   Health/Mana Drain (70) -> +30 Defense`. Deep Shadow is `Shadow Bolt
   III -> Night Terror (65) -> Nightmare (70) -> Desoul (80) -> +30 Magic`;
@@ -464,7 +485,9 @@ or stat requirements differ.
   and Calling is `Conjure Humanoid (30) -> Monster (35) -> Spirit (40) ->
   Fiend (45) -> Celestial (50) -> Dragon (55)`. The level-60,
   three-point Thaumaturgist promotion accepts the terminal node of any
-  discipline.
+  discipline. Development occupies rows 0-5, row 6 is reserved for connector
+  routing, and the outer Calling/Construct alternatives enter the promotion
+  card from its sides.
 - Floating Crystal siphons `10%` of maximum MP after each caster turn, bursts
   after storing `30%` of maximum MP, and multiplies the stored mana by
   `1 + spell power / 100` for its damage. Torchlight halves the random
@@ -529,7 +552,7 @@ interception attack. Smoke Screen escapes bypass Aggressive Pursuit.
 | Rogue | Loaded Odds, Cunning | 14 / 15 | Terminal | Loaded Odds, Cheater's Guard, Jinxed Edge, two-point House Advantage |
 | Inquisitor | Case Journal, Judgment | 20 / 20 | Seeker: 9 | Methodical Inquiry, Prepared Defense, Cross Examination, Contingency File |
 | Seeker | Wayfinding, Revelation | 15 / 16 | Terminal | Revelatory Strike, Wayfinder's Ward, Pattern Lock, two-point Safe Passage |
-| Assassin | Death Mark, Shadowcraft | 16 / 16 | Ninja: 12 | Lethal Preparation, Veiled Retreat, Marked Quarry, Vanishing Point |
+| Assassin | Utility, Combat, Status / Death, Stealth, Counter | 25 / 25 | Ninja: Cutthroat path + 3 | Twist the Knife, OffHand Excellence, For Good Measure, Cutthroat, Surprise!, Main Gauche, Live and Learn |
 | Ninja | Execution, No Trace | 14 / 17 | Terminal | No-Trace Opener, Shadow Evasion, Execution Rhythm, two-point Ghost Step |
 | Spell Stealer | Spell Theft, Stolen Charge | 16 / 16 | Arcane Trickster: 11 | Stolen Momentum, Arcane Escape, Counterfeit Casting, Blank Escape |
 | Arcane Trickster | Arcane Larceny, Misdirection | 14 / 18 | Terminal | Arcane Larceny, Misdirection, Spell Feint, two-point Vanishing Formula |
@@ -538,6 +561,14 @@ House Advantage, Safe Passage, Ghost Step, and Vanishing Formula each add one
 capacity to their terminal class meter. This stacks with the earlier cap talent
 and makes the two-point terminal mastery a mechanical choice rather than a
 renamed rating node.
+
+Assassin now uses five authored six-row columns with intentional gaps instead
+of generic kit branches. Its toxin line turns specific enemy and exploration
+reagents into six coatings; coatings are never random loot and resolve their
+standard reaction on a hit or severe reaction on a critical hit. Apply Toxin
+coats one equipped dagger, while Hidden Blade consumes recoverable ammunition
+from a ten-dagger pack. The tree also implements the utility, dual-wield,
+stealth-opener, and parry-counter passives shown in the diagram.
 
 ### Healer Lineage
 
@@ -612,6 +643,18 @@ Aspect Harmony, Foresight Threads, and Totem Resonance. Tethered Instinct makes
 each successful Lycan stress response record one extra control response.
 Bonded Bulwark raises the full-bond companion combat coefficient from 15% to
 25%, scaling proportionally at lower bond.
+
+Ranger and Beast Master may equip Crossbows in the off hand. A basic attack
+fires the selected bolt pack after the main-hand attack; using a bolt pack from
+inventory changes the selection, and the least expensive available pack is the
+fallback. Repeating Crossbows fire twice. Armor Piercing, Magic, Heat-Seeking,
+Napalm, and Delayed Bolts apply their named combat behaviors, while recovery
+chance determines whether ammunition is returned. Napalm ammunition is
+recovered only as an ordinary Metal Bolt.
+
+Active Resist effects appear as positive buff indicators in the Character Menu,
+dungeon HUD, and combat HUD. Resist All applies a five-turn ward to Fire, Ice,
+Electric, Water, Earth, Wind, Shadow, and Holy resistance.
 
 Promoted-tree passive families use the normal `+20%` or `+30%` tier bonus and
 advance through named mastery ranks only when the class's active catalog does

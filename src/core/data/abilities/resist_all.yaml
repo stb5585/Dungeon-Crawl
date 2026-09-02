@@ -1,7 +1,40 @@
 name: Resist All
 type: Support
 subtype: Support
-description: ""
+description: "Increase all elemental, Shadow, and Holy resistances by 50% for 5 turns."
 cost: 25
 target_self: true
 message: "All spell resistances are increased by 50% for {target}.\n"
+effects:
+  - type: resistance
+    element: Fire
+    amount: 0.5
+    duration: 5
+  - type: resistance
+    element: Ice
+    amount: 0.5
+    duration: 5
+  - type: resistance
+    element: Electric
+    amount: 0.5
+    duration: 5
+  - type: resistance
+    element: Water
+    amount: 0.5
+    duration: 5
+  - type: resistance
+    element: Earth
+    amount: 0.5
+    duration: 5
+  - type: resistance
+    element: Wind
+    amount: 0.5
+    duration: 5
+  - type: resistance
+    element: Shadow
+    amount: 0.5
+    duration: 5
+  - type: resistance
+    element: Holy
+    amount: 0.5
+    duration: 5

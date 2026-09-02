@@ -74,6 +74,8 @@ def test_no_arg_item_catalog_instantiates_and_renders_cleanly():
         elif isinstance(item, items.OffHand):
             if item.subtyp == "Shield":
                 assert "Block:" in rendered
+            elif item.subtyp == "Crossbow":
+                assert "Damage:" in rendered
             else:
                 assert "Spell Damage Mod:" in rendered
         elif isinstance(item, items.Accessory):

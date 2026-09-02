@@ -41,8 +41,14 @@ def test_mage_diagram_is_authoritative_and_tracks_runtime_nodes():
     ).read_text(encoding="utf-8")
 
     for node in ABILITY_TREES["Mage"].nodes:
-        label = node.name if len(node.name) <= 25 else f"{node.name[:22]}..."
+        label = node.name if len(node.name) <= 20 else f"{node.name[:17]}..."
         assert f">{escape(label)}</text>" in mage_svg
+    assert '<path class="edge" d="M 264.0 123.0 H 247.0 V 692.0 H 247.0"/>' in mage_svg
+    for source_x in (580, 802, 1024):
+        assert (
+            f'<path class="promotion-edge" d="M {source_x}.0 623.0 V 792.0"/>'
+            in mage_svg
+        )
 
 
 def test_regeneration_preserves_manually_authored_mage_svg(tmp_path):
@@ -82,12 +88,63 @@ def test_diagram_paths_group_by_base_lineage_and_promotion_level():
     )
 
 
-def test_authored_promotion_connectors_join_at_the_target_row():
+def test_either_or_promotion_connectors_use_outer_side_entries():
     spellblade = render_tree_svg("Spellblade")
 
-    assert 'M 136.0 623.0 V 823.0 H 469.0 V 823.0' in spellblade
-    assert 'M 358.0 723.0 V 823.0 H 469.0 V 823.0' in spellblade
-    assert 'M 580.0 723.0 V 823.0 H 469.0 V 823.0' in spellblade
+    assert spellblade.count('class="promotion-edge"') == 4
+    assert 'V 792.0"/>' in spellblade
+    assert "Requires ANY 3 paths" in spellblade
+
+
+def test_base_svg_promotions_label_all_required_paths():
+    footpad = render_tree_svg("Footpad")
+
+    assert footpad.count('class="promotion-edge"') == 12
+    assert footpad.count("Requires ALL 2 paths") == 4
+    assert 'M 326.7 654.0 V 723.0 H 247.0' in footpad
+    assert 'M 389.3 654.0 V 723.0 H 469.0' in footpad
+    assert 'height="84" rx="8" fill="#3b2d12"' in footpad
+    assert "Promotion · Cost 2 · Level 30</text>" in footpad
+
+
+def test_distant_promotion_requirements_route_through_column_gutters():
+    pathfinder = render_tree_svg("Pathfinder")
+    paladin = render_tree_svg("Paladin")
+
+    assert 'M 358.0 354.0 V 362.0 H 469.0 V 723.0 H 580.0' in pathfinder
+    assert 'M 770.7 354.0 V 362.0 H 691.0 V 723.0 H 580.0' in pathfinder
+    assert 'M 358.0 154.0 V 162.0 H 469.0 V 834.0 H 597.0' in paladin
+    assert 'M 1024.0 154.0 V 162.0 H 913.0 V 834.0 H 785.0' in paladin
+
+
+def test_seven_row_promotion_trees_reserve_an_empty_routing_row():
+    for class_name in (
+        "Warrior",
+        "Footpad",
+        "Healer",
+        "Pathfinder",
+        "Assassin",
+        "Sentinel",
+        "Conjurer",
+    ):
+        tree = ABILITY_TREES[class_name]
+        promotion_rows = {
+            node.position[1]
+            for node in tree.nodes
+            if node.kind.value == "promotion"
+        }
+        development_rows = {
+            node.position[1]
+            for node in tree.nodes
+            if node.kind.value != "promotion"
+        }
+        assert promotion_rows == {7}
+        assert max(development_rows) == 5
+        assert 6 not in development_rows
+
+    for class_name in ("Mage", "Sorcerer", "Weapon Master"):
+        assert max(node.position[1] for node in ABILITY_TREES[class_name].nodes) == 7
+
 
 
 def test_sorcerer_arcane_ritual_connector_enters_from_above():
@@ -100,6 +157,17 @@ def test_passive_nodes_use_distinct_svg_colors():
     sorcerer = render_tree_svg("Sorcerer")
 
     assert 'fill="#263b2b" stroke="#72c987"' in sorcerer
+
+
+def test_long_names_and_resource_labels_fit_separate_svg_lines():
+    footpad = render_tree_svg("Footpad")
+    sentinel = render_tree_svg("Sentinel")
+    knight_enchanter = render_tree_svg("Knight Enchanter")
+
+    assert ">Incantation Compr...</text>" in footpad
+    assert ">Uses Resolve</text>" in sentinel
+    assert ">Uses Blade Charges</text>" in knight_enchanter
+    assert "Level 75 · Blade Charges" not in knight_enchanter
 
 
 def test_all_stat_and_resource_nodes_share_a_non_promotion_color():

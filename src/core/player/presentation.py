@@ -70,6 +70,10 @@ class PlayerPresentationMixin:
             off_crit = int((self.equipment['OffHand'].crit + (BASE_CRIT_PER_POINT * self.check_mod("speed"))) * 100)
             combat_message += f"{'Attack:':16}{' ':2}{str(main_dmg):>3}/{str(off_dmg):>3}\n"
             combat_message += f"{'Critical Chance:':16}{' ':2}{str(main_crit):2}%/{str(off_crit):>2}%\n"
+        elif self.equipment['OffHand'].subtyp == "Crossbow":
+            crossbow_damage = int(getattr(self.equipment['OffHand'], "damage", 0) or 0)
+            combat_message += f"{'Attack:':16}{' ':2}{str(main_dmg):>3}/{str(crossbow_damage):>3}\n"
+            combat_message += f"{'Critical Chance:':16}{' ':2}{str(main_crit):>6}%\n"
         else:
             combat_message += f"{'Attack:':16}{' ':2}{str(main_dmg):>7}\n"
             combat_message += f"{'Critical Chance:':16}{' ':2}{str(main_crit):>6}%\n"

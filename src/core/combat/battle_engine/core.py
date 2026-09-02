@@ -463,6 +463,7 @@ class BattleEngine(BattleTurnMixin, BattleActionMixin, BattleOutcomeMixin):
             self.tile.trap_forced_initiative = False
         self._actor_cycle = ActorCycle(order)
         self._sync_actor_aliases()
+        footpad.arm_surprise(self.player, has_initiative=self.attacker == self.player)
         self._current_actor_turn_id = self._actor_cycle.start_current_turn()
         self.available_actions = self._available_actions()
 

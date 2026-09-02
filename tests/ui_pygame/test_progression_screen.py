@@ -521,11 +521,15 @@ def test_eight_row_dragoon_tree_fits_standard_panel_without_scrolling():
     assert all(rect.bottom <= screen._tree_viewport.bottom for rect in rects)
 
 
-def test_eight_row_paladin_tree_fits_standard_panel_without_scrolling():
+@pytest.mark.parametrize(
+    "class_name",
+    ("Warrior", "Footpad", "Healer", "Pathfinder", "Assassin", "Paladin"),
+)
+def test_eight_row_promotion_tree_fits_standard_panel_without_scrolling(class_name):
     screen = progression_screen.ProgressionScreen.__new__(
         progression_screen.ProgressionScreen
     )
-    tree = ABILITY_TREES["Paladin"]
+    tree = ABILITY_TREES[class_name]
     statuses = [
         NodeStatus(node, NodeState.AVAILABLE)
         for node in tree.nodes
@@ -614,8 +618,10 @@ def test_rebuilt_warrior_branches_directly_from_shared_half_column_trunks():
     retaliate = progression_screen.TREE_NODES["warrior.ability.retaliate"]
 
     assert goad.prerequisites == (shield_block.id,)
-    assert shield_block.id not in retaliate.prerequisites
-    assert "connector_channel_columns" not in retaliate.payload
+    assert shield_block.id in retaliate.prerequisites
+    assert retaliate.payload["connector_channel_columns"] == {
+        shield_block.id: 1.5,
+    }
 
 
 def test_familiar_bond_connector_joins_both_node_side_midpoints(monkeypatch):
@@ -712,7 +718,7 @@ def test_mage_specialization_connectors_use_midpoint_and_enter_from_top(
     assert line_points[0][-1] == target_rect.midtop
 
 
-def test_paladin_oath_connectors_drop_to_promotion_row_before_joining(
+def test_paladin_oath_connectors_enter_opposite_promotion_sides(
     monkeypatch,
 ):
     judgment = progression_screen.TREE_NODES[
@@ -738,11 +744,19 @@ def test_paladin_oath_connectors_drop_to_promotion_row_before_joining(
     ]
     screen._tree_viewport = pygame.Rect(0, 0, 800, 600)
     line_points = []
+    straight_lines = []
     monkeypatch.setattr(
         progression_screen.pygame.draw,
         "lines",
         lambda _screen, _color, _closed, points, _width: (
             line_points.append(points)
+        ),
+    )
+    monkeypatch.setattr(
+        progression_screen.pygame.draw,
+        "line",
+        lambda _screen, _color, start, end, _width: straight_lines.append(
+            (start, end)
         ),
     )
 
@@ -755,18 +769,23 @@ def test_paladin_oath_connectors_drop_to_promotion_row_before_joining(
     assert line_points == [
         (
             judgment_rect.midbottom,
-            (judgment_rect.centerx, promotion_rect.centery),
-            promotion_rect.midleft,
+            (judgment_rect.centerx, judgment_rect.bottom + 6),
+            (256, judgment_rect.bottom + 6),
+            (256, promotion_rect.centery),
+            (promotion_rect.left, promotion_rect.centery),
         ),
         (
             shelter_rect.midbottom,
-            (shelter_rect.centerx, promotion_rect.centery),
-            promotion_rect.midright,
+            (shelter_rect.centerx, shelter_rect.bottom + 6),
+            (476, shelter_rect.bottom + 6),
+            (476, promotion_rect.centery),
+            (promotion_rect.right, promotion_rect.centery),
         ),
     ]
+    assert straight_lines == []
 
 
-def test_lancer_promotion_connectors_stay_in_their_source_columns(monkeypatch):
+def test_lancer_promotion_connectors_merge_in_buffer_row(monkeypatch):
     vigilant = progression_screen.TREE_NODES[
         "lancer.ability.vigilant-landing"
     ]
@@ -790,11 +809,19 @@ def test_lancer_promotion_connectors_stay_in_their_source_columns(monkeypatch):
     screen._tree_column_origin = 80
     screen._tree_lane_width = 120
     line_points = []
+    straight_lines = []
     monkeypatch.setattr(
         progression_screen.pygame.draw,
         "lines",
         lambda _screen, _color, _closed, points, _width: (
             line_points.append(points)
+        ),
+    )
+    monkeypatch.setattr(
+        progression_screen.pygame.draw,
+        "line",
+        lambda _screen, _color, start, end, _width: straight_lines.append(
+            (start, end)
         ),
     )
 
@@ -806,18 +833,195 @@ def test_lancer_promotion_connectors_stay_in_their_source_columns(monkeypatch):
 
     assert line_points == [
         (
-            vigilant_rect.midright,
-            (200, vigilant_rect.centery),
-            (200, promotion_rect.centery),
-            promotion_rect.midleft,
+            vigilant_rect.midbottom,
+            (vigilant_rect.centerx, vigilant_rect.bottom + 6),
+            (260, vigilant_rect.bottom + 6),
+            (260, 458),
+            (promotion_rect.centerx, 458),
         ),
         (
-            excellence_rect.midleft,
-            (560, excellence_rect.centery),
-            (560, promotion_rect.centery),
-            promotion_rect.midright,
+            excellence_rect.midbottom,
+            (excellence_rect.centerx, 458),
+            (promotion_rect.centerx, 458),
         ),
     ]
+    assert straight_lines == [
+        ((promotion_rect.centerx, 458), promotion_rect.midtop),
+    ]
+
+
+def test_base_promotions_describe_exact_required_branch_endpoints():
+    assassin = progression_screen.TREE_NODES["footpad.promotion.assassin"]
+    ranger = progression_screen.TREE_NODES["pathfinder.promotion.ranger"]
+
+    assert progression_screen.ProgressionScreen._promotion_requirement_lines(
+        assassin
+    ) == [
+        "Path requirements (all required):",
+        "- Control: Sleeping Powder",
+        "- Assassin: Obscuration",
+    ]
+    assert progression_screen.ProgressionScreen._promotion_requirement_lines(
+        ranger
+    ) == [
+        "Path requirements (all required):",
+        "- Naturalism: Call Animal",
+        "- Ranger: Bounce Back",
+        "- Melee: +10 Attack",
+    ]
+
+
+def test_either_or_promotions_explicitly_say_to_choose_one_endpoint():
+    knight_enchanter = progression_screen.TREE_NODES[
+        "spellblade.promotion.knight-enchanter"
+    ]
+
+    lines = progression_screen.ProgressionScreen._promotion_requirement_lines(
+        knight_enchanter
+    )
+
+    assert lines[0] == "Path requirement (choose any one):"
+    assert len(lines[1:]) == 3
+
+
+def test_grouped_promotion_requirements_distinguish_required_and_choice_paths():
+    shadowcaster = progression_screen.TREE_NODES[
+        "warlock.promotion.shadowcaster"
+    ]
+
+    assert progression_screen.ProgressionScreen._promotion_requirement_lines(
+        shadowcaster
+    ) == [
+        "Path requirements (all groups required):",
+        "- Choose one: Shadow Control: Doom or Draining: Mana Drain",
+        "- Required: Umbral Offense: Shadow Bolt II",
+    ]
+
+
+def test_hovered_promotion_highlights_required_paths_only_to_their_endpoints():
+    tree = ABILITY_TREES["Footpad"]
+    statuses = [NodeStatus(node, NodeState.BLOCKED) for node in tree.nodes]
+    assassin_index = next(
+        index
+        for index, status in enumerate(statuses)
+        if status.node.id == "footpad.promotion.assassin"
+    )
+
+    highlighted, endpoints = (
+        progression_screen.ProgressionScreen._promotion_highlight_node_ids(
+            statuses,
+            assassin_index,
+        )
+    )
+
+    assert endpoints == {
+        "footpad.ability.sleepingpowder",
+        "footpad.ability.obscuration",
+    }
+    assert "footpad.ability.disarm" in highlighted
+    assert "footpad.ability.dual-wield" in highlighted
+    assert "footpad.ability.serendipity" not in highlighted
+    assert "footpad.promotion.thief" not in highlighted
+
+
+def test_requirement_highlight_overrides_available_node_color():
+    screen = progression_screen.ProgressionScreen.__new__(
+        progression_screen.ProgressionScreen
+    )
+    status = NodeStatus(_node(), NodeState.AVAILABLE)
+
+    path_color = screen._node_display_color(
+        status,
+        False,
+        {status.node.id},
+        set(),
+    )
+    endpoint_color = screen._node_display_color(
+        status,
+        False,
+        {status.node.id},
+        {status.node.id},
+    )
+
+    assert path_color == screen.REQUIRED_PATH_COLOR
+    assert endpoint_color == screen.REQUIRED_ENDPOINT_COLOR
+    assert path_color != screen.STATE_COLORS[NodeState.AVAILABLE]
+    assert endpoint_color != screen.STATE_COLORS[NodeState.AVAILABLE]
+
+
+def test_hover_highlight_clears_when_pointer_leaves_node():
+    screen = progression_screen.ProgressionScreen.__new__(
+        progression_screen.ProgressionScreen
+    )
+    screen.node_rects = [pygame.Rect(10, 10, 40, 40)]
+    screen.attribute_rects = []
+    screen.attribute_minus_rects = []
+    screen.attribute_plus_rects = []
+    screen.reset_button_rect = pygame.Rect(100, 100, 20, 20)
+    screen.spend_button_rect = pygame.Rect(130, 100, 20, 20)
+    screen.focus = "nodes"
+    screen.current_node = 0
+    screen.hovered_node_index = None
+
+    assert screen.handle_event(
+        SimpleNamespace(type=pygame.MOUSEMOTION, pos=(20, 20))
+    )
+    assert screen.hovered_node_index == 0
+
+    assert not screen.handle_event(
+        SimpleNamespace(type=pygame.MOUSEMOTION, pos=(80, 80))
+    )
+    assert screen.hovered_node_index is None
+
+
+def test_shared_promotion_prerequisite_fans_out_from_distinct_source_anchors(
+    monkeypatch,
+):
+    ids = (
+        "footpad.ability.serendipity",
+        "footpad.ability.sleepingpowder",
+        "footpad.ability.obscuration",
+        "footpad.promotion.thief",
+        "footpad.promotion.assassin",
+    )
+    nodes = [progression_screen.TREE_NODES[node_id] for node_id in ids]
+    rects = [
+        pygame.Rect(50, 100, 32, 32),
+        pygame.Rect(150, 100, 32, 32),
+        pygame.Rect(250, 100, 32, 32),
+        pygame.Rect(100, 200, 32, 32),
+        pygame.Rect(200, 200, 32, 32),
+    ]
+    screen = progression_screen.ProgressionScreen.__new__(
+        progression_screen.ProgressionScreen
+    )
+    screen.screen = object()
+    screen.node_icon_rects = rects
+    screen._tree_viewport = pygame.Rect(0, 0, 400, 300)
+    line_points = []
+    monkeypatch.setattr(
+        progression_screen.pygame.draw,
+        "lines",
+        lambda _screen, _color, _closed, points, _width: line_points.append(points),
+    )
+    monkeypatch.setattr(
+        progression_screen.pygame.draw,
+        "line",
+        lambda *_args, **_kwargs: None,
+    )
+
+    screen._draw_connectors(
+        [NodeStatus(node, NodeState.BLOCKED) for node in nodes]
+    )
+
+    sleeping_bottom = rects[1].bottom
+    sleeping_starts = sorted(
+        points[0][0]
+        for points in line_points
+        if points[0][1] == sleeping_bottom
+        and rects[1].left < points[0][0] < rects[1].right
+    )
+    assert sleeping_starts == [160, 171]
 
 
 def test_node_highlight_uses_exact_node_frame_bounds():

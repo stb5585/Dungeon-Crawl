@@ -294,7 +294,7 @@ def test_human_can_promote_at_60_and_continue_lancer_training_as_dragoon():
 
     assert second.success
     assert player.cls.name == "Dragoon"
-    assert player.progression.unspent_points == 13
+    assert player.progression.unspent_points == 11
     assert player.progression.unspent_attribute_points == 9
     assert "Lancer" in player.progression.completed_trees
     assert promotion_kits.current_aerial_tempo(player) == 0
@@ -313,7 +313,7 @@ def test_human_can_promote_at_60_and_continue_lancer_training_as_dragoon():
         {},
     )
     assert optional.success
-    assert player.progression.unspent_points == 11
+    assert player.progression.unspent_points == 9
     assert (
         player.spellbook["Skills"]["Jump"]
         .unlocked_modifications["Quick Dive"]

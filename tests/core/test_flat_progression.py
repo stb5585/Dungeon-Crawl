@@ -133,6 +133,7 @@ def test_all_tree_manifests_validate_and_scale_rating_values_by_stage():
             tree.stage > 1
             and tree.class_name not in {
                 "Weapon Master",
+                "Assassin",
                 "Berserker",
                 "Conjurer",
                 "Knight Enchanter",
@@ -646,6 +647,18 @@ def test_base_trees_use_authored_specializations_and_terminal_level_gates():
     assert by_name["Shield Block"].prerequisites == (
         by_name["Shield Slam"].id,
     )
+    lancer_defense = next(
+        node
+        for node in warrior.nodes
+        if node.name == "+10 Defense" and node.lane == "Vanguard"
+    )
+    assert by_name["Retaliate"].prerequisites == (
+        lancer_defense.id,
+        by_name["Shield Block"].id,
+    )
+    assert by_name["Retaliate"].payload["connector_channel_columns"] == {
+        by_name["Shield Block"].id: 1.5,
+    }
     assert by_name["Dishearten"].prerequisites == (sentinel_defense.id,)
     assert by_name["Goad"].prerequisites == (by_name["Shield Block"].id,)
     assert sentinel_defense.id not in by_name["Goad"].prerequisites
@@ -1083,7 +1096,7 @@ def test_human_warrior_can_reach_every_first_promotion_at_level_thirty():
 
     assert totals == {
         "Weapon Master": (8, 4),
-        "Lancer": (8, 3),
+        "Lancer": (10, 3),
         "Sentinel": (8, 4),
         "Paladin": (8, 5),
     }

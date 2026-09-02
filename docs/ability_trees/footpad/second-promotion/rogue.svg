@@ -6,7 +6,9 @@ text{font-family:DejaVu Sans,Arial,sans-serif}
 .meta{fill:#aab2bf;font-size:12px}
 .name{fill:#f4f6fa;font-size:13px;font-weight:700}
 .detail{fill:#c5ccd6;font-size:11px}
+.resource{fill:#e6bfdc;font-size:9px;font-weight:700}
 .edge{fill:none;stroke:#7f8998;stroke-width:2}
+.promotion-edge{fill:none;stroke:#c59d3d;stroke-width:3}
 </style>
 <rect width="494" height="896" fill="#10131a"/>
 <text class="title" x="42" y="38">Rogue Ability Tree</text>

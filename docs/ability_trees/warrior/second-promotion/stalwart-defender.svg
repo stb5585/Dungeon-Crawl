@@ -6,7 +6,9 @@ text{font-family:DejaVu Sans,Arial,sans-serif}
 .meta{fill:#aab2bf;font-size:12px}
 .name{fill:#f4f6fa;font-size:13px;font-weight:700}
 .detail{fill:#c5ccd6;font-size:11px}
+.resource{fill:#e6bfdc;font-size:9px;font-weight:700}
 .edge{fill:none;stroke:#7f8998;stroke-width:2}
+.promotion-edge{fill:none;stroke:#c59d3d;stroke-width:3}
 </style>
 <rect width="1160" height="796" fill="#10131a"/>
 <text class="title" x="42" y="38">Stalwart Defender Ability Tree</text>
@@ -33,10 +35,12 @@ text{font-family:DejaVu Sans,Arial,sans-serif}
 <path class="edge" d="M 1024.0 523.0 V 573.0 H 1024.0 V 623.0"/>
 <rect x="42.0" y="192.0" width="188" height="62" rx="8" fill="#3d2418" stroke="#ed8a3d" stroke-width="2"/>
 <text class="name" x="52.0" y="216.0">Repercussion</text>
-<text class="detail" x="52.0" y="237.0">Ability · Cost 1 · Resolve</text>
+<text class="detail" x="52.0" y="237.0">Ability · Cost 1</text>
+<text class="resource" x="52.0" y="249.0">Uses Resolve</text>
 <rect x="42.0" y="292.0" width="188" height="62" rx="8" fill="#3d2418" stroke="#ed8a3d" stroke-width="2"/>
 <text class="name" x="52.0" y="316.0">Focused Assault</text>
-<text class="detail" x="52.0" y="337.0">Ability · Cost 1 · Resolve</text>
+<text class="detail" x="52.0" y="337.0">Ability · Cost 1</text>
+<text class="resource" x="52.0" y="349.0">Uses Resolve</text>
 <rect x="42.0" y="392.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
 <text class="name" x="52.0" y="416.0">Punishing Guard</text>
 <text class="detail" x="52.0" y="437.0">Talent · Cost 2 · Level 70</text>
@@ -48,10 +52,12 @@ text{font-family:DejaVu Sans,Arial,sans-serif}
 <text class="detail" x="52.0" y="637.0">Ability · Cost 2 · Level 80</text>
 <rect x="264.0" y="192.0" width="188" height="62" rx="8" fill="#3d2418" stroke="#ed8a3d" stroke-width="2"/>
 <text class="name" x="274.0" y="216.0">Hold the Line</text>
-<text class="detail" x="274.0" y="237.0">Ability · Cost 1 · Resolve</text>
+<text class="detail" x="274.0" y="237.0">Ability · Cost 1</text>
+<text class="resource" x="274.0" y="249.0">Uses Resolve</text>
 <rect x="264.0" y="292.0" width="188" height="62" rx="8" fill="#3d2418" stroke="#ed8a3d" stroke-width="2"/>
 <text class="name" x="274.0" y="316.0">Brace Wall</text>
-<text class="detail" x="274.0" y="337.0">Ability · Cost 1 · Resolve</text>
+<text class="detail" x="274.0" y="337.0">Ability · Cost 1</text>
+<text class="resource" x="274.0" y="349.0">Uses Resolve</text>
 <rect x="264.0" y="392.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
 <text class="name" x="274.0" y="416.0">Last Stand</text>
 <text class="detail" x="274.0" y="437.0">Ability · Cost 1 · Level 70</text>
@@ -78,10 +84,12 @@ text{font-family:DejaVu Sans,Arial,sans-serif}
 <text class="detail" x="496.0" y="637.0">Ability · Cost 1 · Level 80</text>
 <rect x="708.0" y="192.0" width="188" height="62" rx="8" fill="#3d2418" stroke="#ed8a3d" stroke-width="2"/>
 <text class="name" x="718.0" y="216.0">Spell Block</text>
-<text class="detail" x="718.0" y="237.0">Ability · Cost 1 · Resolve</text>
+<text class="detail" x="718.0" y="237.0">Ability · Cost 1</text>
+<text class="resource" x="718.0" y="249.0">Uses Resolve</text>
 <rect x="708.0" y="292.0" width="188" height="62" rx="8" fill="#3d2418" stroke="#ed8a3d" stroke-width="2"/>
 <text class="name" x="718.0" y="316.0">Bulwark Guard</text>
-<text class="detail" x="718.0" y="337.0">Ability · Cost 1 · Resolve</text>
+<text class="detail" x="718.0" y="337.0">Ability · Cost 1</text>
+<text class="resource" x="718.0" y="349.0">Uses Resolve</text>
 <rect x="708.0" y="392.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
 <text class="name" x="718.0" y="416.0">Spell Reflection</text>
 <text class="detail" x="718.0" y="437.0">Ability · Cost 1</text>
@@ -93,10 +101,12 @@ text{font-family:DejaVu Sans,Arial,sans-serif}
 <text class="detail" x="718.0" y="637.0">Talent · Cost 2 · Level 80</text>
 <rect x="930.0" y="192.0" width="188" height="62" rx="8" fill="#3d2418" stroke="#ed8a3d" stroke-width="2"/>
 <text class="name" x="940.0" y="216.0">Purge Weakness</text>
-<text class="detail" x="940.0" y="237.0">Ability · Cost 1 · Resolve</text>
+<text class="detail" x="940.0" y="237.0">Ability · Cost 1</text>
+<text class="resource" x="940.0" y="249.0">Uses Resolve</text>
 <rect x="930.0" y="292.0" width="188" height="62" rx="8" fill="#3d2418" stroke="#ed8a3d" stroke-width="2"/>
 <text class="name" x="940.0" y="316.0">Boast</text>
-<text class="detail" x="940.0" y="337.0">Ability · Cost 1 · Resolve</text>
+<text class="detail" x="940.0" y="337.0">Ability · Cost 1</text>
+<text class="resource" x="940.0" y="349.0">Uses Resolve</text>
 <rect x="930.0" y="392.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
 <text class="name" x="940.0" y="416.0">Battle Cry</text>
 <text class="detail" x="940.0" y="437.0">Ability · Cost 1 · Level 70</text>

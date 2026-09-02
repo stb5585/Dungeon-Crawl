@@ -1,14 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="494" height="996" viewBox="0 0 494 996">
+<svg xmlns="http://www.w3.org/2000/svg" width="494" height="1018" viewBox="0 0 494 1018">
 <style>
 text{font-family:DejaVu Sans,Arial,sans-serif}
 .title{fill:#f4bf2a;font-size:24px;font-weight:700}
 .meta{fill:#aab2bf;font-size:12px}
 .name{fill:#f4f6fa;font-size:13px;font-weight:700}
 .detail{fill:#c5ccd6;font-size:11px}
+.resource{fill:#e6bfdc;font-size:9px;font-weight:700}
 .edge{fill:none;stroke:#7f8998;stroke-width:2}
+.promotion-edge{fill:none;stroke:#c59d3d;stroke-width:3}
 </style>
-<rect width="494" height="996" fill="#10131a"/>
+<rect width="494" height="1018" fill="#10131a"/>
 <text class="title" x="42" y="38">Bard Ability Tree</text>
 <text class="meta" x="42" y="62">Tier 2 · 17 nodes · Performance · Composition</text>
 <path class="edge" d="M 136.0 123.0 V 173.0 H 136.0 V 223.0"/>
@@ -25,7 +27,8 @@ text{font-family:DejaVu Sans,Arial,sans-serif}
 <path class="edge" d="M 358.0 623.0 V 673.0 H 358.0 V 723.0"/>
 <path class="edge" d="M 136.0 723.0 V 773.0 H 136.0 V 823.0"/>
 <path class="edge" d="M 358.0 723.0 V 773.0 H 358.0 V 823.0"/>
-<path class="edge" d="M 136.0 823.0 V 873.0 H 136.0 V 923.0"/>
+<path class="promotion-edge" d="M 136.0 854.0 V 880.0 H 136.0"/>
+<path class="promotion-edge" d="M 136.0 880.0 V 892.0"/>
 <rect x="42.0" y="92.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
 <text class="name" x="52.0" y="116.0">Song of Valor</text>
 <text class="detail" x="52.0" y="137.0">Ability · Cost 1 · Level 35</text>
@@ -74,7 +77,8 @@ text{font-family:DejaVu Sans,Arial,sans-serif}
 <rect x="264.0" y="792.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
 <text class="name" x="274.0" y="816.0">Practiced Refrain 4</text>
 <text class="detail" x="274.0" y="837.0">Talent · Cost 1 · Level 55</text>
-<rect x="42.0" y="892.0" width="188" height="62" rx="8" fill="#3b2d12" stroke="#f4bf2a" stroke-width="2"/>
+<rect x="42.0" y="892.0" width="188" height="84" rx="8" fill="#3b2d12" stroke="#f4bf2a" stroke-width="2"/>
 <text class="name" x="52.0" y="916.0">Promote: Troubadour</text>
 <text class="detail" x="52.0" y="937.0">Promotion · Cost 3 · Level 60</text>
+<text class="detail" x="52.0" y="958.0">Requires ALL 1 path</text>
 </svg>

@@ -312,6 +312,19 @@ class DataDrivenSkill(Skill):
                     msg += paladin.trigger_penalization(user)
                 except (AttributeError, KeyError, TypeError, ValueError):
                     pass
+            if (
+                self.name == "Backstab"
+                and crit > 1
+                and target is not None
+                and target.is_alive()
+                and "Cutthroat" in user.spellbook.get("Skills", {})
+                and "Death" not in getattr(target, "status_immunity", ())
+            ):
+                import random
+
+                if random.random() < 0.25:
+                    target.health.current = 0
+                    msg += f"Cutthroat instantly kills {target.name}.\n"
 
         try:
             from src.core.classes import promotion_kits
@@ -586,6 +599,8 @@ class DataDrivenStatusSkill(Skill):
             and "Blind Fighting" in target.spellbook.get("Skills", {})
         ):
             target_val += max(3, int(getattr(target.stats, "wisdom", 10)) // 2)
+        if bool(getattr(target, "mage_refueling", False)):
+            target_val //= 2
 
         contest_success = actor_val > target_val
         if (self._status_name == "Stun") and (not self._physical):
@@ -635,6 +650,15 @@ class DataDrivenStatusSkill(Skill):
                     )
                 except Exception:
                     pass
+            if self.name == "Disarm" and "For Good Measure" in user.spellbook.get("Skills", {}):
+                offhand = getattr(user, "equipment", {}).get("OffHand")
+                if getattr(offhand, "typ", None) == "Weapon" and target.is_alive():
+                    follow_up, _hit, _crit = user.weapon_damage(
+                        target,
+                        attack_slots=("OffHand",),
+                    )
+                    message += "For Good Measure follows through with the off hand.\n"
+                    message += follow_up
             return item_message + message
 
         return item_message + prefix + self._messages.get("fail", "").format(**fmt)

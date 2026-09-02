@@ -364,13 +364,16 @@ def tick_combat_state(character: Any, *, end: bool = False) -> str:
             character.health.current += max(0, healing)
         state.clear()
         character.mage_refueling = False
+        character.mage_refueling_streak = 0
         return ""
     message = ""
     if bool(getattr(character, "mage_refueling", False)):
         maximum = max(0, int(getattr(character.mana, "max", 0) or 0))
+        streak = max(0, int(getattr(character, "mage_refueling_streak", 0) or 0)) + 1
+        character.mage_refueling_streak = streak
         restored = min(
             maximum - int(getattr(character.mana, "current", 0) or 0),
-            max(1, int(maximum * 0.20)),
+            max(1, int(maximum * 0.10 * (2 ** (streak - 1)))),
         )
         character.mana.current += max(0, restored)
         message += f"{character.name} refuels {max(0, restored)} MP.\n"
@@ -381,6 +384,15 @@ def tick_combat_state(character: Any, *, end: bool = False) -> str:
         if state[key] <= 0:
             del state[key]
     return message
+
+
+def save_roll_multiplier(character: Any) -> float:
+    """Return the defensive-save multiplier for prone or Refueling characters."""
+    prone = getattr(character, "physical_effects", {}).get("Prone")
+    return 0.5 if (
+        bool(getattr(character, "mage_refueling", False))
+        or bool(getattr(prone, "active", False))
+    ) else 1.0
 
 
 def _apply_sorcerer_modifier(

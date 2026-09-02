@@ -155,6 +155,8 @@ def test_effect_and_status_icon_helpers(monkeypatch):
     player = _make_player()
 
     assert hud._effect_label("Resist Fire") == "RF"
+    assert hud._effect_label("Resist Shadow") == "RSH"
+    assert hud._effect_label("Resist Holy") == "RHO"
     assert hud._effect_label("Mystery") == "MYS"
 
     icons = hud._collect_status_icons(player)
@@ -170,6 +172,12 @@ def test_effect_and_status_icon_helpers(monkeypatch):
     assert ("MW2", True) in icons
     assert ("EG2", True) in icons
     assert icons.index(("PRN", False)) < icons.index(("REG", True))
+
+    player.magic_effects["Resist Shadow"] = _effect()
+    player.magic_effects["Resist Holy"] = _effect()
+    icons = hud._collect_status_icons(player)
+    assert ("RSH", True) in icons
+    assert ("RHO", True) in icons
 
     player.status_effects["Blind Rage"] = SimpleNamespace(active=True)
     assert ("BRG", False) in hud._collect_status_icons(player)

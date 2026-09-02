@@ -5506,7 +5506,7 @@ class TestBatch10Resurrection:
 
 
 class TestBatch10ResistAll:
-    """ResistAll - message-only support spell (no-op)."""
+    """ResistAll applies visible wards to every spell-damage resistance."""
 
     @staticmethod
     def _make_combatants():
@@ -5531,8 +5531,23 @@ class TestBatch10ResistAll:
         from src.core import abilities
         caster = self._make_combatants()
         result = abilities.ResistAll().cast(caster, caster)
-        assert "spell resistances" in result.lower()
+        assert "resist fire" in result.lower()
+        assert "resist holy" in result.lower()
         assert caster.name in result
+
+    def test_resist_all_activates_all_spell_resistance_buffs(self):
+        from src.core import abilities
+
+        caster = self._make_combatants()
+        abilities.ResistAll().cast(caster, caster)
+
+        for element in (
+            "Fire", "Ice", "Electric", "Water", "Earth", "Wind", "Shadow", "Holy"
+        ):
+            effect = caster.magic_effects[f"Resist {element}"]
+            assert effect.active is True
+            assert effect.duration == 5
+            assert effect.extra == 0.5
 
 
 class TestBatch10SaveSystem:

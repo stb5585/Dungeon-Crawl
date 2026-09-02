@@ -199,6 +199,9 @@ class PlayerDataSerializer:
             'thieves_guild': thieves_guild.normalize_state(getattr(player, 'thieves_guild', None)),
             'liminal_gap_return': getattr(player, 'liminal_gap_return', None),
             'dungeon_trap_seed': int(getattr(player, 'dungeon_trap_seed', 0) or 0),
+            'resist_death_steps': int(getattr(player, 'resist_death_steps', 0) or 0),
+            'applied_toxin': getattr(player, '_applied_toxin', None),
+            'selected_crossbow_bolts': getattr(player, 'selected_crossbow_bolts', ''),
             'gameplay_stats': normalize_gameplay_stats(
                 getattr(player, 'gameplay_stats', None),
                 current_level=(
@@ -507,6 +510,10 @@ class PlayerDataSerializer:
         player.dungeon_trap_seed = int(
             data.get('dungeon_trap_seed', getattr(player, 'dungeon_trap_seed', 0)) or 0
         )
+        player.resist_death_steps = int(data.get('resist_death_steps', 0) or 0)
+        applied_toxin = data.get('applied_toxin')
+        player._applied_toxin = applied_toxin if isinstance(applied_toxin, dict) else None
+        player.selected_crossbow_bolts = str(data.get('selected_crossbow_bolts', '') or '')
         player.gameplay_stats = normalize_gameplay_stats(
             data.get('gameplay_stats'),
             current_level=(

@@ -10,6 +10,14 @@ from .. import items
 
 
 OBSCURATION_STEPS = 50
+TOXIN_RECIPES = {
+    "Snake Venom": items.MildToxin,
+    "Scorpion Venom": items.Neurotoxin,
+    "Viper Venom": items.Hemotoxin,
+    "Deathcap Mushroom": items.Amatoxin,
+    "Lizard Venom": items.Myotoxin,
+    "Shadow Venom": items.Necrotoxin,
+}
 
 
 def has_skill(character: Any, name: str) -> bool:
@@ -20,6 +28,26 @@ def has_skill(character: Any, name: str) -> bool:
 def start_combat(character: Any) -> None:
     """Reset Footpad passives that can trigger once per battle."""
     character._do_over_used = False
+    character._live_and_learn_stacks = 0
+    character._surprise_ready = False
+    character._surprise_attack = False
+
+
+def arm_surprise(character: Any, *, has_initiative: bool) -> None:
+    """Arm Surprise for the opening attack when its authored conditions hold."""
+    character._surprise_ready = bool(
+        has_initiative
+        and has_skill(character, "Surprise!")
+        and int(getattr(character, "obscuration_steps", 0) or 0) > 0
+    )
+
+
+def surprise_accuracy_bonus(character: Any) -> float:
+    return 0.20 if getattr(character, "_surprise_attack", False) else 0.0
+
+
+def surprise_critical_bonus(character: Any) -> float:
+    return 0.20 if getattr(character, "_surprise_attack", False) else 0.0
 
 
 def try_do_over(character: Any, *, rng: Any | None = None) -> bool:
@@ -79,6 +107,171 @@ def tick_exploration(character: Any, steps: int) -> None:
         0,
         int(getattr(character, "obscuration_steps", 0) or 0) - max(0, int(steps)),
     )
+    character.resist_death_steps = max(
+        0,
+        int(getattr(character, "resist_death_steps", 0) or 0) - max(0, int(steps)),
+    )
+
+
+def _inventory_stack(character: Any, name: str) -> list[Any]:
+    stack = getattr(character, "inventory", {}).get(name, [])
+    return stack if isinstance(stack, list) else []
+
+
+def make_toxin(character: Any) -> str:
+    """Consume the first available toxin reagent and craft its toxin."""
+    for reagent_name, toxin_class in TOXIN_RECIPES.items():
+        stack = _inventory_stack(character, reagent_name)
+        if not stack:
+            continue
+        reagent = stack[0]
+        character.modify_inventory(reagent, subtract=True)
+        toxin = toxin_class()
+        character.modify_inventory(toxin)
+        return f"{character.name} crafts {toxin.name} from {reagent_name}.\n"
+    return "Make Toxin requires venom or a Deathcap Mushroom.\n"
+
+
+def apply_toxin(character: Any) -> str:
+    """Consume an available toxin and coat an equipped dagger-class weapon."""
+    slot = next(
+        (
+            candidate
+            for candidate in ("Weapon", "OffHand")
+            if getattr(getattr(character, "equipment", {}).get(candidate), "subtyp", None)
+            in {"Dagger", "Ninja Blade"}
+        ),
+        None,
+    )
+    if slot is None:
+        return "Apply Toxin requires an equipped Dagger or Ninja Blade.\n"
+    for toxin_class in TOXIN_RECIPES.values():
+        sample = toxin_class()
+        stack = _inventory_stack(character, sample.name)
+        if stack:
+            character.modify_inventory(stack[0], subtract=True)
+            character._applied_toxin = {"name": sample.name, "slot": slot}
+            return f"{character.name} applies {sample.name} to their {slot.lower()}.\n"
+    return "Apply Toxin requires a crafted toxin.\n"
+
+
+def apply_coated_toxin(attacker: Any, target: Any, slot: str, critical: bool) -> str:
+    """Consume and resolve a weapon coating after its next successful hit."""
+    coating = getattr(attacker, "_applied_toxin", None)
+    if not isinstance(coating, dict) or coating.get("slot") != slot:
+        return ""
+    name = str(coating.get("name", "Toxin"))
+    attacker._applied_toxin = None
+    poison = getattr(target, "status_effects", {}).get("Poison")
+    severity = "severe" if critical else "standard"
+    if poison is None or "Poison" in getattr(target, "status_immunity", []):
+        return f"{target.name} is immune to {name}.\n"
+    if poison is not None:
+        poison_tiers = {
+            "Mild Toxin": ((3, 0.01), (4, 0.03)),
+            "Neurotoxin": ((3, 0.01), (4, 0.03)),
+            "Hemotoxin": ((4, 0.03), (5, 0.05)),
+            "Amatoxin": ((5, 0.05), (6, 0.08)),
+            "Myotoxin": ((5, 0.05), (6, 0.08)),
+            "Necrotoxin": ((5, 0.05), (6, 0.08)),
+        }
+        turns, amount = poison_tiers.get(name, poison_tiers["Mild Toxin"])[
+            int(critical)
+        ]
+        poison.active = True
+        poison.duration = max(int(poison.duration or 0), turns)
+        poison.extra = max(float(poison.extra or 0), max(1, int(target.health.max * amount)))
+        poison.source = name
+    messages = [f"{name} causes a {severity} reaction in {target.name}.\n"]
+    if name == "Neurotoxin":
+        if critical:
+            effect = getattr(target, "status_effects", {}).get("Silence")
+            if effect is not None:
+                effect.active, effect.duration = True, max(int(effect.duration or 0), 3)
+            damage = max(1, int(target.health.max * 0.05))
+            target.health.current -= damage
+            messages.append(f"Anaphylaxis deals {damage} damage and silences {target.name}.\n")
+        elif random.random() < 0.5:
+            numbness = getattr(target, "physical_effects", {}).get("Disarm")
+            if numbness is not None:
+                numbness.active, numbness.duration = True, max(int(numbness.duration or 0), 2)
+                messages.append(f"Numbness makes {target.name} drop their weapon.\n")
+    elif name == "Hemotoxin":
+        key = "Bleed" if critical else "Blind"
+        pool = target.physical_effects if key == "Bleed" else target.status_effects
+        effect = pool.get(key)
+        if effect is not None:
+            effect.active, effect.duration = True, max(int(effect.duration or 0), 4)
+    elif name == "Amatoxin":
+        if critical and "Death" not in getattr(target, "status_immunity", []):
+            target._toxin_death_turns = 5
+        else:
+            for stat_name in ("Attack", "Defense"):
+                effect = target.stat_effects.get(stat_name)
+                if effect is not None:
+                    effect.active = True
+                    effect.duration = max(int(effect.duration or 0), 4)
+                    effect.extra = min(int(effect.extra or 0), -3)
+    elif (
+        name == "Myotoxin"
+        and critical
+        and "Stone" not in getattr(target, "status_immunity", [])
+    ):
+        target._toxin_petrify_turns = 3
+    elif (
+        name == "Necrotoxin"
+        and critical
+        and "Death" not in getattr(target, "status_immunity", [])
+    ):
+        target._toxin_death_turns = 2
+    elif name in {"Myotoxin", "Necrotoxin"}:
+        effect = target.status_effects.get("Stun")
+        if effect is not None and random.random() < 0.5:
+            effect.active, effect.duration = True, max(int(effect.duration or 0), 2)
+    return "".join(messages)
+
+
+def throwing_dagger_pack(character: Any) -> Any | None:
+    """Return the first nonempty throwing-dagger pack."""
+    return next(
+        (pack for pack in _inventory_stack(character, "Throwing Daggers")
+         if int(getattr(pack, "charges", 0) or 0) > 0),
+        None,
+    )
+
+
+def spend_throwing_dagger(character: Any, pack: Any, *, retrieve: bool) -> str:
+    """Spend a thrown dagger, retaining it when it can be recovered."""
+    if retrieve:
+        return "The throwing dagger can be recovered.\n"
+    pack.charges = max(0, int(getattr(pack, "charges", 0) or 0) - 1)
+    pack.description = f"A pack used by Hidden Blade. Daggers remaining: {pack.charges}."
+    if pack.charges <= 0:
+        character.modify_inventory(pack, subtract=True)
+    return f"{pack.charges} throwing daggers remain.\n"
+
+
+def offhand_damage_multiplier(character: Any) -> float:
+    return 0.90 if has_skill(character, "OffHand Excellence") else 0.75
+
+
+def main_gauche_parry_bonus(character: Any) -> float:
+    offhand = getattr(character, "equipment", {}).get("OffHand")
+    return 0.12 if (
+        has_skill(character, "Main Gauche")
+        and getattr(offhand, "subtyp", None) in {"Dagger", "Ninja Blade"}
+    ) else 0.0
+
+
+def record_live_and_learn(character: Any) -> None:
+    if has_skill(character, "Live and Learn") and random.random() < 0.5:
+        character._live_and_learn_stacks = min(
+            3, int(getattr(character, "_live_and_learn_stacks", 0) or 0) + 1
+        )
+
+
+def live_and_learn_dodge_bonus(character: Any) -> float:
+    return 0.05 * int(getattr(character, "_live_and_learn_stacks", 0) or 0)
 
 
 def encounter_rate_multiplier(character: Any) -> float:

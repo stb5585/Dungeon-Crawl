@@ -147,6 +147,8 @@ def test_trap_type_and_triggered_state_round_trip_through_saves():
     tile = map_tiles.EmptyCavePath(1, 2, 3)
     tile.trap_type = "Magic Ward"
     tile.trap_triggered = True
+    tile.deathcap_available = True
+    tile.deathcap_gathered = True
     payload = TileStateSerializer.serialize_tile_state({(1, 2, 3): tile})
     restored = map_tiles.EmptyCavePath(1, 2, 3)
 
@@ -154,3 +156,5 @@ def test_trap_type_and_triggered_state_round_trip_through_saves():
 
     assert restored.trap_type == "Magic Ward"
     assert restored.trap_triggered is True
+    assert restored.deathcap_available is True
+    assert restored.deathcap_gathered is True

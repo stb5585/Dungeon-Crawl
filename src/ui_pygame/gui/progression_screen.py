@@ -18,6 +18,7 @@ from src.core.progression import (
     available_nodes,
     effective_node_level_requirement,
     permanent_closures_for_plan,
+    prerequisite_groups,
     progression_class_name,
 )
 from src.ui_pygame.assets.ability_icon_manager import (
@@ -46,6 +47,9 @@ class ProgressionScreen(TownScreenBase):
         "dex": "Dexterity",
     }
     CONNECTOR_COLOR = (72, 78, 88)
+    PROMOTION_CONNECTOR_COLOR = (156, 126, 58)
+    REQUIRED_PATH_COLOR = (174, 104, 238)
+    REQUIRED_ENDPOINT_COLOR = (226, 166, 255)
     NODE_BACKING_COLOR = (12, 14, 20)
     LABEL_BACKING_COLOR = (8, 10, 14)
     PROMOTION_WARNING_COLOR = (205, 95, 95)
@@ -71,6 +75,7 @@ class ProgressionScreen(TownScreenBase):
         self.player_char = player_char
         self.focus = "nodes"
         self.current_node = 0
+        self.hovered_node_index: int | None = None
         self.current_attribute = 0
         self.tree_index = 0
         self.node_rects: list[pygame.Rect] = []
@@ -192,6 +197,7 @@ class ProgressionScreen(TownScreenBase):
                 row_step,
                 max(52, (available_height - cell_height) // max_row),
             )
+        self._tree_row_step = row_step
         visible_rows = max(
             1,
             (available_height - cell_height) // row_step + 1,
@@ -237,9 +243,49 @@ class ProgressionScreen(TownScreenBase):
             status.node.id: index
             for index, status in enumerate(statuses)
         }
+        promotion_targets_by_source: dict[str, list[tuple[str, pygame.Rect]]] = {}
+        for target_index, target_status in enumerate(statuses):
+            if target_status.node.kind != NodeKind.PROMOTION:
+                continue
+            target_rect = self.node_icon_rects[target_index]
+            for prerequisite in target_status.node.prerequisites:
+                promotion_targets_by_source.setdefault(prerequisite, []).append(
+                    (target_status.node.id, target_rect)
+                )
+        source_anchor_x: dict[tuple[str, str], int] = {}
+        for source_id, targets in promotion_targets_by_source.items():
+            source_index = index_by_id.get(source_id)
+            if source_index is None:
+                continue
+            source_rect = self.node_icon_rects[source_index]
+            ordered_targets = sorted(targets, key=lambda entry: entry[1].centerx)
+            for edge_index, (target_id, _target_rect) in enumerate(ordered_targets):
+                source_anchor_x[(source_id, target_id)] = int(
+                    source_rect.left
+                    + source_rect.width * (edge_index + 1) / (len(ordered_targets) + 1)
+                )
         for index, status in enumerate(statuses):
             target_rect = self.node_icon_rects[index]
             if not self._tree_viewport or not self._tree_viewport.colliderect(target_rect):
+                continue
+            if status.node.kind == NodeKind.PROMOTION:
+                prerequisite_edges = [
+                    (
+                        self.node_icon_rects[source_index],
+                        source_anchor_x.get(
+                            (prerequisite, status.node.id),
+                            self.node_icon_rects[source_index].centerx,
+                        ),
+                    )
+                    for prerequisite in status.node.prerequisites
+                    if (source_index := index_by_id.get(prerequisite)) is not None
+                    and self._tree_viewport.colliderect(self.node_icon_rects[source_index])
+                ]
+                self._draw_promotion_connectors(
+                    target_rect,
+                    prerequisite_edges,
+                    status.node.payload,
+                )
                 continue
             for prerequisite in status.node.prerequisites:
                 source_index = index_by_id.get(prerequisite)
@@ -373,6 +419,182 @@ class ProgressionScreen(TownScreenBase):
                     1,
                 )
 
+    def _draw_promotion_connectors(
+        self,
+        target_rect,
+        source_edges,
+        payload=None,
+    ):
+        """Draw promotion routes with buffer-row junctions and side entries."""
+        payload = payload or {}
+        prerequisite_mode = payload.get("prerequisite_mode", "all")
+        ordered_sources = sorted(source_edges, key=lambda edge: edge[0].centerx)
+        edge_count = len(ordered_sources)
+        merge_paths = (
+            prerequisite_mode != "any"
+            and not payload.get("prerequisite_groups")
+            and edge_count > 1
+        )
+        row_step = getattr(self, "_tree_row_step", 58)
+        max_source_bottom = max(
+            (source_rect.bottom for source_rect, _source_x in ordered_sources),
+            default=target_rect.top,
+        )
+        has_buffer_row = target_rect.top - max_source_bottom > row_step
+        buffer_join_y = target_rect.top - row_step + target_rect.height // 2
+        join_y = buffer_join_y if has_buffer_row else target_rect.top - 10
+        for edge_index, (source_rect, source_x) in enumerate(ordered_sources):
+            enters_left_side = (
+                not merge_paths and edge_count > 1 and edge_index == 0
+            )
+            enters_right_side = (
+                not merge_paths and edge_count > 1 and edge_index == edge_count - 1
+            )
+            enters_side = enters_left_side or enters_right_side
+            if merge_paths:
+                destination_x = target_rect.centerx
+            elif edge_count == 1:
+                destination_x = target_rect.centerx
+            elif enters_left_side:
+                destination_x = target_rect.left
+            elif enters_right_side:
+                destination_x = target_rect.right
+            else:
+                destination_x = int(
+                    target_rect.left
+                    + target_rect.width * edge_index / (edge_count - 1)
+                )
+            destination_y = target_rect.centery if enters_side else join_y
+            source_is_penultimate = (
+                has_buffer_row
+                and target_rect.top - source_rect.top == row_step * 2
+            )
+            if source_is_penultimate or (
+                not enters_side and target_rect.top - source_rect.bottom <= 80
+            ):
+                source_anchor = (source_x, source_rect.bottom)
+                points = (
+                    source_anchor,
+                    (source_x, destination_y),
+                    (destination_x, destination_y),
+                )
+            else:
+                branch_y = source_rect.bottom + 6
+                source_anchor = (source_x, source_rect.bottom)
+                lane_width = getattr(self, "_tree_lane_width", 120)
+                if source_rect.centerx < target_rect.centerx:
+                    channel_x = int(
+                        source_rect.centerx + lane_width / 2
+                    )
+                elif source_rect.centerx > target_rect.centerx:
+                    channel_x = int(
+                        source_rect.centerx - lane_width / 2
+                    )
+                else:
+                    channel_x = source_rect.centerx
+                points = (
+                    source_anchor,
+                    (source_x, branch_y),
+                    (channel_x, branch_y),
+                    (channel_x, destination_y),
+                    (destination_x, destination_y),
+                )
+            pygame.draw.lines(
+                self.screen,
+                self.PROMOTION_CONNECTOR_COLOR,
+                False,
+                points,
+                2,
+            )
+            if not merge_paths and not enters_side:
+                pygame.draw.line(
+                    self.screen,
+                    self.PROMOTION_CONNECTOR_COLOR,
+                    (destination_x, join_y),
+                    (destination_x, target_rect.top),
+                    2,
+                )
+        if merge_paths:
+            pygame.draw.line(
+                self.screen,
+                self.PROMOTION_CONNECTOR_COLOR,
+                (target_rect.centerx, join_y),
+                target_rect.midtop,
+                2,
+            )
+
+    @staticmethod
+    def _promotion_highlight_node_ids(statuses, selected_index):
+        """Return full required paths and direct endpoints for a promotion."""
+        if not 0 <= selected_index < len(statuses):
+            return set(), set()
+        selected_node = statuses[selected_index].node
+        if selected_node.kind != NodeKind.PROMOTION:
+            return set(), set()
+        nodes_by_id = {status.node.id: status.node for status in statuses}
+        endpoints = set(selected_node.prerequisites)
+        highlighted = set()
+        pending = list(endpoints)
+        while pending:
+            node_id = pending.pop()
+            if node_id in highlighted:
+                continue
+            node = nodes_by_id.get(node_id)
+            if node is None:
+                continue
+            highlighted.add(node_id)
+            pending.extend(node.prerequisites)
+        return highlighted, endpoints
+
+    def _node_display_color(
+        self,
+        status,
+        is_pending,
+        required_path_ids,
+        required_endpoint_ids,
+    ):
+        """Return node color with hover-path emphasis overriding every state."""
+        if status.node.id in required_endpoint_ids:
+            return self.REQUIRED_ENDPOINT_COLOR
+        if status.node.id in required_path_ids:
+            return self.REQUIRED_PATH_COLOR
+        if is_pending:
+            return (90, 175, 220)
+        return self.STATE_COLORS[status.state]
+
+    @staticmethod
+    def _promotion_requirement_lines(node) -> list[str]:
+        """Describe the exact branch endpoints needed by a promotion."""
+        prerequisites = [
+            TREE_NODES[node_id]
+            for node_id in node.prerequisites
+            if node_id in TREE_NODES
+        ]
+        prerequisites.sort(key=lambda prerequisite: prerequisite.position)
+        if not prerequisites:
+            return []
+        groups = prerequisite_groups(node)
+        if node.payload.get("prerequisite_groups"):
+            lines = ["Path requirements (all groups required):"]
+            for group in groups:
+                members = [TREE_NODES[node_id] for node_id in group]
+                prefix = "Choose one" if len(members) > 1 else "Required"
+                names = " or ".join(
+                    f"{member.lane}: {member.name}" for member in members
+                )
+                lines.append(f"- {prefix}: {names}")
+            return lines
+        requirement_mode = node.payload.get("prerequisite_mode", "all")
+        heading = (
+            "Path requirement (choose any one):"
+            if requirement_mode == "any"
+            else "Path requirements (all required):"
+        )
+        return [heading, *(
+            f"- {prerequisite.lane}: {prerequisite.name}"
+            for prerequisite in prerequisites
+        )]
+
     def _draw_header(self):
         title = self.large_font.render("Progression", True, self.colors.GOLD)
         self.screen.blit(title, (32, 24))
@@ -430,6 +652,12 @@ class ProgressionScreen(TownScreenBase):
             tree.branches,
         )
         self._draw_connectors(statuses)
+        required_path_ids, required_endpoint_ids = self._promotion_highlight_node_ids(
+            statuses,
+            getattr(self, "hovered_node_index", None)
+            if getattr(self, "hovered_node_index", None) is not None
+            else -1,
+        )
 
         for index, status in enumerate(statuses):
             node_rect = self.node_rects[index]
@@ -458,37 +686,23 @@ class ProgressionScreen(TownScreenBase):
             elif status.state == NodeState.CLOSED:
                 icon.fill((150, 70, 70, 175), special_flags=pygame.BLEND_RGBA_MULT)
             self.screen.blit(icon, icon_rect)
-            state_color = (
-                (90, 175, 220)
-                if is_pending
-                else self.STATE_COLORS[status.state]
+            state_color = self._node_display_color(
+                status,
+                is_pending,
+                required_path_ids,
+                required_endpoint_ids,
             )
             pygame.draw.rect(
                 self.screen,
                 state_color,
                 frame_rect,
-                2 if selected else 1,
-            )
-            label = status.node.name
-            while len(label) > 5 and self.small_font.size(label)[0] > node_rect.width:
-                label = f"{label[:-4]}..."
-            label_surface = self.small_font.render(
-                label,
-                True,
-                state_color,
-            )
-            label_rect = label_surface.get_rect(
-                centerx=icon_rect.centerx,
-                top=icon_rect.bottom + 2,
-            )
-            pygame.draw.rect(
-                self.screen,
-                self.LABEL_BACKING_COLOR,
-                label_rect.inflate(4, 0),
-            )
-            self.screen.blit(
-                label_surface,
-                label_rect,
+                (
+                    3
+                    if status.node.id in required_endpoint_ids
+                    else 2
+                    if status.node.id in required_path_ids or selected
+                    else 1
+                ),
             )
         self._draw_tree_warning(rect)
 
@@ -663,6 +877,12 @@ class ProgressionScreen(TownScreenBase):
             )
         if status.node.kind == NodeKind.PROMOTION:
             requirements = status.node.payload["requirements"]
+            for requirement_line in self._promotion_requirement_lines(status.node):
+                lines.extend(wrap_text_to_pixel_width(
+                    requirement_line,
+                    self.small_font,
+                    content_width,
+                ))
             lines.extend(wrap_text_to_pixel_width(
                 (
                     "Required level: "
@@ -926,16 +1146,12 @@ class ProgressionScreen(TownScreenBase):
                         set(self.pending_node_ids)
                         | self.player_char.progression.purchased_node_ids
                     ) - removed
-                    loses_requirement = (
+                    loses_requirement = any(
                         not any(
                             prerequisite in remaining
-                            for prerequisite in pending_node.prerequisites
+                            for prerequisite in group
                         )
-                        if pending_node.payload.get("prerequisite_mode") == "any"
-                        else any(
-                            prerequisite in removed
-                            for prerequisite in pending_node.prerequisites
-                        )
+                        for group in prerequisite_groups(pending_node)
                     )
                     if loses_requirement:
                         removed.add(pending_id)
@@ -1158,6 +1374,8 @@ class ProgressionScreen(TownScreenBase):
                 ) % max(1, len(self._statuses()))
                 return True
             node_index = hit_index(self.node_rects, mouse_position(event))
+            if event.type == pygame.MOUSEMOTION:
+                self.hovered_node_index = node_index
             attribute_index = hit_index(self.attribute_rects, mouse_position(event))
             minus_index = hit_index(
                 self.attribute_minus_rects,
@@ -1195,6 +1413,7 @@ class ProgressionScreen(TownScreenBase):
             return False
         if event.type != pygame.KEYDOWN:
             return False
+        self.hovered_node_index = None
         if event.key in (pygame.K_q, pygame.K_e):
             direction = -1 if event.key == pygame.K_q else 1
             self.tree_index = (self.tree_index + direction) % len(self._tree_ids())
@@ -1300,6 +1519,8 @@ class ProgressionScreen(TownScreenBase):
                             self._adjust_selected_attribute(1)
                 elif event.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN):
                     node_index = hit_index(self.node_rects, mouse_position(event))
+                    if event.type == pygame.MOUSEMOTION:
+                        self.hovered_node_index = node_index
                     attribute_index = hit_index(self.attribute_rects, mouse_position(event))
                     if node_index is not None:
                         self.focus = "nodes"

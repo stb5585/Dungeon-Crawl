@@ -9,6 +9,7 @@ import pygame
 import src.ui_pygame.gui.combat_view as combat_view
 from ..enemy_presentation import effect_icon_label
 from ..status_icons import (
+    RESIST_STATUS_LABELS,
     combine_duplicate_status_icons,
     compact_status_icons,
     fit_status_icon_label,
@@ -118,12 +119,7 @@ class CombatStatusMixin:
             "Mana Shield": "MSH",
             "Reflect": "RFL",
             "Regen": "REG",
-            "Resist Fire": "RF",
-            "Resist Ice": "RI",
-            "Resist Electric": "RE",
-            "Resist Water": "RW",
-            "Resist Earth": "RTH",
-            "Resist Wind": "RWI",
+            **RESIST_STATUS_LABELS,
             "Jump": "JMP",
             "Power Up": "PWR",
             "Vision": "VIS",
@@ -152,12 +148,7 @@ class CombatStatusMixin:
             "Mana Shield",
             "Reflect",
             "Regen",
-            "Resist Fire",
-            "Resist Ice",
-            "Resist Electric",
-            "Resist Water",
-            "Resist Earth",
-            "Resist Wind",
+            *RESIST_STATUS_LABELS,
         }
 
         icons.extend(totem_status_icons(character))

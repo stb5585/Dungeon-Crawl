@@ -23,6 +23,37 @@
 - Replaced local class-level promotion with a shared global-level progression
   runtime, stored progression points every two levels, and separately stored
   primary-attribute points every four levels.
+- Rebuilt Assassin as five authored Utility, Combat, Status/Death, Stealth,
+  and Counter columns. Added toxin reagent drops and crafting/coating reactions,
+  rare Deathcap gathering, reusable dagger-pack serialization, Thieves Guild
+  stock, Hidden Dagger, and the new Assassin active and passive mechanics.
+- Reworked Refueling into a cancellable channel that restores 10% maximum MP
+  on its first tick and doubles its restoration on consecutive ticks.
+- Added seven Ranger/Beast Master off-hand crossbows and seven selectable
+  ten-shot bolt packs to the Thieves Guild. Basic attacks now fire the equipped
+  crossbow, with repeating, armor-piercing, Arcane, heat-seeking, Napalm,
+  delayed-explosion, recovery, inventory, shop, and save behavior.
+- Added active Resist buff indicators to the Character Menu, dungeon HUD, and
+  combat HUD, including distinct Shadow and Holy ward labels. Resist All now
+  applies its documented resistance buffs instead of being message-only.
+- Reworked promotion connectors into clear gold paths: conjunctive requirements
+  merge above each promotion, while shared prerequisite nodes fan out through
+  distinct anchors and alternatives retain separate stems. Hover-only violet
+  highlighting covers complete required paths regardless of node availability
+  and clears when the pointer leaves. SVG promotion cards are taller and place
+  their `Requires ALL/ANY` summary on a dedicated second detail line. Long
+  routes now stay in adjacent column gutters, and compact seven-row trees
+  reserve an eighth row for unobstructed promotion paths.
+- Restored Lancer's Shield Slam and Shield Block promotion requirements, made
+  Assassin's Status/Death path the sole Ninja prerequisite, and restored the
+  Mage elemental connection into Classical Force with straight promotion
+  stems for Spellblade, Warlock, and Conjurer.
+- Moved Warrior's shield requirement onto Retaliate, added missing Sentinel and
+  Conjurer buffer rows, routed outer alternative paths into promotion-card
+  sides, and made Shadowcaster require Shadow Bolt II plus either Doom or Mana
+  Drain. In-game graph icons now rely on the details panel instead of duplicate
+  labels; SVGs truncate long names and place Resolve/Blade Charges on their own
+  metadata line.
 - Added version-5 authored tree manifests, stable node IDs, atomic staged
   purchases, promotion previews, branch closure, equipment cleanup, ability
   retention, save/load normalization, and validation for all 49 playable

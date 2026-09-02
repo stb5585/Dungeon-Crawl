@@ -60,6 +60,8 @@ TREE_SIZE_OVERRIDES = {
     "Crusader": (26, 26),
     # Three release disciplines plus independent universal weapon techniques.
     "Knight Enchanter": (28, 28),
+    # Five six-row Assassin disciplines with four intentional blank positions.
+    "Assassin": (25, 25),
     # Five authored schools of Sorcerer development with two specialization forks.
     "Sorcerer": (29, 29),
     # Five authored Wizard columns, including the quest-awarded ultimate spell.
@@ -257,12 +259,16 @@ WARRIOR_NODE_LEVEL_REQUIREMENTS = {
 # Cross-path requirements can join an ordinary node or promotion. Required
 # nodes use (promotion target, manifest identifier) so rating nodes can be
 # referenced without depending on generated IDs.
-WARRIOR_NODE_CROSS_REQUIREMENTS = {}
+WARRIOR_NODE_CROSS_REQUIREMENTS = {
+    "Retaliate": (("Sentinel", "ShieldBlock"),),
+}
 
 # Cross-path connector channels are expressed as tree-column coordinates.
 # Retaliate's Bulwark requirement routes between the Lancer and Sentinel
 # columns instead of following Shield Block's half-column position.
-WARRIOR_CONNECTOR_CHANNEL_OVERRIDES = {}
+WARRIOR_CONNECTOR_CHANNEL_OVERRIDES = {
+    ("Retaliate", "ShieldBlock"): 1.5,
+}
 
 # Reserved for authored nodes that diverge from their manifest sequence.
 WARRIOR_NODE_PREREQUISITE_OVERRIDES = {
@@ -270,8 +276,8 @@ WARRIOR_NODE_PREREQUISITE_OVERRIDES = {
     "Goad": (("Sentinel", "ShieldBlock"),),
 }
 
-# Promotion nodes only require their completed authored path. Cross-path gates
-# occur at the exact development node where the paths join.
+# Cross-path gates occur at their exact development-node junctions rather than
+# being repeated as direct promotion prerequisites.
 WARRIOR_PROMOTION_CROSS_REQUIREMENTS = {}
 
 # Mage is the second fully authored base tree. This is a pre-release content
@@ -3299,6 +3305,54 @@ PALADIN_TREE_NODE_SPECS = (
         "prerequisites": ("magic-defense-1",),
     },
 )
+
+def _assassin_lane_specs(lane, column, entries):
+    """Build one authored Assassin lane while preserving deliberate blank rows."""
+    specs = []
+    previous = None
+    for row, identifier, level in entries:
+        suffix = identifier.replace("!", "").replace(" ", "-").lower()
+        spec = {
+            "id": suffix,
+            "kind": "ability",
+            "identifier": identifier.replace(" ", ""),
+            "lane": lane,
+            "position": (column, row),
+        }
+        if previous is not None:
+            spec["prerequisites"] = (previous,)
+        if level is not None:
+            spec["level"] = level
+        else:
+            spec["available_on_promotion"] = True
+        specs.append(spec)
+        previous = suffix
+    return tuple(specs)
+
+
+ASSASSIN_TREE_NODE_SPECS = (
+    *_assassin_lane_specs("Utility", 0, (
+        (0, "Steal", None), (1, "Lockpick", 35), (3, "Disruption", 45),
+        (4, "ForGoodMeasure", 50), (5, "Distract", 55),
+    )),
+    *_assassin_lane_specs("Combat", 1, (
+        (0, "TwistTheKnife", None), (1, "OffHandExcellence", 35),
+        (3, "SneakAttack", 45), (4, "Maim", 50), (5, "TripleStrike", 55),
+    )),
+    *_assassin_lane_specs("Status / Death", 2, (
+        (0, "DeathMark", None), (1, "ApplyToxin", 35), (2, "ResistDeath", 40),
+        (3, "Disembowel", 45), (4, "MakeToxin", 50), (5, "Cutthroat", 55),
+    )),
+    *_assassin_lane_specs("Stealth", 3, (
+        (0, "AvoidTraps", None), (1, "SmokeScreen", 35), (2, "HiddenBlade", 40),
+        (4, "Surprise", 50), (5, "Invisibility", 55),
+    )),
+    *_assassin_lane_specs("Counter", 4, (
+        (0, "Parry", None), (2, "MainGauche", 40), (3, "LiveAndLearn", 45),
+        (5, "Riposte", 55),
+    )),
+)
+
 
 CRUSADER_TREE_NODE_SPECS = (
     {

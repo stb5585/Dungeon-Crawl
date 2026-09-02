@@ -108,6 +108,7 @@ from .traps import (
     MAGIC_WARD_SPELLS,
     STANDARD_DUNGEON_DEPTHS,
     TRAP_CHANCE,
+    DEATHCAP_CHANCE,
     TRAP_TYPES,
     assign_dungeon_traps,
     trigger_tile_trap,

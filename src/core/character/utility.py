@@ -197,6 +197,8 @@ class CharacterUtilityMixin:
             if ultimate and typ == 'Physical':  # ultimate weapons bypass Physical resistance
                 return -0.25
             res_mod = self.resistance.get(typ, 0)
+            if typ == "Death" and int(getattr(self, "resist_death_steps", 0) or 0) > 0:
+                res_mod += 0.50
             if typ == "Shadow":
                 from .. import curses
 
@@ -280,6 +282,9 @@ class CharacterUtilityMixin:
             buffs.append("Invisible")
         if self.sight and "Vision" not in buffs:
             buffs.append("Vision")
+        for name, effect in self.magic_effects.items():
+            if name.startswith("Resist ") and effect.active and name not in buffs:
+                buffs.append(name)
         if not buffs:
             buffs.append("None")
         return ", ".join(buffs)

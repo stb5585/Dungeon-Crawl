@@ -24,6 +24,8 @@ class TileStateSerializer:
             "nimue_met_before",
             "trap_type",
             "trap_triggered",
+            "deathcap_available",
+            "deathcap_gathered",
         }
     )
 
@@ -62,6 +64,10 @@ class TileStateSerializer:
                 state['trap_type'] = tile.trap_type
             if hasattr(tile, 'trap_triggered'):
                 state['trap_triggered'] = tile.trap_triggered
+            if hasattr(tile, 'deathcap_available'):
+                state['deathcap_available'] = tile.deathcap_available
+            if hasattr(tile, 'deathcap_gathered'):
+                state['deathcap_gathered'] = tile.deathcap_gathered
 
             if hasattr(tile, 'active'):
                 state['active'] = tile.active
@@ -120,6 +126,10 @@ class TileStateSerializer:
                 tile.trap_type = state['trap_type']
             if 'trap_triggered' in state and hasattr(tile, 'trap_triggered'):
                 tile.trap_triggered = state['trap_triggered']
+            if 'deathcap_available' in state and hasattr(tile, 'deathcap_available'):
+                tile.deathcap_available = state['deathcap_available']
+            if 'deathcap_gathered' in state and hasattr(tile, 'deathcap_gathered'):
+                tile.deathcap_gathered = state['deathcap_gathered']
 
             # Restore defeated flag
             if 'defeated' in state and hasattr(tile, 'defeated'):

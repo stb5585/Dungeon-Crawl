@@ -278,6 +278,7 @@ class PitViper(Animal):
                           'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
         self.gold = random.randint(50, 85)
         self.inventory['Snake Skin'] = [items.SnakeSkin]
+        self.inventory['Viper Venom'] = [items.ViperVenom]
         self.spellbook = {"Spells": {},
                           "Skills": {'Double Strike': abilities.DoubleStrike()}}
         self.resistance["Poison"] = 0.25

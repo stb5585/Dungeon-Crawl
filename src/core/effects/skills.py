@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from .. import abilities
 from .base import Effect
 
 if TYPE_CHECKING:
@@ -110,10 +111,18 @@ class KidneyPunchEffect(Effect):
                 speed = actor.check_mod("speed", enemy=actor)
                 att_roll = _rng.randint(0, int(speed * crit))
                 def_roll = _rng.randint(target.stats.con // 2, target.stats.con)
+                from ..classes import mage_mechanics
+
+                def_roll = int(def_roll * mage_mechanics.save_roll_multiplier(target))
                 if target.stun_contest_success(actor, att_roll, def_roll):
                     dur = max(2, speed // 8)
                     if target.apply_stun(dur, source="Kidney Punch", applier=actor):
                         messages.append(f"{target.name} is stunned.\n")
+                        if "Twist the Knife" in actor.spellbook.get("Skills", {}):
+                            backstab = abilities.Backstab()
+                            follow_up = backstab.use(actor, target, special=True)
+                            messages.append("Twist the Knife triggers Backstab.\n")
+                            messages.append(str(getattr(follow_up, "message", follow_up)))
                 else:
                     messages.append(f"{actor.name} fails to stun {target.name}.\n")
             else:

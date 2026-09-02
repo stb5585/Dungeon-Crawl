@@ -44,7 +44,11 @@ def stat_theme_for_item(item: object) -> str | None:
         return "constitution"
     if "Charisma" in name or "Luck" in mod:
         return "charisma"
-    if "Dexterity" in name or mod in {"Accuracy", "Dodge"} or subtyp in {"Dagger", "Ninja Blade"}:
+    if (
+        "Dexterity" in name
+        or mod in {"Accuracy", "Dodge"}
+        or subtyp in {"Dagger", "Ninja Blade", "Crossbow"}
+    ):
         return "dexterity"
     if "Resist-" in mod or getattr(item, "element", None):
         return "resistance"
@@ -256,6 +260,14 @@ class OffHand(Item):
                     f"{35*'-'}\n"
                     f"Type: {self.subtyp}\n"
                     f"Block: {int(self.mod * 100)}%\n"
+                    f"Weight: {self.weight}\n"
+                    f"{35*'='}")
+        if self.subtyp == "Crossbow":
+            return (f"{'=' * ((35 - len(self.name)) // 2)}{self.name}{'=' * ((36 - len(self.name)) // 2)}\n"
+                    f"{self.description}\n"
+                    f"{35*'-'}\n"
+                    f"Type: {self.subtyp}\n"
+                    f"Damage: {self.damage}\n"
                     f"Weight: {self.weight}\n"
                     f"{35*'='}")
         return (f"{'=' * ((35 - len(self.name)) // 2)}{self.name}{'=' * ((36 - len(self.name)) // 2)}\n"

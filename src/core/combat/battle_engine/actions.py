@@ -89,6 +89,19 @@ class BattleActionMixin:
             self.defender,
             basic_attack=True,
         )
+        from ...classes import crossbow
+
+        crossbow_message, crossbow_hit, crossbow_damage = crossbow.fire_crossbow(
+            self.attacker,
+            self.defender,
+            encounter=self.encounter,
+            rng=self._rng,
+        )
+        message += crossbow_message
+        hit = hit or crossbow_hit
+        if crossbow_damage:
+            self.attacker._last_weapon_primary_damage += sum(crossbow_damage)
+            self.attacker._last_weapon_primary_damage_instances.extend(crossbow_damage)
         damage = getattr(self.attacker, "_last_weapon_primary_damage", None)
         if damage is None:
             # Test doubles and legacy combatants may still return damage in the

@@ -7,6 +7,17 @@ from src.paths import PYGAME_ASSETS_DIR
 
 StatusIcon = tuple[str, bool | None]
 
+RESIST_STATUS_LABELS = {
+    "Resist Fire": "RF",
+    "Resist Ice": "RI",
+    "Resist Electric": "RE",
+    "Resist Water": "RW",
+    "Resist Earth": "RTH",
+    "Resist Wind": "RWI",
+    "Resist Shadow": "RSH",
+    "Resist Holy": "RHO",
+}
+
 STATUS_ICON_ASSET_DIR = PYGAME_ASSETS_DIR / "effects"
 STATUS_ICON_ASSETS = {
     "AST": "astral_shift.png",
@@ -84,6 +95,16 @@ IMPORTANT_POSITIVE_STATUS_LABELS = {
     "ATK": 9,
     "DEF": 10,
 }
+
+
+def active_resist_effect_names(character) -> list[str]:
+    """Return active resistance-ward names in stable display order."""
+    effects = getattr(character, "magic_effects", {}) or {}
+    return [
+        name
+        for name in RESIST_STATUS_LABELS
+        if getattr(effects.get(name), "active", False)
+    ]
 
 
 def stat_effect_status_icon(label: str, effect) -> StatusIcon | None:

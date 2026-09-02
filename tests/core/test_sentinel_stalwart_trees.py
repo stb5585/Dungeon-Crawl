@@ -72,29 +72,29 @@ def test_sentinel_tree_has_authored_paths_and_compact_geometry():
     ]
 
     assert len(development) == 24
-    assert max(node.position[1] for node in tree.nodes) == 8
+    assert max(node.position[1] for node in tree.nodes) == 7
     assert "Shield Check" not in nodes
-    assert nodes["Retaliate"].position == (0, 2)
-    assert nodes["Swing & Bash"].position == (0, 3)
-    assert nodes["Focused Assault"].position == (0, 5)
-    assert nodes["Repercussion"].position == (0, 6)
-    assert nodes["Watchful Reprisal"].position == (0, 7)
-    assert nodes["Hold the Line"].position == (1, 2)
-    assert nodes["Shield Riposte"].position == (1, 3)
-    assert nodes["Resolute Guard"].position == (1, 7)
-    assert nodes["Adrenaline"].position == (2.5, 2)
-    assert nodes["Spell Block"].position == (2, 3)
-    assert nodes["Spell Reflection"].position == (2, 6)
-    assert nodes["Purge Weakness"].position == (3, 3)
-    assert nodes["Boast"].position == (3, 5)
+    assert nodes["Retaliate"].position == (0, 0)
+    assert nodes["Swing & Bash"].position == (0, 1)
+    assert nodes["Focused Assault"].position == (0, 3)
+    assert nodes["Repercussion"].position == (0, 4)
+    assert nodes["Watchful Reprisal"].position == (0, 5)
+    assert nodes["Hold the Line"].position == (1, 0)
+    assert nodes["Shield Riposte"].position == (1, 1)
+    assert nodes["Resolute Guard"].position == (1, 5)
+    assert nodes["Adrenaline"].position == (2.5, 0)
+    assert nodes["Spell Block"].position == (2, 1)
+    assert nodes["Spell Reflection"].position == (2, 4)
+    assert nodes["Purge Weakness"].position == (3, 1)
+    assert nodes["Boast"].position == (3, 3)
     assert "Parry" not in nodes
-    assert nodes["Goad"].position == (4, 3)
-    assert nodes["Charge"].position == (4, 4)
-    assert nodes["Double Strike"].position == (4, 5)
+    assert nodes["Goad"].position == (4, 1)
+    assert nodes["Charge"].position == (4, 2)
+    assert nodes["Double Strike"].position == (4, 3)
     assert nodes["Charge"].prerequisites == ()
     assert nodes["Double Strike"].prerequisites == ()
     promotion = nodes["Promote: Stalwart Defender"]
-    assert promotion.position == (1.5, 8)
+    assert promotion.position == (1.5, 7)
     assert promotion.prerequisites == (
         nodes["Watchful Reprisal"].id,
         nodes["Resolute Guard"].id,

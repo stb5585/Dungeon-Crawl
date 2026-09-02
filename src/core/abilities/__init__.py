@@ -42,6 +42,21 @@ from .detection import (
     detects_encounter,
     tick_detection,
 )
+from .assassin import (
+    ApplyToxin,
+    Cutthroat,
+    Disembowel,
+    Distract,
+    ForGoodMeasure,
+    HiddenBlade,
+    LiveAndLearn,
+    MainGauche,
+    MakeToxin,
+    OffHandExcellence,
+    ResistDeath,
+    Surprise,
+    TwistTheKnife,
+)
 
 from .skills import (
     ShieldSlam,

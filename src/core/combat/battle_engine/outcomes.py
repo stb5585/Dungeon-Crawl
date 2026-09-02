@@ -105,6 +105,8 @@ class BattleOutcomeMixin:
             exp_gain = max(0, int(exp_gain * float(self.player.exp_gain_multiplier())))
         except Exception:
             pass
+        if bool(getattr(enemy, "_surprise_bonus_experience", False)):
+            exp_gain = int(exp_gain * 1.5)
         msg = dragoon.red_dragon_victory_text(enemy)
         msg += f"{self.player.name} gained {exp_gain} experience.\n"
 
