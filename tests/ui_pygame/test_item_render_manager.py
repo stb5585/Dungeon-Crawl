@@ -230,6 +230,57 @@ def test_default_item_render_map_uses_dedicated_art_for_new_tools_and_signet():
         assert pygame.mask.from_surface(surface, 8).count() > 1000
 
 
+def test_default_item_render_map_uses_dedicated_art_for_recent_combat_items():
+    manager = ItemRenderManager(enhance_artwork=False)
+    expected = {
+        items.HandCrossbow().name: "offhand/crossbows/hand_crossbow",
+        items.LightCrossbow().name: "offhand/crossbows/light_crossbow",
+        items.HeavyCrossbow().name: "offhand/crossbows/heavy_crossbow",
+        items.PistolCrossbow().name: "offhand/crossbows/pistol_crossbow",
+        items.RepeatingCrossbow().name: "offhand/crossbows/repeating_crossbow",
+        items.MagicCrossbow().name: "offhand/crossbows/magic_crossbow",
+        items.GoldenClaw().name: "offhand/crossbows/golden_claw",
+        items.WoodenBolts().name: "ammunition/crossbow_bolts/wooden_bolts",
+        items.MetalBolts().name: "ammunition/crossbow_bolts/metal_bolts",
+        items.ArmorPiercingBolts().name: (
+            "ammunition/crossbow_bolts/armor_piercing_bolts"
+        ),
+        items.MagicBolts().name: "ammunition/crossbow_bolts/magic_bolts",
+        items.HeatSeekingBolts().name: (
+            "ammunition/crossbow_bolts/heat_seeking_bolts"
+        ),
+        items.NapalmBolts().name: "ammunition/crossbow_bolts/napalm_bolts",
+        items.DelayedBolts().name: "ammunition/crossbow_bolts/delayed_bolts",
+        items.ThrowingDaggers().name: "ammunition/throwing_daggers",
+        items.MildToxin().name: "consumables/toxins/mild_toxin",
+        items.Neurotoxin().name: "consumables/toxins/neurotoxin",
+        items.Hemotoxin().name: "consumables/toxins/hemotoxin",
+        items.Amatoxin().name: "consumables/toxins/amatoxin",
+        items.Myotoxin().name: "consumables/toxins/myotoxin",
+        items.Necrotoxin().name: "consumables/toxins/necrotoxin",
+        items.SnakeVenom().name: "materials/reagents/snake_venom",
+        items.ScorpionVenom().name: "materials/reagents/scorpion_venom",
+        items.ViperVenom().name: "materials/reagents/viper_venom",
+        items.LizardVenom().name: "materials/reagents/lizard_venom",
+        items.ShadowVenom().name: "materials/reagents/shadow_venom",
+        items.DeathcapMushroom().name: "materials/reagents/deathcap_mushroom",
+    }
+
+    assert len(expected) == 27
+    for item_name, render_key in expected.items():
+        path = manager.art_path_for_key(render_key)
+        assert path.exists()
+        surface = pygame.image.load(str(path))
+        width, height = surface.get_size()
+
+        assert manager.get_render_key_for_item(item_name) == render_key
+        assert surface.get_at((0, 0)).a == 0
+        assert surface.get_at((width - 1, 0)).a == 0
+        assert surface.get_at((0, height - 1)).a == 0
+        assert surface.get_at((width - 1, height - 1)).a == 0
+        assert pygame.mask.from_surface(surface, 8).count() > 1000
+
+
 def test_default_item_render_map_uses_individual_art_for_diviner_rods():
     manager = ItemRenderManager(enhance_artwork=False)
     expected = {
