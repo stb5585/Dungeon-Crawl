@@ -5,10 +5,19 @@ import random
 import pygame
 
 from src.core import map_tiles
+from src.core.classes import class_rings, promotion_kits
 from src.core.player import DIRECTIONS
 
 
 class DungeonNavigationMixin:
+    def _check_hidden_cache(self) -> None:
+        """Award the equipped Seeker ring cache once a floor is well mapped."""
+        level = int(self.player_char.location_z)
+        progress = promotion_kits.level_mapping_progress(self.player_char, level)
+        message = class_rings.award_hidden_cache(self.player_char, level, progress)
+        if message:
+            self.add_message(message)
+
     def move_forward(self):
         """Move one tile forward if the path is clear."""
         dx, dy = DIRECTIONS[self.player_char.facing]["move"]
@@ -93,6 +102,7 @@ class DungeonNavigationMixin:
         if new_tile:
             new_tile.visited = True
             new_tile.adjacent_visited(self.player_char)
+            self._check_hidden_cache()
 
         # Debug: log tile type and FirePath state on each step
         try:
@@ -208,6 +218,7 @@ class DungeonNavigationMixin:
         self._suppress_navigation_input()
         self.add_message(f"You descend the stairs deeper into the dungeon...")
         self.add_message(f"Now on dungeon level {self.player_char.location_z}")
+        self._check_hidden_cache()
 
         return True
 

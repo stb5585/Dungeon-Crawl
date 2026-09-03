@@ -287,6 +287,11 @@ def retaliate_after_block(defender: Any, attacker: Any, *, rng: Any = random) ->
         try:
             from .. import promotion_kits
 
+            counter += promotion_kits.record_resolve_mastery(
+                defender,
+                "ironwall_revenge",
+                "Retaliate",
+            )
             counter += promotion_kits.prepare_get_even(defender)
         except (AttributeError, KeyError, TypeError, ValueError):
             pass
@@ -303,9 +308,16 @@ def final_assault_response(defender: Any, attacker: Any, incoming_damage: int) -
     defender._final_assault_used = True
     defender._final_assault_countering = True
     try:
+        from .. import berserker
+
+        momentum, momentum_msg = berserker.prepare_final_assault_payoff(defender)
         msg = f"{defender.name} answers lethal force with a Final Assault!\n"
+        msg += momentum_msg
         counter, _hit, _crit = defender.weapon_damage(
-            attacker, dmg_mod=1.25, use_offhand=False
+            attacker,
+            dmg_mod=1.25 + momentum.damage_bonus,
+            use_offhand=False,
+            accuracy_modifier=momentum.accuracy_bonus,
         )
         msg += counter
     finally:

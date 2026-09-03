@@ -162,6 +162,11 @@ class CharacterDefenseMixin:
                         try:
                             from ..classes import promotion_kits
 
+                            msg += promotion_kits.record_resolve_mastery(
+                                defender,
+                                "stronghold",
+                                "a full shield block",
+                            )
                             msg += promotion_kits.shield_riposte_after_full_block(
                                 defender,
                                 self,

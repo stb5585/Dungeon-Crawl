@@ -542,6 +542,13 @@ def perform_weapon_art(character: Any, target: Any, art_name: str) -> str:
     cost = ART_COSTS[weapon_type] + (2 * (art_level - 1))
     if getattr(character.mana, "current", 0) < cost:
         return f"{character.name} does not have enough mana to use {art_name}.\n"
+
+    from . import berserker
+
+    momentum, momentum_msg = berserker.prepare_heavy_art_payoff(
+        character,
+        art_name,
+    )
     character.mana.current -= cost
 
     mastered = rank >= 10
@@ -550,16 +557,36 @@ def perform_weapon_art(character: Any, target: Any, art_name: str) -> str:
     msg, hit, crit = character.weapon_damage(
         target,
         dmg_mod=_art_damage_mod(weapon_type, rank, perfect)
-        + (0.15 * (art_level - 1)),
+        + (0.15 * (art_level - 1))
+        + momentum.damage_bonus,
         crit=2 if (weapon_type in {"Sword", "Battle Axe"} and mastered) else 1,
         ignore=weapon_type in {"Longsword", "Hammer"} and improved,
         cover=False,
         use_offhand=False,
+        accuracy_modifier=momentum.accuracy_bonus,
     )
+    msg = momentum_msg + msg
     if not hit:
-        return msg
+        return msg + berserker.resolve_heavy_art_payoff(
+            character,
+            momentum,
+            hit=False,
+        )
 
-    msg += _apply_art_effect(character, target, weapon_type, rank, crit, perfect)
+    msg += _apply_art_effect(
+        character,
+        target,
+        weapon_type,
+        rank,
+        crit,
+        perfect,
+        momentum=momentum,
+    )
+    msg += berserker.resolve_heavy_art_payoff(
+        character,
+        momentum,
+        hit=True,
+    )
     if hasattr(character, "record_grandmaster_weapon_art"):
         before, after, amount = character.record_grandmaster_weapon_art(weapon_type, target)
         msg += discipline_xp_text(character, weapon_type, amount, before, after)
@@ -586,9 +613,24 @@ def _art_damage_mod(weapon_type: str, rank: int, perfect: bool) -> float:
     return base
 
 
-def _apply_art_effect(character: Any, target: Any, weapon_type: str, rank: int, crit: int, perfect: bool) -> str:
+def _apply_art_effect(
+    character: Any,
+    target: Any,
+    weapon_type: str,
+    rank: int,
+    crit: int,
+    perfect: bool,
+    *,
+    momentum: Any | None = None,
+) -> str:
     improved = rank >= 5
     mastered = rank >= 10
+    momentum_stacks = max(0, int(getattr(momentum, "stacks", 0) or 0))
+    crush_bonus = max(0, int(getattr(momentum, "crush_bonus", 0) or 0))
+    rider_bonus = momentum_stacks * max(
+        0.0,
+        float(getattr(momentum, "rider_per_stack", 0.0) or 0.0),
+    )
     msg = ""
     if weapon_type == "Fist":
         penalty = -3 - (2 if improved else 0) - (1 if perfect else 0)
@@ -628,13 +670,18 @@ def _apply_art_effect(character: Any, target: Any, weapon_type: str, rank: int, 
         else:
             msg += f"Low Sweep slows {target.name}'s footing.\n"
     elif weapon_type == "Longsword":
-        defense = -5 - (3 if improved else 0) - (2 if perfect else 0)
+        defense = -5 - (3 if improved else 0) - (2 if perfect else 0) - crush_bonus
         _set_status(target.stat_effects["Defense"], duration=3 + int(mastered), extra=defense)
         msg += f"Guard Cleaver breaks {target.name}'s guard.\n"
     elif weapon_type == "Battle Axe":
         target._reavers_mark = {
             "turns": 3 + int(mastered),
-            "bonus": 0.10 + (0.05 if improved else 0.0) + (0.05 if perfect else 0.0),
+            "bonus": (
+                0.10
+                + (0.05 if improved else 0.0)
+                + (0.05 if perfect else 0.0)
+                + rider_bonus
+            ),
         }
         msg += f"{target.name} is marked by Reaver's Mark.\n"
         if improved:
@@ -645,17 +692,28 @@ def _apply_art_effect(character: Any, target: Any, weapon_type: str, rank: int, 
     elif weapon_type == "Polearm":
         character._brace_art = {
             "turns": 2,
-            "reduction": 0.20 + (0.10 if improved else 0.0) + (0.10 if mastered else 0.0) + (0.05 if perfect else 0.0),
-            "counter": 0.45 + (0.10 if improved else 0.0),
+            "reduction": (
+                0.20
+                + (0.10 if improved else 0.0)
+                + (0.10 if mastered else 0.0)
+                + (0.05 if perfect else 0.0)
+                + rider_bonus
+            ),
+            "counter": 0.45 + (0.10 if improved else 0.0) + rider_bonus,
         }
         _set_status(character.stat_effects["Defense"], duration=2, extra=3 + (2 if mastered else 0))
         msg += f"{character.name} braces behind the polearm.\n"
     elif weapon_type == "Hammer":
-        defense = -6 - (3 if improved else 0) - (2 if perfect else 0)
+        defense = -6 - (3 if improved else 0) - (2 if perfect else 0) - crush_bonus
         _set_status(target.stat_effects["Defense"], duration=3, extra=defense)
         if mastered:
             target._guard_suppressed = 2
         msg += f"Anvil Strike crushes {target.name}'s defenses.\n"
+    if momentum_stacks and weapon_type in TWO_HANDED_WEAPONS:
+        msg += (
+            f"Bloodied Momentum mutates the art with {momentum_stacks} stack(s) "
+            "of added pressure.\n"
+        )
     return msg
 
 

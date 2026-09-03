@@ -606,11 +606,19 @@ class Volitation(MovementSpell):
 
     def cast_out(self, game_or_user) -> str:
         from ..classes import ability_mechanics
+        from ..classes import promotion_kits
 
         user = getattr(game_or_user, "player_char", game_or_user)
-        user.mana.current -= self.cost
+        cost, route_message = promotion_kits.wayfinding_cost(
+            user,
+            self.cost,
+            mapping_progress=promotion_kits.level_mapping_progress(user),
+        )
+        if user.mana.current < cost:
+            return f"{user.name} does not have enough mana to use Volitation.\n"
+        user.mana.current -= cost
         ability_mechanics.apply_exploration_effect(user, "volitation", 40)
-        return f"{user.name} rises gently above the ground.\n"
+        return route_message + f"{user.name} rises gently above the ground.\n"
 
 
 class EnterWall(MovementSpell):
@@ -622,11 +630,19 @@ class EnterWall(MovementSpell):
 
     def cast_out(self, game_or_user) -> str:
         from ..classes import ability_mechanics
+        from ..classes import promotion_kits
 
         user = getattr(game_or_user, "player_char", game_or_user)
-        user.mana.current -= self.cost
+        cost, route_message = promotion_kits.wayfinding_cost(
+            user,
+            self.cost,
+            mapping_progress=promotion_kits.level_mapping_progress(user),
+        )
+        if user.mana.current < cost:
+            return f"{user.name} does not have enough mana to use Enter Wall.\n"
+        user.mana.current -= cost
         ability_mechanics.apply_exploration_effect(user, "enter_wall", 8)
-        return f"{user.name} slips partly into the stone.\n"
+        return route_message + f"{user.name} slips partly into the stone.\n"
 
 
 class Invisibility(IllusionSpell):

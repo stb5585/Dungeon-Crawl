@@ -165,7 +165,7 @@ def test_wizard_mastery_ring_proc_adds_stacking_school_buff(monkeypatch):
     message = wizard.process_cast(player, abilities.Shock(), enemy)
 
     assert "electric affinity arcs" in message
-    assert player.wizard_school_buffs["Electric"] == 1
+    assert player.mage_enhancement_state["school_mastery_buffs"]["Electric"] == 1
     assert enemy.health.current < 100
 
 

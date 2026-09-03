@@ -705,12 +705,23 @@ class BattleTurnMixin:
                 self.player,
                 ability,
             )
+        if self.attacker == self.player:
+            threaded_message += promotion_kits.prepare_stolen_charge_payoff(
+                self.player,
+                intent.action,
+                ability,
+            )
 
         hp_before = self.player.health.current
         if self.attacker != self.player:
             from ...classes import pathfinder
 
             pathfinder.record_incoming_action_start(self.player)
+            promotion_kits.begin_incoming_action(
+                self.player,
+                round_number=self.round_number,
+                actor=self.attacker,
+            )
         if self.attacker == self.player:
             ability_mechanics.store_rewind_snapshot(self)
             promotion_kits.begin_action(
@@ -834,6 +845,9 @@ class BattleTurnMixin:
                 self.player,
                 group,
             )
+            for member in targets:
+                if not member.enemy.is_alive():
+                    promotion_kits.clear_revelation(self.player, member.enemy)
             group.message += promotion_kits.finish_action(
                 self.player,
                 defender_survived=bool(self.encounter.living_members),
@@ -897,7 +911,11 @@ class BattleTurnMixin:
         defender_alive_before = bool(self.defender and self.defender.is_alive())
         if self.attacker != self.player:
             promotion_kits.begin_incoming_ki_action(self.player)
-            promotion_kits.begin_incoming_action(self.player)
+            promotion_kits.begin_incoming_action(
+                self.player,
+                round_number=self.round_number,
+                actor=self.attacker,
+            )
         if self.attacker == self.player:
             warrior.begin_action(self.player)
         if self.attacker == self.player and not (action == "Cast Spell" and choice == "Rewind"):
@@ -932,7 +950,16 @@ class BattleTurnMixin:
                 warrior.finish_action(self.player)
             return result
 
-        elif action == "Attack":
+        conduit_payoff = None
+        if self.summon_active and self.summon is self.attacker:
+            conduit_payoff = promotion_kits.begin_conduit_payoff(
+                self.player,
+                self.summon,
+                action,
+                self.defender,
+            )
+
+        if action == "Attack":
             result.message = self._execute_attack()
 
         elif action == "Pickup Weapon":
@@ -1016,14 +1043,56 @@ class BattleTurnMixin:
         else:
             result.message = f"{self.attacker.name} does nothing.\n"
 
+        if conduit_payoff is not None:
+            result.message += promotion_kits.finish_conduit_payoff(
+                self.player,
+                self.summon,
+                self.defender,
+                conduit_payoff,
+                self._last_combat_result,
+            )
+
         duel_text = self._fail_no_healing_duel_if_healed(hp_before)
         if duel_text:
             result.message = f"{result.message}{duel_text}"
         self._record_failed_enemy_debuff(self.attacker, choice, self.defender, debuff_snapshot)
+        if self.attacker == self.player and choice in promotion_kits.INVESTIGATION_SETUP_ACTIONS:
+            setup_text = str(result.message).lower()
+            setup_success = not any(
+                marker in setup_text
+                for marker in (
+                    "resists",
+                    "immune",
+                    "no effect",
+                    "already",
+                    "cannot cast",
+                    "not enough mana",
+                )
+            )
+            if debuff_snapshot is not None:
+                setup_success = self._debuff_snapshot_gained_effect(
+                    debuff_snapshot,
+                    self.defender,
+                )
+            result.message += promotion_kits.record_investigation_setup(
+                self.player,
+                self.defender,
+                str(choice),
+                setup_success,
+            )
+        elif self.attacker != self.player and choice:
+            ability = self.attacker.spellbook.get("Skills", {}).get(choice)
+            if ability is not None and getattr(ability, "charging", False):
+                result.message += promotion_kits.record_visible_telegraph(
+                    self.player,
+                    self.attacker,
+                    visible=self.show_enemy_details(self.attacker),
+                )
         if self.attacker == self.player:
             warrior.finish_action(self.player)
             if defender_alive_before and self.defender and not self.defender.is_alive():
                 result.message += lycan.record_transformed_kill(self.player)
+                promotion_kits.clear_revelation(self.player, self.defender)
             result.message += lycan.record_player_turn(self.player)
             result.message += promotion_kits.record_action_resolution(
                 self.player,
@@ -1668,8 +1737,12 @@ class BattleTurnMixin:
         """Record terminal enemy states after action/resurrection handling."""
         for member in self.encounter.members:
             enemy = member.enemy
-            if member.resolution is not None or enemy.is_alive():
+            if member.resolution is not None:
+                promotion_kits.clear_revelation(self.player, enemy)
                 continue
+            if enemy.is_alive():
+                continue
+            promotion_kits.clear_revelation(self.player, enemy)
             resolution = EnemyResolution.DEFEATED
             cause = None
             if getattr(enemy, "paladin_mercy_victory", False):

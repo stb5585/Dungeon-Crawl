@@ -513,6 +513,7 @@ class PlayerDataSerializer:
         )
         if hasattr(player, "ensure_promotion_kit_state"):
             player.ensure_promotion_kit_state()
+        promotion_kits.sync_xenid_invocations(player)
         promotion_kits.clear_combat_state(player)
         from ..classes import class_rings
 

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import random
 from typing import Any
 
 from ...progression_manifest import TALENT_KIT_EFFECTS as _TALENT_KIT_EFFECTS
@@ -34,8 +35,10 @@ def cap_for(character: Any, key: str) -> int:
     if key == "foresight_threads":
         base = 3 if cls == "Astromancer" else 0
     elif key == "bloodied_momentum":
-        scars = _class_ring_data(character, "Berserker").get("battle_scars", 0)
-        base = 5 if scars >= 20 else 4 if scars >= 10 else 3
+        if cls != "Berserker":
+            return 0
+        scars = int(_class_ring_data(character, "Berserker").get("battle_scars", 0) or 0)
+        return 5 if scars >= 20 else 4 if scars >= 10 else 3
     elif key == "oath_conviction":
         base = 3 if cls == "Crusader" else 2 if cls == "Paladin" else 0
     elif key == "aerial_tempo":
@@ -60,7 +63,7 @@ def cap_for(character: Any, key: str) -> int:
         base = 5 if _ring_awakened_equipped(character, "Archdruid") else 4
     elif key == "totem_resonance":
         base = 4 if _ring_awakened_equipped(character, "Soulcatcher") else 3
-    if key == "death_marks":
+    if key in {"death_marks", "fortune", "misfortune", "revelation", "stolen_charge"}:
         return base
     return base + _talent_cap_bonus(character, key) if base else 0
 
@@ -101,6 +104,29 @@ def _claim_action(character: Any, claim: str, *, incoming: bool = False) -> bool
         return False
     claims.add(claim)
     return True
+
+
+def gain_bloodied_momentum(
+    character: Any,
+    reason: str,
+    *,
+    incoming: bool = False,
+) -> str:
+    """Grant one action-deduplicated Momentum gain and its round bonus."""
+    if class_name(character) != "Berserker" or _hp_ratio(character) >= 0.50:
+        return ""
+    if not _claim_action(character, "bloodied_momentum", incoming=incoming):
+        return ""
+    state = combat_state(character)
+    amount = 1
+    current_round = int(state.get("action_round", 0) or 0)
+    if (
+        _hp_ratio(character) < 0.25
+        and state.get("bloodied_bonus_round") != current_round
+    ):
+        amount += 1
+        state["bloodied_bonus_round"] = current_round
+    return gain_meter(character, "bloodied_momentum", amount, reason)
 
 
 def _power_up_active(character: Any, skill_name: str) -> bool:
@@ -219,6 +245,7 @@ def finish_action(character: Any, *, defender_survived: bool) -> str:
     state["pending_devotion_gains"] = []
     state["pending_hierophant_devotion_token"] = None
     msg = finish_aerial_follow_through(character)
+    msg += finish_stolen_charge_payoff(character)
     if choice == "Defend" and getattr(
         getattr(character, "equipment", {}).get("OffHand"),
         "subtyp",
@@ -258,6 +285,99 @@ def spend_meter(character: Any, key: str) -> int:
     value = int(state.get(key, 0) or 0)
     state[key] = 0
     return max(0, value)
+
+
+def _stolen_charge_action_is_eligible(action: str, ability: Any | None) -> bool:
+    """Return whether an action can release stored stolen magic."""
+    if action == "Attack":
+        return True
+    if action == "Use Skill":
+        return bool(getattr(ability, "weapon", False))
+    if action not in {"Cast Spell", "Steal As Well"} or ability is None:
+        return False
+    try:
+        return float(getattr(ability, "dmg_mod", 0) or 0) > 0
+    except (TypeError, ValueError):
+        return False
+
+
+def prepare_stolen_charge_payoff(
+    character: Any,
+    action: str,
+    ability: Any | None = None,
+) -> str:
+    """Spend Charge after validation and arm one action-level Arcane payoff."""
+    if class_name(character) not in {"Spell Stealer", "Arcane Trickster"}:
+        return ""
+    if not _stolen_charge_action_is_eligible(action, ability):
+        return ""
+    state = combat_state(character)
+    if state.get("pending_stolen_charge_payoff") is not None:
+        return ""
+    charge = max(0, int(state.get("stolen_charge", 0) or 0))
+    if charge <= 0:
+        return ""
+    state["stolen_charge"] = 0
+    state["pending_stolen_charge_payoff"] = {"stacks": charge, "action": action}
+    return f"{character.name} commits {charge} Stolen Charge to the attack.\n"
+
+
+def _resolve_stolen_charge_payoff(character: Any, portions: list[Any]) -> str:
+    """Resolve one typed Arcane burst from an aggregate action result."""
+    state = combat_state(character)
+    pending = state.get("pending_stolen_charge_payoff")
+    if not isinstance(pending, dict):
+        return ""
+    state["pending_stolen_charge_payoff"] = None
+    stacks = max(1, int(pending.get("stacks", 1) or 1))
+    total_damage = sum(max(0, int(getattr(portion, "damage", 0) or 0)) for portion in portions)
+    target = next(
+        (
+            getattr(portion, "target", None)
+            for portion in portions
+            if int(getattr(portion, "damage", 0) or 0) > 0
+            and getattr(portion, "target", None) is not None
+            and getattr(portion.target, "is_alive", lambda: False)()
+        ),
+        None,
+    )
+    if total_damage <= 0 or target is None:
+        return "Stolen Charge dissipates without finding purchase.\n"
+    raw_bonus = max(5 * stacks, int(total_damage * (0.20 * stacks)))
+    hit, reduction_message, reduced = target.damage_reduction(
+        raw_bonus,
+        character,
+        typ="Arcane",
+    )
+    bonus = max(0, min(int(reduced or 0), int(target.health.current))) if hit else 0
+    if bonus <= 0:
+        return reduction_message or "The stolen Arcane payoff is fully resisted.\n"
+    target.health.current -= bonus
+    character._emit_damage_event(
+        target,
+        bonus,
+        damage_type="Arcane",
+        source="promotion_kit_payoff",
+        ability_name="Stolen Charge",
+    )
+    lines = [reduction_message, f"Stolen Charge releases for {bonus} Arcane damage.\n"]
+    _maybe_preserve(
+        character,
+        "stolen_charge",
+        "Arcane Trickster",
+        "Arcane Larceny",
+        lines,
+    )
+    return "".join(lines)
+
+
+def finish_stolen_charge_payoff(character: Any) -> str:
+    """Consume an unresolved payoff when an eligible action produced no result."""
+    state = combat_state(character)
+    if not isinstance(state.get("pending_stolen_charge_payoff"), dict):
+        return ""
+    state["pending_stolen_charge_payoff"] = None
+    return "Stolen Charge dissipates without finding purchase.\n"
 
 
 def _gain_hierophant_devotion_once(actor: Any, reason: str) -> str:
@@ -420,7 +540,7 @@ def record_action_resolution(character: Any, result: Any | None) -> str:
         changed = any(bool(values) for values in effects.values()) if isinstance(effects, dict) else False
         successful = successful or damage > 0 or healing > 0 or bool(getattr(portion, "hit", False))
         applied = applied or changed
-    msg = ""
+    msg = _resolve_stolen_charge_payoff(character, portions)
     if choice in PRAYER_SUPPORT_ABILITIES and (successful or applied):
         msg += record_prayer_source(character, choice, divine_support=True)
     if choice == "Turn Undead" and successful:
@@ -527,12 +647,22 @@ def record_damage_event(
             target_state["counter_charge_action_token"] = marker
             _message(target, f"{target.name}'s Counter Charge answers the spell.\n")
 
-    if cls == "Berserker" and weapon_hit and _hp_ratio(actor) < 0.50:
-        bonus = 2 if _hp_ratio(actor) < 0.25 else 1
-        _message(actor, gain_meter(actor, "bloodied_momentum", bonus, "bloodied weapon hit"))
+    if (
+        cls == "Berserker"
+        and weapon_hit
+        and not getattr(actor, "_final_assault_countering", False)
+        and combat_state(actor).get("bloodied_payoff_action_token")
+        != int(combat_state(actor).get("action_token", 0) or 0)
+    ):
+        _message(actor, gain_bloodied_momentum(actor, "bloodied weapon hit"))
 
-    if cls in {"Thief", "Rogue"} and critical_hit:
-        _message(actor, gain_meter(actor, "fortune", 1, "critical risky hit"))
+    if not resource_payoff and cls in {"Thief", "Rogue"} and weapon_hit:
+        from .tracks import RISKY_LUCK_ACTIONS, record_luck_roll
+
+        choice = str(combat_state(actor).get("action_choice") or "")
+        if choice not in RISKY_LUCK_ACTIONS:
+            reason = "critical attack" if critical_hit else "attack"
+            _message(actor, record_luck_roll(actor, True, reason))
 
     if not resource_payoff and cls in {"Cleric", "Templar"} and damage_type == "Holy":
         _message(actor, record_devotion_source(
@@ -608,9 +738,23 @@ def record_damage_taken(defender: Any, amount: int, damage_type: str) -> None:
     if not amount or amount <= 0:
         return
     cls = class_name(defender)
-    if cls == "Berserker" and _hp_ratio(defender) < 0.50:
-        bonus = 2 if _hp_ratio(defender) < 0.25 else 1
-        _message(defender, gain_meter(defender, "bloodied_momentum", bonus, "bloodied incoming damage"))
+    if cls == "Berserker":
+        state = combat_state(defender)
+        if int(getattr(getattr(defender, "health", None), "current", 0) or 0) <= 0:
+            state["bloodied_momentum"] = 0
+            state["bloodied_bonus_round"] = None
+            state["bloodied_payoff_action_token"] = None
+            state["battle_scar_momentum_preserved"] = False
+            state["bloodied_ring_miss_preserved"] = False
+        else:
+            _message(
+                defender,
+                gain_bloodied_momentum(
+                    defender,
+                    "bloodied incoming damage",
+                    incoming=True,
+                ),
+            )
     if (
         cls in {"Sentinel", "Stalwart Defender"}
         and damage_type in {"Physical", "Melee"}
@@ -721,14 +865,6 @@ def _consume_weapon_payoffs(actor: Any, target: Any, amount: int, damage_type: s
             from .weaves import resolve_enchanted_assault
 
             lines.append(resolve_enchanted_assault(actor, target, amount, charge))
-
-    stolen = int(state.get("stolen_charge", 0) or 0)
-    if cls in {"Spell Stealer", "Arcane Trickster"} and stolen:
-        burst = max(5 * stolen, int(amount * (0.20 * stolen)))
-        extra += burst
-        state["stolen_charge"] = 0
-        lines.append(f"Stolen Charge releases for {burst} arcane damage.\n")
-        _maybe_preserve(actor, "stolen_charge", "Arcane Trickster", "Arcane Larceny", lines)
 
     if extra > 0 and target is not None:
         target.health.current = max(0, target.health.current - extra)
@@ -972,7 +1108,11 @@ def _maybe_preserve(
     target: Any | None = None,
 ) -> None:
     state = combat_state(actor)
-    marker = f"{ring_class}:{key}"
+    marker = (
+        "Rogue:luck"
+        if ring_class == "Rogue" and key in {"fortune", "misfortune"}
+        else f"{ring_class}:{key}"
+    )
     if marker in state.setdefault("ring_preserved", set()):
         return
     if not _ring_awakened_equipped(actor, ring_class):
@@ -1043,7 +1183,8 @@ def shade_of_ahool(character: Any) -> str:
         return "Shade of Ahool requires at least 20 Umbral Debt.\n"
     data["debt"] -= 20
     data["eclipse_turns"] = 3
-    character.shade_of_ahool_turns = 3
+    if hasattr(character, "shade_of_ahool_turns"):
+        delattr(character, "shade_of_ahool_turns")
     character.flying = True
     return f"{character.name} spends 20 Umbral Debt and becomes the Shade of Ahool for 3 turns.\n"
 
@@ -1062,17 +1203,15 @@ def shadowcaster_debt_cap(character: Any) -> int:
 def record_shadow_damage(character: Any, amount: int) -> None:
     if class_name(character) != "Shadowcaster" or amount <= 0:
         return
+    cap = shadowcaster_debt_cap(character)
     data = _class_ring_data(character, "Shadowcaster")
     _normalize_shadowcaster_data(data)
     familiar = getattr(getattr(character, "familiar", None), "spec", "")
     rate = 0.25 if familiar == "Arcane" else 0.20
     gain = max(1, int(amount * rate))
-    cap = shadowcaster_debt_cap(character)
     new_debt = int(data.get("debt", 0) or 0) + gain
     if new_debt > cap:
         over = new_debt - cap
-        if _ring_awakened_equipped(character, "Shadowcaster"):
-            over = int(over * 0.75)
         data["backlash"] = int(data.get("backlash", 0) or 0) + over
         new_debt = cap
     data["debt"] = new_debt
@@ -1080,22 +1219,52 @@ def record_shadow_damage(character: Any, amount: int) -> None:
 
 
 def _normalize_shadowcaster_data(data: dict[str, Any]) -> None:
-    data["debt"] = max(0, int(data.get("debt", 0) or 0))
-    data["backlash"] = max(0, int(data.get("backlash", 0) or 0))
-    data["eclipse_turns"] = max(0, int(data.get("eclipse_turns", 0) or 0))
+    for key in ("debt", "backlash", "eclipse_turns"):
+        try:
+            value = int(data.get(key, 0) or 0)
+        except (TypeError, ValueError):
+            value = 0
+        data[key] = max(0, value)
     data["familiar_echo_used"] = bool(data.get("familiar_echo_used", False))
 
 
 def _reset_shadowcaster_combat_fields(character: Any) -> None:
     data = _class_ring_data(character, "Shadowcaster")
     if data:
+        was_active = int(data.get("eclipse_turns", 0) or 0) > 0
         data["eclipse_turns"] = 0
         data["familiar_echo_used"] = False
+        if was_active:
+            character.flying = False
+    if hasattr(character, "shade_of_ahool_turns"):
+        delattr(character, "shade_of_ahool_turns")
 
 
-def convert_shadow_backlash(character: Any, *, fraction: float, reason: str) -> str:
+def _fairy_debt_echo(character: Any, debt_spent: int) -> str:
+    familiar = getattr(character, "familiar", None)
+    if getattr(familiar, "spec", "") != "Support" or debt_spent <= 0:
+        return ""
+    missing = max(0, int(character.health.max) - int(character.health.current))
+    healing = min(missing, max(1, int(debt_spent * 0.05)))
+    if healing <= 0:
+        return ""
+    character.health.current += healing
+    return f"{getattr(familiar, 'name', 'Fairy')} restores {healing} extra HP from spent debt.\n"
+
+
+def convert_shadow_backlash(
+    character: Any,
+    *,
+    fraction: float,
+    reason: str,
+    ring_stability: bool = True,
+) -> str:
     if class_name(character) != "Shadowcaster":
         return ""
+    stable_ring = ring_stability and _ring_awakened_equipped(
+        character,
+        "Shadowcaster",
+    )
     data = _class_ring_data(character, "Shadowcaster")
     _normalize_shadowcaster_data(data)
     backlash = int(data.get("backlash", 0) or 0)
@@ -1103,9 +1272,15 @@ def convert_shadow_backlash(character: Any, *, fraction: float, reason: str) -> 
         return ""
     hp_max = max(1, int(character.health.max or 1))
     amount = min(backlash, max(1, int(hp_max * fraction)))
-    if getattr(getattr(character, "familiar", None), "spec", "") == "Luck" and not data.get("familiar_echo_used"):
-        amount = max(0, amount // 2)
+    if stable_ring:
+        amount = max(1, int(amount * 0.75))
+    if (
+        getattr(getattr(character, "familiar", None), "spec", "") == "Luck"
+        and not data.get("familiar_echo_used")
+    ):
         data["familiar_echo_used"] = True
+        if random.random() < 0.30:
+            amount = max(1, amount // 2)
     data["backlash"] = backlash - amount
     if amount:
         character.health.current = max(1, character.health.current - amount)

@@ -404,6 +404,15 @@ class BattleOutcomeMixin:
                     -member.slot,
                 ),
             ).enemy
+            for member in defeated_members:
+                if member.enemy is representative or not self.show_enemy_details(member.enemy):
+                    continue
+                message += promotion_kits.gain_case_progress(
+                    self.player,
+                    getattr(member.enemy, "enemy_typ", None),
+                    4,
+                    "victory",
+                )
             message += promotion_kits.end_combat(
                 self.player,
                 victory=True,

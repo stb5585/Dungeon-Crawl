@@ -64,6 +64,14 @@ def _player(class_name: str, *, level: int = 100):
     return player
 
 
+def _complete_mastery(player, *mastery_keys: str) -> None:
+    mastery = class_rings.ensure_state(player)["data"]["Stalwart Defender"][
+        "resolve_mastery"
+    ]
+    for mastery_key in mastery_keys:
+        mastery[mastery_key] = 4
+
+
 def test_sentinel_tree_has_authored_paths_and_compact_geometry():
     tree = ABILITY_TREES["Sentinel"]
     nodes = _nodes("Sentinel")
@@ -199,6 +207,14 @@ def test_human_sentinel_second_promotion_uses_separate_point_pools():
     player.spellbook["Skills"]["Spell Reflection"] = (
         abilities.SpellReflection()
     )
+    for index in range(3):
+        promotion_kits.begin_action(player, action=f"training-{index}")
+        promotion_kits.record_resolve_mastery(
+            player,
+            "ironwall_revenge",
+            "Retaliate",
+            action_deduplicated=True,
+        )
 
     route = set(_closure("Sentinel", "Watchful Reprisal"))
     route.add(_nodes("Sentinel")["Promote: Stalwart Defender"].id)
@@ -217,6 +233,9 @@ def test_human_sentinel_second_promotion_uses_separate_point_pools():
     } <= set(player.spellbook["Skills"])
     assert "Spell Reflection" in player.spellbook["Skills"]
     assert "Deflect Spell" not in player.spellbook["Skills"]
+    rows = {row["mastery_key"]: row for row in promotion_kits.resolve_surge_rows(player)}
+    assert rows["ironwall_revenge"]["progress"] == 3
+    assert not rows["ironwall_revenge"]["learned"]
 
 
 def test_resolve_sources_use_one_backing_value_and_locked_gain_amounts(
@@ -234,6 +253,11 @@ def test_resolve_sources_use_one_backing_value_and_locked_gain_amounts(
 
     assert "holds the line" in BattleActionMixin._execute_defend(engine)
     assert promotion_kits.current_resolve(player) == 5
+    mastery = class_rings.ensure_state(player)["data"]["Stalwart Defender"][
+        "resolve_mastery"
+    ]
+    assert mastery["citadel_aegis"] == 1
+    assert mastery["stronghold"] == 1
     assert "already active" in BattleActionMixin._execute_defend(engine)
     assert promotion_kits.current_resolve(player) == 5
 
@@ -277,6 +301,188 @@ def test_resolve_sources_use_one_backing_value_and_locked_gain_amounts(
     assert "blocks" in message
     assert promotion_kits.current_resolve(defender) == 5
 
+    monkeypatch.setattr(
+        defender,
+        "check_mod",
+        lambda mod, **_kwargs: 200 if mod == "shield" else 0,
+    )
+    damage, message, _absorbed = attacker._apply_absorption(
+        defender,
+        50,
+        50,
+        1.0,
+        "Weapon",
+        False,
+        1,
+    )
+    assert damage == 0
+    assert "defensive mastery deepens" in message
+    assert class_rings.ensure_state(defender)["data"]["Stalwart Defender"][
+        "resolve_mastery"
+    ]["stronghold"] == 1
+
+
+def test_resolve_mastery_tracks_associated_successes_and_deduplicates_actions():
+    player = _player("Sentinel")
+    player.equipment["OffHand"] = items.KiteShield()
+
+    promotion_kits.begin_action(player, action="training")
+    first = promotion_kits.record_resolve_mastery(
+        player,
+        "citadel_aegis",
+        "Brace Wall",
+        action_deduplicated=True,
+    )
+    duplicate = promotion_kits.record_resolve_mastery(
+        player,
+        "citadel_aegis",
+        "Brace Wall",
+        action_deduplicated=True,
+    )
+    separate = promotion_kits.record_resolve_mastery(
+        player,
+        "stronghold",
+        "Defend",
+        action_deduplicated=True,
+    )
+
+    assert "defensive mastery deepens" in first
+    assert "/4" not in first
+    assert duplicate == ""
+    assert "defensive mastery deepens" in separate
+    assert "/4" not in separate
+    assert promotion_kits.build_resolve(player, 10, "unrelated pressure")
+    rows = {row["mastery_key"]: row for row in promotion_kits.resolve_surge_rows(player)}
+    assert rows["citadel_aegis"]["progress"] == 1
+    assert rows["stronghold"]["progress"] == 1
+    assert rows["ironwall_revenge"]["progress"] == 0
+    assert rows["last_bastion"]["progress"] == 0
+    assert not any(row["unlocked"] for row in rows.values())
+
+
+def test_resolve_mastery_caps_at_four_and_requires_stalwart_for_surge():
+    player = _player("Sentinel")
+    messages = []
+    for index in range(5):
+        promotion_kits.begin_action(player, action=f"boast-{index}")
+        message = promotion_kits.record_resolve_mastery(
+            player,
+            "last_bastion",
+            "Boast",
+            action_deduplicated=True,
+        )
+        messages.append(message)
+
+    assert message == ""
+    assert all("Last Bastion" not in progress for progress in messages[:3])
+    assert "discovers Last Bastion" in messages[3]
+    rows = {row["mastery_key"]: row for row in promotion_kits.resolve_surge_rows(player)}
+    assert rows["last_bastion"]["progress"] == 4
+    assert rows["last_bastion"]["learned"]
+    assert not rows["last_bastion"]["unlocked"]
+    assert not promotion_kits.resolve_surge_unlocked(player, "Last Bastion")
+
+    player.cls = SimpleNamespace(name="Stalwart Defender")
+    assert promotion_kits.resolve_surge_unlocked(player, "Last Bastion")
+
+    player.cls = SimpleNamespace(name="Warrior")
+    assert promotion_kits.record_resolve_mastery(
+        player,
+        "last_bastion",
+        "Boast",
+    ) == ""
+    assert class_rings.ensure_state(player)["data"]["Stalwart Defender"][
+        "resolve_mastery"
+    ]["last_bastion"] == 4
+
+
+def test_resolve_active_sources_advance_only_after_successful_validation():
+    player = _player("Stalwart Defender")
+    player.equipment["OffHand"] = items.KiteShield()
+    target = _player("Warrior")
+
+    promotion_kits.begin_action(player, action="Brace Wall")
+    assert "requires 15 Resolve" in promotion_kits.brace_wall(player)
+    rows = {row["mastery_key"]: row for row in promotion_kits.resolve_surge_rows(player)}
+    assert rows["citadel_aegis"]["progress"] == 0
+
+    class_rings.ensure_state(player)["data"]["Stalwart Defender"][
+        "guard_meter"
+    ] = 30
+    promotion_kits.begin_action(player, action="Repercussion")
+    empty_group = promotion_kits.repercussion(
+        player,
+        [],
+        battle_engine=SimpleNamespace(current_actor_id="player"),
+    )
+    assert "no targets" in empty_group.results[0].message
+    assert promotion_kits.current_resolve(player) == 30
+    assert class_rings.ensure_state(player)["data"]["Stalwart Defender"][
+        "resolve_mastery"
+    ]["ironwall_revenge"] == 0
+
+    actions = (
+        ("Brace Wall", 15, promotion_kits.brace_wall, "citadel_aegis"),
+        ("Bulwark Guard", 25, promotion_kits.bulwark_guard, "citadel_aegis"),
+        ("Purge Weakness", 40, promotion_kits.purge_weakness, "last_bastion"),
+        ("Boast", 20, promotion_kits.boast, "last_bastion"),
+        ("Focused Assault", 15, promotion_kits.focused_assault, "ironwall_revenge"),
+    )
+    expected = {key: 0 for key in (
+        "citadel_aegis",
+        "ironwall_revenge",
+        "last_bastion",
+        "stronghold",
+    )}
+    for name, resolve, action, mastery_key in actions:
+        class_rings.ensure_state(player)["data"]["Stalwart Defender"][
+            "guard_meter"
+        ] = resolve
+        promotion_kits.begin_action(player, action=name)
+        assert "spends" in action(player)
+        expected[mastery_key] += 1
+        mastery = class_rings.ensure_state(player)["data"]["Stalwart Defender"][
+            "resolve_mastery"
+        ]
+        assert mastery == expected
+
+    class_rings.ensure_state(player)["data"]["Stalwart Defender"][
+        "guard_meter"
+    ] = 30
+    promotion_kits.begin_action(player, action="Repercussion")
+    group = promotion_kits.repercussion(
+        player,
+        [("target", target)],
+        battle_engine=SimpleNamespace(current_actor_id="player"),
+    )
+    assert "defensive mastery deepens" in group.results[0].message
+    assert class_rings.ensure_state(player)["data"]["Stalwart Defender"][
+        "resolve_mastery"
+    ]["ironwall_revenge"] == 2
+
+    player.spellbook["Skills"]["Retaliate"] = abilities.Retaliate()
+    player.weapon_damage = lambda *_args, **_kwargs: ("Counter misses.\n", False, 0)
+    missed = ability_mechanics.retaliate_after_block(
+        player,
+        target,
+        rng=SimpleNamespace(random=lambda: 0.0),
+    )
+    assert "defensive mastery deepens" not in missed
+    assert class_rings.ensure_state(player)["data"]["Stalwart Defender"][
+        "resolve_mastery"
+    ]["ironwall_revenge"] == 2
+
+    player.weapon_damage = lambda *_args, **_kwargs: ("Counter lands.\n", True, 1)
+    message = ability_mechanics.retaliate_after_block(
+        player,
+        target,
+        rng=SimpleNamespace(random=lambda: 0.0),
+    )
+    assert "defensive mastery deepens" in message
+    assert class_rings.ensure_state(player)["data"]["Stalwart Defender"][
+        "resolve_mastery"
+    ]["ironwall_revenge"] == 3
+
 
 def test_spell_block_spends_once_and_reflection_modifies_it(monkeypatch):
     player = _player("Stalwart Defender")
@@ -287,6 +493,7 @@ def test_spell_block_spends_once_and_reflection_modifies_it(monkeypatch):
         "stalwart-defender.talent.mirror-bastion"
     )
     promotion_kits.build_resolve(player, 100, "setup")
+    _complete_mastery(player, "citadel_aegis")
     monkeypatch.setattr(
         "src.core.classes.promotion_kits.resolve.random.random",
         lambda: 0.0,
@@ -306,9 +513,13 @@ def test_spell_block_spends_once_and_reflection_modifies_it(monkeypatch):
     assert remaining < 100
     assert "Spell Block" in block_message
     assert "Spell Reflection" in block_message
+    assert "defensive mastery deepens" in block_message
     assert caster.health.current < caster_before
     assert player.stat_effects["Magic Defense"].extra == 50
     assert not promotion_kits.spell_block_ready(player)
+    assert class_rings.ensure_state(player)["data"]["Stalwart Defender"][
+        "resolve_mastery"
+    ]["stronghold"] == 1
 
 
 def test_spell_block_honors_projectile_compatibility_and_expires():
@@ -329,6 +540,9 @@ def test_spell_block_honors_projectile_compatibility_and_expires():
         spell=area_spell,
     )
     assert remaining == 50
+    assert class_rings.ensure_state(player)["data"]["Stalwart Defender"][
+        "resolve_mastery"
+    ]["stronghold"] == 0
     assert promotion_kits.spell_block_ready(player)
     assert promotion_kits.tick_resolve_effects(player) == ""
     assert promotion_kits.tick_resolve_effects(player) == ""
@@ -385,6 +599,7 @@ def test_stalwart_citadel_absorbs_magic_and_fortified_release_returns_it():
         "stalwart-defender.talent.fortified-citadel"
     )
     promotion_kits.build_resolve(player, 100, "setup")
+    _complete_mastery(player, "citadel_aegis")
     member = SimpleNamespace(enemy=enemy)
     engine = SimpleNamespace(encounter=SimpleNamespace(living_members=(member,)))
 
@@ -454,10 +669,25 @@ def test_surge_modifiers_apply_locked_tuning(monkeypatch):
     )
 
     promotion_kits.build_resolve(player, 100, "setup")
+    _complete_mastery(player, "citadel_aegis")
     assert "Citadel Aegis" in promotion_kits.citadel_aegis(player)
     assert promotion_kits.combat_state(player)["citadel_aegis"]["turns"] == 3
+    mastery = class_rings.ensure_state(player)["data"]["Stalwart Defender"][
+        "resolve_mastery"
+    ]
+    assert mastery == {
+        "citadel_aegis": 4,
+        "ironwall_revenge": 0,
+        "last_bastion": 0,
+        "stronghold": 0,
+    }
 
-    promotion_kits.gain_resolve_mastery(player, 8, "setup")
+    _complete_mastery(
+        player,
+        "ironwall_revenge",
+        "last_bastion",
+        "stronghold",
+    )
     promotion_kits.build_resolve(player, 100, "setup")
     revenge = promotion_kits.ironwall_reprisal(
         player,

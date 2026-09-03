@@ -90,7 +90,27 @@ class KidneyPunchEffect(Effect):
 
         # Weapon damage (main hand)
         before = int(target.health.current)
-        use_str, hit, crit = actor.weapon_damage(target, dmg_mod=1.0, cover=False, use_offhand=False)
+        use_str, hit, crit = actor.weapon_damage(
+            target,
+            dmg_mod=1.0,
+            cover=False,
+            use_offhand=False,
+        )
+        if not hit:
+            try:
+                from src.core.classes import class_rings
+
+                if class_rings.loaded_dice_succeeds(actor, rng=_rng):
+                    use_str += "Loaded Dice turns the failed Kidney Punch.\n"
+                    retry, hit, crit = actor.weapon_damage(
+                        target,
+                        dmg_mod=1.0,
+                        cover=False,
+                        use_offhand=False,
+                    )
+                    use_str += retry
+            except Exception:
+                pass
         messages.append(use_str)
         result.hit = hit
         result.crit = crit if crit > 1 else None
@@ -114,11 +134,26 @@ class KidneyPunchEffect(Effect):
             ]):
                 speed = actor.check_mod("speed", enemy=actor)
                 att_roll = _rng.randint(0, int(speed * crit))
+                fortune_bonus = max(
+                    0.0,
+                    float(result.extra.get("fortune_bonus", 0.0) or 0.0),
+                )
+                att_roll += max(0, int(max(1, speed * crit) * fortune_bonus))
                 def_roll = _rng.randint(target.stats.con // 2, target.stats.con)
                 from ..classes import mage_mechanics
 
                 def_roll = int(def_roll * mage_mechanics.save_roll_multiplier(target))
-                if target.stun_contest_success(actor, att_roll, def_roll):
+                contest_success = target.stun_contest_success(actor, att_roll, def_roll)
+                if not contest_success:
+                    try:
+                        from src.core.classes import class_rings
+
+                        contest_success = class_rings.loaded_dice_succeeds(actor, rng=_rng)
+                        if contest_success:
+                            messages.append("Loaded Dice turns the failed stun attempt.\n")
+                    except Exception:
+                        contest_success = False
+                if contest_success:
                     dur = max(2, speed // 8)
                     if target.apply_stun(dur, source="Kidney Punch", applier=actor):
                         result.effects_applied["Status"].append("Stun")
@@ -297,7 +332,9 @@ class ExploitWeaknessEffect(Effect):
                     target.status_effects[effect].duration = -1
 
         # Weapon damage with calculated mod
-        wd_str, _, _ = actor.weapon_damage(target, dmg_mod=mod, use_offhand=False)
+        wd_str, hit, crit = actor.weapon_damage(target, dmg_mod=mod, use_offhand=False)
+        result.hit = bool(hit)
+        result.crit = crit if crit > 1 else None
         messages.append(wd_str)
 
 
@@ -329,6 +366,7 @@ class GoldTossEffect(Effect):
         )
         if available_gold <= 0:
             messages.append("Nothing happens.\n")
+            result.extra["luck_success"] = False
             return
 
         max_thrown = min(target.health.current, available_gold)
@@ -346,6 +384,7 @@ class GoldTossEffect(Effect):
         if any([target.magic_effects["Ice Block"].active,
                 getattr(target, "tunnel", False)]):
             messages.append("It has no effect.\n")
+            result.extra["luck_success"] = False
             return
 
         if not bullionaire and not _rng.randint(0, 1) and not target.incapacitated():
@@ -377,6 +416,9 @@ class GoldTossEffect(Effect):
             except Exception:
                 pass
             messages.append(f"{actor.name} does {damage} damage to {target.name}.\n")
+            result.extra["luck_success"] = True
+        else:
+            result.extra["luck_success"] = False
 
 
 class LickEffect(Effect):
@@ -1112,12 +1154,22 @@ class StealEffect(Effect):
         chance = actor.check_mod("luck", enemy=target, luck_factor=16)
         dv = 1 + int(actor.status_effects["Blind"].active)
 
-        if (
-            _rng.randint(
-                0, int(actor.check_mod("speed", enemy=actor) * crit) // dv
-            ) + chance
-            > _rng.randint(0, target.check_mod("speed", enemy=actor))
-        ):
+        fortune_bonus = max(0.0, float(result.extra.get("fortune_bonus", 0.0) or 0.0))
+        actor_ceiling = max(0, int(actor.check_mod("speed", enemy=actor) * crit) // dv)
+        actor_roll = _rng.randint(0, actor_ceiling) + chance
+        actor_roll += max(0, int((actor_ceiling + chance) * fortune_bonus))
+        target_roll = _rng.randint(0, target.check_mod("speed", enemy=actor))
+        succeeded = actor_roll > target_roll
+        if not succeeded:
+            try:
+                from src.core.classes import class_rings
+
+                succeeded = class_rings.loaded_dice_succeeds(actor, rng=_rng)
+                if succeeded:
+                    messages.append("Loaded Dice turns the failed theft.\n")
+            except Exception:
+                succeeded = False
+        if succeeded:
             if gold_or_item == "Item":
                 if len(target.inventory) != 0:
                     item_key = _rng.choice(list(target.inventory))
@@ -1137,10 +1189,13 @@ class StealEffect(Effect):
                         f"{actor.name} steals {item_key} from "
                         f"{target.name}.\n"
                     )
+                    result.extra["luck_success"] = True
+                    result.extra["stolen_item"] = item_key
                     return
                 messages.append(
                     f"{target.name} doesn't have anything to steal.\n"
                 )
+                result.extra["luck_success"] = False
                 return
             else:
                 gold_amount = _rng.randint(
@@ -1156,8 +1211,11 @@ class StealEffect(Effect):
                     f"{actor.name} steals {gold_amount} gold from "
                     f"{target.name}.\n"
                 )
+                result.extra["luck_success"] = True
+                result.extra["stolen_gold"] = gold_amount
                 return
         messages.append("Steal fails.\n")
+        result.extra["luck_success"] = False
 
 
 class MugEffect(Effect):

@@ -7,9 +7,11 @@ import random
 from typing import Any
 
 from .meters import (
+    _claim_action,
     _maybe_preserve,
     _set_target_stacks,
     _spend_mp,
+    _target_key,
     _target_stacks,
     cap_for,
     gain_meter,
@@ -36,6 +38,22 @@ MARTIAL_KI_ACTIONS = frozenset({
     "Spinning Back Elbow",
     "Suplex",
     "Hadouken",
+})
+
+RISKY_LUCK_ACTIONS = frozenset({
+    "Steal",
+    "Mug",
+    "Gold Toss",
+    "Slot Machine",
+    "Sneak Attack",
+    "Pocket Sand",
+    "Kidney Punch",
+    "Sleeping Powder",
+})
+STATUS_LUCK_ACTIONS = frozenset({
+    "Pocket Sand",
+    "Kidney Punch",
+    "Sleeping Powder",
 })
 KI_SPEND_ABILITIES = frozenset({
     "Chi Heal",
@@ -132,33 +150,73 @@ def add_fortune(character: Any, success: bool, reason: str) -> str:
     return gain_meter(character, "fortune" if success else "misfortune", 1, reason)
 
 
+def record_luck_roll(
+    character: Any,
+    success: bool,
+    reason: str,
+    *,
+    incoming: bool = False,
+) -> str:
+    """Record one meaningful luck outcome per player or hostile action."""
+    if class_name(character) not in {"Thief", "Rogue"}:
+        return ""
+    if not _claim_action(character, "luck_outcome", incoming=incoming):
+        return ""
+    outcome = "clean success" if success else "setback"
+    return add_fortune(character, success, f"{reason} {outcome}")
+
+
 def _preserve_spent_meter(character: Any, key: str, ring_class: str, label: str, msg: str) -> str:
     lines: list[str] = []
     _maybe_preserve(character, key, ring_class, label, lines)
     return msg + "".join(lines)
 
 
-def consume_fortune_for_risky_action(character: Any, reason: str) -> tuple[bool, str]:
+def consume_fortune_for_risky_action(character: Any, reason: str) -> tuple[float, str]:
+    """Spend Fortune before an eligible action and return its reliability bonus."""
     if class_name(character) not in {"Thief", "Rogue"}:
-        return False, ""
+        return 0.0, ""
+    if reason not in RISKY_LUCK_ACTIONS:
+        return 0.0, ""
     state = combat_state(character)
     spent = int(state.get("fortune", 0) or 0)
     if spent <= 0:
-        return False, ""
+        return 0.0, ""
     state["fortune"] = 0
-    force_hit = False
-    try:
-        import random
-
-        force_hit = random.random() < min(0.25, 0.05 * spent)
-    except Exception:
-        force_hit = False
+    state["pending_fortune_payoff"] = {
+        "spent": spent,
+        "reason": reason,
+    }
+    reliability = min(0.15, 0.05 * spent)
     msg = f"{character.name} spends {spent} Fortune smoothing {reason}."
-    msg += " The risky line opens cleanly.\n" if force_hit else "\n"
-    return force_hit, _preserve_spent_meter(character, "fortune", "Rogue", "Loaded Dice", msg)
+    msg += " The odds turn in their favor.\n"
+    return reliability, msg
 
 
-def resolve_misfortune_payoff(character: Any, target: Any | None, base_damage: int, reason: str) -> str:
+def finish_fortune_payoff(character: Any, success: bool) -> str:
+    """Resolve ring preservation only after the prepared risky action succeeds."""
+    state = combat_state(character)
+    pending = state.get("pending_fortune_payoff")
+    state["pending_fortune_payoff"] = None
+    if not success or not isinstance(pending, dict):
+        return ""
+    return _preserve_spent_meter(
+        character,
+        "fortune",
+        "Rogue",
+        "Loaded Dice",
+        "",
+    )
+
+
+def resolve_misfortune_payoff(
+    character: Any,
+    target: Any | None,
+    base_damage: int,
+    reason: str,
+    *,
+    result: Any | None = None,
+) -> str:
     if class_name(character) not in {"Thief", "Rogue"}:
         return ""
     state = combat_state(character)
@@ -168,15 +226,78 @@ def resolve_misfortune_payoff(character: Any, target: Any | None, base_damage: i
     state["misfortune"] = 0
     bonus = max(1, int(max(1, base_damage) * (0.08 * spent)))
     if target is not None and base_damage > 0:
-        target.health.current = max(0, target.health.current - bonus)
-        msg = f"{character.name} cashes in {spent} Misfortune through {reason} for {bonus} extra pressure.\n"
+        hit, defense_message, defended = target.handle_defenses(
+            character,
+            bonus,
+            typ="Physical",
+        )
+        applied = 0
+        reduction_message = ""
+        if hit and defended > 0:
+            hit, reduction_message, reduced = target.damage_reduction(
+                defended,
+                character,
+                typ="Physical",
+            )
+            if hit and reduced > 0:
+                applied = min(int(target.health.current), max(0, int(reduced)))
+                target.health.current = max(0, int(target.health.current) - applied)
+                if applied:
+                    character._emit_damage_event(
+                        target,
+                        applied,
+                        "Physical",
+                        source="promotion_kit_payoff",
+                        attack_source="skill",
+                        ability_name=reason,
+                    )
+        msg = defense_message + reduction_message
+        msg += (
+            f"{character.name} cashes in {spent} Misfortune through {reason} "
+            f"for {applied} extra pressure.\n"
+        )
     else:
-        msg = f"{character.name} cashes in {spent} Misfortune through {reason} for a stronger payoff.\n"
+        scaled_detail = ""
+        extra = getattr(result, "extra", {}) if result is not None else {}
+        stolen_gold = (
+            max(0, int(extra.get("stolen_gold", 0) or 0))
+            if isinstance(extra, dict)
+            else 0
+        )
+        if target is not None and stolen_gold:
+            gold_bonus = min(
+                max(0, int(getattr(target, "gold", 0) or 0)),
+                max(1, int(stolen_gold * 0.10 * spent)),
+            )
+            if gold_bonus:
+                target.gold -= gold_bonus
+                character.gold += gold_bonus
+                scaled_detail = f", including {gold_bonus} extra gold"
+        if target is not None and result is not None:
+            effects = getattr(result, "effects_applied", {}) or {}
+            for names in effects.values() if isinstance(effects, dict) else ():
+                for name in names if isinstance(names, list) else ():
+                    effect = target.effect_handler(name).get(name)
+                    if effect is not None and int(getattr(effect, "duration", 0) or 0) > 0:
+                        effect.duration += spent
+                        scaled_detail = f", extending {name}"
+        msg = (
+            f"{character.name} cashes in {spent} Misfortune through {reason} "
+            f"for a stronger payoff{scaled_detail}.\n"
+        )
     return _preserve_spent_meter(character, "misfortune", "Rogue", "Loaded Dice", msg)
 
 
+def misfortune_severity_multiplier(character: Any) -> float:
+    """Preview stored Misfortune for effects that scale inside their resolver."""
+    if class_name(character) not in {"Thief", "Rogue"}:
+        return 1.0
+    stored = int(combat_state(character).get("misfortune", 0) or 0)
+    return 1.0 + (0.08 * stored)
+
+
 def cheat_death(character: Any) -> str:
-    if class_name(character) != "Rogue":
+    if class_name(character) != "Rogue" or not _has_skill(character, "Cheat Death"):
         return ""
     state = combat_state(character)
     if state.get("cheat_death_used"):
@@ -190,13 +311,39 @@ def cheat_death(character: Any) -> str:
         success = random.random() < chance
     except Exception:
         success = False
+    loaded_dice = False
     if not success:
-        return f"Cheat Death fails at {int(chance * 100)}% odds.\n"
+        try:
+            from .. import class_rings
+
+            loaded_dice = class_rings.loaded_dice_succeeds(character)
+        except Exception:
+            loaded_dice = False
+        success = loaded_dice
+    if not success:
+        return "Cheat Death fails to find a way out.\n"
     state["misfortune"] = 0
     state["jinx_turns"] = 2
     character.health.current = 1
-    msg = f"Cheat Death spends {misfortune} Misfortune and leaves {character.name} standing at 1 HP.\n"
+    msg = "Loaded Dice turns the failed save.\n" if loaded_dice else ""
+    if misfortune > 0:
+        msg += f"Cheat Death spends {misfortune} Misfortune and "
+    else:
+        msg += "Cheat Death "
+    msg += f"leaves {character.name} standing at 1 HP under Jinx.\n"
+    if misfortune <= 0:
+        return msg
     return _preserve_spent_meter(character, "misfortune", "Rogue", "Loaded Dice", msg)
+
+
+def jinx_accuracy_modifier(character: Any) -> float:
+    """Return the risky accuracy penalty while Cheat Death's Jinx lingers."""
+    return -0.10 if int(combat_state(character).get("jinx_turns", 0) or 0) > 0 else 0.0
+
+
+def jinx_luck_multiplier(character: Any) -> float:
+    """Return the luck-check multiplier while Cheat Death's Jinx lingers."""
+    return 0.75 if int(combat_state(character).get("jinx_turns", 0) or 0) > 0 else 1.0
 
 
 def apply_death_mark(character: Any, target: Any, reason: str = "setup") -> str:
@@ -414,6 +561,185 @@ def add_revelation(character: Any, target: Any, amount: int = 1, reason: str = "
     return f"{character.name} gains Revelation on {target.name} from {reason} ({after}/{cap}).\n"
 
 
+REVELATION_PRECISION_ACTIONS = frozenset({
+    "Piercing Strike",
+    "True Strike",
+    "True Piercing Strike",
+})
+INVESTIGATION_SETUP_ACTIONS = frozenset({
+    "Silence",
+    "Dispel",
+    "Enfeeble",
+    "Weaken Mind",
+})
+
+
+def revelation_stacks(character: Any, target: Any) -> int:
+    """Return combat-only Revelation stored against one target."""
+    mapping = combat_state(character).get("revelation", {})
+    return _target_stacks(mapping, target) if isinstance(mapping, dict) else 0
+
+
+def clear_revelation(character: Any, target: Any | None = None) -> None:
+    """Clear one target's Revelation, or all Revelation when target is omitted."""
+    state = combat_state(character)
+    mapping = state.setdefault("revelation", {})
+    if target is None:
+        mapping.clear()
+        state["active_revelation_payoff"] = None
+        return
+    mapping.pop(_target_key(target), None)
+    pending = state.get("active_revelation_payoff")
+    if isinstance(pending, dict) and pending.get("target_key") == _target_key(target):
+        state["active_revelation_payoff"] = None
+
+
+def prepare_revelation_payoff(
+    character: Any,
+    target: Any,
+    *,
+    basic_attack: bool = False,
+) -> tuple[float, float, str]:
+    """Consume Revelation before an eligible weapon payoff resolves."""
+    if target is None or class_name(character) not in {"Inquisitor", "Seeker"}:
+        return 0.0, 1.0, ""
+    state = combat_state(character)
+    action = str(state.get("action_choice") or state.get("action_name") or "")
+    if not (basic_attack or action == "Exploit Weakness" or action in REVELATION_PRECISION_ACTIONS):
+        return 0.0, 1.0, ""
+    target_key = _target_key(target)
+    active = state.get("active_revelation_payoff")
+    if isinstance(active, dict) and active.get("target_key") == target_key:
+        stacks = int(active.get("stacks", 0) or 0)
+        return float(active.get("accuracy", 0.0)), 1.0 + (0.05 * stacks), ""
+    if not _claim_action(character, "revelation_payoff"):
+        return 0.0, 1.0, ""
+    stacks = revelation_stacks(character, target)
+    studied_accuracy = (
+        0.10
+        if action == "Exploit Weakness" and case_progress(character, target) >= 50
+        else 0.0
+    )
+    if stacks <= 0:
+        return studied_accuracy, 1.0, (
+            f"{character.name}'s Weakness Brief steadies the exploit.\n"
+            if studied_accuracy
+            else ""
+        )
+    mapping = state.setdefault("revelation", {})
+    mapping.pop(target_key, None)
+    accuracy = (0.04 * stacks) + studied_accuracy
+    state["active_revelation_payoff"] = {
+        "target_key": target_key,
+        "stacks": stacks,
+        "accuracy": accuracy,
+        "resolved": False,
+    }
+    return accuracy, 1.0 + (0.05 * stacks), (
+        f"{character.name} commits {stacks} Revelation to reading {target.name}.\n"
+    )
+
+
+def finish_revelation_payoff(character: Any, target: Any, *, hit: bool) -> str:
+    """Apply a successful Revelation pressure rider once per action."""
+    state = combat_state(character)
+    active = state.get("active_revelation_payoff")
+    if not isinstance(active, dict) or active.get("target_key") != _target_key(target):
+        return ""
+    if active.get("resolved"):
+        return ""
+    active["resolved"] = True
+    stacks = max(0, int(active.get("stacks", 0) or 0))
+    if not hit:
+        return f"{character.name}'s committed Revelation is lost on the miss.\n"
+    defense = getattr(target, "stat_effects", {}).get("Defense")
+    if defense is not None:
+        existing = int(defense.extra or 0) if defense.active else 0
+        defense.active = True
+        defense.duration = max(int(defense.duration or 0), 2)
+        defense.extra = max(-20, min(-stacks, existing - stacks))
+    return f"Revelation exposes {target.name}, deepening the opening.\n"
+
+
+def case_progress(character: Any, target_or_type: Any) -> int:
+    """Return journal progress for a target or broad enemy-type value."""
+    enemy_type = getattr(target_or_type, "enemy_typ", target_or_type)
+    if not enemy_type:
+        return 0
+    return int(ensure_state(character)["case_journal"].get(str(enemy_type), 0) or 0)
+
+
+def _ring_insight_bonus(character: Any, target: Any, reason: str) -> str:
+    state = combat_state(character)
+    if state.get("seeker_insight_smoothed") or not _ring_awakened_equipped(character, "Seeker"):
+        return ""
+    state["seeker_insight_smoothed"] = True
+    return add_revelation(character, target, 1, f"Hidden Cache insight after {reason}")
+
+
+def record_inspect(character: Any, target: Any) -> str:
+    """Record a committed Inspect and apply studied/ring insight bonuses."""
+    if target is None or class_name(character) not in {"Inquisitor", "Seeker"}:
+        return ""
+    msg = add_revelation(character, target, 1, "Inspect")
+    enemy_type = str(getattr(target, "enemy_typ", "") or "")
+    state = combat_state(character)
+    if (
+        case_progress(character, enemy_type) >= 25
+        and not state.get("inspect_studied_bonus_used")
+    ):
+        state["inspect_studied_bonus_used"] = True
+        msg += add_revelation(character, target, 1, "a familiar tell")
+    msg += _ring_insight_bonus(character, target, "Inspect")
+    msg += gain_case_progress(character, enemy_type, 3, "Inspect")
+    return msg
+
+
+def record_investigation_setup(character: Any, target: Any, action: str, success: bool) -> str:
+    """Grant insight after a successful authored anti-magic/setup action."""
+    if not success or action not in INVESTIGATION_SETUP_ACTIONS:
+        return ""
+    return add_revelation(character, target, 1, action)
+
+
+def record_visible_telegraph(
+    character: Any,
+    target: Any,
+    *,
+    visible: bool,
+) -> str:
+    """Record one visible charged-action read and arm studied prediction."""
+    if not visible or target is None or class_name(character) not in {"Inquisitor", "Seeker"}:
+        return ""
+    state = combat_state(character)
+    token = int(state.get("incoming_action_token", 0) or 0)
+    claim = (_target_key(target), token)
+    reads = state.setdefault("telegraph_reads", set())
+    if claim in reads:
+        return ""
+    reads.add(claim)
+    msg = add_revelation(character, target, 1, "a visible tell")
+    msg += _ring_insight_bonus(character, target, "the read")
+    msg += gain_case_progress(character, getattr(target, "enemy_typ", None), 1, "a visible tell")
+    if case_progress(character, target) >= 75:
+        state.setdefault("pending_case_prediction", {})[_target_key(target)] = 0.10
+        msg += f"{character.name} anticipates {target.name}'s follow-through.\n"
+    return msg
+
+
+def begin_case_prediction(character: Any, actor: Any) -> None:
+    """Arm a Pattern Lock dodge bonus for this enemy's next action."""
+    state = combat_state(character)
+    pending = state.setdefault("pending_case_prediction", {})
+    state["active_case_prediction"] = pending.pop(_target_key(actor), None)
+
+
+def case_prediction_dodge_bonus(character: Any, attacker: Any) -> float:
+    """Return the active studied prediction bonus for the current action."""
+    del attacker
+    return max(0.0, float(combat_state(character).get("active_case_prediction") or 0.0))
+
+
 def gain_case_progress(character: Any, enemy_type: Any, amount: int, reason: str) -> str:
     if class_name(character) not in {"Inquisitor", "Seeker"} or not enemy_type:
         return ""
@@ -422,11 +748,16 @@ def gain_case_progress(character: Any, enemy_type: Any, amount: int, reason: str
     before = int(state["case_journal"].get(key, 0) or 0)
     after = min(100, before + max(0, int(amount)))
     state["case_journal"][key] = after
+    state["case_focus"] = key
     if after == before:
         return ""
-    milestone = case_rank(after)
-    suffix = f" ({milestone})" if milestone else ""
-    return f"Case Journal records {key} +{after - before} from {reason}: {after}/100{suffix}.\n"
+    crossed = next(
+        (name for threshold, name in CASE_MILESTONES if before < threshold <= after),
+        None,
+    )
+    if crossed:
+        return f"Case Journal insight deepens for {key}: {crossed}.\n"
+    return f"Case Journal gathers evidence about {key} from {reason}.\n"
 
 
 def case_rank(progress: int) -> str:
@@ -436,14 +767,52 @@ def case_rank(progress: int) -> str:
     return "Unstudied"
 
 
-def wayfinding_discount(character: Any) -> float:
+def wayfinding_discount(
+    character: Any,
+    *,
+    enemy_type: Any | None = None,
+    mapping_progress: float | None = None,
+) -> float:
     if class_name(character) != "Seeker":
         return 0.0
-    best = max((int(v or 0) for v in ensure_state(character)["case_journal"].values()), default=0)
-    discount = 0.10 if best >= 100 else 0.05 if best >= 50 else 0.0
+    route_type = enemy_type or ensure_state(character).get("case_focus")
+    progress = case_progress(character, route_type) if route_type else 0
+    discount = 0.10 if progress >= 100 else 0.0
+    if mapping_progress is not None and float(mapping_progress) >= 0.50:
+        discount = max(discount, 0.05)
     if _ring_awakened_equipped(character, "Seeker"):
         discount += 0.05
     return min(0.20, discount)
+
+
+def wayfinding_cost(character: Any, base_cost: int, **context: Any) -> tuple[int, str]:
+    """Return a Seeker movement spell's context-sensitive MP cost."""
+    discount = wayfinding_discount(character, **context)
+    cost = max(0, int(round(int(base_cost) * (1.0 - discount))))
+    if cost == int(base_cost):
+        return cost, ""
+    return cost, f"Wayfinding finds a steadier route, saving {int(base_cost) - cost} MP.\n"
+
+
+def level_mapping_progress(character: Any, dungeon_level: int | None = None) -> float:
+    """Return the explored fraction of one loaded dungeon level."""
+    level = int(
+        getattr(character, "location_z", 0)
+        if dungeon_level is None
+        else dungeon_level
+    )
+    tiles = [
+        tile
+        for position, tile in getattr(character, "world_dict", {}).items()
+        if len(position) >= 3 and int(position[2]) == level
+    ]
+    if not tiles:
+        return 0.0
+    mapped = sum(
+        bool(getattr(tile, "visited", False) or getattr(tile, "near", False))
+        for tile in tiles
+    )
+    return mapped / len(tiles)
 
 
 def gain_stolen_charge(character: Any, reason: str) -> str:

@@ -173,8 +173,36 @@ def status_summary_rows(character: Any, target: Any | None = None) -> list[tuple
             if isinstance(state.get("echoing_weave"), dict):
                 rows.append(("Echoing Blade", "Repeats next turn"))
     if cls == "Berserker":
+        from .. import berserker
+
         momentum = int(state.get('bloodied_momentum', 0) or 0)
-        rows.append(("Momentum", _meter_hint(momentum, cap_for(character, 'bloodied_momentum'), ready="Heavy art")))
+        cap = cap_for(character, 'bloodied_momentum')
+        hp_max = max(1, int(getattr(character.health, "max", 1) or 1))
+        hp_ratio = character.health.current / hp_max
+        if hp_ratio < 0.25:
+            threshold = "Critical (<25%)"
+        elif hp_ratio < 0.50:
+            threshold = "Bloodied (<50%)"
+        else:
+            threshold = "Steady"
+        scars = berserker.scar_count(character)
+        scar_ready = (
+            "Locked (<10 scars)"
+            if scars < 10
+            else "Used"
+            if state.get("battle_scar_momentum_preserved")
+            else "Ready"
+        )
+        rows.append((
+            "Bloodied Momentum",
+            _meter_hint(momentum, cap, ready="Heavy art"),
+        ))
+        rows.append(("Bloodied State", threshold))
+        rows.append(("Scar Cap", f"+{cap - 3} from {scars} scars"))
+        rows.append(("Scar Preserve", scar_ready))
+        if _ring_awakened_equipped(character, "Berserker"):
+            ring_ready = "Used" if state.get("bloodied_ring_miss_preserved") else "Ready"
+            rows.append(("Ring Preserve", ring_ready))
     if cls in {"Paladin", "Crusader"}:
         conviction = int(state.get('oath_conviction', 0) or 0)
         rows.append(("Conviction", _meter_hint(conviction, cap_for(character, 'oath_conviction'), ready="Vow ready")))
@@ -198,11 +226,34 @@ def status_summary_rows(character: Any, target: Any | None = None) -> list[tuple
         if int(state.get("jinx_turns", 0) or 0) > 0:
             rows.append(("Jinx", f"{int(state.get('jinx_turns', 0) or 0)} turn(s)"))
     if cls in {"Inquisitor", "Seeker"}:
-        best = max(ensure_state(character)["case_journal"].values(), default=0)
-        rows.append(("Case", f"{best}/100 {case_rank(best)}"))
+        if target is not None:
+            studied = int(
+                ensure_state(character)["case_journal"].get(
+                    str(getattr(target, "enemy_typ", "")),
+                    0,
+                )
+                or 0
+            )
+        else:
+            studied = max(ensure_state(character)["case_journal"].values(), default=0)
+        rows.append(("Case", case_rank(studied)))
         revelation = state.get("revelation", {})
-        current = max((int(value or 0) for value in revelation.values()), default=0) if isinstance(revelation, dict) else 0
+        if target is not None and isinstance(revelation, dict):
+            from .meters import _target_stacks
+
+            current = _target_stacks(revelation, target)
+        else:
+            current = 0
         rows.append(("Revelation", _meter_hint(current, cap_for(character, 'revelation'), ready="Target read")))
+        details_visible = bool(
+            target is not None
+            and not getattr(target, "boss", False)
+            and getattr(target, "name", "") != "Waitress"
+        )
+        rows.append((
+            "Enemy Detail",
+            "Visible" if details_visible else "No visible target selected",
+        ))
     if cls in {"Assassin", "Ninja"}:
         marks = state.get("death_marks", {})
         if target is not None and isinstance(marks, dict):
@@ -215,6 +266,26 @@ def status_summary_rows(character: Any, target: Any | None = None) -> list[tuple
     if cls in {"Spell Stealer", "Arcane Trickster"}:
         stolen = int(state.get('stolen_charge', 0) or 0)
         rows.append(("Stolen Charge", _meter_hint(stolen, cap_for(character, 'stolen_charge'), ready="Charge ready", empty="Steal first")))
+        if cls == "Arcane Trickster" and _ring_awakened_equipped(character, "Arcane Trickster"):
+            from .. import class_rings
+
+            turns = int(
+                class_rings.ensure_state(character)["data"]["Arcane Trickster"].get(
+                    "buff_turns",
+                    0,
+                )
+                or 0
+            )
+            preserved = "Arcane Trickster:stolen_charge" in state.setdefault(
+                "ring_preserved",
+                set(),
+            )
+            if turns > 0:
+                rows.append(("Arcane Larceny", f"Active · {turns} turns"))
+            rows.append((
+                "Ring Preserve",
+                "Spent" if preserved else "Arcane Larceny ready",
+            ))
     if cls in {"Cleric", "Templar", "Hierophant"}:
         devotion = int(state.get('devotion', 0) or 0)
         if cls == "Templar" and devotion >= 2:

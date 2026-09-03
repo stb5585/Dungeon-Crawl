@@ -542,11 +542,9 @@ automated implementation boundary.
   - Expected: `Battle Scars` can increase, caps at 20, raises max HP, and appears in character/ring status text.
   - Expected: Below 25% HP, weapon damage increases from scars and stacks with awakened `Bloodied Crits`.
 
-Audit correction (2026-09-02): the Thief/Rogue, Inquisitor/Seeker, and Spell
-Stealer/Arcane Trickster entries below describe pending acceptance targets,
-not shipped regressions. Their current partial/helper-only behavior and
-critical implementation gaps are recorded in `CLASS_KIT_DESIGN_GATES.md` and
-`DEVELOPMENT_ROADMAP.md`. Assassin/Ninja entries remain shipped checks.
+Audit correction (2026-09-03): the Footpad branch entries below are now shipped
+acceptance checks. Internal progression and proc formulas remain intentionally
+absent from player-facing explanations.
 
 - [ ] Defeat ordinary loot-bearing enemies as Thief with `Scavenger's Eye`.
   - Expected: Enemy loot drop rate and eligible rarity outcomes feel modestly improved without creating quest, special, unique, ultimate, or invalid class/summon-gated drops.
@@ -611,8 +609,8 @@ critical implementation gaps are recorded in `CLASS_KIT_DESIGN_GATES.md` and
   - Expected: Successful `Steal Spell`, successful `Steal Spell 2`, and casting an inscribed stolen-spell scroll each grant 1 Charge, capped at 2 for Spell Stealer and 3 for Arcane Trickster.
   - Expected: Item theft from `Steal As Well` does not independently grant Charge.
 - [ ] Spend `Stolen Charge` with representative spell, weapon, and weapon-tagged trickster actions.
-  - Expected: The next successful eligible damaging spell, standard weapon hit, or weapon-tagged trickster skill spends all Charge and adds bonus arcane damage equal to 20% of base damage per stored Charge, minimum 5 per stored Charge.
-  - Expected: Misses or fully negated actions do not apply the payoff.
+  - Expected: The next validated eligible attempt commits all Charge and a successful action adds one aggregate typed Arcane payoff.
+  - Expected: Misses or fully negated actions consume the commitment without applying the payoff.
 - [ ] End combat, flee, save/load, or change class with `Stolen Charge` active.
   - Expected: Charge clears because it is combat-only and has no persistent save field.
 - [ ] Complete `Impossible Theft`, then successfully steal a spell as Arcane Trickster with the awakened ring equipped.

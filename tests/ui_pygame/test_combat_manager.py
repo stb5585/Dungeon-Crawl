@@ -234,7 +234,7 @@ def _make_enemy(name="Goblin", hp=(20, 20)):
     return enemy
 
 
-def test_resolve_bursts_require_a_full_bar_but_not_mastery(monkeypatch):
+def test_resolve_bursts_require_mastery_and_a_full_bar(monkeypatch):
     manager = _make_manager(monkeypatch)
     player = _make_player()
     player.cls = SimpleNamespace(name="Stalwart Defender")
@@ -242,19 +242,30 @@ def test_resolve_bursts_require_a_full_bar_but_not_mastery(monkeypatch):
     player.class_ring_awakening = class_rings.default_state()
     state = class_rings.ensure_state(player)["data"]["Stalwart Defender"]
     state["guard_meter"] = 99
-    state["resolve_mastery"] = 0
+    state["resolve_mastery"] = {
+        "citadel_aegis": 0,
+        "ironwall_revenge": 0,
+        "last_bastion": 0,
+        "stronghold": 0,
+    }
 
     assert not manager._skill_available_for_selection(player, abilities.CitadelAegis())
     class_rings.ensure_state(player)["data"]["Stalwart Defender"]["guard_meter"] = 100
-    assert manager._skill_available_for_selection(player, abilities.CitadelAegis())
-    assert manager._skill_available_for_selection(player, abilities.IronwallReprisal())
-    assert manager._skill_available_for_selection(player, abilities.LastBastionSurge())
-    assert manager._skill_available_for_selection(player, abilities.Stronghold())
-    assert manager._skill_available_for_selection(player, abilities.Bulwark())
+    assert not manager._skill_available_for_selection(player, abilities.CitadelAegis())
+    assert not manager._skill_available_for_selection(player, abilities.IronwallReprisal())
+    assert not manager._skill_available_for_selection(player, abilities.LastBastionSurge())
+    assert not manager._skill_available_for_selection(player, abilities.Stronghold())
+    assert manager._skill_available_for_selection(player, abilities.BraceWall())
 
     state = class_rings.ensure_state(player)["data"]["Stalwart Defender"]
     state["guard_meter"] = 99
-    state["resolve_mastery"] = 4
+    state["resolve_mastery"]["ironwall_revenge"] = 3
+    assert not manager._skill_available_for_selection(
+        player,
+        abilities.IronwallReprisal(),
+    )
+    state = class_rings.ensure_state(player)["data"]["Stalwart Defender"]
+    state["resolve_mastery"]["ironwall_revenge"] = 4
     assert not manager._skill_available_for_selection(player, abilities.IronwallReprisal())
 
     class_rings.ensure_state(player)["data"]["Stalwart Defender"]["guard_meter"] = 100
@@ -273,7 +284,7 @@ def test_silence_keeps_resolve_and_zero_mana_skills_available(monkeypatch):
         "Silence": SimpleNamespace(active=True),
     }
     player.spellbook["Skills"] = {
-        "Shield Check": abilities.ShieldBash(),
+        "Brace Wall": abilities.BraceWall(),
         "Free Technique": SimpleNamespace(
             name="Free Technique",
             cost=0,
@@ -293,7 +304,7 @@ def test_silence_keeps_resolve_and_zero_mana_skills_available(monkeypatch):
     )
 
     assert manager._available_skill_names(player, enemy, resolve=True) == [
-        "Shield Check",
+        "Brace Wall",
     ]
     assert manager._available_skill_names(player, enemy, resolve=False) == [
         "Free Technique",
@@ -661,7 +672,7 @@ def test_capture_background_scroll_handling_and_action_deduplication(monkeypatch
     player.is_disarmed = lambda: False
     player.equipment = {"OffHand": SimpleNamespace(subtyp="Shield")}
     player.spellbook["Skills"] = {
-        "Shield Check": abilities.ShieldBash(),
+        "Brace Wall": abilities.BraceWall(),
         "Shield Slam": SimpleNamespace(name="Shield Slam", cost=2, passive=False),
     }
     manager.engine = SimpleNamespace(
@@ -702,7 +713,7 @@ def test_capture_background_scroll_handling_and_action_deduplication(monkeypatch
     player.spellbook["Skills"]["Citadel Aegis"] = abilities.CitadelAegis()
     state = class_rings.ensure_state(player)["data"]["Stalwart Defender"]
     state["guard_meter"] = 100
-    state["resolve_mastery"] = 0
+    state["resolve_mastery"]["citadel_aegis"] = 4
     assert manager._build_display_actions() == [
         "Attack",
         "Resolve",
@@ -1562,7 +1573,7 @@ def test_select_item_spell_and_skill_cover_empty_cancel_and_selection_paths(monk
     assert manager.combat_view.messages[-1] == "No skills learned!"
 
     player.equipment = {"OffHand": SimpleNamespace(subtyp="Shield")}
-    player.spellbook["Skills"]["Shield Check"] = abilities.ShieldBash()
+    player.spellbook["Skills"]["Brace Wall"] = abilities.BraceWall()
     event_batches = iter([[SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)]])
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, []))
     assert manager._select_skill(player, enemy) == "Shield Slam"
@@ -1570,15 +1581,15 @@ def test_select_item_spell_and_skill_cover_empty_cancel_and_selection_paths(monk
 
     event_batches = iter([[SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)]])
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, []))
-    assert manager._select_resolve_ability(player, enemy) == "Shield Check"
+    assert manager._select_resolve_ability(player, enemy) == "Brace Wall"
     assert menu_calls[-1][0] == "Select Resolve"
-    assert menu_calls[-1][1] == ("Shield Check (Resolve: 10)",)
+    assert menu_calls[-1][1] == ("Brace Wall (Resolve: 15)",)
 
     player.cls = SimpleNamespace(name="Stalwart Defender")
     player.spellbook["Skills"]["Citadel Aegis"] = abilities.CitadelAegis()
     state = class_rings.ensure_state(player)["data"]["Stalwart Defender"]
     state["guard_meter"] = 100
-    state["resolve_mastery"] = 0
+    state["resolve_mastery"]["citadel_aegis"] = 4
     event_batches = iter([
         [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
     ])

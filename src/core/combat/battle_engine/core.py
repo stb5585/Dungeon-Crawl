@@ -437,6 +437,9 @@ class BattleEngine(BattleTurnMixin, BattleActionMixin, BattleOutcomeMixin):
         from ...classes import healer
 
         healer.start_combat(self.player)
+        from ...classes import mage_mechanics
+
+        mage_mechanics.start_combat(self.player)
         from ...classes import pathfinder
 
         pathfinder.start_combat(self.player)
@@ -444,6 +447,12 @@ class BattleEngine(BattleTurnMixin, BattleActionMixin, BattleOutcomeMixin):
 
         warrior.start_combat(self.player)
         kit_start_message = promotion_kits.start_combat(self.player)
+        promotion_kits.combat_state(self.player)["visible_enemy_types"] = {
+            str(getattr(member.enemy, "enemy_typ", ""))
+            for member in self.encounter.members
+            if self.show_enemy_details(member.enemy)
+            and getattr(member.enemy, "enemy_typ", None)
+        }
         if kit_start_message:
             messages = getattr(self.player, "_promotion_kit_messages", None)
             if not isinstance(messages, list):

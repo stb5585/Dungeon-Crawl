@@ -304,11 +304,11 @@ but the Bursts are intended to unlock through four persistent associated-use
 masteries carried forward from Sentinel. Citadel Aegis learns from barrier and
 stance actions, Ironwall Revenge from assault/counter actions, Last Bastion
 from survival/support actions, and Stronghold from Defend, full blocks, and
-Spell Block triggers. The current scalar `resolve_mastery` and zero thresholds
-do not implement this contract; the class-kit design gate and roadmap record it
-as critical follow-up. Authored modifier talents continue to apply their
-documented barrier, damage, control, healing, and duration upgrades after the
-corresponding Burst is learned.
+Spell Block triggers. Four persistent, capped mastery tracks now implement
+this contract, including Sentinel-to-Stalwart carryover, save/load persistence,
+and hidden discovery presentation. Authored modifier talents continue to apply
+their documented barrier, damage, control, healing, and duration upgrades after
+the corresponding Burst is learned.
 
 Post-checkpoint errata: the Anti-magic description above records the historical
 checkpoint. Current Sentinel implements one merged

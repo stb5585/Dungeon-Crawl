@@ -2,6 +2,108 @@
 
 ## [Unreleased]
 
+### Class-Kit Closure Cleanup And Coverage
+
+- Made shared Momentum copy class-neutral while keeping its Death Mark setup
+  identity in Ninja-specific progression detail.
+- Removed the retired Shield Check, Bulwark, Covering Guard, and active Shield
+  Riposte/Spell Reflection APIs while preserving the finalized passive forms.
+- Added parameterized behavioral coverage for every Grandmaster Weapon Art
+  rank, Wizard school modifier, Warlock familiar modifier, and Shadowcaster
+  terminal passive.
+- Reconciled legacy Transform and Dim Mak tests with their shipped persistent
+  form and full-Ki contracts, leaving the complete repository suite green.
+
+### Spell Stealer And Arcane Trickster Stolen Magic
+
+- Completed validate-before-spend MP handling for both spell-theft abilities
+  without risking Blank Scrolls or permanent spellbook changes on invalid use.
+- Connected every stolen-magic Charge source and moved its Arcane payoff to
+  one action-level resolution across damaging spells, standard attacks, and
+  weapon-tagged skills, including aggregate damage and miss consumption.
+- Made awakened Arcane Larceny require the equipped ring, expire after three
+  turns, clear with combat state, and preserve one clean payoff per combat.
+- Added discreet combat status and focused regressions for caps, sources,
+  spending, typed mitigation, lifecycle behavior, and ring gating.
+
+### Inquisitor And Seeker Investigation Payoff
+
+- Connected target-specific Revelation to standard attacks, Exploit Weakness,
+  and precision weapon skills with pre-roll spending, reliability, damage
+  pressure, miss consumption, and target/lifecycle cleanup.
+- Completed visible-detail and telegraph evidence, all four Case Journal
+  milestone effects, anti-magic/setup insight, and awakened Hidden Cache
+  smoothing while keeping hidden advancement math out of player UI.
+- Routed Wayfinding into all four movement tools and integrated one
+  sufficiently mapped, depth-sensitive Hidden Cache reward into navigation.
+- Added focused regressions for persistence, caps, hit accounting, milestones,
+  prediction, selected-target presentation, movement, ring gating, and rewards.
+
+### Thief And Rogue Authored Kit
+
+- Connected action-scoped Fortune and Misfortune to meaningful attacks,
+  avoidance, theft, luck, and status outcomes, with real pre-roll reliability
+  and typed or outcome-specific severity payoffs.
+- Implemented learned `Scavenger's Eye` rarity nudges and `Finders Keepers`
+  extra ordinary finds while excluding quest, special, ability, summon-gated,
+  class-invalid, unique, and ultimate rewards.
+- Gated Cheat Death on its learned skill, made Jinx penalize accuracy and luck,
+  and connected Loaded Dice to failed eligible checks and one clean
+  meter-preservation payoff per combat.
+- Added focused regressions for caps, action deduplication, payoff timing,
+  typed damage, status and Slot Machine scaling, loot exclusions, survival,
+  ring conversion, preservation, and cleanup.
+
+### Thaumaturgist Conduit Payoff
+
+- Connected Conduit Command to the active Xenid's next committed action with
+  damage/healing amplification, miss and non-damage consumption, lifecycle
+  expiration, and awakened-ring True Name signatures.
+- Replaced generic borrowed-summon damage with fourteen typed Xenid
+  invocations and their authored offensive, defensive, healing, and status
+  riders, adding the missing Hodag and Caladrius skills.
+- Added focused validation, typed-mitigation, complete-roster, action-flow,
+  cleanup, healing, and ring-gating regressions.
+
+### Shadowcaster Shade And Backlash
+
+- Consolidated Shade of Ahool onto one combat timer and removed its obsolete
+  weapon, critical, excessive-Speed, and physical-siphon predecessor effects.
+- Completed Shade-expiration and low-HP-heal backlash conversion with awakened
+  ring stabilization and Homunculus, Fairy, Mephit, and Jinkin variations.
+- Added focused normalization, generation, modifier, conversion, lifecycle,
+  and familiar regression coverage.
+
+### Wizard School Streak And Hidden Mastery Presentation
+
+- Connected the awakened-and-equipped Wizard ring to four registered random
+  elemental riders with school-specific failure streaks, success resets, a
+  consumed guarantee, and once-per-spell-action resolution.
+- Made Wizard affinity mastery buffs explicitly combat-only with start/end and
+  save/load cleanup.
+- Hid exact Resolve Surge progress and undiscovered Burst identities while
+  retaining discovery feedback, and established general-over-formula
+  disclosure as the default for class-kit presentation.
+
+### Stalwart Resolve Mastery And Surges
+
+- Replaced placeholder scalar Resolve mastery with four persistent tracks
+  trained through their associated Sentinel and Stalwart actions.
+- Locked each full-bar Surge behind four qualifying uses, with action/event
+  deduplication, Sentinel-to-Stalwart carryover, and save/load normalization.
+- Added hidden discovery states to the Resolve tab, clearer combat logs, and
+  focused progression, defensive-event, menu, and persistence regressions.
+
+### Berserker Bloodied Momentum
+
+- Completed action-deduplicated Bloodied Momentum generation, the shared
+  below-25% round bonus, and exact Battle Scar caps of 3/4/5.
+- Connected validated heavy weapon arts and Final Assault to pre-resolution
+  Momentum spending, conservative accuracy/damage scaling, themed art riders,
+  miss consumption, and once-per-combat Battle Scar/Class Ring preservation.
+- Added the 20-scar 15% victory threshold, combat-only lifecycle cleanup,
+  expanded status/log feedback, and focused end-to-end regression coverage.
+
 ### Bard And Ranger Kit Cleanup
 
 - Connected mastered Troubadour repertoire to an MP-costed combat action and
@@ -450,8 +552,8 @@
   its dedicated percentage-based damage penalty.
 - Limited Silence skill suppression to techniques that require MP, leaving
   Resolve spends, Resolve Bursts, and zero-MP techniques usable.
-- Revealed all Stalwart Defender Resolve Burst names immediately on promotion
-  while retaining locked styling until each Burst is available.
+- Kept undiscovered Stalwart Defender Resolve Burst identities hidden until
+  their defensive mastery requirement is fulfilled.
 - Rendered multi-enemy HP and MP as independent resource labels to avoid
   unsupported separator glyphs in enemy plates.
 - Made multi-enemy resource plates opaque so bright dungeon geometry cannot

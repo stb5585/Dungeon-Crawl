@@ -92,6 +92,8 @@ class DataDrivenSkill(Skill):
         special: bool = False,
         **kwargs: Any,
     ) -> str | CombatResult:
+        from src.core.classes import promotion_kits
+
         result = self._reset_result(actor=user, target=target)
         try:
             from src.core.classes import promotion_kits
@@ -164,16 +166,19 @@ class DataDrivenSkill(Skill):
         if not special:
             user.mana.current -= self.cost
 
-        fortune_force_hit = False
+        fortune_bonus = 0.0
         smash_and_grab = False
-        if self.name in {"Steal", "Mug", "Gold Toss", "Slot Machine", "Sneak Attack"}:
+        if self.name in promotion_kits.RISKY_LUCK_ACTIONS:
             try:
                 from src.core.classes import promotion_kits
 
-                fortune_force_hit, fortune_msg = promotion_kits.consume_fortune_for_risky_action(user, self.name)
+                fortune_bonus, fortune_msg = (
+                    promotion_kits.consume_fortune_for_risky_action(user, self.name)
+                )
                 msg += fortune_msg
             except Exception:
-                fortune_force_hit = False
+                fortune_bonus = 0.0
+        result.extra["fortune_bonus"] = fortune_bonus
 
         if self.weapon:
             damage_mod = self.dmg_mod
@@ -195,18 +200,19 @@ class DataDrivenSkill(Skill):
                 "cover": cover,
                 "dmg_mod": damage_mod,
                 "use_offhand": self._use_offhand,
+                "accuracy_modifier": fortune_bonus,
             }
             try:
                 from src.core.classes import promotion_kits
 
                 accuracy_bonus = promotion_kits.ki_accuracy_bonus(user, self.name)
                 if accuracy_bonus:
-                    wd_kwargs["accuracy_modifier"] = accuracy_bonus
+                    wd_kwargs["accuracy_modifier"] += accuracy_bonus
             except Exception:
                 pass
             if self._ignore_armor:
                 wd_kwargs["ignore"] = True
-            if self._guaranteed_hit or fortune_force_hit:
+            if self._guaranteed_hit:
                 wd_kwargs["hit"] = True
             if self._crit_override is not None:
                 wd_kwargs["crit"] = self._crit_override
@@ -250,6 +256,16 @@ class DataDrivenSkill(Skill):
                     user._last_weapon_primary_damage = None
                     user._last_weapon_primary_damage_instances = []
                     use_str, h, c = user.weapon_damage(target, **wd_kwargs)
+                    if not h:
+                        try:
+                            from src.core.classes import class_rings
+
+                            if class_rings.loaded_dice_succeeds(user):
+                                use_str += "Loaded Dice turns the failed risky attack.\n"
+                                retry_str, h, c = user.weapon_damage(target, **wd_kwargs)
+                                use_str += retry_str
+                        except Exception:
+                            pass
                     msg += use_str
                     if h:
                         hit = True
@@ -387,17 +403,35 @@ class DataDrivenSkill(Skill):
                     hit=bool(result.hit),
                     status_applied=status_applied,
                 )
-            if self.name == "Inspect" and target is not None:
-                msg += promotion_kits.add_revelation(user, target, 1, "Inspect")
-                msg += promotion_kits.gain_case_progress(user, getattr(target, "enemy_typ", None), 3, "Inspect")
-            if self.name == "Exploit Weakness" and target is not None and hit:
+            if self.name == "Inspect" and target is not None and result.hit:
+                msg += promotion_kits.record_inspect(user, target)
+            if self.name == "Exploit Weakness" and target is not None and result.hit:
                 msg += promotion_kits.add_revelation(user, target, 1, "Exploit Weakness")
-                msg += promotion_kits.gain_case_progress(user, getattr(target, "enemy_typ", None), 2, "Exploit Weakness")
-            if self.name in {"Steal", "Mug", "Gold Toss", "Slot Machine", "Sneak Attack"}:
-                if hit:
-                    msg += promotion_kits.resolve_misfortune_payoff(user, target, result.damage, self.name)
-                if not hit or crit > 1:
-                    msg += promotion_kits.add_fortune(user, bool(hit and crit > 1), self.name)
+                msg += promotion_kits.gain_case_progress(
+                    user,
+                    getattr(target, "enemy_typ", None),
+                    2,
+                    "Exploit Weakness",
+                )
+            if self.name in promotion_kits.RISKY_LUCK_ACTIONS:
+                if self.name in promotion_kits.STATUS_LUCK_ACTIONS:
+                    luck_success = any(result.effects_applied.values())
+                else:
+                    luck_success = bool(result.extra.get("luck_success", hit))
+                msg += promotion_kits.finish_fortune_payoff(user, luck_success)
+                if luck_success:
+                    msg += promotion_kits.resolve_misfortune_payoff(
+                        user,
+                        target,
+                        result.damage,
+                        self.name,
+                        result=result,
+                    )
+                msg += promotion_kits.record_luck_roll(
+                    user,
+                    luck_success,
+                    self.name,
+                )
             msg += promotion_kits.pop_messages(user)
             if target is not None:
                 msg += promotion_kits.pop_messages(target)
@@ -560,6 +594,8 @@ class DataDrivenStatusSkill(Skill):
     ) -> str:
         import random as _rng
 
+        from src.core.classes import class_rings, promotion_kits
+
         if self._required_item:
             from ...items import use_reusable_tool
 
@@ -638,7 +674,11 @@ class DataDrivenStatusSkill(Skill):
         if self._add_luck_chance:
             luck_bonus = target.check_mod("luck", enemy=user, luck_factor=10)
             target_val += luck_bonus
-        elif (not self._physical) and (self._status_name in {"Stun", "Sleep", "Silence", "Blind", "Stupefy", "Stone"}):
+        elif (
+            not self._physical
+            and self._status_name
+            in {"Stun", "Sleep", "Silence", "Blind", "Stupefy", "Stone"}
+        ):
             # Make WIS/CHA matter broadly for resisting control effects even if
             # the YAML entry didn't explicitly opt into luck-based resistance.
             # (Luck is derived from WIS/CHA via Character.check_mod("luck").)
@@ -651,63 +691,104 @@ class DataDrivenStatusSkill(Skill):
         if bool(getattr(target, "mage_refueling", False)):
             target_val //= 2
 
+        fortune_bonus = 0.0
+        fortune_message = ""
+        if self.name in promotion_kits.RISKY_LUCK_ACTIONS:
+            fortune_bonus, fortune_message = (
+                promotion_kits.consume_fortune_for_risky_action(user, self.name)
+            )
+            actor_val += max(1, int(max(1, actor_val) * fortune_bonus)) if fortune_bonus else 0
+
         contest_success = actor_val > target_val
         if (self._status_name == "Stun") and (not self._physical):
             contest_success = target.stun_contest_success(user, actor_val, target_val)
+        if (
+            not contest_success
+            and self.name in promotion_kits.RISKY_LUCK_ACTIONS
+            and class_rings.loaded_dice_succeeds(user, rng=_rng)
+        ):
+            contest_success = True
+            fortune_message += "Loaded Dice turns the failed status attempt.\n"
 
-        if contest_success:
-            # Calculate duration
-            if self._duration_stat:
-                stat_val = getattr(user.stats, self._duration_stat, 10)
-                dur = max(self._duration_min, stat_val // self._duration_divisor)
-            else:
-                dur = self._duration
+        if not contest_success:
+            payoff_message = promotion_kits.finish_fortune_payoff(user, False)
+            if self.name in promotion_kits.RISKY_LUCK_ACTIONS:
+                payoff_message += promotion_kits.record_luck_roll(
+                    user,
+                    False,
+                    self.name,
+                )
+            return (
+                item_message
+                + prefix
+                + fortune_message
+                + self._messages.get("fail", "").format(**fmt)
+                + payoff_message
+            )
 
-            # Stun uses centralized application (handles post-stun immunity).
-            if (self._status_name == "Stun") and (not self._physical):
-                if not target.apply_stun(dur, source=self.name, applier=user):
-                    return item_message + prefix + self._messages.get("fail", "").format(**fmt)
-                return item_message + prefix + self._messages.get("success", "").format(**fmt)
+        if self._duration_stat:
+            stat_val = getattr(user.stats, self._duration_stat, 10)
+            dur = max(self._duration_min, stat_val // self._duration_divisor)
+        else:
+            dur = self._duration
+        if self.name in promotion_kits.RISKY_LUCK_ACTIONS:
+            dur += int(promotion_kits.combat_state(user).get("misfortune", 0) or 0)
 
+        if (self._status_name == "Stun") and (not self._physical):
+            contest_success = target.apply_stun(dur, source=self.name, applier=user)
+        else:
             effects_dict[self._status_name].active = True
-            # Negative duration = permanent (e.g. Disarm = -1)
             if dur < 0:
                 effects_dict[self._status_name].duration = dur
             else:
                 effects_dict[self._status_name].duration = max(
-                    dur, effects_dict[self._status_name].duration
+                    dur,
+                    effects_dict[self._status_name].duration,
                 )
-
             try:
                 user._emit_status_event(
-                    target, self._status_name, applied=True,
+                    target,
+                    self._status_name,
+                    applied=True,
                     duration=effects_dict[self._status_name].duration,
                     source=self.name,
                 )
             except Exception:
                 pass
 
-            message = prefix + self._messages.get("success", "").format(**fmt)
-            if self.name == "Goad":
-                try:
-                    from ...classes import promotion_kits
+        if not contest_success:
+            promotion_kits.finish_fortune_payoff(user, False)
+            return (
+                item_message
+                + prefix
+                + fortune_message
+                + self._messages.get("fail", "").format(**fmt)
+            )
 
-                    message += promotion_kits.build_resolve(
-                        user,
-                        5,
-                        "Goad",
-                    )
-                except Exception:
-                    pass
-            if self.name == "Disarm" and "For Good Measure" in user.spellbook.get("Skills", {}):
-                offhand = getattr(user, "equipment", {}).get("OffHand")
-                if getattr(offhand, "typ", None) == "Weapon" and target.is_alive():
-                    follow_up, _hit, _crit = user.weapon_damage(
-                        target,
-                        attack_slots=("OffHand",),
-                    )
-                    message += "For Good Measure follows through with the off hand.\n"
-                    message += follow_up
-            return item_message + message
+        message = prefix + self._messages.get("success", "").format(**fmt)
+        if self.name == "Goad":
+            message += promotion_kits.build_resolve(user, 5, "Goad")
+        if self.name == "Disarm" and "For Good Measure" in user.spellbook.get("Skills", {}):
+            offhand = getattr(user, "equipment", {}).get("OffHand")
+            if getattr(offhand, "typ", None) == "Weapon" and target.is_alive():
+                follow_up, _hit, _crit = user.weapon_damage(
+                    target,
+                    attack_slots=("OffHand",),
+                )
+                message += "For Good Measure follows through with the off hand.\n"
+                message += follow_up
 
-        return item_message + prefix + self._messages.get("fail", "").format(**fmt)
+        payoff_message = promotion_kits.finish_fortune_payoff(user, True)
+        if self.name in promotion_kits.RISKY_LUCK_ACTIONS:
+            payoff_message += promotion_kits.resolve_misfortune_payoff(
+                user,
+                target,
+                0,
+                self.name,
+            )
+            payoff_message += promotion_kits.record_luck_roll(
+                user,
+                True,
+                self.name,
+            )
+        return item_message + fortune_message + message + payoff_message

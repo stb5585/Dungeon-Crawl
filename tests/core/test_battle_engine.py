@@ -91,15 +91,15 @@ def test_resolve_skill_ignores_silence_and_spends_resolve():
     engine, player = _make_engine_with_player_attacking()
     player.cls = SimpleNamespace(name="Sentinel")
     player.equipment["OffHand"] = SimpleNamespace(subtyp="Shield")
-    player.spellbook["Skills"]["Shield Check"] = abilities.ShieldBash()
-    class_rings.ensure_state(player)["data"]["Stalwart Defender"]["guard_meter"] = 10
+    player.spellbook["Skills"]["Brace Wall"] = abilities.BraceWall()
+    class_rings.ensure_state(player)["data"]["Stalwart Defender"]["guard_meter"] = 15
     player.abilities_suppressed = lambda: True
 
-    result = engine.execute_action("Use Skill", "Shield Check")
+    result = engine.execute_action("Use Skill", "Brace Wall")
 
     assert "cannot use skills because of silence" not in result.message
-    assert "uses Shield Check" in result.message
-    assert "spends 10 Resolve on Shield Check" in result.message
+    assert "uses Brace Wall" in result.message
+    assert "spends 15 Resolve on Brace Wall" in result.message
     assert promotion_kits.current_resolve(player) == 0
 
 
@@ -340,6 +340,55 @@ def test_execute_spell_accepts_data_driven_spell_with_engine_context():
     result = engine.execute_action("Cast Spell", "Test Flame")
 
     assert "TestHero casts Test Flame" in result.message
+
+
+def test_natural_damaging_spell_releases_stolen_charge_once_per_action():
+    player = TestGameState.create_player(
+        name="TestHero",
+        class_name="Spell Stealer",
+        race_name="Human",
+    )
+    enemy = Goblin()
+    enemy.health.current = enemy.health.max = 500
+    engine = BattleEngine(player, enemy, DummyCombatTile())
+    engine.attacker = player
+    engine.defender = enemy
+    spell = DataDrivenSpell(
+        name="Certain Flame",
+        description="A stolen-magic integration test.",
+        cost=0,
+        dmg_mod=1,
+        crit=999,
+        subtyp="Fire",
+    )
+    player.spellbook["Spells"] = {spell.name: spell}
+    promotion_kits.combat_state(player)["stolen_charge"] = 2
+
+    result = engine.execute_action("Cast Spell", spell.name)
+
+    assert result.message.count("commits 2 Stolen Charge") == 1
+    assert result.message.count("Stolen Charge releases") == 1
+    assert promotion_kits.combat_state(player)["stolen_charge"] == 0
+
+
+def test_steal_as_well_stolen_scroll_cast_grants_charge_but_item_theft_does_not():
+    player = TestGameState.create_player(
+        name="TestHero",
+        class_name="Spell Stealer",
+        race_name="Human",
+    )
+    enemy = Goblin()
+    enemy.health.current = enemy.health.max = 500
+    engine = BattleEngine(player, enemy, DummyCombatTile())
+    engine.attacker = player
+    engine.defender = enemy
+    scroll = items.InscribedSpellScroll("Firebolt", charges=2)
+    player.inventory[scroll.name] = [scroll]
+
+    result = engine.execute_action("Steal As Well", scroll.name)
+
+    assert "gains 1 Stolen Charge from stolen spell scroll" in result.message
+    assert promotion_kits.combat_state(player)["stolen_charge"] == 1
 
 
 def test_execute_spell_accepts_stolen_scroll_choice_token():

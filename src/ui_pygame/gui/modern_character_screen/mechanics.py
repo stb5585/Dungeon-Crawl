@@ -333,9 +333,24 @@ class CharacterMechanicsMixin:
         title = str(entry.get("name", ""))
         role = str(entry.get("role", ""))
         description = str(entry.get("description", ""))
-        if not unlocked:
+        if surge:
+            learned = bool(entry.get("learned"))
+            if learned and not unlocked:
+                description = (
+                    "Discovered through defensive mastery; available after promotion"
+                )
+            elif not learned:
+                title = "Unknown Burst"
+                role = "Unrevealed"
+                description = "Defensive mastery may reveal a new technique."
+        elif not unlocked:
             description = "Locked"
-        cost = "Full bar" if surge else f"{int(entry.get('cost', 0) or 0)} Resolve"
+        cost = (
+            "Full bar" if surge and unlocked
+            else "Discovered" if surge and bool(entry.get("learned"))
+            else "Locked" if surge
+            else f"{int(entry.get('cost', 0) or 0)} Resolve"
+        )
 
         self._draw_text(title, self.normal_font, title_color, rect.left + 10, rect.top + 8, rect.width - 20)
         self._draw_text(f"{role} - {cost}", self.small_font, text_color, rect.left + 10, rect.top + 34, rect.width - 20)
@@ -369,10 +384,37 @@ class CharacterMechanicsMixin:
             self._draw_resolve_ability_box(entry, rect)
 
         class_name = self._attr_name(getattr(player_char, "cls", None), "")
-        if class_name == "Stalwart Defender":
+        if class_name in {"Sentinel", "Stalwart Defender"}:
             surge_y = box_top + 2 * (box_height + gap) + 22
-            self._draw_text("Resolve Bursts", self.normal_font, self.colors.GOLD, content.left, surge_y, content.width)
-            for index, entry in enumerate(promotion_kits.resolve_surge_rows(player_char)):
+            surge_rows = [
+                entry
+                for entry in promotion_kits.resolve_surge_rows(player_char)
+                if entry.get("learned")
+            ]
+            heading = (
+                "Resolve Bursts"
+                if class_name == "Stalwart Defender"
+                else "Defensive Mastery"
+            )
+            self._draw_text(
+                heading,
+                self.normal_font,
+                self.colors.GOLD,
+                content.left,
+                surge_y,
+                content.width,
+            )
+            if not surge_rows:
+                self._draw_wrapped_text(
+                    "Continued defensive practice may reveal new techniques.",
+                    self.small_font,
+                    self.colors.GRAY,
+                    content.left,
+                    surge_y + self.normal_font.get_height() + 14,
+                    content.width,
+                    max_lines=2,
+                )
+            for index, entry in enumerate(surge_rows):
                 rect = pygame.Rect(
                     content.left + index * (box_width + gap),
                     surge_y + self.normal_font.get_height() + 14,
@@ -742,26 +784,23 @@ class CharacterMechanicsMixin:
         class_name = self._attr_name(getattr(player_char, "cls", None), "")
         state = promotion_kits.ensure_state(player_char)
         journal = state["case_journal"]
-        combat = promotion_kits.combat_state(player_char)
-        revelation = combat.get("revelation", {})
-        current_revelation = max((int(value or 0) for value in revelation.values()), default=0) if isinstance(revelation, dict) else 0
         best_type, best_progress = max(journal.items(), key=lambda item: (int(item[1]), item[0]), default=("None", 0))
 
         rows = [
-            ("Best Case", f"{best_type} {int(best_progress)}/100"),
+            ("Best Case", best_type),
             ("Best Rank", promotion_kits.case_rank(best_progress)),
-            ("Revelation", f"{current_revelation}/{promotion_kits.cap_for(player_char, 'revelation')}"),
+            ("Revelation", "Target-specific in combat"),
         ]
         if class_name == "Seeker":
             rows.extend(
                 [
-                    ("Wayfinding", "Aligned" if promotion_kits.wayfinding_discount(player_char) > 0 else "Quiet"),
+                    ("Wayfinding", "Contextual"),
                     ("Hidden Cache", self._ring_state_text(player_char, "Seeker")),
                 ]
             )
         self._draw_key_values(rows, left_rect, y, font=self.normal_font, row_gap=10)
 
-        self._draw_text("Enemy-Type Progress", self.normal_font, self.colors.GOLD, right_rect.left, y, right_rect.width)
+        self._draw_text("Studied Enemy Types", self.normal_font, self.colors.GOLD, right_rect.left, y, right_rect.width)
         list_y = y + self.normal_font.get_height() + 12
         entries = sorted(journal.items(), key=lambda item: (-int(item[1]), item[0]))
         if not entries:
@@ -769,7 +808,9 @@ class CharacterMechanicsMixin:
             return
         for enemy_type, progress in entries[:8]:
             detail = promotion_kits.case_rank(progress)
-            list_y = self._draw_progress_row(right_rect, str(enemy_type), int(progress), 100, list_y, detail=detail, color=self.colors.GREEN)
+            self._draw_text(str(enemy_type), self.normal_font, self.colors.WHITE, right_rect.left, list_y, 150)
+            self._draw_text(detail, self.small_font, self.colors.GRAY, right_rect.left + 158, list_y + 2, right_rect.width - 158)
+            list_y += self.normal_font.get_height() + 12
             if list_y > right_rect.bottom - 40:
                 break
 

@@ -276,8 +276,8 @@ or stat requirements differ.
     Battle Determination makes Battle Cry generate 20 Resolve. Citadel Aegis,
     Ironwall Revenge, Last Bastion, and Stronghold are full-Resolve Bursts, not
     tree nodes. Each is intended to unlock after four uses of its associated
-    barrier, counter, survival, or fortress family; the current zero-threshold
-    scalar is a documented critical implementation gap.
+    barrier, counter, survival, or fortress family. Four persistent mastery
+    tracks now enforce those requirements from Sentinel onward.
   - The complete Stalwart tree occupies rows 1-6. Punishing Guard, Unbroken
     Wall, Fortified Citadel, Final Redoubt, Double Payback, and Iron Maiden each
     cost two points.
@@ -404,8 +404,8 @@ or stat requirements differ.
   Mastery contains four independent two-point level-75 nodes: Indiscriminate
   Provocation, Uno Reverse Card, Night Moves, and Bullionaire. Shade of Ahool
   is granted on promotion and spends Umbral Debt to enter a three-turn flying
-  shadow form; its implementation gaps are tracked in
-  `CLASS_KIT_DESIGN_GATES.md` and `DEVELOPMENT_ROADMAP.md`.
+  shadow form with its authored Shadow, Speed, flight, Holy-weakness, backlash,
+  ring, and familiar interactions.
 - Demonologist has five authored paths: Contagion, Contract Mastery, Hellfire,
   Soul Harvest, and Demonic Curses. Contagion combines Life Tap mana economy
   with Corruption II, fire-triggered explosions, and persistent DOT growth.
@@ -574,10 +574,11 @@ there are no hidden tree purchases that expand them. Ninja keeps its fixed
 three-mark capacity and authored setup/finisher development.
 
 The Assassin/Ninja entries are authored trees. The other three promoted
-Footpad paths are now intentionally compact catalog-only graphs: all generated
-rating families, repeated ranks, and generic cap masteries were removed. Their
-small graphs honestly expose the implemented actions while the loot/luck,
-investigation/wayfinding, and stolen-magic kit work remains tracked separately.
+Footpad paths are intentionally compact authored graphs: all generated
+rating families, repeated ranks, and generic cap masteries were removed. The
+Thief/Rogue loot, luck, and survival and Inquisitor/Seeker investigation and
+wayfinding and the Spell Stealer/Arcane Trickster stolen-magic payoff are
+implemented.
 
 Assassin now uses five authored six-row columns with intentional gaps instead
 of generic kit branches. Its toxin line turns specific enemy and exploration

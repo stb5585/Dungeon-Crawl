@@ -826,7 +826,7 @@ class PygameGame:
         guidance = {
             "Thief": (
                 "Thieves keep the old tricks and learn to turn risk into money.\n\n"
-                "Watch Fortune and Misfortune in combat. Steal and Mug feed the rhythm; risky hits cash it in."
+                "Watch Fortune and Misfortune in combat. Theft, close calls, and bold plays feed the rhythm."
             ),
             "Rogue": (
                 "Rogues win by making luck look rehearsed.\n\n"
@@ -838,7 +838,7 @@ class PygameGame:
             ),
             "Seeker": (
                 "Seekers turn evidence into routes.\n\n"
-                "Case Journal progress and Revelation make enemies readable, while Wayfinding keeps the dungeon from owning your path."
+                "Keep studying what hunts these halls. Revelation makes a chosen enemy readable, while Wayfinding keeps the dungeon from owning your path."
             ),
             "Assassin": (
                 "Assassins prepare the end before anyone notices the beginning.\n\n"
@@ -851,12 +851,12 @@ class PygameGame:
             "Spell Stealer": (
                 "Spell Stealers do not memorize what they can steal.\n\n"
                 "Carry Blank Scrolls, use Steal Spell on enemies with magic, then cast inscribed stolen-spell scrolls from the combat Spells menu. "
-                "Each successful stolen-magic action builds Stolen Charge, capped at 2. Your next successful damaging spell, weapon hit, or weapon-tagged trickster skill spends all Charge for bonus arcane damage: 20% of base damage per Charge, minimum 5 per Charge."
+                "Successful stolen-magic actions build Stolen Charge. Your next damaging spell, weapon attack, or weapon-tagged trickster skill commits that magic to an Arcane payoff."
             ),
             "Arcane Trickster": (
                 "Arcane Tricksters keep the scroll racket and learn the deeper con.\n\n"
                 "Blank Scroll theft still matters. Steal Spell 2 can permanently bind a new enemy spell, while stolen-scroll casting from the Spells menu feeds Stolen Charge. "
-                "Stolen Charge caps at 3 and releases on your next successful damaging spell, weapon hit, or weapon-tagged trickster skill for bonus arcane damage: 20% of base damage per Charge, minimum 5 per Charge. Awakened Arcane Larceny can preserve 1 Charge once per combat after a clean payoff."
+                "Stolen Charge deepens the next damaging spell, weapon attack, or weapon-tagged trickster skill with an Arcane payoff. Awakened Arcane Larceny can occasionally keep the rhythm alive after a clean release."
             ),
         }
         return guidance.get(class_name, "The Gray Broker has no branch ledger for your current path.")

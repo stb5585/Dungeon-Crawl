@@ -143,7 +143,13 @@ class PlayerCombatMixin:
                         if (
                             self.familiar.spec == "Arcane"
                             and "Night Moves" in skills
-                            and int(getattr(self, "shade_of_ahool_turns", 0) or 0) > 0
+                            and int(
+                                class_rings.ensure_state(self)["data"]["Shadowcaster"].get(
+                                    "eclipse_turns", 0
+                                )
+                                or 0
+                            )
+                            > 0
                         ):
                             second = self.familiar.spellbook['Spells'][random.choice(
                                 list(self.familiar.spellbook['Spells'])
@@ -208,8 +214,6 @@ class PlayerCombatMixin:
 
             total_mod = (weapon_mod + class_mod + self.combat.attack) * disarm_damage_multiplier
             total_mod *= curses.strength_multiplier(self)
-            if getattr(self, "shade_of_ahool_turns", 0) > 0:
-                total_mod *= 1.50
             total_mod *= class_rings.weapon_damage_multiplier(self)
             total_mod *= ability_mechanics.polearm_damage_multiplier(self)
             total_mod *= ability_mechanics.monkey_grip_damage_multiplier(self, "Weapon")
@@ -510,11 +514,10 @@ class PlayerCombatMixin:
                 luck_factor = max(1, luck_factor // 2)
             lf = max(1, int(luck_factor))
             base = int(self.stats.charisma) + int(self.stats.wisdom)
-            return max(0, (base * 2) // lf) + healer.luck_bonus(self, lf)
+            luck = max(0, (base * 2) // lf) + healer.luck_bonus(self, lf)
+            return int(luck * promotion_kits.jinx_luck_multiplier(self))
         if mod == "speed":
             speed_mod = self.stats.dex
-            if getattr(self, "shade_of_ahool_turns", 0) > 0:
-                speed_mod *= 1.50
             if getattr(self, "warlock_eclipse_turns", 0) > 0:
                 speed_mod *= 1.10
             speed_mod += self.stat_effects["Speed"].extra * self.stat_effects["Speed"].active

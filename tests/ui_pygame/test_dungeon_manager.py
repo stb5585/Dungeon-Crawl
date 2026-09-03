@@ -573,6 +573,23 @@ def test_move_forward_branches_and_turning(monkeypatch):
     assert "effects" in manager.messages
     assert not any(message.startswith("Moved to (") for message in manager.messages)
 
+
+def test_navigation_awards_hidden_cache_after_floor_is_mapped(monkeypatch):
+    manager, _presenter, player, _game = _make_manager(monkeypatch)
+    player.cls = SimpleNamespace(name="Seeker")
+    player.equipment["Ring"] = items.ClassRing()
+    class_rings.ensure_state(player)["awakened"]["Seeker"] = True
+    player.world_dict = {
+        (index, 0, 1): SimpleNamespace(visited=index < 3, near=False)
+        for index in range(4)
+    }
+
+    manager._check_hidden_cache()
+    manager._check_hidden_cache()
+
+    assert [name for name, _kwargs in player.inventory_calls] == ["Smoke Bomb"]
+    assert sum("Hidden Cache discovered" in message for message in manager.messages) == 1
+
     manager.turn_left()
     manager.turn_right()
     manager.turn_around()

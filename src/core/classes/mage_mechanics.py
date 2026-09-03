@@ -20,6 +20,12 @@ TRANSIENT_SUMMON_STEPS = 50
 TORCHLIGHT_STEPS = 50
 TORCHLIGHT_ENCOUNTER_MULTIPLIER = 0.50
 ENHANCEMENT_PROC_CHANCE = 0.20
+RANDOM_SCHOOL_RIDERS: dict[tuple[str, str], float] = {
+    ("Electric", "Paralyzer"): 0.25,
+    ("Wind", "Ejection Gale"): 0.25,
+    ("Ice", "Subzero"): 0.25,
+    ("Water", "Unrelenting Waves"): 0.35,
+}
 
 CALLING_ENEMY_TYPE_PREFERENCES = {
     "Animal": ("Animal",),
@@ -281,6 +287,45 @@ def _combat_state(character: Any) -> dict[str, Any]:
     return state
 
 
+def start_combat(character: Any) -> None:
+    """Clear transient Mage effects before a new combat begins."""
+    _combat_state(character).clear()
+    character.mage_refueling = False
+    character.mage_refueling_streak = 0
+
+
+def _random_school_rider_triggers(
+    character: Any,
+    school: str,
+    passive_name: str,
+    *,
+    rng: Any,
+) -> bool:
+    """Resolve one registered random rider and its hidden Wizard streak."""
+    base_chance = RANDOM_SCHOOL_RIDERS.get((school, passive_name))
+    if base_chance is None or not has_skill(character, passive_name):
+        return False
+    from . import class_rings
+    from . import promotion_kits
+
+    streak_active = (
+        getattr(getattr(character, "cls", None), "name", "") == "Wizard"
+        and class_rings.is_awakened(character, "Wizard")
+        and class_rings.has_equipped_class_ring(character)
+    )
+    if streak_active:
+        if not promotion_kits._claim_action(
+            character,
+            f"wizard_school_rider:{school}",
+        ):
+            return False
+        bonus = class_rings.wizard_rider_chance_bonus(character, school)
+        triggered = bonus >= 1.0 or rng.random() < min(1.0, base_chance + bonus)
+        class_rings.record_wizard_rider(character, school, triggered)
+        return triggered
+    return rng.random() < base_chance
+
+
 def process_cast(
     character: Any,
     ability: Any,
@@ -384,7 +429,7 @@ def tick_combat_state(character: Any, *, end: bool = False) -> str:
         character.mana.current += max(0, restored)
         message += f"{character.name} refuels {max(0, restored)} MP.\n"
     for key in tuple(state):
-        if key == "arcane_empowerment":
+        if key in {"arcane_empowerment", "school_mastery_buffs"}:
             continue
         state[key] = max(0, int(state[key] or 0) - 1)
         if state[key] <= 0:
@@ -429,8 +474,13 @@ def _apply_sorcerer_modifier(
         extra = max(1, damage // 4)
         target.health.current -= extra
         return f"Snowpiercer deals {extra} additional cold damage to {target.name}.\n"
-    if school == "Electric" and has_skill(character, "Paralyzer"):
-        if rng.random() < 0.25 and target.apply_stun(
+    if school == "Electric" and _random_school_rider_triggers(
+        character,
+        school,
+        "Paralyzer",
+        rng=rng,
+    ):
+        if target.apply_stun(
             1,
             source="Paralyzer",
             applier=character,
@@ -438,7 +488,12 @@ def _apply_sorcerer_modifier(
             return f"Paralyzer stuns {target.name}.\n"
         return ""
     if school == "Wind" and has_skill(character, "Ejection Gale"):
-        if rng.random() >= 0.25:
+        if not _random_school_rider_triggers(
+            character,
+            school,
+            "Ejection Gale",
+            rng=rng,
+        ):
             return ""
         target.health.current = 0
         target.windswept_ejected = True
@@ -509,7 +564,12 @@ def _apply_wizard_modifier(
         if others:
             _apply_burning(others[0], max(1, damage // 6), source="Inferno")
         message += "Inferno spreads the flames across the battlefield.\n"
-    elif school == "Ice" and has_skill(character, "Subzero") and rng.random() < 0.25:
+    elif school == "Ice" and _random_school_rider_triggers(
+        character,
+        school,
+        "Subzero",
+        rng=rng,
+    ):
         target.mage_frozen = 2
         target.mage_brittle = True
         target.apply_stun(2, source="Subzero", applier=character)
@@ -529,7 +589,12 @@ def _apply_wizard_modifier(
         prone.source = "Divine Wind"
         message += f"Fujin leaves {target.name} prone.\n"
     elif school == "Water" and has_skill(character, "Unrelenting Waves"):
-        if rng.random() < 0.35:
+        if _random_school_rider_triggers(
+            character,
+            school,
+            "Unrelenting Waves",
+            rng=rng,
+        ):
             target.mage_unrelenting_waves = 2
             effect = target.magic_effects["DOT"]
             effect.active = True

@@ -306,13 +306,15 @@ class DataDrivenSpell(Spell):
                 except Exception:
                     pass
                 try:
-                    data = caster.class_ring_awakening["data"]["Shadowcaster"]
-                    if (
-                        caster.cls.name == "Shadowcaster"
-                        and self.subtyp in {"Shadow", "Dark"}
-                        and int(data.get("eclipse_turns", 0) or 0) > 0
-                    ):
-                        damage = int(damage * 1.15)
+                    from src.core.classes import class_rings
+
+                    damage = int(
+                        damage
+                        * class_rings.shadowcaster_shade_damage_multiplier(
+                            caster,
+                            self.subtyp,
+                        )
+                    )
                 except Exception:
                     pass
 

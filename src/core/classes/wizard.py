@@ -481,11 +481,14 @@ def _grant_ultimate(
 
 
 def _buff_state(character: Any) -> dict[str, int]:
-    state = getattr(character, "wizard_school_buffs", None)
-    if not isinstance(state, dict):
-        state = {}
-        setattr(character, "wizard_school_buffs", state)
-    return state
+    from . import mage_mechanics
+
+    state = mage_mechanics._combat_state(character)
+    buffs = state.get("school_mastery_buffs")
+    if not isinstance(buffs, dict):
+        buffs = {}
+        state["school_mastery_buffs"] = buffs
+    return buffs
 
 
 def _apply_mastery_proc(character: Any, school: str, target: Any | None) -> str:

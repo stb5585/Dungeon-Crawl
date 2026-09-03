@@ -1,6 +1,6 @@
 # The Forsaken Tenet Development Roadmap
 
-*Updated: September 2, 2026*
+*Updated: September 3, 2026*
 
 This roadmap tracks remaining work for **The Forsaken Tenet**. Completed P0-P6
 roadmap history has been consolidated into `CHANGELOG.md`; this file is now
@@ -211,8 +211,8 @@ caps 50/100, explicit Defend/block/physical-damage/Goad/Hold gains, and no
 duplicate Class Ring accumulation. Spell Block is the active anti-projectile
 action and Spell Reflection is its passive reflection modifier. Stalwart's
 Citadel Aegis, Ironwall Revenge, Last Bastion, and Stronghold full-bar Bursts
-currently unlock immediately; replacing that placeholder with four
-use-developed mastery tracks is an active critical gap below.
+unlock through four persistent, use-developed mastery tracks that begin on
+Sentinel, survive promotion and save/load, and require four associated uses.
 Its new Tower Offense, Get Even, Generator Shield, and Battle Determination
 passives turn Shield Slam, Retaliate, Shield Ricochet, and Battle Cry into
 additional Resolve interactions.
@@ -278,8 +278,8 @@ appropriate design-gate document before coding.
   Character Menu tab, pygame promotion preview/stat-delta education, INT-backed
   promotion stat tuning, Sorcerer/Wizard 0-based School Affinity progression,
   and the promotion ability transition decision matrix. The 2026-09-02 audit
-  found several V1 class-kit payoffs that remain incomplete despite their
-  state, tree, or presentation surfaces; they are tracked below.
+  found several incomplete V1 class-kit payoffs despite their state, tree, or
+  presentation surfaces; the completed closure record is tracked below.
 - Cleric now has a second level-3 fork: `Templar` remains the heavy shield
   defender, while `Hierophant` is the staff/shield/light-armor divine
   battle-caster with `Staff Conduit`, `Consecrated Conduit`, Devotion support,
@@ -327,68 +327,34 @@ appropriate design-gate document before coding.
 These are implementation defects or incomplete advertised mechanics, not
 deferred expansion ideas.
 
-- **Critical — Berserker Bloodied Momentum:** replace per-damage-event gain
-  with once-per-player-action and once-per-enemy-action generation, enforce the
-  one-per-round below-25% bonus, spend at validated heavy-art/Final Assault
-  action start, implement art mutations and miss behavior, add Battle Scar
-  milestone/ring preservation, and cover the entire loop with focused tests.
-  Remove the meter and its claims instead if the complete payoff is not going
-  to ship.
-- **Ready cleanup — shared Momentum presentation:** the Weapon Master,
-  Berserker, Assassin, and Ninja trees reuse one ability class, but its base
-  description now always says `Death Mark Setup`. Move that label into
-  Assassin/Ninja-specific tree or detail metadata so non-marking classes are
-  not promised a mechanic they cannot use.
-- **Critical — Stalwart Resolve mastery:** replace the meaningless scalar
-  `resolve_mastery` and zero-threshold Surges with four persistent mastery
-  tracks learned through associated barrier, counter, survival, and fortress
-  actions. Start with four qualifying uses per track, count once per action or
-  defensive event, carry progress from Sentinel into Stalwart, expose locked
-  progress in the Resolve tab, and test save/load and promotion behavior.
-- **Ready cleanup — retired Resolve APIs:** after the mastery rewrite, remove
-  Shield Check, Bulwark, active Shield Riposte, Covering Guard, and active Spell
-  Reflection classes/functions/exports/tests unless an explicit legacy-save
-  compatibility decision keeps them in an isolated adapter.
-- **Critical — Wizard School Streak:** connect awakened-and-equipped ring state
-  to eligible random spell riders through a once-per-action registry. Failed
-  riders build school-specific stacks, success resets them, and four stacks
-  guarantee and consume the next eligible opportunity. Define and test the
-  lifecycle of unsaved `wizard_school_buffs` at the same time.
-- **Critical — Shadowcaster Shade/backlash:** remove predecessor bonuses still
-  triggered by `shade_of_ahool_turns`, retain only the authored Shadow, Speed,
-  flight, and Holy-resistance effects, unify its timer, and trigger backlash
-  conversion once on Shade end and low-HP ring healing with the correct ring
-  and familiar modifiers.
-- **Critical — Thaumaturgist conduit payoff:** consume Conduit Command on the
-  active Xenid's next non-Recall action for its authored damage/healing and
-  True Name effects; implement Recall/death/combat cleanup. Replace generic
-  invocation damage with fourteen authored typed invocations, including the
-  missing Hodag and Caladrius abilities and every documented rider.
-- **Ready coverage — implemented but dispersed mechanics:** add parameterized
-  coverage for all Grandmaster Weapon Art forms, Wizard school modifiers,
-  Warlock familiar modifiers, and Shadowcaster terminal passives. These hooks
-  exist, but current tests are representative rather than exhaustive.
-- **Critical — Thief/Rogue authored kit:** replace the class-name-only loot
-  messages with learned `Scavenger's Eye` rarity/drop behavior and a real
-  `Finders Keepers` extra-loot roll; make Fortune/Misfortune action-scoped and
-  connect them to authored risky-action odds/outcomes. Gate Cheat Death on its
-  learned node, give Jinx a defined effect or remove it, and integrate the
-  currently unused Loaded Dice failed-luck conversion.
-- **Critical — Inquisitor/Seeker investigation payoff:** add the missing Revelation spender,
-  visible-detail/telegraph progress rules, all four Case milestone effects,
-  target-specific cleanup/presentation, live Wayfinding consumers, and actual
-  dungeon/reward integration for Hidden Cache.
-- **Critical — Spell Stealer/Arcane Trickster stolen-magic payoff:** centralize
-  validate-then-spend MP handling for both theft abilities, add the missing
-  stolen-scroll source in Steal As Well, resolve Stolen Charge once per action
-  across weapon and spell payoffs through typed Arcane damage, and settle miss
-  consumption.
-  Make the awakened/equipped Arcane Larceny buff expire after three turns and
-  clear correctly at combat/load boundaries.
+- **Resolved cleanup — shared Momentum presentation:** Momentum's reusable
+  ability description is class-neutral. Its Death Mark identity now appears
+  only in Ninja progression detail, so Weapon Master and Berserker are not
+  promised an unavailable marking mechanic.
+- **Resolved cleanup — retired Resolve APIs:** removed Shield Check, Bulwark,
+  active Shield Riposte, Covering Guard, and active Spell Reflection classes,
+  functions, facade exports, temporary state, and obsolete tests. Finalized
+  Shield Riposte and Spell Reflection remain passive Sentinel/Stalwart nodes.
+- **Resolved coverage — dispersed mechanics:** parameterized regressions now
+  exercise all 24 Grandmaster Weapon Art rank forms, all six Wizard school
+  modifiers, both familiar-bond ranks and every Warlock familiar modifier,
+  and every dispersed Shadowcaster terminal passive.
+- **Resolved — Inquisitor/Seeker investigation payoff:** Revelation now spends
+  before target-specific weapon payoffs, visible details and telegraphs feed
+  the Case Journal, all four hidden milestones have live effects, Wayfinding
+  modifies its four movement tools, and mapped floors can award real awakened
+  Hidden Cache rewards.
+- **Resolved — Spell Stealer/Arcane Trickster stolen-magic payoff:** both theft
+  abilities validate before spending MP or changing inventory/spellbooks,
+  every stolen-scroll route feeds Charge, and eligible actions commit it once
+  before resolving one aggregate typed Arcane payoff. Misses and negated
+  actions consume the commitment without applying bonus damage. Awakened
+  Arcane Larceny now requires the equipped ring, expires after three turns,
+  clears at lifecycle boundaries, and preserves one clean payoff per combat.
 - **Resolved — generic Footpad talent removal:** Thief/Rogue,
   Inquisitor/Seeker, and Spell Stealer/Arcane Trickster now expose only their
   real catalog actions. Repeated rating families and generic meter-cap
-  masteries are gone; the remaining kit implementation gaps stay critical.
+  masteries are gone; their authored mechanic closures are also shipped.
 - **Resolved — Devotion action loop:** Cleric/Templar/Hierophant generation is
   action-scoped across healing, Holy, shield, block, and Turn Undead sources.
   Holy Retribution, Ordered Blessings, Relic Aegis, and typed action-consuming
@@ -942,8 +908,7 @@ an explicit oath confirmation before promotion commits.
 
 The obsolete empty column placeholders previously kept here are retired.
 Assassin/Ninja now has an authored tree and implemented Death Mark system.
-Thief/Rogue, Inquisitor/Seeker, and Spell Stealer/Arcane Trickster require the
-mechanic closure and authored-tree replacement work listed in Active Class-Kit
-Closure and specified in `docs/CLASS_KIT_DESIGN_GATES.md`. Do not add isolated
+The three compact Footpad branches have now received their authored mechanic
+closure work under Active Class-Kit Closure. Do not add isolated
 column fillers such as Find Traps or Disarm Traps before each branch's complete
 identity, prerequisites, action semantics, and test contract are approved.

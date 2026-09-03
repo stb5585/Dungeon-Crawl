@@ -64,10 +64,6 @@ class CharacterEventsMixin:
                 self.haunted_turns = max(3, int(getattr(self, "haunted_turns", 0) or 0))
             if getattr(self, "shadow_curtain_turns", 0) > 0 and damage_type == "Physical":
                 target.health.current = max(0, target.health.current - max(1, int(damage * 0.25)))
-            if getattr(self, "shade_of_ahool_turns", 0) > 0 and damage_type == "Physical":
-                shadow = max(1, int(damage * 0.50))
-                target.health.current = max(0, target.health.current - shadow)
-                self.health.current = min(self.health.max, self.health.current + shadow)
             try:
                 from .. import curses
 

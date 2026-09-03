@@ -1,6 +1,14 @@
 """Player text presentation and menu-facing helpers."""
 
-from ..classes import astromancer, bard, class_rings, lycan, promotion_kits, wizard
+from ..classes import (
+    astromancer,
+    bard,
+    berserker,
+    class_rings,
+    lycan,
+    promotion_kits,
+    wizard,
+)
 from ..constants import BASE_CRIT_PER_POINT
 from ..items import remove_equipment
 
@@ -36,6 +44,11 @@ class PlayerPresentationMixin:
         if cls_name == "Berserker":
             scars = class_rings.ensure_state(self)["data"]["Berserker"].get("battle_scars", 0)
             lines.append(f"{'Battle Scars:':13} {int(scars)}/20")
+            momentum = promotion_kits.combat_state(self).get("bloodied_momentum", 0)
+            cap = promotion_kits.cap_for(self, "bloodied_momentum")
+            lines.append(f"{'Bloodied Momentum:':20} {int(momentum)}/{cap}")
+            threshold = berserker.scar_qualification_threshold(self)
+            lines.append(f"{'Scar Threshold:':20} {int(threshold * 100)}% HP")
         if cls_name in {"Bard", "Troubadour"}:
             song = bard.ensure_song_state(self)
             active = song.get("active") or "None"

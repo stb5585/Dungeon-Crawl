@@ -1565,7 +1565,9 @@ def _build_authored_kit_tree(
                 "name": str(spec.get("name", ability.name)),
                 "book": book,
                 "ability_class": ability_ctor,
-                "description": getattr(ability, "description", ""),
+                "description": str(
+                    spec.get("description", getattr(ability, "description", ""))
+                ),
             }
             icon_key = str(
                 spec.get("icon_key", _ability_icon_key(book, ability))

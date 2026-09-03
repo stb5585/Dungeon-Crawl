@@ -15,8 +15,10 @@ class PlayerInventoryMixin:
     def loot(self, enemy, tile):
         loot_message = ""
         items = sum(enemy.inventory.values(), [])
+        resolved_items = []
         rare = [False] * len(items)
         drop = [False] * len(items)
+        scavenged = [False] * len(items)
         if enemy.gold > 0:
             gold = int(enemy.gold)
             # Gnome Charity (virtue): charisma has a stronger effect on gold outcomes.
@@ -41,6 +43,7 @@ class PlayerInventoryMixin:
                 item = item_typ()
             except TypeError:
                 item = item_typ
+            resolved_items.append(item)
 
             # Check if item has class restrictions
             if hasattr(item, 'restricted_classes'):
@@ -106,28 +109,25 @@ class PlayerInventoryMixin:
                 chance = self.check_mod('luck', enemy=enemy, luck_factor=16) + self.level.pro_level
                 chance *= bard.loot_drop_multiplier(self)
                 chance *= footpad.loot_drop_multiplier(self)
-                if item.rarity > (random.random() / chance):
-                        try:
-                            summon, name = item.subtyp.split(" - ")
-                            summon_drop = item.name in self.special_inventory
-                        except ValueError:
-                            summon, name = None, None
-                            summon_drop = False
-                        if summon and "Thaumaturgist" not in self.cls.name:
-                            continue
-                        drop[i] = True if not summon_drop else False
-                        rare[i] = True if summon else False
+                base_threshold = min(1.0, max(0.0, item.rarity * chance))
+                threshold = footpad.ordinary_loot_threshold(self, item, chance)
+                roll = random.random()
+                if roll < threshold:
+                    scavenged[i] = roll >= base_threshold
+                    try:
+                        summon, name = item.subtyp.split(" - ")
+                        summon_drop = item.name in self.special_inventory
+                    except ValueError:
+                        summon, name = None, None
+                        summon_drop = False
+                    if summon and "Thaumaturgist" not in self.cls.name:
+                        continue
+                    drop[i] = True if not summon_drop else False
+                    rare[i] = True if summon else False
             if drop[i]:
                 loot_message += f"{enemy.name} dropped a {item.name}.\n"
-                if self.cls.name in {"Thief", "Rogue"} and item.subtyp not in {"Quest", "Special", "Ability"}:
-                    try:
-                        _summon, _name = item.subtyp.split(" - ")
-                        summon_gated = True
-                    except ValueError:
-                        summon_gated = False
-                    if not summon_gated and 'Boss' not in str(tile):
-                        passive = "Scavenger's Eye" if self.cls.name == "Thief" else "Finders Keepers"
-                        loot_message += f"{passive} spots ordinary loot: {item.name}.\n"
+                if scavenged[i]:
+                    loot_message += f"Scavenger's Eye uncovers {item.name}.\n"
                 self.modify_inventory(item, rare=rare[i])
                 loot_message += self.quests(item=item)
                 # Unlock Jump modification for special items
@@ -145,6 +145,21 @@ class PlayerInventoryMixin:
                         unlocked = jump_skill.unlock_item_modification(item.name)
                         if unlocked:
                             loot_message += f"New Jump modification unlocked: {unlocked}.\n"
+        if 'Boss' not in str(tile):
+            extra_candidates = [
+                item
+                for index, item in enumerate(resolved_items)
+                if not drop[index]
+            ]
+            extra = footpad.finders_keepers_candidate(
+                self,
+                extra_candidates,
+                rng=random,
+            )
+            if extra is not None:
+                self.modify_inventory(extra)
+                loot_message += f"Finders Keepers turns up an extra {extra.name}.\n"
+
         # Unlock Jump modification for boss defeats
         if 'Boss' in str(tile):
             skills = self.spellbook.get("Skills", {})

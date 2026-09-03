@@ -10,7 +10,9 @@ PROMOTION_MECHANIC_GUIDANCE: dict[str, str] = {
     ),
     "Berserker": (
         "Character Menu tab available: Weapon Discipline. Your weapon training "
-        "continues here, carrying ranks and revealed arts forward."
+        "continues here, carrying ranks and revealed arts forward. Below half "
+        "health, weapon hits and incoming damage build Bloodied Momentum for "
+        "heavy weapon arts and Final Assault."
     ),
     "Grandmaster of Arms": (
         "Character Menu tab available: Weapon Discipline. Your weapon training "
@@ -79,11 +81,11 @@ PROMOTION_MECHANIC_GUIDANCE: dict[str, str] = {
     ),
     "Inquisitor": (
         "Character Menu tab available: Case Journal. Use it to review enemy-type "
-        "evidence, Revelation stacks, and open investigation counterplay."
+        "discoveries while Revelation and investigation tools expose enemy openings."
     ),
     "Seeker": (
         "Character Menu tab available: Case Journal. Use it to review enemy-type "
-        "evidence, Revelation stacks, and Wayfinding progress."
+        "discoveries while Wayfinding turns hard-won insight into safer routes."
     ),
     "Assassin": (
         "Death Mark is shown in combat HUD/status rows and logs. Use setup "

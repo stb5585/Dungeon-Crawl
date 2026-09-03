@@ -102,8 +102,6 @@ class CharacterUtilityMixin:
             from .. import curses
 
             total_mod *= curses.strength_multiplier(self)
-            if getattr(self, "shade_of_ahool_turns", 0) > 0:
-                total_mod *= 1.50
             offense_multiplier = float(getattr(self, "_encounter_offense_multiplier", 1.0))
             return max(0, int(total_mod * (1 + berserk_per) * totem_bonus * offense_multiplier))
         if mod == 'shield':
@@ -237,7 +235,14 @@ class CharacterUtilityMixin:
             base = int(self.stats.charisma) + int(self.stats.wisdom)
             from ..classes import healer
 
-            return max(0, (base * 2) // lf + healer.luck_bonus(self, lf))
+            luck = max(0, (base * 2) // lf + healer.luck_bonus(self, lf))
+            try:
+                from ..classes import promotion_kits
+
+                luck = int(luck * promotion_kits.jinx_luck_multiplier(self))
+            except Exception:
+                pass
+            return luck
         if mod == "speed":
             speed_mod = self.stats.dex
             if (
@@ -246,8 +251,6 @@ class CharacterUtilityMixin:
                 and not getattr(self, "sight", False)
             ):
                 speed_mod *= 0.75
-            if getattr(self, "shade_of_ahool_turns", 0) > 0:
-                speed_mod *= 1.50
             if getattr(self, "warlock_eclipse_turns", 0) > 0:
                 speed_mod *= 1.10
             speed_mod += self.stat_effects["Speed"].extra * self.stat_effects["Speed"].active

@@ -15,10 +15,9 @@ Class Ring activation now has two implementation tiers:
   `Master Monk`, `Archbishop`, `Troubadour`, `Lycan`, `Astromancer`,
   `Soulcatcher`, and `Beast Master`.
 - Activation completion does not imply every advertised combat rider is wired.
-  The current class-kit audit identifies critical runtime gaps for Berserker
-  Bloodied Momentum, Wizard School Streak, Shadowcaster Shade/backlash, and
-  Thaumaturgist Conduit Command/invocations; it also finds missing or orphaned
-  riders across Templar, Master Monk, Archbishop, Lycan, Astromancer,
+  The current class-kit audit still finds missing or orphaned riders across
+  Templar, Master Monk, Archbishop, Lycan,
+  Astromancer,
   Soulcatcher, Archdruid, and Beast Master. Those effects must not be treated
   as shipped merely because their awakening quests and display names work.
 - Legacy second-promotion class-kit pass: supporting class mechanics, saved
@@ -366,11 +365,12 @@ additional visual presentation, and playtest follow-up.
     roll a 10% chance to gain 1 scar, capped at 20. Each scar permanently
     increases max HP by about 1% at the time it is earned and grants +0.5%
     weapon damage while below 25% HP.
-  - Critical implementation gap: combat-only `Bloodied Momentum` currently
-    stores and displays stacks, but gain is not deduplicated per action and no
-    heavy-art, Final Assault, Battle Scar stability, or ring-preservation
-    payoff is wired. Treat those additions as pending until the class-kit gap
-    in `CLASS_KIT_DESIGN_GATES.md` is closed.
+  - Combat-only `Bloodied Momentum` builds once per player/enemy action below
+    50% HP, gains one extra stack once per round below 25%, and has a 3/4/5 cap
+    at 0/10/20 scars. Heavy weapon arts and `Final Assault` consume it for
+    accuracy/damage pressure; Battle Scars preserve one clean spend at 10+
+    scars, and awakened/equipped `Bloodied Crits` preserves one missed spend.
+    At 20 scars, the victory stability threshold rises from 10% to 15% HP.
   - Status: playable in the Barracks when a dormant Berserker Class Ring is
     equipped or stored.
   - The duel has no normal XP, gold, loot, quest, kill-count, or death penalty
@@ -450,9 +450,9 @@ additional visual presentation, and playtest follow-up.
     absorbs compatible hostile projectile spells using spell and shield
     strength; Spell Reflection may return the blocked damage. Stalwart keeps
     those actions and adds the full-bar Resolve Bursts Citadel Aegis, Ironwall
-    Revenge, Last Bastion, and Stronghold. The four Bursts are intended to be
-    learned through separate associated-use mastery tracks carried forward
-    from Sentinel; the current zero-threshold scalar is a critical gap. Mirror
+    Revenge, Last Bastion, and Stronghold. The four Bursts are learned after
+    four uses in separate associated-action mastery tracks carried forward
+    from Sentinel and persisted through save/load. Mirror
     Bastion raises Magic Defense by 50 while its spell-defense payoff is active. Awakened/equipped
     `Shield Mastery` remains the strongest automation layer for major-hit
     mitigation and reads/spends this same Resolve value without a duplicate
@@ -467,9 +467,11 @@ additional visual presentation, and playtest follow-up.
 - `Sorcerer`/`Wizard`: `Four Formulae` awakens `School Streak`. Failed spell
   riders for the same school add +15% rider chance; four stacks guarantee the
   next eligible rider.
-  - Critical implementation gap: the stored streak and helper functions exist,
-    but eligible spell riders never call them. No failed rider currently adds
-    a stack and no accumulated streak changes a rider roll.
+  - The effect is connected to Paralyzer, Ejection Gale, Subzero, and
+    Unrelenting Waves once per spell action. Failure builds the persistent
+    school streak, success resets it, and four failures guarantee and consume
+    the next eligible opportunity. Player-facing ring copy keeps the formula
+    and counter hidden.
   - `School Affinity` is specialization-aware. Classical Force tracks the six
     elemental schools; Arcane Tradition tracks Arcane affinity and presents only
     that school in the mechanic panel. Sorcerer affinity caps at 50; Wizard
@@ -491,10 +493,10 @@ additional visual presentation, and playtest follow-up.
     and adds `Shade of Ahool` as a debt-spending shadow form. The awakened, equipped
     Class Ring raises the debt cap, preserves low-HP auto-healing, and reduces
     Shade of Ahool backlash conversion.
-  - Critical implementation gap: Shade still activates obsolete physical
-    damage, critical, speed, and siphon hooks from its predecessor. Backlash is
-    not converted when Shade ends or low-HP auto-healing triggers, and the
-    documented Fairy/ring conversion behavior is incomplete.
+  - Shade now uses one class-kit timer and only its authored shadow form
+    effects. Shade expiration and low-HP auto-healing convert stored backlash
+    once, with ring stabilization and familiar variations applied during the
+    conversion.
   - Status: playable in the Church when a dormant Shadowcaster Class Ring is
     equipped or stored.
 - `Knight Enchanter`: `Arcane Duel` awakens `Weave Memory`, preserving the
@@ -514,11 +516,11 @@ additional visual presentation, and playtest follow-up.
   awakens +30% HP and damage for any of the 14 named Xenids.
   - A newly chosen member of the fixed roster applies the awakened multiplier
     when its combat stats are initialized.
-  - Critical implementation gap: Conduit Command currently only stores a
-    readiness flag. Summon actions do not consume it, receive its +25% effect,
-    expire it, or resolve True Name. Existing borrowed invocations use one
-    generic damage result instead of their authored riders, and Hodag and
-    Caladrius have no invocation abilities.
+  - Conduit Command now empowers exactly the next committed Xenid action and
+    expires on the summon lifecycle boundaries. A perfected conduit adds its
+    lesser signature only while the awakened ring is equipped.
+  - All fourteen borrowed invocations, including Hodag and Caladrius, use
+    authored damage types, ordinary mitigation, and distinct thematic riders.
   - Status: playable in the Church when a dormant Thaumaturgist Class Ring is
     equipped or stored.
 
@@ -530,12 +532,11 @@ additional visual presentation, and playtest follow-up.
   risky actions, Misfortune severity payoff after clean risky successes, and
   `Cheat Death`; when awakened and equipped, `Loaded Dice` preserves 1 point of
   a spent meter once per combat after a clean Fortune or Misfortune payoff.
-  - Critical implementation gap: the 15% failed-luck conversion is a direct
-    helper with no runtime caller. Fortune/Misfortune cover only a narrow set
-    of critical and named-skill outcomes, Cheat Death does not require its
-    learned node, Jinx has no mechanical effect, and the advertised
-    Scavenger's Eye/Finders Keepers loot behavior is absent. Meter preservation
-    itself is wired for the current representative spends.
+  - Failed eligible theft, risky-attack, and Cheat Death checks now call the
+    conversion directly. Fortune and Misfortune resolve once per meaningful
+    action, Jinx weakens real accuracy and luck checks, and the two learned loot
+    passives affect only eligible ordinary rewards. Meter preservation occurs
+    only after one clean payoff per combat.
   - Status: playable in the Thieves Guild backroom when a dormant Rogue Class Ring is
     equipped or stored.
 - `Seeker`: `Cartographer's Proof` awakens `Hidden Cache`, one depth-weighted
@@ -568,11 +569,10 @@ additional visual presentation, and playtest follow-up.
     On success, the blank is consumed and replaced with a usable stolen-spell
     scroll that preserves the stolen spell identity and normal scroll targeting
     rules. Class Ring trial enemies are immune.
-  - Critical implementation gap: the nominal three-turn ring buff never ticks
-    down or clears, and it may be primed while the ring is unequipped. Stolen
-    Charge releases only from weapon damage rather than eligible spells and
-    bypasses typed Arcane resolution; theft MP validation is also incomplete.
-    Charge preservation is wired for the current weapon-only release.
+  - Shipped: the three-turn buff requires the awakened ring to be equipped and
+    clears at lifecycle boundaries. Stolen Charge resolves once per eligible
+    action through typed Arcane mitigation, with validated theft costs and
+    once-per-combat clean-payoff preservation.
   - Status: playable in the Thieves Guild backroom when a dormant Arcane Trickster
     Class Ring is equipped or stored.
 

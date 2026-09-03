@@ -103,6 +103,49 @@ def loot_drop_multiplier(character: Any) -> float:
     return 1.25 if has_skill(character, "Serendipity") else 1.0
 
 
+def ordinary_loot_eligible(character: Any, item: Any) -> bool:
+    """Return whether a passive loot find may safely grant an item."""
+    if item is None or getattr(item, "subtyp", None) in {"Quest", "Special", "Ability"}:
+        return False
+    if bool(getattr(item, "ultimate", False) or getattr(item, "unique", False)):
+        return False
+    if " - " in str(getattr(item, "subtyp", "")):
+        return False
+    allowed = getattr(item, "restricted_classes", None)
+    class_value = getattr(getattr(character, "cls", None), "name", "")
+    if allowed is not None and class_value not in allowed:
+        return False
+    return getattr(item, "name", None) not in getattr(character, "special_inventory", {})
+
+
+def ordinary_loot_threshold(character: Any, item: Any, base_chance: float) -> float:
+    """Return the ordinary drop threshold with Scavenger's Eye's rarity nudge."""
+    threshold = max(0.0, min(1.0, float(getattr(item, "rarity", 0.0)) * base_chance))
+    if not has_skill(character, "Scavenger's Eye") or not ordinary_loot_eligible(
+        character,
+        item,
+    ):
+        return threshold
+    rarity_nudge = 0.05 * (1.0 - float(getattr(item, "rarity", 0.0)))
+    return min(1.0, (threshold * 1.10) + rarity_nudge)
+
+
+def finders_keepers_candidate(
+    character: Any,
+    candidates: list[Any],
+    *,
+    rng: Any | None = None,
+) -> Any | None:
+    """Roll one conservative extra ordinary find from valid defeated-enemy loot."""
+    if not has_skill(character, "Finders Keepers"):
+        return None
+    generator = rng or random
+    eligible = [item for item in candidates if ordinary_loot_eligible(character, item)]
+    if not eligible or generator.random() >= 0.15:
+        return None
+    return generator.choice(eligible)
+
+
 def trap_damage(character: Any, damage: int, *, rng: Any | None = None) -> tuple[int, str]:
     """Resolve Avoid Traps against a triggered trap's negative effect."""
     damage = max(0, int(damage))

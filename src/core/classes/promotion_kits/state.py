@@ -103,6 +103,7 @@ def default_state() -> dict[str, Any]:
     return {
         "summon_bonds": {name: 0 for name in SUMMON_NAMES},
         "case_journal": {},
+        "case_focus": None,
         "bard_repertoire": {
             song: {"known": False, "practice_xp": 0, "clean_finishes": 0}
             for song in ADVANCED_SONGS
@@ -146,6 +147,8 @@ def normalize_state(state: Any) -> dict[str, Any]:
             for enemy_type, progress in journal.items()
             if str(enemy_type).strip()
         }
+    focus = state.get("case_focus")
+    normalized["case_focus"] = str(focus) if focus and str(focus).strip() else None
 
     repertoire = state.get("bard_repertoire", {})
     if isinstance(repertoire, dict):
@@ -214,23 +217,34 @@ def combat_state(character: Any) -> dict[str, Any]:
         "defensive_release": 0,
         "echoing_weave": None,
         "bloodied_momentum": 0,
-        "momentum_preserved": False,
+        "bloodied_bonus_round": None,
+        "bloodied_payoff_action_token": None,
+        "battle_scar_momentum_preserved": False,
+        "bloodied_ring_miss_preserved": False,
         "oath_conviction": 0,
         "aerial_tempo": 0,
         "pending_aerial_follow_through": None,
         "hold_the_line": 0,
-        "spell_reflection_turns": 0,
-        "spell_reflection_skip_tick": False,
         "oath_judgment_counter": None,
         "oath_protection_guard": None,
         "oath_retribution_shelter": None,
         "fortune": 0,
         "misfortune": 0,
+        "pending_fortune_payoff": None,
         "cheat_death_used": False,
         "revelation": {},
+        "active_revelation_payoff": None,
+        "inspect_studied_bonus_used": False,
+        "seeker_insight_smoothed": False,
+        "telegraph_reads": set(),
+        "pending_case_prediction": {},
+        "active_case_prediction": None,
+        "visible_enemy_types": set(),
         "death_marks": {},
         "death_mark_action_tokens": set(),
         "stolen_charge": 0,
+        "pending_stolen_charge_payoff": None,
+        "arcane_larceny_skip_tick": False,
         "devotion": 0,
         "pending_devotion_gains": [],
         "defer_devotion_until_survival": False,
@@ -293,7 +307,7 @@ def clear_combat_state(character: Any) -> None:
 
 def tick_combat_state(character: Any) -> str:
     from .. import class_rings
-    from .resolve import tick_resolve_effects, tick_spell_reflection
+    from .resolve import tick_resolve_effects
 
     state = combat_state(character)
     character._shadow_evasion_turns = max(
@@ -301,7 +315,7 @@ def tick_combat_state(character: Any) -> str:
         int(getattr(character, "_shadow_evasion_turns", 0) or 0) - 1,
     )
     msg = class_rings.tick_aerial_supremacy_shield(character)
-    msg += tick_spell_reflection(character)
+    msg += class_rings.tick_arcane_larceny(character)
     msg += tick_resolve_effects(character)
     benediction = state.get("great_benediction")
     if isinstance(benediction, dict):
@@ -335,7 +349,12 @@ def tick_combat_state(character: Any) -> str:
         msg += resolve_echoing_blade(character)
         msg += weave_reservoir_regeneration(character)
     if class_name(character) == "Shadowcaster":
-        from .meters import _class_ring_data, _normalize_shadowcaster_data
+        from .meters import (
+            _class_ring_data,
+            _fairy_debt_echo,
+            _normalize_shadowcaster_data,
+            convert_shadow_backlash,
+        )
 
         shadow = _class_ring_data(character, "Shadowcaster")
         _normalize_shadowcaster_data(shadow)
@@ -343,9 +362,16 @@ def tick_combat_state(character: Any) -> str:
         if turns > 0:
             shadow["eclipse_turns"] = turns - 1
             if turns == 1:
-                character.shade_of_ahool_turns = 0
                 character.flying = False
                 msg += f"{character.name} returns from the Shade of Ahool.\n"
+                conversion = convert_shadow_backlash(
+                    character,
+                    fraction=0.10,
+                    reason="Shade expiration",
+                )
+                msg += conversion
+                if conversion:
+                    msg += _fairy_debt_echo(character, 20)
     hold_turns = int(state.get("hold_the_line", 0) or 0)
     if hold_turns > 0:
         state["hold_the_line"] = max(0, hold_turns - 1)
@@ -409,6 +435,7 @@ def end_combat(
     show_progress_messages: bool = False,
 ) -> str:
     from .companions import (
+        clear_conduit_command,
         favorite_enemy_type,
         gain_companion_bond,
         gain_summon_bond_for_active,
@@ -421,6 +448,7 @@ def end_combat(
     from .. import lycan
 
     msg = ""
+    msg += clear_conduit_command(character, "leaves combat")
     state = combat_state(character)
     if class_name(character) == "Lycan" and state.get("lycan_stressed"):
         lycan_state = lycan.ensure_state(character)
@@ -430,8 +458,12 @@ def end_combat(
             if control.get("rank") == "Feral":
                 msg += record_lycan_stress(character, "survive")
     if victory and enemy is not None:
-        case_msg = gain_case_progress(character, getattr(enemy, "enemy_typ", None), 4, "victory")
-        if show_progress_messages:
+        visible_types = state.get("visible_enemy_types", set())
+        enemy_type = str(getattr(enemy, "enemy_typ", "") or "")
+        case_msg = ""
+        if enemy_type and enemy_type in visible_types:
+            case_msg = gain_case_progress(character, enemy_type, 4, "victory")
+        if case_msg:
             msg += case_msg
         companion_bond_before = None
         companion_state = getattr(character, "tamed_companion", None)
@@ -478,7 +510,12 @@ def end_combat(
         from .resolve import build_resolve
 
         msg += build_resolve(character, 5, "Boast's combat-end refund")
-    msg += convert_shadow_backlash(character, fraction=0.05, reason="combat end")
+    msg += convert_shadow_backlash(
+        character,
+        fraction=0.05,
+        reason="combat end",
+        ring_stability=False,
+    )
     clear_combat_state(character)
     from .. import class_rings
 
@@ -533,6 +570,7 @@ def begin_action(
     state["action_name"] = action
     state["action_choice"] = choice
     state["action_claims"] = set()
+    state["active_revelation_payoff"] = None
     if round_number is not None:
         state["action_round"] = max(0, int(round_number))
     state["hierophant_devotion_token"] = None
@@ -547,11 +585,22 @@ def begin_action(
         prepare_action_payoffs(character, action, choice)
 
 
-def begin_incoming_action(character: Any) -> None:
+def begin_incoming_action(
+    character: Any,
+    round_number: int | None = None,
+    actor: Any | None = None,
+) -> None:
     """Open one hostile-action boundary for defensive kit reactions."""
     state = combat_state(character)
     state["incoming_action_token"] = int(state.get("incoming_action_token", 0) or 0) + 1
     state["incoming_claims"] = set()
+    state["active_case_prediction"] = None
+    if actor is not None:
+        from .tracks import begin_case_prediction
+
+        begin_case_prediction(character, actor)
+    if round_number is not None:
+        state["action_round"] = max(0, int(round_number))
 
 
 def _is_weapon_hit(metadata: dict[str, Any] | None) -> bool:

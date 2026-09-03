@@ -5,7 +5,7 @@ from __future__ import annotations
 import random
 from typing import Any
 
-from .meters import _class_ring_data
+from .meters import _claim_action, _class_ring_data
 from .state import class_name, combat_state
 
 
@@ -64,25 +64,29 @@ RESOLVE_SURGES: tuple[dict[str, Any], ...] = (
     {
         "name": "Citadel Aegis",
         "role": "Barrier Surge",
-        "mastery": 0,
+        "mastery_key": "citadel_aegis",
+        "required_uses": 4,
         "description": "Empty full Resolve into a fortress barrier and defensive stance.",
     },
     {
         "name": "Ironwall Revenge",
         "role": "Counter Burst",
-        "mastery": 0,
+        "mastery_key": "ironwall_revenge",
+        "required_uses": 4,
         "description": "Empty full Resolve into a three-hit counterattack.",
     },
     {
         "name": "Last Bastion",
         "role": "Survival Surge",
-        "mastery": 0,
+        "mastery_key": "last_bastion",
+        "required_uses": 4,
         "description": "Empty full Resolve to recover and rebuild your guard.",
     },
     {
         "name": "Stronghold",
         "role": "Defense Burst",
-        "mastery": 0,
+        "mastery_key": "stronghold",
+        "required_uses": 4,
         "description": "Reduce melee damage and improve block amount by 30%.",
     },
 )
@@ -99,7 +103,19 @@ def resolve_cap(character: Any) -> int:
 
 def _normalize_resolve_data(data: dict[str, Any]) -> None:
     data["guard_meter"] = max(0, int(data.get("guard_meter", 0) or 0))
-    data["resolve_mastery"] = max(0, int(data.get("resolve_mastery", 0) or 0))
+    mastery = data.get("resolve_mastery", {})
+    keys = tuple(entry["mastery_key"] for entry in RESOLVE_SURGES)
+    if not isinstance(mastery, dict):
+        data["resolve_mastery"] = {key: 0 for key in keys}
+        return
+    normalized_mastery = {}
+    for key in keys:
+        try:
+            progress = int(mastery.get(key, 0) or 0)
+        except (TypeError, ValueError):
+            progress = 0
+        normalized_mastery[key] = max(0, min(4, progress))
+    data["resolve_mastery"] = normalized_mastery
 
 
 def _has_shield(character: Any) -> bool:
@@ -125,27 +141,55 @@ def _resolve_data(character: Any) -> dict[str, Any]:
     return data
 
 
-def gain_resolve_mastery(character: Any, amount: int = 1, reason: str = "") -> str:
-    if class_name(character) != "Stalwart Defender":
+def record_resolve_mastery(
+    character: Any,
+    mastery_key: str,
+    reason: str,
+    *,
+    action_deduplicated: bool = False,
+) -> str:
+    """Record one successful use toward an associated Resolve Surge."""
+    if class_name(character) not in {"Sentinel", "Stalwart Defender"}:
+        return ""
+    entries = {entry["mastery_key"]: entry for entry in RESOLVE_SURGES}
+    entry = entries.get(mastery_key)
+    if entry is None:
+        return ""
+    if action_deduplicated and not _claim_action(
+        character,
+        f"resolve_mastery:{mastery_key}",
+    ):
         return ""
     data = _resolve_data(character)
-    before = int(data.get("resolve_mastery", 0) or 0)
-    cap = max(8, max(entry["mastery"] for entry in RESOLVE_SURGES))
-    data["resolve_mastery"] = min(cap, before + max(0, int(amount)))
-    if data["resolve_mastery"] == before:
+    mastery = data["resolve_mastery"]
+    required = int(entry["required_uses"])
+    before = int(mastery.get(mastery_key, 0) or 0)
+    mastery[mastery_key] = min(required, before + 1)
+    if mastery[mastery_key] == before:
         return ""
-    reason_text = f" through {reason}" if reason else ""
-    return f"{character.name}'s Resolve mastery deepens{reason_text}.\n"
+    progress = mastery[mastery_key]
+    message = f"{character.name}'s defensive mastery deepens.\n"
+    if progress == required:
+        if class_name(character) == "Stalwart Defender":
+            message += (
+                f"{character.name} discovers the {entry['name']} Resolve Surge!\n"
+            )
+        else:
+            message += (
+                f"{character.name} discovers {entry['name']}; the technique awaits "
+                "their final defender training.\n"
+            )
+    return message
 
 
 def resolve_surge_unlocked(character: Any, surge_name: str) -> bool:
     if class_name(character) != "Stalwart Defender":
         return False
     data = _resolve_data(character)
-    mastery = int(data.get("resolve_mastery", 0) or 0)
     for entry in RESOLVE_SURGES:
         if entry["name"] == surge_name:
-            return mastery >= int(entry["mastery"])
+            progress = int(data["resolve_mastery"].get(entry["mastery_key"], 0) or 0)
+            return progress >= int(entry["required_uses"])
     return False
 
 
@@ -164,11 +208,21 @@ def resolve_surge_available(character: Any, surge_name: str) -> bool:
 
 def resolve_surge_rows(character: Any) -> list[dict[str, Any]]:
     data = _resolve_data(character)
-    mastery = int(data.get("resolve_mastery", 0) or 0)
+    full = int(data.get("guard_meter", 0) or 0) >= resolve_cap(character)
     rows: list[dict[str, Any]] = []
     for entry in RESOLVE_SURGES:
-        unlocked = class_name(character) == "Stalwart Defender" and mastery >= int(entry["mastery"])
-        rows.append({**entry, "unlocked": unlocked})
+        progress = int(data["resolve_mastery"].get(entry["mastery_key"], 0) or 0)
+        required = int(entry["required_uses"])
+        learned = progress >= required
+        unlocked = class_name(character) == "Stalwart Defender" and learned
+        rows.append({
+            **entry,
+            "progress": progress,
+            "required": required,
+            "learned": learned,
+            "unlocked": unlocked,
+            "available": unlocked and full,
+        })
     return rows
 
 
@@ -195,7 +249,6 @@ def _spend_resolve(
     discount_used = cost - spent
     if discount_used:
         state["get_even_discount"] = 0
-    gain_resolve_mastery(character, 1, ability_name)
     message = (
         f"Get Even reduces {ability_name}'s Resolve cost by {discount_used}.\n"
         if discount_used
@@ -241,7 +294,6 @@ def build_resolve(character: Any, amount: int, reason: str = "") -> str:
         f"{character.name} gains {gained} Resolve from {reason} "
         f"({data['guard_meter']}/{cap}).\n"
     )
-    msg += gain_resolve_mastery(character, 1, reason)
     return msg
 
 
@@ -295,7 +347,7 @@ def hold_the_line_active(character: Any) -> bool:
     return int(combat_state(character).get("hold_the_line", 0) or 0) > 0
 
 
-def hold_the_line(character: Any) -> str:
+def hold_the_line(character: Any, *, as_defend: bool = False) -> str:
     training = _require_resolve_training(character, "Hold the Line")
     if training:
         return training
@@ -320,38 +372,20 @@ def hold_the_line(character: Any) -> str:
     )
     msg = f"{character.name} holds the line behind their shield.\n"
     msg += build_resolve(character, 5, "Hold the Line")
-    return msg
-
-
-def shield_check(character: Any, target: Any | None) -> str:
-    training = _require_resolve_training(character, "Shield Check")
-    if training:
-        return training
-    shield = _require_shield(character, "Shield Check")
-    if shield:
-        return shield
-    if target is None:
-        return "There is no target to check.\n"
-    ok, msg, _data = _spend_resolve(character, 10, "Shield Check")
-    if not ok:
-        return msg
-    attack = getattr(target, "stat_effects", {}).get("Attack")
-    if attack is not None:
-        attack.active = True
-        attack.duration = max(int(attack.duration or 0), 2)
-        attack.extra = min(int(attack.extra or 0), -2)
-    speed = getattr(target, "stat_effects", {}).get("Speed")
-    if speed is not None:
-        speed.active = True
-        speed.duration = max(int(speed.duration or 0), 2)
-        speed.extra = min(int(speed.extra or 0), -2)
-    return msg + (
-        f"{character.name}'s Shield Check lowers the enemy's Attack and Speed.\n"
+    msg += record_resolve_mastery(
+        character,
+        "citadel_aegis",
+        "Hold the Line",
+        action_deduplicated=True,
     )
-
-
-def shield_bash(character: Any, target: Any | None) -> str:
-    return shield_check(character, target)
+    if as_defend:
+        msg += record_resolve_mastery(
+            character,
+            "stronghold",
+            "Defend",
+            action_deduplicated=True,
+        )
+    return msg
 
 
 def brace_wall(character: Any) -> str:
@@ -371,7 +405,14 @@ def brace_wall(character: Any) -> str:
     defense.active = True
     defense.duration = max(int(defense.duration or 0), 2)
     defense.extra = max(int(defense.extra or 0), 3)
-    return msg + f"{character.name} braces the wall.\n"
+    msg += f"{character.name} braces the wall.\n"
+    msg += record_resolve_mastery(
+        character,
+        "citadel_aegis",
+        "Brace Wall",
+        action_deduplicated=True,
+    )
+    return msg
 
 
 def prepare_spell_block(character: Any) -> str:
@@ -408,9 +449,16 @@ def bulwark_guard(character: Any) -> str:
         "turns": 1,
         "source": "Bulwark Guard",
     }
-    return message + (
+    message += (
         f"{character.name} raises a {barrier}-point Bulwark Guard for one turn.\n"
     )
+    message += record_resolve_mastery(
+        character,
+        "citadel_aegis",
+        "Bulwark Guard",
+        action_deduplicated=True,
+    )
+    return message
 
 
 def purge_weakness(character: Any) -> str:
@@ -446,10 +494,17 @@ def purge_weakness(character: Any) -> str:
             effect.extra = 0
             removed += 1
     combat_state(character)["purge_immunity_turns"] = 2
-    return message + (
+    message += (
         f"{character.name} purges {removed} negative effect"
         f"{'s' if removed != 1 else ''} and becomes immune for two turns.\n"
     )
+    message += record_resolve_mastery(
+        character,
+        "last_bastion",
+        "Purge Weakness",
+        action_deduplicated=True,
+    )
+    return message
 
 
 def boast(character: Any) -> str:
@@ -466,9 +521,16 @@ def boast(character: Any) -> str:
     state = combat_state(character)
     state["boast_turns"] = 3
     state["boast_starting_pool"] = amount
-    return message + (
+    message += (
         f"{character.name}'s Boast grants {amount} temporary health for three turns.\n"
     )
+    message += record_resolve_mastery(
+        character,
+        "last_bastion",
+        "Boast",
+        action_deduplicated=True,
+    )
+    return message
 
 
 def focused_assault(character: Any) -> str:
@@ -477,7 +539,14 @@ def focused_assault(character: Any) -> str:
     if not ok:
         return message
     combat_state(character)["focused_assault_turns"] = 3
-    return message + f"{character.name} focuses their assault for three turns.\n"
+    message += f"{character.name} focuses their assault for three turns.\n"
+    message += record_resolve_mastery(
+        character,
+        "ironwall_revenge",
+        "Focused Assault",
+        action_deduplicated=True,
+    )
+    return message
 
 
 def focused_assault_accuracy(character: Any) -> float:
@@ -559,10 +628,23 @@ def repercussion(
         target_scope=TargetScope.ALL_ENEMIES,
         target_ids=tuple(target_id for target_id, _target in targets),
     )
+    if not targets:
+        group.add(CombatResult(
+            action="Repercussion",
+            actor=character,
+            message="There are no targets for Repercussion.\n",
+        ))
+        return group
     ok, message, _data = _spend_resolve(character, 30, "Repercussion")
     if not ok:
         group.add(CombatResult(action="Repercussion", actor=character, message=message))
         return group
+    message += record_resolve_mastery(
+        character,
+        "ironwall_revenge",
+        "Repercussion",
+        action_deduplicated=True,
+    )
     try:
         from ...progression import has_talent
 
@@ -610,24 +692,6 @@ def repercussion(
     return group
 
 
-def covering_guard(character: Any) -> str:
-    training = _require_resolve_training(character, "Covering Guard")
-    if training:
-        return training
-    shield = _require_shield(character, "Covering Guard")
-    if shield:
-        return shield
-    ok, msg, _data = _spend_resolve(character, 20, "Covering Guard")
-    if not ok:
-        return msg
-    effect = character.magic_effects["Nature Shield"]
-    effect.active = True
-    effect.duration = max(int(effect.duration or 0), 1)
-    effect.extra = max(int(effect.extra or 0), 20)
-    combat_state(character)["covering_guard"] = 2
-    return msg + f"{character.name} raises Covering Guard.\n"
-
-
 def deflect_spell(character: Any) -> str:
     training = _require_resolve_training(character, "Deflect Spell")
     if training:
@@ -644,40 +708,6 @@ def deflect_spell(character: Any) -> str:
     effect.extra = max(int(effect.extra or 0), 6)
     combat_state(character)["deflect_spell"] = 2
     return msg + f"{character.name} prepares to deflect hostile magic.\n"
-
-
-def prepare_spell_reflection(character: Any) -> str:
-    """Raise Magic Defense and prepare a one-shot hostile-spell reflection."""
-    training = _require_resolve_training(character, "Spell Reflection")
-    if training:
-        return training
-    shield = _require_shield(character, "Spell Reflection")
-    if shield:
-        return shield
-    ok, msg, _data = _spend_resolve(character, 25, "Spell Reflection")
-    if not ok:
-        return msg
-    state = combat_state(character)
-    state["spell_reflection_turns"] = 2
-    state["spell_reflection_skip_tick"] = True
-    effect = character.stat_effects["Magic Defense"]
-    effect.active = True
-    effect.duration = max(int(effect.duration or 0), 3)
-    effect.extra = max(int(effect.extra or 0), 6)
-    return msg + (
-        f"{character.name} raises Magic Defense and prepares Spell Reflection "
-        "for two turns.\n"
-    )
-
-
-def spell_reflection_ready(character: Any) -> bool:
-    """Return whether a prepared one-shot reflection can trigger."""
-    return (
-        class_name(character) in {"Sentinel", "Stalwart Defender"}
-        and int(combat_state(character).get("spell_reflection_turns", 0) or 0)
-        > 0
-        and _has_shield(character)
-    )
 
 
 def spell_reflection_compatible(spell: Any) -> bool:
@@ -748,6 +778,11 @@ def apply_spell_block(
         damage -= reduced
         blocked += reduced
     message += f"{character.name}'s Spell Block stops {blocked} damage.\n"
+    message += record_resolve_mastery(
+        character,
+        "stronghold",
+        "Spell Block",
+    )
     skills = getattr(character, "spellbook", {}).get("Skills", {})
     if "Spell Reflection" in skills and blocked > 0:
         chance = min(
@@ -777,55 +812,6 @@ def apply_spell_block(
             except Exception:
                 pass
     return damage, message
-
-
-def consume_spell_reflection(
-    character: Any,
-    spell_name: str = "The spell",
-    *,
-    spell: Any = None,
-) -> str:
-    """Consume a prepared reflection after a compatible spell targets it."""
-    if (
-        not spell_reflection_ready(character)
-        or not spell_reflection_compatible(spell)
-    ):
-        return ""
-    state = combat_state(character)
-    state["spell_reflection_turns"] = 0
-    state["spell_reflection_skip_tick"] = False
-    msg = (
-        f"{character.name}'s Spell Reflection turns {spell_name} back on "
-        "its caster.\n"
-    )
-    try:
-        from ...progression import has_talent
-
-        if has_talent(character, "stalwart.mirror-bastion"):
-            msg += build_resolve(character, 20, "Mirror Bastion")
-            effect = character.stat_effects["Magic Defense"]
-            effect.active = True
-            effect.duration = max(int(effect.duration or 0), 2)
-            effect.extra = max(int(effect.extra or 0), 6)
-            msg += "Mirror Bastion raises Magic Defense by 6 for two turns.\n"
-    except Exception:
-        pass
-    return msg
-
-
-def tick_spell_reflection(character: Any) -> str:
-    """Advance prepared Spell Reflection without consuming its setup turn."""
-    state = combat_state(character)
-    turns = int(state.get("spell_reflection_turns", 0) or 0)
-    if turns <= 0:
-        return ""
-    if state.get("spell_reflection_skip_tick"):
-        state["spell_reflection_skip_tick"] = False
-        return ""
-    state["spell_reflection_turns"] = max(0, turns - 1)
-    if state["spell_reflection_turns"] <= 0:
-        return f"{character.name}'s Spell Reflection expires.\n"
-    return ""
 
 
 def tick_resolve_effects(character: Any) -> str:
@@ -908,58 +894,6 @@ def tick_resolve_effects(character: Any) -> str:
     return message
 
 
-def bulwark(character: Any) -> str:
-    training = _require_resolve_training(character, "Bulwark")
-    if training:
-        return training
-    shield = _require_shield(character, "Bulwark")
-    if shield:
-        return shield
-    data = _resolve_data(character)
-    resolve = int(data.get("guard_meter", 0) or 0)
-    if resolve < 25:
-        return "Bulwark requires 25 Resolve.\n"
-    spent = min(resolve, 50)
-    data["guard_meter"] = resolve - spent
-    gain_resolve_mastery(character, 1, "Bulwark")
-    effect = character.magic_effects["Nature Shield"]
-    effect.active = True
-    effect.duration = 2
-    effect.extra = max(int(effect.extra or 0), spent)
-    return f"{character.name} spends {spent} Resolve on Bulwark.\n"
-
-
-def shield_riposte(character: Any, target: Any | None) -> str:
-    training = _require_resolve_training(character, "Shield Riposte")
-    if training:
-        return training
-    shield = _require_shield(character, "Shield Riposte")
-    if shield:
-        return shield
-    if target is None:
-        return "There is no target to riposte.\n"
-    ok, spend_message, _data = _spend_resolve(character, 20, "Shield Riposte")
-    if not ok:
-        return spend_message
-    damage_mod = 0.75
-    try:
-        from ...progression import has_talent
-
-        if has_talent(character, "stalwart.punishing-guard"):
-            damage_mod = 1.0
-    except Exception:
-        pass
-    msg, _hit, _crit = character.weapon_damage(
-        target,
-        dmg_mod=damage_mod,
-        use_offhand=False,
-    )
-    return (
-        spend_message
-        + f"{character.name} launches Shield Riposte.\n{msg}"
-    )
-
-
 def _use_resolve_surge(
     character: Any,
     surge_name: str,
@@ -981,7 +915,6 @@ def _use_resolve_surge(
     if int(data.get("guard_meter", 0) or 0) < cap:
         return f"{surge_name} requires a full Resolve bar.\n"
     data["guard_meter"] = 0
-    gain_resolve_mastery(character, 1, surge_name)
 
     if surge_name == "Citadel Aegis":
         duration = 3

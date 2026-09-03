@@ -37,7 +37,7 @@ class BattleActionMixin:
     def player_has_sight(self) -> bool:
         """Check if the player can see enemy details (Seeker/Inquisitor/Vision)."""
         return any([
-            self.player.cls.name in ["Inquisitor", "Seeker"],
+            promotion_kits.class_name(self.player) in ["Inquisitor", "Seeker"],
             getattr(self.player.equipment.get("Pendant"), "mod", None) == "Vision",
             getattr(self.player, "sight", False),
         ])
@@ -88,6 +88,10 @@ class BattleActionMixin:
         opener_marks, opener_multiplier, opener_message = promotion_kits.begin_no_trace_opener(
             self.attacker,
             self.defender,
+        )
+        opener_message += promotion_kits.prepare_stolen_charge_payoff(
+            self.attacker,
+            "Attack",
         )
         hp_before = int(self.defender.health.current)
         message, hit, crit = self.attacker.weapon_damage(
@@ -211,7 +215,7 @@ class BattleActionMixin:
         ):
             from ...classes import promotion_kits
 
-            return promotion_kits.hold_the_line(self.attacker)
+            return promotion_kits.hold_the_line(self.attacker, as_defend=True)
 
         message = self.attacker.enter_defensive_stance(duration=1, source="Defend")
         if self.attacker == self.player:
@@ -221,6 +225,12 @@ class BattleActionMixin:
                 self.player,
                 10,
                 "Defend",
+            )
+            message += promotion_kits.record_resolve_mastery(
+                self.player,
+                "stronghold",
+                "Defend",
+                action_deduplicated=True,
             )
         return message
 
@@ -253,6 +263,12 @@ class BattleActionMixin:
             spell,
         ):
             return f"{self.attacker.name} does not have enough mana to cast {choice}!\n"
+
+        stolen_payoff_message = promotion_kits.prepare_stolen_charge_payoff(
+            self.attacker,
+            "Cast Spell",
+            spell,
+        )
 
         threaded_validation = True
         if (
@@ -290,7 +306,10 @@ class BattleActionMixin:
         ))
 
         defender_was_alive = self.defender.is_alive()
-        message = f"{self.attacker.name} casts {choice}.\n{threaded_message}"
+        message = (
+            f"{self.attacker.name} casts {choice}.\n"
+            f"{threaded_message}{stolen_payoff_message}"
+        )
         try:
             cast_result = self._cast_spell_with_context(
                 spell,
@@ -369,6 +388,12 @@ class BattleActionMixin:
         if not isinstance(scroll, items.InscribedSpellScroll):
             return f"{scroll_name} is not a stolen spell scroll.\n"
 
+        payoff_message = promotion_kits.prepare_stolen_charge_payoff(
+            self.attacker,
+            "Cast Spell",
+            scroll.spell,
+        )
+
         self._event_bus.emit(create_combat_event(
             EventType.ITEM_USE,
             actor=self.attacker,
@@ -379,7 +404,14 @@ class BattleActionMixin:
             source="stolen_spell_scroll",
         ))
 
-        message = str(scroll.use(self.attacker, target=self.defender))
+        message = payoff_message + str(scroll.use(self.attacker, target=self.defender))
+        recorded_result = getattr(scroll.spell, "result", None)
+        if (
+            isinstance(recorded_result, CombatResult)
+            and recorded_result.actor is self.attacker
+            and recorded_result.target is self.defender
+        ):
+            self._last_combat_result = deepcopy(recorded_result)
         if self.attacker == self.player:
             message += promotion_kits.gain_stolen_charge(self.player, "stolen spell scroll")
         return message
@@ -486,18 +518,49 @@ class BattleActionMixin:
 
         message = f"{self.attacker.name} weaves theft into {choice}.\n"
         before_hp = self.defender.health.current
+        stolen_scroll = False
         if choice in self.attacker.spellbook.get("Spells", {}):
             spell = self.attacker.spellbook["Spells"][choice]
             if self.attacker.mana.current < getattr(spell, "cost", 0):
                 return f"{self.attacker.name} does not have enough mana to cast {choice}!\n"
-            message += str(self._cast_spell_with_context(spell, self.attacker, self.defender))
         elif choice in self.attacker.inventory and self.attacker.inventory[choice]:
             scroll = self.attacker.inventory[choice][0]
             if not isinstance(scroll, items.InscribedSpellScroll):
                 return f"{choice} is not a stolen spell scroll.\n"
-            message += str(scroll.use(self.attacker, target=self.defender))
+            spell = scroll.spell
+            stolen_scroll = True
         else:
             return f"{self.attacker.name} cannot find {choice}.\n"
+
+        message += promotion_kits.prepare_stolen_charge_payoff(
+            self.attacker,
+            "Steal As Well",
+            spell,
+        )
+        if stolen_scroll:
+            cast_result = scroll.use(self.attacker, target=self.defender)
+        else:
+            cast_result = self._cast_spell_with_context(
+                spell,
+                self.attacker,
+                self.defender,
+            )
+        message += str(cast_result)
+        if isinstance(cast_result, CombatResult):
+            self._last_combat_result = deepcopy(cast_result)
+        else:
+            recorded_result = getattr(spell, "result", None)
+            if (
+                isinstance(recorded_result, CombatResult)
+                and recorded_result.actor is self.attacker
+                and recorded_result.target is self.defender
+            ):
+                self._last_combat_result = deepcopy(recorded_result)
+        if stolen_scroll:
+            message += promotion_kits.gain_stolen_charge(
+                self.player,
+                "stolen spell scroll",
+            )
 
         if before_hp > self.defender.health.current:
             steal_skill = self.attacker.spellbook.get("Skills", {}).get("Steal") or abilities.Steal()
@@ -597,6 +660,11 @@ class BattleActionMixin:
             self.attacker,
             skill.name,
         )
+        stolen_payoff_message = promotion_kits.prepare_stolen_charge_payoff(
+            self.attacker,
+            "Use Skill",
+            skill,
+        )
 
         self._event_bus.emit(create_combat_event(
             EventType.SKILL_USE,
@@ -607,7 +675,10 @@ class BattleActionMixin:
             source="resolve" if is_resolve_skill else "skill",
         ))
 
-        message = f"{self.attacker.name} uses {skill.name}.\n{ki_spend_message}"
+        message = (
+            f"{self.attacker.name} uses {skill.name}.\n"
+            f"{ki_spend_message}{stolen_payoff_message}"
+        )
 
         # ── Special skill handling ───────────────────────────────────
         if skill.name == "Smoke Screen":
@@ -807,6 +878,10 @@ class BattleActionMixin:
             summoner.mana.current = max(0, summoner.mana.current - mana_cost)
         if gold_cost:
             summoner.gold = max(0, int(getattr(summoner, "gold", 0) or 0) - gold_cost)
+        command_expiry = promotion_kits.clear_conduit_command(
+            summoner,
+            "is replaced",
+        )
         self.summon = summon
         self.summon_active = True
         self.player.active_summon_name = summon.name
@@ -822,7 +897,8 @@ class BattleActionMixin:
         if gold_cost:
             costs.append(f"{gold_cost} gold")
         cost_text = f" ({', '.join(costs)})" if costs else ""
-        message = f"{summoner.name} summons {summon.name} to aid them in combat{cost_text}.\n"
+        message = command_expiry
+        message += f"{summoner.name} summons {summon.name} to aid them in combat{cost_text}.\n"
         return message, True, summon
 
     @staticmethod
@@ -855,7 +931,8 @@ class BattleActionMixin:
         if not self.summon:
             return "No summon to recall.\n", False
 
-        message = f"{self.player.name} recalls {self.summon.name}.\n"
+        message = promotion_kits.clear_conduit_command(self.player, "is recalled")
+        message += f"{self.player.name} recalls {self.summon.name}.\n"
         self.summon_active = False
         self.summon = None
         self.player.active_summon_name = None

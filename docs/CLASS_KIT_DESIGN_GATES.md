@@ -7,7 +7,7 @@ used for deeper class-kit work. Balance validation lives in
 
 ## Promotion Kit V1 Status
 
-Status: `Implementation Audit Reopened; Critical Closure Required`
+Status: `Critical Closure Shipped; Playtest And Tuning Follow-Up`
 
 The promotion class-track V1 pass created shared state, helpers, UI rows, and
 selected runtime hooks through the
@@ -15,21 +15,31 @@ selected runtime hooks through the
 save/load, combat, data-driven abilities, class rings, Demonologist contracts,
 nature Totems, Beast Master companion state, and class skill grants. The
 2026-09-02 audits found that this foundation was frequently mistaken for full
-mechanical implementation. Each lineage audit below is now authoritative for
-the shipped-versus-pending boundary.
+mechanical implementation. The resulting critical closure pass is shipped;
+each lineage audit below remains authoritative for behavior and future tuning.
+
+Player-facing disclosure rule: explain a class mechanic's theme, available
+choices, and state needed for an immediate decision, but keep internal
+progress counters, proc thresholds, exact hidden odds, discovery checklists,
+and undocumented interactions under the hood. Reveal a technique when it is
+earned and give clear feedback when an effect actually changes combat. This
+rule applies to existing kits when their presentation is touched and is the
+default for all future class-kit work; developer documentation and automated
+tests remain exact.
 
 Implemented foundations and presentation surfaces include:
 
 - Combat-only promotion state for Foresight Threads, Blade Charges,
-  Foundation/Accent weaves, Bloodied Momentum, Oath Conviction, Aerial Tempo, Resolve,
-  Fortune/Misfortune, Revelation, Death Mark, Stolen Charge, Devotion, Prayer,
-  Ki, Crescendo, Aspect Harmony, Beast Master commands, and Totem Resonance.
+  Foundation/Accent weaves, Bloodied Momentum, Oath Conviction, Aerial Tempo,
+  Resolve, Fortune/Misfortune, Revelation, Death Mark, Stolen Charge, Devotion,
+  Prayer, Ki, Crescendo, Aspect Harmony, Beast Master commands, and Totem Resonance.
 - Persistent promotion state for summon bonds, Case Journal, Bard repertoire,
   Lycan control/Dragon Essence containers, Demonologist corruption/patron
   mood, and Beast Master companion bond. A normalized container is not proof
   that gameplay can advance or consume it.
 - Named V1 active/passive abilities such as `Threaded Cast`, `Shade of Ahool`,
-  `Hold the Line`, `Bulwark`, `Shield Riposte`, `Sanctuary Ward`,
+  `Hold the Line`, `Brace Wall`, `Bulwark Guard`, passive `Shield Riposte`,
+  `Sanctuary Ward`,
   `Relic Aegis`, `Supplication`, `Great Benediction`, `Dim Mak`,
   `Fourfold Surge`, `Totem Surge`, `Conduit Command`, borrowed summon
   invocations, Beast Master commands, `Winged Pounce`, and the Footpad-track
@@ -45,18 +55,13 @@ Implemented foundations and presentation surfaces include:
   `Divine Intervention`, `Encore`, and bond-scaling `Shared Recovery`, plus
   representative Rogue `Cheat Death`, Fortune/Misfortune payoff, and
   Bard/Troubadour Crescendo coda hooks.
-- Representative helper coverage in `tests/core/test_promotion_class_kits.py`,
-  plus class-ring, data-driven ability, item-helper, and focused subsystem
-  tests. Helper-only assertions do not establish production-path integration.
+- Production-path coverage in focused class-kit modules, plus class-ring,
+  data-driven ability, item-helper, UI, and parameterized dispersed-mechanic
+  tests.
 
-Remaining work includes initial implementation closure, not only tuning and
-presentation:
+Critical implementation closure is complete. Remaining work is tuning,
+presentation review, manual validation, or separately gated expansion:
 
-- Connect remaining orphaned setup/payoff helpers and enforce action-scoped
-  generation and consumption. Generic promoted-tree rating families have been
-  removed rather than presented as class mechanics.
-- Expand bespoke ability-by-ability riders, UI surfacing, and combat-log copy
-  only after each underlying mechanic has a complete production path.
 - Broaden manual playtest and balance tuning for the new meters, especially
   preservation effects, payoff strength, and high-action-economy loops such as
   Totems, songs, summons, and Doublecast-adjacent divine support.
@@ -91,7 +96,7 @@ future implementation-and-presentation target rather than a shipped regression.
 | Dragoon | Aerial Tempo/cap, pending follow-through, landing shield if active. | Clean Jump gain, interruption cleanup, spend, follow-through, landing shield. | Jump modification UI keeps existing capacity and no longer promises extra active mod capacity. | Show awakened/equipped `Aerial Supremacy` readiness. | Land a clean Jump, follow through, and inspect shield/readiness text. |
 | Sentinel/Stalwart Defender | Sentinel Resolve/cap/spends; Stalwart full-bar Resolve Bursts. | Resolve gain/cap/spend, block, barrier, riposte, Burst use, automatic major-hit mitigation. | Shield-required actions fail clearly when shield/offhand setup is invalid. | Show awakened/equipped `Guard Meter` auto-spend readiness without making it the only Stalwart identity. | Build Resolve as Sentinel, spend it on shield actions, then promote and inspect Resolve Bursts. |
 | Rogue | Fortune, Misfortune, `Jinx`, risky-action readiness. | Meter gain/spend/cap, Fortune smoothing, Misfortune payoff, `Cheat Death`, preservation. | Loot finds exclude invalid item categories and log as extra ordinary finds. | Show awakened/equipped `Loaded Dice` and once-per-combat preservation readiness. | Spend both meters and verify `Loaded Dice` status/logs. |
-| Seeker | Case Journal progress/rank, Revelation/cap, sight/detail state where available. | Case progress, milestone, Revelation gain/spend, telegraph prediction, mobility smoothing. | `Hidden Cache` and movement tools report claim/failure/smoothing clearly. | Show awakened/equipped `Hidden Cache` availability/readiness. | Gain Case progress, build Revelation, and inspect status/logs. |
+| Seeker | Case Journal discoveries/rank, selected-target Revelation/cap, sight/detail state where available. | Evidence gathered, milestone discovery, Revelation gain/spend, telegraph prediction, mobility smoothing. | `Hidden Cache` and movement tools report claim/failure/smoothing clearly. | Show awakened/equipped `Hidden Cache` availability/readiness. | Gather evidence, build Revelation, and inspect status/logs without exposing hidden counters. |
 | Ninja | Death Mark/cap on current target when available, opener readiness. | Mark application/cap/spend, miss consumption, immunity/boss/trial downgrade, preservation. | Stealth/opener surfaces keep initiative requirements clear. | Show awakened/equipped `No-Trace Opener` readiness. | Apply marks, spend a finisher, and verify downgrade/preservation lines. |
 | Arcane Trickster | Stolen Charge/cap, `Arcane Larceny` buff/preservation readiness through combat/HUD status, not a dedicated Character Menu tab. | Charge gain/spend/cap, stolen-scroll contribution, miss/negated consumption, preservation. | Spell-steal menus fail clearly without `Blank Scroll` or against trial enemies; stolen-spell scrolls appear in the combat `Spells` picker. | Show awakened/equipped `Arcane Larceny` readiness. | Steal/cast stolen magic from `Spells`, spend Charge, and inspect status/logs. |
 | Templar | Devotion/cap, active ward, `Holy Retribution`, next blessing. | Devotion gain/cap/spend, ward strength, `Pious Bounty`, blessing rotation, preservation. | Shield/offhand requirements for `Relic Aegis` fail clearly. | Show awakened/equipped `Ordered Blessings` preservation readiness. | Spend Devotion before and after ring awakening. |
@@ -106,7 +111,7 @@ future implementation-and-presentation target rather than a shipped regression.
 
 ## Class Mechanic Tab Triage
 
-Status: `Decision Record, Implementation Follow-Up Needed`
+Status: `Decision Record; Baseline Shipped`
 
 The pygame Character Menu now supports a middle mechanic tab, but not every
 class kit deserves one. Use this triage when deciding whether to add bespoke tab
@@ -878,69 +883,63 @@ promotion node where the tree contains one.
 | Class | Tree size | Implemented identity | Audit status |
 | --- | ---: | --- | --- |
 | Mage | 40 / 44 | Six-school foundations, matching enhancements, Arcana, Occultism, Conjuration, and universal magic | Implemented; focused behavior coverage exists |
-| Sorcerer | 30 / 32 | Elemental/Arcane specialization, persistent School Affinity, tier-two spells, modifiers, Doublecast, and illusion | Core mechanic implemented; Wizard ring handoff is incomplete |
-| Wizard | 28 / 28 | Affinity 100, tier-three schools, hidden reactions, arcane/elemental ultimate quests, and mastery buffs | Critical School Streak gap; mastery-buff lifecycle needs a contract |
+| Sorcerer | 30 / 32 | Elemental/Arcane specialization, persistent School Affinity, tier-two spells, modifiers, Doublecast, and illusion | Implemented; focused behavior coverage exists |
+| Wizard | 28 / 28 | Affinity 100, tier-three schools, hidden reactions, arcane/elemental ultimate quests, School Streak, and combat mastery buffs | Implemented with focused ring/rider coverage |
 | Spellblade | 21 / 23 | Arcane/Elemental Blade Charges, spell-to-weapon release, Breakdown, equipment scaling, and capacity/amplification | Implemented with strong focused coverage |
 | Knight Enchanter | 28 / 31 | Foundation/Accent grammar, Assault/Aegis/Spellbind releases, release talents, and Weave Memory | Implemented with strong focused coverage |
-| Warlock | 31 / 35 | Shadow control, drains, curses, Corruption, and one persistent familiar with five modifiers | Implemented; familiar-modifier regression coverage is incomplete |
-| Shadowcaster | 21 / 27 | Umbral Debt/backlash, Shade of Ahool, deep Shadow/Veil/Nightmare paths, and familiar masteries | Critical Shade/backlash mismatch and thin terminal-behavior coverage |
+| Warlock | 31 / 35 | Shadow control, drains, curses, Corruption, and one persistent familiar with five modifiers | Implemented with focused familiar-modifier coverage |
+| Shadowcaster | 21 / 27 | Umbral Debt/backlash, Shade of Ahool, deep Shadow/Veil/Nightmare paths, and familiar masteries | Implemented with focused Shade, backlash, and terminal-path coverage |
 | Demonologist | 24 / 27 | Patron contracts, mood, corruption risk, Hellfire, Soul Gems, and empowered curses | Implemented; contract and representative combat coverage exists |
 | Conjurer | 22 / 24 | Constructs, Binding, Illusion/Movement, and location-aware transient Callings | Implemented with strong focused coverage |
-| Thaumaturgist | 29 / 34 | Permanent paired Xenids, conduit growth, reciprocal bonuses, Miracles, support lane, and revival | Critical Conduit Command/invocation gap |
+| Thaumaturgist | 29 / 34 | Permanent paired Xenids, conduit growth, reciprocal bonuses, Miracles, support lane, revival, typed invocations, and Conduit Command | Implemented with focused payoff and invocation coverage |
 
-Critical Wizard gap — `School Streak`:
+Shipped Wizard closure — `School Streak`:
 
-- Class Ring state and `wizard_rider_chance_bonus`/`record_wizard_rider`
-  helpers exist, but no spell-rider resolution calls them. Failed riders do not
-  build a streak, four stacks do not guarantee anything, and success cannot
-  reset a streak.
-- Add a declarative eligible-rider registry and resolve it once per spell
-  action so multi-projectile or multi-target spells cannot add several stacks.
-  Both accumulation and payoff require the awakened ring to be equipped.
-- Define `wizard_school_buffs` as combat-only or persistent. It currently lives
-  as an unsaved character attribute and has no explicit combat cleanup, so it
-  can survive between encounters in one session but disappear on load.
-- Tests must cover ineligible spells, failure gain, success reset, four-stack
-  guarantee, action deduplication, equip/awakening gates, school isolation,
-  combat/load lifecycle, and interaction with Sorcerer/Wizard modifiers.
+- The awakened-and-equipped Wizard ring now modifies the registered random
+  riders Paralyzer, Ejection Gale, Subzero, and Unrelenting Waves. A failed
+  rider builds its school-specific saved streak, a successful rider resets it,
+  and the fifth opportunity after four failures is guaranteed.
+- Rider outcomes are claimed once per spell action, preventing multi-target,
+  multi-projectile, and repeated-resolution duplication. Dormant, unequipped,
+  off-class, deterministic, and Arcane effects do not alter the streak.
+- Wizard affinity mastery buffs now live in transient Mage combat state. They
+  persist during the encounter, clear on combat start/end, and are not saved.
+- Player-facing copy describes growing reliability without exposing the exact
+  bonus, counter, threshold, or eligible-rider checklist.
 
-Critical Shadowcaster gap — Shade and backlash:
+Shipped Shadowcaster closure — Shade and backlash:
 
-- `Shade of Ahool` correctly spends debt and starts its timer, but the same
-  runtime flag still activates predecessor behavior: +50% weapon damage, +20
-  percentage points critical chance, +50% Speed, and a physical-damage siphon.
-  These conflict with the authored +15% Shadow damage, +10% Speed, flying, and
-  Holy-resistance penalty contract.
-- Use one authoritative Shade timer and remove the obsolete physical hooks.
-  On Shade expiration and low-HP ring auto-healing, convert backlash exactly
-  once using the documented cap. Apply ring and familiar modifiers during that
-  conversion rather than silently reducing overcap accumulation.
-- Add direct tests for every Shade modifier and forbidden legacy modifier,
-  recast/expiry/combat cleanup, auto-heal conversion, ring stabilization, and
-  the Homunculus/Fairy/Mephit/Jinkin variations. Add parameterized coverage for
-  the five terminal paths, whose runtime hooks are currently spread across
-  damage, status, effects, loot, and battle-action modules.
+- `Shade of Ahool` now uses the normalized Shadowcaster state as its only timer
+  and retains only its authored Shadow damage, Speed, flight, and Holy weakness.
+  The obsolete weapon, critical, excessive-Speed, and physical-siphon hooks no
+  longer read a predecessor runtime flag.
+- Shade expiration and awakened-ring low-HP healing each convert backlash once.
+  Overcap pressure is stored in full; ring stabilization and the Homunculus,
+  Fairy, Mephit, and Jinkin variations apply at their authored resolution hook.
+- Focused regressions cover normalization, cap and overcap behavior, every
+  direct Shade modifier, forbidden legacy effects, recast/expiry/combat and
+  save/load cleanup, healing conversion, stabilization, and familiar variants.
 
-Critical Thaumaturgist gap — conduit payoff:
+Shipped Thaumaturgist closure — conduit payoff:
 
-- `Conduit Command` validates class/MP and stores a combat flag, but no summon
-  action reads or clears it. The promised +25% damage/healing, next-action
-  expiration, Recall/death cleanup, and bond-100 True Name rider do not occur.
-- The twelve existing `Invoke <Xenid>` abilities all route through one generic
-  direct-damage implementation. Their documented Attack/Defense/status/heal
-  riders are absent, damage does not use the normal typed-resolution path, and
-  the newer Hodag and Caladrius roster members have no invocation abilities.
-- Implement an action-scoped summon payoff result containing whether the
-  command was consumed, adjusted damage/healing, applied signature rider, and
-  cleanup reason. Give all fourteen Xenids authored invocation definitions.
-  Tests must cover each invocation, typed mitigation, the two missing roster
-  members, command consumption on the next non-Recall action, misses/non-damage
-  actions, Recall/death/combat cleanup, and ring-only True Name behavior.
+- `Conduit Command` now snapshots and consumes on the active Xenid's next
+  committed non-Recall action, adding its authored damage or healing pressure.
+  Misses and non-damaging actions consume it, while Recall, replacement, death,
+  and combat end report why an unused command expired.
+- Bond-100 Xenids add their lesser signature rider only while the awakened
+  Thaumaturgist Class Ring is equipped. The action payoff records consumption,
+  adjusted output, signature rider, and cleanup reason.
+- All fourteen `Invoke <Xenid>` skills use a declarative typed definition and
+  the shared defense/resistance path. Hodag and Caladrius now join the twelve
+  existing invocation classes, and every invocation applies its authored
+  offensive, defensive, healing, or status rider.
+- Focused regressions cover the full roster, typed mitigation, validation,
+  action consumption, misses, non-damage actions, lifecycle cleanup, healing,
+  and ring-only True Name behavior.
 
-Coverage follow-up, not a known missing system: add direct tests for Warlock's
-Thorn By My Side, Restorative Barrier, Insult to Injury, and Master Locator;
-Shadowcaster's Soul Binding, Resource Abuse, Mortal Shackles, Penny Dreadful,
-Piercing Bolt, and Sciophobia; and the complete Wizard school-modifier matrix.
+Resolved coverage follow-up: direct parameterized tests cover Warlock familiar
+bonds and modifiers, the dispersed Shadowcaster terminal passives, and the
+complete Wizard school-modifier matrix.
 
 ### Weapon Master/Berserker Bloodied Momentum
 
@@ -964,8 +963,8 @@ stabilize the dangerous low-HP playstyle.
   Momentum once per player action. Taking meaningful damage while below 50% HP
   grants `+1` Momentum once per enemy action. Below 25% HP, the first eligible
   gain each round grants `+1` extra, capped.
-- Automatic heavy payoff: the next Berserker heavy weapon art or Berserker
-  weapon skill consumes all Momentum before resolving. Eligible heavy arts are
+- Automatic heavy payoff: the next eligible Berserker heavy weapon art
+  consumes all Momentum before resolving. Eligible heavy arts are
   `Guard Cleaver`, `Reaver's Mark`, `Brace`, and `Anvil Strike`.
 - Heavy art mutation: each stack adds conservative accuracy/damage pressure and
   a small art-themed rider: stronger guard break, stronger mark pressure,
@@ -997,14 +996,14 @@ stabilize the dangerous low-HP playstyle.
   `Final Assault` Momentum use, and awakened/equipped `Bloodied Crits`
   retaining current crit/damage bonuses while adding only the specified
   Momentum reliability effects.
-- Critical implementation gap: only storage, cap calculation, presentation,
-  cleanup, and per-damage-event gain currently exist. Multihit actions can gain
-  several stacks, every below-25% event receives the extra stack, and no heavy
-  art or `Final Assault` consumes Momentum. Art mutations, miss consumption,
-  Battle Scar stability, the 20-scar qualification threshold, and awakened
-  ring preservation are unwired. Implement spend at validated action start;
-  the post-damage hook cannot satisfy miss consumption or pre-resolution
-  mutation. Until this closes, do not describe Bloodied Momentum as shipped.
+- Shipped implementation: generation is deduplicated per player/enemy action,
+  the below-25% bonus occurs once per round, and validated heavy arts spend
+  before resolution. Each stack grants `+3` accuracy points and `+5%` weapon
+  damage; heavy-art riders add `-1` Defense or `+2` percentage points per stack
+  as appropriate. Awakened/equipped `Bloodied Crits` raises percentage riders
+  to `+3` below 25% HP and adds one further point of Defense crush. Miss,
+  Battle Scar, Final Assault, lifecycle, and preservation behavior is covered
+  by focused regressions.
 - Presentation cleanup: shared `Momentum` is learned by Weapon Master,
   Berserker, Assassin, and Ninja, but only Assassin/Ninja use it as a Death
   Mark setup. Keep its base description class-neutral and attach the setup role
@@ -1209,8 +1208,9 @@ actions, raises the cap from `50` to `100`, and gains four full-bar Bursts.
     Spell Block.
   Count at most once per action or defensive event. Failed validation and menu
   inspection grant nothing. Progress persists through promotion and save/load.
-  Locked Bursts show their associated-use progress in the Resolve tab; learned
-  Bursts appear in the dedicated Bursts menu and never as ordinary Specials.
+  Undiscovered Bursts remain unnamed and show no associated-use counter in the
+  Resolve tab. A Burst reveals itself when learned, then appears in the
+  dedicated Bursts menu and never as an ordinary Special.
 - Once learned, Citadel Aegis absorbs `50%` of incoming magic damage; Ironwall
   Revenge makes three `1.35x` weapon attacks; Last Bastion retains its
   recovery/barrier behavior; Stronghold grants three turns of `30%` melee
@@ -1225,15 +1225,13 @@ actions, raises the cap from `50` to `100`, and gains four full-bar Bursts.
 - Keep `guard_meter` save compatibility and the awakened Shield Mastery ring's
   automatic major-hit mitigation. Combat-only preparations and temporary
   pools reset at combat boundaries.
-- Critical implementation gap: runtime currently stores one scalar
-  `resolve_mastery`, increments it on unrelated gains/spends, and assigns all
-  four Surges a requirement of zero. Consequently every Surge unlocks on
-  promotion and none is learned through its associated type. Replace the
-  scalar with the four mastery tracks above, migrate/normalize its save data,
-  update the Resolve/Bursts presentation, and add progression, deduplication,
-  promotion carry-forward, and save/load tests. Retired Shield Check, Bulwark,
-  active Shield Riposte, Covering Guard, and active Spell Reflection APIs must
-  then either be removed or explicitly isolated as legacy-save compatibility.
+- Shipped: runtime stores four capped mastery tracks, credits only their
+  associated successful actions or defensive events, carries progress from
+  Sentinel through promotion and save/load, and keeps exact progress hidden
+  until each Burst is discovered. Legacy scalar mastery is discarded
+  during normalization. Retired Shield Check, Bulwark, active Shield Riposte,
+  Covering Guard, and active Spell Reflection APIs have been removed; the
+  finalized Shield Riposte and Spell Reflection passives remain.
 
 ### Remaining Footpad Branch Implementation Audit
 
@@ -1246,12 +1244,12 @@ trees also contain a three-point level-60 promotion node.
 
 | Class | Tree size | Working foundation | Audit status |
 | --- | ---: | --- | --- |
-| Thief | 4 / 4 | Lockpick, Gold Toss, Mug, Footpad tools, and basic Fortune/Misfortune storage | Critical loot and luck-loop gaps |
-| Rogue | 8 / 8 | Sneak Attack, Slot Machine, Triple Strike, Master Lockpick, partial Cheat Death, and meter preservation | Critical payoff, Jinx, Loaded Dice, and passive-loot gaps |
-| Inquisitor | 17 / 17 | Reveal, Inspect, Exploit Weakness, anti-magic/resistance actions, persistent Case Journal storage | Critical identity-transition and Revelation-payoff gaps |
-| Seeker | 11 / 11 | Teleport, Cartography, Third Eye, Volitation, Enter Wall, and direct Hidden Cache helpers | Critical Wayfinding, milestone, cache-integration, and target-presentation gaps |
-| Spell Stealer | 5 / 5 | Blank Scroll theft, inscribed scrolls, Steal As Well, and Stolen Charge storage | Critical resource-validation and charged-payoff gaps |
-| Arcane Trickster | 3 / 3 | Permanent Steal Spell 2 learning and partial awakened ring bonuses | Critical spell-payoff and ring-duration gaps |
+| Thief | 4 / 4 | Lockpick, Gold Toss, Mug, Footpad tools, Scavenger's Eye, and action-scoped Fortune/Misfortune | Implemented with focused loot and luck-loop coverage |
+| Rogue | 8 / 8 | Sneak Attack, Slot Machine, Triple Strike, Master Lockpick, Finders Keepers, Cheat Death/Jinx, and Loaded Dice | Implemented with focused payoff and survival coverage |
+| Inquisitor | 17 / 17 | Reveal, Inspect, Exploit Weakness, anti-magic/resistance actions, persistent Case Journal and target-specific Revelation | Implemented with focused investigation-payoff coverage |
+| Seeker | 11 / 11 | Teleport, Cartography, Third Eye, Volitation, Enter Wall, contextual Wayfinding, and integrated Hidden Cache | Implemented with focused route and cache coverage |
+| Spell Stealer | 5 / 5 | Blank Scroll theft, inscribed scrolls, Steal As Well, and action-scoped Stolen Charge | Implemented with focused stolen-magic coverage |
+| Arcane Trickster | 3 / 3 | Permanent Steal Spell 2 learning, Arcane Larceny, and Charge preservation | Implemented with focused payoff and ring-duration coverage |
 
 Resolved structural gap — generated promoted trees:
 
@@ -1261,90 +1259,69 @@ Resolved structural gap — generated promoted trees:
 - These graphs remain incomplete class progression, but they no longer claim
   mechanics that do not exist. Future additions must be individually authored.
 
-Critical Thief/Rogue gaps — loot, luck, and survival:
+Shipped Thief/Rogue closure — loot, luck, and survival:
 
-- `Scavenger's Eye` and `Finders Keepers` are marker passives. Ordinary drop
-  chance still changes only through retained Footpad `Serendipity`; the loot
-  loop merely prints the passive name beside an item that already dropped.
-  There is no rarity nudge, no extra Finders Keepers roll, and no learned-skill
-  check before that class-name-based message appears.
-- Fortune generation is limited to critical damage events and critical results
-  from five named risky skills. A critical risky weapon action can therefore
-  generate once in the damage hook and again in post-skill handling, while
-  multi-hit or multi-damage actions have no once-per-action boundary. Ordinary
-  meaningful successes, dodges, parries, theft results, and status contests do
-  not implement the advertised gain rules. Misfortune generation is similarly
-  limited mostly to misses from those five skills.
-- Spending Fortune does not add a defined bonus to the underlying roll. It
-  empties the meter for a separate `5%`-per-stack chance, capped at `25%`, to
-  force a hit; nonweapon risky actions can spend it without using that result.
-  Misfortune spends after one of the five skills succeeds and directly removes
-  extra HP, bypassing typed damage and combat events. It does not improve
-  theft, gold, status duration, or Slot Machine outcome scale.
-- `Cheat Death` runs for every Rogue, whether its tree node was learned or not.
-  Its `Jinx` is only a displayed two-turn timer with no gameplay penalty, and
-  the fatal-damage path lacks integration coverage. The standalone 15% Loaded
-  Dice failed-luck conversion helper has no runtime caller. Once-per-combat
-  meter preservation is wired when the awakened ring is equipped.
-- Retained cap talents can raise each meter well beyond the documented base
-  caps through generic payload stacking. Final authored trees must state the
-  intended effective caps and ensure their UI, generation, and payoffs use the
-  same contract.
+- Learned `Scavenger's Eye` improves eligible ordinary drop odds with a larger
+  relative nudge for rare items. Learned `Finders Keepers` makes one
+  conservative extra-find roll over otherwise missed ordinary enemy loot.
+  Quest, special, ability, summon-gated, class-invalid, unique, and ultimate
+  items remain excluded.
+- Fortune and Misfortune use the shared action claims, so multi-hit damage,
+  critical events, nested theft, and repeated avoidance resolution cannot
+  award multiple outcomes inside one action. Meaningful attacks, misses,
+  dodges, parries, risky skills, theft results, and major status results feed
+  the paired meters; passive ticks and housekeeping do not.
+- Fortune spends after validation and before a risky roll, adding five
+  percentage points of reliability per stack. Misfortune spends only after a
+  clean result, adding typed physical pressure or scaling theft gold, status
+  duration, and successful Slot Machine output without changing its outcome
+  category. Thief caps remain two and Rogue caps remain three regardless of
+  obsolete cap metadata.
+- Learned `Cheat Death` makes its once-per-combat fatal Luck save, spends
+  Misfortune only on survival, and leaves the Rogue at one HP under a two-turn
+  Jinx that reduces weapon accuracy and Luck checks. Awakened/equipped Loaded
+  Dice can convert failed eligible checks and preserves one point after the
+  first clean Fortune or Misfortune payoff each combat.
+- Focused regressions cover loot gating/exclusions, exact caps, action
+  deduplication, reliability timing, typed and outcome-specific payoffs, Slot
+  Machine identity, fatal integration, Jinx, ring conversion/preservation, and
+  combat-state cleanup.
 
-Critical Inquisitor/Seeker gaps — investigation and movement:
+Shipped Inquisitor/Seeker closure — investigation and movement:
 
-- Universal promotion retention is intentional. Inquisitor keeps every learned
-  Footpad stealth/tool ability; its investigative identity comes from its new
-  tree, mechanics, stats, and equipment restrictions.
-- Case Journal persistence, normalization, clamping, Inspect `+3`, Exploit
-  Weakness `+2`, and victory `+4` storage exist. Victory progress does not
-  require visible enemy details; Reveal/telegraph observation adds nothing;
-  and the Exploit hook treats the wrapper as successful even when its internal
-  weapon strike misses.
-- Revelation can be added by Inspect and the Exploit wrapper, but there is no
-  consumer. It never improves or spends on a standard attack, precision skill,
-  or Exploit Weakness, and it is not cleared when its target dies. The
-  `25/50/75/100` Case milestones are labels only: their extra Revelation,
-  reliability, prediction, and route benefits do not occur.
-- `wayfinding_discount` has no gameplay caller and bases its preview on the
-  best journal entry rather than relevant route context. Teleport, Sanctuary,
-  Volitation, and Enter Wall keep only their independent legacy behavior.
-  Hidden Cache availability/claim helpers work when called directly, but no
-  dungeon or reward flow calls them, and the promised ring insight smoothing
-  is absent.
-- Status and Character Menu summaries show the maximum Revelation value among
-  all stored targets instead of the selected/current target. Tests cover state
-  helpers and rendering, not the advertised investigation-to-payoff loop.
+- Universal promotion retention remains intentional. Case Journal evidence now
+  requires confirmed Inspect/Exploit outcomes, visible telegraphs, or victories
+  where enemy details were actually available.
+- Revelation is fixed at two for Inquisitor and three for Seeker, is stored per
+  target, and spends before standard attacks, Exploit Weakness, Piercing Strike,
+  True Strike, and True Piercing Strike. Misses consume the read without its
+  pressure rider, and dead or combat-ended targets cannot retain it.
+- Known Tells adds the first studied Inspect insight, Weakness Brief steadies
+  Exploit Weakness, Pattern Lock predicts the studied enemy's next action, and
+  Closed Case improves contextual Seeker movement. Exact progress remains
+  developer-facing; player surfaces reveal ranks and immediate target state.
+- Teleport, Sanctuary, Volitation, and Enter Wall consume contextual Wayfinding
+  discounts. Awakened/equipped Hidden Cache smooths one clean read per combat,
+  and dungeon navigation grants one concrete utility reward after a floor is
+  sufficiently mapped.
+- Focused regressions cover normalization, fixed caps, acquisition/spending,
+  inner-hit accounting, milestones, cleanup, selected-target UI, movement, and
+  cache reward integration.
 
-Critical Spell Stealer/Arcane Trickster gaps — stolen magic:
+Shipped Spell Stealer/Arcane Trickster closure — stolen magic:
 
-- Blank Scroll consumption, inscribed stolen-scroll creation, trial immunity,
-  combat spell-picker routing, `Steal As Well`, and successful `Steal Spell 2`
-  permanent learning are real foundations. The combat dispatcher validates
-  `Steal Spell`'s declared 8-MP requirement, but the ability never spends that
-  MP after success. `Steal Spell 2` spends 22 MP in the ability but relies on
-  the dispatcher for affordability; direct use can therefore succeed from zero
-  MP while the resource silently clamps at zero. Both need one authoritative
-  validate-then-spend path.
-- Successful theft and ordinary stolen-scroll casts add Stolen Charge. A
-  stolen scroll cast through `Steal As Well` does not. Charge releases only
-  from a weapon damage event; an ordinary damaging spell never consumes it.
-  Multi-hit weapon actions consume on the first damage event and scale from
-  that hit rather than an action-level result.
-- The release directly removes HP while labeling the result Arcane damage, so
-  Arcane resistance, normal damage events, defeat attribution, and related
-  reactions are bypassed. The documentation also conflicts on whether a miss
-  should consume Charge; runtime currently waits for successful weapon damage.
-- Successful theft starts the Arcane Trickster ring buff when awakened even if
-  the ring is unequipped. The bonuses correctly require the equipped ring, but
-  `buff_turns` is never decremented or cleared at combat boundaries, allowing a
-  nominal three-turn buff to persist indefinitely and across its saved ring
-  state. Once-per-combat Stolen Charge preservation is wired for weapon
-  releases.
-- Existing tests cover theft/serialization, direct Charge gain, one weapon
-  release, and direct ring helpers. They do not cover MP safety, natural-spell
-  release, action aggregation, typed Arcane resolution, miss policy,
-  Steal-As-Well Charge gain, or ring expiry/cleanup.
+- Both theft abilities validate class, target, source material, and MP before
+  spending resources or mutating inventory and permanent spell knowledge.
+- Successful theft and every stolen-scroll cast route add fixed-cap Stolen
+  Charge. Eligible weapon and spell attempts commit it after validation, then
+  resolve at most one aggregate typed Arcane payoff for the action. Missed and
+  fully negated actions consume the commitment without applying bonus damage.
+- Arcane Larceny starts only while awakened and equipped, lasts three player
+  turns, clears with combat/load lifecycle state, and preserves one Charge
+  after its first clean payoff each combat.
+- Focused tests cover MP safety, every source, exact caps, natural spells,
+  action aggregation, typed mitigation/events, miss consumption,
+  Steal-As-Well routing, preservation, presentation, and cleanup.
 
 ### Thief/Rogue Fortune And Misfortune
 
@@ -1425,7 +1402,7 @@ improves odds and failure fuels bigger eventual payoffs.
 
 ### Inquisitor/Seeker Case Journal And Wayfinding
 
-V1 implementation spec: center Inquisitor and Seeker on persistent enemy-type
+Implemented V1: center Inquisitor and Seeker on persistent enemy-type
 `Case Journal` progress, combat-only `Revelation`, and Seeker mobility depth.
 Inquisitor adds truth-seeking counterplay; Seeker carries that
 forward with stronger exploit reliability, better route control, and awakened
@@ -1457,6 +1434,11 @@ forward with stronger exploit reliability, better route control, and awakened
   hit, or a weapon-tagged precision skill. Each stack improves exploit
   reliability and modestly strengthens weakness/control pressure. Misses
   consume stacks but apply no rider.
+- Shipped Revelation tuning is `+4` accuracy percentage points and `+5%`
+  weapon damage per stack. A hit applies a two-turn Defense opening of one
+  point per stack. `Weakness Brief` adds `+10` accuracy percentage points to
+  Exploit Weakness, and `Pattern Lock` adds `+10` dodge percentage points
+  against the read enemy's next action.
 - Case Journal payoff: against studied enemy types, `25+` makes the first
   `Inspect` grant +1 Revelation; `50+` gives `Exploit Weakness` a small
   accuracy/reliability bonus; `75+` gives visible telegraph reads a small
@@ -1469,6 +1451,10 @@ forward with stronger exploit reliability, better route control, and awakened
   failure messages, small MP discounts, or reduced random-teleport scatter where
   the existing spell supports it. V1 does not add full-map quest pathing,
   guaranteed boss/trial escape, or a persistent route graph.
+- Shipped Wayfinding tuning discounts mapped routes by `5%`, a route tied to a
+  `Closed Case` by `10%`, and awakened/equipped ring routes by a further `5%`,
+  capped at `20%`. A shallow Hidden Cache grants a Smoke Bomb; depth ten or
+  deeper grants a Dispel Scroll.
 - Class Ring enhancement: `Hidden Cache` remains the awakened Seeker Class Ring
   identity and keeps one depth-weighted cache per sufficiently mapped dungeon
   level. While awakened and equipped, it also gives small insight smoothing:
@@ -1476,7 +1462,7 @@ forward with stronger exploit reliability, better route control, and awakened
   slightly improves Seeker `Wayfinding` value. Preserve existing
   `claimed_caches` compatibility and cache gating.
 - UI text/surfaces: status text should show current target Revelation, studied
-  enemy-type progress/rank, active sight/detail state, and Hidden Cache
+  enemy-type discoveries/rank, active sight/detail state, and Hidden Cache
   availability when relevant. Combat/exploration logs should report Case
   Journal progress, milestone reach, Revelation gain/spend, immunity-safe
   exploit payoff, telegraph prediction, mobility smoothing, and Hidden Cache
@@ -1545,7 +1531,7 @@ defense rather than adding more marks.
   reliable single-mark setup/payoff. Numeric tuning starts conservative and
   should be adjusted after playtest.
 
-### Spell Stealer/Arcane Trickster Stolen Charge And Arcane Larceny
+### Spell Stealer/Arcane Trickster Stolen Charge And Arcane Larceny — Shipped
 
 V1 implementation spec: preserve the existing Blank Scroll spell-theft economy,
 `Steal Spell 2` permanent learning, `Steal As Well`, and Arcane Trickster ring
@@ -1566,12 +1552,12 @@ that loop through the awakened `Arcane Larceny` ring identity.
   casting an inscribed stolen-spell scroll each grant `+1` Charge, capped. Item
   theft from `Steal As Well` does not independently grant Charge; Charge comes
   from stolen magic sources only.
-- Hybrid payoff: the next successful damaging spell, standard weapon hit, or
-  weapon-tagged trickster skill spends all Charge and adds bonus arcane damage
+- Hybrid payoff: the next damaging-spell attempt, standard weapon attempt, or
+  weapon-tagged trickster skill commits all Charge after validation and adds bonus arcane damage
   equal to `20%` of the base damage per stored Charge, with a minimum of `5`
   per stored Charge.
-  The current implementation releases only after a successful damaging result;
-  missed or fully negated actions do not apply the payoff.
+  Resolution aggregates the action rather than individual hits. Missed or
+  fully negated actions consume the commitment without applying the payoff.
 - Class Ring display: show the awakened Arcane Trickster effect as
   `Arcane Larceny`, while preserving existing internal `Spell Steal Buff`
   compatibility for saves and tests. Awakened/equipped `Arcane Larceny` keeps
@@ -1599,6 +1585,10 @@ that loop through the awakened `Arcane Larceny` ring identity.
   identity. Arcane Trickster should feel hybrid and opportunistic, not like a
   second Wizard progression path. Numeric tuning starts conservative and should
   be adjusted after playtest.
+- Shipped: theft costs validate before inventory or learning mutations, all
+  three magical sources feed fixed-cap Charge, eligible attempts resolve once
+  per action through typed Arcane mitigation, and Arcane Larceny observes
+  equipment, duration, preservation, and combat/load cleanup boundaries.
 
 ### Healer Lineage Implementation Audit
 

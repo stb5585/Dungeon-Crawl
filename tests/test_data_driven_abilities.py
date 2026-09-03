@@ -4967,13 +4967,13 @@ class TestBatch11Reveal:
 
 
 class TestBatch11Transform:
-    """Transform/2/3/4 - sets user.transform_type to the correct creature."""
+    """Legacy Transform adapters route through persistent unlocked forms."""
 
     @staticmethod
-    def _make_user():
+    def _make_user(class_name="Druid"):
         from tests.test_framework import TestGameState
         user = TestGameState.create_player(
-            name="Druid", class_name="Warrior", race_name="Human",
+            name=class_name, class_name=class_name, race_name="Human",
             level=30, health=(300, 300), mana=(100, 100),
             stats={"strength": 20, "intel": 15, "wisdom": 20,
                    "con": 18, "charisma": 10, "dex": 15},
@@ -4982,31 +4982,34 @@ class TestBatch11Transform:
 
     def test_transform_sets_panther(self):
         from src.core import abilities
-        from src.core.enemies import Panther
         user = self._make_user()
+        user.progression.purchased_node_ids.add("druid.ability.transform")
         abilities.Transform().use(user, user)
-        assert isinstance(user.transform_type, Panther)
+        assert user.cls.name == "Panther"
+        assert user.transformation_state["active_form"] == "Panther"
 
     def test_transform2_sets_direbear(self):
         from src.core import abilities
-        from src.core.enemies import Direbear
         user = self._make_user()
+        user.progression.purchased_node_ids.add("druid.ability.transform2")
         abilities.Transform2().use(user, user)
-        assert isinstance(user.transform_type, Direbear)
+        assert user.cls.name == "Direbear"
+        assert user.transformation_state["active_form"] == "Direbear"
 
     def test_transform3_sets_werewolf(self):
         from src.core import abilities
-        from src.core.enemies import Werewolf
-        user = self._make_user()
+        user = self._make_user("Lycan")
+        user.progression.purchased_node_ids.add("lycan.ability.transform3")
         abilities.Transform3().use(user, user)
-        assert isinstance(user.transform_type, Werewolf)
+        assert user.cls.name == "Werewolf"
+        assert user.transformation_state["active_form"] == "Werewolf"
 
-    def test_transform4_sets_red_dragon(self):
+    def test_transform4_cannot_bypass_authored_form_unlocks(self):
         from src.core import abilities
-        from src.core.enemies import RedDragon
         user = self._make_user()
         abilities.Transform4().use(user, user)
-        assert isinstance(user.transform_type, RedDragon)
+        assert user.cls.name == "Druid"
+        assert user.transformation_state["active_form"] is None
 
     def test_transform_name(self):
         from src.core import abilities
@@ -5580,7 +5583,7 @@ class TestBatch9YAMLLoading:
         ("shield_slam.yaml", "Shield Slam", 8),
         ("kidney_punch.yaml", "Kidney Punch", 18),
         ("poison_strike.yaml", "Poison Strike", 12),
-        ("dim_mak.yaml", "Dim Mak", 50),
+        ("dim_mak.yaml", "Dim Mak", 18),
         ("exploit_weakness.yaml", "Exploit Weakness", 10),
         ("gold_toss.yaml", "Gold Toss", 0),
         ("lick.yaml", "Lick", 10),
@@ -5792,13 +5795,13 @@ class TestBatch9PoisonStrike:
 
 
 class TestBatch9DimMak:
-    """DimMak - weapon + kill/stun/absorb."""
+    """Dim Mak routes through the full-Ki Master Monk finisher."""
 
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
         user = TestGameState.create_player(
-            name="Monk", class_name="Warrior", race_name="Human",
+            name="Monk", class_name="Master Monk", race_name="Human",
             level=30, health=(400, 400), mana=(200, 200),
             stats={"strength": 30, "intel": 15, "wisdom": 30,
                    "con": 20, "charisma": 10, "dex": 25},
@@ -5811,41 +5814,68 @@ class TestBatch9DimMak:
         )
         return user, target
 
-    def test_dim_mak_deducts_mana(self):
+    @staticmethod
+    def _fill_ki(user):
+        from src.core.classes import promotion_kits
+        promotion_kits.gain_meter(
+            user,
+            "ki",
+            promotion_kits.cap_for(user, "ki"),
+            "test",
+        )
+
+    def test_dim_mak_deducts_mana(self, monkeypatch):
         from src.core import abilities
         user, target = self._make_combatants()
+        self._fill_ki(user)
+        monkeypatch.setattr(
+            user,
+            "weapon_damage",
+            lambda *_args, **_kwargs: ("Dim Mak misses.\n", False, False),
+        )
         mana_before = user.mana.current
         abilities.DimMak().use(user, target)
-        assert user.mana.current < mana_before
+        assert user.mana.current == mana_before - 18
 
-    def test_dim_mak_absorbs_essence_on_kill(self):
+    def test_dim_mak_absorbs_essence_on_kill(self, monkeypatch):
         from src.core import abilities
-        absorbed = False
-        for _ in range(50):
-            user, target = self._make_combatants()
-            target.health.current = 10  # Low HP to ensure kill
-            target.health.max = 100
-            result = abilities.DimMak().use(user, target)
-            if not target.is_alive():
-                # Check for absorption
-                text = result.message if hasattr(result, 'message') else str(result)
-                if "essence" in text.lower():
-                    absorbed = True
-                    break
-        assert absorbed, "DimMak should absorb essence on kill"
+        user, target = self._make_combatants()
+        self._fill_ki(user)
+        user.health.current = 200
 
-    def test_dim_mak_can_stun_on_survival(self):
+        def killing_blow(victim, **_kwargs):
+            victim.health.current = 0
+            return "Dim Mak hits.\n", True, False
+
+        monkeypatch.setattr(user, "weapon_damage", killing_blow)
+        message = abilities.DimMak().use(user, target)
+
+        assert "absorbs" in message
+        assert user.health.current == 300
+
+    def test_dim_mak_can_stun_on_survival(self, monkeypatch):
         from src.core import abilities
-        stunned = False
-        for _ in range(200):
-            user, target = self._make_combatants()
-            target.health.current = 9999
-            target.health.max = 9999
-            abilities.DimMak().use(user, target)
-            if target.status_effects["Stun"].active:
-                stunned = True
-                break
-        assert stunned, "DimMak should sometimes stun surviving targets"
+        user, target = self._make_combatants()
+        self._fill_ki(user)
+        monkeypatch.setattr(
+            user,
+            "weapon_damage",
+            lambda *_args, **_kwargs: ("Dim Mak hits.\n", True, False),
+        )
+        monkeypatch.setattr(
+            "src.core.classes.promotion_kits.tracks.resolve_death_contest",
+            lambda *_args, **_kwargs: (False, False),
+        )
+        rolls = iter((user.stats.wisdom, 0))
+        monkeypatch.setattr(
+            "src.core.classes.promotion_kits.tracks.random.randint",
+            lambda *_args: next(rolls),
+        )
+
+        message = abilities.DimMak().use(user, target)
+
+        assert target.status_effects["Stun"].active
+        assert "stunned" in message
 
 
 class TestBatch9ExploitWeakness:

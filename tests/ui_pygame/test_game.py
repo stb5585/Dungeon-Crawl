@@ -918,7 +918,7 @@ def test_thieves_guild_backroom_guidance_for_members(monkeypatch):
     assert menu_calls[-1][0] == "Thieves Guild Backroom"
     assert menu_calls[-1][1] == ("Class Guide", "Leave")
     assert "combat Spells menu" in shown_messages[-1][0]
-    assert "spends all Charge for bonus arcane damage" in shown_messages[-1][0]
+    assert "commits that magic to an Arcane payoff" in shown_messages[-1][0]
     assert shown_messages[-1][1]["title"] == "The Gray Broker"
     assert shown_messages[-1][1]["image_path"] == "npc:The Gray Broker"
 

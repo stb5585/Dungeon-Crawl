@@ -820,6 +820,14 @@ class SlotMachineEffect(Effect):
     ) -> None:
         label = self.card_hand_label(cards)
         score = self._card_hand_score(cards)
+        try:
+            from src.core.classes import promotion_kits
+
+            severity = promotion_kits.misfortune_severity_multiplier(actor)
+        except Exception:
+            severity = 1.0
+        result.extra["luck_success"] = False
+        result.extra["slot_outcome"] = label
         messages.append(f"{label}!\n")
         messages.append(f"Cards: {spin}\n")
 
@@ -827,11 +835,12 @@ class SlotMachineEffect(Effect):
             target = actor
 
         if label == "Straight Flush":
+            result.extra["luck_success"] = target is not actor
             if any([target.magic_effects["Ice Block"].active, getattr(target, "tunnel", False)]):
                 messages.append("It has no effect.\n")
                 return
-            damage = score * 4
-            mana_drain = min(target.mana.current, max(1, score // 2))
+            damage = max(1, int(score * 4 * severity))
+            mana_drain = min(target.mana.current, max(1, int((score // 2) * severity)))
             target.health.current -= damage
             target.mana.current -= mana_drain
             actor.mana.current = min(actor.mana.max, actor.mana.current + mana_drain)
@@ -844,14 +853,16 @@ class SlotMachineEffect(Effect):
             if any([target.magic_effects["Ice Block"].active,
                     rng.randint(0, max(1, user_chance))]):
                 target = actor
+            result.extra["luck_success"] = target is actor
             self._restore_health_and_mana(target, messages)
             return
 
         if label == "Straight":
+            result.extra["luck_success"] = target is not actor
             if target.magic_effects["Ice Block"].active:
                 messages.append("It has no effect.\n")
             else:
-                damage = score * 2
+                damage = max(1, int(score * 2 * severity))
                 target.health.current -= damage
                 messages.append(f"{target.name} takes {damage} damage.\n")
             return
@@ -861,8 +872,15 @@ class SlotMachineEffect(Effect):
                     getattr(target, "tunnel", False),
                     target_chance > user_chance + 1]):
                 target = actor
-            gold_drain = min(getattr(target, "gold", 0), score * 25)
-            mana_drain = min(target.mana.current, max(1, score // 3))
+            result.extra["luck_success"] = target is not actor
+            gold_drain = min(
+                getattr(target, "gold", 0),
+                int(score * 25 * severity),
+            )
+            mana_drain = min(
+                target.mana.current,
+                max(1, int((score // 3) * severity)),
+            )
             target.gold -= gold_drain
             actor.gold += gold_drain
             target.mana.current -= mana_drain
@@ -877,10 +895,11 @@ class SlotMachineEffect(Effect):
                 {rank for rank, _suit in cards},
                 key=lambda rank: [card_rank for card_rank, _suit in cards].count(rank),
             )
-            amount = max(1, self.CARD_VALUES[paired_rank] // 2)
+            amount = max(1, int((self.CARD_VALUES[paired_rank] // 2) * severity))
             duration = max(1, min(10, amount))
             if not rng.randint(0, 1):
                 target = actor
+            result.extra["luck_success"] = target is not actor
             self._apply_random_pair_effect(target, duration, amount ** 2, rng, messages, result)
             return
 
@@ -888,7 +907,8 @@ class SlotMachineEffect(Effect):
         messages.append(
             f"{actor.name} gains {int(mod * 100)}% to attack.\n"
         )
-        wd_str, _, _ = actor.weapon_damage(target, dmg_mod=1 + mod, use_offhand=False)
+        wd_str, hit, _ = actor.weapon_damage(target, dmg_mod=1 + mod, use_offhand=False)
+        result.extra["luck_success"] = bool(hit)
         messages.append(wd_str)
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
@@ -902,6 +922,8 @@ class SlotMachineEffect(Effect):
 
         user_chance = actor.check_mod("luck", enemy=target, luck_factor=10)
         target_chance = target.check_mod("luck", enemy=actor, luck_factor=10)
+        fortune_bonus = max(0.0, float(result.extra.get("fortune_bonus", 0.0) or 0.0))
+        user_chance += max(0, int(max(1, user_chance) * fortune_bonus))
 
         hands = self.HANDS
         success = False

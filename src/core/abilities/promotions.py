@@ -111,16 +111,6 @@ class HoldTheLine(_ResolveActive):
         return not promotion_kits.hold_the_line_active(user)
 
 
-class ShieldBash(_ResolveActive):
-    def __init__(self):
-        super().__init__("Shield Check", "Spend Resolve to lower the enemy's Attack and Speed.", 10)
-
-    def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
-        from ..classes import promotion_kits
-
-        return promotion_kits.shield_bash(user, target)
-
-
 class BraceWall(_ResolveActive):
     def __init__(self):
         super().__init__("Brace Wall", "Spend Resolve to raise Defense; also refreshes Hold the Line.", 15)
@@ -129,53 +119,6 @@ class BraceWall(_ResolveActive):
         from ..classes import promotion_kits
 
         return promotion_kits.brace_wall(user)
-
-
-class Bulwark(_ResolveActive):
-    def __init__(self):
-        super().__init__("Bulwark", "Spend Resolve to create a short-lived damage barrier.", 25)
-
-    def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
-        from ..classes import promotion_kits
-
-        return promotion_kits.bulwark(user)
-
-
-class ShieldRiposte(_ResolveActive):
-    def __init__(self):
-        super().__init__("Shield Riposte", "Spend Resolve for an immediate weapon counter.", 20)
-
-    def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
-        from ..classes import promotion_kits
-
-        return promotion_kits.shield_riposte(user, target)
-
-
-class CoveringGuard(_ResolveActive):
-    def __init__(self):
-        super().__init__("Covering Guard", "Spend Resolve to ward against the next dangerous hit.", 20)
-
-    def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
-        from ..classes import promotion_kits
-
-        return promotion_kits.covering_guard(user)
-
-
-class SpellReflection(_ResolveActive):
-    def __init__(self):
-        super().__init__(
-            "Spell Reflection",
-            (
-                "Spend Resolve to raise Magic Defense and reflect the next "
-                "compatible hostile spell."
-            ),
-            25,
-        )
-
-    def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
-        from ..classes import promotion_kits
-
-        return promotion_kits.prepare_spell_reflection(user)
 
 
 class OathsJudgment(_PromotionActive):
@@ -561,6 +504,14 @@ class _InvokeSummon(_PromotionActive):
         from ..classes import promotion_kits
 
         return promotion_kits.invoke_summon(user, target, self.summon_name)
+
+
+class InvokeHodag(_InvokeSummon):
+    def __init__(self): super().__init__("Hodag")
+
+
+class InvokeCaladrius(_InvokeSummon):
+    def __init__(self): super().__init__("Caladrius")
 
 
 class InvokePatagon(_InvokeSummon):

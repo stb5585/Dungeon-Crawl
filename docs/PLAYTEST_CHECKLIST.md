@@ -145,8 +145,8 @@ second implementation backlog.
   trees, and later affinity-gated spell purchases.
 - [ ] Exercise Sorcerer/Wizard School Affinity across all seven tracked schools,
   both specializations, opposing-school drift, tier-two/tier-three purchase
-  gates, and save/load. After the critical School Streak gap is implemented,
-  verify awakened-and-equipped gating, once-per-spell-action failed-rider
+  gates, and save/load. Verify awakened-and-equipped gating,
+  once-per-spell-action failed-rider
   stacks, school isolation, success reset, and a consumed four-stack guarantee.
   Confirm Wizard mastery-buff stacks obey their documented combat/save
   lifecycle.
@@ -154,7 +154,7 @@ second implementation backlog.
   Restorative Barrier, Insult to Injury, Master Locator, and Familiar Bond I/II.
   Exercise every curse and both promotion gates. For Shadowcaster, verify every
   Umbral Debt, Deep Shadow, Veilcraft, Nightmare, and Familiar Mastery node.
-  After the critical Shade fix, confirm only +15% Shadow damage, +10% Speed,
+  Confirm only +15% Shadow damage, +10% Speed,
   flight, and the correct Holy weakness apply; explicitly reject legacy weapon,
   critical, speed, and physical-siphon bonuses. Verify Shade-end and low-HP
   auto-heal backlash conversion with all four familiar variants. Exercise
@@ -191,7 +191,7 @@ second implementation backlog.
   abilities from conduit rather than XP, each chosen Xenid adds its documented
   caster effect, the paired ultimate node grants only the selected Xenid's
   ultimate, and level-80 Conduit Mastery amplifies caster-side effects.
-- [ ] After the critical conduit-payoff gap is implemented, exercise all
+- [ ] Exercise all
   fourteen borrowed Xenid invocations, including Hodag and Caladrius, and
   verify typed mitigation plus each authored rider. Confirm Conduit Command is
   consumed by exactly the next active-Xenid non-Recall action, modifies damage
@@ -222,20 +222,28 @@ second implementation backlog.
 - [ ] Purchase Bonded Bulwark, save/load, and confirm its companion-bond payoff
   persists without granting a generic combat rating. Confirm Ki, Threads,
   Harmony, Resonance, and Lycan control do not gain removed mastery bonuses.
-- [ ] Critical pending Thief/Rogue coverage: after the authored kit is
-  implemented, verify learned-skill gating and restricted-item exclusions for
+- [ ] Verify Momentum describes Death Mark setup only in the Ninja tree, while
+  Weapon Master and Berserker see its shared dual-wield identity. Confirm the
+  Resolve menu contains finalized actions and Bursts but none of Shield Check,
+  Bulwark, Covering Guard, or active Shield Riposte/Spell Reflection.
+- [ ] Exercise each Grandmaster Weapon Art at its base, improved, and mastered
+  ranks; all six Wizard school modifiers; each Warlock familiar bond/modifier;
+  and the Deep Shadow, Veilcraft, Nightmare, and four familiar terminal
+  passives for Shadowcaster.
+- [ ] Thief/Rogue authored-kit coverage: verify learned-skill gating and
+  restricted-item exclusions for
   Scavenger's Eye and Finders Keepers; once-per-action Fortune/Misfortune gain;
   every approved risky-action spend; typed payoff resolution; Slot Machine,
   theft, gold, and status handling; effective caps; Cheat Death's learned-node
   requirement; a real Jinx effect or its removal; and live Loaded Dice failed-
   luck conversion plus once-per-combat preservation.
-- [ ] Critical pending Inquisitor/Seeker coverage: verify visible-detail Case
-  progress, Inspect,
+- [ ] Shipped Inquisitor/Seeker playtest: verify visible-detail Case evidence,
+  Inspect,
   Exploit Weakness hit accounting, telegraph/setup gains, target-specific
   Revelation spend and cleanup, all four Case milestone effects, selected-
   target UI, Wayfinding consumers, and an actual Hidden Cache dungeon/reward
   flow with awakened-and-equipped insight smoothing.
-- [ ] Critical pending Spell Stealer/Arcane Trickster coverage: verify MP
+- [ ] Shipped Spell Stealer/Arcane Trickster playtest: verify MP
   validation before Blank Scroll or permanent-theft resolution, every Charge
   source including Steal As Well, action-scoped weapon and natural-spell
   payoffs, typed Arcane mitigation/events, the chosen miss policy, combat/load
@@ -316,7 +324,7 @@ second implementation backlog.
   bleed-tick damage, a non-triggering turn breaks its streak, and a third
   consecutive trigger causes two unconscious turns before resetting. Verify
   Fatality's survivor counter/kill heal and Composed Wrath's Frenzy override.
-- [ ] Critical pending coverage: once Bloodied Momentum is implemented, verify
+- [ ] Verify Bloodied Momentum's shipped loop: confirm
   action- and enemy-action-deduplicated gain, one below-25% bonus per round,
   3/4/5 caps, pre-resolution spend on heavy arts and Final Assault, miss
   consumption/preservation, art-specific mutations, combat cleanup, the
@@ -402,8 +410,8 @@ second implementation backlog.
   with Battle Determination and confirm it immediately grants 20 Resolve.
 - [ ] Build Resolve from Defend, blocks, physical damage after mitigation,
   Goad, and Hold the Line. Verify caps 50/100, no duplicate ring gain, legacy
-  `guard_meter` load compatibility, and full-bar major-hit reduction. After the
-  critical mastery gap is implemented, verify separate Citadel Aegis,
+  `guard_meter` load compatibility, and full-bar major-hit reduction. Verify
+  separate Citadel Aegis,
   Ironwall Revenge, Last Bastion, and Stronghold progress; once-per-action or
   event credit; Sentinel-to-Stalwart carry-forward; save/load persistence; and
   locked-to-learned Burst transitions after four associated uses.

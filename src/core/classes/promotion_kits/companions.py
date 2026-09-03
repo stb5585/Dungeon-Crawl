@@ -37,6 +37,22 @@ XENID_CASTER_EFFECTS = {
 }
 XENID_DEATH_CONDUIT_LOSS = 25
 XENID_RAISE_CONDUIT_REFUND = 10
+XENID_INVOCATIONS = {
+    "Hodag": {"types": ("Physical",), "rider": "attack_up"},
+    "Caladrius": {"types": ("Holy",), "rider": "heal_cleanse"},
+    "Patagon": {"types": ("Physical", "Earth"), "rider": "attack_down"},
+    "Dilong": {"types": ("Earth",), "rider": "defense_down"},
+    "Agloolik": {"types": ("Ice",), "rider": "defense_up"},
+    "Cacus": {"types": ("Fire",), "rider": "burn"},
+    "Izulu": {"types": ("Electric",), "rider": "siphon"},
+    "Hala": {"types": ("Wind",), "rider": "speed_up"},
+    "Lamashtu": {"types": ("Shadow",), "rider": "curse"},
+    "Seraphim": {"types": ("Holy",), "rider": "heal"},
+    "Bardi": {"types": ("Shadow",), "rider": "blind"},
+    "Kobalos": {"types": ("Physical", "Poison"), "rider": "dodge_up"},
+    "Tiamat": {"types": ("Water",), "rider": "defense_pressure"},
+    "Zahhak": {"types": ("Arcane",), "rider": "magic_defense_up"},
+}
 
 
 def xenid_caster_effects(character: Any) -> dict[str, float]:
@@ -331,6 +347,7 @@ def record_xenid_death(character: Any, summon_name: str) -> str:
     combat = combat_state(character)
     if combat.get("fallen_xenid") == summon_name:
         return ""
+    message = clear_conduit_command(character, "falls")
     state = ensure_state(character)
     before = int(state["summon_bonds"].get(summon_name, 0) or 0)
     after = max(0, before - XENID_DEATH_CONDUIT_LOSS)
@@ -341,12 +358,13 @@ def record_xenid_death(character: Any, summon_name: str) -> str:
     from ... import companions
 
     companions.sync_xenid_conduit(character, summon_name, after)
-    return (
+    message += (
         f"{summon_name}'s death weakens its conduit by {loss} "
         f"({after}/100).\n"
         if loss
         else f"{summon_name}'s conduit cannot weaken any further.\n"
     )
+    return message
 
 
 def raise_fallen_xenid(
@@ -458,6 +476,7 @@ def gain_summon_bond(character: Any, summon_name: str, amount: int, reason: str)
     from ... import companions
 
     companions.sync_xenid_conduit(character, summon_name, after)
+    sync_xenid_invocations(character)
     if after == before:
         note = str(getattr(character, "_active_summon_bond_note", "") or "")
         return f"Xenid Conduit: {note}\n" if note else ""
@@ -467,9 +486,173 @@ def gain_summon_bond(character: Any, summon_name: str, amount: int, reason: str)
     )
 
 
+def sync_xenid_invocations(character: Any) -> None:
+    """Grant borrowed invocation skills for conduits that reached trust."""
+    if class_name(character) != "Thaumaturgist":
+        return
+    from ... import abilities
+
+    skills = getattr(character, "spellbook", {}).setdefault("Skills", {})
+    bonds = ensure_state(character)["summon_bonds"]
+    for summon_name, bond in bonds.items():
+        if int(bond or 0) < 50:
+            continue
+        ability_type = getattr(abilities, f"Invoke{summon_name}", None)
+        if ability_type is None:
+            continue
+        invocation = ability_type()
+        skills.setdefault(invocation.name, invocation)
+
+
 def summon_bond_multiplier(character: Any, summon_name: str) -> float:
     bond = int(ensure_state(character)["summon_bonds"].get(summon_name, 0) or 0)
     return 1.0 + 0.25 * bond / 100
+
+
+def _apply_temporary_stat(
+    character: Any,
+    stat_name: str,
+    amount: int,
+    *,
+    duration: int = 2,
+) -> None:
+    effect = getattr(character, "stat_effects", {}).get(stat_name)
+    if effect is None:
+        return
+    effect.active = True
+    effect.duration = max(duration, int(getattr(effect, "duration", 0) or 0))
+    current = int(getattr(effect, "extra", 0) or 0)
+    effect.extra = amount if abs(amount) > abs(current) else current
+
+
+def _resolve_invocation_damage(
+    character: Any,
+    target: Any,
+    raw_damage: int,
+    damage_types: tuple[str, ...],
+) -> tuple[int, str]:
+    total = 0
+    messages = ""
+    shares = [raw_damage // len(damage_types)] * len(damage_types)
+    shares[0] += raw_damage - sum(shares)
+    for damage_type, share in zip(damage_types, shares):
+        hit, defense_message, defended = target.handle_defenses(
+            character,
+            max(1, share),
+            typ=damage_type,
+        )
+        messages += defense_message
+        if not hit or defended <= 0:
+            continue
+        hit, reduction_message, final_damage = target.damage_reduction(
+            defended,
+            character,
+            typ=damage_type,
+        )
+        messages += reduction_message
+        if not hit or final_damage <= 0:
+            continue
+        applied = min(int(target.health.current), max(0, int(final_damage)))
+        target.health.current = max(0, int(target.health.current) - applied)
+        total += applied
+        if applied:
+            character._emit_damage_event(
+                target,
+                applied,
+                damage_type,
+                source="Xenid invocation",
+                attack_source="skill",
+                ability_name="Invoke Xenid",
+            )
+    return total, messages
+
+
+def _apply_xenid_signature_rider(
+    actor: Any,
+    target: Any | None,
+    summon_name: str,
+    damage: int,
+    *,
+    lesser: bool = False,
+) -> str:
+    definition = XENID_INVOCATIONS.get(summon_name, {})
+    rider = definition.get("rider")
+    scale = 0.5 if lesser else 1.0
+    label = "True Name" if lesser else f"Invoke {summon_name}"
+    if rider == "attack_up":
+        amount = max(1, int(actor.stats.strength * 0.15 * scale))
+        _apply_temporary_stat(actor, "Attack", amount)
+        return f"{label} briefly strengthens {actor.name}'s Attack.\n"
+    if rider in {"heal", "heal_cleanse"}:
+        healing = min(
+            max(0, int(actor.health.max) - int(actor.health.current)),
+            max(1, int(actor.health.max * 0.05 * scale)),
+        )
+        actor.health.current += healing
+        message = f"{label} restores {healing} HP to {actor.name}.\n" if healing else ""
+        if rider == "heal_cleanse":
+            from .tracks import _cleanse_one_hostile_status
+
+            cleansed = _cleanse_one_hostile_status(actor)
+            if cleansed:
+                message += f"{label} cleanses {cleansed}.\n"
+        return message
+    if rider == "attack_down" and target is not None and damage > 0:
+        amount = -max(1, int(target.stats.strength * 0.10 * scale))
+        _apply_temporary_stat(target, "Attack", amount)
+        return f"{label} briefly suppresses {target.name}'s Attack.\n"
+    if rider in {"defense_down", "defense_pressure"} and target is not None and damage > 0:
+        amount = -max(1, int(target.stats.con * 0.10 * scale))
+        _apply_temporary_stat(target, "Defense", amount)
+        return f"{label} briefly erodes {target.name}'s Defense.\n"
+    if rider == "defense_up":
+        amount = max(1, int(actor.stats.con * 0.10 * scale))
+        _apply_temporary_stat(actor, "Defense", amount)
+        return f"{label} briefly strengthens {actor.name}'s Defense.\n"
+    if rider == "burn" and target is not None and damage > 0:
+        dot = getattr(target, "magic_effects", {}).get("DOT")
+        if dot is not None:
+            dot.active = True
+            dot.duration = max(2, int(getattr(dot, "duration", 0) or 0))
+            pressure = max(1, int(damage * 0.10 * scale))
+            dot.extra = max(int(getattr(dot, "extra", 0) or 0), pressure)
+            dot.source = "Burn"
+            return f"{label} leaves burning pressure on {target.name}.\n"
+    if rider == "siphon" and damage > 0:
+        healing = min(
+            max(0, int(actor.health.max) - int(actor.health.current)),
+            max(1, int(damage * 0.20 * scale)),
+        )
+        actor.health.current += healing
+        return f"{label} siphons {healing} HP to {actor.name}.\n" if healing else ""
+    if rider in {"speed_up", "dodge_up"}:
+        amount = max(1, int(actor.stats.dex * 0.10 * scale))
+        _apply_temporary_stat(actor, "Speed", amount)
+        support = "evasion" if rider == "dodge_up" else "Speed"
+        return f"{label} briefly improves {actor.name}'s {support}.\n"
+    if rider == "curse" and target is not None and damage > 0:
+        if random.random() < (0.15 if lesser else 0.30):
+            from ... import curses
+
+            return curses.apply_curse(
+                target,
+                "Umbra",
+                source=label,
+                caster=actor,
+            )
+    if rider == "blind" and target is not None and damage > 0:
+        if random.random() < (0.15 if lesser else 0.30):
+            blind = getattr(target, "status_effects", {}).get("Blind")
+            if blind is not None:
+                blind.active = True
+                blind.duration = max(2, int(getattr(blind, "duration", 0) or 0))
+                blind.source = label
+                return f"{label} blinds {target.name}.\n"
+    if rider == "magic_defense_up":
+        amount = max(1, int(actor.stats.wisdom * 0.10 * scale))
+        _apply_temporary_stat(actor, "Magic Defense", amount)
+        return f"{label} briefly strengthens {actor.name}'s Magic Defense.\n"
+    return ""
 
 
 def invoke_summon(character: Any, target: Any | None, summon_name: str) -> str:
@@ -477,31 +660,172 @@ def invoke_summon(character: Any, target: Any | None, summon_name: str) -> str:
         return "Only a Thaumaturgist can borrow a Xenid invocation.\n"
     bond = int(ensure_state(character)["summon_bonds"].get(summon_name, 0) or 0)
     if bond < 50:
-        return f"Invoke {summon_name} requires conduit 50.\n"
+        return f"{summon_name} has not entrusted this invocation yet.\n"
     if target is None:
         return "There is no invocation target.\n"
     if not _spend_mp(character, 12):
         return "Not enough MP for the invocation.\n"
-    element = {
-        "Patagon": "Earth", "Dilong": "Earth", "Agloolik": "Ice", "Cacus": "Fire",
-        "Izulu": "Electric", "Hala": "Wind", "Lamashtu": "Shadow",
-        "Seraphim": "Holy", "Bardi": "Shadow", "Kobalos": "Poison",
-        "Tiamat": "Water", "Zahhak": "Arcane",
-    }.get(summon_name, "Physical")
-    damage = max(1, int(character.check_mod("magic", enemy=target) * 0.55))
-    target.health.current = max(0, target.health.current - damage)
-    return f"{character.name} invokes {summon_name}: {element} pressure deals {damage} damage.\n"
+    definition = XENID_INVOCATIONS.get(summon_name)
+    if definition is None:
+        return f"Invoke {summon_name} has no bound Xenid signature.\n"
+    raw_damage = max(1, int(character.check_mod("magic", enemy=target) * 0.55))
+    damage_types = tuple(definition["types"])
+    damage, defense_message = _resolve_invocation_damage(
+        character,
+        target,
+        raw_damage,
+        damage_types,
+    )
+    type_text = "/".join(damage_types)
+    message = defense_message
+    message += (
+        f"{character.name} invokes {summon_name}: {type_text} pressure deals "
+        f"{damage} damage.\n"
+    )
+    message += _apply_xenid_signature_rider(
+        character,
+        target,
+        summon_name,
+        damage,
+    )
+    return message
 
 
 def conduit_command(character: Any) -> str:
     if class_name(character) != "Thaumaturgist":
         return "Conduit Command requires Thaumaturgist training.\n"
-    if getattr(character, "familiar", None) is None and not getattr(character, "active_summon_name", None):
+    summon_name = str(getattr(character, "active_summon_name", "") or "")
+    summon = getattr(character, "summons", {}).get(summon_name)
+    if summon is None or not summon.is_alive() or summon_name not in SUMMON_NAMES:
         return "Conduit Command requires an active living Xenid.\n"
     if not _spend_mp(character, 10):
         return "Not enough MP for Conduit Command.\n"
-    combat_state(character)["conduit_command"] = True
+    combat_state(character)["conduit_command"] = {"summon_name": summon_name}
     return f"{character.name} empowers the active Xenid's next action with Conduit Command.\n"
+
+
+def begin_conduit_payoff(
+    character: Any,
+    summon: Any,
+    action: str,
+    target: Any | None,
+) -> dict[str, Any] | None:
+    """Consume a primed command and snapshot its committed Xenid action."""
+    if action in {"Recall", "Support", "Nothing", "Cancelled"}:
+        return None
+    state = combat_state(character)
+    command = state.get("conduit_command")
+    if not isinstance(command, dict):
+        return None
+    summon_name = str(getattr(summon, "name", "") or "")
+    if command.get("summon_name") != summon_name:
+        return None
+    state["conduit_command"] = False
+    bond = int(ensure_state(character)["summon_bonds"].get(summon_name, 0) or 0)
+    return {
+        "consumed": True,
+        "summon_name": summon_name,
+        "target_health": int(target.health.current) if target is not None else None,
+        "summon_health": int(summon.health.current),
+        "owner_health": int(character.health.current),
+        "true_name": bond >= 100 and _ring_awakened_equipped(character, "Thaumaturgist"),
+    }
+
+
+def finish_conduit_payoff(
+    character: Any,
+    summon: Any,
+    target: Any | None,
+    payoff: dict[str, Any] | None,
+    combat_result: Any | None = None,
+) -> str:
+    """Apply command output and the optional True Name signature rider."""
+    if not isinstance(payoff, dict) or not payoff.get("consumed"):
+        return ""
+    damage = 0
+    damage_bonus = 0
+    target_before = payoff.get("target_health")
+    if target is not None and target_before is not None:
+        damage = max(0, int(target_before) - int(target.health.current))
+        if damage > 0 and target.is_alive():
+            requested = max(1, int(damage * 0.25))
+            damage_bonus = min(int(target.health.current), requested)
+            target.health.current -= damage_bonus
+    healing_bonus = 0
+    healed_targets = []
+    for recipient, before_key in (
+        (summon, "summon_health"),
+        (character, "owner_health"),
+    ):
+        before = int(payoff.get(before_key, recipient.health.current) or 0)
+        healing = max(0, int(recipient.health.current) - before)
+        if healing <= 0:
+            continue
+        bonus = min(
+            max(0, int(recipient.health.max) - int(recipient.health.current)),
+            max(1, int(healing * 0.25)),
+        )
+        if bonus:
+            recipient.health.current += bonus
+            healing_bonus += bonus
+            healed_targets.append(recipient.name)
+    if combat_result is not None:
+        if damage_bonus:
+            prior_damage = max(
+                0,
+                int(getattr(combat_result, "damage", 0) or 0),
+            )
+            combat_result.damage = prior_damage + damage_bonus
+        if healing_bonus:
+            prior_healing = max(
+                0,
+                int(getattr(combat_result, "healing", 0) or 0),
+            )
+            combat_result.healing = prior_healing + healing_bonus
+        extra = getattr(combat_result, "extra", None)
+        if isinstance(extra, dict):
+            extra["conduit_command"] = {
+                "consumed": True,
+                "damage_bonus": damage_bonus,
+                "healing_bonus": healing_bonus,
+                "true_name": bool(payoff.get("true_name")),
+            }
+    message = "Conduit Command is consumed by the Xenid action.\n"
+    if damage_bonus:
+        message += f"Conduit Command adds {damage_bonus} damage.\n"
+    if healing_bonus:
+        message += (
+            f"Conduit Command restores {healing_bonus} additional HP to "
+            f"{', '.join(healed_targets)}.\n"
+        )
+    if payoff.get("true_name"):
+        rider = _apply_xenid_signature_rider(
+            summon,
+            target,
+            str(payoff.get("summon_name") or ""),
+            damage + damage_bonus,
+            lesser=True,
+        )
+        if rider:
+            message += f"True Name answers the command.\n{rider}"
+    else:
+        rider = ""
+    payoff.update({
+        "damage_bonus": damage_bonus,
+        "healing_bonus": healing_bonus,
+        "signature_rider": rider,
+        "cleanup_reason": "next Xenid action",
+    })
+    return message
+
+
+def clear_conduit_command(character: Any, reason: str) -> str:
+    """Expire an unspent Conduit Command for a lifecycle reason."""
+    state = combat_state(character)
+    if not state.get("conduit_command"):
+        return ""
+    state["conduit_command"] = False
+    return f"Conduit Command expires when the Xenid {reason}.\n"
 
 
 def companion_bond_rank(bond: int) -> str:

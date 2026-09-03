@@ -3399,6 +3399,11 @@ def _ninja_lane_specs(lane, column, entries):
             "position": (column, row),
             "cost": cost,
         }
+        if identifier == "Momentum":
+            spec["description"] = (
+                "Death Mark setup: attack with both weapons and turn a clean "
+                "sequence into a combined finisher."
+            )
         if previous is not None:
             spec["prerequisites"] = (previous,)
         if level == 60:
@@ -4771,9 +4776,11 @@ EXTERNAL_ACQUISITION_ABILITIES = frozenset({
     "Familiar",
     "Invoke Agloolik",
     "Invoke Bardi",
+    "Invoke Caladrius",
     "Invoke Cacus",
     "Invoke Dilong",
     "Invoke Hala",
+    "Invoke Hodag",
     "Invoke Izulu",
     "Invoke Kobalos",
     "Invoke Lamashtu",

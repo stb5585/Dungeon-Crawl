@@ -9,7 +9,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parents[2]))
 
-from src.core import items, player as player_module
+from src.core import abilities, items, player as player_module
 from tests.test_framework import TestGameState
 
 
@@ -172,21 +172,22 @@ class TestPlayerLootCoverage:
 
     def test_thief_loot_identity_logs_existing_ordinary_drop(self, monkeypatch):
         player = TestGameState.create_player(class_name="Thief", race_name="Human")
-        player.check_mod = lambda mod, enemy=None, typ=None, luck_factor=1, **_kwargs: 10 if mod == "luck" else 0
+        player.spellbook["Skills"]["Scavenger's Eye"] = abilities.ScavengersEye()
+        player.check_mod = lambda mod, enemy=None, typ=None, luck_factor=1, **_kwargs: 0
         captured = []
         player.modify_inventory = lambda item, rare=False, **_kwargs: captured.append((item.name, rare))
         player.quests = lambda enemy=None, item=None: ""
         enemy = SimpleNamespace(
             name="Bandit",
             gold=0,
-            inventory={"drops": [SimpleNamespace(name="Iron Dagger", subtyp="Dagger", rarity=1.0)]},
+            inventory={"drops": [SimpleNamespace(name="Iron Dagger", subtyp="Dagger", rarity=0.005)]},
         )
-        monkeypatch.setattr(player_module.random, "random", lambda: 0.0)
+        monkeypatch.setattr(player_module.random, "random", lambda: 0.02)
 
         message = player.loot(enemy, CaveTile())
 
         assert "Bandit dropped a Iron Dagger." in message
-        assert "Scavenger's Eye spots ordinary loot: Iron Dagger." in message
+        assert "Scavenger's Eye uncovers Iron Dagger." in message
         assert captured == [("Iron Dagger", False)]
 
 

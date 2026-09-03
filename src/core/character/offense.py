@@ -184,6 +184,12 @@ class CharacterOffenseMixin:
             chance += min(0.15, max(0.0, (dex - 10) / 100))
         if not spell:
             chance += footpad.live_and_learn_dodge_bonus(self)
+        try:
+            from ..classes import promotion_kits
+
+            chance += promotion_kits.case_prediction_dodge_bonus(self, attacker)
+        except Exception:
+            pass
         cls_name = _class_name(self)
         if cls_name == "Seeker" or (cls_name == "Templar" and self.class_effects["Power Up"].active):
             chance += (0.25 * self.power_up)
@@ -248,8 +254,6 @@ class CharacterOffenseMixin:
         crit_chance += ability_mechanics.duelist_critical_bonus(self)
         crit_chance += footpad.surprise_critical_bonus(self)
         crit_chance += footpad.toxic_precision_bonus(self, att)
-        if getattr(self, "shade_of_ahool_turns", 0) > 0:
-            crit_chance += 0.20
         berserk = self.status_effects.get("Berserk")
         if (
             berserk is not None
@@ -310,6 +314,7 @@ class CharacterOffenseMixin:
             warrior,
         )
 
+        revelation_message = ""
         dmg_mod *= pathfinder.melee_damage_multiplier(self)
         if getattr(defender, "_distracted_turns", 0):
             defender._distracted_turns = 0
@@ -356,7 +361,21 @@ class CharacterOffenseMixin:
         if not attacks:
             self._surprise_attack = False
             return f"{self.name} cannot use their main-hand weapon.\n", False, crit
-        weapon_dam_str = ""
+        try:
+            from ..classes import promotion_kits
+
+            revelation_accuracy, revelation_damage, revelation_message = (
+                promotion_kits.prepare_revelation_payoff(
+                    self,
+                    defender,
+                    basic_attack=basic_attack,
+                )
+            )
+            accuracy_modifier += revelation_accuracy
+            dmg_mod *= revelation_damage
+        except Exception:
+            pass
+        weapon_dam_str = revelation_message
         electrified_triggered = False
         for i, att in enumerate(attacks):
             hits.append(hit)
@@ -473,6 +492,7 @@ class CharacterOffenseMixin:
 
                 hit_per += promotion_kits.aerial_accuracy_bonus(self)
                 hit_per += promotion_kits.focused_assault_accuracy(self)
+                hit_per += promotion_kits.jinx_accuracy_modifier(self)
                 hits[i] = hit_per > random.random()
             else:
                 dodge = False
@@ -765,6 +785,28 @@ class CharacterOffenseMixin:
                 weapon_dam_str += f"Mana Depletion drains {drained} MP from {defender.name}.\n"
         if self._surprise_attack and not defender.is_alive():
             defender._surprise_bonus_experience = True
+        try:
+            from ..classes import promotion_kits
+
+            choice = str(promotion_kits.combat_state(self).get("action_choice") or "")
+            if choice not in promotion_kits.RISKY_LUCK_ACTIONS:
+                weapon_dam_str += promotion_kits.record_luck_roll(
+                    self,
+                    any(hits),
+                    "attack",
+                )
+        except Exception:
+            pass
+        try:
+            from ..classes import promotion_kits
+
+            weapon_dam_str += promotion_kits.finish_revelation_payoff(
+                self,
+                defender,
+                hit=any(hits),
+            )
+        except Exception:
+            pass
         self._surprise_attack = False
         return weapon_dam_str, any(hits), max(crits)
 
@@ -799,6 +841,12 @@ class CharacterOffenseMixin:
 
             ghost += promotion_kits.record_ki_reaction(defender, "successful dodge")
             ghost += promotion_kits.add_aspect(defender, "Stone", incoming=True)
+            ghost += promotion_kits.record_luck_roll(
+                defender,
+                True,
+                "dodge",
+                incoming=True,
+            )
         except Exception:
             pass
         return f"{defender.name} evades {self.name}'s attack.\n" + ghost, False
@@ -836,6 +884,12 @@ class CharacterOffenseMixin:
 
             msg += promotion_kits.record_ki_reaction(defender, "successful parry")
             msg += promotion_kits.add_aspect(defender, "Stone", incoming=True)
+            msg += promotion_kits.record_luck_roll(
+                defender,
+                True,
+                "parry",
+                incoming=True,
+            )
         except Exception:
             pass
         riposte_chance = min(0.80, 0.20 + max(0, dex - 10) * 0.02)

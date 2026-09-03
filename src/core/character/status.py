@@ -353,8 +353,6 @@ class CharacterStatusMixin:
             default(end_combat=True)
             self.temporary_health = None
             self.fractures = {}
-            if getattr(self, "shade_of_ahool_turns", 0) > 0:
-                self.flying = False
             for attr in (
                 "soul_bound_to", "soul_siphon", "shadow_curtain_turns",
                 "shade_of_ahool_turns", "warlock_eclipse_turns",
@@ -365,6 +363,12 @@ class CharacterStatusMixin:
             ):
                 if hasattr(self, attr):
                     delattr(self, attr)
+            try:
+                from ..classes import promotion_kits
+
+                promotion_kits.clear_combat_state(self)
+            except Exception:
+                pass
             ability_mechanics.sync_exploration_flags(self)
         else:
             from ..classes import grandmaster
@@ -789,7 +793,6 @@ class CharacterStatusMixin:
                     setattr(self, attr, max(0, value - 1))
             for attr in (
                 "shadow_curtain_turns",
-                "shade_of_ahool_turns",
                 "warlock_eclipse_turns",
                 "mystical_vitality_turns",
                 "demon_grease_turns",
@@ -798,8 +801,6 @@ class CharacterStatusMixin:
                 value = int(getattr(self, attr, 0) or 0)
                 if value > 0:
                     setattr(self, attr, value - 1)
-                    if attr == "shade_of_ahool_turns" and value == 1:
-                        self.flying = False
             for attr in ("_reavers_mark", "_riposte_line", "_brace_art"):
                 state = getattr(self, attr, None)
                 if isinstance(state, dict):

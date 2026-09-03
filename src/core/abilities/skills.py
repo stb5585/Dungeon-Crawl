@@ -255,7 +255,7 @@ class Momentum(Skill):
         super().__init__(
             "Momentum",
             (
-                "Death Mark Setup: attack with both weapons. If both connect, finish with a "
+                "Attack with both weapons. If both connect, finish with a "
                 "two-handed strike using their combined strength."
             ),
             weapon=True,
@@ -1570,6 +1570,18 @@ class StealSpell(Class):
 
         if target is None:
             return "There is no spell to steal.\n"
+        if getattr(getattr(user, "cls", None), "name", "") not in {
+            "Spell Stealer",
+            "Arcane Trickster",
+        }:
+            return f"{user.name} cannot steal spells.\n"
+        if not getattr(user, "inventory", {}).get("Blank Scroll", []):
+            return f"{user.name} needs a Blank Scroll to steal a spell.\n"
+        if not spell_stealer.eligible_spell_classes(target):
+            return f"{target.name} has no stealable spell.\n"
+        if user.mana.current < self.cost:
+            return f"{user.name} does not have enough mana to use Steal Spell!\n"
+        user.mana.current -= self.cost
         _success, message = spell_stealer.steal_spell(user, target)
         if _success:
             from ..classes import promotion_kits
@@ -1591,9 +1603,10 @@ class StealSpell2(Class):
     def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
         from ..classes import spell_stealer
 
-        super().use(user, target, **kwargs)
         if target is None:
             return "There is no spell to steal.\n"
+        if getattr(getattr(user, "cls", None), "name", "") != "Arcane Trickster":
+            return f"{user.name} cannot permanently steal spells.\n"
         spell_classes = spell_stealer.eligible_spell_classes(target)
         spell_classes = [
             spell_cls for spell_cls in spell_classes
@@ -1601,6 +1614,8 @@ class StealSpell2(Class):
         ]
         if not spell_classes:
             return f"{target.name} has no new spell to learn.\n"
+        if user.mana.current < self.cost:
+            return f"{user.name} does not have enough mana to use Steal Spell 2!\n"
         user.mana.current -= self.cost
         chance = min(0.75, 0.20 + ((user.stats.intel + user.stats.dex) * 0.01))
         if random.random() > chance:
@@ -1608,7 +1623,9 @@ class StealSpell2(Class):
         spell_cls = random.choice(spell_classes)
         spell = spell_cls()
         user.spellbook["Spells"][spell.name] = spell
-        from ..classes import promotion_kits
+        from ..classes import class_rings, promotion_kits
+
+        class_rings.activate_spell_steal_buff(user)
 
         return (
             f"{user.name} permanently learns {spell.name}.\n"

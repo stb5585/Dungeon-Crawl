@@ -9,6 +9,7 @@ from src.core.classes import (
     lycan,
     promotion_kits,
 )
+from src.core.combat.combat_result import CombatResult
 from src.core.progression import ABILITY_TREES, ensure_progression
 from src.core.save_system import PlayerDataSerializer
 from tests.test_framework import TestGameState
@@ -61,6 +62,42 @@ def test_removed_generic_masteries_leave_fixed_caps_and_control_progression():
     assert promotion_kits.lycan_control_state(lycan)["rank_progress"]["survive"] == 1
 
 
+def test_resolve_mastery_normalizes_discards_scalar_and_round_trips():
+    player = _player("Sentinel")
+    state = class_rings.default_state()
+    state["data"]["Stalwart Defender"]["resolve_mastery"] = 99
+    player.class_ring_awakening = state
+
+    mastery = class_rings.ensure_state(player)["data"]["Stalwart Defender"][
+        "resolve_mastery"
+    ]
+    assert mastery == {
+        "citadel_aegis": 0,
+        "ironwall_revenge": 0,
+        "last_bastion": 0,
+        "stronghold": 0,
+    }
+
+    mastery.update({
+        "citadel_aegis": 2,
+        "ironwall_revenge": 8,
+        "last_bastion": "invalid",
+        "unknown": 3,
+    })
+    restored = PlayerDataSerializer.deserialize(
+        PlayerDataSerializer.serialize(player),
+        skip_tiles=True,
+    )
+    assert class_rings.ensure_state(restored)["data"]["Stalwart Defender"][
+        "resolve_mastery"
+    ] == {
+        "citadel_aegis": 2,
+        "ironwall_revenge": 4,
+        "last_bastion": 0,
+        "stronghold": 0,
+    }
+
+
 def test_bonded_bulwark_retains_its_authored_companion_payoff():
     beast_master = _player("Beast Master")
     beast_master.tamed_companion = {"active": True, "bond": 100}
@@ -78,7 +115,8 @@ def test_threaded_cast_and_shadowcaster_shade_of_ahool():
     holy_before = shadow.check_mod("resist", typ="Holy")
     class_rings.ensure_state(shadow)["data"]["Shadowcaster"]["debt"] = 25
     assert "becomes the Shade of Ahool" in abilities.ShadeOfAhool().use(shadow)
-    assert shadow.shade_of_ahool_turns == 3
+    assert class_rings.ensure_state(shadow)["data"]["Shadowcaster"]["eclipse_turns"] == 3
+    assert not hasattr(shadow, "shade_of_ahool_turns")
     assert shadow.flying
     assert class_rings.ensure_state(shadow)["data"]["Shadowcaster"]["debt"] == 5
     assert shadow.check_mod("resist", typ="Holy") == holy_before - 0.25
@@ -549,13 +587,21 @@ def test_resolve_aerial_aspect_totem_and_beast_commands():
     defender = _player("Stalwart Defender")
     defender.equipment["OffHand"] = items.Glagwa()
     assert "Resolve" in promotion_kits.build_resolve(defender, 100, "test")
-    assert promotion_kits.resolve_surge_unlocked(defender, "Citadel Aegis")
-    assert promotion_kits.resolve_surge_unlocked(defender, "Ironwall Revenge")
-    assert promotion_kits.resolve_surge_unlocked(defender, "Last Bastion")
-    assert promotion_kits.resolve_surge_unlocked(defender, "Stronghold")
+    mastery = class_rings.ensure_state(defender)["data"]["Stalwart Defender"][
+        "resolve_mastery"
+    ]
+    mastery.update({key: 4 for key in mastery})
+    assert all(
+        promotion_kits.resolve_surge_unlocked(defender, surge)
+        for surge in (
+            "Citadel Aegis",
+            "Ironwall Revenge",
+            "Last Bastion",
+            "Stronghold",
+        )
+    )
     assert "Citadel Aegis" in abilities.CitadelAegis().use(defender)
     assert class_rings.ensure_state(defender)["data"]["Stalwart Defender"]["guard_meter"] == 0
-    promotion_kits.gain_resolve_mastery(defender, 4, "shield tactics")
     assert promotion_kits.resolve_surge_unlocked(defender, "Ironwall Revenge")
 
     restored = PlayerDataSerializer.deserialize(PlayerDataSerializer.serialize(defender), skip_tiles=True)
@@ -608,15 +654,19 @@ def test_stolen_charge_payoff_has_meaningful_damage_floor():
     state = promotion_kits.combat_state(trickster)
     state["stolen_charge"] = 3
 
-    promotion_kits.record_damage_event(
+    promotion_kits.prepare_stolen_charge_payoff(trickster, "Attack")
+    promotion_kits.record_action_resolution(
         trickster,
-        target,
-        6,
-        "Physical",
-        metadata={"attack_source": "weapon"},
+        CombatResult(
+            action="Attack",
+            actor=trickster,
+            target=target,
+            hit=True,
+            damage=6,
+        ),
     )
 
-    assert target.health.current == 85
+    assert target.health.current == 88
     assert state["stolen_charge"] == 0
 
 
@@ -702,8 +752,9 @@ def test_ring_smoothing_preserves_devotion_prayer_and_rogue_luck(monkeypatch):
     _awaken_ring(rogue, "Rogue")
     promotion_kits.gain_meter(rogue, "fortune", 2, "test")
     monkeypatch.setattr("random.random", lambda: 0.0)
-    forced, message = promotion_kits.consume_fortune_for_risky_action(rogue, "Steal")
-    assert forced is True
+    reliability, message = promotion_kits.consume_fortune_for_risky_action(rogue, "Steal")
+    assert reliability == 0.10
+    message += promotion_kits.finish_fortune_payoff(rogue, True)
     assert "Loaded Dice preserves 1 spent fortune" in message
     assert promotion_kits.combat_state(rogue)["fortune"] == 1
 
@@ -711,9 +762,9 @@ def test_ring_smoothing_preserves_devotion_prayer_and_rogue_luck(monkeypatch):
     promotion_kits.gain_meter(rogue, "misfortune", 3, "test")
     before = target.health.current
     message = promotion_kits.resolve_misfortune_payoff(rogue, target, 50, "Mug")
-    assert "Loaded Dice preserves 1 spent misfortune" in message
+    assert "Loaded Dice preserves 1 spent misfortune" not in message
     assert target.health.current < before
-    assert promotion_kits.combat_state(rogue)["misfortune"] == 1
+    assert promotion_kits.combat_state(rogue)["misfortune"] == 0
 
 
 def test_devotion_and_prayer_gain_once_per_authored_action():
@@ -849,6 +900,7 @@ def test_matching_totem_cast_gains_after_success_and_not_on_miss():
 
 def test_rogue_cheat_death_spends_misfortune_and_applies_jinx(monkeypatch):
     rogue = _player("Rogue", health=(100, 0))
+    rogue.spellbook["Skills"]["Cheat Death"] = abilities.CheatDeath()
     _awaken_ring(rogue, "Rogue")
     promotion_kits.gain_meter(rogue, "misfortune", 3, "test")
     monkeypatch.setattr("random.random", lambda: 0.0)
@@ -864,7 +916,7 @@ def test_rogue_cheat_death_spends_misfortune_and_applies_jinx(monkeypatch):
     assert promotion_kits.combat_state(rogue)["jinx_turns"] == 0
 
 
-def test_thief_rogue_fortune_only_grows_on_critical_damage():
+def test_thief_rogue_fortune_grows_once_for_meaningful_weapon_damage():
     thief = _player("Thief")
     target = enemies.Goblin()
 
@@ -875,7 +927,7 @@ def test_thief_rogue_fortune_only_grows_on_critical_damage():
         "Physical",
         metadata={"attack_source": "weapon", "is_critical": False},
     )
-    assert promotion_kits.combat_state(thief)["fortune"] == 0
+    assert promotion_kits.combat_state(thief)["fortune"] == 1
 
     promotion_kits.record_damage_event(
         thief,

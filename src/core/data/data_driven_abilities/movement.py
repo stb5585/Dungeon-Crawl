@@ -74,11 +74,18 @@ class DataDrivenMovementSpell(_get_movement_spell_class()):
     # Sanctuary behaviour
     # ------------------------------------------------------------------
     def _cast_sanctuary(self, user: Character) -> str:
-        user.mana.current -= self.cost
+        from src.core.classes import promotion_kits
+
+        cost, route_message = promotion_kits.wayfinding_cost(
+            user,
+            self.cost,
+            mapping_progress=promotion_kits.level_mapping_progress(user),
+        )
+        user.mana.current -= cost
         user.health.current = user.health.max
         user.mana.current = user.mana.max
         user.to_town()
-        return (
+        return route_message + (
             f"{user.name} casts Sanctuary and is transported back to "
             f"town.\n"
         )
@@ -115,14 +122,29 @@ class DataDrivenMovementSpell(_get_movement_spell_class()):
                 game.player_char.location_z,
             )
         else:
+            if game is None or getattr(game, "player_char", None) is None:
+                return "Teleport cannot find a traveler to guide.\n"
+            if not getattr(game.player_char, "teleport", None):
+                return "Teleport has no previously marked destination.\n"
             cast_message = (
                 f"{game.player_char.name} teleports to set location.\n"
             )
-            game.player_char.mana.current -= self.cost
+            from src.core.classes import promotion_kits
+
+            cost, route_message = promotion_kits.wayfinding_cost(
+                game.player_char,
+                self.cost,
+                mapping_progress=promotion_kits.level_mapping_progress(game.player_char),
+            )
+            if game.player_char.mana.current < cost:
+                return f"{game.player_char.name} does not have enough mana to teleport.\n"
+            game.player_char.mana.current -= cost
             (
                 game.player_char.location_x,
                 game.player_char.location_y,
                 game.player_char.location_z,
             ) = game.player_char.teleport
+
+            cast_message = route_message + cast_message
 
         return cast_message

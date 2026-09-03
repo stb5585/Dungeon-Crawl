@@ -1074,6 +1074,15 @@ def test_modern_character_resolve_tab_shows_meter_progression(monkeypatch):
     }.issubset(rendered_text)
     assert "Resolve" not in presenter.large_font.render_calls
     assert "Resolve Bursts" not in rendered_text
+    assert "Defensive Mastery" in rendered_text
+    assert "Unknown Burst" not in rendered_text
+    assert not {
+        "Citadel Aegis",
+        "Ironwall Revenge",
+        "Last Bastion",
+        "Stronghold",
+    }.intersection(rendered_text)
+    assert not any("/4" in str(text) for text in rendered_text)
     assert "Resolve 25/50" not in rendered_text
     meter_rects = [rect for _color, rect in rect_calls if rect.height == 28]
     assert meter_rects
@@ -1107,7 +1116,7 @@ def test_modern_character_resolve_tab_shows_stalwart_surges(monkeypatch):
     }
     data = class_rings.ensure_state(player)["data"]["Stalwart Defender"]
     data["guard_meter"] = 100
-    data["resolve_mastery"] = 0
+    data["resolve_mastery"].update({key: 4 for key in data["resolve_mastery"]})
 
     monkeypatch.setattr(screen, "draw_semi_transparent_panel", lambda rect, alpha=180: DummySurface((rect.width, rect.height)))
     monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.rect", lambda *_args, **_kwargs: None)
@@ -1465,7 +1474,7 @@ def test_modern_character_case_journal_tab_shows_progress_and_wayfinding(monkeyp
     screen.draw_class_tab(player)
 
     rendered_text = _rendered_text(presenter)
-    assert {"Case Journal", "Best Case", "Fiend 80/100", "Best Rank", "Pattern Lock", "Revelation", "2/3", "Wayfinding", "Aligned", "Enemy-Type Progress", "Fiend", "80/100 Pattern Lock"}.issubset(rendered_text)
+    assert {"Case Journal", "Best Case", "Fiend", "Best Rank", "Pattern Lock", "Revelation", "Target-specific in combat", "Wayfinding", "Contextual", "Studied Enemy Types"}.issubset(rendered_text)
     assert "5%" not in rendered_text
     assert "Promotion Tier" not in rendered_text
 
@@ -1483,7 +1492,7 @@ def test_modern_character_case_journal_tab_hides_seeker_tools_for_inquisitor(mon
     screen.draw_class_tab(player)
 
     rendered_text = _rendered_text(presenter)
-    assert {"Case Journal", "Best Case", "Beast 25/100", "Known Tells"}.issubset(rendered_text)
+    assert {"Case Journal", "Best Case", "Beast", "Known Tells", "Studied Enemy Types"}.issubset(rendered_text)
     assert {"Wayfinding", "Hidden Cache", "Not visible"}.isdisjoint(rendered_text)
 
 

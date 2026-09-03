@@ -33,13 +33,21 @@ LEGACY_CLASS_NAMES = (
 
 CONSTELLATIONS = ("Ember", "Tide", "Gale", "Stone")
 
+RESOLVE_MASTERY_KEYS = (
+    "citadel_aegis",
+    "ironwall_revenge",
+    "last_bastion",
+    "stronghold",
+)
+
 CLASS_RING_SPECS: dict[str, dict[str, str]] = {
     "Berserker": {
         "activation": "No Healing Duel",
         "mod": "Bloodied Crits",
         "description": (
             "below 50% HP gains +10% crit; below 25% HP gains +15% crit "
-            "and +15% weapon damage"
+            "and +15% weapon damage; once per combat, a missed Bloodied "
+            "Momentum heavy-art payoff below 50% HP preserves 1 stack"
         ),
     },
     "Crusader": {
@@ -68,8 +76,8 @@ CLASS_RING_SPECS: dict[str, dict[str, str]] = {
         "activation": "Four Formulae",
         "mod": "School Streak",
         "description": (
-            "failed riders for the same school add +15% rider chance; four "
-            "stacks guarantee the next eligible rider"
+            "repeated failed spell riders make a future effect from the same "
+            "school increasingly reliable"
         ),
     },
     "Shadowcaster": {
@@ -91,14 +99,14 @@ CLASS_RING_SPECS: dict[str, dict[str, str]] = {
         "activation": "Conduit Ritual",
         "mod": "+30% Xenids",
         "description": (
-            "permanently sacrifices 5% max HP so all current and future Xenids "
-            "gain +30% HP and damage"
+            "strengthens current and future Xenids, while a perfected conduit "
+            "can answer Conduit Command with its signature"
         ),
     },
     "Rogue": {
         "activation": "Loaded Game",
         "mod": "Loaded Dice",
-        "description": "failed luck checks have a 15% chance to become successes",
+        "description": "occasionally turns a failed luck check into a success",
     },
     "Seeker": {
         "activation": "Cartographer's Proof",
@@ -201,7 +209,10 @@ def default_state() -> dict[str, Any]:
             },
             "Crusader": {"vow": None},
             "Dragoon": {"meteor_guard_shield": 0, "meteor_guard_turns": 0},
-            "Stalwart Defender": {"guard_meter": 0, "resolve_mastery": 0},
+            "Stalwart Defender": {
+                "guard_meter": 0,
+                "resolve_mastery": {key: 0 for key in RESOLVE_MASTERY_KEYS},
+            },
             "Wizard": {"school_streak": {}},
             "Shadowcaster": {
                 "debt": 0,
@@ -260,21 +271,43 @@ def _normalize_lists(state: dict[str, Any]) -> None:
     )
     wizard = state["data"]["Wizard"]
     streak = wizard.get("school_streak", {})
-    wizard["school_streak"] = {
-        str(school): max(0, min(4, int(stacks or 0)))
-        for school, stacks in streak.items()
-    } if isinstance(streak, dict) else {}
+    normalized_streak = {}
+    if isinstance(streak, dict):
+        for school, stacks in streak.items():
+            school_key = str(school)
+            if not school_key:
+                continue
+            try:
+                progress = int(stacks or 0)
+            except (TypeError, ValueError):
+                progress = 0
+            normalized_streak[school_key] = max(0, min(4, progress))
+    wizard["school_streak"] = normalized_streak
     berserker = state["data"]["Berserker"]
     berserker["battle_scars"] = max(0, min(20, int(berserker.get("battle_scars", 0) or 0)))
     berserker["battle_scar_hp_bonus"] = max(0, int(berserker.get("battle_scar_hp_bonus", 0) or 0))
     shadow = state["data"]["Shadowcaster"]
-    shadow["debt"] = max(0, int(shadow.get("debt", 0) or 0))
-    shadow["backlash"] = max(0, int(shadow.get("backlash", 0) or 0))
-    shadow["eclipse_turns"] = max(0, int(shadow.get("eclipse_turns", 0) or 0))
+    for key in ("debt", "backlash", "eclipse_turns"):
+        try:
+            value = int(shadow.get(key, 0) or 0)
+        except (TypeError, ValueError):
+            value = 0
+        shadow[key] = max(0, value)
     shadow["familiar_echo_used"] = bool(shadow.get("familiar_echo_used", False))
     stalwart = state["data"]["Stalwart Defender"]
     stalwart["guard_meter"] = max(0, int(stalwart.get("guard_meter", 0) or 0))
-    stalwart["resolve_mastery"] = max(0, int(stalwart.get("resolve_mastery", 0) or 0))
+    mastery = stalwart.get("resolve_mastery", {})
+    if isinstance(mastery, dict):
+        normalized_mastery = {}
+        for key in RESOLVE_MASTERY_KEYS:
+            try:
+                progress = int(mastery.get(key, 0) or 0)
+            except (TypeError, ValueError):
+                progress = 0
+            normalized_mastery[key] = max(0, min(4, progress))
+        stalwart["resolve_mastery"] = normalized_mastery
+    else:
+        stalwart["resolve_mastery"] = {key: 0 for key in RESOLVE_MASTERY_KEYS}
 
 
 def ensure_state(character: Any) -> dict[str, Any]:
@@ -607,6 +640,17 @@ def record_shadow_damage(character: Any, amount: int) -> None:
         pass
 
 
+def shadowcaster_shade_damage_multiplier(
+    character: Any,
+    damage_type: str,
+) -> float:
+    """Return Shade of Ahool's typed damage multiplier."""
+    if class_name(character) != "Shadowcaster" or damage_type not in {"Shadow", "Dark"}:
+        return 1.0
+    data = ensure_state(character)["data"]["Shadowcaster"]
+    return 1.15 if int(data.get("eclipse_turns", 0) or 0) > 0 else 1.0
+
+
 def trigger_umbral_debt(character: Any) -> int:
     if not (is_awakened(character, "Shadowcaster") and has_equipped_class_ring(character)):
         return 0
@@ -621,6 +665,16 @@ def trigger_umbral_debt(character: Any) -> int:
         return 0
     character.health.current += heal
     data["debt"] = debt - heal
+    from .promotion_kits import meters as promotion_meters
+
+    message = f"Umbral Debt spends {heal} debt to restore {heal} HP.\n"
+    message += promotion_meters._fairy_debt_echo(character, heal)
+    message += promotion_meters.convert_shadow_backlash(
+        character,
+        fraction=0.10,
+        reason="Umbral Debt healing",
+    )
+    promotion_meters._message(character, message)
     return heal
 
 
@@ -653,7 +707,11 @@ def reduce_major_hit(character: Any, amount: int) -> int:
 
 
 def wizard_rider_chance_bonus(character: Any, school: str) -> float:
-    if not (is_awakened(character, "Wizard") and has_equipped_class_ring(character)):
+    if not (
+        class_name(character) == "Wizard"
+        and is_awakened(character, "Wizard")
+        and has_equipped_class_ring(character)
+    ):
         return 0.0
     state = ensure_state(character)
     stacks = int(state["data"]["Wizard"]["school_streak"].get(str(school), 0) or 0)
@@ -661,7 +719,11 @@ def wizard_rider_chance_bonus(character: Any, school: str) -> float:
 
 
 def record_wizard_rider(character: Any, school: str, triggered: bool) -> float:
-    if not is_awakened(character, "Wizard"):
+    if not (
+        class_name(character) == "Wizard"
+        and is_awakened(character, "Wizard")
+        and has_equipped_class_ring(character)
+    ):
         return 0.0
     state = ensure_state(character)
     school_key = str(school)
@@ -705,6 +767,22 @@ def claim_hidden_cache(character: Any, dungeon_level: int, reveal_progress: floa
     return True, reward
 
 
+def award_hidden_cache(
+    character: Any,
+    dungeon_level: int,
+    reveal_progress: float,
+) -> str:
+    """Claim a mapped-level Seeker cache and grant its concrete utility item."""
+    claimed, cache_name = claim_hidden_cache(character, dungeon_level, reveal_progress)
+    if not claimed or cache_name is None:
+        return ""
+    from .. import items
+
+    reward = items.DispelScroll() if int(dungeon_level) >= 10 else items.SmokeBomb()
+    character.modify_inventory(reward)
+    return f"Hidden Cache discovered: {cache_name} contains {reward.name}."
+
+
 def first_strike_multiplier(character: Any, *, has_initiative: bool = True) -> float:
     if not (has_initiative and is_awakened(character, "Ninja") and has_equipped_class_ring(character)):
         return 1.0
@@ -722,11 +800,39 @@ def reset_combat_flags(character: Any) -> None:
     state["data"]["Archbishop"]["intervention_used"] = False
     state["data"]["Dragoon"]["meteor_guard_turns"] = 0
     state["data"]["Dragoon"]["meteor_guard_shield"] = 0
+    state["data"]["Arcane Trickster"]["buff_turns"] = 0
 
 
 def activate_spell_steal_buff(character: Any) -> None:
-    if is_awakened(character, "Arcane Trickster"):
+    if is_awakened(character, "Arcane Trickster") and has_equipped_class_ring(character):
         ensure_state(character)["data"]["Arcane Trickster"]["buff_turns"] = 3
+        try:
+            from . import promotion_kits
+
+            promotion_kits.combat_state(character)["arcane_larceny_skip_tick"] = True
+        except Exception:
+            pass
+
+
+def tick_arcane_larceny(character: Any) -> str:
+    """Advance the awakened stolen-magic buff by one player turn."""
+    data = ensure_state(character)["data"]["Arcane Trickster"]
+    turns = max(0, int(data.get("buff_turns", 0) or 0))
+    if turns <= 0:
+        return ""
+    try:
+        from . import promotion_kits
+
+        combat = promotion_kits.combat_state(character)
+        if combat.get("arcane_larceny_skip_tick"):
+            combat["arcane_larceny_skip_tick"] = False
+            return ""
+    except Exception:
+        pass
+    data["buff_turns"] = turns - 1
+    if turns == 1:
+        return "Arcane Larceny fades.\n"
+    return ""
 
 
 def arcane_trickster_magic_bonus(character: Any) -> float:
