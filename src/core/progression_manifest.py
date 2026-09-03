@@ -62,10 +62,41 @@ TREE_SIZE_OVERRIDES = {
     "Knight Enchanter": (28, 28),
     # Five six-row Assassin disciplines with four intentional blank positions.
     "Assassin": (25, 25),
+    # Five Ninja disciplines with two intentional utility gaps.
+    "Ninja": (28, 28),
     # Five authored schools of Sorcerer development with two specialization forks.
     "Sorcerer": (29, 29),
     # Five authored Wizard columns, including the quest-awarded ultimate spell.
     "Wizard": (28, 28),
+    # Legacy promoted trees expose only their authored catalog abilities. Fake
+    # rating-family padding was removed; these exact counts prevent it from
+    # returning unnoticed.
+    "Thief": (4, 4),
+    "Rogue": (8, 8),
+    "Inquisitor": (17, 17),
+    "Seeker": (11, 11),
+    "Spell Stealer": (5, 5),
+    "Arcane Trickster": (3, 3),
+    "Cleric": (11, 11),
+    "Templar": (10, 10),
+    "Hierophant": (5, 5),
+    "Monk": (12, 12),
+    "Master Monk": (9, 9),
+    "Priest": (10, 10),
+    "Archbishop": (9, 9),
+    "Bard": (3, 3),
+    "Troubadour": (0, 0),
+    "Druid": (7, 7),
+    "Lycan": (6, 6),
+    "Archdruid": (7, 7),
+    "Diviner": (6, 6),
+    "Astromancer": (10, 10),
+    "Shaman": (10, 10),
+    "Soulcatcher": (8, 8),
+    "Ranger": (1, 1),
+    # Bonded Bulwark is the sole retained talent because it has an authored,
+    # tested companion-bond payoff rather than a generic rating bonus.
+    "Beast Master": (7, 7),
 }
 
 ABILITY_ICON_KEYS = frozenset({
@@ -3354,6 +3385,59 @@ ASSASSIN_TREE_NODE_SPECS = (
 )
 
 
+def _ninja_lane_specs(lane, column, entries):
+    """Build an authored Ninja discipline with intentional gaps and costs."""
+    specs = []
+    previous = None
+    for row, identifier, level, cost in entries:
+        suffix = identifier.replace(" ", "-").lower()
+        spec = {
+            "id": suffix,
+            "kind": "ability",
+            "identifier": identifier.replace(" ", ""),
+            "lane": lane,
+            "position": (column, row),
+            "cost": cost,
+        }
+        if previous is not None:
+            spec["prerequisites"] = (previous,)
+        if level == 60:
+            spec["available_on_promotion"] = True
+        else:
+            spec["level"] = level
+        specs.append(spec)
+        previous = suffix
+    return tuple(specs)
+
+
+NINJA_TREE_NODE_SPECS = (
+    *_ninja_lane_specs("Utility", 0, (
+        (0, "SmokeScreen", 60, 1), (1, "Mug", 65, 1),
+        (2, "FindTraps", 70, 1), (4, "SmashAndGrab", 80, 2),
+    )),
+    *_ninja_lane_specs("Combat", 1, (
+        (0, "TripleStrike", 60, 1), (1, "Momentum", 65, 1),
+        (2, "MarkedShuriken", 70, 1), (3, "FlurryBlades", 75, 1),
+        (4, "ExecutionRhythm", 80, 1), (5, "ThousandCuts", 85, 2),
+    )),
+    *_ninja_lane_specs("Toxin / Death", 2, (
+        (0, "ToxicPrecision", 60, 1), (1, "LingeringVenom", 65, 1),
+        (2, "DeathSentence", 70, 1), (3, "CoatingConservation", 75, 1),
+        (4, "Potentiation", 80, 1), (5, "BlackLotusMastery", 85, 2),
+    )),
+    *_ninja_lane_specs("Stealth", 3, (
+        (0, "Haste", 60, 1), (1, "Invisibility", 65, 1),
+        (2, "SilentWalking", 70, 1), (3, "Alacrity", 75, 1),
+        (4, "ShadowEvasion", 80, 1), (5, "GhostStep", 85, 2),
+    )),
+    *_ninja_lane_specs("Defense", 4, (
+        (0, "Parry", 60, 1), (1, "Riposte", 65, 1),
+        (2, "Quickstep", 70, 1), (3, "EvasiveGuard", 75, 1),
+        (4, "ShadowCounter", 80, 1), (5, "Untouchable", 85, 2),
+    )),
+)
+
+
 CRUSADER_TREE_NODE_SPECS = (
     {
         "id": "condemnation",
@@ -3898,254 +3982,52 @@ BASE_TREE_PROMOTION_SPECS = {
     ),
 }
 
-# Every non-prototype tree owns named passive talents instead of being padded
-# exclusively with anonymous rating nodes.  Each entry is
-# (display name, stable talent key, tier-scaled percentage rating focus).
+# Promoted trees may declare a talent here only when it has an authored runtime
+# payoff. Generic rating-only families are not progression content.
 CLASS_KIT_TALENTS = {
-    "Weapon Master": (),
-    "Berserker": (),
-    "Grandmaster of Arms": (
-        ("Perfect Form", "grandmaster.perfect-form", "Attack"),
-        ("Adaptive Arsenal", "grandmaster.adaptive-arsenal", "Defense"),
-    ),
-    "Paladin": (
-        ("Sworn Purpose", "paladin.sworn-purpose", "Magic Defense"),
-        ("Tempered Conviction", "paladin.tempered-conviction", "Defense"),
-    ),
-    "Crusader": (
-        ("Righteous Advance", "crusader.righteous-advance", "Attack"),
-        ("Consecrated Bulwark", "crusader.consecrated-bulwark", "Magic Defense"),
-    ),
-    "Lancer": (),
-    "Dragoon": (),
-    "Sentinel": (
-        ("Resolute Guard", "sentinel.resolute-guard", "Defense"),
-        ("Watchful Reprisal", "sentinel.watchful-reprisal", "Attack"),
-    ),
-    "Stalwart Defender": (
-        ("Unbroken Wall", "stalwart.unbroken-wall", "Defense"),
-        ("Last Bastion", "stalwart.last-bastion", "Magic Defense"),
-    ),
-    "Sorcerer": (
-        ("Elemental Affinity", "sorcerer.elemental-affinity", "Magic"),
-        ("Reactive Ward", "sorcerer.reactive-ward", "Magic Defense"),
-    ),
-    "Wizard": (),
-    "Warlock": (
-        ("Umbral Hunger", "warlock.umbral-hunger", "Magic"),
-        ("Pact Resilience", "warlock.pact-resilience", "Magic Defense"),
-    ),
-    "Shadowcaster": (
-        ("Deepening Shadow", "shadowcaster.deepening-shadow", "Magic"),
-        ("Debt Control", "shadowcaster.debt-control", "Defense"),
-    ),
-    "Demonologist": (
-        ("Tempered Corruption", "demonologist.tempered-corruption", "Magic"),
-        ("Patron's Shelter", "demonologist.patrons-shelter", "Magic Defense"),
-    ),
-    "Spellblade": (),
-    "Knight Enchanter": (),
-    "Conjurer": (),
-    "Thaumaturgist": (),
-    "Thief": (
-        ("Fortune's Favor", "thief.fortunes-favor", "Attack"),
-        ("Escape Route", "thief.escape-route", "Defense"),
-        ("Misfortune Dividend", "thief.misfortune-dividend", "Attack"),
-        ("Hidden Pocket", "thief.hidden-pocket", "Defense"),
-    ),
-    "Rogue": (
-        ("Loaded Odds", "rogue.loaded-odds", "Attack"),
-        ("Cheater's Guard", "rogue.cheaters-guard", "Defense"),
-        ("Jinxed Edge", "rogue.jinxed-edge", "Attack"),
-        ("House Advantage", "rogue.house-advantage", "Defense"),
-    ),
-    "Inquisitor": (
-        ("Methodical Inquiry", "inquisitor.methodical-inquiry", "Attack"),
-        ("Prepared Defense", "inquisitor.prepared-defense", "Magic Defense"),
-        ("Cross Examination", "inquisitor.cross-examination", "Attack"),
-        ("Contingency File", "inquisitor.contingency-file", "Magic Defense"),
-    ),
-    "Seeker": (
-        ("Revelatory Strike", "seeker.revelatory-strike", "Attack"),
-        ("Wayfinder's Ward", "seeker.wayfinders-ward", "Magic Defense"),
-        ("Pattern Lock", "seeker.pattern-lock", "Attack"),
-        ("Safe Passage", "seeker.safe-passage", "Magic Defense"),
-    ),
-    "Assassin": (
-        ("Lethal Preparation", "assassin.lethal-preparation", "Attack"),
-        ("Veiled Retreat", "assassin.veiled-retreat", "Defense"),
-        ("Marked Quarry", "assassin.marked-quarry", "Attack"),
-        ("Vanishing Point", "assassin.vanishing-point", "Defense"),
-    ),
-    "Ninja": (
-        ("No-Trace Opener", "ninja.no-trace-opener", "Attack"),
-        ("Shadow Evasion", "ninja.shadow-evasion", "Defense"),
-        ("Execution Rhythm", "ninja.execution-rhythm", "Attack"),
-        ("Ghost Step", "ninja.ghost-step", "Defense"),
-    ),
-    "Spell Stealer": (
-        ("Stolen Momentum", "spell-stealer.stolen-momentum", "Magic"),
-        ("Arcane Escape", "spell-stealer.arcane-escape", "Defense"),
-        ("Counterfeit Casting", "spell-stealer.counterfeit-casting", "Magic"),
-        ("Blank Escape", "spell-stealer.blank-escape", "Defense"),
-    ),
-    "Arcane Trickster": (
-        ("Arcane Larceny", "arcane-trickster.arcane-larceny", "Magic"),
-        ("Misdirection", "arcane-trickster.misdirection", "Defense"),
-        ("Spell Feint", "arcane-trickster.spell-feint", "Magic"),
-        ("Vanishing Formula", "arcane-trickster.vanishing-formula", "Defense"),
-    ),
-    "Cleric": (
-        ("Devoted Guard", "cleric.devoted-guard", "Defense"),
-        ("Consecrated Focus", "cleric.consecrated-focus", "Magic"),
-        ("Martyr's Reserve", "cleric.martyrs-reserve", "Defense"),
-        ("Radiant Rebuke", "cleric.radiant-rebuke", "Magic"),
-    ),
-    "Templar": (
-        ("Ordered Blessing", "templar.ordered-blessing", "Magic Defense"),
-        ("Relic Discipline", "templar.relic-discipline", "Defense"),
-        ("Shielded Litany", "templar.shielded-litany", "Magic Defense"),
-        ("Pilgrim's Guard", "templar.pilgrims-guard", "Defense"),
-    ),
-    "Hierophant": (
-        ("Sacred Conduit", "hierophant.sacred-conduit", "Magic"),
-        ("Devotional Ward", "hierophant.devotional-ward", "Magic Defense"),
-        ("Staff Testament", "hierophant.staff-testament", "Magic"),
-        ("Warding Gospel", "hierophant.warding-gospel", "Magic Defense"),
-    ),
-    "Monk": (
-        ("Centered Breath", "monk.centered-breath", "Defense"),
-        ("Focused Ki", "monk.focused-ki", "Attack"),
-        ("Flowing Kata", "monk.flowing-kata", "Defense"),
-        ("Open-Hand Focus", "monk.open-hand-focus", "Attack"),
-    ),
-    "Master Monk": (
-        ("Perfected Ki", "master-monk.perfected-ki", "Attack"),
-        ("Diamond Body", "master-monk.diamond-body", "Defense"),
-        ("Hundred-Fist Rhythm", "master-monk.hundred-fist-rhythm", "Attack"),
-        ("Empty Mountain", "master-monk.empty-mountain", "Defense"),
-    ),
-    "Priest": (
-        ("Answered Prayer", "priest.answered-prayer", "Magic"),
-        ("Sheltering Litany", "priest.sheltering-litany", "Magic Defense"),
-        ("Reserved Benediction", "priest.reserved-benediction", "Magic"),
-        ("Quiet Sanctuary", "priest.quiet-sanctuary", "Magic Defense"),
-    ),
-    "Archbishop": (
-        ("Benediction Mastery", "archbishop.benediction-mastery", "Magic"),
-        ("Intervening Grace", "archbishop.intervening-grace", "Magic Defense"),
-        ("Great Gospel", "archbishop.great-gospel", "Magic"),
-        ("Miracle's Margin", "archbishop.miracles-margin", "Magic Defense"),
-    ),
-    "Bard": (
-        ("Practiced Refrain", "bard.practiced-refrain", "Magic"),
-        ("Harmonic Shelter", "bard.harmonic-shelter", "Magic Defense"),
-        ("Improvised Verse", "bard.improvised-verse", "Magic"),
-        ("Resolving Cadence", "bard.resolving-cadence", "Magic Defense"),
-    ),
-    "Troubadour": (
-        ("Resonant Finale", "troubadour.resonant-finale", "Magic"),
-        ("Sustained Chorus", "troubadour.sustained-chorus", "Magic Defense"),
-        ("Masterful Coda", "troubadour.masterful-coda", "Magic"),
-        ("Endless Encore", "troubadour.endless-encore", "Magic Defense"),
-    ),
-    "Druid": (
-        ("Primal Balance", "druid.primal-balance", "Magic"),
-        ("Living Bark", "druid.living-bark", "Defense"),
-        ("Wildshape Memory", "druid.wildshape-memory", "Magic"),
-        ("Grove Shelter", "druid.grove-shelter", "Defense"),
-    ),
-    "Lycan": (
-        ("Frenzy Control", "lycan.frenzy-control", "Attack"),
-        ("Moonlit Hide", "lycan.moonlit-hide", "Defense"),
-        ("Predator's Rhythm", "lycan.predators-rhythm", "Attack"),
-        ("Tethered Instinct", "lycan.tethered-instinct", "Defense"),
-    ),
-    "Archdruid": (
-        ("Aspect Harmony", "archdruid.aspect-harmony", "Magic"),
-        ("Ancient Growth", "archdruid.ancient-growth", "Magic Defense"),
-        ("Fourfold Memory", "archdruid.fourfold-memory", "Magic"),
-        ("Worldroot Shelter", "archdruid.worldroot-shelter", "Magic Defense"),
-    ),
-    "Diviner": (
-        ("Runic Focus", "diviner.runic-focus", "Magic"),
-        ("Foreseen Defense", "diviner.foreseen-defense", "Magic Defense"),
-        ("Reserved Rune", "diviner.reserved-rune", "Magic"),
-        ("Averted Fate", "diviner.averted-fate", "Magic Defense"),
-    ),
-    "Astromancer": (
-        ("Threaded Fate", "astromancer.threaded-fate", "Magic"),
-        ("Celestial Shelter", "astromancer.celestial-shelter", "Magic Defense"),
-        ("Convergent Signs", "astromancer.convergent-signs", "Magic"),
-        ("Event Horizon", "astromancer.event-horizon", "Magic Defense"),
-    ),
-    "Shaman": (
-        ("Totemic Rhythm", "shaman.totemic-rhythm", "Magic"),
-        ("Spirit Ward", "shaman.spirit-ward", "Magic Defense"),
-        ("Communion Pulse", "shaman.communion-pulse", "Magic"),
-        ("Ancestor's Shelter", "shaman.ancestors-shelter", "Magic Defense"),
-    ),
-    "Soulcatcher": (
-        ("Resonant Soul", "soulcatcher.resonant-soul", "Attack"),
-        ("Spirit Vessel", "soulcatcher.spirit-vessel", "Magic Defense"),
-        ("Harvest Echo", "soulcatcher.harvest-echo", "Attack"),
-        ("Totemic Afterlife", "soulcatcher.totemic-afterlife", "Magic Defense"),
-    ),
-    "Ranger": (
-        ("Disciplined Hunt", "ranger.disciplined-hunt", "Attack"),
-        ("Companion Guard", "ranger.companion-guard", "Defense"),
-        ("Quarry Coordination", "ranger.quarry-coordination", "Attack"),
-        ("Trailside Recovery", "ranger.trailside-recovery", "Defense"),
-    ),
     "Beast Master": (
-        ("Pack Tactics", "beast-master.pack-tactics", "Attack"),
-        ("Shared Recovery", "beast-master.shared-recovery", "Defense"),
-        ("Alpha Command", "beast-master.alpha-command", "Attack"),
         ("Bonded Bulwark", "beast-master.bonded-bulwark", "Defense"),
     ),
 }
+AUTHORED_PROMOTED_TALENT_KEYS = frozenset({
+    "beast-master.bonded-bulwark",
+})
+
+# These classes currently expose only their authored legacy ability catalog
+# (plus the one explicit Beast Master payoff above). They deliberately do not
+# satisfy the normal terminal-tree breadth heuristic by manufacturing passive
+# choices.
+CATALOG_ONLY_PROMOTED_TREE_CLASSES = frozenset({
+    "Thief",
+    "Rogue",
+    "Inquisitor",
+    "Seeker",
+    "Spell Stealer",
+    "Arcane Trickster",
+    "Cleric",
+    "Templar",
+    "Hierophant",
+    "Monk",
+    "Master Monk",
+    "Priest",
+    "Archbishop",
+    "Bard",
+    "Troubadour",
+    "Druid",
+    "Lycan",
+    "Archdruid",
+    "Diviner",
+    "Astromancer",
+    "Shaman",
+    "Soulcatcher",
+    "Ranger",
+    "Beast Master",
+})
 
 TALENT_KIT_EFFECTS = {
-    "astromancer.threaded-fate": ("meter_cap", "foresight_threads", 1),
     "berserker.bloodied-ferocity": ("meter_cap", "bloodied_momentum", 1),
     "paladin.tempered-conviction": ("meter_cap", "oath_conviction", 1),
     "lancer.aerial-footwork": ("meter_cap", "aerial_tempo", 1),
-    "thief.fortunes-favor": ("meter_cap", "fortune", 1),
-    "rogue.loaded-odds": ("meter_cap", "fortune", 1),
-    "inquisitor.methodical-inquiry": ("meter_cap", "revelation", 1),
-    "seeker.revelatory-strike": ("meter_cap", "revelation", 1),
-    "assassin.lethal-preparation": ("meter_cap", "death_marks", 1),
-    "ninja.no-trace-opener": ("meter_cap", "death_marks", 1),
-    "spell-stealer.stolen-momentum": ("meter_cap", "stolen_charge", 1),
-    "arcane-trickster.arcane-larceny": ("meter_cap", "stolen_charge", 1),
-    "cleric.devoted-guard": ("meter_cap", "devotion", 1),
-    "templar.ordered-blessing": ("meter_cap", "devotion", 1),
-    "hierophant.devotional-ward": ("meter_cap", "devotion", 1),
-    "priest.answered-prayer": ("meter_cap", "prayer", 1),
-    "archbishop.benediction-mastery": ("meter_cap", "prayer", 1),
-    "monk.focused-ki": ("meter_cap", "ki", 1),
-    "master-monk.perfected-ki": ("meter_cap", "ki", 1),
-    "bard.practiced-refrain": ("meter_cap", "crescendo", 1),
-    "troubadour.resonant-finale": ("meter_cap", "crescendo", 1),
-    "archdruid.aspect-harmony": ("meter_cap", "aspect_harmony", 1),
-    "shaman.totemic-rhythm": ("meter_cap", "totem_resonance", 1),
-    "soulcatcher.resonant-soul": ("meter_cap", "totem_resonance", 1),
-    # Every generic terminal tree ends in a two-point mastery. Meter classes
-    # deepen their signature resource; persistent classes improve the matching
-    # long-term system instead of inventing a second combat meter.
-    "rogue.house-advantage": ("meter_cap", "fortune", 1),
-    "seeker.safe-passage": ("meter_cap", "revelation", 1),
-    "ninja.ghost-step": ("meter_cap", "death_marks", 1),
-    "arcane-trickster.vanishing-formula": ("meter_cap", "stolen_charge", 1),
-    "templar.pilgrims-guard": ("meter_cap", "devotion", 1),
-    "hierophant.warding-gospel": ("meter_cap", "devotion", 1),
-    "master-monk.empty-mountain": ("meter_cap", "ki", 1),
-    "archbishop.miracles-margin": ("meter_cap", "prayer", 1),
-    "troubadour.endless-encore": ("meter_cap", "crescendo", 1),
-    "lycan.tethered-instinct": ("control_progress", "lycan", 1),
-    "archdruid.worldroot-shelter": ("meter_cap", "aspect_harmony", 1),
-    "astromancer.event-horizon": ("meter_cap", "foresight_threads", 1),
-    "soulcatcher.totemic-afterlife": ("meter_cap", "totem_resonance", 1),
     "beast-master.bonded-bulwark": ("bond_power", "companion", 10),
 }
 
@@ -4154,9 +4036,30 @@ TALENT_KIT_EFFECTS = {
 # registry; adding a class now requires adding progression identity here.
 AUTHORED_TREE_CLASSES = frozenset({
     "Mage",
+    "Ninja",
     "Warrior",
     *BASE_TREE_NODE_SPECS,
+    *CATALOG_ONLY_PROMOTED_TREE_CLASSES,
     *CLASS_KIT_TALENTS,
+    "Weapon Master",
+    "Berserker",
+    "Grandmaster of Arms",
+    "Paladin",
+    "Crusader",
+    "Lancer",
+    "Dragoon",
+    "Sentinel",
+    "Stalwart Defender",
+    "Sorcerer",
+    "Wizard",
+    "Warlock",
+    "Shadowcaster",
+    "Demonologist",
+    "Spellblade",
+    "Knight Enchanter",
+    "Conjurer",
+    "Thaumaturgist",
+    "Assassin",
 })
 
 # Promoted classes use explicit identity paths. Constructor names are declared
@@ -4534,8 +4437,51 @@ PROMOTED_TREE_PATHS = {
         ("Shadowcraft", ("Invisibility", "Lockpick")),
     ),
     "Ninja": (
-        ("Execution", ("Mug", "FlurryBlades", "Desoul")),
-        ("No Trace", ("Haste",)),
+        ("Utility", ("SmokeScreen", "Mug", "FindTraps", "SmashAndGrab")),
+        (
+            "Combat",
+            (
+                "TripleStrike",
+                "Momentum",
+                "MarkedShuriken",
+                "FlurryBlades",
+                "ExecutionRhythm",
+                "ThousandCuts",
+            ),
+        ),
+        (
+            "Toxin / Death",
+            (
+                "ToxicPrecision",
+                "LingeringVenom",
+                "DeathSentence",
+                "CoatingConservation",
+                "Potentiation",
+                "BlackLotusMastery",
+            ),
+        ),
+        (
+            "Stealth",
+            (
+                "Haste",
+                "Invisibility",
+                "SilentWalking",
+                "Alacrity",
+                "ShadowEvasion",
+                "GhostStep",
+            ),
+        ),
+        (
+            "Defense",
+            (
+                "Parry",
+                "Riposte",
+                "Quickstep",
+                "EvasiveGuard",
+                "ShadowCounter",
+                "Untouchable",
+            ),
+        ),
     ),
     "Spell Stealer": (
         ("Spell Theft", ("StealSpell", "StealAsWell", "ImbueWeapon")),
@@ -4582,14 +4528,14 @@ PROMOTED_TREE_PATHS = {
                 "PurgingKata",
             ),
         ),
-        ("Centering", ("PurityBody", "CenteredGuard", "DrunkenBrawler", "Parry", "Shell")),
+        ("Centering", ("PurityBody", "CenteredGuard", "DrunkenBrawler", "Parry")),
     ),
     "Master Monk": (
         (
             "Perfected Ki",
             ("Hyakuretsukyaku", "TripleStrike", "SpinningBackElbow", "Suplex", "Hadouken", "DimMak"),
         ),
-        ("Diamond Body", ("Dispel", "Evasion", "PurityBody2", "MartialMastery", "Reflect")),
+        ("Diamond Body", ("Evasion", "PurityBody2", "MartialMastery")),
     ),
     "Priest": (
         ("Prayer", ("Supplication", "Holy2", "Dispel", "Berserk")),

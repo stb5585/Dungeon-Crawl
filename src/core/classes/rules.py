@@ -1,79 +1,6 @@
-"""Promotion ability transition rules."""
+"""Player-facing promotion mechanic guidance."""
 
 from __future__ import annotations
-
-from typing import Any
-
-PromotionRule = dict[str, Any]
-
-
-# Archived promotion transition data retained for external compatibility.
-# ================================================================================
-# Flat progression does not execute these pruning rules.
-#
-# Keys: Target class name (the class being promoted TO)
-#
-# Values: Dictionary with the following structure:
-#   - clear_spells (bool): If True, wipes all spells and keeps only what's in keep_spells.
-#                         If False, keeps all current spells but can remove specific ones.
-#   - keep_spells (list): Spells to retain after promotion (only used if clear_spells=True
-#                        or for explicit preservation). If spell not in current spellbook,
-#                        it will be created from abilities module.
-#   - remove_spells (list): Spells to remove from spellbook (only if clear_spells=False).
-#   - remove_skills (list): Skills to remove from spellbook.
-#   - description (str): Message displayed to player about ability changes.
-#
-# PROMOTION EXAMPLES:
-#   Mage → Warlock: Trades Arcane spells for Shadow spells, keeps only Enfeeble.
-#   Mage → Monk: Completely replaces spells with physical abilities (clear all spells).
-#   Footpad → Inquisitor: Loses stealth skills, gains investigative skills.
-# ================================================================================
-
-PROMOTION_ABILITY_RULES: dict[str, PromotionRule] = {
-    "Warlock": {
-        "clear_spells": False,  # Don't clear all spells
-        "keep_spells": ["Enfeeble"],  # Keep only Enfeeble from Mage spells
-        "remove_spells": [],  # Warlock gets own spells at level 1
-        "remove_skills": [],
-        "description": "You lose all previously learned attack spells."
-    },
-    "Shadowcaster": {
-        "clear_spells": False,
-        "keep_spells": [],  # Inherits Enfeeble from Warlock, gains Shadowcaster spells
-        "remove_spells": [],
-        "remove_skills": [],
-        "description": ""
-    },
-    "Monk": {
-        "clear_spells": True,  # Clear all spells - Monks use chi, not magic
-        "keep_spells": [],
-        "remove_spells": [],
-        "remove_skills": [],
-        "description": "You lose all previously learned spells."
-    },
-    "Ranger": {
-        "clear_spells": True,  # Clear all spells - Rangers use physical abilities
-        "keep_spells": [],
-        "remove_spells": [],
-        "remove_skills": [],
-        "description": "You lose all previously learned spells."
-    },
-    "Weapon Master": {
-        "clear_spells": False,
-        "keep_spells": [],
-        "remove_spells": [],
-        "remove_skills": ["Shield Slam"],  # Weapon Masters don't use shields
-        "description": "You lose the skill Shield Slam."
-    },
-    "Inquisitor": {
-        "clear_spells": False,
-        "keep_spells": [],
-        "remove_spells": [],
-        "remove_skills": ["Backstab", "Smoke Screen", "Pocket Sand", "Kidney Punch", "Steal", "Sleeping Powder"],
-        "description": "You lose all stealth skills."
-    },
-}
-
 
 PROMOTION_MECHANIC_GUIDANCE: dict[str, str] = {
     "Weapon Master": (
@@ -190,12 +117,14 @@ PROMOTION_MECHANIC_GUIDANCE: dict[str, str] = {
         "then spend it with Consecrated Conduit when a staff or holy payoff is ready."
     ),
     "Monk": (
-        "Ki is shown in combat HUD/status rows and logs. Build martial focus "
-        "through combat actions, then spend it when Dim Mak is ready."
+        "Ki is shown in combat HUD/status rows and logs. Authored martial hits, "
+        "defensive reactions, and meaningful Chi Heal use build up to 3 Ki; five "
+        "martial arts automatically spend one Ki while Master Monk advances toward "
+        "full-Ki Dim Mak."
     ),
     "Master Monk": (
-        "Ki, Dim Mak readiness, and Martial Mastery cues are shown in combat "
-        "HUD/status rows, logs, skill text, and equipment messages."
+        "Build 5 Ki to use the 18-MP Dim Mak finisher. Weapon penalties, ordinary "
+        "staff disarm, Ruyi Jingu Bang, and Martial Mastery ring cues appear in combat."
     ),
     "Priest": (
         "Prayer is shown in combat HUD/status rows and logs. Build divine "
@@ -228,28 +157,29 @@ PROMOTION_MECHANIC_GUIDANCE: dict[str, str] = {
         "and conduit system."
     ),
     "Druid": (
-        "Character Menu tab available: Forms. Use it to review stable wild-shape "
-        "identity and nature-form progression as it unlocks."
+        "Character Menu tab available: Forms. Purchased nodes unlock persistent "
+        "Panther and Direbear forms; dismiss the active form before switching."
     ),
     "Lycan": (
-        "Character Menu tab available: Forms. Use it to review moon form, control, "
-        "and transformation pressure."
+        "Character Menu tab available: Forms. Review persistent Werewolf form, "
+        "moon stress, behavior-earned control, Frenzy, and Dragon Essence."
     ),
     "Archdruid": (
         "Character Menu tab available: Aspects. Use it to review nature aspect "
-        "identity and Fourfold Balance progression."
+        "identity, Fourfold Balance progression, combat Harmony charges, and "
+        "Fourfold Surge readiness."
     ),
     "Diviner": (
-        "Character Menu tab available: Runes. Use it to review learned-spell "
-        "runes and elemental casting identity."
+        "Character Menu tab available: Runes. Successfully resolved hostile "
+        "spells with explicit rank-1 metadata are learned permanently."
     ),
     "Astromancer": (
-        "Character Menu tab available: Runes. Use it to review rune signs, "
-        "constellation flow, and Foresight Threads."
+        "Character Menu tab available: Runes. Review rank-2 witnessed learning, "
+        "rune signs, constellation flow, and action-authored Foresight Threads."
     ),
     "Shaman": (
         "Character Menu tab available: Totems. Use it to review active Totem "
-        "aspects and elemental communion."
+        "aspects, elemental communion, and action-earned Resonance."
     ),
     "Soulcatcher": (
         "Character Menu tab available: Totems. Use it to review Totem Resonance, "
@@ -291,20 +221,6 @@ PROMOTION_MECHANIC_TABS: dict[str, str] = {
     "Soulcatcher": "Totems",
     "Ranger": "Companion & Hunt",
 }
-
-
-def apply_promotion_ability_rules(promoted_player: Any, new_class_name: str) -> str:
-    """Compatibility no-op; flat progression retains all learned abilities.
-
-    Args:
-        promoted_player: Character object being promoted
-        new_class_name: Name of the new class
-
-    Returns:
-        An empty string. Ability pruning was retired by flat progression.
-    """
-    del promoted_player, new_class_name
-    return ""
 
 
 def promotion_mechanic_guidance(new_class_name: str) -> str:

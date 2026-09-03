@@ -209,9 +209,8 @@ def test_lycan_moon_cycle_and_frenzy_state_persist():
     lycan.record_steps(player, 240)
     assert player.lycan_state["moon_phase"] == "Waning"
 
-    player.transform_type = SimpleNamespace(name="Lycan")
-    player.cls = SimpleNamespace(name="Wolf")
-    player._transformed = True
+    player.progression.purchased_node_ids.add("lycan.ability.transform3")
+    player.transform()
     triggered, message = lycan.maybe_trigger_frenzy(player, reason="kill", rng=_Always())
     assert triggered is True
     assert "frenzy" in message
@@ -219,6 +218,7 @@ def test_lycan_moon_cycle_and_frenzy_state_persist():
 
     restored = PlayerDataSerializer.deserialize(PlayerDataSerializer.serialize(player), skip_tiles=True)
     assert restored.lycan_state["moon_phase"] == "Waning"
+    assert restored.cls.name == "Werewolf"
 
 
 def test_thaumaturgist_awakened_ring_scales_future_xenids():

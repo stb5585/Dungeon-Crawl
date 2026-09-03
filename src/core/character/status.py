@@ -718,6 +718,15 @@ class CharacterStatusMixin:
                     heal = min(heal, self.health.max - self.health.current)
                     self.health.current += heal
                     status_text += f"{self.name}'s defensive focus restores {heal} health.\n"
+                    try:
+                        from ..classes import promotion_kits
+
+                        status_text += promotion_kits.record_defensive_regen(
+                            self,
+                            heal,
+                        )
+                    except Exception:
+                        pass
                 self.status_effects["Defend"].duration -= 1
                 if not self.status_effects["Defend"].duration:
                     status_text += f"{self.name} lowers their guard.\n"

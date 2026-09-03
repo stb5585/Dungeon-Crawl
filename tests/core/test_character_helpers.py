@@ -114,16 +114,91 @@ class TestCharacterHelpers:
     def test_druid_can_choose_panther_and_later_direbear_forms(self):
         druid = TestGameState.create_player(class_name="Druid", race_name="Human")
         druid.level.pro_level = 1
+        druid.progression.purchased_node_ids.add("druid.ability.transform")
 
         assert druid.available_transform_forms() == ("Panther",)
         assert druid.select_transform_form("Direbear") is False
         assert druid.select_transform_form("Panther") is True
-        assert druid.transform_type.name == "Panther"
+        assert druid._selected_transform_form == "Panther"
 
         druid.level.pro_level = 15
+        druid.progression.purchased_node_ids.add("druid.ability.transform2")
         assert druid.available_transform_forms() == ("Panther", "Direbear")
         assert druid.select_transform_form("Direbear") is True
-        assert druid.transform_type.name == "Direbear"
+        assert druid._selected_transform_form == "Direbear"
+
+    def test_transformation_save_load_preserves_overlay_and_normal_deficits(self):
+        from src.core.save_system.player import PlayerDataSerializer
+
+        druid = TestGameState.create_player(class_name="Druid", race_name="Human")
+        druid.progression.purchased_node_ids.add("druid.ability.transform")
+        normal_health_max = druid.health.max
+        normal_mana_max = druid.mana.max
+        assert druid.select_transform_form("Panther")
+        druid.transform()
+        overlay = druid.transformation_state["overlay"]
+        druid.health.current -= 7
+        druid.mana.current -= 3
+
+        saved = PlayerDataSerializer.serialize(druid)
+        restored = PlayerDataSerializer.deserialize(saved, skip_tiles=True)
+
+        assert saved["class_name"] == "Druid"
+        assert saved["health"]["max"] == normal_health_max
+        assert saved["mana"]["max"] == normal_mana_max
+        assert restored.cls.name == "Panther"
+        assert restored.transformation_state["active_form"] == "Panther"
+        assert restored.transformation_state["overlay"]["stats"] == overlay["stats"]
+        assert restored.health.max - restored.health.current == 7
+        assert restored.mana.max - restored.mana.current == 3
+        restored.transform(back=True)
+        assert restored.cls.name == "Druid"
+        assert restored.health.max == normal_health_max
+        assert restored.health.max - restored.health.current == 7
+
+    def test_shifted_character_blocks_equipment_and_promotion_but_mirrors_skills(self):
+        from src.core.progression import purchase_node
+
+        lycan = TestGameState.create_player(
+            class_name="Lycan",
+            race_name="Human",
+            level=100,
+        )
+        lycan.progression.unspent_points = 10
+        lycan.progression.purchased_node_ids.update({
+            "lycan.ability.transform3",
+            "lycan.ability.charge",
+            "lycan.ability.battlecry",
+        })
+        lycan.spellbook["Skills"]["Battle Cry"] = abilities.BattleCry()
+        lycan.transform()
+
+        assert lycan.equip("Weapon", items.IronshodStaff()) is False
+        learned = purchase_node(lycan, "lycan.ability.wingedpounce")
+
+        assert learned.success is True
+        assert "Winged Pounce" in lycan.spellbook["Skills"]
+        assert "Winged Pounce" in lycan._normal_form_snapshot["spellbook"]["Skills"]
+
+        druid = TestGameState.create_player(
+            class_name="Druid",
+            race_name="Human",
+            level=100,
+        )
+        druid.progression.purchased_node_ids.update({
+            "druid.ability.transform",
+            "druid.talent.druid-grove-shelter.rank-2",
+        })
+        druid.progression.unspent_points = 10
+        druid.transform()
+        promoted = purchase_node(
+            druid,
+            "druid.promotion.lycan",
+            confirm_promotion=True,
+        )
+
+        assert promoted.success is False
+        assert "permanent form" in promoted.message
 
     def test_hit_chance_reacts_to_accuracy_penalties_and_bonuses(self, monkeypatch):
         attacker = TestGameState.create_player(class_name="Warrior", race_name="Human")

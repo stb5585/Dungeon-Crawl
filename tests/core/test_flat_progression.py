@@ -6,7 +6,7 @@ import random
 
 import pytest
 
-from src.core import items
+from src.core import abilities, companions, items
 from src.core.abilities import (
     Adrenaline,
     Chastise,
@@ -19,16 +19,15 @@ from src.core.abilities import (
 )
 from src.core.character import Combat, Level, Resource, Stats
 from src.core.classes import (
+    BeastMaster,
     Footpad,
     GrandmasterOfArms,
     Healer,
     Mage,
     Pathfinder,
-    Troubadour,
     Warrior,
     WeaponMaster,
 )
-from src.core.classes.promotion_kits import cap_for
 from src.core.combat.combat_result import CombatResult
 from src.core.effects.skills import ShieldSlamEffect
 from src.core.player import Player
@@ -36,6 +35,7 @@ from src.core.progression import (
     ABILITY_TREES,
     CLASS_CHILDREN,
     CLASS_DETAILS,
+    TREE_NODES,
     NodeKind,
     NodeState,
     ProgressionState,
@@ -91,7 +91,7 @@ def test_transformed_character_uses_permanent_progression_tree():
     assert available_nodes(player)
 
 
-def test_all_tree_manifests_validate_and_scale_rating_values_by_stage():
+def test_all_tree_manifests_validate_and_scale_authored_rating_values_by_stage():
     assert validate_trees() == ()
     for tree in ABILITY_TREES.values():
         rating_nodes = [node for node in tree.nodes if node.kind == NodeKind.RATING]
@@ -124,28 +124,7 @@ def test_all_tree_manifests_validate_and_scale_rating_values_by_stage():
             or node.payload.get("level_band_gate") is True
             for node in resource_nodes
         )
-        talent_nodes = [
-            node
-            for node in tree.nodes
-            if node.kind == NodeKind.TALENT
-        ]
-        if (
-            tree.stage > 1
-            and tree.class_name not in {
-                "Weapon Master",
-                "Assassin",
-                "Berserker",
-                "Conjurer",
-                "Knight Enchanter",
-                "Sorcerer",
-                "Spellblade",
-                "Warlock",
-                "Wizard",
-                "Shadowcaster",
-                "Demonologist",
-            }
-        ):
-            assert talent_nodes
+        talent_nodes = [node for node in tree.nodes if node.kind == NodeKind.TALENT]
         for node in talent_nodes:
             expected_bonus = CLASS_DETAILS[node.tree_id][1] * 10
             assert all(
@@ -163,30 +142,25 @@ def test_all_tree_manifests_validate_and_scale_rating_values_by_stage():
                 assert node.cost == (2 if tree.stage == 1 else 3)
 
 
-def test_remaining_lineages_have_full_development_budgets_and_base_graph_parity():
-    completed_lineages = {
-        "Warrior",
-        "Weapon Master",
-        "Berserker",
-        "Grandmaster of Arms",
-        "Paladin",
-        "Crusader",
-        "Lancer",
-        "Dragoon",
-        "Sentinel",
-        "Stalwart Defender",
-        "Mage",
-        "Sorcerer",
-        "Wizard",
-        "Warlock",
-        "Shadowcaster",
-        "Demonologist",
-        "Spellblade",
-        "Knight Enchanter",
-        "Conjurer",
-        "Thaumaturgist",
+def test_catalog_only_promoted_trees_do_not_restore_generic_padding():
+    catalog_only_classes = {
+        "Thief", "Rogue", "Inquisitor", "Seeker", "Spell Stealer",
+        "Arcane Trickster", "Cleric", "Templar", "Hierophant", "Monk",
+        "Master Monk", "Priest", "Archbishop", "Bard", "Troubadour",
+        "Druid", "Lycan", "Archdruid", "Diviner", "Astromancer", "Shaman",
+        "Soulcatcher", "Ranger", "Beast Master",
     }
+    expected_talents = {"Beast Master": {"beast-master.bonded-bulwark"}}
+    for class_name in catalog_only_classes:
+        talents = {
+            node.payload["talent_key"]
+            for node in ABILITY_TREES[class_name].nodes
+            if node.kind == NodeKind.TALENT
+        }
+        assert talents == expected_talents.get(class_name, set())
 
+
+def test_base_graph_parity_and_promotion_route_costs():
     expected_branches = {
         "Footpad": (
             "Thief",
@@ -242,17 +216,6 @@ def test_remaining_lineages_have_full_development_budgets_and_base_graph_parity(
                 by_id[node_id].cost
                 for node_id in prerequisite_closure(promotion)
             ) == expected_route_cost
-
-    for class_name, tree in ABILITY_TREES.items():
-        if class_name in completed_lineages or tree.stage == 1:
-            continue
-        development = [node for node in tree.nodes if node.kind != NodeKind.PROMOTION]
-        minimum = 16 if tree.stage == 2 else 14
-        assert len(development) >= minimum, class_name
-        if tree.stage == 3:
-            advanced = [node for node in development if node.cost == 2]
-            assert advanced, class_name
-            assert any(node.payload.get("kit_effect") for node in advanced), class_name
 
 
 def test_first_promotion_stat_requirements_match_rebalanced_gates():
@@ -353,31 +316,37 @@ def test_conjurer_has_four_authored_disciplines_and_terminal_promotion():
     assert len(promotion.prerequisites) == 4
 
 
-def test_talent_purchase_applies_bonus_and_modifies_class_kit_cap():
-    player = _player(Troubadour)
+def test_authored_promoted_talent_has_only_its_declared_kit_payoff():
+    player = _player(BeastMaster)
     initialize_progression(player)
     player.progression.level = 100
     player.progression.unspent_points = 2
     talent = next(
         node
-        for node in ABILITY_TREES["Troubadour"].nodes
-        if node.payload.get("talent_key") == "troubadour.resonant-finale"
+        for node in ABILITY_TREES["Beast Master"].nodes
+        if node.payload.get("talent_key") == "beast-master.bonded-bulwark"
     )
-    before_magic = player.combat.magic
-    before_cap = cap_for(player, "crescendo")
+    by_id = {node.id: node for node in ABILITY_TREES["Beast Master"].nodes}
+
+    def own_prerequisites(node):
+        for prerequisite_id in node.prerequisites:
+            player.progression.purchased_node_ids.add(prerequisite_id)
+            own_prerequisites(by_id[prerequisite_id])
+
+    own_prerequisites(talent)
+    before_defense = player.combat.defense
 
     result = purchase_node(player, talent.id)
 
     assert result.success
-    assert has_talent(player, "troubadour.resonant-finale")
-    assert player.combat.magic == before_magic + 2
-    assert cap_for(player, "crescendo") == before_cap + 1
+    assert has_talent(player, "beast-master.bonded-bulwark")
+    assert player.combat.defense == before_defense
+    assert "bonuses" not in talent.payload
     restored = PlayerDataSerializer.deserialize(
         PlayerDataSerializer.serialize(player),
         skip_tiles=True,
     )
-    assert has_talent(restored, "troubadour.resonant-finale")
-    assert cap_for(restored, "crescendo") == before_cap + 1
+    assert has_talent(restored, "beast-master.bonded-bulwark")
 
 
 @pytest.mark.parametrize("class_type", [Warrior, Mage, Footpad, Healer, Pathfinder])
@@ -1375,6 +1344,131 @@ def test_promotion_retains_abilities_does_not_reset_level_and_closes_branch():
         status.node.name == "Promote: Diviner" and status.state == NodeState.CLOSED
         for status in old_statuses
     )
+
+
+def _own_promotion_prerequisites(player, promotion_node):
+    """Seed a complete purchased path for a focused promotion regression."""
+    def own_with_prerequisites(node_id):
+        node = TREE_NODES[node_id]
+        for prerequisite in node.prerequisites:
+            own_with_prerequisites(prerequisite)
+        player.progression.purchased_node_ids.add(node_id)
+
+    for prerequisite in promotion_node.prerequisites:
+        own_with_prerequisites(prerequisite)
+
+
+@pytest.mark.parametrize(
+    (
+        "source_class",
+        "promotion_node",
+        "promotion_choices",
+        "collision_ability_ctor",
+    ),
+    (
+        (Warrior, "warrior.promotion.weapon-master", None, None),
+        (
+            Mage,
+            "mage.promotion.warlock",
+            {"familiar": companions.Jinkin()},
+            abilities.Familiar,
+        ),
+        (Footpad, "footpad.promotion.inquisitor", None, None),
+        (Healer, "healer.promotion.monk", None, None),
+        (Healer, "healer.promotion.bard", None, None),
+        (Pathfinder, "pathfinder.promotion.ranger", None, abilities.Tame),
+    ),
+)
+def test_former_pruning_promotions_retain_every_learned_ability(
+    source_class,
+    promotion_node,
+    promotion_choices,
+    collision_ability_ctor,
+):
+    player = _player(source_class)
+    initialize_progression(player)
+    player.progression.level = 30
+    player.level.level = 30
+    player.progression.unspent_points = 3
+    node = TREE_NODES[promotion_node]
+    _own_promotion_prerequisites(player, node)
+
+    retained_spell = abilities.Fireball()
+    retained_skill = abilities.Backstab()
+    retained_spell.retention_marker = "spell-state"
+    retained_skill.retention_marker = "skill-state"
+    player.spellbook["Spells"][retained_spell.name] = retained_spell
+    player.spellbook["Skills"][retained_skill.name] = retained_skill
+    illegal_armor = items.PlateMail()
+    player.equipment["Armor"] = illegal_armor
+
+    collision_ability = None
+    if collision_ability_ctor:
+        collision_ability = collision_ability_ctor()
+        collision_ability.retention_marker = "mandatory-grant-state"
+        player.spellbook["Skills"][collision_ability.name] = collision_ability
+
+    result = purchase_node(
+        player,
+        promotion_node,
+        confirm_promotion=True,
+        promotion_choices=promotion_choices,
+    )
+
+    assert result.success, result.message
+    assert player.spellbook["Spells"][retained_spell.name] is retained_spell
+    assert player.spellbook["Skills"][retained_skill.name] is retained_skill
+    assert retained_spell.retention_marker == "spell-state"
+    assert retained_skill.retention_marker == "skill-state"
+    assert player.equipment["Armor"].name == "No Armor"
+    assert player.inventory[illegal_armor.name] == [illegal_armor]
+    source_statuses = available_nodes(player, node.tree_id)
+    assert all(
+        status.state == NodeState.CLOSED
+        for status in source_statuses
+        if status.node.id not in player.progression.purchased_node_ids
+    )
+    if collision_ability is not None:
+        assert player.spellbook["Skills"][collision_ability.name] is collision_ability
+        assert collision_ability.retention_marker == "mandatory-grant-state"
+
+    restored = PlayerDataSerializer.deserialize(
+        PlayerDataSerializer.serialize(player),
+        skip_tiles=True,
+    )
+
+    assert restored.cls.name == node.payload["target_class"]
+    assert retained_spell.name in restored.spellbook["Spells"]
+    assert retained_skill.name in restored.spellbook["Skills"]
+    assert restored.progression.chosen_promotions[node.tree_id] == restored.cls.name
+
+
+def test_retained_off_identity_abilities_survive_promoted_save_round_trip():
+    player = _player(Pathfinder)
+    initialize_progression(player)
+    player.progression.level = 30
+    player.level.level = 30
+    player.progression.unspent_points = 3
+    promotion_node = TREE_NODES["pathfinder.promotion.ranger"]
+    _own_promotion_prerequisites(player, promotion_node)
+    player.spellbook["Spells"]["Fireball"] = abilities.Fireball()
+    player.spellbook["Skills"]["Backstab"] = abilities.Backstab()
+
+    result = purchase_node(
+        player,
+        promotion_node.id,
+        confirm_promotion=True,
+    )
+    restored = PlayerDataSerializer.deserialize(
+        PlayerDataSerializer.serialize(player),
+        skip_tiles=True,
+    )
+
+    assert result.success, result.message
+    assert restored.cls.name == "Ranger"
+    assert "Fireball" in restored.spellbook["Spells"]
+    assert "Backstab" in restored.spellbook["Skills"]
+    assert restored.progression.chosen_promotions["Pathfinder"] == "Ranger"
 
 
 def test_progression_save_round_trip_and_legacy_rejection():

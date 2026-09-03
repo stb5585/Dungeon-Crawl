@@ -311,8 +311,8 @@ class ClassRing(Accessory):
             player_char.equipment["Ring"].mod = "Rare Find"
 
         elif cls_name == "Ninja":
-            # First round standard attack deals double damage if player has initiative
-            player_char.equipment["Ring"].mod = "First Strike"
+            # First standard Ninja Blade attack pays off Death Marks with initiative.
+            player_char.equipment["Ring"].mod = "No-Trace Opener"
 
         elif cls_name == "Arcane Trickster":
             # Gain buff when spell is stolen (Magic damage + dodge)

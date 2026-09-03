@@ -827,7 +827,10 @@ class LearnSpell(Class):
     def __init__(self):
         super().__init__(
             name="Learn Spell",
-            description="Enables a diviner to learn rank 1 enemy spells.",
+            description=(
+                "Permanently learn an explicitly rank-1 hostile spell after "
+                "witnessing it resolve successfully."
+            ),
         )
         self.passive = True
 
@@ -840,7 +843,10 @@ class LearnSpell2(LearnSpell):
 
     def __init__(self):
         super().__init__()
-        self.description = "Enables a diviner to learn rank 2 enemy spells."
+        self.description = (
+            "Permanently learn explicitly ranked hostile spells up to rank 2 "
+            "after witnessing them resolve successfully."
+        )
 
 
 class Transform:

@@ -117,6 +117,9 @@ def capture_battle_snapshot(engine: Any) -> dict[str, Any]:
     }
     cycle = getattr(engine, "_actor_cycle", None)
     summon = getattr(engine, "summon", None)
+    from .. import promotion_kits
+
+    promotion_state = promotion_kits.combat_state(engine.player)
     return {
         "player": character_state(engine.player),
         "enemy": character_state(engine.encounter.primary_enemy),
@@ -142,6 +145,8 @@ def capture_battle_snapshot(engine: Any) -> dict[str, Any]:
         "delayed_spells": [
             dict(entry) for entry in getattr(engine, "delayed_spells", [])
         ],
+        "foresight_threads": int(promotion_state.get("foresight_threads", 0) or 0),
+        "threaded_cast_pending": bool(promotion_state.get("threaded_cast_pending", False)),
     }
 
 
@@ -202,6 +207,19 @@ def restore_battle_snapshot(engine: Any, snapshot: dict[str, Any]) -> str:
     engine.delayed_spells = [
         dict(entry) for entry in snapshot.get("delayed_spells", [])
     ]
+    from .. import promotion_kits
+
+    promotion_state = promotion_kits.combat_state(engine.player)
+    promotion_state["foresight_threads"] = max(
+        0,
+        int(snapshot.get("foresight_threads", 0) or 0),
+    )
+    promotion_state["threaded_cast_pending"] = bool(
+        snapshot.get("threaded_cast_pending", False)
+    )
+    if getattr(engine.player, "_threaded_cast_context", None):
+        promotion_state["foresight_threads"] = 0
+        promotion_state["threaded_cast_pending"] = False
     if getattr(engine, "_actor_cycle", None):
         engine._sync_actor_aliases()
     else:

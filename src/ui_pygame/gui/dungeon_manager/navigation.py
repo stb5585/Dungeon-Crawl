@@ -1,5 +1,7 @@
 """Navigation behavior for the dungeon manager package."""
 
+import random
+
 import pygame
 
 from src.core import map_tiles
@@ -63,6 +65,11 @@ class DungeonNavigationMixin:
                 image_path=self._enemy_combat_sprite_image_path("jester.png"),
             )
             self.add_message("A crackling force field prevents you from moving forward!")
+            return False
+
+        trap_warning = map_tiles.find_trap_warning(tile_ahead, self.player_char, rng=random)
+        if trap_warning:
+            self.add_message(trap_warning)
             return False
 
         # Record previous position for tiles that inspect it (doors, blockers, etc.)

@@ -10,14 +10,14 @@ class Inquisitor(Job):
     Promotion: Footpad -> Inquisitor -> Seeker
     Pros: Increased strength and constitution gain; ability to perceive enemy status and weaknesses; access to medium
           armor, shields, and some spells; increased resistance to shadow damage
-    Cons: Lower dexterity and charisma gain; lose ability to dual wield and stealth skills and access to fist weapons
+    Cons: Lower dexterity and charisma gain; cannot dual wield or equip fist weapons
     """
 
     def __init__(self):
         super().__init__(
             name="Inquisitor",
-            description="Inquisitors exchange the stealth of the shadows for a pure"
-            "distain. They excel at rooting out hidden secrets and "
+            description="Inquisitors turn stealth-honed observation toward a pure "
+            "disdain for hidden evil. They excel at rooting out secrets and "
             "unraveling mysteries. They rely on a sharp eye for detail, "
             "but also on a finely honed ability to read the words and "
             "deeds of other creatures to determine their true intent. "

@@ -1286,6 +1286,14 @@ class SoulDrainEffect(Effect):
             potency = max(0.0, float(getattr(actor, "_totem_pulse_potency", 1.0)))
         except (TypeError, ValueError):
             pass
+        if hasattr(actor, "_totem_pulse_potency"):
+            try:
+                from ..classes import class_rings
+
+                potency *= 1.0 + class_rings.soul_aspect_bonus(actor)
+                potency *= max(0.0, float(getattr(actor, "_totem_surge_output", 1.0)))
+            except Exception:
+                pass
         if target.health.current <= 1:
             messages.append(f"{target.name}'s soul clings to a final thread.\n")
             return
@@ -1295,7 +1303,15 @@ class SoulDrainEffect(Effect):
         result.damage = damage
         result.hit = True
         try:
-            actor._emit_damage_event(target, damage, damage_type="Soul", is_critical=False)
+            actor._emit_damage_event(
+                target,
+                damage,
+                damage_type="Soul",
+                is_critical=False,
+                source="spell",
+                attack_source="spell",
+                ability_name="Soul Drain",
+            )
         except Exception:
             pass
         messages.append(f"{actor.name} drains {damage} hit points from {target.name}'s soul.\n")

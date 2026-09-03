@@ -1,31 +1,19 @@
-"""
-Church system for GUI - handles promotion, saving, and quests.
-Implements the core church logic from town.py adapted for Pygame presenter.
-"""
+"""Church GUI for services, saving, quests, vows, and class-ring rites."""
 
 import os
 
 import pygame
 
-from src.core import companions
-from src.core.abilities import ability_classes_for_level, spell_dict, skill_dict
 from src.core.classes import (
-    apply_promotion_ability_rules,
     class_rings,
-    classes_dict,
     demonologist,
     paladin,
-    promotion_mechanic_details,
-    promotion_mechanic_tab_label,
 )
-from src.core.items import remove_equipment
-from src.core.progression import promotion_combat_bonuses
 
 from .confirmation_popup import ConfirmationPopup
 from .input_guards import prepare_guarded_input, release_guard_allows_input
 from .location_menu import LocationMenuScreen
 from .mouse_helpers import hit_index, is_left_click, mouse_position
-from .promotion_screen import PromotionScreen
 from .quest_manager import QuestManager
 from .town_base import TownColors, TownScreenBase, wrap_text_to_pixel_width
 
@@ -438,61 +426,6 @@ class ChurchManager(TownScreenBase):
         )
         return vow if confirm.show(flush_events=True, require_key_release=True) else None
 
-    def _remove_illegal_promotion_gear(self):
-        """Move newly illegal promoted-class core gear back to inventory."""
-        removed = []
-        equipment = getattr(self.player_char, "equipment", {})
-        can_equip = getattr(self.player_char, "can_equip_item", None)
-        inventory = getattr(self.player_char, "modify_inventory", None)
-
-        for slot in ("Weapon", "OffHand", "Armor", "Helmet"):
-            item = equipment.get(slot)
-            if item is None or getattr(item, "subtyp", None) == "None":
-                continue
-            try:
-                legal = bool(can_equip(item, slot)) if callable(can_equip) else bool(self.player_char.cls.equip_check(item, slot))
-            except Exception:
-                legal = False
-            if legal:
-                continue
-            if callable(inventory):
-                try:
-                    inventory(item, 1)
-                except TypeError:
-                    inventory(item)
-            equipment[slot] = remove_equipment(slot)
-            removed.append((slot, getattr(item, "name", str(item))))
-        return removed
-
-    def _apply_promotion_stat_bonuses(self, new_class):
-        """Apply promoted class stat, resource, and combat bonuses."""
-        self.player_char.stats.strength += getattr(new_class, "str_plus", 0)
-        self.player_char.stats.intel += getattr(new_class, "int_plus", 0)
-        self.player_char.stats.wisdom += getattr(new_class, "wis_plus", 0)
-        self.player_char.stats.con += getattr(new_class, "con_plus", 0)
-        self.player_char.stats.charisma += getattr(new_class, "cha_plus", 0)
-        self.player_char.stats.dex += getattr(new_class, "dex_plus", 0)
-
-        health_bonus = getattr(new_class, "con_plus", 0) * 2
-        mana_bonus = getattr(new_class, "int_plus", 0) * 2
-        self.player_char.health.max += health_bonus
-        if hasattr(self.player_char.health, "current"):
-            self.player_char.health.current = min(
-                self.player_char.health.max,
-                getattr(self.player_char.health, "current", 0) + health_bonus,
-            )
-        self.player_char.mana.max += mana_bonus
-        if hasattr(self.player_char.mana, "current"):
-            self.player_char.mana.current = min(
-                self.player_char.mana.max,
-                getattr(self.player_char.mana, "current", 0) + mana_bonus,
-            )
-        combat_bonuses = promotion_combat_bonuses(new_class)
-        self.player_char.combat.attack += combat_bonuses["attack"]
-        self.player_char.combat.defense += combat_bonuses["defense"]
-        self.player_char.combat.magic += combat_bonuses["magic"]
-        self.player_char.combat.magic_def += combat_bonuses["magic defense"]
-
     def _legacy_paladin_vow_available(self):
         return paladin.is_paladin_lineage(self.player_char) and not paladin.path(self.player_char)
 
@@ -582,211 +515,6 @@ class ChurchManager(TownScreenBase):
         popup.show(**self.popup_show_kwargs())
         return success
     
-    def handle_promotion(self):
-        """Handle class promotion at level 30."""
-        if self.player_char.level.level < 30 or self.player_char.level.pro_level >= 3:
-            if self.player_char.level.pro_level == 3:
-                popup = ConfirmationPopup(self.presenter, "You are at max promotion level and can no longer be promoted.", show_buttons=False)
-            else:
-                popup = ConfirmationPopup(self.presenter, "You need to be level 30 before you can promote your character.", show_buttons=False)
-            popup.show(**self.popup_show_kwargs())
-            return
-
-        current_class = self.player_char.cls.name
-        pro_level = self.player_char.level.pro_level
-
-        options = []
-        option_map = {}
-
-        if pro_level == 1:
-            base_entry = None
-            for base_name, cls_entry in classes_dict.items():
-                try:
-                    if cls_entry["class"]().name == current_class:
-                        base_entry = cls_entry
-                        break
-                except Exception:
-                    continue
-            if base_entry:
-                allowed = getattr(getattr(self.player_char, 'race', {}), 'cls_res', {}).get('First', [])
-                for pro_name, pro_entry in base_entry.get('pro', {}).items():
-                    try:
-                        class_name = pro_entry['class']().name
-                        if not allowed or pro_name in allowed or class_name in allowed:
-                            options.append(class_name)
-                            option_map[class_name] = pro_entry['class']
-                    except Exception:
-                        continue
-        elif pro_level == 2:
-            for base_name, cls_entry in classes_dict.items():
-                for pro_name, pro_entry in cls_entry.get('pro', {}).items():
-                    try:
-                        if pro_entry['class']().name == current_class:
-                            for nested_name, nested_entry in pro_entry.get('pro', {}).items():
-                                class_name = nested_entry['class']().name
-                                options.append(class_name)
-                                option_map[class_name] = nested_entry['class']
-                            break
-                    except Exception:
-                        continue
-
-        if not options:
-            popup = ConfirmationPopup(self.presenter, "No promotion options are currently available.", show_buttons=False)
-            popup.show(**self.popup_show_kwargs())
-            return
-
-        promo_screen = PromotionScreen(
-            self.presenter,
-            self.player_char,
-            options,
-            option_map,
-            current_class=current_class,
-            pro_level=pro_level,
-        )
-        chosen_name = promo_screen.navigate()
-        if not chosen_name:
-            popup = ConfirmationPopup(self.presenter, "Promotion cancelled.", show_buttons=False)
-            popup.show(**self.popup_show_kwargs())
-            return
-
-        chosen_ctor = option_map.get(chosen_name)
-        if not chosen_ctor:
-            popup = ConfirmationPopup(self.presenter, "Promotion option unavailable.", show_buttons=False)
-            popup.show(**self.popup_show_kwargs())
-            return
-
-        chosen_vow = None
-        if chosen_name == "Paladin":
-            chosen_vow = self._choose_paladin_vow()
-            if not chosen_vow:
-                popup = ConfirmationPopup(self.presenter, "Promotion cancelled.", show_buttons=False)
-                popup.show(**self.popup_show_kwargs())
-                return
-
-        try:
-            new_class = chosen_ctor()
-            self.player_char.cls = new_class
-            self.player_char.level.pro_level += 1
-            self.player_char.level.level = 1
-            self._apply_promotion_stat_bonuses(new_class)
-
-            try:
-                self.player_char.level.exp_to_gain = self.player_char.level_exp()
-            except Exception:
-                pass
-
-            try:
-                removed_gear = self._remove_illegal_promotion_gear()
-            except Exception:
-                removed_gear = []
-
-            apply_promotion_ability_rules(self.player_char, chosen_name)
-
-            # Grant level 1 abilities for the new class
-            learned_abilities = []
-            for spell_cls in ability_classes_for_level(spell_dict, chosen_name, self.player_char.level.level):
-                spell_gain = spell_cls()
-                if spell_gain.name not in self.player_char.spellbook["Spells"]:
-                    learned_abilities.append(f"Spell: {spell_gain.name}")
-                self.player_char.spellbook["Spells"][spell_gain.name] = spell_gain
-            
-            for skill_cls in ability_classes_for_level(skill_dict, chosen_name, self.player_char.level.level):
-                skill_gain = skill_cls()
-                if skill_gain.name not in self.player_char.spellbook["Skills"]:
-                    learned_abilities.append(f"Skill: {skill_gain.name}")
-                self.player_char.spellbook["Skills"][skill_gain.name] = skill_gain
-                if skill_gain.name in ["Transform", "Reveal", "Purity of Body"]:
-                    skill_gain.use(self.player_char)
-
-            if chosen_vow:
-                self.player_char.choose_paladin_vow(chosen_vow)
-
-            if chosen_name == "Warlock":
-                fam_options = ["Homunculus", "Fairy", "Mephit", "Jinkin"]
-                fam_map = {
-                    "Homunculus": companions.Homunculus,
-                    "Fairy": companions.Fairy,
-                    "Mephit": companions.Mephit,
-                    "Jinkin": companions.Jinkin,
-                }
-
-                fam_confirmed = False
-                while not fam_confirmed:
-                    fam_idx = self.presenter.render_menu("Choose your familiar", fam_options)
-                    if fam_idx is None:
-                        break
-
-                    fam_class = fam_map[fam_options[fam_idx]]
-                    familiar = fam_class()
-                    description = familiar.inspect()
-                    self.presenter.show_message(description, title=familiar.race)
-
-                    confirm = self.presenter.render_menu(
-                        f"Bind with this {familiar.race}?",
-                        ["Yes", "No"]
-                    )
-                    if confirm == 0:
-                        default_name = "Buddy"
-                        name_confirmed = False
-                        while not name_confirmed:
-                            fam_name = self.presenter.get_text_input(
-                                "What is your familiar's name?", default_text=default_name
-                            )
-                            if not fam_name:
-                                fam_name = default_name
-                            fam_name = fam_name.capitalize()
-                            confirm_name = self.presenter.render_menu(
-                                f"Name your familiar '{fam_name}'?", ["Yes", "No"]
-                            )
-                            if confirm_name == 0:
-                                name_confirmed = True
-                                fam_confirmed = True
-                                familiar.name = fam_name
-                                self.player_char.familiar = familiar
-
-            if chosen_name == "Demonologist":
-                self.player_char.ensure_demonologist_contracts()
-
-            summary = self._promotion_summary_message(chosen_name, learned_abilities, removed_gear)
-            popup = ConfirmationPopup(self.presenter, summary, show_buttons=False)
-            popup.show(**self.popup_show_kwargs())
-        except Exception as e:
-            popup = ConfirmationPopup(self.presenter, f"Promotion failed: {e}", show_buttons=False)
-            popup.show(**self.popup_show_kwargs())
-
-    def _promotion_mechanic_help_message(self, class_name: str) -> str:
-        """Return mechanic guidance for a promoted class."""
-        mechanic_tab = promotion_mechanic_tab_label(class_name)
-        guidance = promotion_mechanic_details(class_name)
-        if not mechanic_tab:
-            return guidance
-        if not guidance:
-            guidance = f"Open the Character Menu to review {mechanic_tab}."
-        return f"New Character Menu tab: {mechanic_tab}\n{guidance}"
-
-    def _promotion_summary_message(self, class_name: str, learned_abilities: list[str], removed_gear: list[tuple[str, str]]) -> str:
-        """Build one post-promotion summary popup."""
-        sections = [f"Congratulations! You are now a {class_name}."]
-        if learned_abilities:
-            sections.append("Learned abilities:\n" + "\n".join(learned_abilities))
-        mechanic_help = self._promotion_mechanic_help_message(class_name)
-        if mechanic_help:
-            sections.append(mechanic_help)
-        if removed_gear:
-            lines = ["Some equipped gear no longer fits your promoted class:"]
-            lines.extend(f"{slot}: {name}" for slot, name in removed_gear)
-            lines.append("Check your inventory and equip replacement gear before returning to the dungeon.")
-            sections.append("\n".join(lines))
-        return "\n\n".join(sections)
-
-    def _show_promotion_mechanic_help(self, class_name: str) -> None:
-        """Show class-mechanic guidance after a promotion is actually chosen."""
-        message = self._promotion_mechanic_help_message(class_name)
-        if not message:
-            return
-        popup = ConfirmationPopup(self.presenter, message, show_buttons=False)
-        popup.show(**self.popup_show_kwargs())
-
     def visit_hidden_crypt(self):
         """Manage Demonologist contracts and Class Ring awakening."""
         if not demonologist.is_demonologist(self.player_char):

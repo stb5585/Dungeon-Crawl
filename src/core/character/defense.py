@@ -136,6 +136,12 @@ class CharacterDefenseMixin:
                                 resolve_gain,
                                 "a successful block",
                             )
+                            msg += promotion_kits.record_devotion_block(defender)
+                            msg += promotion_kits.add_aspect(
+                                defender,
+                                "Stone",
+                                incoming=True,
+                            )
                         except Exception:
                             pass
                     if (
@@ -413,6 +419,11 @@ class CharacterDefenseMixin:
 
             damage, devotion_message = promotion_kits.devotion_guard_reduction(defender, damage)
             msg += devotion_message
+            damage, benediction_message = promotion_kits.benediction_damage_reduction(
+                defender,
+                damage,
+            )
+            msg += benediction_message
             damage, landing_message = promotion_kits.grounded_landing_reduction(
                 defender,
                 damage,
@@ -469,6 +480,16 @@ class CharacterDefenseMixin:
                 damage,
             )
             msg += barrier_message
+        except Exception:
+            pass
+        try:
+            from ..classes import promotion_kits
+
+            msg += promotion_kits.resolve_devotion_counter(
+                defender,
+                self,
+                damage,
+            )
         except Exception:
             pass
         return damage, msg
@@ -739,6 +760,11 @@ class CharacterDefenseMixin:
 
             final_damage, devotion_message = promotion_kits.devotion_guard_reduction(self, final_damage)
             message += devotion_message
+            final_damage, benediction_message = promotion_kits.benediction_damage_reduction(
+                self,
+                final_damage,
+            )
+            message += benediction_message
             final_damage, landing_message = promotion_kits.grounded_landing_reduction(
                 self,
                 final_damage,

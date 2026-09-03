@@ -64,6 +64,8 @@ class TileStateSerializer:
                 state['trap_type'] = tile.trap_type
             if hasattr(tile, 'trap_triggered'):
                 state['trap_triggered'] = tile.trap_triggered
+            if hasattr(tile, 'trap_warned'):
+                state['trap_warned'] = tile.trap_warned
             if hasattr(tile, 'deathcap_available'):
                 state['deathcap_available'] = tile.deathcap_available
             if hasattr(tile, 'deathcap_gathered'):
@@ -126,6 +128,8 @@ class TileStateSerializer:
                 tile.trap_type = state['trap_type']
             if 'trap_triggered' in state and hasattr(tile, 'trap_triggered'):
                 tile.trap_triggered = state['trap_triggered']
+            if 'trap_warned' in state and hasattr(tile, 'trap_warned'):
+                tile.trap_warned = state['trap_warned']
             if 'deathcap_available' in state and hasattr(tile, 'deathcap_available'):
                 tile.deathcap_available = state['deathcap_available']
             if 'deathcap_gathered' in state and hasattr(tile, 'deathcap_gathered'):

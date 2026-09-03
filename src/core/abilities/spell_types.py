@@ -242,10 +242,36 @@ class HealSpell(Spell):
         heal: int,
     ) -> int:
         """Apply a rolled heal after target modifiers and return actual healing."""
+        try:
+            from ..classes import astromancer
+
+            heal = int(heal * (1.0 + astromancer.threaded_bonus(caster, "output")))
+        except Exception:
+            pass
+        try:
+            from ..classes import promotion_kits
+
+            heal = int(heal * promotion_kits.benediction_healing_multiplier(caster))
+        except Exception:
+            pass
         heal = int(heal * target.healing_received_multiplier())
         actual_heal = max(0, min(heal, target.health.max - target.health.current))
         target.health.current += actual_heal
         caster._emit_healing_event(actual_heal, source=self.name)
+        try:
+            from ..classes import promotion_kits
+
+            promotion_kits._message(
+                caster,
+                promotion_kits.record_healing_done(
+                    caster,
+                    actual_heal,
+                    source=self.name,
+                    target=target,
+                ),
+            )
+        except Exception:
+            pass
         try:
             from ..classes import healer
 
@@ -513,8 +539,11 @@ class Rewind(Spell):
         engine = kwargs.get("battle_engine")
         if engine is None:
             return "There is no combat thread to rewind.\n"
-        user.mana.current -= self.cost
-        return ability_mechanics.restore_rewind_snapshot(engine)
+        message = ability_mechanics.restore_rewind_snapshot(engine)
+        if message.startswith("No "):
+            return message
+        user.mana.current = max(0, user.mana.current - self.cost)
+        return message
 
 
 class TwistFate(Spell):
@@ -605,7 +634,13 @@ class Invisibility(IllusionSpell):
         super().__init__("Invisibility", "Fade from sight for surprise and defense.", 18)
 
     def cast(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
-        return self.cast_out(user)
+        del target, kwargs
+        from ..classes import ability_mechanics
+
+        user.mana.current -= self.cost
+        ability_mechanics.apply_exploration_effect(user, "invisibility", 30)
+        user._combat_concealed = True
+        return f"{user.name} fades from sight and becomes concealed.\n"
 
     def cast_out(self, game_or_user) -> str:
         from ..classes import ability_mechanics

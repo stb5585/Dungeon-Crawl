@@ -207,7 +207,11 @@ class PlayerStateMixin:
         step_count = max(0, int(steps))
         stats["steps_taken"] += step_count
         lycan.record_steps(self, step_count)
-        bard.tick_exploration_song(self, step_count)
+        bard_message = bard.tick_exploration_song(self, step_count)
+        if bard_message:
+            pending = getattr(self, "_exploration_messages", [])
+            pending.append(bard_message)
+            self._exploration_messages = pending
         ability_mechanics.tick_exploration_effects(self, step_count)
         footpad.tick_exploration(self, step_count)
         from ..classes import healer

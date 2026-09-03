@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import random
+from dataclasses import dataclass
 from typing import Any
 
 from .base import Job
@@ -31,6 +32,10 @@ def start_combat(character: Any) -> None:
     character._live_and_learn_stacks = 0
     character._surprise_ready = False
     character._surprise_attack = False
+    character._combat_concealed = False
+    character._shadow_evasion_turns = 0
+    character._ghost_step_used = False
+    character._untouchable_used = False
 
 
 def arm_surprise(character: Any, *, has_initiative: bool) -> None:
@@ -48,6 +53,26 @@ def surprise_accuracy_bonus(character: Any) -> float:
 
 def surprise_critical_bonus(character: Any) -> float:
     return 0.20 if getattr(character, "_surprise_attack", False) else 0.0
+
+
+def concealment_dodge_bonus(character: Any) -> float:
+    """Return active Invisibility and post-break Shadow Evasion dodge."""
+    if getattr(character, "_combat_concealed", False):
+        return 0.25
+    if has_skill(character, "Shadow Evasion") and int(
+        getattr(character, "_shadow_evasion_turns", 0) or 0
+    ) > 0:
+        return 0.15
+    return 0.0
+
+
+def restore_ghost_step(character: Any) -> str:
+    """Restore concealment once per combat after a successful avoidance."""
+    if not has_skill(character, "Ghost Step") or getattr(character, "_ghost_step_used", False):
+        return ""
+    character._ghost_step_used = True
+    character._combat_concealed = True
+    return f"{character.name}'s Ghost Step restores concealment.\n"
 
 
 def try_do_over(character: Any, *, rng: Any | None = None) -> bool:
@@ -111,6 +136,10 @@ def tick_exploration(character: Any, steps: int) -> None:
         0,
         int(getattr(character, "resist_death_steps", 0) or 0) - max(0, int(steps)),
     )
+    character.silent_walking_steps = max(
+        0,
+        int(getattr(character, "silent_walking_steps", 0) or 0) - max(0, int(steps)),
+    )
 
 
 def _inventory_stack(character: Any, name: str) -> list[Any]:
@@ -155,17 +184,56 @@ def apply_toxin(character: Any) -> str:
     return "Apply Toxin requires a crafted toxin.\n"
 
 
-def apply_coated_toxin(attacker: Any, target: Any, slot: str, critical: bool) -> str:
+@dataclass(frozen=True)
+class ToxinReactionResult:
+    """Structured result from consuming a weapon coating."""
+
+    message: str = ""
+    status_applied: bool = False
+    severe: bool = False
+    coating_preserved: bool = False
+
+
+def apply_coated_toxin(
+    attacker: Any,
+    target: Any,
+    slot: str,
+    critical: bool,
+) -> ToxinReactionResult:
     """Consume and resolve a weapon coating after its next successful hit."""
     coating = getattr(attacker, "_applied_toxin", None)
     if not isinstance(coating, dict) or coating.get("slot") != slot:
-        return ""
+        return ToxinReactionResult()
     name = str(coating.get("name", "Toxin"))
-    attacker._applied_toxin = None
     poison = getattr(target, "status_effects", {}).get("Poison")
-    severity = "severe" if critical else "standard"
     if poison is None or "Poison" in getattr(target, "status_immunity", []):
-        return f"{target.name} is immune to {name}.\n"
+        preserved = has_skill(attacker, "Coating Conservation")
+        if not preserved:
+            attacker._applied_toxin = None
+        return ToxinReactionResult(
+            f"{target.name} is immune to {name}.\n",
+            coating_preserved=preserved,
+        )
+    severe_chance = 0.40 if has_skill(attacker, "Black Lotus Mastery") else 0.25
+    severe = bool(
+        critical
+        or (
+            has_skill(attacker, "Potentiation")
+            and random.random() < severe_chance
+        )
+    )
+    severity = "severe" if severe else "standard"
+    potency = 1.0
+    if has_skill(attacker, "Lingering Venom"):
+        potency += 0.20
+    if has_skill(attacker, "Black Lotus Mastery"):
+        potency += 0.25
+    preserved = bool(
+        has_skill(attacker, "Black Lotus Mastery")
+        and random.random() < 0.25
+    )
+    if not preserved:
+        attacker._applied_toxin = None
     if poison is not None:
         poison_tiers = {
             "Mild Toxin": ((3, 0.01), (4, 0.03)),
@@ -176,19 +244,25 @@ def apply_coated_toxin(attacker: Any, target: Any, slot: str, critical: bool) ->
             "Necrotoxin": ((5, 0.05), (6, 0.08)),
         }
         turns, amount = poison_tiers.get(name, poison_tiers["Mild Toxin"])[
-            int(critical)
+            int(severe)
         ]
+        if has_skill(attacker, "Lingering Venom"):
+            turns += 1
         poison.active = True
         poison.duration = max(int(poison.duration or 0), turns)
-        poison.extra = max(float(poison.extra or 0), max(1, int(target.health.max * amount)))
+        poison.extra = max(
+            float(poison.extra or 0),
+            max(1, int(target.health.max * amount * potency)),
+        )
         poison.source = name
     messages = [f"{name} causes a {severity} reaction in {target.name}.\n"]
     if name == "Neurotoxin":
-        if critical:
+        if severe:
             effect = getattr(target, "status_effects", {}).get("Silence")
             if effect is not None:
-                effect.active, effect.duration = True, max(int(effect.duration or 0), 3)
-            damage = max(1, int(target.health.max * 0.05))
+                duration = 4 if has_skill(attacker, "Lingering Venom") else 3
+                effect.active, effect.duration = True, max(int(effect.duration or 0), duration)
+            damage = max(1, int(target.health.max * 0.05 * potency))
             target.health.current -= damage
             messages.append(f"Anaphylaxis deals {damage} damage and silences {target.name}.\n")
         elif random.random() < 0.5:
@@ -197,14 +271,15 @@ def apply_coated_toxin(attacker: Any, target: Any, slot: str, critical: bool) ->
                 numbness.active, numbness.duration = True, max(int(numbness.duration or 0), 2)
                 messages.append(f"Numbness makes {target.name} drop their weapon.\n")
     elif name == "Hemotoxin":
-        key = "Bleed" if critical else "Blind"
+        key = "Bleed" if severe else "Blind"
         pool = target.physical_effects if key == "Bleed" else target.status_effects
         effect = pool.get(key)
         if effect is not None:
-            effect.active, effect.duration = True, max(int(effect.duration or 0), 4)
+            duration = 5 if has_skill(attacker, "Lingering Venom") else 4
+            effect.active, effect.duration = True, max(int(effect.duration or 0), duration)
     elif name == "Amatoxin":
-        if critical and "Death" not in getattr(target, "status_immunity", []):
-            target._toxin_death_turns = 5
+        if severe and "Death" not in getattr(target, "status_immunity", []):
+            target._toxin_death_turns = 4 if has_skill(attacker, "Lingering Venom") else 5
         else:
             for stat_name in ("Attack", "Defense"):
                 effect = target.stat_effects.get(stat_name)
@@ -214,21 +289,28 @@ def apply_coated_toxin(attacker: Any, target: Any, slot: str, critical: bool) ->
                     effect.extra = min(int(effect.extra or 0), -3)
     elif (
         name == "Myotoxin"
-        and critical
+        and severe
         and "Stone" not in getattr(target, "status_immunity", [])
     ):
-        target._toxin_petrify_turns = 3
+        target._toxin_petrify_turns = 2 if has_skill(attacker, "Lingering Venom") else 3
     elif (
         name == "Necrotoxin"
-        and critical
+        and severe
         and "Death" not in getattr(target, "status_immunity", [])
     ):
-        target._toxin_death_turns = 2
+        target._toxin_death_turns = 1 if has_skill(attacker, "Lingering Venom") else 2
     elif name in {"Myotoxin", "Necrotoxin"}:
         effect = target.status_effects.get("Stun")
         if effect is not None and random.random() < 0.5:
-            effect.active, effect.duration = True, max(int(effect.duration or 0), 2)
-    return "".join(messages)
+            duration = 3 if has_skill(attacker, "Lingering Venom") else 2
+            effect.active, effect.duration = True, max(int(effect.duration or 0), duration)
+    attacker._death_mark_toxin_status = True
+    return ToxinReactionResult(
+        "".join(messages),
+        status_applied=True,
+        severe=severe,
+        coating_preserved=preserved,
+    )
 
 
 def throwing_dagger_pack(character: Any) -> Any | None:
@@ -276,7 +358,20 @@ def live_and_learn_dodge_bonus(character: Any) -> float:
 
 def encounter_rate_multiplier(character: Any) -> float:
     """Reduce random encounters while Obscuration remains active."""
-    return 0.5 if int(getattr(character, "obscuration_steps", 0) or 0) > 0 else 1.0
+    obscured = int(getattr(character, "obscuration_steps", 0) or 0) > 0
+    silent = int(getattr(character, "silent_walking_steps", 0) or 0) > 0
+    return 0.5 if obscured or silent else 1.0
+
+
+def toxic_precision_bonus(character: Any, slot: str | None = None) -> float:
+    """Return coated-weapon critical chance from Toxic Precision."""
+    coating = getattr(character, "_applied_toxin", None)
+    coated_slot = coating.get("slot") if isinstance(coating, dict) else None
+    return 0.10 if (
+        has_skill(character, "Toxic Precision")
+        and coated_slot is not None
+        and (slot is None or slot == coated_slot)
+    ) else 0.0
 
 
 def obscuration_accuracy_penalty(defender: Any) -> float:

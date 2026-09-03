@@ -1,5 +1,6 @@
 name: Photon Sphere
 type: MagicMissile
+rank: 3
 subtype: Non-elemental
 description: Collapse a sphere of light across every enemy, striking each target repeatedly with non-elemental damage.
 cost: 150

@@ -259,7 +259,7 @@ class GreatGospel(PowerUp):
 
 
 class DimMak(Class):
-    """Dim Mak keeps its legacy weapon skill behavior outside Master Monk."""
+    """Full-Ki Master Monk finisher."""
 
     def __init__(self):
         legacy = _load_yaml_ability("dim_mak.yaml", cls_name="DimMak")
@@ -267,19 +267,14 @@ class DimMak(Class):
             name=legacy.name,
             description=legacy.description,
         )
-        self.cost = legacy.cost
+        self.cost = 18
         self.weapon = legacy.weapon
         self._legacy = legacy
 
     def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
         from ..classes import promotion_kits
 
-        if (
-            promotion_kits.class_name(user) == "Master Monk"
-            and int(promotion_kits.combat_state(user).get("ki", 0) or 0) >= promotion_kits.cap_for(user, "ki")
-        ):
-            return promotion_kits.dim_mak(user, target)
-        return self._legacy.use(user, target, **kwargs)
+        return promotion_kits.dim_mak(user, target)
 
 
 class MelodyInspiration(PowerUp):

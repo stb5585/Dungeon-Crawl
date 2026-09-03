@@ -7,7 +7,7 @@ from typing import Any
 
 import pygame
 
-from src.core.classes import grandmaster, promotion_mechanic_tab_label
+from src.core.classes import grandmaster, promotion_mechanic_tab_label, transformation
 from src.ui_pygame.assets.companion_art_manager import get_companion_art_manager
 from src.ui_pygame.assets.item_render_manager import get_item_render_manager
 from src.ui_pygame.assets.portrait_manager import PortraitManager
@@ -32,6 +32,7 @@ class CharacterCoreMixin:
         self.progression_selector_active = False
         self.selected_jump_mod_index = 0
         self._jump_mod_row_rects: list[pygame.Rect] = []
+        self._form_action_rects: list[tuple[str, pygame.Rect]] = []
         self.current_selection = 0
         self.menu_options: list[str] = []
         super().__init__(presenter)
@@ -95,7 +96,7 @@ class CharacterCoreMixin:
     def class_mechanic_tab(self, player_char) -> CharacterTab | None:
         if grandmaster.is_weapon_discipline_class(player_char):
             return CharacterTab("class", "Weapon Discipline")
-        class_name = self._attr_name(getattr(player_char, "cls", None), "")
+        class_name = transformation.permanent_class_name(player_char)
         mechanic_label = promotion_mechanic_tab_label(class_name)
         familiar = getattr(player_char, "familiar", None)
         if class_name == "Thaumaturgist":

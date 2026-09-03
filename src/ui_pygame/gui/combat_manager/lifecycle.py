@@ -862,6 +862,12 @@ class CombatLifecycleMixin:
                 return None
             choice = selected_command
 
+        elif action == "Repertoire":
+            selected_song = self._select_repertoire_song(player_char, enemy)
+            if not selected_song:
+                return None
+            choice = selected_song
+
         elif action == "Skills":
             allowed_skill_names = None
             if support_mode and self.engine is not None:

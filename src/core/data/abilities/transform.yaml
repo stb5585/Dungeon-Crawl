@@ -2,8 +2,8 @@ name: Transform
 type: Skill
 subtype: Class
 description: >-
-  Transforms the druid into a Panther, assuming the spells and abilities
-  inherent to the creature.
+  Enter the persistent Panther form. Dismiss it explicitly before choosing a
+  different unlocked form.
 cost: 0
 self_target: true
 effects:

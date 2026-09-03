@@ -96,7 +96,7 @@ def _active_summon_bond_hint(character: Any, summon_name: str, bond: int) -> str
     return "Building"
 
 
-def status_summary_rows(character: Any) -> list[tuple[str, str]]:
+def status_summary_rows(character: Any, target: Any | None = None) -> list[tuple[str, str]]:
     cls = class_name(character)
     state = combat_state(character)
     rows: list[tuple[str, str]] = []
@@ -205,7 +205,12 @@ def status_summary_rows(character: Any) -> list[tuple[str, str]]:
         rows.append(("Revelation", _meter_hint(current, cap_for(character, 'revelation'), ready="Target read")))
     if cls in {"Assassin", "Ninja"}:
         marks = state.get("death_marks", {})
-        current = max((int(value or 0) for value in marks.values()), default=0) if isinstance(marks, dict) else 0
+        if target is not None and isinstance(marks, dict):
+            from .meters import _target_stacks
+
+            current = _target_stacks(marks, target)
+        else:
+            current = max((int(value or 0) for value in marks.values()), default=0) if isinstance(marks, dict) else 0
         rows.append(("Death Mark", _meter_hint(current, cap_for(character, 'death_marks'), ready="Finisher")))
     if cls in {"Spell Stealer", "Arcane Trickster"}:
         stolen = int(state.get('stolen_charge', 0) or 0)
@@ -219,12 +224,32 @@ def status_summary_rows(character: Any) -> list[tuple[str, str]]:
         else:
             hint = "Ward ready"
         rows.append(("Devotion", _meter_hint(devotion, cap_for(character, 'devotion'), ready=hint)))
+        if cls == "Templar" and _ring_awakened_equipped(character, "Templar"):
+            try:
+                from .. import class_rings
+
+                blessing = class_rings.current_ordered_blessing(character)
+                if blessing:
+                    rows.append(("Blessing", blessing))
+            except Exception:
+                pass
+        if cls == "Templar" and (
+            state.get("relic_aegis_counter")
+            or state.get("ordered_blessing_counter")
+        ):
+            rows.append(("Holy Counter", "Armed"))
         if cls == "Hierophant" and state.get("consecrated_conduit"):
             rows.append(("Conduit", "Pending payoff"))
     if cls in {"Priest", "Archbishop"}:
         prayer = int(state.get('prayer', 0) or 0)
         hint = "Benediction ready" if cls == "Archbishop" and prayer >= 3 else "Supplication ready"
         rows.append(("Prayer", _meter_hint(prayer, cap_for(character, 'prayer'), ready=hint)))
+        benediction = state.get("great_benediction")
+        if isinstance(benediction, dict) and int(benediction.get("turns", 0) or 0) > 0:
+            rows.append(("Benediction", f"{int(benediction['turns'])} turns"))
+        power_up = getattr(character, "class_effects", {}).get("Power Up")
+        if cls == "Archbishop" and power_up is not None and power_up.active:
+            rows.append(("Great Gospel", f"{int(power_up.duration or 0)} rounds"))
     if cls in {"Monk", "Master Monk"}:
         ki = int(state.get('ki', 0) or 0)
         rows.append(("Ki", _meter_hint(ki, cap_for(character, 'ki'), ready="Dim Mak")))
@@ -246,10 +271,21 @@ def status_summary_rows(character: Any) -> list[tuple[str, str]]:
             pass
         rows.append(("Dragon Essence", "Yes" if control["dragon_essence"] else "No"))
     if cls == "Archdruid":
-        aspects = state.get("aspect_harmony", set())
-        if not isinstance(aspects, set):
-            aspects = set(aspects)
-        harmony_value = ",".join(sorted(aspects)) or "None"
+        raw_aspects = state.get("aspect_harmony", {})
+        if isinstance(raw_aspects, set):
+            aspects = {name: 1 for name in raw_aspects}
+        elif isinstance(raw_aspects, dict):
+            aspects = {
+                str(name): int(count or 0)
+                for name, count in raw_aspects.items()
+                if int(count or 0) > 0
+            }
+        else:
+            aspects = {}
+        harmony_value = ",".join(
+            f"{name}×{count}" if count > 1 else name
+            for name, count in sorted(aspects.items())
+        ) or "None"
         if len(aspects) >= 2:
             harmony_value += " Surge ready"
         rows.append(("Harmony", harmony_value))

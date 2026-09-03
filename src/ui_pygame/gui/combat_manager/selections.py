@@ -9,6 +9,7 @@ import pygame
 from src.core.classes import (
     ability_mechanics,
     astromancer,
+    bard,
     demonologist,
     grandmaster,
     paladin,
@@ -650,6 +651,67 @@ class CombatSelectionMixin:
                     )
                     if confirmed:
                         return commands[selected]
+
+    def _select_repertoire_song(self, player_char, enemy):
+        """Show mastered Troubadour songs and return the selected title."""
+        songs = bard.mastered_repertoire_songs(player_char)
+        if not songs:
+            self.combat_view.add_combat_message("No mastered repertoire available!")
+            self._pause_with_events(500)
+            return None
+
+        descriptions = [
+            (
+                f"{bard.REPERTOIRE_MP_COSTS[song]} MP - "
+                f"{bard.SONGS[song]['description']}"
+            )
+            for song in songs
+        ]
+        selected = 0
+        scroll_offset = 0
+        input_armed = self._clear_pending_input()
+        frame_player = self._selection_frame_player(player_char)
+        while True:
+            self._render_combat_frame(frame_player, enemy, [], -1)
+            self._render_described_selection_menu(
+                "Mastered Repertoire",
+                songs,
+                selected,
+                scroll_offset,
+                descriptions,
+            )
+            pygame.display.flip()
+            input_armed = release_guard_allows_input(True, input_armed)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit(0)
+                input_armed = self._arm_guarded_input(event, input_armed)
+                if event.type == pygame.KEYDOWN and not input_armed:
+                    continue
+                if event.type == pygame.KEYDOWN:
+                    if event.key in (pygame.K_ESCAPE, pygame.K_BACKSPACE):
+                        return None
+                    if event.key in (pygame.K_UP, pygame.K_w):
+                        selected = (selected - 1) % len(songs)
+                    elif event.key in (pygame.K_DOWN, pygame.K_s):
+                        selected = (selected + 1) % len(songs)
+                    elif event.key in (pygame.K_RETURN, pygame.K_SPACE):
+                        return songs[selected]
+                    scroll_offset = self._scroll_offset_for_selection(
+                        selected,
+                        scroll_offset,
+                    )
+                elif event.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN):
+                    selected, scroll_offset, confirmed = self._selection_menu_mouse_update(
+                        event,
+                        songs,
+                        selected,
+                        scroll_offset,
+                        input_armed,
+                    )
+                    if confirmed:
+                        return songs[selected]
 
     def _select_resolve_ability(self, player_char, enemy, *, bursts=False):
         """Show a Resolve spend or full-bar burst selection menu."""

@@ -1,5 +1,6 @@
 name: Tornado
 type: Spell
+rank: 2
 subtype: Wind
 description: >-
   You bring down a cyclone that pelts the enemy with debris and causes

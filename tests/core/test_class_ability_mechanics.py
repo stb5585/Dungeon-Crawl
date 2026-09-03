@@ -754,6 +754,29 @@ def test_sheet_music_composes_and_performs_one_use_song():
     assert player.bard_song["active"] == "Battle Hymn"
 
 
+def test_mastered_repertoire_is_available_through_the_combat_action():
+    from src.core.classes import bard
+
+    player = TestGameState.create_player(class_name="Troubadour", level=30)
+    player.equipment["OffHand"] = items.Lute()
+    promotion_kits.ensure_state(player)["bard_repertoire"]["Battle Hymn"][
+        "known"
+    ] = True
+    enemy = enemies.Goblin()
+    tile = _Tile()
+    tile.enemy = enemy
+    engine = BattleEngine(player, enemy, tile)
+    engine.attacker = player
+    engine.defender = enemy
+
+    assert "Repertoire" in engine._available_actions()
+    result = engine.execute_action("Repertoire", "Battle Hymn")
+
+    assert "spends 14 MP from mastered repertoire" in result.message
+    assert player.mana.current == player.mana.max - 14
+    assert bard.ensure_song_state(player)["active"] == "Battle Hymn"
+
+
 def test_composable_song_effects_apply_in_combat_and_exploration(monkeypatch):
     from src.core.classes import bard
 

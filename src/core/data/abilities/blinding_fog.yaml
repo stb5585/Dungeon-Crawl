@@ -1,5 +1,6 @@
 name: Blinding Fog
 type: Status
+rank: 1
 subtype: Status
 description: "The enemy is surrounding in a thick fog, lowering the chance to hit on a melee attack."
 cost: 7

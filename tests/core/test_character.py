@@ -866,55 +866,21 @@ class TestPlayerUtilityBehaviors:
         assert "Stolen!" in result
 
     def test_transform_forward_and_back_restore_state(self, monkeypatch):
-        from src.core.character import Combat, Resource, Stats
-
-        player = TestGameState.create_player(class_name="Warrior", race_name="Human")
-        player.transform_type = SimpleNamespace(
-            name="Werewolf",
-            health=Resource(max=20, current=20),
-            mana=Resource(max=5, current=5),
-            stats=Stats(strength=2, intel=1, wisdom=0, con=3, charisma=0, dex=4),
-            equipment={
-                "Weapon": items.Claw(),
-                "Armor": items.NoArmor(),
-                "OffHand": items.NoOffHand(),
-            },
-            spellbook={"Spells": {}, "Skills": {}},
-            resistance={"Fire": 0.1},
-        )
+        player = TestGameState.create_player(class_name="Lycan", race_name="Human")
+        player.progression.purchased_node_ids.add("lycan.ability.transform3")
         original_cls = player.cls
         original_health_max = player.health.max
         original_mana_max = player.mana.max
         original_strength = player.stats.strength
-        monkeypatch.setattr(player, "save", lambda tmp=False: None)
-
         forward = player.transform()
 
         assert "transforms into a Werewolf" in forward
-        assert player.cls == player.transform_type
-        assert player.health.max == original_health_max + 20
-        assert player.mana.max == original_mana_max + 5
-        assert player.stats.strength == original_strength + 2
+        assert player.cls.name == "Werewolf"
+        assert player.transform_type == original_cls
+        assert player.health.max > original_health_max
+        assert player.mana.max >= original_mana_max
+        assert player.stats.strength > original_strength
         assert player._transformed is True
-
-        restored = SimpleNamespace(
-            cls=original_cls,
-            health=Resource(max=original_health_max, current=original_health_max),
-            mana=Resource(max=original_mana_max, current=original_mana_max),
-            stats=Stats(
-                strength=original_strength,
-                intel=player.stats.intel - 1,
-                wisdom=player.stats.wisdom,
-                con=player.stats.con - 3,
-                charisma=player.stats.charisma,
-                dex=player.stats.dex - 4,
-            ),
-            equipment=TestGameState.create_player().equipment,
-            spellbook={"Spells": {}, "Skills": {}},
-            resistance=player.resistance,
-            transform_type=player.transform_type,
-        )
-        monkeypatch.setattr("src.core.player.combat.load_char", lambda char=None: restored)
 
         backward = player.transform(back=True)
 
@@ -924,9 +890,8 @@ class TestPlayerUtilityBehaviors:
         assert player.mana.max == original_mana_max
         assert player._transformed is False
 
-    def test_transform_back_returns_empty_when_no_saved_form(self, monkeypatch):
+    def test_transform_back_returns_empty_when_no_saved_form(self):
         player = TestGameState.create_player(class_name="Warrior", race_name="Human")
-        monkeypatch.setattr("src.core.player.combat.load_char", lambda char=None: None)
 
         assert player.transform(back=True) == ""
 
@@ -954,8 +919,8 @@ class TestPlayerUtilityBehaviors:
 
         msg = player.class_upgrades(game=None, enemy=SimpleNamespace(name="Red Dragon"))
 
-        assert "Red Dragon's essence" in msg
-        assert player.lycan_state["dragon_essence"] is True
+        assert "Dragon Essence" in msg
+        assert player.promotion_kit_state["lycan_control"]["dragon_essence"] is True
         assert "Transform" not in player.spellbook["Skills"]
 
 class TestSaveSystemQuestCompatibility:

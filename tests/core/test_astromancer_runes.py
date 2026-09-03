@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+import pytest
+
 from src.core import abilities, items
 from src.core.classes import astromancer
+from src.core.classes import promotion_kits
 from src.core.combat.battle_engine import BattleEngine
+from src.core.combat.combat_result import CombatResult
 from src.core.save_system import PlayerDataSerializer
 from tests.test_framework import TestGameState
 
@@ -125,3 +129,62 @@ def test_class_ring_upgrades_active_sign_runic_boost_floor_only_when_equipped():
 
     player.equipment["Ring"] = items.NoRing()
     assert astromancer.runic_boost_floor(player, "Ember") == 0.75
+
+
+def test_diviner_guaranteed_learning_uses_explicit_rank_metadata_and_fresh_instance():
+    player = TestGameState.create_player(class_name="Diviner", race_name="Human")
+    player.spellbook["Skills"]["Learn Spell"] = abilities.LearnSpell()
+    witnessed = abilities.Aqualung()
+    result = CombatResult(
+        action="Aqualung",
+        actor=object(),
+        target=object(),
+        hit=True,
+        message="The spell resolves.",
+    )
+
+    message = astromancer.learn_witnessed_spell(player, witnessed, result)
+
+    assert "learns Aqualung" in message
+    assert player.spellbook["Spells"]["Aqualung"] is not witnessed
+    assert astromancer.learn_witnessed_spell(player, witnessed, result) == ""
+    assert astromancer.learn_witnessed_spell(player, abilities.Tornado(), result) == ""
+
+
+def test_astromancer_learning_rejects_miss_rank_three_and_unranked_spell():
+    player = TestGameState.create_player(class_name="Astromancer", race_name="Human")
+    player.spellbook["Skills"]["Learn Spell"] = abilities.LearnSpell2()
+    miss = CombatResult(action="Spell", actor=object(), target=object(), hit=False)
+    success = CombatResult(action="Spell", actor=object(), target=object(), hit=True)
+
+    assert astromancer.learn_witnessed_spell(player, abilities.Tornado(), miss) == ""
+    assert astromancer.learn_witnessed_spell(player, abilities.PhotonSphere(), success) == ""
+    assert astromancer.learn_witnessed_spell(player, abilities.Firebolt(), success) == ""
+    assert "learns Tornado" in astromancer.learn_witnessed_spell(
+        player,
+        abilities.Tornado(),
+        success,
+    )
+
+
+def test_thread_sources_dedupe_and_threaded_cast_spends_all_for_exact_bonuses():
+    player = TestGameState.create_player(class_name="Astromancer", race_name="Human")
+    promotion_kits.begin_action(player, action="Use Skill", choice="Foretell")
+    astromancer.record_thread_action(player, "Foretell", successful=True)
+    astromancer.record_thread_action(player, "Foretell", successful=True)
+    promotion_kits.begin_action(player, action="Use Skill", choice="Twist Fate")
+    astromancer.record_thread_action(player, "Twist Fate", successful=True)
+    promotion_kits.begin_action(player, action="Use Skill", choice="Wormhole")
+    astromancer.record_thread_action(player, "Wormhole", successful=True)
+
+    assert promotion_kits.combat_state(player)["foresight_threads"] == 3
+    assert "prepares Threaded Cast" in promotion_kits.threaded_cast(player)
+    assert "already prepared" in promotion_kits.threaded_cast(player)
+    spent, _message = astromancer.begin_threaded_spell(player, abilities.Firebolt())
+
+    assert spent == 3
+    assert astromancer.threaded_bonus(player, "accuracy") == pytest.approx(0.15)
+    assert astromancer.threaded_bonus(player, "status") == pytest.approx(0.15)
+    assert astromancer.threaded_bonus(player, "output") == pytest.approx(0.18)
+    assert promotion_kits.combat_state(player)["foresight_threads"] == 0
+    assert promotion_kits.combat_state(player)["threaded_cast_pending"] is False

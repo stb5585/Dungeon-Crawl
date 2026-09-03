@@ -1,5 +1,6 @@
 name: Tsunami
 type: Spell
+rank: 2
 subtype: Water
 description: A massive tidal wave cascades over your foes.
 cost: 26

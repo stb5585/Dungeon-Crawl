@@ -21,9 +21,14 @@ def _demonologist():
     return player
 
 
-def test_classes_package_preserves_public_imports():
-    assert classes.classes_dict["Mage"]["pro"]["Warlock"]["pro"]["Demonologist"]["class"] is classes.Demonologist
-    assert classes.apply_promotion_ability_rules(SimpleNamespace(spellbook={"Spells": {}, "Skills": {}}), "Unknown") == ""
+def test_classes_package_registers_demonologist_without_pruning_api():
+    demonologist_class = classes.classes_dict["Mage"]["pro"]["Warlock"]["pro"][
+        "Demonologist"
+    ]["class"]
+
+    assert demonologist_class is classes.Demonologist
+    assert not hasattr(classes, "PROMOTION_ABILITY_RULES")
+    assert not hasattr(classes, "apply_promotion_ability_rules")
 
 
 def test_promotion_state_unlocks_crypt_and_contracts_from_kill_history():

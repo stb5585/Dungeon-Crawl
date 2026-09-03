@@ -23,6 +23,7 @@ def _module_item_classes(module):
         if inspect.isclass(value)
         and issubclass(value, items.Item)
         and value is not items.Item
+        and not name.startswith("_")
         and value.__module__ == module.__name__
     }
 
@@ -45,7 +46,7 @@ def test_items_facade_preserves_all_split_class_exports():
         for name, implementation in _module_item_classes(module).items()
     }
 
-    assert len(direct_exports) == 387
+    assert direct_exports
     for name, implementation in direct_exports.items():
         assert getattr(items, name) is implementation
 

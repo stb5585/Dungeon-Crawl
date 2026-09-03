@@ -758,7 +758,7 @@ class DungeonHUD:
                 rich_rows.append((name, f"{getattr(effect, 'duration', 0)} turns", (200, 190, 255)))
 
         rich_labels = {label for label, _value, _color in rich_rows}
-        for label, value in promotion_kits.status_summary_rows(player_char):
+        for label, value in promotion_kits.status_summary_rows(player_char, target=enemy):
             if label in {"Xenid Bond", "Xenid Conduit"}:
                 continue
             if label in rich_labels:

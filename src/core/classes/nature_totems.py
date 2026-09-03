@@ -35,6 +35,7 @@ SPELL_TO_ASPECT = {
     "Gust": "Wind",
     "Hurricane": "Wind",
     "Tornado": "Wind",
+    "Soul Drain": "Soul",
 }
 BASE_PULSE_CHANCE = 0.35
 STAFF_PULSE_BONUS = 0.15
@@ -74,7 +75,13 @@ def spell_output_multiplier(character: Any, spell_or_name: Any) -> float:
     multiplier = 1.0
     if hasattr(character, "_totem_pulse_potency"):
         try:
-            return max(0.0, float(getattr(character, "_totem_pulse_potency", 1.0)))
+            multiplier = max(0.0, float(getattr(character, "_totem_pulse_potency", 1.0)))
+            multiplier *= max(0.0, float(getattr(character, "_totem_surge_output", 1.0)))
+            if active_totem_aspect(character) == "Soul":
+                from . import class_rings
+
+                multiplier *= 1.0 + class_rings.soul_aspect_bonus(character)
+            return multiplier
         except (TypeError, ValueError):
             return multiplier
 
@@ -90,7 +97,6 @@ def spell_output_multiplier(character: Any, spell_or_name: Any) -> float:
             from . import promotion_kits
 
             multiplier *= 1.0 + (promotion_kits.totem_resonance(character) * 0.03)
-            promotion_kits._message(character, promotion_kits.gain_totem_resonance(character, "matching cast"))
         except Exception:
             pass
     return multiplier
@@ -153,11 +159,23 @@ def resolve_totem_pulse(character: Any, target: Any, rng: Any = random) -> str:
     sentinel, prior = _set_temp_attr(character, "_totem_pulse_potency", TOTEM_PULSE_POTENCY)
     try:
         message = f"{character.name}'s {aspect} Totem pulses with {spell_name}.\n"
-        message += str(spell.cast(character, target=target, special=True))
+        resolved = spell.cast(character, target=target, special=True)
+        message += str(resolved)
+        result = resolved if hasattr(resolved, "damage") else getattr(spell, "result", None)
+        successful = bool(
+            max(0, int(getattr(result, "damage", 0) or 0))
+            or max(0, int(getattr(result, "healing", 0) or 0))
+            or getattr(result, "hit", False)
+            or any(
+                bool(values)
+                for values in (getattr(result, "effects_applied", {}) or {}).values()
+            )
+        )
         try:
             from . import promotion_kits
 
-            message += promotion_kits.gain_totem_resonance(character, "successful pulse")
+            if successful:
+                message += promotion_kits.gain_totem_resonance(character, "successful pulse")
         except Exception:
             pass
     finally:

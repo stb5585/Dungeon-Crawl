@@ -9,13 +9,13 @@ class Monk(Job):
     """
     Promotion: Healer -> Monk -> Master Monk
     Pros: Adds wisdom to damage rolls; gains special skills; increased strength and dex gain
-    Cons: Can only wear light armor; loses access to spells; lower intel and wisdom gain
+    Cons: Can only wear light armor; lower intelligence and wisdom gain
     """
 
     def __init__(self):
         super().__init__(
             name="Monk",
-            description="Monks abandon the cloth to focus the mind into the body, harnessing "
+            description="Monks focus the mind into the body, harnessing "
             "the inner power of the chi. Monks specialize in hand-to-hand combat,"
             " adding both strength and wisdom to their melee damage.",
             str_plus=2,

@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 
 from .. import items, main_story, quest_progress, thieves_guild, town as town_core
 from ..character import Combat, Level, Resource, Stats
-from ..classes import promotion_kits
+from ..classes import bard, promotion_kits, transformation
 from .item_serialization import AbilitySerializer, ItemSerializer
 from .models import CombatData, LevelData, ResourceData, StatsData
 from .quests import QuestDataSerializer
@@ -62,9 +62,65 @@ class PlayerDataSerializer:
             return 0
 
     @staticmethod
+    def _serialize_transformation_state(player) -> dict[str, Any] | None:
+        state = getattr(player, "transformation_state", None)
+        if not transformation.is_transformed(player) or not isinstance(state, dict):
+            return None
+        overlay = state.get("overlay")
+        if not isinstance(overlay, dict):
+            return None
+        return {
+            "active_form": state.get("active_form"),
+            "overlay": {
+                "health_bonus": int(overlay.get("health_bonus", 0) or 0),
+                "mana_bonus": int(overlay.get("mana_bonus", 0) or 0),
+                "stats": dict(overlay.get("stats", {})),
+                "equipment": {
+                    slot: ItemSerializer.serialize(item)
+                    for slot, item in overlay.get("equipment", {}).items()
+                },
+                "spellbook": {
+                    book: {
+                        name: AbilitySerializer.serialize(ability)
+                        for name, ability in entries.items()
+                    }
+                    for book, entries in overlay.get("spellbook", {}).items()
+                },
+                "resistance": dict(overlay.get("resistance", {})),
+            },
+        }
+
+    @staticmethod
+    def _deserialize_transformation_state(data: Any) -> tuple[str, dict[str, Any]] | None:
+        if not isinstance(data, dict) or not data.get("active_form"):
+            return None
+        overlay = data.get("overlay")
+        if not isinstance(overlay, dict):
+            return None
+        return str(data["active_form"]), {
+            "health_bonus": int(overlay.get("health_bonus", 0) or 0),
+            "mana_bonus": int(overlay.get("mana_bonus", 0) or 0),
+            "stats": dict(overlay.get("stats", {})),
+            "equipment": {
+                slot: ItemSerializer.deserialize(item)
+                for slot, item in overlay.get("equipment", {}).items()
+            },
+            "spellbook": {
+                book: {
+                    name: AbilitySerializer.deserialize(ability)
+                    for name, ability in entries.items()
+                }
+                for book, entries in overlay.get("spellbook", {}).items()
+            },
+            "resistance": dict(overlay.get("resistance", {})),
+        }
+
+    @staticmethod
     def serialize(player) -> dict[str, Any]:
         """Convert player object to data dictionary."""
         from ..player import normalize_gameplay_stats
+
+        canonical = transformation.canonical_view(player)
 
         # Basic attributes
         data = {
@@ -72,11 +128,12 @@ class PlayerDataSerializer:
             'name': player.name,
             'location': (player.location_x, player.location_y, player.location_z),
             'facing': player.facing,
-            'health': asdict(ResourceData(player.health.max, player.health.current)),
-            'mana': asdict(ResourceData(player.mana.max, player.mana.current)),
+            'health': asdict(ResourceData(canonical['health'].max, canonical['health'].current)),
+            'mana': asdict(ResourceData(canonical['mana'].max, canonical['mana'].current)),
             'stats': asdict(StatsData(
-                player.stats.strength, player.stats.intel, player.stats.wisdom,
-                player.stats.con, player.stats.charisma, player.stats.dex
+                canonical['stats'].strength, canonical['stats'].intel,
+                canonical['stats'].wisdom, canonical['stats'].con,
+                canonical['stats'].charisma, canonical['stats'].dex
             )),
             'combat': asdict(CombatData(
                 player.combat.attack, player.combat.defense,
@@ -88,12 +145,12 @@ class PlayerDataSerializer:
             )),
             'progression': player.progression.to_dict(),
             'gold': player.gold,
-            'resistance': dict(player.resistance),
+            'resistance': dict(canonical['resistance']),
 
             # Equipment
             'equipment': {
                 slot: ItemSerializer.serialize(item)
-                for slot, item in player.equipment.items()
+                for slot, item in canonical['equipment'].items()
             },
 
             # Inventory
@@ -114,11 +171,11 @@ class PlayerDataSerializer:
             'spellbook': {
                 'Spells': {
                     name: AbilitySerializer.serialize(spell)
-                    for name, spell in player.spellbook['Spells'].items()
+                    for name, spell in canonical['spellbook']['Spells'].items()
                 },
                 'Skills': {
                     name: AbilitySerializer.serialize(skill)
-                    for name, skill in player.spellbook['Skills'].items()
+                    for name, skill in canonical['spellbook']['Skills'].items()
                 },
             },
             'spellbook_state': {
@@ -126,7 +183,7 @@ class PlayerDataSerializer:
             },
 
             # Character attributes
-            'class_name': player.cls.name if player.cls else None,
+            'class_name': canonical['cls'].name if canonical['cls'] else None,
             'race_name': player.race.name if player.race else None,
             'sex': getattr(player, 'sex', 'Male'),
             'portrait_variant': PlayerDataSerializer._portrait_variant(
@@ -175,6 +232,11 @@ class PlayerDataSerializer:
             'paladin_vow': getattr(player, 'paladin_vow', None),
             'dragoon_dragon_quest': getattr(player, 'dragoon_dragon_quest', None),
             'bard_song': getattr(player, 'bard_song', None),
+            'bard_exploration_song': getattr(
+                player,
+                'bard_exploration_song',
+                None,
+            ),
             'summons': SummonSerializer.serialize_summons(
                 getattr(player, 'summons', {})
             ),
@@ -193,6 +255,7 @@ class PlayerDataSerializer:
             ),
             'temporary_exploration_effects': getattr(player, 'temporary_exploration_effects', None),
             'lycan_state': getattr(player, 'lycan_state', None),
+            'transformation_state': PlayerDataSerializer._serialize_transformation_state(player),
             'wizard_affinity': getattr(player, 'wizard_affinity', None),
             'wizard_affinity_version': getattr(player, 'wizard_affinity_version', 1),
             'main_story': main_story.normalize_state(getattr(player, 'main_story', None)),
@@ -216,7 +279,7 @@ class PlayerDataSerializer:
         }
 
         # Persist stateful skill data (e.g., Jump modifications, Totem aspects)
-        for name, skill in player.spellbook.get('Skills', {}).items():
+        for name, skill in canonical['spellbook'].get('Skills', {}).items():
             if not skill:
                 continue
             if PlayerDataSerializer._is_jump_skill(skill):
@@ -475,6 +538,12 @@ class PlayerDataSerializer:
         player.bard_song = data.get('bard_song', getattr(player, 'bard_song', None))
         if hasattr(player, "ensure_bard_song"):
             player.ensure_bard_song()
+        player.bard_exploration_song = bard.normalize_exploration_song_state(
+            data.get(
+                'bard_exploration_song',
+                getattr(player, 'bard_exploration_song', None),
+            )
+        )
         player.summons = SummonSerializer.deserialize_summons(data.get('summons', {}))
         player.tamed_companion = data.get('tamed_companion', getattr(player, 'tamed_companion', None))
         if hasattr(player, "ensure_tamed_companion"):
@@ -488,6 +557,12 @@ class PlayerDataSerializer:
         player.lycan_state = data.get('lycan_state', getattr(player, 'lycan_state', None))
         if hasattr(player, "ensure_lycan_state"):
             player.ensure_lycan_state()
+        legacy_dragon_essence = bool(
+            isinstance(player.lycan_state, dict)
+            and player.lycan_state.get("dragon_essence", False)
+        )
+        if legacy_dragon_essence:
+            promotion_kits.lycan_control_state(player)["dragon_essence"] = True
         player.wizard_affinity = data.get('wizard_affinity', getattr(player, 'wizard_affinity', None))
         player.wizard_affinity_version = data.get(
             'wizard_affinity_version',
@@ -523,6 +598,13 @@ class PlayerDataSerializer:
             ),
         )
         player.intro_shown = data.get('intro_shown', False)
+
+        saved_form = PlayerDataSerializer._deserialize_transformation_state(
+            data.get("transformation_state")
+        )
+        if saved_form is not None:
+            form_name, overlay = saved_form
+            transformation.apply_form(player, form_name, overlay=overlay, force=True)
 
         # Load world tiles and restore saved world state (unless skipped for transform)
         if not skip_tiles:

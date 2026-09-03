@@ -82,51 +82,171 @@ def xenid_caster_multiplier(character: Any, effect: str) -> float:
     return 1.0 + xenid_caster_effects(character).get(effect, 0.0)
 
 
-def add_aspect(character: Any, aspect: str) -> str:
+ASPECTS = ("Venom", "Stone", "Growth", "Storm")
+
+
+def _aspect_counts(character: Any) -> dict[str, int]:
+    state = combat_state(character)
+    raw = state.setdefault("aspect_harmony", {})
+    if isinstance(raw, set):
+        raw = {str(name): 1 for name in raw if name in ASPECTS}
+    elif not isinstance(raw, dict):
+        raw = {}
+    counts = {
+        name: max(0, int(raw.get(name, 0) or 0))
+        for name in ASPECTS
+        if int(raw.get(name, 0) or 0) > 0
+    }
+    state["aspect_harmony"] = counts
+    return counts
+
+
+def add_aspect(character: Any, aspect: str, *, incoming: bool = False) -> str:
     if class_name(character) != "Archdruid":
         return ""
-    cap = cap_for(character, "aspect_harmony")
-    aspects = combat_state(character).setdefault("aspect_harmony", set())
-    if not isinstance(aspects, set):
-        aspects = set(aspects)
-        combat_state(character)["aspect_harmony"] = aspects
-    if aspect in aspects:
+    if aspect not in ASPECTS:
         return ""
-    if len(aspects) >= cap:
+    state = combat_state(character)
+    claim_key = "incoming_claims" if incoming else "action_claims"
+    claims = state.setdefault(claim_key, set())
+    if not isinstance(claims, set):
+        claims = set(claims)
+        state[claim_key] = claims
+    claim = f"aspect:{aspect}"
+    if claim in claims:
+        return ""
+    claims.add(claim)
+    cap = cap_for(character, "aspect_harmony")
+    aspects = _aspect_counts(character)
+    total = sum(aspects.values())
+    if total >= cap:
         return "Aspect Harmony is capped.\n"
-    aspects.add(aspect)
-    return f"{character.name} represents {aspect} Aspect Harmony.\n"
+    gain = 1
+    current_round = int(state.get("action_round", 0) or 0)
+    effect = getattr(character, "class_effects", {}).get("Power Up")
+    ascendant = bool(
+        getattr(character, "power_up", False)
+        and "Primal Ascendance" in getattr(character, "spellbook", {}).get("Skills", {})
+        and effect is not None
+        and effect.active
+    )
+    if ascendant and state.get("aspect_gain_round") != current_round and total + gain < cap:
+        gain += 1
+        state["aspect_gain_round"] = current_round
+    aspects[aspect] = aspects.get(aspect, 0) + gain
+    order = state.setdefault("aspect_harmony_order", [])
+    if not isinstance(order, list):
+        order = list(order)
+        state["aspect_harmony_order"] = order
+    order.extend([aspect] * gain)
+    suffix = f" (+{gain})" if gain > 1 else ""
+    return f"{character.name} represents {aspect} Aspect Harmony{suffix}.\n"
+
+
+def _surge_typed_damage(character: Any, target: Any, raw: int, damage_type: str) -> tuple[int, str]:
+    if target is None or raw <= 0:
+        return 0, ""
+    hit, reduction, reduced = target.damage_reduction(raw, character, typ=damage_type)
+    dealt = max(0, min(int(reduced or 0), int(target.health.current))) if hit else 0
+    if dealt:
+        target.health.current -= dealt
+        character._emit_damage_event(
+            target,
+            dealt,
+            damage_type=damage_type,
+            source="promotion_kit_payoff",
+            ability_name="Fourfold Surge",
+        )
+    return dealt, reduction
 
 
 def fourfold_surge(character: Any, target: Any | None) -> str:
     if class_name(character) != "Archdruid":
         return "Fourfold Surge requires Archdruid training.\n"
-    aspects = combat_state(character).setdefault("aspect_harmony", set())
-    if not isinstance(aspects, set):
-        aspects = set(aspects)
-    if len(aspects) < 2:
+    state = combat_state(character)
+    aspects = _aspect_counts(character)
+    distinct = len(aspects)
+    total = sum(aspects.values())
+    if distinct < 2:
         return "Fourfold Surge requires at least two represented aspects.\n"
     if not _spend_mp(character, 14):
         return "Not enough MP for Fourfold Surge.\n"
-    spent = set(aspects)
-    combat_state(character)["aspect_harmony"] = set()
+    spent = dict(aspects)
+    state["aspect_harmony"] = {}
+    order = list(state.get("aspect_harmony_order", []))
+    state["aspect_harmony_order"] = []
     msg = f"{character.name} spends {', '.join(sorted(spent))} Aspect Harmony on Fourfold Surge.\n"
-    if target is not None and {"Venom", "Storm"} & spent:
-        damage = max(1, int(character.check_mod("magic", enemy=target) * (0.35 + 0.15 * len(spent))))
-        target.health.current = max(0, target.health.current - damage)
-        msg += f"Fourfold Surge deals {damage} nature damage.\n"
+    power = 1.15 if distinct == 4 else 1.0
+    effect = getattr(character, "class_effects", {}).get("Power Up")
+    if (
+        getattr(character, "power_up", False)
+        and "Primal Ascendance" in getattr(character, "spellbook", {}).get("Skills", {})
+        and effect is not None
+        and effect.active
+    ):
+        power *= 1.20
+    clean = False
+    offensive = [name for name in ("Venom", "Storm") if name in spent]
+    if target is not None and offensive:
+        budget = max(1, int(character.check_mod("magic", enemy=target) * (0.35 + 0.15 * total) * power))
+        portions = [budget // len(offensive)] * len(offensive)
+        portions[0] += budget - sum(portions)
+        for name, raw in zip(offensive, portions):
+            damage_type = "Poison" if name == "Venom" else "Electric"
+            immune = float(getattr(target, "resistance", {}).get(damage_type, 0.0) or 0.0) >= 1.0
+            if name == "Venom" and immune:
+                damage_type = "Nature"
+                raw = max(1, raw // 2)
+            dealt, reduction = _surge_typed_damage(character, target, raw, damage_type)
+            msg += reduction
+            msg += f"{name} deals {dealt} {damage_type} damage.\n"
+            clean = clean or dealt > 0
+            boss = bool(getattr(target, "boss", False) or getattr(target, "is_boss", False))
+            if name == "Venom" and dealt > 0 and not immune and not boss and not target.has_status_protection("Poison"):
+                poison = target.status_effects["Poison"]
+                poison.active = True
+                poison.duration = max(poison.duration, 2)
+                poison.extra = max(int(poison.extra or 0), max(1, dealt // 6))
+                msg += f"Venom poisons {target.name} for two turns.\n"
+            if name == "Storm" and dealt > 0 and not boss:
+                speed = target.stat_effects["Speed"]
+                speed.active = True
+                speed.duration = max(speed.duration, 2)
+                speed.extra = min(int(speed.extra or 0), -3 * spent["Storm"])
+                msg += f"Storm slows {target.name}.\n"
     if "Growth" in spent:
-        heal = min(character.health.max - character.health.current, 10 + 5 * len(spent))
+        growth_power = power
+        tree = getattr(character, "magic_effects", {}).get("Tree of Life")
+        if tree is not None and tree.active:
+            growth_power *= 1.25
+        heal = min(character.health.max - character.health.current, int((10 + 5 * total) * growth_power))
         character.health.current += heal
         msg += f"Growth restores {heal} HP.\n"
+        clean = clean or heal > 0
+        if distinct >= 3:
+            from .tracks import _cleanse_one_hostile_status
+
+            cleansed = _cleanse_one_hostile_status(character)
+            if cleansed:
+                clean = True
+                msg += f"Growth cleanses {cleansed}.\n"
     if "Stone" in spent:
         character.stat_effects["Defense"].active = True
         character.stat_effects["Defense"].duration = 2
-        character.stat_effects["Defense"].extra = max(int(character.stat_effects["Defense"].extra or 0), 5 * len(spent))
+        character.stat_effects["Defense"].extra = max(int(character.stat_effects["Defense"].extra or 0), int(5 * total * power))
+        ward = character.magic_effects["Nature Shield"]
+        ward.active = True
+        ward.duration = max(ward.duration, 2)
+        ward.extra = max(int(ward.extra or 0), int(6 * spent["Stone"] * power))
+        clean = True
         msg += "Stone hardens the caster's defense.\n"
-    if _ring_awakened_equipped(character, "Archdruid"):
-        preserved = sorted(spent)[0]
-        combat_state(character)["aspect_harmony"] = {preserved}
+    preservation_key = "Archdruid:aspect_harmony"
+    preserved_flags = state.setdefault("ring_preserved", set())
+    if clean and _ring_awakened_equipped(character, "Archdruid") and preservation_key not in preserved_flags:
+        preserved = next((name for name in reversed(order) if name in spent), sorted(spent)[0])
+        state["aspect_harmony"] = {preserved: 1}
+        state["aspect_harmony_order"] = [preserved]
+        preserved_flags.add(preservation_key)
         msg += f"Harmony Bonus preserves {preserved} Aspect Harmony.\n"
     return msg
 
@@ -172,11 +292,28 @@ def totem_surge(character: Any, target: Any | None) -> str:
     effect = character.magic_effects["Totem"]
     effect.extra["resonance"] = 0
     sentinel, prior = nature_totems._set_temp_attr(character, "_totem_pulse_potency", nature_totems.TOTEM_PULSE_POTENCY)
+    output_sentinel, output_prior = nature_totems._set_temp_attr(
+        character,
+        "_totem_surge_output",
+        1.10 if _ring_awakened_equipped(character, "Soulcatcher") else 1.0,
+    )
+    reliability_sentinel, reliability_prior = nature_totems._set_temp_attr(
+        character,
+        "_totem_surge_reliability",
+        0.10 if _ring_awakened_equipped(character, "Soulcatcher") else 0.0,
+    )
     try:
         msg = f"{character.name} spends {stacks} Totem Resonance to force {spell_name}.\n"
         msg += str(spell.cast(character, target=target, special=True))
     finally:
         nature_totems._restore_temp_attr(character, "_totem_pulse_potency", sentinel, prior)
+        nature_totems._restore_temp_attr(character, "_totem_surge_output", output_sentinel, output_prior)
+        nature_totems._restore_temp_attr(
+            character,
+            "_totem_surge_reliability",
+            reliability_sentinel,
+            reliability_prior,
+        )
     return msg
 
 
@@ -530,7 +667,8 @@ def complete_song(character: Any, song: str) -> str:
         effect.extra = max(int(effect.extra or 0), spent * 12)
         msg += "The Ramparts coda hardens into a small barrier.\n"
     elif song == "Chorus Time":
-        msg += "The Chorus Time coda lands one final reduced tempo check.\n"
+        state["chorus_time_coda"] = spent
+        msg += "The Chorus Time coda readies one final reduced tempo check.\n"
     else:
         msg += "The final refrain lingers as a conservative coda.\n"
     return _preserve_spent_meter(character, "crescendo", "Troubadour", "Encore", msg)
@@ -565,16 +703,13 @@ def lycan_control_state(character: Any) -> dict[str, Any]:
 
 
 def record_lycan_stress(character: Any, reason: str, *, survived: bool = True) -> str:
-    from ...progression import has_talent
-
     if class_name(character) != "Lycan":
         return ""
     control = lycan_control_state(character)
     control["stress_events"] += 1
     if survived:
         progress = control["rank_progress"]
-        amount = 2 if has_talent(character, "lycan.tethered-instinct") else 1
-        progress[reason] = int(progress.get(reason, 0) or 0) + amount
+        progress[reason] = int(progress.get(reason, 0) or 0) + 1
         _maybe_advance_lycan_rank(control)
     return f"Lycan control records {reason} stress at rank {control['rank']}.\n"
 
@@ -586,7 +721,7 @@ def _maybe_advance_lycan_rank(control: dict[str, Any]) -> None:
         "Feral": ("survive", "Muzzled", 3),
         "Muzzled": ("dismiss", "Restive", 3),
         "Restive": ("resist", "Tethered", 3),
-        "Tethered": ("full_moon", "Tame", 3),
+        "Tethered": ("safe_dismiss", "Tame", 3),
     }
     gate = gates.get(rank)
     if gate and int(progress.get(gate[0], 0) or 0) >= gate[2]:
@@ -601,13 +736,25 @@ def unlock_dragon_essence(character: Any) -> str:
 
 
 def winged_pounce(character: Any, target: Any | None) -> str:
+    from .. import lycan
+
     if class_name(character) != "Lycan":
         return "Winged Pounce requires Lycan training.\n"
+    if "Winged Pounce" not in character.spellbook.get("Skills", {}):
+        return "Winged Pounce has not been learned.\n"
+    if not lycan.is_transformed(character) or getattr(character.cls, "name", "") != "Werewolf":
+        return "Winged Pounce requires the Werewolf form.\n"
     if not lycan_control_state(character).get("dragon_essence"):
         return "Winged Pounce requires Dragon Essence.\n"
     if target is None:
         return "There is no target for Winged Pounce.\n"
+    if int(character.mana.current) < 12:
+        return "Not enough mana for Winged Pounce.\n"
+    character.mana.current -= 12
     msg, _hit, _crit = character.weapon_damage(target, dmg_mod=1.35, use_offhand=False)
+    state = combat_state(character)
+    state["winged_pounce_previous_flying"] = bool(character.flying)
+    state["winged_pounce_flight"] = 1
     character.flying = True
     return f"{character.name} launches a Winged Pounce.\n{msg}"
 
@@ -620,5 +767,6 @@ PRESERVATION_METERS = {
     "Templar": ("devotion",),
     "Hierophant": ("devotion",),
     "Archbishop": ("prayer",),
+    "Archdruid": ("aspect_harmony",),
     "Troubadour": ("crescendo",),
 }

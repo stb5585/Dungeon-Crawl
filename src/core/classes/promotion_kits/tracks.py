@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import math
+import random
 from typing import Any
 
 from .meters import (
@@ -15,11 +17,99 @@ from .meters import (
 )
 from .state import (
     CASE_MILESTONES,
+    _has_skill,
     _ring_awakened_equipped,
     class_name,
     combat_state,
     ensure_state,
 )
+
+
+MARTIAL_KI_ACTIONS = frozenset({
+    "Double Strike",
+    "Leg Sweep",
+    "True Strike",
+    "Uppercut",
+    "Headbutt",
+    "Hyakuretsukyaku",
+    "Triple Strike",
+    "Spinning Back Elbow",
+    "Suplex",
+    "Hadouken",
+})
+KI_SPEND_ABILITIES = frozenset({
+    "Chi Heal",
+    "Leg Sweep",
+    "Hyakuretsukyaku",
+    "Suplex",
+    "Hadouken",
+})
+
+HOSTILE_STATUS_GROUPS = ("status_effects", "physical_effects")
+
+
+def _hostile_status_names(character: Any) -> list[str]:
+    ignored = {"Defend", "Peaceful", "Shapeshifted", "Steal Success"}
+    names: list[str] = []
+    for group_name in HOSTILE_STATUS_GROUPS:
+        for name, effect in getattr(character, group_name, {}).items():
+            if name not in ignored and getattr(effect, "active", False):
+                names.append(name)
+    return sorted(names)
+
+
+def _cleanse_one_hostile_status(character: Any) -> str | None:
+    names = _hostile_status_names(character)
+    if not names:
+        return None
+    name = names[0]
+    for group_name in HOSTILE_STATUS_GROUPS:
+        effect = getattr(character, group_name, {}).get(name)
+        if effect is not None:
+            effect.active = False
+            effect.duration = 0
+            effect.extra = 0
+            return name
+    return None
+
+
+def _power_up_active(character: Any, name: str) -> bool:
+    effect = getattr(character, "class_effects", {}).get("Power Up")
+    return bool(
+        getattr(character, "power_up", False)
+        and _has_skill(character, name)
+        and effect is not None
+        and getattr(effect, "active", False)
+    )
+
+
+def _apply_ordered_blessing(character: Any, spent: int) -> str:
+    if not _ring_awakened_equipped(character, "Templar"):
+        return ""
+    from .. import class_rings
+
+    blessing = class_rings.next_ordered_blessing(character)
+    if not blessing:
+        return ""
+    empowered = _power_up_active(character, "Holy Retribution")
+    scale = 1.25 if empowered else 1.0
+    duration = 3 if empowered else 2
+    if blessing == "Regen":
+        effect = character.magic_effects["Regen"]
+        effect.active = True
+        effect.duration = max(effect.duration, duration)
+        effect.extra = max(int(effect.extra or 0), int(4 * spent * scale))
+    elif blessing == "Defense":
+        effect = character.stat_effects["Defense"]
+        effect.active = True
+        effect.duration = max(effect.duration, duration)
+        effect.extra = max(int(effect.extra or 0), int(3 * spent * scale))
+    else:
+        combat_state(character)["ordered_blessing_counter"] = {
+            "damage": max(1, int(6 * spent * scale)),
+            "turns": duration,
+        }
+    return f"Ordered Blessings advances through {blessing}.\n"
 
 
 def conviction_action(character: Any, action_name: str, *, clean: bool = False) -> str:
@@ -123,6 +213,193 @@ def apply_death_mark(character: Any, target: Any, reason: str = "setup") -> str:
     return f"{target.name} gains a Death Mark from {reason} ({after}/{cap}).\n"
 
 
+DEATH_MARK_SETUP_ABILITIES = frozenset({
+    "Backstab",
+    "Sneak Attack",
+    "Momentum",
+    "Kidney Punch",
+    "Disembowel",
+    "Marked Shuriken",
+})
+DEATH_MARK_FINISHERS = frozenset({"Deathblow", "Thousand Cuts", "Death Sentence"})
+DEATH_MARK_ACTION_REGISTRY = {
+    **{name: "setup" for name in DEATH_MARK_SETUP_ABILITIES},
+    **{name: "finisher" for name in DEATH_MARK_FINISHERS},
+}
+
+
+def _claim_death_mark_action(character: Any, ability_name: str, role: str) -> bool:
+    """Claim one authored Death Mark resolution for the current action token."""
+    if DEATH_MARK_ACTION_REGISTRY.get(ability_name) != role:
+        return False
+    state = combat_state(character)
+    token = int(state.get("action_token", 0) or 0)
+    if token <= 0:
+        return True
+    key = (token, role, ability_name)
+    claimed = state.setdefault("death_mark_action_tokens", set())
+    if key in claimed:
+        return False
+    claimed.add(key)
+    return True
+
+
+def death_mark_stacks(character: Any, target: Any) -> int:
+    """Return Death Marks currently attached to one combat target."""
+    if target is None:
+        return 0
+    return _target_stacks(combat_state(character).get("death_marks"), target)
+
+
+def clear_death_marks(character: Any, target: Any) -> None:
+    """Remove Death Marks from one target without disturbing other enemies."""
+    if target is not None:
+        _set_target_stacks(combat_state(character).setdefault("death_marks", {}), target, 0)
+
+
+def resolve_death_mark_setup(
+    character: Any,
+    target: Any,
+    ability_name: str,
+    *,
+    hit: bool,
+    status_applied: bool = False,
+) -> str:
+    """Award at most two marks after a declared setup action completes."""
+    if (
+        ability_name not in DEATH_MARK_SETUP_ABILITIES
+        or not hit
+        or target is None
+        or not target.is_alive()
+        or class_name(character) not in {"Assassin", "Ninja"}
+        or not _claim_death_mark_action(character, ability_name, "setup")
+    ):
+        return ""
+    msg = apply_death_mark(character, target, ability_name)
+    if status_applied:
+        msg += apply_death_mark(character, target, f"{ability_name} status")
+    return msg
+
+
+def begin_death_mark_finisher(character: Any, target: Any, ability_name: str) -> tuple[int, str]:
+    """Spend every mark when a validated dedicated finisher is attempted."""
+    if ability_name not in DEATH_MARK_FINISHERS or target is None:
+        return 0, ""
+    if not _claim_death_mark_action(character, ability_name, "finisher"):
+        return 0, "Death Mark finisher already resolved for this action.\n"
+    stacks = death_mark_stacks(character, target)
+    if stacks <= 0:
+        return 0, "Death Mark setup is required before using this finisher.\n"
+    clear_death_marks(character, target)
+    return stacks, f"{character.name} spends {stacks} Death Mark(s) on {ability_name}.\n"
+
+
+def resolve_weapon_finisher(
+    character: Any,
+    target: Any,
+    ability_name: str,
+    marks: int,
+    base_damage: int,
+    *,
+    mana_cost: int,
+    hit: bool,
+) -> str:
+    """Apply the shared marked damage and Execution Rhythm refund."""
+    if not hit or marks <= 0 or target is None or base_damage <= 0:
+        return ""
+    bonus = max(1, int(base_damage * 0.12 * marks))
+    target.health.current = max(0, target.health.current - bonus)
+    msg = f"{ability_name} releases {marks} Death Mark(s) for {bonus} execution damage.\n"
+    if _has_skill(character, "Execution Rhythm") and mana_cost > 0:
+        refund = max(1, int(mana_cost * 0.10 * marks))
+        before = int(character.mana.current)
+        character.mana.current = min(int(character.mana.max), before + refund)
+        restored = int(character.mana.current) - before
+        if restored:
+            msg += f"Execution Rhythm restores {restored} MP.\n"
+    return msg
+
+
+def resolve_death_contest(
+    actor: Any,
+    target: Any,
+    *,
+    marks: int = 0,
+    actor_divisor: int = 4,
+    actor_roll_multiplier: float = 1.0,
+    rng: Any = random,
+) -> tuple[bool, bool]:
+    """Resolve the shared Charisma-versus-Constitution Death contest.
+
+    Returns a pair of ``(killed, immune)``. Bosses and targets at full Death
+    resistance are always immune; negative resistance strengthens the caster.
+    """
+    try:
+        from ...enemies import is_boss_enemy
+
+        boss = is_boss_enemy(target)
+    except Exception:
+        boss = bool(getattr(target, "boss", False) or getattr(target, "is_boss", False))
+    resistance = float(target.check_mod("resist", enemy=actor, typ="Death"))
+    if boss or resistance >= 1.0 or "Death" in getattr(target, "status_immunity", ()):
+        return False, True
+    actor_max = max(1, int(actor.stats.charisma) // max(1, int(actor_divisor)))
+    actor_roll = rng.randint(0, actor_max)
+    actor_roll = int(
+        actor_roll
+        * max(0.0, float(actor_roll_multiplier))
+        * (1.0 - resistance)
+        * (1.20 ** max(0, int(marks)))
+    )
+    target_roll = rng.randint(max(0, target.stats.con // 2), max(1, target.stats.con))
+    target_roll += target.check_mod("luck", enemy=actor, luck_factor=10)
+    from .. import mage_mechanics
+
+    target_roll = int(target_roll * mage_mechanics.save_roll_multiplier(target))
+    if actor_roll <= target_roll:
+        return False, False
+    target.health.current = 0
+    return True, False
+
+
+def begin_no_trace_opener(character: Any, target: Any) -> tuple[int, float, str]:
+    """Prepare the awakened Ninja ring's first standard Ninja Blade attack."""
+    weapon = getattr(character, "equipment", {}).get("Weapon")
+    state = combat_state(character)
+    if (
+        class_name(character) != "Ninja"
+        or getattr(weapon, "subtyp", None) != "Ninja Blade"
+        or not state.get("has_initiative", False)
+    ):
+        return 0, 1.0, ""
+    from .. import class_rings
+
+    multiplier = class_rings.first_strike_multiplier(character, has_initiative=True)
+    if multiplier <= 1.0:
+        return 0, 1.0, ""
+    msg = apply_death_mark(character, target, "No-Trace Opener")
+    marks = death_mark_stacks(character, target)
+    clear_death_marks(character, target)
+    msg += f"{character.name} spends {marks} Death Mark(s) on No-Trace Opener.\n"
+    return marks, multiplier, msg
+
+
+def finish_no_trace_opener(character: Any, target: Any, *, marks: int, hit: bool) -> str:
+    """Preserve one opener mark after a successful nonlethal payoff."""
+    if not hit or marks <= 0 or target is None or not target.is_alive():
+        return ""
+    lines: list[str] = []
+    _maybe_preserve(
+        character,
+        "death_marks",
+        "Ninja",
+        "No-Trace Opener",
+        lines,
+        target=target,
+    )
+    return "".join(lines)
+
+
 def add_revelation(character: Any, target: Any, amount: int = 1, reason: str = "insight") -> str:
     cap = cap_for(character, "revelation")
     if cap <= 0 or target is None:
@@ -217,9 +494,17 @@ def sanctuary_ward(character: Any) -> str:
     effect.duration = 2
     effect.extra = max(10, spent * 12)
     msg = f"{character.name} spends {spent} Devotion on Sanctuary Ward.\n"
-    if spent >= 3 and character.status_effects["Poison"].active:
-        character.status_effects["Poison"].active = False
-        msg += "Sanctuary Ward cleanses poison.\n"
+    if spent >= 3:
+        cleansed = _cleanse_one_hostile_status(character)
+        if cleansed:
+            msg += f"Sanctuary Ward cleanses {cleansed}.\n"
+    if spent >= 4:
+        regen = character.magic_effects["Regen"]
+        regen.active = True
+        regen.duration = max(regen.duration, 2)
+        regen.extra = max(int(regen.extra or 0), spent * 4)
+        msg += "Sanctuary Ward kindles restorative light.\n"
+    msg += _apply_ordered_blessing(character, spent)
     return _preserve_spent_meter(character, "devotion", "Templar", "Ordered Blessings", msg)
 
 
@@ -239,7 +524,46 @@ def relic_aegis(character: Any) -> str:
     effect.duration = 3
     effect.extra = max(20, spent * 18)
     msg = f"{character.name} spends {spent} Devotion on Relic Aegis.\n"
+    empowered = _power_up_active(character, "Holy Retribution")
+    combat_state(character)["relic_aegis_counter"] = {
+        "damage": max(1, int(4 * spent * (1.5 if empowered else 1.0))),
+        "turns": 4 if empowered else 3,
+    }
+    msg += "Relic Aegis readies a holy counter.\n"
+    msg += _apply_ordered_blessing(character, spent)
     return _preserve_spent_meter(character, "devotion", "Templar", "Ordered Blessings", msg)
+
+
+def resolve_devotion_counter(character: Any, attacker: Any, damage: int) -> str:
+    """Resolve one armed Templar counter after a positive incoming weapon hit."""
+    if damage <= 0 or attacker is None or class_name(character) != "Templar":
+        return ""
+    state = combat_state(character)
+    total = 0
+    labels: list[str] = []
+    for key, label in (
+        ("relic_aegis_counter", "Relic Aegis"),
+        ("ordered_blessing_counter", "Ordered Blessings"),
+    ):
+        counter = state.get(key)
+        if isinstance(counter, dict) and int(counter.get("turns", 0) or 0) > 0:
+            total += max(0, int(counter.get("damage", 0) or 0))
+            labels.append(label)
+            state[key] = None
+    if total <= 0:
+        return ""
+    _hit, reduction, dealt = attacker.damage_reduction(total, character, typ="Holy")
+    dealt = max(0, min(int(dealt or 0), attacker.health.current))
+    if dealt:
+        attacker.health.current -= dealt
+        character._emit_damage_event(
+            attacker,
+            dealt,
+            damage_type="Holy",
+            source="promotion_kit_payoff",
+            ability_name=" / ".join(labels),
+        )
+    return reduction + f"{' and '.join(labels)} return {dealt} Holy damage.\n"
 
 
 def consecrated_conduit(character: Any) -> str:
@@ -265,13 +589,27 @@ def supplication(character: Any, target: Any | None = None) -> str:
     if stacks <= 0:
         return "Supplication requires Prayer.\n"
     target = target or character
+    if not getattr(target, "is_alive", lambda: True)():
+        return "Supplication requires a living target.\n"
+    if not _spend_mp(character, 10):
+        return "Not enough MP for Supplication.\n"
     spent = spend_meter(character, "prayer")
-    heal = min(target.health.max - target.health.current, max(1, 12 * spent + character.stats.wisdom // 2))
+    gospel = _power_up_active(character, "Great Gospel")
+    scale = 1.20 if gospel else 1.0
+    heal = min(
+        target.health.max - target.health.current,
+        max(1, int((12 * spent + character.stats.wisdom // 2) * scale)),
+    )
     target.health.current += heal
     msg = f"{character.name} spends {spent} Prayer; Supplication restores {heal} HP.\n"
-    if target.status_effects["Poison"].active and spent >= 2:
-        target.status_effects["Poison"].active = False
-        msg += "Supplication cleanses poison.\n"
+    ward = target.magic_effects["Nature Shield"]
+    ward.active = True
+    ward.duration = max(ward.duration, 3 if gospel else 2)
+    ward.extra = max(int(ward.extra or 0), int(6 * spent * scale))
+    if random.random() < min(0.50, 0.10 * spent):
+        cleansed = _cleanse_one_hostile_status(target)
+        if cleansed:
+            msg += f"Supplication cleanses {cleansed}.\n"
     return _preserve_spent_meter(character, "prayer", "Archbishop", "Divine Intervention", msg)
 
 
@@ -284,12 +622,22 @@ def great_benediction(character: Any) -> str:
     if not _spend_mp(character, 18):
         return "Not enough MP for Great Benediction.\n"
     spent = spend_meter(character, "prayer")
+    gospel = _power_up_active(character, "Great Gospel")
+    scale = 1.20 if gospel else 1.0
+    duration = 5 if gospel else 4
     character.stat_effects["Magic Defense"].active = True
-    character.stat_effects["Magic Defense"].duration = 4
-    character.stat_effects["Magic Defense"].extra = max(int(character.stat_effects["Magic Defense"].extra or 0), spent * 4)
+    character.stat_effects["Magic Defense"].duration = duration
+    character.stat_effects["Magic Defense"].extra = max(int(character.stat_effects["Magic Defense"].extra or 0), int(spent * 4 * scale))
     character.magic_effects["Regen"].active = True
-    character.magic_effects["Regen"].duration = 4
-    character.magic_effects["Regen"].extra = max(int(character.magic_effects["Regen"].extra or 0), spent * 5)
+    character.magic_effects["Regen"].duration = duration
+    character.magic_effects["Regen"].extra = max(int(character.magic_effects["Regen"].extra or 0), int(spent * 5 * scale))
+    combat_state(character)["great_benediction"] = {
+        "turns": duration,
+        "healing": 0.04 * spent * scale,
+        "reduction": 0.02 * spent * scale,
+        "status": 0.05 * spent * scale,
+        "mana": int(math.ceil(spent / 3)),
+    }
     msg = f"{character.name} spends {spent} Prayer on Great Benediction.\n"
     return _preserve_spent_meter(character, "prayer", "Archbishop", "Divine Intervention", msg)
 
@@ -299,8 +647,149 @@ def great_gospel_prayer(character: Any) -> str:
         return ""
     cap = cap_for(character, "prayer")
     state = combat_state(character)
-    state["prayer"] = max(int(state.get("prayer", 0) or 0), cap // 2)
+    state["prayer"] = max(int(state.get("prayer", 0) or 0), int(math.ceil(cap / 2)))
     return f"Great Gospel raises Prayer to {state['prayer']}/{cap}.\n"
+
+
+def benediction_healing_multiplier(character: Any) -> float:
+    payload = combat_state(character).get("great_benediction")
+    if not isinstance(payload, dict) or int(payload.get("turns", 0) or 0) <= 0:
+        return 1.0
+    return 1.0 + max(0.0, float(payload.get("healing", 0.0) or 0.0))
+
+
+def benediction_status_multiplier(character: Any) -> float:
+    payload = combat_state(character).get("great_benediction")
+    if not isinstance(payload, dict) or int(payload.get("turns", 0) or 0) <= 0:
+        return 1.0
+    return 1.0 + max(0.0, float(payload.get("status", 0.0) or 0.0))
+
+
+def benediction_damage_reduction(character: Any, damage: int) -> tuple[int, str]:
+    payload = combat_state(character).get("great_benediction")
+    if damage <= 0 or not isinstance(payload, dict) or int(payload.get("turns", 0) or 0) <= 0:
+        return damage, ""
+    reduced = max(0, int(damage * float(payload.get("reduction", 0.0) or 0.0)))
+    if reduced <= 0:
+        return damage, ""
+    return max(0, damage - reduced), f"Great Benediction prevents {reduced} damage.\n"
+
+
+def begin_ki_spender(character: Any, ability_name: str) -> str:
+    """Spend one Ki for an authored rider after ordinary validation."""
+    state = combat_state(character)
+    state["ki_spender"] = None
+    if (
+        class_name(character) not in {"Monk", "Master Monk"}
+        or ability_name not in KI_SPEND_ABILITIES
+        or int(state.get("ki", 0) or 0) <= 0
+    ):
+        return ""
+    state["ki"] = int(state.get("ki", 0) or 0) - 1
+    state["ki_spender"] = ability_name
+    return f"{character.name} spends 1 Ki on {ability_name}.\n"
+
+
+def ki_spender_active(character: Any, ability_name: str) -> bool:
+    """Return whether the current action paid for its authored Ki rider."""
+    return combat_state(character).get("ki_spender") == ability_name
+
+
+def finish_ki_spender(
+    character: Any,
+    target: Any | None,
+    ability_name: str,
+    *,
+    hit: bool = False,
+    healing: int = 0,
+) -> str:
+    """Apply post-resolution Ki riders and clear the one-action context."""
+    state = combat_state(character)
+    if state.get("ki_spender") != ability_name:
+        return ""
+    state["ki_spender"] = None
+    msg = ""
+    if ability_name == "Chi Heal":
+        bonus = min(
+            max(0, int(character.health.max) - int(character.health.current)),
+            max(0, int(healing * 0.20)),
+        )
+        if bonus:
+            character.health.current += bonus
+            msg += f"Focused Ki restores {bonus} additional HP.\n"
+        state["purge_immunity_turns"] = max(
+            1,
+            int(state.get("purge_immunity_turns", 0) or 0),
+        )
+        msg += "Focused Ki guards against hostile status for one turn.\n"
+    elif ability_name == "Hadouken" and hit and target is not None and target.is_alive():
+        effect = target.stat_effects["Magic Defense"]
+        effect.active = True
+        effect.duration = max(int(effect.duration or 0), 2)
+        effect.extra = min(int(effect.extra or 0), -10)
+        msg += f"Hadouken lowers {target.name}'s Magic Defense by 10 for two turns.\n"
+    return msg
+
+
+def ki_accuracy_bonus(character: Any, ability_name: str) -> float:
+    """Return the paid Ki rider's per-strike accuracy bonus."""
+    if ki_spender_active(character, ability_name) and ability_name == "Hyakuretsukyaku":
+        return 0.10
+    return 0.0
+
+
+def ki_control_bonus(character: Any, ability_name: str) -> float:
+    """Return the paid Ki rider's control-contest bonus."""
+    if ki_spender_active(character, ability_name) and ability_name in {"Leg Sweep", "Suplex"}:
+        return 0.15
+    return 0.0
+
+
+def record_ki_martial_hit(character: Any, metadata: dict[str, Any] | None) -> str:
+    """Grant ordinary martial rhythm once for the current player action."""
+    if class_name(character) not in {"Monk", "Master Monk"}:
+        return ""
+    metadata = metadata or {}
+    state = combat_state(character)
+    ability_name = str(
+        metadata.get("ability_name")
+        or state.get("action_choice")
+        or ("Attack" if state.get("action_name") == "Attack" else "")
+    )
+    if ability_name == "Dim Mak":
+        return ""
+    weapon_type = str(metadata.get("weapon_type") or "")
+    weapon_name = str(metadata.get("weapon_name") or "")
+    basic = not ability_name or ability_name == "Attack"
+    if basic:
+        qualifies = weapon_type in {"Fist", "None"} or weapon_name == "Ruyi Jingu Bang"
+    else:
+        qualifies = ability_name in MARTIAL_KI_ACTIONS
+    if not qualifies:
+        return ""
+    token = int(state.get("action_token", 0) or 0)
+    if token > 0 and state.get("ki_action_token") == token:
+        return ""
+    state["ki_action_token"] = token if token > 0 else -1
+    return gain_meter(character, "ki", 1, "martial hit")
+
+
+def begin_incoming_ki_action(character: Any) -> None:
+    """Open one defensive-reaction Ki claim for an incoming hostile action."""
+    state = combat_state(character)
+    state["ki_reaction_token"] = int(state.get("ki_reaction_token", 0) or 0) + 1
+
+
+def record_ki_reaction(character: Any, reason: str) -> str:
+    """Grant Ki once for a successful dodge, parry, or counter reaction."""
+    if class_name(character) not in {"Monk", "Master Monk"}:
+        return ""
+    state = combat_state(character)
+    token = int(state.get("ki_reaction_token", 0) or 0)
+    if token and state.get("ki_reaction_claimed") == token:
+        return ""
+    state["ki_reaction_claimed"] = token
+    return gain_meter(character, "ki", 1, reason)
 
 
 def dim_mak(character: Any, target: Any | None) -> str:
@@ -311,31 +800,63 @@ def dim_mak(character: Any, target: Any | None) -> str:
         return "Dim Mak requires full Ki.\n"
     if target is None:
         return "There is no target for Dim Mak.\n"
-    if not _spend_mp(character, 18):
-        return "Not enough MP for Dim Mak.\n"
-    spent = spend_meter(character, "ki")
+    if not target.is_alive():
+        return "Dim Mak requires a living target.\n"
     weapon = character.equipment.get("Weapon")
     subtyp = getattr(weapon, "subtyp", None)
     weapon_name = getattr(weapon, "name", "")
+    if subtyp not in {"Fist", "Staff", "None"}:
+        return "Dim Mak requires an empty hand, fist weapon, or staff.\n"
+    if not _spend_mp(character, 18):
+        return "Not enough MP for Dim Mak.\n"
+    spent = spend_meter(character, "ki")
     penalty = 1.0
     drop_msg = ""
-    if subtyp == "Fist" or subtyp == "None":
-        penalty = 1.0
+    if subtyp == "Fist":
+        penalty = 0.90
     elif subtyp == "Staff" and weapon_name == "Ruyi Jingu Bang":
         penalty = 1.0
     elif subtyp == "Staff":
+        from ... import items
+
         penalty = 0.80
         drop_msg = "The ordinary staff cannot hold the finisher and is disarmed.\n"
-        character.equipment["Weapon"] = type("NoWeapon", (), {"name": "None", "subtyp": "None", "typ": "Weapon", "damage": 0, "crit": 0, "ignore": False, "element": None, "ultimate": False})()
-    else:
-        penalty = 0.90
-    damage = max(1, int((character.check_mod("weapon", enemy=target) + character.stats.wisdom) * (1.5 + spent * 0.12) * penalty))
-    target.health.current = max(0, target.health.current - damage)
-    if not target.has_status_protection("Stun"):
-        target.status_effects["Stun"].active = True
-        target.status_effects["Stun"].duration = max(target.status_effects["Stun"].duration, 2)
-    msg = f"{character.name} spends {spent} Ki on Dim Mak for {damage} damage.\n{drop_msg}"
-    if _ring_awakened_equipped(character, "Master Monk"):
-        combat_state(character)["ki"] = 1
-        msg += "Martial Master refunds 1 Ki after the finisher.\n"
+        if hasattr(character, "modify_inventory"):
+            character.modify_inventory(weapon, 1)
+        character.equipment["Weapon"] = items.NoWeapon()
+    hp_before = int(target.health.current)
+    ring = _ring_awakened_equipped(character, "Master Monk")
+    attack_msg, hit, _crit = character.weapon_damage(
+        target,
+        dmg_mod=(1.5 + spent * 0.12) * penalty,
+        use_offhand=False,
+        accuracy_modifier=0.10 if ring else 0.0,
+    )
+    damage = max(0, hp_before - int(target.health.current))
+    msg = f"{character.name} spends {spent} Ki on Dim Mak.\n{attack_msg}{drop_msg}"
+    if hit and target.is_alive():
+        killed, _immune = resolve_death_contest(
+            character,
+            target,
+            actor_roll_multiplier=1.10 if ring else 1.0,
+        )
+        if killed:
+            msg += f"Dim Mak extinguishes {target.name}'s life force.\n"
+        elif not target.has_status_protection("Stun"):
+            actor_roll = random.randint(0, max(1, character.stats.wisdom))
+            if ring:
+                actor_roll = int(actor_roll * 1.10)
+            defender_roll = random.randint(0, max(1, target.stats.con))
+            if target.stun_contest_success(character, actor_roll, defender_roll):
+                if target.apply_stun(2, source="Dim Mak", applier=character):
+                    msg += f"{target.name} is stunned by the disrupted chi.\n"
+    if hit and not target.is_alive():
+        character.health.current = min(character.health.max, character.health.current + target.health.max)
+        character.mana.current = min(character.mana.max, character.mana.current + target.mana.max)
+        msg += f"{character.name} absorbs {target.name}'s essence.\n"
+    state = combat_state(character)
+    if ring and hit and damage > 0 and not state.get("martial_master_refund_used"):
+        state["martial_master_refund_used"] = True
+        state["ki"] = 1
+        msg += "Martial Master refunds 1 Ki after the clean finisher.\n"
     return msg

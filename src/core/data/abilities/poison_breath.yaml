@@ -1,5 +1,6 @@
 name: Poison Breath
 type: Spell
+rank: 2
 subtype: Poison
 description: >-
   Your spew forth a toxic breath, dealing poison damage and poisoning the

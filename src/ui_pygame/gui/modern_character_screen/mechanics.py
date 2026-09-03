@@ -792,6 +792,7 @@ class CharacterMechanicsMixin:
             ("Song Turns", str(song_state.get("turns", 0))),
             ("Exploration Song", str(exploration.get("active") or "None")),
             ("Exploration Steps", str(exploration.get("steps", 0))),
+            ("Route Coda", str(exploration.get("route_effect") or "None")),
         ]
         if class_name == "Troubadour":
             rows.extend(
@@ -812,8 +813,18 @@ class CharacterMechanicsMixin:
             xp = int(entry.get("practice_xp", 0) or 0)
             finishes = int(entry.get("clean_finishes", 0) or 0)
             self._draw_text(song, self.normal_font, self.colors.WHITE, right_rect.left, list_y, right_rect.width)
-            practice = "Complete" if known == "Mastered" else "Growing" if xp or finishes else "Unstarted"
-            self._draw_text(f"{known} - {practice}", self.small_font, self.colors.GRAY, right_rect.left, list_y + self.normal_font.get_height() + 2, right_rect.width)
+            if known == "Mastered":
+                practice = "Complete"
+            else:
+                practice = f"{xp}/18 XP, {finishes}/3 finishes"
+            self._draw_text(
+                f"{known} - {practice}",
+                self.small_font,
+                self.colors.GRAY,
+                right_rect.left,
+                list_y + self.normal_font.get_height() + 2,
+                right_rect.width,
+            )
             list_y += self.normal_font.get_height() + self.small_font.get_height() + 12
             if list_y > right_rect.bottom - 24:
                 break
@@ -823,29 +834,72 @@ class CharacterMechanicsMixin:
         self.weapon_discipline_selector_active = False
         self._jump_mod_row_rects = []
         left_rect, right_rect = self._split_mechanic_content(y)
-        class_name = self._attr_name(getattr(player_char, "cls", None), "")
-        transform_type = getattr(player_char, "transform_type", None)
-        base_form = self._attr_name(transform_type, class_name or "Unknown")
-        shifted = lycan.is_transformed(player_char) if class_name == "Lycan" or base_form == "Lycan" else bool(transform_type and self._attr_name(transform_type, "") != class_name)
+        from src.core.classes import transformation
+
+        class_name = transformation.permanent_class_name(player_char)
+        shifted = transformation.is_transformed(player_char)
+        transform_state = getattr(player_char, "transformation_state", {}) or {}
+        active_form = str(transform_state.get("active_form") or "None")
+        available = getattr(player_char, "available_transform_forms", None)
+        forms = tuple(
+            available()
+            if callable(available)
+            else transformation.available_forms(player_char)
+        )
         rows = [
-            ("Current Form", "Shifted" if shifted else "Humanoid"),
-            ("Stored Form", base_form),
-            ("Transform", "Available" if transform_type else "Unavailable"),
+            ("Current Form", active_form if shifted else "Humanoid"),
+            ("Stored Form", class_name or "Unknown"),
+            ("Unlocked Forms", ", ".join(forms) if forms else "None"),
+            ("Transform", "Available" if forms and not shifted else "Unavailable"),
             ("Dismiss", "Available" if shifted else "Unavailable"),
         ]
-        if class_name == "Lycan" or base_form == "Lycan":
+        if class_name == "Lycan":
             rows.append(("Ring", self._ring_state_text(player_char, "Lycan")))
         self._draw_key_values(rows, left_rect, y, font=self.normal_font, row_gap=10)
 
-        if class_name == "Lycan" or base_form == "Lycan":
+        self._form_action_rects = []
+        labels = ("Dismiss Form",) if shifted else forms
+        button_y = left_rect.bottom - 48
+        button_width = max(
+            120,
+            (left_rect.width - 12 * max(0, len(labels) - 1))
+            // max(1, len(labels)),
+        )
+        for index, label in enumerate(labels):
+            rect = pygame.Rect(
+                left_rect.left + index * (button_width + 12),
+                button_y,
+                button_width,
+                38,
+            )
+            pygame.draw.rect(self.screen, self.colors.GOLD, rect, border_radius=6)
+            pygame.draw.rect(self.screen, self.colors.WHITE, rect, width=2, border_radius=6)
+            text = self.small_font.render(label, True, self.colors.BLACK)
+            self.screen.blit(text, text.get_rect(center=rect.center))
+            self._form_action_rects.append((label, rect))
+
+        if class_name == "Lycan":
             lycan_state = lycan.ensure_state(player_char)
             control = promotion_kits.lycan_control_state(player_char)
-            list_y = self._draw_progress_row(right_rect, "Moon Cycle", lycan_state.get("moon_steps", 0), lycan.STEPS_PER_PHASE, y, detail=str(lycan_state.get("moon_phase", "New")), color=self.colors.GOLD)
+            list_y = self._draw_progress_row(
+                right_rect,
+                "Moon Cycle",
+                lycan_state.get("moon_steps", 0),
+                lycan.STEPS_PER_PHASE,
+                y,
+                detail=str(lycan_state.get("moon_phase", "New")),
+                color=self.colors.GOLD,
+            )
             rows = [
                 ("Frenzy Lock", f"{int(lycan_state.get('frenzy_turns', 0) or 0)} turn(s)"),
                 ("Control Rank", str(control.get("rank", "Feral"))),
                 ("Stress Records", str(control.get("stress_events", 0))),
-                ("Dragon Essence", "Yes" if control.get("dragon_essence") or lycan_state.get("dragon_essence") else "No"),
+                (
+                    "Dragon Essence",
+                    "Yes"
+                    if control.get("dragon_essence") or lycan_state.get("dragon_essence")
+                    else "No",
+                ),
             ]
             self._draw_key_values(rows, right_rect, list_y, font=self.normal_font, row_gap=8)
         else:

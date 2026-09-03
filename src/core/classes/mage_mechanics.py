@@ -140,6 +140,12 @@ def spell_damage_multiplier(
 ) -> float:
     """Return authored Mage-talent damage scaling for a spell."""
     multiplier = 1.0
+    try:
+        from . import astromancer
+
+        multiplier *= 1.0 + astromancer.threaded_bonus(character, "output")
+    except Exception:
+        pass
     if (
         str(getattr(ability, "name", "")).startswith("Shadow Bolt")
         and has_talent(character, "mage.forbidden-studies")

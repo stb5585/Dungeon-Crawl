@@ -126,12 +126,12 @@ def test_visit_church_routes_actions(monkeypatch):
     manager = church.ChurchManager(presenter, player)
 
     calls = []
-    manager.handle_promotion = lambda: calls.append("promotion")
     manager.save_game = lambda: calls.append("save")
 
     selections = iter([0, 1, 2])
     rendered = []
     draw_frame_calls = []
+    option_snapshots = []
 
     class FakeLocationMenuScreen:
         def __init__(self, _presenter, _title):
@@ -143,7 +143,8 @@ def test_visit_church_routes_actions(monkeypatch):
         def draw_frame(self, *, do_flip=False):
             draw_frame_calls.append(do_flip)
 
-        def navigate(self, _options, reset_cursor=False, **_kwargs):
+        def navigate(self, options, reset_cursor=False, **_kwargs):
+            option_snapshots.append(tuple(options))
             return next(selections)
 
         def display_quest_text(self, text, **kwargs):
@@ -162,6 +163,7 @@ def test_visit_church_routes_actions(monkeypatch):
     manager.visit_church()
 
     assert calls == ["save"]
+    assert all("Promote" not in options for options in option_snapshots)
     assert rendered == [("Priest quest", "Priest")]
     assert "Let the light of Elysia guide you." in FakePopup.messages
     assert FakePopup.show_kwargs[-1]["flush_events"] is True
@@ -171,483 +173,38 @@ def test_visit_church_routes_actions(monkeypatch):
     assert draw_frame_calls == [False]
 
 
-def test_handle_promotion_guards_and_save_game(monkeypatch):
+def test_save_game_reports_success_and_failure(monkeypatch):
     FakePopup.messages = []
-    FakePopup.show_kwargs = []
     player = _make_player()
     presenter = _make_presenter()
-    monkeypatch.setattr(church.ChurchManager, "_load_background", lambda self: setattr(self, "background", None))
-    monkeypatch.setattr("src.ui_pygame.gui.church.ConfirmationPopup", FakePopup)
-    manager = church.ChurchManager(presenter, player)
-
-    player.level.level = 20
-    manager.handle_promotion()
-    assert "You need to be level 30 before you can promote your character." in FakePopup.messages
-    assert FakePopup.show_kwargs[-1]["flush_events"] is True
-    assert FakePopup.show_kwargs[-1]["require_key_release"] is True
-
-    player.level.level = 30
-    player.level.pro_level = 3
-    manager.handle_promotion()
-    assert "You are at max promotion level" in FakePopup.messages[-1]
-
-    player.level.pro_level = 1
-    monkeypatch.setattr("src.ui_pygame.gui.church.classes_dict", {})
-    manager.handle_promotion()
-    assert "No promotion options are currently available." in FakePopup.messages[-1]
-
-    save_paths = []
-    monkeypatch.setattr("src.ui_pygame.gui.church.os.path.exists", lambda _path: True)
-    player.save = lambda filepath=None: save_paths.append(filepath)
-    manager.save_game()
-    assert save_paths == ["save_files/ada_hero.save"]
-    assert "Game saved successfully!" in FakePopup.messages[-1]
-
-    player.save = lambda filepath=None: (_ for _ in ()).throw(RuntimeError("disk full"))
-    manager.save_game()
-    assert "Error saving game:" in FakePopup.messages[-1]
-
-
-def test_handle_promotion_success_and_cancel(monkeypatch):
-    FakePopup.messages = []
-    FakePopup.show_kwargs = []
-    player = _make_player()
-    player.level.level = 30
-    presenter = _make_presenter()
-    monkeypatch.setattr(church.ChurchManager, "_load_background", lambda self: setattr(self, "background", None))
-    monkeypatch.setattr("src.ui_pygame.gui.church.ConfirmationPopup", FakePopup)
-    monkeypatch.setattr("src.ui_pygame.gui.church.remove_equipment", lambda slot: f"default-{slot}")
-    monkeypatch.setattr("src.ui_pygame.gui.church.apply_promotion_ability_rules", lambda _player, chosen: "Promotion rules updated.")
-    monkeypatch.setattr("src.ui_pygame.gui.church.spell_dict", {})
-    monkeypatch.setattr("src.ui_pygame.gui.church.skill_dict", {})
-
-    class BaseClass:
-        def __init__(self):
-            self.name = "Warrior"
-
-    class PromotedClass:
-        def __init__(self):
-            self.name = "Weapon Master"
-            self.equipment = {"Weapon": "blade", "Armor": "plate", "Accessory": "ring"}
-            self.str_plus = 2
-            self.int_plus = 1
-            self.wis_plus = 0
-            self.con_plus = 1
-            self.cha_plus = 0
-            self.dex_plus = 2
-            self.att_plus = 4
-            self.def_plus = 2
-            self.magic_plus = 0
-            self.magic_def_plus = 2
-
-    monkeypatch.setattr(
-        "src.ui_pygame.gui.church.classes_dict",
-        {"Base": {"class": BaseClass, "pro": {"Weapon Master": {"class": PromotedClass}}}},
-    )
-
-    class FakePromotionScreen:
-        def __init__(self, *_args, **_kwargs):
-            pass
-
-        def navigate(self):
-            return selection.pop(0)
-
-    selection = ["Weapon Master", None]
-    monkeypatch.setattr("src.ui_pygame.gui.church.PromotionScreen", FakePromotionScreen)
-
-    manager = church.ChurchManager(presenter, player)
-    manager.handle_promotion()
-
-    assert player.cls.name == "Weapon Master"
-    assert player.level.pro_level == 2
-    assert player.level.level == 1
-    assert player.level.exp_to_gain == 42
-    assert player.stats.strength == 12
-    assert player.stats.intel == 11
-    assert player.stats.con == 11
-    assert player.stats.dex == 12
-    assert player.health.max == 102
-    assert player.health.current == 102
-    assert player.mana.max == 52
-    assert player.mana.current == 52
-    assert player.combat.attack == 14
-    assert player.combat.defense == 12
-    assert player.combat.magic_def == 12
-    assert "Promotion rules updated." not in FakePopup.messages
-    assert not any("Character Menu tab available" in message for message in FakePopup.messages)
-    assert any("Congratulations! You are now a Weapon Master." in message for message in FakePopup.messages)
-    assert any("New Character Menu tab: Weapon Discipline" in message for message in FakePopup.messages)
-    first_promotion_messages = list(FakePopup.messages)
-    assert len(first_promotion_messages) == 1
-    assert "New Character Menu tab: Weapon Discipline" in first_promotion_messages[0]
-
-    player.cls = BaseClass()
-    player.level.level = 30
-    player.level.pro_level = 1
-    manager.handle_promotion()
-    assert "Promotion cancelled." in FakePopup.messages[-1]
-
-
-def test_handle_promotion_grants_cleric_sanctuary_ward_immediately(monkeypatch):
-    FakePopup.messages = []
-    FakePopup.show_kwargs = []
-    player = _make_player()
-    player.cls = SimpleNamespace(name="Healer", equipment={})
-    player.level.level = 30
-    presenter = _make_presenter()
-
-    monkeypatch.setattr(church.ChurchManager, "_load_background", lambda self: setattr(self, "background", None))
-    monkeypatch.setattr("src.ui_pygame.gui.church.ConfirmationPopup", FakePopup)
-    monkeypatch.setattr("src.ui_pygame.gui.church.remove_equipment", lambda slot: f"default-{slot}")
-
-    class FakePromotionScreen:
-        def __init__(self, *_args, **_kwargs):
-            pass
-
-        def navigate(self):
-            return "Cleric"
-
-    monkeypatch.setattr("src.ui_pygame.gui.church.PromotionScreen", FakePromotionScreen)
-
-    manager = church.ChurchManager(presenter, player)
-    manager.handle_promotion()
-
-    assert player.cls.name == "Cleric"
-    assert player.level.pro_level == 2
-    assert player.level.level == 1
-    assert "Sanctuary Ward" in player.spellbook["Skills"]
-    assert "Smite" in player.spellbook["Spells"]
-    assert len(FakePopup.messages) == 1
-    assert "Congratulations! You are now a Cleric." in FakePopup.messages[0]
-    assert "Learned abilities:" in FakePopup.messages[0]
-    assert "Skill: Sanctuary Ward" in FakePopup.messages[0]
-    assert "Sanctuary Ward" in FakePopup.messages[0]
-
-
-def test_handle_promotion_grants_priest_supplication_and_explains_prayer(monkeypatch):
-    FakePopup.messages = []
-    FakePopup.show_kwargs = []
-    player = _make_player()
-    player.cls = SimpleNamespace(name="Healer", equipment={})
-    player.level.level = 30
-    presenter = _make_presenter()
-
     monkeypatch.setattr(
         church.ChurchManager,
         "_load_background",
         lambda self: setattr(self, "background", None),
     )
-    monkeypatch.setattr("src.ui_pygame.gui.church.ConfirmationPopup", FakePopup)
     monkeypatch.setattr(
-        "src.ui_pygame.gui.church.remove_equipment",
-        lambda slot: f"default-{slot}",
+        "src.ui_pygame.gui.church.ConfirmationPopup",
+        FakePopup,
     )
-
-    class FakePromotionScreen:
-        def __init__(self, *_args, **_kwargs):
-            pass
-
-        def navigate(self):
-            return "Priest"
-
-    monkeypatch.setattr("src.ui_pygame.gui.church.PromotionScreen", FakePromotionScreen)
-
-    manager = church.ChurchManager(presenter, player)
-    manager.handle_promotion()
-
-    assert player.cls.name == "Priest"
-    assert player.level.pro_level == 2
-    assert player.level.level == 1
-    assert "Supplication" in player.spellbook["Skills"]
-    assert len(FakePopup.messages) == 1
-    assert "Skill: Supplication" in FakePopup.messages[0]
-    assert "Prayer" in FakePopup.messages[0]
-
-
-def test_handle_promotion_grants_ranger_tame_and_favored_enemy_immediately(monkeypatch):
-    FakePopup.messages = []
-    FakePopup.show_kwargs = []
-    player = _make_player()
-    player.cls = SimpleNamespace(name="Pathfinder", equipment={})
-    player.level.level = 30
-    presenter = _make_presenter()
-
-    monkeypatch.setattr(church.ChurchManager, "_load_background", lambda self: setattr(self, "background", None))
-    monkeypatch.setattr("src.ui_pygame.gui.church.ConfirmationPopup", FakePopup)
-    monkeypatch.setattr("src.ui_pygame.gui.church.remove_equipment", lambda slot: f"default-{slot}")
-
-    class FakePromotionScreen:
-        def __init__(self, *_args, **_kwargs):
-            pass
-
-        def navigate(self):
-            return "Ranger"
-
-    monkeypatch.setattr("src.ui_pygame.gui.church.PromotionScreen", FakePromotionScreen)
-
-    manager = church.ChurchManager(presenter, player)
-    manager.handle_promotion()
-
-    assert player.cls.name == "Ranger"
-    assert player.level.pro_level == 2
-    assert player.level.level == 1
-    assert "Tame" in player.spellbook["Skills"]
-    assert "Favored Enemy" in player.spellbook["Skills"]
-    assert "Skill: Tame" in FakePopup.messages[0]
-    assert "Skill: Favored Enemy" in FakePopup.messages[0]
-
-
-def test_promotion_mechanic_help_shows_tab_and_combat_guidance(monkeypatch):
-    FakePopup.messages = []
-    FakePopup.show_kwargs = []
-    player = _make_player()
-    presenter = _make_presenter()
-    monkeypatch.setattr(church.ChurchManager, "_load_background", lambda self: setattr(self, "background", None))
-    monkeypatch.setattr("src.ui_pygame.gui.church.ConfirmationPopup", FakePopup)
     manager = church.ChurchManager(presenter, player)
 
-    manager._show_promotion_mechanic_help("Weapon Master")
-    assert "New Character Menu tab: Weapon Discipline" in FakePopup.messages[-1]
-    assert "Intelligence helps" in FakePopup.messages[-1]
-
-    manager._show_promotion_mechanic_help("Spell Stealer")
-    assert "Stolen spell scrolls" in FakePopup.messages[-1]
-
-    manager._show_promotion_mechanic_help("Priest")
-    assert "Prayer" in FakePopup.messages[-1]
-    assert "Supplication" in FakePopup.messages[-1]
-
-    manager._show_promotion_mechanic_help("Ranger")
-    assert FakePopup.messages[-1].count("Companion & Hunt") == 1
-
-    message_count = len(FakePopup.messages)
-    manager._show_promotion_mechanic_help("Knight")
-    assert len(FakePopup.messages) == message_count
-
-
-def test_handle_promotion_keeps_legal_gear_removes_illegal_and_grants_no_defaults(monkeypatch):
-    FakePopup.messages = []
-    player = _make_player()
-    player.level.level = 30
-    presenter = _make_presenter()
-    inventory_calls = []
-    keep_weapon = SimpleNamespace(name="Keep Blade", subtyp="Sword")
-    illegal_armor = SimpleNamespace(name="Old Plate", subtyp="Heavy")
-    player.equipment = {
-        "Weapon": keep_weapon,
-        "Armor": illegal_armor,
-        "OffHand": items.NoOffHand(),
-        "Helmet": items.NoHelmet(),
-    }
-    player.modify_inventory = lambda item, *_args, **_kwargs: inventory_calls.append(item.name)
-    player.can_equip_item = lambda item, slot=None: item.name == "Keep Blade"
-
-    monkeypatch.setattr(church.ChurchManager, "_load_background", lambda self: setattr(self, "background", None))
-    monkeypatch.setattr("src.ui_pygame.gui.church.ConfirmationPopup", FakePopup)
-    monkeypatch.setattr("src.ui_pygame.gui.church.apply_promotion_ability_rules", lambda _player, _chosen: "")
-    monkeypatch.setattr("src.ui_pygame.gui.church.spell_dict", {})
-    monkeypatch.setattr("src.ui_pygame.gui.church.skill_dict", {})
-
-    class BaseClass:
-        def __init__(self):
-            self.name = "Warrior"
-
-    class PromotedClass:
-        def __init__(self):
-            self.name = "Knight"
-            self.equipment = {
-                "Weapon": SimpleNamespace(name="Default Sword", subtyp="Sword"),
-                "Armor": SimpleNamespace(name="Default Armor", subtyp="Light"),
-            }
-
+    save_paths = []
     monkeypatch.setattr(
-        "src.ui_pygame.gui.church.classes_dict",
-        {"Base": {"class": BaseClass, "pro": {"Knight": {"class": PromotedClass}}}},
+        "src.ui_pygame.gui.church.os.path.exists",
+        lambda _path: True,
     )
+    player.save = lambda filepath=None: save_paths.append(filepath)
+    manager.save_game()
 
-    class FakePromotionScreen:
-        def __init__(self, *_args, **_kwargs):
-            pass
+    assert save_paths == ["save_files/ada_hero.save"]
+    assert "Game saved successfully!" in FakePopup.messages[-1]
 
-        def navigate(self):
-            return "Knight"
-
-    monkeypatch.setattr("src.ui_pygame.gui.church.PromotionScreen", FakePromotionScreen)
-
-    manager = church.ChurchManager(presenter, player)
-    manager.handle_promotion()
-
-    assert player.equipment["Weapon"] is keep_weapon
-    assert player.equipment["Armor"].name == "No Armor"
-    assert inventory_calls == ["Old Plate"]
-    assert "Default Sword" not in [getattr(item, "name", item) for item in player.equipment.values()]
-    warning = "\n".join(FakePopup.messages)
-    assert "Some equipped gear no longer fits" in warning
-    assert "Armor: Old Plate" in warning
-
-
-def test_handle_promotion_advanced_branches(monkeypatch):
-    FakePopup.messages = []
-    FakePopup.show_kwargs = []
-    player = _make_player()
-    player.level.level = 30
-    player.race = SimpleNamespace(cls_res={"First": ["Warlock", "Thaumaturgist"]})
-    presenter = _make_presenter()
-    menu_choices = iter([1, 0, 0, 0, None])
-    shown_messages = []
-    presenter.render_menu = lambda *_args, **_kwargs: next(menu_choices)
-    presenter.show_message = lambda message, title="": shown_messages.append((title, message))
-    presenter.get_text_input = lambda *_args, **_kwargs: ""
-
-    monkeypatch.setattr(church.ChurchManager, "_load_background", lambda self: setattr(self, "background", None))
-    monkeypatch.setattr("src.ui_pygame.gui.church.ConfirmationPopup", FakePopup)
-    monkeypatch.setattr("src.ui_pygame.gui.church.remove_equipment", lambda slot: f"default-{slot}")
-
-    class BaseClass:
-        def __init__(self):
-            self.name = "Warrior"
-
-    class WarlockClass:
-        def __init__(self):
-            self.name = "Warlock"
-            self.equipment = {"Weapon": "wand", "OffHand": "orb", "Armor": "robe"}
-            self.str_plus = self.int_plus = self.wis_plus = self.con_plus = self.cha_plus = self.dex_plus = 0
-            self.att_plus = self.def_plus = self.magic_plus = self.magic_def_plus = 0
-
-    class ThaumaturgistClass:
-        def __init__(self):
-            self.name = "Thaumaturgist"
-            self.equipment = {"Weapon": "staff", "Armor": "cloak"}
-            self.str_plus = self.int_plus = self.wis_plus = self.con_plus = self.cha_plus = self.dex_plus = 0
-            self.att_plus = self.def_plus = self.magic_plus = self.magic_def_plus = 0
-
-    class NestedClass:
-        def __init__(self):
-            self.name = "Archmage"
-            self.equipment = {}
-            self.str_plus = self.int_plus = self.wis_plus = self.con_plus = self.cha_plus = self.dex_plus = 0
-            self.att_plus = self.def_plus = self.magic_plus = self.magic_def_plus = 0
-
-    class FakeSpell:
-        def __init__(self):
-            self.name = "Arc Bolt"
-
-    class FakeSkill:
-        def __init__(self):
-            self.name = "Transform"
-            self.used_on = None
-
-        def use(self, target):
-            self.used_on = target
-
-    class FakeFairy:
-        def __init__(self):
-            self.race = "Fairy"
-            self.name = "Fairy"
-
-        def inspect(self):
-            return "A bright familiar."
-
-    class FakePatagon:
-        def __init__(self):
-            self.name = "Patagon"
-            self.initialized = None
-
-        def initialize_stats(self, target):
-            self.initialized = target
-
-    monkeypatch.setattr(
-        "src.ui_pygame.gui.church.classes_dict",
-        {
-            "Base": {
-                "class": BaseClass,
-                "pro": {
-                    "Warlock": {"class": WarlockClass},
-                    "Thaumaturgist": {"class": ThaumaturgistClass},
-                },
-            },
-            "Mage": {
-                "class": BaseClass,
-                "pro": {
-                    "Warlock": {
-                        "class": WarlockClass,
-                        "pro": {"Archmage": {"class": NestedClass}},
-                    }
-                },
-            },
-        },
+    player.save = lambda filepath=None: (_ for _ in ()).throw(
+        RuntimeError("disk full")
     )
-    monkeypatch.setattr("src.ui_pygame.gui.church.apply_promotion_ability_rules", lambda _player, chosen: f"{chosen} adjusted.")
-    monkeypatch.setattr("src.ui_pygame.gui.church.spell_dict", {"Warlock": {"1": FakeSpell}})
-    monkeypatch.setattr("src.ui_pygame.gui.church.skill_dict", {"Warlock": {"1": FakeSkill}})
-    monkeypatch.setattr("src.ui_pygame.gui.church.companions.Fairy", FakeFairy)
-    monkeypatch.setattr(companions, "Patagon", FakePatagon)
+    manager.save_game()
 
-    class FakePromotionScreen:
-        def __init__(self, _presenter, _player, options, option_map, current_class, pro_level):
-            self.options = options
-            self.option_map = option_map
-
-        def navigate(self):
-            return selections.pop(0)
-
-    selections = ["Missing", "Warlock", "Thaumaturgist", "Archmage"]
-    monkeypatch.setattr("src.ui_pygame.gui.church.PromotionScreen", FakePromotionScreen)
-
-    manager = church.ChurchManager(presenter, player)
-    manager.handle_promotion()
-    assert "Promotion option unavailable." in FakePopup.messages[-1]
-
-    player.cls = BaseClass()
-    player.level.level = 30
-    player.level.pro_level = 1
-    player.level.exp_to_gain = 10
-    player.spellbook = {"Spells": {}, "Skills": {}}
-    player.familiar = None
-    manager.handle_promotion()
-    assert player.cls.name == "Warlock"
-    assert player.spellbook["Spells"]["Arc Bolt"].name == "Arc Bolt"
-    assert player.spellbook["Skills"]["Transform"].name == "Transform"
-    assert player.familiar is not None
-    assert player.familiar.name == "Buddy"
-    assert not any("joins you as 'Buddy'" in message for message in FakePopup.messages)
-    assert not any("Character Menu tab available: Companion" in message for message in FakePopup.messages)
-    assert shown_messages[-1][0] == "Fairy"
-
-    player.cls = BaseClass()
-    player.level.level = 30
-    player.level.pro_level = 1
-    player.summons = {}
-    manager.handle_promotion()
-    assert player.cls.name == "Thaumaturgist"
-    assert player.summons == {}
-    assert not any("learned to summon Patagon" in message for message in FakePopup.messages)
-
-    player.cls = WarlockClass()
-    player.level.level = 30
-    player.level.pro_level = 2
-    manager.handle_promotion()
-    assert player.cls.name == "Archmage"
-
-    monkeypatch.setattr(
-        "src.ui_pygame.gui.church.classes_dict",
-        {"Base": {"class": BaseClass, "pro": {"Warlock": {"class": WarlockClass}}}},
-    )
-
-    class BrokenSelectionScreen:
-        def __init__(self, *_args, **_kwargs):
-            pass
-
-        def navigate(self):
-            return "Warlock"
-
-    monkeypatch.setattr("src.ui_pygame.gui.church.PromotionScreen", BrokenSelectionScreen)
-    monkeypatch.setattr("src.ui_pygame.gui.church.apply_promotion_ability_rules", lambda *_args, **_kwargs: (_ for _ in ()).throw(RuntimeError("broken promo")))
-    player.cls = BaseClass()
-    player.level.level = 30
-    player.level.pro_level = 1
-    manager.handle_promotion()
-    assert "Promotion failed:" in FakePopup.messages[-1]
+    assert "Error saving game:" in FakePopup.messages[-1]
 
 
 def test_hidden_crypt_binds_contract_and_awakens_ring(monkeypatch):

@@ -1,7 +1,14 @@
 from types import SimpleNamespace
 
 from src.core import abilities, enemies, items
-from src.core.classes import bard, class_rings, demonologist, promotion_kits
+from src.core.classes import (
+    ability_mechanics,
+    bard,
+    class_rings,
+    demonologist,
+    lycan,
+    promotion_kits,
+)
 from src.core.progression import ABILITY_TREES, ensure_progression
 from src.core.save_system import PlayerDataSerializer
 from tests.test_framework import TestGameState
@@ -45,16 +52,16 @@ def test_promotion_kit_state_normalizes_and_round_trips():
     assert promotion_kits.combat_state(restored)["foresight_threads"] == 0
 
 
-def test_terminal_masteries_deepen_meter_and_persistent_class_systems():
+def test_removed_generic_masteries_leave_fixed_caps_and_control_progression():
     rogue = _player("Rogue")
-    _own_talent(rogue, "Rogue", "rogue.house-advantage")
-    assert promotion_kits.cap_for(rogue, "fortune") == 4
+    assert promotion_kits.cap_for(rogue, "fortune") == 3
 
     lycan = _player("Lycan")
-    _own_talent(lycan, "Lycan", "lycan.tethered-instinct")
     promotion_kits.record_lycan_stress(lycan, "survive")
-    assert promotion_kits.lycan_control_state(lycan)["rank_progress"]["survive"] == 2
+    assert promotion_kits.lycan_control_state(lycan)["rank_progress"]["survive"] == 1
 
+
+def test_bonded_bulwark_retains_its_authored_companion_payoff():
     beast_master = _player("Beast Master")
     beast_master.tamed_companion = {"active": True, "bond": 100}
     _own_talent(beast_master, "Beast Master", "beast-master.bonded-bulwark")
@@ -105,9 +112,9 @@ def test_representative_active_spends_and_status_text():
     priest = _player("Priest", mana=(100, 100), health=(120, 40))
     promotion_kits.gain_meter(priest, "prayer", 4, "test")
     mana_before = priest.mana.current
-    assert abilities.Supplication().cost == 0
+    assert abilities.Supplication().cost == 10
     assert "spends 4 Prayer" in abilities.Supplication().use(priest, priest)
-    assert priest.mana.current == mana_before
+    assert priest.mana.current == mana_before - 10
     assert priest.health.current > 40
 
     monk = _player("Master Monk", mana=(100, 100))
@@ -205,6 +212,7 @@ def test_hierophant_devotion_and_consecrated_conduit_payoff():
 
     message = abilities.ConsecratedConduit().use(hierophant)
     assert "spends 2 Devotion" in message
+    promotion_kits.begin_action(hierophant, action="Attack")
     before_hp = target.health.current
     promotion_kits.record_damage_event(
         hierophant,
@@ -231,6 +239,7 @@ def test_hierophant_conduit_gates_and_ring_preserves_after_payoff():
     _awaken_ring(hierophant, "Hierophant")
     promotion_kits.gain_meter(hierophant, "devotion", 3, "test")
     assert "spends 3 Devotion" in abilities.ConsecratedConduit().use(hierophant)
+    promotion_kits.begin_action(hierophant, action="Attack")
     target = enemies.Goblin()
     promotion_kits.record_damage_event(
         hierophant,
@@ -266,6 +275,7 @@ def test_sacred_overchannel_boosts_hierophant_devotion_and_payoff():
     assert "spends 2 Devotion" in abilities.ConsecratedConduit().use(hierophant)
     after_cost_mana = hierophant.mana.current
     assert after_cost_mana == before_mana - 10
+    promotion_kits.begin_action(hierophant, action="Attack")
     promotion_kits.record_damage_event(
         hierophant,
         target,
@@ -401,6 +411,132 @@ def test_ui_log_polish_representative_messages():
         shaman,
         "pulse",
     )
+
+
+def test_monk_ki_authored_actions_and_reactions_dedupe_per_action():
+    monk = _player("Monk")
+    assert promotion_kits.cap_for(monk, "ki") == 3
+    promotion_kits.begin_action(monk, action="Use Skill", choice="Double Strike")
+    metadata = {"ability_name": "Double Strike", "weapon_type": "Fist"}
+
+    promotion_kits.record_ki_martial_hit(monk, metadata)
+    promotion_kits.record_ki_martial_hit(monk, metadata)
+    promotion_kits.begin_incoming_ki_action(monk)
+    promotion_kits.record_ki_reaction(monk, "dodge")
+    promotion_kits.record_ki_reaction(monk, "parry")
+
+    assert promotion_kits.combat_state(monk)["ki"] == 2
+
+
+def test_ki_spender_consumes_on_attempt_and_chi_heal_applies_rider():
+    monk = _player("Monk", health=(100, 50))
+    promotion_kits.gain_meter(monk, "ki", 2, "test")
+
+    assert "spends 1 Ki" in promotion_kits.begin_ki_spender(monk, "Chi Heal")
+    monk.health.current = 70
+    message = promotion_kits.finish_ki_spender(
+        monk,
+        monk,
+        "Chi Heal",
+        healing=20,
+    )
+
+    assert monk.health.current == 74
+    assert "hostile status" in message
+    assert promotion_kits.combat_state(monk)["ki"] == 1
+
+
+def test_dim_mak_requires_full_ki_spends_mp_and_disarms_ordinary_staff(monkeypatch):
+    monk = _player("Master Monk", mana=(100, 100))
+    monk.equipment["Weapon"] = items.IronshodStaff()
+    target = enemies.Goblin()
+    monkeypatch.setattr(monk, "weapon_damage", lambda *_args, **_kwargs: ("miss\n", False, False))
+    promotion_kits.gain_meter(monk, "ki", 5, "test")
+
+    message = abilities.DimMak().use(monk, target)
+
+    assert "spends 5 Ki" in message
+    assert monk.mana.current == 82
+    assert monk.equipment["Weapon"].subtyp == "None"
+    assert promotion_kits.combat_state(monk)["ki"] == 0
+
+
+def test_lycan_stress_control_scaling_pushback_and_rank_progression():
+    character = _player("Lycan")
+    character.progression.purchased_node_ids.add("lycan.ability.transform3")
+    lycan.ensure_state(character)["moon_phase"] = "Full"
+    control = promotion_kits.lycan_control_state(character)
+    control["rank"] = "Tame"
+
+    resisted, _ = lycan.maybe_trigger_frenzy(
+        character,
+        reason="combat_start",
+        rng=SimpleNamespace(random=lambda: 0.10),
+    )
+    assert resisted is False
+    control = promotion_kits.lycan_control_state(character)
+    control["rank"] = "Feral"
+    triggered, message = lycan.maybe_trigger_frenzy(
+        character,
+        reason="combat_start",
+        rng=SimpleNamespace(random=lambda: 0.10),
+    )
+
+    assert triggered is True
+    assert "transforms into a Werewolf" in message
+    assert character.cls.name == "Werewolf"
+    assert lycan.ensure_state(character)["frenzy_turns"] == 4
+
+    character.transform(back=True)
+    for _ in range(3):
+        promotion_kits.record_lycan_stress(character, "survive")
+    assert promotion_kits.lycan_control_state(character)["rank"] == "Muzzled"
+
+    for reason, expected_rank in (
+        ("dismiss", "Restive"),
+        ("resist", "Tethered"),
+        ("safe_dismiss", "Tame"),
+    ):
+        for _ in range(3):
+            promotion_kits.record_lycan_stress(character, reason)
+        assert promotion_kits.lycan_control_state(character)["rank"] == expected_rank
+
+
+def test_winged_pounce_requires_form_essence_and_expires_after_enemy_turn(monkeypatch):
+    character = _player("Lycan", mana=(30, 30), skills=["Winged Pounce"])
+    character.progression.purchased_node_ids.add("lycan.ability.transform3")
+    promotion_kits.lycan_control_state(character)["dragon_essence"] = True
+    character.transform()
+    target = enemies.Goblin()
+    monkeypatch.setattr(
+        character,
+        "weapon_damage",
+        lambda *_args, **_kwargs: ("pounce hit\n", True, False),
+    )
+
+    message = promotion_kits.winged_pounce(character, target)
+
+    assert "launches a Winged Pounce" in message
+    assert character.mana.max - character.mana.current == 12
+    assert character.flying is True
+    assert promotion_kits.combat_state(character)["winged_pounce_flight"] == 1
+
+    from src.core.combat.battle_engine import BattleEngine
+
+    class _Tile:
+        def available_actions(self, _player):
+            return ["Attack"]
+
+    engine = BattleEngine(character, target, _Tile())
+    engine.attacker = target
+    engine.defender = character
+    monkeypatch.setattr(
+        target,
+        "weapon_damage",
+        lambda *_args, **_kwargs: ("miss\n", False, False),
+    )
+    engine.execute_action("Attack")
+    assert character.flying is False
 
 
 def test_resolve_aerial_aspect_totem_and_beast_commands():
@@ -580,6 +716,137 @@ def test_ring_smoothing_preserves_devotion_prayer_and_rogue_luck(monkeypatch):
     assert promotion_kits.combat_state(rogue)["misfortune"] == 1
 
 
+def test_devotion_and_prayer_gain_once_per_authored_action():
+    target = enemies.Goblin()
+    target.health.max = target.health.current = 100
+    cleric = _player("Cleric")
+
+    promotion_kits.begin_action(
+        cleric,
+        defer_devotion=True,
+        action="Cast Spell",
+        choice="Holy",
+        round_number=1,
+    )
+    for _ in range(3):
+        promotion_kits.record_damage_event(
+            cleric,
+            target,
+            10,
+            "Holy",
+            metadata={"ability_name": "Holy", "source": "spell"},
+        )
+    message = promotion_kits.finish_action(cleric, defender_survived=True)
+    assert "gains 1 Devotion" in message
+    assert promotion_kits.combat_state(cleric)["devotion"] == 1
+
+    priest = _player("Priest")
+    promotion_kits.begin_action(
+        priest,
+        action="Cast Spell",
+        choice="Holy2",
+        round_number=1,
+    )
+    promotion_kits.record_damage_event(priest, target, 10, "Holy")
+    promotion_kits.record_damage_event(priest, target, 10, "Holy")
+    promotion_kits.record_healing_done(priest, 10, source="Heal", target=priest)
+    assert promotion_kits.combat_state(priest)["prayer"] == 1
+    promotion_kits.begin_action(priest, action="Effects", choice="Regen", round_number=2)
+    promotion_kits.record_healing_done(priest, 20, source="Regen", target=priest)
+    assert promotion_kits.combat_state(priest)["prayer"] == 1
+
+
+def test_holy_retribution_and_great_gospel_add_one_gain_per_round():
+    target = enemies.Goblin()
+    templar = _player("Templar")
+    templar.spellbook["Skills"]["Holy Retribution"] = abilities.HolyRetribution()
+    templar.power_up = True
+    templar.class_effects["Power Up"].active = True
+    templar.class_effects["Power Up"].duration = 5
+
+    promotion_kits.begin_action(templar, action="Cast Spell", choice="Holy", round_number=3)
+    promotion_kits.record_damage_event(templar, target, 5, "Holy")
+    promotion_kits.finish_action(templar, defender_survived=True)
+    assert promotion_kits.combat_state(templar)["devotion"] == 2
+    promotion_kits.begin_action(templar, action="Cast Spell", choice="Holy", round_number=3)
+    promotion_kits.record_damage_event(templar, target, 5, "Holy")
+    promotion_kits.finish_action(templar, defender_survived=True)
+    assert promotion_kits.combat_state(templar)["devotion"] == 3
+
+    archbishop = _player("Archbishop")
+    archbishop.spellbook["Skills"]["Great Gospel"] = abilities.GreatGospel()
+    archbishop.power_up = True
+    archbishop.class_effects["Power Up"].active = True
+    archbishop.class_effects["Power Up"].duration = 5
+    promotion_kits.begin_action(archbishop, action="Cast Spell", choice="Bless", round_number=4)
+    result = SimpleNamespace(
+        damage=0,
+        healing=0,
+        hit=True,
+        effects_applied={"Magic": ["Bless"]},
+    )
+    promotion_kits.record_action_resolution(archbishop, result)
+    assert promotion_kits.combat_state(archbishop)["prayer"] == 2
+
+
+def test_supplication_and_benediction_complete_support_payoffs(monkeypatch):
+    archbishop = _player("Archbishop", mana=(100, 100), health=(200, 80))
+    archbishop.status_effects["Blind"].active = True
+    promotion_kits.gain_meter(archbishop, "prayer", 4, "test")
+    monkeypatch.setattr("random.random", lambda: 0.0)
+
+    message = abilities.Supplication().use(archbishop, archbishop)
+    assert archbishop.mana.current == 90
+    assert archbishop.health.current > 80
+    assert archbishop.magic_effects["Nature Shield"].active
+    assert "cleanses Blind" in message
+
+    promotion_kits.gain_meter(archbishop, "prayer", 6, "test")
+    message = abilities.GreatBenediction().use(archbishop)
+    payload = promotion_kits.combat_state(archbishop)["great_benediction"]
+    assert "Great Benediction" in message
+    assert payload["turns"] == 4
+    assert payload["mana"] == 2
+    reduced, _message = promotion_kits.benediction_damage_reduction(archbishop, 100)
+    assert reduced == 88
+
+
+def test_aspect_harmony_tracks_charges_and_preserves_latest_clean_aspect():
+    archdruid = _player("Archdruid", mana=(100, 100), health=(200, 100))
+    target = enemies.Goblin()
+    target.health.max = target.health.current = 200
+    _awaken_ring(archdruid, "Archdruid")
+    archdruid.archdruid_attunement["ring_awakened"] = True
+
+    promotion_kits.begin_action(archdruid, action="Cast Spell", choice="Poison Breath")
+    promotion_kits.add_aspect(archdruid, "Venom")
+    promotion_kits.add_aspect(archdruid, "Venom")
+    promotion_kits.begin_action(archdruid, action="Cast Spell", choice="Heal")
+    promotion_kits.add_aspect(archdruid, "Growth")
+    counts = promotion_kits.combat_state(archdruid)["aspect_harmony"]
+    assert counts == {"Venom": 1, "Growth": 1}
+
+    message = abilities.FourfoldSurge().use(archdruid, target)
+    assert "Harmony Bonus preserves Growth" in message
+    assert promotion_kits.combat_state(archdruid)["aspect_harmony"] == {"Growth": 1}
+
+
+def test_matching_totem_cast_gains_after_success_and_not_on_miss():
+    shaman = _player("Shaman")
+    shaman.magic_effects["Totem"].active = True
+    shaman.magic_effects["Totem"].extra = {"aspect": "Fire", "resonance": 0}
+    promotion_kits.begin_action(shaman, action="Cast Spell", choice="Fireball")
+    miss = SimpleNamespace(damage=0, healing=0, hit=False, effects_applied={})
+    promotion_kits.record_action_resolution(shaman, miss)
+    assert promotion_kits.totem_resonance(shaman) == 0
+
+    promotion_kits.begin_action(shaman, action="Cast Spell", choice="Fireball")
+    hit = SimpleNamespace(damage=12, healing=0, hit=True, effects_applied={})
+    promotion_kits.record_action_resolution(shaman, hit)
+    promotion_kits.record_action_resolution(shaman, hit)
+    assert promotion_kits.totem_resonance(shaman) == 1
+
+
 def test_rogue_cheat_death_spends_misfortune_and_applies_jinx(monkeypatch):
     rogue = _player("Rogue", health=(100, 0))
     _awaken_ring(rogue, "Rogue")
@@ -661,9 +928,119 @@ def test_troubadour_crescendo_coda_practice_and_encore_preservation():
     assert repertoire["clean_finishes"] == 1
 
 
+def test_troubadour_exploration_completion_practice_route_coda_and_save():
+    troubadour = _player("Troubadour")
+    troubadour.equipment["OffHand"] = items.Tambourine()
+
+    composed, message = bard.compose_sheet_music(
+        troubadour,
+        "Symphony of Disfunction",
+    )
+    assert composed is True
+    assert "1 practice XP from composition" in message
+    started, _ = bard.start_song(troubadour, "Symphony of Disfunction")
+    assert started is True
+    message = bard.tick_exploration_song(troubadour, 80)
+    repertoire = promotion_kits.ensure_state(troubadour)["bard_repertoire"][
+        "Symphony of Disfunction"
+    ]
+    assert repertoire["practice_xp"] == 8
+    assert repertoire["clean_finishes"] == 1
+    assert "reduced Symphony of Disfunction route coda" in message
+
+    restored = PlayerDataSerializer.deserialize(
+        PlayerDataSerializer.serialize(troubadour),
+        skip_tiles=True,
+    )
+    assert bard.active_exploration_effect(restored) == "enemy_attack_down"
+    enemy = enemies.Goblin()
+    assert "offense falters" in bard.apply_enemy_opening_debuffs(restored, enemy)
+    assert bard.active_exploration_effect(restored) is None
+
+
+def test_mastered_repertoire_costs_mp_and_chorus_coda_resolves_once():
+    troubadour = _player("Troubadour", mana=(100, 100))
+    troubadour.equipment["OffHand"] = items.Lute()
+    promotion_kits.ensure_state(troubadour)["bard_repertoire"]["Battle Hymn"][
+        "known"
+    ] = True
+
+    started, message = bard.perform_repertoire_song(
+        troubadour,
+        "Battle Hymn",
+        target=enemies.Goblin(),
+    )
+    assert started is True
+    assert troubadour.mana.current == 86
+    assert "spends 14 MP" in message
+
+    promotion_kits.combat_state(troubadour)["crescendo"] = 3
+    message = promotion_kits.complete_song(troubadour, "Chorus Time")
+    assert "readies one final reduced tempo check" in message
+
+    class WinningContest:
+        calls = 0
+
+        def randint(self, low, high):
+            self.calls += 1
+            return high if self.calls == 1 else low
+
+    assert bard.consume_chorus_time_coda(
+        troubadour,
+        enemies.Goblin(),
+        rng=WinningContest(),
+    ) is True
+    assert bard.consume_chorus_time_coda(
+        troubadour,
+        enemies.Goblin(),
+        rng=WinningContest(),
+    ) is False
+
+
 def test_shared_recovery_scales_with_companion_bond():
     beast = _player("Beast Master")
     _awaken_ring(beast, "Beast Master")
     beast.tamed_companion = {"active": True, "bond": 100}
 
     assert class_rings.shared_recovery_amount(beast, 100) == 35
+
+
+def test_shared_recovery_ring_strengthens_each_companion_command():
+    beast = _player("Beast Master", health=(100, 50))
+    captured = {}
+
+    def weapon_damage(_target, **kwargs):
+        captured.update(kwargs)
+        return "hits.\n", True, 1
+
+    beast.familiar = SimpleNamespace(
+        name="Wolf",
+        spec="Tamed",
+        health=SimpleNamespace(max=100, current=50),
+        bond=100,
+        is_alive=lambda: True,
+        weapon_damage=weapon_damage,
+    )
+    beast.tamed_companion = {"active": True, "bond": 100}
+    enemy = enemies.Goblin()
+    _awaken_ring(beast, "Beast Master")
+
+    ability_mechanics.set_pending_companion_command(beast, "Pack Strike")
+    message = ability_mechanics.resolve_tamed_companion_command(beast, enemy)
+    assert captured["accuracy_modifier"] == 0.10
+    assert "Shared Recovery strengthens" in message
+
+    ability_mechanics.set_pending_companion_command(beast, "Guard Partner")
+    ability_mechanics.resolve_tamed_companion_command(beast, enemy)
+    assert beast.magic_effects["Nature Shield"].duration == 3
+    assert beast.magic_effects["Nature Shield"].extra == 31
+
+    ability_mechanics.set_pending_companion_command(beast, "Harry Prey")
+    ability_mechanics.resolve_tamed_companion_command(beast, enemy)
+    assert enemy.stat_effects["Defense"].extra == -6
+    assert enemy.stat_effects["Speed"].duration == 3
+
+    ability_mechanics.set_pending_companion_command(beast, "Mend Wounds")
+    message = ability_mechanics.resolve_tamed_companion_command(beast, enemy)
+    assert beast.health.current == 93
+    assert "43 HP" in message

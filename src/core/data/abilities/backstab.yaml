@@ -2,8 +2,8 @@ name: Backstab
 type: Skill
 subtype: Stealth
 description: >-
-  Strike a stunned opponent in the back, ignoring any defense or
-  armor and dealing devastating damage.
+  Death Mark Setup: strike a stunned opponent in the back, ignoring any
+  defense or armor and dealing devastating damage.
 cost: 6
 weapon: true
 damage_mod: 2.0

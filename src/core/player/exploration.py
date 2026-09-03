@@ -177,18 +177,10 @@ class PlayerExplorationMixin:
         """
         Controls the listed options during combat
         """
-        if self.transform_type:
-            if self.cls.name in ["Druid", "Lycan"]:
-                action_list.insert(1, "Transform")
-            if (
-                getattr(self, "_transformed", False)
-                and self.transform_type == self.cls
-                and self.class_effects["Power Up"].duration < 5
-            ):
-                action_list.append("Untransform")
-                for action in ["Flee", "Use Item"]:
-                    if action in action_list:
-                        action_list.pop(action_list.index(action))
+        if getattr(self, "_transformed", False):
+            action_list.insert(1, "Dismiss Form")
+        elif self.available_transform_forms():
+            action_list.insert(1, "Transform")
         if self.is_disarmed():
             action_list.insert(1, "Pickup Weapon")
         if (
@@ -364,6 +356,13 @@ class PlayerExplorationMixin:
             pass
 
         target_tile = self.world_dict.get((new_x, new_y, self.location_z), {})
+        try:
+            from ..map_tiles import find_trap_warning
+
+            if find_trap_warning(target_tile, self):
+                return False
+        except Exception:
+            pass
         can_enter_wall = (
             getattr(self, "enter_wall", False)
             and "Wall" in target_tile.__class__.__name__
@@ -437,31 +436,37 @@ class PlayerExplorationMixin:
 
     def death(self):
         """Resolve death penalties, return the result message, and move the player to town."""
+        from ..classes import promotion_kits
+
+        promotion_kits.clear_combat_state(self)
         self.record_death()
         death_message = ""
         stat_list = ['strength', 'intelligence', 'wisdom', 'constitution', 'charisma', 'dexterity']
+        form_snapshot = getattr(self, "_normal_form_snapshot", None)
+        normal_stats = (
+            form_snapshot["stats"] if isinstance(form_snapshot, dict) else self.stats
+        )
         if self.level.level > 9 or self.level.pro_level > 1:
             cost = self.level.level * self.level.pro_level * 100 * self.location_z
             cost = random.randint(cost // 2, cost)
             cost = min(cost, self.gold)
             death_message += f"Resurrection costs you {cost} gold.\n"
             self.gold -= cost
-            if not random.randint(0, self.stats.charisma):
+            if not random.randint(0, normal_stats.charisma):
                 death_message += "Complications occurred during your resurrection.\n"
                 stat_index = random.randint(0, 5)
                 stat_name = stat_list[stat_index]
-                if stat_name == 'strength':
-                    self.stats.strength -= 1
-                if stat_name == 'intelligence':
-                    self.stats.intel -= 1
-                if stat_name == 'wisdom':
-                    self.stats.wisdom -= 1
-                if stat_name == 'constitution':
-                    self.stats.con -= 1
-                if stat_name == 'charisma':
-                    self.stats.charisma -= 1
-                if stat_name == 'dexterity':
-                    self.stats.dex -= 1
+                stat_attr = {
+                    "strength": "strength",
+                    "intelligence": "intel",
+                    "wisdom": "wisdom",
+                    "constitution": "con",
+                    "charisma": "charisma",
+                    "dexterity": "dex",
+                }[stat_name]
+                setattr(normal_stats, stat_attr, getattr(normal_stats, stat_attr) - 1)
+                if normal_stats is not self.stats:
+                    setattr(self.stats, stat_attr, getattr(self.stats, stat_attr) - 1)
                 death_message += f"You have lost 1 {stat_name}.\n"
         self.state = 'normal'
         self.effects(end=True)

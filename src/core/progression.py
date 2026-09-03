@@ -34,11 +34,14 @@ from .progression_manifest import (
     ABILITY_ICON_KEYS,
     ABILITY_ICON_OVERRIDES,
     ABILITY_NODE_NAME_OVERRIDES,
+    AUTHORED_PROMOTED_TALENT_KEYS,
     AUTHORED_TREE_CLASSES,
     ASSASSIN_TREE_NODE_SPECS,
+    NINJA_TREE_NODE_SPECS,
     BASE_TREE_NODE_SPECS,
     BASE_TREE_PROMOTION_SPECS,
     BERSERKER_TREE_NODE_SPECS,
+    CATALOG_ONLY_PROMOTED_TREE_CLASSES,
     CLASS_KIT_TALENTS,
     CLASS_STAT_GROUPS,
     CONJURER_CARRIED_NODE_IDS,
@@ -346,9 +349,15 @@ def attribute_points_through_level(level: int) -> int:
 
 def class_tier(player: Any) -> int:
     """Return promotion depth independently from global player level."""
+    form_snapshot = getattr(player, "_normal_form_snapshot", None)
+    current_class = (
+        form_snapshot.get("cls")
+        if isinstance(form_snapshot, dict)
+        else getattr(player, "cls", None)
+    )
     return max(
         1,
-        min(3, int(getattr(getattr(player, "cls", None), "pro_level", 1))),
+        min(3, int(getattr(current_class, "pro_level", 1))),
     )
 
 
@@ -1292,6 +1301,8 @@ def _build_terminal_weapon_tree(
                 "ability_class": ability_ctor,
                 "description": getattr(ability, "description", ""),
             }
+            if spec.get("kit_effect"):
+                payload["kit_effect"] = spec["kit_effect"]
             icon_key = str(
                 spec.get("icon_key", _ability_icon_key(book, ability))
             )
@@ -1995,6 +2006,11 @@ def _build_authored_tree(class_name: str) -> AbilityTree:
             promotion_position=(2, 6),
             promotion_prerequisites=("cutthroat",),
         )
+    if class_name == "Ninja":
+        return _build_authored_kit_tree(
+            class_name,
+            NINJA_TREE_NODE_SPECS,
+        )
     if class_name == "Stalwart Defender":
         return _build_authored_kit_tree(
             class_name,
@@ -2142,14 +2158,13 @@ def _build_authored_tree(class_name: str) -> AbilityTree:
             (name, talent_key, rating_name, None)
             for name, talent_key, rating_name
             in CLASS_KIT_TALENTS.get(class_name, ())
+            if talent_key in AUTHORED_PROMOTED_TALENT_KEYS
         )
     advanced_talent_key = (
         authored_talents[-1][1]
         if stage == 3 and authored_talents
         else None
     )
-    talent_bonus = stage * 10
-
     def talent_mechanic_text(talent_key: str) -> str:
         if talent_key == "summoner.conduit-mastery":
             return " It also increases permanent-summon damage by 5%."
@@ -2165,10 +2180,10 @@ def _build_authored_tree(class_name: str) -> AbilityTree:
             return " It also records one extra successful Lycan control response."
         if effect and effect[0] == "bond_power":
             return (
-                " It also increases the companion's bond-derived combat bonus "
+                "Increases the companion's bond-derived combat bonus "
                 f"by {effect[2]} percentage points."
             )
-        return ""
+        raise ValueError(f"{talent_key} has no authored class-kit effect")
 
     for talent_name, talent_key, rating_name, authored_lane in authored_talents[
         :max(0, maximum - len(all_nodes))
@@ -2198,16 +2213,7 @@ def _build_authored_tree(class_name: str) -> AbilityTree:
             payload={
                 "name": talent_name,
                 "talent_key": talent_key,
-                "description": (
-                    f"{talent_name} permanently increases {rating_name} by "
-                    f"{talent_bonus}%."
-                    + talent_mechanic_text(talent_key)
-                ),
-                "bonuses": {
-                    "rating_percentages": {
-                        rating_name: talent_bonus / 100,
-                    },
-                },
+                "description": talent_mechanic_text(talent_key),
                 **(
                     {"kit_effect": TALENT_KIT_EFFECTS[talent_key]}
                     if talent_key in TALENT_KIT_EFFECTS
@@ -2222,67 +2228,6 @@ def _build_authored_tree(class_name: str) -> AbilityTree:
             cost=2 if talent_key == advanced_talent_key else 1,
         )
         lane_nodes[preferred].append(node)
-        all_nodes.append(node)
-
-    talent_ranks: dict[str, int] = {
-        talent_key: 1
-        for _name, talent_key, _rating, _lane in authored_talents
-    }
-    talent_index = 0
-    while stage > 1 and len(all_nodes) < minimum:
-        base_name, talent_key, rating_name, _authored_lane = authored_talents[
-            talent_index % len(authored_talents)
-        ]
-        talent_index += 1
-        talent_ranks[talent_key] += 1
-        rank = talent_ranks[talent_key]
-        lane = next(
-            (
-                branch
-                for branch in branches
-                if _branch_rating_focus(class_name, branch) == rating_name
-            ),
-            min(branches, key=lambda branch: len(lane_nodes[branch])),
-        )
-        row = len(lane_nodes[lane])
-        level_requirement = _development_level_requirement(stage, row)
-        node = AbilityTreeNode(
-            id=(
-                f"{_slug(class_name)}.talent.{_slug(talent_key)}."
-                f"rank-{rank}"
-            ),
-            tree_id=class_name,
-            kind=NodeKind.TALENT,
-            lane=lane,
-            position=(branches.index(lane), row),
-            icon_key="skill_passive",
-            prerequisites=(
-                (lane_nodes[lane][-1].id,)
-                if lane_nodes[lane]
-                else ()
-            ),
-            payload={
-                "name": f"{base_name} {rank}",
-                "talent_key": f"{talent_key}.rank-{rank}",
-                "description": (
-                    f"Deepen {base_name}; permanently increase "
-                    f"{rating_name} by {talent_bonus}%."
-                    + talent_mechanic_text(talent_key)
-                ),
-                "bonuses": {
-                    "rating_percentages": {
-                        rating_name: talent_bonus / 100,
-                    },
-                },
-                **(
-                    {"level_requirement": level_requirement}
-                    if level_requirement
-                    else {}
-                ),
-            },
-            cost=2 if stage == 3 and rank >= 3 else 1,
-        )
-        lane_nodes[lane].append(node)
         all_nodes.append(node)
 
     terminal_by_lane = {
@@ -2709,7 +2654,10 @@ def validate_trees() -> tuple[str, ...]:
                     f"{tree.id}: exclusive group {group} has fewer than two choices"
                 )
 
-        if tree.stage == 3:
+        if (
+            tree.stage == 3
+            and tree.class_name not in CATALOG_ONLY_PROMOTED_TREE_CLASSES
+        ):
             roots = [
                 node
                 for node in tree.nodes
@@ -2908,6 +2856,13 @@ def _sync_level(player: Any) -> None:
 
 
 def _roll_growth(player: Any, rng: random.Random) -> GrowthResult:
+    form_snapshot = getattr(player, "_normal_form_snapshot", None)
+    transformed = isinstance(form_snapshot, dict)
+    active_class = player.cls
+    active_stats = player.stats
+    if transformed:
+        player.cls = form_snapshot["cls"]
+        player.stats = form_snapshot["stats"]
     luck = player.check_mod
     divisor = max(
         1,
@@ -2940,8 +2895,16 @@ def _roll_growth(player: Any, rng: random.Random) -> GrowthResult:
         + (player.stats.wisdom // LEVELUP_STAT_DIVISOR)
         + max(1, player.cls.wis_plus // 2),
     )
-    player.health.max += health
-    player.mana.max += mana
+    if transformed:
+        player.cls = active_class
+        player.stats = active_stats
+    normal_health = form_snapshot["health"] if transformed else player.health
+    normal_mana = form_snapshot["mana"] if transformed else player.mana
+    normal_health.max += health
+    normal_mana.max += mana
+    if transformed:
+        player.health.max += health
+        player.mana.max += mana
     player.combat.attack += attack
     player.combat.defense += defense
     player.combat.magic += magic
@@ -2949,6 +2912,9 @@ def _roll_growth(player: Any, rng: random.Random) -> GrowthResult:
     if player.in_town():
         player.health.current = player.health.max
         player.mana.current = player.mana.max
+        if transformed:
+            normal_health.current = normal_health.max
+            normal_mana.current = normal_mana.max
     return GrowthResult(health, mana, attack, defense, magic, magic_defense)
 
 
@@ -3014,6 +2980,10 @@ def increase_attribute(player: Any, stat_name: str) -> PurchaseResult:
         return PurchaseResult(False, f"Unknown primary attribute: {stat_name}.")
     if state.unspent_attribute_points < 1:
         return PurchaseResult(False, "No attribute points are available.")
+    form_snapshot = getattr(player, "_normal_form_snapshot", None)
+    if isinstance(form_snapshot, dict):
+        normal_stats = form_snapshot["stats"]
+        setattr(normal_stats, normalized, getattr(normal_stats, normalized) + 1)
     setattr(player.stats, normalized, getattr(player.stats, normalized) + 1)
     state.trained_attributes[normalized] = state.trained_attributes.get(normalized, 0) + 1
     state.unspent_attribute_points -= 1
@@ -3347,10 +3317,18 @@ def permanent_closures_for_plan(
 
 
 def _grant_ability(player: Any, node: AbilityTreeNode) -> str:
+    from .classes import transformation
+
     ability_ctor = node.payload["ability_class"]
     ability = ability_ctor()
     book_name = node.payload["book"]
-    book = player.spellbook[book_name]
+    snapshot = getattr(player, "_normal_form_snapshot", None)
+    normal_spellbook = (
+        snapshot["spellbook"]
+        if transformation.is_transformed(player) and isinstance(snapshot, dict)
+        else player.spellbook
+    )
+    book = normal_spellbook[book_name]
     if node.payload.get("stack_if_known") and ability.name in book:
         existing = book[ability.name]
         state = ensure_progression(player)
@@ -3364,22 +3342,27 @@ def _grant_ability(player: Any, node: AbilityTreeNode) -> str:
 
     old_name = _upgrade_source_name(ability_ctor)
     if old_name:
-        for candidate_book in player.spellbook.values():
+        for candidate_book in normal_spellbook.values():
             candidate_book.pop(old_name, None)
     if ability.name == "Health/Mana Drain":
         for old_name in ("Health Drain", "Mana Drain"):
-            player.spellbook["Skills"].pop(old_name, None)
+            normal_spellbook["Skills"].pop(old_name, None)
     elif ability.name == "True Piercing Strike":
         for old_name in ("Piercing Strike", "True Strike"):
-            player.spellbook["Skills"].pop(old_name, None)
+            normal_spellbook["Skills"].pop(old_name, None)
     elif ability.name == "Triple Strike":
-        player.spellbook["Skills"].pop("Double Strike", None)
+        normal_spellbook["Skills"].pop("Double Strike", None)
     elif ability.name == "Flurry of Blades":
-        player.spellbook["Skills"].pop("Triple Strike", None)
+        normal_spellbook["Skills"].pop("Triple Strike", None)
     book[ability.name] = ability
+    if ability.name == "Death Mark":
+        deathblow = abilities.Deathblow()
+        normal_spellbook["Skills"][deathblow.name] = deathblow
     if node.payload.get("stack_if_known"):
         ensure_progression(player).ability_ranks.setdefault(ability.name, 1)
-    if ability.name in ("Transform", "Purity of Body", "Reveal"):
+    if transformation.is_transformed(player):
+        transformation.mirror_learned_skill(player, ability.name, ability)
+    if ability.name in ("Purity of Body", "Reveal"):
         ability.use(player)
     return ability.name
 
@@ -3566,6 +3549,10 @@ def _apply_promotion(
     if target_name == "Warlock" and not choices.get("familiar"):
         raise ValueError("A familiar must be selected before promotion.")
 
+    retained_abilities = {
+        book_name: dict(entries)
+        for book_name, entries in player.spellbook.items()
+    }
     old_class_name = player.cls.name
     permanent_class = getattr(player, "transform_type", None)
     player.cls = new_class
@@ -3602,12 +3589,15 @@ def _apply_promotion(
             raise ValueError(message)
     elif target_name == "Warlock":
         player.familiar = choices["familiar"]
-        player.spellbook["Skills"]["Familiar"] = abilities.Familiar()
+        player.spellbook["Skills"].setdefault("Familiar", abilities.Familiar())
     elif target_name == "Demonologist":
-        player.spellbook["Skills"]["Call Contract"] = abilities.CallContract()
+        player.spellbook["Skills"].setdefault(
+            "Call Contract",
+            abilities.CallContract(),
+        )
         player.ensure_demonologist_contracts()
     elif target_name == "Ranger":
-        player.spellbook["Skills"]["Tame"] = abilities.Tame()
+        player.spellbook["Skills"].setdefault("Tame", abilities.Tame())
         player.ensure_tamed_companion()
     elif target_name == "Stalwart Defender":
         for ability_ctor in (
@@ -3617,9 +3607,15 @@ def _apply_promotion(
             abilities.Stronghold,
         ):
             ability = ability_ctor()
-            player.spellbook["Skills"][ability.name] = ability
+            player.spellbook["Skills"].setdefault(ability.name, ability)
     if target_name in ("Seeker", "Wizard"):
         player.teleport = (player.location_x, player.location_y, player.location_z)
+
+    # Promotion grants are additive. Restore the original objects as a final
+    # invariant so class-specific initialization cannot revoke or replace an
+    # ability the player already owned.
+    for book_name, entries in retained_abilities.items():
+        player.spellbook.setdefault(book_name, {}).update(entries)
     from .classes import class_rings, promotion_kits
 
     promotion_kits.clear_combat_state(player)
@@ -3641,6 +3637,12 @@ def _purchase_snapshot(player: Any) -> dict[str, Any]:
         "equipment": copy.deepcopy(getattr(player, "equipment", {})),
         "inventory": copy.deepcopy(getattr(player, "inventory", {})),
         "spellbook": copy.deepcopy(player.spellbook),
+        "normal_form_snapshot": copy.deepcopy(
+            getattr(player, "_normal_form_snapshot", None)
+        ),
+        "transformation_state": copy.deepcopy(
+            getattr(player, "transformation_state", None)
+        ),
         "familiar": getattr(player, "familiar", None),
         "summons": copy.deepcopy(getattr(player, "summons", {})),
         "special_fields": {
@@ -3668,6 +3670,8 @@ def _restore_purchase_snapshot(player: Any, snapshot: dict[str, Any]) -> None:
     player.equipment = snapshot["equipment"]
     player.inventory = snapshot["inventory"]
     player.spellbook = snapshot["spellbook"]
+    player._normal_form_snapshot = snapshot["normal_form_snapshot"]
+    player.transformation_state = snapshot["transformation_state"]
     player.familiar = snapshot["familiar"]
     player.summons = snapshot["summons"]
     for field_name, value in snapshot["special_fields"].items():
@@ -3693,7 +3697,9 @@ def purchase_node(
         return PurchaseResult(False, f"{node.name} is already owned.", node.id, state.unspent_points)
     if not allow_in_combat and not _outside_combat(player):
         return PurchaseResult(False, "Progression purchases are unavailable in combat.")
-    current_class = player.cls.name
+    from .classes import transformation
+
+    current_class = transformation.permanent_class_name(player)
     carried_node = _is_carried_node(
         node,
         current_class,
@@ -3757,19 +3763,23 @@ def purchase_node(
             message = f"{node.payload['rating']} increased by {amount}."
         elif node.kind == NodeKind.HEALTH:
             amount = int(node.payload["amount"])
-            player.health.max += amount
-            player.health.current = min(
-                player.health.max,
-                player.health.current + amount,
-            )
+            snapshot = getattr(player, "_normal_form_snapshot", None)
+            target = snapshot["health"] if isinstance(snapshot, dict) else player.health
+            target.max += amount
+            target.current = min(target.max, target.current + amount)
+            if isinstance(snapshot, dict):
+                player.health.max += amount
+                player.health.current = min(player.health.max, player.health.current + amount)
             message = f"Maximum HP increased by {amount}."
         elif node.kind == NodeKind.MANA:
             amount = int(node.payload["amount"])
-            player.mana.max += amount
-            player.mana.current = min(
-                player.mana.max,
-                player.mana.current + amount,
-            )
+            snapshot = getattr(player, "_normal_form_snapshot", None)
+            target = snapshot["mana"] if isinstance(snapshot, dict) else player.mana
+            target.max += amount
+            target.current = min(target.max, target.current + amount)
+            if isinstance(snapshot, dict):
+                player.mana.max += amount
+                player.mana.current = min(player.mana.max, player.mana.current + amount)
             message = f"Maximum MP increased by {amount}."
         else:
             removed = _apply_promotion(player, node, promotion_choices)

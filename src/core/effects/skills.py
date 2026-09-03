@@ -89,8 +89,12 @@ class KidneyPunchEffect(Effect):
             return
 
         # Weapon damage (main hand)
+        before = int(target.health.current)
         use_str, hit, crit = actor.weapon_damage(target, dmg_mod=1.0, cover=False, use_offhand=False)
         messages.append(use_str)
+        result.hit = hit
+        result.crit = crit if crit > 1 else None
+        result.damage = max(0, before - int(target.health.current))
 
         # Crusader Divine Aegis check
         crusader_aegis = (
@@ -117,6 +121,7 @@ class KidneyPunchEffect(Effect):
                 if target.stun_contest_success(actor, att_roll, def_roll):
                     dur = max(2, speed // 8)
                     if target.apply_stun(dur, source="Kidney Punch", applier=actor):
+                        result.effects_applied["Status"].append("Stun")
                         messages.append(f"{target.name} is stunned.\n")
                         if "Twist the Knife" in actor.spellbook.get("Skills", {}):
                             backstab = abilities.Backstab()
@@ -823,21 +828,18 @@ class RevealEffect(Effect):
 
 
 class TransformEffect(Effect):
-    """Transform: set user.transform_type to an enemy creature instance.
-
-    The creature name maps to a class in src.core.enemies.
-    """
+    """Apply one unlocked persistent Druid or Lycan form."""
 
     def __init__(self, creature: str = "Panther", **_kw):
         super().__init__()
         self.creature = creature
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
-        from src.core import enemies as _enemies
         messages = result.extra.setdefault("messages", [])
-        creature_cls = getattr(_enemies, self.creature, None)
-        if creature_cls is not None:
-            target.transform_type = creature_cls()
+        select_form = getattr(target, "select_transform_form", None)
+        transform = getattr(target, "transform", None)
+        if callable(select_form) and callable(transform) and select_form(self.creature):
+            messages.append(transform())
 
 
 class StompEffect(Effect):

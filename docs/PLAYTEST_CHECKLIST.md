@@ -133,9 +133,9 @@ second implementation backlog.
 - [ ] Awaken and equip Arcane Duel. Confirm Weave Memory preserves a spent
   Accent as the next Foundation without creating or displaying Arcane Tempo.
 - [ ] Verify the Sorcerer gate is `INT 15/WIS 13`, Warlock
-  `INT 14/CHA 14/WIS 10/CON 10`, Spellblade
-  `STR 10/CON 11/INT 14/CHA 12`, and Conjurer
-  `CHA 13/INT 13/WIS 12/CON 10/DEX 10`, with no Strength gate.
+  `INT 13/CHA 14`, Spellblade `CON 11/INT 13/CHA 12`, and Conjurer
+  `CHA 12/INT 13/WIS 12`. Confirm requirements of 10 or lower are omitted and
+  neither Spellblade nor Conjurer has a Strength gate.
 - [ ] Promote Mage along all four routes. Confirm every learned spell survives;
   non-elemental Mage nodes and competing promotions close; and unrelated
   classes cannot purchase Mage nodes. Confirm Sorcerer and Wizard do not repeat
@@ -143,6 +143,23 @@ second implementation backlog.
   trees, while learned abilities remain in the spellbook and historical tabs
   remain read-only. Verify save/load preserves ownership, talents, completed
   trees, and later affinity-gated spell purchases.
+- [ ] Exercise Sorcerer/Wizard School Affinity across all seven tracked schools,
+  both specializations, opposing-school drift, tier-two/tier-three purchase
+  gates, and save/load. After the critical School Streak gap is implemented,
+  verify awakened-and-equipped gating, once-per-spell-action failed-rider
+  stacks, school isolation, success reset, and a consumed four-stack guarantee.
+  Confirm Wizard mastery-buff stacks obey their documented combat/save
+  lifecycle.
+- [ ] Verify Warlock's familiar choice and action cadence plus Thorn By My Side,
+  Restorative Barrier, Insult to Injury, Master Locator, and Familiar Bond I/II.
+  Exercise every curse and both promotion gates. For Shadowcaster, verify every
+  Umbral Debt, Deep Shadow, Veilcraft, Nightmare, and Familiar Mastery node.
+  After the critical Shade fix, confirm only +15% Shadow damage, +10% Speed,
+  flight, and the correct Holy weakness apply; explicitly reject legacy weapon,
+  critical, speed, and physical-siphon bonuses. Verify Shade-end and low-HP
+  auto-heal backlash conversion with all four familiar variants. Exercise
+  Demonologist contracts, patron mood/corruption, Hellfire, Soul Gems, and
+  empowered curses.
 - [ ] Conjure an animal and enliven the last defeated non-boss enemy. Confirm
   the Charisma/Luck check, one transient companion, an independent random
   follow-up after the player, replacement by a later summon, dissolution after
@@ -174,6 +191,12 @@ second implementation backlog.
   abilities from conduit rather than XP, each chosen Xenid adds its documented
   caster effect, the paired ultimate node grants only the selected Xenid's
   ultimate, and level-80 Conduit Mastery amplifies caster-side effects.
+- [ ] After the critical conduit-payoff gap is implemented, exercise all
+  fourteen borrowed Xenid invocations, including Hodag and Caladrius, and
+  verify typed mitigation plus each authored rider. Confirm Conduit Command is
+  consumed by exactly the next active-Xenid non-Recall action, modifies damage
+  or healing by 25%, expires on Recall/death/combat end, and adds the correct
+  bond-100 True Name rider only with the awakened ring equipped.
 - [ ] Exercise Floating Crystal, Conjure Elixir, Barrier Wall, Banish, Mana
   Barbs, Torchlight, and all six Calling spells. Confirm Floating Crystal
   siphons 10% maximum MP per caster turn, bursts at 30%, and scales damage by
@@ -193,10 +216,44 @@ second implementation backlog.
   Attunement or Tremor and receives neither automatically.
 - [ ] Inspect every promoted tree and confirm its branch labels match
   `ABILITY_TREE_DESIGN.md`, no terminal tree is a chain of anonymous rating
-  nodes, and named talents do not appear in the combat spellbook.
-- [ ] Purchase a meter-cap talent, save/load, and promote. Confirm ownership,
-  the `+5` passive combat bonus, and the extra class-kit meter capacity all
-  persist.
+  nodes, and removed generated family names do not appear. Confirm compact
+  catalog-only trees show only real abilities, Troubadour is empty rather than
+  padded, and Beast Master's Bonded Bulwark is the sole retained talent.
+- [ ] Purchase Bonded Bulwark, save/load, and confirm its companion-bond payoff
+  persists without granting a generic combat rating. Confirm Ki, Threads,
+  Harmony, Resonance, and Lycan control do not gain removed mastery bonuses.
+- [ ] Critical pending Thief/Rogue coverage: after the authored kit is
+  implemented, verify learned-skill gating and restricted-item exclusions for
+  Scavenger's Eye and Finders Keepers; once-per-action Fortune/Misfortune gain;
+  every approved risky-action spend; typed payoff resolution; Slot Machine,
+  theft, gold, and status handling; effective caps; Cheat Death's learned-node
+  requirement; a real Jinx effect or its removal; and live Loaded Dice failed-
+  luck conversion plus once-per-combat preservation.
+- [ ] Critical pending Inquisitor/Seeker coverage: verify visible-detail Case
+  progress, Inspect,
+  Exploit Weakness hit accounting, telegraph/setup gains, target-specific
+  Revelation spend and cleanup, all four Case milestone effects, selected-
+  target UI, Wayfinding consumers, and an actual Hidden Cache dungeon/reward
+  flow with awakened-and-equipped insight smoothing.
+- [ ] Critical pending Spell Stealer/Arcane Trickster coverage: verify MP
+  validation before Blank Scroll or permanent-theft resolution, every Charge
+  source including Steal As Well, action-scoped weapon and natural-spell
+  payoffs, typed Arcane mitigation/events, the chosen miss policy, combat/load
+  cleanup, and a three-turn awakened-and-equipped Arcane Larceny buff that
+  expires and preserves Charge exactly once per combat.
+- [ ] Healer-line payoff playtest: verify once-per-action Devotion/Prayer generation,
+  every accepted
+  gain source and spend rider, live Holy Retribution/Ordered Blessings/Great
+  Gospel integration, and typed Consecrated Conduit. Bard exploration practice,
+  permanent repertoire, route codas, and the Chorus Time contest now have
+  focused regression coverage; playtest their tuning and readability. Monk Ki
+  and Dim Mak likewise need tuning, feedback, and staff-penalty playtest.
+- [ ] Pathfinder-line payoff playtest: playtest persistent Druid forms, behavior-earned
+  Lycan control, Dragon Essence/Winged Pounce, witnessed Diviner spell learning,
+  and Threaded Cast, action-scoped Aspect Harmony and Totem Resonance, typed
+  Fourfold/Soul Surge riders, and Soul harvest/ring payoff. Beast Master's
+  Shared Recovery command enhancements now have focused regression coverage;
+  playtest their command-by-command tuning.
 - [ ] For each race, verify every registry-legal first and second promotion can
   be purchased at levels 30 and 60 respectively. Human routes should retain at
   least three optional points.
@@ -242,23 +299,28 @@ second implementation backlog.
   increases critical bonus damage by `5%` per matching discipline rank.
 - [ ] Verify Berserker's class tab hides Fist, Dagger, Sword, and Club. Confirm
   its tree contains four centered rows of two-handed rank-1/rank-5 arts.
-  Confirm ungated Final Assault and Frenzy begin the left paths; Survival
-  continues through Monkey Grip 1, `+30 Attack`, and Monkey Grip 2, while Fury
-  continues through `+100 HP`, Mortal Strike 2, Boomerang Toss, and Triple
-  Strike. Confirm level-70 Reckless Onslaught sits between `+30 Attack` and
-  Monkey Grip 2. Confirm both left paths occupy five vertically centered rows,
-  the centered third column contains ungated inherited Parry, level-65 Pain
-  Tolerance, and level-70 Hemorrhage Thirst across three centered rows, and
-  every column remains inside the tree panel.
+  Confirm its four development columns are Heavy Weapons (`Monkey Grip ->
+  Momentum -> Tectonic Rift -> Monkey Grip 2`), Two-Weapon Assault (`Mortal
+  Strike 2 -> Boomerang Toss -> +30 Attack -> Thunderous Vault -> Triple
+  Strike`), Fury (`Frenzy -> Hemorrhage Thirst -> Fatality -> Composed Wrath`),
+  and Survival (`Parry -> Pain Tolerance -> Final Assault -> Reckless
+  Onslaught`). Confirm every column remains inside the tree panel and the
+  two-point terminal nodes display their correct costs.
 - [ ] Use Frenzy and verify three forced basic-attack turns with its damage and
   critical bonuses. Verify Pain Tolerance halves bleed damage and vulnerability
   and doubles Bandage healing. Verify Boomerang Toss makes Devastating Throw
-  hit three times, return, and avoid Disarm. Verify Reckless Onslaught replaces
-  Final Assault, deals double weapon damage, stacks `+5 Attack/-5 Defense` when
-  refreshed, and knocks its user Prone when parried. Verify Hemorrhage Thirst
-  heals exactly the enemy's successful bleed-tick damage, a non-triggering turn
-  breaks its streak, and a third consecutive trigger causes two unconscious
-  turns before resetting.
+  hit three times, return, and avoid Disarm. Verify Final Assault remains known
+  alongside Reckless Onslaught; the latter deals double weapon damage, stacks
+  `+5 Attack/-5 Defense` when refreshed, and knocks its user Prone when
+  parried. Verify Hemorrhage Thirst heals exactly the enemy's successful
+  bleed-tick damage, a non-triggering turn breaks its streak, and a third
+  consecutive trigger causes two unconscious turns before resetting. Verify
+  Fatality's survivor counter/kill heal and Composed Wrath's Frenzy override.
+- [ ] Critical pending coverage: once Bloodied Momentum is implemented, verify
+  action- and enemy-action-deduplicated gain, one below-25% bonus per round,
+  3/4/5 caps, pre-resolution spend on heavy arts and Final Assault, miss
+  consumption/preservation, art-specific mutations, combat cleanup, the
+  20-scar victory threshold, and awakened Bloodied Crits reliability.
 - [ ] Verify Grandmaster of Arms shows all 24 rank-1/rank-5/rank-10 art nodes.
   Rank-10 nodes must require discipline 10, replace level 2, and have no global
   level gate. Confirm ungated Double Strike appears between Perfect Form and
@@ -340,8 +402,11 @@ second implementation backlog.
   with Battle Determination and confirm it immediately grants 20 Resolve.
 - [ ] Build Resolve from Defend, blocks, physical damage after mitigation,
   Goad, and Hold the Line. Verify caps 50/100, no duplicate ring gain, legacy
-  `guard_meter` load compatibility, full-bar major-hit reduction, mastery
-  persistence, and immediate access to all four full-bar Bursts.
+  `guard_meter` load compatibility, and full-bar major-hit reduction. After the
+  critical mastery gap is implemented, verify separate Citadel Aegis,
+  Ironwall Revenge, Last Bastion, and Stronghold progress; once-per-action or
+  event credit; Sentinel-to-Stalwart carry-forward; save/load persistence; and
+  locked-to-learned Burst transitions after four associated uses.
 - [ ] Exercise all eight Resolve actions in the 4-by-2 class-tab grid. Verify
   Spell Block scales with spell/shield strength, Shielding Ward halves the
   remainder, passive Spell Reflection can return blocked damage, and Mirror

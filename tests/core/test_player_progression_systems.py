@@ -520,10 +520,10 @@ class TestPlayerProgression:
         player.physical_effects["Disarm"].active = False
 
         actions = player.additional_actions(["Attack", "Use Item", "Flee"])
-        assert "Transform" in actions
-        assert "Untransform" in actions
-        assert "Use Item" not in actions
-        assert "Flee" not in actions
+        assert "Transform" not in actions
+        assert "Dismiss Form" in actions
+        assert "Use Item" in actions
+        assert "Flee" in actions
 
         player.dwarf_hangover_steps = 2
         player.move_forward(game=None)

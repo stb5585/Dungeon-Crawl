@@ -284,6 +284,15 @@ remain the prompts; the evidence ledger is the running decision record.
 - [ ] Load a legacy Sorcerer/Wizard save with old 50-centered affinity values.
   - Expected: Values migrate to the new 0-based model, clamp to the active class cap, and remain readable in character/ring status text.
 
+Audit correction (2026-09-02): Pathfinder promotion checks in this file mix
+working regressions with pending acceptance targets. The rune foundation,
+elemental Totems, Archdruid persistent Fourfold/Grove system, and Ranger/Beast
+Master companion loop are substantially implemented. `Learn Spell`, Threaded
+Cast payoff, Druid persistent forms, Lycan control/Dragon Essence routing,
+combat Aspect Harmony riders, and Soulcatcher harvest/Aspect Evolution payoffs
+are not shipped. Treat checks for those behaviors as implementation acceptance,
+not regression evidence.
+
 ### Diviner And Astromancer Runes
 - [ ] Win combat as a Diviner with Fire, Water, Wind, and Earth natural spells across enemies with neutral resistance, resistance, and weakness to the killing spell's element.
   - Expected: Matching sign runes can drop from natural-spell kills, cap at 3 per sign, and weakness/resistance visibly changes the drop cadence over repeated attempts.
@@ -491,6 +500,13 @@ remain the prompts; the evidence ledger is the running decision record.
   - Expected: Level-1 victories explain that summon bond needs level 2; level-2+ low-XP/no-roll victories can report that bond held steady; successful gains still report the amount and current bond.
 
 ### Legacy Class-Kit Mechanics
+
+Implementation update (2026-09-03): Devotion and Prayer now use authored
+action/hostile-action boundaries, and their ward, support, power-up, and ring
+payoffs are implemented. The checks below remain manual playtest rows rather
+than claims of completed play evidence. See `CLASS_KIT_DESIGN_GATES.md` for the
+automated implementation boundary.
+
 - [ ] Build `Devotion` as Cleric through healing, Holy pressure, shield actions, and `Turn Undead`.
   - Expected: Cleric caps at 3 stacks, gains only after the enemy survives the
     action resolution, and clears Devotion on combat end, flee, save/load,
@@ -525,6 +541,13 @@ remain the prompts; the evidence ledger is the running decision record.
 - [ ] Win ordinary non-trial combat as a Berserker at 10% HP or lower across repeated attempts.
   - Expected: `Battle Scars` can increase, caps at 20, raises max HP, and appears in character/ring status text.
   - Expected: Below 25% HP, weapon damage increases from scars and stacks with awakened `Bloodied Crits`.
+
+Audit correction (2026-09-02): the Thief/Rogue, Inquisitor/Seeker, and Spell
+Stealer/Arcane Trickster entries below describe pending acceptance targets,
+not shipped regressions. Their current partial/helper-only behavior and
+critical implementation gaps are recorded in `CLASS_KIT_DESIGN_GATES.md` and
+`DEVELOPMENT_ROADMAP.md`. Assassin/Ninja entries remain shipped checks.
+
 - [ ] Defeat ordinary loot-bearing enemies as Thief with `Scavenger's Eye`.
   - Expected: Enemy loot drop rate and eligible rarity outcomes feel modestly improved without creating quest, special, unique, ultimate, or invalid class/summon-gated drops.
 - [ ] Defeat ordinary loot-bearing enemies as Rogue with `Finders Keepers`.
@@ -549,7 +572,7 @@ remain the prompts; the evidence ledger is the running decision record.
   - Expected: `Loaded Dice` still gives failed luck checks a 15% chance to become successes.
   - Expected: Once per combat after a clean Fortune or Misfortune payoff, the ring preserves 1 point of the spent meter.
 - [ ] Promote Footpad into Inquisitor after learning stealth skills.
-  - Expected: The existing identity trade removes stealth skills while preserving the investigative kit.
+  - Expected: Every learned stealth/toolkit ability remains available; only unpurchased Footpad nodes and competing promotions close.
 - [ ] Build `Case Journal` progress as Inquisitor or Seeker against several enemy types.
   - Expected: `Inspect`, successful `Exploit Weakness`, visible telegraph reads, and victory with visible enemy details add progress to the broad enemy type.
   - Expected: Progress clamps from 0 to 100 and reports milestone ranks: `Known Tells`, `Weakness Brief`, `Pattern Lock`, and `Closed Case`.
@@ -564,16 +587,16 @@ remain the prompts; the evidence ledger is the running decision record.
   - Expected: Existing one-per-depth cache behavior and `claimed_caches` compatibility remain intact.
   - Expected: The ring adds only small insight smoothing after clean `Inspect` or telegraph reads and slightly improves `Wayfinding`.
 - [ ] Apply `Death Mark` as Assassin through valid setup actions.
-  - Expected: `Sneak Attack`, successful `Poison Strike` poison application, `Invisibility`/surprise opener, and representative blind/silence setup can mark targets.
+  - Expected: `Backstab`, `Sneak Attack`, `Momentum`, `Kidney Punch`, `Disembowel`, and `Marked Shuriken` add one mark when at least one hit lands and one additional mark after a successful native status or nonimmune coating reaction.
   - Expected: Assassin caps at 1 mark and marks clear on combat end, flee, save/load, target death, or class change.
 - [ ] Spend `Death Mark` as Assassin with eligible finishers.
-  - Expected: `Sneak Attack` or `Poison Strike` spends the mark and improves reliability/rider pressure without bypassing immunity.
+  - Expected: `Deathblow` requires at least one mark, spends all marks on a validated attempt, and gains damage, accuracy, and critical chance per mark.
 - [ ] Apply and spend `Death Mark` as Ninja.
-  - Expected: Ninja caps at 3 marks and can spend them through `Flurry Blades`, `Desoul`, or the first Ninja Blade standard strike in combat.
-  - Expected: Bosses and Class Ring trial enemies can be marked, but execution/instant-death pressure downgrades to damage/control when required.
+  - Expected: Ninja caps at 3 marks; only `Deathblow`, `Thousand Cuts`, and `Death Sentence` are dedicated finishers, and each spends all marks on the attempt.
+  - Expected: `Desoul` remains independent of the Ninja tree but shares Death resistance rules with `Death Sentence`; full resistance and bosses are immune.
 - [ ] Awaken Ninja `No-Trace Opener`, then start combat with initiative and the ring equipped.
-  - Expected: Legacy `First Strike Plus` double first standard attack behavior remains compatible.
-  - Expected: The opener can apply 1 Death Mark before damage and preserves 1 spent mark once per combat after a clean marked payoff.
+  - Expected: The first standard Ninja Blade attack applies one mark before its roll, spends all marks, and doubles base damage even though the internal legacy state keys remain compatible.
+  - Expected: A miss still spends the marks; a successful payoff against a surviving target preserves one mark once per combat.
 - [ ] Visit the Alchemist and scroll loot sources after the `Blank Scroll` addition.
   - Expected: `Blank Scroll` can be acquired as a concrete scroll item and round-trips through save/load.
 - [ ] Use `Steal Spell` as a Spell Stealer or Arcane Trickster with and without a `Blank Scroll`.

@@ -76,11 +76,6 @@ class BattleOutcomeMixin:
         restore_defeat_identity(enemy)
         if getattr(enemy, "paladin_repelled", False):
             self.player.state = "normal"
-            if (
-                hasattr(self.player, "transform_type")
-                and self.player.cls != self.player.transform_type
-            ):
-                self.player.transform(back=True)
             self.player.effects(end=True)
             enemy.effects(end=True)
             msg = f"{enemy.name} flees from the battle.\n"
@@ -92,8 +87,6 @@ class BattleOutcomeMixin:
             return msg
         if getattr(enemy, "tamed_by_player", False) or getattr(enemy, "no_victory_rewards", False):
             self.player.state = 'normal'
-            if hasattr(self.player, 'transform_type') and self.player.cls != self.player.transform_type:
-                self.player.transform(back=True)
             self.player.effects(end=True)
             msg = f"{enemy.name} leaves the fight as a companion.\n"
             msg += promotion_kits.end_combat(self.player, victory=False, enemy=enemy)
@@ -195,8 +188,6 @@ class BattleOutcomeMixin:
 
         # Clear effects
         self.player.state = 'normal'
-        if hasattr(self.player, 'transform_type') and self.player.cls != self.player.transform_type:
-            self.player.transform(back=True)
         self.player.effects(end=True)
 
         # Experience growth uses permanent post-transformation stats.
@@ -440,11 +431,6 @@ class BattleOutcomeMixin:
             )
 
         self.player.state = "normal"
-        if (
-            hasattr(self.player, "transform_type")
-            and self.player.cls != self.player.transform_type
-        ):
-            self.player.transform(back=True)
         self.player.effects(end=True)
         for member in self.encounter.members:
             member.enemy.effects(end=True)
@@ -501,8 +487,6 @@ class BattleOutcomeMixin:
     def _process_grandmaster_trial_victory(self) -> str:
         """Handle Secret Master trial victory without normal combat rewards."""
         self.player.state = 'normal'
-        if hasattr(self.player, 'transform_type') and self.player.cls != self.player.transform_type:
-            self.player.transform(back=True)
         self.player.effects(end=True)
         self.encounter.primary_enemy.effects(end=True)
 
@@ -513,8 +497,6 @@ class BattleOutcomeMixin:
     def _process_class_ring_trial_victory(self) -> str:
         """Handle legacy Class Ring trial victory without normal combat rewards."""
         self.player.state = 'normal'
-        if hasattr(self.player, 'transform_type') and self.player.cls != self.player.transform_type:
-            self.player.transform(back=True)
         self.player.effects(end=True)
         self.encounter.primary_enemy.effects(end=True)
         return f"You complete the {self._class_ring_trial_name()}.\n"
@@ -522,8 +504,6 @@ class BattleOutcomeMixin:
     def _process_thieves_guild_trial_victory(self) -> str:
         """Handle Thieves Guild initiation victory without normal combat rewards."""
         self.player.state = 'normal'
-        if hasattr(self.player, 'transform_type') and self.player.cls != self.player.transform_type:
-            self.player.transform(back=True)
         self.player.effects(end=True)
         self.encounter.primary_enemy.effects(end=True)
         if not thieves_guild.has_signet(self.player):
@@ -533,8 +513,6 @@ class BattleOutcomeMixin:
     def _process_class_ring_trial_defeat(self) -> None:
         """Handle Class Ring trial defeat without normal death rules."""
         self.player.state = 'normal'
-        if hasattr(self.player, 'transform_type') and self.player.cls != self.player.transform_type:
-            self.player.transform(back=True)
         self.player.effects(end=True)
         if hasattr(self.player, "_grandmaster_battle_hit_types"):
             self.player._grandmaster_battle_hit_types.clear()
@@ -550,8 +528,6 @@ class BattleOutcomeMixin:
 
         curses.cure_curses(self.player)
         self.player.state = 'normal'
-        if hasattr(self.player, 'transform_type') and self.player.cls != self.player.transform_type:
-            self.player.transform(back=True)
         self.player.effects(end=True)
         if hasattr(self.player, "_grandmaster_battle_hit_types"):
             self.player._grandmaster_battle_hit_types.clear()

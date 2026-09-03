@@ -345,6 +345,24 @@ class CharacterEquipmentMixin:
                             if is_left_click(event) and input_armed:
                                 self._toggle_selected_jump_mod(player_char)
                             continue
+                    elif (
+                        self.active_tab.key == "class"
+                        and self.active_mechanic_label(player_char) == "Forms"
+                    ):
+                        form_action = next(
+                            (
+                                label
+                                for label, rect in getattr(self, "_form_action_rects", [])
+                                if rect.collidepoint(pos)
+                            ),
+                            None,
+                        )
+                        if form_action is not None and is_left_click(event) and input_armed:
+                            if form_action == "Dismiss Form":
+                                player_char.transform(back=True)
+                            elif player_char.select_transform_form(form_action):
+                                player_char.transform()
+                            continue
                     elif self.active_tab.key == "class" and not grandmaster.is_weapon_discipline_class(player_char):
                         entries = self.class_companion_entries(player_char)
                         tile_index = hit_index(self.class_companion_tile_rects(entries), pos)

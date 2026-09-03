@@ -18,7 +18,8 @@ class Druid(Job):
             description="Druids act as an extension of nature to call upon the elemental"
             " forces, embodying nature's wrath and mystique. This attunement "
             "with nature allows druids to emulate creatures of the animal world,"
-            " transforming into them and gaining there specs and abilities. They"
+            " transforming into persistent Panther and Direbear forms with their native "
+            "traits and selected compatible skills. They"
             " lose the ability to wear medium armor and shields but gain "
             "natural weapons and armor when transformed.",
             str_plus=1,

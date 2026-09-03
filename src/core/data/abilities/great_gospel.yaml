@@ -3,7 +3,8 @@ type: Skill
 subtype: Power Up
 description: >-
   The light of God shines upon you, healing all wounds and providing a temporary
-  boost. Status effects are cured and all attacks deal extra damage for 5 rounds.
+  boost. Status effects are cured, Prayer rises to at least half its cap, and
+  divine support generation and payoffs improve for 5 rounds.
 cost: 35
 self_target: true
 effects:

@@ -58,12 +58,15 @@ The refactor created one shared flat-progression authority:
 - The old player-level promotion and automatic class-ability award paths have
   been reduced to compatibility surfaces. Church promotion is retired.
 
-All 49 registered playable classes have declarative tree definitions. Generic
-lineages use authored class paths from the manifest; the complete Warrior
-lineage received bespoke graph, geometry, ability, and class-mechanic work.
+All 49 registered playable classes have declarative tree definitions. The
+complete Warrior lineage and Assassin/Ninja use bespoke graphs. Remaining
+Footpad, Healer, and Pathfinder promotion graphs are catalog-only: their
+generated rating families were removed on 2026-09-03, leaving compact panels
+that make future authored progression needs visible. Bonded Bulwark is the
+only retained talent in that group because it owns a concrete companion payoff.
 
-Node IDs and talent keys are persistent version-5 save API. Renaming them
-requires an explicit migration or alias.
+Active node IDs and talent keys are persistent version-5 save API. The removed
+generic family keys are intentionally retired and are no longer active nodes.
 
 ## Global Level, XP, And Currencies
 
@@ -180,17 +183,25 @@ Implemented behavior includes:
 - rank-1 and rank-5 Weapon Art nodes that require matching discipline mastery
   and replace lower forms instead of auto-learning.
 
-Berserker now has authored Survival, Fury, and independent passive paths:
+Berserker now has authored Heavy Weapons, Two-Weapon Assault, Fury, Survival,
+and Weapon Arts paths:
 
-- Final Assault, Monkey Grip, Reckless Onslaught, and terminal Attack;
-- Frenzy, terminal HP, Mortal Strike II, Boomerang Toss, and Triple Strike;
-- inherited Parry, Pain Tolerance, and Hemorrhage Thirst;
+- Monkey Grip, Momentum, Tectonic Rift, and Monkey Grip 2;
+- Mortal Strike II, Boomerang Toss, terminal Attack, Thunderous Vault, and
+  Triple Strike;
+- Frenzy, Hemorrhage Thirst, Fatality, and Composed Wrath;
+- inherited Parry, Pain Tolerance, Final Assault, and Reckless Onslaught;
 - two-handed rank-1/rank-5 Weapon Arts only;
-- Frenzy's forced berserk/critical behavior;
+- Frenzy's forced berserk/critical behavior and Composed Wrath override;
 - Reckless Onslaught's stacking Attack/Defense tradeoff and parry knockdown;
 - bleed mitigation and Bandage synergy from Pain Tolerance;
 - Hemorrhage Thirst healing with a third-turn crash;
 - returning multi-hit Devastating Throw behavior through Boomerang Toss.
+
+Final Assault and Reckless Onslaught are compatible purchases. Bloodied
+Momentum is an intended terminal-class loop but is not part of this completed
+tree-geometry checkpoint; its incomplete runtime payoff is tracked as a
+critical class-kit gap in `CLASS_KIT_DESIGN_GATES.md` and the roadmap.
 
 Grandmaster of Arms now exposes all eight discipline lines through rank 10:
 
@@ -288,9 +299,16 @@ chance to return blocked spell damage to its caster. Beneficial, area, and
 explicitly unblockable spells do not consume it. Mirror Bastion grants 20 Resolve and
 two turns of Magic Defense after a trigger.
 
-Stalwart promotion grants the Surge wrappers without purchasing nodes.
-Mastery thresholds remain 0/4/8, and the three authored modifier talents apply
-their documented barrier, damage, control, healing, and duration upgrades.
+Stalwart promotion grants the Surge wrappers without purchasing tree nodes,
+but the Bursts are intended to unlock through four persistent associated-use
+masteries carried forward from Sentinel. Citadel Aegis learns from barrier and
+stance actions, Ironwall Revenge from assault/counter actions, Last Bastion
+from survival/support actions, and Stronghold from Defend, full blocks, and
+Spell Block triggers. The current scalar `resolve_mastery` and zero thresholds
+do not implement this contract; the class-kit design gate and roadmap record it
+as critical follow-up. Authored modifier talents continue to apply their
+documented barrier, damage, control, healing, and duration upgrades after the
+corresponding Burst is learned.
 
 Post-checkpoint errata: the Anti-magic description above records the historical
 checkpoint. Current Sentinel implements one merged

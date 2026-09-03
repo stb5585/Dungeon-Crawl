@@ -28,6 +28,24 @@ MAGIC_WARD_SPELLS = (
 )
 
 
+def find_trap_warning(tile: Any, player: Any, *, rng: Any = random) -> str:
+    """Cancel the first detected trap entry and return its warning message."""
+    if (
+        getattr(tile, "trap_type", None) not in TRAP_TYPES
+        or getattr(tile, "trap_triggered", False)
+        or getattr(tile, "trap_warned", False)
+        or not footpad.has_skill(player, "Find Traps")
+    ):
+        return ""
+    dexterity = int(getattr(getattr(player, "stats", None), "dex", 10))
+    depth = max(0, int(getattr(tile, "z", 0) or 0))
+    chance = max(0.25, min(0.90, 0.45 + (0.025 * (dexterity - 10)) - (0.03 * depth)))
+    if rng.random() >= chance:
+        return ""
+    tile.trap_warned = True
+    return f"{player.name} notices a hidden {tile.trap_type} ahead and stops before entering."
+
+
 def assign_dungeon_traps(world_dict: dict, *, rng: Any | None = None) -> int:
     """Randomly arm a stable, sparse set of ordinary cave-path tiles."""
     rng = rng or random.Random(0xD06E0)
@@ -40,6 +58,7 @@ def assign_dungeon_traps(world_dict: dict, *, rng: Any | None = None) -> int:
             continue
         tile.trap_type = None
         tile.trap_triggered = False
+        tile.trap_warned = False
         tile.deathcap_available = rng.random() < DEATHCAP_CHANCE
         tile.deathcap_gathered = False
         if rng.random() >= TRAP_CHANCE:

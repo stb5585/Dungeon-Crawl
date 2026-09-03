@@ -2,7 +2,7 @@
 
 import random
 
-from .. import abilities, enemies
+from .. import abilities
 from ..character import armor_resistance_modifier, armor_spell_modifier
 from ..classes import (
     ability_mechanics,
@@ -15,35 +15,21 @@ from ..classes import (
     mage_mechanics,
     paladin,
     promotion_kits,
+    transformation,
     wizard,
 )
-from .persistence import load_char
 
 
 class PlayerCombatMixin:
     def available_transform_forms(self) -> tuple[str, ...]:
         """Return the forms currently available to the permanent class."""
-        class_name = (
-            getattr(self, "_normal_class_name", "")
-            if getattr(self, "_transformed", False)
-            else getattr(getattr(self, "cls", None), "name", "")
-        )
-        if class_name != "Druid":
-            return ()
-        forms = ["Panther"]
-        if int(getattr(getattr(self, "level", None), "pro_level", 1) or 1) >= 15:
-            forms.append("Direbear")
-        return tuple(forms)
+        return transformation.available_forms(self)
 
     def select_transform_form(self, form_name: str) -> bool:
         """Select an unlocked Druid form without transforming immediately."""
-        constructors = {
-            "Panther": enemies.Panther,
-            "Direbear": enemies.Direbear,
-        }
         if form_name not in self.available_transform_forms():
             return False
-        self.transform_type = constructors[form_name]()
+        self._selected_transform_form = form_name
         return True
 
     def familiar_turn(self, enemy):
@@ -167,55 +153,14 @@ class PlayerCombatMixin:
         return familiar_str
 
     def transform(self, back=False):
-        transform_str = ""
         if back:
-            try:
-                player_char_dict = load_char(char=self)
-                if player_char_dict is None:
-                    # No tmp file exists (player never transformed or already reverted)
-                    return ""
-                health_diff = self.health.max - self.health.current
-                mana_diff = self.mana.max - self.mana.current
-                self.cls = player_char_dict.cls
-                if self.is_alive():
-                    self.health.current = max(1, player_char_dict.health.max - health_diff)
-                self.health.max = player_char_dict.health.max
-                self.mana.current = max(0, player_char_dict.mana.max - mana_diff)
-                self.mana.max = player_char_dict.mana.max
-                self.stats = player_char_dict.stats
-                self.equipment = player_char_dict.equipment
-                self.spellbook = player_char_dict.spellbook
-                self.resistance = player_char_dict.resistance
-                self.transform_type = player_char_dict.transform_type
-                self._transformed = False
-                transform_str = f"{self.name} transforms back into their normal self."
-            except FileNotFoundError:
-                pass
-        else:
-            self.save(tmp=True)
-            self._normal_class_name = self.cls.name
-            transform_str = f"{self.name} transforms into a {self.transform_type.name}."
-            self.cls = self.transform_type
-            self.health.current += self.transform_type.health.max
-            self.health.max += self.transform_type.health.max
-            self.mana.current += self.transform_type.mana.max
-            self.mana.max += self.transform_type.mana.max
-            self.stats.strength += self.transform_type.stats.strength
-            self.stats.intel += self.transform_type.stats.intel
-            self.stats.wisdom += self.transform_type.stats.wisdom
-            self.stats.con += self.transform_type.stats.con
-            self.stats.charisma += self.transform_type.stats.charisma
-            self.stats.dex += self.transform_type.stats.dex
-            self.equipment['Weapon'] = self.transform_type.equipment['Weapon']
-            self.equipment['Armor'] = self.transform_type.equipment['Armor']
-            self.equipment['OffHand'] = self.transform_type.equipment['OffHand']
-            self.spellbook = self.transform_type.spellbook
-            self.resistance = self.transform_type.resistance
-            self._transformed = True
-            if self.power_up:
-                self.class_effects["Power Up"].active = True
-                self.class_effects["Power Up"].duration = 1
-        return transform_str
+            return transformation.dismiss_form(self)
+        forms = self.available_transform_forms()
+        selected = getattr(self, "_selected_transform_form", "")
+        form_name = selected if selected in forms else (forms[0] if forms else "")
+        if not form_name:
+            return "No transformation form has been unlocked."
+        return transformation.apply_form(self, form_name)
 
     def check_mod(self, mod, enemy=None, typ=None, luck_factor=1, ultimate=False, ignore=False):
         class_mod = 0

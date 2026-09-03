@@ -123,6 +123,14 @@ class CharacterOffenseMixin:
                 hit_mod += mage_mechanics.melee_accuracy_bonus(self)
             except Exception:
                 pass
+        elif typ == "magic":
+            try:
+                from ..classes import astromancer
+
+                hit_mod += astromancer.threaded_bonus(self, "accuracy")
+            except Exception:
+                pass
+            hit_mod += max(0.0, float(getattr(self, "_totem_surge_reliability", 0.0) or 0.0))
         return max(0, hit_mod)
 
     def dodge_chance(self, attacker: Character, spell: bool = False) -> float:
@@ -147,6 +155,7 @@ class CharacterOffenseMixin:
         af = armor_factor.get(getattr(self.equipment.get("Armor"), "subtyp", "None"), 1)
         chance = max(0, (d_chance - a_chance) / denom / af)
         chance += 0.1 * ('Dodge' in self.equipment['Ring'].mod + "Evasion" in self.spellbook['Skills'])
+        chance += footpad.concealment_dodge_bonus(self)
         if spell:
             pendant_mod = getattr(self.equipment.get("Pendant"), "mod", "")
             chance += 0.25 * ("Magic Dodge" in pendant_mod)
@@ -154,6 +163,16 @@ class CharacterOffenseMixin:
                 from ..classes import footpad
 
                 chance += footpad.spell_dodge_bonus(self)
+            except Exception:
+                pass
+            chance -= max(
+                0.0,
+                float(getattr(attacker, "_totem_surge_reliability", 0.0) or 0.0),
+            )
+            try:
+                from ..classes import astromancer
+
+                chance -= astromancer.threaded_bonus(attacker, "accuracy")
             except Exception:
                 pass
         # Footpad-line passive: scale *weapon* dodge slightly with DEX so "glass cannon"
@@ -195,7 +214,7 @@ class CharacterOffenseMixin:
                         chance *= GNOME_ENCUMBERED_DODGE_MULTIPLIER
                 except Exception:
                     pass
-        return min(MAX_DODGE_CHANCE, chance)
+        return max(0.0, min(MAX_DODGE_CHANCE, chance))
 
     def critical_chance(self, att: str) -> float:
         from ..classes import ability_mechanics, footpad
@@ -228,6 +247,7 @@ class CharacterOffenseMixin:
         crit_chance += ability_mechanics.tricksters_gambit_crit_bonus(self)
         crit_chance += ability_mechanics.duelist_critical_bonus(self)
         crit_chance += footpad.surprise_critical_bonus(self)
+        crit_chance += footpad.toxic_precision_bonus(self, att)
         if getattr(self, "shade_of_ahool_turns", 0) > 0:
             crit_chance += 0.20
         berserk = self.status_effects.get("Berserk")
@@ -264,6 +284,7 @@ class CharacterOffenseMixin:
         use_offhand: bool = True,
         attack_slots: tuple[str, ...] | None = None,
         accuracy_modifier: float = 0.0,
+        critical_chance_modifier: float = 0.0,
         critical_multiplier: int | None = None,
         damage_type_override: str | None = None,
         basic_attack: bool = False,
@@ -292,8 +313,13 @@ class CharacterOffenseMixin:
         dmg_mod *= pathfinder.melee_damage_multiplier(self)
         if getattr(defender, "_distracted_turns", 0):
             defender._distracted_turns = 0
-        self._surprise_attack = bool(getattr(self, "_surprise_ready", False))
+        concealed_attack = bool(getattr(self, "_combat_concealed", False))
+        self._surprise_attack = bool(getattr(self, "_surprise_ready", False) or concealed_attack)
         self._surprise_ready = False
+        if concealed_attack:
+            self._combat_concealed = False
+            if "Shadow Evasion" in self.spellbook.get("Skills", {}):
+                self._shadow_evasion_turns = 2
         conversion_bonus = pathfinder.consume_conversion(self)
 
         try:
@@ -353,7 +379,8 @@ class CharacterOffenseMixin:
                     weapon_dam_str += f"{self.name} leers at {defender.name}.\n"
                     break
             natural_crit = crit == 1 and (
-                fire_inside_active or self.critical_chance(att) > random.random()
+                fire_inside_active
+                or self.critical_chance(att) + critical_chance_modifier > random.random()
             )
             crits[i] = (
                 int(critical_multiplier or 2)
@@ -481,6 +508,38 @@ class CharacterOffenseMixin:
 
             damage, msg, parried, aborted = self._apply_parry(defender, damage)
             weapon_dam_str += msg
+            if (
+                not parried
+                and "Untouchable" in defender.spellbook.get("Skills", {})
+                and not getattr(defender, "_untouchable_used", False)
+                and not defender.incapacitated()
+            ):
+                defender._untouchable_used = True
+                reroll_dodge = defender.dodge_chance(self) > random.random()
+                reroll_hit = (hit_per if not hit else 1.0) > random.random()
+                weapon_dam_str += f"{defender.name}'s Untouchable rerolls the attack.\n"
+                if reroll_dodge or not reroll_hit:
+                    hits[i] = False
+                    self._reset_maelstrom()
+                    if reroll_dodge:
+                        dodge_message, dodge_aborted = self._handle_dodge(
+                            defender,
+                            damage,
+                            typ,
+                        )
+                        weapon_dam_str += dodge_message
+                        if dodge_aborted:
+                            return weapon_dam_str, any(hits), max(crits)
+                    else:
+                        weapon_dam_str += (
+                            f"{self.name} {typ} {defender.name} but misses entirely.\n"
+                        )
+                    continue
+                damage, parry_message, parried, aborted = self._apply_parry(
+                    defender,
+                    damage,
+                )
+                weapon_dam_str += parry_message
             if parried and damage <= 0:
                 hits[i] = False
                 self._reset_maelstrom()
@@ -684,9 +743,10 @@ class CharacterOffenseMixin:
                 weapon_dam_str += self._apply_equipment_effects(
                     defender, att, damage, crits[i]
                 )
-                weapon_dam_str += footpad.apply_coated_toxin(
+                toxin_result = footpad.apply_coated_toxin(
                     self, defender, att, crits[i] > 1
                 )
+                weapon_dam_str += toxin_result.message
                 if _class_name(self) == "Dragoon" and self.power_up:
                     self.class_effects["Power Up"].active = True
                     self.class_effects["Power Up"].duration += 1
@@ -721,6 +781,8 @@ class CharacterOffenseMixin:
 
     def _handle_dodge(self, defender: Character, damage: int, typ: str) -> tuple[str, bool]:
         """Handle a normal dodge independently of Parry."""
+        from ..classes import footpad
+
         # Evasive Guard stacks reset whenever the defender successfully dodges.
         if "Evasive Guard" in defender.spellbook.get("Skills", {}):
             defender.evasive_guard_stacks = 0
@@ -731,7 +793,15 @@ class CharacterOffenseMixin:
             ))
         except Exception:
             pass
-        return f"{defender.name} evades {self.name}'s attack.\n", False
+        ghost = footpad.restore_ghost_step(defender)
+        try:
+            from ..classes import promotion_kits
+
+            ghost += promotion_kits.record_ki_reaction(defender, "successful dodge")
+            ghost += promotion_kits.add_aspect(defender, "Stone", incoming=True)
+        except Exception:
+            pass
+        return f"{defender.name} evades {self.name}'s attack.\n" + ghost, False
 
     def _apply_parry(self, defender: Character, damage: int) -> tuple[int, str, bool, bool]:
         """Attempt a shield-incompatible melee deflection and optional Riposte."""
@@ -760,6 +830,14 @@ class CharacterOffenseMixin:
         deflected = max(1, int(damage * deflect_ratio))
         remaining = max(0, damage - deflected)
         msg = f"{defender.name} parries and deflects {deflected} damage.\n"
+        msg += footpad.restore_ghost_step(defender)
+        try:
+            from ..classes import promotion_kits
+
+            msg += promotion_kits.record_ki_reaction(defender, "successful parry")
+            msg += promotion_kits.add_aspect(defender, "Stone", incoming=True)
+        except Exception:
+            pass
         riposte_chance = min(0.80, 0.20 + max(0, dex - 10) * 0.02)
         if "Riposte" not in skills or random.random() >= riposte_chance:
             return remaining, msg, True, False
@@ -771,13 +849,15 @@ class CharacterOffenseMixin:
             from ..classes import promotion_kits
 
             arcane_riposte = promotion_kits.weave_release_available(defender)
+        shadow_counter = "Shadow Counter" in skills
         counter, _, _ = defender.weapon_damage(
             self,
-            dmg_mod=1.0,
+            dmg_mod=1.25 if shadow_counter else 1.0,
             crit=counter_crit,
             hit=arcane_riposte,
             use_offhand=False,
             counterattack=True,
+            accuracy_modifier=0.20 if shadow_counter else 0.0,
         )
         msg += f"{defender.name} ripostes!\n"
         if arcane_riposte:

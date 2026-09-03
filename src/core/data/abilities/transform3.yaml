@@ -2,8 +2,8 @@ name: Transform
 type: Skill
 subtype: Class
 description: >-
-  Transforms the druid into a Werewolf, assuming the spells and abilities
-  inherent to the creature.
+  Enter the persistent Werewolf form. Moon stress can force this form and lock
+  dismissal with Frenzy.
 cost: 0
 self_target: true
 effects:

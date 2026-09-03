@@ -1,6 +1,7 @@
 name: Kidney Punch
 description: >-
-  Punch the enemy in the kidney, rendering them stunned. Requires an off-hand weapon.
+  Death Mark Setup: punch the enemy in the kidney, rendering them stunned.
+  Requires an off-hand weapon.
 type: Skill
 cost: 18
 subtype: Stealth

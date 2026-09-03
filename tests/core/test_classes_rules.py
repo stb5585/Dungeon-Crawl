@@ -7,57 +7,6 @@ from types import SimpleNamespace
 from src.core import abilities, classes, companions, items, races
 
 
-def _promotion_player(*, spells=None, skills=None):
-    return SimpleNamespace(
-        spellbook={
-            "Spells": dict(spells or {}),
-            "Skills": dict(skills or {}),
-        }
-    )
-
-
-def test_promotion_rules_retain_all_spellbook_entries():
-    enfeeble = abilities.Enfeeble()
-    player = _promotion_player(
-        spells={
-            "Enfeeble": enfeeble,
-            "Fireball": object(),
-        },
-        skills={"Shield Slam": object(), "Double Strike": object()},
-    )
-
-    message = classes.apply_promotion_ability_rules(player, "Warlock")
-
-    assert message == ""
-    assert player.spellbook["Spells"] == {
-        "Enfeeble": enfeeble,
-        "Fireball": player.spellbook["Spells"]["Fireball"],
-    }
-    assert "Shield Slam" in player.spellbook["Skills"]
-
-    message = classes.apply_promotion_ability_rules(player, "Weapon Master")
-
-    assert message == ""
-    assert "Shield Slam" in player.spellbook["Skills"]
-    assert "Double Strike" in player.spellbook["Skills"]
-
-    player.spellbook["Spells"]["Heal"] = object()
-    message = classes.apply_promotion_ability_rules(player, "Monk")
-
-    assert message == ""
-    assert set(player.spellbook["Spells"]) == {"Enfeeble", "Fireball", "Heal"}
-
-
-def test_promotion_rules_ignore_unknown_class_without_mutating_spellbook():
-    player = _promotion_player(spells={"Spark": object()}, skills={"Feint": object()})
-
-    message = classes.apply_promotion_ability_rules(player, "Unknown Class")
-
-    assert message == ""
-    assert set(player.spellbook["Spells"]) == {"Spark"}
-    assert set(player.spellbook["Skills"]) == {"Feint"}
-
-
 def test_priest_learns_supplication_at_promotion_level():
     granted_skills = abilities.ability_classes_for_level(abilities.skill_dict, "Priest", 1)
 

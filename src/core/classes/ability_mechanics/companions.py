@@ -458,36 +458,61 @@ def resolve_tamed_companion_command(character: Any, target: Any | None) -> str:
     bond = tamed_companion_bond(character)
     rank = max(0, bond // 25)
     favored = _favored_enemy_pressure(character, target)
+    from .. import class_rings
+
+    ring_enhanced = bool(
+        class_rings.is_awakened(character, "Beast Master")
+        and class_rings.has_equipped_class_ring(character)
+    )
+    ring_message = "Shared Recovery strengthens the command.\n" if ring_enhanced else ""
 
     if command == "Pack Strike":
         dmg_mod = 0.55 + (bond / 250.0) + (0.10 if favored else 0.0)
+        if ring_enhanced:
+            dmg_mod *= 1.10
         msg = f"{companion.name} follows Pack Strike.\n"
-        attack_str, hit, crit = companion.weapon_damage(target, dmg_mod=dmg_mod)
-        msg += attack_str
+        attack_str, hit, crit = companion.weapon_damage(
+            target,
+            dmg_mod=dmg_mod,
+            accuracy_modifier=0.10 if ring_enhanced else 0.0,
+        )
+        msg += ring_message + attack_str
         msg += tamed_companion_special_turn(character, target, hit=hit, crit=crit)
         return msg
 
     if command == "Guard Partner":
         effect = character.magic_effects["Nature Shield"]
         amount = 4 + rank * 4 + (bond // 20)
+        if ring_enhanced:
+            amount = max(1, int(amount * 1.25))
         effect.active = True
-        effect.duration = max(effect.duration, 1 + (1 if rank >= 3 else 0))
+        duration = 1 + (1 if rank >= 3 else 0) + int(ring_enhanced)
+        effect.duration = max(effect.duration, duration)
         effect.extra = max(int(effect.extra or 0), amount)
         effect.source = "Guard Partner"
-        return f"{companion.name} guards {character.name}, bracing the next hit.\n"
+        return (
+            f"{companion.name} guards {character.name}, bracing the next hit.\n"
+            f"{ring_message}"
+        )
 
     if command == "Harry Prey":
         defense = target.stat_effects["Defense"]
         defense.active = True
-        defense.duration = max(defense.duration, 1 + min(2, rank))
-        defense.extra = min(int(defense.extra or 0), -(1 + rank))
+        defense.duration = max(
+            defense.duration,
+            1 + min(2, rank) + int(ring_enhanced),
+        )
+        defense.extra = min(int(defense.extra or 0), -(1 + rank + int(ring_enhanced)))
         msg = f"{companion.name} harries {target.name}'s footing.\n"
         if rank >= 2:
             speed = target.stat_effects["Speed"]
             speed.active = True
-            speed.duration = max(speed.duration, 2)
-            speed.extra = min(int(speed.extra or 0), -max(1, rank))
-        return msg
+            speed.duration = max(speed.duration, 2 + int(ring_enhanced))
+            speed.extra = min(
+                int(speed.extra or 0),
+                -max(1, rank + int(ring_enhanced)),
+            )
+        return msg + ring_message
 
     if command == "Mend Wounds":
         owner_missing = max(0, character.health.max - character.health.current)
@@ -496,7 +521,15 @@ def resolve_tamed_companion_command(character: Any, target: Any | None) -> str:
         amount = min(max(owner_missing, companion_missing), 5 + rank * 5 + bond // 10)
         if amount <= 0:
             return f"{companion.name} stays close, ready to mend wounds.\n"
+        if ring_enhanced:
+            amount = min(
+                max(owner_missing, companion_missing),
+                max(1, int(amount * 1.25)),
+            )
         heal_target.health.current = min(heal_target.health.max, heal_target.health.current + amount)
-        return f"{companion.name} mends {heal_target.name}'s wounds for {amount} HP.\n"
+        return (
+            f"{companion.name} mends {heal_target.name}'s wounds for {amount} HP.\n"
+            f"{ring_message}"
+        )
 
     return f"{companion.name} cannot follow {command} yet.\n"

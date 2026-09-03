@@ -94,7 +94,9 @@ CLASS_KIT_LOG_TERMS = (
 
 
 def class_name(character: Any) -> str:
-    return str(getattr(getattr(character, "cls", None), "name", "") or "")
+    from .. import transformation
+
+    return transformation.permanent_class_name(character)
 
 
 def default_state() -> dict[str, Any]:
@@ -200,6 +202,7 @@ def combat_state(character: Any) -> dict[str, Any]:
         "foresight_threads": 0,
         "threaded_cast_pending": False,
         "rewind_thread_granted": False,
+        "foresight_thread_action": None,
         "blade_charge": None,
         "blade_charge_action_token": None,
         "counter_charge_action_token": None,
@@ -226,19 +229,40 @@ def combat_state(character: Any) -> dict[str, Any]:
         "cheat_death_used": False,
         "revelation": {},
         "death_marks": {},
+        "death_mark_action_tokens": set(),
         "stolen_charge": 0,
         "devotion": 0,
         "pending_devotion_gains": [],
         "defer_devotion_until_survival": False,
+        "action_claims": set(),
+        "action_round": 0,
+        "incoming_action_token": 0,
+        "incoming_claims": set(),
+        "holy_retribution_gain_round": None,
+        "great_gospel_gain_round": None,
+        "aspect_gain_round": None,
         "consecrated_conduit": None,
+        "consecrated_conduit_action": None,
+        "relic_aegis_counter": None,
+        "ordered_blessing_counter": None,
         "action_token": 0,
+        "action_name": None,
+        "action_choice": None,
         "hierophant_devotion_token": None,
         "pending_hierophant_devotion_token": None,
         "prayer": 0,
+        "great_benediction": None,
+        "defensive_regen_prayer_armed": False,
         "ki": 0,
+        "ki_action_token": None,
+        "ki_spender": None,
+        "ki_reaction_token": 0,
+        "ki_reaction_claimed": None,
+        "martial_master_refund_used": False,
         "crescendo": 0,
         "jinx_turns": 0,
-        "aspect_harmony": set(),
+        "aspect_harmony": {},
+        "aspect_harmony_order": [],
         "pending_companion_command": None,
         "conduit_command": False,
         "ring_preserved": set(),
@@ -258,6 +282,12 @@ def clear_combat_state(character: Any) -> None:
 
     setattr(character, "_promotion_kit_combat", {})
     combat_state(character)
+    try:
+        from .. import astromancer
+
+        astromancer.clear_threaded_spell(character)
+    except Exception:
+        pass
     _reset_shadowcaster_combat_fields(character)
 
 
@@ -266,9 +296,39 @@ def tick_combat_state(character: Any) -> str:
     from .resolve import tick_resolve_effects, tick_spell_reflection
 
     state = combat_state(character)
+    character._shadow_evasion_turns = max(
+        0,
+        int(getattr(character, "_shadow_evasion_turns", 0) or 0) - 1,
+    )
     msg = class_rings.tick_aerial_supremacy_shield(character)
     msg += tick_spell_reflection(character)
     msg += tick_resolve_effects(character)
+    benediction = state.get("great_benediction")
+    if isinstance(benediction, dict):
+        turns = max(0, int(benediction.get("turns", 0) or 0))
+        if turns > 0:
+            mana = getattr(character, "mana", None)
+            restored = 0
+            if mana is not None:
+                restored = min(
+                    max(0, int(mana.max) - int(mana.current)),
+                    max(0, int(benediction.get("mana", 0) or 0)),
+                )
+                mana.current += restored
+            benediction["turns"] = turns - 1
+            if restored:
+                msg += f"Great Benediction restores {restored} MP.\n"
+            if turns == 1:
+                state["great_benediction"] = None
+                msg += f"{character.name}'s Great Benediction fades.\n"
+    for key in ("relic_aegis_counter", "ordered_blessing_counter"):
+        counter = state.get(key)
+        if not isinstance(counter, dict):
+            continue
+        turns = max(0, int(counter.get("turns", 0) or 0) - 1)
+        counter["turns"] = turns
+        if turns <= 0:
+            state[key] = None
     if class_name(character) == "Knight Enchanter":
         from .weaves import resolve_echoing_blade, weave_reservoir_regeneration
 
@@ -332,11 +392,11 @@ def tick_combat_state(character: Any) -> str:
 
 
 def start_combat(character: Any) -> str:
-    from .. import class_rings
+    from .. import class_rings, lycan
 
     clear_combat_state(character)
     class_rings.reset_combat_flags(character)
-    return ""
+    return lycan.start_combat(character)
 
 
 def end_combat(
@@ -352,12 +412,23 @@ def end_combat(
         favorite_enemy_type,
         gain_companion_bond,
         gain_summon_bond_for_active,
+        record_lycan_stress,
         summon_bond_gain_for_victory,
     )
     from .meters import convert_shadow_backlash
     from .tracks import gain_case_progress
 
+    from .. import lycan
+
     msg = ""
+    state = combat_state(character)
+    if class_name(character) == "Lycan" and state.get("lycan_stressed"):
+        lycan_state = lycan.ensure_state(character)
+        lycan_state["stressed_combat_complete"] = bool(victory)
+        if victory:
+            control = ensure_state(character)["lycan_control"]
+            if control.get("rank") == "Feral":
+                msg += record_lycan_stress(character, "survive")
     if victory and enemy is not None:
         case_msg = gain_case_progress(character, getattr(enemy, "enemy_typ", None), 4, "victory")
         if show_progress_messages:
@@ -419,8 +490,12 @@ def _ring_awakened_equipped(character: Any, class_value: str | None = None) -> b
     try:
         from .. import class_rings
 
+        target = class_value or class_name(character)
+        awakened = class_rings.is_awakened(character, target)
+        if not awakened and target == class_name(character):
+            awakened = bool(class_rings._special_system_awakened(character, target))
         return bool(
-            class_rings.is_awakened(character, class_value or class_name(character))
+            awakened
             and class_rings.has_equipped_class_ring(character)
         )
     except Exception:
@@ -448,20 +523,35 @@ def begin_action(
     defer_devotion: bool = False,
     action: str | None = None,
     choice: str | None = None,
+    round_number: int | None = None,
 ) -> None:
     state = combat_state(character)
     if bool(getattr(character, "mage_refueling", False)) and choice != "Refueling":
         character.mage_refueling = False
         character.mage_refueling_streak = 0
     state["action_token"] = int(state.get("action_token", 0) or 0) + 1
+    state["action_name"] = action
+    state["action_choice"] = choice
+    state["action_claims"] = set()
+    if round_number is not None:
+        state["action_round"] = max(0, int(round_number))
     state["hierophant_devotion_token"] = None
     state["pending_hierophant_devotion_token"] = None
     state["pending_devotion_gains"] = []
     state["defer_devotion_until_survival"] = bool(defer_devotion)
     if action is not None:
         from .aerial import arm_aerial_follow_through
+        from .meters import prepare_action_payoffs
 
         arm_aerial_follow_through(character, action, choice)
+        prepare_action_payoffs(character, action, choice)
+
+
+def begin_incoming_action(character: Any) -> None:
+    """Open one hostile-action boundary for defensive kit reactions."""
+    state = combat_state(character)
+    state["incoming_action_token"] = int(state.get("incoming_action_token", 0) or 0) + 1
+    state["incoming_claims"] = set()
 
 
 def _is_weapon_hit(metadata: dict[str, Any] | None) -> bool:

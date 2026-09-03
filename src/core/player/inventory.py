@@ -208,6 +208,8 @@ class PlayerInventoryMixin:
             >>> equip("Armor", LeatherArmor, check=True)
 
         """
+        if getattr(self, "_transformed", False) and not check:
+            return False
         equip_slots = {"Weapon", "OffHand", "Armor", "Helmet", "Ring", "Pendant"}
         if equip_slot not in equip_slots:
             raise ValueError(f"'equip_slot' must be one of {equip_slots}. Got {equip_slot} instead.")

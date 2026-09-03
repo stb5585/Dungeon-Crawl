@@ -93,6 +93,13 @@ class DataDrivenSkill(Skill):
         **kwargs: Any,
     ) -> str | CombatResult:
         result = self._reset_result(actor=user, target=target)
+        try:
+            from src.core.classes import promotion_kits
+
+            if self.name in promotion_kits.DEATH_MARK_SETUP_ABILITIES:
+                user._death_mark_toxin_status = False
+        except Exception:
+            pass
         if (
             self.name == "Health/Mana Drain"
             and target is not None
@@ -158,6 +165,7 @@ class DataDrivenSkill(Skill):
             user.mana.current -= self.cost
 
         fortune_force_hit = False
+        smash_and_grab = False
         if self.name in {"Steal", "Mug", "Gold Toss", "Slot Machine", "Sneak Attack"}:
             try:
                 from src.core.classes import promotion_kits
@@ -169,6 +177,13 @@ class DataDrivenSkill(Skill):
 
         if self.weapon:
             damage_mod = self.dmg_mod
+            smash_and_grab = bool(
+                self.name == "Mug"
+                and "Smash and Grab" in getattr(user, "spellbook", {}).get("Skills", {})
+            )
+            strike_count = 3 if smash_and_grab else self._strikes
+            if smash_and_grab:
+                damage_mod = 0.60
             status_bonus = self._target_status_damage_multiplier or {}
             status_name = str(status_bonus.get("status", ""))
             target_status = getattr(target, "status_effects", {}).get(status_name)
@@ -181,6 +196,14 @@ class DataDrivenSkill(Skill):
                 "dmg_mod": damage_mod,
                 "use_offhand": self._use_offhand,
             }
+            try:
+                from src.core.classes import promotion_kits
+
+                accuracy_bonus = promotion_kits.ki_accuracy_bonus(user, self.name)
+                if accuracy_bonus:
+                    wd_kwargs["accuracy_modifier"] = accuracy_bonus
+            except Exception:
+                pass
             if self._ignore_armor:
                 wd_kwargs["ignore"] = True
             if self._guaranteed_hit or fortune_force_hit:
@@ -201,6 +224,7 @@ class DataDrivenSkill(Skill):
                         pass
 
             hit = False
+            hit_count = 0
             crit = 1
             total_damage = 0
             damage_instances = []
@@ -210,16 +234,18 @@ class DataDrivenSkill(Skill):
 
                 quick_recharge_started = promotion_kits.begin_multi_hit_weave(
                     user,
-                    self._strikes,
+                    strike_count,
                 )
             except Exception:
                 quick_recharge_started = False
             try:
-                for strike_index in range(self._strikes):
+                for strike_index in range(strike_count):
                     if self._repeat_until_miss:
                         wd_kwargs["accuracy_modifier"] = -(
                             strike_index * self._accuracy_penalty_per_strike
                         )
+                    elif smash_and_grab:
+                        wd_kwargs["accuracy_modifier"] = -(0.10 * strike_index)
                     hp_before = target.health.current if target is not None else 0
                     user._last_weapon_primary_damage = None
                     user._last_weapon_primary_damage_instances = []
@@ -227,6 +253,7 @@ class DataDrivenSkill(Skill):
                     msg += use_str
                     if h:
                         hit = True
+                        hit_count += 1
                         crit = max(crit, c)
                         if target is not None:
                             primary_damage = getattr(
@@ -267,6 +294,7 @@ class DataDrivenSkill(Skill):
             result.crit = crit if crit > 1 else None
             result.damage = total_damage
             result.extra["damage_instances"] = damage_instances
+            result.extra["hit_count"] = hit_count
         else:
             hit = True
             crit = 1
@@ -284,6 +312,19 @@ class DataDrivenSkill(Skill):
                     effect.apply(user, effect_target, result)
                 except Exception:
                     continue
+            if (
+                smash_and_grab
+                and result.extra.get("hit_count", 0) >= 2
+                and target.is_alive()
+            ):
+                import random
+
+                if "Stun" not in getattr(target, "status_immunity", ()) and random.random() < 0.25:
+                    if target.apply_stun(2, source="Smash and Grab", applier=user):
+                        result.effects_applied["Status"].append("Stun")
+                        result.extra.setdefault("messages", []).append(
+                            f"{target.name} is knocked unconscious by Smash and Grab.\n"
+                        )
             if self.weapon and target is not None:
                 try:
                     from src.core.classes import pathfinder
@@ -336,8 +377,16 @@ class DataDrivenSkill(Skill):
                 )
             if self.name == "Battle Cry" and hit:
                 msg += promotion_kits.battle_determination_after_cry(user)
-            if self.name in {"Sneak Attack", "Poison Strike"} and hit and target is not None:
-                msg += promotion_kits.apply_death_mark(user, target, self.name)
+            if self.name in promotion_kits.DEATH_MARK_SETUP_ABILITIES and target is not None:
+                status_applied = bool(getattr(user, "_death_mark_toxin_status", False))
+                status_applied = status_applied or any(result.effects_applied.values())
+                msg += promotion_kits.resolve_death_mark_setup(
+                    user,
+                    target,
+                    self.name,
+                    hit=bool(result.hit),
+                    status_applied=status_applied,
+                )
             if self.name == "Inspect" and target is not None:
                 msg += promotion_kits.add_revelation(user, target, 1, "Inspect")
                 msg += promotion_kits.gain_case_progress(user, getattr(target, "enemy_typ", None), 3, "Inspect")

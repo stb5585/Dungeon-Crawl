@@ -1,11 +1,9 @@
 name: Dim Mak
 description: >-
-  The life force of chi is typically ruled by restraint however there is one
-  exception, the powerful Dim Mak or touch of death. This ability has a chance
-  to either stun or kill its target, with death allowing the user to absorb the
-  essence of the enemy, gaining health and mana.
+  Master Monk finisher requiring full Ki and 18 MP. Strike at 2.10 power with
+  an empty hand, fist, or staff, then contest Death or Stun on a surviving hit.
 type: Skill
-cost: 50
+cost: 18
 subtype: Offensive
 weapon: true
 damage_mod: 1.5

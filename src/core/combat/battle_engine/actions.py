@@ -85,10 +85,34 @@ class BattleActionMixin:
             except NotImplementedError:
                 pass
 
+        opener_marks, opener_multiplier, opener_message = promotion_kits.begin_no_trace_opener(
+            self.attacker,
+            self.defender,
+        )
+        hp_before = int(self.defender.health.current)
         message, hit, crit = self.attacker.weapon_damage(
             self.defender,
+            dmg_mod=opener_multiplier,
             basic_attack=True,
         )
+        message = opener_message + message
+        opener_damage = max(0, hp_before - int(self.defender.health.current))
+        if opener_marks:
+            message += promotion_kits.resolve_weapon_finisher(
+                self.attacker,
+                self.defender,
+                "No-Trace Opener",
+                opener_marks,
+                opener_damage,
+                mana_cost=0,
+                hit=hit,
+            )
+            message += promotion_kits.finish_no_trace_opener(
+                self.attacker,
+                self.defender,
+                marks=opener_marks,
+                hit=hit,
+            )
         from ...classes import crossbow
 
         crossbow_message, crossbow_hit, crossbow_damage = crossbow.fire_crossbow(
@@ -230,6 +254,32 @@ class BattleActionMixin:
         ):
             return f"{self.attacker.name} does not have enough mana to cast {choice}!\n"
 
+        threaded_validation = True
+        if (
+            choice == "Rewind"
+            and getattr(self.attacker, "_rewind_snapshot", None) is None
+        ):
+            threaded_validation = False
+        elif choice == "Wormhole":
+            candidates = [
+                candidate
+                for name, candidate in self.attacker.spellbook.get("Spells", {}).items()
+                if name != "Wormhole" and getattr(candidate, "subtyp", "") != "Support"
+            ]
+            threaded_validation = bool(
+                candidates
+                and self.attacker.mana.current
+                >= mage_mechanics.spell_mana_cost(self.attacker, spell)
+                + int(getattr(candidates[0], "cost", 0) or 0)
+            )
+        if threaded_validation:
+            _thread_count, threaded_message = astromancer.begin_threaded_spell(
+                self.attacker,
+                spell,
+            )
+        else:
+            _thread_count, threaded_message = 0, ""
+
         self._event_bus.emit(create_combat_event(
             EventType.SPELL_CAST,
             actor=self.attacker,
@@ -240,12 +290,15 @@ class BattleActionMixin:
         ))
 
         defender_was_alive = self.defender.is_alive()
-        message = f"{self.attacker.name} casts {choice}.\n"
-        cast_result = self._cast_spell_with_context(
-            spell,
-            self.attacker,
-            self.defender,
-        )
+        message = f"{self.attacker.name} casts {choice}.\n{threaded_message}"
+        try:
+            cast_result = self._cast_spell_with_context(
+                spell,
+                self.attacker,
+                self.defender,
+            )
+        finally:
+            astromancer.clear_threaded_spell(self.attacker)
         if isinstance(cast_result, CombatResult):
             self._last_combat_result = deepcopy(cast_result)
         else:
@@ -257,6 +310,12 @@ class BattleActionMixin:
             ):
                 self._last_combat_result = deepcopy(recorded_result)
         message += str(cast_result)
+        if self.attacker != self.player:
+            message += astromancer.learn_witnessed_spell(
+                self.player,
+                spell,
+                cast_result,
+            )
         if defender_was_alive and not self.defender.is_alive():
             self.defender._killed_by_ability = choice
             if (
@@ -287,6 +346,11 @@ class BattleActionMixin:
             ):
                 self.defender._pious_bounty_gold = True
             message += wizard.process_cast(self.player, spell, self.defender)
+            message += astromancer.record_thread_action(
+                self.player,
+                choice,
+                successful=astromancer.spell_resolution_succeeded(cast_result, spell),
+            )
             if not self.defender.is_alive():
                 message += self._record_player_natural_spell_kill(spell)
             if astromancer.is_astromancer(self.player) and astromancer.sign_for_spell(spell):
@@ -372,13 +436,22 @@ class BattleActionMixin:
         if not astromancer.consume_rune(self.player, sign):
             return f"{self.player.name} has no {sign} runes.\n"
 
+        _thread_count, threaded_message = astromancer.begin_threaded_spell(
+            self.player,
+            spell,
+        )
+
         floor = astromancer.runic_boost_floor(self.player, sign)
         prior_floor = getattr(self.player, "_runic_boost_floor", None)
         self.player._runic_boost_floor = floor
         try:
-            message = f"{self.player.name} spends one {sign} rune to boost {choice}.\n"
+            message = (
+                f"{self.player.name} spends one {sign} rune to boost {choice}.\n"
+                f"{threaded_message}"
+            )
             message += str(spell.cast(self.player, target=self.defender))
         finally:
+            astromancer.clear_threaded_spell(self.player)
             if prior_floor is None:
                 try:
                     delattr(self.player, "_runic_boost_floor")
@@ -388,6 +461,11 @@ class BattleActionMixin:
                 self.player._runic_boost_floor = prior_floor
 
         message += wizard.process_cast(self.player, spell, self.defender)
+        message += astromancer.record_thread_action(
+            self.player,
+            "Runic Boost",
+            successful=True,
+        )
         if not self.defender.is_alive():
             message += self._record_player_natural_spell_kill(spell)
         if astromancer.is_astromancer(self.player):
@@ -456,7 +534,10 @@ class BattleActionMixin:
             return f"{self.attacker.name} does not know {choice}.\n"
 
         skill = skills[choice]
-        if skill.name == "Mortal Strike":
+        if (
+            skill.name == "Mortal Strike"
+            and not getattr(self.attacker, "_transformed", False)
+        ):
             weapon = self.attacker.equipment.get("Weapon")
             if int(getattr(weapon, "handed", 0) or 0) != 2:
                 return (
@@ -494,6 +575,28 @@ class BattleActionMixin:
             and self.attacker.mana.current < skill.cost
         ):
             return f"{self.attacker.name} does not have enough mana to use {choice}!\n"
+        if (
+            skill.name in promotion_kits.KI_SPEND_ABILITIES
+            and skill.name != "Chi Heal"
+            and self.defender is None
+        ):
+            return "There is no target.\n"
+        martial_weapon_check = getattr(skill, "_has_martial_weapon", None)
+        if (
+            skill.name in promotion_kits.KI_SPEND_ABILITIES
+            and callable(martial_weapon_check)
+            and not martial_weapon_check(self.attacker)
+        ):
+            return (
+                f"{self.attacker.name} needs a free hand or fist weapon to use "
+                f"{skill.name}.\n"
+            )
+
+        ki_health_before = int(getattr(self.attacker.health, "current", 0) or 0)
+        ki_spend_message = promotion_kits.begin_ki_spender(
+            self.attacker,
+            skill.name,
+        )
 
         self._event_bus.emit(create_combat_event(
             EventType.SKILL_USE,
@@ -504,7 +607,7 @@ class BattleActionMixin:
             source="resolve" if is_resolve_skill else "skill",
         ))
 
-        message = f"{self.attacker.name} uses {skill.name}.\n"
+        message = f"{self.attacker.name} uses {skill.name}.\n{ki_spend_message}"
 
         # ── Special skill handling ───────────────────────────────────
         if skill.name == "Smoke Screen":
@@ -625,6 +728,28 @@ class BattleActionMixin:
             and recorded_result.target is self.defender
         ):
             self._last_combat_result = deepcopy(recorded_result)
+
+        ki_hit = bool(getattr(recorded_result, "hit", False))
+        ki_healing = max(
+            0,
+            int(getattr(self.attacker.health, "current", 0) or 0) - ki_health_before,
+        )
+        message += promotion_kits.finish_ki_spender(
+            self.attacker,
+            self.defender,
+            skill.name,
+            hit=ki_hit,
+            healing=ki_healing,
+        )
+        if self.attacker == self.player:
+            message += astromancer.record_thread_action(
+                self.player,
+                skill.name,
+                successful=not any(
+                    fragment in message.lower()
+                    for fragment in ("no effect", "there is no target", "fails")
+                ),
+            )
 
         return message
 

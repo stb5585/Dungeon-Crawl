@@ -184,7 +184,7 @@ CLASS_RING_SPECS: dict[str, dict[str, str]] = {
         "mod": "Shared Recovery",
         "description": (
             "when hero or companion receives healing, the other receives a smaller "
-            "echo heal"
+            "echo heal; companion commands gain reliability and stronger payoffs"
         ),
     },
 }
@@ -743,14 +743,26 @@ def arcane_trickster_dodge_bonus(character: Any) -> float:
     return 0.10 if turns > 0 else 0.0
 
 
-def next_ordered_blessing(character: Any) -> str | None:
+def current_ordered_blessing(character: Any) -> str | None:
+    """Return the next Templar blessing without advancing its rotation."""
     if not (is_awakened(character, "Templar") and has_equipped_class_ring(character)):
         return None
     blessings = ("Regen", "Defense", "Holy Damage")
     state = ensure_state(character)
     index = int(state["data"]["Templar"].get("blessing_index", 0) or 0)
-    state["data"]["Templar"]["blessing_index"] = (index + 1) % len(blessings)
     return blessings[index % len(blessings)]
+
+
+def next_ordered_blessing(character: Any) -> str | None:
+    """Consume and return the next Templar blessing in its saved rotation."""
+    blessing = current_ordered_blessing(character)
+    if blessing is None:
+        return None
+    blessings = ("Regen", "Defense", "Holy Damage")
+    state = ensure_state(character)
+    index = int(state["data"]["Templar"].get("blessing_index", 0) or 0)
+    state["data"]["Templar"]["blessing_index"] = (index + 1) % len(blessings)
+    return blessing
 
 
 def divine_intervention(character: Any, rng: Any = random) -> int:

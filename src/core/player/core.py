@@ -119,6 +119,10 @@ class Player(
         self.summons = {}
         self.transform_type = self.cls
         self._transformed = False
+        self._normal_form_snapshot = None
+        self._normal_class_name = ""
+        self._selected_transform_form = ""
+        self.transformation_state = {"active_form": None, "overlay": None}
         self.encumbered = False
         self.power_up = False
         self.inventory_sort_mode = "Name"

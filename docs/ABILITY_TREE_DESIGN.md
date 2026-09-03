@@ -106,22 +106,27 @@ or stat requirements differ.
     right requires rank 5 and replaces the lower form with its level-2 form.
     Neither form has a global-level gate or is learned automatically.
 - Berserker:
-  - Survival column: ungated Final Assault, Monkey Grip 1 at 65, an ungated
-    `+30 Attack` node, Reckless Onslaught at 70, and Monkey Grip 2 at 75.
-  - Fury column: ungated Frenzy, an ungated `+100 HP` node, Mortal Strike 2 at
-    65, Boomerang Toss at 70, and Triple Strike at 75.
-  - Independent center column: inherited-or-purchased Parry without a level
-    gate, Pain Tolerance at 65, and Hemorrhage Thirst at 70. Hemorrhage Thirst
-    heals the Berserker for enemy bleed-tick damage; a third consecutive-turn
-    trigger makes the Berserker unconscious for two turns. Reckless Onslaught
-    replaces Final Assault, deals double weapon damage, stacks Attack Up and
-    Defense Down when refreshed, and knocks the user Prone when parried.
-  - Both left paths use five vertically centered rows. The three independent
-    entries use three vertically centered rows beside the weapon-art block.
+  - Heavy Weapons is `Monkey Grip -> Momentum (65) -> Tectonic Rift (75) ->
+    Monkey Grip 2 (80)`. Tectonic Rift requires two two-handed weapons, damages
+    every enemy with Earth pressure, knocks grounded targets Prone, and deals
+    reduced debris damage to flying targets.
+  - Two-Weapon Assault is `Mortal Strike 2 -> Boomerang Toss (65) -> +30
+    Attack -> Thunderous Vault (75) -> Triple Strike (80)`. Thunderous Vault
+    requires two two-handed weapons, attacks with each hand, then releases an
+    Electric field against the encounter.
+  - Fury is `Frenzy -> Hemorrhage Thirst (70) -> Fatality (75) -> Composed
+    Wrath (80)`. Fatality makes a double-damage execution attempt, heals after
+    a kill, and allows a surviving target to counter. Composed Wrath restores
+    normal Attack/Skill choice during Frenzy.
+  - Survival is `Parry -> Pain Tolerance (65) -> Final Assault (70) ->
+    Reckless Onslaught (75)`. Final Assault and Reckless Onslaught are
+    compatible purchases; Reckless Onslaught no longer replaces Final Assault.
+    Hemorrhage Thirst heals the Berserker for enemy bleed-tick damage, while a
+    third consecutive-turn trigger causes two turns of unconsciousness.
   - Only the four two-handed disciplines appear in its class tab. Their eight
-    rank-1/rank-5 art nodes form four centered rows independent of the three
-    development columns. Monkey Grip 2 and all four rank-5 arts cost two
-    progression points.
+    rank-1/rank-5 art nodes form four centered rows beside the four development
+    columns. Monkey Grip 2, Triple Strike, Composed Wrath, Reckless Onslaught,
+    and all four rank-5 arts cost two progression points.
 - Grandmaster of Arms:
   - Every weapon discipline has rank-1, rank-5, and rank-10 art nodes; each
     higher form replaces the previous form. Every rank-10 art costs two points.
@@ -268,8 +273,11 @@ or stat requirements differ.
     Ricochet hit, doubled when that target is stunned.
   - Resistance adds Mirror Bastion (75) and Fortified Citadel (80); Support
     adds Battle Cry (70), Battle Determination (75), and Final Redoubt (80).
-    Battle Determination makes Battle Cry generate 20 Resolve. Citadel Aegis, Ironwall Revenge,
-    Last Bastion, and Stronghold are full-Resolve Bursts, not tree nodes.
+    Battle Determination makes Battle Cry generate 20 Resolve. Citadel Aegis,
+    Ironwall Revenge, Last Bastion, and Stronghold are full-Resolve Bursts, not
+    tree nodes. Each is intended to unlock after four uses of its associated
+    barrier, counter, survival, or fortress family; the current zero-threshold
+    scalar is a documented critical implementation gap.
   - The complete Stalwart tree occupies rows 1-6. Punishing Guard, Unbroken
     Wall, Fortified Citadel, Final Redoubt, Double Payback, and Iron Maiden each
     cost two points.
@@ -336,12 +344,13 @@ or stat requirements differ.
   Arcane damage/control/barriers/enhancements; Arcane Tradition tracks Arcane
   School Affinity, applies 75% elemental damage, and halves Enhancement proc
   chances. Mage spell learning remains unrestricted before promotion.
-- First-promotion route costs, including the two-point promotion node, are
-  `6/8/8/8` for Sorcerer/Spellblade/Warlock/Conjurer. All require level 30.
+- First-promotion route costs, including the two-point promotion node, are `5`
+  for an Elemental Sorcerer route, `6` for the Arcane Sorcerer route, and
+  `8/8/8` for Spellblade/Warlock/Conjurer. All require level 30.
   Stat gates are Sorcerer `INT 15/WIS 13`; Warlock
-  `INT 14/CHA 14/WIS 10/CON 10`; Spellblade
-  `STR 10/CON 11/INT 14/CHA 12`; and Conjurer
-  `CHA 13/INT 13/WIS 12/CON 10/DEX 10` (no Strength requirement).
+  `INT 13/CHA 14`; Spellblade `CON 11/INT 13/CHA 12`; and Conjurer
+  `CHA 12/INT 13/WIS 12`. Requirements of 10 or lower are omitted, and neither
+  Spellblade nor Conjurer has a Strength requirement.
 - Every learned Mage spell remains owned after promotion. Unpurchased Mage
   development and competing promotions close. Sorcerer does not carry the six
   level-one elemental spells, Magic Missile, or Guidance Upgrade into its
@@ -386,14 +395,17 @@ or stat requirements differ.
   Shadowcaster requires the Umbral Offense path through Shadow Bolt II plus
   either Doom or Mana Drain. Demonologist requires either Curse of Swarms or
   Life Tap.
-- Shadowcaster has three terminal paths. Umbral Debt is `Mana Tap ->
-  Health/Mana Drain (70) -> +30 Defense`. Deep Shadow is `Shadow Bolt
-  III -> Night Terror (65) -> Nightmare (70) -> Desoul (80) -> +30 Magic`;
-  Night Terror damages every enemy and independently attempts to apply Sleep
-  for two turns. Veilcraft is `Invisibility -> Alacrity (65)`, with Alacrity
-  increasing Speed by 25% only while invisible.
-  Shade of Ahool is the class promotion action and spends Umbral Debt to enter
-  its three-turn flying shadow-beast form.
+- Shadowcaster has five terminal paths. Umbral Debt is `Mana Tap -> Soul
+  Binding (65) -> Health/Mana Drain (70) -> Resource Abuse (75) -> Mortal
+  Shackles (80) -> Top Off (85)`. Deep Shadow is `Shadow Bolt III -> Penny
+  Dreadful (70) -> Piercing Bolt (75)`. Veilcraft is `Invisibility -> Shadow
+  Curtain (65) -> Alacrity (70) -> Sciophobia (75)`. Nightmares is `Nightmare
+  -> Night Terror (75) -> Desoul (80) -> Death Becomes Us (85)`. Familiar
+  Mastery contains four independent two-point level-75 nodes: Indiscriminate
+  Provocation, Uno Reverse Card, Night Moves, and Bullionaire. Shade of Ahool
+  is granted on promotion and spends Umbral Debt to enter a three-turn flying
+  shadow form; its implementation gaps are tracked in
+  `CLASS_KIT_DESIGN_GATES.md` and `DEVELOPMENT_ROADMAP.md`.
 - Demonologist has five authored paths: Contagion, Contract Mastery, Hellfire,
   Soul Harvest, and Demonic Curses. Contagion combines Life Tap mana economy
   with Corruption II, fire-triggered explosions, and persistent DOT growth.
@@ -546,21 +558,26 @@ charged ability with a two-turn Silence on a critical hit. Outclassed enemies
 can now choose to flee, and Aggressive Pursuit grants its advantaged
 interception attack. Smoke Screen escapes bypass Aggressive Pursuit.
 
-| Tree | Paths | Development nodes / total cost | Promotion route cost | Passive families |
+| Tree | Paths | Development nodes / total cost | Promotion route cost | Retained talents |
 | --- | --- | ---: | ---: | --- |
-| Thief | Fortune, Tools | 16 / 16 | Rogue: 13 | Fortune's Favor, Escape Route, Misfortune Dividend, Hidden Pocket |
-| Rogue | Loaded Odds, Cunning | 14 / 15 | Terminal | Loaded Odds, Cheater's Guard, Jinxed Edge, two-point House Advantage |
-| Inquisitor | Case Journal, Judgment | 20 / 20 | Seeker: 9 | Methodical Inquiry, Prepared Defense, Cross Examination, Contingency File |
-| Seeker | Wayfinding, Revelation | 15 / 16 | Terminal | Revelatory Strike, Wayfinder's Ward, Pattern Lock, two-point Safe Passage |
+| Thief | Fortune, Tools | 4 / 4 | Rogue: 6 | None |
+| Rogue | Loaded Odds, Cunning | 8 / 8 | Terminal | None |
+| Inquisitor | Case Journal, Judgment | 17 / 17 | Seeker: 7 | None |
+| Seeker | Wayfinding, Revelation | 11 / 11 | Terminal | None |
 | Assassin | Utility, Combat, Status / Death, Stealth, Counter | 25 / 25 | Ninja: Cutthroat path + 3 | Twist the Knife, OffHand Excellence, For Good Measure, Cutthroat, Surprise!, Main Gauche, Live and Learn |
-| Ninja | Execution, No Trace | 14 / 17 | Terminal | No-Trace Opener, Shadow Evasion, Execution Rhythm, two-point Ghost Step |
-| Spell Stealer | Spell Theft, Stolen Charge | 16 / 16 | Arcane Trickster: 11 | Stolen Momentum, Arcane Escape, Counterfeit Casting, Blank Escape |
-| Arcane Trickster | Arcane Larceny, Misdirection | 14 / 18 | Terminal | Arcane Larceny, Misdirection, Spell Feint, two-point Vanishing Formula |
+| Ninja | Utility, Combat, Toxin / Death, Stealth, Defense | 28 / 33 | Terminal | Find Traps, Smash and Grab, Execution Rhythm, toxin mastery, concealment, counters, dedicated Death Mark finishers |
+| Spell Stealer | Spell Theft, Stolen Charge | 5 / 5 | Arcane Trickster: 6 | None |
+| Arcane Trickster | Arcane Larceny, Misdirection | 3 / 3 | Terminal | None |
 
-House Advantage, Safe Passage, Ghost Step, and Vanishing Formula each add one
-capacity to their terminal class meter. This stacks with the earlier cap talent
-and makes the two-point terminal mastery a mechanical choice rather than a
-renamed rating node.
+Fortune, Revelation, and Stolen Charge now use their canonical class caps;
+there are no hidden tree purchases that expand them. Ninja keeps its fixed
+three-mark capacity and authored setup/finisher development.
+
+The Assassin/Ninja entries are authored trees. The other three promoted
+Footpad paths are now intentionally compact catalog-only graphs: all generated
+rating families, repeated ranks, and generic cap masteries were removed. Their
+small graphs honestly expose the implemented actions while the loot/luck,
+investigation/wayfinding, and stolen-magic kit work remains tracked separately.
 
 Assassin now uses five authored six-row columns with intentional gaps instead
 of generic kit branches. Its toxin line turns specific enemy and exploration
@@ -589,23 +606,24 @@ Blindness, Defensive Regen, Incite Panic, and Resist Shadow alongside that
 same Healing column. Monk develops Zen Accuracy, Staff Proficiency, Attack,
 Delayed Reaction, Leg Sweep, and Meditation.
 
-| Tree | Paths | Development nodes / total cost | Promotion route cost | Passive families |
+| Tree | Paths | Development nodes / total cost | Promotion route cost | Retained talents |
 | --- | --- | ---: | ---: | --- |
-| Cleric | Devotion, Bulwark | 16 / 16 | Templar: 10; Hierophant: 12 | Devoted Guard, Consecrated Focus, Martyr's Reserve, Radiant Rebuke |
-| Templar | Relic Discipline, Ordered Blessings | 14 / 15 | Terminal | Ordered Blessing, Relic Discipline, Shielded Litany, two-point Pilgrim's Guard |
-| Hierophant | Sacred Conduit, Devotional Grace | 14 / 16 | Terminal | Sacred Conduit, Devotional Ward, Staff Testament, two-point Warding Gospel |
-| Monk | Ki, Ki Discipline, Centering | 17 / 17 | Master Monk: 10 | Centered Breath, Focused Ki, Flowing Kata, Open-Hand Focus |
-| Master Monk | Perfected Ki, Diamond Body | 15 / 16 | Terminal | Perfected Ki, Diamond Body, Hundred-Fist Rhythm, two-point Empty Mountain |
-| Priest | Prayer, Grace | 16 / 16 | Archbishop: 10 | Answered Prayer, Sheltering Litany, Reserved Benediction, Quiet Sanctuary |
-| Archbishop | Benediction, Intervention | 14 / 15 | Terminal | Benediction Mastery, Intervening Grace, Great Gospel, two-point Miracle's Margin |
-| Bard | Performance, Composition | 16 / 16 | Troubadour: 11 | Practiced Refrain, Harmonic Shelter, Improvised Verse, Resolving Cadence |
-| Troubadour | Finale, Mastery | 14 / 21 | Terminal | Resonant Finale, Sustained Chorus, Masterful Coda, two-point Endless Encore |
+| Cleric | Devotion, Bulwark | 11 / 11 | Templar: 7; Hierophant: 10 | None |
+| Templar | Relic Discipline, Ordered Blessings | 10 / 10 | Terminal | None |
+| Hierophant | Sacred Conduit, Devotional Grace | 5 / 5 | Terminal | None |
+| Monk | Ki, Ki Discipline, Centering | 12 / 12 | Master Monk: 8 | None |
+| Master Monk | Perfected Ki, Diamond Body | 9 / 9 | Terminal | None |
+| Priest | Prayer, Grace | 10 / 10 | Archbishop: 7 | None |
+| Archbishop | Benediction, Intervention | 9 / 9 | Terminal | None |
+| Bard | Performance, Composition | 3 / 3 | Troubadour: 6 | None |
+| Troubadour | Finale, Mastery | 0 / 0 | Terminal | None; inherited kit only |
 
-The terminal masteries add one Devotion, Ki, Prayer, or Crescendo capacity as
-appropriate. Troubadour has no ordinary catalog abilities, so its 14-node tree
-is intentionally a deeper set of two-point performance and mastery ranks; its
-21-point full-clear cost remains below the authored martial and caster
-terminal full clears.
+The generated Healer passive families and their meter-cap payloads are removed.
+Ki therefore remains exactly 3/5, while Devotion, Prayer, and Crescendo use
+their class-defined caps. Troubadour has no ordinary catalog abilities of its
+own, so its terminal panel is intentionally empty; its retained Bard abilities,
+repertoire, codas, and ring mechanics remain available through universal
+promotion retention.
 
 ### Pathfinder Lineage
 
@@ -626,23 +644,23 @@ Thorny Vine is Nature/Earth, and the reworked Poison Strike is a main-hand
 Nature spell with Physical and Poison components. Elemental-trigger passives
 inspect all declared types rather than forcing each spell into one school.
 
-| Tree | Paths | Development nodes / total cost | Promotion route cost | Passive families |
+| Tree | Paths | Development nodes / total cost | Promotion route cost | Retained talents |
 | --- | --- | ---: | ---: | --- |
-| Druid | Forms, Nature Rites | 16 / 16 | Lycan: 11; Archdruid: 11 | Primal Balance, Living Bark, Wildshape Memory, Grove Shelter |
-| Lycan | Frenzy, Control | 14 / 15 | Terminal | Frenzy Control, Moonlit Hide, Predator's Rhythm, two-point Tethered Instinct |
-| Archdruid | Fourfold Balance, Aspect Harmony | 14 / 15 | Terminal | Aspect Harmony, Ancient Growth, Fourfold Memory, two-point Worldroot Shelter |
-| Diviner | Runes, Foresight | 16 / 16 | Astromancer: 14 | Runic Focus, Foreseen Defense, Reserved Rune, Averted Fate |
-| Astromancer | Foresight Threads, Constellations | 14 / 15 | Terminal | Threaded Fate, Celestial Shelter, Convergent Signs, two-point Event Horizon |
-| Shaman | Totems, Elements | 16 / 16 | Soulcatcher: 11 | Totemic Rhythm, Spirit Ward, Communion Pulse, Ancestor's Shelter |
-| Soulcatcher | Soul Communion, Totem Resonance | 14 / 15 | Terminal | Resonant Soul, Spirit Vessel, Harvest Echo, two-point Totemic Afterlife |
-| Ranger | Hunt, Companion Bond | 16 / 16 | Beast Master: 12 | Disciplined Hunt, Companion Guard, Quarry Coordination, Trailside Recovery |
-| Beast Master | Pack Tactics, Commands | 14 / 15 | Terminal | Pack Tactics, Shared Recovery, Alpha Command, two-point Bonded Bulwark |
+| Druid | Forms, Nature Rites | 7 / 7 | Lycan: 6; Archdruid: 7 | None |
+| Lycan | Frenzy, Control | 6 / 6 | Terminal | None |
+| Archdruid | Fourfold Balance, Aspect Harmony | 7 / 7 | Terminal | None |
+| Diviner | Runes, Foresight | 6 / 6 | Astromancer: 9 | None |
+| Astromancer | Foresight Threads, Constellations | 10 / 10 | Terminal | None |
+| Shaman | Totems, Elements | 10 / 10 | Soulcatcher: 6 | None |
+| Soulcatcher | Soul Communion, Totem Resonance | 8 / 8 | Terminal | None |
+| Ranger | Hunt, Companion Bond | 1 / 1 | Beast Master: 4 | None |
+| Beast Master | Pack Tactics, Commands | 7 / 8 | Terminal | two-point Bonded Bulwark |
 
-Worldroot Shelter, Event Horizon, and Totemic Afterlife add one capacity to
-Aspect Harmony, Foresight Threads, and Totem Resonance. Tethered Instinct makes
-each successful Lycan stress response record one extra control response.
-Bonded Bulwark raises the full-bond companion combat coefficient from 15% to
-25%, scaling proportionally at lower bond.
+All generated Pathfinder rating families are removed. Fixed contracts now stay
+fixed: Harmony is 4 (5 with its awakened ring), Threads are 3, Resonance is 3
+(4 with Aspect Evolution), and Lycan ranks require three distinct qualifying
+successes. Bonded Bulwark alone remains because its authored payoff raises the
+full-bond companion coefficient from 15% to 25%, scaling at lower bond.
 
 Ranger and Beast Master may equip Crossbows in the off hand. A basic attack
 fires the selected bolt pack after the main-hand attack; using a bolt pack from

@@ -1,5 +1,6 @@
 name: Hurricane
 type: Spell
+rank: 1
 subtype: Wind
 description: A violent storm berates your foes, causing great wind damage.
 cost: 22

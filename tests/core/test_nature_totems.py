@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from src.core import abilities, map_tiles
-from src.core.classes import nature_totems
+from src.core import abilities, items, map_tiles
+from src.core.classes import class_rings, nature_totems, promotion_kits
 from src.core.combat.battle_engine import BattleEngine
 from src.core.combat.combat_result import CombatResult
 from src.core.effects.composite import ElementalStrikeEffect
@@ -39,6 +39,13 @@ class PulseSpell:
         amount = int(self.damage * nature_totems.spell_output_multiplier(caster, self))
         if target is not None:
             target.health.current -= amount
+        self.result = CombatResult(
+            action=self.name,
+            actor=caster,
+            target=target,
+            hit=amount > 0,
+            damage=amount,
+        )
         return f"{self.name} hits for {amount}.\n"
 
 
@@ -109,6 +116,34 @@ def test_totem_pulse_uses_highest_unlocked_spell_half_potency_and_no_mana():
     assert player.mana.current == 100
     assert player.spellbook["Spells"]["Scorch"].cast_count == 0
     assert player.spellbook["Spells"]["Fireball"].cast_count == 1
+    assert promotion_kits.totem_resonance(player) == 1
+
+
+def test_aspect_evolution_strengthens_soul_surge_without_becoming_lethal():
+    player = TestGameState.create_player(
+        class_name="Soulcatcher",
+        race_name="Human",
+        mana=(100, 100),
+    )
+    enemy = TestGameState.create_player(
+        class_name="Warrior",
+        race_name="Human",
+        health=(100, 100),
+    )
+    player.equipment["Ring"] = items.ClassRing()
+    class_rings.ensure_state(player)["awakened"]["Soulcatcher"] = True
+    player.equipment["Ring"].class_mod(player)
+    for enemy_type in ("Animal", "Fiend", "Undead"):
+        class_rings.record_soul_harvest(player, enemy_type)
+    player.spellbook["Spells"]["Soul Drain"] = abilities.SoulDrain()
+    _active_totem(player, "Soul")
+    player.magic_effects["Totem"].extra["resonance"] = 4
+
+    message = promotion_kits.totem_surge(player, enemy)
+
+    assert "spends 4 Totem Resonance" in message
+    assert 1 <= enemy.health.current < 95
+    assert promotion_kits.totem_resonance(player) == 0
 
 
 def test_staff_increases_totem_pulse_chance_but_not_potency():

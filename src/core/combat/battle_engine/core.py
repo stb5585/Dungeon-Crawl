@@ -316,6 +316,14 @@ class BattleEngine(BattleTurnMixin, BattleActionMixin, BattleOutcomeMixin):
         ):
             insert_at = actions.index("Attack") + 1 if "Attack" in actions else len(actions)
             actions.insert(insert_at, "Companion")
+        if (
+            self.attacker == self.player
+            and bard.mastered_repertoire_songs(self.player)
+            and not self.player.abilities_suppressed()
+            and "Repertoire" not in actions
+        ):
+            insert_at = actions.index("Use Skill") + 1 if "Use Skill" in actions else len(actions)
+            actions.insert(insert_at, "Repertoire")
         return actions
 
     def summoner_support_actions(self) -> list[str]:
@@ -435,7 +443,13 @@ class BattleEngine(BattleTurnMixin, BattleActionMixin, BattleOutcomeMixin):
         from ...classes import warrior
 
         warrior.start_combat(self.player)
-        promotion_kits.start_combat(self.player)
+        kit_start_message = promotion_kits.start_combat(self.player)
+        if kit_start_message:
+            messages = getattr(self.player, "_promotion_kit_messages", None)
+            if not isinstance(messages, list):
+                messages = []
+                self.player._promotion_kit_messages = messages
+            messages.append(kit_start_message)
         forced_enemy_initiative = bool(
             getattr(self.tile, "trap_forced_initiative", False)
         )
@@ -462,8 +476,12 @@ class BattleEngine(BattleTurnMixin, BattleActionMixin, BattleOutcomeMixin):
         if forced_enemy_initiative:
             self.tile.trap_forced_initiative = False
         self._actor_cycle = ActorCycle(order)
+        if self.boss:
+            for member in self.encounter.living_members:
+                member.enemy.boss = True
         self._sync_actor_aliases()
         footpad.arm_surprise(self.player, has_initiative=self.attacker == self.player)
+        promotion_kits.combat_state(self.player)["has_initiative"] = self.attacker == self.player
         self._current_actor_turn_id = self._actor_cycle.start_current_turn()
         self.available_actions = self._available_actions()
 

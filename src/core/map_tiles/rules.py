@@ -368,8 +368,14 @@ def random_encounter_quest_bias_chance(player_char) -> float:
 
 def quest_biased_random_enemy(player_char, level: str, rng=random):
     """Return a random enemy with a soft active-quest target nudge."""
+    from ..classes import bard
+
+    try:
+        shifted_level = str(max(0, int(level) + bard.enemy_difficulty_shift(player_char)))
+    except (TypeError, ValueError):
+        shifted_level = level
     return enemies.random_enemy(
-        level,
+        shifted_level,
         preferred_names=active_random_encounter_quest_targets(player_char),
         preferred_chance=random_encounter_quest_bias_chance(player_char),
         rng=rng,

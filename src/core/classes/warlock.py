@@ -14,15 +14,15 @@ class Warlock(Job):
                                |
                                -> Demonologist
     Pros: Higher charisma and constitution gain; access to additional skills; gains access to shadow spells and familiar
-    Cons: Lower intelligence gain and limited access to higher level spells; lose access to learned arcane Mage spells
+    Cons: Lower intelligence gain and limited access to higher-level tree spells
     Special Mechanic: Gains familiar that sometimes acts in or out of combat
     """
 
     def __init__(self):
         super().__init__(
             name="Warlock",
-            description="The Warlock specializes in the dark arts, forsaking the arcane "
-            "training learned as a Mage. However this focus unlocks powerful "
+            description="The Warlock specializes in the dark arts while retaining earlier "
+            "Mage training. This focus unlocks powerful "
             "abilities, including the ability to summon a familiar to aid "
             "them.",
             str_plus=0,

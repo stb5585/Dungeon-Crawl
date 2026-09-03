@@ -1,5 +1,6 @@
 name: Petrify
 type: Status
+rank: 2
 subtype: Death
 description: "Gaze at the enemy and turn them into stone."
 cost: 50

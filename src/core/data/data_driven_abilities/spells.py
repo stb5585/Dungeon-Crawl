@@ -139,12 +139,6 @@ class DataDrivenHealSpell(_get_heal_spell_class()):
         crit_per = random.uniform(1, crit)
         heal = int(heal * crit_per)
         actual_heal = self._apply_instant_healing(caster, target, heal)
-        try:
-            from src.core.classes import promotion_kits
-
-            cast_message += promotion_kits.record_healing_done(caster, actual_heal)
-        except Exception:
-            pass
         cast_message += (
             f"{caster.name} heals {target.name} for {actual_heal} hit points.\n"
         )
@@ -170,12 +164,6 @@ class DataDrivenHealSpell(_get_heal_spell_class()):
             crit = 2
         heal *= crit
         actual_heal = self._apply_instant_healing(actor, actor, heal)
-        try:
-            from src.core.classes import promotion_kits
-
-            cast_message += promotion_kits.record_healing_done(actor, actual_heal)
-        except Exception:
-            pass
         cast_message += (
             f"{actor.name} heals themself for {actual_heal} hit points.\n"
         )

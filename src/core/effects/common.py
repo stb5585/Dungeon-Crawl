@@ -143,6 +143,13 @@ class StatContestEffect(Effect):
 
         if self.base_chance is not None:
             chance = self.base_chance + ((a_val - t_val) * self.chance_per_point)
+            try:
+                from ..classes import astromancer
+
+                chance += astromancer.threaded_bonus(actor, "status")
+            except Exception:
+                pass
+            chance += max(0.0, float(getattr(actor, "_totem_surge_reliability", 0.0) or 0.0))
             chance = max(self.minimum_chance, min(self.maximum_chance, chance))
             result.extra["stat_contest_chance"] = chance
             if random.random() < chance:
@@ -163,7 +170,23 @@ class StatContestEffect(Effect):
             max(1, t_val // self.target_hi_divisor),
         )
 
-        if roll_actor > roll_target:
+        contest_success = roll_actor > roll_target
+        if not contest_success:
+            try:
+                from ..classes import astromancer
+
+                contest_success = random.random() < astromancer.threaded_bonus(
+                    actor,
+                    "status",
+                )
+            except Exception:
+                pass
+        if not contest_success:
+            contest_success = random.random() < max(
+                0.0,
+                float(getattr(actor, "_totem_surge_reliability", 0.0) or 0.0),
+            )
+        if contest_success:
             self.effect.apply(actor, target, result)
             result.extra['stat_contest_won'] = True
         else:
@@ -349,6 +372,15 @@ class StatusApplyEffect(Effect):
             from ..classes import mage_mechanics
 
             target_roll = int(target_roll * mage_mechanics.save_roll_multiplier(target))
+            try:
+                from ..classes import promotion_kits
+
+                target_roll = int(
+                    target_roll
+                    * promotion_kits.benediction_status_multiplier(target)
+                )
+            except Exception:
+                pass
             # Human Lust (sin): slightly reduced status resistance.
             try:
                 if getattr(getattr(target, "race", None), "name", None) == "Human":
@@ -1129,13 +1161,28 @@ class PhysicalEffectApplyEffect(Effect):
 
         target_roll = int(target_roll * mage_mechanics.save_roll_multiplier(target))
 
-        if actor_roll > target_roll:
+        contest_success = actor_roll > target_roll
+        control_bonus = 0.0
+        if self.effect_name == "Prone":
+            try:
+                from ..classes import promotion_kits
+
+                ability_name = str(getattr(result, "action", "") or "")
+                control_bonus = promotion_kits.ki_control_bonus(actor, ability_name)
+            except Exception:
+                control_bonus = 0.0
+        if not contest_success and control_bonus > 0:
+            contest_success = _rng.random() < control_bonus
+
+        if contest_success:
             # Calculate duration
             if self.duration_stat:
                 stat_val = getattr(actor.stats, self.duration_stat, 10)
                 dur = max(self.duration_min, stat_val // self.duration_divisor)
             else:
                 dur = self.duration
+            if control_bonus > 0:
+                dur += 1
 
             target.physical_effects[self.effect_name].active = True
             target.physical_effects[self.effect_name].duration = max(
@@ -1212,6 +1259,21 @@ class InstantKillEffect(Effect):
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
         import random
+
+        if result.action == "Desoul":
+            from ..classes import promotion_kits
+
+            killed, immune = promotion_kits.resolve_death_contest(actor, target)
+            if immune:
+                result.extra["status_immune"] = "Death"
+            elif killed:
+                result.extra.setdefault("messages", []).append(
+                    self.success_message.format(target=target.name, caster=actor.name)
+                )
+                result.extra["stat_contest_won"] = True
+            else:
+                result.extra["stat_contest_won"] = False
+            return
 
         # --- Reflect check (e.g. Medusa Shield) ---
         if self.reflect_item and self.reflect_slot:

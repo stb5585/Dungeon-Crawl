@@ -8,12 +8,19 @@ remaining tuning or presentation follow-up.
 
 Class Ring activation now has two implementation tiers:
 
-- Fully playable activation flows: `Grandmaster of Arms`, `Demonologist`,
+- Playable activation flows: `Grandmaster of Arms`, `Demonologist`,
   `Archdruid`, `Berserker`, `Dragoon`, `Stalwart Defender`, `Wizard`,
   `Shadowcaster`, `Knight Enchanter`, `Thaumaturgist`, `Rogue`, `Seeker`,
   `Ninja`, `Arcane Trickster`, `Crusader`, `Templar`, `Hierophant`,
   `Master Monk`, `Archbishop`, `Troubadour`, `Lycan`, `Astromancer`,
   `Soulcatcher`, and `Beast Master`.
+- Activation completion does not imply every advertised combat rider is wired.
+  The current class-kit audit identifies critical runtime gaps for Berserker
+  Bloodied Momentum, Wizard School Streak, Shadowcaster Shade/backlash, and
+  Thaumaturgist Conduit Command/invocations; it also finds missing or orphaned
+  riders across Templar, Master Monk, Archbishop, Lycan, Astromancer,
+  Soulcatcher, Archdruid, and Beast Master. Those effects must not be treated
+  as shipped merely because their awakening quests and display names work.
 - Legacy second-promotion class-kit pass: supporting class mechanics, saved
   state, status text, and Class Ring hooks are implemented for the legacy
   classes listed below. Radar-style Wizard visualization can be added later;
@@ -359,12 +366,11 @@ additional visual presentation, and playtest follow-up.
     roll a 10% chance to gain 1 scar, capped at 20. Each scar permanently
     increases max HP by about 1% at the time it is earned and grants +0.5%
     weapon damage while below 25% HP.
-  - The promotion-kit V1 pass adds combat-only `Bloodied Momentum` to the
-    Berserker branch. Low-HP weapon hits and incoming damage
-    build Momentum, heavy Weapon Arts consume it for controlled bloodied
-    payoffs, Battle Scars improve cap/stability, and awakened/equipped
-    `Bloodied Crits` keeps its current thresholds while improving Momentum
-    reliability without adding loss of control.
+  - Critical implementation gap: combat-only `Bloodied Momentum` currently
+    stores and displays stacks, but gain is not deduplicated per action and no
+    heavy-art, Final Assault, Battle Scar stability, or ring-preservation
+    payoff is wired. Treat those additions as pending until the class-kit gap
+    in `CLASS_KIT_DESIGN_GATES.md` is closed.
   - Status: playable in the Barracks when a dormant Berserker Class Ring is
     equipped or stored.
   - The duel has no normal XP, gold, loot, quest, kill-count, or death penalty
@@ -444,8 +450,10 @@ additional visual presentation, and playtest follow-up.
     absorbs compatible hostile projectile spells using spell and shield
     strength; Spell Reflection may return the blocked damage. Stalwart keeps
     those actions and adds the full-bar Resolve Bursts Citadel Aegis, Ironwall
-    Revenge, Last Bastion, and Stronghold. Mirror Bastion raises Magic Defense
-    by 50 while its spell-defense payoff is active. Awakened/equipped
+    Revenge, Last Bastion, and Stronghold. The four Bursts are intended to be
+    learned through separate associated-use mastery tracks carried forward
+    from Sentinel; the current zero-threshold scalar is a critical gap. Mirror
+    Bastion raises Magic Defense by 50 while its spell-defense payoff is active. Awakened/equipped
     `Shield Mastery` remains the strongest automation layer for major-hit
     mitigation and reads/spends this same Resolve value without a duplicate
     gain path.
@@ -459,6 +467,9 @@ additional visual presentation, and playtest follow-up.
 - `Sorcerer`/`Wizard`: `Four Formulae` awakens `School Streak`. Failed spell
   riders for the same school add +15% rider chance; four stacks guarantee the
   next eligible rider.
+  - Critical implementation gap: the stored streak and helper functions exist,
+    but eligible spell riders never call them. No failed rider currently adds
+    a stack and no accumulated streak changes a rider roll.
   - `School Affinity` is specialization-aware. Classical Force tracks the six
     elemental schools; Arcane Tradition tracks Arcane affinity and presents only
     that school in the mechanic panel. Sorcerer affinity caps at 50; Wizard
@@ -480,6 +491,10 @@ additional visual presentation, and playtest follow-up.
     and adds `Shade of Ahool` as a debt-spending shadow form. The awakened, equipped
     Class Ring raises the debt cap, preserves low-HP auto-healing, and reduces
     Shade of Ahool backlash conversion.
+  - Critical implementation gap: Shade still activates obsolete physical
+    damage, critical, speed, and siphon hooks from its predecessor. Backlash is
+    not converted when Shade ends or low-HP auto-healing triggers, and the
+    documented Fairy/ring conversion behavior is incomplete.
   - Status: playable in the Church when a dormant Shadowcaster Class Ring is
     equipped or stored.
 - `Knight Enchanter`: `Arcane Duel` awakens `Weave Memory`, preserving the
@@ -496,9 +511,14 @@ additional visual presentation, and playtest follow-up.
   - Status: playable in the Church when a dormant Knight Enchanter Class Ring is
     equipped or stored.
 - `Thaumaturgist`: `Conduit Ritual` permanently sacrifices 5% max HP and
-  awakens +30% HP and damage for any of the 12 named Xenids.
+  awakens +30% HP and damage for any of the 14 named Xenids.
   - A newly chosen member of the fixed roster applies the awakened multiplier
     when its combat stats are initialized.
+  - Critical implementation gap: Conduit Command currently only stores a
+    readiness flag. Summon actions do not consume it, receive its +25% effect,
+    expire it, or resolve True Name. Existing borrowed invocations use one
+    generic damage result instead of their authored riders, and Hodag and
+    Caladrius have no invocation abilities.
   - Status: playable in the Church when a dormant Thaumaturgist Class Ring is
     equipped or stored.
 
@@ -510,6 +530,12 @@ additional visual presentation, and playtest follow-up.
   risky actions, Misfortune severity payoff after clean risky successes, and
   `Cheat Death`; when awakened and equipped, `Loaded Dice` preserves 1 point of
   a spent meter once per combat after a clean Fortune or Misfortune payoff.
+  - Critical implementation gap: the 15% failed-luck conversion is a direct
+    helper with no runtime caller. Fortune/Misfortune cover only a narrow set
+    of critical and named-skill outcomes, Cheat Death does not require its
+    learned node, Jinx has no mechanical effect, and the advertised
+    Scavenger's Eye/Finders Keepers loot behavior is absent. Meter preservation
+    itself is wired for the current representative spends.
   - Status: playable in the Thieves Guild backroom when a dormant Rogue Class Ring is
     equipped or stored.
 - `Seeker`: `Cartographer's Proof` awakens `Hidden Cache`, one depth-weighted
@@ -518,14 +544,17 @@ additional visual presentation, and playtest follow-up.
   progress, combat-only `Revelation`, and Seeker `Wayfinding`; when awakened
   and equipped, `Hidden Cache` keeps its cache identity while adding small
   insight smoothing after clean `Inspect` or telegraph reads.
+  - Critical implementation gap: Hidden Cache availability and claim helpers
+    have no dungeon/reward caller, ring insight smoothing is absent,
+    Revelation has no spender, Case milestones are labels only, and the
+    Wayfinding discount has no gameplay consumer.
   - Status: playable in the Thieves Guild backroom when a dormant Seeker Class Ring is
     equipped or stored.
 - `Ninja`: `No-Trace Contract` awakens `No-Trace Opener`, preserving the
   legacy internal `First Strike Plus` hook while doubling the first standard
-  attack when the Ninja has initiative. The promotion-kit V1 pass adds
-  combat-only `Death Mark`; when awakened and equipped, `No-Trace Opener` can
-  apply 1 opener mark with initiative and preserve 1 spent mark once per combat
-  after a clean marked payoff.
+  Ninja Blade attack when the Ninja has initiative. It applies one opener mark
+  before the roll, spends all marks even on a miss, and preserves one mark once
+  per combat after a successful payoff against a surviving target.
   - Status: playable in the Thieves Guild backroom when a dormant Ninja Class Ring is
     equipped or stored.
 - `Arcane Trickster`: `Impossible Theft` awakens `Arcane Larceny`, preserving
@@ -539,10 +568,27 @@ additional visual presentation, and playtest follow-up.
     On success, the blank is consumed and replaced with a usable stolen-spell
     scroll that preserves the stolen spell identity and normal scroll targeting
     rules. Class Ring trial enemies are immune.
+  - Critical implementation gap: the nominal three-turn ring buff never ticks
+    down or clears, and it may be primed while the ring is unequipped. Stolen
+    Charge releases only from weapon damage rather than eligible spells and
+    bypasses typed Arcane resolution; theft MP validation is also incomplete.
+    Charge preservation is wired for the current weapon-only release.
   - Status: playable in the Thieves Guild backroom when a dormant Arcane Trickster
     Class Ring is equipped or stored.
 
 ### Healer And Pathfinder Branches
+
+Audit correction (2026-09-02): the awakening flows below are playable, but
+several listed enhancements are acceptance targets rather than live behavior.
+`Ordered Blessings` preservation works, while its blessing rotation has no
+caller. `Martial Master` refunds Ki after the new Dim Mak helper, but Dim Mak's
+legacy fallback bypasses full Ki. `Divine Intervention` healing/preservation,
+`Encore`, Astromancer constellation bonuses, Archdruid Harmony Bonus, and Beast
+Master Shared Recovery work. Controlled Frenzy penalty reduction,
+Soulcatcher `soul_aspect_bonus`, active-sign Threaded Cast strengthening,
+Archdruid once-only Aspect preservation, and Beast Master command enhancement
+are absent or incomplete. See `CLASS_KIT_DESIGN_GATES.md` before changing ring
+numbers or presentation.
 
 - `Templar`: `Relic Defense` awakens `Ordered Blessings`, rotating Regen,
   Defense, and Holy damage blessings through relevant actions.
@@ -646,7 +692,9 @@ additional visual presentation, and playtest follow-up.
   - The promotion-kit V1 pass keeps one persistent tamed companion, adds
     companion bond growth, gives Beast Master direct companion commands, and
     lets the awakened, equipped Class Ring scale `Shared Recovery` from 25%
-    toward 35% with bond.
+    toward 35% with bond. The ring also improves Pack Strike accuracy/output,
+    Guard Partner strength/duration, Harry Prey pressure, and Mend Wounds
+    healing without creating another companion action.
   - Status: playable in the Church when a dormant Beast Master Class Ring is
     equipped or stored.
 

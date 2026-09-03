@@ -112,6 +112,7 @@ from .traps import (
     TRAP_TYPES,
     assign_dungeon_traps,
     trigger_tile_trap,
+    find_trap_warning,
 )
 from .special import (
     UndergroundSpring,

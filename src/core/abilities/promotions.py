@@ -35,7 +35,10 @@ class CheatDeath(_PromotionPassive):
 
 class DeathMark(_PromotionPassive):
     def __init__(self):
-        super().__init__("Death Mark", "Stealth, poison, and opener setups mark foes for finisher pressure.")
+        super().__init__(
+            "Death Mark",
+            "Setup attacks mark foes and grant Deathblow to spend those marks.",
+        )
 
 
 class Wayfinding(_PromotionPassive):
@@ -68,7 +71,12 @@ class _ResolveActive(_PromotionActive):
 
 class ThreadedCast(_PromotionActive):
     def __init__(self):
-        super().__init__("Threaded Cast", "Spend Foresight Threads to mark the next eligible spell payoff.", 8)
+        super().__init__(
+            "Threaded Cast",
+            "Spend all Threads on the next validated spell or Runic Boost: each grants "
+            "+5 accuracy/reliability points and +6% output.",
+            8,
+        )
 
     def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
         from ..classes import promotion_kits
@@ -403,7 +411,11 @@ class LastBastionSurge(_ResolveActive):
 
 class SanctuaryWard(_PromotionActive):
     def __init__(self):
-        super().__init__("Sanctuary Ward", "Spend Devotion for a brief protective ward.", 8)
+        super().__init__(
+            "Sanctuary Ward",
+            "Spend all Devotion for a two-turn shield; larger spends cleanse and regenerate.",
+            8,
+        )
 
     def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
         from ..classes import promotion_kits
@@ -413,7 +425,11 @@ class SanctuaryWard(_PromotionActive):
 
 class RelicAegis(_PromotionActive):
     def __init__(self):
-        super().__init__("Relic Aegis", "Spend Templar Devotion for stronger shielded protection.", 12)
+        super().__init__(
+            "Relic Aegis",
+            "Spend all Devotion for stronger shielded protection and a Holy counter.",
+            12,
+        )
 
     def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
         from ..classes import promotion_kits
@@ -437,7 +453,11 @@ class ConsecratedConduit(_PromotionActive):
 
 class Supplication(_PromotionActive):
     def __init__(self):
-        super().__init__("Supplication", "Spend Prayer on a targeted divine support pulse.", 0)
+        super().__init__(
+            "Supplication",
+            "Spend all Prayer to heal, shield, and possibly cleanse a living target.",
+            10,
+        )
 
     def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
         from ..classes import promotion_kits
@@ -447,7 +467,11 @@ class Supplication(_PromotionActive):
 
 class GreatBenediction(_PromotionActive):
     def __init__(self):
-        super().__init__("Great Benediction", "Spend Prayer for several turns of proactive divine support.", 18)
+        super().__init__(
+            "Great Benediction",
+            "Spend at least 3 Prayer for healing, defense, status resistance, and MP sustain.",
+            18,
+        )
 
     def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
         from ..classes import promotion_kits
@@ -460,6 +484,7 @@ class CenteredGuard(_PromotionActive):
         super().__init__("Centered Guard", "A chi guard replacing late Monk spell exceptions.", 8)
 
     def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        user.mana.current -= self.cost
         user.enter_defensive_stance(duration=2)
         return f"{user.name} centers their guard.\n"
 
@@ -469,6 +494,7 @@ class MirrorBreath(_PromotionActive):
         super().__init__("Mirror Breath", "Brief reflection and counter-ward support.", 10)
 
     def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        user.mana.current -= self.cost
         user.magic_effects["Reflect"].active = True
         user.magic_effects["Reflect"].duration = 2
         return f"{user.name}'s breath becomes a mirror ward.\n"
@@ -479,6 +505,7 @@ class PurgingKata(_PromotionActive):
         super().__init__("Purging Kata", "Cleanse hostile status through martial focus.", 10)
 
     def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        user.mana.current -= self.cost
         removed = []
         for name in ("Poison", "Blind", "Silence", "Berserk"):
             effect = user.status_effects.get(name)
@@ -491,7 +518,11 @@ class PurgingKata(_PromotionActive):
 
 class FourfoldSurge(_PromotionActive):
     def __init__(self):
-        super().__init__("Fourfold Surge", "Spend represented Aspect Harmony for a nature payoff.", 14)
+        super().__init__(
+            "Fourfold Surge",
+            "Spend at least two distinct Harmony aspects for their typed nature riders.",
+            14,
+        )
 
     def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
         from ..classes import promotion_kits

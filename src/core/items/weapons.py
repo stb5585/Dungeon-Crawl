@@ -927,6 +927,12 @@ class RuyiJinguBang(Weapon):
             if promotion_kits.class_name(actor) != "Master Monk":
                 return
             state = promotion_kits.combat_state(actor)
+            if state.get("action_name") not in {None, "", "Attack"}:
+                return
+            action_token = int(state.get("action_token", 0) or 0)
+            if state.get("ruyi_bonus_action_token") == action_token:
+                return
+            state["ruyi_bonus_action_token"] = action_token
             cap = promotion_kits.cap_for(actor, "ki")
             if int(state.get("ki", 0) or 0) >= cap:
                 return

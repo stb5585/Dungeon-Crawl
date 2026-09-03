@@ -7,26 +7,36 @@ points for a first promotion and three points for a second promotion.
 sizes, and structured stat groups. Trees may have multiple independent
 first-tier nodes; there is no mandatory lineage root.
 
-All 49 registered classes now use authored paths. Named talent nodes are
-permanent purchases that may grant a small combat bonus and modify a
-class-specific meter cap without adding a fake ability to the spellbook.
-Their stable keys are part of the version-5 save contract.
+All 49 registered classes now have structurally declared paths. This does not
+mean every promoted tree has a complete authored mechanical identity. The
+remaining Footpad, Healer, and Pathfinder graphs are intentionally compact:
+they expose their real catalog abilities without generated rating families or
+generic meter-cap masteries. Beast Master's Bonded Bulwark is the sole retained
+talent in this group because it has a distinct companion-bond payoff.
 
-Footpad, Healer, and Pathfinder now follow the same base-route budget as the
-normal Warrior promotions: every specialization path contains six development
-nodes and costs eight points with its two-point promotion. Their first-promotion
-trees contain at least 16 development choices and terminal trees at least 14.
-Sparse legacy catalogs are expanded with four class-specific passive families
-instead of two endlessly alternating placeholder talents. Later mastery ranks
-remain real permanent purchases, while every generic terminal tree ends in a
-two-point mastery tied to its class system.
+Footpad, Healer, and Pathfinder use authored joined base routes rather than one
+universal eight-point budget. Footpad combines an identity track with Control
+or Defense for a 13-point route including promotion. Healer's Bard, Cleric,
+and Priest routes cost 14 while Monk costs 8. Pathfinder routes cost 11-14.
+Their promotion prerequisites still follow the authored legacy ability lanes,
+but no minimum node count is manufactured. Empty or sparse terminal panels are
+an explicit signal that future progression must be designed rather than
+inferred from a renamed stat bonus.
 
-Terminal meter masteries add one capacity to Fortune/Revelation/Death Mark/
-Stolen Charge, Devotion/Ki/Prayer/Crescendo, Aspect Harmony/Foresight Threads,
-or Totem Resonance. Lycan's terminal mastery doubles successful control-response
-credit, while Beast Master's raises bond-derived companion combat scaling from
-15% to 25% at full bond. These effects are declarative `kit_effect` payloads
-and are validated with the tree manifest.
+Bonded Bulwark raises bond-derived companion combat scaling from
+15% to 25% at full bond. This declarative `kit_effect` payload is validated
+with the tree manifest and does not add a generic stat rating.
+
+Flat progression intentionally retains every already learned spell and skill
+through every promotion. This includes off-identity abilities such as magic on
+Monk or Ranger and stealth on Inquisitor. Special promotion initialization may
+add mandatory abilities, but it may not delete or replace an existing
+spellbook entry. Class identity comes from the new tree, mechanics, stats, and
+equipment restrictions rather than destructive ability pruning.
+
+Death Mark is the exception: Assassin has one target-specific mark and Ninja
+has three. Capacity is fixed; Ninja progression improves setup, payoff,
+coatings, concealment, and defensive play instead of adding more stacks.
 
 Progression bonuses use one shared tier scale. Attack, Defense, Magic, and
 Magic Defense nodes grant `+10/+20/+30` on base, first-promotion, and terminal
@@ -87,10 +97,10 @@ Enhancements occupy column 1. Arcana, Occultism, and Conjuration are six-node
 paths in columns 2-4. Reflect/Sleep/Boost/Mirror Image are independent
 level-10/15/20/25 Universal nodes in column 5.
 
-- Sorcerer, six points on the Arcane route: buy either an elemental spell, its
-  Enhancement, and Classical Force, or `Magic Missile -> Guidance Upgrade ->
-  Mana Rupture -> Arcane Tradition`,
-  then the two-point promotion. Classical Force and Arcane Tradition are mutually
+- Sorcerer, five points on an Elemental route or six on the Arcane route: buy
+  either an elemental spell, its Enhancement, and Classical Force, or `Magic
+  Missile -> Guidance Upgrade -> Mana Rupture -> Arcane Tradition`, then the
+  two-point promotion. Classical Force and Arcane Tradition are mutually
   exclusive and Spend Distribution warns before the competing specialization
   closes.
 - Spellblade, eight points:
@@ -104,9 +114,9 @@ level-10/15/20/25 Universal nodes in column 5.
   Shackles -> Conjure Potion -> Promote: Conjurer`.
 
 All four promotions require level 30 and two points. Stat gates are Sorcerer
-`INT 15/WIS 13`; Warlock `INT 14/CHA 14/WIS 10/CON 10`; Spellblade
-`STR 10/CON 11/INT 14/CHA 12`; and Conjurer
-`CHA 13/INT 13/WIS 12/CON 10/DEX 10` with no Strength requirement.
+`INT 15/WIS 13`; Warlock `INT 13/CHA 14`; Spellblade
+`CON 11/INT 13/CHA 12`; and Conjurer `CHA 12/INT 13/WIS 12`. Requirements of
+10 or lower are omitted; Spellblade and Conjurer have no Strength requirement.
 
 Learned Mage spells survive every promotion. Unpurchased Mage nodes and
 competing promotions close. Sorcerer replaces the old Mage carry-forward with
@@ -178,17 +188,16 @@ Piercing Strike at 55. Selecting Dual Wield or Duelist permanently closes every
 descendant on the competing path, not only its entry node.
 
 Berserker exposes only two-handed disciplines and owns eight rank-1/rank-5 art
-nodes in four centered rows. Final Assault and Frenzy are immediately available
-after promotion, because the promotion itself enforces level 60. Its left paths
-include terminal-tier `+30 Attack` and `+100 HP` development nodes; the center
-column contains inherited Parry, level-65 Pain Tolerance, and level-70
-Hemorrhage Thirst. Hemorrhage Thirst converts enemy bleed-tick damage into
-equal healing; triggering on a third consecutive enemy turn makes the Berserker
-unconscious for two turns and resets the streak. Level-70 Reckless Onslaught
-sits between `+30 Attack` and Monkey Grip 2 in the Survival path, replaces Final
-Assault, and stacks its Attack-up and Defense-down tradeoff when refreshed.
-Both left paths use five vertically centered rows, while the center column uses
-three.
+nodes in four centered rows. Its four development columns are Heavy Weapons,
+Two-Weapon Assault, Fury, and Survival. Promotion-level roots are Monkey Grip,
+Mortal Strike 2, Frenzy, and inherited-or-purchased Parry. Heavy Weapons adds
+Momentum, Tectonic Rift, and Monkey Grip 2. Two-Weapon Assault adds Boomerang
+Toss, `+30 Attack`, Thunderous Vault, and Triple Strike. Fury adds Hemorrhage
+Thirst, Fatality, and Composed Wrath. Survival adds Pain Tolerance, Final
+Assault, and Reckless Onslaught. Final Assault and Reckless Onslaught are
+compatible; neither replaces the other. Hemorrhage Thirst converts enemy
+bleed-tick damage into equal healing, and a third consecutive-turn trigger
+makes the Berserker unconscious for two turns before resetting the streak.
 
 Grandmaster of Arms exposes all 16 inherited rank-1/rank-5 nodes plus eight
 rank-10 level-3 replacements. Its six-column mastery route runs from ungated
@@ -244,12 +253,17 @@ Stalwart Defender contains 25 nodes across Assault, Bulwark, Shield Offense,
 Resistance, and Support. The new third column runs from Retaliate through
 Shield Ricochet, Tower Offense, Get Even, and Generator Shield. Its full-bar
 Bursts are Citadel Aegis, Ironwall Revenge, Last Bastion,
-and Stronghold; all four are immediately unlocked on promotion and remain out
-of the ordinary Specials list. Point-purchased talents modify those Bursts and
-the eight inherited Resolve actions. Support replaces its HP node with Battle
-Cry and continues through Battle Determination to level-80 Final Redoubt. The
-tree occupies rows 1-6; Punishing Guard, Double Payback, Unbroken Wall, Iron
-Maiden, Fortified Citadel, and Final Redoubt cost two points.
+and Stronghold. Each remains locked until its persistent mastery track records
+four qualifying uses of associated barrier, counter, survival, or fortress
+actions; qualifying Sentinel use carries into Stalwart Defender. Count mastery
+at most once per action or defensive event. Learned Bursts remain out of the
+ordinary Specials list. Point-purchased talents modify those Bursts and the
+eight inherited Resolve actions. Support replaces its HP node with Battle Cry
+and continues through Battle Determination to level-80 Final Redoubt. The tree
+occupies rows 1-6; Punishing Guard, Double Payback, Unbroken Wall, Iron Maiden,
+Fortified Citadel, and Final Redoubt cost two points. This mastery contract is
+a critical pending implementation gap; runtime still uses one scalar and zero
+unlock thresholds.
 
 Paladin begins with independent ungated Oath's Judgment `(1, 0)` and Oath's
 Shelter `(4, 0)` roots. Judgment branches through the column-0 `Double Strike
@@ -282,8 +296,8 @@ Bulwark, and replacing Divine Protection II.
 Penalization, Smite III, and Divine Protection II cost two points.
 Known inherited nodes remain owned but do not satisfy downstream nodes until
 their preceding path is purchased. Unpurchased Sentinel and Paladin nodes close
-at promotion; all already learned actions, talents, Resolve mastery, and the
-permanent Paladin vow remain.
+at promotion; all already learned actions, talents, Resolve mastery progress,
+and the permanent Paladin vow remain.
 
 ## Staging and Atomic Change
 
@@ -323,10 +337,10 @@ spellbook, companions, summons, and progression state.
 ## Retired Behavior
 
 Promotion never resets a local class level, prunes abilities, or grants the
-new class's former level-one catalog entries. `PROMOTION_ABILITY_RULES` and
-`apply_promotion_ability_rules()` remain compatibility surfaces only; they are
-not part of the canonical progression path. Church no longer offers class
-promotion.
+new class's former level-one catalog entries. The obsolete promotion-pruning
+rule table and compatibility helper have been removed. Church no longer offers
+class promotion, and its unreachable learn-as-you-level promotion handler has
+also been removed.
 
 ## Ability Retention and Upgrades
 

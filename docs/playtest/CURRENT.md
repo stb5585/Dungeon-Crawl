@@ -2,11 +2,16 @@
 
 Use a current development save or a purpose-built fixture. Record the build,
 class, race, level, gear, ring state, route, and exact UI/log behavior for every
-failure. Automated regressions are complete for the routes below; these checks
-are about play feel and presentation.
+failure. Automated regressions cover the narrow foundations below, but the
+2026-09-02 class-kit audit found that the accepted Devotion, Prayer, Ki,
+Foresight, form/control, Aspect, and Soul-harvest contracts are not complete.
+Do not record a helper-only pass as proof that its production action path is
+shipped; implementation gaps belong in the roadmap before balance tuning.
 
 ## Devotion
 
+- [ ] Treat this as diagnostic evidence for the pending action-scope and payoff
+  fixes, not as final V1 acceptance.
 - [ ] Smoke-test Cleric Devotion gain, held-stack mitigation, hidden
   `Sanctuary Ward` at zero Devotion, and the first valid spend.
 - [ ] Smoke-test Templar `Relic Aegis` and `Sacred Overchannel`, including

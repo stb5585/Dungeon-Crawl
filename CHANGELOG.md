@@ -2,6 +2,54 @@
 
 ## [Unreleased]
 
+### Bard And Ranger Kit Cleanup
+
+- Connected mastered Troubadour repertoire to an MP-costed combat action and
+  completed composition, exploration-step, clean-finish, route-coda, and
+  Chorus Time practice/payoff behavior.
+- Extended awakened/equipped Beast Master `Shared Recovery` to strengthen all
+  four companion commands without adding companion turns.
+- Updated Character Menu progress/coda presentation, class guidance, playtest
+  coverage, and focused runtime regressions for both comparatively healthy kits.
+
+### Promoted Tree Integrity
+
+- Removed generated rating-family padding from the remaining Footpad, Healer,
+  and Pathfinder promotion trees and pinned their compact catalog-only sizes.
+- Removed generic meter-cap and Lycan control-acceleration masteries that
+  contradicted finalized class-kit contracts. Bonded Bulwark remains as the
+  sole authored promoted-tree payoff and no longer grants a generic rating.
+- Regenerated promoted-tree diagrams and added regressions preventing the
+  removed talent families and repeated ranks from returning.
+
+### Divine And Nature Action Kits
+
+- Rebuilt Devotion and Prayer generation around authored once-per-action
+  outcomes, including shield/block, support, anti-magic, Resurrection, and
+  power-up round boundaries.
+- Completed Sanctuary Ward, Relic Aegis, Consecrated Conduit, Supplication,
+  Great Benediction, Great Gospel, Ordered Blessings, and their class-ring
+  preservation and typed-damage rules.
+- Reworked combat Aspect Harmony into capped aspect charges with Fourfold
+  Surge riders, Primal Ascendance, Tree of Life, and once-per-combat Harmony
+  preservation.
+- Moved Totem Resonance gain to successful action resolution and connected
+  Soul harvest scaling plus Aspect Evolution accuracy, reliability, and output
+  to nonlethal Soul Totem and Totem Surge payoffs.
+
+### Monk, Diviner, Astromancer, Druid, And Lycan Kits
+
+- Rebuilt Monk Ki around authored once-per-action martial, healing, and
+  defensive sources; connected five one-Ki riders and made Dim Mak a full-Ki,
+  18-MP Master Monk finisher with weapon, Death/Stun, essence, and ring rules.
+- Added guaranteed Diviner/Astromancer learning for explicitly ranked,
+  successfully resolved hostile spells and completed action-authored Foresight
+  Threads, Threaded Cast bonuses, active-sign ring payoff, and Rewind safety.
+- Replaced temporary-save transformation with serialized persistent overlays,
+  purchased-node form unlocks, exact deficit-preserving restoration, explicit
+  combat/Forms-tab controls, Lycan moon stress and behavior-earned control,
+  canonical Dragon Essence, and Werewolf-only Winged Pounce.
+
 ### Pygame-Only Frontend And Headless Development
 
 - Retired the unplaytested curses frontend from the active codebase and
@@ -26,7 +74,11 @@
 - Rebuilt Assassin as five authored Utility, Combat, Status/Death, Stealth,
   and Counter columns. Added toxin reagent drops and crafting/coating reactions,
   rare Deathcap gathering, reusable dagger-pack serialization, Thieves Guild
-  stock, Hidden Dagger, and the new Assassin active and passive mechanics.
+  stock, Hidden Blade, and the new Assassin active and passive mechanics.
+- Rebuilt Ninja as five authored Utility, Combat, Toxin/Death, Stealth, and
+  Defense columns. Death Mark now uses six explicit setup attacks and three
+  dedicated finishers, with resistance-aware execution, toxin mastery,
+  combat concealment, trap warnings, and an integrated No-Trace Opener.
 - Reworked Refueling into a cancellable channel that restores 10% maximum MP
   on its first tick and doubles its restoration on consecutive ticks.
 - Added seven Ranger/Beast Master off-hand crossbows and seven selectable
@@ -58,6 +110,10 @@
   purchases, promotion previews, branch closure, equipment cleanup, ability
   retention, save/load normalization, and validation for all 49 playable
   classes.
+- Made ability retention universal across promotions, including Monk, Bard,
+  Ranger, Warlock, Weapon Master, and Inquisitor. Removed the obsolete pruning
+  rule API and the unreachable Church learn-as-you-level promotion handler;
+  class-specific promotion grants are now explicitly additive.
 - Added a pygame Progression tab with authored graph geometry, an ability icon
   atlas, compact connectors, completed-tree navigation, staged node/attribute
   distribution, full Primary Attribute names, and promotion confirmation.
@@ -118,6 +174,11 @@
   mastery.
 - Added terminal meter-cap masteries plus Tethered Instinct's Lycan control
   acceleration and Bonded Bulwark's bond-derived companion scaling.
+- Audited every Healer and Pathfinder promotion against its live runtime and
+  focused coverage. Corrected the design, tree, promotion-rule, ring, roadmap,
+  and playtest documents to distinguish implemented foundations from generated
+  rating scaffolds and disconnected mechanics; this audit made no gameplay
+  changes.
 - Rebaselined Mage as a six-column Elemental/Enhancement/Arcana/Occultism/
   Conjuration/Universal graph with `5/8/8/8` Sorcerer/Spellblade/Warlock/
   Conjurer route costs and registry-affordable stat gates.
@@ -551,14 +612,16 @@
 
 ### Promotion Class Kits
 
-- Implemented the V1 promotion class-kit track pass, including shared
-  promotion-kit state/hooks, combat-only meters, persistent track state,
-  representative active/passive abilities, class-ring identity updates, and
-  save/load normalization for the second-promotion class loops.
-- Added regression coverage for promotion-kit state, representative actives,
+- Added the initial promotion class-kit foundation, including shared state and
+  hooks, combat-only meters, persistent track state, representative
+  active/passive abilities, class-ring identity updates, and save/load
+  normalization. The 2026-09-02 lineage audits supersede the earlier V1
+  completion claim for any mechanic without a full production path.
+- Added representative coverage for promotion-kit state, selected actives,
   Demonologist corruption/patron mood, Shadowcaster Eclipse, summon and
-  companion bond state, Footpad-track meters, Lycan control, and ring display
-  compatibility.
+  companion bond state, Footpad-track meters, direct Lycan control helpers,
+  and ring display compatibility. Helper coverage alone is not evidence that
+  every advertised setup, spend, payoff, or progression loop is integrated.
 - Added the Master Monk-only `Ruyi Jingu Bang` ultimate staff, class-specific
   ultimate-staff selection, and curses/pygame blacksmith coverage for the
   `Unobtainium` crafting flow.
@@ -579,9 +642,10 @@
   `Ordered Blessings`, `Divine Intervention`, `Encore`, and bond-scaling
   `Shared Recovery`, including representative Rogue Fortune/Misfortune payoff,
   `Cheat Death`, and Bard/Troubadour Crescendo coda coverage.
-- Updated class-kit, class-ring, roadmap, and docs-index references to mark the
-  V1 implementation as shipped while keeping deeper ability-specific riders,
-  richer UI/log surfacing, and balance/playtest tuning as follow-up work.
+- Updated class-kit, class-ring, roadmap, and docs-index references for the
+  initial V1 baseline. Later lineage audits reopened incomplete ability riders,
+  action boundaries, class-specific payoffs, and orphaned helpers as
+  implementation work rather than balance or presentation polish.
 
 ### P7 Additional Improvements
 

@@ -1,7 +1,8 @@
 name: Sneak Attack
 type: Skill
 subtype: Stealth
-description: If the target is incapacitated, unleash a devastating attack.
+description: >-
+  Death Mark Setup: if the target is incapacitated, unleash a devastating attack.
 cost: 15
 weapon: true
 use_offhand: true

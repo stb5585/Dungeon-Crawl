@@ -3,7 +3,8 @@ type: Skill
 subtype: Power Up
 description: >-
   Call upon the spirit of a Paladin to fill you with holy energy. For 5 rounds,
-  physical attacks will burn with holy fire.
+  physical attacks burn with holy fire, the first Holy or shield action each
+  round builds extra Devotion, and Devotion payoffs become stronger.
 cost: 25
 self_target: true
 effects:

@@ -228,6 +228,7 @@ class CavePath(MapTile):
         self.enemy = None
         self.trap_type = None
         self.trap_triggered = False
+        self.trap_warned = False
         self.trap_forced_initiative = False
         self.deathcap_available = False
         self.deathcap_gathered = False
@@ -272,10 +273,11 @@ class CavePath(MapTile):
 
         encounter_roll_max = 4 + extra_roll
         try:
-            from ..classes import footpad, mage_mechanics, paladin
+            from ..classes import bard, footpad, mage_mechanics, paladin
 
             multiplier = (
                 paladin.encounter_rate_multiplier(game.player_char)
+                * bard.encounter_rate_multiplier(game.player_char)
                 * footpad.encounter_rate_multiplier(game.player_char)
                 * mage_mechanics.torchlight_encounter_multiplier(
                     game.player_char

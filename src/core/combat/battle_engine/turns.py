@@ -124,11 +124,26 @@ class BattleTurnMixin:
             result.can_act = False
             return result
 
-        if enemy_member is not None and bard.active_song(self.player) == "Chorus Time":
-            performer_stat = int(getattr(self.player.stats, "charisma", 0)) + int(getattr(self.player.stats, "intel", 0)) // 2
-            enemy_con = max(1, int(getattr(self.attacker.stats, "con", 1) or 1))
-            if random.randint(1, max(2, performer_stat)) > random.randint(1, enemy_con * 2):
-                result.effects_text = f"{result.effects_text or ''}{self.attacker.name} is dumbfounded by Chorus Time and loses the turn.\n"
+        if enemy_member is not None:
+            active_chorus = bard.active_song(self.player) == "Chorus Time"
+            dumbfounded = (
+                bard.chorus_time_dumbfounds(
+                    self.player,
+                    self.attacker,
+                    rng=random,
+                )
+                if active_chorus
+                else bard.consume_chorus_time_coda(
+                    self.player,
+                    self.attacker,
+                    rng=random,
+                )
+            )
+            if dumbfounded:
+                result.effects_text = (
+                    f"{result.effects_text or ''}{self.attacker.name} is "
+                    "dumbfounded by Chorus Time and loses the turn.\n"
+                )
                 result.can_act = False
                 result.inactive_reason = "Dumbfounded by Chorus Time."
                 return result
@@ -360,9 +375,11 @@ class BattleTurnMixin:
             "Flee",
             "Recall",
             "Companion",
+            "Repertoire",
             "Totem",
             "Transform",
             "Untransform",
+            "Dismiss Form",
         }:
             return TargetScope.NONE
         if action in {"Defend", "Summon"}:
@@ -682,6 +699,13 @@ class BattleTurnMixin:
             ))
             return ActionResult(message=message, combat_results=group)
 
+        threaded_message = ""
+        if self.attacker == self.player and intent.action == "Cast Spell":
+            _thread_count, threaded_message = astromancer.begin_threaded_spell(
+                self.player,
+                ability,
+            )
+
         hp_before = self.player.health.current
         if self.attacker != self.player:
             from ...classes import pathfinder
@@ -694,6 +718,7 @@ class BattleTurnMixin:
                 defer_devotion=True,
                 action=intent.action,
                 choice=intent.choice,
+                round_number=self.round_number,
             )
         event_type = (
             EventType.SPELL_CAST
@@ -717,48 +742,51 @@ class BattleTurnMixin:
             expanded_target_ids=list(group.target_ids),
         ))
         verb = "casts" if intent.action == "Cast Spell" else "uses"
-        prefix = f"{self.attacker.name} {verb} {intent.choice}.\n"
+        prefix = f"{self.attacker.name} {verb} {intent.choice}.\n{threaded_message}"
         group.message = prefix
         group_resolver = getattr(
             ability,
             "cast_group" if intent.action == "Cast Spell" else "use_group",
             None,
         )
-        if callable(group_resolver):
-            resolved = group_resolver(
-                self.attacker,
-                [(member.combatant_id, member.enemy) for member in targets],
-                battle_engine=self,
-            )
-            for portion in resolved.results:
-                group.add(portion)
-                self._event_bus.emit(create_combat_event(
-                    EventType.ACTION_RESULT,
-                    actor=self.attacker,
-                    target=portion.target,
-                    result=portion,
-                    encounter_id=self.encounter.encounter_id,
-                    actor_id=self.current_actor_id,
-                    target_id=portion.target_id,
-                    target_scope=TargetScope.ALL_ENEMIES.value,
-                    expanded_target_ids=list(group.target_ids),
-                ))
-        else:
-            ability_result = ability.cast(
-                self.attacker,
-                target=targets[0].enemy if targets else None,
-                targets=[member.enemy for member in targets],
-                battle_engine=self,
-            )
-            for member in targets:
-                group.add(CombatResult(
-                    action=intent.choice or intent.action,
-                    actor=self.attacker,
-                    target=member.enemy,
-                    actor_id=self.current_actor_id,
-                    target_id=member.combatant_id,
-                    message=str(ability_result) if member is targets[0] else "",
-                ))
+        try:
+            if callable(group_resolver):
+                resolved = group_resolver(
+                    self.attacker,
+                    [(member.combatant_id, member.enemy) for member in targets],
+                    battle_engine=self,
+                )
+                for portion in resolved.results:
+                    group.add(portion)
+                    self._event_bus.emit(create_combat_event(
+                        EventType.ACTION_RESULT,
+                        actor=self.attacker,
+                        target=portion.target,
+                        result=portion,
+                        encounter_id=self.encounter.encounter_id,
+                        actor_id=self.current_actor_id,
+                        target_id=portion.target_id,
+                        target_scope=TargetScope.ALL_ENEMIES.value,
+                        expanded_target_ids=list(group.target_ids),
+                    ))
+            else:
+                ability_result = ability.cast(
+                    self.attacker,
+                    target=targets[0].enemy if targets else None,
+                    targets=[member.enemy for member in targets],
+                    battle_engine=self,
+                )
+                for member in targets:
+                    group.add(CombatResult(
+                        action=intent.choice or intent.action,
+                        actor=self.attacker,
+                        target=member.enemy,
+                        actor_id=self.current_actor_id,
+                        target_id=member.combatant_id,
+                        message=str(ability_result) if member is targets[0] else "",
+                    ))
+        finally:
+            astromancer.clear_threaded_spell(self.attacker)
         self._record_final_enemy_resolutions()
         if self.attacker == self.player:
             primary_target = targets[0].enemy if targets else None
@@ -778,6 +806,14 @@ class BattleTurnMixin:
                     ability,
                     primary_target,
                 )
+                group.message += astromancer.record_thread_action(
+                    self.player,
+                    intent.choice or "",
+                    successful=any(
+                        astromancer.spell_resolution_succeeded(portion, ability)
+                        for portion in group.results
+                    ),
+                )
                 if len(self.encounter.members) == 1 and targets:
                     member = targets[0]
                     if not member.enemy.is_alive():
@@ -794,13 +830,35 @@ class BattleTurnMixin:
                     and astromancer.sign_for_spell(ability)
                 ):
                     astromancer.advance_constellation(self.player)
+            group.message += promotion_kits.record_action_resolution(
+                self.player,
+                group,
+            )
             group.message += promotion_kits.finish_action(
                 self.player,
                 defender_survived=bool(self.encounter.living_members),
             )
+            if any(not member.enemy.is_alive() for member in targets):
+                group.message += lycan.record_transformed_kill(self.player)
+            group.message += lycan.record_player_turn(self.player)
             group.message += promotion_kits.pop_messages(self.player)
             for member in targets:
                 group.message += promotion_kits.pop_messages(member.enemy)
+        elif intent.action == "Cast Spell":
+            learned_result = next(
+                (
+                    portion
+                    for portion in group.results
+                    if astromancer.spell_resolution_succeeded(portion, ability)
+                ),
+                None,
+            )
+            if learned_result is not None:
+                group.message += astromancer.learn_witnessed_spell(
+                    self.player,
+                    ability,
+                    learned_result,
+                )
         duel_text = self._fail_no_healing_duel_if_healed(hp_before)
         if duel_text:
             group.message += duel_text
@@ -836,6 +894,10 @@ class BattleTurnMixin:
         result = ActionResult()
         self._last_combat_result = None
         hp_before = self.player.health.current
+        defender_alive_before = bool(self.defender and self.defender.is_alive())
+        if self.attacker != self.player:
+            promotion_kits.begin_incoming_ki_action(self.player)
+            promotion_kits.begin_incoming_action(self.player)
         if self.attacker == self.player:
             warrior.begin_action(self.player)
         if self.attacker == self.player and not (action == "Cast Spell" and choice == "Rewind"):
@@ -845,6 +907,7 @@ class BattleTurnMixin:
                 defer_devotion=True,
                 action=action,
                 choice=choice,
+                round_number=self.round_number,
             )
 
         if action == "Nothing" or action == "Cancelled":
@@ -914,6 +977,17 @@ class BattleTurnMixin:
             else:
                 result.message = promotion_kits.beast_command(self.player, choice)
 
+        elif action == "Repertoire":
+            if not choice:
+                result.message = f"{self.attacker.name} needs to choose a mastered song.\n"
+            else:
+                _success, result.message = bard.perform_repertoire_song(
+                    self.player,
+                    choice,
+                    target=self.defender,
+                    battle_engine=self,
+                )
+
         elif action == "Use Item":
             result.message = self._execute_item(choice)
 
@@ -926,7 +1000,7 @@ class BattleTurnMixin:
         elif action == "Totem":
             result.message = self._execute_totem(choice)
 
-        elif action == "Untransform":
+        elif action in {"Untransform", "Dismiss Form"}:
             result.message = self.attacker.transform(back=True)
 
         elif action == "Transform":
@@ -948,6 +1022,13 @@ class BattleTurnMixin:
         self._record_failed_enemy_debuff(self.attacker, choice, self.defender, debuff_snapshot)
         if self.attacker == self.player:
             warrior.finish_action(self.player)
+            if defender_alive_before and self.defender and not self.defender.is_alive():
+                result.message += lycan.record_transformed_kill(self.player)
+            result.message += lycan.record_player_turn(self.player)
+            result.message += promotion_kits.record_action_resolution(
+                self.player,
+                self._last_combat_result,
+            )
             result.message += promotion_kits.finish_action(
                 self.player,
                 defender_survived=bool(self.defender and self.defender.is_alive()),
@@ -970,6 +1051,22 @@ class BattleTurnMixin:
             from ...classes import pathfinder
 
             pathfinder.record_incoming_action_end(self.player, hp_before)
+            state = promotion_kits.combat_state(self.player)
+            if int(state.get("winged_pounce_flight", 0) or 0) > 0:
+                state["winged_pounce_flight"] = 0
+                self.player.flying = bool(
+                    state.pop("winged_pounce_previous_flying", False)
+                )
+            if (
+                hp_before >= self.player.health.max * 0.25
+                and self.player.health.current < self.player.health.max * 0.25
+                and not state.get("lycan_low_hp_checked")
+            ):
+                state["lycan_low_hp_checked"] = True
+                result.message += lycan.maybe_trigger_frenzy(
+                    self.player,
+                    reason="low_hp",
+                )[1]
 
         return result
 
@@ -1500,11 +1597,6 @@ class BattleTurnMixin:
                 enemy.health.current = enemy.health.max
                 enemy.mana.current = enemy.mana.max
             self.player.state = "normal"
-            if (
-                hasattr(self.player, "transform_type")
-                and self.player.cls != self.player.transform_type
-            ):
-                self.player.transform(back=True)
             self.player.effects(end=True)
             if result == "defeat":
                 self.player.death()
@@ -1609,6 +1701,9 @@ class BattleTurnMixin:
             for record in self.encounter.resolution_ledger
             if record.combatant_id not in reported
         )
+        for record in records:
+            member = self.encounter.member_by_id(record.combatant_id)
+            promotion_kits.clear_death_marks(self.player, member.enemy)
         reported.update(record.combatant_id for record in records)
         self._reported_resolution_ids = reported
         return records

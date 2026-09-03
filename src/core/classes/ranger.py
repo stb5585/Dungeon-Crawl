@@ -10,7 +10,7 @@ class Ranger(Job):
     Promotion: Pathfinder -> Ranger -> Beast Master
     Pros: Increased strength and dex gain; gain dual wielding with daggers; can use swords
         and 2-handed axes
-    Cons: Lose access to attack spells, some weapons and armor, shields, and tomes
+    Cons: Lose access to some weapons and armor, shields, and tomes
     Special Mechanic: can tame a beast to aid in and out of combat; companion strength
         affected by charisma
     """

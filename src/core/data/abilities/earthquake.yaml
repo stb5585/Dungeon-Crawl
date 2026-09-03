@@ -1,5 +1,6 @@
 name: Earthquake
 type: Spell
+rank: 2
 subtype: Earth
 description: >-
   The cave wall and ceiling are brought down by a massive seismic event,

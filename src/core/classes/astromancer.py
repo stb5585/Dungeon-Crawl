@@ -23,6 +23,26 @@ SIGN_TO_ELEMENT = {
 }
 ELEMENT_TO_SIGN = {element: sign for sign, element in SIGN_TO_ELEMENT.items()}
 NATURAL_ELEMENTS = set(ELEMENT_TO_SIGN)
+THREAD_ACTIONS = frozenset({
+    "Foretell",
+    "Twist Fate",
+    "Wormhole",
+    "Rewind",
+    "Runic Boost",
+    "Astral Judgment",
+})
+LEARNABLE_SPELL_RANKS = {
+    "Aqualung": 1,
+    "Hurricane": 1,
+    "Mudslide": 1,
+    "Blinding Fog": 1,
+    "Tornado": 2,
+    "Poison Breath": 2,
+    "Earthquake": 2,
+    "Tsunami": 2,
+    "Petrify": 2,
+    "Photon Sphere": 3,
+}
 
 
 def default_state() -> dict[str, Any]:
@@ -215,6 +235,141 @@ def constellation_bonus(character: Any, damage_type: str | None = None) -> float
     return 0.05
 
 
+def spell_learning_rank(character: Any) -> int:
+    """Return the maximum witnessed-spell rank the character may learn."""
+    skill = getattr(character, "spellbook", {}).get("Skills", {}).get("Learn Spell")
+    if skill is None or class_name(character) not in {"Diviner", "Astromancer"}:
+        return 0
+    if skill.__class__.__name__ == "LearnSpell2" or "rank 2" in str(
+        getattr(skill, "description", "")
+    ).lower():
+        return 2
+    return 1
+
+
+def spell_resolution_succeeded(result: Any, spell: Any) -> bool:
+    """Return whether a witnessed spell resolved without miss or full negation."""
+    recorded = result if hasattr(result, "hit") else getattr(spell, "result", None)
+    if recorded is not None:
+        if (
+            getattr(recorded, "hit", None) is False
+            or bool(getattr(recorded, "dodge", False))
+        ):
+            return False
+        extra = getattr(recorded, "extra", {}) or {}
+        if extra.get("no_effect_reason") or extra.get("duplicate_intercepted"):
+            return False
+    message = str(result or "").lower()
+    blocked = (
+        "has no effect",
+        "no effect",
+        "there is no ",
+        "no spell is ",
+        "not enough mana",
+        "cannot ",
+        "collapses without",
+        "misses ",
+        "dodged",
+        "mirror image",
+        "immune",
+        "fumbles",
+    )
+    return not any(fragment in message for fragment in blocked)
+
+
+def learn_witnessed_spell(character: Any, spell: Any, result: Any) -> str:
+    """Permanently learn one successfully witnessed, explicitly ranked spell."""
+    maximum_rank = spell_learning_rank(character)
+    name = str(getattr(spell, "name", "") or "")
+    authored_rank = getattr(spell, "rank", None)
+    rank = LEARNABLE_SPELL_RANKS.get(name)
+    if (
+        maximum_rank <= 0
+        or rank is None
+        or authored_rank != rank
+        or rank > maximum_rank
+        or name in getattr(character, "spellbook", {}).get("Spells", {})
+        or not spell_resolution_succeeded(result, spell)
+    ):
+        return ""
+    from .. import abilities
+
+    class_key = str(getattr(spell, "_class_name", spell.__class__.__name__) or "")
+    constructor = getattr(abilities, class_key, None)
+    if not callable(constructor):
+        return ""
+    learned = constructor()
+    character.spellbook.setdefault("Spells", {})[learned.name] = learned
+    return f"{character.name} learns {learned.name} by witnessing its pattern.\n"
+
+
+def record_thread_action(character: Any, action_name: str, *, successful: bool) -> str:
+    """Award one Foresight Thread for an authored successful action."""
+    if not successful or action_name not in THREAD_ACTIONS or not is_astromancer(character):
+        return ""
+    from . import promotion_kits
+
+    state = promotion_kits.combat_state(character)
+    if action_name == "Rewind":
+        if state.get("rewind_thread_granted"):
+            return ""
+        state["rewind_thread_granted"] = True
+    token = int(state.get("action_token", 0) or 0)
+    marker = (token, action_name)
+    if state.get("foresight_thread_action") == marker:
+        return ""
+    state["foresight_thread_action"] = marker
+    return promotion_kits.gain_meter(
+        character,
+        "foresight_threads",
+        1,
+        action_name,
+    )
+
+
+def begin_threaded_spell(character: Any, spell: Any) -> tuple[int, str]:
+    """Spend a prepared Threaded Cast and install its one-cast context."""
+    if not is_astromancer(character):
+        return 0, ""
+    from . import promotion_kits
+
+    state = promotion_kits.combat_state(character)
+    if not state.get("threaded_cast_pending"):
+        return 0, ""
+    spent = promotion_kits.spend_meter(character, "foresight_threads")
+    state["threaded_cast_pending"] = False
+    if spent <= 0:
+        return 0, ""
+    active_sign = sign_for_spell(spell) == active_constellation(character)
+    ring_bonus = 1 if active_sign and has_awakened_equipped_class_ring(character) else 0
+    character._threaded_cast_context = {
+        "threads": spent,
+        "accuracy": (0.05 * spent) + (0.05 * ring_bonus),
+        "status": (0.05 * spent) + (0.05 * ring_bonus),
+        "output": (0.06 * spent) + (0.05 * ring_bonus),
+        "ring": bool(ring_bonus),
+    }
+    message = f"{character.name} spends {spent} Foresight Thread(s) on {spell.name}.\n"
+    if ring_bonus:
+        message += "Constellation Cycle strengthens the active-sign thread.\n"
+    return spent, message
+
+
+def clear_threaded_spell(character: Any) -> None:
+    """Remove the ephemeral context installed for one marked cast."""
+    if hasattr(character, "_threaded_cast_context"):
+        delattr(character, "_threaded_cast_context")
+
+
+def threaded_bonus(character: Any, key: str) -> float:
+    """Return one numeric bonus from the active Threaded Cast context."""
+    context = getattr(character, "_threaded_cast_context", {})
+    try:
+        return max(0.0, float(context.get(key, 0.0) or 0.0))
+    except (AttributeError, TypeError, ValueError):
+        return 0.0
+
+
 class Astromancer(Job):
     """
     Promotion: Pathfinder -> Diviner -> Astromancer
@@ -229,8 +384,9 @@ class Astromancer(Job):
             name="Astromancer",
             description="Classified among the forbidden arts, astromancers study the celestial "
             "forces that govern magic, destiny, and the hidden threads of fate. Through careful "
-            "observation they can learn spells cast by friend and foe alike, gradually unraveling"
-            " the mysteries of the arcane. Those who master the stars gain the power to bend "
+            "observation they learn rank-one and rank-two hostile spells that resolve while "
+            "they are present. Authored divination and time actions build Foresight Threads; "
+            "those who master the stars spend them to bend "
             "probability itself, turning fortune against their enemies and ensuring destiny "
             "unfolds according to their design.",
             str_plus=0,

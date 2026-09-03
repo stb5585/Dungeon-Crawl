@@ -247,6 +247,16 @@ class CharacterEventsMixin:
         """Helper to emit status effect events."""
         if applied:
             try:
+                from ..classes import promotion_kits
+
+                if status_name == "Poison":
+                    promotion_kits._message(
+                        self,
+                        promotion_kits.add_aspect(self, "Venom"),
+                    )
+            except Exception:
+                pass
+            try:
                 from ..classes import archdruid
                 archdruid.record_status_applied(self, target, status_name)
             except Exception:

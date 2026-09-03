@@ -22,9 +22,11 @@ class Lycan(Job):
     def __init__(self):
         super().__init__(
             name="Lycan",
-            description="Unlike the lycans of mythology who have little choice in morphing "
-            "into their animal form, these lycans have gained mastery over their"
-            " powers to become something truly terrifying.",
+            description=(
+                "Lycans coexist with a persistent Werewolf form whose Moon-driven stress "
+                "becomes more controllable through successful play. Dragon Essence adds "
+                "Winged Pounce without replacing the beast-self."
+            ),
             str_plus=1,
             int_plus=0,
             wis_plus=1,
@@ -45,7 +47,7 @@ class Lycan(Job):
 
 
 def default_state() -> dict[str, Any]:
-    return {"moon_phase": "New", "moon_steps": 0, "frenzy_turns": 0, "dragon_essence": False}
+    return {"moon_phase": "New", "moon_steps": 0, "frenzy_turns": 0}
 
 
 def normalize_state(state: Any) -> dict[str, Any]:
@@ -58,7 +60,8 @@ def normalize_state(state: Any) -> dict[str, Any]:
                 normalized[key] = max(0, int(state.get(key, 0) or 0))
             except (TypeError, ValueError):
                 normalized[key] = 0
-        normalized["dragon_essence"] = bool(state.get("dragon_essence", False))
+        if state.get("dragon_essence", False):
+            normalized["dragon_essence"] = True
     return normalized
 
 
@@ -79,12 +82,9 @@ def record_steps(character: Any, steps: int = 1) -> dict[str, Any]:
 
 
 def is_transformed(character: Any) -> bool:
-    if hasattr(character, "_transformed"):
-        return bool(character._transformed)
-    transform_type = getattr(character, "transform_type", None)
-    current_cls = getattr(getattr(character, "cls", None), "name", None)
-    original_cls = getattr(transform_type, "name", None)
-    return bool(original_cls and current_cls != original_cls)
+    from . import transformation
+
+    return transformation.is_transformed(character)
 
 
 def phase_damage_bonus(character: Any) -> float:
@@ -120,8 +120,6 @@ def maybe_trigger_frenzy(
     ) -> tuple[bool, str]:
     if not _is_lycan(character):
         return False, ""
-    if not is_transformed(character):
-        return False, ""
     state = ensure_state(character)
     if state["frenzy_turns"] > 0:
         return False, ""
@@ -129,11 +127,39 @@ def maybe_trigger_frenzy(
     base_chance = {"New": 0.05, "Waxing": 0.12, "Full": 0.25, "Waning": 0.16}[phase]
     if reason == "low_hp":
         base_chance += 0.10
+    elif reason in {"kill", "extended"}:
+        base_chance += 0.05
+    from . import class_rings, promotion_kits, transformation
+
+    control = promotion_kits.lycan_control_state(character)
+    rank = str(control.get("rank", "Feral") or "Feral")
+    rank_multiplier = {
+        "Feral": 1.00,
+        "Muzzled": 0.80,
+        "Restive": 0.60,
+        "Tethered": 0.40,
+        "Tame": 0.20,
+    }.get(rank, 1.00)
+    base_chance *= rank_multiplier
+    base_chance *= class_rings.controlled_frenzy_penalty_multiplier(character)
     if rng.random() >= base_chance:
+        if rank == "Restive":
+            promotion_kits.record_lycan_stress(character, "resist")
         return False, ""
     duration = {"New": 1, "Waxing": 2, "Full": 4, "Waning": 3}[phase]
+    duration -= {"Feral": 0, "Muzzled": 0, "Restive": 1, "Tethered": 2, "Tame": 3}.get(
+        rank, 0
+    )
+    if class_rings.controlled_frenzy_penalty_multiplier(character) < 1.0:
+        duration -= 1
+    duration = max(1, duration)
+    message = ""
+    if not is_transformed(character):
+        message += transformation.apply_form(character, "Werewolf", force=True) + "\n"
     state["frenzy_turns"] = duration
-    return True, f"The {phase} Moon locks {character.name} into a frenzy for {duration} turns.\n"
+    promotion_kits.combat_state(character)["lycan_stressed"] = True
+    message += f"The {phase} Moon locks {character.name} into a frenzy for {duration} turns.\n"
+    return True, message
 
 
 def tick_frenzy(character: Any) -> str:
@@ -147,6 +173,52 @@ def tick_frenzy(character: Any) -> str:
 
 
 def _is_lycan(character: Any) -> bool:
-    current = getattr(getattr(character, "cls", None), "name", "")
-    original = getattr(getattr(character, "transform_type", None), "name", "")
-    return current == "Lycan" or original == "Lycan"
+    from . import transformation
+
+    return transformation.permanent_class_name(character) == "Lycan"
+
+
+def start_combat(character: Any) -> str:
+    """Initialize Lycan stress triggers and check the Full Moon once."""
+    if not _is_lycan(character):
+        return ""
+    from . import promotion_kits
+
+    state = promotion_kits.combat_state(character)
+    state["lycan_low_hp_checked"] = False
+    state["lycan_transformed_turns"] = 0
+    state["lycan_stressed"] = False
+    state["lycan_success_keys"] = set()
+    if ensure_state(character)["moon_phase"] == "Full":
+        return maybe_trigger_frenzy(character, reason="combat_start")[1]
+    return ""
+
+
+def record_player_turn(character: Any) -> str:
+    """Check low-health and extended-form stress at authored turn thresholds."""
+    if not _is_lycan(character):
+        return ""
+    from . import promotion_kits
+
+    combat = promotion_kits.combat_state(character)
+    message = ""
+    if (
+        not combat.get("lycan_low_hp_checked")
+        and character.health.max > 0
+        and character.health.current / character.health.max < 0.25
+    ):
+        combat["lycan_low_hp_checked"] = True
+        message += maybe_trigger_frenzy(character, reason="low_hp")[1]
+    if is_transformed(character):
+        turns = int(combat.get("lycan_transformed_turns", 0) or 0) + 1
+        combat["lycan_transformed_turns"] = turns
+        if turns == 5 or (turns > 5 and (turns - 5) % 3 == 0):
+            message += maybe_trigger_frenzy(character, reason="extended")[1]
+    return message
+
+
+def record_transformed_kill(character: Any) -> str:
+    """Resolve the once-per-killing-action transformed stress check."""
+    if not _is_lycan(character) or not is_transformed(character):
+        return ""
+    return maybe_trigger_frenzy(character, reason="kill")[1]

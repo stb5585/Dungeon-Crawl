@@ -255,7 +255,7 @@ class Momentum(Skill):
         super().__init__(
             "Momentum",
             (
-                "Attack with both weapons. If both connect, finish with a "
+                "Death Mark Setup: attack with both weapons. If both connect, finish with a "
                 "two-handed strike using their combined strength."
             ),
             weapon=True,
@@ -280,7 +280,10 @@ class Momentum(Skill):
             result.message = f"{user.name} does not have enough mana to use Momentum.\n"
             return result
 
+        from ..classes import promotion_kits
+
         user.mana.current -= self.cost
+        user._death_mark_toxin_status = False
         before = int(target.health.current)
         main_message, main_hit, main_crit = user.weapon_damage(
             target,
@@ -315,6 +318,13 @@ class Momentum(Skill):
         result.hit = bool(main_hit or offhand_hit)
         result.crit = max(main_crit, offhand_crit)
         result.damage = max(0, before - int(target.health.current))
+        message += promotion_kits.resolve_death_mark_setup(
+            user,
+            target,
+            self.name,
+            hit=result.hit,
+            status_applied=bool(getattr(user, "_death_mark_toxin_status", False)),
+        )
         result.message = message
         return result
 
@@ -1433,12 +1443,33 @@ class _MartialStrike(MartialArts):
         if not self._has_martial_weapon(user):
             return f"{user.name} needs a free hand or fist weapon to use {self.name}.\n"
         user.mana.current -= self.cost
-        msg, hit, _crit = user.weapon_damage(target, dmg_mod=self.damage_mod, use_offhand=False)
+        from ..classes import promotion_kits
+
+        accuracy = promotion_kits.ki_accuracy_bonus(user, self.name)
+        msg, hit, _crit = user.weapon_damage(
+            target,
+            dmg_mod=self.damage_mod,
+            use_offhand=False,
+            accuracy_modifier=accuracy,
+        )
         if hit and self.status_name and target.is_alive() and not target.has_status_protection(self.status_name):
-            effect_dict = target.effect_handler(self.status_name)
-            effect_dict[self.status_name].active = True
-            effect_dict[self.status_name].duration = max(effect_dict[self.status_name].duration, 2)
-            msg += f"{target.name} is affected by {self.status_name.lower()}.\n"
+            apply_status = True
+            duration = 2
+            control_bonus = promotion_kits.ki_control_bonus(user, self.name)
+            if self.name == "Suplex":
+                actor_roll = random.randint(user.stats.strength // 2, user.stats.strength)
+                target_roll = random.randint(target.stats.con // 2, target.stats.con)
+                apply_status = actor_roll > target_roll
+                if not apply_status and control_bonus:
+                    apply_status = random.random() < control_bonus
+            if apply_status:
+                effect_dict = target.effect_handler(self.status_name)
+                effect_dict[self.status_name].active = True
+                effect_dict[self.status_name].duration = max(
+                    effect_dict[self.status_name].duration,
+                    duration + int(control_bonus > 0),
+                )
+                msg += f"{target.name} is affected by {self.status_name.lower()}.\n"
         return msg
 
 
@@ -1473,7 +1504,14 @@ class Hyakuretsukyaku(_MartialStrike):
         user.mana.current -= self.cost
         msg = ""
         for _ in range(4):
-            hit_msg, _hit, _crit = user.weapon_damage(target, dmg_mod=0.45, use_offhand=False)
+            from ..classes import promotion_kits
+
+            hit_msg, _hit, _crit = user.weapon_damage(
+                target,
+                dmg_mod=0.45,
+                use_offhand=False,
+                accuracy_modifier=promotion_kits.ki_accuracy_bonus(user, self.name),
+            )
             msg += hit_msg
             if not target.is_alive():
                 break

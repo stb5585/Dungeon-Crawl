@@ -17,8 +17,8 @@ class Diviner(Job):
         super().__init__(
             name="Diviner",
             description="A diviner works with nature to balance the four classical "
-            "elements of Earth, Wind, Water, and Fire, and can learn certain "
-            "spells cast against them within these domains. Diviners are also "
+            "elements of Earth, Wind, Water, and Fire, and permanently learn "
+            "explicitly ranked hostile spells they witness resolving. Diviners are also "
             "hyper aware of their surroundings, limiting the effect of traps "
             "and magic effects.",
             str_plus=0,

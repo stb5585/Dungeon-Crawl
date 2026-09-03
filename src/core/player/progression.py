@@ -144,14 +144,12 @@ class PlayerProgressionMixin:
                     upgrade_str = f"You absorb part of the {enemy.name}'s soul.\n" + upgrade_str
                     state['procs_this_floor'] += 1
                     state['procs_by_enemy'][enemy.name] = enemy_proc_count + 1
-        if self.cls.name == "Lycan" and enemy.name == 'Red Dragon':
-            lycan_state = self.ensure_lycan_state()
-            if not lycan_state.get("dragon_essence", False):
-                lycan_state["dragon_essence"] = True
-                upgrade_str += (
-                    f"{self.name} has harnessed the Red Dragon's essence. "
-                    "It will enhance the werewolf form once Dragon Essence techniques are implemented.\n"
-                )
+        from ..classes import promotion_kits, transformation
+
+        if transformation.permanent_class_name(self) == "Lycan" and enemy.name == 'Red Dragon':
+            essence_message = promotion_kits.unlock_dragon_essence(self)
+            if essence_message:
+                upgrade_str += essence_message
         return upgrade_str
 
     def quests(self, enemy: object | None = None, item: object | None = None) -> str:

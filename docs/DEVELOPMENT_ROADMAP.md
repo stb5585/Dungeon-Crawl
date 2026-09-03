@@ -1,6 +1,6 @@
 # The Forsaken Tenet Development Roadmap
 
-*Updated: August 24, 2026*
+*Updated: September 2, 2026*
 
 This roadmap tracks remaining work for **The Forsaken Tenet**. Completed P0-P6
 roadmap history has been consolidated into `CHANGELOG.md`; this file is now
@@ -35,6 +35,11 @@ gates.
 Learned abilities survive class changes; all unpurchased nodes in the prior
 tree close. Church promotion and automatic level-based ability/stat awards
 are retired. Progression is a Character Menu tab rather than a Town option.
+Universal retention is intentional even when an ability falls outside the new
+class identity: Monk keeps magic, Bard keeps divine abilities, Ranger keeps
+attack spells, and Inquisitor keeps stealth. Promotion grants are additive;
+specialization is expressed by current-tree access, mechanics, stats, and
+equipment restrictions rather than destructive pruning.
 
 Warrior was the first fully authored talent-tree prototype. Its six-column
 graph leads through Arms to Weapon Master, Vanguard to Lancer, Bulwark to
@@ -72,9 +77,13 @@ ability icons, and prerequisite connectors without path headings or textual
 availability labels.
 The same declarative contract now covers all 49 class trees. Mage, Footpad,
 Healer, and Pathfinder retain independent specialization roots, while every
-promoted and terminal class uses named identity paths and class-kit talents
-instead of generic four-lane rating padding. Exact branch ownership is recorded
-in `docs/ABILITY_TREE_DESIGN.md`. Weapon Master is the first deliberately
+promoted and terminal class has a structurally declared graph. Named identity
+paths do not by themselves prove authored mechanics: outside the rebuilt
+Warrior, Mage, and Assassin/Ninja graphs, many promoted paths remain sparse
+catalog-only layouts awaiting authored expansion. Generic rating padding has
+been removed. Exact branch ownership and audit status are recorded in
+`docs/ABILITY_TREE_DESIGN.md` and
+`docs/CLASS_KIT_DESIGN_GATES.md`. Weapon Master is the first deliberately
 asymmetric promoted tree: Berserker and Grandmaster routes use different node
 types, Grandmaster forks permanently between Dual Wield and Duelist, and eight
 independent weapon arts branch into rank-5 replacement upgrades instead of
@@ -95,18 +104,21 @@ independent six-node route costing eight points including promotion.
 Footpad's Control track is required by both Thief and Assassin, while Defense
 is required by both Spell Stealer and Inquisitor; each joined promotion route
 costs 13 progression points.
-Shared tracks can feed several promotions without duplicating nodes. Their 12
-first-promotion trees provide at least 16 development choices and their 14
-terminal trees at least 14, using four class-specific passive families rather
-than alternating two placeholder ranks. Each generic terminal tree ends in a
-two-point mastery that deepens its meter or persistent class system; full
-counts, path costs, names, and generated diagrams live in
+Shared tracks can feed several promotions without duplicating nodes. The
+remaining Footpad, Healer, and Pathfinder promotion graphs now expose only
+their real catalog abilities. Generated rating families, repeated ranks,
+generic cap masteries, and Lycan control acceleration were removed; exact
+compact sizes prevent padding from returning. Beast Master's two-point Bonded
+Bulwark remains because it has an authored companion-bond payoff. Several
+underlying class systems still need the independently tracked implementation
+work below.
+Full counts, path costs, names, and generated diagrams live in
 `docs/ABILITY_TREE_DESIGN.md` and `docs/ability_trees/`.
 
 Mage is now the second bespoke base graph. Its six columns define independent
 Elemental roots, matching Enhancements, Arcana, Occultism, Conjuration, and
-Universal utility. Promotion route costs are `5/8/8/8` for
-Sorcerer/Spellblade/Warlock/Conjurer. Sorcerer permanently chooses Classical
+Universal utility. Promotion route costs are `5` for Elemental Sorcerer, `6`
+for Arcane Sorcerer, and `8/8/8` for Spellblade/Warlock/Conjurer. Sorcerer permanently chooses Classical
 Force or Arcane Tradition, making School Affinity Elemental- or Arcane-focused
 and severely nerfing the competing school. Learned spells survive promotion;
 Guidance Upgrade and the six elemental spell nodes retain the existing
@@ -144,13 +156,13 @@ conduit, and the combat-only 100-MP Raise Summon restores only that just-fallen
 Xenid at 25% HP while refunding 10 conduit.
 
 The authored terminal follow-up replaces Berserker's generated talents with
-Survival, Fury, and independent center columns plus eight centered two-handed
-discipline arts. Its promotion-level entries are ungated, its stat development
-uses `+30 Attack` and `+100 HP`, and Reckless Onslaught replaces Final Assault
-with a stacking offensive tradeoff. Hemorrhage Thirst turns enemy bleed damage
-into healing at the risk of a two-turn bloodlust crash. Grandmaster of Arms now
-owns all three levels of every weapon art plus ungated Double Strike positioned
-between two ungated, discipline-scaled mastery talents.
+Heavy Weapons, Two-Weapon Assault, Fury, Survival, and eight centered
+two-handed discipline arts. It adds Momentum, Tectonic Rift, Thunderous Vault,
+Fatality, Composed Wrath, and Reckless Onslaught while retaining Final Assault
+as a compatible purchase. Hemorrhage Thirst turns enemy bleed damage into
+healing at the risk of a two-turn bloodlust crash. Grandmaster of Arms owns all
+three levels of every weapon art plus ungated Double Strike positioned between
+two ungated, discipline-scaled mastery talents.
 
 Knight Enchanter now evolves Spellblade's typed Blade Charges through a
 combat-only Foundation/Accent grammar instead of Arcane Tempo. Element, Force,
@@ -197,9 +209,10 @@ Shield Offense column while shifting Resistance and Support right. Resolve uses
 the legacy `guard_meter` field as one value with
 caps 50/100, explicit Defend/block/physical-damage/Goad/Hold gains, and no
 duplicate Class Ring accumulation. Spell Block is the active anti-projectile
-action and Spell Reflection is its passive reflection modifier. Stalwart grants
-Citadel Aegis, Ironwall Revenge, Last Bastion, and Stronghold as immediately
-unlocked full-bar Bursts.
+action and Spell Reflection is its passive reflection modifier. Stalwart's
+Citadel Aegis, Ironwall Revenge, Last Bastion, and Stronghold full-bar Bursts
+currently unlock immediately; replacing that placeholder with four
+use-developed mastery tracks is an active critical gap below.
 Its new Tower Offense, Get Even, Generator Shield, and Battle Determination
 passives turn Shield Slam, Retaliate, Shield Ricochet, and Battle Cry into
 additional Resolve interactions.
@@ -263,17 +276,20 @@ appropriate design-gate document before coding.
 - Recent class-mechanic follow-up shipped Weapon Master/Berserker/Grandmaster
   Weapon Discipline and tree-purchased weapon arts, the `Weapon Discipline`
   Character Menu tab, pygame promotion preview/stat-delta education, INT-backed
-  promotion stat tuning, the Sorcerer/Wizard 0-based School Affinity
-  progression, the promotion ability transition decision matrix, and the V1
-  promotion class-kit track implementation.
+  promotion stat tuning, Sorcerer/Wizard 0-based School Affinity progression,
+  and the promotion ability transition decision matrix. The 2026-09-02 audit
+  found several V1 class-kit payoffs that remain incomplete despite their
+  state, tree, or presentation surfaces; they are tracked below.
 - Cleric now has a second level-3 fork: `Templar` remains the heavy shield
   defender, while `Hierophant` is the staff/shield/light-armor divine
   battle-caster with `Staff Conduit`, `Consecrated Conduit`, Devotion support,
   Church Class Ring awakening, and Voluntas bridge coverage.
-- Cleric Devotion now has immediate post-promotion value: `Sanctuary Ward` is
+- Cleric Devotion has a narrow post-promotion foundation: `Sanctuary Ward` is
   granted at Cleric level 1, held Devotion grants light incoming-damage
   reduction, `Sanctuary Ward` is hidden from combat skills until Devotion
-  exists, and Devotion gain waits until the enemy survives the action.
+  exists, and queued gain waits until the enemy survives the action. The
+  lineage audit found that action deduplication, several gain sources, and the
+  Templar payoff/ring loop remain incomplete.
 - The relic quest opening now stages the mystery through `Uncertain Reports`
   before creating `The Holy Relics`, with old-save migration and shared core
   quest-progress handling.
@@ -306,6 +322,120 @@ appropriate design-gate document before coding.
     and economy gates.
   - `docs/PLAYTEST_CHECKLIST.md` for manual validation coverage.
 
+## Active Class-Kit Closure
+
+These are implementation defects or incomplete advertised mechanics, not
+deferred expansion ideas.
+
+- **Critical — Berserker Bloodied Momentum:** replace per-damage-event gain
+  with once-per-player-action and once-per-enemy-action generation, enforce the
+  one-per-round below-25% bonus, spend at validated heavy-art/Final Assault
+  action start, implement art mutations and miss behavior, add Battle Scar
+  milestone/ring preservation, and cover the entire loop with focused tests.
+  Remove the meter and its claims instead if the complete payoff is not going
+  to ship.
+- **Ready cleanup — shared Momentum presentation:** the Weapon Master,
+  Berserker, Assassin, and Ninja trees reuse one ability class, but its base
+  description now always says `Death Mark Setup`. Move that label into
+  Assassin/Ninja-specific tree or detail metadata so non-marking classes are
+  not promised a mechanic they cannot use.
+- **Critical — Stalwart Resolve mastery:** replace the meaningless scalar
+  `resolve_mastery` and zero-threshold Surges with four persistent mastery
+  tracks learned through associated barrier, counter, survival, and fortress
+  actions. Start with four qualifying uses per track, count once per action or
+  defensive event, carry progress from Sentinel into Stalwart, expose locked
+  progress in the Resolve tab, and test save/load and promotion behavior.
+- **Ready cleanup — retired Resolve APIs:** after the mastery rewrite, remove
+  Shield Check, Bulwark, active Shield Riposte, Covering Guard, and active Spell
+  Reflection classes/functions/exports/tests unless an explicit legacy-save
+  compatibility decision keeps them in an isolated adapter.
+- **Critical — Wizard School Streak:** connect awakened-and-equipped ring state
+  to eligible random spell riders through a once-per-action registry. Failed
+  riders build school-specific stacks, success resets them, and four stacks
+  guarantee and consume the next eligible opportunity. Define and test the
+  lifecycle of unsaved `wizard_school_buffs` at the same time.
+- **Critical — Shadowcaster Shade/backlash:** remove predecessor bonuses still
+  triggered by `shade_of_ahool_turns`, retain only the authored Shadow, Speed,
+  flight, and Holy-resistance effects, unify its timer, and trigger backlash
+  conversion once on Shade end and low-HP ring healing with the correct ring
+  and familiar modifiers.
+- **Critical — Thaumaturgist conduit payoff:** consume Conduit Command on the
+  active Xenid's next non-Recall action for its authored damage/healing and
+  True Name effects; implement Recall/death/combat cleanup. Replace generic
+  invocation damage with fourteen authored typed invocations, including the
+  missing Hodag and Caladrius abilities and every documented rider.
+- **Ready coverage — implemented but dispersed mechanics:** add parameterized
+  coverage for all Grandmaster Weapon Art forms, Wizard school modifiers,
+  Warlock familiar modifiers, and Shadowcaster terminal passives. These hooks
+  exist, but current tests are representative rather than exhaustive.
+- **Critical — Thief/Rogue authored kit:** replace the class-name-only loot
+  messages with learned `Scavenger's Eye` rarity/drop behavior and a real
+  `Finders Keepers` extra-loot roll; make Fortune/Misfortune action-scoped and
+  connect them to authored risky-action odds/outcomes. Gate Cheat Death on its
+  learned node, give Jinx a defined effect or remove it, and integrate the
+  currently unused Loaded Dice failed-luck conversion.
+- **Critical — Inquisitor/Seeker investigation payoff:** add the missing Revelation spender,
+  visible-detail/telegraph progress rules, all four Case milestone effects,
+  target-specific cleanup/presentation, live Wayfinding consumers, and actual
+  dungeon/reward integration for Hidden Cache.
+- **Critical — Spell Stealer/Arcane Trickster stolen-magic payoff:** centralize
+  validate-then-spend MP handling for both theft abilities, add the missing
+  stolen-scroll source in Steal As Well, resolve Stolen Charge once per action
+  across weapon and spell payoffs through typed Arcane damage, and settle miss
+  consumption.
+  Make the awakened/equipped Arcane Larceny buff expire after three turns and
+  clear correctly at combat/load boundaries.
+- **Resolved — generic Footpad talent removal:** Thief/Rogue,
+  Inquisitor/Seeker, and Spell Stealer/Arcane Trickster now expose only their
+  real catalog actions. Repeated rating families and generic meter-cap
+  masteries are gone; the remaining kit implementation gaps stay critical.
+- **Resolved — Devotion action loop:** Cleric/Templar/Hierophant generation is
+  action-scoped across healing, Holy, shield, block, and Turn Undead sources.
+  Holy Retribution, Ordered Blessings, Relic Aegis, and typed action-consuming
+  Consecrated Conduit payoffs are connected.
+- **Resolved — Prayer support loop:** Priest/Archbishop generation is
+  action-scoped across meaningful healing, support, cleanse, anti-magic,
+  Resurrection, and authored Defensive Regen while passive ticks are excluded.
+  Supplication, Great Benediction, Great Gospel, and Divine Intervention now
+  resolve their complete resource payoffs.
+- **Resolved — Monk/Master Monk Ki:** authored martial actions, hostile-action
+  defensive reactions, and meaningful Chi Heal uses generate once per action;
+  all five one-Ki riders and the full-Ki, 18-MP Dim Mak pipeline are connected.
+  Dim Mak now honors weapon penalties, boss/Death immunity, contested Stun,
+  essence recovery, and the once-per-combat Martial Master refund.
+- **Resolved — Bard/Troubadour closure:** mastered repertoire has a live
+  MP-costed combat action; composition, carried exploration steps, and clean
+  completions advance mastery. Exploration songs leave conservative route
+  codas, and Chorus Time's final coda now resolves its reduced contest.
+- **Resolved — generic Healer talent removal:** all generated rating families
+  and hidden meter-cap payloads are gone. Promoted Healer trees now contain
+  only catalog abilities; Troubadour intentionally has no terminal purchases
+  until genuinely authored progression is designed.
+- **Resolved — Druid/Lycan persistent forms:** transformations use serialized,
+  reversible overlays and survive combat, town, and save/load. Purchased nodes
+  determine form access; Lycan stress, control ranks, ring mitigation, canonical
+  Dragon Essence, dismissal rules, and Werewolf-only Winged Pounce are live.
+- **Resolved — Diviner/Astromancer identity:** explicit rank metadata controls
+  guaranteed learning from successfully resolved hostile spells. Threads now
+  come only from the six authored actions, and Threaded Cast spends them on a
+  validated spell/Runic Boost with exact accuracy, reliability, output, ring,
+  and Rewind-safe behavior.
+- **Resolved — Archdruid combat Aspect Harmony:** action/round-scoped charges,
+  typed and immunity-aware Fourfold Surge riders, Primal Ascendance, Tree of
+  Life, and once-per-combat Harmony preservation are live without changing
+  persistent Grove/attunement progression.
+- **Resolved — Totem Resonance and Soul harvest payoff:** matching casts and
+  successful pulses gain once after resolution; Soul Totem/Surge consume
+  harvested-type scaling nonlethally, and Aspect Evolution improves the cap,
+  reliability, and output of every Surge aspect.
+- **Resolved — Ranger/Beast Master closure:** awakened/equipped Shared Recovery
+  now improves Pack Strike accuracy/output, Guard Partner, Harry Prey, and Mend
+  Wounds while preserving the one-companion-turn action boundary.
+- **Resolved — generic Pathfinder talent removal:** all generated rating
+  families, cap inflation, and Lycan control acceleration are gone. Bonded
+  Bulwark alone remains as a two-point authored companion-bond payoff; compact
+  catalog-only trees make future authored expansion needs explicit.
+
 ## Deferred Expansion Triage Map
 
 This map indexes larger deferred expansions across owner docs. It does not make
@@ -328,7 +458,7 @@ Triage bands:
 | --- | --- | --- | --- | --- | --- |
 | Class-kit track expansions | Combo chains, Maestro progression, Beast Master stables, Grove questlines, Jump mastery, multi-vow systems, broader scar trees, divine economy, loot redesign, Seeker pathing, stealth rewrite, stolen-spell mastery. | `Needs Evidence` | Class-kit UI/log, pacing, and balance-threshold evidence identifies one specific track. | `CLASS_KIT_DESIGN_GATES.md` | One track's one-page spec, not a multi-track mechanics batch. |
 | Class-ring tuning/presentation | Wizard radar visualization, ring status polish, and ring effect tuning. | `Needs Evidence` | Manual UI/readability notes or class-kit balance threshold findings. | `CLASS_RING_SYSTEM.md` | Presentation-only ring readability before numeric tuning. |
-| Promotion ability transition expansions | Ability-history restoration, alternate retention policies, and new promotion spell/skill grants. | `Do Not Promote As Cleanup` | Explicit transition-rule spec with save/load and UI message behavior. | `PROMOTION_ABILITY_RULES.md` | One promotion path with save/load and text/pygame message coverage. |
+| Promotion ability grant expansions | New mandatory promotion spell/skill grants; universal retention remains invariant. | `Do Not Promote As Cleanup` | Explicit additive-grant spec with save/load behavior and no ability replacement. | `PROMOTION_ABILITY_RULES.md` | One additive grant with flat-progression and save/load coverage. |
 | Combat semantics and architecture | Deeper-floor multi-enemy content, speed-based combat stacks, dice conversion, always-hit flags, ignore-defense order, unlockable race/class/difficulty strategy, and XP scaling. | `Needs Evidence` | Rebenchmark Pilot 3 after the ability-tree refactor, then decide the floor-5 second-promotion matrix and enemy-area-action boundary; other combat expansions still require their own full spec. | `MULTI_ENEMY_COMBAT_DESIGN.md`, `MULTI_ENEMY_PILOT_3_PLAN.md`, `COMBAT_BALANCE_DESIGN_GATES.md` | Preserve the completed manual acceptance and rerun promoted-class balance, not random rollout or rosters larger than two. |
 | Equipment/economy save-heavy systems | Durability, identification, item modification, equipment actives, armor mobility, Tome effects, ultimate helmets, rarity semantics. | `Needs Spec` | Serializer, UI, economy, old-save, and balance contracts are defined. | `EQUIPMENT_ITEMS_ECONOMY_DESIGN_GATES.md` | Shop polish or one inert P6-adjacent item, not durability plus modification. |
 | Dungeon/world interaction expansion | Harvestable roots/fungus, rubble clearing, crystal interaction, bone/gear salvage, deeper Realm of Cambion rooms, rewards, and encounter variants. | `Needs Spec` | Content beat, tile state, reward, and save behavior are defined. | `DUNGEON_WORLD_ENCOUNTER_DESIGN_GATES.md` | One decorative tile interaction with old-save inert fallback. |
@@ -349,13 +479,13 @@ to decide which larger gate deserves promotion next.
 ### Implementation Sequence
 
 1. **Cleric/Hierophant Devotion closure**
-   - Automated: complete. Focused tests cover immediate
+   - Automated foundation only. Focused tests cover immediate
      `Sanctuary Ward` grants, learned-ability promotion messaging, hidden skill
      visibility at 0 Devotion, held-stack damage reduction, and enemy-survival
      Devotion gain.
-   - Manually smoke-test Cleric, Templar, and Hierophant Devotion in pygame
-     combat, including `Relic Aegis`, `Consecrated Conduit`, and
-     `Sacred Overchannel`.
+   - Completed: once-per-action generation, defensive sources, Holy
+     Retribution riders, Ordered Blessings rotation, Relic Aegis counters, and
+     typed/action-level Consecrated Conduit resolution have focused coverage.
 2. **High-signal UI bugfixes**
    - Automated: complete. The Race selection `Virtue/Sin` section is pinned so
      two-line descriptions fit
@@ -495,8 +625,8 @@ than a single umbrella spec:
   polish, deferred track expansions, and P6 class ability decision blocks.
 - `docs/CLASS_RING_SYSTEM.md` owns Class Ring activation baselines and
   presentation/tuning follow-up.
-- `docs/PROMOTION_ABILITY_RULES.md` owns promotion spell/skill retention rules
-  and future transition-expansion requirements.
+- `docs/PROMOTION_ABILITY_RULES.md` owns universal promotion spell/skill
+  retention and future additive-grant requirements.
 - `docs/COMBAT_BALANCE_DESIGN_GATES.md` owns combat semantics, balance-report
   gates, always-hit rules, Polearm Mastery gating, and deferred combat
   architecture.
@@ -808,41 +938,12 @@ an explicit oath confirmation before promotion commits.
   Animal alongside Detect Elemental. Place the remaining definitions in
   promotion trees where their creature families fit.
 
-## Future Implementations
+## Footpad Promotion Follow-Up
 
-* For Inquistor tree,
-- column 1:
-- column 2:
-- column 3:
-- column 4:
-* For Spell Stealer tree,
-- column 1:
-- column 2:
-- column 3:
-- column 4:
-* For Thief tree,
-- column 1: Find Traps
-- column 2:
-- column 3:
-- column 4:
-* For Ninja tree
-- column 1: Steal (ungated), Mug (lvl 65), a new ability Find Traps (Passive; chance to alert the player to a nearby trap, so the player can either avoid it or at least prepare for it if there is no way around; chance to find depends on player perception and trap level; lvl 70)
-- column 2: Triple Strike (ungated), Momentum (lvl 65), Flurry of Blades (lvl 75)
-- column 3: Desoul (lvl 70)
-- column 4: Haste (ungated), Invisibility (lvl 65)
-- column 5: Parry (ungated), Riposte (lvl 65),
-* For Seeker tree,
-- column 1:
-- column 2:
-- column 3:
-- column 4:
-* For Arcane Trickster tree,
-- column 1:
-- column 2:
-- column 3:
-- column 4:
-* For Rogue tree,
-- column 1: a new ability Disarm Traps (Passive; gives the player the option to disarm the trap but it is not guaranteed; certain skills and items can increase the disarm chance, with the difficulty dependent on the player's deftness and trap level)
-- column 2:
-- column 3:
-- column 4:
+The obsolete empty column placeholders previously kept here are retired.
+Assassin/Ninja now has an authored tree and implemented Death Mark system.
+Thief/Rogue, Inquisitor/Seeker, and Spell Stealer/Arcane Trickster require the
+mechanic closure and authored-tree replacement work listed in Active Class-Kit
+Closure and specified in `docs/CLASS_KIT_DESIGN_GATES.md`. Do not add isolated
+column fillers such as Find Traps or Disarm Traps before each branch's complete
+identity, prerequisites, action semantics, and test contract are approved.
