@@ -153,6 +153,12 @@ class CharacterUtilityMixin:
                 magic_mod += int(self.equipment['Weapon'].damage * 0.75)
             magic_mod += armor_spell_modifier(self.equipment.get("Armor"))
             magic_mod += self.stat_effects["Magic"].extra * self.stat_effects["Magic"].active
+            try:
+                from ..classes import promotion_kits
+
+                magic_mod += promotion_kits.magical_invigoration_bonus(self)
+            except Exception:
+                pass
             offense_multiplier = float(getattr(self, "_encounter_offense_multiplier", 1.0))
             return max(
                 0,
@@ -197,6 +203,10 @@ class CharacterUtilityMixin:
             res_mod = self.resistance.get(typ, 0)
             if typ == "Death" and int(getattr(self, "resist_death_steps", 0) or 0) > 0:
                 res_mod += 0.50
+            if typ == "Poison":
+                exploration = getattr(self, "temporary_exploration_effects", {}) or {}
+                if int(exploration.get("resist_poison", 0) or 0) > 0:
+                    res_mod += 0.50
             if typ == "Shadow":
                 from .. import curses
 

@@ -90,8 +90,10 @@ from .companions import (
     apply_tamed_companion_growth,
     tamed_companion_special_turn,
     tamed_companion_bond,
+    tamed_companion_damage_multiplier,
     has_living_tamed_companion,
     _class_name,
+    _has_talent,
     available_beast_companion_commands,
     _companion_command_state,
     pending_companion_command,
@@ -99,6 +101,7 @@ from .companions import (
     tamed_auto_action_chance,
     tamed_companion_should_auto_act,
     _favored_enemy_pressure,
+    _clear_harmful_companion_condition,
     resolve_tamed_companion_command,
 )
 from .exploration import (

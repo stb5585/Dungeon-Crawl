@@ -256,9 +256,10 @@ gates. `CLASS_RING_SYSTEM.md` owns Class Ring activation,
 `PROMOTION_ABILITY_RULES.md` owns promotion ability retention, and
 `COMBAT_BALANCE_DESIGN_GATES.md` owns combat semantics and balance-report gates.
 
-The V1 promotion kit pass is implemented. Future work should start with
-UI/log readability for combat meters, class status, ring state, and combat
-messages, with no mechanic or numeric tuning changes in that slice.
+The V1 promotion kit pass and authored tree completion are implemented.
+UI/log readability remains a parallel evidence task. Future tuning may deepen
+existing mechanics but may not silently introduce the broader deferred
+systems below.
 
 Status locks to preserve unless a later spec explicitly changes them:
 
@@ -1235,21 +1236,21 @@ actions, raises the cap from `50` to `100`, and gains four full-bar Bursts.
 
 ### Remaining Footpad Branch Implementation Audit
 
-Audit date: 2026-09-03. This covers the three Footpad paths not included in
-the Assassin/Ninja rebuild. Their generated talent families have been removed;
-the compact graphs now expose only real catalog actions.
+Audit date: 2026-09-04. This records the finished Footpad promotion paths.
+Generated talent families
+remain removed; every exposed choice has authored behavior.
 
 `Tree size` is development nodes / development-point cost. The first-promotion
 trees also contain a three-point level-60 promotion node.
 
 | Class | Tree size | Working foundation | Audit status |
 | --- | ---: | --- | --- |
-| Thief | 4 / 4 | Lockpick, Gold Toss, Mug, Footpad tools, Scavenger's Eye, and action-scoped Fortune/Misfortune | Implemented with focused loot and luck-loop coverage |
-| Rogue | 8 / 8 | Sneak Attack, Slot Machine, Triple Strike, Master Lockpick, Finders Keepers, Cheat Death/Jinx, and Loaded Dice | Implemented with focused payoff and survival coverage |
-| Inquisitor | 17 / 17 | Reveal, Inspect, Exploit Weakness, anti-magic/resistance actions, persistent Case Journal and target-specific Revelation | Implemented with focused investigation-payoff coverage |
-| Seeker | 11 / 11 | Teleport, Cartography, Third Eye, Volitation, Enter Wall, contextual Wayfinding, and integrated Hidden Cache | Implemented with focused route and cache coverage |
-| Spell Stealer | 5 / 5 | Blank Scroll theft, inscribed scrolls, Steal As Well, and action-scoped Stolen Charge | Implemented with focused stolen-magic coverage |
-| Arcane Trickster | 3 / 3 | Permanent Steal Spell 2 learning, Arcane Larceny, and Charge preservation | Implemented with focused payoff and ring-duration coverage |
+| Thief | 22 / 22 | Four Fortune, Misfortune, Tools, and Escape disciplines with three new active actions and two stat choices | Finished authored tree; 55% promotion-ready coverage |
+| Rogue | 28 / 30 | Four Loaded Odds, Comebacks, Cunning, and Escape disciplines, including Disarm Traps and Take It On the Run | Finished authored tree; 67% tier-earned coverage |
+| Inquisitor | 23 / 24 | Case Journal and Judgment promotion routes, optional elemental-ward passives, and read-only Take Notes | Finished authored tree; 50% tier-earned cost coverage |
+| Seeker | 28 / 30 | Four route, defense, Revelation, and Judgment disciplines with four new active techniques | Finished authored tree; 67% tier-earned coverage |
+| Spell Stealer | 12 / 19 | Blank Scroll theft, inscribed scrolls, active charged offense/defense, and action-scoped Stolen Charge | Finished authored tree; 63% tier-earned cost coverage |
+| Arcane Trickster | 12 / 30 | Permanent Steal Spell II learning, Neural Connection, misdirection actions, and Charge preservation | Finished authored tree; 67% tier-earned cost coverage |
 
 Resolved structural gap — generated promoted trees:
 
@@ -1301,9 +1302,12 @@ Shipped Inquisitor/Seeker closure — investigation and movement:
   Closed Case improves contextual Seeker movement. Exact progress remains
   developer-facing; player surfaces reveal ranks and immediate target state.
 - Teleport, Sanctuary, Volitation, and Enter Wall consume contextual Wayfinding
-  discounts. Awakened/equipped Hidden Cache smooths one clean read per combat,
-  and dungeon navigation grants one concrete utility reward after a floor is
-  sufficiently mapped.
+  discounts. Surveyor's Step and Safe Passage convert mapped-floor familiarity
+  into combat mobility and defense. Deductive Strike and Foregone Conclusion
+  add direct weapon and control payoffs for studied targets and Revelation.
+  Awakened/equipped Hidden Cache smooths one clean read per combat, and dungeon
+  navigation grants one concrete utility reward after a floor is sufficiently
+  mapped.
 - Focused regressions cover normalization, fixed caps, acquisition/spending,
   inner-hit accounting, milestones, cleanup, selected-target UI, movement, and
   cache reward integration.
@@ -1312,15 +1316,15 @@ Shipped Spell Stealer/Arcane Trickster closure — stolen magic:
 
 - Both theft abilities validate class, target, source material, and MP before
   spending resources or mutating inventory and permanent spell knowledge.
-- Successful theft and every stolen-scroll cast route add fixed-cap Stolen
-  Charge. Eligible weapon and spell attempts commit it after validation, then
-  resolve at most one aggregate typed Arcane payoff for the action. Missed and
-  fully negated actions consume the commitment without applying bonus damage.
+- Successful theft and every stolen-scroll cast route add Stolen Charge.
+  Eligible weapon and spell attempts commit it after validation, then resolve
+  at most one aggregate typed Arcane payoff for the action. Controlled
+  Discharge retains one Charge from a missed or fully negated commitment.
 - Arcane Larceny starts only while awakened and equipped, lasts three player
   turns, clears with combat/load lifecycle state, and preserves one Charge
   after its first clean payoff each combat.
-- Focused tests cover MP safety, every source, exact caps, natural spells,
-  action aggregation, typed mitigation/events, miss consumption,
+- Focused tests cover MP safety, every source, visible cap expansion, natural
+  spells, action aggregation, typed mitigation/events, failed-payoff retention,
   Steal-As-Well routing, preservation, presentation, and cleanup.
 
 ### Thief/Rogue Fortune And Misfortune
@@ -1539,17 +1543,20 @@ compatibility, then add a combat-only `Stolen Charge` loop. Spell Stealer turns
 successful magical theft into short hybrid payoffs; Arcane Trickster deepens
 that loop through the awakened `Arcane Larceny` ring identity.
 
-- Preserve current identity: `Steal Spell` still requires and consumes a
-  concrete `Blank Scroll` on successful theft, creates a usable inscribed
+- Preserve current identity: `Steal Spell` still requires a concrete `Blank
+  Scroll` and normally consumes it on successful theft; Perfect Forgery adds
+  its visible 25% preservation chance. Theft creates a usable inscribed
   stolen-spell scroll, and respects Class Ring trial immunity. `Steal Spell 2`
   remains Arcane Trickster permanent spell learning. `Steal As Well`,
   `Imbue Weapon`, `Third Eye`, and `Trickster's Gambit` remain intact.
 - Charge storage: add combat-only `Stolen Charge` with no new persistent save
-  field. Spell Stealer caps at `2`; Arcane Trickster caps at `3`. Clear Charge
+  field. Spell Stealer caps at `2`; Arcane Trickster caps at `3`, or `4` after
+  purchasing Grand Larceny. Clear Charge
   on combat end, flee, death, save/load restore, class change, or leaving the
   class track.
 - Charge gain: successful `Steal Spell`, successful `Steal Spell 2`, and
-  casting an inscribed stolen-spell scroll each grant `+1` Charge, capped. Item
+  casting an inscribed stolen-spell scroll each grant `+1` Charge, capped;
+  Counterfeit Casting raises only the scroll-cast source to `+2`. Item
   theft from `Steal As Well` does not independently grant Charge; Charge comes
   from stolen magic sources only.
 - Hybrid payoff: the next damaging-spell attempt, standard weapon attempt, or
@@ -1557,7 +1564,8 @@ that loop through the awakened `Arcane Larceny` ring identity.
   equal to `20%` of the base damage per stored Charge, with a minimum of `5`
   per stored Charge.
   Resolution aggregates the action rather than individual hits. Missed or
-  fully negated actions consume the commitment without applying the payoff.
+  fully negated actions consume the commitment without applying the payoff,
+  unless Controlled Discharge retains one stack.
 - Class Ring display: show the awakened Arcane Trickster effect as
   `Arcane Larceny`, while preserving existing internal `Spell Steal Buff`
   compatibility for saves and tests. Awakened/equipped `Arcane Larceny` keeps
@@ -1572,11 +1580,11 @@ that loop through the awakened `Arcane Larceny` ring identity.
   `Arcane Trickster` do not receive a dedicated Character Menu mechanic tab.
   Inscribed stolen-spell scrolls are selected from the combat `Spells` picker
   with scroll labeling. Combat logs should report Charge gain, capped Charge,
-  spend, miss consumption, charged payoff, stolen-scroll contribution, and ring
-  preservation.
+  spend, failed-payoff retention, charged payoff, stolen-scroll contribution,
+  and ring preservation.
 - Tests: cover `Steal Spell` Blank Scroll consumption, stolen-scroll creation,
   and immunity; `Steal Spell 2` permanent learning plus Charge gain; Charge
-  caps, gain sources, spend-all behavior, miss consumption, and combat-end or
+  caps, gain sources, spend-all behavior, failed-payoff retention, and combat-end or
   save/load cleanup; representative spell, weapon, and weapon-tagged skill
   payoffs; `Steal As Well` item-theft boundaries; and awakened/equipped
   `Arcane Larceny` legacy buff plus once-per-combat Charge preservation.
@@ -1586,31 +1594,30 @@ that loop through the awakened `Arcane Larceny` ring identity.
   second Wizard progression path. Numeric tuning starts conservative and should
   be adjusted after playtest.
 - Shipped: theft costs validate before inventory or learning mutations, all
-  three magical sources feed fixed-cap Charge, eligible attempts resolve once
-  per action through typed Arcane mitigation, and Arcane Larceny observes
+  three magical sources feed visible Charge caps, eligible attempts resolve
+  once per action through typed Arcane mitigation, and Arcane Larceny observes
   equipment, duration, preservation, and combat/load cleanup boundaries.
 
 ### Healer Lineage Implementation Audit
 
-Audit date: 2026-09-03. The authored base Healer tree has focused runtime and
+Audit date: 2026-09-04. The authored base Healer tree has focused runtime and
 regression coverage for its support, healing, holy, control, and staff paths.
-Promoted graphs now contain only their catalog abilities; generated rating and
-meter-cap families have been removed.
+Every Healer promotion path now has an authored graph.
 
 `Tree size` is development nodes / development-point cost. First-promotion
 trees also contain their three-point level-60 promotion node.
 
 | Class | Tree size | Working foundation | Audit status |
 | --- | ---: | --- | --- |
-| Cleric | 11 / 11 | Action-scoped Devotion, held mitigation, `Sanctuary Ward`, and `Pious Bounty` reward marking | Implemented resource loop; numeric tuning needs playtest |
-| Templar | 10 / 10 | `Holy Retribution`, shield gating, Relic counters, Ordered Blessings, and preservation | Implemented resource loop; numeric tuning needs playtest |
-| Hierophant | 5 / 5 | Staff identity, action-scoped Devotion, `Sacred Overchannel`, and typed `Consecrated Conduit` | Implemented resource loop; authored tree expansion remains |
-| Monk | 12 / 12 | Authored action/reaction Ki, five spend riders, chi-art replacements, and exact cleanup | Implemented; numeric tuning and combat feedback need playtest |
-| Master Monk | 9 / 9 | Full-Ki `Dim Mak`, normal damage/Death/Stun resolution, staff rules, Ruyi exception, and ring refund | Implemented; finisher reliability needs playtest |
-| Priest | 10 / 10 | Action-scoped Prayer plus 10-MP `Supplication` healing, shielding, and cleanse | Implemented resource loop; support tuning needs playtest |
-| Archbishop | 9 / 9 | Full `Great Benediction`, `Great Gospel`, emergency ring heal, and preservation | Implemented resource loop; support tuning needs playtest |
-| Bard | 3 / 3 | Three baseline songs, advanced sheet composition, exploration songs, and Crescendo | Implemented runtime kit; authored tree expansion remains |
-| Troubadour | 0 / 0 | Persistent repertoire mastery, MP-costed performance, route/combat codas, and awakened `Encore` | Implemented runtime kit; no class-specific terminal purchases exist |
+| Cleric | 26 / 26 | Four route disciplines, shared ministry, partial/full Devotion spends, warding, and two promotions | Finished authored tree; 46% tier-earned coverage |
+| Templar | 28 / 30 | Four full Relic, Vanguard, Ordered Blessing, and Judgment disciplines | Finished authored tree; 67% tier-earned coverage |
+| Hierophant | 28 / 30 | Four full Conduit, Grace, Radiant, and Pastoral disciplines | Finished authored tree; 67% tier-earned coverage |
+| Monk | 23 / 23 | Four rearranged disciplines with three stat nodes, Ki generation, healing, reflection, and centering | Finished authored tree; 52% promotion-ready coverage |
+| Master Monk | 28 / 30 | Four full Flurry, Final Art, Diamond Body, and Rope-a-Dope disciplines | Finished authored tree; 67% tier-earned coverage |
+| Priest | 22 / 22 | Four Prayer, Exorcism, Grace, and Protection disciplines with added Magic and Magic Defense nodes | Finished authored tree; 55% promotion-ready coverage |
+| Archbishop | 29 / 31 | Five Benediction, Gospel, Intervention, sustain, and Supplication disciplines | Finished authored tree; 65% tier-earned coverage |
+| Bard | 26 / 26 | Three baseline songs, inherent Class-tab Compose, support/attack/defense actions, prismatic and untyped casting, advanced sheets, and Crescendo | Finished authored tree; 27 nodes including promotion |
+| Troubadour | 27 / 27 | Grand Finale, support/attack/defense actions, prismatic and untyped casting, repertoire mastery, codas, and normal/ring `Encore` | Finished authored terminal tree |
 
 Shared structural findings:
 
@@ -1672,23 +1679,23 @@ Bard/Troubadour findings:
 
 ### Pathfinder Lineage Implementation Audit
 
-Audit date: 2026-09-03. Pathfinder's 40-node base tree is authored and has
+Audit updated: 2026-09-04. Pathfinder's 40-node base tree is authored and has
 focused coverage for its Nature damage types, moonlight suppression, vines,
 poison strike, shared passives, animal utility, Primal Trance, Geomancy, and
-Control Z. Its promoted trees are compact catalog-only graphs; the generic
-rating scaffolds have been removed.
+Control Z. Every promoted Pathfinder tree now has an authored graph; generic
+rating scaffolds remain removed.
 
 | Class | Tree size | Working foundation | Audit status |
 | --- | ---: | --- | --- |
-| Druid | 7 / 7 | Purchased-node Panther/Direbear selection, persistent overlays, exact restoration, and nature spells | Implemented; form balance needs playtest |
-| Lycan | 6 / 6 | Persistent Werewolf, moon stress, behavior-earned control, canonical Dragon Essence, and Winged Pounce | Implemented; stress pacing needs playtest |
-| Archdruid | 7 / 7 | Fourfold progression plus action-scoped Harmony, typed Surge riders, and ring preservation | Implemented resource loop; Surge tuning needs playtest |
-| Diviner | 6 / 6 | Runes plus guaranteed witnessed learning from explicit rank-1 spell metadata | Implemented; enemy-spell availability remains content-authored |
-| Astromancer | 10 / 10 | Rank-2 learning, authored Threads, Threaded Cast payoff, safe Rewind, and active-sign ring modifiers | Implemented; payoff tuning needs playtest |
-| Shaman | 10 / 10 | Communions, Totems, Water ward, staff synergy, post-resolution Resonance, and guarded Surge | Implemented resource loop; authored tree expansion remains |
-| Soulcatcher | 8 / 8 | Soul Drain, harvest-scaled Soul Totem/Surge, Resonance, and Aspect Evolution | Implemented resource loop; nonlethal tuning needs playtest |
-| Ranger | 1 / 1 | Tame, bounded roster, naming, evolution, bond, Favored Enemy, and hunt growth | Implemented runtime kit; authored tree expansion remains |
-| Beast Master | 7 / 8 | Companion commands, automatic traits, bond scaling, and enhanced Shared Recovery | Implemented runtime kit; authored tree expansion remains |
+| Druid | 28 / 28 | Two form disciplines, two nature disciplines, shared Primal Practice, and split terminal promotions | Authored tree finished; form/spell tuning needs playtest |
+| Lycan | 28 / 30 | Persistent Werewolf, moon stress, behavior-earned control, Dragon Essence, and four disciplines | Authored tree finished; stress pacing needs playtest |
+| Archdruid | 28 / 30 | Four affinity disciplines, attunement memories, Harmony, typed Surge riders, and ring preservation | Authored tree finished; Surge tuning needs playtest |
+| Diviner | 22 / 22 | Four rune/foresight/time disciplines, two intentional gaps, rank-1 learning, and level-55 endpoints | Authored tree finished; enemy-spell availability remains content-authored |
+| Astromancer | 28 / 30 | Four Thread/rune/celestial/lucid disciplines, Tephra, storage access, and asleep casting | Authored tree finished; payoff tuning needs playtest |
+| Shaman | 19 / 21 | Inherent Totem, communions, elemental wards, Spirit Animal, expanded Bad Omens, Resonance, and Surge | Authored tree finished; Skinwalker deferred pending defeat/traversal contract |
+| Soulcatcher | 28 / 30 | Soul Drain, harvest mastery, Soul Totem/Surge, Ancestral Aegis, and spirit combat | Authored tree finished; nonlethal tuning needs playtest |
+| Ranger | 24 + promotion | Tame, bounded roster, naming, evolution, bond, quarry mastery, crossbows, weapon styles, and layered defense | Authored tree and runtime kit implemented; balance evidence remains |
+| Beast Master | 22 / 22 | Companion commands, automatic traits, quarry coordination, guardian recovery, bond scaling, and enhanced Shared Recovery | Authored tree and runtime kit implemented; balance evidence remains |
 
 Shared structural findings:
 
@@ -1763,8 +1770,9 @@ Resolved Shaman/Soulcatcher findings:
 - Soul Drain is registered as Soul. Harvest diversity now improves Soul Totem
   and Soul Surge while retaining the one-HP floor, and awakened/equipped Aspect
   Evolution supplies the fourth stack plus Surge reliability and output.
-- Most named generated tree talents remain rating-only and are still tracked
-  as a separate authored-tree replacement concern.
+- Generated rating-only tree talents have been removed. Shaman and Soulcatcher
+  now use named, mechanically authored choices
+  defined by their individual decision blocks.
 
 Ranger/Beast Master findings:
 

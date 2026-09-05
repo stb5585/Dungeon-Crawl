@@ -351,7 +351,15 @@ class ExpelCurse(Spell):
         del kwargs
         target = target or user
         if not fam:
-            user.mana.current -= self.cost
+            cost = self.cost
+            try:
+                from ..progression import has_talent
+
+                if has_talent(user, "archbishop.swift-exorcism"):
+                    cost -= 6
+            except (AttributeError, KeyError, TypeError, ValueError):
+                pass
+            user.mana.current -= cost
         return curses.cure_curses(target)
 
 

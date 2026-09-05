@@ -58,6 +58,7 @@ from src.core.progression import (
     _grant_talent,
 )
 from src.core.races import Human, races_dict
+from src.core.progression_manifest import CATALOG_ONLY_PROMOTED_TREE_CLASSES
 from src.core.save_system import PlayerDataSerializer
 from src.core.save_system.player import UnsupportedSaveVersionError
 
@@ -142,22 +143,8 @@ def test_all_tree_manifests_validate_and_scale_authored_rating_values_by_stage()
                 assert node.cost == (2 if tree.stage == 1 else 3)
 
 
-def test_catalog_only_promoted_trees_do_not_restore_generic_padding():
-    catalog_only_classes = {
-        "Thief", "Rogue", "Inquisitor", "Seeker", "Spell Stealer",
-        "Arcane Trickster", "Cleric", "Templar", "Hierophant", "Monk",
-        "Master Monk", "Priest", "Archbishop", "Bard", "Troubadour",
-        "Druid", "Lycan", "Archdruid", "Diviner", "Astromancer", "Shaman",
-        "Soulcatcher", "Ranger", "Beast Master",
-    }
-    expected_talents = {"Beast Master": {"beast-master.bonded-bulwark"}}
-    for class_name in catalog_only_classes:
-        talents = {
-            node.payload["talent_key"]
-            for node in ABILITY_TREES[class_name].nodes
-            if node.kind == NodeKind.TALENT
-        }
-        assert talents == expected_talents.get(class_name, set())
+def test_no_promoted_tree_remains_catalog_only():
+    assert not CATALOG_ONLY_PROMOTED_TREE_CLASSES
 
 
 def test_base_graph_parity_and_promotion_route_costs():

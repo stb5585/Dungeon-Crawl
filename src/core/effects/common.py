@@ -844,6 +844,7 @@ class DynamicMultiDebuffEffect(Effect):
         import random as _rng
         dv = getattr(actor.stats, self.scaling_stat, 10) // self.scaling_divisor
         dur = self.duration if self.duration is not None else max(self.duration_min, dv)
+        applied_amounts: dict[str, int] = {}
 
         for spec in self.stats:
             stat_name = spec["stat_name"]
@@ -874,6 +875,7 @@ class DynamicMultiDebuffEffect(Effect):
             )
 
             result.effects_applied["Stat"].append(f"{stat_name} Debuff")
+            applied_amounts[stat_name] = stat_mod
             if self.percentage is not None:
                 percent = round(self.percentage * 100)
                 message = (
@@ -883,6 +885,30 @@ class DynamicMultiDebuffEffect(Effect):
             else:
                 message = f"{target.name}'s {stat_name.lower()} is lowered by {stat_mod}."
             result.extra.setdefault("messages", []).append(message)
+
+        if result.action == "Weaken Mind" and applied_amounts:
+            try:
+                from ..progression import has_talent
+
+                neural_connection = has_talent(
+                    actor,
+                    "arcane-trickster.neural-connection",
+                )
+            except (AttributeError, KeyError, TypeError, ValueError):
+                neural_connection = False
+            if neural_connection:
+                for stat_name in ("Magic", "Magic Defense"):
+                    amount = applied_amounts.get(stat_name, 0)
+                    if amount <= 0:
+                        continue
+                    effect = actor.stat_effects[stat_name]
+                    effect.active = True
+                    effect.duration = max(dur, int(effect.duration or 0))
+                    effect.extra = max(amount, int(effect.extra or 0))
+                    effect.source = "Neural Connection"
+                result.extra.setdefault("messages", []).append(
+                    f"Neural Connection mirrors the stolen magical strength to {actor.name}."
+                )
 
 
 class CleanseEffect(Effect):

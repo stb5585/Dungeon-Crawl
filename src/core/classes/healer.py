@@ -32,12 +32,16 @@ def accuracy_bonus(character, weapon_type: str | None = None) -> float:
     bonus = 0.05 if has_skill(character, "Zen Accuracy") else 0.0
     if weapon_type == "Staff" and has_skill(character, "Staff Proficiency"):
         bonus += 0.10
+    if weapon_type in {"None", "Fist"} and has_skill(character, "Unarmed Proficiency"):
+        bonus += 0.10
     return bonus
 
 
 def staff_damage_multiplier(character, weapon_type: str | None) -> float:
     """Return Staff Proficiency's weapon damage multiplier."""
     if weapon_type == "Staff" and has_skill(character, "Staff Proficiency"):
+        return 1.10
+    if weapon_type in {"None", "Fist"} and has_skill(character, "Unarmed Proficiency"):
         return 1.10
     return 1.0
 
@@ -62,6 +66,22 @@ def reduce_incoming_damage(
         state["stored"] = int(state.get("stored", 0) or 0) + damage
         return 0, f"{character.name}'s meditation stores {damage} damage.\n"
     message = ""
+    try:
+        from ..progression import has_talent
+
+        weapon = getattr(character, "equipment", {}).get("Weapon")
+        armor = getattr(character, "equipment", {}).get("Armor")
+        if (
+            damage
+            and has_talent(character, "master-monk.empty-fortress")
+            and getattr(weapon, "subtyp", "None") in {"None", "Fist"}
+            and int(getattr(armor, "armor", 0) or 0) == 0
+        ):
+            prevented = max(1, int(damage * 0.10))
+            damage -= prevented
+            message += f"Empty Fortress prevents {prevented} damage.\n"
+    except (AttributeError, KeyError, TypeError, ValueError):
+        pass
     if melee and damage and float(getattr(character, "_safeguarding_reduction", 0) or 0):
         reduction = min(0.75, float(character._safeguarding_reduction))
         reduced = max(1, int(damage * reduction))

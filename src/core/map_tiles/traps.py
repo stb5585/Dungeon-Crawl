@@ -33,17 +33,64 @@ def find_trap_warning(tile: Any, player: Any, *, rng: Any = random) -> str:
     if (
         getattr(tile, "trap_type", None) not in TRAP_TYPES
         or getattr(tile, "trap_triggered", False)
-        or getattr(tile, "trap_warned", False)
-        or not footpad.has_skill(player, "Find Traps")
     ):
+        return ""
+    if getattr(tile, "trap_warned", False):
+        if footpad.has_skill(player, "Disarm Traps"):
+            return disarm_tile_trap(tile, player, rng=rng)
+        return ""
+    if not footpad.has_skill(player, "Find Traps"):
         return ""
     dexterity = int(getattr(getattr(player, "stats", None), "dex", 10))
     depth = max(0, int(getattr(tile, "z", 0) or 0))
     chance = max(0.25, min(0.90, 0.45 + (0.025 * (dexterity - 10)) - (0.03 * depth)))
+    from ..classes.thief import has_thief_talent
+
+    if has_thief_talent(player, "thief.trap-lore"):
+        chance = min(0.95, chance + 0.15)
     if rng.random() >= chance:
         return ""
     tile.trap_warned = True
     return f"{player.name} notices a hidden {tile.trap_type} ahead and stops before entering."
+
+
+def disarm_tile_trap(tile: Any, player: Any, *, rng: Any = random) -> str:
+    """Attempt to disarm a previously detected trap and stop movement."""
+    trap_type = getattr(tile, "trap_type", None)
+    if (
+        trap_type not in TRAP_TYPES
+        or getattr(tile, "trap_triggered", False)
+        or not getattr(tile, "trap_warned", False)
+        or not footpad.has_skill(player, "Disarm Traps")
+    ):
+        return ""
+    from .. import items
+    from ..classes.thief import has_thief_talent
+
+    dexterity = int(getattr(getattr(player, "stats", None), "dex", 10))
+    depth = max(0, int(getattr(tile, "z", 0) or 0))
+    difficulty = {
+        "Tripwire": 0.00,
+        "Magic Ward": 0.08,
+        "Alert": 0.05,
+        "Red Alert": 0.15,
+    }[trap_type]
+    chance = 0.40 + (0.025 * (dexterity - 10)) - (0.035 * depth) - difficulty
+    if items.has_lockpick_kit(player):
+        chance += 0.10
+    if footpad.has_skill(player, "Master Lockpick"):
+        chance += 0.10
+    if has_thief_talent(player, "rogue.sure-hands"):
+        chance += 0.15
+    cap = 0.95 if has_thief_talent(player, "rogue.impossible-job") else 0.90
+    chance = max(0.15, min(cap, chance))
+    if rng.random() < chance:
+        tile.trap_triggered = True
+        return f"{player.name} disarms the hidden {trap_type}."
+    player._failed_disarm = True
+    message = trigger_tile_trap(tile, player, rng=rng)
+    player._failed_disarm = False
+    return f"{player.name} fails to disarm the {trap_type}. {message}"
 
 
 def assign_dungeon_traps(world_dict: dict, *, rng: Any | None = None) -> int:
@@ -74,7 +121,19 @@ def assign_dungeon_traps(world_dict: dict, *, rng: Any | None = None) -> int:
 
 def _avoidance_severity(player: Any, *, rng: Any) -> tuple[float, str]:
     """Return the fraction of a trap effect remaining after Avoid Traps."""
-    return footpad.trap_severity_multiplier(player, rng=rng)
+    severity, message = footpad.trap_severity_multiplier(player, rng=rng)
+    try:
+        from ..classes.thief import has_thief_talent
+
+        if (
+            getattr(player, "_failed_disarm", False)
+            and has_thief_talent(player, "rogue.impossible-job")
+        ):
+            severity = min(severity, 0.5)
+            message = message or "Impossible Job halves the failed disarm's effect."
+    except (AttributeError, KeyError, TypeError, ValueError):
+        pass
+    return severity, message
 
 
 def _tripwire(tile: Any, player: Any, severity: float, *, rng: Any) -> str:

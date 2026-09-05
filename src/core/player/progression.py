@@ -62,6 +62,10 @@ class PlayerProgressionMixin:
 
             luck_bonus = min(4, self.check_mod('luck', enemy=enemy, luck_factor=20))
             chance = max(12, 19 - luck_bonus)
+            from ..progression import has_talent
+
+            if has_talent(self, "soulcatcher.discerning-vessel"):
+                chance = max(6, chance - 8)
             if not random.randint(0, chance):
                 applied = False
 
@@ -144,6 +148,13 @@ class PlayerProgressionMixin:
                     upgrade_str = f"You absorb part of the {enemy.name}'s soul.\n" + upgrade_str
                     state['procs_this_floor'] += 1
                     state['procs_by_enemy'][enemy.name] = enemy_proc_count + 1
+                    if has_talent(self, "soulcatcher.eternal-harvest"):
+                        restored = min(
+                            int(self.mana.max) - int(self.mana.current),
+                            max(1, int(self.mana.max * 0.05)),
+                        )
+                        self.mana.current += restored
+                        upgrade_str += f"Eternal Harvest restores {restored} mana.\n"
         from ..classes import promotion_kits, transformation
 
         if transformation.permanent_class_name(self) == "Lycan" and enemy.name == 'Red Dragon':

@@ -219,6 +219,7 @@ class PlayerDataSerializer:
             'xenid_choices': dict(getattr(player, 'xenid_choices', {}) or {}),
             'bestiary': getattr(player, 'bestiary', {}),
             'absorb_essence_state': getattr(player, 'absorb_essence_state', {}),
+            'spirit_animal': getattr(player, 'spirit_animal', 'Bear'),
             'grandmaster_discipline': getattr(player, 'grandmaster_discipline', None),
             'demonologist_contracts': getattr(player, 'demonologist_contracts', None),
             'persistent_curses': getattr(player, 'persistent_curses', {}),
@@ -466,6 +467,15 @@ class PlayerDataSerializer:
         player.xenid_choices = dict(data.get('xenid_choices', {}) or {})
         player.bestiary = data.get('bestiary', {})
         player.absorb_essence_state = data.get('absorb_essence_state', getattr(player, 'absorb_essence_state', {}))
+        spirit_animal = str(data.get('spirit_animal', 'Bear'))
+        player.spirit_animal = (
+            spirit_animal
+            if spirit_animal in (
+                'Bear', 'Wolf', 'Owl', 'Panther',
+                'Eagle', 'Turtle', 'Toad', 'Snake',
+            )
+            else 'Bear'
+        )
         player.grandmaster_discipline = data.get('grandmaster_discipline', getattr(player, 'grandmaster_discipline', None))
         if hasattr(player, "ensure_grandmaster_discipline"):
             player.ensure_grandmaster_discipline()

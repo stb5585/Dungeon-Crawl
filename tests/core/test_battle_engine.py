@@ -461,3 +461,28 @@ def test_smoke_screen_requires_and_consumes_smoke_bomb():
     assert "TestHero vanishes into smoke." in result.message
     assert "Smoke Bomb" not in player.inventory
     assert result.fled is True
+
+
+def test_take_it_on_the_run_attempts_theft_after_smoke_escape(monkeypatch):
+    engine, player = _make_engine_with_player_attacking()
+    player.spellbook["Skills"] = {
+        "Smoke Screen": abilities.SmokeScreen(),
+        "Take It On the Run": abilities.TakeItOnTheRun(),
+    }
+    player.inventory["Smoke Bomb"] = [items.SmokeBomb()]
+    player.flee = lambda _enemy, smoke=False: (True, "TestHero escapes.\n")
+    engine.defender.sight = False
+
+    class FakeSteal:
+        def use(self, _user, _target):
+            return SimpleNamespace(
+                message="Take It On the Run steals 7 gold.\n",
+                extra={"stolen_gold": 7},
+            )
+
+    monkeypatch.setattr("src.core.abilities.utility.Steal", FakeSteal)
+
+    result = engine.execute_action("Use Skill", "Smoke Screen")
+
+    assert result.fled is True
+    assert "Take It On the Run steals 7 gold" in result.message

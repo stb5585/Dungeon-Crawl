@@ -217,8 +217,8 @@ second implementation backlog.
 - [ ] Inspect every promoted tree and confirm its branch labels match
   `ABILITY_TREE_DESIGN.md`, no terminal tree is a chain of anonymous rating
   nodes, and removed generated family names do not appear. Confirm compact
-  catalog-only trees show only real abilities, Troubadour is empty rather than
-  padded, and Beast Master's Bonded Bulwark is the sole retained talent.
+  catalog-only trees show only real abilities and authored terminal trees do
+  not regain anonymous padding.
 - [ ] Purchase Bonded Bulwark, save/load, and confirm its companion-bond payoff
   persists without granting a generic combat rating. Confirm Ki, Threads,
   Harmony, Resonance, and Lycan control do not gain removed mastery bonuses.
@@ -237,6 +237,10 @@ second implementation backlog.
   theft, gold, and status handling; effective caps; Cheat Death's learned-node
   requirement; a real Jinx effect or its removal; and live Loaded Dice failed-
   luck conversion plus once-per-combat preservation.
+  Verify all four Thief promotion routes, Turn the Tables, Pilfering Strike,
+  Cut and Run, All In, Snake Eyes, Dirty Trick, a successful and failed
+  detected-trap disarm, Smoke Bomb preservation, and Take It On the Run during
+  a successful Smoke Screen escape.
 - [ ] Shipped Inquisitor/Seeker playtest: verify visible-detail Case evidence,
   Inspect,
   Exploit Weakness hit accounting, telegraph/setup gains, target-specific
@@ -246,9 +250,10 @@ second implementation backlog.
 - [ ] Shipped Spell Stealer/Arcane Trickster playtest: verify MP
   validation before Blank Scroll or permanent-theft resolution, every Charge
   source including Steal As Well, action-scoped weapon and natural-spell
-  payoffs, typed Arcane mitigation/events, the chosen miss policy, combat/load
-  cleanup, and a three-turn awakened-and-equipped Arcane Larceny buff that
-  expires and preserves Charge exactly once per combat.
+  payoffs, Borrowed Ward, Vanishing Act, Neural Connection, typed Arcane
+  mitigation/events, Controlled Discharge retention, combat/load cleanup, and
+  a three-turn awakened-and-equipped Arcane Larceny buff that expires and
+  preserves Charge exactly once per combat.
 - [ ] Healer-line payoff playtest: verify once-per-action Devotion/Prayer generation,
   every accepted
   gain source and spend rider, live Holy Retribution/Ordered Blessings/Great

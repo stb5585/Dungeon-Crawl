@@ -523,7 +523,7 @@ def test_eight_row_dragoon_tree_fits_standard_panel_without_scrolling():
 
 @pytest.mark.parametrize(
     "class_name",
-    ("Warrior", "Footpad", "Healer", "Pathfinder", "Assassin", "Paladin"),
+    ("Warrior", "Footpad", "Healer", "Pathfinder", "Assassin", "Paladin", "Bard"),
 )
 def test_eight_row_promotion_tree_fits_standard_panel_without_scrolling(class_name):
     screen = progression_screen.ProgressionScreen.__new__(
@@ -922,6 +922,37 @@ def test_hovered_promotion_highlights_required_paths_only_to_their_endpoints():
     assert "footpad.ability.dual-wield" in highlighted
     assert "footpad.ability.serendipity" not in highlighted
     assert "footpad.promotion.thief" not in highlighted
+
+
+def test_bard_promotion_hover_highlights_all_four_any_path_options():
+    tree = ABILITY_TREES["Bard"]
+    statuses = [NodeStatus(node, NodeState.BLOCKED) for node in tree.nodes]
+    promotion_index = next(
+        index
+        for index, status in enumerate(statuses)
+        if status.node.kind == NodeKind.PROMOTION
+    )
+
+    highlighted, endpoints = (
+        progression_screen.ProgressionScreen._promotion_highlight_node_ids(
+            statuses,
+            promotion_index,
+        )
+    )
+
+    assert endpoints == {
+        "bard.talent.resonant-hall",
+        "bard.talent.crescendo-reserve",
+        "bard.talent.copyist",
+        "bard.talent.prismatic-flourish",
+    }
+    assert endpoints <= highlighted
+    assert {
+        "bard.ability.songvalor",
+        "bard.ability.songshelter",
+        "bard.talent.battle-arrangement",
+        "bard.ability.kaleidoscope",
+    } <= highlighted
 
 
 def test_requirement_highlight_overrides_available_node_color():

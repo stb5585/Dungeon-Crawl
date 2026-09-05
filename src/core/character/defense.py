@@ -485,6 +485,13 @@ class CharacterDefenseMixin:
                 damage,
             )
             msg += barrier_message
+            damage, ranger_message = pathfinder.ranger_damage_reduction(
+                defender,
+                self,
+                damage,
+                physical=True,
+            )
+            msg += ranger_message
         except Exception:
             pass
         try:
@@ -822,6 +829,13 @@ class CharacterDefenseMixin:
                 final_damage,
             )
             message += barrier_message
+            final_damage, ranger_message = pathfinder.ranger_damage_reduction(
+                self,
+                attacker,
+                final_damage,
+                physical=typ == "Physical",
+            )
+            message += ranger_message
         except Exception:
             pass
         return True, message, final_damage

@@ -360,11 +360,15 @@ def render_tree_svg(class_name: str) -> str:
                 promotion_detail = f"Requires ALL {len(groups)} groups"
             else:
                 prerequisite_mode = node.payload.get("prerequisite_mode", "all")
-                mode_label = "ANY" if prerequisite_mode == "any" else "ALL"
                 path_noun = "path" if len(node.prerequisites) == 1 else "paths"
-                promotion_detail = (
-                    f"Requires {mode_label} {len(node.prerequisites)} {path_noun}"
-                )
+                if prerequisite_mode == "any":
+                    promotion_detail = (
+                        f"Requires 1 of {len(node.prerequisites)} {path_noun}"
+                    )
+                else:
+                    promotion_detail = (
+                        f"Requires ALL {len(node.prerequisites)} {path_noun}"
+                    )
         # These diagrams are developer references, so quest-hidden nodes use
         # their authored names even while the player-facing tree says Unknown.
         name = str(node.payload.get("revealed_name", node.name))
@@ -410,6 +414,8 @@ def render_index() -> str:
         "Run `./.venv/bin/python tools/generate_ability_tree_diagrams.py` after",
         "changing any tree. The drift test fails when these references are stale.",
         "Diagrams are grouped by base-class lineage and then promotion tier.",
+        "See [Ability Tree Status](ABILITY_TREE_STATUS.md) for completion state,",
+        "implementation order, and decision-block policy.",
         "",
     ]
     base_classes = [
@@ -431,7 +437,11 @@ def render_index() -> str:
             lines.extend((f"### {STAGE_HEADINGS[stage]}", ""))
             for class_name in members:
                 path = diagram_relative_path(class_name).as_posix()
-                lines.append(f"- [{class_name}]({path})")
+                documentation_path = str(Path(path).with_suffix(".md"))
+                lines.append(
+                    f"- [{class_name}]({path}) - "
+                    f"[documentation]({documentation_path})"
+                )
             lines.append("")
     return "\n".join(lines).rstrip() + "\n"
 

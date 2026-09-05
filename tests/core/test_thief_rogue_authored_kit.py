@@ -2,9 +2,10 @@
 
 from types import SimpleNamespace
 
-from src.core import abilities, enemies, items, player as player_module
+from src.core import abilities, enemies, items, map_tiles, player as player_module
 from src.core.classes import class_rings, footpad, promotion_kits
 from src.core.combat.combat_result import CombatResult
+from src.core.progression import ABILITY_TREES, NodeKind, ProgressionState
 from tests.test_framework import TestGameState
 
 
@@ -13,13 +14,77 @@ class _OrdinaryTile:
 
 
 def _player(class_name="Thief", *, health=(500, 500), mana=(500, 500)):
-    return TestGameState.create_player(
+    player = TestGameState.create_player(
         class_name=class_name,
         race_name="Human",
         level=70,
         health=health,
         mana=mana,
     )
+    player.progression = ProgressionState(level=70)
+    return player
+
+
+def _grant(player, *talent_keys):
+    talents = {
+        node.payload["talent_key"]: node.id
+        for tree_name in ("Thief", "Rogue")
+        for node in ABILITY_TREES[tree_name].nodes
+        if node.kind == NodeKind.TALENT
+    }
+    player.progression.purchased_node_ids.update(talents[key] for key in talent_keys)
+
+
+def _closure_cost(tree, node):
+    by_id = {entry.id: entry for entry in tree.nodes}
+    seen = set()
+
+    def visit(entry):
+        if entry.id in seen:
+            return 0
+        seen.add(entry.id)
+        return entry.cost + sum(visit(by_id[parent]) for parent in entry.prerequisites)
+
+    return visit(node)
+
+
+def test_thief_tree_has_four_routes_and_cross_training_budget():
+    tree = ABILITY_TREES["Thief"]
+    development = [node for node in tree.nodes if node.kind != NodeKind.PROMOTION]
+    promotion = next(node for node in tree.nodes if node.kind == NodeKind.PROMOTION)
+
+    assert tree.branches == ("Fortune", "Misfortune", "Tools", "Escape")
+    assert len(development) == 22
+    assert sum(node.cost for node in development) == 22
+    assert promotion.payload["prerequisite_mode"] == "any"
+    assert len(promotion.prerequisites) == 4
+    assert {
+        _closure_cost(tree, next(node for node in tree.nodes if node.id == endpoint))
+        for endpoint in promotion.prerequisites
+    } == {5, 6}
+    assert 15 - promotion.cost - 5 == 7
+
+
+def test_rogue_tree_has_normal_terminal_breadth_and_cost():
+    tree = ABILITY_TREES["Rogue"]
+
+    assert tree.branches == ("Loaded Odds", "Comebacks", "Cunning", "Escape")
+    assert len(tree.nodes) == 28
+    assert sum(node.cost for node in tree.nodes) == 30
+    assert sum(node.cost > 1 for node in tree.nodes) == 2
+    assert 0.60 <= 20 / 30 <= 0.70
+    assert max(node.position[1] for node in tree.nodes) == 6
+
+
+def test_thief_and_rogue_rows_use_standard_level_bands():
+    for class_name, levels in (
+        ("Thief", {1: 35, 2: 40, 3: 45, 4: 50, 5: 55}),
+        ("Rogue", {1: 65, 2: 70, 3: 75, 4: 80, 5: 85, 6: 90}),
+    ):
+        for node in ABILITY_TREES[class_name].nodes:
+            if node.kind == NodeKind.PROMOTION or node.position[1] == 0:
+                continue
+            assert node.payload["level_requirement"] == levels[node.position[1]]
 
 
 def test_luck_caps_are_exact_and_ignore_obsolete_cap_talents():
@@ -372,3 +437,103 @@ def test_combat_state_cleanup_removes_both_luck_meters_and_jinx():
     assert state["fortune"] == 0
     assert state["misfortune"] == 0
     assert state["jinx_turns"] == 0
+
+
+def test_turn_the_tables_and_cut_and_run_are_resource_and_combat_choices(monkeypatch):
+    thief = _player()
+    target = enemies.Goblin()
+    _grant(
+        thief,
+        "thief.reversal",
+        "thief.fleet-footed",
+        "thief.lasting-head-start",
+    )
+    promotion_kits.gain_meter(thief, "misfortune", 2, "test")
+
+    tables = abilities.TurnTheTables().use(thief)
+
+    assert tables.hit is True
+    assert thief.stat_effects["Attack"].extra == 10
+    assert thief.stat_effects["Defense"].duration == 4
+    assert promotion_kits.combat_state(thief)["misfortune"] == 0
+
+    def weapon_hit(enemy, **_kwargs):
+        enemy.health.current -= 10
+        return "hit\n", True, 1
+
+    monkeypatch.setattr(thief, "weapon_damage", weapon_hit)
+    result = abilities.CutAndRun().use(thief, target)
+    assert result.damage == 10
+    assert thief.stat_effects["Speed"].extra == 12
+    assert thief.stat_effects["Speed"].duration == 3
+
+
+def test_all_in_spends_both_meters_and_can_preserve_fortune(monkeypatch):
+    rogue = _player("Rogue")
+    target = enemies.Goblin()
+    _grant(rogue, "rogue.house-always-wins")
+    promotion_kits.gain_meter(rogue, "fortune", 2, "test")
+    promotion_kits.gain_meter(rogue, "misfortune", 3, "test")
+    captured = {}
+
+    def weapon_hit(enemy, **kwargs):
+        captured.update(kwargs)
+        enemy.health.current -= 20
+        return "hit\n", True, 1
+
+    monkeypatch.setattr(rogue, "weapon_damage", weapon_hit)
+    result = abilities.AllIn().use(rogue, target)
+
+    assert result.hit is True
+    assert captured["dmg_mod"] == 1.6
+    assert captured["accuracy_modifier"] == 0.10
+    assert promotion_kits.combat_state(rogue)["fortune"] == 1
+    assert promotion_kits.combat_state(rogue)["misfortune"] == 0
+
+
+def test_detected_trap_can_be_disarmed_on_the_second_approach():
+    rogue = _player("Rogue")
+    rogue.stats.dex = 20
+    rogue.spellbook["Skills"].update({
+        "Find Traps": abilities.FindTraps(),
+        "Disarm Traps": abilities.DisarmTraps(),
+    })
+    tile = SimpleNamespace(
+        trap_type="Tripwire",
+        trap_triggered=False,
+        trap_warned=False,
+        z=1,
+    )
+    rng = SimpleNamespace(random=lambda: 0.0)
+
+    warning = map_tiles.find_trap_warning(tile, rogue, rng=rng)
+    disarmed = map_tiles.find_trap_warning(tile, rogue, rng=rng)
+
+    assert "stops before entering" in warning
+    assert "disarms the hidden Tripwire" in disarmed
+    assert tile.trap_triggered is True
+
+
+def test_impossible_job_caps_disarm_chance_and_softens_failure():
+    rogue = _player("Rogue")
+    rogue.stats.dex = 10
+    rogue.spellbook["Skills"]["Disarm Traps"] = abilities.DisarmTraps()
+    _grant(rogue, "rogue.impossible-job")
+    tile = SimpleNamespace(
+        trap_type="Tripwire",
+        trap_triggered=False,
+        trap_warned=True,
+        trap_forced_initiative=False,
+        z=6,
+    )
+    rng = SimpleNamespace(
+        random=lambda: 0.99,
+        randint=lambda _low, _high: 20,
+    )
+    before = rogue.health.current
+
+    message = map_tiles.disarm_tile_trap(tile, rogue, rng=rng)
+
+    assert "fails to disarm" in message
+    assert "halves" in message
+    assert 0 < before - rogue.health.current <= 10

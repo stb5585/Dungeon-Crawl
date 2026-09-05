@@ -489,6 +489,15 @@ def lockpick_break_chance(character, *, master: bool = False) -> float:
     base = 0.18 if master else 0.35
     floor = 0.04 if master else 0.08
     chance = base - max(0, dex_score - 10) * 0.01
+    try:
+        from ..classes.thief import has_thief_talent
+
+        if has_thief_talent(character, "thief.careful-hands"):
+            chance -= 0.10
+        if has_thief_talent(character, "thief.master-tools"):
+            chance -= 0.05
+    except (AttributeError, KeyError, TypeError, ValueError):
+        pass
     return max(floor, min(base, chance))
 
 
@@ -515,11 +524,26 @@ def use_lockpick_kit(character, *, master: bool = False, roll: float | None = No
     return True, f"The Lockpick Kit holds together. Durability: {kit.charges}."
 
 
-def consume_smoke_bomb(character) -> tuple[bool, str]:
+def consume_smoke_bomb(character, *, roll: float | None = None) -> tuple[bool, str]:
     """Consume one Smoke Bomb for Smoke Screen."""
     stack = _inventory_stack(character, "Smoke Bomb")
     if not stack:
         return False, "Smoke Screen requires a Smoke Bomb.\n"
+    preserve_chance = 0.0
+    try:
+        from ..classes.thief import has_thief_talent
+
+        if has_thief_talent(character, "thief.smoke-tactician"):
+            preserve_chance += 0.25
+        if has_thief_talent(character, "rogue.smoke-and-mirrors"):
+            preserve_chance += 0.25
+    except (AttributeError, KeyError, TypeError, ValueError):
+        pass
+    preserve_roll = (
+        random.random() if preserve_chance > 0 and roll is None else float(roll or 0.0)
+    )
+    if preserve_chance > 0 and preserve_roll < preserve_chance:
+        return True, "A carefully packed Smoke Bomb bursts without being consumed.\n"
     character.modify_inventory(stack[0], subtract=True)
     return True, "A Smoke Bomb bursts open.\n"
 

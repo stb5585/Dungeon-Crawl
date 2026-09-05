@@ -195,7 +195,16 @@ def activate_last_stand(character: Any) -> str:
     effect.duration = max(int(effect.duration or 0), 4)
     defense = int(getattr(getattr(character, "combat", None), "defense", 0) or 0)
     effect.extra = max(int(effect.extra or 0), max(1, defense // 2))
-    return f"{character.name} makes a Last Stand.\n"
+    message = f"{character.name} makes a Last Stand.\n"
+    try:
+        from ..cleric import has_cleric_talent
+        from ..promotion_kits import gain_meter
+
+        if has_cleric_talent(character, "templar.last-line"):
+            message += gain_meter(character, "devotion", 1, "Last Line")
+    except (AttributeError, KeyError, TypeError, ValueError):
+        pass
+    return message
 
 
 def posturing_parry_bonus(character: Any) -> float:

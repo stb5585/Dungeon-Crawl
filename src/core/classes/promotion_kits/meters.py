@@ -63,7 +63,7 @@ def cap_for(character: Any, key: str) -> int:
         base = 5 if _ring_awakened_equipped(character, "Archdruid") else 4
     elif key == "totem_resonance":
         base = 4 if _ring_awakened_equipped(character, "Soulcatcher") else 3
-    if key in {"death_marks", "fortune", "misfortune", "revelation", "stolen_charge"}:
+    if key in {"death_marks", "fortune", "misfortune", "revelation"}:
         return base
     return base + _talent_cap_bonus(character, key) if base else 0
 
@@ -141,6 +141,14 @@ def _power_up_active(character: Any, skill_name: str) -> bool:
 
 def _devotion_amount(character: Any, *, holy_or_shield: bool) -> int:
     amount = 2 if class_name(character) == "Hierophant" and _hierophant_overchannel_active(character) else 1
+    from ..cleric import has_cleric_talent
+
+    if (
+        class_name(character) == "Hierophant"
+        and not holy_or_shield
+        and has_cleric_talent(character, "hierophant.gentle-grace")
+    ):
+        amount += 1
     state = combat_state(character)
     current_round = int(state.get("action_round", 0) or 0)
     if (
@@ -166,9 +174,22 @@ def record_devotion_source(
         return ""
     if not _claim_action(character, "devotion"):
         return ""
+    amount = _devotion_amount(character, holy_or_shield=holy_or_shield)
+    from ..cleric import has_cleric_talent
+
+    if (
+        reason == "Holy pressure"
+        and has_cleric_talent(character, "cleric.consecrated-blows")
+    ):
+        amount += 1
+    if (
+        reason == "Holy pressure"
+        and has_cleric_talent(character, "hierophant.luminous-doctrine")
+    ):
+        amount += 1
     return _gain_or_queue_devotion(
         character,
-        _devotion_amount(character, holy_or_shield=holy_or_shield),
+        amount,
         reason,
         require_survivor=hostile,
     )
@@ -184,6 +205,15 @@ def record_prayer_source(character: Any, reason: str, *, divine_support: bool = 
     if not _claim_action(character, "prayer"):
         return ""
     amount = 1
+    from ...progression import has_talent
+
+    if divine_support and has_talent(character, "priest.deliberate-prayer"):
+        amount += 1
+    if (
+        int(combat_state(character).get("prayer", 0) or 0) == 0
+        and has_talent(character, "archbishop.first-words")
+    ):
+        amount += 1
     state = combat_state(character)
     current_round = int(state.get("action_round", 0) or 0)
     if (
@@ -342,8 +372,16 @@ def _resolve_stolen_charge_payoff(character: Any, portions: list[Any]) -> str:
         None,
     )
     if total_damage <= 0 or target is None:
-        return "Stolen Charge dissipates without finding purchase.\n"
-    raw_bonus = max(5 * stacks, int(total_damage * (0.20 * stacks)))
+        return _failed_stolen_charge_message(character)
+    multiplier = 0.20
+    try:
+        from ...progression import has_talent
+
+        if has_talent(character, "spell-stealer.volatile-script"):
+            multiplier = 0.25
+    except (AttributeError, KeyError, TypeError, ValueError):
+        pass
+    raw_bonus = max(5 * stacks, int(total_damage * (multiplier * stacks)))
     hit, reduction_message, reduced = target.damage_reduction(
         raw_bonus,
         character,
@@ -351,7 +389,7 @@ def _resolve_stolen_charge_payoff(character: Any, portions: list[Any]) -> str:
     )
     bonus = max(0, min(int(reduced or 0), int(target.health.current))) if hit else 0
     if bonus <= 0:
-        return reduction_message or "The stolen Arcane payoff is fully resisted.\n"
+        return reduction_message + _failed_stolen_charge_message(character)
     target.health.current -= bonus
     character._emit_damage_event(
         target,
@@ -361,6 +399,23 @@ def _resolve_stolen_charge_payoff(character: Any, portions: list[Any]) -> str:
         ability_name="Stolen Charge",
     )
     lines = [reduction_message, f"Stolen Charge releases for {bonus} Arcane damage.\n"]
+    try:
+        from ...progression import has_talent
+
+        misdirection = has_talent(character, "arcane-trickster.misdirection")
+    except (AttributeError, KeyError, TypeError, ValueError):
+        misdirection = False
+    if misdirection:
+        penalty = max(3, int(character.stats.intel) // 6)
+        for stat_name in ("Attack", "Magic"):
+            effect = target.stat_effects[stat_name]
+            effect.active = True
+            effect.duration = max(int(effect.duration or 0), 2)
+            effect.extra = min(int(effect.extra or 0), -penalty)
+            effect.source = "Misdirection"
+        lines.append(
+            f"Misdirection lowers {target.name}'s Attack and Magic by {penalty}.\n"
+        )
     _maybe_preserve(
         character,
         "stolen_charge",
@@ -371,13 +426,31 @@ def _resolve_stolen_charge_payoff(character: Any, portions: list[Any]) -> str:
     return "".join(lines)
 
 
+def _failed_stolen_charge_message(character: Any) -> str:
+    """Resolve a failed discharge, retaining one stack when trained."""
+    try:
+        from ...progression import has_talent
+
+        controlled = has_talent(character, "spell-stealer.controlled-discharge")
+    except (AttributeError, KeyError, TypeError, ValueError):
+        controlled = False
+    if controlled:
+        state = combat_state(character)
+        state["stolen_charge"] = min(
+            cap_for(character, "stolen_charge"),
+            int(state.get("stolen_charge", 0) or 0) + 1,
+        )
+        return "Controlled Discharge retains 1 Stolen Charge.\n"
+    return "Stolen Charge dissipates without finding purchase.\n"
+
+
 def finish_stolen_charge_payoff(character: Any) -> str:
     """Consume an unresolved payoff when an eligible action produced no result."""
     state = combat_state(character)
     if not isinstance(state.get("pending_stolen_charge_payoff"), dict):
         return ""
     state["pending_stolen_charge_payoff"] = None
-    return "Stolen Charge dissipates without finding purchase.\n"
+    return _failed_stolen_charge_message(character)
 
 
 def _gain_hierophant_devotion_once(actor: Any, reason: str) -> str:
@@ -444,6 +517,10 @@ def _consume_consecrated_conduit(
         return
     stacks = max(1, int(conduit.get("stacks", 1) or 1))
     multiplier = 0.12 + (0.03 * stacks)
+    from ..cleric import has_cleric_talent
+
+    if has_cleric_talent(actor, "hierophant.deep-conduit"):
+        multiplier += 0.08
     if _hierophant_overchannel_active(actor):
         multiplier += 0.08
     if _ring_awakened_equipped(actor, "Hierophant") and staff_hit:
@@ -474,10 +551,20 @@ def _consume_consecrated_conduit(
     if ward is not None:
         ward.active = True
         ward.duration = max(int(getattr(ward, "duration", 0) or 0), 2)
-        ward.extra = max(int(getattr(ward, "extra", 0) or 0), max(8, stacks * 6))
+        ward_scale = (
+            1.5
+            if has_cleric_talent(actor, "hierophant.staff-ward")
+            else 1.0
+        )
+        ward.extra = max(
+            int(getattr(ward, "extra", 0) or 0),
+            max(8, int(stacks * 6 * ward_scale)),
+        )
     mana = getattr(actor, "mana", None)
     if mana is not None:
         return_floor = stacks if _hierophant_overchannel_active(actor) else max(1, stacks // 2)
+        if has_cleric_talent(actor, "hierophant.radiant-return"):
+            return_floor = stacks
         returned = min(int(getattr(mana, "max", 0) or 0) - int(getattr(mana, "current", 0) or 0), max(1, return_floor))
         if returned > 0:
             mana.current += returned
@@ -497,10 +584,13 @@ def record_devotion_block(character: Any) -> str:
         return ""
     if class_name(character) not in {"Cleric", "Templar", "Hierophant"}:
         return ""
+    from ..cleric import has_cleric_talent
+
+    amount = 2 if has_cleric_talent(character, "cleric.shield-litany") else 1
     return gain_meter(
         character,
         "devotion",
-        _devotion_amount(character, holy_or_shield=True),
+        amount,
         "a successful shield block",
     )
 
@@ -570,6 +660,11 @@ def record_action_resolution(character: Any, result: Any | None) -> str:
             and _claim_action(character, "totem_resonance")
         ):
             msg += gain_totem_resonance(character, "matching cast")
+            if (
+                nature_totems.has_nature_talent(character, "soulcatcher.ancestral-current")
+                and random.random() < 0.25
+            ):
+                msg += gain_totem_resonance(character, "Ancestral Current")
     return msg
 
 
@@ -613,6 +708,27 @@ def record_damage_event(
         from .aerial import critical_vigor
 
         _message(actor, critical_vigor(actor))
+    if critical_hit and cls in {"Shaman", "Soulcatcher"} and target is not None:
+        from .. import nature_totems
+
+        if nature_totems.has_nature_talent(actor, "shaman.bad-omens"):
+            _message(actor, nature_totems.add_dread(actor, target, "a critical hit"))
+            if nature_totems.has_nature_talent(actor, "soulcatcher.haunting-blows"):
+                _message(actor, nature_totems.add_dread(actor, target, "Haunting Blows"))
+    if (
+        cls == "Soulcatcher"
+        and str((metadata or {}).get("ability_name") or "") == "Soul Drain"
+    ):
+        from .. import nature_totems
+
+        if nature_totems.has_nature_talent(actor, "soulcatcher.gentle-reaping"):
+            healing = min(
+                max(0, int(actor.health.max) - int(actor.health.current)),
+                max(1, int(amount * 0.25)),
+            )
+            actor.health.current += healing
+            if healing:
+                _message(actor, f"Gentle Reaping restores {healing} health.\n")
 
     spell_hit = bool(
         not weapon_hit
@@ -738,6 +854,10 @@ def record_damage_taken(defender: Any, amount: int, damage_type: str) -> None:
     if not amount or amount <= 0:
         return
     cls = class_name(defender)
+    if cls == "Master Monk":
+        from .tracks import break_rope_a_dope
+
+        _message(defender, break_rope_a_dope(defender))
     if cls == "Berserker":
         state = combat_state(defender)
         if int(getattr(getattr(defender, "health", None), "current", 0) or 0) <= 0:
@@ -811,6 +931,7 @@ def record_healing_done(
     target: Any | None = None,
 ) -> str:
     from .companions import add_aspect
+    from ..cleric import has_cleric_talent
 
     if not amount or amount <= 0:
         return ""
@@ -822,6 +943,20 @@ def record_healing_done(
     passive = str(source).lower().startswith(("regen", "water totem"))
     if meaningful and cls in {"Cleric", "Templar", "Hierophant"}:
         msg += record_devotion_source(actor, "meaningful healing")
+    if (
+        meaningful
+        and not passive
+        and cls == "Hierophant"
+        and has_cleric_talent(actor, "hierophant.merciful-ward")
+    ):
+        ward = recipient.magic_effects["Nature Shield"]
+        ward.active = True
+        ward.duration = max(int(ward.duration or 0), 2)
+        ward.extra = max(
+            int(ward.extra or 0),
+            max(6, int(getattr(actor.stats, "wisdom", 0) or 0) // 4),
+        )
+        msg += f"Merciful Ward shelters {recipient.name}.\n"
     if meaningful and cls in {"Priest", "Archbishop"} and not passive:
         msg += record_prayer_source(actor, "meaningful healing", divine_support=True)
     if cls in {"Monk", "Master Monk"} and _has_skill(actor, "Chi Heal"):

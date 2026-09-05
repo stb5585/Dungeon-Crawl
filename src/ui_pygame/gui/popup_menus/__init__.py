@@ -8,7 +8,12 @@ from .base import BasePopupMenu
 from .equipment import EquipmentPopupMenu
 from .inventory import InventoryPopupMenu
 from .journals import BestiaryPopupMenu, QuestPopupMenu
-from .mechanics import JumpModsPopupMenu, SimpleListPopupMenu, TotemAspectsPopupMenu
+from .mechanics import (
+    CompositionPopupMenu,
+    JumpModsPopupMenu,
+    SimpleListPopupMenu,
+    TotemAspectsPopupMenu,
+)
 from .selections import EquipmentSelectionPopup, SelectionPopup
 
 
@@ -16,6 +21,7 @@ __all__ = [
     "BasePopupMenu",
     "BestiaryPopupMenu",
     "ConfirmationPopup",
+    "CompositionPopupMenu",
     "enemies",
     "EquipmentPopupMenu",
     "EquipmentSelectionPopup",

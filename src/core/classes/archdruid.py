@@ -168,6 +168,19 @@ def adjust_attunement(character: Any, affinity: str, amount: int) -> tuple[int, 
     if affinity not in AFFINITIES or amount == 0 or not is_archdruid(character):
         return 0, 0
     state = ensure_state(character)
+    try:
+        from ..progression import has_talent
+
+        memory_talents = {
+            "Venom": "archdruid.patient-venom",
+            "Stone": "archdruid.granite-memory",
+            "Growth": "archdruid.verdant-memory",
+            "Storm": "archdruid.storm-memory",
+        }
+        if amount > 0 and has_talent(character, memory_talents[affinity]):
+            amount += 1
+    except (AttributeError, KeyError, TypeError):
+        pass
     before = int(state["attunement"][affinity])
     state["attunement"][affinity] = _clamp_attunement(
         before + int(amount),

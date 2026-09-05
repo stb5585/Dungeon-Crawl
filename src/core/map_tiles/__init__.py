@@ -111,6 +111,7 @@ from .traps import (
     DEATHCAP_CHANCE,
     TRAP_TYPES,
     assign_dungeon_traps,
+    disarm_tile_trap,
     trigger_tile_trap,
     find_trap_warning,
 )

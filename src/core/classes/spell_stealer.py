@@ -47,6 +47,16 @@ class SpellStealer(Job):
         )
 
 
+def has_stolen_magic_talent(character: Any, talent_key: str) -> bool:
+    """Return whether a stolen-magic tree talent has been purchased."""
+    try:
+        from ..progression import has_talent
+
+        return has_talent(character, talent_key)
+    except (AttributeError, KeyError, TypeError, ValueError):
+        return False
+
+
 def eligible_spell_classes(target: Any) -> list[type]:
     if getattr(target, "class_ring_trial_enemy", False) and not getattr(target, "thieves_guild_trial_enemy", False):
         return []
@@ -73,7 +83,12 @@ def steal_spell(user: Any, target: Any, *, rng: Any = random) -> tuple[bool, str
         return False, f"{getattr(target, 'name', 'The target')} has no stealable spell.\n"
     spell_cls = rng.choice(spell_classes)
     blank = blanks[0]
-    user.modify_inventory(blank, subtract=True)
+    preserve_blank = (
+        has_stolen_magic_talent(user, "spell-stealer.perfect-forgery")
+        and rng.random() < 0.25
+    )
+    if not preserve_blank:
+        user.modify_inventory(blank, subtract=True)
     scroll = items.InscribedSpellScroll(spell_cls.__name__)
     user.modify_inventory(scroll)
     try:
@@ -82,4 +97,7 @@ def steal_spell(user: Any, target: Any, *, rng: Any = random) -> tuple[bool, str
         class_rings.activate_spell_steal_buff(user)
     except Exception:
         pass
-    return True, f"{user.name} steals {scroll.spell.name} onto a Blank Scroll.\n"
+    message = f"{user.name} steals {scroll.spell.name} onto a Blank Scroll.\n"
+    if preserve_blank:
+        message += "Perfect Forgery preserves the Blank Scroll.\n"
+    return True, message

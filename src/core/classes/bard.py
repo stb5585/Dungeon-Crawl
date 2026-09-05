@@ -169,7 +169,22 @@ def available_compositions(character: Any) -> dict[str, str]:
     }
 
 
-def compose_sheet_music(character: Any, song: str) -> tuple[bool, str]:
+def _has_talent(character: Any, talent_key: str) -> bool:
+    """Return whether a Bard-family talent is currently purchased."""
+    try:
+        from ..progression import has_talent
+
+        return has_talent(character, talent_key)
+    except (AttributeError, KeyError, TypeError):
+        return False
+
+
+def compose_sheet_music(
+    character: Any,
+    song: str,
+    *,
+    rng: Any = random,
+) -> tuple[bool, str]:
     options = available_compositions(character)
     if song not in options:
         required = COMPOSITIONS.get(song, ("a matching instrument", ""))[0]
@@ -178,13 +193,16 @@ def compose_sheet_music(character: Any, song: str) -> tuple[bool, str]:
     sheet = getattr(items, options[song])()
     character.modify_inventory(sheet)
     message = f"{character.name} composes {sheet.song_name} onto sheet music.\n"
+    if _has_talent(character, "bard.copyist") and rng.random() < 0.25:
+        character.modify_inventory(getattr(items, options[song])())
+        message += "Careful copywork produces a second sheet.\n"
     if getattr(getattr(character, "cls", None), "name", "") == "Troubadour":
         from . import promotion_kits
 
         message += promotion_kits.gain_bard_practice(
             character,
             song,
-            1,
+            2 if _has_talent(character, "troubadour.composers-memory") else 1,
             "composition",
         )
     return True, message
@@ -194,7 +212,28 @@ def song_strength(character: Any) -> float:
     strength = 1.0
     if getattr(getattr(character, "cls", None), "name", "") == "Troubadour":
         strength *= 1.5
+    if _has_talent(character, "bard.resonant-hall"):
+        strength *= 1.10
+    if _has_talent(character, "troubadour.commanding-stage"):
+        strength *= 1.10
+    if _has_talent(character, "troubadour.repertoire-authority"):
+        strength *= 1.10
     return strength
+
+
+def _song_duration(character: Any, song: str) -> int:
+    """Return the purchased duration for a newly started combat song."""
+    duration = int(SONGS[song].get("duration", SONG_DURATION))
+    if _has_talent(character, "bard.sustained-performance"):
+        duration += 1
+    if _has_talent(character, "troubadour.long-form"):
+        duration += 1
+    if (
+        song in REPERTOIRE_MP_COSTS
+        and _has_talent(character, "bard.battle-arrangement")
+    ):
+        duration += 1
+    return duration
 
 
 def default_exploration_song_state() -> dict[str, Any]:
@@ -261,10 +300,12 @@ def tick_exploration_song(character: Any, steps: int = 1) -> str:
     state["practice_steps"] = after_practice
     state["steps"] = max(0, int(state.get("steps", 0) or 0) - step_count)
     if getattr(getattr(character, "cls", None), "name", "") == "Troubadour":
-        gained = (
-            after_practice // EXPLORATION_PRACTICE_STEP
-            - before_practice // EXPLORATION_PRACTICE_STEP
+        practice_step = (
+            16
+            if _has_talent(character, "troubadour.road-tested")
+            else EXPLORATION_PRACTICE_STEP
         )
+        gained = after_practice // practice_step - before_practice // practice_step
         if gained:
             from . import promotion_kits
 
@@ -305,7 +346,11 @@ def _complete_exploration_song(
     state.update(default_exploration_song_state())
     state["route_effect"] = route_effect
     if route_effect == "encounter_rate_shift":
-        state["route_steps"] = ROUTE_CODA_STEPS
+        state["route_steps"] = (
+            30
+            if _has_talent(character, "troubadour.lasting-impression")
+            else ROUTE_CODA_STEPS
+        )
     message += f"A reduced {song} route coda lingers.\n"
     return message
 
@@ -329,7 +374,10 @@ def _consume_route_effect(character: Any, effect: str) -> bool:
 def loot_drop_multiplier(character: Any) -> float:
     if active_exploration_effect(character) != "loot_rate_up":
         return 1.0
-    return 1.25 if _consume_route_effect(character, "loot_rate_up") else 2.0
+    lingering = _consume_route_effect(character, "loot_rate_up")
+    if _has_talent(character, "bard.gilded-verse"):
+        return 1.35 if lingering else 2.25
+    return 1.25 if lingering else 2.0
 
 
 def encounter_rate_multiplier(character: Any) -> float:
@@ -353,6 +401,10 @@ def apply_enemy_opening_debuffs(character: Any, enemy: Any) -> str:
         return ""
     route_coda = _consume_route_effect(character, effect)
     scale = 0.10 if route_coda else 0.15
+    if _has_talent(character, "bard.pointed-satire"):
+        scale += 0.05
+    if _has_talent(character, "troubadour.cutting-encore"):
+        scale += 0.05
     if effect == "enemy_attack_down":
         for stat_name in ("Attack", "Magic"):
             stat = enemy.stat_effects[stat_name]
@@ -394,6 +446,8 @@ def perform_repertoire_song(
     if not entry.get("known"):
         return False, f"{character.name} has not mastered {song}.\n"
     cost = REPERTOIRE_MP_COSTS[song]
+    if _has_talent(character, "troubadour.efficient-repertoire"):
+        cost = max(1, cost - 2)
     if int(character.mana.current) < cost:
         return False, f"{character.name} needs {cost} MP to perform {song}.\n"
     success, message = start_song(
@@ -431,17 +485,30 @@ def start_song(character: Any, song: str, target: Any | None = None, battle_engi
         state["active"] = song
         state["effect"] = spec["exploration_effect"]
         state["steps"] = EXPLORATION_SONG_STEPS
+        if _has_talent(character, "bard.road-song"):
+            state["steps"] += 20
+        if _has_talent(character, "troubadour.endless-refrain"):
+            state["steps"] += 20
         state["practice_steps"] = 0
         state["route_effect"] = None
         state["route_steps"] = 0
         return True, f"{character.name} begins {song}; its refrain will carry for {EXPLORATION_SONG_STEPS} steps.\n"
 
-    duration = int(spec.get("duration", SONG_DURATION))
+    duration = _song_duration(character, song)
     state = ensure_song_state(character)
     if state.get("active") and state.get("turns", 0) > 0:
         from . import promotion_kits
 
-        messages = promotion_kits.clear_crescendo(character, "song replacement")
+        if _has_talent(character, "bard.seamless-transition"):
+            meter = promotion_kits.combat_state(character)
+            retained = min(1, int(meter.get("crescendo", 0) or 0))
+            meter["crescendo"] = retained
+            messages = (
+                f"Seamless Transition retains {retained} Crescendo.\n"
+                if retained else ""
+            )
+        else:
+            messages = promotion_kits.clear_crescendo(character, "song replacement")
     else:
         messages = ""
     state["active"] = song
@@ -476,6 +543,18 @@ def start_song(character: Any, song: str, target: Any | None = None, battle_engi
         messages += f"Ode to the Ramparts raises {character.name}'s defenses by {amount}.\n"
 
     messages += _song_recovery_pulse(character, song, strength=song_strength(character))
+    if (
+        song in REPERTOIRE_MP_COSTS
+        and _has_talent(character, "troubadour.virtuoso-repertoire")
+    ):
+        from . import promotion_kits
+
+        messages += promotion_kits.gain_meter(
+            character,
+            "crescendo",
+            1,
+            "Virtuoso Repertoire",
+        )
     return True, messages
 
 
@@ -524,6 +603,8 @@ def damage_bonus(character: Any) -> float:
         bonus += SONGS.get(state.get("active"), {}).get("damage_bonus", 0.0) * song_strength(character)
     if state.get("encore"):
         bonus += SONGS.get(state.get("encore"), {}).get("damage_bonus", 0.0) * _encore_strength(character)
+    if bonus and _has_talent(character, "bard.driving-rhythm"):
+        bonus += 0.05
     return bonus
 
 
@@ -534,6 +615,8 @@ def damage_reduction(character: Any) -> float:
         reduction += SONGS.get(state.get("active"), {}).get("damage_reduction", 0.0) * song_strength(character)
     if state.get("encore"):
         reduction += SONGS.get(state.get("encore"), {}).get("damage_reduction", 0.0) * _encore_strength(character)
+    if reduction and _has_talent(character, "bard.sheltering-refrain"):
+        reduction += 0.05
     return min(0.75, reduction)
 
 
@@ -554,6 +637,8 @@ def tick_song(character: Any) -> str:
         from . import class_rings
 
         encore_strength = class_rings.encore_strength(character)
+        if _has_talent(character, "troubadour.learned-encore"):
+            encore_strength = max(encore_strength, 0.35)
         messages += f"{character.name}'s Song of {song} ends.\n"
         messages += promotion_kits.complete_song(character, song)
         state["active"] = None
@@ -566,6 +651,28 @@ def tick_song(character: Any) -> str:
     return messages
 
 
+def grand_finale(character: Any, *, cost: int = 8) -> str:
+    """Spend MP to end the active combat song and resolve its coda now."""
+    if getattr(getattr(character, "cls", None), "name", "") != "Troubadour":
+        return "Grand Finale requires Troubadour training.\n"
+    state = ensure_song_state(character)
+    song = state.get("active") if int(state.get("turns", 0) or 0) > 0 else None
+    if not song:
+        return "Grand Finale requires an active combat song.\n"
+    if _has_talent(character, "troubadour.decisive-ending"):
+        cost = max(1, cost - 2)
+    if int(character.mana.current) < cost:
+        return f"{character.name} needs {cost} MP for Grand Finale.\n"
+    from . import promotion_kits
+
+    character.mana.current -= cost
+    state["active"] = None
+    state["turns"] = 0
+    message = f"{character.name} ends Song of {song} with Grand Finale.\n"
+    message += promotion_kits.complete_song(character, song)
+    return message
+
+
 def _encore_strength(character: Any) -> float:
     from . import class_rings
 
@@ -575,8 +682,11 @@ def _encore_strength(character: Any) -> float:
 def _renewal_pulse(character: Any, *, strength: float) -> str:
     hp_max = max(1, int(getattr(character.health, "max", 1) or 1))
     mp_max = max(1, int(getattr(character.mana, "max", 1) or 1))
-    hp = max(1, int(hp_max * SONGS["Renewal"]["recovery"] * strength))
-    mp = max(1, int(mp_max * SONGS["Renewal"]["recovery"] * strength))
+    recovery = SONGS["Renewal"]["recovery"]
+    if _has_talent(character, "bard.restorative-harmony"):
+        recovery += 0.02
+    hp = max(1, int(hp_max * recovery * strength))
+    mp = max(1, int(mp_max * recovery * strength))
     before_hp = character.health.current
     before_mp = character.mana.current
     character.health.current = min(hp_max, character.health.current + hp)

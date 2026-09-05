@@ -52,6 +52,13 @@ def selected_bolts(character: Any) -> Any | None:
 
 def _recover_bolt(character: Any, pack: Any, *, rng: Any) -> str:
     chance = float(getattr(pack, "recovery_chance", 0.0) or 0.0)
+    try:
+        from ..progression import has_talent
+
+        if has_talent(character, "ranger.quick-reload"):
+            chance += 0.20
+    except (AttributeError, KeyError, TypeError):
+        pass
     pack.charges = max(0, int(getattr(pack, "charges", 0) or 0) - 1)
     recovered = rng.random() < chance
     if recovered and pack.name == "Napalm Bolts":
@@ -113,6 +120,9 @@ def fire_crossbow(
     *,
     encounter: Any = None,
     rng: Any | None = None,
+    shot_limit: int | None = None,
+    damage_multiplier: float = 1.0,
+    napalm_splash: bool = True,
 ) -> tuple[str, bool, list[int]]:
     """Fire an equipped crossbow after a basic attack."""
     crossbow = equipped_crossbow(attacker)
@@ -122,12 +132,22 @@ def fire_crossbow(
     messages: list[str] = []
     damages: list[int] = []
     any_hit = False
-    for _shot in range(int(getattr(crossbow, "shots_per_attack", 1) or 1)):
+    shots = int(getattr(crossbow, "shots_per_attack", 1) or 1)
+    if shot_limit is not None:
+        shots = min(shots, max(0, int(shot_limit)))
+    for _shot in range(shots):
         pack = selected_bolts(attacker)
         if pack is None:
             messages.append(f"{crossbow.name} has no crossbow bolts to fire.\n")
             break
         accuracy = float(attacker.hit_chance(target, typ="weapon"))
+        try:
+            from ..progression import has_talent
+
+            if has_talent(attacker, "ranger.crossbow-training"):
+                accuracy += 0.10
+        except (AttributeError, KeyError, TypeError):
+            pass
         if pack.name == "Heat-Seeking Bolts":
             accuracy += _heat_seeking_bonus(target)
         if generator.random() >= min(0.95, accuracy):
@@ -135,9 +155,22 @@ def fire_crossbow(
             messages.append(_recover_bolt(attacker, pack, rng=generator))
             continue
         any_hit = True
+        shot_damage_multiplier = damage_multiplier
+        try:
+            from . import pathfinder
+
+            shot_damage_multiplier *= pathfinder.ranger_weapon_damage_multiplier(
+                attacker,
+                target,
+            )
+        except (AttributeError, KeyError, TypeError):
+            pass
         raw = max(
             1,
-            int(crossbow.damage + attacker.combat.attack + attacker.stats.dex // 2),
+            int(
+                (crossbow.damage + attacker.combat.attack + attacker.stats.dex // 2)
+                * shot_damage_multiplier
+            ),
         )
         if pack.name == "Delayed Bolts":
             payload = getattr(target, "_delayed_crossbow_bolts", [])
@@ -164,7 +197,12 @@ def fire_crossbow(
                 if reduction_message:
                     messages.append(reduction_message)
             if pack.name == "Napalm Bolts":
-                for enemy in _living_enemies(encounter, target):
+                napalm_targets = (
+                    _living_enemies(encounter, target)
+                    if napalm_splash
+                    else [target]
+                )
+                for enemy in napalm_targets:
                     if not enemy.is_alive():
                         continue
                     _hit, _reduction_message, fire_damage = enemy.damage_reduction(

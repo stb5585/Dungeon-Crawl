@@ -68,35 +68,44 @@ TREE_SIZE_OVERRIDES = {
     "Sorcerer": (29, 29),
     # Five authored Wizard columns, including the quest-awarded ultimate spell.
     "Wizard": (28, 28),
-    # Legacy promoted trees expose only their authored catalog abilities. Fake
-    # rating-family padding was removed; these exact counts prevent it from
-    # returning unnoticed.
-    "Thief": (4, 4),
-    "Rogue": (8, 8),
-    "Inquisitor": (17, 17),
-    "Seeker": (11, 11),
-    "Spell Stealer": (5, 5),
-    "Arcane Trickster": (3, 3),
-    "Cleric": (11, 11),
-    "Templar": (10, 10),
-    "Hierophant": (5, 5),
-    "Monk": (12, 12),
-    "Master Monk": (9, 9),
-    "Priest": (10, 10),
-    "Archbishop": (9, 9),
-    "Bard": (3, 3),
-    "Troubadour": (0, 0),
-    "Druid": (7, 7),
-    "Lycan": (6, 6),
-    "Archdruid": (7, 7),
-    "Diviner": (6, 6),
-    "Astromancer": (10, 10),
-    "Shaman": (10, 10),
-    "Soulcatcher": (8, 8),
-    "Ranger": (1, 1),
+    # Catalog-only promoted trees expose only their implemented abilities while
+    # their sidecar decision blocks await authored expansion. Fake rating-family
+    # padding was removed; these exact interim counts prevent it from returning
+    # unnoticed.
+    "Thief": (22, 22),
+    "Rogue": (28, 28),
+    # Casework and judgment lead to Seeker; six elemental wards remain optional.
+    "Inquisitor": (23, 23),
+    # Four complete terminal disciplines deepen Revelation and Wayfinding.
+    "Seeker": (28, 28),
+    # Compact stolen-magic trees use higher node costs to create build pressure.
+    "Spell Stealer": (12, 12),
+    "Arcane Trickster": (12, 12),
+    # Four route disciplines and one shared ministry support both promotions.
+    "Cleric": (26, 26),
+    "Templar": (28, 28),
+    "Hierophant": (28, 28),
+    "Monk": (23, 23),
+    "Master Monk": (28, 28),
+    "Priest": (22, 22),
+    "Archbishop": (29, 29),
+    "Bard": (26, 26),
+    "Troubadour": (27, 27),
+    "Druid": (28, 28),
+    "Lycan": (28, 28),
+    "Archdruid": (28, 28),
+    "Diviner": (22, 22),
+    "Astromancer": (28, 28),
+    # Totem is inherent; three routes and an optional omen branch contain 19 nodes.
+    "Shaman": (19, 19),
+    # Four seven-node Soulcatcher mastery routes total 30 development points.
+    "Soulcatcher": (28, 28),
+    # Five Ranger disciplines contain 24 development nodes plus one promotion.
+    "Ranger": (24, 24),
     # Bonded Bulwark is the sole retained talent because it has an authored,
     # tested companion-bond payoff rather than a generic rating bonus.
-    "Beast Master": (7, 7),
+    # Four Beast Master tracks contain 22 terminal development nodes.
+    "Beast Master": (22, 22),
 }
 
 ABILITY_ICON_KEYS = frozenset({
@@ -863,6 +872,685 @@ SORCERER_TREE_NODE_SPECS = (
         "lane": "Illusion", "position": (4, 3), "level": 45,
         "prerequisites": ("ice-block",),
     },
+)
+
+
+BARD_TREE_NODE_SPECS = (
+    {"id": "songvalor", "kind": "ability", "identifier": "SongValor", "lane": "Performance", "position": (0, 0), "available_on_promotion": True, "owned_if_known": True},
+    {"id": "sustained-performance", "kind": "talent", "identifier": "bard.sustained-performance", "name": "Sustained Performance", "description": "Combat songs last one additional turn.", "lane": "Performance", "position": (0, 1), "level": 35, "prerequisites": ("songvalor",)},
+    {"id": "driving-rhythm", "kind": "talent", "identifier": "bard.driving-rhythm", "name": "Driving Rhythm", "description": "Song of Valor grants a further 5% weapon and magic damage.", "lane": "Performance", "position": (0, 2), "level": 40, "prerequisites": ("sustained-performance",)},
+    {"id": "rising-cadence", "kind": "talent", "identifier": "bard.rising-cadence", "name": "Rising Cadence", "description": "The first maintained turn of a song gains one additional Crescendo.", "lane": "Performance", "position": (0, 3), "level": 45, "prerequisites": ("driving-rhythm",)},
+    {"id": "coda-craft", "kind": "talent", "identifier": "bard.coda-craft", "name": "Coda Craft", "description": "Combat codas resolve as though one additional Crescendo were spent.", "lane": "Performance", "position": (0, 4), "level": 50, "prerequisites": ("rising-cadence",)},
+    {"id": "resonant-hall", "kind": "talent", "identifier": "bard.resonant-hall", "name": "Resonant Hall", "description": "Increase the strength of every active song by 10%.", "lane": "Performance", "position": (0, 5), "level": 55, "prerequisites": ("coda-craft",)},
+    {"id": "rhythmic-strike", "kind": "ability", "identifier": "RhythmicStrike", "lane": "Performance", "position": (2, 0), "available_on_promotion": True},
+    {"id": "curtain-guard", "kind": "ability", "identifier": "CurtainGuard", "lane": "Performance", "position": (2, 1), "level": 35, "prerequisites": ("rhythmic-strike",)},
+    {"id": "songshelter", "kind": "ability", "identifier": "SongShelter", "lane": "Performance", "position": (1, 0), "available_on_promotion": True, "owned_if_known": True},
+    {"id": "sheltering-refrain", "kind": "talent", "identifier": "bard.sheltering-refrain", "name": "Sheltering Refrain", "description": "Song of Shelter reduces incoming damage by a further 5%.", "lane": "Performance", "position": (1, 1), "level": 35, "prerequisites": ("songshelter",)},
+    {"id": "songrenewal", "kind": "ability", "identifier": "SongRenewal", "lane": "Performance", "position": (1, 2), "level": 40, "available_on_promotion": True, "owned_if_known": True, "prerequisites": ("sheltering-refrain",)},
+    {"id": "restorative-harmony", "kind": "talent", "identifier": "bard.restorative-harmony", "name": "Restorative Harmony", "description": "Song of Renewal restores an additional 2% maximum HP and MP per pulse.", "lane": "Performance", "position": (1, 3), "level": 45, "prerequisites": ("songrenewal",)},
+    {"id": "seamless-transition", "kind": "talent", "identifier": "bard.seamless-transition", "name": "Seamless Transition", "description": "Replacing a combat song retains one Crescendo instead of clearing it all.", "lane": "Performance", "position": (1, 4), "level": 50, "prerequisites": ("restorative-harmony", "inspiring-verse"), "prerequisite_mode": "any"},
+    {"id": "crescendo-reserve", "kind": "talent", "identifier": "bard.crescendo-reserve", "name": "Crescendo Reserve", "description": "Increase maximum Crescendo by one.", "lane": "Performance", "position": (1, 5), "level": 55, "prerequisites": ("seamless-transition",), "kit_effect": ("meter_cap", "crescendo", 1)},
+    {"id": "inspiring-verse", "kind": "ability", "identifier": "InspiringVerse", "lane": "Performance", "position": (2, 2), "level": 40, "prerequisites": ("curtain-guard",)},
+    {"id": "battle-arrangement", "kind": "talent", "identifier": "bard.battle-arrangement", "name": "Battle Arrangement", "description": "Battle Hymn and Ode to the Ramparts last one additional turn.", "lane": "Composition", "position": (3, 0), "available_on_promotion": True},
+    {"id": "pointed-satire", "kind": "talent", "identifier": "bard.pointed-satire", "name": "Pointed Satire", "description": "Exploration songs that hinder enemy stats apply 5 percentage points more pressure.", "lane": "Composition", "position": (3, 1), "level": 35, "prerequisites": ("battle-arrangement",)},
+    {"id": "road-song", "kind": "talent", "identifier": "bard.road-song", "name": "Road Song", "description": "Exploration performances carry for 20 additional steps.", "lane": "Composition", "position": (3, 2), "level": 40, "prerequisites": ("pointed-satire",)},
+    {"id": "gilded-verse", "kind": "talent", "identifier": "bard.gilded-verse", "name": "Gilded Verse", "description": "Gold Trigger improves active and lingering loot multipliers.", "lane": "Composition", "position": (3, 3), "level": 45, "prerequisites": ("road-song",)},
+    {"id": "dissonant-chord", "kind": "ability", "identifier": "DissonantChord", "lane": "Composition", "position": (3, 4), "level": 50, "prerequisites": ("gilded-verse",)},
+    {"id": "copyist", "kind": "talent", "identifier": "bard.copyist", "name": "Copyist", "description": "Composing has a 25% chance to produce a second sheet of the chosen song.", "lane": "Composition", "position": (3, 5), "level": 55, "prerequisites": ("dissonant-chord",)},
+    {"id": "kaleidoscope", "kind": "ability", "identifier": "Kaleidoscope", "lane": "Composition", "position": (4, 0), "available_on_promotion": True},
+    {"id": "vivid-palette", "kind": "talent", "identifier": "bard.vivid-palette", "name": "Vivid Palette", "description": "Increase Kaleidoscope potency by 15%; Emerald also restores MP.", "lane": "Composition", "position": (4, 1), "level": 35, "prerequisites": ("kaleidoscope",)},
+    {"id": "elemental-cadence", "kind": "talent", "identifier": "bard.elemental-cadence", "name": "Elemental Cadence", "description": "Kaleidoscope gains one Crescendo while a combat song is active.", "lane": "Composition", "position": (4, 2), "level": 40, "prerequisites": ("vivid-palette",)},
+    {"id": "prismatic-ray", "kind": "ability", "identifier": "PrismaticRay", "lane": "Composition", "position": (4, 3), "level": 45, "prerequisites": ("elemental-cadence",)},
+    {"id": "prismatic-flourish", "kind": "talent", "identifier": "bard.prismatic-flourish", "name": "Prismatic Flourish", "description": "Azure and Violet Kaleidoscope riders last one additional turn.", "lane": "Composition", "position": (4, 5), "level": 55, "prerequisites": ("prismatic-ray",)},
+)
+
+
+TROUBADOUR_TREE_NODE_SPECS = (
+    {"id": "grand-finale", "kind": "ability", "identifier": "GrandFinale", "lane": "Finale", "position": (0, 0), "available_on_promotion": True},
+    {"id": "masterful-finale", "kind": "talent", "identifier": "troubadour.masterful-finale", "name": "Masterful Finale", "description": "Every combat coda resolves as though one additional Crescendo were spent.", "lane": "Finale", "position": (0, 1), "level": 65, "prerequisites": ("grand-finale",)},
+    {"id": "decisive-ending", "kind": "talent", "identifier": "troubadour.decisive-ending", "name": "Decisive Ending", "description": "Reduce Grand Finale's MP cost from 8 to 6.", "lane": "Finale", "position": (0, 2), "level": 70, "prerequisites": ("masterful-finale",)},
+    {"id": "crescendo-reserve", "kind": "talent", "identifier": "troubadour.crescendo-reserve", "name": "Crescendo Reserve", "description": "Increase maximum Crescendo by two.", "lane": "Finale", "position": (0, 3), "level": 75, "prerequisites": ("decisive-ending",), "kit_effect": ("meter_cap", "crescendo", 2)},
+    {"id": "rolling-crescendo", "kind": "talent", "identifier": "troubadour.rolling-crescendo", "name": "Rolling Crescendo", "description": "Each maintained song turn gains one additional Crescendo.", "lane": "Finale", "position": (0, 4), "level": 80, "prerequisites": ("crescendo-reserve",)},
+    {"id": "commanding-stage", "kind": "talent", "identifier": "troubadour.commanding-stage", "name": "Commanding Stage", "description": "Increase the strength of every active song by 10%.", "lane": "Finale", "position": (0, 5), "level": 85, "prerequisites": ("rolling-crescendo",)},
+    {"id": "syncopated-strike", "kind": "ability", "identifier": "SyncopatedStrike", "lane": "Finale", "position": (0, 6), "level": 85, "prerequisites": ("commanding-stage",)},
+    {"id": "heroic-finale", "kind": "talent", "identifier": "troubadour.heroic-finale", "name": "Heroic Finale", "description": "Valor codas resolve as though one additional Crescendo were spent.", "lane": "Finale", "position": (1, 0), "available_on_promotion": True},
+    {"id": "guardian-finale", "kind": "talent", "identifier": "troubadour.guardian-finale", "name": "Guardian Finale", "description": "Shelter codas resolve as though one additional Crescendo were spent.", "lane": "Finale", "position": (1, 1), "level": 65, "prerequisites": ("heroic-finale",)},
+    {"id": "reviving-finale", "kind": "talent", "identifier": "troubadour.reviving-finale", "name": "Reviving Finale", "description": "Renewal codas gain one effective Crescendo and cleanse poison at two spent.", "lane": "Finale", "position": (1, 2), "level": 70, "prerequisites": ("guardian-finale",)},
+    {"id": "riotous-finale", "kind": "talent", "identifier": "troubadour.riotous-finale", "name": "Riotous Finale", "description": "Battle Hymn's coda extends its controlled Berserk beat by one turn.", "lane": "Finale", "position": (1, 3), "level": 75, "prerequisites": ("reviving-finale",)},
+    {"id": "rallying-chorus", "kind": "ability", "identifier": "RallyingChorus", "lane": "Finale", "position": (1, 4), "level": 80, "prerequisites": ("riotous-finale",)},
+    {"id": "cutting-encore", "kind": "talent", "identifier": "troubadour.cutting-encore", "name": "Cutting Encore", "description": "Enemy-stat exploration songs apply 5 percentage points more pressure.", "lane": "Finale", "position": (1, 5), "level": 85, "prerequisites": ("rallying-chorus",)},
+    {"id": "resonant-wave", "kind": "ability", "identifier": "ResonantWave", "lane": "Finale", "position": (1, 6), "level": 85, "prerequisites": ("cutting-encore",)},
+    {"id": "composers-memory", "kind": "talent", "identifier": "troubadour.composers-memory", "name": "Composer's Memory", "description": "Composition grants two practice XP instead of one.", "lane": "Mastery", "position": (2, 0), "available_on_promotion": True},
+    {"id": "practiced-ear", "kind": "talent", "identifier": "troubadour.practiced-ear", "name": "Practiced Ear", "description": "Maintained advanced-song turns grant one additional practice XP.", "lane": "Mastery", "position": (2, 1), "level": 65, "prerequisites": ("composers-memory",)},
+    {"id": "flawless-form", "kind": "talent", "identifier": "troubadour.flawless-form", "name": "Flawless Form", "description": "Natural advanced-song completion grants five practice XP instead of three.", "lane": "Mastery", "position": (2, 2), "level": 70, "prerequisites": ("practiced-ear",)},
+    {"id": "efficient-repertoire", "kind": "talent", "identifier": "troubadour.efficient-repertoire", "name": "Efficient Repertoire", "description": "Reduce mastered repertoire song MP costs by two.", "lane": "Mastery", "position": (2, 3), "level": 75, "prerequisites": ("flawless-form",)},
+    {"id": "repertoire-authority", "kind": "talent", "identifier": "troubadour.repertoire-authority", "name": "Repertoire Authority", "description": "Increase the strength of every active song by a further 10%.", "lane": "Mastery", "position": (2, 4), "level": 80, "prerequisites": ("efficient-repertoire",)},
+    {"id": "learned-encore", "kind": "talent", "identifier": "troubadour.learned-encore", "name": "Learned Encore", "description": "A naturally completed song leaves a 35%-strength final beat without requiring a ring.", "lane": "Mastery", "position": (2, 5), "level": 85, "prerequisites": ("repertoire-authority",)},
+    {"id": "long-form", "kind": "talent", "identifier": "troubadour.long-form", "name": "Long Form", "description": "Combat songs last one additional turn.", "lane": "Mastery", "position": (3, 0), "available_on_promotion": True},
+    {"id": "road-tested", "kind": "talent", "identifier": "troubadour.road-tested", "name": "Road Tested", "description": "Exploration songs gain practice XP every 16 carried steps instead of every 20.", "lane": "Mastery", "position": (3, 1), "level": 65, "prerequisites": ("long-form",)},
+    {"id": "endless-refrain", "kind": "talent", "identifier": "troubadour.endless-refrain", "name": "Endless Refrain", "description": "Exploration performances carry for 20 additional steps.", "lane": "Mastery", "position": (3, 2), "level": 70, "prerequisites": ("road-tested",)},
+    {"id": "lasting-impression", "kind": "talent", "identifier": "troubadour.lasting-impression", "name": "Lasting Impression", "description": "Bones, Thugs, and Harmony's reduced route coda lasts 30 steps.", "lane": "Mastery", "position": (3, 3), "level": 75, "prerequisites": ("endless-refrain",)},
+    {"id": "prismatic-finale", "kind": "ability", "identifier": "PrismaticFinale", "lane": "Mastery", "position": (3, 4), "level": 80, "prerequisites": ("lasting-impression",)},
+    {"id": "virtuoso-repertoire", "kind": "talent", "identifier": "troubadour.virtuoso-repertoire", "name": "Virtuoso Repertoire", "description": "Starting a mastered advanced song immediately gains one Crescendo.", "lane": "Mastery", "position": (3, 5), "level": 85, "prerequisites": ("prismatic-finale",)},
+    {"id": "countermelody", "kind": "ability", "identifier": "Countermelody", "lane": "Mastery", "position": (3, 6), "level": 85, "prerequisites": ("virtuoso-repertoire",)},
+)
+
+
+THIEF_TREE_NODE_SPECS = (
+    {"id": "scavengers-eye", "kind": "ability", "identifier": "ScavengersEye", "lane": "Fortune", "position": (0, 0), "available_on_promotion": True, "owned_if_known": True},
+    {"id": "read-the-room", "kind": "talent", "identifier": "thief.read-the-room", "name": "Read the Room", "description": "Successful meaningful luck outcomes grant an extra Fortune 25% of the time.", "lane": "Fortune", "position": (0, 1), "level": 35, "prerequisites": ("scavengers-eye",)},
+    {"id": "gold-toss", "kind": "ability", "identifier": "GoldToss", "lane": "Fortune", "position": (0, 2), "level": 40, "owned_if_known": True, "prerequisites": ("read-the-room",)},
+    {"id": "fortune-vitality", "kind": "health", "identifier": "Health", "lane": "Fortune", "position": (0, 3), "level": 45, "level_band_gate": True, "prerequisites": ("gold-toss",)},
+    {"id": "gilt-edge", "kind": "talent", "identifier": "thief.gilt-edge", "name": "Gilt Edge", "description": "Fortune spent on a risky action grants 2.5 additional accuracy points per stack.", "lane": "Fortune", "position": (0, 4), "level": 50, "prerequisites": ("fortune-vitality",)},
+    {"id": "fortune-favors-bold", "kind": "talent", "identifier": "thief.fortune-favors-bold", "name": "Fortune Favors the Bold", "description": "A clean Fortune payoff preserves one spent stack once per action.", "lane": "Fortune", "position": (0, 5), "level": 55, "prerequisites": ("gilt-edge",)},
+    {"id": "mug", "kind": "ability", "identifier": "Mug", "lane": "Misfortune", "position": (1, 0), "available_on_promotion": True, "owned_if_known": True},
+    {"id": "hard-lessons", "kind": "talent", "identifier": "thief.hard-lessons", "name": "Hard Lessons", "description": "Misfortune damage and severity scaling increases from 8% to 10% per stack.", "lane": "Misfortune", "position": (1, 1), "level": 35, "prerequisites": ("mug",)},
+    {"id": "spiteful-attack", "kind": "rating", "identifier": "Attack", "lane": "Misfortune", "position": (1, 2), "level": 40, "level_band_gate": True, "prerequisites": ("hard-lessons",)},
+    {"id": "turn-the-tables", "kind": "ability", "identifier": "TurnTheTables", "lane": "Misfortune", "position": (1, 3), "level": 45, "prerequisites": ("spiteful-attack",)},
+    {"id": "spiteful-streak", "kind": "talent", "identifier": "thief.spiteful-streak", "name": "Spiteful Streak", "description": "A Misfortune status payoff adds one further turn to the affected condition.", "lane": "Misfortune", "position": (1, 4), "level": 50, "prerequisites": ("turn-the-tables",)},
+    {"id": "reversal", "kind": "talent", "identifier": "thief.reversal", "name": "Reversal", "description": "Turn the Tables grants 5 points per stack and lasts four turns.", "lane": "Misfortune", "position": (1, 5), "level": 55, "prerequisites": ("spiteful-streak",)},
+    {"id": "lockpick", "kind": "ability", "identifier": "Lockpick", "lane": "Tools", "position": (2, 0), "available_on_promotion": True, "owned_if_known": True},
+    {"id": "careful-hands", "kind": "talent", "identifier": "thief.careful-hands", "name": "Careful Hands", "description": "Reduce Lockpick Kit break chance by 10 percentage points.", "lane": "Tools", "position": (2, 1), "level": 35, "prerequisites": ("lockpick",)},
+    {"id": "trap-lore", "kind": "talent", "identifier": "thief.trap-lore", "name": "Trap Lore", "description": "Find Traps gains 15 percentage points of detection chance.", "lane": "Tools", "position": (2, 2), "level": 40, "prerequisites": ("careful-hands",)},
+    {"id": "pilfering-strike", "kind": "ability", "identifier": "PilferingStrike", "lane": "Tools", "position": (2, 3), "level": 45, "prerequisites": ("trap-lore",)},
+    {"id": "master-tools", "kind": "talent", "identifier": "thief.master-tools", "name": "Master Tools", "description": "Pilfering Strike steals twice as much gold and tool break chance falls further.", "lane": "Tools", "position": (2, 5), "level": 55, "prerequisites": ("pilfering-strike",)},
+    {"id": "cut-and-run", "kind": "ability", "identifier": "CutAndRun", "lane": "Escape", "position": (3, 0), "available_on_promotion": True},
+    {"id": "smoke-tactician", "kind": "talent", "identifier": "thief.smoke-tactician", "name": "Smoke Tactician", "description": "Smoke Screen has a 25% chance not to consume its Smoke Bomb.", "lane": "Escape", "position": (3, 1), "level": 35, "prerequisites": ("cut-and-run",)},
+    {"id": "fleet-footed", "kind": "talent", "identifier": "thief.fleet-footed", "name": "Fleet Footed", "description": "Cut and Run grants 12 Speed instead of 8.", "lane": "Escape", "position": (3, 2), "level": 40, "prerequisites": ("smoke-tactician",)},
+    {"id": "lasting-head-start", "kind": "talent", "identifier": "thief.lasting-head-start", "name": "Lasting Head Start", "description": "Cut and Run's Speed bonus lasts one additional turn.", "lane": "Escape", "position": (3, 3), "level": 45, "prerequisites": ("fleet-footed",)},
+    {"id": "clean-getaway", "kind": "talent", "identifier": "thief.clean-getaway", "name": "Clean Getaway", "description": "A successful Smoke Screen escape grants one Fortune before combat ends.", "lane": "Escape", "position": (3, 5), "level": 55, "prerequisites": ("lasting-head-start",)},
+)
+
+
+ROGUE_TREE_NODE_SPECS = (
+    {"id": "finders-keepers", "kind": "ability", "identifier": "FindersKeepers", "lane": "Loaded Odds", "position": (0, 0), "available_on_promotion": True, "owned_if_known": True},
+    {"id": "stacked-odds", "kind": "talent", "identifier": "rogue.stacked-odds", "name": "Stacked Odds", "description": "Fortune grants 2.5 additional accuracy points per spent stack.", "lane": "Loaded Odds", "position": (0, 1), "level": 65, "prerequisites": ("finders-keepers",)},
+    {"id": "slot-machine", "kind": "ability", "identifier": "SlotMachine", "lane": "Loaded Odds", "position": (0, 2), "level": 70, "owned_if_known": True, "prerequisites": ("stacked-odds",)},
+    {"id": "rigged-reels", "kind": "talent", "identifier": "rogue.rigged-reels", "name": "Rigged Reels", "description": "Slot Machine treats Misfortune as 25% stronger when scaling a winning result.", "lane": "Loaded Odds", "position": (0, 3), "level": 75, "prerequisites": ("slot-machine",)},
+    {"id": "triple-strike", "kind": "ability", "identifier": "TripleStrike", "lane": "Loaded Odds", "position": (0, 4), "level": 80, "owned_if_known": True, "upgrade_without_source": True, "prerequisites": ("rigged-reels",)},
+    {"id": "all-in", "kind": "ability", "identifier": "AllIn", "lane": "Loaded Odds", "position": (0, 5), "level": 85, "cost": 2, "prerequisites": ("triple-strike",)},
+    {"id": "house-always-wins", "kind": "talent", "identifier": "rogue.house-always-wins", "name": "The House Always Wins", "description": "A successful All In preserves one Fortune when any Fortune was spent.", "lane": "Loaded Odds", "position": (0, 6), "level": 90, "prerequisites": ("all-in",)},
+    {"id": "sneak-attack", "kind": "ability", "identifier": "SneakAttack", "lane": "Comebacks", "position": (1, 0), "available_on_promotion": True, "owned_if_known": True},
+    {"id": "cruel-reversal", "kind": "talent", "identifier": "rogue.cruel-reversal", "name": "Cruel Reversal", "description": "Misfortune damage and severity scaling increases by 2 percentage points per stack.", "lane": "Comebacks", "position": (1, 1), "level": 65, "prerequisites": ("sneak-attack",)},
+    {"id": "zephyrstrike", "kind": "ability", "identifier": "Zephyrstrike", "lane": "Comebacks", "position": (1, 2), "level": 70, "owned_if_known": True, "prerequisites": ("cruel-reversal",)},
+    {"id": "snake-eyes", "kind": "ability", "identifier": "SnakeEyes", "lane": "Comebacks", "position": (1, 3), "level": 75, "prerequisites": ("zephyrstrike",)},
+    {"id": "cheat-death", "kind": "ability", "identifier": "CheatDeath", "lane": "Comebacks", "position": (1, 4), "level": 80, "owned_if_known": True, "prerequisites": ("snake-eyes",)},
+    {"id": "cheat-fate", "kind": "talent", "identifier": "rogue.cheat-fate", "name": "Cheat Fate", "description": "Cheat Death gains 10 percentage points of success chance.", "lane": "Comebacks", "position": (1, 5), "level": 85, "prerequisites": ("cheat-death",)},
+    {"id": "break-the-jinx", "kind": "talent", "identifier": "rogue.break-the-jinx", "name": "Break the Jinx", "description": "A successful Cheat Death applies Jinx for one turn instead of two.", "lane": "Comebacks", "position": (1, 6), "level": 90, "prerequisites": ("cheat-fate",)},
+    {"id": "keen-eye", "kind": "ability", "identifier": "KeenEye", "lane": "Cunning", "position": (2, 0), "available_on_promotion": True, "owned_if_known": True},
+    {"id": "master-lockpick", "kind": "ability", "identifier": "MasterLockpick", "lane": "Cunning", "position": (2, 1), "level": 65, "owned_if_known": True, "prerequisites": ("keen-eye",)},
+    {"id": "disarm-traps", "kind": "ability", "identifier": "DisarmTraps", "lane": "Cunning", "position": (2, 2), "level": 70, "prerequisites": ("master-lockpick",)},
+    {"id": "sure-hands", "kind": "talent", "identifier": "rogue.sure-hands", "name": "Sure Hands", "description": "Disarm Traps gains 15 percentage points of success chance.", "lane": "Cunning", "position": (2, 3), "level": 75, "prerequisites": ("disarm-traps",)},
+    {"id": "dirty-trick", "kind": "ability", "identifier": "DirtyTrick", "lane": "Cunning", "position": (2, 4), "level": 80, "prerequisites": ("sure-hands",)},
+    {"id": "deep-pockets", "kind": "talent", "identifier": "rogue.deep-pockets", "name": "Deep Pockets", "description": "Finders Keepers gains 10 percentage points of ordinary-find chance.", "lane": "Cunning", "position": (2, 5), "level": 85, "prerequisites": ("dirty-trick",)},
+    {"id": "impossible-job", "kind": "talent", "identifier": "rogue.impossible-job", "name": "Impossible Job", "description": "Disarm Traps can reach 95% success and failed attempts apply half severity.", "lane": "Cunning", "position": (2, 6), "level": 90, "cost": 2, "prerequisites": ("deep-pockets",)},
+    {"id": "take-it-on-run", "kind": "ability", "identifier": "TakeItOnTheRun", "lane": "Escape", "position": (3, 0), "available_on_promotion": True},
+    {"id": "cut-and-run", "kind": "ability", "identifier": "CutAndRun", "lane": "Escape", "position": (3, 1), "level": 65, "owned_if_known": True, "prerequisites": ("take-it-on-run",)},
+    {"id": "smoke-screen", "kind": "ability", "identifier": "SmokeScreen", "lane": "Escape", "position": (3, 2), "level": 70, "owned_if_known": True, "prerequisites": ("cut-and-run",)},
+    {"id": "slippery-customer", "kind": "talent", "identifier": "rogue.slippery-customer", "name": "Slippery Customer", "description": "Cut and Run grants 15 Speed and lasts three turns.", "lane": "Escape", "position": (3, 3), "level": 75, "prerequisites": ("smoke-screen",)},
+    {"id": "evasive-guard", "kind": "ability", "identifier": "EvasiveGuard", "lane": "Escape", "position": (3, 4), "level": 80, "owned_if_known": True, "prerequisites": ("slippery-customer",)},
+    {"id": "smoke-and-mirrors", "kind": "talent", "identifier": "rogue.smoke-and-mirrors", "name": "Smoke and Mirrors", "description": "Smoke Screen has a further 25% chance not to consume its Smoke Bomb.", "lane": "Escape", "position": (3, 5), "level": 85, "prerequisites": ("evasive-guard",)},
+    {"id": "gone-before-dawn", "kind": "talent", "identifier": "rogue.gone-before-dawn", "name": "Gone Before Dawn", "description": "Take It On the Run steals twice as much gold on a clean escape.", "lane": "Escape", "position": (3, 6), "level": 90, "prerequisites": ("smoke-and-mirrors",)},
+)
+
+
+MONK_TREE_NODE_SPECS = (
+    {"id": "unarmed-proficiency", "kind": "ability", "identifier": "UnarmedProficiency", "name": "Unarmed Proficiency", "lane": "Ki Assault", "position": (0, 0), "available_on_promotion": True, "owned_if_known": True},
+    {"id": "flowing-palm", "kind": "ability", "identifier": "FlowingPalm", "lane": "Ki Assault", "position": (0, 1), "level": 35, "prerequisites": ("unarmed-proficiency",)},
+    {"id": "rhythmic-breathing", "kind": "talent", "identifier": "monk.rhythmic-breathing", "name": "Rhythmic Breathing", "description": "A qualifying martial hit at zero Ki gains two Ki instead of one.", "lane": "Ki Assault", "position": (0, 2), "level": 40, "prerequisites": ("flowing-palm",)},
+    {"id": "disciplined-attack", "kind": "rating", "identifier": "Attack", "lane": "Ki Assault", "position": (0, 3), "level": 45, "level_band_gate": True, "prerequisites": ("rhythmic-breathing",)},
+    {"id": "headbutt", "kind": "ability", "identifier": "Headbutt", "lane": "Ki Assault", "position": (0, 4), "level": 50, "owned_if_known": True, "prerequisites": ("disciplined-attack",)},
+    {"id": "uppercut", "kind": "ability", "identifier": "Uppercut", "lane": "Ki Assault", "position": (0, 5), "level": 55, "owned_if_known": True, "prerequisites": ("headbutt",)},
+    {"id": "chi-heal", "kind": "ability", "identifier": "ChiHeal", "lane": "Ki Discipline", "position": (1, 0), "available_on_promotion": True, "owned_if_known": True},
+    {"id": "disciplined-vitality", "kind": "health", "identifier": "Health", "lane": "Ki Discipline", "position": (1, 1), "level": 35, "level_band_gate": True, "prerequisites": ("chi-heal",)},
+    {"id": "mirror-breath", "kind": "ability", "identifier": "MirrorBreath", "lane": "Ki Discipline", "position": (1, 2), "level": 40, "owned_if_known": True, "prerequisites": ("disciplined-vitality",)},
+    {"id": "deep-restoration", "kind": "talent", "identifier": "monk.deep-restoration", "name": "Deep Restoration", "description": "Focused Chi Heal restores 30% additional healing instead of 20%.", "lane": "Ki Discipline", "position": (1, 3), "level": 45, "prerequisites": ("mirror-breath",)},
+    {"id": "purging-kata", "kind": "ability", "identifier": "PurgingKata", "lane": "Ki Discipline", "position": (1, 4), "level": 50, "owned_if_known": True, "prerequisites": ("deep-restoration",)},
+    {"id": "mirror-stillness", "kind": "talent", "identifier": "monk.mirror-stillness", "name": "Mirror Stillness", "description": "Mirror Breath lasts three turns instead of two.", "lane": "Ki Discipline", "position": (1, 5), "level": 55, "prerequisites": ("purging-kata",)},
+    {"id": "purity-body", "kind": "ability", "identifier": "PurityBody", "lane": "Centering", "position": (2, 0), "available_on_promotion": True, "owned_if_known": True},
+    {"id": "centered-guard", "kind": "ability", "identifier": "CenteredGuard", "lane": "Centering", "position": (2, 1), "level": 35, "owned_if_known": True, "prerequisites": ("purity-body",)},
+    {"id": "centered-defense", "kind": "rating", "identifier": "Defense", "lane": "Centering", "position": (2, 2), "level": 40, "level_band_gate": True, "prerequisites": ("centered-guard",)},
+    {"id": "steadfast-center", "kind": "talent", "identifier": "monk.steadfast-center", "name": "Steadfast Center", "description": "Centered Guard lasts three turns instead of two.", "lane": "Centering", "position": (2, 3), "level": 45, "prerequisites": ("centered-defense",)},
+    {"id": "reactive-center", "kind": "talent", "identifier": "monk.reactive-center", "name": "Reactive Center", "description": "A successful dodge or parry gains two Ki instead of one.", "lane": "Centering", "position": (2, 4), "level": 50, "prerequisites": ("steadfast-center",)},
+    {"id": "guarded-purity", "kind": "talent", "identifier": "monk.guarded-purity", "name": "Guarded Purity", "description": "Centered Guard also grants two turns of hostile-status immunity.", "lane": "Centering", "position": (2, 5), "level": 55, "prerequisites": ("reactive-center",)},
+    {"id": "leg-sweep", "kind": "ability", "identifier": "LegSweep", "lane": "Open Hand", "position": (3, 0), "available_on_promotion": True, "owned_if_known": True},
+    {"id": "double-strike", "kind": "ability", "identifier": "DoubleStrike", "lane": "Open Hand", "position": (3, 1), "level": 35, "owned_if_known": True, "prerequisites": ("leg-sweep",)},
+    {"id": "parry", "kind": "ability", "identifier": "Parry", "lane": "Open Hand", "position": (3, 2), "level": 40, "owned_if_known": True, "prerequisites": ("double-strike",)},
+    {"id": "drunken-brawler", "kind": "ability", "identifier": "DrunkenBrawler", "lane": "Open Hand", "position": (3, 3), "level": 45, "owned_if_known": True, "prerequisites": ("parry",)},
+    {"id": "true-strike", "kind": "ability", "identifier": "TrueStrike", "lane": "Open Hand", "position": (3, 4), "level": 50, "owned_if_known": True, "prerequisites": ("drunken-brawler",)},
+)
+
+
+MASTER_MONK_TREE_NODE_SPECS = (
+    {"id": "hyakuretsukyaku", "kind": "ability", "identifier": "Hyakuretsukyaku", "lane": "Perfected Flurry", "position": (0, 0), "available_on_promotion": True, "owned_if_known": True},
+    {"id": "hundredfold-precision", "kind": "talent", "identifier": "master-monk.hundredfold-precision", "name": "Hundredfold Precision", "description": "A Ki-empowered Hyakuretsukyaku gains 15 accuracy points per hit instead of 10.", "lane": "Perfected Flurry", "position": (0, 1), "level": 65, "prerequisites": ("hyakuretsukyaku",)},
+    {"id": "triple-strike", "kind": "ability", "identifier": "TripleStrike", "lane": "Perfected Flurry", "position": (0, 2), "level": 70, "owned_if_known": True, "upgrade_without_source": True, "prerequisites": ("hundredfold-precision",)},
+    {"id": "perfect-control", "kind": "talent", "identifier": "master-monk.perfect-control", "name": "Perfect Control", "description": "Ki control riders gain 25 percentage points of reliability instead of 15.", "lane": "Perfected Flurry", "position": (0, 3), "level": 75, "prerequisites": ("triple-strike",)},
+    {"id": "spinning-back-elbow", "kind": "ability", "identifier": "SpinningBackElbow", "lane": "Perfected Flurry", "position": (0, 4), "level": 80, "owned_if_known": True, "prerequisites": ("perfect-control",)},
+    {"id": "perfected-restoration", "kind": "talent", "identifier": "master-monk.perfected-restoration", "name": "Perfected Restoration", "description": "Focused Chi Heal restores a further 15% additional healing.", "lane": "Perfected Flurry", "position": (0, 5), "level": 85, "prerequisites": ("spinning-back-elbow",)},
+    {"id": "purity-without-end", "kind": "talent", "identifier": "master-monk.purity-without-end", "name": "Purity Without End", "description": "Focused Chi Heal extends hostile-status immunity by one turn.", "lane": "Perfected Flurry", "position": (0, 6), "level": 90, "prerequisites": ("perfected-restoration",)},
+    {"id": "hadouken", "kind": "ability", "identifier": "Hadouken", "lane": "Final Art", "position": (1, 0), "available_on_promotion": True, "owned_if_known": True},
+    {"id": "decisive-pressure", "kind": "talent", "identifier": "master-monk.decisive-pressure", "name": "Decisive Pressure", "description": "Dim Mak gains 15% damage per spent Ki instead of 12%.", "lane": "Final Art", "position": (1, 1), "level": 65, "prerequisites": ("hadouken",)},
+    {"id": "suplex", "kind": "ability", "identifier": "Suplex", "lane": "Final Art", "position": (1, 2), "level": 70, "owned_if_known": True, "prerequisites": ("decisive-pressure",)},
+    {"id": "death-point-focus", "kind": "talent", "identifier": "master-monk.death-point-focus", "name": "Death-Point Focus", "description": "Dim Mak gains 10 additional accuracy points.", "lane": "Final Art", "position": (1, 3), "level": 75, "prerequisites": ("suplex",)},
+    {"id": "dim-mak", "kind": "ability", "identifier": "DimMak", "lane": "Final Art", "position": (1, 4), "level": 80, "cost": 2, "owned_if_known": True, "prerequisites": ("death-point-focus",)},
+    {"id": "flexible-form", "kind": "talent", "identifier": "master-monk.flexible-form", "name": "Flexible Form", "description": "An ordinary staff retains 90% of Dim Mak's power instead of 80%.", "lane": "Final Art", "position": (1, 5), "level": 85, "prerequisites": ("dim-mak",)},
+    {"id": "essence-mastery", "kind": "talent", "identifier": "master-monk.essence-mastery", "name": "Essence Mastery", "description": "A lethal Dim Mak restores 125% of the target's maximum HP and MP, still capped by your maxima.", "lane": "Final Art", "position": (1, 6), "level": 90, "prerequisites": ("flexible-form",)},
+    {"id": "evasion", "kind": "ability", "identifier": "Evasion", "lane": "Diamond Body", "position": (2, 0), "available_on_promotion": True, "owned_if_known": True},
+    {"id": "empty-fortress", "kind": "talent", "identifier": "master-monk.empty-fortress", "name": "Empty Fortress", "description": "Reduce incoming damage by 10% while unarmed and unarmored.", "lane": "Diamond Body", "position": (2, 1), "level": 65, "prerequisites": ("evasion",)},
+    {"id": "purity-body-2", "kind": "ability", "identifier": "PurityBody2", "name": "Purity Body II", "lane": "Diamond Body", "position": (2, 2), "level": 70, "owned_if_known": True, "upgrade_without_source": True, "prerequisites": ("empty-fortress",)},
+    {"id": "reflecting-soul", "kind": "talent", "identifier": "master-monk.reflecting-soul", "name": "Reflecting Soul", "description": "Inherited Mirror Breath lasts one additional turn.", "lane": "Diamond Body", "position": (2, 3), "level": 75, "prerequisites": ("purity-body-2",)},
+    {"id": "rooted-recovery", "kind": "talent", "identifier": "master-monk.rooted-recovery", "name": "Rooted Recovery", "description": "Successful dodge and parry reactions gain one additional Ki.", "lane": "Diamond Body", "position": (2, 4), "level": 80, "prerequisites": ("reflecting-soul",)},
+    {"id": "inner-reserve", "kind": "talent", "identifier": "master-monk.inner-reserve", "name": "Inner Reserve", "description": "A damaging Dim Mak can trigger its once-per-combat Ki refund without an awakened ring.", "lane": "Diamond Body", "position": (2, 5), "level": 85, "prerequisites": ("rooted-recovery",)},
+    {"id": "perfect-recovery", "kind": "talent", "identifier": "master-monk.perfect-recovery", "name": "Perfect Recovery", "description": "The once-per-combat Dim Mak refund restores two Ki instead of one.", "lane": "Diamond Body", "position": (2, 6), "level": 90, "prerequisites": ("inner-reserve",)},
+    {"id": "martial-mastery", "kind": "ability", "identifier": "MartialMastery", "lane": "Rope-a-Dope", "position": (3, 0), "available_on_promotion": True, "owned_if_known": True},
+    {"id": "rope-a-dope", "kind": "ability", "identifier": "RopeADope", "name": "Rope-a-Dope", "lane": "Rope-a-Dope", "position": (3, 1), "level": 65, "cost": 2, "prerequisites": ("martial-mastery",)},
+    {"id": "goading-smile", "kind": "talent", "identifier": "master-monk.goading-smile", "name": "Goading Smile", "description": "Rope-a-Dope's Berserk challenge chance rises from 50% to 75%.", "lane": "Rope-a-Dope", "position": (3, 2), "level": 70, "prerequisites": ("rope-a-dope",)},
+    {"id": "slip-the-rope", "kind": "talent", "identifier": "master-monk.slip-the-rope", "name": "Slip the Rope", "description": "Rope-a-Dope begins with 15 dodge points instead of 10.", "lane": "Rope-a-Dope", "position": (3, 3), "level": 75, "prerequisites": ("goading-smile",)},
+    {"id": "rolling-shoulders", "kind": "talent", "identifier": "master-monk.rolling-shoulders", "name": "Rolling Shoulders", "description": "Each consecutive Rope-a-Dope dodge adds seven dodge points instead of five.", "lane": "Rope-a-Dope", "position": (3, 4), "level": 80, "prerequisites": ("slip-the-rope",)},
+    {"id": "championship-round", "kind": "talent", "identifier": "master-monk.championship-round", "name": "Championship Round", "description": "Increase each hit of the Rope-a-Dope combination by 10% weapon damage.", "lane": "Rope-a-Dope", "position": (3, 5), "level": 85, "prerequisites": ("rolling-shoulders",)},
+    {"id": "second-wind", "kind": "talent", "identifier": "master-monk.second-wind", "name": "Second Wind", "description": "Completing the Rope-a-Dope combination restores 10% maximum HP.", "lane": "Rope-a-Dope", "position": (3, 6), "level": 90, "prerequisites": ("championship-round",)},
+)
+
+
+PRIEST_TREE_NODE_SPECS = (
+    {"id": "supplication", "kind": "ability", "identifier": "Supplication", "lane": "Prayer", "position": (0, 0), "available_on_promotion": True, "owned_if_known": True},
+    {"id": "deliberate-prayer", "kind": "talent", "identifier": "priest.deliberate-prayer", "name": "Deliberate Prayer", "description": "A qualifying direct support action gains two Prayer instead of one.", "lane": "Prayer", "position": (0, 1), "level": 35, "prerequisites": ("supplication",)},
+    {"id": "holy-2", "kind": "ability", "identifier": "Holy2", "name": "Holy II", "lane": "Prayer", "position": (0, 2), "level": 40, "owned_if_known": True, "upgrade_without_source": True, "prerequisites": ("deliberate-prayer",)},
+    {"id": "dazed-or-confused", "kind": "ability", "identifier": "DazedOrConfused", "name": "Dazed or Confused", "lane": "Prayer", "position": (0, 3), "level": 45, "prerequisites": ("holy-2",)},
+    {"id": "prayer-potency", "kind": "rating", "identifier": "Magic", "lane": "Prayer", "position": (0, 4), "level": 50, "level_band_gate": True, "prerequisites": ("dazed-or-confused",)},
+    {"id": "holy-disorientation", "kind": "talent", "identifier": "priest.holy-disorientation", "name": "Holy Disorientation", "description": "Dazed or Confused's Stun chance rises from 25% to 35%.", "lane": "Prayer", "position": (0, 5), "level": 55, "prerequisites": ("prayer-potency",)},
+    {"id": "dispel", "kind": "ability", "identifier": "Dispel", "lane": "Exorcism", "position": (1, 0), "available_on_promotion": True, "owned_if_known": True},
+    {"id": "expel-curse", "kind": "ability", "identifier": "ExpelCurse", "name": "Expel Curse", "lane": "Exorcism", "position": (1, 1), "level": 35, "owned_if_known": True, "prerequisites": ("dispel",)},
+    {"id": "exorcists-ward", "kind": "rating", "identifier": "Magic Defense", "lane": "Exorcism", "position": (1, 2), "level": 40, "level_band_gate": True, "prerequisites": ("expel-curse",)},
+    {"id": "berserk", "kind": "ability", "identifier": "Berserk", "lane": "Exorcism", "position": (1, 3), "level": 45, "owned_if_known": True, "prerequisites": ("exorcists-ward",)},
+    {"id": "fervent-supplication", "kind": "talent", "identifier": "priest.fervent-supplication", "name": "Fervent Supplication", "description": "Supplication's healing increases by 15%.", "lane": "Exorcism", "position": (1, 5), "level": 55, "prerequisites": ("berserk",)},
+    {"id": "defensive-regen", "kind": "ability", "identifier": "DefensiveRegen", "lane": "Grace", "position": (2, 0), "available_on_promotion": True, "owned_if_known": True},
+    {"id": "regen-2", "kind": "ability", "identifier": "Regen2", "name": "Regen II", "lane": "Grace", "position": (2, 1), "level": 35, "owned_if_known": True, "upgrade_without_source": True, "prerequisites": ("defensive-regen",)},
+    {"id": "magical-invigoration", "kind": "ability", "identifier": "MagicalInvigoration", "name": "Magical Invigoration", "lane": "Grace", "position": (2, 2), "level": 40, "prerequisites": ("regen-2",)},
+    {"id": "long-regeneration", "kind": "talent", "identifier": "priest.long-regeneration", "name": "Long Regeneration", "description": "Magical Invigoration stacks last one additional turn.", "lane": "Grace", "position": (2, 3), "level": 45, "prerequisites": ("magical-invigoration",)},
+    {"id": "arcane-renewal", "kind": "talent", "identifier": "priest.arcane-renewal", "name": "Arcane Renewal", "description": "Each Magical Invigoration stack grants six Magic instead of four.", "lane": "Grace", "position": (2, 5), "level": 55, "prerequisites": ("long-regeneration",)},
+    {"id": "mana-shield", "kind": "ability", "identifier": "ManaShield", "lane": "Protection", "position": (3, 0), "available_on_promotion": True, "owned_if_known": True},
+    {"id": "shell", "kind": "ability", "identifier": "Shell", "lane": "Protection", "position": (3, 1), "level": 35, "owned_if_known": True, "prerequisites": ("mana-shield",)},
+    {"id": "cleanse", "kind": "ability", "identifier": "Cleanse", "lane": "Protection", "position": (3, 2), "level": 40, "owned_if_known": True, "prerequisites": ("shell",)},
+    {"id": "bless", "kind": "ability", "identifier": "Bless", "lane": "Protection", "position": (3, 3), "level": 45, "owned_if_known": True, "prerequisites": ("cleanse",)},
+    {"id": "sheltering-prayer", "kind": "talent", "identifier": "priest.sheltering-prayer", "name": "Sheltering Prayer", "description": "Supplication's ward lasts one additional turn.", "lane": "Protection", "position": (3, 4), "level": 50, "prerequisites": ("bless",)},
+    {"id": "merciful-prayer", "kind": "talent", "identifier": "priest.merciful-prayer", "name": "Merciful Prayer", "description": "Supplication gains 15 percentage points of cleanse chance.", "lane": "Protection", "position": (3, 5), "level": 55, "prerequisites": ("sheltering-prayer",)},
+)
+
+
+ARCHBISHOP_TREE_NODE_SPECS = (
+    {"id": "great-benediction", "kind": "ability", "identifier": "GreatBenediction", "lane": "Benediction", "position": (0, 0), "cost": 2, "available_on_promotion": True, "owned_if_known": True},
+    {"id": "ready-benediction", "kind": "talent", "identifier": "archbishop.ready-benediction", "name": "Ready Benediction", "description": "Great Benediction can be cast with two Prayer instead of three.", "lane": "Benediction", "position": (0, 1), "level": 65, "prerequisites": ("great-benediction",)},
+    {"id": "greater-benediction", "kind": "talent", "identifier": "archbishop.greater-benediction", "name": "Greater Benediction", "description": "Great Benediction's Prayer scaling increases by 15%.", "lane": "Benediction", "position": (0, 2), "level": 70, "prerequisites": ("ready-benediction",)},
+    {"id": "lasting-benediction", "kind": "talent", "identifier": "archbishop.lasting-benediction", "name": "Lasting Benediction", "description": "Great Benediction lasts one additional turn.", "lane": "Benediction", "position": (0, 3), "level": 75, "prerequisites": ("greater-benediction",)},
+    {"id": "benediction-aegis", "kind": "talent", "identifier": "archbishop.benediction-aegis", "name": "Benediction Aegis", "description": "Great Benediction grants five Magic Defense per Prayer instead of four.", "lane": "Benediction", "position": (0, 4), "level": 80, "prerequisites": ("lasting-benediction",)},
+    {"id": "healing-liturgy", "kind": "talent", "identifier": "archbishop.healing-liturgy", "name": "Healing Liturgy", "description": "Great Benediction gains one percentage point more healing per Prayer.", "lane": "Benediction", "position": (0, 5), "level": 85, "prerequisites": ("benediction-aegis",)},
+    {"id": "mana-liturgy", "kind": "talent", "identifier": "archbishop.mana-liturgy", "name": "Mana Liturgy", "description": "Great Benediction restores one MP per two Prayer instead of per three.", "lane": "Benediction", "position": (0, 6), "level": 90, "prerequisites": ("healing-liturgy",)},
+    {"id": "doublecast", "kind": "ability", "identifier": "Doublecast", "lane": "Great Gospel", "position": (1, 0), "available_on_promotion": True, "owned_if_known": True},
+    {"id": "holy-3", "kind": "ability", "identifier": "Holy3", "name": "Holy III", "lane": "Great Gospel", "position": (1, 1), "level": 65, "owned_if_known": True, "upgrade_without_source": True, "prerequisites": ("doublecast",)},
+    {"id": "silence", "kind": "ability", "identifier": "Silence", "lane": "Great Gospel", "position": (1, 2), "level": 70, "owned_if_known": True, "prerequisites": ("holy-3",)},
+    {"id": "mana-shield-2", "kind": "ability", "identifier": "ManaShield2", "name": "Mana Shield II", "lane": "Great Gospel", "position": (1, 3), "level": 75, "owned_if_known": True, "upgrade_without_source": True, "prerequisites": ("silence",)},
+    {"id": "first-words", "kind": "talent", "identifier": "archbishop.first-words", "name": "First Words", "description": "The first qualifying Prayer source from zero grants one additional Prayer.", "lane": "Great Gospel", "position": (1, 4), "level": 80, "prerequisites": ("mana-shield-2",)},
+    {"id": "opening-gospel", "kind": "talent", "identifier": "archbishop.opening-gospel", "name": "Opening Gospel", "description": "Great Gospel raises Prayer to at least 75% of capacity instead of half.", "lane": "Great Gospel", "position": (1, 6), "level": 90, "prerequisites": ("first-words",)},
+    {"id": "heal-3", "kind": "ability", "identifier": "Heal3", "name": "Heal III", "lane": "Intervention", "position": (2, 0), "available_on_promotion": True, "owned_if_known": True, "upgrade_without_source": True},
+    {"id": "resurrection", "kind": "ability", "identifier": "Resurrection", "lane": "Intervention", "position": (2, 1), "level": 65, "cost": 2, "owned_if_known": True, "prerequisites": ("heal-3",)},
+    {"id": "expel-curse", "kind": "ability", "identifier": "ExpelCurse", "name": "Expel Curse", "lane": "Intervention", "position": (2, 2), "level": 70, "owned_if_known": True, "prerequisites": ("resurrection",)},
+    {"id": "assured-intervention", "kind": "talent", "identifier": "archbishop.assured-intervention", "name": "Assured Intervention", "description": "Awakened Divine Intervention's rescue chance rises from 35% to 50%.", "lane": "Intervention", "position": (2, 3), "level": 75, "prerequisites": ("expel-curse",)},
+    {"id": "miraculous-recovery", "kind": "talent", "identifier": "archbishop.miraculous-recovery", "name": "Miraculous Recovery", "description": "Successful Divine Intervention restores 35% maximum HP instead of 25%.", "lane": "Intervention", "position": (2, 4), "level": 80, "prerequisites": ("assured-intervention",)},
+    {"id": "swift-exorcism", "kind": "talent", "identifier": "archbishop.swift-exorcism", "name": "Swift Exorcism", "description": "Reduce Expel Curse's MP cost by six.", "lane": "Intervention", "position": (2, 6), "level": 90, "prerequisites": ("miraculous-recovery",)},
+    {"id": "regen-3", "kind": "ability", "identifier": "Regen3", "name": "Regen III", "lane": "Sustaining Grace", "position": (3, 0), "available_on_promotion": True, "owned_if_known": True, "upgrade_without_source": True},
+    {"id": "enduring-invigoration", "kind": "talent", "identifier": "archbishop.enduring-invigoration", "name": "Enduring Invigoration", "description": "Magical Invigoration stacks last one additional turn.", "lane": "Sustaining Grace", "position": (3, 1), "level": 65, "prerequisites": ("regen-3",)},
+    {"id": "radiant-renewal", "kind": "talent", "identifier": "archbishop.radiant-renewal", "name": "Radiant Renewal", "description": "Magical Invigoration stacks grant two additional Magic.", "lane": "Sustaining Grace", "position": (3, 2), "level": 70, "prerequisites": ("enduring-invigoration",)},
+    {"id": "unshaken-congregation", "kind": "talent", "identifier": "archbishop.unshaken-congregation", "name": "Unshaken Congregation", "description": "Great Benediction gains two percentage points more status resistance per Prayer.", "lane": "Sustaining Grace", "position": (3, 3), "level": 75, "prerequisites": ("radiant-renewal",)},
+    {"id": "protective-liturgy", "kind": "talent", "identifier": "archbishop.protective-liturgy", "name": "Protective Liturgy", "description": "Great Benediction prevents an additional half percentage point of damage per Prayer.", "lane": "Sustaining Grace", "position": (3, 5), "level": 85, "prerequisites": ("unshaken-congregation",)},
+    {"id": "abundant-mercy", "kind": "talent", "identifier": "archbishop.abundant-mercy", "name": "Abundant Mercy", "description": "Supplication's healing scaling increases by 20%.", "lane": "Perfect Supplication", "position": (4, 0), "available_on_promotion": True},
+    {"id": "sheltering-word", "kind": "talent", "identifier": "archbishop.sheltering-word", "name": "Sheltering Word", "description": "Supplication grants eight ward points per Prayer instead of six.", "lane": "Perfect Supplication", "position": (4, 1), "level": 65, "prerequisites": ("abundant-mercy",)},
+    {"id": "purifying-word", "kind": "talent", "identifier": "archbishop.purifying-word", "name": "Purifying Word", "description": "Supplication gains 20 percentage points of cleanse chance.", "lane": "Perfect Supplication", "position": (4, 2), "level": 70, "prerequisites": ("sheltering-word",)},
+    {"id": "endless-supplication", "kind": "talent", "identifier": "archbishop.endless-supplication", "name": "Endless Supplication", "description": "Supplication restores one Prayer after resolving.", "lane": "Perfect Supplication", "position": (4, 3), "level": 75, "prerequisites": ("purifying-word",)},
+    {"id": "overwhelming-light", "kind": "talent", "identifier": "archbishop.overwhelming-light", "name": "Overwhelming Light", "description": "Dazed or Confused's secondary confusion chance rises to 40%.", "lane": "Perfect Supplication", "position": (4, 5), "level": 85, "prerequisites": ("endless-supplication",)},
+)
+
+
+INQUISITOR_TREE_NODE_SPECS = (
+    {"id": "reveal", "kind": "ability", "identifier": "Reveal", "lane": "Case Journal", "position": (0, 0), "available_on_promotion": True, "owned_if_known": True},
+    {"id": "inspect", "kind": "ability", "identifier": "Inspect", "lane": "Case Journal", "position": (0, 1), "level": 35, "owned_if_known": True, "prerequisites": ("reveal",)},
+    {"id": "take-notes", "kind": "ability", "identifier": "TakeNotes", "name": "Take Notes", "lane": "Case Journal", "position": (0, 2), "level": 40, "cost": 2, "prerequisites": ("inspect",)},
+    {"id": "exploit-weakness", "kind": "ability", "identifier": "ExploitWeakness", "lane": "Case Journal", "position": (0, 3), "level": 45, "owned_if_known": True, "prerequisites": ("take-notes",)},
+    {"id": "analytical-precision", "kind": "talent", "identifier": "inquisitor.analytical-precision", "name": "Analytical Precision", "description": "Increase Attack by 10% after learning to exploit recorded weaknesses.", "lane": "Case Journal", "position": (0, 4), "level": 50, "prerequisites": ("exploit-weakness",), "bonuses": {"rating_percentages": {"Attack": 0.10}}},
+    {"id": "keen-eye", "kind": "ability", "identifier": "KeenEye", "lane": "Case Journal", "position": (0, 5), "level": 55, "owned_if_known": True, "prerequisites": ("analytical-precision",)},
+    {"id": "piercing-strike", "kind": "ability", "identifier": "PiercingStrike", "lane": "Judgment", "position": (1, 0), "available_on_promotion": True, "owned_if_known": True},
+    {"id": "shield-block", "kind": "ability", "identifier": "ShieldBlock", "lane": "Judgment", "position": (1, 1), "level": 35, "owned_if_known": True, "prerequisites": ("piercing-strike",)},
+    {"id": "dispel", "kind": "ability", "identifier": "Dispel", "lane": "Judgment", "position": (1, 2), "level": 40, "owned_if_known": True, "prerequisites": ("shield-block",)},
+    {"id": "silence", "kind": "ability", "identifier": "Silence", "lane": "Judgment", "position": (1, 3), "level": 45, "owned_if_known": True, "prerequisites": ("dispel",)},
+    {"id": "reflect", "kind": "ability", "identifier": "Reflect", "lane": "Judgment", "position": (1, 4), "level": 50, "owned_if_known": True, "prerequisites": ("silence",)},
+    {"id": "true-strike", "kind": "ability", "identifier": "TrueStrike", "lane": "Judgment", "position": (1, 5), "level": 55, "owned_if_known": True, "prerequisites": ("reflect",)},
+    {"id": "enfeeble", "kind": "ability", "identifier": "Enfeeble", "lane": "Judgment", "position": (2, 3), "level": 45, "owned_if_known": True, "prerequisites": ("dispel",)},
+    {"id": "debilitating-doctrine", "kind": "talent", "identifier": "inquisitor.debilitating-doctrine", "name": "Debilitating Doctrine", "description": "Increase Magic by 10% after mastering Enfeeble.", "lane": "Judgment", "position": (2, 4), "level": 50, "prerequisites": ("enfeeble",), "bonuses": {"rating_percentages": {"Magic": 0.10}}},
+    {"id": "resist-fire", "kind": "ability", "identifier": "ResistFire", "lane": "Elemental Wards", "position": (3, 0), "available_on_promotion": True, "owned_if_known": True},
+    {"id": "resist-ice", "kind": "ability", "identifier": "ResistIce", "lane": "Elemental Wards", "position": (4, 0), "available_on_promotion": True, "owned_if_known": True},
+    {"id": "warding-studies", "kind": "talent", "identifier": "inquisitor.warding-studies", "name": "Warding Studies", "description": "All six elemental Resist spells last two additional turns.", "lane": "Elemental Wards", "position": (3.5, 1), "level": 35, "prerequisites": ("resist-fire", "resist-ice")},
+    {"id": "resist-electric", "kind": "ability", "identifier": "ResistElectric", "lane": "Elemental Wards", "position": (3, 2), "level": 40, "owned_if_known": True, "prerequisites": ("warding-studies",)},
+    {"id": "resist-water", "kind": "ability", "identifier": "ResistWater", "lane": "Elemental Wards", "position": (4, 2), "level": 40, "owned_if_known": True, "prerequisites": ("warding-studies",)},
+    {"id": "elemental-poise", "kind": "talent", "identifier": "inquisitor.elemental-poise", "name": "Elemental Poise", "description": "Increase Magic Defense by 10% through elemental conditioning.", "lane": "Elemental Wards", "position": (3.5, 3), "level": 45, "prerequisites": ("resist-electric", "resist-water"), "bonuses": {"rating_percentages": {"Magic Defense": 0.10}}},
+    {"id": "resist-earth", "kind": "ability", "identifier": "ResistEarth", "lane": "Elemental Wards", "position": (3, 4), "level": 50, "owned_if_known": True, "prerequisites": ("elemental-poise",)},
+    {"id": "resist-wind", "kind": "ability", "identifier": "ResistWind", "lane": "Elemental Wards", "position": (4, 4), "level": 50, "owned_if_known": True, "prerequisites": ("elemental-poise",)},
+    {"id": "adaptive-constitution", "kind": "talent", "identifier": "inquisitor.adaptive-constitution", "name": "Adaptive Constitution", "description": "Increase maximum HP by 10% after completing elemental ward training.", "lane": "Elemental Wards", "position": (3.5, 5), "level": 55, "prerequisites": ("resist-earth", "resist-wind"), "bonuses": {"health_percentage": 0.10}},
+)
+
+
+SEEKER_TREE_NODE_SPECS = (
+    {"id": "cartography", "kind": "ability", "identifier": "Cartography", "lane": "Wayfinding", "position": (0, 0), "available_on_promotion": True, "owned_if_known": True},
+    {"id": "early-bearings", "kind": "talent", "identifier": "seeker.early-bearings", "name": "Early Bearings", "description": "Mapped-floor Wayfinding discounts begin at 35% exploration instead of 50%.", "lane": "Wayfinding", "position": (0, 1), "level": 65, "prerequisites": ("cartography",)},
+    {"id": "wayfinding", "kind": "ability", "identifier": "Wayfinding", "lane": "Wayfinding", "position": (0, 2), "level": 70, "owned_if_known": True, "prerequisites": ("early-bearings",)},
+    {"id": "surveyors-step", "kind": "ability", "identifier": "SurveyorsStep", "name": "Surveyor's Step", "lane": "Wayfinding", "position": (0, 3), "level": 75, "prerequisites": ("wayfinding",)},
+    {"id": "teleport", "kind": "ability", "identifier": "Teleport", "lane": "Wayfinding", "position": (0, 4), "level": 80, "owned_if_known": True, "prerequisites": ("surveyors-step",)},
+    {"id": "efficient-passage", "kind": "talent", "identifier": "seeker.efficient-passage", "name": "Efficient Passage", "description": "Increase every earned Wayfinding MP discount by five percentage points.", "lane": "Wayfinding", "position": (0, 5), "level": 85, "prerequisites": ("teleport",)},
+    {"id": "enter-wall", "kind": "ability", "identifier": "EnterWall", "lane": "Wayfinding", "position": (0, 6), "level": 90, "owned_if_known": True, "prerequisites": ("efficient-passage",)},
+    {"id": "volitation", "kind": "ability", "identifier": "Volitation", "lane": "Safe Passage", "position": (1, 0), "available_on_promotion": True, "owned_if_known": True},
+    {"id": "light-footed", "kind": "talent", "identifier": "seeker.light-footed", "name": "Light Footed", "description": "Surveyor's Step grants five additional Speed.", "lane": "Safe Passage", "position": (1, 1), "level": 65, "prerequisites": ("volitation",)},
+    {"id": "safe-passage", "kind": "ability", "identifier": "SafePassage", "name": "Safe Passage", "lane": "Safe Passage", "position": (1, 2), "level": 70, "prerequisites": ("light-footed",)},
+    {"id": "sanctuary", "kind": "ability", "identifier": "Sanctuary", "lane": "Safe Passage", "position": (1, 3), "level": 75, "owned_if_known": True, "prerequisites": ("safe-passage",)},
+    {"id": "sanctuary-route", "kind": "talent", "identifier": "seeker.sanctuary-route", "name": "Sanctuary Route", "description": "Safe Passage lasts one additional turn.", "lane": "Safe Passage", "position": (1, 4), "level": 80, "prerequisites": ("sanctuary",)},
+    {"id": "resist-all", "kind": "ability", "identifier": "ResistAll", "lane": "Safe Passage", "position": (1, 5), "level": 85, "owned_if_known": True, "prerequisites": ("sanctuary-route",)},
+    {"id": "master-cartographer", "kind": "talent", "identifier": "seeker.master-cartographer", "name": "Master Cartographer", "description": "Safe Passage reaches full strength at 35% mapped instead of 50%.", "lane": "Safe Passage", "position": (1, 6), "level": 90, "cost": 2, "prerequisites": ("resist-all",)},
+    {"id": "inspect", "kind": "ability", "identifier": "Inspect", "lane": "Revelation", "position": (2, 0), "available_on_promotion": True, "owned_if_known": True},
+    {"id": "practiced-inspection", "kind": "talent", "identifier": "seeker.practiced-inspection", "name": "Practiced Inspection", "description": "Inspect records four Case Journal progress instead of three.", "lane": "Revelation", "position": (2, 1), "level": 65, "prerequisites": ("inspect",)},
+    {"id": "deductive-strike", "kind": "ability", "identifier": "DeductiveStrike", "name": "Deductive Strike", "lane": "Revelation", "position": (2, 2), "level": 70, "prerequisites": ("practiced-inspection",)},
+    {"id": "patient-deduction", "kind": "talent", "identifier": "seeker.patient-deduction", "name": "Patient Deduction", "description": "Deductive Strike reaches full power against Known Tells at 25 Case progress.", "lane": "Revelation", "position": (2, 3), "level": 75, "prerequisites": ("deductive-strike",)},
+    {"id": "foregone-conclusion", "kind": "ability", "identifier": "ForegoneConclusion", "name": "Foregone Conclusion", "lane": "Revelation", "position": (2, 4), "level": 80, "cost": 2, "prerequisites": ("patient-deduction",)},
+    {"id": "proven-case", "kind": "talent", "identifier": "seeker.proven-case", "name": "Proven Case", "description": "Foregone Conclusion reduces each rating by eight per Revelation instead of six.", "lane": "Revelation", "position": (2, 5), "level": 85, "prerequisites": ("foregone-conclusion",)},
+    {"id": "inevitable-conclusion", "kind": "talent", "identifier": "seeker.inevitable-conclusion", "name": "Inevitable Conclusion", "description": "Foregone Conclusion lasts four turns instead of three.", "lane": "Revelation", "position": (2, 6), "level": 90, "prerequisites": ("proven-case",)},
+    {"id": "third-eye", "kind": "ability", "identifier": "ThirdEye", "lane": "Judgment", "position": (3, 0), "available_on_promotion": True, "owned_if_known": True},
+    {"id": "weaken-mind", "kind": "ability", "identifier": "WeakenMind", "lane": "Judgment", "position": (3, 1), "level": 65, "owned_if_known": True, "prerequisites": ("third-eye",)},
+    {"id": "triple-strike", "kind": "ability", "identifier": "TripleStrike", "lane": "Judgment", "position": (3, 2), "level": 70, "owned_if_known": True, "upgrade_without_source": True, "prerequisites": ("weaken-mind",)},
+    {"id": "precise-revelation", "kind": "talent", "identifier": "seeker.precise-revelation", "name": "Precise Revelation", "description": "Committed Revelation grants five accuracy points per stack instead of four.", "lane": "Judgment", "position": (3, 3), "level": 75, "prerequisites": ("triple-strike",)},
+    {"id": "true-piercing-strike", "kind": "ability", "identifier": "TruePiercingStrike", "lane": "Judgment", "position": (3, 4), "level": 80, "owned_if_known": True, "upgrade_without_source": True, "prerequisites": ("precise-revelation",)},
+    {"id": "conserved-insight", "kind": "talent", "identifier": "seeker.conserved-insight", "name": "Conserved Insight", "description": "A missed Revelation payoff restores one committed stack.", "lane": "Judgment", "position": (3, 5), "level": 85, "prerequisites": ("true-piercing-strike",)},
+    {"id": "exposed-truth", "kind": "talent", "identifier": "seeker.exposed-truth", "name": "Exposed Truth", "description": "A successful Revelation payoff reduces Defense by two per stack for three turns.", "lane": "Judgment", "position": (3, 6), "level": 90, "prerequisites": ("conserved-insight",)},
+)
+
+
+SHAMAN_TREE_NODE_SPECS = (
+    {"id": "hydration", "kind": "ability", "identifier": "Hydration", "lane": "Totems", "position": (0, 0), "available_on_promotion": True, "owned_if_known": True},
+    {"id": "resonant-ward", "kind": "ability", "identifier": "ResonantWard", "lane": "Totems", "position": (0, 1), "level": 35, "prerequisites": ("hydration",)},
+    {"id": "spirit-mend", "kind": "ability", "identifier": "SpiritMend", "lane": "Totems", "position": (0, 2), "level": 40, "prerequisites": ("resonant-ward",)},
+    {"id": "totem-surge", "kind": "ability", "identifier": "TotemSurge", "lane": "Totems", "position": (0, 5), "level": 55, "owned_if_known": True, "prerequisites": ("spirit-mend",)},
+    {"id": "elemental-strike", "kind": "ability", "identifier": "ElementalStrike", "lane": "Elements", "position": (1, 0), "available_on_promotion": True, "owned_if_known": True},
+    {"id": "resist-fire", "kind": "ability", "identifier": "ResistFire", "lane": "Elements", "position": (1, 1), "level": 35, "prerequisites": ("elemental-strike",)},
+    {"id": "resist-water", "kind": "ability", "identifier": "ResistWater", "lane": "Elements", "position": (1, 2), "level": 40, "prerequisites": ("resist-fire",)},
+    {"id": "resist-earth", "kind": "ability", "identifier": "ResistEarth", "lane": "Elements", "position": (1, 3), "level": 45, "prerequisites": ("resist-water",)},
+    {"id": "resist-wind", "kind": "ability", "identifier": "ResistWind", "lane": "Elements", "position": (1, 4), "level": 50, "prerequisites": ("resist-earth",)},
+    {"id": "astral-shift", "kind": "ability", "identifier": "AstralShift", "lane": "Elements", "position": (1, 5), "level": 55, "owned_if_known": True, "prerequisites": ("resist-wind",)},
+    {"id": "spirit-animal", "kind": "ability", "identifier": "SpiritAnimal", "lane": "Spirit Warrior", "position": (2, 0), "cost": 2, "available_on_promotion": True},
+    {"id": "piercing-strike", "kind": "ability", "identifier": "PiercingStrike", "lane": "Spirit Warrior", "position": (2, 1), "level": 35, "owned_if_known": True, "prerequisites": ("spirit-animal",)},
+    {"id": "maelstrom-weapon", "kind": "ability", "identifier": "MaelstromWeapon", "lane": "Spirit Warrior", "position": (2, 2), "level": 40, "owned_if_known": True, "prerequisites": ("piercing-strike",)},
+    {"id": "true-strike", "kind": "ability", "identifier": "TrueStrike", "lane": "Spirit Warrior", "position": (2, 3), "level": 45, "owned_if_known": True, "prerequisites": ("maelstrom-weapon",)},
+    {"id": "double-strike", "kind": "ability", "identifier": "DoubleStrike", "lane": "Spirit Warrior", "position": (2, 5), "level": 55, "owned_if_known": True, "prerequisites": ("true-strike",)},
+    {"id": "hex", "kind": "ability", "identifier": "Hex", "lane": "Bad Omens", "position": (3, 0), "available_on_promotion": True, "owned_if_known": True},
+    {"id": "hexcraft", "kind": "talent", "identifier": "shaman.hexcraft", "name": "Hexcraft", "description": "Increase Magic by 10% while cultivating hostile omens.", "lane": "Bad Omens", "position": (3, 2), "level": 40, "prerequisites": ("hex",), "bonuses": {"rating_percentages": {"Magic": 0.10}}},
+    {"id": "omen-ward", "kind": "talent", "identifier": "shaman.omen-ward", "name": "Omen Ward", "description": "Increase Magic Defense by 10% before mastering Bad Omens.", "lane": "Bad Omens", "position": (3, 4), "level": 50, "prerequisites": ("hexcraft",), "bonuses": {"rating_percentages": {"Magic Defense": 0.10}}},
+    {"id": "bad-omens", "kind": "talent", "identifier": "shaman.bad-omens", "name": "Bad Omens", "description": "Enemy misses and your critical hits add dread; three stacks Stun for two turns.", "lane": "Bad Omens", "position": (3, 5), "level": 55, "cost": 2, "prerequisites": ("omen-ward",)},
+)
+
+
+SOULCATCHER_TREE_NODE_SPECS = (
+    {"id": "soul-drain", "kind": "ability", "identifier": "SoulDrain", "lane": "Soul Dominion", "position": (0, 0), "available_on_promotion": True, "owned_if_known": True},
+    {"id": "gentle-reaping", "kind": "talent", "identifier": "soulcatcher.gentle-reaping", "name": "Gentle Reaping", "description": "Soul Drain restores health equal to 25% of its nonlethal damage.", "lane": "Soul Dominion", "position": (0, 1), "level": 65, "prerequisites": ("soul-drain",)},
+    {"id": "soul-rend", "kind": "ability", "identifier": "SoulRend", "lane": "Soul Dominion", "position": (0, 2), "level": 70, "prerequisites": ("gentle-reaping",)},
+    {"id": "soul-amplifier", "kind": "talent", "identifier": "soulcatcher.soul-amplifier", "name": "Soul Amplifier", "description": "Soul Totem pulses gain 10 percentage points of potency.", "lane": "Soul Dominion", "position": (0, 3), "level": 75, "prerequisites": ("soul-rend",)},
+    {"id": "desoul", "kind": "ability", "identifier": "Desoul", "lane": "Soul Dominion", "position": (0, 4), "level": 80, "owned_if_known": True, "prerequisites": ("soul-amplifier",)},
+    {"id": "death-ward", "kind": "talent", "identifier": "soulcatcher.death-ward", "name": "Death Ward", "description": "Gain 15 Magic Defense while the Soul Totem is active.", "lane": "Soul Dominion", "position": (0, 5), "level": 85, "prerequisites": ("desoul",)},
+    {"id": "soulstorm", "kind": "ability", "identifier": "Soulstorm", "lane": "Soul Dominion", "position": (0, 6), "level": 90, "cost": 2, "prerequisites": ("death-ward",)},
+    {"id": "absorb-essence", "kind": "ability", "identifier": "AbsorbEssence", "lane": "Essence", "position": (1, 0), "available_on_promotion": True, "owned_if_known": True},
+    {"id": "discerning-vessel", "kind": "talent", "identifier": "soulcatcher.discerning-vessel", "name": "Discerning Vessel", "description": "Increase Absorb Essence's successful harvest chance by 5 percentage points.", "lane": "Essence", "position": (1, 1), "level": 65, "prerequisites": ("absorb-essence",)},
+    {"id": "vulcanize", "kind": "ability", "identifier": "Vulcanize", "lane": "Essence", "position": (1, 2), "level": 70, "owned_if_known": True, "prerequisites": ("discerning-vessel",)},
+    {"id": "varied-harvest", "kind": "talent", "identifier": "soulcatcher.varied-harvest", "name": "Varied Harvest", "description": "Three distinct harvested essence types grant 10 Magic.", "lane": "Essence", "position": (1, 3), "level": 75, "prerequisites": ("vulcanize",)},
+    {"id": "essence-shell", "kind": "talent", "identifier": "soulcatcher.essence-shell", "name": "Essence Shell", "description": "Five distinct harvested essence types grant 10 Armor.", "lane": "Essence", "position": (1, 4), "level": 80, "prerequisites": ("varied-harvest",)},
+    {"id": "perfect-vessel", "kind": "talent", "identifier": "soulcatcher.perfect-vessel", "name": "Perfect Vessel", "description": "Seven distinct harvested essence types grant 10 weapon power and Magic Defense.", "lane": "Essence", "position": (1, 5), "level": 85, "prerequisites": ("essence-shell",)},
+    {"id": "eternal-harvest", "kind": "talent", "identifier": "soulcatcher.eternal-harvest", "name": "Eternal Harvest", "description": "Successful essence absorption also restores 5% maximum MP.", "lane": "Essence", "position": (1, 6), "level": 90, "prerequisites": ("perfect-vessel",)},
+    {"id": "totem-surge", "kind": "ability", "identifier": "TotemSurge", "lane": "Ancestral Totem", "position": (2, 0), "available_on_promotion": True, "owned_if_known": True},
+    {"id": "deep-resonance", "kind": "talent", "identifier": "soulcatcher.deep-resonance", "name": "Deep Resonance", "description": "Increase maximum Totem Resonance by one.", "lane": "Ancestral Totem", "position": (2, 1), "level": 65, "prerequisites": ("totem-surge",), "kit_effect": ("meter_cap", "totem_resonance", 1)},
+    {"id": "ancestral-aegis", "kind": "ability", "identifier": "AncestralAegis", "lane": "Ancestral Totem", "position": (2, 2), "level": 70, "prerequisites": ("deep-resonance",)},
+    {"id": "resonant-return", "kind": "talent", "identifier": "soulcatcher.resonant-return", "name": "Resonant Return", "description": "Totem Surge has a 25% chance to preserve one Resonance.", "lane": "Ancestral Totem", "position": (2, 3), "level": 75, "prerequisites": ("ancestral-aegis",)},
+    {"id": "deep-water", "kind": "talent", "identifier": "shaman.deep-water", "name": "Deep Water", "description": "Water Totem absorbs 35% rather than 25% spell damage.", "lane": "Ancestral Totem", "position": (2, 4), "level": 80, "prerequisites": ("resonant-return",)},
+    {"id": "ancestral-current", "kind": "talent", "identifier": "soulcatcher.ancestral-current", "name": "Ancestral Current", "description": "Matching casts gain a 25% chance to add a second Resonance.", "lane": "Ancestral Totem", "position": (2, 5), "level": 85, "prerequisites": ("deep-water",)},
+    {"id": "perfect-surge", "kind": "talent", "identifier": "soulcatcher.perfect-surge", "name": "Perfect Surge", "description": "Totem Surge resolves at 60% rather than 50% pulse potency.", "lane": "Ancestral Totem", "position": (2, 6), "level": 90, "cost": 2, "prerequisites": ("ancestral-current",)},
+    {"id": "parry", "kind": "ability", "identifier": "Parry", "lane": "Spirit Warrior", "position": (3, 0), "available_on_promotion": True, "owned_if_known": True},
+    {"id": "spirit-claw", "kind": "ability", "identifier": "SpiritClaw", "lane": "Spirit Warrior", "position": (3, 1), "level": 65, "upgrade_without_source": True, "prerequisites": ("parry",)},
+    {"id": "triple-strike", "kind": "ability", "identifier": "TripleStrike", "lane": "Spirit Warrior", "position": (3, 2), "level": 70, "owned_if_known": True, "upgrade_without_source": True, "prerequisites": ("spirit-claw",)},
+    {"id": "haunting-blows", "kind": "talent", "identifier": "soulcatcher.haunting-blows", "name": "Haunting Blows", "description": "Weapon critical hits add one Bad Omens dread when that talent is known.", "lane": "Spirit Warrior", "position": (3, 3), "level": 75, "prerequisites": ("triple-strike",)},
+    {"id": "dispel", "kind": "ability", "identifier": "Dispel", "lane": "Spirit Warrior", "position": (3, 4), "level": 80, "owned_if_known": True, "prerequisites": ("haunting-blows",)},
+    {"id": "true-piercing-strike", "kind": "ability", "identifier": "TruePiercingStrike", "lane": "Spirit Warrior", "position": (3, 5), "level": 85, "owned_if_known": True, "upgrade_without_source": True, "prerequisites": ("dispel",)},
+    {"id": "spirit-warrior", "kind": "talent", "identifier": "soulcatcher.spirit-warrior", "name": "Spirit Warrior", "description": "Gain 10 weapon power while any Totem is active.", "lane": "Spirit Warrior", "position": (3, 6), "level": 90, "prerequisites": ("true-piercing-strike",)},
+)
+
+
+SPELL_STEALER_TREE_NODE_SPECS = (
+    {
+        "id": "steal-spell", "kind": "ability", "identifier": "StealSpell",
+        "lane": "Spell Theft", "position": (0, 0), "cost": 1,
+        "available_on_promotion": True, "owned_if_known": True,
+    },
+    {
+        "id": "arcane-ledger", "kind": "talent",
+        "identifier": "spell-stealer.arcane-ledger", "name": "Arcane Ledger",
+        "description": "Reduce Steal Spell's MP cost by two.",
+        "lane": "Spell Theft", "position": (0, 1), "level": 35, "cost": 2,
+        "prerequisites": ("steal-spell",),
+    },
+    {
+        "id": "wind-speed", "kind": "ability", "identifier": "WindSpeed",
+        "lane": "Spell Theft", "position": (0, 2), "level": 40, "cost": 1,
+        "owned_if_known": True, "prerequisites": ("arcane-ledger",),
+    },
+    {
+        "id": "counterfeit-casting", "kind": "talent",
+        "identifier": "spell-stealer.counterfeit-casting",
+        "name": "Counterfeit Casting",
+        "description": (
+            "Casting an inscribed stolen-spell scroll gains two Stolen Charge "
+            "instead of one."
+        ),
+        "lane": "Spell Theft", "position": (0, 3), "level": 45, "cost": 2,
+        "prerequisites": ("wind-speed",),
+    },
+    {
+        "id": "silence", "kind": "ability", "identifier": "Silence",
+        "lane": "Spell Theft", "position": (0, 4), "level": 50, "cost": 1,
+        "owned_if_known": True, "prerequisites": ("counterfeit-casting",),
+    },
+    {
+        "id": "perfect-forgery", "kind": "talent",
+        "identifier": "spell-stealer.perfect-forgery", "name": "Perfect Forgery",
+        "description": (
+            "Successful Steal Spell attempts have a 25% chance to preserve "
+            "the Blank Scroll."
+        ),
+        "lane": "Spell Theft", "position": (0, 5), "level": 55, "cost": 2,
+        "prerequisites": ("silence",),
+    },
+    {
+        "id": "imbue-weapon", "kind": "ability", "identifier": "ImbueWeapon",
+        "lane": "Stolen Charge", "position": (1, 0), "cost": 1,
+        "available_on_promotion": True, "owned_if_known": True,
+    },
+    {
+        "id": "spellbreakers-cut", "kind": "ability",
+        "identifier": "SpellbreakersCut", "lane": "Stolen Charge",
+        "position": (1, 1), "level": 35, "cost": 1,
+        "prerequisites": ("imbue-weapon",),
+    },
+    {
+        "id": "steal-as-well", "kind": "ability", "identifier": "StealAsWell",
+        "lane": "Stolen Charge", "position": (1, 2), "level": 40, "cost": 1,
+        "owned_if_known": True, "prerequisites": ("spellbreakers-cut",),
+    },
+    {
+        "id": "borrowed-ward", "kind": "ability", "identifier": "BorrowedWard",
+        "lane": "Stolen Charge", "position": (1, 3), "level": 45, "cost": 2,
+        "prerequisites": ("steal-as-well",),
+    },
+    {
+        "id": "volatile-script", "kind": "talent",
+        "identifier": "spell-stealer.volatile-script", "name": "Volatile Script",
+        "description": (
+            "Each committed Stolen Charge adds 25% of the triggering action's "
+            "damage instead of 20%."
+        ),
+        "lane": "Stolen Charge", "position": (1, 4), "level": 50, "cost": 2,
+        "prerequisites": ("borrowed-ward",),
+    },
+    {
+        "id": "controlled-discharge", "kind": "talent",
+        "identifier": "spell-stealer.controlled-discharge",
+        "name": "Controlled Discharge",
+        "description": (
+            "When a charged payoff misses or finds no purchase, retain one "
+            "Stolen Charge."
+        ),
+        "lane": "Stolen Charge", "position": (1, 5), "level": 55, "cost": 3,
+        "prerequisites": ("volatile-script",),
+    },
+)
+
+
+ARCANE_TRICKSTER_TREE_NODE_SPECS = (
+    {
+        "id": "steal-spell-2", "kind": "ability", "identifier": "StealSpell2",
+        "lane": "Arcane Larceny", "position": (0, 0), "cost": 2,
+        "available_on_promotion": True, "owned_if_known": True,
+    },
+    {
+        "id": "master-thief", "kind": "talent",
+        "identifier": "arcane-trickster.master-thief", "name": "Master Thief",
+        "description": (
+            "Add 15 percentage points to Steal Spell II's learning chance and "
+            "raise its cap to 90%."
+        ),
+        "lane": "Arcane Larceny", "position": (0, 1), "level": 65, "cost": 3,
+        "prerequisites": ("steal-spell-2",),
+    },
+    {
+        "id": "arcane-ambush", "kind": "ability", "identifier": "ArcaneAmbush",
+        "lane": "Arcane Larceny", "position": (0, 2), "level": 70, "cost": 2,
+        "prerequisites": ("master-thief",),
+    },
+    {
+        "id": "mnemonic-larceny", "kind": "talent",
+        "identifier": "arcane-trickster.mnemonic-larceny",
+        "name": "Mnemonic Larceny",
+        "description": "Permanently learning a spell restores half of Steal Spell II's MP cost.",
+        "lane": "Arcane Larceny", "position": (0, 3), "level": 75, "cost": 3,
+        "prerequisites": ("arcane-ambush",),
+    },
+    {
+        "id": "weaken-mind", "kind": "ability", "identifier": "WeakenMind",
+        "lane": "Arcane Larceny", "position": (0, 4), "level": 80, "cost": 2,
+        "owned_if_known": True, "prerequisites": ("mnemonic-larceny",),
+    },
+    {
+        "id": "neural-connection", "kind": "talent",
+        "identifier": "arcane-trickster.neural-connection",
+        "name": "Neural Connection",
+        "description": (
+            "Weaken Mind grants equal Magic and Magic Defense while its target "
+            "remains weakened."
+        ),
+        "lane": "Arcane Larceny", "position": (0, 5), "level": 85, "cost": 3,
+        "prerequisites": ("weaken-mind",),
+    },
+    {
+        "id": "third-eye", "kind": "ability", "identifier": "ThirdEye",
+        "lane": "Misdirection", "position": (1, 0), "cost": 2,
+        "available_on_promotion": True, "owned_if_known": True,
+    },
+    {
+        "id": "vanishing-act", "kind": "ability", "identifier": "VanishingAct",
+        "lane": "Misdirection", "position": (1, 1), "level": 65, "cost": 2,
+        "prerequisites": ("third-eye",),
+    },
+    {
+        "id": "escape-artist", "kind": "talent",
+        "identifier": "arcane-trickster.escape-artist", "name": "Escape Artist",
+        "description": (
+            "Vanishing Act grants 12 Speed and Defense for four turns instead "
+            "of 8 for three."
+        ),
+        "lane": "Misdirection", "position": (1, 2), "level": 70, "cost": 3,
+        "prerequisites": ("vanishing-act",),
+    },
+    {
+        "id": "false-opening", "kind": "ability", "identifier": "FalseOpening",
+        "lane": "Misdirection", "position": (1, 3), "level": 75, "cost": 2,
+        "prerequisites": ("escape-artist",),
+    },
+    {
+        "id": "misdirection", "kind": "talent",
+        "identifier": "arcane-trickster.misdirection", "name": "Misdirection",
+        "description": (
+            "A successful Stolen Charge payoff also lowers the target's Attack "
+            "and Magic for two turns."
+        ),
+        "lane": "Misdirection", "position": (1, 4), "level": 80, "cost": 3,
+        "prerequisites": ("false-opening",),
+    },
+    {
+        "id": "grand-larceny", "kind": "talent",
+        "identifier": "arcane-trickster.grand-larceny", "name": "Grand Larceny",
+        "description": "Increase maximum Stolen Charge by one.",
+        "lane": "Misdirection", "position": (1, 5), "level": 85, "cost": 3,
+        "prerequisites": ("misdirection",),
+        "kit_effect": ("meter_cap", "stolen_charge", 1),
+    },
+)
+
+
+CLERIC_TREE_NODE_SPECS = (
+    {"id": "sanctuary-ward", "kind": "ability", "identifier": "SanctuaryWard", "lane": "Devotion", "position": (0, 0), "available_on_promotion": True, "owned_if_known": True},
+    {"id": "held-faith", "kind": "talent", "identifier": "cleric.held-faith", "name": "Held Faith", "description": "Each held Devotion reduces incoming damage by 4% instead of 3%.", "lane": "Devotion", "position": (0, 1), "level": 35, "prerequisites": ("sanctuary-ward",)},
+    {"id": "bless", "kind": "ability", "identifier": "Bless", "lane": "Devotion", "position": (0, 2), "level": 40, "owned_if_known": True, "prerequisites": ("held-faith",)},
+    {"id": "devotional-attack", "kind": "rating", "identifier": "Attack", "lane": "Devotion", "position": (0, 3), "level": 45, "level_band_gate": True, "prerequisites": ("bless",)},
+    {"id": "lasting-sanctuary", "kind": "talent", "identifier": "cleric.lasting-sanctuary", "name": "Lasting Sanctuary", "description": "Sanctuary Ward lasts one additional turn.", "lane": "Devotion", "position": (0, 4), "level": 50, "prerequisites": ("devotional-attack",)},
+    {"id": "pious-bounty", "kind": "ability", "identifier": "PiousBounty", "lane": "Devotion", "position": (0, 5), "level": 55, "owned_if_known": True, "prerequisites": ("lasting-sanctuary",)},
+    {"id": "smite", "kind": "ability", "identifier": "Smite", "lane": "Sacred Office", "position": (1, 0), "available_on_promotion": True, "owned_if_known": True},
+    {"id": "smite-2", "kind": "ability", "identifier": "Smite2", "name": "Smite II", "lane": "Sacred Office", "position": (1, 1), "level": 35, "owned_if_known": True, "prerequisites": ("smite",), "upgrade_without_source": True},
+    {"id": "turn-undead-2", "kind": "ability", "identifier": "TurnUndead2", "name": "Turn Undead II", "lane": "Sacred Office", "position": (1, 2), "level": 40, "owned_if_known": True, "prerequisites": ("smite-2",), "upgrade_without_source": True},
+    {"id": "cleanse", "kind": "ability", "identifier": "Cleanse", "lane": "Sacred Office", "position": (1, 3), "level": 45, "owned_if_known": True, "prerequisites": ("turn-undead-2",)},
+    {"id": "overflowing-grace", "kind": "talent", "identifier": "cleric.overflowing-grace", "name": "Overflowing Grace", "description": "Increase maximum Devotion by one.", "lane": "Sacred Office", "position": (1, 5), "level": 55, "prerequisites": ("cleanse",), "kit_effect": ("meter_cap", "devotion", 1)},
+    {"id": "shield-slam", "kind": "ability", "identifier": "ShieldSlam", "lane": "Bulwark", "position": (2, 0), "available_on_promotion": True, "owned_if_known": True},
+    {"id": "shield-block", "kind": "ability", "identifier": "ShieldBlock", "lane": "Bulwark", "position": (2, 1), "level": 35, "owned_if_known": True, "prerequisites": ("shield-slam",)},
+    {"id": "bastion-prayer", "kind": "ability", "identifier": "BastionPrayer", "lane": "Bulwark", "position": (2, 2), "level": 40, "prerequisites": ("shield-block",)},
+    {"id": "bulwark-defense", "kind": "rating", "identifier": "Defense", "lane": "Bulwark", "position": (2, 3), "level": 45, "level_band_gate": True, "prerequisites": ("bastion-prayer",)},
+    {"id": "shield-litany", "kind": "talent", "identifier": "cleric.shield-litany", "name": "Shield Litany", "description": "A successful shield block grants two Devotion instead of one.", "lane": "Bulwark", "position": (2, 4), "level": 50, "prerequisites": ("bulwark-defense",)},
+    {"id": "bastion-practice", "kind": "talent", "identifier": "cleric.bastion-practice", "name": "Bastion Practice", "description": "Bastion Prayer raises both defenses by 10 instead of 7.", "lane": "Bulwark", "position": (2, 5), "level": 55, "prerequisites": ("shield-litany",)},
+    {"id": "true-strike", "kind": "ability", "identifier": "TrueStrike", "lane": "Judgment", "position": (3, 0), "available_on_promotion": True, "owned_if_known": True},
+    {"id": "devotional-rebuke", "kind": "ability", "identifier": "DevotionalRebuke", "lane": "Judgment", "position": (3, 1), "level": 35, "prerequisites": ("true-strike",)},
+    {"id": "measured-judgment", "kind": "talent", "identifier": "cleric.measured-judgment", "name": "Measured Judgment", "description": "Devotional Rebuke deals 25% more Holy damage.", "lane": "Judgment", "position": (3, 2), "level": 40, "prerequisites": ("devotional-rebuke",)},
+    {"id": "silence", "kind": "ability", "identifier": "Silence", "lane": "Judgment", "position": (3, 3), "level": 45, "owned_if_known": True, "prerequisites": ("measured-judgment",)},
+    {"id": "consecrated-blows", "kind": "talent", "identifier": "cleric.consecrated-blows", "name": "Consecrated Blows", "description": "Successful Holy pressure grants one additional Devotion once per action.", "lane": "Judgment", "position": (3, 5), "level": 55, "prerequisites": ("silence",)},
+    {"id": "sacred-mending", "kind": "ability", "identifier": "SacredMending", "lane": "Shared Ministry", "position": (4, 0), "available_on_promotion": True},
+    {"id": "open-ministry", "kind": "talent", "identifier": "cleric.open-ministry", "name": "Open Ministry", "description": "Sacred Mending restores 25% more health.", "lane": "Shared Ministry", "position": (4, 1), "level": 35, "prerequisites": ("sacred-mending",)},
+    {"id": "hallowed-readiness", "kind": "ability", "identifier": "HallowedReadiness", "lane": "Shared Ministry", "position": (4, 3), "level": 45, "prerequisites": ("open-ministry",)},
+    {"id": "common-purpose", "kind": "talent", "identifier": "cleric.common-purpose", "name": "Common Purpose", "description": "Hallowed Readiness raises both defenses by 12 instead of 8 and lasts an additional turn.", "lane": "Shared Ministry", "position": (4, 5), "level": 55, "prerequisites": ("hallowed-readiness",)},
+)
+
+
+TEMPLAR_TREE_NODE_SPECS = (
+    {"id": "relic-aegis", "kind": "ability", "identifier": "RelicAegis", "lane": "Relic Discipline", "position": (0, 0), "available_on_promotion": True, "owned_if_known": True},
+    {"id": "reinforced-relic", "kind": "talent", "identifier": "templar.reinforced-relic", "name": "Reinforced Relic", "description": "Increase Relic Aegis shielding and Holy counter damage by 25%.", "lane": "Relic Discipline", "position": (0, 1), "level": 65, "cost": 2, "prerequisites": ("relic-aegis",)},
+    {"id": "shield-block", "kind": "ability", "identifier": "ShieldBlock", "lane": "Relic Discipline", "position": (0, 2), "level": 70, "owned_if_known": True, "prerequisites": ("reinforced-relic",)},
+    {"id": "enduring-aegis", "kind": "talent", "identifier": "templar.enduring-aegis", "name": "Enduring Aegis", "description": "Relic Aegis and its Holy counter last one additional turn.", "lane": "Relic Discipline", "position": (0, 3), "level": 75, "prerequisites": ("shield-block",)},
+    {"id": "last-stand", "kind": "ability", "identifier": "LastStand", "lane": "Relic Discipline", "position": (0, 4), "level": 80, "owned_if_known": True, "prerequisites": ("enduring-aegis",)},
+    {"id": "last-line", "kind": "talent", "identifier": "templar.last-line", "name": "Last Line", "description": "Entering Last Stand grants one Devotion.", "lane": "Relic Discipline", "position": (0, 5), "level": 85, "prerequisites": ("last-stand",)},
+    {"id": "unbroken-reliquary", "kind": "talent", "identifier": "templar.unbroken-reliquary", "name": "Unbroken Reliquary", "description": "Below half health, Relic Aegis is 25% stronger.", "lane": "Relic Discipline", "position": (0, 6), "level": 90, "prerequisites": ("last-line",)},
+    {"id": "charge", "kind": "ability", "identifier": "Charge", "lane": "Vanguard", "position": (1, 0), "available_on_promotion": True, "owned_if_known": True},
+    {"id": "goad", "kind": "ability", "identifier": "Goad", "lane": "Vanguard", "position": (1, 1), "level": 65, "owned_if_known": True, "prerequisites": ("charge",)},
+    {"id": "shield-slam", "kind": "ability", "identifier": "ShieldSlam", "lane": "Vanguard", "position": (1, 2), "level": 70, "owned_if_known": True, "prerequisites": ("goad",)},
+    {"id": "parry", "kind": "ability", "identifier": "Parry", "lane": "Vanguard", "position": (1, 3), "level": 75, "owned_if_known": True, "prerequisites": ("shield-slam",)},
+    {"id": "piercing-strike", "kind": "ability", "identifier": "PiercingStrike", "lane": "Vanguard", "position": (1, 4), "level": 80, "owned_if_known": True, "prerequisites": ("parry",)},
+    {"id": "double-strike", "kind": "ability", "identifier": "DoubleStrike", "lane": "Vanguard", "position": (1, 5), "level": 85, "owned_if_known": True, "prerequisites": ("piercing-strike",)},
+    {"id": "true-piercing-strike", "kind": "ability", "identifier": "TruePiercingStrike", "lane": "Vanguard", "position": (1, 6), "level": 90, "owned_if_known": True, "prerequisites": ("double-strike",)},
+    {"id": "smite-3", "kind": "ability", "identifier": "Smite3", "name": "Smite III", "lane": "Ordered Blessings", "position": (2, 0), "available_on_promotion": True, "owned_if_known": True, "upgrade_without_source": True},
+    {"id": "ordered-purpose", "kind": "talent", "identifier": "templar.ordered-purpose", "name": "Ordered Purpose", "description": "Ordered Blessings are 25% stronger and last one additional turn.", "lane": "Ordered Blessings", "position": (2, 1), "level": 65, "cost": 2, "prerequisites": ("smite-3",)},
+    {"id": "regen-2", "kind": "ability", "identifier": "Regen2", "name": "Regen II", "lane": "Ordered Blessings", "position": (2, 2), "level": 70, "owned_if_known": True, "prerequisites": ("ordered-purpose",)},
+    {"id": "bless", "kind": "ability", "identifier": "Bless", "lane": "Ordered Blessings", "position": (2, 3), "level": 75, "owned_if_known": True, "prerequisites": ("regen-2",)},
+    {"id": "dispel", "kind": "ability", "identifier": "Dispel", "lane": "Ordered Blessings", "position": (2, 4), "level": 80, "owned_if_known": True, "prerequisites": ("bless",)},
+    {"id": "liturgical-renewal", "kind": "talent", "identifier": "templar.liturgical-renewal", "name": "Liturgical Renewal", "description": "An Ordered Blessing restores one MP per Devotion spent.", "lane": "Ordered Blessings", "position": (2, 5), "level": 85, "prerequisites": ("dispel",)},
+    {"id": "perfect-order", "kind": "talent", "identifier": "templar.perfect-order", "name": "Perfect Order", "description": "Ordered Blessings also raise Magic Defense while active.", "lane": "Ordered Blessings", "position": (2, 6), "level": 90, "prerequisites": ("liturgical-renewal",)},
+    {"id": "devotional-rebuke", "kind": "ability", "identifier": "DevotionalRebuke", "lane": "Judgment", "position": (3, 0), "available_on_promotion": True, "owned_if_known": True},
+    {"id": "exacting-judgment", "kind": "talent", "identifier": "templar.exacting-judgment", "name": "Exacting Judgment", "description": "Devotional Rebuke deals 25% more Holy damage.", "lane": "Judgment", "position": (3, 1), "level": 65, "prerequisites": ("devotional-rebuke",)},
+    {"id": "true-strike", "kind": "ability", "identifier": "TrueStrike", "lane": "Judgment", "position": (3, 2), "level": 70, "owned_if_known": True, "prerequisites": ("exacting-judgment",)},
+    {"id": "holy-2", "kind": "ability", "identifier": "Holy2", "name": "Holy II", "lane": "Judgment", "position": (3, 3), "level": 75, "owned_if_known": True, "prerequisites": ("true-strike",)},
+    {"id": "turn-undead-2", "kind": "ability", "identifier": "TurnUndead2", "name": "Turn Undead II", "lane": "Judgment", "position": (3, 4), "level": 80, "owned_if_known": True, "prerequisites": ("holy-2",)},
+    {"id": "cleanse", "kind": "ability", "identifier": "Cleanse", "lane": "Judgment", "position": (3, 5), "level": 85, "owned_if_known": True, "prerequisites": ("turn-undead-2",)},
+    {"id": "bastion-prayer", "kind": "ability", "identifier": "BastionPrayer", "lane": "Judgment", "position": (3, 6), "level": 90, "owned_if_known": True, "prerequisites": ("cleanse",)},
+)
+
+
+HIEROPHANT_TREE_NODE_SPECS = (
+    {"id": "staff-conduit", "kind": "ability", "identifier": "StaffConduit", "lane": "Sacred Conduit", "position": (0, 0), "available_on_promotion": True, "owned_if_known": True},
+    {"id": "conduit-strike", "kind": "ability", "identifier": "ConduitStrike", "lane": "Sacred Conduit", "position": (0, 1), "level": 65, "prerequisites": ("staff-conduit",)},
+    {"id": "consecrated-conduit", "kind": "ability", "identifier": "ConsecratedConduit", "lane": "Sacred Conduit", "position": (0, 2), "level": 70, "owned_if_known": True, "prerequisites": ("conduit-strike",)},
+    {"id": "deep-conduit", "kind": "talent", "identifier": "hierophant.deep-conduit", "name": "Deep Conduit", "description": "Consecrated Conduit adds a further 8% Holy damage.", "lane": "Sacred Conduit", "position": (0, 3), "level": 75, "cost": 2, "prerequisites": ("consecrated-conduit",)},
+    {"id": "holy-2", "kind": "ability", "identifier": "Holy2", "name": "Holy II", "lane": "Sacred Conduit", "position": (0, 4), "level": 80, "owned_if_known": True, "prerequisites": ("deep-conduit",)},
+    {"id": "staff-ward", "kind": "talent", "identifier": "hierophant.staff-ward", "name": "Staff Ward", "description": "Consecrated Conduit's ward gains 50% more strength.", "lane": "Sacred Conduit", "position": (0, 5), "level": 85, "prerequisites": ("holy-2",)},
+    {"id": "radiant-return", "kind": "talent", "identifier": "hierophant.radiant-return", "name": "Radiant Return", "description": "Consecrated Conduit restores one MP per spent Devotion.", "lane": "Sacred Conduit", "position": (0, 6), "level": 90, "prerequisites": ("staff-ward",)},
+    {"id": "regen-2", "kind": "ability", "identifier": "Regen2", "name": "Regen II", "lane": "Devotional Grace", "position": (1, 0), "available_on_promotion": True, "owned_if_known": True},
+    {"id": "gentle-grace", "kind": "talent", "identifier": "hierophant.gentle-grace", "name": "Gentle Grace", "description": "Meaningful healing grants one additional Devotion once per action.", "lane": "Devotional Grace", "position": (1, 1), "level": 65, "cost": 2, "prerequisites": ("regen-2",)},
+    {"id": "graceful-intercession", "kind": "ability", "identifier": "GracefulIntercession", "lane": "Devotional Grace", "position": (1, 2), "level": 70, "prerequisites": ("gentle-grace",)},
+    {"id": "greater-intercession", "kind": "talent", "identifier": "hierophant.greater-intercession", "name": "Greater Intercession", "description": "Graceful Intercession is 35% stronger and its ward lasts one extra turn.", "lane": "Devotional Grace", "position": (1, 3), "level": 75, "prerequisites": ("graceful-intercession",)},
+    {"id": "dispel", "kind": "ability", "identifier": "Dispel", "lane": "Devotional Grace", "position": (1, 4), "level": 80, "owned_if_known": True, "prerequisites": ("greater-intercession",)},
+    {"id": "warded-faith", "kind": "talent", "identifier": "hierophant.warded-faith", "name": "Warded Faith", "description": "Each held Devotion reduces incoming damage by one additional percentage point.", "lane": "Devotional Grace", "position": (1, 5), "level": 85, "prerequisites": ("dispel",)},
+    {"id": "abundant-grace", "kind": "talent", "identifier": "hierophant.abundant-grace", "name": "Abundant Grace", "description": "Increase maximum Devotion by one.", "lane": "Devotional Grace", "position": (1, 6), "level": 90, "prerequisites": ("warded-faith",), "kit_effect": ("meter_cap", "devotion", 1)},
+    {"id": "smite-3", "kind": "ability", "identifier": "Smite3", "name": "Smite III", "lane": "Radiant Office", "position": (2, 0), "available_on_promotion": True, "owned_if_known": True, "upgrade_without_source": True},
+    {"id": "luminous-doctrine", "kind": "talent", "identifier": "hierophant.luminous-doctrine", "name": "Luminous Doctrine", "description": "Successful Holy pressure grants one additional Devotion once per action.", "lane": "Radiant Office", "position": (2, 1), "level": 65, "prerequisites": ("smite-3",)},
+    {"id": "resist-shadow", "kind": "ability", "identifier": "ResistShadow", "name": "Resist Shadow", "lane": "Radiant Office", "position": (2, 2), "level": 70, "owned_if_known": True, "prerequisites": ("luminous-doctrine",)},
+    {"id": "devotional-rebuke", "kind": "ability", "identifier": "DevotionalRebuke", "lane": "Radiant Office", "position": (2, 3), "level": 75, "owned_if_known": True, "prerequisites": ("resist-shadow",)},
+    {"id": "turn-undead-2", "kind": "ability", "identifier": "TurnUndead2", "name": "Turn Undead II", "lane": "Radiant Office", "position": (2, 4), "level": 80, "owned_if_known": True, "prerequisites": ("devotional-rebuke",)},
+    {"id": "cleanse", "kind": "ability", "identifier": "Cleanse", "lane": "Radiant Office", "position": (2, 5), "level": 85, "owned_if_known": True, "prerequisites": ("turn-undead-2",)},
+    {"id": "silence", "kind": "ability", "identifier": "Silence", "lane": "Radiant Office", "position": (2, 6), "level": 90, "owned_if_known": True, "prerequisites": ("cleanse",)},
+    {"id": "heal-2", "kind": "ability", "identifier": "Heal2", "name": "Heal II", "lane": "Pastoral Office", "position": (3, 0), "available_on_promotion": True, "owned_if_known": True, "upgrade_without_source": True},
+    {"id": "bless", "kind": "ability", "identifier": "Bless", "lane": "Pastoral Office", "position": (3, 1), "level": 65, "owned_if_known": True, "prerequisites": ("heal-2",)},
+    {"id": "sanctuary-ward", "kind": "ability", "identifier": "SanctuaryWard", "lane": "Pastoral Office", "position": (3, 2), "level": 70, "owned_if_known": True, "prerequisites": ("bless",)},
+    {"id": "shell", "kind": "ability", "identifier": "Shell", "lane": "Pastoral Office", "position": (3, 3), "level": 75, "owned_if_known": True, "prerequisites": ("sanctuary-ward",)},
+    {"id": "reflect", "kind": "ability", "identifier": "Reflect", "lane": "Pastoral Office", "position": (3, 4), "level": 80, "owned_if_known": True, "prerequisites": ("shell",)},
+    {"id": "merciful-ward", "kind": "talent", "identifier": "hierophant.merciful-ward", "name": "Merciful Ward", "description": "Meaningful direct healing raises a two-turn ward on its recipient.", "lane": "Pastoral Office", "position": (3, 5), "level": 85, "prerequisites": ("reflect",)},
+    {"id": "bastion-prayer", "kind": "ability", "identifier": "BastionPrayer", "lane": "Pastoral Office", "position": (3, 6), "level": 90, "owned_if_known": True, "prerequisites": ("merciful-ward",)},
+)
+
+
+BEAST_MASTER_TREE_NODE_SPECS = (
+    {"id": "packstrike", "kind": "ability", "identifier": "PackStrike", "lane": "Pack Tactics", "position": (0, 0), "available_on_promotion": True},
+    {"id": "heavy-hunter", "kind": "talent", "identifier": "beast-master.heavy-hunter", "name": "Heavy Hunter", "description": "Deal 15% more damage to your quarry with a two-handed main-hand weapon.", "lane": "Pack Tactics", "position": (0, 1), "level": 65, "prerequisites": ("packstrike",)},
+    {"id": "coordinated-assault", "kind": "talent", "identifier": "beast-master.coordinated-assault", "name": "Coordinated Assault", "description": "Deal 10% more weapon damage to your quarry while your companion is fighting.", "lane": "Pack Tactics", "position": (0, 2), "level": 70, "prerequisites": ("heavy-hunter",)},
+    {"id": "alpha-instinct", "kind": "talent", "identifier": "beast-master.alpha-instinct", "name": "Alpha Instinct", "description": "Increase the damage, protection, and pressure of companion species traits by 25%.", "lane": "Pack Tactics", "position": (0, 3), "level": 75, "prerequisites": ("coordinated-assault",)},
+    {"id": "unleash-instinct", "kind": "ability", "identifier": "UnleashInstinct", "lane": "Pack Tactics", "position": (0, 4), "level": 80, "prerequisites": ("alpha-instinct",)},
+    {"id": "apex-pack", "kind": "talent", "identifier": "beast-master.apex-pack", "name": "Apex Pack", "description": "Increase automatic companion action chance by 10 percentage points and its damage by 10%.", "lane": "Pack Tactics", "position": (0, 5), "level": 85, "prerequisites": ("unleash-instinct",)},
+    {"id": "zephyrstrike", "kind": "ability", "identifier": "Zephyrstrike", "lane": "Pack Tactics", "position": (1, 0), "available_on_promotion": True, "owned_if_known": True},
+    {"id": "harryprey", "kind": "ability", "identifier": "HarryPrey", "lane": "Pack Tactics", "position": (1, 1), "level": 65, "prerequisites": ("zephyrstrike",)},
+    {"id": "trail-guard", "kind": "talent", "identifier": "beast-master.trail-guard", "name": "Trail Guard", "description": "Take 10% less damage from your favored enemy type.", "lane": "Pack Tactics", "position": (1, 2), "level": 70, "prerequisites": ("harryprey",)},
+    {"id": "crippling-harrier", "kind": "talent", "identifier": "beast-master.crippling-harrier", "name": "Crippling Harrier", "description": "Harry Prey also reduces the target's Attack.", "lane": "Pack Tactics", "position": (1, 3), "level": 75, "prerequisites": ("trail-guard",)},
+    {"id": "cornered-prey", "kind": "talent", "identifier": "beast-master.cornered-prey", "name": "Cornered Prey", "description": "Your companion deals 25% more damage to a wounded favored enemy.", "lane": "Pack Tactics", "position": (1, 4), "level": 80, "prerequisites": ("crippling-harrier",)},
+    {"id": "cover", "kind": "ability", "identifier": "Cover", "lane": "Commands", "position": (2, 0), "available_on_promotion": True, "owned_if_known": True},
+    {"id": "guardpartner", "kind": "ability", "identifier": "GuardPartner", "lane": "Commands", "position": (2, 1), "level": 65, "prerequisites": ("cover",)},
+    {"id": "beast-master-bonded-bulwark", "kind": "talent", "identifier": "beast-master.bonded-bulwark", "name": "Bonded Bulwark", "description": "Increase the companion's bond-derived combat bonus by 10 percentage points.", "lane": "Commands", "position": (2, 2), "level": 70, "prerequisites": ("guardpartner",)},
+    {"id": "mendwounds", "kind": "ability", "identifier": "MendWounds", "lane": "Commands", "position": (2, 3), "level": 75, "prerequisites": ("beast-master-bonded-bulwark",)},
+    {"id": "field-dressing", "kind": "talent", "identifier": "beast-master.field-dressing", "name": "Field Dressing", "description": "Mend Wounds also removes one harmful physical condition.", "lane": "Commands", "position": (2, 4), "level": 80, "prerequisites": ("mendwounds",)},
+    {"id": "guardian-pack", "kind": "talent", "identifier": "beast-master.guardian-pack", "name": "Guardian Pack", "description": "Strengthen Guard Partner and let Mend Wounds restore both partners.", "lane": "Commands", "position": (2, 5), "level": 85, "prerequisites": ("field-dressing",)},
+    {"id": "rally-partner", "kind": "ability", "identifier": "RallyPartner", "lane": "Commands", "position": (3, 0), "available_on_promotion": True},
+    {"id": "commanders-voice", "kind": "talent", "identifier": "beast-master.commanders-voice", "name": "Commander's Voice", "description": "Increase the damage, healing, protection, and pressure of companion commands by 15%.", "lane": "Commands", "position": (3, 1), "level": 65, "prerequisites": ("rally-partner",)},
+    {"id": "adaptive-orders", "kind": "talent", "identifier": "beast-master.adaptive-orders", "name": "Adaptive Orders", "description": "Commands used against your quarry gain one turn of duration.", "lane": "Commands", "position": (3, 2), "level": 70, "prerequisites": ("commanders-voice",)},
+    {"id": "perfect-coordination", "kind": "talent", "identifier": "beast-master.perfect-coordination", "name": "Perfect Coordination", "description": "Pack Strike triggers the companion's species trait even when its weapon attack misses.", "lane": "Commands", "position": (3, 3), "level": 75, "prerequisites": ("adaptive-orders",)},
+    {"id": "true-bond", "kind": "talent", "identifier": "beast-master.true-bond", "name": "True Bond", "description": "Increase the companion's bond-derived combat bonus by a further 10 percentage points.", "lane": "Commands", "position": (3, 4), "level": 80, "prerequisites": ("perfect-coordination",)},
+)
+
+
+RANGER_TREE_NODE_SPECS = (
+    {"id": "favored-enemy", "kind": "ability", "identifier": "FavoredEnemy", "lane": "Hunt", "position": (0, 0), "available_on_promotion": True},
+    {"id": "wild-sense", "kind": "ability", "identifier": "WildSense", "lane": "Hunt", "position": (0, 1), "level": 35, "prerequisites": ("favored-enemy",)},
+    {"id": "relentless-tracker", "kind": "talent", "identifier": "ranger.relentless-tracker", "name": "Relentless Tracker", "description": "Retain half your Tracking Mastery instead of one third when changing quarry.", "lane": "Hunt", "position": (0, 2), "level": 40, "prerequisites": ("wild-sense",)},
+    {"id": "quarrys-bane", "kind": "talent", "identifier": "ranger.quarrys-bane", "name": "Quarry's Bane", "description": "Deal 10% more weapon and crossbow damage to your favored enemy type.", "lane": "Hunt", "position": (0, 3), "level": 45, "prerequisites": ("relentless-tracker",)},
+    {"id": "aggressive-pursuit", "kind": "ability", "identifier": "AggressivePursuit", "lane": "Hunt", "position": (0, 4), "level": 50, "prerequisites": ("quarrys-bane",)},
+    {"id": "apex-hunter", "kind": "talent", "identifier": "ranger.apex-hunter", "name": "Apex Hunter", "description": "At Mastered Trail, deal a further 10% weapon and crossbow damage to your quarry.", "lane": "Hunt", "position": (0, 5), "level": 55, "prerequisites": ("aggressive-pursuit",)},
+    {"id": "detect-animal", "kind": "ability", "identifier": "DetectAnimal", "lane": "Companion Bond", "position": (1, 0), "available_on_promotion": True, "owned_if_known": True},
+    {"id": "creature-comforts", "kind": "ability", "identifier": "CreatureComforts", "lane": "Companion Bond", "position": (1, 1), "level": 35, "owned_if_known": True, "prerequisites": ("detect-animal",)},
+    {"id": "kindred-instinct", "kind": "talent", "identifier": "ranger.kindred-instinct", "name": "Kindred Instinct", "description": "Your tamed companion can use its species trait at 15 bond instead of 25.", "lane": "Companion Bond", "position": (1, 2), "level": 40, "prerequisites": ("creature-comforts",)},
+    {"id": "pack-tactics", "kind": "talent", "identifier": "ranger.pack-tactics", "name": "Pack Tactics", "description": "Your tamed companion deals 20% more damage to your favored enemy type.", "lane": "Companion Bond", "position": (1, 4), "level": 50, "prerequisites": ("kindred-instinct", "quarrys-bane"), "prerequisite_mode": "any"},
+    {"id": "companion-bond", "kind": "talent", "identifier": "ranger.companion-bond", "name": "Companion Bond", "description": "Increase the companion's bond-derived combat bonus by 5 percentage points.", "lane": "Companion Bond", "position": (1, 5), "level": 55, "prerequisites": ("pack-tactics",)},
+    {"id": "duelist", "kind": "ability", "identifier": "Duelist", "lane": "Duelist / Ranged", "position": (2, 0), "available_on_promotion": True, "owned_if_known": True},
+    {"id": "crossbow-training", "kind": "talent", "identifier": "ranger.crossbow-training", "name": "Crossbow Training", "description": "Gain 10% crossbow accuracy. Ranger Duelist remains active with a crossbow off hand.", "lane": "Duelist / Ranged", "position": (2, 1), "level": 35, "prerequisites": ("duelist",)},
+    {"id": "vision", "kind": "ability", "identifier": "Vision", "lane": "Duelist / Ranged", "position": (2, 2), "level": 40, "owned_if_known": True, "prerequisites": ("crossbow-training",)},
+    {"id": "uncanny-volley", "kind": "ability", "identifier": "UncannyVolley", "lane": "Duelist / Ranged", "position": (2, 3), "level": 45, "prerequisites": ("vision",)},
+    {"id": "quick-reload", "kind": "talent", "identifier": "ranger.quick-reload", "name": "Quick Reload", "description": "Add 20 percentage points to the recovery chance of fired crossbow bolts.", "lane": "Duelist / Ranged", "position": (2, 4), "level": 50, "prerequisites": ("uncanny-volley",)},
+    {"id": "two-handed-proficiency", "kind": "ability", "identifier": "TwoHandedWeaponProficiency", "lane": "Two-Handed Fighting", "position": (3, 0), "available_on_promotion": True, "owned_if_known": True},
+    {"id": "quarry-cleave", "kind": "ability", "identifier": "QuarryCleave", "lane": "Two-Handed Fighting", "position": (3, 1), "level": 35, "prerequisites": ("two-handed-proficiency",)},
+    {"id": "true-strike", "kind": "ability", "identifier": "TrueStrike", "lane": "Two-Handed Fighting", "position": (3, 2), "level": 40, "owned_if_known": True, "prerequisites": ("quarry-cleave",)},
+    {"id": "braced-grip", "kind": "talent", "identifier": "ranger.braced-grip", "name": "Braced Grip", "description": "Reduce physical damage by 8% while wielding a two-handed main-hand weapon.", "lane": "Two-Handed Fighting", "position": (3, 3), "level": 45, "prerequisites": ("true-strike",)},
+    {"id": "parry", "kind": "ability", "identifier": "Parry", "lane": "Defense", "position": (4, 0), "available_on_promotion": True, "owned_if_known": True},
+    {"id": "combo-breaker", "kind": "talent", "identifier": "ranger.combo-breaker", "name": "Combo Breaker", "description": "Each hit after the first in one enemy action takes 8% less damage, stacking to 32%.", "lane": "Defense", "position": (4, 1), "level": 35, "prerequisites": ("parry",)},
+    {"id": "hunters-snare", "kind": "ability", "identifier": "HuntersSnare", "lane": "Defense", "position": (4, 2), "level": 40, "prerequisites": ("combo-breaker",)},
+    {"id": "companion-cover", "kind": "talent", "identifier": "ranger.companion-cover", "name": "Companion Cover", "description": "Take 8% less damage while your active tamed companion is alive.", "lane": "Defense", "position": (4, 3), "level": 45, "prerequisites": ("hunters-snare",)},
 )
 
 
@@ -3953,6 +4641,245 @@ BASE_TREE_NODE_SPECS = {
     ),
 }
 
+def _pathfinder_kit_column(
+    lane,
+    column,
+    stage,
+    entries,
+):
+    """Build one compact authored Pathfinder promotion discipline."""
+    levels = (
+        (None, 35, 40, 45, 50, 55, 55)
+        if stage == 2
+        else (None, 65, 70, 75, 80, 85, 90)
+    )
+    specs = []
+    previous = None
+    for row, entry in enumerate(entries):
+        if entry is None:
+            continue
+        suffix, kind, identifier, name, description, rating, cost = entry
+        spec = {
+            "id": suffix,
+            "kind": kind,
+            "identifier": identifier,
+            "lane": lane,
+            "position": (column, row),
+        }
+        if previous:
+            spec["prerequisites"] = (previous,)
+        if row == 0:
+            spec["available_on_promotion"] = True
+            spec["owned_if_known"] = kind == "ability"
+        elif levels[row] is not None:
+            spec["level"] = levels[row]
+        if name is not None:
+            spec["name"] = name
+        if description is not None:
+            spec["description"] = description
+        if rating is not None:
+            spec["bonuses"] = {"rating_percentages": {rating: 0.10}}
+        if cost != 1:
+            spec["cost"] = cost
+        specs.append(spec)
+        previous = suffix
+    return tuple(specs)
+
+
+DRUID_TREE_NODE_SPECS = (
+    *_pathfinder_kit_column("Panther Form", 0, 2, (
+        ("transform", "ability", "Transform", None, None, None, 1),
+        ("predator-instinct", "rating", "Attack", None, None, None, 1),
+        ("feline-grace", "talent", "druid.feline-grace", "Feline Grace", "Increase Attack by 10%; Panther form remains the precision route.", "Attack", 1),
+        ("mortalstrike", "ability", "MortalStrike", None, None, None, 1),
+        ("razor-ambush", "talent", "druid.razor-ambush", "Razor Ambush", "Increase Attack by 10% and sharpen transformed opening pressure.", "Attack", 1),
+        ("apex-prowler", "talent", "druid.apex-prowler", "Apex Prowler", "Increase Attack by 10% after mastering the Panther discipline.", "Attack", 1),
+    )),
+    *_pathfinder_kit_column("Direbear Form", 1, 2, (
+        ("transform2", "ability", "Transform2", None, None, None, 1),
+        ("thick-hide", "talent", "druid.thick-hide", "Thick Hide", "Increase Defense by 10%; Direbear form remains the protection route.", "Defense", 1),
+        ("bear-fortitude", "rating", "Defense", None, None, None, 1),
+        ("bearish-might", "talent", "druid.bearish-might", "Bearish Might", "Increase Attack by 10% while developing Direbear pressure.", "Attack", 1),
+        ("rooted-guard", "talent", "druid.rooted-guard", "Rooted Guard", "Increase Magic Defense by 10% against hostile magic.", "Magic Defense", 1),
+        ("guardian-beast", "talent", "druid.guardian-beast", "Guardian Beast", "Increase Defense by 10% after mastering the Direbear discipline.", "Defense", 1),
+    )),
+    *_pathfinder_kit_column("Venom and Stone", 2, 2, (
+        ("poisondart", "ability", "PoisonDart", None, None, None, 1),
+        ("ritual-potency", "rating", "Magic", None, None, None, 1),
+        ("resist-poison", "ability", "ResistPoison", None, None, None, 1),
+        ("noxious-mist", "ability", "NoxiousMist", None, None, None, 1),
+        ("stoneskin", "ability", "StoneSkin", None, None, None, 1),
+        ("earthen-toxins", "talent", "druid.earthen-toxins", "Earthen Toxins", "Increase Magic by 10% to reinforce poison and stone rites.", "Magic", 1),
+    )),
+    *_pathfinder_kit_column("Growth and Stars", 3, 2, (
+        ("regrowth", "ability", "Regrowth", None, None, None, 1),
+        ("restoring-boon", "ability", "RestoringBoon", None, None, None, 1),
+        ("calmingbreeze", "ability", "CalmingBreeze", None, None, None, 1),
+        ("natural-aegis", "rating", "Magic Defense", None, None, None, 1),
+        ("seasonal-rite", "talent", "druid.seasonal-rite", "Seasonal Rite", "Increase Magic by 10% after mastering restorative and stellar rites.", "Magic", 1),
+        ("starfall", "ability", "Starfall", None, None, None, 1),
+    )),
+    *_pathfinder_kit_column("Primal Practice", 4, 2, (
+        ("primal-practice", "ability", "PrimalPractice", None, None, None, 1),
+        ("primal-vitality", "health", "Health", None, None, None, 1),
+        ("primal-reserve", "mana", "Mana", None, None, None, 1),
+        ("primal-versatility", "talent", "druid.primal-versatility", "Primal Versatility", "Increase Magic Defense by 10% across forms and nature rites.", "Magic Defense", 1),
+    )),
+)
+
+DIVINER_TREE_NODE_SPECS = (
+    *_pathfinder_kit_column("Rune Lore", 0, 2, (
+        ("vulcanize", "ability", "Vulcanize", None, None, None, 1),
+        ("rune-potency", "rating", "Magic", None, None, None, 1),
+        ("enfeeble", "ability", "Enfeeble", None, None, None, 1),
+        ("elemental-script", "talent", "diviner.elemental-script", "Elemental Script", "Increase Magic by 10% while studying natural-element signs.", "Magic", 1),
+        ("dispel", "ability", "Dispel", None, None, None, 1),
+        ("open-sigils", "talent", "diviner.open-sigils", "Open Sigils", "Increase Magic by 10% and improve natural-element rune acquisition.", "Magic", 1),
+    )),
+    *_pathfinder_kit_column("Rune Flow", 1, 2, (
+        ("haste", "ability", "Haste", None, None, None, 1),
+        ("rune-ward", "rating", "Magic Defense", None, None, None, 1),
+        ("quick-inscription", "talent", "diviner.quick-inscription", "Quick Inscription", "Increase Magic Defense by 10% while preparing runic casts.", "Magic Defense", 1),
+        ("runic-focus", "talent", "diviner.runic-focus", "Runic Focus", "Increase Magic by 10% to reinforce Runic Boost output.", "Magic", 1),
+        ("balanced-grid", "talent", "diviner.balanced-grid", "Balanced Grid", "Increase Magic Defense by 10% after mastering rune flow.", "Magic Defense", 1),
+        ("doublecast", "ability", "Doublecast", None, None, None, 1),
+    )),
+    *_pathfinder_kit_column("Foresight", 2, 2, (
+        ("learnspell", "ability", "LearnSpell", None, None, None, 1),
+        None,
+        ("pattern-memory", "talent", "diviner.pattern-memory", "Pattern Memory", "Increase Magic by 10% while retaining witnessed rank-one patterns.", "Magic", 1),
+        ("clear-omen", "talent", "diviner.clear-omen", "Clear Omen", "Increase Magic Defense by 10% through defensive prediction.", "Magic Defense", 1),
+        ("witnessed-certainty", "talent", "diviner.witnessed-certainty", "Witnessed Certainty", "Increase Magic by 10% after mastering witnessed spellcraft.", "Magic", 1),
+        ("berserk", "ability", "Berserk", None, None, None, 1),
+    )),
+    *_pathfinder_kit_column("Chronomancy", 3, 2, (
+        None,
+        ("held-moment", "talent", "diviner.held-moment", "Held Moment", "Increase Magic Defense by 10% while controlling hostile tempo.", "Magic Defense", 1),
+        ("chronal-guard", "rating", "Defense", None, None, None, 1),
+        ("protected-future", "talent", "diviner.protected-future", "Protected Future", "Increase Defense by 10% through anticipated movement.", "Defense", 1),
+        ("far-sight", "talent", "diviner.far-sight", "Far Sight", "Increase Magic by 10% after mastering the chronomancy discipline.", "Magic", 1),
+        ("temporary-stasis", "ability", "TemporaryStasis", None, None, None, 1),
+    )),
+)
+
+ARCHDRUID_TREE_NODE_SPECS = (
+    *_pathfinder_kit_column("Venom", 0, 3, (
+        ("vilepotion", "ability", "VilePotion", None, None, None, 1),
+        ("patient-venom", "talent", "archdruid.patient-venom", "Patient Venom", "Increase Magic by 10% while cultivating Venom attunement.", "Magic", 1),
+        ("poison-breath", "ability", "PoisonBreath", None, None, None, 1),
+        ("toxic-memory", "talent", "archdruid.toxic-memory", "Toxic Memory", "Increase Magic Defense by 10% after surviving poison.", "Magic Defense", 1),
+        ("serpents-patience", "talent", "archdruid.serpents-patience", "Serpent's Patience", "Increase Magic by 10% for deliberate poison pressure.", "Magic", 1),
+        ("venom-aspect", "talent", "archdruid.venom-aspect", "Venom Aspect", "Increase Magic by 10% as the Venom aspect approaches mastery.", "Magic", 1),
+        ("venom-incarnate", "talent", "archdruid.venom-incarnate", "Venom Incarnate", "Increase Magic by 10% after completing the Venom discipline.", "Magic", 2),
+    )),
+    *_pathfinder_kit_column("Stone", 1, 3, (
+        ("natureshield", "ability", "NatureShield", None, None, None, 1),
+        ("granite-memory", "talent", "archdruid.granite-memory", "Granite Memory", "Increase Defense by 10% while cultivating Stone attunement.", "Defense", 1),
+        ("rooted-bastion", "talent", "archdruid.rooted-bastion", "Rooted Bastion", "Increase Magic Defense by 10% against control magic.", "Magic Defense", 1),
+        ("unyielding-crust", "talent", "archdruid.unyielding-crust", "Unyielding Crust", "Increase Defense by 10% after surviving physical blows.", "Defense", 1),
+        ("standing-stone", "talent", "archdruid.standing-stone", "Standing Stone", "Increase Defense by 10% for sustained protection.", "Defense", 1),
+        ("stone-aspect", "talent", "archdruid.stone-aspect", "Stone Aspect", "Increase Magic Defense by 10% as the Stone aspect approaches mastery.", "Magic Defense", 1),
+        ("mountain-incarnate", "talent", "archdruid.mountain-incarnate", "Mountain Incarnate", "Increase Defense by 10% after completing the Stone discipline.", "Defense", 2),
+    )),
+    *_pathfinder_kit_column("Growth", 2, 3, (
+        ("plantseeds", "ability", "PlantSeeds", None, None, None, 1),
+        ("verdant-memory", "talent", "archdruid.verdant-memory", "Verdant Memory", "Increase Magic by 10% while cultivating Growth attunement.", "Magic", 1),
+        ("expel-curse", "ability", "ExpelCurse", None, None, None, 1),
+        ("grove-pulse", "ability", "GrovePulse", None, None, None, 1),
+        ("deep-roots", "talent", "archdruid.deep-roots", "Deep Roots", "Increase Magic Defense by 10% for sustained Growth magic.", "Magic Defense", 1),
+        ("growth-aspect", "talent", "archdruid.growth-aspect", "Growth Aspect", "Increase Magic by 10% as the Growth aspect approaches mastery.", "Magic", 1),
+        ("world-tree-scion", "talent", "archdruid.world-tree-scion", "World-Tree Scion", "Increase Magic by 10% after completing the Growth discipline.", "Magic", 1),
+    )),
+    *_pathfinder_kit_column("Storm", 3, 3, (
+        ("bolt", "ability", "Bolt", None, None, None, 1),
+        ("windswept", "ability", "Windswept", None, None, None, 1),
+        ("storm-memory", "talent", "archdruid.storm-memory", "Storm Memory", "Increase Magic by 10% while cultivating Storm attunement.", "Magic", 1),
+        ("balllightning", "ability", "BallLightning", None, None, None, 1),
+        ("eye-of-storm", "talent", "archdruid.eye-of-storm", "Eye of the Storm", "Increase Magic Defense by 10% amid elemental pressure.", "Magic Defense", 1),
+        ("storm-aspect", "talent", "archdruid.storm-aspect", "Storm Aspect", "Increase Magic by 10% as the Storm aspect approaches mastery.", "Magic", 1),
+        ("fourfoldsurge", "ability", "FourfoldSurge", None, None, None, 1),
+    )),
+)
+
+LYCAN_TREE_NODE_SPECS = (
+    *_pathfinder_kit_column("Frenzy", 0, 3, (
+        ("transform3", "ability", "Transform3", None, None, None, 1),
+        ("blood-scent", "talent", "lycan.blood-scent", "Blood Scent", "Increase Attack by 10% while hunting in Werewolf form.", "Attack", 1),
+        ("charge", "ability", "Charge", None, None, None, 1),
+        ("frenzied-force", "talent", "lycan.frenzied-force", "Frenzied Force", "Increase Attack by 10% and deepen Frenzy's offensive payoff.", "Attack", 1),
+        ("battlecry", "ability", "BattleCry", None, None, None, 1),
+        ("red-tooth", "talent", "lycan.red-tooth", "Red Tooth", "Increase Attack by 10% during transformed pressure.", "Attack", 1),
+        ("moon-ravager", "talent", "lycan.moon-ravager", "Moon Ravager", "Increase Attack by 10% after completing the Frenzy discipline.", "Attack", 2),
+    )),
+    *_pathfinder_kit_column("Moon Hunt", 1, 3, (
+        ("mortalstrike2", "ability", "MortalStrike2", None, None, None, 1),
+        ("lunar-rend", "ability", "LunarRend", None, None, None, 1),
+        ("lunar-pursuit", "talent", "lycan.lunar-pursuit", "Lunar Pursuit", "Increase Defense by 10% while pursuing marked prey.", "Defense", 1),
+        ("full-moon-fury", "talent", "lycan.full-moon-fury", "Full Moon Fury", "Increase Attack by 10% at the most dangerous lunar peak.", "Attack", 1),
+        ("waning-guard", "talent", "lycan.waning-guard", "Waning Guard", "Increase Defense by 10% while the moon recedes.", "Defense", 1),
+        ("relentless-hunt", "talent", "lycan.relentless-hunt", "Relentless Hunt", "Increase Attack by 10% for sustained transformed combat.", "Attack", 1),
+        ("lunar-apex", "talent", "lycan.lunar-apex", "Lunar Apex", "Increase Attack by 10% after completing the Moon Hunt discipline.", "Attack", 2),
+    )),
+    *_pathfinder_kit_column("Dragon Essence", 2, 3, (
+        ("wingedpounce", "ability", "WingedPounce", None, None, None, 1),
+        ("scaled-hide", "talent", "lycan.scaled-hide", "Scaled Hide", "Increase Defense by 10% while channeling Dragon Essence.", "Defense", 1),
+        ("draconic-lift", "talent", "lycan.draconic-lift", "Draconic Lift", "Increase Attack by 10% for Winged Pounce follow-through.", "Attack", 1),
+        ("dragon-fang", "ability", "DragonFang", None, None, None, 1),
+        ("sky-predator", "talent", "lycan.sky-predator", "Sky Predator", "Increase Defense by 10% during airborne pressure.", "Defense", 1),
+        ("ancient-essence", "talent", "lycan.ancient-essence", "Ancient Essence", "Increase Magic Defense by 10% against hostile elements.", "Magic Defense", 1),
+        ("dragon-wolf", "talent", "lycan.dragon-wolf", "Dragon-Wolf", "Increase Attack by 10% after completing the Dragon Essence discipline.", "Attack", 1),
+    )),
+    *_pathfinder_kit_column("Control", 3, 3, (
+        ("dispel", "ability", "Dispel", None, None, None, 1),
+        ("measured-breath", "talent", "lycan.measured-breath", "Measured Breath", "Increase Magic Defense by 10% without granting control ranks.", "Magic Defense", 1),
+        ("muzzled-instinct", "talent", "lycan.muzzled-instinct", "Muzzled Instinct", "Increase Defense by 10% while resisting Frenzy.", "Defense", 1),
+        ("restive-guard", "talent", "lycan.restive-guard", "Restive Guard", "Increase Defense by 10% during deliberate transformed defense.", "Defense", 1),
+        ("center-the-beast", "ability", "CenterBeast", None, None, None, 1),
+        ("tame-heart", "talent", "lycan.tame-heart", "Tame Heart", "Increase Defense by 10%; control ranks remain behavior-earned.", "Defense", 1),
+        ("self-possessed", "talent", "lycan.self-possessed", "Self-Possessed", "Increase Magic Defense by 10% after completing the Control discipline.", "Magic Defense", 1),
+    )),
+)
+
+ASTROMANCER_TREE_NODE_SPECS = (
+    *_pathfinder_kit_column("Foresight Threads", 0, 3, (
+        ("foretell", "ability", "Foretell", None, None, None, 1),
+        ("thread-spinner", "talent", "astromancer.thread-spinner", "Thread Spinner", "Increase Magic by 10% while generating Foresight Threads.", "Magic", 1),
+        ("twistfate", "ability", "TwistFate", None, None, None, 1),
+        ("threadedcast", "ability", "ThreadedCast", None, None, None, 1),
+        ("woven-certainty", "talent", "astromancer.woven-certainty", "Woven Certainty", "Increase Magic by 10% for Threaded Cast output.", "Magic", 1),
+        ("rewind", "ability", "Rewind", None, None, None, 1),
+        ("fate-loom", "talent", "astromancer.fate-loom", "Fate Loom", "Increase Magic by 10% without altering Rewind's safety rules.", "Magic", 2),
+    )),
+    *_pathfinder_kit_column("Runic Constellations", 1, 3, (
+        ("vulcanize", "ability", "Vulcanize", None, None, None, 1),
+        ("stellar-script", "talent", "astromancer.stellar-script", "Stellar Script", "Increase Magic by 10% while aligning natural runes.", "Magic", 1),
+        ("weakenmind", "ability", "WeakenMind", None, None, None, 1),
+        ("boost", "ability", "Boost", None, None, None, 1),
+        ("learnspell2", "ability", "LearnSpell2", None, None, None, 1),
+        ("active-sign", "talent", "astromancer.active-sign", "Active Sign", "Increase Magic by 10% while cycling the active constellation.", "Magic", 1),
+        ("celestial-runes", "talent", "astromancer.celestial-runes", "Celestial Runes", "Increase Magic by 10% after completing the runic discipline.", "Magic", 2),
+    )),
+    *_pathfinder_kit_column("Celestial Force", 2, 3, (
+        ("wormhole", "ability", "Wormhole", None, None, None, 1),
+        ("astral-anchor", "talent", "astromancer.astral-anchor", "Astral Anchor", "Increase Magic Defense by 10% while opening a Wormhole.", "Magic Defense", 1),
+        ("triplecast", "ability", "Triplecast", None, None, None, 1),
+        ("volcano", "ability", "Volcano", None, None, None, 1),
+        ("tephra", "ability", "Tephra", None, None, None, 1),
+        ("meteor-logic", "talent", "astromancer.meteor-logic", "Meteor Logic", "Increase Magic by 10% for celestial area pressure.", "Magic", 1),
+        ("astral-judgment", "talent", "astromancer.astral-judgment", "Astral Judgment", "Increase Magic by 10% after completing the celestial discipline.", "Magic", 1),
+    )),
+    *_pathfinder_kit_column("Lucid Utility", 3, 3, (
+        ("access-storage", "ability", "AccessStorage", None, None, None, 1),
+        ("weightless-reach", "talent", "astromancer.weightless-reach", "Weightless Reach", "Increase Magic Defense by 10% while reaching beyond the dungeon.", "Magic Defense", 1),
+        ("silent-lucidity", "ability", "SilentLucidity", None, None, None, 1),
+        ("dream-calculus", "talent", "astromancer.dream-calculus", "Dream Calculus", "Increase Magic by 10% while lucid spellcasting is available.", "Magic", 1),
+        ("sleepwalker-ward", "talent", "astromancer.sleepwalker-ward", "Sleepwalker Ward", "Increase Defense by 10% against waking threats.", "Defense", 1),
+        ("remote-cache", "talent", "astromancer.remote-cache", "Remote Cache", "Increase Magic Defense by 10% for remote dungeon utility.", "Magic Defense", 1),
+        ("lucid-horizon", "talent", "astromancer.lucid-horizon", "Lucid Horizon", "Increase Magic by 10% after completing the lucid discipline.", "Magic", 1),
+    )),
+)
+
+
 BASE_TREE_PROMOTION_SPECS = {
     "Footpad": (
         ("Thief", "Thief", (0.5, 6), ("footpad.ability.serendipity",
@@ -3998,42 +4925,23 @@ AUTHORED_PROMOTED_TALENT_KEYS = frozenset({
     "beast-master.bonded-bulwark",
 })
 
-# These classes currently expose only their authored legacy ability catalog
-# (plus the one explicit Beast Master payoff above). They deliberately do not
-# satisfy the normal terminal-tree breadth heuristic by manufacturing passive
-# choices.
-CATALOG_ONLY_PROMOTED_TREE_CLASSES = frozenset({
-    "Thief",
-    "Rogue",
-    "Inquisitor",
-    "Seeker",
-    "Spell Stealer",
-    "Arcane Trickster",
-    "Cleric",
-    "Templar",
-    "Hierophant",
-    "Monk",
-    "Master Monk",
-    "Priest",
-    "Archbishop",
-    "Bard",
-    "Troubadour",
-    "Druid",
-    "Lycan",
-    "Archdruid",
-    "Diviner",
-    "Astromancer",
-    "Shaman",
-    "Soulcatcher",
-    "Ranger",
-    "Beast Master",
-})
+# These classes currently expose only their authored legacy ability catalog.
+# Their decision blocks live
+# beside the generated diagrams. They deliberately do not satisfy the normal
+# breadth heuristic by manufacturing passive choices.
+CATALOG_ONLY_PROMOTED_TREE_CLASSES = frozenset()
 
 TALENT_KIT_EFFECTS = {
     "berserker.bloodied-ferocity": ("meter_cap", "bloodied_momentum", 1),
     "paladin.tempered-conviction": ("meter_cap", "oath_conviction", 1),
     "lancer.aerial-footwork": ("meter_cap", "aerial_tempo", 1),
     "beast-master.bonded-bulwark": ("bond_power", "companion", 10),
+    "bard.crescendo-reserve": ("meter_cap", "crescendo", 1),
+    "troubadour.crescendo-reserve": ("meter_cap", "crescendo", 2),
+    "arcane-trickster.grand-larceny": ("meter_cap", "stolen_charge", 1),
+    "cleric.overflowing-grace": ("meter_cap", "devotion", 1),
+    "hierophant.abundant-grace": ("meter_cap", "devotion", 1),
+    "soulcatcher.deep-resonance": ("meter_cap", "totem_resonance", 1),
 }
 
 # A class is considered authored only when its ability paths are explicit or
@@ -4065,6 +4973,30 @@ AUTHORED_TREE_CLASSES = frozenset({
     "Conjurer",
     "Thaumaturgist",
     "Assassin",
+    "Ranger",
+    "Beast Master",
+    "Bard",
+    "Troubadour",
+    "Spell Stealer",
+    "Arcane Trickster",
+    "Cleric",
+    "Templar",
+    "Hierophant",
+    "Thief",
+    "Rogue",
+    "Inquisitor",
+    "Seeker",
+    "Shaman",
+    "Soulcatcher",
+    "Monk",
+    "Master Monk",
+    "Priest",
+    "Archbishop",
+    "Druid",
+    "Lycan",
+    "Archdruid",
+    "Diviner",
+    "Astromancer",
 })
 
 # Promoted classes use explicit identity paths. Constructor names are declared
@@ -4396,18 +5328,19 @@ PROMOTED_TREE_PATHS = {
         ),
     ),
     "Thief": (
-        ("Fortune", ("GoldToss", "Mug", "ScavengersEye")),
-        ("Tools", ("Lockpick",)),
+        ("Fortune", ("ScavengersEye", "GoldToss")),
+        ("Misfortune", ("Mug", "TurnTheTables")),
+        ("Tools", ("Lockpick", "PilferingStrike")),
+        ("Escape", ("CutAndRun",)),
     ),
     "Rogue": (
-        (
-            "Loaded Odds",
-            ("SneakAttack", "SlotMachine", "TripleStrike", "FindersKeepers", "CheatDeath"),
-        ),
-        ("Cunning", ("Zephyrstrike", "KeenEye", "MasterLockpick")),
+        ("Loaded Odds", ("FindersKeepers", "SlotMachine", "TripleStrike", "AllIn")),
+        ("Comebacks", ("SneakAttack", "Zephyrstrike", "SnakeEyes", "CheatDeath")),
+        ("Cunning", ("KeenEye", "MasterLockpick", "DisarmTraps", "DirtyTrick")),
+        ("Escape", ("TakeItOnTheRun", "CutAndRun", "SmokeScreen", "EvasiveGuard")),
     ),
     "Inquisitor": (
-        ("Case Journal", ("Inspect", "ExploitWeakness", "Reveal", "KeenEye")),
+        ("Case Journal", ("Reveal", "Inspect", "TakeNotes", "ExploitWeakness", "KeenEye")),
         (
             "Judgment",
             (
@@ -4418,6 +5351,11 @@ PROMOTED_TREE_PATHS = {
                 "Enfeeble",
                 "ShieldBlock",
                 "Reflect",
+            ),
+        ),
+        (
+            "Elemental Wards",
+            (
                 "ResistFire",
                 "ResistIce",
                 "ResistElectric",
@@ -4430,11 +5368,19 @@ PROMOTED_TREE_PATHS = {
     "Seeker": (
         (
             "Wayfinding",
-            ("Teleport", "Volitation", "EnterWall", "Cartography", "Wayfinding", "ThirdEye"),
+            ("Cartography", "Wayfinding", "SurveyorsStep", "Teleport", "EnterWall"),
+        ),
+        (
+            "Safe Passage",
+            ("Volitation", "SafePassage", "Sanctuary", "ResistAll"),
         ),
         (
             "Revelation",
-            ("TripleStrike", "TruePiercingStrike", "WeakenMind", "ResistAll", "Sanctuary"),
+            ("Inspect", "DeductiveStrike", "ForegoneConclusion"),
+        ),
+        (
+            "Judgment",
+            ("ThirdEye", "WeakenMind", "TripleStrike", "TruePiercingStrike"),
         ),
     ),
     "Assassin": (
@@ -4489,36 +5435,53 @@ PROMOTED_TREE_PATHS = {
         ),
     ),
     "Spell Stealer": (
-        ("Spell Theft", ("StealSpell", "StealAsWell", "ImbueWeapon")),
-        ("Stolen Charge", ("Silence", "WindSpeed")),
+        ("Spell Theft", ("StealSpell", "WindSpeed", "Silence")),
+        (
+            "Stolen Charge",
+            ("ImbueWeapon", "SpellbreakersCut", "StealAsWell", "BorrowedWard"),
+        ),
     ),
     "Arcane Trickster": (
-        ("Arcane Larceny", ("StealSpell2", "WeakenMind")),
-        ("Misdirection", ("ThirdEye",)),
+        ("Arcane Larceny", ("StealSpell2", "ArcaneAmbush", "WeakenMind")),
+        ("Misdirection", ("ThirdEye", "VanishingAct", "FalseOpening")),
     ),
     "Cleric": (
         (
             "Devotion",
-            ("SanctuaryWard", "Smite", "Silence", "Smite2", "TurnUndead2", "Bless", "Cleanse"),
+            ("SanctuaryWard", "Bless", "PiousBounty"),
         ),
-        ("Bulwark", ("TrueStrike", "ShieldSlam", "ShieldBlock", "PiousBounty")),
+        ("Sacred Office", ("Smite", "Smite2", "TurnUndead2", "Cleanse")),
+        ("Bulwark", ("ShieldSlam", "ShieldBlock", "BastionPrayer")),
+        ("Judgment", ("TrueStrike", "DevotionalRebuke", "Silence")),
+        ("Shared Ministry", ("SacredMending", "HallowedReadiness")),
     ),
     "Templar": (
         (
             "Relic Discipline",
-            ("PiercingStrike", "RelicAegis", "Charge", "DoubleStrike", "TruePiercingStrike", "Parry", "Goad"),
+            ("RelicAegis", "ShieldBlock", "LastStand"),
         ),
-        ("Ordered Blessings", ("Smite3", "Dispel", "Regen2")),
+        ("Vanguard", ("Charge", "Goad", "ShieldSlam", "Parry", "PiercingStrike", "DoubleStrike", "TruePiercingStrike")),
+        (
+            "Ordered Blessings",
+            ("Smite3", "Regen2", "Bless", "Dispel"),
+        ),
+        ("Judgment", ("DevotionalRebuke", "TrueStrike", "Holy2", "TurnUndead2", "Cleanse", "BastionPrayer")),
     ),
     "Hierophant": (
-        ("Sacred Conduit", ("ConsecratedConduit", "StaffConduit", "Holy2")),
-        ("Devotional Grace", ("Dispel", "Regen2")),
+        (
+            "Sacred Conduit",
+            ("StaffConduit", "ConduitStrike", "ConsecratedConduit", "Holy2"),
+        ),
+        ("Devotional Grace", ("Regen2", "GracefulIntercession", "Dispel")),
+        ("Radiant Office", ("Smite3", "ResistShadow", "DevotionalRebuke", "TurnUndead2", "Cleanse", "Silence")),
+        ("Pastoral Office", ("Heal2", "Bless", "SanctuaryWard", "Shell", "Reflect", "BastionPrayer")),
     ),
     "Monk": (
         (
-            "Ki",
+            "Ki Assault",
             (
                 "DoubleStrike",
+                "FlowingPalm",
                 "LegSweep",
                 "TrueStrike",
                 "Uppercut",
@@ -4529,29 +5492,38 @@ PROMOTED_TREE_PATHS = {
             "Ki Discipline",
             (
                 "ChiHeal",
+                "UnarmedProficiency",
                 "MirrorBreath",
                 "PurgingKata",
             ),
         ),
-        ("Centering", ("PurityBody", "CenteredGuard", "DrunkenBrawler", "Parry")),
+        ("Centering", ("PurityBody", "CenteredGuard", "Parry")),
+        ("Open Hand", ("Headbutt", "DrunkenBrawler")),
     ),
     "Master Monk": (
         (
-            "Perfected Ki",
-            ("Hyakuretsukyaku", "TripleStrike", "SpinningBackElbow", "Suplex", "Hadouken", "DimMak"),
+            "Perfected Flurry",
+            ("Hyakuretsukyaku", "TripleStrike", "SpinningBackElbow"),
         ),
-        ("Diamond Body", ("Evasion", "PurityBody2", "MartialMastery")),
+        ("Final Art", ("Hadouken", "Suplex", "DimMak")),
+        ("Diamond Body", ("Evasion", "PurityBody2")),
+        ("Rope-a-Dope", ("MartialMastery", "RopeADope")),
     ),
     "Priest": (
-        ("Prayer", ("Supplication", "Holy2", "Dispel", "Berserk")),
+        ("Prayer", ("Supplication", "Holy2", "DazedOrConfused")),
+        ("Exorcism", ("Dispel", "ExpelCurse", "Berserk")),
         (
             "Grace",
-            ("DefensiveRegen", "ManaShield", "Regen2", "Shell", "Cleanse", "Bless"),
+            ("DefensiveRegen", "Regen2", "MagicalInvigoration"),
         ),
+        ("Protection", ("ManaShield", "Shell", "Cleanse", "Bless")),
     ),
     "Archbishop": (
-        ("Benediction", ("Doublecast", "GreatBenediction", "ManaShield2", "Holy3", "Silence")),
-        ("Intervention", ("Heal3", "Regen3", "Resurrection", "ExpelCurse")),
+        ("Benediction", ("GreatBenediction",)),
+        ("Great Gospel", ("Doublecast", "Holy3", "Silence", "ManaShield2")),
+        ("Intervention", ("Heal3", "Resurrection", "ExpelCurse")),
+        ("Sustaining Grace", ("Regen3",)),
+        ("Perfect Supplication", ()),
     ),
     "Bard": (
         ("Performance", ("SongValor", "SongShelter", "SongRenewal")),
@@ -4559,30 +5531,41 @@ PROMOTED_TREE_PATHS = {
     ),
     "Troubadour": (("Finale", ()), ("Mastery", ())),
     "Druid": (
-        ("Forms", ("Transform", "Transform2", "MortalStrike")),
-        ("Nature Rites", ("PoisonDart", "StoneSkin", "Regrowth", "CalmingBreeze")),
+        ("Panther Form", ("Transform", "MortalStrike")),
+        ("Direbear Form", ("Transform2",)),
+        ("Venom and Stone", ("PoisonDart", "ResistPoison", "NoxiousMist", "StoneSkin")),
+        ("Growth and Stars", ("Regrowth", "RestoringBoon", "CalmingBreeze", "Starfall")),
+        ("Primal Practice", ("PrimalPractice",)),
     ),
     "Lycan": (
-        ("Frenzy", ("Transform3", "Charge", "WingedPounce", "MortalStrike2", "BattleCry")),
-        ("Control", ("Dispel",)),
+        ("Frenzy", ("Transform3", "Charge", "BattleCry")),
+        ("Moon Hunt", ("MortalStrike2", "LunarRend")),
+        ("Dragon Essence", ("WingedPounce", "DragonFang")),
+        ("Control", ("Dispel", "CenterBeast")),
     ),
     "Archdruid": (
         (
-            "Fourfold Balance",
-            ("FourfoldSurge", "PlantSeeds", "Bolt", "VilePotion", "Windswept", "BallLightning", "NatureShield"),
+            "Venom",
+            ("VilePotion", "PoisonBreath"),
         ),
-        ("Aspect Harmony", ()),
+        ("Stone", ("NatureShield",)),
+        ("Growth", ("PlantSeeds", "ExpelCurse", "GrovePulse")),
+        ("Storm", ("Bolt", "Windswept", "BallLightning", "FourfoldSurge")),
     ),
     "Diviner": (
-        ("Runes", ("Doublecast", "Enfeeble", "Dispel", "Berserk", "LearnSpell", "Haste")),
-        ("Foresight", ()),
+        ("Rune Lore", ("Vulcanize", "Enfeeble", "Dispel")),
+        ("Rune Flow", ("Haste", "Doublecast")),
+        ("Foresight", ("LearnSpell", "Berserk")),
+        ("Chronomancy", ("TemporaryStasis",)),
     ),
     "Astromancer": (
-        ("Foresight Threads", ("ThreadedCast", "Triplecast", "Foretell", "TwistFate", "Rewind")),
-        ("Constellations", ("Vulcanize", "WeakenMind", "Wormhole", "LearnSpell2", "Boost")),
+        ("Foresight Threads", ("Foretell", "TwistFate", "ThreadedCast", "Rewind")),
+        ("Runic Constellations", ("Vulcanize", "WeakenMind", "Boost", "LearnSpell2")),
+        ("Celestial Force", ("Wormhole", "Triplecast", "Volcano", "Tephra")),
+        ("Lucid Utility", ("AccessStorage", "SilentLucidity")),
     ),
     "Shaman": (
-        ("Totems", ("Totem", "TotemSurge", "MaelstromWeapon")),
+        ("Totems", ("TotemSurge", "MaelstromWeapon")),
         (
             "Elements",
             ("ElementalStrike", "PiercingStrike", "TrueStrike", "DoubleStrike", "Hex", "Hydration", "AstralShift"),
@@ -4592,7 +5575,13 @@ PROMOTED_TREE_PATHS = {
         ("Soul Communion", ("SoulDrain", "Desoul", "AbsorbEssence")),
         ("Totem Resonance", ("TotemSurge", "TripleStrike", "TruePiercingStrike", "Dispel", "Parry")),
     ),
-    "Ranger": (("Hunt", ("FavoredEnemy",)), ("Companion Bond", ())),
+    "Ranger": (
+        ("Hunt", ("FavoredEnemy", "WildSense", "AggressivePursuit")),
+        ("Companion Bond", ("DetectAnimal", "CreatureComforts")),
+        ("Duelist / Ranged", ("Duelist", "Vision", "UncannyVolley")),
+        ("Two-Handed Fighting", ("TwoHandedWeaponProficiency", "QuarryCleave", "TrueStrike")),
+        ("Defense", ("Parry", "HuntersSnare")),
+    ),
     "Beast Master": (
         ("Pack Tactics", ("PackStrike", "HarryPrey", "MendWounds")),
         ("Commands", ("Cover", "Zephyrstrike", "GuardPartner")),
@@ -4619,10 +5608,10 @@ PROMOTED_TREE_PROMOTION_PATHS = {
     "Monk": {"Master Monk": "Ki"},
     "Priest": {"Archbishop": "Prayer"},
     "Bard": {"Troubadour": "Performance"},
-    "Druid": {"Lycan": "Forms", "Archdruid": "Nature Rites"},
-    "Diviner": {"Astromancer": "Runes"},
+    "Druid": {"Lycan": "Panther Form", "Archdruid": "Growth and Stars"},
+    "Diviner": {"Astromancer": "Rune Lore"},
     "Shaman": {"Soulcatcher": "Totems"},
-    "Ranger": {"Beast Master": "Hunt"},
+    "Ranger": {"Beast Master": "Companion Bond"},
 }
 
 # Fallback classification for promoted-class trees. These paths are only
@@ -4793,4 +5782,5 @@ EXTERNAL_ACQUISITION_ABILITIES = frozenset({
     "Last Bastion",
     "Stronghold",
     "Tame",
+    "Totem",
 })

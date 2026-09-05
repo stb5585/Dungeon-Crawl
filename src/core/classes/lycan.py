@@ -100,7 +100,15 @@ def frenzy_damage_bonus(character: Any) -> float:
     state = ensure_state(character)
     if state["frenzy_turns"] <= 0:
         return 0.0
-    return 0.20
+    bonus = 0.20
+    try:
+        from ..progression import has_talent
+
+        if has_talent(character, "lycan.frenzied-force"):
+            bonus += 0.10
+    except (AttributeError, KeyError, TypeError):
+        pass
+    return bonus
 
 
 def healing_multiplier(character: Any) -> float:
@@ -141,6 +149,16 @@ def maybe_trigger_frenzy(
         "Tame": 0.20,
     }.get(rank, 1.00)
     base_chance *= rank_multiplier
+    combat = promotion_kits.combat_state(character)
+    if combat.pop("center_beast_ready", False):
+        base_chance *= 0.50
+    try:
+        from ..progression import has_talent
+
+        if has_talent(character, "lycan.measured-breath"):
+            base_chance *= 0.85
+    except (AttributeError, KeyError, TypeError):
+        pass
     base_chance *= class_rings.controlled_frenzy_penalty_multiplier(character)
     if rng.random() >= base_chance:
         if rank == "Restive":

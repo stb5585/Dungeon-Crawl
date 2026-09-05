@@ -49,6 +49,8 @@ RISKY_LUCK_ACTIONS = frozenset({
     "Pocket Sand",
     "Kidney Punch",
     "Sleeping Powder",
+    "Pilfering Strike",
+    "Dirty Trick",
 })
 STATUS_LUCK_ACTIONS = frozenset({
     "Pocket Sand",
@@ -112,6 +114,11 @@ def _apply_ordered_blessing(character: Any, spent: int) -> str:
     empowered = _power_up_active(character, "Holy Retribution")
     scale = 1.25 if empowered else 1.0
     duration = 3 if empowered else 2
+    from ..cleric import has_cleric_talent
+
+    if has_cleric_talent(character, "templar.ordered-purpose"):
+        scale *= 1.25
+        duration += 1
     if blessing == "Regen":
         effect = character.magic_effects["Regen"]
         effect.active = True
@@ -127,7 +134,24 @@ def _apply_ordered_blessing(character: Any, spent: int) -> str:
             "damage": max(1, int(6 * spent * scale)),
             "turns": duration,
         }
-    return f"Ordered Blessings advances through {blessing}.\n"
+    message = f"Ordered Blessings advances through {blessing}.\n"
+    if has_cleric_talent(character, "templar.perfect-order"):
+        effect = character.stat_effects["Magic Defense"]
+        effect.active = True
+        effect.duration = max(int(effect.duration or 0), duration)
+        effect.extra = max(int(effect.extra or 0), max(2, spent * 2))
+        effect.source = "Perfect Order"
+        message += "Perfect Order raises Magic Defense.\n"
+    if has_cleric_talent(character, "templar.liturgical-renewal"):
+        mana = character.mana
+        restored = min(
+            max(0, int(mana.max) - int(mana.current)),
+            max(1, spent),
+        )
+        mana.current += restored
+        if restored:
+            message += f"Liturgical Renewal restores {restored} MP.\n"
+    return message
 
 
 def conviction_action(character: Any, action_name: str, *, clean: bool = False) -> str:
@@ -163,7 +187,16 @@ def record_luck_roll(
     if not _claim_action(character, "luck_outcome", incoming=incoming):
         return ""
     outcome = "clean success" if success else "setback"
-    return add_fortune(character, success, f"{reason} {outcome}")
+    message = add_fortune(character, success, f"{reason} {outcome}")
+    if success:
+        from ..thief import has_thief_talent
+
+        if has_thief_talent(character, "thief.read-the-room"):
+            import random
+
+            if random.random() < 0.25:
+                message += gain_meter(character, "fortune", 1, "Read the Room")
+    return message
 
 
 def _preserve_spent_meter(character: Any, key: str, ring_class: str, label: str, msg: str) -> str:
@@ -187,7 +220,14 @@ def consume_fortune_for_risky_action(character: Any, reason: str) -> tuple[float
         "spent": spent,
         "reason": reason,
     }
-    reliability = min(0.15, 0.05 * spent)
+    from ..thief import has_thief_talent
+
+    per_stack = 0.05
+    if has_thief_talent(character, "thief.gilt-edge"):
+        per_stack += 0.025
+    if has_thief_talent(character, "rogue.stacked-odds"):
+        per_stack += 0.025
+    reliability = min(0.30, per_stack * spent)
     msg = f"{character.name} spends {spent} Fortune smoothing {reason}."
     msg += " The odds turn in their favor.\n"
     return reliability, msg
@@ -200,13 +240,22 @@ def finish_fortune_payoff(character: Any, success: bool) -> str:
     state["pending_fortune_payoff"] = None
     if not success or not isinstance(pending, dict):
         return ""
-    return _preserve_spent_meter(
+    message = _preserve_spent_meter(
         character,
         "fortune",
         "Rogue",
         "Loaded Dice",
         "",
     )
+    from ..thief import has_thief_talent
+
+    if (
+        has_thief_talent(character, "thief.fortune-favors-bold")
+        and int(combat_state(character).get("fortune", 0) or 0) == 0
+    ):
+        combat_state(character)["fortune"] = 1
+        message += "Fortune Favors the Bold preserves 1 spent Fortune.\n"
+    return message
 
 
 def resolve_misfortune_payoff(
@@ -224,7 +273,14 @@ def resolve_misfortune_payoff(
     if spent <= 0:
         return ""
     state["misfortune"] = 0
-    bonus = max(1, int(max(1, base_damage) * (0.08 * spent)))
+    from ..thief import has_thief_talent
+
+    per_stack = 0.08
+    if has_thief_talent(character, "thief.hard-lessons"):
+        per_stack += 0.02
+    if has_thief_talent(character, "rogue.cruel-reversal"):
+        per_stack += 0.02
+    bonus = max(1, int(max(1, base_damage) * (per_stack * spent)))
     if target is not None and base_damage > 0:
         hit, defense_message, defended = target.handle_defenses(
             character,
@@ -280,6 +336,8 @@ def resolve_misfortune_payoff(
                     effect = target.effect_handler(name).get(name)
                     if effect is not None and int(getattr(effect, "duration", 0) or 0) > 0:
                         effect.duration += spent
+                        if has_thief_talent(character, "thief.spiteful-streak"):
+                            effect.duration += 1
                         scaled_detail = f", extending {name}"
         msg = (
             f"{character.name} cashes in {spent} Misfortune through {reason} "
@@ -293,7 +351,16 @@ def misfortune_severity_multiplier(character: Any) -> float:
     if class_name(character) not in {"Thief", "Rogue"}:
         return 1.0
     stored = int(combat_state(character).get("misfortune", 0) or 0)
-    return 1.0 + (0.08 * stored)
+    from ..thief import has_thief_talent
+
+    per_stack = 0.08
+    if has_thief_talent(character, "thief.hard-lessons"):
+        per_stack += 0.02
+    if has_thief_talent(character, "rogue.cruel-reversal"):
+        per_stack += 0.02
+    if has_thief_talent(character, "rogue.rigged-reels"):
+        per_stack *= 1.25
+    return 1.0 + (per_stack * stored)
 
 
 def cheat_death(character: Any) -> str:
@@ -304,7 +371,12 @@ def cheat_death(character: Any) -> str:
         return ""
     state["cheat_death_used"] = True
     misfortune = int(state.get("misfortune", 0) or 0)
-    chance = min(0.65, 0.25 + (0.10 * misfortune))
+    from ..thief import has_thief_talent
+
+    chance = 0.25 + (0.10 * misfortune)
+    if has_thief_talent(character, "rogue.cheat-fate"):
+        chance += 0.10
+    chance = min(0.75, chance)
     try:
         import random
 
@@ -323,7 +395,9 @@ def cheat_death(character: Any) -> str:
     if not success:
         return "Cheat Death fails to find a way out.\n"
     state["misfortune"] = 0
-    state["jinx_turns"] = 2
+    state["jinx_turns"] = (
+        1 if has_thief_talent(character, "rogue.break-the-jinx") else 2
+    )
     character.health.current = 1
     msg = "Loaded Dice turns the failed save.\n" if loaded_dice else ""
     if misfortune > 0:
@@ -574,6 +648,15 @@ INVESTIGATION_SETUP_ACTIONS = frozenset({
 })
 
 
+def _has_track_talent(character: Any, key: str) -> bool:
+    try:
+        from ...progression import has_talent
+
+        return has_talent(character, key)
+    except (AttributeError, KeyError, TypeError, ValueError):
+        return False
+
+
 def revelation_stacks(character: Any, target: Any) -> int:
     """Return combat-only Revelation stored against one target."""
     mapping = combat_state(character).get("revelation", {})
@@ -628,7 +711,12 @@ def prepare_revelation_payoff(
         )
     mapping = state.setdefault("revelation", {})
     mapping.pop(target_key, None)
-    accuracy = (0.04 * stacks) + studied_accuracy
+    accuracy_per_stack = (
+        0.05
+        if _has_track_talent(character, "seeker.precise-revelation")
+        else 0.04
+    )
+    accuracy = (accuracy_per_stack * stacks) + studied_accuracy
     state["active_revelation_payoff"] = {
         "target_key": target_key,
         "stacks": stacks,
@@ -651,13 +739,19 @@ def finish_revelation_payoff(character: Any, target: Any, *, hit: bool) -> str:
     active["resolved"] = True
     stacks = max(0, int(active.get("stacks", 0) or 0))
     if not hit:
+        if stacks and _has_track_talent(character, "seeker.conserved-insight"):
+            add_revelation(character, target, 1, "conserved insight")
+            return f"{character.name} conserves one Revelation despite the miss.\n"
         return f"{character.name}'s committed Revelation is lost on the miss.\n"
     defense = getattr(target, "stat_effects", {}).get("Defense")
     if defense is not None:
         existing = int(defense.extra or 0) if defense.active else 0
         defense.active = True
-        defense.duration = max(int(defense.duration or 0), 2)
-        defense.extra = max(-20, min(-stacks, existing - stacks))
+        exposed_truth = _has_track_talent(character, "seeker.exposed-truth")
+        severity = 2 if exposed_truth else 1
+        duration = 3 if exposed_truth else 2
+        defense.duration = max(int(defense.duration or 0), duration)
+        defense.extra = max(-20, min(-(severity * stacks), existing - (severity * stacks)))
     return f"Revelation exposes {target.name}, deepening the opening.\n"
 
 
@@ -691,7 +785,12 @@ def record_inspect(character: Any, target: Any) -> str:
         state["inspect_studied_bonus_used"] = True
         msg += add_revelation(character, target, 1, "a familiar tell")
     msg += _ring_insight_bonus(character, target, "Inspect")
-    msg += gain_case_progress(character, enemy_type, 3, "Inspect")
+    amount = (
+        4
+        if _has_track_talent(character, "seeker.practiced-inspection")
+        else 3
+    )
+    msg += gain_case_progress(character, enemy_type, amount, "Inspect")
     return msg
 
 
@@ -778,8 +877,15 @@ def wayfinding_discount(
     route_type = enemy_type or ensure_state(character).get("case_focus")
     progress = case_progress(character, route_type) if route_type else 0
     discount = 0.10 if progress >= 100 else 0.0
-    if mapping_progress is not None and float(mapping_progress) >= 0.50:
+    mapping_threshold = (
+        0.35
+        if _has_track_talent(character, "seeker.early-bearings")
+        else 0.50
+    )
+    if mapping_progress is not None and float(mapping_progress) >= mapping_threshold:
         discount = max(discount, 0.05)
+    if discount and _has_track_talent(character, "seeker.efficient-passage"):
+        discount += 0.05
     if _ring_awakened_equipped(character, "Seeker"):
         discount += 0.05
     return min(0.20, discount)
@@ -816,7 +922,16 @@ def level_mapping_progress(character: Any, dungeon_level: int | None = None) -> 
 
 
 def gain_stolen_charge(character: Any, reason: str) -> str:
-    return gain_meter(character, "stolen_charge", 1, reason)
+    amount = 1
+    if reason == "stolen spell scroll":
+        try:
+            from ...progression import has_talent
+
+            if has_talent(character, "spell-stealer.counterfeit-casting"):
+                amount = 2
+        except (AttributeError, KeyError, TypeError, ValueError):
+            pass
+    return gain_meter(character, "stolen_charge", amount, reason)
 
 
 def devotion_guard_reduction(character: Any, damage: int) -> tuple[int, str]:
@@ -829,7 +944,14 @@ def devotion_guard_reduction(character: Any, damage: int) -> tuple[int, str]:
     )
     if stacks <= 0:
         return damage, ""
-    reduced = int(damage * (0.03 * stacks))
+    from ..cleric import has_cleric_talent
+
+    per_stack = 0.03
+    if has_cleric_talent(character, "cleric.held-faith"):
+        per_stack += 0.01
+    if has_cleric_talent(character, "hierophant.warded-faith"):
+        per_stack += 0.01
+    reduced = int(damage * (per_stack * stacks))
     if reduced <= 0:
         return damage, ""
     damage = max(0, damage - reduced)
@@ -860,7 +982,11 @@ def sanctuary_ward(character: Any) -> str:
     spent = spend_meter(character, "devotion")
     effect = character.magic_effects["Nature Shield"]
     effect.active = True
-    effect.duration = 2
+    from ..cleric import has_cleric_talent
+
+    effect.duration = (
+        3 if has_cleric_talent(character, "cleric.lasting-sanctuary") else 2
+    )
     effect.extra = max(10, spent * 12)
     msg = f"{character.name} spends {spent} Devotion on Sanctuary Ward.\n"
     if spent >= 3:
@@ -888,15 +1014,31 @@ def relic_aegis(character: Any) -> str:
     if not _spend_mp(character, 12):
         return "Not enough MP for Relic Aegis.\n"
     spent = spend_meter(character, "devotion")
+    from ..cleric import has_cleric_talent
+
+    relic_scale = (
+        1.25
+        if has_cleric_talent(character, "templar.reinforced-relic")
+        else 1.0
+    )
+    if (
+        has_cleric_talent(character, "templar.unbroken-reliquary")
+        and int(character.health.current) * 2 < int(character.health.max)
+    ):
+        relic_scale *= 1.25
+    extra_turn = int(has_cleric_talent(character, "templar.enduring-aegis"))
     effect = character.magic_effects["Nature Shield"]
     effect.active = True
-    effect.duration = 3
-    effect.extra = max(20, spent * 18)
+    effect.duration = 3 + extra_turn
+    effect.extra = max(20, int(spent * 18 * relic_scale))
     msg = f"{character.name} spends {spent} Devotion on Relic Aegis.\n"
     empowered = _power_up_active(character, "Holy Retribution")
     combat_state(character)["relic_aegis_counter"] = {
-        "damage": max(1, int(4 * spent * (1.5 if empowered else 1.0))),
-        "turns": 4 if empowered else 3,
+        "damage": max(
+            1,
+            int(4 * spent * (1.5 if empowered else 1.0) * relic_scale),
+        ),
+        "turns": (4 if empowered else 3) + extra_turn,
     }
     msg += "Relic Aegis readies a holy counter.\n"
     msg += _apply_ordered_blessing(character, spent)
@@ -965,6 +1107,10 @@ def supplication(character: Any, target: Any | None = None) -> str:
     spent = spend_meter(character, "prayer")
     gospel = _power_up_active(character, "Great Gospel")
     scale = 1.20 if gospel else 1.0
+    if _has_track_talent(character, "priest.fervent-supplication"):
+        scale += 0.15
+    if _has_track_talent(character, "archbishop.abundant-mercy"):
+        scale += 0.20
     heal = min(
         target.health.max - target.health.current,
         max(1, int((12 * spent + character.stats.wisdom // 2) * scale)),
@@ -973,39 +1119,57 @@ def supplication(character: Any, target: Any | None = None) -> str:
     msg = f"{character.name} spends {spent} Prayer; Supplication restores {heal} HP.\n"
     ward = target.magic_effects["Nature Shield"]
     ward.active = True
-    ward.duration = max(ward.duration, 3 if gospel else 2)
-    ward.extra = max(int(ward.extra or 0), int(6 * spent * scale))
-    if random.random() < min(0.50, 0.10 * spent):
+    ward_duration = 3 if gospel else 2
+    if _has_track_talent(character, "priest.sheltering-prayer"):
+        ward_duration += 1
+    ward.duration = max(ward.duration, ward_duration)
+    ward_scale = 8 if _has_track_talent(character, "archbishop.sheltering-word") else 6
+    ward.extra = max(int(ward.extra or 0), int(ward_scale * spent * scale))
+    cleanse_chance = 0.10 * spent
+    if _has_track_talent(character, "priest.merciful-prayer"):
+        cleanse_chance += 0.15
+    if _has_track_talent(character, "archbishop.purifying-word"):
+        cleanse_chance += 0.20
+    if random.random() < min(0.90, cleanse_chance):
         cleansed = _cleanse_one_hostile_status(target)
         if cleansed:
             msg += f"Supplication cleanses {cleansed}.\n"
-    return _preserve_spent_meter(character, "prayer", "Archbishop", "Divine Intervention", msg)
+    msg = _preserve_spent_meter(character, "prayer", "Archbishop", "Divine Intervention", msg)
+    if _has_track_talent(character, "archbishop.endless-supplication"):
+        msg += gain_meter(character, "prayer", 1, "Endless Supplication")
+    return msg
 
 
 def great_benediction(character: Any) -> str:
     if class_name(character) != "Archbishop":
         return "Great Benediction requires Archbishop training.\n"
     stacks = int(combat_state(character).get("prayer", 0) or 0)
-    if stacks < 3:
-        return "Great Benediction requires at least 3 Prayer.\n"
+    minimum = 2 if _has_track_talent(character, "archbishop.ready-benediction") else 3
+    if stacks < minimum:
+        return f"Great Benediction requires at least {minimum} Prayer.\n"
     if not _spend_mp(character, 18):
         return "Not enough MP for Great Benediction.\n"
     spent = spend_meter(character, "prayer")
     gospel = _power_up_active(character, "Great Gospel")
     scale = 1.20 if gospel else 1.0
+    if _has_track_talent(character, "archbishop.greater-benediction"):
+        scale += 0.15
     duration = 5 if gospel else 4
+    if _has_track_talent(character, "archbishop.lasting-benediction"):
+        duration += 1
     character.stat_effects["Magic Defense"].active = True
     character.stat_effects["Magic Defense"].duration = duration
-    character.stat_effects["Magic Defense"].extra = max(int(character.stat_effects["Magic Defense"].extra or 0), int(spent * 4 * scale))
+    defense_scale = 5 if _has_track_talent(character, "archbishop.benediction-aegis") else 4
+    character.stat_effects["Magic Defense"].extra = max(int(character.stat_effects["Magic Defense"].extra or 0), int(spent * defense_scale * scale))
     character.magic_effects["Regen"].active = True
     character.magic_effects["Regen"].duration = duration
     character.magic_effects["Regen"].extra = max(int(character.magic_effects["Regen"].extra or 0), int(spent * 5 * scale))
     combat_state(character)["great_benediction"] = {
         "turns": duration,
-        "healing": 0.04 * spent * scale,
-        "reduction": 0.02 * spent * scale,
-        "status": 0.05 * spent * scale,
-        "mana": int(math.ceil(spent / 3)),
+        "healing": (0.05 if _has_track_talent(character, "archbishop.healing-liturgy") else 0.04) * spent * scale,
+        "reduction": (0.025 if _has_track_talent(character, "archbishop.protective-liturgy") else 0.02) * spent * scale,
+        "status": (0.07 if _has_track_talent(character, "archbishop.unshaken-congregation") else 0.05) * spent * scale,
+        "mana": int(math.ceil(spent / (2 if _has_track_talent(character, "archbishop.mana-liturgy") else 3))),
     }
     msg = f"{character.name} spends {spent} Prayer on Great Benediction.\n"
     return _preserve_spent_meter(character, "prayer", "Archbishop", "Divine Intervention", msg)
@@ -1016,7 +1180,8 @@ def great_gospel_prayer(character: Any) -> str:
         return ""
     cap = cap_for(character, "prayer")
     state = combat_state(character)
-    state["prayer"] = max(int(state.get("prayer", 0) or 0), int(math.ceil(cap / 2)))
+    fraction = 0.75 if _has_track_talent(character, "archbishop.opening-gospel") else 0.50
+    state["prayer"] = max(int(state.get("prayer", 0) or 0), int(math.ceil(cap * fraction)))
     return f"Great Gospel raises Prayer to {state['prayer']}/{cap}.\n"
 
 
@@ -1042,6 +1207,44 @@ def benediction_damage_reduction(character: Any, damage: int) -> tuple[int, str]
     if reduced <= 0:
         return damage, ""
     return max(0, damage - reduced), f"Great Benediction prevents {reduced} damage.\n"
+
+
+def record_magical_invigoration_tick(character: Any) -> str:
+    """Add one independently expiring Magic stack after a Regen tick."""
+    if not _has_skill(character, "Magical Invigoration"):
+        return ""
+    state = combat_state(character)
+    stacks = state.setdefault("magical_invigoration", [])
+    if not isinstance(stacks, list):
+        stacks = []
+        state["magical_invigoration"] = stacks
+    duration = 4 if _has_track_talent(character, "archbishop.enduring-invigoration") else 3
+    if _has_track_talent(character, "priest.long-regeneration"):
+        duration += 1
+    stacks.append(duration)
+    return f"{character.name} gains Magical Invigoration ({len(stacks)} stacks).\n"
+
+
+def tick_magical_invigoration(character: Any) -> None:
+    """Advance separately timed Magical Invigoration stacks."""
+    state = combat_state(character)
+    stacks = state.get("magical_invigoration")
+    if not isinstance(stacks, list):
+        return
+    state["magical_invigoration"] = [int(turns) - 1 for turns in stacks if int(turns) > 1]
+
+
+def magical_invigoration_bonus(character: Any) -> int:
+    """Return the current Magic rating supplied by Regen-derived stacks."""
+    stacks = combat_state(character).get("magical_invigoration", [])
+    if not isinstance(stacks, list):
+        return 0
+    amount = 4
+    if _has_track_talent(character, "priest.arcane-renewal"):
+        amount += 2
+    if _has_track_talent(character, "archbishop.radiant-renewal"):
+        amount += 2
+    return len(stacks) * amount
 
 
 def begin_ki_spender(character: Any, ability_name: str) -> str:
@@ -1079,15 +1282,21 @@ def finish_ki_spender(
     state["ki_spender"] = None
     msg = ""
     if ability_name == "Chi Heal":
+        ratio = 0.30 if _has_track_talent(character, "monk.deep-restoration") else 0.20
+        if _has_track_talent(character, "master-monk.perfected-restoration"):
+            ratio += 0.15
         bonus = min(
             max(0, int(character.health.max) - int(character.health.current)),
-            max(0, int(healing * 0.20)),
+            max(0, int(healing * ratio)),
         )
         if bonus:
             character.health.current += bonus
             msg += f"Focused Ki restores {bonus} additional HP.\n"
+        immunity = 2 if _has_track_talent(character, "monk.purifying-flow") else 1
+        if _has_track_talent(character, "master-monk.purity-without-end"):
+            immunity += 1
         state["purge_immunity_turns"] = max(
-            1,
+            immunity,
             int(state.get("purge_immunity_turns", 0) or 0),
         )
         msg += "Focused Ki guards against hostile status for one turn.\n"
@@ -1103,14 +1312,14 @@ def finish_ki_spender(
 def ki_accuracy_bonus(character: Any, ability_name: str) -> float:
     """Return the paid Ki rider's per-strike accuracy bonus."""
     if ki_spender_active(character, ability_name) and ability_name == "Hyakuretsukyaku":
-        return 0.10
+        return 0.15 if _has_track_talent(character, "master-monk.hundredfold-precision") else 0.10
     return 0.0
 
 
 def ki_control_bonus(character: Any, ability_name: str) -> float:
     """Return the paid Ki rider's control-contest bonus."""
     if ki_spender_active(character, ability_name) and ability_name in {"Leg Sweep", "Suplex"}:
-        return 0.15
+        return 0.25 if _has_track_talent(character, "master-monk.perfect-control") else 0.15
     return 0.0
 
 
@@ -1140,7 +1349,13 @@ def record_ki_martial_hit(character: Any, metadata: dict[str, Any] | None) -> st
     if token > 0 and state.get("ki_action_token") == token:
         return ""
     state["ki_action_token"] = token if token > 0 else -1
-    return gain_meter(character, "ki", 1, "martial hit")
+    amount = 1
+    if (
+        int(state.get("ki", 0) or 0) == 0
+        and _has_track_talent(character, "monk.rhythmic-breathing")
+    ):
+        amount += 1
+    return gain_meter(character, "ki", amount, "martial hit")
 
 
 def begin_incoming_ki_action(character: Any) -> None:
@@ -1158,7 +1373,65 @@ def record_ki_reaction(character: Any, reason: str) -> str:
     if token and state.get("ki_reaction_claimed") == token:
         return ""
     state["ki_reaction_claimed"] = token
-    return gain_meter(character, "ki", 1, reason)
+    amount = 1
+    if _has_track_talent(character, "monk.reactive-center"):
+        amount += 1
+    if _has_track_talent(character, "master-monk.rooted-recovery"):
+        amount += 1
+    return gain_meter(character, "ki", amount, reason)
+
+
+def rope_a_dope_dodge_bonus(character: Any) -> float:
+    """Return the escalating avoidance bonus of an active Rope-a-Dope."""
+    payload = combat_state(character).get("rope_a_dope")
+    if not isinstance(payload, dict) or not payload.get("active"):
+        return 0.0
+    base = 0.15 if _has_track_talent(character, "master-monk.slip-the-rope") else 0.10
+    step = 0.07 if _has_track_talent(character, "master-monk.rolling-shoulders") else 0.05
+    return base + step * max(0, int(payload.get("dodges", 0) or 0))
+
+
+def record_rope_a_dope_dodge(character: Any, attacker: Any) -> str:
+    """Advance Rope-a-Dope and release its four-hit answer at three dodges."""
+    payload = combat_state(character).get("rope_a_dope")
+    if not isinstance(payload, dict) or not payload.get("active"):
+        return ""
+    if payload.get("target") is not attacker:
+        return ""
+    payload["dodges"] = int(payload.get("dodges", 0) or 0) + 1
+    if payload["dodges"] < 3:
+        return f"Rope-a-Dope rises to {payload['dodges']} consecutive dodges.\n"
+    payload["active"] = False
+    modifiers = (0.40, 0.50, 0.60, 0.70)
+    if _has_track_talent(character, "master-monk.championship-round"):
+        modifiers = (0.50, 0.60, 0.70, 0.80)
+    msg = f"{character.name} answers with the Rope-a-Dope combination!\n"
+    for modifier in modifiers:
+        hit_message, _hit, _critical = character.weapon_damage(
+            attacker,
+            dmg_mod=modifier,
+            use_offhand=False,
+        )
+        msg += hit_message
+        if not attacker.is_alive():
+            break
+    if _has_track_talent(character, "master-monk.second-wind"):
+        healing = min(
+            character.health.max - character.health.current,
+            max(1, int(character.health.max * 0.10)),
+        )
+        character.health.current += healing
+        msg += f"Second Wind restores {healing} HP.\n"
+    return msg
+
+
+def break_rope_a_dope(character: Any) -> str:
+    """End Rope-a-Dope when its user takes damage."""
+    payload = combat_state(character).get("rope_a_dope")
+    if not isinstance(payload, dict) or not payload.get("active"):
+        return ""
+    payload["active"] = False
+    return f"{character.name}'s Rope-a-Dope stance breaks on the hit.\n"
 
 
 def dim_mak(character: Any, target: Any | None) -> str:
@@ -1188,18 +1461,22 @@ def dim_mak(character: Any, target: Any | None) -> str:
     elif subtyp == "Staff":
         from ... import items
 
-        penalty = 0.80
+        penalty = 0.90 if _has_track_talent(character, "master-monk.flexible-form") else 0.80
         drop_msg = "The ordinary staff cannot hold the finisher and is disarmed.\n"
         if hasattr(character, "modify_inventory"):
             character.modify_inventory(weapon, 1)
         character.equipment["Weapon"] = items.NoWeapon()
     hp_before = int(target.health.current)
     ring = _ring_awakened_equipped(character, "Master Monk")
+    damage_per_ki = 0.15 if _has_track_talent(character, "master-monk.decisive-pressure") else 0.12
+    accuracy = 0.10 if ring else 0.0
+    if _has_track_talent(character, "master-monk.death-point-focus"):
+        accuracy += 0.10
     attack_msg, hit, _crit = character.weapon_damage(
         target,
-        dmg_mod=(1.5 + spent * 0.12) * penalty,
+        dmg_mod=(1.5 + spent * damage_per_ki) * penalty,
         use_offhand=False,
-        accuracy_modifier=0.10 if ring else 0.0,
+        accuracy_modifier=accuracy,
     )
     damage = max(0, hp_before - int(target.health.current))
     msg = f"{character.name} spends {spent} Ki on Dim Mak.\n{attack_msg}{drop_msg}"
@@ -1220,12 +1497,21 @@ def dim_mak(character: Any, target: Any | None) -> str:
                 if target.apply_stun(2, source="Dim Mak", applier=character):
                     msg += f"{target.name} is stunned by the disrupted chi.\n"
     if hit and not target.is_alive():
-        character.health.current = min(character.health.max, character.health.current + target.health.max)
-        character.mana.current = min(character.mana.max, character.mana.current + target.mana.max)
+        recovery_scale = 1.25 if _has_track_talent(character, "master-monk.essence-mastery") else 1.0
+        character.health.current = min(
+            character.health.max,
+            character.health.current + int(target.health.max * recovery_scale),
+        )
+        character.mana.current = min(
+            character.mana.max,
+            character.mana.current + int(target.mana.max * recovery_scale),
+        )
         msg += f"{character.name} absorbs {target.name}'s essence.\n"
     state = combat_state(character)
-    if ring and hit and damage > 0 and not state.get("martial_master_refund_used"):
+    refund_training = _has_track_talent(character, "master-monk.inner-reserve")
+    if (ring or refund_training) and hit and damage > 0 and not state.get("martial_master_refund_used"):
         state["martial_master_refund_used"] = True
-        state["ki"] = 1
-        msg += "Martial Master refunds 1 Ki after the clean finisher.\n"
+        refund = 2 if _has_track_talent(character, "master-monk.perfect-recovery") else 1
+        state["ki"] = refund
+        msg += f"Martial Master refunds {refund} Ki after the clean finisher.\n"
     return msg

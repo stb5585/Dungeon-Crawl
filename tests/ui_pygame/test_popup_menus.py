@@ -1389,10 +1389,39 @@ def test_simple_list_jumpmods_totems_and_selection_popups(monkeypatch):
         set_active_aspect=lambda aspect: (True, ""),
     )
     player.spellbook["Skills"]["Totem"] = totem_skill
+    player.spellbook["Skills"]["Spirit Animal"] = SimpleNamespace(
+        name="Spirit Animal",
+        ANIMALS=("Bear", "Wolf"),
+    )
     totem_popup = popup_menus.TotemAspectsPopupMenu(presenter, parent)
     totem_popup.build_items(player)
     totem_popup.draw_details(player)
     assert totem_popup.on_select(player, totem_popup.items[1]) is None
+    wolf = next(item for item in totem_popup.items if item.get("value") == "Wolf")
+    assert totem_popup.on_select(player, wolf) is None
+    assert player.spirit_animal == "Wolf"
+
+    composed = []
+    player.cls = SimpleNamespace(name="Bard")
+    player.equipment["OffHand"] = SimpleNamespace(
+        name="Lute",
+        subtyp="Musical Instrument",
+    )
+    monkeypatch.setattr(
+        popup_menus.mechanics.bard,
+        "compose_sheet_music",
+        lambda _player, song: (True, composed.append(song) or "Composed.\n"),
+    )
+    composition_popup = popup_menus.CompositionPopupMenu(presenter, parent)
+    composition_popup.build_items(player)
+    battle_hymn = next(
+        item
+        for item in composition_popup.items
+        if item["value"] == "Battle Hymn"
+    )
+    assert battle_hymn["available"] is True
+    assert composition_popup.on_select(player, battle_hymn) is None
+    assert composed == ["Battle Hymn"]
 
     selection = popup_menus.SelectionPopup(presenter, parent, title="Pick", header_message="Choose wisely", options=["A", "B"])
     selection.build_items(player)

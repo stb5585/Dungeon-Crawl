@@ -37,12 +37,19 @@ from .progression_manifest import (
     AUTHORED_PROMOTED_TALENT_KEYS,
     AUTHORED_TREE_CLASSES,
     ASSASSIN_TREE_NODE_SPECS,
+    ARCANE_TRICKSTER_TREE_NODE_SPECS,
+    ARCHDRUID_TREE_NODE_SPECS,
+    ARCHBISHOP_TREE_NODE_SPECS,
+    ASTROMANCER_TREE_NODE_SPECS,
     NINJA_TREE_NODE_SPECS,
     BASE_TREE_NODE_SPECS,
     BASE_TREE_PROMOTION_SPECS,
     BERSERKER_TREE_NODE_SPECS,
+    BARD_TREE_NODE_SPECS,
+    BEAST_MASTER_TREE_NODE_SPECS,
     CATALOG_ONLY_PROMOTED_TREE_CLASSES,
     CLASS_KIT_TALENTS,
+    CLERIC_TREE_NODE_SPECS,
     CLASS_STAT_GROUPS,
     CONJURER_CARRIED_NODE_IDS,
     CONJURER_CARRIED_NODE_POSITIONS,
@@ -50,28 +57,45 @@ from .progression_manifest import (
     EXTERNAL_ACQUISITION_ABILITIES,
     FIRST_PROMOTION_STAT_REQUIREMENT_OVERRIDES,
     DRAGOON_TREE_NODE_SPECS,
+    DRUID_TREE_NODE_SPECS,
     CRUSADER_TREE_NODE_SPECS,
     DEMONOLOGIST_TREE_NODE_SPECS,
     GRANDMASTER_TREE_NODE_SPECS,
+    HIEROPHANT_TREE_NODE_SPECS,
+    INQUISITOR_TREE_NODE_SPECS,
     LANCER_TREE_NODE_SPECS,
+    LYCAN_TREE_NODE_SPECS,
     KNIGHT_ENCHANTER_TREE_NODE_SPECS,
     MAGE_CARRIED_NODE_IDS,
     MAGE_CARRIED_NODE_POSITIONS,
     MAGE_PROMOTION_SPECS,
     MAGE_TREE_NODE_SPECS,
+    MASTER_MONK_TREE_NODE_SPECS,
+    MONK_TREE_NODE_SPECS,
     PALADIN_TREE_NODE_SPECS,
+    DIVINER_TREE_NODE_SPECS,
     PROMOTED_TREE_PATHS,
     PROMOTED_TREE_PROMOTION_PATHS,
+    PRIEST_TREE_NODE_SPECS,
+    RANGER_TREE_NODE_SPECS,
+    ROGUE_TREE_NODE_SPECS,
     SECOND_PROMOTION_STAT_REQUIREMENT_OVERRIDES,
+    SEEKER_TREE_NODE_SPECS,
+    SHAMAN_TREE_NODE_SPECS,
     SHADOWCASTER_TREE_NODE_SPECS,
     SENTINEL_TREE_NODE_SPECS,
     SORCERER_TREE_NODE_SPECS,
+    SOULCATCHER_TREE_NODE_SPECS,
     SPELLBLADE_TREE_NODE_SPECS,
+    SPELL_STEALER_TREE_NODE_SPECS,
     STAGE_SIZE_RANGES,
     STALWART_DEFENDER_TREE_NODE_SPECS,
     TALENT_KIT_EFFECTS,
     TREE_SIZE_OVERRIDES,
     TREE_LANES,
+    TROUBADOUR_TREE_NODE_SPECS,
+    TEMPLAR_TREE_NODE_SPECS,
+    THIEF_TREE_NODE_SPECS,
     WARRIOR_CONNECTOR_CHANNEL_OVERRIDES,
     WARRIOR_FLOATING_NODES,
     WARRIOR_NODE_LEVEL_REQUIREMENTS,
@@ -1510,7 +1534,7 @@ def _build_lancer_dragoon_tree(
     else:
         lancer_tree = _build_lancer_dragoon_tree(
             "Lancer",
-            LANCER_TREE_NODE_SPECS,
+    LANCER_TREE_NODE_SPECS,
         )
         inherited_nodes = [
             node
@@ -1698,6 +1722,86 @@ def _build_authored_kit_tree(
         branches=branches,
         nodes=tuple(nodes),
     )
+
+
+def _build_cleric_tree() -> AbilityTree:
+    """Build Cleric's four disciplines and two independent promotions."""
+    tree = _build_authored_kit_tree("Cleric", CLERIC_TREE_NODE_SPECS)
+    promotions = (
+        (
+            "Hierophant",
+            (0.5, 7),
+            ("cleric.ability.pious-bounty", "cleric.talent.overflowing-grace"),
+        ),
+        (
+            "Templar",
+            (2.5, 7),
+            ("cleric.talent.bastion-practice", "cleric.talent.consecrated-blows"),
+        ),
+    )
+    nodes = list(tree.nodes)
+    for target_name, position, prerequisites in promotions:
+        nodes.append(AbilityTreeNode(
+            id=f"cleric.promotion.{_slug(target_name)}",
+            tree_id="Cleric",
+            kind=NodeKind.PROMOTION,
+            lane="Devotion" if target_name == "Hierophant" else "Bulwark",
+            position=position,
+            icon_key="promotion",
+            prerequisites=prerequisites,
+            payload={
+                "name": f"Promote: {target_name}",
+                "target_class": target_name,
+                "target_class_ctor": CLASS_DETAILS[target_name][0],
+                "requirements": _promotion_requirements(target_name, 3),
+                "level_requirement": 60,
+                "prerequisite_mode": "any",
+                "connector_join_at_target_row": True,
+            },
+            cost=3,
+        ))
+    return replace(tree, nodes=tuple(nodes))
+
+
+def _build_druid_tree() -> AbilityTree:
+    """Build Druid's four disciplines and two independent promotions."""
+    tree = _build_authored_kit_tree("Druid", DRUID_TREE_NODE_SPECS)
+    promotions = (
+        (
+            "Lycan",
+            "Panther Form",
+            (0.5, 7),
+            ("druid.talent.apex-prowler", "druid.talent.guardian-beast"),
+        ),
+        (
+            "Archdruid",
+            "Growth and Stars",
+            (2.5, 7),
+            ("druid.talent.earthen-toxins", "druid.ability.starfall"),
+        ),
+    )
+    nodes = list(tree.nodes)
+    for target_name, lane, position, prerequisites in promotions:
+        nodes.append(AbilityTreeNode(
+            id=f"druid.promotion.{_slug(target_name)}",
+            tree_id="Druid",
+            kind=NodeKind.PROMOTION,
+            lane=lane,
+            position=position,
+            icon_key="promotion",
+            prerequisites=prerequisites,
+            payload={
+                "name": f"Promote: {target_name}",
+                "target_class": target_name,
+                "target_class_ctor": CLASS_DETAILS[target_name][0],
+                "requirements": _promotion_requirements(target_name, 3),
+                "level_requirement": 60,
+                "prerequisite_mode": "any",
+                "connector_join_at_target_row": True,
+            },
+            cost=3,
+        ))
+    return replace(tree, nodes=tuple(nodes))
 
 
 def _build_warlock_tree() -> AbilityTree:
@@ -2008,6 +2112,163 @@ def _build_authored_tree(class_name: str) -> AbilityTree:
             promotion_position=(2, 6),
             promotion_prerequisites=("cutthroat",),
         )
+    if class_name == "Thief":
+        return _build_authored_kit_tree(
+            class_name,
+            THIEF_TREE_NODE_SPECS,
+            promotion_target="Rogue",
+            promotion_position=(1.5, 7),
+            promotion_prerequisites=(
+                "fortune-favors-bold",
+                "reversal",
+                "master-tools",
+                "clean-getaway",
+            ),
+            promotion_prerequisite_mode="any",
+            promotion_connector_join_at_target_row=True,
+        )
+    if class_name == "Rogue":
+        return _build_authored_kit_tree(class_name, ROGUE_TREE_NODE_SPECS)
+    if class_name == "Inquisitor":
+        return _build_authored_kit_tree(
+            class_name,
+            INQUISITOR_TREE_NODE_SPECS,
+            promotion_target="Seeker",
+            promotion_position=(1.5, 7),
+            promotion_prerequisites=("keen-eye", "true-strike"),
+            promotion_prerequisite_mode="any",
+            promotion_connector_join_at_target_row=True,
+        )
+    if class_name == "Seeker":
+        return _build_authored_kit_tree(class_name, SEEKER_TREE_NODE_SPECS)
+    if class_name == "Druid":
+        return _build_druid_tree()
+    if class_name == "Lycan":
+        return _build_authored_kit_tree(class_name, LYCAN_TREE_NODE_SPECS)
+    if class_name == "Archdruid":
+        return _build_authored_kit_tree(class_name, ARCHDRUID_TREE_NODE_SPECS)
+    if class_name == "Diviner":
+        return _build_authored_kit_tree(
+            class_name,
+            DIVINER_TREE_NODE_SPECS,
+            promotion_target="Astromancer",
+            promotion_position=(1.5, 7),
+            promotion_prerequisites=(
+                "open-sigils",
+                "doublecast",
+                "berserk",
+                "temporary-stasis",
+            ),
+            promotion_prerequisite_mode="any",
+            promotion_connector_join_at_target_row=True,
+        )
+    if class_name == "Astromancer":
+        return _build_authored_kit_tree(class_name, ASTROMANCER_TREE_NODE_SPECS)
+    if class_name == "Shaman":
+        return _build_authored_kit_tree(
+            class_name,
+            SHAMAN_TREE_NODE_SPECS,
+            promotion_target="Soulcatcher",
+            promotion_position=(1.5, 7),
+            promotion_prerequisites=(
+                "totem-surge",
+                "astral-shift",
+                "double-strike",
+            ),
+            promotion_prerequisite_mode="any",
+            promotion_connector_join_at_target_row=True,
+        )
+    if class_name == "Soulcatcher":
+        return _build_authored_kit_tree(class_name, SOULCATCHER_TREE_NODE_SPECS)
+    if class_name == "Ranger":
+        return _build_authored_kit_tree(
+            class_name,
+            RANGER_TREE_NODE_SPECS,
+            promotion_target="Beast Master",
+            promotion_position=(1, 6),
+            promotion_prerequisites=("companion-bond",),
+        )
+    if class_name == "Beast Master":
+        return _build_authored_kit_tree(
+            class_name,
+            BEAST_MASTER_TREE_NODE_SPECS,
+        )
+    if class_name == "Bard":
+        return _build_authored_kit_tree(
+            class_name,
+            BARD_TREE_NODE_SPECS,
+            promotion_target="Troubadour",
+            promotion_position=(2, 7),
+            promotion_prerequisites=(
+                "resonant-hall",
+                "crescendo-reserve",
+                "copyist",
+                "prismatic-flourish",
+            ),
+            promotion_prerequisite_mode="any",
+            promotion_connector_join_at_target_row=True,
+        )
+    if class_name == "Troubadour":
+        return _build_authored_kit_tree(
+            class_name,
+            TROUBADOUR_TREE_NODE_SPECS,
+        )
+    if class_name == "Spell Stealer":
+        return _build_authored_kit_tree(
+            class_name,
+            SPELL_STEALER_TREE_NODE_SPECS,
+            promotion_target="Arcane Trickster",
+            promotion_position=(0.5, 7),
+            promotion_prerequisites=("perfect-forgery", "controlled-discharge"),
+            promotion_prerequisite_mode="any",
+            promotion_connector_join_at_target_row=True,
+        )
+    if class_name == "Arcane Trickster":
+        return _build_authored_kit_tree(
+            class_name,
+            ARCANE_TRICKSTER_TREE_NODE_SPECS,
+        )
+    if class_name == "Cleric":
+        return _build_cleric_tree()
+    if class_name == "Templar":
+        return _build_authored_kit_tree(
+            class_name,
+            TEMPLAR_TREE_NODE_SPECS,
+        )
+    if class_name == "Hierophant":
+        return _build_authored_kit_tree(
+            class_name,
+            HIEROPHANT_TREE_NODE_SPECS,
+        )
+    if class_name == "Monk":
+        return _build_authored_kit_tree(
+            class_name,
+            MONK_TREE_NODE_SPECS,
+            promotion_target="Master Monk",
+            promotion_position=(1, 7),
+            promotion_prerequisites=("uppercut", "mirror-stillness", "guarded-purity"),
+            promotion_prerequisite_mode="any",
+            promotion_connector_join_at_target_row=True,
+        )
+    if class_name == "Master Monk":
+        return _build_authored_kit_tree(class_name, MASTER_MONK_TREE_NODE_SPECS)
+    if class_name == "Priest":
+        return _build_authored_kit_tree(
+            class_name,
+            PRIEST_TREE_NODE_SPECS,
+            promotion_target="Archbishop",
+            promotion_position=(1.5, 7),
+            promotion_prerequisites=(
+                "holy-disorientation",
+                "fervent-supplication",
+                "arcane-renewal",
+                "merciful-prayer",
+            ),
+            promotion_prerequisite_mode="any",
+            promotion_connector_join_at_target_row=True,
+        )
+    if class_name == "Archbishop":
+        return _build_authored_kit_tree(class_name, ARCHBISHOP_TREE_NODE_SPECS)
     if class_name == "Ninja":
         return _build_authored_kit_tree(
             class_name,
@@ -3601,6 +3862,8 @@ def _apply_promotion(
     elif target_name == "Ranger":
         player.spellbook["Skills"].setdefault("Tame", abilities.Tame())
         player.ensure_tamed_companion()
+    elif target_name == "Shaman":
+        player.spellbook["Skills"].setdefault("Totem", abilities.Totem())
     elif target_name == "Stalwart Defender":
         for ability_ctor in (
             abilities.CitadelAegis,

@@ -77,20 +77,20 @@ ability icons, and prerequisite connectors without path headings or textual
 availability labels.
 The same declarative contract now covers all 49 class trees. Mage, Footpad,
 Healer, and Pathfinder retain independent specialization roots, while every
-promoted and terminal class has a structurally declared graph. Named identity
-paths do not by themselves prove authored mechanics: outside the rebuilt
-Warrior, Mage, and Assassin/Ninja graphs, many promoted paths remain sparse
-catalog-only layouts awaiting authored expansion. Generic rating padding has
+promoted and terminal class has an authored graph. The former catalog-only
+Pathfinder promotions were completed on 2026-09-04. Generic rating padding has
 been removed. Exact branch ownership and audit status are recorded in
 `docs/ABILITY_TREE_DESIGN.md` and
-`docs/CLASS_KIT_DESIGN_GATES.md`. Weapon Master is the first deliberately
-asymmetric promoted tree: Berserker and Grandmaster routes use different node
-types, Grandmaster forks permanently between Dual Wield and Duelist, and eight
-independent weapon arts branch into rank-5 replacement upgrades instead of
-being learned automatically. Its ungated inherited entry nodes and rating
-nodes remain immediately available; the extended Berserker route adds
-two-handed proficiency and discipline-scaled critical damage while keeping
-both second-promotion nodes aligned.
+`docs/CLASS_KIT_DESIGN_GATES.md`. The five base trees and all 44 promoted trees
+are finished, with implementation references under `docs/ability_trees/`.
+Weapon Master is the
+first deliberately asymmetric promoted tree: Berserker and Grandmaster routes
+use different node types, Grandmaster forks permanently between Dual Wield and
+Duelist, and eight independent weapon arts branch into rank-5 replacement
+upgrades instead of being learned automatically. Its ungated inherited entry
+nodes and rating nodes remain immediately available; the extended Berserker
+route adds two-handed proficiency and discipline-scaled critical damage while
+keeping both second-promotion nodes aligned.
 
 Pathfinder has 40 development nodes across seven explicit vertical tracks:
 Druid, Naturalism, Ranger, Melee, Shaman, Elemental, and Diviner. Its joined
@@ -105,13 +105,10 @@ Footpad's Control track is required by both Thief and Assassin, while Defense
 is required by both Spell Stealer and Inquisitor; each joined promotion route
 costs 13 progression points.
 Shared tracks can feed several promotions without duplicating nodes. The
-remaining Footpad, Healer, and Pathfinder promotion graphs now expose only
-their real catalog abilities. Generated rating families, repeated ranks,
-generic cap masteries, and Lycan control acceleration were removed; exact
-compact sizes prevent padding from returning. Beast Master's two-point Bonded
-Bulwark remains because it has an authored companion-bond payoff. Several
-underlying class systems still need the independently tracked implementation
-work below.
+Pathfinder promotion graphs now use named, mechanically grounded choices.
+Generated rating families, repeated ranks, generic cap masteries, and Lycan
+control acceleration remain excluded. Several underlying class systems still
+need the independently tracked implementation work below.
 Full counts, path costs, names, and generated diagrams live in
 `docs/ABILITY_TREE_DESIGN.md` and `docs/ability_trees/`.
 
@@ -284,12 +281,11 @@ appropriate design-gate document before coding.
   defender, while `Hierophant` is the staff/shield/light-armor divine
   battle-caster with `Staff Conduit`, `Consecrated Conduit`, Devotion support,
   Church Class Ring awakening, and Voluntas bridge coverage.
-- Cleric Devotion has a narrow post-promotion foundation: `Sanctuary Ward` is
-  granted at Cleric level 1, held Devotion grants light incoming-damage
-  reduction, `Sanctuary Ward` is hidden from combat skills until Devotion
-  exists, and queued gain waits until the enemy survives the action. The
-  lineage audit found that action deduplication, several gain sources, and the
-  Templar payoff/ring loop remain incomplete.
+- Cleric Devotion now supports four first-promotion disciplines and two full
+  terminal identities. Templar has 28 Relic, Vanguard, Ordered Blessing, and
+  Judgment nodes; Hierophant has 28 Conduit, Grace, Radiant, and Pastoral
+  nodes. Both terminal trees cost 30 points, so their 20 earned points cover
+  67% without relying on the compact external-repertoire exception.
 - The relic quest opening now stages the mystery through `Uncertain Reports`
   before creating `The Holy Relics`, with old-save migration and shared core
   quest-progress handling.
@@ -347,14 +343,14 @@ deferred expansion ideas.
 - **Resolved — Spell Stealer/Arcane Trickster stolen-magic payoff:** both theft
   abilities validate before spending MP or changing inventory/spellbooks,
   every stolen-scroll route feeds Charge, and eligible actions commit it once
-  before resolving one aggregate typed Arcane payoff. Misses and negated
-  actions consume the commitment without applying bonus damage. Awakened
+  before resolving one aggregate typed Arcane payoff. Controlled Discharge can
+  retain one Charge after misses and negated actions. Awakened
   Arcane Larceny now requires the equipped ring, expires after three turns,
   clears at lifecycle boundaries, and preserves one clean payoff per combat.
-- **Resolved — generic Footpad talent removal:** Thief/Rogue,
-  Inquisitor/Seeker, and Spell Stealer/Arcane Trickster now expose only their
-  real catalog actions. Repeated rating families and generic meter-cap
-  masteries are gone; their authored mechanic closures are also shipped.
+- **Resolved — generic Footpad talent removal:** unfinished Thief/Rogue and
+  Inquisitor/Seeker expose only real catalog actions. Spell Stealer/Arcane
+  Trickster now has a compact authored tree whose higher-cost talents modify
+  specific theft, Charge, and misdirection mechanics.
 - **Resolved — Devotion action loop:** Cleric/Templar/Hierophant generation is
   action-scoped across healing, Holy, shield, block, and Turn Undead sources.
   Holy Retribution, Ordered Blessings, Relic Aegis, and typed action-consuming
@@ -369,14 +365,14 @@ deferred expansion ideas.
   all five one-Ki riders and the full-Ki, 18-MP Dim Mak pipeline are connected.
   Dim Mak now honors weapon penalties, boss/Death immunity, contested Stun,
   essence recovery, and the once-per-combat Martial Master refund.
-- **Resolved — Bard/Troubadour closure:** mastered repertoire has a live
-  MP-costed combat action; composition, carried exploration steps, and clean
-  completions advance mastery. Exploration songs leave conservative route
-  codas, and Chorus Time's final coda now resolves its reduced contest.
+- **Resolved — Bard/Troubadour authored trees:** Bard has 26 development
+  choices plus its promotion; Compose is inherent in the Crescendo Class tab.
+  Troubadour has 27 terminal choices. Both trees include support, elemental,
+  non-elemental, weapon, and defensive actions alongside their song systems.
 - **Resolved — generic Healer talent removal:** all generated rating families
-  and hidden meter-cap payloads are gone. Promoted Healer trees now contain
-  only catalog abilities; Troubadour intentionally has no terminal purchases
-  until genuinely authored progression is designed.
+  and hidden meter-cap payloads are gone. Unfinished promoted Healer trees
+  contain only catalog abilities; Bard and Troubadour now use explicit talents
+  with concrete music-system payoffs.
 - **Resolved — Druid/Lycan persistent forms:** transformations use serialized,
   reversible overlays and survive combat, town, and save/load. Purchased nodes
   determine form access; Lycan stress, control ranks, ring mitigation, canonical
@@ -397,10 +393,9 @@ deferred expansion ideas.
 - **Resolved — Ranger/Beast Master closure:** awakened/equipped Shared Recovery
   now improves Pack Strike accuracy/output, Guard Partner, Harry Prey, and Mend
   Wounds while preserving the one-companion-turn action boundary.
-- **Resolved — generic Pathfinder talent removal:** all generated rating
-  families, cap inflation, and Lycan control acceleration are gone. Bonded
-  Bulwark alone remains as a two-point authored companion-bond payoff; compact
-  catalog-only trees make future authored expansion needs explicit.
+- **Resolved — authored Pathfinder promotions:** all generated rating families,
+  cap inflation, and Lycan control acceleration are gone. Every Pathfinder
+  promotion now uses named choices tied to shipped mechanics.
 
 ## Deferred Expansion Triage Map
 
@@ -422,7 +417,7 @@ Triage bands:
 
 | Area | Deferred expansion | Triage band | Promotion trigger | Owner doc | First safe slice |
 | --- | --- | --- | --- | --- | --- |
-| Class-kit track expansions | Combo chains, Maestro progression, Beast Master stables, Grove questlines, Jump mastery, multi-vow systems, broader scar trees, divine economy, loot redesign, Seeker pathing, stealth rewrite, stolen-spell mastery. | `Needs Evidence` | Class-kit UI/log, pacing, and balance-threshold evidence identifies one specific track. | `CLASS_KIT_DESIGN_GATES.md` | One track's one-page spec, not a multi-track mechanics batch. |
+| Broader class-kit track expansions | Combo chains, Maestro economy, Beast Master stables, Grove questlines, Jump mastery, multi-vow systems, broader scar trees, divine economy, loot redesign, Seeker pathing, stealth rewrite, stolen-spell mastery. | `Needs Evidence` | Class-kit UI/log, pacing, and balance-threshold evidence identifies one specific track. | `CLASS_KIT_DESIGN_GATES.md` | One track's one-page spec, not a multi-track mechanics batch. |
 | Class-ring tuning/presentation | Wizard radar visualization, ring status polish, and ring effect tuning. | `Needs Evidence` | Manual UI/readability notes or class-kit balance threshold findings. | `CLASS_RING_SYSTEM.md` | Presentation-only ring readability before numeric tuning. |
 | Promotion ability grant expansions | New mandatory promotion spell/skill grants; universal retention remains invariant. | `Do Not Promote As Cleanup` | Explicit additive-grant spec with save/load behavior and no ability replacement. | `PROMOTION_ABILITY_RULES.md` | One additive grant with flat-progression and save/load coverage. |
 | Combat semantics and architecture | Deeper-floor multi-enemy content, speed-based combat stacks, dice conversion, always-hit flags, ignore-defense order, unlockable race/class/difficulty strategy, and XP scaling. | `Needs Evidence` | Rebenchmark Pilot 3 after the ability-tree refactor, then decide the floor-5 second-promotion matrix and enemy-area-action boundary; other combat expansions still require their own full spec. | `MULTI_ENEMY_COMBAT_DESIGN.md`, `MULTI_ENEMY_PILOT_3_PLAN.md`, `COMBAT_BALANCE_DESIGN_GATES.md` | Preserve the completed manual acceptance and rerun promoted-class balance, not random rollout or rosters larger than two. |
@@ -432,6 +427,20 @@ Triage bands:
 | Story/endgame expansion | Bespoke Guardian rooms, mini-bosses, stronger consequences, deeper per-class Voluntas quests, deeper Reflection mechanics, Vesperion tuning/presentation, legacy Devil retirement. | `Needs Spec` | Story-content decision block defines beat, trigger, flags, UI surface, fallback, and tests. | `STORY_AND_ENDGAME_DESIGN.md` | One story-only vignette or one Guardian room spec, not route replacement. |
 | Audio/event/meta systems | Final audio replacement, dynamic music, spatial audio, profiles, event payload enrichment, account-wide Bestiary, achievements, run summaries, persistent statistics. | `Needs Spec` | Concrete consumer, privacy/profile-storage decision, or asset-content need exists. | `SOUND_SYSTEM.md`, `EVENT_EMISSIONS.md`, Systems/Audio/Meta roadmap section | Source-specific event payload or audio route for an existing consumer. |
 | UI/core boundary cleanup | Moving mechanics or data ownership out of `ui_*` modules into core services. | `Do Not Promote As Cleanup` | A concrete duplicated rule, save-critical behavior, or testability blocker is identified with owner module and compatibility behavior. | Systems/Audio/Meta roadmap section and the affected domain gate | One rule extraction with parity tests, not a broad UI-module refactor. |
+
+## Completed Priority - Authored Promotion-Tree Completion
+
+Status: `Complete - 2026-09-04`
+
+All formerly catalog-only promoted trees now have authored graphs, runtime
+mechanics, implementation references, and generated diagrams. Continue with
+focused playtest and tuning rather than structural tree completion.
+
+Each tree's sidecar under `docs/ability_trees/` owns its target point pressure,
+identity, exclusions, state boundary, UI contract, test requirements, and
+focused evidence gate. This program may deepen an existing mechanic, but it
+must not manufacture generic rating families or silently promote the broader
+deferred systems listed below.
 
 ## Active Priority - P8 Playtest Readiness And Polish
 
@@ -444,12 +453,13 @@ to decide which larger gate deserves promotion next.
 
 ### Implementation Sequence
 
-1. **Cleric/Hierophant Devotion closure**
-   - Automated foundation only. Focused tests cover immediate
+1. **Cleric/Templar/Hierophant Devotion closure — complete**
+   - Focused tests cover immediate
      `Sanctuary Ward` grants, learned-ability promotion messaging, hidden skill
      visibility at 0 Devotion, held-stack damage reduction, and enemy-survival
      Devotion gain.
-   - Completed: once-per-action generation, defensive sources, Holy
+   - Completed: four separated Cleric disciplines, both terminal gates,
+     cross-training budget, once-per-action generation, defensive sources, Holy
      Retribution riders, Ordered Blessings rotation, Relic Aegis counters, and
      typed/action-level Consecrated Conduit resolution have focused coverage.
 2. **High-signal UI bugfixes**
@@ -599,12 +609,12 @@ than a single umbrella spec:
 - `docs/STORY_AND_ENDGAME_DESIGN.md` owns future Voluntas/class-identity story
   tie-ins.
 
-Current active implementation batch is presentation-only UI/log readability
-polish for class-kit meters, ring state, combat messages, and compact
-menu/status hints across all shipped promotion tracks. This batch may add
-status/log text and evidence notes, but mechanics and numeric tuning should
-remain unchanged until playtest or simulator evidence promotes a specific
-balance change.
+The parallel P8 batch is presentation-only UI/log readability polish for
+class-kit meters, ring state, combat messages, and compact menu/status hints.
+It may add status/log text and evidence notes, but mechanics and numeric tuning
+remain unchanged until evidence promotes a specific balance change. It does
+not block authored tree completion when a tree stays within its sidecar's
+existing-mechanic boundary.
 
 P8 narrows the immediate class/ability work to playtest readiness: finish
 Devotion regression coverage, verify promotion messaging, check combat skill

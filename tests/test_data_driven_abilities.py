@@ -9494,8 +9494,25 @@ class TestClassAbilityMechanicsSlice:
             abilities.SongValor,
             abilities.SongShelter,
             abilities.SongRenewal,
+            abilities.RhythmicStrike,
+            abilities.CurtainGuard,
         ]
-        assert abilities.skill_dict["Troubadour"] == {}
+        assert abilities.skill_dict["Troubadour"] == {
+            "1": abilities.GrandFinale,
+            "2": abilities.SyncopatedStrike,
+            "3": abilities.Countermelody,
+        }
+        assert abilities.spell_dict["Bard"] == {
+            "1": abilities.Kaleidoscope,
+            "2": abilities.InspiringVerse,
+            "3": abilities.DissonantChord,
+            "4": abilities.PrismaticRay,
+        }
+        assert abilities.spell_dict["Troubadour"] == {
+            "1": abilities.RallyingChorus,
+            "2": abilities.ResonantWave,
+            "3": abilities.PrismaticFinale,
+        }
         assert all(spell is not abilities.Haste for spell in abilities.spell_dict["Sorcerer"].values())
         assert all(spell is not abilities.Haste for spell in abilities.spell_dict["Wizard"].values())
         assert abilities.spell_dict["Diviner"]["8"] is abilities.Haste
@@ -9509,6 +9526,8 @@ class TestClassAbilityMechanicsSlice:
             "10": abilities.GuardPartner,
             "11": abilities.HarryPrey,
             "12": abilities.MendWounds,
+            "13": abilities.UnleashInstinct,
+            "14": abilities.RallyPartner,
         }
         assert abilities.spell_dict["Shadowcaster"]["16"] is abilities.Nightmare
         assert "Nightmare" not in [spell().name for spell in abilities.spell_dict["Demonologist"].values()]
@@ -9517,20 +9536,37 @@ class TestClassAbilityMechanicsSlice:
         from src.core import abilities
 
         assert abilities.skill_dict["Archdruid"] == {"10": abilities.FourfoldSurge}
-        assert list(abilities.spell_dict["Druid"].values()) == [
+        druid_spells = {
+            spell
+            for entry in abilities.spell_dict["Druid"].values()
+            for spell in abilities.ability_classes_for(entry)
+        }
+        assert druid_spells == {
             abilities.PoisonDart,
+            abilities.NoxiousMist,
+            abilities.ResistPoison,
+            abilities.RestoringBoon,
+            abilities.Starfall,
             abilities.StoneSkin,
             abilities.Regrowth,
             abilities.CalmingBreeze,
-        ]
-        assert list(abilities.spell_dict["Archdruid"].values()) == [
+        }
+        archdruid_spells = {
+            spell
+            for entry in abilities.spell_dict["Archdruid"].values()
+            for spell in abilities.ability_classes_for(entry)
+        }
+        assert archdruid_spells == {
             abilities.PlantSeeds,
             abilities.Bolt,
             abilities.VilePotion,
             abilities.Windswept,
             abilities.NatureShield,
             abilities.BallLightning,
-        ]
+            abilities.PoisonBreath,
+            abilities.ExpelCurse,
+            abilities.GrovePulse,
+        }
 
     def test_simple_support_spells_apply_existing_effects(self):
         from src.core import abilities

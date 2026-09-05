@@ -58,12 +58,9 @@ The refactor created one shared flat-progression authority:
 - The old player-level promotion and automatic class-ability award paths have
   been reduced to compatibility surfaces. Church promotion is retired.
 
-All 49 registered playable classes have declarative tree definitions. The
-complete Warrior lineage and Assassin/Ninja use bespoke graphs. Remaining
-Footpad, Healer, and Pathfinder promotion graphs are catalog-only: their
-generated rating families were removed on 2026-09-03, leaving compact panels
-that make future authored progression needs visible. Bonded Bulwark is the
-only retained talent in that group because it owns a concrete companion payoff.
+All 49 registered playable classes have declarative, authored tree definitions.
+The Warrior, Mage, Footpad, Healer, and Pathfinder lineages now use bespoke
+graphs; no promoted class remains on the catalog-only fallback.
 
 Active node IDs and talent keys are persistent version-5 save API. The removed
 generic family keys are intentionally retired and are no longer active nodes.

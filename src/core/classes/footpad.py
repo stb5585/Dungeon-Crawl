@@ -141,7 +141,15 @@ def finders_keepers_candidate(
         return None
     generator = rng or random
     eligible = [item for item in candidates if ordinary_loot_eligible(character, item)]
-    if not eligible or generator.random() >= 0.15:
+    chance = 0.15
+    try:
+        from .thief import has_thief_talent
+
+        if has_thief_talent(character, "rogue.deep-pockets"):
+            chance += 0.10
+    except (AttributeError, KeyError, TypeError, ValueError):
+        pass
+    if not eligible or generator.random() >= chance:
         return None
     return generator.choice(eligible)
 

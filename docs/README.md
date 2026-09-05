@@ -48,6 +48,9 @@ only as historical context.
   progression and authored-tree refactor.
 - [ABILITY_TREE_DESIGN.md](ABILITY_TREE_DESIGN.md) - canonical authored tree
   identities, Warrior-line graphs, ownership boundaries, and stable-ID rules.
+- [ability_trees/ABILITY_TREE_STATUS.md](ability_trees/ABILITY_TREE_STATUS.md) -
+  per-tree completion status and links to every implemented-tree reference and
+  unfinished-tree decision block.
 - [DUNGEON_TILE_ART.md](DUNGEON_TILE_ART.md) - dungeon texture manifest,
   decorative tile authoring, and render-asset rebuild notes.
 - [ENEMY_VISUAL_SYSTEM.md](ENEMY_VISUAL_SYSTEM.md) - enemy combat sprites,

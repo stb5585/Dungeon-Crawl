@@ -12,6 +12,7 @@ def default_exploration_effects() -> dict[str, int]:
         "enter_wall": 0,
         "resist_shadow": 0,
         "resist_holy": 0,
+        "resist_poison": 0,
     }
 
 
@@ -51,6 +52,11 @@ def sync_exploration_flags(character: Any) -> None:
         if effect is not None:
             effect.active = True
             effect.extra = max(0.5, float(effect.extra or 0))
+    if state["resist_poison"] > 0:
+        effect = character.magic_effects.get("Resist Poison")
+        if effect is not None:
+            effect.active = True
+            effect.extra = max(0.5, float(effect.extra or 0))
 
 
 def apply_exploration_effect(character: Any, key: str, turns: int) -> None:
@@ -86,6 +92,12 @@ def tick_exploration_effects(character: Any, steps: int) -> None:
                 effect.extra = 0
         if state["resist_holy"] <= 0:
             effect = character.magic_effects.get("Resist Holy")
+            if effect is not None:
+                effect.active = False
+                effect.duration = 0
+                effect.extra = 0
+        if state["resist_poison"] <= 0:
+            effect = character.magic_effects.get("Resist Poison")
             if effect is not None:
                 effect.active = False
                 effect.duration = 0
@@ -168,7 +180,15 @@ def mark_favored_enemy(character: Any, target: Any | None) -> str:
         state["practice"] = min(999, before + 2)
         return f"{character.name} studies the {enemy_type} trail more deeply.\n"
 
-    carryover = before // 3 if current else 0
+    carryover_divisor = 3
+    try:
+        from ...progression import has_talent
+
+        if has_talent(character, "ranger.relentless-tracker"):
+            carryover_divisor = 2
+    except (AttributeError, KeyError, TypeError):
+        pass
+    carryover = before // carryover_divisor if current else 0
     state["type"] = str(enemy_type)
     state["practice"] = carryover
     state["switches"] = int(state.get("switches", 0) or 0) + int(bool(current))

@@ -9,7 +9,7 @@ first-tier nodes; there is no mandatory lineage root.
 
 All 49 registered classes now have structurally declared paths. This does not
 mean every promoted tree has a complete authored mechanical identity. The
-remaining Footpad, Healer, and Pathfinder graphs are intentionally compact:
+remaining Pathfinder graphs are intentionally compact:
 they expose their real catalog abilities without generated rating families or
 generic meter-cap masteries. Beast Master's Bonded Bulwark is the sole retained
 talent in this group because it has a distinct companion-bond payoff.

@@ -343,35 +343,53 @@ def tamed_companion_special_turn(owner: Any, target: Any, *, hit: bool = False, 
     if companion is None or getattr(companion, "spec", "") != "Tamed":
         return ""
     bond = max(0, min(100, int(getattr(companion, "bond", 0) or 0)))
-    if bond < 25 or target is None:
+    special_bond = 25
+    try:
+        from ...progression import has_talent
+
+        if has_talent(owner, "ranger.kindred-instinct"):
+            special_bond = 15
+    except (AttributeError, KeyError, TypeError):
+        pass
+    if bond < special_bond or target is None:
         return ""
     special = str(getattr(companion, "special_ability", "") or "Keen Scent")
+    potency = 1.25 if _has_talent(owner, "beast-master.alpha-instinct") else 1.0
     if special == "Pounce" and hit:
-        damage = max(1, int(getattr(companion.combat, "attack", 1) * (0.12 + (0.08 if crit else 0.0))))
+        damage = max(
+            1,
+            int(
+                getattr(companion.combat, "attack", 1)
+                * (0.12 + (0.08 if crit else 0.0))
+                * potency
+            ),
+        )
         target.health.current = max(0, target.health.current - damage)
         return f"{companion.name}'s Pounce follows through for {damage} damage.\n"
     if special == "Wingbeat" and hit:
         effect = target.stat_effects["Speed"]
         effect.active = True
         effect.duration = max(effect.duration, 2)
-        effect.extra = min(int(effect.extra or 0), -max(1, bond // 25))
+        pressure = max(1, int((bond // 25) * potency))
+        effect.extra = min(int(effect.extra or 0), -pressure)
         return f"{companion.name}'s Wingbeat throws {target.name} off balance.\n"
     if special == "Guard Hide":
         effect = owner.magic_effects["Nature Shield"]
         effect.active = True
         effect.duration = max(effect.duration, 1)
-        effect.extra = max(int(effect.extra or 0), max(4, bond // 5))
+        effect.extra = max(int(effect.extra or 0), max(4, int((bond // 5) * potency)))
         effect.source = "Guard Hide"
         return f"{companion.name}'s Guard Hide braces {owner.name}.\n"
     if special == "Primal Spark" and hit:
-        damage = max(1, int(getattr(companion.combat, "magic", 1) * 0.20))
+        damage = max(1, int(getattr(companion.combat, "magic", 1) * 0.20 * potency))
         target.health.current = max(0, target.health.current - damage)
         return f"{companion.name}'s Primal Spark flashes for {damage} damage.\n"
     if special == "Keen Scent" and hit:
         effect = target.stat_effects["Defense"]
         effect.active = True
         effect.duration = max(effect.duration, 2)
-        effect.extra = min(int(effect.extra or 0), -max(1, bond // 30))
+        pressure = max(1, int((bond // 30) * potency))
+        effect.extra = min(int(effect.extra or 0), -pressure)
         return f"{companion.name}'s Keen Scent finds a weak point.\n"
     return ""
 
@@ -398,6 +416,34 @@ def has_living_tamed_companion(character: Any) -> bool:
 
 def _class_name(character: Any) -> str:
     return str(getattr(getattr(character, "cls", None), "name", "") or "")
+
+
+def _has_talent(character: Any, talent_key: str) -> bool:
+    try:
+        from ...progression import has_talent
+
+        return has_talent(character, talent_key)
+    except (AttributeError, KeyError, TypeError):
+        return False
+
+
+def tamed_companion_damage_multiplier(owner: Any, target: Any | None) -> float:
+    """Return Ranger and Beast Master modifiers for one companion attack."""
+    favored = _favored_enemy_pressure(owner, target)
+    multiplier = 1.0
+    if favored and _has_talent(owner, "ranger.pack-tactics"):
+        multiplier *= 1.20
+    if _has_talent(owner, "beast-master.apex-pack"):
+        multiplier *= 1.10
+    target_health = getattr(target, "health", None)
+    if (
+        favored
+        and _has_talent(owner, "beast-master.cornered-prey")
+        and target_health is not None
+        and target_health.current * 10 <= target_health.max * 3
+    ):
+        multiplier *= 1.25
+    return multiplier
 
 
 def available_beast_companion_commands(character: Any) -> list[str]:
@@ -430,7 +476,10 @@ def set_pending_companion_command(character: Any, command: str | None) -> None:
 
 def tamed_auto_action_chance(character: Any) -> float:
     bond = tamed_companion_bond(character)
-    return min(0.40, 0.12 + (bond * 0.0028))
+    chance = 0.12 + (bond * 0.0028)
+    if _has_talent(character, "beast-master.apex-pack"):
+        chance += 0.10
+    return min(0.50, chance)
 
 
 def tamed_companion_should_auto_act(character: Any, *, rng: Any = random) -> bool:
@@ -446,6 +495,35 @@ def _favored_enemy_pressure(character: Any, target: Any | None) -> bool:
     return bool(target is not None and getattr(target, "enemy_typ", None) == favorite_enemy_type(character))
 
 
+def _clear_harmful_companion_condition(target: Any) -> str | None:
+    """Clear one condition suitable for field treatment and return its name."""
+    harmful = (
+        "Stun",
+        "Paralyze",
+        "Sleep",
+        "Confusion",
+        "Fear",
+        "Silence",
+        "Blind",
+        "Poison",
+        "Bleed",
+        "Prone",
+        "Cripple",
+        "Maim",
+    )
+    for effects_name in ("status_effects", "physical_effects"):
+        effects = getattr(target, effects_name, {}) or {}
+        for name in harmful:
+            effect = effects.get(name)
+            if effect is None or not getattr(effect, "active", False):
+                continue
+            effect.active = False
+            effect.duration = 0
+            effect.extra = 0
+            return name
+    return None
+
+
 def resolve_tamed_companion_command(character: Any, target: Any | None) -> str:
     command = pending_companion_command(character)
     if not command:
@@ -458,7 +536,15 @@ def resolve_tamed_companion_command(character: Any, target: Any | None) -> str:
     bond = tamed_companion_bond(character)
     rank = max(0, bond // 25)
     favored = _favored_enemy_pressure(character, target)
-    from .. import class_rings
+    command_power = (
+        1.15
+        if _has_talent(character, "beast-master.commanders-voice")
+        else 1.0
+    )
+    duration_bonus = int(
+        favored and _has_talent(character, "beast-master.adaptive-orders")
+    )
+    from .. import class_rings, promotion_kits
 
     ring_enhanced = bool(
         class_rings.is_awakened(character, "Beast Master")
@@ -468,6 +554,9 @@ def resolve_tamed_companion_command(character: Any, target: Any | None) -> str:
 
     if command == "Pack Strike":
         dmg_mod = 0.55 + (bond / 250.0) + (0.10 if favored else 0.0)
+        dmg_mod *= promotion_kits.companion_bond_multiplier(character)
+        dmg_mod *= tamed_companion_damage_multiplier(character, target)
+        dmg_mod *= command_power
         if ring_enhanced:
             dmg_mod *= 1.10
         msg = f"{companion.name} follows Pack Strike.\n"
@@ -477,16 +566,29 @@ def resolve_tamed_companion_command(character: Any, target: Any | None) -> str:
             accuracy_modifier=0.10 if ring_enhanced else 0.0,
         )
         msg += ring_message + attack_str
-        msg += tamed_companion_special_turn(character, target, hit=hit, crit=crit)
+        trait_hit = hit or _has_talent(character, "beast-master.perfect-coordination")
+        msg += tamed_companion_special_turn(
+            character,
+            target,
+            hit=trait_hit,
+            crit=crit,
+        )
         return msg
 
     if command == "Guard Partner":
         effect = character.magic_effects["Nature Shield"]
-        amount = 4 + rank * 4 + (bond // 20)
+        amount = int((4 + rank * 4 + (bond // 20)) * command_power)
+        if _has_talent(character, "beast-master.guardian-pack"):
+            amount = max(1, int(amount * 1.25))
         if ring_enhanced:
             amount = max(1, int(amount * 1.25))
         effect.active = True
-        duration = 1 + (1 if rank >= 3 else 0) + int(ring_enhanced)
+        duration = (
+            1
+            + (1 if rank >= 3 else 0)
+            + int(ring_enhanced)
+            + duration_bonus
+        )
         effect.duration = max(effect.duration, duration)
         effect.extra = max(int(effect.extra or 0), amount)
         effect.source = "Guard Partner"
@@ -500,26 +602,52 @@ def resolve_tamed_companion_command(character: Any, target: Any | None) -> str:
         defense.active = True
         defense.duration = max(
             defense.duration,
-            1 + min(2, rank) + int(ring_enhanced),
+            1 + min(2, rank) + int(ring_enhanced) + duration_bonus,
         )
-        defense.extra = min(int(defense.extra or 0), -(1 + rank + int(ring_enhanced)))
+        defense_penalty = max(
+            1,
+            int((1 + rank + int(ring_enhanced)) * command_power),
+        )
+        defense.extra = min(int(defense.extra or 0), -defense_penalty)
         msg = f"{companion.name} harries {target.name}'s footing.\n"
         if rank >= 2:
             speed = target.stat_effects["Speed"]
             speed.active = True
-            speed.duration = max(speed.duration, 2 + int(ring_enhanced))
+            speed.duration = max(
+                speed.duration,
+                2 + int(ring_enhanced) + duration_bonus,
+            )
             speed.extra = min(
                 int(speed.extra or 0),
-                -max(1, rank + int(ring_enhanced)),
+                -max(1, int((rank + int(ring_enhanced)) * command_power)),
             )
+        if _has_talent(character, "beast-master.crippling-harrier"):
+            attack = target.stat_effects["Attack"]
+            attack.active = True
+            attack.duration = max(attack.duration, 2 + duration_bonus)
+            attack.extra = min(
+                int(attack.extra or 0),
+                -max(1, int((1 + rank) * command_power)),
+            )
+            msg += f"{target.name}'s attacks lose force under the harassment.\n"
         return msg + ring_message
 
     if command == "Mend Wounds":
         owner_missing = max(0, character.health.max - character.health.current)
         companion_missing = max(0, companion.health.max - companion.health.current)
         heal_target = companion if companion_missing > owner_missing else character
-        amount = min(max(owner_missing, companion_missing), 5 + rank * 5 + bond // 10)
+        maximum_missing = max(owner_missing, companion_missing)
+        amount = min(
+            maximum_missing,
+            max(1, int((5 + rank * 5 + bond // 10) * command_power)),
+        )
         if amount <= 0:
+            if _has_talent(character, "beast-master.field-dressing"):
+                cleared = _clear_harmful_companion_condition(character)
+                if not cleared:
+                    cleared = _clear_harmful_companion_condition(companion)
+                if cleared:
+                    return f"Field Dressing clears {cleared}.\n"
             return f"{companion.name} stays close, ready to mend wounds.\n"
         if ring_enhanced:
             amount = min(
@@ -527,9 +655,48 @@ def resolve_tamed_companion_command(character: Any, target: Any | None) -> str:
                 max(1, int(amount * 1.25)),
             )
         heal_target.health.current = min(heal_target.health.max, heal_target.health.current + amount)
-        return (
+        msg = (
             f"{companion.name} mends {heal_target.name}'s wounds for {amount} HP.\n"
             f"{ring_message}"
         )
+        if _has_talent(character, "beast-master.guardian-pack"):
+            partner = companion if heal_target is character else character
+            missing = max(0, partner.health.max - partner.health.current)
+            partner_heal = min(missing, max(1, amount // 2))
+            if partner_heal:
+                partner.health.current += partner_heal
+                msg += f"The shared treatment restores {partner.name} for {partner_heal} HP.\n"
+        if _has_talent(character, "beast-master.field-dressing"):
+            cleared = _clear_harmful_companion_condition(heal_target)
+            if cleared:
+                msg += f"Field Dressing clears {cleared} from {heal_target.name}.\n"
+        return msg
+
+    if command == "Unleash Instinct":
+        special_name = str(getattr(companion, "special_ability", "Keen Scent"))
+        msg = f"{companion.name} unleashes {special_name}.\n"
+        return msg + tamed_companion_special_turn(
+            character,
+            target,
+            hit=True,
+            crit=False,
+        )
+
+    if command == "Rally Partner":
+        cleared_target = character
+        cleared = _clear_harmful_companion_condition(character)
+        if not cleared:
+            cleared_target = companion
+            cleared = _clear_harmful_companion_condition(companion)
+        missing = max(0, character.health.max - character.health.current)
+        healing = min(missing, max(1, int((5 + bond // 10) * command_power)))
+        character.health.current += healing
+        msg = f"{companion.name} rallies {character.name}"
+        if healing:
+            msg += f", restoring {healing} HP"
+        msg += ".\n"
+        if cleared:
+            msg += f"Rally Partner clears {cleared} from {cleared_target.name}.\n"
+        return msg
 
     return f"{companion.name} cannot follow {command} yet.\n"

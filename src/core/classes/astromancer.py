@@ -93,6 +93,21 @@ def is_astromancer(character: Any) -> bool:
     return class_name(character) == "Astromancer"
 
 
+def silent_lucidity_active(character: Any) -> bool:
+    """Return whether the Astromancer may select a lucid spell while asleep."""
+    return bool(
+        is_astromancer(character)
+        and "Silent Lucidity" in getattr(character, "spellbook", {}).get("Skills", {})
+    )
+
+
+def can_cast_while_asleep(character: Any, spell: Any) -> bool:
+    """Limit Silent Lucidity to authored Time and Divination spells."""
+    if not silent_lucidity_active(character):
+        return False
+    return str(getattr(spell, "subtyp", "") or "") in {"Time", "Divination"}
+
+
 def active_constellation(character: Any) -> str:
     state = ensure_state(character)
     index = int(state.get("active_constellation_index", 0) or 0)
@@ -199,6 +214,18 @@ def rune_drop_chance(character: Any, target: Any, spell: Any) -> tuple[str | Non
     if not sign:
         return None, 0.0
     chance = BASE_RUNE_DROP_CHANCE
+    try:
+        from ..progression import has_talent
+
+        if has_talent(character, "diviner.open-sigils"):
+            chance += 0.10
+        if (
+            sign == active_constellation(character)
+            and has_talent(character, "astromancer.celestial-runes")
+        ):
+            chance += 0.15
+    except (AttributeError, KeyError, TypeError):
+        pass
     if is_astromancer(character) and sign == active_constellation(character):
         chance += ASTROMANCER_ACTIVE_SIGN_DROP_BONUS
     element = SIGN_TO_ELEMENT[sign]
@@ -319,10 +346,22 @@ def record_thread_action(character: Any, action_name: str, *, successful: bool) 
     if state.get("foresight_thread_action") == marker:
         return ""
     state["foresight_thread_action"] = marker
+    amount = 1
+    try:
+        from ..progression import has_talent
+
+        if (
+            has_talent(character, "astromancer.thread-spinner")
+            and not state.get("thread_spinner_used")
+        ):
+            amount += 1
+            state["thread_spinner_used"] = True
+    except (AttributeError, KeyError, TypeError):
+        pass
     return promotion_kits.gain_meter(
         character,
         "foresight_threads",
-        1,
+        amount,
         action_name,
     )
 
@@ -368,6 +407,35 @@ def threaded_bonus(character: Any, key: str) -> float:
         return max(0.0, float(context.get(key, 0.0) or 0.0))
     except (AttributeError, TypeError, ValueError):
         return 0.0
+
+
+def tephra_splash(character: Any, primary_target: Any, encounter: Any) -> str:
+    """Scatter Volcano debris onto every other living hostile."""
+    if (
+        not is_astromancer(character)
+        or "Tephra" not in getattr(character, "spellbook", {}).get("Skills", {})
+    ):
+        return ""
+    messages = []
+    raw = max(1, int(character.check_mod("magic") * 0.35))
+    for member in getattr(encounter, "living_members", ()):
+        target = member.enemy
+        if target is primary_target:
+            continue
+        hit, reduction, damage = target.damage_reduction(raw, character, typ="Fire")
+        dealt = min(max(0, int(damage or 0)), int(target.health.current)) if hit else 0
+        if dealt:
+            target.health.current -= dealt
+            character._emit_damage_event(
+                target,
+                dealt,
+                damage_type="Fire",
+                source="Tephra",
+                ability_name="Volcano",
+            )
+        messages.append(reduction)
+        messages.append(f"Tephra strikes {target.name} for {dealt} Fire damage.\n")
+    return "".join(messages)
 
 
 class Astromancer(Job):

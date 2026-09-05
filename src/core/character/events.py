@@ -47,9 +47,13 @@ class CharacterEventsMixin:
                 damage_type == "Holy"
                 and "Dazed or Confused" in getattr(self, "spellbook", {}).get("Skills", {})
             ):
-                if random.random() < 0.25:
+                from ..progression import has_talent
+
+                stun_chance = 0.35 if has_talent(self, "priest.holy-disorientation") else 0.25
+                confuse_chance = 0.40 if has_talent(self, "archbishop.overwhelming-light") else 0.25
+                if random.random() < stun_chance:
                     target.apply_stun(2, source="Dazed or Confused", applier=self)
-                elif random.random() < 0.25:
+                elif random.random() < confuse_chance:
                     target.confused_turns = max(2, int(getattr(target, "confused_turns", 0) or 0))
                     berserk = target.status_effects.get("Berserk")
                     if berserk is not None:

@@ -46,6 +46,99 @@ WATER_WARD_ABSORB_FRACTION = 0.25
 WIND_COMMUNION_POS = (5, 5, 3)
 
 
+def has_nature_talent(character: Any, talent_key: str) -> bool:
+    """Return whether a Shaman-line progression talent is owned."""
+    try:
+        from ..progression import has_talent
+
+        return has_talent(character, talent_key)
+    except (AttributeError, KeyError, TypeError, ValueError):
+        return False
+
+
+def _dread_key(target: Any) -> str:
+    return str(getattr(target, "combatant_id", None) or id(target))
+
+
+def dread_stacks(character: Any, target: Any) -> int:
+    """Return combat-only Bad Omens dread on one enemy."""
+    from . import promotion_kits
+
+    dread = promotion_kits.combat_state(character).setdefault("omen_dread", {})
+    return max(0, int(dread.get(_dread_key(target), 0) or 0))
+
+
+def add_dread(character: Any, target: Any, reason: str) -> str:
+    """Add one dread and realize the omen at three stacks."""
+    if target is None or not getattr(target, "is_alive", lambda: False)():
+        return ""
+    from . import promotion_kits
+
+    dread = promotion_kits.combat_state(character).setdefault("omen_dread", {})
+    key = _dread_key(target)
+    stacks = min(3, max(0, int(dread.get(key, 0) or 0)) + 1)
+    dread[key] = stacks
+    message = f"{target.name} gains dread from {reason} ({stacks}/3).\n"
+    if stacks < 3:
+        return message
+    dread[key] = 0
+    if target.has_status_protection("Stun"):
+        return message + f"{target.name} resists the omen.\n"
+    stun = target.status_effects["Stun"]
+    stun.active = True
+    duration = 3 if has_nature_talent(character, "shaman.inevitable-omen") else 2
+    stun.duration = max(int(stun.duration or 0), duration)
+    stun.source = "Bad Omens"
+    return message + f"The omen comes true: {target.name} is Stunned for {duration} turns.\n"
+
+
+def record_enemy_miss(character: Any, enemy: Any, result: Any) -> str:
+    """Turn a hostile miss into Bad Omens dread."""
+    if not has_nature_talent(character, "shaman.bad-omens"):
+        return ""
+    portions = getattr(result, "results", None)
+    if not isinstance(portions, list):
+        portions = [result]
+    if not portions or not any(getattr(portion, "hit", None) is False for portion in portions):
+        return ""
+    return add_dread(character, enemy, "a failed attack")
+
+
+def passive_rating_bonus(character: Any, rating: str) -> int:
+    """Return authored Soulcatcher bonuses from Totem and harvest mastery."""
+    if getattr(getattr(character, "cls", None), "name", None) != "Soulcatcher":
+        return 0
+    bonus = 0
+    if active_totem_aspect(character):
+        if rating == "weapon" and has_nature_talent(character, "soulcatcher.spirit-warrior"):
+            bonus += 10
+        if (
+            rating == "magic def"
+            and active_totem_aspect(character) == "Soul"
+            and has_nature_talent(character, "soulcatcher.death-ward")
+        ):
+            bonus += 15
+    try:
+        from . import class_rings
+
+        count = len(
+            class_rings.ensure_state(character)["data"]["Soulcatcher"].get(
+                "harvested_types",
+                [],
+            )
+        )
+    except (AttributeError, KeyError, TypeError):
+        count = 0
+    if rating == "magic" and count >= 3 and has_nature_talent(character, "soulcatcher.varied-harvest"):
+        bonus += 10
+    if rating == "armor" and count >= 5 and has_nature_talent(character, "soulcatcher.essence-shell"):
+        bonus += 10
+    if count >= 7 and has_nature_talent(character, "soulcatcher.perfect-vessel"):
+        if rating in {"weapon", "magic def"}:
+            bonus += 10
+    return bonus
+
+
 def is_nature_totem_class(character: Any) -> bool:
     return getattr(getattr(character, "cls", None), "name", None) in ELIGIBLE_CLASSES
 
@@ -114,6 +207,8 @@ def totem_pulse_chance(character: Any) -> float:
     chance = BASE_PULSE_CHANCE
     if has_staff_equipped(character):
         chance += STAFF_PULSE_BONUS
+    if has_nature_talent(character, "shaman.steady-pulse"):
+        chance += 0.10
     try:
         from . import promotion_kits
 
@@ -156,7 +251,12 @@ def resolve_totem_pulse(character: Any, target: Any, rng: Any = random) -> str:
     if not spell:
         return ""
 
-    sentinel, prior = _set_temp_attr(character, "_totem_pulse_potency", TOTEM_PULSE_POTENCY)
+    potency = TOTEM_PULSE_POTENCY
+    if has_nature_talent(character, "shaman.echoing-totem"):
+        potency += 0.10
+    if has_nature_talent(character, "soulcatcher.soul-amplifier") and aspect == "Soul":
+        potency += 0.10
+    sentinel, prior = _set_temp_attr(character, "_totem_pulse_potency", potency)
     try:
         message = f"{character.name}'s {aspect} Totem pulses with {spell_name}.\n"
         resolved = spell.cast(character, target=target, special=True)
@@ -210,7 +310,10 @@ def unlock_communion(character: Any, aspect: str) -> tuple[bool, str]:
 def water_ward_absorb(defender: Any, damage: int) -> tuple[int, str]:
     if damage <= 0 or active_totem_aspect(defender) != "Water":
         return damage, ""
-    absorbed = int(damage * WATER_WARD_ABSORB_FRACTION)
+    fraction = WATER_WARD_ABSORB_FRACTION
+    if has_nature_talent(defender, "shaman.deep-water"):
+        fraction += 0.10
+    absorbed = int(damage * fraction)
     if absorbed <= 0:
         return damage, ""
     defender.health.current = min(defender.health.max, defender.health.current + absorbed)

@@ -757,6 +757,7 @@ class CharacterMechanicsMixin:
         rows = [
             ("Active Aspect", str(active)),
             ("Unlocked Aspects", ", ".join(unlocked) if unlocked else "None"),
+            ("Spirit Animal", str(getattr(player_char, "spirit_animal", "Not chosen"))),
             ("Staff Bond", "Aligned" if nature_totems.has_staff_equipped(player_char) else "Unfocused"),
             ("Select", "C/Enter: Totem Aspects"),
         ]
@@ -827,7 +828,15 @@ class CharacterMechanicsMixin:
         repertoire = promotion_kits.ensure_state(player_char)["bard_repertoire"]
         mastered = sum(1 for entry in repertoire.values() if entry.get("known"))
 
-        row_y = self._draw_progress_row(left_rect, "Crescendo", crescendo, 3, y, detail="Coda", color=self.colors.GOLD)
+        row_y = self._draw_progress_row(
+            left_rect,
+            "Crescendo",
+            crescendo,
+            promotion_kits.cap_for(player_char, "crescendo"),
+            y,
+            detail="Coda",
+            color=self.colors.GOLD,
+        )
         rows = [
             ("Combat Song", str(song_state.get("active") or "None")),
             ("Song Turns", str(song_state.get("turns", 0))),
@@ -844,11 +853,33 @@ class CharacterMechanicsMixin:
             )
         self._draw_key_values(rows, left_rect, row_y, font=self.normal_font, row_gap=8)
 
+        available = bard.available_compositions(player_char)
+        equipped_song = next(iter(available), "None")
         if class_name != "Troubadour":
+            self._draw_text("Composition", self.normal_font, self.colors.GOLD, right_rect.left, y, right_rect.width)
+            self._draw_key_values(
+                [
+                    ("Instrument Match", equipped_song),
+                    ("Compose", "C/Enter: choose song"),
+                ],
+                right_rect,
+                y + self.normal_font.get_height() + 12,
+                font=self.normal_font,
+                row_gap=10,
+            )
             return
 
         self._draw_text("Advanced Repertoire", self.normal_font, self.colors.GOLD, right_rect.left, y, right_rect.width)
         list_y = y + self.normal_font.get_height() + 12
+        self._draw_text(
+            f"Compose: C/Enter ({equipped_song})",
+            self.small_font,
+            self.colors.GRAY,
+            right_rect.left,
+            list_y,
+            right_rect.width,
+        )
+        list_y += self.small_font.get_height() + 8
         for song, entry in repertoire.items():
             known = "Mastered" if entry.get("known") else "Practice"
             xp = int(entry.get("practice_xp", 0) or 0)
@@ -869,6 +900,14 @@ class CharacterMechanicsMixin:
             list_y += self.normal_font.get_height() + self.small_font.get_height() + 12
             if list_y > right_rect.bottom - 24:
                 break
+
+    def _open_composition_popup(self, player_char) -> None:
+        popup = character_screen.CompositionPopupMenu(
+            self.presenter,
+            self,
+            title="Compose Song",
+        )
+        popup.show(player_char=player_char, flush_events=True)
 
     def _draw_forms_tab(self, player_char, y: int) -> None:
         self.class_companion_selector_active = False

@@ -713,7 +713,7 @@ class BattleTurnMixin:
             )
 
         hp_before = self.player.health.current
-        if self.attacker != self.player:
+        if self._member_for_character(self.attacker) is not None:
             from ...classes import pathfinder
 
             pathfinder.record_incoming_action_start(self.player)
@@ -934,6 +934,21 @@ class BattleTurnMixin:
                 warrior.finish_action(self.player)
             return result
 
+        if (
+            self.attacker.status_effects["Sleep"].active
+            and astromancer.silent_lucidity_active(self.attacker)
+        ):
+            spell = self.attacker.spellbook.get("Spells", {}).get(choice)
+            if action != "Cast Spell" or not astromancer.can_cast_while_asleep(
+                self.attacker,
+                spell,
+            ):
+                result.message = (
+                    f"{self.attacker.name} can shape only lucid Time or "
+                    "Divination spells while asleep.\n"
+                )
+                return result
+
         if self._tunneled_action_blocked(action, choice):
             result.message = f"{self.attacker.name} must surface before doing that.\n"
             return result
@@ -1088,6 +1103,14 @@ class BattleTurnMixin:
                     self.attacker,
                     visible=self.show_enemy_details(self.attacker),
                 )
+        if self.attacker != self.player:
+            from ...classes import nature_totems
+
+            result.message += nature_totems.record_enemy_miss(
+                self.player,
+                self.attacker,
+                self._last_combat_result,
+            )
         if self.attacker == self.player:
             warrior.finish_action(self.player)
             if defender_alive_before and self.defender and not self.defender.is_alive():

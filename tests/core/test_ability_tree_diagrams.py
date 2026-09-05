@@ -13,6 +13,7 @@ from src.core.ability_tree_diagrams import (
     write_all,
 )
 from src.core.progression import ABILITY_TREES
+from src.core.progression_manifest import CATALOG_ONLY_PROMOTED_TREE_CLASSES
 
 
 def test_generated_ability_tree_diagrams_match_runtime_trees():
@@ -33,6 +34,28 @@ def test_generated_ability_tree_diagrams_match_runtime_trees():
             continue
         path = OUTPUT_DIRECTORY / diagram_relative_path(class_name)
         assert path.read_text(encoding="utf-8") == render_tree_svg(class_name)
+
+
+def test_every_ability_tree_has_status_appropriate_documentation():
+    status_index = (OUTPUT_DIRECTORY / "ABILITY_TREE_STATUS.md").read_text(
+        encoding="utf-8"
+    )
+    for class_name in ABILITY_TREES:
+        diagram_path = diagram_relative_path(class_name)
+        documentation_relative_path = diagram_path.with_suffix(".md")
+        documentation_path = OUTPUT_DIRECTORY / documentation_relative_path
+        text = documentation_path.read_text(encoding="utf-8")
+        assert f"]({diagram_path.as_posix()})" in status_index
+        assert f"]({documentation_relative_path.as_posix()})" in status_index
+        if class_name in CATALOG_ONLY_PROMOTED_TREE_CLASSES:
+            assert "Decision Block" in text
+            assert (
+                "Authored Expansion Pending" in text
+                or "Graph Authorship Pending" in text
+            )
+        else:
+            assert "Implementation Reference" in text
+            assert 'Status: `Finished`' in text
 
 
 def test_mage_diagram_is_authoritative_and_tracks_runtime_nodes():
@@ -93,7 +116,13 @@ def test_either_or_promotion_connectors_use_outer_side_entries():
 
     assert spellblade.count('class="promotion-edge"') == 4
     assert 'V 792.0"/>' in spellblade
-    assert "Requires ANY 3 paths" in spellblade
+    assert "Requires 1 of 3 paths" in spellblade
+
+
+def test_cleric_promotions_label_one_of_two_eligible_paths():
+    cleric = render_tree_svg("Cleric")
+
+    assert cleric.count("Requires 1 of 2 paths") == 2
 
 
 def test_base_svg_promotions_label_all_required_paths():

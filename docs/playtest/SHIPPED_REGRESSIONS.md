@@ -349,6 +349,12 @@ not regression evidence.
   - Expected: Soul Drain provides useful pressure without trivializing bosses or long fights.
 - [ ] Open Totem aspect selection and inspect active Totem HUD/status presentation in pygame combat.
   - Expected: Current aspect, active benefits, and selection state are readable without relying on combat-log memory.
+- [ ] Learn `Spirit Animal`, select each animal in the Totems popup, save/load, and invoke its combat blessing.
+  - Expected: Bear, Wolf, Owl, Panther, Eagle, Turtle, Toad, and Snake remain selectable; the chosen animal persists and applies its documented four-turn stat blessing.
+- [ ] Learn `Bad Omens`, then observe enemy misses and Shaman weapon criticals against multiple enemies.
+  - Expected: Dread is tracked per enemy, realizes as a two-turn Stun at three stacks, respects Stun protection, and clears with combat state.
+- [ ] Build each Soulcatcher discipline and compare Soul Drain, Soulstorm, harvest thresholds, Ancestral Aegis, and spirit-weapon actions.
+  - Expected: Soul damage retains its one-HP floor, 20 points cannot buy more than two thirds of the tree, and harvest/Totem bonuses appear only when their talents and prerequisites are owned.
 - [ ] Try to find all four elemental communion locations without reading the map data.
   - Expected: The locations are discoverable enough for exploration without becoming quest-log objectives.
 - [ ] Visit the Thieves Guild backroom as a member Rogue, Seeker, Ninja, or Arcane Trickster with a dormant Class Ring equipped or stored.
@@ -496,6 +502,13 @@ not regression evidence.
   - Expected: Pygame coin meters for Fortune/Misfortune still render as coins even when the backing value includes a compact hint.
 - [ ] Defeat ordinary loot-bearing enemies as Thief/Rogue after the readability pass.
   - Expected: Existing ordinary eligible drops remain unchanged mechanically, but `Scavenger's Eye` or `Finders Keepers` makes the class loot identity visible in the combat log when such loot appears.
+- [ ] Approach a detected trap twice as a Rogue with `Disarm Traps`.
+  - Expected: The first approach warns and stops; the second attempts a
+    DEX/depth check. Success disarms it, while failure triggers it and
+    `Impossible Job` limits the failed attempt to half severity.
+- [ ] Escape successfully with `Smoke Screen` and `Take It On the Run`.
+  - Expected: The Rogue attempts one theft before combat cleanup; `Gone Before
+    Dawn` doubles stolen gold without bypassing ordinary theft eligibility.
 - [ ] Win with an active level-1 summon and then with an active level-2+ summon.
   - Expected: Level-1 victories explain that summon bond needs level 2; level-2+ low-XP/no-roll victories can report that bond held steady; successful gains still report the amount and current bond.
 
@@ -521,9 +534,15 @@ automated implementation boundary.
     least 1 Devotion has been built.
   - Expected: The cleanse/Regen rider remains conservative and logs clearly when it triggers.
 - [ ] Spend Devotion with `Relic Aegis` as Templar.
+  - Expected: Enduring Aegis extends both protection and counter readiness;
+    Unbroken Reliquary strengthens both below half health.
+  - Expected: Liturgical Renewal restores MP from an awakened Ordered Blessing
+    and Perfect Order adds a Magic Defense rider.
 - [ ] Spend Devotion with `Consecrated Conduit` as Hierophant, then land a staff, Smite, or Holy payoff.
   - Expected: The skill requires MP, at least 1 Devotion, and a staff.
   - Expected: It spends all stacks to empower the next staff, Smite, or Holy payoff with bonus holy damage, modest warding, and small mana return.
+  - Expected: Luminous Doctrine strengthens Holy-pressure generation, while
+    Merciful Ward shields the recipient of meaningful direct healing.
 - [ ] Use `Holy Retribution` and awakened `Ordered Blessings` with Devotion.
   - Expected: `Holy Retribution` keeps its holy-fire attack window while improving Devotion gain from holy/shield actions once per round.
   - Expected: `Ordered Blessings` keeps the Regen/Defense/Holy Damage rotation and preserves 1 Devotion once per combat after a clean matching payoff.
@@ -606,11 +625,11 @@ absent from player-facing explanations.
     saved stolen spell identity, decrements charges, and persists after
     save/load.
 - [ ] Build `Stolen Charge` as Spell Stealer and Arcane Trickster.
-  - Expected: Successful `Steal Spell`, successful `Steal Spell 2`, and casting an inscribed stolen-spell scroll each grant 1 Charge, capped at 2 for Spell Stealer and 3 for Arcane Trickster.
+  - Expected: Successful `Steal Spell`, successful `Steal Spell 2`, and casting an inscribed stolen-spell scroll each grant 1 Charge; Counterfeit Casting raises the scroll source to 2. Caps are 2 for Spell Stealer, 3 for Arcane Trickster, and 4 with Grand Larceny.
   - Expected: Item theft from `Steal As Well` does not independently grant Charge.
 - [ ] Spend `Stolen Charge` with representative spell, weapon, and weapon-tagged trickster actions.
   - Expected: The next validated eligible attempt commits all Charge and a successful action adds one aggregate typed Arcane payoff.
-  - Expected: Misses or fully negated actions consume the commitment without applying the payoff.
+  - Expected: Misses or fully negated actions consume the commitment without applying the payoff; Controlled Discharge visibly retains one Charge.
 - [ ] End combat, flee, save/load, or change class with `Stolen Charge` active.
   - Expected: Charge clears because it is combat-only and has no persistent save field.
 - [ ] Complete `Impossible Theft`, then successfully steal a spell as Arcane Trickster with the awakened ring equipped.

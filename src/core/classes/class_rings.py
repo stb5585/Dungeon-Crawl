@@ -882,9 +882,13 @@ def divine_intervention(character: Any, rng: Any = random) -> int:
     if character.health.current / hp_max >= 0.50:
         return 0
     data["intervention_used"] = True
-    if rng.random() >= 0.35:
+    from ..progression import has_talent
+
+    chance = 0.50 if has_talent(character, "archbishop.assured-intervention") else 0.35
+    if rng.random() >= chance:
         return 0
-    heal = max(1, int(hp_max * 0.25))
+    ratio = 0.35 if has_talent(character, "archbishop.miraculous-recovery") else 0.25
+    heal = max(1, int(hp_max * ratio))
     character.health.current = min(hp_max, character.health.current + heal)
     return heal
 

@@ -188,6 +188,7 @@ class CharacterOffenseMixin:
             from ..classes import promotion_kits
 
             chance += promotion_kits.case_prediction_dodge_bonus(self, attacker)
+            chance += promotion_kits.rope_a_dope_dodge_bonus(self)
         except Exception:
             pass
         cls_name = _class_name(self)
@@ -316,6 +317,7 @@ class CharacterOffenseMixin:
 
         revelation_message = ""
         dmg_mod *= pathfinder.melee_damage_multiplier(self)
+        dmg_mod *= pathfinder.ranger_weapon_damage_multiplier(self, defender)
         if getattr(defender, "_distracted_turns", 0):
             defender._distracted_turns = 0
         concealed_attack = bool(getattr(self, "_combat_concealed", False))
@@ -840,6 +842,7 @@ class CharacterOffenseMixin:
             from ..classes import promotion_kits
 
             ghost += promotion_kits.record_ki_reaction(defender, "successful dodge")
+            ghost += promotion_kits.record_rope_a_dope_dodge(defender, self)
             ghost += promotion_kits.add_aspect(defender, "Stone", incoming=True)
             ghost += promotion_kits.record_luck_roll(
                 defender,

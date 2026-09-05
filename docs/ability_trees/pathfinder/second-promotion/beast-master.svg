@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="494" height="496" viewBox="0 0 494 496">
+<svg xmlns="http://www.w3.org/2000/svg" width="938" height="696" viewBox="0 0 938 696">
 <style>
 text{font-family:DejaVu Sans,Arial,sans-serif}
 .title{fill:#f4bf2a;font-size:24px;font-weight:700}
@@ -10,33 +10,91 @@ text{font-family:DejaVu Sans,Arial,sans-serif}
 .edge{fill:none;stroke:#7f8998;stroke-width:2}
 .promotion-edge{fill:none;stroke:#c59d3d;stroke-width:3}
 </style>
-<rect width="494" height="496" fill="#10131a"/>
+<rect width="938" height="696" fill="#10131a"/>
 <text class="title" x="42" y="38">Beast Master Ability Tree</text>
-<text class="meta" x="42" y="62">Tier 3 · 7 nodes · Pack Tactics · Commands</text>
-<path class="edge" d="M 358.0 123.0 V 173.0 H 358.0 V 223.0"/>
-<path class="edge" d="M 358.0 223.0 V 273.0 H 358.0 V 323.0"/>
+<text class="meta" x="42" y="62">Tier 3 · 22 nodes · Pack Tactics · Commands</text>
 <path class="edge" d="M 136.0 123.0 V 173.0 H 136.0 V 223.0"/>
 <path class="edge" d="M 136.0 223.0 V 273.0 H 136.0 V 323.0"/>
+<path class="edge" d="M 136.0 323.0 V 373.0 H 136.0 V 423.0"/>
+<path class="edge" d="M 136.0 423.0 V 473.0 H 136.0 V 523.0"/>
+<path class="edge" d="M 136.0 523.0 V 573.0 H 136.0 V 623.0"/>
+<path class="edge" d="M 358.0 123.0 V 173.0 H 358.0 V 223.0"/>
+<path class="edge" d="M 358.0 223.0 V 273.0 H 358.0 V 323.0"/>
 <path class="edge" d="M 358.0 323.0 V 373.0 H 358.0 V 423.0"/>
-<rect x="264.0" y="92.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
-<text class="name" x="274.0" y="116.0">Cover</text>
-<text class="detail" x="274.0" y="137.0">Ability · Cost 1 · Level 65</text>
-<rect x="264.0" y="192.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
-<text class="name" x="274.0" y="216.0">Zephyrstrike</text>
-<text class="detail" x="274.0" y="237.0">Ability · Cost 1 · Level 70</text>
+<path class="edge" d="M 358.0 423.0 V 473.0 H 358.0 V 523.0"/>
+<path class="edge" d="M 580.0 123.0 V 173.0 H 580.0 V 223.0"/>
+<path class="edge" d="M 580.0 223.0 V 273.0 H 580.0 V 323.0"/>
+<path class="edge" d="M 580.0 323.0 V 373.0 H 580.0 V 423.0"/>
+<path class="edge" d="M 580.0 423.0 V 473.0 H 580.0 V 523.0"/>
+<path class="edge" d="M 580.0 523.0 V 573.0 H 580.0 V 623.0"/>
+<path class="edge" d="M 802.0 123.0 V 173.0 H 802.0 V 223.0"/>
+<path class="edge" d="M 802.0 223.0 V 273.0 H 802.0 V 323.0"/>
+<path class="edge" d="M 802.0 323.0 V 373.0 H 802.0 V 423.0"/>
+<path class="edge" d="M 802.0 423.0 V 473.0 H 802.0 V 523.0"/>
 <rect x="42.0" y="92.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
 <text class="name" x="52.0" y="116.0">Pack Strike</text>
-<text class="detail" x="52.0" y="137.0">Ability · Cost 1 · Level 65</text>
-<rect x="264.0" y="292.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
-<text class="name" x="274.0" y="316.0">Guard Partner</text>
-<text class="detail" x="274.0" y="337.0">Ability · Cost 1 · Level 75</text>
-<rect x="42.0" y="192.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
-<text class="name" x="52.0" y="216.0">Harry Prey</text>
-<text class="detail" x="52.0" y="237.0">Ability · Cost 1 · Level 70</text>
-<rect x="42.0" y="292.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
-<text class="name" x="52.0" y="316.0">Mend Wounds</text>
-<text class="detail" x="52.0" y="337.0">Ability · Cost 1 · Level 75</text>
+<text class="detail" x="52.0" y="137.0">Ability · Cost 1</text>
+<rect x="42.0" y="192.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
+<text class="name" x="52.0" y="216.0">Heavy Hunter</text>
+<text class="detail" x="52.0" y="237.0">Talent · Cost 1 · Level 65</text>
+<rect x="42.0" y="292.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
+<text class="name" x="52.0" y="316.0">Coordinated Assault</text>
+<text class="detail" x="52.0" y="337.0">Talent · Cost 1 · Level 70</text>
+<rect x="42.0" y="392.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
+<text class="name" x="52.0" y="416.0">Alpha Instinct</text>
+<text class="detail" x="52.0" y="437.0">Talent · Cost 1 · Level 75</text>
+<rect x="42.0" y="492.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<text class="name" x="52.0" y="516.0">Unleash Instinct</text>
+<text class="detail" x="52.0" y="537.0">Ability · Cost 1 · Level 80</text>
+<rect x="42.0" y="592.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
+<text class="name" x="52.0" y="616.0">Apex Pack</text>
+<text class="detail" x="52.0" y="637.0">Talent · Cost 1 · Level 85</text>
+<rect x="264.0" y="92.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<text class="name" x="274.0" y="116.0">Zephyrstrike</text>
+<text class="detail" x="274.0" y="137.0">Ability · Cost 1</text>
+<rect x="264.0" y="192.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<text class="name" x="274.0" y="216.0">Harry Prey</text>
+<text class="detail" x="274.0" y="237.0">Ability · Cost 1 · Level 65</text>
+<rect x="264.0" y="292.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
+<text class="name" x="274.0" y="316.0">Trail Guard</text>
+<text class="detail" x="274.0" y="337.0">Talent · Cost 1 · Level 70</text>
 <rect x="264.0" y="392.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
-<text class="name" x="274.0" y="416.0">Bonded Bulwark</text>
-<text class="detail" x="274.0" y="437.0">Talent · Cost 2 · Level 80</text>
+<text class="name" x="274.0" y="416.0">Crippling Harrier</text>
+<text class="detail" x="274.0" y="437.0">Talent · Cost 1 · Level 75</text>
+<rect x="264.0" y="492.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
+<text class="name" x="274.0" y="516.0">Cornered Prey</text>
+<text class="detail" x="274.0" y="537.0">Talent · Cost 1 · Level 80</text>
+<rect x="486.0" y="92.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<text class="name" x="496.0" y="116.0">Cover</text>
+<text class="detail" x="496.0" y="137.0">Ability · Cost 1</text>
+<rect x="486.0" y="192.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<text class="name" x="496.0" y="216.0">Guard Partner</text>
+<text class="detail" x="496.0" y="237.0">Ability · Cost 1 · Level 65</text>
+<rect x="486.0" y="292.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
+<text class="name" x="496.0" y="316.0">Bonded Bulwark</text>
+<text class="detail" x="496.0" y="337.0">Talent · Cost 1 · Level 70</text>
+<rect x="486.0" y="392.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<text class="name" x="496.0" y="416.0">Mend Wounds</text>
+<text class="detail" x="496.0" y="437.0">Ability · Cost 1 · Level 75</text>
+<rect x="486.0" y="492.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
+<text class="name" x="496.0" y="516.0">Field Dressing</text>
+<text class="detail" x="496.0" y="537.0">Talent · Cost 1 · Level 80</text>
+<rect x="486.0" y="592.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
+<text class="name" x="496.0" y="616.0">Guardian Pack</text>
+<text class="detail" x="496.0" y="637.0">Talent · Cost 1 · Level 85</text>
+<rect x="708.0" y="92.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<text class="name" x="718.0" y="116.0">Rally Partner</text>
+<text class="detail" x="718.0" y="137.0">Ability · Cost 1</text>
+<rect x="708.0" y="192.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
+<text class="name" x="718.0" y="216.0">Commander&#x27;s Voice</text>
+<text class="detail" x="718.0" y="237.0">Talent · Cost 1 · Level 65</text>
+<rect x="708.0" y="292.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
+<text class="name" x="718.0" y="316.0">Adaptive Orders</text>
+<text class="detail" x="718.0" y="337.0">Talent · Cost 1 · Level 70</text>
+<rect x="708.0" y="392.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
+<text class="name" x="718.0" y="416.0">Perfect Coordination</text>
+<text class="detail" x="718.0" y="437.0">Talent · Cost 1 · Level 75</text>
+<rect x="708.0" y="492.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
+<text class="name" x="718.0" y="516.0">True Bond</text>
+<text class="detail" x="718.0" y="537.0">Talent · Cost 1 · Level 80</text>
 </svg>

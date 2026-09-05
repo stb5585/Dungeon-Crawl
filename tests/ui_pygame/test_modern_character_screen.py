@@ -7,7 +7,7 @@ from types import SimpleNamespace
 
 import pygame
 
-from src.core import abilities, companions
+from src.core import abilities, companions, items
 from src.core.classes import (
     ability_mechanics,
     archdruid,
@@ -1523,6 +1523,7 @@ def test_modern_character_crescendo_tab_hides_troubadour_repertoire_for_bard(mon
     screen = ModernCharacterScreen(presenter)
     player = _make_player()
     player.cls = SimpleNamespace(name="Bard", description="Performs songs.")
+    player.equipment["OffHand"] = items.Lute()
     player.bard_song = {"active": "Valor", "turns": 1, "encore": None}
     promotion_kits.combat_state(player)["crescendo"] = 1
     _stub_character_screen_drawing(monkeypatch, screen)
@@ -1531,8 +1532,39 @@ def test_modern_character_crescendo_tab_hides_troubadour_repertoire_for_bard(mon
     screen.draw_class_tab(player)
 
     rendered_text = _rendered_text(presenter)
-    assert {"Crescendo", "1/3 Coda", "Combat Song", "Valor"}.issubset(rendered_text)
-    assert {"Encore", "Mastered", "Advanced Repertoire", "Battle Hymn", "Not visible"}.isdisjoint(rendered_text)
+    assert {
+        "Crescendo",
+        "1/3 Coda",
+        "Combat Song",
+        "Valor",
+        "Composition",
+        "Instrument Match",
+        "Battle Hymn",
+        "C/Enter: choose song",
+    }.issubset(rendered_text)
+    assert {"Encore", "Mastered", "Advanced Repertoire", "Not visible"}.isdisjoint(rendered_text)
+
+
+def test_modern_character_crescendo_tab_opens_inherent_composition(monkeypatch):
+    presenter = _make_presenter()
+    screen = ModernCharacterScreen(presenter)
+    player = _make_player()
+    player.cls = SimpleNamespace(name="Bard", description="Performs songs.")
+    opened = []
+
+    class FakePopup:
+        def __init__(self, _presenter, _screen, title="Compose Song"):
+            opened.append(title)
+
+        def show(self, **kwargs):
+            opened.append(kwargs["player_char"].cls.name)
+
+    import src.ui_pygame.gui.modern_character_screen as modern_module
+
+    monkeypatch.setattr(modern_module, "CompositionPopupMenu", FakePopup)
+    screen._open_composition_popup(player)
+
+    assert opened == ["Compose Song", "Bard"]
 
 
 def test_modern_character_forms_tab_shows_lycan_control(monkeypatch):

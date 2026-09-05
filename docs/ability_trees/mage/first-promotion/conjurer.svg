@@ -102,5 +102,5 @@ text{font-family:DejaVu Sans,Arial,sans-serif}
 <rect x="375.0" y="792.0" width="188" height="84" rx="8" fill="#3b2d12" stroke="#f4bf2a" stroke-width="2"/>
 <text class="name" x="385.0" y="816.0">Promote: Thaumatu...</text>
 <text class="detail" x="385.0" y="837.0">Promotion · Cost 3 · Level 60</text>
-<text class="detail" x="385.0" y="858.0">Requires ANY 4 paths</text>
+<text class="detail" x="385.0" y="858.0">Requires 1 of 4 paths</text>
 </svg>

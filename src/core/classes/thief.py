@@ -5,6 +5,16 @@ from __future__ import annotations
 from .base import Job
 
 
+def has_thief_talent(character, talent_key: str) -> bool:
+    """Return whether a Thief-line talent has been purchased."""
+    try:
+        from ..progression import has_talent
+
+        return has_talent(character, talent_key)
+    except (AttributeError, KeyError, TypeError, ValueError):
+        return False
+
+
 class Thief(Job):
     """
     Promotion: Footpad -> Thief-> Rogue

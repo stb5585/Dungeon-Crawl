@@ -560,25 +560,23 @@ interception attack. Smoke Screen escapes bypass Aggressive Pursuit.
 
 | Tree | Paths | Development nodes / total cost | Promotion route cost | Retained talents |
 | --- | --- | ---: | ---: | --- |
-| Thief | Fortune, Tools | 4 / 4 | Rogue: 6 | None |
-| Rogue | Loaded Odds, Cunning | 8 / 8 | Terminal | None |
-| Inquisitor | Case Journal, Judgment | 17 / 17 | Seeker: 7 | None |
-| Seeker | Wayfinding, Revelation | 11 / 11 | Terminal | None |
+| Thief | Fortune, Misfortune, Tools, Escape | 22 / 22 | Rogue: any complete discipline + 3 | Authored luck, tool, escape, and stat choices |
+| Rogue | Loaded Odds, Comebacks, Cunning, Escape | 28 / 30 | Terminal | Authored luck, survival, tool, and escape talents |
+| Inquisitor | Case Journal, Judgment, Elemental Wards | 23 / 24 | Seeker: either complete route + 3 | Take Notes costs two points; five added passives deepen casework, debuffs, and wards |
+| Seeker | Wayfinding, Safe Passage, Revelation, Judgment | 28 / 30 | Terminal | Twelve authored mechanic talents |
 | Assassin | Utility, Combat, Status / Death, Stealth, Counter | 25 / 25 | Ninja: Cutthroat path + 3 | Twist the Knife, OffHand Excellence, For Good Measure, Cutthroat, Surprise!, Main Gauche, Live and Learn |
 | Ninja | Utility, Combat, Toxin / Death, Stealth, Defense | 28 / 33 | Terminal | Find Traps, Smash and Grab, Execution Rhythm, toxin mastery, concealment, counters, dedicated Death Mark finishers |
-| Spell Stealer | Spell Theft, Stolen Charge | 5 / 5 | Arcane Trickster: 6 | None |
-| Arcane Trickster | Arcane Larceny, Misdirection | 3 / 3 | Terminal | None |
+| Spell Stealer | Spell Theft, Stolen Charge | 12 / 19 | Arcane Trickster: either complete path + 3 | Five authored talents |
+| Arcane Trickster | Arcane Larceny, Misdirection | 12 / 30 | Terminal | Six authored talents |
 
-Fortune, Revelation, and Stolen Charge now use their canonical class caps;
-there are no hidden tree purchases that expand them. Ninja keeps its fixed
+Fortune and Revelation use their canonical class caps. Stolen Charge uses its
+canonical cap until the visible Grand Larceny purchase expands it. Ninja keeps its fixed
 three-mark capacity and authored setup/finisher development.
 
-The Assassin/Ninja entries are authored trees. The other three promoted
-Footpad paths are intentionally compact authored graphs: all generated
-rating families, repeated ranks, and generic cap masteries were removed. The
-Thief/Rogue loot, luck, and survival and Inquisitor/Seeker investigation and
-wayfinding and the Spell Stealer/Arcane Trickster stolen-magic payoff are
-implemented.
+All four Footpad promotion paths now use authored trees. Inquisitor's six
+elemental wards remain independent cross-training rather than promotion gates;
+Seeker expands the Case Journal and Wayfinding systems without adding another
+meter. Generated rating families and repeated ranks remain prohibited.
 
 Assassin now uses five authored six-row columns with intentional gaps instead
 of generic kit branches. Its toxin line turns specific enemy and exploration
@@ -609,22 +607,22 @@ Delayed Reaction, Leg Sweep, and Meditation.
 
 | Tree | Paths | Development nodes / total cost | Promotion route cost | Retained talents |
 | --- | --- | ---: | ---: | --- |
-| Cleric | Devotion, Bulwark | 11 / 11 | Templar: 7; Hierophant: 10 | None |
-| Templar | Relic Discipline, Ordered Blessings | 10 / 10 | Terminal | None |
-| Hierophant | Sacred Conduit, Devotional Grace | 5 / 5 | Terminal | None |
-| Monk | Ki, Ki Discipline, Centering | 12 / 12 | Master Monk: 8 | None |
-| Master Monk | Perfected Ki, Diamond Body | 9 / 9 | Terminal | None |
-| Priest | Prayer, Grace | 10 / 10 | Archbishop: 7 | None |
-| Archbishop | Benediction, Intervention | 9 / 9 | Terminal | None |
-| Bard | Performance, Composition | 3 / 3 | Troubadour: 6 | None |
-| Troubadour | Finale, Mastery | 0 / 0 | Terminal | None; inherited kit only |
+| Cleric | Devotion, Sacred Office, Bulwark, Judgment, Shared Ministry | 26 / 26 | Either terminal: one route endpoint + 3 | Nine authored talents and two shared active rites |
+| Templar | Relic Discipline, Vanguard, Ordered Blessings, Judgment | 28 / 30 | Terminal | Relic durability, martial coverage, blessing riders, Holy judgment |
+| Hierophant | Sacred Conduit, Devotional Grace, Radiant Office, Pastoral Office | 28 / 30 | Terminal | Staff payoff, partial spending, Holy pressure, direct-heal wards |
+| Monk | Ki Assault, Ki Discipline, Centering, Open Hand | 23 / 23 | Master Monk: any complete primary route + 3 | Six authored Ki and centering talents plus three stat choices |
+| Master Monk | Perfected Flurry, Final Art, Diamond Body, Rope-a-Dope | 28 / 30 | Terminal | Eighteen authored martial talents |
+| Priest | Prayer, Exorcism, Grace, Protection | 22 / 22 | Archbishop: any complete discipline + 3 | Seven authored Prayer/support talents plus Magic and Magic Defense choices |
+| Archbishop | Benediction, Great Gospel, Intervention, Sustaining Grace, Perfect Supplication | 29 / 31 | Terminal | Twenty authored support and crisis talents |
+| Bard | Performance, Composition | 26 / 26 | Troubadour: 7 | Five visual columns, four `any` route capstones; Compose is inherent in the Class tab |
+| Troubadour | Finale, Mastery | 27 / 27 | Terminal | Authored terminal kit |
 
 The generated Healer passive families and their meter-cap payloads are removed.
-Ki therefore remains exactly 3/5, while Devotion, Prayer, and Crescendo use
-their class-defined caps. Troubadour has no ordinary catalog abilities of its
-own, so its terminal panel is intentionally empty; its retained Bard abilities,
-repertoire, codas, and ring mechanics remain available through universal
-promotion retention.
+Ki remains exactly 3/5. Devotion uses its class-defined cap unless the visible
+Overflowing Grace or Abundant Grace node expands it; Prayer and Crescendo use
+their authored rules. Troubadour has no ordinary catalog abilities of its
+own outside its authored terminal actions; retained Bard abilities, repertoire,
+codas, and ring mechanics remain available through universal promotion retention.
 
 ### Pathfinder Lineage
 
@@ -647,17 +645,17 @@ inspect all declared types rather than forcing each spell into one school.
 
 | Tree | Paths | Development nodes / total cost | Promotion route cost | Retained talents |
 | --- | --- | ---: | ---: | --- |
-| Druid | Forms, Nature Rites | 7 / 7 | Lycan: 6; Archdruid: 7 | None |
-| Lycan | Frenzy, Control | 6 / 6 | Terminal | None |
-| Archdruid | Fourfold Balance, Aspect Harmony | 7 / 7 | Terminal | None |
-| Diviner | Runes, Foresight | 6 / 6 | Astromancer: 9 | None |
-| Astromancer | Foresight Threads, Constellations | 10 / 10 | Terminal | None |
-| Shaman | Totems, Elements | 10 / 10 | Soulcatcher: 6 | None |
-| Soulcatcher | Soul Communion, Totem Resonance | 8 / 8 | Terminal | None |
-| Ranger | Hunt, Companion Bond | 1 / 1 | Beast Master: 4 | None |
-| Beast Master | Pack Tactics, Commands | 7 / 8 | Terminal | two-point Bonded Bulwark |
+| Druid | Panther Form, Direbear Form, Venom and Stone, Growth and Stars, Primal Practice | 28 / 28 | Lycan or Archdruid: any matching endpoint + 3 | Ten authored form/nature talents |
+| Lycan | Frenzy, Moon Hunt, Dragon Essence, Control | 28 / 30 | Terminal | Nineteen authored form/control talents and three added active techniques |
+| Archdruid | Venom, Stone, Growth, Storm | 28 / 30 | Terminal | Eighteen authored affinity talents |
+| Diviner | Rune Lore, Rune Flow, Foresight, Chronomancy | 22 / 22 | Astromancer: any endpoint + 3 | Eleven authored rune/foresight talents plus three rating nodes and intentional gaps |
+| Astromancer | Foresight Threads, Runic Constellations, Celestial Force, Lucid Utility | 28 / 30 | Terminal | Fourteen authored thread/rune/utility talents |
+| Shaman | Totems, Elements, Spirit Warrior, Bad Omens | 19 / 21 | Soulcatcher: Totems, Elements, or Spirit Warrior endpoint | Totem is inherent; Hexcraft and Omen Ward deepen the optional omen route |
+| Soulcatcher | Soul Dominion, Essence, Ancestral Totem, Spirit Warrior | 28 / 30 | Terminal | None |
+| Ranger | Hunt, Companion Bond, Duelist/Ranged, Two-Handed, Defense | 24 / 24 | Beast Master: Companion Bond + 3 | Authored hunt, weapon, and defense talents |
+| Beast Master | Pack Tactics, Commands, Guardian Bond, Apex Bond | 22 / 22 | Terminal | Authored companion-command talents |
 
-All generated Pathfinder rating families are removed. Fixed contracts now stay
+Generated Pathfinder rating families remain removed. Fixed contracts now stay
 fixed: Harmony is 4 (5 with its awakened ring), Threads are 3, Resonance is 3
 (4 with Aspect Evolution), and Lycan ranks require three distinct qualifying
 successes. Bonded Bulwark alone remains because its authored payoff raises the
@@ -675,12 +673,12 @@ Active Resist effects appear as positive buff indicators in the Character Menu,
 dungeon HUD, and combat HUD. Resist All applies a five-turn ward to Fire, Ice,
 Electric, Water, Earth, Wind, Shadow, and Holy resistance.
 
-Promoted-tree passive families use the normal `+20%` or `+30%` tier bonus and
-advance through named mastery ranks only when the class's active catalog does
-not fill the 16-node first-promotion or 14-node terminal baseline. The fourth
-terminal family is always a two-point class-system mastery. First-promotion
-route costs above include the three-point terminal promotion; total development
-costs exclude promotion nodes.
+Catalog-only promoted trees are intentionally exempt from the ordinary
+16-node first-promotion and 14-node terminal breadth checks until their
+individual authored decision blocks are implemented. Do not restore generated
+passive families, repeated ranks, or generic cap masteries to satisfy those
+targets. First-promotion route costs above include the three-point terminal
+promotion; total development costs exclude promotion nodes.
 
 ## Ownership Boundaries
 

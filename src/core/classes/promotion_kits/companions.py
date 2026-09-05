@@ -306,8 +306,15 @@ def totem_surge(character: Any, target: Any | None) -> str:
     if not spell:
         return "No known spell matches the active Totem.\n"
     effect = character.magic_effects["Totem"]
-    effect.extra["resonance"] = 0
-    sentinel, prior = nature_totems._set_temp_attr(character, "_totem_pulse_potency", nature_totems.TOTEM_PULSE_POTENCY)
+    preserve = (
+        nature_totems.has_nature_talent(character, "soulcatcher.resonant-return")
+        and random.random() < 0.25
+    )
+    effect.extra["resonance"] = 1 if preserve else 0
+    potency = nature_totems.TOTEM_PULSE_POTENCY
+    if nature_totems.has_nature_talent(character, "soulcatcher.perfect-surge"):
+        potency += 0.10
+    sentinel, prior = nature_totems._set_temp_attr(character, "_totem_pulse_potency", potency)
     output_sentinel, output_prior = nature_totems._set_temp_attr(
         character,
         "_totem_surge_output",
@@ -320,6 +327,8 @@ def totem_surge(character: Any, target: Any | None) -> str:
     )
     try:
         msg = f"{character.name} spends {stacks} Totem Resonance to force {spell_name}.\n"
+        if preserve:
+            msg += "Resonant Return preserves 1 Totem Resonance.\n"
         msg += str(spell.cast(character, target=target, special=True))
     finally:
         nature_totems._restore_temp_attr(character, "_totem_pulse_potency", sentinel, prior)
@@ -900,7 +909,11 @@ def companion_bond_multiplier(character: Any) -> float:
     state = getattr(character, "tamed_companion", {}) or {}
     bond = _clamp_int(state.get("bond", 0), 0, 100)
     coefficient = 0.15
+    if has_talent(character, "ranger.companion-bond"):
+        coefficient += 0.05
     if has_talent(character, "beast-master.bonded-bulwark"):
+        coefficient += 0.10
+    if has_talent(character, "beast-master.true-bond"):
         coefficient += 0.10
     return 1.0 + (coefficient * (bond / 100))
 
@@ -908,9 +921,22 @@ def companion_bond_multiplier(character: Any) -> float:
 def record_song_turn(character: Any, song: str) -> str:
     if class_name(character) not in {"Bard", "Troubadour"}:
         return ""
-    msg = gain_meter(character, "crescendo", 1, f"Song of {song}")
+    from ...progression import has_talent
+
+    state = combat_state(character)
+    amount = 1
+    if (
+        has_talent(character, "bard.rising-cadence")
+        and int(state.get("crescendo", 0) or 0) == 0
+    ):
+        amount += 1
+    if has_talent(character, "troubadour.rolling-crescendo"):
+        amount += 1
+    msg = gain_meter(character, "crescendo", amount, f"Song of {song}")
     if class_name(character) == "Troubadour":
         msg += gain_bard_practice(character, song, 1, "performed turn")
+        if has_talent(character, "troubadour.practiced-ear"):
+            msg += gain_bard_practice(character, song, 1, "Practiced Ear")
     return msg
 
 
@@ -944,54 +970,70 @@ def gain_bard_practice(character: Any, song: str, amount: int, reason: str) -> s
 def complete_song(character: Any, song: str) -> str:
     if class_name(character) not in {"Bard", "Troubadour"}:
         return ""
+    from ...progression import has_talent
+
     msg = ""
     if class_name(character) == "Troubadour" and song in ADVANCED_SONGS:
         entry = ensure_state(character)["bard_repertoire"][song]
         entry["clean_finishes"] = min(999, int(entry.get("clean_finishes", 0) or 0) + 1)
         msg += f"{song} records a clean finish ({entry['clean_finishes']}/3).\n"
-        msg += gain_bard_practice(character, song, 3, "natural completion")
+        completion_xp = 5 if has_talent(character, "troubadour.flawless-form") else 3
+        msg += gain_bard_practice(character, song, completion_xp, "natural completion")
 
     state = combat_state(character)
     spent = int(state.get("crescendo", 0) or 0)
     if spent <= 0:
         return msg
     state["crescendo"] = 0
+    effective_spent = spent
+    if has_talent(character, "bard.coda-craft"):
+        effective_spent += 1
+    if has_talent(character, "troubadour.masterful-finale"):
+        effective_spent += 1
     msg += f"{character.name} spends {spent} Crescendo on a {song} coda.\n"
     if song == "Valor":
+        if has_talent(character, "troubadour.heroic-finale"):
+            effective_spent += 1
         for stat_name in ("Attack", "Magic"):
             effect = character.stat_effects[stat_name]
             effect.active = True
             effect.duration = max(effect.duration, 2)
-            effect.extra = max(int(effect.extra or 0), spent * 2)
+            effect.extra = max(int(effect.extra or 0), effective_spent * 2)
         msg += "The Valor coda primes the next offensive phrase.\n"
     elif song == "Shelter":
+        if has_talent(character, "troubadour.guardian-finale"):
+            effective_spent += 1
         effect = character.magic_effects["Nature Shield"]
         effect.active = True
         effect.duration = max(effect.duration, 2)
-        effect.extra = max(int(effect.extra or 0), spent * 10)
+        effect.extra = max(int(effect.extra or 0), effective_spent * 10)
         msg += "The Shelter coda leaves a brief ward.\n"
     elif song == "Renewal":
-        hp = min(character.health.max - character.health.current, max(1, spent * 8))
-        mp = min(character.mana.max - character.mana.current, max(1, spent * 4))
+        if has_talent(character, "troubadour.reviving-finale"):
+            effective_spent += 1
+        hp = min(character.health.max - character.health.current, max(1, effective_spent * 8))
+        mp = min(character.mana.max - character.mana.current, max(1, effective_spent * 4))
         character.health.current += hp
         character.mana.current += mp
-        if spent >= 3 and character.status_effects["Poison"].active:
+        cleanse_at = 2 if has_talent(character, "troubadour.reviving-finale") else 3
+        if spent >= cleanse_at and character.status_effects["Poison"].active:
             character.status_effects["Poison"].active = False
             msg += "The Renewal coda cleanses poison.\n"
         msg += f"The Renewal coda restores {hp} HP and {mp} MP.\n"
     elif song == "Battle Hymn":
         berserk = character.status_effects["Berserk"]
         berserk.active = True
-        berserk.duration = max(berserk.duration, 1 + spent // 2)
+        bonus = 1 if has_talent(character, "troubadour.riotous-finale") else 0
+        berserk.duration = max(berserk.duration, 1 + effective_spent // 2 + bonus)
         msg += "The Battle Hymn coda keeps one controlled offensive beat.\n"
     elif song == "Ode to the Ramparts":
         effect = character.magic_effects["Nature Shield"]
         effect.active = True
         effect.duration = max(effect.duration, 2)
-        effect.extra = max(int(effect.extra or 0), spent * 12)
+        effect.extra = max(int(effect.extra or 0), effective_spent * 12)
         msg += "The Ramparts coda hardens into a small barrier.\n"
     elif song == "Chorus Time":
-        state["chorus_time_coda"] = spent
+        state["chorus_time_coda"] = effective_spent
         msg += "The Chorus Time coda readies one final reduced tempo check.\n"
     else:
         msg += "The final refrain lingers as a conservative coda.\n"

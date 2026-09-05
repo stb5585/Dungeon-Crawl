@@ -11,7 +11,11 @@ def test_priest_learns_supplication_at_promotion_level():
     granted_skills = abilities.ability_classes_for_level(abilities.skill_dict, "Priest", 1)
 
     assert granted_skills == [abilities.Supplication]
-    assert abilities.ability_classes_for_level(abilities.skill_dict, "Priest", 6) == []
+    assert abilities.ability_classes_for_level(
+        abilities.skill_dict,
+        "Priest",
+        6,
+    ) == [abilities.MagicalInvigoration]
 
 
 def test_promotion_mechanic_guidance_points_to_relevant_character_surface():

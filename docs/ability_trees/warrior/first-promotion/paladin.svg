@@ -106,5 +106,5 @@ text{font-family:DejaVu Sans,Arial,sans-serif}
 <rect x="597.0" y="792.0" width="188" height="84" rx="8" fill="#3b2d12" stroke="#f4bf2a" stroke-width="2"/>
 <text class="name" x="607.0" y="816.0">Promote: Crusader</text>
 <text class="detail" x="607.0" y="837.0">Promotion · Cost 3 · Level 60</text>
-<text class="detail" x="607.0" y="858.0">Requires ANY 2 paths</text>
+<text class="detail" x="607.0" y="858.0">Requires 1 of 2 paths</text>
 </svg>

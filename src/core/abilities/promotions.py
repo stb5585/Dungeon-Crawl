@@ -424,11 +424,23 @@ class GreatBenediction(_PromotionActive):
 
 class CenteredGuard(_PromotionActive):
     def __init__(self):
-        super().__init__("Centered Guard", "A chi guard replacing late Monk spell exceptions.", 8)
+        super().__init__(
+            "Centered Guard",
+            "Enter a defensive stance for two turns; later talents extend it and add protection.",
+            8,
+        )
 
     def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        from ..classes import promotion_kits
+
         user.mana.current -= self.cost
-        user.enter_defensive_stance(duration=2)
+        duration = 3 if promotion_kits._has_track_talent(user, "monk.steadfast-center") else 2
+        user.enter_defensive_stance(duration=duration)
+        if promotion_kits._has_track_talent(user, "monk.guarded-purity"):
+            promotion_kits.combat_state(user)["purge_immunity_turns"] = max(
+                2,
+                int(promotion_kits.combat_state(user).get("purge_immunity_turns", 0) or 0),
+            )
         return f"{user.name} centers their guard.\n"
 
 
@@ -437,20 +449,31 @@ class MirrorBreath(_PromotionActive):
         super().__init__("Mirror Breath", "Brief reflection and counter-ward support.", 10)
 
     def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        from ..classes import promotion_kits
+
         user.mana.current -= self.cost
         user.magic_effects["Reflect"].active = True
-        user.magic_effects["Reflect"].duration = 2
+        duration = 3 if promotion_kits._has_track_talent(user, "monk.mirror-stillness") else 2
+        if promotion_kits._has_track_talent(user, "master-monk.reflecting-soul"):
+            duration += 1
+        user.magic_effects["Reflect"].duration = duration
         return f"{user.name}'s breath becomes a mirror ward.\n"
 
 
 class PurgingKata(_PromotionActive):
     def __init__(self):
-        super().__init__("Purging Kata", "Cleanse hostile status through martial focus.", 10)
+        super().__init__(
+            "Purging Kata",
+            "Cleanse Blind and Berserk through martial focus.",
+            10,
+        )
 
     def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        from ..classes import promotion_kits
+
         user.mana.current -= self.cost
         removed = []
-        for name in ("Poison", "Blind", "Silence", "Berserk"):
+        for name in ("Blind", "Berserk"):
             effect = user.status_effects.get(name)
             if effect is not None and effect.active:
                 effect.active = False
@@ -589,6 +612,37 @@ class HarryPrey(_BeastCommand):
 
 class MendWounds(_BeastCommand):
     def __init__(self): super().__init__("Mend Wounds")
+
+
+class UnleashInstinct(_BeastCommand):
+    """Spend the companion action on its species-specific bonded trait."""
+
+    def __init__(self):
+        super().__init__("Unleash Instinct")
+
+
+class RallyPartner(_BeastCommand):
+    """Spend the companion action restoring its partner's fighting condition."""
+
+    def __init__(self):
+        super().__init__("Rally Partner")
+
+
+class GrandFinale(_PromotionActive):
+    """End the current song immediately and resolve its accumulated coda."""
+
+    def __init__(self):
+        super().__init__(
+            "Grand Finale",
+            "End the active combat song immediately and spend its Crescendo on the coda.",
+            8,
+        )
+
+    def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
+        del target, kwargs
+        from ..classes import bard
+
+        return bard.grand_finale(user, cost=self.cost)
 
 
 class WingedPounce(_PromotionActive):

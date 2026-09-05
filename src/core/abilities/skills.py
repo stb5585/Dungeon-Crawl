@@ -1579,10 +1579,20 @@ class StealSpell(Class):
             return f"{user.name} needs a Blank Scroll to steal a spell.\n"
         if not spell_stealer.eligible_spell_classes(target):
             return f"{target.name} has no stealable spell.\n"
-        if user.mana.current < self.cost:
+        effective_cost = self.cost
+        if spell_stealer.has_stolen_magic_talent(
+            user,
+            "spell-stealer.arcane-ledger",
+        ):
+            effective_cost -= 2
+        if user.mana.current < effective_cost:
             return f"{user.name} does not have enough mana to use Steal Spell!\n"
-        user.mana.current -= self.cost
-        _success, message = spell_stealer.steal_spell(user, target)
+        user.mana.current -= effective_cost
+        _success, message = spell_stealer.steal_spell(
+            user,
+            target,
+            rng=kwargs.get("rng", random),
+        )
         if _success:
             from ..classes import promotion_kits
 
@@ -1617,20 +1627,34 @@ class StealSpell2(Class):
         if user.mana.current < self.cost:
             return f"{user.name} does not have enough mana to use Steal Spell 2!\n"
         user.mana.current -= self.cost
-        chance = min(0.75, 0.20 + ((user.stats.intel + user.stats.dex) * 0.01))
-        if random.random() > chance:
+        mastery = spell_stealer.has_stolen_magic_talent(
+            user,
+            "arcane-trickster.master-thief",
+        )
+        chance = 0.20 + ((user.stats.intel + user.stats.dex) * 0.01)
+        chance = min(0.90 if mastery else 0.75, chance + (0.15 if mastery else 0.0))
+        rng = kwargs.get("rng", random)
+        if rng.random() > chance:
             return f"{user.name} fails to bind the stolen spell.\n"
-        spell_cls = random.choice(spell_classes)
+        spell_cls = rng.choice(spell_classes)
         spell = spell_cls()
         user.spellbook["Spells"][spell.name] = spell
         from ..classes import class_rings, promotion_kits
 
         class_rings.activate_spell_steal_buff(user)
 
-        return (
+        message = (
             f"{user.name} permanently learns {spell.name}.\n"
             + promotion_kits.gain_stolen_charge(user, "Steal Spell 2")
         )
+        if spell_stealer.has_stolen_magic_talent(
+            user,
+            "arcane-trickster.mnemonic-larceny",
+        ):
+            restored = min(self.cost // 2, user.mana.max - user.mana.current)
+            user.mana.current += restored
+            message += f"Mnemonic Larceny restores {restored} MP.\n"
+        return message
 
 
 class StealAsWell(Class):
@@ -1696,6 +1720,48 @@ class SongRenewal(Class):
 
         _success, message = bard.start_song(user, "Renewal")
         return message
+
+
+class Compose(Class):
+    """Create one matching advanced-song sheet through a single action."""
+
+    def __init__(self):
+        super().__init__(
+            name="Compose",
+            description=(
+                "Choose an advanced song and compose it onto one-use sheet "
+                "music with its matching equipped instrument."
+            ),
+        )
+        self.cost = 0
+        self.combat = False
+
+    def use(
+        self,
+        user: Character,
+        target: Character | None = None,
+        **kwargs: Any,
+    ) -> str:
+        del target
+        from ..classes import bard
+
+        song = kwargs.get("song")
+        if song is None:
+            options = bard.available_compositions(user)
+            if not options:
+                return f"{user.name} has no composition for the equipped instrument.\n"
+            names = ", ".join(options)
+            return f"Choose a composition: {names}.\n"
+        _success, message = bard.compose_sheet_music(
+            user,
+            str(song),
+            rng=kwargs.get("rng", random),
+        )
+        return message
+
+    def use_out(self, game_or_user, *, song: str | None = None) -> str:
+        user = getattr(game_or_user, "player_char", game_or_user)
+        return self.use(user, song=song)
 
 
 class _ComposeSong(Class):

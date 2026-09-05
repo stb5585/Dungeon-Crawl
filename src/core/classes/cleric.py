@@ -5,6 +5,16 @@ from __future__ import annotations
 from .base import Job
 
 
+def has_cleric_talent(character, talent_key: str) -> bool:
+    """Return whether a Cleric-line talent has been purchased."""
+    try:
+        from ..progression import has_talent
+
+        return has_talent(character, talent_key)
+    except (AttributeError, KeyError, TypeError, ValueError):
+        return False
+
+
 class Cleric(Job):
     """
     Promotion: Healer -> Cleric -> Templar

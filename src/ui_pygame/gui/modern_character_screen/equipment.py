@@ -416,6 +416,8 @@ class CharacterEquipmentMixin:
                 elif event.key == pygame.K_c and self.active_tab.key == "class":
                     if self.active_mechanic_label(player_char) == "Totems":
                         self._open_totem_aspects_popup(player_char)
+                    elif self.active_mechanic_label(player_char) == "Crescendo":
+                        self._open_composition_popup(player_char)
                     elif not grandmaster.is_weapon_discipline_class(player_char):
                         entries = self.class_companion_entries(player_char)
                         self.class_companion_selector_active = bool(entries) and not self.class_companion_selector_active
@@ -535,6 +537,8 @@ class CharacterEquipmentMixin:
                         self._toggle_selected_jump_mod(player_char)
                     elif self.active_tab.key == "class" and self.active_mechanic_label(player_char) == "Totems":
                         self._open_totem_aspects_popup(player_char)
+                    elif self.active_tab.key == "class" and self.active_mechanic_label(player_char) == "Crescendo":
+                        self._open_composition_popup(player_char)
                     elif self.active_tab.key == "class" and self.class_companion_selector_active and self.class_companion_entries(player_char):
                         self._open_class_companion_popup(player_char)
                     elif self.active_tab.key == "class" and grandmaster.is_weapon_discipline_class(player_char):

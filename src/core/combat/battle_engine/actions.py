@@ -329,6 +329,12 @@ class BattleActionMixin:
             ):
                 self._last_combat_result = deepcopy(recorded_result)
         message += str(cast_result)
+        if choice == "Volcano" and self.attacker == self.player:
+            message += astromancer.tephra_splash(
+                self.player,
+                self.defender,
+                self.encounter,
+            )
         if self.attacker != self.player:
             message += astromancer.learn_witnessed_spell(
                 self.player,
@@ -709,6 +715,8 @@ class BattleActionMixin:
                 for member in self.encounter.living_members
             )
             attempted, flee_str = self.attacker.flee(hostile, smoke=True)
+            from ...classes.thief import has_thief_talent
+
             if not perceived:
                 self.flee = True
                 if not attempted:
@@ -716,9 +724,27 @@ class BattleActionMixin:
                         f"{self.attacker.name} disappears in a cloud of smoke."
                     )
             else:
-                self.flee = False
-                flee_str = f"{hostile.name} sees through the smoke."
+                self.flee = bool(
+                    attempted
+                    and has_thief_talent(self.attacker, "thief.clean-getaway")
+                )
+                if not self.flee:
+                    flee_str = f"{hostile.name} sees through the smoke."
             message += flee_str
+            if self.flee and footpad.has_skill(self.attacker, "Take It On the Run"):
+                from ...abilities.utility import Steal
+
+                stolen = Steal().use(self.attacker, hostile)
+                message += getattr(stolen, "message", str(stolen))
+                stolen_gold = int(getattr(stolen, "extra", {}).get("stolen_gold", 0) or 0)
+                if (
+                    stolen_gold > 0
+                    and has_thief_talent(self.attacker, "rogue.gone-before-dawn")
+                ):
+                    bonus = min(stolen_gold, max(0, int(getattr(hostile, "gold", 0) or 0)))
+                    hostile.gold -= bonus
+                    self.attacker.gold += bonus
+                    message += f"Gone Before Dawn steals {bonus} additional gold.\n"
             if self.flee and hasattr(self.player, "record_flee"):
                 self.player.record_flee()
 

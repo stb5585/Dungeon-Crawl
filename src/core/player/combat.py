@@ -13,6 +13,7 @@ from ..classes import (
     healer,
     lycan,
     mage_mechanics,
+    nature_totems,
     paladin,
     promotion_kits,
     transformation,
@@ -45,7 +46,19 @@ class PlayerCombatMixin:
                 if not ability_mechanics.tamed_companion_should_auto_act(self):
                     return ""
                 familiar_str += f"{self.familiar.name} attacks {target.name}.\n"
-                attack_str, _hit, _crit = self.familiar.weapon_damage(target, dmg_mod=0.75)
+                companion_damage_mod = (
+                    0.75 * promotion_kits.companion_bond_multiplier(self)
+                )
+                companion_damage_mod *= (
+                    ability_mechanics.tamed_companion_damage_multiplier(
+                        self,
+                        target,
+                    )
+                )
+                attack_str, _hit, _crit = self.familiar.weapon_damage(
+                    target,
+                    dmg_mod=companion_damage_mod,
+                )
                 familiar_str += attack_str
                 familiar_str += ability_mechanics.tamed_companion_special_turn(
                     self,
@@ -169,7 +182,7 @@ class PlayerCombatMixin:
         return transformation.apply_form(self, form_name)
 
     def check_mod(self, mod, enemy=None, typ=None, luck_factor=1, ultimate=False, ignore=False):
-        class_mod = 0
+        class_mod = nature_totems.passive_rating_bonus(self, str(mod))
         berserk_per = int(self.status_effects["Berserk"].active) * 0.1  # berserk increases damage by 10%
         disarm_damage_multiplier = 0.5 if self.is_disarmed() else 1.0
         if self.cls.name == "Soulcatcher" and self.power_up:
@@ -406,8 +419,6 @@ class PlayerCombatMixin:
             m_def_mod += self.stat_effects["Magic Defense"].extra * self.stat_effects["Magic Defense"].active
             total_magic_def = m_def_mod + class_mod + self.combat.magic_def
             try:
-                from ..classes import nature_totems
-
                 if nature_totems.active_totem_aspect(self) == "Water":
                     total_magic_def = int(total_magic_def * (1 + nature_totems.WATER_WARD_MAGIC_DEFENSE_BONUS))
             except Exception:
@@ -455,6 +466,10 @@ class PlayerCombatMixin:
                 res_mod = self.resistance[typ]
             if typ == "Death" and int(getattr(self, "resist_death_steps", 0) or 0) > 0:
                 res_mod += 0.50
+            if typ == "Poison":
+                exploration = getattr(self, "temporary_exploration_effects", {}) or {}
+                if int(exploration.get("resist_poison", 0) or 0) > 0:
+                    res_mod += 0.50
             if typ == "Shadow":
                 from .. import curses
 

@@ -242,6 +242,105 @@ class BallLightning(Spell):
         return msg
 
 
+class Kaleidoscope(Spell):
+    """Release a randomly colored elemental mist with a distinct rider."""
+
+    COLORS = ("Crimson", "Azure", "Emerald", "Violet")
+
+    def __init__(self):
+        super().__init__(
+            "Kaleidoscope",
+            (
+                "Unleash a random elemental mist: Crimson burns, Azure slows, "
+                "Emerald restores, and Violet weakens magic defense."
+            ),
+            school="Elemental",
+        )
+        self.cost = 12
+        self.subtyp = "Elemental"
+
+    def cast(
+        self,
+        user: Character,
+        target: Character | None = None,
+        **kwargs: Any,
+    ) -> str:
+        super().cast(user, target, **kwargs)
+        if int(user.mana.current) < self.cost:
+            return f"{user.name} does not have enough mana for Kaleidoscope.\n"
+        if target is None:
+            return "Kaleidoscope needs a target.\n"
+        user.mana.current -= self.cost
+        rng = kwargs.get("rng") or random
+        color = str(rng.choice(self.COLORS))
+        vivid = False
+        try:
+            from ..progression import has_talent
+
+            vivid = has_talent(user, "bard.vivid-palette")
+        except (AttributeError, KeyError, TypeError):
+            pass
+        potency = 1.15 if vivid else 1.0
+        message = f"{user.name}'s Kaleidoscope blooms {color}.\n"
+        if color == "Emerald":
+            amount = max(1, int(user.check_mod("magic") * 0.55 * potency))
+            restored = min(user.health.max - user.health.current, amount)
+            user.health.current += restored
+            if vivid:
+                restored_bonus = min(
+                    user.mana.max - user.mana.current,
+                    max(1, amount // 4),
+                )
+                user.mana.current += restored_bonus
+                message += f"Vivid color restores {restored_bonus} MP.\n"
+            _kaleidoscope_cadence(user)
+            return message + f"Emerald mist restores {restored} HP.\n"
+
+        damage_type = "Fire" if color == "Crimson" else "Arcane"
+        damage_message, damage = _simple_spell_damage(
+            user,
+            target,
+            dmg_mod=(0.95 if color == "Crimson" else 0.65) * potency,
+            typ=damage_type,
+        )
+        message += damage_message
+        if damage <= 0:
+            return message
+        duration = 3 if _bard_talent(user, "bard.prismatic-flourish") else 2
+        if color == "Azure":
+            effect = target.stat_effects["Speed"]
+            effect.active = True
+            effect.duration = max(effect.duration, duration)
+            effect.extra = min(int(effect.extra or 0), -max(2, damage // 8))
+            message += f"Azure mist slows {target.name}.\n"
+        elif color == "Violet":
+            effect = target.stat_effects["Magic Defense"]
+            effect.active = True
+            effect.duration = max(effect.duration, duration)
+            effect.extra = min(int(effect.extra or 0), -max(2, damage // 8))
+            message += f"Violet mist weakens {target.name}'s magic defense.\n"
+        _kaleidoscope_cadence(user)
+        return message
+
+
+def _bard_talent(character: Any, key: str) -> bool:
+    try:
+        from ..progression import has_talent
+
+        return has_talent(character, key)
+    except (AttributeError, KeyError, TypeError):
+        return False
+
+
+def _kaleidoscope_cadence(character: Any) -> None:
+    if not _bard_talent(character, "bard.elemental-cadence"):
+        return
+    from ..classes import bard, promotion_kits
+
+    if bard.active_song(character):
+        promotion_kits.gain_meter(character, "crescendo", 1, "Kaleidoscope")
+
+
 class WaterJet:
     """Data-driven (water_jet.yaml)"""
     def __new__(cls):

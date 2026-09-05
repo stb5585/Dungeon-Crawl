@@ -139,11 +139,11 @@ PROMOTION_MECHANIC_GUIDANCE: dict[str, str] = {
     ),
     "Bard": (
         "Character Menu tab available: Crescendo. Use it to review song momentum "
-        "and coda payoff readiness."
+        "and coda payoff readiness, or open the inherent Compose selector."
     ),
     "Troubadour": (
         "Character Menu tab available: Crescendo. Use it to review song momentum, "
-        "repertoire mastery, Encore, and coda payoff readiness."
+        "repertoire mastery, Encore, coda payoff readiness, and Compose."
     ),
     "Beast Master": (
         "Character Menu tab available: Companion & Hunt. Use it to review your "

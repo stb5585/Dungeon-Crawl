@@ -681,7 +681,13 @@ class _ResistElement(Spell):
         user.mana.current -= self.cost
         effect = user.magic_effects[f"Resist {self.element}"]
         effect.active = True
-        effect.duration = max(effect.duration, 5)
+        try:
+            from ..progression import has_talent
+
+            studied = has_talent(user, "inquisitor.warding-studies")
+        except (AttributeError, KeyError, TypeError, ValueError):
+            studied = False
+        effect.duration = max(effect.duration, 7 if studied else 5)
         effect.extra = max(float(effect.extra or 0), 0.5)
         return f"{user.name} gains resistance to {self.element.lower()}.\n"
 

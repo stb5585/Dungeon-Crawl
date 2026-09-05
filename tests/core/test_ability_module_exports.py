@@ -4,21 +4,32 @@ import inspect
 
 from src.core import abilities
 from src.core.abilities import (
+    bard,
     base,
+    cleric,
     enemy,
+    healer_promotions,
+    inquisitor,
     mage,
     pathfinder,
     powerups,
     promotions,
     skills,
+    spell_stealer,
     spell_types,
+    shaman,
     spells,
+    thief,
     utility,
 )
 
 
 ABILITY_MODULES = (
     base,
+    bard,
+    cleric,
+    healer_promotions,
+    inquisitor,
     skills,
     promotions,
     utility,
@@ -28,6 +39,9 @@ ABILITY_MODULES = (
     spell_types,
     spells,
     pathfinder,
+    shaman,
+    spell_stealer,
+    thief,
 )
 
 
@@ -53,7 +67,7 @@ def test_abilities_facade_preserves_all_split_class_exports():
         for name, implementation in _module_ability_classes(module).items()
     }
 
-    assert len(direct_exports) == 558
+    assert len(direct_exports) == 623
     for name, implementation in direct_exports.items():
         assert getattr(abilities, name) is implementation
 

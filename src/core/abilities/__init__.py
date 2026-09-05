@@ -74,6 +74,68 @@ from .assassin import (
     TwistTheKnife,
     Untouchable,
 )
+from .ranger import HuntersSnare, QuarryCleave, UncannyVolley, WildSense
+from .inquisitor import (
+    DeductiveStrike,
+    ForegoneConclusion,
+    SafePassage,
+    SurveyorsStep,
+    TakeNotes,
+)
+from .healer_promotions import (
+    FlowingPalm,
+    MagicalInvigoration,
+    RopeADope,
+    UnarmedProficiency,
+)
+from .cleric import (
+    BastionPrayer,
+    ConduitStrike,
+    DevotionalRebuke,
+    GracefulIntercession,
+    HallowedReadiness,
+    SacredMending,
+)
+from .thief import (
+    AllIn,
+    CutAndRun,
+    DirtyTrick,
+    DisarmTraps,
+    PilferingStrike,
+    SnakeEyes,
+    TakeItOnTheRun,
+    TurnTheTables,
+)
+from .shaman import (
+    AncestralAegis,
+    DreadfulSign,
+    OmenStrike,
+    ResonantWard,
+    SoulRend,
+    Soulstorm,
+    SpiritAnimal,
+    SpiritClaw,
+    SpiritMend,
+)
+from .spell_stealer import (
+    ArcaneAmbush,
+    BorrowedWard,
+    FalseOpening,
+    SpellbreakersCut,
+    VanishingAct,
+)
+from .bard import (
+    Countermelody,
+    CurtainGuard,
+    DissonantChord,
+    InspiringVerse,
+    PrismaticFinale,
+    PrismaticRay,
+    RallyingChorus,
+    ResonantWave,
+    RhythmicStrike,
+    SyncopatedStrike,
+)
 
 from .skills import (
     ShieldSlam,
@@ -168,6 +230,7 @@ from .skills import (
     SongValor,
     SongShelter,
     SongRenewal,
+    Compose,
     _ComposeSong,
     ComposeBattleHymn,
     ComposeOdeToTheRamparts,
@@ -236,9 +299,12 @@ from .promotions import (
     InvokeTiamat,
     _BeastCommand,
     PackStrike,
+    RallyPartner,
+    GrandFinale,
     GuardPartner,
     HarryPrey,
     MendWounds,
+    UnleashInstinct,
     WingedPounce,
 )
 
@@ -304,22 +370,35 @@ from .healer import (
 
 from .pathfinder import (
     _PathfinderPassive,
+    AccessStorage,
     BounceBack,
+    CenterBeast,
     CallAnimal,
     CautiousAssault,
     Chronology,
     ControlZ,
     Conversion,
     CreatureComforts,
+    DragonFang,
     FundamentalHarmony,
     Geomancy,
+    GrovePulse,
     IntensifyElements,
+    LunarRend,
+    NoxiousMist,
     NullifyPoison,
     PoisonStrike,
+    PrimalPractice,
     PrimalTrance,
     RayOfMoonlight,
     RazorTalons,
+    ResistPoison,
+    RestoringBoon,
+    SilentLucidity,
     SpiritStrike,
+    Starfall,
+    TemporaryStasis,
+    Tephra,
     ThornyVine,
     UnnaturalPurge,
     VerySuperstitious,
@@ -652,6 +731,7 @@ from .spells import (
     Electrocution,
     Bolt,
     BallLightning,
+    Kaleidoscope,
     WaterJet,
     Aqualung,
     Tsunami,

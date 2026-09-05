@@ -326,7 +326,10 @@ def status_summary_rows(character: Any, target: Any | None = None) -> list[tuple
         rows.append(("Ki", _meter_hint(ki, cap_for(character, 'ki'), ready="Dim Mak")))
     if cls in {"Bard", "Troubadour"}:
         crescendo = int(state.get('crescendo', 0) or 0)
-        rows.append(("Crescendo", _meter_hint(crescendo, 3, ready="Coda")))
+        rows.append((
+            "Crescendo",
+            _meter_hint(crescendo, cap_for(character, "crescendo"), ready="Coda"),
+        ))
         if cls == "Troubadour":
             repertoire = ensure_state(character)["bard_repertoire"]
             mastered = sum(1 for entry in repertoire.values() if entry.get("known"))

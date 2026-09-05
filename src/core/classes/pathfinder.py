@@ -22,6 +22,151 @@ def has_skill(character: Any, name: str) -> bool:
     return name in getattr(character, "spellbook", {}).get("Skills", {})
 
 
+def has_ranger_talent(character: Any, talent_key: str) -> bool:
+    """Return whether a character purchased a Ranger tree talent."""
+    try:
+        from ..progression import has_talent
+
+        return has_talent(character, talent_key)
+    except (AttributeError, KeyError, TypeError):
+        return False
+
+
+def is_unnatural_enemy(enemy: Any | None) -> bool:
+    """Return whether an enemy belongs to Ranger's unnatural quarry group."""
+    return str(getattr(enemy, "enemy_typ", "") or "") in UNNATURAL_ENEMY_TYPES
+
+
+def is_favored_enemy(character: Any, enemy: Any | None) -> bool:
+    """Return whether an enemy matches the character's current quarry type."""
+    if enemy is None or not has_skill(character, "Favored Enemy"):
+        return False
+    from . import ability_mechanics
+
+    return (
+        str(getattr(enemy, "enemy_typ", "") or "")
+        == ability_mechanics.favorite_enemy_type(character)
+    )
+
+
+def wild_sense_report(character: Any, enemy: Any | None) -> str:
+    """Describe a favored enemy with detail scaled by Tracking Mastery."""
+    if enemy is None:
+        return "Wild Sense needs a target.\n"
+    if not is_favored_enemy(character, enemy):
+        return f"{enemy.name} is not your favored enemy type.\n"
+    from . import ability_mechanics
+
+    detail = ability_mechanics.favored_enemy_practice_bonus(character)
+    lines = [
+        f"Wild Sense: {enemy.name} — {enemy.enemy_typ}.",
+        f"Vitality: {enemy.health.current}/{enemy.health.max} HP.",
+    ]
+    combat = getattr(enemy, "combat", None)
+    if detail >= 3 and combat is not None:
+        lines.append(
+            "Combat profile: "
+            f"Attack {getattr(combat, 'attack', 0)}, "
+            f"Defense {getattr(combat, 'defense', 0)}, "
+            f"Magic {getattr(combat, 'magic', 0)}, Magic Defense "
+            f"{getattr(combat, 'magic_def', 0)}."
+        )
+    if detail >= 5:
+        resistances = [
+            f"{name} {int(float(value) * 100):+d}%"
+            for name, value in sorted((getattr(enemy, "resistance", {}) or {}).items())
+            if float(value or 0)
+        ]
+        resistance_text = ", ".join(resistances) if resistances else "none observed"
+        lines.append(
+            f"Resistances: {resistance_text}."
+        )
+    if detail >= 7:
+        known = []
+        for book in (getattr(enemy, "spellbook", {}) or {}).values():
+            if isinstance(book, dict):
+                known.extend(str(name) for name in book)
+        technique_text = ", ".join(sorted(known)) if known else "none"
+        lines.append(f"Known techniques: {technique_text}.")
+    return "\n".join(lines) + "\n"
+
+
+def ranger_weapon_damage_multiplier(character: Any, enemy: Any | None) -> float:
+    """Return Hunt and two-handed multipliers for a weapon or crossbow hit."""
+    if not is_favored_enemy(character, enemy):
+        return 1.0
+    multiplier = 1.0
+    if has_ranger_talent(character, "ranger.quarrys-bane"):
+        multiplier *= 1.10
+    weapon = getattr(character, "equipment", {}).get("Weapon")
+    if (
+        has_ranger_talent(character, "beast-master.heavy-hunter")
+        and int(getattr(weapon, "handed", 1) or 1) == 2
+    ):
+        multiplier *= 1.15
+    if has_ranger_talent(character, "beast-master.coordinated-assault"):
+        from . import ability_mechanics
+
+        if ability_mechanics.has_living_tamed_companion(character):
+            multiplier *= 1.10
+    from . import ability_mechanics
+
+    if (
+        has_ranger_talent(character, "ranger.apex-hunter")
+        and ability_mechanics.favored_enemy_rank(
+            ability_mechanics.favored_enemy_state(character).get("practice", 0)
+        ) == "Mastered Trail"
+    ):
+        multiplier *= 1.10
+    return multiplier
+
+
+def ranger_damage_reduction(
+    defender: Any,
+    attacker: Any | None,
+    damage: int,
+    *,
+    physical: bool,
+) -> tuple[int, str]:
+    """Apply Ranger defensive talents, including per-action Combo Breaker stacks."""
+    if damage <= 0:
+        return damage, ""
+    multiplier = 1.0
+    labels = []
+    if has_ranger_talent(defender, "beast-master.trail-guard") and is_favored_enemy(
+        defender,
+        attacker,
+    ):
+        multiplier *= 0.90
+        labels.append("Trail Guard")
+    if physical and has_ranger_talent(defender, "ranger.braced-grip"):
+        weapon = getattr(defender, "equipment", {}).get("Weapon")
+        if int(getattr(weapon, "handed", 1) or 1) == 2:
+            multiplier *= 0.92
+            labels.append("Braced Grip")
+    if has_ranger_talent(defender, "ranger.companion-cover"):
+        from . import ability_mechanics
+
+        if ability_mechanics.has_living_tamed_companion(defender):
+            multiplier *= 0.92
+            labels.append("Companion Cover")
+    hit_index = int(getattr(defender, "_ranger_incoming_hit_count", 0) or 0)
+    if has_ranger_talent(defender, "ranger.combo-breaker"):
+        combo_reduction = min(0.32, 0.08 * hit_index)
+        if combo_reduction:
+            multiplier *= 1.0 - combo_reduction
+            labels.append(f"Combo Breaker {int(combo_reduction * 100)}%")
+    defender._ranger_incoming_hit_count = hit_index + 1
+    reduced_damage = max(0, int(damage * multiplier))
+    reduced = damage - reduced_damage
+    if reduced <= 0 or not labels:
+        return reduced_damage, ""
+    label_text = ", ".join(labels)
+    return reduced_damage, (
+        f"{defender.name}'s {label_text} reduces damage by {reduced}.\n"
+    )
+
+
 def ability_damage_types(ability: Any) -> frozenset[str]:
     """Return every declared damage/school type attached to an ability."""
     types = {
@@ -49,6 +194,7 @@ def start_combat(character: Any) -> None:
     character._primal_trance_multiplier = 1.0
     character._control_z_snapshot = None
     character._incoming_action_snapshot = None
+    character._ranger_incoming_hit_count = 0
 
 
 def spell_output_multiplier(character: Any, ability: Any) -> float:
@@ -463,6 +609,7 @@ def geomancy_exploration(character: Any) -> str:
 
 def record_incoming_action_start(character: Any) -> None:
     """Snapshot player state immediately before an enemy action."""
+    character._ranger_incoming_hit_count = 0
     character._incoming_action_snapshot = {
         "health": int(character.health.current),
         "mana": int(character.mana.current),
@@ -479,6 +626,7 @@ def record_incoming_action_end(character: Any, health_before: int) -> None:
     if isinstance(snapshot, dict) and int(character.health.current) < int(health_before):
         character._control_z_snapshot = snapshot
     character._incoming_action_snapshot = None
+    character._ranger_incoming_hit_count = 0
 
 
 def control_z(character: Any) -> str:

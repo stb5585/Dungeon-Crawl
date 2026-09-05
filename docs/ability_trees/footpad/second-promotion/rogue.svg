@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="494" height="596" viewBox="0 0 494 596">
+<svg xmlns="http://www.w3.org/2000/svg" width="938" height="796" viewBox="0 0 938 796">
 <style>
 text{font-family:DejaVu Sans,Arial,sans-serif}
 .title{fill:#f4bf2a;font-size:24px;font-weight:700}
@@ -10,37 +10,117 @@ text{font-family:DejaVu Sans,Arial,sans-serif}
 .edge{fill:none;stroke:#7f8998;stroke-width:2}
 .promotion-edge{fill:none;stroke:#c59d3d;stroke-width:3}
 </style>
-<rect width="494" height="596" fill="#10131a"/>
+<rect width="938" height="796" fill="#10131a"/>
 <text class="title" x="42" y="38">Rogue Ability Tree</text>
-<text class="meta" x="42" y="62">Tier 3 · 8 nodes · Loaded Odds · Cunning</text>
+<text class="meta" x="42" y="62">Tier 3 · 28 nodes · Loaded Odds · Comebacks · Cunning · Escape</text>
 <path class="edge" d="M 136.0 123.0 V 173.0 H 136.0 V 223.0"/>
 <path class="edge" d="M 136.0 223.0 V 273.0 H 136.0 V 323.0"/>
-<path class="edge" d="M 358.0 123.0 V 173.0 H 358.0 V 223.0"/>
 <path class="edge" d="M 136.0 323.0 V 373.0 H 136.0 V 423.0"/>
 <path class="edge" d="M 136.0 423.0 V 473.0 H 136.0 V 523.0"/>
+<path class="edge" d="M 136.0 523.0 V 573.0 H 136.0 V 623.0"/>
+<path class="edge" d="M 136.0 623.0 V 673.0 H 136.0 V 723.0"/>
+<path class="edge" d="M 358.0 123.0 V 173.0 H 358.0 V 223.0"/>
 <path class="edge" d="M 358.0 223.0 V 273.0 H 358.0 V 323.0"/>
+<path class="edge" d="M 358.0 323.0 V 373.0 H 358.0 V 423.0"/>
+<path class="edge" d="M 358.0 423.0 V 473.0 H 358.0 V 523.0"/>
+<path class="edge" d="M 358.0 523.0 V 573.0 H 358.0 V 623.0"/>
+<path class="edge" d="M 358.0 623.0 V 673.0 H 358.0 V 723.0"/>
+<path class="edge" d="M 580.0 123.0 V 173.0 H 580.0 V 223.0"/>
+<path class="edge" d="M 580.0 223.0 V 273.0 H 580.0 V 323.0"/>
+<path class="edge" d="M 580.0 323.0 V 373.0 H 580.0 V 423.0"/>
+<path class="edge" d="M 580.0 423.0 V 473.0 H 580.0 V 523.0"/>
+<path class="edge" d="M 580.0 523.0 V 573.0 H 580.0 V 623.0"/>
+<path class="edge" d="M 580.0 623.0 V 673.0 H 580.0 V 723.0"/>
+<path class="edge" d="M 802.0 123.0 V 173.0 H 802.0 V 223.0"/>
+<path class="edge" d="M 802.0 223.0 V 273.0 H 802.0 V 323.0"/>
+<path class="edge" d="M 802.0 323.0 V 373.0 H 802.0 V 423.0"/>
+<path class="edge" d="M 802.0 423.0 V 473.0 H 802.0 V 523.0"/>
+<path class="edge" d="M 802.0 523.0 V 573.0 H 802.0 V 623.0"/>
+<path class="edge" d="M 802.0 623.0 V 673.0 H 802.0 V 723.0"/>
 <rect x="42.0" y="92.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
 <text class="name" x="52.0" y="116.0">Finders Keepers</text>
-<text class="detail" x="52.0" y="137.0">Ability · Cost 1 · Level 65</text>
-<rect x="264.0" y="92.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
-<text class="name" x="274.0" y="116.0">Zephyrstrike</text>
-<text class="detail" x="274.0" y="137.0">Ability · Cost 1 · Level 65</text>
+<text class="detail" x="52.0" y="137.0">Ability · Cost 1</text>
 <rect x="42.0" y="192.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
-<text class="name" x="52.0" y="216.0">Cheat Death</text>
-<text class="detail" x="52.0" y="237.0">Ability · Cost 1 · Level 70</text>
+<text class="name" x="52.0" y="216.0">Stacked Odds</text>
+<text class="detail" x="52.0" y="237.0">Talent · Cost 1 · Level 65</text>
 <rect x="42.0" y="292.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
-<text class="name" x="52.0" y="316.0">Sneak Attack</text>
-<text class="detail" x="52.0" y="337.0">Ability · Cost 1 · Level 75</text>
-<rect x="264.0" y="192.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
-<text class="name" x="274.0" y="216.0">Keen Eye</text>
-<text class="detail" x="274.0" y="237.0">Ability · Cost 1 · Level 70</text>
-<rect x="42.0" y="392.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
-<text class="name" x="52.0" y="416.0">Slot Machine</text>
-<text class="detail" x="52.0" y="437.0">Ability · Cost 1 · Level 80</text>
+<text class="name" x="52.0" y="316.0">Slot Machine</text>
+<text class="detail" x="52.0" y="337.0">Ability · Cost 1 · Level 70</text>
+<rect x="42.0" y="392.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
+<text class="name" x="52.0" y="416.0">Rigged Reels</text>
+<text class="detail" x="52.0" y="437.0">Talent · Cost 1 · Level 75</text>
 <rect x="42.0" y="492.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
 <text class="name" x="52.0" y="516.0">Triple Strike</text>
-<text class="detail" x="52.0" y="537.0">Ability · Cost 1 · Level 85</text>
+<text class="detail" x="52.0" y="537.0">Ability · Cost 1 · Level 80</text>
+<rect x="42.0" y="592.0" width="188" height="62" rx="8" fill="#3b213f" stroke="#d27adb" stroke-width="2"/>
+<text class="name" x="52.0" y="616.0">All In</text>
+<text class="detail" x="52.0" y="637.0">Ability · Cost 2 · Level 85</text>
+<text class="resource" x="52.0" y="649.0">Uses Fortune + Misfortune</text>
+<rect x="42.0" y="692.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
+<text class="name" x="52.0" y="716.0">The House Always ...</text>
+<text class="detail" x="52.0" y="737.0">Talent · Cost 1 · Level 90</text>
+<rect x="264.0" y="92.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<text class="name" x="274.0" y="116.0">Sneak Attack</text>
+<text class="detail" x="274.0" y="137.0">Ability · Cost 1</text>
+<rect x="264.0" y="192.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
+<text class="name" x="274.0" y="216.0">Cruel Reversal</text>
+<text class="detail" x="274.0" y="237.0">Talent · Cost 1 · Level 65</text>
 <rect x="264.0" y="292.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
-<text class="name" x="274.0" y="316.0">Master Lockpick</text>
-<text class="detail" x="274.0" y="337.0">Ability · Cost 1 · Level 75</text>
+<text class="name" x="274.0" y="316.0">Zephyrstrike</text>
+<text class="detail" x="274.0" y="337.0">Ability · Cost 1 · Level 70</text>
+<rect x="264.0" y="392.0" width="188" height="62" rx="8" fill="#3b213f" stroke="#d27adb" stroke-width="2"/>
+<text class="name" x="274.0" y="416.0">Snake Eyes</text>
+<text class="detail" x="274.0" y="437.0">Ability · Cost 1 · Level 75</text>
+<text class="resource" x="274.0" y="449.0">Uses Misfortune</text>
+<rect x="264.0" y="492.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
+<text class="name" x="274.0" y="516.0">Cheat Death</text>
+<text class="detail" x="274.0" y="537.0">Ability · Cost 1 · Level 80</text>
+<rect x="264.0" y="592.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
+<text class="name" x="274.0" y="616.0">Cheat Fate</text>
+<text class="detail" x="274.0" y="637.0">Talent · Cost 1 · Level 85</text>
+<rect x="264.0" y="692.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
+<text class="name" x="274.0" y="716.0">Break the Jinx</text>
+<text class="detail" x="274.0" y="737.0">Talent · Cost 1 · Level 90</text>
+<rect x="486.0" y="92.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<text class="name" x="496.0" y="116.0">Keen Eye</text>
+<text class="detail" x="496.0" y="137.0">Ability · Cost 1</text>
+<rect x="486.0" y="192.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<text class="name" x="496.0" y="216.0">Master Lockpick</text>
+<text class="detail" x="496.0" y="237.0">Ability · Cost 1 · Level 65</text>
+<rect x="486.0" y="292.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
+<text class="name" x="496.0" y="316.0">Disarm Traps</text>
+<text class="detail" x="496.0" y="337.0">Ability · Cost 1 · Level 70</text>
+<rect x="486.0" y="392.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
+<text class="name" x="496.0" y="416.0">Sure Hands</text>
+<text class="detail" x="496.0" y="437.0">Talent · Cost 1 · Level 75</text>
+<rect x="486.0" y="492.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<text class="name" x="496.0" y="516.0">Dirty Trick</text>
+<text class="detail" x="496.0" y="537.0">Ability · Cost 1 · Level 80</text>
+<rect x="486.0" y="592.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
+<text class="name" x="496.0" y="616.0">Deep Pockets</text>
+<text class="detail" x="496.0" y="637.0">Talent · Cost 1 · Level 85</text>
+<rect x="486.0" y="692.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
+<text class="name" x="496.0" y="716.0">Impossible Job</text>
+<text class="detail" x="496.0" y="737.0">Talent · Cost 2 · Level 90</text>
+<rect x="708.0" y="92.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
+<text class="name" x="718.0" y="116.0">Take It On the Run</text>
+<text class="detail" x="718.0" y="137.0">Ability · Cost 1</text>
+<rect x="708.0" y="192.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<text class="name" x="718.0" y="216.0">Cut and Run</text>
+<text class="detail" x="718.0" y="237.0">Ability · Cost 1 · Level 65</text>
+<rect x="708.0" y="292.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<text class="name" x="718.0" y="316.0">Smoke Screen</text>
+<text class="detail" x="718.0" y="337.0">Ability · Cost 1 · Level 70</text>
+<rect x="708.0" y="392.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
+<text class="name" x="718.0" y="416.0">Slippery Customer</text>
+<text class="detail" x="718.0" y="437.0">Talent · Cost 1 · Level 75</text>
+<rect x="708.0" y="492.0" width="188" height="62" rx="8" fill="#133047" stroke="#54b8ed" stroke-width="2"/>
+<text class="name" x="718.0" y="516.0">Evasive Guard</text>
+<text class="detail" x="718.0" y="537.0">Ability · Cost 1 · Level 80</text>
+<rect x="708.0" y="592.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
+<text class="name" x="718.0" y="616.0">Smoke and Mirrors</text>
+<text class="detail" x="718.0" y="637.0">Talent · Cost 1 · Level 85</text>
+<rect x="708.0" y="692.0" width="188" height="62" rx="8" fill="#263b2b" stroke="#72c987" stroke-width="2"/>
+<text class="name" x="718.0" y="716.0">Gone Before Dawn</text>
+<text class="detail" x="718.0" y="737.0">Talent · Cost 1 · Level 90</text>
 </svg>

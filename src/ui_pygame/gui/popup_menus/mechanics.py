@@ -1,6 +1,7 @@
 """Mechanics behavior for the popup menus package."""
 
 from src.core import map_tiles
+from src.core.classes import bard
 from .base import BasePopupMenu
 
 
@@ -261,6 +262,7 @@ class JumpModsPopupMenu(BasePopupMenu):
                 return skill
         return None
 
+
     def build_items(self, player_char):
         self.jump_skill = self._get_jump_skill(player_char)
         self.items = []
@@ -390,12 +392,92 @@ class JumpModsPopupMenu(BasePopupMenu):
         return None
 
 
+class CompositionPopupMenu(BasePopupMenu):
+    """Select an inherent Bard composition for the equipped instrument."""
+
+    def __init__(self, presenter, parent_screen, title="Compose Song"):
+        super().__init__(presenter, parent_screen, title=title)
+        self.last_message = ""
+
+    def build_items(self, player_char):
+        available = bard.available_compositions(player_char)
+        self.items = [
+            {
+                "is_header": False,
+                "text": song,
+                "value": song,
+                "available": song in available,
+                "instrument": instrument,
+            }
+            for song, (instrument, _sheet) in bard.COMPOSITIONS.items()
+        ]
+        self.selected_index = 0
+        self.scroll_offset = 0
+
+    def item_display_text(self, item):
+        if not isinstance(item, dict):
+            return str(item)
+        suffix = "" if item.get("available") else f" - needs {item.get('instrument')}"
+        return f"{item.get('text', '')}{suffix}"
+
+    def draw_details(self, player_char):
+        del player_char
+        item = self.items[self.selected_index] if self.items else None
+        x = self.details_rect.left + 16
+        y = self.details_rect.top + 12
+        if not isinstance(item, dict):
+            return
+        song = str(item.get("value", ""))
+        self.screen.blit(self.large_font.render(song, True, self.WHITE), (x, y))
+        y += self.large_font.get_height() + 10
+        y = self._draw_wrapped_lines(
+            str(bard.SONGS.get(song, {}).get("description", "")),
+            x,
+            y,
+            self.details_rect.width - 32,
+        )
+        status = (
+            "Ready to compose"
+            if item.get("available")
+            else "Matching instrument required"
+        )
+        y += 8
+        self.screen.blit(
+            self.normal_font.render(
+                f"Instrument: {item.get('instrument', '')}",
+                True,
+                self.LIGHT_GRAY,
+            ),
+            (x, y),
+        )
+        y += self.line_height
+        self.screen.blit(self.normal_font.render(status, True, self.GOLD), (x, y))
+        if self.last_message:
+            self._draw_wrapped_lines(
+                self.last_message.strip(),
+                x,
+                y + self.line_height + 8,
+                self.details_rect.width - 32,
+                color=self.GREEN,
+            )
+
+    def on_select(self, player_char, item):
+        if not isinstance(item, dict):
+            return None
+        _success, self.last_message = bard.compose_sheet_music(
+            player_char,
+            str(item.get("value", "")),
+        )
+        return None
+
+
 class TotemAspectsPopupMenu(BasePopupMenu):
     """Popup menu for selecting active Totem aspects."""
 
     def __init__(self, presenter, parent_screen, title="Totem Aspects"):
         super().__init__(presenter, parent_screen, title=title)
         self.totem_skill = None
+        self.spirit_skill = None
 
     def _get_totem_skill(self, player_char):
         skills = getattr(player_char, "spellbook", {}).get("Skills", {})
@@ -408,6 +490,14 @@ class TotemAspectsPopupMenu(BasePopupMenu):
 
     def build_items(self, player_char):
         self.totem_skill = self._get_totem_skill(player_char)
+        self.spirit_skill = next(
+            (
+                skill
+                for skill in getattr(player_char, "spellbook", {}).get("Skills", {}).values()
+                if getattr(skill, "name", "") == "Spirit Animal"
+            ),
+            None,
+        )
         self.items = []
 
         if not self.totem_skill or not hasattr(self.totem_skill, "get_unlocked_aspects"):
@@ -427,7 +517,20 @@ class TotemAspectsPopupMenu(BasePopupMenu):
                 "is_header": False,
                 "text": f"{prefix} {aspect}",
                 "value": aspect,
+                "kind": "aspect",
             })
+
+        if self.spirit_skill is not None:
+            chosen = str(getattr(player_char, "spirit_animal", "Bear"))
+            self.items.append({"is_header": True, "text": f"Spirit Animal: {chosen}"})
+            for animal in self.spirit_skill.ANIMALS:
+                prefix = "[X]" if animal == chosen else "[ ]"
+                self.items.append({
+                    "is_header": False,
+                    "text": f"{prefix} {animal}",
+                    "value": animal,
+                    "kind": "spirit",
+                })
 
         self.selected_index = 1 if len(self.items) > 1 else 0
         self.scroll_offset = 0
@@ -485,9 +588,14 @@ class TotemAspectsPopupMenu(BasePopupMenu):
                     self.screen.blit(self.normal_font.render(line, True, self.WHITE), (x, y))
 
     def on_select(self, player_char, item):
-        if not self.totem_skill or not hasattr(self.totem_skill, "set_active_aspect"):
-            return None
         if isinstance(item, dict) and item.get("is_header"):
+            return None
+
+        if isinstance(item, dict) and item.get("kind") == "spirit":
+            player_char.spirit_animal = str(item["value"])
+            self.build_items(player_char)
+            return None
+        if not self.totem_skill or not hasattr(self.totem_skill, "set_active_aspect"):
             return None
 
         aspect = item.get("value") if isinstance(item, dict) else str(item)

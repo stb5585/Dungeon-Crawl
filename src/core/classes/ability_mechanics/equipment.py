@@ -22,7 +22,14 @@ TAMED_COMPANION_SPECIALS = {
     "Primal Spark": "Adds a small elemental spark once bonded.",
     "Keen Scent": "Sniffs out openings once bonded.",
 }
-BEAST_COMPANION_COMMANDS = ("Pack Strike", "Guard Partner", "Harry Prey", "Mend Wounds")
+BEAST_COMPANION_COMMANDS = (
+    "Pack Strike",
+    "Guard Partner",
+    "Harry Prey",
+    "Mend Wounds",
+    "Unleash Instinct",
+    "Rally Partner",
+)
 TAMED_COMPANION_CLASS_ALIASES = {
     "Panther2": "Panther",
     "Direwolf2": "Direwolf",
@@ -131,10 +138,16 @@ def duelist_style_active(character: Any) -> bool:
         return False
     weapon = getattr(character, "equipment", {}).get("Weapon")
     offhand = getattr(character, "equipment", {}).get("OffHand")
+    offhand_subtype = getattr(offhand, "subtyp", None)
+    ranger_crossbow = (
+        offhand_subtype == "Crossbow"
+        and getattr(getattr(character, "cls", None), "name", None)
+        in {"Ranger", "Beast Master"}
+    )
     return bool(
         getattr(weapon, "typ", None) == "Weapon"
         and int(getattr(weapon, "handed", 1) or 1) == 1
-        and getattr(offhand, "subtyp", None) == "None"
+        and (offhand_subtype == "None" or ranger_crossbow)
     )
 
 
