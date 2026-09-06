@@ -1,0 +1,520 @@
+Name,Class ID,Book,Type,Subtype,School,Cost,Resource,Damage Modifier,Critical Chance,Target Scope,Passive,Combat Only,Rank,Class Sources,Enemy Sources,External Acquisition,Modifies,Description
+Absorb Essence,AbsorbEssence,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Soulcatcher,,False,,"When a Soulcatcher kills an enemy, there is a chance that they may absorb part of the enemy's essence. Different monster types improve different stats, allowing the Soulcatcher to grow stronger with each victory."
+Abyssal Authority,AbyssalAuthority,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Demonologist,,False,Call Contract,Increase the strength of fiend-contract effects by 20%.
+Abyssal Covenant,AbyssalCovenant,Skills,Skill,Power Up,,0,,1.0,,self,False,True,,,,True,,"Consume a large portion of HP; in exchange for several turns gain massive spell power, increased corruption, and all contract bonuses doubled."
+Access Storage,AccessStorage,Skills,Skill,Support,,0,,1.0,,none,False,False,,Astromancer,,False,,Move one item between dungeon inventory and storage for MP equal to its weight.
+Achilles Heel,AchillesHeel,Skills,Skill,Offensive,,7,Mana,1.0,,single_enemy,False,True,,Warrior,,False,,Launch a targeted main-hand attack that cripples the target's speed and makes it easier to knock prone.
+Acid Spit,AcidSpit,Skills,Skill,Offensive,,0,,1.0,,single_enemy,False,True,,,Aboleth; Ankheg; Green Slime,False,,"Spit a corrosive substance on the target, dealing initial damage plus damage over time."
+Adrenaline,Adrenaline,Skills,Skill,Enhance,,0,,1.0,,single_enemy,False,True,,Sentinel; Warrior,,False,,"When in dire need, trigger the body's reserves to restore up to 20% of maximum health while below 10% health."
+Aegis Weave,AegisWeave,Skills,Skill,Class,,0,Blade Charges,1.0,,single_enemy,False,True,,Knight Enchanter,,False,,Consume all Blade Charges and the current pattern to create a temporary ward shaped by its Foundation and Accent.
+Aftershock,Aftershock,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Wizard,,False,,"Earth spells reverberate through the ground, repeatedly damaging one or more enemies."
+Aggressive Pursuit,AggressivePursuit,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Footpad; Ranger; Warrior,,False,,Passive: Make an advantaged main-hand attack when an enemy attempts to flee; a survivor escapes.
+Alacrity,Alacrity,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Ninja; Shadowcaster,,False,,"While invisible, increase Speed by 25%."
+All In,AllIn,Skills,Skill,Offensive,,10,Fortune + Misfortune,1.0,,single_enemy,False,True,,Rogue,,False,,"Spend all Fortune and Misfortune on one accurate, amplified strike."
+Amplify Arcane,AmplifyArcane,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Spellblade,,False,,Arcane blade charges release at double power.
+Amplify Elemental,AmplifyElemental,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Spellblade,,False,,Elemental blade charges release at double power.
+Ancestral Aegis,AncestralAegis,Skills,Skill,Class,,6,Totem Resonance,1.0,,self,False,True,,Soulcatcher,,False,,Spend all Totem Resonance for a ward and restore 5% maximum health per stack.
+Anvil Strike,AnvilStrike,Skills,Skill,Class,,10,Mana,1.0,,single_enemy,False,True,,Berserker; Grandmaster of Arms; Weapon Master,,False,,A hammer discipline art that crushes defense and can suppress guard at mastery.
+Anvil Strike 2,AnvilStrike2,Skills,Skill,Class,,12,Mana,1.0,,single_enemy,False,True,,Berserker; Grandmaster of Arms; Weapon Master,,False,,A mastered hammer blow with greater impact against armor and balance.
+Anvil Strike 3,AnvilStrike3,Skills,Skill,Class,,14,Mana,1.0,,single_enemy,False,True,,Grandmaster of Arms,,False,,A perfected hammer blow that crushes armor and balance.
+Apply Toxin,ApplyToxin,Skills,Skill,Utility,,0,,1.0,,single_enemy,False,False,,Assassin,,False,,Apply an available toxin to an equipped dagger.
+Arcane Ambush,ArcaneAmbush,Skills,Skill,Offensive,,10,Mana,1.0,,single_enemy,False,True,,Arcane Trickster,,False,,Strike for 130% weapon damage; committed Stolen Charge releases normally.
+Arcane Blast,ArcaneBlast,Skills,Skill,PowerUp,,0,,1.0,,single_enemy,False,True,,,,True,,"Expend all remaining mana in a devastating blast of arcane energy. If the enemy survives, mana will regenerate over the next 4 turns."
+Arcane Empowerment,ArcaneEmpowerment,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Sorcerer,,False,Kinetic Explosion,"Gain 5% magic damage for every enemy hit by Kinetic Explosion, stacking up to five times for the current combat."
+Arcane Riposte,ArcaneRiposte,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Knight Enchanter,,False,,Parry immediately releases a prepared Weave through its counterattack.
+Arcane Ritual,ArcaneRitual,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Sorcerer,,False,,"Further specialize in Arcane magic, lowering elemental spell potency by an additional 25%."
+Arcane Tradition,ArcaneTradition,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Mage,,False,,Specialize School Affinity in Arcane magic. Elemental spell damage operates at 75% potency and Enhancement proc chances are halved.
+Arsenal Mastery,ArsenalMastery,Skills,Skill,Power Up,,30,Mana,1.0,,self,False,True,,,,True,,"For several turns, gain the passive bonuses of every weapon type you've mastered"
+Aspirate,Aspirate,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Sorcerer,,False,,"Water spells can drown their targets, dealing damage over time and preventing them from acting."
+Astral Judgment,AstralJudgment,Skills,Skill,Power Up,,20,Mana,1.0,,single_enemy,False,True,,,,True,,"Call judgment from the active constellation, bending fate through one natural sign before the stars wheel onward."
+Avoid Traps,AvoidTraps,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Assassin; Footpad,,False,,Passive: Gain an increased chance to avoid a triggered trap's negative effect; halve it otherwise.
+Backstab,Backstab,Skills,Skill,Stealth,,6,Mana,2.0,,single_enemy,False,True,,Footpad,Barghest; Drow Assassin; False-Ledger Broker; Guild Cutpurse; Invisible Stalker; Panther; Silent Contract Knife; Spell-Sealed Cutpurse,False,,"Death Mark Setup: strike a stunned opponent in the back, ignoring any defense or armor and dealing devastating damage."
+Bad Breath,BadBreath,Skills,Skill,Enemy,,32,Mana,1.0,,single_enemy,False,True,,,Basilisk,False,,Exhale a foul cloud of debilitating statuses.
+Bastion Prayer,BastionPrayer,Skills,Skill,Defensive,,5,Mana,1.0,,self,False,True,,Cleric; Hierophant; Templar,,False,,Spend one Devotion to raise Defense and Magic Defense for three turns.
+Battle Cry,BattleCry,Skills,Skill,Offensive,,16,Mana,1.0,,self,False,True,,Lycan; Stalwart Defender; Warrior,,False,,"Let out a battle cry, boosting your attack."
+Battle Determination,BattleDetermination,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Stalwart Defender,,False,,Battle Cry immediately generates 20 Resolve.
+Beginner's Luck,BeginnersLuck,Skills,Skill,Luck,,5,Mana,1.0,,single_enemy,False,True,,Healer,,False,,Increase the Charisma bonus on luck rolls for the rest of combat.
+Beyond Reproach,BeyondReproach,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Crusader,,False,,"Passive: Condemnation can mark undead and fiends, causing a successful Repel the Wicked to disintegrate them."
+Black Lotus Mastery,BlackLotusMastery,Skills,Skill,Passive,,0,,1.0,,single_enemy,True,True,,Ninja,,False,,"Passive: Perfects toxin severity, potency, and coating retention."
+Blackjack,Blackjack,Skills,Skill,Luck,,7,Mana,1.0,,single_enemy,False,True,,,,False,,Play a round of blackjack with the Jester; different things happen depending on the result.
+Blade of Fatalities,BladeFatalities,Skills,Skill,Power Up,,0,,1.0,,self,False,True,,,,True,,"Sacrifice health to strengthen your attacks, dealing extra damage with every hit for a limited time."
+Blessed Light,BlessedLight,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Paladin,,False,,Passive: Successfully casting a healing spell in combat grants +10 Attack for three turns.
+Blind Fighting,BlindFighting,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Weapon Master,,False,,Passive: Reduce Blind's accuracy penalty and make Blind less likely to be inflicted.
+Blood Rage,BloodRage,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,,,True,,"A berserker's rage knows no bounds, their power growing as their blood is spilled. Attack power increases as health decreases and gains an increase to defense below 30%."
+Boast,Boast,Skills,Skill,Class,,0,Resolve,1.0,,single_enemy,False,True,,Sentinel; Stalwart Defender,,False,,Gain temporary health and increased Resolve generation for three turns.
+Boomerang Toss,BoomerangToss,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Berserker,,False,,Passive: Devastating Throw hits three times and returns the main-hand weapon instead of disarming you.
+Borrowed Ward,BorrowedWard,Skills,Skill,Defensive,,5,Mana,1.0,,self,False,True,,Spell Stealer,,False,,Spend all Stolen Charge to raise Defense and Magic Defense for three turns.
+Bounce Back,BounceBack,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Pathfinder,,False,,Passive: Recover from Prone more quickly.
+Brace,Brace,Skills,Skill,Class,,8,Mana,1.0,,single_enemy,False,True,,Berserker; Grandmaster of Arms; Weapon Master,,False,,A polearm discipline art that prepares a defensive counter stance.
+Brace 2,Brace2,Skills,Skill,Class,,10,Mana,1.0,,single_enemy,False,True,,Berserker; Grandmaster of Arms; Weapon Master,,False,,A mastered defensive brace with greater force behind its answering strike.
+Brace 3,Brace3,Skills,Skill,Class,,12,Mana,1.0,,single_enemy,False,True,,Grandmaster of Arms,,False,,A perfected brace that turns defense into a masterful counter.
+Brace Wall,BraceWall,Skills,Skill,Class,,0,Resolve,1.0,,single_enemy,False,True,,Sentinel; Stalwart Defender,,False,,Spend Resolve to raise Defense; also refreshes Hold the Line.
+Braggadocious,Braggadocious,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,,,False,,Increase HP by 50 and convert Boast's unused temporary HP into Resolve.
+Brain Gorge,BrainGorge,Skills,Skill,Offensive,,30,Mana,0.75,,single_enemy,False,True,,,Brain Gorger,False,,Attack the enemy and attempt to latch on and eat its brain; a successful attack can lower intelligence.
+Breakdown,Breakdown,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Spellblade,,False,,"Each melee hit lowers that target's Magic Defense by 4, up to five stacks. The next damaging spell benefits and clears the stacks."
+Breathe Fire,BreatheFire,Skills,Skill,Offensive,,0,,1.0,,single_enemy,False,True,,,,False,,Special attack used randomly when attack is selected. Only used by dragon-like creatures.
+Brutish Strength,BrutishStrength,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Weapon Master,,False,,Passive: Increase critical damage based on the equipped weapon's discipline rank.
+Bullionaire,Bullionaire,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Shadowcaster,,False,Gold Toss,"Jinkin Gold Toss uses endless heavy bullion, deals double damage, and increases combat gold."
+Bulwark Guard,BulwarkGuard,Skills,Skill,Class,,0,Resolve,1.0,,single_enemy,False,True,,Sentinel; Stalwart Defender,,False,,Create a powerful barrier that lasts for one turn.
+Cacophany,Cacophany,Skills,Skill,Support,,10,Mana,1.0,,all_enemies,False,True,,Healer,,False,,Perform an unpredictable Charisma-driven vocal warm-up.
+Call Contract,CallContract,Skills,Skill,Class,,0,,1.0,,single_enemy,False,True,,Demonologist,,True,,Call on the active fiend patron and bargain for aid.
+Cartography,Cartography,Skills,Skill,Truth,,0,,1.0,,single_enemy,True,True,,Seeker,,False,,"Seekers are masters at map making and gain the ability to see all of the dungeon, regardless of whether an area has been visited."
+Cautious Assault,CautiousAssault,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Pathfinder,,False,,Passive: Increase dodge chance against counterattacks.
+Censure,Censure,Skills,Skill,Class,,12,Mana,1.0,,single_enemy,False,True,,Crusader,,False,,Attack with a chance to interrupt an enemy charge ability.
+Center the Beast,CenterBeast,Skills,Skill,Defensive,,10,Mana,1.0,,self,False,True,,Lycan,,False,,Werewolf only: defend for two turns and halve the next Frenzy trigger chance.
+Centered Guard,CenteredGuard,Skills,Skill,Class,,8,Mana,1.0,,single_enemy,False,True,,Monk,,False,,Enter a defensive stance for two turns; later talents extend it and add protection.
+Challenge,Challenge,Skills,Skill,Class,,0,,1.0,,single_enemy,False,True,,,,False,,Mark the current enemy as your Challenged Foe for 3 turns.
+Charge,Charge,Skills,Skill,Offensive,,10,Mana,1.25,,single_enemy,False,True,,Lycan; Sentinel; Templar; Warrior,Clannfear; Direbear; Dragonkin; Giant; Minotaur; Steel Predator,False,,"Charge the enemy, building momentum before stunning them and dealing weapon damage."
+Chastise,Chastise,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Warrior,,False,,Passive: Shield Slam deals 25% more damage.
+Cheat Death,CheatDeath,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Rogue,,False,,"Once per combat, Misfortune can help turn fatal damage into survival at 1 HP."
+Chi Heal,ChiHeal,Skills,Skill,Chi Strike,,16,Mana,1.0,,self,False,True,,Monk,,False,,Channel your chi energy to heal wounds and cleanse all negative status effects.
+Choose Fate,ChooseFate,Skills,Skill,Skill,,0,,1.0,,single_enemy,False,True,,,The Devil; Vesperion,False,,"The Devil likes to toy with his food, letting the player decide what he will do for that turn."
+Choose Fate,VesperionChooseFate,Skills,Skill,Skill,,0,,1.0,,single_enemy,False,True,,,The Devil; Vesperion,False,,"Vesperion forces the hero to choose which consequence of Voluntas they will bear: pain, loss, or control."
+Chronology,Chronology,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Pathfinder,,False,,Passive: Add the Intelligence modifier to initiative rolls.
+Citadel Aegis,CitadelAegis,Skills,Skill,Class,,0,Resolve,1.0,,single_enemy,False,True,,Stalwart Defender,,True,,Consume full Resolve for a fortress barrier and defensive stance.
+Classical Enrichment,ClassicalEnrichment,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Sorcerer,,False,,"Further specialize in elemental magic, lowering Arcane spell potency by an additional 25%."
+Classical Force,ClassicalForce,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Mage,,False,,"Specialize School Affinity in elemental magic. Arcane spell damage, control, barriers, and enhancements operate at 75% potency."
+Cleaving Edge,CleavingEdge,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Knight Enchanter,,False,,Offensive Weave Releases also affect enemies adjacent to the primary target.
+Coating Conservation,CoatingConservation,Skills,Skill,Passive,,0,,1.0,,single_enemy,True,True,,Ninja,,False,,Passive: Poison immunity no longer consumes a coating.
+Combustion,Combustion,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Sorcerer,,False,,Fire spells also burn their targets.
+Commitment,Commitment,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Warrior,,False,,"Passive: Consecutive attacks against the same target gain stacking accuracy and critical-strike damage. The focus ends after another combat action, changing targets, or combat. Choosing Commitment closes the other Warrior promotions."
+Compose,Compose,Skills,Skill,Class,,0,,1.0,,single_enemy,False,False,,,,False,,Choose an advanced song and compose it onto one-use sheet music with its matching equipped instrument.
+Compose Battle Hymn,ComposeBattleHymn,Skills,Skill,Class,,0,,1.0,,single_enemy,False,True,,,,False,,Compose Battle Hymn into one-use sheet music from the character menu.
+"Compose Bones, Thugs, and Harmony",ComposeBonesThugsHarmony,Skills,Skill,Class,,0,,1.0,,single_enemy,False,True,,,,False,,"Compose Bones, Thugs, and Harmony into one-use sheet music from the character menu."
+Compose Chorus Time,ComposeChorusTime,Skills,Skill,Class,,0,,1.0,,single_enemy,False,True,,,,False,,Compose Chorus Time into one-use sheet music from the character menu.
+Compose Gold Trigger,ComposeGoldTrigger,Skills,Skill,Class,,0,,1.0,,single_enemy,False,True,,,,False,,Compose Gold Trigger into one-use sheet music from the character menu.
+Compose Low-defense-ian Rhapsody,ComposeLowDefenseRhapsody,Skills,Skill,Class,,0,,1.0,,single_enemy,False,True,,,,False,,Compose Low-defense-ian Rhapsody into one-use sheet music from the character menu.
+Compose Ode to the Ramparts,ComposeOdeToTheRamparts,Skills,Skill,Class,,0,,1.0,,single_enemy,False,True,,,,False,,Compose Ode to the Ramparts into one-use sheet music from the character menu.
+Compose Scores and Scores Score,ComposeScoresAndScoresScore,Skills,Skill,Class,,0,,1.0,,single_enemy,False,True,,,,False,,Compose Scores and Scores Score into one-use sheet music from the character menu.
+Compose Slow Ride,ComposeSlowRide,Skills,Skill,Class,,0,,1.0,,single_enemy,False,True,,,,False,,Compose Slow Ride into one-use sheet music from the character menu.
+Compose Symphony of Disfunction,ComposeSymphonyOfDisfunction,Skills,Skill,Class,,0,,1.0,,single_enemy,False,True,,,,False,,Compose Symphony of Disfunction into one-use sheet music from the character menu.
+Composed Wrath,ComposedWrath,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Berserker,,False,,Passive: You can Attack or use Skills while under the effects of Frenzy.
+Condemnation,Condemnation,Skills,Skill,Class,,10,Mana,1.0,,single_enemy,False,True,,Crusader,,False,,Strike with holy vengeance for weapon and Holy damage.
+Conduit Command,ConduitCommand,Skills,Skill,Class,,10,Mana,1.0,,single_enemy,False,True,,Thaumaturgist,,False,,Empower the active summon's next non-Recall action.
+Conduit Strike,ConduitStrike,Skills,Skill,Offensive,,9,Mana,1.0,,single_enemy,False,True,,Hierophant,,False,,Strike for 120% staff damage and conduct prepared sacred power.
+Consecrated Conduit,ConsecratedConduit,Skills,Skill,Class,,10,Mana,1.0,,single_enemy,False,True,,Hierophant,,False,,Spend Hierophant Devotion to empower the next staff or holy attack.
+Consume Item,ConsumeItem,Skills,Skill,Offensive,,14,Mana,1.0,,single_enemy,False,True,,,Sandworm,False,,"You enjoy the finer things in life, which includes metal, wood, and leather. Steal an item from the enemy and consume it, absorbing the power of the item."
+Contagious Blaze,ContagiousBlaze,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Demonologist,,False,Corruption; Corruption II,Fire spells detonate Corruption around the target and may spread it.
+Contract Killer,ContractKiller,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Demonologist,,False,Call Contract,Soul Gem contracts gain 25% more favor and bargain taint.
+Controlled Corruption,ControlledCorruption,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Demonologist,,False,Call Contract,Reduce bargain taint gained from fiend contracts by 25%.
+Conversion,Conversion,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Pathfinder,,False,,Passive: Elemental spell damage empowers the next melee critical strike.
+Counter Charge,CounterCharge,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Spellblade,,False,,"When a spell damages you in combat, gain an Arcane or Elemental blade charge matching its category."
+Countermelody,Countermelody,Skills,Skill,Defensive,,10,Mana,1.0,,self,False,True,,Troubadour,,False,,Raise a two-turn ward whose strength scales with current Crescendo without spending it.
+Cover,Cover,Skills,Skill,Defensive,,0,,1.0,,single_enemy,True,True,,Beast Master,,False,,"You stand in the way in the face of attack, protecting your master from harm."
+Cripple,Cripple,Skills,Skill,Offensive,,6,Mana,1.0,,single_enemy,False,True,,Footpad; Warrior,,False,,"Launch a less accurate attack against the target's main hand. On hit, reduce its melee damage based on damage dealt."
+Critical Vigor,CriticalVigor,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Dragoon; Lancer,,False,,Critical weapon hits have a chance to restore health.
+Cross Block,CrossBlock,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Weapon Master,,False,,Passive: Cross two weapons to block attacks. A complete block can disarm the attacker.
+Crush,Crush,Skills,Skill,Offensive,,25,Mana,1.0,,single_enemy,False,True,,,Balor; Golem; Iron Golem; Maelephant; The Devil; Warforged,False,,Take the enemy into your clutches and attempt to squeeze the life from them.
+Crushing Blow,CrushingBlow,Skills,Skill,Physical,,25,Mana,3.0,,single_enemy,False,True,,,Treant; Wendigo,False,,A devastating overhead strike that takes time to wind up but deals massive damage.
+Crushing Vengeance,CrushingVengeance,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Stalwart Defender,,False,,Increase every Ironwall Revenge strike and make each debilitate its target.
+Curtain Guard,CurtainGuard,Skills,Skill,Defensive,,7,Mana,1.0,,self,False,True,,Bard,,False,,Raise Defense and Magic Defense for three turns without ending the active song.
+Cut and Run,CutAndRun,Skills,Skill,Offensive,,7,Mana,1.0,,single_enemy,False,True,,Rogue; Thief,,False,,Strike for normal weapon damage; a hit raises Speed for two turns.
+Cutthroat,Cutthroat,Skills,Skill,Passive,,0,,1.0,,single_enemy,True,True,,Assassin,,False,,Passive: Critical Backstab attacks have a chance to kill instantly.
+Dance of the Dead,DanceOfTheDead,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Demonologist,,False,Doom,Enemies killed by Doom return as temporary undead allies.
+Dazed or Confused,DazedOrConfused,Skills,Skill,,,0,,1.0,,single_enemy,True,True,,Priest,Wayward Priest,False,,Holy spells may stun the target for two turns or leave it confused.
+Death Becomes Us,DeathBecomesUs,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Shadowcaster,,False,Desoul,"Desoul kills darken the dungeon, costing unsighted enemies initiative and increasing all Shadow damage."
+Death Mark,DeathMark,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Assassin,,False,,Setup attacks mark foes and grant Deathblow to spend those marks.
+Death Sentence,DeathSentence,Skills,Skill,Death,,50,Mana,1.0,,single_enemy,False,True,,Ninja,,False,,"Death Mark Finisher: strike once, then test Death resistance for execution."
+Deathblow,Deathblow,Skills,Skill,Offensive,,15,Mana,1.0,,single_enemy,False,True,,,,False,,"Death Mark Finisher: spend all marks on one accurate, critical strike."
+Deductive Strike,DeductiveStrike,Skills,Skill,Offensive,,8,Mana,1.0,,single_enemy,False,True,,Seeker,,False,,"Strike for 110% weapon damage, rising to 135% against a Weakness Brief target."
+Defensive Regen,DefensiveRegen,Skills,Skill,Defensive,,0,,1.0,,single_enemy,True,True,,Healer; Priest,,False,,You recover best when holding a defensive line; Regen is increased when defending.
+Defensive Release,DefensiveRelease,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Knight Enchanter,,False,,"Replaces Defend. Each use increases the next Weave Release by 25%, stacking up to three times; releasing consumes all stacks."
+Delayed Reaction,DelayedReaction,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Healer,,False,,Passive: Critical damage may be spread over three turns.
+Destroy Metal,DestroyMetal,Skills,Skill,Offensive,,27,Mana,1.0,,single_enemy,False,True,,,Steel Predator,False,,Target metal items and destroy them.
+Detonate,Detonate,Skills,Skill,Offensive,,0,,1.0,,single_enemy,False,True,,,,False,,Systems are failing and retreat is not an option. Protocol states the prime directive is destruction of the enemy by any means necessary. Self-destruct sequence initiated.
+Detonation Cascade,DetonationCascade,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Wizard,,False,Kinetic Explosion,Kinetic Explosion detonates scattered Arcane crystal shards into smaller explosions.
+Devastating Throw,DevastatingThrow,Skills,Skill,Offensive,,15,Mana,1.0,,single_enemy,False,True,,Weapon Master,,False,,"Throw your main-hand weapon at the enemy for massive damage, disarming yourself afterward."
+Devotional Rebuke,DevotionalRebuke,Skills,Skill,Offensive,,8,Mana,1.0,,single_enemy,False,True,,Cleric; Hierophant; Templar,,False,,Strike for normal weapon damage and add a Wisdom-scaled Holy rebuke.
+Devour,Devour,Skills,Skill,Offensive,,35,Mana,1.0,,single_enemy,False,True,,,,False,,"The sandworm swallows its prey whole, crushing them repeatedly before spitting them back out."
+Dim Mak,DimMak,Skills,Skill,Class,,18,Mana,1.0,,single_enemy,False,True,,Master Monk,,True,,"Master Monk finisher requiring full Ki and 18 MP. Strike at 2.10 power with an empty hand, fist, or staff, then contest Death or Stun on a surviving hit."
+Dirty Trick,DirtyTrick,Skills,Skill,Offensive,,8,Mana,1.0,,single_enemy,False,True,,Rogue,,False,,Strike for 80% weapon damage and reduce Attack and Defense on hit.
+Disarm,Disarm,Skills,Skill,Defensive,,4,Mana,1.0,,single_enemy,False,True,,Footpad; Warrior,Bandit; Dark Knight; Dragonkin; False-Ledger Broker; Gnoll; Minotaur; Panther; Warrior,False,,"Surprise the enemy by attacking their weapon, knocking it out of their grasp. Disarmed characters have lower chance to hit and can't use certain abilities."
+Disarm Traps,DisarmTraps,Skills,Skill,Class,,0,,1.0,,single_enemy,True,False,,Rogue,,False,,"After Find Traps stops you, approach again to attempt a DEX- and depth-based disarm. Lockpick tools and training improve the chance."
+Disembowel,Disembowel,Skills,Skill,Offensive,,12,Mana,1.0,,single_enemy,False,True,,Assassin,,False,,Death Mark Setup: slash with both weapons and open a bleeding wound.
+Dishearten,Dishearten,Skills,Skill,Defensive,,5,Mana,1.0,,single_enemy,False,True,,Warrior,Giant,False,,"Shout at an enemy, reducing the melee damage they deal by 25% for three turns."
+Dispel Slash,DispelSlash,Skills,Skill,Enhance,,20,Mana,1.0,,single_enemy,False,True,,Knight Enchanter,,False,,A strike that dispels all magical effects on the target.
+Disruption,Disruption,Skills,Skill,Offensive,,10,Mana,1.0,,single_enemy,False,True,,Assassin; Footpad,,False,,Attack a charging target to interrupt its spell; a critical hit also Silences it for 2 turns.
+Distract,Distract,Skills,Skill,Control,,8,Mana,1.0,,single_enemy,False,True,,Assassin,,False,,Create a diversion that costs the target two turns; attacking restores its focus.
+Divine Aegis,DivineAegis,Skills,Skill,Power Up,,20,Mana,1.0,,self,False,True,,,,True,,Create a holy shield that absorbs some incoming damage for a limited time.
+Divine Wind,DivineWind,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Wizard,,False,,"Call upon Fujin to lift grounded enemies or crash flying enemies to the ground, leaving them prone."
+Do-over,DoOver,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Footpad,,False,,Passive: A missed attack has a chance to be rerolled once per battle.
+Double Payback,DoublePayback,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Stalwart Defender,,False,,Ironwall Revenge makes one additional attack.
+Double Strike,DoubleStrike,Skills,Skill,Offensive,,14,Mana,1.0,,single_enemy,False,True,,Footpad; Grandmaster of Arms; Knight Enchanter; Monk; Paladin; Sentinel; Shaman; Spellblade; Templar; Warrior; Weapon Master,Antlion; Clannfear; Cockatrice; Copycat; Displacer Beast; Harlequin; Hydra; Incubus; Naga; Pit Viper; Puppet; Shadow Serpent; Trickster; Wendigo; Wind Myrmidon,False,,Strike the enemy twice in rapid succession.
+Doublecast,Doublecast,Skills,Skill,Offensive,,10,Mana,1.0,,single_enemy,False,True,,Archbishop; Diviner; Sorcerer,Domingo; Red Dragon,False,,Cast multiple spells in a single turn.
+Draconic Onslaught,DraconicOnslaught,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,,,True,,"The power up unleashed the dragon within, a power that continues to grow. With each successive hit, your attack and defense increase. A miss will reset this buff."
+Dragon Breath (Fire),DragonBreathFire,Skills,Skill,Fire,,0,,1.0,,single_enemy,False,True,,,Pseudodragon; Red Dragon; Wyrm,False,,A devastating breath of fire that incinerates everything in its path
+Dragon Breath (Water),DragonBreathWater,Skills,Skill,Water,,0,,1.0,,single_enemy,False,True,,,Hydra,False,,A torrential blast of water erupts from multiple maws
+Dragon Breath (Wind),DragonBreathWind,Skills,Skill,Wind,,0,,1.0,,single_enemy,False,True,,,Wyvern,False,,A powerful gale of cutting wind is exhaled with devastating force
+Dragon Dive,DragonDive,Skills,Skill,Offensive,,18,Mana,1.0,,single_enemy,False,True,,Dragoon,,False,,Consume all Aerial Tempo in a decisive aerial strike. Each stack increases weapon damage and accuracy.
+Dragon Fang,DragonFang,Skills,Skill,Offensive,,15,Mana,1.0,,single_enemy,False,True,,Lycan,,False,,"Werewolf and Dragon Essence only: strike, then deal additional Fire damage."
+Dragon Soul,DragonSoul,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Dragoon; Lancer,,False,,Lethal damage has a chance to leave you at 1 HP and grant the next turn.
+Dragonheart,Dragonheart,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Dragoon,,False,,Improves Dragon Soul's trigger chance and restores 25% maximum HP.
+Dreadful Sign,DreadfulSign,Skills,Skill,Class,,8,Mana,1.0,,single_enemy,False,True,,,,False,,Place one stack of dread on an enemy; three stacks Stun it.
+Driving Thrust,DrivingThrust,Skills,Skill,Offensive,,7,Mana,1.0,,single_enemy,False,True,,Warrior,,False,,"Drive your weapon into the enemy, dealing greatly increased damage while the target is stunned."
+Drunken Brawler,DrunkenBrawler,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Monk,,False,,"After using a potion, your next turn gains bonus damage and critical chance."
+Dual Wield,DualWield,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Footpad; Weapon Master,,False,,"Passive: Equip a one-handed weapon in the off hand, with an accuracy penalty to attacks made by either hand."
+Dual Wield Excellence,DualWieldExcellence,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Grandmaster of Arms,,False,,Passive: Dual Wield no longer penalizes main-hand accuracy; the off-hand penalty remains.
+Dual Wield Mastery,DualWieldMastery,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Grandmaster of Arms,,False,,Passive: Dual Wield no longer penalizes accuracy with either hand.
+Duelist,Duelist,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Footpad; Ranger; Weapon Master,,False,,"Passive: Gain accuracy, critical chance, and melee damage while wielding a one-handed weapon without a shield."
+Echoing Blade,EchoingBlade,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Knight Enchanter,,False,,Weave Releases have a 25% chance to repeat their effect at the start of your next turn.
+Ejection Gale,EjectionGale,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Sorcerer,,False,,Wind spells can eject their targets from combat.
+Electrical Burns,ElectricalBurns,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Wizard,,False,,Critical Electric spells can set their target on fire.
+Electrified,Electrified,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Mage,,False,,Electric spells have a 20% chance to electrify the caster for 3 turns; successful melee attacks against them trigger an Intelligence-scaled jolt.
+Elemental Convergence,ElementalConvergence,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Wizard,,False,Prismatic Cataclysm,Each successive elemental strike in Prismatic Cataclysm deals 10% more damage.
+Elemental Strike,ElementalStrike,Skills,Skill,Enhance,,15,Mana,1.25,,single_enemy,False,True,,Shaman,,False,,Attack the enemy with your weapon and a random elemental spell.
+Enhance Armor,EnhanceArmor,Skills,Skill,Enhance,,0,,1.0,,single_enemy,True,True,,Knight Enchanter; Spellblade,,False,,"Your armor adapts to your dwindling arcane reserves, fortifying itself as your mana depletes. The less mana you have, the greater your ' defense rating becomes. This protective enchantment ensures you can endure even when your magic is nearly exhausted."
+Enhance Blade,EnhanceBlade,Skills,Skill,Enhance,,0,,1.0,,single_enemy,True,True,,Spellblade,Dark Knight,False,,"Your blade thrums with arcane energy, amplifying its strength in proportion to your mana reserves. With each strike, you channel your magic into raw power, adding bonus damage equal to your weapon's base damage multiplied by your mana percentage."
+Eternal Conduit,EternalConduit,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,,,True,,"The Thaumaturgist's bond with their Xenids is so strong that they gain a portion of all healing and buffs their Xenids receive, and their Xenids gain a portion of all healing and buffs the Thaumaturgist receives."
+Evasion,Evasion,Skills,Skill,Martial Arts,,0,,1.0,,single_enemy,True,True,,Master Monk,,False,,"You have become highly attuned at your surroundings, anticipating other's actions and increasing your chance to dodge attacks."
+Evasive Guard,EvasiveGuard,Skills,Skill,Defensive,,0,,1.0,,single_enemy,True,True,,Footpad; Ninja; Rogue,,False,,"Each time you are hit, you learn and reduce future damage (stacks up to 3). Stacks reset when you dodge an attack."
+Execution Rhythm,ExecutionRhythm,Skills,Skill,Passive,,0,,1.0,,single_enemy,True,True,,Ninja,,False,,Passive: Marked finishers refund 10% of their MP cost per mark.
+Exploit Weakness,ExploitWeakness,Skills,Skill,Truth,,10,Mana,1.0,,single_enemy,False,True,,Inquisitor,,False,,Inspect and identify the enemy's greatest weakness and exploit it.
+Extended Reach,ExtendedReach,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Dragoon; Lancer,,False,,A main-hand polearm removes the accuracy penalty against flying creatures.
+Eyes of the Unseen,EyesUnseen,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,,,True,,"The Seeker excels at rooting out the evil that hides in the shadows. Studying these enemies has improved their own game, improving battle awareness and increasing both critical and dodge chance."
+False Opening,FalseOpening,Skills,Skill,Control,,8,Mana,1.0,,single_enemy,False,True,,Arcane Trickster,,False,,Strike for 85% weapon damage and reduce the target's Attack and Magic.
+Familiar,Familiar,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Warlock,,True,,"The warlock gains the assistance of a familiar, a magic serving as both a pet and a helper. The familiar's abilities rely on its master's statistics and resources."
+Familiar,Familiar2,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Warlock,,True,,"The warlock's familiar gains strength, unlocking additional abilities."
+Familiar,Familiar3,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Shadowcaster,,True,,"The warlock's familiar gains additional strength, unlocking even more abilities."
+Familiar Bond,FamiliarBond,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Warlock,,False,,Increase the familiar action chance from 25% to 33%.
+Familiar Bond II,FamiliarBond2,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Warlock,,False,,Increase the familiar action chance from 33% to 50%.
+Fatality,Fatality,Skills,Skill,Offensive,,16,Mana,1.0,,single_enemy,False,True,,Berserker,,False,,"Attempt to finish the enemy with double weapon damage. If the enemy survives, they immediately parry and counterattack. If the enemy dies, restore 15% of your maximum health."
+Favored Enemy,FavoredEnemy,Skills,Skill,Class,,0,,1.0,,single_enemy,False,True,,Ranger,,False,,Mark the current enemy type as your quarry. Keeping the same mark builds tracking mastery; changing quarry carries over only some practice.
+Festering Anguish,FesteringAnguish,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Warlock,,False,Corruption; Corruption II,Corruption damage increases by 25% on every tick.
+Final Assault,FinalAssault,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Berserker,,False,,"When a melee blow would kill you, counterattack; if the attacker falls, stabilize at 1 HP."
+Find Traps,FindTraps,Skills,Skill,Passive,,0,,1.0,,single_enemy,True,True,,Ninja,,False,,Passive: Warns before entering some adjacent armed traps.
+Finders Keepers,FindersKeepers,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Rogue,,False,,Occasionally finds extra eligible loot after ordinary defeated enemies.
+Fine Print,FinePrint,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Demonologist,,False,Call Contract,Reduce fiend-contract gold costs by 20%.
+Fire Inside,FireInside,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Mage,,False,,Fire spells have a 20% chance to grant +25% critical chance to the next attack. The charge expires after 3 turns and is consumed by the next attack regardless of its result.
+Flammable Affliction,FlammableAffliction,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Demonologist,,False,Curse of Umbra,Curse of Umbra also reduces Fire resistance.
+Flash Blindness,FlashBlindness,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Healer,,False,,Holy spells may blind every nearby enemy with brilliant radiance.
+Flowing Palm,FlowingPalm,Skills,Skill,Offensive,,8,Mana,1.0,,single_enemy,False,True,,Monk,,False,,Strike for 115% weapon damage and gain 5 accuracy points per stored Ki.
+Flurry of Blades,FlurryBlades,Skills,Skill,Offensive,,40,Mana,0.75,,single_enemy,False,True,,Ninja,,False,,Launch progressively less accurate main-hand attacks until one misses.
+Focused Assault,FocusedAssault,Skills,Skill,Class,,0,Resolve,1.0,,single_enemy,False,True,,Sentinel; Stalwart Defender,,False,,Improve hit chance and critical strike damage for three turns.
+For Good Measure,ForGoodMeasure,Skills,Skill,Passive,,0,,1.0,,single_enemy,True,True,,Assassin,,False,,Passive: A successful Disarm is followed by an off-hand attack.
+Force Multiplier,ForceMultiplier,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Sorcerer,,False,Magic Missile; Magic Missile II; Magic Missile III,Magic Missile casts cost 25% more mana. Each projectile deals 25% more damage.
+Foregone Conclusion,ForegoneConclusion,Skills,Skill,Class,,10,Revelation,1.0,,single_enemy,False,True,,Seeker,,False,,Spend all Revelation on a target to reduce Attack and Magic for three turns.
+Fourfold Surge,FourfoldSurge,Skills,Skill,Class,,14,Mana,1.0,,single_enemy,False,True,,Archdruid,,False,,Spend at least two distinct Harmony aspects for their typed nature riders.
+Fragmentation,Fragmentation,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Wizard,,False,Magic Missile III,"Each Magic Missile projectile has a chance to fragment on impact, leaving Arcane crystal shards on the battlefield."
+Frenzy,Frenzy,Skills,Skill,Enhance,,10,Mana,1.0,,single_enemy,False,True,,Berserker,,False,,"Enter a controlled Berserk state for three turns. You can only attack, but gain increased weapon damage and critical chance."
+Frozen Armor,FrozenArmor,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Mage,,False,,Ice spells have a 20% chance to grant +10 Defense and 25% Ice resistance for one turn.
+Fundamental Harmony,FundamentalHarmony,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Pathfinder,,False,,Passive: Increase damage from offensive Elemental spells.
+Generator Shield,GeneratorShield,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Stalwart Defender,,False,,"Gain Resolve for each enemy hit by Shield Ricochet, doubled when that enemy is stunned."
+Get Even,GetEven,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Stalwart Defender,,False,,Successful Retaliate counterattacks reduce the cost of the next non-Surge Resolve ability.
+Ghost Step,GhostStep,Skills,Skill,Passive,,0,,1.0,,single_enemy,True,True,,Ninja,,False,,"Passive: Once per combat, a dodge or parry restores concealment."
+Goad,Goad,Skills,Skill,Defensive,,12,Mana,1.0,,single_enemy,False,True,,Healer; Sentinel; Templar; Warrior,Dragonkin; Earth Myrmidon; Evil Crusader; Golem; Iron Golem; Maelephant; Pseudodragon,False,,Provoke the target into a berserking rage.
+Goblin Punch,GoblinPunch,Skills,Skill,Offensive,,0,,1.0,,single_enemy,False,True,,,Goblin,False,,"Attack the target multiple times with a flurry of punches, dealing damage based on the strength difference between the user and target."
+Gold Toss,GoldToss,Skills,Skill,Luck,,0,,1.0,,single_enemy,False,True,,Thief,Copycat; Goblin; Harlequin; Pseudodragon; Puppet; Trickster,False,,"Toss a handful of gold at the enemy, dealing damage equal to the amount of gold thrown."
+Gore,Gore,Skills,Skill,,,0,,1.0,,single_enemy,False,True,,,Unicorn,False,,"Attempt to disembowel the target with a horn, dealing extra weapon damage and bleed."
+Graceful Intercession,GracefulIntercession,Skills,Skill,Support,,8,Mana,1.0,,self,False,True,,Hierophant,,False,,Spend one Devotion to restore health and raise a two-turn ward.
+Grand Finale,GrandFinale,Skills,Skill,Class,,8,Mana,1.0,,single_enemy,False,True,,Troubadour,,False,,End the active combat song immediately and spend its Crescendo on the coda.
+Grand Heist,GrandHeist,Skills,Skill,Offensive,,25,Mana,1.0,,single_enemy,False,True,,,,False,,"The ultimate trickster maneuver. Steals everything not nailed down, inflicts a nasty surprise, then pelts the victim with their own gold."
+Grease Missile,GreaseMissile,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Demonologist,,False,Shadow Bolt; Shadow Bolt II; Shadow Bolt III,"Shadow Bolt coats its target in flammable grease, slowing it and making it prone to falling and intense burns."
+Great Benediction,GreatBenediction,Skills,Skill,Class,,18,Mana,1.0,,single_enemy,False,True,,Archbishop,,False,,"Spend at least 3 Prayer for healing, defense, status resistance, and MP sustain."
+Great Gospel,GreatGospel,Skills,Skill,Power Up,,35,Mana,1.0,,self,False,True,,,,True,,"The light of God shines upon you, healing all wounds and providing a temporary boost. Status effects are cured, Prayer rises to at least half its cap, and divine support generation and payoffs improve for 5 rounds."
+Guard Cleaver,GuardCleaver,Skills,Skill,Class,,9,Mana,1.0,,single_enemy,False,True,,Berserker; Grandmaster of Arms; Weapon Master,,False,,A longsword discipline art that cuts through and weakens guard.
+Guard Cleaver 2,GuardCleaver2,Skills,Skill,Class,,11,Mana,1.0,,single_enemy,False,True,,Berserker; Grandmaster of Arms; Weapon Master,,False,,A mastered longsword blow with greater force against an enemy's guard.
+Guard Cleaver 3,GuardCleaver3,Skills,Skill,Class,,13,Mana,1.0,,single_enemy,False,True,,Grandmaster of Arms,,False,,A perfected longsword blow that tears through an enemy's guard.
+Guard Partner,GuardPartner,Skills,Skill,Class,,0,,1.0,,single_enemy,False,True,,Beast Master,,False,,Order the tamed companion to guard partner.
+Hadouken,Hadouken,Skills,Skill,Martial Arts,,16,Mana,1.0,,single_enemy,False,True,,Master Monk,,False,,A focused chi strike delivered at range.
+Hallowed Readiness,HallowedReadiness,Skills,Skill,Defensive,,10,Mana,1.0,,self,False,True,,Cleric,,False,,Raise Defense and Magic Defense.
+Harry Prey,HarryPrey,Skills,Skill,Class,,0,,1.0,,single_enemy,False,True,,Beast Master,,False,,Order the tamed companion to harry prey.
+Headbutt,Headbutt,Skills,Skill,Martial Arts,,6,Mana,1.0,,single_enemy,False,True,,Monk,War Turtle,False,,A close strike that can stun.
+Heal Summon,HealSummon,Skills,Skill,Class,,18,Mana,1.0,,single_enemy,False,True,,Thaumaturgist,,False,,Restore HP and MP to all owned summons.
+Health Drain,HealthDrain,Skills,Skill,Drain,,10,Mana,1.0,,single_enemy,False,True,,Warlock,Succubus; Vampire; Vampire Bat,False,,"Drain the enemy, absorbing their health."
+Health/Mana Drain,HealthManaDrain,Skills,Skill,Drain,,0,,1.0,,single_enemy,False,True,,Shadowcaster,Lich,False,,"Drain the enemy, absorbing the health and mana in return."
+Hemorrhage,Hemorrhage,Skills,Skill,Class,,7,Mana,1.0,,single_enemy,False,True,,Grandmaster of Arms; Weapon Master,,False,,A dagger discipline art that opens and worsens bleeding wounds.
+Hemorrhage 2,Hemorrhage2,Skills,Skill,Class,,9,Mana,1.0,,single_enemy,False,True,,Grandmaster of Arms; Weapon Master,,False,,A mastered dagger cut with greater force before it opens a deep wound.
+Hemorrhage 3,Hemorrhage3,Skills,Skill,Class,,11,Mana,1.0,,single_enemy,False,True,,Grandmaster of Arms,,False,,A perfected dagger cut that opens a devastating wound.
+Hemorrhage Thirst,HemorrhageThirst,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Berserker,,False,,Passive: Enemy bleed damage restores the same amount of health. Triggering this on more than two consecutive turns causes two turns of unconsciousness.
+Hidden Blade,HiddenBlade,Skills,Skill,Offensive,,8,Mana,1.0,,single_enemy,False,True,,Assassin,,False,,"Attack normally, then follow with a concealed throwing dagger."
+Hold the Line,HoldTheLine,Skills,Skill,Class,,0,Resolve,1.0,,single_enemy,False,True,,Sentinel; Stalwart Defender,,False,,Enter a shield stance that improves block and mitigation.
+Holy Retribution,HolyRetribution,Skills,Skill,Power Up,,25,Mana,1.0,,self,False,True,,,,True,,"Call upon the spirit of a Paladin to fill you with holy energy. For 5 rounds, physical attacks burn with holy fire, the first Holy or shield action each round builds extra Devotion, and Devotion payoffs become stronger."
+Honed Attack,HonedAttack,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Pathfinder; Warrior; Weapon Master,,False,,Passive: Increase the damage bonus from critical hits by 25%.
+Howl,Howl,Skills,Skill,Offensive,,10,Mana,1.0,,single_enemy,False,True,,,Direwolf; Werewolf,False,,"The wolf howls at the moon, terrifying the enemy."
+Hunter's Snare,HuntersSnare,Skills,Skill,Control,,8,Mana,1.0,,single_enemy,False,True,,Ranger,,False,,"Reduce an enemy's Speed. Against your favored enemy, Tracking Mastery strengthens the penalty and extends its duration."
+Hyakuretsukyaku,Hyakuretsukyaku,Skills,Skill,Martial Arts,,14,Mana,1.0,,single_enemy,False,True,,Master Monk,,False,,A rushing flurry of kicks.
+Illusory Link,IllusoryLink,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Sorcerer,,False,Mirror Image; Mirror Image II,"While Mirror Image is active, the caster and a duplicate split incoming damage, reducing it by half."
+Imbue Weapon,ImbueWeapon,Skills,Skill,Enhance,,12,Mana,1.25,,single_enemy,False,True,,Footpad; Healer; Mage; Spell Stealer,,False,,Channel magical energy into your weapon to enhance its damage.
+Impending Demise,ImpendingDemise,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Warlock,,False,Shadow Bolt; Shadow Bolt II; Shadow Bolt III,Shadow Bolt damage is increased by 50% divided by the turns left on Doom.
+Improved Defend,ImprovedDefend,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Warrior,,False,,Passive: Defend grants an additional 15% damage reduction.
+Incantation Comprehension,IncantationComprehension,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Footpad,,False,,Passive: Increase the effectiveness of scrolls by 25 percent.
+Indiscriminate Provocation,IndiscriminateProvocation,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Shadowcaster,,False,Goad,Homunculus Goad succeeds more often and confuses its target into attacking allies.
+Inferno,Inferno,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Wizard,,False,,"Flames feed more flames, allowing burns to spread through the battlefield and among enemies."
+Inspect,Inspect,Skills,Skill,Truth,,5,Mana,1.0,,single_enemy,False,True,,Footpad; Inquisitor; Seeker,,False,,"Your attention to detail allows you to inspect aspects of the enemy, possibly revealing a tender spot."
+Insult to Injury,InsultToInjury,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Warlock,,False,Magic Missile; Magic Missile II; Magic Missile III; Kinetic Explosion,Mephit Arcane spells deal 50% more damage to Corrupted targets.
+Intensify Elements,IntensifyElements,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Pathfinder,,False,,Passive: Taking elemental damage empowers the next spell of that school.
+Interpose,Interpose,Skills,Skill,Class,,0,,1.0,,single_enemy,False,True,,,,False,,Enter a guarded stance for 2 turns and strengthen the next block.
+Invoke Agloolik,InvokeAgloolik,Skills,Skill,Class,,12,Mana,1.0,,single_enemy,False,True,,Thaumaturgist,,True,,Borrow Agloolik's trusted invocation.
+Invoke Bardi,InvokeBardi,Skills,Skill,Class,,12,Mana,1.0,,single_enemy,False,True,,Thaumaturgist,,True,,Borrow Bardi's trusted invocation.
+Invoke Cacus,InvokeCacus,Skills,Skill,Class,,12,Mana,1.0,,single_enemy,False,True,,Thaumaturgist,,True,,Borrow Cacus's trusted invocation.
+Invoke Caladrius,InvokeCaladrius,Skills,Skill,Class,,12,Mana,1.0,,single_enemy,False,True,,Thaumaturgist,,True,,Borrow Caladrius's trusted invocation.
+Invoke Dilong,InvokeDilong,Skills,Skill,Class,,12,Mana,1.0,,single_enemy,False,True,,Thaumaturgist,,True,,Borrow Dilong's trusted invocation.
+Invoke Hala,InvokeHala,Skills,Skill,Class,,12,Mana,1.0,,single_enemy,False,True,,Thaumaturgist,,True,,Borrow Hala's trusted invocation.
+Invoke Hodag,InvokeHodag,Skills,Skill,Class,,12,Mana,1.0,,single_enemy,False,True,,Thaumaturgist,,True,,Borrow Hodag's trusted invocation.
+Invoke Izulu,InvokeIzulu,Skills,Skill,Class,,12,Mana,1.0,,single_enemy,False,True,,Thaumaturgist,,True,,Borrow Izulu's trusted invocation.
+Invoke Kobalos,InvokeKobalos,Skills,Skill,Class,,12,Mana,1.0,,single_enemy,False,True,,Thaumaturgist,,True,,Borrow Kobalos's trusted invocation.
+Invoke Lamashtu,InvokeLamashtu,Skills,Skill,Class,,12,Mana,1.0,,single_enemy,False,True,,Thaumaturgist,,True,,Borrow Lamashtu's trusted invocation.
+Invoke Patagon,InvokePatagon,Skills,Skill,Class,,12,Mana,1.0,,single_enemy,False,True,,Thaumaturgist,,True,,Borrow Patagon's trusted invocation.
+Invoke Seraphim,InvokeSeraphim,Skills,Skill,Class,,12,Mana,1.0,,single_enemy,False,True,,Thaumaturgist,,True,,Borrow Seraphim's trusted invocation.
+Invoke Tiamat,InvokeTiamat,Skills,Skill,Class,,12,Mana,1.0,,single_enemy,False,True,,Thaumaturgist,,True,,Borrow Tiamat's trusted invocation.
+Invoke Zahhak,InvokeZahhak,Skills,Skill,Class,,12,Mana,1.0,,single_enemy,False,True,,Thaumaturgist,,True,,Borrow Zahhak's trusted invocation.
+Iron Maiden,IronMaiden,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Stalwart Defender,,False,,Attackers take damage while Stronghold is active.
+Iron Palm,IronPalm,Skills,Skill,Class,,6,Mana,1.0,,single_enemy,False,True,,Grandmaster of Arms; Weapon Master,,False,,A fist discipline art that disrupts the target's attack and hardens your stance as mastery grows.
+Iron Palm 2,IronPalm2,Skills,Skill,Class,,8,Mana,1.0,,single_enemy,False,True,,Grandmaster of Arms; Weapon Master,,False,,A mastered palm strike with greater force and discipline scaling.
+Iron Palm 3,IronPalm3,Skills,Skill,Class,,10,Mana,1.0,,single_enemy,False,True,,Grandmaster of Arms,,False,,A perfected palm strike backed by complete unarmed mastery.
+Ironwall Revenge,IronwallReprisal,Skills,Skill,Class,,0,Resolve,1.0,,single_enemy,False,True,,Stalwart Defender,,True,,Consume full Resolve for a three-hit counterattack.
+Judgment Riposte,JudgmentRiposte,Skills,Skill,Class,,0,,1.0,,single_enemy,False,True,,,,False,,Prepare a Holy counterattack against the next enemy attack.
+Jump,Jump,Skills,Skill,Offensive,,10,Mana,2.0,1,single_enemy,False,True,,Dragoon; Lancer,Battle Toad; Direwolf,False,,"Leap into the air and bring down your weapon onto the enemy, delivering increased damage."
+Keen Eye,KeenEye,Skills,Skill,Truth,,0,,1.0,,single_enemy,True,True,,Inquisitor; Rogue,,False,,"As an Inquisitor, you can gain insights into your surroundings."
+Kidney Punch,KidneyPunch,Skills,Skill,Stealth,,18,Mana,1.0,,single_enemy,False,True,,Footpad,Barghest; Battle Toad; Drow Assassin; Invisible Stalker; Panther,False,,"Death Mark Setup: punch the enemy in the kidney, rendering them stunned. Requires an off-hand weapon."
+Lance Sweep,LanceSweep,Skills,Skill,Offensive,,8,Mana,1.0,,single_enemy,False,True,,Dragoon; Lancer,,False,,"Sweep a polearm through the target for normal weapon damage, reducing its Speed for two turns."
+Last Bastion,LastBastionSurge,Skills,Skill,Class,,0,Resolve,1.0,,single_enemy,False,True,,Stalwart Defender,,True,,Consume full Resolve to recover and rebuild your guard.
+Last Stand,LastStand,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Stalwart Defender; Templar,,False,,Increase defense and block strength at the expense of attack power.
+Learn Spell,LearnSpell,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Diviner,,False,,Permanently learn an explicitly rank-1 hostile spell after witnessing it resolve successfully.
+Learn Spell,LearnSpell2,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Astromancer,,False,,Permanently learn explicitly ranked hostile spells up to rank 2 after witnessing them resolve successfully.
+Leg Sweep,LegSweep,Skills,Skill,Offensive,,8,Mana,0.75,,single_enemy,False,True,,Healer; Monk,,False,,"Sweep the leg, tripping the enemy and leaving them prone."
+Lick,Lick,Skills,Skill,Offensive,,10,Mana,1.25,,single_enemy,False,True,,,,False,,"Lick the target, dealing damage and inflicting random status effect(s)."
+Life Tap,LifeTap,Skills,Skill,Drain,,0,,1.0,,self,False,True,,Warlock,,False,,Convert a portion of your health into mana.
+Lingering Venom,LingeringVenom,Skills,Skill,Passive,,0,,1.0,,single_enemy,True,True,,Ninja,,False,,Passive: Improves toxin potency and ordinary reaction duration.
+Live and Learn,LiveAndLearn,Skills,Skill,Passive,,0,,1.0,,single_enemy,True,True,,Assassin,,False,,"Passive: Critical hits taken can increase dodge, stacking three times."
+Lockpick,Lockpick,Skills,Skill,Stealth,,0,,1.0,,single_enemy,True,True,,Assassin; Footpad; Thief,,False,,Unlock a locked chest while carrying a Lockpick Kit. The kit may lose durability or break.
+Low Sweep,LowSweep,Skills,Skill,Class,,7,Mana,1.0,,single_enemy,False,True,,Grandmaster of Arms; Weapon Master,,False,,A club discipline art that disrupts footing with speed pressure and prone chances.
+Low Sweep 2,LowSweep2,Skills,Skill,Class,,9,Mana,1.0,,single_enemy,False,True,,Grandmaster of Arms; Weapon Master,,False,,A mastered sweep with greater impact against the target's footing.
+Low Sweep 3,LowSweep3,Skills,Skill,Class,,11,Mana,1.0,,single_enemy,False,True,,Grandmaster of Arms,,False,,A perfected sweep that overwhelms the target's footing.
+Lullaby,Lullaby,Skills,Skill,Control,,5,Mana,1.0,,single_enemy,False,True,,Healer,,False,,Serenade a target with a chance to put it to sleep.
+Lunar Frenzy,LunarFrenzy,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,,,True,,"Transformation is a powerful ability, achievable as a Druid but perfected by the Lycan. You gain an increased brutality while transformed, dealing increasing damage and healing on critical hits the longer you are changed. This does come at a cost, as you will reach a point where you can no longer change back until after combat."
+Lunar Rend,LunarRend,Skills,Skill,Offensive,,12,Mana,1.0,,single_enemy,False,True,,Lycan,,False,,Werewolf only: strike for 140% weapon damage and inflict Bleed.
+Maelstrom Weapon,MaelstromWeapon,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Shaman,,False,,"Successive strikes channel maelstrom energy into your weapon, increasing critical strike chance with each hit. The energy dissipates on a critical strike or if you miss."
+Magical Invigoration,MagicalInvigoration,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Priest,,False,,Passive: Each Regen tick grants 4 Magic. Each stack expires independently in the same cadence in which it was gained.
+Maim,Maim,Skills,Skill,Offensive,,10,Mana,1.0,,single_enemy,False,True,,Assassin; Weapon Master,,False,,"Target the foe's main hand, rendering it unusable. A critical hit deals triple damage."
+Main Gauche,MainGauche,Skills,Skill,Passive,,0,,1.0,,single_enemy,True,True,,Assassin,,False,,Passive: Daggers and Ninja blades in the off hand improve Parry.
+Make Toxin,MakeToxin,Skills,Skill,Utility,,0,,1.0,,single_enemy,False,False,,Assassin,,False,,Craft an available venom or Deathcap into its matching toxin.
+Mana Depletion,ManaDepletion,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Footpad,,False,,Passive: Basic attacks deplete mana from the target based on damage dealt.
+Mana Drain,ManaDrain,Skills,Skill,Drain,,0,,1.0,,single_enemy,False,True,,Warlock,Beholder; Incubus; Mind Flayer; Succubus,False,,"Drain the enemy, absorbing their mana."
+Mana Leak,ManaLeak,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Sorcerer,,False,Mana Rupture,Mana Rupture consumes Arcane Empowerment to deplete the target's mana pool.
+Mana Shield,ManaShield,Skills,Skill,Enhance,,0,,1.0,,self,False,True,,Mage; Priest,Brain Gorger; Circe; Domingo; Merzhin,False,,Toggle a mana shield that redirects up to 25% of each physical attack's damage into your mana pool.
+Mana Shield 2,ManaShield2,Skills,Skill,Enhance,,0,,1.0,,self,False,True,,Archbishop,,False,,Toggle an enhanced mana shield that redirects up to 50% of each physical attack's damage into your mana pool.
+Mana Slice,ManaSlice,Skills,Skill,Enhance,,0,,0.5,,single_enemy,False,True,,Spellblade,,False,,A mana-infused strike that drains the target's mana.
+Mana Slice II,ManaSlice2,Skills,Skill,Enhance,,0,,1.5,,single_enemy,False,True,,Knight Enchanter,,False,,An improved mana-infused strike that drains more of the target's mana.
+Mana Splinters,ManaSplinters,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Wizard,,False,Mana Rupture,"Mana Rupture shatters every Arcane crystal shard, damaging all enemies while the returning force restores the caster's mana."
+Mana Tap,ManaTap,Skills,Skill,Drain,,0,,1.0,,self,False,True,,Knight Enchanter; Shadowcaster; Spellblade,,False,,Convert a portion of your mana into health.
+Marked Shuriken,MarkedShuriken,Skills,Skill,Stealth,,12,Mana,1.0,,single_enemy,False,True,,Ninja,,False,,Death Mark Setup: throw a concealed blade that may Blind the target.
+Martial Mastery,MartialMastery,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Master Monk,,False,,Improves Ki discipline and readies the Dim Mak finisher.
+Master Locator,MasterLocator,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Warlock,,False,,Jinkin finds improve random post-combat loot by one rarity tier.
+Master Lockpick,MasterLockpick,Skills,Skill,Stealth,,0,,1.0,,single_enemy,True,True,,Rogue,,False,,Unlock a locked chest or door while carrying a Lockpick Kit. Master technique lowers the kit's break chance.
+Meditation,Meditation,Skills,Skill,Enhance,,8,Mana,1.0,,single_enemy,False,True,,Healer,,False,,"Enter a two-turn trance, storing damage to release two-fold on the next melee attack."
+Melody of Inspiration,MelodyInspiration,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,,,True,,"The Troubadour's presence inspires allies and self, granting a small bonus to all stats and occasionally removing negative status effects at the start of combat."
+Mend Wounds,MendWounds,Skills,Skill,Class,,0,,1.0,,single_enemy,False,True,,Beast Master,,False,,Order the tamed companion to mend wounds.
+Mental Shard,MentalShard,Skills,Skill,Offensive,,7,Mana,1.0,,single_enemy,False,True,,Healer,,False,,Drive psychic spines into a target and lower its Intelligence.
+Mirror Breath,MirrorBreath,Skills,Skill,Class,,10,Mana,1.0,,single_enemy,False,True,,Monk,,False,,Brief reflection and counter-ward support.
+Momentum,Momentum,Skills,Skill,Offensive,,12,Mana,1.0,,single_enemy,False,True,,Berserker; Ninja; Weapon Master,,False,,"Attack with both weapons. If both connect, finish with a two-handed strike using their combined strength."
+Monkey Grip,MonkeyGrip,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Berserker,,False,,"Your two-handed dual wielding becomes steadier, reducing its accuracy and damage penalties."
+Monkey Grip 2,MonkeyGrip2,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Berserker,,False,,"Your two-handed dual wielding is fully stabilized, removing its accuracy and damage penalties."
+Monkey's Paw,MonkeysPaw,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Demonologist,,False,Curse of Umbra; Curse of Frailty; Curse of Swarms; Hemorrhaging Curse; Curse of Elijah; Curse of Dysarthria; Demon Eyes,Increases the potency of all curses.
+Mortal Shackles,MortalShackles,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Shadowcaster,,False,Soul Binding,Soul Binding makes the target take 25% more damage and reduces damage shared to the caster.
+Mortal Strike,MortalStrike,Skills,Skill,Offensive,,10,Mana,1.5,,single_enemy,False,True,,Crusader; Druid; Weapon Master,Giant; Minotaur; Red Dragon; Troll,False,,"Assault the enemy, striking them with a critical hit and placing a bleed effect that deals damage. Requires a 2-handed weapon."
+Mortal Strike,MortalStrike2,Skills,Skill,Offensive,,30,Mana,1.5,,single_enemy,False,True,,Berserker; Lycan,Giant; Minotaur; Red Dragon; Troll,False,,Devastating critical strike plus bleed; duration and damage determined by the player's strength. Requires a 2-handed weapon.
+Mug,Mug,Skills,Skill,Stealth,,20,Mana,1.0,,single_enemy,False,True,,Ninja; Thief,Drow Assassin,False,,Attack the enemy with a chance to steal their items.
+Multiplicity,Multiplicity,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Wizard,,False,Mirror Image; Mirror Image II,"If combat ends while Mirror Image is active, restore 5% of maximum health for every duplicate still active."
+Mystical Evasion,MysticalEvasion,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Footpad,,False,,Passive: Increase dodge chance against spells.
+Mystical Vitality,MysticalVitality,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Demonologist,,False,Life Tap,Spells cost 25% less mana for two turns after using Life Tap.
+Natural Attunement,NaturalAttunement,Skills,Skill,Enhance,,5,Mana,1.0,,single_enemy,False,True,,Pathfinder,,False,,"Attune to nature, increasing Defense and Magic Defense."
+Night Moves,NightMoves,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Shadowcaster,,False,,Mephit can cast two spells per turn while Shade of Ahool is active.
+Night Terror,NightTerror,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Shadowcaster,,False,Terrify,"Increase Terrify damage by 25%, or by 50% when the target is asleep."
+Novel Shielding,NovelShielding,Skills,Skill,Class,,20,Mana,1.0,,single_enemy,False,True,,Spellblade,,False,,Create a three-turn shield with strength equal to twice the power of the equipped Tome.
+Oath's Judgment,OathsJudgment,Skills,Skill,Class,,0,Oath Conviction,1.0,,single_enemy,False,True,,Paladin,,False,,Spend all Oath Conviction on a weapon technique shaped by the sworn vow.
+Oath's Shelter,OathsShelter,Skills,Skill,Class,,0,Oath Conviction,1.0,,single_enemy,False,True,,Paladin,,False,,Spend all Oath Conviction on protection shaped by the sworn vow.
+Obscuration,Obscuration,Skills,Skill,Stealth,,10,Mana,1.0,,single_enemy,False,False,,Footpad,,False,,Cast outside combat with a Censer of Choking Ash to reduce encounters and enemy accuracy for 50 steps.
+OffHand Excellence,OffHandExcellence,Skills,Skill,Passive,,0,,1.0,,single_enemy,True,True,,Assassin,,False,,Passive: Reduces the damage penalty for off-hand attacks.
+Omen Strike,OmenStrike,Skills,Skill,Offensive,,8,Mana,1.0,,single_enemy,False,True,,,,False,,Strike for 110% weapon damage; critical hits add dread.
+Pack Bond,PackBond,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,,,True,,"The Beast Master and their animal companion(s) share a deep bond, granting increased damage and defense when fighting alongside a companion. Occasionally, the companion will intercept attacks or provide a healing effect."
+Pack Strike,PackStrike,Skills,Skill,Class,,0,,1.0,,single_enemy,False,True,,Beast Master,,False,,Order the tamed companion to pack strike.
+Pain Tolerance,PainTolerance,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Berserker,,False,,Passive: Halve bleed damage and its melee vulnerability. Bandages heal twice as much as normal.
+Paralyzer,Paralyzer,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Sorcerer,,False,,Electric spells gain a chance to stun their targets.
+Parry,Parry,Skills,Skill,Defensive,,0,,1.0,,single_enemy,True,True,,Assassin; Berserker; Crusader; Footpad; Knight Enchanter; Monk; Ninja; Paladin; Pathfinder; Ranger; Soulcatcher; Spellblade; Templar; Warrior; Weapon Master,Archvile; Balor; Drow Assassin; Goblin; Invisible Stalker; Minotaur; The Devil; Warrior; Water Myrmidon,False,,Passive: Chance to deflect some or all damage from an incoming melee attack. Cannot Parry while wielding a shield.
+Patronage,Patronage,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Demonologist,,False,Call Contract,Successful fiend contracts generate additional patron favor.
+Penalization,Penalization,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Crusader,,False,,"Passive: Successful Mortal Strike hits trigger wrath, increasing critical strike chance and Holy damage for the rest of combat."
+Penny Dreadful,PennyDreadful,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Shadowcaster,,False,,Feared targets take increased Shadow damage.
+Persistent Corruption,PersistentCorruption,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Demonologist,,False,Corruption; Corruption II,Corruption lasts at least four turns and deals 25% more damage.
+Phalanx,Phalanx,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Dragoon; Lancer,,False,,Gain defensive advantage while wielding a polearm in the main hand.
+Piercing Bolt,PiercingBolt,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Shadowcaster,,False,Shadow Bolt; Shadow Bolt II; Shadow Bolt III,Shadow Bolt bypasses half of resistance and increases the effect of weakness by 50%.
+Piercing Strike,PiercingStrike,Skills,Skill,Offensive,,5,Mana,1.25,,single_enemy,False,True,,Footpad; Inquisitor; Pathfinder; Shaman; Templar; Warrior,Direbear; Gargoyle; Ogre; Orc; Storm Myrmidon; Twisted Dwarf; Warrior; Wyvern,False,,"Pierces the enemy's defenses, ignoring armor and defenses."
+Pilfering Strike,PilferingStrike,Skills,Skill,Offensive,,6,Mana,1.0,,single_enemy,False,True,,Thief,,False,,Strike for 90% weapon damage and steal gold on a successful hit.
+Pious Bounty,PiousBounty,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Cleric,,False,,Your devotion draws extra providence from righteous victories.
+Pocket Sand,PocketSand,Skills,Skill,Stealth,,8,Mana,1.0,,single_enemy,False,True,,Footpad,,False,,Throw sand in the target's eyes to blind them.
+Polearm Excellence,PolearmExcellence,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Dragoon; Lancer,,False,,You can wield a two-handed polearm with a shield without accuracy or damage penalties.
+Polearm Mastery,PolearmMastery,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Dragoon,,False,,Your one-handed polearm technique grants bonus accuracy and damage.
+Polearm Proficiency,PolearmProficiency,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Dragoon; Lancer,,False,,"You can wield a two-handed polearm with a shield, but your accuracy and damage suffer."
+Posturing,Posturing,Skills,Skill,Defensive,,0,,1.0,,single_enemy,True,True,,Crusader,,False,,You know how to present an impossible target; increased chance of parrying when defending.
+Potentiation,Potentiation,Skills,Skill,Passive,,0,,1.0,,single_enemy,True,True,,Ninja,,False,,Passive: Noncritical toxin reactions can become severe.
+Prayer of Faith,PrayerOfFaith,Skills,Skill,Class,,20,Mana,1.0,,all_enemies,False,True,,Crusader,,False,,"Below 10% health, invoke a random miracle: heal to full, gain a brief all-damage barrier, or unleash Holy damage on all enemies."
+Primal Ascendance,PrimalAscendance,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,,,True,,"For several turns, gain bonuses from all Nature Aspects;increased healing (Growth), increased poison effectiveness (Venom),increased spell power (Storm), increased defense (Stone)."
+Primal Practice,PrimalPractice,Skills,Skill,Enhance,,8,Mana,1.0,,self,False,True,,Druid,,False,,"Raise Attack while transformed, or Magic while in natural form, for three turns."
+Primal Trance,PrimalTrance,Skills,Skill,Enhance,,18,Mana,1.0,,single_enemy,False,True,,Pathfinder,,False,,"Charge for one turn, then automatically cast increasingly powerful elemental spells."
+Purge Weakness,PurgeWeakness,Skills,Skill,Class,,0,Resolve,1.0,,single_enemy,False,True,,Sentinel; Stalwart Defender,,False,,Remove negative effects and become immune to them for two turns.
+Purging Kata,PurgingKata,Skills,Skill,Class,,10,Mana,1.0,,single_enemy,False,True,,Monk,,False,,Cleanse Blind and Berserk through martial focus.
+Purity of Body,PurityBody,Skills,Skill,Martial Arts,,0,,1.0,,none,True,True,,Monk,,False,,"Through meditation and perserverance, the monk gains control over their body, increasing resistance against poison magic to 50% and gaining immunity to poison status."
+Purity of Body,PurityBody2,Skills,Skill,Martial Arts,,0,,1.0,,none,True,True,,Master Monk,,False,,"Further meditation and perserverance, the monk masters control over their body, increasing resistance against poison magic by 100% and gaining immunity to stone status."
+Quarry Cleave,QuarryCleave,Skills,Skill,Offensive,,10,Mana,1.0,,single_enemy,False,True,,Ranger,,False,,"Make a heavy two-handed attack for 25% more damage, increased to 50% against your favored enemy type."
+Quick Recharge,QuickRecharge,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Knight Enchanter,,False,,"When releasing a Weave with a multi-hit attack, apply its effects to each successful hit in that attack."
+Quickstep,Quickstep,Skills,Skill,Defensive,,0,,1.0,,single_enemy,True,True,,Footpad; Ninja; Pathfinder,,False,,"You fight light on your feet, improving your ability to evade attacks."
+Radiant Healing,RadiantHealing,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Crusader,,False,,Passive: Healing spells cast in combat damage an enemy for 10% of the amount healed as Holy damage.
+Raise Summon,RaiseSummon,Skills,Skill,Class,,100,Mana,1.0,,single_enemy,False,True,,Thaumaturgist,,False,,"In combat, restore the Xenid that just fell. The rite refunds part of the conduit lost on death."
+Rally,Rally,Skills,Skill,Enhance,,5,Mana,1.0,,single_enemy,False,True,,Warrior,,False,,"Steel your resolve, increasing Defense and Magic Defense."
+Rally Partner,RallyPartner,Skills,Skill,Class,,0,,1.0,,single_enemy,False,True,,Beast Master,,False,,Order the tamed companion to rally partner.
+Razor Talons,RazorTalons,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Pathfinder,,False,,Passive: Increase melee damage and Bleed damage caused by melee attacks.
+Re-debuff,ReDebuff,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Knight Enchanter,,False,,Offensive Weave Releases refresh active negative status effects on affected enemies to at least three turns.
+Reaver's Mark,ReaversMark,Skills,Skill,Class,,9,Mana,1.0,,single_enemy,False,True,,Berserker; Grandmaster of Arms; Weapon Master,,False,,A battle axe discipline art that marks a foe to take increased weapon pressure.
+Reaver's Mark 2,ReaversMark2,Skills,Skill,Class,,11,Mana,1.0,,single_enemy,False,True,,Berserker; Grandmaster of Arms; Weapon Master,,False,,A mastered reaping strike that deepens the mark left on its target.
+Reaver's Mark 3,ReaversMark3,Skills,Skill,Class,,13,Mana,1.0,,single_enemy,False,True,,Grandmaster of Arms,,False,,A perfected reaping strike that leaves an inescapable mark.
+Reckless Onslaught,RecklessOnslaught,Skills,Skill,Offensive,,14,Mana,1.0,,single_enemy,False,True,,Berserker,,False,,Unleash an all-out attack for double weapon damage. Gain stacking Attack Up and Defense Down; being parried knocks you prone.
+Redeem,Redeem,Skills,Skill,Class,,0,,1.0,,single_enemy,False,True,,,,False,,Attempt a mercy victory against a wounded non-boss foe.
+Refreshment,Refreshment,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Mage,,False,,Water spells have a 20% chance to restore 5% of maximum HP and MP.
+Relic Aegis,RelicAegis,Skills,Skill,Class,,12,Mana,1.0,,single_enemy,False,True,,Templar,,False,,Spend all Devotion for stronger shielded protection and a Holy counter.
+Repercussion,Repercussion,Skills,Skill,Class,,0,Resolve,1.0,,all_enemies,False,True,,Sentinel; Stalwart Defender,,False,,Release a powerful blast wave against every enemy.
+Resist Death,ResistDeath,Skills,Skill,Enhance,,15,Mana,1.0,,single_enemy,False,False,,Assassin,,False,,Increase resistance to Death magic for a duration.
+Resonant Strike,ResonantStrike,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Knight Enchanter,,False,,"After releasing a Weave, preserve one spent blade charge. The Foundation's matching type is preserved when possible."
+Resonant Ward,ResonantWard,Skills,Skill,Class,,6,Totem Resonance,1.0,,self,False,True,,Shaman,,False,,Spend all Totem Resonance to raise Defense and Magic Defense for three turns.
+Resource Abuse,ResourceAbuse,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Shadowcaster,,False,Mana Tap,Double Mana Tap's effect and redirect overhealing to the next Shadow damage spell.
+Restorative Barrier,RestorativeBarrier,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Warlock,,False,Heal; Heal II; Heal III,Fairy direct healing also creates a barrier equal to the healing.
+Retaliate,Retaliate,Skills,Skill,Defensive,,0,,1.0,,single_enemy,True,True,,Sentinel; Stalwart Defender; Warrior,,False,,Your skill with a shield makes quick responses your forte.
+Retort,Retort,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Footpad; Weapon Master,,False,,Passive: Add your Intelligence modifier to Parry chance.
+Retract,Retract,Skills,Skill,,,0,,1.0,,single_enemy,False,True,,,War Turtle,False,,Retract into a spiked shell until its separate health pool is destroyed.
+Reveal,Reveal,Skills,Skill,Truth,,0,,1.0,,none,True,True,,Inquisitor,,False,,"An Inquisitor is a champion of truth, exposing secrets and gaining protection from shadow."
+Rhythmic Strike,RhythmicStrike,Skills,Skill,Offensive,,6,Mana,1.0,,single_enemy,False,True,,Bard,,False,,Strike for 115% weapon damage and gain Crescendo if a combat song is active.
+Riposte,Riposte,Skills,Skill,Defensive,,0,,1.0,,single_enemy,True,True,,Assassin; Knight Enchanter; Ninja,,False,,Passive: Chance to make an automatic main-hand counterattack after a successful Parry.
+Riposte Line,RiposteLine,Skills,Skill,Class,,7,Mana,1.0,,single_enemy,False,True,,Grandmaster of Arms; Weapon Master,,False,,A sword discipline art that strikes and prepares a brief counter line.
+Riposte Line 2,RiposteLine2,Skills,Skill,Class,,9,Mana,1.0,,single_enemy,False,True,,Grandmaster of Arms; Weapon Master,,False,,A mastered sword counter-line with greater damage and precision.
+Riposte Line 3,RiposteLine3,Skills,Skill,Class,,11,Mana,1.0,,single_enemy,False,True,,Grandmaster of Arms,,False,,A perfected sword counter-line with masterful precision.
+Rope-a-Dope,RopeADope,Skills,Skill,Defensive,,14,Mana,1.0,,single_enemy,False,True,,Master Monk,,False,,"Challenge a target, enter an escalating dodge stance, and answer three consecutive dodges with a four-hit combination. A hit ends the stance."
+Sacred Mending,SacredMending,Skills,Skill,Support,,8,Mana,1.0,,self,False,True,,Cleric,,False,,Restore your health through a rite of the Cleric faith.
+Sacred Overchannel,SacredOverchannel,Skills,Skill,Power Up,,24,Mana,1.0,,self,False,True,,,,True,,"Open the staff-and-shield channel fully. For 5 rounds, Hierophant staff and holy actions build Devotion faster, and Consecrated Conduit payoffs strike harder while returning more mana."
+Safe Passage,SafePassage,Skills,Skill,Class,,9,Mana,1.0,,self,False,True,,Seeker,,False,,Raise Defense and Magic Defense for three turns; mapped floors strengthen the ward.
+Safeguarding,Safeguarding,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Healer,,False,,Direct heals reduce damage from the target's next melee source.
+Sanctification,Sanctification,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Crusader,,False,,Passive: Increase Holy damage by 50%.
+Sanctuary Ward,SanctuaryWard,Skills,Skill,Class,,8,Mana,1.0,,single_enemy,False,True,,Cleric; Hierophant,,False,,Spend all Devotion for a two-turn shield; larger spends cleanse and regenerate.
+Scavenger's Eye,ScavengersEye,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Thief,,False,,Modestly improves ordinary loot odds and rarity without creating restricted drops.
+Sciophobia,Sciophobia,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Shadowcaster,,False,Shadow Curtain,"While Shadow Curtain is active, attackers may become haunted and risk Fear each turn."
+Screech,Screech,Skills,Skill,Offensive,,15,Mana,1.0,,single_enemy,False,True,,,Cockatrice; Fuath; Giant Owl; Golden Eagle; Griffin; Harpy,False,,"Let out an ear-piercing screech, damaging the foe and silencing them."
+Serendipity,Serendipity,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Footpad,,False,,Passive: Increase the chance of enemies dropping items.
+Shade of Ahool,ShadeOfAhool,Skills,Skill,Class,,0,,1.0,,single_enemy,False,True,,,,True,,Become a flying shadow beast for three turns.
+Shadow Counter,ShadowCounter,Skills,Skill,Passive,,0,,1.0,,single_enemy,True,True,,Ninja,,False,,Passive: A Riposte after parrying gains accuracy and damage.
+Shadow Evasion,ShadowEvasion,Skills,Skill,Passive,,0,,1.0,,single_enemy,True,True,,Ninja,,False,,Passive: Retains dodge briefly after concealment breaks.
+Shadow Strike,ShadowStrike,Skills,Skill,Shadow,,20,Mana,2.0,,single_enemy,False,True,,,Drow Assassin,False,,Meld with shadows before striking from the darkness with deadly precision
+Shapeshift,Shapeshift,Skills,Skill,Skill,,0,,1.0,,self,False,True,,,Barghest; Quasit; Vampire; Vampire Bat,False,,Some enemies can change their appearance and type. This is the skill they use to do so.
+Shield Block,ShieldBlock,Skills,Skill,Defensive,,0,,1.0,,single_enemy,True,True,,Cleric; Inquisitor; Templar; Warrior,Dark Knight; Earth Myrmidon; Evil Crusader,False,,"You are much more proficient with a shield than most, increasing the amount of damage blocked."
+Shield Mastery,ShieldMastery,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,,,True,,"The Stalwart Defender is so skilled with a shield that they gain a bonus chance to block melee and spells, with a chance to reflect the spell back."
+Shield Ricochet,ShieldRicochet,Skills,Skill,Class,,16,Mana,1.0,,all_enemies,False,True,,Crusader; Stalwart Defender,,False,,"Throw your shield through all enemies, dealing physical damage with a chance to stun each target for 1 turn."
+Shield Riposte,ShieldRiposte,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Sentinel,,False,,Fully blocking a weapon attack immediately attempts to knock the attacker prone.
+Shield Slam,ShieldSlam,Skills,Skill,Offensive,,8,Mana,1.0,,single_enemy,False,True,,Cleric; Healer; Templar; Warrior,Dark Knight; Earth Myrmidon; Evil Crusader; Fire Myrmidon; Ice Myrmidon; Storm Myrmidon; Water Myrmidon; Wind Myrmidon,False,,"Slam the enemy with your shield, damaging with a chance to stun for several turns."
+Shielding Ward,ShieldingWard,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,,,False,,Increase Magic Defense by 20 and halve damage remaining after Spell Block.
+Silent Lucidity,SilentLucidity,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Astromancer,,False,,"Passive: While asleep, you may still cast Time and Divination spells."
+Silent Walking,SilentWalking,Skills,Skill,Stealth,,20,Mana,1.0,,single_enemy,False,False,,Ninja,,False,,Halve random encounters for 50 exploration steps.
+Slam,Slam,Skills,Skill,Offensive,,12,Mana,1.5,,single_enemy,False,True,,,Basilisk; Giant Snake,False,,"Slam into the enemy, dealing great damage with a chance for prone."
+Sleeping Powder,SleepingPowder,Skills,Skill,Stealth,,11,Mana,1.0,,single_enemy,False,True,,Footpad,Scarecrow,False,,Use one of a Monocane's five charges to blow sleeping powder at the target.
+Slot Machine,SlotMachine,Skills,Skill,Luck,,15,Mana,1.0,,single_enemy,False,True,,Rogue,Jester; Test,False,,"Pull the handle and see what comes up! Depending on the results, different possible outcomes can occur."
+Smash and Grab,SmashAndGrab,Skills,Skill,Passive,,0,,1.0,,single_enemy,True,True,,Ninja,,False,,Passive: Mug strikes three times and may stun after two hits.
+Smoke Screen,SmokeScreen,Skills,Skill,Stealth,,5,Mana,1.0,,single_enemy,False,True,,Assassin; Footpad; Ninja; Rogue,Bandit; Copycat; Displacer Beast; Drow Assassin; False-Ledger Broker; Guild Cutpurse; Harlequin; Invisible Stalker; Puppet; Silent Contract Knife; Spell-Sealed Cutpurse; Trickster,False,,"Create a cloud of smoke, enabling escape. Requires a Smoke Bomb to use."
+Snake Eyes,SnakeEyes,Skills,Skill,Offensive,,8,Misfortune,1.0,,single_enemy,False,True,,Rogue,,False,,Spend all Misfortune on a weapon strike that blinds on hit.
+Sneak Attack,SneakAttack,Skills,Skill,Stealth,,15,Mana,2.0,,single_enemy,False,True,,Assassin; Rogue,Silent Contract Knife,False,,"Death Mark Setup: if the target is incapacitated, unleash a devastating attack."
+Snowpiercer,Snowpiercer,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Sorcerer,,False,,Ice spells also deal additional cold damage.
+Song of Renewal,SongRenewal,Skills,Skill,Class,,0,,1.0,,single_enemy,False,True,,Bard,,False,,Perform a 3-turn song that restores HP and MP each turn.
+Song of Shelter,SongShelter,Skills,Skill,Class,,0,,1.0,,single_enemy,False,True,,Bard,,False,,Perform a 3-turn song that reduces incoming damage.
+Song of Valor,SongValor,Skills,Skill,Class,,0,,1.0,,single_enemy,False,True,,Bard,,False,,Perform a 3-turn song that raises weapon and magic damage.
+Soul Asylum,SoulAsylum,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Demonologist,,False,Desoul,Enemies killed by Desoul produce a Soul Gem.
+Soul Harvest,SoulHarvest,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,,,True,,The souls of the dead contain traces of its host's power. The Soulcatcher knows this and uses it to their advantage. Each enemy killed of a particular type increases the combat effectiveness against that enemy type.
+Soul Rend,SoulRend,Skills,Skill,Offensive,,9,Mana,1.0,,single_enemy,False,True,,Soulcatcher,,False,,Strike for 125% weapon damage and gain Resonance against a drained foe.
+Soul Vessel,SoulVessel,Skills,Skill,Power Up,,0,,1.0,,single_enemy,False,True,,Demonologist,,False,,Use a Soul Gem to store your soul temporarily; fatal damage instead restores 25% health and mana.
+Soulstorm,Soulstorm,Skills,Skill,Class,,12,Totem Resonance,1.0,,single_enemy,False,True,,Soulcatcher,,False,,Spend all Resonance to force a strengthened Soul Totem pulse.
+Spaghettification,Spaghettification,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Wizard,,False,Photon Sphere,"Photon Sphere gains a chance to pull a target apart, instantly erasing it from existence."
+Spell Block,SpellBlock,Skills,Skill,Class,,0,Resolve,1.0,,single_enemy,False,True,,Sentinel; Stalwart Defender,,False,,Prepare to block a projectile spell using its power and your shield strength.
+Spell Mastery,SpellMastery,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,,,True,,"The Wizard is so good at spell casting that even running out of mana won't stop them. This ability automatically triggers when no spells can be cast due to low mana, making spells free for a time. While active mana is regenerated based on damage dealt."
+Spell Reflection,SpellReflection,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Sentinel; Stalwart Defender,,False,,Spell Block has a chance to reflect a blocked projectile spell at its caster.
+Spellbind,Spellbind,Skills,Skill,Class,,0,Blade Charges,1.0,,single_enemy,False,True,,Knight Enchanter,,False,,Consume all Blade Charges and the current pattern to empower the next damaging spell hit within three turns.
+Spellbreaker's Cut,SpellbreakersCut,Skills,Skill,Offensive,,7,Mana,1.0,,single_enemy,False,True,,Spell Stealer,,False,,Strike for 95% weapon damage and reduce the target's Magic Defense.
+Spinning Back Elbow,SpinningBackElbow,Skills,Skill,Martial Arts,,10,Mana,1.0,,single_enemy,False,True,,Master Monk,,False,,A turning blow that can blind.
+Spirit Animal,SpiritAnimal,Skills,Skill,Class,,7,Mana,1.0,,self,False,True,,Shaman,,False,,Call your chosen undead animal spirit for a four-turn combat blessing.
+Spirit Claw,SpiritClaw,Skills,Skill,Offensive,,7,Mana,1.0,,single_enemy,False,True,,Soulcatcher,,False,,Strike for 115% weapon damage; Spirit Animal raises it to 135%.
+Spirit Mend,SpiritMend,Skills,Skill,Class,,9,Mana,1.0,,self,False,True,,Shaman,,False,,"Restore health, with stronger healing while Spirit Animal is active."
+Spirit Strike,SpiritStrike,Skills,Skill,Offensive,,7,Mana,1.0,,single_enemy,False,True,,Pathfinder,,False,,Attack and deal additional spirit damage when your Wisdom is higher.
+Staff Conduit,StaffConduit,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Hierophant,,False,,You can wield a two-handed staff with a shield and focus Devotion through staff strikes.
+Staff Proficiency,StaffProficiency,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Healer,,False,,Passive: Gain 10% accuracy and damage with Staves.
+Steal,Steal,Skills,Skill,Stealth,,6,Mana,1.0,,single_enemy,False,True,,Assassin; Footpad,Bandit; False-Ledger Broker; Guild Cutpurse; Silent Contract Knife; Spell-Sealed Cutpurse,False,,Relieve the enemy of their items or gold.
+Steal As Well,StealAsWell,Skills,Skill,Class,,0,,1.0,,single_enemy,False,True,,Spell Stealer,,False,,Cast an attack spell and attempt to steal after it lands.
+Steal Spell,StealSpell,Skills,Skill,Class,,8,Mana,1.0,,single_enemy,False,True,,Spell Stealer,,False,,Inscribes one of the target's spells onto a Blank Scroll.
+Steal Spell 2,StealSpell2,Skills,Skill,Class,,22,Mana,1.0,,single_enemy,False,True,,Arcane Trickster,,False,,Attempt to permanently learn one of the target's stealable spells.
+Stomp,Stomp,Skills,Skill,Offensive,,8,Mana,1.0,,single_enemy,False,True,,,Maelephant; Nightmare; Satyr; Unicorn,False,,"Stomp on the enemy, dealing damage with a chance to stun."
+Storage Capacity,StorageCapacity,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Spellblade,,False,,Store one additional Arcane charge and one additional Elemental charge.
+Storage Capacity II,StorageCapacity2,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Knight Enchanter,,False,,Increase the number of Arcane and Elemental Blade Charges that can be held by 2. This stacks with Storage Capacity.
+Stroke of Luck,StrokeLuck,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,,,True,,"The master of tricks and subterfuge also has Lady Luck on its side, gaining a bonus to all luck-based rolls."
+Stronghold,Stronghold,Skills,Skill,Class,,0,Resolve,1.0,,single_enemy,False,True,,Stalwart Defender,,True,,Consume full Resolve to reduce melee damage and increase block amount by 30%.
+Stumble Upon,StumbleUpon,Skills,Skill,Offensive,,5,Mana,1.0,,single_enemy,False,True,,Footpad; Pathfinder,,False,,"Attack the target and follow with a trip attempt. On a complete miss, pass a DEX check or fall prone."
+Subzero,Subzero,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Wizard,,False,,"Ice spells gain a chance to freeze an enemy, preventing it from acting for two turns."
+Suplex,Suplex,Skills,Skill,Martial Arts,,12,Mana,1.0,,single_enemy,False,True,,Master Monk,,False,,A crushing throw that can knock the target prone.
+Supplication,Supplication,Skills,Skill,Class,,10,Mana,1.0,,single_enemy,False,True,,Priest,,False,,"Spend all Prayer to heal, shield, and possibly cleanse a living target."
+Surface,Surface,Skills,Skill,Offensive,,0,,1.0,,self,False,True,,,Antlion; Sandworm,False,,"Emerge from underground, becoming targetable again."
+Surprise!,Surprise,Skills,Skill,Passive,,0,,1.0,,single_enemy,True,True,,Assassin,,False,,"Passive: While Obscuration is active, an initiative-winning opening attack gains accuracy, critical chance, and 50% experience if it kills."
+Surveyor's Step,SurveyorsStep,Skills,Skill,Class,,7,Mana,1.0,,self,False,True,,Seeker,,False,,Gain Speed for three turns based on how much of the current floor is mapped.
+Swing & Bash,SwingAndBash,Skills,Skill,Offensive,,10,Mana,1.0,,single_enemy,False,True,,Dragoon; Lancer; Sentinel,,False,,Follow a weapon attack with a shield attack.
+Sword & Board,SwordAndBoard,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Crusader,,False,,Passive: Gain accuracy and weapon damage while wielding a one-handed weapon and a shield.
+Syncopated Strike,SyncopatedStrike,Skills,Skill,Offensive,,10,Mana,1.0,,single_enemy,False,True,,Troubadour,,False,,"Strike for 135% weapon damage; on hit, extend the active song by one turn."
+Take It On the Run,TakeItOnTheRun,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Rogue,,False,,A successful Smoke Screen escape also attempts to steal from the enemy.
+Take Notes,TakeNotes,Skills,Skill,Class,,0,,1.0,,single_enemy,False,False,,Inquisitor,,False,,"Outside combat, review the rank of every enemy type recorded in your Notebook."
+Tame,Tame,Skills,Skill,Class,,0,,1.0,,single_enemy,False,True,,Ranger,,True,,Attempt to bring a wild beast over to your side. You cannot perform any actions while channeling this ability.
+Tectonic Rift,TectonicRift,Skills,Skill,Offensive,,24,Mana,1.0,,all_enemies,False,True,,Berserker,,False,,"Slam both two-handed weapons into the ground, dealing massive Earth damage to all enemies and knocking grounded enemies prone. Flying enemies take partial damage from debris."
+Tephra,Tephra,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Astromancer,,False,,Passive: Vulcanize scatters debris that damages other nearby enemies.
+Terra Firma,TerraFirma,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Mage,,False,,Earth spells have a 20% chance to increase melee damage by 50% for 3 turns.
+Third Eye,ThirdEye,Skills,Skill,Truth,,0,,1.0,,single_enemy,True,True,,Arcane Trickster; Knight Enchanter; Seeker,,False,,Passive: Add Intelligence to critical-hit and dodge chance calculations.
+Thorn By My Side,ThornByMySide,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Warlock,,False,Cover,Homunculus Cover redirects damage to the attacker.
+Thousand Cuts,ThousandCuts,Skills,Skill,Offensive,,40,Mana,1.0,,single_enemy,False,True,,Ninja,,False,,Death Mark Finisher: spend all marks to sharpen five rapid blade strikes.
+Threaded Cast,ThreadedCast,Skills,Skill,Class,,8,Mana,1.0,,single_enemy,False,True,,Astromancer,,False,,Spend all Threads on the next validated spell or Runic Boost: each grants +5 accuracy/reliability points and +6% output.
+Throw Rock,ThrowRock,Skills,Skill,Offensive,,7,Mana,1.0,,single_enemy,False,True,,,Treant,False,,"Grab the nearest rock or stone and chuck it at the enemy, with a chance to knock the target prone."
+Thunderous Vault,ThunderousVault,Skills,Skill,Offensive,,18,Mana,1.0,,single_enemy,False,True,,Berserker,,False,,"Leap at an enemy and strike with both weapons in midair, releasing an expanding electrical field on landing that may stun enemies."
+Titanic Slam,TitanicSlam,Skills,Skill,Offensive,,30,Mana,4.0,,single_enemy,False,True,,,,False,,The ultimate technique of the mountain giant. Brings both fists crashing down with enough force to stun any foe.
+Top Off,TopOff,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Shadowcaster,,False,Health/Mana Drain,Health/Mana Drain consumes all Umbral Debt to refill both pools or completely drain the target; Death-immune targets increase its effect by 50%.
+Totem,Totem,Skills,Skill,Class,,12,Mana,1.0,,self,False,True,,Shaman,,True,,"Summon a totem channeling a sacred aspect. Choose Earth for defense, Water for healing and warding, Fire for offense, Wind for mobility, or Soul for weapon mastery. Active totems can pulse learned aspect spells. Only one aspect active at a time."
+Totem Surge,TotemSurge,Skills,Skill,Class,,10,Mana,1.0,,single_enemy,False,True,,Shaman; Soulcatcher,,False,,Spend Totem Resonance to force the active Totem pulse.
+Tower Offense,TowerOffense,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Stalwart Defender,,False,,Shield Slam generates Resolve based on the damage it deals.
+Toxic Precision,ToxicPrecision,Skills,Skill,Passive,,0,,1.0,,single_enemy,True,True,,Ninja,,False,,Passive: Coated weapons gain 10% critical chance.
+Transform,Transform,Skills,Skill,Class,,0,,1.0,,self,False,True,,Druid,,False,,Enter the persistent Panther form. Dismiss it explicitly before choosing a different unlocked form.
+Transform,Transform2,Skills,Skill,Class,,0,,1.0,,self,False,True,,Druid,,False,,Enter the persistent Direbear form. Dismiss it explicitly before choosing a different unlocked form.
+Transform,Transform3,Skills,Skill,Class,,0,,1.0,,self,False,True,,Lycan,,False,,Enter the persistent Werewolf form. Moon stress can force this form and lock dismissal with Frenzy.
+Transform,Transform4,Skills,Skill,Class,,0,,1.0,,self,False,True,,,,False,,"Transforms the druid into a Red Dragon, assuming the spells and abilities inherent to the creature."
+Trickster's Gambit,TrickstersGambit,Skills,Skill,Power Up,,24,Mana,1.0,,self,False,True,,,,True,,"For several turns, stolen spells cost no mana and have a chance not to be consumed when cast. Each successful cast increases critical chance and dodge."
+Trip,Trip,Skills,Skill,Offensive,,6,Mana,1.0,,single_enemy,False,True,,,Alligator; Ankheg; Cerberus; Clannfear; Direwolf,False,,"Grab the enemy's leg and trip them to the ground, leaving them prone."
+Triple Strike,TripleStrike,Skills,Skill,Offensive,,26,Mana,0.9,,single_enemy,False,True,,Assassin; Berserker; Crusader; Knight Enchanter; Master Monk; Ninja; Rogue; Seeker; Soulcatcher,Cerberus; Iron Golem; Wyrm,False,,Strike the enemy three times in quick succession.
+Triplecast,Triplecast,Skills,Skill,Offensive,,20,Mana,1.0,,single_enemy,False,True,,Astromancer; Wizard,,False,,Cast multiple spells in a single turn.
+True Piercing Strike,TruePiercingStrike,Skills,Skill,Offensive,,15,Mana,0.75,,single_enemy,False,True,,Crusader; Dragoon; Knight Enchanter; Seeker; Soulcatcher; Templar; Weapon Master,,False,,"Attack that is guaranteed to hit and that pierces the enemy's defenses, ignoring armor and defenses but reduces weapon damage."
+True Strike,TrueStrike,Skills,Skill,Offensive,,12,Mana,0.75,,single_enemy,False,True,,Cleric; Dragoon; Inquisitor; Lancer; Monk; Paladin; Pathfinder; Ranger; Shaman; Spellblade; Templar; Warrior,Behemoth; Chimera; Ice Myrmidon; Nightmare; Werewolf,False,,Attack that is guaranteed to hit at the cost of damage.
+Tunnel,Tunnel,Skills,Skill,Offensive,,3,Mana,1.0,,self,False,True,,,Antlion; Sandworm,False,,"Tunnel into the ground indefinitely, making user untargetable. Self-targeting abilities can be used but offensive abilities require user to surface."
+Turn the Tables,TurnTheTables,Skills,Skill,Class,,6,Misfortune,1.0,,self,False,True,,Thief,,False,,Spend all Misfortune to raise Attack and Defense for three turns.
+Turtle,Turtle,Skills,Skill,,,0,,1.0,,single_enemy,True,True,,,,False,,"Hunker down into a ball, reducing all damage to 0 and regenerating health."
+Twist the Knife,TwistTheKnife,Skills,Skill,Passive,,0,,1.0,,single_enemy,True,True,,Assassin,,False,,Passive: A successful Kidney Punch stun triggers Backstab.
+Two-Handed Weapon Proficiency,TwoHandedWeaponProficiency,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Crusader; Ranger; Weapon Master,,False,,Passive: Increase accuracy and damage while wielding a two-handed weapon.
+Unarmed Proficiency,UnarmedProficiency,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Monk,,False,,Passive: Gain 10% accuracy and weapon damage while unarmed or using a fist weapon.
+Uncanny Volley,UncannyVolley,Skills,Skill,Offensive,,14,Mana,1.0,,all_enemies,False,True,,Ranger,,False,,Fire one crossbow bolt at every enemy. Bolts deal 25% more damage to unnatural enemies.
+Undead Hunter,UndeadHunter,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Crusader,,False,,"Passive: The presence of Undead enemies increases Speed, initiative, and critical strike chance."
+Unleash Instinct,UnleashInstinct,Skills,Skill,Class,,0,,1.0,,single_enemy,False,True,,Beast Master,,False,,Order the tamed companion to unleash instinct.
+Unnatural Purge,UnnaturalPurge,Skills,Skill,Offensive,,10,Mana,1.0,,single_enemy,False,True,,Pathfinder,,False,,"Strike an enemy, dealing 50% more damage to unnatural creatures."
+Uno Reverse Card,UnoReverseCard,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Shadowcaster,,False,Cleanse,Fairy Cleanse reverses cured status effects into beneficial effects.
+Unrelenting Waves,UnrelentingWaves,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Wizard,,False,,Water spells gain a chance to recur on successive turns.
+Unsteady Ground,UnsteadyGround,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Sorcerer,,False,,Earth spells also knock their targets prone.
+Untouchable,Untouchable,Skills,Skill,Passive,,0,,1.0,,single_enemy,True,True,,Ninja,,False,,"Passive: Once per combat, reroll a failed weapon avoidance."
+Uppercut,Uppercut,Skills,Skill,Martial Arts,,8,Mana,1.0,,single_enemy,False,True,,Monk,,False,,A rising martial strike that deals increased damage.
+Upsurge,Upsurge,Skills,Skill,Enhance,,8,Mana,1.0,,single_enemy,False,True,,Warrior,,False,,Reach deep and grant all allies temporary health equal to 15% of their maximum health for three turns.
+Vanishing Act,VanishingAct,Skills,Skill,Defensive,,6,Mana,1.0,,self,False,True,,Arcane Trickster,,False,,Spend one Stolen Charge to raise Speed and Defense for three turns.
+Veil of Shadows,VeilShadows,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,,,False,,"Darkness becomes light and light falls to darkness, concealing the Shadowcaster from all but the most keen eyes. The player gains invisibility and a bonus to damage at the beginning of battle if they have initiative."
+Very Superstitious,VerySuperstitious,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Pathfinder,,False,,Passive: Negative status effects may create a matching-duration damage barrier.
+Vigilant Landing,VigilantLanding,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Dragoon; Lancer,,False,,Landing from Jump has a Dexterity-based chance to enter a defensive stance.
+Vim and Rigor,VimAndRigor,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Warlock,,False,Health Drain; Health/Mana Drain,Health drains are more potent when the target is at full health.
+Wayfinding,Wayfinding,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Seeker,,False,,Studied routes and cases smooth Seeker movement magic.
+Weapon Focus,WeaponFocus,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Warrior,,False,,Focused weapon practice increases weapon hit chance.
+Weapon Swap,WeaponSwap,Skills,Skill,,,0,,1.0,,single_enemy,False,True,,Grandmaster of Arms,,False,,Change to a different weapon during combat.
+Weave Reservoir,WeaveReservoir,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Knight Enchanter,,False,,"At the start of your turn, full Arcane and Elemental charge pools restore 3% of maximum HP and MP."
+Web,Web,Skills,Skill,Offensive,,6,Mana,1.0,,single_enemy,False,True,,,Giant Spider,False,,"Expel a thick, sticky substance onto the enemy, leaving them prone."
+Widow's Wail,WidowsWail,Skills,Skill,Offensive,,12,Mana,1.0,,single_enemy,False,True,,,Mad Waitress,False,,"The agony of loss is released, affecting both the target and user. Both will take non-elemental damage based on the current health of the user."
+Wild Sense,WildSense,Skills,Skill,Class,,0,,1.0,,single_enemy,False,True,,Ranger,,False,,Inspect a favored enemy. Higher Tracking Mastery reveals more combat details.
+Wind Currents,WindCurrents,Skills,Skill,Power Up,,0,,1.0,,single_enemy,True,True,,Mage,,False,,Wind spells have a 20% chance to grant +3 Speed and +10% melee accuracy for 3 turns.
+Winged Pounce,WingedPounce,Skills,Skill,Class,,12,Mana,1.0,,single_enemy,False,True,,Lycan,,False,,Dragon Essence Werewolf pounce with brief flight.
+Zen Accuracy,ZenAccuracy,Skills,Skill,Class,,0,,1.0,,single_enemy,True,True,,Healer,,False,,Passive: Increase hit chance by 5%.
+Zephyrstrike,Zephyrstrike,Skills,Skill,Offensive,,0,,1.0,,single_enemy,True,True,,Beast Master; Dragoon; Lancer; Pathfinder; Rogue,,False,,You strike with the timing of a sudden gale.

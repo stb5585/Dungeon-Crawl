@@ -1,0 +1,411 @@
+Name,Class ID,Type,Subtype,Value,Rarity,Weight,Damage,Critical Chance,Hands,Offhand Eligible,Armor,Modifier,Element,Restricted To,Restricted Against,Ultimate,Random Drop,Unequipped,Description
+No Pendant,NoPendant,Accessory,None,0,0,0,,,,,,No Mod,,,,False,True,True,No pendant equipped.
+No Ring,NoRing,Accessory,None,0,0,0,,,,,,No Mod,,,,False,True,True,No ring equipped.
+Antidote Pendant,AntidotePendant,Accessory,Pendant,2500,0.85,0.2,,,,,,Status-Poison,,,,False,True,False,Protects the wearer against the effects of poison.
+Calming Pendant,CalmingPendant,Accessory,Pendant,5000,0.7,0.2,,,,,,Status-Berserk,,,,False,True,False,Protects the wearer against the effects of berserk.
+Dharma Pendant,DharmaPendant,Accessory,Pendant,25000,0.25,0.2,,,,,,Status-Death,,,,False,True,False,"No need to fear the reaper while wearing this amulet, giving the wearer immunity against instant death."
+Diamond Locket,DiamondLocket,Accessory,Pendant,55000,0.1,0.2,,,,,,+50 Magic Defense,,,,False,True,False,A diamond necklace that massively improves the wearer's magic damage.
+Draconite Pendant,DraconitePendant,Accessory,Pendant,0,0,0.1,,,,,,Jump Recover+,,,,False,True,False,"A pendant cut from Kaelenon's Draconite. It strengthens the Recover Jump modification, restoring more health and mana when the wearer lands."
+Earth Amulet,EarthAmulet,Accessory,Pendant,40000,0.2,0.2,,,,,,Immune-Earth,,,,False,True,False,An amulet with a dense green gem veined like ancient bedrock.
+Earth Chain,EarthChain,Accessory,Pendant,8000,0.6,0.2,,,,,,Resist-Earth,,,,False,True,False,"A necklace carved from polished stone, heavy with the patience of deep caverns."
+Electric Amulet,ElectricAmulet,Accessory,Pendant,40000,0.2,0.2,,,,,,Immune-Electric,,,,False,True,False,An amulet with a storm-bright gem that clicks with tiny sparks.
+Electric Chain,ElectricChain,Accessory,Pendant,8000,0.6,0.2,,,,,,Resist-Electric,,,,False,True,False,A necklace strung with storm glass that hums softly before lightning strikes.
+Element Amulet,ElementAmulet,Accessory,Pendant,40000,0.2,0.2,,,,,,None,,,,False,True,False,"Base class for the various element amulets, each shaped around a concentrated warding jewel."
+Element Chain,ElementChain,Accessory,Pendant,8000,0.6,0.2,,,,,,None,,,,False,True,False,"Base class for the various element chains, each forged around a focused elemental core."
+Elemental Amulet,ElementalAmulet,Accessory,Pendant,100000,0.05,0.2,,,,,,Immune-Elemental,,,,False,True,False,"Legend claims the jewel of this amulet is actually the heart of a god, still turning with every color of creation."
+Elemental Chain,ElementalChain,Accessory,Pendant,15000,0.4,0.2,,,,,,Resist-Elemental,,,,False,True,False,"Fashioned from the cores of elementals, this necklace shifts color as nearby magic changes shape."
+Fire Amulet,FireAmulet,Accessory,Pendant,40000,0.2,0.2,,,,,,Immune-Fire,,,,False,True,False,An amulet with a ruby heart that burns like a banked coal.
+Fire Chain,FireChain,Accessory,Pendant,8000,0.6,0.2,,,,,,Resist-Fire,,,,False,True,False,A necklace set with a warm ember-stone that glows brighter near open flame.
+Garfunkel Pendant,GarfunkelPendant,Accessory,Pendant,23000,0.3,0.2,,,,,,Status-Silence,,,,False,True,False,The Sound of Silence can be deafening but not with this necklace.
+Gold Necklace,GoldNecklace,Accessory,Pendant,22000,0.4,0.2,,,,,,+20 Magic Damage,,,,False,True,False,A gold-chained necklace that greatly improves the wearer's magic damage.
+Gorgon Pendant,GorgonPendant,Accessory,Pendant,20000,0.4,0.2,,,,,,Status-Stone,,,,False,True,False,"Made from the scale of a Gorgon, this ring protects the wearer against petrification."
+Ice Amulet,IceAmulet,Accessory,Pendant,40000,0.2,0.2,,,,,,Immune-Ice,,,,False,True,False,An amulet with a frost-white gem that leaves a chill on the skin.
+Ice Chain,IceChain,Accessory,Pendant,8000,0.6,0.2,,,,,,Resist-Ice,,,,False,True,False,A necklace of pale crystal links that stay cold even in midsummer heat.
+Invisibility Pendant,InvisibilityPendant,Accessory,Pendant,50000,0.1,0.2,,,,,,Invisible,,,,False,True,False,Makes the wearer invisible and harder to hit.
+Levitation Pendant,LevitationPendant,Accessory,Pendant,30000,0.25,0.2,,,,,,Flying,,,,False,True,False,"Gives the wearer the ability to fly, making them harder to hit and immune to ground-based spells. The downfall is that Wind spells will hurt more."
+Magic Pendant,MagicPendant,Accessory,Pendant,150000,0.01,0.2,,,,,,Magic Dodge,,,,False,True,False,An amulet that makes the wearer harder to hit with magic spells.
+Pendant of Vision,VisionPendant,Accessory,Pendant,1200,0.9,0.2,,,,,,Vision,,,,False,True,False,A pendant that that gives information about the enemy.
+Platinum Necklace,PlatinumNecklace,Accessory,Pendant,60000,0.1,0.2,,,,,,+50 Magic Damage,,,,False,True,False,A platinum-chained necklace that massively improves the wearer's magic damage.
+Ribbon Pendant,RibbonPendant,Accessory,Pendant,150000,0.01,0,,,,,,Status-All,,,,False,True,False,"Forged from a rare mineral, this pendant provides the wearer with immunity from all negative status effects."
+Ruby Locket,RubyLocket,Accessory,Pendant,1800,0.85,0.2,,,,,,+10 Magic Defense,,,,False,True,False,A ruby necklace that improves the wearer's magic defense.
+Sapphire Locket,SapphireLocket,Accessory,Pendant,16000,0.5,0.2,,,,,,+20 Magic Defense,,,,False,True,False,A sapphire necklace that greatly improves the wearer's magic defense.
+Silver Necklace,SilverNecklace,Accessory,Pendant,8000,0.75,0.2,,,,,,+10 Magic Damage,,,,False,True,False,A silver-chained necklace that improves the wearer's magic damage.
+Water Amulet,WaterAmulet,Accessory,Pendant,40000,0.2,0.2,,,,,,Immune-Water,,,,False,True,False,An amulet with a deep blue gem that seems to ripple beneath its surface.
+Water Chain,WaterChain,Accessory,Pendant,8000,0.6,0.2,,,,,,Resist-Water,,,,False,True,False,A necklace of blue-green links that beads with dew in dry air.
+Wind Amulet,WindAmulet,Accessory,Pendant,40000,0.2,0.2,,,,,,Immune-Wind,,,,False,True,False,An amulet with a clear gem that feels almost weightless in the hand.
+Wind Chain,WindChain,Accessory,Pendant,8000,0.6,0.2,,,,,,Resist-Wind,,,,False,True,False,A necklace of feather-light silver links that stir when no breeze is present.
+Accuracy Ring,AccuracyRing,Accessory,Ring,25000,0.4,0.1,,,,,,Accuracy,,,,False,True,False,A ring that improves the wearer's weapon accuracy by 10%.
+Barrier Ring,BarrierRing,Accessory,Ring,16000,0.5,0.1,,,,,,Block,,,,False,True,False,"A ring that increases the wearer's chance to block attacks by 25%, even without having a shield equipped."
+Class Ring,ClassRing,Accessory,Ring,0,0,0.1,,,,,,Special,,,,False,True,False,A ring that changes depending on the wearer's specialty.
+Evasion Ring,EvasionRing,Accessory,Ring,40000,0.2,0.1,,,,,,Dodge,,,,False,True,False,A ring that improves the wearer's chance to dodge.
+Force Ring,ForceRing,Accessory,Ring,50000,0.1,0.1,,,,,,+50 Physical Damage,,,,False,True,False,A ring that massively improves the wearer's attack damage.
+Iron Ring,IronRing,Accessory,Ring,2000,0.85,0.1,,,,,,+4 Physical Defense,,,,False,True,False,A ring that improves the wearer's defense.
+Might Ring,MightRing,Accessory,Ring,24000,0.4,0.1,,,,,,+20 Physical Damage,,,,False,True,False,A ring that greatly improves the wearer's attack damage.
+Power Ring,PowerRing,Accessory,Ring,5000,0.75,0.1,,,,,,+10 Physical Damage,,,,False,True,False,A ring that improves the wearer's attack damage.
+Steel Ring,SteelRing,Accessory,Ring,20000,0.4,0.1,,,,,,+10 Physical Defense,,,,False,True,False,A ring that greatly improves the wearer's defense.
+Titanium Ring,TitaniumRing,Accessory,Ring,45000,0.2,0.1,,,,,,+20 Physical Defense,,,,False,True,False,A ring that massively improves the wearer's defense.
+Cloak of Enchantment,CloakEnchantment,Armor,Cloth,22000,0.5,3,,,,,14,0,,,,False,True,False,A magical cloak that shields the wearer from all forms of attack.
+Cloth Cloak,ClothCloak,Armor,Cloth,200,0.9,2,,,,,4,0,,,,False,True,False,"An outdoor cloth garment, typically sleeveless, that hangs loosely from the shoulders."
+Gold Cloak,GoldCloak,Armor,Cloth,7000,0.75,4,,,,,10,0,,,,False,True,False,A cloak weaved with strands of gold to improve protective power.
+Robes of Merlin,MerlinRobe,Armor,Cloth,0,0.0,2,,,,,30,0,,,,False,True,False,The enchanted robes of Merlin the enchanter.
+Silver Cloak,SilverCloak,Armor,Cloth,2500,0.85,3,,,,,6,0,,,,False,True,False,A cloak weaved with strands of silver to improve protective power.
+Tarnkappe,Tarnkappe,Armor,Cloth,90000,0.2,1,,,,,24,0,,,,False,True,False,"A tarnkappe is a mythical garment that grants its wearer the power to become invisible and move undetected. The Tarnkappe is depicted as a dark, enchanted cloak or hood, embodying the idea of secrecy, stealth, and mysticism."
+Tunic,Tunic,Armor,Cloth,60,0.95,2,,,,,2,0,,,,False,True,False,"A close-fitting short coat as part of a uniform, especially a police or military uniform."
+Wizard's Robe,WizardRobe,Armor,Cloth,45000,0.4,4,,,,,20,0,,,,False,True,False,"A knee-length, long-sleeved robe with an impressive hood designed to add a mysterious feel to magic users."
+Chain Mail,ChainMail,Armor,Heavy,1000,0.85,18,,,,,10,0,,,,False,True,False,"Made of interlocking metal rings, includes a layer of quilted fabric worn underneath the mail to prevent chafing and to cushion the impact of blows. The suit includes gauntlets."
+Genji Armor,Genji,Armor,Heavy,0,0.0,25,,,,,50,0,,,,False,True,False,Mythical armor crafted by an unknown master blacksmith and embued with protective enchantments that allow the user to shrug off damage.
+Maximilian,Maximilian,Armor,Heavy,110000,0.2,30,,,,,40,0,,,,False,True,False,"Maximilian armor is characterized by its intricate designs and full-coverage plates. Known for its effectiveness in both defense and mobility, this armor often features a distinctive fluted design, which not only enhances its aesthetic appeal but also reinforces the structure, providing extra strength without adding excessive weight."
+Palangina,Palangina,Armor,Heavy,55000,0.4,30,,,,,30,0,,,,False,True,False,A Persian lamellar cuirass worked with fire-red and water-blue inlays.
+Plate Mail,PlateMail,Armor,Heavy,27500,0.5,25,,,,,20,0,,,,False,True,False,"Armor consisting of shaped, interlocking metal plates to cover most of the body."
+Ring Mail,RingMail,Armor,Heavy,200,0.95,15,,,,,8,0,,,,False,True,False,Leather armor with heavy rings sewn into it. The rings help reinforce the armor against blows from Swords and axes.
+Splint Mail,Splint,Armor,Heavy,6000,0.75,20,,,,,14,0,,,,False,True,False,Armor made of narrow vertical strips of metal riveted to a backing of leather that is worn over cloth padding. Flexible chain mail protects the joints.
+Cuirboulli,Cuirboulli,Armor,Light,3000,0.75,6,,,,,8,0,,,,False,True,False,"French for ""boiled leather"", this armor has increased rigidity for add protection"
+Dragon Hide,DragonHide,Armor,Light,0,0.0,10,,,,,36,0,Fire,,,False,True,False,"Hide armor made from the scales of a red dragon, inconceivably light for this type of armor."
+Leather Armor,LeatherArmor,Armor,Light,600,0.85,5,,,,,6,0,,,,False,True,False,"A protective covering made of animal hide, boiled to make it tough and rigid and worn over the torso to protect it from injury."
+Mithril Coat,MithrilCoat,Armor,Light,95000,0.2,2,,,,,28,0,,,,False,True,False,"A mithril coat is a lightweight, shimmering shirt of armor made from mithril, a rare and incredibly strong metal. Known for its silver-like appearance and superior durability, the mithril coat offers exceptional protection while remaining much lighter than traditional steel armor."
+Padded Armor,PaddedArmor,Armor,Light,75,0.95,4,,,,,4,0,,,,False,True,False,Consists of quilted layers of cloth and feathers to provide some protection from attack.
+Studded Cuirboulli,StuddedCuirboulli,Armor,Light,42000,0.4,8,,,,,24,0,,,,False,True,False,Boiled leather armor embedded with iron studs to improve defensive capabilities.
+Studded Leather,StuddedLeather,Armor,Light,20000,0.5,7,,,,,16,0,,,,False,True,False,Leather armor embedded with iron studs to improve defensive capabilities.
+Breastplate,Breastplate,Armor,Medium,23500,0.5,15,,,,,18,0,,,,False,True,False,"Armor consisting of a fitted metal chest piece worn with supple leather. Although it leaves the legs and arms relatively unprotected, this armor provides good protection for the wearer's vital organs while leaving the wearer relatively unencumbered."
+Chain Shirt,ChainShirt,Armor,Medium,800,0.85,12,,,,,8,0,,,,False,True,False,A type of armor consisting of small metal rings linked together in a pattern to form a mesh.
+Half Plate,HalfPlate,Armor,Medium,46000,0.4,20,,,,,26,0,,,,False,True,False,Armor consisting of shaped metal plates that cover most of the wearer's body. It does not include leg Protection beyond simple greaves that are attached with leather straps.
+Hide Armor,HideArmor,Armor,Medium,100,0.95,9,,,,,6,0,,,,False,True,False,A crude armor made from thick furs and pelts.
+Klivanion,Klivanion,Armor,Medium,0,0.0,18,,,,,36,0,Electric,,,False,True,False,A lamellar breastplate whose charged plates lash attackers with lightning and can stun them in place.
+Kusari,Kusari,Armor,Medium,100000,0.2,17,,,,,32,0,,,,False,True,False,"Kusari armor is made from interconnected metal rings, providing excellent flexibility and mobility. This chain mail offers robust protection while allowing for ease of movement, making it ideal for both ranged and close combat."
+Scale Mail,ScaleMail,Armor,Medium,4000,0.75,10,,,,,10,0,,,,False,True,False,"Armor consisting of a coat and leggings of leather covered with overlapping pieces of metal, mimicking the scales of a fish."
+Animal Hide,AnimalHide,Armor,Natural,0,0,0,,,,,4,0,,,,False,True,False,
+Animal Hide,AnimalHide2,Armor,Natural,0,0,0,,,,,12,0,,,,False,True,False,
+Carapace,Carapace,Armor,Natural,0,0,0,,,,,6,0,,,,False,True,False,
+Cerberus Hide,CerberusHide,Armor,Natural,0,0,0,,,,,36,0,,,,False,True,False,
+Demon Armor,DemonArmor,Armor,Natural,0,0,0,,,,,8,0,,,,False,True,False,
+Demon Armor,DemonArmor2,Armor,Natural,0,0,0,,,,,20,0,,,,False,True,False,
+Devil Skin,DevilSkin,Armor,Natural,0,0,0,100,,,,80,0,,,,False,True,False,
+Dragon Scales,DragonScale,Armor,Natural,0,0,0,,,,,12,0,,,,False,True,False,
+Metal Plating,MetalPlating,Armor,Natural,0,0,0,,,,,10,0,,,,False,True,False,
+Snake Scales,SnakeScales,Armor,Natural,0,0,0,,,,,6,0,,,,False,True,False,
+Snake Scales,SnakeScales2,Armor,Natural,0,0,0,,,,,6,0,,,,False,True,False,
+Stone Armor,StoneArmor,Armor,Natural,0,0,0,,,,,8,0,,,,False,True,False,
+Stone Armor,StoneArmor2,Armor,Natural,0,0,0,,,,,18,0,,,,False,True,False,
+No Armor,NoArmor,Armor,None,0,0,0,,,,,0,0,,,,False,True,True,No armor equipped.
+Ariadne's Diadem,AriadnesDiadem,Helmet,Cloth,0,0,1,,,,,12,0,,,,False,True,False,A legendary diadem whose threadlike filigree guides the wearer safely through impossible danger.
+Circlet,Circlet,Helmet,Cloth,12000,0.4,2,,,,,8,0,,,Priest; Archbishop; Diviner; Astromancer,False,True,False,A thin metal circlet that focuses the wearer's will into a protective halo.
+Cloth Cap,ClothCap,Helmet,Cloth,45,0.95,1,,,,,1,0,,,,False,True,False,A simple padded cap that offers modest protection without interfering with spellcasting.
+Cohuleen Druith,CohuleenDruith,Helmet,Cloth,40000,0.2,1,,,,,10,0,Water,,,False,True,False,A fey cap steeped in old river magic and woven with reeds from a hidden ford.
+Enchanted Hood,EnchantedHood,Helmet,Cloth,3500,0.5,1,,,,,5,0,,,,False,True,False,A hood embroidered with protective thread that turns aside glancing blows.
+Jaapi,Jaapi,Helmet,Cloth,180,0.9,1,,,,,2,0,,,,False,True,False,A quilted cloth head wrap that cushions blows while staying light enough for spellwork.
+Mitre Hat,MitreHat,Helmet,Cloth,10000,0.4,1,,,,,9,0,,Priest; Archbishop; Diviner; Astromancer,,False,True,False,A ceremonial mitre reinforced with sacred thread and geomantic sigils.
+Turban,Turban,Helmet,Cloth,550,0.8,1,,,,,3,0,,,,False,True,False,Layered cloth wound into a protective wrap that softens glancing strikes.
+Witch Hat,WitchHat,Helmet,Cloth,1600,0.65,1,,,,,4,0,,,,False,True,False,A tall enchanted hat stiffened with hidden ribs and protective wards.
+Barbute,Barbute,Helmet,Heavy,3200,0.75,7,,,,,8,0,,,,False,True,False,A heavy helm with a T-shaped opening and strong cheek protection.
+Close Helm,CloseHelm,Helmet,Heavy,62000,0.2,14,,,,,18,0,,,,False,True,False,A fully enclosing heavy helm with a fitted visor and reinforced gorget.
+Great Helm,GreatHelm,Helmet,Heavy,13000,0.5,8,,,,,10,0,,,,False,True,False,A full steel helm with narrow eye slits and thick plates.
+Iron Helm,IronHelm,Helmet,Heavy,160,0.95,6,,,,,4,0,,,,False,True,False,A heavy iron helmet that favors protection over comfort.
+Kabuto,Kabuto,Helmet,Heavy,0,0,16,,,,,25,0,,,,False,True,False,A legendary heavy helm with layered plates and a commanding crest.
+Kettle Helm,KettleHelm,Helmet,Heavy,1200,0.85,5,,,,,6,0,,,,False,True,False,A brimmed iron helmet that sheds blows away from the face and neck.
+Plate Helm,PlateHelm,Helmet,Heavy,28000,0.4,9,,,,,12,0,,,,False,True,False,A masterwork plate helmet that completes a knight's heavy armor kit.
+Arming Cap,ArmingCap,Helmet,Light,8500,0.5,3,,,,,5,0,,,,False,True,False,A reinforced cap worn under heavier helms or alone by light fighters.
+Demon Cowl,DemonCowl,Helmet,Light,0,0,4,,,,,16,0,Death,,,False,True,False,A sinister cowl threaded with funereal charms and ash-dark silk.
+Katapu,Katapu,Helmet,Light,18000,0.4,2,,,,,7,0,,,,False,True,False,A light protective headpiece built from layered plates and lacquered leather.
+Leather Cap,LeatherCap,Helmet,Light,80,0.95,2,,,,,2,0,,,,False,True,False,A boiled leather cap that protects the head while keeping movement light.
+Pith Helmet,PithHelmet,Helmet,Light,700,0.85,3,,,,,3,0,,,,False,True,False,A stiffened light helmet with a broad brim and padded crown.
+Sōmen,Somen,Helmet,Light,48000,0.2,4,,,,,10,0,,,,False,True,False,A full-face light helm that protects without sacrificing agility.
+War Mask,WarMask,Helmet,Light,1800,0.75,2,,,,,4,0,,,,False,True,False,A hardened leather mask shaped to intimidate and deflect cuts.
+Cervelliere,Cervelliere,Helmet,Medium,10000,0.5,8,,,,,8,0,,,,False,True,False,A close-fitting steel skullcap that can be worn beneath other headgear.
+Chain Coif,ChainCoif,Helmet,Medium,900,0.85,5,,,,,4,0,,,,False,True,False,A hood of interlocking metal rings worn under or instead of a helmet.
+Helm of Rostam,HelmOfRostam,Helmet,Medium,0,0,8,,,,,19,Status-Berserk Status-Stun,,,,False,True,False,A heroic medium helm whose crest steadies the wearer against panic and stunning blows.
+Kulah Khud,KulahKhud,Helmet,Medium,2400,0.75,4,,,,,6,0,,,,False,True,False,A domed medium helm with cheek guards and a mail aventail.
+Scale Helm,ScaleHelm,Helmet,Medium,120,0.95,4,,,,,3,0,,,,False,True,False,A sturdy helmet of overlapping metal scales.
+Tarnhelm,Tarnhelm,Helmet,Medium,55000,0.2,11,,,,,13,0,,,,False,True,False,A mythic helm that bends sight around its wearer and grants invisibility.
+Tolga,Tolga,Helmet,Medium,22000,0.4,6,,,,,10,0,,,,False,True,False,A heavy medium helm with reinforced bands and a high nasal guard.
+Visored Sallet,VisoredSallet,Helmet,Medium,22000,0.4,6,,,,,10,0,,,,False,True,False,A fitted steel helmet with a narrow visor and strong neck guard.
+No Helmet,NoHelmet,Helmet,None,0,0,0,,,,,0,0,,,,False,True,True,No helmet equipped.
+Dragon's Tear,DragonTear,Misc,Ability,0,0.01,0,,,,,,0,,,,False,True,False,A crystallized tear shed by a dragon. Said to contain the essence of draconic vitality and regeneration. Extremely rare.
+Throwing Daggers,ThrowingDaggers,Misc,Ammunition,1000,0.7,0,,,,,,0,,,,False,False,False,A pack used by Hidden Blade. Daggers remaining: 10.
+Armor Piercing Bolts,ArmorPiercingBolts,Misc,Crossbow Bolts,1200,0.6,0,,,,,,0,,,,False,False,False,Hardened bolts that ignore armor. Bolts remaining: 10.
+Delayed Bolts,DelayedBolts,Misc,Crossbow Bolts,32000,0.1,0,,,,,,0,,,,False,False,False,Bolts that explode one turn after attaching. Bolts remaining: 10.
+Heat-Seeking Bolts,HeatSeekingBolts,Misc,Crossbow Bolts,6000,0.4,0,,,,,,0,,,,False,False,False,Bolts that curve toward warm targets. Bolts remaining: 10.
+Magic Bolts,MagicBolts,Misc,Crossbow Bolts,2500,0.5,0,,,,,,0,,,,False,False,False,Arcane ammunition for a Magic Crossbow. Bolts remaining: 10.
+Metal Bolts,MetalBolts,Misc,Crossbow Bolts,600,0.7,0,,,,,,0,,,,False,False,False,Durable ammunition with a high recovery chance. Bolts remaining: 10.
+Napalm Bolts,NapalmBolts,Misc,Crossbow Bolts,15000,0.2,0,,,,,,0,,,,False,False,False,Explosive bolts that spread burning material. Bolts remaining: 10.
+Wooden Bolts,WoodenBolts,Misc,Crossbow Bolts,250,0.75,0,,,,,,0,,,,False,False,False,Fragile wooden crossbow ammunition. Bolts remaining: 10.
+Cryptic Key,CrypticKey,Misc,Key,0,0,0,,,,,,0,,,,False,True,False,"A pristine key forged by Griswold. Its purpose is shrouded in mystery, but it feels important."
+Key,Key,Misc,Key,500,0.9,0,,,,,,0,,,,False,True,False,Unlocks a locked chest but is consumed.
+Master Key,MasterKey,Misc,Key,0,0,0,,,,,,0,,,,False,True,False,Unlocks doors that may lead to either valuable treasure or to powerful enemies.
+Old Key,OldKey,Misc,Key,50000,0.5,0,,,,,,0,,,,False,True,False,Unlocks doors that may lead to either valuable treasure or to powerful enemies.
+Censer of Choking Ash,CenserOfChokingAsh,Misc,Magic Tool,5000,0.35,0,,,,,,0,,,,False,True,False,A reusable censer that blankets the surrounding area in choking smoke. Required to cast Obscuration.
+Oculus,Oculus,Misc,Magic Tool,35000,0.25,0,,,,,,0,,,,False,True,False,An expensive arcane lens that reveals the telltale shimmer of fake walls.
+Bird Fat,BirdFat,Misc,Quest,0,0.1,0,,,,,,0,,,,False,True,False,"The fat from a bird, used as a fuel for lamps."
+Cursed Hops,CursedHops,Misc,Quest,0,1,0,,,,,,0,,,,False,True,False,"Hops from a cursed tree, these flower are used primarily in the creation of beer and other beverages, as well as herbal medicines."
+Dead Soldier,DeadSoldier,Misc,Quest,0,0,100,,,,,,0,,,,False,True,False,The partially eaten body of a very green soldier. He never stood a chance...
+Elemental Mote,ElementalMote,Misc,Quest,0,1,0,,,,,,0,,,,False,True,False,The elemental core of a Myrmidon.
+Feather,Feather,Misc,Quest,0,0.5,0,,,,,,0,,,,False,True,False,The feather of a bird.
+Jester Token,JesterToken,Misc,Quest,0,0,0,,,,,,0,,,,False,True,False,A carnival token that shimmers with magical energy. These are required to breach the Jester's inner sanctum.
+Leather,Leather,Misc,Quest,0,0.5,0,,,,,,0,,,,False,True,False,"The dried skin of an animal, used for various purposes."
+Mystery Meat,MysteryMeat,Misc,Quest,0,0.5,0,,,,,,0,,,,False,True,False,Unknown meat with a strange smell. Maybe you could do something with this.
+Phylactery,Phylactery,Misc,Quest,0,0.05,0,,,,,,0,,,,False,True,False,"The soul artifcat of a Lich, given up willingly to achieve immortality."
+Power Core,PowerCore,Misc,Quest,0,1,0,,,,,,0,,,,False,True,False,The power source of a Golem.
+Rat Tail,RatTail,Misc,Quest,0,1,0,,,,,,0,,,,False,True,False,The tail of a rat.
+Scrap Metal,ScrapMetal,Misc,Quest,0,0.5,0,,,,,,0,,,,False,True,False,A chunk of metal.
+Snake Skin,SnakeSkin,Misc,Quest,0,1,0,,,,,,0,,,,False,True,False,The skin of a snake.
+Ticket Piece,TicketPiece,Misc,Quest,0,0,0,,,,,,0,,,,False,True,False,A scrap of a lottery ticket with a few numbers on it.
+Acorn,Acorn,Misc,Reagent,25,0.5,0,,,,,,0,,,,False,True,False,A hardy oak seed prized by druids for growth rites.
+Fungus Spore,FungusSpore,Misc,Reagent,25,0.5,0,,,,,,0,,,,False,True,False,A powdery spore bundle useful in poison and decay rites.
+Hemlock Root,HemlockRoot,Misc,Reagent,25,0.5,0,,,,,,0,,,,False,True,False,A bitter root gathered for dangerous druidic mixtures.
+Reality Fragment,RealityFragment,Misc,Reagent,100000,0.01,0,,,,,,0,,,,False,True,False,A splinter of impossible matter. Thaumaturgists consume it to force a Miracle past the ordinary laws of conjuration.
+Soul Gem,SoulGem,Misc,Reagent,5000,0,0,,,,,,0,,,,False,True,False,A crystallized soul used to barter for stronger fiend-contract outcomes.
+Vine Seed,VineSeed,Misc,Reagent,25,0.5,0,,,,,,0,,,,False,True,False,A coiled seed that hums with grasping green life.
+Blank Scroll,BlankScroll,Misc,Scroll,2500,0.45,0,,,,,,0,,,,False,True,False,A prepared scroll with enough receptive ink to hold one stolen spell.
+Bless Scroll,BlessScroll,Misc,Scroll,1000,0.9,0,,,,,,0,,,,False,True,False,"Scroll inscribed with an incantation allowing the user to cast Bless, which increases attack damage for several turns. The scroll will be consumed when it is out of charges."
+Boost Scroll,BoostScroll,Misc,Scroll,8000,0.6,0,,,,,,0,,,,False,True,False,Scroll inscribed with an incantation allowing the user to cast the heal spell Boost. The scroll will be consumed when it is out of charges.
+Cleanse Scroll,CleanseScroll,Misc,Scroll,4000,0.7,0,,,,,,0,,,,False,True,False,Scroll inscribed with an incantation allowing the user to cast the holy spell Cleanse. The scroll will be consumed when it is out of charges.
+Death Scroll,DeathScroll,Misc,Scroll,15000,0.4,0,,,,,,0,,,,False,True,False,"Scroll inscribed with an incantation allowing the user to cast Desoul, which can kill the target. The scroll will be consumed when it is out of charges."
+Dispel Scroll,DispelScroll,Misc,Scroll,10000,0.5,0,,,,,,0,,,,False,True,False,"Scroll inscribed with an incantation allowing the user to cast Dispel, which can remove all positive status effects from the target. The scroll will be consumed when it is out of charges."
+Earth Scroll,EarthScroll,Misc,Scroll,3000,0.75,0,,,,,,0,,,,False,True,False,Scroll inscribed with an incantation allowing the user to cast the earth spell Tremor. The scroll will be consumed when it is out of charges.
+Electric Scroll,ElectricScroll,Misc,Scroll,3000,0.75,0,,,,,,0,,,,False,True,False,Scroll inscribed with an incantation allowing the user to cast the electric spell Shock. The scroll will be consumed when it is out of charges.
+Fire Scroll,FireScroll,Misc,Scroll,3000,0.75,0,,,,,,0,,,,False,True,False,Scroll inscribed with an incantation allowing the user to cast the fire spell Firebolt. The scroll will be consumed when it is out of charges.
+Holy Scroll,HolyScroll,Misc,Scroll,4000,0.7,0,,,,,,0,,,,False,True,False,Scroll inscribed with an incantation allowing the user to cast the holy spell Holy. The scroll will be consumed when it is out of charges.
+Ice Scroll,IceScroll,Misc,Scroll,3000,0.75,0,,,,,,0,,,,False,True,False,Scroll inscribed with an incantation allowing the user to cast the ice spell Ice Lance. The scroll will be consumed when it is out of charges.
+Photon Sphere Scroll,UltimaScroll,Misc,Scroll,100000,0.01,0,,,,,,0,,,,False,True,False,Scroll inscribed with an incantation allowing the user to cast the powerful Photon Sphere. The scroll will be consumed when it is out of charges.
+Sanctuary Scroll,SanctuaryScroll,Misc,Scroll,50000,0.25,0,,,,,,0,,,,False,True,False,"Scroll inscribed with an incantation allowing the user to cast Sanctuary, which can return the user to town. The scroll will be consumed when it is out of charges."
+Scroll,Scroll,Misc,Scroll,0,0,0,,,,,,0,,,,False,True,False,Base class for scrolls.
+Shadow Scroll,ShadowScroll,Misc,Scroll,4000,0.7,0,,,,,,0,,,,False,True,False,Scroll inscribed with an incantation allowing the user to cast the shadow spell Shadow Bolt. The scroll will be consumed when it is out of charges.
+Sheet Music: Battle Hymn,BattleHymnSheet,Misc,Scroll,2500,0,0,,,,,,0,,,,False,True,False,A martial hymn for battle.
+"Sheet Music: Bones, Thugs, and Harmony",BonesThugsHarmonySheet,Misc,Scroll,2500,0,0,,,,,,0,,,,False,True,False,A graveyard harmony.
+Sheet Music: Chorus Time,ChorusTimeSheet,Misc,Scroll,2500,0,0,,,,,,0,,,,False,True,False,A looping chorus.
+Sheet Music: Gold Trigger,GoldTriggerSheet,Misc,Scroll,2500,0,0,,,,,,0,,,,False,True,False,A glittering trigger phrase.
+Sheet Music: Low-defense-ian Rhapsody,LowDefenseRhapsodySheet,Misc,Scroll,2500,0,0,,,,,,0,,,,False,True,False,A tune that lowers defenses.
+Sheet Music: Ode to the Ramparts,RampartsOdeSheet,Misc,Scroll,2500,0,0,,,,,,0,,,,False,True,False,A protective ode.
+Sheet Music: Scores and Scores Score,ScoresAndScoresScoreSheet,Misc,Scroll,2500,0,0,,,,,,0,,,,False,True,False,A score about scoring.
+Sheet Music: Slow Ride,SlowRideSheet,Misc,Scroll,2500,0,0,,,,,,0,,,,False,True,False,A dragging song.
+Sheet Music: Symphony of Disfunction,DysfunctionSymphonySheet,Misc,Scroll,2500,0,0,,,,,,0,,,,False,True,False,A discordant enemy-breaking score.
+Shell Scroll,ShellScroll,Misc,Scroll,8000,0.6,0,,,,,,0,,,,False,True,False,Scroll inscribed with an incantation allowing the user to cast the heal spell Shell. The scroll will be consumed when it is out of charges.
+Silence Scroll,SilenceScroll,Misc,Scroll,8000,0.6,0,,,,,,0,,,,False,True,False,"Scroll inscribed with an incantation allowing the user to cast Silence, which can prevent an target from casting spell for a time. The scroll will be consumed when it is out of charges."
+Sleep Scroll,SleepScroll,Misc,Scroll,2000,0.85,0,,,,,,0,,,,False,True,False,Scroll inscribed with an incantation allowing the user to cast Sleep. The scroll will be consumed when it is out of charges.
+Stolen Magic Missile Scroll,InscribedSpellScroll,Misc,Scroll,5000,0.2,0,,,,,,0,,,,False,True,False,Scroll inscribed with a stolen copy of Magic Missile. Charges: 5. The scroll crumbles when its charges run out.
+Water Scroll,WaterScroll,Misc,Scroll,3000,0.75,0,,,,,,0,,,,False,True,False,Scroll inscribed with an incantation allowing the user to cast the water spell Water Jet. The scroll will be consumed when it is out of charges.
+Wind Scroll,WindScroll,Misc,Scroll,3000,0.75,0,,,,,,0,,,,False,True,False,Scroll inscribed with an incantation allowing the user to cast the wind spell Gust. The scroll will be consumed when it is out of charges.
+Brass Key,BrassKey,Misc,Special,0,0,0,,,,,,0,,,,False,True,False,"A brass key, similar to the key for your storage locker in the barracks."
+Chalice Map,ChaliceMap,Misc,Special,0,0,0,,,,,,0,,,,False,True,False,A weathered map whose ink appears almost completely faded.
+Draconite,Draconite,Misc,Special,0,0,0,,,,,,0,,,,False,True,False,"A red-black shard from Kaelenon's home realm, warm with restored draconic power."
+Empty Vial,EmptyVial,Misc,Special,0,0,0,,,,,,0,,,,False,True,False,"An empty vial, perfect for storing liquids and other tinctures."
+Excaliper,Excaliper,Misc,Special,0,0,0,,,,,,0,,,,False,True,False,The broken fragments of a failed experiment. It appears someone tried to forge the legendary sword Excalibur using a caliper tool. It did not go well...
+Golden Chalice,GoldenChalice,Misc,Special,0,0,0,,,,,,0,,,,False,True,False,"A golden chalice that once held the Holy Grail. It is said that the chalice can grant immense power to those who drink from it, but it is also cursed with a terrible thirst."
+Heartstone Shard,HeartstoneShard,Misc,Special,0,0,0,,,,,,0,,,,False,True,False,A mineral fragment that beats once when held still.
+Hexagonum,Relic3,Misc,Special,0,0,0,,,,,,0,,,,False,True,False,"The Hexagonum relic represents the natural world, since the hexagon is the considered the strongest shape and regularly found in nature."
+Infinitas,Relic6,Misc,Special,0,0,0,,,,,,0,,,,False,True,False,"Shaped like a circle, the Infinitas relic represents the never-ending struggle between good and evil."
+Joffrey's Letter,JoffreysLetter,Misc,Special,0,0,0,,,,,,0,,,,False,True,False,A letter written from Joffrey to the waitress; maybe there is some use of this.
+Joker,Joker,Misc,Special,0,1,0,,,,,,0,,,,False,True,False,They say that Joker's are wild; you'll see how wild this one is.
+Kaelenon's Portal Key,KaelenonPortalKey,Misc,Special,0,0,0,,,,,,0,,,,False,True,False,A glass-dark key printed from the Realm of Cambion terminal for Kaelenon's return home.
+Lucky Locket,LuckyLocket,Misc,Special,0,0,0,,,,,,0,,,,False,True,False,A simple gold necklace with a locket containing the picture of a fair lass.
+Luna,Relic4,Misc,Special,0,0,0,,,,,,0,,,,False,True,False,"The Moon, our celestial partner, is the inspiration for the Luna relic and represents love for others."
+Polaris,Relic5,Misc,Special,0,0,0,,,,,,0,,,,False,True,False,The Polaris relic resembles the shape of a star and represents the guiding light of the North Star.
+Quadrata,Relic2,Misc,Special,0,0,0,,,,,,0,,,,False,True,False,"The Quadrata relic symbolizes order, trust, stability, and logic, the hallmarks of a well-balanced person."
+Serpent Venom Heart,SerpentVenomHeart,Misc,Special,0,0,0,,,,,,0,,,,False,True,False,A pulsing knot of venom that refuses to die.
+Spring Water,SpringWater,Misc,Special,0,0,0,,,,,,0,,,,False,True,False,A vial of the finest spring water.
+Stormglass Feather,StormglassFeather,Misc,Special,0,0,0,,,,,,0,,,,False,True,False,A translucent feather with lightning trapped along its spine.
+Thieves Guild Signet,ThievesGuildSignet,Misc,Special,0,1,0,,,,,,0,,,,False,True,False,A blackened silver signet taken from the guild's hidden initiation trial.
+Triangulus,Relic1,Misc,Special,0,0,0,,,,,,0,,,,False,True,False,"The holy trinity of mind, body, and spirit are represented by the Triangulus relic."
+Unobtainium,Unobtainium,Misc,Special,0,0,0,,,,,,0,,,,False,True,False,The legendary ore that has only been theorized. Can be used to create ultimate weapons.
+Verdant Seed,VerdantSeed,Misc,Special,0,0,0,,,,,,0,,,,False,True,False,A sleeping seed warm with impossible spring.
+Blacksmith's Hammer,BlacksmithsHammer,Misc,Summon - Cacus,0,0,0,,,,,,0,,,,False,True,False,It looks like a normal blacksmithing hammer but something seems...special about this one.
+Chiryu Koma,ChiryuKoma,Misc,Summon - Dilong,0,0.1,0,,,,,,0,,,,False,True,False,"A game piece used for shogi, depicting an earth dragon."
+Lockpick Kit,LockpickKit,Misc,Tool,1500,0.55,0,,,,,,0,,,,False,True,False,"A compact set of picks, tension wrenches, and shims required to use lockpicking skills. Durability: 3."
+Monocane,Monocane,Misc,Tool,2500,0.45,0,,,,,,0,,,,False,True,False,A hollow gentleman's cane used to cast Sleeping Powder. Uses remaining: 5.
+Smoke Bomb,SmokeBomb,Misc,Tool,750,0.65,0,,,,,,0,,,,False,True,False,A packed clay pellet that bursts into concealing smoke. Required and consumed by Smoke Screen.
+Water Bladder,WaterBladder,Misc,Tool,400,0.8,0,,,,,,0,,,,False,True,False,Carries ten restorative sips of water. Sips remaining: 10.
+Amatoxin,Amatoxin,Misc,Toxin,15000,0,0,,,,,,0,,,,False,False,False,Standard: Severe poison with a chance to enfeeble. Severe: Critical poison that can kill in five turns if not cured.
+Hemotoxin,Hemotoxin,Misc,Toxin,8000,0,0,,,,,,0,,,,False,False,False,Standard: Moderate poison with a chance to blind. Severe: Severe poison and hemorrhaging.
+Mild Toxin,MildToxin,Misc,Toxin,1000,0,0,,,,,,0,,,,False,False,False,Standard: Mild poison. Severe: Moderate poison.
+Myotoxin,Myotoxin,Misc,Toxin,20000,0,0,,,,,,0,,,,False,False,False,Standard: Severe poison with a chance to stun. Severe: Critical poison that can petrify in three turns if not cured.
+Necrotoxin,Necrotoxin,Misc,Toxin,30000,0,0,,,,,,0,,,,False,False,False,Standard: Severe poison with a chance to incapacitate. Severe: Critical poison that can kill in two turns if not cured.
+Neurotoxin,Neurotoxin,Misc,Toxin,4000,0,0,,,,,,0,,,,False,False,False,"Standard: Mild poison with a chance to numb and disarm. Severe: Moderate poison and anaphylaxis, causing damage and silence."
+Deathcap Mushroom,DeathcapMushroom,Misc,Toxin Reagent,5000,0.2,0,,,,,,0,,,,False,False,False,A toxin reagent used to make Amatoxin.
+Lizard Venom,LizardVenom,Misc,Toxin Reagent,7500,0.15,0,,,,,,0,,,,False,False,False,A toxin reagent used to make Myotoxin.
+Scorpion Venom,ScorpionVenom,Misc,Toxin Reagent,1000,0.33,0,,,,,,0,,,,False,False,False,A toxin reagent used to make Neurotoxin.
+Shadow Venom,ShadowVenom,Misc,Toxin Reagent,10000,0.1,0,,,,,,0,,,,False,False,False,A toxin reagent used to make Necrotoxin.
+Snake Venom,SnakeVenom,Misc,Toxin Reagent,200,0.33,0,,,,,,0,,,,False,False,False,A toxin reagent used to make Mild Toxin.
+Viper Venom,ViperVenom,Misc,Toxin Reagent,2500,0.25,0,,,,,,0,,,,False,False,False,A toxin reagent used to make Hemotoxin.
+Golden Claw,GoldenClaw,OffHand,Crossbow,150000,0.01,8,45,,,,,45,,,,False,True,False,The Saintly Crossbow of the Supernaturally Luminous Golden Claw.
+Hand Crossbow,HandCrossbow,OffHand,Crossbow,4000,0.75,3,12,,,,,12,,,,False,True,False,A compact off-hand crossbow.
+Heavy Crossbow,HeavyCrossbow,OffHand,Crossbow,12000,0.5,12,20,,,,,20,,,,False,True,False,A weighty crossbow with substantial force.
+Light Crossbow,LightCrossbow,OffHand,Crossbow,6000,0.6,5,16,,,,,16,,,,False,True,False,"A light, dependable off-hand crossbow."
+Magic Crossbow,MagicCrossbow,OffHand,Crossbow,80000,0.2,4,35,,,,,35,,,,False,True,False,Magic Bolts fired from this crossbow also deal Arcane damage.
+Pistol Crossbow,PistolCrossbow,OffHand,Crossbow,48000,0.4,6,24,,,,,24,,,,False,True,False,A powerful crossbow in a compact frame.
+Repeating Crossbow,RepeatingCrossbow,OffHand,Crossbow,65000,0.3,10,30,,,,,30,,,,False,True,False,Its magazine can fire two bolts after each basic attack.
+Accordina,Accordina,OffHand,Musical Instrument,70000,0.3,5,,,,,,75,,,,False,True,False,
+Bagpipes,Bagpipes,OffHand,Musical Instrument,200000,0.05,7,,,,,,150,,,,False,True,False,
+Didgeridoo,Didgeridoo,OffHand,Musical Instrument,90000,0.2,4,,,,,,100,,,,False,True,False,
+GrandPiano,GrandPiano,OffHand,Musical Instrument,0,0,40,,,,,,0,,,,False,True,False,
+Lute,Lute,OffHand,Musical Instrument,5000,0.75,2,,,,,,20,,,,False,True,False,
+Lyre,Lyre,OffHand,Musical Instrument,16000,0.5,3,,,,,,30,,,,False,True,False,
+Mbira,Mbira,OffHand,Musical Instrument,8000,0.6,1,,,,,,25,,,,False,True,False,
+Shamisen,Shamisen,OffHand,Musical Instrument,300000,0.01,6,,,,,,200,,,,False,True,False,
+Sitar,Sitar,OffHand,Musical Instrument,125000,0.1,4,,,,,,130,,,,False,True,False,
+Tambourine,Tambourine,OffHand,Musical Instrument,55000,0.4,1,,,,,,50,,,,False,True,False,
+No OffHand,NoOffHand,OffHand,None,0,0,0,,,,,,0,,,,False,True,True,No off-hand equipped.
+Copper Ley Rod,CopperLeyRod,OffHand,Rod,19000,0.5,2,,,,,,38,,,,False,True,False,A straight copper rod etched with ley-line marks. It steadies minor omens and strengthens early rune work.
+Dowsing Rod,DowsingRod,OffHand,Rod,75000,0.2,2,,,,,,50,,,,False,True,False,"Also known as a divining rod, this oak Y-shaped branch is thought to help locate natural sources of water. But this is no normal dowsing rod, enhanced by the power of Poseidon. All water-based spells gain double the bonus to spell damage."
+Gaia's Branch,GaiasBranch,OffHand,Rod,75000,0.2,3,,,,,,50,,,,False,True,False,"Mother Earth embodies all the living things, including the tree of life. As a sacrifice to combat those who try to hurt her, a single branch was removed and infused with the power of her domain. All earth-based spells gain double the bonus to spell damage."
+Moonlit Hazel Rod,MoonlitHazelRod,OffHand,Rod,45000,0.4,2,,,,,,45,,,,False,True,False,"Hazel harvested under a clear moon and capped with silver. It answers elemental signs with a quieter, stronger pulse."
+Photon Sphere Scepter,UltimaScepter,OffHand,Rod,250000,0.01,5,,,,,,100,,,,False,True,False,"Crafted to harness the pure, devastating power of the Photon Sphere spell, this scepter is an artifact of forbidden magic and unparalleled potency. The Photon Sphere Scepter channels immense energy directly into the spell, making it a weapon of unmatched finality in battle, doubling the bonus to spell damage."
+Rainbow Rod,RainbowRod,OffHand,Rod,200000,0.05,3,,,,,,80,,,,False,True,False,"A radiant rod imbued with the essence of every elemental power, the Rainbow Rod amplifies the user's spells across all types, enhancing each with a vibrant, prismatic aura. All elemental spells gain double the bonus to spell damage."
+Scepter of Ifrit,ScepterIfrit,OffHand,Rod,75000,0.2,3,,,,,,50,,,,False,True,False,A flaming scepter imbued by the wrath of Ifrit. All fire-based spells gain double the bonus to spell damage.
+Willow Divining Rod,WillowDiviningRod,OffHand,Rod,12000,0.6,1,,,,,,30,,,,False,True,False,"A fresh willow switch wrapped in copper thread. It is humble work, but the forked tip answers many questions."
+Zephyruswand,Zephyruswand,OffHand,Rod,75000,0.2,1,,,,,,50,,,,False,True,False,"As the God of the West Wind, Zephyrus lends his power to user. All wind-based spells gain double the bonus to spell damage."
+Aspis,Aspis,OffHand,Shield,100,0.9,10,,,,,,0.1,,,,False,True,False,An aspis is a heavy wooden shield with a handle at the edge and is strapped to the forearm for greater mobility.
+Buckler,Buckler,OffHand,Shield,25,0.95,2,,,,,,0.05,,,,False,True,False,A small round shield held by a handle or worn on the forearm.
+Force Field,ForceField,OffHand,Shield,0,0,0,,,,,,0.1,,,,False,True,False,
+Force Field,ForceField2,OffHand,Shield,0,0,0,,,,,,0.2,,,,False,True,False,
+Force Field,ForceField3,OffHand,Shield,0,0,0,,,,,,0.3,,,,False,True,False,
+Glagwa,Glagwa,OffHand,Shield,2500,0.75,13,,,,,,0.2,,,,False,True,False,A glagwa is a bell-shaped shield made from iron and covered with leather for improved durability.
+Kite Shield,KiteShield,OffHand,Shield,15000,0.5,15,,,,,,0.25,,,,False,True,False,"A kite shield is a large, almond-shaped shield rounded at the top and curving down to a point or rounded point at the bottom. The term ""kite shield"" is a reference to the shield's unique shape, and is derived from its supposed similarity to a flying kite."
+Medusa Shield,MedusaShield,OffHand,Shield,150000,0.05,25,,,,,,0.4,,,,False,True,False,A shield that has been polished to resemble a mirror. Said to be used to defeat the Gorgon Medusa. Reflects back some magic.
+Pavise,Pavise,OffHand,Shield,42000,0.4,20,,,,,,0.3,,,,False,True,False,A pavise is an oblong shield similar to a tower shield that features a spike at the bottom to hold it in place to provide full body protection.
+Svalinn,Svalinn,OffHand,Shield,75000,0.2,18,,,,,,0.35,,,,False,True,False,"The svalinn is a mythical shield that symbolizes protection and strength, often depicted as an essential element in the cosmic balance."
+Targe,Targe,OffHand,Shield,500,0.85,7,,,,,,0.15,,,,False,True,False,"A targe is a circular, concave shield fitted with straps on the inside to be attached to the forearm, featuring metal studs on the face for durability and additional offensive power."
+Book,Book,OffHand,Tome,25,0.95,1,,,,,,6,,,,False,True,False,A book of notes taken during the character's apprenticeship.
+Codex of Eternity,CodexEternity,OffHand,Tome,150000,0.01,0,,,,,,130,,,,False,True,False,"A shimmering tome bound in starlight, with pages that shift and reform endlessly."
+Compendium of the Ancients,CompendiumAncients,OffHand,Tome,65000,0.2,5,,,,,,65,,,,False,True,False,"A colossal tome filled with records of forgotten civilizations, written in a language lost to time."
+Dragon Rouge,DragonRouge,OffHand,Tome,21000,0.5,4,,,,,,42,,,,False,True,False,"French for ""Red Dragon"", this mythical tome contains ancient knowledge passed down through the ages."
+Elemental Primer,ElementalPrimer,OffHand,Tome,10000,0.75,2,,,,,,30,,,,False,True,False,A multi-colored tome that shifts between elemental motifs depending on its surroundings.
+Infernal Grimoire,InfernalGrimoire,OffHand,Tome,2500,0.85,3,,,,,,22,,,,False,True,False,"A blackened, flame-wreathed book that burns to the touch but never turns to ash."
+Magus,Magus,OffHand,Tome,90000,0.05,3,,,,,,90,,,,False,True,False,A book of magical art written by a powerful wizard.
+Necronomicon,Necronomicon,OffHand,Tome,72000,0.2,6,,,,,,75,,Warlock; Necromancer,,False,True,False,"The Book of the Dead, a mystical grimoire written by an unknown author."
+Tome of Knowledge,TomeKnowledge,OffHand,Tome,500,0.9,3,,,,,,14,,,,False,True,False,A tome containing secrets to enhancing spells.
+Treatise of Balance,TreatiseBalance,OffHand,Tome,16000,0.6,3,,,,,,36,,,,False,True,False,"A weathered tome, marked with a taijitu, better known as the yin and yang symbol. The pages are filled with intricate diagrams illustrating the harmony of opposing forces."
+Vedas,Vedas,OffHand,Tome,50000,0.4,4,,,,,,54,,,,False,True,False,"A large body of religious texts, consisting of some of the oldest holy teachings."
+Elixir,Elixir,Potion,Elixir,20000,0.2,0.1,,,,,,0,,,,False,True,False,A potion that restores up to 50% of your health and mana.
+Megalixir,Megalixir,Potion,Elixir,50000,0.05,0.1,,,,,,0,,,,False,True,False,A potion that restores up to 100% of your health and mana.
+Great Health Potion,GreatHealthPotion,Potion,Health,600,0.7,0.1,,,,,,0,,,,False,True,False,A potion that restores up to 50% of your health.
+Health Potion,HealthPotion,Potion,Health,100,0.99,0.1,,,,,,0,,,,False,True,False,A potion that restores up to 25% of your health.
+Master Health Potion,MasterHealthPotion,Potion,Health,10000,0.3,0.1,,,,,,0,,,,False,True,False,A potion that restores up to 100% of your health.
+Super Health Potion,SuperHealthPotion,Potion,Health,3000,0.5,0.1,,,,,,0,,,,False,True,False,A potion that restores up to 75% of your health.
+Great Mana Potion,GreatManaPotion,Potion,Mana,1500,0.45,0.1,,,,,,0,,,,False,True,False,A potion that restores up to 50% of your mana.
+Mana Potion,ManaPotion,Potion,Mana,250,0.9,0.1,,,,,,0,,,,False,True,False,A potion that restores up to 25% of your mana.
+Master Mana Potion,MasterManaPotion,Potion,Mana,35000,0.15,0.1,,,,,,0,,,,False,True,False,A potion that restores up to 100% of your mana.
+Super Mana Potion,SuperManaPotion,Potion,Mana,8000,0.3,0.1,,,,,,0,,,,False,True,False,A potion that restores up to 75% of your mana.
+Aard of Being,AardBeing,Potion,Stat,250000,0.01,0.1,,,,,,0,,,,False,True,False,A potion that permanently increases all stats by 1.
+Charisma Potion,CharismaPotion,Potion,Stat,50000,0.3,0.1,,,,,,0,,,,False,True,False,A potion that permanently increases your charisma by 1.
+Constitution Potion,ConPotion,Potion,Stat,50000,0.3,0.1,,,,,,0,,,,False,True,False,A potion that permanently increases your constitution by 1.
+Dexterity Potion,DexterityPotion,Potion,Stat,50000,0.3,0.1,,,,,,0,,,,False,True,False,A potion that permanently increases your dexterity by 1.
+HP Potion,HPPotion,Potion,Stat,10000,0.7,0.1,,,,,,10,,,,False,True,False,A potion that permanently increases your max health by 10.
+Intelligence Potion,IntelPotion,Potion,Stat,50000,0.3,0.1,,,,,,0,,,,False,True,False,A potion that permanently increases your intelligence by 1.
+MP Potion,MPPotion,Potion,Stat,15000,0.6,0.1,,,,,,10,,,,False,True,False,A potion that permanently increases your max mana by 10.
+Strength Potion,StrengthPotion,Potion,Stat,50000,0.3,0.1,,,,,,0,,,,False,True,False,A potion that permanently increases your strength by 1.
+Wisdom Potion,WisdomPotion,Potion,Stat,50000,0.3,0.1,,,,,,0,,,,False,True,False,A potion that permanently increases your wisdom by 1.
+Antidote,Antidote,Potion,Status,250,0.9,0.1,,,,,,0,,,,False,True,False,A potion that will cure poison.
+Bandage,Bandage,Potion,Status,1000,0.8,0.1,,,,,,0,,,,False,True,False,A linen bandage that will stop bleeding.
+Echo Screen,EchoScreen,Potion,Status,1000,0.8,0.1,,,,,,0,,,,False,True,False,A potion that will cure silence.
+Eye Drop,EyeDrop,Potion,Status,250,0.9,0.1,,,,,,0,,,,False,True,False,A potion that will cure blindness.
+Phoenix Down,PhoenixDown,Potion,Status,2000,0.7,0.1,,,,,,0,,,,False,True,False,A potion that will cure doom status.
+Remedy,Remedy,Potion,Status,5000,0.2,0.1,,,,,,0,,,,False,True,False,A potion that will cure all negative status effects.
+Status,Status,Potion,Status,0,0,0.1,,,,,,0,,,,False,True,False,Base class for status items.
+Broadaxe,Broadaxe,Weapon,Battle Axe,4500,0.85,17,30,0.15,2,False,,0,,,,False,True,False,A broadaxe is broad-headed axe with a large flared blade.
+Double Axe,DoubleAxe,Weapon,Battle Axe,10000,0.75,22,42,0.2,2,False,,0,,,,False,True,False,The double axe is basically a broadaxe but with a blade on each side of the axehead.
+Greataxe,Greataxe,Weapon,Battle Axe,59000,0.4,26,68,0.3,2,False,,0,,,,False,True,False,A greataxe is a scaled up version of the double axe with greater mass and killing power.
+Jarnbjorn,Jarnbjorn,Weapon,Battle Axe,0,0,20,110,0.33,2,False,,0,,,,True,True,False,"Legendary axe of Thor Odinson. Old Norse for ""iron bear""."
+Mattock,Mattock,Weapon,Battle Axe,800,0.9,15,12,0.1,2,False,,0,,,,False,True,False,"A mattock is a hand tool used for digging, prying, and chopping, similar to the pickaxe."
+Parashu,Parashu,Weapon,Battle Axe,27500,0.5,20,56,0.25,2,False,,0,,,,False,True,False,A parashu is a single-bladed battle axe with an arced edge extending beyond 180 degrees and paired with a spike on the non-cutting edge.
+Tabarzin,Tabarzin,Weapon,Battle Axe,100000,0.2,24,86,0.33,2,False,,0,,,,False,True,False,"The tabarzin is notable for its single-bladed axe head, accompanied by a spike on the opposite side. Typically adorned with intricate carvings or inlays, the tabarzin reflects the a unique artistry, blending practical lethality with cultural craftsmanship."
+Mace,Mace,Weapon,Club,2000,0.85,6,18,0.05,1,True,,0,,,,False,True,False,"A mace is a blunt weapon, a type of club or virge that uses a heavy head on the end of a handle to deliver powerful strikes. A mace typically consists of a strong, heavy, wooden or metal shaft, often reinforced with metal, featuring a head made of iron."
+Mjolnir,Mjolnir,Weapon,Club,0,0,8,76,0.25,1,True,,0,,,,True,True,False,"Mjolnir, wielded by the Thunder god Thor, is depicted in Norse mythology as one of the most fearsome and powerful weapons in existence, capable of leveling mountains."
+Morgenstern,Morgenstern,Weapon,Club,43500,0.4,10,48,0.15,1,True,,0,,,,False,True,False,"A morgenstern, or morning star, is a club-like weapon consisting of a shaft with an attached ball adorned with several spikes."
+Pernach,Pernach,Weapon,Club,18000,0.5,10,36,0.1,1,True,,0,,,,False,True,False,A pernach is a type of flanged mace used to penetrate even heavy armor plating.
+Shishpar,Shishpar,Weapon,Club,85000,0.2,9,62,0.2,1,True,,0,,,,False,True,False,"A shishpar is a heavy, spiked mace traditionally used to crush armor and bone in combat. Its distinctive feature is the large head adorned with several protruding flanges or spikes, designed to maximize the impact force while easily breaking through defenses."
+War Hammer,WarHammer,Weapon,Club,4500,0.75,10,26,0.075,1,True,,0,,,,False,True,False,A war hammer is a club with a head featuring both a blunt end and a spike on the other end.
+Baselard,Baselard,Weapon,Dagger,1500,0.85,3,10,0.2,1,True,,0,,,,False,True,False,A baselard is a short bladed weapon with an H-shaped hilt.
+Carnwennan,Carnwennan,Weapon,Dagger,0,0,2,48,0.5,1,True,,0,,,,True,True,False,"King Arthur's dagger, sometimes described to shroud the user in shadow."
+Dirk,Dirk,Weapon,Dagger,125,0.95,2,4,0.15,1,True,,0,,,,False,True,False,A dirk is a long bladed thrusting dagger with a smooth jumpshot.
+Khanjar,Khanjar,Weapon,Dagger,75000,0.2,3,36,0.45,1,True,,0,,,,False,True,False,"A khanjar is a curved dagger of Middle Eastern origin, known for its distinctive double-edged blade that tapers to a sharp point. It is designed for swift, precise strikes, making it ideal for close-quarters encounters."
+Kris,Kris,Weapon,Dagger,5000,0.75,3,14,0.25,1,True,,0,,,,False,True,False,"A Kris is an asymmetrical dagger with distinctive blade-patterning achieved through alternating laminations of iron and nickelous iron, easily identified by its distinct wavy blade."
+Kukri,Kukri,Weapon,Dagger,42000,0.4,4,26,0.4,1,True,,0,,,,False,True,False,"A kukri is a traditional Nepalese knife, recognized for its distinctive inwardly curved blade that widens towards the tip. The blade's unique design delivers powerful strikes, making it ideal for combat, especially in close quarters."
+Rondel,Rondel,Weapon,Dagger,17000,0.5,3,22,0.33,1,True,,0,,,,False,True,False,"A type of dagger with a stiff-blade, named for the round hand guard and round or spherical pommel."
+Bagh Nahk,BaghNahk,Weapon,Fist,45000,0.4,1,30,0.25,1,True,,0,,,,False,True,False,"The bagh nahk is a 'fist-load, claw-like' dagger designed to fit over the knuckles or be concealed under and against the palm."
+Battle Gauntlet,BattleGauntlet,Weapon,Fist,20000,0.5,3,24,0.2,1,True,,0,,,,False,True,False,"A battle gauntlet is a type of glove that protects the hand and wrist of a combatant, constructed with metal platings to inflict additional damage."
+Brass Knuckles,BrassKnuckles,Weapon,Fist,2000,0.85,1,12,0.1,1,True,,0,,,,False,True,False,Brass knuckles are pieces of metal shaped to fit around the knuckles to add weight during hand-to-hand combat.
+Cestus,Cestus,Weapon,Fist,7500,0.75,1,16,0.15,1,True,,0,,,,False,True,False,A cestus is a battle glove that is typically used in gladiatorial events.
+God's Hand,GodsHand,Weapon,Fist,0,0,0,52,0.33,1,True,,0,Holy,,,True,True,False,"With the appearance of an ordinary white glove, this weapon is said to be imbued with the power of God."
+Indra's Fist,IndrasFist,Weapon,Fist,80000,0.2,1,40,0.3,1,True,,0,Electric,,,False,True,False,"Indra's Fist is a powerful weapon named after the Hindu god of thunder and lightning and is said to embody the sheer force and power of a thunderstorm. The weapon crackles with electric energy, emitting a faint glow as if it holds the essence of a storm within."
+Earth Hammer,EarthHammer,Weapon,Hammer,29000,0.5,20,50,0.15,2,False,,0,Earth,,,False,True,False,"A large, 2-handed hammer infused with the power of Gaia."
+Great Maul,GreatMaul,Weapon,Hammer,60000,0.4,30,72,0.2,2,False,,0,,,,False,True,False,A great maul looks similar to a sledgehammer but is significantly larger in all aspects.
+Skullcrusher,Skullcrusher,Weapon,Hammer,0,0,25,120,0.25,2,False,,0,,,,True,True,False,A massive hammer with the power to pulverize an enemy's skull to powder.
+Sledgehammer,Sledgehammer,Weapon,Hammer,800,0.9,20,14,0.075,2,False,,0,,,,False,True,False,"A sledgehammer is a tool with a large, flat, metal head, attached to a long handle that gathers momentum during a swing to apply a large force upon the target."
+Spike Maul,SpikeMaul,Weapon,Hammer,7500,0.75,22,36,0.12,2,False,,0,,,,False,True,False,A spike maul is similar to a sledgehammer except for having a more narrow face for increased damage.
+Streithammer,Streithammer,Weapon,Hammer,98000,0.2,26,94,0.25,2,False,,0,,,,False,True,False,"The streithammer is a fearsome, two-handed war hammer designed for battle, particularly against heavily armored foes. Its solid steel head features a broad, flat face for crushing blows and a sharp, opposing spike for piercing armor or breaking shields."
+Bastard Sword,Bastard,Weapon,Longsword,700,0.9,14,10,0.125,2,False,,0,,,,False,True,False,"The bastard sword, also referred to as a hand-and-a-half sword, is a type of longsword that typically requires two hands to wield but can be wielded in one if the need arises."
+Changdao,Changdao,Weapon,Longsword,28000,0.5,16,50,0.25,2,False,,0,,,,False,True,False,"A single-edged two-hander over seven feet long, roughly translates to 'long saber'."
+Claymore,Claymore,Weapon,Longsword,4200,0.85,20,28,0.15,2,False,,0,,,,False,True,False,"The claymore is a two-handed sword featuring quillons (crossguards between the hilt and the blade) are angled in towards the blade and end in quatrefoils, and a tongue of metal protrudes down either side of the blade."
+Executioner's Blade,Executioner,Weapon,Longsword,0,0,20,100,0.4,2,False,,0,,,,True,True,False,"Designed specifically for decapitation, the Executioner's Blade is a large, two-handed sword with a broad blade that is highly efficient at killing."
+Flamberge,Flamberge,Weapon,Longsword,61000,0.4,18,62,0.33,2,False,,0,Fire,,,False,True,False,The flamberge is a type of flame-bladed sword featuring a signature wavy blade.
+Katana,Katana,Weapon,Longsword,100000,0.2,18,78,0.4,2,False,,0,,,,False,True,False,"The katana is a traditional Japanese sword characterized by its curved, slender, single-edged blade, circular or squared guard, and long grip suitable for two-handed use. Renowned for its sharpness, the katana was crafted with exceptional skill, incorporating a folded steel forging process that produced both resilience and flexibility."
+Zweihander,Zweihander,Weapon,Longsword,9500,0.75,18,38,0.2,2,False,,0,,,,False,True,False,"German for 'two-handed', the zweihander is a double-edged, straight blade with a cruciform hilt."
+Alligator Tail,AlligatorTail,Weapon,Natural,0,0,0,24,0.1,1,False,,0,,,,False,True,False,
+Bear Claw,BearClaw,Weapon,Natural,0,0,0,24,0.2,1,True,,0,,,,False,True,False,
+Bite,Bite,Weapon,Natural,0,0,0,6,0.05,1,False,,0,,,,False,True,False,
+Bite,Bite2,Weapon,Natural,0,0,0,30,0.2,1,False,,0,,,,False,True,False,
+Bite,VampireBite,Weapon,Natural,0,0,0,20,0.15,1,False,,0,,,,False,True,False,
+Claw,Claw,Weapon,Natural,0,0,0,8,0.2,1,True,,0,,,,False,True,False,
+Claw,Claw2,Weapon,Natural,0,0,0,20,0.25,1,True,,0,,,,False,True,False,
+Claw,Claw3,Weapon,Natural,0,0,0,36,0.33,1,True,,0,,,,False,True,False,
+Demon Claw,DemonClaw,Weapon,Natural,0,0,0,10,0.25,1,True,,0,,,,False,True,False,
+Demon Claw,DemonClaw2,Weapon,Natural,0,0,0,30,0.33,1,True,,0,,,,False,True,False,
+Dragon Claw,DragonClaw,Weapon,Natural,0,0,0,28,0.2,1,True,,0,,,,False,True,False,
+Dragon Claw,DragonClaw2,Weapon,Natural,0,0,0,70,0.33,1,True,,0,,,,False,True,False,
+Dragon Tail,DragonTail,Weapon,Natural,0,0,0,40,0.15,1,True,,0,,,,False,True,False,
+Dragon Tail,DragonTail2,Weapon,Natural,0,0,0,90,0.3,1,True,,0,,,,False,True,False,
+Earth Maw,EarthMaw,Weapon,Natural,0,0,0,60,0.2,1,False,,0,Earth,,,False,True,False,
+Elemental Blade,ElementalBlade,Weapon,Natural,0,0,0,30,0.25,1,True,,0,,,,False,True,False,
+Gaze,Gaze,Weapon,Natural,0,0,0,0,0,1,False,,0,,,,False,True,False,
+Ice Shard,IceShard,Weapon,Natural,0,0,0,30,0.33,1,False,,0,Ice,,,False,True,False,
+Invisible Blade,InvisibleBlade,Weapon,Natural,0,0,0,18,0.25,1,True,,0,Shadow,,,False,True,False,
+Laser,Laser,Weapon,Natural,0,0,0,40,0.25,1,True,,0,,,,False,True,False,
+Laser,Laser2,Weapon,Natural,0,0,0,70,0.4,1,True,,0,,,,False,True,False,
+Lion Paw,LionPaw,Weapon,Natural,0,0,0,34,0.15,1,True,,0,,,,False,True,False,
+Nightmare Hoof,NightmareHoof,Weapon,Natural,0,0,0,26,0.25,1,True,,0,Fire,,,False,True,False,
+Pincers,Pincers,Weapon,Natural,0,0,0,8,0.15,1,True,,0,,,,False,True,False,
+Pincers,Pincers2,Weapon,Natural,0,0,0,12,0.2,1,True,,0,,,,False,True,False,
+Snake Fang,SnakeFang,Weapon,Natural,0,0,0,10,0.25,1,False,,0,,,,False,True,False,
+Snake Fang,SnakeFang2,Weapon,Natural,0,0,0,32,0.33,1,False,,0,,,,False,True,False,
+Stinger,Stinger,Weapon,Natural,0,0,0,10,0.25,1,False,,0,,,,False,True,False,
+Tentacle,Tentacle,Weapon,Natural,0,0,0,24,0.2,1,True,,0,,,,False,True,False,"A slender, flexible limb or appendage in an animal, especially around the mouth of an invertebrate, used for grasping or moving about, or bearing sense organs."
+Tentacle,Tentacle2,Weapon,Natural,0,0,0,48,0.3,1,True,,0,,,,False,True,False,"A slender, flexible limb or appendage in an animal, especially around the mouth of an invertebrate, used for grasping or moving about, or bearing sense organs."
+Unicorn Horn,UnicornHorn,Weapon,Natural,0,0,0,28,0.2,1,True,,0,Holy,,,False,True,False,
+attacks,Cannon,Weapon,Natural,0,0,0,80,0.15,1,True,,0,,,,False,True,False,
+attacks,DevilBlade,Weapon,Natural,0,0,0,100,0.33,1,True,,0,,,,False,True,False,
+bites,CerberusBite,Weapon,Natural,0,0,0,60,0.25,1,False,,0,Fire,,,False,True,False,
+claws,CerberusClaw,Weapon,Natural,0,0,0,40,0.25,1,True,,0,,,,False,True,False,
+touches,LichHand,Weapon,Natural,0,0,0,35,0.2,1,True,,0,Ice,,,False,True,False,
+Ninjato,Ninjato,Weapon,Ninja Blade,0,0,5,50,0.5,1,True,,0,,Ninja,,True,True,False,A mythical blade used by ninjas said to be possessed by a demon who steals the soul of those slain by the weapon.
+Tanto,Tanto,Weapon,Ninja Blade,44000,0.4,5,28,0.33,1,True,,0,,Ninja,,False,True,False,"A tanto is a double-edged, straight blade, designed primarily as a stabbing weapon, but the edge can be used for slashing as well."
+Wakizashi,Wakizashi,Weapon,Ninja Blade,87000,0.2,7,38,0.4,1,True,,0,,Ninja,,False,True,False,"A wakizashi is a curved, single-edged blade with a narrow cross-section, producing a deadly strike."
+Bare Hands,NoWeapon,Weapon,None,0,0,0,2,0.025,1,True,,0,,,,False,True,True,Nothing but good ol' lefty and righty.
+Framea,Framea,Weapon,Polearm,800,0.9,10,10,0.15,2,False,,0,,,,False,True,False,A type of spear used by the ancient Germanic tribes and is a versatile weapon used in both melee combat and as a projectile.
+Gungnir,Gungnir,Weapon,Polearm,0,0,14,96,0.4,2,False,,0,,,,True,True,False,"Legendary spear of the god Odin. Old Norse for ""swaying one""."
+Halberd,Halberd,Weapon,Polearm,9000,0.75,15,36,0.25,2,False,,0,,,,False,True,False,A halberd is a two-handed pole weapon consisting of an axe blade topped with a spike mounted on a long shaft.
+Naginata,Naginata,Weapon,Polearm,26500,0.5,14,50,0.3,2,False,,0,,,,False,True,False,A naginata consists of a wooden or metal pole with a curved single-edged blade on the end that has a round handguard between the blade and shaft.
+Partisan,Partisan,Weapon,Polearm,3500,0.85,12,26,0.2,2,False,,0,,,,False,True,False,"A partisan consists of a spearhead mounted on a long wooden shaft, with protrusions on the sides which aid in parrying sword thrusts."
+Ranseur,Ranseur,Weapon,Polearm,95000,0.2,15,76,0.35,2,False,,0,,,,False,True,False,"A ranseur is a polearm characterized by a central spearhead flanked by two outward-curving prongs, giving it a trident-like appearance. Its primary purpose was to parry or entangle an opponent's weapon while still maintaining the thrusting capability of a spear."
+Trident,Trident,Weapon,Polearm,57000,0.4,16,62,0.33,2,False,,0,Water,,,False,True,False,"A trident is a 3-pronged spear, the preferred weapon of the Sea god Poseidon."
+Baston,Baston,Weapon,Staff,800,0.9,6,8,0.05,2,False,,0,,,,False,True,False,"A baston is a long, light, and flexible staff weapon that is ideal for speed and precision."
+Dragon Staff,DragonStaff,Weapon,Staff,0,0,9,70,0.3,2,False,,0,,Wizard; Necromancer; Master Monk; Lycan; Astromancer; Soulcatcher,,True,True,False,"A magic staff, shaped to appear as a dragon."
+Holy Staff,HolyStaff,Weapon,Staff,25000,0.5,6,30,0.15,2,False,,0,Holy,Priest; Archbishop,,False,True,False,A staff that emits a holy light. Only equipable by priests and archbishops.
+Ironshod Staff,IronshodStaff,Weapon,Staff,4000,0.85,10,18,0.1,2,False,,0,,,,False,True,False,"An iron walking stick, making it ideal for striking."
+Khatvanga,Khatvanga,Weapon,Staff,100000,0.2,7,56,0.25,2,False,,0,,,,False,True,False,"A khatvanga is a ritual staff that consists of a wooden or metal shaft adorned with a trident or skull, symbolizing its esoteric nature."
+Mithrilshod Staff,MithrilshodStaff,Weapon,Staff,65000,0.4,8,44,0.2,2,False,,0,,,,False,True,False,"A mithril walking stick, making it ideal for striking."
+Princess Guard,PrincessGuard,Weapon,Staff,0,0,4,74,0.25,2,False,,0,,Archbishop,,True,True,False,A mythical staff from another world.
+Quarterstaff,Quarterstaff,Weapon,Staff,250,0.95,6,4,0.025,2,False,,0,,,,False,True,False,A quarterstaff is a shaft of hardwood about eight feet long fitted with metal tips on each end.
+Rune Staff,RuneStaff,Weapon,Staff,27500,0.5,7,36,0.18,2,False,,0,,,,False,True,False,A wooden staff with a magical rune embedded in the handle.
+Ruyi Jingu Bang,RuyiJinguBang,Weapon,Staff,0,0,8,72,0.28,2,False,,0,,Master Monk,,True,True,False,A legendary iron staff that changes weight with the wielder's breath and carries chi cleanly through every strike.
+Serpent Staff,SerpentStaff,Weapon,Staff,8000,0.75,8,26,0.12,2,False,,0,,,,False,True,False,"A magic staff, shaped to appear as a snake."
+Giant's Club,GiantClub,Weapon,Summon,0,0,0,50,0.1,2,False,,0,,,,False,True,False,"A massive club wielded by Patagon, the giant summon creature."
+Kobold Dagger,KoboldDagger,Weapon,Summon,0,0,0,50,0.4,1,False,,0,,,,False,True,False,
+Scythe,Scythe,Weapon,Summon,0,0,0,80,0.3,2,False,,0,,,,False,True,False,
+Vulcan's Hammer,VulcansHammer,Weapon,Summon,0,0,0,45,0.25,2,False,,0,,,,False,True,False,A blacksmith's hammer that allegedly belonged to the fire god Vulcan.
+Excalibur,Excalibur,Weapon,Sword,0,0,8,60,0.35,1,True,,0,,,,True,True,False,"The legendary sword of King Arthur, bestowed upon him by the Lady of the Lake."
+Excalibur,Excalibur2,Weapon,Sword,0,0,8,60,0.35,1,True,,0,,,,True,True,False,"An upgraded version of the legendary sword of King Arthur, bestowed upon him by the Lady of the Lake."
+Falchion,Falchion,Weapon,Sword,90000,0.2,10,46,0.3,1,True,,0,,,,False,True,False,"A falchion is a one-handed sword with a broad, curved blade that is designed to deliver powerful cleaving and chopping blows. Its slight curve and weight distribution make it capable of delivering decisive strikes, while the sturdy design provides balance for quick, fluid attacks."
+Jian,Jian,Weapon,Sword,2000,0.85,6,14,0.1,1,True,,0,,,,False,True,False,"A jian is a double-edged straight sword with a guard that protects the wielder from opposing blades,"
+Khopesh,Khopesh,Weapon,Sword,47000,0.4,10,36,0.25,1,True,,0,,,,False,True,False,A khopesh is a sickle-shaped sword that evolved from battle axes and that can be used to disarm an opponent.
+Rapier,Rapier,Weapon,Sword,125,0.95,5,6,0.075,1,True,,0,,,,False,True,False,A rapier is a slender and sharply pointed two-edged blade with a protective hilt.
+Shamshir,Shamshir,Weapon,Sword,21000,0.5,10,28,0.2,1,True,,0,,,,False,True,False,A shamshir has a radically curved blade featuring a slim blade with almost no taper until the very tip.
+Talwar,Talwar,Weapon,Sword,5500,0.75,8,20,0.15,1,True,,0,,,,False,True,False,"A talwar is curved, single-edged sword with an iron disc hilt and knucklebow, and a fullered blade."

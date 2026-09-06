@@ -60,6 +60,8 @@ priority, owner documents define current behavior and decision gates, and
   inspection art, and scale rules.
 - [`SOUND_SYSTEM.md`](SOUND_SYSTEM.md) — audio runtime, routing, assets, and
   future audio gates.
+- [`spreadsheets/README.md`](spreadsheets/README.md) — generated CSV snapshots
+  for classes, races, specials, items, enemies, quests, and Google Sheets.
 
 ## Architecture And Development References
 

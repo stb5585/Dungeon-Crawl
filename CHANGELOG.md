@@ -4,6 +4,13 @@
 
 ### Development Tool And Code Cleanup
 
+- Separated optional Class Ring modifiers from ordinary second-promotion
+  progression: Templar Ordered Blessings and Archbishop Divine Intervention
+  upgrades are terminal leaves, while ambiguous Arcane Trickster, Hierophant,
+  and Troubadour tree labels now distinguish their non-ring mechanics.
+- Returned Volcano and Weaken Mind to enemy-learned acquisition, made Tephra
+  and Neural Connection optional terminal modifiers, completed rank metadata
+  for Volcano and Stupefy, and refunds retired tree-node purchases on load.
 - Repaired the balance-suite enemy roster after the enemy `Conjurer` was
   renamed to `Necromancer`, and added a regression test for CLI startup.
 - Restored the Power Core quest reward path for every terminal class, removed
@@ -16,6 +23,9 @@
 
 ### Documentation Consolidation And Refactor Sequencing
 
+- Replaced stale manually maintained game spreadsheets with 83 deterministic
+  CSV exports covering current character, special, item, enemy, and quest
+  catalogs, plus a regeneration tool and drift regression.
 - Replaced the shipped-history-heavy roadmap with a forward-looking priority
   map centered on foundational gameplay refactors before broad manual
   playtesting.
