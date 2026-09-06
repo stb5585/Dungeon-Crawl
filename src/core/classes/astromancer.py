@@ -36,11 +36,13 @@ LEARNABLE_SPELL_RANKS = {
     "Hurricane": 1,
     "Mudslide": 1,
     "Blinding Fog": 1,
+    "Stupefy": 1,
     "Tornado": 2,
     "Poison Breath": 2,
     "Earthquake": 2,
     "Tsunami": 2,
     "Petrify": 2,
+    "Volcano": 2,
     "Photon Sphere": 3,
 }
 

@@ -1,5 +1,6 @@
 name: Volcano
 type: Spell
+rank: 2
 subtype: Fire
 description: A mighty eruption burst out from beneath the enemy' feet, dealing massive fire damage.
 cost: 24

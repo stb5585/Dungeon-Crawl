@@ -322,7 +322,7 @@ class Disciple(Humanoid):
 
 class BlackSlime(Slime):
     """
-    Stupefy - Enemy Skill learnable by Diviner/Astromancer
+    Stupefy - Rank 1 enemy spell learnable by Diviner/Astromancer.
     """
 
     def __init__(self):

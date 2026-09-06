@@ -63,7 +63,7 @@ the class also gains a broad external repertoire, such as stolen spells.
 | Inquisitor | Finished | 23 / 24 points | [Reference](footpad/first-promotion/inquisitor.md) | [SVG](footpad/first-promotion/inquisitor.svg) |
 | Seeker | Finished | 28 / 30 points | [Reference](footpad/second-promotion/seeker.md) | [SVG](footpad/second-promotion/seeker.svg) |
 | Spell Stealer | Finished | 12 / 19 points | [Reference](footpad/first-promotion/spell-stealer.md) | [SVG](footpad/first-promotion/spell-stealer.svg) |
-| Arcane Trickster | Finished | 12 / 30 points | [Reference](footpad/second-promotion/arcane-trickster.md) | [SVG](footpad/second-promotion/arcane-trickster.svg) |
+| Arcane Trickster | Finished | 11 / 28 points | [Reference](footpad/second-promotion/arcane-trickster.md) | [SVG](footpad/second-promotion/arcane-trickster.svg) |
 
 ## Healer Lineage
 
@@ -91,7 +91,7 @@ the class also gains a broad external repertoire, such as stolen spells.
 | Ranger | Finished | 25 | [Reference](pathfinder/first-promotion/ranger.md) | [SVG](pathfinder/first-promotion/ranger.svg) |
 | Lycan | Finished | 28 / 30 points | [Reference](pathfinder/second-promotion/lycan.md) | [SVG](pathfinder/second-promotion/lycan.svg) |
 | Archdruid | Finished | 28 / 30 points | [Reference](pathfinder/second-promotion/archdruid.md) | [SVG](pathfinder/second-promotion/archdruid.svg) |
-| Astromancer | Finished | 28 / 30 points | [Reference](pathfinder/second-promotion/astromancer.md) | [SVG](pathfinder/second-promotion/astromancer.svg) |
+| Astromancer | Finished | 27 / 29 points | [Reference](pathfinder/second-promotion/astromancer.md) | [SVG](pathfinder/second-promotion/astromancer.svg) |
 | Soulcatcher | Finished | 28 / 30 points | [Reference](pathfinder/second-promotion/soulcatcher.md) | [SVG](pathfinder/second-promotion/soulcatcher.svg) |
 | Beast Master | Finished | 22 | [Reference](pathfinder/second-promotion/beast-master.md) | [SVG](pathfinder/second-promotion/beast-master.svg) |
 

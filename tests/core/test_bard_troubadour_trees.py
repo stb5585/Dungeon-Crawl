@@ -82,6 +82,8 @@ def test_troubadour_tree_has_twenty_seven_authored_terminal_nodes():
         "Syncopated Strike",
         "Countermelody",
     } <= {node.name for node in tree.nodes}
+    assert "Cutting Refrain" in {node.name for node in tree.nodes}
+    assert "Cutting Encore" not in {node.name for node in tree.nodes}
 
 
 def test_compose_is_inherent_and_selects_matching_custom_song():

@@ -80,7 +80,8 @@ TREE_SIZE_OVERRIDES = {
     "Seeker": (28, 28),
     # Compact stolen-magic trees use higher node costs to create build pressure.
     "Spell Stealer": (12, 12),
-    "Arcane Trickster": (12, 12),
+    # Enemy spells remain external; Neural Connection is an optional mastery leaf.
+    "Arcane Trickster": (11, 11),
     # Four route disciplines and one shared ministry support both promotions.
     "Cleric": (26, 26),
     "Templar": (28, 28),
@@ -97,7 +98,8 @@ TREE_SIZE_OVERRIDES = {
     "Lycan": (28, 28),
     "Archdruid": (28, 28),
     "Diviner": (22, 22),
-    "Astromancer": (28, 28),
+    # Volcano remains witnessed enemy magic; Tephra is an optional mastery leaf.
+    "Astromancer": (27, 27),
     # Totem is inherent; three routes and an optional omen branch contain 19 nodes.
     "Shaman": (19, 19),
     # Four seven-node Soulcatcher mastery routes total 30 development points.
@@ -920,7 +922,7 @@ TROUBADOUR_TREE_NODE_SPECS = (
     {"id": "reviving-finale", "kind": "talent", "identifier": "troubadour.reviving-finale", "name": "Reviving Finale", "description": "Renewal codas gain one effective Crescendo and cleanse poison at two spent.", "lane": "Finale", "position": (1, 2), "level": 70, "prerequisites": ("guardian-finale",)},
     {"id": "riotous-finale", "kind": "talent", "identifier": "troubadour.riotous-finale", "name": "Riotous Finale", "description": "Battle Hymn's coda extends its controlled Berserk beat by one turn.", "lane": "Finale", "position": (1, 3), "level": 75, "prerequisites": ("reviving-finale",)},
     {"id": "rallying-chorus", "kind": "ability", "identifier": "RallyingChorus", "lane": "Finale", "position": (1, 4), "level": 80, "prerequisites": ("riotous-finale",)},
-    {"id": "cutting-encore", "kind": "talent", "identifier": "troubadour.cutting-encore", "name": "Cutting Encore", "description": "Enemy-stat exploration songs apply 5 percentage points more pressure.", "lane": "Finale", "position": (1, 5), "level": 85, "prerequisites": ("rallying-chorus",)},
+    {"id": "cutting-encore", "kind": "talent", "identifier": "troubadour.cutting-encore", "name": "Cutting Refrain", "description": "Enemy-stat exploration songs apply 5 percentage points more pressure.", "lane": "Finale", "position": (1, 5), "level": 85, "prerequisites": ("rallying-chorus",)},
     {"id": "resonant-wave", "kind": "ability", "identifier": "ResonantWave", "lane": "Finale", "position": (1, 6), "level": 85, "prerequisites": ("cutting-encore",)},
     {"id": "composers-memory", "kind": "talent", "identifier": "troubadour.composers-memory", "name": "Composer's Memory", "description": "Composition grants two practice XP instead of one.", "lane": "Mastery", "position": (2, 0), "available_on_promotion": True},
     {"id": "practiced-ear", "kind": "talent", "identifier": "troubadour.practiced-ear", "name": "Practiced Ear", "description": "Maintained advanced-song turns grant one additional practice XP.", "lane": "Mastery", "position": (2, 1), "level": 65, "prerequisites": ("composers-memory",)},
@@ -1050,7 +1052,7 @@ MASTER_MONK_TREE_NODE_SPECS = (
     {"id": "flexible-form", "kind": "talent", "identifier": "master-monk.flexible-form", "name": "Flexible Form", "description": "An ordinary staff retains 90% of Dim Mak's power instead of 80%.", "lane": "Dim Mak Mastery", "position": (4, 2), "level": 85, "prerequisites": ("suplex",)},
     {"id": "essence-mastery", "kind": "talent", "identifier": "master-monk.essence-mastery", "name": "Essence Mastery", "description": "A lethal Dim Mak restores 125% of the target's maximum HP and MP, still capped by your maxima.", "lane": "Dim Mak Mastery", "position": (4, 3), "level": 90, "prerequisites": ("suplex",)},
     {"id": "inner-reserve", "kind": "talent", "identifier": "master-monk.inner-reserve", "name": "Inner Reserve", "description": "A damaging Dim Mak can trigger its once-per-combat Ki refund without an awakened ring.", "lane": "Dim Mak Mastery", "position": (4, 4), "level": 85, "prerequisites": ("rooted-recovery",)},
-    {"id": "perfect-recovery", "kind": "talent", "identifier": "master-monk.perfect-recovery", "name": "Perfect Recovery", "description": "The once-per-combat Dim Mak refund restores two Ki instead of one.", "lane": "Dim Mak Mastery", "position": (4, 5), "level": 90, "prerequisites": ("rooted-recovery",)},
+    {"id": "perfect-recovery", "kind": "talent", "identifier": "master-monk.perfect-recovery", "name": "Perfect Recovery", "description": "When Martial Master or Inner Reserve enables Dim Mak's once-per-combat Ki refund, it restores two Ki instead of one.", "lane": "Dim Mak Mastery", "position": (4, 5), "level": 90, "prerequisites": ("rooted-recovery",)},
 )
 
 
@@ -1097,9 +1099,7 @@ ARCHBISHOP_TREE_NODE_SPECS = (
     {"id": "heal-3", "kind": "ability", "identifier": "Heal3", "name": "Heal III", "lane": "Intervention", "position": (2, 0), "available_on_promotion": True, "owned_if_known": True, "upgrade_without_source": True},
     {"id": "resurrection", "kind": "ability", "identifier": "Resurrection", "lane": "Intervention", "position": (2, 1), "level": 65, "cost": 2, "owned_if_known": True, "prerequisites": ("heal-3",)},
     {"id": "expel-curse", "kind": "ability", "identifier": "ExpelCurse", "name": "Expel Curse", "lane": "Intervention", "position": (2, 2), "level": 70, "owned_if_known": True, "prerequisites": ("resurrection",)},
-    {"id": "assured-intervention", "kind": "talent", "identifier": "archbishop.assured-intervention", "name": "Assured Intervention", "description": "Awakened Divine Intervention's rescue chance rises from 35% to 50%.", "lane": "Intervention", "position": (2, 3), "level": 75, "prerequisites": ("expel-curse",)},
-    {"id": "miraculous-recovery", "kind": "talent", "identifier": "archbishop.miraculous-recovery", "name": "Miraculous Recovery", "description": "Successful Divine Intervention restores 35% maximum HP instead of 25%.", "lane": "Intervention", "position": (2, 4), "level": 80, "prerequisites": ("assured-intervention",)},
-    {"id": "swift-exorcism", "kind": "talent", "identifier": "archbishop.swift-exorcism", "name": "Swift Exorcism", "description": "Reduce Expel Curse's MP cost by six.", "lane": "Intervention", "position": (2, 6), "level": 90, "prerequisites": ("miraculous-recovery",)},
+    {"id": "swift-exorcism", "kind": "talent", "identifier": "archbishop.swift-exorcism", "name": "Swift Exorcism", "description": "Reduce Expel Curse's MP cost by six.", "lane": "Intervention", "position": (2, 6), "level": 90, "prerequisites": ("expel-curse",)},
     {"id": "regen-3", "kind": "ability", "identifier": "Regen3", "name": "Regen III", "lane": "Sustaining Grace", "position": (3, 0), "available_on_promotion": True, "owned_if_known": True, "upgrade_without_source": True},
     {"id": "enduring-invigoration", "kind": "talent", "identifier": "archbishop.enduring-invigoration", "name": "Enduring Invigoration", "description": "Magical Invigoration stacks last one additional turn.", "lane": "Sustaining Grace", "position": (3, 1), "level": 65, "prerequisites": ("regen-3",)},
     {"id": "radiant-renewal", "kind": "talent", "identifier": "archbishop.radiant-renewal", "name": "Radiant Renewal", "description": "Magical Invigoration stacks grant two additional Magic.", "lane": "Sustaining Grace", "position": (3, 2), "level": 70, "prerequisites": ("enduring-invigoration",)},
@@ -1110,6 +1110,8 @@ ARCHBISHOP_TREE_NODE_SPECS = (
     {"id": "purifying-word", "kind": "talent", "identifier": "archbishop.purifying-word", "name": "Purifying Word", "description": "Supplication gains 20 percentage points of cleanse chance.", "lane": "Perfect Supplication", "position": (4, 2), "level": 70, "prerequisites": ("sheltering-word",)},
     {"id": "endless-supplication", "kind": "talent", "identifier": "archbishop.endless-supplication", "name": "Endless Supplication", "description": "Supplication restores one Prayer after resolving.", "lane": "Perfect Supplication", "position": (4, 3), "level": 75, "prerequisites": ("purifying-word",)},
     {"id": "overwhelming-light", "kind": "talent", "identifier": "archbishop.overwhelming-light", "name": "Overwhelming Light", "description": "Dazed or Confused's secondary confusion chance rises to 40%.", "lane": "Perfect Supplication", "position": (4, 5), "level": 85, "prerequisites": ("endless-supplication",)},
+    {"id": "assured-intervention", "kind": "talent", "identifier": "archbishop.assured-intervention", "name": "Assured Intervention", "description": "Awakened Divine Intervention's rescue chance rises from 35% to 50%.", "lane": "Divine Intervention", "position": (5, 3), "level": 75, "prerequisites": ("expel-curse",)},
+    {"id": "miraculous-recovery", "kind": "talent", "identifier": "archbishop.miraculous-recovery", "name": "Miraculous Recovery", "description": "Successful awakened Divine Intervention restores 35% maximum HP instead of 25%.", "lane": "Divine Intervention", "position": (5, 4), "level": 80, "prerequisites": ("expel-curse",)},
 )
 
 
@@ -1319,7 +1321,7 @@ SPELL_STEALER_TREE_NODE_SPECS = (
 ARCANE_TRICKSTER_TREE_NODE_SPECS = (
     {
         "id": "steal-spell-2", "kind": "ability", "identifier": "StealSpell2",
-        "lane": "Arcane Larceny", "position": (0, 0), "cost": 2,
+        "lane": "Spell Theft", "position": (0, 0), "cost": 2,
         "available_on_promotion": True, "owned_if_known": True,
     },
     {
@@ -1329,12 +1331,12 @@ ARCANE_TRICKSTER_TREE_NODE_SPECS = (
             "Add 15 percentage points to Steal Spell II's learning chance and "
             "raise its cap to 90%."
         ),
-        "lane": "Arcane Larceny", "position": (0, 1), "level": 65, "cost": 3,
+        "lane": "Spell Theft", "position": (0, 1), "level": 65, "cost": 3,
         "prerequisites": ("steal-spell-2",),
     },
     {
         "id": "arcane-ambush", "kind": "ability", "identifier": "ArcaneAmbush",
-        "lane": "Arcane Larceny", "position": (0, 2), "level": 70, "cost": 2,
+        "lane": "Spell Theft", "position": (0, 2), "level": 70, "cost": 2,
         "prerequisites": ("master-thief",),
     },
     {
@@ -1342,24 +1344,19 @@ ARCANE_TRICKSTER_TREE_NODE_SPECS = (
         "identifier": "arcane-trickster.mnemonic-larceny",
         "name": "Mnemonic Larceny",
         "description": "Permanently learning a spell restores half of Steal Spell II's MP cost.",
-        "lane": "Arcane Larceny", "position": (0, 3), "level": 75, "cost": 3,
+        "lane": "Spell Theft", "position": (0, 3), "level": 75, "cost": 3,
         "prerequisites": ("arcane-ambush",),
-    },
-    {
-        "id": "weaken-mind", "kind": "ability", "identifier": "WeakenMind",
-        "lane": "Arcane Larceny", "position": (0, 4), "level": 80, "cost": 2,
-        "owned_if_known": True, "prerequisites": ("mnemonic-larceny",),
     },
     {
         "id": "neural-connection", "kind": "talent",
         "identifier": "arcane-trickster.neural-connection",
         "name": "Neural Connection",
         "description": (
-            "Weaken Mind grants equal Magic and Magic Defense while its target "
-            "remains weakened."
+            "When Weaken Mind has been stolen, it grants equal Magic and Magic "
+            "Defense while its target remains weakened."
         ),
-        "lane": "Arcane Larceny", "position": (0, 5), "level": 85, "cost": 3,
-        "prerequisites": ("weaken-mind",),
+        "lane": "Stolen Spell Mastery", "position": (2, 5), "level": 85,
+        "cost": 3, "prerequisites": ("steal-spell-2",),
     },
     {
         "id": "third-eye", "kind": "ability", "identifier": "ThirdEye",
@@ -1452,13 +1449,10 @@ TEMPLAR_TREE_NODE_SPECS = (
     {"id": "piercing-strike", "kind": "ability", "identifier": "PiercingStrike", "lane": "Vanguard", "position": (1, 4), "level": 80, "owned_if_known": True, "prerequisites": ("parry",)},
     {"id": "double-strike", "kind": "ability", "identifier": "DoubleStrike", "lane": "Vanguard", "position": (1, 5), "level": 85, "owned_if_known": True, "prerequisites": ("piercing-strike",)},
     {"id": "true-piercing-strike", "kind": "ability", "identifier": "TruePiercingStrike", "lane": "Vanguard", "position": (1, 6), "level": 90, "owned_if_known": True, "prerequisites": ("double-strike",)},
-    {"id": "smite-3", "kind": "ability", "identifier": "Smite3", "name": "Smite III", "lane": "Ordered Blessings", "position": (2, 0), "available_on_promotion": True, "owned_if_known": True, "upgrade_without_source": True},
-    {"id": "ordered-purpose", "kind": "talent", "identifier": "templar.ordered-purpose", "name": "Ordered Purpose", "description": "Ordered Blessings are 25% stronger and last one additional turn.", "lane": "Ordered Blessings", "position": (2, 1), "level": 65, "cost": 2, "prerequisites": ("smite-3",)},
-    {"id": "regen-2", "kind": "ability", "identifier": "Regen2", "name": "Regen II", "lane": "Ordered Blessings", "position": (2, 2), "level": 70, "owned_if_known": True, "prerequisites": ("ordered-purpose",)},
-    {"id": "bless", "kind": "ability", "identifier": "Bless", "lane": "Ordered Blessings", "position": (2, 3), "level": 75, "owned_if_known": True, "prerequisites": ("regen-2",)},
-    {"id": "dispel", "kind": "ability", "identifier": "Dispel", "lane": "Ordered Blessings", "position": (2, 4), "level": 80, "owned_if_known": True, "prerequisites": ("bless",)},
-    {"id": "liturgical-renewal", "kind": "talent", "identifier": "templar.liturgical-renewal", "name": "Liturgical Renewal", "description": "An Ordered Blessing restores one MP per Devotion spent.", "lane": "Ordered Blessings", "position": (2, 5), "level": 85, "prerequisites": ("dispel",)},
-    {"id": "perfect-order", "kind": "talent", "identifier": "templar.perfect-order", "name": "Perfect Order", "description": "Ordered Blessings also raise Magic Defense while active.", "lane": "Ordered Blessings", "position": (2, 6), "level": 90, "prerequisites": ("liturgical-renewal",)},
+    {"id": "smite-3", "kind": "ability", "identifier": "Smite3", "name": "Smite III", "lane": "Sacred Rites", "position": (2, 0), "available_on_promotion": True, "owned_if_known": True, "upgrade_without_source": True},
+    {"id": "regen-2", "kind": "ability", "identifier": "Regen2", "name": "Regen II", "lane": "Sacred Rites", "position": (2, 2), "level": 70, "owned_if_known": True, "prerequisites": ("smite-3",)},
+    {"id": "bless", "kind": "ability", "identifier": "Bless", "lane": "Sacred Rites", "position": (2, 3), "level": 75, "owned_if_known": True, "prerequisites": ("regen-2",)},
+    {"id": "dispel", "kind": "ability", "identifier": "Dispel", "lane": "Sacred Rites", "position": (2, 4), "level": 80, "owned_if_known": True, "prerequisites": ("bless",)},
     {"id": "devotional-rebuke", "kind": "ability", "identifier": "DevotionalRebuke", "lane": "Judgment", "position": (3, 0), "available_on_promotion": True, "owned_if_known": True},
     {"id": "exacting-judgment", "kind": "talent", "identifier": "templar.exacting-judgment", "name": "Exacting Judgment", "description": "Devotional Rebuke deals 25% more Holy damage.", "lane": "Judgment", "position": (3, 1), "level": 65, "prerequisites": ("devotional-rebuke",)},
     {"id": "true-strike", "kind": "ability", "identifier": "TrueStrike", "lane": "Judgment", "position": (3, 2), "level": 70, "owned_if_known": True, "prerequisites": ("exacting-judgment",)},
@@ -1466,17 +1460,20 @@ TEMPLAR_TREE_NODE_SPECS = (
     {"id": "turn-undead-2", "kind": "ability", "identifier": "TurnUndead2", "name": "Turn Undead II", "lane": "Judgment", "position": (3, 4), "level": 80, "owned_if_known": True, "prerequisites": ("holy-2",)},
     {"id": "cleanse", "kind": "ability", "identifier": "Cleanse", "lane": "Judgment", "position": (3, 5), "level": 85, "owned_if_known": True, "prerequisites": ("turn-undead-2",)},
     {"id": "bastion-prayer", "kind": "ability", "identifier": "BastionPrayer", "lane": "Judgment", "position": (3, 6), "level": 90, "owned_if_known": True, "prerequisites": ("cleanse",)},
+    {"id": "ordered-purpose", "kind": "talent", "identifier": "templar.ordered-purpose", "name": "Ordered Purpose", "description": "Awakened Ordered Blessings are 25% stronger and last one additional turn.", "lane": "Ordered Blessings", "position": (4, 1), "level": 65, "cost": 2, "prerequisites": ("smite-3",)},
+    {"id": "liturgical-renewal", "kind": "talent", "identifier": "templar.liturgical-renewal", "name": "Liturgical Renewal", "description": "An awakened Ordered Blessing restores one MP per Devotion spent.", "lane": "Ordered Blessings", "position": (4, 5), "level": 85, "prerequisites": ("dispel",)},
+    {"id": "perfect-order", "kind": "talent", "identifier": "templar.perfect-order", "name": "Perfect Order", "description": "Awakened Ordered Blessings also raise Magic Defense while active.", "lane": "Ordered Blessings", "position": (4, 6), "level": 90, "prerequisites": ("dispel",)},
 )
 
 
 HIEROPHANT_TREE_NODE_SPECS = (
-    {"id": "staff-conduit", "kind": "ability", "identifier": "StaffConduit", "lane": "Sacred Conduit", "position": (0, 0), "available_on_promotion": True, "owned_if_known": True},
-    {"id": "conduit-strike", "kind": "ability", "identifier": "ConduitStrike", "lane": "Sacred Conduit", "position": (0, 1), "level": 65, "prerequisites": ("staff-conduit",)},
-    {"id": "consecrated-conduit", "kind": "ability", "identifier": "ConsecratedConduit", "lane": "Sacred Conduit", "position": (0, 2), "level": 70, "owned_if_known": True, "prerequisites": ("conduit-strike",)},
-    {"id": "deep-conduit", "kind": "talent", "identifier": "hierophant.deep-conduit", "name": "Deep Conduit", "description": "Consecrated Conduit adds a further 8% Holy damage.", "lane": "Sacred Conduit", "position": (0, 3), "level": 75, "cost": 2, "prerequisites": ("consecrated-conduit",)},
-    {"id": "holy-2", "kind": "ability", "identifier": "Holy2", "name": "Holy II", "lane": "Sacred Conduit", "position": (0, 4), "level": 80, "owned_if_known": True, "prerequisites": ("deep-conduit",)},
-    {"id": "staff-ward", "kind": "talent", "identifier": "hierophant.staff-ward", "name": "Staff Ward", "description": "Consecrated Conduit's ward gains 50% more strength.", "lane": "Sacred Conduit", "position": (0, 5), "level": 85, "prerequisites": ("holy-2",)},
-    {"id": "radiant-return", "kind": "talent", "identifier": "hierophant.radiant-return", "name": "Radiant Return", "description": "Consecrated Conduit restores one MP per spent Devotion.", "lane": "Sacred Conduit", "position": (0, 6), "level": 90, "prerequisites": ("staff-ward",)},
+    {"id": "staff-conduit", "kind": "ability", "identifier": "StaffConduit", "lane": "Consecrated Conduit", "position": (0, 0), "available_on_promotion": True, "owned_if_known": True},
+    {"id": "conduit-strike", "kind": "ability", "identifier": "ConduitStrike", "lane": "Consecrated Conduit", "position": (0, 1), "level": 65, "prerequisites": ("staff-conduit",)},
+    {"id": "consecrated-conduit", "kind": "ability", "identifier": "ConsecratedConduit", "lane": "Consecrated Conduit", "position": (0, 2), "level": 70, "owned_if_known": True, "prerequisites": ("conduit-strike",)},
+    {"id": "deep-conduit", "kind": "talent", "identifier": "hierophant.deep-conduit", "name": "Deep Conduit", "description": "Consecrated Conduit adds a further 8% Holy damage.", "lane": "Consecrated Conduit", "position": (0, 3), "level": 75, "cost": 2, "prerequisites": ("consecrated-conduit",)},
+    {"id": "holy-2", "kind": "ability", "identifier": "Holy2", "name": "Holy II", "lane": "Consecrated Conduit", "position": (0, 4), "level": 80, "owned_if_known": True, "prerequisites": ("deep-conduit",)},
+    {"id": "staff-ward", "kind": "talent", "identifier": "hierophant.staff-ward", "name": "Staff Ward", "description": "Consecrated Conduit's ward gains 50% more strength.", "lane": "Consecrated Conduit", "position": (0, 5), "level": 85, "prerequisites": ("holy-2",)},
+    {"id": "radiant-return", "kind": "talent", "identifier": "hierophant.radiant-return", "name": "Radiant Return", "description": "Consecrated Conduit restores one MP per spent Devotion.", "lane": "Consecrated Conduit", "position": (0, 6), "level": 90, "prerequisites": ("staff-ward",)},
     {"id": "regen-2", "kind": "ability", "identifier": "Regen2", "name": "Regen II", "lane": "Devotional Grace", "position": (1, 0), "available_on_promotion": True, "owned_if_known": True},
     {"id": "gentle-grace", "kind": "talent", "identifier": "hierophant.gentle-grace", "name": "Gentle Grace", "description": "Meaningful healing grants one additional Devotion once per action.", "lane": "Devotional Grace", "position": (1, 1), "level": 65, "cost": 2, "prerequisites": ("regen-2",)},
     {"id": "graceful-intercession", "kind": "ability", "identifier": "GracefulIntercession", "lane": "Devotional Grace", "position": (1, 2), "level": 70, "prerequisites": ("gentle-grace",)},
@@ -4864,8 +4861,6 @@ ASTROMANCER_TREE_NODE_SPECS = (
         ("wormhole", "ability", "Wormhole", None, None, None, 1),
         ("astral-anchor", "talent", "astromancer.astral-anchor", "Astral Anchor", "Increase Magic Defense by 10% while opening a Wormhole.", "Magic Defense", 1),
         ("triplecast", "ability", "Triplecast", None, None, None, 1),
-        ("volcano", "ability", "Volcano", None, None, None, 1),
-        ("tephra", "ability", "Tephra", None, None, None, 1),
         ("meteor-logic", "talent", "astromancer.meteor-logic", "Meteor Logic", "Increase Magic by 10% for celestial area pressure.", "Magic", 1),
         ("astral-judgment", "talent", "astromancer.astral-judgment", "Celestial Mastery", "Increase Magic by 10% after completing the celestial discipline.", "Magic", 1),
     )),
@@ -4878,6 +4873,16 @@ ASTROMANCER_TREE_NODE_SPECS = (
         ("remote-cache", "talent", "astromancer.remote-cache", "Remote Cache", "Increase Magic Defense by 10% for remote dungeon utility.", "Magic Defense", 1),
         ("lucid-horizon", "talent", "astromancer.lucid-horizon", "Lucid Horizon", "Increase Magic by 10% after completing the lucid discipline.", "Magic", 1),
     )),
+    {
+        "id": "tephra",
+        "kind": "ability",
+        "identifier": "Tephra",
+        "lane": "Witnessed Magic",
+        "position": (4, 4),
+        "level": 80,
+        "cost": 1,
+        "prerequisites": ("learnspell2",),
+    },
 )
 
 
@@ -5443,7 +5448,8 @@ PROMOTED_TREE_PATHS = {
         ),
     ),
     "Arcane Trickster": (
-        ("Arcane Larceny", ("StealSpell2", "ArcaneAmbush", "WeakenMind")),
+        ("Spell Theft", ("StealSpell2", "ArcaneAmbush")),
+        ("Stolen Spell Mastery", ()),
         ("Misdirection", ("ThirdEye", "VanishingAct", "FalseOpening")),
     ),
     "Cleric": (
@@ -5463,14 +5469,15 @@ PROMOTED_TREE_PATHS = {
         ),
         ("Vanguard", ("Charge", "Goad", "ShieldSlam", "Parry", "PiercingStrike", "DoubleStrike", "TruePiercingStrike")),
         (
-            "Ordered Blessings",
+            "Sacred Rites",
             ("Smite3", "Regen2", "Bless", "Dispel"),
         ),
         ("Judgment", ("DevotionalRebuke", "TrueStrike", "Holy2", "TurnUndead2", "Cleanse", "BastionPrayer")),
+        ("Ordered Blessings", ()),
     ),
     "Hierophant": (
         (
-            "Sacred Conduit",
+            "Consecrated Conduit",
             ("StaffConduit", "ConduitStrike", "ConsecratedConduit", "Holy2"),
         ),
         ("Devotional Grace", ("Regen2", "GracefulIntercession", "Dispel")),
@@ -5525,6 +5532,7 @@ PROMOTED_TREE_PATHS = {
         ("Intervention", ("Heal3", "Resurrection", "ExpelCurse")),
         ("Sustaining Grace", ("Regen3",)),
         ("Perfect Supplication", ()),
+        ("Divine Intervention", ()),
     ),
     "Bard": (
         ("Performance", ("SongValor", "SongShelter", "SongRenewal")),
@@ -5562,8 +5570,9 @@ PROMOTED_TREE_PATHS = {
     "Astromancer": (
         ("Foresight Threads", ("Foretell", "TwistFate", "ThreadedCast", "Rewind")),
         ("Runic Constellations", ("Vulcanize", "WeakenMind", "Boost", "LearnSpell2")),
-        ("Celestial Force", ("Wormhole", "Triplecast", "Volcano", "Tephra")),
+        ("Celestial Force", ("Wormhole", "Triplecast")),
         ("Lucid Utility", ("AccessStorage", "SilentLucidity")),
+        ("Witnessed Magic", ("Tephra",)),
     ),
     "Shaman": (
         ("Totems", ("TotemSurge", "MaelstromWeapon")),

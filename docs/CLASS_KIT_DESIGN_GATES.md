@@ -1251,7 +1251,7 @@ trees also contain a three-point level-60 promotion node.
 | Inquisitor | 23 / 24 | Case Journal and Judgment promotion routes, optional elemental-ward passives, and read-only Take Notes | Finished authored tree; 50% tier-earned cost coverage |
 | Seeker | 28 / 30 | Four route, defense, Revelation, and Judgment disciplines with four new active techniques | Finished authored tree; 67% tier-earned coverage |
 | Spell Stealer | 12 / 19 | Blank Scroll theft, inscribed scrolls, active charged offense/defense, and action-scoped Stolen Charge | Finished authored tree; 63% tier-earned cost coverage |
-| Arcane Trickster | 12 / 30 | Permanent Steal Spell II learning, Neural Connection, misdirection actions, and Charge preservation | Finished authored tree; 67% tier-earned cost coverage |
+| Arcane Trickster | 11 / 28 | Permanent Steal Spell II learning, optional stolen-spell mastery, misdirection actions, and Charge preservation | Finished authored tree; 71% tier-earned cost coverage |
 
 Resolved structural gap — generated promoted trees:
 
@@ -1692,7 +1692,7 @@ rating scaffolds remain removed.
 | Lycan | 28 / 30 | Persistent Werewolf, moon stress, behavior-earned control, Dragon Essence, and four disciplines | Authored tree finished; stress pacing needs playtest |
 | Archdruid | 28 / 30 | Four affinity disciplines, attunement memories, Harmony, typed Surge riders, and ring preservation | Authored tree finished; Surge tuning needs playtest |
 | Diviner | 22 / 22 | Four rune/foresight/time disciplines, two intentional gaps, rank-1 learning, and level-55 endpoints | Authored tree finished; enemy-spell availability remains content-authored |
-| Astromancer | 28 / 30 | Four Thread/rune/celestial/lucid disciplines, Tephra, storage access, and asleep casting | Authored tree finished; payoff tuning needs playtest |
+| Astromancer | 27 / 29 | Four Thread/rune/celestial/lucid disciplines, optional Tephra, storage access, and asleep casting | Authored tree finished; payoff tuning needs playtest |
 | Shaman | 19 / 21 | Inherent Totem, communions, elemental wards, Spirit Animal, expanded Bad Omens, Resonance, and Surge | Authored tree finished; Skinwalker deferred pending defeat/traversal contract |
 | Soulcatcher | 28 / 30 | Soul Drain, harvest mastery, Soul Totem/Surge, Ancestral Aegis, and spirit combat | Authored tree finished; nonlethal tuning needs playtest |
 | Ranger | 24 + promotion | Tame, bounded roster, naming, evolution, bond, quarry mastery, crossbows, weapon styles, and layered defense | Authored tree and runtime kit implemented; balance evidence remains |
@@ -1745,7 +1745,8 @@ Resolved Diviner/Astromancer findings:
   explicitly rank-1 hostile spell successfully resolves while the learner is
   present; the Astromancer upgrade admits ranks 1-2. Misses, full negation,
   duplicate interception, known spells, rank 3, and unranked content teach
-  nothing. Rank metadata is authored on the nine accepted enemy spells.
+  nothing. Rank metadata is authored on eleven accepted enemy spells, including
+  rank-one Stupefy and rank-two Volcano.
 - The four-sign rune system is functional and covered. Natural-spell kills,
   rune cap/normalization, resistance/weakness scaling, Runic Boost spending,
   constellation advancement, and active-sign ring floors all have runtime
@@ -1840,6 +1841,10 @@ through `Staff Conduit`, `Consecrated Conduit`, and awakened `Sacred Conduit`.
 - Class Ring enhancement: `Relic Defense` still awakens displayed
   `Ordered Blessings`. Preserve the existing Regen, Defense, and Holy Damage
   blessing rotation through the current ring state for compatibility.
+- Ability-tree boundary: Smite III, Regen II, Bless, and Dispel form the
+  independent `Sacred Rites` path. Ordered Purpose, Liturgical Renewal, and
+  Perfect Order are optional terminal leaves because they only modify the
+  awakened, equipped ring.
 - `Ordered Blessings`: while awakened and equipped, the ring improves the next
   matching Devotion payoff and preserves `1` Devotion once per combat after a
   clean ward or holy-retaliation payoff. Do not replace the rotation with
@@ -1911,6 +1916,9 @@ Gospel` as a major Prayer reset/setup power-up, and awakened
 - Class Ring enhancement: `Miracle Vigil` still awakens displayed
   `Divine Intervention`. Preserve the existing once-per-combat 35% chance to
   heal 25% max HP when first falling below 50% HP.
+- Ability-tree boundary: Assured Intervention and Miraculous Recovery are
+  optional terminal leaves. Neither may gate Swift Exorcism or another
+  ordinary Archbishop node.
 - `Divine Intervention`: while awakened and equipped, the ring also improves
   Prayer stability. After a clean `Supplication` or `Great Benediction` payoff,
   the ring preserves `1` Prayer once per combat. It does not spend Prayer,

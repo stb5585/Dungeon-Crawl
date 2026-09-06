@@ -1540,7 +1540,6 @@ spell_dict = {
         "27": Silence,
         },
     "Arcane Trickster": {
-        "4": WeakenMind,
         },
     "Healer": {
         "1": [
@@ -1669,7 +1668,7 @@ spell_dict = {
         "23": [Berserk, TemporaryStasis],
         },
     "Astromancer": {
-        "1": [Vulcanize, Volcano],
+        "1": Vulcanize,
         "6": Foretell,
         "10": WeakenMind,
         "15": Boost,

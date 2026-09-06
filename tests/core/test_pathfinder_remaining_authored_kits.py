@@ -6,7 +6,12 @@ import pytest
 
 from src.core import abilities, enemies
 from src.core.classes import astromancer, lycan
-from src.core.progression import ABILITY_TREES, NodeKind, ProgressionState
+from src.core.progression import (
+    ABILITY_TREES,
+    NodeKind,
+    ProgressionState,
+    ensure_progression,
+)
 from tests.test_framework import TestGameState
 
 
@@ -33,7 +38,7 @@ def test_remaining_pathfinder_trees_use_authored_budgets_and_visible_rows():
         "Diviner": (22, 22, 7),
         "Lycan": (28, 30, 6),
         "Archdruid": (28, 30, 6),
-        "Astromancer": (28, 30, 6),
+        "Astromancer": (27, 29, 6),
     }
     for class_name, (count, cost, final_row) in expected.items():
         development = [
@@ -69,6 +74,34 @@ def test_remaining_pathfinder_trees_use_authored_budgets_and_visible_rows():
     astromancer_names = {node.name for node in ABILITY_TREES["Astromancer"].nodes}
     assert "Celestial Mastery" in astromancer_names
     assert "Astral Judgment" not in astromancer_names
+
+
+def test_astromancer_external_volcano_does_not_gate_celestial_progression():
+    tree = ABILITY_TREES["Astromancer"]
+    nodes = {node.name: node for node in tree.nodes}
+
+    assert "Volcano" not in nodes
+    assert nodes["Meteor Logic"].prerequisites == (nodes["Triplecast"].id,)
+    assert nodes["Celestial Mastery"].prerequisites == (nodes["Meteor Logic"].id,)
+    assert nodes["Tephra"].lane == "Witnessed Magic"
+    assert nodes["Tephra"].prerequisites == (nodes["Learn Spell"].id,)
+    assert not any(
+        nodes["Tephra"].id in candidate.prerequisites
+        for candidate in tree.nodes
+    )
+
+
+def test_retired_astromancer_volcano_node_is_refunded_without_forgetting_spell():
+    player = _player("Astromancer")
+    player.progression.unspent_points = 0
+    player.progression.purchased_node_ids.add("astromancer.ability.volcano")
+    player.spellbook["Spells"]["Volcano"] = abilities.Volcano()
+
+    ensure_progression(player)
+
+    assert "astromancer.ability.volcano" not in player.progression.purchased_node_ids
+    assert player.progression.unspent_points == 1
+    assert "Volcano" in player.spellbook["Spells"]
 
 
 def test_druid_promotions_accept_either_completed_discipline():

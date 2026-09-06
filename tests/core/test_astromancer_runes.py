@@ -167,6 +167,35 @@ def test_astromancer_learning_rejects_miss_rank_three_and_unranked_spell():
     )
 
 
+def test_witnessed_learning_includes_stupefy_and_volcano_at_authored_ranks():
+    diviner = TestGameState.create_player(class_name="Diviner", race_name="Human")
+    diviner.spellbook["Skills"]["Learn Spell"] = abilities.LearnSpell()
+    astromancer_player = TestGameState.create_player(
+        class_name="Astromancer",
+        race_name="Human",
+    )
+    astromancer_player.spellbook["Skills"]["Learn Spell"] = abilities.LearnSpell2()
+    success = CombatResult(action="Spell", actor=object(), target=object(), hit=True)
+
+    assert abilities.Stupefy().rank == 1
+    assert "learns Stupefy" in astromancer.learn_witnessed_spell(
+        diviner,
+        abilities.Stupefy(),
+        success,
+    )
+    assert abilities.Volcano().rank == 2
+    assert astromancer.learn_witnessed_spell(
+        diviner,
+        abilities.Volcano(),
+        success,
+    ) == ""
+    assert "learns Volcano" in astromancer.learn_witnessed_spell(
+        astromancer_player,
+        abilities.Volcano(),
+        success,
+    )
+
+
 def test_thread_sources_dedupe_and_threaded_cast_spends_all_for_exact_bonuses():
     player = TestGameState.create_player(class_name="Astromancer", race_name="Human")
     promotion_kits.begin_action(player, action="Use Skill", choice="Foretell")

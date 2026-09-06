@@ -81,6 +81,19 @@ def test_dim_mak_is_external_and_its_tree_modifiers_are_terminal():
         assert not any(node.id in candidate.prerequisites for candidate in master.nodes)
 
 
+def test_archbishop_ring_modifiers_are_terminal_and_do_not_gate_exorcism():
+    tree = ABILITY_TREES["Archbishop"]
+    nodes = {node.name: node for node in tree.nodes}
+
+    assert nodes["Swift Exorcism"].prerequisites == (nodes["Expel Curse"].id,)
+    assert nodes["Swift Exorcism"].payload["level_requirement"] == 90
+    for name in ("Assured Intervention", "Miraculous Recovery"):
+        node = nodes[name]
+        assert node.lane == "Divine Intervention"
+        assert node.prerequisites == (nodes["Expel Curse"].id,)
+        assert not any(node.id in candidate.prerequisites for candidate in tree.nodes)
+
+
 def test_legacy_tree_dim_mak_is_removed_and_refunded_without_quest_unlock():
     monk = _player("Master Monk")
     monk.progression.unspent_points = 0

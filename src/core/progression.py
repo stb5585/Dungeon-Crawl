@@ -2983,6 +2983,14 @@ def _migrate_spell_reflection_ability(player: Any) -> None:
 def _adopt_known_ability_nodes(player: Any, state: ProgressionState) -> None:
     """Mark explicitly inheritable abilities and Jump mods as pre-owned."""
     class_name = getattr(getattr(player, "cls", None), "name", None)
+    retired_external_spell_nodes = {
+        "arcane-trickster.ability.weaken-mind": 2,
+        "astromancer.ability.volcano": 1,
+    }
+    for node_id, point_cost in retired_external_spell_nodes.items():
+        if node_id in state.purchased_node_ids:
+            state.purchased_node_ids.discard(node_id)
+            state.unspent_points += point_cost
     retired_dim_mak_node = "master-monk.ability.dim-mak"
     if retired_dim_mak_node in state.purchased_node_ids:
         state.purchased_node_ids.discard(retired_dim_mak_node)
