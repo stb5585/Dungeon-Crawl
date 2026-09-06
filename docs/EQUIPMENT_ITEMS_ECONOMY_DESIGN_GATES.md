@@ -7,7 +7,7 @@ should keep active, deferred, or decision-gated direction.
 
 ## Status
 
-Status: `Spec Map, Shop Polish V1 Shipped`
+Status: `Shop Polish V1 Shipped; Save-Heavy Systems Gated`
 
 The first implementation slice shipped for the existing pygame shop purchase
 and equip-now flow because it did not require new economy rules, new item state,
@@ -221,9 +221,9 @@ Future modification work must define:
 - rollback and failure behavior;
 - tests for combat resistance, metadata, and serialization.
 
-## P6-Adjacent Item Content
+## Future Item Content
 
-Additional P6-adjacent item content requires a one-page decision block per item
+Additional item content requires a one-page decision block per item
 before implementation.
 
 Each block must cover:

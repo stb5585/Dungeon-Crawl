@@ -1,77 +1,91 @@
 # Documentation Index
 
-Use this index as the front door for project documentation. The active backlog
-and current status live in `DEVELOPMENT_ROADMAP.md`; older phase plans are kept
-only as historical context.
+Use this index as the front door for project documentation. The roadmap owns
+priority, owner documents define current behavior and decision gates, and
+[`CHANGELOG.md`](../CHANGELOG.md) owns shipped history.
 
-## Active Planning
+## Start Here
 
-- [DEVELOPMENT_ROADMAP.md](DEVELOPMENT_ROADMAP.md) - current status,
-  active P8 backlog, deferred decisions, and spec gates. Completed roadmap
-  history now lives in [../CHANGELOG.md](../CHANGELOG.md).
-- [CLASS_KIT_DESIGN_GATES.md](CLASS_KIT_DESIGN_GATES.md) - shipped class-kit
-  baselines, promotion-kit V1 implementation status, scope boundaries, and
-  follow-up tuning gates.
-- [CLASS_KIT_EVIDENCE_NOTES.md](CLASS_KIT_EVIDENCE_NOTES.md) - class-kit
-  UI/log, meter cadence, preservation, action-economy, and progression pacing
-  evidence ledger.
-- [COMBAT_BALANCE_DESIGN_GATES.md](COMBAT_BALANCE_DESIGN_GATES.md) - combat
-  architecture, balance decision gates, current behavior decisions, and report
-  plan.
-- [MULTI_ENEMY_COMBAT_DESIGN.md](MULTI_ENEMY_COMBAT_DESIGN.md) - proposed
-  one-or-two-enemy combat architecture, targeting contract, rollout plan, and
-  required pre-implementation decisions.
-- [CURSES_UI_RETIREMENT.md](CURSES_UI_RETIREMENT.md) - decision record for the
-  archived terminal frontend and the continuing headless terminal-development
-  contract.
-- [CLASS_STAT_PRIORITIES.md](CLASS_STAT_PRIORITIES.md) - gameplay-facing stat
-  impact reference and class-by-class stat priority guide.
-- [PLAYTEST_CHECKLIST.md](PLAYTEST_CHECKLIST.md) - index for the focused current
-  playtest queue, preserved shipped regressions, and deferred-spec gates.
-- [STORY_AND_ENDGAME_DESIGN.md](STORY_AND_ENDGAME_DESIGN.md) - Vesperion,
-  Voluntas, Liminal Gap, Reflection, and true-final story design.
-- [CLASS_RING_SYSTEM.md](CLASS_RING_SYSTEM.md) - class-ring activation flows,
-  persistent state expectations, and legacy second-promotion mechanics.
-- [PRESENTATION_ASSET_DESIGN_GATES.md](PRESENTATION_ASSET_DESIGN_GATES.md) -
-  presentation, generated bitmap, screen-polish, and visual-cue gates.
-- [DUNGEON_WORLD_ENCOUNTER_DESIGN_GATES.md](DUNGEON_WORLD_ENCOUNTER_DESIGN_GATES.md)
-  - dungeon interaction, chest, encounter, relic, town-hint, and low-health
-  navigation gates.
-- [EQUIPMENT_ITEMS_ECONOMY_DESIGN_GATES.md](EQUIPMENT_ITEMS_ECONOMY_DESIGN_GATES.md)
-  - shop polish, ultimate helmets, durability, identification, item
-  modification, rarity, and economy gates.
+- [`DEVELOPMENT_ROADMAP.md`](DEVELOPMENT_ROADMAP.md) — current priorities,
+  ordered candidates, and deferred gates.
+- [`FOUNDATIONAL_REFACTOR_PLAN.md`](FOUNDATIONAL_REFACTOR_PLAN.md) — active
+  pre-playtest gameplay-refactor dependencies and decision-block template.
+- [`PLAYTEST_CHECKLIST.md`](PLAYTEST_CHECKLIST.md) — playtest index and current
+  deferral policy.
 
-## Current Implementation References
+## Gameplay And Progression Contracts
 
-- [PROGRESSION_REFACTOR_CHECKPOINT.md](PROGRESSION_REFACTOR_CHECKPOINT.md) -
-  complete implementation record and pause boundary for the version-5 flat
-  progression and authored-tree refactor.
-- [ABILITY_TREE_DESIGN.md](ABILITY_TREE_DESIGN.md) - canonical authored tree
-  identities, Warrior-line graphs, ownership boundaries, and stable-ID rules.
-- [ability_trees/ABILITY_TREE_STATUS.md](ability_trees/ABILITY_TREE_STATUS.md) -
-  per-tree completion status and links to every implemented-tree reference and
-  unfinished-tree decision block.
-- [DUNGEON_TILE_ART.md](DUNGEON_TILE_ART.md) - dungeon texture manifest,
-  decorative tile authoring, and render-asset rebuild notes.
-- [ENEMY_VISUAL_SYSTEM.md](ENEMY_VISUAL_SYSTEM.md) - enemy combat sprites,
-  tokens, scale maps, and boss-navigation presentation.
-- [SOUND_SYSTEM.md](SOUND_SYSTEM.md) - pygame audio runtime, SFX/music layout,
-  diagnostics, asset gates, and placeholder asset workflow.
-- [EVENT_EMISSIONS.md](EVENT_EMISSIONS.md) - current event-bus, combat
-  event-emission reference, and payload enrichment gates.
-- [PROMOTION_ABILITY_RULES.md](PROMOTION_ABILITY_RULES.md) - promotion
-  spell/skill transition rules.
+- [`ABILITY_TREE_DESIGN.md`](ABILITY_TREE_DESIGN.md) — authored tree rules,
+  identities, and ownership boundaries.
+- [`ability_trees/ABILITY_TREE_STATUS.md`](ability_trees/ABILITY_TREE_STATUS.md)
+  — completion table and links to all 49 tree references and diagrams.
+- [`PROMOTION_ABILITY_RULES.md`](PROMOTION_ABILITY_RULES.md) — promotion,
+  retention, closure, and transactional purchase rules.
+- [`CLASS_KIT_DESIGN_GATES.md`](CLASS_KIT_DESIGN_GATES.md) — shipped class-kit
+  contracts plus separately gated expansion and tuning rules.
+- [`CLASS_RING_SYSTEM.md`](CLASS_RING_SYSTEM.md) — awakening, persistent state,
+  class-specific effects, and presentation rules.
+- [`CLASS_STAT_PRIORITIES.md`](CLASS_STAT_PRIORITIES.md) — player-facing stat
+  effects and class priorities.
+- [`WIZARD_CROSS_ELEMENT_INTERACTIONS.md`](WIZARD_CROSS_ELEMENT_INTERACTIONS.md)
+  — developer-only hidden interaction reference.
 
-## Historical Or Superseded Notes
+## Combat And Encounters
 
-Local historical notes under `docs/archive/` are excluded from version control
-and should not be treated as current planning sources. Durable shipped history
-lives in [../CHANGELOG.md](../CHANGELOG.md).
+- [`COMBAT_BALANCE_DESIGN_GATES.md`](COMBAT_BALANCE_DESIGN_GATES.md) — current
+  combat contract, foundational refactor gates, balance evidence, and
+  validation commands.
+- [`MULTI_ENEMY_COMBAT_DESIGN.md`](MULTI_ENEMY_COMBAT_DESIGN.md) — implemented
+  one-or-two-enemy architecture and remaining rollout decisions.
+- [`MULTI_ENEMY_PILOT_3_PLAN.md`](MULTI_ENEMY_PILOT_3_PLAN.md) — current
+  post-tree rebenchmark and floor-5 boundary.
+- [`MULTI_ENEMY_ABILITY_INVENTORY.md`](MULTI_ENEMY_ABILITY_INVENTORY.md) —
+  targeting and multi-target ability audit.
+- [`DUNGEON_WORLD_ENCOUNTER_DESIGN_GATES.md`](DUNGEON_WORLD_ENCOUNTER_DESIGN_GATES.md)
+  — dungeon interaction, encounter, recovery, and world-content gates.
 
-## Related Project Docs
+## Content, Story, Items, And Presentation
 
-- [../README.md](../README.md) - project overview, entry points, and common
-  commands.
-- [../tests/README.md](../tests/README.md) - test-suite layout and validation
-  guidance.
-- [../tools/README.md](../tools/README.md) - development and asset tooling.
+- [`STORY_AND_ENDGAME_DESIGN.md`](STORY_AND_ENDGAME_DESIGN.md) — current
+  Vesperion/Voluntas canon, route contract, and future story gates.
+- [`QUEST_STORY_INTEGRATION_DESIGN.md`](QUEST_STORY_INTEGRATION_DESIGN.md) —
+  quest staging, save migration, and postgame dialogue boundaries.
+- [`EQUIPMENT_ITEMS_ECONOMY_DESIGN_GATES.md`](EQUIPMENT_ITEMS_ECONOMY_DESIGN_GATES.md)
+  — equipment, item state, shop, and economy gates.
+- [`PRESENTATION_ASSET_DESIGN_GATES.md`](PRESENTATION_ASSET_DESIGN_GATES.md) —
+  screen, cue, asset, and generated-bitmap workflow.
+- [`DUNGEON_TILE_ART.md`](DUNGEON_TILE_ART.md) — dungeon texture manifest and
+  asset-generation instructions.
+- [`ENEMY_VISUAL_SYSTEM.md`](ENEMY_VISUAL_SYSTEM.md) — combat sprites, tokens,
+  inspection art, and scale rules.
+- [`SOUND_SYSTEM.md`](SOUND_SYSTEM.md) — audio runtime, routing, assets, and
+  future audio gates.
+
+## Architecture And Development References
+
+- [`EVENT_EMISSIONS.md`](EVENT_EMISSIONS.md) — event contracts, emitters,
+  consumers, and payload-enrichment gate.
+- [`CURSES_UI_RETIREMENT.md`](CURSES_UI_RETIREMENT.md) — why Pygame is the only
+  supported player-facing frontend and what headless coverage remains.
+- [`../tests/README.md`](../tests/README.md) — test layout and commands.
+- [`../tools/README.md`](../tools/README.md) — development and asset tools.
+- [`../src/core/data/abilities/README.md`](../src/core/data/abilities/README.md)
+  — ability-data schema and authoring workflow.
+
+## Playtest References
+
+- [`playtest/CURRENT.md`](playtest/CURRENT.md) — preserved post-refactor manual
+  queue and milestone exit criteria.
+- [`CLASS_KIT_EVIDENCE_NOTES.md`](CLASS_KIT_EVIDENCE_NOTES.md) — evidence
+  ledger and capture format.
+- [`playtest/SHIPPED_REGRESSIONS.md`](playtest/SHIPPED_REGRESSIONS.md) — detailed
+  historical/manual regression prompts; not the current implementation queue.
+- [`playtest/DEFERRED_SPEC.md`](playtest/DEFERRED_SPEC.md) — features that need
+  a promoted design contract before implementation or broad testing.
+
+## Historical Material
+
+Completed phase plans are removed from the active documentation set after
+their durable contracts are consolidated. Their original text remains
+recoverable through Git history. Local notes under `docs/archive/` are ignored
+and must not be treated as current direction.

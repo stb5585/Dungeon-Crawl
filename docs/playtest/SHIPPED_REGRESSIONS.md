@@ -95,7 +95,7 @@ remain the prompts; the evidence ledger is the running decision record.
 - [ ] Visit the Church as a Templar, Hierophant, Master Monk, Archbishop, Troubadour, Lycan, Astromancer, Soulcatcher, or Beast Master with a dormant Class Ring equipped or stored.
   - Expected: The Church menu includes the matching rite: `Relic Defense`, `Purity Rite`, `Miracle Vigil`, `Lost Ballad`, `Control Rite`, `Star Chart`, `Ancestral Totem Rite`, or `Pack Trial`.
   - Expected: Completing the rite awakens the ring and applies the expected equipped mod.
-- [ ] Promote a Warrior-line character to Paladin in pygame and curses.
+- [ ] Promote a Warrior-line character to Paladin in Pygame.
   - Expected: Promotion requires choosing one permanent vow: `Redemption`, `Conquest`, `Protection`, or `Retribution`.
   - Expected: The pygame vow picker uses the styled selection popup and updates
     signature skill, aura, mark, and broad playstyle details while each vow is
@@ -284,14 +284,9 @@ remain the prompts; the evidence ledger is the running decision record.
 - [ ] Load a legacy Sorcerer/Wizard save with old 50-centered affinity values.
   - Expected: Values migrate to the new 0-based model, clamp to the active class cap, and remain readable in character/ring status text.
 
-Audit correction (2026-09-02): Pathfinder promotion checks in this file mix
-working regressions with pending acceptance targets. The rune foundation,
-elemental Totems, Archdruid persistent Fourfold/Grove system, and Ranger/Beast
-Master companion loop are substantially implemented. `Learn Spell`, Threaded
-Cast payoff, Druid persistent forms, Lycan control/Dragon Essence routing,
-combat Aspect Harmony riders, and Soulcatcher harvest/Aspect Evolution payoffs
-are not shipped. Treat checks for those behaviors as implementation acceptance,
-not regression evidence.
+The September 2026 critical closure pass completed the Pathfinder promotion
+mechanics covered below. These entries are regression prompts for the shipped
+V1 behavior, not pending implementation acceptance.
 
 ### Diviner And Astromancer Runes
 - [ ] Win combat as a Diviner with Fire, Water, Wind, and Earth natural spells across enemies with neutral resistance, resistance, and weakness to the killing spell's element.
@@ -301,7 +296,7 @@ not regression evidence.
   - Expected: The selection menu lists only currently boostable natural spells, consumes one matching rune, and casts the selected spell with the fate floor.
 - [ ] Repeat `Runic Boost` as an Astromancer while casting normal natural spells between uses.
   - Expected: Every natural spell cast, including Runic Boost, advances the visible constellation cycle.
-  - Expected: Pygame and curses combat views show the current sign and four compact rune rows.
+  - Expected: Pygame shows the current sign and four compact rune rows.
 - [ ] Awaken and equip the Astromancer Class Ring, then use `Runic Boost` with a spell matching the active sign.
   - Expected: Active-sign Runic Boost uses the 100% fate floor only while the awakened Class Ring is equipped.
   - Expected: Unequipping the ring leaves rune drops and the cycle available but returns Runic Boost to the baseline 75% floor.
@@ -444,7 +439,7 @@ not regression evidence.
   - Expected: The current gate advances after 3 matching successful stress records. Class Ring state and Dragon Essence should not advance control rank by themselves.
   - Record: starting rank, required behavior, eligible opportunity count, successful records, moon/ring/Dragon Essence state, failures, and cadence band.
 
-### P6 Content And Ability Mechanics
+### Shipped Content And Ability Mechanics
 - [ ] Encounter `Giant` and `Owlbear` on dungeon levels 3 and 4.
   - Expected: Giant reads as a Humanoid bruiser with `Stomp` and `Charge`.
   - Expected: Owlbear reads as a Monster with physical pressure, `Shock`, `Wind Speed`, and below-half `Regen` preference.
@@ -457,7 +452,7 @@ not regression evidence.
   - Expected: `Vile Potion` consumes Hemlock Root and Fungus Spore, costs user HP, and deals poison pressure.
 - [ ] Use Growth-mastery `Tree of Life`.
   - Expected: The user transforms into an oak form for 3 turns, cannot attack, gains defense/status protection, and heals each turn.
-- [ ] Exercise P6 passive hooks in ordinary combat.
+- [ ] Exercise shipped passive hooks in ordinary combat.
   - Expected: Zephyrstrike, Retaliate, Defensive Regen, Posturing, Third Eye, Pious Bounty, Final Assault, Last Stand, and polearm/Monkey Grip penalties or bonuses match their class descriptions.
 - [ ] Use Footpad stealth skills against valid and invalid targets.
   - Expected: Kidney Punch costs exactly 18 MP and never leaves the caster below 0 MP.
@@ -494,7 +489,7 @@ not regression evidence.
 - [ ] Inspect a persistent-progress class track, such as Demonologist, Thaumaturgist, Seeker, Troubadour, Lycan, or Beast Master.
   - Expected: Persistent progress rank/value and relevant temporary combat state appear together without implying new progression, rewards, or tuning.
 - [ ] Trigger representative class-kit combat messages for gain, cap, spend, miss/negated payoff, expiration/cleanup, and ring preservation.
-  - Expected: Pygame and curses combat logs keep the class-kit message visible, wrap long lines cleanly, and do not suppress important failure, immunity, downgrade, or preservation text as generic status noise.
+  - Expected: Pygame keeps the class-kit message visible, wraps long lines cleanly, and does not suppress important failure, immunity, downgrade, or preservation text as generic status noise.
 - [ ] Inspect one menu/exploration-adjacent class-kit surface, such as Demonologist contracts, Seeker `Hidden Cache`, Troubadour composition/repertoire, Lycan `Dismiss Form`, Beast Master tame/command, or Soulcatcher Totem aspects.
   - Expected: The surface explains current availability and failure state clearly without changing quest gates, save state, combat rules, or numeric balance.
 - [ ] Inspect compact class-kit hints across all promotion tracks in Combat Focus and character status.
@@ -995,8 +990,6 @@ absent from player-facing explanations.
   - Expected: The equip prompt shows available actions, replacement slots, stat changes or `no stat change`, and dual-wield copy requirements.
   - Expected: Choosing equip uses normal equipment rules and leaves failed equip attempts in inventory.
   - Expected: Non-equipment purchases such as potions, keys, scrolls, and quest items do not show equip prompts.
-- [ ] Buy an equipable item from blacksmith, jeweler, and secret-shop equipment categories in curses.
-  - Expected: Existing curses shop behavior remains usable; prompt-copy parity with pygame is a later polish pass.
 - [ ] Buy one weapon that can be equipped in either hand.
   - Expected: The equip prompt offers `Main Hand`, `OffHand`, and `Cancel`.
   - Expected: The equip prompt explains that dual-wield requires buying two copies.
@@ -1185,7 +1178,7 @@ absent from player-facing explanations.
 - [x] Reopen a chest that has already been opened.
   - Expected: The chest reports that it has already been opened and does not regenerate loot, trigger combat, show a loot popup, or mutate inventory.
 - [x] Collect a relic from a relic room and interact with the room again.
-  - Expected: The first interaction uses the shared relic-specific discovery text in pygame and core/curses flows, grants the relic, sets the room read state, and restores HP/MP; repeat interaction does not duplicate the relic or restoration.
+  - Expected: The first interaction uses the shared relic-specific discovery text in Pygame and core validation, grants the relic, sets the room read state, and restores HP/MP; repeat interaction does not duplicate the relic or restoration.
 - [ ] Simulate or create an item with no exact render mapping.
   - Expected: The render manager falls back through icon mapping, category/slot, and then the generated fallback surface without blocking gameplay.
 - [x] Save and reload after viewing item artwork.

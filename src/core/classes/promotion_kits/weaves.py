@@ -7,7 +7,6 @@ from typing import Any
 
 from .state import (
     _has_skill,
-    _message,
     _ring_awakened_equipped,
     class_name,
     combat_state,

@@ -2,12 +2,13 @@
 
 This is the durable class-kit design gate reference. It records shipped
 class-mechanics baselines, scope boundaries, and the one-page decision gates
-used for deeper class-kit work. Balance validation lives in
-`PLAYTEST_CHECKLIST.md`.
+used for deeper class-kit work. The manual evidence queue is deferred until the
+foundational gameplay refactors stabilize; focused regression requirements
+remain active.
 
 ## Promotion Kit V1 Status
 
-Status: `Critical Closure Shipped; Playtest And Tuning Follow-Up`
+Status: `Critical Closure Shipped; Manual Tuning Evidence Deferred`
 
 The promotion class-track V1 pass created shared state, helpers, UI rows, and
 selected runtime hooks through the
@@ -62,16 +63,17 @@ Implemented foundations and presentation surfaces include:
 Critical implementation closure is complete. Remaining work is tuning,
 presentation review, manual validation, or separately gated expansion:
 
-- Broaden manual playtest and balance tuning for the new meters, especially
-  preservation effects, payoff strength, and high-action-economy loops such as
-  Totems, songs, summons, and Doublecast-adjacent divine support.
+- After the foundational gameplay refactors, broaden manual playtest and
+  balance evidence for the new meters, especially preservation effects, payoff
+  strength, and high-action-economy loops such as Totems, songs, summons, and
+  Doublecast-adjacent divine support.
 - Deeper narrative beats tying second-promotion identity back to `Voluntas`
   remain deferred until their quest/content spec defines timing, text, flags,
   and optional/required status.
 
 ## UI/Log Polish Acceptance Matrix
 
-Status: `Presentation-Only V1`
+Status: `Presentation-Only V1 Shipped`
 
 This matrix defines the first UI/log readability polish pass for shipped
 promotion kits. It is an acceptance reference for shared status text, combat
@@ -79,10 +81,9 @@ logs, and lightweight menu/exploration surfacing only. This pass must not
 change meter gain/spend rules, class-ring activation, save schema, quest state,
 combat math, or numeric balance.
 
-The rows below are presentation acceptance targets, not evidence that every
-listed mechanic has a complete runtime path. Apply the lineage audits in this
-document first; where an audit marks a mechanic missing, treat its row as a
-future implementation-and-presentation target rather than a shipped regression.
+The rows below describe the shipped V1 presentation contract. Future
+foundational UI work may replace their surfaces, but it must preserve each
+track's gain, ready, spend, failure, preservation, and cleanup information.
 
 | Track/class | Status surface requirements | Combat-log requirements | Menu/exploration/town requirements | Ring-readiness/readability requirement | Regression/manual acceptance target |
 | --- | --- | --- | --- | --- | --- |
@@ -318,7 +319,7 @@ implementation:
   Non-members hear from Mara Vale: "The wares are for all but the backroom is
   for a select few."
 
-Future P6 class ability work needs a one-page decision block covering trigger,
+Future class ability work needs a one-page decision block covering trigger,
 class eligibility, storage/save migration, combat and exploration behavior,
 UI/menu/status/combat-log copy, event/audio needs, balance assumptions,
 regression tests, and manual playtest checks.
@@ -1234,7 +1235,7 @@ actions, raises the cap from `50` to `100`, and gains four full-bar Bursts.
   Covering Guard, and active Spell Reflection APIs have been removed; the
   finalized Shield Riposte and Spell Reflection passives remain.
 
-### Remaining Footpad Branch Implementation Audit
+### Footpad Branch Implementation Record
 
 Audit date: 2026-09-04. This records the finished Footpad promotion paths.
 Generated talent families
@@ -1257,8 +1258,8 @@ Resolved structural gap — generated promoted trees:
 - The four-name families, repeated ranks, tier-scaled ratings, and generic cap
   payloads are removed. Exact compact node counts are validated so padding
   cannot silently return.
-- These graphs remain incomplete class progression, but they no longer claim
-  mechanics that do not exist. Future additions must be individually authored.
+- These graphs are complete for their authored V1 scope. Future additions must
+  be individually authored rather than inferred from size or tier.
 
 Shipped Thief/Rogue closure — loot, luck, and survival:
 

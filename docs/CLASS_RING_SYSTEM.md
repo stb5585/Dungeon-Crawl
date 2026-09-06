@@ -6,24 +6,19 @@ remaining tuning or presentation follow-up.
 
 ## Current Implementation Status
 
-Class Ring activation now has two implementation tiers:
+Playable activation flows and their advertised V1 combat riders are implemented
+for `Grandmaster of Arms`, `Demonologist`, `Archdruid`, `Berserker`, `Dragoon`,
+`Stalwart Defender`, `Wizard`, `Shadowcaster`, `Knight Enchanter`,
+`Thaumaturgist`, `Rogue`, `Seeker`, `Ninja`, `Arcane Trickster`, `Crusader`,
+`Templar`, `Hierophant`, `Master Monk`, `Archbishop`, `Troubadour`, `Lycan`,
+`Astromancer`, `Soulcatcher`, and `Beast Master`.
 
-- Playable activation flows: `Grandmaster of Arms`, `Demonologist`,
-  `Archdruid`, `Berserker`, `Dragoon`, `Stalwart Defender`, `Wizard`,
-  `Shadowcaster`, `Knight Enchanter`, `Thaumaturgist`, `Rogue`, `Seeker`,
-  `Ninja`, `Arcane Trickster`, `Crusader`, `Templar`, `Hierophant`,
-  `Master Monk`, `Archbishop`, `Troubadour`, `Lycan`, `Astromancer`,
-  `Soulcatcher`, and `Beast Master`.
-- Activation completion does not imply every advertised combat rider is wired.
-  The current class-kit audit still finds missing or orphaned riders across
-  Templar, Master Monk, Archbishop, Lycan,
-  Astromancer,
-  Soulcatcher, Archdruid, and Beast Master. Those effects must not be treated
-  as shipped merely because their awakening quests and display names work.
-- Legacy second-promotion class-kit pass: supporting class mechanics, saved
-  state, status text, and Class Ring hooks are implemented for the legacy
-  classes listed below. Radar-style Wizard visualization can be added later;
-  the six affinity values are exposed as readable text first.
+Supporting class mechanics, saved state, status text, and Class Ring hooks are
+part of the shipped critical class-kit baseline. Future changes are
+presentation review, evidence-driven tuning, or separately specified expansion.
+Radar-style Wizard visualization remains optional; the six affinity values are
+currently exposed as readable text.
+
 - Weapon Master starts Weapon Discipline and active Weapon Arts; Berserker
   carries that progress forward; Grandmaster of Arms deepens it with Class Ring
   binding and Perfect Bound Art.
@@ -545,10 +540,10 @@ additional visual presentation, and playtest follow-up.
   progress, combat-only `Revelation`, and Seeker `Wayfinding`; when awakened
   and equipped, `Hidden Cache` keeps its cache identity while adding small
   insight smoothing after clean `Inspect` or telegraph reads.
-  - Critical implementation gap: Hidden Cache availability and claim helpers
-    have no dungeon/reward caller, ring insight smoothing is absent,
-    Revelation has no spender, Case milestones are labels only, and the
-    Wayfinding discount has no gameplay consumer.
+  - Hidden Cache availability and claim helpers are connected to mapped-floor
+    rewards. Ring insight smoothing, Revelation spending, Case Journal
+    milestones, and Wayfinding movement effects are part of the shipped V1
+    class-kit closure.
   - Status: playable in the Thieves Guild backroom when a dormant Seeker Class Ring is
     equipped or stored.
 - `Ninja`: `No-Trace Contract` awakens `No-Trace Opener`, preserving the
@@ -578,17 +573,11 @@ additional visual presentation, and playtest follow-up.
 
 ### Healer And Pathfinder Branches
 
-Audit correction (2026-09-02): the awakening flows below are playable, but
-several listed enhancements are acceptance targets rather than live behavior.
-`Ordered Blessings` preservation works, while its blessing rotation has no
-caller. `Martial Master` refunds Ki after the new Dim Mak helper, but Dim Mak's
-legacy fallback bypasses full Ki. `Divine Intervention` healing/preservation,
-`Encore`, Astromancer constellation bonuses, Archdruid Harmony Bonus, and Beast
-Master Shared Recovery work. Controlled Frenzy penalty reduction,
-Soulcatcher `soul_aspect_bonus`, active-sign Threaded Cast strengthening,
-Archdruid once-only Aspect preservation, and Beast Master command enhancement
-are absent or incomplete. See `CLASS_KIT_DESIGN_GATES.md` before changing ring
-numbers or presentation.
+The September 2026 critical closure pass connected the previously orphaned V1
+riders in this section, including Ordered Blessings rotation, full-Ki Dim Mak,
+Controlled Frenzy smoothing, Soulcatcher aspect scaling, active-sign Threaded
+Cast, Archdruid Aspect preservation, and Beast Master command enhancement. See
+`CLASS_KIT_DESIGN_GATES.md` before changing ring numbers or expanding mechanics.
 
 - `Templar`: `Relic Defense` awakens `Ordered Blessings`, rotating Regen,
   Defense, and Holy damage blessings through relevant actions.

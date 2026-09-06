@@ -1,6 +1,6 @@
 # Story And Endgame Design
 
-Status: `Initial Spec, Vesperion Boss Concept, False-Final, Liminal Hub Shell, Six Lightweight Guardian Trials, Liminal Clue Review, Trial Consequences, Endgame Story Route, Reflection Combat Shell, Reflection Path Mirroring, Reflection Retry Tracking, Vesperion Guardian Counters, True-Final Victory, Ending Sequence, Tavern Epilogue, New Game Intro, Story Polish Epic, Class Ring Voluntas Tie-In, Story Polish Bundle V2, Liminal Trials V2, And Narrative Systems Bundle V3 Implemented`
+Status: `Vesperion/Voluntas Route Implemented; Further Story Work Gated`
 
 This is the durable story and endgame design reference for **The Forsaken
 Tenet** after the Six Relics arc. It records shipped story canon, route gates,

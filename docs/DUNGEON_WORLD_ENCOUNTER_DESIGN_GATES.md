@@ -7,7 +7,7 @@ this file should keep active, deferred, or decision-gated direction.
 
 ## Status
 
-Status: `Spec Map, V1 Quick Wins Shipped, Relic Text Shared`
+Status: `V1 Baseline Shipped; Expansions Gated`
 
 The first implementation slice shipped low-risk improvements that do not
 require new maps, generated art, or broad content rewrites:

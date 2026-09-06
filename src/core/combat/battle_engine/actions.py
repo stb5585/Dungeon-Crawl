@@ -12,7 +12,6 @@ from ... import items
 from ...classes import (
     ability_mechanics,
     astromancer,
-    class_rings,
     mage_mechanics,
     promotion_kits,
     wizard,

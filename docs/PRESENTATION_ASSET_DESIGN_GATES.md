@@ -8,7 +8,7 @@ presentation direction.
 
 ## Status
 
-Status: `Spec Map, V1 Screen/Cue And Identity/Asset Implementation`
+Status: `V1 Screen, Cue, Identity, And Asset Baseline Shipped`
 
 The first implementation slice prioritizes quick wins that do not require a new
 art direction pass:
@@ -22,7 +22,8 @@ art direction pass:
 Generated bitmap batches are allowed for later asset-heavy slices, but each
 batch must have a review artifact before runtime integration.
 
-The next implementation set shipped Enemy Identity Presentation V1, the Quasit
+The follow-up implementation set shipped Enemy Identity Presentation V1, the
+Quasit
 combat-sprite remake, active/inactive Warp Point dungeon art, and bespoke
 summon companion art. Runtime PNGs remain transparent, review sheets are checked
 in, and fallbacks remain valid.

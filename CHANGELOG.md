@@ -2,6 +2,32 @@
 
 ## [Unreleased]
 
+### Development Tool And Code Cleanup
+
+- Repaired the balance-suite enemy roster after the enemy `Conjurer` was
+  renamed to `Necromancer`, and added a regression test for CLI startup.
+- Removed the unreachable legacy Pygame level-up implementation so the screen
+  has one progression-service-backed path.
+- Removed confirmed unused imports and stale cleanup markers without changing
+  gameplay rules.
+
+### Documentation Consolidation And Refactor Sequencing
+
+- Replaced the shipped-history-heavy roadmap with a forward-looking priority
+  map centered on foundational gameplay refactors before broad manual
+  playtesting.
+- Added an ordered refactor plan for ability taxonomy, combat timing and
+  accuracy, invisibility and targeting, multi-enemy scope, combat actions and
+  resource presentation, and dungeon recovery.
+- Rebased the playtest documentation as a post-refactor queue while preserving
+  focused slice validation and the class-kit evidence format.
+- Retired the completed progression checkpoint and Multi-Enemy Pilot 1-2 plans
+  from the active documentation set after consolidating their durable
+  boundaries into current owner documents. Their full text remains available
+  in Git history.
+- Corrected stale ability-tree, promotion, class-kit, Class Ring, multi-enemy,
+  combat, story, presentation, dungeon, and equipment status language.
+
 ### Class-Kit Closure Cleanup And Coverage
 
 - Made shared Momentum copy class-neutral while keeping its Death Mark setup

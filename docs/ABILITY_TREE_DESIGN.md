@@ -673,12 +673,12 @@ Active Resist effects appear as positive buff indicators in the Character Menu,
 dungeon HUD, and combat HUD. Resist All applies a five-turn ward to Fire, Ice,
 Electric, Water, Earth, Wind, Shadow, and Holy resistance.
 
-Catalog-only promoted trees are intentionally exempt from the ordinary
-16-node first-promotion and 14-node terminal breadth checks until their
-individual authored decision blocks are implemented. Do not restore generated
-passive families, repeated ranks, or generic cap masteries to satisfy those
-targets. First-promotion route costs above include the three-point terminal
-promotion; total development costs exclude promotion nodes.
+Every promoted tree is authored. Compact trees remain exempt from arbitrary
+breadth targets when their external repertoire or higher-cost masteries provide
+meaningful development pressure. Do not restore generated passive families,
+repeated ranks, or generic cap masteries to inflate node counts.
+First-promotion route costs above include the three-point terminal promotion;
+total development costs exclude promotion nodes.
 
 ## Ownership Boundaries
 

@@ -1,22 +1,19 @@
 # Ability Tree Status
 
-This index distinguishes mechanically authored trees from catalog-only graphs.
-Every runtime tree has a colocated Markdown sidecar and generated SVG. The
-runtime authority remains `src/core/progression_manifest.py`; these documents
-record design status, boundaries, and validation expectations.
+All 49 playable classes have mechanically authored trees. Every runtime tree
+has a colocated Markdown sidecar and generated SVG. The runtime authority
+remains `src/core/progression_manifest.py`; these documents record the shipped
+design, boundaries, and validation expectations.
 
 ## Status Rules
 
 - `Finished`: the graph has authored choices, prerequisites, and runtime
   mechanics. Its sidecar is an implementation reference.
-- `Decision Block`: existing catalog abilities and class mechanics work, but
-  the graph still needs authored progression choices. Its sidecar is the scope
-  gate for that implementation.
 - New nodes must modify an existing class mechanic or introduce a fully
   specified action. Generic rating families, repeated filler ranks, and hidden
   meter-cap padding are prohibited.
-- Complete one vertical promotion path at a time. Focused evidence may tune a
-  proposed effect, but unrelated P8 evidence does not block implementation.
+- Future structural changes belong to the foundational progression gate in
+  `../FOUNDATIONAL_REFACTOR_PLAN.md`, not to an unfinished-tree queue.
 
 Node counts are a readability guide, not a completion target. A class tier
 should normally let its newly earned progression points buy only 60-70% of
@@ -100,8 +97,9 @@ the class also gains a broad external repertoire, such as stolen spells.
 
 ## Implementation Order
 
-All promoted class paths now have authored graphs. Continue with focused
-playtest evidence and balance tuning rather than structural tree completion.
+All promoted class paths have authored graphs. Structural tree completion is
+closed; future changes require either a focused mechanic decision or an
+explicitly promoted progression redesign.
 
 After any tree change, update its sidecar and run:
 

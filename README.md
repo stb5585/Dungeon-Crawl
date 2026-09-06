@@ -16,8 +16,11 @@ roadmap pass:
   and diagnostic tools rather than a second playable frontend.
 - Ability data is substantially migrated to YAML under
   `src/core/data/abilities/`.
-- Current P4-P7 content slices are completed; P8 playtest readiness and
-  evidence collection are the active roadmap lane.
+- All 49 authored class ability trees and the critical class-kit closure pass
+  are complete.
+- Foundational gameplay refactors are the active planning lane. Broad manual
+  playtesting is deferred until combat timing, targeting, multi-enemy scope,
+  and the combat action interface stabilize.
 - Completed class-kit scope and deferred deep-kit gates are tracked in
   [docs/CLASS_KIT_DESIGN_GATES.md](docs/CLASS_KIT_DESIGN_GATES.md).
 - Combat architecture and balance decisions are specified in
@@ -25,8 +28,8 @@ roadmap pass:
   before gameplay or balance rules change.
 - Presentation, dungeon/world/encounter, and equipment/economy work now have
   dedicated design-gate docs linked from the roadmap and docs index.
-- Older phase/migration docs are retained for historical context, not as the
-  current backlog.
+- Retired phase plans are removed from the active documentation set and remain
+  recoverable through Git history.
 
 ## Requirements
 
@@ -69,7 +72,6 @@ without maintaining a second player-facing UI:
 ./.venv/bin/python -m pytest tests/integration -q
 ./.venv/bin/python tools/dev_tools.py effects
 ./.venv/bin/python tools/dev_tools.py events
-./.venv/bin/python tools/run_balance_suite.py --tier base --level 10 --iters 30 --seed 1337
 ```
 
 ## Testing
@@ -111,6 +113,7 @@ game_pygame.py   Pygame entry point
 Start with [docs/README.md](docs/README.md). The most useful current docs are:
 
 - [docs/DEVELOPMENT_ROADMAP.md](docs/DEVELOPMENT_ROADMAP.md)
+- [docs/FOUNDATIONAL_REFACTOR_PLAN.md](docs/FOUNDATIONAL_REFACTOR_PLAN.md)
 - [docs/CLASS_KIT_DESIGN_GATES.md](docs/CLASS_KIT_DESIGN_GATES.md)
 - [docs/COMBAT_BALANCE_DESIGN_GATES.md](docs/COMBAT_BALANCE_DESIGN_GATES.md)
 - [docs/CLASS_RING_SYSTEM.md](docs/CLASS_RING_SYSTEM.md)
@@ -129,7 +132,7 @@ Start with [docs/README.md](docs/README.md). The most useful current docs are:
 ./.venv/bin/python tools/dev_tools.py queue
 ./.venv/bin/python tools/dev_tools.py events
 ./.venv/bin/python tools/dev_tools.py abilities --directory src/core/data/abilities
-./.venv/bin/python tools/run_balance_suite.py --tier base --level 10 --iters 30 --seed 1337
+./.venv/bin/python tools/run_balance_suite.py --help
 ```
 
 See [tools/README.md](tools/README.md) for more.

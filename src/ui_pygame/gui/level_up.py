@@ -1,81 +1,42 @@
-"""
-Level Up GUI for Pygame.
-Displays level up bonuses and allows stat selection.
-"""
+"""Pygame level-up presentation backed by the shared progression service."""
 
 import pygame
 
 from .level_up_popup import LevelUpPopup
 
 
-def _upgrade_source_name(ability_cls) -> str | None:
-    """Return the inherited ability name for upgrade detection, if available."""
-    try:
-        explicit = getattr(ability_cls, "replaces", None)
-        if explicit:
-            return explicit
-        bases = getattr(ability_cls, "__mro__", ())
-        if len(bases) < 2:
-            return None
-        parent_instance = bases[1]()
-        return getattr(parent_instance, "name", None)
-    except Exception:
-        return None
-
-
 class LevelUpScreen:
-    """Display level up information and handle stat selection."""
-    
+    """Display canonical level-up results in a popup."""
+
     def __init__(self, screen, presenter):
         self.screen = screen
         self.presenter = presenter
-        self.width = screen.get_width()
-        self.height = screen.get_height()
         self._popup_background = None
-        
-        # Colors
-        self.bg_color = (20, 20, 30)
-        self.panel_color = (40, 40, 50)
-        self.border_color = (100, 100, 150)
-        self.text_color = (220, 220, 220)
-        self.highlight_color = (255, 215, 0)
-        self.gain_color = (100, 255, 100)
-        
-        # Fonts
-        self.title_font = pygame.font.Font(None, 56)
-        self.header_font = pygame.font.Font(None, 36)
-        self.stat_font = pygame.font.Font(None, 28)
-        self.small_font = pygame.font.Font(None, 22)
-    
-    def show_level_up(self, player_char, game):
-        """
-        Display level up screen and process level up bonuses.
-        
-        Args:
-            player_char: The player character
-            game: Game object (for compatibility, might not be needed)
-        
-        Returns:
-            dict: Information about the level up (gains, new abilities, etc.)
-        """
-        # Calculate gains
-        level_info = self._calculate_level_up(player_char)
 
-        # Capture current scene so level-up overlays preserve the prior background
+    def show_level_up(self, player_char, game):
+        """Display the result of the player's most recent level increase.
+
+        Args:
+            player_char: Player whose progression result should be displayed.
+            game: Retained for compatibility with existing callers.
+
+        Returns:
+            A dictionary of level and stat gains rendered by the popup.
+        """
+        level_info = self._calculate_level_up(player_char)
         self._popup_background = self._get_background_surface()
-        
-        # Show level up information popup
+
         popup = LevelUpPopup(self.presenter, level_info)
         popup.show(
             background_draw_func=self._draw_popup_background,
             flush_events=True,
             require_key_release=True,
         )
-        
+
         return level_info
-    
+
     def _calculate_level_up(self, player_char):
-        """Calculate all level up bonuses."""
+        """Return display data from the canonical progression service."""
         from src.core.progression import (
             award_experience,
             cumulative_experience_for_level,
@@ -97,13 +58,12 @@ class LevelUpScreen:
                     player_char,
                     max(0, target_xp - state.total_xp),
                 )
-                growth = result.growth
-                points_awarded = result.points_awarded
-                attribute_points_awarded = result.attribute_points_awarded
+
         if result is not None:
             growth = result.growth
             points_awarded = result.points_awarded
             attribute_points_awarded = result.attribute_points_awarded
+
         point_messages = []
         if points_awarded:
             point_messages.append(
@@ -115,6 +75,7 @@ class LevelUpScreen:
                 f"+{attribute_points_awarded} attribute point"
                 f"{'s' if attribute_points_awarded != 1 else ''}"
             )
+
         return {
             "new_level": player_char.level.level,
             "health_gain": sum(item.health for item in growth),
@@ -127,281 +88,6 @@ class LevelUpScreen:
             "spell_upgrades": [],
             "skill_upgrades": [],
         }
-
-        # The point service above owns all current leveling behavior. TODO: cleanup
-        from src.core import abilities
-        
-        dv = max(1, 5 - player_char.check_mod('luck', luck_factor=8))
-        
-        # Calculate gains
-        health_gain = random.randint(player_char.stats.con // dv, player_char.stats.con)
-        mana_gain = random.randint(player_char.stats.intel // dv, player_char.stats.intel)
-        
-        attack_gain = random.randint(0, player_char.check_mod("luck", luck_factor=12) +
-                                    (player_char.stats.strength // 12) + 
-                                    max(1, player_char.cls.att_plus // 2))
-        defense_gain = random.randint(0, player_char.check_mod("luck", luck_factor=15) + 
-                                    (player_char.stats.con // 12) + 
-                                    max(1, player_char.cls.def_plus // 2))
-        magic_gain = random.randint(0, player_char.check_mod("luck", luck_factor=12) +
-                                    (player_char.stats.intel // 12) + 
-                                    max(1, player_char.cls.int_plus // 2))
-        magic_def_gain = random.randint(0, player_char.check_mod("luck", luck_factor=15) +
-                                    (player_char.stats.wisdom // 12) + 
-                                    max(1, player_char.cls.wis_plus // 2))
-        
-        # Apply gains
-        player_char.health.max += health_gain
-        player_char.mana.max += mana_gain
-        
-        if player_char.in_town():
-            player_char.health.current = player_char.health.max
-            player_char.mana.current = player_char.mana.max
-        
-        player_char.combat.attack += attack_gain
-        player_char.combat.defense += defense_gain
-        player_char.combat.magic += magic_gain
-        player_char.combat.magic_def += magic_def_gain
-        
-        player_char.level.level += 1
-        
-        # Check for new spells/skills
-        new_abilities = []
-        spell_upgrades = []
-        skill_upgrades = []
-        
-        # Check for new spell
-        for spell in abilities.ability_classes_for_level(
-            abilities.spell_dict, player_char.cls.name, player_char.level.level
-        ):
-            spell_gain = spell()
-            spell_name = spell_gain.name
-            
-            if spell_name in player_char.spellbook['Spells']:
-                spell_upgrades.append(f"{spell_name} goes up a level")
-            else:
-                old_name = _upgrade_source_name(spell)
-                if old_name and old_name in player_char.spellbook['Spells']:
-                    spell_upgrades.append(f"{old_name} upgraded to {spell_name}")
-                    del player_char.spellbook['Spells'][old_name]
-                else:
-                    new_abilities.append(f"Spell: {spell_name}")
-            
-            player_char.spellbook['Spells'][spell_name] = spell_gain
-        
-        # Check for new skill
-        for skill in abilities.ability_classes_for_level(
-            abilities.skill_dict, player_char.cls.name, player_char.level.level
-        ):
-            skill_gain = skill()
-            skill_name = skill_gain.name
-            
-            if skill_name in player_char.spellbook['Skills']:
-                skill_upgrades.append(f"{skill_name} goes up a level")
-            else:
-                old_name = _upgrade_source_name(skill)
-                if old_name and old_name in player_char.spellbook['Skills']:
-                    skill_upgrades.append(f"{old_name} upgraded to {skill_name}")
-                    del player_char.spellbook['Skills'][old_name]
-                else:
-                    new_abilities.append(f"Skill: {skill_name}")
-            
-            player_char.spellbook['Skills'][skill_name] = skill_gain
-            
-            # Handle special skill effects
-            if skill_name == 'Health/Mana Drain':
-                for old_skill in ["Health Drain", "Mana Drain"]:
-                    if old_skill in player_char.spellbook["Skills"]:
-                        del player_char.spellbook['Skills'][old_skill]
-            elif skill_name == "True Piercing Strike":
-                for old_skill in ["Piercing Strike", "True Strike"]:
-                    if old_skill in player_char.spellbook["Skills"]:
-                        del player_char.spellbook['Skills'][old_skill]
-            elif skill_name == 'Familiar' and hasattr(player_char, 'familiar'):
-                familiar_msg = player_char.familiar.level_up()
-                new_abilities.append(f"Familiar: {familiar_msg}")
-            elif skill_name in ["Transform", "Reveal", "Purity of Body"]:
-                effect_msg = skill_gain.use(player_char)
-                new_abilities.append(effect_msg)
-        
-        # Unlock Jump modifications (Lancer/Dragoon)
-        jump_skill = None
-        skills = player_char.spellbook.get("Skills", {})
-        if "Jump" in skills:
-            jump_skill = skills["Jump"]
-        else:
-            for sk in skills.values():
-                if getattr(sk, "name", "") == "Jump":
-                    jump_skill = sk
-                    break
-        if jump_skill is not None:
-            # Check for max active modifications increase
-            if hasattr(jump_skill, "get_max_active_modifications"):
-                # Create a temporary mock character with old level for comparison
-                import copy
-                old_char = copy.copy(player_char)
-                old_char.level = copy.copy(player_char.level)
-                old_char.level.level = player_char.level.level - 1
-                
-                old_max = jump_skill.get_max_active_modifications(old_char)
-                new_max = jump_skill.get_max_active_modifications(player_char)
-                if new_max > old_max:
-                    new_abilities.append(f"Jump: Can now equip {new_max} modifications (was {old_max})")
-            
-        # Unlock Totem aspects (Shaman)
-        totem_skill = None
-        skills = player_char.spellbook.get("Skills", {})
-        if "Totem" in skills:
-            totem_skill = skills["Totem"]
-        else:
-            for sk in skills.values():
-                if getattr(sk, "name", "") == "Totem":
-                    totem_skill = sk
-                    break
-        if totem_skill is not None and hasattr(totem_skill, "check_and_unlock_aspects"):
-            newly_unlocked = totem_skill.check_and_unlock_aspects(player_char.level.level)
-            if newly_unlocked:
-                for aspect in newly_unlocked:
-                    new_abilities.append(f"Totem Aspect: {aspect}")
-        
-        # Update exp requirement
-        if not player_char.max_level():
-            player_char.level.exp_to_gain += (player_char.exp_scale ** player_char.level.pro_level) * player_char.level.level
-        else:
-            player_char.level.exp_to_gain = "MAX"
-        
-        return {
-            'new_level': player_char.level.level,
-            'health_gain': health_gain,
-            'mana_gain': mana_gain,
-            'attack_gain': attack_gain,
-            'defense_gain': defense_gain,
-            'magic_gain': magic_gain,
-            'magic_def_gain': magic_def_gain,
-            'new_abilities': new_abilities,
-            'spell_upgrades': spell_upgrades,
-            'skill_upgrades': skill_upgrades
-        }
-    
-    def _display_level_up_info(self, player_char, level_info):
-        """Display the level up information screen."""
-        self.screen.fill(self.bg_color)
-        
-        y = 50
-        
-        # Title
-        title = self.title_font.render("LEVEL UP!", True, self.highlight_color)
-        title_rect = title.get_rect(center=(self.width // 2, y))
-        self.screen.blit(title, title_rect)
-        y += 80
-        
-        # New level
-        level_text = self.header_font.render(
-            f"You are now level {level_info['new_level']}!",
-            True, self.text_color
-        )
-        level_rect = level_text.get_rect(center=(self.width // 2, y))
-        self.screen.blit(level_text, level_rect)
-        y += 60
-        
-        # Stats gained
-        stats_header = self.header_font.render("Stats Gained:", True, self.text_color)
-        self.screen.blit(stats_header, (100, y))
-        y += 50
-        
-        gains = [
-            f"Health: +{level_info['health_gain']}",
-            f"Mana: +{level_info['mana_gain']}",
-        ]
-        
-        if level_info['attack_gain'] > 0:
-            gains.append(f"Attack: +{level_info['attack_gain']}")
-        if level_info['defense_gain'] > 0:
-            gains.append(f"Defense: +{level_info['defense_gain']}")
-        if level_info['magic_gain'] > 0:
-            gains.append(f"Magic: +{level_info['magic_gain']}")
-        if level_info['magic_def_gain'] > 0:
-            gains.append(f"Magic Defense: +{level_info['magic_def_gain']}")
-        
-        for gain in gains:
-            text = self.stat_font.render(gain, True, self.gain_color)
-            self.screen.blit(text, (120, y))
-            y += 35
-        
-        # New abilities
-        if level_info['new_abilities']:
-            y += 20
-            abilities_header = self.header_font.render("New Abilities:", True, self.text_color)
-            self.screen.blit(abilities_header, (100, y))
-            y += 50
-            
-            for ability in level_info['new_abilities']:
-                text = self.stat_font.render(ability, True, self.highlight_color)
-                self.screen.blit(text, (120, y))
-                y += 35
-        
-        # Upgrades
-        all_upgrades = level_info['spell_upgrades'] + level_info['skill_upgrades']
-        if all_upgrades:
-            y += 20
-            upgrades_header = self.header_font.render("Upgrades:", True, self.text_color)
-            self.screen.blit(upgrades_header, (100, y))
-            y += 50
-            
-            for upgrade in all_upgrades:
-                text = self.stat_font.render(upgrade, True, self.highlight_color)
-                self.screen.blit(text, (120, y))
-                y += 35
-        
-        # Footer
-        footer = self.small_font.render("Press any key to continue...", True, self.text_color)
-        footer_rect = footer.get_rect(center=(self.width // 2, self.height - 40))
-        self.screen.blit(footer, footer_rect)
-        
-        pygame.display.flip()
-    
-    def _select_stat_increase(self, player_char):
-        """Allow player to select a stat to increase (every 4 levels) using a popup."""
-        stat_options = [
-            ('Strength', player_char.stats.strength),
-            ('Intelligence', player_char.stats.intel),
-            ('Wisdom', player_char.stats.wisdom),
-            ('Constitution', player_char.stats.con),
-            ('Charisma', player_char.stats.charisma),
-            ('Dexterity', player_char.stats.dex)
-        ]
-        
-        # Show popup to select stat  TODO: fix missing import or delete
-        popup = StatSelectionPopup(self.presenter, stat_options)
-        selected_stat = popup.show(
-            background_draw_func=lambda: self._draw_level_up_background(player_char),
-            flush_events=True,
-            require_key_release=True,
-        )
-        
-        if selected_stat is None:
-            return
-        
-        # Apply stat increase
-        if selected_stat == 'Strength':
-            player_char.stats.strength += 1
-        elif selected_stat == 'Intelligence':
-            player_char.stats.intel += 1
-        elif selected_stat == 'Wisdom':
-            player_char.stats.wisdom += 1
-        elif selected_stat == 'Constitution':
-            player_char.stats.con += 1
-        elif selected_stat == 'Charisma':
-            player_char.stats.charisma += 1
-        elif selected_stat == 'Dexterity':
-            player_char.stats.dex += 1
-        
-        # Show confirmation
-        self._show_stat_confirmation(selected_stat, stat_options)
-    
-    def _draw_level_up_background(self, player_char):
-        """Draw the level up info as background for the popup."""
-        self._draw_popup_background()
 
     def _get_background_surface(self):
         if hasattr(self.presenter, "get_background_surface"):
@@ -417,32 +103,11 @@ class LevelUpScreen:
         if self._popup_background is None:
             self._popup_background = self._get_background_surface()
         self.screen.blit(self._popup_background, (0, 0))
-    
-    def _show_stat_confirmation(self, stat_name, stat_options):
-        """Show confirmation of stat increase using a popup."""
-        from .confirmation_popup import ConfirmationPopup
-        
-        # Find the new value for this stat
-        new_value = None
-        for name, value in stat_options:
-            if name == stat_name:
-                new_value = value + 1
-                break
-        
-        message = f"{stat_name} increased to {new_value}!"
-        popup = ConfirmationPopup(self.presenter, message, show_buttons=False)
-        popup.show(
-            background_draw_func=self._draw_popup_background,
-            flush_events=True,
-            require_key_release=True,
-        )
-    
+
     def _wait_for_continue(self):
-        """Wait for player to press a key."""
+        """Wait for the player to press a key or close the window."""
         waiting = True
         while waiting:
             for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    waiting = False
-                elif event.type == pygame.KEYDOWN:
+                if event.type in (pygame.QUIT, pygame.KEYDOWN):
                     waiting = False

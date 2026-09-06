@@ -2,22 +2,19 @@
 
 ## Status
 
-Status: `Manual acceptance complete; promoted-class balance provisional`
+Status: `Ready For Post-Tree Rebenchmark`
 
-Automated result: `Partial pass (1 accepted, 2 blocked); rerun required after
-the ability-tree refactor`
+Pre-tree automated result: `Partial pass (1 accepted, 2 blocked)`
 
 Pilot 3 extends curated two-enemy validation to dungeon floors 3 and 4. It
 does not enable random pair generation, change save data, or permit more than
 two enemies.
 
 The six required manual runs are complete. Their targeting, presentation,
-cleanup, and encounter-flow acceptance is closed. Their combat-length and
-difficulty observations are not promotion evidence: current first-promotion
-trees vary substantially in completeness, with Weapon Master currently the
-most representative. Re-run the promoted-class matrices after the ability-tree
-refactor and compare them with the reports below before changing pair balance
-or enabling deeper-floor random generation.
+cleanup, and encounter-flow acceptance is closed. All authored trees are now
+complete, so rerun the promoted-class matrices and compare them with the
+pre-tree reports below before changing pair balance or enabling deeper-floor
+random generation.
 
 ## Benchmark Contract
 
@@ -136,7 +133,7 @@ any defect.
 
 Manual status: `Accepted (six of six completed)`
 
-Balance follow-up: `Rebenchmark after the ability-tree refactor. Preserve
-these reports as the pre-refactor comparison point; do not infer tuning from
-the Druid run because its delayed promotion changed its level and stat-growth
-history.`
+Balance follow-up: `Rebenchmark against the completed authored trees. Preserve
+these reports as the pre-tree comparison point; do not infer tuning from the
+historical Druid run because its delayed promotion changed its level and
+stat-growth history.`

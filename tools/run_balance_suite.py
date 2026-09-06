@@ -13,12 +13,12 @@ Example:
 from __future__ import annotations
 
 import argparse
-from collections import Counter, defaultdict
 import datetime as _dt
 import statistics
+import sys
+from collections import Counter, defaultdict
 from dataclasses import dataclass
 from pathlib import Path
-import sys
 
 # Allow running as a script from repo root without installing as a package.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -713,7 +713,6 @@ def main() -> int:
         Bandit,
         Chimera,
         Clannfear,
-        Conjurer,
         DarkKnight,
         DisplacerBeast,
         EvilCrusader,
@@ -725,6 +724,7 @@ def main() -> int:
         Imp,
         Mimic,
         Naga,
+        Necromancer,
         NightHag,
         ShadowSerpent,
         SteelPredator,
@@ -924,7 +924,7 @@ def main() -> int:
                     "Evil Crusader": 1.0,
                     "Troll": 1.25,
                     "Vampire": 1.25,
-                    "Conjurer": 1.25,
+                    "Necromancer": 1.25,
                     "Gargoyle": 1.35,
                     "Mimic": 1.5,
                     "Steel Predator": 1.25,
@@ -1108,7 +1108,7 @@ def main() -> int:
         ("Evil Crusader", EvilCrusader),
         ("Troll", Troll),
         ("Vampire", Vampire),
-        ("Conjurer", Conjurer),
+        ("Necromancer", Necromancer),
         ("Gargoyle", Gargoyle),
         ("Steel Predator", SteelPredator),
         ("Dark Knight", DarkKnight),

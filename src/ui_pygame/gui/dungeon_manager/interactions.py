@@ -6,7 +6,6 @@ import pygame
 
 import src.ui_pygame.gui.dungeon_manager as dungeon_manager
 from src.core import (
-    companions,
     enemies,
     items,
     map_tiles,

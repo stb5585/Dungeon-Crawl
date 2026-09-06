@@ -4,10 +4,10 @@
 
 Status: `Implemented - Slices 0 through 6; early-floor curated pilots complete`
 
-This document promotes the multi-enemy combat item from
-`COMBAT_BALANCE_DESIGN_GATES.md` into a concrete architecture proposal.
-Architecture decisions 1-12 and content, frontend, and balance decisions
-13-21 are implemented through the development pilot. Two-enemy execution is
+This document defines the implemented multi-enemy architecture and the gates
+for promoting it beyond development-only encounters. Architecture decisions
+1-12 and content, frontend, and balance decisions 13-21 are implemented through
+the development pilot. Two-enemy execution is
 available to headless callers and Pygame only through direct APIs or the
 explicit development override; ordinary random generation remains singleton.
 
@@ -24,20 +24,20 @@ permanent two-enemy ceiling, but content generation and UI acceptance enforce
 that ceiling until playtest and simulator evidence support expanding it.
 
 Pilot 1 closed with its 20-battle evidence pass. Pilot 2 closed with seven
-targeted manual battles, including a dedicated Hallowed Ground
-`ALL_ENEMIES` run, after automated screening selected three additional
-development-only pairs. Pilot 3's six-run manual acceptance is complete for
-three development-only pairs across floors 3 and 4. Its promoted-class balance
-remains provisional until the ability-tree refactor is complete: one pair
-passes the current aggregate gates and two remain blocked. Floor 5 is deferred
-behind that rebenchmark, a second-promotion benchmark, and an
+targeted manual battles, including a dedicated Hallowed Ground `ALL_ENEMIES`
+run. Pilot 3's six-run manual acceptance is complete for three development-only
+pairs across floors 3 and 4. All authored class trees are now complete, so its
+promoted-class matrices are ready to rebenchmark: one pair passed the earlier
+aggregate gates and two were blocked. Floor 5 remains deferred behind that
+rebenchmark, a second-promotion benchmark, and an
 enemy-area-action gate. Ordinary random pair generation remains disabled
 pending its separate promotion decision.
 
 ## Motivation
 
-The current duel loop makes every encounter read as a one-on-one contest even
-when an ability's fiction describes an area, formation, pack, field, or group.
+The singleton encounter baseline makes ordinary combat read as a one-on-one
+contest even when an ability's fiction describes an area, formation, pack,
+field, or group.
 That limits:
 
 - abilities that attack or control multiple enemies;
@@ -82,35 +82,21 @@ existing one-enemy game reliable.
 - Saving and resuming in the middle of a combat loop unless that capability is
   separately approved.
 
-## Current Runtime Constraints
+## Current Runtime Contract
 
-The current combat path is structurally one-on-one:
+- `BattleEngine` normalizes legacy singleton construction into an `Encounter`
+  and supports a fixed actor cycle with stable combatant IDs.
+- Explicit `ActionIntent` targets, `TargetScope`, `TargetLossPolicy`, and
+  `CombatResultGroup` own target validation and multi-target results.
+- Invalid intents do not spend resources or advance the actor cycle; defeated
+  actors are skipped.
+- Pygame supports lane selection, keyboard and mouse targeting, focus state,
+  target cancellation, and target-loss feedback for one or two enemies.
+- Outcomes, rewards, logs, events, and simulator records are roster-aware.
+- Ordinary generation remains singleton. Curated pairs require explicit
+  development override keys, and saves do not preserve mid-combat snapshots.
 
-- `BattleEngine` accepts one `enemy` and alternates
-  `attacker`/`defender` between two sides.
-- `determine_initiative()` returns a pair rather than an actor cycle.
-- actions implicitly use `self.defender`; neither frontend asks for a target;
-- `battle_continues()` ends when `self.enemy` dies;
-- status ticks, passive retaliation, delayed spells, familiar output, Totems,
-  charging abilities, and forced actions all assume one opposing object;
-- `BattleOutcomeMixin` awards XP, loot, quests, kill credit, vows, class-kit
-  triggers, and cleanup for one enemy;
-- pygame rendering, animations, floating text, enemy details, telegraphs, and
-  presenter state use one enemy or the literal target key `"enemy"`;
-- `CombatResult` and most event payloads carry one target, although
-  `CombatResultGroup` already provides a useful per-target result container;
-- the simulator models `char1` against `char2`, and `BattleLogger` stores one
-  enemy metadata record;
-- encounter catalogs return one enemy and map tiles/save payloads store one
-  `enemy`/`enemy_state`;
-- mechanics such as Rewind, Foretell, Bard songs, Paladin marks, delayed
-  spells, Hallowed Ground, and summon support directly inspect
-  `battle_engine.enemy` or the current defender.
-
-These are migration points, not reasons to implement a second parallel combat
-engine.
-
-## Proposed V1 Player Experience
+## Current V1 Player Experience
 
 ### Encounter Start
 
@@ -274,7 +260,7 @@ An `ALL_ENEMIES` action snapshots the valid living enemy targets when execution
 begins. It then resolves the same effect separately against each target in
 stable slot order.
 
-Proposed default rules:
+Implemented default rules:
 
 - mana, item, class-resource, and action costs are paid once;
 - hit, dodge, block, critical, resistance, immunity, damage, and secondary
@@ -383,10 +369,8 @@ result:
 - Battle Hymn and other encounter-wide effects enumerate participants through
   the encounter API rather than named `player`/`enemy`/`summon` attributes.
 
-Counterspell behavior for an all-enemy spell is not yet specified. It could
-cancel the entire cast, cancel only that enemy's portion, or roll once before
-target resolution. This must be decided before the first reflectable or
-counterable all-enemy damage spell ships.
+Counterspell remains retaliation and resolves independently for each affected
+target. It does not cancel the cast or another target's portion.
 
 ### Defeat And Removal
 
@@ -398,7 +382,7 @@ resolution before rewards:
 | `defeated` | No | Yes | Candidate |
 | `mercy` | No | No | Redemption rules |
 | `tamed` | No | No | No |
-| `ejected` | No | No | No loot; XP decision open |
+| `ejected` | No | Half | No loot |
 | `escaped` | No | No | No |
 
 The encounter ends in victory when no hostile enemy remains, including a mixed
@@ -413,7 +397,7 @@ single-enemy `_process_victory()` once per enemy because that would duplicate
 end-of-combat cleanup, class-kit triggers, transformation resets, and encounter
 statistics.
 
-Proposed separation:
+Implemented separation:
 
 - **per defeated enemy:** kill dictionary, Bestiary defeat, bounty/quest
   progress, soul harvest, eligible loot, enemy-specific class triggers;
@@ -423,12 +407,11 @@ Proposed separation:
   `end_combat`, total XP award, summon XP award, level-up calculation, boss/tile
   completion.
 
-Total encounter XP is provisionally the sum of eligible enemy XP, awarded once
-after multipliers. Loot is processed in authored slot order so inventory-full
-and floor-drop behavior is deterministic.
-
-This section requires explicit decisions for partial victories, flee/death
-after defeating one enemy, bounty encounters, and per-kill class resources.
+Total encounter XP is the sum of eligible enemy XP, awarded once after
+multipliers. Loot is processed in authored slot order so inventory-full and
+floor-drop behavior is deterministic. Flee or player defeat discards partial
+ledger progress and rewards; per-kill and per-encounter hooks follow the cadence
+defined in the approved decisions below.
 
 ## Encounter Authoring And Generation
 
@@ -584,35 +567,28 @@ before broad rollout:
 - duplicate enemy inventory, item stealing, quest identity, Bestiary identity,
   and loot drops.
 
-## Ability-Tree Refactor Integration
+## Ability And Progression Integration
 
 Targeting belongs to the canonical ability definition, not to a progression
 node. Tree nodes should continue to reference ability classes/IDs and should
 not duplicate `TargetScope`, coefficients, or encounter rules in the
 progression manifest.
 
-The paused ability-tree work can resume in two stages:
-
-1. After the target-scope enum, metadata location, and structured-result
-   contract are approved, abilities and future nodes may be designed with an
-   explicit scope even while two-enemy generation remains disabled.
-2. Abilities declared `ALL_ENEMIES` should not become purchasable in normal
-   play until Slice 3 proves their resource, reaction, kill-trigger, and
-   singleton behavior. A development-only tree/node is acceptable for
-   headless and UI validation.
-
-Before resuming broad tree authoring, build an ability inventory containing
-canonical ID/class, current description, inferred scope, approved scope,
-resource cost, charge behavior, reaction exposure, and per-kill triggers.
-That inventory will distinguish simple metadata work from abilities that need
-bespoke multi-target mechanics.
+The target-scope enum, structured-result contract, and ability inventory are
+implemented. New abilities must declare scope through the canonical ability
+definition and must cover resource, reaction, per-kill, and singleton behavior.
+The foundational ability-taxonomy refactor may relocate metadata, but it must
+preserve this ownership rule.
 
 Changing only an ability's target scope should not require a progression node
 ID migration. Renaming or replacing a version-5 node/ability identity remains
 subject to the existing save and ownership rules in
 `ABILITY_TREE_DESIGN.md`.
 
-## Rollout Plan
+## Implemented Rollout Record
+
+Slices 0-6 below are retained as an architecture record, not as the current
+backlog. Current rollout work begins with the Pilot 3 rebenchmark.
 
 ### Slice 0 - Decision And Characterization Gate
 
@@ -757,15 +733,16 @@ The 2026-08-03 automated pilot completed 500 pair battles per encounter with
 zero crashes or invalid actor/target states. Carrion Crawl measured 100.0%
 wins, a 2.11x actor-turn ratio, and 81.8% median winning HP; Wing and Mattock
 measured 80.0%, 1.49x, and 74.6%; Fang and Spear measured 85.8%, 2.07x, and
-58.9%. No pair passed every band, and the 20-battle manual gate remains open.
-See `MULTI_ENEMY_PILOT_EVIDENCE.md`; no balance values were changed.
-Final repository validation completed with 2,544 passing tests, and the
-post-Slice 6 singleton report remained byte-identical to the Slice 0 baseline.
+58.9%. No pair passed every initial band. The subsequent 20-battle manual gate,
+corrected floor-level balance pass, and targeted confirmation were completed;
+no balance values were changed. Detailed evidence remains available in Git
+history. The post-Slice 6 singleton report remained byte-identical to the Slice
+0 baseline.
 
 ## Approved Architecture Decisions
 
-The following contracts are approved for Slices 0 and 1. Runtime behavior
-belonging to later slices remains deferred even though its contract is fixed.
+The following contracts are implemented for the development pilot. Later
+rollout remains gated where noted.
 
 ### Blocking The Architecture Slices
 
@@ -841,7 +818,7 @@ belonging to later slices remains deferred even though its contract is fixed.
     1.25-2.0 times the harder member's singleton actor-turn count, and 20-60%
     median remaining HP on wins.
 
-14. **Occurrence:** Pairs are development-only on floors 1-2. They have no
+14. **Occurrence:** Pairs are development-only on floors 1-4. They have no
     random chance and cannot replace tutorial, chest, quest, boss, trial, or
     scripted encounters.
 
@@ -869,11 +846,10 @@ belonging to later slices remains deferred even though its contract is fixed.
     enemies hide their sprite. Sight reveals exact HP, MP, statuses,
     resistances, and focused details.
 
-21. **Promotion evidence:** Require 500 seeded simulations per pair across the
-    five base classes, 20 manual battles with at least five per pair, zero
-    crashes/invalid target states, and no unexplained singleton drift. Passing
-    evidence may recommend normal 1v2 rollout but never authorizes rosters
-    larger than two.
+21. **Promotion evidence:** Rebenchmark Pilot 3 against representative promoted
+    classes after authored-tree completion. Require zero crashes or invalid
+    target states and no unexplained singleton drift. Passing evidence may
+    recommend normal 1v2 rollout but never authorizes rosters larger than two.
 
 ## Acceptance Criteria
 

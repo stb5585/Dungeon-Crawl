@@ -1265,7 +1265,7 @@ class CambionAcolyte(Fiend):
 class Devil(Fiend):
     """
     Final Boss; highly resistant to spells; immune to weapon damage except ultimate weapons
-    Aided in combat by his acolyte  TODO
+    Aided in combat by his acolyte.
     Choose Fate ability:
      if Attack is chosen, damage mod is increased (increases attack damage and armor)
      if Hellfire is chosen, spell mod is increased (increase magic, healing, and magic defense)

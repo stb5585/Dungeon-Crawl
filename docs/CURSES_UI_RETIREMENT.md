@@ -38,7 +38,6 @@ shared engine rather than a second interactive frontend:
 ./.venv/bin/python tools/dev_tools.py queue
 ./.venv/bin/python tools/dev_tools.py events
 ./.venv/bin/python tools/dev_tools.py abilities --directory src/core/data/abilities
-./.venv/bin/python tools/run_balance_suite.py --tier base --level 10 --iters 30 --seed 1337
 ```
 
 New diagnostic needs should extend headless tests, simulator policies, compact

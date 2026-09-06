@@ -54,6 +54,13 @@ you intentionally want to add new checked-in ability data.
 ```
 Runs combat simulations for balance testing (requires Character instances).
 
+For the representative class, race, gear, progression, and enemy matrices used
+by the design-gate documents, use the standalone suite:
+
+```bash
+./.venv/bin/python tools/run_balance_suite.py --help
+```
+
 ### Help
 ```bash
 ./.venv/bin/python tools/dev_tools.py --help

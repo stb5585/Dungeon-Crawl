@@ -9,7 +9,7 @@ from .input_guards import prepare_guarded_input, release_guard_allows_input, upd
 from .mouse_helpers import hit_index, is_left_click, mouse_position
 
 
-class StatSelectionPopup:  # TODO: is this used anymore?
+class StatSelectionPopup:
     """
     A stat selection popup that appears over the current screen.
     Allows player to select which stat to increase during level up.

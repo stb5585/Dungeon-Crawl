@@ -140,7 +140,7 @@ class SacredMending(Class):
     def __init__(self) -> None:
         super().__init__(
             "Sacred Mending",
-            "Restore your health through a rite retained by either promotion path.",
+            "Restore your health through a rite of the Cleric faith.",
         )
         self.cost = 8
         self.subtyp = "Support"
@@ -172,7 +172,7 @@ class HallowedReadiness(Class):
     def __init__(self) -> None:
         super().__init__(
             "Hallowed Readiness",
-            "Raise Defense and Magic Defense without spending Devotion.",
+            "Raise Defense and Magic Defense.",
         )
         self.cost = 10
         self.subtyp = "Defensive"

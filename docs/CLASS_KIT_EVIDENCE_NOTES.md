@@ -1,9 +1,9 @@
 # Class-Kit Evidence Notes
 
 Canonical ledger for class-kit UI/log readability, meter cadence, ring
-preservation, action-economy pressure, and progression pacing evidence. Use this
-file to turn `PLAYTEST_CHECKLIST.md` prompts into concrete decision fuel before
-promoting any tuning, content, or expansion slice.
+preservation, action-economy pressure, and progression pacing evidence. The
+manual queue is preserved for the post-refactor ruleset; focused automated
+evidence remains useful during implementation.
 
 ## Evidence Rules
 
@@ -22,22 +22,23 @@ promoting any tuning, content, or expansion slice.
 
 ## Current Evidence Summary
 
-- Overall state: `Evidence Collection Started`.
+- Overall state: `Manual Evidence Deferred Until Foundational Refactors Stabilize`.
 - Automated regression evidence exists for class-kit shared status lines,
   representative combat-log messages, pygame log filtering/wrapping, class-ring
   readiness/status behavior, and simulator payload aggregation/export.
-- A presentation-only all-track UI/log readability batch is active for compact
-  status hints, class-kit log preservation, Thief/Rogue loot visibility, and
-  Thaumaturgist Xenid-bond eligibility/no-bond messaging.
+- The presentation-only UI/log baseline and critical class-kit implementation
+  closure are shipped.
 - Manual readability, cadence, preservation feel, action-economy pressure, and
-  pacing feel remain pending until focused playtest notes are recorded below.
+  pacing remain pending. Collect them after combat timing, targeting, encounter
+  scope, and the action interface stabilize so results describe the intended
+  gameplay baseline.
 
 ## Seeded Objective Evidence
 
 | Area | Track/class | Evidence source | Command or playtest route | Result band | Notes | Follow-up decision |
 | --- | --- | --- | --- | --- | --- | --- |
 | UI/log readability | Representative V1 class-kit surfaces | Automated regression | `./.venv/bin/python -m pytest tests/core/test_promotion_class_kits.py tests/ui_pygame/test_combat_view.py tests/core/test_class_ring_awakening.py` | `Pass` | 67 tests passed on 2026-06-28. Coverage includes shared status matrix surfaces, persistent/preservation status lines, representative class-kit messages, pygame class-kit log filtering, combat-log wrapping/cache behavior, and class-ring awakening/status coverage. | Keep as regression baseline; still requires manual readability inspection across real panels and logs. |
-| P8 automated readiness | Devotion, race layout, Smoke Screen cleanup, promotion gear, relic staging, and postgame tavern routing | Automated regression | `./.venv/bin/python -m pytest tests/ -q` | `Pass` | 2412 tests passed on 2026-07-29. The full suite covers the recently closed P8 automation routes in both shared core and frontend adapters, plus compatibility checks for the refactored effect, item, enemy, ability, player, map-tile, character, data-driven ability, promotion-kit, save-system, ability-loader, class-mechanics, and battle-engine packages. | Keep manual feel/readability checks in `docs/playtest/CURRENT.md`; do not treat automated coverage as play evidence. |
+| Pre-refactor automated readiness | Devotion, race layout, Smoke Screen cleanup, promotion gear, relic staging, and postgame tavern routing | Automated regression | `./.venv/bin/python -m pytest tests/ -q` | `Historical Pass` | 2412 tests passed on 2026-07-29. The count records that revision only; rerun relevant focused suites after foundational changes. | Preserve as a comparison point, not current play evidence or a current full-suite claim. |
 | Ring preservation | Representative awakened class-ring tracks | Automated regression | `./.venv/bin/python -m pytest tests/core/test_promotion_class_kits.py tests/core/test_class_ring_awakening.py` | `Pass` | Tests cover existing preservation/readiness paths such as Devotion/Prayer smoothing, Troubadour Encore preservation, and class-ring activation/status behavior. | Use manual preservation rows to judge whether smoothing feels mandatory or erases failure costs. |
 | Analytics payloads | Combat simulator class-kit and action-economy reporting | Automated regression | `./.venv/bin/python -m pytest tests/core/test_combat_simulator.py tests/core/test_combat_simulator_advanced.py` | `Pass` | 25 tests passed on 2026-06-28. Coverage includes aggregate/export payload behavior and smoke coverage for `class_kit_events` and `action_economy_events`. | Use payloads as investigation support, not automatic tuning failures. |
 | Progression pacing | Troubadour, Beast Master, Thaumaturgist, Seeker/Inquisitor, Lycan | Design baseline | `docs/CLASS_KIT_DESIGN_GATES.md` progression pacing tables | `Design Baseline` | Tables document expected formulas and watch gates: Troubadour clean completions, Beast Master bond milestones, Thaumaturgist Xenid-bond milestones, Seeker Case Journal milestones, and Lycan stress-record gates. | Manual pacing rows must confirm actual combat counts, interruptions, ring state, and feel before any tuning spec. |
@@ -46,8 +47,9 @@ promoting any tuning, content, or expansion slice.
 
 ## Manual Evidence Queue
 
-Use these rows for focused evidence collection. Replace `Pending Manual` only
-after the route has been played or measured.
+Use these rows after the foundational refactor milestone. Replace
+`Pending Manual` only after the route has been played or measured against the
+new baseline.
 
 | Area | Track/class | Evidence source | Command or playtest route | Result band | Notes | Follow-up decision |
 | --- | --- | --- | --- | --- | --- | --- |

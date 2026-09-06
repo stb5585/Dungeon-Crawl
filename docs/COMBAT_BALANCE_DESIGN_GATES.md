@@ -23,9 +23,11 @@ and gates future combat or balance changes behind explicit one-page specs.
     `LOW_HP_ONLY`, and `SKIP` style AI decisions.
   - Enemy combat items are surfaced through `_combat_item_choices()` and used
     through the same BattleEngine item action path as player item use.
+- `BattleEngine` supports singleton and explicit one-or-two-enemy encounters.
+  Curated pairs remain development-only; ordinary random generation is
+  singleton.
 - `src/core/combat/action_queue.py` exists as a priority/delay scheduling
-  helper, but the main one-on-one BattleEngine loop remains the active combat
-  runtime.
+  helper, but it is not yet the authoritative player/enemy timing model.
 
 ### Analytics And Tooling
 
@@ -39,10 +41,9 @@ and gates future combat or balance changes behind explicit one-page specs.
 - `tools/run_balance_suite.py` builds representative class/race/enemy matchups
   and supports tier, level, race, gear, meta-loadout, progression, and race
   delta options.
-- Known tooling issue: `./.venv/bin/python tools/run_balance_suite.py --help`
-  currently fails because one argparse help string contains an unescaped `%`.
-  Do not treat that failure as a combat gameplay issue; fix it only in a
-  tooling cleanup slice.
+- The CLI startup path has regression coverage in
+  `tests/test_development_tools.py` so stale catalog imports are caught before
+  they can block a baseline run.
 
 ## Current-Slice Decisions
 
@@ -56,8 +57,10 @@ and gates future combat or balance changes behind explicit one-page specs.
 - Keep current shield, Reflect, ignore-defense, resistance, dodge, block, and
   damage-resolution order unchanged until a dedicated combat-resolution spec
   defines a replacement order.
-- Keep current single-enemy combat and one-action turn flow. Multi-enemy combat
-  and speed-based combat stacks are deferred.
+- Keep ordinary random generation singleton. The implemented development pilot
+  may run one-or-two-enemy encounters through explicit APIs and override keys.
+  Normal pair generation, rosters larger than two, and a speed-based combat
+  stack remain gated.
 - Keep current experience rules. Class/race-specific level scaling,
   charisma-driven experience, unlockable race/class/level strategy, and
   difficulty-level strategy are deferred.
@@ -155,6 +158,11 @@ tests, and balance assumptions.
 
 ### Ability And Menu Ergonomics
 
+The foundational action-interface spec now lives in
+`FOUNDATIONAL_REFACTOR_PLAN.md`. It owns the shortcut bar, active/passive
+separation, action cancellation, class-resource presentation, and compatibility
+requirements. The smaller follow-ups below remain independent gates.
+
 - Spell and skill sorting, including mana-cost ordering and broader action menu
   ordering beyond current `Runic Boost` insertion.
 - Status-gated skill visibility and messaging.
@@ -192,6 +200,11 @@ tests, and balance assumptions.
 
 ### Combat Semantics
 
+The foundational combat spec must resolve Speed/dodge double counting,
+initiative and action frequency, invisibility/reveal, targetability, and target
+loss before broad balance playtesting. Preserve the current formulas until that
+decision is approved.
+
 - DnD-style dice roll conversion.
 - Charisma or alternate-stat experience modifiers.
 - Silence edge cases beyond current `abilities_suppressed()` behavior.
@@ -207,12 +220,13 @@ tests, and balance assumptions.
 
 ### Architecture Expansions
 
-- Multi-enemy combat now has a draft promoted design in
-  `docs/MULTI_ENEMY_COMBAT_DESIGN.md`, including targeting, encounter
-  generation, UI layout, loot/XP allocation, AI, simulator support, rollout
-  boundaries, and the decisions required before implementation.
-- Speed-based combat stacks, including initiative/action-queue rules,
-  multiple-turn caps, UI messaging, simulator impact, and save compatibility.
+- Multi-enemy combat has an implemented development pilot. Its post-tree
+  rebenchmark, normal-generation decision, floor-5 boundary, enemy area actions,
+  and roster-size limit are tracked in `MULTI_ENEMY_PILOT_3_PLAN.md` and
+  `FOUNDATIONAL_REFACTOR_PLAN.md`.
+- Speed-based combat stacks remain a spec gate covering initiative/action-queue
+  rules, multiple-turn caps, UI messaging, simulator impact, and save
+  compatibility.
 
 ## Validation
 

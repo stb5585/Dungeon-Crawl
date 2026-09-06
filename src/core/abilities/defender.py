@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from ..combat.targeting import TargetLossPolicy, TargetScope
 from .base import Class, Skill
 

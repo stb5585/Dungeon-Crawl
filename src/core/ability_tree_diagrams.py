@@ -414,8 +414,8 @@ def render_index() -> str:
         "Run `./.venv/bin/python tools/generate_ability_tree_diagrams.py` after",
         "changing any tree. The drift test fails when these references are stale.",
         "Diagrams are grouped by base-class lineage and then promotion tier.",
-        "See [Ability Tree Status](ABILITY_TREE_STATUS.md) for completion state,",
-        "implementation order, and decision-block policy.",
+        "See [Ability Tree Status](ABILITY_TREE_STATUS.md) for completion state and",
+        "future-change policy.",
         "",
     ]
     base_classes = [

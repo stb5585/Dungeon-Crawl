@@ -7,21 +7,17 @@ points for a first promotion and three points for a second promotion.
 sizes, and structured stat groups. Trees may have multiple independent
 first-tier nodes; there is no mandatory lineage root.
 
-All 49 registered classes now have structurally declared paths. This does not
-mean every promoted tree has a complete authored mechanical identity. The
-remaining Pathfinder graphs are intentionally compact:
-they expose their real catalog abilities without generated rating families or
-generic meter-cap masteries. Beast Master's Bonded Bulwark is the sole retained
-talent in this group because it has a distinct companion-bond payoff.
+All 49 registered classes have structurally declared, mechanically authored
+paths. Compact trees are intentional where a class also gains a broad external
+repertoire; they are not catalog-only placeholders. Generated rating families,
+generic meter-cap padding, and invented node-count targets remain prohibited.
 
 Footpad, Healer, and Pathfinder use authored joined base routes rather than one
 universal eight-point budget. Footpad combines an identity track with Control
 or Defense for a 13-point route including promotion. Healer's Bard, Cleric,
 and Priest routes cost 14 while Monk costs 8. Pathfinder routes cost 11-14.
-Their promotion prerequisites still follow the authored legacy ability lanes,
-but no minimum node count is manufactured. Empty or sparse terminal panels are
-an explicit signal that future progression must be designed rather than
-inferred from a renamed stat bonus.
+Their promotion prerequisites follow the authored ability lanes, and no minimum
+node count is manufactured.
 
 Bonded Bulwark raises bond-derived companion combat scaling from
 15% to 25% at full bond. This declarative `kit_effect` payload is validated
@@ -261,9 +257,10 @@ ordinary Specials list. Point-purchased talents modify those Bursts and the
 eight inherited Resolve actions. Support replaces its HP node with Battle Cry
 and continues through Battle Determination to level-80 Final Redoubt. The tree
 occupies rows 1-6; Punishing Guard, Double Payback, Unbroken Wall, Iron Maiden,
-Fortified Citadel, and Final Redoubt cost two points. This mastery contract is
-a critical pending implementation gap; runtime still uses one scalar and zero
-unlock thresholds.
+Fortified Citadel, and Final Redoubt cost two points. Runtime stores four capped
+mastery tracks, credits their associated actions or defensive events at most
+once, carries progress through promotion and save/load, and keeps exact progress
+hidden until each Burst is discovered.
 
 Paladin begins with independent ungated Oath's Judgment `(1, 0)` and Oath's
 Shelter `(4, 0)` roots. Judgment branches through the column-0 `Double Strike
