@@ -7,7 +7,8 @@ import pytest
 
 from src.core import abilities, enemies, items
 from src.core.classes import class_rings, healer, promotion_kits
-from src.core.progression import ABILITY_TREES, NodeKind, ProgressionState
+from src.core.progression import ABILITY_TREES, NodeKind, ProgressionState, ensure_progression
+from src.core.progression_manifest import EXTERNAL_ACQUISITION_ABILITIES
 from tests.test_framework import TestGameState
 
 
@@ -48,15 +49,63 @@ def test_four_trees_use_authored_budgets_and_standard_rows():
 
     assert (len(monk_development), sum(node.cost for node in monk_development)) == (23, 23)
     assert (len(priest_development), sum(node.cost for node in priest_development)) == (22, 22)
-    assert len(master.nodes) == 28
-    assert sum(node.cost for node in master.nodes) == 30
+    assert len(master.nodes) == 27
+    assert sum(node.cost for node in master.nodes) == 28
     assert len(archbishop.nodes) == 29
     assert sum(node.cost for node in archbishop.nodes) == 31
-    assert 0.60 <= 20 / 30 <= 0.70
+    assert 0.60 <= 20 / 28 <= 0.75
     assert 0.60 <= 20 / 31 <= 0.70
     assert monk_promotion.payload["prerequisite_mode"] == "any"
     assert priest_promotion.payload["prerequisite_mode"] == "any"
     assert max(node.position[1] for tree in (monk, master, priest, archbishop) for node in tree.nodes) <= 7
+
+
+def test_dim_mak_is_external_and_its_tree_modifiers_are_terminal():
+    master = ABILITY_TREES["Master Monk"]
+    nodes = {node.name: node for node in master.nodes}
+    modifier_names = {
+        "Decisive Pressure",
+        "Death-Point Focus",
+        "Flexible Form",
+        "Essence Mastery",
+        "Inner Reserve",
+        "Perfect Recovery",
+    }
+
+    assert "Dim Mak" not in nodes
+    assert "Dim Mak" in EXTERNAL_ACQUISITION_ABILITIES
+    assert nodes["Suplex"].prerequisites == (nodes["Hadouken"].id,)
+    for name in modifier_names:
+        node = nodes[name]
+        assert node.lane == "Dim Mak Mastery"
+        assert not any(node.id in candidate.prerequisites for candidate in master.nodes)
+
+
+def test_legacy_tree_dim_mak_is_removed_and_refunded_without_quest_unlock():
+    monk = _player("Master Monk")
+    monk.progression.unspent_points = 0
+    monk.progression.purchased_node_ids.add("master-monk.ability.dim-mak")
+    monk.spellbook["Skills"]["Dim Mak"] = abilities.DimMak()
+
+    ensure_progression(monk)
+
+    assert "master-monk.ability.dim-mak" not in monk.progression.purchased_node_ids
+    assert "Dim Mak" not in monk.spellbook["Skills"]
+    assert monk.progression.unspent_points == 2
+
+
+def test_legacy_tree_marker_preserves_quest_unlocked_dim_mak():
+    monk = _player("Master Monk")
+    monk.progression.unspent_points = 0
+    monk.progression.purchased_node_ids.add("master-monk.ability.dim-mak")
+    monk.spellbook["Skills"]["Dim Mak"] = abilities.DimMak()
+    monk.quest_dict["Side"]["This Thing's Nuclear"] = {"Turned In": True}
+
+    ensure_progression(monk)
+
+    assert "master-monk.ability.dim-mak" not in monk.progression.purchased_node_ids
+    assert "Dim Mak" in monk.spellbook["Skills"]
+    assert monk.progression.unspent_points == 0
 
 
 def test_unarmed_proficiency_and_monk_ki_talents_are_live():

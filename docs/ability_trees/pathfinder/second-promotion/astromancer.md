@@ -17,6 +17,8 @@ points buy 66.7% of the graph.
 
 Thread Spinner grants one extra Thread on its first valid generation each
 combat. Celestial Runes adds 15 percentage points to active-sign rune drops.
+Celestial Mastery closes the Celestial Force discipline with a Magic bonus;
+the separately quest-awarded active ability retains the name Astral Judgment.
 Tephra makes Volcano scatter Fire debris onto every other living enemy. Access
 Storage moves one selected item between storage and inventory outside combat,
 charging MP equal to at least one point of item weight. Silent Lucidity allows

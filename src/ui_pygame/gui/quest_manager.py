@@ -10,6 +10,7 @@ import textwrap
 from typing import Any
 
 from src.core import items, quest_progress
+from src.core.player.combat import has_special_power_reward
 from src.core.town import (
     RESPONSE_MAP,
     already_defeated_enemy,
@@ -206,6 +207,14 @@ class QuestManager:
 
     def _turn_in(self, quest_name: str, typ: str) -> None:
         qdata = self.player_char.quest_dict[typ][quest_name]
+        reward = qdata.get('Reward', [])
+        reward_num = qdata.get('Reward Number', 1)
+        if reward == ["Power Up"] and not has_special_power_reward(self.player_char):
+            self._show_hint(
+                "Complete your second promotion before claiming the Power Core reward."
+            )
+            return
+
         # Show end-of-quest text from quest giver if available
         end_text = qdata.get('End Text', '')
         if end_text:
@@ -226,8 +235,6 @@ class QuestManager:
 
         # Rewards
         exp = qdata.get('Experience', 0)
-        reward = qdata.get('Reward', [])
-        reward_num = qdata.get('Reward Number', 1)
 
         def format_item_info(item) -> str:
             info_lines = []
@@ -270,6 +277,10 @@ class QuestManager:
         if reward == ["Gold"]:
             self.player_char.gold += reward_num
             reward_str = f"{reward_num} gold"
+        elif reward == ["Power Up"]:
+            grant_message = self.player_char.special_power()
+            reward_str = grant_message.strip()
+            reward_str = reward_str.removeprefix("You gain the skill ").removesuffix(".")
         elif reward == ["Warp Point"]:
             # Special flag for warp point access
             setattr(self.player_char, 'warp_point', True)
@@ -495,6 +506,8 @@ class QuestManager:
             show_special_event_text("Nimue After Merzhin")
         elif quest_name == "Bring Him Home":
             show_special_event_text("Timmy Home")
+        elif quest_name == "This Thing's Nuclear":
+            show_special_event_text("Power Up")
     
     def _already_killed(self, enemy_name: str) -> bool:
         return already_defeated_enemy(self.player_char, enemy_name)

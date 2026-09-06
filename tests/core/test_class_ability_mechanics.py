@@ -893,6 +893,44 @@ def test_hierophant_power_core_grants_sacred_overchannel():
     assert "Sacred Overchannel" in message
 
 
+def test_every_terminal_class_can_claim_its_power_core_reward_without_game_adapter():
+    expected_powers = {
+        "Berserker": "Blood Rage",
+        "Grandmaster of Arms": "Arsenal Mastery",
+        "Crusader": "Divine Aegis",
+        "Dragoon": "Draconic Onslaught",
+        "Stalwart Defender": "Shield Mastery",
+        "Wizard": "Spell Mastery",
+        "Shadowcaster": "Shade of Ahool",
+        "Demonologist": "Abyssal Covenant",
+        "Knight Enchanter": "Arcane Blast",
+        "Thaumaturgist": "Eternal Conduit",
+        "Rogue": "Stroke of Luck",
+        "Seeker": "Eyes of the Unseen",
+        "Ninja": "Blade of Fatalities",
+        "Arcane Trickster": "Trickster's Gambit",
+        "Hierophant": "Sacred Overchannel",
+        "Templar": "Holy Retribution",
+        "Archbishop": "Great Gospel",
+        "Master Monk": "Dim Mak",
+        "Troubadour": "Melody of Inspiration",
+        "Archdruid": "Primal Ascendance",
+        "Lycan": "Lunar Frenzy",
+        "Astromancer": "Astral Judgment",
+        "Soulcatcher": "Soul Harvest",
+        "Beast Master": "Pack Bond",
+    }
+
+    for class_name, ability_name in expected_powers.items():
+        player = TestGameState.create_player(class_name=class_name, level=60)
+
+        message = player.special_power()
+
+        assert message == f"You gain the skill {ability_name}.\n", class_name
+        assert ability_name in player.spellbook["Skills"], class_name
+        assert player.power_up is True, class_name
+
+
 def test_passive_power_ups_support_defender_troubadour_and_beast_master():
     defender = TestGameState.create_player(class_name="Stalwart Defender", level=30)
     defender.spellbook["Skills"]["Shield Mastery"] = abilities.ShieldMastery()

@@ -1614,7 +1614,7 @@ trees also contain their three-point level-60 promotion node.
 | Templar | 28 / 30 | Four full Relic, Vanguard, Ordered Blessing, and Judgment disciplines | Finished authored tree; 67% tier-earned coverage |
 | Hierophant | 28 / 30 | Four full Conduit, Grace, Radiant, and Pastoral disciplines | Finished authored tree; 67% tier-earned coverage |
 | Monk | 23 / 23 | Four rearranged disciplines with three stat nodes, Ki generation, healing, reflection, and centering | Finished authored tree; 52% promotion-ready coverage |
-| Master Monk | 28 / 30 | Four full Flurry, Final Art, Diamond Body, and Rope-a-Dope disciplines | Finished authored tree; 67% tier-earned coverage |
+| Master Monk | 27 / 28 | Four ordinary disciplines plus six terminal Dim Mak modifier leaves | Finished authored tree; Dim Mak remains a Power Core quest reward |
 | Priest | 22 / 22 | Four Prayer, Exorcism, Grace, and Protection disciplines with added Magic and Magic Defense nodes | Finished authored tree; 55% promotion-ready coverage |
 | Archbishop | 29 / 31 | Five Benediction, Gospel, Intervention, sustain, and Supplication disciplines | Finished authored tree; 65% tier-earned coverage |
 | Bard | 26 / 26 | Three baseline songs, inherent Class-tab Compose, support/attack/defense actions, prismatic and untyped casting, advanced sheets, and Crescendo | Finished authored tree; 27 nodes including promotion |
@@ -1951,8 +1951,10 @@ makes staff play viable without replacing unarmed mastery.
   defensive protection, `Mirror Breath` for brief reflection/counter-ward
   support, and `Purging Kata` for cleanse/dispel support.
 - Power-up redesign: current power-up skill `Dim Mak` becomes the full-Ki
-  finisher. Master Monk's normal power-up becomes passive `Martial Mastery`,
-  focused on Ki discipline and finisher readiness.
+  finisher and remains exclusive to the Power Core quest rather than appearing
+  as a purchasable tree node. Its tree modifiers are optional terminal leaves.
+  Master Monk's normal promotion passive becomes `Martial Mastery`, focused on
+  Ki discipline and finisher readiness.
 - Ki storage: no persistent save state in V1. Ki starts at `0` each combat and
   clears on combat end, flee, death, save/load restore, or class change. Monk
   caps at `3`; Master Monk caps at `5`.

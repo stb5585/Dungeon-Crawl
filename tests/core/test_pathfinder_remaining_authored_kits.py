@@ -66,6 +66,9 @@ def test_remaining_pathfinder_trees_use_authored_budgets_and_visible_rows():
         node.id in {"diviner.rating.foresight-potency", "diviner.mana.chronal-reserve"}
         for node in ABILITY_TREES["Diviner"].nodes
     )
+    astromancer_names = {node.name for node in ABILITY_TREES["Astromancer"].nodes}
+    assert "Celestial Mastery" in astromancer_names
+    assert "Astral Judgment" not in astromancer_names
 
 
 def test_druid_promotions_accept_either_completed_discipline():

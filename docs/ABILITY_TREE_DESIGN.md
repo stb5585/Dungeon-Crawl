@@ -611,7 +611,7 @@ Delayed Reaction, Leg Sweep, and Meditation.
 | Templar | Relic Discipline, Vanguard, Ordered Blessings, Judgment | 28 / 30 | Terminal | Relic durability, martial coverage, blessing riders, Holy judgment |
 | Hierophant | Sacred Conduit, Devotional Grace, Radiant Office, Pastoral Office | 28 / 30 | Terminal | Staff payoff, partial spending, Holy pressure, direct-heal wards |
 | Monk | Ki Assault, Ki Discipline, Centering, Open Hand | 23 / 23 | Master Monk: any complete primary route + 3 | Six authored Ki and centering talents plus three stat choices |
-| Master Monk | Perfected Flurry, Final Art, Diamond Body, Rope-a-Dope | 28 / 30 | Terminal | Eighteen authored martial talents |
+| Master Monk | Perfected Flurry, Final Art, Diamond Body, Rope-a-Dope, Dim Mak Mastery | 27 / 28 | Terminal | Dim Mak remains quest-awarded; its six optional modifiers are terminal leaves |
 | Priest | Prayer, Exorcism, Grace, Protection | 22 / 22 | Archbishop: any complete discipline + 3 | Seven authored Prayer/support talents plus Magic and Magic Defense choices |
 | Archbishop | Benediction, Great Gospel, Intervention, Sustaining Grace, Perfect Supplication | 29 / 31 | Terminal | Twenty authored support and crisis talents |
 | Bard | Performance, Composition | 26 / 26 | Troubadour: 7 | Five visual columns, four `any` route capstones; Compose is inherent in the Class tab |

@@ -9,6 +9,7 @@ from types import SimpleNamespace
 from src.core import items as core_items, quest_progress
 from src.core.data.data_loader import get_quests
 from src.ui_pygame.gui import quest_manager
+from tests.test_framework import TestGameState
 
 
 class BarghestBossRoom:
@@ -378,6 +379,48 @@ def test_turn_in_handles_gold_collect_cleanup_and_levelup(monkeypatch):
     assert player.quest_dict["Main"]["Collect Quest"]["Turned In"] is True
     assert events == ["Collect Quest"]
     assert any("Quest turned in: Collect Quest" in text for text in rendered)
+
+
+def test_power_core_turn_in_grants_terminal_class_power(monkeypatch):
+    player = TestGameState.create_player(class_name="Master Monk", level=60)
+    player.quest_dict["Side"]["This Thing's Nuclear"] = _content_quest(
+        "Griswold",
+        "Side",
+        "This Thing's Nuclear",
+    )
+    player.special_inventory["Power Core"] = [core_items.PowerCore()]
+    rendered = []
+    manager = _manager(player, quest_text_renderer=rendered.append)
+    monkeypatch.setattr(quest_manager, "LevelUpScreen", FakeLevelUpScreen)
+    monkeypatch.setattr(
+        "src.core.data.data_loader.get_special_events",
+        lambda: {"Power Up": {"Text": ["The Power Core awakens your hidden art."]}},
+    )
+
+    manager._turn_in("This Thing's Nuclear", "Side")
+
+    assert player.quest_dict["Side"]["This Thing's Nuclear"]["Turned In"] is True
+    assert "Dim Mak" in player.spellbook["Skills"]
+    assert player.power_up is True
+    assert "Power Core" not in player.special_inventory
+    assert any("Reward: Dim Mak" in message for message in rendered)
+    assert any("Power Core awakens" in message for message in rendered)
+
+
+def test_power_core_turn_in_waits_for_second_promotion():
+    player = _make_player(level=60)
+    player.quest_dict["Side"]["This Thing's Nuclear"] = {
+        "Reward": ["Power Up"],
+        "Completed": True,
+        "Turned In": False,
+    }
+    rendered = []
+    manager = _manager(player, quest_text_renderer=rendered.append)
+
+    manager._turn_in("This Thing's Nuclear", "Side")
+
+    assert player.quest_dict["Side"]["This Thing's Nuclear"]["Turned In"] is False
+    assert any("second promotion" in message for message in rendered)
 
 
 def test_turn_in_handles_reward_selection_and_bad_dream_event(monkeypatch):

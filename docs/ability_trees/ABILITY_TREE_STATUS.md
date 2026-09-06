@@ -76,7 +76,7 @@ the class also gains a broad external repertoire, such as stolen spells.
 | Bard | Finished | 27 | [Reference](healer/first-promotion/bard.md) | [SVG](healer/first-promotion/bard.svg) |
 | Templar | Finished | 28 / 30 points | [Reference](healer/second-promotion/templar.md) | [SVG](healer/second-promotion/templar.svg) |
 | Hierophant | Finished | 28 / 30 points | [Reference](healer/second-promotion/hierophant.md) | [SVG](healer/second-promotion/hierophant.svg) |
-| Master Monk | Finished | 28 / 30 points | [Reference](healer/second-promotion/master-monk.md) | [SVG](healer/second-promotion/master-monk.svg) |
+| Master Monk | Finished | 27 / 28 points | [Reference](healer/second-promotion/master-monk.md) | [SVG](healer/second-promotion/master-monk.svg) |
 | Archbishop | Finished | 29 / 31 points | [Reference](healer/second-promotion/archbishop.md) | [SVG](healer/second-promotion/archbishop.svg) |
 | Troubadour | Finished | 27 | [Reference](healer/second-promotion/troubadour.md) | [SVG](healer/second-promotion/troubadour.svg) |
 

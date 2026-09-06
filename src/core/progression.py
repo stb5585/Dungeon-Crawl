@@ -2983,6 +2983,16 @@ def _migrate_spell_reflection_ability(player: Any) -> None:
 def _adopt_known_ability_nodes(player: Any, state: ProgressionState) -> None:
     """Mark explicitly inheritable abilities and Jump mods as pre-owned."""
     class_name = getattr(getattr(player, "cls", None), "name", None)
+    retired_dim_mak_node = "master-monk.ability.dim-mak"
+    if retired_dim_mak_node in state.purchased_node_ids:
+        state.purchased_node_ids.discard(retired_dim_mak_node)
+        quest = getattr(player, "quest_dict", {}).get("Side", {}).get(
+            "This Thing's Nuclear",
+            {},
+        )
+        if not bool(quest.get("Turned In")):
+            player.spellbook.setdefault("Skills", {}).pop("Dim Mak", None)
+            state.unspent_points += 2
     if class_name == "Stalwart Defender":
         for ability_ctor in (
             abilities.CitadelAegis,

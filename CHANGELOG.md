@@ -6,6 +6,9 @@
 
 - Repaired the balance-suite enemy roster after the enemy `Conjurer` was
   renamed to `Necromancer`, and added a regression test for CLI startup.
+- Restored the Power Core quest reward path for every terminal class, removed
+  Dim Mak from point-purchased progression, isolated its modifiers as optional
+  leaves, and disambiguated Astromancer's Celestial Mastery talent.
 - Removed the unreachable legacy Pygame level-up implementation so the screen
   has one progression-service-backed path.
 - Removed confirmed unused imports and stale cleanup markers without changing
