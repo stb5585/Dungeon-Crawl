@@ -31,6 +31,8 @@
   and interaction orchestration modules while preserving its public class.
 - Split battle-engine turn handling into preparation, targeting, resolution,
   and lifecycle phases behind the existing turn mixin.
+- Split battle actions into attack, spell, skill, and inventory/summon modules
+  behind the existing action mixin and package exports.
 - Split pygame combat selections into ability, class-mechanic, special-action,
   and shared menu-support modules behind the existing selection mixin.
 - Removed pre-release progression migrations and refunds, including a reversed

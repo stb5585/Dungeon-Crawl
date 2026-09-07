@@ -32,9 +32,15 @@ ABILITY_MECHANIC_MODULES = (
     ability_mechanics.summons,
 )
 BATTLE_BEHAVIOR_MODULES = (
-    battle_engine.turns,
-    battle_engine.actions,
+    battle_engine.action_attacks,
+    battle_engine.action_inventory,
+    battle_engine.action_skills,
+    battle_engine.action_spells,
     battle_engine.outcomes,
+    battle_engine.turn_execution,
+    battle_engine.turn_lifecycle,
+    battle_engine.turn_preparation,
+    battle_engine.turn_resolution,
 )
 
 
