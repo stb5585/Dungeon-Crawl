@@ -745,7 +745,7 @@ absent from player-facing explanations.
 - [ ] Run renderer diagnostics with all shipped dungeon assets present.
   - Expected: Texture, special-tile, and manifest fallback counts remain zero for shipped dungeon-render assets.
 - [x] Review active and inactive Warp Point dungeon art.
-  - Expected: `src/ui_pygame/assets/dungeon_tiles/special_tiles/warp_point_art_review_sheet.png` shows both approved variants.
+  - Expected: `docs/assets/review-sheets/warp-point-art.png` shows both approved variants.
   - Expected: Active Warp Points use the active platform plus existing spark overlay; inactive/spent Warp Points use the dim platform; missing approved art falls back to the readable legacy teleporter.
 - [ ] Inspect aggregate texture diagnostics after entering and leaving several rooms.
   - Expected: Loaded state, fallback counts/totals, cache size/limit/capacity, and override counts are visible in one diagnostic payload.
@@ -1186,13 +1186,13 @@ absent from player-facing explanations.
 
 ### NPC Story Artwork
 - [ ] Review the generated NPC portrait sheet after the story portrait batch.
-  - Expected: `src/ui_pygame/assets/npc_art/npc_art_review_sheet.png` shows recurring town NPCs, Seraphine Voss, Mara Vale, The Gray Broker, Old Warehouse Guard, Warp Point Scientist, Acolyte, Reflection, and Vesperion.
+  - Expected: `docs/assets/review-sheets/npc-art.png` shows recurring town NPCs, Seraphine Voss, Mara Vale, The Gray Broker, Old Warehouse Guard, Warp Point Scientist, Acolyte, Reflection, and Vesperion.
   - Expected: Portraits have transparent edges, no rectangular backgrounds, no labels or watermarks, consistent dark fantasy painterly style, and readable silhouettes.
 - [ ] Inspect Seraphine Voss, Mara Vale, The Gray Broker, Old Warehouse Guard, and Warp Point Scientist portrait aliases.
   - Expected: Their assets appear in the NPC review sheet and resolve through `NpcArtManager` without appearing in unrelated shop, combat, bounty, or town hover panels.
 - [ ] Visit the Old Warehouse after the Thieves Guild has unlocked.
   - Expected: The off-limits warning uses the split dialogue popup with the Old Warehouse Guard portrait instead of a plain text-only popup.
-- [ ] Review `src/ui_pygame/assets/npc_art/npc_art_review_sheet.png` after the V3 diversity replacements.
+- [ ] Review `docs/assets/review-sheets/npc-art.png` after the V3 diversity replacements.
   - Expected: Alchemist, Barkeep, Jeweler, Priest, Soldier, Waitress, and Warp Point Scientist use the approved replacement portraits.
   - Expected: Busboy, Drunkard, Griswold, Old Warehouse Guard, and Sergeant retain their prior approved portraits.
   - Expected: Archived originals and rejected candidates under `npc_art/old_files/` do not appear in live dialogue, shops, town menus, combat, bounty boards, or hover panels.
@@ -1242,7 +1242,7 @@ absent from player-facing explanations.
 
 ### Enemy Combat Sprites
 - [x] Review the generated enemy combat sprite sheet.
-  - Expected: `src/ui_pygame/assets/enemy_combat_sprites/enemy_combat_sprite_review_sheet.png` shows every sprite on a neutral dungeon background.
+  - Expected: `docs/assets/review-sheets/enemy-combat-sprites.png` shows every sprite on a neutral dungeon background.
   - Expected: Sprites have transparent backgrounds, clean silhouettes, no rectangular cards, no labels, and no clipping.
   - Expected: Quasit is visually distinct from Imp, with green warted skin, spiky horns, barbed tail, and long clawed digits.
 - [x] Start combat against Skeleton, Giant Rat, an elemental such as Ice Myrmidon, Dragon, Demon, boss fallback, and generic fallback enemies.

@@ -14,7 +14,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 DEFAULT_SPECIAL_ROOT = PROJECT_ROOT / "src" / "ui_pygame" / "assets" / "dungeon_tiles" / "special_tiles"
-DEFAULT_OUTPUT = DEFAULT_SPECIAL_ROOT / "warp_point_art_review_sheet.png"
+DEFAULT_OUTPUT = PROJECT_ROOT / "docs" / "assets" / "review-sheets" / "warp-point-art.png"
 WARP_POINT_ASSETS = (
     ("active", "warp_point_active.png"),
     ("inactive", "warp_point_inactive.png"),

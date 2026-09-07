@@ -10,7 +10,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_ART_ROOT = PROJECT_ROOT / "src" / "ui_pygame" / "assets" / "companion_art"
-DEFAULT_REVIEW_SHEET = DEFAULT_ART_ROOT / "summon_companion_art_review_sheet.png"
+DEFAULT_REVIEW_SHEET = PROJECT_ROOT / "docs" / "assets" / "review-sheets" / "companion-art.png"
 CELL_SIZE = (220, 250)
 PREVIEW_SIZE = (180, 180)
 HEADER_HEIGHT = 42

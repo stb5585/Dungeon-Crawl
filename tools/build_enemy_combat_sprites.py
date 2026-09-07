@@ -15,7 +15,9 @@ if str(PROJECT_ROOT) not in sys.path:
 
 
 DEFAULT_SPRITE_ROOT = PROJECT_ROOT / "src" / "ui_pygame" / "assets" / "enemy_combat_sprites"
-DEFAULT_OUTPUT = DEFAULT_SPRITE_ROOT / "enemy_combat_sprite_review_sheet.png"
+DEFAULT_OUTPUT = (
+    PROJECT_ROOT / "docs" / "assets" / "review-sheets" / "enemy-combat-sprites.png"
+)
 CELL_SIZE = (220, 250)
 PREVIEW_SIZE = (180, 180)
 HEADER_HEIGHT = 42
