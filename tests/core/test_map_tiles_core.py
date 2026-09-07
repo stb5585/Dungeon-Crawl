@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Focused coverage for core map tile helpers and interaction tiles."""
 
+import ast
 import sys
 from pathlib import Path
 from types import SimpleNamespace
@@ -11,6 +12,20 @@ sys.path.insert(0, str(Path(__file__).parents[2]))
 
 from src.core import enemies, items, map_tiles, thieves_guild
 from tests.test_framework import TestGameState
+
+
+def test_map_tile_rules_do_not_depend_on_pygame_assets():
+    """Core map rules expose gameplay state without importing presentation assets."""
+    rules_path = Path(map_tiles.__file__).with_name("rules.py")
+    rules_module = ast.parse(rules_path.read_text(encoding="utf-8"))
+    imported_names = {
+        alias.name
+        for node in ast.walk(rules_module)
+        if isinstance(node, ast.ImportFrom) and node.module == "src.paths"
+        for alias in node.names
+    }
+
+    assert "PYGAME_ASSETS_DIR" not in imported_names
 
 
 def _make_player(*, class_name="Warrior", race_name="Human", level=10, pro_level=None):
