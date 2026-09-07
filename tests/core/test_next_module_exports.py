@@ -63,7 +63,7 @@ def _owned_functions(module):
 def _defined_methods(class_type):
     methods = {}
     for name, value in vars(class_type).items():
-        if isinstance(value, staticmethod):
+        if isinstance(value, (staticmethod, classmethod)):
             methods[name] = value.__func__
         elif inspect.isfunction(value):
             methods[name] = value
@@ -92,7 +92,8 @@ def test_effect_factory_composes_every_constructor_group():
 
     assert len(methods) == 95
     for name, implementation in methods.items():
-        assert getattr(ability_loader.EffectFactory, name) is implementation
+        factory_method = getattr(ability_loader.EffectFactory, name)
+        assert getattr(factory_method, "__func__", factory_method) is implementation
 
 
 def test_ability_mechanics_facade_preserves_all_split_functions():
