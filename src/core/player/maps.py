@@ -10,6 +10,7 @@ def _parse_tiled_properties(props):
         return {}
     return {prop.get("name"): prop.get("value") for prop in props}
 
+
 def _tiled_bool(value, default=False):
     if value is None:
         return default
@@ -19,6 +20,7 @@ def _tiled_bool(value, default=False):
         return value.strip().lower() in {"1", "true", "yes", "on"}
     return bool(value)
 
+
 def _extract_tile_type(tile_data):
     tile_type = tile_data.get("type") or tile_data.get("class")
     if tile_type:
@@ -26,11 +28,10 @@ def _extract_tile_type(tile_data):
     props = _parse_tiled_properties(tile_data.get("properties"))
     return props.get("tile") or props.get("type") or props.get("class")
 
+
 def _select_tiled_gameplay_layer(layers):
     visible_tile_layers = [
-        layer
-        for layer in layers
-        if layer.get("type") == "tilelayer" and layer.get("visible", True)
+        layer for layer in layers if layer.get("type") == "tilelayer" and layer.get("visible", True)
     ]
     if not visible_tile_layers:
         return None
@@ -46,6 +47,7 @@ def _select_tiled_gameplay_layer(layers):
             return layer
 
     return visible_tile_layers[0]
+
 
 def _load_tiled_tileset(tileset_entry, map_dir):
     if "source" in tileset_entry:
@@ -67,10 +69,7 @@ def _load_tiled_tileset(tileset_entry, map_dir):
                     tile_id = int(tile_elem.get("id", 0))
                     tile_type = tile_elem.get("type", "")
                     if tile_type:
-                        tileset_data["tiles"].append({
-                            "id": tile_id,
-                            "type": tile_type
-                        })
+                        tileset_data["tiles"].append({"id": tile_id, "type": tile_type})
                 return tileset_data, tileset_entry["firstgid"]
             else:
                 # Parse JSON tileset
@@ -78,6 +77,7 @@ def _load_tiled_tileset(tileset_entry, map_dir):
                 return tileset_data, tileset_entry["firstgid"]
 
     return tileset_entry, tileset_entry.get("firstgid", 1)
+
 
 def _load_tiled_map(map_file, z, map_tiles):
     with open(map_file, "r", encoding="utf-8") as file_handle:

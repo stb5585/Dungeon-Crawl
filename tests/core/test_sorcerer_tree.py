@@ -11,7 +11,6 @@ from src.core.progression import (
 )
 from tests.test_framework import TestGameState
 
-
 ELEMENTAL_SPELLS = {
     "Fireball": (0, 0),
     "Icicle": (0, 1),
@@ -53,9 +52,7 @@ def test_tree_matches_authored_schools_specializations_and_utility_columns():
         "Spell Enhancements",
         "Illusion",
     )
-    assert {
-        name: nodes[name].position for name in ELEMENTAL_SPELLS
-    } == ELEMENTAL_SPELLS
+    assert {name: nodes[name].position for name in ELEMENTAL_SPELLS} == ELEMENTAL_SPELLS
     assert {
         name: nodes[name].position
         for name in (
@@ -88,21 +85,13 @@ def test_tree_matches_authored_schools_specializations_and_utility_columns():
     assert nodes["Magic Missile II"].position == (2, 0)
     assert nodes["Force Multiplier"].prerequisites == (nodes["Magic Missile II"].id,)
     assert nodes["Mana Rupture"].position == (2, 2)
-    assert nodes["Mana Rupture"].prerequisites == (
-        nodes["Force Multiplier"].id,
-    )
+    assert nodes["Mana Rupture"].prerequisites == (nodes["Force Multiplier"].id,)
     assert nodes["Mana Leak"].prerequisites == (nodes["Mana Rupture"].id,)
     assert nodes["Kinetic Explosion"].position == (2, 4)
     assert nodes["Kinetic Explosion"].payload["level_requirement"] == 50
-    assert nodes["Kinetic Explosion"].prerequisites == (
-        nodes["Mana Leak"].id,
-    )
-    assert nodes["Arcane Empowerment"].prerequisites == (
-        nodes["Kinetic Explosion"].id,
-    )
-    assert nodes["Arcane Ritual"].prerequisites == (
-        nodes["Arcane Empowerment"].id,
-    )
+    assert nodes["Kinetic Explosion"].prerequisites == (nodes["Mana Leak"].id,)
+    assert nodes["Arcane Empowerment"].prerequisites == (nodes["Kinetic Explosion"].id,)
+    assert nodes["Arcane Ritual"].prerequisites == (nodes["Arcane Empowerment"].id,)
     assert nodes["Boost"].payload.get("level_requirement") is None
     assert nodes["Mirror Image"].payload.get("level_requirement") is None
     assert nodes["+20 Magic"].kind == NodeKind.RATING
@@ -110,19 +99,13 @@ def test_tree_matches_authored_schools_specializations_and_utility_columns():
 
 def test_tier_two_spells_require_thirty_matching_affinity():
     player = _player()
-    statuses = {
-        status.node.name: status
-        for status in available_nodes(player, "Sorcerer")
-    }
+    statuses = {status.node.name: status for status in available_nodes(player, "Sorcerer")}
 
     assert statuses["Fireball"].state == NodeState.BLOCKED
     assert "Requires 30 Fire affinity" in statuses["Fireball"].reasons[0]
 
     player.wizard_affinity["Fire"] = 30
-    statuses = {
-        status.node.name: status
-        for status in available_nodes(player, "Sorcerer")
-    }
+    statuses = {status.node.name: status for status in available_nodes(player, "Sorcerer")}
 
     assert statuses["Fireball"].state == NodeState.AVAILABLE
     assert statuses["Icicle"].state == NodeState.BLOCKED
@@ -157,9 +140,6 @@ def test_one_elemental_spell_modifier_pair_unlocks_classical_enrichment():
     assert "Fireball" in player.spellbook["Spells"]
     assert purchase_node(player, nodes["Combustion"].id).success
 
-    statuses = {
-        status.node.name: status
-        for status in available_nodes(player, "Sorcerer")
-    }
+    statuses = {status.node.name: status for status in available_nodes(player, "Sorcerer")}
     assert statuses["Classical Enrichment"].state == NodeState.AVAILABLE
     assert statuses["Arcane Ritual"].state == NodeState.BLOCKED

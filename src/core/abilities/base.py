@@ -9,7 +9,6 @@ from src.paths import CORE_DATA_DIR
 from ..combat.combat_result import CombatResult
 from ..combat.targeting import TargetLossPolicy, TargetScope
 
-
 if TYPE_CHECKING:
     from typing import Any
 
@@ -28,9 +27,8 @@ def _load_yaml_ability(filename: str, cls_name: str | None = None) -> Ability:
     original Python class name.
     """
     from ..data.ability_loader import AbilityFactory
-    ability = AbilityFactory.create_from_yaml(
-        _YAML_DIR / filename, combat_ready=True
-    )
+
+    ability = AbilityFactory.create_from_yaml(_YAML_DIR / filename, combat_ready=True)
     if cls_name:
         ability._class_name = cls_name
     return ability
@@ -58,18 +56,18 @@ class Ability:
     """
 
     def __init__(
-            self,
-            name: str,
-            description: str,
-            cost: int = 0,
-            combat: bool = True,
-            passive: bool = False,
-            typ: str = "",
-            subtyp: str = "",
-            dmg_mod: float = 1.0,
-            target_scope: TargetScope = TargetScope.SINGLE_ENEMY,
-            target_loss_policy: TargetLossPolicy = TargetLossPolicy.LOCKED,
-            ) -> None:
+        self,
+        name: str,
+        description: str,
+        cost: int = 0,
+        combat: bool = True,
+        passive: bool = False,
+        typ: str = "",
+        subtyp: str = "",
+        dmg_mod: float = 1.0,
+        target_scope: TargetScope = TargetScope.SINGLE_ENEMY,
+        target_loss_policy: TargetLossPolicy = TargetLossPolicy.LOCKED,
+    ) -> None:
         """
         Args:
             name (str): name of the ability
@@ -93,19 +91,18 @@ class Ability:
         self.target_scope = target_scope
         self.target_loss_policy = target_loss_policy
         self.result = CombatResult(
-            action=name,
-            extra={'cost': cost, "type": self.typ, "subtype": self.subtyp}
-            )
+            action=name, extra={"cost": cost, "type": self.typ, "subtype": self.subtyp}
+        )
 
     def _ensure_result(self) -> None:
         """
         Ensure self.result exists (for backward compatibility with old save files).
         Creates a new CombatResult if the attribute is missing.
         """
-        if not hasattr(self, 'result'):
+        if not hasattr(self, "result"):
             self.result = CombatResult(
                 action=self.name,
-                extra={'cost': self.cost, "type": self.typ, "subtype": self.subtyp}
+                extra={"cost": self.cost, "type": self.typ, "subtype": self.subtyp},
             )
 
     def is_available(self, user: Character, target: Character | None = None) -> bool:
@@ -237,12 +234,7 @@ class Skill(Ability):
         ===================================
     """
 
-    def __init__(
-            self,
-            name: str,
-            description: str,
-            weapon: bool = False
-            ) -> None:
+    def __init__(self, name: str, description: str, weapon: bool = False) -> None:
         """
         Args:
             name (str): name of the ability
@@ -435,11 +427,11 @@ class Spell(Ability):
     """
 
     def __init__(
-            self,
-            name: str,
-            description: str,
-            school: str | None = None,
-            ) -> None:
+        self,
+        name: str,
+        description: str,
+        school: str | None = None,
+    ) -> None:
         """
         Args:
             name (str): name of the ability
@@ -479,32 +471,50 @@ Skill section
 
 def _skill_subtype(cls_name: str, subtyp: str, description: str) -> type:
     """Generate a Skill subclass whose only distinction is *subtyp*."""
+
     def _init(self, name: str = "", description: str = "", **kwargs: Any) -> None:
         Skill.__init__(self, name, description, **kwargs)
         self.subtyp = subtyp
-    return type(cls_name, (Skill,), {
-        "__init__": _init,
-        "__doc__": description,
-    })
+
+    return type(
+        cls_name,
+        (Skill,),
+        {
+            "__init__": _init,
+            "__doc__": description,
+        },
+    )
 
 
-Offensive = _skill_subtype("Offensive", "Offensive",
-    "Skill subtype for offensive skills that work to damage the enemy.")
-Defensive = _skill_subtype("Defensive", "Defensive",
-    "Skill subtype for defensive skills that work to protect the user.")
-Stealth = _skill_subtype("Stealth", "Stealth",
-    "Skill subtype for stealth skills that use subterfuge to surprise the enemy.")
-Enhance = _skill_subtype("Enhance", "Enhance",
-    "Skill subtype for enhance skills that enhance the user's abilities or equipment.")
-Drain = _skill_subtype("Drain", "Drain",
-    "Skill subtype for drain skills that drain the enemy's health or mana.")
-Class = _skill_subtype("Class", "Class",
-    "Skill subtype for class-specific skills.")
-Truth = _skill_subtype("Truth", "Truth",
-    "Skill subtype for truth skills that reveal secrets or hidden truths.")
-MartialArts = _skill_subtype("MartialArts", "Martial Arts",
-    "Skill subtype for martial arts skills specific to hand-to-hand combat.")
-Luck = _skill_subtype("Luck", "Luck",
-    "Skill subtype for luck-based skills.")
-PowerUp = _skill_subtype("PowerUp", "Power Up",
-    "Skill subtype for power-up skills obtained through training.")
+Offensive = _skill_subtype(
+    "Offensive", "Offensive", "Skill subtype for offensive skills that work to damage the enemy."
+)
+Defensive = _skill_subtype(
+    "Defensive", "Defensive", "Skill subtype for defensive skills that work to protect the user."
+)
+Stealth = _skill_subtype(
+    "Stealth",
+    "Stealth",
+    "Skill subtype for stealth skills that use subterfuge to surprise the enemy.",
+)
+Enhance = _skill_subtype(
+    "Enhance",
+    "Enhance",
+    "Skill subtype for enhance skills that enhance the user's abilities or equipment.",
+)
+Drain = _skill_subtype(
+    "Drain", "Drain", "Skill subtype for drain skills that drain the enemy's health or mana."
+)
+Class = _skill_subtype("Class", "Class", "Skill subtype for class-specific skills.")
+Truth = _skill_subtype(
+    "Truth", "Truth", "Skill subtype for truth skills that reveal secrets or hidden truths."
+)
+MartialArts = _skill_subtype(
+    "MartialArts",
+    "Martial Arts",
+    "Skill subtype for martial arts skills specific to hand-to-hand combat.",
+)
+Luck = _skill_subtype("Luck", "Luck", "Skill subtype for luck-based skills.")
+PowerUp = _skill_subtype(
+    "PowerUp", "Power Up", "Skill subtype for power-up skills obtained through training."
+)

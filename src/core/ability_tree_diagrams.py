@@ -13,7 +13,6 @@ from .progression import (
     effective_node_level_requirement,
 )
 
-
 OUTPUT_DIRECTORY = Path(__file__).parents[2] / "docs" / "ability_trees"
 MANUALLY_AUTHORED_DIAGRAM_CLASSES = frozenset({"Mage"})
 STAGE_DIRECTORY_NAMES = {
@@ -104,14 +103,9 @@ def render_tree_svg(class_name: str) -> str:
     """Render one runtime ability tree as a standalone SVG document."""
     tree = ABILITY_TREES[class_name]
     max_x = max((node.position[0] for node in tree.nodes), default=0)
-    width = int(
-        MARGIN_X * 2 + (max_x + 1) * NODE_WIDTH + max_x * COLUMN_GAP
-    )
+    width = int(MARGIN_X * 2 + (max_x + 1) * NODE_WIDTH + max_x * COLUMN_GAP)
     max_bottom = max(
-        (
-            _node_xy(node.position)[1] + _node_height(node)
-            for node in tree.nodes
-        ),
+        (_node_xy(node.position)[1] + _node_height(node) for node in tree.nodes),
         default=HEADER_HEIGHT,
     )
     height = int(max_bottom + 42)
@@ -139,10 +133,9 @@ def render_tree_svg(class_name: str) -> str:
         source_left = source_x - NODE_WIDTH / 2
         ordered_targets = sorted(targets, key=lambda entry: entry[1])
         for edge_index, (target_id, _target_x) in enumerate(ordered_targets):
-            promotion_source_anchors[(source_id, target_id)] = (
-                source_left
-                + NODE_WIDTH * (edge_index + 1) / (len(ordered_targets) + 1)
-            )
+            promotion_source_anchors[(source_id, target_id)] = source_left + NODE_WIDTH * (
+                edge_index + 1
+            ) / (len(ordered_targets) + 1)
     lines = [
         '<?xml version="1.0" encoding="UTF-8"?>',
         (
@@ -160,10 +153,7 @@ def render_tree_svg(class_name: str) -> str:
         ".promotion-edge{fill:none;stroke:#c59d3d;stroke-width:3}",
         "</style>",
         f'<rect width="{width}" height="{height}" fill="#10131a"/>',
-        (
-            f'<text class="title" x="{MARGIN_X}" y="38">'
-            f"{escape(class_name)} Ability Tree</text>"
-        ),
+        (f'<text class="title" x="{MARGIN_X}" y="38">' f"{escape(class_name)} Ability Tree</text>"),
         (
             f'<text class="meta" x="{MARGIN_X}" y="62">'
             f"Tier {tree.stage} · {len(tree.nodes)} nodes · "
@@ -190,41 +180,24 @@ def render_tree_svg(class_name: str) -> str:
             edge_count = len(prerequisite_centers)
             prerequisite_mode = node.payload.get("prerequisite_mode", "all")
             grouped_requirements = node.payload.get("prerequisite_groups")
-            merge_paths = (
-                prerequisite_mode != "any"
-                and not grouped_requirements
-                and edge_count > 1
-            )
+            merge_paths = prerequisite_mode != "any" and not grouped_requirements and edge_count > 1
             source_rows = {
                 prerequisite: next(
-                    source.position[1]
-                    for source in tree.nodes
-                    if source.id == prerequisite
+                    source.position[1] for source in tree.nodes if source.id == prerequisite
                 )
                 for prerequisite, _source_x, _source_y in prerequisite_centers
             }
-            buffer_join_y = (
-                _node_xy((0, node.position[1] - 1))[1] + NODE_HEIGHT / 2
-            )
-            has_buffer_row = (
-                bool(source_rows)
-                and node.position[1] - max(source_rows.values()) >= 2
-            )
+            buffer_join_y = _node_xy((0, node.position[1] - 1))[1] + NODE_HEIGHT / 2
+            has_buffer_row = bool(source_rows) and node.position[1] - max(source_rows.values()) >= 2
             join_y = buffer_join_y if has_buffer_row else target_top - 12
-            for edge_index, (source_id, source_x, source_y) in enumerate(
-                prerequisite_centers
-            ):
+            for edge_index, (source_id, source_x, source_y) in enumerate(prerequisite_centers):
                 source_anchor_x = promotion_source_anchors.get(
                     (source_id, node.id),
                     source_x,
                 )
-                enters_left_side = (
-                    not merge_paths and edge_count > 1 and edge_index == 0
-                )
+                enters_left_side = not merge_paths and edge_count > 1 and edge_index == 0
                 enters_right_side = (
-                    not merge_paths
-                    and edge_count > 1
-                    and edge_index == edge_count - 1
+                    not merge_paths and edge_count > 1 and edge_index == edge_count - 1
                 )
                 enters_side = enters_left_side or enters_right_side
                 if merge_paths:
@@ -236,23 +209,18 @@ def render_tree_svg(class_name: str) -> str:
                 elif enters_right_side:
                     destination_x = target_left + NODE_WIDTH
                 else:
-                    destination_x = (
-                        target_left
-                        + NODE_WIDTH * edge_index / (edge_count - 1)
-                    )
+                    destination_x = target_left + NODE_WIDTH * edge_index / (edge_count - 1)
                 source_bottom = source_y + NODE_HEIGHT / 2
                 destination_y = target_y if enters_side else join_y
                 source_is_penultimate = (
-                    has_buffer_row
-                    and source_rows[source_id] == node.position[1] - 2
+                    has_buffer_row and source_rows[source_id] == node.position[1] - 2
                 )
                 if source_is_penultimate or (
-                    not enters_side
-                    and target_top - source_bottom <= NODE_HEIGHT + ROW_GAP
+                    not enters_side and target_top - source_bottom <= NODE_HEIGHT + ROW_GAP
                 ):
                     path = (
-                        f'M {source_anchor_x:.1f} {source_bottom:.1f} '
-                        f'V {destination_y:.1f} H {destination_x:.1f}'
+                        f"M {source_anchor_x:.1f} {source_bottom:.1f} "
+                        f"V {destination_y:.1f} H {destination_x:.1f}"
                     )
                 else:
                     branch_y = source_bottom + 8
@@ -264,14 +232,12 @@ def render_tree_svg(class_name: str) -> str:
                     else:
                         channel_x = source_x
                     path = (
-                        f'M {source_anchor_x:.1f} {source_bottom:.1f} '
-                        f'V {branch_y:.1f} H {channel_x:.1f} '
-                        f'V {destination_y:.1f} '
-                        f'H {destination_x:.1f}'
+                        f"M {source_anchor_x:.1f} {source_bottom:.1f} "
+                        f"V {branch_y:.1f} H {channel_x:.1f} "
+                        f"V {destination_y:.1f} "
+                        f"H {destination_x:.1f}"
                     )
-                lines.append(
-                    f'<path class="promotion-edge" d="{path}"/>'
-                )
+                lines.append(f'<path class="promotion-edge" d="{path}"/>')
                 if not merge_paths and not enters_side:
                     lines.append(
                         f'<path class="promotion-edge" d="M {destination_x:.1f} '
@@ -293,9 +259,7 @@ def render_tree_svg(class_name: str) -> str:
             ).get(prerequisite)
             if node.payload.get("connector_enter_from_top"):
                 source_is_left = source_x < target_x
-                source_side_x = source_x + (
-                    NODE_WIDTH / 2 if source_is_left else -NODE_WIDTH / 2
-                )
+                source_side_x = source_x + (NODE_WIDTH / 2 if source_is_left else -NODE_WIDTH / 2)
                 channel_x = (
                     target_x
                     if channel_column is None
@@ -304,21 +268,17 @@ def render_tree_svg(class_name: str) -> str:
                 target_top = target_y - NODE_HEIGHT / 2
                 lines.append(
                     f'<path class="edge" d="M {source_side_x:.1f} '
-                    f'{source_y:.1f} H {channel_x:.1f} V {target_top:.1f} '
+                    f"{source_y:.1f} H {channel_x:.1f} V {target_top:.1f} "
                     f'H {target_x:.1f}"/>'
                 )
                 continue
             if channel_column is not None:
                 channel_x = _node_xy((channel_column, 0))[0] + NODE_WIDTH / 2
                 source_is_left = source_x <= target_x
-                source_side_x = source_x + (
-                    NODE_WIDTH / 2 if source_is_left else -NODE_WIDTH / 2
-                )
+                source_side_x = source_x + (NODE_WIDTH / 2 if source_is_left else -NODE_WIDTH / 2)
                 if source_x == target_x:
                     target_side_x = target_x + (
-                        NODE_WIDTH / 2
-                        if channel_x >= target_x
-                        else -NODE_WIDTH / 2
+                        NODE_WIDTH / 2 if channel_x >= target_x else -NODE_WIDTH / 2
                     )
                 else:
                     target_side_x = target_x + (
@@ -326,7 +286,7 @@ def render_tree_svg(class_name: str) -> str:
                     )
                 lines.append(
                     f'<path class="edge" d="M {source_side_x:.1f} '
-                    f'{source_y:.1f} H {channel_x:.1f} V {target_y:.1f} '
+                    f"{source_y:.1f} H {channel_x:.1f} V {target_y:.1f} "
                     f'H {target_side_x:.1f}"/>'
                 )
                 continue
@@ -362,33 +322,28 @@ def render_tree_svg(class_name: str) -> str:
                 prerequisite_mode = node.payload.get("prerequisite_mode", "all")
                 path_noun = "path" if len(node.prerequisites) == 1 else "paths"
                 if prerequisite_mode == "any":
-                    promotion_detail = (
-                        f"Requires 1 of {len(node.prerequisites)} {path_noun}"
-                    )
+                    promotion_detail = f"Requires 1 of {len(node.prerequisites)} {path_noun}"
                 else:
-                    promotion_detail = (
-                        f"Requires ALL {len(node.prerequisites)} {path_noun}"
-                    )
+                    promotion_detail = f"Requires ALL {len(node.prerequisites)} {path_noun}"
         # These diagrams are developer references, so quest-hidden nodes use
         # their authored names even while the player-facing tree says Unknown.
         name = str(node.payload.get("revealed_name", node.name))
         if len(name) > 20:
             name = f"{name[:17]}..."
-        lines.extend((
+        lines.extend(
             (
-                f'<rect x="{x:.1f}" y="{y:.1f}" width="{NODE_WIDTH}" '
-                f'height="{node_height}" rx="8" fill="{fill}" '
-                f'stroke="{stroke}" stroke-width="2"/>'
-            ),
-            (
-                f'<text class="name" x="{x + 10:.1f}" y="{y + 24:.1f}">'
-                f"{escape(name)}</text>"
-            ),
-            (
-                f'<text class="detail" x="{x + 10:.1f}" y="{y + 45:.1f}">'
-                f"{escape(' · '.join(details))}</text>"
-            ),
-        ))
+                (
+                    f'<rect x="{x:.1f}" y="{y:.1f}" width="{NODE_WIDTH}" '
+                    f'height="{node_height}" rx="8" fill="{fill}" '
+                    f'stroke="{stroke}" stroke-width="2"/>'
+                ),
+                (f'<text class="name" x="{x + 10:.1f}" y="{y + 24:.1f}">' f"{escape(name)}</text>"),
+                (
+                    f'<text class="detail" x="{x + 10:.1f}" y="{y + 45:.1f}">'
+                    f"{escape(' · '.join(details))}</text>"
+                ),
+            )
+        )
         if promotion_detail:
             lines.append(
                 f'<text class="detail" x="{x + 10:.1f}" y="{y + 66:.1f}">'
@@ -419,9 +374,7 @@ def render_index() -> str:
         "",
     ]
     base_classes = [
-        class_name
-        for class_name in ABILITY_TREES
-        if CLASS_DETAILS[class_name][2] is None
+        class_name for class_name in ABILITY_TREES if CLASS_DETAILS[class_name][2] is None
     ]
     for base_class in base_classes:
         lines.extend((f"## {base_class} lineage", ""))
@@ -429,8 +382,7 @@ def render_index() -> str:
             members = [
                 class_name
                 for class_name, tree in ABILITY_TREES.items()
-                if tree.stage == stage
-                and base_class_name(class_name) == base_class
+                if tree.stage == stage and base_class_name(class_name) == base_class
             ]
             if not members:
                 continue
@@ -439,8 +391,7 @@ def render_index() -> str:
                 path = diagram_relative_path(class_name).as_posix()
                 documentation_path = str(Path(path).with_suffix(".md"))
                 lines.append(
-                    f"- [{class_name}]({path}) - "
-                    f"[documentation]({documentation_path})"
+                    f"- [{class_name}]({path}) - " f"[documentation]({documentation_path})"
                 )
             lines.append("")
     return "\n".join(lines).rstrip() + "\n"

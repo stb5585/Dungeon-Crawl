@@ -31,27 +31,50 @@ class FamiliarBond2(_WarlockPassive):
 
 class ThornByMySide(_WarlockPassive):
     def __init__(self) -> None:
-        super().__init__("Thorn By My Side", "Homunculus Cover redirects damage to the attacker.", modifies=("Cover",))
+        super().__init__(
+            "Thorn By My Side",
+            "Homunculus Cover redirects damage to the attacker.",
+            modifies=("Cover",),
+        )
 
 
 class RestorativeBarrier(_WarlockPassive):
     def __init__(self) -> None:
-        super().__init__("Restorative Barrier", "Fairy direct healing also creates a barrier equal to the healing.", modifies=("Heal", "Heal II", "Heal III"))
+        super().__init__(
+            "Restorative Barrier",
+            "Fairy direct healing also creates a barrier equal to the healing.",
+            modifies=("Heal", "Heal II", "Heal III"),
+        )
 
 
 class InsultToInjury(_WarlockPassive):
     def __init__(self) -> None:
-        super().__init__("Insult to Injury", "Mephit Arcane spells deal 50% more damage to Corrupted targets.", modifies=("Magic Missile", "Magic Missile II", "Magic Missile III", "Kinetic Explosion"))
+        super().__init__(
+            "Insult to Injury",
+            "Mephit Arcane spells deal 50% more damage to Corrupted targets.",
+            modifies=(
+                "Magic Missile",
+                "Magic Missile II",
+                "Magic Missile III",
+                "Kinetic Explosion",
+            ),
+        )
 
 
 class MasterLocator(_WarlockPassive):
     def __init__(self) -> None:
-        super().__init__("Master Locator", "Jinkin finds improve random post-combat loot by one rarity tier.")
+        super().__init__(
+            "Master Locator", "Jinkin finds improve random post-combat loot by one rarity tier."
+        )
 
 
 class FesteringAnguish(_WarlockPassive):
     def __init__(self) -> None:
-        super().__init__("Festering Anguish", "Corruption damage increases by 25% on every tick.", modifies=("Corruption", "Corruption II"))
+        super().__init__(
+            "Festering Anguish",
+            "Corruption damage increases by 25% on every tick.",
+            modifies=("Corruption", "Corruption II"),
+        )
 
 
 class VimAndRigor(_WarlockPassive):
@@ -168,17 +191,27 @@ class Bullionaire(_WarlockPassive):
 
 class DanceOfTheDead(_WarlockPassive):
     def __init__(self) -> None:
-        super().__init__("Dance of the Dead", "Enemies killed by Doom return as temporary undead allies.", modifies=("Doom",))
+        super().__init__(
+            "Dance of the Dead",
+            "Enemies killed by Doom return as temporary undead allies.",
+            modifies=("Doom",),
+        )
 
 
 class SoulAsylum(_WarlockPassive):
     def __init__(self) -> None:
-        super().__init__("Soul Asylum", "Enemies killed by Desoul produce a Soul Gem.", modifies=("Desoul",))
+        super().__init__(
+            "Soul Asylum", "Enemies killed by Desoul produce a Soul Gem.", modifies=("Desoul",)
+        )
 
 
 class ContractKiller(_WarlockPassive):
     def __init__(self) -> None:
-        super().__init__("Contract Killer", "Soul Gem contracts gain 25% more favor and bargain taint.", modifies=("Call Contract",))
+        super().__init__(
+            "Contract Killer",
+            "Soul Gem contracts gain 25% more favor and bargain taint.",
+            modifies=("Call Contract",),
+        )
 
 
 class MysticalVitality(_WarlockPassive):
@@ -251,7 +284,9 @@ class _CurseSpell(Spell):
         self.cost = cost
         self.subtyp = "Curse"
 
-    def cast(self, user: Any, target: Any | None = None, *, fam: bool = False, **kwargs: Any) -> str:
+    def cast(
+        self, user: Any, target: Any | None = None, *, fam: bool = False, **kwargs: Any
+    ) -> str:
         del kwargs
         if target is None:
             return "There is no target to curse.\n"
@@ -276,21 +311,29 @@ class CurseFrailty(_CurseSpell):
     curse_name = "Frailty"
 
     def __init__(self) -> None:
-        super().__init__("Curse of Frailty", "Persistently weakens every Strength-based action and check.")
+        super().__init__(
+            "Curse of Frailty", "Persistently weakens every Strength-based action and check."
+        )
 
 
 class CurseElijah(_CurseSpell):
     curse_name = "Elijah"
 
     def __init__(self) -> None:
-        super().__init__("Curse of Elijah", "Makes the target brittle, reducing armor and allowing fractures.", 20)
+        super().__init__(
+            "Curse of Elijah",
+            "Makes the target brittle, reducing armor and allowing fractures.",
+            20,
+        )
 
 
 class CurseDysarthria(_CurseSpell):
     curse_name = "Dysarthria"
 
     def __init__(self) -> None:
-        super().__init__("Curse of Dysarthria", "Persistently adds one turn to every spell's casting time.", 20)
+        super().__init__(
+            "Curse of Dysarthria", "Persistently adds one turn to every spell's casting time.", 20
+        )
 
 
 class CurseSwarms(_CurseSpell):
@@ -338,16 +381,24 @@ class CursePolydipsia(_CurseSpell):
     curse_name = "Polydipsia"
 
     def __init__(self) -> None:
-        super().__init__("Curse of Polydipsia", "Afflicts the target with an escalating, unquenchable thirst.", 22)
+        super().__init__(
+            "Curse of Polydipsia",
+            "Afflicts the target with an escalating, unquenchable thirst.",
+            22,
+        )
 
 
 class ExpelCurse(Spell):
     def __init__(self) -> None:
-        super().__init__("Expel Curse", "Remove all persistent curses from the target.", school="Holy")
+        super().__init__(
+            "Expel Curse", "Remove all persistent curses from the target.", school="Holy"
+        )
         self.cost = 24
         self.subtyp = "Healing"
 
-    def cast(self, user: Any, target: Any | None = None, *, fam: bool = False, **kwargs: Any) -> str:
+    def cast(
+        self, user: Any, target: Any | None = None, *, fam: bool = False, **kwargs: Any
+    ) -> str:
         del kwargs
         target = target or user
         if not fam:
@@ -365,7 +416,11 @@ class ExpelCurse(Spell):
 
 class ShadowCurtain(Spell):
     def __init__(self) -> None:
-        super().__init__("Shadow Curtain", "Cloak yourself in shadow, slowing nearby enemies and empowering attacks.", school="Shadow")
+        super().__init__(
+            "Shadow Curtain",
+            "Cloak yourself in shadow, slowing nearby enemies and empowering attacks.",
+            school="Shadow",
+        )
         self.cost = 28
         self.subtyp = "Support"
 
@@ -382,7 +437,11 @@ class ShadowCurtain(Spell):
 
 class SoulBinding(Spell):
     def __init__(self) -> None:
-        super().__init__("Soul Binding", "Link two souls so damage suffered by either is shared by both.", school="Shadow")
+        super().__init__(
+            "Soul Binding",
+            "Link two souls so damage suffered by either is shared by both.",
+            school="Shadow",
+        )
         self.cost = 30
         self.subtyp = "Status"
 
@@ -399,7 +458,11 @@ class SoulBinding(Spell):
 
 class SoulSiphon(Spell):
     def __init__(self) -> None:
-        super().__init__("Soul Siphon", "Mark a soul for three turns; its death yields a Soul Gem.", school="Shadow")
+        super().__init__(
+            "Soul Siphon",
+            "Mark a soul for three turns; its death yields a Soul Gem.",
+            school="Shadow",
+        )
         self.cost = 25
         self.subtyp = "Status"
 

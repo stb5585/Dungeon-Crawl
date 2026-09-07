@@ -134,7 +134,9 @@ def test_scheduled_action_lt_uses_speed_modifier_for_tiebreak():
     slow = MockCharWithStats("Slow", 10)
     fast = MockCharWithStats("Fast", 8)
 
-    slower_action = ScheduledAction(slow, ActionType.ATTACK, None, ActionPriority.NORMAL, callback=lambda **_: None)
+    slower_action = ScheduledAction(
+        slow, ActionType.ATTACK, None, ActionPriority.NORMAL, callback=lambda **_: None
+    )
     faster_action = ScheduledAction(
         fast,
         ActionType.ATTACK,

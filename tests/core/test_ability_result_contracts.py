@@ -6,7 +6,6 @@ from src.core import abilities
 from src.core.combat.combat_result import CombatResult
 from tests.test_framework import TestGameState
 
-
 EXPECTED_EFFECT_BUCKETS = {"Status", "Physical", "Stat", "Magic", "Class"}
 
 
@@ -301,9 +300,7 @@ def test_weapon_data_driven_skill_records_weapon_damage_in_result():
 
     result = skill.use(user, target)
 
-    _assert_result_contract(
-        result, action="Double Strike", actor=user, target=target
-    )
+    _assert_result_contract(result, action="Double Strike", actor=user, target=target)
     assert result.hit is True
     assert result.damage == 14
     assert result.extra["last_damage"] == 14

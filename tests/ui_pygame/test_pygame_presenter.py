@@ -162,7 +162,9 @@ def _install_presenter_fakes(monkeypatch):
     monkeypatch.setattr(pygame_presenter, "get_event_bus", lambda: event_bus)
     monkeypatch.setattr(pygame_presenter, "get_sound_manager", lambda event_bus=None: sound_manager)
     monkeypatch.setattr("src.ui_pygame.presentation.pygame_presenter.pygame.init", lambda: None)
-    monkeypatch.setattr("src.ui_pygame.presentation.pygame_presenter.pygame.font.init", lambda: None)
+    monkeypatch.setattr(
+        "src.ui_pygame.presentation.pygame_presenter.pygame.font.init", lambda: None
+    )
     monkeypatch.setattr(
         "src.ui_pygame.presentation.pygame_presenter.pygame.display.set_mode",
         lambda size: display_screen,
@@ -266,9 +268,7 @@ def test_presenter_initializes_subscriptions_and_basic_event_handlers(monkeypatc
     )
     presenter._on_healing_done(SimpleNamespace(data={"amount": 18, "actor": hero}))
     presenter._on_critical_hit(SimpleNamespace(data={}))
-    presenter._on_status_applied(
-        SimpleNamespace(target=goblin, data={"status_name": "Poisoned"})
-    )
+    presenter._on_status_applied(SimpleNamespace(target=goblin, data={"status_name": "Poisoned"}))
     presenter._on_status_applied(
         SimpleNamespace(target=None, data={"status_name": "Burning", "target": "Torch"})
     )
@@ -352,7 +352,9 @@ def test_render_combat_processes_input_updates_and_draws(monkeypatch):
     presenter.log_scroll_offset = 1
     presenter.turn_number = 3
     presenter.telegraph_message = "Enemy is charging!"
-    presenter.floating_texts = [pygame_presenter.FloatingText("hit", 1, 2, pygame_presenter.WHITE, presenter.large_font)]
+    presenter.floating_texts = [
+        pygame_presenter.FloatingText("hit", 1, 2, pygame_presenter.WHITE, presenter.large_font)
+    ]
     presenter.shake_intensity = 2
     presenter.shake_duration = 1
 
@@ -379,40 +381,61 @@ def test_render_menu_list_grid_and_split_layout_paths(monkeypatch):
     bundle = _install_presenter_fakes(monkeypatch)
     presenter = bundle.presenter
 
-    event_batches = iter([
-        [_event(pygame.KEYDOWN, pygame.K_DOWN)],
-        [_event(pygame.KEYDOWN, pygame.K_RETURN)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.presentation.pygame_presenter.pygame.event.get", lambda: next(event_batches, []))
-    assert presenter.render_menu("Title", ["One", "Two", "Three"], selected_index=0, max_visible=2) == 1
+    event_batches = iter(
+        [
+            [_event(pygame.KEYDOWN, pygame.K_DOWN)],
+            [_event(pygame.KEYDOWN, pygame.K_RETURN)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.presentation.pygame_presenter.pygame.event.get",
+        lambda: next(event_batches, []),
+    )
+    assert (
+        presenter.render_menu("Title", ["One", "Two", "Three"], selected_index=0, max_visible=2)
+        == 1
+    )
 
-    event_batches = iter([
-        [_event(pygame.KEYDOWN, pygame.K_RIGHT)],
-        [_event(pygame.KEYDOWN, pygame.K_RETURN)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.presentation.pygame_presenter.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [_event(pygame.KEYDOWN, pygame.K_RIGHT)],
+            [_event(pygame.KEYDOWN, pygame.K_RETURN)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.presentation.pygame_presenter.pygame.event.get",
+        lambda: next(event_batches, []),
+    )
     assert presenter.render_menu("Grid", ["A", "B", "C"], use_grid=True) == 1
 
     fake_image = DummySurface((200, 100))
     bg_calls = []
-    event_batches = iter([
-        [_event(pygame.KEYDOWN, pygame.K_DOWN)],
-        [_event(pygame.KEYDOWN, pygame.K_RETURN)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.presentation.pygame_presenter.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [_event(pygame.KEYDOWN, pygame.K_DOWN)],
+            [_event(pygame.KEYDOWN, pygame.K_RETURN)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.presentation.pygame_presenter.pygame.event.get",
+        lambda: next(event_batches, []),
+    )
     monkeypatch.setattr("os.path.exists", lambda _path: True)
     monkeypatch.setattr(
         "src.ui_pygame.presentation.pygame_presenter.pygame.image.load",
         lambda _path: fake_image,
     )
-    assert presenter.render_menu(
-        "Wrapped title for split layout rendering.",
-        ["Left", "Right", "Down"],
-        split_layout=True,
-        max_visible=2,
-        image_path="portrait.png",
-        background_draw_func=lambda: bg_calls.append(True),
-    ) == 1
+    assert (
+        presenter.render_menu(
+            "Wrapped title for split layout rendering.",
+            ["Left", "Right", "Down"],
+            split_layout=True,
+            max_visible=2,
+            image_path="portrait.png",
+            background_draw_func=lambda: bg_calls.append(True),
+        )
+        == 1
+    )
     assert bg_calls
     assert "UP/DOWN: Navigate  ENTER: Select  ESC: Cancel" in presenter.small_font.render_calls
     assert "menu_select" in bundle.sound_manager.sfx
@@ -423,23 +446,41 @@ def test_render_menu_mouse_selects_list_grid_and_split_options(monkeypatch):
     bundle = _install_presenter_fakes(monkeypatch)
     presenter = bundle.presenter
 
-    event_batches = iter([
-        [_mouse_event(pygame.MOUSEMOTION, (320, 335), 0)],
-        [_mouse_event(pygame.MOUSEBUTTONDOWN, (320, 335))],
-    ])
-    monkeypatch.setattr("src.ui_pygame.presentation.pygame_presenter.pygame.event.get", lambda: next(event_batches, []))
-    assert presenter.render_menu("Title", ["One", "Two", "Three"], selected_index=0, max_visible=2) == 1
+    event_batches = iter(
+        [
+            [_mouse_event(pygame.MOUSEMOTION, (320, 335), 0)],
+            [_mouse_event(pygame.MOUSEBUTTONDOWN, (320, 335))],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.presentation.pygame_presenter.pygame.event.get",
+        lambda: next(event_batches, []),
+    )
+    assert (
+        presenter.render_menu("Title", ["One", "Two", "Three"], selected_index=0, max_visible=2)
+        == 1
+    )
 
-    event_batches = iter([
-        [_mouse_event(pygame.MOUSEBUTTONDOWN, (425, 270))],
-    ])
-    monkeypatch.setattr("src.ui_pygame.presentation.pygame_presenter.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [_mouse_event(pygame.MOUSEBUTTONDOWN, (425, 270))],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.presentation.pygame_presenter.pygame.event.get",
+        lambda: next(event_batches, []),
+    )
     assert presenter.render_menu("Grid", ["A", "B", "C"], use_grid=True) == 1
 
-    event_batches = iter([
-        [_mouse_event(pygame.MOUSEBUTTONDOWN, (465, 154))],
-    ])
-    monkeypatch.setattr("src.ui_pygame.presentation.pygame_presenter.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [_mouse_event(pygame.MOUSEBUTTONDOWN, (465, 154))],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.presentation.pygame_presenter.pygame.event.get",
+        lambda: next(event_batches, []),
+    )
     assert presenter.render_menu("Split", ["Left", "Right"], split_layout=True) == 1
 
 
@@ -449,12 +490,20 @@ def test_show_message_progress_popup_and_dialogue_paths(monkeypatch):
     presenter.debug_mode = True
 
     tick_values = iter([0, 0, 1000, 1000])
-    event_batches = iter([
-        [],
-        [_event(pygame.KEYDOWN, pygame.K_SPACE)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.presentation.pygame_presenter.pygame.time.get_ticks", lambda: next(tick_values))
-    monkeypatch.setattr("src.ui_pygame.presentation.pygame_presenter.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [],
+            [_event(pygame.KEYDOWN, pygame.K_SPACE)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.presentation.pygame_presenter.pygame.time.get_ticks",
+        lambda: next(tick_values),
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.presentation.pygame_presenter.pygame.event.get",
+        lambda: next(event_batches, []),
+    )
     presenter.show_message(
         "A very long message that should wrap in the split layout pane.",
         title="Header",
@@ -465,11 +514,19 @@ def test_show_message_progress_popup_and_dialogue_paths(monkeypatch):
 
     fake_image = DummySurface((90, 45))
     tick_values = iter([1000, 1000])
-    event_batches = iter([
-        [_event(pygame.KEYDOWN, pygame.K_SPACE)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.presentation.pygame_presenter.pygame.time.get_ticks", lambda: next(tick_values))
-    monkeypatch.setattr("src.ui_pygame.presentation.pygame_presenter.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [_event(pygame.KEYDOWN, pygame.K_SPACE)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.presentation.pygame_presenter.pygame.time.get_ticks",
+        lambda: next(tick_values),
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.presentation.pygame_presenter.pygame.event.get",
+        lambda: next(event_batches, []),
+    )
     monkeypatch.setattr("os.path.exists", lambda _path: True)
     monkeypatch.setattr(
         "src.ui_pygame.presentation.pygame_presenter.pygame.image.load",
@@ -477,19 +534,31 @@ def test_show_message_progress_popup_and_dialogue_paths(monkeypatch):
     )
     presenter.show_message("Short message", title="Notice", image_path="img.png")
 
-    event_batches = iter([
-        [],
-        [],
-    ])
-    monkeypatch.setattr("src.ui_pygame.presentation.pygame_presenter.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [],
+            [],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.presentation.pygame_presenter.pygame.event.get",
+        lambda: next(event_batches, []),
+    )
     presenter.show_progress_popup("Loading", "Please wait", steps=1, total_time=0.0)
 
     calls = []
-    monkeypatch.setattr(presenter, "show_message", lambda text, title="": calls.append((title, text)))
-    event_batches = iter([
-        [_event(pygame.KEYDOWN, pygame.K_SPACE)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.presentation.pygame_presenter.pygame.event.get", lambda: next(event_batches, []))
+    monkeypatch.setattr(
+        presenter, "show_message", lambda text, title="": calls.append((title, text))
+    )
+    event_batches = iter(
+        [
+            [_event(pygame.KEYDOWN, pygame.K_SPACE)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.presentation.pygame_presenter.pygame.event.get",
+        lambda: next(event_batches, []),
+    )
     presenter.show_dialogue("Guide", "Welcome")
 
     assert calls == [("Guide", "Welcome")]
@@ -531,11 +600,16 @@ def test_show_progress_popup_runs_work_while_visible(monkeypatch):
     bundle = _install_presenter_fakes(monkeypatch)
     presenter = bundle.presenter
 
-    event_batches = iter([
-        [],
-        [],
-    ])
-    monkeypatch.setattr("src.ui_pygame.presentation.pygame_presenter.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [],
+            [],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.presentation.pygame_presenter.pygame.event.get",
+        lambda: next(event_batches, []),
+    )
     work_calls = []
 
     def load_work():
@@ -553,11 +627,16 @@ def test_input_confirmation_and_basic_render_helpers(monkeypatch):
     bundle = _install_presenter_fakes(monkeypatch)
     presenter = bundle.presenter
 
-    event_batches = iter([
-        [_event(pygame.KEYDOWN, pygame.K_DOWN)],
-        [_event(pygame.KEYDOWN, pygame.K_RETURN)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.presentation.pygame_presenter.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [_event(pygame.KEYDOWN, pygame.K_DOWN)],
+            [_event(pygame.KEYDOWN, pygame.K_RETURN)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.presentation.pygame_presenter.pygame.event.get",
+        lambda: next(event_batches, []),
+    )
     menu_calls = []
     monkeypatch.setattr(
         presenter,
@@ -566,19 +645,29 @@ def test_input_confirmation_and_basic_render_helpers(monkeypatch):
     )
     assert presenter.get_player_action("Choose", ["Attack", "Defend"]) == "Defend"
 
-    event_batches = iter([
-        [_event(pygame.KEYDOWN, unicode="A")],
-        [_event(pygame.KEYDOWN, unicode="B")],
-        [_event(pygame.KEYDOWN, pygame.K_BACKSPACE)],
-        [_event(pygame.KEYDOWN, pygame.K_RETURN)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.presentation.pygame_presenter.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [_event(pygame.KEYDOWN, unicode="A")],
+            [_event(pygame.KEYDOWN, unicode="B")],
+            [_event(pygame.KEYDOWN, pygame.K_BACKSPACE)],
+            [_event(pygame.KEYDOWN, pygame.K_RETURN)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.presentation.pygame_presenter.pygame.event.get",
+        lambda: next(event_batches, []),
+    )
     assert presenter.get_text_input("Name?", default="Hero") == "HeroA"
 
-    event_batches = iter([
-        [_event(pygame.KEYDOWN, pygame.K_ESCAPE)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.presentation.pygame_presenter.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [_event(pygame.KEYDOWN, pygame.K_ESCAPE)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.presentation.pygame_presenter.pygame.event.get",
+        lambda: next(event_batches, []),
+    )
     assert presenter.get_text_input("Name?", default="Hero") == "Hero"
 
     monkeypatch.setattr(presenter, "get_player_action", lambda prompt, options: "Yes")

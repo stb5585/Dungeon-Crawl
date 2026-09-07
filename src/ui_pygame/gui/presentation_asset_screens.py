@@ -10,7 +10,11 @@ import pygame
 
 from src.ui_pygame.assets.portrait_manager import PortraitManager
 
-from .input_guards import prepare_guarded_input, release_guard_allows_input, update_input_armed_from_event
+from .input_guards import (
+    prepare_guarded_input,
+    release_guard_allows_input,
+    update_input_armed_from_event,
+)
 from .mouse_helpers import is_left_click, mouse_position
 from .town_base import TownColors
 
@@ -50,7 +54,9 @@ class _PresentationScreenBase:
         band = pygame.Surface((self.width, band_height), pygame.SRCALPHA)
         band.fill((28, 22, 34, 210))
         self.screen.blit(band, (0, 0))
-        pygame.draw.line(self.screen, (124, 102, 58), (0, band_height), (self.width, band_height), 2)
+        pygame.draw.line(
+            self.screen, (124, 102, 58), (0, band_height), (self.width, band_height), 2
+        )
 
     def _draw_panel(self, rect: pygame.Rect, *, fill=(18, 18, 24), border=None) -> None:
         panel = pygame.Surface(rect.size, pygame.SRCALPHA)
@@ -101,7 +107,9 @@ class _PresentationScreenBase:
         button_width = min(self.width - 80, max(190, text_width + 54))
         button_height = max(42, self._font_height(self.normal_font) + 18)
         y = (bottom - button_height) if bottom is not None else (self.height - button_height - 42)
-        self.continue_rect = pygame.Rect(self.width // 2 - button_width // 2, y, button_width, button_height)
+        self.continue_rect = pygame.Rect(
+            self.width // 2 - button_width // 2, y, button_width, button_height
+        )
         pygame.draw.rect(self.screen, self.colors.GOLD, self.continue_rect)
         pygame.draw.rect(self.screen, self.colors.WHITE, self.continue_rect, 2)
         self.screen.blit(text, text.get_rect(center=self.continue_rect.center))
@@ -125,7 +133,9 @@ class _PresentationScreenBase:
 class CharacterCreatedScreen(_PresentationScreenBase):
     """Visual character-created summary shown after the creation flow."""
 
-    def __init__(self, presenter, player_char, *, portrait_manager: PortraitManager | None = None) -> None:
+    def __init__(
+        self, presenter, player_char, *, portrait_manager: PortraitManager | None = None
+    ) -> None:
         super().__init__(presenter)
         self.player_char = player_char
         self.portrait_manager = portrait_manager or PortraitManager()
@@ -180,8 +190,12 @@ class CharacterCreatedScreen(_PresentationScreenBase):
         top = max(120, self.height // 6)
         gap = max(22, self.width // 48)
         panel_height = self.height - top - 118
-        portrait_panel = pygame.Rect(margin, top, (self.width - margin * 2 - gap) // 2, panel_height)
-        summary_panel = pygame.Rect(portrait_panel.right + gap, top, portrait_panel.width, panel_height)
+        portrait_panel = pygame.Rect(
+            margin, top, (self.width - margin * 2 - gap) // 2, panel_height
+        )
+        summary_panel = pygame.Rect(
+            portrait_panel.right + gap, top, portrait_panel.width, panel_height
+        )
         self._draw_panel(portrait_panel)
         self._draw_panel(summary_panel)
 
@@ -223,7 +237,9 @@ class CharacterCreatedScreen(_PresentationScreenBase):
         self._draw_continue_button("Begin Adventure")
 
     def show(self, *, flush_events: bool = False, require_key_release: bool = False) -> bool:
-        input_armed = prepare_guarded_input(flush_events=flush_events, require_key_release=require_key_release)
+        input_armed = prepare_guarded_input(
+            flush_events=flush_events, require_key_release=require_key_release
+        )
         while True:
             self.draw()
             pygame.display.flip()
@@ -256,7 +272,9 @@ class StoryCardSequence(_PresentationScreenBase):
         self._draw_panel(card, fill=(18, 16, 22), border=self.colors.GOLD)
 
         page_count = max(1, len(self.pages))
-        counter = self.small_font.render(f"{self.page_index + 1}/{page_count}", True, self.colors.GRAY)
+        counter = self.small_font.render(
+            f"{self.page_index + 1}/{page_count}", True, self.colors.GRAY
+        )
         self.screen.blit(counter, counter.get_rect(right=card.right - 24, top=card.top + 20))
 
         body_rect = card.inflate(-72, -92)
@@ -276,7 +294,9 @@ class StoryCardSequence(_PresentationScreenBase):
         if not self.pages:
             return True
 
-        input_armed = prepare_guarded_input(flush_events=flush_events, require_key_release=require_key_release)
+        input_armed = prepare_guarded_input(
+            flush_events=flush_events, require_key_release=require_key_release
+        )
         while True:
             self.draw()
             pygame.display.flip()

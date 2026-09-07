@@ -16,12 +16,14 @@ MOMENTUM_ACCURACY_PER_STACK = 0.03
 MOMENTUM_DAMAGE_PER_STACK = 0.05
 MOMENTUM_RIDER_PER_STACK = 0.02
 RING_MOMENTUM_RIDER_PER_STACK = 0.03
-HEAVY_ARTS = frozenset({
-    "Guard Cleaver",
-    "Reaver's Mark",
-    "Brace",
-    "Anvil Strike",
-})
+HEAVY_ARTS = frozenset(
+    {
+        "Guard Cleaver",
+        "Reaver's Mark",
+        "Brace",
+        "Anvil Strike",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -139,11 +141,7 @@ def prepare_heavy_art_payoff(
         stacks=stacks,
         accuracy_bonus=MOMENTUM_ACCURACY_PER_STACK * stacks,
         damage_bonus=MOMENTUM_DAMAGE_PER_STACK * stacks,
-        rider_per_stack=(
-            RING_MOMENTUM_RIDER_PER_STACK
-            if ring_boost
-            else MOMENTUM_RIDER_PER_STACK
-        ),
+        rider_per_stack=(RING_MOMENTUM_RIDER_PER_STACK if ring_boost else MOMENTUM_RIDER_PER_STACK),
         crush_bonus=stacks + int(ring_boost),
     )
     return (
@@ -244,6 +242,5 @@ def record_battle_scar(character: Any, *, rng: Any = random) -> tuple[bool, str]
     character.health.current = min(character.health.max, character.health.current + hp_bonus)
     stability = " at the 15% scar-stability threshold" if threshold > LOW_HP_THRESHOLD else ""
     return True, (
-        f"{character.name} earns a Battle Scar{stability}. "
-        f"Max HP rises by {hp_bonus}.\n"
+        f"{character.name} earns a Battle Scar{stability}. " f"Max HP rises by {hp_bonus}.\n"
     )

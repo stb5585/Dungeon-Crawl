@@ -2,6 +2,7 @@
 GUI Quest Manager: offers and turns in quests using Pygame presenter.
 Adapts core quest data from town.quest_dict for Pygame presentation.
 """
+
 from __future__ import annotations
 
 import copy
@@ -91,7 +92,9 @@ class QuestManager:
                 "The Hooded Figure whispers that a map to the Golden Chalice was last seen with an adventurer carrying an ugly sword."
             )
             progress["Hooded"] = True
-            quest_data["Help Text"] = "Revisit the boulder where you found Excaliper; the map may be hidden there."
+            quest_data["Help Text"] = (
+                "Revisit the boulder where you found Excaliper; the map may be hidden there."
+            )
             return True
 
         if giver == "Sergeant" and not progress.get("Sergeant"):
@@ -101,7 +104,9 @@ class QuestManager:
                     "The Sergeant studies your map and mutters, 'There's a hidden route somewhere on the third floor. Find the adventurer there.'"
                 )
                 progress["Sergeant"] = True
-                quest_data["Help Text"] = "Search the third floor for a secret path; an adventurer there can help decipher the map."
+                quest_data["Help Text"] = (
+                    "Search the third floor for a secret path; an adventurer there can help decipher the map."
+                )
                 return True
 
         return False
@@ -110,6 +115,7 @@ class QuestManager:
         """Return a single random help hint for active quests from the given giver.
         Does not render anything; returns None if no applicable hints.
         """
+
         def flatten(lst):
             out = []
             for d in lst:
@@ -120,15 +126,15 @@ class QuestManager:
         mains, sides = self._eligible_quests(giver)
         hints: list[str] = []
         for name, _ in flatten(mains):
-            pdata = self.player_char.quest_dict.get('Main', {}).get(name)
-            if pdata and not pdata.get('Turned In'):
-                ht = pdata.get('Help Text', '')
+            pdata = self.player_char.quest_dict.get("Main", {}).get(name)
+            if pdata and not pdata.get("Turned In"):
+                ht = pdata.get("Help Text", "")
                 if isinstance(ht, str) and ht.strip():
                     hints.append(ht)
         for name, _ in flatten(sides):
-            pdata = self.player_char.quest_dict.get('Side', {}).get(name)
-            if pdata and not pdata.get('Turned In'):
-                ht = pdata.get('Help Text', '')
+            pdata = self.player_char.quest_dict.get("Side", {}).get(name)
+            if pdata and not pdata.get("Turned In"):
+                ht = pdata.get("Help Text", "")
                 if isinstance(ht, str) and ht.strip():
                     hints.append(ht)
         hints.extend(get_reactive_town_hints(self.player_char, giver))
@@ -146,17 +152,17 @@ class QuestManager:
             if level >= int(lvl):
                 side_list.append(q)
         return main_list, side_list
-    
+
     def _can_offer_quest(self, quest_name: str, q: dict[str, Any], typ: str) -> bool:
         """Check if quest can be offered based on prerequisites."""
         # Check if quest requires another quest to be turned in first
-        required_quest = q.get('Requires')
+        required_quest = q.get("Requires")
         if required_quest:
             # Look for the required quest in both Main and Side
-            for quest_type in ['Main', 'Side']:
+            for quest_type in ["Main", "Side"]:
                 if required_quest in self.player_char.quest_dict.get(quest_type, {}):
                     req_data = self.player_char.quest_dict[quest_type][required_quest]
-                    if not req_data.get('Turned In', False):
+                    if not req_data.get("Turned In", False):
                         return False
                     # Required quest is turned in, can proceed
                     return True
@@ -207,16 +213,14 @@ class QuestManager:
 
     def _turn_in(self, quest_name: str, typ: str) -> None:
         qdata = self.player_char.quest_dict[typ][quest_name]
-        reward = qdata.get('Reward', [])
-        reward_num = qdata.get('Reward Number', 1)
+        reward = qdata.get("Reward", [])
+        reward_num = qdata.get("Reward Number", 1)
         if reward == ["Power Up"] and not has_special_power_reward(self.player_char):
-            self._show_hint(
-                "Complete your second promotion before claiming the Power Core reward."
-            )
+            self._show_hint("Complete your second promotion before claiming the Power Core reward.")
             return
 
         # Show end-of-quest text from quest giver if available
-        end_text = qdata.get('End Text', '')
+        end_text = qdata.get("End Text", "")
         if end_text:
             if self.quest_text_renderer:
                 if self.renderer_preserve_formatting:
@@ -234,23 +238,23 @@ class QuestManager:
                 self._show_popup(popup)
 
         # Rewards
-        exp = qdata.get('Experience', 0)
+        exp = qdata.get("Experience", 0)
 
         def format_item_info(item) -> str:
             info_lines = []
             info_lines.append(f"Type: {getattr(item, 'typ', 'Item')}")
-            if hasattr(item, 'subtyp'):
+            if hasattr(item, "subtyp"):
                 info_lines.append(f"Subtype: {item.subtyp}")
             info_lines.append("")
-            if getattr(item, 'damage', 0):
+            if getattr(item, "damage", 0):
                 info_lines.append(f"Damage: {item.damage}")
-            if getattr(item, 'armor', 0):
+            if getattr(item, "armor", 0):
                 info_lines.append(f"Armor: {item.armor}")
-            if getattr(item, 'magic', 0):
+            if getattr(item, "magic", 0):
                 info_lines.append(f"Magic: {item.magic:+d}")
-            if getattr(item, 'magic_defense', 0):
+            if getattr(item, "magic_defense", 0):
                 info_lines.append(f"Magic Defense: {item.magic_defense:+d}")
-            if getattr(item, 'description', ''):
+            if getattr(item, "description", ""):
                 info_lines.append("")
                 wrapped_desc = textwrap.wrap(item.description, width=self.wrap_width)
                 info_lines.extend(wrapped_desc)
@@ -261,14 +265,14 @@ class QuestManager:
         def ensure_item_instance(reward_entry):
             if isinstance(reward_entry, type):
                 return reward_entry()
-            if hasattr(reward_entry, 'name'):
+            if hasattr(reward_entry, "name"):
                 return reward_entry
             return None
 
         def new_item_copy(reward_entry):
             if isinstance(reward_entry, type):
                 return reward_entry()
-            if hasattr(reward_entry, 'name'):
+            if hasattr(reward_entry, "name"):
                 return reward_entry.__class__()
             return None
 
@@ -283,12 +287,12 @@ class QuestManager:
             reward_str = reward_str.removeprefix("You gain the skill ").removesuffix(".")
         elif reward == ["Warp Point"]:
             # Special flag for warp point access
-            setattr(self.player_char, 'warp_point', True)
+            setattr(self.player_char, "warp_point", True)
             reward_str = "Warp Point access"
         elif reward and isinstance(reward, list) and len(reward) == 1:
             # Single item reward: can be either [ItemClass] or [ItemInstance]
             item_or_cls = reward[0]
-            
+
             # Check if it's a class or an instance
             if isinstance(item_or_cls, type):
                 # It's a class, instantiate it Reward Number times
@@ -314,7 +318,11 @@ class QuestManager:
         else:
             # If multiple reward choices, let player pick one (with inspect) instead of granting all
             chosen_names = []
-            if reward and len(reward) > 1 and all(isinstance(r, type) or hasattr(r, 'name') for r in reward):
+            if (
+                reward
+                and len(reward) > 1
+                and all(isinstance(r, type) or hasattr(r, "name") for r in reward)
+            ):
                 reward_items = []
                 for entry in reward:
                     try:
@@ -374,14 +382,12 @@ class QuestManager:
 
         level_result = award_experience(self.player_char, exp)
         self.player_char._pending_level_up_result = (
-            level_result
-            if level_result.new_level > level_result.old_level
-            else None
+            level_result if level_result.new_level > level_result.old_level else None
         )
 
         # Remove collected items if this is a Collect type quest
-        if qdata.get('Type') == 'Collect':
-            quest_item = qdata.get('What')
+        if qdata.get("Type") == "Collect":
+            quest_item = qdata.get("What")
             if quest_item:
                 try:
                     target_names = set()
@@ -395,25 +401,25 @@ class QuestManager:
                             quest_item_cls = getattr(items, quest_item, None)
                             if quest_item_cls and callable(quest_item_cls):
                                 quest_item_obj = quest_item_cls()
-                                target_names.add(getattr(quest_item_obj, 'name', quest_item))
+                                target_names.add(getattr(quest_item_obj, "name", quest_item))
                                 target_classes.add(quest_item_cls.__name__)
                         except Exception:
                             pass
                     elif callable(quest_item):
                         quest_item_obj = quest_item()
-                        target_names.add(getattr(quest_item_obj, 'name', ''))
+                        target_names.add(getattr(quest_item_obj, "name", ""))
                         target_classes.add(quest_item.__name__)
                     else:
-                        target_names.add(getattr(quest_item, 'name', ''))
+                        target_names.add(getattr(quest_item, "name", ""))
                         target_classes.add(quest_item.__class__.__name__)
 
                     # Remove only the required amount when possible.
                     try:
-                        remaining_to_remove = int(qdata.get('Total', 0))
+                        remaining_to_remove = int(qdata.get("Total", 0))
                     except (TypeError, ValueError):
                         remaining_to_remove = 0
 
-                    for inventory_name in ('special_inventory', 'inventory'):
+                    for inventory_name in ("special_inventory", "inventory"):
                         inventory = getattr(self.player_char, inventory_name, {})
                         for key in list(inventory.keys()):
                             item_list = inventory.get(key, [])
@@ -421,7 +427,7 @@ class QuestManager:
                                 continue
 
                             sample = item_list[0]
-                            sample_name = getattr(sample, 'name', key)
+                            sample_name = getattr(sample, "name", key)
                             sample_class = sample.__class__.__name__
                             is_match = (
                                 key in target_names
@@ -450,8 +456,8 @@ class QuestManager:
         level_up_screen = LevelUpScreen(self.presenter.screen, self.presenter)
         if level_result.new_level > level_result.old_level:
             level_up_screen.show_level_up(self.player_char, None)
-        qdata['Turned In'] = True
-        
+        qdata["Turned In"] = True
+
         # Quest-specific post-turn-in events
         self._handle_quest_events(quest_name)
         quest_progress.handle_quest_turn_in(self.player_char, quest_name)
@@ -466,6 +472,7 @@ class QuestManager:
 
     def _handle_quest_events(self, quest_name: str) -> None:
         """Handle special events triggered by specific quest turn-ins."""
+
         def show_special_event_text(event_name: str) -> None:
             from src.core.data.data_loader import get_special_events
 
@@ -485,22 +492,32 @@ class QuestManager:
 
             # Show Busboy special event
             show_special_event_text("Busboy")
-            
+
             # Transfer "Where's the Beef?" quest to Busboy if it exists
             if "Where's the Beef?" in self.player_char.quest_dict.get("Side", {}):
                 beef_quest = self.player_char.quest_dict["Side"]["Where's the Beef?"]
                 if not beef_quest.get("Turned In"):
                     beef_quest["Who"] = "Busboy"
-                    beef_quest["End Text"] = "Thanks, this will help feed a lot of people. Here's something for your time."
-                    beef_quest["Help Text"] = "You can get meat from pretty much any animal. Not really a time to be picky..."
-                    
-                    transfer_msg = ("I know the waitress asked you to get her some meat for her wedding.\n"
-                                  "She obviously doesn't need them anymore, so I can take them if you get them.")
+                    beef_quest["End Text"] = (
+                        "Thanks, this will help feed a lot of people. Here's something for your time."
+                    )
+                    beef_quest["Help Text"] = (
+                        "You can get meat from pretty much any animal. Not really a time to be picky..."
+                    )
+
+                    transfer_msg = (
+                        "I know the waitress asked you to get her some meat for her wedding.\n"
+                        "She obviously doesn't need them anymore, so I can take them if you get them."
+                    )
                     if self.quest_text_renderer:
                         self.quest_text_renderer(self._format_for_renderer(transfer_msg))
                     else:
-                        wrapped_transfer = "\n".join(textwrap.wrap(transfer_msg, width=self.wrap_width))
-                        popup = ConfirmationPopup(self.presenter, wrapped_transfer, show_buttons=False)
+                        wrapped_transfer = "\n".join(
+                            textwrap.wrap(transfer_msg, width=self.wrap_width)
+                        )
+                        popup = ConfirmationPopup(
+                            self.presenter, wrapped_transfer, show_buttons=False
+                        )
                         self._show_popup(popup)
         elif quest_name == "The Wizard's Folly":
             show_special_event_text("Nimue After Merzhin")
@@ -508,13 +525,13 @@ class QuestManager:
             show_special_event_text("Timmy Home")
         elif quest_name == "This Thing's Nuclear":
             show_special_event_text("Power Up")
-    
+
     def _already_killed(self, enemy_name: str) -> bool:
         return already_defeated_enemy(self.player_char, enemy_name)
 
     def _offer(self, giver: str, quest_name: str, q: dict[str, Any], typ: str) -> bool:
         # Offer quest via presenter
-        text = q.get('Start Text', '')
+        text = q.get("Start Text", "")
         # Display quest text - use renderer if available, otherwise the standard confirmation popup
         if self.quest_text_renderer:
             if self.renderer_preserve_formatting:
@@ -533,7 +550,7 @@ class QuestManager:
             wrapped_text = header_text + wrapped_text
             popup = ConfirmationPopup(self.presenter, wrapped_text, show_buttons=False)
             self._show_popup(popup)
-        
+
         # Separate Accept/Decline menu
         if self.quest_choice_renderer:
             choice = self.quest_choice_renderer("Accept this quest?", ["Accept", "Decline"])
@@ -552,29 +569,33 @@ class QuestManager:
                 self._ensure_chalice_progress(self.player_char.quest_dict[typ][quest_name])
 
             # If it's a defeat quest and player already killed the target, mark complete
-            if q.get('Type') == 'Defeat' and isinstance(q.get('What'), str):
-                if self._already_killed(q['What']):
-                    self.player_char.quest_dict[typ][quest_name]['Completed'] = True
+            if q.get("Type") == "Defeat" and isinstance(q.get("What"), str):
+                if self._already_killed(q["What"]):
+                    self.player_char.quest_dict[typ][quest_name]["Completed"] = True
 
             # If it's the Relics collection quest and player already has all relics,
             # mark as completed immediately so it can be turned in.
-            if q.get('Type') == 'Collect' and q.get('What') == 'Relics':
+            if q.get("Type") == "Collect" and q.get("What") == "Relics":
                 try:
-                    if getattr(self.player_char, 'has_relics')() and not self.player_char.quest_dict[typ][quest_name].get('Completed'):
-                        self.player_char.quest_dict[typ][quest_name]['Completed'] = True
+                    if getattr(
+                        self.player_char, "has_relics"
+                    )() and not self.player_char.quest_dict[typ][quest_name].get("Completed"):
+                        self.player_char.quest_dict[typ][quest_name]["Completed"] = True
                 except Exception:
                     pass
 
             # If the quest grants an initial item (for example Naivete's empty vial),
             # replicate minimal cases here if needed.
-            if quest_name == 'Naivete':
+            if quest_name == "Naivete":
                 try:
                     self.player_char.modify_inventory(items.EmptyVial(), rare=True)
                 except Exception:
                     pass
 
             # Use personalized response from RESPONSE_MAP
-            response = RESPONSE_MAP.get(giver, ["Quest accepted! Check your quest log for details.", "Maybe next time."])[0]
+            response = RESPONSE_MAP.get(
+                giver, ["Quest accepted! Check your quest log for details.", "Maybe next time."]
+            )[0]
             # Special case for Sergeant's Relics quest
             if giver == "Sergeant" and quest_name == "The Holy Relics":
                 response += "\n\nMake sure to grab the health potions out of your storage locker if you haven't already."
@@ -591,7 +612,9 @@ class QuestManager:
             return True
         else:
             # Use personalized rejection response from RESPONSE_MAP
-            response = RESPONSE_MAP.get(giver, ["Quest accepted! Check your quest log for details.", "Maybe next time."])[1]
+            response = RESPONSE_MAP.get(
+                giver, ["Quest accepted! Check your quest log for details.", "Maybe next time."]
+            )[1]
             if self.quest_text_renderer:
                 self.quest_text_renderer(self._format_for_renderer(response))
             else:
@@ -599,7 +622,9 @@ class QuestManager:
                 self._show_popup(popup)
             return False
 
-    def check_and_offer(self, giver: str, show_help: bool = True, suppress_no_quests_message: bool = False) -> tuple[bool, bool]:
+    def check_and_offer(
+        self, giver: str, show_help: bool = True, suppress_no_quests_message: bool = False
+    ) -> tuple[bool, bool]:
         """Return (did_action, showed_message).
 
         did_action: quest turned in or accepted.
@@ -610,6 +635,7 @@ class QuestManager:
         showed_message = False
         quest_was_offered = False
         mains, sides = self._eligible_quests(giver)
+
         # Turn-in checks, then offers
         # Build flat (name, data) lists
         def flatten(lst):
@@ -620,57 +646,74 @@ class QuestManager:
             return out
 
         for name, q in flatten(mains):
-            pdata = self.player_char.quest_dict.get('Main', {}).get(name)
-            if pdata and not pdata.get('Completed') and q.get('Type') == 'Defeat' and isinstance(q.get('What'), str):
-                if self._already_killed(q['What']):
-                    pdata['Completed'] = True
+            pdata = self.player_char.quest_dict.get("Main", {}).get(name)
+            if (
+                pdata
+                and not pdata.get("Completed")
+                and q.get("Type") == "Defeat"
+                and isinstance(q.get("What"), str)
+            ):
+                if self._already_killed(q["What"]):
+                    pdata["Completed"] = True
             # Safety: auto-complete Relics collect quest if already fulfilled but not marked
-            pdata = self.player_char.quest_dict.get('Main', {}).get(name)
-            if pdata and not pdata.get('Completed') and q.get('Type') == 'Collect' and q.get('What') == 'Relics':
+            pdata = self.player_char.quest_dict.get("Main", {}).get(name)
+            if (
+                pdata
+                and not pdata.get("Completed")
+                and q.get("Type") == "Collect"
+                and q.get("What") == "Relics"
+            ):
                 try:
-                    if getattr(self.player_char, 'has_relics')():
-                        pdata['Completed'] = True
+                    if getattr(self.player_char, "has_relics")():
+                        pdata["Completed"] = True
                 except Exception:
                     pass
-            pdata = self.player_char.quest_dict.get('Main', {}).get(name)
-            if pdata and pdata.get('Completed') and not pdata.get('Turned In'):
-                self._turn_in(name, 'Main')
+            pdata = self.player_char.quest_dict.get("Main", {}).get(name)
+            if pdata and pdata.get("Completed") and not pdata.get("Turned In"):
+                self._turn_in(name, "Main")
                 did_action = True
                 showed_message = True
                 return did_action, showed_message
         for name, q in flatten(sides):
-            pdata = self.player_char.quest_dict.get('Side', {}).get(name)
-            if pdata and not pdata.get('Completed') and q.get('Type') == 'Defeat' and isinstance(q.get('What'), str):
-                if self._already_killed(q['What']):
-                    pdata['Completed'] = True
-            pdata = self.player_char.quest_dict.get('Side', {}).get(name)
-            if pdata and pdata.get('Completed') and not pdata.get('Turned In'):
-                self._turn_in(name, 'Side')
+            pdata = self.player_char.quest_dict.get("Side", {}).get(name)
+            if (
+                pdata
+                and not pdata.get("Completed")
+                and q.get("Type") == "Defeat"
+                and isinstance(q.get("What"), str)
+            ):
+                if self._already_killed(q["What"]):
+                    pdata["Completed"] = True
+            pdata = self.player_char.quest_dict.get("Side", {}).get(name)
+            if pdata and pdata.get("Completed") and not pdata.get("Turned In"):
+                self._turn_in(name, "Side")
                 did_action = True
                 showed_message = True
                 return did_action, showed_message
 
         # Offer new quests, main first then side
         for name, q in flatten(mains):
-            if name not in self.player_char.quest_dict.get('Main', {}):
+            if name not in self.player_char.quest_dict.get("Main", {}):
                 # Check prerequisites before offering
-                if not self._can_offer_quest(name, q, 'Main'):
+                if not self._can_offer_quest(name, q, "Main"):
                     continue
                 quest_was_offered = True
-                if self._offer(giver, name, q, 'Main'):
+                if self._offer(giver, name, q, "Main"):
                     return True, True
                 showed_message = True  # declined quest still showed a popup
         for name, q in flatten(sides):
             # Skip debug-only pandora/ultima style special cases
-            if name == "Pandora's Box" and 'Photon Sphere' not in self.player_char.spellbook.get('Spells', {}):
+            if name == "Pandora's Box" and "Photon Sphere" not in self.player_char.spellbook.get(
+                "Spells", {}
+            ):
                 continue
-            
-            if name not in self.player_char.quest_dict.get('Side', {}):
+
+            if name not in self.player_char.quest_dict.get("Side", {}):
                 # Check prerequisites before offering
-                if not self._can_offer_quest(name, q, 'Side'):
+                if not self._can_offer_quest(name, q, "Side"):
                     continue
                 quest_was_offered = True
-                if self._offer(giver, name, q, 'Side'):
+                if self._offer(giver, name, q, "Side"):
                     return True, True
                 showed_message = True  # declined quest still showed a popup
 
@@ -681,13 +724,13 @@ class QuestManager:
         # If no actions, show help text from active quests for this giver if any
         help_texts = []
         for name, q in flatten(mains):
-            pdata = self.player_char.quest_dict.get('Main', {}).get(name)
-            if pdata and not pdata.get('Turned In'):
-                help_texts.append(pdata.get('Help Text', ''))
+            pdata = self.player_char.quest_dict.get("Main", {}).get(name)
+            if pdata and not pdata.get("Turned In"):
+                help_texts.append(pdata.get("Help Text", ""))
         for name, q in flatten(sides):
-            pdata = self.player_char.quest_dict.get('Side', {}).get(name)
-            if pdata and not pdata.get('Turned In'):
-                help_texts.append(pdata.get('Help Text', ''))
+            pdata = self.player_char.quest_dict.get("Side", {}).get(name)
+            if pdata and not pdata.get("Turned In"):
+                help_texts.append(pdata.get("Help Text", ""))
         help_texts.extend(get_reactive_town_hints(self.player_char, giver))
         if help_texts and show_help:
             # Show a single random hint per interaction instead of all at once
@@ -703,7 +746,9 @@ class QuestManager:
                 showed_message = True
         elif not quest_was_offered and not suppress_no_quests_message:
             # Only show "no quests" if no quest was offered at all and not suppressed
-            popup = ConfirmationPopup(self.presenter, "I have no new quests for you at this time.", show_buttons=False)
+            popup = ConfirmationPopup(
+                self.presenter, "I have no new quests for you at this time.", show_buttons=False
+            )
             self._show_popup(popup)
             showed_message = True
         return did_action, showed_message

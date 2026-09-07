@@ -34,16 +34,14 @@ class TestCombatResultAPI:
         from src.core.combat.combat_result import CombatResult
         from tests.test_framework import TestGameState
 
-        attacker = TestGameState.create_player(name="Attacker", class_name="Warrior", race_name="Human")
-        defender = TestGameState.create_player(name="Defender", class_name="Warrior", race_name="Human")
-
-        result = CombatResult(
-            action="Attack",
-            actor=attacker,
-            target=defender,
-            hit=True,
-            damage=10
+        attacker = TestGameState.create_player(
+            name="Attacker", class_name="Warrior", race_name="Human"
         )
+        defender = TestGameState.create_player(
+            name="Defender", class_name="Warrior", race_name="Human"
+        )
+
+        result = CombatResult(action="Attack", actor=attacker, target=defender, hit=True, damage=10)
 
         assert result.actor == attacker
         assert result.target == defender
@@ -72,13 +70,11 @@ class TestAbilitiesAPI:
         # Abilities should be able to create empty CombatResult
         try:
             # This might fail if CombatResult requires actor/target
-            ability = Ability(
-                name="Test Ability",
-                description="A test ability"
-            )
+            ability = Ability(name="Test Ability", description="A test ability")
             # If it has a result attribute, it should be a CombatResult
-            if hasattr(ability, 'result'):
+            if hasattr(ability, "result"):
                 from src.core.combat.combat_result import CombatResult
+
                 assert isinstance(ability.result, CombatResult)
         except TypeError as e:
             if "missing" in str(e) and "required" in str(e):
@@ -225,9 +221,7 @@ class TestBattleEngineBasics:
         engine.defender = enemy
 
         enemy.health.current = 10
-        monkeypatch.setattr(
-            player, "effects", lambda: "Exploding shield deals 5 damage.\n"
-        )
+        monkeypatch.setattr(player, "effects", lambda: "Exploding shield deals 5 damage.\n")
         pre = engine.pre_turn()
         assert pre.shield_explosion_damage == 5
         assert enemy.health.current == 5
@@ -296,8 +290,7 @@ class TestBattleEngineBasics:
         engine.attacker = player
         player.class_effects["Jump"].active = True
         player.spellbook["Skills"]["Jump"] = SimpleNamespace(
-            name="Jump",
-            cancel_charge=lambda _user: "Jump cancelled.\n"
+            name="Jump", cancel_charge=lambda _user: "Jump cancelled.\n"
         )
         monkeypatch = pytest.MonkeyPatch()
         monkeypatch.setattr(player, "incapacitated", lambda: True)
@@ -499,7 +492,9 @@ class TestBattleEngineBasics:
         engine.attacker = player
         engine.defender = enemy
 
-        monkeypatch.setattr(player, "enter_defensive_stance", lambda duration, source: f"{source}:{duration}")
+        monkeypatch.setattr(
+            player, "enter_defensive_stance", lambda duration, source: f"{source}:{duration}"
+        )
 
         result = engine.execute_action("Defend")
 
@@ -512,9 +507,7 @@ class TestBattleEngineBasics:
         engine.attacker = player
         engine.defender = enemy
         player.cls.name = "Knight Enchanter"
-        player.spellbook["Skills"]["Defensive Release"] = (
-            abilities.DefensiveRelease()
-        )
+        player.spellbook["Skills"]["Defensive Release"] = abilities.DefensiveRelease()
 
         first = engine.execute_action("Defend")
         second = engine.execute_action("Defend")
@@ -529,7 +522,10 @@ class TestBattleEngineBasics:
         engine.defender = enemy
 
         player.abilities_suppressed = lambda: True
-        assert "cannot cast spells because of silence" in engine.execute_action("Cast Spell", "Missing").message
+        assert (
+            "cannot cast spells because of silence"
+            in engine.execute_action("Cast Spell", "Missing").message
+        )
 
         player.abilities_suppressed = lambda: False
         assert "fumbles the spell" in engine.execute_action("Cast Spell", "Missing").message
@@ -542,7 +538,9 @@ class TestBattleEngineBasics:
 
         player.spellbook["Spells"]["Test Spell"] = DummySpell()
         player.mana.current = 2
-        assert "does not have enough mana" in engine.execute_action("Cast Spell", "Test Spell").message
+        assert (
+            "does not have enough mana" in engine.execute_action("Cast Spell", "Test Spell").message
+        )
 
         player.mana.current = 10
         cast_result = engine.execute_action("Cast Spell", "Test Spell")
@@ -622,7 +620,9 @@ class TestBattleEngineBasics:
     def test_execute_transform_and_unknown_action_fallback(self, monkeypatch):
         engine, player, enemy, _tile = self._make_engine()
         engine.attacker = player
-        monkeypatch.setattr(player, "transform", lambda back=False: "back\n" if back else "forward\n")
+        monkeypatch.setattr(
+            player, "transform", lambda back=False: "back\n" if back else "forward\n"
+        )
 
         assert engine.execute_action("Transform").message == "forward\n"
         assert engine.execute_action("Untransform").message == "back\n"
@@ -1026,8 +1026,12 @@ class TestBattleLogger:
         from src.core.combat.battle_logger import BattleLogger
         from tests.test_framework import TestGameState
 
-        player = TestGameState.create_player(name="Hero", class_name="Warrior", race_name="Human", level=7)
-        enemy = TestGameState.create_player(name="Goblin", class_name="Warrior", race_name="Human", level=3)
+        player = TestGameState.create_player(
+            name="Hero", class_name="Warrior", race_name="Human", level=7
+        )
+        enemy = TestGameState.create_player(
+            name="Goblin", class_name="Warrior", race_name="Human", level=3
+        )
         enemy.enemy_typ = "TestEnemy"
 
         logger = BattleLogger()
@@ -1058,8 +1062,12 @@ class TestBattleLogger:
         from src.core.combat.battle_logger import BattleLogger
         from tests.test_framework import TestGameState
 
-        player = TestGameState.create_player(name="Hero", class_name="Warrior", race_name="Human", level=5)
-        enemy = TestGameState.create_player(name="Slime", class_name="Warrior", race_name="Human", level=2)
+        player = TestGameState.create_player(
+            name="Hero", class_name="Warrior", race_name="Human", level=5
+        )
+        enemy = TestGameState.create_player(
+            name="Slime", class_name="Warrior", race_name="Human", level=2
+        )
         enemy.enemy_typ = "TestEnemy"
 
         logger = BattleLogger()
@@ -1075,8 +1083,12 @@ class TestBattleLogger:
         from src.core.combat.battle_logger import BattleLogger
         from tests.test_framework import TestGameState
 
-        player = TestGameState.create_player(name="Hero", class_name="Warrior", race_name="Human", level=5)
-        enemy = TestGameState.create_player(name="Slime", class_name="Warrior", race_name="Human", level=2)
+        player = TestGameState.create_player(
+            name="Hero", class_name="Warrior", race_name="Human", level=5
+        )
+        enemy = TestGameState.create_player(
+            name="Slime", class_name="Warrior", race_name="Human", level=2
+        )
         enemy.enemy_typ = "TestEnemy"
 
         logger = BattleLogger()
@@ -1095,8 +1107,12 @@ class TestBattleLogger:
         from src.core.combat.battle_logger import BattleLogger
         from tests.test_framework import TestGameState
 
-        player = TestGameState.create_player(name="Hero", class_name="Warrior", race_name="Human", level=5)
-        enemy = TestGameState.create_player(name="Slime", class_name="Warrior", race_name="Human", level=2)
+        player = TestGameState.create_player(
+            name="Hero", class_name="Warrior", race_name="Human", level=5
+        )
+        enemy = TestGameState.create_player(
+            name="Slime", class_name="Warrior", race_name="Human", level=2
+        )
         enemy.enemy_typ = "TestEnemy"
 
         logger = BattleLogger()
@@ -1132,8 +1148,12 @@ class TestBattleLogger:
         from src.core.combat.battle_logger import BattleLogger
         from tests.test_framework import TestGameState
 
-        player = TestGameState.create_player(name="Hero", class_name="Warrior", race_name="Human", level=5)
-        enemy = TestGameState.create_player(name="Slime", class_name="Warrior", race_name="Human", level=2)
+        player = TestGameState.create_player(
+            name="Hero", class_name="Warrior", race_name="Human", level=5
+        )
+        enemy = TestGameState.create_player(
+            name="Slime", class_name="Warrior", race_name="Human", level=2
+        )
         enemy.enemy_typ = "TestEnemy"
 
         logger = BattleLogger()
@@ -1202,7 +1222,9 @@ class TestInitiative:
         from src.core.combat.initiative import determine_initiative
         from tests.test_framework import TestGameState
 
-        player = TestGameState.create_player(name="Shade", class_name="Shadowcaster", race_name="Human")
+        player = TestGameState.create_player(
+            name="Shade", class_name="Shadowcaster", race_name="Human"
+        )
         enemy = TestGameState.create_player(name="Guard", class_name="Warrior", race_name="Human")
 
         player.invisible = True
@@ -1442,8 +1464,12 @@ class TestEventBus:
         enemy = TestGameState.create_player(name="Goblin", class_name="Warrior", race_name="Human")
         result = CombatResult(action="Attack", damage=9)
 
-        combat_event = create_combat_event(EventType.ATTACK, actor=player, target=enemy, result=result, round=1)
-        ui_event = create_ui_event(EventType.MESSAGE_DISPLAY, message="Hello", choices=["Yes", "No"], page=2)
+        combat_event = create_combat_event(
+            EventType.ATTACK, actor=player, target=enemy, result=result, round=1
+        )
+        ui_event = create_ui_event(
+            EventType.MESSAGE_DISPLAY, message="Hello", choices=["Yes", "No"], page=2
+        )
 
         assert combat_event.data["actor"] == "Hero"
         assert combat_event.data["target"] == "Goblin"
@@ -1466,15 +1492,11 @@ def run_tests():
     print()
 
     import pytest
-    exit_code = pytest.main([
-        __file__,
-        '-v',
-        '--tb=short',
-        '--color=yes'
-    ])
+
+    exit_code = pytest.main([__file__, "-v", "--tb=short", "--color=yes"])
 
     return exit_code
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(run_tests())

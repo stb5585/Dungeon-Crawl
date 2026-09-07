@@ -107,7 +107,9 @@ def test_wizard_affinity_hex_opposites_and_save_load():
     player.wizard_affinity["Water"] = 10
     assert wizard.affinity_damage_bonus(player, "Water") == 0.01
 
-    restored = PlayerDataSerializer.deserialize(PlayerDataSerializer.serialize(player), skip_tiles=True)
+    restored = PlayerDataSerializer.deserialize(
+        PlayerDataSerializer.serialize(player), skip_tiles=True
+    )
     assert restored.wizard_affinity["Water"] == 10
     assert restored.wizard_affinity["Electric"] == 0
 
@@ -142,7 +144,14 @@ def test_wizard_ring_accelerates_affinity_without_auto_upgrading_spells(monkeypa
 
 def test_legacy_affinity_values_migrate_from_centered_model():
     player = TestGameState.create_player(class_name="Wizard")
-    player.wizard_affinity = {"Fire": 55, "Ice": 45, "Water": 50, "Electric": 50, "Earth": 60, "Wind": 40}
+    player.wizard_affinity = {
+        "Fire": 55,
+        "Ice": 45,
+        "Water": 50,
+        "Electric": 50,
+        "Earth": 60,
+        "Wind": 40,
+    }
     player.wizard_affinity_version = 1
 
     migrated = wizard.ensure_affinity(player)
@@ -216,7 +225,9 @@ def test_lycan_moon_cycle_and_frenzy_state_persist():
     assert "frenzy" in message
     assert player.lycan_state["frenzy_turns"] > 0
 
-    restored = PlayerDataSerializer.deserialize(PlayerDataSerializer.serialize(player), skip_tiles=True)
+    restored = PlayerDataSerializer.deserialize(
+        PlayerDataSerializer.serialize(player), skip_tiles=True
+    )
     assert restored.lycan_state["moon_phase"] == "Waning"
     assert restored.cls.name == "Werewolf"
 

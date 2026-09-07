@@ -106,9 +106,7 @@ class AbilityChainEffect:
         actual_target = actor if self.target_self else target
 
         if self.use_method == "cast" or (
-            self.use_method == "auto"
-            and hasattr(ability, "school")
-            and ability.school is not None
+            self.use_method == "auto" and hasattr(ability, "school") and ability.school is not None
         ):
             msg = str(ability.cast(actor, actual_target, special=self.special))
         else:
@@ -176,9 +174,8 @@ class DrainEffect:
         drain = _rng.randint(lo, hi)
 
         potency = 1.0
-        if (
-            self.resource == "health"
-            and "Vim and Rigor" in getattr(actor, "spellbook", {}).get("Skills", {})
+        if self.resource == "health" and "Vim and Rigor" in getattr(actor, "spellbook", {}).get(
+            "Skills", {}
         ):
             target_max = max(1, int(target.health.max or 1))
             potency += 0.50 * (target.health.current / target_max)
@@ -197,13 +194,9 @@ class DrainEffect:
             cap = max(1, int(target.health.max * self.cap_percent * potency))
             drain = min(drain, cap, target.health.current)
             target.health.current -= drain
-            actor.health.current = min(
-                actor.health.max, actor.health.current + drain
-            )
+            actor.health.current = min(actor.health.max, actor.health.current + drain)
             try:
-                actor._emit_damage_event(
-                    target, drain, damage_type="Drain", is_critical=False
-                )
+                actor._emit_damage_event(target, drain, damage_type="Drain", is_critical=False)
                 actor._emit_healing_event(drain, source="Life Drain")
             except Exception:
                 pass
@@ -211,13 +204,9 @@ class DrainEffect:
             cap = max(1, int(target.mana.max * self.cap_percent))
             drain = min(drain, cap, target.mana.current)
             target.mana.current -= drain
-            actor.mana.current = min(
-                actor.mana.max, actor.mana.current + drain
-            )
+            actor.mana.current = min(actor.mana.max, actor.mana.current + drain)
 
-        msg = (
-            self.message or "{actor} drains {amount} {resource} from {target}.\n"
-        ).format(
+        msg = (self.message or "{actor} drains {amount} {resource} from {target}.\n").format(
             actor=actor.name,
             target=target.name,
             amount=drain,
@@ -249,28 +238,20 @@ class MagicEffectToggleEffect:
         self.effect_name = effect_name
         self.cost = cost
         self.reduction = reduction
-        self.activate_message = (
-            activate_message or f"{effect_name} has been activated.\n"
-        )
-        self.deactivate_message = (
-            deactivate_message or f"{effect_name} has been deactivated.\n"
-        )
+        self.activate_message = activate_message or f"{effect_name} has been activated.\n"
+        self.deactivate_message = deactivate_message or f"{effect_name} has been deactivated.\n"
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
         if actor.magic_effects[self.effect_name].active:
             actor.magic_effects[self.effect_name].active = False
-            result.extra.setdefault("messages", []).append(
-                self.deactivate_message
-            )
+            result.extra.setdefault("messages", []).append(self.deactivate_message)
             result.extra["toggled_off"] = True
         else:
             if self.cost:
                 actor.mana.current -= self.cost
             actor.magic_effects[self.effect_name].active = True
             actor.magic_effects[self.effect_name].duration = self.reduction
-            result.extra.setdefault("messages", []).append(
-                self.activate_message
-            )
+            result.extra.setdefault("messages", []).append(self.activate_message)
 
 
 class ScreechEffect:
@@ -298,14 +279,8 @@ class ScreechEffect:
         damage = 0
 
         # Stat contest: speed_check_mod + intel  vs  con(half-to-full) + wisdom
-        actor_val = (
-            _rng.randint(0, actor.check_mod("speed", enemy=actor))
-            + actor.stats.intel
-        )
-        target_val = (
-            _rng.randint(target.stats.con // 2, target.stats.con)
-            + target.stats.wisdom
-        )
+        actor_val = _rng.randint(0, actor.check_mod("speed", enemy=actor)) + actor.stats.intel
+        target_val = _rng.randint(target.stats.con // 2, target.stats.con) + target.stats.wisdom
 
         if actor_val > target_val:
             resist = target.check_mod("resist", enemy=actor, typ="Physical")
@@ -313,29 +288,28 @@ class ScreechEffect:
             if damage > 0:
                 target.health.current -= damage
                 result.damage = damage
-                messages.append(
-                    self.damage_message.format(
-                        target=target.name, damage=damage
-                    )
-                )
+                messages.append(self.damage_message.format(target=target.name, damage=damage))
                 # Silence check
-                if not any([
-                    "Silence" in getattr(target, "status_immunity", []),
-                    "Status-Silence" in target.equipment["Pendant"].mod,
-                    "Status-All" in target.equipment["Pendant"].mod,
-                ]):
+                if not any(
+                    [
+                        "Silence" in getattr(target, "status_immunity", []),
+                        "Status-Silence" in target.equipment["Pendant"].mod,
+                        "Status-All" in target.equipment["Pendant"].mod,
+                    ]
+                ):
                     target.status_effects["Silence"].active = True
                     target.status_effects["Silence"].duration = -1
                     try:
                         actor._emit_status_event(
-                            target, "Silence", applied=True,
-                            duration=-1, source="Screech",
+                            target,
+                            "Silence",
+                            applied=True,
+                            duration=-1,
+                            source="Screech",
                         )
                     except Exception:
                         pass
-                    messages.append(
-                        self.silence_message.format(target=target.name)
-                    )
+                    messages.append(self.silence_message.format(target=target.name))
 
         if damage <= 0:
             messages.append(self.fail_message)
@@ -391,16 +365,10 @@ class AcidSpitEffect:
 
         if actor.hit_chance(target, typ="magic"):
             if target.dodge_chance(actor, spell=True):
-                messages.append(
-                    self.dodge_message.format(target=target.name)
-                )
+                messages.append(self.dodge_message.format(target=target.name))
                 damage //= 2
             if damage > 0:
-                messages.append(
-                    self.damage_message.format(
-                        target=target.name, damage=damage
-                    )
-                )
+                messages.append(self.damage_message.format(target=target.name, damage=damage))
                 target.health.current -= damage
                 result.damage = damage
                 # DOT chance via con check
@@ -413,23 +381,19 @@ class AcidSpitEffect:
                     target.magic_effects["DOT"].source = "Acid"
                     try:
                         actor._emit_status_event(
-                            target, "DOT", applied=True,
+                            target,
+                            "DOT",
+                            applied=True,
                             duration=self.dot_duration,
                             source="Acid Splash",
                         )
                     except Exception:
                         pass
-                    messages.append(
-                        self.dot_message.format(target=target.name)
-                    )
+                    messages.append(self.dot_message.format(target=target.name))
             else:
                 messages.append(self.ineffective_message)
         else:
-            messages.append(
-                self.miss_message.format(
-                    actor=actor.name, target=target.name
-                )
-            )
+            messages.append(self.miss_message.format(actor=actor.name, target=target.name))
 
 
 class BreathDamageEffect:
@@ -462,9 +426,7 @@ class BreathDamageEffect:
         # Allow element override from caller kwargs
         typ = result.extra.get("use_kwargs", {}).get("typ", self.element)
 
-        base_damage = int(
-            (actor.stats.strength + actor.stats.intel) * self.multiplier
-        )
+        base_damage = int((actor.stats.strength + actor.stats.intel) * self.multiplier)
         variance = _rng.uniform(DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH)
         damage = int(base_damage * variance)
 
@@ -473,9 +435,7 @@ class BreathDamageEffect:
         if hit:
             _, reduction_msg, damage = target.damage_reduction(damage, actor, typ=typ)
 
-        messages.append(
-            self.announce_message.format(actor=actor.name, element=typ)
-        )
+        messages.append(self.announce_message.format(actor=actor.name, element=typ))
         if defense_msg:
             messages.append(defense_msg)
         if reduction_msg:
@@ -485,18 +445,12 @@ class BreathDamageEffect:
             target.health.current -= damage
             result.damage = damage
             try:
-                actor._emit_damage_event(
-                    target, damage, damage_type=typ, is_critical=False
-                )
+                actor._emit_damage_event(target, damage, damage_type=typ, is_critical=False)
             except Exception:
                 pass
-            messages.append(
-                self.damage_message.format(target=target.name, damage=damage)
-            )
+            messages.append(self.damage_message.format(target=target.name, damage=damage))
         else:
-            messages.append(
-                self.no_effect_message.format(target=target.name)
-            )
+            messages.append(self.no_effect_message.format(target=target.name))
 
 
 class NightmareFuelEffect:
@@ -509,9 +463,7 @@ class NightmareFuelEffect:
     def __init__(
         self,
         crit_chance: float = 0.5,
-        damage_message: str = (
-            "{actor} invades {target}'s dreams, dealing {damage} damage"
-        ),
+        damage_message: str = ("{actor} invades {target}'s dreams, dealing {damage} damage"),
         fail_message: str = "{target} resists the spell.\n",
         no_sleep_message: str = "The spell does nothing.\n",
     ):
@@ -537,10 +489,7 @@ class NightmareFuelEffect:
             crit = 2 if _rng.random() > self.crit_chance else 1
             variance = _rng.uniform(DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH)
             damage = int(
-                target.status_effects["Sleep"].duration
-                * actor.stats.intel
-                * crit
-                * variance
+                target.status_effects["Sleep"].duration * actor.stats.intel * crit * variance
             )
             target.health.current -= damage
             result.damage = damage
@@ -552,9 +501,7 @@ class NightmareFuelEffect:
                 dmg_msg += " (Critical hit!)"
             messages.append(dmg_msg + ".\n")
         else:
-            messages.append(
-                self.fail_message.format(target=target.name)
-            )
+            messages.append(self.fail_message.format(target=target.name))
 
 
 class WidowsWailEffect:
@@ -588,25 +535,23 @@ class WidowsWailEffect:
         if _rng.randint(actor.stats.intel // 2, actor.stats.intel) > _rng.randint(
             actor.stats.wisdom // 2, actor.stats.wisdom
         ):
-            messages.append(
-                self.self_message.format(name=actor.name, damage=damage)
-            )
+            messages.append(self.self_message.format(name=actor.name, damage=damage))
             actor.health.current -= damage
 
         # Target-damage: skip if ice block / tunnel
-        if any([
-            target.magic_effects["Ice Block"].active,
-            getattr(target, "tunnel", False),
-        ]):
+        if any(
+            [
+                target.magic_effects["Ice Block"].active,
+                getattr(target, "tunnel", False),
+            ]
+        ):
             return
 
         # Target-damage: intel vs wisdom (actor vs target)
         if _rng.randint(actor.stats.intel // 2, actor.stats.intel) > _rng.randint(
             target.stats.wisdom // 2, target.stats.wisdom
         ):
-            messages.append(
-                self.target_message.format(name=target.name, damage=damage)
-            )
+            messages.append(self.target_message.format(name=target.name, damage=damage))
             target.health.current -= damage
             result.damage = damage
 
@@ -633,9 +578,7 @@ class GoblinPunchEffect:
 
         messages = result.extra.setdefault("messages", [])
 
-        num_attacks = max(1, _rng.randint(
-            actor.level.pro_level, self.max_punches
-        ))
+        num_attacks = max(1, _rng.randint(actor.level.pro_level, self.max_punches))
         str_diff = max(
             1 + actor.level.pro_level,
             (target.stats.strength - actor.stats.strength) // 2,
@@ -647,14 +590,16 @@ class GoblinPunchEffect:
                 total_damage += str_diff
                 messages.append(
                     self.hit_message.format(
-                        actor=actor.name, target=target.name,
+                        actor=actor.name,
+                        target=target.name,
                         damage=str_diff,
                     )
                 )
             else:
                 messages.append(
                     self.miss_message.format(
-                        actor=actor.name, target=target.name,
+                        actor=actor.name,
+                        target=target.name,
                     )
                 )
         result.damage = total_damage
@@ -685,19 +630,19 @@ class HexEffect:
 
     def _is_immune(self, target: Character, status_name: str) -> bool:
         """Check immunity via status_immunity list and pendant."""
-        return any([
-            status_name in getattr(target, "status_immunity", []),
-            f"Status-{status_name}" in target.equipment["Pendant"].mod,
-            "Status-All" in target.equipment["Pendant"].mod,
-        ])
+        return any(
+            [
+                status_name in getattr(target, "status_immunity", []),
+                f"Status-{status_name}" in target.equipment["Pendant"].mod,
+                "Status-All" in target.equipment["Pendant"].mod,
+            ]
+        )
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
         import random as _rng
 
         messages = result.extra.setdefault("messages", [])
-        messages.append(
-            self.announce_message.format(caster=actor.name, target=target.name)
-        )
+        messages.append(self.announce_message.format(caster=actor.name, target=target.name))
         applied = False
 
         # ── Poison: intel vs con ──
@@ -718,15 +663,15 @@ class HexEffect:
                     )
                     try:
                         actor._emit_status_event(
-                            target, "Poison", applied=True,
+                            target,
+                            "Poison",
+                            applied=True,
                             duration=target.status_effects["Poison"].duration,
                             source="Hex",
                         )
                     except Exception:
                         pass
-                    messages.append(
-                        self.poison_message.format(target=target.name)
-                    )
+                    messages.append(self.poison_message.format(target=target.name))
                     applied = True
 
         # ── Blind: intel vs con ──
@@ -742,15 +687,15 @@ class HexEffect:
                     )
                     try:
                         actor._emit_status_event(
-                            target, "Blind", applied=True,
+                            target,
+                            "Blind",
+                            applied=True,
                             duration=target.status_effects["Blind"].duration,
                             source="Hex",
                         )
                     except Exception:
                         pass
-                    messages.append(
-                        self.blind_message.format(target=target.name)
-                    )
+                    messages.append(self.blind_message.format(target=target.name))
                     applied = True
 
         # ── Silence: intel vs wisdom ──
@@ -766,15 +711,15 @@ class HexEffect:
                     )
                     try:
                         actor._emit_status_event(
-                            target, "Silence", applied=True,
+                            target,
+                            "Silence",
+                            applied=True,
                             duration=target.status_effects["Silence"].duration,
                             source="Hex",
                         )
                     except Exception:
                         pass
-                    messages.append(
-                        self.silence_message.format(target=target.name)
-                    )
+                    messages.append(self.silence_message.format(target=target.name))
                     applied = True
 
         if not applied:
@@ -816,20 +761,14 @@ class VulcanizeEffect:
         damage = int((1 - fire_resist) * (target.health.current * self.health_fraction))
         target.health.current -= damage
         try:
-            actor._emit_damage_event(
-                target, damage, damage_type="Fire", is_critical=False
-            )
+            actor._emit_damage_event(target, damage, damage_type="Fire", is_critical=False)
         except Exception:
             pass
 
         if damage > 0:
-            messages.append(
-                self.damage_message.format(target=target.name, damage=damage)
-            )
+            messages.append(self.damage_message.format(target=target.name, damage=damage))
         elif damage < 0:
-            messages.append(
-                self.heal_message.format(target=target.name, damage=abs(damage))
-            )
+            messages.append(self.heal_message.format(target=target.name, damage=abs(damage)))
 
         if target.is_alive():
             def_gain = target.combat.defense + actor.stats.intel
@@ -839,9 +778,7 @@ class VulcanizeEffect:
                 def_gain // self.buff_lo_divisor,
                 def_gain // self.buff_hi_divisor,
             )
-            messages.append(
-                self.buff_message.format(target=target.name)
-            )
+            messages.append(self.buff_message.format(target=target.name))
 
 
 class HolyFollowupEffect:
@@ -929,18 +866,14 @@ class HolyFollowupEffect:
             )
         else:
             # Armor curve
-            damage = int(
-                damage * (1 - (dam_red / (dam_red + ARMOR_SCALING_FACTOR)))
-            )
+            damage = int(damage * (1 - (dam_red / (dam_red + ARMOR_SCALING_FACTOR))))
             # Variance
             variance = _rng.uniform(DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH)
             damage = int(damage * variance)
 
             if damage <= 0:
                 damage = 0
-                messages.append(
-                    self.ineffective_message.format(name="Smite")
-                )
+                messages.append(self.ineffective_message.format(name="Smite"))
             elif _rng.randint(0, target.stats.con // 2) > _rng.randint(
                 (actor.stats.intel * crit) // 2,
                 (actor.stats.intel * crit),
@@ -948,25 +881,21 @@ class HolyFollowupEffect:
                 # CON save → half damage
                 damage //= 2
                 if damage > 0:
-                    messages.append(
-                        self.con_save_message.format(
-                            target=target.name, name="Smite"
-                        )
-                    )
+                    messages.append(self.con_save_message.format(target=target.name, name="Smite"))
                     messages.append(
                         self.damage_message.format(
-                            actor=actor.name, target=target.name,
+                            actor=actor.name,
+                            target=target.name,
                             damage=damage,
                         )
                     )
                 else:
-                    messages.append(
-                        self.ineffective_message.format(name="Smite")
-                    )
+                    messages.append(self.ineffective_message.format(name="Smite"))
             else:
                 messages.append(
                     self.damage_message.format(
-                        actor=actor.name, target=target.name,
+                        actor=actor.name,
+                        target=target.name,
                         damage=damage,
                     )
                 )
@@ -1028,9 +957,7 @@ class TurnUndeadEffect:
         if not _rng.randint(0, chance):
             target.health.current = 0
             result.damage = target.health.max
-            messages.append(
-                self.kill_message.format(target=target.name)
-            )
+            messages.append(self.kill_message.format(target=target.name))
             return
 
         # Fallback holy damage
@@ -1041,20 +968,14 @@ class TurnUndeadEffect:
 
         damage = int(dmg_mod * spell_mod)
         damage *= crit
-        damage = int(
-            damage
-            * (1 - resist)
-            * (1 - (dam_red / (dam_red + ARMOR_SCALING_FACTOR)))
-        )
+        damage = int(damage * (1 - resist) * (1 - (dam_red / (dam_red + ARMOR_SCALING_FACTOR))))
         variance = _rng.uniform(DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH)
         damage = int(damage * variance)
 
         target.health.current -= damage
         result.damage = damage
 
-        dmg_msg = self.damage_message.format(
-            actor=actor.name, target=target.name, damage=damage
-        )
+        dmg_msg = self.damage_message.format(actor=actor.name, target=target.name, damage=damage)
         if crit > 1:
             dmg_msg += " (Critical hit!)"
         messages.append(dmg_msg + ".\n")

@@ -12,10 +12,7 @@ from src.core import enemies
 def test_curated_pair_catalog_is_stable_and_builds_fresh_rosters():
     specs = enemies.curated_encounter_specs()
 
-    assert [
-        (spec.key, spec.display_name, spec.floor)
-        for spec in specs
-    ] == [
+    assert [(spec.key, spec.display_name, spec.floor) for spec in specs] == [
         ("carrion_crawl", "Giant Hornet & Battle Toad", 1),
         ("wing_and_mattock", "Electric Bat & Battle Toad", 1),
         ("fang_and_spear", "Twisted Dwarf & Vampire Bat", 2),
@@ -91,10 +88,7 @@ def test_pilot_two_overrides_build_authored_fresh_rosters(
     first_encounter = first._runtime_combat_encounter
     second = enemies.build_curated_encounter(key)
 
-    assert tuple(
-        member.enemy.name
-        for member in first_encounter.members
-    ) == member_names
+    assert tuple(member.enemy.name for member in first_encounter.members) == member_names
     assert first_encounter.encounter_id != second.encounter_id
     assert all(
         first_member.enemy is not second_member.enemy
@@ -159,10 +153,10 @@ def test_curated_override_remains_enabled_for_ordinary_dungeon_tiles(monkeypatch
 
     selected = quest_biased_random_enemy(player, "1")
 
-    assert [
-        member.enemy.name
-        for member in selected._runtime_combat_encounter.members
-    ] == ["Giant Hornet", "Battle Toad"]
+    assert [member.enemy.name for member in selected._runtime_combat_encounter.members] == [
+        "Giant Hornet",
+        "Battle Toad",
+    ]
 
 
 def test_unknown_curated_pair_is_explicit_error():

@@ -6,7 +6,11 @@ import textwrap
 
 import pygame
 
-from .input_guards import prepare_guarded_input, release_guard_allows_input, update_input_armed_from_event
+from .input_guards import (
+    prepare_guarded_input,
+    release_guard_allows_input,
+    update_input_armed_from_event,
+)
 from .mouse_helpers import hit_index, is_left_click, mouse_position
 from .town_base import TownScreenBase
 
@@ -44,11 +48,9 @@ class TownMenuScreen(TownScreenBase):
         "Statistics": (
             "Review the record of your run: travel, combat, survival, and personal bests."
         ),
-        "Quit to Main Menu": (
-            "Step away from Silvana and return to the main menu."
-        ),
+        "Quit to Main Menu": ("Step away from Silvana and return to the main menu."),
     }
-    
+
     def __init__(self, presenter):
         super().__init__(presenter)
         # Menu state
@@ -61,7 +63,12 @@ class TownMenuScreen(TownScreenBase):
         options_start_y = 150
         line_height = 50
         return [
-            pygame.Rect(panel_x + 20, options_start_y + i * line_height - 5, panel_width - 40, line_height - 10)
+            pygame.Rect(
+                panel_x + 20,
+                options_start_y + i * line_height - 5,
+                panel_width - 40,
+                line_height - 10,
+            )
             for i, _option in enumerate(options)
         ]
 
@@ -71,27 +78,27 @@ class TownMenuScreen(TownScreenBase):
         panel_height = self.height
         panel_x = self.width - panel_width
         panel_y = 0
-        
+
         # Create semi-transparent overlay
         panel_rect = pygame.Rect(panel_x, panel_y, panel_width, panel_height)
         self.draw_semi_transparent_panel(panel_rect)
-        
+
         # Draw border
         pygame.draw.rect(self.screen, self.colors.GOLD, panel_rect, 3)
-        
+
         # Title
         title_text = self.title_font.render("Town of Silvana", True, self.colors.GOLD)
         title_rect = title_text.get_rect(centerx=panel_x + panel_width // 2, top=40)
         self.screen.blit(title_text, title_rect)
-        
+
         # Options list
         options_start_y = 150
         line_height = 50
-        
+
         option_rects = self.option_rects(options)
         for i, option in enumerate(options):
             y = options_start_y + i * line_height
-            
+
             # Highlight selected option
             if i == self.current_selection:
                 highlight_rect = option_rects[i]
@@ -100,20 +107,16 @@ class TownMenuScreen(TownScreenBase):
                 color = self.colors.GOLD
             else:
                 color = self.colors.WHITE
-            
+
             # Option text
             option_text = self.normal_font.render(option, True, color)
             option_rect = option_text.get_rect(left=panel_x + 40, centery=y + 15)
             self.screen.blit(option_text, option_rect)
 
         self.draw_location_detail(options)
-        
+
         # Instructions at bottom
-        instructions = [
-            "UP/DOWN: Navigate",
-            "ENTER: Select",
-            "ESC: Quit"
-        ]
+        instructions = ["UP/DOWN: Navigate", "ENTER: Select", "ESC: Quit"]
         if getattr(self.presenter, "debug_mode", False):
             instructions.append("L: Debug Level Up")
         instructions_y = self.height - 120
@@ -151,7 +154,7 @@ class TownMenuScreen(TownScreenBase):
             line_surface = self.small_font.render(line, True, self.colors.WHITE)
             self.screen.blit(line_surface, (detail_rect.left + 16, text_y))
             text_y += 20
-    
+
     def navigate(
         self,
         options,
@@ -160,10 +163,10 @@ class TownMenuScreen(TownScreenBase):
     ):
         """
         Navigate the town menu and return selected option index.
-        
+
         Args:
             options: List of location names to display
-            
+
         Returns:
             int: Index of selected option, or None if cancelled
         """
@@ -177,13 +180,14 @@ class TownMenuScreen(TownScreenBase):
             self.draw_background()
             self.draw_menu_panel(options)
             pygame.display.flip()
-            
+
             # Handle events
             input_armed = release_guard_allows_input(require_key_release, input_armed)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     import sys
+
                     sys.exit()
                 input_armed = update_input_armed_from_event(event, require_key_release, input_armed)
                 hovered = hit_index(self.option_rects(options), mouse_position(event))
@@ -209,5 +213,5 @@ class TownMenuScreen(TownScreenBase):
                     elif event.key == pygame.K_ESCAPE:
                         # Return the last option (typically Quit)
                         return len(options) - 1
-            
+
             self.presenter.clock.tick(30)

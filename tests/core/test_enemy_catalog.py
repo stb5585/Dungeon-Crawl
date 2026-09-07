@@ -218,11 +218,16 @@ def test_giant_and_owlbear_are_midgame_catalog_enemies():
     assert giant.enemy_typ == "Humanoid"
     assert giant.level.pro_level == 4
     assert set(giant.spellbook["Skills"]) == {
-        "Charge", "Mortal Strike", "Dishearten",
+        "Charge",
+        "Mortal Strike",
+        "Dishearten",
     }
     assert giant.inventory == {}
     assert [entry["ability"] for entry in giant.action_stack] == [
-        "Attack", "Charge", "Mortal Strike", "Dishearten",
+        "Attack",
+        "Charge",
+        "Mortal Strike",
+        "Dishearten",
     ]
 
     owlbear = enemies.Owlbear()

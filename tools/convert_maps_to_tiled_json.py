@@ -12,7 +12,6 @@ import argparse
 import json
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 MAP_FILES_DIR = PROJECT_ROOT / "src" / "core" / "data" / "maps"
 
@@ -120,7 +119,7 @@ def _build_gid_map_from_tileset() -> dict[str, int]:
         *[image for image in all_images if image.stem not in APPENDED_TILE_STEM_SET],
         *[image_by_stem[stem] for stem in APPENDED_TILE_STEMS if stem in image_by_stem],
     ]
-    
+
     gid_map = {}
     for gid_idx, img_path in enumerate(image_files):
         stem = img_path.stem
@@ -129,7 +128,7 @@ def _build_gid_map_from_tileset() -> dict[str, int]:
             if img_name == stem:
                 gid_map[tile_class] = gid_idx + 1  # GIDs start at 1
                 break
-    
+
     return gid_map
 
 
@@ -166,9 +165,13 @@ def read_txt_map(path: Path) -> tuple[list[list[str]], int, int]:
     return grid, width, height
 
 
-def build_map_json(grid: list[list[str]], width: int, height: int, name: str, gid_map: dict[str, int]) -> dict:
+def build_map_json(
+    grid: list[list[str]], width: int, height: int, name: str, gid_map: dict[str, int]
+) -> dict:
     """Build a Tiled JSON map that references the external dungeon_tiles.tsx tileset."""
-    data = [gid_map.get(tile_name, 1) for row in grid for tile_name in row]  # Default to gid 1 (Wall) if unknown
+    data = [
+        gid_map.get(tile_name, 1) for row in grid for tile_name in row
+    ]  # Default to gid 1 (Wall) if unknown
 
     return {
         "compressionlevel": -1,
@@ -198,15 +201,8 @@ def build_map_json(grid: list[list[str]], width: int, height: int, name: str, gi
         "type": "map",
         "version": "1.10",
         "width": width,
-        "tilesets": [
-            {
-                "firstgid": 1,
-                "source": "dungeon_tiles.tsx"
-            }
-        ],
-        "properties": [
-            {"name": "default_tile", "type": "string", "value": "Wall"}
-        ],
+        "tilesets": [{"firstgid": 1, "source": "dungeon_tiles.tsx"}],
+        "properties": [{"name": "default_tile", "type": "string", "value": "Wall"}],
     }
 
 

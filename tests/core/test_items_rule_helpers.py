@@ -64,7 +64,14 @@ def test_class_ring_covers_remaining_description_and_modifier_branches(
     [
         (items.HealthPotion, "health", 100, 40, 67, "healed you for 27 life"),
         (items.ManaPotion, "mana", 80, 10, 32, "restored 22 mana points"),
-        (items.Elixir, "both", (100, 60), (20, 0), (75, 33), "restored 55 health points and 33 mana points"),
+        (
+            items.Elixir,
+            "both",
+            (100, 60),
+            (20, 0),
+            (75, 33),
+            "restored 55 health points and 33 mana points",
+        ),
     ],
 )
 def test_dwarf_out_of_combat_consumables_clamp_hangover_steps(
@@ -130,7 +137,9 @@ def test_status_items_cover_out_of_combat_dwarf_steps_and_early_returns(monkeypa
 def test_scroll_use_keeps_scroll_until_last_charge():
     player = TestGameState.create_player(class_name="Warrior", race_name="Human")
     calls = []
-    player.modify_inventory = lambda item, subtract=False, **_kwargs: calls.append((item.name, subtract))
+    player.modify_inventory = lambda item, subtract=False, **_kwargs: calls.append(
+        (item.name, subtract)
+    )
 
     scroll = items.FireScroll()
     scroll.spell = SimpleNamespace(cast=lambda user, target=None, special=True: "Flames erupt!\n")

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import Any
 
-
 ELEMENTS = ("Fire", "Ice", "Electric", "Water", "Earth", "Wind")
 TAMED_COMPANION_START_BOND = 5
 TAMED_COMPANION_ROSTER_LIMIT = 6
@@ -44,17 +43,35 @@ TAMED_COMPANION_SPECIES = {
     "GiantCentipede": {
         "species": "Centipede",
         "special_ability": "Keen Scent",
-        "evolutions": ("Skitterling", "Hooked Centipede", "Ironback Centipede", "Burrow Centipede", "Elder Centipede"),
+        "evolutions": (
+            "Skitterling",
+            "Hooked Centipede",
+            "Ironback Centipede",
+            "Burrow Centipede",
+            "Elder Centipede",
+        ),
     },
     "GiantHornet": {
         "species": "Hornet",
         "special_ability": "Wingbeat",
-        "evolutions": ("Stingwing", "Amber Hornet", "War Hornet", "Hiveguard Hornet", "Storm Hornet"),
+        "evolutions": (
+            "Stingwing",
+            "Amber Hornet",
+            "War Hornet",
+            "Hiveguard Hornet",
+            "Storm Hornet",
+        ),
     },
     "ElectricBat": {
         "species": "Electric Bat",
         "special_ability": "Primal Spark",
-        "evolutions": ("Spark Bat", "Stormwing Bat", "Thunder Bat", "Tempest Bat", "Volt Sovereign"),
+        "evolutions": (
+            "Spark Bat",
+            "Stormwing Bat",
+            "Thunder Bat",
+            "Tempest Bat",
+            "Volt Sovereign",
+        ),
     },
     "GiantSpider": {
         "species": "Spider",
@@ -64,12 +81,24 @@ TAMED_COMPANION_SPECIES = {
     "Panther": {
         "species": "Panther",
         "special_ability": "Pounce",
-        "evolutions": ("Shadow Kit", "Stalker Panther", "Night Panther", "Huntmaster Panther", "Apex Panther"),
+        "evolutions": (
+            "Shadow Kit",
+            "Stalker Panther",
+            "Night Panther",
+            "Huntmaster Panther",
+            "Apex Panther",
+        ),
     },
     "BattleToad": {
         "species": "Battle Toad",
         "special_ability": "Guard Hide",
-        "evolutions": ("Puddle Toad", "Brace Toad", "War Toad", "Bulwark Toad", "Elder Battle Toad"),
+        "evolutions": (
+            "Puddle Toad",
+            "Brace Toad",
+            "War Toad",
+            "Bulwark Toad",
+            "Elder Battle Toad",
+        ),
     },
     "GiantSnake": {
         "species": "Snake",
@@ -84,7 +113,13 @@ TAMED_COMPANION_SPECIES = {
     "VampireBat": {
         "species": "Vampire Bat",
         "special_ability": "Keen Scent",
-        "evolutions": ("Duskwick Bat", "Redfang Bat", "Nightdrinker Bat", "Bloodmoon Bat", "Nocturne Bat"),
+        "evolutions": (
+            "Duskwick Bat",
+            "Redfang Bat",
+            "Nightdrinker Bat",
+            "Bloodmoon Bat",
+            "Nocturne Bat",
+        ),
     },
     "Direwolf": {
         "species": "Direwolf",
@@ -94,7 +129,13 @@ TAMED_COMPANION_SPECIES = {
     "GiantScorpion": {
         "species": "Scorpion",
         "special_ability": "Guard Hide",
-        "evolutions": ("Dust Scorpion", "Barbed Scorpion", "Iron Scorpion", "Venom Scorpion", "Dune Tyrant"),
+        "evolutions": (
+            "Dust Scorpion",
+            "Barbed Scorpion",
+            "Iron Scorpion",
+            "Venom Scorpion",
+            "Dune Tyrant",
+        ),
     },
     "Direbear": {
         "species": "Direbear",
@@ -109,12 +150,24 @@ TAMED_COMPANION_SPECIES = {
     "Alligator": {
         "species": "Alligator",
         "special_ability": "Guard Hide",
-        "evolutions": ("Mud Snapper", "Marsh Gator", "Ironjaw Gator", "Bayou Gator", "Ancient Alligator"),
+        "evolutions": (
+            "Mud Snapper",
+            "Marsh Gator",
+            "Ironjaw Gator",
+            "Bayou Gator",
+            "Ancient Alligator",
+        ),
     },
     "GoldenEagle": {
         "species": "Golden Eagle",
         "special_ability": "Wingbeat",
-        "evolutions": ("Eaglet", "Golden Eagle", "Sunwing Eagle", "Highwind Eagle", "Sky Crown Eagle"),
+        "evolutions": (
+            "Eaglet",
+            "Golden Eagle",
+            "Sunwing Eagle",
+            "Highwind Eagle",
+            "Sky Crown Eagle",
+        ),
     },
     "Antlion": {
         "species": "Antlion",
@@ -139,11 +192,9 @@ def duelist_style_active(character: Any) -> bool:
     weapon = getattr(character, "equipment", {}).get("Weapon")
     offhand = getattr(character, "equipment", {}).get("OffHand")
     offhand_subtype = getattr(offhand, "subtyp", None)
-    ranger_crossbow = (
-        offhand_subtype == "Crossbow"
-        and getattr(getattr(character, "cls", None), "name", None)
-        in {"Ranger", "Beast Master"}
-    )
+    ranger_crossbow = offhand_subtype == "Crossbow" and getattr(
+        getattr(character, "cls", None), "name", None
+    ) in {"Ranger", "Beast Master"}
     return bool(
         getattr(weapon, "typ", None) == "Weapon"
         and int(getattr(weapon, "handed", 1) or 1) == 1
@@ -173,16 +224,10 @@ def cross_block_profile(character: Any) -> tuple[float, float] | None:
     equipment = getattr(character, "equipment", {})
     main = equipment.get("Weapon")
     offhand = equipment.get("OffHand")
-    if (
-        getattr(main, "typ", None) != "Weapon"
-        or getattr(offhand, "typ", None) != "Weapon"
-    ):
+    if getattr(main, "typ", None) != "Weapon" or getattr(offhand, "typ", None) != "Weapon":
         return None
     strength = max(0, int(getattr(getattr(character, "stats", None), "strength", 0)))
-    weapon_strength = sum(
-        max(0, int(getattr(item, "damage", 0) or 0))
-        for item in (main, offhand)
-    )
+    weapon_strength = sum(max(0, int(getattr(item, "damage", 0) or 0)) for item in (main, offhand))
     chance = min(0.75, 0.10 + ((strength + weapon_strength) / 200))
     mitigation = min(1.0, 0.25 + ((strength + weapon_strength) / 100))
     return chance, mitigation

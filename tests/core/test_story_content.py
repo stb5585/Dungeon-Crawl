@@ -114,9 +114,7 @@ def test_red_dragon_continuity_copy_separates_route_meanings():
     red_dragon_text = "\n".join(events["Red Dragon"]["Text"])
     zahhak_text = "\n".join(events["Zahhak"]["Text"])
     dracarys = get_quests()["Hooded Figure"]["Main"]["60"]["Dracarys"]
-    dracarys_text = "\n".join(
-        dracarys[field] for field in ("Start Text", "End Text", "Help Text")
-    )
+    dracarys_text = "\n".join(dracarys[field] for field in ("Start Text", "End Text", "Help Text"))
 
     assert "Whatever truths the dragon carries" in red_dragon_text
     assert "not Kaelenon's restored self" in zahhak_text

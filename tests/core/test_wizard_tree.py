@@ -27,45 +27,39 @@ def _player(level: int = 95):
 
 def test_wizard_tree_uses_master_spells_modifiers_and_quest_placeholder():
     tree = ABILITY_TREES["Wizard"]
-    nodes = {
-        node.payload.get("revealed_name", node.name): node
-        for node in tree.nodes
-    }
+    nodes = {node.payload.get("revealed_name", node.name): node for node in tree.nodes}
 
     assert len(tree.nodes) == 28
-    assert [nodes[name].position for name in (
-        "Firestorm", "Blizzard", "Electrocution", "Tornado", "Tsunami",
-        "Earthquake",
-    )] == [(0, row) for row in range(6)]
+    assert [
+        nodes[name].position
+        for name in (
+            "Firestorm",
+            "Blizzard",
+            "Electrocution",
+            "Tornado",
+            "Tsunami",
+            "Earthquake",
+        )
+    ] == [(0, row) for row in range(6)]
     assert nodes["Magic Missile III"].payload["school_affinity"] == (
         "Arcane",
         80,
     )
-    assert nodes["Fragmentation"].prerequisites == (
-        nodes["Magic Missile III"].id,
-    )
+    assert nodes["Fragmentation"].prerequisites == (nodes["Magic Missile III"].id,)
     assert {"Kinetic Explosion", "Arcane Empowerment"}.isdisjoint(nodes)
     assert nodes["Photon Sphere"].icon_key == "unknown"
     assert nodes["Prismatic Cataclysm"].icon_key == "unknown"
     assert nodes["Mana Splinters"].position == (2, 2)
-    assert nodes["Mana Splinters"].prerequisites == (
-        nodes["Fragmentation"].id,
-    )
+    assert nodes["Mana Splinters"].prerequisites == (nodes["Fragmentation"].id,)
     assert nodes["Detonation Cascade"].position == (2, 3)
     assert nodes["Detonation Cascade"].payload["level_requirement"] == 75
-    assert nodes["Detonation Cascade"].prerequisites == (
-        nodes["Mana Splinters"].id,
-    )
+    assert nodes["Detonation Cascade"].prerequisites == (nodes["Mana Splinters"].id,)
     assert nodes["Photon Sphere"].position == (2, 6)
-    assert nodes["Spaghettification"].prerequisites == (
-        nodes["Photon Sphere"].id,
-    )
+    assert nodes["Spaghettification"].prerequisites == (nodes["Photon Sphere"].id,)
     assert nodes["Spaghettification"].position == (2, 7)
     assert nodes["Prismatic Cataclysm"].position == (0.5, 6)
     assert nodes["Elemental Convergence"].position == (0.5, 7)
-    assert nodes["Elemental Convergence"].prerequisites == (
-        nodes["Prismatic Cataclysm"].id,
-    )
+    assert nodes["Elemental Convergence"].prerequisites == (nodes["Prismatic Cataclysm"].id,)
     assert nodes["Counterspell"].position == (3, 0)
     assert nodes["Counterspell"].payload.get("level_requirement") is None
     assert nodes["Gravitational Pull"].position == (3, 1)
@@ -83,10 +77,18 @@ def test_wizard_tree_uses_master_spells_modifiers_and_quest_placeholder():
     assert nodes["Teleport"].payload["level_requirement"] == 75
 
     removed = {
-        "Firebolt", "Ice Lance", "Shock", "Gust", "Water Jet", "Tremor",
-        "Magic Missile", "Arcane Fundamentals", "Guidance Upgrade",
+        "Firebolt",
+        "Ice Lance",
+        "Shock",
+        "Gust",
+        "Water Jet",
+        "Tremor",
+        "Magic Missile",
+        "Arcane Fundamentals",
+        "Guidance Upgrade",
         "Perfected Formula",
-        "Layered Countermagic", "Mana Rupture",
+        "Layered Countermagic",
+        "Mana Rupture",
     }
     assert removed.isdisjoint(nodes)
 

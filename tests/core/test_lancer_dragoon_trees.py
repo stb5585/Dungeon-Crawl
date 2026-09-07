@@ -47,10 +47,7 @@ def _player(class_name: str, *, level: int = 100):
 
 
 def _tree_by_name(class_name: str):
-    return {
-        node.name: node
-        for node in ABILITY_TREES[class_name].nodes
-    }
+    return {node.name: node for node in ABILITY_TREES[class_name].nodes}
 
 
 def _prerequisite_closure(class_name: str, node_name: str) -> set[str]:
@@ -90,9 +87,7 @@ def test_authored_lancer_tree_has_locked_graph_and_stable_ids():
     assert nodes["Polearm Excellence"].position == (4, 5)
     assert nodes["Polearm Excellence"].payload["level_requirement"] == 55
     assert nodes["Polearm Excellence"].cost == 2
-    assert nodes["Polearm Excellence"].prerequisites == (
-        nodes["Polearm Proficiency"].id,
-    )
+    assert nodes["Polearm Excellence"].prerequisites == (nodes["Polearm Proficiency"].id,)
     assert nodes["Phalanx"].position == (5, 1)
     assert nodes["Critical Vigor"].position == (5, 2)
     assert nodes["+50 HP"].position == (5, 3)
@@ -144,30 +139,21 @@ def test_authored_dragoon_tree_has_locked_graph_and_stable_ids():
     tree = ABILITY_TREES["Dragoon"]
     nodes = _tree_by_name("Dragoon")
     lancer_development_ids = {
-        node.id
-        for node in ABILITY_TREES["Lancer"].nodes
-        if node.kind != NodeKind.PROMOTION
+        node.id for node in ABILITY_TREES["Lancer"].nodes if node.kind != NodeKind.PROMOTION
     }
 
     assert len(tree.nodes) == 33
     assert lancer_development_ids <= {node.id for node in tree.nodes}
-    assert "lancer.promotion.dragoon" not in {
-        node.id
-        for node in tree.nodes
-    }
+    assert "lancer.promotion.dragoon" not in {node.id for node in tree.nodes}
     assert nodes["Polearm Excellence"].position == (4, 5)
     assert nodes["Grounded Landing"].prerequisites == (nodes["Acrobat"].id,)
     assert nodes["+20 Defense"].prerequisites == (nodes["Jump"].id,)
     assert nodes["+20 Attack"].prerequisites == (nodes["Jump"].id,)
     assert nodes["Thrust"].prerequisites == (nodes["Quick Dive"].id,)
-    assert nodes["+30 Attack"].prerequisites == (
-        nodes["Polearm Excellence"].id,
-    )
+    assert nodes["+30 Attack"].prerequisites == (nodes["Polearm Excellence"].id,)
     assert nodes["True Piercing Strike"].position == (6, 7)
     assert nodes["True Piercing Strike"].payload["level_requirement"] == 75
-    assert nodes["True Piercing Strike"].prerequisites == (
-        nodes["True Strike"].id,
-    )
+    assert nodes["True Piercing Strike"].prerequisites == (nodes["True Strike"].id,)
     assert nodes["+30 Attack"].position == (4, 6)
     assert nodes["Polearm Mastery"].payload["level_requirement"] == 80
     assert nodes["Polearm Mastery"].position == (4, 7)
@@ -182,9 +168,7 @@ def test_authored_dragoon_tree_has_locked_graph_and_stable_ids():
     assert nodes["Soaring Strike"].prerequisites == (nodes["Quake"].id,)
     assert "level_requirement" not in nodes["Dragon's Ascent"].payload
     assert nodes["Dragon's Ascent"].payload["available_on_promotion"] is True
-    assert nodes["Dragon's Ascent"].prerequisites == (
-        nodes["+20 Attack"].id,
-    )
+    assert nodes["Dragon's Ascent"].prerequisites == (nodes["+20 Attack"].id,)
     assert nodes["Dragon Dive"].payload["level_requirement"] == 80
     assert nodes["Dragon Dive"].prerequisites == (
         nodes["Dragon's Ascent"].id,
@@ -193,20 +177,13 @@ def test_authored_dragoon_tree_has_locked_graph_and_stable_ids():
     )
     assert nodes["Dragon's Ascent"].position == (1, 5)
     assert nodes["+30 Defense"].position == (1, 6)
-    assert nodes["+30 Defense"].prerequisites == (
-        nodes["Dragon's Ascent"].id,
-    )
+    assert nodes["+30 Defense"].prerequisites == (nodes["Dragon's Ascent"].id,)
     assert nodes["Dragon Dive"].position == (1, 7)
-    assert "dragoon.ability.shield-block" not in {
-        node.id
-        for node in tree.nodes
-    }
+    assert "dragoon.ability.shield-block" not in {node.id for node in tree.nodes}
     assert "level_requirement" not in nodes["+30 Defense"].payload
     assert nodes["Retribution"].position == (0, 6)
     assert nodes["Retribution"].payload["level_requirement"] == 65
-    assert nodes["Retribution"].prerequisites == (
-        nodes["Grounded Landing"].id,
-    )
+    assert nodes["Retribution"].prerequisites == (nodes["Grounded Landing"].id,)
     assert nodes["Unstoppable"].position == (0, 7)
     assert nodes["Unstoppable"].payload["level_requirement"] == 70
     assert max(node.position[1] for node in tree.nodes) == 7
@@ -217,9 +194,7 @@ def test_dragoon_promotion_requires_middle_path_level_and_authored_stats():
     player.stats.strength = 16
     player.stats.dex = 12
     status = next(
-        status
-        for status in available_nodes(player)
-        if status.node.id == "lancer.promotion.dragoon"
+        status for status in available_nodes(player) if status.node.id == "lancer.promotion.dragoon"
     )
 
     assert status.reasons == (
@@ -240,9 +215,7 @@ def test_dragoon_promotion_requires_middle_path_level_and_authored_stats():
     assert purchase_node(player, "lancer.ability.polearm-proficiency").success
     assert purchase_node(player, "lancer.ability.polearm-excellence").success
     status = next(
-        status
-        for status in available_nodes(player)
-        if status.node.id == "lancer.promotion.dragoon"
+        status for status in available_nodes(player) if status.node.id == "lancer.promotion.dragoon"
     )
     assert status.reasons == ()
 
@@ -298,10 +271,7 @@ def test_human_can_promote_at_60_and_continue_lancer_training_as_dragoon():
     assert player.progression.unspent_attribute_points == 9
     assert "Lancer" in player.progression.completed_trees
     assert promotion_kits.current_aerial_tempo(player) == 0
-    assert (
-        promotion_kits.combat_state(player)["pending_aerial_follow_through"]
-        is None
-    )
+    assert promotion_kits.combat_state(player)["pending_aerial_follow_through"] is None
     ring_data = class_rings.ensure_state(player)["data"]["Dragoon"]
     assert ring_data["meteor_guard_shield"] == 0
     optional = apply_progression_plan(
@@ -314,11 +284,7 @@ def test_human_can_promote_at_60_and_continue_lancer_training_as_dragoon():
     )
     assert optional.success
     assert player.progression.unspent_points == 9
-    assert (
-        player.spellbook["Skills"]["Jump"]
-        .unlocked_modifications["Quick Dive"]
-        is True
-    )
+    assert player.spellbook["Skills"]["Jump"].unlocked_modifications["Quick Dive"] is True
 
 
 def test_jump_mod_purchase_can_share_transaction_with_jump_without_fake_skill():
@@ -377,8 +343,7 @@ def test_dragoon_keeps_required_shield_block_off_tree_and_adopts_lancer_mods():
     ensure_progression(player)
 
     assert "dragoon.ability.shield-block" not in {
-        node.id
-        for node in ABILITY_TREES["Dragoon"].nodes
+        node.id for node in ABILITY_TREES["Dragoon"].nodes
     }
     assert "Shield Block" in player.spellbook["Skills"]
     assert "lancer.ability.parry" not in player.progression.purchased_node_ids

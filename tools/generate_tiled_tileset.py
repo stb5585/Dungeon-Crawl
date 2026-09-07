@@ -9,7 +9,6 @@ from pathlib import Path
 
 from PIL import Image
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 MAP_FILES_DIR = PROJECT_ROOT / "src" / "core" / "data" / "maps"
 
@@ -110,10 +109,10 @@ TILE_MAPPING = {
 def generate_tileset():
     tileset_dir = MAP_FILES_DIR / "tileset"
     output_file = MAP_FILES_DIR / "dungeon_tiles.tsx"
-    
+
     if not tileset_dir.exists():
         raise FileNotFoundError(f"Tileset directory not found: {tileset_dir}")
-    
+
     # Scan for PNG images
     all_images = sorted(tileset_dir.glob("*.png"))
     image_by_stem = {image.stem: image for image in all_images}
@@ -123,19 +122,19 @@ def generate_tileset():
     ]
     if not images:
         raise FileNotFoundError(f"No PNG images found in {tileset_dir}")
-    
+
     tiles_xml = []
     tile_width = None
     tile_height = None
-    
+
     for idx, img_path in enumerate(images):
         stem = img_path.stem
         tile_type = TILE_MAPPING.get(stem)
-        
+
         if not tile_type:
             print(f"Warning: No mapping for {stem}.png, skipping")
             continue
-        
+
         # Read actual image dimensions
         try:
             img = Image.open(img_path)
@@ -143,32 +142,31 @@ def generate_tileset():
         except Exception as e:
             print(f"Error reading {img_path}: {e}, using 32x32")
             width, height = 32, 32
-        
+
         # Track consistent dimensions
         if tile_width is None:
             tile_width = width
             tile_height = height
-        
+
         tiles_xml.append(
             f'  <tile id="{idx}" type="{tile_type}">\n'
             f'    <image width="{width}" height="{height}" '
             f'source="tileset/{img_path.name}"/>\n'
-            f'  </tile>'
+            f"  </tile>"
         )
-    
+
     if tile_width is None:
         tile_width = tile_height = 32
-    
+
     xml_content = (
         '<?xml version="1.0" encoding="UTF-8"?>\n'
         '<tileset version="1.10" tiledversion="1.10.2" name="DungeonTiles" '
         f'tilewidth="{tile_width}" tileheight="{tile_height}" '
         f'tilecount="{len(tiles_xml)}" columns="0">\n'
-        ' <grid orientation="orthogonal" width="1" height="1"/>\n'
-        + '\n'.join(tiles_xml) + '\n'
-        '</tileset>'
+        ' <grid orientation="orthogonal" width="1" height="1"/>\n' + "\n".join(tiles_xml) + "\n"
+        "</tileset>"
     )
-    
+
     output_file.write_text(xml_content, encoding="utf-8")
     print(f"Created tileset: {output_file}")
     print(f"Total tiles: {len(tiles_xml)}")

@@ -4,10 +4,13 @@ import os
 
 import pygame
 
-from src.ui_pygame.gui.dungeon.geometry import build_depth_rect, build_next_depth_rect, build_zone_geometry
+from src.ui_pygame.gui.dungeon.geometry import (
+    build_depth_rect,
+    build_next_depth_rect,
+    build_zone_geometry,
+)
 from src.ui_pygame.gui.dungeon.geometry import Quad
 from src.ui_pygame.gui.dungeon.projector import project_texture_to_quad
-
 
 os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
 
@@ -31,7 +34,13 @@ def test_project_texture_to_core_panels():
         rect = build_depth_rect(size[0], size[1], 1)
         next_rect = build_next_depth_rect(rect)
         zone = build_zone_geometry(rect, next_rect, depth=1)
-        for quad in (zone.center_floor, zone.left_floor_open, zone.right_floor_open, zone.left_wall, zone.right_wall):
+        for quad in (
+            zone.center_floor,
+            zone.left_floor_open,
+            zone.right_floor_open,
+            zone.left_wall,
+            zone.right_wall,
+        ):
             projected = project_texture_to_quad(texture, quad, darkness=0.2, output_size=size)
             assert projected.surface.get_width() > 0
             assert projected.surface.get_height() > 0

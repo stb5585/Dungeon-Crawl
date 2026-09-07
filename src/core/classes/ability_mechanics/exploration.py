@@ -228,7 +228,10 @@ def favored_enemy_bonus(character: Any, enemy: Any | None) -> int:
     if state.get("type"):
         bonus = favored_enemy_practice_bonus(character)
     else:
-        total = sum(int(value or 0) for value in (getattr(character, "kill_dict", {}) or {}).get(enemy_type, {}).values())
+        total = sum(
+            int(value or 0)
+            for value in (getattr(character, "kill_dict", {}) or {}).get(enemy_type, {}).values()
+        )
         bonus = max(1, total // 10)
     if bonus > 0:
         try:

@@ -6,5 +6,7 @@ from .outcomes import CombatOutcomeMixin
 from .selections import CombatSelectionMixin
 
 
-class GUICombatManager(CombatOutcomeMixin,CombatSelectionMixin,CombatLifecycleMixin,CombatManagerCoreMixin):
+class GUICombatManager(
+    CombatOutcomeMixin, CombatSelectionMixin, CombatLifecycleMixin, CombatManagerCoreMixin
+):
     """Coordinates pygame combat flow around the core battle engine."""

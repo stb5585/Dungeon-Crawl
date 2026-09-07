@@ -7,5 +7,11 @@ from .sprites import CombatSpriteMixin
 from .status import CombatStatusMixin
 
 
-class CombatView(CombatOverlayMixin,CombatRenderingMixin,CombatSpriteMixin,CombatStatusMixin,CombatViewCoreMixin):
+class CombatView(
+    CombatOverlayMixin,
+    CombatRenderingMixin,
+    CombatSpriteMixin,
+    CombatStatusMixin,
+    CombatViewCoreMixin,
+):
     """Renders combat state and transient presentation effects."""

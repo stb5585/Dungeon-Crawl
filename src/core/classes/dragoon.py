@@ -128,7 +128,9 @@ def recover_amounts(character) -> tuple[int, int]:
     return hp_recover, mp_recover
 
 
-def try_restore_kaelenon(actor, target, modifications: dict[str, bool], messages: list[str]) -> bool:
+def try_restore_kaelenon(
+    actor, target, modifications: dict[str, bool], messages: list[str]
+) -> bool:
     """Resolve the Lancer/Dragoon Recover Jump alternate Red Dragon victory."""
     if not modifications.get("Recover"):
         return False

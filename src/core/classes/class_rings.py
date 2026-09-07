@@ -6,7 +6,6 @@ import copy
 import random
 from typing import Any
 
-
 LEGACY_CLASS_NAMES = (
     "Berserker",
     "Crusader",
@@ -53,9 +52,7 @@ CLASS_RING_SPECS: dict[str, dict[str, str]] = {
     "Crusader": {
         "activation": "Vow Trial",
         "mod": "Vow Affirmation",
-        "description": (
-            "improves the chosen Paladin vow aura and softens its mark drawback"
-        ),
+        "description": ("improves the chosen Paladin vow aura and softens its mark drawback"),
     },
     "Dragoon": {
         "activation": "Guard The Fall",
@@ -91,9 +88,7 @@ CLASS_RING_SPECS: dict[str, dict[str, str]] = {
     "Knight Enchanter": {
         "activation": "Arcane Duel",
         "mod": "Weave Memory",
-        "description": (
-            "preserves a spent Accent as the next weave Foundation"
-        ),
+        "description": ("preserves a spent Accent as the next weave Foundation"),
     },
     "Thaumaturgist": {
         "activation": "Conduit Ritual",
@@ -111,9 +106,7 @@ CLASS_RING_SPECS: dict[str, dict[str, str]] = {
     "Seeker": {
         "activation": "Cartographer's Proof",
         "mod": "Hidden Cache",
-        "description": (
-            "revealed dungeon levels can contain one depth-weighted hidden cache"
-        ),
+        "description": ("revealed dungeon levels can contain one depth-weighted hidden cache"),
     },
     "Ninja": {
         "activation": "No-Trace Contract",
@@ -135,8 +128,7 @@ CLASS_RING_SPECS: dict[str, dict[str, str]] = {
         "activation": "Relic Defense",
         "mod": "Ordered Blessings",
         "description": (
-            "rotating Regen, Defense, and Holy damage blessings trigger through "
-            "relevant actions"
+            "rotating Regen, Defense, and Holy damage blessings trigger through " "relevant actions"
         ),
     },
     "Hierophant": {
@@ -156,8 +148,7 @@ CLASS_RING_SPECS: dict[str, dict[str, str]] = {
         "activation": "Miracle Vigil",
         "mod": "Divine Intervention",
         "description": (
-            "once per combat, the first drop below 50% HP has a 35% chance to "
-            "heal 25% max HP"
+            "once per combat, the first drop below 50% HP has a 35% chance to " "heal 25% max HP"
         ),
     },
     "Troubadour": {
@@ -168,9 +159,7 @@ CLASS_RING_SPECS: dict[str, dict[str, str]] = {
     "Lycan": {
         "activation": "Control Rite",
         "mod": "Controlled Frenzy",
-        "description": (
-            "lock-in still happens, but penalties are reduced and healing improves"
-        ),
+        "description": ("lock-in still happens, but penalties are reduced and healing improves"),
     },
     "Astromancer": {
         "activation": "Star Chart",
@@ -183,9 +172,7 @@ CLASS_RING_SPECS: dict[str, dict[str, str]] = {
     "Soulcatcher": {
         "activation": "Ancestral Totem Rite",
         "mod": "Aspect Evolution",
-        "description": (
-            "Soul Aspect improves slightly based on distinct enemy types harvested"
-        ),
+        "description": ("Soul Aspect improves slightly based on distinct enemy types harvested"),
     },
     "Beast Master": {
         "activation": "Pack Trial",
@@ -334,14 +321,18 @@ def has_stored_class_ring(character: Any) -> bool:
     storage = getattr(character, "storage", {})
     if not isinstance(storage, dict):
         return False
-    return any(getattr(item, "name", None) == "Class Ring" for item in storage.get("Class Ring", []))
+    return any(
+        getattr(item, "name", None) == "Class Ring" for item in storage.get("Class Ring", [])
+    )
 
 
 def has_inventory_class_ring(character: Any) -> bool:
     inventory = getattr(character, "inventory", {})
     if not isinstance(inventory, dict):
         return False
-    return any(getattr(item, "name", None) == "Class Ring" for item in inventory.get("Class Ring", []))
+    return any(
+        getattr(item, "name", None) == "Class Ring" for item in inventory.get("Class Ring", [])
+    )
 
 
 def class_ring_item(character: Any) -> Any | None:
@@ -553,7 +544,9 @@ def _description_extra(character: Any, current: str) -> str:
     return ""
 
 
-def activate(character: Any, class_name_value: str | None = None, **kwargs: Any) -> tuple[bool, str]:
+def activate(
+    character: Any, class_name_value: str | None = None, **kwargs: Any
+) -> tuple[bool, str]:
     target = class_name_value or class_name(character)
     if target not in LEGACY_CLASS_NAMES:
         return False, "This Class Ring has no legacy awakening path.\n"
@@ -580,8 +573,7 @@ def activate(character: Any, class_name_value: str | None = None, **kwargs: Any)
         character.health.max = max(1, character.health.max - sacrifice)
         character.health.current = min(character.health.current, character.health.max)
         state["data"]["Thaumaturgist"]["hp_sacrificed"] = (
-            int(state["data"]["Thaumaturgist"].get("hp_sacrificed", 0) or 0)
-            + sacrifice
+            int(state["data"]["Thaumaturgist"].get("hp_sacrificed", 0) or 0) + sacrifice
         )
 
     state["awakened"][target] = True
@@ -625,7 +617,11 @@ def martial_master_active(character: Any) -> bool:
     weapon = getattr(character, "equipment", {}).get("Weapon")
     armor = getattr(character, "equipment", {}).get("Armor")
     weapon_empty = weapon is None or getattr(weapon, "subtyp", "None") in {"None", "Fist"}
-    armor_empty = armor is None or getattr(armor, "subtyp", "None") == "None" or getattr(armor, "armor", 0) == 0
+    armor_empty = (
+        armor is None
+        or getattr(armor, "subtyp", "None") == "None"
+        or getattr(armor, "armor", 0) == 0
+    )
     return bool(weapon_empty and armor_empty)
 
 
@@ -738,17 +734,22 @@ def record_wizard_rider(character: Any, school: str, triggered: bool) -> float:
 def summon_multiplier(character: Any) -> float:
     return (
         1.30
-        if is_awakened(character, "Thaumaturgist")
-        and has_equipped_class_ring(character)
+        if is_awakened(character, "Thaumaturgist") and has_equipped_class_ring(character)
         else 1.0
     )
 
 
 def loaded_dice_succeeds(character: Any, rng: Any = random) -> bool:
-    return bool(is_awakened(character, "Rogue") and has_equipped_class_ring(character) and rng.random() < 0.15)
+    return bool(
+        is_awakened(character, "Rogue")
+        and has_equipped_class_ring(character)
+        and rng.random() < 0.15
+    )
 
 
-def hidden_cache_available(character: Any, dungeon_level: int, reveal_progress: float = 1.0) -> bool:
+def hidden_cache_available(
+    character: Any, dungeon_level: int, reveal_progress: float = 1.0
+) -> bool:
     if not (is_awakened(character, "Seeker") and has_equipped_class_ring(character)):
         return False
     if reveal_progress < 0.70:
@@ -757,7 +758,9 @@ def hidden_cache_available(character: Any, dungeon_level: int, reveal_progress: 
     return int(dungeon_level) not in state["data"]["Seeker"]["claimed_caches"]
 
 
-def claim_hidden_cache(character: Any, dungeon_level: int, reveal_progress: float = 1.0) -> tuple[bool, str | None]:
+def claim_hidden_cache(
+    character: Any, dungeon_level: int, reveal_progress: float = 1.0
+) -> tuple[bool, str | None]:
     if not hidden_cache_available(character, dungeon_level, reveal_progress):
         return False, None
     state = ensure_state(character)
@@ -784,7 +787,9 @@ def award_hidden_cache(
 
 
 def first_strike_multiplier(character: Any, *, has_initiative: bool = True) -> float:
-    if not (has_initiative and is_awakened(character, "Ninja") and has_equipped_class_ring(character)):
+    if not (
+        has_initiative and is_awakened(character, "Ninja") and has_equipped_class_ring(character)
+    ):
         return 1.0
     state = ensure_state(character)
     data = state["data"]["Ninja"]
@@ -894,7 +899,9 @@ def divine_intervention(character: Any, rng: Any = random) -> int:
 
 
 def encore_strength(character: Any) -> float:
-    return 0.50 if is_awakened(character, "Troubadour") and has_equipped_class_ring(character) else 0.0
+    return (
+        0.50 if is_awakened(character, "Troubadour") and has_equipped_class_ring(character) else 0.0
+    )
 
 
 def controlled_frenzy_penalty_multiplier(character: Any) -> float:

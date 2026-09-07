@@ -44,7 +44,9 @@ class PaladinVowSelectionPopup:
         height = min(int(self.height * 0.72), 560)
         return pygame.Rect((self.width - width) // 2, (self.height - height) // 2, width, height)
 
-    def _draw_text(self, text: str, font, color, x: int, y: int, max_width: int | None = None) -> int:
+    def _draw_text(
+        self, text: str, font, color, x: int, y: int, max_width: int | None = None
+    ) -> int:
         if max_width is not None:
             text = self._fit_text(text, font, max_width)
         surface = font.render(text, True, color)
@@ -63,7 +65,9 @@ class PaladinVowSelectionPopup:
             fitted += char
         return fitted.rstrip() + ellipsis
 
-    def _draw_wrapped(self, text: str, font, color, x: int, y: int, max_width: int, *, max_lines: int = 4) -> int:
+    def _draw_wrapped(
+        self, text: str, font, color, x: int, y: int, max_width: int, *, max_lines: int = 4
+    ) -> int:
         for line in wrap_text_to_pixel_width(text, font, max_width)[:max_lines]:
             y = self._draw_text(line, font, color, x, y)
             y += 3
@@ -75,7 +79,12 @@ class PaladinVowSelectionPopup:
         total_height = len(self.options) * row_height + (len(self.options) - 1) * gap
         y = list_rect.centery - total_height // 2
         return [
-            pygame.Rect(list_rect.left + 16, y + index * (row_height + gap), list_rect.width - 32, row_height)
+            pygame.Rect(
+                list_rect.left + 16,
+                y + index * (row_height + gap),
+                list_rect.width - 32,
+                row_height,
+            )
             for index, _option in enumerate(self.options)
         ]
 
@@ -94,7 +103,9 @@ class PaladinVowSelectionPopup:
         pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, panel, 3)
 
         title_surface = self.title_font.render(self.title, True, self.colors.GOLD)
-        self.screen.blit(title_surface, title_surface.get_rect(center=(panel.centerx, panel.top + 42)))
+        self.screen.blit(
+            title_surface, title_surface.get_rect(center=(panel.centerx, panel.top + 42))
+        )
 
         content_top = panel.top + 82
         footer_top = panel.bottom - 56
@@ -105,8 +116,15 @@ class PaladinVowSelectionPopup:
             max(240, footer_top - content_top - 14),
         )
         list_width = max(230, int(content_rect.width * 0.36))
-        list_rect = pygame.Rect(content_rect.left, content_rect.top, list_width, content_rect.height)
-        detail_rect = pygame.Rect(list_rect.right + 18, content_rect.top, content_rect.right - list_rect.right - 18, content_rect.height)
+        list_rect = pygame.Rect(
+            content_rect.left, content_rect.top, list_width, content_rect.height
+        )
+        detail_rect = pygame.Rect(
+            list_rect.right + 18,
+            content_rect.top,
+            content_rect.right - list_rect.right - 18,
+            content_rect.height,
+        )
         self.list_rect = list_rect
         self.detail_rect = detail_rect
 
@@ -129,7 +147,9 @@ class PaladinVowSelectionPopup:
         vow = self.options[self.current_selection]
         x = detail_rect.left + 20
         y = detail_rect.top + 20
-        y = self._draw_text(f"Vow of {vow}", self.large_font, self.colors.GOLD, x, y, detail_rect.width - 40)
+        y = self._draw_text(
+            f"Vow of {vow}", self.large_font, self.colors.GOLD, x, y, detail_rect.width - 40
+        )
         y += 8
         y = self._draw_wrapped(
             paladin.DESCRIPTIONS[vow],
@@ -177,12 +197,20 @@ class PaladinVowSelectionPopup:
 
         instructions = "UP/DOWN: Navigate   ENTER: Select   ESC: Cancel"
         instruction_surface = self.small_font.render(instructions, True, self.colors.GRAY)
-        self.instruction_rect = instruction_surface.get_rect(center=(panel.centerx, panel.bottom - 26))
+        self.instruction_rect = instruction_surface.get_rect(
+            center=(panel.centerx, panel.bottom - 26)
+        )
         self.screen.blit(instruction_surface, self.instruction_rect)
 
         pygame.display.flip()
 
-    def show(self, *, flush_events: bool = False, require_key_release: bool = False, background_draw_func=None) -> str | None:
+    def show(
+        self,
+        *,
+        flush_events: bool = False,
+        require_key_release: bool = False,
+        background_draw_func=None,
+    ) -> str | None:
         background = None
         if background_draw_func is None and hasattr(self.screen, "copy"):
             background = self.screen.copy()
@@ -326,11 +354,11 @@ class ChurchManager(TownScreenBase):
             ),
         },
     }
-    
+
     def __init__(self, presenter, player_char):
         super().__init__(presenter)
         self.player_char = player_char
-    
+
     def visit_church(self):
         """Visit the Church of Elysia."""
         church_options = ["Save Game", "Quests"]
@@ -347,11 +375,11 @@ class ChurchManager(TownScreenBase):
         if demonologist.is_demonologist(self.player_char):
             church_options.append("Hidden Crypt")
         church_options.append("Leave")
-        
+
         church_screen = LocationMenuScreen(self.presenter, "Church of Elysia")
         church_screen.set_location_portrait("Priest")
         self._popup_background_draw_func = lambda: church_screen.draw_frame(do_flip=False)
-        
+
         while True:
             choice_idx = church_screen.navigate(
                 church_options,
@@ -359,23 +387,27 @@ class ChurchManager(TownScreenBase):
                 flush_events=True,
                 require_key_release=True,
             )
-            
+
             if choice_idx is None or church_options[choice_idx] == "Leave":
-                popup = ConfirmationPopup(self.presenter, "Let the light of Elysia guide you.", show_buttons=False)
+                popup = ConfirmationPopup(
+                    self.presenter, "Let the light of Elysia guide you.", show_buttons=False
+                )
                 popup.show(**self.popup_show_kwargs())
                 break
-            
+
             elif church_options[choice_idx] == "Save Game":
                 self.save_game()
-            
+
             elif church_options[choice_idx] == "Quests":
                 qm = QuestManager(
-                    self.presenter, 
-                    self.player_char, 
-                    quest_text_renderer=lambda text: church_screen.display_quest_text(text, npc_name="Priest"),
+                    self.presenter,
+                    self.player_char,
+                    quest_text_renderer=lambda text: church_screen.display_quest_text(
+                        text, npc_name="Priest"
+                    ),
                     renderer_preserve_formatting=True,
                 )
-                qm.check_and_offer('Priest')
+                qm.check_and_offer("Priest")
 
             elif church_options[choice_idx] == "Cure Curses":
                 message = curses.cure_curses(self.player_char)
@@ -430,12 +462,16 @@ class ChurchManager(TownScreenBase):
 
     def visit_legacy_paladin_vow_choice(self):
         if not self._legacy_paladin_vow_available():
-            popup = ConfirmationPopup(self.presenter, "No unanswered Paladin vow waits here.", show_buttons=False)
+            popup = ConfirmationPopup(
+                self.presenter, "No unanswered Paladin vow waits here.", show_buttons=False
+            )
             popup.show(**self.popup_show_kwargs())
             return False
         vow = self._choose_paladin_vow()
         if not vow:
-            popup = ConfirmationPopup(self.presenter, "The vow remains unspoken.", show_buttons=False)
+            popup = ConfirmationPopup(
+                self.presenter, "The vow remains unspoken.", show_buttons=False
+            )
             popup.show(**self.popup_show_kwargs())
             return False
         success, message = self.player_char.choose_paladin_vow(vow)
@@ -453,7 +489,9 @@ class ChurchManager(TownScreenBase):
 
     def visit_crusader_vow_trial(self):
         if not self._crusader_vow_trial_available():
-            popup = ConfirmationPopup(self.presenter, "The Vow Trial does not answer yet.", show_buttons=False)
+            popup = ConfirmationPopup(
+                self.presenter, "The Vow Trial does not answer yet.", show_buttons=False
+            )
             popup.show(**self.popup_show_kwargs())
             return False
         vow = paladin.path(self.player_char)
@@ -491,11 +529,15 @@ class ChurchManager(TownScreenBase):
         class_name = class_rings.class_name(self.player_char)
         config = self._arcane_class_ring_rite_config()
         if not config:
-            popup = ConfirmationPopup(self.presenter, "No Class Ring rite answers you here.", show_buttons=False)
+            popup = ConfirmationPopup(
+                self.presenter, "No Class Ring rite answers you here.", show_buttons=False
+            )
             popup.show(**self.popup_show_kwargs())
             return False
         if not self._arcane_class_ring_rite_available():
-            popup = ConfirmationPopup(self.presenter, "The Class Ring is not ready for this rite.", show_buttons=False)
+            popup = ConfirmationPopup(
+                self.presenter, "The Class Ring is not ready for this rite.", show_buttons=False
+            )
             popup.show(**self.popup_show_kwargs())
             return False
 
@@ -513,11 +555,13 @@ class ChurchManager(TownScreenBase):
         )
         popup.show(**self.popup_show_kwargs())
         return success
-    
+
     def visit_hidden_crypt(self):
         """Manage Demonologist contracts and Class Ring awakening."""
         if not demonologist.is_demonologist(self.player_char):
-            popup = ConfirmationPopup(self.presenter, "The crypt door is nowhere to be found.", show_buttons=False)
+            popup = ConfirmationPopup(
+                self.presenter, "The crypt door is nowhere to be found.", show_buttons=False
+            )
             popup.show(**self.popup_show_kwargs())
             return False
 
@@ -539,7 +583,9 @@ class ChurchManager(TownScreenBase):
             if options[choice] == "Review Contracts":
                 if unlocked:
                     active = state.get("active_patron") or "None"
-                    text = "Unlocked contracts: " + ", ".join(unlocked) + f"\nActive patron: {active}"
+                    text = (
+                        "Unlocked contracts: " + ", ".join(unlocked) + f"\nActive patron: {active}"
+                    )
                 else:
                     text = "No fiend has answered your name. Defeat an eligible fiend, then return."
                 popup = ConfirmationPopup(self.presenter, text, show_buttons=False)
@@ -551,7 +597,9 @@ class ChurchManager(TownScreenBase):
                     patron = unlocked[bind_idx]
                     demonologist.bind_patron(self.player_char, patron)
                     state = self.player_char.demonologist_contracts
-                    popup = ConfirmationPopup(self.presenter, f"{patron} is now your active contract.", show_buttons=False)
+                    popup = ConfirmationPopup(
+                        self.presenter, f"{patron} is now your active contract.", show_buttons=False
+                    )
                     popup.show(**self.popup_show_kwargs())
 
             elif options[choice] == "Awaken Class Ring":
@@ -560,7 +608,7 @@ class ChurchManager(TownScreenBase):
                 popup.show(**self.popup_show_kwargs())
                 if success:
                     options = [option for option in options if option != "Awaken Class Ring"]
-    
+
     def save_game(self):
         """Save the game at the church."""
         # Use character name as filename (always overwrites)

@@ -25,8 +25,13 @@ def _hold_magical_thirst(user: Character) -> None:
 class HealthPotion(Potion):
 
     def __init__(self):
-        super().__init__(name="Health Potion", description="A potion that restores up to 25% of your health.",
-                         value=100, rarity=0.99, subtyp='Health')
+        super().__init__(
+            name="Health Potion",
+            description="A potion that restores up to 25% of your health.",
+            value=100,
+            rarity=0.99,
+            subtyp="Health",
+        )
         self.percent = 0.25
         self.minimum_heal = 25
 
@@ -41,7 +46,7 @@ class HealthPotion(Potion):
         user.modify_inventory(self, subtract=True)
         # Dwarf Temperance/Gluttony: combat consumables are stronger, but may cause hangover.
         is_dwarf = getattr(getattr(user, "race", None), "name", None) == "Dwarf"
-        if user.state != 'fight':
+        if user.state != "fight":
             # Out of combat: 80-110% of base amount for variance and improved usefulness
             base_heal = self._base_heal_amount(user)
             heal = int(random.uniform(0.8, 1.1) * base_heal)
@@ -50,7 +55,9 @@ class HealthPotion(Potion):
             rand_heal = self._base_heal_amount(user)
             heal_cap = max(1, rand_heal)
             heal_floor = min(heal_cap, int(getattr(self, "minimum_heal", 0) or 0))
-            heal = random.randint(rand_heal // 2, rand_heal) * max(1, user.check_mod('luck', luck_factor=12))
+            heal = random.randint(rand_heal // 2, rand_heal) * max(
+                1, user.check_mod("luck", luck_factor=12)
+            )
             heal = max(min(heal, heal_cap), heal_floor)
         if is_dwarf:
             from ..constants import (
@@ -59,6 +66,7 @@ class HealthPotion(Potion):
                 DWARF_HANGOVER_MAX_STEPS,
                 DWARF_HANGOVER_STEPS_PER_USE,
             )
+
             heal = int(heal * DWARF_COMBAT_CONSUMABLE_MULTIPLIER)
             if user.state == "fight":
                 h = user.status_effects.get("Hangover")
@@ -68,7 +76,8 @@ class HealthPotion(Potion):
             else:
                 user.dwarf_hangover_steps = min(
                     DWARF_HANGOVER_MAX_STEPS,
-                    int(getattr(user, "dwarf_hangover_steps", 0) or 0) + DWARF_HANGOVER_STEPS_PER_USE,
+                    int(getattr(user, "dwarf_hangover_steps", 0) or 0)
+                    + DWARF_HANGOVER_STEPS_PER_USE,
                 )
         use_str += f"The potion healed you for {heal} life.\n"
         user.health.current += heal
@@ -84,7 +93,9 @@ class GreatHealthPotion(HealthPotion):
     def __init__(self):
         super().__init__()
         self.name = "Great Health Potion"
-        self.description = "\n".join(wrap("A potion that restores up to 50% of your health.", 35, break_on_hyphens=False))
+        self.description = "\n".join(
+            wrap("A potion that restores up to 50% of your health.", 35, break_on_hyphens=False)
+        )
         self.value = 600
         self.rarity = 0.7
         self.percent = 0.50
@@ -96,7 +107,9 @@ class SuperHealthPotion(HealthPotion):
     def __init__(self):
         super().__init__()
         self.name = "Super Health Potion"
-        self.description = "\n".join(wrap("A potion that restores up to 75% of your health.", 35, break_on_hyphens=False))
+        self.description = "\n".join(
+            wrap("A potion that restores up to 75% of your health.", 35, break_on_hyphens=False)
+        )
         self.value = 3000
         self.rarity = 0.5
         self.percent = 0.75
@@ -108,7 +121,9 @@ class MasterHealthPotion(HealthPotion):
     def __init__(self):
         super().__init__()
         self.name = "Master Health Potion"
-        self.description = "\n".join(wrap("A potion that restores up to 100% of your health.", 35, break_on_hyphens=False))
+        self.description = "\n".join(
+            wrap("A potion that restores up to 100% of your health.", 35, break_on_hyphens=False)
+        )
         self.value = 10000
         self.rarity = 0.3
         self.percent = 1.0
@@ -118,8 +133,13 @@ class MasterHealthPotion(HealthPotion):
 class ManaPotion(Potion):
 
     def __init__(self):
-        super().__init__(name="Mana Potion", description="A potion that restores up to 25% of your mana.",
-                         value=250, rarity=0.9, subtyp='Mana')
+        super().__init__(
+            name="Mana Potion",
+            description="A potion that restores up to 25% of your mana.",
+            value=250,
+            rarity=0.9,
+            subtyp="Mana",
+        )
         self.percent = 0.25
 
     def use(self, user: Character, target: Character | None = None, tile: Any = None) -> str:
@@ -129,14 +149,16 @@ class ManaPotion(Potion):
             return use_str
         user.modify_inventory(self, subtract=True)
         is_dwarf = getattr(getattr(user, "race", None), "name", None) == "Dwarf"
-        if user.state != 'fight':
+        if user.state != "fight":
             # Out of combat: 80-110% of base amount for variance and improved usefulness
             base_heal = int(user.mana.max * self.percent)
             heal = int(random.uniform(0.8, 1.1) * base_heal)
         else:
             # In combat: 50-100% with luck modifier
             rand_res = int(user.mana.max * self.percent)
-            heal = random.randint(rand_res // 2, rand_res) * max(1, user.check_mod('luck', luck_factor=12))
+            heal = random.randint(rand_res // 2, rand_res) * max(
+                1, user.check_mod("luck", luck_factor=12)
+            )
         if is_dwarf:
             from ..constants import (
                 DWARF_COMBAT_CONSUMABLE_MULTIPLIER,
@@ -144,6 +166,7 @@ class ManaPotion(Potion):
                 DWARF_HANGOVER_MAX_STEPS,
                 DWARF_HANGOVER_STEPS_PER_USE,
             )
+
             heal = int(heal * DWARF_COMBAT_CONSUMABLE_MULTIPLIER)
             if user.state == "fight":
                 h = user.status_effects.get("Hangover")
@@ -153,7 +176,8 @@ class ManaPotion(Potion):
             else:
                 user.dwarf_hangover_steps = min(
                     DWARF_HANGOVER_MAX_STEPS,
-                    int(getattr(user, "dwarf_hangover_steps", 0) or 0) + DWARF_HANGOVER_STEPS_PER_USE,
+                    int(getattr(user, "dwarf_hangover_steps", 0) or 0)
+                    + DWARF_HANGOVER_STEPS_PER_USE,
                 )
         use_str += f"The potion restored {heal} mana points.\n"
         user.mana.current += heal
@@ -169,7 +193,9 @@ class GreatManaPotion(ManaPotion):
     def __init__(self):
         super().__init__()
         self.name = "Great Mana Potion"
-        self.description = "\n".join(wrap("A potion that restores up to 50% of your mana.", 35, break_on_hyphens=False))
+        self.description = "\n".join(
+            wrap("A potion that restores up to 50% of your mana.", 35, break_on_hyphens=False)
+        )
         self.value = 1500
         self.rarity = 0.45
         self.percent = 0.50
@@ -180,7 +206,9 @@ class SuperManaPotion(ManaPotion):
     def __init__(self):
         super().__init__()
         self.name = "Super Mana Potion"
-        self.description = "\n".join(wrap("A potion that restores up to 75% of your mana.", 35, break_on_hyphens=False))
+        self.description = "\n".join(
+            wrap("A potion that restores up to 75% of your mana.", 35, break_on_hyphens=False)
+        )
         self.value = 8000
         self.rarity = 0.3
         self.percent = 0.75
@@ -191,7 +219,9 @@ class MasterManaPotion(ManaPotion):
     def __init__(self):
         super().__init__()
         self.name = "Master Mana Potion"
-        self.description = "\n".join(wrap("A potion that restores up to 100% of your mana.", 35, break_on_hyphens=False))
+        self.description = "\n".join(
+            wrap("A potion that restores up to 100% of your mana.", 35, break_on_hyphens=False)
+        )
         self.value = 35000
         self.rarity = 0.15
         self.percent = 1.0
@@ -200,8 +230,13 @@ class MasterManaPotion(ManaPotion):
 class Elixir(Potion):
 
     def __init__(self):
-        super().__init__(name="Elixir", description="A potion that restores up to 50% of your health and mana.",
-                         value=20000, rarity=0.2, subtyp='Elixir')
+        super().__init__(
+            name="Elixir",
+            description="A potion that restores up to 50% of your health and mana.",
+            value=20000,
+            rarity=0.2,
+            subtyp="Elixir",
+        )
         self.percent = 0.5
 
     def use(self, user: Character, target: Character | None = None, tile: Any = None) -> str:
@@ -211,14 +246,18 @@ class Elixir(Potion):
             return use_str
         user.modify_inventory(self, subtract=True)
         is_dwarf = getattr(getattr(user, "race", None), "name", None) == "Dwarf"
-        if user.state != 'fight':
+        if user.state != "fight":
             health_heal = int(user.health.max * self.percent)
             mana_heal = int(user.mana.max * self.percent)
         else:
             rand_heal = int(user.health.max * self.percent)
             rand_res = int(user.mana.max * self.percent)
-            health_heal = random.randint(rand_heal // 2, rand_heal) * max(1, user.check_mod('luck', luck_factor=12))
-            mana_heal = random.randint(rand_res // 2, rand_res) * max(1, user.check_mod('luck', luck_factor=12))
+            health_heal = random.randint(rand_heal // 2, rand_heal) * max(
+                1, user.check_mod("luck", luck_factor=12)
+            )
+            mana_heal = random.randint(rand_res // 2, rand_res) * max(
+                1, user.check_mod("luck", luck_factor=12)
+            )
         if is_dwarf:
             from ..constants import (
                 DWARF_COMBAT_CONSUMABLE_MULTIPLIER,
@@ -226,6 +265,7 @@ class Elixir(Potion):
                 DWARF_HANGOVER_MAX_STEPS,
                 DWARF_HANGOVER_STEPS_PER_USE,
             )
+
             health_heal = int(health_heal * DWARF_COMBAT_CONSUMABLE_MULTIPLIER)
             mana_heal = int(mana_heal * DWARF_COMBAT_CONSUMABLE_MULTIPLIER)
             if user.state == "fight":
@@ -236,7 +276,8 @@ class Elixir(Potion):
             else:
                 user.dwarf_hangover_steps = min(
                     DWARF_HANGOVER_MAX_STEPS,
-                    int(getattr(user, "dwarf_hangover_steps", 0) or 0) + DWARF_HANGOVER_STEPS_PER_USE,
+                    int(getattr(user, "dwarf_hangover_steps", 0) or 0)
+                    + DWARF_HANGOVER_STEPS_PER_USE,
                 )
         use_str += f"The potion restored {health_heal} health points and {mana_heal} mana points.\n"
         user.health.current += health_heal
@@ -256,7 +297,13 @@ class Megalixir(Elixir):
     def __init__(self):
         super().__init__()
         self.name = "Megalixir"
-        self.description = "\n".join(wrap("A potion that restores up to 100% of your health and mana.", 35, break_on_hyphens=False))
+        self.description = "\n".join(
+            wrap(
+                "A potion that restores up to 100% of your health and mana.",
+                35,
+                break_on_hyphens=False,
+            )
+        )
         self.value = 50000
         self.rarity = 0.05
         self.percent = 1.0
@@ -265,8 +312,13 @@ class Megalixir(Elixir):
 class HPPotion(Potion):
 
     def __init__(self):
-        super().__init__(name="HP Potion", description="A potion that permanently increases your max health by 10.",
-                         value=10000, rarity=0.7, subtyp='Stat')
+        super().__init__(
+            name="HP Potion",
+            description="A potion that permanently increases your max health by 10.",
+            value=10000,
+            rarity=0.7,
+            subtyp="Stat",
+        )
         self.mod = 10
 
     def use(
@@ -286,8 +338,13 @@ class HPPotion(Potion):
 class MPPotion(Potion):
 
     def __init__(self):
-        super().__init__(name="MP Potion", description="A potion that permanently increases your max mana by 10.",
-                         value=15000, rarity=0.6, subtyp='Stat')
+        super().__init__(
+            name="MP Potion",
+            description="A potion that permanently increases your max mana by 10.",
+            value=15000,
+            rarity=0.6,
+            subtyp="Stat",
+        )
         self.mod = 10
 
     def use(
@@ -307,8 +364,13 @@ class MPPotion(Potion):
 class StrengthPotion(Potion):
 
     def __init__(self):
-        super().__init__(name="Strength Potion", description="A potion that permanently increases your strength by 1.",
-                         value=50000, rarity=0.3, subtyp='Stat')
+        super().__init__(
+            name="Strength Potion",
+            description="A potion that permanently increases your strength by 1.",
+            value=50000,
+            rarity=0.3,
+            subtyp="Stat",
+        )
 
     def use(
         self,
@@ -325,9 +387,13 @@ class StrengthPotion(Potion):
 class IntelPotion(Potion):
 
     def __init__(self):
-        super().__init__(name="Intelligence Potion", description="A potion that permanently increases your intelligence"
-                                                                 " by 1.",
-                         value=50000, rarity=0.3, subtyp='Stat')
+        super().__init__(
+            name="Intelligence Potion",
+            description="A potion that permanently increases your intelligence" " by 1.",
+            value=50000,
+            rarity=0.3,
+            subtyp="Stat",
+        )
 
     def use(
         self,
@@ -344,8 +410,13 @@ class IntelPotion(Potion):
 class WisdomPotion(Potion):
 
     def __init__(self):
-        super().__init__(name="Wisdom Potion", description="A potion that permanently increases your wisdom by 1.",
-                         value=50000, rarity=0.3, subtyp='Stat')
+        super().__init__(
+            name="Wisdom Potion",
+            description="A potion that permanently increases your wisdom by 1.",
+            value=50000,
+            rarity=0.3,
+            subtyp="Stat",
+        )
 
     def use(
         self,
@@ -362,9 +433,13 @@ class WisdomPotion(Potion):
 class ConPotion(Potion):
 
     def __init__(self):
-        super().__init__(name="Constitution Potion", description="A potion that permanently increases your constitution"
-                                                                 " by 1.",
-                         value=50000, rarity=0.3, subtyp='Stat')
+        super().__init__(
+            name="Constitution Potion",
+            description="A potion that permanently increases your constitution" " by 1.",
+            value=50000,
+            rarity=0.3,
+            subtyp="Stat",
+        )
 
     def use(
         self,
@@ -381,8 +456,13 @@ class ConPotion(Potion):
 class CharismaPotion(Potion):
 
     def __init__(self):
-        super().__init__(name="Charisma Potion", description="A potion that permanently increases your charisma by 1.",
-                         value=50000, rarity=0.3, subtyp='Stat')
+        super().__init__(
+            name="Charisma Potion",
+            description="A potion that permanently increases your charisma by 1.",
+            value=50000,
+            rarity=0.3,
+            subtyp="Stat",
+        )
 
     def use(
         self,
@@ -399,9 +479,13 @@ class CharismaPotion(Potion):
 class DexterityPotion(Potion):
 
     def __init__(self):
-        super().__init__(name="Dexterity Potion", description="A potion that permanently increases your dexterity by "
-                                                              "1.",
-                         value=50000, rarity=0.3, subtyp='Stat')
+        super().__init__(
+            name="Dexterity Potion",
+            description="A potion that permanently increases your dexterity by " "1.",
+            value=50000,
+            rarity=0.3,
+            subtyp="Stat",
+        )
 
     def use(
         self,
@@ -418,8 +502,13 @@ class DexterityPotion(Potion):
 class AardBeing(Potion):
 
     def __init__(self):
-        super().__init__(name="Aard of Being", description="A potion that permanently increases all stats by 1.",
-                         value=250000, rarity=0.01, subtyp='Stat')
+        super().__init__(
+            name="Aard of Being",
+            description="A potion that permanently increases all stats by 1.",
+            value=250000,
+            rarity=0.01,
+            subtyp="Stat",
+        )
 
     def use(
         self,
@@ -441,8 +530,13 @@ class AardBeing(Potion):
 class Status(Potion):
 
     def __init__(self):
-        super().__init__(name="Status", description="Base class for status items.",
-                         value=0, rarity=0, subtyp="Status")
+        super().__init__(
+            name="Status",
+            description="Base class for status items.",
+            value=0,
+            rarity=0,
+            subtyp="Status",
+        )
         self.status = None
 
     def use(self, user: Character, target: Character | None = None, tile: Any = None) -> str:
@@ -457,6 +551,7 @@ class Status(Potion):
                 DWARF_HANGOVER_MAX_STEPS,
                 DWARF_HANGOVER_STEPS_PER_USE,
             )
+
             if user.state == "fight":
                 h = user.status_effects.get("Hangover")
                 if h is not None:
@@ -465,7 +560,8 @@ class Status(Potion):
             else:
                 user.dwarf_hangover_steps = min(
                     DWARF_HANGOVER_MAX_STEPS,
-                    int(getattr(user, "dwarf_hangover_steps", 0) or 0) + DWARF_HANGOVER_STEPS_PER_USE,
+                    int(getattr(user, "dwarf_hangover_steps", 0) or 0)
+                    + DWARF_HANGOVER_STEPS_PER_USE,
                 )
         user.status_effects[self.status].active = False
         user.status_effects[self.status].duration = 0
@@ -488,7 +584,9 @@ class Antidote(Status):
     def __init__(self):
         super().__init__()
         self.name = "Antidote"
-        self.description = "\n".join(wrap("A potion that will cure poison.", 35, break_on_hyphens=False))
+        self.description = "\n".join(
+            wrap("A potion that will cure poison.", 35, break_on_hyphens=False)
+        )
         self.value = 250
         self.rarity = 0.9
         self.status = "Poison"
@@ -499,7 +597,9 @@ class EyeDrop(Status):
     def __init__(self):
         super().__init__()
         self.name = "Eye Drop"
-        self.description = "\n".join(wrap("A potion that will cure blindness.", 35, break_on_hyphens=False))
+        self.description = "\n".join(
+            wrap("A potion that will cure blindness.", 35, break_on_hyphens=False)
+        )
         self.value = 250
         self.rarity = 0.9
         self.status = "Blind"
@@ -510,7 +610,9 @@ class EchoScreen(Status):
     def __init__(self):
         super().__init__()
         self.name = "Echo Screen"
-        self.description = "\n".join(wrap("A potion that will cure silence.", 35, break_on_hyphens=False))
+        self.description = "\n".join(
+            wrap("A potion that will cure silence.", 35, break_on_hyphens=False)
+        )
         self.value = 1000
         self.rarity = 0.8
         self.status = "Silence"
@@ -521,7 +623,9 @@ class Bandage(Status):
     def __init__(self):
         super().__init__()
         self.name = "Bandage"
-        self.description = "\n".join(wrap("A linen bandage that will stop bleeding.", 35, break_on_hyphens=False))
+        self.description = "\n".join(
+            wrap("A linen bandage that will stop bleeding.", 35, break_on_hyphens=False)
+        )
         self.value = 1000
         self.rarity = 0.8
         self.status = "Bleed"
@@ -546,9 +650,7 @@ class Bandage(Status):
 
             heal = int(0.1 * user.health.max)
             heal = random.randint(heal // 2, heal)
-            heal = int(
-                heal * ability_mechanics.bandage_healing_multiplier(user)
-            )
+            heal = int(heal * ability_mechanics.bandage_healing_multiplier(user))
             heal = min(heal, user.health.max - user.health.current)
             user.health.current += heal
             use_str += f"You have been healed for {heal} health.\n"
@@ -560,7 +662,9 @@ class PhoenixDown(Status):
     def __init__(self):
         super().__init__()
         self.name = "Phoenix Down"
-        self.description = "\n".join(wrap("A potion that will cure doom status.", 35, break_on_hyphens=False))
+        self.description = "\n".join(
+            wrap("A potion that will cure doom status.", 35, break_on_hyphens=False)
+        )
         self.value = 2000
         self.rarity = 0.7
         self.status = "Doom"
@@ -572,7 +676,9 @@ class Remedy(Status):
     def __init__(self):
         super().__init__()
         self.name = "Remedy"
-        self.description = "\n".join(wrap("A potion that will cure all negative status effects.", 35, break_on_hyphens=False))
+        self.description = "\n".join(
+            wrap("A potion that will cure all negative status effects.", 35, break_on_hyphens=False)
+        )
         self.value = 5000
         self.rarity = 0.2
         self.status = ["Poison", "Blind", "Silence", "Doom"]

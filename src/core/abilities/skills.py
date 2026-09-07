@@ -26,18 +26,21 @@ if TYPE_CHECKING:
 # Offensive
 class ShieldSlam:
     """Data-driven (shield_slam.yaml) - str+shield damage + stun."""
+
     def __new__(cls):
         return _load_yaml_ability("shield_slam.yaml", cls_name="ShieldSlam")
 
 
 class DoubleStrike:
     """Data-driven (double_strike.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("double_strike.yaml", cls_name="DoubleStrike")
 
 
 class TripleStrike:
     """Data-driven (triple_strike.yaml)"""
+
     replaces = "Double Strike"
 
     def __new__(cls):
@@ -46,6 +49,7 @@ class TripleStrike:
 
 class FlurryBlades:
     """Data-driven (flurry_blades.yaml)"""
+
     replaces = "Triple Strike"
 
     def __new__(cls):
@@ -54,60 +58,70 @@ class FlurryBlades:
 
 class PiercingStrike:
     """Data-driven (piercing_strike.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("piercing_strike.yaml", cls_name="PiercingStrike")
 
 
 class TrueStrike:
     """Data-driven (true_strike.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("true_strike.yaml", cls_name="TrueStrike")
 
 
 class TruePiercingStrike:
     """Data-driven (true_piercing_strike.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("true_piercing_strike.yaml", cls_name="TruePiercingStrike")
 
 
 class Jump:
     """Data-driven (jump.yaml) - leap attack with full modification system."""
+
     def __new__(cls):
         return _load_yaml_ability("jump.yaml", cls_name="Jump")
 
 
 class Doublecast:
     """Data-driven (doublecast.yaml) - cast 2 spells in a single turn."""
+
     def __new__(cls):
         return _load_yaml_ability("doublecast.yaml", cls_name="Doublecast")
 
 
 class Triplecast:
     """Data-driven (triplecast.yaml) - cast 3 spells in a single turn."""
+
     def __new__(cls):
         return _load_yaml_ability("triplecast.yaml", cls_name="Triplecast")
 
 
 class MortalStrike:
     """Data-driven (mortal_strike.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("mortal_strike.yaml", cls_name="MortalStrike")
 
 
 class MortalStrike2:
     """Data-driven (mortal_strike_2.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("mortal_strike_2.yaml", cls_name="MortalStrike2")
 
 
 class BattleCry:
     """Data-driven (battle_cry.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("battle_cry.yaml", cls_name="BattleCry")
 
 
 class Charge(Offensive):
     """Data-driven (charge.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("charge.yaml", cls_name="Charge")
 
@@ -196,9 +210,7 @@ class DevastatingThrow(Skill):
             result.message = "Devastating Throw needs a target.\n"
             return result
         if user.mana.current < self.cost:
-            result.message = (
-                f"{user.name} does not have enough mana to use Devastating Throw.\n"
-            )
+            result.message = f"{user.name} does not have enough mana to use Devastating Throw.\n"
             return result
         if not getattr(user, "can_be_disarmed", lambda: False)():
             result.message = f"{user.name} has no throwable main-hand weapon.\n"
@@ -222,9 +234,7 @@ class DevastatingThrow(Skill):
                 crits.append(crit)
                 if not target.is_alive():
                     break
-            messages.append(
-                f"{user.name}'s weapon completes its arc and returns to hand.\n"
-            )
+            messages.append(f"{user.name}'s weapon completes its arc and returns to hand.\n")
             message = "".join(messages)
             hit = any(hits)
             crit = max(crits, default=1)
@@ -238,9 +248,7 @@ class DevastatingThrow(Skill):
             disarm.active = True
             disarm.duration = -1
             disarm.source = self.name
-            message += (
-                f"{user.name} is disarmed after throwing the main-hand weapon.\n"
-            )
+            message += f"{user.name} is disarmed after throwing the main-hand weapon.\n"
         result.hit = hit
         result.crit = crit if crit > 1 else None
         result.damage = max(0, before - int(target.health.current))
@@ -270,10 +278,7 @@ class Momentum(Skill):
             return result
         main = user.equipment.get("Weapon")
         offhand = user.equipment.get("OffHand")
-        if (
-            getattr(main, "typ", None) != "Weapon"
-            or getattr(offhand, "typ", None) != "Weapon"
-        ):
+        if getattr(main, "typ", None) != "Weapon" or getattr(offhand, "typ", None) != "Weapon":
             result.message = "Momentum requires a weapon in each hand.\n"
             return result
         if user.mana.current < self.cost:
@@ -463,9 +468,7 @@ class Retort(_PassiveSkill):
     def __init__(self):
         super().__init__(
             "Retort",
-            (
-                "Passive: Add your Intelligence modifier to Parry chance."
-            ),
+            ("Passive: Add your Intelligence modifier to Parry chance."),
         )
 
 
@@ -544,8 +547,7 @@ class Frenzy(Skill):
         effect.extra = 1
         effect.source = self.name
         result.message = (
-            f"{user.name} enters a controlled frenzy for three turns and can "
-            "only attack.\n"
+            f"{user.name} enters a controlled frenzy for three turns and can " "only attack.\n"
         )
         return result
 
@@ -573,15 +575,11 @@ class RecklessOnslaught(Skill):
             return result
         if user.mana.current < self.cost:
             result.message = (
-                f"{user.name} does not have enough mana to use "
-                "Reckless Onslaught.\n"
+                f"{user.name} does not have enough mana to use " "Reckless Onslaught.\n"
             )
             return result
         if getattr(user.equipment.get("Weapon"), "typ", None) != "Weapon":
-            result.message = (
-                f"{user.name} needs a main-hand weapon to use "
-                "Reckless Onslaught.\n"
-            )
+            result.message = f"{user.name} needs a main-hand weapon to use " "Reckless Onslaught.\n"
             return result
 
         user.mana.current -= self.cost
@@ -594,20 +592,14 @@ class RecklessOnslaught(Skill):
         )
         for stat_name, modifier in (("Attack", 5), ("Defense", -5)):
             effect = user.stat_effects[stat_name]
-            effect.extra = (
-                int(effect.extra or 0) + modifier
-                if effect.active
-                else modifier
-            )
+            effect.extra = int(effect.extra or 0) + modifier if effect.active else modifier
             effect.active = True
             effect.duration = max(3, int(effect.duration or 0))
             effect.source = self.name
             result.effects_applied["Stat"].append(
                 f"{stat_name} {'Buff' if modifier > 0 else 'Debuff'}"
             )
-        message += (
-            f"{user.name}'s attack rises as their defense falls.\n"
-        )
+        message += f"{user.name}'s attack rises as their defense falls.\n"
         if getattr(user, "_last_attack_parried", False):
             prone = user.physical_effects["Prone"]
             prone.active = True
@@ -691,8 +683,7 @@ class Fatality(Skill):
         if target.is_alive():
             user._last_attack_parried = True
             message += (
-                f"{target.name} survives Fatality, parries {user.name}, "
-                "and counterattacks!\n"
+                f"{target.name} survives Fatality, parries {user.name}, " "and counterattacks!\n"
             )
             counter_message, _counter_hit, _counter_crit = target.weapon_damage(
                 user,
@@ -766,8 +757,7 @@ class TectonicRift(Skill):
             raw_damage = max(
                 1,
                 int(
-                    user.check_mod("weapon", enemy=target)
-                    + user.check_mod("offhand", enemy=target)
+                    user.check_mod("weapon", enemy=target) + user.check_mod("offhand", enemy=target)
                 ),
             )
             if getattr(target, "flying", False):
@@ -792,16 +782,18 @@ class TectonicRift(Skill):
                 prone.duration = max(2, int(prone.duration or 0))
                 prone.source = self.name
                 message += f"{target.name} is knocked prone by the rupture.\n"
-            group.add(CombatResult(
-                action=self.name,
-                actor=user,
-                target=target,
-                hit=damage > 0,
-                damage=damage,
-                message=message,
-                actor_id=battle_engine.current_actor_id,
-                target_id=target_id,
-            ))
+            group.add(
+                CombatResult(
+                    action=self.name,
+                    actor=user,
+                    target=target,
+                    hit=damage > 0,
+                    damage=damage,
+                    message=message,
+                    actor_id=battle_engine.current_actor_id,
+                    target_id=target_id,
+                )
+            )
         return group
 
 
@@ -849,10 +841,9 @@ class ThunderousVault(Skill):
             if hit:
                 total_damage += max(0, before - int(target.health.current))
         encounter = getattr(user, "_combat_encounter", None)
-        field_targets = [
-            member.enemy
-            for member in getattr(encounter, "living_members", ())
-        ] or [target]
+        field_targets = [member.enemy for member in getattr(encounter, "living_members", ())] or [
+            target
+        ]
         for enemy in field_targets:
             raw = max(1, int(user.stats.strength * 0.75))
             _hit, field_message, damage = enemy.damage_reduction(
@@ -1015,9 +1006,7 @@ class LanceSweep(Skill):
             result.message = "Lance Sweep requires a main-hand polearm.\n"
             return result
         if user.mana.current < self.cost:
-            result.message = (
-                f"{user.name} does not have enough mana to use Lance Sweep.\n"
-            )
+            result.message = f"{user.name} does not have enough mana to use Lance Sweep.\n"
             return result
 
         user.mana.current -= self.cost
@@ -1037,9 +1026,7 @@ class LanceSweep(Skill):
             speed.active = True
             speed.duration = max(2, int(speed.duration or 0))
             speed.extra = min(int(speed.extra or 0), -penalty)
-            message += (
-                f"{target.name}'s Speed falls by {penalty} for two turns.\n"
-            )
+            message += f"{target.name}'s Speed falls by {penalty} for two turns.\n"
         result.message = message
         return result
 
@@ -1075,9 +1062,7 @@ class DragonDive(Skill):
             result.message = "Dragon Dive requires Aerial Tempo.\n"
             return result
         if user.mana.current < self.cost:
-            result.message = (
-                f"{user.name} does not have enough mana to use Dragon Dive.\n"
-            )
+            result.message = f"{user.name} does not have enough mana to use Dragon Dive.\n"
             return result
 
         user.mana.current -= self.cost
@@ -1093,10 +1078,7 @@ class DragonDive(Skill):
         result.hit = hit
         result.crit = crit if crit > 1 else None
         result.damage = max(0, before - int(target.health.current))
-        message = (
-            f"{user.name} spends {stacks} Aerial Tempo on Dragon Dive.\n"
-            f"{message}"
-        )
+        message = f"{user.name} spends {stacks} Aerial Tempo on Dragon Dive.\n" f"{message}"
         if not hit:
             message += "Dragon Dive misses, but its Aerial Tempo is spent.\n"
         result.message = message
@@ -1107,9 +1089,7 @@ class _WeaponArt(Class):
     def __init__(self, name: str, weapon_type: str, description: str):
         super().__init__(name=name, description=description)
         art_level = (
-            int(name[-1])
-            if len(name) >= 2 and name[-2] == " " and name[-1] in {"2", "3"}
-            else 1
+            int(name[-1]) if len(name) >= 2 and name[-2] == " " and name[-1] in {"2", "3"} else 1
         )
         base_name = name[:-2] if art_level > 1 else name
         self.cost = {
@@ -1452,7 +1432,12 @@ class _MartialStrike(MartialArts):
             use_offhand=False,
             accuracy_modifier=accuracy,
         )
-        if hit and self.status_name and target.is_alive() and not target.has_status_protection(self.status_name):
+        if (
+            hit
+            and self.status_name
+            and target.is_alive()
+            and not target.has_status_protection(self.status_name)
+        ):
             apply_status = True
             duration = 2
             control_bonus = promotion_kits.ki_control_bonus(user, self.name)
@@ -1475,13 +1460,17 @@ class _MartialStrike(MartialArts):
 
 class Uppercut(_MartialStrike):
     damage_mod = 1.25
-    def __init__(self): super().__init__("Uppercut", "A rising martial strike that deals increased damage.", 8)
+
+    def __init__(self):
+        super().__init__("Uppercut", "A rising martial strike that deals increased damage.", 8)
 
 
 class Headbutt(_MartialStrike):
     status_name = "Stun"
     damage_mod = 1.0
-    def __init__(self): super().__init__("Headbutt", "A close strike that can stun.", 6)
+
+    def __init__(self):
+        super().__init__("Headbutt", "A close strike that can stun.", 6)
 
 
 class DrunkenBrawler(_PassiveSkill):
@@ -1493,7 +1482,8 @@ class DrunkenBrawler(_PassiveSkill):
 
 
 class Hyakuretsukyaku(_MartialStrike):
-    def __init__(self): super().__init__("Hyakuretsukyaku", "A rushing flurry of kicks.", 14)
+    def __init__(self):
+        super().__init__("Hyakuretsukyaku", "A rushing flurry of kicks.", 14)
 
     def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
         MartialArts.use(self, user, target, **kwargs)
@@ -1521,18 +1511,24 @@ class Hyakuretsukyaku(_MartialStrike):
 class SpinningBackElbow(_MartialStrike):
     status_name = "Blind"
     damage_mod = 1.2
-    def __init__(self): super().__init__("Spinning Back Elbow", "A turning blow that can blind.", 10)
+
+    def __init__(self):
+        super().__init__("Spinning Back Elbow", "A turning blow that can blind.", 10)
 
 
 class Suplex(_MartialStrike):
     status_name = "Prone"
     damage_mod = 1.35
-    def __init__(self): super().__init__("Suplex", "A crushing throw that can knock the target prone.", 12)
+
+    def __init__(self):
+        super().__init__("Suplex", "A crushing throw that can knock the target prone.", 12)
 
 
 class Hadouken(_MartialStrike):
     damage_mod = 1.4
-    def __init__(self): super().__init__("Hadouken", "A focused chi strike delivered at range.", 16)
+
+    def __init__(self):
+        super().__init__("Hadouken", "A focused chi strike delivered at range.", 16)
 
 
 # Defensive skills
@@ -1619,7 +1615,8 @@ class StealSpell2(Class):
             return f"{user.name} cannot permanently steal spells.\n"
         spell_classes = spell_stealer.eligible_spell_classes(target)
         spell_classes = [
-            spell_cls for spell_cls in spell_classes
+            spell_cls
+            for spell_cls in spell_classes
             if spell_cls().name not in user.spellbook.get("Spells", {})
         ]
         if not spell_classes:
@@ -1789,36 +1786,45 @@ class _ComposeSong(Class):
 
 
 class ComposeBattleHymn(_ComposeSong):
-    def __init__(self): super().__init__("Compose Battle Hymn", "BattleHymnSheet")
+    def __init__(self):
+        super().__init__("Compose Battle Hymn", "BattleHymnSheet")
 
 
 class ComposeOdeToTheRamparts(_ComposeSong):
-    def __init__(self): super().__init__("Compose Ode to the Ramparts", "RampartsOdeSheet")
+    def __init__(self):
+        super().__init__("Compose Ode to the Ramparts", "RampartsOdeSheet")
 
 
 class ComposeSymphonyOfDisfunction(_ComposeSong):
-    def __init__(self): super().__init__("Compose Symphony of Disfunction", "DysfunctionSymphonySheet")
+    def __init__(self):
+        super().__init__("Compose Symphony of Disfunction", "DysfunctionSymphonySheet")
 
 
 class ComposeLowDefenseRhapsody(_ComposeSong):
-    def __init__(self): super().__init__("Compose Low-defense-ian Rhapsody", "LowDefenseRhapsodySheet")
+    def __init__(self):
+        super().__init__("Compose Low-defense-ian Rhapsody", "LowDefenseRhapsodySheet")
 
 
 class ComposeSlowRide(_ComposeSong):
-    def __init__(self): super().__init__("Compose Slow Ride", "SlowRideSheet")
+    def __init__(self):
+        super().__init__("Compose Slow Ride", "SlowRideSheet")
 
 
 class ComposeBonesThugsHarmony(_ComposeSong):
-    def __init__(self): super().__init__("Compose Bones, Thugs, and Harmony", "BonesThugsHarmonySheet")
+    def __init__(self):
+        super().__init__("Compose Bones, Thugs, and Harmony", "BonesThugsHarmonySheet")
 
 
 class ComposeScoresAndScoresScore(_ComposeSong):
-    def __init__(self): super().__init__("Compose Scores and Scores Score", "ScoresAndScoresScoreSheet")
+    def __init__(self):
+        super().__init__("Compose Scores and Scores Score", "ScoresAndScoresScoreSheet")
 
 
 class ComposeGoldTrigger(_ComposeSong):
-    def __init__(self): super().__init__("Compose Gold Trigger", "GoldTriggerSheet")
+    def __init__(self):
+        super().__init__("Compose Gold Trigger", "GoldTriggerSheet")
 
 
 class ComposeChorusTime(_ComposeSong):
-    def __init__(self): super().__init__("Compose Chorus Time", "ChorusTimeSheet")
+    def __init__(self):
+        super().__init__("Compose Chorus Time", "ChorusTimeSheet")

@@ -32,7 +32,6 @@ from .progression import (
 from .progression_manifest import EXTERNAL_ACQUISITION_ABILITIES
 from .races import races_dict
 
-
 OUTPUT_DIRECTORY = Path(__file__).parents[2] / "docs" / "spreadsheets"
 RESISTANCE_TYPES = (
     "Fire",
@@ -106,10 +105,20 @@ def _render_character_exports() -> dict[Path, str]:
     exports: dict[Path, str] = {}
     powers = _power_up_names()
     class_headers = [
-        "Name", "Stage", "Parent", "Base Class", "Promotions", "Power Core Ability",
+        "Name",
+        "Stage",
+        "Parent",
+        "Base Class",
+        "Promotions",
+        "Power Core Ability",
         *(name for name, _attribute in STAT_FIELDS),
         *(name for name, _attribute in COMBAT_FIELDS),
-        "Weapons", "Off Hands", "Armor", "Helmets", "Starting Equipment", "Description",
+        "Weapons",
+        "Off Hands",
+        "Armor",
+        "Helmets",
+        "Starting Equipment",
+        "Description",
     ]
     class_rows = []
     for class_name, (constructor, stage, parent) in sorted(
@@ -118,64 +127,89 @@ def _render_character_exports() -> dict[Path, str]:
     ):
         job = constructor()
         restrictions = job.restrictions
-        class_rows.append((
-            class_name,
-            _stage_name(stage),
-            parent or "",
-            _base_class(class_name),
-            "; ".join(CLASS_CHILDREN.get(class_name, ())),
-            powers.get(class_name, ""),
-            *(getattr(job, attribute) for _name, attribute in (
-                ("Strength", "str_plus"),
-                ("Intelligence", "int_plus"),
-                ("Wisdom", "wis_plus"),
-                ("Constitution", "con_plus"),
-                ("Charisma", "cha_plus"),
-                ("Dexterity", "dex_plus"),
-            )),
-            *(getattr(job, attribute) for _name, attribute in (
-                ("Attack", "att_plus"),
-                ("Defense", "def_plus"),
-                ("Magic", "magic_plus"),
-                ("Magic Defense", "magic_def_plus"),
-            )),
-            "; ".join(restrictions.get("Weapon", ())),
-            "; ".join(restrictions.get("OffHand", ())),
-            "; ".join(restrictions.get("Armor", ())),
-            "; ".join(restrictions.get("Helmet", ())),
-            "; ".join(
-                f"{slot}: {equipment.name}"
-                for slot, equipment in job.equipment.items()
-                if not getattr(equipment, "unequip", False)
-            ),
-            job.description,
-        ))
+        class_rows.append(
+            (
+                class_name,
+                _stage_name(stage),
+                parent or "",
+                _base_class(class_name),
+                "; ".join(CLASS_CHILDREN.get(class_name, ())),
+                powers.get(class_name, ""),
+                *(
+                    getattr(job, attribute)
+                    for _name, attribute in (
+                        ("Strength", "str_plus"),
+                        ("Intelligence", "int_plus"),
+                        ("Wisdom", "wis_plus"),
+                        ("Constitution", "con_plus"),
+                        ("Charisma", "cha_plus"),
+                        ("Dexterity", "dex_plus"),
+                    )
+                ),
+                *(
+                    getattr(job, attribute)
+                    for _name, attribute in (
+                        ("Attack", "att_plus"),
+                        ("Defense", "def_plus"),
+                        ("Magic", "magic_plus"),
+                        ("Magic Defense", "magic_def_plus"),
+                    )
+                ),
+                "; ".join(restrictions.get("Weapon", ())),
+                "; ".join(restrictions.get("OffHand", ())),
+                "; ".join(restrictions.get("Armor", ())),
+                "; ".join(restrictions.get("Helmet", ())),
+                "; ".join(
+                    f"{slot}: {equipment.name}"
+                    for slot, equipment in job.equipment.items()
+                    if not getattr(equipment, "unequip", False)
+                ),
+                job.description,
+            )
+        )
     exports[Path("characters/classes.csv")] = _csv_text(class_headers, class_rows)
 
     restriction_headers = ["Class", "Stage", "Weapon", "OffHand", "Armor", "Helmet"]
     restriction_rows = []
     for class_name, (constructor, stage, _parent) in sorted(CLASS_DETAILS.items()):
         restrictions = constructor().restrictions
-        restriction_rows.append((
-            class_name,
-            _stage_name(stage),
-            "; ".join(restrictions.get("Weapon", ())),
-            "; ".join(restrictions.get("OffHand", ())),
-            "; ".join(restrictions.get("Armor", ())),
-            "; ".join(restrictions.get("Helmet", ())),
-        ))
+        restriction_rows.append(
+            (
+                class_name,
+                _stage_name(stage),
+                "; ".join(restrictions.get("Weapon", ())),
+                "; ".join(restrictions.get("OffHand", ())),
+                "; ".join(restrictions.get("Armor", ())),
+                "; ".join(restrictions.get("Helmet", ())),
+            )
+        )
     exports[Path("characters/equipment-restrictions.csv")] = _csv_text(
         restriction_headers,
         restriction_rows,
     )
 
     node_headers = [
-        "Class", "Stage", "Parent", "Power Core Ability",
+        "Class",
+        "Stage",
+        "Parent",
+        "Power Core Ability",
         *(f"{name} Bonus" for name, _attribute in STAT_FIELDS),
         *(f"{name} Bonus" for name, _attribute in COMBAT_FIELDS),
-        "Weapons", "Off Hands", "Armor", "Helmets", "Class Description",
-        "Node ID", "Lane", "Column", "Row", "Kind", "Name", "Cost", "Level",
-        "Prerequisites", "Node Description",
+        "Weapons",
+        "Off Hands",
+        "Armor",
+        "Helmets",
+        "Class Description",
+        "Node ID",
+        "Lane",
+        "Column",
+        "Row",
+        "Kind",
+        "Name",
+        "Cost",
+        "Level",
+        "Prerequisites",
+        "Node Description",
     ]
     for class_name, tree in sorted(ABILITY_TREES.items()):
         constructor, stage, parent = CLASS_DETAILS[class_name]
@@ -204,19 +238,21 @@ def _render_character_exports() -> dict[Path, str]:
         )
         node_rows = []
         for node in sorted(tree.nodes, key=lambda entry: (entry.position[0], entry.position[1])):
-            node_rows.append((
-                *class_prefix,
-                node.id,
-                node.lane,
-                node.position[0],
-                node.position[1],
-                node.kind.value,
-                node.name,
-                node.cost,
-                effective_node_level_requirement(node, class_name) or "",
-                "; ".join(node.prerequisites),
-                node.payload.get("description", ""),
-            ))
+            node_rows.append(
+                (
+                    *class_prefix,
+                    node.id,
+                    node.lane,
+                    node.position[0],
+                    node.position[1],
+                    node.kind.value,
+                    node.name,
+                    node.cost,
+                    effective_node_level_requirement(node, class_name) or "",
+                    "; ".join(node.prerequisites),
+                    node.payload.get("description", ""),
+                )
+            )
         exports[Path(f"characters/classes/{_slug(class_name)}.csv")] = _csv_text(
             node_headers,
             node_rows,
@@ -225,27 +261,36 @@ def _render_character_exports() -> dict[Path, str]:
     race_headers = [
         "Race",
         *(name for name, _attribute in STAT_FIELDS),
-        "Base Attack", "Base Defense", "Base Magic", "Base Magic Defense",
+        "Base Attack",
+        "Base Defense",
+        "Base Magic",
+        "Base Magic Defense",
         *(f"{name} Resistance" for name in RESISTANCE_TYPES),
-        "Virtue", "Virtue Effect", "Sin", "Sin Effect", "Description",
+        "Virtue",
+        "Virtue Effect",
+        "Sin",
+        "Sin Effect",
+        "Description",
     ]
     race_rows = []
     for race_name, constructor in races_dict.items():
         race = constructor()
-        race_rows.append((
-            race_name,
-            *(getattr(race, attribute) for _name, attribute in STAT_FIELDS),
-            race.base_attack,
-            race.base_defense,
-            race.base_magic,
-            race.base_magic_def,
-            *(race.resistance.get(name, 0) for name in RESISTANCE_TYPES),
-            race.virtue.name,
-            race.virtue.description,
-            race.sin.name,
-            race.sin.description,
-            race.description,
-        ))
+        race_rows.append(
+            (
+                race_name,
+                *(getattr(race, attribute) for _name, attribute in STAT_FIELDS),
+                race.base_attack,
+                race.base_defense,
+                race.base_magic,
+                race.base_magic_def,
+                *(race.resistance.get(name, 0) for name in RESISTANCE_TYPES),
+                race.virtue.name,
+                race.virtue.description,
+                race.sin.name,
+                race.sin.description,
+                race.description,
+            )
+        )
         race_prefix = (
             race_name,
             *(getattr(race, attribute) for _name, attribute in STAT_FIELDS),
@@ -285,16 +330,18 @@ def _render_character_exports() -> dict[Path, str]:
             *companion.spellbook.get("Spells", {}).keys(),
             *companion.spellbook.get("Skills", {}).keys(),
         ]
-        companion_rows.append((
-            companion.name,
-            name,
-            category,
-            getattr(companion, "spec", ""),
-            companion.health.max,
-            companion.mana.max,
-            "; ".join(specials),
-            getattr(companion, "description", ""),
-        ))
+        companion_rows.append(
+            (
+                companion.name,
+                name,
+                category,
+                getattr(companion, "spec", ""),
+                companion.health.max,
+                companion.mana.max,
+                "; ".join(specials),
+                getattr(companion, "description", ""),
+            )
+        )
     exports[Path("characters/companions.csv")] = _csv_text(
         ("Name", "Class ID", "Category", "Specialization", "HP", "MP", "Specials", "Description"),
         sorted(companion_rows),
@@ -328,36 +375,54 @@ def _item_rows() -> list[tuple[Any, ...]]:
     finally:
         random.setstate(random_state)
     for class_id, item, _constructor in instances:
-        rows.append((
-            item.name,
-            class_id,
-            getattr(item, "typ", ""),
-            item.subtyp,
-            item.value,
-            item.rarity,
-            item.weight,
-            getattr(item, "damage", ""),
-            getattr(item, "crit_chance", ""),
-            getattr(item, "handed", ""),
-            getattr(item, "off", ""),
-            getattr(item, "armor", ""),
-            getattr(item, "mod", ""),
-            getattr(item, "element", ""),
-            "; ".join(getattr(item, "restriction", ())),
-            "; ".join(getattr(item, "restricted_against", ())),
-            getattr(item, "ultimate", False),
-            getattr(item, "random_drop", True),
-            getattr(item, "unequip", False),
-            item.description,
-        ))
+        rows.append(
+            (
+                item.name,
+                class_id,
+                getattr(item, "typ", ""),
+                item.subtyp,
+                item.value,
+                item.rarity,
+                item.weight,
+                getattr(item, "damage", ""),
+                getattr(item, "crit_chance", ""),
+                getattr(item, "handed", ""),
+                getattr(item, "off", ""),
+                getattr(item, "armor", ""),
+                getattr(item, "mod", ""),
+                getattr(item, "element", ""),
+                "; ".join(getattr(item, "restriction", ())),
+                "; ".join(getattr(item, "restricted_against", ())),
+                getattr(item, "ultimate", False),
+                getattr(item, "random_drop", True),
+                getattr(item, "unequip", False),
+                item.description,
+            )
+        )
     return sorted(rows, key=lambda row: (str(row[2]), str(row[3]), str(row[0]), str(row[1])))
 
 
 def _render_item_exports() -> dict[Path, str]:
     headers = (
-        "Name", "Class ID", "Type", "Subtype", "Value", "Rarity", "Weight", "Damage",
-        "Critical Chance", "Hands", "Offhand Eligible", "Armor", "Modifier", "Element",
-        "Restricted To", "Restricted Against", "Ultimate", "Random Drop", "Unequipped",
+        "Name",
+        "Class ID",
+        "Type",
+        "Subtype",
+        "Value",
+        "Rarity",
+        "Weight",
+        "Damage",
+        "Critical Chance",
+        "Hands",
+        "Offhand Eligible",
+        "Armor",
+        "Modifier",
+        "Element",
+        "Restricted To",
+        "Restricted Against",
+        "Ultimate",
+        "Random Drop",
+        "Unequipped",
         "Description",
     )
     rows = _item_rows()
@@ -488,14 +553,22 @@ def _enemy_records() -> list[dict[str, Any]]:
             high = _extreme_enemy(constructor, high=True)
         except (AttributeError, IndexError, KeyError, TypeError, ValueError):
             continue
-        spell_names = tuple(sorted({
-            *low.spellbook.get("Spells", {}).keys(),
-            *high.spellbook.get("Spells", {}).keys(),
-        }))
-        skill_names = tuple(sorted({
-            *low.spellbook.get("Skills", {}).keys(),
-            *high.spellbook.get("Skills", {}).keys(),
-        }))
+        spell_names = tuple(
+            sorted(
+                {
+                    *low.spellbook.get("Spells", {}).keys(),
+                    *high.spellbook.get("Spells", {}).keys(),
+                }
+            )
+        )
+        skill_names = tuple(
+            sorted(
+                {
+                    *low.spellbook.get("Skills", {}).keys(),
+                    *high.spellbook.get("Skills", {}).keys(),
+                }
+            )
+        )
         record = {
             "Name": low.name,
             "Class ID": class_id,
@@ -548,15 +621,31 @@ def _enemy_records() -> list[dict[str, Any]]:
 def _render_enemy_exports() -> dict[Path, str]:
     records = _enemy_records()
     headers = (
-        "Name", "Class ID", "Type", "Floors", "Locations", "Funhouse", "Boss",
-        "HP Min", "HP Max", "MP Min", "MP Max", "Experience Min", "Experience Max",
+        "Name",
+        "Class ID",
+        "Type",
+        "Floors",
+        "Locations",
+        "Funhouse",
+        "Boss",
+        "HP Min",
+        "HP Max",
+        "MP Min",
+        "MP Max",
+        "Experience Min",
+        "Experience Max",
         *(field for label, _attribute in STAT_FIELDS for field in (f"{label} Min", f"{label} Max")),
         *(
             field
             for label, _attribute in COMBAT_FIELDS
             for field in (f"{label} Min", f"{label} Max")
         ),
-        "Promotion Level", "Spells", "Skills", "Equipment", "Drops", "Status Immunities",
+        "Promotion Level",
+        "Spells",
+        "Skills",
+        "Equipment",
+        "Drops",
+        "Status Immunities",
         *(f"{name} Resistance" for name in RESISTANCE_TYPES),
     )
 
@@ -583,14 +672,31 @@ def _render_enemy_exports() -> dict[Path, str]:
         ),
     )
     natural_rows = [
-        row for row in _item_rows()
+        row
+        for row in _item_rows()
         if row[2] in {"Weapon", "Armor", "OffHand"} and row[3] == "Natural"
     ]
     exports[Path("enemies/natural-equipment.csv")] = _csv_text(
         (
-            "Name", "Class ID", "Type", "Subtype", "Value", "Rarity", "Weight", "Damage",
-            "Critical Chance", "Hands", "Offhand Eligible", "Armor", "Modifier", "Element",
-            "Restricted To", "Restricted Against", "Ultimate", "Random Drop", "Unequipped",
+            "Name",
+            "Class ID",
+            "Type",
+            "Subtype",
+            "Value",
+            "Rarity",
+            "Weight",
+            "Damage",
+            "Critical Chance",
+            "Hands",
+            "Offhand Eligible",
+            "Armor",
+            "Modifier",
+            "Element",
+            "Restricted To",
+            "Restricted Against",
+            "Ultimate",
+            "Random Drop",
+            "Unequipped",
             "Description",
         ),
         natural_rows,
@@ -611,9 +717,25 @@ def _render_special_exports() -> dict[Path, str]:
     class_sources, books = _catalog_ability_sources()
     enemy_sources = _enemy_ability_sources()
     headers = (
-        "Name", "Class ID", "Book", "Type", "Subtype", "School", "Cost", "Resource",
-        "Damage Modifier", "Critical Chance", "Target Scope", "Passive", "Combat Only", "Rank",
-        "Class Sources", "Enemy Sources", "External Acquisition", "Modifies", "Description",
+        "Name",
+        "Class ID",
+        "Book",
+        "Type",
+        "Subtype",
+        "School",
+        "Cost",
+        "Resource",
+        "Damage Modifier",
+        "Critical Chance",
+        "Target Scope",
+        "Passive",
+        "Combat Only",
+        "Rank",
+        "Class Sources",
+        "Enemy Sources",
+        "External Acquisition",
+        "Modifies",
+        "Description",
     )
     rows_by_book: dict[str, list[tuple[Any, ...]]] = defaultdict(list)
     for class_id, ability, _constructor in _ability_instances():
@@ -641,8 +763,7 @@ def _render_special_exports() -> dict[Path, str]:
             getattr(ability, "rank", ""),
             "; ".join(sorted(class_sources.get(class_id, ()))),
             "; ".join(sorted(enemy_sources.get(ability.name, ()))),
-            ability.name in EXTERNAL_ACQUISITION_ABILITIES
-            or ability.name in LEARNABLE_SPELL_RANKS,
+            ability.name in EXTERNAL_ACQUISITION_ABILITIES or ability.name in LEARNABLE_SPELL_RANKS,
             "; ".join(getattr(ability, "modifies", ())),
             ability.description,
         )
@@ -662,32 +783,45 @@ def _render_special_exports() -> dict[Path, str]:
 def _render_quest_exports() -> dict[Path, str]:
     quest_data = load_json_data("quests.json")
     headers = (
-        "Quest", "Story", "Level", "Giver", "Type", "Objective", "Total", "Rewards",
-        "Reward Amount", "Experience", "Start Text", "Help Text", "End Text",
+        "Quest",
+        "Story",
+        "Level",
+        "Giver",
+        "Type",
+        "Objective",
+        "Total",
+        "Rewards",
+        "Reward Amount",
+        "Experience",
+        "Start Text",
+        "Help Text",
+        "End Text",
     )
     rows = []
     for giver, story_types in quest_data.items():
         for story_type, levels in story_types.items():
             for level, quests in levels.items():
                 for quest_name, quest in quests.items():
-                    rows.append((
-                        quest_name,
-                        story_type,
-                        level,
-                        giver,
-                        quest.get("Type", ""),
-                        quest.get("What", ""),
-                        quest.get("Total", ""),
-                        "; ".join(
-                            reward if isinstance(reward, str) else reward.__name__
-                            for reward in quest.get("Reward", ())
-                        ),
-                        quest.get("Reward Number", ""),
-                        quest.get("Experience", ""),
-                        quest.get("Start Text", ""),
-                        quest.get("Help Text", ""),
-                        quest.get("End Text", ""),
-                    ))
+                    rows.append(
+                        (
+                            quest_name,
+                            story_type,
+                            level,
+                            giver,
+                            quest.get("Type", ""),
+                            quest.get("What", ""),
+                            quest.get("Total", ""),
+                            "; ".join(
+                                reward if isinstance(reward, str) else reward.__name__
+                                for reward in quest.get("Reward", ())
+                            ),
+                            quest.get("Reward Number", ""),
+                            quest.get("Experience", ""),
+                            quest.get("Start Text", ""),
+                            quest.get("Help Text", ""),
+                            quest.get("End Text", ""),
+                        )
+                    )
     rows.sort(key=lambda row: (int(row[2]), row[1], row[3], row[0]))
     return {Path("quests/quests.csv"): _csv_text(headers, rows)}
 

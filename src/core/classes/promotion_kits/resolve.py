@@ -8,7 +8,6 @@ from typing import Any
 from .meters import _claim_action, _class_ring_data
 from .state import class_name, combat_state
 
-
 RESOLVE_SPEND_ABILITIES: tuple[dict[str, Any], ...] = (
     {
         "name": "Hold the Line",
@@ -171,9 +170,7 @@ def record_resolve_mastery(
     message = f"{character.name}'s defensive mastery deepens.\n"
     if progress == required:
         if class_name(character) == "Stalwart Defender":
-            message += (
-                f"{character.name} discovers the {entry['name']} Resolve Surge!\n"
-            )
+            message += f"{character.name} discovers the {entry['name']} Resolve Surge!\n"
         else:
             message += (
                 f"{character.name} discovers {entry['name']}; the technique awaits "
@@ -215,23 +212,22 @@ def resolve_surge_rows(character: Any) -> list[dict[str, Any]]:
         required = int(entry["required_uses"])
         learned = progress >= required
         unlocked = class_name(character) == "Stalwart Defender" and learned
-        rows.append({
-            **entry,
-            "progress": progress,
-            "required": required,
-            "learned": learned,
-            "unlocked": unlocked,
-            "available": unlocked and full,
-        })
+        rows.append(
+            {
+                **entry,
+                "progress": progress,
+                "required": required,
+                "learned": learned,
+                "unlocked": unlocked,
+                "available": unlocked and full,
+            }
+        )
     return rows
 
 
 def resolve_spend_rows(character: Any) -> list[dict[str, Any]]:
     learned = set(getattr(character, "spellbook", {}).get("Skills", {}) or {})
-    return [
-        {**entry, "unlocked": entry["name"] in learned}
-        for entry in RESOLVE_SPEND_ABILITIES
-    ]
+    return [{**entry, "unlocked": entry["name"] in learned} for entry in RESOLVE_SPEND_ABILITIES]
 
 
 def _spend_resolve(
@@ -279,9 +275,8 @@ def build_resolve(character: Any, amount: int, reason: str = "") -> str:
     try:
         from ...progression import has_talent
 
-        if (
-            has_talent(character, "stalwart.unbroken-wall")
-            and getattr(character.class_effects.get("Last Stand"), "active", False)
+        if has_talent(character, "stalwart.unbroken-wall") and getattr(
+            character.class_effects.get("Last Stand"), "active", False
         ):
             gain = max(1, int(round(gain * 1.5)))
     except Exception:
@@ -299,9 +294,7 @@ def build_resolve(character: Any, amount: int, reason: str = "") -> str:
 
 def tower_offense_after_shield_slam(character: Any, damage: int) -> str:
     """Generate damage-scaled Resolve after Shield Slam deals damage."""
-    if damage <= 0 or "Tower Offense" not in getattr(
-        character, "spellbook", {}
-    ).get("Skills", {}):
+    if damage <= 0 or "Tower Offense" not in getattr(character, "spellbook", {}).get("Skills", {}):
         return ""
     gain = min(
         TOWER_OFFENSE_GAIN_CAP,
@@ -325,9 +318,7 @@ def generator_shield_after_ricochet(
     stunned: bool,
 ) -> str:
     """Generate Resolve for one Shield Ricochet impact."""
-    if not hit or "Generator Shield" not in getattr(
-        character, "spellbook", {}
-    ).get("Skills", {}):
+    if not hit or "Generator Shield" not in getattr(character, "spellbook", {}).get("Skills", {}):
         return ""
     gain = GENERATOR_SHIELD_GAIN * (2 if stunned else 1)
     return build_resolve(character, gain, "Generator Shield")
@@ -335,9 +326,7 @@ def generator_shield_after_ricochet(
 
 def battle_determination_after_cry(character: Any) -> str:
     """Generate Resolve when a trained Stalwart Defender uses Battle Cry."""
-    if "Battle Determination" not in getattr(
-        character, "spellbook", {}
-    ).get("Skills", {}):
+    if "Battle Determination" not in getattr(character, "spellbook", {}).get("Skills", {}):
         return ""
     return build_resolve(character, 20, "Battle Determination")
 
@@ -449,9 +438,7 @@ def bulwark_guard(character: Any) -> str:
         "turns": 1,
         "source": "Bulwark Guard",
     }
-    message += (
-        f"{character.name} raises a {barrier}-point Bulwark Guard for one turn.\n"
-    )
+    message += f"{character.name} raises a {barrier}-point Bulwark Guard for one turn.\n"
     message += record_resolve_mastery(
         character,
         "citadel_aegis",
@@ -482,10 +469,7 @@ def purge_weakness(character: Any) -> str:
                 continue
             if collection_name == "magic_effects" and name not in negative_magic:
                 continue
-            if (
-                collection_name == "stat_effects"
-                and float(getattr(effect, "extra", 0) or 0) >= 0
-            ):
+            if collection_name == "stat_effects" and float(getattr(effect, "extra", 0) or 0) >= 0:
                 continue
             if collection_name == "status_effects" and name in {"Berserk", "Peaceful"}:
                 continue
@@ -521,9 +505,7 @@ def boast(character: Any) -> str:
     state = combat_state(character)
     state["boast_turns"] = 3
     state["boast_starting_pool"] = amount
-    message += (
-        f"{character.name}'s Boast grants {amount} temporary health for three turns.\n"
-    )
+    message += f"{character.name}'s Boast grants {amount} temporary health for three turns.\n"
     message += record_resolve_mastery(
         character,
         "last_bastion",
@@ -556,9 +538,7 @@ def focused_assault_accuracy(character: Any) -> float:
 
 def focused_assault_critical_multiplier(character: Any, multiplier: float) -> float:
     """Increase only the bonus portion of critical weapon damage."""
-    if multiplier <= 1 or not int(
-        combat_state(character).get("focused_assault_turns", 0) or 0
-    ):
+    if multiplier <= 1 or not int(combat_state(character).get("focused_assault_turns", 0) or 0):
         return multiplier
     return 1 + ((multiplier - 1) * 1.30)
 
@@ -589,9 +569,7 @@ def stronghold_melee_reduction(
         return damage, ""
     reduced = max(1, int(damage * 0.30)) if damage > 0 else 0
     message = (
-        f"{character.name}'s Stronghold reduces melee damage by {reduced}.\n"
-        if reduced
-        else ""
+        f"{character.name}'s Stronghold reduces melee damage by {reduced}.\n" if reduced else ""
     )
     if (
         attacker is not None
@@ -629,11 +607,13 @@ def repercussion(
         target_ids=tuple(target_id for target_id, _target in targets),
     )
     if not targets:
-        group.add(CombatResult(
-            action="Repercussion",
-            actor=character,
-            message="There are no targets for Repercussion.\n",
-        ))
+        group.add(
+            CombatResult(
+                action="Repercussion",
+                actor=character,
+                message="There are no targets for Repercussion.\n",
+            )
+        )
         return group
     ok, message, _data = _spend_resolve(character, 30, "Repercussion")
     if not ok:
@@ -679,16 +659,18 @@ def repercussion(
             attack_source="special_attack",
             source="ability",
         )
-        group.add(CombatResult(
-            action="Repercussion",
-            actor=character,
-            target=target,
-            actor_id=battle_engine.current_actor_id,
-            target_id=target_id,
-            hit=damage > 0,
-            damage=damage,
-            message=hit_message,
-        ))
+        group.add(
+            CombatResult(
+                action="Repercussion",
+                actor=character,
+                target=target,
+                actor_id=battle_engine.current_actor_id,
+                target_id=target_id,
+                hit=damage > 0,
+                damage=damage,
+                message=hit_message,
+            )
+        )
     return group
 
 
@@ -721,8 +703,7 @@ def spell_reflection_compatible(spell: Any) -> bool:
     if bool(getattr(spell, "area", False) or getattr(spell, "area_effect", False)):
         return False
     target_mode = str(
-        getattr(spell, "target_mode", getattr(spell, "target_type", "target"))
-        or "target"
+        getattr(spell, "target_mode", getattr(spell, "target_type", "target")) or "target"
     ).lower()
     if target_mode in {"all", "all_enemies", "area", "aoe", "self"}:
         return False
@@ -736,8 +717,7 @@ def spell_reflection_compatible(spell: Any) -> bool:
 def spell_block_ready(character: Any) -> bool:
     """Return whether a prepared projectile block can trigger."""
     return bool(
-        _has_shield(character)
-        and int(combat_state(character).get("spell_block_turns", 0) or 0) > 0
+        _has_shield(character) and int(combat_state(character).get("spell_block_turns", 0) or 0) > 0
     )
 
 
@@ -920,9 +900,7 @@ def _use_resolve_surge(
         duration = 3
         targets = ()
         if battle_engine is not None:
-            targets = tuple(
-                member.enemy for member in battle_engine.encounter.living_members
-            )
+            targets = tuple(member.enemy for member in battle_engine.encounter.living_members)
         combat_state(character)["citadel_aegis"] = {
             "turns": duration,
             "absorbed": 0,
@@ -942,9 +920,7 @@ def _use_resolve_surge(
         if crushing:
             damage_mod = 1.60
         attacks = 4 if "Double Payback" in skills else 3
-        messages = [
-            f"{character.name} unleashes Ironwall Revenge in {attacks} strikes.\n"
-        ]
+        messages = [f"{character.name} unleashes Ironwall Revenge in {attacks} strikes.\n"]
         for _index in range(attacks):
             attack_message, hit, _crit = character.weapon_damage(
                 target,

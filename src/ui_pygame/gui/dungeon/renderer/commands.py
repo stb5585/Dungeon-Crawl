@@ -12,7 +12,9 @@ class RendererCommandMixin:
     def _is_localized_current_floor_tile(depth: int, tile) -> bool:
         return depth == 1 and "UndergroundSpring" in type(tile).__name__
 
-    def _build_center_floor_commands(self, depth: int, zone, texture_key: str, darkness: float) -> list[RenderCommand]:
+    def _build_center_floor_commands(
+        self, depth: int, zone, texture_key: str, darkness: float
+    ) -> list[RenderCommand]:
         return self._build_center_surface_commands(
             depth=depth,
             panel_id=f"d{depth}:center_floor",
@@ -23,7 +25,9 @@ class RendererCommandMixin:
             family="floor",
         )
 
-    def _build_center_ceiling_commands(self, depth: int, zone, texture_key: str, darkness: float) -> list[RenderCommand]:
+    def _build_center_ceiling_commands(
+        self, depth: int, zone, texture_key: str, darkness: float
+    ) -> list[RenderCommand]:
         return self._build_center_surface_commands(
             depth=depth,
             panel_id=f"d{depth}:center_ceiling",
@@ -52,7 +56,9 @@ class RendererCommandMixin:
             has_override = self.textures.has_ceiling_slot_override(panel_id)
 
         slot_spans = self.textures.describe_surface_slot_spans(panel_id, texture_key=texture_key)
-        has_overscan_slots = any(start_ratio < 0.0 or end_ratio > 1.0 for start_ratio, end_ratio in slot_spans)
+        has_overscan_slots = any(
+            start_ratio < 0.0 or end_ratio > 1.0 for start_ratio, end_ratio in slot_spans
+        )
         should_split_slots = bool(slot_ids) and (has_override or has_overscan_slots)
 
         if not should_split_slots:
@@ -161,7 +167,11 @@ class RendererCommandMixin:
         if next_zone is None:
             return []
 
-        if self._opening_tile_blocks_view(opening_tile) or forward_tile is None or is_wall(forward_tile):
+        if (
+            self._opening_tile_blocks_view(opening_tile)
+            or forward_tile is None
+            or is_wall(forward_tile)
+        ):
             return []
 
         commands: list[RenderCommand] = []
@@ -186,11 +196,13 @@ class RendererCommandMixin:
 
         ceiling_key = self.textures.get_ceiling_key(forward_tile)
         if ceiling_key != "ceiling" and "LadderUp" not in type(forward_tile).__name__:
-            ceiling_quad, ceiling_depth, ceiling_panel_id = self._get_visible_side_special_ceiling_geometry(
-                zone=zone,
-                side=side,
-                depth=visible_depth.depth,
-                next_zone=next_zone,
+            ceiling_quad, ceiling_depth, ceiling_panel_id = (
+                self._get_visible_side_special_ceiling_geometry(
+                    zone=zone,
+                    side=side,
+                    depth=visible_depth.depth,
+                    next_zone=next_zone,
+                )
             )
             commands.append(
                 RenderCommand(
@@ -397,7 +409,9 @@ class RendererCommandMixin:
                         depth=depth,
                         order=3,
                         panel_id=f"d{depth}:{side}_wall",
-                        texture_key="door_open" if getattr(side_tile, "open", False) else "door_closed",
+                        texture_key=(
+                            "door_open" if getattr(side_tile, "open", False) else "door_closed"
+                        ),
                         quad=wall_quad,
                         darkness=darkness,
                     )
@@ -457,7 +471,9 @@ class RendererCommandMixin:
         elif is_wall(outer_wall_tile) and continuation_quad is not None:
             outer_texture_key = self.textures.get_wall_key(outer_wall_tile)
             if self._is_door_tile(outer_wall_tile):
-                outer_texture_key = "door_open" if getattr(outer_wall_tile, "open", False) else "door_closed"
+                outer_texture_key = (
+                    "door_open" if getattr(outer_wall_tile, "open", False) else "door_closed"
+                )
             commands.extend(
                 self._build_wall_panel_commands(
                     depth=continuation_depth,
@@ -483,7 +499,9 @@ class RendererCommandMixin:
         return commands
 
     @staticmethod
-    def _push_outer_wall_quad(quad: Quad, side: str, base_offset: float, edge_offset: float) -> Quad:
+    def _push_outer_wall_quad(
+        quad: Quad, side: str, base_offset: float, edge_offset: float
+    ) -> Quad:
         p0, p1, p2, p3 = quad.points
 
         if side == "left":
@@ -510,7 +528,9 @@ class RendererCommandMixin:
         )
 
     @staticmethod
-    def _push_outer_ceiling_quad(quad: Quad, side: str, base_offset: float, edge_offset: float) -> Quad:
+    def _push_outer_ceiling_quad(
+        quad: Quad, side: str, base_offset: float, edge_offset: float
+    ) -> Quad:
         p0, p1, p2, p3 = quad.points
         outer_cover = base_offset * 0.04
         inner_cover = base_offset * 0.12
@@ -533,7 +553,9 @@ class RendererCommandMixin:
         )
 
     @staticmethod
-    def _push_outer_floor_quad(quad: Quad, side: str, base_offset: float, edge_offset: float) -> Quad:
+    def _push_outer_floor_quad(
+        quad: Quad, side: str, base_offset: float, edge_offset: float
+    ) -> Quad:
         p0, p1, p2, p3 = quad.points
         outer_cover = base_offset * 0.04
         inner_cover = base_offset * 0.12

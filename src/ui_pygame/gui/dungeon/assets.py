@@ -14,7 +14,6 @@ from src.paths import MAP_FILES_DIR, PROJECT_ROOT, PYGAME_ASSETS_DIR
 from .geometry import Quad
 from .projector import ProjectedSurface, project_texture_to_quad
 
-
 TEXTURE_MANIFEST_NAME = "dungeon_texture_manifest.json"
 
 DEFAULT_TEXTURE_PATHS = {
@@ -250,8 +249,7 @@ class TextureLibrary:
             category, _separator, texture_key = fallback_key.partition(":")
             grouped.setdefault(category, []).append(texture_key)
         return {
-            category: sorted(texture_keys)
-            for category, texture_keys in sorted(grouped.items())
+            category: sorted(texture_keys) for category, texture_keys in sorted(grouped.items())
         }
 
     def get_projected_cache_stats(self) -> dict[str, int]:
@@ -277,7 +275,9 @@ class TextureLibrary:
             "surface_slot_revision": self._surface_slot_revision,
         }
 
-    def _record_asset_fallback(self, category: str, texture_key: str, path: str | os.PathLike[str]) -> None:
+    def _record_asset_fallback(
+        self, category: str, texture_key: str, path: str | os.PathLike[str]
+    ) -> None:
         self._asset_fallbacks[f"{category}:{texture_key}"] = str(path)
 
     def ensure_loaded(self) -> None:
@@ -328,7 +328,9 @@ class TextureLibrary:
         self.ensure_loaded()
         return self._textures[texture_key]
 
-    def get_special_texture(self, texture_key: str, size: int | None = None) -> pygame.Surface | None:
+    def get_special_texture(
+        self, texture_key: str, size: int | None = None
+    ) -> pygame.Surface | None:
         self.ensure_loaded()
         if texture_key not in self.special_texture_paths:
             return None
@@ -347,7 +349,14 @@ class TextureLibrary:
                 self._record_asset_fallback("special", texture_key, full_path)
             if base is None:
                 fallback = pygame.Surface((128, 128), pygame.SRCALPHA)
-                fallback.fill((*SPECIAL_FALLBACK_COLORS.get(texture_key, SPECIAL_FALLBACK_COLORS["empty_altar"]), 255))
+                fallback.fill(
+                    (
+                        *SPECIAL_FALLBACK_COLORS.get(
+                            texture_key, SPECIAL_FALLBACK_COLORS["empty_altar"]
+                        ),
+                        255,
+                    )
+                )
                 base = fallback
             self._special_base_textures[texture_key] = base
 
@@ -399,12 +408,16 @@ class TextureLibrary:
         base = self._enemy_base_textures.get(cache_name)
         if cache_name not in self._enemy_base_textures:
             try:
-                from src.ui_pygame.assets.enemy_combat_sprite_manager import get_enemy_combat_sprite_manager
+                from src.ui_pygame.assets.enemy_combat_sprite_manager import (
+                    get_enemy_combat_sprite_manager,
+                )
 
                 sprite_manager = get_enemy_combat_sprite_manager()
                 sprite_key = sprite_manager.get_sprite_key_for_enemy(cache_name)
                 if sprite_key == "generic_enemy" and cache_name != "Generic Enemy":
-                    self._record_asset_fallback("enemy", cache_name, "enemy_combat_sprites/generic_enemy.png")
+                    self._record_asset_fallback(
+                        "enemy", cache_name, "enemy_combat_sprites/generic_enemy.png"
+                    )
                 base = sprite_manager.get_sprite_by_key(sprite_key).copy()
             except (pygame.error, OSError, ValueError) as exc:
                 self._record_asset_fallback("enemy", cache_name, f"enemy_combat_sprites: {exc}")
@@ -436,7 +449,9 @@ class TextureLibrary:
             return self.assets_base / path
         return self.tileset_base / path
 
-    def describe_surface_slot_ids(self, panel_id: str, texture_key: str | None = None) -> tuple[str, ...]:
+    def describe_surface_slot_ids(
+        self, panel_id: str, texture_key: str | None = None
+    ) -> tuple[str, ...]:
         plan = self._get_surface_panel_plan(panel_id, texture_key=texture_key)
         return () if plan is None else plan.slot_ids
 
@@ -495,11 +510,7 @@ class TextureLibrary:
         if plan is None:
             return {}
         overrides = self.get_surface_slot_overrides()
-        return {
-            slot_id: overrides[slot_id]
-            for slot_id in plan.slot_ids
-            if slot_id in overrides
-        }
+        return {slot_id: overrides[slot_id] for slot_id in plan.slot_ids if slot_id in overrides}
 
     def describe_panel_surface_slot_state(
         self,
@@ -648,7 +659,11 @@ class TextureLibrary:
         texture = self.get_texture(texture_key)
         surface_plan = self._get_surface_panel_plan(panel_id, texture_key)
         if surface_plan is not None and self._panel_has_surface_slot_overrides(surface_plan):
-            cache_key = (panel_id, texture_key, self._get_surface_panel_override_signature(panel_id, texture_key))
+            cache_key = (
+                panel_id,
+                texture_key,
+                self._get_surface_panel_override_signature(panel_id, texture_key),
+            )
             cached = self._panel_texture_cache.get(cache_key)
             if cached is not None:
                 return cached
@@ -673,7 +688,11 @@ class TextureLibrary:
                     special_texture=texture,
                     columns=columns,
                 )
-            columns = len(self._get_center_floor_slot_ids(depth)) if panel_id.endswith("center_floor") else len(self._get_center_ceiling_slot_ids(depth))
+            columns = (
+                len(self._get_center_floor_slot_ids(depth))
+                if panel_id.endswith("center_floor")
+                else len(self._get_center_ceiling_slot_ids(depth))
+            )
             return self._build_tiled_band_texture(
                 texture,
                 columns=columns,
@@ -684,7 +703,9 @@ class TextureLibrary:
             return texture
         return texture
 
-    def _get_surface_panel_plan(self, panel_id: str, texture_key: str | None = None) -> SurfacePanelPlan | None:
+    def _get_surface_panel_plan(
+        self, panel_id: str, texture_key: str | None = None
+    ) -> SurfacePanelPlan | None:
         depth = self._get_panel_depth(panel_id)
         texture_key = texture_key or self._get_default_texture_key(panel_id)
         if texture_key is None:
@@ -745,7 +766,11 @@ class TextureLibrary:
                 slot_texture_keys=(texture_key,),
             )
 
-        if panel_id.endswith(":left_wall") or panel_id.endswith(":right_wall") or panel_id.endswith("corridor_outer_wall"):
+        if (
+            panel_id.endswith(":left_wall")
+            or panel_id.endswith(":right_wall")
+            or panel_id.endswith("corridor_outer_wall")
+        ):
             side = "left" if ":left_" in panel_id else "right"
             panel_kind = "corridor_outer" if panel_id.endswith("corridor_outer_wall") else side
             return SurfacePanelPlan(
@@ -819,14 +844,24 @@ class TextureLibrary:
     @lru_cache(maxsize=None)
     def _get_center_depth_slot_spans(depth: int) -> tuple[tuple[float, float], ...]:
         if depth == 3:
-            boundaries = (-1.0 / 7.0, 0.0, 1.0 / 7.0, 2.0 / 7.0, 3.0 / 7.0, 4.0 / 7.0, 5.0 / 7.0, 6.0 / 7.0, 1.0, 8.0 / 7.0)
+            boundaries = (
+                -1.0 / 7.0,
+                0.0,
+                1.0 / 7.0,
+                2.0 / 7.0,
+                3.0 / 7.0,
+                4.0 / 7.0,
+                5.0 / 7.0,
+                6.0 / 7.0,
+                1.0,
+                8.0 / 7.0,
+            )
         elif depth == 2:
             boundaries = (0.0, 0.2, 0.4, 0.6, 0.8, 1.0)
         else:
             boundaries = (0.0, 1.0 / 3.0, 2.0 / 3.0, 1.0)
         return tuple(
-            (boundaries[index], boundaries[index + 1])
-            for index in range(len(boundaries) - 1)
+            (boundaries[index], boundaries[index + 1]) for index in range(len(boundaries) - 1)
         )
 
     @staticmethod
@@ -836,10 +871,7 @@ class TextureLibrary:
         slot_count = len(plan.slot_ids)
         if slot_count == 0:
             return ()
-        return tuple(
-            (index / slot_count, (index + 1) / slot_count)
-            for index in range(slot_count)
-        )
+        return tuple((index / slot_count, (index + 1) / slot_count) for index in range(slot_count))
 
     def _panel_has_surface_slot_overrides(self, plan: SurfacePanelPlan) -> bool:
         overrides = self.get_surface_slot_overrides()
@@ -995,7 +1027,9 @@ class TextureLibrary:
         while len(self._projected_cache) > self._projected_cache_limit:
             self._projected_cache.popitem(last=False)
 
-    def _shade_projected_surface(self, surface: pygame.Surface, panel_id: str, base_darkness: float) -> pygame.Surface:
+    def _shade_projected_surface(
+        self, surface: pygame.Surface, panel_id: str, base_darkness: float
+    ) -> pygame.Surface:
         depth_match = re.match(r"d(\d+):", panel_id)
         layer = int(depth_match.group(1)) if depth_match else 1
         target_darkness = min(1.0, base_darkness + 0.4) if layer < 3 else base_darkness
@@ -1005,15 +1039,27 @@ class TextureLibrary:
             or ":center_floor_slot" in panel_id
             or panel_id.endswith("corridor_outer_floor")
         ):
-            return self._apply_vertical_gradient(surface, base_darkness, target_darkness, near_at_top=False)
-        if panel_id.endswith("center_ceiling") or ":center_ceiling_slot" in panel_id or panel_id.endswith("corridor_outer_ceiling"):
-            shaded = self._apply_vertical_gradient(surface, base_darkness, target_darkness, near_at_top=True)
+            return self._apply_vertical_gradient(
+                surface, base_darkness, target_darkness, near_at_top=False
+            )
+        if (
+            panel_id.endswith("center_ceiling")
+            or ":center_ceiling_slot" in panel_id
+            or panel_id.endswith("corridor_outer_ceiling")
+        ):
+            shaded = self._apply_vertical_gradient(
+                surface, base_darkness, target_darkness, near_at_top=True
+            )
             return self._apply_uniform_darkness(shaded, 0.30)
         if panel_id.endswith("left_wall") or ":left_wall_slot" in panel_id:
-            shaded = self._apply_horizontal_gradient(surface, base_darkness, target_darkness, near_at_left=True)
+            shaded = self._apply_horizontal_gradient(
+                surface, base_darkness, target_darkness, near_at_left=True
+            )
             return self._apply_uniform_darkness(shaded, 0.20)
         if panel_id.endswith("right_wall") or ":right_wall_slot" in panel_id:
-            shaded = self._apply_horizontal_gradient(surface, base_darkness, target_darkness, near_at_left=False)
+            shaded = self._apply_horizontal_gradient(
+                surface, base_darkness, target_darkness, near_at_left=False
+            )
             return self._apply_uniform_darkness(shaded, 0.20)
         if panel_id.endswith("corridor_outer_wall") or "corridor_outer_wall_slot" in panel_id:
             side = "left" if ":left_" in panel_id else "right"

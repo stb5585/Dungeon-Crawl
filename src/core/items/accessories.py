@@ -8,23 +8,44 @@ from .base import Accessory
 class NoRing(Accessory):
 
     def __init__(self):
-        super().__init__(name="No Ring", description="No ring equipped.", value=0, rarity=0, mod="No Mod",
-                         subtyp='None', unequip=True)
+        super().__init__(
+            name="No Ring",
+            description="No ring equipped.",
+            value=0,
+            rarity=0,
+            mod="No Mod",
+            subtyp="None",
+            unequip=True,
+        )
 
 
 class IronRing(Accessory):
 
     def __init__(self):
-        super().__init__(name="Iron Ring", description="A ring that improves the wearer's defense.",
-                         value=2000, rarity=0.85, mod="+4 Physical Defense", subtyp="Ring", unequip=False)
+        super().__init__(
+            name="Iron Ring",
+            description="A ring that improves the wearer's defense.",
+            value=2000,
+            rarity=0.85,
+            mod="+4 Physical Defense",
+            subtyp="Ring",
+            unequip=False,
+        )
         self.weight = 0.1
 
 
 class PowerRing(Accessory):
 
     def __init__(self):
-        super().__init__(name="Power Ring", description="A ring that improves the wearer's attack damage.",
-                         value=5000, rarity=0.75, mod="+10 Physical Damage", subtyp="Ring", unequip=False)
+        super().__init__(
+            name="Power Ring",
+            description="A ring that improves the wearer's attack damage.",
+            value=5000,
+            rarity=0.75,
+            mod="+10 Physical Damage",
+            subtyp="Ring",
+            unequip=False,
+        )
         self.weight = 0.1
 
 
@@ -34,33 +55,61 @@ class BarrierRing(Accessory):
     """
 
     def __init__(self):
-        super().__init__(name="Barrier Ring", description="A ring that increases the wearer's chance to block attacks "
-                                                          "by 25%, even without having a shield equipped.",
-                         value=16000, rarity=0.5, mod="Block", subtyp="Ring", unequip=False)
+        super().__init__(
+            name="Barrier Ring",
+            description="A ring that increases the wearer's chance to block attacks "
+            "by 25%, even without having a shield equipped.",
+            value=16000,
+            rarity=0.5,
+            mod="Block",
+            subtyp="Ring",
+            unequip=False,
+        )
         self.weight = 0.1
 
 
 class SteelRing(Accessory):
 
     def __init__(self):
-        super().__init__(name="Steel Ring", description="A ring that greatly improves the wearer's defense.",
-                         value=20000, rarity=0.4, mod="+10 Physical Defense", subtyp="Ring", unequip=False)
+        super().__init__(
+            name="Steel Ring",
+            description="A ring that greatly improves the wearer's defense.",
+            value=20000,
+            rarity=0.4,
+            mod="+10 Physical Defense",
+            subtyp="Ring",
+            unequip=False,
+        )
         self.weight = 0.1
 
 
 class MightRing(Accessory):
 
     def __init__(self):
-        super().__init__(name="Might Ring", description="A ring that greatly improves the wearer's attack damage.",
-                         value=24000, rarity=0.4, mod="+20 Physical Damage", subtyp="Ring", unequip=False)
+        super().__init__(
+            name="Might Ring",
+            description="A ring that greatly improves the wearer's attack damage.",
+            value=24000,
+            rarity=0.4,
+            mod="+20 Physical Damage",
+            subtyp="Ring",
+            unequip=False,
+        )
         self.weight = 0.1
 
 
 class AccuracyRing(Accessory):
 
     def __init__(self):
-        super().__init__(name="Accuracy Ring", description="A ring that improves the wearer's weapon accuracy by 10%.",
-                         value=25000, rarity=0.4, mod="Accuracy", subtyp="Ring", unequip=False)
+        super().__init__(
+            name="Accuracy Ring",
+            description="A ring that improves the wearer's weapon accuracy by 10%.",
+            value=25000,
+            rarity=0.4,
+            mod="Accuracy",
+            subtyp="Ring",
+            unequip=False,
+        )
         self.weight = 0.1
 
 
@@ -70,32 +119,60 @@ class EvasionRing(Accessory):
     """
 
     def __init__(self):
-        super().__init__(name="Evasion Ring", description="A ring that improves the wearer's chance to dodge.",
-                         value=40000, rarity=0.2, mod="Dodge", subtyp="Ring", unequip=False)
+        super().__init__(
+            name="Evasion Ring",
+            description="A ring that improves the wearer's chance to dodge.",
+            value=40000,
+            rarity=0.2,
+            mod="Dodge",
+            subtyp="Ring",
+            unequip=False,
+        )
         self.weight = 0.1
 
 
 class TitaniumRing(Accessory):
 
     def __init__(self):
-        super().__init__(name="Titanium Ring", description="A ring that massively improves the wearer's defense.",
-                         value=45000, rarity=0.2, mod="+20 Physical Defense", subtyp="Ring", unequip=False)
+        super().__init__(
+            name="Titanium Ring",
+            description="A ring that massively improves the wearer's defense.",
+            value=45000,
+            rarity=0.2,
+            mod="+20 Physical Defense",
+            subtyp="Ring",
+            unequip=False,
+        )
         self.weight = 0.1
 
 
 class ForceRing(Accessory):
 
     def __init__(self):
-        super().__init__(name="Force Ring", description="A ring that massively improves the wearer's attack damage.",
-                         value=50000, rarity=0.1, mod="+50 Physical Damage", subtyp="Ring", unequip=False)
+        super().__init__(
+            name="Force Ring",
+            description="A ring that massively improves the wearer's attack damage.",
+            value=50000,
+            rarity=0.1,
+            mod="+50 Physical Damage",
+            subtyp="Ring",
+            unequip=False,
+        )
         self.weight = 0.1
 
 
 class ClassRing(Accessory):
 
     def __init__(self):
-        super().__init__(name="Class Ring", description="A ring that changes depending on the wearer's specialty.",
-                         value=0, rarity=0, mod="Special", subtyp="Ring", unequip=False)
+        super().__init__(
+            name="Class Ring",
+            description="A ring that changes depending on the wearer's specialty.",
+            value=0,
+            rarity=0,
+            mod="Special",
+            subtyp="Ring",
+            unequip=False,
+        )
         self.weight = 0.1
 
     def get_description(self, player_char=None):
@@ -105,6 +182,7 @@ class ClassRing(Accessory):
 
         cls_name = player_char.cls.name
         from ..classes import class_rings
+
         if class_rings.is_legacy_class(cls_name):
             return class_rings.description(player_char)
 
@@ -199,8 +277,7 @@ class ClassRing(Accessory):
 
         state = archdruid.normalize_state(getattr(player_char, "archdruid_attunement", None))
         attunement = ", ".join(
-            f"{affinity} {state['attunement'][affinity]}"
-            for affinity in archdruid.AFFINITIES
+            f"{affinity} {state['attunement'][affinity]}" for affinity in archdruid.AFFINITIES
         )
         if not state["grove_unlocked"]:
             return (
@@ -216,7 +293,9 @@ class ClassRing(Accessory):
                 f"Aspects: {aspects}. {class_rings.active_effect_summary(player_char, awakened=False)}"
             )
         bonus = int(archdruid.harmony_bonus(player_char) * 100)
-        total_attunement = sum(int(state["attunement"][affinity]) for affinity in archdruid.AFFINITIES)
+        total_attunement = sum(
+            int(state["attunement"][affinity]) for affinity in archdruid.AFFINITIES
+        )
         potential = (total_attunement // 25) * 0.01
         if all(int(state["attunement"][affinity]) >= 75 for affinity in archdruid.AFFINITIES):
             potential *= 2
@@ -233,6 +312,7 @@ class ClassRing(Accessory):
         cls_name = player_char.cls.name
 
         from ..classes import class_rings
+
         if class_rings.is_legacy_class(cls_name):
             player_char.equipment["Ring"].mod = class_rings.ring_mod(player_char)
             if cls_name == "Soulcatcher" and class_rings.is_awakened(player_char, "Soulcatcher"):
@@ -255,7 +335,9 @@ class ClassRing(Accessory):
         elif cls_name in {"Weapon Master", "Grandmaster of Arms"}:
             from ..classes import grandmaster
 
-            state = grandmaster.normalize_state(getattr(player_char, "grandmaster_discipline", None))
+            state = grandmaster.normalize_state(
+                getattr(player_char, "grandmaster_discipline", None)
+            )
             bound_weapon = state["bound_weapon"]
             if cls_name == "Grandmaster of Arms" and state["activated"] and bound_weapon:
                 player_char.equipment["Ring"].mod = f"{bound_weapon} Discipline x2"
@@ -286,7 +368,9 @@ class ClassRing(Accessory):
         elif cls_name == "Demonologist":
             from ..classes import demonologist
 
-            state = demonologist.normalize_state(getattr(player_char, "demonologist_contracts", None))
+            state = demonologist.normalize_state(
+                getattr(player_char, "demonologist_contracts", None)
+            )
             if state["ring_awakened"]:
                 player_char.equipment["Ring"].mod = "Empowered Contracts"
             else:
@@ -374,57 +458,105 @@ class ClassRing(Accessory):
 class NoPendant(Accessory):
 
     def __init__(self):
-        super().__init__(name="No Pendant", description="No pendant equipped.", value=0, rarity=0, mod="No Mod",
-                         subtyp="None", unequip=True)
+        super().__init__(
+            name="No Pendant",
+            description="No pendant equipped.",
+            value=0,
+            rarity=0,
+            mod="No Mod",
+            subtyp="None",
+            unequip=True,
+        )
 
 
 class VisionPendant(Accessory):
 
     def __init__(self):
-        super().__init__(name="Pendant of Vision", description="A pendant that that gives information about the enemy.",
-                         value=1200, rarity=0.9, mod="Vision", subtyp="Pendant", unequip=False)
+        super().__init__(
+            name="Pendant of Vision",
+            description="A pendant that that gives information about the enemy.",
+            value=1200,
+            rarity=0.9,
+            mod="Vision",
+            subtyp="Pendant",
+            unequip=False,
+        )
         self.weight = 0.2
 
 
 class RubyLocket(Accessory):
 
     def __init__(self):
-        super().__init__(name="Ruby Locket", description="A ruby necklace that improves the wearer's magic defense.",
-                         value=1800, rarity=0.85, mod="+10 Magic Defense", subtyp="Pendant", unequip=False)
+        super().__init__(
+            name="Ruby Locket",
+            description="A ruby necklace that improves the wearer's magic defense.",
+            value=1800,
+            rarity=0.85,
+            mod="+10 Magic Defense",
+            subtyp="Pendant",
+            unequip=False,
+        )
         self.weight = 0.2
 
 
 class SilverNecklace(Accessory):
 
     def __init__(self):
-        super().__init__(name="Silver Necklace", description="A silver-chained necklace that improves the wearer's "
-                                                             "magic damage.",
-                         value=8000, rarity=0.75, mod="+10 Magic Damage", subtyp="Pendant", unequip=False)
+        super().__init__(
+            name="Silver Necklace",
+            description="A silver-chained necklace that improves the wearer's " "magic damage.",
+            value=8000,
+            rarity=0.75,
+            mod="+10 Magic Damage",
+            subtyp="Pendant",
+            unequip=False,
+        )
         self.weight = 0.2
 
 
 class AntidotePendant(Accessory):
 
     def __init__(self):
-        super().__init__(name="Antidote Pendant", description="Protects the wearer against the effects of poison.",
-                         value=2500, rarity=0.85, mod="Status-Poison", subtyp="Pendant", unequip=False)
+        super().__init__(
+            name="Antidote Pendant",
+            description="Protects the wearer against the effects of poison.",
+            value=2500,
+            rarity=0.85,
+            mod="Status-Poison",
+            subtyp="Pendant",
+            unequip=False,
+        )
         self.weight = 0.2
 
 
 class CalmingPendant(Accessory):
 
     def __init__(self):
-        super().__init__(name="Calming Pendant", description="Protects the wearer against the effects of berserk.",
-                         value=5000, rarity=0.7, mod="Status-Berserk", subtyp="Pendant", unequip=False)
+        super().__init__(
+            name="Calming Pendant",
+            description="Protects the wearer against the effects of berserk.",
+            value=5000,
+            rarity=0.7,
+            mod="Status-Berserk",
+            subtyp="Pendant",
+            unequip=False,
+        )
         self.weight = 0.2
 
 
 class ElementChain(Accessory):
 
     def __init__(self):
-        super().__init__(name="Element Chain", description="Base class for the various element chains, each forged "
-                                                           "around a focused elemental core.",
-                         value=8000, rarity=0.6, mod="None", subtyp="Pendant", unequip=False)
+        super().__init__(
+            name="Element Chain",
+            description="Base class for the various element chains, each forged "
+            "around a focused elemental core.",
+            value=8000,
+            rarity=0.6,
+            mod="None",
+            subtyp="Pendant",
+            unequip=False,
+        )
         self.weight = 0.2
 
 
@@ -433,7 +565,9 @@ class FireChain(ElementChain):
     def __init__(self):
         super().__init__()
         self.name = "Fire Chain"
-        self.description = ("A necklace set with a warm ember-stone that glows brighter near open flame.")
+        self.description = (
+            "A necklace set with a warm ember-stone that glows brighter near open flame."
+        )
         self.mod = "Resist-Fire"
 
 
@@ -442,7 +576,7 @@ class IceChain(ElementChain):
     def __init__(self):
         super().__init__()
         self.name = "Ice Chain"
-        self.description = ("A necklace of pale crystal links that stay cold even in midsummer heat.")
+        self.description = "A necklace of pale crystal links that stay cold even in midsummer heat."
         self.mod = "Resist-Ice"
 
 
@@ -451,7 +585,9 @@ class ElectricChain(ElementChain):
     def __init__(self):
         super().__init__()
         self.name = "Electric Chain"
-        self.description = ("A necklace strung with storm glass that hums softly before lightning strikes.")
+        self.description = (
+            "A necklace strung with storm glass that hums softly before lightning strikes."
+        )
         self.mod = "Resist-Electric"
 
 
@@ -460,7 +596,7 @@ class WaterChain(ElementChain):
     def __init__(self):
         super().__init__()
         self.name = "Water Chain"
-        self.description = ("A necklace of blue-green links that beads with dew in dry air.")
+        self.description = "A necklace of blue-green links that beads with dew in dry air."
         self.mod = "Resist-Water"
 
 
@@ -469,7 +605,9 @@ class EarthChain(ElementChain):
     def __init__(self):
         super().__init__()
         self.name = "Earth Chain"
-        self.description = ("A necklace carved from polished stone, heavy with the patience of deep caverns.")
+        self.description = (
+            "A necklace carved from polished stone, heavy with the patience of deep caverns."
+        )
         self.mod = "Resist-Earth"
 
 
@@ -478,7 +616,9 @@ class WindChain(ElementChain):
     def __init__(self):
         super().__init__()
         self.name = "Wind Chain"
-        self.description = ("A necklace of feather-light silver links that stir when no breeze is present.")
+        self.description = (
+            "A necklace of feather-light silver links that stir when no breeze is present."
+        )
         self.mod = "Resist-Wind"
 
 
@@ -487,8 +627,10 @@ class ElementalChain(ElementChain):
     def __init__(self):
         super().__init__()
         self.name = "Elemental Chain"
-        self.description = ("Fashioned from the cores of elementals, this necklace shifts color as nearby magic "
-                            "changes shape.")
+        self.description = (
+            "Fashioned from the cores of elementals, this necklace shifts color as nearby magic "
+            "changes shape."
+        )
         self.value = 15000
         self.rarity = 0.4
         self.mod = "Resist-Elemental"
@@ -497,45 +639,78 @@ class ElementalChain(ElementChain):
 class SapphireLocket(Accessory):
 
     def __init__(self):
-        super().__init__(name="Sapphire Locket", description="A sapphire necklace that greatly improves the wearer's "
-                                                             "magic defense.",
-                         value=16000, rarity=0.5, mod="+20 Magic Defense", subtyp="Pendant", unequip=False)
+        super().__init__(
+            name="Sapphire Locket",
+            description="A sapphire necklace that greatly improves the wearer's " "magic defense.",
+            value=16000,
+            rarity=0.5,
+            mod="+20 Magic Defense",
+            subtyp="Pendant",
+            unequip=False,
+        )
         self.weight = 0.2
 
 
 class GoldNecklace(Accessory):
 
     def __init__(self):
-        super().__init__(name="Gold Necklace", description="A gold-chained necklace that greatly improves the "
-                                                           "wearer's magic damage.",
-                         value=22000, rarity=0.4, mod="+20 Magic Damage", subtyp="Pendant", unequip=False)
+        super().__init__(
+            name="Gold Necklace",
+            description="A gold-chained necklace that greatly improves the "
+            "wearer's magic damage.",
+            value=22000,
+            rarity=0.4,
+            mod="+20 Magic Damage",
+            subtyp="Pendant",
+            unequip=False,
+        )
         self.weight = 0.2
 
 
 class GorgonPendant(Accessory):
 
     def __init__(self):
-        super().__init__(name="Gorgon Pendant", description="Made from the scale of a Gorgon, this ring protects the "
-                                                            "wearer against petrification.",
-                         value=20000, rarity=0.4, mod="Status-Stone", subtyp="Pendant", unequip=False)
+        super().__init__(
+            name="Gorgon Pendant",
+            description="Made from the scale of a Gorgon, this ring protects the "
+            "wearer against petrification.",
+            value=20000,
+            rarity=0.4,
+            mod="Status-Stone",
+            subtyp="Pendant",
+            unequip=False,
+        )
         self.weight = 0.2
 
 
 class GarfunkelPendant(Accessory):
 
     def __init__(self):
-        super().__init__(name="Garfunkel Pendant", description="The Sound of Silence can be deafening but not with "
-                                                              "this necklace.",
-                         value=23000, rarity=0.3, mod="Status-Silence", subtyp="Pendant", unequip=False)
+        super().__init__(
+            name="Garfunkel Pendant",
+            description="The Sound of Silence can be deafening but not with " "this necklace.",
+            value=23000,
+            rarity=0.3,
+            mod="Status-Silence",
+            subtyp="Pendant",
+            unequip=False,
+        )
         self.weight = 0.2
 
 
 class DharmaPendant(Accessory):
 
     def __init__(self):
-        super().__init__(name="Dharma Pendant", description="No need to fear the reaper while wearing this amulet, "
-                                                            "giving the wearer immunity against instant death.",
-                         value=25000, rarity=0.25, mod="Status-Death", subtyp="Pendant", unequip=False)
+        super().__init__(
+            name="Dharma Pendant",
+            description="No need to fear the reaper while wearing this amulet, "
+            "giving the wearer immunity against instant death.",
+            value=25000,
+            rarity=0.25,
+            mod="Status-Death",
+            subtyp="Pendant",
+            unequip=False,
+        )
         self.weight = 0.2
 
 
@@ -546,7 +721,7 @@ class DraconitePendant(Accessory):
         super().__init__(
             name="Draconite Pendant",
             description="A pendant cut from Kaelenon's Draconite. It strengthens the Recover Jump modification, "
-                        "restoring more health and mana when the wearer lands.",
+            "restoring more health and mana when the wearer lands.",
             value=0,
             rarity=0,
             mod="Jump Recover+",
@@ -559,19 +734,33 @@ class DraconitePendant(Accessory):
 class LevitationPendant(Accessory):
 
     def __init__(self):
-        super().__init__(name="Levitation Pendant", description="Gives the wearer the ability to fly, making them "
-                                                                 "harder to hit and immune to ground-based spells. "
-                                                                 "The downfall is that Wind spells will hurt more.",
-                         value=30000, rarity=0.25, mod="Flying", subtyp="Pendant", unequip=False)
+        super().__init__(
+            name="Levitation Pendant",
+            description="Gives the wearer the ability to fly, making them "
+            "harder to hit and immune to ground-based spells. "
+            "The downfall is that Wind spells will hurt more.",
+            value=30000,
+            rarity=0.25,
+            mod="Flying",
+            subtyp="Pendant",
+            unequip=False,
+        )
         self.weight = 0.2
 
 
 class ElementAmulet(Accessory):
 
     def __init__(self):
-        super().__init__(name="Element Amulet", description="Base class for the various element amulets, each shaped "
-                                                           "around a concentrated warding jewel.",
-                         value=40000, rarity=0.2, mod="None", subtyp="Pendant", unequip=False)
+        super().__init__(
+            name="Element Amulet",
+            description="Base class for the various element amulets, each shaped "
+            "around a concentrated warding jewel.",
+            value=40000,
+            rarity=0.2,
+            mod="None",
+            subtyp="Pendant",
+            unequip=False,
+        )
         self.weight = 0.2
 
 
@@ -580,7 +769,7 @@ class FireAmulet(ElementAmulet):
     def __init__(self):
         super().__init__()
         self.name = "Fire Amulet"
-        self.description = ("An amulet with a ruby heart that burns like a banked coal.")
+        self.description = "An amulet with a ruby heart that burns like a banked coal."
         self.mod = "Immune-Fire"
 
 
@@ -589,7 +778,7 @@ class IceAmulet(ElementAmulet):
     def __init__(self):
         super().__init__()
         self.name = "Ice Amulet"
-        self.description = ("An amulet with a frost-white gem that leaves a chill on the skin.")
+        self.description = "An amulet with a frost-white gem that leaves a chill on the skin."
         self.mod = "Immune-Ice"
 
 
@@ -598,7 +787,7 @@ class ElectricAmulet(ElementAmulet):
     def __init__(self):
         super().__init__()
         self.name = "Electric Amulet"
-        self.description = ("An amulet with a storm-bright gem that clicks with tiny sparks.")
+        self.description = "An amulet with a storm-bright gem that clicks with tiny sparks."
         self.mod = "Immune-Electric"
 
 
@@ -607,7 +796,9 @@ class WaterAmulet(ElementAmulet):
     def __init__(self):
         super().__init__()
         self.name = "Water Amulet"
-        self.description = ("An amulet with a deep blue gem that seems to ripple beneath its surface.")
+        self.description = (
+            "An amulet with a deep blue gem that seems to ripple beneath its surface."
+        )
         self.mod = "Immune-Water"
 
 
@@ -616,7 +807,7 @@ class EarthAmulet(ElementAmulet):
     def __init__(self):
         super().__init__()
         self.name = "Earth Amulet"
-        self.description = ("An amulet with a dense green gem veined like ancient bedrock.")
+        self.description = "An amulet with a dense green gem veined like ancient bedrock."
         self.mod = "Immune-Earth"
 
 
@@ -625,7 +816,7 @@ class WindAmulet(ElementAmulet):
     def __init__(self):
         super().__init__()
         self.name = "Wind Amulet"
-        self.description = ("An amulet with a clear gem that feels almost weightless in the hand.")
+        self.description = "An amulet with a clear gem that feels almost weightless in the hand."
         self.mod = "Immune-Wind"
 
 
@@ -634,8 +825,10 @@ class ElementalAmulet(ElementAmulet):
     def __init__(self):
         super().__init__()
         self.name = "Elemental Amulet"
-        self.description = ("Legend claims the jewel of this amulet is actually the heart of a god, still turning "
-                            "with every color of creation.")
+        self.description = (
+            "Legend claims the jewel of this amulet is actually the heart of a god, still turning "
+            "with every color of creation."
+        )
         self.value = 100000
         self.rarity = 0.05
         self.mod = "Immune-Elemental"
@@ -644,26 +837,46 @@ class ElementalAmulet(ElementAmulet):
 class InvisibilityPendant(Accessory):
 
     def __init__(self):
-        super().__init__(name="Invisibility Pendant", description="Makes the wearer invisible and harder to hit.",
-                         value=50000, rarity=0.1, mod="Invisible", subtyp="Pendant", unequip=False)
+        super().__init__(
+            name="Invisibility Pendant",
+            description="Makes the wearer invisible and harder to hit.",
+            value=50000,
+            rarity=0.1,
+            mod="Invisible",
+            subtyp="Pendant",
+            unequip=False,
+        )
         self.weight = 0.2
 
 
 class DiamondLocket(Accessory):
 
     def __init__(self):
-        super().__init__(name="Diamond Locket", description="A diamond necklace that massively improves the wearer's "
-                                                            "magic damage.",
-                         value=55000, rarity=0.1, mod="+50 Magic Defense", subtyp="Pendant", unequip=False)
+        super().__init__(
+            name="Diamond Locket",
+            description="A diamond necklace that massively improves the wearer's " "magic damage.",
+            value=55000,
+            rarity=0.1,
+            mod="+50 Magic Defense",
+            subtyp="Pendant",
+            unequip=False,
+        )
         self.weight = 0.2
 
 
 class PlatinumNecklace(Accessory):
 
     def __init__(self):
-        super().__init__(name="Platinum Necklace", description="A platinum-chained necklace that massively improves "
-                                                               "the wearer's magic damage.",
-                         value=60000, rarity=0.1, mod="+50 Magic Damage", subtyp="Pendant", unequip=False)
+        super().__init__(
+            name="Platinum Necklace",
+            description="A platinum-chained necklace that massively improves "
+            "the wearer's magic damage.",
+            value=60000,
+            rarity=0.1,
+            mod="+50 Magic Damage",
+            subtyp="Pendant",
+            unequip=False,
+        )
         self.weight = 0.2
 
 
@@ -673,9 +886,16 @@ class RibbonPendant(Accessory):
     """
 
     def __init__(self):
-        super().__init__(name="Ribbon Pendant", description="Forged from a rare mineral, this pendant provides the "
-                                                            "wearer with immunity from all negative status effects.",
-                         value=150000, rarity=0.01, mod="Status-All", subtyp="Pendant", unequip=False)
+        super().__init__(
+            name="Ribbon Pendant",
+            description="Forged from a rare mineral, this pendant provides the "
+            "wearer with immunity from all negative status effects.",
+            value=150000,
+            rarity=0.01,
+            mod="Status-All",
+            subtyp="Pendant",
+            unequip=False,
+        )
 
 
 class MagicPendant(Accessory):
@@ -684,6 +904,13 @@ class MagicPendant(Accessory):
     """
 
     def __init__(self):
-        super().__init__(name="Magic Pendant", description="An amulet that makes the wearer harder to hit with magic spells.",
-                         value=150000, rarity=0.01, mod="Magic Dodge", subtyp="Pendant", unequip=False)
+        super().__init__(
+            name="Magic Pendant",
+            description="An amulet that makes the wearer harder to hit with magic spells.",
+            value=150000,
+            rarity=0.01,
+            mod="Magic Dodge",
+            subtyp="Pendant",
+            unequip=False,
+        )
         self.weight = 0.2

@@ -4,6 +4,7 @@ Sprite sheet extractor.
 
 Slices a sheet into fixed-size sprites and skips fully transparent tiles.
 """
+
 from __future__ import annotations
 
 import argparse

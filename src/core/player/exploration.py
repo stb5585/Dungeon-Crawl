@@ -25,14 +25,15 @@ class PlayerExplorationMixin:
         Function that allows the player_char to view the current dungeon level in terminal
         20 x 20 grid
         """
+
         def is_direction_visible_from_current(direction: str) -> bool:
             current_tile = self.world_dict.get((self.location_x, self.location_y, self.location_z))
             if not current_tile:
                 return True
 
-            blocked = getattr(current_tile, 'blocked', None)
+            blocked = getattr(current_tile, "blocked", None)
             if blocked and blocked.lower() == direction:
-                if hasattr(current_tile, 'open') and getattr(current_tile, 'open', False):
+                if hasattr(current_tile, "open") and getattr(current_tile, "open", False):
                     return True
                 return False
 
@@ -40,10 +41,10 @@ class PlayerExplorationMixin:
 
         visible_adjacent = set()
         adjacent_dirs = {
-            'north': (0, -1),
-            'south': (0, 1),
-            'east': (1, 0),
-            'west': (-1, 0),
+            "north": (0, -1),
+            "south": (0, 1),
+            "east": (1, 0),
+            "west": (-1, 0),
         }
         for direction, (dx, dy) in adjacent_dirs.items():
             if not is_direction_visible_from_current(direction):
@@ -57,36 +58,56 @@ class PlayerExplorationMixin:
         for tile in self.world_dict:
             if self.location_z == tile[2]:
                 tile_x, tile_y = tile[1], tile[0]
-                if self.world_dict[tile].near or self.cls.name == "Seeker" or (tile[0], tile[1]) in visible_adjacent:
-                    if 'Stairs' in str(self.world_dict[tile]) or 'Ladder' in str(self.world_dict[tile]):
-                        map_array[tile_x][tile_y] = "\u25E3"
+                if (
+                    self.world_dict[tile].near
+                    or self.cls.name == "Seeker"
+                    or (tile[0], tile[1]) in visible_adjacent
+                ):
+                    if "Stairs" in str(self.world_dict[tile]) or "Ladder" in str(
+                        self.world_dict[tile]
+                    ):
+                        map_array[tile_x][tile_y] = "\u25e3"
                     elif "Door" in str(self.world_dict[tile]):
                         # Special handling for OreVaultDoor - only show as door if detected or open
                         if "OreVaultDoor" in str(self.world_dict[tile]):
                             if self.world_dict[tile].open:
                                 map_array[tile_x][tile_y] = "."
-                            elif hasattr(self.world_dict[tile], 'detected') and self.world_dict[tile].detected:
+                            elif (
+                                hasattr(self.world_dict[tile], "detected")
+                                and self.world_dict[tile].detected
+                            ):
                                 map_array[tile_x][tile_y] = "\u2593"
                             else:
                                 # Show as wall if not detected
                                 map_array[tile_x][tile_y] = "#"
                         else:
-                            map_array[tile_x][tile_y] = "\u2593" if not self.world_dict[tile].open else "."
-                    elif 'Wall' in str(self.world_dict[tile]):
-                        if "FakeWall" in str(self.world_dict[tile]) and self.world_dict[tile].visited:
+                            map_array[tile_x][tile_y] = (
+                                "\u2593" if not self.world_dict[tile].open else "."
+                            )
+                    elif "Wall" in str(self.world_dict[tile]):
+                        if (
+                            "FakeWall" in str(self.world_dict[tile])
+                            and self.world_dict[tile].visited
+                        ):
                             map_array[tile_x][tile_y] = ":"
                         else:
                             map_array[tile_x][tile_y] = "#"
-                    elif 'Chest' in str(self.world_dict[tile]):
-                        map_array[tile_x][tile_y] = "\u25A1" if self.world_dict[tile].open else "\u25A0"
-                    elif 'Relic' in str(self.world_dict[tile]):
-                        map_array[tile_x][tile_y] = "\u25CB" if self.world_dict[tile].read else "\u25C9"
-                    elif 'BossRoom' in str(self.world_dict[tile]):
-                        map_array[tile_x][tile_y] = "\u2620" if not self.world_dict[tile].defeated else "."
+                    elif "Chest" in str(self.world_dict[tile]):
+                        map_array[tile_x][tile_y] = (
+                            "\u25a1" if self.world_dict[tile].open else "\u25a0"
+                        )
+                    elif "Relic" in str(self.world_dict[tile]):
+                        map_array[tile_x][tile_y] = (
+                            "\u25cb" if self.world_dict[tile].read else "\u25c9"
+                        )
+                    elif "BossRoom" in str(self.world_dict[tile]):
+                        map_array[tile_x][tile_y] = (
+                            "\u2620" if not self.world_dict[tile].defeated else "."
+                        )
                     elif "SecretShop" in str(self.world_dict[tile]):
                         map_array[tile_x][tile_y] = "\u2302"
                     elif "WarpPoint" in str(self.world_dict[tile]):
-                        map_array[tile_x][tile_y] = "\u25C9"
+                        map_array[tile_x][tile_y] = "\u25c9"
                     else:
                         map_array[tile_x][tile_y] = "."
         map_array[self.location_y][self.location_x] = DIRECTIONS[self.facing]["char"]
@@ -116,7 +137,7 @@ class PlayerExplorationMixin:
             if ext not in {".txt", ".json"}:
                 continue
             try:
-                z = int(root_name.split('_')[-1])
+                z = int(root_name.split("_")[-1])
             except ValueError:
                 continue
             existing = files_by_level.get(z)
@@ -142,13 +163,15 @@ class PlayerExplorationMixin:
             if ext == ".json":
                 world_dict.update(_load_tiled_map(map_file, z, map_tiles))
                 continue
-            with open(map_file, 'r', encoding="utf-8") as f:
+            with open(map_file, "r", encoding="utf-8") as f:
                 rows = f.readlines()
-            x_max = len(rows[0].split('\t'))  # Assumes all rows contain the same number of tabs
+            x_max = len(rows[0].split("\t"))  # Assumes all rows contain the same number of tabs
             for y, _ in enumerate(rows):
-                cols = rows[y].split('\t')
+                cols = rows[y].split("\t")
                 for x in range(x_max):
-                    tile_name = cols[x].replace('\n', '')  # Windows users may need to replace '\r\n'
+                    tile_name = cols[x].replace(
+                        "\n", ""
+                    )  # Windows users may need to replace '\r\n'
                     tile = getattr(map_tiles, tile_name)(x, y, z)
                     world_dict[(x, y, z)] = tile
 
@@ -162,13 +185,17 @@ class PlayerExplorationMixin:
             world_dict[wind_pos] = map_tiles.StrangeDraftTile(*wind_pos)
 
         if thieves_guild.TRIAL_ENTRY_POS in world_dict:
-            world_dict[thieves_guild.TRIAL_ENTRY_POS] = map_tiles.CavePath0(*thieves_guild.TRIAL_ENTRY_POS)
+            world_dict[thieves_guild.TRIAL_ENTRY_POS] = map_tiles.CavePath0(
+                *thieves_guild.TRIAL_ENTRY_POS
+            )
         if thieves_guild.TRIAL_FAKE_WALL_POS in world_dict:
             guild_wall = map_tiles.ThievesGuildTrialFakeWall(*thieves_guild.TRIAL_FAKE_WALL_POS)
             guild_wall.sync_for_player(self)
             world_dict[thieves_guild.TRIAL_FAKE_WALL_POS] = guild_wall
         if thieves_guild.TRIAL_BOSS_POS in world_dict:
-            world_dict[thieves_guild.TRIAL_BOSS_POS] = map_tiles.ThievesGuildTrialBossRoom(*thieves_guild.TRIAL_BOSS_POS)
+            world_dict[thieves_guild.TRIAL_BOSS_POS] = map_tiles.ThievesGuildTrialBossRoom(
+                *thieves_guild.TRIAL_BOSS_POS
+            )
 
         self.world_dict = world_dict
         map_tiles.sync_rookie_body_drop_marker(self)
@@ -223,11 +250,11 @@ class PlayerExplorationMixin:
         return (self.location_x, self.location_y, self.location_z) == TOWN_LOCATION
 
     def to_town(self):
-        (self.location_x, self.location_y, self.location_z) = TOWN_LOCATION
+        self.location_x, self.location_y, self.location_z = TOWN_LOCATION
 
     def exit_funhouse(self):
         """Exit the funhouse and return to the saved location."""
-        if hasattr(self, 'funhouse_return') and self.funhouse_return:
+        if hasattr(self, "funhouse_return") and self.funhouse_return:
             self.location_x, self.location_y, self.location_z, self.facing = self.funhouse_return
             self.funhouse_return = None
         else:
@@ -250,7 +277,7 @@ class PlayerExplorationMixin:
 
     def exit_realm_of_cambion(self):
         """Exit the Realm of Cambion and return to the saved location."""
-        if hasattr(self, 'cambion_return') and self.cambion_return:
+        if hasattr(self, "cambion_return") and self.cambion_return:
             self.location_x, self.location_y, self.location_z, self.facing = self.cambion_return
             self.cambion_return = None
         self.anti_magic_active = False
@@ -296,7 +323,7 @@ class PlayerExplorationMixin:
         return False
 
     def town_heal(self):
-        self.state = 'normal'
+        self.state = "normal"
         self.health.current = self.health.max
         self.mana.current = self.mana.max
         for summon in self.summons.values():
@@ -307,7 +334,7 @@ class PlayerExplorationMixin:
         if self.in_town():
             cat_list = ["Stat"]
         else:
-            cat_list = ['Health', 'Mana', 'Elixir', 'Stat']
+            cat_list = ["Health", "Mana", "Elixir", "Stat"]
         if item.subtyp in cat_list or item.name == "Sanctuary Scroll":
             return True
         return False
@@ -317,8 +344,13 @@ class PlayerExplorationMixin:
             return False
         for ability in self.spellbook[typ].values():
             if not ability.passive and ability.cost <= self.mana.current:
-                if any([ability.name == 'Shield Slam' and self.equipment['OffHand'].subtyp != 'Shield',
-                        ability.name == "Mortal Strike" and self.equipment['Weapon'].handed == 1]):
+                if any(
+                    [
+                        ability.name == "Shield Slam"
+                        and self.equipment["OffHand"].subtyp != "Shield",
+                        ability.name == "Mortal Strike" and self.equipment["Weapon"].handed == 1,
+                    ]
+                ):
                     continue
                 return True
         # should only reach if not enough mana to cast spells; lasts for 4 turns
@@ -331,7 +363,9 @@ class PlayerExplorationMixin:
     def max_weight(self):
         from .. import curses
 
-        return int(self.stats.strength * curses.strength_multiplier(self)) * 10 * self.level.pro_level
+        return (
+            int(self.stats.strength * curses.strength_multiplier(self)) * 10 * self.level.pro_level
+        )
 
     def current_weight(self):
         weight = 0
@@ -349,8 +383,11 @@ class PlayerExplorationMixin:
         new_x, new_y = self.location_x + dx, self.location_y + dy
         try:
             from .. import map_tiles
+
             current_tile = self.world_dict.get((self.location_x, self.location_y, self.location_z))
-            if current_tile and map_tiles.jester_force_field_blocks(current_tile, self, self.facing):
+            if current_tile and map_tiles.jester_force_field_blocks(
+                current_tile, self, self.facing
+            ):
                 return False
         except Exception:
             pass
@@ -380,8 +417,11 @@ class PlayerExplorationMixin:
         """Moves the character in the direction they are facing."""
         try:
             from .. import map_tiles
+
             current_tile = self.world_dict.get((self.location_x, self.location_y, self.location_z))
-            if current_tile and map_tiles.jester_force_field_blocks(current_tile, self, self.facing):
+            if current_tile and map_tiles.jester_force_field_blocks(
+                current_tile, self, self.facing
+            ):
                 if game is not None and hasattr(game, "special_event"):
                     game.special_event(map_tiles.JESTER_FORCE_FIELD_EVENT)
                 return False
@@ -441,11 +481,9 @@ class PlayerExplorationMixin:
         promotion_kits.clear_combat_state(self)
         self.record_death()
         death_message = ""
-        stat_list = ['strength', 'intelligence', 'wisdom', 'constitution', 'charisma', 'dexterity']
+        stat_list = ["strength", "intelligence", "wisdom", "constitution", "charisma", "dexterity"]
         form_snapshot = getattr(self, "_normal_form_snapshot", None)
-        normal_stats = (
-            form_snapshot["stats"] if isinstance(form_snapshot, dict) else self.stats
-        )
+        normal_stats = form_snapshot["stats"] if isinstance(form_snapshot, dict) else self.stats
         if self.level.level > 9 or self.level.pro_level > 1:
             cost = self.level.level * self.level.pro_level * 100 * self.location_z
             cost = random.randint(cost // 2, cost)
@@ -468,7 +506,7 @@ class PlayerExplorationMixin:
                 if normal_stats is not self.stats:
                     setattr(self.stats, stat_attr, getattr(self.stats, stat_attr) - 1)
                 death_message += f"You have lost 1 {stat_name}.\n"
-        self.state = 'normal'
+        self.state = "normal"
         self.effects(end=True)
         death_message += self._drop_rookie_body_on_death()
         self.to_town()

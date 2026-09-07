@@ -16,6 +16,7 @@ if TYPE_CHECKING:
 @dataclass
 class PreTurnResult:
     """Result of pre-turn processing (status effects, activity check)."""
+
     effects_text: str = ""
     can_act: bool = True
     inactive_reason: str = ""
@@ -28,6 +29,7 @@ class PreTurnResult:
 @dataclass
 class ForcedAction:
     """Represents an automatically-determined action (berserk, charging, jump)."""
+
     action: str = ""
     choice: str | None = None
     cancel_message: str = ""  # non-empty when a charging ability was cancelled
@@ -36,6 +38,7 @@ class ForcedAction:
 @dataclass
 class ActionResult:
     """Result of executing a combat action."""
+
     message: str = ""
     fled: bool = False
     summon_started: bool = False
@@ -50,6 +53,7 @@ class ActionResult:
 @dataclass
 class PostTurnResult:
     """Result of post-turn processing."""
+
     messages: list[str] = field(default_factory=list)
     defender_died: bool = False
     resurrected: bool = False
@@ -69,9 +73,10 @@ class LootAward:
 @dataclass
 class BattleOutcome:
     """Final result of a completed battle."""
-    result: str = ""          # "victory", "defeat", "flee"
+
+    result: str = ""  # "victory", "defeat", "flee"
     winner: str | None = None
-    message: str = ""         # Summary text (exp, loot, quests, etc.)
+    message: str = ""  # Summary text (exp, loot, quests, etc.)
     level_up: bool = False
     boss: bool = False
     rewards_settled: bool = True

@@ -47,7 +47,12 @@ def test_warlock_tree_has_authored_six_column_paths():
 
     assert len(tree.nodes) == 31
     assert tree.branches == (
-        "Shadow Control", "Draining", "Umbral Offense", "Curses", "Corruption", "Familiar"
+        "Shadow Control",
+        "Draining",
+        "Umbral Offense",
+        "Curses",
+        "Corruption",
+        "Familiar",
     )
     assert nodes["Sleep"].position == (0, 1)
     assert nodes["Doom"].prerequisites == (nodes["Terrify"].id,)
@@ -110,9 +115,7 @@ def test_shadowcaster_requires_umbral_offense_and_one_control_path():
     state.purchased_node_ids.update(closure(nodes["Doom"].id))
     assert promotion_state() == NodeState.AVAILABLE
 
-    state.purchased_node_ids = (
-        closure(nodes["Doom"].id) | closure(nodes["Mana Drain"].id)
-    )
+    state.purchased_node_ids = closure(nodes["Doom"].id) | closure(nodes["Mana Drain"].id)
     assert promotion_state() == NodeState.BLOCKED
 
 

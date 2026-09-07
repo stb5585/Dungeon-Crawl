@@ -13,7 +13,6 @@ from src.core.save_system import (
 )
 from tests.test_framework import TestGameState
 
-
 FIXTURE_PATH = Path(__file__).parents[1] / "fixtures" / "saves" / "master-v3-sorcerer.save"
 
 

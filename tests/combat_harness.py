@@ -24,6 +24,7 @@ from src.core.events.event_bus import (
 @dataclass
 class TurnOutcome:
     """Snapshot of a single BattleEngine turn."""
+
     attacker: str
     defender: str
     action: str
@@ -40,7 +41,9 @@ class MockTile:
     def __init__(self, enemy=None, actions: Iterable[str] | None = None, boss: bool = False):
         self.enemy = enemy
         self.defeated = False
-        self._actions = list(actions) if actions else ["Attack", "Cast Spell", "Use Skill", "Use Item", "Flee"]
+        self._actions = (
+            list(actions) if actions else ["Attack", "Cast Spell", "Use Skill", "Use Item", "Flee"]
+        )
         self._boss = boss
 
     def available_actions(self, _player):
@@ -108,6 +111,7 @@ class BattleEngineHarness:
 
         if rng_seed is not None:
             import random
+
             random.seed(rng_seed)
 
         if isolate_events:
@@ -117,6 +121,7 @@ class BattleEngineHarness:
         self.collected_events = []
         self._event_collector = None
         if collect_events:
+
             def _collect(event) -> None:
                 self.collected_events.append(event)
 
@@ -160,13 +165,15 @@ class BattleEngineHarness:
         self.engine.attacker, self.engine.defender = first, second
 
         # Mirror BattleEngine.start_battle side-effects without relying on RNG.
-        self.engine._event_bus.emit(create_combat_event(
-            EventType.COMBAT_START,
-            actor=self.engine.player,
-            target=enemy,
-            initiative=self.engine.attacker == self.engine.player,
-            boss=self.engine.boss,
-        ))
+        self.engine._event_bus.emit(
+            create_combat_event(
+                EventType.COMBAT_START,
+                actor=self.engine.player,
+                target=enemy,
+                initiative=self.engine.attacker == self.engine.player,
+                boss=self.engine.boss,
+            )
+        )
         try:
             self.engine.logger.start_battle(
                 self.engine.player,

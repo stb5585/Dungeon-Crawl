@@ -16,7 +16,10 @@ def test_signal_handler_quits_and_exits(monkeypatch):
     quit_calls = []
     exit_codes = []
     monkeypatch.setattr("src.ui_pygame.game.pygame.quit", lambda: quit_calls.append(True))
-    monkeypatch.setattr("src.ui_pygame.game.sys.exit", lambda code=0: exit_codes.append(code) or (_ for _ in ()).throw(SystemExit(code)))
+    monkeypatch.setattr(
+        "src.ui_pygame.game.sys.exit",
+        lambda code=0: exit_codes.append(code) or (_ for _ in ()).throw(SystemExit(code)),
+    )
 
     with pytest.raises(SystemExit):
         pygame_game.signal_handler(None, None)
@@ -145,7 +148,19 @@ def test_init_build_character_and_default_character(monkeypatch):
     created = {}
 
     class FakePlayer:
-        def __init__(self, location_x, location_y, location_z, level, health, mana, stats, combat, gold, resistance):
+        def __init__(
+            self,
+            location_x,
+            location_y,
+            location_z,
+            level,
+            health,
+            mana,
+            stats,
+            combat,
+            gold,
+            resistance,
+        ):
             created.update(
                 location=(location_x, location_y, location_z),
                 level=level,
@@ -242,11 +257,32 @@ def test_debug_level_up_initialize_managers_and_update_bounties(monkeypatch):
     ]
 
     manager_calls = []
-    monkeypatch.setattr(pygame_game, "ShopManager", lambda presenter, player: manager_calls.append(("shop", player)) or "shop")
-    monkeypatch.setattr(pygame_game, "ChurchManager", lambda presenter, player: manager_calls.append(("church", player)) or "church")
-    monkeypatch.setattr(pygame_game, "InnManager", lambda presenter, player: manager_calls.append(("inn", player)) or "inn")
-    monkeypatch.setattr(pygame_game, "BarracksManager", lambda presenter, player: manager_calls.append(("barracks", player)) or "barracks")
-    monkeypatch.setattr(pygame_game, "DungeonManager", lambda presenter, player, game_obj: manager_calls.append(("dungeon", player, game_obj)) or "dungeon")
+    monkeypatch.setattr(
+        pygame_game,
+        "ShopManager",
+        lambda presenter, player: manager_calls.append(("shop", player)) or "shop",
+    )
+    monkeypatch.setattr(
+        pygame_game,
+        "ChurchManager",
+        lambda presenter, player: manager_calls.append(("church", player)) or "church",
+    )
+    monkeypatch.setattr(
+        pygame_game,
+        "InnManager",
+        lambda presenter, player: manager_calls.append(("inn", player)) or "inn",
+    )
+    monkeypatch.setattr(
+        pygame_game,
+        "BarracksManager",
+        lambda presenter, player: manager_calls.append(("barracks", player)) or "barracks",
+    )
+    monkeypatch.setattr(
+        pygame_game,
+        "DungeonManager",
+        lambda presenter, player, game_obj: manager_calls.append(("dungeon", player, game_obj))
+        or "dungeon",
+    )
     game.initialize_managers()
     assert game.shop_manager == "shop"
     assert game.dungeon_manager == "dungeon"
@@ -269,7 +305,8 @@ def test_location_music_wrapper_is_defensive_and_routes_to_sound_manager():
     stop_calls = []
     game.presenter = SimpleNamespace(
         sound_manager=SimpleNamespace(
-            play_location_music=lambda location, **kwargs: calls.append((location, kwargs)) or "theme",
+            play_location_music=lambda location, **kwargs: calls.append((location, kwargs))
+            or "theme",
             stop_music=lambda **kwargs: stop_calls.append(kwargs),
         )
     )
@@ -279,9 +316,13 @@ def test_location_music_wrapper_is_defensive_and_routes_to_sound_manager():
     game._stop_music(fade_ms=125)
     assert stop_calls == [{"fade_ms": 125}]
 
-    game.presenter.sound_manager.play_location_music = lambda *_args, **_kwargs: (_ for _ in ()).throw(RuntimeError("audio"))
+    game.presenter.sound_manager.play_location_music = lambda *_args, **_kwargs: (
+        _ for _ in ()
+    ).throw(RuntimeError("audio"))
     assert game._play_location_music("town") is None
-    game.presenter.sound_manager.stop_music = lambda *_args, **_kwargs: (_ for _ in ()).throw(RuntimeError("audio"))
+    game.presenter.sound_manager.stop_music = lambda *_args, **_kwargs: (_ for _ in ()).throw(
+        RuntimeError("audio")
+    )
     game._stop_music()
 
     game.presenter.sound_manager = None
@@ -292,7 +333,9 @@ def test_location_music_wrapper_is_defensive_and_routes_to_sound_manager():
 def test_top_level_flows_request_location_music(monkeypatch):
     game = pygame_game.PygameGame.__new__(pygame_game.PygameGame)
     music_calls = []
-    game._play_location_music = lambda location, **kwargs: music_calls.append((location, kwargs)) or location
+    game._play_location_music = (
+        lambda location, **kwargs: music_calls.append((location, kwargs)) or location
+    )
     game.presenter = SimpleNamespace(set_background_provider=lambda _provider: None)
     game.shop_manager = SimpleNamespace(
         visit_blacksmith=lambda: None,
@@ -388,14 +431,16 @@ def test_new_game_uses_guarded_race_and_class_selection(monkeypatch):
 
     game.races_dict = {"Human": FakeRace}
     game.classes_dict = {"Warrior": {"class": FakeClass}}
-    game._build_player_character = lambda race_name, class_name, name, sex, portrait_variant=0: SimpleNamespace(
-        race_name=race_name,
-        class_name=class_name,
-        name=name,
-        sex=sex,
-        portrait_variant=portrait_variant,
-        health=SimpleNamespace(max=20),
-        mana=SimpleNamespace(max=10),
+    game._build_player_character = (
+        lambda race_name, class_name, name, sex, portrait_variant=0: SimpleNamespace(
+            race_name=race_name,
+            class_name=class_name,
+            name=name,
+            sex=sex,
+            portrait_variant=portrait_variant,
+            health=SimpleNamespace(max=20),
+            mana=SimpleNamespace(max=10),
+        )
     )
     game.initialize_managers = lambda: None
     monkeypatch.setattr(pygame_game, "RaceSelectionScreen", FakeRaceScreen)
@@ -448,11 +493,15 @@ def test_main_menu_load_game_show_intro_warp_point_save_and_character_info(monke
     game.player_char = None
     game.initialize_managers = lambda: init_calls.append(True)
     save_list = ["save1"]
-    monkeypatch.setattr(pygame_game.SaveManager, "list_saves", staticmethod(lambda: list(save_list)))
+    monkeypatch.setattr(
+        pygame_game.SaveManager, "list_saves", staticmethod(lambda: list(save_list))
+    )
     stop_calls = []
     music_calls = []
     game._stop_music = lambda **kwargs: stop_calls.append(kwargs)
-    game._play_location_music = lambda location, **kwargs: music_calls.append((location, kwargs)) or location
+    game._play_location_music = (
+        lambda location, **kwargs: music_calls.append((location, kwargs)) or location
+    )
     init_calls = []
 
     class FakePopup:
@@ -490,7 +539,8 @@ def test_main_menu_load_game_show_intro_warp_point_save_and_character_info(monke
     assert popup_kwargs[-1]["require_key_release"] is True
     assert any("Settings" in opts for opts in menu_calls)
     settings_calls = [
-        kwargs for message, kwargs in popup_show_calls
+        kwargs
+        for message, kwargs in popup_show_calls
         if "settings menu coming soon" in message.lower()
     ]
     assert settings_calls
@@ -517,7 +567,9 @@ def test_main_menu_load_game_show_intro_warp_point_save_and_character_info(monke
 
     navigate_results = ["save1", "save2"]
     monkeypatch.setattr(pygame_game, "LoadGameScreen", FakeLoadScreen)
-    monkeypatch.setattr(pygame_game.SaveManager, "load_player", staticmethod(lambda filename: load_results.pop(0)))
+    monkeypatch.setattr(
+        pygame_game.SaveManager, "load_player", staticmethod(lambda filename: load_results.pop(0))
+    )
     load_results = [
         SimpleNamespace(in_town=lambda: True, quit=True),
         None,
@@ -578,7 +630,13 @@ def test_main_menu_load_game_show_intro_warp_point_save_and_character_info(monke
     monkeypatch.setattr(pygame_game, "ConfirmationPopup", FakePopup2)
     game.player_char = SimpleNamespace(
         name="Hero",
-        world_dict={(3, 0, 5): SimpleNamespace(visited=False, warped=False), (2, 0, 5): SimpleNamespace(near=False), (4, 0, 5): SimpleNamespace(near=False), (3, -1, 5): SimpleNamespace(near=False), (3, 1, 5): SimpleNamespace(near=False)},
+        world_dict={
+            (3, 0, 5): SimpleNamespace(visited=False, warped=False),
+            (2, 0, 5): SimpleNamespace(near=False),
+            (4, 0, 5): SimpleNamespace(near=False),
+            (3, -1, 5): SimpleNamespace(near=False),
+            (3, 1, 5): SimpleNamespace(near=False),
+        },
         location_x=0,
         location_y=0,
         location_z=0,
@@ -599,7 +657,10 @@ def test_main_menu_load_game_show_intro_warp_point_save_and_character_info(monke
 
     render_menu_calls = []
     game.presenter = SimpleNamespace(
-        render_menu=lambda prompt, options, **kwargs: render_menu_calls.append((prompt, tuple(options), kwargs)) or 0,
+        render_menu=lambda prompt, options, **kwargs: render_menu_calls.append(
+            (prompt, tuple(options), kwargs)
+        )
+        or 0,
         show_message=lambda message, title="": presenter_messages.append((title, message)),
         cleanup=lambda: cleanup_calls.append(True),
         set_background_provider=lambda provider: background_provider_calls.append(provider),
@@ -619,8 +680,14 @@ def test_main_menu_load_game_show_intro_warp_point_save_and_character_info(monke
     assert render_menu_calls[0][1] == ("Yes", "No")
     assert render_menu_calls[0][2]["split_layout"] is True
 
-    monkeypatch.setattr(pygame_game.SaveManager, "save_player", staticmethod(lambda player, filename: save_results.pop(0)))
-    monkeypatch.setattr(pygame_game.SaveManager, "list_saves", staticmethod(lambda: ["hero.save", "mage.save"]))
+    monkeypatch.setattr(
+        pygame_game.SaveManager,
+        "save_player",
+        staticmethod(lambda player, filename: save_results.pop(0)),
+    )
+    monkeypatch.setattr(
+        pygame_game.SaveManager, "list_saves", staticmethod(lambda: ["hero.save", "mage.save"])
+    )
     save_results = [True, False]
     game.player_char = SimpleNamespace(name="Hero")
     game.save_game()
@@ -657,7 +724,9 @@ def test_main_menu_stops_music_after_returning_from_gameplay(monkeypatch):
     music_calls = []
     run_calls = []
     game._stop_music = lambda **kwargs: stop_calls.append(kwargs)
-    game._play_location_music = lambda location, **kwargs: music_calls.append((location, kwargs)) or location
+    game._play_location_music = (
+        lambda location, **kwargs: music_calls.append((location, kwargs)) or location
+    )
     game.new_game = lambda: SimpleNamespace(name="Hero")
     game.run = lambda: run_calls.append(True)
     monkeypatch.setattr(pygame_game.SaveManager, "list_saves", staticmethod(lambda: []))
@@ -809,7 +878,9 @@ def test_gameplay_statistics_popup_and_town_menu_entry(monkeypatch):
 
     stats_calls = []
     monkeypatch.setattr(pygame_game, "TownMenuScreen", FakeTownMenu)
-    game.show_gameplay_statistics = lambda background_draw_func=None: stats_calls.append(background_draw_func)
+    game.show_gameplay_statistics = lambda background_draw_func=None: stats_calls.append(
+        background_draw_func
+    )
 
     assert game.town_menu() == "quit"
     assert stats_calls
@@ -846,14 +917,19 @@ def test_old_warehouse_footpad_ring_jobs_require_visible_dormant_ring(monkeypatc
     monkeypatch.setattr(
         pygame_game,
         "get_npc_art_manager",
-        lambda: SimpleNamespace(get_image_path=lambda name: f"npc:{name}" if name == "Old Warehouse Guard" else ""),
+        lambda: SimpleNamespace(
+            get_image_path=lambda name: f"npc:{name}" if name == "Old Warehouse Guard" else ""
+        ),
     )
 
     assert game._footpad_class_ring_rite_label() == "Loaded Game"
     assert game._footpad_class_ring_rite_available() is False
     assert game.visit_old_warehouse() is False
     assert popup_messages == []
-    assert shown_messages[-1][0] == 'A warehouse guard steps into your path.\n\n"Authorized personnel only. Please leave."'
+    assert (
+        shown_messages[-1][0]
+        == 'A warehouse guard steps into your path.\n\n"Authorized personnel only. Please leave."'
+    )
     assert shown_messages[-1][1]["title"] == "Old Warehouse Guard"
     assert shown_messages[-1][1]["image_path"] == "npc:Old Warehouse Guard"
     assert shown_messages[-1][1]["split_layout"] is True
@@ -897,10 +973,12 @@ def test_thieves_guild_backroom_ring_jobs_awaken_mods(monkeypatch):
             storage={},
             equipment={"Ring": items.ClassRing()},
         )
-        player.awaken_class_ring = lambda class_name=None, _player=player, **kwargs: class_rings.activate(
-            _player,
-            class_name,
-            **kwargs,
+        player.awaken_class_ring = (
+            lambda class_name=None, _player=player, **kwargs: class_rings.activate(
+                _player,
+                class_name,
+                **kwargs,
+            )
         )
         game.player_char = player
 
@@ -919,18 +997,28 @@ def test_thieves_guild_backroom_guidance_for_members(monkeypatch):
     monkeypatch.setattr(
         pygame_game,
         "get_npc_art_manager",
-        lambda: SimpleNamespace(get_image_path=lambda name: f"npc:{name}" if name == "The Gray Broker" else ""),
+        lambda: SimpleNamespace(
+            get_image_path=lambda name: f"npc:{name}" if name == "The Gray Broker" else ""
+        ),
     )
 
     game = pygame_game.PygameGame.__new__(pygame_game.PygameGame)
     game.presenter = SimpleNamespace(
-        render_menu=lambda prompt, options, **kwargs: menu_calls.append((prompt, tuple(options), kwargs)) or 0,
+        render_menu=lambda prompt, options, **kwargs: menu_calls.append(
+            (prompt, tuple(options), kwargs)
+        )
+        or 0,
         show_message=lambda message, **kwargs: shown_messages.append((message, kwargs)),
     )
     game.player_char = SimpleNamespace(
         cls=SimpleNamespace(name="Spell Stealer"),
         level=SimpleNamespace(level=1, pro_level=2),
-        thieves_guild={"member": True, "trial_started": True, "trial_branch": "arcane", "starter_kit_claimed": True},
+        thieves_guild={
+            "member": True,
+            "trial_started": True,
+            "trial_branch": "arcane",
+            "starter_kit_claimed": True,
+        },
         class_ring_awakening=class_rings.default_state(),
         equipment={},
         storage={},
@@ -960,10 +1048,17 @@ def test_thieves_guild_membership_turn_in_grants_discount_state_and_kit(monkeypa
     )
     game.player_char = SimpleNamespace(
         cls=SimpleNamespace(name="Arcane Trickster"),
-        thieves_guild={"member": False, "trial_started": True, "trial_branch": "arcane", "starter_kit_claimed": False},
+        thieves_guild={
+            "member": False,
+            "trial_started": True,
+            "trial_branch": "arcane",
+            "starter_kit_claimed": False,
+        },
         special_inventory={"Thieves Guild Signet": [items.ThievesGuildSignet()]},
         inventory={},
-        modify_inventory=lambda item, num=1, subtract=False, rare=False: inventory_calls.append((item.name, num, subtract, rare)),
+        modify_inventory=lambda item, num=1, subtract=False, rare=False: inventory_calls.append(
+            (item.name, num, subtract, rare)
+        ),
     )
 
     game._offer_thieves_guild_membership(background_draw_func=lambda: None)
@@ -1059,7 +1154,9 @@ def test_thieves_guild_backroom_denial_from_shop_uses_shop_note(monkeypatch):
             pass
 
     game = pygame_game.PygameGame.__new__(pygame_game.PygameGame)
-    game.presenter = SimpleNamespace(show_message=lambda message, **kwargs: shown_messages.append((message, kwargs)))
+    game.presenter = SimpleNamespace(
+        show_message=lambda message, **kwargs: shown_messages.append((message, kwargs))
+    )
     game.player_char = SimpleNamespace(
         cls=SimpleNamespace(name="Warrior"),
         player_level=lambda: 10,
@@ -1081,7 +1178,7 @@ def test_thieves_guild_backroom_denial_from_shop_uses_shop_note(monkeypatch):
 
     assert notes == [
         (
-            'Mara Vale keeps the public ledger open and the backroom door shut.\n\n'
+            "Mara Vale keeps the public ledger open and the backroom door shut.\n\n"
             '"The wares are for all but the backroom is for a select few."',
             "Mara Vale",
         )
@@ -1220,7 +1317,14 @@ def test_visit_shop_lists_magic_shop_and_thieves_guild_from_start(monkeypatch):
 
     game.visit_shop()
 
-    assert options_seen[0] == ("Blacksmith", "Alchemist", "Jeweler", "Magic Shop", "Thieves Guild", "Go Back")
+    assert options_seen[0] == (
+        "Blacksmith",
+        "Alchemist",
+        "Jeweler",
+        "Magic Shop",
+        "Thieves Guild",
+        "Go Back",
+    )
     assert calls == [("music", "shop"), "guild"]
 
 
@@ -1238,7 +1342,9 @@ def test_thieves_guild_shop_is_closed_before_level_10(monkeypatch):
     game = pygame_game.PygameGame.__new__(pygame_game.PygameGame)
     game.presenter = SimpleNamespace()
     game.player_char = SimpleNamespace(player_level=lambda: 9)
-    game._play_location_music = lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("should not open"))
+    game._play_location_music = lambda *_args, **_kwargs: (_ for _ in ()).throw(
+        AssertionError("should not open")
+    )
     monkeypatch.setattr(pygame_game, "ConfirmationPopup", FakePopup)
 
     game.visit_thieves_guild()
@@ -1345,7 +1451,17 @@ def test_explore_town_prototype_routes_existing_location_actions(monkeypatch):
 
     class FakeTownNavigation:
         def __init__(self, _presenter):
-            self.actions = iter(["Barracks", "Shops", "The Thirsty Dog Tavern", "Church of Elysia", "Old Warehouse", "Warp Point", "Enter Dungeon"])
+            self.actions = iter(
+                [
+                    "Barracks",
+                    "Shops",
+                    "The Thirsty Dog Tavern",
+                    "Church of Elysia",
+                    "Old Warehouse",
+                    "Warp Point",
+                    "Enter Dungeon",
+                ]
+            )
 
         def draw(self):
             return None
@@ -1365,7 +1481,12 @@ def test_explore_town_prototype_routes_existing_location_actions(monkeypatch):
         "warehouse",
         "warp",
     ]
-    assert (game.player_char.location_x, game.player_char.location_y, game.player_char.location_z, game.player_char.facing) == (5, 10, 1, "east")
+    assert (
+        game.player_char.location_x,
+        game.player_char.location_y,
+        game.player_char.location_z,
+        game.player_char.facing,
+    ) == (5, 10, 1, "east")
 
 
 def test_main_can_launch_direct_town_navigation(monkeypatch):
@@ -1394,7 +1515,11 @@ def test_main_can_launch_direct_town_navigation(monkeypatch):
             calls.append("cleanup")
 
     monkeypatch.setattr(pygame_game, "PygameGame", FakeGame)
-    monkeypatch.setattr(pygame_game.sys, "argv", ["game_pygame.py", "--town-navigation", "--preview-name", "Town Tester"])
+    monkeypatch.setattr(
+        pygame_game.sys,
+        "argv",
+        ["game_pygame.py", "--town-navigation", "--preview-name", "Town Tester"],
+    )
 
     pygame_game.main()
 

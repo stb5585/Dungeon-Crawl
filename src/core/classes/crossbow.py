@@ -8,7 +8,6 @@ from typing import Any
 from .. import items
 from ..constants import ARMOR_SCALING_FACTOR
 
-
 BOLT_ORDER = (
     "Wooden Bolts",
     "Metal Bolts",
@@ -90,11 +89,7 @@ def _heat_seeking_bonus(target: Any) -> float:
         name = str(getattr(target, "name", "") or "").lower()
         resistances = getattr(target, "resistance", {})
         fire_resistance = float(resistances.get("Fire", 0) or 0)
-        is_fire_elemental = (
-            "fire" in name
-            or "flame" in name
-            or fire_resistance >= 1.0
-        )
+        is_fire_elemental = "fire" in name or "flame" in name or fire_resistance >= 1.0
         if not is_fire_elemental:
             return 0.0
     return 0.20
@@ -197,11 +192,7 @@ def fire_crossbow(
                 if reduction_message:
                     messages.append(reduction_message)
             if pack.name == "Napalm Bolts":
-                napalm_targets = (
-                    _living_enemies(encounter, target)
-                    if napalm_splash
-                    else [target]
-                )
+                napalm_targets = _living_enemies(encounter, target) if napalm_splash else [target]
                 for enemy in napalm_targets:
                     if not enemy.is_alive():
                         continue

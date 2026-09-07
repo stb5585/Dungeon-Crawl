@@ -85,7 +85,9 @@ class TestMapTileHelpers:
         assert map_tiles.ordinary_chest_mimic_chance(low_level_player) == 0.0
         assert map_tiles.ordinary_chest_mimic_chance(player) == pytest.approx(0.12)
         assert map_tiles.ordinary_chest_mimic_chance(player, locked=1) == pytest.approx(0.17)
-        assert map_tiles.ordinary_chest_mimic_chance(player, locked=1, plus=1) == pytest.approx(0.20)
+        assert map_tiles.ordinary_chest_mimic_chance(player, locked=1, plus=1) == pytest.approx(
+            0.20
+        )
         assert map_tiles.ordinary_chest_spawns_mimic(player, roll=0.11) is True
         assert map_tiles.ordinary_chest_spawns_mimic(player, roll=0.12) is False
         assert map_tiles.ordinary_chest_spawns_mimic(player, locked=1, plus=1, roll=0.19) is True
@@ -102,7 +104,10 @@ class TestMapTileHelpers:
         player.load_tiles()
 
         assert isinstance(player.world_dict[thieves_guild.TRIAL_HINT_POS], map_tiles.CavePath0)
-        assert isinstance(player.world_dict[thieves_guild.TRIAL_FAKE_WALL_POS], map_tiles.ThievesGuildTrialFakeWall)
+        assert isinstance(
+            player.world_dict[thieves_guild.TRIAL_FAKE_WALL_POS],
+            map_tiles.ThievesGuildTrialFakeWall,
+        )
         assert player.world_dict[thieves_guild.TRIAL_FAKE_WALL_POS].enter is True
         assert thieves_guild.TRIAL_HINT_POS == (15, 0, 2)
         assert thieves_guild.TRIAL_FAKE_WALL_POS == (15, 1, 2)
@@ -159,7 +164,9 @@ class TestMapTileHelpers:
         assert trial_wall.enter is False
         assert trial_wall.detectable_for(player) is False
         player.inventory["Oculus"] = [items.Oculus()]
-        assert map_tiles.check_fake_wall(player.world_dict[thieves_guild.TRIAL_HINT_POS], game) == ""
+        assert (
+            map_tiles.check_fake_wall(player.world_dict[thieves_guild.TRIAL_HINT_POS], game) == ""
+        )
 
     def test_chalice_progress_description_preview_and_reveal_helpers(self):
         player = _make_player()
@@ -321,7 +328,9 @@ class TestBasicTiles:
             (map_tiles.LadderDown, "ladder leading down", "StairsDown"),
         ],
     )
-    def test_stairs_and_ladders_intro_modify_and_actions(self, tile_factory, expected_text, action_key):
+    def test_stairs_and_ladders_intro_modify_and_actions(
+        self, tile_factory, expected_text, action_key
+    ):
         player = _make_player()
         player.world_dict = {
             (0, -1, 0): SimpleNamespace(enter=True, near=False),
@@ -366,7 +375,9 @@ class TestBasicTiles:
         player.is_disarmed = lambda: True
         player.additional_actions = lambda actions: actions + ["Summon"]
         tile = map_tiles.CavePath(0, 0, map_tiles.REALM_OF_CAMBION_LEVEL)
-        tile.enter_combat = lambda _player: (_ for _ in ()).throw(AssertionError("combat should not start"))
+        tile.enter_combat = lambda _player: (_ for _ in ()).throw(
+            AssertionError("combat should not start")
+        )
         game = _make_game(player)
         game._random_combat = True
         called = []
@@ -381,7 +392,16 @@ class TestBasicTiles:
 
         assert tile.visited is True
         assert called == [(player, (0, 0, map_tiles.REALM_OF_CAMBION_LEVEL))]
-        assert actions == ["Attack", "Defend", "Pickup Weapon", "Use Skill", "Cast Spell", "Use Item", "Flee", "Summon"]
+        assert actions == [
+            "Attack",
+            "Defend",
+            "Pickup Weapon",
+            "Use Skill",
+            "Cast Spell",
+            "Use Item",
+            "Flee",
+            "Summon",
+        ]
 
     def test_funhouse_wall_and_fire_paths_cover_behavioral_branches(self, monkeypatch):
         player = _make_player(class_name="Thaumaturgist")
@@ -413,7 +433,9 @@ class TestBasicTiles:
         special = map_tiles.FirePathSpecial(1, 1, 0)
         player.special_inventory = {"Vulcan's Hammer": [items.BlacksmithsHammer()]}
         calls = []
-        player.modify_inventory = lambda item, subtract=False, rare=False, **_kwargs: calls.append((item.name, subtract, rare))
+        player.modify_inventory = lambda item, subtract=False, rare=False, **_kwargs: calls.append(
+            (item.name, subtract, rare)
+        )
         monkeypatch.setattr(
             "src.core.map_tiles.companions.Cacus",
             lambda: SimpleNamespace(name="Cacus", initialize_stats=lambda _player: None),
@@ -522,8 +544,10 @@ class TestSpecialTiles:
         progress = map_tiles.get_chalice_progress(player)
         progress["Hooded"] = True
         calls = []
-        player.modify_inventory = lambda item, subtract=False, rare=False, quest=False, **_kwargs: calls.append(
-            (item.name, subtract, rare, quest)
+        player.modify_inventory = (
+            lambda item, subtract=False, rare=False, quest=False, **_kwargs: calls.append(
+                (item.name, subtract, rare, quest)
+            )
         )
         game = _make_game(player)
         boulder = map_tiles.Boulder(2, 19, 3)
@@ -545,7 +569,11 @@ class TestSpecialTiles:
 
         portal = map_tiles.Portal(99, 99, map_tiles.REALM_OF_CAMBION_LEVEL)
         portal.modify_player(game)
-        assert (player.location_x, player.location_y, player.location_z) == map_tiles.UNDERGROUND_SPRING_POS
+        assert (
+            player.location_x,
+            player.location_y,
+            player.location_z,
+        ) == map_tiles.UNDERGROUND_SPRING_POS
 
         player.health.current = 50
         trap = map_tiles.Trap(2, 2, map_tiles.REALM_OF_CAMBION_LEVEL)
@@ -559,20 +587,28 @@ class TestSpecialTiles:
         map_tiles.disable_cambion_anti_magic(player)
         inactive_text = switch.intro_text(game)
         assert "anti-magic field" in active_text.lower()
-        assert "offline" in map_tiles.pop_cambion_messages(player + 0) if False else inactive_text.lower() or True
+        assert (
+            "offline" in map_tiles.pop_cambion_messages(player + 0)
+            if False
+            else inactive_text.lower() or True
+        )
         result = switch.attempt_disable(game, None)
         assert result is True
         assert "SHIELD OFFLINE" in map_tiles.pop_cambion_messages(player)[0]
 
         room = map_tiles.BossRoom(0, 0, map_tiles.REALM_OF_CAMBION_LEVEL)
-        room.enemy = lambda: SimpleNamespace(name="Shade", is_alive=lambda: True, anti_magic_active=None)
+        room.enemy = lambda: SimpleNamespace(
+            name="Shade", is_alive=lambda: True, anti_magic_active=None
+        )
         room.modify_player(game)
         assert player.state == "fight"
         assert room.enemy.name == "Shade"
         room.special_text(game)
         assert "Shade" in game.events
 
-    def test_chests_doors_ore_vault_and_chalice_room_cover_unlock_and_pickup_paths(self, monkeypatch):
+    def test_chests_doors_ore_vault_and_chalice_room_cover_unlock_and_pickup_paths(
+        self, monkeypatch
+    ):
         player = _make_player(class_name="Rogue")
         player.previous_location = (0, 1, 0)
         player.world_dict = {
@@ -583,11 +619,16 @@ class TestSpecialTiles:
         }
         game = _make_game(player)
         calls = []
-        player.modify_inventory = lambda item, subtract=False, rare=False, quest=False, **_kwargs: calls.append(
-            (item.name, subtract, rare, quest)
+        player.modify_inventory = (
+            lambda item, subtract=False, rare=False, quest=False, **_kwargs: calls.append(
+                (item.name, subtract, rare, quest)
+            )
         )
 
-        monkeypatch.setattr("src.core.map_tiles.items.random_item", lambda level: SimpleNamespace(name=f"Loot-{level}"))
+        monkeypatch.setattr(
+            "src.core.map_tiles.items.random_item",
+            lambda level: SimpleNamespace(name=f"Loot-{level}"),
+        )
 
         chest = map_tiles.LockedChestRoom(0, 0, 1)
         assert chest.loot.name == "Loot-2"
@@ -628,8 +669,10 @@ class TestSpecialTiles:
         player.warp_point = True
         game = _make_game(player)
         calls = []
-        player.modify_inventory = lambda item, subtract=False, rare=False, quest=False, **_kwargs: calls.append(
-            (item.name, subtract, rare, quest)
+        player.modify_inventory = (
+            lambda item, subtract=False, rare=False, quest=False, **_kwargs: calls.append(
+                (item.name, subtract, rare, quest)
+            )
         )
 
         relic_room = map_tiles.RelicRoom(0, 0, 1)
@@ -677,7 +720,10 @@ class TestSpecialTiles:
         assert game.events == []
 
         mimic = map_tiles.FunhouseMimicChest(3, 3, 7)
-        monkeypatch.setattr("src.core.map_tiles.items.random_item", lambda level: SimpleNamespace(name=f"Loot-{level}"))
+        monkeypatch.setattr(
+            "src.core.map_tiles.items.random_item",
+            lambda level: SimpleNamespace(name=f"Loot-{level}"),
+        )
         mimic.loot = None
         mimic.generate_loot()
         assert mimic.loot.name == "Loot-4"
@@ -688,8 +734,10 @@ class TestSpecialTiles:
         player.quest_dict["Side"]["Oedipal Complex"] = {"Completed": False}
         player.quest_dict["Main"]["A Bad Dream"] = {"Completed": False}
         calls = []
-        player.modify_inventory = lambda item, subtract=False, rare=False, quest=False, **_kwargs: calls.append(
-            (item.name, subtract, rare, quest)
+        player.modify_inventory = (
+            lambda item, subtract=False, rare=False, quest=False, **_kwargs: calls.append(
+                (item.name, subtract, rare, quest)
+            )
         )
         game = _make_game(player)
 
@@ -712,8 +760,15 @@ class TestSpecialTiles:
         assert "Incubus Defeated" in game.events
 
         shop_calls = []
-        monkeypatch.setattr(map_tiles.town, "secret_shop", lambda _game: shop_calls.append("secret"), raising=False)
-        monkeypatch.setattr(map_tiles.town, "ultimate_armor_repo", lambda _game: shop_calls.append("armor"), raising=False)
+        monkeypatch.setattr(
+            map_tiles.town, "secret_shop", lambda _game: shop_calls.append("secret"), raising=False
+        )
+        monkeypatch.setattr(
+            map_tiles.town,
+            "ultimate_armor_repo",
+            lambda _game: shop_calls.append("armor"),
+            raising=False,
+        )
 
         secret_shop = map_tiles.SecretShop(2, 2, 0)
         secret_shop.modify_player(game)

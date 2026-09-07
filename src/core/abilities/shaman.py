@@ -117,7 +117,11 @@ class SpiritClaw(Skill):
     """Make a weapon strike reinforced by the active animal spirit."""
 
     def __init__(self) -> None:
-        super().__init__("Spirit Claw", "Strike for 115% weapon damage; Spirit Animal raises it to 135%.", weapon=True)
+        super().__init__(
+            "Spirit Claw",
+            "Strike for 115% weapon damage; Spirit Animal raises it to 135%.",
+            weapon=True,
+        )
         self.cost = 7
         self.subtyp = "Offensive"
 
@@ -141,7 +145,9 @@ class SpiritMend(Class):
     """Ask the bound spirit to restore the Shaman's health."""
 
     def __init__(self) -> None:
-        super().__init__("Spirit Mend", "Restore health, with stronger healing while Spirit Animal is active.")
+        super().__init__(
+            "Spirit Mend", "Restore health, with stronger healing while Spirit Animal is active."
+        )
         self.cost = 9
         self.target_scope = TargetScope.SELF
 
@@ -168,7 +174,9 @@ class DreadfulSign(Class):
     """Place one Bad Omens dread stack on an enemy deliberately."""
 
     def __init__(self) -> None:
-        super().__init__("Dreadful Sign", "Place one stack of dread on an enemy; three stacks Stun it.")
+        super().__init__(
+            "Dreadful Sign", "Place one stack of dread on an enemy; three stacks Stun it."
+        )
         self.cost = 8
 
     def use(self, user: Any, target: Any | None = None, **kwargs: Any):
@@ -191,7 +199,9 @@ class OmenStrike(Skill):
     """Attack a dreaded enemy and hasten the omen on a critical hit."""
 
     def __init__(self) -> None:
-        super().__init__("Omen Strike", "Strike for 110% weapon damage; critical hits add dread.", weapon=True)
+        super().__init__(
+            "Omen Strike", "Strike for 110% weapon damage; critical hits add dread.", weapon=True
+        )
         self.cost = 8
         self.subtyp = "Offensive"
 
@@ -215,7 +225,11 @@ class SoulRend(Skill):
     """Follow Soul Drain with a physical strike that respects its nonlethal identity."""
 
     def __init__(self) -> None:
-        super().__init__("Soul Rend", "Strike for 125% weapon damage and gain Resonance against a drained foe.", weapon=True)
+        super().__init__(
+            "Soul Rend",
+            "Strike for 125% weapon damage and gain Resonance against a drained foe.",
+            weapon=True,
+        )
         self.cost = 9
         self.subtyp = "Offensive"
 
@@ -241,7 +255,9 @@ class AncestralAegis(ResonantWard):
     def __init__(self) -> None:
         super().__init__()
         self.name = "Ancestral Aegis"
-        self.description = "Spend all Totem Resonance for a ward and restore 5% maximum health per stack."
+        self.description = (
+            "Spend all Totem Resonance for a ward and restore 5% maximum health per stack."
+        )
         self.result.action = self.name
 
     def use(self, user: Any, target: Any | None = None, **kwargs: Any):
@@ -266,7 +282,9 @@ class Soulstorm(Class):
     resource_type = "Totem Resonance"
 
     def __init__(self) -> None:
-        super().__init__("Soulstorm", "Spend all Resonance to force a strengthened Soul Totem pulse.")
+        super().__init__(
+            "Soulstorm", "Spend all Resonance to force a strengthened Soul Totem pulse."
+        )
         self.cost = 12
 
     def use(self, user: Any, target: Any | None = None, **kwargs: Any):

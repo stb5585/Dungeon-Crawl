@@ -8,7 +8,6 @@ from typing import Any
 
 from .base import Job
 
-
 WEAPON_TYPES = (
     "Fist",
     "Dagger",
@@ -52,22 +51,20 @@ WEAPON_ARTS = {
     "Hammer": "Anvil Strike",
 }
 ART_WEAPON_TYPES = {art: weapon_type for weapon_type, art in WEAPON_ARTS.items()}
-WEAPON_ART_UPGRADES = {
-    f"{art_name} 2": art_name
-    for art_name in WEAPON_ARTS.values()
-}
-WEAPON_ART_MASTERIES = {
-    f"{art_name} 3": f"{art_name} 2"
-    for art_name in WEAPON_ARTS.values()
-}
-ART_WEAPON_TYPES.update({
-    upgraded_name: ART_WEAPON_TYPES[base_name]
-    for upgraded_name, base_name in WEAPON_ART_UPGRADES.items()
-})
-ART_WEAPON_TYPES.update({
-    mastered_name: ART_WEAPON_TYPES[WEAPON_ART_UPGRADES[upgraded_name]]
-    for mastered_name, upgraded_name in WEAPON_ART_MASTERIES.items()
-})
+WEAPON_ART_UPGRADES = {f"{art_name} 2": art_name for art_name in WEAPON_ARTS.values()}
+WEAPON_ART_MASTERIES = {f"{art_name} 3": f"{art_name} 2" for art_name in WEAPON_ARTS.values()}
+ART_WEAPON_TYPES.update(
+    {
+        upgraded_name: ART_WEAPON_TYPES[base_name]
+        for upgraded_name, base_name in WEAPON_ART_UPGRADES.items()
+    }
+)
+ART_WEAPON_TYPES.update(
+    {
+        mastered_name: ART_WEAPON_TYPES[WEAPON_ART_UPGRADES[upgraded_name]]
+        for mastered_name, upgraded_name in WEAPON_ART_MASTERIES.items()
+    }
+)
 WEAPON_ART_LEVELS = {
     **{art_name: 1 for art_name in WEAPON_ARTS.values()},
     **{art_name: 2 for art_name in WEAPON_ART_UPGRADES},
@@ -134,10 +131,7 @@ def default_state() -> dict[str, Any]:
     return {
         "activated": False,
         "bound_weapon": None,
-        "disciplines": {
-            weapon_type: {"xp": 0, "rank": 0}
-            for weapon_type in WEAPON_TYPES
-        },
+        "disciplines": {weapon_type: {"xp": 0, "rank": 0} for weapon_type in WEAPON_TYPES},
     }
 
 
@@ -201,9 +195,7 @@ def weapon_discipline_types(character: Any) -> tuple[str, ...]:
     """Return weapon disciplines visible to the current class."""
     if getattr(getattr(character, "cls", None), "name", None) == "Berserker":
         return tuple(
-            weapon_type
-            for weapon_type in WEAPON_TYPES
-            if weapon_type in TWO_HANDED_WEAPONS
+            weapon_type for weapon_type in WEAPON_TYPES if weapon_type in TWO_HANDED_WEAPONS
         )
     return WEAPON_TYPES
 
@@ -218,7 +210,9 @@ def has_stored_class_ring(character: Any) -> bool:
     storage = getattr(character, "storage", {})
     if not isinstance(storage, dict):
         return False
-    return any(getattr(item, "name", None) == "Class Ring" for item in storage.get("Class Ring", []))
+    return any(
+        getattr(item, "name", None) == "Class Ring" for item in storage.get("Class Ring", [])
+    )
 
 
 def ring_visible_for_sergeant(character: Any) -> bool:
@@ -322,18 +316,11 @@ def discipline_xp_text(
         text += f"{weapon_type} Discipline reached rank {after_rank}.\n"
         art_name = WEAPON_ARTS.get(weapon_type)
         if art_name and before_rank < 1 <= after_rank:
-            text += (
-                f"{art_name} is now available in the Weapon Master ability tree.\n"
-            )
+            text += f"{art_name} is now available in the Weapon Master ability tree.\n"
         if art_name and before_rank < 5 <= after_rank:
-            text += (
-                f"{art_name} 2 is now available in the Weapon Master ability tree.\n"
-            )
+            text += f"{art_name} 2 is now available in the Weapon Master ability tree.\n"
         if art_name and before_rank < 10 <= after_rank:
-            text += (
-                f"{art_name} 3 is now available in the Grandmaster of Arms "
-                "ability tree.\n"
-            )
+            text += f"{art_name} 3 is now available in the Grandmaster of Arms " "ability tree.\n"
     return text
 
 
@@ -381,10 +368,7 @@ def _has_skill(character: Any, skill_name: str) -> bool:
 def two_handed_accuracy_bonus(character: Any, slot: str) -> float:
     """Return the passive accuracy bonus for a two-handed weapon attack."""
     weapon_type = get_weapon_type(character, slot)
-    if (
-        weapon_type in TWO_HANDED_WEAPONS
-        and _has_skill(character, "Two-Handed Weapon Proficiency")
-    ):
+    if weapon_type in TWO_HANDED_WEAPONS and _has_skill(character, "Two-Handed Weapon Proficiency"):
         return 0.10
     return 0.0
 
@@ -392,10 +376,7 @@ def two_handed_accuracy_bonus(character: Any, slot: str) -> float:
 def two_handed_damage_multiplier(character: Any, slot: str) -> float:
     """Return the passive damage multiplier for a two-handed weapon attack."""
     weapon_type = get_weapon_type(character, slot)
-    if (
-        weapon_type in TWO_HANDED_WEAPONS
-        and _has_skill(character, "Two-Handed Weapon Proficiency")
-    ):
+    if weapon_type in TWO_HANDED_WEAPONS and _has_skill(character, "Two-Handed Weapon Proficiency"):
         return 1.10
     return 1.0
 
@@ -500,17 +481,17 @@ def sync_weapon_art_skills(character: Any) -> list[str]:
         *WEAPON_ART_UPGRADES,
         *WEAPON_ART_MASTERIES,
     ):
-        node_suffix = (
-            ".ability."
-            + art_name.lower().replace("'", "").replace(" ", "-")
-        )
+        node_suffix = ".ability." + art_name.lower().replace("'", "").replace(" ", "-")
         if not any(node_id.endswith(node_suffix) for node_id in purchased):
             skills.pop(art_name, None)
     return []
 
 
 def _matching_weapon_equipped(character: Any, weapon_type: str) -> bool:
-    return get_weapon_type(character, "Weapon") == weapon_type or get_weapon_type(character, "OffHand") == weapon_type
+    return (
+        get_weapon_type(character, "Weapon") == weapon_type
+        or get_weapon_type(character, "OffHand") == weapon_type
+    )
 
 
 def matching_weapon_for_art_equipped(character: Any, art_name: str) -> bool:
@@ -532,10 +513,7 @@ def perform_weapon_art(character: Any, target: Any, art_name: str) -> str:
     required_rank = {1: 1, 2: 5, 3: 10}[art_level]
     if weapon_type not in WEAPON_TYPES or rank < required_rank:
         if weapon_type in WEAPON_TYPES and art_level > 1:
-            return (
-                f"{art_name} requires {weapon_type} specialization level "
-                f"{required_rank}.\n"
-            )
+            return f"{art_name} requires {weapon_type} specialization level " f"{required_rank}.\n"
         return f"{character.name} has not learned {art_name}.\n"
     if not _matching_weapon_equipped(character, weapon_type):
         return f"{art_name} requires an equipped {weapon_type}.\n"
@@ -640,13 +618,19 @@ def _apply_art_effect(
             if target.apply_stun(1, source="Iron Palm", applier=character):
                 msg += f"{target.name} reels from the palm strike.\n"
         if mastered:
-            _set_status(character.stat_effects["Defense"], duration=2, extra=4 + (2 if perfect else 0))
+            _set_status(
+                character.stat_effects["Defense"], duration=2, extra=4 + (2 if perfect else 0)
+            )
             msg += f"{character.name}'s stance hardens after Iron Palm.\n"
     elif weapon_type == "Dagger":
         bleed = max(2, character.stats.dex // 5) + (2 if improved else 0) + (2 if mastered else 0)
         if target.physical_effects["Bleed"].active and improved:
             bleed += max(1, int(target.physical_effects["Bleed"].extra or 0) // 2)
-        _set_status(target.physical_effects["Bleed"], duration=3 + int(mastered), extra=bleed + (1 if perfect else 0))
+        _set_status(
+            target.physical_effects["Bleed"],
+            duration=3 + int(mastered),
+            extra=bleed + (1 if perfect else 0),
+        )
         msg += f"Hemorrhage opens a bleeding wound on {target.name}.\n"
         if mastered and not target.is_alive():
             refund = max(1, ART_COSTS["Dagger"] // 2)
@@ -665,7 +649,9 @@ def _apply_art_effect(
         prone_chance = 0.25 + (0.20 if improved else 0.0) + (0.10 if mastered else 0.0)
         if random.random() < prone_chance and not getattr(target, "flying", False):
             target.physical_effects["Prone"].active = True
-            target.physical_effects["Prone"].duration = max(1 + int(mastered), target.physical_effects["Prone"].duration)
+            target.physical_effects["Prone"].duration = max(
+                1 + int(mastered), target.physical_effects["Prone"].duration
+            )
             msg += f"{target.name} is swept low and knocked prone.\n"
         else:
             msg += f"Low Sweep slows {target.name}'s footing.\n"
@@ -677,17 +663,16 @@ def _apply_art_effect(
         target._reavers_mark = {
             "turns": 3 + int(mastered),
             "bonus": (
-                0.10
-                + (0.05 if improved else 0.0)
-                + (0.05 if perfect else 0.0)
-                + rider_bonus
+                0.10 + (0.05 if improved else 0.0) + (0.05 if perfect else 0.0) + rider_bonus
             ),
         }
         msg += f"{target.name} is marked by Reaver's Mark.\n"
         if improved:
             _set_status(target.stat_effects["Defense"], duration=2, extra=-3)
         if mastered and not target.is_alive():
-            _set_status(character.stat_effects["Attack"], duration=2, extra=5 + (2 if perfect else 0))
+            _set_status(
+                character.stat_effects["Attack"], duration=2, extra=5 + (2 if perfect else 0)
+            )
             msg += f"{character.name} surges after reaving the marked foe.\n"
     elif weapon_type == "Polearm":
         character._brace_art = {
@@ -745,7 +730,9 @@ def apply_weapon_technique(attacker: Any, defender: Any, weapon_type: str | None
         effect = defender.physical_effects["Bleed"]
         effect.active = True
         effect.duration = 3
-        effect.extra = max(int(effect.extra or 0), max(1, attacker.stats.dex // 4) * entry["stacks"])
+        effect.extra = max(
+            int(effect.extra or 0), max(1, attacker.stats.dex // 4) * entry["stacks"]
+        )
         return f"{attacker.name}'s dagger exposes {defender.name}'s guard.\n"
 
     if weapon_type == "Sword":

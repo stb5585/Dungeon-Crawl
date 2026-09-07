@@ -155,7 +155,9 @@ class CombatSelectionMixin:
 
     def _prompt_for_tamed_companion_name(self, player_char, enemy, background_surface=None) -> None:
         """Ask for an optional nickname after a successful tame."""
-        state = ability_mechanics.normalize_tamed_companion(getattr(player_char, "tamed_companion", None))
+        state = ability_mechanics.normalize_tamed_companion(
+            getattr(player_char, "tamed_companion", None)
+        )
         companion_name = str(state.get("name") or getattr(enemy, "name", "Companion"))
         screen = combat_manager.CompanionNamingScreen(
             self.presenter,
@@ -174,7 +176,9 @@ class CombatSelectionMixin:
         if not nickname:
             return
         ability_mechanics.rename_tamed_companion(player_char, nickname)
-        display_name = ability_mechanics.tamed_companion_display_name(getattr(player_char, "tamed_companion", None))
+        display_name = ability_mechanics.tamed_companion_display_name(
+            getattr(player_char, "tamed_companion", None)
+        )
         original_name = getattr(enemy, "name", "companion")
         if display_name and display_name != original_name:
             self.combat_view.add_combat_message(f"{original_name} answers to {display_name}.")
@@ -369,8 +373,8 @@ class CombatSelectionMixin:
                 f"{name} (MP: {getattr(spell, 'cost', 0)})",
                 described_selection_text(player_char, spell),
             )
-            for name, spell in player_char.spellbook['Spells'].items()
-            if not getattr(spell, 'passive', False)
+            for name, spell in player_char.spellbook["Spells"].items()
+            if not getattr(spell, "passive", False)
             and not getattr(spell, "exploration_cast", False)
             and (getattr(spell, "subtyp", None) != "Movement" or name == "Volitation")
         ]
@@ -440,8 +444,11 @@ class CombatSelectionMixin:
     def _select_skill(self, player_char, enemy, *, allowed_names=None):
         """Show skill selection menu and return selected skill name."""
         from src.core.abilities.descriptions import described_selection_text
+
         # Filter out passive and currently unusable equipment-dependent skills.
-        skills = self._available_skill_names(player_char, enemy, allowed_names=allowed_names, resolve=False)
+        skills = self._available_skill_names(
+            player_char, enemy, allowed_names=allowed_names, resolve=False
+        )
 
         if not skills:
             self.combat_view.add_combat_message("No skills learned!")
@@ -457,7 +464,7 @@ class CombatSelectionMixin:
             self._render_combat_frame(frame_player, enemy, [], -1)
             skill_options = []
             for skill_name in skills:
-                skill = player_char.spellbook['Skills'][skill_name]
+                skill = player_char.spellbook["Skills"][skill_name]
                 cost = skill.cost
                 if getattr(skill, "resource_type", None) == "Oath Conviction":
                     conviction = int(
@@ -467,14 +474,12 @@ class CombatSelectionMixin:
                         )
                         or 0
                     )
-                    skill_options.append(
-                        f"{skill_name} (Conviction: all {conviction})"
-                    )
+                    skill_options.append(f"{skill_name} (Conviction: all {conviction})")
                 else:
                     skill_options.append(f"{skill_name} (MP: {cost})")
             skill_descriptions = []
             for skill_name in skills:
-                skill = player_char.spellbook['Skills'][skill_name]
+                skill = player_char.spellbook["Skills"][skill_name]
                 if getattr(skill, "resource_type", None) == "Oath Conviction":
                     skill_descriptions.append(
                         paladin.oath_technique_description(
@@ -483,9 +488,7 @@ class CombatSelectionMixin:
                         )
                     )
                 else:
-                    skill_descriptions.append(
-                        described_selection_text(player_char, skill)
-                    )
+                    skill_descriptions.append(described_selection_text(player_char, skill))
 
             self._render_described_selection_menu(
                 "Select Skill", skill_options, selected, scroll_offset, skill_descriptions
@@ -661,10 +664,7 @@ class CombatSelectionMixin:
             return None
 
         descriptions = [
-            (
-                f"{bard.REPERTOIRE_MP_COSTS[song]} MP - "
-                f"{bard.SONGS[song]['description']}"
-            )
+            (f"{bard.REPERTOIRE_MP_COSTS[song]} MP - " f"{bard.SONGS[song]['description']}")
             for song in songs
         ]
         selected = 0
@@ -716,23 +716,14 @@ class CombatSelectionMixin:
     def _select_resolve_ability(self, player_char, enemy, *, bursts=False):
         """Show a Resolve spend or full-bar burst selection menu."""
         skills = self._available_skill_names(player_char, enemy, resolve=True)
-        burst_names = {
-            entry["name"]
-            for entry in promotion_kits.RESOLVE_SURGES
-        }
+        burst_names = {entry["name"] for entry in promotion_kits.RESOLVE_SURGES}
         if bursts:
             skills = [name for name in skills if name in burst_names]
         else:
-            skills = [
-                name
-                for name in skills
-                if name not in burst_names
-            ]
+            skills = [name for name in skills if name not in burst_names]
         if not skills:
             label = "bursts" if bursts else "abilities"
-            self.combat_view.add_combat_message(
-                f"No Resolve {label} available!"
-            )
+            self.combat_view.add_combat_message(f"No Resolve {label} available!")
             self._pause_with_events(500)
             return None
 
@@ -745,7 +736,9 @@ class CombatSelectionMixin:
             resolve_options = []
             for skill_name in skills:
                 skill = player_char.spellbook["Skills"][skill_name]
-                display_name = self._canonical_resolve_skill_name(getattr(skill, "name", skill_name))
+                display_name = self._canonical_resolve_skill_name(
+                    getattr(skill, "name", skill_name)
+                )
                 resolve_options.append(
                     f"{display_name} ({self._resolve_skill_cost_label(skill, player_char)})"
                 )
@@ -799,8 +792,7 @@ class CombatSelectionMixin:
         """Show summon selection menu and return selected summon name."""
         summons = getattr(player_char, "summons", {}) or {}
         summon_names = [
-            name for name, summon in summons.items()
-            if self._living_summon_available(summon)
+            name for name, summon in summons.items() if self._living_summon_available(summon)
         ]
 
         if not summon_names:
@@ -932,11 +924,14 @@ class CombatSelectionMixin:
         from src.core import items as core_items
 
         options = [
-            name for name, spell in player_char.spellbook["Spells"].items()
-            if spell.subtyp not in {"Support", "Movement"} and spell.cost <= player_char.mana.current
+            name
+            for name, spell in player_char.spellbook["Spells"].items()
+            if spell.subtyp not in {"Support", "Movement"}
+            and spell.cost <= player_char.mana.current
         ]
         options.extend(
-            item_name for item_name, item_list in player_char.inventory.items()
+            item_name
+            for item_name, item_list in player_char.inventory.items()
             if item_list and isinstance(item_list[0], core_items.InscribedSpellScroll)
         )
         if not options:
@@ -957,7 +952,9 @@ class CombatSelectionMixin:
                     continue
                 item_list = player_char.inventory.get(option, [])
                 descriptions.append(getattr(item_list[0], "description", "") if item_list else "")
-            self._render_described_selection_menu("Steal As Well", options, selected, scroll_offset, descriptions)
+            self._render_described_selection_menu(
+                "Steal As Well", options, selected, scroll_offset, descriptions
+            )
             pygame.display.flip()
 
             input_armed = release_guard_allows_input(True, input_armed)
@@ -1025,7 +1022,9 @@ class CombatSelectionMixin:
                 lines.append("Additional demand: one potion.")
             permanent = costs.get("permanent")
             if permanent:
-                lines.append(f"Additional demand: permanent {permanent['amount']} {permanent['stat']}.")
+                lines.append(
+                    f"Additional demand: permanent {permanent['amount']} {permanent['stat']}."
+                )
             if not demonologist.can_pay_quote(player_char, quote):
                 self.combat_view.add_combat_message("You cannot pay that price.")
                 self._pause_with_events(700)
@@ -1075,7 +1074,7 @@ class CombatSelectionMixin:
 
     def _skill_available_for_selection(self, player_char, skill, target=None) -> bool:
         """Return whether a learned skill should be shown in the combat skill list."""
-        if getattr(skill, 'passive', False):
+        if getattr(skill, "passive", False):
             return False
         if not promotion_kits.combat_skill_visible(player_char, skill):
             return False
@@ -1096,9 +1095,9 @@ class CombatSelectionMixin:
         ):
             return False
 
-        if getattr(skill, 'name', None) == "Shield Slam":
-            offhand = getattr(player_char, 'equipment', {}).get('OffHand')
-            return getattr(offhand, 'subtyp', None) == "Shield"
+        if getattr(skill, "name", None) == "Shield Slam":
+            offhand = getattr(player_char, "equipment", {}).get("OffHand")
+            return getattr(offhand, "subtyp", None) == "Shield"
 
         if getattr(skill, "name", None) == "Mortal Strike":
             weapon = getattr(player_char, "equipment", {}).get("Weapon")
@@ -1106,13 +1105,13 @@ class CombatSelectionMixin:
                 return False
 
         if is_resolve_skill:
-            offhand = getattr(player_char, 'equipment', {}).get('OffHand')
-            if getattr(offhand, 'subtyp', None) != "Shield":
+            offhand = getattr(player_char, "equipment", {}).get("OffHand")
+            if getattr(offhand, "subtyp", None) != "Shield":
                 return False
 
         class_name = getattr(getattr(player_char, "cls", None), "name", "")
         if (
-            getattr(skill, 'weapon', False)
+            getattr(skill, "weapon", False)
             and player_char.is_disarmed()
             and "Monk" not in class_name
         ):
@@ -1122,15 +1121,15 @@ class CombatSelectionMixin:
         if callable(availability) and not availability(player_char, target):
             return False
 
-        art_name = getattr(skill, 'name', None)
+        art_name = getattr(skill, "name", None)
         if art_name in grandmaster.ART_WEAPON_TYPES:
             return grandmaster.matching_weapon_for_art_equipped(player_char, art_name)
 
         if art_name in {entry["name"] for entry in promotion_kits.RESOLVE_SURGES}:
             return promotion_kits.resolve_surge_available(player_char, art_name)
 
-        if getattr(skill, '_requires_incapacitated', False):
-            incapacitated = getattr(target, 'incapacitated', None)
+        if getattr(skill, "_requires_incapacitated", False):
+            incapacitated = getattr(target, "incapacitated", None)
             if target is None or not callable(incapacitated) or not incapacitated():
                 return False
 
@@ -1168,7 +1167,11 @@ class CombatSelectionMixin:
         self.screen.blit(title_surf, (panel_x + 20, panel_y + 12))
         descriptions = getattr(self, "_selection_menu_descriptions", None)
         if descriptions and 0 <= selected < len(descriptions):
-            title_width = title_surf.get_width() if hasattr(title_surf, "get_width") else font_large.size(title)[0]
+            title_width = (
+                title_surf.get_width()
+                if hasattr(title_surf, "get_width")
+                else font_large.size(title)[0]
+            )
             description = self._fit_text_to_width(
                 font_small,
                 str(descriptions[selected] or ""),
@@ -1205,7 +1208,9 @@ class CombatSelectionMixin:
             pygame.draw.rect(self.screen, (58, 58, 66), track_rect)
             scrollbar_height = int(track_rect.height * max_visible / len(options))
             scrollbar_height = max(20, scrollbar_height)
-            scrollbar_y = track_rect.y + int((track_rect.height - scrollbar_height) * scroll_offset / max_scroll)
+            scrollbar_y = track_rect.y + int(
+                (track_rect.height - scrollbar_height) * scroll_offset / max_scroll
+            )
             pygame.draw.rect(
                 self.screen,
                 (170, 138, 82),
@@ -1213,7 +1218,9 @@ class CombatSelectionMixin:
             )
 
         if len(options) > max_visible:
-            instructions = "Up/Down or W/S: Navigate | PgUp/PgDn: Scroll | Enter: Select | Esc: Cancel"
+            instructions = (
+                "Up/Down or W/S: Navigate | PgUp/PgDn: Scroll | Enter: Select | Esc: Cancel"
+            )
         else:
             instructions = "Up/Down or W/S: Navigate | Enter/Space: Select | Esc: Cancel"
         instr_surf = font_small.render(instructions, True, (176, 176, 176))

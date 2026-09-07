@@ -3,7 +3,6 @@
 import ast
 from pathlib import Path
 
-
 SRC_ROOT = Path(__file__).parents[2] / "src"
 PACKAGE_INITIALIZERS = tuple(sorted(SRC_ROOT.rglob("__init__.py")))
 

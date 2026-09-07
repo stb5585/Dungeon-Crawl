@@ -18,7 +18,6 @@ from .catalog import (
     resolve_random_enemy_catalog,
 )
 
-
 AbilityFactory = Callable[[], object]
 EnemyFactory = Callable[[], Enemy]
 RandomEnemyOverride = str | type[Enemy] | EnemyFactory
@@ -86,9 +85,7 @@ def curated_encounter_specs() -> tuple[CuratedEncounterSpec, ...]:
     specs = []
     for key, raw_spec in CURATED_PAIR_SPECS.items():
         display_name, floor, class_names, *modifiers = raw_spec
-        health_multiplier, offense_multiplier = (
-            modifiers[0] if modifiers else (1.0, 1.0)
-        )
+        health_multiplier, offense_multiplier = modifiers[0] if modifiers else (1.0, 1.0)
         factories = tuple(_ENEMY_NAMESPACE[name] for name in class_names)
         specs.append(
             CuratedEncounterSpec(
@@ -123,22 +120,19 @@ def _forced_curated_encounter(
 ) -> CombatEncounter | None:
     """Build an environment-forced pair for an authorized random encounter."""
     key = os.getenv(_CURATED_ENCOUNTER_OVERRIDE_ENV, "").strip()
-    forced_enemy = (
-        _random_enemy_override is not None
-        or bool(os.getenv(_RANDOM_ENEMY_OVERRIDE_ENV, "").strip())
+    forced_enemy = _random_enemy_override is not None or bool(
+        os.getenv(_RANDOM_ENEMY_OVERRIDE_ENV, "").strip()
     )
     if key and forced_enemy:
         raise ValueError(
-            "DUNGEON_FORCE_ENEMY and DUNGEON_FORCE_ENCOUNTER "
-            "cannot be used together."
+            "DUNGEON_FORCE_ENEMY and DUNGEON_FORCE_ENCOUNTER " "cannot be used together."
         )
     if not key or not enabled:
         return None
     spec = curated_encounter_spec(key)
     if int(level) != spec.floor:
         raise ValueError(
-            f"Curated encounter {key!r} belongs to floor {spec.floor}, "
-            f"not floor {level}."
+            f"Curated encounter {key!r} belongs to floor {spec.floor}, " f"not floor {level}."
         )
     return spec.build()
 

@@ -46,7 +46,7 @@ class DungeonNavigationMixin:
             return False
 
         # Closed or locked doors block movement
-        if 'Door' in tile_type:
+        if "Door" in tile_type:
             if hasattr(tile_ahead, "open") and tile_ahead.open:
                 pass
             elif getattr(tile_ahead, "locked", False):
@@ -57,8 +57,8 @@ class DungeonNavigationMixin:
                 return False
 
         # Final blocker requires relics
-        if 'FinalBlocker' in tile_type and not self.player_char.has_relics():
-            blocked_dir = getattr(tile_ahead, 'blocked', None)
+        if "FinalBlocker" in tile_type and not self.player_char.has_relics():
+            blocked_dir = getattr(tile_ahead, "blocked", None)
             if blocked_dir and blocked_dir.lower() == self.player_char.facing:
                 self.add_message("An invisible force prevents you from moving forward!")
                 return False
@@ -66,7 +66,9 @@ class DungeonNavigationMixin:
         current_tile = self.get_current_tile()
         if (
             current_tile
-            and map_tiles.jester_force_field_blocks(current_tile, self.player_char, self.player_char.facing)
+            and map_tiles.jester_force_field_blocks(
+                current_tile, self.player_char, self.player_char.facing
+            )
         ) or map_tiles.jester_force_field_blocks_entry(tile_ahead, self.player_char):
             self._show_special_event_dialogue(
                 map_tiles.JESTER_FORCE_FIELD_EVENT,
@@ -110,8 +112,8 @@ class DungeonNavigationMixin:
             y = self.player_char.location_y
             z = self.player_char.location_z
             tname = type(new_tile).__name__ if new_tile else "None"
-            if new_tile and ('FirePath' in tname):
-                resist = self.player_char.check_mod('resist', typ='Fire')
+            if new_tile and ("FirePath" in tname):
+                resist = self.player_char.check_mod("resist", typ="Fire")
         except Exception as e:
             pass
 
@@ -170,18 +172,20 @@ class DungeonNavigationMixin:
         current_tile = self.get_current_tile()
         tile_type = type(current_tile).__name__
 
-        if 'StairsUp' not in tile_type and 'LadderUp' not in tile_type:
+        if "StairsUp" not in tile_type and "LadderUp" not in tile_type:
             self.add_message("There are no stairs here!")
             return False
 
         target_level = self.player_char.location_z - 1
-        loading_text = "Returning to town..." if target_level <= 0 else f"Ascending to level {target_level}..."
+        loading_text = (
+            "Returning to town..." if target_level <= 0 else f"Ascending to level {target_level}..."
+        )
         self._show_dungeon_loading_screen(loading_text)
 
         self.player_char.location_z = target_level
         if hasattr(self.player_char, "record_stairs_used"):
             self.player_char.record_stairs_used()
-        if 'StairsUp' in tile_type:
+        if "StairsUp" in tile_type:
             self._move_to_adjacent_from_stairs()
         self._mark_view_dirty()
         self._suppress_navigation_input()
@@ -202,7 +206,7 @@ class DungeonNavigationMixin:
         current_tile = self.get_current_tile()
         tile_type = type(current_tile).__name__
 
-        if 'StairsDown' not in tile_type and 'LadderDown' not in tile_type:
+        if "StairsDown" not in tile_type and "LadderDown" not in tile_type:
             self.add_message("There are no stairs here!")
             return False
 
@@ -212,7 +216,7 @@ class DungeonNavigationMixin:
         self.player_char.location_z = target_level
         if hasattr(self.player_char, "record_stairs_used"):
             self.player_char.record_stairs_used()
-        if 'StairsDown' in tile_type:
+        if "StairsDown" in tile_type:
             self._move_to_adjacent_from_stairs()
         self._mark_view_dirty()
         self._suppress_navigation_input()
@@ -274,13 +278,13 @@ class DungeonNavigationMixin:
         tile_type = type(tile).__name__
 
         # Do not spawn directly onto stair tiles
-        if any(name in tile_type for name in ('StairsUp', 'StairsDown')):
+        if any(name in tile_type for name in ("StairsUp", "StairsDown")):
             return False
 
         if not getattr(tile, "enter", True):
             return False
 
-        if 'Door' in tile_type:
+        if "Door" in tile_type:
             if getattr(tile, "locked", False):
                 return False
             if hasattr(tile, "open") and not tile.open:
@@ -296,7 +300,7 @@ class DungeonNavigationMixin:
 
         walkable_neighbors = []
         for direction in ("north", "east", "south", "west"):
-            dx, dy = DIRECTIONS[direction]['move']
+            dx, dy = DIRECTIONS[direction]["move"]
             pos = (x + dx, y + dy, z)
             candidate_tile = self.player_char.world_dict.get(pos)
             if self._is_walkable_spawn_tile(candidate_tile):
@@ -312,14 +316,14 @@ class DungeonNavigationMixin:
             return
 
         facing = self.player_char.facing
-        right_turn = {'north': 'east', 'east': 'south', 'south': 'west', 'west': 'north'}
-        left_turn = {'north': 'west', 'west': 'south', 'south': 'east', 'east': 'north'}
-        back_turn = {'north': 'south', 'south': 'north', 'east': 'west', 'west': 'east'}
+        right_turn = {"north": "east", "east": "south", "south": "west", "west": "north"}
+        left_turn = {"north": "west", "west": "south", "south": "east", "east": "north"}
+        back_turn = {"north": "south", "south": "north", "east": "west", "west": "east"}
 
         candidate_order = [facing, right_turn[facing], left_turn[facing], back_turn[facing]]
 
         for direction in candidate_order:
-            dx, dy = DIRECTIONS[direction]['move']
+            dx, dy = DIRECTIONS[direction]["move"]
             pos = (x + dx, y + dy, z)
             candidate_tile = self.player_char.world_dict.get(pos)
             if self._is_walkable_spawn_tile(candidate_tile):

@@ -112,9 +112,7 @@ class DevotionalRebuke(Skill):
             typ="Holy",
         )
         holy_damage = (
-            max(0, min(int(holy_damage or 0), int(target.health.current)))
-            if holy_hit
-            else 0
+            max(0, min(int(holy_damage or 0), int(target.health.current))) if holy_hit else 0
         )
         result.message += reduction
         if holy_damage:
@@ -195,9 +193,7 @@ class HallowedReadiness(Class):
             effect.source = self.name
             result.effects_applied["Stat"].append(stat_name)
         result.hit = True
-        result.message = (
-            f"{user.name}'s Hallowed Readiness raises both defenses by {amount}.\n"
-        )
+        result.message = f"{user.name}'s Hallowed Readiness raises both defenses by {amount}.\n"
         return result
 
 

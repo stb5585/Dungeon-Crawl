@@ -22,9 +22,9 @@ def _demonologist():
 
 
 def test_classes_package_registers_demonologist_without_pruning_api():
-    demonologist_class = classes.classes_dict["Mage"]["pro"]["Warlock"]["pro"][
-        "Demonologist"
-    ]["class"]
+    demonologist_class = classes.classes_dict["Mage"]["pro"]["Warlock"]["pro"]["Demonologist"][
+        "class"
+    ]
 
     assert demonologist_class is classes.Demonologist
     assert not hasattr(classes, "PROMOTION_ABILITY_RULES")
@@ -95,7 +95,9 @@ def test_contract_quote_pay_and_resolve_with_charisma_weighting():
     assert quote["patron"] == "Imp"
     assert demonologist.can_pay_quote(player, quote) is True
 
-    msg = demonologist.resolve_contract(player, target, "Harm", rng=SimpleNamespace(random=lambda: 1.0))
+    msg = demonologist.resolve_contract(
+        player, target, "Harm", rng=SimpleNamespace(random=lambda: 1.0)
+    )
 
     assert "accepts" in msg
     assert target.health.current < target_hp

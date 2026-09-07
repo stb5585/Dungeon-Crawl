@@ -27,7 +27,9 @@ class OffHandExcellence(_AssassinPassive):
 
 class ForGoodMeasure(_AssassinPassive):
     def __init__(self):
-        super().__init__("For Good Measure", "A successful Disarm is followed by an off-hand attack.")
+        super().__init__(
+            "For Good Measure", "A successful Disarm is followed by an off-hand attack."
+        )
 
 
 class Cutthroat(_AssassinPassive):
@@ -51,7 +53,9 @@ class MainGauche(_AssassinPassive):
 
 class LiveAndLearn(_AssassinPassive):
     def __init__(self):
-        super().__init__("Live and Learn", "Critical hits taken can increase dodge, stacking three times.")
+        super().__init__(
+            "Live and Learn", "Critical hits taken can increase dodge, stacking three times."
+        )
 
 
 class ApplyToxin(Skill):
@@ -79,7 +83,9 @@ class MakeToxin(Skill):
     exploration_cast = True
 
     def __init__(self):
-        super().__init__("Make Toxin", "Craft an available venom or Deathcap into its matching toxin.")
+        super().__init__(
+            "Make Toxin", "Craft an available venom or Deathcap into its matching toxin."
+        )
         self.combat = False
         self.subtyp = "Utility"
 
@@ -190,7 +196,11 @@ class Disembowel(Skill):
 
 class HiddenBlade(Skill):
     def __init__(self):
-        super().__init__("Hidden Blade", "Attack normally, then follow with a concealed throwing dagger.", weapon=True)
+        super().__init__(
+            "Hidden Blade",
+            "Attack normally, then follow with a concealed throwing dagger.",
+            weapon=True,
+        )
         self.cost = 8
         self.subtyp = "Offensive"
 
@@ -271,7 +281,13 @@ class Deathblow(Skill):
         base_damage = max(0, before - int(target.health.current))
         message += attack_message
         message += promotion_kits.resolve_weapon_finisher(
-            user, target, self.name, marks, base_damage, mana_cost=self.cost, hit=hit,
+            user,
+            target,
+            self.name,
+            marks,
+            base_damage,
+            mana_cost=self.cost,
+            hit=hit,
         )
         result.hit, result.crit = hit, crit
         result.damage = max(0, before - int(target.health.current))
@@ -317,7 +333,11 @@ class MarkedShuriken(Skill):
                 message += f"{target.name} is blinded by Marked Shuriken.\n"
         status_applied = status_applied or bool(getattr(user, "_death_mark_toxin_status", False))
         message += promotion_kits.resolve_death_mark_setup(
-            user, target, self.name, hit=hit, status_applied=status_applied,
+            user,
+            target,
+            self.name,
+            hit=hit,
+            status_applied=status_applied,
         )
         message += footpad.spend_throwing_dagger(user, ammunition, retrieve=random.random() < 0.35)
         result.hit, result.crit = hit, crit
@@ -371,7 +391,13 @@ class ThousandCuts(Skill):
             crit = max(crit, strike_crit)
         base_damage = max(0, before - int(target.health.current))
         message += promotion_kits.resolve_weapon_finisher(
-            user, target, self.name, marks, base_damage, mana_cost=self.cost, hit=any_hit,
+            user,
+            target,
+            self.name,
+            marks,
+            base_damage,
+            mana_cost=self.cost,
+            hit=any_hit,
         )
         result.hit, result.crit = any_hit, crit
         result.damage = max(0, before - int(target.health.current))
@@ -412,7 +438,13 @@ class DeathSentence(Skill):
         message += attack_message
         base_damage = max(0, before - int(target.health.current))
         message += promotion_kits.resolve_weapon_finisher(
-            user, target, self.name, marks, base_damage, mana_cost=self.cost, hit=hit,
+            user,
+            target,
+            self.name,
+            marks,
+            base_damage,
+            mana_cost=self.cost,
+            hit=hit,
         )
         if hit and target.is_alive():
             killed, immune = promotion_kits.resolve_death_contest(user, target, marks=marks)
@@ -440,7 +472,9 @@ class SmashAndGrab(_AssassinPassive):
 
 class ExecutionRhythm(_AssassinPassive):
     def __init__(self):
-        super().__init__("Execution Rhythm", "Marked finishers refund 10% of their MP cost per mark.")
+        super().__init__(
+            "Execution Rhythm", "Marked finishers refund 10% of their MP cost per mark."
+        )
 
 
 class ToxicPrecision(_AssassinPassive):
@@ -450,7 +484,9 @@ class ToxicPrecision(_AssassinPassive):
 
 class LingeringVenom(_AssassinPassive):
     def __init__(self):
-        super().__init__("Lingering Venom", "Improves toxin potency and ordinary reaction duration.")
+        super().__init__(
+            "Lingering Venom", "Improves toxin potency and ordinary reaction duration."
+        )
 
 
 class CoatingConservation(_AssassinPassive):
@@ -465,7 +501,9 @@ class Potentiation(_AssassinPassive):
 
 class BlackLotusMastery(_AssassinPassive):
     def __init__(self):
-        super().__init__("Black Lotus Mastery", "Perfects toxin severity, potency, and coating retention.")
+        super().__init__(
+            "Black Lotus Mastery", "Perfects toxin severity, potency, and coating retention."
+        )
 
 
 class ShadowEvasion(_AssassinPassive):

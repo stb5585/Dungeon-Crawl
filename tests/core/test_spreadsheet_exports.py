@@ -5,10 +5,7 @@ from src.core.spreadsheet_exports import OUTPUT_DIRECTORY, render_all, write_all
 
 def test_generated_spreadsheets_match_runtime_catalogs():
     expected = render_all()
-    actual = {
-        path.relative_to(OUTPUT_DIRECTORY)
-        for path in OUTPUT_DIRECTORY.rglob("*.csv")
-    }
+    actual = {path.relative_to(OUTPUT_DIRECTORY) for path in OUTPUT_DIRECTORY.rglob("*.csv")}
 
     assert actual == set(expected)
     for relative_path, content in expected.items():
@@ -20,12 +17,8 @@ def test_generated_spreadsheets_match_runtime_catalogs():
 def test_spreadsheet_exports_cover_current_catalogs():
     exports = render_all()
     spells = exports[next(path for path in exports if path.as_posix() == "specials/spells.csv")]
-    floor_four = exports[
-        next(path for path in exports if path.as_posix() == "enemies/floor-4.csv")
-    ]
-    classes = exports[
-        next(path for path in exports if path.as_posix() == "characters/classes.csv")
-    ]
+    floor_four = exports[next(path for path in exports if path.as_posix() == "enemies/floor-4.csv")]
+    classes = exports[next(path for path in exports if path.as_posix() == "characters/classes.csv")]
 
     assert len(exports) >= 70
     assert "Volcano" in spells

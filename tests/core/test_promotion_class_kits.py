@@ -47,7 +47,9 @@ def test_promotion_kit_state_normalizes_and_round_trips():
     assert state["lycan_control"]["rank"] == "Tethered"
     assert state["favored_enemy"] == {"type": "Animal", "practice": 999, "switches": 2}
 
-    restored = PlayerDataSerializer.deserialize(PlayerDataSerializer.serialize(player), skip_tiles=True)
+    restored = PlayerDataSerializer.deserialize(
+        PlayerDataSerializer.serialize(player), skip_tiles=True
+    )
     assert restored.promotion_kit_state["case_journal"]["Fiend"] == 100
     assert restored.promotion_kit_state["favored_enemy"]["type"] == "Animal"
     assert promotion_kits.combat_state(restored)["foresight_threads"] == 0
@@ -68,9 +70,7 @@ def test_resolve_mastery_normalizes_discards_scalar_and_round_trips():
     state["data"]["Stalwart Defender"]["resolve_mastery"] = 99
     player.class_ring_awakening = state
 
-    mastery = class_rings.ensure_state(player)["data"]["Stalwart Defender"][
-        "resolve_mastery"
-    ]
+    mastery = class_rings.ensure_state(player)["data"]["Stalwart Defender"]["resolve_mastery"]
     assert mastery == {
         "citadel_aegis": 0,
         "ironwall_revenge": 0,
@@ -78,19 +78,19 @@ def test_resolve_mastery_normalizes_discards_scalar_and_round_trips():
         "stronghold": 0,
     }
 
-    mastery.update({
-        "citadel_aegis": 2,
-        "ironwall_revenge": 8,
-        "last_bastion": "invalid",
-        "unknown": 3,
-    })
+    mastery.update(
+        {
+            "citadel_aegis": 2,
+            "ironwall_revenge": 8,
+            "last_bastion": "invalid",
+            "unknown": 3,
+        }
+    )
     restored = PlayerDataSerializer.deserialize(
         PlayerDataSerializer.serialize(player),
         skip_tiles=True,
     )
-    assert class_rings.ensure_state(restored)["data"]["Stalwart Defender"][
-        "resolve_mastery"
-    ] == {
+    assert class_rings.ensure_state(restored)["data"]["Stalwart Defender"]["resolve_mastery"] == {
         "citadel_aegis": 2,
         "ironwall_revenge": 4,
         "last_bastion": 0,
@@ -135,7 +135,9 @@ def test_demonologist_corruption_and_mood_gate_intents():
     assert "Protect" in demonologist.available_intents(demo, "Imp")
 
     target = enemies.Goblin()
-    message = demonologist.resolve_contract(demo, target, "Protect", rng=SimpleNamespace(random=lambda: 1.0))
+    message = demonologist.resolve_contract(
+        demo, target, "Protect", rng=SimpleNamespace(random=lambda: 1.0)
+    )
 
     assert "Bargain taint rises" in message
     assert demo.demonologist_contracts["corruption"] > 0
@@ -587,9 +589,7 @@ def test_resolve_aerial_aspect_totem_and_beast_commands():
     defender = _player("Stalwart Defender")
     defender.equipment["OffHand"] = items.Glagwa()
     assert "Resolve" in promotion_kits.build_resolve(defender, 100, "test")
-    mastery = class_rings.ensure_state(defender)["data"]["Stalwart Defender"][
-        "resolve_mastery"
-    ]
+    mastery = class_rings.ensure_state(defender)["data"]["Stalwart Defender"]["resolve_mastery"]
     mastery.update({key: 4 for key in mastery})
     assert all(
         promotion_kits.resolve_surge_unlocked(defender, surge)
@@ -604,7 +604,9 @@ def test_resolve_aerial_aspect_totem_and_beast_commands():
     assert class_rings.ensure_state(defender)["data"]["Stalwart Defender"]["guard_meter"] == 0
     assert promotion_kits.resolve_surge_unlocked(defender, "Ironwall Revenge")
 
-    restored = PlayerDataSerializer.deserialize(PlayerDataSerializer.serialize(defender), skip_tiles=True)
+    restored = PlayerDataSerializer.deserialize(
+        PlayerDataSerializer.serialize(defender), skip_tiles=True
+    )
     assert promotion_kits.resolve_surge_unlocked(restored, "Ironwall Revenge")
 
     dragoon = _player("Dragoon")
@@ -643,7 +645,9 @@ def test_case_revelation_death_mark_stolen_charge_and_summon_bond():
 
     summoner = _player("Thaumaturgist", mana=(100, 100))
     assert "Patagon's conduit" in promotion_kits.gain_summon_bond(summoner, "Patagon", 50, "test")
-    assert ("Xenid Conduit", "Patagon 50/100 Invoke ready") in promotion_kits.status_summary_rows(summoner)
+    assert ("Xenid Conduit", "Patagon 50/100 Invoke ready") in promotion_kits.status_summary_rows(
+        summoner
+    )
     assert "invokes Patagon" in abilities.InvokePatagon().use(summoner, target)
 
 
@@ -693,11 +697,14 @@ def test_summon_conduit_gain_allows_new_xenids_and_can_fail_roll(monkeypatch):
     summoner.summons = {"Patagon": summon}
     summoner.active_summon_name = "Patagon"
 
-    assert promotion_kits.summon_bond_gain_for_victory(
-        summoner,
-        9999,
-        guaranteed=True,
-    ) > 0
+    assert (
+        promotion_kits.summon_bond_gain_for_victory(
+            summoner,
+            9999,
+            guaranteed=True,
+        )
+        > 0
+    )
     monkeypatch.setattr("src.core.classes.promotion_kits.random.random", lambda: 0.99)
     assert promotion_kits.summon_bond_gain_for_victory(summoner, 50) == 0
     message = promotion_kits.gain_summon_bond_for_active(summoner, 0, "victory")
@@ -1013,9 +1020,7 @@ def test_troubadour_exploration_completion_practice_route_coda_and_save():
 def test_mastered_repertoire_costs_mp_and_chorus_coda_resolves_once():
     troubadour = _player("Troubadour", mana=(100, 100))
     troubadour.equipment["OffHand"] = items.Lute()
-    promotion_kits.ensure_state(troubadour)["bard_repertoire"]["Battle Hymn"][
-        "known"
-    ] = True
+    promotion_kits.ensure_state(troubadour)["bard_repertoire"]["Battle Hymn"]["known"] = True
 
     started, message = bard.perform_repertoire_song(
         troubadour,
@@ -1037,16 +1042,22 @@ def test_mastered_repertoire_costs_mp_and_chorus_coda_resolves_once():
             self.calls += 1
             return high if self.calls == 1 else low
 
-    assert bard.consume_chorus_time_coda(
-        troubadour,
-        enemies.Goblin(),
-        rng=WinningContest(),
-    ) is True
-    assert bard.consume_chorus_time_coda(
-        troubadour,
-        enemies.Goblin(),
-        rng=WinningContest(),
-    ) is False
+    assert (
+        bard.consume_chorus_time_coda(
+            troubadour,
+            enemies.Goblin(),
+            rng=WinningContest(),
+        )
+        is True
+    )
+    assert (
+        bard.consume_chorus_time_coda(
+            troubadour,
+            enemies.Goblin(),
+            rng=WinningContest(),
+        )
+        is False
+    )
 
 
 def test_shared_recovery_scales_with_companion_bond():

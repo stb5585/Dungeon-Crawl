@@ -73,11 +73,7 @@ class CombatOverlayMixin:
                 enemy,
                 has_sight,
             )
-            presented_label = (
-                "Unseen force"
-                if hidden_by_invisibility
-                else member.display_label
-            )
+            presented_label = "Unseen force" if hidden_by_invisibility else member.display_label
             label = self._truncate_text(
                 title_font,
                 presented_label,
@@ -125,21 +121,11 @@ class CombatOverlayMixin:
                 except (AttributeError, TypeError):
                     visible_bounds = sprite.get_rect()
                 if getattr(enemy, "flying", False):
-                    sprite_left = (
-                        sprite_area.centerx
-                        - visible_bounds.centerx
-                    )
-                    sprite_top = (
-                        lane.centery
-                        - 10
-                        + animator.bob_offset
-                        - visible_bounds.centery
-                    )
+                    sprite_left = sprite_area.centerx - visible_bounds.centerx
+                    sprite_top = lane.centery - 10 + animator.bob_offset - visible_bounds.centery
                 else:
                     pace_offset = (
-                        animator.confused_pace_offset()
-                        if self._enemy_is_polymorphed(enemy)
-                        else 0
+                        animator.confused_pace_offset() if self._enemy_is_polymorphed(enemy) else 0
                     )
                     sprite_left = (
                         sprite_area.centerx
@@ -147,10 +133,7 @@ class CombatOverlayMixin:
                         + pace_offset
                         - visible_bounds.centerx
                     )
-                    sprite_top = (
-                        sprite_area.bottom
-                        - visible_bounds.bottom
-                    )
+                    sprite_top = sprite_area.bottom - visible_bounds.bottom
                 sprite_rect = sprite.get_rect(
                     topleft=(sprite_left, sprite_top),
                 )
@@ -260,10 +243,12 @@ class CombatOverlayMixin:
         if display_sprite is not None:
             # Apply damage flash tint
             if animator.damage_flash > 0:
-                display_sprite = animator.apply_tint(display_sprite, (255, 100, 100), animator.damage_flash)
+                display_sprite = animator.apply_tint(
+                    display_sprite, (255, 100, 100), animator.damage_flash
+                )
 
             # Apply death animation
-            if animator.animation_type == 'death':
+            if animator.animation_type == "death":
                 scale = 1.0 - (animator.death_progress * 0.7)
                 death_size = (
                     max(1, int(display_sprite.get_width() * scale)),
@@ -278,19 +263,15 @@ class CombatOverlayMixin:
                 display_sprite = display_sprite.copy()
                 display_sprite.blit(alpha_surf, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
 
-            if animator.animation_type != 'death':
+            if animator.animation_type != "death":
                 display_sprite = self._fade_sprite_for_smoke_screen(display_sprite, enemy, "enemy")
 
             # Calculate Y position with bob animation
             bob_y = center_y + animator.bob_offset if is_flying else center_y
             pace_offset = animator.confused_pace_offset() if polymorphed else 0
-            bob_x = (
-                center_x
-                if is_flying
-                else center_x + animator.sway_offset + pace_offset
-            )
+            bob_x = center_x if is_flying else center_x + animator.sway_offset + pace_offset
 
-            if animator.animation_type != 'death':
+            if animator.animation_type != "death":
                 self._draw_mirror_images(
                     display_sprite,
                     (int(bob_x), int(bob_y)),
@@ -308,8 +289,9 @@ class CombatOverlayMixin:
             enemy_size = 150
             fallback_x = center_x if is_flying else center_x + animator.sway_offset
             fallback_y = center_y + animator.bob_offset if is_flying else center_y
-            pygame.draw.circle(self.screen, self.colors['enemy'],
-                             (int(fallback_x), int(fallback_y)), enemy_size)
+            pygame.draw.circle(
+                self.screen, self.colors["enemy"], (int(fallback_x), int(fallback_y)), enemy_size
+            )
             self._last_enemy_target_rect = pygame.Rect(
                 int(fallback_x - enemy_size),
                 int(fallback_y - enemy_size),
@@ -320,14 +302,30 @@ class CombatOverlayMixin:
             # Add eyes
             eye_offset = enemy_size // 3
             eye_size = enemy_size // 6
-            pygame.draw.circle(self.screen, (255, 255, 255),
-                             (int(fallback_x - eye_offset), int(fallback_y - eye_offset)), eye_size)
-            pygame.draw.circle(self.screen, (255, 255, 255),
-                             (int(fallback_x + eye_offset), int(fallback_y - eye_offset)), eye_size)
-            pygame.draw.circle(self.screen, (0, 0, 0),
-                             (int(fallback_x - eye_offset), int(fallback_y - eye_offset)), eye_size // 2)
-            pygame.draw.circle(self.screen, (0, 0, 0),
-                             (int(fallback_x + eye_offset), int(fallback_y - eye_offset)), eye_size // 2)
+            pygame.draw.circle(
+                self.screen,
+                (255, 255, 255),
+                (int(fallback_x - eye_offset), int(fallback_y - eye_offset)),
+                eye_size,
+            )
+            pygame.draw.circle(
+                self.screen,
+                (255, 255, 255),
+                (int(fallback_x + eye_offset), int(fallback_y - eye_offset)),
+                eye_size,
+            )
+            pygame.draw.circle(
+                self.screen,
+                (0, 0, 0),
+                (int(fallback_x - eye_offset), int(fallback_y - eye_offset)),
+                eye_size // 2,
+            )
+            pygame.draw.circle(
+                self.screen,
+                (0, 0, 0),
+                (int(fallback_x + eye_offset), int(fallback_y - eye_offset)),
+                eye_size // 2,
+            )
 
         self._render_ability_status_visuals(enemy, "enemy", include_duplicates=False)
 
@@ -354,18 +352,21 @@ class CombatOverlayMixin:
             bar_y = center_y - enemy_size - 80
 
             # Background
-            pygame.draw.rect(self.screen, (40, 40, 40),
-                           pygame.Rect(bar_x, bar_y, bar_width, bar_height))
+            pygame.draw.rect(
+                self.screen, (40, 40, 40), pygame.Rect(bar_x, bar_y, bar_width, bar_height)
+            )
 
             # HP fill
             hp_ratio = enemy.health.current / max(enemy.health.max, 1)
             hp_width = int(bar_width * hp_ratio)
-            pygame.draw.rect(self.screen, self.colors['hp_bar'],
-                           pygame.Rect(bar_x, bar_y, hp_width, bar_height))
+            pygame.draw.rect(
+                self.screen, self.colors["hp_bar"], pygame.Rect(bar_x, bar_y, hp_width, bar_height)
+            )
 
             # Border
-            pygame.draw.rect(self.screen, (150, 150, 150),
-                           pygame.Rect(bar_x, bar_y, bar_width, bar_height), 2)
+            pygame.draw.rect(
+                self.screen, (150, 150, 150), pygame.Rect(bar_x, bar_y, bar_width, bar_height), 2
+            )
 
             # HP text
             hp_font = pygame.font.Font(None, 22)
@@ -378,14 +379,19 @@ class CombatOverlayMixin:
             enemy_mana = getattr(enemy, "mana", None)
             if enemy_mana is not None and getattr(enemy_mana, "max", 0) > 0:
                 mp_y = resource_bottom + 6
-                pygame.draw.rect(self.screen, (40, 40, 40),
-                               pygame.Rect(bar_x, mp_y, bar_width, bar_height))
+                pygame.draw.rect(
+                    self.screen, (40, 40, 40), pygame.Rect(bar_x, mp_y, bar_width, bar_height)
+                )
                 mp_ratio = enemy_mana.current / max(enemy_mana.max, 1)
                 mp_width = int(bar_width * mp_ratio)
-                pygame.draw.rect(self.screen, self.colors['mp_bar'],
-                               pygame.Rect(bar_x, mp_y, mp_width, bar_height))
-                pygame.draw.rect(self.screen, (150, 150, 150),
-                               pygame.Rect(bar_x, mp_y, bar_width, bar_height), 2)
+                pygame.draw.rect(
+                    self.screen,
+                    self.colors["mp_bar"],
+                    pygame.Rect(bar_x, mp_y, mp_width, bar_height),
+                )
+                pygame.draw.rect(
+                    self.screen, (150, 150, 150), pygame.Rect(bar_x, mp_y, bar_width, bar_height), 2
+                )
                 mp_text = f"MP {enemy_mana.current}/{enemy_mana.max}"
                 mp_surf = hp_font.render(mp_text, True, (255, 255, 255))
                 mp_rect = mp_surf.get_rect(center=(center_x, mp_y + bar_height // 2))
@@ -466,7 +472,7 @@ class CombatOverlayMixin:
         max_scroll = max(0, len(display_lines) - max_lines)
         self.log_scroll_offset = min(self.log_scroll_offset, max_scroll)
 
-        for line in display_lines[self.log_scroll_offset:self.log_scroll_offset + max_lines]:
+        for line in display_lines[self.log_scroll_offset : self.log_scroll_offset + max_lines]:
             if lines_rendered >= max_lines:
                 break
             marker_color = (90, 90, 98) if line.continuation else line.marker_color
@@ -521,11 +527,17 @@ class CombatOverlayMixin:
             translucent_highlight=True,
         )
 
-    def _render_turn_indicator(self, player_char, enemy, current_turn=None, overlay=False, current_actor=None):
+    def _render_turn_indicator(
+        self, player_char, enemy, current_turn=None, overlay=False, current_actor=None
+    ):
         """Render a compact banner showing whose turn is active."""
         if current_turn not in {"player", "enemy"}:
             return
-        turn_actor = current_actor if current_actor is not None else (player_char if current_turn == "player" else enemy)
+        turn_actor = (
+            current_actor
+            if current_actor is not None
+            else (player_char if current_turn == "player" else enemy)
+        )
         incapacitated = getattr(turn_actor, "incapacitated", None)
         if callable(incapacitated) and incapacitated():
             return
@@ -535,12 +547,9 @@ class CombatOverlayMixin:
         text_left = token_size + 26
         min_height = 64
         label = "Your Turn" if current_turn == "player" else "Enemy Turn"
-        hidden_enemy = (
-            current_turn == "enemy"
-            and self._enemy_hidden_by_invisibility(
-                turn_actor,
-                self._has_sight(player_char),
-            )
+        hidden_enemy = current_turn == "enemy" and self._enemy_hidden_by_invisibility(
+            turn_actor,
+            self._has_sight(player_char),
         )
         if current_turn == "enemy":
             sublabel = presented_enemy_name(
@@ -556,7 +565,14 @@ class CombatOverlayMixin:
         label_surf = font.render(label, True, (255, 255, 255))
 
         max_width = max(120, view_width - 30)
-        width = min(max(label_surf.get_width() + text_left + 14, small_font.size(sublabel)[0] + text_left + 14, 180), max_width)
+        width = min(
+            max(
+                label_surf.get_width() + text_left + 14,
+                small_font.size(sublabel)[0] + text_left + 14,
+                180,
+            ),
+            max_width,
+        )
         sublabel = self._truncate_text(small_font, sublabel, width - text_left - 14)
         sublabel_surf = small_font.render(sublabel, True, (220, 220, 220))
         x = max(15, (view_width - width) // 2)
@@ -574,11 +590,19 @@ class CombatOverlayMixin:
         if current_turn == "player":
             try:
                 if turn_actor is player_char:
-                    token = self.player_token_manager.get_scaled_token(player_char, (token_size, token_size))
+                    token = self.player_token_manager.get_scaled_token(
+                        player_char, (token_size, token_size)
+                    )
                 else:
-                    token = combat_view.get_companion_art_manager().get_scaled_sprite(turn_actor, (token_size, token_size))
-            except Exception as exc:  # pragma: no cover - defensive runtime fallback for external art failures
-                print(f"Failed to render player-side token for {getattr(turn_actor, 'name', turn_actor)}: {exc}")
+                    token = combat_view.get_companion_art_manager().get_scaled_sprite(
+                        turn_actor, (token_size, token_size)
+                    )
+            except (
+                Exception
+            ) as exc:  # pragma: no cover - defensive runtime fallback for external art failures
+                print(
+                    f"Failed to render player-side token for {getattr(turn_actor, 'name', turn_actor)}: {exc}"
+                )
                 token = None
         else:
             token = None
@@ -588,8 +612,12 @@ class CombatOverlayMixin:
                         turn_actor,
                         (token_size, token_size),
                     )
-                except Exception as exc:  # pragma: no cover - defensive runtime fallback for external art failures
-                    print(f"Failed to render enemy token for {getattr(enemy, 'name', enemy)}: {exc}")
+                except (
+                    Exception
+                ) as exc:  # pragma: no cover - defensive runtime fallback for external art failures
+                    print(
+                        f"Failed to render enemy token for {getattr(enemy, 'name', enemy)}: {exc}"
+                    )
         if token is not None:
             self.screen.blit(token, (rect.left + 8, rect.centery - token_size // 2))
         self.screen.blit(label_surf, (rect.left + text_left, rect.top + 8))
@@ -597,7 +625,13 @@ class CombatOverlayMixin:
         if current_turn == "player" and turn_actor is not player_char:
             icons = self._collect_status_icons(turn_actor)
             if icons:
-                self._render_status_icons(icons, rect.left + text_left, rect.bottom + 4, max_width=width - text_left - 10, max_rows=1)
+                self._render_status_icons(
+                    icons,
+                    rect.left + text_left,
+                    rect.bottom + 4,
+                    max_width=width - text_left - 10,
+                    max_rows=1,
+                )
 
     def _latest_telegraph_line(self, actor=None) -> str | None:
         if self._active_telegraph_line:
@@ -606,7 +640,9 @@ class CombatOverlayMixin:
         if self._suppress_logged_telegraph_banner:
             return None
         for message in reversed(self.combat_log):
-            for line in reversed([segment.strip() for segment in message.split("\n") if segment.strip()]):
+            for line in reversed(
+                [segment.strip() for segment in message.split("\n") if segment.strip()]
+            ):
                 if self._is_telegraph_message(line) and (
                     actor is None or self._message_starts_with_actor(line, actor)
                 ):
@@ -648,7 +684,11 @@ class CombatOverlayMixin:
             alpha=225,
             border_width=2,
         )
-        pygame.draw.rect(self.screen, (132, 58, 42), pygame.Rect(rect.left + 10, rect.top + 9, 7, rect.height - 18))
+        pygame.draw.rect(
+            self.screen,
+            (132, 58, 42),
+            pygame.Rect(rect.left + 10, rect.top + 9, 7, rect.height - 18),
+        )
         pygame.draw.circle(self.screen, self.colors["telegraph"], (rect.left + 30, rect.centery), 5)
         self.screen.blit(title_surf, (rect.left + 44, rect.top + 6))
         self.screen.blit(body_surf, (rect.left + 44, rect.top + 24))

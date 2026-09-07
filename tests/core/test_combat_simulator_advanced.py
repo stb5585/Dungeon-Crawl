@@ -106,7 +106,9 @@ def _make_tile(actions=None):
         def __init__(self):
             self.enemy = None
             self.defeated = False
-            self.actions = list(actions or ["Attack", "Cast Spell", "Use Skill", "Defend", "Use Item"])
+            self.actions = list(
+                actions or ["Attack", "Cast Spell", "Use Skill", "Defend", "Use Item"]
+            )
 
         def available_actions(self, _player):
             return list(self.actions)
@@ -226,7 +228,9 @@ def test_simulate_battle_records_all_event_accounting_branches(monkeypatch):
         SimpleNamespace(type=EventType.SKILL_USE, data=None),
     ]
 
-    monkeypatch.setattr("src.core.combat.battle_engine.BattleEngine", _make_fake_engine(start_events=start_events))
+    monkeypatch.setattr(
+        "src.core.combat.battle_engine.BattleEngine", _make_fake_engine(start_events=start_events)
+    )
 
     player = _make_player()
     enemy = _make_player(name="Goblin")
@@ -288,7 +292,9 @@ def test_simulate_battle_records_class_kit_and_action_economy_smoke(monkeypatch)
             "item",
             lambda player, tile: (
                 setattr(player.health, "current", 15),
-                player.inventory.update({"Health Potion": [SimpleNamespace(subtyp="Health", percent=75)]}),
+                player.inventory.update(
+                    {"Health Potion": [SimpleNamespace(subtyp="Health", percent=75)]}
+                ),
                 tile.actions.append("Use Item"),
             ),
             "Use Item",
@@ -308,7 +314,11 @@ def test_simulate_battle_records_class_kit_and_action_economy_smoke(monkeypatch)
             "offensive spell",
             lambda player, tile: (
                 player.spellbook["Spells"].update(
-                    {"Fireball": _make_spell("Fireball", effects=[_make_damage_effect("DamageSpark")])}
+                    {
+                        "Fireball": _make_spell(
+                            "Fireball", effects=[_make_damage_effect("DamageSpark")]
+                        )
+                    }
                 ),
                 tile.actions.append("Cast Spell"),
             ),
@@ -338,7 +348,9 @@ def test_simulate_battle_records_class_kit_and_action_economy_smoke(monkeypatch)
         ),
     ],
 )
-def test_simulate_battle_default_policy_prefers_high_value_actions(monkeypatch, case_name, configure, expected_action, expected_choice):
+def test_simulate_battle_default_policy_prefers_high_value_actions(
+    monkeypatch, case_name, configure, expected_action, expected_choice
+):
     from src.core.analytics import combat_simulator as sim_mod
 
     player = _make_player()
@@ -372,7 +384,13 @@ def test_simulate_battle_policy_exceptions_fall_back_to_attack(monkeypatch):
 
     monkeypatch.setattr("src.core.combat.battle_engine.BattleEngine", player_engine)
     sim = sim_mod.CombatSimulator()
-    stats = sim.simulate_battle(player, enemy, max_turns=1, seed=11, char1_policy=lambda _engine: (_ for _ in ()).throw(RuntimeError("boom")))
+    stats = sim.simulate_battle(
+        player,
+        enemy,
+        max_turns=1,
+        seed=11,
+        char1_policy=lambda _engine: (_ for _ in ()).throw(RuntimeError("boom")),
+    )
 
     assert player_engine.last_instance.actions == [("Attack", None)]
     assert stats.winner == "draw"

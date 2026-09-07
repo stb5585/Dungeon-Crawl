@@ -65,7 +65,10 @@ def is_wall(tile) -> bool:
     if "Door" in tile_type:
         return True
 
-    if any(name in tile_type for name in ("Chest", "Relic", "Boulder", "GoldenChaliceRoom", "SecretShop")):
+    if any(
+        name in tile_type
+        for name in ("Chest", "Relic", "Boulder", "GoldenChaliceRoom", "SecretShop")
+    ):
         return False
 
     return getattr(tile, "enter", False) is False

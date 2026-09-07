@@ -9,7 +9,6 @@ from pathlib import Path
 
 from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageEnhance
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DUNGEON_ROOT = PROJECT_ROOT / "src" / "ui_pygame" / "assets" / "dungeon_tiles"
 MAP_TILESET_ROOT = PROJECT_ROOT / "src" / "core" / "data" / "maps" / "tileset"
@@ -120,7 +119,9 @@ def clamp(value: int) -> int:
     return max(0, min(255, value))
 
 
-def jitter(color: tuple[int, int, int], amount: int, rng: random.Random) -> tuple[int, int, int, int]:
+def jitter(
+    color: tuple[int, int, int], amount: int, rng: random.Random
+) -> tuple[int, int, int, int]:
     return tuple(clamp(channel + rng.randint(-amount, amount)) for channel in color) + (255,)
 
 
@@ -271,7 +272,9 @@ def _fit_door_panel(door: Image.Image, wall: Image.Image) -> Image.Image:
     return panel.filter(ImageFilter.UnsharpMask(radius=1.0, percent=105))
 
 
-def _tint_alpha_preserving(image: Image.Image, color: tuple[int, int, int], strength: float) -> Image.Image:
+def _tint_alpha_preserving(
+    image: Image.Image, color: tuple[int, int, int], strength: float
+) -> Image.Image:
     result = image.convert("RGBA").copy()
     pixels = result.load()
     for y in range(result.height):
@@ -338,8 +341,18 @@ def _draw_root_network(
         draw.line(shadow, fill=(0, 0, 0, 40), width=width + 7, joint="curve")
         draw.line(points, fill=(18, 15, 12, 122), width=width + 3, joint="curve")
         draw.line(points, fill=(43, 33, 24, 216), width=width + 1, joint="curve")
-        draw.line(tuple((x - 1, y - 1) for x, y in points), fill=(104, 82, 54, 94), width=max(1, width // 3), joint="curve")
-        draw.line(tuple((x + 1, y + 2) for x, y in points), fill=(16, 12, 9, 70), width=max(1, width // 3), joint="curve")
+        draw.line(
+            tuple((x - 1, y - 1) for x, y in points),
+            fill=(104, 82, 54, 94),
+            width=max(1, width // 3),
+            joint="curve",
+        )
+        draw.line(
+            tuple((x + 1, y + 2) for x, y in points),
+            fill=(16, 12, 9, 70),
+            width=max(1, width // 3),
+            joint="curve",
+        )
 
         for _ in range(rng.randint(10, 22)):
             t = rng.random()
@@ -393,12 +406,21 @@ def _draw_root_network(
                 t = step / 4.0
                 branch_points.append(
                     (
-                        anchor_x + round(math.cos(angle) * branch_len * t) + round(math.sin(t * math.pi) * rng.randint(-10, 10)),
-                        anchor_y + round(math.sin(angle) * branch_len * t) + round(math.sin(t * math.tau + phase) * rng.randint(3, 12)),
+                        anchor_x
+                        + round(math.cos(angle) * branch_len * t)
+                        + round(math.sin(t * math.pi) * rng.randint(-10, 10)),
+                        anchor_y
+                        + round(math.sin(angle) * branch_len * t)
+                        + round(math.sin(t * math.tau + phase) * rng.randint(3, 12)),
                     )
                 )
             branch_width = max(2, width // 2)
-            draw.line(tuple((x + 2, y + 3) for x, y in branch_points), fill=(0, 0, 0, 28), width=branch_width + 3, joint="curve")
+            draw.line(
+                tuple((x + 2, y + 3) for x, y in branch_points),
+                fill=(0, 0, 0, 28),
+                width=branch_width + 3,
+                joint="curve",
+            )
             draw.line(branch_points, fill=(22, 16, 11, 104), width=branch_width + 1, joint="curve")
             draw.line(branch_points, fill=(64, 48, 30, 146), width=branch_width, joint="curve")
 
@@ -437,7 +459,9 @@ def _draw_fungus_growth(
             t = step / max(1, steps - 1)
             inset_x = round((x1 - x0) * 0.08 * t)
             inset_y = round((y1 - y0) * 0.18 * t)
-            color = tuple(clamp(round(base[i] * (1 - t * 0.24) + highlight[i] * (t * 0.24))) for i in range(3))
+            color = tuple(
+                clamp(round(base[i] * (1 - t * 0.24) + highlight[i] * (t * 0.24))) for i in range(3)
+            )
             draw.pieslice(
                 (x0 + inset_x, y0 + inset_y, x1 - inset_x, y1 - inset_y),
                 180,
@@ -445,7 +469,9 @@ def _draw_fungus_growth(
                 fill=color + (round(alpha * (1 - t * 0.05)),),
             )
         underside_y = y0 + round((y1 - y0) * 0.52)
-        draw.ellipse((x0 + 2, underside_y - 2, x1 - 2, y1 + 1), fill=(34, 28, 34, round(alpha * 0.42)))
+        draw.ellipse(
+            (x0 + 2, underside_y - 2, x1 - 2, y1 + 1), fill=(34, 28, 34, round(alpha * 0.42))
+        )
         for line_index in range(5):
             x = x0 + round((x1 - x0) * (line_index + 1) / 6)
             draw.line((x, underside_y, (x0 + x1) // 2, y1), fill=(196, 176, 184, 42), width=1)
@@ -477,15 +503,25 @@ def _draw_fungus_growth(
                 stem_top = stem_y - stem_h
                 stem_bottom = stem_y
             stem_mid = stem_x + rng.randint(-2, 2)
-            draw.line((stem_x + 2, stem_top + 3, stem_mid + 2, stem_bottom + 2), fill=(0, 0, 0, 42), width=3)
+            draw.line(
+                (stem_x + 2, stem_top + 3, stem_mid + 2, stem_bottom + 2),
+                fill=(0, 0, 0, 42),
+                width=3,
+            )
             draw.line((stem_x, stem_top, stem_mid, stem_bottom), fill=(126, 114, 94, 154), width=2)
-            draw.line((stem_x - 1, stem_top, stem_mid - 1, stem_bottom), fill=(194, 178, 142, 50), width=1)
+            draw.line(
+                (stem_x - 1, stem_top, stem_mid - 1, stem_bottom), fill=(194, 178, 142, 50), width=1
+            )
             cap_w = rng.randint(10, 27)
             cap_h = rng.randint(6, 14)
             cap_y = stem_top if not ceiling else stem_bottom
-            cap_color = rng.choice(((66, 47, 78), (82, 50, 70), (54, 70, 62), (68, 64, 92), (88, 70, 56)))
+            cap_color = rng.choice(
+                ((66, 47, 78), (82, 50, 70), (54, 70, 62), (68, 64, 92), (88, 70, 56))
+            )
             cap_box = (stem_x - cap_w, cap_y - cap_h, stem_x + cap_w, cap_y + cap_h)
-            draw.ellipse((cap_box[0] + 2, cap_box[1] + 3, cap_box[2] + 2, cap_box[3] + 4), fill=(0, 0, 0, 48))
+            draw.ellipse(
+                (cap_box[0] + 2, cap_box[1] + 3, cap_box[2] + 2, cap_box[3] + 4), fill=(0, 0, 0, 48)
+            )
             shaded_ellipse(
                 cap_box,
                 cap_color,
@@ -612,7 +648,9 @@ def _masonry_wall_texture(seed: int = 1210) -> Image.Image:
                 width=3,
             )
             draw.line((left + 10, top + 8, right - 12, top + 6), fill=(98, 112, 136, 255), width=1)
-            draw.line((left + 8, bottom - 8, right - 10, bottom - 9), fill=(42, 50, 62, 255), width=1)
+            draw.line(
+                (left + 8, bottom - 8, right - 10, bottom - 9), fill=(42, 50, 62, 255), width=1
+            )
             x = right
     overlay = Image.new("RGBA", image.size, (0, 0, 0, 0))
     overlay_draw = ImageDraw.Draw(overlay, "RGBA")
@@ -622,7 +660,9 @@ def _masonry_wall_texture(seed: int = 1210) -> Image.Image:
         length = rng.randint(12, 70)
         angle = rng.uniform(-0.75, 0.75)
         end = (x + round(math.cos(angle) * length), y + round(math.sin(angle) * length))
-        overlay_draw.line((x, y, *end), fill=(16, 20, 28, rng.randint(34, 82)), width=rng.randint(1, 2))
+        overlay_draw.line(
+            (x, y, *end), fill=(16, 20, 28, rng.randint(34, 82)), width=rng.randint(1, 2)
+        )
     for _ in range(42):
         x = rng.randint(0, SIZE)
         y = rng.randint(0, SIZE)
@@ -651,7 +691,11 @@ def _continuous_slate_wall(seed: int = 1200) -> Image.Image:
         end = (x + int(math.cos(angle) * length), y + int(math.sin(angle) * length))
         draw.line((x, y, *end), fill=(14, 18, 26, rng.randint(24, 70)), width=rng.randint(1, 3))
         if rng.random() < 0.32:
-            draw.line((x + 1, y + 1, end[0] + 1, end[1] + 1), fill=(158, 174, 196, rng.randint(12, 30)), width=1)
+            draw.line(
+                (x + 1, y + 1, end[0] + 1, end[1] + 1),
+                fill=(158, 174, 196, rng.randint(12, 30)),
+                width=1,
+            )
     for _ in range(95):
         x = rng.randint(0, SIZE)
         y = rng.randint(0, SIZE)
@@ -663,7 +707,11 @@ def _continuous_slate_wall(seed: int = 1200) -> Image.Image:
     edge_draw = ImageDraw.Draw(edge, "RGBA")
     for offset in range(54):
         alpha = round(30 * ((54 - offset) / 54.0) ** 2)
-        edge_draw.rectangle((offset, offset, SIZE - offset - 1, SIZE - offset - 1), outline=(58, 68, 84, alpha), width=1)
+        edge_draw.rectangle(
+            (offset, offset, SIZE - offset - 1, SIZE - offset - 1),
+            outline=(58, 68, 84, alpha),
+            width=1,
+        )
     image = Image.alpha_composite(image, edge)
     alpha = Image.new("L", image.size, 255)
     image.putalpha(alpha)
@@ -732,15 +780,29 @@ def _write_board_assets() -> bool:
     )
     extracted_textures["door_open"] = _transparent_arch_door(extracted_textures["door_closed"])
     extracted_textures["wall_upper"] = _tint_texture(extracted_textures["wall"], (44, 58, 78), 0.10)
-    extracted_textures["wall_middle"] = _tint_texture(extracted_textures["wall"], (28, 42, 62), 0.18)
+    extracted_textures["wall_middle"] = _tint_texture(
+        extracted_textures["wall"], (28, 42, 62), 0.18
+    )
     extracted_textures["wall_deep"] = _tint_texture(extracted_textures["wall"], (18, 30, 48), 0.24)
-    extracted_textures["floor_debris"] = _tint_texture(extracted_textures["floor"], (54, 66, 80), 0.14)
-    extracted_textures["floor_roots"] = _add_roots_overlay(_tint_texture(extracted_textures["floor"], (28, 54, 46), 0.16))
+    extracted_textures["floor_debris"] = _tint_texture(
+        extracted_textures["floor"], (54, 66, 80), 0.14
+    )
+    extracted_textures["floor_roots"] = _add_roots_overlay(
+        _tint_texture(extracted_textures["floor"], (28, 54, 46), 0.16)
+    )
     extracted_textures["floor_fungus"] = _add_fungus_overlay(extracted_textures["floor"], seed=940)
-    extracted_textures["floor_pit"] = _add_pit_overlay(_tint_texture(extracted_textures["floor"], (12, 18, 28), 0.24))
-    extracted_textures["ceiling_fungus"] = _add_fungus_overlay(extracted_textures["ceiling"], seed=941)
-    extracted_textures["ceiling_crystal"] = _tint_texture(extracted_textures["ceiling"], (26, 84, 128), 0.20)
-    extracted_textures["ceiling_pit"] = _add_pit_overlay(_tint_texture(extracted_textures["ceiling"], (0, 6, 14), 0.24))
+    extracted_textures["floor_pit"] = _add_pit_overlay(
+        _tint_texture(extracted_textures["floor"], (12, 18, 28), 0.24)
+    )
+    extracted_textures["ceiling_fungus"] = _add_fungus_overlay(
+        extracted_textures["ceiling"], seed=941
+    )
+    extracted_textures["ceiling_crystal"] = _tint_texture(
+        extracted_textures["ceiling"], (26, 84, 128), 0.20
+    )
+    extracted_textures["ceiling_pit"] = _add_pit_overlay(
+        _tint_texture(extracted_textures["ceiling"], (0, 6, 14), 0.24)
+    )
     extracted_textures["floor_funhouse"] = funhouse()
     extracted_textures["wall_funhouse"] = funhouse_wall()
     extracted_textures["wall_funhouse_boundary"] = funhouse_boundary_wall()
@@ -783,7 +845,9 @@ def stone_wall(seed: int, base: tuple[int, int, int], grime: tuple[int, int, int
             width = rng.randint(118, 184)
             rect = (x, top, x + width, bottom)
             draw.rectangle(rect, outline=(30, 30, 36, 150), width=4)
-            draw.line((x + 4, bottom - 5, x + width - 4, bottom - 5), fill=(210, 210, 220, 38), width=2)
+            draw.line(
+                (x + 4, bottom - 5, x + width - 4, bottom - 5), fill=(210, 210, 220, 38), width=2
+            )
             x += width
     for _ in range(80):
         x = rng.randint(0, SIZE)
@@ -797,11 +861,15 @@ def stone_wall(seed: int, base: tuple[int, int, int], grime: tuple[int, int, int
         y = rng.randint(0, SIZE)
         radius = rng.randint(6, 24)
         stain = tuple(clamp(channel + 28) for channel in grime)
-        draw.ellipse((x - radius, y - radius, x + radius, y + radius), fill=(*stain, rng.randint(8, 24)))
+        draw.ellipse(
+            (x - radius, y - radius, x + radius, y + radius), fill=(*stain, rng.randint(8, 24))
+        )
     return image.filter(ImageFilter.UnsharpMask(radius=1.4, percent=120))
 
 
-def floor_texture(seed: int, base: tuple[int, int, int], accent: tuple[int, int, int] | None = None) -> Image.Image:
+def floor_texture(
+    seed: int, base: tuple[int, int, int], accent: tuple[int, int, int] | None = None
+) -> Image.Image:
     rng = random.Random(seed)
     image = base_noise(seed, base, 24)
     draw = ImageDraw.Draw(image, "RGBA")
@@ -817,11 +885,17 @@ def floor_texture(seed: int, base: tuple[int, int, int], accent: tuple[int, int,
             x = rng.randint(0, SIZE)
             y = rng.randint(0, SIZE)
             length = rng.randint(30, 150)
-            draw.line((x, y, x + rng.randint(-50, 50), y + length), fill=(*accent, rng.randint(55, 140)), width=rng.randint(2, 6))
+            draw.line(
+                (x, y, x + rng.randint(-50, 50), y + length),
+                fill=(*accent, rng.randint(55, 140)),
+                width=rng.randint(2, 6),
+            )
     return image.filter(ImageFilter.SMOOTH_MORE)
 
 
-def ceiling_texture(seed: int, base: tuple[int, int, int], accent: tuple[int, int, int] | None = None) -> Image.Image:
+def ceiling_texture(
+    seed: int, base: tuple[int, int, int], accent: tuple[int, int, int] | None = None
+) -> Image.Image:
     image = stone_wall(seed, base, (28, 27, 30)).filter(ImageFilter.GaussianBlur(0.3))
     overlay = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
     draw = ImageDraw.Draw(overlay, "RGBA")
@@ -853,9 +927,9 @@ def draw_roots(image: Image.Image, seed: int, painterly: bool = False) -> Image.
                 floor_plane=True,
             )
     shadow = _crop_center_tile(shadow)
-    return Image.alpha_composite(image, shadow.filter(ImageFilter.GaussianBlur(0.25 if painterly else 0))).filter(
-        ImageFilter.UnsharpMask(radius=1.0, percent=105)
-    )
+    return Image.alpha_composite(
+        image, shadow.filter(ImageFilter.GaussianBlur(0.25 if painterly else 0))
+    ).filter(ImageFilter.UnsharpMask(radius=1.0, percent=105))
 
 
 def draw_glow_spots(image: Image.Image, seed: int, color: tuple[int, int, int]) -> Image.Image:
@@ -874,16 +948,26 @@ def door(opened: bool) -> Image.Image:
     image = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
     draw = ImageDraw.Draw(image, "RGBA")
     arch = (80, 34, 432, 500)
-    draw.rounded_rectangle(arch, radius=150, fill=(92, 94, 104, 255), outline=(28, 28, 34, 255), width=8)
+    draw.rounded_rectangle(
+        arch, radius=150, fill=(92, 94, 104, 255), outline=(28, 28, 34, 255), width=8
+    )
     inner = (118, 78, 394, 500)
     draw.rounded_rectangle(inner, radius=120, fill=(34, 32, 30, 255))
     if opened:
-        draw.pieslice((126, 70, 466, 530), 86, 268, fill=(92, 58, 36, 255), outline=(24, 18, 14, 255), width=5)
+        draw.pieslice(
+            (126, 70, 466, 530), 86, 268, fill=(92, 58, 36, 255), outline=(24, 18, 14, 255), width=5
+        )
         for x in (206, 278, 350):
             draw.line((x, 112, x - 42, 492), fill=(45, 27, 17, 130), width=4)
         draw.rectangle((330, 112, 356, 450), fill=(40, 28, 22, 150))
     else:
-        draw.rounded_rectangle((130, 82, 382, 500), radius=84, fill=(112, 72, 42, 255), outline=(42, 28, 20, 255), width=6)
+        draw.rounded_rectangle(
+            (130, 82, 382, 500),
+            radius=84,
+            fill=(112, 72, 42, 255),
+            outline=(42, 28, 20, 255),
+            width=6,
+        )
         for x in (172, 230, 288, 344):
             draw.line((x, 96, x, 492), fill=(56, 34, 20, 145), width=4)
         for y in (190, 330):
@@ -936,21 +1020,34 @@ def prop_fungus() -> Image.Image:
     image, draw = alpha_canvas()
     rng = random.Random(412)
 
-    def shaded_cap(cx: int, cy: int, cap_w: int, cap_h: int, color: tuple[int, int, int], alpha: int) -> None:
+    def shaded_cap(
+        cx: int, cy: int, cap_w: int, cap_h: int, color: tuple[int, int, int], alpha: int
+    ) -> None:
         draw.ellipse((cx - cap_w + 3, cy + 1, cx + cap_w + 3, cy + cap_h + 7), fill=(0, 0, 0, 54))
         for step in range(8):
             t = step / 7.0
             inset_x = round(cap_w * 0.16 * t)
             inset_y = round(cap_h * 0.32 * t)
-            shade = tuple(clamp(round(color[i] * (1.0 - t * 0.24) + (176, 156, 188)[i] * (t * 0.24))) for i in range(3))
+            shade = tuple(
+                clamp(round(color[i] * (1.0 - t * 0.24) + (176, 156, 188)[i] * (t * 0.24)))
+                for i in range(3)
+            )
             draw.pieslice(
-                (cx - cap_w + inset_x, cy - cap_h + inset_y, cx + cap_w - inset_x, cy + cap_h - inset_y),
+                (
+                    cx - cap_w + inset_x,
+                    cy - cap_h + inset_y,
+                    cx + cap_w - inset_x,
+                    cy + cap_h - inset_y,
+                ),
                 180,
                 360,
                 fill=shade + (alpha,),
             )
         underside_y = cy + round(cap_h * 0.45)
-        draw.ellipse((cx - cap_w + 2, underside_y - 2, cx + cap_w - 2, cy + cap_h + 1), fill=(34, 28, 34, round(alpha * 0.44)))
+        draw.ellipse(
+            (cx - cap_w + 2, underside_y - 2, cx + cap_w - 2, cy + cap_h + 1),
+            fill=(34, 28, 34, round(alpha * 0.44)),
+        )
         for line_index in range(5):
             x = cx - cap_w + round((cap_w * 2) * (line_index + 1) / 6)
             draw.line((x, underside_y, cx, cy + cap_h), fill=(216, 190, 198, 44), width=1)
@@ -962,7 +1059,13 @@ def prop_fungus() -> Image.Image:
                 (spot_x - spot_r, spot_y - spot_r, spot_x + spot_r, spot_y + spot_r),
                 fill=(36, 28, 42, rng.randint(48, 96)),
             )
-        draw.arc((cx - cap_w + 2, cy - cap_h, cx + cap_w - 2, cy + cap_h), 188, 342, fill=(220, 196, 226, 70), width=1)
+        draw.arc(
+            (cx - cap_w + 2, cy - cap_h, cx + cap_w - 2, cy + cap_h),
+            188,
+            342,
+            fill=(220, 196, 226, 70),
+            width=1,
+        )
 
     for _ in range(9):
         cx = rng.randint(120, 392)
@@ -989,7 +1092,9 @@ def prop_fungus() -> Image.Image:
             cap_w = rng.randint(11, 28)
             cap_h = rng.randint(7, 14)
             cap_y = y - h
-            cap_color = rng.choice(((66, 48, 82), (86, 52, 74), (56, 78, 66), (74, 70, 98), (92, 72, 58)))
+            cap_color = rng.choice(
+                ((66, 48, 82), (86, 52, 74), (56, 78, 66), (74, 70, 98), (92, 72, 58))
+            )
             shaded_cap(x + bend, cap_y, cap_w, cap_h, cap_color, 226)
         for _ in range(36):
             x = cx + rng.randint(-rx - 28, rx + 28)
@@ -1018,7 +1123,13 @@ def prop_crystals() -> Image.Image:
         w = rng.randint(18, 48)
         color = jitter((92, 186, 220), 22, rng)
         draw.polygon(
-            [(x, y - h), (x - w, y - h // 3), (x - w // 2, y), (x + w // 2, y), (x + w, y - h // 3)],
+            [
+                (x, y - h),
+                (x - w, y - h // 3),
+                (x - w // 2, y),
+                (x + w // 2, y),
+                (x + w, y - h // 3),
+            ],
             fill=color[:3] + (210,),
             outline=(210, 244, 255, 180),
         )
@@ -1091,7 +1202,9 @@ def pit(kind: str) -> Image.Image:
     return image
 
 
-def _repeated_seamless_canvas(seed: int, base: tuple[int, int, int], spread: int = 12) -> Image.Image:
+def _repeated_seamless_canvas(
+    seed: int, base: tuple[int, int, int], spread: int = 12
+) -> Image.Image:
     tile = _make_seamless_texture(base_noise(seed, base, spread), edge=96, blur=52)
     canvas = Image.new("RGBA", (SIZE * 3, SIZE * 3), (0, 0, 0, 255))
     for row in range(3):
@@ -1166,7 +1279,9 @@ def funhouse() -> Image.Image:
             for row in range(len(y_lines)):
                 points = [grid_point(origin_x, origin_y, col, row) for col in range(len(x_lines))]
                 draw.line(points, fill=(6, 6, 10, 232), width=7, joint="curve")
-                draw.line([(x, y - 2) for x, y in points], fill=(136, 92, 132, 42), width=1, joint="curve")
+                draw.line(
+                    [(x, y - 2) for x, y in points], fill=(136, 92, 132, 42), width=1, joint="curve"
+                )
 
     grime = Image.new("RGBA", image.size, (0, 0, 0, 0))
     grime_draw = ImageDraw.Draw(grime, "RGBA")
@@ -1210,7 +1325,9 @@ def funhouse_wall() -> Image.Image:
                     y = origin_y + step * 76 - 52
                     x = x0 + round(math.sin(step * 0.9 + band * 0.65) * 24)
                     points.append((x, y))
-                points_right = [(x + 56 + round(math.sin(y / 83.0) * 10), y) for x, y in reversed(points)]
+                points_right = [
+                    (x + 56 + round(math.sin(y / 83.0) * 10), y) for x, y in reversed(points)
+                ]
                 color = palette[band % len(palette)]
                 draw.polygon(points + points_right, fill=color + (104,))
                 draw.line(points, fill=(6, 6, 10, 170), width=5, joint="curve")
@@ -1221,8 +1338,12 @@ def funhouse_wall() -> Image.Image:
                 cy = origin_y + rng.randint(-36, SIZE + 36)
                 rx = rng.randint(20, 54)
                 ry = rng.randint(8, 20)
-                draw.arc((cx - rx, cy - ry, cx + rx, cy + ry), 20, 330, fill=(156, 142, 190, 34), width=2)
-                draw.line((cx - rx, cy, cx + rx, cy + rng.randint(-8, 8)), fill=(8, 8, 12, 62), width=2)
+                draw.arc(
+                    (cx - rx, cy - ry, cx + rx, cy + ry), 20, 330, fill=(156, 142, 190, 34), width=2
+                )
+                draw.line(
+                    (cx - rx, cy, cx + rx, cy + rng.randint(-8, 8)), fill=(8, 8, 12, 62), width=2
+                )
 
             for _ in range(24):
                 x = origin_x + rng.randint(-32, SIZE + 32)
@@ -1230,7 +1351,12 @@ def funhouse_wall() -> Image.Image:
                 length = rng.randint(24, 86)
                 angle = rng.uniform(-0.7, 0.7)
                 draw.line(
-                    (x, y, x + round(math.cos(angle) * length), y + round(math.sin(angle) * length)),
+                    (
+                        x,
+                        y,
+                        x + round(math.cos(angle) * length),
+                        y + round(math.sin(angle) * length),
+                    ),
                     fill=(4, 4, 8, rng.randint(34, 92)),
                     width=rng.randint(1, 3),
                 )
@@ -1259,8 +1385,14 @@ def funhouse_boundary_wall() -> Image.Image:
                     wobble = rng.randint(-12, 12)
                     points = (
                         (origin_x + x + wobble, origin_y + top + rng.randint(-6, 6)),
-                        (origin_x + x + width + rng.randint(-10, 10), origin_y + top + rng.randint(-8, 8)),
-                        (origin_x + x + width + rng.randint(-10, 10), origin_y + bottom + rng.randint(-8, 8)),
+                        (
+                            origin_x + x + width + rng.randint(-10, 10),
+                            origin_y + top + rng.randint(-8, 8),
+                        ),
+                        (
+                            origin_x + x + width + rng.randint(-10, 10),
+                            origin_y + bottom + rng.randint(-8, 8),
+                        ),
                         (origin_x + x + wobble, origin_y + bottom + rng.randint(-6, 6)),
                     )
                     base = palette[(row + col) % len(palette)]
@@ -1298,7 +1430,12 @@ def funhouse_boundary_wall() -> Image.Image:
                 length = rng.randint(26, 96)
                 angle = rng.uniform(-0.65, 0.65)
                 draw.line(
-                    (x, y, x + round(math.cos(angle) * length), y + round(math.sin(angle) * length)),
+                    (
+                        x,
+                        y,
+                        x + round(math.cos(angle) * length),
+                        y + round(math.sin(angle) * length),
+                    ),
                     fill=(3, 3, 7, rng.randint(42, 104)),
                     width=rng.randint(1, 3),
                 )
@@ -1323,7 +1460,9 @@ def funhouse_ceiling() -> Image.Image:
                     x = origin_x + step * 66 - 56
                     y = origin_y + stripe * 72 + round(math.sin(step * 0.9 + stripe * 0.8) * 24)
                     points.append((x, y))
-                points_lower = [(x, y + 34 + round(math.cos(x / 88.0) * 10)) for x, y in reversed(points)]
+                points_lower = [
+                    (x, y + 34 + round(math.cos(x / 88.0) * 10)) for x, y in reversed(points)
+                ]
                 color = (94, 28, 76) if stripe % 2 == 0 else (8, 8, 14)
                 draw.polygon(points + points_lower, fill=color + (132,))
                 draw.line(points, fill=(5, 5, 8, 150), width=5, joint="curve")
@@ -1333,7 +1472,9 @@ def funhouse_ceiling() -> Image.Image:
                 cy = origin_y + rng.randint(-40, SIZE + 40)
                 rx = rng.randint(28, 62)
                 ry = rng.randint(10, 22)
-                draw.ellipse((cx - rx, cy - ry, cx + rx, cy + ry), outline=(128, 122, 162, 34), width=2)
+                draw.ellipse(
+                    (cx - rx, cy - ry, cx + rx, cy + ry), outline=(128, 122, 162, 34), width=2
+                )
                 draw.ellipse((cx - 5, cy - 3, cx + 5, cy + 3), fill=(5, 5, 8, 58))
 
     image = _crop_center_tile(image)
@@ -1352,7 +1493,9 @@ def spring() -> Image.Image:
     return draw_glow_spots(image, 723, (98, 224, 238))
 
 
-def _crop_atlas_cell(atlas: Image.Image, index: int, columns: int = 3, rows: int = 2) -> Image.Image:
+def _crop_atlas_cell(
+    atlas: Image.Image, index: int, columns: int = 3, rows: int = 2
+) -> Image.Image:
     cell_width = atlas.width // columns
     cell_height = atlas.height // rows
     x = (index % columns) * cell_width
@@ -1393,7 +1536,9 @@ def _normalize_tile_edges(image: Image.Image, band: int = 24, match_band: int = 
             t = ((match_band - offset) / match_band) ** 2.0 * 0.78
             left = offset
             right = width - 1 - offset
-            average = tuple((pixels[left, y][channel] + pixels[right, y][channel]) // 2 for channel in range(4))
+            average = tuple(
+                (pixels[left, y][channel] + pixels[right, y][channel]) // 2 for channel in range(4)
+            )
             pixels[left, y] = mix(pixels[left, y], average, t)
             pixels[right, y] = mix(pixels[right, y], average, t)
 
@@ -1402,7 +1547,9 @@ def _normalize_tile_edges(image: Image.Image, band: int = 24, match_band: int = 
             t = ((match_band - offset) / match_band) ** 2.0 * 0.78
             top = offset
             bottom = height - 1 - offset
-            average = tuple((pixels[x, top][channel] + pixels[x, bottom][channel]) // 2 for channel in range(4))
+            average = tuple(
+                (pixels[x, top][channel] + pixels[x, bottom][channel]) // 2 for channel in range(4)
+            )
             pixels[x, top] = mix(pixels[x, top], average, t)
             pixels[x, bottom] = mix(pixels[x, bottom], average, t)
 
@@ -1539,9 +1686,15 @@ def blood_spatter_overlay(seed: int, *, surface: str) -> Image.Image:
 
 def write_textures() -> None:
     _masonry_wall_texture(100).save(DUNGEON_ROOT / TEXTURES["wall"])
-    _tint_texture(_masonry_wall_texture(101), (44, 58, 78), 0.10).save(DUNGEON_ROOT / TEXTURES["wall_upper"])
-    _tint_texture(_masonry_wall_texture(102), (28, 42, 62), 0.18).save(DUNGEON_ROOT / TEXTURES["wall_middle"])
-    _tint_texture(_masonry_wall_texture(103), (18, 30, 48), 0.24).save(DUNGEON_ROOT / TEXTURES["wall_deep"])
+    _tint_texture(_masonry_wall_texture(101), (44, 58, 78), 0.10).save(
+        DUNGEON_ROOT / TEXTURES["wall_upper"]
+    )
+    _tint_texture(_masonry_wall_texture(102), (28, 42, 62), 0.18).save(
+        DUNGEON_ROOT / TEXTURES["wall_middle"]
+    )
+    _tint_texture(_masonry_wall_texture(103), (18, 30, 48), 0.24).save(
+        DUNGEON_ROOT / TEXTURES["wall_deep"]
+    )
     funhouse_wall().save(DUNGEON_ROOT / TEXTURES["wall_funhouse"])
     funhouse_boundary_wall().save(DUNGEON_ROOT / TEXTURES["wall_funhouse_boundary"])
     door(False).save(DUNGEON_ROOT / TEXTURES["door_closed"])
@@ -1549,17 +1702,27 @@ def write_textures() -> None:
 
     floor_texture(200, (112, 96, 76)).save(DUNGEON_ROOT / TEXTURES["floor"])
     floor_texture(201, (96, 90, 82)).save(DUNGEON_ROOT / TEXTURES["floor_debris"])
-    _save_generated_organic_texture("floor_roots", draw_roots(floor_texture(202, (88, 86, 68)), 202, painterly=True))
-    _save_generated_organic_texture("floor_fungus", _add_fungus_overlay(floor_texture(203, (70, 86, 64)), 203))
-    draw_glow_spots(floor_texture(204, (58, 78, 88)), 204, (70, 180, 226)).save(DUNGEON_ROOT / TEXTURES["floor_crystal"])
+    _save_generated_organic_texture(
+        "floor_roots", draw_roots(floor_texture(202, (88, 86, 68)), 202, painterly=True)
+    )
+    _save_generated_organic_texture(
+        "floor_fungus", _add_fungus_overlay(floor_texture(203, (70, 86, 64)), 203)
+    )
+    draw_glow_spots(floor_texture(204, (58, 78, 88)), 204, (70, 180, 226)).save(
+        DUNGEON_ROOT / TEXTURES["floor_crystal"]
+    )
     firepath().save(DUNGEON_ROOT / TEXTURES["floor_fire"])
     spring().save(DUNGEON_ROOT / TEXTURES["floor_spring"])
     funhouse().save(DUNGEON_ROOT / TEXTURES["floor_funhouse"])
     pit("floor").save(DUNGEON_ROOT / TEXTURES["floor_pit"])
 
     ceiling_texture(300, (76, 76, 84)).save(DUNGEON_ROOT / TEXTURES["ceiling"])
-    _save_generated_organic_texture("ceiling_fungus", _add_fungus_overlay(ceiling_texture(301, (64, 72, 66)), 301))
-    ceiling_texture(302, (56, 66, 76), (72, 176, 226)).save(DUNGEON_ROOT / TEXTURES["ceiling_crystal"])
+    _save_generated_organic_texture(
+        "ceiling_fungus", _add_fungus_overlay(ceiling_texture(301, (64, 72, 66)), 301)
+    )
+    ceiling_texture(302, (56, 66, 76), (72, 176, 226)).save(
+        DUNGEON_ROOT / TEXTURES["ceiling_crystal"]
+    )
     funhouse_ceiling().save(DUNGEON_ROOT / TEXTURES["ceiling_funhouse"])
     pit("ceiling").save(DUNGEON_ROOT / TEXTURES["ceiling_pit"])
 
@@ -1574,9 +1737,15 @@ def write_specials() -> None:
     torch(True).save(DUNGEON_ROOT / SPECIAL_TEXTURES["torch_lit"])
     torch(False).save(DUNGEON_ROOT / SPECIAL_TEXTURES["sconce_unlit"])
     torch(False, broken=True).save(DUNGEON_ROOT / SPECIAL_TEXTURES["sconce_broken"])
-    blood_spatter_overlay(1701, surface="floor").save(DUNGEON_ROOT / SPECIAL_TEXTURES["blood_floor_overlay"])
-    blood_spatter_overlay(1702, surface="wall").save(DUNGEON_ROOT / SPECIAL_TEXTURES["blood_wall_overlay"])
-    blood_spatter_overlay(1703, surface="ceiling").save(DUNGEON_ROOT / SPECIAL_TEXTURES["blood_ceiling_overlay"])
+    blood_spatter_overlay(1701, surface="floor").save(
+        DUNGEON_ROOT / SPECIAL_TEXTURES["blood_floor_overlay"]
+    )
+    blood_spatter_overlay(1702, surface="wall").save(
+        DUNGEON_ROOT / SPECIAL_TEXTURES["blood_wall_overlay"]
+    )
+    blood_spatter_overlay(1703, surface="ceiling").save(
+        DUNGEON_ROOT / SPECIAL_TEXTURES["blood_ceiling_overlay"]
+    )
 
 
 def write_manifest() -> None:
@@ -1596,7 +1765,11 @@ def write_map_icons() -> None:
         draw = ImageDraw.Draw(image, "RGBA")
         draw.rectangle((1, 1, 30, 30), fill=color + (255,), outline=(12, 12, 14, 255))
         if "crystal" in name:
-            draw.polygon((16, 4, 8, 20, 14, 29, 24, 20), fill=(106, 214, 244, 255), outline=(220, 250, 255, 210))
+            draw.polygon(
+                (16, 4, 8, 20, 14, 29, 24, 20),
+                fill=(106, 214, 244, 255),
+                outline=(220, 250, 255, 210),
+            )
         elif "fungus" in name:
             draw.ellipse((7, 7, 25, 19), fill=(156, 92, 174, 255))
             draw.rectangle((14, 17, 18, 28), fill=(210, 190, 150, 255))
@@ -1609,7 +1782,9 @@ def write_map_icons() -> None:
             draw.ellipse((8, 8, 24, 24), outline=(168, 152, 120, 255), width=4)
             draw.line((6, 24, 26, 10), fill=(104, 72, 50, 255), width=3)
         else:
-            draw.polygon((6, 24, 13, 8, 27, 18, 21, 27), fill=(128, 124, 116, 255), outline=(44, 40, 36, 255))
+            draw.polygon(
+                (6, 24, 13, 8, 27, 18, 21, 27), fill=(128, 124, 116, 255), outline=(44, 40, 36, 255)
+            )
         image.save(MAP_TILESET_ROOT / f"{name}.png")
 
 

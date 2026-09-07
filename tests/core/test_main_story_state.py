@@ -66,7 +66,9 @@ def test_main_story_round_trips_through_player_serializer():
     player.main_story["guardian_trial_choices"]["Hexagonum"] = "not-a-valid-choice"
     player.liminal_gap_return = (7, 8, 6, "south")
 
-    loaded = PlayerDataSerializer.deserialize(PlayerDataSerializer.serialize(player), skip_tiles=True)
+    loaded = PlayerDataSerializer.deserialize(
+        PlayerDataSerializer.serialize(player), skip_tiles=True
+    )
 
     assert loaded.main_story["vesperion_false_final_triggered"] is True
     assert loaded.main_story["liminal_gap_entered"] is True
@@ -118,7 +120,10 @@ def test_guardian_trial_definitions_validate_choices_and_completion():
     assert main_story.guardian_trial_definition("Infinitas")["kind"] == "combat"
     assert main_story.guardian_trial_question("Polaris") == "How do you follow guidance?"
     assert main_story.guardian_trial_event("Triangulus", "Memory") == "Triangulus Trial Memory"
-    assert main_story.guardian_trial_event("Infinitas", event="defeat_event") == "Infinitas Trial Defeat"
+    assert (
+        main_story.guardian_trial_event("Infinitas", event="defeat_event")
+        == "Infinitas Trial Defeat"
+    )
     assert main_story.record_guardian_trial_completion(state, "Triangulus", "Memory") is True
     assert state["guardian_trials_started"]["Triangulus"] is True
     assert state["guardian_trials_completed"]["Triangulus"] is True
@@ -131,8 +136,7 @@ def test_guardian_trial_vignettes_default_normalize_and_summarize():
     state = main_story.default_state()
 
     assert state["guardian_trial_vignettes_seen"] == {
-        guardian: False
-        for guardian in main_story.GUARDIAN_TRIALS
+        guardian: False for guardian in main_story.GUARDIAN_TRIALS
     }
     assert state["liminal_trial_v2_reviewed"] is False
     assert main_story.guardian_trial_vignette_seen(state, "Triangulus") is False
@@ -296,7 +300,10 @@ def test_narrative_system_v3_flags_helpers_and_path_summary():
         main_story.class_voluntas_bridge_event_key("  Grandmaster of Arms  ")
         == "Class Voluntas Bridge Grandmaster of Arms"
     )
-    assert main_story.class_voluntas_bridge_event_key("Chronomancer") == "Class Voluntas Bridge Wanderer"
+    assert (
+        main_story.class_voluntas_bridge_event_key("Chronomancer")
+        == "Class Voluntas Bridge Wanderer"
+    )
     assert main_story.record_class_voluntas_bridge(state) is True
     assert main_story.record_class_voluntas_bridge(state) is False
 

@@ -13,7 +13,9 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-DEFAULT_SPECIAL_ROOT = PROJECT_ROOT / "src" / "ui_pygame" / "assets" / "dungeon_tiles" / "special_tiles"
+DEFAULT_SPECIAL_ROOT = (
+    PROJECT_ROOT / "src" / "ui_pygame" / "assets" / "dungeon_tiles" / "special_tiles"
+)
 DEFAULT_OUTPUT = PROJECT_ROOT / "docs" / "assets" / "review-sheets" / "warp-point-art.png"
 WARP_POINT_ASSETS = (
     ("active", "warp_point_active.png"),
@@ -56,7 +58,12 @@ def draw_review_sheet(asset_root: Path, output: Path) -> None:
 
         text = f"{label}: {filename}"
         text_width = draw.textlength(text, font=font)
-        draw.text((x + (CELL_SIZE[0] - text_width) / 2, y + CELL_SIZE[1] - 34), text, fill=LABEL, font=font)
+        draw.text(
+            (x + (CELL_SIZE[0] - text_width) / 2, y + CELL_SIZE[1] - 34),
+            text,
+            fill=LABEL,
+            font=font,
+        )
 
     output.parent.mkdir(parents=True, exist_ok=True)
     sheet.convert("RGB").save(output)

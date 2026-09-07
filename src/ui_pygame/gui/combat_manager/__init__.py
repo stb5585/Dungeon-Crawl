@@ -15,7 +15,6 @@ from ..level_up import LevelUpScreen
 from .constants import COMBAT_START_TRANSITION_FRAMES, POST_TURN_DELAY_FRAMES, SLOT_SYMBOL_ATLAS
 from .manager import GUICombatManager
 
-
 __all__ = [
     "astromancer",
     "BattleEngine",

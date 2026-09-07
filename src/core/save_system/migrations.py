@@ -15,7 +15,6 @@ from ..progression import (
     progression_points_through_level,
 )
 
-
 CURRENT_SAVE_VERSION = 5
 SUPPORTED_LEGACY_SAVE_VERSIONS = frozenset({3})
 _LEGACY_LEVEL_OFFSETS = {1: 0, 2: 30, 3: 60}
@@ -87,8 +86,7 @@ def _migrate_version_3(data: dict[str, Any]) -> dict[str, Any]:
     completed_trees = lineage[:-1]
     chosen_promotions = dict(zip(lineage, lineage[1:]))
     promotion_nodes = [
-        f"{_slug(source)}.promotion.{_slug(target)}"
-        for source, target in zip(lineage, lineage[1:])
+        f"{_slug(source)}.promotion.{_slug(target)}" for source, target in zip(lineage, lineage[1:])
     ]
     migrated["version"] = CURRENT_SAVE_VERSION
     migrated["progression"] = {

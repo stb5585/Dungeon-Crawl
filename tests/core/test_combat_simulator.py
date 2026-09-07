@@ -90,9 +90,7 @@ def test_simulator_accepts_explicit_encounter_and_reports_roster_metrics():
     assert stats.rounds >= 1
     assert len(stats.enemy_hp_remaining) == 2
     assert stats.player_hp_max == 500
-    assert set(stats.damage_by_combatant).issubset(
-        {"Giant Hornet", "Battle Toad"}
-    )
+    assert set(stats.damage_by_combatant).issubset({"Giant Hornet", "Battle Toad"})
     assert stats.consumables_used >= 0
     assert stats.reward_experience >= 0
     assert stats.reward_gold >= 0
@@ -120,7 +118,13 @@ def test_remaining_improvement_tuning_report_lists_deferred_measurement_targets(
 
     report = remaining_improvement_tuning_report()
 
-    assert set(report) == {"footpad", "ordinary_drops", "multi_strike_accuracy", "enfeeble", "poison_consistency"}
+    assert set(report) == {
+        "footpad",
+        "ordinary_drops",
+        "multi_strike_accuracy",
+        "enfeeble",
+        "poison_consistency",
+    }
     assert report["footpad"]["status"] == "measure_before_tuning"
     assert "win_rate" in report["footpad"]["metrics"]
     assert report["ordinary_drops"]["excluded_drop_sources"] == ["quest", "special", "boss"]
@@ -147,7 +151,10 @@ def test_remaining_balance_baseline_wrapper_plans_canonical_targets(tmp_path):
     assert "--tier base --level 10 --iters 30 --seed 1337" in command_text
     assert "--tier first --level 20 --iters 30 --seed 1337" in command_text
     assert "--tier second --level 30 --iters 30 --seed 1337" in command_text
-    assert "--races Human Elf Half Elf Half Giant Gnome Dwarf Half Orc --delta --baseline-race Human" in command_text
+    assert (
+        "--races Human Elf Half Elf Half Giant Gnome Dwarf Half Orc --delta --baseline-race Human"
+        in command_text
+    )
     assert set(payload["remaining_tuning_targets"]) == {
         "footpad",
         "ordinary_drops",

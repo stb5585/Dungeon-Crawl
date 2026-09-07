@@ -25,8 +25,12 @@ def _write_render_fixture(root: Path) -> None:
         "generic_item": {"x": 160, "y": 140, "w": 80, "h": 140},
     }
     (root / "item_render_atlas.json").write_text(json.dumps(manifest), encoding="utf-8")
-    (root / "item_render_map.json").write_text(json.dumps({"Claymore": "greatsword"}), encoding="utf-8")
-    (root / "item_icon_map.json").write_text(json.dumps({"Iron Sword": "sword", "War Hammer": "hammer"}), encoding="utf-8")
+    (root / "item_render_map.json").write_text(
+        json.dumps({"Claymore": "greatsword"}), encoding="utf-8"
+    )
+    (root / "item_icon_map.json").write_text(
+        json.dumps({"Iron Sword": "sword", "War Hammer": "hammer"}), encoding="utf-8"
+    )
     surface = pygame.Surface((240, 280), pygame.SRCALPHA)
     surface.fill((0, 0, 0, 0))
     surface.fill((255, 0, 0, 255), pygame.Rect(0, 0, 80, 140))
@@ -62,10 +66,28 @@ def test_item_render_manager_uses_icon_map_conversion_and_category_fallbacks(tmp
 
     assert manager.get_render_key_for_item(SimpleNamespace(name="Iron Sword")) == "longsword"
     assert manager.get_render_key_for_item(SimpleNamespace(name="War Hammer")) == "warhammer"
-    assert manager.get_render_key_for_item(SimpleNamespace(name="Mystery Axe", typ="Weapon", subtyp="Unknown")) == "weapon"
-    assert manager.get_render_key_for_item(SimpleNamespace(name="Mystery Plate", typ="Armor", subtyp="Unknown")) == "armor"
-    assert manager.get_render_key_for_item(SimpleNamespace(name="Mystery Helm", typ="Helmet", subtyp="Heavy")) == "helmet"
-    assert manager.get_render_key_for_item(SimpleNamespace(name="Mystery Thing", typ="", subtyp="")) == "generic_item"
+    assert (
+        manager.get_render_key_for_item(
+            SimpleNamespace(name="Mystery Axe", typ="Weapon", subtyp="Unknown")
+        )
+        == "weapon"
+    )
+    assert (
+        manager.get_render_key_for_item(
+            SimpleNamespace(name="Mystery Plate", typ="Armor", subtyp="Unknown")
+        )
+        == "armor"
+    )
+    assert (
+        manager.get_render_key_for_item(
+            SimpleNamespace(name="Mystery Helm", typ="Helmet", subtyp="Heavy")
+        )
+        == "helmet"
+    )
+    assert (
+        manager.get_render_key_for_item(SimpleNamespace(name="Mystery Thing", typ="", subtyp=""))
+        == "generic_item"
+    )
     assert "Mystery Thing" in manager.missing_mappings
 
 
@@ -73,7 +95,9 @@ def test_item_render_manager_prefers_individual_item_art_for_exact_mapping(tmp_p
     _write_render_fixture(tmp_path)
     art_root = tmp_path / "item_art"
     art_root.mkdir()
-    (tmp_path / "item_render_map.json").write_text(json.dumps({"Rapier": "rapier"}), encoding="utf-8")
+    (tmp_path / "item_render_map.json").write_text(
+        json.dumps({"Rapier": "rapier"}), encoding="utf-8"
+    )
     art = pygame.Surface((20, 20), pygame.SRCALPHA)
     art.fill((12, 34, 210, 255))
     pygame.image.save(art, art_root / "rapier.png")
@@ -112,7 +136,10 @@ def test_item_render_manager_loads_nested_individual_item_art(tmp_path):
 
     render = manager.get_render_by_name("Excalibur")
 
-    assert manager.get_render_key_for_item(SimpleNamespace(name="Excalibur")) == "weapons/swords/excalibur"
+    assert (
+        manager.get_render_key_for_item(SimpleNamespace(name="Excalibur"))
+        == "weapons/swords/excalibur"
+    )
     assert manager.art_path_for_key("weapons/swords/excalibur") == nested_root / "excalibur.png"
     assert render.get_size() == (18, 22)
     assert render.get_at((1, 1)) == pygame.Color(220, 210, 44, 255)
@@ -242,13 +269,9 @@ def test_default_item_render_map_uses_dedicated_art_for_recent_combat_items():
         items.GoldenClaw().name: "offhand/crossbows/golden_claw",
         items.WoodenBolts().name: "ammunition/crossbow_bolts/wooden_bolts",
         items.MetalBolts().name: "ammunition/crossbow_bolts/metal_bolts",
-        items.ArmorPiercingBolts().name: (
-            "ammunition/crossbow_bolts/armor_piercing_bolts"
-        ),
+        items.ArmorPiercingBolts().name: ("ammunition/crossbow_bolts/armor_piercing_bolts"),
         items.MagicBolts().name: "ammunition/crossbow_bolts/magic_bolts",
-        items.HeatSeekingBolts().name: (
-            "ammunition/crossbow_bolts/heat_seeking_bolts"
-        ),
+        items.HeatSeekingBolts().name: ("ammunition/crossbow_bolts/heat_seeking_bolts"),
         items.NapalmBolts().name: "ammunition/crossbow_bolts/napalm_bolts",
         items.DelayedBolts().name: "ammunition/crossbow_bolts/delayed_bolts",
         items.ThrowingDaggers().name: "ammunition/throwing_daggers",

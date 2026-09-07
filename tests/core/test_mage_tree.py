@@ -24,7 +24,6 @@ from src.core.progression import (
 from src.core.save_system import PlayerDataSerializer
 from tests.test_framework import TestGameState
 
-
 PROMOTION_ROUTES = {
     "Sorcerer": (
         "mage.ability.magicmissile",
@@ -167,9 +166,7 @@ def test_mage_tree_has_exact_ids_coordinates_gates_and_prerequisites():
         "mage.ability.classical-force": (0.5, 6),
         "mage.ability.arcane-tradition": (1.5, 6),
     }
-    development = {
-        node.id: node for node in tree.nodes if node.kind != NodeKind.PROMOTION
-    }
+    development = {node.id: node for node in tree.nodes if node.kind != NodeKind.PROMOTION}
 
     assert tree.branches == (
         "Elementalism",
@@ -182,8 +179,7 @@ def test_mage_tree_has_exact_ids_coordinates_gates_and_prerequisites():
     assert {node_id: node.position for node_id, node in development.items()} == expected_positions
     assert all(development[node_id].prerequisites == () for node_id in ELEMENTAL_IDS)
     assert all(
-        development[node_id].payload.get("level_requirement") is None
-        for node_id in ELEMENTAL_IDS
+        development[node_id].payload.get("level_requirement") is None for node_id in ELEMENTAL_IDS
     )
     for spell_id, passive_id in zip(ELEMENTAL_IDS, ENHANCEMENT_IDS):
         assert development[passive_id].prerequisites == (spell_id,)
@@ -220,9 +216,7 @@ def test_mage_tree_has_exact_ids_coordinates_gates_and_prerequisites():
     assert "level_requirement" not in development["mage.ability.mana-rupture"].payload
     assert "level_requirement" not in development["mage.mana.conjuration-reserve"].payload
     assert "mage.talent.warded-casting" not in nodes
-    assert {
-        node_id: node.icon_key for node_id, node in development.items()
-    } == {
+    assert {node_id: node.icon_key for node_id, node in development.items()} == {
         "mage.ability.firebolt": "spell_fire",
         "mage.ability.icelance": "spell_ice",
         "mage.ability.shock": "spell_lightning",
@@ -294,12 +288,13 @@ def test_sorcerer_specializations_are_exclusive_and_warn_before_closure():
         ),
         {},
     ).success
-    assert permanent_closures_for_plan(
-        player, "Mage", ("mage.ability.arcane-tradition",)
-    ) == ("Classical Force",)
+    assert permanent_closures_for_plan(player, "Mage", ("mage.ability.arcane-tradition",)) == (
+        "Classical Force",
+    )
     assert purchase_node(player, "mage.ability.arcane-tradition").success
     classical = next(
-        status for status in available_nodes(player)
+        status
+        for status in available_nodes(player)
         if status.node.id == "mage.ability.classical-force"
     )
     assert classical.state == NodeState.CLOSED
@@ -310,7 +305,8 @@ def test_classical_force_accepts_any_enhanced_element():
         player = _player(level=25)
         assert apply_progression_plan(player, (spell_id, passive_id), {}).success
         status = next(
-            entry for entry in available_nodes(player)
+            entry
+            for entry in available_nodes(player)
             if entry.node.id == "mage.ability.classical-force"
         )
         assert status.state == NodeState.AVAILABLE
@@ -492,9 +488,7 @@ def test_conjurer_tree_has_exact_authored_disciplines_and_gates():
         for node_id, (position, level, prerequisites) in expected.items()
     }
     development = {
-        node_id: node
-        for node_id, node in nodes.items()
-        if node.kind != NodeKind.PROMOTION
+        node_id: node for node_id, node in nodes.items() if node.kind != NodeKind.PROMOTION
     }
     assert set(development) == set(expected)
     assert {
@@ -533,23 +527,16 @@ def test_thaumaturgist_tree_carries_animal_and_six_conjurer_callings():
         "conjurer.ability.conjure-dragon",
     }
     carried = {
-        node.id
-        for node in ABILITY_TREES["Thaumaturgist"].nodes
-        if node.tree_id == "Conjurer"
+        node.id for node in ABILITY_TREES["Thaumaturgist"].nodes if node.tree_id == "Conjurer"
     }
     assert carried == calling_ids
     assert "mage.ability.conjure-animal" in {
-        node.id
-        for node in ABILITY_TREES["Thaumaturgist"].nodes
-        if node.tree_id == "Mage"
+        node.id for node in ABILITY_TREES["Thaumaturgist"].nodes if node.tree_id == "Mage"
     }
 
     thaumaturgist = _player("Thaumaturgist")
     thaumaturgist.progression.completed_trees.add("Conjurer")
-    statuses = {
-        status.node.id: status
-        for status in available_nodes(thaumaturgist)
-    }
+    statuses = {status.node.id: status for status in available_nodes(thaumaturgist)}
     assert statuses["conjurer.ability.conjure-humanoid"].state == NodeState.AVAILABLE
     assert "conjurer.ability.floating-crystal" not in statuses
 
@@ -573,9 +560,7 @@ def test_thaumaturgist_tree_has_paired_choices_ultimates_and_conduit_lane():
         ("animal", "humanoid", "monster", "spirit", "fiend", "celestial", "dragon")
     ):
         choice = _nodes("Thaumaturgist")[f"thaumaturgist.talent.bind-{category}"]
-        ultimate = _nodes("Thaumaturgist")[
-            f"thaumaturgist.talent.{category}-ultimate"
-        ]
+        ultimate = _nodes("Thaumaturgist")[f"thaumaturgist.talent.{category}-ultimate"]
         assert choice.position == (1, row + 1)
         assert ultimate.position == (2, row + 1)
         assert ultimate.prerequisites == (choice.id,)
@@ -625,13 +610,17 @@ def test_promoted_trees_drop_ability_gates_below_their_promotion_floor():
         effective_node_level_requirement(
             thaumaturgist_nodes[node_id],
             "Thaumaturgist",
-        ) == 0
+        )
+        == 0
         for node_id in carried_ids
     )
-    assert effective_node_level_requirement(
-        thaumaturgist_nodes["thaumaturgist.ability.miracleblade"],
-        "Thaumaturgist",
-    ) == 65
+    assert (
+        effective_node_level_requirement(
+            thaumaturgist_nodes["thaumaturgist.ability.miracleblade"],
+            "Thaumaturgist",
+        )
+        == 65
+    )
     conjure_dragon = thaumaturgist_nodes["conjurer.ability.conjure-dragon"]
     assert effective_node_level_requirement(conjure_dragon, "Conjurer") == 55
 
@@ -639,10 +628,12 @@ def test_promoted_trees_drop_ability_gates_below_their_promotion_floor():
 def test_thaumaturgist_tree_choice_binds_xenid_and_unlocks_ultimate():
     thaumaturgist = _player("Thaumaturgist")
     thaumaturgist.progression.completed_trees.update({"Mage", "Conjurer"})
-    thaumaturgist.progression.purchased_node_ids.update({
-        "mage.mana.conjuration-reserve",
-        "mage.ability.conjure-animal",
-    })
+    thaumaturgist.progression.purchased_node_ids.update(
+        {
+            "mage.mana.conjuration-reserve",
+            "mage.ability.conjure-animal",
+        }
+    )
 
     choice = purchase_node(
         thaumaturgist,
@@ -682,21 +673,25 @@ def test_xenid_conduit_replaces_experience_growth_and_shapes_the_caster():
     assert cacus.level.exp_to_gain == 0
     assert cacus.level.level == 10
     assert cacus.combat.attack > starting_attack
-    assert promotion_kits.xenid_caster_attribute_bonus(
-        thaumaturgist,
-        "strength",
-    ) == 5
+    assert (
+        promotion_kits.xenid_caster_attribute_bonus(
+            thaumaturgist,
+            "strength",
+        )
+        == 5
+    )
     assert promotion_kits.xenid_caster_multiplier(
         thaumaturgist,
         "melee",
     ) == pytest.approx(1.15)
-    thaumaturgist.progression.purchased_node_ids.add(
-        "thaumaturgist.talent.conduit-mastery"
+    thaumaturgist.progression.purchased_node_ids.add("thaumaturgist.talent.conduit-mastery")
+    assert (
+        promotion_kits.xenid_caster_attribute_bonus(
+            thaumaturgist,
+            "strength",
+        )
+        == 7
     )
-    assert promotion_kits.xenid_caster_attribute_bonus(
-        thaumaturgist,
-        "strength",
-    ) == 7
     assert promotion_kits.xenid_caster_multiplier(
         thaumaturgist,
         "melee",
@@ -760,10 +755,7 @@ def test_floating_crystal_siphons_percent_mana_and_scales_with_spell_power():
     assert player.mana.current == 140
     assert player.floating_crystal is None
     assert enemy.health.current == 10_000 - expected_damage
-    assert any(
-        f"with {spell_power} spell power" in message
-        for message in result.messages
-    )
+    assert any(f"with {spell_power} spell power" in message for message in result.messages)
 
 
 def test_miracles_consume_reality_fragments_and_break_normal_rules():

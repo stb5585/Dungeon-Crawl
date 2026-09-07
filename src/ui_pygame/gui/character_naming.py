@@ -11,9 +11,12 @@ import pygame
 from src.ui_pygame.assets.portrait_manager import PORTRAIT_ROOT, PortraitManager
 
 from .confirmation_popup import ConfirmationPopup
-from .input_guards import prepare_guarded_input, release_guard_allows_input, update_input_armed_from_event
+from .input_guards import (
+    prepare_guarded_input,
+    release_guard_allows_input,
+    update_input_armed_from_event,
+)
 from .town_base import TownColors
-
 
 PORTRAIT_DIR = PORTRAIT_ROOT
 MAX_NAME_LENGTH = 20
@@ -70,7 +73,9 @@ class CharacterNamingScreen:
     def cycle_portrait(self, delta: int) -> None:
         if self.portrait_variant_count <= 1:
             return
-        self.selected_portrait_variant = (self.selected_portrait_variant + delta) % self.portrait_variant_count
+        self.selected_portrait_variant = (
+            self.selected_portrait_variant + delta
+        ) % self.portrait_variant_count
         self.portrait = self.load_portrait()
 
     def select_sex(self, sex: str) -> None:
@@ -91,7 +96,9 @@ class CharacterNamingScreen:
         panel_width = (self.width - margin * 2 - gap) // 2
         panel_height = content_height - margin * 2
         self.preview_rect = pygame.Rect(margin, content_top + margin, panel_width, panel_height)
-        self.name_rect = pygame.Rect(self.preview_rect.right + gap, content_top + margin, panel_width, panel_height)
+        self.name_rect = pygame.Rect(
+            self.preview_rect.right + gap, content_top + margin, panel_width, panel_height
+        )
 
     def draw_header(self) -> None:
         pygame.draw.rect(self.screen, self.colors.BLACK, self.header_rect)
@@ -182,7 +189,9 @@ class CharacterNamingScreen:
             True,
             self.colors.GRAY,
         )
-        count_rect = count_text.get_rect(centerx=portrait_rect.centerx, top=portrait_rect.bottom + 8)
+        count_rect = count_text.get_rect(
+            centerx=portrait_rect.centerx, top=portrait_rect.bottom + 8
+        )
         self.screen.blit(count_text, count_rect)
         return count_rect.bottom
 
@@ -195,14 +204,18 @@ class CharacterNamingScreen:
         y = top_y + 14
         self.sex_button_rects = {}
         for index, option in enumerate(SEX_OPTIONS):
-            rect = pygame.Rect(start_x + index * (button_width + gap), y, button_width, button_height)
+            rect = pygame.Rect(
+                start_x + index * (button_width + gap), y, button_width, button_height
+            )
             self.sex_button_rects[option] = rect
             selected = option == self.sex
             fill = self.colors.HIGHLIGHT_BG if selected else self.colors.DARK_GRAY
             border = self.colors.GOLD if selected else self.colors.BORDER_COLOR
             pygame.draw.rect(self.screen, fill, rect)
             pygame.draw.rect(self.screen, border, rect, 2)
-            label = self.normal_font.render(option, True, self.colors.GOLD if selected else self.colors.WHITE)
+            label = self.normal_font.render(
+                option, True, self.colors.GOLD if selected else self.colors.WHITE
+            )
             self.screen.blit(label, label.get_rect(center=rect.center))
         return y + button_height
 
@@ -232,7 +245,9 @@ class CharacterNamingScreen:
         name_rect = name_surface.get_rect(left=input_rect.left + 18, centery=input_rect.centery)
         self.screen.blit(name_surface, name_rect)
 
-        hint = self.small_font.render("ENTER: Confirm   BACKSPACE: Delete   ESC: Back", True, self.colors.GRAY)
+        hint = self.small_font.render(
+            "ENTER: Confirm   BACKSPACE: Delete   ESC: Back", True, self.colors.GRAY
+        )
         hint_rect = hint.get_rect(left=x, top=input_rect.bottom + 24)
         self.screen.blit(hint, hint_rect)
 
@@ -269,10 +284,17 @@ class CharacterNamingScreen:
                     sys.exit()
 
                 input_armed = update_input_armed_from_event(event, require_key_release, input_armed)
-                if event.type == pygame.MOUSEBUTTONDOWN and getattr(event, "button", None) == 1 and input_armed:
+                if (
+                    event.type == pygame.MOUSEBUTTONDOWN
+                    and getattr(event, "button", None) == 1
+                    and input_armed
+                ):
                     pos = getattr(event, "pos", None)
                     if pos is not None:
-                        if self.previous_portrait_rect and self.previous_portrait_rect.collidepoint(pos):
+                        if (
+                            self.previous_portrait_rect
+                            and self.previous_portrait_rect.collidepoint(pos)
+                        ):
                             self.cycle_portrait(-1)
                             continue
                         if self.next_portrait_rect and self.next_portrait_rect.collidepoint(pos):
@@ -314,7 +336,9 @@ class CharacterNamingScreen:
 class CompanionNamingScreen:
     """Name-entry screen for newly tamed companions."""
 
-    def __init__(self, presenter, companion_name: str, species: str = "", form: str = "", special: str = ""):
+    def __init__(
+        self, presenter, companion_name: str, species: str = "", form: str = "", special: str = ""
+    ):
         self.presenter = presenter
         self.screen = presenter.screen
         self.width = presenter.width
@@ -346,7 +370,9 @@ class CompanionNamingScreen:
         pygame.draw.rect(self.screen, self.colors.BLACK, self.header_rect)
         pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, self.header_rect, 2)
         title = self.normal_font.render("Tame Complete", True, self.colors.GOLD)
-        self.screen.blit(title, title.get_rect(centerx=self.width // 2, centery=self.header_rect.centery))
+        self.screen.blit(
+            title, title.get_rect(centerx=self.width // 2, centery=self.header_rect.centery)
+        )
 
     def draw(self, background_surface: pygame.Surface | None = None) -> None:
         if background_surface is not None:
@@ -380,7 +406,9 @@ class CompanionNamingScreen:
             self.screen.blit(value_text, (x + 150, y))
             y += self.normal_font.get_height() + 12
 
-        input_rect = pygame.Rect(x, y + 18, self.panel_rect.width - 96, max(62, self.large_font.get_height() + 26))
+        input_rect = pygame.Rect(
+            x, y + 18, self.panel_rect.width - 96, max(62, self.large_font.get_height() + 26)
+        )
         pygame.draw.rect(self.screen, self.colors.DARK_GRAY, input_rect)
         pygame.draw.rect(self.screen, self.colors.GOLD, input_rect, 2)
 
@@ -392,7 +420,9 @@ class CompanionNamingScreen:
         if entry_font.render(display_text, True, self.colors.WHITE).get_width() > available_width:
             entry_font = self.small_font
         surface = entry_font.render(display_text, True, self.colors.WHITE)
-        self.screen.blit(surface, surface.get_rect(left=input_rect.left + 18, centery=input_rect.centery))
+        self.screen.blit(
+            surface, surface.get_rect(left=input_rect.left + 18, centery=input_rect.centery)
+        )
 
         preview_name = self.text.strip() or self.companion_name
         if preview_name != self.companion_name:
@@ -400,7 +430,9 @@ class CompanionNamingScreen:
         preview = self.normal_font.render(f"Known as {preview_name}", True, self.colors.GOLD)
         self.screen.blit(preview, preview.get_rect(left=x, top=input_rect.bottom + 24))
 
-        hint = self.small_font.render("ENTER: Confirm   BACKSPACE: Delete   ESC: Keep original name", True, self.colors.GRAY)
+        hint = self.small_font.render(
+            "ENTER: Confirm   BACKSPACE: Delete   ESC: Keep original name", True, self.colors.GRAY
+        )
         self.screen.blit(hint, hint.get_rect(left=x, bottom=self.panel_rect.bottom - 36))
 
     def navigate(
@@ -431,7 +463,9 @@ class CompanionNamingScreen:
                     display_name = chosen or self.companion_name
                     if chosen and chosen != self.companion_name:
                         display_name = f"{chosen} ({self.companion_name})"
-                    confirm = ConfirmationPopup(self.presenter, f"Keep the name {display_name}?", show_buttons=True)
+                    confirm = ConfirmationPopup(
+                        self.presenter, f"Keep the name {display_name}?", show_buttons=True
+                    )
                     if confirm.show(
                         background_draw_func=lambda: self.draw(background_surface),
                         flush_events=True,

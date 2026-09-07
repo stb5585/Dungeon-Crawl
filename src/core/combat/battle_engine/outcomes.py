@@ -38,11 +38,13 @@ class BattleOutcomeMixin:
             messages += f"{self.player.name} captures {enemy.name}'s soul in a Soul Gem.\n"
         if doomed and "Dance of the Dead" in skills:
             allies = getattr(self.player, "temporary_undead_allies", [])
-            allies.append({
-                "name": enemy.name,
-                "turns": 3,
-                "damage": max(1, int(getattr(enemy.combat, "attack", 1) * 0.5)),
-            })
+            allies.append(
+                {
+                    "name": enemy.name,
+                    "turns": 3,
+                    "damage": max(1, int(getattr(enemy.combat, "attack", 1) * 0.5)),
+                }
+            )
             self.player.temporary_undead_allies = allies
             messages += f"{enemy.name} rises as a temporary undead ally.\n"
         return messages
@@ -64,7 +66,9 @@ class BattleOutcomeMixin:
     def _inventory_awards(before, after) -> tuple[LootAward, ...]:
         """Return positive inventory changes in stable destination/name order."""
         return tuple(
-            LootAward(item_name=name, quantity=after[key] - before.get(key, 0), destination=destination)
+            LootAward(
+                item_name=name, quantity=after[key] - before.get(key, 0), destination=destination
+            )
             for key in sorted(after, key=lambda value: (value[0], value[1]))
             for destination, name in (key,)
             if after[key] > before.get(key, 0)
@@ -86,7 +90,7 @@ class BattleOutcomeMixin:
             )
             return msg
         if getattr(enemy, "tamed_by_player", False) or getattr(enemy, "no_victory_rewards", False):
-            self.player.state = 'normal'
+            self.player.state = "normal"
             self.player.effects(end=True)
             msg = f"{enemy.name} leaves the fight as a companion.\n"
             msg += promotion_kits.end_combat(self.player, victory=False, enemy=enemy)
@@ -113,10 +117,7 @@ class BattleOutcomeMixin:
         if self.summon:
             self.summon.effects(end=True)
             if getattr(getattr(self.player, "cls", None), "name", "") == "Thaumaturgist":
-                msg += (
-                    f"{self.summon.name}'s growth is driven by its conduit, "
-                    "not experience.\n"
-                )
+                msg += f"{self.summon.name}'s growth is driven by its conduit, " "not experience.\n"
             else:
                 self.summon.level.exp += exp_gain
                 if self.summon.level.level < 10:
@@ -156,7 +157,9 @@ class BattleOutcomeMixin:
             if scar_text:
                 msg += scar_text
             class_rings.record_soul_harvest(self.player, getattr(enemy, "enemy_typ", None))
-            msg += promotion_kits.end_combat(self.player, victory=True, enemy=enemy, exp_gain=exp_gain, boss=self.boss)
+            msg += promotion_kits.end_combat(
+                self.player, victory=True, enemy=enemy, exp_gain=exp_gain, boss=self.boss
+            )
             try:
                 from ...classes import demonologist
 
@@ -187,7 +190,7 @@ class BattleOutcomeMixin:
                 msg += quest_msg
 
         # Clear effects
-        self.player.state = 'normal'
+        self.player.state = "normal"
         self.player.effects(end=True)
 
         # Experience growth uses permanent post-transformation stats.
@@ -195,9 +198,7 @@ class BattleOutcomeMixin:
 
         level_result = award_experience(self.player, exp_gain)
         self.player._pending_level_up_result = (
-            level_result
-            if level_result.new_level > level_result.old_level
-            else None
+            level_result if level_result.new_level > level_result.old_level else None
         )
         if hasattr(self.player, "award_grandmaster_victory_xp"):
             msg += self._grandmaster_victory_xp_text()
@@ -352,8 +353,7 @@ class BattleOutcomeMixin:
 
             if exp_gain:
                 member_message = (
-                    f"{member.display_label}: {exp_gain} experience.\n"
-                    + member_message
+                    f"{member.display_label}: {exp_gain} experience.\n" + member_message
                 )
             settlements.append(
                 EnemySettlement(
@@ -381,8 +381,7 @@ class BattleOutcomeMixin:
             self.summon.effects(end=True)
             if getattr(getattr(self.player, "cls", None), "name", "") == "Thaumaturgist":
                 message += (
-                    f"{self.summon.name}'s growth is driven by its conduit, "
-                    "not experience.\n"
+                    f"{self.summon.name}'s growth is driven by its conduit, " "not experience.\n"
                 )
             else:
                 self.summon.level.exp += total_exp
@@ -448,9 +447,7 @@ class BattleOutcomeMixin:
 
         level_result = award_experience(self.player, total_exp)
         self.player._pending_level_up_result = (
-            level_result
-            if level_result.new_level > level_result.old_level
-            else None
+            level_result if level_result.new_level > level_result.old_level else None
         )
         message += f"Encounter total: {total_exp} experience.\n"
         reward_fragments = (
@@ -481,9 +478,9 @@ class BattleOutcomeMixin:
         if not hasattr(self.player, "award_grandmaster_victory_xp"):
             return ""
         text = ""
-        for weapon_type, (before, after, amount) in (
-            self.player.award_grandmaster_victory_xp(enemy).items()
-        ):
+        for weapon_type, (before, after, amount) in self.player.award_grandmaster_victory_xp(
+            enemy
+        ).items():
             text += grandmaster.discipline_xp_text(
                 self.player,
                 weapon_type,
@@ -495,7 +492,7 @@ class BattleOutcomeMixin:
 
     def _process_grandmaster_trial_victory(self) -> str:
         """Handle Secret Master trial victory without normal combat rewards."""
-        self.player.state = 'normal'
+        self.player.state = "normal"
         self.player.effects(end=True)
         self.encounter.primary_enemy.effects(end=True)
 
@@ -505,14 +502,14 @@ class BattleOutcomeMixin:
 
     def _process_class_ring_trial_victory(self) -> str:
         """Handle legacy Class Ring trial victory without normal combat rewards."""
-        self.player.state = 'normal'
+        self.player.state = "normal"
         self.player.effects(end=True)
         self.encounter.primary_enemy.effects(end=True)
         return f"You complete the {self._class_ring_trial_name()}.\n"
 
     def _process_thieves_guild_trial_victory(self) -> str:
         """Handle Thieves Guild initiation victory without normal combat rewards."""
-        self.player.state = 'normal'
+        self.player.state = "normal"
         self.player.effects(end=True)
         self.encounter.primary_enemy.effects(end=True)
         if not thieves_guild.has_signet(self.player):
@@ -521,7 +518,7 @@ class BattleOutcomeMixin:
 
     def _process_class_ring_trial_defeat(self) -> None:
         """Handle Class Ring trial defeat without normal death rules."""
-        self.player.state = 'normal'
+        self.player.state = "normal"
         self.player.effects(end=True)
         if hasattr(self.player, "_grandmaster_battle_hit_types"):
             self.player._grandmaster_battle_hit_types.clear()
@@ -536,7 +533,7 @@ class BattleOutcomeMixin:
         from ... import curses
 
         curses.cure_curses(self.player)
-        self.player.state = 'normal'
+        self.player.state = "normal"
         self.player.effects(end=True)
         if hasattr(self.player, "_grandmaster_battle_hit_types"):
             self.player._grandmaster_battle_hit_types.clear()

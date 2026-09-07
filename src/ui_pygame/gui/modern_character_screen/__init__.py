@@ -25,7 +25,6 @@ from .models import (
 )
 from .screen import ModernCharacterScreen
 
-
 __all__ = [
     "BestiaryPopupMenu",
     "CharacterTab",

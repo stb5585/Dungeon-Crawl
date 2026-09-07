@@ -11,7 +11,6 @@ from src.core.classes import ability_mechanics
 from src.core.data.ability_loader import AbilityFactory
 from tests.test_framework import TestGameState
 
-
 DETECT_CLASSES = (
     abilities.DetectSlime,
     abilities.DetectAnimal,
@@ -36,8 +35,17 @@ def test_all_standard_enemy_families_have_timed_exclusive_detect_spells():
     player.mana.current = 100
 
     assert {ability().enemy_type for ability in DETECT_CLASSES} == {
-        "Slime", "Animal", "Humanoid", "Fey", "Fiend", "Undead",
-        "Elemental", "Dragon", "Monster", "Aberration", "Construct",
+        "Slime",
+        "Animal",
+        "Humanoid",
+        "Fey",
+        "Fiend",
+        "Undead",
+        "Elemental",
+        "Dragon",
+        "Monster",
+        "Aberration",
+        "Construct",
     }
     abilities.DetectUndead().cast_out(player)
     abilities.DetectFiend().cast_out(player)

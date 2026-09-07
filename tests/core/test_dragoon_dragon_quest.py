@@ -95,6 +95,7 @@ def test_red_dragon_alternate_victory_preserves_progression_and_jump_unlock():
     red_dragon = enemies.RedDragon()
     red_dragon.health.current = 0
     red_dragon.kaelenon_restored = True
+
     class BossTile(SimpleNamespace):
         def __str__(self):
             return "RedDragonBossRoom"

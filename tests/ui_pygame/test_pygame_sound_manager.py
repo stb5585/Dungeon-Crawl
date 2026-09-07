@@ -125,9 +125,7 @@ def test_sound_manager_initializes_mixer_and_subscribes_to_bus(tmp_path, fake_mi
     manager = sound_module.SoundManager(assets_dir=str(_make_assets_dir(tmp_path)), event_bus=bus)
 
     assert manager.enabled is True
-    assert state["init_calls"] == [
-        {"frequency": 44100, "size": -16, "channels": 2, "buffer": 512}
-    ]
+    assert state["init_calls"] == [{"frequency": 44100, "size": -16, "channels": 2, "buffer": 512}]
     assert state["channels"] == [16]
     assert EventType.COMBAT_START in bus._subscribers
     assert EventType.ITEM_USE in bus._subscribers
@@ -184,7 +182,10 @@ def test_audio_asset_diagnostics_report_sound_and_music_availability(tmp_path, f
     assert manager.resolve_sfx_path("heal") == assets_dir / "sounds" / "heal.ogg"
     assert manager.resolve_sfx_path("spring") == assets_dir / "sounds" / "new_sounds" / "spring.wav"
     assert manager.resolve_music_path("town") == assets_dir / "music" / "town.mp3"
-    assert manager.resolve_music_path("dungeon") == assets_dir / "music" / "eerie_dungeon_background.wav"
+    assert (
+        manager.resolve_music_path("dungeon")
+        == assets_dir / "music" / "eerie_dungeon_background.wav"
+    )
     assert manager.get_sfx_candidate_paths("hit") == (
         assets_dir / "sounds" / "hit.wav",
         assets_dir / "sounds" / "hit.ogg",
@@ -502,7 +503,9 @@ def test_event_handlers_route_to_expected_sound_effects(tmp_path, fake_mixer, mo
     manager = sound_module.SoundManager(assets_dir=str(_make_assets_dir(tmp_path)))
     calls = []
     music_calls = []
-    monkeypatch.setattr(manager, "play_sfx", lambda name, volume=None, loops=0: calls.append((name, volume, loops)))
+    monkeypatch.setattr(
+        manager, "play_sfx", lambda name, volume=None, loops=0: calls.append((name, volume, loops))
+    )
     monkeypatch.setattr(
         manager,
         "play_location_music",
@@ -510,38 +513,96 @@ def test_event_handlers_route_to_expected_sound_effects(tmp_path, fake_mixer, mo
     )
 
     manager._on_combat_start(GameEvent(type=EventType.COMBAT_START, timestamp=0, data={}))
-    manager._on_combat_end(GameEvent(type=EventType.COMBAT_END, timestamp=0, data={"player_alive": True}))
+    manager._on_combat_end(
+        GameEvent(type=EventType.COMBAT_END, timestamp=0, data={"player_alive": True})
+    )
     manager._on_combat_end(GameEvent(type=EventType.COMBAT_END, timestamp=0, data={"fled": True}))
     manager._on_combat_end(GameEvent(type=EventType.COMBAT_END, timestamp=0, data={}))
-    manager._on_damage_dealt(GameEvent(type=EventType.DAMAGE_DEALT, timestamp=0, data={"crit": True, "damage": 1}))
-    manager._on_damage_dealt(GameEvent(type=EventType.DAMAGE_DEALT, timestamp=0, data={"is_critical": True, "damage": 1}))
-    manager._on_damage_dealt(GameEvent(type=EventType.DAMAGE_DEALT, timestamp=0, data={"weapon_name": "Laser", "damage": 10}))
-    manager._on_damage_dealt(GameEvent(type=EventType.DAMAGE_DEALT, timestamp=0, data={"damage": 80}))
-    manager._on_damage_dealt(GameEvent(type=EventType.DAMAGE_DEALT, timestamp=0, data={"damage": 10}))
+    manager._on_damage_dealt(
+        GameEvent(type=EventType.DAMAGE_DEALT, timestamp=0, data={"crit": True, "damage": 1})
+    )
+    manager._on_damage_dealt(
+        GameEvent(type=EventType.DAMAGE_DEALT, timestamp=0, data={"is_critical": True, "damage": 1})
+    )
+    manager._on_damage_dealt(
+        GameEvent(
+            type=EventType.DAMAGE_DEALT, timestamp=0, data={"weapon_name": "Laser", "damage": 10}
+        )
+    )
+    manager._on_damage_dealt(
+        GameEvent(type=EventType.DAMAGE_DEALT, timestamp=0, data={"damage": 80})
+    )
+    manager._on_damage_dealt(
+        GameEvent(type=EventType.DAMAGE_DEALT, timestamp=0, data={"damage": 10})
+    )
     manager._on_block(GameEvent(type=EventType.BLOCK, timestamp=0, data={"damage_blocked": 25}))
     manager._on_healing(GameEvent(type=EventType.HEALING_DONE, timestamp=0, data={}))
-    manager._on_spell_cast(GameEvent(type=EventType.SPELL_CAST, timestamp=0, data={"spell_name": "Fireball"}))
-    manager._on_spell_cast(GameEvent(type=EventType.SPELL_CAST, timestamp=0, data={"spell_name": "Frost Lance"}))
-    manager._on_spell_cast(GameEvent(type=EventType.SPELL_CAST, timestamp=0, data={"ability_name": "Lightning Arc"}))
-    manager._on_spell_cast(GameEvent(type=EventType.SPELL_CAST, timestamp=0, data={"spell_name": "Heal"}))
-    manager._on_spell_cast(GameEvent(type=EventType.SPELL_CAST, timestamp=0, data={"spell_name": "Mystery"}))
-    manager._on_skill_use(GameEvent(type=EventType.SKILL_USE, timestamp=0, data={"skill_name": "Fire Slash"}))
-    manager._on_skill_use(GameEvent(type=EventType.SKILL_USE, timestamp=0, data={"skill_name": "Ice Kick"}))
-    manager._on_skill_use(GameEvent(type=EventType.SKILL_USE, timestamp=0, data={"ability_name": "Shock Palm"}))
-    manager._on_skill_use(GameEvent(type=EventType.SKILL_USE, timestamp=0, data={"skill_name": "Healing Waltz"}))
-    manager._on_skill_use(GameEvent(type=EventType.SKILL_USE, timestamp=0, data={"skill_name": "Mortal Strike"}))
-    manager._on_skill_use(GameEvent(type=EventType.SKILL_USE, timestamp=0, data={"skill_name": "Screech"}))
-    manager._on_skill_use(GameEvent(type=EventType.SKILL_USE, timestamp=0, data={"skill_name": "Howl"}))
-    manager._on_skill_use(GameEvent(type=EventType.SKILL_USE, timestamp=0, data={"skill_name": "Backflip"}))
-    manager._on_item_use(GameEvent(type=EventType.ITEM_USE, timestamp=0, data={"item_name": "Fire Scroll"}))
-    manager._on_item_use(GameEvent(type=EventType.ITEM_USE, timestamp=0, data={"item_subtype": "Elixir"}))
-    manager._on_item_use(GameEvent(type=EventType.ITEM_USE, timestamp=0, data={"item_name": "Mystery Token"}))
-    manager._on_status_applied(GameEvent(type=EventType.STATUS_APPLIED, timestamp=0, data={"status_name": "Poison"}))
-    manager._on_status_applied(GameEvent(type=EventType.STATUS_APPLIED, timestamp=0, data={"status_name": "Freeze"}))
-    manager._on_status_applied(GameEvent(type=EventType.STATUS_APPLIED, timestamp=0, data={"status_name": "Burn"}))
-    manager._on_status_applied(GameEvent(type=EventType.STATUS_APPLIED, timestamp=0, data={"status_name": "Sleep"}))
-    manager._on_death(GameEvent(type=EventType.CHARACTER_DEATH, timestamp=0, data={"is_player": True}))
-    manager._on_death(GameEvent(type=EventType.CHARACTER_DEATH, timestamp=0, data={"is_player": False}))
+    manager._on_spell_cast(
+        GameEvent(type=EventType.SPELL_CAST, timestamp=0, data={"spell_name": "Fireball"})
+    )
+    manager._on_spell_cast(
+        GameEvent(type=EventType.SPELL_CAST, timestamp=0, data={"spell_name": "Frost Lance"})
+    )
+    manager._on_spell_cast(
+        GameEvent(type=EventType.SPELL_CAST, timestamp=0, data={"ability_name": "Lightning Arc"})
+    )
+    manager._on_spell_cast(
+        GameEvent(type=EventType.SPELL_CAST, timestamp=0, data={"spell_name": "Heal"})
+    )
+    manager._on_spell_cast(
+        GameEvent(type=EventType.SPELL_CAST, timestamp=0, data={"spell_name": "Mystery"})
+    )
+    manager._on_skill_use(
+        GameEvent(type=EventType.SKILL_USE, timestamp=0, data={"skill_name": "Fire Slash"})
+    )
+    manager._on_skill_use(
+        GameEvent(type=EventType.SKILL_USE, timestamp=0, data={"skill_name": "Ice Kick"})
+    )
+    manager._on_skill_use(
+        GameEvent(type=EventType.SKILL_USE, timestamp=0, data={"ability_name": "Shock Palm"})
+    )
+    manager._on_skill_use(
+        GameEvent(type=EventType.SKILL_USE, timestamp=0, data={"skill_name": "Healing Waltz"})
+    )
+    manager._on_skill_use(
+        GameEvent(type=EventType.SKILL_USE, timestamp=0, data={"skill_name": "Mortal Strike"})
+    )
+    manager._on_skill_use(
+        GameEvent(type=EventType.SKILL_USE, timestamp=0, data={"skill_name": "Screech"})
+    )
+    manager._on_skill_use(
+        GameEvent(type=EventType.SKILL_USE, timestamp=0, data={"skill_name": "Howl"})
+    )
+    manager._on_skill_use(
+        GameEvent(type=EventType.SKILL_USE, timestamp=0, data={"skill_name": "Backflip"})
+    )
+    manager._on_item_use(
+        GameEvent(type=EventType.ITEM_USE, timestamp=0, data={"item_name": "Fire Scroll"})
+    )
+    manager._on_item_use(
+        GameEvent(type=EventType.ITEM_USE, timestamp=0, data={"item_subtype": "Elixir"})
+    )
+    manager._on_item_use(
+        GameEvent(type=EventType.ITEM_USE, timestamp=0, data={"item_name": "Mystery Token"})
+    )
+    manager._on_status_applied(
+        GameEvent(type=EventType.STATUS_APPLIED, timestamp=0, data={"status_name": "Poison"})
+    )
+    manager._on_status_applied(
+        GameEvent(type=EventType.STATUS_APPLIED, timestamp=0, data={"status_name": "Freeze"})
+    )
+    manager._on_status_applied(
+        GameEvent(type=EventType.STATUS_APPLIED, timestamp=0, data={"status_name": "Burn"})
+    )
+    manager._on_status_applied(
+        GameEvent(type=EventType.STATUS_APPLIED, timestamp=0, data={"status_name": "Sleep"})
+    )
+    manager._on_death(
+        GameEvent(type=EventType.CHARACTER_DEATH, timestamp=0, data={"is_player": True})
+    )
+    manager._on_death(
+        GameEvent(type=EventType.CHARACTER_DEATH, timestamp=0, data={"is_player": False})
+    )
     manager._on_level_up(GameEvent(type=EventType.LEVEL_UP, timestamp=0, data={}))
 
     assert calls == [
@@ -592,8 +653,12 @@ def test_combat_start_music_uses_boss_and_final_flags(tmp_path, fake_mixer, monk
         lambda location, **kwargs: music_calls.append((location, kwargs)) or "combat_boss",
     )
 
-    manager._on_combat_start(GameEvent(type=EventType.COMBAT_START, timestamp=0, data={"boss": True}))
-    manager._on_combat_start(GameEvent(type=EventType.COMBAT_START, timestamp=0, data={"final": True}))
+    manager._on_combat_start(
+        GameEvent(type=EventType.COMBAT_START, timestamp=0, data={"boss": True})
+    )
+    manager._on_combat_start(
+        GameEvent(type=EventType.COMBAT_START, timestamp=0, data={"final": True})
+    )
 
     assert music_calls == [
         ("combat", {"boss": True, "final": False}),
@@ -611,16 +676,22 @@ def test_combat_end_restores_previous_location_music(tmp_path, fake_mixer, monke
     monkeypatch.setattr(
         manager,
         "play_location_music",
-        lambda location, **kwargs: setattr(manager, "current_music", "combat_boss") or music_calls.append(("location", location, kwargs)),
+        lambda location, **kwargs: setattr(manager, "current_music", "combat_boss")
+        or music_calls.append(("location", location, kwargs)),
     )
     monkeypatch.setattr(
         manager,
         "play_music",
-        lambda music_name, **_kwargs: setattr(manager, "current_music", music_name) or music_calls.append(("music", music_name)),
+        lambda music_name, **_kwargs: setattr(manager, "current_music", music_name)
+        or music_calls.append(("music", music_name)),
     )
 
-    manager._on_combat_start(GameEvent(type=EventType.COMBAT_START, timestamp=0, data={"boss": True}))
-    manager._on_combat_end(GameEvent(type=EventType.COMBAT_END, timestamp=0, data={"player_alive": True}))
+    manager._on_combat_start(
+        GameEvent(type=EventType.COMBAT_START, timestamp=0, data={"boss": True})
+    )
+    manager._on_combat_end(
+        GameEvent(type=EventType.COMBAT_END, timestamp=0, data={"player_alive": True})
+    )
 
     assert sfx_calls == ["combat_start", "victory"]
     assert music_calls == [

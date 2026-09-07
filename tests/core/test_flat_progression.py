@@ -97,32 +97,25 @@ def test_all_tree_manifests_validate_and_scale_authored_rating_values_by_stage()
     for tree in ABILITY_TREES.values():
         rating_nodes = [node for node in tree.nodes if node.kind == NodeKind.RATING]
         assert all(
-            node.payload["amount"] == CLASS_DETAILS[node.tree_id][1] * 10
-            for node in rating_nodes
+            node.payload["amount"] == CLASS_DETAILS[node.tree_id][1] * 10 for node in rating_nodes
         )
         assert all(
-            node.payload["description"].startswith("Permanently increase")
-            for node in rating_nodes
+            node.payload["description"].startswith("Permanently increase") for node in rating_nodes
         )
         assert all(
-            "level_requirement" not in node.payload
-            or node.payload.get("level_band_gate") is True
+            "level_requirement" not in node.payload or node.payload.get("level_band_gate") is True
             for node in rating_nodes
         )
         resource_nodes = [
-            node
-            for node in tree.nodes
-            if node.kind in {NodeKind.HEALTH, NodeKind.MANA}
+            node for node in tree.nodes if node.kind in {NodeKind.HEALTH, NodeKind.MANA}
         ]
         expected_resources = {1: 25, 2: 50, 3: 100}
         assert all(
-            node.payload["amount"]
-            == expected_resources[CLASS_DETAILS[node.tree_id][1]]
+            node.payload["amount"] == expected_resources[CLASS_DETAILS[node.tree_id][1]]
             for node in resource_nodes
         )
         assert all(
-            "level_requirement" not in node.payload
-            or node.payload.get("level_band_gate") is True
+            "level_requirement" not in node.payload or node.payload.get("level_band_gate") is True
             for node in resource_nodes
         )
         talent_nodes = [node for node in tree.nodes if node.kind == NodeKind.TALENT]
@@ -130,16 +123,16 @@ def test_all_tree_manifests_validate_and_scale_authored_rating_values_by_stage()
             expected_bonus = CLASS_DETAILS[node.tree_id][1] * 10
             assert all(
                 amount == expected_bonus
-                for amount in node.payload.get("bonuses", {}).get(
+                for amount in node.payload.get("bonuses", {})
+                .get(
                     "ratings",
                     {},
-                ).values()
+                )
+                .values()
             )
         for node in tree.nodes:
             if node.kind == NodeKind.PROMOTION:
-                assert node.payload["level_requirement"] == (
-                    30 if tree.stage == 1 else 60
-                )
+                assert node.payload["level_requirement"] == (30 if tree.stage == 1 else 60)
                 assert node.cost == (2 if tree.stage == 1 else 3)
 
 
@@ -185,9 +178,7 @@ def test_base_graph_parity_and_promotion_route_costs():
         if class_name == "Pathfinder":
             expected_node_count = 40
         assert sum(node.kind != NodeKind.PROMOTION for node in tree.nodes) == expected_node_count
-        for promotion in (
-            node for node in tree.nodes if node.kind == NodeKind.PROMOTION
-        ):
+        for promotion in (node for node in tree.nodes if node.kind == NodeKind.PROMOTION):
             assert promotion.cost == 2
             expected_route_cost = 13 if class_name == "Footpad" else 8
             if class_name == "Healer" and promotion.payload["target_class"] != "Monk":
@@ -199,10 +190,10 @@ def test_base_graph_parity_and_promotion_route_costs():
                     "Shaman": 14,
                     "Diviner": 11,
                 }[promotion.payload["target_class"]]
-            assert sum(
-                by_id[node_id].cost
-                for node_id in prerequisite_closure(promotion)
-            ) == expected_route_cost
+            assert (
+                sum(by_id[node_id].cost for node_id in prerequisite_closure(promotion))
+                == expected_route_cost
+            )
 
 
 def test_first_promotion_stat_requirements_match_rebalanced_gates():
@@ -255,10 +246,11 @@ def test_no_promotion_node_retains_a_requirement_of_ten_or_less():
         for node in tree.nodes:
             if node.kind != NodeKind.PROMOTION:
                 continue
-            assert all(
-                required > 10
-                for required in node.payload["requirements"].values()
-            ), (tree.class_name, node.name, node.payload["requirements"])
+            assert all(required > 10 for required in node.payload["requirements"].values()), (
+                tree.class_name,
+                node.name,
+                node.payload["requirements"],
+            )
 
 
 def test_only_plain_stat_nodes_use_fixed_stat_increases():
@@ -274,11 +266,7 @@ def test_only_plain_stat_nodes_use_fixed_stat_increases():
 def test_custom_stat_talents_apply_percentage_based_increases():
     player = _player(Mage)
     player.combat.defense = 21
-    node = next(
-        node
-        for node in ABILITY_TREES["Mage"].nodes
-        if node.name == "Binding Circle"
-    )
+    node = next(node for node in ABILITY_TREES["Mage"].nodes if node.name == "Binding Circle")
 
     _grant_talent(player, node)
 
@@ -294,9 +282,7 @@ def test_conjurer_has_four_authored_disciplines_and_terminal_promotion():
         "Illusion / Movement",
         "Calling",
     }
-    promotion = next(
-        node for node in tree.nodes if node.kind == NodeKind.PROMOTION
-    )
+    promotion = next(node for node in tree.nodes if node.kind == NodeKind.PROMOTION)
     assert promotion.payload["target_class"] == "Thaumaturgist"
     assert promotion.payload["floating_promotion"] is False
     assert promotion.payload["prerequisite_mode"] == "any"
@@ -422,9 +408,7 @@ def test_base_trees_expose_independent_first_tier_choices(
     player = _player(class_type)
     initialize_progression(player)
     roots = {
-        status.node.name
-        for status in available_nodes(player)
-        if not status.node.prerequisites
+        status.node.name for status in available_nodes(player) if not status.node.prerequisites
     }
 
     assert roots == expected_roots
@@ -551,11 +535,7 @@ def test_base_trees_use_authored_specializations_and_terminal_level_gates():
         current = promotion
         actual = []
         while current.prerequisites:
-            current = next(
-                node
-                for node in warrior.nodes
-                if node.id == current.prerequisites[0]
-            )
+            current = next(node for node in warrior.nodes if node.id == current.prerequisites[0])
             actual.append(current.name)
         assert tuple(reversed(actual)) == path_names
         assert promotion.cost == 2
@@ -574,8 +554,7 @@ def test_base_trees_use_authored_specializations_and_terminal_level_gates():
     assert double_strike.position == (5, 3)
     assert parry.position == (4, 4)
     assert all(
-        disarm.id not in node.prerequisites
-        and battle_cry.id not in node.prerequisites
+        disarm.id not in node.prerequisites and battle_cry.id not in node.prerequisites
         for node in warrior.nodes
         if node.kind == NodeKind.PROMOTION
     )
@@ -591,22 +570,14 @@ def test_base_trees_use_authored_specializations_and_terminal_level_gates():
     assert lancer.prerequisites == (by_name["Retaliate"].id,)
     assert paladin.prerequisites == (by_name["Commitment"].id,)
     sentinel_defense = next(
-        node
-        for node in warrior.nodes
-        if node.name == "+10 Defense" and node.lane == "Bulwark"
+        node for node in warrior.nodes if node.name == "+10 Defense" and node.lane == "Bulwark"
     )
     assert by_name["Rally"].prerequisites == (by_name["Shield Block"].id,)
-    assert sentinel_defense.prerequisites == (
-        by_name["Rally"].id,
-    )
+    assert sentinel_defense.prerequisites == (by_name["Rally"].id,)
     assert by_name["Shield Slam"].prerequisites == ()
-    assert by_name["Shield Block"].prerequisites == (
-        by_name["Shield Slam"].id,
-    )
+    assert by_name["Shield Block"].prerequisites == (by_name["Shield Slam"].id,)
     lancer_defense = next(
-        node
-        for node in warrior.nodes
-        if node.name == "+10 Defense" and node.lane == "Vanguard"
+        node for node in warrior.nodes if node.name == "+10 Defense" and node.lane == "Vanguard"
     )
     assert by_name["Retaliate"].prerequisites == (
         lancer_defense.id,
@@ -656,15 +627,12 @@ def test_base_trees_use_authored_specializations_and_terminal_level_gates():
         "Achilles Heel": 20,
     }
     assert {
-        name: by_name[name].payload["level_requirement"]
-        for name in expected_levels
+        name: by_name[name].payload["level_requirement"] for name in expected_levels
     } == expected_levels
     assert "level_requirement" not in by_name["Battle Cry"].payload
 
     development_rows = [
-        node.position[1]
-        for node in warrior.nodes
-        if node.kind != NodeKind.PROMOTION
+        node.position[1] for node in warrior.nodes if node.kind != NodeKind.PROMOTION
     ]
     for node in warrior.nodes:
         if node.kind == NodeKind.PROMOTION:
@@ -675,9 +643,7 @@ def test_base_trees_use_authored_specializations_and_terminal_level_gates():
 def test_healer_upgrade_order_preserves_regen_before_heal_two():
     healer = ABILITY_TREES["Healer"]
     regen = next(node for node in healer.nodes if node.id.endswith(".regen"))
-    safeguarding = next(
-        node for node in healer.nodes if node.id.endswith(".safeguarding")
-    )
+    safeguarding = next(node for node in healer.nodes if node.id.endswith(".safeguarding"))
     heal_two = next(node for node in healer.nodes if node.id.endswith(".heal2"))
 
     assert regen.position[1] < heal_two.position[1]
@@ -883,10 +849,7 @@ def test_odd_level_growth_does_not_award_a_progression_point():
 
     result = award_experience(
         player,
-        (
-            cumulative_experience_for_level(3)
-            - cumulative_experience_for_level(2)
-        ),
+        (cumulative_experience_for_level(3) - cumulative_experience_for_level(2)),
         rng=random.Random(4),
     )
 
@@ -970,9 +933,7 @@ def test_race_and_staged_promotion_exclusions_are_closed():
 
     assert staged["Promote: Weapon Master"].state == NodeState.OWNED
     assert staged["Promote: Sentinel"].state == NodeState.CLOSED
-    assert "Another promotion is already distributed." in (
-        staged["Promote: Sentinel"].reasons
-    )
+    assert "Another promotion is already distributed." in (staged["Promote: Sentinel"].reasons)
 
 
 def test_human_warrior_can_reach_every_first_promotion_at_level_thirty():
@@ -994,19 +955,11 @@ def test_human_warrior_can_reach_every_first_promotion_at_level_thirty():
         return result
 
     totals = {}
-    for promotion in (
-        node
-        for node in warrior.nodes
-        if node.kind == NodeKind.PROMOTION
-    ):
-        node_points = sum(
-            by_id[node_id].cost
-            for node_id in required_nodes(promotion)
-        )
+    for promotion in (node for node in warrior.nodes if node.kind == NodeKind.PROMOTION):
+        node_points = sum(by_id[node_id].cost for node_id in required_nodes(promotion))
         stat_points = sum(
             max(0, requirement - base_stats[stat_name])
-            for stat_name, requirement
-            in promotion.payload["requirements"].items()
+            for stat_name, requirement in promotion.payload["requirements"].items()
         )
         totals[promotion.payload["target_class"]] = (
             node_points,
@@ -1019,23 +972,16 @@ def test_human_warrior_can_reach_every_first_promotion_at_level_thirty():
         initialize_progression(player)
         player.progression.level = 30
         player.progression.unspent_points = progression_points_through_level(30)
-        player.progression.unspent_attribute_points = (
-            attribute_points_through_level(30)
-        )
+        player.progression.unspent_attribute_points = attribute_points_through_level(30)
         node_ids = tuple(required_nodes(promotion))
         attributes = {
             stat_name: max(
                 0,
                 requirement - getattr(player.stats, stat_name),
             )
-            for stat_name, requirement
-            in promotion.payload["requirements"].items()
+            for stat_name, requirement in promotion.payload["requirements"].items()
         }
-        attributes = {
-            stat_name: amount
-            for stat_name, amount in attributes.items()
-            if amount
-        }
+        attributes = {stat_name: amount for stat_name, amount in attributes.items() if amount}
         choices = (
             {promotion.id: {"vow": "Protection"}}
             if promotion.payload["target_class"] == "Paladin"
@@ -1068,40 +1014,32 @@ def _promotion_path_cost(tree, target_class, stats):
     promotion = next(
         node
         for node in tree.nodes
-        if (
-            node.kind == NodeKind.PROMOTION
-            and node.payload["target_class"] == target_class
-        )
+        if (node.kind == NodeKind.PROMOTION and node.payload["target_class"] == target_class)
     )
 
     def required_node_ids(node):
         result = {node.id}
         prerequisite_sets = [
-            required_node_ids(by_id[prerequisite])
-            for prerequisite in node.prerequisites
+            required_node_ids(by_id[prerequisite]) for prerequisite in node.prerequisites
         ]
         if node.payload.get("prerequisite_mode") == "any" and prerequisite_sets:
-            result.update(min(
-                prerequisite_sets,
-                key=lambda node_ids: sum(by_id[node_id].cost for node_id in node_ids),
-            ))
+            result.update(
+                min(
+                    prerequisite_sets,
+                    key=lambda node_ids: sum(by_id[node_id].cost for node_id in node_ids),
+                )
+            )
         else:
             for node_ids in prerequisite_sets:
                 result.update(node_ids)
         return result
 
-    node_cost = sum(
-        by_id[node_id].cost
-        for node_id in required_node_ids(promotion)
-    )
+    node_cost = sum(by_id[node_id].cost for node_id in required_node_ids(promotion))
     trained = {
         stat_name: max(0, required - stats[stat_name])
         for stat_name, required in promotion.payload["requirements"].items()
     }
-    updated = {
-        stat_name: value + trained.get(stat_name, 0)
-        for stat_name, value in stats.items()
-    }
+    updated = {stat_name: value + trained.get(stat_name, 0) for stat_name, value in stats.items()}
     target = CLASS_DETAILS[target_class][0]()
     for stat_name, bonus_name in (
         ("strength", "str_plus"),
@@ -1132,10 +1070,9 @@ def test_all_eligible_races_can_reach_first_promotions_at_level_thirty():
         for target_class in CLASS_CHILDREN[base_class]:
             for race_ctor in races_dict.values():
                 race = race_ctor()
-                if (
-                    base_class not in race.cls_res.get("Base", ())
-                    or target_class not in race.cls_res.get("First", ())
-                ):
+                if base_class not in race.cls_res.get(
+                    "Base", ()
+                ) or target_class not in race.cls_res.get("First", ()):
                     continue
                 node_cost, attribute_cost, _stats = _promotion_path_cost(
                     ABILITY_TREES[base_class],
@@ -1180,9 +1117,7 @@ def test_all_eligible_races_can_reach_second_promotions_at_level_sixty():
                         stats,
                     )
                     total_node_cost = first_node_cost + second_node_cost
-                    total_attribute_cost = (
-                        first_attribute_cost + second_attribute_cost
-                    )
+                    total_attribute_cost = first_attribute_cost + second_attribute_cost
                     assert total_node_cost <= progression_points_through_level(60), (
                         race.name,
                         first_class,
@@ -1190,10 +1125,7 @@ def test_all_eligible_races_can_reach_second_promotions_at_level_sixty():
                         total_node_cost,
                     )
                     if race.name == "Human":
-                        assert (
-                            total_attribute_cost
-                            <= attribute_points_through_level(60)
-                        ), (
+                        assert total_attribute_cost <= attribute_points_through_level(60), (
                             race.name,
                             first_class,
                             second_class,
@@ -1240,10 +1172,12 @@ def test_health_node_permanently_increases_maximum_and_current_hp():
     initialize_progression(player)
     player.progression.unspent_points = 5
     player.progression.level = 15
-    player.progression.purchased_node_ids.update({
-        "warrior.ability.battlecry",
-        "warrior.ability.adrenaline",
-    })
+    player.progression.purchased_node_ids.update(
+        {
+            "warrior.ability.battlecry",
+            "warrior.ability.adrenaline",
+        }
+    )
     old_max = player.health.max
     old_current = player.health.current
 
@@ -1335,6 +1269,7 @@ def test_promotion_retains_abilities_does_not_reset_level_and_closes_branch():
 
 def _own_promotion_prerequisites(player, promotion_node):
     """Seed a complete purchased path for a focused promotion regression."""
+
     def own_with_prerequisites(node_id):
         node = TREE_NODES[node_id]
         for prerequisite in node.prerequisites:
@@ -1482,11 +1417,13 @@ def test_progression_save_round_trip_and_legacy_rejection():
 
 
 def test_legacy_progression_refunds_attribute_training_node_currency():
-    state = ProgressionState.from_dict({
-        "level": 12,
-        "unspent_points": 2,
-        "trained_attributes": {"strength": 2},
-    })
+    state = ProgressionState.from_dict(
+        {
+            "level": 12,
+            "unspent_points": 2,
+            "trained_attributes": {"strength": 2},
+        }
+    )
 
     assert state.unspent_points == 4
     assert state.unspent_attribute_points == 1

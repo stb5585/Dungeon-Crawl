@@ -22,13 +22,13 @@ if TYPE_CHECKING:
 class Attack(Spell):
 
     def __init__(
-            self,
-            name: str,
-            description: str,
-            cost: int,
-            dmg_mod: float,
-            crit: int,
-            ) -> None:
+        self,
+        name: str,
+        description: str,
+        cost: int,
+        dmg_mod: float,
+        crit: int,
+    ) -> None:
         super().__init__(name, description)
         self.cost = cost
         self.dmg_mod = dmg_mod
@@ -44,8 +44,10 @@ class Attack(Spell):
         fam: bool = False,
     ) -> str:
         cast_message = ""
-        if not (special or fam
-                or (caster.cls.name == "Wizard" and caster.class_effects["Power Up"].active)
+        if not (
+            special
+            or fam
+            or (caster.cls.name == "Wizard" and caster.class_effects["Power Up"].active)
         ):
             caster.mana.current -= self.cost
         if any([target.magic_effects["Ice Block"].active, target.tunnel]):
@@ -88,9 +90,7 @@ class Attack(Spell):
                     variance = random.uniform(DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH)
                     damage = int(damage * variance)
                     if damage <= 0:
-                        cast_message += (
-                            f"The spell was ineffective and does no damage.\n"
-                        )
+                        cast_message += f"The spell was ineffective and does no damage.\n"
                         damage = 0
                     elif random.randint(0, target.stats.con // 2) > random.randint(
                         (caster.stats.intel * crit) // 2, (caster.stats.intel * crit)
@@ -98,14 +98,14 @@ class Attack(Spell):
                         damage //= 2
                         if damage > 0:
                             cast_message += f"{target.name} shrugs off the spell and only receives half of the damage.\n"
-                            damage_msg = f"{caster.name} damages {target.name} for {damage} hit points"
+                            damage_msg = (
+                                f"{caster.name} damages {target.name} for {damage} hit points"
+                            )
                             if crit > 1:
                                 damage_msg += " (Critical hit!)"
                             cast_message += damage_msg + ".\n"
                         else:
-                            cast_message += (
-                                f"The spell was ineffective and does no damage.\n"
-                            )
+                            cast_message += f"The spell was ineffective and does no damage.\n"
                     else:
                         damage_msg = f"{caster.name} damages {target.name} for {damage} hit points"
                         if crit > 1:
@@ -153,13 +153,9 @@ class Attack(Spell):
                         source="spell",
                     )
                     if target.is_alive() and damage > 0 and not reflect:
-                        cast_message += self.special_effect(
-                            caster, target, damage, crit
-                        )
+                        cast_message += self.special_effect(caster, target, damage, crit)
                     elif target.is_alive() and damage > 0 and reflect:
-                        cast_message += self.special_effect(
-                            caster, caster, damage, crit
-                        )
+                        cast_message += self.special_effect(caster, caster, damage, crit)
                 if "Counterspell" in target.spellbook["Spells"] and not random.randint(
                     0, 4
                 ):  # TODO
@@ -296,8 +292,7 @@ class HealSpell(Spell):
         crit = 1
         heal_mod = caster.check_mod("heal")
         heal = int(
-            (random.randint(target.health.max // 2, target.health.max) + heal_mod)
-            * self.heal
+            (random.randint(target.health.max // 2, target.health.max) + heal_mod) * self.heal
         )
         if self.turns:
             self.hot(target, heal)
@@ -308,9 +303,7 @@ class HealSpell(Spell):
             crit_per = random.uniform(1, crit)
             heal = int(heal * crit_per)
             actual_heal = self._apply_instant_healing(caster, target, heal)
-            cast_message += (
-                f"{caster.name} heals {target.name} for {actual_heal} hit points.\n"
-            )
+            cast_message += f"{caster.name} heals {target.name} for {actual_heal} hit points.\n"
             if target.health.current >= target.health.max:
                 target.health.current = target.health.max
                 cast_message += f"{target.name} is at full health.\n"
@@ -347,7 +340,9 @@ def _consume_inventory_item(character: Character, item_name: str) -> bool:
     return True
 
 
-def _simple_spell_damage(caster: Character, target: Character, *, dmg_mod: float, typ: str) -> tuple[str, int]:
+def _simple_spell_damage(
+    caster: Character, target: Character, *, dmg_mod: float, typ: str
+) -> tuple[str, int]:
     if target is None:
         return "There is no target.\n", 0
     if target.magic_effects["Ice Block"].active or target.tunnel:
@@ -416,7 +411,9 @@ class PlantSeeds(_ReagentSpell):
             return "The seeds find no soil.\n"
         selected = kwargs.get("reagent") or kwargs.get("seed")
         if selected is None:
-            selected = next((name for name in self.reagent_effects if _inventory_count(user, name) > 0), None)
+            selected = next(
+                (name for name in self.reagent_effects if _inventory_count(user, name) > 0), None
+            )
         if selected not in self.reagent_effects:
             return f"{selected or 'That reagent'} cannot be planted with Plant Seeds.\n"
         failed = self._consume_reagent(user, selected)
@@ -432,14 +429,19 @@ class PlantSeeds(_ReagentSpell):
 
         if selected == "Vine Seed":
             target.physical_effects["Prone"].active = True
-            target.physical_effects["Prone"].duration = max(target.physical_effects["Prone"].duration, 3)
+            target.physical_effects["Prone"].duration = max(
+                target.physical_effects["Prone"].duration, 3
+            )
             return f"Fast-growing vines strangle {target.name}, restricting movement.\n"
 
         if target.has_status_protection("Poison"):
             return f"Deadly mushroom caps bloom, but {target.name} resists the poison.\n"
         target.status_effects["Poison"].active = True
         target.status_effects["Poison"].duration = max(target.status_effects["Poison"].duration, 4)
-        target.status_effects["Poison"].extra = max(int(target.status_effects["Poison"].extra or 0), max(1, user.check_mod("magic", enemy=target) // 4))
+        target.status_effects["Poison"].extra = max(
+            int(target.status_effects["Poison"].extra or 0),
+            max(1, user.check_mod("magic", enemy=target) // 4),
+        )
         return f"Deadly mushroom caps bloom around {target.name}, spreading poison.\n"
 
 
@@ -470,7 +472,9 @@ class VilePotion(_ReagentSpell):
     required_items = ("Hemlock Root", "Fungus Spore")
 
     def __init__(self):
-        super().__init__("Vile Potion", "Imbibe rot and spew putrid vomitus at a foe.", school="Nature")
+        super().__init__(
+            "Vile Potion", "Imbibe rot and spew putrid vomitus at a foe.", school="Nature"
+        )
         self.cost = 0
         self.subtyp = "Poison"
 
@@ -488,8 +492,12 @@ class VilePotion(_ReagentSpell):
         msg += damage_msg
         if damage > 0 and not target.has_status_protection("Poison") and random.random() < 0.65:
             target.status_effects["Poison"].active = True
-            target.status_effects["Poison"].duration = max(target.status_effects["Poison"].duration, 4)
-            target.status_effects["Poison"].extra = max(target.status_effects["Poison"].extra, max(1, damage // 3))
+            target.status_effects["Poison"].duration = max(
+                target.status_effects["Poison"].duration, 4
+            )
+            target.status_effects["Poison"].extra = max(
+                target.status_effects["Poison"].extra, max(1, damage // 3)
+            )
             msg += f"{target.name} is poisoned.\n"
         return msg
 
@@ -527,7 +535,9 @@ class Foretell(Spell):
 
 class Rewind(Spell):
     def __init__(self):
-        super().__init__("Rewind", "Return combat to the previous player choice point.", school="Time")
+        super().__init__(
+            "Rewind", "Return combat to the previous player choice point.", school="Time"
+        )
         self.cost = 40
         self.subtyp = "Time"
 
@@ -574,7 +584,8 @@ class Wormhole(Spell):
         spellbook = user.spellbook.get("Spells", {})
         if not spell_name:
             candidates = [
-                name for name, spell in spellbook.items()
+                name
+                for name, spell in spellbook.items()
                 if name != self.name and getattr(spell, "subtyp", "") != "Support"
             ]
             spell_name = candidates[0] if candidates else None
@@ -585,14 +596,16 @@ class Wormhole(Spell):
             return f"{user.name} does not have enough mana to send {spell_name} through time.\n"
         user.mana.current -= getattr(spell, "cost", 0)
         target_member = engine._member_for_character(target)
-        engine.delayed_spells.append({
-            "turns": 2,
-            "caster": user,
-            "spell": spell,
-            "owner_id": engine._actor_id_for(user),
-            "target_id": target_member.combatant_id if target_member else None,
-            "skip_next_owner_tick": True,
-        })
+        engine.delayed_spells.append(
+            {
+                "turns": 2,
+                "caster": user,
+                "spell": spell,
+                "owner_id": engine._actor_id_for(user),
+                "target_id": target_member.combatant_id if target_member else None,
+                "skip_next_owner_tick": True,
+            }
+        )
         return f"{user.name} sends {spell_name} two turns into the future.\n"
 
 
@@ -670,7 +683,9 @@ class _ResistElement(Spell):
     element = "Fire"
 
     def __init__(self, name: str, element: str):
-        super().__init__(name, f"Raise {element} resistance for several turns.", school="Abjuration")
+        super().__init__(
+            name, f"Raise {element} resistance for several turns.", school="Abjuration"
+        )
         self.cost = 12
         self.subtyp = "Support"
         self.element = element
@@ -692,27 +707,33 @@ class _ResistElement(Spell):
 
 
 class ResistFire(_ResistElement):
-    def __init__(self): super().__init__("Resist Fire", "Fire")
+    def __init__(self):
+        super().__init__("Resist Fire", "Fire")
 
 
 class ResistIce(_ResistElement):
-    def __init__(self): super().__init__("Resist Ice", "Ice")
+    def __init__(self):
+        super().__init__("Resist Ice", "Ice")
 
 
 class ResistElectric(_ResistElement):
-    def __init__(self): super().__init__("Resist Electric", "Electric")
+    def __init__(self):
+        super().__init__("Resist Electric", "Electric")
 
 
 class ResistWater(_ResistElement):
-    def __init__(self): super().__init__("Resist Water", "Water")
+    def __init__(self):
+        super().__init__("Resist Water", "Water")
 
 
 class ResistEarth(_ResistElement):
-    def __init__(self): super().__init__("Resist Earth", "Earth")
+    def __init__(self):
+        super().__init__("Resist Earth", "Earth")
 
 
 class ResistWind(_ResistElement):
-    def __init__(self): super().__init__("Resist Wind", "Wind")
+    def __init__(self):
+        super().__init__("Resist Wind", "Wind")
 
 
 class ResistShadow(Spell):
@@ -723,10 +744,7 @@ class ResistShadow(Spell):
     def __init__(self):
         super().__init__(
             "Resist Shadow",
-            (
-                "Increase Shadow resistance outside battle for 100 steps of "
-                "game time."
-            ),
+            ("Increase Shadow resistance outside battle for 100 steps of " "game time."),
             school="Abjuration",
         )
         self.cost = 15
@@ -753,10 +771,7 @@ class ResistShadow(Spell):
             "resist_shadow",
             100,
         )
-        return (
-            f"{user.name} gains 50% Shadow resistance for 100 steps of "
-            "game time.\n"
-        )
+        return f"{user.name} gains 50% Shadow resistance for 100 steps of " "game time.\n"
 
 
 class ResistHoly(Spell):
@@ -790,9 +805,7 @@ class ResistHoly(Spell):
             return f"{user.name} does not have enough mana to cast Resist Holy.\n"
         user.mana.current -= self.cost
         ability_mechanics.apply_exploration_effect(user, "resist_holy", 100)
-        return (
-            f"{user.name} gains 50% Holy resistance for 100 steps of game time.\n"
-        )
+        return f"{user.name} gains 50% Holy resistance for 100 steps of game time.\n"
 
 
 class HallowedGround(Spell):
@@ -880,9 +893,7 @@ class HallowedGround(Spell):
             source=self.name,
         )
         names = ", ".join(enemy.name for enemy in unique_targets)
-        return (
-            f"{user.name} hallows the ground beneath {names} for 3 turns.\n"
-        )
+        return f"{user.name} hallows the ground beneath {names} for 3 turns.\n"
 
     def cast_group(
         self,
@@ -904,16 +915,18 @@ class HallowedGround(Spell):
         for target_id, enemy in targets:
             member = battle_engine.encounter.member_by_id(target_id)
             if not member.is_living_hostile:
-                group.add(CombatResult(
-                    action=self.name,
-                    actor=user,
-                    target=enemy,
-                    actor_id=battle_engine.current_actor_id,
-                    target_id=target_id,
-                    hit=False,
-                    extra={"skipped": True},
-                    message=f"{member.display_label} is no longer a valid target.\n",
-                ))
+                group.add(
+                    CombatResult(
+                        action=self.name,
+                        actor=user,
+                        target=enemy,
+                        actor_id=battle_engine.current_actor_id,
+                        target_id=target_id,
+                        hit=False,
+                        extra={"skipped": True},
+                        message=f"{member.display_label} is no longer a valid target.\n",
+                    )
+                )
                 continue
             raw_damage = max(
                 1,
@@ -938,23 +951,25 @@ class HallowedGround(Spell):
                     duration=3,
                     source=self.name,
                 )
-            group.add(CombatResult(
-                action=self.name,
-                actor=user,
-                target=enemy,
-                actor_id=battle_engine.current_actor_id,
-                target_id=target_id,
-                hit=True,
-                extra={
-                    "field": "damage",
-                    "tick_amount": damage,
-                    "display_label": member.display_label,
-                },
-                message=(
-                    f"{user.name} hallows the ground beneath "
-                    f"{member.display_label} for 3 turns.\n"
-                ),
-            ))
+            group.add(
+                CombatResult(
+                    action=self.name,
+                    actor=user,
+                    target=enemy,
+                    actor_id=battle_engine.current_actor_id,
+                    target_id=target_id,
+                    hit=True,
+                    extra={
+                        "field": "damage",
+                        "tick_amount": damage,
+                        "display_label": member.display_label,
+                    },
+                    message=(
+                        f"{user.name} hallows the ground beneath "
+                        f"{member.display_label} for 3 turns.\n"
+                    ),
+                )
+            )
 
         healing = max(1, int(user.health.max * 0.05) + user.check_mod("heal") // 10)
         self._apply_field(user, mode="healing", amount=healing)
@@ -972,16 +987,18 @@ class HallowedGround(Spell):
                 duration=3,
                 source=self.name,
             )
-        group.add(CombatResult(
-            action=self.name,
-            actor=user,
-            target=user,
-            actor_id=battle_engine.current_actor_id,
-            target_id="player",
-            healing=0,
-            extra={"field": "healing", "tick_amount": healing, "self_result": True},
-            message=f"Hallowed Ground will restore {user.name} on their turns.\n",
-        ))
+        group.add(
+            CombatResult(
+                action=self.name,
+                actor=user,
+                target=user,
+                actor_id=battle_engine.current_actor_id,
+                target_id="player",
+                healing=0,
+                extra={"field": "healing", "tick_amount": healing, "self_result": True},
+                message=f"Hallowed Ground will restore {user.name} on their turns.\n",
+            )
+        )
         return group
 
 
@@ -1008,7 +1025,9 @@ class Corruption2(Spell):
             user,
             len(demonologist.ensure_state(user).get("unlocked_contracts", [])),
         )
-        msg, damage = _simple_spell_damage(user, target, dmg_mod=0.9 + (0.12 * contracts), typ="Shadow")
+        msg, damage = _simple_spell_damage(
+            user, target, dmg_mod=0.9 + (0.12 * contracts), typ="Shadow"
+        )
         if damage > 0 and "DOT" not in getattr(target, "status_immunity", []):
             dot = target.magic_effects["DOT"]
             dot.active = True
@@ -1032,7 +1051,9 @@ class Corruption2(Spell):
 
 class Nightmare(Spell):
     def __init__(self):
-        super().__init__("Nightmare", "Twist fear into shadow damage against the enemy.", school="Shadow")
+        super().__init__(
+            "Nightmare", "Twist fear into shadow damage against the enemy.", school="Shadow"
+        )
         self.cost = 24
         self.subtyp = "Shadow"
 
@@ -1042,7 +1063,9 @@ class Nightmare(Spell):
         msg, damage = _simple_spell_damage(user, target, dmg_mod=1.2, typ="Shadow")
         if target and damage > 0 and not target.has_status_protection("Sleep"):
             target.status_effects["Sleep"].active = True
-            target.status_effects["Sleep"].duration = max(target.status_effects["Sleep"].duration, 2)
+            target.status_effects["Sleep"].duration = max(
+                target.status_effects["Sleep"].duration, 2
+            )
             msg += f"{target.name} is trapped in a nightmare.\n"
         return msg
 

@@ -44,7 +44,8 @@ def test_vesperion_choose_fate_phase_one_damage_choice():
     message = vesperion.spellbook["Skills"]["Choose Fate"].use(
         vesperion,
         player,
-        selection_callback=lambda prompt, options: captured.update(prompt=prompt, options=options) or 0,
+        selection_callback=lambda prompt, options: captured.update(prompt=prompt, options=options)
+        or 0,
     )
 
     assert vesperion.vesperion_phase() == 1
@@ -86,7 +87,8 @@ def test_vesperion_choose_fate_phase_two_resource_choice():
     message = vesperion.spellbook["Skills"]["Choose Fate"].use(
         vesperion,
         player,
-        selection_callback=lambda prompt, options: captured.update(prompt=prompt, options=options) or 1,
+        selection_callback=lambda prompt, options: captured.update(prompt=prompt, options=options)
+        or 1,
     )
 
     assert vesperion.vesperion_phase() == 2
@@ -104,7 +106,8 @@ def test_vesperion_choose_fate_phase_three_control_choice():
     message = vesperion.spellbook["Skills"]["Choose Fate"].use(
         vesperion,
         player,
-        selection_callback=lambda prompt, options: captured.update(prompt=prompt, options=options) or 2,
+        selection_callback=lambda prompt, options: captured.update(prompt=prompt, options=options)
+        or 2,
     )
 
     assert vesperion.vesperion_phase() == 3
@@ -148,7 +151,10 @@ def test_vesperion_phase_pressure_uses_all_guardian_counter_pairs():
     phase_two = vesperion.apply_phase_pressure(player)
 
     assert "Vesperion enters the second pattern" in phase_two
-    assert "Quadrata breaks the forced order before law becomes a lock, preserving the right to consent." in phase_two
+    assert (
+        "Quadrata breaks the forced order before law becomes a lock, preserving the right to consent."
+        in phase_two
+    )
     assert player.status_effects["Silence"].active is False
     assert player.status_effects["Blind"].active is True
 
@@ -160,8 +166,14 @@ def test_vesperion_phase_pressure_uses_all_guardian_counter_pairs():
     phase_three = vesperion.apply_phase_pressure(player)
 
     assert "Vesperion enters the final pattern" in phase_three
-    assert "Triangulus holds the chosen self against the overwrite; Voluntas keeps the name yours." in phase_three
-    assert "Infinitas turns the endless loop into another step freely chosen, not an eternity imposed." in phase_three
+    assert (
+        "Triangulus holds the chosen self against the overwrite; Voluntas keeps the name yours."
+        in phase_three
+    )
+    assert (
+        "Infinitas turns the endless loop into another step freely chosen, not an eternity imposed."
+        in phase_three
+    )
     assert player.status_effects["Silence"].active is False
     assert player.health.current == hp_before
 

@@ -38,7 +38,6 @@ from .gui.town_menu import TownMenuScreen
 from .gui.town_navigation import TownNavigationScreen
 from .presentation.pygame_presenter import PygamePresenter
 
-
 # Use enhanced combat by default
 USE_ENHANCED_COMBAT = True
 
@@ -117,7 +116,7 @@ class PygameGame:
             ),
         },
     }
-    
+
     def __init__(self, debug_mode=False):
         pygame.init()
         self.presenter = PygamePresenter()
@@ -131,16 +130,16 @@ class PygameGame:
         self.player_char = None
         self.running = True
         self.bounties = {}  # Populated by update_bounties()
-        
+
         # Initialize managers (will be set after player_char is created)
         self.shop_manager = None
         self.church_manager = None
         self.inn_manager = None
         self.barracks_manager = None
         self.dungeon_manager = None
-        
+
         # Initialize character menu on-demand when needed.
-        
+
         self.presenter.debug_mode = debug_mode  # Propagate debug mode to presenter
 
         self._play_location_music("town")
@@ -163,7 +162,9 @@ class PygameGame:
             kwargs["min_display_ms"] = min_display_ms
         return kwargs
 
-    def _play_location_music(self, location: str, *, boss: bool = False, final: bool = False) -> str | None:
+    def _play_location_music(
+        self, location: str, *, boss: bool = False, final: bool = False
+    ) -> str | None:
         """Play a location music theme when audio is available, without affecting gameplay."""
         sound_manager = getattr(self.presenter, "sound_manager", None)
         if sound_manager is None or not hasattr(sound_manager, "play_location_music"):
@@ -224,7 +225,7 @@ class PygameGame:
             background_draw_func=draw_current_screen,
             flush_events=True,
             require_key_release=True,
-            min_display_ms=300
+            min_display_ms=300,
         )
 
     def _play_funhouse_entry_effect(self, draw_current_screen, duration_ms: int = 1100):
@@ -305,12 +306,12 @@ class PygameGame:
             )
             popup.show(flush_events=True, require_key_release=True)
             return
-        
+
         from .gui.level_up import LevelUpScreen
 
         level_up_screen = LevelUpScreen(self.presenter.screen, self.presenter)
         level_up_screen.show_level_up(self.player_char, self)
-    
+
     def initialize_managers(self):
         """Initialize location managers after player character is created."""
         self.shop_manager = ShopManager(self.presenter, self.player_char)
@@ -322,7 +323,9 @@ class PygameGame:
             self.barracks_manager = BarracksManager(self.presenter, self.player_char)
         self.dungeon_manager = DungeonManager(self.presenter, self.player_char, self)
 
-    def _build_player_character(self, race_name, class_name, name="Hero", sex="Male", portrait_variant=0):
+    def _build_player_character(
+        self, race_name, class_name, name="Hero", sex="Male", portrait_variant=0
+    ):
         """Build a player character from selected race/class and name."""
         from src.core.player import Player
 
@@ -340,12 +343,20 @@ class PygameGame:
         char_class = class_ctor()
 
         location_x, location_y, location_z = (5, 10, 0)
-        stats_tuple = tuple(map(
-            lambda x, y: x + y,
-            (race.strength, race.intel, race.wisdom, race.con, race.charisma, race.dex),
-            (char_class.str_plus, char_class.int_plus, char_class.wis_plus,
-             char_class.con_plus, char_class.cha_plus, char_class.dex_plus)
-        ))
+        stats_tuple = tuple(
+            map(
+                lambda x, y: x + y,
+                (race.strength, race.intel, race.wisdom, race.con, race.charisma, race.dex),
+                (
+                    char_class.str_plus,
+                    char_class.int_plus,
+                    char_class.wis_plus,
+                    char_class.con_plus,
+                    char_class.cha_plus,
+                    char_class.dex_plus,
+                ),
+            )
+        )
         hp = stats_tuple[3] * 2
         mp = stats_tuple[1] * 2
         attack = race.base_attack + char_class.att_plus
@@ -355,15 +366,23 @@ class PygameGame:
         gold = stats_tuple[4] * 25
 
         player_char = Player(
-            location_x, location_y, location_z,
+            location_x,
+            location_y,
+            location_z,
             level=Level(),
             health=Resource(hp, hp),
             mana=Resource(mp, mp),
-            stats=Stats(stats_tuple[0], stats_tuple[1], stats_tuple[2],
-                       stats_tuple[3], stats_tuple[4], stats_tuple[5]),
+            stats=Stats(
+                stats_tuple[0],
+                stats_tuple[1],
+                stats_tuple[2],
+                stats_tuple[3],
+                stats_tuple[4],
+                stats_tuple[5],
+            ),
             combat=Combat(attack=attack, defense=defense, magic=magic, magic_def=magic_def),
             gold=gold,
-            resistance=race.resistance
+            resistance=race.resistance,
         )
         player_char.name = name or "Hero"
         player_char.sex = sex or "Male"
@@ -383,8 +402,10 @@ class PygameGame:
 
     def create_default_character(self, name="Hero"):
         """Create a default preview character for quick UI testing."""
-        return self._build_player_character(race_name="Human", class_name="Warrior", name=name, sex="Male")
-        
+        return self._build_player_character(
+            race_name="Human", class_name="Warrior", name=name, sex="Male"
+        )
+
     def main_menu(self):
         """Display main menu and handle selection."""
         self._stop_music(fade_ms=250)
@@ -393,50 +414,56 @@ class PygameGame:
         if self.debug_mode:
             if confirm_yes_no(self.presenter, "Debug Mode - Turn off random encounters?"):
                 self._random_combat = False
-                popup = ConfirmationPopup(self.presenter, "Random encounters disabled", show_buttons=False)
+                popup = ConfirmationPopup(
+                    self.presenter, "Random encounters disabled", show_buttons=False
+                )
                 popup.show(**self._popup_show_kwargs())
             else:
                 self._random_combat = True
-                popup = ConfirmationPopup(self.presenter, "Random encounters enabled", show_buttons=False)
+                popup = ConfirmationPopup(
+                    self.presenter, "Random encounters enabled", show_buttons=False
+                )
                 popup.show(**self._popup_show_kwargs())
-        
+
         # Create main menu screen
         main_menu = MainMenuScreen(self.presenter)
-        
+
         while self.running:
             # Build menu options each iteration to pick up new save files
             self.refresh_load_files()
-            menu_options = ['New Game']
+            menu_options = ["New Game"]
             if self.load_files:
-                menu_options.append('Load Game')
-            menu_options.append('Settings')
-            menu_options.append('Exit')
-            
+                menu_options.append("Load Game")
+            menu_options.append("Settings")
+            menu_options.append("Exit")
+
             choice = main_menu.navigate(
                 menu_options,
                 flush_events=True,
                 require_key_release=True,
             )
-            
+
             if choice is None:
                 # ESC pressed
                 self.running = False
-            elif menu_options[choice] == 'New Game':
+            elif menu_options[choice] == "New Game":
                 self.player_char = self.new_game()
                 if self.player_char:
                     self.run()
                     self._stop_music(fade_ms=250)
-            elif menu_options[choice] == 'Load Game':
+            elif menu_options[choice] == "Load Game":
                 self.player_char = self.load_game()
                 if self.player_char:
                     self.run()
                     self._stop_music(fade_ms=250)
-            elif menu_options[choice] == 'Settings':
-                popup = ConfirmationPopup(self.presenter, "Settings menu coming soon!", show_buttons=False)
+            elif menu_options[choice] == "Settings":
+                popup = ConfirmationPopup(
+                    self.presenter, "Settings menu coming soon!", show_buttons=False
+                )
                 popup.show(**self._popup_show_kwargs())
-            elif menu_options[choice] == 'Exit':
+            elif menu_options[choice] == "Exit":
                 self.running = False
-                
+
     def new_game(self):
         """Create a new character."""
         # Loop for race selection with confirmation
@@ -451,7 +478,7 @@ class PygameGame:
             if race_name is None:
                 return None  # ESC pressed, return to main menu
             race = self.races_dict[race_name]()  # Instantiate the race class
-            
+
             # Confirm race selection with popup
             confirm_race = ConfirmationPopup(
                 self.presenter,
@@ -461,7 +488,7 @@ class PygameGame:
             if confirm_race.show(**self._popup_show_kwargs()):
                 break  # Yes selected, continue to class selection
             # No selected, loop back to race selection
-        
+
         # Loop for class selection with confirmation
         while True:
             # Choose class using ClassSelectionScreen
@@ -476,7 +503,7 @@ class PygameGame:
             if class_name is None:
                 return None  # ESC pressed, return to main menu
             char_class = self.classes_dict[class_name]["class"]()  # Get class from nested dict
-            
+
             # Confirm class selection with popup
             confirm_class = ConfirmationPopup(
                 self.presenter,
@@ -486,7 +513,7 @@ class PygameGame:
             if confirm_class.show(**self._popup_show_kwargs()):
                 break  # Yes selected, continue to name input
             # No selected, loop back to class selection
-        
+
         # Get character name, sex, and portrait variant after race/class selection.
         name_screen = CharacterNamingScreen(self.presenter, race_name, class_name)
         name = name_screen.navigate(
@@ -496,7 +523,7 @@ class PygameGame:
         )
         if name is None:
             return None
-        
+
         # Create player character using the same logic as the original game
         player_char = self._build_player_character(
             race_name,
@@ -505,24 +532,24 @@ class PygameGame:
             sex=getattr(name_screen, "sex", "Male"),
             portrait_variant=getattr(name_screen, "selected_portrait_variant", 0),
         )
-        
+
         CharacterCreatedScreen(self.presenter, player_char).show(
             flush_events=True,
             require_key_release=True,
         )
-        
+
         self.player_char = player_char
         self.initialize_managers()  # Initialize location managers
-        
+
         return player_char
-        
+
     def load_game(self):
         """Load a saved game."""
         self.refresh_load_files()
         if not self.load_files:
             self.presenter.show_message("No saved games found!")
             return None
-        
+
         # Use the new LoadGameScreen interface
         load_screen = LoadGameScreen(self.presenter)
         selected_file = load_screen.navigate(
@@ -530,10 +557,10 @@ class PygameGame:
             flush_events=True,
             require_key_release=True,
         )
-        
+
         if selected_file is None:
             return None
-        
+
         def load_selected_game():
             player_char = SaveManager.load_player(selected_file)
             if player_char is None:
@@ -563,9 +590,9 @@ class PygameGame:
         if player_char is None:
             self.presenter.show_message("Failed to load character!")
             return None
-        
+
         return player_char
-        
+
     def run(self):
         """Main game loop."""
         if not self.player_char:
@@ -573,18 +600,18 @@ class PygameGame:
 
         # Ensure bounties are available for GUI bounty board
         self.update_bounties()
-        
+
         # Show intro story for new characters (level 1)
-        if self.player_char.level.level == 1 and not hasattr(self.player_char, 'intro_shown'):
+        if self.player_char.level.level == 1 and not hasattr(self.player_char, "intro_shown"):
             self.show_intro()
             self.player_char.intro_shown = True
-            
+
         # Main game loop
         while True:
             # Check if player quit
             if self.player_char.quit:
                 break
-                
+
             # Check if player is in town
             if self.player_char.in_town():
                 choice = self.town_menu()
@@ -611,7 +638,7 @@ class PygameGame:
         bounty_board.generate_bounties(self)
         if bounty_board.bounties:
             self.bounties = {bounty["enemy"].name: bounty for bounty in bounty_board.bounties}
-    
+
     def show_intro(self):
         """Show the game introduction story."""
         intro_texts = get_intro_story()
@@ -636,7 +663,7 @@ class PygameGame:
         options.append("Enter Dungeon")
 
         # Add Warp Point or Old Warehouse based on player progress
-        if getattr(self.player_char, 'warp_point', False):
+        if getattr(self.player_char, "warp_point", False):
             options.append("Warp Point")
         else:
             options.append("Old Warehouse")
@@ -644,17 +671,28 @@ class PygameGame:
         options.append("Character Menu")
         options.append("Statistics")
         options.append("Quit to Main Menu")
-        
+
         # Create and use the new town menu screen
         town_screen = TownMenuScreen(self.presenter)
-        
+
         # Auto-heal when entering town menu
         try:
             self.player_char.town_heal()
             # Check if we should suppress the heal message (loading in town)
-            if not getattr(self.player_char, '_suppress_heal_message', False):
-                popup = ConfirmationPopup(self.presenter, "You rest in town. HP and MP fully restored.", show_buttons=False)
-                popup.show(**self._popup_show_kwargs(lambda: (town_screen.draw_background(), town_screen.draw_menu_panel(options))))
+            if not getattr(self.player_char, "_suppress_heal_message", False):
+                popup = ConfirmationPopup(
+                    self.presenter,
+                    "You rest in town. HP and MP fully restored.",
+                    show_buttons=False,
+                )
+                popup.show(
+                    **self._popup_show_kwargs(
+                        lambda: (
+                            town_screen.draw_background(),
+                            town_screen.draw_menu_panel(options),
+                        )
+                    )
+                )
             else:
                 # Clear the flag after first use
                 self.player_char._suppress_heal_message = False
@@ -663,9 +701,9 @@ class PygameGame:
             pass
 
         # The Rookie event already notifies the player; town entry only drops off the body.
-        rookie_quest = self.player_char.quest_dict.get('Side', {}).get('Rookie Mistake')
+        rookie_quest = self.player_char.quest_dict.get("Side", {}).get("Rookie Mistake")
         if "Dead Soldier" in self.player_char.special_inventory and rookie_quest is not None:
-            rookie_quest['Completed'] = True
+            rookie_quest["Completed"] = True
             self.player_char.modify_inventory(items.DeadSoldier(), subtract=True, rare=True)
 
         while True:
@@ -674,10 +712,17 @@ class PygameGame:
                 flush_events=True,
                 require_key_release=True,
             )
-            
+
             if choice_idx is None or choice_idx == len(options) - 1:  # Quit
                 popup = ConfirmationPopup(self.presenter, "Return to the main menu?")
-                if popup.show(**self._popup_show_kwargs(lambda: (town_screen.draw_background(), town_screen.draw_menu_panel(options)))):
+                if popup.show(
+                    **self._popup_show_kwargs(
+                        lambda: (
+                            town_screen.draw_background(),
+                            town_screen.draw_menu_panel(options),
+                        )
+                    )
+                ):
                     return "quit"
                 continue
             choice_label = options[choice_idx]
@@ -690,7 +735,7 @@ class PygameGame:
 
             elif choice_label == "The Thirsty Dog Tavern":
                 self.visit_inn()
-                
+
             elif choice_label == "Church of Elysia":
                 self.visit_church()
 
@@ -815,7 +860,9 @@ class PygameGame:
             require_key_release=True,
         )
 
-    def _show_town_npc_dialogue(self, message: str, *, title: str, npc_name: str = "", background_draw_func=None) -> None:
+    def _show_town_npc_dialogue(
+        self, message: str, *, title: str, npc_name: str = "", background_draw_func=None
+    ) -> None:
         """Show a town dialogue message with optional NPC portrait art."""
         image_path = get_npc_art_manager().get_image_path(npc_name or title)
         if hasattr(self.presenter, "show_message"):
@@ -888,7 +935,9 @@ class PygameGame:
                 "Stolen Charge deepens the next damaging spell, weapon attack, or weapon-tagged trickster skill with an Arcane payoff. Awakened Arcane Larceny can occasionally keep the rhythm alive after a clean release."
             ),
         }
-        return guidance.get(class_name, "The Gray Broker has no branch ledger for your current path.")
+        return guidance.get(
+            class_name, "The Gray Broker has no branch ledger for your current path."
+        )
 
     def _run_footpad_class_ring_rite(self, background_draw_func=None):
         class_name = class_rings.class_name(self.player_char)
@@ -935,7 +984,7 @@ class PygameGame:
         if not thieves_guild.can_join(self.player_char):
             self._show_town_npc_dialogue(
                 "Mara Vale keeps the public ledger open and the backroom door shut.\n\n"
-                "\"The wares are for all but the backroom is for a select few.\"",
+                '"The wares are for all but the backroom is for a select few."',
                 title="Mara Vale",
                 npc_name="Mara Vale",
                 background_draw_func=background_draw_func,
@@ -945,7 +994,9 @@ class PygameGame:
         if thieves_guild.has_signet(self.player_char):
             success, message = thieves_guild.complete_membership(self.player_char)
             if success:
-                self.player_char.modify_inventory(items.ThievesGuildSignet(), subtract=True, rare=True)
+                self.player_char.modify_inventory(
+                    items.ThievesGuildSignet(), subtract=True, rare=True
+                )
                 message += self._grant_thieves_guild_starter_kit()
                 message += "\n\nGuild prices are now 25% lower at Mara's counter."
             self._show_town_npc_dialogue(
@@ -959,7 +1010,9 @@ class PygameGame:
         state = thieves_guild.ensure_state(self.player_char)
         if not state.get("trial_started"):
             _ok, branch = thieves_guild.start_trial(self.player_char)
-            trial_wall = getattr(self.player_char, "world_dict", {}).get(thieves_guild.TRIAL_FAKE_WALL_POS)
+            trial_wall = getattr(self.player_char, "world_dict", {}).get(
+                thieves_guild.TRIAL_FAKE_WALL_POS
+            )
             sync_wall = getattr(trial_wall, "sync_for_player", None)
             if callable(sync_wall):
                 sync_wall(self.player_char)
@@ -1030,13 +1083,19 @@ class PygameGame:
         while True:
             choice = shop_screen.navigate_options()
             if choice is None or choice == "Leave":
-                popup = ConfirmationPopup(self.presenter, "Keep your keys close.", show_buttons=False)
-                popup.show(background_draw_func=bg_func, flush_events=True, require_key_release=True)
+                popup = ConfirmationPopup(
+                    self.presenter, "Keep your keys close.", show_buttons=False
+                )
+                popup.show(
+                    background_draw_func=bg_func, flush_events=True, require_key_release=True
+                )
                 return
             if choice == "Buy":
                 self.shop_manager._active_shopkeeper_portrait = "Mara Vale"
                 self.shop_manager._active_price_multiplier = (
-                    thieves_guild.DISCOUNT_MULTIPLIER if thieves_guild.member(self.player_char) else 1.0
+                    thieves_guild.DISCOUNT_MULTIPLIER
+                    if thieves_guild.member(self.player_char)
+                    else 1.0
                 )
                 self.shop_manager.buy_thieves_guild_goods()
                 self.shop_manager._active_price_multiplier = 1.0
@@ -1047,15 +1106,19 @@ class PygameGame:
                 self.shop_manager.sell_items()
                 shop_screen.shop_message = "Mara Vale's Counter"
             elif choice == "Ask About Backroom":
-                if not thieves_guild.member(self.player_char) and not thieves_guild.can_join(self.player_char):
+                if not thieves_guild.member(self.player_char) and not thieves_guild.can_join(
+                    self.player_char
+                ):
                     shop_screen.display_quest_text(
                         "Mara Vale keeps the public ledger open and the backroom door shut.\n\n"
-                        "\"The wares are for all but the backroom is for a select few.\"",
+                        '"The wares are for all but the backroom is for a select few."',
                         title="Mara Vale",
                     )
                     shop_screen.draw_all()
                     continue
-                self._offer_thieves_guild_membership(background_draw_func=background_draw_func or bg_func)
+                self._offer_thieves_guild_membership(
+                    background_draw_func=background_draw_func or bg_func
+                )
 
     def visit_old_warehouse(self, background_draw_func=None):
         """Handle Old Warehouse entry guard dialogue."""
@@ -1071,31 +1134,30 @@ class PygameGame:
         """Use the warp point to teleport to dungeon level 5."""
         from src.core.classes import wizard
 
-        research_message = wizard.consult_ultimate_research(
-            self.player_char
-        )
+        research_message = wizard.consult_ultimate_research(self.player_char)
         if research_message:
             research_popup = ConfirmationPopup(
                 self.presenter,
                 research_message,
                 show_buttons=False,
             )
-            research_popup.show(
-                **self._popup_show_kwargs(background_draw_func)
-            )
+            research_popup.show(**self._popup_show_kwargs(background_draw_func))
         prompt = (
             "Two field scientists stand beside the brass-ringed platform, "
             "checking gauges that hum with blue light.\n\n"
-            f"\"Hello, {self.player_char.name}.\"\n\n"
+            f'"Hello, {self.player_char.name}."\n\n'
             "Do you want to warp down to level 5?"
         )
         if hasattr(self.presenter, "render_menu"):
-            confirmed = self.presenter.render_menu(
-                prompt,
-                ["Yes", "No"],
-                split_layout=True,
-                background_draw_func=background_draw_func,
-            ) == 0
+            confirmed = (
+                self.presenter.render_menu(
+                    prompt,
+                    ["Yes", "No"],
+                    split_layout=True,
+                    background_draw_func=background_draw_func,
+                )
+                == 0
+            )
         else:
             confirm = ConfirmationPopup(self.presenter, prompt)
             confirmed = confirm.show(**self._popup_show_kwargs(background_draw_func))
@@ -1110,7 +1172,7 @@ class PygameGame:
                         adj_pos = (3 + dx, 0 + dy, 5)
                         if adj_pos in self.player_char.world_dict:
                             self.player_char.world_dict[adj_pos].near = True
-                
+
                 # Mark as warped
                 self.player_char.world_dict[(3, 0, 5)].warped = True
 
@@ -1122,13 +1184,13 @@ class PygameGame:
                 show_buttons=False,
             )
             popup.show(**self._popup_show_kwargs(background_draw_func))
-            
+
             # Warp player to level 5
             self.player_char.location_x = 3
             self.player_char.location_y = 0
             self.player_char.location_z = 5
             self.player_char.facing = "south"
-            
+
             # Return to dungeon
             return "dungeon"
         else:
@@ -1138,23 +1200,23 @@ class PygameGame:
                 show_buttons=False,
             )
             popup.show(**self._popup_show_kwargs(background_draw_func))
-    
+
     def visit_shop(self):
         """Visit the town shop - routes to appropriate shop via ShopManager."""
         self._play_location_music("shop")
         shop_options = ["Blacksmith", "Alchemist", "Jeweler", "Magic Shop", "Thieves Guild"]
         shop_options.append("Go Back")
-        
+
         # Create shop selection screen
         shop_screen = ShopSelectionScreen(self.presenter)
-        
+
         while True:
             choice = shop_screen.navigate(
                 shop_options,
                 flush_events=True,
                 require_key_release=True,
             )
-            
+
             if choice is None or choice == len(shop_options) - 1:  # Go Back
                 break
             choice_label = shop_options[choice]
@@ -1169,12 +1231,12 @@ class PygameGame:
                 self.shop_manager.visit_magic_shop()
             elif choice_label == "Thieves Guild":
                 self.visit_thieves_guild()
-    
+
     def visit_church(self):
         """Visit the Church - managed by ChurchManager."""
         self._play_location_music("church")
         self.church_manager.visit_church()
-    
+
     def visit_barracks(self):
         """Visit the Barracks - managed by BarracksManager."""
         self._play_location_music("town")
@@ -1184,7 +1246,9 @@ class PygameGame:
         """Visit the Archdruid Ancient Grove."""
         self._play_location_music("town")
         if not archdruid.grove_unlocked(self.player_char):
-            popup = ConfirmationPopup(self.presenter, "The path to the Ancient Grove is hidden.", show_buttons=False)
+            popup = ConfirmationPopup(
+                self.presenter, "The path to the Ancient Grove is hidden.", show_buttons=False
+            )
             popup.show(**self._popup_show_kwargs())
             return
 
@@ -1218,12 +1282,12 @@ class PygameGame:
                 ring.class_mod(self.player_char)
             popup = ConfirmationPopup(self.presenter, message.strip(), show_buttons=False)
             popup.show(**self._popup_show_kwargs())
-    
+
     def visit_inn(self):
         """Visit the Inn/Tavern - managed by InnManager."""
         self._play_location_music("inn")
         self.inn_manager.visit_inn()
-    
+
     def enter_dungeon(self):
         """Enter first-person dungeon exploration mode."""
         self._play_location_music("dungeon")
@@ -1232,7 +1296,7 @@ class PygameGame:
 
         if hasattr(self.presenter, "set_background_provider"):
             self.presenter.set_background_provider(None)
-        
+
         # After exiting dungeon (returned to town, quit, etc.)
         # Check if player quit the game
         if self.player_char.quit:
@@ -1240,7 +1304,7 @@ class PygameGame:
         in_town = getattr(self.player_char, "in_town", None)
         if callable(in_town) and in_town():
             self._play_location_music("town")
-    
+
     def show_character_info(self):
         """Display character information using the character screen."""
         char_screen = ModernCharacterScreen(self.presenter)
@@ -1250,7 +1314,7 @@ class PygameGame:
 
             if choice == "Exit Menu":
                 break
-    
+
     def save_game(self):
         """Save the current game."""
         filename = f"{str(self.player_char.name).lower()}.save"
@@ -1262,7 +1326,7 @@ class PygameGame:
             self.load_files = SaveManager.list_saves()
         else:
             self.presenter.show_message("Save failed. Please try again.")
-        
+
     def cleanup(self):
         """Clean up resources."""
         try:
@@ -1276,23 +1340,25 @@ class PygameGame:
 def main() -> int:
     """Entry point for GUI game."""
     import argparse
-    
-    parser = argparse.ArgumentParser(description='The Forsaken Tenet GUI Game')
-    parser.add_argument('--debug', action='store_true', help='Enable debug mode (disable random combat)')
+
+    parser = argparse.ArgumentParser(description="The Forsaken Tenet GUI Game")
     parser.add_argument(
-        '--character-menu',
-        action='store_true',
-        help='Launch directly into Character Menu using a default Human Warrior character'
+        "--debug", action="store_true", help="Enable debug mode (disable random combat)"
     )
     parser.add_argument(
-        '--town-navigation',
-        action='store_true',
-        help='Launch directly into the optional Explore Town prototype using a default Human Warrior character'
+        "--character-menu",
+        action="store_true",
+        help="Launch directly into Character Menu using a default Human Warrior character",
     )
     parser.add_argument(
-        '--preview-name',
-        default='Menu Preview',
-        help='Character name used with --character-menu or --town-navigation (default: Menu Preview)'
+        "--town-navigation",
+        action="store_true",
+        help="Launch directly into the optional Explore Town prototype using a default Human Warrior character",
+    )
+    parser.add_argument(
+        "--preview-name",
+        default="Menu Preview",
+        help="Character name used with --character-menu or --town-navigation (default: Menu Preview)",
     )
     parser.add_argument(
         "--smoke-test",
@@ -1332,6 +1398,7 @@ def main() -> int:
     except Exception as e:
         print(f"Fatal startup error: {e}", file=sys.stderr)
         import traceback
+
         traceback.print_exc()
         return 1
     finally:
@@ -1340,5 +1407,5 @@ def main() -> int:
     return 0
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     raise SystemExit(main())

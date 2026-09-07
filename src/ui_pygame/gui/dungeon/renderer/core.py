@@ -100,7 +100,9 @@ class RendererCoreMixin:
                 center_tile=visible_depth.center,
                 overrides=desired_overrides,
             )
-            side_doors_hidden_by_center_wall = self._should_hide_side_doors_behind_center_wall(visible_depth)
+            side_doors_hidden_by_center_wall = self._should_hide_side_doors_behind_center_wall(
+                visible_depth
+            )
 
             self._collect_visible_ceiling_slot_overrides(
                 visible_depth=visible_depth,
@@ -144,10 +146,14 @@ class RendererCoreMixin:
             and visible_depth.source_tile is not None
             and "StairsUp" in type(visible_depth.source_tile).__name__
         ):
-            self._set_center_ceiling_void_override(visible_depth.depth, max_visible_depth, overrides)
+            self._set_center_ceiling_void_override(
+                visible_depth.depth, max_visible_depth, overrides
+            )
 
         if visible_depth.center is not None and "StairsUp" in type(visible_depth.center).__name__:
-            self._set_center_ceiling_void_override(visible_depth.depth + 1, max_visible_depth, overrides)
+            self._set_center_ceiling_void_override(
+                visible_depth.depth + 1, max_visible_depth, overrides
+            )
 
     @staticmethod
     def _set_center_ceiling_void_override(
@@ -173,7 +179,9 @@ class RendererCoreMixin:
         if not slot_ids:
             return
 
-        overrides[slot_ids[0]] = "door_open" if getattr(center_tile, "open", False) else "door_closed"
+        overrides[slot_ids[0]] = (
+            "door_open" if getattr(center_tile, "open", False) else "door_closed"
+        )
 
     def _collect_visible_floor_slot_overrides(
         self,
@@ -285,7 +293,11 @@ class RendererCoreMixin:
         forward_tile,
         overrides: dict[str, str],
     ) -> None:
-        if self._opening_tile_blocks_view(opening_tile) or forward_tile is None or not self._is_door_tile(forward_tile):
+        if (
+            self._opening_tile_blocks_view(opening_tile)
+            or forward_tile is None
+            or not self._is_door_tile(forward_tile)
+        ):
             return
 
         panel_id = f"d{depth}:{side}_blocker"
@@ -293,7 +305,9 @@ class RendererCoreMixin:
         if not slot_ids:
             return
 
-        overrides[slot_ids[0]] = "door_open" if getattr(forward_tile, "open", False) else "door_closed"
+        overrides[slot_ids[0]] = (
+            "door_open" if getattr(forward_tile, "open", False) else "door_closed"
+        )
 
     def _build_render_commands(self, scene, zones) -> list[RenderCommand]:
         commands: list[RenderCommand] = []

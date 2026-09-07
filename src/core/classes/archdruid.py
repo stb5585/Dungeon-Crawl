@@ -8,7 +8,6 @@ from typing import Any
 from .base import Job
 from .. import items
 
-
 AFFINITIES = ("Venom", "Stone", "Growth", "Storm")
 ENTRY_THRESHOLD = 50
 MASTERY_THRESHOLD = 100
@@ -35,6 +34,7 @@ CATALYST_SOURCES = {
 HARD_CONTROL_EFFECTS = {"Prone", "Stun"}
 STORM_TYPES = {"Electric", "Wind"}
 
+
 class Archdruid(Job):
     """
     Promotion: Pathfinder -> Druid -> Archdruid
@@ -49,7 +49,7 @@ class Archdruid(Job):
         super().__init__(
             name="Archdruid",
             description="The Archdruid is the ultimate embodiment of nature's power, a "
-                        "legendary figure who has mastered the ways of the natural world.",
+            "legendary figure who has mastered the ways of the natural world.",
             str_plus=0,
             int_plus=3,
             wis_plus=2,
@@ -123,7 +123,9 @@ def normalize_state(state: Any) -> dict[str, Any]:
                 except (TypeError, ValueError):
                     normalized["progress"][affinity][key] = 0
 
-    normalized["grove_unlocked"] = normalized["grove_unlocked"] or grove_requirements_met_from_state(normalized)
+    normalized["grove_unlocked"] = normalized[
+        "grove_unlocked"
+    ] or grove_requirements_met_from_state(normalized)
     if all(normalized["aspects"].values()):
         normalized["ring_awakened"] = bool(normalized["ring_awakened"])
     return normalized
@@ -207,9 +209,17 @@ def apply_mastery_perks(character: Any) -> None:
     immunities = getattr(character, "status_immunity", None)
     if not isinstance(immunities, list):
         return
-    if state["aspects"]["Venom"] and state["attunement"]["Venom"] >= MASTERY_THRESHOLD and "Poison" not in immunities:
+    if (
+        state["aspects"]["Venom"]
+        and state["attunement"]["Venom"] >= MASTERY_THRESHOLD
+        and "Poison" not in immunities
+    ):
         immunities.append("Poison")
-    if state["aspects"]["Stone"] and state["attunement"]["Stone"] >= MASTERY_THRESHOLD and "Stone" not in immunities:
+    if (
+        state["aspects"]["Stone"]
+        and state["attunement"]["Stone"] >= MASTERY_THRESHOLD
+        and "Stone" not in immunities
+    ):
         immunities.append("Stone")
     if state["aspects"]["Growth"] and state["attunement"]["Growth"] >= MASTERY_THRESHOLD:
         try:
@@ -242,7 +252,9 @@ def record_damage_taken(character: Any, amount: int, damage_type: str) -> None:
     if not is_archdruid(character) or amount <= 0:
         return
     if damage_type == "Poison":
-        _accumulate_progress(character, "Venom", "poison_damage_taken", amount, threshold=25, direction=-1)
+        _accumulate_progress(
+            character, "Venom", "poison_damage_taken", amount, threshold=25, direction=-1
+        )
     if damage_type == "Physical" and getattr(getattr(character, "health", None), "current", 0) > 0:
         adjust_attunement(character, "Stone", 1)
     if damage_type in STORM_TYPES and mastery_unlocked(character, "Storm"):
@@ -292,7 +304,9 @@ def has_stored_class_ring(character: Any) -> bool:
     storage = getattr(character, "storage", {})
     if not isinstance(storage, dict):
         return False
-    return any(getattr(item, "name", None) == "Class Ring" for item in storage.get("Class Ring", []))
+    return any(
+        getattr(item, "name", None) == "Class Ring" for item in storage.get("Class Ring", [])
+    )
 
 
 def has_visible_class_ring(character: Any) -> bool:

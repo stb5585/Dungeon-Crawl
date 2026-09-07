@@ -113,8 +113,7 @@ class NovelShielding(Class):
         del target
         return (
             self._equipped_tome(user) is not None
-            and int(getattr(getattr(user, "mana", None), "current", 0) or 0)
-            >= self.cost
+            and int(getattr(getattr(user, "mana", None), "current", 0) or 0) >= self.cost
         )
 
     def use(

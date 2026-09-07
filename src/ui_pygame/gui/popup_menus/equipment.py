@@ -115,7 +115,7 @@ class EquipmentPopupMenu(BasePopupMenu):
             options=options,
             slot=slot,
             current_item=obj,
-            player_char=player_char
+            player_char=player_char,
         )
 
         # Capture current state for background
@@ -196,7 +196,9 @@ class EquipmentPopupMenu(BasePopupMenu):
                 # Handle accessories (Ring/Pendant)
                 elif item_typ == "Accessory":
                     subtyp = getattr(inv_item, "subtyp", None)
-                    if (subtyp == "Ring" and slot == "Ring") or (subtyp == "Pendant" and slot == "Pendant"):
+                    if (subtyp == "Ring" and slot == "Ring") or (
+                        subtyp == "Pendant" and slot == "Pendant"
+                    ):
                         if callable(equip_check) and not equip_check(inv_item, slot):
                             continue
                         equippable.append(inv_item)
@@ -237,7 +239,6 @@ class EquipmentPopupMenu(BasePopupMenu):
         # Rebuild items list
         self.build_items(player_char)
 
-
     def _unequip_item(self, player_char, slot, item):
         """Unequip an item and move to inventory."""
         # Don't unequip placeholder items (NoRing, NoOffHand, etc.)
@@ -251,7 +252,7 @@ class EquipmentPopupMenu(BasePopupMenu):
             "Helmet": items.NoHelmet,
             "OffHand": items.NoOffHand,
             "Ring": items.NoRing,
-            "Pendant": items.NoPendant
+            "Pendant": items.NoPendant,
         }
 
         if slot in no_item_classes:

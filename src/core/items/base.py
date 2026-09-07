@@ -110,7 +110,7 @@ class Item:
 
     def __init__(self, name: str, description: str, value: int, rarity: float, subtyp: str) -> None:
         self.name = name
-        self.description = '\n'.join(wrap(description, 35, break_on_hyphens=False))
+        self.description = "\n".join(wrap(description, 35, break_on_hyphens=False))
         self.value = value
         self.rarity = rarity
         self.subtyp = subtyp
@@ -121,11 +121,13 @@ class Item:
         self.ultimate = False
 
     def __str__(self) -> str:
-        return (f"{'=' * ((35 - len(self.name)) // 2)}{self.name}{'=' * ((36 - len(self.name)) // 2)}\n"
-                f"{self.description}\n"
-                f"{35*'-'}\n"
-                f"Sub-type: {'Special' if 'Summon' in self.subtyp else self.subtyp}\n"
-                f"{35*'='}")
+        return (
+            f"{'=' * ((35 - len(self.name)) // 2)}{self.name}{'=' * ((36 - len(self.name)) // 2)}\n"
+            f"{self.description}\n"
+            f"{35*'-'}\n"
+            f"Sub-type: {'Special' if 'Summon' in self.subtyp else self.subtyp}\n"
+            f"{35*'='}"
+        )
 
     def use(self, user: Character, target: Character | None = None, tile: Any = None) -> str:
         return ""
@@ -171,7 +173,7 @@ class Weapon(Item):
         self.off = off
         self.typ = "Weapon"
         self.disarm = True
-        if subtyp == 'Fist':
+        if subtyp == "Fist":
             self.disarm = False
         self.ignore = False
         self.element = None
@@ -186,15 +188,17 @@ class Weapon(Item):
         self.crit = value
 
     def __str__(self) -> str:
-        return (f"{'=' * ((35 - len(self.name)) // 2)}{self.name}{'=' * ((36 - len(self.name)) // 2)}\n"
-                f"{self.description}\n"
-                f"{35*'-'}\n"
-                f"Type: {self.subtyp}\n"
-                f"{self.handed}-handed\n"
-                f"Damage: {self.damage}\n"
-                f"Critical Chance: {int(self.crit_chance * 100)}%\n"
-                f"Weight: {self.weight}\n"
-                f"{35*'='}")
+        return (
+            f"{'=' * ((35 - len(self.name)) // 2)}{self.name}{'=' * ((36 - len(self.name)) // 2)}\n"
+            f"{self.description}\n"
+            f"{35*'-'}\n"
+            f"Type: {self.subtyp}\n"
+            f"{self.handed}-handed\n"
+            f"Damage: {self.damage}\n"
+            f"Critical Chance: {int(self.crit_chance * 100)}%\n"
+            f"Weight: {self.weight}\n"
+            f"{35*'='}"
+        )
 
     def special_effect(self, results: CombatResultGroup) -> None:
         return
@@ -207,31 +211,49 @@ class Armor(Item):
     typ: the item type; 'Armor' for this class
     """
 
-    def __init__(self, name: str, description: str, value: int, rarity: float,
-                 armor: int, subtyp: str, unequip: bool) -> None:
+    def __init__(
+        self,
+        name: str,
+        description: str,
+        value: int,
+        rarity: float,
+        armor: int,
+        subtyp: str,
+        unequip: bool,
+    ) -> None:
         super().__init__(name, description, value, rarity, subtyp)
         self.armor = armor
         self.unequip = unequip
-        self.typ = 'Armor'
+        self.typ = "Armor"
         self.element = None
 
     def __str__(self) -> str:
-        return (f"{'=' * ((35 - len(self.name)) // 2)}{self.name}{'=' * ((36 - len(self.name)) // 2)}\n"
-                f"{self.description}\n"
-                f"{35*'-'}\n"
-                f"Type: {self.subtyp}\n"
-                f"Armor: {self.armor}\n"
-                f"Weight: {self.weight}\n"
-                f"{35*'='}")
+        return (
+            f"{'=' * ((35 - len(self.name)) // 2)}{self.name}{'=' * ((36 - len(self.name)) // 2)}\n"
+            f"{self.description}\n"
+            f"{35*'-'}\n"
+            f"Type: {self.subtyp}\n"
+            f"Armor: {self.armor}\n"
+            f"Weight: {self.weight}\n"
+            f"{35*'='}"
+        )
 
 
 class Helmet(Armor):
     """Head-slot armor that contributes to the normal Defense modifier."""
 
-    def __init__(self, name: str, description: str, value: int, rarity: float,
-                 armor: int, subtyp: str, unequip: bool) -> None:
+    def __init__(
+        self,
+        name: str,
+        description: str,
+        value: int,
+        rarity: float,
+        armor: int,
+        subtyp: str,
+        unequip: bool,
+    ) -> None:
         super().__init__(name, description, value, rarity, armor, subtyp, unequip)
-        self.typ = 'Helmet'
+        self.typ = "Helmet"
 
     def special_effect(self, results: CombatResultGroup) -> None:
         return
@@ -246,37 +268,51 @@ class OffHand(Item):
     typ: the item type; 'OffHand' for this class
     """
 
-    def __init__(self, name: str, description: str, value: int, rarity: float,
-                 mod: float, subtyp: str, unequip: bool) -> None:
+    def __init__(
+        self,
+        name: str,
+        description: str,
+        value: int,
+        rarity: float,
+        mod: float,
+        subtyp: str,
+        unequip: bool,
+    ) -> None:
         super().__init__(name, description, value, rarity, subtyp)
         self.mod = mod
         self.unequip = unequip
-        self.typ = 'OffHand'
+        self.typ = "OffHand"
 
     def __str__(self) -> str:
-        if self.subtyp == 'Shield':
-            return (f"{'=' * ((35 - len(self.name)) // 2)}{self.name}{'=' * ((36 - len(self.name)) // 2)}\n"
-                    f"{self.description}\n"
-                    f"{35*'-'}\n"
-                    f"Type: {self.subtyp}\n"
-                    f"Block: {int(self.mod * 100)}%\n"
-                    f"Weight: {self.weight}\n"
-                    f"{35*'='}")
-        if self.subtyp == "Crossbow":
-            return (f"{'=' * ((35 - len(self.name)) // 2)}{self.name}{'=' * ((36 - len(self.name)) // 2)}\n"
-                    f"{self.description}\n"
-                    f"{35*'-'}\n"
-                    f"Type: {self.subtyp}\n"
-                    f"Damage: {self.damage}\n"
-                    f"Weight: {self.weight}\n"
-                    f"{35*'='}")
-        return (f"{'=' * ((35 - len(self.name)) // 2)}{self.name}{'=' * ((36 - len(self.name)) // 2)}\n"
+        if self.subtyp == "Shield":
+            return (
+                f"{'=' * ((35 - len(self.name)) // 2)}{self.name}{'=' * ((36 - len(self.name)) // 2)}\n"
                 f"{self.description}\n"
                 f"{35*'-'}\n"
                 f"Type: {self.subtyp}\n"
-                f"Spell Damage Mod: {self.mod}\n"
+                f"Block: {int(self.mod * 100)}%\n"
                 f"Weight: {self.weight}\n"
-                f"{35*'='}")
+                f"{35*'='}"
+            )
+        if self.subtyp == "Crossbow":
+            return (
+                f"{'=' * ((35 - len(self.name)) // 2)}{self.name}{'=' * ((36 - len(self.name)) // 2)}\n"
+                f"{self.description}\n"
+                f"{35*'-'}\n"
+                f"Type: {self.subtyp}\n"
+                f"Damage: {self.damage}\n"
+                f"Weight: {self.weight}\n"
+                f"{35*'='}"
+            )
+        return (
+            f"{'=' * ((35 - len(self.name)) // 2)}{self.name}{'=' * ((36 - len(self.name)) // 2)}\n"
+            f"{self.description}\n"
+            f"{35*'-'}\n"
+            f"Type: {self.subtyp}\n"
+            f"Spell Damage Mod: {self.mod}\n"
+            f"Weight: {self.weight}\n"
+            f"{35*'='}"
+        )
 
 
 class Accessory(Item):
@@ -290,20 +326,30 @@ class Accessory(Item):
     typ: the item type; 'Accessory' for this class
     """
 
-    def __init__(self, name: str, description: str, value: int, rarity: float,
-                 mod: str, subtyp: str, unequip: bool) -> None:
+    def __init__(
+        self,
+        name: str,
+        description: str,
+        value: int,
+        rarity: float,
+        mod: str,
+        subtyp: str,
+        unequip: bool,
+    ) -> None:
         super().__init__(name, description, value, rarity, subtyp)
         self.mod = mod
         self.unequip = unequip
         self.typ = "Accessory"
 
     def __str__(self) -> str:
-        return (f"{'=' * ((35 - len(self.name)) // 2)}{self.name}{'=' * ((36 - len(self.name)) // 2)}\n"
-                f"{self.description}\n"
-                f"{35*'-'}\n"
-                f"Mod: {self.mod}\n"
-                f"Weight: {self.weight}\n"
-                f"{35*'='}")
+        return (
+            f"{'=' * ((35 - len(self.name)) // 2)}{self.name}{'=' * ((36 - len(self.name)) // 2)}\n"
+            f"{self.description}\n"
+            f"{35*'-'}\n"
+            f"Mod: {self.mod}\n"
+            f"Weight: {self.weight}\n"
+            f"{35*'='}"
+        )
 
 
 class Potion(Item):
@@ -317,11 +363,13 @@ class Potion(Item):
         self.weight = 0.1
 
     def __str__(self) -> str:
-        return (f"{'=' * ((35 - len(self.name)) // 2)}{self.name}{'=' * ((36 - len(self.name)) // 2)}\n"
-                f"{self.description}\n"
-                f"{35*'-'}\n"
-                f"Weight: {self.weight}\n"
-                f"{35*'='}")
+        return (
+            f"{'=' * ((35 - len(self.name)) // 2)}{self.name}{'=' * ((36 - len(self.name)) // 2)}\n"
+            f"{self.description}\n"
+            f"{35*'-'}\n"
+            f"Weight: {self.weight}\n"
+            f"{35*'='}"
+        )
 
 
 class Misc(Item):

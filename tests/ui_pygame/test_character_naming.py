@@ -95,7 +95,9 @@ def test_character_naming_draws_identity_and_default_preview(monkeypatch):
         lambda *_args, **_kwargs: draw_calls.append((_args, _kwargs)),
     )
 
-    screen = character_naming.CharacterNamingScreen(presenter, "Half Elf", "Spellblade", sex="Female")
+    screen = character_naming.CharacterNamingScreen(
+        presenter, "Half Elf", "Spellblade", sex="Female"
+    )
     screen.draw()
 
     assert manager_calls == [("Half Elf", "Female", 1)]
@@ -164,18 +166,24 @@ def test_character_naming_sex_buttons_switch_portrait(monkeypatch):
 
     monkeypatch.setattr(character_naming, "PortraitManager", FakePortraitManager)
     monkeypatch.setattr(character_naming.random, "randrange", lambda _count: 1)
-    monkeypatch.setattr("src.ui_pygame.gui.character_naming.pygame.draw.rect", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.character_naming.pygame.draw.rect", lambda *_args, **_kwargs: None
+    )
 
     screen = character_naming.CharacterNamingScreen(presenter, "Human", "Warrior", sex="Male")
     screen.draw()
     female_pos = screen.sex_button_rects["Female"].center
     monkeypatch.setattr("src.ui_pygame.gui.character_naming.pygame.display.flip", lambda: None)
     monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=female_pos)],
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.character_naming.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=female_pos)],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.character_naming.pygame.event.get", lambda: next(event_batches, [])
+    )
 
     assert screen.navigate() == "Hero"
     assert screen.sex == "Female"
@@ -200,23 +208,31 @@ def test_character_naming_navigation_confirm_and_cancel(monkeypatch):
     monkeypatch.setattr("src.ui_pygame.gui.character_naming.pygame.display.flip", lambda: None)
     monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
 
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_a, unicode="A")],
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_d, unicode="d")],
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_BACKSPACE)],
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_a, unicode="a")],
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.character_naming.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_a, unicode="A")],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_d, unicode="d")],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_BACKSPACE)],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_a, unicode="a")],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.character_naming.pygame.event.get", lambda: next(event_batches, [])
+    )
     assert screen.navigate() == "Aa"
 
     screen.text = ""
     event_batches = iter([[SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)]])
-    monkeypatch.setattr("src.ui_pygame.gui.character_naming.pygame.event.get", lambda: next(event_batches, []))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.character_naming.pygame.event.get", lambda: next(event_batches, [])
+    )
     assert screen.navigate(default="Hero") == "Hero"
 
     event_batches = iter([[SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_ESCAPE)]])
-    monkeypatch.setattr("src.ui_pygame.gui.character_naming.pygame.event.get", lambda: next(event_batches, []))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.character_naming.pygame.event.get", lambda: next(event_batches, [])
+    )
     assert screen.navigate() is None
 
 
@@ -227,12 +243,16 @@ def test_character_naming_allows_m_and_f_as_name_characters(monkeypatch):
     monkeypatch.setattr("src.ui_pygame.gui.character_naming.pygame.display.flip", lambda: None)
     monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
 
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_m, unicode="m")],
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_f, unicode="f")],
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.character_naming.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_m, unicode="m")],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_f, unicode="f")],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.character_naming.pygame.event.get", lambda: next(event_batches, [])
+    )
 
     assert screen.navigate() == "mf"
     assert screen.sex == "Male"
@@ -249,7 +269,9 @@ def test_companion_naming_uses_background_and_confirmation(monkeypatch):
     )
     background = pygame.Surface((1000, 760))
     background.fill((12, 34, 56))
-    monkeypatch.setattr("src.ui_pygame.gui.character_naming.pygame.draw.rect", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.character_naming.pygame.draw.rect", lambda *_args, **_kwargs: None
+    )
     monkeypatch.setattr("src.ui_pygame.gui.character_naming.pygame.display.flip", lambda: None)
     monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
     draw_backgrounds = []
@@ -271,16 +293,20 @@ def test_companion_naming_uses_background_and_confirmation(monkeypatch):
             return True
 
     monkeypatch.setattr("src.ui_pygame.gui.character_naming.ConfirmationPopup", FakePopup)
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_n, unicode="N")],
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_e, unicode="e")],
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_e, unicode="e")],
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_d, unicode="d")],
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_l, unicode="l")],
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_e, unicode="e")],
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.character_naming.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_n, unicode="N")],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_e, unicode="e")],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_e, unicode="e")],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_d, unicode="d")],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_l, unicode="l")],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_e, unicode="e")],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.character_naming.pygame.event.get", lambda: next(event_batches, [])
+    )
 
     assert screen.navigate(background_surface=background) == "Needle"
     assert background in draw_backgrounds
@@ -294,8 +320,12 @@ def test_character_naming_quit_exits(monkeypatch):
     quit_calls = []
     monkeypatch.setattr(screen, "draw", lambda: None)
     monkeypatch.setattr("src.ui_pygame.gui.character_naming.pygame.display.flip", lambda: None)
-    monkeypatch.setattr("src.ui_pygame.gui.character_naming.pygame.quit", lambda: quit_calls.append(True))
-    monkeypatch.setattr("src.ui_pygame.gui.character_naming.sys.exit", lambda: (_ for _ in ()).throw(SystemExit()))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.character_naming.pygame.quit", lambda: quit_calls.append(True)
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.character_naming.sys.exit", lambda: (_ for _ in ()).throw(SystemExit())
+    )
     monkeypatch.setattr(
         "src.ui_pygame.gui.character_naming.pygame.event.get",
         lambda: [SimpleNamespace(type=pygame.QUIT)],

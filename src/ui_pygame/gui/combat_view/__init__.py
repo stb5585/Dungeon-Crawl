@@ -10,7 +10,6 @@ from .animator import SpriteAnimator
 from .models import CombatImpactEffect, CombatLogLine, FloatingCombatText
 from .view import CombatView
 
-
 __all__ = [
     "CombatImpactEffect",
     "CombatLogLine",

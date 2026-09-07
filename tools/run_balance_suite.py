@@ -62,11 +62,11 @@ def _parse_table_from_stdout(text: str) -> dict[tuple[str, str], MatchupSummary]
         if not line or line.startswith("Balance Suite") or line.startswith("Class"):
             continue
         cls = line[:_CLASS_COL_W].rstrip()
-        enemy = line[_CLASS_COL_W + 1:_CLASS_COL_W + 1 + _ENEMY_COL_W].rstrip()
+        enemy = line[_CLASS_COL_W + 1 : _CLASS_COL_W + 1 + _ENEMY_COL_W].rstrip()
         try:
             win_start = _CLASS_COL_W + 1 + _ENEMY_COL_W + 1
-            win = float(line[win_start:win_start + 8])
-            turns = float(line[win_start + 9:].strip())
+            win = float(line[win_start : win_start + 8])
+            turns = float(line[win_start + 9 :].strip())
         except Exception:
             continue
         out[(cls, enemy)] = MatchupSummary(cls, enemy, win, turns)
@@ -118,15 +118,24 @@ def _run_once(
     # Reuse the main() implementation by temporarily spoofing argv.
     argv = [
         "run_balance_suite.py",
-        "--level", str(level),
-        "--iters", str(iters),
-        "--seed", str(seed),
-        "--race", race,
-        "--profile", profile,
-        "--gear", gear,
-        "--meta-loadouts", meta_loadouts,
-        "--progression", progression,
-        "--tier", tier,
+        "--level",
+        str(level),
+        "--iters",
+        str(iters),
+        "--seed",
+        str(seed),
+        "--race",
+        race,
+        "--profile",
+        profile,
+        "--gear",
+        gear,
+        "--meta-loadouts",
+        meta_loadouts,
+        "--progression",
+        progression,
+        "--tier",
+        tier,
     ]
     if classes:
         argv += ["--classes", *classes]
@@ -135,6 +144,7 @@ def _run_once(
     with contextlib.redirect_stdout(buf):
         # Local import to avoid module-level side effects.
         import sys as _sys
+
         old = list(_sys.argv)
         try:
             _sys.argv = argv
@@ -181,16 +191,10 @@ def _apply_auto_stat_ups(
     """Spend roughly half of earned progression points on a focus attribute."""
     if not getattr(player, "cls", None):
         return
-    stat = (
-        "strength"
-        if point_build == "one-stat"
-        else _primary_stat_for_class(player.cls)
-    )
+    stat = "strength" if point_build == "one-stat" else _primary_stat_for_class(player.cls)
     ups = max(
         0,
-        int(target_level) - 1
-        if point_build == "one-stat"
-        else (int(target_level) - 1) // 2,
+        int(target_level) - 1 if point_build == "one-stat" else (int(target_level) - 1) // 2,
     )
     if hasattr(player, "stats") and hasattr(player.stats, stat):
         setattr(player.stats, stat, int(getattr(player.stats, stat)) + ups)
@@ -372,11 +376,7 @@ def _populate_spellbook_for_progression(
     tier_names = lineage[: lineage.index(class_name) + 1]
 
     player.spellbook = {"Spells": {}, "Skills": {}}
-    ability_budget = (
-        1
-        if point_build == "one-stat"
-        else max(1, (int(class_level) + 1) // 2)
-    )
+    ability_budget = 1 if point_build == "one-stat" else max(1, (int(class_level) + 1) // 2)
     for tree_name in tier_names:
         tree = ABILITY_TREES.get(tree_name)
         if tree is None:
@@ -409,6 +409,7 @@ def _apply_meta_progression_loadouts(player, target_level: int) -> None:
     # In real play this is quest-gated. For analytics we assume it's unlocked
     # for promoted characters (and late-game levels).
     if lvl >= 30 and getattr(player, "cls", None) is not None:
+
         def ability_ctor(name: str):
             return getattr(abilities, name, None)
 
@@ -529,11 +530,23 @@ def _apply_meta_progression_loadouts(player, target_level: int) -> None:
             player.summons[summon.name] = summon
 
     # ── Soulcatcher stacks (kill_dict) ───────────────────────────────
-    if getattr(getattr(player, "cls", None), "name", "") == "Soulcatcher" and getattr(player, "power_up", False):
+    if getattr(getattr(player, "cls", None), "name", "") == "Soulcatcher" and getattr(
+        player, "power_up", False
+    ):
         # Provide a conservative baseline of "souls harvested" so the class
         # doesn't appear artificially weak in a fresh test state.
         baseline = 20 if lvl < 30 else (80 if lvl < 50 else 160)
-        for typ in ["Humanoid", "Aberration", "Monster", "Undead", "Animal", "Slime", "Construct", "Insect", "Dragon"]:
+        for typ in [
+            "Humanoid",
+            "Aberration",
+            "Monster",
+            "Undead",
+            "Animal",
+            "Slime",
+            "Construct",
+            "Insect",
+            "Dragon",
+        ]:
             player.kill_dict.setdefault(typ, {})
             player.kill_dict[typ].setdefault("Baseline", baseline)
 
@@ -587,7 +600,11 @@ def _auto_equip_best(player) -> None:
             return int(getattr(it, "armor", 0) or 0)
         if slot == "OffHand":
             # Tomes: mod (magic); Shields: mod (block); weapons: damage.
-            return int(getattr(it, "damage", 0) or 0) + int(getattr(it, "mod", 0) or 0) + int(getattr(it, "armor", 0) or 0)
+            return (
+                int(getattr(it, "damage", 0) or 0)
+                + int(getattr(it, "mod", 0) or 0)
+                + int(getattr(it, "armor", 0) or 0)
+            )
         if slot in ["Ring", "Pendant"]:
             return _parse_leading_int(getattr(it, "mod", "")) * 10
         return 0
@@ -903,6 +920,7 @@ def main() -> int:
             f"# Delta: tier={args.tier} level={args.level} iters={args.iters} "
             f"baseline={args.baseline_race} races={len(args.races)}"
         )
+
         def _enemy_weights() -> dict[str, float]:
             # Default weights are intentionally simple and tuned for the small
             # representative enemy set in this script.
@@ -958,7 +976,9 @@ def main() -> int:
         baseline_classes = [c for c in class_names if _race_allows_class(baseline_race_obj, c)]
         skipped_baseline = [c for c in class_names if c not in baseline_classes]
         for cls_name in skipped_baseline:
-            print(f"# Skipping invalid race/class pairing: {baseline_race_obj.name} cannot be {cls_name}")
+            print(
+                f"# Skipping invalid race/class pairing: {baseline_race_obj.name} cannot be {cls_name}"
+            )
 
         _progress(f"# Running baseline race={args.baseline_race} classes={len(baseline_classes)}")
         baseline_out = _run_once(
@@ -995,7 +1015,9 @@ def main() -> int:
             race_classes = [c for c in class_names if _race_allows_class(race_obj, c)]
             skipped = [c for c in class_names if c not in race_classes]
             for cls_name in skipped:
-                print(f"# Skipping invalid race/class pairing: {race_obj.name} cannot be {cls_name}")
+                print(
+                    f"# Skipping invalid race/class pairing: {race_obj.name} cannot be {cls_name}"
+                )
             if not race_classes:
                 print(f"# Skipping race: {race_obj.name} (no valid requested classes)")
                 continue
@@ -1018,9 +1040,7 @@ def main() -> int:
                     continue
                 dwin = now.win_rate - base.win_rate
                 dturns = now.avg_turns - base.avg_turns
-                all_rows.append(
-                    (race, cls, enemy, dwin, dturns, base.win_rate, base.avg_turns)
-                )
+                all_rows.append((race, cls, enemy, dwin, dturns, base.win_rate, base.avg_turns))
                 print(
                     f"{race:12s} "
                     f"{cls:{_CLASS_COL_W}s} "
@@ -1053,7 +1073,9 @@ def main() -> int:
                 avg_dwin = sum(r[1] for r in rows) / max(1, len(rows))
                 avg_dturns = sum(r[2] for r in rows) / max(1, len(rows))
                 worst_enemy, worst_dwin, _ = min(rows, key=lambda r: r[1])
-                base_avg = sum(base_by_class.get(cls, [0.0])) / max(1, len(base_by_class.get(cls, [0.0])))
+                base_avg = sum(base_by_class.get(cls, [0.0])) / max(
+                    1, len(base_by_class.get(cls, [0.0]))
+                )
                 line = (
                     f"{race:12s} "
                     f"{cls:{_CLASS_COL_W}s} "
@@ -1083,7 +1105,9 @@ def main() -> int:
                 f"{'dWin%':>8s} {'BaseWin%':>8s}"
             )
             for race, cls, enemy, dwin, _dturns, basewin, _baset in drops:
-                print(f"{race:12s} {cls:{_CLASS_COL_W}s} {enemy:{_ENEMY_COL_W}s} {dwin:8.1f} {basewin:8.1f}")
+                print(
+                    f"{race:12s} {cls:{_CLASS_COL_W}s} {enemy:{_ENEMY_COL_W}s} {dwin:8.1f} {basewin:8.1f}"
+                )
         return 0
 
     if args.races is not None and not args.delta:
@@ -1116,14 +1140,13 @@ def main() -> int:
         ("Chimera", Chimera),
         ("Shadow Serpent", ShadowSerpent),
         ("Aboleth", Aboleth),
-        ("Mimic", lambda: Mimic(
-            z=2,
-            player_level=(
-                args.level
-                if args.progression != "on" else
-                args.level
+        (
+            "Mimic",
+            lambda: Mimic(
+                z=2,
+                player_level=(args.level if args.progression != "on" else args.level),
             ),
-        )),
+        ),
     ]
     pair_mode = args.encounters is not None
     pair_keys_by_label: dict[str, str] = {}
@@ -1144,10 +1167,7 @@ def main() -> int:
             )
             for key in requested
         ]
-        pair_keys_by_label = {
-            curated_encounter_spec(key).display_name: key
-            for key in requested
-        }
+        pair_keys_by_label = {curated_encounter_spec(key).display_name: key for key in requested}
         pair_specs_by_label = {
             curated_encounter_spec(key).display_name: curated_encounter_spec(key)
             for key in requested
@@ -1176,7 +1196,9 @@ def main() -> int:
             pro_level = 1
         max_lvl = _max_level_for_pro_level(pro_level)
         if int(args.level) > max_lvl:
-            print(f"# Skipping invalid class level: {cls_name} (pro_level={pro_level}) cannot be level {args.level} (max {max_lvl})")
+            print(
+                f"# Skipping invalid class level: {cls_name} (pro_level={pro_level}) cannot be level {args.level} (max {max_lvl})"
+            )
             continue
 
         def make_player():
@@ -1204,9 +1226,13 @@ def main() -> int:
             # Race baselines (combat stats + resistances).
             player.resistance = dict(getattr(race_obj, "resistance", {}) or player.resistance)
             player.combat.attack = int(getattr(race_obj, "base_attack", 0) or player.combat.attack)
-            player.combat.defense = int(getattr(race_obj, "base_defense", 0) or player.combat.defense)
+            player.combat.defense = int(
+                getattr(race_obj, "base_defense", 0) or player.combat.defense
+            )
             player.combat.magic = int(getattr(race_obj, "base_magic", 0) or player.combat.magic)
-            player.combat.magic_def = int(getattr(race_obj, "base_magic_def", 0) or player.combat.magic_def)
+            player.combat.magic_def = int(
+                getattr(race_obj, "base_magic_def", 0) or player.combat.magic_def
+            )
 
             if args.profile == "leveled":
                 _apply_auto_stat_ups(
@@ -1238,7 +1264,9 @@ def main() -> int:
                 # Avoid silent "no potions present" runs (these dramatically skew results).
                 # Print once per invocation.
                 if not getattr(make_player, "_warned_no_items", False):
-                    print("# WARNING: could not import src.core.items; consumables will not be stocked.")
+                    print(
+                        "# WARNING: could not import src.core.items; consumables will not be stocked."
+                    )
                     setattr(make_player, "_warned_no_items", True)
             else:
                 try:
@@ -1279,27 +1307,15 @@ def main() -> int:
             if pair_mode and report.results:
                 pair_key = pair_keys_by_label[enemy_label]
                 pair_results_by_key[pair_key].extend(report.results)
-                wins_list = [
-                    result
-                    for result in report.results
-                    if result.winner == cls_name
-                ]
+                wins_list = [result for result in report.results if result.winner == cls_name]
                 losses = sum(
-                    1
-                    for result in report.results
-                    if result.winner not in {cls_name, "draw"}
+                    1 for result in report.results if result.winner not in {cls_name, "draw"}
                 )
                 draws = len(report.results) - len(wins_list) - losses
-                avg_rounds = statistics.mean(
-                    result.rounds for result in report.results
-                )
-                avg_actor_turns = statistics.mean(
-                    result.actor_turns for result in report.results
-                )
+                avg_rounds = statistics.mean(result.rounds for result in report.results)
+                avg_actor_turns = statistics.mean(result.actor_turns for result in report.results)
                 singleton_actor_turns = []
-                for member_factory in pair_specs_by_label[
-                    enemy_label
-                ].member_factories:
+                for member_factory in pair_specs_by_label[enemy_label].member_factories:
                     member_report = CombatSimulator().run_simulations(
                         make_player,
                         member_factory,
@@ -1307,78 +1323,60 @@ def main() -> int:
                         seed=args.seed,
                     )
                     singleton_actor_turns.append(
-                        statistics.mean(
-                            result.actor_turns
-                            for result in member_report.results
-                        )
+                        statistics.mean(result.actor_turns for result in member_report.results)
                     )
                 harder_singleton_turns = max(singleton_actor_turns)
                 actor_turn_ratio = (
-                    avg_actor_turns / harder_singleton_turns
-                    if harder_singleton_turns
-                    else 0.0
+                    avg_actor_turns / harder_singleton_turns if harder_singleton_turns else 0.0
                 )
                 pair_actor_ratios_by_key[pair_key].append(actor_turn_ratio)
                 avg_hp = statistics.mean(
-                    (
-                        result.player_hp_remaining
-                        / max(1, result.player_hp_max)
-                    )
-                    * 100
+                    (result.player_hp_remaining / max(1, result.player_hp_max)) * 100
                     for result in report.results
                 )
                 winning_hp_median = (
                     statistics.median(
-                        (
-                            result.player_hp_remaining
-                            / max(1, result.player_hp_max)
-                        )
-                        * 100
+                        (result.player_hp_remaining / max(1, result.player_hp_max)) * 100
                         for result in wins_list
                     )
                     if wins_list
                     else 0.0
                 )
-                avg_mp = statistics.mean(
-                    result.player_mana_remaining
-                    for result in report.results
-                )
+                avg_mp = statistics.mean(result.player_mana_remaining for result in report.results)
                 avg_consumables = statistics.mean(
                     result.consumables_used for result in report.results
                 )
                 avg_reward_xp = statistics.mean(
                     result.reward_experience for result in report.results
                 )
-                avg_reward_gold = statistics.mean(
-                    result.reward_gold for result in report.results
-                )
+                avg_reward_gold = statistics.mean(result.reward_gold for result in report.results)
                 damage_totals: dict[str, int] = defaultdict(int)
                 resolution_counts: Counter[str] = Counter()
                 for result in report.results:
                     for label, damage in result.damage_by_combatant.items():
                         damage_totals[label] += damage
                     resolution_counts.update(
-                        resolution or "unresolved"
-                        for resolution in result.resolutions
+                        resolution or "unresolved" for resolution in result.resolutions
                     )
-                damage_summary = ",".join(
-                    f"{label}:{damage / len(report.results):.1f}"
-                    for label, damage in damage_totals.items()
-                ) or "none"
-                resolution_summary = ",".join(
-                    f"{resolution}:{count}"
-                    for resolution, count in sorted(resolution_counts.items())
-                ) or "none"
+                damage_summary = (
+                    ",".join(
+                        f"{label}:{damage / len(report.results):.1f}"
+                        for label, damage in damage_totals.items()
+                    )
+                    or "none"
+                )
+                resolution_summary = (
+                    ",".join(
+                        f"{resolution}:{count}"
+                        for resolution, count in sorted(resolution_counts.items())
+                    )
+                    or "none"
+                )
                 roster = "/".join(report.results[0].roster)
-                invalid_intents = sum(
-                    result.invalid_intents for result in report.results
-                )
-                max_turn_loops = sum(
-                    result.max_turns_reached for result in report.results
-                )
+                invalid_intents = sum(result.invalid_intents for result in report.results)
+                max_turn_loops = sum(result.max_turns_reached for result in report.results)
                 repeated_non_progress = sum(
-                    result.repeated_non_progress_actions
-                    for result in report.results
+                    result.repeated_non_progress_actions for result in report.results
                 )
                 print(
                     "# PairMetrics "
@@ -1427,32 +1425,20 @@ def main() -> int:
         player_names = set(class_names)
         for key in requested:
             results = pair_results_by_key[key]
-            wins = [
-                result
-                for result in results
-                if result.winner in player_names
-            ]
+            wins = [result for result in results if result.winner in player_names]
             winning_hp_median = (
                 statistics.median(
-                    (
-                        result.player_hp_remaining
-                        / max(1, result.player_hp_max)
-                    )
-                    * 100
+                    (result.player_hp_remaining / max(1, result.player_hp_max)) * 100
                     for result in wins
                 )
                 if wins
                 else 0.0
             )
             win_rate = (len(wins) / max(1, len(results))) * 100
-            mean_actor_turn_ratio = statistics.mean(
-                pair_actor_ratios_by_key[key]
-            )
+            mean_actor_turn_ratio = statistics.mean(pair_actor_ratios_by_key[key])
             invalid_intents = sum(result.invalid_intents for result in results)
             max_turn_loops = sum(result.max_turns_reached for result in results)
-            repeated_non_progress = sum(
-                result.repeated_non_progress_actions for result in results
-            )
+            repeated_non_progress = sum(result.repeated_non_progress_actions for result in results)
             print(
                 "# PairAggregate "
                 f"key={key} battles={len(results)} "
@@ -1468,7 +1454,9 @@ def main() -> int:
     print(f"Balance Suite: level={args.level} iters={args.iters} seed={args.seed}")
     print(f"{'Class':{_CLASS_COL_W}s} {'Enemy':{_ENEMY_COL_W}s} {'WinRate%':>8s} {'AvgTurns':>8s}")
     for s in summaries:
-        print(f"{s.class_name:{_CLASS_COL_W}s} {s.enemy_name:{_ENEMY_COL_W}s} {s.win_rate:8.1f} {s.avg_turns:8.2f}")
+        print(
+            f"{s.class_name:{_CLASS_COL_W}s} {s.enemy_name:{_ENEMY_COL_W}s} {s.win_rate:8.1f} {s.avg_turns:8.2f}"
+        )
 
     return 0
 

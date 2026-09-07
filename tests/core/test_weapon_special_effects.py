@@ -34,36 +34,33 @@ def create_test_character(name="TestChar", level_num=10):
 
     # Initialize equipment with basic items
     char.equipment = {
-        'Weapon': items.NoWeapon(),
-        'OffHand': items.NoOffHand(),
-        'Armor': items.NoArmor(),
-        'Ring': items.NoRing(),
-        'Pendant': items.NoPendant()
+        "Weapon": items.NoWeapon(),
+        "OffHand": items.NoOffHand(),
+        "Armor": items.NoArmor(),
+        "Ring": items.NoRing(),
+        "Pendant": items.NoPendant(),
     }
 
     # Initialize status effects using StatusEffect dataclass
     from src.core.character import StatusEffect
+
     char.status_effects = {
-        'Stun': StatusEffect(),
-        'Sleep': StatusEffect(),
-        'Poison': StatusEffect(),
-        'Blind': StatusEffect(),
-        'Berserk': StatusEffect()
+        "Stun": StatusEffect(),
+        "Sleep": StatusEffect(),
+        "Poison": StatusEffect(),
+        "Blind": StatusEffect(),
+        "Berserk": StatusEffect(),
     }
     char.status_immunity = []
 
     # Initialize magic/physical effects dicts
     char.magic_effects = {
-        'Mana Shield': StatusEffect(),
-        'Ice Block': StatusEffect(),
-        'Duplicates': StatusEffect()
+        "Mana Shield": StatusEffect(),
+        "Ice Block": StatusEffect(),
+        "Duplicates": StatusEffect(),
     }
-    char.physical_effects = {
-        'Disarm': StatusEffect()
-    }
-    char.class_effects = {
-        'Power Up': StatusEffect()
-    }
+    char.physical_effects = {"Disarm": StatusEffect()}
+    char.class_effects = {"Power Up": StatusEffect()}
 
     # Other combat attributes
     char.invisible = False
@@ -71,11 +68,12 @@ def create_test_character(name="TestChar", level_num=10):
     char.tunnel = False
 
     # Initialize spellbook
-    char.spellbook = {'Skills': [], 'Spells': []}
+    char.spellbook = {"Skills": [], "Spells": []}
 
     # Add cls mock for class checks
     class MockClass:
         name = "Warrior"
+
     char.cls = MockClass()
     char.power_up = False
 
@@ -88,7 +86,7 @@ def test_vampire_bite_life_steal(monkeypatch):
     defender = create_test_character("Victim", level_num=5)
 
     # Equip VampireBite
-    attacker.equipment['Weapon'] = items.VampireBite()
+    attacker.equipment["Weapon"] = items.VampireBite()
 
     # Set attacker to low health
     attacker.health.current = 50
@@ -101,7 +99,7 @@ def test_vampire_bite_life_steal(monkeypatch):
         target=defender,
         hit=True,
         crit=2.0,  # Critical hit
-        damage=20
+        damage=20,
     )
     results = CombatResultGroup()
     results.add(result)
@@ -109,7 +107,7 @@ def test_vampire_bite_life_steal(monkeypatch):
     monkeypatch.setattr(random, "random", lambda: 0.0)
 
     # Call special_effect
-    attacker.equipment['Weapon'].special_effect(results)
+    attacker.equipment["Weapon"].special_effect(results)
 
     assert results.results[-1].extra["Drain"] is True
     assert attacker.health.current == initial_health + 20
@@ -148,7 +146,7 @@ def test_ninjato_instant_death(monkeypatch):
     defender = create_test_character("Victim", level_num=5)
 
     # Equip Ninjato
-    attacker.equipment['Weapon'] = items.Ninjato()
+    attacker.equipment["Weapon"] = items.Ninjato()
     attacker.stats.strength = 50
     attacker.stats.luck = 50
 
@@ -159,7 +157,7 @@ def test_ninjato_instant_death(monkeypatch):
         target=defender,
         hit=True,
         crit=2.0,  # Critical hit
-        damage=40
+        damage=40,
     )
     results = CombatResultGroup()
     results.add(result)
@@ -168,7 +166,7 @@ def test_ninjato_instant_death(monkeypatch):
     monkeypatch.setattr(random, "randint", lambda _a, _b: next(rolls))
 
     # Call special_effect
-    attacker.equipment['Weapon'].special_effect(results)
+    attacker.equipment["Weapon"].special_effect(results)
 
     assert results.results[-1].extra["Instant Death"] is True
 
@@ -179,16 +177,11 @@ def test_gaze_petrification(monkeypatch):
     defender = create_test_character("Victim", level_num=5)
 
     # Equip Gaze weapon
-    attacker.equipment['Weapon'] = items.Gaze()
+    attacker.equipment["Weapon"] = items.Gaze()
 
     # Create a combat result
     result = CombatResult(
-        action="Leer",
-        actor=attacker,
-        target=defender,
-        hit=True,
-        crit=1,
-        damage=0
+        action="Leer", actor=attacker, target=defender, hit=True, crit=1, damage=0
     )
     results = CombatResultGroup()
     results.add(result)
@@ -202,7 +195,7 @@ def test_gaze_petrification(monkeypatch):
 
     monkeypatch.setattr("src.core.items.weapons.abilities.Petrify", lambda: FakePetrify())
 
-    attacker.equipment['Weapon'].special_effect(results)
+    attacker.equipment["Weapon"].special_effect(results)
 
     assert results.results[-1].extra["leers"] is True
     assert petrify_calls == [(attacker, defender, True)]
@@ -214,7 +207,7 @@ def test_mjolnir_stun(monkeypatch):
     defender = create_test_character("Victim", level_num=10)
 
     # Equip Mjolnir
-    attacker.equipment['Weapon'] = items.Mjolnir()
+    attacker.equipment["Weapon"] = items.Mjolnir()
     attacker.stats.strength = 40
 
     # Defender should not be immune to stun
@@ -227,7 +220,7 @@ def test_mjolnir_stun(monkeypatch):
         target=defender,
         hit=True,
         crit=2.0,  # Critical hit (float, not list)
-        damage=35
+        damage=35,
     )
     results = CombatResultGroup()
     results.add(result)
@@ -236,11 +229,11 @@ def test_mjolnir_stun(monkeypatch):
     monkeypatch.setattr(defender, "stun_contest_success", lambda *_args, **_kwargs: True)
 
     # Call special_effect
-    attacker.equipment['Weapon'].special_effect(results)
+    attacker.equipment["Weapon"].special_effect(results)
 
-    assert results.results[-1].target.status_effects['Stun'].active is True
-    assert results.results[-1].target.status_effects['Stun'].duration == 4
-    assert 'Stun' in results.results[-1].effects_applied['Status']
+    assert results.results[-1].target.status_effects["Stun"].active is True
+    assert results.results[-1].target.status_effects["Stun"].duration == 4
+    assert "Stun" in results.results[-1].effects_applied["Status"]
 
 
 def test_armor_special_effect():
@@ -249,30 +242,25 @@ def test_armor_special_effect():
     defender = create_test_character("Defender", level_num=10)
 
     # Equip basic armor
-    defender.equipment['Armor'] = items.NoArmor()
+    defender.equipment["Armor"] = items.NoArmor()
 
     # Create a combat result
     result = CombatResult(
-        action="Weapon",
-        actor=attacker,
-        target=defender,
-        hit=True,
-        crit=1.5,
-        damage=25
+        action="Weapon", actor=attacker, target=defender, hit=True, crit=1.5, damage=25
     )
     results = CombatResultGroup()
     results.add(result)
 
-    returned = defender.equipment['Armor'].special_effect(results)
+    returned = defender.equipment["Armor"].special_effect(results)
 
     assert returned is None
     assert results.results[-1].damage == 25
     assert results.results[-1].effects_applied == {
-        'Status': [],
-        'Physical': [],
-        'Stat': [],
-        'Magic': [],
-        'Class': [],
+        "Status": [],
+        "Physical": [],
+        "Stat": [],
+        "Magic": [],
+        "Class": [],
     }
 
 
@@ -394,7 +382,7 @@ def main():
         test_ninjato_instant_death,
         test_gaze_petrification,
         test_mjolnir_stun,
-        test_armor_special_effect
+        test_armor_special_effect,
     ]
 
     passed = 0
@@ -409,6 +397,7 @@ def main():
         except Exception as e:
             print(f"\n✗ Test {test.__name__} failed with error: {e}")
             import traceback
+
             traceback.print_exc()
             failed += 1
 

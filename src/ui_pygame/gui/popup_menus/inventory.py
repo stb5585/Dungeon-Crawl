@@ -11,7 +11,9 @@ class InventoryPopupMenu(BasePopupMenu):
         super().__init__(presenter, parent_screen, title="Inventory")
         self.sort_modes = ["Name", "Type", "Quantity", "Combat"]
         stored_mode = getattr(parent_screen, "_inventory_sort_mode", self.sort_modes[0])
-        self.sort_mode_idx = self.sort_modes.index(stored_mode) if stored_mode in self.sort_modes else 0
+        self.sort_mode_idx = (
+            self.sort_modes.index(stored_mode) if stored_mode in self.sort_modes else 0
+        )
 
     def _store_sort_mode(self, player_char=None):
         if self.parent_screen is not None:
@@ -21,9 +23,8 @@ class InventoryPopupMenu(BasePopupMenu):
 
     def _is_combat_usable(self, item) -> bool:
         subtyp = getattr(item, "subtyp", None)
-        return (
-            subtyp in ("Health", "Mana", "Elixir", "Status")
-            or (subtyp == "Scroll" and getattr(item, "name", "") != "Sanctuary Scroll")
+        return subtyp in ("Health", "Mana", "Elixir", "Status") or (
+            subtyp == "Scroll" and getattr(item, "name", "") != "Sanctuary Scroll"
         )
 
     def _current_mode(self) -> str:
@@ -38,14 +39,22 @@ class InventoryPopupMenu(BasePopupMenu):
         if mode == "Combat":
             combat_items = [entry for entry in items if self._is_combat_usable(entry[1])]
             non_combat_items = [entry for entry in items if not self._is_combat_usable(entry[1])]
-            return sorted(combat_items, key=lambda entry: str(getattr(entry[1], "name", "")).lower()) + non_combat_items
+            return (
+                sorted(combat_items, key=lambda entry: str(getattr(entry[1], "name", "")).lower())
+                + non_combat_items
+            )
         if mode == "Type":
-            return sorted(items, key=lambda entry: (
-                str(getattr(entry[1], "subtyp", "")),
-                str(getattr(entry[1], "name", "")).lower(),
-            ))
+            return sorted(
+                items,
+                key=lambda entry: (
+                    str(getattr(entry[1], "subtyp", "")),
+                    str(getattr(entry[1], "name", "")).lower(),
+                ),
+            )
         if mode == "Quantity":
-            return sorted(items, key=lambda entry: (-entry[2], str(getattr(entry[1], "name", "")).lower()))
+            return sorted(
+                items, key=lambda entry: (-entry[2], str(getattr(entry[1], "name", "")).lower())
+            )
         return sorted(items, key=lambda entry: str(getattr(entry[1], "name", "")).lower())
 
     def build_items(self, player_char):
@@ -166,7 +175,10 @@ class InventoryPopupMenu(BasePopupMenu):
 
         # Check if item is usable (consumable) - check subtyp, not category
         item_subtyp = getattr(obj, "subtyp", None)
-        if item_subtyp in ("Health", "Mana", "Elixir", "Stat") or getattr(obj, "name", "") == "Sanctuary Scroll":
+        if (
+            item_subtyp in ("Health", "Mana", "Elixir", "Stat")
+            or getattr(obj, "name", "") == "Sanctuary Scroll"
+        ):
             actions.append("Use")
 
         actions.extend(["Drop", "Cancel"])
@@ -179,7 +191,7 @@ class InventoryPopupMenu(BasePopupMenu):
             self.parent_screen,
             title=f"Action: {getattr(obj, 'name', 'Item')}",
             header_message=f"What would you like to do with {getattr(obj, 'name', 'this item')}?",
-            options=actions
+            options=actions,
         )
 
         item_name = getattr(obj, "name", str(obj))
@@ -219,7 +231,8 @@ class InventoryPopupMenu(BasePopupMenu):
                 self._drop_item(player_char, obj, category, background_surface=action_bg)
 
             remaining = [
-                it for it in player_char.inventory.get(category, [])
+                it
+                for it in player_char.inventory.get(category, [])
                 if getattr(it, "name", str(it)) == item_name
             ]
             if not remaining:
@@ -240,7 +253,9 @@ class InventoryPopupMenu(BasePopupMenu):
         return False
 
     def help_footer(self) -> str:
-        return "Arrows: Navigate  Enter: Select  S: Cycle Sort/Filter  Esc: Close  PgUp/PgDn: Scroll"
+        return (
+            "Arrows: Navigate  Enter: Select  S: Cycle Sort/Filter  Esc: Close  PgUp/PgDn: Scroll"
+        )
 
     def _show_inventory_notice(self, player_char, message: str, background_surface=None) -> None:
         from . import ConfirmationPopup
@@ -276,7 +291,11 @@ class InventoryPopupMenu(BasePopupMenu):
                 slot = "Pendant"
 
         if not slot:
-            self._show_inventory_notice(player_char, f"You cannot equip {getattr(item, 'name', 'that item')}.", background_surface)
+            self._show_inventory_notice(
+                player_char,
+                f"You cannot equip {getattr(item, 'name', 'that item')}.",
+                background_surface,
+            )
             return
 
         # Enforce class equip restrictions
@@ -288,19 +307,31 @@ class InventoryPopupMenu(BasePopupMenu):
                 else player_char.cls.equip_check(item, slot)
             )
             if not allowed:
-                self._show_inventory_notice(player_char, f"You cannot equip {getattr(item, 'name', 'that item')}.", background_surface)
+                self._show_inventory_notice(
+                    player_char,
+                    f"You cannot equip {getattr(item, 'name', 'that item')}.",
+                    background_surface,
+                )
                 return
         equip_method = getattr(player_char, "equip", None)
         if callable(equip_method):
             result = equip_method(slot, item)
             if result is False:
-                self._show_inventory_notice(player_char, f"You cannot equip {getattr(item, 'name', 'that item')}.", background_surface)
+                self._show_inventory_notice(
+                    player_char,
+                    f"You cannot equip {getattr(item, 'name', 'that item')}.",
+                    background_surface,
+                )
                 return
         else:
             # Check if current item can be unequipped
             current = player_char.equipment.get(slot)
             if current and not getattr(current, "unequip", True):
-                self._show_inventory_notice(player_char, f"You cannot unequip {getattr(current, 'name', 'this item')}.", background_surface)
+                self._show_inventory_notice(
+                    player_char,
+                    f"You cannot unequip {getattr(current, 'name', 'this item')}.",
+                    background_surface,
+                )
                 return
 
             # Move current item to inventory (if it exists and is not a placeholder)
@@ -355,7 +386,9 @@ class InventoryPopupMenu(BasePopupMenu):
         """Drop an item from inventory."""
         # Confirm drop
         menu_bg = background_surface or self._capture_menu_surface(player_char)
-        popup = ConfirmationPopup(self.presenter, f"Drop {getattr(item, 'name', 'this item')}? This cannot be undone.")
+        popup = ConfirmationPopup(
+            self.presenter, f"Drop {getattr(item, 'name', 'this item')}? This cannot be undone."
+        )
         if not popup.show(
             background_draw_func=lambda: self.screen.blit(menu_bg, (0, 0)),
             flush_events=True,

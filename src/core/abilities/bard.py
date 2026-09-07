@@ -333,8 +333,7 @@ class PrismaticFinale(Spell):
         result.hit = result.damage > 0
         result.extra.update({"element": element, "crescendo_spent": spent})
         result.message = (
-            f"{user.name} spends {spent} Crescendo on a {element} Prismatic Finale.\n"
-            f"{message}"
+            f"{user.name} spends {spent} Crescendo on a {element} Prismatic Finale.\n" f"{message}"
         )
         return result
 

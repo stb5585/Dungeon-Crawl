@@ -150,7 +150,9 @@ def test_companion_art_manager_prefers_tamed_enemy_class_for_renamed_companion(t
 
     enemy_manager = FakeEnemyManager()
     manager = CompanionArtManager(art_root=art_root, enemy_sprite_manager=enemy_manager)
-    companion = SimpleNamespace(name="Needle (Giant Hornet)", race="Needle (Giant Hornet)", enemy_class="GiantHornet")
+    companion = SimpleNamespace(
+        name="Needle (Giant Hornet)", race="Needle (Giant Hornet)", enemy_class="GiantHornet"
+    )
 
     assert manager.get_scaled_sprite(companion, (16, 16)) is scaled
     assert enemy_manager.scaled_key_calls == [("giant_hornet", (16, 16))]

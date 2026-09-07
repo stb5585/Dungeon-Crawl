@@ -134,7 +134,13 @@ def test_soulcatcher_deep_resonance_and_harvest_masteries_are_live():
     from src.core.classes import class_rings
 
     class_rings.ensure_state(soulcatcher)["data"]["Soulcatcher"]["harvested_types"] = [
-        "Animal", "Construct", "Dragon", "Fiend", "Humanoid", "Slime", "Undead"
+        "Animal",
+        "Construct",
+        "Dragon",
+        "Fiend",
+        "Humanoid",
+        "Slime",
+        "Undead",
     ]
 
     assert promotion_kits.cap_for(soulcatcher, "totem_resonance") == 4

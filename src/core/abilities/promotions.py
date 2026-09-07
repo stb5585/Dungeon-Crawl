@@ -20,17 +20,26 @@ class _PromotionPassive(_PassiveSkill):
 
 class ScavengersEye(_PromotionPassive):
     def __init__(self):
-        super().__init__("Scavenger's Eye", "Modestly improves ordinary loot odds and rarity without creating restricted drops.")
+        super().__init__(
+            "Scavenger's Eye",
+            "Modestly improves ordinary loot odds and rarity without creating restricted drops.",
+        )
 
 
 class FindersKeepers(_PromotionPassive):
     def __init__(self):
-        super().__init__("Finders Keepers", "Occasionally finds extra eligible loot after ordinary defeated enemies.")
+        super().__init__(
+            "Finders Keepers",
+            "Occasionally finds extra eligible loot after ordinary defeated enemies.",
+        )
 
 
 class CheatDeath(_PromotionPassive):
     def __init__(self):
-        super().__init__("Cheat Death", "Once per combat, Misfortune can help turn fatal damage into survival at 1 HP.")
+        super().__init__(
+            "Cheat Death",
+            "Once per combat, Misfortune can help turn fatal damage into survival at 1 HP.",
+        )
 
 
 class DeathMark(_PromotionPassive):
@@ -48,7 +57,9 @@ class Wayfinding(_PromotionPassive):
 
 class MartialMastery(_PromotionPassive):
     def __init__(self):
-        super().__init__("Martial Mastery", "Improves Ki discipline and readies the Dim Mak finisher.")
+        super().__init__(
+            "Martial Mastery", "Improves Ki discipline and readies the Dim Mak finisher."
+        )
 
 
 class _PromotionActive(Class):
@@ -96,7 +107,9 @@ class ShadeOfAhool(_PromotionActive):
 
 class HoldTheLine(_ResolveActive):
     def __init__(self):
-        super().__init__("Hold the Line", "Enter a shield stance that improves block and mitigation.", 0)
+        super().__init__(
+            "Hold the Line", "Enter a shield stance that improves block and mitigation.", 0
+        )
 
     def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
         from ..classes import promotion_kits
@@ -113,7 +126,9 @@ class HoldTheLine(_ResolveActive):
 
 class BraceWall(_ResolveActive):
     def __init__(self):
-        super().__init__("Brace Wall", "Spend Resolve to raise Defense; also refreshes Hold the Line.", 15)
+        super().__init__(
+            "Brace Wall", "Spend Resolve to raise Defense; also refreshes Hold the Line.", 15
+        )
 
     def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
         from ..classes import promotion_kits
@@ -157,9 +172,7 @@ class Condemnation(_PromotionActive):
     def __init__(self):
         super().__init__(
             "Condemnation",
-            (
-                "Strike with holy vengeance for weapon and Holy damage."
-            ),
+            ("Strike with holy vengeance for weapon and Holy damage."),
             10,
         )
         self.weapon = True
@@ -318,7 +331,11 @@ class Penalization(_PromotionPassive):
 
 class CitadelAegis(_ResolveActive):
     def __init__(self):
-        super().__init__("Citadel Aegis", "Consume full Resolve for a fortress barrier and defensive stance.", "Full")
+        super().__init__(
+            "Citadel Aegis",
+            "Consume full Resolve for a fortress barrier and defensive stance.",
+            "Full",
+        )
         self.specials_hidden = True
 
     def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
@@ -332,7 +349,9 @@ class CitadelAegis(_ResolveActive):
 
 class IronwallReprisal(_ResolveActive):
     def __init__(self):
-        super().__init__("Ironwall Revenge", "Consume full Resolve for a three-hit counterattack.", "Full")
+        super().__init__(
+            "Ironwall Revenge", "Consume full Resolve for a three-hit counterattack.", "Full"
+        )
         self.specials_hidden = True
 
     def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
@@ -343,7 +362,9 @@ class IronwallReprisal(_ResolveActive):
 
 class LastBastionSurge(_ResolveActive):
     def __init__(self):
-        super().__init__("Last Bastion", "Consume full Resolve to recover and rebuild your guard.", "Full")
+        super().__init__(
+            "Last Bastion", "Consume full Resolve to recover and rebuild your guard.", "Full"
+        )
         self.specials_hidden = True
 
     def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
@@ -498,7 +519,9 @@ class FourfoldSurge(_PromotionActive):
 
 class TotemSurge(_PromotionActive):
     def __init__(self):
-        super().__init__("Totem Surge", "Spend Totem Resonance to force the active Totem pulse.", 10)
+        super().__init__(
+            "Totem Surge", "Spend Totem Resonance to force the active Totem pulse.", 10
+        )
 
     def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
         from ..classes import promotion_kits
@@ -508,7 +531,9 @@ class TotemSurge(_PromotionActive):
 
 class ConduitCommand(_PromotionActive):
     def __init__(self):
-        super().__init__("Conduit Command", "Empower the active summon's next non-Recall action.", 10)
+        super().__init__(
+            "Conduit Command", "Empower the active summon's next non-Recall action.", 10
+        )
 
     def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
         from ..classes import promotion_kits
@@ -530,59 +555,73 @@ class _InvokeSummon(_PromotionActive):
 
 
 class InvokeHodag(_InvokeSummon):
-    def __init__(self): super().__init__("Hodag")
+    def __init__(self):
+        super().__init__("Hodag")
 
 
 class InvokeCaladrius(_InvokeSummon):
-    def __init__(self): super().__init__("Caladrius")
+    def __init__(self):
+        super().__init__("Caladrius")
 
 
 class InvokePatagon(_InvokeSummon):
-    def __init__(self): super().__init__("Patagon")
+    def __init__(self):
+        super().__init__("Patagon")
 
 
 class InvokeDilong(_InvokeSummon):
-    def __init__(self): super().__init__("Dilong")
+    def __init__(self):
+        super().__init__("Dilong")
 
 
 class InvokeAgloolik(_InvokeSummon):
-    def __init__(self): super().__init__("Agloolik")
+    def __init__(self):
+        super().__init__("Agloolik")
 
 
 class InvokeCacus(_InvokeSummon):
-    def __init__(self): super().__init__("Cacus")
+    def __init__(self):
+        super().__init__("Cacus")
 
 
 class InvokeIzulu(_InvokeSummon):
-    def __init__(self): super().__init__("Izulu")
+    def __init__(self):
+        super().__init__("Izulu")
 
 
 class InvokeHala(_InvokeSummon):
-    def __init__(self): super().__init__("Hala")
+    def __init__(self):
+        super().__init__("Hala")
 
 
 class InvokeLamashtu(_InvokeSummon):
-    def __init__(self): super().__init__("Lamashtu")
+    def __init__(self):
+        super().__init__("Lamashtu")
 
 
 class InvokeSeraphim(_InvokeSummon):
-    def __init__(self): super().__init__("Seraphim")
+    def __init__(self):
+        super().__init__("Seraphim")
 
 
 class InvokeBardi(_InvokeSummon):
-    def __init__(self): super().__init__("Bardi")
+    def __init__(self):
+        super().__init__("Bardi")
 
 
 class InvokeKobalos(_InvokeSummon):
-    def __init__(self): super().__init__("Kobalos")
+    def __init__(self):
+        super().__init__("Kobalos")
 
 
 class InvokeZahhak(_InvokeSummon):
-    def __init__(self): super().__init__("Zahhak")
+    def __init__(self):
+        super().__init__("Zahhak")
 
 
 class InvokeTiamat(_InvokeSummon):
-    def __init__(self): super().__init__("Tiamat")
+    def __init__(self):
+        super().__init__("Tiamat")
 
 
 class _BeastCommand(_PromotionActive):
@@ -599,19 +638,23 @@ class _BeastCommand(_PromotionActive):
 
 
 class PackStrike(_BeastCommand):
-    def __init__(self): super().__init__("Pack Strike")
+    def __init__(self):
+        super().__init__("Pack Strike")
 
 
 class GuardPartner(_BeastCommand):
-    def __init__(self): super().__init__("Guard Partner")
+    def __init__(self):
+        super().__init__("Guard Partner")
 
 
 class HarryPrey(_BeastCommand):
-    def __init__(self): super().__init__("Harry Prey")
+    def __init__(self):
+        super().__init__("Harry Prey")
 
 
 class MendWounds(_BeastCommand):
-    def __init__(self): super().__init__("Mend Wounds")
+    def __init__(self):
+        super().__init__("Mend Wounds")
 
 
 class UnleashInstinct(_BeastCommand):

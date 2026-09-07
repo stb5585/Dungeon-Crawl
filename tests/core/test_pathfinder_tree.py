@@ -10,11 +10,31 @@ from src.core.combat.actor_cycle import initiative_rating
 from src.core.progression import ABILITY_TREES, NodeKind
 from tests.test_framework import TestGameState
 
-
 EXPECTED_COLUMNS = (
-    ("Poison Dart", "Regrowth", "Ray of Moonlight", "Nullify Poison", "Thorny Vine", "Poison Strike"),
-    ("Natural Attunement", "Razor Talons", "Call Animal", None, "Detect Animal", "Creature Comforts"),
-    ("Stumble Upon", "Zephyrstrike", "Cautious Assault", "Honed Attack", "Unnatural Purge", "Bounce Back"),
+    (
+        "Poison Dart",
+        "Regrowth",
+        "Ray of Moonlight",
+        "Nullify Poison",
+        "Thorny Vine",
+        "Poison Strike",
+    ),
+    (
+        "Natural Attunement",
+        "Razor Talons",
+        "Call Animal",
+        None,
+        "Detect Animal",
+        "Creature Comforts",
+    ),
+    (
+        "Stumble Upon",
+        "Zephyrstrike",
+        "Cautious Assault",
+        "Honed Attack",
+        "Unnatural Purge",
+        "Bounce Back",
+    ),
     ("Piercing Strike", "Quickstep", "+10 Attack", None, "Parry", "True Strike"),
     ("Spirit Strike", "Conversion", "+25 MP", "Hydration", "Very Superstitious", "Primal Trance"),
     ("Tremor", "Water Jet", "Gust", "Scorch", "Fundamental Harmony", "Detect Elemental"),
@@ -34,14 +54,18 @@ def test_pathfinder_tree_matches_requested_columns_gaps_and_gates():
     development = [node for node in tree.nodes if node.kind != NodeKind.PROMOTION]
     by_position = {node.position: node for node in development}
     promotions = {
-        node.payload["target_class"]: node
-        for node in tree.nodes
-        if node.kind == NodeKind.PROMOTION
+        node.payload["target_class"]: node for node in tree.nodes if node.kind == NodeKind.PROMOTION
     }
 
     assert len(development) == 40
     assert tree.branches == (
-        "Druid", "Naturalism", "Ranger", "Melee", "Shaman", "Elemental", "Diviner",
+        "Druid",
+        "Naturalism",
+        "Ranger",
+        "Melee",
+        "Shaman",
+        "Elemental",
+        "Diviner",
     )
     for column, names in enumerate(EXPECTED_COLUMNS):
         for row, name in enumerate(names):
@@ -154,17 +178,18 @@ def test_poison_strike_is_a_main_hand_nature_spell_with_poison_damage(monkeypatc
 
 def test_shared_passives_modify_melee_elemental_and_initiative_rules():
     player = _player()
-    player.spellbook["Skills"].update({
-        "Razor Talons": abilities.RazorTalons(),
-        "Conversion": abilities.Conversion(),
-        "Fundamental Harmony": abilities.FundamentalHarmony(),
-        "Intensify Elements": abilities.IntensifyElements(),
-        "Chronology": abilities.Chronology(),
-    })
+    player.spellbook["Skills"].update(
+        {
+            "Razor Talons": abilities.RazorTalons(),
+            "Conversion": abilities.Conversion(),
+            "Fundamental Harmony": abilities.FundamentalHarmony(),
+            "Intensify Elements": abilities.IntensifyElements(),
+            "Chronology": abilities.Chronology(),
+        }
+    )
     spell = abilities.Scorch()
-    baseline_initiative = (
-        player.check_mod("speed", enemy=enemies.Goblin())
-        + player.check_mod("luck", enemy=enemies.Goblin(), luck_factor=10)
+    baseline_initiative = player.check_mod("speed", enemy=enemies.Goblin()) + player.check_mod(
+        "luck", enemy=enemies.Goblin(), luck_factor=10
     )
 
     pathfinder.record_elemental_spell_damage(player, "Fire")

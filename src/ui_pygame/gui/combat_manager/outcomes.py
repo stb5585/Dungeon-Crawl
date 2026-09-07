@@ -16,7 +16,6 @@ from .constants import (
 )
 from .helpers import _player_facing_victory_line
 
-
 POST_DEATH_PAUSE_MS = 75
 
 
@@ -26,7 +25,7 @@ class CombatOutcomeMixin:
         # Pre-turn: process status effects and check activity
         pre = self.engine.pre_turn()
         if pre.effects_text:
-            for line in pre.effects_text.strip().split('\n'):
+            for line in pre.effects_text.strip().split("\n"):
                 if line.strip():
                     self.combat_view.add_combat_message(line)
             self._flush_result_frame(player_char, enemy)
@@ -59,7 +58,7 @@ class CombatOutcomeMixin:
         forced = self.engine.get_forced_action()
         if forced:
             if forced.action == "Cancelled":
-                for line in forced.cancel_message.strip().split('\n'):
+                for line in forced.cancel_message.strip().split("\n"):
                     if line.strip():
                         self.combat_view.add_combat_message(line)
                 self._flush_result_frame(player_char, enemy)
@@ -72,8 +71,10 @@ class CombatOutcomeMixin:
 
             result = self.engine.execute_action(forced.action, choice=forced.choice)
             self._announce_new_resolutions(result)
-            self._record_bestiary_ability_if_visible(player_char, enemy, forced.choice or forced.action)
-            for line in result.message.strip().split('\n'):
+            self._record_bestiary_ability_if_visible(
+                player_char, enemy, forced.choice or forced.action
+            )
+            for line in result.message.strip().split("\n"):
                 if line.strip():
                     self.combat_view.add_combat_message(line)
             self._add_new_player_stun_message(player_char, player_stun_before, result.message)
@@ -86,10 +87,14 @@ class CombatOutcomeMixin:
 
             damage_to_player = max(0, player_hp_before - player_char.health.current)
             if damage_to_player > 0:
-                self._show_combat_damage_effect("player", forced.action, forced.choice, result.message, damage_to_player)
+                self._show_combat_damage_effect(
+                    "player", forced.action, forced.choice, result.message, damage_to_player
+                )
                 self._flush_result_frame(player_char, enemy)
             else:
-                self._show_combat_heal_text("player", max(0, player_char.health.current - player_hp_before))
+                self._show_combat_heal_text(
+                    "player", max(0, player_char.health.current - player_hp_before)
+                )
             self._show_combat_heal_text("enemy", max(0, enemy.health.current - enemy_hp_before))
 
             if result.fled:
@@ -97,9 +102,8 @@ class CombatOutcomeMixin:
             return None
 
         def is_shapeshift_action(action_name, choice_name, skill_obj=None):
-            return (
-                action_name == "Use Skill"
-                and (choice_name == "Shapeshift" or getattr(skill_obj, "name", "") == "Shapeshift")
+            return action_name == "Use Skill" and (
+                choice_name == "Shapeshift" or getattr(skill_obj, "name", "") == "Shapeshift"
             )
 
         def execute_enemy_action(action_name, choice_name, *, pause_after=True):
@@ -117,23 +121,24 @@ class CombatOutcomeMixin:
             slot_cb = None
             skill_obj = None
             if action_name == "Use Skill" and choice_name:
-                skill_obj = enemy.spellbook.get('Skills', {}).get(choice_name)
+                skill_obj = enemy.spellbook.get("Skills", {}).get(choice_name)
                 if skill_obj and skill_obj.name == "Slot Machine":
                     slot_cb = lambda _u, _t: self._show_slot_machine_reveal(player_char, enemy)
 
-            result = self.engine.execute_action(action_name, choice=choice_name, slot_machine_callback=slot_cb)
+            result = self.engine.execute_action(
+                action_name, choice=choice_name, slot_machine_callback=slot_cb
+            )
             self._announce_new_resolutions(result)
             self._record_bestiary_ability_if_visible(player_char, enemy, choice_name or action_name)
-            is_smoke_screen = (
-                action_name == "Use Skill"
-                and (choice_name == "Smoke Screen" or getattr(skill_obj, "name", "") == "Smoke Screen")
+            is_smoke_screen = action_name == "Use Skill" and (
+                choice_name == "Smoke Screen" or getattr(skill_obj, "name", "") == "Smoke Screen"
             )
             action_fled = result.fled or bool(getattr(self.engine, "flee", False))
             if action_fled and is_smoke_screen:
                 self.combat_view.hide_enemy_for_flee()
 
             # Display messages
-            for line in result.message.strip().split('\n'):
+            for line in result.message.strip().split("\n"):
                 if line.strip():
                     self.combat_view.add_combat_message(line)
             self._add_new_player_stun_message(player_char, player_stun_before, result.message)
@@ -151,10 +156,14 @@ class CombatOutcomeMixin:
             # Show damage flash if player took damage
             damage_to_player = max(0, player_hp_before - player_char.health.current)
             if damage_to_player > 0:
-                self._show_combat_damage_effect("player", action_name, choice_name, result.message, damage_to_player)
+                self._show_combat_damage_effect(
+                    "player", action_name, choice_name, result.message, damage_to_player
+                )
                 self._flush_result_frame(player_char, enemy)
             else:
-                self._show_combat_heal_text("player", max(0, player_char.health.current - player_hp_before))
+                self._show_combat_heal_text(
+                    "player", max(0, player_char.health.current - player_hp_before)
+                )
             self._show_combat_heal_text("enemy", max(0, enemy.health.current - enemy_hp_before))
 
             if action_fled:
@@ -177,7 +186,11 @@ class CombatOutcomeMixin:
 
         # Enemy AI chooses action
         action, choice = self.engine.get_enemy_action()
-        skill_obj = enemy.spellbook.get('Skills', {}).get(choice) if action == "Use Skill" and choice else None
+        skill_obj = (
+            enemy.spellbook.get("Skills", {}).get(choice)
+            if action == "Use Skill" and choice
+            else None
+        )
         result_status, shapeshifted = execute_enemy_action(
             action,
             choice,
@@ -189,7 +202,7 @@ class CombatOutcomeMixin:
         if shapeshifted and player_char.is_alive():
             follow_action, follow_choice = self.engine.get_enemy_action()
             follow_skill = (
-                enemy.spellbook.get('Skills', {}).get(follow_choice)
+                enemy.spellbook.get("Skills", {}).get(follow_choice)
                 if follow_action == "Use Skill" and follow_choice
                 else None
             )
@@ -201,7 +214,9 @@ class CombatOutcomeMixin:
 
         return None
 
-    def _add_new_player_stun_message(self, player_char, was_stunned: bool, result_message: str) -> None:
+    def _add_new_player_stun_message(
+        self, player_char, was_stunned: bool, result_message: str
+    ) -> None:
         """Ensure newly-applied player stun is visible even when an effect omits text."""
         stun = getattr(player_char, "status_effects", {}).get("Stun")
         is_stunned = bool(getattr(stun, "active", False))
@@ -253,9 +268,8 @@ class CombatOutcomeMixin:
             }
             show_enemy_details = details_by_id[focus_id]
             for member in encounter.members:
-                if (
-                    details_by_id[member.combatant_id]
-                    and hasattr(player_char, "record_bestiary_enemy")
+                if details_by_id[member.combatant_id] and hasattr(
+                    player_char, "record_bestiary_enemy"
                 ):
                     player_char.record_bestiary_enemy(
                         member.enemy,
@@ -267,10 +281,7 @@ class CombatOutcomeMixin:
             show_enemy_details = None
             if self.engine is not None and hasattr(self.engine, "show_enemy_details"):
                 show_enemy_details = self.engine.show_enemy_details()
-            if (
-                show_enemy_details
-                and hasattr(player_char, "record_bestiary_enemy")
-            ):
+            if show_enemy_details and hasattr(player_char, "record_bestiary_enemy"):
                 player_char.record_bestiary_enemy(
                     enemy,
                     getattr(enemy, "enemy_typ", None),
@@ -328,12 +339,15 @@ class CombatOutcomeMixin:
     def _handle_combat_end(self, player_char, enemy, fled):
         """Handle end of combat using the engine for bookkeeping."""
 
-        def _show_end_popup(message_text: str, *, background=None, refresh_background: bool = True) -> None:
+        def _show_end_popup(
+            message_text: str, *, background=None, refresh_background: bool = True
+        ) -> None:
             if refresh_background:
                 self._refresh_combat_background(player_char, enemy)
             background = background or self._combat_background or self._capture_background()
             draw_background = lambda: self.screen.blit(background, (0, 0))
             from ..confirmation_popup import ConfirmationPopup
+
             popup = ConfirmationPopup(self.presenter, message_text, show_buttons=False)
             popup.show(
                 background_draw_func=draw_background,
@@ -410,14 +424,12 @@ class CombatOutcomeMixin:
                 if encounter is not None
                 else []
             )
-            if (
-                encounter is None
-                and getattr(enemy, "tamed_by_player", False)
-            ):
+            if encounter is None and getattr(enemy, "tamed_by_player", False):
                 tamed_members = [type("_TamedMember", (), {"enemy": enemy})()]
-            tamed_victory = bool(tamed_members) and len(
-                encounter.members if encounter is not None else [enemy]
-            ) == 1
+            tamed_victory = (
+                bool(tamed_members)
+                and len(encounter.members if encounter is not None else [enemy]) == 1
+            )
             repelled_victory = bool(getattr(enemy, "paladin_repelled", False))
             # Build end messages from outcome
             if encounter is not None and len(encounter.members) > 1:
@@ -462,7 +474,7 @@ class CombatOutcomeMixin:
                         )
                     )
             else:
-                for line in outcome.message.strip().split('\n'):
+                for line in outcome.message.strip().split("\n"):
                     if line.strip():
                         end_messages.append(
                             _player_facing_victory_line(

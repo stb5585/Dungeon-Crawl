@@ -23,11 +23,13 @@ from tests.test_framework import TestGameState
 
 class TestEquipmentBasics:
     """Test basic equipment operations."""
-    
+
     def test_player_starts_with_equipment(self):
         """Verify player has initial equipment from class defaults."""
-        player = TestGameState.create_player(name="TestPlayer", class_name="Warrior", race_name="Human")
-        
+        player = TestGameState.create_player(
+            name="TestPlayer", class_name="Warrior", race_name="Human"
+        )
+
         assert player.equipment is not None
         assert "Weapon" in player.equipment
         assert "Armor" in player.equipment
@@ -35,14 +37,16 @@ class TestEquipmentBasics:
         assert "OffHand" in player.equipment
         assert "Ring" in player.equipment
         assert "Pendant" in player.equipment
-    
+
     def test_equipment_items_are_not_none(self):
         """Verify all equipment slots have valid items."""
-        player = TestGameState.create_player(name="TestPlayer", class_name="Warrior", race_name="Human")
-        
+        player = TestGameState.create_player(
+            name="TestPlayer", class_name="Warrior", race_name="Human"
+        )
+
         for slot, item in player.equipment.items():
             assert item is not None, f"Equipment slot {slot} should not be None"
-            assert hasattr(item, 'name'), f"Equipment in {slot} should have a name attribute"
+            assert hasattr(item, "name"), f"Equipment in {slot} should have a name attribute"
 
     def test_weapon_crit_chance_alias_tracks_legacy_crit(self):
         """Weapons expose crit_chance while preserving legacy crit storage."""
@@ -76,7 +80,9 @@ class TestEquipmentBasics:
 
     def test_character_critical_chance_prefers_crit_chance_alias(self):
         """Character crit math should use the clearer weapon API when present."""
-        player = TestGameState.create_player(name="TestPlayer", class_name="Warrior", race_name="Human")
+        player = TestGameState.create_player(
+            name="TestPlayer", class_name="Warrior", race_name="Human"
+        )
         legacy_weapon = SimpleNamespace(crit=0.0)
         aliased_weapon = SimpleNamespace(crit=0.0, crit_chance=0.4)
 
@@ -88,85 +94,96 @@ class TestEquipmentBasics:
 
         assert aliased_chance > legacy_chance
 
+
 class TestTwoHandedWeaponLogic:
     """Test two-handed weapon equipping and offhand conflicts."""
-    
+
     def test_2h_weapon_has_correct_hand_count(self):
         """Verify 2H weapons are correctly marked as 2-handed."""
         two_handed = items.Claymore()
         assert two_handed.handed == 2, "Claymore should be 2-handed"
-        
+
         two_handed_2 = items.Greataxe()
         assert two_handed_2.handed == 2, "Greataxe should be 2-handed"
-    
+
     def test_lancer_can_equip_polearm_with_shield(self):
         """Verify Lancer/Dragoon can keep shield with polearm."""
-        player = TestGameState.create_player(name="TestPlayer", class_name="Lancer", race_name="Human")
-        
+        player = TestGameState.create_player(
+            name="TestPlayer", class_name="Lancer", race_name="Human"
+        )
+
         # Start with shield
-        player.equipment['OffHand'] = items.Buckler()
-        shield_name = player.equipment['OffHand'].name
-        
+        player.equipment["OffHand"] = items.Buckler()
+        shield_name = player.equipment["OffHand"].name
+
         # Equip polearm (2H but Lancer can use with shield)
         polearm = items.Partisan()
-        assert polearm.subtyp == 'Polearm'
+        assert polearm.subtyp == "Polearm"
         assert polearm.handed == 2
-        
-        result = player.equip('Weapon', polearm, check=True)
+
+        result = player.equip("Weapon", polearm, check=True)
         assert result is True
-        
+
         # Shield should still be equipped
-        assert player.equipment['OffHand'].name == shield_name
-        assert player.equipment['Weapon'].name == 'Partisan'
-    
+        assert player.equipment["OffHand"].name == shield_name
+        assert player.equipment["Weapon"].name == "Partisan"
+
     def test_dragoon_can_equip_polearm_with_shield(self):
         """Verify Dragoon (promotion of Lancer) can keep shield with polearm."""
-        player = TestGameState.create_player(name="TestPlayer", class_name="Dragoon", race_name="Human")
-        
+        player = TestGameState.create_player(
+            name="TestPlayer", class_name="Dragoon", race_name="Human"
+        )
+
         # Start with shield
-        player.equipment['OffHand'] = items.Buckler()
-        
+        player.equipment["OffHand"] = items.Buckler()
+
         # Equip polearm
         polearm = items.Framea()
-        assert polearm.subtyp == 'Polearm'
-        result = player.equip('Weapon', polearm, check=True)
+        assert polearm.subtyp == "Polearm"
+        result = player.equip("Weapon", polearm, check=True)
         assert result is True
-        
+
         # Shield should still be equipped
-        assert player.equipment['OffHand'].name == 'Buckler'
-        assert player.equipment['Weapon'].name == 'Framea'
+        assert player.equipment["OffHand"].name == "Buckler"
+        assert player.equipment["Weapon"].name == "Framea"
 
     def test_hierophant_can_equip_two_handed_staff_with_shield(self):
         """Verify Staff Conduit lets Hierophant keep a shield with a two-handed staff."""
-        player = TestGameState.create_player(name="TestPlayer", class_name="Hierophant", race_name="Human")
+        player = TestGameState.create_player(
+            name="TestPlayer", class_name="Hierophant", race_name="Human"
+        )
         player.spellbook["Skills"]["Staff Conduit"] = abilities.StaffConduit()
-        player.equipment['OffHand'] = items.Buckler()
+        player.equipment["OffHand"] = items.Buckler()
         staff = items.Quarterstaff()
         player.inventory[staff.name] = [staff]
 
-        result = player.equip('Weapon', staff)
+        result = player.equip("Weapon", staff)
 
         assert result is True
-        assert player.equipment['OffHand'].name == 'Buckler'
-        assert player.equipment['Weapon'].name == 'Quarterstaff'
+        assert player.equipment["OffHand"].name == "Buckler"
+        assert player.equipment["Weapon"].name == "Quarterstaff"
 
     def test_non_hierophant_staff_user_loses_offhand_to_two_handed_staff(self):
         """Verify two-handed staff/offhand compatibility is gated by Staff Conduit."""
-        player = TestGameState.create_player(name="TestPlayer", class_name="Cleric", race_name="Human")
-        player.equipment['OffHand'] = items.Buckler()
+        player = TestGameState.create_player(
+            name="TestPlayer", class_name="Cleric", race_name="Human"
+        )
+        player.equipment["OffHand"] = items.Buckler()
         staff = items.Quarterstaff()
         player.inventory[staff.name] = [staff]
 
-        result = player.equip('Weapon', staff)
+        result = player.equip("Weapon", staff)
 
         assert result is True
-        assert player.equipment['OffHand'].name == 'No OffHand'
-        assert player.equipment['Weapon'].name == 'Quarterstaff'
-    
+        assert player.equipment["OffHand"].name == "No OffHand"
+        assert player.equipment["Weapon"].name == "Quarterstaff"
+
     def test_berserker_2h_weapon_logic(self):
         """Verify Berserker is not Lancer/Dragoon for 2H polearm exception."""
-        berserker = TestGameState.create_player(name="TestPlayer", class_name="Berserker", race_name="Human")
-        
+        berserker = TestGameState.create_player(
+            name="TestPlayer", class_name="Berserker", race_name="Human"
+        )
+
         # Berserker should NOT have the Lancer/Dragoon polearm+shield exception
         assert berserker.cls.name == "Berserker"
         assert berserker.cls.name not in ["Lancer", "Dragoon"]
@@ -174,35 +191,38 @@ class TestTwoHandedWeaponLogic:
 
 class TestClassEquipmentRestrictions:
     """Test class-specific equipment restrictions."""
-    
+
     def test_warrior_can_equip_warrior_sword(self):
         """Verify Warrior can equip Warrior-class weapons."""
-        player = TestGameState.create_player(name="TestPlayer", class_name="Warrior", race_name="Human")
-        
+        player = TestGameState.create_player(
+            name="TestPlayer", class_name="Warrior", race_name="Human"
+        )
+
         # Equip class-appropriate weapon
         weapon = items.Claymore()
-        result = player.equip('Weapon', weapon, check=True)
+        result = player.equip("Weapon", weapon, check=True)
         assert result is True
-        assert player.equipment['Weapon'].name == 'Claymore'
-    
+        assert player.equipment["Weapon"].name == "Claymore"
+
     def test_different_classes_different_equipment(self):
         """Verify different classes prefer different equipment types."""
-        warrior = TestGameState.create_player(name="Warrior", class_name="Warrior", race_name="Human")
+        warrior = TestGameState.create_player(
+            name="Warrior", class_name="Warrior", race_name="Human"
+        )
         rogue = TestGameState.create_player(name="Rogue", class_name="Thief", race_name="Human")
         mage = TestGameState.create_player(name="Mage", class_name="Mage", race_name="Human")
-        
+
         # All should have weapons but may be different types
-        assert warrior.equipment['Weapon'] is not None
-        assert rogue.equipment['Weapon'] is not None
-        assert mage.equipment['Weapon'] is not None
+        assert warrior.equipment["Weapon"] is not None
+        assert rogue.equipment["Weapon"] is not None
+        assert mage.equipment["Weapon"] is not None
 
     def test_can_equip_item_checks_restrictions_without_mutating_equipment(self):
         """Player.can_equip_item reports eligibility without performing an equip."""
-        warrior = TestGameState.create_player(name="Warrior", class_name="Warrior", race_name="Human")
-        original_equipment = {
-            slot: item.name
-            for slot, item in warrior.equipment.items()
-        }
+        warrior = TestGameState.create_player(
+            name="Warrior", class_name="Warrior", race_name="Human"
+        )
+        original_equipment = {slot: item.name for slot, item in warrior.equipment.items()}
 
         assert warrior.can_equip_item(items.Claymore(), "Weapon") is True
         assert warrior.can_equip_item(items.Rondel(), "OffHand") is False
@@ -210,25 +230,24 @@ class TestClassEquipmentRestrictions:
         assert warrior.can_equip_item(items.PowerRing()) is True
         assert warrior.can_equip_item(items.HealthPotion()) is False
 
-        assert {
-            slot: item.name
-            for slot, item in warrior.equipment.items()
-        } == original_equipment
+        assert {slot: item.name for slot, item in warrior.equipment.items()} == original_equipment
 
 
 class TestOffHandEquipment:
     """Test off-hand equipment handling."""
-    
+
     def test_dual_wield_compatible_weapons(self):
         """Verify can equip compatible off-hand weapons."""
-        player = TestGameState.create_player(name="TestPlayer", class_name="Warrior", race_name="Human")
-        
+        player = TestGameState.create_player(
+            name="TestPlayer", class_name="Warrior", race_name="Human"
+        )
+
         # Main hand weapon
-        player.equipment['Weapon'] = items.Mace()
-        
+        player.equipment["Weapon"] = items.Mace()
+
         # Off-hand: shields are valid off-hand
         offhand = items.Buckler()
-        result = player.equip('OffHand', offhand, check=True)
+        result = player.equip("OffHand", offhand, check=True)
         assert result is True
 
     def test_dual_wield_skill_unlocks_one_handed_offhand_weapon(self):
@@ -241,26 +260,28 @@ class TestOffHandEquipment:
 
         assert player.equip("OffHand", dagger, check=True) is False
         player.spellbook["Skills"]["Dual Wield"] = abilities.DualWield()
-        ensure_progression(player).purchased_node_ids.add(
-            "weapon-master.ability.dual-wield"
-        )
+        ensure_progression(player).purchased_node_ids.add("weapon-master.ability.dual-wield")
 
         assert player.equip("OffHand", dagger, check=True) is True
-    
+
     def test_shield_in_offhand_slot(self):
         """Verify shields can be equipped in off-hand."""
-        player = TestGameState.create_player(name="TestPlayer", class_name="Warrior", race_name="Human")
-        
+        player = TestGameState.create_player(
+            name="TestPlayer", class_name="Warrior", race_name="Human"
+        )
+
         shield = items.Buckler()
-        assert shield.subtyp == 'Shield'
-        
-        result = player.equip('OffHand', shield, check=True)
+        assert shield.subtyp == "Shield"
+
+        result = player.equip("OffHand", shield, check=True)
         assert result is True
-        assert player.equipment['OffHand'].name == 'Buckler'
+        assert player.equipment["OffHand"].name == "Buckler"
 
     def test_soulcatcher_can_equip_indras_fist_offhand(self):
         """Soulcatcher can dual-wield fist weapons such as Indra's Fist."""
-        player = TestGameState.create_player(name="TestPlayer", class_name="Soulcatcher", race_name="Human")
+        player = TestGameState.create_player(
+            name="TestPlayer", class_name="Soulcatcher", race_name="Human"
+        )
 
         player.equipment["Weapon"] = items.IndrasFist()
         result = player.equip("OffHand", items.IndrasFist(), check=True)
@@ -272,33 +293,39 @@ class TestOffHandEquipment:
 
 class TestEquipmentSlots:
     """Test all equipment slots."""
-    
+
     def test_all_equipment_slots_exist(self):
         """Verify all 5 equipment slots are present."""
-        player = TestGameState.create_player(name="TestPlayer", class_name="Warrior", race_name="Human")
-        
-        required_slots = ['Weapon', 'Armor', 'Helmet', 'OffHand', 'Ring', 'Pendant']
+        player = TestGameState.create_player(
+            name="TestPlayer", class_name="Warrior", race_name="Human"
+        )
+
+        required_slots = ["Weapon", "Armor", "Helmet", "OffHand", "Ring", "Pendant"]
         for slot in required_slots:
             assert slot in player.equipment, f"Missing equipment slot: {slot}"
-    
+
     def test_armor_slot_contains_armor(self):
         """Verify armor slot contains armor type."""
-        player = TestGameState.create_player(name="TestPlayer", class_name="Warrior", race_name="Human")
-        
-        armor = player.equipment['Armor']
+        player = TestGameState.create_player(
+            name="TestPlayer", class_name="Warrior", race_name="Human"
+        )
+
+        armor = player.equipment["Armor"]
         assert armor is not None
-        assert hasattr(armor, 'subtyp')
+        assert hasattr(armor, "subtyp")
         # Should be 'Light', 'Medium', 'Heavy', or 'None'
-        assert armor.subtyp in ['Light', 'Medium', 'Heavy', 'None']
+        assert armor.subtyp in ["Light", "Medium", "Heavy", "None"]
 
     def test_helmet_slot_contains_helmet_and_adds_defense(self):
         """Verify helmet slot contains helmet type and contributes to defense."""
-        player = TestGameState.create_player(name="TestPlayer", class_name="Warrior", race_name="Human")
+        player = TestGameState.create_player(
+            name="TestPlayer", class_name="Warrior", race_name="Human"
+        )
 
-        helmet = player.equipment['Helmet']
+        helmet = player.equipment["Helmet"]
         assert helmet is not None
-        assert hasattr(helmet, 'subtyp')
-        assert helmet.subtyp in ['Cloth', 'Light', 'Medium', 'Heavy', 'None']
+        assert hasattr(helmet, "subtyp")
+        assert helmet.subtyp in ["Cloth", "Light", "Medium", "Heavy", "None"]
 
         base_defense = player.check_mod("armor")
         player.equipment["Helmet"] = items.IronHelm()
@@ -318,60 +345,70 @@ class TestEquipmentSlots:
         assert wizard.equip("Helmet", items.MitreHat(), check=True) is False
         assert wizard.equip("Helmet", items.Circlet(), check=True) is True
 
-        player = TestGameState.create_player(name="TestPlayer", class_name="Warrior", race_name="Human")
+        player = TestGameState.create_player(
+            name="TestPlayer", class_name="Warrior", race_name="Human"
+        )
         player.equipment["Helmet"] = items.CohuleenDruith()
         assert player.check_mod("resist", typ="Water") == 0.5
 
         player.equipment["Helmet"] = items.DemonCowl()
         assert player.check_mod("resist", typ="Death") == 0.5
-    
+
     def test_ring_slot_contains_ring(self):
         """Verify ring slot contains ring or empty."""
-        player = TestGameState.create_player(name="TestPlayer", class_name="Warrior", race_name="Human")
-        
-        ring = player.equipment['Ring']
+        player = TestGameState.create_player(
+            name="TestPlayer", class_name="Warrior", race_name="Human"
+        )
+
+        ring = player.equipment["Ring"]
         assert ring is not None
-        assert hasattr(ring, 'name')
-    
+        assert hasattr(ring, "name")
+
     def test_pendant_slot_contains_pendant(self):
         """Verify pendant slot contains pendant or empty."""
-        player = TestGameState.create_player(name="TestPlayer", class_name="Warrior", race_name="Human")
-        
-        pendant = player.equipment['Pendant']
+        player = TestGameState.create_player(
+            name="TestPlayer", class_name="Warrior", race_name="Human"
+        )
+
+        pendant = player.equipment["Pendant"]
         assert pendant is not None
-        assert hasattr(pendant, 'name')
+        assert hasattr(pendant, "name")
 
 
 class TestEquipmentEdgeCases:
     """Test edge cases and error conditions."""
-    
+
     def test_equip_same_item_twice(self):
         """Verify can't equip same item instance in multiple slots."""
-        player = TestGameState.create_player(name="TestPlayer", class_name="Warrior", race_name="Human")
-        
+        player = TestGameState.create_player(
+            name="TestPlayer", class_name="Warrior", race_name="Human"
+        )
+
         sword = items.Mace()
-        player.equipment['Weapon'] = sword
-        
+        player.equipment["Weapon"] = sword
+
         # Trying to equip same item in OffHand should still work
         # (items might allow it or game prevents it)
         # This documents current behavior
-        result = player.equip('OffHand', sword, check=True)
+        result = player.equip("OffHand", sword, check=True)
         # Result depends on implementation - just verify no crash
         assert isinstance(result, bool)
-    
+
     def test_unequip_and_reequip(self):
         """Verify can unequip and re-equip items."""
-        player = TestGameState.create_player(name="TestPlayer", class_name="Warrior", race_name="Human")
-        
-        original_weapon = player.equipment['Weapon']
+        player = TestGameState.create_player(
+            name="TestPlayer", class_name="Warrior", race_name="Human"
+        )
+
+        original_weapon = player.equipment["Weapon"]
         new_weapon = items.Claymore()
-        
+
         # Equip new weapon
-        player.equip('Weapon', new_weapon, check=True)
-        assert player.equipment['Weapon'].name == 'Claymore'
-        
+        player.equip("Weapon", new_weapon, check=True)
+        assert player.equipment["Weapon"].name == "Claymore"
+
         # Equipment changed successfully
-        assert player.equipment['Weapon'].name != original_weapon.name
+        assert player.equipment["Weapon"].name != original_weapon.name
 
 
 def run_tests():
@@ -380,17 +417,13 @@ def run_tests():
     print("EQUIPMENT SYSTEM TESTS")
     print("=" * 70)
     print()
-    
+
     import pytest
-    exit_code = pytest.main([
-        __file__,
-        '-v',
-        '--tb=short',
-        '--color=yes'
-    ])
-    
+
+    exit_code = pytest.main([__file__, "-v", "--tb=short", "--color=yes"])
+
     return exit_code
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(run_tests())

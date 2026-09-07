@@ -19,15 +19,15 @@ from .event_bus import (
 )
 
 __all__ = [
-    'EventType',
-    'GameEvent',
-    'CombatEvent',
-    'EventDispatchFailure',
-    'EventBus',
-    'get_event_bus',
-    'reset_event_bus',
-    'create_combat_event',
-    'create_ui_event',
-    'ConsoleEventLogger',
-    'CombatEventCollector',
+    "EventType",
+    "GameEvent",
+    "CombatEvent",
+    "EventDispatchFailure",
+    "EventBus",
+    "get_event_bus",
+    "reset_event_bus",
+    "create_combat_event",
+    "create_ui_event",
+    "ConsoleEventLogger",
+    "CombatEventCollector",
 ]

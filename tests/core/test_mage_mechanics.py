@@ -52,30 +52,16 @@ def test_specialization_reduces_only_the_competing_school_by_twenty_five_percent
     arcane = _player()
     arcane.spellbook["Skills"]["Arcane Tradition"] = abilities.ArcaneTradition()
 
-    assert mage_mechanics.spell_potency_multiplier(
-        elemental, abilities.MagicMissile()
-    ) == 0.75
-    assert mage_mechanics.spell_potency_multiplier(
-        elemental, abilities.Firebolt()
-    ) == 1.0
-    assert mage_mechanics.spell_potency_multiplier(
-        arcane, abilities.Firebolt()
-    ) == 0.75
-    assert mage_mechanics.spell_potency_multiplier(
-        arcane, abilities.MagicMissile()
-    ) == 1.0
+    assert mage_mechanics.spell_potency_multiplier(elemental, abilities.MagicMissile()) == 0.75
+    assert mage_mechanics.spell_potency_multiplier(elemental, abilities.Firebolt()) == 1.0
+    assert mage_mechanics.spell_potency_multiplier(arcane, abilities.Firebolt()) == 0.75
+    assert mage_mechanics.spell_potency_multiplier(arcane, abilities.MagicMissile()) == 1.0
 
-    elemental.spellbook["Skills"]["Classical Enrichment"] = (
-        abilities.ClassicalEnrichment()
-    )
+    elemental.spellbook["Skills"]["Classical Enrichment"] = abilities.ClassicalEnrichment()
     arcane.spellbook["Skills"]["Arcane Ritual"] = abilities.ArcaneRitual()
 
-    assert mage_mechanics.spell_potency_multiplier(
-        elemental, abilities.MagicMissile()
-    ) == 0.50
-    assert mage_mechanics.spell_potency_multiplier(
-        arcane, abilities.Firebolt()
-    ) == 0.50
+    assert mage_mechanics.spell_potency_multiplier(elemental, abilities.MagicMissile()) == 0.50
+    assert mage_mechanics.spell_potency_multiplier(arcane, abilities.Firebolt()) == 0.50
 
 
 def test_targeted_passives_are_embedded_in_affected_spell_descriptions():
@@ -100,26 +86,30 @@ def test_targeted_passives_are_embedded_in_affected_spell_descriptions():
 
 def test_arcane_fundamentals_boosts_critical_bonus_by_twenty_percent_only():
     player = _player()
-    player.progression.purchased_node_ids.add(
-        "mage.talent.arcane-fundamentals"
-    )
+    player.progression.purchased_node_ids.add("mage.talent.arcane-fundamentals")
     magic_before = player.combat.magic
 
-    assert mage_mechanics.arcane_critical_multiplier(
-        player,
-        2.0,
-        abilities.MagicMissile(),
-    ) == 2.2
-    assert mage_mechanics.arcane_critical_multiplier(
-        player,
-        2.0,
-        abilities.ManaRupture(),
-    ) == 2.0
+    assert (
+        mage_mechanics.arcane_critical_multiplier(
+            player,
+            2.0,
+            abilities.MagicMissile(),
+        )
+        == 2.2
+    )
+    assert (
+        mage_mechanics.arcane_critical_multiplier(
+            player,
+            2.0,
+            abilities.ManaRupture(),
+        )
+        == 2.0
+    )
     player.spellbook["Spells"]["Magic Missile"] = abilities.MagicMissile()
     missile = presented_abilities(player, "Spells")[0]
-    assert [
-        modifier.name for modifier in missile.presentation_modifications
-    ] == ["Guidance Upgrade"]
+    assert [modifier.name for modifier in missile.presentation_modifications] == [
+        "Guidance Upgrade"
+    ]
     assert player.combat.magic == magic_before
 
 
@@ -153,12 +143,8 @@ def test_enhancements_proc_refresh_without_stacking():
     player = _player("Sorcerer")
     player.spellbook["Skills"]["Wind Currents"] = abilities.WindCurrents()
 
-    first = mage_mechanics.process_cast(
-        player, abilities.Gust(), rng=FixedRng
-    )
-    second = mage_mechanics.process_cast(
-        player, abilities.Gust(), rng=FixedRng
-    )
+    first = mage_mechanics.process_cast(player, abilities.Gust(), rng=FixedRng)
+    second = mage_mechanics.process_cast(player, abilities.Gust(), rng=FixedRng)
 
     assert "Wind Currents" in first
     assert "Wind Currents" in second
@@ -171,9 +157,7 @@ def test_refreshment_restores_five_percent_of_max_resources():
     player = _player()
     player.spellbook["Skills"]["Refreshment"] = abilities.Refreshment()
 
-    message = mage_mechanics.process_cast(
-        player, abilities.WaterJet(), rng=FixedRng
-    )
+    message = mage_mechanics.process_cast(player, abilities.WaterJet(), rng=FixedRng)
 
     assert player.health.current == 110
     assert player.mana.current == 88
@@ -203,9 +187,7 @@ def test_transient_companion_replaces_prior_one_acts_and_expires():
         is_alive=lambda: True,
     )
 
-    message = mage_mechanics.transient_companion_action(
-        player, [enemy], rng=FixedRng
-    )
+    message = mage_mechanics.transient_companion_action(player, [enemy], rng=FixedRng)
 
     assert "Undead Goblin acts independently" in message
     assert enemy.health.current == 91
@@ -334,9 +316,7 @@ def test_bosses_strongly_resist_polymorph_without_immunity(monkeypatch):
 
 def test_enliven_dead_uses_last_nonboss_enemy_and_forbidden_studies(monkeypatch):
     player = _player()
-    player.progression.purchased_node_ids.add(
-        "mage.talent.forbidden-studies"
-    )
+    player.progression.purchased_node_ids.add("mage.talent.forbidden-studies")
     player.last_defeated_enemy = {
         "name": "Goblin",
         "enemy_type": "Humanoid",
@@ -366,9 +346,7 @@ def test_enliven_dead_uses_last_nonboss_enemy_and_forbidden_studies(monkeypatch)
 
 def test_forbidden_studies_only_increases_shadow_bolt_spell_damage():
     player = _player()
-    player.progression.purchased_node_ids.add(
-        "mage.talent.forbidden-studies"
-    )
+    player.progression.purchased_node_ids.add("mage.talent.forbidden-studies")
 
     assert mage_mechanics.spell_damage_multiplier(
         player,
@@ -402,11 +380,10 @@ def test_conjure_shackles_and_potion_apply_first_pass_rules(monkeypatch):
     assert "conjures" in potion_message
     assert player.conjure_potion_cooldown == 50
     assert any("Health Potion" in name for name in player.inventory)
-    assert {
-        item.subtyp
-        for item_list in player.inventory.values()
-        for item in item_list
-    } <= {"Health", "Mana"}
+    assert {item.subtyp for item_list in player.inventory.values() for item in item_list} <= {
+        "Health",
+        "Mana",
+    }
 
 
 def test_classical_force_reduces_mana_shield_and_imbue_weapon_by_twenty_five_percent(
@@ -474,15 +451,9 @@ def test_fragmentation_shards_persist_until_detonation_cascade(monkeypatch):
     target = enemies.Goblin()
     target.health.current = target.health.max = 1000
     player.spellbook["Skills"]["Fragmentation"] = abilities.Fragmentation()
-    player.spellbook["Skills"]["Detonation Cascade"] = (
-        abilities.DetonationCascade()
-    )
-    player.spellbook["Skills"]["Arcane Empowerment"] = (
-        abilities.ArcaneEmpowerment()
-    )
-    player._combat_encounter = SimpleNamespace(
-        living_members=[SimpleNamespace(enemy=target)]
-    )
+    player.spellbook["Skills"]["Detonation Cascade"] = abilities.DetonationCascade()
+    player.spellbook["Skills"]["Arcane Empowerment"] = abilities.ArcaneEmpowerment()
+    player._combat_encounter = SimpleNamespace(living_members=[SimpleNamespace(enemy=target)])
     monkeypatch.setattr(mage_mechanics.random, "random", lambda: 0.0)
 
     for _index in range(3):
@@ -514,9 +485,7 @@ def test_mana_rupture_modifiers_consume_empowerment_and_shards():
         "arcane_empowerment": 3,
         "arcane_crystal_shards": 4,
     }
-    player._combat_encounter = SimpleNamespace(
-        living_members=[SimpleNamespace(enemy=target)]
-    )
+    player._combat_encounter = SimpleNamespace(living_members=[SimpleNamespace(enemy=target)])
     player.mana.current = 0
 
     message = mage_mechanics.resolve_mana_rupture(player, target)

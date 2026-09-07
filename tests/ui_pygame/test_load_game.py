@@ -88,13 +88,22 @@ def test_load_game_draw_helpers_and_data_loading(monkeypatch):
             return DummySurface((90, 160), text="portrait")
 
     monkeypatch.setattr(load_game, "PortraitManager", FakePortraitManager)
-    monkeypatch.setattr(load_game.pygame.transform, "smoothscale", lambda surface, size: DummySurface(size, text="scaled-portrait"))
+    monkeypatch.setattr(
+        load_game.pygame.transform,
+        "smoothscale",
+        lambda surface, size: DummySurface(size, text="scaled-portrait"),
+    )
     screen = load_game.LoadGameScreen(presenter)
 
     draw_calls = []
-    monkeypatch.setattr("src.ui_pygame.gui.load_game.pygame.draw.rect", lambda *_args, **_kwargs: draw_calls.append((_args, _kwargs)))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.load_game.pygame.draw.rect",
+        lambda *_args, **_kwargs: draw_calls.append((_args, _kwargs)),
+    )
     flip_calls = []
-    monkeypatch.setattr("src.ui_pygame.gui.load_game.pygame.display.flip", lambda: flip_calls.append(True))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.load_game.pygame.display.flip", lambda: flip_calls.append(True)
+    )
 
     player_a = SimpleNamespace(
         name="hero",
@@ -122,7 +131,9 @@ def test_load_game_draw_helpers_and_data_loading(monkeypatch):
             metadata["is_file"] = False
         return metadata
 
-    monkeypatch.setattr(load_game.SaveManager, "describe_save_file", staticmethod(fake_describe_save_file))
+    monkeypatch.setattr(
+        load_game.SaveManager, "describe_save_file", staticmethod(fake_describe_save_file)
+    )
     monkeypatch.setattr(load_game.SaveManager, "load_player", staticmethod(fake_load_player))
     screen.load_save_files(["a.save", "b.save", "c.save"])
 
@@ -143,7 +154,10 @@ def test_load_game_draw_helpers_and_data_loading(monkeypatch):
     screen.draw_char_info()
     assert portrait_calls[-1][0][:2] == ("Human", "Female")
     assert portrait_calls[-1][1]["variant"] == 3
-    assert any(getattr(surface, "text", None) == "scaled-portrait" for surface, _pos in presenter.screen.blit_calls)
+    assert any(
+        getattr(surface, "text", None) == "scaled-portrait"
+        for surface, _pos in presenter.screen.blit_calls
+    )
     assert "Level: 5" in presenter.small_font.render_calls
     assert "Race: Human" in presenter.small_font.render_calls
     assert "Sex: Female" in presenter.small_font.render_calls
@@ -168,7 +182,9 @@ def test_load_game_draw_helpers_and_data_loading(monkeypatch):
     screen.draw_file_list()
     assert "No save files found" in presenter.normal_font.render_calls
 
-    screen.save_data = [{"name": "Hero", "level": 5, "race": "Human", "class": "Warrior", "file": "a.save"}]
+    screen.save_data = [
+        {"name": "Hero", "level": 5, "race": "Human", "class": "Warrior", "file": "a.save"}
+    ]
     screen.current_selection = 0
     screen.draw_all()
     assert presenter.screen.fill_calls
@@ -187,45 +203,73 @@ def test_load_game_navigation_selects_and_cancels(monkeypatch):
     monkeypatch.setattr(screen, "load_save_files", lambda _save_files: None)
     monkeypatch.setattr(screen, "draw_all", lambda: None)
 
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)],
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.load_game.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.load_game.pygame.event.get", lambda: next(event_batches, [])
+    )
     assert screen.navigate(["a.save", "b.save"]) == "b.save"
 
     screen.current_selection = 0
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_ESCAPE)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.load_game.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_ESCAPE)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.load_game.pygame.event.get", lambda: next(event_batches, [])
+    )
     assert screen.navigate(["a.save", "b.save"]) is None
 
     clear_calls = []
     pressed_states = iter([[], []])
-    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: next(pressed_states, []))
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)],
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.load_game.pygame.event.get", lambda: next(event_batches, []))
-    monkeypatch.setattr("src.ui_pygame.gui.load_game.pygame.event.clear", lambda: clear_calls.append(True))
-    assert screen.navigate(["a.save", "b.save"], flush_events=True, require_key_release=True) == "b.save"
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: next(pressed_states, [])
+    )
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.load_game.pygame.event.get", lambda: next(event_batches, [])
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.load_game.pygame.event.clear", lambda: clear_calls.append(True)
+    )
+    assert (
+        screen.navigate(["a.save", "b.save"], flush_events=True, require_key_release=True)
+        == "b.save"
+    )
     assert clear_calls == [True]
 
     screen.current_selection = 0
     monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
     event_batches = iter([[SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)]])
-    monkeypatch.setattr("src.ui_pygame.gui.load_game.pygame.event.get", lambda: next(event_batches, []))
-    assert screen.navigate(["a.save", "b.save"], flush_events=True, require_key_release=True) == "a.save"
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.load_game.pygame.event.get", lambda: next(event_batches, [])
+    )
+    assert (
+        screen.navigate(["a.save", "b.save"], flush_events=True, require_key_release=True)
+        == "a.save"
+    )
 
     screen.current_selection = 0
     click_pos = screen.save_row_rects()[1].center
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.MOUSEMOTION, pos=click_pos)],
-        [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=click_pos)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.load_game.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.MOUSEMOTION, pos=click_pos)],
+            [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=click_pos)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.load_game.pygame.event.get", lambda: next(event_batches, [])
+    )
     assert screen.navigate(["a.save", "b.save"]) == "b.save"
 
 
@@ -233,20 +277,19 @@ def test_load_game_scrolls_visible_save_window(monkeypatch):
     presenter = _make_presenter()
     screen = load_game.LoadGameScreen(presenter)
     screen.save_data = [
-        {"name": f"Hero {index}", "level": index, "file": f"{index}.save"}
-        for index in range(14)
+        {"name": f"Hero {index}", "level": index, "file": f"{index}.save"} for index in range(14)
     ]
     screen.save_files = [entry["file"] for entry in screen.save_data]
     monkeypatch.setattr(screen, "load_save_files", lambda _save_files: None)
     monkeypatch.setattr(screen, "draw_all", lambda: None)
 
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)]
-        for _index in range(11)
-    ] + [
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)]
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.load_game.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [[SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)] for _index in range(11)]
+        + [[SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)]]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.load_game.pygame.event.get", lambda: next(event_batches, [])
+    )
 
     assert screen.navigate(screen.save_files) == "11.save"
     assert screen.current_selection == 11
@@ -254,10 +297,14 @@ def test_load_game_scrolls_visible_save_window(monkeypatch):
     assert screen.visible_save_data()[0]["file"] == "2.save"
 
     click_pos = screen.save_row_rects()[3].center
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=click_pos)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.load_game.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=click_pos)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.load_game.pygame.event.get", lambda: next(event_batches, [])
+    )
 
     assert screen.navigate(screen.save_files) == "5.save"
 
@@ -286,7 +333,11 @@ def test_load_game_navigation_deletes_selected_save(monkeypatch):
     )
 
     deleted = []
-    monkeypatch.setattr(load_game.SaveManager, "delete_save", staticmethod(lambda filename: deleted.append(filename) or True))
+    monkeypatch.setattr(
+        load_game.SaveManager,
+        "delete_save",
+        staticmethod(lambda filename: deleted.append(filename) or True),
+    )
 
     popup_messages = []
 
@@ -302,13 +353,20 @@ def test_load_game_navigation_deletes_selected_save(monkeypatch):
 
     monkeypatch.setattr(load_game, "ConfirmationPopup", FakePopup)
     monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DELETE)],
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.load_game.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DELETE)],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.load_game.pygame.event.get", lambda: next(event_batches, [])
+    )
 
-    assert screen.navigate(["a.save", "b.save"], flush_events=True, require_key_release=True) == "b.save"
+    assert (
+        screen.navigate(["a.save", "b.save"], flush_events=True, require_key_release=True)
+        == "b.save"
+    )
     assert deleted == ["a.save"]
     assert popup_messages == [("Delete a.save? This cannot be undone.", True)]
 
@@ -320,21 +378,25 @@ def test_load_game_navigation_warns_for_unloadable_save_without_returning(monkey
     monkeypatch.setattr(
         load_game.SaveManager,
         "describe_save_file",
-        staticmethod(lambda filename: _valid_save_metadata(filename, empty=filename == "empty.save")),
+        staticmethod(
+            lambda filename: _valid_save_metadata(filename, empty=filename == "empty.save")
+        ),
     )
     monkeypatch.setattr(
         load_game.SaveManager,
         "load_player",
         staticmethod(
-            lambda filename: SimpleNamespace(
-                name="hero",
-                race=SimpleNamespace(name="Human"),
-                cls=SimpleNamespace(name="Warrior"),
-                level=SimpleNamespace(level=1, exp=0),
-                gold=0,
+            lambda filename: (
+                SimpleNamespace(
+                    name="hero",
+                    race=SimpleNamespace(name="Human"),
+                    cls=SimpleNamespace(name="Warrior"),
+                    level=SimpleNamespace(level=1, exp=0),
+                    gold=0,
+                )
+                if filename == "hero.save"
+                else None
             )
-            if filename == "hero.save"
-            else None
         ),
     )
 
@@ -352,14 +414,21 @@ def test_load_game_navigation_warns_for_unloadable_save_without_returning(monkey
 
     monkeypatch.setattr(load_game, "ConfirmationPopup", FakePopup)
     monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)],
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.load_game.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.load_game.pygame.event.get", lambda: next(event_batches, [])
+    )
 
-    assert screen.navigate(["empty.save", "hero.save"], flush_events=True, require_key_release=True) == "hero.save"
+    assert (
+        screen.navigate(["empty.save", "hero.save"], flush_events=True, require_key_release=True)
+        == "hero.save"
+    )
     assert popup_messages == [
         ("empty.save cannot be loaded.\n\nUse DEL/BACKSPACE to delete it.", False)
     ]

@@ -26,8 +26,7 @@ def _grant(player, class_name: str, talent_key: str) -> None:
     node = next(
         node
         for node in ABILITY_TREES[class_name].nodes
-        if node.kind == NodeKind.TALENT
-        and node.payload["talent_key"] == talent_key
+        if node.kind == NodeKind.TALENT and node.payload["talent_key"] == talent_key
     )
     player.progression.purchased_node_ids.add(node.id)
 
@@ -42,9 +41,7 @@ def test_remaining_pathfinder_trees_use_authored_budgets_and_visible_rows():
     }
     for class_name, (count, cost, final_row) in expected.items():
         development = [
-            node
-            for node in ABILITY_TREES[class_name].nodes
-            if node.kind != NodeKind.PROMOTION
+            node for node in ABILITY_TREES[class_name].nodes if node.kind != NodeKind.PROMOTION
         ]
         assert len(development) == count
         assert sum(node.cost for node in development) == cost
@@ -53,18 +50,12 @@ def test_remaining_pathfinder_trees_use_authored_budgets_and_visible_rows():
     assert 0.60 <= 20 / 30 <= 0.70
 
     for class_name in ("Druid", "Diviner"):
-        level_55 = [
-            node
-            for node in ABILITY_TREES[class_name].nodes
-            if node.position[1] == 5
-        ]
+        level_55 = [node for node in ABILITY_TREES[class_name].nodes if node.position[1] == 5]
         assert len(level_55) == 4
         assert all(node.payload["level_requirement"] == 55 for node in level_55)
 
     diviner_abilities = [
-        node
-        for node in ABILITY_TREES["Diviner"].nodes
-        if node.kind == NodeKind.ABILITY
+        node for node in ABILITY_TREES["Diviner"].nodes if node.kind == NodeKind.ABILITY
     ]
     assert len(diviner_abilities) == 8
     assert not any(
@@ -85,10 +76,7 @@ def test_astromancer_external_volcano_does_not_gate_celestial_progression():
     assert nodes["Celestial Mastery"].prerequisites == (nodes["Meteor Logic"].id,)
     assert nodes["Tephra"].lane == "Witnessed Magic"
     assert nodes["Tephra"].prerequisites == (nodes["Learn Spell"].id,)
-    assert not any(
-        nodes["Tephra"].id in candidate.prerequisites
-        for candidate in tree.nodes
-    )
+    assert not any(nodes["Tephra"].id in candidate.prerequisites for candidate in tree.nodes)
 
 
 def test_retired_astromancer_volcano_node_is_refunded_without_forgetting_spell():

@@ -25,7 +25,7 @@ class DungeonInteractionMixin:
 
         # First check tile ahead
         direction = self.player_char.facing
-        dx, dy = DIRECTIONS[direction]['move']
+        dx, dy = DIRECTIONS[direction]["move"]
         ahead_x = self.player_char.location_x + dx
         ahead_y = self.player_char.location_y + dy
         ahead_z = self.player_char.location_z
@@ -36,31 +36,31 @@ class DungeonInteractionMixin:
             tile_type = type(ahead_tile).__name__
 
             # Interact with tile ahead for these types
-            if 'Chest' in tile_type:
+            if "Chest" in tile_type:
                 self._interact_chest(ahead_tile, tile_type)
                 return
-            elif 'Door' in tile_type:
+            elif "Door" in tile_type:
                 # Special check for OreVaultDoor - only allow interaction if detected or open
-                if tile_type == 'OreVaultDoor':
+                if tile_type == "OreVaultDoor":
                     has_cryptic_key = "Cryptic Key" in self.player_char.inventory
-                    has_keen_eye = 'Keen Eye' in self.player_char.spellbook.get('Skills', [])
-                    is_open = getattr(ahead_tile, 'open', False)
+                    has_keen_eye = "Keen Eye" in self.player_char.spellbook.get("Skills", [])
+                    is_open = getattr(ahead_tile, "open", False)
                     if not (has_cryptic_key or has_keen_eye or is_open):
                         # Door not detected - treat like a wall
                         self.add_message("There's nothing to interact with here.")
                         return
                 self._interact_door(ahead_tile)
                 return
-            elif 'Relic' in tile_type:
+            elif "Relic" in tile_type:
                 self._interact_relic(ahead_tile)
                 return
-            elif 'Boulder' in tile_type:
+            elif "Boulder" in tile_type:
                 self._interact_boulder(ahead_tile)
                 return
-            elif 'UnobtainiumRoom' in tile_type:
+            elif "UnobtainiumRoom" in tile_type:
                 self._interact_unobtainium_room(ahead_tile)
                 return
-            elif 'GoldenChaliceRoom' in tile_type:
+            elif "GoldenChaliceRoom" in tile_type:
                 self._interact_golden_chalice_room(ahead_tile)
                 return
 
@@ -74,63 +74,64 @@ class DungeonInteractionMixin:
 
         # Check for adjacent SecretShop tiles (since SecretShop is non-enterable)
         adjacent_secret_shop = None
-        if 'SecretShop' not in tile_type:
+        if "SecretShop" not in tile_type:
             # Check all adjacent tiles for secret shops
-            dx, dy = DIRECTIONS[self.player_char.facing]['move']
-            adjacent_pos = (self.player_char.location_x + dx, self.player_char.location_y + dy, self.player_char.location_z)
+            dx, dy = DIRECTIONS[self.player_char.facing]["move"]
+            adjacent_pos = (
+                self.player_char.location_x + dx,
+                self.player_char.location_y + dy,
+                self.player_char.location_z,
+            )
             adjacent_tile = self.player_char.world_dict.get(adjacent_pos)
-            if adjacent_tile and 'SecretShop' in type(adjacent_tile).__name__:
+            if adjacent_tile and "SecretShop" in type(adjacent_tile).__name__:
                 adjacent_secret_shop = adjacent_tile
 
-        if 'SecretShop' in tile_type or adjacent_secret_shop:
+        if "SecretShop" in tile_type or adjacent_secret_shop:
             # Show special message on first discovery
-            shop_tile = current_tile if 'SecretShop' in tile_type else adjacent_secret_shop
-            if not hasattr(shop_tile, 'read') or not shop_tile.read:
+            shop_tile = current_tile if "SecretShop" in tile_type else adjacent_secret_shop
+            if not hasattr(shop_tile, "read") or not shop_tile.read:
                 self.presenter.show_message(
                     "You've discovered a secret shop!\n\n"
                     "A mysterious merchant appears from the shadows...\n\n"
-                    "\"Welcome, traveler. I have rare goods for sale.\"",
+                    '"Welcome, traveler. I have rare goods for sale."',
                     image_path=str(
-                        PYGAME_ASSETS_DIR
-                        / "dungeon_tiles"
-                        / "special_tiles"
-                        / "secret_shop.png"
+                        PYGAME_ASSETS_DIR / "dungeon_tiles" / "special_tiles" / "secret_shop.png"
                     ),
                 )
                 shop_tile.read = True
 
             self.add_message("Entering secret shop...")
             self.shop_manager.visit_secret_shop()
-        elif 'UltimateArmorShop' in tile_type:
+        elif "UltimateArmorShop" in tile_type:
             self.add_message("Approaching the forge...")
             self.ultimate_armor_shop.visit_shop(self.player_char, current_tile)
-        elif 'WarpPoint' in tile_type:
+        elif "WarpPoint" in tile_type:
             self._handle_warp_point(current_tile)
-        elif 'UndergroundSpring' in tile_type:
+        elif "UndergroundSpring" in tile_type:
             self._interact_underground_spring(current_tile)
-        elif 'AntiMagicSwitch' in tile_type:
+        elif "AntiMagicSwitch" in tile_type:
             self._interact_anti_magic_switch(current_tile)
-        elif 'UnobtainiumRoom' in tile_type:
+        elif "UnobtainiumRoom" in tile_type:
             self._interact_unobtainium_room(current_tile)
-        elif 'DeadBody' in tile_type:
+        elif "DeadBody" in tile_type:
             self._interact_dead_body(current_tile)
-        elif 'FinalRoom' in tile_type:
+        elif "FinalRoom" in tile_type:
             self._interact_final_room(current_tile)
-        elif 'LiminalGuide' in tile_type:
+        elif "LiminalGuide" in tile_type:
             self._interact_liminal_guide(current_tile)
-        elif 'LiminalSeventhSeat' in tile_type:
+        elif "LiminalSeventhSeat" in tile_type:
             self._interact_liminal_seventh_seat(current_tile)
-        elif 'LiminalAcolyte' in tile_type:
+        elif "LiminalAcolyte" in tile_type:
             self._interact_liminal_acolyte(current_tile)
-        elif 'LiminalReflection' in tile_type:
+        elif "LiminalReflection" in tile_type:
             self._interact_liminal_reflection(current_tile)
         elif getattr(current_tile, "liminal_gate_event", None):
             self._interact_liminal_guardian_gate(current_tile)
-        elif 'LiminalExitBlocker' in tile_type:
+        elif "LiminalExitBlocker" in tile_type:
             self._interact_liminal_exit_blocker(current_tile)
-        elif 'IncubusLair' in tile_type:
+        elif "IncubusLair" in tile_type:
             self._interact_incubus_lair(current_tile)
-        elif 'GoldenChaliceRoom' in tile_type:
+        elif "GoldenChaliceRoom" in tile_type:
             self._interact_golden_chalice_room(current_tile)
         else:
             self.add_message("There's nothing to interact with here.")
@@ -138,17 +139,19 @@ class DungeonInteractionMixin:
     def _interact_chest(self, chest_tile, tile_type):
         """Handle chest interaction."""
         # Check if already opened
-        if hasattr(chest_tile, 'open') and chest_tile.open:
+        if hasattr(chest_tile, "open") and chest_tile.open:
             self.add_message("This chest has already been opened.")
             return
 
         # Check if locked
-        if hasattr(chest_tile, 'locked') and chest_tile.locked:
+        if hasattr(chest_tile, "locked") and chest_tile.locked:
             # Try to unlock
             if "Master Key" in self.player_char.special_inventory:
                 chest_tile.locked = False
                 self.add_message("You unlock the chest with the Master Key!")
-            elif "Lockpick" in self.player_char.spellbook.get("Skills", []) and items.has_lockpick_kit(self.player_char):
+            elif "Lockpick" in self.player_char.spellbook.get(
+                "Skills", []
+            ) and items.has_lockpick_kit(self.player_char):
                 chest_tile.locked = False
                 self.add_message("You skillfully pick the lock!")
                 _used, kit_message = items.use_lockpick_kit(self.player_char)
@@ -165,23 +168,27 @@ class DungeonInteractionMixin:
                 if use_key:
                     chest_tile.locked = False
                     self.player_char.modify_inventory(
-                        self.player_char.inventory["Key"][0],
-                        subtract=True
+                        self.player_char.inventory["Key"][0], subtract=True
                     )
                     self.add_message("You unlock the chest with a Key!")
                 else:
                     self.add_message("The chest remains locked.")
                     return
             else:
-                self.add_message("The chest is locked! You need a Key or Lockpick Kit with the Lockpick skill.")
+                self.add_message(
+                    "The chest is locked! You need a Key or Lockpick Kit with the Lockpick skill."
+                )
                 return
 
         # Check for Mimic (FunhouseMimicChest always spawns one; other chests have random chance)
-        locked = int('Locked' in tile_type)
-        plus = int('ChestRoom2' in tile_type)
-        is_funhouse_mimic = 'FunhouseMimicChest' in tile_type
-        if is_funhouse_mimic or map_tiles.ordinary_chest_spawns_mimic(self.player_char, locked=locked, plus=plus):
+        locked = int("Locked" in tile_type)
+        plus = int("ChestRoom2" in tile_type)
+        is_funhouse_mimic = "FunhouseMimicChest" in tile_type
+        if is_funhouse_mimic or map_tiles.ordinary_chest_spawns_mimic(
+            self.player_char, locked=locked, plus=plus
+        ):
             from src.core import enemies
+
             # For funhouse mimic chest, spawn level 4 mimic; for other chests use normal scaling
             mimic_level = 4 if is_funhouse_mimic else (self.player_char.location_z + locked + plus)
             enemy = enemies.Mimic(mimic_level, player_level=self.player_char.player_level())
@@ -189,7 +196,7 @@ class DungeonInteractionMixin:
             chest_tile.enemy = enemy
             self.add_message("There is a Mimic in the chest!")
             # Start combat with the Mimic
-            self.player_char.state = 'fight'
+            self.player_char.state = "fight"
             self._refresh_cached_frame()
             victory = self.combat_manager.start_combat(self.player_char, enemy, chest_tile)
             if not getattr(enemy, "is_alive", lambda: True)():
@@ -201,7 +208,7 @@ class DungeonInteractionMixin:
         chest_tile.open = True
 
         # Generate loot if not already generated
-        if not hasattr(chest_tile, 'loot') or chest_tile.loot is None:
+        if not hasattr(chest_tile, "loot") or chest_tile.loot is None:
             chest_tile.generate_loot()
 
         # Show loot with visual popup
@@ -224,6 +231,7 @@ class DungeonInteractionMixin:
             # Funhouse Mimic Chest also drops a Jester Token
             if is_funhouse_mimic:
                 from src.core import items as items_module
+
                 token = items_module.JesterToken()
                 self._refresh_cached_frame()
                 self.loot_popup.show_loot(
@@ -247,7 +255,7 @@ class DungeonInteractionMixin:
 
     def _interact_door(self, door_tile):
         """Handle door interaction."""
-        if not hasattr(door_tile, 'locked'):
+        if not hasattr(door_tile, "locked"):
             self.add_message("This door cannot be interacted with.")
             return
 
@@ -257,7 +265,7 @@ class DungeonInteractionMixin:
 
         # Special handling for OreVaultDoor
         door_type = type(door_tile).__name__
-        if door_type == 'OreVaultDoor':
+        if door_type == "OreVaultDoor":
             # Try to unlock with Cryptic Key first
             if "Cryptic Key" in self.player_char.inventory:
                 door_tile.locked = False
@@ -265,8 +273,7 @@ class DungeonInteractionMixin:
                 door_tile.enter = True
                 door_tile.detected = True
                 self.player_char.modify_inventory(
-                    self.player_char.inventory['Cryptic Key'][0],
-                    subtract=True
+                    self.player_char.inventory["Cryptic Key"][0], subtract=True
                 )
                 self.add_message("The Cryptic Key turns smoothly in the hidden lock.")
                 self.add_message("The door swings open, revealing the vault beyond!")
@@ -275,7 +282,7 @@ class DungeonInteractionMixin:
                 return
             # Master Key works if player has Keen Eye
             elif "Master Key" in self.player_char.special_inventory:
-                if 'Keen Eye' in self.player_char.spellbook.get('Skills', []):
+                if "Keen Eye" in self.player_char.spellbook.get("Skills", []):
                     door_tile.locked = False
                     door_tile.open = True
                     door_tile.enter = True
@@ -285,11 +292,10 @@ class DungeonInteractionMixin:
                     self._mark_view_dirty()
                     return
             # Master Lockpick works if player has Keen Eye
-            elif (
-                'Master Lockpick' in self.player_char.spellbook.get('Skills', [])
-                and items.has_lockpick_kit(self.player_char)
-            ):
-                if 'Keen Eye' in self.player_char.spellbook.get('Skills', []):
+            elif "Master Lockpick" in self.player_char.spellbook.get(
+                "Skills", []
+            ) and items.has_lockpick_kit(self.player_char):
+                if "Keen Eye" in self.player_char.spellbook.get("Skills", []):
                     door_tile.locked = False
                     door_tile.open = True
                     door_tile.enter = True
@@ -301,7 +307,9 @@ class DungeonInteractionMixin:
                     self._mark_view_dirty()
                     return
             # If we get here, they can't unlock it
-            self.add_message("You sense something is hidden here, but you lack the means to open it.")
+            self.add_message(
+                "You sense something is hidden here, but you lack the means to open it."
+            )
             return
 
         # Regular door handling
@@ -312,10 +320,9 @@ class DungeonInteractionMixin:
             door_tile.blocked = None
             self.add_message("You unlock and open the door with the Master Key!")
             self._play_sfx("open_door")
-        elif (
-            "Master Lockpick" in self.player_char.spellbook.get("Skills", [])
-            and items.has_lockpick_kit(self.player_char)
-        ):
+        elif "Master Lockpick" in self.player_char.spellbook.get(
+            "Skills", []
+        ) and items.has_lockpick_kit(self.player_char):
             door_tile.locked = False
             door_tile.open = True
             door_tile.blocked = None
@@ -336,27 +343,32 @@ class DungeonInteractionMixin:
                 door_tile.open = True
                 door_tile.blocked = None
                 self.player_char.modify_inventory(
-                    self.player_char.inventory["Old Key"][0],
-                    subtract=True
+                    self.player_char.inventory["Old Key"][0], subtract=True
                 )
                 self.add_message("You unlock and open the door with an Old Key!")
                 self._play_sfx("open_door")
             else:
                 self.add_message("The door remains locked.")
         else:
-            self.add_message("The door is locked! You need an Old Key or Lockpick Kit with the Master Lockpick skill.")
+            self.add_message(
+                "The door is locked! You need an Old Key or Lockpick Kit with the Master Lockpick skill."
+            )
 
     def _interact_relic(self, relic_tile):
         """Handle relic room interaction."""
-        if hasattr(relic_tile, 'read') and relic_tile.read:
+        if hasattr(relic_tile, "read") and relic_tile.read:
             self.add_message("You already collected the relic from this room.")
             return
 
         # Get the appropriate relic for this level
         z = self.player_char.location_z
         relics = [
-            items.Relic1(), items.Relic2(), items.Relic3(),
-            items.Relic4(), items.Relic5(), items.Relic6()
+            items.Relic1(),
+            items.Relic2(),
+            items.Relic3(),
+            items.Relic4(),
+            items.Relic5(),
+            items.Relic6(),
         ]
 
         if 1 <= z <= 6:
@@ -387,7 +399,7 @@ class DungeonInteractionMixin:
 
     def _handle_warp_point(self, warp_tile):
         """Handle warp point interaction - return to town."""
-        if not getattr(self.player_char, 'warp_point', False):
+        if not getattr(self.player_char, "warp_point", False):
             self.add_message("The warp point is inactive. It looks like it requires authorization.")
             return
 
@@ -420,17 +432,17 @@ class DungeonInteractionMixin:
         has_excaliper = "Excaliper" in self.player_char.special_inventory
 
         # Backfill old saves/states where Excaliper was already obtained but tile wasn't marked read.
-        if has_excaliper and hasattr(boulder_tile, 'read') and not boulder_tile.read:
+        if has_excaliper and hasattr(boulder_tile, "read") and not boulder_tile.read:
             boulder_tile.read = True
 
-        if hasattr(boulder_tile, 'read') and boulder_tile.read and not map_ready:
+        if hasattr(boulder_tile, "read") and boulder_tile.read and not map_ready:
             self.add_message("Just a broken boulder where you found that sword.")
             return
 
         # Check if player has drunk from the spring
         spring_tile = self.player_char.world_dict.get((4, 9, 3))
-        if spring_tile and hasattr(spring_tile, 'drink') and spring_tile.drink:
-            if not getattr(boulder_tile, 'read', False):
+        if spring_tile and hasattr(spring_tile, "drink") and spring_tile.drink:
+            if not getattr(boulder_tile, "read", False):
                 self.game.special_event("Boulder")
                 self.add_message("You find a magnificent sword embedded in the boulder!")
                 self.add_message("You obtained: Excaliper!")
@@ -439,14 +451,16 @@ class DungeonInteractionMixin:
         else:
             self.add_message("An oddly placed boulder. Nothing seems special about it.")
 
-        if map_ready and getattr(boulder_tile, 'read', False):
+        if map_ready and getattr(boulder_tile, "read", False):
             self.game.special_event("Chalice Map")
             self.add_message("You find a weathered map tucked inside a crevice.")
             self.player_char.modify_inventory(items.ChaliceMap(), rare=True, quest=True)
             progress["Map"] = True
             map_tiles.sync_chalice_map_description(self.player_char)
             chalice_quest = self.player_char.quest_dict["Side"]["The Holy Grail of Quests"]
-            chalice_quest["Help Text"] = "Bring the map to the Sergeant at the barracks for help deciphering it."
+            chalice_quest["Help Text"] = (
+                "Bring the map to the Sergeant at the barracks for help deciphering it."
+            )
 
     def _interact_underground_spring(self, spring_tile):
         """Handle underground spring interaction."""
@@ -492,23 +506,19 @@ class DungeonInteractionMixin:
 
         # Random encounter with Fuath
         if self.player_char.level.pro_level > 1 and not random.randint(0, 1):
-            if not hasattr(spring_tile, 'defeated') or not spring_tile.defeated:
+            if not hasattr(spring_tile, "defeated") or not spring_tile.defeated:
                 self.add_message("A Fuath emerges from the spring!")
 
                 enemy = enemies.Fuath()
 
                 # Start combat
                 self._refresh_cached_frame()
-                self.combat_manager.start_combat(
-                    self.player_char,
-                    enemy,
-                    spring_tile
-                )
+                self.combat_manager.start_combat(self.player_char, enemy, spring_tile)
 
                 spring_tile.defeated = True
 
         # Drink from spring
-        if not hasattr(spring_tile, 'drink'):
+        if not hasattr(spring_tile, "drink"):
             spring_tile.drink = False
 
         if not spring_tile.drink:
@@ -516,7 +526,7 @@ class DungeonInteractionMixin:
             spring_tile.drink = True
 
         # Check for Excaliper quest
-        if not hasattr(spring_tile, 'nimue'):
+        if not hasattr(spring_tile, "nimue"):
             spring_tile.nimue = False
 
         if not spring_tile.nimue and "Excaliper" in self.player_char.special_inventory:
@@ -527,16 +537,16 @@ class DungeonInteractionMixin:
             self.player_char.modify_inventory(items.Excaliper(), subtract=True, rare=True)
             spring_tile.nimue = True
             # Track this as first meeting - don't offer quests yet
-            if not hasattr(spring_tile, 'nimue_met_before'):
+            if not hasattr(spring_tile, "nimue_met_before"):
                 spring_tile.nimue_met_before = False
 
         # Offer Nimue quests only on subsequent visits after first meeting
         if spring_tile.nimue:
-            if not hasattr(spring_tile, 'nimue_met_before'):
+            if not hasattr(spring_tile, "nimue_met_before"):
                 spring_tile.nimue_met_before = True
 
             # Check if this is a return visit (not the first meeting)
-            if hasattr(spring_tile, 'nimue_met_before') and spring_tile.nimue_met_before:
+            if hasattr(spring_tile, "nimue_met_before") and spring_tile.nimue_met_before:
                 from ..quest_manager import QuestManager
                 from ..confirmation_popup import ConfirmationPopup
 
@@ -575,9 +585,9 @@ class DungeonInteractionMixin:
                 self.add_message("The Lady of the Lake appears and upgrades your Excalibur!")
                 self.player_char.modify_inventory(items.Excalibur2())
                 self.player_char.modify_inventory(items.Excalibur(), subtract=True)
-            elif "Excalibur" == self.player_char.equipment.get('Weapon').name:
+            elif "Excalibur" == self.player_char.equipment.get("Weapon").name:
                 self.add_message("The Lady of the Lake appears and upgrades your Excalibur!")
-                self.player_char.equipment['Weapon'] = items.Excalibur2()
+                self.player_char.equipment["Weapon"] = items.Excalibur2()
 
         wizard_folly = self.player_char.quest_dict.get("Side", {}).get("The Wizard's Folly")
         if wizard_folly and not wizard_folly.get("Completed") and not wizard_folly.get("Turned In"):
@@ -626,7 +636,7 @@ class DungeonInteractionMixin:
 
     def _interact_unobtainium_room(self, unobtainium_tile):
         """Handle Unobtainium room interaction."""
-        if hasattr(unobtainium_tile, 'visited') and unobtainium_tile.visited:
+        if hasattr(unobtainium_tile, "visited") and unobtainium_tile.visited:
             self.add_message("The ground here is already cleared.")
             return
 
@@ -639,7 +649,7 @@ class DungeonInteractionMixin:
         """Handle dead body interaction."""
         # Check for quest item pickup
         if "A Bad Dream" in self.player_char.quest_dict.get("Main", {}):
-            if not hasattr(body_tile, 'read') or not body_tile.read:
+            if not hasattr(body_tile, "read") or not body_tile.read:
                 self.game.special_event("Dead Body")
                 self.add_message("You found a Lucky Locket on the body!")
                 self.player_char.modify_inventory(items.LuckyLocket(), rare=True, quest=True)
@@ -651,7 +661,9 @@ class DungeonInteractionMixin:
         # Trigger Waitress encounter if "A Bad Dream" has been turned in
         if "A Bad Dream" in self.player_char.quest_dict.get("Main", {}):
             if self.player_char.quest_dict["Main"]["A Bad Dream"].get("Turned In"):
-                if not self.player_char.quest_dict["Main"]["A Bad Dream"].get("Waitress Defeated", False):
+                if not self.player_char.quest_dict["Main"]["A Bad Dream"].get(
+                    "Waitress Defeated", False
+                ):
                     self.game.special_event("Waitress")
                     self._play_sfx("waitress_wail")
                     self._show_special_event_dialogue(
@@ -666,14 +678,14 @@ class DungeonInteractionMixin:
                     # Start combat
                     self._refresh_cached_frame()
                     combat_won = self.combat_manager.start_combat(
-                        self.player_char,
-                        enemy,
-                        body_tile
+                        self.player_char, enemy, body_tile
                     )
 
                     if combat_won:
                         # Mark the encounter as complete
-                        self.player_char.quest_dict["Main"]["A Bad Dream"]["Waitress Defeated"] = True
+                        self.player_char.quest_dict["Main"]["A Bad Dream"][
+                            "Waitress Defeated"
+                        ] = True
                     return
 
         # Check for Something to Cry About quest
@@ -685,23 +697,27 @@ class DungeonInteractionMixin:
 
                 # Start combat
                 self._refresh_cached_frame()
-                combat_won = self.combat_manager.start_combat(
-                    self.player_char,
-                    enemy,
-                    body_tile
-                )
+                combat_won = self.combat_manager.start_combat(self.player_char, enemy, body_tile)
 
     def _interact_final_room(self, final_room_tile):
         """Handle final room interaction - ask if player wants to fight final boss."""
         ensure_story = getattr(self.player_char, "ensure_main_story_state", None)
-        story_state = ensure_story() if callable(ensure_story) else getattr(self.player_char, "main_story", {})
+        story_state = (
+            ensure_story()
+            if callable(ensure_story)
+            else getattr(self.player_char, "main_story", {})
+        )
         if isinstance(story_state, dict) and story_state.get("main_story_complete"):
-            self._show_special_event_dialogue("The Forsaken Tenet Ending", title="The Forsaken Tenet")
+            self._show_special_event_dialogue(
+                "The Forsaken Tenet Ending", title="The Forsaken Tenet"
+            )
             self.add_message("The Forsaken Tenet is already remembered.")
             self._mark_view_dirty()
             return
-        if isinstance(story_state, dict) and story_state.get("vesperion_false_final_triggered") and not story_state.get(
-            "true_final_unlocked"
+        if (
+            isinstance(story_state, dict)
+            and story_state.get("vesperion_false_final_triggered")
+            and not story_state.get("true_final_unlocked")
         ):
             self._show_special_event_dialogue("Liminal Gap Blocker", title="Voluntas")
             self.add_message("Voluntas remains unresolved. The final chamber will not open yet.")
@@ -713,7 +729,7 @@ class DungeonInteractionMixin:
             "You stand before the final chamber.\n\n"
             "Vesperion awaits within.\n\n"
             "Do you wish to enter and face your destiny?",
-            ["Yes, I'm ready", "No, not yet"]
+            ["Yes, I'm ready", "No, not yet"],
         )
 
         if choice == 0:  # Yes
@@ -733,7 +749,11 @@ class DungeonInteractionMixin:
 
             # Show Vesperion's dialogue
             special_event_dict = dungeon_manager.get_special_events()
-            event_name = "True Final Prelude" if true_final and "True Final Prelude" in special_event_dict else "Final Boss"
+            event_name = (
+                "True Final Prelude"
+                if true_final and "True Final Prelude" in special_event_dict
+                else "Final Boss"
+            )
             if event_name in special_event_dict:
                 self._show_special_event_dialogue(event_name, title="Vesperion")
             if true_final:
@@ -744,7 +764,7 @@ class DungeonInteractionMixin:
 
             # Spawn and initiate combat with Vesperion
             vesperion = enemies.Vesperion()
-            self.player_char.state = 'fight'
+            self.player_char.state = "fight"
 
             # Update combat manager with current world state
             self.combat_manager.player_world_dict = self.player_char.world_dict
@@ -752,12 +772,14 @@ class DungeonInteractionMixin:
             # Start combat
             self._refresh_cached_frame()
             combat_won = self.combat_manager.start_combat(
-                self.player_char,
-                vesperion,
-                final_room_tile
+                self.player_char, vesperion, final_room_tile
             )
 
-            story_state = ensure_story() if callable(ensure_story) else getattr(self.player_char, "main_story", {})
+            story_state = (
+                ensure_story()
+                if callable(ensure_story)
+                else getattr(self.player_char, "main_story", {})
+            )
             if isinstance(story_state, dict) and story_state.get("pending_liminal_gap_entry"):
                 self._enter_liminal_gap_stub(return_location, vesperion)
                 return
@@ -775,8 +797,12 @@ class DungeonInteractionMixin:
                 try:
                     self.player_char.to_town()
                 except Exception:
-                    self.player_char.location_x, self.player_char.location_y, self.player_char.location_z = (5, 10, 0)
-                self.player_char.state = 'normal'
+                    (
+                        self.player_char.location_x,
+                        self.player_char.location_y,
+                        self.player_char.location_z,
+                    ) = (5, 10, 0)
+                self.player_char.state = "normal"
                 self.running = False
             else:
                 self.add_message("You escaped from combat.")

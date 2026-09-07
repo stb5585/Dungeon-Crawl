@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import re
 
-
 BLEED_PRESENTATION_LABEL = "Oil Leak"
 BLEED_PRESENTATION_ICON = "OIL"
 UNSEEN_FORCE_LABEL = "Unseen force"
@@ -27,8 +26,7 @@ def is_construct_like(character) -> bool:
 def is_invisible_target(enemy) -> bool:
     """Return whether the enemy should receive an invisibility readability note."""
     return bool(
-        getattr(enemy, "invisible", False)
-        or getattr(enemy, "name", "") == "Invisible Stalker"
+        getattr(enemy, "invisible", False) or getattr(enemy, "name", "") == "Invisible Stalker"
     )
 
 

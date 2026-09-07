@@ -8,7 +8,6 @@ from typing import Any
 from ..combat.targeting import TargetScope
 from .base import Spell
 
-
 DETECT_STEPS = 50
 
 
@@ -34,7 +33,9 @@ class DetectEnemy(Spell):
         user.mana.current -= self.cost
         user.detect_enemy_type = self.enemy_type
         user.detect_enemy_steps = DETECT_STEPS
-        return f"{user.name} begins watching for {self.enemy_type} enemies for {DETECT_STEPS} steps.\n"
+        return (
+            f"{user.name} begins watching for {self.enemy_type} enemies for {DETECT_STEPS} steps.\n"
+        )
 
     cast = cast_out
 

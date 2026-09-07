@@ -15,9 +15,16 @@ from ..input_guards import (
 )
 from ..mouse_helpers import is_left_click, mouse_position
 
-
 ITEM_ART_DIR = PYGAME_ASSETS_DIR / "item_art"
-RELIC_ART_FILES = {"Triangulus":Path("special/relics/triangulus.png"),"Quadrata":Path("special/relics/quadrata.png"),"Hexagonum":Path("special/relics/hexagonum.png"),"Luna":Path("special/relics/luna.png"),"Polaris":Path("special/relics/polaris.png"),"Infinitas":Path("special/relics/infinitas.png"),"Golden Chalice":Path("special/story/golden_chalice.png")}
+RELIC_ART_FILES = {
+    "Triangulus": Path("special/relics/triangulus.png"),
+    "Quadrata": Path("special/relics/quadrata.png"),
+    "Hexagonum": Path("special/relics/hexagonum.png"),
+    "Luna": Path("special/relics/luna.png"),
+    "Polaris": Path("special/relics/polaris.png"),
+    "Infinitas": Path("special/relics/infinitas.png"),
+    "Golden Chalice": Path("special/story/golden_chalice.png"),
+}
 
 
 class BasePopupMenu:
@@ -51,9 +58,21 @@ class BasePopupMenu:
         self._relic_sprite_cache: dict[str, pygame.Surface] = {}
 
         # Layout
-        self.popup_rect = pygame.Rect(self.width // 10, self.height // 8, self.width * 8 // 10, self.height * 3 // 4)
-        self.list_rect = pygame.Rect(self.popup_rect.left + 24, self.popup_rect.top + 72, self.popup_rect.width * 2 // 5, self.popup_rect.height - 120)
-        self.details_rect = pygame.Rect(self.popup_rect.left + self.popup_rect.width * 2 // 5 + 40, self.popup_rect.top + 72, self.popup_rect.width * 3 // 5 - 64, self.popup_rect.height - 120)
+        self.popup_rect = pygame.Rect(
+            self.width // 10, self.height // 8, self.width * 8 // 10, self.height * 3 // 4
+        )
+        self.list_rect = pygame.Rect(
+            self.popup_rect.left + 24,
+            self.popup_rect.top + 72,
+            self.popup_rect.width * 2 // 5,
+            self.popup_rect.height - 120,
+        )
+        self.details_rect = pygame.Rect(
+            self.popup_rect.left + self.popup_rect.width * 2 // 5 + 40,
+            self.popup_rect.top + 72,
+            self.popup_rect.width * 3 // 5 - 64,
+            self.popup_rect.height - 120,
+        )
 
         # Data
         self.items = []  # list of displayable items (objects or strings)
@@ -119,7 +138,9 @@ class BasePopupMenu:
         if not self._is_selectable_index(self.selected_index):
             direction = 1 if step > 0 else -1
             for _ in range(len(self.items)):
-                self.selected_index = max(0, min(len(self.items) - 1, self.selected_index + direction))
+                self.selected_index = max(
+                    0, min(len(self.items) - 1, self.selected_index + direction)
+                )
                 if self._is_selectable_index(self.selected_index):
                     break
         self._ensure_visible()
@@ -160,7 +181,9 @@ class BasePopupMenu:
         return 16
 
     def visible_row_count(self) -> int:
-        return max(1, (self.list_rect.height - (self.list_vertical_padding() * 2)) // self.line_height)
+        return max(
+            1, (self.list_rect.height - (self.list_vertical_padding() * 2)) // self.line_height
+        )
 
     def visible_row_rects(self) -> list[tuple[int, pygame.Rect]]:
         """Return visible popup-list indexes and clickable row rectangles."""
@@ -220,7 +243,9 @@ class BasePopupMenu:
             value_text = " ".join(value_text.split())
         lines = []
         for raw_line in value_text.split("\n"):
-            wrap_width = max_width - 16 if label == "Description" or "\n" in value_text else text_width
+            wrap_width = (
+                max_width - 16 if label == "Description" or "\n" in value_text else text_width
+            )
             lines.extend(self._wrap_text(raw_line, wrap_width))
         if label == "Description" or len(lines) > 1 or "\n" in value_text:
             self.screen.blit(self.normal_font.render(label_text, True, self.WHITE), (x, y))
@@ -259,7 +284,11 @@ class BasePopupMenu:
                 return "One-handed"
         except (TypeError, ValueError):
             pass
-        return "Two-handed" if str(getattr(item, "subtyp", "") or "") in {"Longsword", "Battle Axe", "Hammer"} else "One-handed"
+        return (
+            "Two-handed"
+            if str(getattr(item, "subtyp", "") or "") in {"Longsword", "Battle Axe", "Hammer"}
+            else "One-handed"
+        )
 
     @classmethod
     def _equipment_display_name(cls, item) -> str:
@@ -427,7 +456,10 @@ class BasePopupMenu:
 
         # Title
         title_text = self.title_font.render(self.title, True, self.GOLD)
-        self.screen.blit(title_text, (self.popup_rect.centerx - title_text.get_width() // 2, self.popup_rect.top + 16))
+        self.screen.blit(
+            title_text,
+            (self.popup_rect.centerx - title_text.get_width() // 2, self.popup_rect.top + 16),
+        )
 
         # Column borders
         pygame.draw.rect(self.screen, self.BLACK, self.list_rect)
@@ -438,7 +470,10 @@ class BasePopupMenu:
         # Help footer
         help_str = self.help_footer()
         help_text = self.small_font.render(help_str, True, self.WHITE)
-        self.screen.blit(help_text, (self.popup_rect.left + 16, self.popup_rect.bottom - help_text.get_height() - 12))
+        self.screen.blit(
+            help_text,
+            (self.popup_rect.left + 16, self.popup_rect.bottom - help_text.get_height() - 12),
+        )
 
     def draw_list(self):
         # Visible rows
@@ -465,7 +500,9 @@ class BasePopupMenu:
             icon_subject = self.icon_subject_for_item(item)
             if icon_subject is not None and not is_header:
                 icon = self.icon_manager.get_icon(icon_subject)
-                icon_rect = pygame.Rect(text_x, y + max(0, (self.line_height - icon_size) // 2), icon_size, icon_size)
+                icon_rect = pygame.Rect(
+                    text_x, y + max(0, (self.line_height - icon_size) // 2), icon_size, icon_size
+                )
                 fitted_icon = pygame.transform.smoothscale(icon, icon_rect.size)
                 self.screen.blit(fitted_icon, icon_rect)
                 text_x = icon_rect.right + 8
@@ -477,8 +514,14 @@ class BasePopupMenu:
             bar_height = int(self.list_rect.height * max_visible / len(self.items))
             bar_height = max(24, bar_height)
             max_scroll = len(self.items) - max_visible
-            scrolled = 0 if max_scroll <= 0 else int(self.scroll_offset * (self.list_rect.height - bar_height) / max_scroll)
-            bar_rect = pygame.Rect(self.list_rect.right - 12, self.list_rect.top + scrolled + 4, 8, bar_height)
+            scrolled = (
+                0
+                if max_scroll <= 0
+                else int(self.scroll_offset * (self.list_rect.height - bar_height) / max_scroll)
+            )
+            bar_rect = pygame.Rect(
+                self.list_rect.right - 12, self.list_rect.top + scrolled + 4, 8, bar_height
+            )
             pygame.draw.rect(self.screen, self.GRAY, bar_rect)
 
     def draw_details(self, player_char):
@@ -509,7 +552,10 @@ class BasePopupMenu:
             icon_size = min(42, max(32, self.large_font.get_height() + 8))
             icon_rect = pygame.Rect(x, y, icon_size, icon_size)
             self.screen.blit(pygame.transform.smoothscale(icon, icon_rect.size), icon_rect)
-            self.screen.blit(name_text, (icon_rect.right + 10, y + max(0, (icon_size - name_text.get_height()) // 2)))
+            self.screen.blit(
+                name_text,
+                (icon_rect.right + 10, y + max(0, (icon_size - name_text.get_height()) // 2)),
+            )
             y += max(icon_size, name_text.get_height()) + 8
         else:
             self.screen.blit(name_text, (x, y))
@@ -555,7 +601,11 @@ class BasePopupMenu:
             self.selected_index = 0
             self.scroll_offset = 0
         # Ensure initial selection is on a selectable item (not a header)
-        while self.items and isinstance(self.items[self.selected_index], dict) and self.items[self.selected_index].get("is_header"):
+        while (
+            self.items
+            and isinstance(self.items[self.selected_index], dict)
+            and self.items[self.selected_index].get("is_header")
+        ):
             if self.selected_index < len(self.items) - 1:
                 self.selected_index += 1
             else:
@@ -576,9 +626,12 @@ class BasePopupMenu:
         prev_provider = getattr(self.presenter, "_background_provider", None)
         menu_surface_ref = [None]
         if hasattr(self.presenter, "set_background_provider"):
-            self.presenter.set_background_provider(lambda: menu_surface_ref[0] or self.screen.copy())
+            self.presenter.set_background_provider(
+                lambda: menu_surface_ref[0] or self.screen.copy()
+            )
 
         try:
+
             def activate_selected_item():
                 nonlocal running, result, background_surface
                 if not self.items or not self._is_selectable_index(self.selected_index):
@@ -605,8 +658,11 @@ class BasePopupMenu:
                     if event.type == pygame.QUIT:
                         pygame.quit()
                         import sys
+
                         sys.exit()
-                    input_armed = update_input_armed_from_event(event, require_key_release, input_armed)
+                    input_armed = update_input_armed_from_event(
+                        event, require_key_release, input_armed
+                    )
                     if popup_close_clicked(event, self.popup_rect):
                         if not input_armed:
                             continue
@@ -614,7 +670,11 @@ class BasePopupMenu:
                         result = None
                         continue
                     hovered = self._hit_visible_row(mouse_position(event))
-                    if hovered is not None and event.type == pygame.MOUSEMOTION and self._is_selectable_index(hovered):
+                    if (
+                        hovered is not None
+                        and event.type == pygame.MOUSEMOTION
+                        and self._is_selectable_index(hovered)
+                    ):
                         self.selected_index = hovered
                         self._ensure_visible()
                     elif hovered is not None and is_left_click(event):

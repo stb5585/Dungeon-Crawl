@@ -141,11 +141,7 @@ def flash_blindness(character, enemies, *, rng=None) -> str:
         blind.duration = max(2, int(blind.duration or 0))
         blind.source = "Flash Blindness"
         affected += 1
-    return (
-        f"Flash Blindness blinds {affected} nearby enemy(s).\n"
-        if affected
-        else ""
-    )
+    return f"Flash Blindness blinds {affected} nearby enemy(s).\n" if affected else ""
 
 
 def tick_combat_state(character, *, end: bool = False) -> str:

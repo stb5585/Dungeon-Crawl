@@ -62,29 +62,33 @@ class SummonSerializer:
             "name": getattr(summon, "name", summon.__class__.__name__),
             "health": asdict(ResourceData(summon.health.max, summon.health.current)),
             "mana": asdict(ResourceData(summon.mana.max, summon.mana.current)),
-            "stats": asdict(StatsData(
-                summon.stats.strength,
-                summon.stats.intel,
-                summon.stats.wisdom,
-                summon.stats.con,
-                summon.stats.charisma,
-                summon.stats.dex,
-            )),
-            "combat": asdict(CombatData(
-                summon.combat.attack,
-                summon.combat.defense,
-                summon.combat.magic,
-                summon.combat.magic_def,
-            )),
-            "level": asdict(LevelData(
-                summon.level.level,
-                summon.level.pro_level,
-                summon.level.exp,
-                summon.level.exp_to_gain,
-            )),
-            "spellbook": SummonSerializer._serialize_spellbook(
-                getattr(summon, "spellbook", {})
+            "stats": asdict(
+                StatsData(
+                    summon.stats.strength,
+                    summon.stats.intel,
+                    summon.stats.wisdom,
+                    summon.stats.con,
+                    summon.stats.charisma,
+                    summon.stats.dex,
+                )
             ),
+            "combat": asdict(
+                CombatData(
+                    summon.combat.attack,
+                    summon.combat.defense,
+                    summon.combat.magic,
+                    summon.combat.magic_def,
+                )
+            ),
+            "level": asdict(
+                LevelData(
+                    summon.level.level,
+                    summon.level.pro_level,
+                    summon.level.exp,
+                    summon.level.exp_to_gain,
+                )
+            ),
+            "spellbook": SummonSerializer._serialize_spellbook(getattr(summon, "spellbook", {})),
             "resistance": dict(getattr(summon, "resistance", {})),
             "status_immunity": list(getattr(summon, "status_immunity", [])),
             "flying": bool(getattr(summon, "flying", False)),
@@ -148,12 +152,8 @@ class SummonSerializer:
             exp_to_gain=level.get("exp_to_gain", summon.level.exp_to_gain),
         )
 
-        summon.spellbook = SummonSerializer._deserialize_spellbook(
-            data.get("spellbook", {})
-        )
-        summon.resistance = dict(
-            data.get("resistance", getattr(summon, "resistance", {}))
-        )
+        summon.spellbook = SummonSerializer._deserialize_spellbook(data.get("spellbook", {}))
+        summon.resistance = dict(data.get("resistance", getattr(summon, "resistance", {})))
         summon.status_immunity = list(
             data.get("status_immunity", getattr(summon, "status_immunity", []))
         )

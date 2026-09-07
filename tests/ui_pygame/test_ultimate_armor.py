@@ -80,7 +80,9 @@ def test_visit_shop_handles_quest_looted_leave_and_confirm(monkeypatch):
     tile = SimpleNamespace(looted=False)
 
     crafted = []
-    monkeypatch.setattr(shop, "_show_crafting_animation", lambda armor_name: crafted.append(armor_name))
+    monkeypatch.setattr(
+        shop, "_show_crafting_animation", lambda armor_name: crafted.append(armor_name)
+    )
 
     class MerlinRobe:
         def __init__(self):
@@ -125,7 +127,10 @@ def test_visit_shop_handles_quest_looted_leave_and_confirm(monkeypatch):
     tile.looted = False
     presenter.menu_results = [4]
     shop.visit_shop(player, tile)
-    assert any("Come back when you have made your decision." in message for _title, message in presenter.messages)
+    assert any(
+        "Come back when you have made your decision." in message
+        for _title, message in presenter.messages
+    )
 
     presenter.messages.clear()
     presenter.menu_results = [2, 1]
@@ -140,10 +145,16 @@ def test_crafting_animation_renders_until_time_expires(monkeypatch):
     shop = ultimate_armor.UltimateArmorShop(presenter)
 
     fonts = [RecordingFont(), RecordingFont()]
-    monkeypatch.setattr("src.ui_pygame.gui.ultimate_armor.pygame.font.Font", lambda *_args, **_kwargs: fonts.pop(0) if fonts else RecordingFont())
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.ultimate_armor.pygame.font.Font",
+        lambda *_args, **_kwargs: fonts.pop(0) if fonts else RecordingFont(),
+    )
     monkeypatch.setattr("src.ui_pygame.gui.ultimate_armor.pygame.display.flip", lambda: None)
     monkeypatch.setattr("src.ui_pygame.gui.ultimate_armor.pygame.event.get", lambda: [])
-    monkeypatch.setattr("src.ui_pygame.gui.ultimate_armor.pygame.time.Clock", lambda: SimpleNamespace(tick=lambda _fps: None))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.ultimate_armor.pygame.time.Clock",
+        lambda: SimpleNamespace(tick=lambda _fps: None),
+    )
 
     values = [0.0, 0.1, 0.2, 0.4, 0.8, 1.2, 1.8, 2.4, 3.1]
     state = {"index": 0}

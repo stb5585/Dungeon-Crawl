@@ -51,14 +51,23 @@ class RendererOverlayMixin:
             orbit = (index / particle_count) * math.tau
             rise_phase = (ticks * 0.9 + (index * 0.173)) % 1.0
             drift = math.sin((ticks * 2.8) + (index * 1.7))
-            x = (effect_rect.width * 0.5) + (math.cos(orbit + (ticks * 1.7)) * effect_rect.width * 0.22) + (drift * effect_rect.width * 0.04)
+            x = (
+                (effect_rect.width * 0.5)
+                + (math.cos(orbit + (ticks * 1.7)) * effect_rect.width * 0.22)
+                + (drift * effect_rect.width * 0.04)
+            )
             y = (effect_rect.height * 0.78) - (rise_phase * effect_rect.height * 0.62)
             radius = max(1, round((3 if depth <= 1 else 2) * (1.0 - (rise_phase * 0.55))))
             alpha = int((220 - (rise_phase * 110)) * max(0.0, 1.0 - min(1.0, darkness * 0.7)))
             color = (130, 220, 255, alpha)
             pygame.draw.circle(overlay, color, (round(x), round(y)), radius)
             if radius > 1:
-                pygame.draw.circle(overlay, (220, 245, 255, min(255, alpha)), (round(x), round(y)), max(1, radius - 1))
+                pygame.draw.circle(
+                    overlay,
+                    (220, 245, 255, min(255, alpha)),
+                    (round(x), round(y)),
+                    max(1, radius - 1),
+                )
 
         self.screen.blit(overlay, effect_rect.topleft)
 
@@ -69,7 +78,9 @@ class RendererOverlayMixin:
         side: str | None = None,
     ) -> pygame.Rect:
         if lateral_view:
-            anchor_x, anchor_y = RendererOverlayMixin._get_floor_sprite_anchor(rect, side=side, lateral_view=True)
+            anchor_x, anchor_y = RendererOverlayMixin._get_floor_sprite_anchor(
+                rect, side=side, lateral_view=True
+            )
             effect_width = max(16, int(rect.width))
             effect_height = max(16, int(rect.height))
             return pygame.Rect(
@@ -117,7 +128,11 @@ class RendererOverlayMixin:
         return os.path.exists(resolver(rel_path))
 
     def _warp_point_sprite_key(self) -> str:
-        preferred = "warp_point_active" if bool(getattr(self.player_char, "warp_point", False)) else "warp_point_inactive"
+        preferred = (
+            "warp_point_active"
+            if bool(getattr(self.player_char, "warp_point", False))
+            else "warp_point_inactive"
+        )
         if self._special_texture_available(self.textures, preferred):
             return preferred
         return "teleporter"
@@ -286,7 +301,9 @@ class RendererOverlayMixin:
                 max(1, round(rect.h)),
             )
 
-        max_size = max(16, round(min(rect.width, rect.height) * (0.42 if surface == "floor" else 0.34)))
+        max_size = max(
+            16, round(min(rect.width, rect.height) * (0.42 if surface == "floor" else 0.34))
+        )
         sprite = self.textures.get_special_texture(texture_key, max_size)
         if sprite is None:
             return
@@ -326,9 +343,15 @@ class RendererOverlayMixin:
 
         sprite_rect = sprite.get_rect()
         if side == "left":
-            sprite_rect.midtop = (round(rect.x + rect.width * 0.64), round(rect.y + rect.height * 0.24))
+            sprite_rect.midtop = (
+                round(rect.x + rect.width * 0.64),
+                round(rect.y + rect.height * 0.24),
+            )
         elif side == "right":
-            sprite_rect.midtop = (round(rect.x + rect.width * 0.36), round(rect.y + rect.height * 0.24))
+            sprite_rect.midtop = (
+                round(rect.x + rect.width * 0.36),
+                round(rect.y + rect.height * 0.24),
+            )
         else:
             sprite_rect.midtop = (rect.centerx, round(rect.y + rect.height * 0.22))
 
@@ -411,7 +434,9 @@ class RendererOverlayMixin:
         next_zone=None,
         depth: int | None = None,
     ) -> pygame.Rect:
-        if not self._is_floor_sprite_tile(tile, getattr(self, "player_char", None)) or is_wall(center_tile):
+        if not self._is_floor_sprite_tile(tile, getattr(self, "player_char", None)) or is_wall(
+            center_tile
+        ):
             return rect
 
         if zone is not None and next_zone is not None and depth is not None:
@@ -435,7 +460,9 @@ class RendererOverlayMixin:
         return pygame.Rect(rect.x - overscan, rect.y, rect.width + overscan, rect.height)
 
     @staticmethod
-    def _get_side_special_clip_rect(rect: pygame.Rect, tile, side: str, center_tile=None) -> pygame.Rect | None:
+    def _get_side_special_clip_rect(
+        rect: pygame.Rect, tile, side: str, center_tile=None
+    ) -> pygame.Rect | None:
         if not is_wall(center_tile):
             return None
 

@@ -112,12 +112,12 @@ class BarracksManager(TownScreenBase):
             ),
         ),
     )
-    
+
     def __init__(self, presenter, player_char, game=None):
         super().__init__(presenter)
         self.player_char = player_char
         self.game = game
-    
+
     def visit_barracks(self):
         """Visit the barracks for quests and storage."""
         barracks_options = ["Quests", "Storage Locker"]
@@ -128,7 +128,7 @@ class BarracksManager(TownScreenBase):
         if self._grandmaster_hall_available():
             barracks_options.append("Secret Hall")
         barracks_options.append("Leave")
-        
+
         barracks_screen = LocationMenuScreen(self.presenter, "Barracks")
         barracks_screen.options_list = barracks_options
         barracks_screen.set_location_portrait("Sergeant")
@@ -147,8 +147,13 @@ class BarracksManager(TownScreenBase):
                 lines = get_special_events().get("Joffrey's Key", {}).get("Text", [])
             except Exception:
                 lines = []
-            event_message = " ".join(line.strip() for line in lines if line is not None).strip() or "Joffrey's Key"
-            event_popup = ConfirmationPopup(self.presenter, event_message, show_buttons=False, slow_print=True)
+            event_message = (
+                " ".join(line.strip() for line in lines if line is not None).strip()
+                or "Joffrey's Key"
+            )
+            event_popup = ConfirmationPopup(
+                self.presenter, event_message, show_buttons=False, slow_print=True
+            )
             event_popup.show(
                 background_draw_func=draw_barracks_background,
                 flush_events=True,
@@ -170,7 +175,7 @@ class BarracksManager(TownScreenBase):
                 flush_events=True,
                 require_key_release=True,
             )
-        
+
         while True:
             choice_idx = barracks_screen.navigate(
                 barracks_options,
@@ -178,7 +183,7 @@ class BarracksManager(TownScreenBase):
                 flush_events=True,
                 require_key_release=True,
             )
-            
+
             if choice_idx is None:
                 choice_label = "Leave"
             else:
@@ -192,16 +197,19 @@ class BarracksManager(TownScreenBase):
                     require_key_release=True,
                 )
                 break
-            
+
             elif choice_label == "Quests":
                 from .quest_manager import QuestManager
+
                 qm = QuestManager(
-                    self.presenter, 
-                    self.player_char, 
-                    quest_text_renderer=lambda text: barracks_screen.display_quest_text(text, npc_name="Sergeant"),
+                    self.presenter,
+                    self.player_char,
+                    quest_text_renderer=lambda text: barracks_screen.display_quest_text(
+                        text, npc_name="Sergeant"
+                    ),
                     renderer_preserve_formatting=True,
                 )
-                qm.check_and_offer('Sergeant')
+                qm.check_and_offer("Sergeant")
 
             elif choice_label == "Storage Locker":
                 self.manage_storage()
@@ -212,7 +220,9 @@ class BarracksManager(TownScreenBase):
                 trial_label = self._legacy_barracks_trial_label()
                 if self._legacy_barracks_trial_available() and trial_label not in barracks_options:
                     barracks_options.insert(-1, trial_label)
-                elif not self._legacy_barracks_trial_available() and trial_label in barracks_options:
+                elif (
+                    not self._legacy_barracks_trial_available() and trial_label in barracks_options
+                ):
                     barracks_options.remove(trial_label)
                 if self._grandmaster_hall_available() and "Secret Hall" not in barracks_options:
                     barracks_options.insert(-1, "Secret Hall")
@@ -229,10 +239,9 @@ class BarracksManager(TownScreenBase):
                 self.visit_grandmaster_secret_hall(draw_barracks_background)
 
     def _grandmaster_hall_available(self):
-        return (
-            grandmaster.is_grandmaster(self.player_char)
-            and grandmaster.ring_visible_for_sergeant(self.player_char)
-        )
+        return grandmaster.is_grandmaster(
+            self.player_char
+        ) and grandmaster.ring_visible_for_sergeant(self.player_char)
 
     def _berserker_duel_available(self):
         return (
@@ -317,7 +326,9 @@ class BarracksManager(TownScreenBase):
         )
 
     def _run_grandmaster_gauntlet(self, weapon_type, rebind=False):
-        combat_manager = getattr(getattr(self.game, "dungeon_manager", None), "combat_manager", None)
+        combat_manager = getattr(
+            getattr(self.game, "dungeon_manager", None), "combat_manager", None
+        )
         if combat_manager is None:
             return False
 
@@ -340,7 +351,9 @@ class BarracksManager(TownScreenBase):
         return True
 
     def visit_grandmaster_secret_hall(self, background_draw_func=None):
-        state = grandmaster.normalize_state(getattr(self.player_char, "grandmaster_discipline", None))
+        state = grandmaster.normalize_state(
+            getattr(self.player_char, "grandmaster_discipline", None)
+        )
         rebind = bool(state["activated"])
         intro = (
             "The Sergeant studies the Class Ring and unlocks a narrow door behind the old banners. "
@@ -357,7 +370,9 @@ class BarracksManager(TownScreenBase):
         if weapon_type is None:
             return False
         if grandmaster.get_weapon_type(self.player_char, "Weapon") != weapon_type:
-            self._show_message(f"Equip a {weapon_type} in your main hand before beginning the trial.")
+            self._show_message(
+                f"Equip a {weapon_type} in your main hand before beginning the trial."
+            )
             return False
 
         if not self._run_grandmaster_gauntlet(weapon_type, rebind=rebind):
@@ -370,7 +385,8 @@ class BarracksManager(TownScreenBase):
             ring.class_mod(self.player_char)
         self._show_message(
             f"The Class Ring awakens to {weapon_type} Discipline."
-            if not rebind else f"The Class Ring is rebound to {weapon_type} Discipline."
+            if not rebind
+            else f"The Class Ring is rebound to {weapon_type} Discipline."
         )
         return True
 
@@ -403,7 +419,9 @@ class BarracksManager(TownScreenBase):
         return enemy
 
     def _run_berserker_duel(self):
-        combat_manager = getattr(getattr(self.game, "dungeon_manager", None), "combat_manager", None)
+        combat_manager = getattr(
+            getattr(self.game, "dungeon_manager", None), "combat_manager", None
+        )
         if combat_manager is None:
             return False
 
@@ -466,7 +484,9 @@ class BarracksManager(TownScreenBase):
         return enemy
 
     def _run_legacy_barracks_trial(self):
-        combat_manager = getattr(getattr(self.game, "dungeon_manager", None), "combat_manager", None)
+        combat_manager = getattr(
+            getattr(self.game, "dungeon_manager", None), "combat_manager", None
+        )
         if combat_manager is None:
             return False
         enemy = self._legacy_barracks_trial_enemy()
@@ -551,17 +571,17 @@ class BarracksManager(TownScreenBase):
             )
 
         return granted
-    
+
     def manage_storage(self):
         """Access storage system."""
         storage_options = ["Store Items", "Leave"]
-        
+
         # Add retrieve option if storage has items
         if self.player_char.storage:
             storage_options.insert(1, "Retrieve Items")
-        
+
         storage_screen = LocationMenuScreen(self.presenter, "Storage Locker")
-        
+
         while True:
             choice = storage_screen.navigate(
                 storage_options,
@@ -569,39 +589,41 @@ class BarracksManager(TownScreenBase):
                 flush_events=True,
                 require_key_release=True,
             )
-            
+
             if choice is None or (choice is not None and storage_options[choice] == "Leave"):
                 break
-            
+
             if storage_options[choice] == "Store Items":
                 self.store_items()
                 # Update menu if storage now has items
                 if self.player_char.storage and "Retrieve Items" not in storage_options:
                     storage_options.insert(1, "Retrieve Items")
-            
+
             elif storage_options[choice] == "Retrieve Items":
                 self.retrieve_items()
                 # Update menu if storage is now empty
                 if not self.player_char.storage and "Retrieve Items" in storage_options:
                     storage_options.remove("Retrieve Items")
-    
+
     def store_items(self):
         """Store items in storage locker."""
         if not self.player_char.inventory:
-            popup = ConfirmationPopup(self.presenter, "You have no items to store.", show_buttons=False)
+            popup = ConfirmationPopup(
+                self.presenter, "You have no items to store.", show_buttons=False
+            )
             popup.show(flush_events=True, require_key_release=True)
             return
-        
+
         from .confirmation_popup import QuantityPopup
-        
+
         store_screen = LocationMenuScreen(self.presenter, "Store Items")
-        
+
         while True:
             # Build item list
             item_options = []
             item_data_list = []
             items_display = []
-            
+
             for name, items_list in self.player_char.inventory.items():
                 if items_list:
                     count = len(items_list)
@@ -609,83 +631,91 @@ class BarracksManager(TownScreenBase):
                     item_options.append(name)
                     item_data_list.append((item, count))
                     items_display.append((item.name, count))
-            
+
             if not item_options:
-                popup = ConfirmationPopup(self.presenter, "You have no items to store.", show_buttons=False)
+                popup = ConfirmationPopup(
+                    self.presenter, "You have no items to store.", show_buttons=False
+                )
                 popup.show(flush_events=True, require_key_release=True)
                 return
-            
+
             item_options.append("Back")
             items_display.append(("Back", 0))
-            
+
             # Show items list in right panel and navigate on right
             choice = store_screen.navigate_with_content(
                 items_display,
                 flush_events=True,
                 require_key_release=True,
             )
-            
+
             if choice is None or items_display[choice][0] == "Back":
                 return
-            
+
             item, count = item_data_list[choice]
-            
+
             # Use QuantityPopup for quantity selection
-            qty_popup = QuantityPopup(self.presenter, item.name, unit_cost=0, max_quantity=count, action="store")
+            qty_popup = QuantityPopup(
+                self.presenter, item.name, unit_cost=0, max_quantity=count, action="store"
+            )
             quantity = qty_popup.show(flush_events=True, require_key_release=True)
-            
+
             if quantity is None or quantity == 0:
                 continue
-            
+
             # Move to storage
             self.player_char.modify_inventory(item, num=quantity, storage=True, subtract=True)
-            popup = ConfirmationPopup(self.presenter, f"Stored {quantity}x {item.name}", show_buttons=False)
+            popup = ConfirmationPopup(
+                self.presenter, f"Stored {quantity}x {item.name}", show_buttons=False
+            )
             popup.show(flush_events=True, require_key_release=True)
-    
+
     def retrieve_items(self):
         """Retrieve items from storage locker."""
         if not self.player_char.storage:
             popup = ConfirmationPopup(self.presenter, "Your storage is empty.", show_buttons=False)
             popup.show(flush_events=True, require_key_release=True)
             return
-        
+
         from .confirmation_popup import QuantityPopup
-        
+
         storage_screen = LocationMenuScreen(self.presenter, "Retrieve Items")
-        
+
         while True:
             # Build storage list
             storage_options = []
             storage_data_list = []
             storage_display = []
-            
+
             for name, item_list in self.player_char.storage.items():
                 if item_list:
                     count = len(item_list)
                     storage_options.append(name)
                     storage_data_list.append((item_list[0], count))
                     storage_display.append((item_list[0].name, count))
-            
+
             if not storage_options:
-                popup = ConfirmationPopup(self.presenter, "Your storage is empty.", show_buttons=False)
+                popup = ConfirmationPopup(
+                    self.presenter, "Your storage is empty.", show_buttons=False
+                )
                 popup.show(flush_events=True, require_key_release=True)
                 return
-            
+
             storage_options.append("Back")
             storage_display.append(("Back", 0))
-            
+
             # Show items list in right panel and navigate on right
             choice = storage_screen.navigate_with_content(
                 storage_display,
                 flush_events=True,
                 require_key_release=True,
             )
-            
+
             if choice is None or storage_display[choice][0] == "Back":
                 return
-            
+
             item, count = storage_data_list[choice]
-            
+
             # Use QuantityPopup for quantity selection
             qty_popup = QuantityPopup(
                 self.presenter,
@@ -696,11 +726,13 @@ class BarracksManager(TownScreenBase):
                 default_quantity=count,
             )
             quantity = qty_popup.show(flush_events=True, require_key_release=True)
-            
+
             if quantity is None or quantity == 0:
                 continue
-            
+
             # Move from storage to inventory (subtract=False means add to inventory, remove from storage)
             self.player_char.modify_inventory(item, num=quantity, storage=True, subtract=False)
-            popup = ConfirmationPopup(self.presenter, f"Retrieved {quantity}x {item.name}", show_buttons=False)
+            popup = ConfirmationPopup(
+                self.presenter, f"Retrieved {quantity}x {item.name}", show_buttons=False
+            )
             popup.show(flush_events=True, require_key_release=True)

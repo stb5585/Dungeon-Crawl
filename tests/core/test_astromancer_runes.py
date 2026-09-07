@@ -184,11 +184,14 @@ def test_witnessed_learning_includes_stupefy_and_volcano_at_authored_ranks():
         success,
     )
     assert abilities.Volcano().rank == 2
-    assert astromancer.learn_witnessed_spell(
-        diviner,
-        abilities.Volcano(),
-        success,
-    ) == ""
+    assert (
+        astromancer.learn_witnessed_spell(
+            diviner,
+            abilities.Volcano(),
+            success,
+        )
+        == ""
+    )
     assert "learns Volcano" in astromancer.learn_witnessed_spell(
         astromancer_player,
         abilities.Volcano(),

@@ -31,7 +31,9 @@ class DungeonRenderer:
 
     def render_message_area(self, messages, scroll_offset=0, lines_per_page=4):
         self._refresh_screen_refs()
-        self.overlays.render_message_area(messages, scroll_offset=scroll_offset, lines_per_page=lines_per_page)
+        self.overlays.render_message_area(
+            messages, scroll_offset=scroll_offset, lines_per_page=lines_per_page
+        )
 
     def trigger_damage_flash(self, duration_ms=700, alpha=255, color=(255, 32, 16)):
         self.overlays.trigger_damage_flash(duration_ms=duration_ms, alpha=alpha, color=color)

@@ -16,16 +16,22 @@ from tests.test_framework import TestGameState
 
 class TestItemConsumables:
     def test_health_potion_full_health_returns_early(self):
-        player = TestGameState.create_player(class_name="Warrior", race_name="Human", health=(100, 100))
+        player = TestGameState.create_player(
+            class_name="Warrior", race_name="Human", health=(100, 100)
+        )
 
         result = items.HealthPotion().use(player)
 
         assert result == "You are already at full health.\n"
 
     def test_health_potion_out_of_combat_heals_and_caps(self, monkeypatch):
-        player = TestGameState.create_player(class_name="Warrior", race_name="Human", health=(100, 40))
+        player = TestGameState.create_player(
+            class_name="Warrior", race_name="Human", health=(100, 40)
+        )
         calls = []
-        player.modify_inventory = lambda item, subtract=False, **_kwargs: calls.append((item.name, subtract))
+        player.modify_inventory = lambda item, subtract=False, **_kwargs: calls.append(
+            (item.name, subtract)
+        )
         monkeypatch.setattr("src.core.items.random.uniform", lambda _a, _b: 1.0)
 
         result = items.HealthPotion().use(player)
@@ -40,7 +46,9 @@ class TestItemConsumables:
         assert "You are at max health." in result
 
     def test_health_potion_dwarf_combat_use_applies_hangover(self, monkeypatch):
-        player = TestGameState.create_player(class_name="Warrior", race_name="Dwarf", health=(100, 20))
+        player = TestGameState.create_player(
+            class_name="Warrior", race_name="Dwarf", health=(100, 20)
+        )
         player.state = "fight"
         player.check_mod = lambda mod, luck_factor=None: 1 if mod == "luck" else 0
         player.modify_inventory = lambda *_args, **_kwargs: None
@@ -54,7 +62,9 @@ class TestItemConsumables:
         assert "healed you" in result
 
     def test_health_potion_combat_luck_cannot_exceed_regular_potion_tier(self, monkeypatch):
-        player = TestGameState.create_player(class_name="Dragoon", race_name="Human", health=(1200, 100))
+        player = TestGameState.create_player(
+            class_name="Dragoon", race_name="Human", health=(1200, 100)
+        )
         player.state = "fight"
         player.check_mod = lambda mod, luck_factor=None: 3 if mod == "luck" else 0
         player.modify_inventory = lambda *_args, **_kwargs: None
@@ -66,7 +76,9 @@ class TestItemConsumables:
         assert "healed you for 300 life" in result
 
     def test_health_potion_uses_minimum_floor_before_percent_scaling(self, monkeypatch):
-        player = TestGameState.create_player(class_name="Warrior", race_name="Human", health=(40, 1))
+        player = TestGameState.create_player(
+            class_name="Warrior", race_name="Human", health=(40, 1)
+        )
         player.state = "normal"
         player.modify_inventory = lambda *_args, **_kwargs: None
         monkeypatch.setattr("src.core.items.random.uniform", lambda _a, _b: 1.0)
@@ -77,7 +89,9 @@ class TestItemConsumables:
         assert "healed you for 25 life" in result
 
     def test_mana_potion_full_mana_and_dwarf_out_of_combat_steps(self, monkeypatch):
-        full_mana = TestGameState.create_player(class_name="Warrior", race_name="Human", mana=(50, 50))
+        full_mana = TestGameState.create_player(
+            class_name="Warrior", race_name="Human", mana=(50, 50)
+        )
         assert items.ManaPotion().use(full_mana) == "You are already at full mana.\n"
 
         dwarf = TestGameState.create_player(class_name="Warrior", race_name="Dwarf", mana=(80, 10))
@@ -93,7 +107,9 @@ class TestItemConsumables:
         assert "restored 22 mana points" in result
 
     def test_elixir_restores_health_and_mana_and_clamps(self, monkeypatch):
-        player = TestGameState.create_player(class_name="Warrior", race_name="Human", health=(100, 80), mana=(60, 50))
+        player = TestGameState.create_player(
+            class_name="Warrior", race_name="Human", health=(100, 80), mana=(60, 50)
+        )
         player.state = "normal"
         player.modify_inventory = lambda *_args, **_kwargs: None
 
@@ -105,7 +121,9 @@ class TestItemConsumables:
         assert "You are at max health." in result
         assert "You are at full mana." in result
 
-        full = TestGameState.create_player(class_name="Warrior", race_name="Human", health=(100, 100), mana=(60, 60))
+        full = TestGameState.create_player(
+            class_name="Warrior", race_name="Human", health=(100, 100), mana=(60, 60)
+        )
         assert items.Elixir().use(full) == "You are already at full health and mana.\n"
 
     @pytest.mark.parametrize(
@@ -159,10 +177,14 @@ class TestItemConsumables:
         assert "stats have been increased by 1" in result
 
     def test_status_items_cover_normal_dwarf_bandage_and_remedy_paths(self, monkeypatch):
-        human = TestGameState.create_player(class_name="Warrior", race_name="Human", health=(100, 70))
+        human = TestGameState.create_player(
+            class_name="Warrior", race_name="Human", health=(100, 70)
+        )
         assert items.Antidote().use(human) == "You are not affected by poison.\n"
 
-        dwarf = TestGameState.create_player(class_name="Warrior", race_name="Dwarf", health=(100, 60))
+        dwarf = TestGameState.create_player(
+            class_name="Warrior", race_name="Dwarf", health=(100, 60)
+        )
         dwarf.state = "fight"
         dwarf.status_effects["Poison"].active = True
         dwarf.status_effects["Poison"].duration = 3
@@ -185,20 +207,27 @@ class TestItemConsumables:
         assert human.physical_effects["Bleed"].active is False
         assert "cured of bleed" in bandage_result
 
-        remedy_user = TestGameState.create_player(class_name="Warrior", race_name="Human", health=(100, 80))
+        remedy_user = TestGameState.create_player(
+            class_name="Warrior", race_name="Human", health=(100, 80)
+        )
         remedy_user.modify_inventory = lambda *_args, **_kwargs: None
         for status in ["Poison", "Blind", "Silence", "Doom"]:
             remedy_user.status_effects[status].active = True
             remedy_user.status_effects[status].duration = 2
         remedy_result = items.Remedy().use(remedy_user)
-        assert all(not remedy_user.status_effects[status].active for status in ["Poison", "Blind", "Silence", "Doom"])
+        assert all(
+            not remedy_user.status_effects[status].active
+            for status in ["Poison", "Blind", "Silence", "Doom"]
+        )
         assert "cured of poison" in remedy_result
         assert "cured of doom" in remedy_result
 
     def test_scroll_and_sanctuary_scroll_consume_last_charge(self):
         player = TestGameState.create_player(class_name="Warrior", race_name="Human")
         calls = []
-        player.modify_inventory = lambda item, subtract=False, **_kwargs: calls.append((item.name, subtract))
+        player.modify_inventory = lambda item, subtract=False, **_kwargs: calls.append(
+            (item.name, subtract)
+        )
 
         bless = items.BlessScroll()
         bless.spell = SimpleNamespace(cast=lambda user, target=None, special=True: "Blessed!\n")
@@ -211,7 +240,9 @@ class TestItemConsumables:
         assert ("Bless Scroll", True) in calls
 
         sanctuary = items.SanctuaryScroll()
-        sanctuary.spell = SimpleNamespace(cast_out=lambda user=None: "A safe light surrounds you.\n")
+        sanctuary.spell = SimpleNamespace(
+            cast_out=lambda user=None: "A safe light surrounds you.\n"
+        )
         sanctuary.charges = 1
         sanctuary_result = sanctuary.use(player)
 

@@ -18,7 +18,14 @@ from .models import _whole_stat_text
 class ClassCompanionDetailsPopup:
     """Character-tab-style details modal for familiars, companions, and summons."""
 
-    def __init__(self, presenter, parent_screen: "ModernCharacterScreen", player_char, kind: str, companion: Any):
+    def __init__(
+        self,
+        presenter,
+        parent_screen: "ModernCharacterScreen",
+        player_char,
+        kind: str,
+        companion: Any,
+    ):
         self.presenter = presenter
         self.parent_screen = parent_screen
         self.player_char = player_char
@@ -48,7 +55,12 @@ class ClassCompanionDetailsPopup:
         content.height = self.popup_rect.bottom - content.top - 42
         left_width = (content.width * 3) // 5
         left_rect = pygame.Rect(content.left, content.top, left_width, content.height)
-        right_rect = pygame.Rect(left_rect.right + gap, content.top, content.right - left_rect.right - gap, content.height)
+        right_rect = pygame.Rect(
+            left_rect.right + gap,
+            content.top,
+            content.right - left_rect.right - gap,
+            content.height,
+        )
         return left_rect, right_rect
 
     def _draw_overlay(self, background_surface) -> None:
@@ -64,7 +76,9 @@ class ClassCompanionDetailsPopup:
         art_width = min(max(170, rect.width // 3), rect.width // 2)
         art_height = min(max(190, (rect.height * 9) // 20), rect.height - 180)
         art_rect = pygame.Rect(rect.left + 16, y, art_width, art_height)
-        sprite = self.parent_screen.companion_art_manager.get_scaled_sprite(self.companion, art_rect.size)
+        sprite = self.parent_screen.companion_art_manager.get_scaled_sprite(
+            self.companion, art_rect.size
+        )
         self.screen.blit(sprite, art_rect)
         pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, art_rect, 2)
 
@@ -147,10 +161,14 @@ class ClassCompanionDetailsPopup:
     def _draw_abilities(self, rect: pygame.Rect, y: int, bottom_limit: int) -> int:
         names = self._ability_names()
         self.parent_screen._draw_divider(rect, y - 10)
-        self.parent_screen._draw_text("Abilities", self.large_font, self.colors.GOLD, rect.left + 16, y, rect.width - 32)
+        self.parent_screen._draw_text(
+            "Abilities", self.large_font, self.colors.GOLD, rect.left + 16, y, rect.width - 32
+        )
         y += self.large_font.get_height() + 8
         if not names:
-            self.parent_screen._draw_text("None", self.normal_font, self.colors.GRAY, rect.left + 16, y, rect.width - 32)
+            self.parent_screen._draw_text(
+                "None", self.normal_font, self.colors.GRAY, rect.left + 16, y, rect.width - 32
+            )
             return y + self.normal_font.get_height() + 8
 
         available_lines = max(1, (bottom_limit - y) // (self.small_font.get_height() + 4))
@@ -224,7 +242,9 @@ class ClassCompanionDetailsPopup:
                 right_y += 8
 
     def _draw_tamed_companion_flavor(self, rect: pygame.Rect, y: int) -> None:
-        self.parent_screen._draw_text("Companion Notes", self.large_font, self.colors.GOLD, rect.left + 16, y, rect.width - 32)
+        self.parent_screen._draw_text(
+            "Companion Notes", self.large_font, self.colors.GOLD, rect.left + 16, y, rect.width - 32
+        )
         y += self.large_font.get_height() + 10
         notes = [
             getattr(self.companion, "inspect", lambda: "")(),
@@ -283,7 +303,14 @@ class ClassCompanionDetailsPopup:
             self._draw_familiar_details(left_rect, right_rect, y)
         else:
             self.parent_screen._draw_divider(left_rect, y - 8)
-            self.parent_screen._draw_text("Core Attributes", self.large_font, self.colors.GOLD, left_rect.left + 16, y, left_rect.width - 32)
+            self.parent_screen._draw_text(
+                "Core Attributes",
+                self.large_font,
+                self.colors.GOLD,
+                left_rect.left + 16,
+                y,
+                left_rect.width - 32,
+            )
             y += self.large_font.get_height() + 8
             self.parent_screen._draw_key_values(
                 self._core_attribute_rows(),
@@ -317,26 +344,68 @@ class ClassCompanionDetailsPopup:
             self.parent_screen._draw_divider(right_rect, y - 10)
             column_gap = 12
             column_width = (right_rect.width - 32 - column_gap) // 2
-            weakness_rect = pygame.Rect(right_rect.left + 16, y, column_width, right_rect.bottom - y - 16)
-            resistance_rect = pygame.Rect(weakness_rect.right + column_gap, y, column_width, weakness_rect.height)
-            self.parent_screen._draw_text("Weaknesses", self.large_font, self.colors.RED, weakness_rect.left, y, weakness_rect.width)
-            self.parent_screen._draw_text("Resistances", self.large_font, self.colors.GREEN, resistance_rect.left, y, resistance_rect.width)
+            weakness_rect = pygame.Rect(
+                right_rect.left + 16, y, column_width, right_rect.bottom - y - 16
+            )
+            resistance_rect = pygame.Rect(
+                weakness_rect.right + column_gap, y, column_width, weakness_rect.height
+            )
+            self.parent_screen._draw_text(
+                "Weaknesses",
+                self.large_font,
+                self.colors.RED,
+                weakness_rect.left,
+                y,
+                weakness_rect.width,
+            )
+            self.parent_screen._draw_text(
+                "Resistances",
+                self.large_font,
+                self.colors.GREEN,
+                resistance_rect.left,
+                y,
+                resistance_rect.width,
+            )
             group_y = y + self.large_font.get_height() + 6
-            self.parent_screen._draw_resistance_group(groups["weaknesses"], weakness_rect, group_y, self.colors.RED, font=self.small_font, row_gap=2)
-            self.parent_screen._draw_resistance_group(groups["resistances"], resistance_rect, group_y, self.colors.GREEN, font=self.small_font, row_gap=2)
+            self.parent_screen._draw_resistance_group(
+                groups["weaknesses"],
+                weakness_rect,
+                group_y,
+                self.colors.RED,
+                font=self.small_font,
+                row_gap=2,
+            )
+            self.parent_screen._draw_resistance_group(
+                groups["resistances"],
+                resistance_rect,
+                group_y,
+                self.colors.GREEN,
+                font=self.small_font,
+                row_gap=2,
+            )
 
         footer = "Esc/Enter: Close"
         footer_text = self.small_font.render(footer, True, self.colors.GRAY)
-        self.screen.blit(footer_text, (self.popup_rect.left + 16, self.popup_rect.bottom - footer_text.get_height() - 12))
+        self.screen.blit(
+            footer_text,
+            (self.popup_rect.left + 16, self.popup_rect.bottom - footer_text.get_height() - 12),
+        )
         pygame.display.flip()
 
-    def show(self, background_draw_func=None, flush_events: bool = False, require_key_release: bool = False) -> None:
+    def show(
+        self,
+        background_draw_func=None,
+        flush_events: bool = False,
+        require_key_release: bool = False,
+    ) -> None:
         if background_draw_func is None:
             background = self.screen.copy()
             background_draw_func = lambda: self.screen.blit(background, (0, 0))
         background_draw_func()
         background_surface = self.screen.copy()
-        input_armed = prepare_guarded_input(flush_events=flush_events, require_key_release=require_key_release)
+        input_armed = prepare_guarded_input(
+            flush_events=flush_events, require_key_release=require_key_release
+        )
 
         while True:
             self.draw(background_surface)

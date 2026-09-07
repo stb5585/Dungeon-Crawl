@@ -58,8 +58,12 @@ class TestCharacterHelpers:
         elf.status_effects["Poison"].active = True
         half_elf.status_effects["Poison"].active = True
 
-        assert elf.healing_received_multiplier() == pytest.approx(0.70 * ELF_HEALING_RECEIVED_MULTIPLIER)
-        assert half_elf.healing_received_multiplier() == pytest.approx(0.70 * HALF_ELF_HEALING_RECEIVED_MULTIPLIER)
+        assert elf.healing_received_multiplier() == pytest.approx(
+            0.70 * ELF_HEALING_RECEIVED_MULTIPLIER
+        )
+        assert half_elf.healing_received_multiplier() == pytest.approx(
+            0.70 * HALF_ELF_HEALING_RECEIVED_MULTIPLIER
+        )
         assert human.healing_received_multiplier() == pytest.approx(1.0)
 
     def test_bleed_tick_uses_bleeding_message(self, monkeypatch):
@@ -165,11 +169,13 @@ class TestCharacterHelpers:
             level=100,
         )
         lycan.progression.unspent_points = 10
-        lycan.progression.purchased_node_ids.update({
-            "lycan.ability.transform3",
-            "lycan.ability.charge",
-            "lycan.ability.battlecry",
-        })
+        lycan.progression.purchased_node_ids.update(
+            {
+                "lycan.ability.transform3",
+                "lycan.ability.charge",
+                "lycan.ability.battlecry",
+            }
+        )
         lycan.spellbook["Skills"]["Battle Cry"] = abilities.BattleCry()
         lycan.transform()
 
@@ -185,10 +191,12 @@ class TestCharacterHelpers:
             race_name="Human",
             level=100,
         )
-        druid.progression.purchased_node_ids.update({
-            "druid.ability.transform",
-            "druid.talent.druid-grove-shelter.rank-2",
-        })
+        druid.progression.purchased_node_ids.update(
+            {
+                "druid.ability.transform",
+                "druid.talent.druid-grove-shelter.rank-2",
+            }
+        )
         druid.progression.unspent_points = 10
         druid.transform()
         promoted = purchase_node(
@@ -320,9 +328,7 @@ class TestCharacterHelpers:
         defender = TestGameState.create_player(class_name="Warrior", race_name="Human")
         attacker = TestGameState.create_player(class_name="Warrior", race_name="Human")
         status_events = []
-        attacker._emit_status_event = lambda *args, **kwargs: status_events.append(
-            (args, kwargs)
-        )
+        attacker._emit_status_event = lambda *args, **kwargs: status_events.append((args, kwargs))
 
         defender.magic_effects["Mana Shield"].active = True
         defender.magic_effects["Mana Shield"].duration = 25
@@ -371,7 +377,9 @@ class TestCharacterHelpers:
         assert defender.magic_effects["Mana Shield"].active is False
 
         defender.resistance["Fire"] = 0.25
-        defender.check_mod = lambda mod, enemy=None, typ=None, **_kwargs: 50 if mod == "magic def" else defender.resistance.get(typ, 0)
+        defender.check_mod = lambda mod, enemy=None, typ=None, **_kwargs: (
+            50 if mod == "magic def" else defender.resistance.get(typ, 0)
+        )
         hit, message, damage = defender.damage_reduction(100, attacker, typ="Fire")
 
         assert hit is True
@@ -422,7 +430,13 @@ class TestCharacterHelpers:
     def test_effects_cover_end_of_combat_and_common_duration_expiry(self, monkeypatch):
         player = TestGameState.create_player(class_name="Warrior", race_name="Human")
         emitted = []
-        monkeypatch.setattr(player, "_emit_status_event", lambda *args, **kwargs: emitted.append(kwargs.get("source", args[-1] if args else None)))
+        monkeypatch.setattr(
+            player,
+            "_emit_status_event",
+            lambda *args, **kwargs: emitted.append(
+                kwargs.get("source", args[-1] if args else None)
+            ),
+        )
 
         player.status_effects["Blind"].active = True
         player.status_effects["Blind"].duration = 1

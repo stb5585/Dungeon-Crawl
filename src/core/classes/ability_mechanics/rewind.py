@@ -23,7 +23,11 @@ def attempt_tame(character: Any, target: Any, *, rng: Any = random) -> str:
         return "There is no beast to tame.\n"
     if getattr(target, "enemy_typ", None) != "Animal":
         return f"{getattr(target, 'name', 'The target')} is not tamable.\n"
-    if getattr(target, "boss", False) or getattr(target, "boss_type", None) or getattr(target, "class_ring_trial_enemy", False):
+    if (
+        getattr(target, "boss", False)
+        or getattr(target, "boss_type", None)
+        or getattr(target, "class_ring_trial_enemy", False)
+    ):
         return f"{target.name} resists all attempts at taming.\n"
     current_state = normalize_tamed_companion(getattr(character, "tamed_companion", None))
     roster = list(current_state.get("companions", []))
@@ -70,7 +74,9 @@ def attempt_tame(character: Any, target: Any, *, rng: Any = random) -> str:
         )
         existing.update(state)
         existing["bond"] = bond
-        existing["evolution"] = tamed_companion_evolution_for_bond(bond, enemy_class, existing["species"])
+        existing["evolution"] = tamed_companion_evolution_for_bond(
+            bond, enemy_class, existing["species"]
+        )
         roster[existing_index] = existing
         active_index = existing_index
         lead = f"{character.name} strengthens their bond with {target.name}.\n"
@@ -87,8 +93,7 @@ def attempt_tame(character: Any, target: Any, *, rng: Any = random) -> str:
     special = character.tamed_companion["special_ability"]
     roster_count = len(character.tamed_companion.get("companions", []))
     return (
-        lead +
-        f"{target.name} begins watching for your signals with {special}.\n"
+        lead + f"{target.name} begins watching for your signals with {special}.\n"
         f"Tamed companions held: {roster_count}/{TAMED_COMPANION_ROSTER_LIMIT}.\n"
     )
 
@@ -131,20 +136,21 @@ def capture_battle_snapshot(engine: Any) -> dict[str, Any]:
         "summon": summon,
         "summon_state": character_state(summon) if summon is not None else None,
         "focus_target_id": getattr(engine, "_focus_target_id", None),
-        "cycle": {
-            "order": tuple(cycle.order),
-            "cursor": cycle.cursor,
-            "round_number": cycle.round_number,
-            "total_started_actor_turns": cycle.total_started_actor_turns,
-            "current_actor_turn_id": getattr(engine, "_current_actor_turn_id", 0),
-        } if cycle else None,
+        "cycle": (
+            {
+                "order": tuple(cycle.order),
+                "cursor": cycle.cursor,
+                "round_number": cycle.round_number,
+                "total_started_actor_turns": cycle.total_started_actor_turns,
+                "current_actor_turn_id": getattr(engine, "_current_actor_turn_id", 0),
+            }
+            if cycle
+            else None
+        ),
         "pending_actions": {
-            key: dict(value)
-            for key, value in getattr(engine, "pending_actions", {}).items()
+            key: dict(value) for key, value in getattr(engine, "pending_actions", {}).items()
         },
-        "delayed_spells": [
-            dict(entry) for entry in getattr(engine, "delayed_spells", [])
-        ],
+        "delayed_spells": [dict(entry) for entry in getattr(engine, "delayed_spells", [])],
         "foresight_threads": int(promotion_state.get("foresight_threads", 0) or 0),
         "threaded_cast_pending": bool(promotion_state.get("threaded_cast_pending", False)),
     }
@@ -178,9 +184,7 @@ def restore_battle_snapshot(engine: Any, snapshot: dict[str, Any]) -> str:
             restore(member.enemy, state["character"])
             member.resolution = state["resolution"]
             member.resolution_cause = state["resolution_cause"]
-        engine.encounter._resolution_ledger = list(
-            deepcopy(snapshot.get("resolution_ledger", ()))
-        )
+        engine.encounter._resolution_ledger = list(deepcopy(snapshot.get("resolution_ledger", ())))
     else:
         restore(engine.encounter.primary_enemy, snapshot["enemy"])
     engine.summon_active = bool(snapshot.get("summon_active", False))
@@ -192,21 +196,16 @@ def restore_battle_snapshot(engine: Any, snapshot: dict[str, Any]) -> str:
         engine._actor_cycle.order = tuple(cycle_state["order"])
         engine._actor_cycle.cursor = cycle_state["cursor"]
         engine._actor_cycle.round_number = cycle_state["round_number"]
-        engine._actor_cycle.total_started_actor_turns = cycle_state[
-            "total_started_actor_turns"
-        ]
+        engine._actor_cycle.total_started_actor_turns = cycle_state["total_started_actor_turns"]
         engine._current_actor_turn_id = cycle_state["current_actor_turn_id"]
     engine._focus_target_id = snapshot.get(
         "focus_target_id",
         engine.encounter.primary_member.combatant_id,
     )
     engine.pending_actions = {
-        key: dict(value)
-        for key, value in snapshot.get("pending_actions", {}).items()
+        key: dict(value) for key, value in snapshot.get("pending_actions", {}).items()
     }
-    engine.delayed_spells = [
-        dict(entry) for entry in snapshot.get("delayed_spells", [])
-    ]
+    engine.delayed_spells = [dict(entry) for entry in snapshot.get("delayed_spells", [])]
     from .. import promotion_kits
 
     promotion_state = promotion_kits.combat_state(engine.player)
@@ -214,9 +213,7 @@ def restore_battle_snapshot(engine: Any, snapshot: dict[str, Any]) -> str:
         0,
         int(snapshot.get("foresight_threads", 0) or 0),
     )
-    promotion_state["threaded_cast_pending"] = bool(
-        snapshot.get("threaded_cast_pending", False)
-    )
+    promotion_state["threaded_cast_pending"] = bool(snapshot.get("threaded_cast_pending", False))
     if getattr(engine.player, "_threaded_cast_context", None):
         promotion_state["foresight_threads"] = 0
         promotion_state["threaded_cast_pending"] = False
@@ -225,15 +222,11 @@ def restore_battle_snapshot(engine: Any, snapshot: dict[str, Any]) -> str:
     else:
         attacker_id = snapshot.get("attacker")
         engine.attacker = (
-            engine.player
-            if attacker_id == "player"
-            else engine.encounter.primary_enemy
+            engine.player if attacker_id == "player" else engine.encounter.primary_enemy
         )
         defender_id = snapshot.get("defender")
         engine.defender = (
-            engine.player
-            if defender_id == "player"
-            else engine.encounter.primary_enemy
+            engine.player if defender_id == "player" else engine.encounter.primary_enemy
         )
     engine.player._foretell_snapshot = None
     return "Time folds back to the foretold moment.\n"

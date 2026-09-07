@@ -59,11 +59,7 @@ def trigger_blessed_light(character: Any, amount: int, source: str) -> str:
         return ""
     if not has_skill(character, "Blessed Light"):
         return ""
-    spell = (
-        getattr(character, "spellbook", {})
-        .get("Spells", {})
-        .get(source)
-    )
+    spell = getattr(character, "spellbook", {}).get("Spells", {}).get(source)
     if spell is None or getattr(spell, "subtyp", None) != "Heal":
         return ""
     attack = getattr(character, "stat_effects", {}).get("Attack")
@@ -76,7 +72,9 @@ def trigger_blessed_light(character: Any, amount: int, source: str) -> str:
     return f"Blessed Light grants {character.name} +10 Attack for three turns.\n"
 
 
-def power_up_active(character: Any, skill_name: str | None = None, class_name: str | None = None) -> bool:
+def power_up_active(
+    character: Any, skill_name: str | None = None, class_name: str | None = None
+) -> bool:
     if class_name and getattr(getattr(character, "cls", None), "name", None) != class_name:
         return False
     if skill_name and not has_skill(character, skill_name):
@@ -85,7 +83,9 @@ def power_up_active(character: Any, skill_name: str | None = None, class_name: s
     return bool(getattr(character, "power_up", False) and effect is not None and effect.active)
 
 
-def passive_power_up_unlocked(character: Any, skill_name: str, class_name: str | None = None) -> bool:
+def passive_power_up_unlocked(
+    character: Any, skill_name: str, class_name: str | None = None
+) -> bool:
     if class_name and getattr(getattr(character, "cls", None), "name", None) != class_name:
         return False
     return bool(getattr(character, "power_up", False) and has_skill(character, skill_name))
@@ -121,7 +121,11 @@ def abyssal_covenant_magic_bonus(character: Any) -> float:
 
 
 def abyssal_contract_count(character: Any, count: int) -> int:
-    return int(count) * 2 if power_up_active(character, "Abyssal Covenant", "Demonologist") else int(count)
+    return (
+        int(count) * 2
+        if power_up_active(character, "Abyssal Covenant", "Demonologist")
+        else int(count)
+    )
 
 
 def arsenal_mastery_weapon_multiplier(character: Any) -> float:
@@ -130,7 +134,11 @@ def arsenal_mastery_weapon_multiplier(character: Any) -> float:
     ranks = getattr(character, "grandmaster_discipline", {}).get("disciplines", {})
     mastered = 0
     if isinstance(ranks, dict):
-        mastered = sum(1 for entry in ranks.values() if isinstance(entry, dict) and int(entry.get("rank", 0) or 0) >= 10)
+        mastered = sum(
+            1
+            for entry in ranks.values()
+            if isinstance(entry, dict) and int(entry.get("rank", 0) or 0) >= 10
+        )
     return 1.10 + min(0.20, mastered * 0.03)
 
 
@@ -139,7 +147,9 @@ def shield_mastery_block_bonus(character: Any) -> int:
 
 
 def melody_inspiration_bonus(character: Any) -> float:
-    return 0.05 if passive_power_up_unlocked(character, "Melody of Inspiration", "Troubadour") else 0.0
+    return (
+        0.05 if passive_power_up_unlocked(character, "Melody of Inspiration", "Troubadour") else 0.0
+    )
 
 
 def pack_bond_multiplier(character: Any) -> float:
@@ -312,7 +322,9 @@ def final_assault_response(defender: Any, attacker: Any, incoming_damage: int) -
         return "", False
     if not has_skill(defender, "Final Assault"):
         return "", False
-    if getattr(defender, "_final_assault_used", False) or getattr(defender, "_final_assault_countering", False):
+    if getattr(defender, "_final_assault_used", False) or getattr(
+        defender, "_final_assault_countering", False
+    ):
         return "", False
     defender._final_assault_used = True
     defender._final_assault_countering = True

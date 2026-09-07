@@ -32,26 +32,26 @@ class CombatViewCoreMixin:
 
         # Colors
         self.colors = {
-            'background': (20, 20, 25),
-            'enemy': (200, 50, 50),
-            'player': (50, 150, 250),
-            'hp_bar': (200, 50, 50),
-            'mp_bar': (50, 100, 200),
-            'text': (255, 255, 255),
-            'action_bg': (40, 40, 45),
-            'action_selected': (80, 80, 90),
-            'action_border': (118, 116, 126),
-            'panel_accent': (166, 132, 74),
-            'message_bg': (30, 30, 35),
-            'turn_player': (70, 130, 210),
-            'turn_enemy': (180, 80, 70),
-            'telegraph': (255, 205, 110),
-            'log_damage': (235, 120, 105),
-            'log_heal': (120, 210, 135),
-            'log_muted': (175, 175, 180),
-            'log_player': (50, 150, 250),
-            'log_enemy': (200, 50, 50),
-            'log_summon': (85, 215, 190),
+            "background": (20, 20, 25),
+            "enemy": (200, 50, 50),
+            "player": (50, 150, 250),
+            "hp_bar": (200, 50, 50),
+            "mp_bar": (50, 100, 200),
+            "text": (255, 255, 255),
+            "action_bg": (40, 40, 45),
+            "action_selected": (80, 80, 90),
+            "action_border": (118, 116, 126),
+            "panel_accent": (166, 132, 74),
+            "message_bg": (30, 30, 35),
+            "turn_player": (70, 130, 210),
+            "turn_enemy": (180, 80, 70),
+            "telegraph": (255, 205, 110),
+            "log_damage": (235, 120, 105),
+            "log_heal": (120, 210, 135),
+            "log_muted": (175, 175, 180),
+            "log_player": (50, 150, 250),
+            "log_enemy": (200, 50, 50),
+            "log_summon": (85, 215, 190),
         }
 
         # Combat log
@@ -116,7 +116,9 @@ class CombatViewCoreMixin:
         """Trigger damage flash when enemy takes damage."""
         animator = self._get_sprite_animator(enemy)
         animator.trigger_damage()
-        self._enemy_recoil_until_ms = max(self._enemy_recoil_until_ms, pygame.time.get_ticks() + 220)
+        self._enemy_recoil_until_ms = max(
+            self._enemy_recoil_until_ms, pygame.time.get_ticks() + 220
+        )
 
     def enemy_card_at(self, position) -> str | None:
         """Return the living-card combatant ID under a mouse position."""
@@ -195,11 +197,7 @@ class CombatViewCoreMixin:
 
     def set_hidden_enemy_identities(self, enemy_names) -> None:
         """Set canonical enemy names that current combat text must conceal."""
-        self._hidden_enemy_names = {
-            str(name)
-            for name in enemy_names
-            if str(name)
-        }
+        self._hidden_enemy_names = {str(name) for name in enemy_names if str(name)}
 
     def add_combat_message(self, message):
         """Add a message to the combat log."""
@@ -270,9 +268,7 @@ class CombatViewCoreMixin:
             return
         now = pygame.time.get_ticks()
         self._active_float_texts = [
-            text
-            for text in self._active_float_texts
-            if now - text.start_ms < text.duration_ms
+            text for text in self._active_float_texts if now - text.start_ms < text.duration_ms
         ]
 
     def _enemy_recoil_offset(self) -> int:
@@ -353,15 +349,15 @@ class CombatViewCoreMixin:
             shadow.set_alpha(max(0, alpha - 50))
             y_offset = int(34 * progress)
             stack_y = text.stack_index * 24
-            text_rect = surf.get_rect(
-                center=(rect.centerx, rect.top - 18 - y_offset - stack_y)
-            )
+            text_rect = surf.get_rect(center=(rect.centerx, rect.top - 18 - y_offset - stack_y))
             shadow_rect = shadow.get_rect(center=(text_rect.centerx + 2, text_rect.centery + 2))
             self.screen.blit(shadow, shadow_rect)
             self.screen.blit(surf, text_rect)
         self._prune_float_texts()
 
-    def _draw_weapon_impact(self, rect: pygame.Rect, effect: CombatImpactEffect, progress: float) -> None:
+    def _draw_weapon_impact(
+        self, rect: pygame.Rect, effect: CombatImpactEffect, progress: float
+    ) -> None:
         alpha = int(190 * (1.0 - progress))
         if alpha <= 0:
             return
@@ -387,10 +383,14 @@ class CombatViewCoreMixin:
             spark_alpha = max(0, alpha - index * 18)
             spark_x = overlay.get_width() // 2 + index * 14 - 30
             spark_y = overlay.get_height() // 2 - int(progress * 36) + ((index % 2) * 14)
-            pygame.draw.circle(overlay, (*effect.color, spark_alpha), (spark_x, spark_y), max(2, 5 - index // 2))
+            pygame.draw.circle(
+                overlay, (*effect.color, spark_alpha), (spark_x, spark_y), max(2, 5 - index // 2)
+            )
         self.screen.blit(overlay, overlay.get_rect(center=rect.center))
 
-    def _draw_skill_impact(self, rect: pygame.Rect, effect: CombatImpactEffect, progress: float) -> None:
+    def _draw_skill_impact(
+        self, rect: pygame.Rect, effect: CombatImpactEffect, progress: float
+    ) -> None:
         alpha = int(150 * (1.0 - progress))
         if alpha <= 0:
             return
@@ -401,10 +401,18 @@ class CombatViewCoreMixin:
         for angle in (0, math.pi / 3, math.pi * 2 / 3):
             dx = int(math.cos(angle) * (radius + 12))
             dy = int(math.sin(angle) * (radius // 2))
-            pygame.draw.line(overlay, (*effect.color, alpha), (center[0] - dx, center[1] - dy), (center[0] + dx, center[1] + dy), 2)
+            pygame.draw.line(
+                overlay,
+                (*effect.color, alpha),
+                (center[0] - dx, center[1] - dy),
+                (center[0] + dx, center[1] + dy),
+                2,
+            )
         self.screen.blit(overlay, overlay.get_rect(center=rect.center))
 
-    def _draw_spell_impact(self, rect: pygame.Rect, effect: CombatImpactEffect, progress: float) -> None:
+    def _draw_spell_impact(
+        self, rect: pygame.Rect, effect: CombatImpactEffect, progress: float
+    ) -> None:
         alpha = int(170 * (1.0 - progress))
         if alpha <= 0:
             return
@@ -417,12 +425,20 @@ class CombatViewCoreMixin:
             angle = (math.pi * 2 * index / 8) + progress * 1.4
             inner = glow_radius // 3
             outer = glow_radius
-            start = (center[0] + int(math.cos(angle) * inner), center[1] + int(math.sin(angle) * inner))
-            end = (center[0] + int(math.cos(angle) * outer), center[1] + int(math.sin(angle) * outer))
+            start = (
+                center[0] + int(math.cos(angle) * inner),
+                center[1] + int(math.sin(angle) * inner),
+            )
+            end = (
+                center[0] + int(math.cos(angle) * outer),
+                center[1] + int(math.sin(angle) * outer),
+            )
             pygame.draw.line(overlay, (*effect.color, max(35, alpha // 2)), start, end, 2)
         self.screen.blit(overlay, overlay.get_rect(center=rect.center))
 
-    def _draw_reflect_impact(self, rect: pygame.Rect, effect: CombatImpactEffect, progress: float) -> None:
+    def _draw_reflect_impact(
+        self, rect: pygame.Rect, effect: CombatImpactEffect, progress: float
+    ) -> None:
         alpha = int(180 * (1.0 - progress))
         if alpha <= 0:
             return
@@ -446,7 +462,9 @@ class CombatViewCoreMixin:
             pygame.draw.line(overlay, (*effect.color, max(50, alpha // 2)), start, end, 2)
         self.screen.blit(overlay, overlay.get_rect(center=rect.center))
 
-    def _draw_status_impact(self, rect: pygame.Rect, effect: CombatImpactEffect, progress: float) -> None:
+    def _draw_status_impact(
+        self, rect: pygame.Rect, effect: CombatImpactEffect, progress: float
+    ) -> None:
         alpha = int(175 * (1.0 - progress))
         if alpha <= 0:
             return
@@ -460,10 +478,14 @@ class CombatViewCoreMixin:
                 center[0] + int(math.cos(angle) * (radius + 18)),
                 center[1] + int(math.sin(angle) * (radius + 8)),
             )
-            pygame.draw.circle(overlay, (*effect.color, max(35, alpha - index * 10)), marker_center, 4)
+            pygame.draw.circle(
+                overlay, (*effect.color, max(35, alpha - index * 10)), marker_center, 4
+            )
         self.screen.blit(overlay, overlay.get_rect(center=rect.center))
 
-    def _draw_elemental_strike_impact(self, rect: pygame.Rect, effect: CombatImpactEffect, progress: float) -> None:
+    def _draw_elemental_strike_impact(
+        self, rect: pygame.Rect, effect: CombatImpactEffect, progress: float
+    ) -> None:
         self._draw_weapon_impact(rect, effect, progress)
         alpha = int(120 * (1.0 - progress))
         if alpha <= 0:
@@ -503,7 +525,9 @@ class CombatViewCoreMixin:
         )
         for line in message.split("\n"):
             line_lower = line.lower()
-            keep_class_kit_line = any(term in line_lower for term in promotion_kits.CLASS_KIT_LOG_TERMS)
+            keep_class_kit_line = any(
+                term in line_lower for term in promotion_kits.CLASS_KIT_LOG_TERMS
+            )
             if "is affected by" in line_lower:
                 continue
             if not keep_class_kit_line and any(term in line_lower for term in suppress_terms):
@@ -572,8 +596,7 @@ class CombatViewCoreMixin:
     ) -> list[str]:
         """Return combat log history flattened into render-ready wrapped lines."""
         return [
-            line.text
-            for line in self._wrapped_combat_log_entries(max_width=max_width, font=font)
+            line.text for line in self._wrapped_combat_log_entries(max_width=max_width, font=font)
         ]
 
     def _wrapped_combat_log_entries(

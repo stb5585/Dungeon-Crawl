@@ -16,7 +16,6 @@ from .mechanics import (
 )
 from .selections import EquipmentSelectionPopup, SelectionPopup
 
-
 __all__ = [
     "BasePopupMenu",
     "BestiaryPopupMenu",

@@ -52,7 +52,6 @@ from .soulcatcher import Soulcatcher
 from .ranger import Ranger
 from .beast_master import BeastMaster
 
-
 classes_dict = {
     "Warrior": {
         "class": Warrior,
@@ -64,14 +63,8 @@ classes_dict = {
                     "Grandmaster of Arms": {"class": GrandmasterOfArms},
                 },
             },
-            "Paladin": {
-                "class": Paladin,
-                "pro": {"Crusader": {"class": Crusader}}
-                },
-            "Lancer": {
-                "class": Lancer,
-                "pro": {"Dragoon": {"class": Dragoon}}
-                },
+            "Paladin": {"class": Paladin, "pro": {"Crusader": {"class": Crusader}}},
+            "Lancer": {"class": Lancer, "pro": {"Dragoon": {"class": Dragoon}}},
             "Sentinel": {
                 "class": Sentinel,
                 "pro": {"Stalwart Defender": {"class": StalwartDefender}},
@@ -81,16 +74,13 @@ classes_dict = {
     "Mage": {
         "class": Mage,
         "pro": {
-            "Sorcerer": {
-                "class": Sorcerer,
-                "pro": {"Wizard": {"class": Wizard}}
-            },
+            "Sorcerer": {"class": Sorcerer, "pro": {"Wizard": {"class": Wizard}}},
             "Warlock": {
                 "class": Warlock,
                 "pro": {
                     "Shadowcaster": {"class": Shadowcaster},
                     "Demonologist": {"class": Demonologist},
-                    },
+                },
             },
             "Spellblade": {
                 "class": Spellblade,
@@ -105,18 +95,9 @@ classes_dict = {
     "Footpad": {
         "class": Footpad,
         "pro": {
-            "Thief": {
-                "class": Thief,
-                "pro": {"Rogue": {"class": Rogue}}
-                },
-            "Inquisitor": {
-                "class": Inquisitor,
-                "pro": {"Seeker": {"class": Seeker}}
-                },
-            "Assassin": {
-                "class": Assassin,
-                "pro": {"Ninja": {"class": Ninja}}
-                },
+            "Thief": {"class": Thief, "pro": {"Rogue": {"class": Rogue}}},
+            "Inquisitor": {"class": Inquisitor, "pro": {"Seeker": {"class": Seeker}}},
+            "Assassin": {"class": Assassin, "pro": {"Ninja": {"class": Ninja}}},
             "Spell Stealer": {
                 "class": SpellStealer,
                 "pro": {"Arcane Trickster": {"class": ArcaneTrickster}},
@@ -131,20 +112,11 @@ classes_dict = {
                 "pro": {
                     "Templar": {"class": Templar},
                     "Hierophant": {"class": Hierophant},
-                }
+                },
             },
-            "Monk": {
-                "class": Monk,
-                "pro": {"Master Monk": {"class": MasterMonk}}
-            },
-            "Priest": {
-                "class": Priest,
-                "pro": {"Archbishop": {"class": Archbishop}}
-            },
-            "Bard": {
-                "class": Bard,
-                "pro": {"Troubadour": {"class": Troubadour}}
-            },
+            "Monk": {"class": Monk, "pro": {"Master Monk": {"class": MasterMonk}}},
+            "Priest": {"class": Priest, "pro": {"Archbishop": {"class": Archbishop}}},
+            "Bard": {"class": Bard, "pro": {"Troubadour": {"class": Troubadour}}},
         },
     },
     "Pathfinder": {

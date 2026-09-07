@@ -104,12 +104,8 @@ def test_invalid_intents_do_not_commit_or_change_focus():
     hp_before = [enemy.health.current for enemy in enemies]
 
     missing = engine.execute_intent(ActionIntent("Attack"))
-    unknown = engine.execute_intent(
-        ActionIntent("Attack", target_ids=("not-in-this-fight",))
-    )
-    wrong_scope = engine.execute_intent(
-        ActionIntent("Defend", target_ids=("enemy-a",))
-    )
+    unknown = engine.execute_intent(ActionIntent("Attack", target_ids=("not-in-this-fight",)))
+    wrong_scope = engine.execute_intent(ActionIntent("Defend", target_ids=("enemy-a",)))
 
     assert missing.committed is False
     assert missing.validation_code == ActionValidationCode.MISSING_TARGET
@@ -157,9 +153,7 @@ def test_explicit_target_updates_focus_without_enemy_compatibility_bridge(monkey
         return "Hit.\n", True, 7
 
     monkeypatch.setattr(player, "weapon_damage", weapon_damage)
-    result = engine.execute_intent(
-        ActionIntent("Attack", target_ids=("enemy-b",))
-    )
+    result = engine.execute_intent(ActionIntent("Attack", target_ids=("enemy-b",)))
 
     assert result.committed is True
     assert result.combat_results.target_scope == TargetScope.SINGLE_ENEMY
@@ -182,18 +176,12 @@ def test_lethal_single_target_intent_records_resolution_before_return(monkeypatc
 
     monkeypatch.setattr(player, "weapon_damage", lethal_weapon_damage)
 
-    result = engine.execute_intent(
-        ActionIntent("Attack", target_ids=("enemy-a",))
-    )
+    result = engine.execute_intent(ActionIntent("Attack", target_ids=("enemy-a",)))
 
-    assert result.new_resolutions == (
-        engine.encounter.resolution_ledger[0],
-    )
+    assert result.new_resolutions == (engine.encounter.resolution_ledger[0],)
     assert result.new_resolutions[0].combatant_id == "enemy-a"
     assert result.new_resolutions[0].resolution == EnemyResolution.DEFEATED
-    assert engine.encounter.member_by_id("enemy-a").resolution == (
-        EnemyResolution.DEFEATED
-    )
+    assert engine.encounter.member_by_id("enemy-a").resolution == (EnemyResolution.DEFEATED)
     assert engine.focus_target_id == "enemy-b"
     assert enemies[0].health.current == 0
 
@@ -219,9 +207,7 @@ def test_single_target_resurrection_precedes_terminal_resolution(monkeypatch):
 
     monkeypatch.setattr(player, "weapon_damage", lethal_weapon_damage)
 
-    result = engine.execute_intent(
-        ActionIntent("Attack", target_ids=("enemy-a",))
-    )
+    result = engine.execute_intent(ActionIntent("Attack", target_ids=("enemy-a",)))
 
     assert "Goblin rises again" in result.message
     assert result.new_resolutions == ()
@@ -263,9 +249,7 @@ def test_shield_ricochet_resolves_as_an_all_enemy_skill(monkeypatch):
     engine, player, enemies, _tile = _engine()
     player.cls.name = "Crusader"
     player.equipment["OffHand"] = items.KiteShield()
-    player.spellbook["Skills"]["Shield Ricochet"] = (
-        abilities.ShieldRicochet()
-    )
+    player.spellbook["Skills"]["Shield Ricochet"] = abilities.ShieldRicochet()
     for enemy in enemies:
         monkeypatch.setattr(
             enemy,
@@ -283,9 +267,7 @@ def test_shield_ricochet_resolves_as_an_all_enemy_skill(monkeypatch):
         )
     engine.start_battle()
 
-    result = engine.execute_intent(
-        ActionIntent("Use Skill", "Shield Ricochet")
-    )
+    result = engine.execute_intent(ActionIntent("Use Skill", "Shield Ricochet"))
 
     assert player.mana.current == 84
     assert result.combat_results.target_scope == TargetScope.ALL_ENEMIES
@@ -317,9 +299,7 @@ def test_hallowed_ground_has_enemy_portions_and_tagged_self_portion():
     player.spellbook["Spells"]["Hallowed Ground"] = abilities.HallowedGround()
     engine.start_battle()
 
-    result = engine.execute_intent(
-        ActionIntent("Cast Spell", "Hallowed Ground")
-    )
+    result = engine.execute_intent(ActionIntent("Cast Spell", "Hallowed Ground"))
 
     portions = result.combat_results.results
     assert [portion.target_id for portion in portions] == [
@@ -337,9 +317,7 @@ def test_locked_charge_fizzles_without_refund_when_target_is_gone():
     player.spellbook["Skills"]["Charge"] = abilities.Charge()
     engine.start_battle()
 
-    started = engine.execute_intent(
-        ActionIntent("Use Skill", "Charge", ("enemy-a",))
-    )
+    started = engine.execute_intent(ActionIntent("Use Skill", "Charge", ("enemy-a",)))
     mana_after_commit = player.mana.current
     enemies[0].health.current = 0
     engine._record_final_enemy_resolutions()
@@ -460,10 +438,9 @@ def test_post_turn_reports_each_new_resolution_once():
     first = engine.post_turn()
     second = engine.post_turn()
 
-    assert [
-        (record.combatant_id, record.resolution)
-        for record in first.new_resolutions
-    ] == [("enemy-a", EnemyResolution.DEFEATED)]
+    assert [(record.combatant_id, record.resolution) for record in first.new_resolutions] == [
+        ("enemy-a", EnemyResolution.DEFEATED)
+    ]
     assert second.new_resolutions == ()
 
 
@@ -488,8 +465,7 @@ def test_multi_settlement_aggregates_normal_and_special_loot():
 
     assert outcome.total_gold == 14
     assert {
-        (award.item_name, award.quantity, award.destination)
-        for award in outcome.loot_awards
+        (award.item_name, award.quantity, award.destination) for award in outcome.loot_awards
     } == {
         ("Health Potion", 2, "normal"),
         ("Jester Token", 2, "special"),

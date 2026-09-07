@@ -95,9 +95,7 @@ class RopeADope(Skill):
         generator = kwargs.get("rng") or random
         challenged = False
         chance = (
-            0.75
-            if promotion_kits._has_track_talent(user, "master-monk.goading-smile")
-            else 0.50
+            0.75 if promotion_kits._has_track_talent(user, "master-monk.goading-smile") else 0.50
         )
         if not target.has_status_protection("Berserk") and generator.random() < chance:
             effect = target.status_effects["Berserk"]

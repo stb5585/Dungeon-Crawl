@@ -7,7 +7,6 @@ from pathlib import Path
 import subprocess
 import sys
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 SPEC_FILE = PROJECT_ROOT / "packaging" / "forsaken_tenet.spec"
 

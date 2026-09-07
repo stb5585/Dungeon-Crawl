@@ -59,8 +59,7 @@ class ProgressionScreen(TownScreenBase):
         "from buying learning certain abilities. Choose carefully."
     )
     LANCER_PROMOTION_TEXT = (
-        "Promoting to Dragoon retains all unpurchased Lancer nodes in the "
-        "Dragoon tree."
+        "Promoting to Dragoon retains all unpurchased Lancer nodes in the " "Dragoon tree."
     )
 
     STATE_COLORS = {
@@ -125,25 +124,18 @@ class ProgressionScreen(TownScreenBase):
 
     def _pending_node_cost(self) -> int:
         self._ensure_staging()
-        return sum(
-            TREE_NODES[node_id].cost
-            for node_id in self.pending_node_ids
-        )
+        return sum(TREE_NODES[node_id].cost for node_id in self.pending_node_ids)
 
     def _pending_attribute_cost(self) -> int:
         self._ensure_staging()
         return sum(self.pending_attributes.values())
 
     def _remaining_points(self) -> int:
-        return (
-            self.player_char.progression.unspent_points
-            - self._pending_node_cost()
-        )
+        return self.player_char.progression.unspent_points - self._pending_node_cost()
 
     def _remaining_attribute_points(self) -> int:
         return (
-            self.player_char.progression.unspent_attribute_points
-            - self._pending_attribute_cost()
+            self.player_char.progression.unspent_attribute_points - self._pending_attribute_cost()
         )
 
     def has_pending_changes(self) -> bool:
@@ -179,9 +171,7 @@ class ProgressionScreen(TownScreenBase):
         if not statuses:
             self.node_icon_rects = []
             return []
-        explicit_column_count = math.ceil(
-            max(status.node.position[0] for status in statuses) + 1
-        )
+        explicit_column_count = math.ceil(max(status.node.position[0] for status in statuses) + 1)
         column_count = max(1, len(branches), explicit_column_count)
         lane_width = (rect.width - 24) // column_count
         self._tree_column_origin = rect.left + 12 + lane_width // 2
@@ -221,9 +211,7 @@ class ProgressionScreen(TownScreenBase):
         icon_rects: list[pygame.Rect] = []
         for status in statuses:
             column, row = status.node.position
-            center_x = int(
-                rect.left + 12 + column * lane_width + lane_width // 2
-            )
+            center_x = int(rect.left + 12 + column * lane_width + lane_width // 2)
             y = graph_top + (row - self.tree_scroll_row) * row_step
             cell_width = max(64, min(144, lane_width - 8))
             cell = pygame.Rect(
@@ -239,10 +227,7 @@ class ProgressionScreen(TownScreenBase):
 
     def _draw_connectors(self, statuses):
         """Draw orthogonal prerequisite connectors behind talent nodes."""
-        index_by_id = {
-            status.node.id: index
-            for index, status in enumerate(statuses)
-        }
+        index_by_id = {status.node.id: index for index, status in enumerate(statuses)}
         promotion_targets_by_source: dict[str, list[tuple[str, pygame.Rect]]] = {}
         for target_index, target_status in enumerate(statuses):
             if target_status.node.kind != NodeKind.PROMOTION:
@@ -296,11 +281,7 @@ class ProgressionScreen(TownScreenBase):
                     continue
                 if status.node.payload.get("connector_enter_from_top"):
                     source_is_left = source_rect.centerx < target_rect.centerx
-                    source_side = (
-                        source_rect.midright
-                        if source_is_left
-                        else source_rect.midleft
-                    )
+                    source_side = source_rect.midright if source_is_left else source_rect.midleft
                     channel_column = status.node.payload.get(
                         "connector_channel_columns",
                         {},
@@ -308,10 +289,7 @@ class ProgressionScreen(TownScreenBase):
                     channel_x = (
                         target_rect.centerx
                         if channel_column is None
-                        else int(
-                            self._tree_column_origin
-                            + channel_column * self._tree_lane_width
-                        )
+                        else int(self._tree_column_origin + channel_column * self._tree_lane_width)
                     )
                     pygame.draw.lines(
                         self.screen,
@@ -328,11 +306,7 @@ class ProgressionScreen(TownScreenBase):
                     continue
                 if status.node.payload.get("connector_join_at_target_row"):
                     source_is_left = source_rect.centerx < target_rect.centerx
-                    end = (
-                        target_rect.midleft
-                        if source_is_left
-                        else target_rect.midright
-                    )
+                    end = target_rect.midleft if source_is_left else target_rect.midright
                     pygame.draw.lines(
                         self.screen,
                         self.CONNECTOR_COLOR,
@@ -362,8 +336,7 @@ class ProgressionScreen(TownScreenBase):
                     continue
                 if source_rect.centerx == target_rect.centerx:
                     channel_x = int(
-                        self._tree_column_origin
-                        + channel_column * self._tree_lane_width
+                        self._tree_column_origin + channel_column * self._tree_lane_width
                     )
                     source_side = (
                         source_rect.midright
@@ -389,22 +362,13 @@ class ProgressionScreen(TownScreenBase):
                     )
                     continue
                 source_is_left = source_rect.centerx <= target_rect.centerx
-                source_side = (
-                    source_rect.midright
-                    if source_is_left
-                    else source_rect.midleft
-                )
-                end = (
-                    target_rect.midleft
-                    if source_is_left
-                    else target_rect.midright
-                )
+                source_side = source_rect.midright if source_is_left else source_rect.midleft
+                end = target_rect.midleft if source_is_left else target_rect.midright
                 if channel_column is None:
                     channel_x = (source_side[0] + end[0]) // 2
                 else:
                     channel_x = int(
-                        self._tree_column_origin
-                        + channel_column * self._tree_lane_width
+                        self._tree_column_origin + channel_column * self._tree_lane_width
                     )
                 pygame.draw.lines(
                     self.screen,
@@ -431,9 +395,7 @@ class ProgressionScreen(TownScreenBase):
         ordered_sources = sorted(source_edges, key=lambda edge: edge[0].centerx)
         edge_count = len(ordered_sources)
         merge_paths = (
-            prerequisite_mode != "any"
-            and not payload.get("prerequisite_groups")
-            and edge_count > 1
+            prerequisite_mode != "any" and not payload.get("prerequisite_groups") and edge_count > 1
         )
         row_step = getattr(self, "_tree_row_step", 58)
         max_source_bottom = max(
@@ -444,12 +406,8 @@ class ProgressionScreen(TownScreenBase):
         buffer_join_y = target_rect.top - row_step + target_rect.height // 2
         join_y = buffer_join_y if has_buffer_row else target_rect.top - 10
         for edge_index, (source_rect, source_x) in enumerate(ordered_sources):
-            enters_left_side = (
-                not merge_paths and edge_count > 1 and edge_index == 0
-            )
-            enters_right_side = (
-                not merge_paths and edge_count > 1 and edge_index == edge_count - 1
-            )
+            enters_left_side = not merge_paths and edge_count > 1 and edge_index == 0
+            enters_right_side = not merge_paths and edge_count > 1 and edge_index == edge_count - 1
             enters_side = enters_left_side or enters_right_side
             if merge_paths:
                 destination_x = target_rect.centerx
@@ -461,13 +419,11 @@ class ProgressionScreen(TownScreenBase):
                 destination_x = target_rect.right
             else:
                 destination_x = int(
-                    target_rect.left
-                    + target_rect.width * edge_index / (edge_count - 1)
+                    target_rect.left + target_rect.width * edge_index / (edge_count - 1)
                 )
             destination_y = target_rect.centery if enters_side else join_y
             source_is_penultimate = (
-                has_buffer_row
-                and target_rect.top - source_rect.top == row_step * 2
+                has_buffer_row and target_rect.top - source_rect.top == row_step * 2
             )
             if source_is_penultimate or (
                 not enters_side and target_rect.top - source_rect.bottom <= 80
@@ -483,13 +439,9 @@ class ProgressionScreen(TownScreenBase):
                 source_anchor = (source_x, source_rect.bottom)
                 lane_width = getattr(self, "_tree_lane_width", 120)
                 if source_rect.centerx < target_rect.centerx:
-                    channel_x = int(
-                        source_rect.centerx + lane_width / 2
-                    )
+                    channel_x = int(source_rect.centerx + lane_width / 2)
                 elif source_rect.centerx > target_rect.centerx:
-                    channel_x = int(
-                        source_rect.centerx - lane_width / 2
-                    )
+                    channel_x = int(source_rect.centerx - lane_width / 2)
                 else:
                     channel_x = source_rect.centerx
                 points = (
@@ -566,9 +518,7 @@ class ProgressionScreen(TownScreenBase):
     def _promotion_requirement_lines(node) -> list[str]:
         """Describe the exact branch endpoints needed by a promotion."""
         prerequisites = [
-            TREE_NODES[node_id]
-            for node_id in node.prerequisites
-            if node_id in TREE_NODES
+            TREE_NODES[node_id] for node_id in node.prerequisites if node_id in TREE_NODES
         ]
         prerequisites.sort(key=lambda prerequisite: prerequisite.position)
         if not prerequisites:
@@ -579,9 +529,7 @@ class ProgressionScreen(TownScreenBase):
             for group in groups:
                 members = [TREE_NODES[node_id] for node_id in group]
                 prefix = "Choose one" if len(members) > 1 else "Required"
-                names = " or ".join(
-                    f"{member.lane}: {member.name}" for member in members
-                )
+                names = " or ".join(f"{member.lane}: {member.name}" for member in members)
                 lines.append(f"- {prefix}: {names}")
             return lines
         requirement_mode = node.payload.get("prerequisite_mode", "all")
@@ -590,10 +538,10 @@ class ProgressionScreen(TownScreenBase):
             if requirement_mode == "any"
             else "Path requirements (all required):"
         )
-        return [heading, *(
-            f"- {prerequisite.lane}: {prerequisite.name}"
-            for prerequisite in prerequisites
-        )]
+        return [
+            heading,
+            *(f"- {prerequisite.lane}: {prerequisite.name}" for prerequisite in prerequisites),
+        ]
 
     def _draw_header(self):
         title = self.large_font.render("Progression", True, self.colors.GOLD)
@@ -613,10 +561,7 @@ class ProgressionScreen(TownScreenBase):
     def _draw_tree(self, rect):
         self.draw_semi_transparent_panel(rect)
         pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, rect, 2)
-        points_text = (
-            "Available Progression Points: "
-            f"{self._remaining_points()}"
-        )
+        points_text = "Available Progression Points: " f"{self._remaining_points()}"
         points_surface = self.normal_font.render(
             points_text,
             True,
@@ -654,9 +599,11 @@ class ProgressionScreen(TownScreenBase):
         self._draw_connectors(statuses)
         required_path_ids, required_endpoint_ids = self._promotion_highlight_node_ids(
             statuses,
-            getattr(self, "hovered_node_index", None)
-            if getattr(self, "hovered_node_index", None) is not None
-            else -1,
+            (
+                getattr(self, "hovered_node_index", None)
+                if getattr(self, "hovered_node_index", None) is not None
+                else -1
+            ),
         )
 
         for index, status in enumerate(statuses):
@@ -669,11 +616,7 @@ class ProgressionScreen(TownScreenBase):
             frame_rect = self._node_frame_rect(icon_rect)
             pygame.draw.rect(
                 self.screen,
-                (
-                    self.colors.HIGHLIGHT_BG
-                    if selected
-                    else self.NODE_BACKING_COLOR
-                ),
+                (self.colors.HIGHLIGHT_BG if selected else self.NODE_BACKING_COLOR),
                 frame_rect,
             )
             icon_manager = getattr(self, "icon_manager", None)
@@ -699,9 +642,7 @@ class ProgressionScreen(TownScreenBase):
                 (
                     3
                     if status.node.id in required_endpoint_ids
-                    else 2
-                    if status.node.id in required_path_ids or selected
-                    else 1
+                    else 2 if status.node.id in required_path_ids or selected else 1
                 ),
             )
         self._draw_tree_warning(rect)
@@ -710,8 +651,7 @@ class ProgressionScreen(TownScreenBase):
         """Return whether the current distribution contains a promotion."""
         self._ensure_staging()
         return any(
-            node_id in TREE_NODES
-            and TREE_NODES[node_id].kind == NodeKind.PROMOTION
+            node_id in TREE_NODES and TREE_NODES[node_id].kind == NodeKind.PROMOTION
             for node_id in self.pending_node_ids
         )
 
@@ -722,9 +662,7 @@ class ProgressionScreen(TownScreenBase):
         except (AttributeError, ZeroDivisionError):
             selected_tree = ""
         warning_text = (
-            self.LANCER_PROMOTION_TEXT
-            if selected_tree == "Lancer"
-            else self.TREE_WARNING_TEXT
+            self.LANCER_PROMOTION_TEXT if selected_tree == "Lancer" else self.TREE_WARNING_TEXT
         )
         lines = wrap_text_to_pixel_width(
             warning_text,
@@ -745,11 +683,7 @@ class ProgressionScreen(TownScreenBase):
             self.LABEL_BACKING_COLOR,
             backing_rect,
         )
-        color = (
-            self.PROMOTION_WARNING_COLOR
-            if self._has_pending_promotion()
-            else self.colors.GRAY
-        )
+        color = self.PROMOTION_WARNING_COLOR if self._has_pending_promotion() else self.colors.GRAY
         for index, line in enumerate(lines):
             self.screen.blit(
                 self.small_font.render(line, True, color),
@@ -805,15 +739,9 @@ class ProgressionScreen(TownScreenBase):
                 text_surface,
                 (row.left + 34, row.top + 7),
             )
-            minus_color = (
-                self.colors.GOLD
-                if pending > 0
-                else self.colors.GRAY
-            )
+            minus_color = self.colors.GOLD if pending > 0 else self.colors.GRAY
             plus_color = (
-                self.colors.GOLD
-                if self._remaining_attribute_points() > 0
-                else self.colors.GRAY
+                self.colors.GOLD if self._remaining_attribute_points() > 0 else self.colors.GRAY
             )
             pygame.draw.rect(self.screen, minus_color, minus_rect, 1)
             pygame.draw.rect(self.screen, plus_color, plus_rect, 1)
@@ -831,10 +759,7 @@ class ProgressionScreen(TownScreenBase):
                     plus_rect.centery - self.small_font.get_height() // 2,
                 ),
             )
-        available_text = (
-            "Available Attribute Points: "
-            f"{self._remaining_attribute_points()}"
-        )
+        available_text = "Available Attribute Points: " f"{self._remaining_attribute_points()}"
         self.screen.blit(
             self.small_font.render(
                 available_text,
@@ -858,9 +783,7 @@ class ProgressionScreen(TownScreenBase):
         warning_lines = set()
         content_width = rect.width - 28
         displayed_class = (
-            self._selected_tree_id()
-            if hasattr(self, "player_char")
-            else status.node.tree_id
+            self._selected_tree_id() if hasattr(self, "player_char") else status.node.tree_id
         )
         required_level = effective_node_level_requirement(
             status.node,
@@ -878,47 +801,47 @@ class ProgressionScreen(TownScreenBase):
         if status.node.kind == NodeKind.PROMOTION:
             requirements = status.node.payload["requirements"]
             for requirement_line in self._promotion_requirement_lines(status.node):
-                lines.extend(wrap_text_to_pixel_width(
-                    requirement_line,
+                lines.extend(
+                    wrap_text_to_pixel_width(
+                        requirement_line,
+                        self.small_font,
+                        content_width,
+                    )
+                )
+            lines.extend(
+                wrap_text_to_pixel_width(
+                    ("Required level: " f"{status.node.payload['level_requirement']}"),
                     self.small_font,
                     content_width,
-                ))
-            lines.extend(wrap_text_to_pixel_width(
-                (
-                    "Required level: "
-                    f"{status.node.payload['level_requirement']}"
-                ),
-                self.small_font,
-                content_width,
-            ))
-            lines.extend(wrap_text_to_pixel_width(
-                (
-                    "Required Stats: "
-                    + ", ".join(
-                        f"{self.STAT_DISPLAY_NAMES.get(name, name.title())} "
-                        f"{value}"
-                        for name, value in requirements.items()
-                    )
-                ),
-                self.small_font,
-                content_width,
-            ))
-        elif required_level:
-            lines.append(
-                "Required level: "
-                f"{required_level}"
+                )
             )
+            lines.extend(
+                wrap_text_to_pixel_width(
+                    (
+                        "Required Stats: "
+                        + ", ".join(
+                            f"{self.STAT_DISPLAY_NAMES.get(name, name.title())} " f"{value}"
+                            for name, value in requirements.items()
+                        )
+                    ),
+                    self.small_font,
+                    content_width,
+                )
+            )
+        elif required_level:
+            lines.append("Required level: " f"{required_level}")
         specialization = status.node.payload.get("weapon_specialization")
         if specialization:
             weapon_type, rank = specialization
-            lines.extend(wrap_text_to_pixel_width(
-                f"Required {weapon_type} specialization level: {rank}",
-                self.small_font,
-                content_width,
-            ))
+            lines.extend(
+                wrap_text_to_pixel_width(
+                    f"Required {weapon_type} specialization level: {rank}",
+                    self.small_font,
+                    content_width,
+                )
+            )
         implied_prerequisites = {
-            f"Requires {TREE_NODES[node_id].name}."
-            for node_id in status.node.prerequisites
+            f"Requires {TREE_NODES[node_id].name}." for node_id in status.node.prerequisites
         }
         point_noun = "point" if status.node.cost == 1 else "points"
         implied_cost_reasons = {
@@ -938,9 +861,7 @@ class ProgressionScreen(TownScreenBase):
                 )
                 and not (
                     specialization
-                    and reason.startswith(
-                        f"Requires {specialization[0]} specialization level "
-                    )
+                    and reason.startswith(f"Requires {specialization[0]} specialization level ")
                 )
                 and not (
                     status.node.kind == NodeKind.PROMOTION
@@ -1143,23 +1064,17 @@ class ProgressionScreen(TownScreenBase):
                         continue
                     pending_node = TREE_NODES[pending_id]
                     remaining = (
-                        set(self.pending_node_ids)
-                        | self.player_char.progression.purchased_node_ids
+                        set(self.pending_node_ids) | self.player_char.progression.purchased_node_ids
                     ) - removed
                     loses_requirement = any(
-                        not any(
-                            prerequisite in remaining
-                            for prerequisite in group
-                        )
+                        not any(prerequisite in remaining for prerequisite in group)
                         for group in prerequisite_groups(pending_node)
                     )
                     if loses_requirement:
                         removed.add(pending_id)
                         changed = True
             self.pending_node_ids = [
-                node_id
-                for node_id in self.pending_node_ids
-                if node_id not in removed
+                node_id for node_id in self.pending_node_ids if node_id not in removed
             ]
         elif status.state == NodeState.AVAILABLE:
             self.pending_node_ids.append(node.id)
@@ -1188,9 +1103,7 @@ class ProgressionScreen(TownScreenBase):
             changed = False
             for node_id in reversed(self.pending_node_ids):
                 other_nodes = [
-                    candidate
-                    for candidate in self.pending_node_ids
-                    if candidate != node_id
+                    candidate for candidate in self.pending_node_ids if candidate != node_id
                 ]
                 statuses = available_nodes(
                     self.player_char,
@@ -1198,11 +1111,7 @@ class ProgressionScreen(TownScreenBase):
                     planned_node_ids=other_nodes,
                     planned_attributes=self.pending_attributes,
                 )
-                status = next(
-                    candidate
-                    for candidate in statuses
-                    if candidate.node.id == node_id
-                )
+                status = next(candidate for candidate in statuses if candidate.node.id == node_id)
                 if status.state != NodeState.AVAILABLE:
                     self.pending_node_ids.remove(node_id)
                     changed = True
@@ -1257,10 +1166,12 @@ class ProgressionScreen(TownScreenBase):
             node = TREE_NODES[node_id]
             category = node.payload.get("xenid_category")
             if category:
-                options = list(node.payload.get(
-                    "xenid_options",
-                    companions.XENID_PAIRS.get(str(category), ()),
-                ))
+                options = list(
+                    node.payload.get(
+                        "xenid_options",
+                        companions.XENID_PAIRS.get(str(category), ()),
+                    )
+                )
                 result = SelectionPopup(
                     self.presenter,
                     self,
@@ -1276,10 +1187,7 @@ class ProgressionScreen(TownScreenBase):
                 selected = result[1]
                 confirmed = ConfirmationPopup(
                     self.presenter,
-                    (
-                        f"Permanently bind {selected} to the {category} "
-                        "Calling?"
-                    ),
+                    (f"Permanently bind {selected} to the {category} " "Calling?"),
                     show_buttons=True,
                 ).show(background_draw_func=self._popup_background)
                 if not confirmed:
@@ -1369,9 +1277,7 @@ class ProgressionScreen(TownScreenBase):
         if event.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN):
             if event.type == pygame.MOUSEBUTTONDOWN and event.button in (4, 5):
                 delta = -1 if event.button == 4 else 1
-                self.current_node = (
-                    self.current_node + delta
-                ) % max(1, len(self._statuses()))
+                self.current_node = (self.current_node + delta) % max(1, len(self._statuses()))
                 return True
             node_index = hit_index(self.node_rects, mouse_position(event))
             if event.type == pygame.MOUSEMOTION:
@@ -1427,33 +1333,25 @@ class ProgressionScreen(TownScreenBase):
             if self.focus == "nodes":
                 self.current_node = (self.current_node - 1) % len(self._statuses())
             else:
-                self.current_attribute = (
-                    self.current_attribute - 1
-                ) % len(PRIMARY_ATTRIBUTES)
+                self.current_attribute = (self.current_attribute - 1) % len(PRIMARY_ATTRIBUTES)
             return True
         if event.key == pygame.K_LEFT:
             if self.focus == "nodes":
                 self.current_node = (self.current_node - 1) % len(self._statuses())
             else:
-                self.current_attribute = (
-                    self.current_attribute - 1
-                ) % len(PRIMARY_ATTRIBUTES)
+                self.current_attribute = (self.current_attribute - 1) % len(PRIMARY_ATTRIBUTES)
             return True
         if event.key == pygame.K_DOWN:
             if self.focus == "nodes":
                 self.current_node = (self.current_node + 1) % len(self._statuses())
             else:
-                self.current_attribute = (
-                    self.current_attribute + 1
-                ) % len(PRIMARY_ATTRIBUTES)
+                self.current_attribute = (self.current_attribute + 1) % len(PRIMARY_ATTRIBUTES)
             return True
         if event.key == pygame.K_RIGHT:
             if self.focus == "nodes":
                 self.current_node = (self.current_node + 1) % len(self._statuses())
             else:
-                self.current_attribute = (
-                    self.current_attribute + 1
-                ) % len(PRIMARY_ATTRIBUTES)
+                self.current_attribute = (self.current_attribute + 1) % len(PRIMARY_ATTRIBUTES)
             return True
         if event.key in (pygame.K_RETURN, pygame.K_SPACE):
             if self.focus == "nodes":
@@ -1496,9 +1394,7 @@ class ProgressionScreen(TownScreenBase):
                             return
                     if event.key in (pygame.K_q, pygame.K_e):
                         direction = -1 if event.key == pygame.K_q else 1
-                        self.tree_index = (
-                            self.tree_index + direction
-                        ) % len(self._tree_ids())
+                        self.tree_index = (self.tree_index + direction) % len(self._tree_ids())
                         self.current_node = 0
                     if event.key == pygame.K_TAB:
                         self.focus = "attributes" if self.focus == "nodes" else "nodes"
@@ -1506,12 +1402,16 @@ class ProgressionScreen(TownScreenBase):
                         if self.focus == "nodes":
                             self.current_node = (self.current_node - 1) % len(self._statuses())
                         else:
-                            self.current_attribute = (self.current_attribute - 1) % len(PRIMARY_ATTRIBUTES)
+                            self.current_attribute = (self.current_attribute - 1) % len(
+                                PRIMARY_ATTRIBUTES
+                            )
                     elif event.key in (pygame.K_DOWN, pygame.K_RIGHT):
                         if self.focus == "nodes":
                             self.current_node = (self.current_node + 1) % len(self._statuses())
                         else:
-                            self.current_attribute = (self.current_attribute + 1) % len(PRIMARY_ATTRIBUTES)
+                            self.current_attribute = (self.current_attribute + 1) % len(
+                                PRIMARY_ATTRIBUTES
+                            )
                     elif event.key in (pygame.K_RETURN, pygame.K_SPACE):
                         if self.focus == "nodes":
                             self._toggle_selected_node()

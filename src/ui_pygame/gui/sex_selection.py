@@ -4,10 +4,13 @@ from __future__ import annotations
 
 import pygame
 
-from .input_guards import prepare_guarded_input, release_guard_allows_input, update_input_armed_from_event
+from .input_guards import (
+    prepare_guarded_input,
+    release_guard_allows_input,
+    update_input_armed_from_event,
+)
 from .mouse_helpers import hit_index, is_left_click, mouse_position
 from .town_base import TownColors
-
 
 SEX_OPTIONS = ("Male", "Female")
 
@@ -31,7 +34,12 @@ class SexSelectionScreen:
         """Return clickable rectangles for visible sex rows."""
         line_height = 40
         return [
-            pygame.Rect(self.list_rect.left + 5, self.list_rect.top + 20 + i * line_height - 2, self.list_rect.width - 10, line_height - 4)
+            pygame.Rect(
+                self.list_rect.left + 5,
+                self.list_rect.top + 20 + i * line_height - 2,
+                self.list_rect.width - 10,
+                line_height - 4,
+            )
             for i, _option in enumerate(options)
         ]
 
@@ -94,8 +102,12 @@ class SexSelectionScreen:
         self.draw_details()
         self.draw_list(options)
 
-        instructions = self.small_font.render("UP/DOWN: Navigate   ENTER: Select   ESC: Back", True, self.colors.GRAY)
-        instructions_rect = instructions.get_rect(centerx=self.list_rect.centerx, bottom=self.list_rect.bottom - 24)
+        instructions = self.small_font.render(
+            "UP/DOWN: Navigate   ENTER: Select   ESC: Back", True, self.colors.GRAY
+        )
+        instructions_rect = instructions.get_rect(
+            centerx=self.list_rect.centerx, bottom=self.list_rect.bottom - 24
+        )
         self.screen.blit(instructions, instructions_rect)
 
     def navigate(
@@ -119,6 +131,7 @@ class SexSelectionScreen:
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     import sys
+
                     sys.exit()
 
                 input_armed = update_input_armed_from_event(event, require_key_release, input_armed)

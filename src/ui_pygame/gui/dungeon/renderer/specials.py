@@ -43,7 +43,9 @@ class RendererSpecialTileMixin:
                 continue
             rect = pygame.Rect(zones[visible_depth.depth].back_wall_rect.to_int_tuple())
             render_depth = visible_depth.depth
-            center_type = type(visible_depth.center).__name__ if visible_depth.center is not None else ""
+            center_type = (
+                type(visible_depth.center).__name__ if visible_depth.center is not None else ""
+            )
             if visible_depth.center is not None and "StairsUp" in center_type:
                 rect = self._get_center_stairs_up_render_rect(zones, visible_depth.depth + 1)
             if visible_depth.center is not None and (
@@ -68,7 +70,10 @@ class RendererSpecialTileMixin:
                     max(1, round(floor_bounds.h)),
                 )
                 render_depth = floor_depth
-            if visible_depth.center is not None and "WarpPoint" in type(visible_depth.center).__name__:
+            if (
+                visible_depth.center is not None
+                and "WarpPoint" in type(visible_depth.center).__name__
+            ):
                 continue
             self._render_special_tile(
                 visible_depth.center,
@@ -114,7 +119,9 @@ class RendererSpecialTileMixin:
                 depth=visible_depth.depth,
             )
 
-    def _render_jester_force_fields(self, scene, zones, *, body: bool = True, arcs: bool = True) -> None:
+    def _render_jester_force_fields(
+        self, scene, zones, *, body: bool = True, arcs: bool = True
+    ) -> None:
         for visible_depth in scene.depths:
             tile = visible_depth.center
             zone = zones.get(visible_depth.depth)
@@ -191,7 +198,9 @@ class RendererSpecialTileMixin:
 
         previous_clip = self.screen.get_clip()
         try:
-            clip_rect = self._get_side_special_clip_rect(opening_rect, tile, side, center_tile=center_tile)
+            clip_rect = self._get_side_special_clip_rect(
+                opening_rect, tile, side, center_tile=center_tile
+            )
             if clip_rect is not None:
                 self.screen.set_clip(clip_rect)
             self._render_jester_force_field(
@@ -237,7 +246,9 @@ class RendererSpecialTileMixin:
             next_zone=next_zone,
         )
 
-    def _get_side_special_surface_geometry(self, zone, next_zone, side: str, depth: int) -> tuple[Quad, Quad, int]:
+    def _get_side_special_surface_geometry(
+        self, zone, next_zone, side: str, depth: int
+    ) -> tuple[Quad, Quad, int]:
         if next_zone is None:
             if side == "left":
                 return zone.left_floor_open, zone.left_ceiling_open, depth
@@ -249,12 +260,16 @@ class RendererSpecialTileMixin:
         if side == "left":
             return (
                 self._slice_quad_horizontal_region(
-                    self._push_outer_floor_quad(next_zone.center_floor_left, side, base_offset, edge_offset),
+                    self._push_outer_floor_quad(
+                        next_zone.center_floor_left, side, base_offset, edge_offset
+                    ),
                     0.25,
                     0.75,
                 ),
                 self._slice_quad_horizontal_region(
-                    self._push_outer_ceiling_quad(next_zone.center_ceiling_left, side, base_offset, edge_offset),
+                    self._push_outer_ceiling_quad(
+                        next_zone.center_ceiling_left, side, base_offset, edge_offset
+                    ),
                     0.25,
                     0.75,
                 ),
@@ -263,19 +278,25 @@ class RendererSpecialTileMixin:
 
         return (
             self._slice_quad_horizontal_region(
-                self._push_outer_floor_quad(next_zone.center_floor_right, side, base_offset, edge_offset),
+                self._push_outer_floor_quad(
+                    next_zone.center_floor_right, side, base_offset, edge_offset
+                ),
                 0.25,
                 0.75,
             ),
             self._slice_quad_horizontal_region(
-                self._push_outer_ceiling_quad(next_zone.center_ceiling_right, side, base_offset, edge_offset),
+                self._push_outer_ceiling_quad(
+                    next_zone.center_ceiling_right, side, base_offset, edge_offset
+                ),
                 0.25,
                 0.75,
             ),
             depth + 1,
         )
 
-    def _get_visible_side_special_floor_geometry(self, zone, side: str, depth: int, next_zone=None) -> tuple[Quad, int, str]:
+    def _get_visible_side_special_floor_geometry(
+        self, zone, side: str, depth: int, next_zone=None
+    ) -> tuple[Quad, int, str]:
         base_quad = zone.left_floor_open if side == "left" else zone.right_floor_open
         if side == "left":
             sliced = self._slice_quad_region(base_quad, 0.10, 0.38, 0.45, 0.85)
@@ -283,7 +304,9 @@ class RendererSpecialTileMixin:
             sliced = self._slice_quad_region(base_quad, 0.62, 0.90, 0.45, 0.85)
         return sliced, depth, f"d{depth}:{side}_opening_special_floor"
 
-    def _get_visible_side_special_ceiling_geometry(self, zone, side: str, depth: int, next_zone=None) -> tuple[Quad, int, str]:
+    def _get_visible_side_special_ceiling_geometry(
+        self, zone, side: str, depth: int, next_zone=None
+    ) -> tuple[Quad, int, str]:
         base_quad = zone.left_ceiling_open if side == "left" else zone.right_ceiling_open
         if side == "left":
             sliced = self._slice_quad_region(base_quad, 0.10, 0.42, 0.15, 0.70)
@@ -303,7 +326,11 @@ class RendererSpecialTileMixin:
         zone=None,
         next_zone=None,
     ) -> None:
-        if self._opening_tile_blocks_view(opening_tile) or tile is None or (is_wall(tile) and not self._is_door_tile(tile)):
+        if (
+            self._opening_tile_blocks_view(opening_tile)
+            or tile is None
+            or (is_wall(tile) and not self._is_door_tile(tile))
+        ):
             return
         if self._is_door_tile(tile):
             return
@@ -335,7 +362,7 @@ class RendererSpecialTileMixin:
                 round(render_rect.y),
                 max(1, round(render_rect.w)),
                 max(1, round(render_rect.h)),
-        )
+            )
         clip_rect = self._get_side_special_clip_rect(rect, tile, side, center_tile=center_tile)
         previous_clip = self.screen.get_clip()
         try:
@@ -471,7 +498,9 @@ class RendererSpecialTileMixin:
             return
 
         if "StairsUp" in tile_type:
-            self._render_special_sprite("stairs_up", rect, darkness=darkness, side=side, lateral_view=lateral_view)
+            self._render_special_sprite(
+                "stairs_up", rect, darkness=darkness, side=side, lateral_view=lateral_view
+            )
             return
 
         if "StairsDown" in tile_type:
@@ -511,7 +540,9 @@ class RendererSpecialTileMixin:
             return
 
         if "Portal" in tile_type:
-            self._render_special_sprite("portal", rect, darkness=darkness, side=side, lateral_view=lateral_view)
+            self._render_special_sprite(
+                "portal", rect, darkness=darkness, side=side, lateral_view=lateral_view
+            )
             return
 
         if "WarpPoint" in tile_type:
@@ -573,7 +604,9 @@ class RendererSpecialTileMixin:
             )
             return
 
-        if bool(getattr(tile, "rookie_body_marker", False)) or bool(getattr(tile, "dropped_rookie_body", False)):
+        if bool(getattr(tile, "rookie_body_marker", False)) or bool(
+            getattr(tile, "dropped_rookie_body", False)
+        ):
             player_char = getattr(self, "player_char", None)
             visible = (
                 not bool(getattr(tile, "read", False))
@@ -620,9 +653,15 @@ class RendererSpecialTileMixin:
             return
 
         if "GoldenChaliceRoom" in tile_type:
-            if hasattr(getattr(self, "player_char", None), "quest_dict") and not map_tiles.chalice_altar_visible(self.player_char):
+            if hasattr(
+                getattr(self, "player_char", None), "quest_dict"
+            ) and not map_tiles.chalice_altar_visible(self.player_char):
                 return
-            sprite_key = "empty_golden_chalice_altar" if bool(getattr(tile, "read", False)) else "golden_chalice_altar"
+            sprite_key = (
+                "empty_golden_chalice_altar"
+                if bool(getattr(tile, "read", False))
+                else "golden_chalice_altar"
+            )
             self._render_floor_sprite(
                 sprite_key,
                 rect,
@@ -647,11 +686,15 @@ class RendererSpecialTileMixin:
             return
 
         if "SecretShop" in tile_type:
-            self._render_special_sprite("secret_shop", rect, darkness=darkness, side=side, lateral_view=lateral_view)
+            self._render_special_sprite(
+                "secret_shop", rect, darkness=darkness, side=side, lateral_view=lateral_view
+            )
             return
 
         if "BossRoom" in tile_type:
-            self._render_boss_enemy(tile, rect, darkness=darkness, depth=depth, side=side, lateral_view=lateral_view)
+            self._render_boss_enemy(
+                tile, rect, darkness=darkness, depth=depth, side=side, lateral_view=lateral_view
+            )
             return
 
     def _render_translucent_fake_wall_panel(
@@ -727,7 +770,9 @@ class RendererSpecialTileMixin:
             return
 
         sprite_rect = sprite.get_rect()
-        sprite_rect.midbottom = self._get_floor_sprite_anchor(rect, side=side, lateral_view=lateral_view)
+        sprite_rect.midbottom = self._get_floor_sprite_anchor(
+            rect, side=side, lateral_view=lateral_view
+        )
 
         if kind == "ladder_up":
             sprite_rect.y = rect.y + (rect.height - sprite_rect.height) // 2
@@ -742,7 +787,9 @@ class RendererSpecialTileMixin:
                 round(rect.y + (rect.height * 0.55)),
             )
         elif kind == "dead_body":
-            anchor_x, _anchor_y = self._get_floor_sprite_anchor(rect, side=side, lateral_view=lateral_view)
+            anchor_x, _anchor_y = self._get_floor_sprite_anchor(
+                rect, side=side, lateral_view=lateral_view
+            )
             sprite_rect.midbottom = (
                 anchor_x,
                 round(rect.y + (rect.height * (1.06 if lateral_view else 1.08))),
@@ -813,7 +860,9 @@ class RendererSpecialTileMixin:
             sprite = fallback
 
         sprite_rect = sprite.get_rect()
-        sprite_rect.midbottom = self._get_floor_sprite_anchor(rect, side=side, lateral_view=lateral_view)
+        sprite_rect.midbottom = self._get_floor_sprite_anchor(
+            rect, side=side, lateral_view=lateral_view
+        )
 
         if lateral_view and side is not None:
             quad = self._get_lateral_floor_sprite_quad(sprite_rect, side)
@@ -857,7 +906,9 @@ class RendererSpecialTileMixin:
 
         if arcs:
             self._force_field_seed_counter += 1
-            rng = random.Random((pygame.time.get_ticks() * 1009) + (self._force_field_seed_counter * 9173) + depth)
+            rng = random.Random(
+                (pygame.time.get_ticks() * 1009) + (self._force_field_seed_counter * 9173) + depth
+            )
             outer_glow = pygame.Surface(overlay.get_size(), pygame.SRCALPHA)
             inner_glow = pygame.Surface(overlay.get_size(), pygame.SRCALPHA)
             for start_ratio in (0.20, 0.48, 0.76):
@@ -866,7 +917,9 @@ class RendererSpecialTileMixin:
                 start = (max(2, min(field_rect.width - 3, start_x)), 0)
                 end = (max(2, min(field_rect.width - 3, end_x)), field_rect.height)
                 displacement = max(8.0, field_rect.width * 0.20)
-                points = self._build_midpoint_lightning_points(start, end, displacement, rng, iterations=6)
+                points = self._build_midpoint_lightning_points(
+                    start, end, displacement, rng, iterations=6
+                )
                 self._draw_layered_lightning(
                     overlay,
                     points,
@@ -880,7 +933,13 @@ class RendererSpecialTileMixin:
                 for branch_start in points[2:-2:4]:
                     branch_direction = -1 if rng.random() < 0.5 else 1
                     branch_end = (
-                        max(2, min(field_rect.width - 3, branch_start[0] + branch_direction * rng.randint(8, 20))),
+                        max(
+                            2,
+                            min(
+                                field_rect.width - 3,
+                                branch_start[0] + branch_direction * rng.randint(8, 20),
+                            ),
+                        ),
                         max(2, min(field_rect.height - 3, branch_start[1] + rng.randint(-6, 10))),
                     )
                     branch_points = self._build_midpoint_lightning_points(
@@ -1028,7 +1087,9 @@ class RendererSpecialTileMixin:
     def _is_floor_sprite_tile(tile, player_char=None) -> bool:
         if tile is None:
             return False
-        if bool(getattr(tile, "rookie_body_marker", False)) or bool(getattr(tile, "dropped_rookie_body", False)):
+        if bool(getattr(tile, "rookie_body_marker", False)) or bool(
+            getattr(tile, "dropped_rookie_body", False)
+        ):
             if player_char is None:
                 return not bool(getattr(tile, "read", False))
             return map_tiles.rookie_body_visible_for_player(player_char, tile)

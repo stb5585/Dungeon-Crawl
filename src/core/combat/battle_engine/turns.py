@@ -245,8 +245,8 @@ class BattleTurnMixin:
                 return ForcedAction(action="Use Skill", choice=jump_choice)
 
         # Ongoing charging ability (e.g. Charge, Crushing Blow, Dragon Breath).
-        for skill_name, skill in self.attacker.spellbook.get('Skills', {}).items():
-            if getattr(skill, 'charging', False):
+        for skill_name, skill in self.attacker.spellbook.get("Skills", {}).items():
+            if getattr(skill, "charging", False):
                 return ForcedAction(action="Use Skill", choice=skill_name)
 
         if self.charging_ability:
@@ -257,10 +257,9 @@ class BattleTurnMixin:
         # Berserk forces a basic attack unless a higher-priority forced action
         # such as an active Jump or charge-up has already claimed the turn.
         berserk = self.attacker.status_effects["Berserk"]
-        composed_wrath = (
-            getattr(berserk, "source", None) == "Frenzy"
-            and "Composed Wrath" in self.attacker.spellbook.get("Skills", {})
-        )
+        composed_wrath = getattr(
+            berserk, "source", None
+        ) == "Frenzy" and "Composed Wrath" in self.attacker.spellbook.get("Skills", {})
         if berserk.active and not composed_wrath:
             return ForcedAction(action="Attack")
 
@@ -292,9 +291,8 @@ class BattleTurnMixin:
         """Compatibility adapter for callers that do not construct intents."""
         scope = self._target_scope_for_action(action, choice)
         target_ids: tuple[str, ...] = ()
-        player_side = (
-            self.current_actor_id == PLAYER_ACTOR_ID
-            or (self.current_actor_id is None and self.is_player_turn())
+        player_side = self.current_actor_id == PLAYER_ACTOR_ID or (
+            self.current_actor_id is None and self.is_player_turn()
         )
         if (
             scope == TargetScope.SINGLE_ENEMY
@@ -406,7 +404,8 @@ class BattleTurnMixin:
             if (
                 declared == TargetScope.ALL_ENEMIES
                 and self.attacker != self.player
-                and getattr(ability, "name", "") in {
+                and getattr(ability, "name", "")
+                in {
                     "Photon Sphere",
                     "Prismatic Cataclysm",
                 }
@@ -421,9 +420,8 @@ class BattleTurnMixin:
                 return declared
             if getattr(ability, "passive", False):
                 return TargetScope.NONE
-            if (
-                getattr(ability, "subtyp", None) in {"Heal", "Support"}
-                or getattr(ability, "self_target", False)
+            if getattr(ability, "subtyp", None) in {"Heal", "Support"} or getattr(
+                ability, "self_target", False
             ):
                 return TargetScope.SELF
             return declared
@@ -466,9 +464,8 @@ class BattleTurnMixin:
                 return list(self.encounter.living_members)
             return []
 
-        player_side = (
-            self.current_actor_id == PLAYER_ACTOR_ID
-            or (self.current_actor_id is None and self.is_player_turn())
+        player_side = self.current_actor_id == PLAYER_ACTOR_ID or (
+            self.current_actor_id is None and self.is_player_turn()
         )
         if not player_side:
             if supplied:
@@ -524,8 +521,7 @@ class BattleTurnMixin:
                 if spent:
                     self.attacker.health.current -= spent
                     result.message += (
-                        f"Mana Barbs deal {spent} damage back to "
-                        f"{self.attacker.name}.\n"
+                        f"Mana Barbs deal {spent} damage back to " f"{self.attacker.name}.\n"
                     )
                 barbs["turns"] = int(barbs["turns"]) - 1
                 if barbs["turns"] <= 0:
@@ -610,9 +606,7 @@ class BattleTurnMixin:
         # never renders an intermediate "dead but unresolved" frame.
         if len(self.encounter.members) > 1:
             if member is not None and not member.enemy.is_alive():
-                resurrection = member.enemy.spellbook.get("Spells", {}).get(
-                    "Resurrection"
-                )
+                resurrection = member.enemy.spellbook.get("Spells", {}).get("Resurrection")
                 if (
                     resurrection is not None
                     and abs(member.enemy.health.current) <= member.enemy.mana.current
@@ -622,12 +616,14 @@ class BattleTurnMixin:
                         result.message += str(resurrection_message)
             self._record_final_enemy_resolutions()
 
-        target_id = member.combatant_id if member else (
-            actor_id
-            if scope == TargetScope.SELF
-            else PLAYER_ACTOR_ID
-            if scope == TargetScope.SINGLE_ENEMY
-            else None
+        target_id = (
+            member.combatant_id
+            if member
+            else (
+                actor_id
+                if scope == TargetScope.SELF
+                else PLAYER_ACTOR_ID if scope == TargetScope.SINGLE_ENEMY else None
+            )
         )
         raw_portion = getattr(self, "_last_combat_result", None)
         if isinstance(raw_portion, CombatResult):
@@ -648,23 +644,21 @@ class BattleTurnMixin:
                 message=result.message,
             )
         group.add(portion)
-        self._event_bus.emit(create_combat_event(
-            EventType.ACTION_RESULT,
-            actor=self.attacker,
-            target=portion.target,
-            result=portion,
-            encounter_id=self.encounter.encounter_id,
-            actor_id=actor_id,
-            target_id=target_id,
-            target_scope=scope.value,
-            expanded_target_ids=list(target_ids),
-        ))
+        self._event_bus.emit(
+            create_combat_event(
+                EventType.ACTION_RESULT,
+                actor=self.attacker,
+                target=portion.target,
+                result=portion,
+                encounter_id=self.encounter.encounter_id,
+                actor_id=actor_id,
+                target_id=target_id,
+                target_scope=scope.value,
+                expanded_target_ids=list(target_ids),
+            )
+        )
         result.combat_results = group
-        if (
-            member is not None
-            and actor_id == PLAYER_ACTOR_ID
-            and bool(intent.target_ids)
-        ):
+        if member is not None and actor_id == PLAYER_ACTOR_ID and bool(intent.target_ids):
             self._focus_target_id = member.combatant_id
         return result
 
@@ -688,15 +682,16 @@ class BattleTurnMixin:
         )
         if self.attacker.mana.current < effective_cost:
             message = (
-                f"{self.attacker.name} does not have enough mana to cast "
-                f"{intent.choice}!\n"
+                f"{self.attacker.name} does not have enough mana to cast " f"{intent.choice}!\n"
             )
-            group.add(CombatResult(
-                action=intent.choice or intent.action,
-                actor=self.attacker,
-                actor_id=self.current_actor_id,
-                message=message,
-            ))
+            group.add(
+                CombatResult(
+                    action=intent.choice or intent.action,
+                    actor=self.attacker,
+                    actor_id=self.current_actor_id,
+                    message=message,
+                )
+            )
             return ActionResult(message=message, combat_results=group)
 
         threaded_message = ""
@@ -731,27 +726,25 @@ class BattleTurnMixin:
                 choice=intent.choice,
                 round_number=self.round_number,
             )
-        event_type = (
-            EventType.SPELL_CAST
-            if intent.action == "Cast Spell"
-            else EventType.SKILL_USE
+        event_type = EventType.SPELL_CAST if intent.action == "Cast Spell" else EventType.SKILL_USE
+        self._event_bus.emit(
+            create_combat_event(
+                event_type,
+                actor=self.attacker,
+                target=targets[0].enemy if targets else None,
+                **(
+                    {"spell_name": intent.choice}
+                    if intent.action == "Cast Spell"
+                    else {"skill_name": intent.choice}
+                ),
+                ability_name=intent.choice,
+                source="spell" if intent.action == "Cast Spell" else "skill",
+                encounter_id=self.encounter.encounter_id,
+                actor_id=self.current_actor_id,
+                target_scope=TargetScope.ALL_ENEMIES.value,
+                expanded_target_ids=list(group.target_ids),
+            )
         )
-        self._event_bus.emit(create_combat_event(
-            event_type,
-            actor=self.attacker,
-            target=targets[0].enemy if targets else None,
-            **(
-                {"spell_name": intent.choice}
-                if intent.action == "Cast Spell"
-                else {"skill_name": intent.choice}
-            ),
-            ability_name=intent.choice,
-            source="spell" if intent.action == "Cast Spell" else "skill",
-            encounter_id=self.encounter.encounter_id,
-            actor_id=self.current_actor_id,
-            target_scope=TargetScope.ALL_ENEMIES.value,
-            expanded_target_ids=list(group.target_ids),
-        ))
         verb = "casts" if intent.action == "Cast Spell" else "uses"
         prefix = f"{self.attacker.name} {verb} {intent.choice}.\n{threaded_message}"
         group.message = prefix
@@ -769,17 +762,19 @@ class BattleTurnMixin:
                 )
                 for portion in resolved.results:
                     group.add(portion)
-                    self._event_bus.emit(create_combat_event(
-                        EventType.ACTION_RESULT,
-                        actor=self.attacker,
-                        target=portion.target,
-                        result=portion,
-                        encounter_id=self.encounter.encounter_id,
-                        actor_id=self.current_actor_id,
-                        target_id=portion.target_id,
-                        target_scope=TargetScope.ALL_ENEMIES.value,
-                        expanded_target_ids=list(group.target_ids),
-                    ))
+                    self._event_bus.emit(
+                        create_combat_event(
+                            EventType.ACTION_RESULT,
+                            actor=self.attacker,
+                            target=portion.target,
+                            result=portion,
+                            encounter_id=self.encounter.encounter_id,
+                            actor_id=self.current_actor_id,
+                            target_id=portion.target_id,
+                            target_scope=TargetScope.ALL_ENEMIES.value,
+                            expanded_target_ids=list(group.target_ids),
+                        )
+                    )
             else:
                 ability_result = ability.cast(
                     self.attacker,
@@ -788,14 +783,16 @@ class BattleTurnMixin:
                     battle_engine=self,
                 )
                 for member in targets:
-                    group.add(CombatResult(
-                        action=intent.choice or intent.action,
-                        actor=self.attacker,
-                        target=member.enemy,
-                        actor_id=self.current_actor_id,
-                        target_id=member.combatant_id,
-                        message=str(ability_result) if member is targets[0] else "",
-                    ))
+                    group.add(
+                        CombatResult(
+                            action=intent.choice or intent.action,
+                            actor=self.attacker,
+                            target=member.enemy,
+                            actor_id=self.current_actor_id,
+                            target_id=member.combatant_id,
+                            message=str(ability_result) if member is targets[0] else "",
+                        )
+                    )
         finally:
             astromancer.clear_threaded_spell(self.attacker)
         self._record_final_enemy_resolutions()
@@ -833,13 +830,8 @@ class BattleTurnMixin:
                             TargetScope.ALL_ENEMIES,
                             group.target_ids,
                         ):
-                            group.message += self._record_player_natural_spell_kill(
-                                ability
-                            )
-                if (
-                    astromancer.is_astromancer(self.player)
-                    and astromancer.sign_for_spell(ability)
-                ):
+                            group.message += self._record_player_natural_spell_kill(ability)
+                if astromancer.is_astromancer(self.player) and astromancer.sign_for_spell(ability):
                     astromancer.advance_constellation(self.player)
             group.message += promotion_kits.record_action_resolution(
                 self.player,
@@ -934,9 +926,8 @@ class BattleTurnMixin:
                 warrior.finish_action(self.player)
             return result
 
-        if (
-            self.attacker.status_effects["Sleep"].active
-            and astromancer.silent_lucidity_active(self.attacker)
+        if self.attacker.status_effects["Sleep"].active and astromancer.silent_lucidity_active(
+            self.attacker
         ):
             spell = self.attacker.spellbook.get("Spells", {}).get(choice)
             if action != "Cast Spell" or not astromancer.can_cast_while_asleep(
@@ -960,7 +951,9 @@ class BattleTurnMixin:
             and getattr(self.attacker, "magic_effects", {}).get("Tree of Life")
             and self.attacker.magic_effects["Tree of Life"].active
         ):
-            result.message = f"{self.attacker.name} is rooted as the Tree of Life and cannot attack.\n"
+            result.message = (
+                f"{self.attacker.name} is rooted as the Tree of Life and cannot attack.\n"
+            )
             if self.attacker == self.player:
                 warrior.finish_action(self.player)
             return result
@@ -1049,9 +1042,7 @@ class BattleTurnMixin:
             if choice:
                 select_form = getattr(self.attacker, "select_transform_form", None)
                 if not callable(select_form) or not select_form(choice):
-                    result.message = (
-                        f"{self.attacker.name} cannot transform into {choice}.\n"
-                    )
+                    result.message = f"{self.attacker.name} cannot transform into {choice}.\n"
                     return result
             result.message = self.attacker.transform()
 
@@ -1146,9 +1137,7 @@ class BattleTurnMixin:
             state = promotion_kits.combat_state(self.player)
             if int(state.get("winged_pounce_flight", 0) or 0) > 0:
                 state["winged_pounce_flight"] = 0
-                self.player.flying = bool(
-                    state.pop("winged_pounce_previous_flying", False)
-                )
+                self.player.flying = bool(state.pop("winged_pounce_previous_flying", False))
             if (
                 hp_before >= self.player.health.max * 0.25
                 and self.player.health.current < self.player.health.max * 0.25
@@ -1229,7 +1218,9 @@ class BattleTurnMixin:
             )
         return True
 
-    def _record_failed_enemy_debuff(self, actor, ability_name: str | None, target, snapshot: dict | None) -> None:
+    def _record_failed_enemy_debuff(
+        self, actor, ability_name: str | None, target, snapshot: dict | None
+    ) -> None:
         if snapshot is None or self._member_for_character(actor) is None:
             return
         if self._debuff_snapshot_gained_effect(snapshot, target):
@@ -1247,7 +1238,9 @@ class BattleTurnMixin:
             for ally in allies:
                 damage = min(self.defender.health.current, int(ally.get("damage", 1) or 1))
                 self.defender.health.current -= damage
-                undead_text += f"Undead {ally['name']} attacks {self.defender.name} for {damage} damage.\n"
+                undead_text += (
+                    f"Undead {ally['name']} attacks {self.defender.name} for {damage} damage.\n"
+                )
                 ally["turns"] = int(ally.get("turns", 0) or 0) - 1
                 if ally["turns"] > 0:
                     remaining.append(ally)
@@ -1306,7 +1299,9 @@ class BattleTurnMixin:
                     "but its locked target is gone.\n"
                 )
                 continue
-            messages.append(f"{getattr(spell, 'name', 'A delayed spell')} emerges from the wormhole.\n")
+            messages.append(
+                f"{getattr(spell, 'name', 'A delayed spell')} emerges from the wormhole.\n"
+            )
             with self._target_resolution_context(
                 member,
                 TargetScope.SINGLE_ENEMY,
@@ -1391,10 +1386,7 @@ class BattleTurnMixin:
                         )
                         damage = max(
                             1,
-                            int(
-                                int(crystal["mana"])
-                                * (1.0 + spell_power / 100.0)
-                            ),
+                            int(int(crystal["mana"]) * (1.0 + spell_power / 100.0)),
                         )
                         targets = (
                             [member.enemy for member in self.encounter.living_members]
@@ -1452,8 +1444,8 @@ class BattleTurnMixin:
             # Check defender resurrection (e.g. Resurrection spell)
             if not self.defender.is_alive():
                 result.defender_died = True
-                if 'Resurrection' in self.defender.spellbook.get('Spells', {}):
-                    res_spell = self.defender.spellbook['Spells']['Resurrection']
+                if "Resurrection" in self.defender.spellbook.get("Spells", {}):
+                    res_spell = self.defender.spellbook["Spells"]["Resurrection"]
                     if abs(self.defender.health.current) <= self.defender.mana.current:
                         res_msg = res_spell.cast(self.defender)
                         if res_msg:
@@ -1484,15 +1476,17 @@ class BattleTurnMixin:
                 if triggered:
                     result.messages.append(frenzy_msg)
         paladin.clear_transient_marks(self.player)
-        self._event_bus.emit(create_combat_event(
-            EventType.TURN_END,
-            actor=self.attacker,
-            target=self.defender,
-            encounter_id=self.encounter.encounter_id,
-            actor_id=self.current_actor_id,
-            round=self.round_number,
-            actor_turn_id=self._current_actor_turn_id,
-        ))
+        self._event_bus.emit(
+            create_combat_event(
+                EventType.TURN_END,
+                actor=self.attacker,
+                target=self.defender,
+                encounter_id=self.encounter.encounter_id,
+                actor_id=self.current_actor_id,
+                round=self.round_number,
+                actor_turn_id=self._current_actor_turn_id,
+            )
+        )
         self.logger.next_turn()
         return result
 
@@ -1524,35 +1518,41 @@ class BattleTurnMixin:
         wrapped, _actor_id = self._actor_cycle.advance(self._valid_actor_ids())
         if wrapped:
             self.logger.next_round()
-            self._event_bus.emit(create_combat_event(
-                EventType.ROUND_END,
-                actor=self.attacker,
-                target=self.defender,
-                encounter_id=self.encounter.encounter_id,
-                round=old_round,
-                actor_turn_id=self._current_actor_turn_id,
-            ))
+            self._event_bus.emit(
+                create_combat_event(
+                    EventType.ROUND_END,
+                    actor=self.attacker,
+                    target=self.defender,
+                    encounter_id=self.encounter.encounter_id,
+                    round=old_round,
+                    actor_turn_id=self._current_actor_turn_id,
+                )
+            )
         self._sync_actor_aliases()
         self._current_actor_turn_id = self._actor_cycle.start_current_turn()
         if wrapped:
-            self._event_bus.emit(create_combat_event(
-                EventType.ROUND_START,
+            self._event_bus.emit(
+                create_combat_event(
+                    EventType.ROUND_START,
+                    actor=self.attacker,
+                    target=self.defender,
+                    encounter_id=self.encounter.encounter_id,
+                    actor_id=self.current_actor_id,
+                    round=self.round_number,
+                    actor_turn_id=self._current_actor_turn_id,
+                )
+            )
+        self._event_bus.emit(
+            create_combat_event(
+                EventType.TURN_START,
                 actor=self.attacker,
                 target=self.defender,
                 encounter_id=self.encounter.encounter_id,
                 actor_id=self.current_actor_id,
                 round=self.round_number,
                 actor_turn_id=self._current_actor_turn_id,
-            ))
-        self._event_bus.emit(create_combat_event(
-            EventType.TURN_START,
-            actor=self.attacker,
-            target=self.defender,
-            encounter_id=self.encounter.encounter_id,
-            actor_id=self.current_actor_id,
-            round=self.round_number,
-            actor_turn_id=self._current_actor_turn_id,
-        ))
+            )
+        )
         self.available_actions = self._available_actions()
 
     def end_battle(self) -> BattleOutcome:
@@ -1596,10 +1596,7 @@ class BattleTurnMixin:
                 outcome.message = self._process_victory()
             # Check for level up possibility
             pending_level = getattr(self.player, "_pending_level_up_result", None)
-            if (
-                pending_level is not None
-                and pending_level.new_level > pending_level.old_level
-            ):
+            if pending_level is not None and pending_level.new_level > pending_level.old_level:
                 outcome.level_up = True
         else:
             outcome.result = "defeat"
@@ -1629,16 +1626,18 @@ class BattleTurnMixin:
         paladin.clear_condemnation(enemy)
 
         # Emit combat end event
-        self._event_bus.emit(create_combat_event(
-            EventType.COMBAT_END,
-            actor=self.player,
-            target=enemy,
-            fled=self.flee,
-            player_alive=self.player.is_alive(),
-            enemy_alive=enemy.is_alive(),
-            encounter_id=self.encounter.encounter_id,
-            enemies=self.encounter.roster_summary(),
-        ))
+        self._event_bus.emit(
+            create_combat_event(
+                EventType.COMBAT_END,
+                actor=self.player,
+                target=enemy,
+                fled=self.flee,
+                player_alive=self.player.is_alive(),
+                enemy_alive=enemy.is_alive(),
+                encounter_id=self.encounter.encounter_id,
+                enemies=self.encounter.roster_summary(),
+            )
+        )
 
         self.player._active_combat = False
         self.player._combat_encounter = None
@@ -1702,10 +1701,7 @@ class BattleTurnMixin:
             for (destination, name), quantity in sorted(combined_loot.items())
         )
         resolution_counts = tuple(
-            (resolution, sum(
-                settlement.resolution == resolution
-                for settlement in settlements
-            ))
+            (resolution, sum(settlement.resolution == resolution for settlement in settlements))
             for resolution in EnemyResolution
             if any(settlement.resolution == resolution for settlement in settlements)
         )
@@ -1731,27 +1727,29 @@ class BattleTurnMixin:
             settlements=settlements,
             total_experience=total_exp,
         )
-        self._event_bus.emit(create_combat_event(
-            EventType.COMBAT_END,
-            actor=self.player,
-            target=self.encounter.primary_enemy,
-            fled=self.flee,
-            player_alive=self.player.is_alive(),
-            enemy_alive=bool(self.encounter.living_members),
-            encounter_id=self.encounter.encounter_id,
-            enemies=self.encounter.roster_summary(),
-            rewards_settled=True,
-            settlements=[
-                {
-                    "combatant_id": settlement.combatant_id,
-                    "resolution": settlement.resolution.value,
-                    "experience": settlement.experience,
-                    "gold": settlement.gold,
-                }
-                for settlement in settlements
-            ],
-            total_experience=total_exp,
-        ))
+        self._event_bus.emit(
+            create_combat_event(
+                EventType.COMBAT_END,
+                actor=self.player,
+                target=self.encounter.primary_enemy,
+                fled=self.flee,
+                player_alive=self.player.is_alive(),
+                enemy_alive=bool(self.encounter.living_members),
+                encounter_id=self.encounter.encounter_id,
+                enemies=self.encounter.roster_summary(),
+                rewards_settled=True,
+                settlements=[
+                    {
+                        "combatant_id": settlement.combatant_id,
+                        "resolution": settlement.resolution.value,
+                        "experience": settlement.experience,
+                        "gold": settlement.gold,
+                    }
+                    for settlement in settlements
+                ],
+                total_experience=total_exp,
+            )
+        )
         self.player._active_combat = False
         self.player._combat_encounter = None
         return outcome

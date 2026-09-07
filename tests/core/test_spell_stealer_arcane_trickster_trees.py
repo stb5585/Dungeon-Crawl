@@ -44,12 +44,8 @@ class _CertainRng:
 
 def test_stolen_magic_trees_preserve_compact_build_pressure():
     stealer_tree = ABILITY_TREES["Spell Stealer"]
-    stealer_nodes = [
-        node for node in stealer_tree.nodes if node.kind != NodeKind.PROMOTION
-    ]
-    promotion = next(
-        node for node in stealer_tree.nodes if node.kind == NodeKind.PROMOTION
-    )
+    stealer_nodes = [node for node in stealer_tree.nodes if node.kind != NodeKind.PROMOTION]
+    promotion = next(node for node in stealer_tree.nodes if node.kind == NodeKind.PROMOTION)
     trickster_tree = ABILITY_TREES["Arcane Trickster"]
 
     assert len(stealer_nodes) == 12
@@ -76,24 +72,19 @@ def test_external_weaken_mind_does_not_gate_arcane_trickster_progression():
     assert nodes["Neural Connection"].lane == "Stolen Spell Mastery"
     assert nodes["Neural Connection"].prerequisites == (nodes["Steal Spell 2"].id,)
     assert not any(
-        nodes["Neural Connection"].id in candidate.prerequisites
-        for candidate in tree.nodes
+        nodes["Neural Connection"].id in candidate.prerequisites for candidate in tree.nodes
     )
 
 
 def test_retired_external_spell_nodes_are_refunded_without_forgetting_spells():
     trickster = _player("Arcane Trickster")
     trickster.progression.unspent_points = 0
-    trickster.progression.purchased_node_ids.add(
-        "arcane-trickster.ability.weaken-mind"
-    )
+    trickster.progression.purchased_node_ids.add("arcane-trickster.ability.weaken-mind")
     trickster.spellbook["Spells"]["Weaken Mind"] = abilities.WeakenMind()
 
     ensure_progression(trickster)
 
-    assert "arcane-trickster.ability.weaken-mind" not in (
-        trickster.progression.purchased_node_ids
-    )
+    assert "arcane-trickster.ability.weaken-mind" not in (trickster.progression.purchased_node_ids)
     assert trickster.progression.unspent_points == 2
     assert "Weaken Mind" in trickster.spellbook["Spells"]
 
@@ -226,9 +217,7 @@ def test_neural_connection_mirrors_weaken_mind_amount_and_duration():
     effect.apply(trickster, target, result)
 
     for stat_name in ("Magic", "Magic Defense"):
-        assert trickster.stat_effects[stat_name].extra == abs(
-            target.stat_effects[stat_name].extra
-        )
+        assert trickster.stat_effects[stat_name].extra == abs(target.stat_effects[stat_name].extra)
         assert trickster.stat_effects[stat_name].duration == 4
     assert "Neural Connection" in "".join(result.extra["messages"])
 

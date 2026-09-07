@@ -53,11 +53,14 @@ def test_warrior_replaces_dual_wield_with_level_twenty_cripple():
     assert by_name["True Strike"].prerequisites[0] == by_name["Cripple"].id
     assert warrior.cls.restrictions["OffHand"] == ["Shield"]
     warrior.spellbook["Skills"]["Dual Wield"] = abilities.DualWield()
-    assert ability_mechanics.can_dual_wield_item(
-        warrior,
-        items.Rondel(),
-        "OffHand",
-    ) is False
+    assert (
+        ability_mechanics.can_dual_wield_item(
+            warrior,
+            items.Rondel(),
+            "OffHand",
+        )
+        is False
+    )
 
 
 def test_weapon_master_layout_uses_distinct_routes_and_independent_weapon_arts():
@@ -73,27 +76,20 @@ def test_weapon_master_layout_uses_distinct_routes_and_independent_weapon_arts()
         "Brace": ("Polearm", 1),
         "Anvil Strike": ("Hammer", 1),
     }
-    upgrades = {
-        f"{name} 2": (weapon_type, 5)
-        for name, (weapon_type, _rank) in arts.items()
-    }
+    upgrades = {f"{name} 2": (weapon_type, 5) for name, (weapon_type, _rank) in arts.items()}
 
     assert by_name["Double Strike"].lane == "Berserker"
     assert by_name["Mortal Strike"].lane == "Berserker"
     assert by_name["Devastating Throw"].lane == "Berserker"
     assert by_name["Two-Handed Weapon Proficiency"].lane == "Berserker"
     assert by_name["Two-Handed Weapon Proficiency"].position == (0, 2)
-    assert by_name["Two-Handed Weapon Proficiency"].payload[
-        "level_requirement"
-    ] == 35
-    assert by_name["Two-Handed Weapon Proficiency"].payload[
-        "exclusive_group"
-    ] == "weapon-master.style"
+    assert by_name["Two-Handed Weapon Proficiency"].payload["level_requirement"] == 35
+    assert (
+        by_name["Two-Handed Weapon Proficiency"].payload["exclusive_group"] == "weapon-master.style"
+    )
     assert by_name["Mortal Strike"].position == (0, 4)
     assert by_name["Brutish Strength"].lane == "Berserker"
-    assert by_name["Brutish Strength"].prerequisites == (
-        by_name["Devastating Throw"].id,
-    )
+    assert by_name["Brutish Strength"].prerequisites == (by_name["Devastating Throw"].id,)
     assert by_name["Parry"].lane == "Grandmaster"
     assert by_name["True Piercing Strike"].lane == "Grandmaster"
     assert by_name["True Piercing Strike"].payload["prerequisite_mode"] == "any"
@@ -140,10 +136,7 @@ def test_inherited_warrior_entries_are_preowned_without_spending_points():
     player.spellbook["Skills"]["Parry"] = abilities.Parry()
     before = player.progression.unspent_points
 
-    statuses = {
-        status.node.name: status
-        for status in available_nodes(player, "Weapon Master")
-    }
+    statuses = {status.node.name: status for status in available_nodes(player, "Weapon Master")}
 
     assert statuses["Double Strike"].state == NodeState.OWNED
     assert statuses["Parry"].state == NodeState.OWNED
@@ -165,10 +158,7 @@ def test_duelist_choice_closes_dual_wield_and_rejoins_at_true_piercing_strike():
     ):
         assert purchase_node(player, node_id).success
 
-    statuses = {
-        status.node.name: status
-        for status in available_nodes(player, "Weapon Master")
-    }
+    statuses = {status.node.name: status for status in available_nodes(player, "Weapon Master")}
     for name in ("Dual Wield", "Honed Attack", "Momentum", "Cross Block"):
         assert statuses[name].state == NodeState.CLOSED
     assert statuses["True Piercing Strike"].state == NodeState.AVAILABLE
@@ -192,10 +182,7 @@ def test_two_handed_choice_closes_both_other_weapon_master_styles():
         "weapon-master.ability.two-handed-weapon-proficiency",
     ).success
 
-    statuses = {
-        status.node.name: status
-        for status in available_nodes(player, "Weapon Master")
-    }
+    statuses = {status.node.name: status for status in available_nodes(player, "Weapon Master")}
     for name in (
         "Dual Wield",
         "Honed Attack",

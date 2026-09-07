@@ -34,7 +34,6 @@ from .constants import (
 )
 from .helpers import _battle_log_slug
 
-
 if TYPE_CHECKING:
     from src.ui_pygame.gui.dungeon_hud import DungeonHUD
     from src.ui_pygame.presentation.pygame_presenter import PygamePresenter
@@ -72,8 +71,7 @@ class CombatManagerCoreMixin:
     def _debug_mode_enabled(self) -> bool:
         """Return whether debug-only combat tools should be exposed."""
         return bool(
-            getattr(self.game, "debug_mode", False)
-            or getattr(self.presenter, "debug_mode", False)
+            getattr(self.game, "debug_mode", False) or getattr(self.presenter, "debug_mode", False)
         )
 
     def _slot_symbol_surfaces(self) -> list[pygame.Surface]:
@@ -86,9 +84,7 @@ class CombatManagerCoreMixin:
             atlas = pygame.image.load(str(SLOT_SYMBOL_ATLAS))
             atlas_w, atlas_h = atlas.get_size()
             full_deck_grid = (
-                atlas_w % 13 == 0
-                and atlas_h % 4 == 0
-                and atlas_w // 13 == atlas_h // 4
+                atlas_w % 13 == 0 and atlas_h % 4 == 0 and atlas_w // 13 == atlas_h // 4
             )
             columns = 13 if full_deck_grid else 5
             rows = 4 if full_deck_grid else 2
@@ -219,17 +215,22 @@ class CombatManagerCoreMixin:
             return False
 
         ensure_story = getattr(player_char, "ensure_main_story_state", None)
-        story_state = ensure_story() if callable(ensure_story) else getattr(player_char, "main_story", {})
+        story_state = (
+            ensure_story() if callable(ensure_story) else getattr(player_char, "main_story", {})
+        )
         if not isinstance(story_state, dict):
             return False
-        return not story_state.get("vesperion_false_final_triggered", False) and not story_state.get(
-            "true_final_unlocked", False
-        )
+        return not story_state.get(
+            "vesperion_false_final_triggered", False
+        ) and not story_state.get("true_final_unlocked", False)
 
     @staticmethod
     def _is_reflection_psychopomp_combat(enemy: Character) -> bool:
         """Return whether this is the Liminal Reflection/Psychopomp encounter."""
-        return bool(getattr(enemy, "reflection_psychopomp", False)) or getattr(enemy, "name", "") == "Reflection Psychopomp"
+        return (
+            bool(getattr(enemy, "reflection_psychopomp", False))
+            or getattr(enemy, "name", "") == "Reflection Psychopomp"
+        )
 
     @staticmethod
     def _is_guardian_trial_echo_combat(enemy: Character) -> bool:
@@ -242,7 +243,9 @@ class CombatManagerCoreMixin:
         if not isinstance(enemy, enemies.Vesperion) and getattr(enemy, "name", "") != "Vesperion":
             return False
         ensure_story = getattr(player_char, "ensure_main_story_state", None)
-        story_state = ensure_story() if callable(ensure_story) else getattr(player_char, "main_story", {})
+        story_state = (
+            ensure_story() if callable(ensure_story) else getattr(player_char, "main_story", {})
+        )
         if not isinstance(story_state, dict):
             return False
         return bool(story_state.get("true_final_unlocked")) and not bool(
@@ -260,7 +263,9 @@ class CombatManagerCoreMixin:
     def _handle_vesperion_false_final(self, player_char: Player, enemy: Character) -> bool:
         """Mark the pending Liminal transition without invoking normal battle-end rewards."""
         ensure_story = getattr(player_char, "ensure_main_story_state", None)
-        story_state = ensure_story() if callable(ensure_story) else getattr(player_char, "main_story", None)
+        story_state = (
+            ensure_story() if callable(ensure_story) else getattr(player_char, "main_story", None)
+        )
         if isinstance(story_state, dict):
             story_state["vesperion_false_final_triggered"] = True
             story_state["pending_liminal_gap_entry"] = True
@@ -276,7 +281,9 @@ class CombatManagerCoreMixin:
     def _handle_reflection_psychopomp_end(self, player_char: Player, enemy: Character) -> bool:
         """Resolve Reflection combat without normal rewards or death penalties."""
         ensure_story = getattr(player_char, "ensure_main_story_state", None)
-        story_state = ensure_story() if callable(ensure_story) else getattr(player_char, "main_story", {})
+        story_state = (
+            ensure_story() if callable(ensure_story) else getattr(player_char, "main_story", {})
+        )
 
         if player_char.is_alive() and not enemy.is_alive():
             if isinstance(story_state, dict):
@@ -299,13 +306,17 @@ class CombatManagerCoreMixin:
             enemy.effects(end=True)
         except Exception:
             pass
-        player_char.location_x, player_char.location_y, player_char.location_z = LIMINAL_GAP_ENTRY_POS
+        player_char.location_x, player_char.location_y, player_char.location_z = (
+            LIMINAL_GAP_ENTRY_POS
+        )
         player_char.facing = LIMINAL_GAP_ENTRY_FACING
         player_char.health.current = max(1, player_char.health.max // 2)
         player_char.mana.current = max(0, player_char.mana.max // 2)
         enemy.health.current = enemy.health.max
         enemy.mana.current = enemy.mana.max
-        self.combat_view.add_combat_message("The Reflection breaks your stance and returns you to the Liminal hub.")
+        self.combat_view.add_combat_message(
+            "The Reflection breaks your stance and returns you to the Liminal hub."
+        )
         self.running = False
         self.combat_view.reset_combat_log()
         self._combat_background = None
@@ -316,7 +327,9 @@ class CombatManagerCoreMixin:
         if player_char.is_alive() and not enemy.is_alive():
             player_char.state = "normal"
             guardian_name = getattr(enemy, "liminal_trial_guardian", "The trial")
-            self.combat_view.add_combat_message(f"{guardian_name} yields to the choice you carried into the fight.")
+            self.combat_view.add_combat_message(
+                f"{guardian_name} yields to the choice you carried into the fight."
+            )
             self.running = False
             self.combat_view.reset_combat_log()
             self._combat_background = None
@@ -331,14 +344,18 @@ class CombatManagerCoreMixin:
             enemy.effects(end=True)
         except Exception:
             pass
-        player_char.location_x, player_char.location_y, player_char.location_z = LIMINAL_GAP_ENTRY_POS
+        player_char.location_x, player_char.location_y, player_char.location_z = (
+            LIMINAL_GAP_ENTRY_POS
+        )
         player_char.facing = LIMINAL_GAP_ENTRY_FACING
         player_char.health.current = max(1, player_char.health.max // 2)
         player_char.mana.current = max(0, player_char.mana.max // 2)
         enemy.health.current = enemy.health.max
         enemy.mana.current = enemy.mana.max
         guardian_name = getattr(enemy, "liminal_trial_guardian", "The trial")
-        self.combat_view.add_combat_message(f"{guardian_name} returns you to the Liminal hub to choose again.")
+        self.combat_view.add_combat_message(
+            f"{guardian_name} returns you to the Liminal hub to choose again."
+        )
         self.running = False
         self.combat_view.reset_combat_log()
         self._combat_background = None
@@ -347,7 +364,9 @@ class CombatManagerCoreMixin:
     def _handle_vesperion_true_final_victory(self, player_char: Player, enemy: Character) -> bool:
         """Resolve true-final Vesperion victory without normal loot/reward handling."""
         ensure_story = getattr(player_char, "ensure_main_story_state", None)
-        story_state = ensure_story() if callable(ensure_story) else getattr(player_char, "main_story", {})
+        story_state = (
+            ensure_story() if callable(ensure_story) else getattr(player_char, "main_story", {})
+        )
         if isinstance(story_state, dict):
             story_state["vesperion_true_final_defeated"] = True
             story_state["main_story_complete"] = True
@@ -366,7 +385,7 @@ class CombatManagerCoreMixin:
         message = pressure(player_char)
         if not message:
             return False
-        for line in message.strip().split('\n'):
+        for line in message.strip().split("\n"):
             if line.strip():
                 self.combat_view.add_combat_message(line)
         self._flush_result_frame(player_char, enemy)
@@ -403,10 +422,14 @@ class CombatManagerCoreMixin:
             col = index % actions_per_row
             x = menu_rect.left + 28 + col * cell_width
             y = menu_rect.top + start_y_offset + row * row_height
-            rects.append(pygame.Rect(x - 5, y - 4, max(42, cell_width - 12), max(20, row_height - 3)))
+            rects.append(
+                pygame.Rect(x - 5, y - 4, max(42, cell_width - 12), max(20, row_height - 3))
+            )
         return rects
 
-    def _selection_menu_option_rects(self, options, scroll_offset: int = 0) -> list[tuple[int, pygame.Rect]]:
+    def _selection_menu_option_rects(
+        self, options, scroll_offset: int = 0
+    ) -> list[tuple[int, pygame.Rect]]:
         """Return visible option indices and click rectangles for an in-combat picker."""
         panel_width = max(420, int(self.screen.get_width() * 0.65))
         panel_height = 176
@@ -451,7 +474,9 @@ class CombatManagerCoreMixin:
         scroll_offset = self._scroll_offset_for_selection(selected, scroll_offset)
         return selected, scroll_offset, is_left_click(event) and input_armed
 
-    def _render_described_selection_menu(self, title, options, selected, scroll_offset, descriptions):
+    def _render_described_selection_menu(
+        self, title, options, selected, scroll_offset, descriptions
+    ):
         self._selection_menu_descriptions = descriptions
         try:
             self._render_selection_menu(title, options, selected, scroll_offset)
@@ -459,7 +484,9 @@ class CombatManagerCoreMixin:
             self._selection_menu_descriptions = None
 
     @staticmethod
-    def _scroll_offset_for_selection(selected: int, scroll_offset: int, max_visible: int = 3) -> int:
+    def _scroll_offset_for_selection(
+        selected: int, scroll_offset: int, max_visible: int = 3
+    ) -> int:
         if selected < scroll_offset:
             return selected
         if selected >= scroll_offset + max_visible:
@@ -484,7 +511,9 @@ class CombatManagerCoreMixin:
             or name in surge_names
         )
 
-    def _available_skill_names(self, player_char, enemy=None, *, allowed_names=None, resolve: bool | None = None) -> list[str]:
+    def _available_skill_names(
+        self, player_char, enemy=None, *, allowed_names=None, resolve: bool | None = None
+    ) -> list[str]:
         allowed = set(allowed_names) if allowed_names is not None else None
         if getattr(player_char, "tunnel", False):
             allowed = {"Surface"} if allowed is None else allowed & {"Surface"}
@@ -549,7 +578,10 @@ class CombatManagerCoreMixin:
             return "spell"
         if action in {"Skills", "Resolve", "Use Skill"}:
             return "skill"
-        if choice and any(term in str(choice).lower() for term in ("spell", "bolt", "blast", "storm", "fire", "ice")):
+        if choice and any(
+            term in str(choice).lower()
+            for term in ("spell", "bolt", "blast", "storm", "fire", "ice")
+        ):
             return "spell"
         return "weapon"
 
@@ -621,9 +653,7 @@ class CombatManagerCoreMixin:
         portions = list(getattr(group, "results", ()) or ())
         if target_id is not None:
             portions = [
-                portion
-                for portion in portions
-                if getattr(portion, "target_id", None) == target_id
+                portion for portion in portions if getattr(portion, "target_id", None) == target_id
             ]
         amounts = []
         for portion in portions:
@@ -683,7 +713,9 @@ class CombatManagerCoreMixin:
         symbols = self._slot_symbol_surfaces()
         clock = pygame.time.Clock()
 
-        def draw_symbol(symbol_index: int, reel_rect: pygame.Rect, alpha: int = 255, y_offset: int = 0) -> None:
+        def draw_symbol(
+            symbol_index: int, reel_rect: pygame.Rect, alpha: int = 255, y_offset: int = 0
+        ) -> None:
             if symbols:
                 symbol = symbols[symbol_index]
                 inset = reel_rect.inflate(-24, -20)
@@ -694,21 +726,30 @@ class CombatManagerCoreMixin:
                 )
                 symbol_surface = pygame.transform.smoothscale(symbol, scaled_size)
                 symbol_surface.set_alpha(alpha)
-                symbol_rect = symbol_surface.get_rect(center=(reel_rect.centerx, reel_rect.centery + y_offset))
+                symbol_rect = symbol_surface.get_rect(
+                    center=(reel_rect.centerx, reel_rect.centery + y_offset)
+                )
                 self.screen.blit(symbol_surface, symbol_rect)
                 return
 
             fallback_font = pygame.font.Font(None, 62)
-            fallback_text = SLOT_CARD_DECK[symbol_index] if 0 <= symbol_index < len(SLOT_CARD_DECK) else "?"
+            fallback_text = (
+                SLOT_CARD_DECK[symbol_index] if 0 <= symbol_index < len(SLOT_CARD_DECK) else "?"
+            )
             fallback = fallback_font.render(fallback_text, True, (120, 20, 30))
             if hasattr(fallback, "set_alpha"):
                 fallback.set_alpha(alpha)
-            self.screen.blit(fallback, fallback.get_rect(center=(reel_rect.centerx, reel_rect.centery + y_offset)))
+            self.screen.blit(
+                fallback,
+                fallback.get_rect(center=(reel_rect.centerx, reel_rect.centery + y_offset)),
+            )
 
         def draw_overlay(revealed_count: int, final: bool = False) -> None:
             self._render_combat_frame(user, target, [], -1)
 
-            overlay = pygame.Surface((self.combat_view.combat_width, self.combat_view.combat_height), pygame.SRCALPHA)
+            overlay = pygame.Surface(
+                (self.combat_view.combat_width, self.combat_view.combat_height), pygame.SRCALPHA
+            )
             overlay.fill((0, 0, 0, 185))
             self.screen.blit(overlay, (0, 0))
 
@@ -719,11 +760,17 @@ class CombatManagerCoreMixin:
             popup_rect = pygame.Rect(popup_x, popup_y, popup_width, popup_height)
 
             pygame.draw.rect(self.screen, (42, 9, 16), popup_rect, border_radius=8)
-            pygame.draw.rect(self.screen, (144, 24, 34), popup_rect.inflate(-14, -14), border_radius=6)
+            pygame.draw.rect(
+                self.screen, (144, 24, 34), popup_rect.inflate(-14, -14), border_radius=6
+            )
             pygame.draw.rect(self.screen, (236, 188, 72), popup_rect, 5, border_radius=8)
-            pygame.draw.rect(self.screen, (72, 14, 24), popup_rect.inflate(-34, -32), border_radius=5)
+            pygame.draw.rect(
+                self.screen, (72, 14, 24), popup_rect.inflate(-34, -32), border_radius=5
+            )
 
-            top_rect = pygame.Rect(popup_rect.left + 42, popup_rect.top + 22, popup_rect.width - 84, 64)
+            top_rect = pygame.Rect(
+                popup_rect.left + 42, popup_rect.top + 22, popup_rect.width - 84, 64
+            )
             pygame.draw.rect(
                 self.screen,
                 (122, 20, 34),
@@ -734,8 +781,17 @@ class CombatManagerCoreMixin:
 
             for index in range(11):
                 bulb_x = popup_rect.left + 28 + index * ((popup_rect.width - 56) // 10)
-                bulb_color = (255, 228, 126) if (pygame.time.get_ticks() // 240 + index) % 2 == 0 else (178, 92, 46)
-                pygame.draw.rect(self.screen, bulb_color, pygame.Rect(bulb_x - 5, popup_rect.top + 8, 10, 10), border_radius=5)
+                bulb_color = (
+                    (255, 228, 126)
+                    if (pygame.time.get_ticks() // 240 + index) % 2 == 0
+                    else (178, 92, 46)
+                )
+                pygame.draw.rect(
+                    self.screen,
+                    bulb_color,
+                    pygame.Rect(bulb_x - 5, popup_rect.top + 8, 10, 10),
+                    border_radius=5,
+                )
 
             title_font = pygame.font.Font(None, 46)
             subtitle_font = pygame.font.Font(None, 25)
@@ -744,9 +800,13 @@ class CombatManagerCoreMixin:
             title_rect = title_text.get_rect(center=(popup_rect.centerx, top_rect.centery - 2))
             self.screen.blit(title_text, title_rect)
 
-            reel_area = pygame.Rect(popup_rect.left + 58, popup_rect.top + 104, popup_rect.width - 136, 158)
+            reel_area = pygame.Rect(
+                popup_rect.left + 58, popup_rect.top + 104, popup_rect.width - 136, 158
+            )
             pygame.draw.rect(self.screen, (25, 18, 22), reel_area.inflate(24, 20), border_radius=7)
-            pygame.draw.rect(self.screen, (232, 192, 92), reel_area.inflate(24, 20), 3, border_radius=7)
+            pygame.draw.rect(
+                self.screen, (232, 192, 92), reel_area.inflate(24, 20), 3, border_radius=7
+            )
             reel_gap = 14
             reel_width = (reel_area.width - reel_gap * 2) // 3
             for i in range(3):
@@ -757,28 +817,48 @@ class CombatManagerCoreMixin:
                     reel_area.height,
                 )
                 pygame.draw.rect(self.screen, (232, 222, 190), reel_rect, border_radius=5)
-                pygame.draw.rect(self.screen, (255, 250, 224), reel_rect.inflate(-8, -8), border_radius=4)
+                pygame.draw.rect(
+                    self.screen, (255, 250, 224), reel_rect.inflate(-8, -8), border_radius=4
+                )
                 pygame.draw.rect(self.screen, (40, 24, 30), reel_rect, 3, border_radius=5)
 
                 symbol_index = SLOT_CARD_ORDER[cards[i]]
                 if i >= revealed_count:
                     spin_index = (pygame.time.get_ticks() // 145 + i * 11) % len(SLOT_CARD_DECK)
-                    draw_symbol((spin_index - 1) % len(SLOT_CARD_DECK), reel_rect, alpha=85, y_offset=-44)
+                    draw_symbol(
+                        (spin_index - 1) % len(SLOT_CARD_DECK), reel_rect, alpha=85, y_offset=-44
+                    )
                     draw_symbol(spin_index, reel_rect, alpha=210)
-                    draw_symbol((spin_index + 1) % len(SLOT_CARD_DECK), reel_rect, alpha=85, y_offset=44)
+                    draw_symbol(
+                        (spin_index + 1) % len(SLOT_CARD_DECK), reel_rect, alpha=85, y_offset=44
+                    )
                 else:
                     draw_symbol(symbol_index, reel_rect)
 
-            payout_rect = pygame.Rect(popup_rect.left + 120, popup_rect.bottom - 82, popup_rect.width - 240, 26)
+            payout_rect = pygame.Rect(
+                popup_rect.left + 120, popup_rect.bottom - 82, popup_rect.width - 240, 26
+            )
             pygame.draw.rect(self.screen, (30, 22, 26), payout_rect, border_radius=4)
             pygame.draw.rect(self.screen, (178, 150, 84), payout_rect, 2, border_radius=4)
             payout_text = result_label if final else "..."
-            payout = subtitle_font.render(payout_text, True, (245, 225, 150) if final else (120, 112, 116))
+            payout = subtitle_font.render(
+                payout_text, True, (245, 225, 150) if final else (120, 112, 116)
+            )
             self.screen.blit(payout, payout.get_rect(center=payout_rect.center))
 
             handle_x = popup_rect.right - 34
-            pygame.draw.rect(self.screen, (86, 68, 54), (handle_x, popup_rect.top + 116, 10, 110), border_radius=4)
-            pygame.draw.rect(self.screen, (218, 45, 54), (handle_x - 12, popup_rect.top + 98, 34, 34), border_radius=16)
+            pygame.draw.rect(
+                self.screen,
+                (86, 68, 54),
+                (handle_x, popup_rect.top + 116, 10, 110),
+                border_radius=4,
+            )
+            pygame.draw.rect(
+                self.screen,
+                (218, 45, 54),
+                (handle_x - 12, popup_rect.top + 98, 34, 34),
+                border_radius=16,
+            )
 
             subtitle_text = "Press any key or click to continue" if final else "Reels spinning..."
             subtitle_color = (245, 225, 150) if final else (194, 182, 176)
@@ -806,7 +886,10 @@ class CombatManagerCoreMixin:
                     pygame.quit()
                     sys.exit(0)
                 input_armed = self._arm_guarded_input(event, input_armed)
-                if event.type in (pygame.KEYDOWN, pygame.MOUSEBUTTONDOWN, pygame.JOYBUTTONDOWN) and input_armed:
+                if (
+                    event.type in (pygame.KEYDOWN, pygame.MOUSEBUTTONDOWN, pygame.JOYBUTTONDOWN)
+                    and input_armed
+                ):
                     waiting = False
                     break
             if waiting:

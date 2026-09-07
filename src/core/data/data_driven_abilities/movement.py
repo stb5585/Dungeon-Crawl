@@ -13,6 +13,7 @@ if TYPE_CHECKING:
 
 def _get_movement_spell_class():
     from src.core.abilities import MovementSpell
+
     return MovementSpell
 
 
@@ -86,8 +87,7 @@ class DataDrivenMovementSpell(_get_movement_spell_class()):
         user.mana.current = user.mana.max
         user.to_town()
         return route_message + (
-            f"{user.name} casts Sanctuary and is transported back to "
-            f"town.\n"
+            f"{user.name} casts Sanctuary and is transported back to " f"town.\n"
         )
 
     # ------------------------------------------------------------------
@@ -101,8 +101,7 @@ class DataDrivenMovementSpell(_get_movement_spell_class()):
         import random as _random
 
         teleport_message = (
-            "Do you want to set your location or teleport to the "
-            "previous location?"
+            "Do you want to set your location or teleport to the " "previous location?"
         )
         options = ["Set", "Teleport"]
 
@@ -113,8 +112,7 @@ class DataDrivenMovementSpell(_get_movement_spell_class()):
 
         if options[option_index] == "Set":
             cast_message = (
-                f"This location has been set for teleport by "
-                f"{game.player_char.name}.\n"
+                f"This location has been set for teleport by " f"{game.player_char.name}.\n"
             )
             game.player_char.teleport = (
                 game.player_char.location_x,
@@ -126,9 +124,7 @@ class DataDrivenMovementSpell(_get_movement_spell_class()):
                 return "Teleport cannot find a traveler to guide.\n"
             if not getattr(game.player_char, "teleport", None):
                 return "Teleport has no previously marked destination.\n"
-            cast_message = (
-                f"{game.player_char.name} teleports to set location.\n"
-            )
+            cast_message = f"{game.player_char.name} teleports to set location.\n"
             from src.core.classes import promotion_kits
 
             cost, route_message = promotion_kits.wayfinding_cost(

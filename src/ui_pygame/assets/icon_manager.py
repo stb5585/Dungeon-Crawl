@@ -12,7 +12,6 @@ import pygame
 
 from src.paths import PYGAME_ASSETS_DIR
 
-
 logger = logging.getLogger(__name__)
 
 ICON_ROOT = PYGAME_ASSETS_DIR / "item_icons"
@@ -99,9 +98,13 @@ class IconManager:
             self.atlas_paths[atlas_key] = image_path
             for key, entry in data.items():
                 try:
-                    rect = pygame.Rect(int(entry["x"]), int(entry["y"]), int(entry["w"]), int(entry["h"]))
+                    rect = pygame.Rect(
+                        int(entry["x"]), int(entry["y"]), int(entry["w"]), int(entry["h"])
+                    )
                 except (KeyError, TypeError, ValueError) as exc:
-                    logger.warning("Skipping invalid icon frame %s in %s: %s", key, manifest_path, exc)
+                    logger.warning(
+                        "Skipping invalid icon frame %s in %s: %s", key, manifest_path, exc
+                    )
                     continue
                 self.frames[str(key)] = IconFrame(atlas=atlas_key, key=str(key), rect=rect)
 
@@ -192,7 +195,18 @@ class IconManager:
         subtyp = str(getattr(item, "subtyp", "") or "")
         if typ == "Weapon":
             name = self.item_name(item)
-            if name in {"Brass Knuckles", "Cestus", "Battle Gauntlet", "Bagh Nahk", "Indra's Fist", "God's Hand"} or subtyp == "Fist":
+            if (
+                name
+                in {
+                    "Brass Knuckles",
+                    "Cestus",
+                    "Battle Gauntlet",
+                    "Bagh Nahk",
+                    "Indra's Fist",
+                    "God's Hand",
+                }
+                or subtyp == "Fist"
+            ):
                 return "fist_weapon"
             if subtyp in {"Club", "Hammer"}:
                 return "hammer"

@@ -8,7 +8,6 @@ import random
 
 from .base import Job
 
-
 PATRONS = ("Imp", "Quasit", "Incubus", "Succubus", "Archvile", "Maelephant", "Balor")
 INTENTS = ("Harm", "Curse", "Protect", "Restore", "Desperate Aid")
 ECHOES = {
@@ -97,8 +96,7 @@ def process_spell_cast(
         adjacent = [
             member.enemy
             for member in getattr(encounter, "living_members", ())
-            if source_member is not None
-            and abs(int(member.slot) - int(source_member.slot)) == 1
+            if source_member is not None and abs(int(member.slot) - int(source_member.slot)) == 1
         ]
         explosion = max(1, int(character.check_mod("magic", enemy=target) * 0.50))
         for enemy in adjacent:
@@ -218,7 +216,9 @@ def normalize_state(state: Any) -> dict[str, Any]:
     if isinstance(moods, dict):
         for patron in PATRONS:
             try:
-                normalized["patron_moods"][patron] = max(-100, min(100, int(moods.get(patron, 0) or 0)))
+                normalized["patron_moods"][patron] = max(
+                    -100, min(100, int(moods.get(patron, 0) or 0))
+                )
             except (TypeError, ValueError):
                 normalized["patron_moods"][patron] = 0
 
@@ -251,7 +251,9 @@ def has_stored_class_ring(character: Any) -> bool:
     storage = getattr(character, "storage", {})
     if not isinstance(storage, dict):
         return False
-    return any(getattr(item, "name", None) == "Class Ring" for item in storage.get("Class Ring", []))
+    return any(
+        getattr(item, "name", None) == "Class Ring" for item in storage.get("Class Ring", [])
+    )
 
 
 def has_visible_class_ring(character: Any) -> bool:
@@ -280,7 +282,9 @@ def refresh_unlocked_contracts(character: Any) -> list[str]:
     unlocked.update(defeated_contract_patrons(character))
     state["unlocked_contracts"] = [name for name in PATRONS if name in unlocked]
     if state["active_patron"] not in state["unlocked_contracts"]:
-        state["active_patron"] = state["unlocked_contracts"][0] if state["unlocked_contracts"] else None
+        state["active_patron"] = (
+            state["unlocked_contracts"][0] if state["unlocked_contracts"] else None
+        )
     setattr(character, "demonologist_contracts", state)
     return state["unlocked_contracts"]
 
@@ -509,13 +513,14 @@ def resolve_contract(character: Any, target: Any, intent: str, *, rng: Any = ran
 
         if curses.has_curse(target, "Demon Eyes"):
             strength = int(
-                strength
-                * (1.40 if curses.curse_is_empowered(target, "Demon Eyes") else 1.25)
+                strength * (1.40 if curses.curse_is_empowered(target, "Demon Eyes") else 1.25)
             )
     except Exception:
         pass
 
-    msg += apply_intent(character, target, quote["intent"], strength, twisted=twisted, severity=severity)
+    msg += apply_intent(
+        character, target, quote["intent"], strength, twisted=twisted, severity=severity
+    )
     _record_history(character, quote, twisted)
     mood_delta = -4 if twisted else (4 if quote.get("soul_gem") else 3)
     msg += adjust_patron_mood(character, quote["patron"], mood_delta)
@@ -540,7 +545,9 @@ def contract_strength(character: Any, quote: dict[str, Any], *, twisted: bool = 
     return max(1, strength)
 
 
-def apply_intent(character: Any, target: Any, intent: str, strength: int, *, twisted: bool, severity: int) -> str:
+def apply_intent(
+    character: Any, target: Any, intent: str, strength: int, *, twisted: bool, severity: int
+) -> str:
     patron = ensure_state(character).get("active_patron") or "The fiend"
     prefix = "twists the bargain and " if twisted else ""
 

@@ -106,7 +106,10 @@ class TestPlayerTopLevelHelpers:
         monkeypatch.setattr(
             player_module.persistence.SaveManager,
             "load_player",
-            lambda filename, is_tmp=False, skip_tiles=False: load_calls.append((filename, is_tmp, skip_tiles)) or loaded,
+            lambda filename, is_tmp=False, skip_tiles=False: load_calls.append(
+                (filename, is_tmp, skip_tiles)
+            )
+            or loaded,
         )
         monkeypatch.setattr(
             player_module.persistence.SaveManager,
@@ -132,7 +135,9 @@ class TestPlayerTopLevelHelpers:
         assert _extract_tile_type({"properties": [{"name": "tile", "value": "Trap"}]}) == "Trap"
 
         json_tileset = tmp_path / "tileset.json"
-        json_tileset.write_text(json.dumps({"tiles": [{"id": 0, "type": "Floor"}]}), encoding="utf-8")
+        json_tileset.write_text(
+            json.dumps({"tiles": [{"id": 0, "type": "Floor"}]}), encoding="utf-8"
+        )
         xml_tileset = tmp_path / "tileset.tsx"
         xml_tileset.write_text(
             """<?xml version="1.0" encoding="UTF-8"?>
@@ -143,8 +148,12 @@ class TestPlayerTopLevelHelpers:
             encoding="utf-8",
         )
 
-        json_data, json_gid = _load_tiled_tileset({"source": "tileset.json", "firstgid": 4}, str(tmp_path))
-        xml_data, xml_gid = _load_tiled_tileset({"source": "tileset.tsx", "firstgid": 8}, str(tmp_path))
+        json_data, json_gid = _load_tiled_tileset(
+            {"source": "tileset.json", "firstgid": 4}, str(tmp_path)
+        )
+        xml_data, xml_gid = _load_tiled_tileset(
+            {"source": "tileset.tsx", "firstgid": 8}, str(tmp_path)
+        )
         inline_data, inline_gid = _load_tiled_tileset({"firstgid": 3, "tiles": []}, str(tmp_path))
 
         assert json_data["tiles"][0]["type"] == "Floor"
@@ -187,7 +196,9 @@ class TestPlayerTopLevelHelpers:
                     "layers": [
                         {
                             "type": "tilelayer",
-                            "chunks": [{"x": 0, "y": 0, "width": 2, "height": 2, "data": [1, 0, 0, 1]}],
+                            "chunks": [
+                                {"x": 0, "y": 0, "width": 2, "height": 2, "data": [1, 0, 0, 1]}
+                            ],
                         }
                     ],
                 }
@@ -199,7 +210,9 @@ class TestPlayerTopLevelHelpers:
         assert chunked_world[(1, 1, 4)].kind == "Floor"
 
         missing_layer = tmp_path / "missing_layer.json"
-        missing_layer.write_text(json.dumps({"width": 1, "height": 1, "layers": []}), encoding="utf-8")
+        missing_layer.write_text(
+            json.dumps({"width": 1, "height": 1, "layers": []}), encoding="utf-8"
+        )
         with pytest.raises(ValueError):
             _load_tiled_map(str(missing_layer), 1, fake_tiles)
 
@@ -270,7 +283,9 @@ class TestPlayerTopLevelHelpers:
 
         assert [narrow_world[(x, 0, 2)].kind for x in range(3)] == ["Floor", "Wall", "Floor"]
 
-    def test_load_tiles_prefers_json_per_level_and_loads_optional_side_areas(self, tmp_path, monkeypatch):
+    def test_load_tiles_prefers_json_per_level_and_loads_optional_side_areas(
+        self, tmp_path, monkeypatch
+    ):
         map_dir = tmp_path / "map_files"
         map_dir.mkdir()
         (map_dir / "map_level_0.txt").write_text("Wall\tCavePath\n", encoding="utf-8")
@@ -292,7 +307,10 @@ class TestPlayerTopLevelHelpers:
         assert type(player.world_dict[(1, 0, 0)]).__name__ == "CavePath"
         assert player.world_dict[(99, 1, 1)].source == "map_level_1.json"
         assert player.world_dict[(99, 7, 7)].source == "map_funhouse.json"
-        assert player.world_dict[(99, REALM_OF_CAMBION_LEVEL, REALM_OF_CAMBION_LEVEL)].source == "map_realm_cambion.json"
+        assert (
+            player.world_dict[(99, REALM_OF_CAMBION_LEVEL, REALM_OF_CAMBION_LEVEL)].source
+            == "map_realm_cambion.json"
+        )
 
     def test_load_tiles_finds_repo_maps_when_cwd_changes(self, tmp_path, monkeypatch):
         monkeypatch.chdir(tmp_path)
@@ -360,8 +378,12 @@ class TestPlayerProgression:
         player.spellbook["Skills"]["True Strike"] = BaseSkill()
         player.spellbook["Skills"]["Piercing Strike"] = SimpleNamespace(name="Piercing Strike")
 
-        monkeypatch.setattr(player_module.abilities, "spell_dict", {"Warrior": {"2": UpgradedSpell}})
-        monkeypatch.setattr(player_module.abilities, "skill_dict", {"Warrior": {"2": UpgradedSkill}})
+        monkeypatch.setattr(
+            player_module.abilities, "spell_dict", {"Warrior": {"2": UpgradedSpell}}
+        )
+        monkeypatch.setattr(
+            player_module.abilities, "skill_dict", {"Warrior": {"2": UpgradedSkill}}
+        )
         rolls = iter([1, 1, 0, 0, 0, 0])
         monkeypatch.setattr(player_module.random, "randint", lambda _a, _b: next(rolls))
 
@@ -394,7 +416,9 @@ class TestPlayerProgression:
                 return "Wild shape awakened.\n"
 
         monkeypatch.setattr(player_module.abilities, "spell_dict", {"Warrior": {}})
-        monkeypatch.setattr(player_module.abilities, "skill_dict", {"Warrior": {"2": TransformSkill}})
+        monkeypatch.setattr(
+            player_module.abilities, "skill_dict", {"Warrior": {"2": TransformSkill}}
+        )
         monkeypatch.setattr(player_module.random, "randint", lambda _a, _b: 0)
 
         player.level_up()
@@ -431,7 +455,9 @@ class TestPlayerProgression:
             def __init__(self):
                 self.name = "Sunburst"
 
-        monkeypatch.setattr(player_module.abilities, "spell_dict", {"Warrior": {"2": ObjectParentSpell}})
+        monkeypatch.setattr(
+            player_module.abilities, "spell_dict", {"Warrior": {"2": ObjectParentSpell}}
+        )
         monkeypatch.setattr(player_module.abilities, "skill_dict", {"Warrior": {}})
         rolls = iter([1, 1, 0, 0, 0, 0])
         monkeypatch.setattr(player_module.random, "randint", lambda _a, _b: next(rolls))
@@ -447,7 +473,9 @@ class TestPlayerProgression:
         monkeypatch.setattr(
             player_module.inventory.SaveManager,
             "save_player",
-            lambda player_obj, filename, is_tmp=False: save_calls.append((player_obj.name, filename, is_tmp)),
+            lambda player_obj, filename, is_tmp=False: save_calls.append(
+                (player_obj.name, filename, is_tmp)
+            ),
         )
 
         player.save(filepath="/tmp/custom_name.save")
@@ -458,10 +486,14 @@ class TestPlayerProgression:
         assert ("Saver", "saver.save", True) in save_calls
         assert save_calls.count(("Saver", "saver.save", False)) == 1
 
-    def test_equip_branches_handle_validation_two_handed_conflicts_and_jump_limits(self, monkeypatch):
+    def test_equip_branches_handle_validation_two_handed_conflicts_and_jump_limits(
+        self, monkeypatch
+    ):
         player = TestGameState.create_player(class_name="Warrior", race_name="Human")
         calls = []
-        player.modify_inventory = lambda item, num=1, subtract=False, **_kwargs: calls.append((item.name, subtract))
+        player.modify_inventory = lambda item, num=1, subtract=False, **_kwargs: calls.append(
+            (item.name, subtract)
+        )
 
         assert player.equip("Helmet", items.IronHelm(), check=True) is True
         assert player.equipment["Helmet"].name == "Iron Helm"
@@ -474,7 +506,9 @@ class TestPlayerProgression:
         assert player.equip("Weapon", two_hander) is True
         assert player.equipment["Weapon"] is two_hander
         assert player.equipment["OffHand"].subtyp == "None"
-        assert any(name == "No OffHand" or "No OffHand" == name for name, _subtract in calls) is False
+        assert (
+            any(name == "No OffHand" or "No OffHand" == name for name, _subtract in calls) is False
+        )
         assert any(subtract is True and name == "Great Pike" for name, subtract in calls)
 
         enforced = []
@@ -511,7 +545,9 @@ class TestPlayerProgression:
         player.equip("Helmet", items.HelmOfRostam())
         assert player.invisible is False
 
-        player.equip("Pendant", SimpleNamespace(name="Levitation Necklace", subtyp="Pendant", handed=0))
+        player.equip(
+            "Pendant", SimpleNamespace(name="Levitation Necklace", subtyp="Pendant", handed=0)
+        )
         assert player.flying is True
 
     def test_action_and_movement_helpers_cover_transform_move_forward_and_stairs(self):

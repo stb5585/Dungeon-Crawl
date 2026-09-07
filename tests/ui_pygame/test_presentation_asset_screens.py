@@ -84,9 +84,15 @@ def _make_presenter():
 
 
 def _patch_drawing(monkeypatch):
-    monkeypatch.setattr("src.ui_pygame.gui.presentation_asset_screens.pygame.draw.rect", lambda *_a, **_k: None)
-    monkeypatch.setattr("src.ui_pygame.gui.presentation_asset_screens.pygame.draw.line", lambda *_a, **_k: None)
-    monkeypatch.setattr("src.ui_pygame.gui.presentation_asset_screens.pygame.display.flip", lambda: None)
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.presentation_asset_screens.pygame.draw.rect", lambda *_a, **_k: None
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.presentation_asset_screens.pygame.draw.line", lambda *_a, **_k: None
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.presentation_asset_screens.pygame.display.flip", lambda: None
+    )
 
 
 def test_character_created_screen_draws_summary_and_accepts_keyboard(monkeypatch):
@@ -103,7 +109,9 @@ def test_character_created_screen_draws_summary_and_accepts_keyboard(monkeypatch
         mana=SimpleNamespace(max=31),
     )
     manager = SimpleNamespace(get_portrait=lambda *args, **kwargs: portrait)
-    screen = presentation_asset_screens.CharacterCreatedScreen(presenter, player, portrait_manager=manager)
+    screen = presentation_asset_screens.CharacterCreatedScreen(
+        presenter, player, portrait_manager=manager
+    )
 
     screen.draw()
 
@@ -124,7 +132,10 @@ def test_character_created_screen_draws_summary_and_accepts_keyboard(monkeypatch
     assert any("1 Progression Point" in text for text in rendered)
 
     event_batches = iter([[SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)]])
-    monkeypatch.setattr("src.ui_pygame.gui.presentation_asset_screens.pygame.event.get", lambda: next(event_batches, []))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.presentation_asset_screens.pygame.event.get",
+        lambda: next(event_batches, []),
+    )
 
     assert screen.show() is True
 
@@ -140,8 +151,12 @@ def test_character_created_screen_survives_portrait_fallback(monkeypatch):
         health=SimpleNamespace(max=20),
         mana=SimpleNamespace(max=10),
     )
-    manager = SimpleNamespace(get_portrait=lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("missing")))
-    screen = presentation_asset_screens.CharacterCreatedScreen(presenter, player, portrait_manager=manager)
+    manager = SimpleNamespace(
+        get_portrait=lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("missing"))
+    )
+    screen = presentation_asset_screens.CharacterCreatedScreen(
+        presenter, player, portrait_manager=manager
+    )
 
     screen.draw()
 
@@ -158,11 +173,16 @@ def test_story_card_sequence_advances_with_keyboard_mouse_and_can_skip(monkeypat
         title="The Story Begins",
     )
 
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_SPACE)],
-        [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=(450, 620))],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.presentation_asset_screens.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_SPACE)],
+            [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=(450, 620))],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.presentation_asset_screens.pygame.event.get",
+        lambda: next(event_batches, []),
+    )
 
     assert sequence.show() is True
     assert sequence.page_index == 1
@@ -170,8 +190,13 @@ def test_story_card_sequence_advances_with_keyboard_mouse_and_can_skip(monkeypat
     assert "1/2" in presenter.small_font.render_calls
     assert "2/2" in presenter.small_font.render_calls
 
-    skip_sequence = presentation_asset_screens.StoryCardSequence(presenter, ["Only page"], title="Skip Me")
+    skip_sequence = presentation_asset_screens.StoryCardSequence(
+        presenter, ["Only page"], title="Skip Me"
+    )
     event_batches = iter([[SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_ESCAPE)]])
-    monkeypatch.setattr("src.ui_pygame.gui.presentation_asset_screens.pygame.event.get", lambda: next(event_batches, []))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.presentation_asset_screens.pygame.event.get",
+        lambda: next(event_batches, []),
+    )
 
     assert skip_sequence.show() is False

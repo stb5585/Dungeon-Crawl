@@ -101,8 +101,13 @@ def test_race_selection_draw_and_set_races(monkeypatch):
     screen = race_selection.RaceSelectionScreen(presenter)
     draw_rect_calls = []
     flip_calls = []
-    monkeypatch.setattr("src.ui_pygame.gui.race_selection.pygame.draw.rect", lambda *_a, **_k: draw_rect_calls.append(True))
-    monkeypatch.setattr("src.ui_pygame.gui.race_selection.pygame.display.flip", lambda: flip_calls.append(True))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.race_selection.pygame.draw.rect",
+        lambda *_a, **_k: draw_rect_calls.append(True),
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.race_selection.pygame.display.flip", lambda: flip_calls.append(True)
+    )
 
     screen.set_races({"Elf": ElfRace, "Human": HumanRace})
 
@@ -138,43 +143,63 @@ def test_race_selection_navigation_and_quit(monkeypatch):
 
     races = {"Elf": ElfRace, "Human": HumanRace}
 
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)],
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_SPACE)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.race_selection.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_SPACE)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.race_selection.pygame.event.get", lambda: next(event_batches, [])
+    )
     assert screen.navigate(races) == "Human"
 
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_ESCAPE)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.race_selection.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_ESCAPE)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.race_selection.pygame.event.get", lambda: next(event_batches, [])
+    )
     assert screen.navigate(races) is None
 
     clear_calls = []
     pressed_states = iter([[1], [1], [], []])
-    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: next(pressed_states, []))
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_SPACE)],
-        [SimpleNamespace(type=pygame.KEYUP, key=pygame.K_SPACE)],
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)],
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_SPACE)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.race_selection.pygame.event.get", lambda: next(event_batches, []))
-    monkeypatch.setattr("src.ui_pygame.gui.race_selection.pygame.event.clear", lambda: clear_calls.append(True))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: next(pressed_states, [])
+    )
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_SPACE)],
+            [SimpleNamespace(type=pygame.KEYUP, key=pygame.K_SPACE)],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_SPACE)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.race_selection.pygame.event.get", lambda: next(event_batches, [])
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.race_selection.pygame.event.clear", lambda: clear_calls.append(True)
+    )
     assert screen.navigate(races, flush_events=True, require_key_release=True) == "Human"
     assert clear_calls == [True]
 
     screen.current_selection = 0
     monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
     event_batches = iter([[SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_SPACE)]])
-    monkeypatch.setattr("src.ui_pygame.gui.race_selection.pygame.event.get", lambda: next(event_batches, []))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.race_selection.pygame.event.get", lambda: next(event_batches, [])
+    )
     assert screen.navigate(races, flush_events=True, require_key_release=True) == "Elf"
 
     screen.set_races(races)
     click_pos = screen.option_rects()[1].center
     event_batches = iter([[SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=click_pos)]])
-    monkeypatch.setattr("src.ui_pygame.gui.race_selection.pygame.event.get", lambda: next(event_batches, []))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.race_selection.pygame.event.get", lambda: next(event_batches, [])
+    )
     assert screen.navigate(races) == "Human"
 
     monkeypatch.setattr(screen, "set_races", lambda *_args: setattr(screen, "races", []))
@@ -182,7 +207,9 @@ def test_race_selection_navigation_and_quit(monkeypatch):
 
     quit_calls = []
     monkeypatch.setattr(screen, "set_races", lambda *_args: setattr(screen, "races", ["Elf"]))
-    monkeypatch.setattr("src.ui_pygame.gui.race_selection.pygame.quit", lambda: quit_calls.append(True))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.race_selection.pygame.quit", lambda: quit_calls.append(True)
+    )
     monkeypatch.setattr("sys.exit", lambda: (_ for _ in ()).throw(SystemExit()))
     monkeypatch.setattr(
         "src.ui_pygame.gui.race_selection.pygame.event.get",

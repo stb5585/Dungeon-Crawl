@@ -14,19 +14,19 @@ from .town_base import TownScreenBase
 
 class InnManager(TownScreenBase):
     """Manages inn/tavern interactions with pygame presenter."""
-    
+
     def __init__(self, presenter, player_char):
         super().__init__(presenter)
         self.player_char = player_char
         self.level_up_screen = LevelUpScreen(presenter.screen, presenter)
-    
+
     def visit_inn(self):
         """Visit the inn/tavern - integrates with The Thirsty Dog tavern."""
         inn_options = ["Talk to Patrons", "Bounty Board", "Leave"]
 
         inn_screen = LocationMenuScreen(self.presenter, "The Thirsty Dog Tavern")
         self._popup_background_draw_func = lambda: inn_screen.draw_frame(do_flip=False)
-        
+
         while True:
             choice_idx = inn_screen.navigate(
                 inn_options,
@@ -34,15 +34,17 @@ class InnManager(TownScreenBase):
                 flush_events=True,
                 require_key_release=True,
             )
-            
+
             if choice_idx is None or choice_idx == 2:  # Leave
-                popup = ConfirmationPopup(self.presenter, "Come back whenever you'd like.", show_buttons=False)
+                popup = ConfirmationPopup(
+                    self.presenter, "Come back whenever you'd like.", show_buttons=False
+                )
                 popup.show(**self.popup_show_kwargs())
                 break
-            
+
             elif choice_idx == 0:  # Talk to patrons
                 self.talk_to_patrons()
-            
+
             elif choice_idx == 1:  # Bounty Board
                 self.show_bounty_board()
 
@@ -64,61 +66,65 @@ class InnManager(TownScreenBase):
         combined_pool.extend(TAVERN_FLAVOR_DIALOGUES)
 
         return random.choice(combined_pool) if combined_pool else None
-    
+
     def _build_patron_list(self):
         """Build the list of available patrons based on quest state."""
         options = ["Barkeep"]
-        if 'A Bad Dream' in self.player_char.quest_dict.get('Main', {}):
-            if not self.player_char.quest_dict['Main']['A Bad Dream'].get('Turned In'):
+        if "A Bad Dream" in self.player_char.quest_dict.get("Main", {}):
+            if not self.player_char.quest_dict["Main"]["A Bad Dream"].get("Turned In"):
                 options.append("Waitress")
             else:
-                options.append('Busboy')
+                options.append("Busboy")
         else:
-            options.append('Waitress')
+            options.append("Waitress")
         if self.player_char.player_level() >= 8:
             options.append("Drunkard")
             if self.player_char.player_level() >= 10:
                 options.append("Soldier")
                 if self.player_char.player_level() >= 25:
-                    if 'Red Dragon' in self.player_char.quest_dict.get('Main', {}):
-                        if not self.player_char.quest_dict['Main']['Red Dragon'].get('Turned In'):
+                    if "Red Dragon" in self.player_char.quest_dict.get("Main", {}):
+                        if not self.player_char.quest_dict["Main"]["Red Dragon"].get("Turned In"):
                             options.append("Hooded Figure")
                     else:
                         options.append("Hooded Figure")
-        options.append('Back')
+        options.append("Back")
         return options
-    
+
     def talk_to_patrons(self):
         """Talk to tavern patrons and access their quests."""
         patrons_screen = LocationMenuScreen(self.presenter, "The Thirsty Dog - Patrons")
-        
+
         while True:
             # Rebuild patron list each iteration to reflect quest state changes
             options = self._build_patron_list()
-            patrons_screen.set_option_portraits([
-                patron if patron != "Back" else None
-                for patron in options
-            ])
+            patrons_screen.set_option_portraits(
+                [patron if patron != "Back" else None for patron in options]
+            )
             choice = patrons_screen.navigate(
                 options,
                 reset_cursor=False,
                 flush_events=True,
                 require_key_release=True,
             )
-            if choice is None or (choice is not None and options[choice] == 'Back'):
+            if choice is None or (choice is not None and options[choice] == "Back"):
                 return
 
             patron = options[choice]
             # Route to quest manager for applicable quest givers
             if patron in ("Barkeep", "Waitress", "Soldier", "Busboy", "Hooded Figure", "Drunkard"):
                 from .quest_manager import QuestManager
+
                 qm = QuestManager(
-                    self.presenter, 
-                    self.player_char, 
-                    quest_text_renderer=lambda text, patron=patron: patrons_screen.display_quest_text(text, npc_name=patron),
+                    self.presenter,
+                    self.player_char,
+                    quest_text_renderer=lambda text, patron=patron: patrons_screen.display_quest_text(
+                        text, npc_name=patron
+                    ),
                     renderer_preserve_formatting=True,
                 )
-                did_action, showed_message = qm.check_and_offer(patron, show_help=False, suppress_no_quests_message=True)
+                did_action, showed_message = qm.check_and_offer(
+                    patron, show_help=False, suppress_no_quests_message=True
+                )
                 if not did_action and not showed_message:
                     # Mix a random patron comment with a random quest help hint
                     pool = []
@@ -137,12 +143,12 @@ class InnManager(TownScreenBase):
                 patron_dialogue = random.choice(TAVERN_FLAVOR_DIALOGUES)
                 popup = ConfirmationPopup(self.presenter, patron_dialogue, show_buttons=False)
                 popup.show(**self.popup_show_kwargs())
-    
+
     def show_bounty_board(self):
         """Show and manage bounty quests from the tavern."""
         # Check for completable bounties
-        bounty_dict = self.player_char.quest_dict.get('Bounty', {})
-        
+        bounty_dict = self.player_char.quest_dict.get("Bounty", {})
+
         bounty_screen = LocationMenuScreen(self.presenter, "Bounty Board")
         previous_background_draw_func = self._popup_background_draw_func
         self._popup_background_draw_func = lambda: bounty_screen.draw_frame(do_flip=False)
@@ -190,13 +196,13 @@ class InnManager(TownScreenBase):
 
     def accept_bounty(self):
         """Accept a bounty from the board."""
-        bounty_dict = self.player_char.quest_dict.get('Bounty', {})
+        bounty_dict = self.player_char.quest_dict.get("Bounty", {})
         bounty_screen = LocationMenuScreen(self.presenter, "Accept Bounty")
 
         while True:
             # Get available bounties
             bounties_available = []
-            if hasattr(self.presenter, 'game') and hasattr(self.presenter.game, 'bounties'):
+            if hasattr(self.presenter, "game") and hasattr(self.presenter.game, "bounties"):
                 game_bounties = self.presenter.game.bounties
                 # Only offer bounties the player doesn't already have
                 for bounty_name in game_bounties.keys():
@@ -204,7 +210,9 @@ class InnManager(TownScreenBase):
                         bounties_available.append(bounty_name)
 
             if not bounties_available:
-                popup = ConfirmationPopup(self.presenter, "No new bounties available at this time.", show_buttons=False)
+                popup = ConfirmationPopup(
+                    self.presenter, "No new bounties available at this time.", show_buttons=False
+                )
                 popup.show(**self.popup_show_kwargs())
                 return
 
@@ -235,14 +243,16 @@ class InnManager(TownScreenBase):
             completed = prior_defeats >= required
 
             # Add bounty to player's quest dict
-            self.player_char.quest_dict['Bounty'][bounty_name] = [bounty_data, prior_defeats, completed]
+            self.player_char.quest_dict["Bounty"][bounty_name] = [
+                bounty_data,
+                prior_defeats,
+                completed,
+            ]
             self._remove_board_bounty(bounty_name)
 
             # Show bounty info
             progress_line = (
-                f"\nPrior defeats counted: {prior_defeats}/{required}"
-                if prior_defeats
-                else ""
+                f"\nPrior defeats counted: {prior_defeats}/{required}" if prior_defeats else ""
             )
             info_msg = (
                 f"Bounty Accepted: {bounty_name}\n"
@@ -260,7 +270,7 @@ class InnManager(TownScreenBase):
             return max(1, int(bounty_data.get("num", 1) or 1))
         except (AttributeError, TypeError, ValueError):
             return 1
-    
+
     def turn_in_bounty(self, completable):
         """Turn in completed bounties using the inn UI."""
         if not completable:
@@ -282,9 +292,11 @@ class InnManager(TownScreenBase):
             return
 
         bounty_name = bounty_options[choice_idx]
-        bounty_data = self.player_char.quest_dict['Bounty'].get(bounty_name)
+        bounty_data = self.player_char.quest_dict["Bounty"].get(bounty_name)
         if not bounty_data:
-            popup = ConfirmationPopup(self.presenter, "That bounty is no longer available.", show_buttons=False)
+            popup = ConfirmationPopup(
+                self.presenter, "That bounty is no longer available.", show_buttons=False
+            )
             popup.show(**self.popup_show_kwargs())
             return
 
@@ -298,9 +310,7 @@ class InnManager(TownScreenBase):
 
         level_result = award_experience(self.player_char, exp)
         self.player_char._pending_level_up_result = (
-            level_result
-            if level_result.new_level > level_result.old_level
-            else None
+            level_result if level_result.new_level > level_result.old_level else None
         )
 
         reward_lines = [
@@ -321,7 +331,7 @@ class InnManager(TownScreenBase):
         popup.show(**self.popup_show_kwargs())
 
         # Remove completed bounty
-        del self.player_char.quest_dict['Bounty'][bounty_name]
+        del self.player_char.quest_dict["Bounty"][bounty_name]
         self._remove_board_bounty(bounty_name)
 
         if level_result.new_level > level_result.old_level:
@@ -336,10 +346,12 @@ class InnManager(TownScreenBase):
 
     def abandon_bounty(self):
         """Abandon an active bounty without returning it to the current board."""
-        bounty_dict = self.player_char.quest_dict.get('Bounty', {})
+        bounty_dict = self.player_char.quest_dict.get("Bounty", {})
 
         if not bounty_dict:
-            popup = ConfirmationPopup(self.presenter, "No active bounties to abandon.", show_buttons=False)
+            popup = ConfirmationPopup(
+                self.presenter, "No active bounties to abandon.", show_buttons=False
+            )
             popup.show(**self.popup_show_kwargs())
             return
 
@@ -370,18 +382,22 @@ class InnManager(TownScreenBase):
                 show_buttons=False,
             )
             notice.show(**self.popup_show_kwargs())
-    
+
     def view_active_bounties(self):
         """View all active bounty quests."""
-        bounty_dict = self.player_char.quest_dict.get('Bounty', {})
-        
+        bounty_dict = self.player_char.quest_dict.get("Bounty", {})
+
         if not bounty_dict:
-            popup = ConfirmationPopup(self.presenter, "No active bounties.\n\nCheck back later for new opportunities!", show_buttons=False)
+            popup = ConfirmationPopup(
+                self.presenter,
+                "No active bounties.\n\nCheck back later for new opportunities!",
+                show_buttons=False,
+            )
             popup.show(**self.popup_show_kwargs())
             return
-        
+
         bounty_screen = LocationMenuScreen(self.presenter, "Active Bounties")
-        
+
         # Build display list
         bounty_display = []
         for name, data in bounty_dict.items():
@@ -391,18 +407,18 @@ class InnManager(TownScreenBase):
             status = "✓ Complete" if complete else f"{killed}/{bounty['num']} killed"
             display_text = f"{name} - {status}"
             bounty_display.append((display_text, 0))
-        
+
         bounty_display.append(("Back", 0))
-        
+
         choice = bounty_screen.navigate_with_content(
             bounty_display,
             flush_events=True,
             require_key_release=True,
         )
-        
+
         if choice is None or bounty_display[choice][0] == "Back":
             return
-    
+
     def level_up(self):
         """Handle level up with GUI interface."""
         # show_level_up already displays all level-up information

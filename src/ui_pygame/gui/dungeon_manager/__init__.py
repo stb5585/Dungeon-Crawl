@@ -15,7 +15,6 @@ from ..loot_popup import LootPopup
 from .helpers import relic_discovery_text
 from .manager import DungeonManager
 
-
 __all__ = [
     "companions",
     "DungeonHUD",

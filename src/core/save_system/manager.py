@@ -169,9 +169,7 @@ class SaveManager:
                     )
             result = SaveLoadResult(
                 player,
-                migrated_from_version=(
-                    migration.source_version if migration.migrated else None
-                ),
+                migrated_from_version=(migration.source_version if migration.migrated else None),
                 backup_path=backup_path,
                 warning=warning,
             )
@@ -203,7 +201,7 @@ class SaveManager:
         saves = []
         for filename in os.listdir(SaveManager.SAVE_DIR):
             filepath = os.path.join(SaveManager.SAVE_DIR, filename)
-            if filename.endswith('.save') and os.path.isfile(filepath):
+            if filename.endswith(".save") and os.path.isfile(filepath):
                 saves.append(filename)
         return sorted(saves)
 
@@ -248,10 +246,7 @@ class SaveManager:
     @staticmethod
     def list_save_metadata() -> list[dict[str, object]]:
         """Return metadata for player-visible save files in load-menu order."""
-        return [
-            SaveManager.describe_save_file(filename)
-            for filename in SaveManager.list_saves()
-        ]
+        return [SaveManager.describe_save_file(filename) for filename in SaveManager.list_saves()]
 
     @staticmethod
     def summarize_save_metadata() -> dict[str, object]:

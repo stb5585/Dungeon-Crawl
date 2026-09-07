@@ -12,8 +12,8 @@ from .interface import (
 )
 
 __all__ = [
-    'GamePresenter',
-    'NullPresenter',
-    'EventDrivenPresenter',
-    'ConsolePresenter',
+    "GamePresenter",
+    "NullPresenter",
+    "EventDrivenPresenter",
+    "ConsolePresenter",
 ]

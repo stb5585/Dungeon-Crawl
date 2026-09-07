@@ -228,10 +228,7 @@ def _song_duration(character: Any, song: str) -> int:
         duration += 1
     if _has_talent(character, "troubadour.long-form"):
         duration += 1
-    if (
-        song in REPERTOIRE_MP_COSTS
-        and _has_talent(character, "bard.battle-arrangement")
-    ):
+    if song in REPERTOIRE_MP_COSTS and _has_talent(character, "bard.battle-arrangement"):
         duration += 1
     return duration
 
@@ -301,9 +298,7 @@ def tick_exploration_song(character: Any, steps: int = 1) -> str:
     state["steps"] = max(0, int(state.get("steps", 0) or 0) - step_count)
     if getattr(getattr(character, "cls", None), "name", "") == "Troubadour":
         practice_step = (
-            16
-            if _has_talent(character, "troubadour.road-tested")
-            else EXPLORATION_PRACTICE_STEP
+            16 if _has_talent(character, "troubadour.road-tested") else EXPLORATION_PRACTICE_STEP
         )
         gained = after_practice // practice_step - before_practice // practice_step
         if gained:
@@ -347,9 +342,7 @@ def _complete_exploration_song(
     state["route_effect"] = route_effect
     if route_effect == "encounter_rate_shift":
         state["route_steps"] = (
-            30
-            if _has_talent(character, "troubadour.lasting-impression")
-            else ROUTE_CODA_STEPS
+            30 if _has_talent(character, "troubadour.lasting-impression") else ROUTE_CODA_STEPS
         )
     message += f"A reduced {song} route coda lingers.\n"
     return message
@@ -410,21 +403,27 @@ def apply_enemy_opening_debuffs(character: Any, enemy: Any) -> str:
             stat = enemy.stat_effects[stat_name]
             stat.active = True
             stat.duration = max(stat.duration, 3)
-            stat.extra = min(int(stat.extra or 0), -max(1, int(getattr(enemy.combat, "attack", 5) * scale)))
+            stat.extra = min(
+                int(stat.extra or 0), -max(1, int(getattr(enemy.combat, "attack", 5) * scale))
+            )
         return f"{enemy.name}'s offense falters under Symphony of Disfunction.\n"
     if effect == "enemy_defense_down":
         for stat_name in ("Defense", "Magic Defense"):
             stat = enemy.stat_effects[stat_name]
             stat.active = True
             stat.duration = max(stat.duration, 3)
-            stat.extra = min(int(stat.extra or 0), -max(1, int(getattr(enemy.combat, "defense", 5) * scale)))
+            stat.extra = min(
+                int(stat.extra or 0), -max(1, int(getattr(enemy.combat, "defense", 5) * scale))
+            )
         return f"{enemy.name}'s guard falters under Low-defense-ian Rhapsody.\n"
     if effect == "enemy_speed_down":
         stat = enemy.stat_effects["Speed"]
         stat.active = True
         stat.duration = max(stat.duration, 3)
         speed_scale = 0.15 if route_coda else 0.20
-        stat.extra = min(int(stat.extra or 0), -max(1, int(getattr(enemy.stats, "dex", 10) * speed_scale)))
+        stat.extra = min(
+            int(stat.extra or 0), -max(1, int(getattr(enemy.stats, "dex", 10) * speed_scale))
+        )
         return f"{enemy.name}'s rhythm drags under Slow Ride.\n"
     return ""
 
@@ -472,7 +471,9 @@ def mastered_repertoire_songs(character: Any) -> list[str]:
     return [song for song in REPERTOIRE_MP_COSTS if repertoire[song].get("known")]
 
 
-def start_song(character: Any, song: str, target: Any | None = None, battle_engine: Any | None = None) -> tuple[bool, str]:
+def start_song(
+    character: Any, song: str, target: Any | None = None, battle_engine: Any | None = None
+) -> tuple[bool, str]:
     if song not in SONGS:
         return False, f"{song} is not a known song.\n"
     if getattr(getattr(character, "cls", None), "name", "") not in {"Bard", "Troubadour"}:
@@ -492,7 +493,10 @@ def start_song(character: Any, song: str, target: Any | None = None, battle_engi
         state["practice_steps"] = 0
         state["route_effect"] = None
         state["route_steps"] = 0
-        return True, f"{character.name} begins {song}; its refrain will carry for {EXPLORATION_SONG_STEPS} steps.\n"
+        return (
+            True,
+            f"{character.name} begins {song}; its refrain will carry for {EXPLORATION_SONG_STEPS} steps.\n",
+        )
 
     duration = _song_duration(character, song)
     state = ensure_song_state(character)
@@ -503,10 +507,7 @@ def start_song(character: Any, song: str, target: Any | None = None, battle_engi
             meter = promotion_kits.combat_state(character)
             retained = min(1, int(meter.get("crescendo", 0) or 0))
             meter["crescendo"] = retained
-            messages = (
-                f"Seamless Transition retains {retained} Crescendo.\n"
-                if retained else ""
-            )
+            messages = f"Seamless Transition retains {retained} Crescendo.\n" if retained else ""
         else:
             messages = promotion_kits.clear_crescendo(character, "song replacement")
     else:
@@ -534,7 +535,14 @@ def start_song(character: Any, song: str, target: Any | None = None, battle_engi
         messages += "Battle Hymn drives the combatants into a battle frenzy.\n"
 
     if spec.get("defense_bonus"):
-        amount = max(1, int((character.check_mod("armor") + character.check_mod("magic def")) * spec["defense_bonus"] / 2))
+        amount = max(
+            1,
+            int(
+                (character.check_mod("armor") + character.check_mod("magic def"))
+                * spec["defense_bonus"]
+                / 2
+            ),
+        )
         for stat_name in ("Defense", "Magic Defense"):
             effect = character.stat_effects[stat_name]
             effect.active = True
@@ -543,10 +551,7 @@ def start_song(character: Any, song: str, target: Any | None = None, battle_engi
         messages += f"Ode to the Ramparts raises {character.name}'s defenses by {amount}.\n"
 
     messages += _song_recovery_pulse(character, song, strength=song_strength(character))
-    if (
-        song in REPERTOIRE_MP_COSTS
-        and _has_talent(character, "troubadour.virtuoso-repertoire")
-    ):
+    if song in REPERTOIRE_MP_COSTS and _has_talent(character, "troubadour.virtuoso-repertoire"):
         from . import promotion_kits
 
         messages += promotion_kits.gain_meter(
@@ -600,9 +605,13 @@ def damage_bonus(character: Any) -> float:
     state = ensure_song_state(character)
     bonus = 0.0
     if state.get("active") and state.get("turns", 0) > 0:
-        bonus += SONGS.get(state.get("active"), {}).get("damage_bonus", 0.0) * song_strength(character)
+        bonus += SONGS.get(state.get("active"), {}).get("damage_bonus", 0.0) * song_strength(
+            character
+        )
     if state.get("encore"):
-        bonus += SONGS.get(state.get("encore"), {}).get("damage_bonus", 0.0) * _encore_strength(character)
+        bonus += SONGS.get(state.get("encore"), {}).get("damage_bonus", 0.0) * _encore_strength(
+            character
+        )
     if bonus and _has_talent(character, "bard.driving-rhythm"):
         bonus += 0.05
     return bonus
@@ -612,9 +621,13 @@ def damage_reduction(character: Any) -> float:
     state = ensure_song_state(character)
     reduction = 0.0
     if state.get("active") and state.get("turns", 0) > 0:
-        reduction += SONGS.get(state.get("active"), {}).get("damage_reduction", 0.0) * song_strength(character)
+        reduction += SONGS.get(state.get("active"), {}).get(
+            "damage_reduction", 0.0
+        ) * song_strength(character)
     if state.get("encore"):
-        reduction += SONGS.get(state.get("encore"), {}).get("damage_reduction", 0.0) * _encore_strength(character)
+        reduction += SONGS.get(state.get("encore"), {}).get(
+            "damage_reduction", 0.0
+        ) * _encore_strength(character)
     if reduction and _has_talent(character, "bard.sheltering-refrain"):
         reduction += 0.05
     return min(0.75, reduction)
@@ -644,7 +657,9 @@ def tick_song(character: Any) -> str:
         state["active"] = None
         if encore_strength:
             if SONGS.get(song, {}).get("recovery"):
-                messages += _song_recovery_pulse(character, song, strength=song_strength(character) * encore_strength)
+                messages += _song_recovery_pulse(
+                    character, song, strength=song_strength(character) * encore_strength
+                )
             else:
                 state["encore"] = song
                 messages += f"Encore carries the Song of {song} for one final beat.\n"

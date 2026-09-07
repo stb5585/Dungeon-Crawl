@@ -7,7 +7,6 @@ from pathlib import Path
 import sys
 from typing import Mapping
 
-
 APPLICATION_DIRECTORY_NAME = "the-forsaken-tenet"
 SOURCE_ROOT = Path(__file__).resolve().parent
 

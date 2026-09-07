@@ -24,7 +24,9 @@ class OverlayRenderer:
         width, height = self.screen.get_size()
         return int(width * 0.65), height
 
-    def trigger_damage_flash(self, duration_ms: int = 700, alpha: int = 255, color=(255, 32, 16)) -> None:
+    def trigger_damage_flash(
+        self, duration_ms: int = 700, alpha: int = 255, color=(255, 32, 16)
+    ) -> None:
         now = pygame.time.get_ticks()
         self._damage_flash_active = True
         self._damage_flash_start = now
@@ -133,7 +135,9 @@ class OverlayRenderer:
 
         self.screen.blit(cue, (0, 0))
 
-    def render_message_area(self, messages, scroll_offset: int = 0, lines_per_page: int = 4) -> None:
+    def render_message_area(
+        self, messages, scroll_offset: int = 0, lines_per_page: int = 4
+    ) -> None:
         width, height = self._get_viewport_size()
         msg_height = 100
 
@@ -147,7 +151,7 @@ class OverlayRenderer:
         y_offset = height - msg_height + 10
         max_scroll = max(0, len(messages) - lines_per_page)
         clamped_offset = max(0, min(scroll_offset, max_scroll))
-        visible_messages = messages[clamped_offset:clamped_offset + lines_per_page]
+        visible_messages = messages[clamped_offset : clamped_offset + lines_per_page]
 
         for message in visible_messages:
             text_surface = font.render(message, True, (220, 220, 220))

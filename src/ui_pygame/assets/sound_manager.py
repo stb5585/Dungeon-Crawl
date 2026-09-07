@@ -3,6 +3,7 @@ Sound Manager - Handles sound effects and music for The Forsaken Tenet.
 
 Integrates with the event bus to play sounds based on game events.
 """
+
 from __future__ import annotations
 
 import logging
@@ -12,7 +13,6 @@ import pygame.mixer
 
 from src.core.events.event_bus import EventBus, EventType
 from src.paths import PYGAME_ASSETS_DIR
-
 
 logger = logging.getLogger(__name__)
 
@@ -96,49 +96,44 @@ class SoundManager:
         self.assets_dir = Path(assets_dir)
         self.sounds_dir = self.assets_dir / "sounds"
         self.music_dir = self.assets_dir / "music"
-        
+
         # Sound caches
         self.sfx_cache: dict[str, pygame.mixer.Sound] = {}
         self.current_music: str | None = None
         self._pre_combat_music: str | None = None
-        
+
         # Volume settings (0.0 to 1.0)
         self.master_volume = 1.0
         self.sfx_volume = 0.7
         self.music_volume = 0.5
         self.enabled = True
-        
+
         # Event bus integration
         self.event_bus = event_bus
-        
+
         # Initialize pygame mixer if not already done
         if not pygame.mixer.get_init():
             try:
-                pygame.mixer.init(
-                    frequency=44100,
-                    size=-16,
-                    channels=2,
-                    buffer=512
-                )
+                pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=512)
                 logger.info("Pygame mixer initialized")
             except pygame.error as e:
                 logger.error(f"Failed to initialize pygame mixer: {e}")
                 self.enabled = False
                 return
-        
+
         # Set channel count for simultaneous sounds
         pygame.mixer.set_num_channels(16)
-        
+
         if self.event_bus:
             self._subscribe_to_events()
-        
+
         logger.info("SoundManager initialized")
 
     def _subscribe_to_events(self):
         """Subscribe to combat and game events."""
         if not self.event_bus:
             return
-            
+
         # Combat events
         self.event_bus.subscribe(EventType.COMBAT_START, self._on_combat_start)
         self.event_bus.subscribe(EventType.COMBAT_END, self._on_combat_end)
@@ -151,7 +146,7 @@ class SoundManager:
         self.event_bus.subscribe(EventType.STATUS_APPLIED, self._on_status_applied)
         self.event_bus.subscribe(EventType.CHARACTER_DEATH, self._on_death)
         self.event_bus.subscribe(EventType.LEVEL_UP, self._on_level_up)
-        
+
         logger.info("SoundManager subscribed to events")
 
     def _on_combat_start(self, event):
@@ -167,9 +162,9 @@ class SoundManager:
 
     def _on_combat_end(self, event):
         """Handle combat end event."""
-        if event.data.get('player_alive'):
+        if event.data.get("player_alive"):
             self.play_sfx("victory")
-        elif event.data.get('fled'):
+        elif event.data.get("fled"):
             self.play_sfx("flee")
         else:
             self.play_sfx("defeat")
@@ -185,9 +180,9 @@ class SoundManager:
             self.play_sfx("laser_beam")
             return
 
-        is_crit = event.data.get('crit', event.data.get("is_critical", False))
-        damage = event.data.get('damage', 0)
-        
+        is_crit = event.data.get("crit", event.data.get("is_critical", False))
+        damage = event.data.get("damage", 0)
+
         if is_crit:
             self.play_sfx("critical_hit", volume=1.0)
         elif damage > 50:
@@ -205,35 +200,35 @@ class SoundManager:
 
     def _on_spell_cast(self, event):
         """Handle spell cast event."""
-        spell_name = event.data.get('spell_name', event.data.get('ability_name', ''))
-        
+        spell_name = event.data.get("spell_name", event.data.get("ability_name", ""))
+
         # Map spells to sound effects
-        if 'fire' in spell_name.lower():
+        if "fire" in spell_name.lower():
             self.play_sfx("spell_fire")
-        elif 'ice' in spell_name.lower() or 'frost' in spell_name.lower():
+        elif "ice" in spell_name.lower() or "frost" in spell_name.lower():
             self.play_sfx("ice_spell")
-        elif 'lightning' in spell_name.lower() or 'shock' in spell_name.lower():
+        elif "lightning" in spell_name.lower() or "shock" in spell_name.lower():
             self.play_sfx("spell_lightning")
-        elif 'heal' in spell_name.lower():
+        elif "heal" in spell_name.lower():
             self.play_sfx("spell_heal")
         else:
             self.play_sfx("spell_cast")
-    
+
     def _on_skill_use(self, event):
         """Handle skill use event."""
-        skill_name = event.data.get('skill_name', event.data.get('ability_name', ''))
+        skill_name = event.data.get("skill_name", event.data.get("ability_name", ""))
         skill_name_lower = skill_name.lower()
-        
+
         # Map skills to sound effects
-        if 'fire' in skill_name_lower:
+        if "fire" in skill_name_lower:
             self.play_sfx("spell_fire")
-        elif 'ice' in skill_name_lower or 'frost' in skill_name_lower:
+        elif "ice" in skill_name_lower or "frost" in skill_name_lower:
             self.play_sfx("ice_spell")
-        elif 'lightning' in skill_name_lower or 'shock' in skill_name_lower:
+        elif "lightning" in skill_name_lower or "shock" in skill_name_lower:
             self.play_sfx("spell_lightning")
-        elif 'heal' in skill_name_lower:
+        elif "heal" in skill_name_lower:
             self.play_sfx("spell_heal")
-        elif 'mortal strike' in skill_name_lower:
+        elif "mortal strike" in skill_name_lower:
             self.play_sfx("mortal_strike")
         elif "screech" in skill_name_lower:
             self.play_sfx("bird_attack_sound")
@@ -250,26 +245,25 @@ class SoundManager:
         if item_subtype == "scroll" or "scroll" in item_name:
             self.play_sfx("spell_cast")
         elif item_subtype in {"health", "mana", "elixir", "both"} or any(
-            keyword in item_name
-            for keyword in ("potion", "elixir", "megalixir")
+            keyword in item_name for keyword in ("potion", "elixir", "megalixir")
         ):
             self.play_sfx("heal")
 
     def _on_status_applied(self, event):
         """Handle status effect applied event."""
-        status_name = event.data.get('status_name', '').lower()
-        
-        if 'poison' in status_name or 'bleed' in status_name:
+        status_name = event.data.get("status_name", "").lower()
+
+        if "poison" in status_name or "bleed" in status_name:
             self.play_sfx("poison")
-        elif 'stun' in status_name or 'freeze' in status_name:
+        elif "stun" in status_name or "freeze" in status_name:
             self.play_sfx("stun")
-        elif 'burn' in status_name:
+        elif "burn" in status_name:
             self.play_sfx("burn")
 
     def _on_death(self, event):
         """Handle death event."""
-        is_player = event.data.get('is_player', False)
-        
+        is_player = event.data.get("is_player", False)
+
         if is_player:
             self.play_sfx("player_death")
         else:
@@ -320,7 +314,9 @@ class SoundManager:
             name: {
                 "available": (path := self.resolve_sfx_path(name)) is not None,
                 "path": str(path) if path is not None else None,
-                "checked_paths": [str(candidate) for candidate in self.get_sfx_candidate_paths(name)],
+                "checked_paths": [
+                    str(candidate) for candidate in self.get_sfx_candidate_paths(name)
+                ],
             }
             for name in sfx_names
         }
@@ -328,7 +324,9 @@ class SoundManager:
             name: {
                 "available": (path := self.resolve_music_path(name)) is not None,
                 "path": str(path) if path is not None else None,
-                "checked_paths": [str(candidate) for candidate in self.get_music_candidate_paths(name)],
+                "checked_paths": [
+                    str(candidate) for candidate in self.get_music_candidate_paths(name)
+                ],
             }
             for name in music_names
         }
@@ -417,16 +415,16 @@ class SoundManager:
         """
         if not self.enabled:
             return None
-            
+
         # Check cache first
         if sound_name in self.sfx_cache:
             return self.sfx_cache[sound_name]
-        
+
         sound_path = self.resolve_sfx_path(sound_name)
         if sound_path is None:
             logger.debug(f"Sound file not found: {sound_name}")
             return None
-        
+
         try:
             sound = pygame.mixer.Sound(str(sound_path))
             self.sfx_cache[sound_name] = sound
@@ -447,16 +445,16 @@ class SoundManager:
         """
         if not self.enabled:
             return
-            
+
         sound = self.load_sfx(sound_name)
         if sound is None:
             return
-        
+
         # Calculate final volume
         if volume is None:
             volume = self.sfx_volume
         final_volume = volume * self.master_volume
-        
+
         sound.set_volume(final_volume)
         sound.play(loops=loops)
 
@@ -471,7 +469,7 @@ class SoundManager:
         """
         if not self.enabled:
             return
-            
+
         music_path = self.resolve_music_path(music_name)
         if music_path is None:
             logger.debug(f"Music file not found: {music_name}")
@@ -479,12 +477,12 @@ class SoundManager:
                 pygame.mixer.music.fadeout(fade_ms // 2)
             self.current_music = music_name
             return
-        
+
         try:
             # Stop current music with fade out
             if pygame.mixer.music.get_busy():
                 pygame.mixer.music.fadeout(fade_ms // 2)
-            
+
             pygame.mixer.music.load(str(music_path))
             pygame.mixer.music.set_volume(self.music_volume * self.master_volume)
             pygame.mixer.music.play(loops=loops, fade_ms=fade_ms)

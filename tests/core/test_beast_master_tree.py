@@ -66,9 +66,7 @@ def test_heavy_hunter_coordinated_assault_and_trail_guard_reuse_ranger_rules():
         "beast-master.trail-guard",
     )
 
-    assert pathfinder.ranger_weapon_damage_multiplier(beast, target) == pytest.approx(
-        1.15 * 1.10
-    )
+    assert pathfinder.ranger_weapon_damage_multiplier(beast, target) == pytest.approx(1.15 * 1.10)
     reduced, message = pathfinder.ranger_damage_reduction(
         beast,
         target,

@@ -11,7 +11,6 @@ from ..classes import footpad
 from ..constants import ARMOR_SCALING_FACTOR
 from .rules import _queue_cambion_message, quest_biased_random_enemy
 
-
 TRAP_CHANCE = 0.06
 DEATHCAP_CHANCE = 0.015
 TRAP_TYPES = ("Tripwire", "Magic Ward", "Alert", "Red Alert")
@@ -30,10 +29,7 @@ MAGIC_WARD_SPELLS = (
 
 def find_trap_warning(tile: Any, player: Any, *, rng: Any = random) -> str:
     """Cancel the first detected trap entry and return its warning message."""
-    if (
-        getattr(tile, "trap_type", None) not in TRAP_TYPES
-        or getattr(tile, "trap_triggered", False)
-    ):
+    if getattr(tile, "trap_type", None) not in TRAP_TYPES or getattr(tile, "trap_triggered", False):
         return ""
     if getattr(tile, "trap_warned", False):
         if footpad.has_skill(player, "Disarm Traps"):
@@ -125,9 +121,8 @@ def _avoidance_severity(player: Any, *, rng: Any) -> tuple[float, str]:
     try:
         from ..classes.thief import has_thief_talent
 
-        if (
-            getattr(player, "_failed_disarm", False)
-            and has_thief_talent(player, "rogue.impossible-job")
+        if getattr(player, "_failed_disarm", False) and has_thief_talent(
+            player, "rogue.impossible-job"
         ):
             severity = min(severity, 0.5)
             message = message or "Impossible Job halves the failed disarm's effect."

@@ -157,7 +157,9 @@ class PlayerStateMixin:
             self._grandmaster_battle_hit_types.add(weapon_type)
         return before, after, amount
 
-    def record_grandmaster_weapon_art(self, weapon_type: str | None, opponent=None) -> tuple[int, int, int]:
+    def record_grandmaster_weapon_art(
+        self, weapon_type: str | None, opponent=None
+    ) -> tuple[int, int, int]:
         """Award discipline insight for successfully landing a Weapon Art."""
         self.ensure_grandmaster_discipline()
         return grandmaster.roll_discipline_xp(
@@ -279,6 +281,7 @@ class PlayerStateMixin:
         multiplier = 1.0
         try:
             from ..constants import HUMAN_EXP_MULTIPLIER, HALF_GIANT_EXP_MULTIPLIER
+
             race_name = getattr(getattr(self, "race", None), "name", None)
             if race_name == "Human":
                 multiplier *= HUMAN_EXP_MULTIPLIER

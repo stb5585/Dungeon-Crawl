@@ -125,9 +125,7 @@ def test_regen_effect_applies_magic_status_payload():
 
 def test_status_effect_activates_known_status_and_records_extra():
     actor = SimpleNamespace(name="Caster")
-    target = SimpleNamespace(
-        status_effects={"Stun": SimpleNamespace(active=False, duration=0)}
-    )
+    target = SimpleNamespace(status_effects={"Stun": SimpleNamespace(active=False, duration=0)})
     result = CombatResult(action="Status", actor=actor, target=target, hit=True, crit=1)
 
     effect = StatusEffect(name="Stun", duration=2)

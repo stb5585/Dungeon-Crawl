@@ -341,7 +341,11 @@ class RangerClass(KnightClass):
 def test_promotion_screen_draw_helpers(monkeypatch):
     presenter = _make_presenter()
     player = _make_player()
-    monkeypatch.setattr(promotion_screen.PromotionScreen, "_load_background", lambda self: setattr(self, "background", None))
+    monkeypatch.setattr(
+        promotion_screen.PromotionScreen,
+        "_load_background",
+        lambda self: setattr(self, "background", None),
+    )
     screen = promotion_screen.PromotionScreen(
         presenter,
         player,
@@ -355,9 +359,18 @@ def test_promotion_screen_draw_helpers(monkeypatch):
     draw_rect_calls = []
     flip_calls = []
     monkeypatch.setattr(screen, "draw_background", lambda: panel_calls.append("bg"))
-    monkeypatch.setattr(screen, "draw_semi_transparent_panel", lambda rect, alpha=180: panel_calls.append((rect, alpha)))
-    monkeypatch.setattr("src.ui_pygame.gui.promotion_screen.pygame.draw.rect", lambda *_a, **_k: draw_rect_calls.append(True))
-    monkeypatch.setattr("src.ui_pygame.gui.promotion_screen.pygame.display.flip", lambda: flip_calls.append(True))
+    monkeypatch.setattr(
+        screen,
+        "draw_semi_transparent_panel",
+        lambda rect, alpha=180: panel_calls.append((rect, alpha)),
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.promotion_screen.pygame.draw.rect",
+        lambda *_a, **_k: draw_rect_calls.append(True),
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.promotion_screen.pygame.display.flip", lambda: flip_calls.append(True)
+    )
 
     assert screen._wrap_lines("alpha beta\ngamma", presenter.small_font, 40)
 
@@ -371,10 +384,7 @@ def test_promotion_screen_draw_helpers(monkeypatch):
     screen.draw_all()
 
     assert "Class Promotion" in presenter.normal_font.render_calls
-    assert not any(
-        "Church" in text
-        for text in presenter.normal_font.render_calls
-    )
+    assert not any("Church" in text for text in presenter.normal_font.render_calls)
     assert "Choose your path" in presenter.normal_font.render_calls
     assert "Warrior -> Knight" in presenter.large_font.render_calls
     assert "Promotion Impact" in presenter.normal_font.render_calls
@@ -401,7 +411,11 @@ def test_promotion_screen_draw_helpers(monkeypatch):
 def test_promotion_screen_embeds_compact_character_menu_help(monkeypatch):
     presenter = _make_presenter()
     player = _make_player()
-    monkeypatch.setattr(promotion_screen.PromotionScreen, "_load_background", lambda self: setattr(self, "background", None))
+    monkeypatch.setattr(
+        promotion_screen.PromotionScreen,
+        "_load_background",
+        lambda self: setattr(self, "background", None),
+    )
     screen = promotion_screen.PromotionScreen(
         presenter,
         player,
@@ -414,8 +428,15 @@ def test_promotion_screen_embeds_compact_character_menu_help(monkeypatch):
     panel_calls = []
     draw_rect_calls = []
     monkeypatch.setattr(screen, "draw_background", lambda: panel_calls.append("bg"))
-    monkeypatch.setattr(screen, "draw_semi_transparent_panel", lambda rect, alpha=180: panel_calls.append((rect, alpha)))
-    monkeypatch.setattr("src.ui_pygame.gui.promotion_screen.pygame.draw.rect", lambda *_a, **_k: draw_rect_calls.append(True))
+    monkeypatch.setattr(
+        screen,
+        "draw_semi_transparent_panel",
+        lambda rect, alpha=180: panel_calls.append((rect, alpha)),
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.promotion_screen.pygame.draw.rect",
+        lambda *_a, **_k: draw_rect_calls.append(True),
+    )
     monkeypatch.setattr("src.ui_pygame.gui.promotion_screen.pygame.display.flip", lambda: None)
 
     screen.draw_all()
@@ -423,7 +444,9 @@ def test_promotion_screen_embeds_compact_character_menu_help(monkeypatch):
     assert "Warrior -> Weapon Master" in presenter.large_font.render_calls
     assert "Character Menu Preview" not in presenter.normal_font.render_calls
     assert not any("New tab:" in call for call in presenter.small_font.render_calls)
-    assert any("Character Menu: Weapon Discipline" in call for call in presenter.small_font.render_calls)
+    assert any(
+        "Character Menu: Weapon Discipline" in call for call in presenter.small_font.render_calls
+    )
     assert any("Intelligence helps" in call for call in presenter.small_font.render_calls)
     mechanic_colors = {
         color
@@ -478,7 +501,11 @@ def test_promotion_screen_previews_warrior_branch_mechanics(monkeypatch):
     ):
         presenter = _make_presenter()
         player = _make_player()
-        monkeypatch.setattr(promotion_screen.PromotionScreen, "_load_background", lambda self: setattr(self, "background", None))
+        monkeypatch.setattr(
+            promotion_screen.PromotionScreen,
+            "_load_background",
+            lambda self: setattr(self, "background", None),
+        )
         screen = promotion_screen.PromotionScreen(
             presenter,
             player,
@@ -490,7 +517,9 @@ def test_promotion_screen_previews_warrior_branch_mechanics(monkeypatch):
 
         monkeypatch.setattr(screen, "draw_background", lambda: None)
         monkeypatch.setattr(screen, "draw_semi_transparent_panel", lambda rect, alpha=180: None)
-        monkeypatch.setattr("src.ui_pygame.gui.promotion_screen.pygame.draw.rect", lambda *_a, **_k: None)
+        monkeypatch.setattr(
+            "src.ui_pygame.gui.promotion_screen.pygame.draw.rect", lambda *_a, **_k: None
+        )
         monkeypatch.setattr("src.ui_pygame.gui.promotion_screen.pygame.display.flip", lambda: None)
 
         screen.draw_all()
@@ -513,7 +542,11 @@ def test_promotion_screen_previews_mage_branch_mechanics(monkeypatch):
     ):
         presenter = _make_presenter()
         player = _make_player()
-        monkeypatch.setattr(promotion_screen.PromotionScreen, "_load_background", lambda self: setattr(self, "background", None))
+        monkeypatch.setattr(
+            promotion_screen.PromotionScreen,
+            "_load_background",
+            lambda self: setattr(self, "background", None),
+        )
         screen = promotion_screen.PromotionScreen(
             presenter,
             player,
@@ -525,7 +558,9 @@ def test_promotion_screen_previews_mage_branch_mechanics(monkeypatch):
 
         monkeypatch.setattr(screen, "draw_background", lambda: None)
         monkeypatch.setattr(screen, "draw_semi_transparent_panel", lambda rect, alpha=180: None)
-        monkeypatch.setattr("src.ui_pygame.gui.promotion_screen.pygame.draw.rect", lambda *_a, **_k: None)
+        monkeypatch.setattr(
+            "src.ui_pygame.gui.promotion_screen.pygame.draw.rect", lambda *_a, **_k: None
+        )
         monkeypatch.setattr("src.ui_pygame.gui.promotion_screen.pygame.display.flip", lambda: None)
 
         screen.draw_all()
@@ -547,7 +582,11 @@ def test_promotion_screen_previews_footpad_branch_mechanics(monkeypatch):
     ):
         presenter = _make_presenter()
         player = _make_player()
-        monkeypatch.setattr(promotion_screen.PromotionScreen, "_load_background", lambda self: setattr(self, "background", None))
+        monkeypatch.setattr(
+            promotion_screen.PromotionScreen,
+            "_load_background",
+            lambda self: setattr(self, "background", None),
+        )
         screen = promotion_screen.PromotionScreen(
             presenter,
             player,
@@ -559,7 +598,9 @@ def test_promotion_screen_previews_footpad_branch_mechanics(monkeypatch):
 
         monkeypatch.setattr(screen, "draw_background", lambda: None)
         monkeypatch.setattr(screen, "draw_semi_transparent_panel", lambda rect, alpha=180: None)
-        monkeypatch.setattr("src.ui_pygame.gui.promotion_screen.pygame.draw.rect", lambda *_a, **_k: None)
+        monkeypatch.setattr(
+            "src.ui_pygame.gui.promotion_screen.pygame.draw.rect", lambda *_a, **_k: None
+        )
         monkeypatch.setattr("src.ui_pygame.gui.promotion_screen.pygame.display.flip", lambda: None)
 
         screen.draw_all()
@@ -582,7 +623,11 @@ def test_promotion_screen_previews_healer_branch_mechanics(monkeypatch):
     ):
         presenter = _make_presenter()
         player = _make_player()
-        monkeypatch.setattr(promotion_screen.PromotionScreen, "_load_background", lambda self: setattr(self, "background", None))
+        monkeypatch.setattr(
+            promotion_screen.PromotionScreen,
+            "_load_background",
+            lambda self: setattr(self, "background", None),
+        )
         screen = promotion_screen.PromotionScreen(
             presenter,
             player,
@@ -594,7 +639,9 @@ def test_promotion_screen_previews_healer_branch_mechanics(monkeypatch):
 
         monkeypatch.setattr(screen, "draw_background", lambda: None)
         monkeypatch.setattr(screen, "draw_semi_transparent_panel", lambda rect, alpha=180: None)
-        monkeypatch.setattr("src.ui_pygame.gui.promotion_screen.pygame.draw.rect", lambda *_a, **_k: None)
+        monkeypatch.setattr(
+            "src.ui_pygame.gui.promotion_screen.pygame.draw.rect", lambda *_a, **_k: None
+        )
         monkeypatch.setattr("src.ui_pygame.gui.promotion_screen.pygame.display.flip", lambda: None)
 
         screen.draw_all()
@@ -614,7 +661,11 @@ def test_promotion_screen_previews_pathfinder_branch_mechanics(monkeypatch):
     ):
         presenter = _make_presenter()
         player = _make_player()
-        monkeypatch.setattr(promotion_screen.PromotionScreen, "_load_background", lambda self: setattr(self, "background", None))
+        monkeypatch.setattr(
+            promotion_screen.PromotionScreen,
+            "_load_background",
+            lambda self: setattr(self, "background", None),
+        )
         screen = promotion_screen.PromotionScreen(
             presenter,
             player,
@@ -626,7 +677,9 @@ def test_promotion_screen_previews_pathfinder_branch_mechanics(monkeypatch):
 
         monkeypatch.setattr(screen, "draw_background", lambda: None)
         monkeypatch.setattr(screen, "draw_semi_transparent_panel", lambda rect, alpha=180: None)
-        monkeypatch.setattr("src.ui_pygame.gui.promotion_screen.pygame.draw.rect", lambda *_a, **_k: None)
+        monkeypatch.setattr(
+            "src.ui_pygame.gui.promotion_screen.pygame.draw.rect", lambda *_a, **_k: None
+        )
         monkeypatch.setattr("src.ui_pygame.gui.promotion_screen.pygame.display.flip", lambda: None)
 
         screen.draw_all()
@@ -641,7 +694,11 @@ def test_promotion_screen_previews_pathfinder_branch_mechanics(monkeypatch):
 def test_promotion_screen_navigation(monkeypatch):
     presenter = _make_presenter()
     player = _make_player()
-    monkeypatch.setattr(promotion_screen.PromotionScreen, "_load_background", lambda self: setattr(self, "background", None))
+    monkeypatch.setattr(
+        promotion_screen.PromotionScreen,
+        "_load_background",
+        lambda self: setattr(self, "background", None),
+    )
     screen = promotion_screen.PromotionScreen(
         presenter,
         player,
@@ -665,26 +722,38 @@ def test_promotion_screen_navigation(monkeypatch):
 
     monkeypatch.setattr("src.ui_pygame.gui.promotion_screen.ConfirmationPopup", FakePopup)
 
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.promotion_screen.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.promotion_screen.pygame.event.get", lambda: next(event_batches, [])
+    )
     assert screen.navigate() == "Knight"
     assert FakePopup.show_kwargs[-1]["flush_events"] is True
     assert FakePopup.show_kwargs[-1]["require_key_release"] is True
     assert callable(FakePopup.show_kwargs[-1]["background_draw_func"])
 
     screen.current_selection = 1
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.promotion_screen.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.promotion_screen.pygame.event.get", lambda: next(event_batches, [])
+    )
     assert screen.navigate() is None
 
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_ESCAPE)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.promotion_screen.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_ESCAPE)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.promotion_screen.pygame.event.get", lambda: next(event_batches, [])
+    )
     assert screen.navigate() is None
 
     screen.options = []
@@ -694,7 +763,11 @@ def test_promotion_screen_navigation(monkeypatch):
 def test_promotion_screen_mouse_selects_option(monkeypatch):
     presenter = _make_presenter()
     player = _make_player()
-    monkeypatch.setattr(promotion_screen.PromotionScreen, "_load_background", lambda self: setattr(self, "background", None))
+    monkeypatch.setattr(
+        promotion_screen.PromotionScreen,
+        "_load_background",
+        lambda self: setattr(self, "background", None),
+    )
     screen = promotion_screen.PromotionScreen(
         presenter,
         player,
@@ -717,28 +790,40 @@ def test_promotion_screen_mouse_selects_option(monkeypatch):
     monkeypatch.setattr("src.ui_pygame.gui.promotion_screen.ConfirmationPopup", FakePopup)
 
     click_pos = screen.option_rects()[0].center
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.MOUSEMOTION, pos=click_pos)],
-        [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=click_pos)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.promotion_screen.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.MOUSEMOTION, pos=click_pos)],
+            [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=click_pos)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.promotion_screen.pygame.event.get", lambda: next(event_batches, [])
+    )
 
     assert screen.navigate() == "Knight"
     assert FakePopup.messages == ["Promote to Knight?"]
 
     screen.current_selection = 0
     back_pos = screen.option_rects()[1].center
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=back_pos)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.promotion_screen.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=back_pos)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.promotion_screen.pygame.event.get", lambda: next(event_batches, [])
+    )
     assert screen.navigate() is None
 
 
 def test_promotion_screen_quit_event_raises(monkeypatch):
     presenter = _make_presenter()
     player = _make_player()
-    monkeypatch.setattr(promotion_screen.PromotionScreen, "_load_background", lambda self: setattr(self, "background", None))
+    monkeypatch.setattr(
+        promotion_screen.PromotionScreen,
+        "_load_background",
+        lambda self: setattr(self, "background", None),
+    )
     screen = promotion_screen.PromotionScreen(
         presenter,
         player,
@@ -749,7 +834,9 @@ def test_promotion_screen_quit_event_raises(monkeypatch):
     )
     monkeypatch.setattr(screen, "draw_all", lambda: None)
     quit_calls = []
-    monkeypatch.setattr("src.ui_pygame.gui.promotion_screen.pygame.quit", lambda: quit_calls.append(True))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.promotion_screen.pygame.quit", lambda: quit_calls.append(True)
+    )
     monkeypatch.setattr("sys.exit", lambda: (_ for _ in ()).throw(SystemExit()))
     monkeypatch.setattr(
         "src.ui_pygame.gui.promotion_screen.pygame.event.get",

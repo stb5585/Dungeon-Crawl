@@ -11,7 +11,6 @@ import pygame
 
 from src.ui_pygame.gui import town_base
 
-
 os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
 
 
@@ -167,10 +166,14 @@ def test_display_quest_text_debug_mode_draws_npc_portrait(monkeypatch):
 
     events = [SimpleNamespace(type=pygame.KEYDOWN)]
     monkeypatch.setattr("src.ui_pygame.gui.town_base.pygame.image.load", fake_load)
-    monkeypatch.setattr("src.ui_pygame.gui.town_base.pygame.transform.smoothscale", fake_smoothscale)
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.town_base.pygame.transform.smoothscale", fake_smoothscale
+    )
     monkeypatch.setattr("src.ui_pygame.gui.town_base.pygame.event.get", lambda: list(events))
     monkeypatch.setattr("src.ui_pygame.gui.town_base.pygame.display.flip", lambda: None)
-    monkeypatch.setattr(base, "draw_semi_transparent_panel", lambda rect, alpha=180: panel_rects.append(rect))
+    monkeypatch.setattr(
+        base, "draw_semi_transparent_panel", lambda rect, alpha=180: panel_rects.append(rect)
+    )
 
     base.display_quest_text("====== Sergeant ======\nLine one", image_path="sergeant.png")
 
@@ -207,7 +210,9 @@ def test_display_quest_text_debug_mode_exits_on_left_click(monkeypatch):
 def test_display_quest_text_non_debug_supports_skip_and_advance(monkeypatch):
     pygame.init()
     pygame.display.set_mode((1, 1))
-    presenter = _make_presenter(debug_mode=False, screen=pygame.Surface((640, 480), pygame.SRCALPHA))
+    presenter = _make_presenter(
+        debug_mode=False, screen=pygame.Surface((640, 480), pygame.SRCALPHA)
+    )
     monkeypatch.setattr("src.ui_pygame.gui.town_base.os.path.exists", lambda _path: False)
     base = RecordingTownScreen(presenter)
 
@@ -228,7 +233,10 @@ def test_display_quest_text_non_debug_supports_skip_and_advance(monkeypatch):
     tick_calls = []
     presenter.clock = SimpleNamespace(tick=lambda fps: tick_calls.append(fps))
     monkeypatch.setattr("src.ui_pygame.gui.town_base.pygame.event.get", fake_get)
-    monkeypatch.setattr("src.ui_pygame.gui.town_base.pygame.event.clear", lambda event_type=None: clear_calls.append(event_type))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.town_base.pygame.event.clear",
+        lambda event_type=None: clear_calls.append(event_type),
+    )
     monkeypatch.setattr("src.ui_pygame.gui.town_base.pygame.display.flip", lambda: None)
     monkeypatch.setattr("time.sleep", lambda _value: None)
 
@@ -245,7 +253,9 @@ def test_display_quest_text_non_debug_supports_skip_and_advance(monkeypatch):
 def test_display_quest_text_non_debug_keeps_full_text_width_with_portrait(monkeypatch):
     pygame.init()
     pygame.display.set_mode((1, 1))
-    presenter = _make_presenter(debug_mode=False, screen=pygame.Surface((640, 480), pygame.SRCALPHA))
+    presenter = _make_presenter(
+        debug_mode=False, screen=pygame.Surface((640, 480), pygame.SRCALPHA)
+    )
     monkeypatch.setattr("src.ui_pygame.gui.town_base.os.path.exists", lambda _path: False)
     base = RecordingTownScreen(presenter)
 
@@ -263,7 +273,9 @@ def test_display_quest_text_non_debug_keeps_full_text_width_with_portrait(monkey
         return ["wrapped"]
 
     monkeypatch.setattr(town_base, "wrap_text_to_pixel_width", fake_wrap)
-    monkeypatch.setattr("src.ui_pygame.gui.town_base.pygame.event.clear", lambda event_type=None: None)
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.town_base.pygame.event.clear", lambda event_type=None: None
+    )
     monkeypatch.setattr("src.ui_pygame.gui.town_base.pygame.display.flip", lambda: None)
     monkeypatch.setattr("time.sleep", lambda _value: None)
 
@@ -274,7 +286,9 @@ def test_display_quest_text_non_debug_keeps_full_text_width_with_portrait(monkey
                 [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
             ]
         )
-        monkeypatch.setattr("src.ui_pygame.gui.town_base.pygame.event.get", lambda: next(key_events, []))
+        monkeypatch.setattr(
+            "src.ui_pygame.gui.town_base.pygame.event.get", lambda: next(key_events, [])
+        )
         base.display_quest_text(
             "====== Sergeant ======\nThis is a longer portrait dialogue line.",
             image_path=image_path,
@@ -292,7 +306,9 @@ def test_display_quest_text_non_debug_keeps_full_text_width_with_portrait(monkey
 def test_display_quest_text_non_debug_supports_mouse_skip_and_advance(monkeypatch):
     pygame.init()
     pygame.display.set_mode((1, 1))
-    presenter = _make_presenter(debug_mode=False, screen=pygame.Surface((640, 480), pygame.SRCALPHA))
+    presenter = _make_presenter(
+        debug_mode=False, screen=pygame.Surface((640, 480), pygame.SRCALPHA)
+    )
     monkeypatch.setattr("src.ui_pygame.gui.town_base.os.path.exists", lambda _path: False)
     base = RecordingTownScreen(presenter)
 
@@ -313,7 +329,10 @@ def test_display_quest_text_non_debug_supports_mouse_skip_and_advance(monkeypatc
     tick_calls = []
     presenter.clock = SimpleNamespace(tick=lambda fps: tick_calls.append(fps))
     monkeypatch.setattr("src.ui_pygame.gui.town_base.pygame.event.get", fake_get)
-    monkeypatch.setattr("src.ui_pygame.gui.town_base.pygame.event.clear", lambda event_type=None: clear_calls.append(event_type))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.town_base.pygame.event.clear",
+        lambda event_type=None: clear_calls.append(event_type),
+    )
     monkeypatch.setattr("src.ui_pygame.gui.town_base.pygame.display.flip", lambda: None)
     monkeypatch.setattr("time.sleep", lambda _value: None)
 

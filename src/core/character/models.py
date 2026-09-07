@@ -1,5 +1,5 @@
 ##########################################
-""" character manager """
+"""character manager"""
 
 from __future__ import annotations
 
@@ -111,12 +111,14 @@ class Stats:
         charisma: The charisma attribute of the character, influencing interactions with NPCs.
         dex: The dexterity attribute of the character, influencing speed and avoidance.
     """
+
     strength: int = 0
     intel: int = 0
     wisdom: int = 0
     con: int = 0
     charisma: int = 0
     dex: int = 0
+
 
 @dataclass
 class Combat:
@@ -127,10 +129,12 @@ class Combat:
         magic: base stat for calculating magic damage
         magic_def: base stat for calculating magic damage reduction
     """
+
     attack: int = 0
     defense: int = 0
     magic: int = 0
     magic_def: int = 0
+
 
 @dataclass
 class Resource:
@@ -145,12 +149,14 @@ class Resource:
                 value = 0
         super().__setattr__(name, value)
 
+
 @dataclass
 class Level:
     level: int = 1
     pro_level: int = 1
     exp: int = 0
     exp_to_gain: int = 25
+
 
 @dataclass
 class StatusEffect:

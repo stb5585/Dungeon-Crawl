@@ -1,12 +1,16 @@
 ###########################################
-""" Town manager """
+"""Town manager"""
 
 import random
 import re
 
 from . import enemies, items
-from .data.data_loader import get_quests, get_patron_dialogues, get_response_map, get_tavern_flavor_dialogues
-
+from .data.data_loader import (
+    get_quests,
+    get_patron_dialogues,
+    get_response_map,
+    get_tavern_flavor_dialogues,
+)
 
 # Patron dialogue keyed by minimum total level (base + promotions)
 # Loaded from external JSON file
@@ -32,7 +36,15 @@ BOUNTY_BOARD_STATE_DEFAULTS = {
 }
 
 RELIC_NAMES = ("Triangulus", "Quadrata", "Hexagonum", "Luna", "Polaris", "Infinitas")
-MAJOR_BOSS_NAMES = ("Barghest", "Nightmare", "Iron Golem", "Domingo", "Jester", "Red Dragon", "Merzhin")
+MAJOR_BOSS_NAMES = (
+    "Barghest",
+    "Nightmare",
+    "Iron Golem",
+    "Domingo",
+    "Jester",
+    "Red Dragon",
+    "Merzhin",
+)
 
 
 def default_bounty_board_state():
@@ -85,9 +97,7 @@ def _gameplay_stat(player_char, stat_name):
 
 def ensure_bounty_board_state(player_char):
     """Attach normalized bounty-board restock state to the player."""
-    state = normalize_bounty_board_state(
-        getattr(player_char, "bounty_board_state", None)
-    )
+    state = normalize_bounty_board_state(getattr(player_char, "bounty_board_state", None))
     player_char.bounty_board_state = state
     return state
 
@@ -214,22 +224,38 @@ def _relic_progress_hints(relic_names: list[str], speaker: str) -> list[str]:
         ]
     if speaker == "Soldier":
         if count >= len(RELIC_NAMES):
-            return ["Every relic report on the board is marked recovered, but the old hands look more afraid than relieved."]
-        return [f"The relic board has {count} bright pin{'s' if count != 1 else ''} now. The map room gets colder each time we add one."]
+            return [
+                "Every relic report on the board is marked recovered, but the old hands look more afraid than relieved."
+            ]
+        return [
+            f"The relic board has {count} bright pin{'s' if count != 1 else ''} now. The map room gets colder each time we add one."
+        ]
     if speaker == "Hooded Figure":
         if count >= len(RELIC_NAMES):
-            return ["Six holy shapes, one closing circle. The last door will not mistake you for unchosen."]
+            return [
+                "Six holy shapes, one closing circle. The last door will not mistake you for unchosen."
+            ]
         return ["The relics do not merely wait to be found. They listen for each other."]
     if speaker == "Barkeep":
         if count >= len(RELIC_NAMES):
-            return ["Six relics on one road. I would offer a toast, but the room has learned not to celebrate too early."]
-        return ["Word is another relic came home with you. The mugs rattled on the shelf before anyone said your name."]
+            return [
+                "Six relics on one road. I would offer a toast, but the room has learned not to celebrate too early."
+            ]
+        return [
+            "Word is another relic came home with you. The mugs rattled on the shelf before anyone said your name."
+        ]
     if speaker == "Busboy":
-        return ["People keep asking which relic you found next. I keep telling them the order matters less than getting you back alive."]
+        return [
+            "People keep asking which relic you found next. I keep telling them the order matters less than getting you back alive."
+        ]
     if speaker == "Waitress":
-        return ["When you carry relic-light, even the quiet patrons notice. Please do not let it make you careless."]
+        return [
+            "When you carry relic-light, even the quiet patrons notice. Please do not let it make you careless."
+        ]
     if speaker == "Drunkard":
-        return ["Relics, guardians, old songs... (hic) every shiny thing down there has teeth in the story somewhere."]
+        return [
+            "Relics, guardians, old songs... (hic) every shiny thing down there has teeth in the story somewhere."
+        ]
     return []
 
 
@@ -241,49 +267,87 @@ def _boss_progress_hints(defeated: list[str], speaker: str) -> list[str]:
     hints: list[str] = []
     if speaker == "Sergeant":
         if "Barghest" in defeated_set:
-            hints.append("The Barghest report is closed. That means the first relic guardian was real, and so is everything after it.")
+            hints.append(
+                "The Barghest report is closed. That means the first relic guardian was real, and so is everything after it."
+            )
         if "Iron Golem" in defeated_set:
-            hints.append("With the Iron Golem down, deeper patrol markers are back on the table. Do not confuse access with safety.")
+            hints.append(
+                "With the Iron Golem down, deeper patrol markers are back on the table. Do not confuse access with safety."
+            )
         if "Domingo" in defeated_set:
-            hints.append("The scientists say the warp route is stable after Domingo. I say stable does not mean friendly.")
+            hints.append(
+                "The scientists say the warp route is stable after Domingo. I say stable does not mean friendly."
+            )
         if "Jester" in defeated_set:
-            hints.append("The Jester file is sealed, but nobody here laughs at sealed files anymore.")
+            hints.append(
+                "The Jester file is sealed, but nobody here laughs at sealed files anymore."
+            )
         if "Merzhin" in defeated_set:
-            hints.append("Cambion stopped moving on our maps after Merzhin fell. I do not trust a quiet map, but I will take it.")
+            hints.append(
+                "Cambion stopped moving on our maps after Merzhin fell. I do not trust a quiet map, but I will take it."
+            )
     elif speaker == "Soldier":
         if "Nightmare" in defeated_set:
-            hints.append("The Nightmare patrol notes ended in ash. Yours is the first report that came back with a pulse.")
+            hints.append(
+                "The Nightmare patrol notes ended in ash. Yours is the first report that came back with a pulse."
+            )
         if "Iron Golem" in defeated_set:
-            hints.append("Engineers are measuring the cracks left by the Iron Golem. They keep finding the same shape under different stones.")
+            hints.append(
+                "Engineers are measuring the cracks left by the Iron Golem. They keep finding the same shape under different stones."
+            )
         if "Jester" in defeated_set:
-            hints.append("After the Jester fell, we stopped finding playing cards under the barracks doors. I still check.")
+            hints.append(
+                "After the Jester fell, we stopped finding playing cards under the barracks doors. I still check."
+            )
         if "Merzhin" in defeated_set:
-            hints.append("The Realm of Cambion no longer shifts our patrol markers, but everyone still walks the corridors twice.")
+            hints.append(
+                "The Realm of Cambion no longer shifts our patrol markers, but everyone still walks the corridors twice."
+            )
     elif speaker == "Barkeep":
         if "Jester" in defeated_set:
-            hints.append("The first quiet night after the Jester died felt worse than the jokes. Quiet gives people room to count losses.")
+            hints.append(
+                "The first quiet night after the Jester died felt worse than the jokes. Quiet gives people room to count losses."
+            )
         if "Merzhin" in defeated_set:
-            hints.append("When word came from Cambion, nobody cheered right away. They waited to see whether the walls agreed.")
+            hints.append(
+                "When word came from Cambion, nobody cheered right away. They waited to see whether the walls agreed."
+            )
     elif speaker == "Busboy":
         if "Iron Golem" in defeated_set:
-            hints.append("A guard said the Iron Golem left footprints like wells. I am pretending that was an exaggeration.")
+            hints.append(
+                "A guard said the Iron Golem left footprints like wells. I am pretending that was an exaggeration."
+            )
         if "Merzhin" in defeated_set:
-            hints.append("The portal-room crowd drinks more water since Merzhin fell. Nobody says why.")
+            hints.append(
+                "The portal-room crowd drinks more water since Merzhin fell. Nobody says why."
+            )
     elif speaker == "Waitress":
         if "Nightmare" in defeated_set:
-            hints.append("Someone said the Nightmare is gone. I hope that means fewer people wake screaming above the tavern.")
+            hints.append(
+                "Someone said the Nightmare is gone. I hope that means fewer people wake screaming above the tavern."
+            )
         if "Jester" in defeated_set:
-            hints.append("The Jester being gone should feel cleaner than it does. Grief has strange manners.")
+            hints.append(
+                "The Jester being gone should feel cleaner than it does. Grief has strange manners."
+            )
     elif speaker == "Drunkard":
         if "Domingo" in defeated_set:
-            hints.append("Big magic egg thing gone, then? Good. Never trusted eggs with job titles. (hic)")
+            hints.append(
+                "Big magic egg thing gone, then? Good. Never trusted eggs with job titles. (hic)"
+            )
         if "Merzhin" in defeated_set:
-            hints.append("If a realm can lie, can it apologize? No? Then I am still mad at it. (hic)")
+            hints.append(
+                "If a realm can lie, can it apologize? No? Then I am still mad at it. (hic)"
+            )
     elif speaker == "Hooded Figure":
         if "Red Dragon" in defeated_set:
-            hints.append("Dragonfire reveals what ordinary flame only burns away. You have been clarified.")
+            hints.append(
+                "Dragonfire reveals what ordinary flame only burns away. You have been clarified."
+            )
         if "Merzhin" in defeated_set:
-            hints.append("Merzhin mistook illusion for authorship. The difference matters more than he survived knowing.")
+            hints.append(
+                "Merzhin mistook illusion for authorship. The difference matters more than he survived knowing."
+            )
     return hints
 
 
@@ -291,15 +355,23 @@ def _quest_state_hints(player_char, speaker: str) -> list[str]:
     hints: list[str] = []
     if speaker == "Sergeant":
         if _completed_unturned_quest(player_char, "Side", "The Holy Grail of Quests"):
-            hints.append("The Chalice is found. Report to Nimue and do not waste the one advantage that realm has not learned to counterfeit.")
+            hints.append(
+                "The Chalice is found. Report to Nimue and do not waste the one advantage that realm has not learned to counterfeit."
+            )
         if _active_quest(player_char, "Side", "The Wizard's Folly"):
-            hints.append("If Nimue opens Cambion for you, mark every portal and trust no straight corridor just because it looks honest.")
+            hints.append(
+                "If Nimue opens Cambion for you, mark every portal and trust no straight corridor just because it looks honest."
+            )
     elif speaker == "Soldier":
         if _active_quest(player_char, "Side", "The Wizard's Folly"):
-            hints.append("Cambion reports disagree on every route except one point: Merzhin wants you second-guessing before the first turn.")
+            hints.append(
+                "Cambion reports disagree on every route except one point: Merzhin wants you second-guessing before the first turn."
+            )
     elif speaker == "Hooded Figure":
         if _active_quest(player_char, "Side", "The Wizard's Folly"):
-            hints.append("A false path is still a path. The question is who benefits when you believe it is the only one.")
+            hints.append(
+                "A false path is still a path. The question is who benefits when you believe it is the only one."
+            )
     return hints
 
 
@@ -368,7 +440,8 @@ def should_restock_bounty_board(game, *, available_count=None):
     return (
         current_level > state["last_restock_level"]
         or current_steps - state["last_restock_steps"] >= BOUNTY_RESTOCK_STEP_THRESHOLD
-        or current_defeats - state["last_restock_enemies_defeated"] >= BOUNTY_RESTOCK_ENEMY_THRESHOLD
+        or current_defeats - state["last_restock_enemies_defeated"]
+        >= BOUNTY_RESTOCK_ENEMY_THRESHOLD
     )
 
 
@@ -380,7 +453,7 @@ class BountyBoard:
         self.bounties = []
 
     def _existing_target_names(self, game):
-        return set(game.player_char.quest_dict.get('Bounty', {})) | set(self.bounty_options())
+        return set(game.player_char.quest_dict.get("Bounty", {})) | set(self.bounty_options())
 
     def _catalog_bounty_enemy(self, level, existing_names):
         catalog = enemies.random_enemy_candidates(level)
@@ -408,8 +481,10 @@ class BountyBoard:
             enemy.experience * bounty["num"] // 2,
             enemy.experience * bounty["num"],
         )
-        bounty["gold"] = random.randint(25*bounty["num"], 50*bounty["num"]) * game.player_char.player_level()
-        if random.randint(0, game.player_char.check_mod('luck', luck_factor=10)):
+        bounty["gold"] = (
+            random.randint(25 * bounty["num"], 50 * bounty["num"]) * game.player_char.player_level()
+        )
+        if random.randint(0, game.player_char.check_mod("luck", luck_factor=10)):
             global_level = game.player_char.player_level()
             item_band = min(8, 1 + ((global_level - 1) // 15))
             item_level = min(8, item_band + random.randint(0, item_band))
@@ -418,17 +493,14 @@ class BountyBoard:
 
     def generate_bounties(self, game):
         available_count = len(getattr(game, "bounties", {}) or {})
-        if (
-            active_bounty_count(game.player_char) > 0
-            or available_count > 0
-        ):
+        if active_bounty_count(game.player_char) > 0 or available_count > 0:
             state = ensure_bounty_board_state(game.player_char)
             if not state["initialized"]:
                 mark_bounty_board_restock(game.player_char)
             return False
         if not should_restock_bounty_board(game, available_count=available_count):
             return False
-        num = random.randint(1, 4) - len(game.player_char.quest_dict['Bounty'])
+        num = random.randint(1, 4) - len(game.player_char.quest_dict["Bounty"])
         if num > 0:
             for _ in range(num):
                 bounty = self.create_bounty(game)
@@ -459,6 +531,7 @@ class BountyBoard:
 # Using lazy loading to defer resolution of item classes until needed
 _quest_dict_cache = None
 
+
 def get_quest_dict():
     """Lazy load quests from JSON data file."""
     global _quest_dict_cache
@@ -484,17 +557,27 @@ def get_holy_grail_rotation_hints(player_char, speaker: str) -> list[str]:
         )
         hints.append("Revisit the boulder where you found Excaliper; the map may be hidden there.")
 
-    if speaker == "Sergeant" and (progress.get("Map") or "Chalice Map" in player_char.special_inventory):
+    if speaker == "Sergeant" and (
+        progress.get("Map") or "Chalice Map" in player_char.special_inventory
+    ):
         if not progress.get("Adventurer"):
             hints.append(
                 "The Sergeant studies your map and mutters, 'There's a hidden route somewhere on the third floor. Find the adventurer there.'"
             )
-            hints.append("Search the third floor for a secret path; an adventurer there can help you decipher the map.")
+            hints.append(
+                "Search the third floor for a secret path; an adventurer there can help you decipher the map."
+            )
         elif not progress.get("Revealed"):
-            hints.append("The Sergeant says the hidden adventurer's trick should make the ink emerge if you inspect the Chalice Map carefully.")
-            hints.append("Inspect the Chalice Map from your Key Items to reveal the hidden altar location.")
+            hints.append(
+                "The Sergeant says the hidden adventurer's trick should make the ink emerge if you inspect the Chalice Map carefully."
+            )
+            hints.append(
+                "Inspect the Chalice Map from your Key Items to reveal the hidden altar location."
+            )
         else:
-            hints.append("The Sergeant nods. 'The map marks somewhere on the sixth floor. Go claim the Golden Chalice.'")
+            hints.append(
+                "The Sergeant nods. 'The map marks somewhere on the sixth floor. Go claim the Golden Chalice.'"
+            )
 
     return hints
 

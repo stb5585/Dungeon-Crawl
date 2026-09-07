@@ -18,7 +18,6 @@ from .state import (
 )
 from .tracks import _preserve_spent_meter
 
-
 XENID_CASTER_EFFECTS = {
     "Hodag": {"strength": 4, "melee": 0.10},
     "Caladrius": {"wisdom": 4, "healing": 0.12},
@@ -66,9 +65,8 @@ def xenid_caster_effects(character: Any) -> dict[str, float]:
     mastery = False
     progression = getattr(character, "progression", None)
     if progression is not None:
-        mastery = (
-            "thaumaturgist.talent.conduit-mastery"
-            in getattr(progression, "purchased_node_ids", set())
+        mastery = "thaumaturgist.talent.conduit-mastery" in getattr(
+            progression, "purchased_node_ids", set()
         )
     mastery_scale = 1.5 if mastery else 1.0
     totals: dict[str, float] = {}
@@ -204,7 +202,9 @@ def fourfold_surge(character: Any, target: Any | None) -> str:
     clean = False
     offensive = [name for name in ("Venom", "Storm") if name in spent]
     if target is not None and offensive:
-        budget = max(1, int(character.check_mod("magic", enemy=target) * (0.35 + 0.15 * total) * power))
+        budget = max(
+            1, int(character.check_mod("magic", enemy=target) * (0.35 + 0.15 * total) * power)
+        )
         portions = [budget // len(offensive)] * len(offensive)
         portions[0] += budget - sum(portions)
         for name, raw in zip(offensive, portions):
@@ -218,7 +218,13 @@ def fourfold_surge(character: Any, target: Any | None) -> str:
             msg += f"{name} deals {dealt} {damage_type} damage.\n"
             clean = clean or dealt > 0
             boss = bool(getattr(target, "boss", False) or getattr(target, "is_boss", False))
-            if name == "Venom" and dealt > 0 and not immune and not boss and not target.has_status_protection("Poison"):
+            if (
+                name == "Venom"
+                and dealt > 0
+                and not immune
+                and not boss
+                and not target.has_status_protection("Poison")
+            ):
                 poison = target.status_effects["Poison"]
                 poison.active = True
                 poison.duration = max(poison.duration, 2)
@@ -235,7 +241,9 @@ def fourfold_surge(character: Any, target: Any | None) -> str:
         tree = getattr(character, "magic_effects", {}).get("Tree of Life")
         if tree is not None and tree.active:
             growth_power *= 1.25
-        heal = min(character.health.max - character.health.current, int((10 + 5 * total) * growth_power))
+        heal = min(
+            character.health.max - character.health.current, int((10 + 5 * total) * growth_power)
+        )
         character.health.current += heal
         msg += f"Growth restores {heal} HP.\n"
         clean = clean or heal > 0
@@ -249,7 +257,9 @@ def fourfold_surge(character: Any, target: Any | None) -> str:
     if "Stone" in spent:
         character.stat_effects["Defense"].active = True
         character.stat_effects["Defense"].duration = 2
-        character.stat_effects["Defense"].extra = max(int(character.stat_effects["Defense"].extra or 0), int(5 * total * power))
+        character.stat_effects["Defense"].extra = max(
+            int(character.stat_effects["Defense"].extra or 0), int(5 * total * power)
+        )
         ward = character.magic_effects["Nature Shield"]
         ward.active = True
         ward.duration = max(ward.duration, 2)
@@ -258,7 +268,11 @@ def fourfold_surge(character: Any, target: Any | None) -> str:
         msg += "Stone hardens the caster's defense.\n"
     preservation_key = "Archdruid:aspect_harmony"
     preserved_flags = state.setdefault("ring_preserved", set())
-    if clean and _ring_awakened_equipped(character, "Archdruid") and preservation_key not in preserved_flags:
+    if (
+        clean
+        and _ring_awakened_equipped(character, "Archdruid")
+        and preservation_key not in preserved_flags
+    ):
         preserved = next((name for name in reversed(order) if name in spent), sorted(spent)[0])
         state["aspect_harmony"] = {preserved: 1}
         state["aspect_harmony_order"] = [preserved]
@@ -332,7 +346,9 @@ def totem_surge(character: Any, target: Any | None) -> str:
         msg += str(spell.cast(character, target=target, special=True))
     finally:
         nature_totems._restore_temp_attr(character, "_totem_pulse_potency", sentinel, prior)
-        nature_totems._restore_temp_attr(character, "_totem_surge_output", output_sentinel, output_prior)
+        nature_totems._restore_temp_attr(
+            character, "_totem_surge_output", output_sentinel, output_prior
+        )
         nature_totems._restore_temp_attr(
             character,
             "_totem_surge_reliability",
@@ -368,8 +384,7 @@ def record_xenid_death(character: Any, summon_name: str) -> str:
 
     companions.sync_xenid_conduit(character, summon_name, after)
     message += (
-        f"{summon_name}'s death weakens its conduit by {loss} "
-        f"({after}/100).\n"
+        f"{summon_name}'s death weakens its conduit by {loss} " f"({after}/100).\n"
         if loss
         else f"{summon_name}'s conduit cannot weaken any further.\n"
     )
@@ -449,7 +464,11 @@ def summon_bond_gain_for_victory(
     except (TypeError, ValueError):
         exp_gain = 0
     if exp_gain <= 0:
-        setattr(character, "_active_summon_bond_note", f"{summon_name or 'Summon'} bond sees no eligible XP.")
+        setattr(
+            character,
+            "_active_summon_bond_note",
+            f"{summon_name or 'Summon'} bond sees no eligible XP.",
+        )
         return 0
     global_level = getattr(
         getattr(character, "progression", None),
@@ -489,10 +508,7 @@ def gain_summon_bond(character: Any, summon_name: str, amount: int, reason: str)
     if after == before:
         note = str(getattr(character, "_active_summon_bond_note", "") or "")
         return f"Xenid Conduit: {note}\n" if note else ""
-    return (
-        f"{summon_name}'s conduit grows by {after - before} from {reason} "
-        f"({after}/100).\n"
-    )
+    return f"{summon_name}'s conduit grows by {after - before} from {reason} " f"({after}/100).\n"
 
 
 def sync_xenid_invocations(character: Any) -> None:
@@ -688,8 +704,7 @@ def invoke_summon(character: Any, target: Any | None, summon_name: str) -> str:
     type_text = "/".join(damage_types)
     message = defense_message
     message += (
-        f"{character.name} invokes {summon_name}: {type_text} pressure deals "
-        f"{damage} damage.\n"
+        f"{character.name} invokes {summon_name}: {type_text} pressure deals " f"{damage} damage.\n"
     )
     message += _apply_xenid_signature_rider(
         character,
@@ -819,12 +834,14 @@ def finish_conduit_payoff(
             message += f"True Name answers the command.\n{rider}"
     else:
         rider = ""
-    payoff.update({
-        "damage_bonus": damage_bonus,
-        "healing_bonus": healing_bonus,
-        "signature_rider": rider,
-        "cleanup_reason": "next Xenid action",
-    })
+    payoff.update(
+        {
+            "damage_bonus": damage_bonus,
+            "healing_bonus": healing_bonus,
+            "signature_rider": rider,
+            "cleanup_reason": "next Xenid action",
+        }
+    )
     return message
 
 
@@ -862,7 +879,9 @@ def companion_bond_gain_roll(current_bond: int, amount: int, *, rng: Any = rando
     return max(1, min(base, int(round(base * scale))))
 
 
-def gain_companion_bond(character: Any, amount: int, reason: str, *, rng: Any = random, announce: bool = True) -> str:
+def gain_companion_bond(
+    character: Any, amount: int, reason: str, *, rng: Any = random, announce: bool = True
+) -> str:
     if class_name(character) not in {"Ranger", "Beast Master"}:
         return ""
     state = getattr(character, "tamed_companion", None)
@@ -882,12 +901,20 @@ def gain_companion_bond(character: Any, amount: int, reason: str, *, rng: Any = 
 
         enemy_class = state.get("enemy_class")
         species = state.get("species")
-        before_evolution = ability_mechanics.tamed_companion_evolution_for_bond(before, enemy_class, species)
-        after_evolution = ability_mechanics.tamed_companion_evolution_for_bond(after, enemy_class, species)
+        before_evolution = ability_mechanics.tamed_companion_evolution_for_bond(
+            before, enemy_class, species
+        )
+        after_evolution = ability_mechanics.tamed_companion_evolution_for_bond(
+            after, enemy_class, species
+        )
         state["evolution"] = after_evolution
         roster = state.get("companions", [])
         active_index = state.get("active_index")
-        if isinstance(roster, list) and isinstance(active_index, int) and 0 <= active_index < len(roster):
+        if (
+            isinstance(roster, list)
+            and isinstance(active_index, int)
+            and 0 <= active_index < len(roster)
+        ):
             roster[active_index]["bond"] = after
             roster[active_index]["evolution"] = after_evolution
             roster[active_index]["active"] = True
@@ -925,10 +952,7 @@ def record_song_turn(character: Any, song: str) -> str:
 
     state = combat_state(character)
     amount = 1
-    if (
-        has_talent(character, "bard.rising-cadence")
-        and int(state.get("crescendo", 0) or 0) == 0
-    ):
+    if has_talent(character, "bard.rising-cadence") and int(state.get("crescendo", 0) or 0) == 0:
         amount += 1
     if has_talent(character, "troubadour.rolling-crescendo"):
         amount += 1
@@ -961,7 +985,11 @@ def gain_bard_practice(character: Any, song: str, amount: int, reason: str) -> s
     msg = ""
     if entry["practice_xp"] > before_xp:
         msg += f"{song} gains {entry['practice_xp'] - before_xp} practice XP from {reason} ({entry['practice_xp']}/18).\n"
-    if not before_known and entry["practice_xp"] >= 18 and int(entry.get("clean_finishes", 0) or 0) >= 3:
+    if (
+        not before_known
+        and entry["practice_xp"] >= 18
+        and int(entry.get("clean_finishes", 0) or 0) >= 3
+    ):
         entry["known"] = True
         msg += f"{character.name} masters {song} as permanent repertoire.\n"
     return msg

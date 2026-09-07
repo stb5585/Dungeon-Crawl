@@ -21,8 +21,13 @@ class Key(Misc):
     """
 
     def __init__(self):
-        super().__init__(name="Key", description="Unlocks a locked chest but is consumed.", value=500, rarity=0.9,
-                         subtyp='Key')
+        super().__init__(
+            name="Key",
+            description="Unlocks a locked chest but is consumed.",
+            value=500,
+            rarity=0.9,
+            subtyp="Key",
+        )
 
 
 class OldKey(Misc):
@@ -31,9 +36,14 @@ class OldKey(Misc):
     """
 
     def __init__(self):
-        super().__init__(name="Old Key", description="Unlocks doors that may lead to either valuable treasure or to "
-                                                     "powerful enemies.",
-                         value=50000, rarity=0.5, subtyp='Key')
+        super().__init__(
+            name="Old Key",
+            description="Unlocks doors that may lead to either valuable treasure or to "
+            "powerful enemies.",
+            value=50000,
+            rarity=0.5,
+            subtyp="Key",
+        )
 
 
 class MasterKey(Misc):
@@ -42,9 +52,14 @@ class MasterKey(Misc):
     """
 
     def __init__(self):
-        super().__init__(name="Master Key", description="Unlocks doors that may lead to either valuable treasure or to "
-                                                     "powerful enemies.",
-                         value=0, rarity=0, subtyp='Key')
+        super().__init__(
+            name="Master Key",
+            description="Unlocks doors that may lead to either valuable treasure or to "
+            "powerful enemies.",
+            value=0,
+            rarity=0,
+            subtyp="Key",
+        )
 
 
 class CrypticKey(Misc):
@@ -53,10 +68,14 @@ class CrypticKey(Misc):
     """
 
     def __init__(self):
-        super().__init__(name="Cryptic Key",
-                         description="A pristine key forged by Griswold. Its purpose is shrouded in mystery, "
-                                     "but it feels important.",
-                         value=0, rarity=0, subtyp='Key')
+        super().__init__(
+            name="Cryptic Key",
+            description="A pristine key forged by Griswold. Its purpose is shrouded in mystery, "
+            "but it feels important.",
+            value=0,
+            rarity=0,
+            subtyp="Key",
+        )
 
 
 class LockpickKit(Misc):
@@ -153,7 +172,8 @@ class MildToxin(_ToxinItem):
 class Neurotoxin(_ToxinItem):
     def __init__(self):
         super().__init__(
-            "Neurotoxin", 4000,
+            "Neurotoxin",
+            4000,
             "Mild poison with a chance to numb and disarm.",
             "Moderate poison and anaphylaxis, causing damage and silence.",
         )
@@ -162,7 +182,8 @@ class Neurotoxin(_ToxinItem):
 class Hemotoxin(_ToxinItem):
     def __init__(self):
         super().__init__(
-            "Hemotoxin", 8000,
+            "Hemotoxin",
+            8000,
             "Moderate poison with a chance to blind.",
             "Severe poison and hemorrhaging.",
         )
@@ -171,7 +192,8 @@ class Hemotoxin(_ToxinItem):
 class Amatoxin(_ToxinItem):
     def __init__(self):
         super().__init__(
-            "Amatoxin", 15000,
+            "Amatoxin",
+            15000,
             "Severe poison with a chance to enfeeble.",
             "Critical poison that can kill in five turns if not cured.",
         )
@@ -180,7 +202,8 @@ class Amatoxin(_ToxinItem):
 class Myotoxin(_ToxinItem):
     def __init__(self):
         super().__init__(
-            "Myotoxin", 20000,
+            "Myotoxin",
+            20000,
             "Severe poison with a chance to stun.",
             "Critical poison that can petrify in three turns if not cured.",
         )
@@ -189,7 +212,8 @@ class Myotoxin(_ToxinItem):
 class Necrotoxin(_ToxinItem):
     def __init__(self):
         super().__init__(
-            "Necrotoxin", 30000,
+            "Necrotoxin",
+            30000,
             "Severe poison with a chance to incapacitate.",
             "Critical poison that can kill in two turns if not cured.",
         )
@@ -296,8 +320,11 @@ class MetalBolts(CrossbowBolts):
 
     def __init__(self, charges=10):
         super().__init__(
-            "Metal Bolts", "Durable ammunition with a high recovery chance.",
-            600, 0.7, charges,
+            "Metal Bolts",
+            "Durable ammunition with a high recovery chance.",
+            600,
+            0.7,
+            charges,
         )
 
 
@@ -308,8 +335,11 @@ class ArmorPiercingBolts(CrossbowBolts):
 
     def __init__(self, charges=10):
         super().__init__(
-            "Armor Piercing Bolts", "Hardened bolts that ignore armor.",
-            1200, 0.6, charges,
+            "Armor Piercing Bolts",
+            "Hardened bolts that ignore armor.",
+            1200,
+            0.6,
+            charges,
         )
 
 
@@ -320,8 +350,11 @@ class MagicBolts(CrossbowBolts):
 
     def __init__(self, charges=10):
         super().__init__(
-            "Magic Bolts", "Arcane ammunition for a Magic Crossbow.",
-            2500, 0.5, charges,
+            "Magic Bolts",
+            "Arcane ammunition for a Magic Crossbow.",
+            2500,
+            0.5,
+            charges,
         )
 
 
@@ -332,8 +365,11 @@ class HeatSeekingBolts(CrossbowBolts):
 
     def __init__(self, charges=10):
         super().__init__(
-            "Heat-Seeking Bolts", "Bolts that curve toward warm targets.",
-            6000, 0.4, charges,
+            "Heat-Seeking Bolts",
+            "Bolts that curve toward warm targets.",
+            6000,
+            0.4,
+            charges,
         )
 
 
@@ -344,8 +380,11 @@ class NapalmBolts(CrossbowBolts):
 
     def __init__(self, charges=10):
         super().__init__(
-            "Napalm Bolts", "Explosive bolts that spread burning material.",
-            15000, 0.2, charges,
+            "Napalm Bolts",
+            "Explosive bolts that spread burning material.",
+            15000,
+            0.2,
+            charges,
         )
 
 
@@ -356,8 +395,11 @@ class DelayedBolts(CrossbowBolts):
 
     def __init__(self, charges=10):
         super().__init__(
-            "Delayed Bolts", "Bolts that explode one turn after attaching.",
-            32000, 0.1, charges,
+            "Delayed Bolts",
+            "Bolts that explode one turn after attaching.",
+            32000,
+            0.1,
+            charges,
         )
 
 
@@ -501,7 +543,9 @@ def lockpick_break_chance(character, *, master: bool = False) -> float:
     return max(floor, min(base, chance))
 
 
-def use_lockpick_kit(character, *, master: bool = False, roll: float | None = None) -> tuple[bool, str]:
+def use_lockpick_kit(
+    character, *, master: bool = False, roll: float | None = None
+) -> tuple[bool, str]:
     """Spend durability on a Lockpick Kit and possibly break it."""
     stack = _inventory_stack(character, "Lockpick Kit")
     if not stack:
@@ -539,9 +583,7 @@ def consume_smoke_bomb(character, *, roll: float | None = None) -> tuple[bool, s
             preserve_chance += 0.25
     except (AttributeError, KeyError, TypeError, ValueError):
         pass
-    preserve_roll = (
-        random.random() if preserve_chance > 0 and roll is None else float(roll or 0.0)
-    )
+    preserve_roll = random.random() if preserve_chance > 0 and roll is None else float(roll or 0.0)
     if preserve_chance > 0 and preserve_roll < preserve_chance:
         return True, "A carefully packed Smoke Bomb bursts without being consumed.\n"
     character.modify_inventory(stack[0], subtract=True)
@@ -554,10 +596,14 @@ class JesterToken(Misc):
     """
 
     def __init__(self):
-        super().__init__(name="Jester Token",
-                         description="A carnival token that shimmers with magical energy. These are required to breach "
-                                     "the Jester's inner sanctum.",
-                         value=0, rarity=0, subtyp='Quest')
+        super().__init__(
+            name="Jester Token",
+            description="A carnival token that shimmers with magical energy. These are required to breach "
+            "the Jester's inner sanctum.",
+            value=0,
+            rarity=0,
+            subtyp="Quest",
+        )
 
 
 class Scroll(Misc):
@@ -566,7 +612,9 @@ class Scroll(Misc):
     """
 
     def __init__(self):
-        super().__init__(name="Scroll", description="Base class for scrolls.", value=0, rarity=0, subtyp='Scroll')
+        super().__init__(
+            name="Scroll", description="Base class for scrolls.", value=0, rarity=0, subtyp="Scroll"
+        )
         self.spell = None
         self.charges = random.randint(2, 10)
 
@@ -597,9 +645,15 @@ class BlessScroll(Scroll):
     def __init__(self):
         super().__init__()
         self.name = "Bless Scroll"
-        self.description = "\n".join(wrap("Scroll inscribed with an incantation allowing the user to cast Bless, which"
-                                          " increases attack damage for several turns. The scroll will be consumed "
-                                          "when it is out of charges.", 35, break_on_hyphens=False))
+        self.description = "\n".join(
+            wrap(
+                "Scroll inscribed with an incantation allowing the user to cast Bless, which"
+                " increases attack damage for several turns. The scroll will be consumed "
+                "when it is out of charges.",
+                35,
+                break_on_hyphens=False,
+            )
+        )
         self.value = 1000
         self.rarity = 0.9
         self.spell = abilities.Bless()
@@ -613,8 +667,14 @@ class SleepScroll(Scroll):
     def __init__(self):
         super().__init__()
         self.name = "Sleep Scroll"
-        self.description = "\n".join(wrap("Scroll inscribed with an incantation allowing the user to cast Sleep. The "
-                                          "scroll will be consumed when it is out of charges.", 35, break_on_hyphens=False))
+        self.description = "\n".join(
+            wrap(
+                "Scroll inscribed with an incantation allowing the user to cast Sleep. The "
+                "scroll will be consumed when it is out of charges.",
+                35,
+                break_on_hyphens=False,
+            )
+        )
         self.value = 2000
         self.rarity = 0.85
         self.spell = abilities.Sleep()
@@ -628,8 +688,14 @@ class FireScroll(Scroll):
     def __init__(self):
         super().__init__()
         self.name = "Fire Scroll"
-        self.description = "\n".join(wrap("Scroll inscribed with an incantation allowing the user to cast the fire "
-                                          "spell Firebolt. The scroll will be consumed when it is out of charges.", 35, break_on_hyphens=False))
+        self.description = "\n".join(
+            wrap(
+                "Scroll inscribed with an incantation allowing the user to cast the fire "
+                "spell Firebolt. The scroll will be consumed when it is out of charges.",
+                35,
+                break_on_hyphens=False,
+            )
+        )
         self.value = 3000
         self.rarity = 0.75
         self.spell = abilities.Firebolt()
@@ -643,8 +709,14 @@ class IceScroll(Scroll):
     def __init__(self):
         super().__init__()
         self.name = "Ice Scroll"
-        self.description = "\n".join(wrap("Scroll inscribed with an incantation allowing the user to cast the ice "
-                                          "spell Ice Lance. The scroll will be consumed when it is out of charges.", 35, break_on_hyphens=False))
+        self.description = "\n".join(
+            wrap(
+                "Scroll inscribed with an incantation allowing the user to cast the ice "
+                "spell Ice Lance. The scroll will be consumed when it is out of charges.",
+                35,
+                break_on_hyphens=False,
+            )
+        )
         self.value = 3000
         self.rarity = 0.75
         self.spell = abilities.IceLance()
@@ -658,8 +730,14 @@ class ElectricScroll(Scroll):
     def __init__(self):
         super().__init__()
         self.name = "Electric Scroll"
-        self.description = "\n".join(wrap("Scroll inscribed with an incantation allowing the user to cast the electric"
-                                          " spell Shock. The scroll will be consumed when it is out of charges.", 35, break_on_hyphens=False))
+        self.description = "\n".join(
+            wrap(
+                "Scroll inscribed with an incantation allowing the user to cast the electric"
+                " spell Shock. The scroll will be consumed when it is out of charges.",
+                35,
+                break_on_hyphens=False,
+            )
+        )
         self.value = 3000
         self.rarity = 0.75
         self.spell = abilities.Shock()
@@ -673,8 +751,14 @@ class WaterScroll(Scroll):
     def __init__(self):
         super().__init__()
         self.name = "Water Scroll"
-        self.description = "\n".join(wrap("Scroll inscribed with an incantation allowing the user to cast the water "
-                                          "spell Water Jet. The scroll will be consumed when it is out of charges.", 35, break_on_hyphens=False))
+        self.description = "\n".join(
+            wrap(
+                "Scroll inscribed with an incantation allowing the user to cast the water "
+                "spell Water Jet. The scroll will be consumed when it is out of charges.",
+                35,
+                break_on_hyphens=False,
+            )
+        )
         self.value = 3000
         self.rarity = 0.75
         self.spell = abilities.WaterJet()
@@ -688,8 +772,14 @@ class EarthScroll(Scroll):
     def __init__(self):
         super().__init__()
         self.name = "Earth Scroll"
-        self.description = "\n".join(wrap("Scroll inscribed with an incantation allowing the user to cast the earth "
-                                          "spell Tremor. The scroll will be consumed when it is out of charges.", 35, break_on_hyphens=False))
+        self.description = "\n".join(
+            wrap(
+                "Scroll inscribed with an incantation allowing the user to cast the earth "
+                "spell Tremor. The scroll will be consumed when it is out of charges.",
+                35,
+                break_on_hyphens=False,
+            )
+        )
         self.value = 3000
         self.rarity = 0.75
         self.spell = abilities.Tremor()
@@ -703,8 +793,14 @@ class WindScroll(Scroll):
     def __init__(self):
         super().__init__()
         self.name = "Wind Scroll"
-        self.description = "\n".join(wrap("Scroll inscribed with an incantation allowing the user to cast the wind "
-                                          "spell Gust. The scroll will be consumed when it is out of charges.", 35, break_on_hyphens=False))
+        self.description = "\n".join(
+            wrap(
+                "Scroll inscribed with an incantation allowing the user to cast the wind "
+                "spell Gust. The scroll will be consumed when it is out of charges.",
+                35,
+                break_on_hyphens=False,
+            )
+        )
         self.value = 3000
         self.rarity = 0.75
         self.spell = abilities.Gust()
@@ -718,9 +814,15 @@ class ShadowScroll(Scroll):
     def __init__(self):
         super().__init__()
         self.name = "Shadow Scroll"
-        self.description = "\n".join(wrap("Scroll inscribed with an incantation allowing the user to cast the "
-                                          "shadow spell Shadow Bolt. The scroll will be consumed when it is out of "
-                                          "charges.", 35, break_on_hyphens=False))
+        self.description = "\n".join(
+            wrap(
+                "Scroll inscribed with an incantation allowing the user to cast the "
+                "shadow spell Shadow Bolt. The scroll will be consumed when it is out of "
+                "charges.",
+                35,
+                break_on_hyphens=False,
+            )
+        )
         self.value = 4000
         self.rarity = 0.7
         self.spell = abilities.ShadowBolt()
@@ -734,8 +836,14 @@ class HolyScroll(Scroll):
     def __init__(self):
         super().__init__()
         self.name = "Holy Scroll"
-        self.description = "\n".join(wrap("Scroll inscribed with an incantation allowing the user to cast the holy "
-                                          "spell Holy. The scroll will be consumed when it is out of charges.", 35, break_on_hyphens=False))
+        self.description = "\n".join(
+            wrap(
+                "Scroll inscribed with an incantation allowing the user to cast the holy "
+                "spell Holy. The scroll will be consumed when it is out of charges.",
+                35,
+                break_on_hyphens=False,
+            )
+        )
         self.value = 4000
         self.rarity = 0.7
         self.spell = abilities.Holy()
@@ -749,8 +857,14 @@ class CleanseScroll(Scroll):
     def __init__(self):
         super().__init__()
         self.name = "Cleanse Scroll"
-        self.description = "\n".join(wrap("Scroll inscribed with an incantation allowing the user to cast the holy"
-                                          " spell Cleanse. The scroll will be consumed when it is out of charges.", 35, break_on_hyphens=False))
+        self.description = "\n".join(
+            wrap(
+                "Scroll inscribed with an incantation allowing the user to cast the holy"
+                " spell Cleanse. The scroll will be consumed when it is out of charges.",
+                35,
+                break_on_hyphens=False,
+            )
+        )
         self.value = 4000
         self.rarity = 0.7
         self.spell = abilities.Cleanse()
@@ -764,8 +878,14 @@ class BoostScroll(Scroll):
     def __init__(self):
         super().__init__()
         self.name = "Boost Scroll"
-        self.description = "\n".join(wrap("Scroll inscribed with an incantation allowing the user to cast the heal "
-                                          "spell Boost. The scroll will be consumed when it is out of charges.", 35, break_on_hyphens=False))
+        self.description = "\n".join(
+            wrap(
+                "Scroll inscribed with an incantation allowing the user to cast the heal "
+                "spell Boost. The scroll will be consumed when it is out of charges.",
+                35,
+                break_on_hyphens=False,
+            )
+        )
         self.value = 8000
         self.rarity = 0.6
         self.spell = abilities.Boost()
@@ -779,8 +899,14 @@ class ShellScroll(Scroll):
     def __init__(self):
         super().__init__()
         self.name = "Shell Scroll"
-        self.description = "\n".join(wrap("Scroll inscribed with an incantation allowing the user to cast the heal "
-                                          "spell Shell. The scroll will be consumed when it is out of charges.", 35, break_on_hyphens=False))
+        self.description = "\n".join(
+            wrap(
+                "Scroll inscribed with an incantation allowing the user to cast the heal "
+                "spell Shell. The scroll will be consumed when it is out of charges.",
+                35,
+                break_on_hyphens=False,
+            )
+        )
         self.value = 8000
         self.rarity = 0.6
         self.spell = abilities.Shell()
@@ -794,9 +920,15 @@ class SilenceScroll(Scroll):
     def __init__(self):
         super().__init__()
         self.name = "Silence Scroll"
-        self.description = "\n".join(wrap("Scroll inscribed with an incantation allowing the user to cast Silence, "
-                                          "which can prevent an target from casting spell for a time. The scroll will"
-                                          " be consumed when it is out of charges.", 35, break_on_hyphens=False))
+        self.description = "\n".join(
+            wrap(
+                "Scroll inscribed with an incantation allowing the user to cast Silence, "
+                "which can prevent an target from casting spell for a time. The scroll will"
+                " be consumed when it is out of charges.",
+                35,
+                break_on_hyphens=False,
+            )
+        )
         self.value = 8000
         self.rarity = 0.6
         self.spell = abilities.Silence()
@@ -810,9 +942,15 @@ class DispelScroll(Scroll):
     def __init__(self):
         super().__init__()
         self.name = "Dispel Scroll"
-        self.description = "\n".join(wrap("Scroll inscribed with an incantation allowing the user to cast Dispel, "
-                                          "which can remove all positive status effects from the target. The scroll"
-                                          " will be consumed when it is out of charges.", 35, break_on_hyphens=False))
+        self.description = "\n".join(
+            wrap(
+                "Scroll inscribed with an incantation allowing the user to cast Dispel, "
+                "which can remove all positive status effects from the target. The scroll"
+                " will be consumed when it is out of charges.",
+                35,
+                break_on_hyphens=False,
+            )
+        )
         self.value = 10000
         self.rarity = 0.5
         self.spell = abilities.Dispel()
@@ -826,9 +964,15 @@ class DeathScroll(Scroll):
     def __init__(self):
         super().__init__()
         self.name = "Death Scroll"
-        self.description = "\n".join(wrap("Scroll inscribed with an incantation allowing the user to cast Desoul, "
-                                          "which can kill the target. The scroll will be consumed when it is out "
-                                          "of charges.", 35, break_on_hyphens=False))
+        self.description = "\n".join(
+            wrap(
+                "Scroll inscribed with an incantation allowing the user to cast Desoul, "
+                "which can kill the target. The scroll will be consumed when it is out "
+                "of charges.",
+                35,
+                break_on_hyphens=False,
+            )
+        )
         self.value = 15000
         self.rarity = 0.4
         self.spell = abilities.Desoul()
@@ -842,9 +986,15 @@ class SanctuaryScroll(Scroll):
     def __init__(self):
         super().__init__()
         self.name = "Sanctuary Scroll"
-        self.description = "\n".join(wrap("Scroll inscribed with an incantation allowing the user to cast Sanctuary,"
-                                          " which can return the user to town. The scroll will be consumed when it is"
-                                          " out of charges.", 35, break_on_hyphens=False))
+        self.description = "\n".join(
+            wrap(
+                "Scroll inscribed with an incantation allowing the user to cast Sanctuary,"
+                " which can return the user to town. The scroll will be consumed when it is"
+                " out of charges.",
+                35,
+                break_on_hyphens=False,
+            )
+        )
         self.value = 50000
         self.rarity = 0.25
         self.spell = abilities.Sanctuary()
@@ -872,8 +1022,14 @@ class UltimaScroll(Scroll):
     def __init__(self):
         super().__init__()
         self.name = "Photon Sphere Scroll"
-        self.description = "\n".join(wrap("Scroll inscribed with an incantation allowing the user to cast the powerful"
-                                          " Photon Sphere. The scroll will be consumed when it is out of charges.", 35, break_on_hyphens=False))
+        self.description = "\n".join(
+            wrap(
+                "Scroll inscribed with an incantation allowing the user to cast the powerful"
+                " Photon Sphere. The scroll will be consumed when it is out of charges.",
+                35,
+                break_on_hyphens=False,
+            )
+        )
         self.value = 100000
         self.rarity = 0.01
         self.spell = abilities.PhotonSphere()
@@ -905,7 +1061,9 @@ class SheetMusic(Misc):
 
 class BattleHymnSheet(SheetMusic):
     def __init__(self):
-        super().__init__("Sheet Music: Battle Hymn", "A martial hymn for battle.", 2500, 0, "Scroll")
+        super().__init__(
+            "Sheet Music: Battle Hymn", "A martial hymn for battle.", 2500, 0, "Scroll"
+        )
 
 
 class RampartsOdeSheet(SheetMusic):
@@ -915,12 +1073,24 @@ class RampartsOdeSheet(SheetMusic):
 
 class DysfunctionSymphonySheet(SheetMusic):
     def __init__(self):
-        super().__init__("Sheet Music: Symphony of Disfunction", "A discordant enemy-breaking score.", 2500, 0, "Scroll")
+        super().__init__(
+            "Sheet Music: Symphony of Disfunction",
+            "A discordant enemy-breaking score.",
+            2500,
+            0,
+            "Scroll",
+        )
 
 
 class LowDefenseRhapsodySheet(SheetMusic):
     def __init__(self):
-        super().__init__("Sheet Music: Low-defense-ian Rhapsody", "A tune that lowers defenses.", 2500, 0, "Scroll")
+        super().__init__(
+            "Sheet Music: Low-defense-ian Rhapsody",
+            "A tune that lowers defenses.",
+            2500,
+            0,
+            "Scroll",
+        )
 
 
 class SlowRideSheet(SheetMusic):
@@ -930,17 +1100,23 @@ class SlowRideSheet(SheetMusic):
 
 class BonesThugsHarmonySheet(SheetMusic):
     def __init__(self):
-        super().__init__("Sheet Music: Bones, Thugs, and Harmony", "A graveyard harmony.", 2500, 0, "Scroll")
+        super().__init__(
+            "Sheet Music: Bones, Thugs, and Harmony", "A graveyard harmony.", 2500, 0, "Scroll"
+        )
 
 
 class ScoresAndScoresScoreSheet(SheetMusic):
     def __init__(self):
-        super().__init__("Sheet Music: Scores and Scores Score", "A score about scoring.", 2500, 0, "Scroll")
+        super().__init__(
+            "Sheet Music: Scores and Scores Score", "A score about scoring.", 2500, 0, "Scroll"
+        )
 
 
 class GoldTriggerSheet(SheetMusic):
     def __init__(self):
-        super().__init__("Sheet Music: Gold Trigger", "A glittering trigger phrase.", 2500, 0, "Scroll")
+        super().__init__(
+            "Sheet Music: Gold Trigger", "A glittering trigger phrase.", 2500, 0, "Scroll"
+        )
 
 
 class ChorusTimeSheet(SheetMusic):
@@ -963,11 +1139,14 @@ class BlankScroll(Misc):
     ) -> None:
         super().__init__(
             name=name,
-            description=description or "\n".join(wrap(
+            description=description
+            or "\n".join(
+                wrap(
                     "A prepared scroll with enough receptive ink to hold one stolen spell.",
                     35,
                     break_on_hyphens=False,
-                )),
+                )
+            ),
             value=value,
             rarity=rarity,
             subtyp=subtyp,
@@ -1007,126 +1186,199 @@ class InscribedSpellScroll(Scroll):
 class RatTail(Misc):
 
     def __init__(self):
-        super().__init__(name="Rat Tail", description="The tail of a rat.",
-                         value=0, rarity=1, subtyp="Quest")
+        super().__init__(
+            name="Rat Tail", description="The tail of a rat.", value=0, rarity=1, subtyp="Quest"
+        )
 
 
 class MysteryMeat(Misc):
 
     def __init__(self):
-        super().__init__(name="Mystery Meat", description="Unknown meat with a strange smell. Maybe you could do "
-                                                          "something with this.",
-                         value=0, rarity=0.5, subtyp="Quest")
+        super().__init__(
+            name="Mystery Meat",
+            description="Unknown meat with a strange smell. Maybe you could do "
+            "something with this.",
+            value=0,
+            rarity=0.5,
+            subtyp="Quest",
+        )
 
 
 class TicketPiece(Misc):
 
     def __init__(self):
-        super().__init__(name="Ticket Piece", description="A scrap of a lottery ticket with a few numbers on it.",
-                         value=0, rarity=0, subtyp="Quest")
+        super().__init__(
+            name="Ticket Piece",
+            description="A scrap of a lottery ticket with a few numbers on it.",
+            value=0,
+            rarity=0,
+            subtyp="Quest",
+        )
 
 
 class DeadSoldier(Misc):
 
     def __init__(self):
-        super().__init__(name="Dead Soldier", description="The partially eaten body of a very green soldier. He never "
-                                                          "stood a chance...",
-                         value=0, rarity=0, subtyp="Quest")
+        super().__init__(
+            name="Dead Soldier",
+            description="The partially eaten body of a very green soldier. He never "
+            "stood a chance...",
+            value=0,
+            rarity=0,
+            subtyp="Quest",
+        )
         self.weight = 100
 
 
 class Leather(Misc):
 
     def __init__(self):
-        super().__init__(name="Leather", description="The dried skin of an animal, used for various purposes.",
-                         value=0, rarity=0.5, subtyp="Quest")
+        super().__init__(
+            name="Leather",
+            description="The dried skin of an animal, used for various purposes.",
+            value=0,
+            rarity=0.5,
+            subtyp="Quest",
+        )
 
 
 class Feather(Misc):
 
     def __init__(self):
-        super().__init__(name="Feather", description="The feather of a bird.",
-                         value=0, rarity=0.5, subtyp="Quest")
+        super().__init__(
+            name="Feather",
+            description="The feather of a bird.",
+            value=0,
+            rarity=0.5,
+            subtyp="Quest",
+        )
 
 
 class SnakeSkin(Misc):
 
     def __init__(self):
-        super().__init__(name="Snake Skin", description="The skin of a snake.",
-                         value=0, rarity=1, subtyp="Quest")
+        super().__init__(
+            name="Snake Skin", description="The skin of a snake.", value=0, rarity=1, subtyp="Quest"
+        )
 
 
 class ScrapMetal(Misc):
 
     def __init__(self):
-        super().__init__(name="Scrap Metal", description="A chunk of metal.",
-                         value=0, rarity=0.5, subtyp="Quest")
+        super().__init__(
+            name="Scrap Metal", description="A chunk of metal.", value=0, rarity=0.5, subtyp="Quest"
+        )
 
 
 class CursedHops(Misc):
 
     def __init__(self):
-        super().__init__(name="Cursed Hops", description="Hops from a cursed tree, these flower are used primarily in"
-                                                         " the creation of beer and other beverages, as well as herbal "
-                                                         "medicines.",
-                         value=0, rarity=1, subtyp="Quest")
+        super().__init__(
+            name="Cursed Hops",
+            description="Hops from a cursed tree, these flower are used primarily in"
+            " the creation of beer and other beverages, as well as herbal "
+            "medicines.",
+            value=0,
+            rarity=1,
+            subtyp="Quest",
+        )
 
 
 class BirdFat(Misc):
 
     def __init__(self):
-        super().__init__(name="Bird Fat", description="The fat from a bird, used as a fuel for lamps.",
-                         value=0, rarity=0.1, subtyp="Quest")
+        super().__init__(
+            name="Bird Fat",
+            description="The fat from a bird, used as a fuel for lamps.",
+            value=0,
+            rarity=0.1,
+            subtyp="Quest",
+        )
 
 
 class ElementalMote(Misc):
 
     def __init__(self):
-        super().__init__(name="Elemental Mote", description="The elemental core of a Myrmidon.",
-                         value=0, rarity=1, subtyp="Quest")
+        super().__init__(
+            name="Elemental Mote",
+            description="The elemental core of a Myrmidon.",
+            value=0,
+            rarity=1,
+            subtyp="Quest",
+        )
 
 
 class Acorn(Misc):
 
     def __init__(self):
-        super().__init__(name="Acorn", description="A hardy oak seed prized by druids for growth rites.",
-                         value=25, rarity=0.5, subtyp="Reagent")
+        super().__init__(
+            name="Acorn",
+            description="A hardy oak seed prized by druids for growth rites.",
+            value=25,
+            rarity=0.5,
+            subtyp="Reagent",
+        )
 
 
 class VineSeed(Misc):
 
     def __init__(self):
-        super().__init__(name="Vine Seed", description="A coiled seed that hums with grasping green life.",
-                         value=25, rarity=0.5, subtyp="Reagent")
+        super().__init__(
+            name="Vine Seed",
+            description="A coiled seed that hums with grasping green life.",
+            value=25,
+            rarity=0.5,
+            subtyp="Reagent",
+        )
 
 
 class FungusSpore(Misc):
 
     def __init__(self):
-        super().__init__(name="Fungus Spore", description="A powdery spore bundle useful in poison and decay rites.",
-                         value=25, rarity=0.5, subtyp="Reagent")
+        super().__init__(
+            name="Fungus Spore",
+            description="A powdery spore bundle useful in poison and decay rites.",
+            value=25,
+            rarity=0.5,
+            subtyp="Reagent",
+        )
 
 
 class HemlockRoot(Misc):
 
     def __init__(self):
-        super().__init__(name="Hemlock Root", description="A bitter root gathered for dangerous druidic mixtures.",
-                         value=25, rarity=0.5, subtyp="Reagent")
+        super().__init__(
+            name="Hemlock Root",
+            description="A bitter root gathered for dangerous druidic mixtures.",
+            value=25,
+            rarity=0.5,
+            subtyp="Reagent",
+        )
 
 
 class PowerCore(Misc):
 
     def __init__(self):
-        super().__init__(name="Power Core", description="The power source of a Golem.",
-                         value=0, rarity=1, subtyp="Quest")
+        super().__init__(
+            name="Power Core",
+            description="The power source of a Golem.",
+            value=0,
+            rarity=1,
+            subtyp="Quest",
+        )
 
 
 class Phylactery(Misc):
 
     def __init__(self):
-        super().__init__(name="Phylactery", description="The soul artifcat of a Lich, given up willingly to achieve "
-                                                        "immortality.",
-                         value=0, rarity=0.05, subtyp="Quest")
+        super().__init__(
+            name="Phylactery",
+            description="The soul artifcat of a Lich, given up willingly to achieve "
+            "immortality.",
+            value=0,
+            rarity=0.05,
+            subtyp="Quest",
+        )
 
 
 class LuckyLocket(Misc):
@@ -1135,9 +1387,14 @@ class LuckyLocket(Misc):
     """
 
     def __init__(self):
-        super().__init__(name="Lucky Locket", description="A simple gold necklace with a locket containing the picture "
-                                                          "of a fair lass.",
-                         value=0, rarity=0, subtyp="Special")
+        super().__init__(
+            name="Lucky Locket",
+            description="A simple gold necklace with a locket containing the picture "
+            "of a fair lass.",
+            value=0,
+            rarity=0,
+            subtyp="Special",
+        )
 
 
 class BrassKey(Misc):
@@ -1146,9 +1403,14 @@ class BrassKey(Misc):
     """
 
     def __init__(self):
-        super().__init__(name="Brass Key", description="A brass key, similar to the key for your storage locker in the"
-                                                       " barracks.",
-                         value=0, rarity=0, subtyp="Special")
+        super().__init__(
+            name="Brass Key",
+            description="A brass key, similar to the key for your storage locker in the"
+            " barracks.",
+            value=0,
+            rarity=0,
+            subtyp="Special",
+        )
 
 
 class ThievesGuildSignet(Misc):
@@ -1172,9 +1434,14 @@ class JoffreysLetter(Misc):
     """
 
     def __init__(self):
-        super().__init__(name="Joffrey's Letter", description="A letter written from Joffrey to the waitress; maybe "
-                                                              "there is some use of this.",
-                         value=0, rarity=0, subtyp="Special")
+        super().__init__(
+            name="Joffrey's Letter",
+            description="A letter written from Joffrey to the waitress; maybe "
+            "there is some use of this.",
+            value=0,
+            rarity=0,
+            subtyp="Special",
+        )
 
 
 class EmptyVial(Misc):
@@ -1183,9 +1450,13 @@ class EmptyVial(Misc):
     """
 
     def __init__(self):
-        super().__init__(name="Empty Vial", description="An empty vial, perfect for storing liquids and other "
-                                                        "tinctures.",
-                         value=0, rarity=0, subtyp='Special')
+        super().__init__(
+            name="Empty Vial",
+            description="An empty vial, perfect for storing liquids and other " "tinctures.",
+            value=0,
+            rarity=0,
+            subtyp="Special",
+        )
 
 
 class SpringWater(Misc):
@@ -1194,8 +1465,13 @@ class SpringWater(Misc):
     """
 
     def __init__(self):
-        super().__init__(name="Spring Water", description="A vial of the finest spring water.",
-                         value=0, rarity=0, subtyp='Special')
+        super().__init__(
+            name="Spring Water",
+            description="A vial of the finest spring water.",
+            value=0,
+            rarity=0,
+            subtyp="Special",
+        )
 
 
 class Unobtainium(Misc):
@@ -1204,9 +1480,14 @@ class Unobtainium(Misc):
     """
 
     def __init__(self):
-        super().__init__(name="Unobtainium", description="The legendary ore that has only been theorized. Can be used "
-                                                         "to create ultimate weapons.",
-                         value=0, rarity=0, subtyp='Special')
+        super().__init__(
+            name="Unobtainium",
+            description="The legendary ore that has only been theorized. Can be used "
+            "to create ultimate weapons.",
+            value=0,
+            rarity=0,
+            subtyp="Special",
+        )
 
 
 class Relic1(Misc):
@@ -1215,9 +1496,14 @@ class Relic1(Misc):
     """
 
     def __init__(self):
-        super().__init__(name="Triangulus", description="The holy trinity of mind, body, and spirit are represented by "
-                                                        "the Triangulus relic.",
-                         value=0, rarity=0, subtyp='Special')
+        super().__init__(
+            name="Triangulus",
+            description="The holy trinity of mind, body, and spirit are represented by "
+            "the Triangulus relic.",
+            value=0,
+            rarity=0,
+            subtyp="Special",
+        )
 
 
 class Relic2(Misc):
@@ -1226,9 +1512,14 @@ class Relic2(Misc):
     """
 
     def __init__(self):
-        super().__init__(name="Quadrata", description="The Quadrata relic symbolizes order, trust, stability, and "
-                                                      "logic, the hallmarks of a well-balanced person.",
-                         value=0, rarity=0, subtyp='Special')
+        super().__init__(
+            name="Quadrata",
+            description="The Quadrata relic symbolizes order, trust, stability, and "
+            "logic, the hallmarks of a well-balanced person.",
+            value=0,
+            rarity=0,
+            subtyp="Special",
+        )
 
 
 class Relic3(Misc):
@@ -1237,10 +1528,15 @@ class Relic3(Misc):
     """
 
     def __init__(self):
-        super().__init__(name="Hexagonum", description="The Hexagonum relic represents the natural world, since the "
-                                                       "hexagon is the considered the strongest shape and regularly "
-                                                       "found in nature.",
-                         value=0, rarity=0, subtyp='Special')
+        super().__init__(
+            name="Hexagonum",
+            description="The Hexagonum relic represents the natural world, since the "
+            "hexagon is the considered the strongest shape and regularly "
+            "found in nature.",
+            value=0,
+            rarity=0,
+            subtyp="Special",
+        )
 
 
 class Relic4(Misc):
@@ -1249,9 +1545,14 @@ class Relic4(Misc):
     """
 
     def __init__(self):
-        super().__init__(name="Luna", description="The Moon, our celestial partner, is the inspiration for the Luna "
-                                                  "relic and represents love for others.",
-                         value=0, rarity=0, subtyp='Special')
+        super().__init__(
+            name="Luna",
+            description="The Moon, our celestial partner, is the inspiration for the Luna "
+            "relic and represents love for others.",
+            value=0,
+            rarity=0,
+            subtyp="Special",
+        )
 
 
 class Relic5(Misc):
@@ -1260,9 +1561,14 @@ class Relic5(Misc):
     """
 
     def __init__(self):
-        super().__init__(name="Polaris", description="The Polaris relic resembles the shape of a star and represents "
-                                                     "the guiding light of the North Star.",
-                         value=0, rarity=0, subtyp='Special')
+        super().__init__(
+            name="Polaris",
+            description="The Polaris relic resembles the shape of a star and represents "
+            "the guiding light of the North Star.",
+            value=0,
+            rarity=0,
+            subtyp="Special",
+        )
 
 
 class Relic6(Misc):
@@ -1271,9 +1577,14 @@ class Relic6(Misc):
     """
 
     def __init__(self):
-        super().__init__(name="Infinitas", description="Shaped like a circle, the Infinitas relic represents the never-"
-                                                       "ending struggle between good and evil.",
-                         value=0, rarity=0, subtyp='Special')
+        super().__init__(
+            name="Infinitas",
+            description="Shaped like a circle, the Infinitas relic represents the never-"
+            "ending struggle between good and evil.",
+            value=0,
+            rarity=0,
+            subtyp="Special",
+        )
 
 
 class Excaliper(Misc):
@@ -1282,10 +1593,15 @@ class Excaliper(Misc):
     """
 
     def __init__(self):
-        super().__init__(name="Excaliper", description="The broken fragments of a failed experiment. It appears "
-                                                       "someone tried to forge the legendary sword Excalibur using "
-                                                       "a caliper tool. It did not go well...",
-                        value=0, rarity=0, subtyp="Special")
+        super().__init__(
+            name="Excaliper",
+            description="The broken fragments of a failed experiment. It appears "
+            "someone tried to forge the legendary sword Excalibur using "
+            "a caliper tool. It did not go well...",
+            value=0,
+            rarity=0,
+            subtyp="Special",
+        )
 
 
 class ChaliceMap(Misc):
@@ -1316,10 +1632,15 @@ class GoldenChalice(Misc):
     """
 
     def __init__(self):
-        super().__init__(name="Golden Chalice", description="A golden chalice that once held the Holy Grail. It is said "
-                                                          "that the chalice can grant immense power to those who drink "
-                                                          "from it, but it is also cursed with a terrible thirst.",
-                         value=0, rarity=0, subtyp="Special")
+        super().__init__(
+            name="Golden Chalice",
+            description="A golden chalice that once held the Holy Grail. It is said "
+            "that the chalice can grant immense power to those who drink "
+            "from it, but it is also cursed with a terrible thirst.",
+            value=0,
+            rarity=0,
+            subtyp="Special",
+        )
 
 
 class SerpentVenomHeart(Misc):
@@ -1380,8 +1701,13 @@ class Joker(Misc):
     """
 
     def __init__(self):
-        super().__init__(name="Joker", description="They say that Joker's are wild; you'll see how wild this one is.",
-                         value=0, rarity=1, subtyp="Special")
+        super().__init__(
+            name="Joker",
+            description="They say that Joker's are wild; you'll see how wild this one is.",
+            value=0,
+            rarity=1,
+            subtyp="Special",
+        )
         self.restricted_classes = ["Thaumaturgist", "Spell Stealer", "Arcane Trickster"]
 
 
@@ -1391,8 +1717,13 @@ class ChiryuKoma(Misc):
     """
 
     def __init__(self):
-        super().__init__(name="Chiryu Koma", description="A game piece used for shogi, depicting an earth dragon.",
-                         value=0, rarity=0.1, subtyp="Summon - Dilong")
+        super().__init__(
+            name="Chiryu Koma",
+            description="A game piece used for shogi, depicting an earth dragon.",
+            value=0,
+            rarity=0.1,
+            subtyp="Summon - Dilong",
+        )
         self.restricted_classes = ["Thaumaturgist"]
 
 
@@ -1403,9 +1734,14 @@ class BlacksmithsHammer(Misc):
     """
 
     def __init__(self):
-        super().__init__(name="Blacksmith's Hammer", description="It looks like a normal blacksmithing hammer but "
-                                                                 "something seems...special about this one.",
-                         value=0, rarity=0, subtyp="Summon - Cacus")
+        super().__init__(
+            name="Blacksmith's Hammer",
+            description="It looks like a normal blacksmithing hammer but "
+            "something seems...special about this one.",
+            value=0,
+            rarity=0,
+            subtyp="Summon - Cacus",
+        )
         self.restricted_classes = ["Thaumaturgist"]
 
 
@@ -1416,10 +1752,14 @@ class DragonTear(Misc):
     """
 
     def __init__(self):
-        super().__init__(name="Dragon's Tear",
-                         description="A crystallized tear shed by a dragon. Said to contain the essence "
-                                   "of draconic vitality and regeneration. Extremely rare.",
-                         value=0, rarity=0.01, subtyp="Ability")
+        super().__init__(
+            name="Dragon's Tear",
+            description="A crystallized tear shed by a dragon. Said to contain the essence "
+            "of draconic vitality and regeneration. Extremely rare.",
+            value=0,
+            rarity=0.01,
+            subtyp="Ability",
+        )
         self.restricted_classes = ["Lancer", "Dragoon"]
 
 

@@ -26,7 +26,7 @@ class ChestRoom(MapTile):
     def generate_loot(self):
         """Generate random loot for the chest if not already generated."""
         if self.loot is None:
-            bonus = int('Locked' in str(self)) + int('Room2' in str(self))
+            bonus = int("Locked" in str(self)) + int("Room2" in str(self))
             self.loot = items.random_item(self.z + bonus)
 
 
@@ -46,7 +46,7 @@ class UnlockedChestRoom(ChestRoom):
 
     def available_actions(self, player_char):
         if not self.open:
-            if player_char.state == 'fight':
+            if player_char.state == "fight":
                 action_list = ["Attack", "Use Item", "Flee"]
                 if not player_char.abilities_suppressed():
                     if player_char.usable_abilities("Spells"):
@@ -89,7 +89,7 @@ class LockedChestRoom(ChestRoom):
         if not self.open:
             if self.locked:
                 return []
-            if player_char.state == 'fight':
+            if player_char.state == "fight":
                 action_list = ["Attack", "Use Item", "Flee"]
                 if not player_char.abilities_suppressed():
                     if player_char.usable_abilities("Spells"):
@@ -114,8 +114,12 @@ class LockedChestRoom(ChestRoom):
             # UI hook: show unlock success/failure messages
             if "Master Key" in game.player_char.special_inventory:
                 self.locked = False
-            elif any(["Lockpick" in game.player_char.spellbook["Skills"],
-                      "Master Lockpick" in game.player_char.spellbook["Skills"]]) and items.has_lockpick_kit(game.player_char):
+            elif any(
+                [
+                    "Lockpick" in game.player_char.spellbook["Skills"],
+                    "Master Lockpick" in game.player_char.spellbook["Skills"],
+                ]
+            ) and items.has_lockpick_kit(game.player_char):
                 self.locked = False
                 items.use_lockpick_kit(
                     game.player_char,
@@ -142,11 +146,12 @@ class LockedDoor(MapTile):
         intro_str = super().intro_text(game)
         if not self.open:
             if self.locked:
-                intro_str += (f"{game.player_char.name} finds a locked door.\n"
-                        f"If only you could find the key...\n")
+                intro_str += (
+                    f"{game.player_char.name} finds a locked door.\n"
+                    f"If only you could find the key...\n"
+                )
             else:
-                intro_str += (f"There is an unlocked door.\n"
-                    f"(Enter 'o' to open)\n")
+                intro_str += f"There is an unlocked door.\n" f"(Enter 'o' to open)\n"
         else:
             intro_str += "There is an open door.\n"
         return intro_str
@@ -164,7 +169,9 @@ class LockedDoor(MapTile):
             # UI hook: show unlock success/failure messages
             if "Master Key" in game.player_char.special_inventory:
                 self.locked = False
-            elif 'Master Lockpick' in game.player_char.spellbook['Skills'] and items.has_lockpick_kit(game.player_char):
+            elif "Master Lockpick" in game.player_char.spellbook[
+                "Skills"
+            ] and items.has_lockpick_kit(game.player_char):
                 self.locked = False
                 items.use_lockpick_kit(game.player_char, master=True)
 
@@ -212,7 +219,7 @@ class OreVaultDoor(Wall):
             return intro_str
 
         # Check if player can perceive the hidden door
-        has_keen_eye = 'Keen Eye' in game.player_char.spellbook['Skills']
+        has_keen_eye = "Keen Eye" in game.player_char.spellbook["Skills"]
         has_cryptic_key = "Cryptic Key" in game.player_char.inventory
 
         # Only reveal and mark as detected if player has the means to see it
@@ -224,7 +231,9 @@ class OreVaultDoor(Wall):
         elif has_keen_eye:
             # Keen perception reveals the door
             self.detected = True
-            intro_str += f"{game.player_char.name}'s keen eye spots something unusual in the wall.\n"
+            intro_str += (
+                f"{game.player_char.name}'s keen eye spots something unusual in the wall.\n"
+            )
             intro_str += "The stone here doesn't quite match... it's a hidden door!\n"
         else:
             # Reset detected status if player no longer has the means to see it
@@ -241,7 +250,7 @@ class OreVaultDoor(Wall):
 
         # If door hasn't been detected, treat it like a wall - no interaction
         has_cryptic_key = "Cryptic Key" in game.player_char.inventory
-        has_keen_eye = 'Keen Eye' in game.player_char.spellbook['Skills']
+        has_keen_eye = "Keen Eye" in game.player_char.spellbook["Skills"]
 
         if not (has_cryptic_key or has_keen_eye or self.open):
             # Door is not detected and not open - act like a wall, do nothing
@@ -279,8 +288,9 @@ class WarningTile(CavePath):
     def intro_text(self, game):
         intro_str = super().intro_text(game)
         if not self.warning:
-            intro_str += (f"Enemies beyond this point increase in difficulty.\n"
-                          f"Plan accordingly.\n")
+            intro_str += (
+                f"Enemies beyond this point increase in difficulty.\n" f"Plan accordingly.\n"
+            )
         return intro_str
 
     def modify_player(self, game):
@@ -330,14 +340,23 @@ class RelicRoom(SpecialTile):
     def special_text(self, game):
         if not self.read:
             game.special_event("Relic Room")
-            relics = [items.Relic1(), items.Relic2(), items.Relic3(), items.Relic4(), items.Relic5(), items.Relic6()]
+            relics = [
+                items.Relic1(),
+                items.Relic2(),
+                items.Relic3(),
+                items.Relic4(),
+                items.Relic5(),
+                items.Relic6(),
+            ]
             relic = relics[game.player_char.location_z - 1]
             game.player_char.modify_inventory(relic, rare=True, quest=True)
             self.read = True
             game.player_char.health.current = game.player_char.health.max
             game.player_char.mana.current = game.player_char.mana.max
             game.player_char.quests()
-            return f"{relic_discovery_text(relic)}Your health and mana have been restored to full!\n"
+            return (
+                f"{relic_discovery_text(relic)}Your health and mana have been restored to full!\n"
+            )
         return ""
 
 
@@ -400,7 +419,7 @@ class IncubusLair(BossRoom):
         return False
 
     def available_actions(self, player_char):
-        if player_char.state == 'fight':
+        if player_char.state == "fight":
             action_list = ["Attack", "Use Item"]
             if not player_char.abilities_suppressed():
                 if player_char.usable_abilities("Spells"):
@@ -476,36 +495,38 @@ class DeadBody(SpecialTile):
         if not self.read:
             intro_str += "The body of a soldier lies in a heap on the floor.\n"
         else:
-            if 'Something to Cry About' in game.player_char.quest_dict['Side']:
-                if game.player_char.quest_dict['Side']['Something to Cry About']['Completed']:
+            if "Something to Cry About" in game.player_char.quest_dict["Side"]:
+                if game.player_char.quest_dict["Side"]["Something to Cry About"]["Completed"]:
                     intro_str += f"The two lovers have been reunited. May they rest in peace.\n"
             else:
-                intro_str += (f"'Here lies Joffrey, survived by his one true love.\n"
-                              f"May he be a reminder of the horrors of combat.\n")
+                intro_str += (
+                    f"'Here lies Joffrey, survived by his one true love.\n"
+                    f"May he be a reminder of the horrors of combat.\n"
+                )
         return intro_str
 
     def modify_player(self, game):
         self.adjacent_visited(game.player_char)
         self.visited = True
-        if 'Something to Cry About' in game.player_char.quest_dict['Side'] and not self.defeated:
-            if not game.player_char.quest_dict['Side']['Something to Cry About']['Completed']:
+        if "Something to Cry About" in game.player_char.quest_dict["Side"] and not self.defeated:
+            if not game.player_char.quest_dict["Side"]["Something to Cry About"]["Completed"]:
                 game.special_event("Waitress")
                 self.enter_combat(game.player_char)
 
     def special_text(self, game):
-        if 'A Bad Dream' in game.player_char.quest_dict['Main']:
+        if "A Bad Dream" in game.player_char.quest_dict["Main"]:
             if not self.read:
                 game.special_event("Dead Body")
                 game.player_char.modify_inventory(items.LuckyLocket(), rare=True, quest=True)
-                game.player_char.quest_dict['Main']['A Bad Dream']['Completed'] = True
+                game.player_char.quest_dict["Main"]["A Bad Dream"]["Completed"] = True
                 self.read = True
 
     def enter_combat(self, player_char):
         self.enemy = enemies.NightHag2()
-        player_char.state = 'fight'
+        player_char.state = "fight"
 
     def available_actions(self, player_char):
-        if player_char.state == 'fight':
+        if player_char.state == "fight":
             action_list = ["Attack", "Use Item", "Flee"]
             if not player_char.abilities_suppressed():
                 if player_char.usable_abilities("Spells"):

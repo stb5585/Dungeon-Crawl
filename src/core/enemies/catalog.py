@@ -9,15 +9,13 @@ from __future__ import annotations
 
 from collections.abc import Callable, Mapping, Sequence
 
-
 EnemySpec = tuple[str, str]
 ResolvedEnemySpec = tuple[str, Callable[[], object]]
 
 
 CURATED_PAIR_SPECS: dict[
     str,
-    tuple[str, int, tuple[str, str]]
-    | tuple[str, int, tuple[str, str], tuple[float, float]],
+    tuple[str, int, tuple[str, str]] | tuple[str, int, tuple[str, str], tuple[float, float]],
 ] = {
     "carrion_crawl": (
         "Giant Hornet & Battle Toad",
@@ -289,6 +287,5 @@ def resolve_random_enemy_catalog(
 ) -> dict[str, tuple[ResolvedEnemySpec, ...]]:
     """Resolve every floor catalog after enemy classes have been defined."""
     return {
-        level: resolve_enemy_specs(specs, namespace)
-        for level, specs in RANDOM_ENEMY_SPECS.items()
+        level: resolve_enemy_specs(specs, namespace) for level, specs in RANDOM_ENEMY_SPECS.items()
     }

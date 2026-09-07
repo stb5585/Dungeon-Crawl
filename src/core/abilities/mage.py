@@ -85,8 +85,7 @@ class TerraFirma(_SchoolEnhancement):
     def __init__(self) -> None:
         super().__init__(
             "Terra Firma",
-            "Earth spells have a 20% chance to increase melee damage by 50% "
-            "for 3 turns.",
+            "Earth spells have a 20% chance to increase melee damage by 50% " "for 3 turns.",
             "Earth",
         )
 
@@ -139,8 +138,7 @@ class ForceMultiplier(_MagePassive):
     def __init__(self) -> None:
         super().__init__(
             "Force Multiplier",
-            "Magic Missile casts cost 25% more mana. Each projectile deals "
-            "25% more damage.",
+            "Magic Missile casts cost 25% more mana. Each projectile deals " "25% more damage.",
         )
         self.presentation_modifier = True
         self.modifies = ("Magic Missile", "Magic Missile II", "Magic Missile III")
@@ -302,9 +300,7 @@ class ManaRupture(Spell):
         try:
             from ..classes import mage_mechanics
 
-            damage = int(
-                damage * mage_mechanics.spell_potency_multiplier(user, self)
-            )
+            damage = int(damage * mage_mechanics.spell_potency_multiplier(user, self))
         except Exception:
             pass
         damage = max(0, damage)
@@ -321,8 +317,7 @@ class ManaRupture(Spell):
         result.damage = damage
         result.extra["target_mana_before"] = remaining_mana
         result.message = (
-            message
-            + f"{user.name} ruptures {target.name}'s mana for {damage} damage.\n"
+            message + f"{user.name} ruptures {target.name}'s mana for {damage} damage.\n"
         )
         try:
             from ..classes import mage_mechanics
@@ -563,8 +558,7 @@ class ManaLeak(_MagePassive):
     def __init__(self) -> None:
         super().__init__(
             "Mana Leak",
-            "Mana Rupture consumes Arcane Empowerment to deplete the target's "
-            "mana pool.",
+            "Mana Rupture consumes Arcane Empowerment to deplete the target's " "mana pool.",
         )
         self.presentation_modifier = True
         self.modifies = ("Mana Rupture",)
@@ -585,8 +579,7 @@ class ElementalConvergence(_MagePassive):
     def __init__(self) -> None:
         super().__init__(
             "Elemental Convergence",
-            "Each successive elemental strike in Prismatic Cataclysm deals "
-            "10% more damage.",
+            "Each successive elemental strike in Prismatic Cataclysm deals " "10% more damage.",
         )
         self.presentation_modifier = True
         self.modifies = ("Prismatic Cataclysm",)
@@ -730,9 +723,7 @@ class ConjureBlade(Spell):
             from ..classes import mage_mechanics
             from ..classes import wizard
 
-            critical = (
-                mage_mechanics.fire_inside_critical_bonus(user) > random.random()
-            )
+            critical = mage_mechanics.fire_inside_critical_bonus(user) > random.random()
             mage_mechanics.consume_fire_inside(user)
             critical_multiplier = 2.0 if critical else 1.0
             critical_multiplier = mage_mechanics.arcane_critical_multiplier(
@@ -783,8 +774,7 @@ class ConjureAnimal(Spell):
     def __init__(self) -> None:
         super().__init__(
             "Conjure Animal",
-            "Outside combat, call a local animal that fights independently for "
-            "a short time.",
+            "Outside combat, call a local animal that fights independently for " "a short time.",
             school="Arcane",
         )
         self.cost = 12
@@ -888,10 +878,7 @@ class ConjurePotion(Spell):
         del target
         in_town = getattr(user, "in_town", False)
         in_town = in_town() if callable(in_town) else bool(in_town)
-        return (
-            not in_town
-            and int(getattr(user, "conjure_potion_cooldown", 0) or 0) <= 0
-        )
+        return not in_town and int(getattr(user, "conjure_potion_cooldown", 0) or 0) <= 0
 
     def cast_out(self, user: Any) -> str:
         in_town = getattr(user, "in_town", False)
@@ -994,8 +981,7 @@ class ExplosiveDecoy(Spell):
             ability_name=self.name,
         )
         return (
-            shield_message
-            + f"One of {user.name}'s mirror images rushes {target.name} and "
+            shield_message + f"One of {user.name}'s mirror images rushes {target.name} and "
             f"explodes for {damage} Arcane damage.\n"
         )
 
@@ -1060,8 +1046,7 @@ class MiracleBlade(_MiracleSpell):
             ability_name=self.name,
         )
         return (
-            shield_message
-            + f"An impossible blade cuts through every protection around "
+            shield_message + f"An impossible blade cuts through every protection around "
             f"{target.name} for {damage} reality damage.\n"
         )
 
@@ -1168,9 +1153,7 @@ class MiracleCrystal(_MiracleSpell):
             "miracle": True,
             "generated_per_turn": max(1, math.ceil(maximum_mana * 0.25)),
         }
-        return (
-            "A miraculous crystal begins creating mana where none existed.\n"
-        )
+        return "A miraculous crystal begins creating mana where none existed.\n"
 
 
 class Torchlight(Spell):
@@ -1237,8 +1220,7 @@ class BarrierWall(Spell):
     def __init__(self) -> None:
         super().__init__(
             "Barrier Wall",
-            "Conjure a wall that enemies must destroy before they can target "
-            "the caster again.",
+            "Conjure a wall that enemies must destroy before they can target " "the caster again.",
             school="Conjuration",
         )
         self.cost = 35
@@ -1250,8 +1232,7 @@ class BarrierWall(Spell):
         user.mana.current -= self.cost
         hit_points = max(
             30,
-            int(getattr(getattr(user, "level", None), "level", 1))
-            + int(user.stats.intel) * 2,
+            int(getattr(getattr(user, "level", None), "level", 1)) + int(user.stats.intel) * 2,
         )
         user.barrier_wall_hp = hit_points
         return f"A barrier wall with {hit_points} HP rises before {user.name}.\n"
@@ -1298,8 +1279,7 @@ class ManaBarbs(Spell):
     def __init__(self) -> None:
         super().__init__(
             "Mana Barbs",
-            "For 3 turns, mana spent by the target deals the same amount of "
-            "damage back to it.",
+            "For 3 turns, mana spent by the target deals the same amount of " "damage back to it.",
             school="Conjuration",
         )
         self.cost = 30
@@ -1350,10 +1330,7 @@ class _CallXenid(Spell):
                 source=self.name,
             )
             if companion is None:
-                return (
-                    f"No suitable {self.category.lower()} creature answers "
-                    "the conjuration.\n"
-                )
+                return f"No suitable {self.category.lower()} creature answers " "the conjuration.\n"
             user.mana.current -= self.cost
             return (
                 f"{companion['name']} answers {self.name} and will fight "

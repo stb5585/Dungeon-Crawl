@@ -77,11 +77,14 @@ def test_miss_consumes_charge_and_unrelated_actions_retain_it():
     state = promotion_kits.combat_state(stealer)
     state["stolen_charge"] = 2
 
-    assert promotion_kits.prepare_stolen_charge_payoff(
-        stealer,
-        "Use Skill",
-        SimpleNamespace(weapon=False),
-    ) == ""
+    assert (
+        promotion_kits.prepare_stolen_charge_payoff(
+            stealer,
+            "Use Skill",
+            SimpleNamespace(weapon=False),
+        )
+        == ""
+    )
     assert state["stolen_charge"] == 2
 
     promotion_kits.prepare_stolen_charge_payoff(stealer, "Attack")
@@ -185,6 +188,4 @@ def test_stolen_magic_is_not_restored_from_a_save_and_status_is_discreet():
         skip_tiles=True,
     )
     assert promotion_kits.combat_state(restored)["stolen_charge"] == 0
-    assert class_rings.ensure_state(restored)["data"]["Arcane Trickster"][
-        "buff_turns"
-    ] == 0
+    assert class_rings.ensure_state(restored)["data"]["Arcane Trickster"]["buff_turns"] == 0

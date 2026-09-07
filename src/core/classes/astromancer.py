@@ -7,7 +7,6 @@ from typing import Any
 
 from .base import Job
 
-
 CONSTELLATIONS = ("Ember", "Tide", "Gale", "Stone")
 RUNE_CAP = 3
 BASE_RUNE_DROP_CHANCE = 0.25
@@ -23,14 +22,16 @@ SIGN_TO_ELEMENT = {
 }
 ELEMENT_TO_SIGN = {element: sign for sign, element in SIGN_TO_ELEMENT.items()}
 NATURAL_ELEMENTS = set(ELEMENT_TO_SIGN)
-THREAD_ACTIONS = frozenset({
-    "Foretell",
-    "Twist Fate",
-    "Wormhole",
-    "Rewind",
-    "Runic Boost",
-    "Astral Judgment",
-})
+THREAD_ACTIONS = frozenset(
+    {
+        "Foretell",
+        "Twist Fate",
+        "Wormhole",
+        "Rewind",
+        "Runic Boost",
+        "Astral Judgment",
+    }
+)
 LEARNABLE_SPELL_RANKS = {
     "Aqualung": 1,
     "Hurricane": 1,
@@ -221,9 +222,8 @@ def rune_drop_chance(character: Any, target: Any, spell: Any) -> tuple[str | Non
 
         if has_talent(character, "diviner.open-sigils"):
             chance += 0.10
-        if (
-            sign == active_constellation(character)
-            and has_talent(character, "astromancer.celestial-runes")
+        if sign == active_constellation(character) and has_talent(
+            character, "astromancer.celestial-runes"
         ):
             chance += 0.15
     except (AttributeError, KeyError, TypeError):
@@ -243,7 +243,9 @@ def rune_drop_chance(character: Any, target: Any, spell: Any) -> tuple[str | Non
     return sign, max(0.0, min(1.0, chance))
 
 
-def maybe_award_rune(character: Any, target: Any, spell: Any, rng: Any = random) -> tuple[bool, str | None, float]:
+def maybe_award_rune(
+    character: Any, target: Any, spell: Any, rng: Any = random
+) -> tuple[bool, str | None, float]:
     if not has_rune_system(character):
         return False, None, 0.0
     sign, chance = rune_drop_chance(character, target, spell)
@@ -269,9 +271,10 @@ def spell_learning_rank(character: Any) -> int:
     skill = getattr(character, "spellbook", {}).get("Skills", {}).get("Learn Spell")
     if skill is None or class_name(character) not in {"Diviner", "Astromancer"}:
         return 0
-    if skill.__class__.__name__ == "LearnSpell2" or "rank 2" in str(
-        getattr(skill, "description", "")
-    ).lower():
+    if (
+        skill.__class__.__name__ == "LearnSpell2"
+        or "rank 2" in str(getattr(skill, "description", "")).lower()
+    ):
         return 2
     return 1
 
@@ -280,10 +283,7 @@ def spell_resolution_succeeded(result: Any, spell: Any) -> bool:
     """Return whether a witnessed spell resolved without miss or full negation."""
     recorded = result if hasattr(result, "hit") else getattr(spell, "result", None)
     if recorded is not None:
-        if (
-            getattr(recorded, "hit", None) is False
-            or bool(getattr(recorded, "dodge", False))
-        ):
+        if getattr(recorded, "hit", None) is False or bool(getattr(recorded, "dodge", False)):
             return False
         extra = getattr(recorded, "extra", {}) or {}
         if extra.get("no_effect_reason") or extra.get("duplicate_intercepted"):
@@ -352,9 +352,8 @@ def record_thread_action(character: Any, action_name: str, *, successful: bool) 
     try:
         from ..progression import has_talent
 
-        if (
-            has_talent(character, "astromancer.thread-spinner")
-            and not state.get("thread_spinner_used")
+        if has_talent(character, "astromancer.thread-spinner") and not state.get(
+            "thread_spinner_used"
         ):
             amount += 1
             state["thread_spinner_used"] = True
@@ -413,9 +412,8 @@ def threaded_bonus(character: Any, key: str) -> float:
 
 def tephra_splash(character: Any, primary_target: Any, encounter: Any) -> str:
     """Scatter Volcano debris onto every other living hostile."""
-    if (
-        not is_astromancer(character)
-        or "Tephra" not in getattr(character, "spellbook", {}).get("Skills", {})
+    if not is_astromancer(character) or "Tephra" not in getattr(character, "spellbook", {}).get(
+        "Skills", {}
     ):
         return ""
     messages = []

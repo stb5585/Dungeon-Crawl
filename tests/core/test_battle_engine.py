@@ -198,7 +198,9 @@ def test_start_battle_records_bestiary_encounter():
 
 
 def test_shapeshifted_barghest_victory_credits_original_enemy(monkeypatch):
-    player = TestGameState.create_player(name="Kongol", class_name="Warrior", race_name="Half Giant")
+    player = TestGameState.create_player(
+        name="Kongol", class_name="Warrior", race_name="Half Giant"
+    )
     enemy = Barghest()
     engine = BattleEngine(player, enemy, DummyCombatTile())
     player.quest_dict = {
@@ -213,7 +215,9 @@ def test_shapeshifted_barghest_victory_credits_original_enemy(monkeypatch):
         },
         "Side": {},
     }
-    monkeypatch.setattr(player, "loot", lambda defeated_enemy, _tile: f"{defeated_enemy.name} dropped loot.\n")
+    monkeypatch.setattr(
+        player, "loot", lambda defeated_enemy, _tile: f"{defeated_enemy.name} dropped loot.\n"
+    )
 
     engine.start_battle()
     enemy.name = "Direwolf"
@@ -229,7 +233,9 @@ def test_shapeshifted_barghest_victory_credits_original_enemy(monkeypatch):
 
 
 def test_thieves_guild_trial_victory_uses_guild_wording_and_awards_signet():
-    player = TestGameState.create_player(name="Shade", class_name="Spell Stealer", race_name="Human")
+    player = TestGameState.create_player(
+        name="Shade", class_name="Spell Stealer", race_name="Human"
+    )
     enemy = GuildArcaneBoss()
     engine = BattleEngine(player, enemy, DummyCombatTile())
 
@@ -392,7 +398,9 @@ def test_steal_as_well_stolen_scroll_cast_grants_charge_but_item_theft_does_not(
 
 
 def test_execute_spell_accepts_stolen_scroll_choice_token():
-    player = TestGameState.create_player(name="TestHero", class_name="Spell Stealer", race_name="Human")
+    player = TestGameState.create_player(
+        name="TestHero", class_name="Spell Stealer", race_name="Human"
+    )
     enemy = Goblin()
     engine = BattleEngine(player, enemy, DummyCombatTile())
     engine.attacker = player
@@ -408,7 +416,9 @@ def test_execute_spell_accepts_stolen_scroll_choice_token():
 
 
 def test_execute_spell_consumes_stolen_scroll_when_charges_run_out():
-    player = TestGameState.create_player(name="TestHero", class_name="Spell Stealer", race_name="Human")
+    player = TestGameState.create_player(
+        name="TestHero", class_name="Spell Stealer", race_name="Human"
+    )
     enemy = Goblin()
     engine = BattleEngine(player, enemy, DummyCombatTile())
     engine.attacker = player

@@ -12,7 +12,6 @@ import pygame
 from src.paths import PYGAME_ASSETS_DIR
 from .enemy_combat_sprite_manager import get_enemy_combat_sprite_manager
 
-
 logger = logging.getLogger(__name__)
 
 COMPANION_ART_ROOT = PYGAME_ASSETS_DIR / "companion_art"

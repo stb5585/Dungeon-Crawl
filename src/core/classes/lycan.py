@@ -125,7 +125,7 @@ def maybe_trigger_frenzy(
     *,
     reason: str,
     rng: Any = random,
-    ) -> tuple[bool, str]:
+) -> tuple[bool, str]:
     if not _is_lycan(character):
         return False, ""
     state = ensure_state(character)
@@ -165,9 +165,7 @@ def maybe_trigger_frenzy(
             promotion_kits.record_lycan_stress(character, "resist")
         return False, ""
     duration = {"New": 1, "Waxing": 2, "Full": 4, "Waning": 3}[phase]
-    duration -= {"Feral": 0, "Muzzled": 0, "Restive": 1, "Tethered": 2, "Tame": 3}.get(
-        rank, 0
-    )
+    duration -= {"Feral": 0, "Muzzled": 0, "Restive": 1, "Tethered": 2, "Tame": 3}.get(rank, 0)
     if class_rings.controlled_frenzy_penalty_multiplier(character) < 1.0:
         duration -= 1
     duration = max(1, duration)

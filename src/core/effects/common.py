@@ -76,9 +76,9 @@ class ChanceEffect(Effect):
 
         if random.random() < self.chance:
             self.effect.apply(actor, target, result)
-            result.extra['chance_effect_triggered'] = True
+            result.extra["chance_effect_triggered"] = True
         else:
-            result.extra['chance_effect_triggered'] = False
+            result.extra["chance_effect_triggered"] = False
 
 
 class StatContestEffect(Effect):
@@ -188,9 +188,9 @@ class StatContestEffect(Effect):
             )
         if contest_success:
             self.effect.apply(actor, target, result)
-            result.extra['stat_contest_won'] = True
+            result.extra["stat_contest_won"] = True
         else:
-            result.extra['stat_contest_won'] = False
+            result.extra["stat_contest_won"] = False
 
 
 class DynamicDotEffect(Effect):
@@ -235,9 +235,10 @@ class DynamicDotEffect(Effect):
         ):
             duration = max(4, duration)
             dmg = max(1, int(dmg * 1.25))
-        if result.action in self.FIRE_DOT_ACTIONS and int(
-            getattr(target, "demon_grease_turns", 0) or 0
-        ) > 0:
+        if (
+            result.action in self.FIRE_DOT_ACTIONS
+            and int(getattr(target, "demon_grease_turns", 0) or 0) > 0
+        ):
             duration += 1
             dmg = max(1, int(dmg * 1.50))
 
@@ -340,6 +341,7 @@ class StatusApplyEffect(Effect):
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
         import random as _rng
+
         # If crit_only, skip when there's no critical hit
         crit = result.extra.get("last_crit", 1)
         if self.crit_only and crit <= 1:
@@ -376,8 +378,7 @@ class StatusApplyEffect(Effect):
                 from ..classes import promotion_kits
 
                 target_roll = int(
-                    target_roll
-                    * promotion_kits.benediction_status_multiplier(target)
+                    target_roll * promotion_kits.benediction_status_multiplier(target)
                 )
             except Exception:
                 pass
@@ -385,6 +386,7 @@ class StatusApplyEffect(Effect):
             try:
                 if getattr(getattr(target, "race", None), "name", None) == "Human":
                     from src.core.constants import HUMAN_STATUS_RESIST_MULTIPLIER
+
                     target_roll = int(target_roll * HUMAN_STATUS_RESIST_MULTIPLIER)
             except Exception:
                 pass
@@ -456,12 +458,12 @@ class ScalingEffect(Effect):
         multiplier = self.scaling_func(actor, target)
 
         # Modify the base effect's magnitude
-        if hasattr(self.base_effect, 'base_damage'):
+        if hasattr(self.base_effect, "base_damage"):
             original_damage = self.base_effect.base_damage
             self.base_effect.base_damage = int(original_damage * multiplier)
             self.base_effect.apply(actor, target, result)
             self.base_effect.base_damage = original_damage  # Restore original
-        elif hasattr(self.base_effect, 'base_healing'):
+        elif hasattr(self.base_effect, "base_healing"):
             original_healing = self.base_effect.base_healing
             self.base_effect.base_healing = int(original_healing * multiplier)
             self.base_effect.apply(actor, target, result)
@@ -490,7 +492,7 @@ class LifestealEffect(Effect):
             heal_amount = int(heal_amount * actor.healing_received_multiplier())
             actual_heal = min(heal_amount, actor.health.max - actor.health.current)
             actor.health.current += actual_heal
-            result.extra['lifesteal'] = actual_heal
+            result.extra["lifesteal"] = actual_heal
             result.healing = actual_heal
 
 
@@ -513,7 +515,7 @@ class ReflectDamageEffect(Effect):
         target.magic_effects["Reflect"].active = True
         target.magic_effects["Reflect"].duration = self.duration
         target.magic_effects["Reflect"].extra = int(self.reflect_percent * 100)
-        result.effects_applied['Magic'].append('Reflect')
+        result.effects_applied["Magic"].append("Reflect")
 
 
 class DamageOverTimeEffect(Effect):
@@ -524,11 +526,7 @@ class DamageOverTimeEffect(Effect):
     """
 
     def __init__(
-        self,
-        dot_type: str,
-        damage_per_tick: int,
-        duration: int,
-        element: str = 'Physical'
+        self, dot_type: str, damage_per_tick: int, duration: int, element: str = "Physical"
     ):
         """
         Args:
@@ -549,15 +547,15 @@ class DamageOverTimeEffect(Effect):
             target.status_effects[self.dot_type].active = True
             target.status_effects[self.dot_type].duration = self.duration
             target.status_effects[self.dot_type].extra = self.damage_per_tick
-            result.effects_applied['Status'].append(self.dot_type)
+            result.effects_applied["Status"].append(self.dot_type)
         else:
             # Use generic DOT magic effect
             target.magic_effects["DOT"].active = True
             target.magic_effects["DOT"].duration = self.duration
             target.magic_effects["DOT"].extra = self.damage_per_tick
             target.magic_effects["DOT"].source = self.dot_type
-            result.effects_applied['Magic'].append(f'DOT ({self.dot_type})')
-            result.extra['dot_type'] = self.dot_type
+            result.effects_applied["Magic"].append(f"DOT ({self.dot_type})")
+            result.extra["dot_type"] = self.dot_type
 
 
 class DispelEffect(Effect):
@@ -565,7 +563,7 @@ class DispelEffect(Effect):
     Removes buffs or debuffs from target.
     """
 
-    def __init__(self, dispel_type: str = 'all'):
+    def __init__(self, dispel_type: str = "all"):
         """
         Args:
             dispel_type: What to dispel ('buffs', 'debuffs', 'all')
@@ -579,23 +577,23 @@ class DispelEffect(Effect):
         # Dispel stat effects
         for stat_name, effect in target.stat_effects.items():
             if effect.active:
-                if self.dispel_type == 'all':
+                if self.dispel_type == "all":
                     effect.active = False
                     effect.duration = 0
                     effect.extra = 0
                     dispelled.append(stat_name)
-                elif self.dispel_type == 'buffs' and effect.extra > 0:
+                elif self.dispel_type == "buffs" and effect.extra > 0:
                     effect.active = False
                     effect.duration = 0
                     effect.extra = 0
                     dispelled.append(stat_name)
-                elif self.dispel_type == 'debuffs' and effect.extra < 0:
+                elif self.dispel_type == "debuffs" and effect.extra < 0:
                     effect.active = False
                     effect.duration = 0
                     effect.extra = 0
                     dispelled.append(stat_name)
 
-        result.extra['dispelled'] = dispelled
+        result.extra["dispelled"] = dispelled
 
 
 class ShieldEffect(Effect):
@@ -617,8 +615,8 @@ class ShieldEffect(Effect):
         target.magic_effects["Mana Shield"].active = True
         target.magic_effects["Mana Shield"].duration = self.duration
         # Note: Current implementation uses mana as shield, might need adjustment
-        result.effects_applied['Magic'].append('Shield')
-        result.extra['shield_amount'] = self.shield_amount
+        result.effects_applied["Magic"].append("Shield")
+        result.extra["shield_amount"] = self.shield_amount
 
 
 class DynamicStatusDotEffect(Effect):
@@ -739,7 +737,9 @@ class MagicEffectApplyEffect(Effect):
 
         try:
             actor._emit_status_event(
-                target, self.effect_name, applied=True,
+                target,
+                self.effect_name,
+                applied=True,
                 duration=target.magic_effects[self.effect_name].duration,
                 source=result.action,
             )
@@ -782,6 +782,7 @@ class DynamicStatBuffEffect(Effect):
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
         import random as _rng
+
         if self.source == "target_combat":
             obj = actor.combat if self.apply_to_caster else target.combat
             source_val = getattr(obj, self.source_stat, 10)
@@ -842,6 +843,7 @@ class DynamicMultiDebuffEffect(Effect):
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
         import random as _rng
+
         dv = getattr(actor.stats, self.scaling_stat, 10) // self.scaling_divisor
         dur = self.duration if self.duration is not None else max(self.duration_min, dv)
         applied_amounts: dict[str, int] = {}
@@ -1175,7 +1177,11 @@ class PhysicalEffectApplyEffect(Effect):
         # Stat contest
         actor_val = getattr(actor.stats, self.actor_stat, 10)
         if self.use_crit_multiplier:
-            actor_val = int(actor_val * crit * self.damage_multiplier) if self.damage_multiplier else actor_val
+            actor_val = (
+                int(actor_val * crit * self.damage_multiplier)
+                if self.damage_multiplier
+                else actor_val
+            )
         actor_roll = _rng.randint(
             actor_val // self.actor_lo_divisor, actor_val // max(1, self.actor_hi_divisor)
         )
@@ -1304,10 +1310,16 @@ class InstantKillEffect(Effect):
         # --- Reflect check (e.g. Medusa Shield) ---
         if self.reflect_item and self.reflect_slot:
             equip = getattr(target, "equipment", {})
-            item = equip.get(self.reflect_slot) if isinstance(equip, dict) else getattr(equip, self.reflect_slot, None)
+            item = (
+                equip.get(self.reflect_slot)
+                if isinstance(equip, dict)
+                else getattr(equip, self.reflect_slot, None)
+            )
             if item and getattr(item, "name", None) == self.reflect_item:
                 msg = self.reflect_message.format(
-                    target=target.name, caster=actor.name, name=result.action,
+                    target=target.name,
+                    caster=actor.name,
+                    name=result.action,
                 )
                 result.extra.setdefault("messages", []).append(msg)
                 target = actor  # reflected!
@@ -1351,7 +1363,8 @@ class InstantKillEffect(Effect):
         if actor_roll > target_roll:
             target.health.current = 0
             msg = self.success_message.format(
-                target=target.name, caster=actor.name,
+                target=target.name,
+                caster=actor.name,
             )
             result.extra.setdefault("messages", []).append(msg)
             result.extra["stat_contest_won"] = True
@@ -1418,7 +1431,8 @@ class StatReduceEffect(Effect):
             if not random.randint(0, stat_val + chance):
                 setattr(target.stats, self.stat, stat_val - self.amount)
                 msg = self.success_message.format(
-                    target=target.name, caster=actor.name,
+                    target=target.name,
+                    caster=actor.name,
                 )
                 result.extra.setdefault("messages", []).append(msg)
                 result.extra["stat_contest_won"] = True

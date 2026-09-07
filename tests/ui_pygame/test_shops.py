@@ -140,7 +140,9 @@ class FakeSelectionPopup:
     responses = []
     created = []
 
-    def __init__(self, _presenter, _parent_screen, title="Select", header_message=None, options=None):
+    def __init__(
+        self, _presenter, _parent_screen, title="Select", header_message=None, options=None
+    ):
         self.title = title
         self.header_message = header_message
         self.options = list(options or [])
@@ -157,7 +159,9 @@ class FakeShopScreen:
     item_sequences = []
     instances = []
 
-    def __init__(self, _presenter, _player_char, shop_message, background_image="town.png", options_list=None):
+    def __init__(
+        self, _presenter, _player_char, shop_message, background_image="town.png", options_list=None
+    ):
         self.shop_message = shop_message
         self.background_image = background_image
         self.location_portrait_name = None
@@ -165,8 +169,12 @@ class FakeShopScreen:
         self.set_calls = []
         self.update_calls = []
         self.draw_calls = []
-        self._navigate_options = list(FakeShopScreen.option_sequences.pop(0) if FakeShopScreen.option_sequences else [])
-        self._navigate_items = list(FakeShopScreen.item_sequences.pop(0) if FakeShopScreen.item_sequences else [])
+        self._navigate_options = list(
+            FakeShopScreen.option_sequences.pop(0) if FakeShopScreen.option_sequences else []
+        )
+        self._navigate_items = list(
+            FakeShopScreen.item_sequences.pop(0) if FakeShopScreen.item_sequences else []
+        )
         FakeShopScreen.instances.append(self)
 
     def set_options(self, options):
@@ -250,8 +258,13 @@ def _manager(monkeypatch, *, level=12, in_town=True, gold=500):
     FakeShopScreen.item_sequences = []
     FakeShopScreen.instances = []
     FakeQuestManager.instances = []
-    monkeypatch.setattr("src.ui_pygame.gui.town_base.TownScreenBase._load_background", lambda self: setattr(self, "background", None))
-    return shops.ShopManager(_make_presenter(), _make_player(level=level, in_town=in_town, gold=gold))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.town_base.TownScreenBase._load_background",
+        lambda self: setattr(self, "background", None),
+    )
+    return shops.ShopManager(
+        _make_presenter(), _make_player(level=level, in_town=in_town, gold=gold)
+    )
 
 
 def test_visit_blacksmith_and_jeweler_closed_show_popup(monkeypatch):
@@ -261,7 +274,9 @@ def test_visit_blacksmith_and_jeweler_closed_show_popup(monkeypatch):
     manager.visit_blacksmith()
     manager.visit_jeweler()
 
-    assert any("blacksmith is currently closed" in message for message, _buttons in FakePopup.messages)
+    assert any(
+        "blacksmith is currently closed" in message for message, _buttons in FakePopup.messages
+    )
     assert any("jeweler is currently closed" in message for message, _buttons in FakePopup.messages)
     assert all(call.get("flush_events") for call in FakePopup.calls)
 
@@ -284,7 +299,10 @@ def test_visit_blacksmith_handles_unobtainium_buy_branch_and_leave(monkeypatch):
     manager.visit_blacksmith()
 
     assert any("Unobtainium" in message for message in shown_messages)
-    assert any("don't know how to forge a weapon your class can use" in message for message in shown_messages)
+    assert any(
+        "don't know how to forge a weapon your class can use" in message
+        for message in shown_messages
+    )
     assert buy_calls == ["weapons"]
     assert FakeShopScreen.instances[0].set_calls[:2] == [
         ["Buy", "Sell", "Quests", "Leave"],
@@ -292,7 +310,9 @@ def test_visit_blacksmith_handles_unobtainium_buy_branch_and_leave(monkeypatch):
     ]
     assert FakeShopScreen.instances[0].location_portrait_name == "Griswold"
     assert FakeShopScreen.instances[0].shop_message == "Griswold's Blacksmith"
-    assert any("Come back whenever you'd like." in message for message, _buttons in FakePopup.messages)
+    assert any(
+        "Come back whenever you'd like." in message for message, _buttons in FakePopup.messages
+    )
 
 
 def test_visit_blacksmith_quest_renderer_uses_griswold_portrait(monkeypatch):
@@ -417,7 +437,9 @@ def test_visit_alchemist_and_jeweler_cover_quest_and_sell_paths(monkeypatch):
     assert FakeShopScreen.instances[0].last_quest_npc_name == "Alchemist"
     assert FakeShopScreen.instances[1].last_quest_npc_name == "Jeweler"
     assert sell_calls == ["sold"]
-    assert any("Good luck on your adventures!" in message for message, _buttons in FakePopup.messages)
+    assert any(
+        "Good luck on your adventures!" in message for message, _buttons in FakePopup.messages
+    )
     assert any("May fortune favor you!" in message for message, _buttons in FakePopup.messages)
 
 
@@ -462,7 +484,11 @@ def test_visit_jeweler_crafts_draconite_pendant(monkeypatch):
     assert player.dragoon_dragon_quest["pendant_crafted"] is True
     assert any("Draconite Pendant" in message for message in messages)
     assert FakeShopScreen.instances[0].set_calls[0] == [
-        "Buy", "Sell", "Quests", "Craft Draconite Pendant", "Leave"
+        "Buy",
+        "Sell",
+        "Quests",
+        "Craft Draconite Pendant",
+        "Leave",
     ]
 
 
@@ -470,7 +496,13 @@ def test_buy_helpers_route_to_expected_equipment_methods(monkeypatch):
     manager = _manager(monkeypatch, level=20)
     item_calls = []
 
-    monkeypatch.setattr(manager, "buy_equipment", lambda item_list, category_name, background_image="town.png": item_calls.append((item_list, category_name, background_image)))
+    monkeypatch.setattr(
+        manager,
+        "buy_equipment",
+        lambda item_list, category_name, background_image="town.png": item_calls.append(
+            (item_list, category_name, background_image)
+        ),
+    )
     monkeypatch.setattr(
         manager,
         "_buy_with_shop_screen",
@@ -519,7 +551,11 @@ def test_buy_helpers_route_to_expected_equipment_methods(monkeypatch):
     assert "Scrolls" not in item_calls[10][0]
     assert item_calls[11][1] == "Thieves Guild Goods"
     assert set(item_calls[11][0]) == {
-        "Tools", "Toxins", "Ammunition", "Crossbows", "Crossbow Bolts"
+        "Tools",
+        "Toxins",
+        "Ammunition",
+        "Crossbows",
+        "Crossbow Bolts",
     }
     assert items.Key in item_calls[11][0]["Tools"]
     assert items.BlankScroll in item_calls[11][0]["Tools"]
@@ -569,7 +605,11 @@ def test_magic_shop_uses_town_rarity_filter_and_includes_diviner_starter_rods(mo
 def test_buy_helpers_return_early_for_back_and_unavailable_items(monkeypatch):
     manager = _manager(monkeypatch, level=20)
     monkeypatch.setattr(shops, "ShopScreen", FakeShopScreen)
-    monkeypatch.setattr(manager, "buy_equipment", lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("should not buy")))
+    monkeypatch.setattr(
+        manager,
+        "buy_equipment",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("should not buy")),
+    )
 
     FakeShopScreen.option_sequences = [[None]]
     manager.buy_weapons()
@@ -588,12 +628,14 @@ def test_buy_with_shop_screen_covers_cancel_insufficient_gold_and_purchase(monke
     messages = []
     manager.presenter.show_message = lambda message: messages.append(message)
 
-    FakeShopScreen.item_sequences = [[
-        ("Potion", item, 30, 0),
-        ("Potion", item, 100, 0),
-        ("Potion", item, 10, 0),
-        None,
-    ]]
+    FakeShopScreen.item_sequences = [
+        [
+            ("Potion", item, 30, 0),
+            ("Potion", item, 100, 0),
+            ("Potion", item, 10, 0),
+            None,
+        ]
+    ]
     FakeQuantityPopup.responses = [0, 2, 2]
     FakePopup.responses = [None]
 
@@ -652,7 +694,9 @@ def test_buy_with_shop_screen_equips_purchased_weapon_to_chosen_slot(monkeypatch
 def test_alchemist_and_secret_consumables_include_status_items(monkeypatch):
     manager = _manager(monkeypatch, level=30, gold=120)
     captured = []
-    manager._buy_with_shop_screen = lambda itemdict, category_name, **kwargs: captured.append((category_name, itemdict, kwargs))
+    manager._buy_with_shop_screen = lambda itemdict, category_name, **kwargs: captured.append(
+        (category_name, itemdict, kwargs)
+    )
 
     manager.buy_potions()
     manager.buy_alchemist_goods()
@@ -667,9 +711,7 @@ def test_alchemist_and_secret_consumables_include_status_items(monkeypatch):
     assert "Health Potions" in captured[1][1]
     assert "Mana Potions" in captured[1][1]
     assert "Scrolls" not in captured[1][1]
-    assert set(captured[2][1]) == {
-        "Tools", "Toxins", "Ammunition", "Crossbows", "Crossbow Bolts"
-    }
+    assert set(captured[2][1]) == {"Tools", "Toxins", "Ammunition", "Crossbows", "Crossbow Bolts"}
     assert items.BlankScroll in captured[2][1]["Tools"]
     assert items.LockpickKit in captured[2][1]["Tools"]
     assert items.FireScroll not in captured[2][1]["Tools"]
@@ -743,7 +785,10 @@ def test_buy_with_shop_screen_can_dual_wield_multi_quantity_purchase(monkeypatch
     assert "uses 2 purchased copies" in header
     assert "Main Hand: replaces empty" in header
     assert "OffHand: replaces empty" in header
-    assert any("Equipped Dirk to Main Hand and OffHand." in message for message, _buttons in FakePopup.messages)
+    assert any(
+        "Equipped Dirk to Main Hand and OffHand." in message
+        for message, _buttons in FakePopup.messages
+    )
 
 
 def test_buy_with_shop_screen_cancel_equip_keeps_purchase_in_inventory(monkeypatch):
@@ -793,7 +838,10 @@ def test_buy_with_shop_screen_preflight_failure_keeps_purchase_in_inventory(monk
     assert manager.player_char.equipment["Weapon"].name == "Bare Hands"
     assert manager.player_char.equipment["OffHand"].name == "Buckler"
     assert len(manager.player_char.inventory["Rapier"]) == 1
-    assert any("Could not equip Rapier. It remains in inventory." in message for message, _buttons in FakePopup.messages)
+    assert any(
+        "Could not equip Rapier. It remains in inventory." in message
+        for message, _buttons in FakePopup.messages
+    )
 
 
 def test_buy_with_shop_screen_mid_action_failure_restores_inventory_and_equipment(monkeypatch):
@@ -827,16 +875,34 @@ def test_buy_with_shop_screen_mid_action_failure_restores_inventory_and_equipmen
     assert manager.player_char.equipment["Weapon"].name == "Bare Hands"
     assert manager.player_char.equipment["OffHand"].name == "No OffHand"
     assert len(manager.player_char.inventory["Dirk"]) == 2
-    assert any("Could not equip Dirk. It remains in inventory." in message for message, _buttons in FakePopup.messages)
+    assert any(
+        "Could not equip Dirk. It remains in inventory." in message
+        for message, _buttons in FakePopup.messages
+    )
 
 
 def test_format_item_info_and_item_availability_helpers(monkeypatch):
     manager = _manager(monkeypatch, level=12, in_town=True)
     current = DummyItem(name="Old Sword", typ="Weapon", subtyp="Sword")
-    manager.player_char.equipment = {"Weapon": current, "Ring": DummyItem(name="None", typ="Accessory", subtyp="Ring")}
-    manager.player_char.equip_diff = lambda _item, _slot, buy=False: "Attack  +5\nDefense  -2\nSpeed  0"
+    manager.player_char.equipment = {
+        "Weapon": current,
+        "Ring": DummyItem(name="None", typ="Accessory", subtyp="Ring"),
+    }
+    manager.player_char.equip_diff = (
+        lambda _item, _slot, buy=False: "Attack  +5\nDefense  -2\nSpeed  0"
+    )
 
-    info = manager._format_item_info(DummyItem(name="New Sword", typ="Weapon", subtyp="Sword", description="A very long description that should wrap neatly in the info panel for testing.", value=75, damage=12, weight=3))
+    info = manager._format_item_info(
+        DummyItem(
+            name="New Sword",
+            typ="Weapon",
+            subtyp="Sword",
+            description="A very long description that should wrap neatly in the info panel for testing.",
+            value=75,
+            damage=12,
+            weight=3,
+        )
+    )
     assert "Type: Weapon" in info
     assert "Subtype: Sword" in info
     assert "Theme Name: Mighty New Sword" in info
@@ -851,10 +917,14 @@ def test_format_item_info_and_item_availability_helpers(monkeypatch):
     assert "not usable in this slot" in info
 
     manager.player_char.equipment = {"Ring": DummyItem(name="None", typ="Accessory", subtyp="Ring")}
-    ring_info = manager._format_item_info(DummyItem(name="Silver Band", typ="Accessory", subtyp="Ring", value=40))
+    ring_info = manager._format_item_info(
+        DummyItem(name="Silver Band", typ="Accessory", subtyp="Ring", value=40)
+    )
     assert "(No Ring currently equipped)" in ring_info
 
-    electric_info = manager._format_item_info(DummyItem(name="Storm Fist", typ="Weapon", subtyp="Fist", value=40, damage=10))
+    electric_info = manager._format_item_info(
+        DummyItem(name="Storm Fist", typ="Weapon", subtyp="Fist", value=40, damage=10)
+    )
     assert "Element: Electric" not in electric_info
     elemental_item = DummyItem(name="Storm Fist", typ="Weapon", subtyp="Fist", value=40, damage=10)
     elemental_item.element = "Electric"
@@ -877,7 +947,10 @@ def test_format_item_info_and_item_availability_helpers(monkeypatch):
             return DummyItem(name="Rare", rarity=0.1)
 
     assert manager._has_available_items([AvailableItem()]) is True
-    assert manager._has_available_items([RestrictedByLevel(), RestrictedByClass(), LowRarity()]) is False
+    assert (
+        manager._has_available_items([RestrictedByLevel(), RestrictedByClass(), LowRarity()])
+        is False
+    )
 
 
 def test_sell_items_covers_empty_inventory_unsellable_cancel_and_confirm(monkeypatch):
@@ -913,27 +986,51 @@ def test_secret_shop_branches_delegate_to_expected_helpers(monkeypatch):
 
     monkeypatch.setattr(shops, "ShopScreen", FakeShopScreen)
     monkeypatch.setattr(shops, "ConfirmationPopup", FakePopup)
-    monkeypatch.setattr(manager, "_buy_secret_weapons", lambda screen: calls.append(("weapons", screen.shop_message)))
-    monkeypatch.setattr(manager, "_buy_secret_offhand", lambda screen: calls.append(("offhand", screen.shop_message)))
-    monkeypatch.setattr(manager, "_buy_secret_armor", lambda screen: calls.append(("armor", screen.shop_message)))
-    monkeypatch.setattr(manager, "_buy_secret_accessories", lambda screen: calls.append(("accessories", screen.shop_message)))
-    monkeypatch.setattr(manager, "_buy_secret_consumables", lambda screen: calls.append(("consumables", screen.shop_message)))
-    monkeypatch.setattr(manager, "sell_items", lambda background_image="town.png": calls.append(("sell", background_image)))
+    monkeypatch.setattr(
+        manager,
+        "_buy_secret_weapons",
+        lambda screen: calls.append(("weapons", screen.shop_message)),
+    )
+    monkeypatch.setattr(
+        manager,
+        "_buy_secret_offhand",
+        lambda screen: calls.append(("offhand", screen.shop_message)),
+    )
+    monkeypatch.setattr(
+        manager, "_buy_secret_armor", lambda screen: calls.append(("armor", screen.shop_message))
+    )
+    monkeypatch.setattr(
+        manager,
+        "_buy_secret_accessories",
+        lambda screen: calls.append(("accessories", screen.shop_message)),
+    )
+    monkeypatch.setattr(
+        manager,
+        "_buy_secret_consumables",
+        lambda screen: calls.append(("consumables", screen.shop_message)),
+    )
+    monkeypatch.setattr(
+        manager,
+        "sell_items",
+        lambda background_image="town.png": calls.append(("sell", background_image)),
+    )
 
-    FakeShopScreen.option_sequences = [[
-        "Buy",
-        "Weapons",
-        "Buy",
-        "Shields & Tomes",
-        "Buy",
-        "Armor",
-        "Buy",
-        "Accessories",
-        "Buy",
-        "Potions & Scrolls",
-        "Sell",
-        "Leave",
-    ]]
+    FakeShopScreen.option_sequences = [
+        [
+            "Buy",
+            "Weapons",
+            "Buy",
+            "Shields & Tomes",
+            "Buy",
+            "Armor",
+            "Buy",
+            "Accessories",
+            "Buy",
+            "Potions & Scrolls",
+            "Sell",
+            "Leave",
+        ]
+    ]
 
     manager.visit_secret_shop()
 
@@ -954,7 +1051,13 @@ def test_secret_shop_submenus_and_misc_helpers(monkeypatch):
     delegated = []
     monkeypatch.setattr(shops, "ShopScreen", FakeShopScreen)
     monkeypatch.setattr(manager, "_has_available_items", lambda _item_list: True)
-    monkeypatch.setattr(manager, "_buy_with_shop_screen", lambda itemdict, category_name, background_image="town.png": delegated.append((category_name, background_image, itemdict)))
+    monkeypatch.setattr(
+        manager,
+        "_buy_with_shop_screen",
+        lambda itemdict, category_name, background_image="town.png": delegated.append(
+            (category_name, background_image, itemdict)
+        ),
+    )
 
     FakeShopScreen.option_sequences = [["2-Handed"]]
     manager._buy_secret_weapons(FakeShopScreen(_make_presenter(), manager.player_char, "msg"))
@@ -966,18 +1069,41 @@ def test_secret_shop_submenus_and_misc_helpers(monkeypatch):
     manager._buy_secret_stat_potions()
     manager._buy_secret_keys()
 
-    assert ("2-Handed Weapons", "dungeon.png", manager._available_item_groups(shops.items_module.items_dict["Weapon"]["2-Handed"])) in delegated
-    assert ("Off-Hand", "dungeon.png", {
-        "Shields": shops.items_module.items_dict["OffHand"]["Shield"],
-        "Tomes": shops.items_module.items_dict["OffHand"]["Tome"],
-        "Rods": shops.items_module.items_dict["OffHand"]["Rod"],
-    }) in delegated
+    assert (
+        "2-Handed Weapons",
+        "dungeon.png",
+        manager._available_item_groups(shops.items_module.items_dict["Weapon"]["2-Handed"]),
+    ) in delegated
+    assert (
+        "Off-Hand",
+        "dungeon.png",
+        {
+            "Shields": shops.items_module.items_dict["OffHand"]["Shield"],
+            "Tomes": shops.items_module.items_dict["OffHand"]["Tome"],
+            "Rods": shops.items_module.items_dict["OffHand"]["Rod"],
+        },
+    ) in delegated
     assert ("Armor", "dungeon.png", shops.items_module.items_dict["Armor"]) in delegated
     assert ("Helmets", "dungeon.png", shops.items_module.items_dict["Helmet"]) in delegated
-    assert ("Accessories", "dungeon.png", {
-        "Rings": shops.items_module.items_dict["Accessory"]["Ring"],
-        "Pendants": shops.items_module.items_dict["Accessory"]["Pendant"],
-    }) in delegated
-    assert any(category == "Consumables" and background == "dungeon.png" for category, background, _itemdict in delegated)
-    assert ("Stat Potions", "dungeon.png", {"Stat Potions": shops.items_module.items_dict["Potion"]["Stat"]}) in delegated
-    assert ("Keys", "dungeon.png", {"Keys": shops.items_module.items_dict["Misc"]["Key"]}) in delegated
+    assert (
+        "Accessories",
+        "dungeon.png",
+        {
+            "Rings": shops.items_module.items_dict["Accessory"]["Ring"],
+            "Pendants": shops.items_module.items_dict["Accessory"]["Pendant"],
+        },
+    ) in delegated
+    assert any(
+        category == "Consumables" and background == "dungeon.png"
+        for category, background, _itemdict in delegated
+    )
+    assert (
+        "Stat Potions",
+        "dungeon.png",
+        {"Stat Potions": shops.items_module.items_dict["Potion"]["Stat"]},
+    ) in delegated
+    assert (
+        "Keys",
+        "dungeon.png",
+        {"Keys": shops.items_module.items_dict["Misc"]["Key"]},
+    ) in delegated

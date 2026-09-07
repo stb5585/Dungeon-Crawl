@@ -7,7 +7,6 @@ from src.core.classes import ability_mechanics
 from src.core.combat import battle_engine
 from src.core.data import ability_loader
 
-
 SAVE_MODULES = (
     save_system.models,
     save_system.item_serialization,

@@ -23,7 +23,6 @@ from src.core.abilities import (
     utility,
 )
 
-
 ABILITY_MODULES = (
     base,
     bard,

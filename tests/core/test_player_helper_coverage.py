@@ -142,7 +142,9 @@ class TestPlayerHelperCoverage:
         player.equipment["Ring"] = items.BarrierRing()
         assert player.check_mod("shield") == 30
 
-        player.equipment["OffHand"] = SimpleNamespace(subtyp="Tome", mod=6, damage=0, name="Prayer Tome", weight=0)
+        player.equipment["OffHand"] = SimpleNamespace(
+            subtyp="Tome", mod=6, damage=0, name="Prayer Tome", weight=0
+        )
         player.stat_effects["Magic"].active = True
         player.stat_effects["Magic"].extra = 3
         assert player.check_mod("heal") == 84
@@ -214,7 +216,9 @@ class TestPlayerHelperCoverage:
 
         assert warlock.check_mod("armor") == 19
 
-    def test_check_mod_resist_applies_flying_equipment_familiar_and_class_bonuses(self, monkeypatch):
+    def test_check_mod_resist_applies_flying_equipment_familiar_and_class_bonuses(
+        self, monkeypatch
+    ):
         geomancer = TestGameState.create_player(class_name="Astromancer", race_name="Human")
         geomancer.power_up = True
         geomancer.class_effects["Power Up"].active = True
@@ -325,8 +329,12 @@ class TestPlayerHelperCoverage:
         equipment_message = player.equipment_str()
         resist_message = player.resist_str()
 
-        main_crit = int((player.equipment["Weapon"].crit + (BASE_CRIT_PER_POINT * stat_values["speed"])) * 100)
-        off_crit = int((player.equipment["OffHand"].crit + (BASE_CRIT_PER_POINT * stat_values["speed"])) * 100)
+        main_crit = int(
+            (player.equipment["Weapon"].crit + (BASE_CRIT_PER_POINT * stat_values["speed"])) * 100
+        )
+        off_crit = int(
+            (player.equipment["OffHand"].crit + (BASE_CRIT_PER_POINT * stat_values["speed"])) * 100
+        )
 
         assert "Attack:" in combat_message
         assert "11/  7" in combat_message

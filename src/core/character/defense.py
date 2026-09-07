@@ -22,8 +22,14 @@ if TYPE_CHECKING:
 
 class CharacterDefenseMixin:
     def _apply_absorption(
-        self, defender: Character, damage: int, raw_dmg: int,
-        crit_per: float, att: str, cover: bool, crit: int
+        self,
+        defender: Character,
+        damage: int,
+        raw_dmg: int,
+        crit_per: float,
+        att: str,
+        cover: bool,
+        crit: int,
     ) -> AbsorptionResult:
         """
         Apply cover, shield block, mana shield, class shields, and reflect.
@@ -36,12 +42,13 @@ class CharacterDefenseMixin:
         from ..classes import ability_mechanics
 
         if cover:
-            msg += (f"{defender.familiar.name} steps in front of the attack, "
-                    f"taking the damage for {defender.name}.\n")
-            if (
-                getattr(defender.familiar, "spec", "") == "Defense"
-                and "Thorn By My Side" in defender.spellbook.get("Skills", {})
-            ):
+            msg += (
+                f"{defender.familiar.name} steps in front of the attack, "
+                f"taking the damage for {defender.name}.\n"
+            )
+            if getattr(
+                defender.familiar, "spec", ""
+            ) == "Defense" and "Thorn By My Side" in defender.spellbook.get("Skills", {}):
                 reflected = max(1, int(raw_dmg))
                 self.health.current = max(0, self.health.current - reflected)
                 msg += f"The Homunculus redirects {reflected} damage to {self.name}.\n"
@@ -50,19 +57,24 @@ class CharacterDefenseMixin:
         # Shield block
         cross_block = ability_mechanics.cross_block_profile(defender)
         can_block = (
-            (defender.equipment['OffHand'].subtyp == 'Shield' or
-             'Dodge' in defender.equipment['Ring'].mod or
-             cross_block is not None) and
-            not defender.magic_effects["Mana Shield"].active and
-            not (_class_name(defender) == "Crusader" and defender.power_up and
-                 defender.class_effects["Power Up"].active) and
-            not defender.incapacitated()
+            (
+                defender.equipment["OffHand"].subtyp == "Shield"
+                or "Dodge" in defender.equipment["Ring"].mod
+                or cross_block is not None
+            )
+            and not defender.magic_effects["Mana Shield"].active
+            and not (
+                _class_name(defender) == "Crusader"
+                and defender.power_up
+                and defender.class_effects["Power Up"].active
+            )
+            and not defender.incapacitated()
         )
         if can_block:
             blk_chance = (
                 cross_block[0]
                 if cross_block is not None
-                else defender.check_mod('shield', enemy=self) / 100
+                else defender.check_mod("shield", enemy=self) / 100
             )
             try:
                 from ..classes import paladin
@@ -76,15 +88,18 @@ class CharacterDefenseMixin:
                     if cross_block is not None
                     else (
                         blk_chance
-                        + (((
-                            defender.stats.strength
-                            * curses.strength_multiplier(defender)
-                        ) - self.stats.strength) / damage)
+                        + (
+                            (
+                                (defender.stats.strength * curses.strength_multiplier(defender))
+                                - self.stats.strength
+                            )
+                            / damage
+                        )
                         if damage
                         else 0
                     )
                 )
-                if 'Shield Block' in defender.spellbook['Skills']:
+                if "Shield Block" in defender.spellbook["Skills"]:
                     blk_per *= 1.25
                 try:
                     from ..classes import paladin
@@ -112,18 +127,25 @@ class CharacterDefenseMixin:
                     blocked_damage = max(0, incoming_damage - damage)
                     try:
                         from ..events.event_bus import get_event_bus, create_combat_event, EventType
+
                         event_bus = get_event_bus()
-                        event_bus.emit(create_combat_event(
-                            EventType.BLOCK, actor=defender, target=self,
-                            damage_blocked=blocked_damage,
-                            **self._weapon_event_metadata(att),
-                        ))
+                        event_bus.emit(
+                            create_combat_event(
+                                EventType.BLOCK,
+                                actor=defender,
+                                target=self,
+                                damage_blocked=blocked_damage,
+                                **self._weapon_event_metadata(att),
+                            )
+                        )
                     except Exception:
                         pass
                     blocked_pct = round(blk_per * 100)
                     if blocked_pct > 0:
-                        msg += (f"{defender.name} blocks {self.name}'s attack and mitigates "
-                                f"{blocked_pct} percent of the damage.\n")
+                        msg += (
+                            f"{defender.name} blocks {self.name}'s attack and mitigates "
+                            f"{blocked_pct} percent of the damage.\n"
+                        )
                         try:
                             from ..classes import promotion_kits
 
@@ -187,13 +209,10 @@ class CharacterDefenseMixin:
             absorbed = min(wall_hp, damage)
             defender.barrier_wall_hp = wall_hp - absorbed
             damage -= absorbed
-            msg += (
-                f"{defender.name}'s barrier wall absorbs {absorbed} damage"
-                + (
-                    " and shatters.\n"
-                    if defender.barrier_wall_hp <= 0
-                    else f" ({defender.barrier_wall_hp} HP remains).\n"
-                )
+            msg += f"{defender.name}'s barrier wall absorbs {absorbed} damage" + (
+                " and shatters.\n"
+                if defender.barrier_wall_hp <= 0
+                else f" ({defender.barrier_wall_hp} HP remains).\n"
             )
             if damage <= 0:
                 return 0, msg, True
@@ -208,14 +227,20 @@ class CharacterDefenseMixin:
             return damage, msg + shield_msg, absorbed
 
         # Crusader absorb shield
-        if (_class_name(defender) == "Crusader" and defender.power_up and
-                defender.class_effects["Power Up"].active):
+        if (
+            _class_name(defender) == "Crusader"
+            and defender.power_up
+            and defender.class_effects["Power Up"].active
+        ):
             damage, shield_msg, absorbed = self._apply_crusader_shield(defender, damage)
             return damage, msg + shield_msg, absorbed
 
         # Templar reflect
-        if (_class_name(defender) == "Templar" and defender.power_up and
-                defender.class_effects["Power Up"].active):
+        if (
+            _class_name(defender) == "Templar"
+            and defender.power_up
+            and defender.class_effects["Power Up"].active
+        ):
             ref_dam = int(0.25 * damage)
             damage -= ref_dam
             self.health.current -= ref_dam
@@ -224,9 +249,11 @@ class CharacterDefenseMixin:
             return damage, msg, False
 
         # Totem reflect
-        if (defender.magic_effects["Totem"].active and
-                isinstance(defender.magic_effects["Totem"].extra, dict) and
-                defender.magic_effects["Totem"].extra.get("secondary") == "reflect"):
+        if (
+            defender.magic_effects["Totem"].active
+            and isinstance(defender.magic_effects["Totem"].extra, dict)
+            and defender.magic_effects["Totem"].extra.get("secondary") == "reflect"
+        ):
             ref_dam = int(0.25 * damage)
             damage -= ref_dam
             self.health.current -= ref_dam
@@ -275,16 +302,13 @@ class CharacterDefenseMixin:
             0.0,
             min(
                 1.0,
-                float(defender.magic_effects["Mana Shield"].duration or 0)
-                / 100.0,
+                float(defender.magic_effects["Mana Shield"].duration or 0) / 100.0,
             ),
         )
         try:
             from ..classes import mage_mechanics
 
-            redirect_percent *= mage_mechanics.arcane_potency_multiplier(
-                defender
-            )
+            redirect_percent *= mage_mechanics.arcane_potency_multiplier(defender)
         except Exception:
             pass
         available_mana = max(0, int(defender.mana.current))
@@ -316,8 +340,10 @@ class CharacterDefenseMixin:
         """Handle Crusader Power Up absorb shield. Returns (damage, msg, fully_absorbed)."""
         msg = ""
         if damage >= defender.class_effects["Power Up"].extra:
-            msg += (f"The shield around {defender.name} absorbs "
-                    f"{defender.class_effects['Power Up'].extra} damage.\n")
+            msg += (
+                f"The shield around {defender.name} absorbs "
+                f"{defender.class_effects['Power Up'].extra} damage.\n"
+            )
             damage -= defender.class_effects["Power Up"].extra
             defender.class_effects["Power Up"].active = False
             msg += f"The shield dissolves around {defender.name}.\n"
@@ -338,14 +364,20 @@ class CharacterDefenseMixin:
         # Elemental + physical resistance
         e_resist = 0
         if self.equipment[att].element:
-            e_resist = defender.check_mod('resist', enemy=self, typ=self.equipment[att].element)
+            e_resist = defender.check_mod("resist", enemy=self, typ=self.equipment[att].element)
         p_resist = defender.check_mod(
-            'resist', enemy=self, typ='Physical', ultimate=self.equipment[att].ultimate
+            "resist", enemy=self, typ="Physical", ultimate=self.equipment[att].ultimate
         )
-        dam_red = defender.check_mod('armor', enemy=self, ignore=ignore)
-        damage = max(0, int(
-            damage * (1 - p_resist) * (1 - e_resist) * (1 - (dam_red / (dam_red + ARMOR_SCALING_FACTOR)))
-        ))
+        dam_red = defender.check_mod("armor", enemy=self, ignore=ignore)
+        damage = max(
+            0,
+            int(
+                damage
+                * (1 - p_resist)
+                * (1 - e_resist)
+                * (1 - (dam_red / (dam_red + ARMOR_SCALING_FACTOR)))
+            ),
+        )
         variance = random.uniform(DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH)
         damage = int(damage * variance)
         try:
@@ -367,11 +399,7 @@ class CharacterDefenseMixin:
             )
             bonus = max(
                 1,
-                int(
-                    damage
-                    * (BLEED_MELEE_DAMAGE_TAKEN_MULTIPLIER - 1.0)
-                    * bleed_multiplier
-                ),
+                int(damage * (BLEED_MELEE_DAMAGE_TAKEN_MULTIPLIER - 1.0) * bleed_multiplier),
             )
             damage += bonus
             msg += f"{defender.name}'s bleeding leaves them vulnerable (+{bonus} damage).\n"
@@ -379,14 +407,19 @@ class CharacterDefenseMixin:
         # Defensive stance
         defensive_reduction = (
             defender.get_defensive_reduction()
-            if hasattr(defender, "get_defensive_reduction") else 0.0
+            if hasattr(defender, "get_defensive_reduction")
+            else 0.0
         )
         if defensive_reduction > 0 and damage > 0:
             reduced = max(1, int(damage * defensive_reduction))
             damage = max(0, damage - reduced)
             msg += f"{defender.name} braces defensively, reducing damage by {reduced}.\n"
 
-        if defender.magic_effects.get("Stone Skin") and defender.magic_effects["Stone Skin"].active and damage > 0:
+        if (
+            defender.magic_effects.get("Stone Skin")
+            and defender.magic_effects["Stone Skin"].active
+            and damage > 0
+        ):
             reduced = max(1, int(damage * 0.35))
             damage = max(0, damage - reduced)
             msg += f"{defender.name}'s stone skin absorbs {reduced} damage.\n"
@@ -521,7 +554,7 @@ class CharacterDefenseMixin:
         defender: Character,
         damage: int,
         crit: int,
-        att: str = 'Weapon',
+        att: str = "Weapon",
         *,
         damage_type_override: str | None = None,
     ) -> str:
@@ -554,8 +587,9 @@ class CharacterDefenseMixin:
             pass
 
         # Sleep wakeup
-        if defender.status_effects["Sleep"].active and \
-                not random.randint(0, defender.status_effects["Sleep"].duration):
+        if defender.status_effects["Sleep"].active and not random.randint(
+            0, defender.status_effects["Sleep"].duration
+        ):
             msg += f"The attack awakens {defender.name}!\n"
             self._emit_status_event(defender, "Sleep", applied=False, source="Awakened by Damage")
             defender.status_effects["Sleep"].active = False
@@ -594,14 +628,13 @@ class CharacterDefenseMixin:
 
         msg = ""
         result = CombatResult(
-            action=att, actor=self, target=defender,
-            hit=True, crit=crit, damage=damage, healing=0
+            action=att, actor=self, target=defender, hit=True, crit=crit, damage=damage, healing=0
         )
         results = CombatResultGroup()
         results.add(result)
 
         # Armor special effects (thorns, reflection)
-        defender.equipment['Armor'].special_effect(results)
+        defender.equipment["Armor"].special_effect(results)
 
         # Weapon special effects (life steal, elemental effects, instant death)
         if defender.is_alive() and damage > 0 and not defender.magic_effects["Mana Shield"].active:
@@ -611,10 +644,10 @@ class CharacterDefenseMixin:
         for res in results.results:
             if res.message:
                 msg += res.message
-            if 'Drain' in res.extra and res.extra['Drain']:
+            if "Drain" in res.extra and res.extra["Drain"]:
                 drain_amount = res.actor.health.current - (res.actor.health.current - res.damage)
                 msg += f"{res.actor.name} drains {drain_amount} health from {res.target.name}.\n"
-            if 'Instant Death' in res.extra and res.extra['Instant Death']:
+            if "Instant Death" in res.extra and res.extra["Instant Death"]:
                 res.target.health.current = 0
                 msg += f"{res.target.name} is instantly killed!\n"
 
@@ -668,7 +701,9 @@ class CharacterDefenseMixin:
 
         return (hit, message, damage)
 
-    def damage_reduction(self, damage: int, attacker: Character, typ: str = "Physical") -> DefenseResolution:
+    def damage_reduction(
+        self, damage: int, attacker: Character, typ: str = "Physical"
+    ) -> DefenseResolution:
         """
         Apply elemental resistance and magic-defense reduction to incoming damage.
 
@@ -692,7 +727,11 @@ class CharacterDefenseMixin:
                 if ability_mechanics.spend_nature_shield_orb(self):
                     healing = max(1, int(damage * 0.5))
                     self.health.current = min(self.health.max, self.health.current + healing)
-                    return False, f"A Nature Shield orb intercepts the spell and heals {self.name} for {healing}.\n", 0
+                    return (
+                        False,
+                        f"A Nature Shield orb intercepts the spell and heals {self.name} for {healing}.\n",
+                        0,
+                    )
             except Exception:
                 pass
 
@@ -707,7 +746,7 @@ class CharacterDefenseMixin:
         # Apply basic resistance only if typ is a valid resistance type
         resist = 0
         if typ in self.resistance:
-            resist = self.check_mod('resist', enemy=attacker, typ=typ)
+            resist = self.check_mod("resist", enemy=attacker, typ=typ)
         if typ == "Shadow" and getattr(attacker, "_piercing_bolt_cast", False):
             resist *= 0.5 if resist > 0 else 1.5
         try:
@@ -757,9 +796,7 @@ class CharacterDefenseMixin:
         try:
             from ..classes import mage_mechanics
 
-            final_damage = int(
-                final_damage * mage_mechanics.incoming_damage_multiplier(self)
-            )
+            final_damage = int(final_damage * mage_mechanics.incoming_damage_multiplier(self))
         except Exception:
             pass
 
@@ -770,7 +807,9 @@ class CharacterDefenseMixin:
         try:
             from ..classes import promotion_kits
 
-            final_damage, devotion_message = promotion_kits.devotion_guard_reduction(self, final_damage)
+            final_damage, devotion_message = promotion_kits.devotion_guard_reduction(
+                self, final_damage
+            )
             message += devotion_message
             final_damage, benediction_message = promotion_kits.benediction_damage_reduction(
                 self,
@@ -787,12 +826,10 @@ class CharacterDefenseMixin:
         try:
             from ..classes import paladin
 
-            final_damage, shelter_message = (
-                paladin.oath_shelter_damage_reduction(
-                    self,
-                    attacker,
-                    final_damage,
-                )
+            final_damage, shelter_message = paladin.oath_shelter_damage_reduction(
+                self,
+                attacker,
+                final_damage,
             )
             message += shelter_message
         except Exception:

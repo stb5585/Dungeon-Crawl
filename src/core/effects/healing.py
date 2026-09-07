@@ -40,4 +40,4 @@ class RegenEffect(Effect):
         target.magic_effects["Regen"].active = True
         target.magic_effects["Regen"].duration = self.duration
         target.magic_effects["Regen"].extra = healing_per_tick
-        result.effects_applied.setdefault('Magic', []).append('Regen')
+        result.effects_applied.setdefault("Magic", []).append("Regen")

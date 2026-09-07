@@ -9,7 +9,6 @@ from src.core.classes import healer
 from src.core.progression import ABILITY_TREES, NodeKind
 from tests.test_framework import TestGameState
 
-
 EXPECTED_COLUMNS = (
     ("Imbue Weapon", "Goad", "Lullaby", "Beginner's Luck", "Mental Shard", "Cacophany"),
     ("Bless", "Tranquility", "Courage", "Vision", "+10 Magic Defense", "Tutelary"),
@@ -51,10 +50,10 @@ def test_healer_tree_matches_requested_columns_gates_and_promotion_joins():
     for column, names in enumerate(EXPECTED_COLUMNS):
         assert tuple(by_position[(column, row)].name for row in range(6)) == names
     for column in range(6):
-        assert tuple(
-            by_position[(column, row)].payload.get("level_requirement")
-            for row in range(6)
-        ) == EXPECTED_LEVELS[column]
+        assert (
+            tuple(by_position[(column, row)].payload.get("level_requirement") for row in range(6))
+            == EXPECTED_LEVELS[column]
+        )
     assert by_name["Promote: Bard"].position == (0.5, 7)
     assert by_name["Promote: Cleric"].position == (2.5, 7)
     assert by_name["Promote: Priest"].position == (3.5, 7)
@@ -208,10 +207,12 @@ def test_delayed_reaction_and_meditation_defer_then_release_damage():
 
 def test_zen_accuracy_and_staff_proficiency_stack_for_staves():
     player = _player()
-    player.spellbook["Skills"].update({
-        "Zen Accuracy": abilities.ZenAccuracy(),
-        "Staff Proficiency": abilities.StaffProficiency(),
-    })
+    player.spellbook["Skills"].update(
+        {
+            "Zen Accuracy": abilities.ZenAccuracy(),
+            "Staff Proficiency": abilities.StaffProficiency(),
+        }
+    )
 
     assert healer.accuracy_bonus(player, "Staff") == pytest.approx(0.15)
     assert healer.staff_damage_multiplier(player, "Staff") == pytest.approx(1.10)

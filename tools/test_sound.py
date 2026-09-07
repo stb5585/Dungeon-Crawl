@@ -2,9 +2,11 @@
 """
 Test sound playback to diagnose audio issues.
 """
+
 import sys
 import time
-sys.path.insert(0, '.')
+
+sys.path.insert(0, ".")
 
 import pygame
 
@@ -28,14 +30,15 @@ print(f"  SFX volume: {sm.sfx_volume}")
 
 # List available sound files
 import os
-sound_files = [f for f in os.listdir(sm.sounds_dir) if f.endswith('.wav')]
+
+sound_files = [f for f in os.listdir(sm.sounds_dir) if f.endswith(".wav")]
 print(f"\nFound {len(sound_files)} sound files")
 print(f"First few: {sound_files[:5]}")
 
 # Test playing a sound
-print("\n" + "="*50)
+print("\n" + "=" * 50)
 print("AUDIO TEST - Playing 'menu_select' sound")
-print("="*50)
+print("=" * 50)
 print("\nIf you can hear a beep in the next 2 seconds, audio is working!")
 print("Playing...")
 
@@ -44,7 +47,7 @@ sm.set_master_volume(1.0)
 sm.set_sfx_volume(1.0)
 
 # Play the sound
-sm.play_sfx('menu_select', volume=1.0)
+sm.play_sfx("menu_select", volume=1.0)
 
 # Keep the program alive while sound plays
 # Need to process pygame events to keep audio playing

@@ -12,7 +12,6 @@ from .state import (
     combat_state,
 )
 
-
 WEAVE_SIGNATURES = ("Element", "Force", "Protection", "Conjuration")
 
 _FOUNDATION_PREVIEWS = {
@@ -28,15 +27,17 @@ _ACCENT_PREVIEWS = {
     "Conjuration": "echoed effect",
 }
 
-_ELEMENTAL_TYPES = frozenset({
-    "Earth",
-    "Electric",
-    "Fire",
-    "Ice",
-    "Lightning",
-    "Water",
-    "Wind",
-})
+_ELEMENTAL_TYPES = frozenset(
+    {
+        "Earth",
+        "Electric",
+        "Fire",
+        "Ice",
+        "Lightning",
+        "Water",
+        "Wind",
+    }
+)
 _PROTECTION_TERMS = (
     "armor",
     "barrier",
@@ -141,10 +142,7 @@ def _finish_pattern(character: Any) -> str:
     """Clear a spent pattern, applying the awakened ring's Accent memory."""
     state = combat_state(character)
     accent = state.get("weave_accent")
-    if (
-        accent in WEAVE_SIGNATURES
-        and _ring_awakened_equipped(character, "Knight Enchanter")
-    ):
+    if accent in WEAVE_SIGNATURES and _ring_awakened_equipped(character, "Knight Enchanter"):
         state["weave_foundation"] = accent
         state["weave_accent"] = None
         return f"Arcane Duel preserves {accent} as the next Foundation.\n"
@@ -435,13 +433,16 @@ def resolve_enchanted_assault(
         return ""
     count = max(1, int(charge.get("count", 1) or 1))
     multiplier = _release_multiplier(actor)
-    _remember_multi_hit_release(actor, {
-        "charge": dict(charge),
-        "count": count,
-        "foundation": foundation,
-        "accent": accent,
-        "multiplier": multiplier,
-    })
+    _remember_multi_hit_release(
+        actor,
+        {
+            "charge": dict(charge),
+            "count": count,
+            "foundation": foundation,
+            "accent": accent,
+            "multiplier": multiplier,
+        },
+    )
     offensive_pattern = foundation != "Protection" or accent not in {None, "Protection"}
     targets = [
         target,
@@ -454,12 +455,14 @@ def resolve_enchanted_assault(
 
         for adjacent in targets[1:]:
             if adjacent is not None and adjacent.is_alive():
-                messages.append(_release_blade_charge_damage(
-                    actor,
-                    adjacent,
-                    trigger_damage,
-                    charge,
-                ))
+                messages.append(
+                    _release_blade_charge_damage(
+                        actor,
+                        adjacent,
+                        trigger_damage,
+                        charge,
+                    )
+                )
     messages.extend(
         _apply_assault_pattern(
             actor,
@@ -477,16 +480,21 @@ def resolve_enchanted_assault(
     memory = _finish_pattern(actor)
     messages.append(memory)
     messages.append(_preserve_resonant_charge(actor, charge, foundation))
-    messages.append(_schedule_echo(actor, {
-        "kind": "assault",
-        "targets": targets,
-        "trigger_damage": trigger_damage,
-        "count": count,
-        "charge": charge,
-        "foundation": foundation,
-        "accent": accent,
-        "multiplier": multiplier,
-    }))
+    messages.append(
+        _schedule_echo(
+            actor,
+            {
+                "kind": "assault",
+                "targets": targets,
+                "trigger_damage": trigger_damage,
+                "count": count,
+                "charge": charge,
+                "foundation": foundation,
+                "accent": accent,
+                "multiplier": multiplier,
+            },
+        )
+    )
     return "".join(messages)
 
 
@@ -510,9 +518,7 @@ def resolve_quick_recharge_hit(
     accent = payload.get("accent")
     count = max(1, int(payload.get("count", 1) or 1))
     multiplier = max(1.0, float(payload.get("multiplier", 1.0) or 1.0))
-    offensive_pattern = (
-        foundation != "Protection" or accent not in {None, "Protection"}
-    )
+    offensive_pattern = foundation != "Protection" or accent not in {None, "Protection"}
     targets = [
         target,
         *(_adjacent_targets(actor, target) if offensive_pattern else []),
@@ -521,22 +527,26 @@ def resolve_quick_recharge_hit(
     for index, affected in enumerate(targets):
         if affected is None or not affected.is_alive():
             continue
-        messages.append(_release_blade_charge_damage(
-            actor,
-            affected,
-            trigger_damage,
-            charge,
-        ))
-        messages.append(_apply_assault_pattern(
-            actor,
-            affected,
-            trigger_damage,
-            count,
-            foundation,
-            accent,
-            multiplier,
-            grant_self_benefits=index == 0,
-        ))
+        messages.append(
+            _release_blade_charge_damage(
+                actor,
+                affected,
+                trigger_damage,
+                charge,
+            )
+        )
+        messages.append(
+            _apply_assault_pattern(
+                actor,
+                affected,
+                trigger_damage,
+                count,
+                foundation,
+                accent,
+                multiplier,
+                grant_self_benefits=index == 0,
+            )
+        )
     return "".join(messages)
 
 
@@ -553,10 +563,12 @@ def aegis_weave(character: Any) -> str:
     if foundation == "Element":
         stat_bonuses.append(("Attack", max(1, int(3 * count * multiplier))))
     elif foundation == "Force":
-        stat_bonuses.append((
-            "Magic Defense",
-            max(1, int(4 * count * multiplier)),
-        ))
+        stat_bonuses.append(
+            (
+                "Magic Defense",
+                max(1, int(4 * count * multiplier)),
+            )
+        )
     elif foundation == "Protection":
         ward = int(ward * 1.50)
     elif foundation == "Conjuration":
@@ -586,16 +598,19 @@ def aegis_weave(character: Any) -> str:
         f"{granted} temporary HP for {turns} turns.\n{memory}"
     )
     message += _preserve_resonant_charge(character, charge, foundation)
-    message += _schedule_echo(character, {
-        "kind": "aegis",
-        "count": count,
-        "foundation": foundation,
-        "accent": accent,
-        "multiplier": multiplier,
-        "ward": ward,
-        "turns": turns,
-        "stat_bonuses": stat_bonuses,
-    })
+    message += _schedule_echo(
+        character,
+        {
+            "kind": "aegis",
+            "count": count,
+            "foundation": foundation,
+            "accent": accent,
+            "multiplier": multiplier,
+            "ward": ward,
+            "turns": turns,
+            "stat_bonuses": stat_bonuses,
+        },
+    )
     return message
 
 
@@ -687,18 +702,23 @@ def resolve_spellbind(actor: Any, target: Any, trigger_damage: int) -> str:
         messages.append(_maybe_refresh_debuffs(actor, affected))
     pattern = foundation + (f" > {accent}" if accent else "")
     del pattern
-    messages.append(_schedule_echo(actor, {
-        "kind": "spellbind",
-        "targets": targets,
-        "raw_damage": raw_damage,
-        "foundation": foundation,
-        "accent": accent,
-        "count": count,
-        "multiplier": multiplier,
-        "healing": healing,
-        "mana": restored,
-        "ward": ward,
-    }))
+    messages.append(
+        _schedule_echo(
+            actor,
+            {
+                "kind": "spellbind",
+                "targets": targets,
+                "raw_damage": raw_damage,
+                "foundation": foundation,
+                "accent": accent,
+                "count": count,
+                "multiplier": multiplier,
+                "healing": healing,
+                "mana": restored,
+                "ward": ward,
+            },
+        )
+    )
     return "".join(messages)
 
 
@@ -716,22 +736,26 @@ def resolve_echoing_blade(character: Any) -> str:
 
         for index, target in enumerate(payload.get("targets", ())):
             if target is not None and target.is_alive():
-                messages.append(_release_blade_charge_damage(
-                    character,
-                    target,
-                    int(payload.get("trigger_damage", 0) or 0),
-                    payload.get("charge", {}),
-                ))
-                messages.append(_apply_assault_pattern(
-                    character,
-                    target,
-                    int(payload.get("trigger_damage", 0) or 0),
-                    int(payload.get("count", 1) or 1),
-                    str(payload.get("foundation") or "Force"),
-                    payload.get("accent"),
-                    float(payload.get("multiplier", 1.0) or 1.0),
-                    grant_self_benefits=index == 0,
-                ))
+                messages.append(
+                    _release_blade_charge_damage(
+                        character,
+                        target,
+                        int(payload.get("trigger_damage", 0) or 0),
+                        payload.get("charge", {}),
+                    )
+                )
+                messages.append(
+                    _apply_assault_pattern(
+                        character,
+                        target,
+                        int(payload.get("trigger_damage", 0) or 0),
+                        int(payload.get("count", 1) or 1),
+                        str(payload.get("foundation") or "Force"),
+                        payload.get("accent"),
+                        float(payload.get("multiplier", 1.0) or 1.0),
+                        grant_self_benefits=index == 0,
+                    )
+                )
     elif kind == "aegis":
         turns = int(payload.get("turns", 3) or 3)
         for rating, bonus in payload.get("stat_bonuses", ()):
@@ -797,9 +821,7 @@ def resolve_echoing_blade(character: Any) -> str:
                 target,
                 int(payload.get("raw_damage", 0) or 0),
             )
-            messages.append(
-                f"Echoing Spellbind deals {damage} damage to {target.name}.\n"
-            )
+            messages.append(f"Echoing Spellbind deals {damage} damage to {target.name}.\n")
             messages.append(_maybe_refresh_debuffs(character, target))
     return "".join(messages)
 
