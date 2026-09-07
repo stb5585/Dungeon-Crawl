@@ -29,6 +29,8 @@
   and player-facing service modules while preserving `src.core.progression`.
 - Split the pygame progression screen into tree rendering, panel rendering,
   and interaction orchestration modules while preserving its public class.
+- Split battle-engine turn handling into preparation, targeting, resolution,
+  and lifecycle phases behind the existing turn mixin.
 - Removed pre-release progression migrations and refunds, including a reversed
   Spell Reflection node-ID rewrite that corrupted current persisted ownership.
 - Retired the obsolete tab-delimited numbered-map conversion workflow, made
