@@ -25,6 +25,28 @@ def test_signal_handler_quits_and_exits(monkeypatch):
     assert exit_codes == [0]
 
 
+def test_signal_handler_registration_is_explicit(monkeypatch):
+    calls = []
+    monkeypatch.setattr(pygame_game.signal, "signal", lambda *args: calls.append(args))
+
+    pygame_game.install_signal_handlers()
+
+    assert calls == [(pygame_game.signal.SIGINT, pygame_game.signal_handler)]
+
+
+def test_main_returns_nonzero_for_fatal_startup_failure(monkeypatch, capsys):
+    monkeypatch.setattr(pygame_game, "install_signal_handlers", lambda: None)
+    monkeypatch.setattr(
+        pygame_game,
+        "PygameGame",
+        lambda **_kwargs: (_ for _ in ()).throw(RuntimeError("startup exploded")),
+    )
+    monkeypatch.setattr(pygame_game.sys, "argv", ["game_pygame.py"])
+
+    assert pygame_game.main() == 1
+    assert "Fatal startup error: startup exploded" in capsys.readouterr().err
+
+
 def test_cleanup_clears_background_provider_and_quits(monkeypatch):
     game = pygame_game.PygameGame.__new__(pygame_game.PygameGame)
     cleanup_calls = []

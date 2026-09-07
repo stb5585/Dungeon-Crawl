@@ -17,6 +17,7 @@ from src.core.data.data_loader import get_intro_story, get_special_events
 from src.core.player import summarize_gameplay_stat_groups
 from src.core.races import races_dict
 from src.core.save_system import SaveManager
+from src.paths import CORE_DATA_DIR, MAP_FILES_DIR, PYGAME_ASSETS_DIR, USER_SAVE_DIR
 from src.ui_pygame.assets.npc_art_manager import get_npc_art_manager
 from .gui.barracks import BarracksManager
 from .gui.character_naming import CharacterNamingScreen
@@ -49,8 +50,36 @@ def signal_handler(sig, frame):
     sys.exit(0)
 
 
-# Set up signal handler for Ctrl+C
-signal.signal(signal.SIGINT, signal_handler)
+def install_signal_handlers() -> None:
+    """Install process handlers only when launching the executable."""
+    signal.signal(signal.SIGINT, signal_handler)
+
+
+def runtime_smoke_check() -> None:
+    """Validate frozen resources and headless Pygame startup, then exit."""
+    required_paths = (
+        CORE_DATA_DIR / "content" / "quests.json",
+        MAP_FILES_DIR / "map_level_1.json",
+        MAP_FILES_DIR / "dungeon_tiles.tsx",
+        PYGAME_ASSETS_DIR / "backgrounds" / "main_menu.png",
+    )
+    missing = [str(path) for path in required_paths if not path.is_file()]
+    if missing:
+        raise FileNotFoundError(f"Missing runtime resources: {', '.join(missing)}")
+
+    from src.core import map_tiles
+    from src.core.player.maps import _load_tiled_map
+
+    pygame.init()
+    try:
+        pygame.display.set_mode((1, 1), flags=pygame.HIDDEN)
+        pygame.image.load(str(required_paths[-1]))
+        world = _load_tiled_map(required_paths[1], 1, map_tiles)
+        if not world:
+            raise RuntimeError("Runtime map loaded without tiles.")
+        SaveManager.ensure_dirs()
+    finally:
+        pygame.quit()
 
 
 class PygameGame:
@@ -1228,7 +1257,7 @@ class PygameGame:
 
         if SaveManager.save_player(self.player_char, filename):
             self.presenter.show_message(
-                f"Game saved successfully!\n\nSaved to: save_files/{filename}"
+                f"Game saved successfully!\n\nSaved to: {USER_SAVE_DIR / filename}"
             )
             self.load_files = SaveManager.list_saves()
         else:
@@ -1244,7 +1273,7 @@ class PygameGame:
             pygame.quit()
 
 
-def main():
+def main() -> int:
     """Entry point for GUI game."""
     import argparse
     
@@ -1265,8 +1294,24 @@ def main():
         default='Menu Preview',
         help='Character name used with --character-menu or --town-navigation (default: Menu Preview)'
     )
+    parser.add_argument(
+        "--smoke-test",
+        action="store_true",
+        help="Validate packaged resources and headless startup, then exit",
+    )
     args = parser.parse_args()
-    
+
+    install_signal_handlers()
+    if args.smoke_test:
+        try:
+            runtime_smoke_check()
+        except Exception as error:
+            print(f"Startup smoke test failed: {error}", file=sys.stderr)
+            return 1
+        print("Startup smoke test passed.")
+        return 0
+
+    game = None
     try:
         game = PygameGame(debug_mode=args.debug)
         if args.character_menu:
@@ -1283,14 +1328,17 @@ def main():
             game.main_menu()
     except KeyboardInterrupt:
         print("\nGame interrupted by user")
+        return 130
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"Fatal startup error: {e}", file=sys.stderr)
         import traceback
         traceback.print_exc()
+        return 1
     finally:
-        if 'game' in locals():
+        if game is not None:
             game.cleanup()
+    return 0
 
 
 if __name__ == '__main__':
-    main()
+    raise SystemExit(main())

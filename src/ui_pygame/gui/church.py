@@ -1,7 +1,5 @@
 """Church GUI for services, saving, quests, vows, and class-ring rites."""
 
-import os
-
 import pygame
 
 from src.core.classes import (
@@ -9,6 +7,7 @@ from src.core.classes import (
     demonologist,
     paladin,
 )
+from src.core.save_system import SaveManager
 
 from .confirmation_popup import ConfirmationPopup
 from .input_guards import prepare_guarded_input, release_guard_allows_input
@@ -564,20 +563,16 @@ class ChurchManager(TownScreenBase):
     
     def save_game(self):
         """Save the game at the church."""
-        save_dir = "save_files"
-        if not os.path.exists(save_dir):
-            os.makedirs(save_dir)
-        
         # Use character name as filename (always overwrites)
         char_name = self.player_char.name.lower().replace(" ", "_")
         filename = f"{char_name}.save"
-        filepath = os.path.join(save_dir, filename)
-        
-        try:
-            # Save directly to filepath using the new Player.save signature
-            self.player_char.save(filepath=filepath)
-            popup = ConfirmationPopup(self.presenter, f"Game saved successfully!", show_buttons=False)
+        if SaveManager.save_player(self.player_char, filename):
+            popup = ConfirmationPopup(
+                self.presenter,
+                "Game saved successfully!",
+                show_buttons=False,
+            )
             popup.show(**self.popup_show_kwargs())
-        except Exception as e:
-            popup = ConfirmationPopup(self.presenter, f"Error saving game:\n\n{str(e)}", show_buttons=False)
+        else:
+            popup = ConfirmationPopup(self.presenter, "Error saving game.", show_buttons=False)
             popup.show(**self.popup_show_kwargs())

@@ -188,23 +188,25 @@ def test_save_game_reports_success_and_failure(monkeypatch):
     )
     manager = church.ChurchManager(presenter, player)
 
-    save_paths = []
+    save_calls = []
     monkeypatch.setattr(
-        "src.ui_pygame.gui.church.os.path.exists",
-        lambda _path: True,
+        church.SaveManager,
+        "save_player",
+        lambda saved_player, filename: save_calls.append((saved_player, filename)) or True,
     )
-    player.save = lambda filepath=None: save_paths.append(filepath)
     manager.save_game()
 
-    assert save_paths == ["save_files/ada_hero.save"]
+    assert save_calls == [(player, "ada_hero.save")]
     assert "Game saved successfully!" in FakePopup.messages[-1]
 
-    player.save = lambda filepath=None: (_ for _ in ()).throw(
-        RuntimeError("disk full")
+    monkeypatch.setattr(
+        church.SaveManager,
+        "save_player",
+        lambda _saved_player, _filename: False,
     )
     manager.save_game()
 
-    assert "Error saving game:" in FakePopup.messages[-1]
+    assert "Error saving game." in FakePopup.messages[-1]
 
 
 def test_hidden_crypt_binds_contract_and_awakens_ring(monkeypatch):

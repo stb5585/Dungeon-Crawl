@@ -431,7 +431,7 @@ class TextureLibrary:
         if rel_path.startswith("src/"):
             return PROJECT_ROOT / path
         if rel_path.startswith("map_files/"):
-            return PROJECT_ROOT / path
+            return MAP_FILES_DIR / Path(*path.parts[1:])
         if rel_path.startswith("sprites/"):
             return self.assets_base / path
         return self.tileset_base / path

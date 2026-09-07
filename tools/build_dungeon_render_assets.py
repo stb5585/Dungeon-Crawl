@@ -12,7 +12,7 @@ from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageEnhance
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DUNGEON_ROOT = PROJECT_ROOT / "src" / "ui_pygame" / "assets" / "dungeon_tiles"
-MAP_TILESET_ROOT = PROJECT_ROOT / "map_files" / "tileset"
+MAP_TILESET_ROOT = PROJECT_ROOT / "src" / "core" / "data" / "maps" / "tileset"
 SOURCE_BOARD = DUNGEON_ROOT / "source" / "dungeon_asset_board.png"
 ORGANIC_FLOOR_ATLAS = DUNGEON_ROOT / "source" / "ai" / "roots_fungus_floor_atlas.png"
 ORGANIC_OVERLAY_ATLAS = DUNGEON_ROOT / "source" / "ai" / "roots_fungus_overlay_chromakey_atlas.png"

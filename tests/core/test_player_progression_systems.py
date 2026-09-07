@@ -108,7 +108,11 @@ class TestPlayerTopLevelHelpers:
             "load_player",
             lambda filename, is_tmp=False, skip_tiles=False: load_calls.append((filename, is_tmp, skip_tiles)) or loaded,
         )
-        monkeypatch.setattr(player_module.os, "remove", lambda path: removed.append(path))
+        monkeypatch.setattr(
+            player_module.persistence.SaveManager,
+            "delete_save",
+            lambda filename, is_tmp=False: removed.append((filename, is_tmp)) or True,
+        )
 
         assert load_char() is None
 
@@ -116,7 +120,7 @@ class TestPlayerTopLevelHelpers:
 
         assert restored is loaded
         assert load_calls == [("hero.save", True, True)]
-        assert removed == ["tmp_files/hero.save"]
+        assert removed == [("hero.save", True)]
 
     def test_tiled_parsing_helpers_cover_json_xml_inline_and_chunk_maps(self, tmp_path):
         assert _parse_tiled_properties(None) == {}

@@ -3,7 +3,7 @@ Convert tab-delimited map text files into Tiled JSON maps.
 
 Usage:
   python3 tools/convert_maps_to_tiled_json.py
-  python3 tools/convert_maps_to_tiled_json.py --input map_files --force
+  python3 tools/convert_maps_to_tiled_json.py --input map_files/text_files --force
 """
 
 from __future__ import annotations
@@ -11,6 +11,10 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+MAP_FILES_DIR = PROJECT_ROOT / "src" / "core" / "data" / "maps"
 
 
 APPENDED_TILE_STEMS = (
@@ -109,7 +113,7 @@ TILE_NAME_TO_IMAGE = {
 def _build_gid_map_from_tileset() -> dict[str, int]:
     """Build a map from tile class name to GID in dungeon_tiles.tsx."""
     # Read the external tileset to determine GID order
-    tileset_dir = Path("map_files/tileset")
+    tileset_dir = MAP_FILES_DIR / "tileset"
     all_images = sorted(tileset_dir.glob("*.png"))
     image_by_stem = {image.stem: image for image in all_images}
     image_files = [
@@ -133,20 +137,13 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Convert map_level_*.txt to Tiled JSON maps.")
     parser.add_argument(
         "--input",
-        default="map_files",
+        default="map_files/text_files",
         help="Directory containing map_level_*.txt files.",
     )
     parser.add_argument(
-        "--force",
-        action="store_true",
-        help="Overwrite existing map_level_*.json files.",
-    )
-    return parser.parse_args()
-    parser = argparse.ArgumentParser(description="Convert map_level_*.txt to Tiled JSON maps.")
-    parser.add_argument(
-        "--input",
-        default="map_files",
-        help="Directory containing map_level_*.txt files.",
+        "--output",
+        default=str(MAP_FILES_DIR),
+        help="Directory that receives packaged map_level_*.json files.",
     )
     parser.add_argument(
         "--force",
@@ -213,10 +210,15 @@ def build_map_json(grid: list[list[str]], width: int, height: int, name: str, gi
     }
 
 
-def convert_file(path: Path, force: bool, gid_map: dict[str, int]) -> Path | None:
+def convert_file(
+    path: Path,
+    output_directory: Path,
+    force: bool,
+    gid_map: dict[str, int],
+) -> Path | None:
     grid, width, height = read_txt_map(path)
     name = path.stem
-    out_path = path.with_suffix(".json")
+    out_path = output_directory / f"{path.stem}.json"
     if out_path.exists() and not force:
         return None
     map_json = build_map_json(grid, width, height, name, gid_map)
@@ -227,6 +229,7 @@ def convert_file(path: Path, force: bool, gid_map: dict[str, int]) -> Path | Non
 def main() -> int:
     args = parse_args()
     input_dir = Path(args.input)
+    output_directory = Path(args.output)
     if not input_dir.exists():
         raise FileNotFoundError(f"Input directory not found: {input_dir}")
 
@@ -236,10 +239,11 @@ def main() -> int:
 
     # Build the GID map once from the external tileset
     gid_map = _build_gid_map_from_tileset()
-    
+    output_directory.mkdir(parents=True, exist_ok=True)
+
     created = []
     for path in txt_files:
-        out_path = convert_file(path, args.force, gid_map)
+        out_path = convert_file(path, output_directory, args.force, gid_map)
         if out_path:
             created.append(out_path)
 

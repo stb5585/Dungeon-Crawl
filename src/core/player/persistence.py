@@ -1,6 +1,6 @@
 """Player save-loading helpers."""
 
-import os
+import os  # Compatibility re-exported by src.core.player.
 
 from ..save_system import SaveManager
 
@@ -27,8 +27,5 @@ def load_char(char=None, filename=None, is_tmp=False):
     # Skip tiles when loading for transform (only need character stats)
     player = SaveManager.load_player(target_filename, is_tmp=target_tmp, skip_tiles=True)
     if player and target_tmp:
-        try:
-            os.remove(f"tmp_files/{target_filename}")
-        except FileNotFoundError:
-            pass
+        SaveManager.delete_save(target_filename, is_tmp=True)
     return player

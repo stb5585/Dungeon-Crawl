@@ -4,6 +4,8 @@ import json
 import os
 from dataclasses import dataclass
 
+from src.paths import USER_SAVE_DIR, USER_TEMP_DIR
+
 from .migrations import (
     UnsupportedSaveVersionError,
     migrate_save_data,
@@ -26,8 +28,8 @@ class SaveLoadResult:
 class SaveManager:
     """High-level save/load management."""
 
-    SAVE_DIR = "save_files"
-    TMP_DIR = "tmp_files"
+    SAVE_DIR = str(USER_SAVE_DIR)
+    TMP_DIR = str(USER_TEMP_DIR)
     last_load_result = SaveLoadResult(None)
 
     @staticmethod
@@ -308,10 +310,10 @@ class SaveManager:
         }
 
     @staticmethod
-    def delete_save(filename: str) -> bool:
+    def delete_save(filename: str, is_tmp: bool = False) -> bool:
         """Delete a save file."""
         try:
-            filepath = SaveManager._resolve_save_path(filename)
+            filepath = SaveManager._resolve_save_path(filename, is_tmp=is_tmp)
             if os.path.isfile(filepath):
                 os.remove(filepath)
                 return True
