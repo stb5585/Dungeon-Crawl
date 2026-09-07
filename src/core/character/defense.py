@@ -5,7 +5,7 @@ from __future__ import annotations
 import random
 from typing import TYPE_CHECKING
 
-from .. import curses
+from .. import persistent_afflictions as afflictions
 from ..constants import (
     ARMOR_SCALING_FACTOR,
     ASTRAL_SHIFT_REDUCTION,
@@ -90,7 +90,10 @@ class CharacterDefenseMixin:
                         blk_chance
                         + (
                             (
-                                (defender.stats.strength * curses.strength_multiplier(defender))
+                                (
+                                    defender.stats.strength
+                                    * afflictions.strength_multiplier(defender)
+                                )
                                 - self.stats.strength
                             )
                             / damage

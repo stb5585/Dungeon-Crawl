@@ -449,10 +449,10 @@ class WaterBladder(Misc):
         del target, tile
         if self.charges <= 0:
             return "The Water Bladder is empty.\n"
-        from .. import curses
+        from .. import persistent_afflictions as afflictions
 
         self.charges -= 1
-        message = curses.drink(user)
+        message = afflictions.drink(user)
         self.description = f"Carries restorative water. Sips remaining: {self.charges}."
         return message
 

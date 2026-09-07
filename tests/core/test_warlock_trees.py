@@ -2,7 +2,8 @@
 
 import pytest
 
-from src.core import abilities, curses, enemies
+from src.core import abilities, enemies
+from src.core import persistent_afflictions as afflictions
 from src.core.classes import demonologist, mage_mechanics, warlock
 from src.core.combat import CombatEncounter
 from src.core.combat.battle_engine.outcomes import BattleOutcomeMixin
@@ -295,18 +296,18 @@ def test_curse_of_swarms_ticks_repeatedly_and_spreads_afflictions(monkeypatch):
     abilities.CurseSwarms().cast(player, source)
     source.status_effects["Poison"].active = True
     source.status_effects["Poison"].duration = 3
-    curses.apply_curse(source, "Frailty")
-    monkeypatch.setattr(curses.random, "randint", lambda low, _high: low)
-    monkeypatch.setattr(curses.random, "random", lambda: 0.0)
-    monkeypatch.setattr(curses.random, "choice", lambda choices: choices[0])
+    afflictions.apply_curse(source, "Frailty")
+    monkeypatch.setattr(afflictions.random, "randint", lambda low, _high: low)
+    monkeypatch.setattr(afflictions.random, "random", lambda: 0.0)
+    monkeypatch.setattr(afflictions.random, "choice", lambda choices: choices[0])
     health_before = source.health.current
 
-    message = curses.swarms_tick(source)
+    message = afflictions.swarms_tick(source)
 
     assert source.health.current < health_before
     assert "4 times" in message
     assert nearby.status_effects["Poison"].active
-    assert curses.has_curse(nearby, "Frailty")
+    assert afflictions.has_curse(nearby, "Frailty")
 
 
 def test_hemorrhaging_curse_deals_periodic_damage():
@@ -316,7 +317,7 @@ def test_hemorrhaging_curse_deals_periodic_damage():
     target.health.current = 100
 
     abilities.HemorrhagingCurse().cast(player, target)
-    message = curses.hemorrhaging_tick(target)
+    message = afflictions.hemorrhaging_tick(target)
 
     assert target.health.current == 96
     assert "open wounds bleed" in message
@@ -401,7 +402,7 @@ def test_demonic_curse_passives_amplify_umbra_and_hemorrhaging():
     abilities.HemorrhagingCurse().cast(player, target)
 
     assert target.check_mod("resist", typ="Fire") == pytest.approx(-0.50)
-    curses.hemorrhaging_tick(target)
+    afflictions.hemorrhaging_tick(target)
     assert target.health.current == 94
 
 

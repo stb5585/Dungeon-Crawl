@@ -362,9 +362,11 @@ class ChurchManager(TownScreenBase):
     def visit_church(self):
         """Visit the Church of Elysia."""
         church_options = ["Save Game", "Quests"]
-        from ...core import curses
+        from ...core import persistent_afflictions as afflictions
 
-        if any(entry.get("active") for entry in curses.ensure_curses(self.player_char).values()):
+        if any(
+            entry.get("active") for entry in afflictions.ensure_curses(self.player_char).values()
+        ):
             church_options.append("Cure Curses")
         if self._legacy_paladin_vow_available():
             church_options.append("Swear Paladin Vow")
@@ -410,7 +412,7 @@ class ChurchManager(TownScreenBase):
                 qm.check_and_offer("Priest")
 
             elif church_options[choice_idx] == "Cure Curses":
-                message = curses.cure_curses(self.player_char)
+                message = afflictions.cure_curses(self.player_char)
                 ConfirmationPopup(self.presenter, message, show_buttons=False).show(
                     **self.popup_show_kwargs()
                 )

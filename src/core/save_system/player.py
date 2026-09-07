@@ -495,10 +495,10 @@ class PlayerDataSerializer:
         )
         if hasattr(player, "ensure_demonologist_contracts"):
             player.ensure_demonologist_contracts()
-        from .. import curses
+        from .. import persistent_afflictions as afflictions
 
         player.persistent_curses = data.get("persistent_curses", {})
-        curses.ensure_curses(player)
+        afflictions.ensure_curses(player)
         player.fractures = dict(data.get("fractures", {}) or {})
         familiar_state = data.get("familiar_state")
         if isinstance(familiar_state, dict):

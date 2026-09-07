@@ -227,13 +227,13 @@ class PlayerStateMixin:
                 0,
                 int(self.shadow_dungeon_darkness_steps) - step_count,
             )
-        from .. import curses
+        from .. import persistent_afflictions as afflictions
 
-        if curses.has_curse(self, "Polydipsia"):
+        if afflictions.has_curse(self, "Polydipsia"):
             self._polydipsia_steps = int(getattr(self, "_polydipsia_steps", 0) or 0) + step_count
             while self._polydipsia_steps >= 10:
                 self._polydipsia_steps -= 10
-                message = curses.polydipsia_tick(self)
+                message = afflictions.polydipsia_tick(self)
                 if message:
                     pending = getattr(self, "_exploration_messages", [])
                     pending.append(message)

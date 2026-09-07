@@ -69,16 +69,16 @@ class CharacterEventsMixin:
                 self.haunted_turns = max(3, int(getattr(self, "haunted_turns", 0) or 0))
             if getattr(self, "shadow_curtain_turns", 0) > 0 and damage_type == "Physical":
                 target.health.current = max(0, target.health.current - max(1, int(damage * 0.25)))
-            from .. import curses
+            from .. import persistent_afflictions as afflictions
 
-            fracture_chance = 0.30 if curses.curse_is_empowered(target, "Elijah") else 0.20
-            if curses.has_curse(target, "Elijah") and random.random() < fracture_chance:
-                curses.apply_fracture(target)
+            fracture_chance = 0.30 if afflictions.curse_is_empowered(target, "Elijah") else 0.20
+            if afflictions.has_curse(target, "Elijah") and random.random() < fracture_chance:
+                afflictions.apply_fracture(target)
             if (
-                curses.has_curse(target, "Demon Eyes")
+                afflictions.has_curse(target, "Demon Eyes")
                 and str(getattr(self, "enemy_typ", "")) == "Fiend"
             ):
-                multiplier = 0.40 if curses.curse_is_empowered(target, "Demon Eyes") else 0.25
+                multiplier = 0.40 if afflictions.curse_is_empowered(target, "Demon Eyes") else 0.25
                 target.health.current = max(
                     0,
                     target.health.current - max(1, int(damage * multiplier)),

@@ -509,11 +509,11 @@ def resolve_contract(character: Any, target: Any, intent: str, *, rng: Any = ran
     severity = twist_severity(character)
     strength = contract_strength(character, quote, twisted=twisted)
     try:
-        from .. import curses
+        from .. import persistent_afflictions as afflictions
 
-        if curses.has_curse(target, "Demon Eyes"):
+        if afflictions.has_curse(target, "Demon Eyes"):
             strength = int(
-                strength * (1.40 if curses.curse_is_empowered(target, "Demon Eyes") else 1.25)
+                strength * (1.40 if afflictions.curse_is_empowered(target, "Demon Eyes") else 1.25)
             )
     except Exception:
         pass

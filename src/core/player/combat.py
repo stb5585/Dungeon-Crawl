@@ -277,10 +277,10 @@ class PlayerCombatMixin:
             if "Physical Damage" in self.equipment["Ring"].mod:
                 weapon_mod += int(self.equipment["Ring"].mod.split(" ")[0])
             weapon_mod += self.stat_effects["Attack"].extra * self.stat_effects["Attack"].active
-            from .. import curses
+            from .. import persistent_afflictions as afflictions
 
             total_mod = (weapon_mod + class_mod + self.combat.attack) * disarm_damage_multiplier
-            total_mod *= curses.strength_multiplier(self)
+            total_mod *= afflictions.strength_multiplier(self)
             total_mod *= class_rings.weapon_damage_multiplier(self)
             total_mod *= ability_mechanics.polearm_damage_multiplier(self)
             total_mod *= ability_mechanics.monkey_grip_damage_multiplier(self, "Weapon")
@@ -416,9 +416,9 @@ class PlayerCombatMixin:
             armor_total *= 1 + ability_mechanics.melody_inspiration_bonus(self)
             if self.magic_effects.get("Tree of Life") and self.magic_effects["Tree of Life"].active:
                 armor_total *= 1.75
-            from .. import curses
+            from .. import persistent_afflictions as afflictions
 
-            if curses.has_curse(self, "Elijah"):
+            if afflictions.has_curse(self, "Elijah"):
                 armor_total *= 0.65
             return max(0, int(armor_total))
         if mod == "magic":
@@ -562,13 +562,13 @@ class PlayerCombatMixin:
                 if int(exploration.get("resist_poison", 0) or 0) > 0:
                     res_mod += 0.50
             if typ == "Shadow":
-                from .. import curses
+                from .. import persistent_afflictions as afflictions
 
-                res_mod += curses.shadow_resistance_penalty(self)
+                res_mod += afflictions.shadow_resistance_penalty(self)
             if typ == "Fire":
-                from .. import curses
+                from .. import persistent_afflictions as afflictions
 
-                res_mod += curses.fire_resistance_penalty(self)
+                res_mod += afflictions.fire_resistance_penalty(self)
             resist_effect = self.magic_effects.get(f"Resist {typ}")
             if resist_effect is not None and resist_effect.active:
                 try:
