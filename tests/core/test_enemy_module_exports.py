@@ -3,7 +3,7 @@
 import inspect
 
 from src.core import enemies
-from src.core.enemies import base, early, endgame, midgame
+from src.core.enemies import base, early, endgame, midgame, registry
 
 ENEMY_MODULES = (base, early, midgame, endgame)
 
@@ -40,6 +40,12 @@ def test_encounter_catalogs_reference_split_implementations():
     for _display_name, enemy_class in catalog_entries:
         assert getattr(enemies, enemy_class.__name__) is enemy_class
         assert enemy_class.__module__.startswith("src.core.enemies.")
+
+
+def test_registry_resolves_catalogs_without_the_package_facade():
+    assert registry.ENEMY_NAMESPACE
+    assert registry.RANDOM_ENEMY_CATALOG == enemies._RANDOM_ENEMY_CATALOG
+    assert registry.FUNHOUSE_ENEMY_CATALOG == enemies._FUNHOUSE_ENEMY_CATALOG
 
 
 def test_transform_targets_preserve_public_class_identity():
