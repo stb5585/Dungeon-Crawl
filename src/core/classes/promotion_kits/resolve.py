@@ -5,8 +5,7 @@ from __future__ import annotations
 import random
 from typing import Any
 
-from .meters import _claim_action, _class_ring_data
-from .state import class_name, combat_state
+from .state import _claim_action, _class_ring_data, class_name, combat_state
 
 RESOLVE_SPEND_ABILITIES: tuple[dict[str, Any], ...] = (
     {

@@ -10,10 +10,11 @@ from .companions import (
     lycan_control_state,
     totem_resonance,
 )
-from .meters import _class_ring_data, cap_for, eclipse, shadowcaster_debt_cap
+from .meters import cap_for, eclipse, shadowcaster_debt_cap
 from .resolve import _resolve_data, resolve_cap
 from .state import (
     _clamp_int,
+    _class_ring_data,
     _ring_awakened_equipped,
     class_name,
     combat_state,

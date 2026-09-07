@@ -159,33 +159,27 @@ class BaseEffectFactoryMixin:
             dot_type=dot_type, damage_per_tick=damage_per_tick, duration=duration, element=element
         )
 
-    @staticmethod
-    def _create_composite(data: dict) -> CompositeEffect:
+    @classmethod
+    def _create_composite(cls, data: dict) -> CompositeEffect:
         """Create a composite effect (multiple effects combined)."""
-        from .effects import EffectFactory
-
         effect_list = data.get("effects", [])
-        effects = [EffectFactory.create(e) for e in effect_list]
+        effects = [cls.create(effect) for effect in effect_list]
         return CompositeEffect(effects)
 
-    @staticmethod
-    def _create_chance(data: dict) -> ChanceEffect:
+    @classmethod
+    def _create_chance(cls, data: dict) -> ChanceEffect:
         """Create a chance-based effect."""
         chance = data.get("chance", 0.5)
-        from .effects import EffectFactory
-
         inner_effect_data = data.get("effect", {})
-        inner_effect = EffectFactory.create(inner_effect_data)
+        inner_effect = cls.create(inner_effect_data)
 
         return ChanceEffect(inner_effect, chance)
 
-    @staticmethod
-    def _create_stat_contest(data: dict) -> StatContestEffect:
+    @classmethod
+    def _create_stat_contest(cls, data: dict) -> StatContestEffect:
         """Create a stat-contest gated effect (e.g. intel vs wisdom)."""
-        from .effects import EffectFactory
-
         inner_effect_data = data.get("effect", {})
-        inner_effect = EffectFactory.create(inner_effect_data)
+        inner_effect = cls.create(inner_effect_data)
         return StatContestEffect(
             effect=inner_effect,
             actor_stat=data.get("actor_stat", "intel"),
