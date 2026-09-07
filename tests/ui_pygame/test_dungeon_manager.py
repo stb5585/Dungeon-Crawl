@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 31485)
-Total output lines: 3070
-
 #!/usr/bin/env python3
 """Focused coverage for pygame dungeon-manager navigation and helper flows."""
 
@@ -1582,7 +1579,140 @@ def test_final_room_pending_false_final_enters_liminal_stub(monkeypatch):
 
     def start_false_final(*_args, **_kwargs):
         player.main_story["vesperion_false_final_triggered"] = True
-        player.main_story["pending_l…1485 tokens truncated…Review Trial Depths" in captured_options[-1]
+        player.main_story["pending_liminal_gap_entry"] = True
+        player.health.current = 0
+        return False
+
+    player.location_x, player.location_y, player.location_z, player.facing = (5, 5, 1, "north")
+    player.health.current = 1
+    player.mana.current = 0
+    manager.combat_manager.start_combat = start_false_final
+
+    manager._interact_final_room(FinalRoom())
+
+    assert (player.location_x, player.location_y, player.location_z) == LIMINAL_GAP_ENTRY_POS
+    assert player.facing == LIMINAL_GAP_ENTRY_FACING
+    assert player.liminal_gap_return == (5, 5, 1, "north")
+    assert player.health.current == 10
+    assert player.mana.current == 4
+    assert player.state == "normal"
+    assert player.main_story["vesperion_false_final_triggered"] is True
+    assert player.main_story["pending_liminal_gap_entry"] is False
+    assert player.main_story["liminal_gap_entered"] is True
+    assert any(call[1].get("title") == "Vesperion" for call in shown)
+    assert shown[0][1]["title"] == "Vesperion"
+    assert shown[0][1]["image_path"] == "npc:Vesperion"
+    assert shown[1][1]["title"] == "Vesperion"
+    assert shown[1][1]["image_path"] == "npc:Vesperion"
+    assert any(call[1].get("title") == "The Liminal Gap" for call in shown)
+    assert "You wake in the Liminal Gap, wounded but alive." in manager.messages
+    assert player.quit is False
+    assert manager.running is True
+
+
+def test_final_room_reentry_before_true_final_shows_liminal_blocker(monkeypatch):
+    manager, presenter, player, _game = _make_manager(monkeypatch)
+    shown = []
+    player.main_story["vesperion_false_final_triggered"] = True
+    presenter.show_message = lambda *args, **kwargs: shown.append((args, kwargs))
+    presenter.render_menu = lambda *_args, **_kwargs: (_ for _ in ()).throw(
+        AssertionError("menu should not open")
+    )
+    manager.combat_manager.start_combat = lambda *_args, **_kwargs: (_ for _ in ()).throw(
+        AssertionError("combat should not start")
+    )
+    monkeypatch.setattr(
+        dungeon_manager.core,
+        "get_special_events",
+        lambda: {"Liminal Gap Blocker": {"Text": ["Voluntas remains unresolved."]}},
+    )
+
+    manager._interact_final_room(FinalRoom())
+
+    assert shown[-1][1]["title"] == "Voluntas"
+    assert "Voluntas remains unresolved. The final chamber will not open yet." in " ".join(
+        manager.messages
+    )
+
+
+def test_liminal_guide_reveals_hooded_figure_and_saves(monkeypatch):
+    manager, presenter, player, game = _make_manager(monkeypatch)
+    shown = []
+    presenter.show_message = lambda *args, **kwargs: shown.append((args, kwargs))
+    manager._popup_menu = lambda title, options, **kwargs: 0
+    monkeypatch.setattr(
+        dungeon_manager.core,
+        "get_special_events",
+        lambda: {
+            "Hooded Figure Liminal Reveal": {"Text": ["The Hooded Figure lowers their hood."]},
+            "Liminal Guide Save": {"Text": ["Your name appears in the flame."]},
+        },
+    )
+    guide_tile = dungeon_manager.map_tiles.LiminalGuide(5, 4, LIMINAL_GAP_ENTRY_POS[2])
+
+    manager._interact_liminal_guide(guide_tile)
+
+    assert player.main_story["liminal_gap_guide_revealed"] is True
+    assert player.main_story["liminal_gap_guide_save_used"] is True
+    assert guide_tile.read is True
+    assert game.save_calls == ["save"]
+    assert [call[1]["title"] for call in shown] == ["The Hooded Figure", "The Hooded Figure"]
+    assert "The Hooded Figure anchors your progress." in manager.messages
+
+
+def test_liminal_guide_reviews_awakened_guardian_clues(monkeypatch):
+    manager, presenter, player, _game = _make_manager(monkeypatch)
+    shown = []
+    player.main_story["liminal_gap_guide_revealed"] = True
+    player.main_story["guardian_trials_completed"]["Triangulus"] = True
+    player.main_story["guardian_trial_choices"]["Triangulus"] = "Memory"
+    player.main_story["voluntas_clues_found"]["Triangulus"] = True
+    player.main_story["guardian_trials_completed"]["Luna"] = True
+    player.main_story["guardian_trial_choices"]["Luna"] = "Release"
+    player.main_story["voluntas_clues_found"]["Luna"] = True
+    presenter.show_message = lambda *args, **kwargs: shown.append((args, kwargs))
+    manager._popup_menu = lambda *_args, **_kwargs: 1
+    monkeypatch.setattr(
+        dungeon_manager.core,
+        "get_special_events",
+        lambda: {"Liminal Clue Review": {"Text": ["The clues answer together."]}},
+    )
+    guide_tile = dungeon_manager.map_tiles.LiminalGuide(5, 4, LIMINAL_GAP_ENTRY_POS[2])
+
+    manager._interact_liminal_guide(guide_tile)
+
+    assert shown[-1][1]["title"] == "The Hooded Figure"
+    assert player.main_story["liminal_gap_clues_reviewed"] is True
+    assert guide_tile.read is True
+    joined_messages = " ".join(manager.messages)
+    assert "Guardian clues awakened: 2/6." in joined_messages
+    assert "Triangulus (Memory): selfhood is chosen, not assigned." in joined_messages
+    assert (
+        "Luna (Release): love without freedom becomes possession or obligation." in joined_messages
+    )
+
+
+def test_liminal_guide_reviews_guardian_trial_depths(monkeypatch):
+    manager, presenter, player, _game = _make_manager(monkeypatch)
+    shown = []
+    captured_options = []
+    player.main_story["liminal_gap_guide_revealed"] = True
+    player.main_story["guardian_trial_vignettes_seen"]["Triangulus"] = True
+    player.main_story["guardian_trial_choices"]["Triangulus"] = "Memory"
+    presenter.show_message = lambda *args, **kwargs: shown.append((args, kwargs))
+    manager._popup_menu = lambda _title, options, **_kwargs: captured_options.append(
+        list(options)
+    ) or options.index("Review Trial Depths")
+    monkeypatch.setattr(
+        dungeon_manager.core,
+        "get_special_events",
+        lambda: {"Liminal Trial V2 Review": {"Text": ["The deeper trials answer."]}},
+    )
+    guide_tile = dungeon_manager.map_tiles.LiminalGuide(5, 4, LIMINAL_GAP_ENTRY_POS[2])
+
+    manager._interact_liminal_guide(guide_tile)
+
+    assert "Review Trial Depths" in captured_options[-1]
     assert shown[-1][1]["title"] == "The Hooded Figure"
     assert player.main_story["liminal_trial_v2_reviewed"] is True
     assert player.main_story["voluntas_revealed"] is False
