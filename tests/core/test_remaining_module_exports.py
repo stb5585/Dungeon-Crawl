@@ -89,7 +89,7 @@ def test_character_composes_every_split_behavior_method():
         if inspect.isfunction(implementation)
     }
 
-    assert len(methods) == 49
+    assert len(methods) == 54
     for name, implementation in methods.items():
         assert getattr(character.Character, name) is implementation
 
