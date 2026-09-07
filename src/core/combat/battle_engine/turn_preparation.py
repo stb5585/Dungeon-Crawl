@@ -249,14 +249,11 @@ class TurnPreparationMixin:
 
     def get_enemy_action(self) -> tuple[str, str | None]:
         """Ask the enemy AI for its chosen action. Returns (action, choice)."""
-        try:
-            return self.attacker.options(
-                self.active_player_character,
-                self.available_actions,
-                self.tile,
-            )
-        except Exception:
-            return "Attack", None
+        return self.attacker.options(
+            self.active_player_character,
+            self.available_actions,
+            self.tile,
+        )
 
     def is_player_turn(self) -> bool:
         """Return True if the current attacker is the player (or summon)."""

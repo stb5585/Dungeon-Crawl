@@ -23,6 +23,15 @@ if TYPE_CHECKING:
     from ...character import Character
 
 
+def _demonologist_victory_text(player) -> str:
+    """Apply the Demonologist's post-victory corruption cooldown when relevant."""
+    if getattr(getattr(player, "cls", None), "name", None) != "Demonologist":
+        return ""
+    from ...classes import demonologist
+
+    return demonologist.cool_corruption(player, 2, "combat victory")
+
+
 class BattleOutcomeMixin:
     def _warlock_soul_reward(self, enemy) -> str:
         """Award Soul Gems and temporary undead for marked death effects."""
@@ -98,10 +107,7 @@ class BattleOutcomeMixin:
 
         mercy = bool(getattr(enemy, "paladin_mercy_victory", False))
         exp_gain = int(enemy.experience)
-        try:
-            exp_gain = max(0, int(exp_gain * float(self.player.exp_gain_multiplier())))
-        except Exception:
-            pass
+        exp_gain = max(0, int(exp_gain * float(self.player.exp_gain_multiplier())))
         if bool(getattr(enemy, "_surprise_bonus_experience", False)):
             exp_gain = int(exp_gain * 1.5)
         msg = dragoon.red_dragon_victory_text(enemy)
@@ -160,13 +166,7 @@ class BattleOutcomeMixin:
             msg += promotion_kits.end_combat(
                 self.player, victory=True, enemy=enemy, exp_gain=exp_gain, boss=self.boss
             )
-            try:
-                from ...classes import demonologist
-
-                if self.player.cls.name == "Demonologist":
-                    msg += demonologist.cool_corruption(self.player, 2, "combat victory")
-            except Exception:
-                pass
+            msg += _demonologist_victory_text(self.player)
             frenzy_triggered, frenzy_text = lycan.maybe_trigger_frenzy(self.player, reason="kill")
             if frenzy_triggered:
                 msg += frenzy_text
@@ -221,10 +221,7 @@ class BattleOutcomeMixin:
         gold = max(0, int(getattr(enemy, "gold", 0) or 0))
         if not gold:
             return ""
-        try:
-            gold = max(0, int(gold * paladin.redemption_reward_multiplier(self.player)))
-        except Exception:
-            pass
+        gold = max(0, int(gold * paladin.redemption_reward_multiplier(self.player)))
         self.player.gold += gold
         return f"{enemy.name} offers {gold} gold in restitution.\n"
 
@@ -233,17 +230,17 @@ class BattleOutcomeMixin:
 
     def _enemy_is_active_bounty_for(self, enemy) -> bool:
         """Return whether one encounter member matches an active bounty."""
-        try:
-            bounties = self.player.quest_dict.get("Bounty", {})
-            if not isinstance(bounties, dict):
-                return False
-            return enemy.name in bounties or any(
-                getattr(data.get("enemy", None), "name", None) == enemy.name
-                for data in bounties.values()
-                if isinstance(data, dict)
-            )
-        except Exception:
+        quest_dict = getattr(self.player, "quest_dict", {})
+        if not isinstance(quest_dict, dict):
             return False
+        bounties = quest_dict.get("Bounty", {})
+        if not isinstance(bounties, dict):
+            return False
+        return enemy.name in bounties or any(
+            getattr(data.get("enemy", None), "name", None) == enemy.name
+            for data in bounties.values()
+            if isinstance(data, dict)
+        )
 
     def _process_multi_victory(
         self,
@@ -258,11 +255,7 @@ class BattleOutcomeMixin:
         settlements = []
         total_exp = 0
         defeated_members = []
-        multiplier = 1.0
-        try:
-            multiplier = float(self.player.exp_gain_multiplier())
-        except Exception:
-            pass
+        multiplier = float(self.player.exp_gain_multiplier())
 
         for member in self.encounter.members:
             enemy = member.enemy
@@ -329,13 +322,10 @@ class BattleOutcomeMixin:
                 member_message += quest_text or ""
             elif resolution == EnemyResolution.MERCY:
                 gold = max(0, int(getattr(enemy, "gold", 0) or 0))
-                try:
-                    gold = max(
-                        0,
-                        int(gold * paladin.redemption_reward_multiplier(self.player)),
-                    )
-                except Exception:
-                    pass
+                gold = max(
+                    0,
+                    int(gold * paladin.redemption_reward_multiplier(self.player)),
+                )
                 self.player.gold += gold
                 member_message += (
                     f"{member.display_label} offers {gold} gold in restitution.\n"
@@ -419,17 +409,7 @@ class BattleOutcomeMixin:
                 exp_gain=total_exp,
                 boss=False,
             )
-            try:
-                from ...classes import demonologist
-
-                if self.player.cls.name == "Demonologist":
-                    message += demonologist.cool_corruption(
-                        self.player,
-                        2,
-                        "combat victory",
-                    )
-            except Exception:
-                pass
+            message += _demonologist_victory_text(self.player)
             message += self._grandmaster_victory_xp_text_for(representative)
         else:
             message += promotion_kits.end_combat(
