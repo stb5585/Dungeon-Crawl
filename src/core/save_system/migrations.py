@@ -10,7 +10,6 @@ from typing import Any
 from ..progression import (
     CLASS_DETAILS,
     MAX_PLAYER_LEVEL,
-    attribute_points_through_level,
     cumulative_experience_for_level,
     progression_points_through_level,
 )
@@ -35,6 +34,8 @@ class SaveMigration:
 
 def _integer(value: object, field_name: str) -> int:
     if isinstance(value, bool):
+        raise InvalidSaveDataError(f"{field_name} must be an integer.")
+    if not isinstance(value, (int, float, str)):
         raise InvalidSaveDataError(f"{field_name} must be an integer.")
     try:
         return int(value)

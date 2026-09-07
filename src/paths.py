@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import os
 import sys
+from collections.abc import Mapping
 from pathlib import Path
-from typing import Mapping
 
 APPLICATION_DIRECTORY_NAME = "the-forsaken-tenet"
 SOURCE_ROOT = Path(__file__).resolve().parent
