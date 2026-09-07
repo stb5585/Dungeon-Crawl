@@ -103,6 +103,33 @@ CLASS_KIT_LOG_TERMS = (
     "vow affirmation",
 )
 
+_HOSTILE_STATUS_GROUPS = ("status_effects", "physical_effects")
+
+
+def _hostile_status_names(character: Any) -> list[str]:
+    ignored = {"Defend", "Peaceful", "Shapeshifted", "Steal Success"}
+    names: list[str] = []
+    for group_name in _HOSTILE_STATUS_GROUPS:
+        for name, effect in getattr(character, group_name, {}).items():
+            if name not in ignored and getattr(effect, "active", False):
+                names.append(name)
+    return sorted(names)
+
+
+def _cleanse_one_hostile_status(character: Any) -> str | None:
+    names = _hostile_status_names(character)
+    if not names:
+        return None
+    name = names[0]
+    for group_name in _HOSTILE_STATUS_GROUPS:
+        effect = getattr(character, group_name, {}).get(name)
+        if effect is not None:
+            effect.active = False
+            effect.duration = 0
+            effect.extra = 0
+            return name
+    return None
+
 
 def class_name(character: Any) -> str:
     from .. import transformation

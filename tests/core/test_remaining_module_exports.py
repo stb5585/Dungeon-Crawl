@@ -34,6 +34,7 @@ PROMOTION_KIT_MODULES = (
     promotion_kits.state,
     promotion_kits.lifecycle,
     promotion_kits.meters,
+    promotion_kits.events,
     promotion_kits.resolve,
     promotion_kits.tracks,
     promotion_kits.companions,
