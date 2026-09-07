@@ -7,7 +7,7 @@ and independent utility. Its shared trunks lead to Weapon Master, Lancer,
 Sentinel, and Paladin while preserving route-specific stat and branch gates.
 [Runtime diagram](warrior.svg).
 
-The graph is authoritative in `src/core/progression_manifest.py`. Stable node
+The graph is authoritative in `src/core/progression_manifests/`. Stable node
 IDs, shared prerequisites, Commitment closure, rating values, and promotion
 costs are persistent progression API. Coverage lives in
 `tests/core/test_warrior_tree_updates.py`, `test_flat_progression.py`, and

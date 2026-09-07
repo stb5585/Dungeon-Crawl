@@ -2,7 +2,7 @@
 
 All 49 playable classes have mechanically authored trees. Every runtime tree
 has a colocated Markdown sidecar and generated SVG. The runtime authority
-remains `src/core/progression_manifest.py`; these documents record the shipped
+remains `src/core/progression_manifests/`; these documents record the shipped
 design, boundaries, and validation expectations.
 
 ## Status Rules

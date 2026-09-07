@@ -3,7 +3,7 @@
 ## Runtime Contract
 
 All 49 playable classes own a declarative tree in
-`src/core/progression_manifest.py`. `src/core/progression.py` builds and
+`src/core/progression_manifests/`. `src/core/progression.py` builds and
 validates those declarations, applies purchases atomically, and remains the
 public runtime facade for Pygame and headless validation.
 

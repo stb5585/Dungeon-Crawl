@@ -34,7 +34,7 @@ the mechanic and the affected class priorities.
 ## Class Priorities
 
 The first two groups in this table are also structured progression data in
-`src/core/progression_manifest.py`. Promotion nodes use current permanent
+`src/core/progression_manifests/`. Promotion nodes use current permanent
 attributes (including class bonuses, training, consumables, and permanent
 events; excluding equipment and temporary transformations):
 
@@ -47,7 +47,7 @@ Authored promotion exceptions balance complete route cost and race
 reachability rather than forcing identical gates. Warrior retains its documented
 Weapon Master, Sentinel, and Paladin exceptions; Mage, Footpad, Pathfinder,
 and all second-promotion targets also declare route-specific values in
-`src/core/progression_manifest.py`.
+`src/core/progression_manifests/`.
 
 These stat requirements complement the global level 30/60 promotion gates.
 Every fourth global level grants one stored attribute point. Attribute points

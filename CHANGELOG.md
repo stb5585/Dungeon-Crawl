@@ -23,6 +23,8 @@
 
 ### Development Tool And Code Cleanup
 
+- Split the monolithic ability-tree manifest into shared metadata and five
+  base-class lineage modules while preserving its existing import facade.
 - Retired the obsolete tab-delimited numbered-map conversion workflow, made
   Tiled JSON the explicit numbered-map authority, and retained text loading
   only for the Liminal Gap special-area map.
