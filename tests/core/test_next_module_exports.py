@@ -37,6 +37,7 @@ BATTLE_BEHAVIOR_MODULES = (
     battle_engine.action_inventory,
     battle_engine.action_skills,
     battle_engine.action_spells,
+    battle_engine.intent_resolution,
     battle_engine.outcomes,
     battle_engine.turn_execution,
     battle_engine.turn_lifecycle,
