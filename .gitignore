@@ -40,6 +40,8 @@ env/
 
 # pytest files
 .coverage
+coverage.xml
+htmlcov/
 
 # skip currently unneeded files/directories
 test_suite.py
