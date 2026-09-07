@@ -32,6 +32,7 @@ ABILITY_MECHANIC_MODULES = (
     ability_mechanics.summons,
 )
 BATTLE_BEHAVIOR_MODULES = (
+    battle_engine.area_resolution,
     battle_engine.action_attacks,
     battle_engine.action_inventory,
     battle_engine.action_skills,
