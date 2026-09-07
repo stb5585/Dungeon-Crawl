@@ -70,8 +70,6 @@ Rebuild the Tiled tileset after adding or changing authoring icons:
 ./.venv/bin/python tools/generate_tiled_tileset.py
 ```
 
-Then convert maps if needed:
-
-```bash
-./.venv/bin/python tools/convert_maps_to_tiled_json.py
-```
+The tracked Tiled JSON files are the authoritative numbered dungeon maps.
+Edit them through Tiled; the retired tab-delimited `map_level_*.txt` sources
+and their one-time conversion utility are not part of the current workflow.

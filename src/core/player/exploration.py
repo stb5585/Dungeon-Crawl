@@ -1,7 +1,5 @@
 """Player exploration, navigation, travel, and death behavior."""
 
-import glob
-import os
 import random
 
 import numpy
@@ -17,7 +15,7 @@ from .config import (
     LIMINAL_GAP_LEVEL,
     REALM_OF_CAMBION_LEVEL,
 )
-from .maps import _load_tiled_map
+from .maps import _load_text_map, _load_tiled_map
 
 
 class PlayerExplorationMixin:
@@ -130,51 +128,32 @@ class PlayerExplorationMixin:
 
         world_dict = {}
         map_dir = MAP_FILES_DIR
-        map_files = glob.glob(str(map_dir / "map_level_*"))
         files_by_level = {}
-        for map_file in map_files:
-            base_name = os.path.basename(map_file)
-            root_name, ext = os.path.splitext(base_name)
-            if ext not in {".txt", ".json"}:
-                continue
+        for map_file in map_dir.glob("map_level_*.json"):
             try:
-                z = int(root_name.split("_")[-1])
+                z = int(map_file.stem.split("_")[-1])
             except ValueError:
                 continue
-            existing = files_by_level.get(z)
-            if not existing or (ext == ".json" and existing["ext"] != ".json"):
-                files_by_level[z] = {"path": map_file, "ext": ext}
+            files_by_level[z] = map_file
 
         # Optional side-area map: funhouse challenge level (level 4 boss area).
         funhouse_path = map_dir / "map_funhouse.json"
-        if os.path.exists(funhouse_path) and 7 not in files_by_level:
-            files_by_level[7] = {"path": funhouse_path, "ext": ".json"}
+        if funhouse_path.exists() and 7 not in files_by_level:
+            files_by_level[7] = funhouse_path
 
         cambion_path = map_dir / "map_realm_cambion.json"
-        if os.path.exists(cambion_path) and REALM_OF_CAMBION_LEVEL not in files_by_level:
-            files_by_level[REALM_OF_CAMBION_LEVEL] = {"path": cambion_path, "ext": ".json"}
+        if cambion_path.exists() and REALM_OF_CAMBION_LEVEL not in files_by_level:
+            files_by_level[REALM_OF_CAMBION_LEVEL] = cambion_path
 
         liminal_path = map_dir / "map_liminal_gap.txt"
-        if os.path.exists(liminal_path) and LIMINAL_GAP_LEVEL not in files_by_level:
-            files_by_level[LIMINAL_GAP_LEVEL] = {"path": liminal_path, "ext": ".txt"}
+        if liminal_path.exists() and LIMINAL_GAP_LEVEL not in files_by_level:
+            files_by_level[LIMINAL_GAP_LEVEL] = liminal_path
 
-        for z in sorted(files_by_level):
-            map_file = files_by_level[z]["path"]
-            ext = files_by_level[z]["ext"]
-            if ext == ".json":
+        for z, map_file in sorted(files_by_level.items()):
+            if map_file.suffix == ".json":
                 world_dict.update(_load_tiled_map(map_file, z, map_tiles))
                 continue
-            with open(map_file, "r", encoding="utf-8") as f:
-                rows = f.readlines()
-            x_max = len(rows[0].split("\t"))  # Assumes all rows contain the same number of tabs
-            for y, _ in enumerate(rows):
-                cols = rows[y].split("\t")
-                for x in range(x_max):
-                    tile_name = cols[x].replace(
-                        "\n", ""
-                    )  # Windows users may need to replace '\r\n'
-                    tile = getattr(map_tiles, tile_name)(x, y, z)
-                    world_dict[(x, y, z)] = tile
+            world_dict.update(_load_text_map(map_file, z, map_tiles))
 
         map_tiles.assign_dungeon_traps(
             world_dict,

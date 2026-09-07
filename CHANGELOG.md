@@ -23,6 +23,9 @@
 
 ### Development Tool And Code Cleanup
 
+- Retired the obsolete tab-delimited numbered-map conversion workflow, made
+  Tiled JSON the explicit numbered-map authority, and retained text loading
+  only for the Liminal Gap special-area map.
 - Separated optional Class Ring modifiers from ordinary second-promotion
   progression: Templar Ordered Blessings and Archbishop Divine Intervention
   upgrades are terminal leaves, while ambiguous Arcane Trickster, Hierophant,

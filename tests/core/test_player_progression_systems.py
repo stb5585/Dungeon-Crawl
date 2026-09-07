@@ -13,6 +13,7 @@ sys.path.insert(0, str(Path(__file__).parents[2]))
 from src.core import items, map_tiles
 from src.core import player as player_module
 from src.core.player import (
+    LIMINAL_GAP_LEVEL,
     REALM_OF_CAMBION_LEVEL,
     _extract_tile_type,
     _load_tiled_map,
@@ -284,13 +285,13 @@ class TestPlayerTopLevelHelpers:
 
         assert [narrow_world[(x, 0, 2)].kind for x in range(3)] == ["Floor", "Wall", "Floor"]
 
-    def test_load_tiles_prefers_json_per_level_and_loads_optional_side_areas(
+    def test_load_tiles_uses_json_levels_and_loads_optional_side_areas(
         self, tmp_path, monkeypatch
     ):
-        map_dir = tmp_path / "map_files"
+        map_dir = tmp_path / "maps"
         map_dir.mkdir()
         (map_dir / "map_level_0.txt").write_text("Wall\tCavePath\n", encoding="utf-8")
-        (map_dir / "map_level_1.txt").write_text("Wall\n", encoding="utf-8")
+        (map_dir / "map_liminal_gap.txt").write_text("Wall\tCavePath\n", encoding="utf-8")
         for name in ["map_level_1.json", "map_funhouse.json", "map_realm_cambion.json"]:
             (map_dir / name).write_text("{}", encoding="utf-8")
 
@@ -304,14 +305,15 @@ class TestPlayerTopLevelHelpers:
         player = TestGameState.create_player(class_name="Warrior", race_name="Human")
         player.load_tiles()
 
-        assert type(player.world_dict[(0, 0, 0)]).__name__ == "Wall"
-        assert type(player.world_dict[(1, 0, 0)]).__name__ == "CavePath"
+        assert not any(position[2] == 0 for position in player.world_dict)
         assert player.world_dict[(99, 1, 1)].source == "map_level_1.json"
         assert player.world_dict[(99, 7, 7)].source == "map_funhouse.json"
         assert (
             player.world_dict[(99, REALM_OF_CAMBION_LEVEL, REALM_OF_CAMBION_LEVEL)].source
             == "map_realm_cambion.json"
         )
+        assert type(player.world_dict[(0, 0, LIMINAL_GAP_LEVEL)]).__name__ == "Wall"
+        assert type(player.world_dict[(1, 0, LIMINAL_GAP_LEVEL)]).__name__ == "CavePath"
 
     def test_load_tiles_finds_repo_maps_when_cwd_changes(self, tmp_path, monkeypatch):
         monkeypatch.chdir(tmp_path)

@@ -59,9 +59,8 @@ an owner-controlled archive or have their disposition documented.
   not runtime resources, and are excluded from the artifact.
 - `docs/ability_trees/` contains generated diagrams used for design review,
   not runtime resources.
-- Local `old_assets/` and `map_files/text_files/` directories are
-  source/reference workspaces ignored by Git and excluded from builds. Their
-  contents are not covered by this tracked inventory.
+- Local `old_assets/` is a source/reference workspace ignored by Git and
+  excluded from builds. Its contents are not covered by this tracked inventory.
 - The tracked `ascii_files/` enemy-art directory and its unused conversion
   utilities belonged to the retired curses frontend and were deleted. They
   remain recoverable from the `curses-ui-final` Git tag and repository history.
