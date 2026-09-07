@@ -2,8 +2,11 @@
 
 from src.core import map_tiles
 from src.core.classes import bard
+from src.paths import PYGAME_ASSETS_DIR
 
 from .base import BasePopupMenu
+
+CHALICE_MAP_REVEALED_IMAGE_PATH = str(PYGAME_ASSETS_DIR / "key_items" / "chalice_map.png")
 
 
 class SimpleListPopupMenu(BasePopupMenu):
@@ -218,7 +221,7 @@ class SimpleListPopupMenu(BasePopupMenu):
                     self.presenter.show_message(
                         "Hidden ink blooms across the parchment, revealing the altar location on the sixth floor.",
                         title="Chalice Map",
-                        image_path=map_tiles.CHALICE_ALTAR_IMAGE_PATH,
+                        image_path=CHALICE_MAP_REVEALED_IMAGE_PATH,
                         split_layout=True,
                     )
                 elif progress.get("Adventurer"):
