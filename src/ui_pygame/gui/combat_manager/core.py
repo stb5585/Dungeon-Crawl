@@ -6,11 +6,10 @@ import datetime
 import random
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pygame
 
-import src.ui_pygame.gui.combat_manager as combat_manager
 from src.core import enemies, main_story
 from src.core.character import Character
 from src.core.classes import ability_mechanics, promotion_kits
@@ -19,11 +18,13 @@ from src.core.combat.battle_logger import BattleLogger
 from src.core.player import LIMINAL_GAP_ENTRY_FACING, LIMINAL_GAP_ENTRY_POS, Player
 from src.paths import DEBUG_LOGS_DIR
 
+from ..combat_view.view import CombatView
 from ..input_guards import (
     prepare_guarded_input,
     release_guard_allows_input,
     update_input_armed_from_event,
 )
+from ..level_up import LevelUpScreen
 from ..mouse_helpers import hit_index, is_left_click, mouse_position
 from .constants import (
     SLOT_CARD_DECK,
@@ -36,19 +37,18 @@ from .constants import (
 from .helpers import _battle_log_slug
 
 if TYPE_CHECKING:
-    from src.ui_pygame.game import PygameGame
     from src.ui_pygame.gui.dungeon_hud import DungeonHUD
     from src.ui_pygame.presentation.pygame_presenter import PygamePresenter
 
 
 class CombatManagerCoreMixin:
-    def __init__(self, presenter: PygamePresenter, hud: DungeonHUD, game: PygameGame):
+    def __init__(self, presenter: PygamePresenter, hud: DungeonHUD, game: Any):
         self.presenter = presenter
         self.screen = presenter.screen
         self.hud = hud
         self.game = game
-        self.combat_view = combat_manager.CombatView(self.screen, presenter)
-        self.level_up_screen = combat_manager.LevelUpScreen(self.screen, presenter)
+        self.combat_view = CombatView(self.screen, presenter)
+        self.level_up_screen = LevelUpScreen(self.screen, presenter)
         self.logger = BattleLogger()
         self.running = False
         self.engine: BattleEngine | None = None

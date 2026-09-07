@@ -195,8 +195,8 @@ def _make_manager(monkeypatch):
     hud = DummyHud()
     game = SimpleNamespace()
 
-    monkeypatch.setattr(combat_manager, "CombatView", DummyCombatView)
-    monkeypatch.setattr(combat_manager, "LevelUpScreen", DummyLevelUpScreen)
+    monkeypatch.setattr(combat_manager.core, "CombatView", DummyCombatView)
+    monkeypatch.setattr(combat_manager.core, "LevelUpScreen", DummyLevelUpScreen)
 
     manager = combat_manager.GUICombatManager(presenter, hud, game)
     return manager
@@ -394,7 +394,7 @@ def test_vesperion_false_final_triggers_at_hp_threshold_without_battle_end(monke
     enemy.health.max = 1000
     enemy.health.current = 1000
     engine = ScriptedEngine(player, enemy, player_turn=True)
-    monkeypatch.setattr(combat_manager, "BattleEngine", lambda **_kwargs: engine)
+    monkeypatch.setattr(combat_manager.lifecycle, "BattleEngine", lambda **_kwargs: engine)
 
     def player_turn(_player, target):
         target.health.current = 700
@@ -417,7 +417,7 @@ def test_vesperion_false_final_triggers_after_three_enemy_turns(monkeypatch):
     enemy.health.current = 1000
     engine = ScriptedEngine(player, enemy, player_turn=False)
     enemy_turns = []
-    monkeypatch.setattr(combat_manager, "BattleEngine", lambda **_kwargs: engine)
+    monkeypatch.setattr(combat_manager.lifecycle, "BattleEngine", lambda **_kwargs: engine)
     monkeypatch.setattr(
         manager, "_enemy_turn", lambda _player, _enemy: enemy_turns.append("turn") or None
     )
@@ -437,7 +437,7 @@ def test_vesperion_death_before_threshold_uses_false_final_not_defeat(monkeypatc
     enemy.health.max = 1000
     enemy.health.current = 1000
     engine = ScriptedEngine(player, enemy, player_turn=False)
-    monkeypatch.setattr(combat_manager, "BattleEngine", lambda **_kwargs: engine)
+    monkeypatch.setattr(combat_manager.lifecycle, "BattleEngine", lambda **_kwargs: engine)
 
     def enemy_turn(_player, _enemy):
         _player.health.current = 0
@@ -458,7 +458,7 @@ def test_fleeing_vesperion_does_not_set_liminal_flags(monkeypatch):
     enemy = enemies.Vesperion()
     engine = ScriptedEngine(player, enemy, player_turn=True)
     handled = []
-    monkeypatch.setattr(combat_manager, "BattleEngine", lambda **_kwargs: engine)
+    monkeypatch.setattr(combat_manager.lifecycle, "BattleEngine", lambda **_kwargs: engine)
     monkeypatch.setattr(manager, "_player_turn", lambda _player, _enemy: "flee")
     monkeypatch.setattr(
         manager,
@@ -1450,7 +1450,8 @@ def test_tamed_combat_end_skips_death_fade_then_names_companion(monkeypatch):
 
     monkeypatch.setattr("src.ui_pygame.gui.confirmation_popup.ConfirmationPopup", FakePopup)
     monkeypatch.setattr(
-        "src.ui_pygame.gui.combat_manager.CompanionNamingScreen", FakeCompanionNamingScreen
+        "src.ui_pygame.gui.combat_manager.selection_special.CompanionNamingScreen",
+        FakeCompanionNamingScreen,
     )
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.display.flip", lambda: None)
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: [])
@@ -2060,7 +2061,7 @@ def test_start_combat_handles_initiative_and_sanctuary_escape(monkeypatch):
         player=player,
     )
 
-    monkeypatch.setattr(combat_manager, "BattleEngine", lambda **kwargs: fake_engine)
+    monkeypatch.setattr(combat_manager.lifecycle, "BattleEngine", lambda **kwargs: fake_engine)
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.display.flip", lambda: None)
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: [])
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.time.Clock", lambda: DummyClock())

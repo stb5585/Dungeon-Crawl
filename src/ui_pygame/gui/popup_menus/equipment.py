@@ -3,6 +3,7 @@
 from src.core import items
 
 from .base import BasePopupMenu
+from .selections import EquipmentSelectionPopup
 
 
 class EquipmentPopupMenu(BasePopupMenu):
@@ -106,8 +107,6 @@ class EquipmentPopupMenu(BasePopupMenu):
         options.append("Cancel")
 
         # Show selection menu
-        from . import EquipmentSelectionPopup
-
         action_popup = EquipmentSelectionPopup(
             self.presenter,
             self.parent_screen,

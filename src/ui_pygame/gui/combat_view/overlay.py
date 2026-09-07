@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pygame
 
-import src.ui_pygame.gui.combat_view as combat_view
+from src.ui_pygame.assets.companion_art_manager import get_companion_art_manager
 
 from ..enemy_presentation import presented_enemy_name
 
@@ -595,7 +595,7 @@ class CombatOverlayMixin:
                         player_char, (token_size, token_size)
                     )
                 else:
-                    token = combat_view.get_companion_art_manager().get_scaled_sprite(
+                    token = get_companion_art_manager().get_scaled_sprite(
                         turn_actor, (token_size, token_size)
                     )
             except (

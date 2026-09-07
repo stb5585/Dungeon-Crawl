@@ -4,7 +4,6 @@ import random
 
 import pygame
 
-import src.ui_pygame.gui.dungeon_manager as dungeon_manager
 from src.core import (
     enemies,
     items,
@@ -13,6 +12,7 @@ from src.core import (
 from src.core.player import DIRECTIONS
 from src.paths import PYGAME_ASSETS_DIR
 
+from .core import get_npc_art_manager, get_special_events
 from .helpers import relic_discovery_text
 
 
@@ -467,7 +467,7 @@ class DungeonInteractionMixin:
         """Handle underground spring interaction."""
         from ..confirmation_popup import ConfirmationPopup
 
-        nimue_image_path = dungeon_manager.get_npc_art_manager().get_image_path("Nimue")
+        nimue_image_path = get_npc_art_manager().get_image_path("Nimue")
         popup = ConfirmationPopup(
             self.presenter,
             "You see a refreshing underground spring.\n\nDo you want to drink from it?",
@@ -749,7 +749,7 @@ class DungeonInteractionMixin:
             final_room_tile.adjacent_visited(self.player_char)
 
             # Show Vesperion's dialogue
-            special_event_dict = dungeon_manager.get_special_events()
+            special_event_dict = get_special_events()
             event_name = (
                 "True Final Prelude"
                 if true_final and "True Final Prelude" in special_event_dict

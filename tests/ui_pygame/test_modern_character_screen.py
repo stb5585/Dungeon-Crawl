@@ -927,7 +927,9 @@ def test_modern_character_ranger_companion_tab_releases_active_companion(monkeyp
             popup_messages.append(("shown", kwargs))
             return True
 
-    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.ConfirmationPopup", FakePopup)
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.modern_character_screen.layout.ConfirmationPopup", FakePopup
+    )
     screen.selected_class_companion_index = 0
     screen._release_selected_tamed_companion(player)
     assert popup_messages[0] == ("Release Giant Rat?", True)
@@ -961,7 +963,9 @@ def test_modern_character_ranger_companion_tab_releases_active_companion(monkeyp
             popup_messages.append(("shown", kwargs))
             return False
 
-    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.ConfirmationPopup", CancelPopup)
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.modern_character_screen.layout.ConfirmationPopup", CancelPopup
+    )
     screen._release_selected_tamed_companion(player)
     assert len(player.tamed_companion["companions"]) == 1
 
@@ -1381,7 +1385,9 @@ def test_modern_character_weapon_discipline_popup_uses_selected_row(monkeypatch)
         def show(self, **kwargs):
             popup_kwargs.append(kwargs)
 
-    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.ConfirmationPopup", FakePopup)
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.modern_character_screen.layout.ConfirmationPopup", FakePopup
+    )
 
     screen._open_weapon_discipline_popup(player)
 
@@ -1631,7 +1637,7 @@ def test_modern_character_totems_tab_shows_review_and_selector(monkeypatch):
 
     import src.ui_pygame.gui.modern_character_screen as modern_module
 
-    monkeypatch.setattr(modern_module, "TotemAspectsPopupMenu", FakePopup)
+    monkeypatch.setattr(modern_module.mechanics, "TotemAspectsPopupMenu", FakePopup)
     screen._open_totem_aspects_popup(player)
     assert opened == ["Totem Aspects", "Soulcatcher"]
 
@@ -1654,7 +1660,7 @@ def test_modern_character_totems_tab_c_opens_existing_aspect_popup(monkeypatch):
 
     import src.ui_pygame.gui.modern_character_screen as modern_module
 
-    monkeypatch.setattr(modern_module, "TotemAspectsPopupMenu", FakePopup)
+    monkeypatch.setattr(modern_module.mechanics, "TotemAspectsPopupMenu", FakePopup)
     monkeypatch.setattr(screen, "draw_all", lambda *_args, **_kwargs: None)
     monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
     event_batches = iter(
@@ -1826,7 +1832,7 @@ def test_modern_character_crescendo_tab_opens_inherent_composition(monkeypatch):
 
     import src.ui_pygame.gui.modern_character_screen as modern_module
 
-    monkeypatch.setattr(modern_module, "CompositionPopupMenu", FakePopup)
+    monkeypatch.setattr(modern_module.mechanics, "CompositionPopupMenu", FakePopup)
     screen._open_composition_popup(player)
 
     assert opened == ["Compose Song", "Bard"]
@@ -2098,7 +2104,7 @@ def test_modern_character_class_tab_supports_multiple_summon_tiles_and_popup(mon
 
     import src.ui_pygame.gui.modern_character_screen as modern_module
 
-    monkeypatch.setattr(modern_module, "ClassCompanionDetailsPopup", FakeCompanionPopup)
+    monkeypatch.setattr(modern_module.layout, "ClassCompanionDetailsPopup", FakeCompanionPopup)
     monkeypatch.setattr(
         screen,
         "draw_semi_transparent_panel",
@@ -2620,7 +2626,7 @@ def test_modern_equipment_tab_enter_opens_selected_slot_change(monkeypatch):
 
     import src.ui_pygame.gui.modern_character_screen as modern_module
 
-    monkeypatch.setattr(modern_module, "EquipmentPopupMenu", FakeEquipmentPopup)
+    monkeypatch.setattr(modern_module.equipment, "EquipmentPopupMenu", FakeEquipmentPopup)
 
     screen.open_selected_equipment_change(player)
 
@@ -2657,7 +2663,7 @@ def test_modern_character_c_toggles_class_summon_focus_and_opens_popup(monkeypat
 
     import src.ui_pygame.gui.modern_character_screen as modern_module
 
-    monkeypatch.setattr(modern_module, "ClassCompanionDetailsPopup", FakeCompanionPopup)
+    monkeypatch.setattr(modern_module.layout, "ClassCompanionDetailsPopup", FakeCompanionPopup)
     monkeypatch.setattr(screen, "draw_all", lambda *_args, **_kwargs: None)
     monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
     event_batches = iter(
@@ -2810,7 +2816,7 @@ def test_modern_character_menu_opens_bestiary(monkeypatch):
 
     import src.ui_pygame.gui.modern_character_screen as modern_module
 
-    monkeypatch.setattr(modern_module, "BestiaryPopupMenu", FakeBestiaryPopup)
+    monkeypatch.setattr(modern_module.equipment, "BestiaryPopupMenu", FakeBestiaryPopup)
 
     assert screen._open_menu_choice("Bestiary", player) is None
     assert opened == ["created", (True, True)]
@@ -2831,7 +2837,7 @@ def test_modern_character_menu_opens_quest_popup(monkeypatch):
 
     import src.ui_pygame.gui.modern_character_screen as modern_module
 
-    monkeypatch.setattr(modern_module, "QuestPopupMenu", FakeQuestPopup)
+    monkeypatch.setattr(modern_module.equipment, "QuestPopupMenu", FakeQuestPopup)
 
     assert screen._open_menu_choice("Quests", player) is None
     assert opened == ["created", (True, True)]
@@ -2868,7 +2874,9 @@ def test_dungeon_character_screen_router_lazy_loads_modern_default(monkeypatch):
 
     import src.ui_pygame.gui.modern_character_screen as modern_module
 
-    monkeypatch.setattr(modern_module, "ModernCharacterScreen", FakeModern)
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.modern_character_screen.screen.ModernCharacterScreen", FakeModern
+    )
 
     manager = DungeonManager.__new__(DungeonManager)
     manager.presenter = SimpleNamespace()

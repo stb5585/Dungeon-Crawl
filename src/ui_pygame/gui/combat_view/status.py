@@ -6,14 +6,13 @@ import math
 
 import pygame
 
-import src.ui_pygame.gui.combat_view as combat_view
-
 from ..enemy_presentation import effect_icon_label
 from ..status_icons import (
     RESIST_STATUS_LABELS,
     combine_duplicate_status_icons,
     compact_status_icons,
     fit_status_icon_label,
+    load_status_icon_surface,
     prioritize_status_icons,
     stat_effect_status_icon,
     status_icon_color,
@@ -424,9 +423,7 @@ class CombatStatusMixin:
             color = status_icon_color(is_positive, label)
 
             rect = pygame.Rect(icon_x, icon_y, icon_w, icon_h)
-            icon_surface = combat_view.load_status_icon_surface(
-                label, (icon_h - 2, icon_h - 2), is_positive
-            )
+            icon_surface = load_status_icon_surface(label, (icon_h - 2, icon_h - 2), is_positive)
             if icon_surface is not None:
                 icon_rect = icon_surface.get_rect(center=rect.center)
                 self.screen.blit(icon_surface, icon_rect)

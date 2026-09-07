@@ -3,6 +3,7 @@
 from src.core import map_tiles
 from src.core.classes import bard
 
+from ..confirmation_popup import ConfirmationPopup
 from .base import BasePopupMenu
 
 
@@ -163,8 +164,6 @@ class SimpleListPopupMenu(BasePopupMenu):
     def on_select(self, player_char, item):
         value = item.get("value") if isinstance(item, dict) else item
         if getattr(value, "exploration_cast", False) and callable(getattr(value, "cast_out", None)):
-            from . import ConfirmationPopup
-
             menu_background = self._capture_menu_surface(player_char)
             if player_char.mana.current < int(getattr(value, "cost", 0) or 0):
                 notice = ConfirmationPopup(
