@@ -307,7 +307,6 @@ class CharacterOffenseMixin:
         cover(bool): whether the attack can be blocked by a familiar or pet
         hit(bool): guarantees hit if target doesn't dodge
         """
-        from ..combat.combat_result import CombatResult, CombatResultGroup
         from ..classes import (
             ability_mechanics,
             footpad,
@@ -317,6 +316,7 @@ class CharacterOffenseMixin:
             pathfinder,
             warrior,
         )
+        from ..combat.combat_result import CombatResult, CombatResultGroup
 
         revelation_message = ""
         dmg_mod *= pathfinder.melee_damage_multiplier(self)
@@ -830,7 +830,7 @@ class CharacterOffenseMixin:
         if "Evasive Guard" in defender.spellbook.get("Skills", {}):
             defender.evasive_guard_stacks = 0
         try:
-            from ..events.event_bus import get_event_bus, create_combat_event, EventType
+            from ..events.event_bus import EventType, create_combat_event, get_event_bus
 
             get_event_bus().emit(
                 create_combat_event(EventType.DODGE, actor=defender, target=self, damage=damage)
@@ -969,7 +969,7 @@ class CharacterOffenseMixin:
     def _emit_crit_event(self, defender: Character, crit_mult: int) -> None:
         """Emit a CRITICAL_HIT event."""
         try:
-            from ..events.event_bus import get_event_bus, create_combat_event, EventType
+            from ..events.event_bus import EventType, create_combat_event, get_event_bus
 
             event_bus = get_event_bus()
             event_bus.emit(

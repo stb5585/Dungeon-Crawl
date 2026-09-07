@@ -3,8 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from math import ceil, floor
 
-import pygame
 import numpy as np
+import pygame
 from PIL import Image, ImageChops, ImageDraw
 
 from .geometry import Quad

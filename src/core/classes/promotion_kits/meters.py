@@ -936,8 +936,8 @@ def record_healing_done(
     source: str = "Unknown",
     target: Any | None = None,
 ) -> str:
-    from .companions import add_aspect
     from ..cleric import has_cleric_talent
+    from .companions import add_aspect
 
     if not amount or amount <= 0:
         return ""

@@ -6,21 +6,19 @@ from types import SimpleNamespace
 
 import pytest
 
-from src.core import abilities
-from src.core import enemies
-from src.core import items
-from src.core.classes import class_rings
-from src.core.classes import paladin
-from src.core.classes import promotion_kits
+from src.core import abilities, enemies, items
+from src.core.classes import class_rings, paladin, promotion_kits
 from src.core.combat import CombatEncounter
 from src.core.combat.battle_engine.outcomes import BattleOutcomeMixin
 from src.core.constants import BASE_CRIT_PER_POINT
-from src.core.progression import ABILITY_TREES
-from src.core.progression import NodeKind
-from src.core.progression import NodeState
-from src.core.progression import ProgressionState
-from src.core.progression import apply_progression_plan
-from src.core.progression import available_nodes
+from src.core.progression import (
+    ABILITY_TREES,
+    NodeKind,
+    NodeState,
+    ProgressionState,
+    apply_progression_plan,
+    available_nodes,
+)
 from tests.test_framework import TestGameState
 
 

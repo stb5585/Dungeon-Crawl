@@ -23,9 +23,9 @@ from src.core.progression import ProgressionState
 from src.ui_pygame import game as pygame_game
 from src.ui_pygame.gui.dungeon_manager import DungeonManager
 from src.ui_pygame.gui.modern_character_screen import (
+    RESISTANCE_ORDER,
     ClassCompanionDetailsPopup,
     ModernCharacterScreen,
-    RESISTANCE_ORDER,
 )
 
 

@@ -5,9 +5,10 @@ Implements the core shop logic from town.py adapted for Pygame presenter.
 
 from src.core import items as items_module
 from src.core.classes import dragoon
-from .shop_screen import ShopScreen
+
 from .confirmation_popup import ConfirmationPopup
 from .popup_menus import SelectionPopup
+from .shop_screen import ShopScreen
 from .town_base import TownScreenBase
 
 

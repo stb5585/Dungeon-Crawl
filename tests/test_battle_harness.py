@@ -10,9 +10,9 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 
 def test_harness_runs_single_turn(monkeypatch):
-    from tests.test_framework import TestGameState
-    from tests.combat_harness import BattleEngineHarness
     import src.core.combat.battle_engine as battle_engine
+    from tests.combat_harness import BattleEngineHarness
+    from tests.test_framework import TestGameState
 
     player = TestGameState.create_player(
         name="Hero",

@@ -956,8 +956,7 @@ def combat_skill_visible(character: Any, skill: Any) -> bool:
     name = str(getattr(skill, "name", "") or "")
     if name == "Sanctuary Ward":
         return int(combat_state(character).get("devotion", 0) or 0) > 0
-    from .resolve import RESOLVE_SURGES
-    from .resolve import resolve_surge_available
+    from .resolve import RESOLVE_SURGES, resolve_surge_available
 
     if name in {entry["name"] for entry in RESOLVE_SURGES}:
         return resolve_surge_available(character, name)

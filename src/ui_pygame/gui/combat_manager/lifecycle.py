@@ -7,16 +7,17 @@ from typing import TYPE_CHECKING
 
 import pygame
 
+import src.ui_pygame.gui.combat_manager as combat_manager
 from src.core import enemies
 from src.core.character import Character
 from src.core.classes import ability_mechanics, promotion_kits
 from src.core.combat import ActionIntent, CombatEncounter, TargetScope
 from src.core.player import Player
-import src.ui_pygame.gui.combat_manager as combat_manager
 from src.ui_pygame.gui.enemy_presentation import (
     is_invisible_target,
     player_has_sight,
 )
+
 from ..input_guards import release_guard_allows_input
 from ..mouse_helpers import hit_index, is_left_click, mouse_position
 from .constants import (

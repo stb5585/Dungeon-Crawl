@@ -5,8 +5,8 @@ from __future__ import annotations
 import random
 from typing import Any
 
-from .base import Job
 from .. import abilities, items
+from .base import Job
 
 
 class SpellStealer(Job):

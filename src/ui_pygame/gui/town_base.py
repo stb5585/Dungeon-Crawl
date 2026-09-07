@@ -190,6 +190,7 @@ class TownScreenBase:
     def display_quest_text(self, quest_text, *, npc_name: str | None = None, image_path: str = ""):
         """Display quest text in the content area with slow printing animation."""
         import time
+
         import pygame
 
         # Normalize text and peel off a header line if present (====== Name ======)

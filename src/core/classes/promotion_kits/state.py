@@ -445,6 +445,7 @@ def end_combat(
     boss: bool = False,
     show_progress_messages: bool = False,
 ) -> str:
+    from .. import lycan
     from .companions import (
         clear_conduit_command,
         favorite_enemy_type,
@@ -455,8 +456,6 @@ def end_combat(
     )
     from .meters import convert_shadow_backlash
     from .tracks import gain_case_progress
-
-    from .. import lycan
 
     msg = ""
     msg += clear_conduit_command(character, "leaves combat")

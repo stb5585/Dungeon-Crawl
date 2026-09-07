@@ -7,6 +7,7 @@ This module contains effects that modify character stats temporarily.
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
+
 from .base import Effect
 
 if TYPE_CHECKING:

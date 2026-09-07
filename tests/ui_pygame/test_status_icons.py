@@ -16,9 +16,9 @@ from src.ui_pygame.gui.status_icons import (
     prioritize_status_icons,
     stat_effect_status_icon,
     status_icon_asset_path,
-    status_icon_stack_count,
     status_icon_color,
     status_icon_priority,
+    status_icon_stack_count,
     totem_status_icons,
 )
 

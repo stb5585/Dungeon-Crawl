@@ -10,7 +10,8 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parents[2]))
 
-from src.core import items, map_tiles, player as player_module
+from src.core import items, map_tiles
+from src.core import player as player_module
 from src.core.player import (
     REALM_OF_CAMBION_LEVEL,
     _extract_tile_type,
@@ -19,8 +20,8 @@ from src.core.player import (
     _parse_tiled_properties,
     load_char,
     normalize_gameplay_stats,
-    summarize_gameplay_stats,
     summarize_gameplay_stat_groups,
+    summarize_gameplay_stats,
 )
 from tests.test_framework import TestGameState
 

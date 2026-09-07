@@ -4,18 +4,17 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from src.core import abilities
-from src.core import items
+from src.core import abilities, items
 from src.core.abilities.descriptions import presented_abilities
-from src.core.classes import class_rings
-from src.core.classes import ability_mechanics
-from src.core.classes import promotion_kits
+from src.core.classes import ability_mechanics, class_rings, promotion_kits
 from src.core.combat.battle_engine.actions import BattleActionMixin
-from src.core.progression import ABILITY_TREES
-from src.core.progression import NodeKind
-from src.core.progression import ProgressionState
-from src.core.progression import apply_progression_plan
-from src.core.progression import purchase_node
+from src.core.progression import (
+    ABILITY_TREES,
+    NodeKind,
+    ProgressionState,
+    apply_progression_plan,
+    purchase_node,
+)
 from tests.test_framework import TestGameState
 
 

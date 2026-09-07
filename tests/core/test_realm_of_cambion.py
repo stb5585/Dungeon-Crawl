@@ -1,9 +1,9 @@
 import random
 from types import SimpleNamespace
 
-from src.core.character import Combat, Level, Resource, Stats
 from src.core import map_tiles
-from src.core.player import Player, REALM_OF_CAMBION_LEVEL
+from src.core.character import Combat, Level, Resource, Stats
+from src.core.player import REALM_OF_CAMBION_LEVEL, Player
 
 
 def _build_player():

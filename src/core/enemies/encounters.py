@@ -2,15 +2,15 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable
-from dataclasses import dataclass
 import os
 import random
+from collections.abc import Callable, Iterable
+from dataclasses import dataclass
 from typing import NamedTuple
 
+from ..combat.encounter import CombatEncounter
 from . import base, early, endgame, midgame
 from .base import Enemy
-from ..combat.encounter import CombatEncounter
 from .catalog import (
     CURATED_PAIR_SPECS,
     FUNHOUSE_ENEMY_SPECS,

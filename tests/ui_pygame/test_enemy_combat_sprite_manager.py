@@ -4,13 +4,13 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 import re
+from pathlib import Path
 from types import SimpleNamespace
 
-from PIL import Image
 import pygame
 import pytest
+from PIL import Image
 
 from src.core import enemies
 from src.ui_pygame.assets.enemy_combat_sprite_manager import (

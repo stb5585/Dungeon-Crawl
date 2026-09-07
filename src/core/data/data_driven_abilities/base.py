@@ -13,8 +13,8 @@ works transparently with the existing battle engine code.
 
 from __future__ import annotations
 
-from copy import deepcopy
 import random
+from copy import deepcopy
 from typing import TYPE_CHECKING
 
 from src.core.abilities import Spell

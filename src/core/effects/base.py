@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from character import Character
+
     from src.core.combat.combat_result import CombatResult
 
 

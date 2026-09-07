@@ -166,7 +166,7 @@ class CharacterEventsMixin:
             except Exception:
                 pass
         try:
-            from ..events.event_bus import get_event_bus, create_combat_event, EventType
+            from ..events.event_bus import EventType, create_combat_event, get_event_bus
 
             event_bus = get_event_bus()
             event_data = {
@@ -247,7 +247,7 @@ class CharacterEventsMixin:
             except Exception:
                 pass
         try:
-            from ..events.event_bus import get_event_bus, create_combat_event, EventType
+            from ..events.event_bus import EventType, create_combat_event, get_event_bus
 
             event_bus = get_event_bus()
             event_bus.emit(
@@ -299,7 +299,7 @@ class CharacterEventsMixin:
             except Exception:
                 pass
         try:
-            from ..events.event_bus import get_event_bus, create_combat_event, EventType
+            from ..events.event_bus import EventType, create_combat_event, get_event_bus
 
             event_bus = get_event_bus()
             event_bus.emit(
@@ -342,7 +342,7 @@ class CharacterEventsMixin:
         ):
             self.record_archdruid_healing_done(amount)
         try:
-            from ..events.event_bus import get_event_bus, create_combat_event, EventType
+            from ..events.event_bus import EventType, create_combat_event, get_event_bus
 
             event_bus = get_event_bus()
             event_bus.emit(

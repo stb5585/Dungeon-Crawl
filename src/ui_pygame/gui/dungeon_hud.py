@@ -10,6 +10,7 @@ import pygame
 from src.core import map_tiles
 from src.core.classes import promotion_kits, wizard
 from src.core.player import LIMINAL_GAP_LEVEL, REALM_OF_CAMBION_LEVEL
+
 from .enemy_presentation import player_has_sight, presented_enemy_name
 from .status_icons import (
     RESIST_STATUS_LABELS,

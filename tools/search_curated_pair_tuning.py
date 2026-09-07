@@ -4,11 +4,11 @@
 from __future__ import annotations
 
 import argparse
-from itertools import combinations, product
 import json
-from pathlib import Path
 import statistics
 import sys
+from itertools import combinations, product
+from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 

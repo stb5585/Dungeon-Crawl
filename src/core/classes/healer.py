@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import random
 
-from .base import Job
 from .. import items
+from .base import Job
 
 
 def has_skill(character, name: str) -> bool:

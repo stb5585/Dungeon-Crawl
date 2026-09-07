@@ -8,6 +8,7 @@ import sys
 import pygame
 
 from src.core.classes import astromancer
+
 from ..enemy_presentation import (
     invisible_target_note,
     presented_enemy_name,

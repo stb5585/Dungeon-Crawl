@@ -6,6 +6,7 @@ import pygame
 
 from src.core.save_system import SaveManager
 from src.ui_pygame.assets.portrait_manager import PortraitManager
+
 from .confirmation_popup import ConfirmationPopup
 from .input_guards import (
     prepare_guarded_input,

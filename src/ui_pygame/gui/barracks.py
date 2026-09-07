@@ -6,6 +6,7 @@ Implements the core barracks logic from town.py adapted for Pygame presenter.
 from src.core import enemies, items, map_tiles
 from src.core.classes import class_rings, grandmaster
 from src.core.data.data_loader import get_special_events
+
 from .confirmation_popup import ConfirmationPopup
 from .location_menu import LocationMenuScreen
 from .town_base import TownScreenBase

@@ -5,13 +5,13 @@ from __future__ import annotations
 import pytest
 
 from src.core import abilities, items
+from src.core.classes import ability_mechanics
 from src.core.combat import CombatEncounter, EnemyResolution, TargetScope
 from src.core.combat.battle_engine import (
     ActionIntent,
     ActionValidationCode,
     BattleEngine,
 )
-from src.core.classes import ability_mechanics
 from src.core.events.event_bus import EventType, get_event_bus, reset_event_bus
 from tests.test_framework import TestGameState
 

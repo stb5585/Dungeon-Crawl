@@ -216,8 +216,7 @@ class ClassRing(Accessory):
         return descriptions.get(cls_name, self.description)
 
     def _grandmaster_description(self, player_char):
-        from ..classes import grandmaster
-        from ..classes import class_rings
+        from ..classes import class_rings, grandmaster
 
         state = grandmaster.normalize_state(getattr(player_char, "grandmaster_discipline", None))
         if getattr(getattr(player_char, "cls", None), "name", None) == "Weapon Master":
@@ -251,8 +250,7 @@ class ClassRing(Accessory):
         )
 
     def _demonologist_description(self, player_char):
-        from ..classes import demonologist
-        from ..classes import class_rings
+        from ..classes import class_rings, demonologist
 
         state = demonologist.normalize_state(getattr(player_char, "demonologist_contracts", None))
         active = state["active_patron"] or "no active patron"
@@ -272,8 +270,7 @@ class ClassRing(Accessory):
         )
 
     def _archdruid_description(self, player_char):
-        from ..classes import archdruid
-        from ..classes import class_rings
+        from ..classes import archdruid, class_rings
 
         state = archdruid.normalize_state(getattr(player_char, "archdruid_attunement", None))
         attunement = ", ".join(

@@ -18,6 +18,7 @@ from src.core.combat.battle_engine import BattleEngine
 from src.core.combat.battle_logger import BattleLogger
 from src.core.player import LIMINAL_GAP_ENTRY_FACING, LIMINAL_GAP_ENTRY_POS, Player
 from src.paths import DEBUG_LOGS_DIR
+
 from ..input_guards import (
     prepare_guarded_input,
     release_guard_allows_input,
@@ -35,9 +36,9 @@ from .constants import (
 from .helpers import _battle_log_slug
 
 if TYPE_CHECKING:
+    from src.ui_pygame.game import PygameGame
     from src.ui_pygame.gui.dungeon_hud import DungeonHUD
     from src.ui_pygame.presentation.pygame_presenter import PygamePresenter
-    from src.ui_pygame.game import PygameGame
 
 
 class CombatManagerCoreMixin:

@@ -4,10 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from src.core import abilities
-from src.core import items
-from src.core.classes import ability_mechanics
-from src.core.classes import grandmaster
+from src.core import abilities, items
+from src.core.classes import ability_mechanics, grandmaster
 from src.core.combat import CombatEncounter
 from src.core.combat.battle_engine import BattleEngine
 from src.core.progression import (

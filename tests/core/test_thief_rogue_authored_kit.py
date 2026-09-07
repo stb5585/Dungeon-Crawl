@@ -2,7 +2,8 @@
 
 from types import SimpleNamespace
 
-from src.core import abilities, enemies, items, map_tiles, player as player_module
+from src.core import abilities, enemies, items, map_tiles
+from src.core import player as player_module
 from src.core.classes import class_rings, footpad, promotion_kits
 from src.core.combat.combat_result import CombatResult
 from src.core.progression import ABILITY_TREES, NodeKind, ProgressionState

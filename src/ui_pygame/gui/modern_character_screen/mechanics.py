@@ -7,6 +7,7 @@ from typing import Any
 
 import pygame
 
+import src.ui_pygame.gui.modern_character_screen as character_screen
 from src.core.classes import (
     archdruid,
     astromancer,
@@ -20,7 +21,6 @@ from src.core.classes import (
     wizard,
 )
 from src.ui_pygame.assets.ability_icon_manager import get_ability_icon_manager
-import src.ui_pygame.gui.modern_character_screen as character_screen
 
 SCHOOL_AFFINITY_ICON_KEYS = {
     "Fire": "spell_fire",

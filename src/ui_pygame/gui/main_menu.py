@@ -5,6 +5,7 @@ Main menu screen for the Pygame GUI.
 import pygame
 
 from src.paths import PYGAME_ASSETS_DIR
+
 from .input_guards import (
     prepare_guarded_input,
     release_guard_allows_input,

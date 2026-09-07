@@ -2,12 +2,8 @@
 
 import pytest
 
-from src.core import abilities
-from src.core import curses
-from src.core import enemies
-from src.core.classes import demonologist
-from src.core.classes import mage_mechanics
-from src.core.classes import warlock
+from src.core import abilities, curses, enemies
+from src.core.classes import demonologist, mage_mechanics, warlock
 from src.core.combat import CombatEncounter
 from src.core.combat.battle_engine.outcomes import BattleOutcomeMixin
 from src.core.combat.combat_result import CombatResult

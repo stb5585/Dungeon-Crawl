@@ -9,6 +9,7 @@ from .base import Effect
 
 if TYPE_CHECKING:
     from character import Character
+
     from src.core.combat.combat_result import CombatResult
 
 

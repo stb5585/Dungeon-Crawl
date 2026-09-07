@@ -9,6 +9,7 @@ from .base import Effect
 
 if TYPE_CHECKING:
     from character import Character
+
     from src.core.combat.combat_result import CombatResult
 
 
@@ -25,7 +26,8 @@ class ShieldSlamEffect(Effect):
     # noinspection PyMethodOverriding
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
         import random as _rng
-        from src.core.constants import DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH
+
+        from src.core.constants import DAMAGE_VARIANCE_HIGH, DAMAGE_VARIANCE_LOW
 
         messages = result.extra.setdefault("messages", [])
 

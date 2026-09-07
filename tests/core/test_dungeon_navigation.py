@@ -3,10 +3,11 @@
 Smoke tests for core dungeon navigation behavior.
 """
 
-from src.core.character import Combat, Level, Resource, Stats
-from src.core import enemies, map_tiles
-from src.core.player import DIRECTIONS, Player
 from types import SimpleNamespace
+
+from src.core import enemies, map_tiles
+from src.core.character import Combat, Level, Resource, Stats
+from src.core.player import DIRECTIONS, Player
 
 
 def _make_player():

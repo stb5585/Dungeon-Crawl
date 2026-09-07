@@ -6,6 +6,7 @@ import sys
 
 import pygame
 
+import src.ui_pygame.gui.combat_manager as combat_manager
 from src.core.classes import (
     ability_mechanics,
     astromancer,
@@ -16,7 +17,7 @@ from src.core.classes import (
     promotion_kits,
 )
 from src.core.combat.battle_engine import STOLEN_SCROLL_CHOICE_PREFIX
-import src.ui_pygame.gui.combat_manager as combat_manager
+
 from ..input_guards import release_guard_allows_input
 from .constants import _DISPLAY_TO_ENGINE
 

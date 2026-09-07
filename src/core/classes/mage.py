@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from .base import Job
 from .. import items
+from .base import Job
 
 
 class Mage(Job):

@@ -6,6 +6,7 @@ from textwrap import wrap
 from typing import TYPE_CHECKING
 
 from src.paths import CORE_DATA_DIR
+
 from ..combat.combat_result import CombatResult
 from ..combat.targeting import TargetLossPolicy, TargetScope
 

@@ -7,6 +7,7 @@ from typing import Any
 import pygame
 
 import src.ui_pygame.gui.modern_character_screen as character_screen
+
 from ..input_guards import (
     prepare_guarded_input,
     release_guard_allows_input,

@@ -8,16 +8,17 @@ Events are emitted by the game engine and can be consumed by different presenter
 
 from __future__ import annotations
 
+import logging
 from collections import Counter
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass, field
 from enum import Enum, auto
-import logging
 from typing import TYPE_CHECKING, Any, Callable
 
 if TYPE_CHECKING:
     from character import Character
+
     from src.core.combat.combat_result import CombatResult
 
 

@@ -5,9 +5,9 @@ from __future__ import annotations
 import random
 from typing import TYPE_CHECKING
 
-from ..constants import DAMAGE_VARIANCE_HIGH, DAMAGE_VARIANCE_LOW
 from ..combat.combat_result import CombatResult, CombatResultGroup
 from ..combat.targeting import TargetLossPolicy, TargetScope
+from ..constants import DAMAGE_VARIANCE_HIGH, DAMAGE_VARIANCE_LOW
 from ..events.event_bus import combat_event_context
 from .base import Skill, Spell
 from .enemy import Counterspell
@@ -617,8 +617,7 @@ class Volitation(MovementSpell):
         return self.cast_out(user)
 
     def cast_out(self, game_or_user) -> str:
-        from ..classes import ability_mechanics
-        from ..classes import promotion_kits
+        from ..classes import ability_mechanics, promotion_kits
 
         user = getattr(game_or_user, "player_char", game_or_user)
         cost, route_message = promotion_kits.wayfinding_cost(
@@ -641,8 +640,7 @@ class EnterWall(MovementSpell):
         return "Enter Wall has no combat use.\n"
 
     def cast_out(self, game_or_user) -> str:
-        from ..classes import ability_mechanics
-        from ..classes import promotion_kits
+        from ..classes import ability_mechanics, promotion_kits
 
         user = getattr(game_or_user, "player_char", game_or_user)
         cost, route_message = promotion_kits.wayfinding_cost(

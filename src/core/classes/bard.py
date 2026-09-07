@@ -5,8 +5,8 @@ from __future__ import annotations
 import random
 from typing import Any
 
-from .base import Job
 from .. import items
+from .base import Job
 
 SONGS = {
     "Valor": {

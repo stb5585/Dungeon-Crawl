@@ -5,8 +5,7 @@ from __future__ import annotations
 import pytest
 
 from src.core import abilities, items
-from src.core.classes import astromancer
-from src.core.classes import promotion_kits
+from src.core.classes import astromancer, promotion_kits
 from src.core.combat.battle_engine import BattleEngine
 from src.core.combat.combat_result import CombatResult
 from src.core.save_system import PlayerDataSerializer

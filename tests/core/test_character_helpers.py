@@ -9,8 +9,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parents[2]))
 
-from src.core import abilities
-from src.core import items
+from src.core import abilities, items
 from src.core.constants import (
     BASE_CRIT_PER_POINT,
     ELF_HEALING_RECEIVED_MULTIPLIER,

@@ -14,13 +14,13 @@ from ..popup_menus import (
 )
 from .companion_popup import ClassCompanionDetailsPopup
 from .models import (
-    CharacterTab,
     DEFAULT_CHARACTER_TABS,
     EQUIPMENT_SLOT_ORDER,
-    EquipmentBuffSummary,
-    EquipmentSlotSummary,
     RESISTANCE_ORDER,
     RESISTANCE_SLOT_COUNT,
+    CharacterTab,
+    EquipmentBuffSummary,
+    EquipmentSlotSummary,
     ResistanceSummary,
 )
 from .screen import ModernCharacterScreen

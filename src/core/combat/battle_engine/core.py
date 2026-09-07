@@ -2,14 +2,10 @@
 
 from __future__ import annotations
 
-from contextlib import contextmanager
 import random
+from contextlib import contextmanager
 from typing import TYPE_CHECKING
 
-from ..actor_cycle import ActorCycle, PLAYER_ACTOR_ID, build_actor_order
-from ..battle_logger import BattleLogger
-from ..encounter import CombatEncounter
-from ..initiative import determine_initiative
 from ...classes import ability_mechanics, astromancer, bard, footpad, paladin, promotion_kits
 from ...enemies.identity import remember_defeat_identity
 from ...events.event_bus import (
@@ -18,6 +14,10 @@ from ...events.event_bus import (
     create_combat_event,
     get_event_bus,
 )
+from ..actor_cycle import PLAYER_ACTOR_ID, ActorCycle, build_actor_order
+from ..battle_logger import BattleLogger
+from ..encounter import CombatEncounter
+from ..initiative import determine_initiative
 from .actions import BattleActionMixin
 from .models import ActionResult
 from .outcomes import BattleOutcomeMixin

@@ -9,7 +9,8 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parents[2]))
 
-from src.core import abilities, items, player as player_module
+from src.core import abilities, items
+from src.core import player as player_module
 from tests.test_framework import TestGameState
 
 

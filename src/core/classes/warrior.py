@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from .base import Job
 from .. import items
+from .base import Job
 
 COMMITMENT_ACCURACY_PER_STACK = 0.03
 COMMITMENT_CRITICAL_BONUS_PER_STACK = 0.05

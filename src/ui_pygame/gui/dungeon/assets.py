@@ -11,6 +11,7 @@ from pathlib import Path
 import pygame
 
 from src.paths import MAP_FILES_DIR, PROJECT_ROOT, PYGAME_ASSETS_DIR
+
 from .geometry import Quad
 from .projector import ProjectedSurface, project_texture_to_quad
 

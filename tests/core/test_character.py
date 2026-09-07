@@ -14,8 +14,8 @@ sys.path.insert(0, str(Path(__file__).parents[2]))
 
 import pytest
 
+from src.core import abilities, companions, enemies, items
 from src.core.enemies import Goblin
-from src.core import items, enemies, abilities, companions
 from src.core.save_system import PlayerDataSerializer, QuestDataSerializer, TileStateSerializer
 from tests.test_framework import TestGameState
 
@@ -627,7 +627,7 @@ class TestPlayerUtilityBehaviors:
         assert player.gameplay_stats["highest_level_reached"] == 18
 
     def test_exp_gain_multiplier_matches_race(self):
-        from src.core.constants import HUMAN_EXP_MULTIPLIER, HALF_GIANT_EXP_MULTIPLIER
+        from src.core.constants import HALF_GIANT_EXP_MULTIPLIER, HUMAN_EXP_MULTIPLIER
 
         human = TestGameState.create_player(class_name="Warrior", race_name="Human")
         half_giant = TestGameState.create_player(class_name="Warrior", race_name="Half Giant")

@@ -3,17 +3,17 @@
 from __future__ import annotations
 
 from src.core.effects import (
-    MagicEffectToggleEffect,
-    ScreechEffect,
     AcidSpitEffect,
     BreathDamageEffect,
-    NightmareFuelEffect,
-    WidowsWailEffect,
     GoblinPunchEffect,
     HexEffect,
-    VulcanizeEffect,
     HolyFollowupEffect,
+    MagicEffectToggleEffect,
+    NightmareFuelEffect,
+    ScreechEffect,
     TurnUndeadEffect,
+    VulcanizeEffect,
+    WidowsWailEffect,
 )
 
 

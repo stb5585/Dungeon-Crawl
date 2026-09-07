@@ -7,7 +7,7 @@ import math
 import random
 from pathlib import Path
 
-from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageEnhance
+from PIL import Image, ImageChops, ImageDraw, ImageEnhance, ImageFilter
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DUNGEON_ROOT = PROJECT_ROOT / "src" / "ui_pygame" / "assets" / "dungeon_tiles"

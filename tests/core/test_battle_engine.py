@@ -7,7 +7,7 @@ from types import SimpleNamespace
 
 from src.core import abilities, items
 from src.core.classes import class_rings, promotion_kits
-from src.core.combat.battle_engine import BattleEngine, STOLEN_SCROLL_CHOICE_PREFIX
+from src.core.combat.battle_engine import STOLEN_SCROLL_CHOICE_PREFIX, BattleEngine
 from src.core.data.data_driven_abilities import DataDrivenSpell
 from src.core.enemies import Barghest, Goblin, GuildArcaneBoss
 from tests.test_framework import TestGameState

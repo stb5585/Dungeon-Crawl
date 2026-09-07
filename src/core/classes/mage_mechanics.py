@@ -297,8 +297,7 @@ def _random_school_rider_triggers(
     base_chance = RANDOM_SCHOOL_RIDERS.get((school, passive_name))
     if base_chance is None or not has_skill(character, passive_name):
         return False
-    from . import class_rings
-    from . import promotion_kits
+    from . import class_rings, promotion_kits
 
     streak_active = (
         getattr(getattr(character, "cls", None), "name", "") == "Wizard"

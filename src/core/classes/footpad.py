@@ -6,8 +6,8 @@ import random
 from dataclasses import dataclass
 from typing import Any
 
-from .base import Job
 from .. import items
+from .base import Job
 
 OBSCURATION_STEPS = 50
 TOXIN_RECIPES = {

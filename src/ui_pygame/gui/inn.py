@@ -6,8 +6,9 @@ Implements the core tavern logic from town.py adapted for Pygame presenter.
 import random
 
 from src.core.town import PATRON_DIALOGUES, TAVERN_FLAVOR_DIALOGUES, prior_bounty_target_defeats
-from .level_up import LevelUpScreen
+
 from .confirmation_popup import ConfirmationPopup
+from .level_up import LevelUpScreen
 from .location_menu import LocationMenuScreen
 from .town_base import TownScreenBase
 

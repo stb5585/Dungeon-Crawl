@@ -6,6 +6,7 @@ from functools import lru_cache
 from textwrap import wrap
 
 from src.paths import PYGAME_ASSETS_DIR
+
 from .. import enemies
 from ..player import DIRECTIONS, REALM_OF_CAMBION_LEVEL
 

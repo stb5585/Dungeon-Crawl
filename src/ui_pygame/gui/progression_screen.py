@@ -25,8 +25,8 @@ from src.ui_pygame.assets.ability_icon_manager import (
     get_ability_icon_manager,
 )
 
-from .church import PaladinVowSelectionPopup
 from .character_naming import CompanionNamingScreen
+from .church import PaladinVowSelectionPopup
 from .confirmation_popup import ConfirmationPopup
 from .familiar_selection_popup import FamiliarSelectionPopup
 from .mouse_helpers import hit_index, is_left_click, mouse_position

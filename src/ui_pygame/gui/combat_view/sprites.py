@@ -7,6 +7,7 @@ import math
 import pygame
 
 from src.ui_pygame.assets.enemy_combat_sprite_manager import EnemyCombatSpriteManager
+
 from ..enemy_presentation import is_invisible_target, player_has_sight
 
 

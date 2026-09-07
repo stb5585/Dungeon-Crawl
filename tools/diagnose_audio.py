@@ -4,9 +4,9 @@ Sound System Diagnostic Tool
 Checks common audio issues and provides troubleshooting steps.
 """
 
-import sys
 import os
 import subprocess
+import sys
 
 sys.path.insert(0, ".")
 

@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable
 import random
+from collections.abc import Callable, Iterable
 from textwrap import wrap
 
 from .. import items

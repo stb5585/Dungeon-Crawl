@@ -5,7 +5,8 @@ from __future__ import annotations
 from dataclasses import asdict
 from typing import TYPE_CHECKING
 
-from .. import items, main_story, quest_progress, thieves_guild, town as town_core
+from .. import items, main_story, quest_progress, thieves_guild
+from .. import town as town_core
 from ..character import Combat, Level, Resource, Stats
 from ..classes import bard, promotion_kits, transformation
 from .item_serialization import AbilitySerializer, ItemSerializer
@@ -299,10 +300,9 @@ class PlayerDataSerializer:
         """
         data = migrate_save_data(data).data
 
+        from .. import classes, races
         from ..player import Player, normalize_gameplay_stats
         from ..progression import ProgressionState, award_experience
-        from .. import races
-        from .. import classes
 
         # Create fresh character
         health = Resource(data["health"]["max"], data["health"]["current"])

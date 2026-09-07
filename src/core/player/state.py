@@ -280,7 +280,7 @@ class PlayerStateMixin:
         """Race-based experience gain multiplier (used by combat and quests)."""
         multiplier = 1.0
         try:
-            from ..constants import HUMAN_EXP_MULTIPLIER, HALF_GIANT_EXP_MULTIPLIER
+            from ..constants import HALF_GIANT_EXP_MULTIPLIER, HUMAN_EXP_MULTIPLIER
 
             race_name = getattr(getattr(self, "race", None), "name", None)
             if race_name == "Human":

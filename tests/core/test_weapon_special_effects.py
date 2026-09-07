@@ -16,8 +16,8 @@ sys.path.insert(0, str(Path(__file__).parents[2]))
 
 import pytest
 
-from src.core.character import Character, Stats, Combat, Resource, Level
 from src.core import items
+from src.core.character import Character, Combat, Level, Resource, Stats
 from src.core.combat.combat_result import CombatResult, CombatResultGroup
 
 

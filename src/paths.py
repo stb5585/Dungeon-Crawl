@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import os
-from pathlib import Path
 import sys
+from pathlib import Path
 from typing import Mapping
 
 APPLICATION_DIRECTORY_NAME = "the-forsaken-tenet"

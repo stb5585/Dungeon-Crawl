@@ -1,8 +1,8 @@
 """Story behavior for the dungeon manager package."""
 
+import src.ui_pygame.gui.dungeon_manager as dungeon_manager
 from src.core import enemies, main_story
 from src.core.classes import class_rings
-import src.ui_pygame.gui.dungeon_manager as dungeon_manager
 
 
 class DungeonStoryMixin:

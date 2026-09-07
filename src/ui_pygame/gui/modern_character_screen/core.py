@@ -11,8 +11,9 @@ from src.core.classes import grandmaster, promotion_mechanic_tab_label, transfor
 from src.ui_pygame.assets.companion_art_manager import get_companion_art_manager
 from src.ui_pygame.assets.item_render_manager import get_item_render_manager
 from src.ui_pygame.assets.portrait_manager import PortraitManager
+
 from ..progression_screen import ProgressionScreen
-from .models import CharacterTab, DEFAULT_CHARACTER_TABS, PORTRAIT_DIR
+from .models import DEFAULT_CHARACTER_TABS, PORTRAIT_DIR, CharacterTab
 
 
 class CharacterCoreMixin:

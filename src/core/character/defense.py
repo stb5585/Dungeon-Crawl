@@ -126,7 +126,7 @@ class CharacterDefenseMixin:
                     damage = int(damage * (1 - blk_per))
                     blocked_damage = max(0, incoming_damage - damage)
                     try:
-                        from ..events.event_bus import get_event_bus, create_combat_event, EventType
+                        from ..events.event_bus import EventType, create_combat_event, get_event_bus
 
                         event_bus = get_event_bus()
                         event_bus.emit(

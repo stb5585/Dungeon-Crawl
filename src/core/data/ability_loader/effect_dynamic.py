@@ -3,23 +3,23 @@
 from __future__ import annotations
 
 from src.core.effects import (
-    DynamicExtraDamageEffect,
-    DynamicStatusDotEffect,
-    StatusApplyEffect,
-    MagicEffectApplyEffect,
-    DynamicStatBuffEffect,
-    DynamicMultiDebuffEffect,
-    CleanseEffect,
-    FullDispelEffect,
-    ManaDrainOnHitEffect,
-    ResourceConvertEffect,
-    PhysicalEffectApplyEffect,
-    SetFlagEffect,
-    InstantKillEffect,
-    StatReduceEffect,
-    PowerUpActivateEffect,
     AbilityChainEffect,
+    CleanseEffect,
     DrainEffect,
+    DynamicExtraDamageEffect,
+    DynamicMultiDebuffEffect,
+    DynamicStatBuffEffect,
+    DynamicStatusDotEffect,
+    FullDispelEffect,
+    InstantKillEffect,
+    MagicEffectApplyEffect,
+    ManaDrainOnHitEffect,
+    PhysicalEffectApplyEffect,
+    PowerUpActivateEffect,
+    ResourceConvertEffect,
+    SetFlagEffect,
+    StatReduceEffect,
+    StatusApplyEffect,
 )
 
 

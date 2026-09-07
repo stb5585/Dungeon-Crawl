@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import os
 import json
+import os
 from dataclasses import dataclass
 from types import SimpleNamespace
 
@@ -11,11 +11,11 @@ import pytest
 from src.core import map_tiles
 from src.ui_pygame.gui.dungeon.assets import TEXTURE_PATHS, TextureLibrary
 from src.ui_pygame.gui.dungeon.geometry import (
+    Quad,
     build_depth_rect,
     build_next_depth_rect,
     build_zone_geometry,
 )
-from src.ui_pygame.gui.dungeon.geometry import Quad
 from src.ui_pygame.gui.dungeon.projector import project_texture_to_quad
 from src.ui_pygame.gui.dungeon.renderer import SceneRenderer
 from src.ui_pygame.gui.dungeon.scene import extract_visible_scene

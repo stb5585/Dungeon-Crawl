@@ -5,11 +5,11 @@ import os
 import pygame
 
 from src.ui_pygame.gui.dungeon.geometry import (
+    Quad,
     build_depth_rect,
     build_next_depth_rect,
     build_zone_geometry,
 )
-from src.ui_pygame.gui.dungeon.geometry import Quad
 from src.ui_pygame.gui.dungeon.projector import project_texture_to_quad
 
 os.environ.setdefault("SDL_VIDEODRIVER", "dummy")

@@ -7,6 +7,7 @@ import pygame
 from src.paths import PYGAME_ASSETS_DIR
 from src.ui_pygame.assets.icon_manager import IconManager
 from src.ui_pygame.assets.item_render_manager import get_item_render_manager
+
 from ..confirmation_popup import draw_popup_close_button, popup_close_clicked
 from ..input_guards import (
     prepare_guarded_input,

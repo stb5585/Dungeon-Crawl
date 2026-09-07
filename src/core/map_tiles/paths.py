@@ -5,9 +5,9 @@ import random
 from .. import companions, enemies, items, thieves_guild
 from ..combat import CombatEncounter
 from .rules import (
+    _CARDINAL_DIRECTIONS,
     JESTER_TOKENS_REQUIRED,
     REALM_OF_CAMBION_LEVEL,
-    _CARDINAL_DIRECTIONS,
     _apply_cambion_antimagic,
     _queue_cambion_message,
     check_fake_wall,

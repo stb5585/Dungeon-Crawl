@@ -1,7 +1,6 @@
 """Regression coverage for the authored Monk and Priest promotion paths."""
 
-from types import MethodType
-from types import SimpleNamespace
+from types import MethodType, SimpleNamespace
 
 import pytest
 

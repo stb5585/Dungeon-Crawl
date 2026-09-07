@@ -66,18 +66,18 @@ class AbilityFactory:
 
         # ── Combat-ready instances ────────────────────────────────
         from src.core.data.data_driven_abilities import (
-            DataDrivenSpell,
-            DataDrivenSkill,
-            DataDrivenHealSpell,
-            DataDrivenSupportSpell,
-            DataDrivenStatusSpell,
-            DataDrivenStatusSkill,
-            DataDrivenWeaponSpell,
-            DataDrivenCustomSpell,
             DataDrivenChargingSkill,
-            DataDrivenMagicMissileSpell,
+            DataDrivenCustomSpell,
+            DataDrivenHealSpell,
             DataDrivenJumpSkill,
+            DataDrivenMagicMissileSpell,
             DataDrivenMovementSpell,
+            DataDrivenSkill,
+            DataDrivenSpell,
+            DataDrivenStatusSkill,
+            DataDrivenStatusSpell,
+            DataDrivenSupportSpell,
+            DataDrivenWeaponSpell,
         )
 
         if ability_type == "Heal":

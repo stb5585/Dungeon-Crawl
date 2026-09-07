@@ -6,7 +6,8 @@ from __future__ import annotations
 from copy import deepcopy
 from types import SimpleNamespace
 
-from src.core import items as core_items, quest_progress
+from src.core import items as core_items
+from src.core import quest_progress
 from src.core.data.data_loader import get_quests
 from src.ui_pygame.gui import quest_manager
 from tests.test_framework import TestGameState

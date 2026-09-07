@@ -39,26 +39,26 @@ from src.core.progression import (
     NodeKind,
     NodeState,
     ProgressionState,
+    _grant_talent,
     apply_progression_plan,
-    award_experience,
-    available_nodes,
     attribute_points_through_level,
+    available_nodes,
+    award_experience,
     cumulative_experience_for_level,
     experience_for_level,
     has_talent,
     increase_attribute,
     initialize_progression,
     level_up_message,
+    progression_class_name,
     progression_points_through_level,
     promotion_combat_bonuses,
     promotion_preview,
-    progression_class_name,
     purchase_node,
     validate_trees,
-    _grant_talent,
 )
-from src.core.races import Human, races_dict
 from src.core.progression_manifest import CATALOG_ONLY_PROMOTED_TREE_CLASSES
+from src.core.races import Human, races_dict
 from src.core.save_system import PlayerDataSerializer
 from src.core.save_system.player import UnsupportedSaveVersionError
 

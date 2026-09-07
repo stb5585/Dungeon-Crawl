@@ -484,7 +484,7 @@ class TestYAMLLoading:
 
     def test_load_directory_produces_combat_ready(self):
         from src.core.data.ability_loader import AbilityFactory
-        from src.core.data.data_driven_abilities import DataDrivenSpell, DataDrivenSkill
+        from src.core.data.data_driven_abilities import DataDrivenSkill, DataDrivenSpell
 
         abilities = AbilityFactory.load_abilities_from_directory(self.ABILITIES_DIR)
         assert len(abilities) > 0
@@ -518,8 +518,8 @@ class TestDataDrivenSpellCast:
 
     @staticmethod
     def _make_combatants():
-        from tests.test_framework import TestGameState
         from src.core.enemies import Enemy
+        from tests.test_framework import TestGameState
 
         caster = TestGameState.create_player(
             name="Caster",
@@ -545,8 +545,8 @@ class TestDataDrivenSpellCast:
         return caster, target
 
     def test_cast_returns_combat_result(self):
-        from src.core.data.ability_loader import AbilityFactory
         from src.core.combat.combat_result import CombatResult
+        from src.core.data.ability_loader import AbilityFactory
 
         filepath = (
             Path(__file__).parent.parent / "src" / "core" / "data" / "abilities" / "fireball.yaml"
@@ -625,8 +625,9 @@ class TestDataDrivenSpellCast:
 
     def test_fire_spell_special_effect_can_apply_dot(self):
         """Fire spells should sometimes apply DOT via the stat contest."""
-        from src.core.data.ability_loader import AbilityFactory
         import random
+
+        from src.core.data.ability_loader import AbilityFactory
 
         filepath = (
             Path(__file__).parent.parent / "src" / "core" / "data" / "abilities" / "fireball.yaml"
@@ -1104,8 +1105,8 @@ class TestBatch1CombatIntegration:
     )
     def test_simple_spell_deals_damage(self, yaml_file):
         """Simple spells (no special effect) should deal damage."""
-        from src.core.data.ability_loader import AbilityFactory
         from src.core.combat.combat_result import CombatResult
+        from src.core.data.ability_loader import AbilityFactory
 
         filepath = Path(__file__).parent.parent / "src" / "core" / "data" / "abilities" / yaml_file
         spell = AbilityFactory.create_from_yaml(filepath)
@@ -1273,8 +1274,8 @@ class TestBatch2NewEffects:
         )
 
     def test_magic_effect_apply(self):
-        from src.core.effects import MagicEffectApplyEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import MagicEffectApplyEffect
 
         actor = self._make_char()
         target = actor
@@ -1286,8 +1287,8 @@ class TestBatch2NewEffects:
         assert "Reflect" in result.effects_applied.get("Magic", [])
 
     def test_magic_effect_apply_stat_duration(self):
-        from src.core.effects import MagicEffectApplyEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import MagicEffectApplyEffect
 
         actor = self._make_char()
         actor.stats.intel = 80
@@ -1305,8 +1306,8 @@ class TestBatch2NewEffects:
         assert target.magic_effects["Reflect"].duration >= 8  # max(4, 80//10)
 
     def test_dynamic_stat_buff(self):
-        from src.core.effects import DynamicStatBuffEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import DynamicStatBuffEffect
 
         actor = self._make_char()
         target = actor
@@ -1326,8 +1327,8 @@ class TestBatch2NewEffects:
         assert target.stat_effects["Magic"].duration >= 5
 
     def test_dynamic_multi_debuff(self):
-        from src.core.effects import DynamicMultiDebuffEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import DynamicMultiDebuffEffect
 
         actor = self._make_char()
         actor.stats.intel = 50
@@ -1353,8 +1354,8 @@ class TestBatch2NewEffects:
         assert len(result.extra.get("messages", [])) == 2
 
     def test_dynamic_multi_debuff_skips_zero_stat_changes(self):
-        from src.core.effects import DynamicMultiDebuffEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import DynamicMultiDebuffEffect
 
         actor = self._make_char()
         actor.stats.intel = 10
@@ -1380,8 +1381,8 @@ class TestBatch2NewEffects:
         assert result.extra.get("messages", []) == []
 
     def test_fixed_stat_modifier_skips_zero_changes(self):
-        from src.core.effects import StatModifierEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import StatModifierEffect
 
         actor = self._make_char()
         target = self._make_char()
@@ -1394,8 +1395,8 @@ class TestBatch2NewEffects:
         assert result.effects_applied["Stat"] == []
 
     def test_cleanse_effect(self):
-        from src.core.effects import CleanseEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import CleanseEffect
 
         actor = self._make_char()
         target = actor
@@ -1408,8 +1409,8 @@ class TestBatch2NewEffects:
         assert not target.status_effects["Poison"].active
 
     def test_full_dispel_effect(self):
-        from src.core.effects import FullDispelEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import FullDispelEffect
 
         actor = self._make_char()
         target = self._make_char()
@@ -1425,8 +1426,8 @@ class TestBatch2NewEffects:
         assert not target.stat_effects["Attack"].active
 
     def test_status_apply_skip_if_active(self):
-        from src.core.effects import StatusApplyEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import StatusApplyEffect
 
         actor = self._make_char()
         target = self._make_char()
@@ -1445,8 +1446,8 @@ class TestBatch2NewEffects:
         assert target.status_effects["Blind"].duration == 2
 
     def test_status_apply_duration_random(self):
-        from src.core.effects import StatusApplyEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import StatusApplyEffect
 
         actor = self._make_char()
         actor.stats.intel = 60
@@ -2000,8 +2001,8 @@ class TestBatch3NewEffects:
         )
 
     def test_mana_drain_on_hit(self):
-        from src.core.effects import ManaDrainOnHitEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import ManaDrainOnHitEffect
 
         actor = self._make_char()
         target = self._make_char()
@@ -2016,8 +2017,8 @@ class TestBatch3NewEffects:
         assert target.mana.current < 100, "Mana should have been drained"
 
     def test_resource_convert_health_to_mana(self):
-        from src.core.effects import ResourceConvertEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import ResourceConvertEffect
 
         actor = self._make_char()
         actor.mana.current = 100  # not full
@@ -2031,8 +2032,8 @@ class TestBatch3NewEffects:
         assert actor.mana.current > 100, "Mana should increase"
 
     def test_resource_convert_mana_to_health(self):
-        from src.core.effects import ResourceConvertEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import ResourceConvertEffect
 
         actor = self._make_char()
         actor.health.current = 100  # not full
@@ -2047,8 +2048,8 @@ class TestBatch3NewEffects:
 
     def test_resource_convert_full_guard(self):
         """If target resource is already full, no conversion happens."""
-        from src.core.effects import ResourceConvertEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import ResourceConvertEffect
 
         actor = self._make_char()
         # mana is already at max
@@ -2460,8 +2461,8 @@ class TestBatch3CombatIntegration:
 
     def test_elemental_spell_cast(self):
         """Elemental spells should cast and return CombatResult."""
-        from src.core.data.ability_loader import AbilityFactory
         from src.core.combat.combat_result import CombatResult
+        from src.core.data.ability_loader import AbilityFactory
 
         user, target = self._make_combatants()
         # Use a high-intel caster
@@ -3176,8 +3177,8 @@ class TestBatch5NewEffects:
         assert eff.message == "{target} digs down."
 
     def test_set_flag_effect_applies_flag(self):
-        from src.core.effects import SetFlagEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import SetFlagEffect
         from tests.test_framework import TestGameState
 
         user = TestGameState.create_player(
@@ -3197,8 +3198,8 @@ class TestBatch5NewEffects:
         assert any("Digger digs." in m for m in msgs)
 
     def test_set_flag_effect_clears_flag(self):
-        from src.core.effects import SetFlagEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import SetFlagEffect
         from tests.test_framework import TestGameState
 
         user = TestGameState.create_player(
@@ -3217,8 +3218,8 @@ class TestBatch5NewEffects:
 
     def test_physical_effect_apply_bleed_no_double_multiply(self):
         """Bleed damage should not double-apply crit & damage_multiplier."""
-        from src.core.effects import PhysicalEffectApplyEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import PhysicalEffectApplyEffect
         from tests.test_framework import TestGameState
 
         user = TestGameState.create_player(
@@ -3284,6 +3285,7 @@ class TestBatch5YAMLLoading:
 
     def test_yaml_loads(self, yaml_file):
         from pathlib import Path
+
         import yaml
 
         yaml_dir = Path(__file__).parent.parent / "src" / "core" / "data" / "abilities"
@@ -3297,6 +3299,7 @@ class TestBatch5YAMLLoading:
 
     def test_mortal_strike_yaml_fields(self):
         from pathlib import Path
+
         import yaml
 
         yaml_dir = Path(__file__).parent.parent / "src" / "core" / "data" / "abilities"
@@ -3316,6 +3319,7 @@ class TestBatch5YAMLLoading:
 
     def test_mortal_strike_2_yaml_fields(self):
         from pathlib import Path
+
         import yaml
 
         yaml_dir = Path(__file__).parent.parent / "src" / "core" / "data" / "abilities"
@@ -3326,6 +3330,7 @@ class TestBatch5YAMLLoading:
 
     def test_doom_yaml_fields(self):
         from pathlib import Path
+
         import yaml
 
         yaml_dir = Path(__file__).parent.parent / "src" / "core" / "data" / "abilities"
@@ -3346,6 +3351,7 @@ class TestBatch5YAMLLoading:
 
     def test_tunnel_yaml_fields(self):
         from pathlib import Path
+
         import yaml
 
         yaml_dir = Path(__file__).parent.parent / "src" / "core" / "data" / "abilities"
@@ -3360,6 +3366,7 @@ class TestBatch5YAMLLoading:
 
     def test_surface_yaml_fields(self):
         from pathlib import Path
+
         import yaml
 
         yaml_dir = Path(__file__).parent.parent / "src" / "core" / "data" / "abilities"
@@ -3660,8 +3667,8 @@ class TestBatch6NewEffects:
         assert eff.apply_resist_multiplier is True
 
     def test_instant_kill_effect_kills_target(self):
-        from src.core.effects import InstantKillEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import InstantKillEffect
         from tests.test_framework import TestGameState
 
         killed = False
@@ -3710,8 +3717,8 @@ class TestBatch6NewEffects:
 
     def test_instant_kill_resist_immunity(self):
         """Full resist (>=1) should block the kill."""
-        from src.core.effects import InstantKillEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import InstantKillEffect
         from tests.test_framework import TestGameState
 
         user = TestGameState.create_player(
@@ -3743,8 +3750,8 @@ class TestBatch6NewEffects:
 
     def test_instant_kill_status_immunity(self):
         """Status immunity (e.g. Stone) should block the kill."""
-        from src.core.effects import InstantKillEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import InstantKillEffect
         from tests.test_framework import TestGameState
 
         user = TestGameState.create_player(
@@ -3775,8 +3782,8 @@ class TestBatch6NewEffects:
 
     def test_instant_kill_reflect(self):
         """Reflect item should redirect the kill to the caster."""
-        from src.core.effects import InstantKillEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import InstantKillEffect
         from tests.test_framework import TestGameState
 
         user = TestGameState.create_player(
@@ -3839,8 +3846,8 @@ class TestBatch6NewEffects:
 
     def test_stat_reduce_effect_reduces_stat(self):
         """With extreme stats, the two-stage contest should succeed."""
-        from src.core.effects import StatReduceEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import StatReduceEffect
         from tests.test_framework import TestGameState
 
         reduced = False
@@ -4984,8 +4991,8 @@ class TestBatch12Counterspell:
 
     @staticmethod
     def _make_combatants():
-        from tests.test_framework import TestGameState
         from src.core import abilities
+        from tests.test_framework import TestGameState
 
         user = TestGameState.create_player(
             name="Behemoth",
@@ -5047,8 +5054,8 @@ class TestBatch12ElementalStrike:
 
     @staticmethod
     def _make_combatants():
-        from tests.test_framework import TestGameState
         from src.core import abilities
+        from tests.test_framework import TestGameState
 
         user = TestGameState.create_player(
             name="Spellblade",
@@ -5233,8 +5240,8 @@ class TestBatch13Doublecast:
 
     @staticmethod
     def _make_combatants():
-        from tests.test_framework import TestGameState
         from src.core import abilities
+        from tests.test_framework import TestGameState
 
         user = TestGameState.create_player(
             name="Mage",
@@ -5316,8 +5323,8 @@ class TestBatch13Triplecast:
 
     @staticmethod
     def _make_combatants():
-        from tests.test_framework import TestGameState
         from src.core import abilities
+        from tests.test_framework import TestGameState
 
         user = TestGameState.create_player(
             name="Archmage",
@@ -5481,8 +5488,7 @@ class TestBatch13Shapeshift:
         return user, target
 
     def test_shapeshift_transforms_user(self):
-        from src.core import abilities
-        from src.core import enemies
+        from src.core import abilities, enemies
 
         user, target = self._make_combatants()
         # Give user a transform list with at least 2 creature types
@@ -5494,8 +5500,7 @@ class TestBatch13Shapeshift:
         assert user.name != old_name
 
     def test_shapeshift_applies_shapeshifted_status(self):
-        from src.core import abilities
-        from src.core import enemies
+        from src.core import abilities, enemies
 
         user, target = self._make_combatants()
         user.transform = [enemies.Zombie, enemies.Skeleton]
@@ -5504,8 +5509,7 @@ class TestBatch13Shapeshift:
         assert user.status_effects["Shapeshifted"].duration == 3
 
     def test_shapeshift_readds_shapeshift_to_spellbook(self):
-        from src.core import abilities
-        from src.core import enemies
+        from src.core import abilities, enemies
 
         user, target = self._make_combatants()
         user.transform = [enemies.Zombie, enemies.Skeleton]
@@ -5513,8 +5517,7 @@ class TestBatch13Shapeshift:
         assert "Shapeshift" in user.spellbook["Skills"]
 
     def test_shapeshift_no_mana_cost(self):
-        from src.core import abilities
-        from src.core import enemies
+        from src.core import abilities, enemies
 
         user, target = self._make_combatants()
         user.transform = [enemies.Zombie, enemies.Skeleton]
@@ -5528,8 +5531,8 @@ class TestBatch13AstralJudgment:
 
     @staticmethod
     def _make_combatants():
-        from tests.test_framework import TestGameState
         from src.core import abilities
+        from tests.test_framework import TestGameState
 
         user = TestGameState.create_player(
             name="Astromancer",
@@ -6521,6 +6524,7 @@ class TestBatch9ShieldSlam:
 
     def test_shield_slam_does_not_replay_prior_messages(self, monkeypatch):
         import random
+
         from src.core import abilities
 
         user, target = self._make_combatants()
@@ -8027,8 +8031,8 @@ class TestBatch14ConsumeItem:
 
     @staticmethod
     def _make_combatants(target_has_items=True):
-        from tests.test_framework import TestGameState
         from src.core import items as _items
+        from tests.test_framework import TestGameState
 
         user = TestGameState.create_player(
             name="Xorn",
@@ -8099,7 +8103,9 @@ class TestBatch14ConsumeItem:
 
     def test_consume_item_potion_effect_applies_to_user_not_target(self, monkeypatch):
         import random
-        from src.core import abilities, items as _items
+
+        from src.core import abilities
+        from src.core import items as _items
 
         user, target = self._make_combatants(target_has_items=False)
         target.modify_inventory(_items.EchoScreen())
@@ -8672,6 +8678,7 @@ class TestBatch15CrushingBlow:
     def test_crushing_blow_stun_with_high_chance(self):
         """With stun_chance=1.0, stun should always apply when not immune."""
         import random
+
         from src.core import abilities
 
         user, target = self._make_combatants()
@@ -8949,6 +8956,7 @@ class TestBatch16YAMLLoading:
 
     def test_jump_yaml_loads(self):
         from pathlib import Path
+
         from src.core.data.ability_loader import AbilityFactory
 
         p = Path(__file__).parent.parent / "src" / "core" / "data" / "abilities" / "jump.yaml"
@@ -9312,6 +9320,7 @@ class TestBatch17YAMLLoading:
 
     def test_sanctuary_yaml_loads(self):
         from pathlib import Path
+
         from src.core.data.ability_loader import AbilityFactory
 
         p = Path(__file__).parent.parent / "src" / "core" / "data" / "abilities" / "sanctuary.yaml"
@@ -9325,6 +9334,7 @@ class TestBatch17YAMLLoading:
 
     def test_teleport_yaml_loads(self):
         from pathlib import Path
+
         from src.core.data.ability_loader import AbilityFactory
 
         p = Path(__file__).parent.parent / "src" / "core" / "data" / "abilities" / "teleport.yaml"
@@ -9410,8 +9420,9 @@ class TestBatch17Teleport:
     """Teleport cast_out behaviour."""
 
     def test_teleport_set_location(self):
-        from src.core import abilities
         from types import SimpleNamespace
+
+        from src.core import abilities
 
         player = SimpleNamespace(
             name="Seeker",
@@ -9429,8 +9440,9 @@ class TestBatch17Teleport:
         assert player.teleport == (5, 10, 2)
 
     def test_teleport_to_location(self):
-        from src.core import abilities
         from types import SimpleNamespace
+
+        from src.core import abilities
 
         player = SimpleNamespace(
             name="Seeker",
@@ -9451,8 +9463,9 @@ class TestBatch17Teleport:
         assert player.mana.current == 100 - 50
 
     def test_teleport_random_when_no_callback(self):
-        from src.core import abilities
         from types import SimpleNamespace
+
+        from src.core import abilities
 
         player = SimpleNamespace(
             name="Seeker",
@@ -9624,8 +9637,8 @@ class TestBatch18ShadowStrikeEffect:
 
     def test_effect_does_weapon_damage(self):
         """ShadowStrikeEffect should deal weapon damage with guaranteed crit."""
-        from src.core.effects import ShadowStrikeEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import ShadowStrikeEffect
 
         user, target = self._make_combatants()
         effect = ShadowStrikeEffect(dmg_mod=2.0, blind_chance=0.0)
@@ -9638,8 +9651,8 @@ class TestBatch18ShadowStrikeEffect:
 
     def test_blind_blocked_by_immunity(self):
         """Blind should not apply if target has Blind immunity."""
-        from src.core.effects import ShadowStrikeEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import ShadowStrikeEffect
 
         user, target = self._make_combatants()
         target.status_immunity.append("Blind")
@@ -9650,8 +9663,8 @@ class TestBatch18ShadowStrikeEffect:
 
     def test_blind_blocked_by_mana_shield(self):
         """Blind should not apply if target has Mana Shield active."""
-        from src.core.effects import ShadowStrikeEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import ShadowStrikeEffect
 
         user, target = self._make_combatants()
         target.magic_effects["Mana Shield"].active = True
@@ -9664,8 +9677,9 @@ class TestBatch18ShadowStrikeEffect:
     def test_blind_applies_with_full_chance(self):
         """With blind_chance=1.0, blind should always apply when not immune."""
         import random
-        from src.core.effects import ShadowStrikeEffect
+
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import ShadowStrikeEffect
 
         user, target = self._make_combatants()
         effect = ShadowStrikeEffect(dmg_mod=2.0, blind_chance=1.0, blind_duration=3)
@@ -9978,7 +9992,7 @@ class TestBatch19EnemySpellbooks:
 
     def test_enemy_telegraphs_are_unique(self):
         """Each enemy has a different telegraph message for their breath."""
-        from src.core.enemies import Pseudodragon, Wyrm, Hydra, Wyvern, RedDragon
+        from src.core.enemies import Hydra, Pseudodragon, RedDragon, Wyrm, Wyvern
 
         telegraphs = set()
         for EnemyClass in [Pseudodragon, Wyrm, Hydra, Wyvern, RedDragon]:
@@ -10156,8 +10170,8 @@ class TestTitanicSlamEffect:
         return user, target
 
     def test_deals_damage(self):
-        from src.core.effects import TitanicSlamEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import TitanicSlamEffect
 
         user, target = self._make_combatants()
         result = CombatResult(action="Titanic Slam", actor=user, target=target)
@@ -10167,8 +10181,8 @@ class TestTitanicSlamEffect:
         assert target.health.current < 500
 
     def test_stun_applied(self):
-        from src.core.effects import TitanicSlamEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import TitanicSlamEffect
 
         user, target = self._make_combatants()
         result = CombatResult(action="Titanic Slam", actor=user, target=target)
@@ -10179,8 +10193,8 @@ class TestTitanicSlamEffect:
             assert target.status_effects["Stun"].duration == 2
 
     def test_stun_blocked_by_mana_shield(self):
-        from src.core.effects import TitanicSlamEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import TitanicSlamEffect
 
         user, target = self._make_combatants()
         target.magic_effects["Mana Shield"].active = True
@@ -10193,8 +10207,8 @@ class TestTitanicSlamEffect:
         assert target.status_effects["Stun"].active is False
 
     def test_has_messages(self):
-        from src.core.effects import TitanicSlamEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import TitanicSlamEffect
 
         user, target = self._make_combatants()
         result = CombatResult(action="Titanic Slam", actor=user, target=target)
@@ -10232,8 +10246,8 @@ class TestDevourEffect:
         return user, target
 
     def test_deals_multi_hit_damage(self):
-        from src.core.effects import DevourEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import DevourEffect
 
         user, target = self._make_combatants()
         result = CombatResult(action="Devour", actor=user, target=target)
@@ -10243,8 +10257,8 @@ class TestDevourEffect:
         assert result.damage > 0
 
     def test_bite_messages(self):
-        from src.core.effects import DevourEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import DevourEffect
 
         user, target = self._make_combatants()
         result = CombatResult(action="Devour", actor=user, target=target)
@@ -10288,8 +10302,8 @@ class TestAbsoluteZeroEffect:
         return user, target
 
     def test_deals_damage(self):
-        from src.core.effects import AbsoluteZeroEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import AbsoluteZeroEffect
 
         user, target = self._make_combatants()
         result = CombatResult(action="Absolute Zero", actor=user, target=target)
@@ -10298,8 +10312,8 @@ class TestAbsoluteZeroEffect:
         assert target.health.current < 500
 
     def test_stun_applied(self):
-        from src.core.effects import AbsoluteZeroEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import AbsoluteZeroEffect
 
         user, target = self._make_combatants()
         result = CombatResult(action="Absolute Zero", actor=user, target=target)
@@ -10310,8 +10324,8 @@ class TestAbsoluteZeroEffect:
             assert target.status_effects["Stun"].duration == 3
 
     def test_defense_permanently_reduced(self):
-        from src.core.effects import AbsoluteZeroEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import AbsoluteZeroEffect
 
         user, target = self._make_combatants()
         def_before = target.combat.defense
@@ -10351,8 +10365,8 @@ class TestEruptionEffect:
         return user, target
 
     def test_deals_fire_damage(self):
-        from src.core.effects import EruptionEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import EruptionEffect
 
         user, target = self._make_combatants()
         result = CombatResult(action="Eruption", actor=user, target=target)
@@ -10361,8 +10375,8 @@ class TestEruptionEffect:
         assert target.health.current < 500
 
     def test_burn_applied(self):
-        from src.core.effects import EruptionEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import EruptionEffect
 
         user, target = self._make_combatants()
         result = CombatResult(action="Eruption", actor=user, target=target)
@@ -10373,8 +10387,8 @@ class TestEruptionEffect:
             assert target.magic_effects["DOT"].duration == 3
 
     def test_self_defense_buff(self):
-        from src.core.effects import EruptionEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import EruptionEffect
 
         user, target = self._make_combatants()
         result = CombatResult(action="Eruption", actor=user, target=target)
@@ -10413,8 +10427,8 @@ class TestMaelstromVortexEffect:
         return user, target
 
     def test_deals_water_damage(self):
-        from src.core.effects import MaelstromVortexEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import MaelstromVortexEffect
 
         user, target = self._make_combatants()
         result = CombatResult(action="Maelstrom Vortex", actor=user, target=target)
@@ -10423,8 +10437,8 @@ class TestMaelstromVortexEffect:
         assert target.health.current < 500
 
     def test_debuffs_applied(self):
-        from src.core.effects import MaelstromVortexEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import MaelstromVortexEffect
 
         user, target = self._make_combatants()
         result = CombatResult(action="Maelstrom Vortex", actor=user, target=target)
@@ -10436,8 +10450,8 @@ class TestMaelstromVortexEffect:
             assert target.status_effects["Silence"].active is True
 
     def test_debuffs_blocked_by_mana_shield(self):
-        from src.core.effects import MaelstromVortexEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import MaelstromVortexEffect
 
         user, target = self._make_combatants()
         target.magic_effects["Mana Shield"].active = True
@@ -10479,8 +10493,8 @@ class TestThunderstrikeEffect:
         return user, target
 
     def test_deals_damage_with_chains(self):
-        from src.core.effects import ThunderstrikeEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import ThunderstrikeEffect
 
         user, target = self._make_combatants()
         result = CombatResult(action="Thunderstrike", actor=user, target=target)
@@ -10492,8 +10506,8 @@ class TestThunderstrikeEffect:
         assert len(chain_msgs) >= 1
 
     def test_stun_applied(self):
-        from src.core.effects import ThunderstrikeEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import ThunderstrikeEffect
 
         user, target = self._make_combatants()
         result = CombatResult(action="Thunderstrike", actor=user, target=target)
@@ -10533,8 +10547,8 @@ class TestWindShrapnelEffect:
         return user, target
 
     def test_multiple_hits(self):
-        from src.core.effects import WindShrapnelEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import WindShrapnelEffect
 
         user, target = self._make_combatants()
         result = CombatResult(action="Wind Shrapnel", actor=user, target=target)
@@ -10546,8 +10560,8 @@ class TestWindShrapnelEffect:
         assert len(shard_msgs) >= 1
 
     def test_total_damage_is_sum(self):
-        from src.core.effects import WindShrapnelEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import WindShrapnelEffect
 
         user, target = self._make_combatants()
         result = CombatResult(action="Wind Shrapnel", actor=user, target=target)
@@ -10584,8 +10598,8 @@ class TestDivineJudgmentEffect:
         return user, target
 
     def test_deals_holy_damage(self):
-        from src.core.effects import DivineJudgmentEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import DivineJudgmentEffect
 
         user, target = self._make_combatants()
         result = CombatResult(action="Divine Judgment", actor=user, target=target)
@@ -10594,8 +10608,8 @@ class TestDivineJudgmentEffect:
         assert target.health.current < 500
 
     def test_heals_owner(self):
-        from src.core.effects import DivineJudgmentEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import DivineJudgmentEffect
 
         user, target = self._make_combatants()
         # Simulate owner (summoner) who is damaged
@@ -10609,8 +10623,8 @@ class TestDivineJudgmentEffect:
         assert owner.health.current > 100
 
     def test_cleanses_owner_status(self):
-        from src.core.effects import DivineJudgmentEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import DivineJudgmentEffect
 
         user, target = self._make_combatants()
         owner = self._make_combatants()[0]
@@ -10626,8 +10640,8 @@ class TestDivineJudgmentEffect:
         assert owner.status_effects["Blind"].active is False
 
     def test_double_damage_vs_undead(self):
-        from src.core.effects import DivineJudgmentEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import DivineJudgmentEffect
 
         user, target = self._make_combatants()
         target.enemy_typ = "Undead"
@@ -10667,8 +10681,8 @@ class TestOblivionEffect:
         return user, target
 
     def test_deals_shadow_damage(self):
-        from src.core.effects import OblivionEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import OblivionEffect
 
         user, target = self._make_combatants()
         result = CombatResult(action="Oblivion", actor=user, target=target)
@@ -10677,8 +10691,8 @@ class TestOblivionEffect:
         assert target.health.current < 500
 
     def test_stat_drain(self):
-        from src.core.effects import OblivionEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import OblivionEffect
 
         user, target = self._make_combatants()
         str_before = target.stats.strength
@@ -10691,8 +10705,8 @@ class TestOblivionEffect:
             assert target.stats.intel == int_before - 3
 
     def test_instant_kill_blocked_by_death_immunity(self):
-        from src.core.effects import OblivionEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import OblivionEffect
 
         user, target = self._make_combatants()
         target.status_immunity.append("Death")
@@ -10733,8 +10747,8 @@ class TestGrandHeistEffect:
         return user, target
 
     def test_steals_gold(self):
-        from src.core.effects import GrandHeistEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import GrandHeistEffect
 
         user, target = self._make_combatants()
         user.owner = self._make_combatants()[0]  # summoner
@@ -10748,8 +10762,8 @@ class TestGrandHeistEffect:
         assert any("steal" in m.lower() for m in messages)
 
     def test_gold_toss_damage(self):
-        from src.core.effects import GrandHeistEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import GrandHeistEffect
 
         user, target = self._make_combatants()
         user.owner = self._make_combatants()[0]
@@ -10762,8 +10776,8 @@ class TestGrandHeistEffect:
         assert any("gold" in m.lower() or "coin" in m.lower() for m in messages)
 
     def test_debuff_blocked_by_immunity(self):
-        from src.core.effects import GrandHeistEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import GrandHeistEffect
 
         user, target = self._make_combatants()
         target.status_immunity.extend(["Blind", "Silence", "Poison"])
@@ -10804,8 +10818,8 @@ class TestCataclysmEffect:
         return user, target
 
     def test_deals_breath_damage(self):
-        from src.core.effects import CataclysmEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import CataclysmEffect
 
         user, target = self._make_combatants()
         result = CombatResult(action="Cataclysm", actor=user, target=target)
@@ -10816,8 +10830,8 @@ class TestCataclysmEffect:
         assert any("breath" in m.lower() or "fire" in m.lower() for m in messages)
 
     def test_self_power_up(self):
-        from src.core.effects import CataclysmEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import CataclysmEffect
 
         user, target = self._make_combatants()
         result = CombatResult(action="Cataclysm", actor=user, target=target)
@@ -10827,9 +10841,9 @@ class TestCataclysmEffect:
         assert user.stat_effects["Attack"].duration == 3
 
     def test_casts_spells_from_spellbook(self):
-        from src.core.effects import CataclysmEffect
-        from src.core.combat.combat_result import CombatResult
         from src.core import abilities
+        from src.core.combat.combat_result import CombatResult
+        from src.core.effects import CataclysmEffect
 
         user, target = self._make_combatants()
         # Give the user some spells

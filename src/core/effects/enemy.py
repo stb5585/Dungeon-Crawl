@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from character import Character
+
     from src.core.combat.combat_result import CombatResult
 
 
@@ -344,10 +345,11 @@ class AcidSpitEffect:
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
         import random as _rng
+
         from src.core.constants import (
             ARMOR_SCALING_FACTOR,
-            DAMAGE_VARIANCE_LOW,
             DAMAGE_VARIANCE_HIGH,
+            DAMAGE_VARIANCE_LOW,
         )
 
         messages = result.extra.setdefault("messages", [])
@@ -419,7 +421,8 @@ class BreathDamageEffect:
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
         import random as _rng
-        from src.core.constants import DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH
+
+        from src.core.constants import DAMAGE_VARIANCE_HIGH, DAMAGE_VARIANCE_LOW
 
         messages = result.extra.setdefault("messages", [])
 
@@ -474,7 +477,8 @@ class NightmareFuelEffect:
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
         import random as _rng
-        from src.core.constants import DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH
+
+        from src.core.constants import DAMAGE_VARIANCE_HIGH, DAMAGE_VARIANCE_LOW
 
         messages = result.extra.setdefault("messages", [])
 
@@ -809,10 +813,11 @@ class HolyFollowupEffect:
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
         import random as _rng
+
         from src.core.constants import (
             ARMOR_SCALING_FACTOR,
-            DAMAGE_VARIANCE_LOW,
             DAMAGE_VARIANCE_HIGH,
+            DAMAGE_VARIANCE_LOW,
         )
 
         messages = result.extra.setdefault("messages", [])
@@ -928,10 +933,11 @@ class TurnUndeadEffect:
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
         import random as _rng
+
         from src.core.constants import (
             ARMOR_SCALING_FACTOR,
-            DAMAGE_VARIANCE_LOW,
             DAMAGE_VARIANCE_HIGH,
+            DAMAGE_VARIANCE_LOW,
         )
 
         messages = result.extra.setdefault("messages", [])

@@ -6,8 +6,8 @@ import re
 
 from . import enemies, items
 from .data.data_loader import (
-    get_quests,
     get_patron_dialogues,
+    get_quests,
     get_response_map,
     get_tavern_flavor_dialogues,
 )

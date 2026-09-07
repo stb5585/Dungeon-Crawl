@@ -8,16 +8,17 @@ import pygame
 
 from src.core import items
 from src.core.classes import ability_mechanics, grandmaster
+
 from ..status_icons import active_resist_effect_names
 from .models import (
-    _whole_stat_text,
     EQUIPMENT_SLOT_ORDER,
-    EquipmentBuffSummary,
-    EquipmentSlotSummary,
     RESISTANCE_ORDER,
-    ResistanceSummary,
     TWO_HANDED_WEAPON_SUBTYPES,
     WEAPON_DISCIPLINE_ICON_FACTORIES,
+    EquipmentBuffSummary,
+    EquipmentSlotSummary,
+    ResistanceSummary,
+    _whole_stat_text,
 )
 
 

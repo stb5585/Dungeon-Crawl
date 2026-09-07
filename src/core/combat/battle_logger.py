@@ -14,8 +14,8 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ..enemies import Enemy
     from ..character import Character
+    from ..enemies import Enemy
     from ..player import Player
     from .encounter import CombatEncounter
 

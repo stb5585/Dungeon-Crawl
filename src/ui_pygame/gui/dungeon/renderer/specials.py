@@ -7,9 +7,10 @@ import random
 
 import pygame
 
+import src.ui_pygame.gui.dungeon.renderer as renderer_module
 from src.core import map_tiles
 from src.ui_pygame.assets.enemy_combat_sprite_manager import get_enemy_combat_sprite_manager
-import src.ui_pygame.gui.dungeon.renderer as renderer_module
+
 from ..geometry import Quad
 from ..scene import is_fake_wall, is_wall
 

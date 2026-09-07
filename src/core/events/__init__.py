@@ -5,17 +5,17 @@ Provides event-driven architecture for decoupling game logic from presentation.
 """
 
 from .event_bus import (
+    CombatEvent,
+    CombatEventCollector,
+    ConsoleEventLogger,
+    EventBus,
+    EventDispatchFailure,
     EventType,
     GameEvent,
-    CombatEvent,
-    EventDispatchFailure,
-    EventBus,
-    get_event_bus,
-    reset_event_bus,
     create_combat_event,
     create_ui_event,
-    ConsoleEventLogger,
-    CombatEventCollector,
+    get_event_bus,
+    reset_event_bus,
 )
 
 __all__ = [

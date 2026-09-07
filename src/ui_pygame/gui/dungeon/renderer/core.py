@@ -8,10 +8,10 @@ import pygame
 
 from ..assets import TextureLibrary
 from ..geometry import (
+    Quad,
     build_depth_rect,
     build_next_depth_rect,
     build_zone_geometry,
-    Quad,
 )
 from ..scene import extract_visible_scene, is_wall
 from .models import RenderCommand

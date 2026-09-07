@@ -19,6 +19,7 @@ from src.core.races import races_dict
 from src.core.save_system import SaveManager
 from src.paths import CORE_DATA_DIR, MAP_FILES_DIR, PYGAME_ASSETS_DIR, USER_SAVE_DIR
 from src.ui_pygame.assets.npc_art_manager import get_npc_art_manager
+
 from .gui.barracks import BarracksManager
 from .gui.character_naming import CharacterNamingScreen
 from .gui.church import ChurchManager

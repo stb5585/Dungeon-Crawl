@@ -5,8 +5,10 @@ submodules. Existing imports from ``src.core.player`` remain supported.
 """
 
 from src.paths import MAP_FILES_DIR, PROJECT_ROOT
+
 from .. import abilities
 from ..constants import TOWN_LOCATION
+from .combat import random
 from .config import (
     BASIC_BESTIARY_ACTIONS,
     DIRECTIONS,
@@ -33,4 +35,3 @@ from .stats import (
     summarize_gameplay_stat_groups,
     summarize_gameplay_stats,
 )
-from .combat import random

@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from collections import defaultdict
-from collections.abc import Callable, Iterable, Sequence
 import csv
 import inspect
-from io import StringIO
-from pathlib import Path
 import random
 import re
+from collections import defaultdict
+from collections.abc import Callable, Iterable, Sequence
+from io import StringIO
+from pathlib import Path
 from typing import Any
 from unittest.mock import patch
 

@@ -7,6 +7,7 @@ import math
 import pygame
 
 import src.ui_pygame.gui.combat_view as combat_view
+
 from ..enemy_presentation import effect_icon_label
 from ..status_icons import (
     RESIST_STATUS_LABELS,

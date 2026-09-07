@@ -16,7 +16,7 @@ from enum import Enum
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from typing import Callable, Any
+    from typing import Any, Callable
 
     from character import Character
 

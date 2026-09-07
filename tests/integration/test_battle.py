@@ -10,10 +10,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parents[2]))
 
-import pytest
 import json
 from dataclasses import dataclass
 from types import SimpleNamespace
+
+import pytest
 
 
 class TestCombatResultAPI:

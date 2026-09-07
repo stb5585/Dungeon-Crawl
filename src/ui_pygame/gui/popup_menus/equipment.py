@@ -1,6 +1,7 @@
 """Equipment behavior for the popup menus package."""
 
 from src.core import items
+
 from .base import BasePopupMenu
 
 

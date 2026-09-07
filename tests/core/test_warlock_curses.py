@@ -1,9 +1,6 @@
 """Regression coverage for persistent Warlock curses and familiar growth."""
 
-from src.core import abilities
-from src.core import curses
-from src.core import enemies
-from src.core import items
+from src.core import abilities, curses, enemies, items
 from src.core.companions import Fairy
 from tests.test_framework import TestGameState
 

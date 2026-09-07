@@ -720,8 +720,7 @@ class ConjureBlade(Spell):
         damage = max(1, random.randint(level, level * 2) + int(user.stats.intel))
         critical = False
         try:
-            from ..classes import mage_mechanics
-            from ..classes import wizard
+            from ..classes import mage_mechanics, wizard
 
             critical = mage_mechanics.fire_inside_critical_bonus(user) > random.random()
             mage_mechanics.consume_fire_inside(user)

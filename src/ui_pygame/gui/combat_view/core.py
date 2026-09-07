@@ -10,6 +10,7 @@ from src.core.classes import promotion_kits
 from src.ui_pygame.assets.enemy_combat_sprite_manager import get_enemy_combat_sprite_manager
 from src.ui_pygame.assets.enemy_token_manager import get_enemy_token_manager
 from src.ui_pygame.assets.player_token_manager import get_player_token_manager
+
 from ..enemy_presentation import (
     present_status_log_line,
     redact_hidden_enemy_identities,

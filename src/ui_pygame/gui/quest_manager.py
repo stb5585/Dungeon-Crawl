@@ -18,6 +18,7 @@ from src.core.town import (
     get_reactive_town_hints,
     quest_dict,
 )
+
 from .confirmation_popup import ConfirmationPopup, RewardSelectionPopup
 from .level_up import LevelUpScreen
 

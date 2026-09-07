@@ -112,8 +112,8 @@ def _run_once(
 
     This avoids subprocess overhead and keeps the delta mode self-contained.
     """
-    import io
     import contextlib
+    import io
 
     # Reuse the main() implementation by temporarily spoofing argv.
     argv = [
@@ -399,8 +399,7 @@ def _apply_meta_progression_loadouts(player, target_level: int) -> None:
     This intentionally does *not* attempt to perfectly mirror a save file; it
     creates a stable baseline so balance comparisons are meaningful.
     """
-    from src.core import abilities
-    from src.core import companions
+    from src.core import abilities, companions
 
     skills = player.spellbook.get("Skills", {})
     lvl = int(target_level)
@@ -723,8 +722,8 @@ def _iter_playable_class_names() -> list[str]:
 
 
 def main() -> int:
+    from src.core import races
     from src.core.analytics.combat_simulator import CombatSimulator
-    from tests.test_framework import TestGameState
     from src.core.enemies import (
         Aboleth,
         Bandit,
@@ -744,13 +743,13 @@ def main() -> int:
         Necromancer,
         NightHag,
         ShadowSerpent,
-        SteelPredator,
         Skeleton,
+        SteelPredator,
         Troll,
         Vampire,
         Werewolf,
     )
-    from src.core import races
+    from tests.test_framework import TestGameState
 
     def _get_race_obj(race_name: str):
         """Instantiate a race by display name (Race.name)."""

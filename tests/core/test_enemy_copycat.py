@@ -11,8 +11,8 @@ sys.path.insert(0, str(Path(__file__).parents[2]))
 
 
 def _make_player():
-    from tests.test_framework import TestGameState
     from src.core import abilities
+    from tests.test_framework import TestGameState
 
     player = TestGameState.create_player(
         name="Hero",

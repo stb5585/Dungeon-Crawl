@@ -2,21 +2,21 @@
 
 from __future__ import annotations
 
-from copy import deepcopy
 import inspect
 import random
 import re
+from copy import deepcopy
 from typing import TYPE_CHECKING
 
 from ... import items
 from ...classes import (
     ability_mechanics,
     astromancer,
+    footpad,
     mage_mechanics,
     promotion_kits,
     wizard,
 )
-from ...classes import footpad
 from ...constants import SPECIAL_ATTACK_LUCK_FACTOR, SPECIAL_ATTACK_ROLL_MAX
 from ...events.event_bus import EventType, create_combat_event
 from ..actor_cycle import initiative_rating

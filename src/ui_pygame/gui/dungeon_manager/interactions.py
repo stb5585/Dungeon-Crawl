@@ -12,6 +12,7 @@ from src.core import (
 )
 from src.core.player import DIRECTIONS
 from src.paths import PYGAME_ASSETS_DIR
+
 from .helpers import relic_discovery_text
 
 
@@ -547,8 +548,8 @@ class DungeonInteractionMixin:
 
             # Check if this is a return visit (not the first meeting)
             if hasattr(spring_tile, "nimue_met_before") and spring_tile.nimue_met_before:
-                from ..quest_manager import QuestManager
                 from ..confirmation_popup import ConfirmationPopup
+                from ..quest_manager import QuestManager
 
                 qm = QuestManager(
                     self.presenter,

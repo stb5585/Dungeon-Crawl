@@ -8,8 +8,8 @@ This module contains the core combat mechanics, including:
 """
 
 from .action_queue import (
-    ActionQueue,
     ActionPriority,
+    ActionQueue,
     ActionType,
     ScheduledAction,
     TurnManager,

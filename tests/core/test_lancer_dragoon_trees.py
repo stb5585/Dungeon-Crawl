@@ -4,20 +4,20 @@ from __future__ import annotations
 
 import pytest
 
-from src.core import abilities
-from src.core import items
-from src.core.classes import class_rings
-from src.core.classes import promotion_kits
+from src.core import abilities, items
+from src.core.classes import class_rings, promotion_kits
 from src.core.combat.combat_result import CombatResult
 from src.core.effects.special import JumpEffect
-from src.core.progression import ABILITY_TREES
-from src.core.progression import NodeKind
-from src.core.progression import ProgressionState
-from src.core.progression import apply_progression_plan
-from src.core.progression import available_nodes
-from src.core.progression import ensure_progression
-from src.core.progression import progression_points_through_level
-from src.core.progression import purchase_node
+from src.core.progression import (
+    ABILITY_TREES,
+    NodeKind,
+    ProgressionState,
+    apply_progression_plan,
+    available_nodes,
+    ensure_progression,
+    progression_points_through_level,
+    purchase_node,
+)
 from src.core.save_system import PlayerDataSerializer
 from tests.test_framework import TestGameState
 

@@ -11,7 +11,7 @@ from collections import deque
 from dataclasses import dataclass
 from typing import Callable, Deque, Iterable, Literal
 
-from src.core.combat.battle_engine import BattleEngine, PreTurnResult, PostTurnResult, ActionResult
+from src.core.combat.battle_engine import ActionResult, BattleEngine, PostTurnResult, PreTurnResult
 from src.core.events.event_bus import (
     EventBus,
     EventType,

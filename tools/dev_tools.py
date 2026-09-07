@@ -41,7 +41,7 @@ def test_ability_loader(args):
 
 def test_event_system(args):
     """Test the event system."""
-    from src.core.events import EventBus, EventType, ConsoleEventLogger
+    from src.core.events import ConsoleEventLogger, EventBus, EventType
 
     print("Testing Event System...")
     print("=" * 60)
@@ -88,7 +88,7 @@ def run_balance_test(args):
 
 def test_action_queue(args):
     """Test the action queue system."""
-    from src.core.combat import ActionQueue, ActionType, ActionPriority
+    from src.core.combat import ActionPriority, ActionQueue, ActionType
 
     print("Testing Action Queue System...")
     print("=" * 60)
@@ -146,10 +146,10 @@ def test_action_queue(args):
 def test_effects(args):
     """Test the effect system."""
     from src.core.effects import (
-        DamageEffect,
         AttackBuffEffect,
-        CompositeEffect,
         ChanceEffect,
+        CompositeEffect,
+        DamageEffect,
     )
 
     print("Testing Effect System...")

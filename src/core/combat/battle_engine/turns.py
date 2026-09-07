@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from copy import deepcopy
 import math
 import random
+from copy import deepcopy
 from typing import TYPE_CHECKING
 
 from ...classes import (
@@ -19,7 +19,7 @@ from ...classes import (
     warrior,
     wizard,
 )
-from ...events.event_bus import combat_event_context, EventType, create_combat_event
+from ...events.event_bus import EventType, combat_event_context, create_combat_event
 from ..actor_cycle import PLAYER_ACTOR_ID
 from ..combat_result import CombatResult, CombatResultGroup
 from ..encounter import EnemyResolution

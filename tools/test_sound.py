@@ -14,8 +14,8 @@ print("Initializing pygame...")
 pygame.init()
 print(f"Pygame mixer initialized: {pygame.mixer.get_init()}")
 
-from src.ui_pygame.assets.sound_manager import get_sound_manager
 from src.core.events import get_event_bus
+from src.ui_pygame.assets.sound_manager import get_sound_manager
 
 # Get sound manager
 event_bus = get_event_bus()

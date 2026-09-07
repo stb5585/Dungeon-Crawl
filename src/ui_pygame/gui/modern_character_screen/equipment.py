@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import pygame
 
-from src.core.classes import grandmaster
 import src.ui_pygame.gui.modern_character_screen as character_screen
+from src.core.classes import grandmaster
+
 from ..input_guards import (
     prepare_guarded_input,
     release_guard_allows_input,

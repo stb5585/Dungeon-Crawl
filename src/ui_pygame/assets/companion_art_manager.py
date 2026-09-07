@@ -10,6 +10,7 @@ from typing import Any
 import pygame
 
 from src.paths import PYGAME_ASSETS_DIR
+
 from .enemy_combat_sprite_manager import get_enemy_combat_sprite_manager
 
 logger = logging.getLogger(__name__)

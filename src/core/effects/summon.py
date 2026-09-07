@@ -8,6 +8,7 @@ from .base import Effect
 
 if TYPE_CHECKING:
     from character import Character
+
     from src.core.combat.combat_result import CombatResult
 
 
@@ -83,7 +84,8 @@ class DevourEffect(Effect):
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
         import random
-        from src.core.constants import DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH
+
+        from src.core.constants import DAMAGE_VARIANCE_HIGH, DAMAGE_VARIANCE_LOW
 
         messages = result.extra.setdefault("messages", [])
         messages.append(f"{actor.name} lunges forward and swallows " f"{target.name} whole!\n")
@@ -141,7 +143,8 @@ class AbsoluteZeroEffect(Effect):
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
         import random
-        from src.core.constants import DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH
+
+        from src.core.constants import DAMAGE_VARIANCE_HIGH, DAMAGE_VARIANCE_LOW
 
         messages = result.extra.setdefault("messages", [])
         messages.append(f"{actor.name} channels the essence of absolute cold!\n")
@@ -214,7 +217,8 @@ class EruptionEffect(Effect):
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
         import random
-        from src.core.constants import DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH
+
+        from src.core.constants import DAMAGE_VARIANCE_HIGH, DAMAGE_VARIANCE_LOW
 
         messages = result.extra.setdefault("messages", [])
         messages.append(f"{actor.name} erupts in a cataclysmic blaze of fire!\n")
@@ -290,7 +294,8 @@ class MaelstromVortexEffect(Effect):
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
         import random
-        from src.core.constants import DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH
+
+        from src.core.constants import DAMAGE_VARIANCE_HIGH, DAMAGE_VARIANCE_LOW
 
         messages = result.extra.setdefault("messages", [])
         messages.append(f"{actor.name} summons a maddening vortex of swirling water!\n")
@@ -384,7 +389,8 @@ class ThunderstrikeEffect(Effect):
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
         import random
-        from src.core.constants import DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH
+
+        from src.core.constants import DAMAGE_VARIANCE_HIGH, DAMAGE_VARIANCE_LOW
 
         messages = result.extra.setdefault("messages", [])
         messages.append(
@@ -481,7 +487,8 @@ class WindShrapnelEffect(Effect):
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
         import random
-        from src.core.constants import DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH
+
+        from src.core.constants import DAMAGE_VARIANCE_HIGH, DAMAGE_VARIANCE_LOW
 
         messages = result.extra.setdefault("messages", [])
         messages.append(f"{actor.name} conjures a storm of razor-sharp wind blades!\n")
@@ -548,7 +555,8 @@ class DivineJudgmentEffect(Effect):
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
         import random
-        from src.core.constants import DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH
+
+        from src.core.constants import DAMAGE_VARIANCE_HIGH, DAMAGE_VARIANCE_LOW
 
         messages = result.extra.setdefault("messages", [])
         messages.append(f"{actor.name} raises a holy sword and passes " f"divine judgment!\n")
@@ -628,7 +636,8 @@ class OblivionEffect(Effect):
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
         import random
-        from src.core.constants import DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH
+
+        from src.core.constants import DAMAGE_VARIANCE_HIGH, DAMAGE_VARIANCE_LOW
 
         messages = result.extra.setdefault("messages", [])
         messages.append(
@@ -796,7 +805,8 @@ class CataclysmEffect(Effect):
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
         import random
-        from src.core.constants import DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH
+
+        from src.core.constants import DAMAGE_VARIANCE_HIGH, DAMAGE_VARIANCE_LOW
 
         messages = result.extra.setdefault("messages", [])
         messages.append(f"{actor.name} roars and unleashes total cataclysm!\n")

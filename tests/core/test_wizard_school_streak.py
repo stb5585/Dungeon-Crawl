@@ -6,12 +6,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from src.core import abilities
-from src.core import items
-from src.core.classes import class_rings
-from src.core.classes import mage_mechanics
-from src.core.classes import promotion_kits
-from src.core.classes import wizard
+from src.core import abilities, items
+from src.core.classes import class_rings, mage_mechanics, promotion_kits, wizard
 from src.core.save_system import PlayerDataSerializer
 from tests.test_framework import TestGameState
 

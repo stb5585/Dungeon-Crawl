@@ -5,8 +5,8 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import Any
 
-from .base import Job
 from .. import items
+from .base import Job
 
 AFFINITIES = ("Venom", "Stone", "Growth", "Storm")
 ENTRY_THRESHOLD = 50

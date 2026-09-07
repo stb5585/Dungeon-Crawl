@@ -13,6 +13,7 @@ if TYPE_CHECKING:
 import random
 
 from src.core.combat.combat_result import CombatResult
+
 from .base import _get_heal_spell_class, _get_status_spell_class, _get_support_spell_class
 
 

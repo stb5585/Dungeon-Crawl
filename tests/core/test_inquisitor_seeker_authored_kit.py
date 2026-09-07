@@ -1,7 +1,6 @@
 """Regression coverage for authored Inquisitor and Seeker progression."""
 
-from types import MethodType
-from types import SimpleNamespace
+from types import MethodType, SimpleNamespace
 
 import pytest
 

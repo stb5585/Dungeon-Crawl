@@ -7,6 +7,7 @@ import random
 import numpy
 
 from src.paths import MAP_FILES_DIR
+
 from .. import thieves_guild
 from ..constants import TOWN_LOCATION
 from .config import (

@@ -98,8 +98,8 @@ class TamedCompanion(Familiar):
 
 def tamed_companion_from_state(state):
     """Rebuild a tamed companion from compact save state."""
-    from .classes import ability_mechanics
     from . import enemies
+    from .classes import ability_mechanics
 
     normalized = ability_mechanics.normalize_tamed_companion(state)
     if not normalized["active"] or not normalized["enemy_class"]:

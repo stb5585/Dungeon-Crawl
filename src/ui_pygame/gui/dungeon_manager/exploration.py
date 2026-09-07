@@ -8,6 +8,7 @@ import pygame
 from src.core import map_tiles
 from src.core.abilities import detects_encounter
 from src.core.player import DIRECTIONS
+
 from ..input_guards import (
     prepare_guarded_input,
     release_guard_allows_input,

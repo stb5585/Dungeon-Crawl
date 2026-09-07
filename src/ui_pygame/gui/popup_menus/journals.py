@@ -3,6 +3,7 @@
 import pygame
 
 from src.core import enemies, items
+
 from .base import BasePopupMenu
 
 

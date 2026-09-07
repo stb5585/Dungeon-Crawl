@@ -7,13 +7,14 @@ It subscribes to the event system for animations and real-time updates.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable
 import sys
+from typing import TYPE_CHECKING, Any, Callable
 
 import pygame
 
-from src.core.events import get_event_bus, EventType
+from src.core.events import EventType, get_event_bus
 from src.ui_pygame.gui.mouse_helpers import hit_index, is_left_click, mouse_position
+
 from .interface import GamePresenter
 
 # Import asset managers
@@ -1372,7 +1373,7 @@ if __name__ == "__main__":
     presenter = PygamePresenter()
 
     # Create mock characters for testing
-    from src.core.character import Character, Stats, Combat, Resource
+    from src.core.character import Character, Combat, Resource, Stats
 
     stats = Stats(strength=15, intel=10, wisdom=10, con=15, charisma=10, dex=12)
     combat_stats = Combat(attack=10, defense=8, magic=5, magic_def=5)
