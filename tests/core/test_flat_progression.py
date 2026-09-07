@@ -1413,15 +1413,11 @@ def test_progression_save_round_trip():
     )
 
 
-def test_legacy_progression_refunds_attribute_training_node_currency():
-    state = ProgressionState.from_dict(
-        {
-            "level": 12,
-            "unspent_points": 2,
-            "trained_attributes": {"strength": 2},
-        }
+def test_current_spell_reflection_node_id_round_trips_unchanged():
+    state = ProgressionState(
+        purchased_node_ids={"sentinel.ability.spell-reflection"},
     )
 
-    assert state.unspent_points == 4
-    assert state.unspent_attribute_points == 1
-    assert state.trained_attributes == {"strength": 2}
+    restored = ProgressionState.from_dict(state.to_dict())
+
+    assert restored.purchased_node_ids == {"sentinel.ability.spell-reflection"}

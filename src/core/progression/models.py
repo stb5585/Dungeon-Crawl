@@ -88,30 +88,17 @@ class ProgressionState:
             str(name): max(0, int(amount))
             for name, amount in data.get("trained_attributes", {}).items()
         }
-        if "unspent_attribute_points" in data:
-            unspent_attribute_points = max(
-                0,
-                int(data.get("unspent_attribute_points", 0)),
-            )
-            unspent_points = max(0, int(data.get("unspent_points", 0)))
-        else:
-            legacy_training_cost = sum(trained_attributes.values())
-            unspent_attribute_points = max(
-                0,
-                attribute_points_through_level(level) - legacy_training_cost,
-            )
-            unspent_points = max(0, int(data.get("unspent_points", 0))) + legacy_training_cost
-        purchased_node_ids = set(data.get("purchased_node_ids", ()))
-        legacy_reflection_id = "sentinel.ability.spell-reflection"
-        if legacy_reflection_id in purchased_node_ids:
-            purchased_node_ids.discard(legacy_reflection_id)
-            purchased_node_ids.add("sentinel.ability.deflect-spell")
+        unspent_attribute_points = max(
+            0,
+            int(data.get("unspent_attribute_points", 0)),
+        )
+        unspent_points = max(0, int(data.get("unspent_points", 0)))
         return cls(
             level=level,
             total_xp=max(0, int(data.get("total_xp", 0))),
             unspent_points=unspent_points,
             unspent_attribute_points=unspent_attribute_points,
-            purchased_node_ids=purchased_node_ids,
+            purchased_node_ids=set(data.get("purchased_node_ids", ())),
             trained_attributes=trained_attributes,
             ability_ranks={
                 str(name): max(1, int(rank)) for name, rank in data.get("ability_ranks", {}).items()

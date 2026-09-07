@@ -296,7 +296,6 @@ def validate_trees() -> tuple[str, ...]:
 
 def ensure_progression(player: Any) -> ProgressionState:
     """Return the player's state, creating an unallocated state if needed."""
-    _migrate_spell_reflection_ability(player)
     current = getattr(player, "progression", None)
     if isinstance(current, ProgressionState):
         _adopt_known_ability_nodes(player, current)
@@ -315,40 +314,9 @@ def ensure_progression(player: Any) -> ProgressionState:
     return state
 
 
-def _migrate_spell_reflection_ability(player: Any) -> None:
-    """Replace the retired Deflect Spell skill with merged Spell Reflection."""
-    skills = getattr(player, "spellbook", {}).setdefault("Skills", {})
-    if "Deflect Spell" not in skills:
-        return
-    skills.pop("Deflect Spell", None)
-    skills.setdefault("Spell Reflection", abilities.SpellReflection())
-
-
 def _adopt_known_ability_nodes(player: Any, state: ProgressionState) -> None:
     """Mark explicitly inheritable abilities and Jump mods as pre-owned."""
     class_name = getattr(getattr(player, "cls", None), "name", None)
-    retired_external_spell_nodes = {
-        "arcane-trickster.ability.weaken-mind": 2,
-        "astromancer.ability.volcano": 1,
-    }
-    for node_id, point_cost in retired_external_spell_nodes.items():
-        if node_id in state.purchased_node_ids:
-            state.purchased_node_ids.discard(node_id)
-            state.unspent_points += point_cost
-    retired_dim_mak_node = "master-monk.ability.dim-mak"
-    if retired_dim_mak_node in state.purchased_node_ids:
-        state.purchased_node_ids.discard(retired_dim_mak_node)
-        quest = (
-            getattr(player, "quest_dict", {})
-            .get("Side", {})
-            .get(
-                "This Thing's Nuclear",
-                {},
-            )
-        )
-        if not bool(quest.get("Turned In")):
-            player.spellbook.setdefault("Skills", {}).pop("Dim Mak", None)
-            state.unspent_points += 2
     if class_name == "Stalwart Defender":
         for ability_ctor in (
             abilities.CitadelAegis,
@@ -369,24 +337,6 @@ def _adopt_known_ability_nodes(player: Any, state: ProgressionState) -> None:
         for book in getattr(player, "spellbook", {}).values()
         for ability_name in getattr(book, "keys", lambda: ())()
     }
-    if (
-        class_name == "Paladin"
-        and "paladin.ability.oath-judgment" in state.purchased_node_ids
-        and "Oath's Judgment" not in learned
-    ):
-        # Earlier authored-tree adoption recursively marked the prerequisites
-        # of inherited Double/True Strike as purchased without granting their
-        # payloads. Repair that impossible state while retaining abilities the
-        # character genuinely learned before becoming a Paladin.
-        state.purchased_node_ids.difference_update(
-            {
-                "paladin.ability.oath-judgment",
-                "paladin.rating.attack-1",
-                "paladin.talent.tempered-conviction",
-            }
-        )
-        if "Double Strike" not in learned:
-            state.purchased_node_ids.discard("paladin.ability.double-strike")
     jump_skill = player.spellbook.get("Skills", {}).get("Jump")
     unlocked_jump_mods = set()
     if jump_skill is not None:
@@ -869,9 +819,7 @@ def available_nodes(
                     (
                         NodeState.CLOSED
                         if permanently_unavailable_promotion
-                        else NodeState.BLOCKED
-                        if blockers
-                        else NodeState.AVAILABLE
+                        else NodeState.BLOCKED if blockers else NodeState.AVAILABLE
                     ),
                     blockers,
                 )

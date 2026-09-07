@@ -6,7 +6,7 @@ import pytest
 
 from src.core import abilities, enemies, items
 from src.core.classes import class_rings, healer, promotion_kits
-from src.core.progression import ABILITY_TREES, NodeKind, ProgressionState, ensure_progression
+from src.core.progression import ABILITY_TREES, NodeKind, ProgressionState
 from src.core.progression_manifest import EXTERNAL_ACQUISITION_ABILITIES
 from tests.test_framework import TestGameState
 
@@ -93,33 +93,6 @@ def test_archbishop_ring_modifiers_are_terminal_and_do_not_gate_exorcism():
         assert node.lane == "Divine Intervention"
         assert node.prerequisites == (nodes["Expel Curse"].id,)
         assert not any(node.id in candidate.prerequisites for candidate in tree.nodes)
-
-
-def test_legacy_tree_dim_mak_is_removed_and_refunded_without_quest_unlock():
-    monk = _player("Master Monk")
-    monk.progression.unspent_points = 0
-    monk.progression.purchased_node_ids.add("master-monk.ability.dim-mak")
-    monk.spellbook["Skills"]["Dim Mak"] = abilities.DimMak()
-
-    ensure_progression(monk)
-
-    assert "master-monk.ability.dim-mak" not in monk.progression.purchased_node_ids
-    assert "Dim Mak" not in monk.spellbook["Skills"]
-    assert monk.progression.unspent_points == 2
-
-
-def test_legacy_tree_marker_preserves_quest_unlocked_dim_mak():
-    monk = _player("Master Monk")
-    monk.progression.unspent_points = 0
-    monk.progression.purchased_node_ids.add("master-monk.ability.dim-mak")
-    monk.spellbook["Skills"]["Dim Mak"] = abilities.DimMak()
-    monk.quest_dict["Side"]["This Thing's Nuclear"] = {"Turned In": True}
-
-    ensure_progression(monk)
-
-    assert "master-monk.ability.dim-mak" not in monk.progression.purchased_node_ids
-    assert "Dim Mak" in monk.spellbook["Skills"]
-    assert monk.progression.unspent_points == 0
 
 
 def test_unarmed_proficiency_and_monk_ki_talents_are_live():

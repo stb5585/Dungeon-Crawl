@@ -10,7 +10,6 @@ from src.core.progression import (
     ABILITY_TREES,
     NodeKind,
     ProgressionState,
-    ensure_progression,
 )
 from tests.test_framework import TestGameState
 
@@ -77,19 +76,6 @@ def test_astromancer_external_volcano_does_not_gate_celestial_progression():
     assert nodes["Tephra"].lane == "Witnessed Magic"
     assert nodes["Tephra"].prerequisites == (nodes["Learn Spell"].id,)
     assert not any(nodes["Tephra"].id in candidate.prerequisites for candidate in tree.nodes)
-
-
-def test_retired_astromancer_volcano_node_is_refunded_without_forgetting_spell():
-    player = _player("Astromancer")
-    player.progression.unspent_points = 0
-    player.progression.purchased_node_ids.add("astromancer.ability.volcano")
-    player.spellbook["Spells"]["Volcano"] = abilities.Volcano()
-
-    ensure_progression(player)
-
-    assert "astromancer.ability.volcano" not in player.progression.purchased_node_ids
-    assert player.progression.unspent_points == 1
-    assert "Volcano" in player.spellbook["Spells"]
 
 
 def test_druid_promotions_accept_either_completed_discipline():

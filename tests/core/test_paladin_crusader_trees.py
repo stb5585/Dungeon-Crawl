@@ -258,29 +258,6 @@ def test_known_gated_abilities_adopt_only_their_matching_nodes():
     }
 
 
-def test_legacy_recursive_paladin_adoption_is_repaired_on_load():
-    player = _player("Paladin")
-    player.spellbook["Skills"]["True Strike"] = abilities.TrueStrike()
-    player.progression.purchased_node_ids.update(
-        {
-            "paladin.ability.oath-judgment",
-            "paladin.ability.double-strike",
-            "paladin.rating.attack-1",
-            "paladin.talent.tempered-conviction",
-            "paladin.ability.true-strike",
-        }
-    )
-
-    statuses = {status.node.name: status for status in available_nodes(player, "Paladin")}
-
-    assert statuses["Oath's Judgment"].state == NodeState.AVAILABLE
-    assert statuses["Double Strike"].state != NodeState.OWNED
-    assert statuses["True Strike"].state == NodeState.OWNED
-    assert player.progression.purchased_node_ids == {
-        "paladin.ability.true-strike",
-    }
-
-
 def test_inherited_repel_adopts_without_owning_crusader_smite_path():
     player = _player("Crusader")
     player.spellbook["Spells"]["Repel the Wicked"] = abilities.RepelTheWicked()

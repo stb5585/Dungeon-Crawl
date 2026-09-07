@@ -27,6 +27,8 @@
   base-class lineage modules while preserving its existing import facade.
 - Split the progression runtime into value models, tree construction/registry,
   and player-facing service modules while preserving `src.core.progression`.
+- Removed pre-release progression migrations and refunds, including a reversed
+  Spell Reflection node-ID rewrite that corrupted current persisted ownership.
 - Retired the obsolete tab-delimited numbered-map conversion workflow, made
   Tiled JSON the explicit numbered-map authority, and retained text loading
   only for the Liminal Gap special-area map.
@@ -36,7 +38,7 @@
   and Troubadour tree labels now distinguish their non-ring mechanics.
 - Returned Volcano and Weaken Mind to enemy-learned acquisition, made Tephra
   and Neural Connection optional terminal modifiers, completed rank metadata
-  for Volcano and Stupefy, and refunds retired tree-node purchases on load.
+  for Volcano and Stupefy.
 - Repaired the balance-suite enemy roster after the enemy `Conjurer` was
   renamed to `Necromancer`, and added a regression test for CLI startup.
 - Restored the Power Core quest reward path for every terminal class, removed

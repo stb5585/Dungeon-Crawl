@@ -10,7 +10,6 @@ from src.core.progression import (
     ABILITY_TREES,
     NodeKind,
     ProgressionState,
-    ensure_progression,
 )
 from tests.test_framework import TestGameState
 
@@ -74,19 +73,6 @@ def test_external_weaken_mind_does_not_gate_arcane_trickster_progression():
     assert not any(
         nodes["Neural Connection"].id in candidate.prerequisites for candidate in tree.nodes
     )
-
-
-def test_retired_external_spell_nodes_are_refunded_without_forgetting_spells():
-    trickster = _player("Arcane Trickster")
-    trickster.progression.unspent_points = 0
-    trickster.progression.purchased_node_ids.add("arcane-trickster.ability.weaken-mind")
-    trickster.spellbook["Spells"]["Weaken Mind"] = abilities.WeakenMind()
-
-    ensure_progression(trickster)
-
-    assert "arcane-trickster.ability.weaken-mind" not in (trickster.progression.purchased_node_ids)
-    assert trickster.progression.unspent_points == 2
-    assert "Weaken Mind" in trickster.spellbook["Spells"]
 
 
 def test_stolen_magic_rows_use_standard_level_bands_and_fit_eight_rows():
