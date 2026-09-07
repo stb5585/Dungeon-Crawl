@@ -320,10 +320,12 @@ def _make_manager(monkeypatch):
     game = SimpleNamespace(special_event=lambda _name: None, save_calls=[])
     game.save_game = lambda: game.save_calls.append("save")
 
-    monkeypatch.setattr(dungeon_manager, "DungeonRenderer", lambda presenter: SimpleNamespace())
-    monkeypatch.setattr(dungeon_manager, "DungeonHUD", lambda presenter: SimpleNamespace())
     monkeypatch.setattr(
-        dungeon_manager,
+        dungeon_manager.core, "DungeonRenderer", lambda presenter: SimpleNamespace()
+    )
+    monkeypatch.setattr(dungeon_manager.core, "DungeonHUD", lambda presenter: SimpleNamespace())
+    monkeypatch.setattr(
+        dungeon_manager.core,
         "GUICombatManager",
         lambda presenter, hud, game_instance: SimpleNamespace(
             dungeon_renderer=None,
@@ -332,7 +334,7 @@ def _make_manager(monkeypatch):
         ),
     )
     monkeypatch.setattr(
-        dungeon_manager,
+        dungeon_manager.core,
         "LootPopup",
         lambda screen, presenter: SimpleNamespace(
             show_unlock_prompt=lambda kind: True, show_loot=lambda *args: None
@@ -394,7 +396,7 @@ def test_boss_intro_uses_split_dialogue_and_jester_defeat_returns_to_funhouse_te
     presenter.show_message = lambda *args, **kwargs: shown.append((args, kwargs))
     manager._dungeon_dialog_background = lambda: None
     monkeypatch.setattr(
-        dungeon_manager,
+        dungeon_manager.core,
         "get_special_events",
         lambda: {
             "Jester": {"Text": ["The fool bows with a knife behind his back."]},
@@ -672,7 +674,7 @@ def test_use_stairs_up_interact_secret_shop_and_dialogue_helpers(monkeypatch):
     )
     manager._show_special_event_dialogue("Event", title="Title", image_path="img.png")
     monkeypatch.setattr(
-        dungeon_manager,
+        dungeon_manager.core,
         "get_npc_art_manager",
         lambda: SimpleNamespace(
             get_image_path=lambda name: (
@@ -1482,7 +1484,7 @@ def test_final_room_incubus_and_golden_chalice_branches(monkeypatch):
     )
     presenter.render_menu = lambda prompt, options: 0
     monkeypatch.setattr(
-        dungeon_manager,
+        dungeon_manager.core,
         "get_special_events",
         lambda: {"Final Boss": {"Text": ["I await", "your challenge"]}},
     )
@@ -1557,7 +1559,7 @@ def test_final_room_pending_false_final_enters_liminal_stub(monkeypatch):
     shown = []
     presenter.show_message = lambda *args, **kwargs: shown.append((args, kwargs))
     monkeypatch.setattr(
-        dungeon_manager,
+        dungeon_manager.core,
         "get_special_events",
         lambda: {
             "Final Boss": {"Text": ["Vesperion waits."]},
@@ -1566,7 +1568,7 @@ def test_final_room_pending_false_final_enters_liminal_stub(monkeypatch):
         },
     )
     monkeypatch.setattr(
-        dungeon_manager,
+        dungeon_manager.core,
         "get_npc_art_manager",
         lambda: SimpleNamespace(
             get_image_path=lambda name: f"npc:{name}" if name == "Vesperion" else ""
@@ -1620,7 +1622,7 @@ def test_final_room_reentry_before_true_final_shows_liminal_blocker(monkeypatch)
         AssertionError("combat should not start")
     )
     monkeypatch.setattr(
-        dungeon_manager,
+        dungeon_manager.core,
         "get_special_events",
         lambda: {"Liminal Gap Blocker": {"Text": ["Voluntas remains unresolved."]}},
     )
@@ -1639,7 +1641,7 @@ def test_liminal_guide_reveals_hooded_figure_and_saves(monkeypatch):
     presenter.show_message = lambda *args, **kwargs: shown.append((args, kwargs))
     manager._popup_menu = lambda title, options, **kwargs: 0
     monkeypatch.setattr(
-        dungeon_manager,
+        dungeon_manager.core,
         "get_special_events",
         lambda: {
             "Hooded Figure Liminal Reveal": {"Text": ["The Hooded Figure lowers their hood."]},
@@ -1671,7 +1673,7 @@ def test_liminal_guide_reviews_awakened_guardian_clues(monkeypatch):
     presenter.show_message = lambda *args, **kwargs: shown.append((args, kwargs))
     manager._popup_menu = lambda *_args, **_kwargs: 1
     monkeypatch.setattr(
-        dungeon_manager,
+        dungeon_manager.core,
         "get_special_events",
         lambda: {"Liminal Clue Review": {"Text": ["The clues answer together."]}},
     )
@@ -1702,7 +1704,7 @@ def test_liminal_guide_reviews_guardian_trial_depths(monkeypatch):
         list(options)
     ) or options.index("Review Trial Depths")
     monkeypatch.setattr(
-        dungeon_manager,
+        dungeon_manager.core,
         "get_special_events",
         lambda: {"Liminal Trial V2 Review": {"Text": ["The deeper trials answer."]}},
     )
@@ -1787,7 +1789,7 @@ def test_liminal_guide_affirms_class_path_once(monkeypatch, ring_awakened):
         list(options)
     ) or options.index("Affirm Class Path")
     monkeypatch.setattr(
-        dungeon_manager,
+        dungeon_manager.core,
         "get_special_events",
         lambda: {
             "Class Voluntas Affirmation": {"Text": ["Voluntas asks what path is yours."]},
@@ -1826,7 +1828,7 @@ def test_liminal_guide_revisits_class_path_once(monkeypatch):
         list(options)
     ) or options.index("Revisit Class Path")
     monkeypatch.setattr(
-        dungeon_manager,
+        dungeon_manager.core,
         "get_special_events",
         lambda: {
             "Class Voluntas Followup": {"Text": ["The path remains chosen."]},
@@ -1881,7 +1883,7 @@ def test_liminal_guide_bridges_recorded_class_identity_once_and_story_only(monke
         list(options)
     ) or options.index("Bridge Class Identity")
     monkeypatch.setattr(
-        dungeon_manager,
+        dungeon_manager.core,
         "get_special_events",
         lambda: {
             "Class Voluntas Bridge": {"Text": ["The bridge opens."]},
@@ -1932,7 +1934,7 @@ def test_liminal_guide_witness_farewell_visibility_and_once(monkeypatch):
         list(options)
     ) or options.index("Ask About the Witness")
     monkeypatch.setattr(
-        dungeon_manager,
+        dungeon_manager.core,
         "get_special_events",
         lambda: {"Hooded Figure Witness Farewell": {"Text": ["I kept a door from closing."]}},
     )
@@ -1982,7 +1984,7 @@ def test_remaining_guardian_trials_complete_and_record_choice(
     presenter.show_message = lambda *args, **kwargs: shown.append((args, kwargs))
     manager._popup_menu = lambda title, options, **kwargs: next(menu_choices)
     monkeypatch.setattr(
-        dungeon_manager,
+        dungeon_manager.core,
         "get_special_events",
         lambda: {
             f"{guardian_name} Trial Intro": {"Text": ["Begin."]},
@@ -2019,7 +2021,7 @@ def test_triangulus_trial_requires_hooded_figure_reveal(monkeypatch):
     shown = []
     presenter.show_message = lambda *args, **kwargs: shown.append((args, kwargs))
     monkeypatch.setattr(
-        dungeon_manager,
+        dungeon_manager.core,
         "get_special_events",
         lambda: {"Triangulus Gate": {"Text": ["The gate waits."]}},
     )
@@ -2046,7 +2048,7 @@ def test_triangulus_trial_completes_and_records_self_choice(monkeypatch):
         lambda player_char, enemy, tile: combat_calls.append((player_char, enemy, tile)) or True
     )
     monkeypatch.setattr(
-        dungeon_manager,
+        dungeon_manager.core,
         "get_special_events",
         lambda: {
             "Triangulus Trial Intro": {"Text": ["What proves the self?"]},
@@ -2092,7 +2094,7 @@ def test_combat_guardian_trial_defeat_is_retry_safe(monkeypatch):
     manager._refresh_cached_frame = lambda: None
     manager.combat_manager.start_combat = lambda *_args, **_kwargs: False
     monkeypatch.setattr(
-        dungeon_manager,
+        dungeon_manager.core,
         "get_special_events",
         lambda: {
             "Infinitas Trial Intro": {"Text": ["Begin again."]},
@@ -2162,7 +2164,7 @@ def test_completed_triangulus_trial_does_not_reaward_progress(monkeypatch):
         AssertionError("trial menu should not reopen")
     )
     monkeypatch.setattr(
-        dungeon_manager,
+        dungeon_manager.core,
         "get_special_events",
         lambda: {"Triangulus Trial Complete": {"Text": ["Already complete."]}},
     )
@@ -2188,7 +2190,7 @@ def test_completed_guardian_trial_can_recall_unseen_vignette_without_rewards(mon
     presenter.show_message = lambda *args, **kwargs: shown.append((args, kwargs))
     manager._popup_menu = lambda title, options, **kwargs: 0
     monkeypatch.setattr(
-        dungeon_manager,
+        dungeon_manager.core,
         "get_special_events",
         lambda: {
             "Triangulus Trial V2 Threshold": {"Text": ["The triangle deepens."]},
@@ -2223,7 +2225,7 @@ def test_completed_guardian_trial_recall_falls_back_for_missing_choice(monkeypat
     presenter.show_message = lambda *args, **kwargs: shown.append((args, kwargs))
     manager._popup_menu = lambda title, options, **kwargs: 0
     monkeypatch.setattr(
-        dungeon_manager,
+        dungeon_manager.core,
         "get_special_events",
         lambda: {
             "Quadrata Trial V2 Threshold": {"Text": ["The square deepens."]},
@@ -2245,7 +2247,7 @@ def test_liminal_exit_blocker_prevents_return(monkeypatch):
     presenter.show_message = lambda *args, **kwargs: shown.append((args, kwargs))
     player.location_x, player.location_y, player.location_z = LIMINAL_GAP_ENTRY_POS
     monkeypatch.setattr(
-        dungeon_manager,
+        dungeon_manager.core,
         "get_special_events",
         lambda: {"Liminal No Exit": {"Text": ["The way back is broken."]}},
     )
@@ -2264,7 +2266,7 @@ def test_liminal_seventh_seat_waits_for_all_guardian_clues(monkeypatch):
     shown = []
     presenter.show_message = lambda *args, **kwargs: shown.append((args, kwargs))
     monkeypatch.setattr(
-        dungeon_manager,
+        dungeon_manager.core,
         "get_special_events",
         lambda: {"Seventh Seat Sealed": {"Text": ["The empty seat waits."]}},
     )
@@ -2286,7 +2288,7 @@ def test_liminal_seventh_seat_reveals_voluntas_after_all_clues(monkeypatch):
         player.main_story["guardian_trials_completed"][guardian] = True
         player.main_story["voluntas_clues_found"][guardian] = True
     monkeypatch.setattr(
-        dungeon_manager,
+        dungeon_manager.core,
         "get_special_events",
         lambda: {
             "Seventh Seat Reveal": {"Text": ["Voluntas is remembered."]},
@@ -2313,7 +2315,7 @@ def test_liminal_acolyte_scene_is_non_combat_and_repeat_safe(monkeypatch):
     shown = []
     presenter.show_message = lambda *args, **kwargs: shown.append((args, kwargs))
     monkeypatch.setattr(
-        dungeon_manager,
+        dungeon_manager.core,
         "get_special_events",
         lambda: {
             "Acolyte Liminal Waiting": {"Text": ["Not yet."]},
@@ -2350,7 +2352,7 @@ def test_liminal_reflection_unlocks_true_final_after_voluntas_and_acolyte(monkey
     combat_calls = []
     presenter.show_message = lambda *args, **kwargs: shown.append((args, kwargs))
     monkeypatch.setattr(
-        dungeon_manager,
+        dungeon_manager.core,
         "get_special_events",
         lambda: {
             "Reflection Locked": {"Text": ["The mirror waits."]},
@@ -2447,7 +2449,7 @@ def test_liminal_reflection_class_voluntas_echo_is_story_only_and_once(monkeypat
         lambda player_char, enemy, tile: combat_calls.append((player_char, enemy, tile)) or False
     )
     monkeypatch.setattr(
-        dungeon_manager,
+        dungeon_manager.core,
         "get_special_events",
         lambda: {
             "Reflection Prelude": {"Text": ["Every path appears."]},
@@ -2491,7 +2493,7 @@ def test_liminal_reflection_defeat_keeps_route_locked(monkeypatch):
     manager._refresh_cached_frame = lambda: None
     manager.combat_manager.start_combat = lambda *_args, **_kwargs: False
     monkeypatch.setattr(
-        dungeon_manager,
+        dungeon_manager.core,
         "get_special_events",
         lambda: {
             "Reflection Prelude": {"Text": ["Every path appears."]},
@@ -2531,7 +2533,7 @@ def test_liminal_exit_returns_after_true_final_unlock(monkeypatch):
     player.liminal_gap_return = (14, 12, 6, "north")
     player.main_story["true_final_unlocked"] = True
     monkeypatch.setattr(
-        dungeon_manager,
+        dungeon_manager.core,
         "get_special_events",
         lambda: {"Return From Liminal Gap": {"Text": ["Go back."]}},
     )
@@ -2572,7 +2574,7 @@ def test_final_room_true_final_reentry_uses_true_final_prelude(monkeypatch):
     player.main_story["guardian_trial_choices"]["Triangulus"] = "Memory"
     player.main_story["guardian_trial_vignettes_seen"]["Triangulus"] = True
     monkeypatch.setattr(
-        dungeon_manager,
+        dungeon_manager.core,
         "get_special_events",
         lambda: {
             "True Final Prelude": {"Text": ["This time, choose."]},
@@ -2584,7 +2586,7 @@ def test_final_room_true_final_reentry_uses_true_final_prelude(monkeypatch):
         },
     )
     monkeypatch.setattr(
-        dungeon_manager,
+        dungeon_manager.core,
         "get_npc_art_manager",
         lambda: SimpleNamespace(
             get_image_path=lambda name: f"npc:{name}" if name == "Vesperion" else ""
@@ -2647,7 +2649,7 @@ def test_final_room_after_main_story_complete_does_not_restart_finale(monkeypatc
         AssertionError("combat should not start")
     )
     monkeypatch.setattr(
-        dungeon_manager,
+        dungeon_manager.core,
         "get_special_events",
         lambda: {"The Forsaken Tenet Ending": {"Text": ["The tenet is remembered."]}},
     )

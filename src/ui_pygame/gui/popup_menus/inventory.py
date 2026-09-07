@@ -4,7 +4,9 @@ import pygame
 
 from src.core import items
 
+from ..confirmation_popup import ConfirmationPopup
 from .base import BasePopupMenu
+from .selections import SelectionPopup
 
 
 class InventoryPopupMenu(BasePopupMenu):
@@ -185,8 +187,6 @@ class InventoryPopupMenu(BasePopupMenu):
         actions.extend(["Drop", "Cancel"])
 
         # Show action menu
-        from . import SelectionPopup
-
         action_popup = SelectionPopup(
             self.presenter,
             self.parent_screen,
@@ -259,8 +259,6 @@ class InventoryPopupMenu(BasePopupMenu):
         )
 
     def _show_inventory_notice(self, player_char, message: str, background_surface=None) -> None:
-        from . import ConfirmationPopup
-
         menu_bg = background_surface or self._capture_menu_surface(player_char)
         popup = ConfirmationPopup(self.presenter, message, show_buttons=False)
         popup.show(
@@ -352,8 +350,6 @@ class InventoryPopupMenu(BasePopupMenu):
         self.build_items(player_char)
 
     def _use_item(self, player_char, item, category, background_surface=None):
-        from . import ConfirmationPopup
-
         """Use a consumable item."""
         menu_bg = background_surface or self._capture_menu_surface(player_char)
 
@@ -382,8 +378,6 @@ class InventoryPopupMenu(BasePopupMenu):
         self.build_items(player_char)
 
     def _drop_item(self, player_char, item, category, background_surface=None):
-        from . import ConfirmationPopup
-
         """Drop an item from inventory."""
         # Confirm drop
         menu_bg = background_surface or self._capture_menu_surface(player_char)

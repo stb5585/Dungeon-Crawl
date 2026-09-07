@@ -7,11 +7,11 @@ from typing import TYPE_CHECKING
 
 import pygame
 
-import src.ui_pygame.gui.combat_manager as combat_manager
 from src.core import enemies
 from src.core.character import Character
 from src.core.classes import ability_mechanics, promotion_kits
 from src.core.combat import ActionIntent, CombatEncounter, TargetScope
+from src.core.combat.battle_engine import BattleEngine
 from src.core.player import Player
 from src.ui_pygame.gui.enemy_presentation import (
     is_invisible_target,
@@ -96,7 +96,7 @@ class CombatLifecycleMixin:
             self.player_world_dict = player_char.world_dict
 
         # Create the core engine (handles initiative, actions, bookkeeping)
-        self.engine = combat_manager.BattleEngine(
+        self.engine = BattleEngine(
             player=player_char,
             tile=tile,
             game=self.game,

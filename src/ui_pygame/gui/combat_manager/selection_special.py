@@ -6,11 +6,11 @@ import sys
 
 import pygame
 
-import src.ui_pygame.gui.combat_manager as combat_manager
 from src.core.classes import (
     ability_mechanics,
 )
 
+from ..character_naming import CompanionNamingScreen
 from ..input_guards import release_guard_allows_input
 from .constants import _DISPLAY_TO_ENGINE
 
@@ -155,7 +155,7 @@ class SpecialSelectionMixin:
             getattr(player_char, "tamed_companion", None)
         )
         companion_name = str(state.get("name") or getattr(enemy, "name", "Companion"))
-        screen = combat_manager.CompanionNamingScreen(
+        screen = CompanionNamingScreen(
             self.presenter,
             companion_name,
             species=str(state.get("species") or ""),

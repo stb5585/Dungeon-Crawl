@@ -4,15 +4,19 @@ from __future__ import annotations
 
 import pygame
 
-import src.ui_pygame.gui.modern_character_screen as character_screen
 from src.core.classes import grandmaster
 
+from ..confirmation_popup import ConfirmationPopup
 from ..input_guards import (
     prepare_guarded_input,
     release_guard_allows_input,
     update_input_armed_from_event,
 )
 from ..mouse_helpers import hit_index, is_left_click, mouse_position
+from ..popup_menus.equipment import EquipmentPopupMenu
+from ..popup_menus.inventory import InventoryPopupMenu
+from ..popup_menus.journals import BestiaryPopupMenu, QuestPopupMenu
+from ..popup_menus.mechanics import SimpleListPopupMenu, TotemAspectsPopupMenu
 from .models import EQUIPMENT_SLOT_ORDER, EquipmentSlotSummary, ResistanceSummary
 
 
@@ -262,36 +266,34 @@ class CharacterEquipmentMixin:
 
     def _open_menu_choice(self, chosen: str, player_char) -> str | None:
         if chosen == "Inventory":
-            popup = character_screen.InventoryPopupMenu(self.presenter, self)
+            popup = InventoryPopupMenu(self.presenter, self)
             popup.show(player_char, flush_events=True, require_key_release=True)
         elif chosen == "Quests":
-            popup = character_screen.QuestPopupMenu(self.presenter, self)
+            popup = QuestPopupMenu(self.presenter, self)
             _ = popup.show(player_char, flush_events=True, require_key_release=True)
         elif chosen == "Key Items":
             special_inv = getattr(player_char, "special_inventory", {})
             if not special_inv:
                 self.draw_all(player_char, do_flip=False)
-                popup = character_screen.ConfirmationPopup(
+                popup = ConfirmationPopup(
                     self.presenter, "You do not have any key items.", show_buttons=False
                 )
                 popup.show(flush_events=True, require_key_release=True)
             else:
-                popup = character_screen.SimpleListPopupMenu(
+                popup = SimpleListPopupMenu(
                     self.presenter, self, title="Key Items", source_fn=self._get_key_items_list
                 )
                 _ = popup.show(player_char, flush_events=True, require_key_release=True)
         elif chosen == "Bestiary":
-            popup = character_screen.BestiaryPopupMenu(self.presenter, self)
+            popup = BestiaryPopupMenu(self.presenter, self)
             _ = popup.show(player_char, flush_events=True, require_key_release=True)
         elif chosen == "Specials":
-            popup = character_screen.SimpleListPopupMenu(
+            popup = SimpleListPopupMenu(
                 self.presenter, self, title="Special Abilities", source_fn=self._get_specials_list
             )
             _ = popup.show(player_char, flush_events=True, require_key_release=True)
         elif chosen == "Totem Aspects":
-            popup = character_screen.TotemAspectsPopupMenu(
-                self.presenter, self, title="Totem Aspects"
-            )
+            popup = TotemAspectsPopupMenu(self.presenter, self, title="Totem Aspects")
             _ = popup.show(player_char, flush_events=True, require_key_release=True)
         elif chosen == "Exit Menu":
             return chosen
@@ -302,7 +304,7 @@ class CharacterEquipmentMixin:
 
     def open_selected_equipment_change(self, player_char) -> None:
         slot_name = self.selected_equipment_slot(player_char)
-        popup = character_screen.EquipmentPopupMenu(self.presenter, self)
+        popup = EquipmentPopupMenu(self.presenter, self)
         popup.build_items(player_char)
         for index, entry in enumerate(popup.items):
             if isinstance(entry, tuple) and entry[0] == slot_name:

@@ -566,7 +566,7 @@ def test_turn_indicator_renders_player_and_enemy_states(monkeypatch):
         or DummySurface(size, text="enemy-token")
     )
     monkeypatch.setattr(
-        "src.ui_pygame.gui.combat_view.get_companion_art_manager",
+        "src.ui_pygame.gui.combat_view.overlay.get_companion_art_manager",
         lambda: SimpleNamespace(
             get_scaled_sprite=lambda target, size: companion_token_calls.append((target.name, size))
             or DummySurface(size, text="summon-token")
@@ -1089,7 +1089,7 @@ def test_status_art_icons_render_without_badge_background(monkeypatch):
         lambda *_args, **_kwargs: rect_calls.append((_args, _kwargs)),
     )
     monkeypatch.setattr(
-        "src.ui_pygame.gui.combat_view.load_status_icon_surface",
+        "src.ui_pygame.gui.combat_view.status.load_status_icon_surface",
         lambda _label, size, _is_positive=None: icon_sizes.append(size) or icon_surface,
     )
 
@@ -1115,7 +1115,7 @@ def test_counted_art_status_icons_render_badge_over_icon(monkeypatch):
         lambda *_args, **_kwargs: circle_calls.append((_args, _kwargs)),
     )
     monkeypatch.setattr(
-        "src.ui_pygame.gui.combat_view.load_status_icon_surface",
+        "src.ui_pygame.gui.combat_view.status.load_status_icon_surface",
         lambda _label, _size, _is_positive=None: icon_surface,
     )
 

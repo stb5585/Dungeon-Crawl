@@ -7,9 +7,15 @@ from pathlib import Path
 
 import pygame
 
-import src.ui_pygame.gui.dungeon_manager as dungeon_manager
 from src.core import map_tiles
+from src.core.data.data_loader import get_special_events
 from src.paths import PYGAME_ASSETS_DIR
+from src.ui_pygame.assets.npc_art_manager import get_npc_art_manager
+
+from ..combat_manager.manager import GUICombatManager
+from ..dungeon_hud import DungeonHUD
+from ..dungeon_renderer import DungeonRenderer
+from ..loot_popup import LootPopup
 
 logger = logging.getLogger(__name__)
 
@@ -25,11 +31,11 @@ class DungeonCoreMixin:
         self._dungeon_background_loaded = False
 
         # Initialize renderer and HUD
-        self.renderer = dungeon_manager.DungeonRenderer(presenter)
-        self.hud = dungeon_manager.DungeonHUD(presenter)
+        self.renderer = DungeonRenderer(presenter)
+        self.hud = DungeonHUD(presenter)
 
         # Initialize combat manager
-        self.combat_manager = dungeon_manager.GUICombatManager(presenter, self.hud, game_instance)
+        self.combat_manager = GUICombatManager(presenter, self.hud, game_instance)
         # Give combat manager access to dungeon renderer for in-place combat
         self.combat_manager.dungeon_renderer = self.renderer
 
@@ -37,7 +43,7 @@ class DungeonCoreMixin:
         self.character_screen = None
 
         # Initialize loot popup
-        self.loot_popup = dungeon_manager.LootPopup(presenter.screen, presenter)
+        self.loot_popup = LootPopup(presenter.screen, presenter)
 
         # Import shop manager (lazy import to avoid circular dependencies)
         from ..shops import ShopManager
@@ -101,7 +107,7 @@ class DungeonCoreMixin:
 
     def _get_character_screen(self):
         if self.character_screen is None:
-            from ..modern_character_screen import ModernCharacterScreen
+            from ..modern_character_screen.screen import ModernCharacterScreen
 
             self.character_screen = ModernCharacterScreen(self.presenter)
             if self._dungeon_background is not None:
@@ -302,7 +308,7 @@ class DungeonCoreMixin:
 
     def _show_dungeon_dialogue(self, message: str, title: str = "", image_path: str = ""):
         """Show split dialogue panel with optional NPC image on the left."""
-        image_path = image_path or dungeon_manager.get_npc_art_manager().get_image_path(title)
+        image_path = image_path or get_npc_art_manager().get_image_path(title)
         self.presenter.show_message(
             message,
             title=title,
@@ -324,7 +330,7 @@ class DungeonCoreMixin:
     def _show_special_event_dialogue(self, event_name: str, title: str = "", image_path: str = ""):
         """Show special event text using split dialogue layout."""
         try:
-            lines = dungeon_manager.get_special_events().get(event_name, {}).get("Text", [])
+            lines = get_special_events().get(event_name, {}).get("Text", [])
             message = (
                 " ".join(line.strip() for line in lines if line is not None).strip()
                 if lines
@@ -332,9 +338,7 @@ class DungeonCoreMixin:
             )
         except Exception:
             message = event_name
-        image_path = image_path or dungeon_manager.get_npc_art_manager().get_image_path(
-            title or event_name
-        )
+        image_path = image_path or get_npc_art_manager().get_image_path(title or event_name)
         self.presenter.show_message(
             message,
             title=title or event_name,
@@ -375,7 +379,7 @@ class DungeonCoreMixin:
     def _show_boss_intro_dialogue(self, boss_tile, enemy) -> None:
         """Show boss introduction text in the split NPC-style dialogue window."""
         try:
-            lines = dungeon_manager.get_special_events().get(enemy.name, {}).get("Text", [])
+            lines = get_special_events().get(enemy.name, {}).get("Text", [])
             message = " ".join(line.strip() for line in lines if line is not None).strip()
         except Exception:
             message = ""

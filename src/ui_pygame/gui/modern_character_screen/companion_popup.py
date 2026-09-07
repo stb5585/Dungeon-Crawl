@@ -6,8 +6,7 @@ from typing import Any
 
 import pygame
 
-import src.ui_pygame.gui.modern_character_screen as character_screen
-
+from ..confirmation_popup import draw_popup_close_button, popup_close_clicked
 from ..input_guards import (
     prepare_guarded_input,
     release_guard_allows_input,
@@ -71,7 +70,7 @@ class ClassCompanionDetailsPopup:
         self.screen.blit(overlay, (0, 0))
         pygame.draw.rect(self.screen, (8, 8, 12), self.popup_rect)
         pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, self.popup_rect, 2)
-        character_screen.draw_popup_close_button(self.screen, self.popup_rect, self.small_font)
+        draw_popup_close_button(self.screen, self.popup_rect, self.small_font)
 
     def _draw_art_and_identity(self, rect: pygame.Rect, y: int) -> int:
         art_width = min(max(170, rect.width // 3), rect.width // 2)
@@ -418,7 +417,7 @@ class ClassCompanionDetailsPopup:
 
                     sys.exit()
                 input_armed = update_input_armed_from_event(event, require_key_release, input_armed)
-                if character_screen.popup_close_clicked(event, self.popup_rect):
+                if popup_close_clicked(event, self.popup_rect):
                     if input_armed:
                         background_draw_func()
                         return

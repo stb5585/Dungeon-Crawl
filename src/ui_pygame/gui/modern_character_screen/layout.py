@@ -6,9 +6,10 @@ from typing import Any
 
 import pygame
 
-import src.ui_pygame.gui.modern_character_screen as character_screen
 from src.core.classes import ability_mechanics, grandmaster
 
+from ..confirmation_popup import ConfirmationPopup
+from .companion_popup import ClassCompanionDetailsPopup
 from .models import RESISTANCE_SLOT_COUNT
 
 
@@ -605,9 +606,7 @@ class CharacterLayoutMixin:
         )
         kind, companion = entries[self.selected_class_companion_index]
         background = self.screen.copy()
-        popup = character_screen.ClassCompanionDetailsPopup(
-            self.presenter, self, player_char, kind, companion
-        )
+        popup = ClassCompanionDetailsPopup(self.presenter, self, player_char, kind, companion)
         popup.show(
             background_draw_func=lambda: self.screen.blit(background, (0, 0)),
             flush_events=True,
@@ -664,7 +663,7 @@ class CharacterLayoutMixin:
                     companion_name = getattr(companion, "name", companion_name)
                     break
         background = self.screen.copy()
-        popup = character_screen.ConfirmationPopup(
+        popup = ConfirmationPopup(
             self.presenter,
             f"Release {companion_name}?",
             show_buttons=True,
@@ -693,7 +692,7 @@ class CharacterLayoutMixin:
         )
         weapon_type = weapon_types[self.selected_weapon_discipline_index]
         background = self.screen.copy()
-        popup = character_screen.ConfirmationPopup(
+        popup = ConfirmationPopup(
             self.presenter,
             self.weapon_discipline_detail_text(player_char, weapon_type),
             show_buttons=False,

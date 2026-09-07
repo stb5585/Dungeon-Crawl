@@ -1,8 +1,9 @@
 """Story behavior for the dungeon manager package."""
 
-import src.ui_pygame.gui.dungeon_manager as dungeon_manager
 from src.core import enemies, main_story
 from src.core.classes import class_rings
+
+from .core import get_special_events
 
 
 class DungeonStoryMixin:
@@ -564,7 +565,7 @@ class DungeonStoryMixin:
         )
         event_name = f"Reflection {beat} {profile_suffix}"
         try:
-            if event_name in dungeon_manager.get_special_events():
+            if event_name in get_special_events():
                 return event_name
         except Exception:
             pass

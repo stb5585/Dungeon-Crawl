@@ -7,11 +7,11 @@ import random
 
 import pygame
 
-import src.ui_pygame.gui.dungeon.renderer as renderer_module
 from src.core import map_tiles
 from src.ui_pygame.assets.enemy_combat_sprite_manager import get_enemy_combat_sprite_manager
 
 from ..geometry import Quad
+from ..projector import project_texture_to_quad
 from ..scene import is_fake_wall, is_wall
 
 
@@ -802,7 +802,7 @@ class RendererSpecialTileMixin:
                 self.screen.blit(shaded, sprite_rect.topleft)
             else:
                 quad = self._get_lateral_floor_sprite_quad(sprite_rect, side)
-                projected = renderer_module.project_texture_to_quad(sprite, quad, darkness=darkness)
+                projected = project_texture_to_quad(sprite, quad, darkness=darkness)
                 self.screen.blit(projected.surface, projected.topleft)
             return
 
@@ -867,7 +867,7 @@ class RendererSpecialTileMixin:
 
         if lateral_view and side is not None:
             quad = self._get_lateral_floor_sprite_quad(sprite_rect, side)
-            projected = renderer_module.project_texture_to_quad(sprite, quad, darkness=darkness)
+            projected = project_texture_to_quad(sprite, quad, darkness=darkness)
             self.screen.blit(projected.surface, projected.topleft)
             return
 

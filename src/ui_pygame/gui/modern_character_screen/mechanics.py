@@ -7,7 +7,6 @@ from typing import Any
 
 import pygame
 
-import src.ui_pygame.gui.modern_character_screen as character_screen
 from src.core.classes import (
     archdruid,
     astromancer,
@@ -21,6 +20,8 @@ from src.core.classes import (
     wizard,
 )
 from src.ui_pygame.assets.ability_icon_manager import get_ability_icon_manager
+
+from ..popup_menus.mechanics import CompositionPopupMenu, TotemAspectsPopupMenu
 
 SCHOOL_AFFINITY_ICON_KEYS = {
     "Fire": "spell_fire",
@@ -865,7 +866,7 @@ class CharacterMechanicsMixin:
         return []
 
     def _open_totem_aspects_popup(self, player_char) -> None:
-        popup = character_screen.TotemAspectsPopupMenu(self.presenter, self, title="Totem Aspects")
+        popup = TotemAspectsPopupMenu(self.presenter, self, title="Totem Aspects")
         popup.show(player_char=player_char, flush_events=True)
 
     def _draw_totems_tab(self, player_char, y: int) -> None:
@@ -1115,7 +1116,7 @@ class CharacterMechanicsMixin:
                 break
 
     def _open_composition_popup(self, player_char) -> None:
-        popup = character_screen.CompositionPopupMenu(
+        popup = CompositionPopupMenu(
             self.presenter,
             self,
             title="Compose Song",

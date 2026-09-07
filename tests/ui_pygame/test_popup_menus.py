@@ -299,7 +299,7 @@ def test_specials_popup_casts_exploration_spells_with_confirmation(monkeypatch):
             kwargs["background_draw_func"]()
             return True
 
-    monkeypatch.setattr(popup_menus, "ConfirmationPopup", FakeConfirmation)
+    monkeypatch.setattr(popup_menus.mechanics, "ConfirmationPopup", FakeConfirmation)
 
     assert (
         popup.on_select(
@@ -801,7 +801,7 @@ def test_inventory_popup_build_sort_cycle_and_item_actions(monkeypatch):
             kwargs["background_draw_func"]()
             return True
 
-    monkeypatch.setattr(popup_menus, "ConfirmationPopup", FakePopup)
+    monkeypatch.setattr(popup_menus.inventory, "ConfirmationPopup", FakePopup)
     no_equip_player = _make_player()
     no_equip_player.cls = SimpleNamespace(equip_check=lambda item, slot: False)
     popup._equip_item(
@@ -823,7 +823,7 @@ def test_inventory_popup_build_sort_cycle_and_item_actions(monkeypatch):
             confirm_calls.append(_kwargs)
             return True
 
-    monkeypatch.setattr(popup_menus, "ConfirmationPopup", FakeConfirm)
+    monkeypatch.setattr(popup_menus.inventory, "ConfirmationPopup", FakeConfirm)
     popup._use_item(player, player.inventory["Weapons"][0], "Weapons", background_surface="bg")
     assert "Weapons" in player.inventory
     popup._drop_item(player, player.inventory["Weapons"][0], "Weapons", background_surface="bg")
@@ -1103,7 +1103,7 @@ def test_inventory_popup_on_select_uses_nested_selection_popup(monkeypatch):
             assert _kwargs["require_key_release"] is True
             return next(actions)
 
-    monkeypatch.setattr(popup_menus, "SelectionPopup", FakeSelectionPopup)
+    monkeypatch.setattr(popup_menus.inventory, "SelectionPopup", FakeSelectionPopup)
     monkeypatch.setattr(popup, "_equip_item", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(popup, "_use_item", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(popup, "_drop_item", lambda *_args, **_kwargs: None)
@@ -1135,7 +1135,7 @@ def test_inventory_popup_restores_nested_action_background_on_error(monkeypatch)
         action_popup_ref["popup"] = action_popup
         return action_popup
 
-    monkeypatch.setattr(popup_menus, "SelectionPopup", fake_selection_popup)
+    monkeypatch.setattr(popup_menus.inventory, "SelectionPopup", fake_selection_popup)
 
     with pytest.raises(RuntimeError, match="nested boom"):
         popup.on_select(player, popup.items[0])
@@ -1190,7 +1190,7 @@ def test_equipment_popup_build_details_and_selection_flows(monkeypatch):
 
     flips = []
     monkeypatch.setattr(pygame.display, "flip", lambda: flips.append("flip"))
-    monkeypatch.setattr(popup_menus, "EquipmentSelectionPopup", FakeEquipPopup)
+    monkeypatch.setattr(popup_menus.equipment, "EquipmentSelectionPopup", FakeEquipPopup)
     assert popup.on_select(player, popup.items[0]) is None
     assert flips == []
 
@@ -1612,7 +1612,7 @@ def test_second_popup_menus_pass_covers_remaining_helper_branches(monkeypatch):
             confirm_calls.append(_kwargs)
             return False
 
-    monkeypatch.setattr(popup_menus, "ConfirmationPopup", FalseConfirm)
+    monkeypatch.setattr(popup_menus.inventory, "ConfirmationPopup", FalseConfirm)
     before = list(player.inventory["Weapons"])
     inv._drop_item(player, player.inventory["Weapons"][0], "Weapons", background_surface="bg")
     assert player.inventory["Weapons"] == before
@@ -1640,7 +1640,7 @@ def test_second_popup_menus_pass_covers_remaining_helper_branches(monkeypatch):
             return next(actions)
 
     real_equipment_selection_popup = popup_menus.EquipmentSelectionPopup
-    monkeypatch.setattr(popup_menus, "EquipmentSelectionPopup", UnequipPopup)
+    monkeypatch.setattr(popup_menus.equipment, "EquipmentSelectionPopup", UnequipPopup)
     monkeypatch.setattr(
         eq, "_unequip_item", lambda *_args, **_kwargs: setattr(eq, "_unequipped", True)
     )
@@ -1750,7 +1750,9 @@ def test_second_popup_menus_pass_covers_remaining_helper_branches(monkeypatch):
     selection.draw_details(player)
 
     player.inventory["Weapons"] = [DummyItem("Steel Sword")]
-    monkeypatch.setattr(popup_menus, "EquipmentSelectionPopup", real_equipment_selection_popup)
+    monkeypatch.setattr(
+        popup_menus.equipment, "EquipmentSelectionPopup", real_equipment_selection_popup
+    )
     equip_sel = popup_menus.EquipmentSelectionPopup(
         presenter,
         parent,
