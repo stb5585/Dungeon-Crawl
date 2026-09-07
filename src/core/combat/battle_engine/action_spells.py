@@ -47,9 +47,9 @@ class SpellActionMixin:
             return f"{self.attacker.name} fumbles the spell.\n"
 
         spell = self.attacker.spellbook["Spells"][choice]
-        from ... import curses
+        from ... import persistent_afflictions as afflictions
 
-        if curses.spell_delay(self.attacker):
+        if afflictions.spell_delay(self.attacker):
             pending = getattr(self.attacker, "_dysarthria_pending_spell", None)
             if pending != choice:
                 self.attacker._dysarthria_pending_spell = choice

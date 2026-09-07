@@ -653,9 +653,9 @@ def _apply_xenid_signature_rider(
         return f"{label} briefly improves {actor.name}'s {support}.\n"
     if rider == "curse" and target is not None and damage > 0:
         if random.random() < (0.15 if lesser else 0.30):
-            from ... import curses
+            from ... import persistent_afflictions as afflictions
 
-            return curses.apply_curse(
+            return afflictions.apply_curse(
                 target,
                 "Umbra",
                 source=label,

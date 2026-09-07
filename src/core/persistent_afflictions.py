@@ -21,18 +21,18 @@ FRACTURE_EXCLUDED = ("slime", "elemental", "construct", "apparition", "spirit")
 def ensure_curses(character: Any) -> dict[str, dict[str, Any]]:
     """Return a normalized persistent curse mapping for a character."""
     raw = getattr(character, "persistent_curses", None)
-    curses = raw if isinstance(raw, dict) else {}
+    afflictions = raw if isinstance(raw, dict) else {}
     for name in CURSE_NAMES:
-        value = curses.get(name)
+        value = afflictions.get(name)
         if value is True:
-            curses[name] = {"active": True, "turns": 0}
+            afflictions[name] = {"active": True, "turns": 0}
         elif not isinstance(value, dict):
-            curses[name] = {"active": False, "turns": 0}
+            afflictions[name] = {"active": False, "turns": 0}
         else:
             value["active"] = bool(value.get("active", False))
             value["turns"] = max(0, int(value.get("turns", 0) or 0))
-    character.persistent_curses = curses
-    return curses
+    character.persistent_curses = afflictions
+    return afflictions
 
 
 def has_curse(character: Any, name: str) -> bool:

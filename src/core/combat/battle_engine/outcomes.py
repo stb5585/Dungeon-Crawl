@@ -530,9 +530,9 @@ class BattleOutcomeMixin:
 
     def _process_defeat(self) -> None:
         """Handle defeat bookkeeping: reset enemy, player death."""
-        from ... import curses
+        from ... import persistent_afflictions as afflictions
 
-        curses.cure_curses(self.player)
+        afflictions.cure_curses(self.player)
         self.player.state = "normal"
         self.player.effects(end=True)
         if hasattr(self.player, "_grandmaster_battle_hit_types"):

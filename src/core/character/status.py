@@ -637,11 +637,11 @@ class CharacterStatusMixin:
                         else:
                             status_text += f"The magic affecting {self.name} has worn off.\n"
             try:
-                from .. import curses
+                from .. import persistent_afflictions as afflictions
 
-                status_text += curses.hemorrhaging_tick(self)
-                status_text += curses.swarms_tick(self)
-                status_text += curses.polydipsia_tick(self)
+                status_text += afflictions.hemorrhaging_tick(self)
+                status_text += afflictions.swarms_tick(self)
+                status_text += afflictions.polydipsia_tick(self)
             except Exception:
                 pass
             fractures = getattr(self, "fractures", {})

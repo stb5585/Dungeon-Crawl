@@ -16,10 +16,10 @@ if TYPE_CHECKING:
 
 def _hold_magical_thirst(user: Character) -> None:
     """Let a consumed drink postpone Polydipsia for one turn."""
-    from .. import curses
+    from .. import persistent_afflictions as afflictions
 
-    if curses.has_curse(user, "Polydipsia"):
-        curses.ensure_curses(user)["Polydipsia"]["held_turns"] = 1
+    if afflictions.has_curse(user, "Polydipsia"):
+        afflictions.ensure_curses(user)["Polydipsia"]["held_turns"] = 1
 
 
 class HealthPotion(Potion):

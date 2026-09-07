@@ -117,9 +117,9 @@ class CharacterUtilityMixin:
                 pass
             weapon_mod += self.stat_effects["Attack"].extra * self.stat_effects["Attack"].active
             total_mod = (weapon_mod + class_mod + self.combat.attack) * disarm_damage_multiplier
-            from .. import curses
+            from .. import persistent_afflictions as afflictions
 
-            total_mod *= curses.strength_multiplier(self)
+            total_mod *= afflictions.strength_multiplier(self)
             offense_multiplier = float(getattr(self, "_encounter_offense_multiplier", 1.0))
             return max(0, int(total_mod * (1 + berserk_per) * totem_bonus * offense_multiplier))
         if mod == "shield":
@@ -164,9 +164,9 @@ class CharacterUtilityMixin:
             total = (
                 int((armor_mod * int(not ignore)) + class_mod + self.combat.defense) * totem_bonus
             )
-            from .. import curses
+            from .. import persistent_afflictions as afflictions
 
-            if curses.has_curse(self, "Elijah"):
+            if afflictions.has_curse(self, "Elijah"):
                 total *= 0.65
             return max(0, int(total))
         if mod == "magic":
@@ -236,13 +236,13 @@ class CharacterUtilityMixin:
                 if int(exploration.get("resist_poison", 0) or 0) > 0:
                     res_mod += 0.50
             if typ == "Shadow":
-                from .. import curses
+                from .. import persistent_afflictions as afflictions
 
-                res_mod += curses.shadow_resistance_penalty(self)
+                res_mod += afflictions.shadow_resistance_penalty(self)
             if typ == "Fire":
-                from .. import curses
+                from .. import persistent_afflictions as afflictions
 
-                res_mod += curses.fire_resistance_penalty(self)
+                res_mod += afflictions.fire_resistance_penalty(self)
             resist_effect = self.magic_effects.get(f"Resist {typ}")
             if resist_effect is not None and resist_effect.active:
                 try:

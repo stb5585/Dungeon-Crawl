@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from .. import curses
+from .. import persistent_afflictions as afflictions
 from ..combat.combat_result import CombatResult
 from .base import PowerUp, Spell
 
@@ -292,7 +292,7 @@ class _CurseSpell(Spell):
             return "There is no target to curse.\n"
         if not fam:
             user.mana.current -= self.cost
-        return curses.apply_curse(
+        return afflictions.apply_curse(
             target,
             self.curse_name,
             source=self.name,
@@ -411,7 +411,7 @@ class ExpelCurse(Spell):
             except (AttributeError, KeyError, TypeError, ValueError):
                 pass
             user.mana.current -= cost
-        return curses.cure_curses(target)
+        return afflictions.cure_curses(target)
 
 
 class ShadowCurtain(Spell):

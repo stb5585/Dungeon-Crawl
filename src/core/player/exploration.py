@@ -341,10 +341,12 @@ class PlayerExplorationMixin:
         return False
 
     def max_weight(self):
-        from .. import curses
+        from .. import persistent_afflictions as afflictions
 
         return (
-            int(self.stats.strength * curses.strength_multiplier(self)) * 10 * self.level.pro_level
+            int(self.stats.strength * afflictions.strength_multiplier(self))
+            * 10
+            * self.level.pro_level
         )
 
     def current_weight(self):
