@@ -203,6 +203,18 @@ def test_shared_passives_modify_melee_elemental_and_initiative_rules():
     )
 
 
+def test_initiative_rating_surfaces_chronology_rule_errors(monkeypatch):
+    player = _player()
+    monkeypatch.setattr(
+        pathfinder,
+        "chronology_initiative_bonus",
+        lambda _character: (_ for _ in ()).throw(RuntimeError("chronology failed")),
+    )
+
+    with pytest.raises(RuntimeError, match="chronology failed"):
+        initiative_rating(player, enemies.Goblin())
+
+
 def test_creature_comforts_and_call_animal_use_existing_encounter_companion_system():
     player = _player()
     player.location_z = 0

@@ -205,6 +205,17 @@ class TestBattleEngineBasics:
 
         assert player.gameplay_stats["enemies_defeated"] == 1
 
+    def test_process_victory_surfaces_broken_experience_rule(self, monkeypatch):
+        engine, player, _enemy, _tile = self._make_engine()
+        monkeypatch.setattr(
+            player,
+            "exp_gain_multiplier",
+            lambda: (_ for _ in ()).throw(RuntimeError("experience rule failed")),
+        )
+
+        with pytest.raises(RuntimeError, match="experience rule failed"):
+            engine._process_victory()
+
     def test_process_defeat_updates_deaths_stat(self, monkeypatch):
         engine, player, enemy, _tile = self._make_engine()
 
@@ -262,12 +273,15 @@ class TestBattleEngineBasics:
 
         assert engine.battle_continues() is False
 
-    def test_get_enemy_action_falls_back_to_attack_on_ai_error(self):
+    def test_get_enemy_action_surfaces_ai_error(self):
         engine, player, enemy, _tile = self._make_engine()
+        engine.attacker = enemy
+        engine.defender = player
 
         enemy.options = lambda *_args: (_ for _ in ()).throw(RuntimeError("ai blew up"))
 
-        assert engine.get_enemy_action() == ("Attack", None)
+        with pytest.raises(RuntimeError, match="ai blew up"):
+            engine.get_enemy_action()
 
     def test_is_player_turn_counts_active_summon_as_player_turn(self):
         engine, player, enemy, _tile = self._make_engine()
