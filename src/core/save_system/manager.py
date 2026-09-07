@@ -317,6 +317,6 @@ class SaveManager:
             if os.path.isfile(filepath):
                 os.remove(filepath)
                 return True
-        except Exception:
-            pass
+        except (OSError, ValueError) as error:
+            print(f"Error deleting save: {error}")
         return False

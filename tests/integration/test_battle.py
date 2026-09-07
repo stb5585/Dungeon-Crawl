@@ -1376,6 +1376,8 @@ class TestEventBus:
             "subscriber_event_types": ["ATTACK"],
             "subscriber_counts": {"ATTACK": 1},
             "subscriber_total": 1,
+            "dispatch_failure_count": 0,
+            "last_dispatch_failure": None,
         }
 
         bus.disable()
@@ -1400,9 +1402,11 @@ class TestEventBus:
             "subscriber_event_types": [],
             "subscriber_counts": {},
             "subscriber_total": 0,
+            "dispatch_failure_count": 0,
+            "last_dispatch_failure": None,
         }
 
-    def test_emit_continues_after_callback_error(self, capsys):
+    def test_emit_continues_after_callback_error(self, caplog):
         from src.core.events.event_bus import EventBus, EventType
 
         bus = EventBus()
@@ -1419,9 +1423,9 @@ class TestEventBus:
 
         bus.emit_simple(EventType.ATTACK, {"value": 1})
 
-        captured = capsys.readouterr()
-        assert "Error in event callback: boom" in captured.out
+        assert "failed while handling ATTACK" in caplog.text
         assert received == [EventType.ATTACK]
+        assert bus.get_dispatch_failures()[0].message == "boom"
 
     def test_global_bus_helpers_reset_and_event_factories_populate_data(self):
         from src.core.combat.combat_result import CombatResult

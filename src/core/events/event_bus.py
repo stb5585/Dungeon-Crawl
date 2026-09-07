@@ -13,6 +13,7 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass, field
 from enum import Enum, auto
+import logging
 from typing import TYPE_CHECKING, Any, Callable
 
 if TYPE_CHECKING:
@@ -24,6 +25,7 @@ _COMBAT_EVENT_CONTEXT: ContextVar[dict[str, Any]] = ContextVar(
     "combat_event_context",
     default={},
 )
+logger = logging.getLogger(__name__)
 
 
 @contextmanager
@@ -138,6 +140,16 @@ class CombatEvent(GameEvent):
             self.data['result'] = self.result.to_dict()
 
 
+@dataclass(frozen=True)
+class EventDispatchFailure:
+    """Diagnostic retained when an optional subscriber callback fails."""
+
+    event_type: str
+    callback: str
+    exception_type: str
+    message: str
+
+
 class EventBus:
     """
     Central event dispatcher for the game.
@@ -146,10 +158,12 @@ class EventBus:
     event types and receive callbacks when those events are emitted.
     """
     
-    def __init__(self, max_history: int = 1000):
+    def __init__(self, max_history: int = 1000, max_dispatch_failures: int = 100):
         self._subscribers: dict[EventType, list[Callable[[GameEvent], None]]] = {}
         self._history: list[GameEvent] = []
         self._max_history: int = max(0, max_history)
+        self._dispatch_failures: list[EventDispatchFailure] = []
+        self._max_dispatch_failures = max(0, max_dispatch_failures)
         self._enabled: bool = True
     
     def subscribe(self, event_type: EventType, callback: Callable[[GameEvent], None]) -> None:
@@ -200,9 +214,23 @@ class EventBus:
             for callback in tuple(self._subscribers[event.type]):
                 try:
                     callback(event)
-                except Exception as e:
-                    # Log error but don't crash the game
-                    print(f"Error in event callback: {e}")
+                except Exception as error:
+                    failure = EventDispatchFailure(
+                        event_type=event.type.name,
+                        callback=getattr(callback, "__qualname__", repr(callback)),
+                        exception_type=type(error).__name__,
+                        message=str(error),
+                    )
+                    if self._max_dispatch_failures:
+                        self._dispatch_failures.append(failure)
+                        self._dispatch_failures = self._dispatch_failures[
+                            -self._max_dispatch_failures:
+                        ]
+                    logger.exception(
+                        "Event subscriber %s failed while handling %s",
+                        failure.callback,
+                        failure.event_type,
+                    )
     
     def emit_simple(
         self,
@@ -258,6 +286,14 @@ class EventBus:
             if callbacks
         }
 
+    def get_dispatch_failures(self) -> tuple[EventDispatchFailure, ...]:
+        """Return bounded subscriber failures for diagnostics and tests."""
+        return tuple(self._dispatch_failures)
+
+    def clear_dispatch_failures(self) -> None:
+        """Discard retained subscriber-failure diagnostics."""
+        self._dispatch_failures.clear()
+
     def get_diagnostics(self) -> dict[str, Any]:
         """Return compact event-bus state for debug screens and tests."""
         history_counts = self.get_history_counts()
@@ -273,6 +309,12 @@ class EventBus:
             "subscriber_event_types": sorted(subscriber_counts),
             "subscriber_counts": subscriber_counts,
             "subscriber_total": sum(subscriber_counts.values()),
+            "dispatch_failure_count": len(self._dispatch_failures),
+            "last_dispatch_failure": (
+                None
+                if not self._dispatch_failures
+                else self._dispatch_failures[-1].__dict__.copy()
+            ),
         }
     
     def enable(self) -> None:
