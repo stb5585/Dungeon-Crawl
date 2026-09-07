@@ -69,23 +69,20 @@ class CharacterEventsMixin:
                 self.haunted_turns = max(3, int(getattr(self, "haunted_turns", 0) or 0))
             if getattr(self, "shadow_curtain_turns", 0) > 0 and damage_type == "Physical":
                 target.health.current = max(0, target.health.current - max(1, int(damage * 0.25)))
-            try:
-                from .. import curses
+            from .. import curses
 
-                fracture_chance = 0.30 if curses.curse_is_empowered(target, "Elijah") else 0.20
-                if curses.has_curse(target, "Elijah") and random.random() < fracture_chance:
-                    curses.apply_fracture(target)
-                if (
-                    curses.has_curse(target, "Demon Eyes")
-                    and str(getattr(self, "enemy_typ", "")) == "Fiend"
-                ):
-                    multiplier = 0.40 if curses.curse_is_empowered(target, "Demon Eyes") else 0.25
-                    target.health.current = max(
-                        0,
-                        target.health.current - max(1, int(damage * multiplier)),
-                    )
-            except Exception:
-                pass
+            fracture_chance = 0.30 if curses.curse_is_empowered(target, "Elijah") else 0.20
+            if curses.has_curse(target, "Elijah") and random.random() < fracture_chance:
+                curses.apply_fracture(target)
+            if (
+                curses.has_curse(target, "Demon Eyes")
+                and str(getattr(self, "enemy_typ", "")) == "Fiend"
+            ):
+                multiplier = 0.40 if curses.curse_is_empowered(target, "Demon Eyes") else 0.25
+                target.health.current = max(
+                    0,
+                    target.health.current - max(1, int(damage * multiplier)),
+                )
             linked = getattr(target, "soul_bound_to", None)
             if linked is not None and linked is not target and linked.is_alive():
                 mortal_shackles = "Mortal Shackles" in getattr(
@@ -99,30 +96,25 @@ class CharacterEventsMixin:
                 else:
                     shared_damage = int(damage)
                 linked.health.current = max(0, linked.health.current - shared_damage)
-            try:
-                from ..classes import class_rings
+            from ..classes import class_rings, promotion_kits
 
-                reduced_damage = class_rings.reduce_major_hit(target, damage)
-                if reduced_damage < damage:
-                    target.health.current = min(
-                        target.health.max, target.health.current + (damage - reduced_damage)
-                    )
-                    damage = reduced_damage
-                shielded_damage, shield_message = class_rings.absorb_aerial_supremacy_shield(
-                    target, damage
+            reduced_damage = class_rings.reduce_major_hit(target, damage)
+            if reduced_damage < damage:
+                target.health.current = min(
+                    target.health.max, target.health.current + (damage - reduced_damage)
                 )
-                if shielded_damage < damage:
-                    target.health.current = min(
-                        target.health.max,
-                        target.health.current + (damage - shielded_damage),
-                    )
-                    damage = shielded_damage
-                if shield_message:
-                    from ..classes import promotion_kits
-
-                    promotion_kits._message(target, shield_message)
-            except Exception:
-                pass
+                damage = reduced_damage
+            shielded_damage, shield_message = class_rings.absorb_aerial_supremacy_shield(
+                target, damage
+            )
+            if shielded_damage < damage:
+                target.health.current = min(
+                    target.health.max,
+                    target.health.current + (damage - shielded_damage),
+                )
+                damage = shielded_damage
+            if shield_message:
+                promotion_kits._message(target, shield_message)
             if hasattr(self, "record_damage_dealt"):
                 self.record_damage_dealt(damage)
             if hasattr(target, "record_damage_taken"):
@@ -131,70 +123,59 @@ class CharacterEventsMixin:
                 self.record_archdruid_damage_dealt(damage, damage_type)
             if hasattr(target, "record_archdruid_damage_taken"):
                 target.record_archdruid_damage_taken(damage, damage_type)
-            try:
-                from ..classes import class_rings, promotion_kits
-
-                class_rings.record_damage_dealt(self, damage, damage_type)
-                class_rings.trigger_umbral_debt(self)
-                class_rings.divine_intervention(target)
-                promotion_kits.record_damage_event(
-                    self,
-                    target,
-                    damage,
-                    damage_type,
-                    metadata={
-                        "source": source,
-                        "attack_source": attack_source,
-                        "weapon_name": weapon_name,
-                        "weapon_slot": weapon_slot,
-                        "weapon_type": weapon_type,
-                        "ability_name": ability_name,
-                        "item_name": item_name,
-                        "is_critical": is_critical,
-                        "crit": is_critical,
-                    },
-                )
-                promotion_kits.record_damage_taken(target, damage, damage_type)
-            except Exception:
-                pass
-            try:
-                from ..classes import pathfinder
-
-                if attack_source == "spell" or source == "spell":
-                    pathfinder.record_elemental_spell_damage(self, damage_type)
-                pathfinder.record_elemental_damage_taken(target, damage_type)
-            except Exception:
-                pass
-        try:
-            from ..events.event_bus import EventType, create_combat_event, get_event_bus
-
-            event_bus = get_event_bus()
-            event_data = {
-                "damage": damage,
-                "damage_type": damage_type,
-                "is_critical": is_critical,
-                "crit": is_critical,
-                "source": source,
-            }
-            optional_payload = {
-                "attack_source": attack_source,
-                "weapon_name": weapon_name,
-                "weapon_slot": weapon_slot,
-                "weapon_type": weapon_type,
-                "ability_name": ability_name,
-                "item_name": item_name,
-            }
-            event_data.update({key: value for key, value in optional_payload.items() if value})
-            event_bus.emit(
-                create_combat_event(
-                    EventType.DAMAGE_DEALT if damage > 0 else EventType.MISS,
-                    actor=self,
-                    target=target,
-                    **event_data,
-                )
+            class_rings.record_damage_dealt(self, damage, damage_type)
+            class_rings.trigger_umbral_debt(self)
+            class_rings.divine_intervention(target)
+            promotion_kits.record_damage_event(
+                self,
+                target,
+                damage,
+                damage_type,
+                metadata={
+                    "source": source,
+                    "attack_source": attack_source,
+                    "weapon_name": weapon_name,
+                    "weapon_slot": weapon_slot,
+                    "weapon_type": weapon_type,
+                    "ability_name": ability_name,
+                    "item_name": item_name,
+                    "is_critical": is_critical,
+                    "crit": is_critical,
+                },
             )
-        except Exception:
-            pass
+            promotion_kits.record_damage_taken(target, damage, damage_type)
+            from ..classes import pathfinder
+
+            if attack_source == "spell" or source == "spell":
+                pathfinder.record_elemental_spell_damage(self, damage_type)
+            pathfinder.record_elemental_damage_taken(target, damage_type)
+        from ..events.event_bus import EventType, create_combat_event, get_event_bus
+
+        event_bus = get_event_bus()
+        event_data = {
+            "damage": damage,
+            "damage_type": damage_type,
+            "is_critical": is_critical,
+            "crit": is_critical,
+            "source": source,
+        }
+        optional_payload = {
+            "attack_source": attack_source,
+            "weapon_name": weapon_name,
+            "weapon_slot": weapon_slot,
+            "weapon_type": weapon_type,
+            "ability_name": ability_name,
+            "item_name": item_name,
+        }
+        event_data.update({key: value for key, value in optional_payload.items() if value})
+        event_bus.emit(
+            create_combat_event(
+                EventType.DAMAGE_DEALT if damage > 0 else EventType.MISS,
+                actor=self,
+                target=target,
+                **event_data,
+            )
+        )
 
     def _emit_healing_event(self, amount: int, source: str = "Unknown") -> None:
         """Helper to emit healing events."""
@@ -212,51 +193,33 @@ class CharacterEventsMixin:
                 self.restorative_barrier = int(getattr(self, "restorative_barrier", 0) or 0) + int(
                     amount
                 )
-            try:
-                from ..classes import ability_mechanics
+            from ..classes import ability_mechanics, class_rings
 
-                ability_mechanics.trigger_blessed_light(self, amount, source)
-            except Exception:
-                pass
-            try:
-                from ..classes import class_rings
-
-                echo = class_rings.shared_recovery_amount(self, amount)
+            ability_mechanics.trigger_blessed_light(self, amount, source)
+            echo = class_rings.shared_recovery_amount(self, amount)
+            familiar = getattr(self, "familiar", None)
+            if echo and familiar is not None and familiar.is_alive():
+                familiar.health.current = min(familiar.health.max, familiar.health.current + echo)
+            if getattr(self, "power_up", False) and "Eternal Conduit" in getattr(
+                self, "spellbook", {}
+            ).get("Skills", {}):
+                echo = max(1, int(amount * 0.25))
+                for summon in getattr(self, "summons", {}).values():
+                    if summon.is_alive():
+                        summon.health.current = min(summon.health.max, summon.health.current + echo)
                 familiar = getattr(self, "familiar", None)
-                if echo and familiar is not None and familiar.is_alive():
+                if familiar is not None and familiar.is_alive():
                     familiar.health.current = min(
                         familiar.health.max, familiar.health.current + echo
                     )
-            except Exception:
-                pass
-            try:
-                if getattr(self, "power_up", False) and "Eternal Conduit" in getattr(
-                    self, "spellbook", {}
-                ).get("Skills", {}):
-                    echo = max(1, int(amount * 0.25))
-                    for summon in getattr(self, "summons", {}).values():
-                        if summon.is_alive():
-                            summon.health.current = min(
-                                summon.health.max, summon.health.current + echo
-                            )
-                    familiar = getattr(self, "familiar", None)
-                    if familiar is not None and familiar.is_alive():
-                        familiar.health.current = min(
-                            familiar.health.max, familiar.health.current + echo
-                        )
-            except Exception:
-                pass
-        try:
-            from ..events.event_bus import EventType, create_combat_event, get_event_bus
+        from ..events.event_bus import EventType, create_combat_event, get_event_bus
 
-            event_bus = get_event_bus()
-            event_bus.emit(
-                create_combat_event(
-                    EventType.HEALING_DONE, actor=self, target=self, amount=amount, source=source
-                )
+        event_bus = get_event_bus()
+        event_bus.emit(
+            create_combat_event(
+                EventType.HEALING_DONE, actor=self, target=self, amount=amount, source=source
             )
-        except Exception:
-            pass
+        )
 
     def _emit_status_event(
         self,
@@ -268,52 +231,34 @@ class CharacterEventsMixin:
     ) -> None:
         """Helper to emit status effect events."""
         if applied:
-            try:
-                from ..classes import promotion_kits
+            from ..classes import archdruid, pathfinder, promotion_kits
 
-                if status_name == "Poison":
-                    promotion_kits._message(
-                        self,
-                        promotion_kits.add_aspect(self, "Venom"),
-                    )
-            except Exception:
-                pass
-            try:
-                from ..classes import archdruid
-
-                archdruid.record_status_applied(self, target, status_name)
-            except Exception:
-                pass
-            try:
-                from ..classes import pathfinder
-
-                message = pathfinder.activate_superstitious_barrier(
-                    target,
-                    status_name,
-                    duration,
+            if status_name == "Poison":
+                promotion_kits._message(
+                    self,
+                    promotion_kits.add_aspect(self, "Venom"),
                 )
-                if message:
-                    from ..classes import promotion_kits
-
-                    promotion_kits._message(target, message)
-            except Exception:
-                pass
-        try:
-            from ..events.event_bus import EventType, create_combat_event, get_event_bus
-
-            event_bus = get_event_bus()
-            event_bus.emit(
-                create_combat_event(
-                    EventType.STATUS_APPLIED if applied else EventType.STATUS_REMOVED,
-                    actor=self,
-                    target=target,
-                    status_name=status_name,
-                    duration=duration,
-                    source=source,
-                )
+            archdruid.record_status_applied(self, target, status_name)
+            message = pathfinder.activate_superstitious_barrier(
+                target,
+                status_name,
+                duration,
             )
-        except Exception:
-            pass
+            if message:
+                promotion_kits._message(target, message)
+        from ..events.event_bus import EventType, create_combat_event, get_event_bus
+
+        event_bus = get_event_bus()
+        event_bus.emit(
+            create_combat_event(
+                EventType.STATUS_APPLIED if applied else EventType.STATUS_REMOVED,
+                actor=self,
+                target=target,
+                status_name=status_name,
+                duration=duration,
+                source=source,
+            )
+        )
 
     def _emit_status_tick_event(
         self,
@@ -341,20 +286,17 @@ class CharacterEventsMixin:
             and hasattr(self, "record_archdruid_healing_done")
         ):
             self.record_archdruid_healing_done(amount)
-        try:
-            from ..events.event_bus import EventType, create_combat_event, get_event_bus
+        from ..events.event_bus import EventType, create_combat_event, get_event_bus
 
-            event_bus = get_event_bus()
-            event_bus.emit(
-                create_combat_event(
-                    EventType.STATUS_TICK,
-                    actor=self,
-                    target=target,
-                    status_name=status_name,
-                    amount=amount,
-                    kind=kind,
-                    source=source,
-                )
+        event_bus = get_event_bus()
+        event_bus.emit(
+            create_combat_event(
+                EventType.STATUS_TICK,
+                actor=self,
+                target=target,
+                status_name=status_name,
+                amount=amount,
+                kind=kind,
+                source=source,
             )
-        except Exception:
-            pass
+        )
