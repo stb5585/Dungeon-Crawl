@@ -1485,7 +1485,7 @@ def test_simple_list_jumpmods_totems_and_selection_popups(monkeypatch):
     simple.draw_details(player)
 
     messages = []
-    presenter.show_message = lambda message, **kwargs: messages.append(message)
+    presenter.show_message = lambda message, **kwargs: messages.append((message, kwargs))
     monkeypatch.setattr(
         popup_menus.map_tiles, "reveal_chalice_map_on_inspect", lambda _player, _value: None
     )
@@ -1500,6 +1500,7 @@ def test_simple_list_jumpmods_totems_and_selection_popups(monkeypatch):
         "value": SimpleNamespace(name="Chalice Map"),
     }
     assert simple.on_select(player, chalice_item) is None
+    assert messages[0][1]["image_path"].endswith("key_items/chalice_map.png")
 
     jump_skill = SimpleNamespace(
         modifications={"Crit": True, "Quake": False},

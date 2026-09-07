@@ -5,8 +5,6 @@ import random
 from functools import lru_cache
 from textwrap import wrap
 
-from src.paths import PYGAME_ASSETS_DIR
-
 from .. import enemies
 from ..player import DIRECTIONS, REALM_OF_CAMBION_LEVEL
 
@@ -99,9 +97,6 @@ CAMBION_PORTAL_PAIRS = [
     ((28, 15, REALM_OF_CAMBION_LEVEL), (22, 17, REALM_OF_CAMBION_LEVEL)),
     ((6, 18, REALM_OF_CAMBION_LEVEL), (12, 24, REALM_OF_CAMBION_LEVEL)),
 ]
-# This is the dungeon/location reveal image. The selected inventory item uses
-# the painterly item-art render mapped from item_render_map.json.
-CHALICE_ALTAR_IMAGE_PATH = str(PYGAME_ASSETS_DIR / "key_items" / "chalice_map.png")
 CHALICE_MAP_BLANK_DESC = "A weathered map whose ink appears almost completely faded."
 CHALICE_MAP_METHOD_DESC = (
     "A weathered map with barely visible marks. The hidden adventurer showed you a trick to reveal it—"
