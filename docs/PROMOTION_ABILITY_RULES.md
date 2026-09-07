@@ -2,7 +2,7 @@
 
 Promotion is a permanent purchase in the current class ability tree: two
 points for a first promotion and three points for a second promotion.
-`src/core/progression.py` is the runtime authority and
+`src/core/progression/` is the runtime authority and
 `src/core/progression_manifests/` owns authored paths, icon semantics, stage
 sizes, and structured stat groups. Trees may have multiple independent
 first-tier nodes; there is no mandatory lineage root.

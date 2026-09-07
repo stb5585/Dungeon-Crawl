@@ -25,6 +25,8 @@
 
 - Split the monolithic ability-tree manifest into shared metadata and five
   base-class lineage modules while preserving its existing import facade.
+- Split the progression runtime into value models, tree construction/registry,
+  and player-facing service modules while preserving `src.core.progression`.
 - Retired the obsolete tab-delimited numbered-map conversion workflow, made
   Tiled JSON the explicit numbered-map authority, and retained text loading
   only for the Liminal Gap special-area map.
