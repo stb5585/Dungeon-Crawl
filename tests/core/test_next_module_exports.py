@@ -41,6 +41,7 @@ BATTLE_BEHAVIOR_MODULES = (
     battle_engine.turn_execution,
     battle_engine.turn_lifecycle,
     battle_engine.turn_preparation,
+    battle_engine.single_target_resolution,
     battle_engine.turn_resolution,
 )
 
