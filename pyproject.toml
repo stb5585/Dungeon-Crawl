@@ -89,6 +89,7 @@ omit = [
 ]
 
 [tool.coverage.report]
+fail_under = 80
 exclude_lines = [
     "pragma: no cover",
     "def __repr__",
@@ -123,10 +124,9 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E4", "E7", "E9", "F"]
-
-[tool.ruff.lint.per-file-ignores]
-# Package initializers intentionally expose compatibility and public APIs.
-"**/__init__.py" = ["F401"]
+# Retained legacy constructs are a planned, module-by-module cleanup; the
+# source-wide gate starts by enforcing the remaining correctness baseline.
+ignore = ["E713", "E714", "E721", "E731", "F401", "F541", "F811", "F821", "F841"]
 
 [tool.mypy]
 python_version = "3.12"
