@@ -179,8 +179,8 @@ The preferred interpretation is layered rather than exclusive:
 The first safe slice is copy-only: update quest, victory, and class unlock
 messaging to distinguish boss defeat, Kaelenon restoration, and Zahhak binding.
 Do not change Red Dragon stats, floor gates, summon availability, class-kit
-mechanics, boss-room state, old saves, or reward eligibility without a separate
-mechanical spec.
+mechanics, boss-room state, current-save fields, or reward eligibility without
+a separate mechanical spec.
 
 ### Postgame And Harder Replay
 
@@ -199,18 +199,18 @@ The feature must define:
   and how duplicate quest-critical items, relics, Class Rings, companions,
   summons, and unique rewards are handled;
 - how harder difficulty scales enemies, rewards, shops, bounties, and bosses
-  without invalidating existing solo saves;
+  with an explicit current-save/reset policy;
 - how Pygame exposes the selection, warning, and save confirmation flow.
 
 Do not implement this as a loose post-ending autosave. It touches save
-compatibility, party composition, difficulty, economy, quest reset policy, and
-endgame story framing.
+current persistence, party composition, difficulty, economy, quest reset
+policy, and endgame story framing.
 
 ## Story-Content Decision Block
 
 Future story work should define the content beat, trigger, prerequisites, repeat
 behavior, save flags, special-event keys, UI surface, spoiler boundaries,
-affected NPCs/tiles/enemies, fallback behavior for old saves, regression tests,
+affected NPCs/tiles/enemies, missing-field/reset behavior, regression tests,
 and playtest checklist entry.
 
 For endgame polish, the block should also state whether the work is:
@@ -355,7 +355,7 @@ trials, two exploration/puzzle trials, and two choice/sacrifice trials.
 ## Vesperion Boss Concept
 
 Vesperion is distinct from the old Devil identity. The old Devil class may
-remain for legacy saves/tests, and the old Devil visual direction belongs to
+remain as an internal compatibility surface for tests, and its visual direction belongs to
 `Balor`, but the main plot routes to `Vesperion`.
 
 Vesperion's palette:
@@ -554,9 +554,9 @@ Implemented in Liminal Trials V2:
   vignettes.
 - Extended existing pygame Guardian gate interactions with V2 threshold and
   choice-specific story beats for all six Guardians.
-- Completed trials from older saves can recall an unseen deeper trial beat
-  using the stored Guardian choice, or the first valid choice as prose fallback,
-  without re-awarding consequences or changing route gates.
+- Completed trials with a missing vignette marker can recall an unseen deeper
+  trial beat using the stored Guardian choice, or the first valid choice as
+  prose fallback, without re-awarding consequences or changing route gates.
 - The Hooded Figure guide can review witnessed trial depths once at least one
   deeper vignette has been seen.
 - The slice remains story-state-only: no new rooms, enemies, rewards, permanent
@@ -585,7 +585,7 @@ Implemented in the Voluntas/Class-Identity Bridge slice:
 - Added a pygame Hooded Figure guide option, `Bridge Class Identity`, after
   class affirmation and `Revisit Class Path`.
 - Added one short bridge event for every fully playable Class Ring awakening
-  class, plus a `Wanderer` fallback for old saves or unknown class names.
+  class, plus a `Wanderer` fallback for missing or unknown class names.
 - The slice remains story-state-only: it uses the recorded affirmed class
   snapshot and does not change current class state, equipment, Class Ring
   mechanics, rewards, resources, combat tuning, or true-final prerequisites.
@@ -752,6 +752,7 @@ Implemented special-event keys include:
   saves.
 - Re-entering the final room after `main_story_complete` shows the ending
   reminder and does not restart combat.
-- Legacy saves normalize any new main-story flags safely.
+- New main-story flags define safe missing-field defaults or require a
+  documented local-save reset.
 - Legacy Devil compatibility surfaces remain present until a dedicated
   compatibility-retirement cleanup intentionally removes them.

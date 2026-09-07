@@ -91,4 +91,6 @@ interactive loop.
 
 Ordinary CI pushes validate source only. Artifact construction, headless frozen
 startup, and artifact upload run only for a manual workflow dispatch or a
-published release.
+published release. Linux is the only verified artifact target during
+development; Windows and macOS packaging are deferred until the
+pre-distribution milestone.

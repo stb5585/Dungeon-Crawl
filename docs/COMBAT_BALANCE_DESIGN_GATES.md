@@ -153,8 +153,8 @@ checks.
 ## Deferred One-Page Spec Gates
 
 Each item below needs a one-page spec before implementation. Each spec must
-define current behavior, target behavior, UI text/surfaces, save compatibility,
-tests, and balance assumptions.
+define current behavior, target behavior, UI text/surfaces, current-save/reset
+behavior, tests, and balance assumptions.
 
 ### Ability And Menu Ergonomics
 

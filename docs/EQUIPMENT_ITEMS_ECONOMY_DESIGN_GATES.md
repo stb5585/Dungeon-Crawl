@@ -128,7 +128,7 @@ Item identification is deferred. Future work must define:
 - inventory grouping;
 - loot popup display;
 - shop buy/sell behavior;
-- save fields and legacy defaults.
+- current-save fields and missing-field defaults or an explicit local reset.
 
 Identification must not obscure quest-critical items, relics, class rings, or
 other special inventory that the player needs to route progression.
@@ -233,7 +233,7 @@ Each block must cover:
 - shop, drop, crafting, or quest source;
 - subtype;
 - icon/render mapping;
-- save compatibility;
+- current-save fields and reset policy;
 - tests;
 - whether the item is inert reagent-only or actively usable.
 
@@ -249,7 +249,8 @@ Focused tests should cover:
 - Durability/repair: serializer defaults, durability loss triggers, repair
   pricing, broken behavior, shatter/loss rules, and UI display.
 - Identification: unidentified loot display, identify services/items, inventory
-  grouping, shop sell/buy behavior, old saves, and identified round trip.
+  grouping, shop sell/buy behavior, missing-field defaults, and identified
+  round trip.
 - Tome/equipment actives/modification: action availability, costs/cooldowns,
   combat results, item state changes, and save/load.
 - Economy content: rarity bucket placement, shop availability, drop eligibility,

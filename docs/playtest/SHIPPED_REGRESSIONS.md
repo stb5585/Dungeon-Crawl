@@ -105,7 +105,7 @@ remain the prompts; the evidence ledger is the running decision record.
     declining it returns without committing the promotion.
   - Expected: Canceling the vow choice cancels promotion.
   - Expected: Completing promotion grants the matching vow skill: `Redeem`, `Challenge`, `Interpose`, or `Judgment Riposte`.
-- [ ] Load or create a legacy Paladin/Crusader save with no vow, then visit the Church.
+- [ ] Load or create a Paladin/Crusader test fixture with missing vow state, then visit the Church.
   - Expected: The Church menu includes `Swear Paladin Vow`.
   - Expected: Choosing a vow persists it and grants the matching vow skill.
 - [ ] Visit the Church as a Crusader with a dormant Class Ring equipped or stored and a sworn vow.
@@ -281,8 +281,9 @@ remain the prompts; the evidence ledger is the running decision record.
 - [ ] Cast Fire/Ice/Water/Electric/Earth/Wind spells as Wizard before and after awakening the Wizard Class Ring.
   - Expected: Wizard affinity caps at 100, unlocks tier-3 spell upgrades at 80, and applies matching damage bonuses per full 10 affinity.
   - Expected: With the awakened ring equipped, matching casts gain +3 affinity instead of +2 and final mastery enables 3-stack school buffs.
-- [ ] Load a legacy Sorcerer/Wizard save with old 50-centered affinity values.
-  - Expected: Values migrate to the new 0-based model, clamp to the active class cap, and remain readable in character/ring status text.
+- [ ] Inject pre-normalization 50-centered affinity values for a Sorcerer or Wizard.
+  - Expected: Values normalize to the 0-based model, clamp to the active class
+    cap, and remain readable in character/ring status text.
 
 The September 2026 critical closure pass completed the Pathfinder promotion
 mechanics covered below. These entries are regression prompts for the shipped
@@ -952,7 +953,7 @@ absent from player-facing explanations.
   - Expected: Status changes to `Detailed`.
   - Expected: Resistances, known abilities, immunities, and features appear alongside Locations and Possible Drops after defeat.
   - Expected: Repeated combat-frame rendering does not inflate Seen count.
-- [ ] Defeat or load a legacy-save defeated enemy with no detailed record.
+- [ ] Defeat or load a defeated enemy with no detailed identity record.
   - Expected: The entry still appears from `kill_dict`, shows defeated count, and displays defeated-gated practical info.
 - [ ] Defeat or load a defeated boss with no detailed Bestiary record.
   - Expected: The entry shows defeated-gated practical info but does not suggest using Vision to reveal boss details.
@@ -1051,10 +1052,11 @@ absent from player-facing explanations.
   - Expected: Visible saves, temp leftovers, directory entries, and ignored entries are counted separately.
   - Expected: Hidden-entry filename lists identify temp leftovers, directory-like saves, and ignored files.
   - Expected: Hidden-entry totals match temp leftovers plus directory-like saves plus ignored files.
-- [ ] Load an older or partially malformed save with tile-state data.
+- [ ] Load a partially malformed current save with tile-state data.
   - Expected: Valid door/chest/boss room states still restore, while malformed tile-state entries are ignored.
   - Expected: Tile-state diagnostics count valid entries, malformed positions, malformed state payloads, and positions absent from the loaded world.
-  - Expected: Tile-state diagnostics identify restorable attribute counts and any unknown legacy/custom attribute keys.
+  - Expected: Tile-state diagnostics identify restorable attribute counts and
+    any unknown or custom attribute keys.
 - [x] Attempt to load a corrupted save file.
   - Expected: Loading fails gracefully without deleting or rewriting the corrupted file.
 
@@ -1063,7 +1065,8 @@ absent from player-facing explanations.
   - Expected: Quest completion and turned-in state are recorded correctly.
 - [ ] Inspect quest status summary diagnostics after accepting, completing, and turning in quests.
   - Expected: Main/Side/Bounty category counts distinguish total, completed, turned-in, ready-to-turn-in, and active quests.
-  - Expected: Malformed or legacy non-dictionary quest entries are ignored instead of crashing diagnostics.
+  - Expected: Malformed non-dictionary quest entries are ignored instead of
+    crashing diagnostics.
 
 ### Developer Tooling
 - [ ] Generate or inspect a `CombatResult` / `CombatResultGroup` diagnostic payload after combat.

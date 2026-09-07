@@ -66,7 +66,8 @@ an owner-controlled archive or have their disposition documented.
   utilities belonged to the retired curses frontend and were deleted. They
   remain recoverable from the `curses-ui-final` Git tag and repository history.
 
-The repository should eventually use Git LFS for large binary assets if clone
-size becomes a maintenance problem. This stabilization pass intentionally does
-not rewrite Git history; any LFS migration must be separately planned and
-coordinated.
+If binary history makes clone size a maintenance problem, evaluate Git LFS in
+a separately planned repository-maintenance task. Any adoption must inventory
+the exact file patterns, coordinate with every active clone, preserve recovery
+references, and explicitly approve the history rewrite; it must not occur as
+incidental asset cleanup.

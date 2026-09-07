@@ -55,7 +55,8 @@ The ordered planning sequence is:
 6. Decide whether dungeon resting belongs in the same gameplay revision.
 
 This order records dependencies, not pre-approval. Each phase must preserve
-stable IDs and save compatibility or include an explicit migration plan.
+stable IDs and the current save shape or explicitly require local development
+saves to be reset.
 
 ### First Implementation Target
 
@@ -162,8 +163,8 @@ findings using [`CLASS_KIT_EVIDENCE_NOTES.md`](CLASS_KIT_EVIDENCE_NOTES.md).
 2. `CHANGELOG.md` owns shipped history. Do not leave completed phase narratives
    in the active roadmap.
 3. Do not implement a `Spec Gate` by inference from a loose idea.
-4. Preserve stable ability, node, event, item, quest, and save identifiers unless
-   a migration is part of the approved slice.
+4. Preserve stable ability, node, event, item, quest, and current-save identifiers
+   unless the approved slice explicitly requires a local-save reset.
 5. Run focused tests for every changed system before broad validation.
 6. Update the owner document and roadmap in the same change when a gate is
    promoted, completed, or deferred.

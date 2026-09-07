@@ -42,6 +42,9 @@
 
 ### Documentation Consolidation And Refactor Sequencing
 
+- Retired the temporary stabilization checklist after moving its remaining
+  audio, asset-history, quality-gate, API, combat-refactor, save-policy, build,
+  and playtest follow-ups into their durable owner documents.
 - Replaced stale manually maintained game spreadsheets with 83 deterministic
   CSV exports covering current character, special, item, enemy, and quest
   catalogs, plus a regeneration tool and drift regression.

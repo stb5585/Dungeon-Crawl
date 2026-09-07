@@ -244,3 +244,11 @@ Default settings (configured in `SoundManager.__init__`):
 - Check `loops` parameter is set to -1
 
 Future audio enhancements are tracked in the Audio Gates section above.
+
+## Deferred Format Optimization
+
+The large runtime WAV files may be converted to OGG in a later size-focused
+slice. Preserve the current source-quality files in an owner-controlled archive
+or document their disposition first, then verify playback through Pygame and a
+fresh frozen-artifact smoke test. This optimization is independent of audio
+routing and is not required for the current Linux development build.

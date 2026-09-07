@@ -67,7 +67,8 @@ The decision must cover:
 - delayed, charged, forced, companion, summon, Totem, and reaction actions;
 - status-tick timing and defeat during pre-turn processing;
 - deterministic simulator behavior and diagnostics; and
-- how old saves and in-progress combat snapshots are handled.
+- whether current saves or in-progress combat snapshots are affected and
+  whether local saves must be reset.
 
 Numeric balance changes should follow the structural implementation and a new
 simulator baseline rather than being bundled into the architecture change.
@@ -138,7 +139,7 @@ The decision must cover:
 - a bounded or unbounded action shortcut bar;
 - assignment, rearrangement, defaults, empty slots, and controller/keyboard/
   mouse behavior;
-- save ownership and migration of player layouts;
+- current-save ownership of player layouts and any required local reset;
 - access to actions not placed on the shortcut bar;
 - separation of active, passive, reaction, and unavailable abilities;
 - spellbook and Character Menu responsibilities;
@@ -171,8 +172,8 @@ Owner reference:
 
 ## Progression Boundary
 
-The version-5 flat-level, separate-currency, point-purchased tree system is the
-current shipped baseline. All 49 trees were completed after the earlier
+The flat-level, separate-currency, point-purchased tree system is the current
+shipped baseline. All 49 trees were completed after the earlier
 progression checkpoint, so that checkpoint is no longer an active plan.
 
 Do not reopen progression as incidental cleanup. A replacement progression
@@ -183,7 +184,7 @@ proposal must explicitly decide:
 3. how learned abilities participate in later class development;
 4. how promotions close or carry options forward;
 5. which class resources are inherent versus purchased; and
-6. how version-5 node ownership and saves migrate.
+6. how node ownership is serialized and whether local saves must be reset.
 
 State: `Hold Unless Explicitly Promoted`.
 

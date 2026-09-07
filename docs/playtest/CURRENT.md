@@ -23,7 +23,7 @@ intermediate ruleset.
   combatants.
 - Verify ordinary, charged, delayed, forced, reaction, companion, summon, Totem,
   item, and flee actions under the revised timing model.
-- Verify save/load across every migrated gameplay or UI state.
+- Verify current-save round trips across every changed gameplay or UI state.
 
 ## Class Rings And Kit Evidence
 
