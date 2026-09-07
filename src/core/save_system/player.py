@@ -9,6 +9,11 @@ from .. import items, main_story, quest_progress, thieves_guild, town as town_co
 from ..character import Combat, Level, Resource, Stats
 from ..classes import bard, promotion_kits, transformation
 from .item_serialization import AbilitySerializer, ItemSerializer
+from .migrations import (
+    CURRENT_SAVE_VERSION,
+    UnsupportedSaveVersionError,
+    migrate_save_data,
+)
 from .models import CombatData, LevelData, ResourceData, StatsData
 from .quests import QuestDataSerializer
 from .summons import SummonSerializer
@@ -18,20 +23,7 @@ if TYPE_CHECKING:
     from typing import Any
 
 
-SAVE_VERSION = 5
-
-
-class UnsupportedSaveVersionError(ValueError):
-    """Raised when a save is incompatible with current flat progression."""
-
-    def __init__(self, actual_version: object):
-        super().__init__(
-            f"Unsupported save version {actual_version!r}; "
-            f"authored ability trees require version {SAVE_VERSION}. "
-            "Pre-release version-4 progression cannot be migrated safely."
-        )
-        self.actual_version = actual_version
-        self.required_version = SAVE_VERSION
+SAVE_VERSION = CURRENT_SAVE_VERSION
 
 
 class PlayerDataSerializer:
@@ -304,10 +296,7 @@ class PlayerDataSerializer:
             data: Serialized player data dictionary
             skip_tiles: If True, skip loading world tiles (for transform feature)
         """
-        if data.get("version") != SAVE_VERSION:
-            raise UnsupportedSaveVersionError(data.get("version"))
-        if not isinstance(data.get("progression"), dict):
-            raise UnsupportedSaveVersionError(data.get("version"))
+        data = migrate_save_data(data).data
 
         from ..player import Player, normalize_gameplay_stats
         from ..progression import ProgressionState, award_experience

@@ -4,7 +4,11 @@ import json
 import os
 from dataclasses import dataclass
 
-from .player import PlayerDataSerializer, UnsupportedSaveVersionError
+from .migrations import (
+    UnsupportedSaveVersionError,
+    migrate_save_data,
+)
+from .player import PlayerDataSerializer
 
 
 @dataclass(frozen=True)
@@ -14,6 +18,9 @@ class SaveLoadResult:
     player: object | None
     error: str | None = None
     unsupported_version: bool = False
+    migrated_from_version: int | None = None
+    backup_path: str | None = None
+    warning: str | None = None
 
 
 class SaveManager:
@@ -52,30 +59,52 @@ class SaveManager:
                 os.makedirs(dir_path, exist_ok=True)
 
     @staticmethod
+    def _write_json_atomic(filepath: str, data: dict[str, object]) -> None:
+        """Replace one JSON file only after a complete, durable temporary write."""
+        tmp_filepath = f"{filepath}.tmp"
+        try:
+            with open(tmp_filepath, "w", encoding="utf-8") as file_obj:
+                json.dump(data, file_obj, indent=2, default=str)
+                file_obj.flush()
+                os.fsync(file_obj.fileno())
+            os.replace(tmp_filepath, filepath)
+        except (OSError, TypeError, ValueError):
+            try:
+                os.remove(tmp_filepath)
+            except FileNotFoundError:
+                pass
+            raise
+
+    @staticmethod
+    def _persist_migration(
+        filepath: str,
+        original_text: str,
+        migrated_data: dict[str, object],
+        source_version: int,
+    ) -> str:
+        """Back up a legacy save and atomically replace it with migrated JSON."""
+        backup_path = f"{filepath}.v{source_version}.bak"
+        try:
+            with open(backup_path, "x", encoding="utf-8") as backup_file:
+                backup_file.write(original_text)
+                backup_file.flush()
+                os.fsync(backup_file.fileno())
+        except FileExistsError:
+            pass
+        SaveManager._write_json_atomic(filepath, migrated_data)
+        return backup_path
+
+    @staticmethod
     def save_player(player, filename: str, is_tmp: bool = False) -> bool:
         """Save player to file."""
         SaveManager.ensure_dirs()
 
-        tmp_filepath = None
         try:
             filepath = SaveManager._resolve_save_path(filename, is_tmp=is_tmp)
-            tmp_filepath = f"{filepath}.tmp"
-
-            # Serialize player
             data = PlayerDataSerializer.serialize(player)
-
-            # Write atomically so a failed save does not corrupt the prior file.
-            with open(tmp_filepath, 'w') as f:
-                json.dump(data, f, indent=2, default=str)
-            os.replace(tmp_filepath, filepath)
-
+            SaveManager._write_json_atomic(filepath, data)
             return True
-        except Exception as e:
-            if tmp_filepath and os.path.exists(tmp_filepath):
-                try:
-                    os.remove(tmp_filepath)
-                except OSError:
-                    pass
+        except (OSError, TypeError, ValueError) as e:
             print(f"Error saving player: {e}")
             return False
 
@@ -110,20 +139,54 @@ class SaveManager:
                 SaveManager.last_load_result = result
                 return result
 
-            # Load JSON
-            with open(filepath, 'r') as f:
-                data = json.load(f)
-
-            # Deserialize player
-            player = PlayerDataSerializer.deserialize(data, skip_tiles=skip_tiles)
-            result = SaveLoadResult(player)
+            with open(filepath, "r", encoding="utf-8") as file_obj:
+                original_text = file_obj.read()
+            data = json.loads(original_text)
+            migration = migrate_save_data(data)
+            player = PlayerDataSerializer.deserialize(
+                migration.data,
+                skip_tiles=skip_tiles,
+            )
+            backup_path = None
+            warning = None
+            if migration.migrated:
+                try:
+                    backup_path = SaveManager._persist_migration(
+                        filepath,
+                        original_text,
+                        migration.data,
+                        migration.source_version,
+                    )
+                except OSError as error:
+                    candidate_backup = f"{filepath}.v{migration.source_version}.bak"
+                    if os.path.isfile(candidate_backup):
+                        backup_path = candidate_backup
+                    warning = (
+                        "Save loaded after in-memory migration, but the migrated file "
+                        f"could not be written: {error}"
+                    )
+            result = SaveLoadResult(
+                player,
+                migrated_from_version=(
+                    migration.source_version if migration.migrated else None
+                ),
+                backup_path=backup_path,
+                warning=warning,
+            )
             SaveManager.last_load_result = result
             return result
         except UnsupportedSaveVersionError as error:
             result = SaveLoadResult(None, str(error), unsupported_version=True)
             SaveManager.last_load_result = result
             return result
-        except Exception as e:
+        except (
+            AttributeError,
+            IndexError,
+            KeyError,
+            OSError,
+            TypeError,
+            ValueError,
+        ) as e:
             print(f"Error loading player: {e}")
             result = SaveLoadResult(None, f"Unable to load save: {e}")
             SaveManager.last_load_result = result
