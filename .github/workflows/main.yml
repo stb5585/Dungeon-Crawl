@@ -36,18 +36,15 @@ jobs:
         run: |
           python -m ruff check \
             src/paths.py \
-            src/core/save_system/migrations.py \
             src/core/save_system/manager.py \
             src/core/events/event_bus.py \
             tools/build_distribution.py \
-            tests/integration/test_save_migrations.py \
             tests/test_distribution.py
 
       - name: Run strict typing baseline
         run: |
           python -m mypy --strict --follow-imports=skip \
             src/paths.py \
-            src/core/save_system/migrations.py \
             tools/build_distribution.py
 
       - name: Run tests with source coverage

@@ -45,9 +45,9 @@ class CombatSpriteMixin:
     def _colorize_sprite(self, sprite, enemy):
         """Prepare sprite for rendering.
 
-        With the new colored sprite system (ascii_to_sprite_colored.py), sprites
-        are generated with full color palettes that preserve detail and outlines.
-        This method now skips blanket colorization which was destroying detail.
+        Current combat sprites are authored as full-color PNG assets that
+        preserve detail and outlines. This method skips blanket colorization,
+        which would destroy that detail.
 
         Combat sprites now include:
         - Base color for the enemy type

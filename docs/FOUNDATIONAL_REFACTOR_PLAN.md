@@ -199,7 +199,7 @@ In scope:
 Out of scope:
 Core owner:
 UI surfaces:
-Stable IDs and save migration:
+Stable IDs and current-save/reset policy:
 Failure and fallback behavior:
 Automated regression targets:
 Focused manual validation:
@@ -212,7 +212,7 @@ The foundational refactor milestone is complete when:
 
 - approved core contracts are implemented without unresolved compatibility
   adapters that change gameplay;
-- stable identifiers and old-save behavior are validated;
+- stable identifiers and current-save behavior are validated;
 - combat simulator baselines have been regenerated for the new rules;
 - the supported combat UI represents every legal action and target state;
 - focused automated and manual checks pass for each changed slice; and

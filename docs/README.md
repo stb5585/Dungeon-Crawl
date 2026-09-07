@@ -49,7 +49,7 @@ priority, owner documents define current behavior and decision gates, and
 - [`STORY_AND_ENDGAME_DESIGN.md`](STORY_AND_ENDGAME_DESIGN.md) — current
   Vesperion/Voluntas canon, route contract, and future story gates.
 - [`QUEST_STORY_INTEGRATION_DESIGN.md`](QUEST_STORY_INTEGRATION_DESIGN.md) —
-  quest staging, save migration, and postgame dialogue boundaries.
+  quest staging, persisted-state normalization, and postgame dialogue boundaries.
 - [`EQUIPMENT_ITEMS_ECONOMY_DESIGN_GATES.md`](EQUIPMENT_ITEMS_ECONOMY_DESIGN_GATES.md)
   — equipment, item state, shop, and economy gates.
 - [`PRESENTATION_ASSET_DESIGN_GATES.md`](PRESENTATION_ASSET_DESIGN_GATES.md) —

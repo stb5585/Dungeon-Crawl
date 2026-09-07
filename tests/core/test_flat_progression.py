@@ -60,7 +60,6 @@ from src.core.progression import (
 from src.core.progression_manifest import CATALOG_ONLY_PROMOTED_TREE_CLASSES
 from src.core.races import Human, races_dict
 from src.core.save_system import PlayerDataSerializer
-from src.core.save_system.player import UnsupportedSaveVersionError
 
 
 def _player(class_type=Pathfinder, stats=30):
@@ -1393,7 +1392,7 @@ def test_retained_off_identity_abilities_survive_promoted_save_round_trip():
     assert restored.progression.chosen_promotions["Pathfinder"] == "Ranger"
 
 
-def test_progression_save_round_trip_and_legacy_rejection():
+def test_progression_save_round_trip():
     player = _player()
     initialize_progression(player)
     player.progression.unspent_attribute_points = 1
@@ -1401,6 +1400,7 @@ def test_progression_save_round_trip_and_legacy_rejection():
     player.spellbook["Skills"]["Adrenaline"] = Adrenaline()
     player.spellbook["Skills"]["Honed Attack"] = HonedAttack()
     serialized = PlayerDataSerializer.serialize(player)
+    assert "version" not in serialized
 
     restored = PlayerDataSerializer.deserialize(serialized, skip_tiles=True)
 
@@ -1411,9 +1411,6 @@ def test_progression_save_round_trip_and_legacy_rejection():
         restored.spellbook["Skills"]["Honed Attack"],
         HonedAttack,
     )
-    serialized["version"] = 4
-    with pytest.raises(UnsupportedSaveVersionError):
-        PlayerDataSerializer.deserialize(serialized, skip_tiles=True)
 
 
 def test_legacy_progression_refunds_attribute_training_node_currency():

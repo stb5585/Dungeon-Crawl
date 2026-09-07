@@ -10,11 +10,6 @@ from .. import town as town_core
 from ..character import Combat, Level, Resource, Stats
 from ..classes import bard, promotion_kits, transformation
 from .item_serialization import AbilitySerializer, ItemSerializer
-from .migrations import (
-    CURRENT_SAVE_VERSION,
-    UnsupportedSaveVersionError,
-    migrate_save_data,
-)
 from .models import CombatData, LevelData, ResourceData, StatsData
 from .quests import QuestDataSerializer
 from .summons import SummonSerializer
@@ -22,9 +17,6 @@ from .tiles import TileStateSerializer
 
 if TYPE_CHECKING:
     from typing import Any
-
-
-SAVE_VERSION = CURRENT_SAVE_VERSION
 
 
 class PlayerDataSerializer:
@@ -115,7 +107,6 @@ class PlayerDataSerializer:
 
         # Basic attributes
         data = {
-            "version": SAVE_VERSION,
             "name": player.name,
             "location": (player.location_x, player.location_y, player.location_z),
             "facing": player.facing,
@@ -298,8 +289,6 @@ class PlayerDataSerializer:
             data: Serialized player data dictionary
             skip_tiles: If True, skip loading world tiles (for transform feature)
         """
-        data = migrate_save_data(data).data
-
         from .. import classes, races
         from ..player import Player, normalize_gameplay_stats
         from ..progression import ProgressionState, award_experience

@@ -110,7 +110,7 @@ The broad playtest milestone resumes when:
 
 1. combat timing, targeting, and multi-enemy scope are stable;
 2. the combat action interface and resource presentation are stable;
-3. save migrations for the milestone are complete;
+3. current save serialization and any required local-save reset are complete;
 4. focused regression suites pass; and
 5. the roadmap records the new baseline to test.
 
@@ -130,8 +130,8 @@ These are bounded follow-ups, not current priorities:
 
 | Area | Required before promotion | Owner |
 | --- | --- | --- |
-| Durability, identification, item modification, equipment actives, and rarity | State model, serializer, old-save migration, UI, economy, and balance contract. | [`EQUIPMENT_ITEMS_ECONOMY_DESIGN_GATES.md`](EQUIPMENT_ITEMS_ECONOMY_DESIGN_GATES.md) |
-| Harvesting, salvage, destructible dungeon features, and deeper Cambion rooms | Content beat, tile state, reward, persistence, and inert old-save behavior. | [`DUNGEON_WORLD_ENCOUNTER_DESIGN_GATES.md`](DUNGEON_WORLD_ENCOUNTER_DESIGN_GATES.md) |
+| Durability, identification, item modification, equipment actives, and rarity | State model, current serializer, local-save reset policy, UI, economy, and balance contract. | [`EQUIPMENT_ITEMS_ECONOMY_DESIGN_GATES.md`](EQUIPMENT_ITEMS_ECONOMY_DESIGN_GATES.md) |
+| Harvesting, salvage, destructible dungeon features, and deeper Cambion rooms | Content beat, tile state, reward, current persistence, and local-save reset policy. | [`DUNGEON_WORLD_ENCOUNTER_DESIGN_GATES.md`](DUNGEON_WORLD_ENCOUNTER_DESIGN_GATES.md) |
 | Broader class-kit systems | One track-specific trigger, state, UI, save, action-economy, and tuning spec. | [`CLASS_KIT_DESIGN_GATES.md`](CLASS_KIT_DESIGN_GATES.md) |
 | Guardian rooms, mini-bosses, deeper Reflection, and Vesperion tuning | Story trigger, failure/retry behavior, route compatibility, and balance target. | [`STORY_AND_ENDGAME_DESIGN.md`](STORY_AND_ENDGAME_DESIGN.md) |
 | Dynamic/spatial audio and final asset replacement | Concrete asset list, runtime routing, fallback, and settings behavior. | [`SOUND_SYSTEM.md`](SOUND_SYSTEM.md) |

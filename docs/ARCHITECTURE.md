@@ -52,27 +52,18 @@ incrementally by typed, ordered modifier pipelines operating on explicit
 combat context and result models. That work needs compatibility tests and
 design approval; it is not part of stabilization.
 
-## Saves And Migration
+## Saves
 
-Save payloads have an explicit integer version. Version 5 is current. Repository
-history proves that `master` produced version 3 and that the intermediate
-`improvements` serializer continued to produce version 3 before changing
-directly to version 5. No committed version 4 writer was found.
+Save files are development artifacts, not a distributed compatibility
+contract. The game writes only the current serializer shape and does not stamp
+a format version, migrate historical payloads, or promise that saves survive
+refactors. `SaveManager` still uses atomic replacement so an interrupted write
+does not leave a partially written current save.
 
-`SaveManager` reads and validates a payload before deserialization. Supported
-legacy payloads migrate in memory, deserialize, receive an exact
-`.v<version>.bak` copy of their original text, and are then replaced atomically.
-If replacement fails, the loaded player and original/backup remain recoverable
-and the caller receives a structured warning. Unknown versions and version 4
-fail with a specific unsupported-version result rather than guessed data.
-
-Version 3 staged class levels map to global levels by adding 0, 30, or 60 for
-base, first-promotion, and second-promotion classes. Promotion lineage and
-points earned through the resulting global level are reconstructed. Serialized
-statistics already include legacy attribute choices, so attribute points are
-not granted again. Version 3 did not preserve enough information to translate
-partial progress within the current level; migrated total experience is set to
-the threshold for the reconstructed level.
+When a gameplay or content refactor changes persisted state, developers may
+delete local saves and create new ones. A future public-distribution milestone
+must define a versioning and migration policy before any release that promises
+save compatibility.
 
 ## Resources And Writable Data
 

@@ -47,8 +47,8 @@ Run a specific test:
 High-coverage areas:
 - `test_data_driven_abilities.py`: migrated abilities and effect behaviors
 - `core/test_character.py` / `integration/test_battle.py`: character logic, battle engine flow, gameplay statistics, save/load compatibility, and battle logging
-- `integration/test_save_migrations.py`: supported legacy migration, backup,
-  invalid-data, interrupted-write, and current-version behavior
+- `integration/test_save_system_manager.py`: current-save round trips, atomic
+  persistence behavior, metadata, and invalid-file handling
 - `test_distribution.py`: runtime path and frozen-build configuration contracts
 - Dungeon renderer/math tests:
   - `tests/ui_pygame/test_dungeon_renderer_smoke.py`

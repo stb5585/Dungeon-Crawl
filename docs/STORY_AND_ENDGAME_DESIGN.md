@@ -55,8 +55,8 @@ setting fit, spoiler boundaries, and how answers are remembered or echoed.
 
 No fate-question implementation is authorized until a promoted spec defines the
 mechanical contract for any stat, resource, item, class, race, or starting-route
-effect. The spec must preserve Pygame presentation, define save fields and
-old-save fallback behavior before adding fields, and state whether answers can
+effect. The spec must preserve Pygame presentation, define current save fields
+and the local-save reset policy before adding fields, and state whether answers can
 be changed, replayed, or surfaced later in story text.
 
 ### Class Identity And Class Ring Tie-Ins
@@ -223,7 +223,7 @@ For endgame polish, the block should also state whether the work is:
 - save/profile/postgame progression.
 
 Only the first two categories can usually be promoted without simulator or
-save-migration evidence. The others need explicit old-save behavior, frontend
+persistence evidence. The others need explicit current-save behavior, frontend
 parity, and regression coverage before code changes.
 
 ## Core Direction
@@ -731,7 +731,7 @@ Implemented special-event keys include:
   remains story-only.
 - The Class Ring Reflection echo plays once on the first affirmed Reflection
   attempt and does not change HP, MP, XP, loot, or route flags.
-- Reflection Voluntas answers record once, reject invalid old-save values, and
+- Reflection Voluntas answers record once, reject invalid persisted values, and
   never change Reflection stats, AI, rewards, or true-final gates.
 - Reflection path mirror plays once before combat and does not alter Reflection
   stats, AI, HP, MP, XP, loot, rewards, failures, or true-final gates.

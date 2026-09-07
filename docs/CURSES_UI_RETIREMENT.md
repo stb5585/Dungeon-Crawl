@@ -17,14 +17,15 @@ frontends were supported.
 - `game_curses.py`;
 - `src/ui_curses/`;
 - `tests/ui_curses/`;
+- `ascii_files/` terminal enemy sprites and the unused ASCII conversion tools;
 - curses package entry points;
 - curses launch behavior in `launch.sh` and `launch_debug.sh`;
 - active documentation and acceptance requirements that mandated curses
   parity.
 
-The standard launch scripts now start Pygame. Existing JSON saves remain
-compatible because both frontends used the shared
-`src/core/save_system/SaveManager`.
+The standard launch scripts now start Pygame. Pre-release saves are development
+artifacts and do not retain a compatibility guarantee with the archived
+frontend or older serializer shapes.
 
 ## Terminal Development Contract
 

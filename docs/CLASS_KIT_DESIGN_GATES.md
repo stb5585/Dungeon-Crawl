@@ -320,7 +320,7 @@ implementation:
   for a select few."
 
 Future class ability work needs a one-page decision block covering trigger,
-class eligibility, storage/save migration, combat and exploration behavior,
+class eligibility, current-save storage, combat and exploration behavior,
 UI/menu/status/combat-log copy, event/audio needs, balance assumptions,
 regression tests, and manual playtest checks.
 
@@ -439,7 +439,7 @@ If future Totem work changes code, cover the final behavior with focused tests a
 The specs below are the accepted V1 implementation contracts. They remain here
 as durable behavior references and as the source of follow-up tuning/polish
 items. When changing one of these class tracks, preserve the storage boundaries,
-save migration assumptions, and test intent unless a later spec explicitly
+current-save assumptions, and test intent unless a later spec explicitly
 updates them.
 
 ### Diviner/Astromancer Foresight Threads

@@ -32,4 +32,4 @@ Hidden Cache remains an awakened-ring reward rather than a tree loot loop.
   discounts, Inspect progress, Revelation accuracy/refunds/debuffs, and the
   new active techniques.
 - Preserve movement failure handling, combat cleanup, Case rank concealment,
-  and old-save defaults.
+  and current-save defaults.

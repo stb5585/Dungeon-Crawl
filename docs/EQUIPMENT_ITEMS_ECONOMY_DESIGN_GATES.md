@@ -10,8 +10,8 @@ should keep active, deferred, or decision-gated direction.
 Status: `Shop Polish V1 Shipped; Save-Heavy Systems Gated`
 
 The first implementation slice shipped for the existing pygame shop purchase
-and equip-now flow because it did not require new economy rules, new item state,
-or save migration.
+and equip-now flow because it did not require new economy rules or new item
+state.
 
 Save-heavy systems such as durability, identification, item modification, and
 equipment active abilities remain deferred until their serializer, UI, economy,
@@ -113,7 +113,7 @@ Future work must define:
 - broken-state behavior;
 - shatter or permanent-loss rules;
 - display in inventory, equipment, shop, loot, and combat UI;
-- old-save defaults.
+- current-save defaults and the local-save reset policy.
 
 Any durability fields must round-trip for equipped items, inventory, special
 inventory, and storage.

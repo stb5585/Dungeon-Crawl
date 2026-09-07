@@ -698,5 +698,6 @@ every Lancer development node into the editable Dragoon tree. Mage to Sorcerer
 and Sorcerer to Wizard keep only the declared elemental nodes editable in the
 current tree; other historical development stays closed.
 
-Version-5 node and talent IDs are persistent save API. Renaming one requires a
-save migration or alias.
+Node and talent IDs are part of the current save shape. Renaming one may
+invalidate local development saves; update the serializer and document any
+required local-save reset.

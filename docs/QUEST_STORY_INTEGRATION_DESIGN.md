@@ -111,10 +111,10 @@ relic count reflects the actual saved inventory.
 ## Implementation Notes
 
 - Quest content lives in `src/core/data/content/quests.json`.
-- Staged relic quest synchronization and old-save migration live in
+- Staged relic quest synchronization and missing-field normalization live in
   `src/core/quest_progress.py`.
-- Save-load migration is called from `src/core/save_system/player.py` after special
-  inventory restoration.
+- Quest-state normalization is called from `src/core/save_system/player.py`
+  after special inventory restoration.
 - Pygame quest turn-in paths call the shared quest-progress helper.
 - Relic discovery copy uses `src/core/map_tiles/rules.py` so presentation and
   core validation share the same mapping and fallback.
@@ -132,7 +132,8 @@ relic count reflects the actual saved inventory.
 - Turning in `Uncertain Reports` creates active `The Holy Relics`.
 - The six-relic count and completion behavior remain correct in Pygame quest
   menus and headless core validation.
-- Old-save migration covers 0, 1, 5, 6, completed, and turned-in relic states.
+- Current quest-state normalization covers 0, 1, 5, 6, completed, and turned-in
+  relic states.
 - Red Dragon continuity copy distinguishes progression victory, Kaelenon
   restoration, and Zahhak binding without changing quest gates or rewards.
 - Postgame town dialogue appears only after `main_story_complete`, is

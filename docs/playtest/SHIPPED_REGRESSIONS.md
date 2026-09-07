@@ -174,7 +174,7 @@ remain the prompts; the evidence ledger is the running decision record.
   - Expected: Any postgame town dialogue is local, repeat-safe, and does not mutate quests, shops, bounties, church, inn, barracks, storage, or NPC availability.
 - [ ] Run the Red Dragon route as a Lancer/Dragoon with `Recover`, as a Thaumaturgist choosing a Dragon Xenid, and as another class.
   - Expected: Copy distinguishes Red Dragon boss defeat, Kaelenon restoration, and Zahhak binding without declaring ordinary victories invalid.
-  - Expected: Red Dragon floor gates, boss-room state, `Dragon's Fury`, summon unlock behavior, class rewards, and old-save compatibility remain unchanged.
+  - Expected: Red Dragon floor gates, boss-room state, `Dragon's Fury`, summon unlock behavior, class rewards, and current-save behavior remain unchanged.
 
 ### Weapon Discipline And School Affinity
 - [ ] Promote a Warrior to Weapon Master.

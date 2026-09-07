@@ -16,7 +16,6 @@ SAVE_MODULES = (
     save_system.quests,
     save_system.player,
     save_system.manager,
-    save_system.migrations,
 )
 EFFECT_FACTORY_MODULES = (
     ability_loader.effect_base,
@@ -72,7 +71,7 @@ def test_save_system_facade_preserves_all_serializer_classes():
         for name, implementation in _owned_classes(module).items()
     }
 
-    assert len(exports) == 17
+    assert len(exports) == 14
     for name, implementation in exports.items():
         assert getattr(save_system, name) is implementation
 

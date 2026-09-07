@@ -4,14 +4,16 @@
 
 ### Promotion Stabilization
 
-- Added tested version 3-to-5 save migration with exact legacy backups,
-  atomic replacement, explicit unsupported-version results, and safe recovery
-  from interrupted persistence.
+- Recorded pre-release saves as disposable development artifacts, removed
+  format versions and legacy migration machinery, and retained atomic writes
+  for current saves.
 - Added portable checkout/frozen resource paths and platform user-data paths,
   moved runtime maps into package data, and introduced a PyInstaller onedir
   build with a headless frozen-resource smoke test.
-- Added the MIT license and complete asset-category inventory, separated review
-  sheets from runtime assets, and recorded unresolved audio attribution.
+- Added the MIT license and complete asset-category inventory, recorded
+  OpenAI-generated and Sonniss-derived audio provenance, separated review
+  sheets from runtime assets, and removed retired curses ASCII enemy art and
+  conversion tools.
 - Made startup failures return nonzero, moved signal registration into the
   executable path, and retained structured event subscriber failures.
 - Established Black, isort, focused Ruff, incremental strict mypy, source
