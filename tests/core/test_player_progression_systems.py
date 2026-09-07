@@ -108,10 +108,9 @@ class TestPlayerTopLevelHelpers:
         monkeypatch.setattr(
             player_module.persistence.SaveManager,
             "load_player",
-            lambda filename, is_tmp=False, skip_tiles=False: load_calls.append(
-                (filename, is_tmp, skip_tiles)
-            )
-            or loaded,
+            lambda filename, is_tmp=False, skip_tiles=False: (
+                load_calls.append((filename, is_tmp, skip_tiles)) or loaded
+            ),
         )
         monkeypatch.setattr(
             player_module.persistence.SaveManager,
@@ -285,9 +284,7 @@ class TestPlayerTopLevelHelpers:
 
         assert [narrow_world[(x, 0, 2)].kind for x in range(3)] == ["Floor", "Wall", "Floor"]
 
-    def test_load_tiles_uses_json_levels_and_loads_optional_side_areas(
-        self, tmp_path, monkeypatch
-    ):
+    def test_load_tiles_uses_json_levels_and_loads_optional_side_areas(self, tmp_path, monkeypatch):
         map_dir = tmp_path / "maps"
         map_dir.mkdir()
         (map_dir / "map_level_0.txt").write_text("Wall\tCavePath\n", encoding="utf-8")
