@@ -65,6 +65,12 @@ priority, owner documents define current behavior and decision gates, and
 
 ## Architecture And Development References
 
+- [`ARCHITECTURE.md`](ARCHITECTURE.md) — runtime boundaries, public APIs,
+  combat/targeting flow, save policy, resource paths, and distribution.
+- [`STABILIZATION_CHECKLIST.md`](STABILIZATION_CHECKLIST.md) — completed
+  stabilization work, validation, deferred cleanup, and owner decisions.
+- [`ASSET_PROVENANCE.md`](ASSET_PROVENANCE.md) — runtime and source asset
+  inventory, known provenance, and attribution gaps.
 - [`EVENT_EMISSIONS.md`](EVENT_EMISSIONS.md) — event contracts, emitters,
   consumers, and payload-enrichment gate.
 - [`CURSES_UI_RETIREMENT.md`](CURSES_UI_RETIREMENT.md) — why Pygame is the only

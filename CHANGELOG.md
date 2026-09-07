@@ -2,6 +2,23 @@
 
 ## [Unreleased]
 
+### Promotion Stabilization
+
+- Added tested version 3-to-5 save migration with exact legacy backups,
+  atomic replacement, explicit unsupported-version results, and safe recovery
+  from interrupted persistence.
+- Added portable checkout/frozen resource paths and platform user-data paths,
+  moved runtime maps into package data, and introduced a PyInstaller onedir
+  build with a headless frozen-resource smoke test.
+- Added the MIT license and complete asset-category inventory, separated review
+  sheets from runtime assets, and recorded unresolved audio attribution.
+- Made startup failures return nonzero, moved signal registration into the
+  executable path, and retained structured event subscriber failures.
+- Established Black, isort, focused Ruff, incremental strict mypy, source
+  coverage, and release/manual-only artifact CI gates.
+- Restored current architecture and stabilization decision records and fixed
+  stale launcher, module, map, and test-count documentation.
+
 ### Development Tool And Code Cleanup
 
 - Separated optional Class Ring modifiers from ordinary second-promotion

@@ -841,7 +841,7 @@ absent from player-facing explanations.
 - [x] Enter combat with more than six available actions, such as debug actions plus item/spell/skill options.
   - Expected: The action menu compacts into the bottom command panel without overflowing below the screen.
   - Expected: Long action labels are truncated inside their cells instead of overlapping neighboring actions.
-- [x] Set `DUNGEON_FORCE_ENEMY=Test` before running `launch_gui_debug.sh`, or uncomment the matching line in the script during an ability debug run.
+- [x] Set `DUNGEON_FORCE_ENEMY=Test` before running `./launch_debug.sh`, or uncomment the matching line in the script during an ability debug run.
   - Expected: Random encounters use the requested debug enemy only while the environment variable is active, then return to normal catalog selection.
 - [x] Trigger random encounters while an active defeat, collection, or bounty quest target exists in the current floor catalog.
   - Expected: The helper can softly prefer matching active quest enemies, ignores completed/turned-in targets, falls back on soft-roll failure, and still lets debug overrides win.

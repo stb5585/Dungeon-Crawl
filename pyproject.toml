@@ -81,7 +81,7 @@ addopts = [
 ]
 
 [tool.coverage.run]
-source = ["."]
+source = ["src"]
 omit = [
     "tests/*",
     ".venv/*",
@@ -116,6 +116,17 @@ exclude = '''
 profile = "black"
 line_length = 100
 skip_gitignore = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F"]
+
+[tool.ruff.lint.per-file-ignores]
+# Package initializers intentionally expose compatibility and public APIs.
+"**/__init__.py" = ["F401"]
 
 [tool.mypy]
 python_version = "3.12"
