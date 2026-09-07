@@ -9,14 +9,9 @@ from dataclasses import dataclass
 from typing import NamedTuple
 
 from ..combat.encounter import CombatEncounter
-from . import base, early, endgame, midgame
 from .base import Enemy
-from .catalog import (
-    CURATED_PAIR_SPECS,
-    FUNHOUSE_ENEMY_SPECS,
-    resolve_enemy_specs,
-    resolve_random_enemy_catalog,
-)
+from .catalog import CURATED_PAIR_SPECS
+from .registry import ENEMY_NAMESPACE, FUNHOUSE_ENEMY_CATALOG, RANDOM_ENEMY_CATALOG
 
 AbilityFactory = Callable[[], object]
 EnemyFactory = Callable[[], Enemy]
@@ -25,12 +20,9 @@ _random_enemy_override: RandomEnemyOverride | None = None
 _RANDOM_ENEMY_OVERRIDE_ENV = "DUNGEON_FORCE_ENEMY"
 _CURATED_ENCOUNTER_OVERRIDE_ENV = "DUNGEON_FORCE_ENCOUNTER"
 
-_ENEMY_NAMESPACE = {
-    name: value
-    for module in (base, early, midgame, endgame)
-    for name, value in vars(module).items()
-    if isinstance(value, type) and issubclass(value, Enemy)
-}
+_ENEMY_NAMESPACE = ENEMY_NAMESPACE
+_RANDOM_ENEMY_CATALOG = RANDOM_ENEMY_CATALOG
+_FUNHOUSE_ENEMY_CATALOG = FUNHOUSE_ENEMY_CATALOG
 
 
 class EnemyCandidate(NamedTuple):
@@ -225,12 +217,3 @@ def funhouse_enemy() -> Enemy:
     """Return a random Funhouse challenge enemy."""
     _name, enemy_factory = random.choice(_FUNHOUSE_ENEMY_CATALOG)
     return enemy_factory()
-
-
-_RANDOM_ENEMY_CATALOG: dict[str, tuple[tuple[str, EnemyFactory], ...]] = (
-    resolve_random_enemy_catalog(_ENEMY_NAMESPACE)
-)
-_FUNHOUSE_ENEMY_CATALOG: tuple[tuple[str, EnemyFactory], ...] = resolve_enemy_specs(
-    FUNHOUSE_ENEMY_SPECS,
-    _ENEMY_NAMESPACE,
-)

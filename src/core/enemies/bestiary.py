@@ -3,8 +3,12 @@
 from __future__ import annotations
 
 from .base import Enemy
-from .catalog import BOSS_DROP_ENEMY_NAMES, FIXED_LOCATION_HINTS
-from .encounters import _FUNHOUSE_ENEMY_CATALOG, _RANDOM_ENEMY_CATALOG
+from .catalog import (
+    BOSS_DROP_ENEMY_NAMES,
+    FIXED_LOCATION_HINTS,
+    FUNHOUSE_ENEMY_SPECS,
+    RANDOM_ENEMY_SPECS,
+)
 
 
 def bestiary_location_hints(enemy_name: str) -> list[str]:
@@ -14,12 +18,12 @@ def bestiary_location_hints(enemy_name: str) -> list[str]:
         return []
 
     locations: set[str] = set()
-    for level, catalog in _RANDOM_ENEMY_CATALOG.items():
+    for level, catalog in RANDOM_ENEMY_SPECS.items():
         label = "Early Dungeon" if str(level) == "0" else f"Dungeon Level {level}"
-        if any(enemy_name == clean_name for enemy_name, _factory in catalog):
+        if any(enemy_name == clean_name for enemy_name, _class_name in catalog):
             locations.add(label)
 
-    if any(enemy_name == clean_name for enemy_name, _factory in _FUNHOUSE_ENEMY_CATALOG):
+    if any(enemy_name == clean_name for enemy_name, _class_name in FUNHOUSE_ENEMY_SPECS):
         locations.add("Funhouse")
 
     locations.update(FIXED_LOCATION_HINTS.get(clean_name, ()))
