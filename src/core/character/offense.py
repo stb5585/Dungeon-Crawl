@@ -38,6 +38,9 @@ if TYPE_CHECKING:
     from .models import WeaponDamageResult
 
 
+_WeaponStrike = tuple[str | None, int, int, int, float]
+
+
 class CharacterOffenseMixin:
     def _honed_attack_critical_multiplier(self, multiplier: float) -> float:
         """Increase only the bonus portion of weapon critical damage."""
@@ -307,60 +310,22 @@ class CharacterOffenseMixin:
         cover(bool): whether the attack can be blocked by a familiar or pet
         hit(bool): guarantees hit if target doesn't dodge
         """
-        from ..classes import (
-            ability_mechanics,
-            footpad,
-            grandmaster,
-            healer,
-            paladin,
-            pathfinder,
-            warrior,
-        )
+        from ..classes import ability_mechanics, footpad, grandmaster, healer
         from ..combat.combat_result import CombatResult, CombatResultGroup
 
-        revelation_message = ""
-        dmg_mod *= pathfinder.melee_damage_multiplier(self)
-        dmg_mod *= pathfinder.ranger_weapon_damage_multiplier(self, defender)
-        if getattr(defender, "_distracted_turns", 0):
-            defender._distracted_turns = 0
-        concealed_attack = bool(getattr(self, "_combat_concealed", False))
-        self._surprise_attack = bool(getattr(self, "_surprise_ready", False) or concealed_attack)
-        self._surprise_ready = False
-        if concealed_attack:
-            self._combat_concealed = False
-            if "Shadow Evasion" in self.spellbook.get("Skills", {}):
-                self._shadow_evasion_turns = 2
-        conversion_bonus = pathfinder.consume_conversion(self)
-
-        try:
-            from ..classes import mage_mechanics
-
-            dmg_mod *= mage_mechanics.melee_damage_multiplier(self)
-            fire_inside_active = random.random() < mage_mechanics.fire_inside_critical_bonus(self)
-            mage_mechanics.consume_fire_inside(self)
-        except Exception:
-            fire_inside_active = False
-        self._last_attack_parried = False
-        self._last_weapon_primary_damage = 0
-        self._last_weapon_primary_damage_instances = []
-        if defender.magic_effects["Ice Block"].active or defender.tunnel:
-            self._surprise_attack = False
-            return f"{self.name}'s attack has no effect.\n", False, crit
-        warrior.record_attack(self, defender)
-        if getattr(self, "_twist_fate_success", False):
-            hit = True
-            self._twist_fate_success = False
+        dmg_mod, hit, conversion_bonus, fire_inside_active, early_result = (
+            self._prepare_weapon_damage(
+                defender,
+                dmg_mod,
+                hit,
+                crit,
+            )
+        )
+        if early_result is not None:
+            return early_result
         hits = []  # indicates if the attack was successful for means of ability/weapon affects
         crits = []
-        if attack_slots is not None:
-            attacks = list(attack_slots)
-        else:
-            attacks = []
-            maim = self.physical_effects.get("Maim")
-            if maim is None or not maim.active:
-                attacks.append("Weapon")
-            if use_offhand and self.equipment["OffHand"].typ == "Weapon":
-                attacks.append("OffHand")
+        attacks = self._weapon_attack_slots(use_offhand, attack_slots)
         if not attacks:
             self._surprise_attack = False
             return f"{self.name} cannot use their main-hand weapon.\n", False, crit
@@ -399,113 +364,27 @@ class CharacterOffenseMixin:
                     self.equipment[att].special_effect(results)
                     weapon_dam_str += f"{self.name} leers at {defender.name}.\n"
                     break
-            natural_crit = crit == 1 and (
-                fire_inside_active
-                or self.critical_chance(att) + critical_chance_modifier > random.random()
+            strike = self._calculate_weapon_strike(
+                defender,
+                att,
+                dmg_mod,
+                crit,
+                critical_chance_modifier,
+                critical_multiplier,
+                conversion_bonus,
+                fire_inside_active,
             )
-            crits[i] = int(critical_multiplier or 2) if natural_crit else crit
-            weapon_type = getattr(self.equipment[att], "subtyp", None)
-            style_modifier = (
-                ability_mechanics.duelist_damage_multiplier(self)
-                * grandmaster.two_handed_damage_multiplier(self, att)
-                * paladin.sword_and_board_damage_multiplier(self)
-                * grandmaster.perfect_form_damage_multiplier(
-                    self,
-                    weapon_type,
-                )
-                * healer.staff_damage_multiplier(self, weapon_type)
-            )
-            cripple = self.physical_effects.get("Cripple")
-            cripple_modifier = (
-                1.0 - min(0.90, max(0.0, float(cripple.extra or 0)))
-                if cripple is not None and cripple.active
-                else 1.0
-            )
-            dmg = max(
-                1,
-                int(
-                    dmg_mod
-                    * style_modifier
-                    * cripple_modifier
-                    * self.check_mod(att.lower(), enemy=defender)
-                ),
-            )
-            crit_per = random.uniform(1, crits[i])
-            crit_per = self._honed_attack_critical_multiplier(crit_per)
-            crit_per = warrior.commitment_critical_multiplier(self, crit_per)
-            if crits[i] > 1:
-                crit_per += conversion_bonus
-            try:
-                from ..classes import promotion_kits
+            weapon_type, damage, dmg, crits[i], crit_per = strike
 
-                crit_per = promotion_kits.focused_assault_critical_multiplier(
-                    self,
-                    crit_per,
-                )
-            except Exception:
-                pass
-            crit_per = grandmaster.brutish_critical_multiplier(
-                self,
+            hits[i], dodge, hit_per, hit_message = self._resolve_weapon_hit(
+                defender,
+                att,
                 weapon_type,
-                crit_per,
+                hit,
+                counterattack,
+                accuracy_modifier,
             )
-            if crit_per > 1:
-                try:
-                    from ..classes import paladin
-
-                    crit_per *= paladin.retribution_crit_damage_multiplier(self)
-                except Exception:
-                    pass
-            if weapon_type == "Sword":
-                precision = getattr(self, "grandmaster_technique_stacks", {}).get(
-                    "Sword Precision", {}
-                )
-                stacks = int(precision.get("stacks", 0) or 0)
-                if stacks and crit_per > 1:
-                    crit_per += 0.05 * min(3, stacks)
-            # Half Elf racial sin: slightly reduced crit spike potential.
-            try:
-                if (
-                    getattr(getattr(self, "race", None), "name", None) == "Half Elf"
-                    and crit_per > 1.0
-                ):
-                    crit_per = 1.0 + ((crit_per - 1.0) * HALF_ELF_CRIT_SPIKE_MULTIPLIER)
-            except Exception:
-                pass
-            damage = max(0, int(dmg * crit_per))
-
-            # defender variables
-            if not hit:
-                dodge_chance = defender.dodge_chance(self)
-                if counterattack:
-                    dodge_chance += pathfinder.counterattack_dodge_bonus(defender)
-                dodge = dodge_chance > random.random()
-                hit_per = self.hit_chance(defender, typ="weapon")
-                hit_per += accuracy_modifier
-                hit_per += ability_mechanics.dual_wield_accuracy_modifier(self, att)
-                hit_per += grandmaster.accuracy_bonus(self, weapon_type)
-                hit_per += grandmaster.two_handed_accuracy_bonus(self, att)
-                hit_per += grandmaster.perfect_form_accuracy_bonus(
-                    self,
-                    weapon_type,
-                )
-                hit_per += ability_mechanics.polearm_accuracy_modifier(self, weapon_type)
-                hit_per += ability_mechanics.monkey_grip_accuracy_modifier(self, att)
-                from ..classes import promotion_kits
-
-                hit_per += promotion_kits.aerial_accuracy_bonus(self)
-                hit_per += promotion_kits.focused_assault_accuracy(self)
-                hit_per += promotion_kits.jinx_accuracy_modifier(self)
-                hits[i] = hit_per > random.random()
-            else:
-                dodge = False
-            if defender.incapacitated():
-                dodge = False
-                hits[i] = True
-            if (dodge or not hits[i]) and footpad.try_do_over(self):
-                dodge = defender.dodge_chance(self) > random.random()
-                hits[i] = (hit_per > random.random()) and not dodge
-                weapon_dam_str += f"{self.name} uses Do-over to reroll the missed attack.\n"
+            weapon_dam_str += hit_message
 
             # --- Phase 1: Dodge / Parry ---
             if dodge:
@@ -776,11 +655,221 @@ class CharacterOffenseMixin:
                     self.class_effects["Power Up"].active = False
                     self.class_effects["Power Up"].duration = 0
 
+        return self._finish_weapon_damage(
+            defender,
+            basic_attack,
+            hits,
+            crits,
+            weapon_dam_str,
+        )
+
+    # ------------------------------------------------------------------ #
+    #  weapon_damage helper methods                                       #
+    # ------------------------------------------------------------------ #
+
+    def _weapon_attack_slots(
+        self,
+        use_offhand: bool,
+        attack_slots: tuple[str, ...] | None,
+    ) -> list[str]:
+        """Return the weapon slots that may resolve for this attack."""
+        if attack_slots is not None:
+            return list(attack_slots)
+
+        attacks: list[str] = []
+        maim = self.physical_effects.get("Maim")
+        if maim is None or not maim.active:
+            attacks.append("Weapon")
+        if use_offhand and self.equipment["OffHand"].typ == "Weapon":
+            attacks.append("OffHand")
+        return attacks
+
+    def _prepare_weapon_damage(
+        self,
+        defender: Character,
+        dmg_mod: float,
+        hit: bool,
+        crit: int,
+    ) -> tuple[float, bool, float, bool, WeaponDamageResult | None]:
+        """Apply one-time attacker setup before resolving weapon slots."""
+        from ..classes import pathfinder, warrior
+
+        dmg_mod *= pathfinder.melee_damage_multiplier(self)
+        dmg_mod *= pathfinder.ranger_weapon_damage_multiplier(self, defender)
+        if getattr(defender, "_distracted_turns", 0):
+            defender._distracted_turns = 0
+        concealed_attack = bool(getattr(self, "_combat_concealed", False))
+        self._surprise_attack = bool(getattr(self, "_surprise_ready", False) or concealed_attack)
+        self._surprise_ready = False
+        if concealed_attack:
+            self._combat_concealed = False
+            if "Shadow Evasion" in self.spellbook.get("Skills", {}):
+                self._shadow_evasion_turns = 2
+        conversion_bonus = pathfinder.consume_conversion(self)
+
+        try:
+            from ..classes import mage_mechanics
+
+            dmg_mod *= mage_mechanics.melee_damage_multiplier(self)
+            fire_inside_active = random.random() < mage_mechanics.fire_inside_critical_bonus(self)
+            mage_mechanics.consume_fire_inside(self)
+        except Exception:
+            fire_inside_active = False
+        self._last_attack_parried = False
+        self._last_weapon_primary_damage = 0
+        self._last_weapon_primary_damage_instances = []
+        if defender.magic_effects["Ice Block"].active or defender.tunnel:
+            self._surprise_attack = False
+            return (
+                dmg_mod,
+                hit,
+                conversion_bonus,
+                fire_inside_active,
+                (f"{self.name}'s attack has no effect.\n", False, crit),
+            )
+        warrior.record_attack(self, defender)
+        if getattr(self, "_twist_fate_success", False):
+            hit = True
+            self._twist_fate_success = False
+        return dmg_mod, hit, conversion_bonus, fire_inside_active, None
+
+    def _calculate_weapon_strike(
+        self,
+        defender: Character,
+        slot: str,
+        dmg_mod: float,
+        crit: int,
+        critical_chance_modifier: float,
+        critical_multiplier: int | None,
+        conversion_bonus: float,
+        fire_inside_active: bool,
+    ) -> _WeaponStrike:
+        """Calculate one slot's pre-defense damage without mutating the defender."""
+        from ..classes import ability_mechanics, grandmaster, healer, paladin, warrior
+
+        natural_crit = crit == 1 and (
+            fire_inside_active
+            or self.critical_chance(slot) + critical_chance_modifier > random.random()
+        )
+        crit_multiplier = int(critical_multiplier or 2) if natural_crit else crit
+        weapon_type = getattr(self.equipment[slot], "subtyp", None)
+        style_modifier = (
+            ability_mechanics.duelist_damage_multiplier(self)
+            * grandmaster.two_handed_damage_multiplier(self, slot)
+            * paladin.sword_and_board_damage_multiplier(self)
+            * grandmaster.perfect_form_damage_multiplier(self, weapon_type)
+            * healer.staff_damage_multiplier(self, weapon_type)
+        )
+        cripple = self.physical_effects.get("Cripple")
+        cripple_modifier = (
+            1.0 - min(0.90, max(0.0, float(cripple.extra or 0)))
+            if cripple is not None and cripple.active
+            else 1.0
+        )
+        unmitigated_damage = max(
+            1,
+            int(
+                dmg_mod
+                * style_modifier
+                * cripple_modifier
+                * self.check_mod(slot.lower(), enemy=defender)
+            ),
+        )
+        crit_percent = random.uniform(1, crit_multiplier)
+        crit_percent = self._honed_attack_critical_multiplier(crit_percent)
+        crit_percent = warrior.commitment_critical_multiplier(self, crit_percent)
+        if crit_multiplier > 1:
+            crit_percent += conversion_bonus
+        try:
+            from ..classes import promotion_kits
+
+            crit_percent = promotion_kits.focused_assault_critical_multiplier(self, crit_percent)
+        except Exception:
+            pass
+        crit_percent = grandmaster.brutish_critical_multiplier(self, weapon_type, crit_percent)
+        if crit_percent > 1:
+            try:
+                crit_percent *= paladin.retribution_crit_damage_multiplier(self)
+            except Exception:
+                pass
+        if weapon_type == "Sword":
+            precision = getattr(self, "grandmaster_technique_stacks", {}).get("Sword Precision", {})
+            stacks = int(precision.get("stacks", 0) or 0)
+            if stacks and crit_percent > 1:
+                crit_percent += 0.05 * min(3, stacks)
+        try:
+            if (
+                getattr(getattr(self, "race", None), "name", None) == "Half Elf"
+                and crit_percent > 1.0
+            ):
+                crit_percent = 1.0 + ((crit_percent - 1.0) * HALF_ELF_CRIT_SPIKE_MULTIPLIER)
+        except Exception:
+            pass
+        return (
+            weapon_type,
+            max(0, int(unmitigated_damage * crit_percent)),
+            unmitigated_damage,
+            crit_multiplier,
+            crit_percent,
+        )
+
+    def _resolve_weapon_hit(
+        self,
+        defender: Character,
+        slot: str,
+        weapon_type: str | None,
+        hit: bool,
+        counterattack: bool,
+        accuracy_modifier: float,
+    ) -> tuple[bool, bool, float, str]:
+        """Resolve dodge, accuracy, and Do-over for one non-guaranteed attack."""
+        from ..classes import ability_mechanics, footpad, grandmaster, pathfinder, promotion_kits
+
+        message = ""
+        hit_per = 1.0
+        resolved_hit = hit
+        if not hit:
+            dodge_chance = defender.dodge_chance(self)
+            if counterattack:
+                dodge_chance += pathfinder.counterattack_dodge_bonus(defender)
+            dodge = dodge_chance > random.random()
+            hit_per = self.hit_chance(defender, typ="weapon")
+            hit_per += accuracy_modifier
+            hit_per += ability_mechanics.dual_wield_accuracy_modifier(self, slot)
+            hit_per += grandmaster.accuracy_bonus(self, weapon_type)
+            hit_per += grandmaster.two_handed_accuracy_bonus(self, slot)
+            hit_per += grandmaster.perfect_form_accuracy_bonus(self, weapon_type)
+            hit_per += ability_mechanics.polearm_accuracy_modifier(self, weapon_type)
+            hit_per += ability_mechanics.monkey_grip_accuracy_modifier(self, slot)
+            hit_per += promotion_kits.aerial_accuracy_bonus(self)
+            hit_per += promotion_kits.focused_assault_accuracy(self)
+            hit_per += promotion_kits.jinx_accuracy_modifier(self)
+            resolved_hit = hit_per > random.random()
+        else:
+            dodge = False
+        if defender.incapacitated():
+            dodge = False
+            resolved_hit = True
+        if (dodge or not resolved_hit) and footpad.try_do_over(self):
+            dodge = defender.dodge_chance(self) > random.random()
+            resolved_hit = (hit_per > random.random()) and not dodge
+            message = f"{self.name} uses Do-over to reroll the missed attack.\n"
+        return resolved_hit, dodge, hit_per, message
+
+    def _finish_weapon_damage(
+        self,
+        defender: Character,
+        basic_attack: bool,
+        hits: list[bool],
+        crits: list[int],
+        weapon_dam_str: str,
+    ) -> WeaponDamageResult:
+        """Apply end-of-attack effects after all weapon slots have resolved."""
+        from ..classes import footpad
+
         if basic_attack:
             drained = footpad.drain_basic_attack_mana(
-                self,
-                defender,
-                self._last_weapon_primary_damage,
+                self, defender, self._last_weapon_primary_damage
             )
             if drained:
                 weapon_dam_str += f"Mana Depletion drains {drained} MP from {defender.name}.\n"
@@ -791,11 +880,7 @@ class CharacterOffenseMixin:
 
             choice = str(promotion_kits.combat_state(self).get("action_choice") or "")
             if choice not in promotion_kits.RISKY_LUCK_ACTIONS:
-                weapon_dam_str += promotion_kits.record_luck_roll(
-                    self,
-                    any(hits),
-                    "attack",
-                )
+                weapon_dam_str += promotion_kits.record_luck_roll(self, any(hits), "attack")
         except Exception:
             pass
         try:
@@ -810,10 +895,6 @@ class CharacterOffenseMixin:
             pass
         self._surprise_attack = False
         return weapon_dam_str, any(hits), max(crits)
-
-    # ------------------------------------------------------------------ #
-    #  weapon_damage helper methods                                       #
-    # ------------------------------------------------------------------ #
 
     def _reset_maelstrom(self) -> None:
         """Reset Maelstrom Weapon consecutive-hit counter."""
