@@ -158,9 +158,7 @@ class TurnResolutionMixin:
             else (
                 actor_id
                 if scope == TargetScope.SELF
-                else PLAYER_ACTOR_ID
-                if scope == TargetScope.SINGLE_ENEMY
-                else None
+                else PLAYER_ACTOR_ID if scope == TargetScope.SINGLE_ENEMY else None
             )
         )
         raw_portion = getattr(self, "_last_combat_result", None)

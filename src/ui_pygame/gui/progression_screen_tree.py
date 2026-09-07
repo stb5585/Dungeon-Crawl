@@ -501,9 +501,7 @@ class ProgressionTreeMixin:
                 (
                     3
                     if status.node.id in required_endpoint_ids
-                    else 2
-                    if status.node.id in required_path_ids or selected
-                    else 1
+                    else 2 if status.node.id in required_path_ids or selected else 1
                 ),
             )
         self._draw_tree_warning(rect)
