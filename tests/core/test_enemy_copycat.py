@@ -11,8 +11,8 @@ sys.path.insert(0, str(Path(__file__).parents[2]))
 
 
 def _make_player():
-    from tests.test_framework import TestGameState
     from src.core import abilities
+    from tests.test_framework import TestGameState
 
     player = TestGameState.create_player(
         name="Hero",
@@ -49,11 +49,19 @@ def test_copycat_clones_abilities_not_same_instances():
     enemy.options(player, [], None)
 
     copied_fireball = next(
-        (ab for ab in enemy.spellbook.get("Spells", {}).values() if getattr(ab, "name", "") == "Fireball"),
+        (
+            ab
+            for ab in enemy.spellbook.get("Spells", {}).values()
+            if getattr(ab, "name", "") == "Fireball"
+        ),
         None,
     )
     copied_charge = next(
-        (ab for ab in enemy.spellbook.get("Skills", {}).values() if getattr(ab, "name", "") == "Charge"),
+        (
+            ab
+            for ab in enemy.spellbook.get("Skills", {}).values()
+            if getattr(ab, "name", "") == "Charge"
+        ),
         None,
     )
 
@@ -73,10 +81,14 @@ def test_copycat_only_copies_affordable_non_blacklisted():
     enemy.options(player, [], None)
 
     # Ensure blacklisted items not present (by class name / behavior)
-    assert all(getattr(ab, "_class_name", ab.__class__.__name__) != "Teleport"
-               for ab in enemy.spellbook.get("Spells", {}).values())
-    assert all(getattr(ab, "_class_name", ab.__class__.__name__) != "SlotMachine"
-               for ab in enemy.spellbook.get("Skills", {}).values())
+    assert all(
+        getattr(ab, "_class_name", ab.__class__.__name__) != "Teleport"
+        for ab in enemy.spellbook.get("Spells", {}).values()
+    )
+    assert all(
+        getattr(ab, "_class_name", ab.__class__.__name__) != "SlotMachine"
+        for ab in enemy.spellbook.get("Skills", {}).values()
+    )
 
     # Ensure over-cost source did not get copied
     assert all(getattr(ab, "cost", 0) < 9999 for ab in enemy.spellbook.get("Spells", {}).values())

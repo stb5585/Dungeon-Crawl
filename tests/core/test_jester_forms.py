@@ -60,7 +60,9 @@ def test_jester_switches_forms_based_on_player_profile(monkeypatch):
         lambda candidates, weights, k=1: [candidates[weights.index(max(weights))]],
     )
 
-    target.check_mod = lambda mod, enemy=None, typ=None, luck_factor=1, **_kwargs: 80 if mod == "magic" else 20
+    target.check_mod = lambda mod, enemy=None, typ=None, luck_factor=1, **_kwargs: (
+        80 if mod == "magic" else 20
+    )
     text = jester.special_effects(target)
     assert text == (
         "The Jester changes form: Yellow Heckler.\n"
@@ -81,7 +83,9 @@ def test_jester_switches_forms_based_on_player_profile(monkeypatch):
 
     jester._jester_form_shift_delay = 0
     target.magic_effects["Reflect"].active = False
-    target.check_mod = lambda mod, enemy=None, typ=None, luck_factor=1, **_kwargs: 90 if mod == "weapon" else 20
+    target.check_mod = lambda mod, enemy=None, typ=None, luck_factor=1, **_kwargs: (
+        90 if mod == "weapon" else 20
+    )
     text = jester.special_effects(target)
     assert text == (
         "The Jester changes form: Green Cutpurse.\n"
@@ -146,10 +150,17 @@ def test_jester_weighted_choice_keeps_all_forms_possible(monkeypatch):
 
     captured = {}
     monkeypatch.setattr(enemies.random, "random", lambda: 0.0)
-    monkeypatch.setattr(enemies.random, "choices", lambda candidates, weights, k=1: captured.update({
-        "candidates": tuple(candidates),
-        "weights": tuple(weights),
-    }) or ["violet"])
+    monkeypatch.setattr(
+        enemies.random,
+        "choices",
+        lambda candidates, weights, k=1: captured.update(
+            {
+                "candidates": tuple(candidates),
+                "weights": tuple(weights),
+            }
+        )
+        or ["violet"],
+    )
 
     jester._jester_form_shift_delay = 0
     assert "Purple Hexer" in jester.special_effects(target)

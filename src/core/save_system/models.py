@@ -8,6 +8,7 @@ from dataclasses import dataclass
 @dataclass
 class ResourceData:
     """Serializable resource (health/mana)."""
+
     max: int
     current: int
 
@@ -15,6 +16,7 @@ class ResourceData:
 @dataclass
 class StatsData:
     """Serializable character stats."""
+
     strength: int = 0
     intel: int = 0
     wisdom: int = 0
@@ -26,6 +28,7 @@ class StatsData:
 @dataclass
 class CombatData:
     """Serializable combat stats."""
+
     attack: int = 0
     defense: int = 0
     magic: int = 0
@@ -35,6 +38,7 @@ class CombatData:
 @dataclass
 class LevelData:
     """Serializable level info."""
+
     level: int = 1
     pro_level: int = 1
     exp: int = 0
@@ -44,6 +48,7 @@ class LevelData:
 @dataclass
 class StatusEffectData:
     """Serializable status effect."""
+
     active: bool = False
     duration: int = 0
     extra: int = 0

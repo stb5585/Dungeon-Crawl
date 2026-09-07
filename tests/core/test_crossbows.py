@@ -40,9 +40,7 @@ def test_crossbow_fires_selected_bolt_after_attack_and_can_recover_it():
     pack.use(ranger)
     before = target.health.current
 
-    message, hit, damages = crossbow.fire_crossbow(
-        ranger, target, rng=_Rng(0.0, 0.0)
-    )
+    message, hit, damages = crossbow.fire_crossbow(ranger, target, rng=_Rng(0.0, 0.0))
 
     assert hit
     assert target.health.current < before
@@ -58,9 +56,7 @@ def test_repeating_crossbow_spends_two_unrecovered_bolts():
     pack = items.WoodenBolts()
     ranger.modify_inventory(pack)
 
-    _message, hit, damages = crossbow.fire_crossbow(
-        ranger, target, rng=_Rng(0.0, 1.0, 0.0, 1.0)
-    )
+    _message, hit, damages = crossbow.fire_crossbow(ranger, target, rng=_Rng(0.0, 1.0, 0.0, 1.0))
 
     assert hit
     assert len(damages) == 2
@@ -104,13 +100,9 @@ def test_magic_bolts_add_arcane_damage_only_with_magic_crossbow():
     ranger.modify_inventory(items.MagicBolts())
 
     ranger.equipment["OffHand"] = items.HandCrossbow()
-    _message, _hit, ordinary_damages = crossbow.fire_crossbow(
-        ranger, target, rng=_Rng(0.0, 1.0)
-    )
+    _message, _hit, ordinary_damages = crossbow.fire_crossbow(ranger, target, rng=_Rng(0.0, 1.0))
     ranger.equipment["OffHand"] = items.MagicCrossbow()
-    _message, _hit, magic_damages = crossbow.fire_crossbow(
-        ranger, target, rng=_Rng(0.0, 1.0)
-    )
+    _message, _hit, magic_damages = crossbow.fire_crossbow(ranger, target, rng=_Rng(0.0, 1.0))
 
     assert len(ordinary_damages) == 1
     assert len(magic_damages) == 2
@@ -131,9 +123,7 @@ def test_bolt_packs_round_trip_charges_and_do_not_enter_random_loot():
         ItemSerializer.serialize(items.ArmorPiercingBolts(charges=4))
     )
     random_classes = {
-        item_class
-        for bucket in items._build_rarity_table().values()
-        for item_class in bucket
+        item_class for bucket in items._build_rarity_table().values() for item_class in bucket
     }
 
     assert restored.charges == 4

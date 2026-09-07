@@ -418,7 +418,9 @@ def test_vesperion_false_final_triggers_after_three_enemy_turns(monkeypatch):
     engine = ScriptedEngine(player, enemy, player_turn=False)
     enemy_turns = []
     monkeypatch.setattr(combat_manager, "BattleEngine", lambda **_kwargs: engine)
-    monkeypatch.setattr(manager, "_enemy_turn", lambda _player, _enemy: enemy_turns.append("turn") or None)
+    monkeypatch.setattr(
+        manager, "_enemy_turn", lambda _player, _enemy: enemy_turns.append("turn") or None
+    )
 
     assert manager.start_combat(player, enemy, SimpleNamespace()) is False
     assert enemy_turns == ["turn", "turn", "turn"]
@@ -477,7 +479,9 @@ def test_reflection_psychopomp_victory_unlocks_true_final_without_engine_end(mon
     enemy.health.current = 0
     manager.engine = SimpleNamespace(
         flee=False,
-        end_battle=lambda: (_ for _ in ()).throw(AssertionError("normal end_battle should not run")),
+        end_battle=lambda: (_ for _ in ()).throw(
+            AssertionError("normal end_battle should not run")
+        ),
     )
 
     result = manager._handle_combat_end(player, enemy, fled=False)
@@ -502,13 +506,19 @@ def test_reflection_psychopomp_defeat_returns_to_liminal_hub_without_death(monke
     enemy = enemies.ReflectionPsychopomp()
     manager.engine = SimpleNamespace(
         flee=False,
-        end_battle=lambda: (_ for _ in ()).throw(AssertionError("normal end_battle should not run")),
+        end_battle=lambda: (_ for _ in ()).throw(
+            AssertionError("normal end_battle should not run")
+        ),
     )
 
     result = manager._handle_combat_end(player, enemy, fled=False)
 
     assert result is False
-    assert (player.location_x, player.location_y, player.location_z) == combat_manager.LIMINAL_GAP_ENTRY_POS
+    assert (
+        player.location_x,
+        player.location_y,
+        player.location_z,
+    ) == combat_manager.LIMINAL_GAP_ENTRY_POS
     assert player.facing == combat_manager.LIMINAL_GAP_ENTRY_FACING
     assert player.health.current == 50
     assert player.mana.current == 25
@@ -516,7 +526,10 @@ def test_reflection_psychopomp_defeat_returns_to_liminal_hub_without_death(monke
     assert player.main_story["reflection_defeated"] is False
     assert player.main_story["true_final_unlocked"] is False
     assert effect_calls == [True]
-    assert "The Reflection breaks your stance and returns you to the Liminal hub." in manager.combat_view.messages
+    assert (
+        "The Reflection breaks your stance and returns you to the Liminal hub."
+        in manager.combat_view.messages
+    )
 
 
 def test_guardian_trial_echo_victory_bypasses_normal_rewards(monkeypatch):
@@ -526,7 +539,9 @@ def test_guardian_trial_echo_victory_bypasses_normal_rewards(monkeypatch):
     enemy.health.current = 0
     manager.engine = SimpleNamespace(
         flee=False,
-        end_battle=lambda: (_ for _ in ()).throw(AssertionError("normal end_battle should not run")),
+        end_battle=lambda: (_ for _ in ()).throw(
+            AssertionError("normal end_battle should not run")
+        ),
     )
 
     result = manager._handle_combat_end(player, enemy, fled=False)
@@ -534,7 +549,10 @@ def test_guardian_trial_echo_victory_bypasses_normal_rewards(monkeypatch):
     assert result is True
     assert player.state == "normal"
     assert player.main_story["guardian_trials_completed"]["Triangulus"] is False
-    assert "Triangulus yields to the choice you carried into the fight." in manager.combat_view.messages
+    assert (
+        "Triangulus yields to the choice you carried into the fight."
+        in manager.combat_view.messages
+    )
     assert manager.combat_view.reset_calls == 1
 
 
@@ -550,20 +568,28 @@ def test_guardian_trial_echo_defeat_returns_to_liminal_hub_without_death(monkeyp
     enemy = enemies.GuardianTrialEcho("Infinitas", profile="Rest")
     manager.engine = SimpleNamespace(
         flee=False,
-        end_battle=lambda: (_ for _ in ()).throw(AssertionError("normal end_battle should not run")),
+        end_battle=lambda: (_ for _ in ()).throw(
+            AssertionError("normal end_battle should not run")
+        ),
     )
 
     result = manager._handle_combat_end(player, enemy, fled=False)
 
     assert result is False
-    assert (player.location_x, player.location_y, player.location_z) == combat_manager.LIMINAL_GAP_ENTRY_POS
+    assert (
+        player.location_x,
+        player.location_y,
+        player.location_z,
+    ) == combat_manager.LIMINAL_GAP_ENTRY_POS
     assert player.facing == combat_manager.LIMINAL_GAP_ENTRY_FACING
     assert player.health.current == 50
     assert player.mana.current == 25
     assert player.state == "normal"
     assert player.main_story["guardian_trials_completed"]["Infinitas"] is False
     assert effect_calls == [True]
-    assert "Infinitas returns you to the Liminal hub to choose again." in manager.combat_view.messages
+    assert (
+        "Infinitas returns you to the Liminal hub to choose again." in manager.combat_view.messages
+    )
 
 
 def test_vesperion_true_final_victory_completes_story_without_engine_end(monkeypatch):
@@ -574,7 +600,9 @@ def test_vesperion_true_final_victory_completes_story_without_engine_end(monkeyp
     enemy.health.current = 0
     manager.engine = SimpleNamespace(
         flee=False,
-        end_battle=lambda: (_ for _ in ()).throw(AssertionError("normal end_battle should not run")),
+        end_battle=lambda: (_ for _ in ()).throw(
+            AssertionError("normal end_battle should not run")
+        ),
     )
 
     result = manager._handle_combat_end(player, enemy, fled=False)
@@ -633,7 +661,9 @@ def test_render_combat_frame_records_bestiary_details_when_visible(monkeypatch):
     enemy = _make_enemy("Specter")
     enemy.enemy_typ = "Undead"
     calls = []
-    player.record_bestiary_enemy = lambda observed, enemy_type=None: calls.append((observed, enemy_type))
+    player.record_bestiary_enemy = lambda observed, enemy_type=None: calls.append(
+        (observed, enemy_type)
+    )
     manager.engine = SimpleNamespace(is_player_turn=lambda: False, show_enemy_details=lambda: True)
 
     manager._render_combat_frame(player, enemy, ["Attack"], 0)
@@ -664,10 +694,24 @@ def test_capture_background_scroll_handling_and_action_deduplication(monkeypatch
     player = _make_player()
     player.is_disarmed = lambda: True
     manager.engine = SimpleNamespace(
-        available_actions=["Attack", "Cast Spell", "Cast Spell", {"name": "Use Skill"}, "Use Item", ""],
+        available_actions=[
+            "Attack",
+            "Cast Spell",
+            "Cast Spell",
+            {"name": "Use Skill"},
+            "Use Item",
+            "",
+        ],
         player=player,
     )
-    assert manager._build_display_actions() == ["Attack", "Defend", "Pickup Weapon", "Spells", "Skills", "Items"]
+    assert manager._build_display_actions() == [
+        "Attack",
+        "Defend",
+        "Pickup Weapon",
+        "Spells",
+        "Skills",
+        "Items",
+    ]
 
     player.is_disarmed = lambda: False
     player.equipment = {"OffHand": SimpleNamespace(subtyp="Shield")}
@@ -757,7 +801,10 @@ def test_capture_background_scroll_handling_and_action_deduplication(monkeypatch
     )
     assert manager._build_display_actions() == ["Attack", "Defend", "Companion", "Skills", "Items"]
     assert manager._available_skill_names(beast, manager.engine.defender) == ["Quick Strike"]
-    assert ability_mechanics.available_beast_companion_commands(beast) == ["Pack Strike", "Guard Partner"]
+    assert ability_mechanics.available_beast_companion_commands(beast) == [
+        "Pack Strike",
+        "Guard Partner",
+    ]
 
 
 def test_combat_damage_effect_classifies_actions_and_elements(monkeypatch):
@@ -766,16 +813,24 @@ def test_combat_damage_effect_classifies_actions_and_elements(monkeypatch):
     assert manager._combat_effect_kind("Attack") == "weapon"
     assert manager._combat_effect_kind("Spells") == "spell"
     assert manager._combat_effect_kind("Use Skill") == "skill"
-    assert manager._combat_effect_kind("Attack", None, "The spell reflects for 8 damage.") == "reflect"
+    assert (
+        manager._combat_effect_kind("Attack", None, "The spell reflects for 8 damage.") == "reflect"
+    )
     assert manager._combat_effect_kind("Attack", None, "Goblin is stunned for 1 turn.") == "status"
     assert manager._combat_effect_element("Lightning Bolt", "Goblin takes damage") == "Electric"
     assert manager._combat_effect_element(None, "The target burns in holy fire") == "Fire"
 
-    manager._show_combat_damage_effect("enemy", "Spells", "Lightning Bolt", "Goblin takes 12 electric damage.", 12)
+    manager._show_combat_damage_effect(
+        "enemy", "Spells", "Lightning Bolt", "Goblin takes 12 electric damage.", 12
+    )
     manager._show_combat_damage_effect("player", "Attack", None, "Hero takes 4 damage.", 4)
     manager._show_combat_damage_effect("enemy", "Attack", None, "Goblin takes 6 fire damage.", 6)
-    manager._show_combat_damage_effect("player", "Attack", None, "The spell reflects for 5 damage.", 5)
-    manager._show_combat_damage_effect("enemy", "Attack", None, "Goblin is knocked prone for 3 damage.", 3)
+    manager._show_combat_damage_effect(
+        "player", "Attack", None, "The spell reflects for 5 damage.", 5
+    )
+    manager._show_combat_damage_effect(
+        "enemy", "Attack", None, "Goblin is knocked prone for 3 damage.", 3
+    )
 
     assert manager.combat_view.impact_calls == [
         ("enemy", "spell", "Electric", False),
@@ -802,16 +857,22 @@ def test_floating_damage_uses_recorded_primary_damage_not_total_hp_loss():
         )
     )
 
-    assert combat_manager.GUICombatManager._recorded_floating_damage(
-        result,
-        45,
-        target_id="goblin",
-    ) == 40
-    assert combat_manager.GUICombatManager._recorded_floating_damage(
-        result,
-        30,
-        target_id="orc",
-    ) == 25
+    assert (
+        combat_manager.GUICombatManager._recorded_floating_damage(
+            result,
+            45,
+            target_id="goblin",
+        )
+        == 40
+    )
+    assert (
+        combat_manager.GUICombatManager._recorded_floating_damage(
+            result,
+            30,
+            target_id="orc",
+        )
+        == 25
+    )
     assert (
         combat_manager.GUICombatManager._recorded_floating_damage(
             SimpleNamespace(),
@@ -855,9 +916,13 @@ def test_combat_damage_effect_renders_each_recorded_damage_instance(monkeypatch)
 
 def test_post_turn_and_special_effect_helpers(monkeypatch):
     manager = _make_manager(monkeypatch)
-    manager.engine = SimpleNamespace(post_turn=lambda: SimpleNamespace(messages=["Line one\nLine two", "", "Last line"]))
+    manager.engine = SimpleNamespace(
+        post_turn=lambda: SimpleNamespace(messages=["Line one\nLine two", "", "Last line"])
+    )
     flushes = []
-    manager._flush_result_frame = lambda player, enemy: flushes.append((player, enemy, tuple(manager.combat_view.messages)))
+    manager._flush_result_frame = lambda player, enemy: flushes.append(
+        (player, enemy, tuple(manager.combat_view.messages))
+    )
     manager._post_turn_processing(_make_player(), _make_enemy())
     assert manager.combat_view.messages == ["Line one", "Line two", "Last line"]
     assert flushes[-1][2] == ("Line one", "Line two", "Last line")
@@ -909,11 +974,21 @@ def test_show_slot_machine_reveal_returns_three_digits_and_renders(monkeypatch):
     )
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", slot_events)
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.display.flip", lambda: None)
-    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.draw.rect", lambda *_args, **_kwargs: None)
-    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.font.Font", lambda *_args, **_kwargs: RecordingFont())
-    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.Surface", lambda size, *_args, **_kwargs: RecordingScreen(size))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.combat_manager.pygame.draw.rect", lambda *_args, **_kwargs: None
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.combat_manager.pygame.font.Font",
+        lambda *_args, **_kwargs: RecordingFont(),
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.combat_manager.pygame.Surface",
+        lambda size, *_args, **_kwargs: RecordingScreen(size),
+    )
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.time.Clock", lambda: DummyClock())
-    monkeypatch.setattr(manager, "_render_combat_frame", lambda *args, **kwargs: frame_calls.append((args, kwargs)))
+    monkeypatch.setattr(
+        manager, "_render_combat_frame", lambda *args, **kwargs: frame_calls.append((args, kwargs))
+    )
     monkeypatch.setattr(manager, "_slot_symbol_surfaces", lambda: [])
 
     result = manager._show_slot_machine_reveal(player, enemy)
@@ -932,7 +1007,9 @@ def test_show_slot_machine_reveal_returns_three_digits_and_renders(monkeypatch):
 
 
 def test_slot_machine_result_labels_match_core_hands():
-    assert combat_manager.GUICombatManager._slot_machine_result_label("AS,2S,3S") == "Straight Flush"
+    assert (
+        combat_manager.GUICombatManager._slot_machine_result_label("AS,2S,3S") == "Straight Flush"
+    )
     assert combat_manager.GUICombatManager._slot_machine_result_label("AS,9S,KS") == "Flush"
     assert combat_manager.GUICombatManager._slot_machine_result_label("AH,2S,3D") == "Straight"
     assert combat_manager.GUICombatManager._slot_machine_result_label("AH,AD,AC") == "3 of a Kind"
@@ -1000,6 +1077,7 @@ def test_waitress_transition_and_preservation_helpers(monkeypatch):
 
         def show(self, **kwargs):
             popup_calls.append((self.message, kwargs))
+
     monkeypatch.setattr(combat_manager.enemies, "NightHag2", FakeNightHag2)
     monkeypatch.setattr("src.ui_pygame.gui.confirmation_popup.ConfirmationPopup", FakePopup)
 
@@ -1131,7 +1209,9 @@ def test_execute_action_tame_skips_damage_animation_and_defers_nickname(monkeypa
     manager._render_combat_frame = lambda *args, **kwargs: None
     manager._flush_result_frame = lambda *args, **kwargs: None
     damage_effects = []
-    manager._show_combat_damage_effect = lambda *args, **kwargs: damage_effects.append((args, kwargs))
+    manager._show_combat_damage_effect = lambda *args, **kwargs: damage_effects.append(
+        (args, kwargs)
+    )
     manager._show_combat_heal_text = lambda *args, **kwargs: None
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.display.flip", lambda: None)
 
@@ -1181,13 +1261,19 @@ def test_select_companion_command_shows_beast_master_orders(monkeypatch):
     manager._clear_pending_input = lambda: True
     manager._render_combat_frame = lambda *_args, **_kwargs: None
     manager._render_described_selection_menu = (
-        lambda title, options, selected, scroll_offset, descriptions:
-        rendered.append((title, list(options), list(descriptions)))
+        lambda title, options, selected, scroll_offset, descriptions: rendered.append(
+            (title, list(options), list(descriptions))
+        )
     )
-    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.release_guard_allows_input", lambda *_args, **_kwargs: True)
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.combat_manager.release_guard_allows_input",
+        lambda *_args, **_kwargs: True,
+    )
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.display.flip", lambda: None)
     event_batches = iter([[pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN)]])
-    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, []))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, [])
+    )
 
     assert manager._select_companion_command(player, enemy) == "Pack Strike"
     assert rendered
@@ -1257,7 +1343,9 @@ def test_handle_combat_end_victory_defeat_and_flee_paths(monkeypatch):
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: [])
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.time.Clock", lambda: DummyClock())
     render_calls = []
-    monkeypatch.setattr(manager, "_render_combat_frame", lambda *args, **kwargs: render_calls.append((args, kwargs)))
+    monkeypatch.setattr(
+        manager, "_render_combat_frame", lambda *args, **kwargs: render_calls.append((args, kwargs))
+    )
     monkeypatch.setattr(manager, "_pause_with_events", lambda _ms: None)
 
     manager.engine = SimpleNamespace(
@@ -1361,12 +1449,16 @@ def test_tamed_combat_end_skips_death_fade_then_names_companion(monkeypatch):
             return "Needle"
 
     monkeypatch.setattr("src.ui_pygame.gui.confirmation_popup.ConfirmationPopup", FakePopup)
-    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.CompanionNamingScreen", FakeCompanionNamingScreen)
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.combat_manager.CompanionNamingScreen", FakeCompanionNamingScreen
+    )
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.display.flip", lambda: None)
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: [])
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.time.Clock", lambda: DummyClock())
     render_calls = []
-    monkeypatch.setattr(manager, "_render_combat_frame", lambda *args, **kwargs: render_calls.append((args, kwargs)))
+    monkeypatch.setattr(
+        manager, "_render_combat_frame", lambda *args, **kwargs: render_calls.append((args, kwargs))
+    )
     monkeypatch.setattr(manager, "_pause_with_events", lambda _ms: None)
     manager.engine = SimpleNamespace(
         flee=False,
@@ -1406,7 +1498,9 @@ def test_jester_victory_runs_death_fade_before_dungeon_end_event(monkeypatch):
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: [])
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.time.Clock", lambda: DummyClock())
     render_calls = []
-    monkeypatch.setattr(manager, "_render_combat_frame", lambda *args, **kwargs: render_calls.append((args, kwargs)))
+    monkeypatch.setattr(
+        manager, "_render_combat_frame", lambda *args, **kwargs: render_calls.append((args, kwargs))
+    )
     pauses = []
     monkeypatch.setattr(manager, "_pause_with_events", lambda ms: pauses.append(ms))
     popup_messages = []
@@ -1471,8 +1565,10 @@ def test_select_item_spell_and_skill_cover_empty_cancel_and_selection_paths(monk
     manager._pause_with_events = lambda ms: pauses.append(ms)
     manager._render_combat_frame = lambda *args, **kwargs: None
     menu_calls = []
-    manager._render_selection_menu = lambda title, options, selected, scroll_offset=0: menu_calls.append(
-        (title, tuple(options), selected, scroll_offset)
+    manager._render_selection_menu = (
+        lambda title, options, selected, scroll_offset=0: menu_calls.append(
+            (title, tuple(options), selected, scroll_offset)
+        )
     )
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.display.flip", lambda: None)
 
@@ -1484,16 +1580,26 @@ def test_select_item_spell_and_skill_cover_empty_cancel_and_selection_paths(monk
         "Potion": [SimpleNamespace(name="Potion", subtyp="Health") for _ in range(2)],
         "Bomb": [SimpleNamespace(name="Bomb", subtyp="Throwing")],
         "Blank Scroll": [SimpleNamespace(name="Blank Scroll", subtyp="Scroll")],
-        "Scroll": [SimpleNamespace(name="Scroll of Ice", subtyp="Scroll", spell=SimpleNamespace(name="Ice"))],
+        "Scroll": [
+            SimpleNamespace(
+                name="Scroll of Ice", subtyp="Scroll", spell=SimpleNamespace(name="Ice")
+            )
+        ],
     }
     pressed_states = iter([[1], [], [], []])
-    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: next(pressed_states, []))
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)],
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, []))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: next(pressed_states, [])
+    )
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, [])
+    )
     selected_item = manager._select_item(player, enemy)
     assert selected_item.name == "Scroll of Ice"
     assert menu_calls[-2][1] == ("Potion (2)", "Scroll (1)")
@@ -1502,19 +1608,27 @@ def test_select_item_spell_and_skill_cover_empty_cancel_and_selection_paths(monk
 
     monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
     click_pos = manager._selection_menu_option_rects(["Potion (2)", "Scroll (1)"], 0)[1][1].center
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.MOUSEMOTION, pos=click_pos)],
-        [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=click_pos)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.MOUSEMOTION, pos=click_pos)],
+            [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=click_pos)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, [])
+    )
     selected_item = manager._select_item(player, enemy)
     assert selected_item.name == "Scroll of Ice"
 
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.KEYUP, key=pygame.K_ESCAPE)],
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_ESCAPE)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.KEYUP, key=pygame.K_ESCAPE)],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_ESCAPE)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, [])
+    )
     assert manager._select_item(player, enemy) is None
 
     player.spellbook["Spells"] = {}
@@ -1532,22 +1646,33 @@ def test_select_item_spell_and_skill_cover_empty_cancel_and_selection_paths(monk
         ),
     }
     monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)],
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, [])
+    )
     assert manager._select_spell(player, enemy) == "Ice"
     assert any(call[0] == "Select Spell" for call in menu_calls)
 
     stolen_scroll = items.InscribedSpellScroll("Firebolt", charges=2)
     player.inventory = {stolen_scroll.name: [stolen_scroll]}
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_PAGEDOWN)],
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, []))
-    assert manager._select_spell(player, enemy) == f"{combat_manager.STOLEN_SCROLL_CHOICE_PREFIX}{stolen_scroll.name}"
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_PAGEDOWN)],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, [])
+    )
+    assert (
+        manager._select_spell(player, enemy)
+        == f"{combat_manager.STOLEN_SCROLL_CHOICE_PREFIX}{stolen_scroll.name}"
+    )
     assert menu_calls[-1][1] == (
         "Fireball (MP: 4)",
         "Ice (MP: 2)",
@@ -1555,11 +1680,18 @@ def test_select_item_spell_and_skill_cover_empty_cancel_and_selection_paths(monk
     )
 
     click_pos = manager._selection_menu_option_rects(menu_calls[-1][1], 0)[2][1].center
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=click_pos)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, []))
-    assert manager._select_spell(player, enemy) == f"{combat_manager.STOLEN_SCROLL_CHOICE_PREFIX}{stolen_scroll.name}"
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=click_pos)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, [])
+    )
+    assert (
+        manager._select_spell(player, enemy)
+        == f"{combat_manager.STOLEN_SCROLL_CHOICE_PREFIX}{stolen_scroll.name}"
+    )
 
     player.spellbook["Skills"] = {}
     assert manager._select_skill(player, enemy) is None
@@ -1575,12 +1707,16 @@ def test_select_item_spell_and_skill_cover_empty_cancel_and_selection_paths(monk
     player.equipment = {"OffHand": SimpleNamespace(subtyp="Shield")}
     player.spellbook["Skills"]["Brace Wall"] = abilities.BraceWall()
     event_batches = iter([[SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)]])
-    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, []))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, [])
+    )
     assert manager._select_skill(player, enemy) == "Shield Slam"
     assert menu_calls[-1][1] == ("Shield Slam (MP: 2)",)
 
     event_batches = iter([[SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)]])
-    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, []))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, [])
+    )
     assert manager._select_resolve_ability(player, enemy) == "Brace Wall"
     assert menu_calls[-1][0] == "Select Resolve"
     assert menu_calls[-1][1] == ("Brace Wall (Resolve: 15)",)
@@ -1590,22 +1726,25 @@ def test_select_item_spell_and_skill_cover_empty_cancel_and_selection_paths(monk
     state = class_rings.ensure_state(player)["data"]["Stalwart Defender"]
     state["guard_meter"] = 100
     state["resolve_mastery"]["citadel_aegis"] = 4
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
-    ])
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+        ]
+    )
     monkeypatch.setattr(
         "src.ui_pygame.gui.combat_manager.pygame.event.get",
         lambda: next(event_batches, []),
     )
-    assert manager._select_resolve_ability(
-        player,
-        enemy,
-        bursts=True,
-    ) == "Citadel Aegis"
-    assert menu_calls[-1][0] == "Select Resolve Burst"
-    assert menu_calls[-1][1] == (
-        "Citadel Aegis (Full Resolve)",
+    assert (
+        manager._select_resolve_ability(
+            player,
+            enemy,
+            bursts=True,
+        )
+        == "Citadel Aegis"
     )
+    assert menu_calls[-1][0] == "Select Resolve Burst"
+    assert menu_calls[-1][1] == ("Citadel Aegis (Full Resolve)",)
 
     player.cls = SimpleNamespace(name="Paladin")
     player.paladin_vow = "Conquest"
@@ -1613,25 +1752,29 @@ def test_select_item_spell_and_skill_cover_empty_cancel_and_selection_paths(monk
         "Oath's Judgment": abilities.OathsJudgment(),
     }
     promotion_kits.combat_state(player)["oath_conviction"] = 2
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
-    ])
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+        ]
+    )
     monkeypatch.setattr(
         "src.ui_pygame.gui.combat_manager.pygame.event.get",
         lambda: next(event_batches, []),
     )
     assert manager._select_skill(player, enemy) == "Oath's Judgment"
-    assert menu_calls[-1][1] == (
-        "Oath's Judgment (Conviction: all 2)",
-    )
+    assert menu_calls[-1][1] == ("Oath's Judgment (Conviction: all 2)",)
 
     player.is_disarmed = lambda: True
     player.spellbook["Skills"] = {
-        "Piercing Strike": SimpleNamespace(name="Piercing Strike", cost=5, passive=False, weapon=True),
+        "Piercing Strike": SimpleNamespace(
+            name="Piercing Strike", cost=5, passive=False, weapon=True
+        ),
         "Smoke Screen": SimpleNamespace(name="Smoke Screen", cost=1, passive=False, weapon=False),
     }
     event_batches = iter([[SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)]])
-    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, []))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, [])
+    )
     assert manager._select_skill(player, enemy) == "Smoke Screen"
     assert menu_calls[-1][1] == ("Smoke Screen (MP: 1)",)
     player.is_disarmed = lambda: False
@@ -1658,17 +1801,23 @@ def test_select_item_spell_and_skill_cover_empty_cancel_and_selection_paths(monk
         "Brace": SimpleNamespace(name="Brace", cost=8, passive=False, weapon=True),
     }
     event_batches = iter([[SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)]])
-    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, []))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, [])
+    )
     assert manager._select_skill(player, enemy) == "Brace"
     assert menu_calls[-1][1] == ("Brace (MP: 8)",)
 
     enemy.incapacitated = lambda: False
     player.spellbook["Skills"] = {
-        "Backstab": SimpleNamespace(name="Backstab", cost=4, passive=False, _requires_incapacitated=True),
+        "Backstab": SimpleNamespace(
+            name="Backstab", cost=4, passive=False, _requires_incapacitated=True
+        ),
         "Slash": SimpleNamespace(name="Slash", cost=1, passive=False),
     }
     event_batches = iter([[SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)]])
-    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, []))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, [])
+    )
     assert manager._select_skill(player, enemy) == "Slash"
     assert menu_calls[-1][1] == ("Slash (MP: 1)",)
 
@@ -1678,17 +1827,23 @@ def test_select_item_spell_and_skill_cover_empty_cancel_and_selection_paths(monk
 
     player.summons = {
         "Spent": SimpleNamespace(name="Spent", is_alive=lambda: False),
-        "Patagon": SimpleNamespace(name="Patagon", level=SimpleNamespace(level=1), is_alive=lambda: True),
+        "Patagon": SimpleNamespace(
+            name="Patagon", level=SimpleNamespace(level=1), is_alive=lambda: True
+        ),
     }
     event_batches = iter([[SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)]])
-    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, []))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, [])
+    )
     assert manager._select_summon(player, enemy) == "Patagon"
     assert menu_calls[-1][0] == "Select Summon"
     assert menu_calls[-1][1] == ("Patagon (Lv 1)",)
 
     enemy.incapacitated = lambda: True
     event_batches = iter([[SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)]])
-    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, []))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, [])
+    )
     assert manager._select_skill(player, enemy) == "Backstab"
     assert menu_calls[-1][1] == ("Backstab (MP: 4)", "Slash (MP: 1)")
 
@@ -1698,11 +1853,15 @@ def test_select_item_spell_and_skill_cover_empty_cancel_and_selection_paths(monk
         "Jump": SimpleNamespace(cost=3, passive=False),
     }
     monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_PAGEDOWN)],
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_PAGEDOWN)],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, [])
+    )
     assert manager._select_skill(player, enemy) == "Jump"
 
 
@@ -1712,20 +1871,30 @@ def test_select_totem_aspect_ignores_stale_confirm_until_key_release(monkeypatch
     enemy = _make_enemy()
     manager._render_combat_frame = lambda *args, **kwargs: None
     menu_calls = []
-    manager._render_selection_menu = lambda title, options, selected, scroll_offset=0: menu_calls.append(
-        (title, tuple(options), selected, scroll_offset)
+    manager._render_selection_menu = (
+        lambda title, options, selected, scroll_offset=0: menu_calls.append(
+            (title, tuple(options), selected, scroll_offset)
+        )
     )
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.display.flip", lambda: None)
     clear_calls = []
-    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.clear", lambda: clear_calls.append(True))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.combat_manager.pygame.event.clear", lambda: clear_calls.append(True)
+    )
     pressed_states = iter([[1], [], [], []])
-    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: next(pressed_states, []))
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)],
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, []))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: next(pressed_states, [])
+    )
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, [])
+    )
     totem = SimpleNamespace(
         active_aspect="Wolf",
         get_unlocked_aspects=lambda _player: ["Wolf", "Bear"],
@@ -1751,22 +1920,32 @@ def test_runic_steal_and_contract_pickers_support_mouse_confirm(monkeypatch):
         "Fire": SimpleNamespace(cost=3, subtyp="Damage"),
         "Ice": SimpleNamespace(cost=2, subtyp="Damage"),
     }
-    monkeypatch.setattr(combat_manager.astromancer, "boostable_spells", lambda _player: ["Fire", "Ice"])
+    monkeypatch.setattr(
+        combat_manager.astromancer, "boostable_spells", lambda _player: ["Fire", "Ice"]
+    )
     monkeypatch.setattr(combat_manager.astromancer, "sign_for_spell", lambda _spell: "Solar")
     runic_options = ["Solar: Fire (MP: 3)", "Solar: Ice (MP: 2)"]
     click_pos = manager._selection_menu_option_rects(runic_options, 0)[1][1].center
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=click_pos)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=click_pos)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, [])
+    )
     assert manager._select_runic_boost_spell(player, enemy) == "Ice"
 
     steal_options = ["Fire", "Ice"]
     click_pos = manager._selection_menu_option_rects(steal_options, 0)[1][1].center
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=click_pos)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=click_pos)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, [])
+    )
     assert manager._select_steal_as_well_spell(player, enemy) == "Ice"
 
     intents = ["Wound", "Guard"]
@@ -1784,10 +1963,14 @@ def test_runic_steal_and_contract_pickers_support_mouse_confirm(monkeypatch):
     )
     monkeypatch.setattr(combat_manager.demonologist, "can_pay_quote", lambda _player, _quote: True)
     manager.presenter.render_menu = lambda prompt, options: 0
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=click_pos)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=click_pos)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, [])
+    )
     assert manager._select_contract_intent(player, enemy) == "Guard"
 
 
@@ -1801,33 +1984,56 @@ def test_render_selection_menu_refresh_background_and_pause_helpers(monkeypatch)
     small_font = RecordingFont()
     fonts = iter([large_font, medium_font, small_font])
 
-    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.font.Font", lambda *_args, **_kwargs: next(fonts))
-    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.Surface", lambda size, *_args, **_kwargs: DummySurface(size))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.combat_manager.pygame.font.Font", lambda *_args, **_kwargs: next(fonts)
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.combat_manager.pygame.Surface",
+        lambda size, *_args, **_kwargs: DummySurface(size),
+    )
     draw_calls = []
-    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.draw.rect", lambda *_args, **_kwargs: draw_calls.append((_args, _kwargs)))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.combat_manager.pygame.draw.rect",
+        lambda *_args, **_kwargs: draw_calls.append((_args, _kwargs)),
+    )
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.display.flip", lambda: None)
 
-    long_options = [f"Option {index} with very long descriptive text that should truncate" for index in range(15)]
+    long_options = [
+        f"Option {index} with very long descriptive text that should truncate"
+        for index in range(15)
+    ]
     manager._selection_menu_descriptions = [""] * 13 + ["Selected option description"] + [""]
     manager._render_selection_menu("Choose Action", long_options, selected=13, scroll_offset=99)
 
     assert "Choose Action" in large_font.render_calls
-    fitted_option = next(text for text in medium_font.render_calls if text.startswith("13. Option 12"))
+    fitted_option = next(
+        text for text in medium_font.render_calls if text.startswith("13. Option 12")
+    )
     assert fitted_option.endswith("...")
     assert medium_font.size(fitted_option)[0] <= 462
     assert "Selected option description" in small_font.render_calls
-    assert "Up/Down or W/S: Navigate | PgUp/PgDn: Scroll | Enter: Select | Esc: Cancel" in small_font.render_calls
+    assert (
+        "Up/Down or W/S: Navigate | PgUp/PgDn: Scroll | Enter: Select | Esc: Cancel"
+        in small_font.render_calls
+    )
     assert draw_calls
 
     manager._combat_background = None
-    manager._render_combat_frame = lambda *args, **kwargs: manager.screen.blit("combat-frame", (1, 2))
+    manager._render_combat_frame = lambda *args, **kwargs: manager.screen.blit(
+        "combat-frame", (1, 2)
+    )
     manager._refresh_combat_background(player, enemy)
     assert str(manager._combat_background).startswith("screen-copy-")
 
-    scroll_events = [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_PAGEUP), pygame.event.Event(pygame.QUIT)]
+    scroll_events = [
+        pygame.event.Event(pygame.KEYDOWN, key=pygame.K_PAGEUP),
+        pygame.event.Event(pygame.QUIT),
+    ]
     event_batches = iter([[scroll_events[0]], []])
     clock = DummyClock(frame_ms=300)
-    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, []))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, [])
+    )
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.time.Clock", lambda: clock)
     manager._pause_with_events(500)
     assert manager.combat_view.scrolled[-1] == -1
@@ -1860,7 +2066,11 @@ def test_start_combat_handles_initiative_and_sanctuary_escape(monkeypatch):
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.time.Clock", lambda: DummyClock())
     monkeypatch.setattr(manager, "_render_combat_frame", lambda *args, **kwargs: None)
     monkeypatch.setattr(manager, "_player_turn", lambda _player, _enemy: "flee")
-    monkeypatch.setattr(manager, "_handle_combat_end", lambda _player, _enemy, fled: end_calls.append(("end", fled)) or False)
+    monkeypatch.setattr(
+        manager,
+        "_handle_combat_end",
+        lambda _player, _enemy, fled: end_calls.append(("end", fled)) or False,
+    )
 
     result = manager.start_combat(player, enemy, tile)
 
@@ -1876,14 +2086,20 @@ def test_start_combat_handles_initiative_and_sanctuary_escape(monkeypatch):
     sanctuary_player = _make_player()
     sanctuary_player.in_town = lambda: True
     sanctuary_player.effects = lambda end=False: end_calls.append(("effects", end))
-    sanctuary_manager.logger = SimpleNamespace(end_battle=lambda **kwargs: end_calls.append(("logger", kwargs)))
+    sanctuary_manager.logger = SimpleNamespace(
+        end_battle=lambda **kwargs: end_calls.append(("logger", kwargs))
+    )
     sanctuary_manager.engine = SimpleNamespace(flee=False)
     sanctuary_manager._combat_background = "cached"
     sanctuary_manager.combat_view.reset_calls = 0
 
     assert sanctuary_manager._handle_combat_end(sanctuary_player, enemy, fled=False) is False
     assert ("effects", True) in end_calls
-    assert any(call[0] == "logger" and call[1]["result"] == "Escaped" for call in end_calls if isinstance(call, tuple))
+    assert any(
+        call[0] == "logger" and call[1]["result"] == "Escaped"
+        for call in end_calls
+        if isinstance(call, tuple)
+    )
     assert sanctuary_manager.combat_view.reset_calls == 1
     assert sanctuary_manager._combat_background is None
 
@@ -1898,7 +2114,9 @@ def test_render_combat_frame_waits_for_initiative_before_turn_label(monkeypatch)
     manager.dungeon_renderer = None
     manager.player_world_dict = None
     manager.combat_view.render_enemy_in_dungeon = lambda *_args, **_kwargs: None
-    manager.combat_view.render_combat_overlay = lambda *_args, **kwargs: turn_calls.append(kwargs.get("current_turn"))
+    manager.combat_view.render_combat_overlay = lambda *_args, **kwargs: turn_calls.append(
+        kwargs.get("current_turn")
+    )
     manager.hud.render_hud = lambda *_args, **_kwargs: None
 
     manager._render_combat_frame(player, enemy, [], -1)
@@ -1913,18 +2131,24 @@ def test_player_turn_covers_preturn_forced_actions_and_grid_selection(monkeypatc
 
     manager._render_combat_frame = lambda *args, **kwargs: None
     flushed_messages = []
-    manager._flush_result_frame = lambda *_args: flushed_messages.append(tuple(manager.combat_view.messages))
+    manager._flush_result_frame = lambda *_args: flushed_messages.append(
+        tuple(manager.combat_view.messages)
+    )
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.display.flip", lambda: None)
 
     manager.engine = SimpleNamespace(
-        pre_turn=lambda: SimpleNamespace(effects_text="Poison ticks", died_from_effects=True, can_act=True, inactive_reason=""),
+        pre_turn=lambda: SimpleNamespace(
+            effects_text="Poison ticks", died_from_effects=True, can_act=True, inactive_reason=""
+        ),
     )
     assert manager._player_turn(player, enemy) is True
     assert manager.combat_view.messages[-1] == "Poison ticks"
     assert flushed_messages[-1] == ("Poison ticks",)
 
     manager.engine = SimpleNamespace(
-        pre_turn=lambda: SimpleNamespace(effects_text="", died_from_effects=False, can_act=False, inactive_reason="Asleep"),
+        pre_turn=lambda: SimpleNamespace(
+            effects_text="", died_from_effects=False, can_act=False, inactive_reason="Asleep"
+        ),
     )
     assert manager._player_turn(player, enemy) is True
     assert manager.combat_view.messages[-1] == "Asleep"
@@ -1932,7 +2156,9 @@ def test_player_turn_covers_preturn_forced_actions_and_grid_selection(monkeypatc
 
     forced = SimpleNamespace(action="Cancelled", cancel_message="Jump failed", choice=None)
     manager.engine = SimpleNamespace(
-        pre_turn=lambda: SimpleNamespace(effects_text="", died_from_effects=False, can_act=True, inactive_reason=""),
+        pre_turn=lambda: SimpleNamespace(
+            effects_text="", died_from_effects=False, can_act=True, inactive_reason=""
+        ),
         get_forced_action=lambda: forced,
     )
     assert manager._player_turn(player, enemy) is True
@@ -1941,7 +2167,9 @@ def test_player_turn_covers_preturn_forced_actions_and_grid_selection(monkeypatc
     enemy.health.current = 12
     forced = SimpleNamespace(action="Attack", cancel_message="", choice=None)
     manager.engine = SimpleNamespace(
-        pre_turn=lambda: SimpleNamespace(effects_text="", died_from_effects=False, can_act=True, inactive_reason=""),
+        pre_turn=lambda: SimpleNamespace(
+            effects_text="", died_from_effects=False, can_act=True, inactive_reason=""
+        ),
         get_forced_action=lambda: forced,
         execute_action=lambda action, choice=None: SimpleNamespace(message="Hit hard", fled=False),
         companion_turn=lambda: None,
@@ -1952,19 +2180,29 @@ def test_player_turn_covers_preturn_forced_actions_and_grid_selection(monkeypatc
     actions = []
     manager.available_actions = ["Attack", "Defend", "Items", "Spells"]
     manager.engine = SimpleNamespace(
-        pre_turn=lambda: SimpleNamespace(effects_text="", died_from_effects=False, can_act=True, inactive_reason=""),
+        pre_turn=lambda: SimpleNamespace(
+            effects_text="", died_from_effects=False, can_act=True, inactive_reason=""
+        ),
         get_forced_action=lambda: None,
         companion_turn=lambda: "Fairy assists",
     )
-    manager._execute_action = lambda action, _player, _enemy: actions.append(action) or "action_taken"
+    manager._execute_action = (
+        lambda action, _player, _enemy: actions.append(action) or "action_taken"
+    )
     pressed_states = iter([[1], [], [], []])
-    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: next(pressed_states, []))
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RIGHT)],
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, []))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: next(pressed_states, [])
+    )
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RIGHT)],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, [])
+    )
     assert manager._player_turn(player, enemy) is True
     assert actions == ["Defend"]
     assert manager.combat_view.messages[-1] == "Fairy assists"
@@ -1972,21 +2210,29 @@ def test_player_turn_covers_preturn_forced_actions_and_grid_selection(monkeypatc
     manager.available_actions = ["Attack", "Defend", "Items"]
     actions.clear()
     monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_3)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_3)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, [])
+    )
     assert manager._player_turn(player, enemy) is True
     assert actions == ["Items"]
 
     manager.available_actions = ["Attack", "Defend", "Items"]
     actions.clear()
     click_pos = manager._combat_action_rects(manager.available_actions)[1].center
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.MOUSEMOTION, pos=click_pos)],
-        [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=click_pos)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.MOUSEMOTION, pos=click_pos)],
+            [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=click_pos)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, [])
+    )
     assert manager._player_turn(player, enemy) is True
     assert actions == ["Defend"]
 
@@ -1998,17 +2244,23 @@ def test_player_turn_accepts_first_fresh_key_after_guard_pumps_state(monkeypatch
 
     manager._render_combat_frame = lambda *args, **kwargs: None
     flushed_messages = []
-    manager._flush_result_frame = lambda *_args: flushed_messages.append(tuple(manager.combat_view.messages))
+    manager._flush_result_frame = lambda *_args: flushed_messages.append(
+        tuple(manager.combat_view.messages)
+    )
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.display.flip", lambda: None)
 
     actions = []
     manager.available_actions = ["Attack", "Defend", "Items"]
     manager.engine = SimpleNamespace(
-        pre_turn=lambda: SimpleNamespace(effects_text="", died_from_effects=False, can_act=True, inactive_reason=""),
+        pre_turn=lambda: SimpleNamespace(
+            effects_text="", died_from_effects=False, can_act=True, inactive_reason=""
+        ),
         get_forced_action=lambda: None,
         companion_turn=lambda: None,
     )
-    manager._execute_action = lambda action, _player, _enemy: actions.append(action) or "action_taken"
+    manager._execute_action = (
+        lambda action, _player, _enemy: actions.append(action) or "action_taken"
+    )
 
     key_held = {"value": True}
 
@@ -2020,11 +2272,15 @@ def test_player_turn_accepts_first_fresh_key_after_guard_pumps_state(monkeypatch
         "src.ui_pygame.gui.input_guards.pygame.key.get_pressed",
         lambda: [1] if key_held["value"] else [],
     )
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RIGHT)],
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RIGHT)],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, [])
+    )
 
     assert manager._player_turn(player, enemy) is True
     assert actions == ["Defend"]
@@ -2054,11 +2310,17 @@ def test_player_turn_refreshes_actions_after_silence_expires(monkeypatch):
         get_forced_action=lambda: None,
         companion_turn=lambda: None,
     )
-    manager._execute_action = lambda action, _player, _enemy: actions.append(action) or "action_taken"
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_3)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, []))
+    manager._execute_action = (
+        lambda action, _player, _enemy: actions.append(action) or "action_taken"
+    )
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_3)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, [])
+    )
 
     assert manager._player_turn(player, enemy) is True
     assert actions == ["Spells"]
@@ -2078,7 +2340,9 @@ def test_player_turn_continues_after_summoning_for_summon_action(monkeypatch):
     companion_turns = []
     engine = SimpleNamespace(
         available_actions=["Summon"],
-        pre_turn=lambda: SimpleNamespace(effects_text="", died_from_effects=False, can_act=True, inactive_reason=""),
+        pre_turn=lambda: SimpleNamespace(
+            effects_text="", died_from_effects=False, can_act=True, inactive_reason=""
+        ),
         get_forced_action=lambda: None,
         companion_turn=lambda: companion_turns.append(True) or None,
     )
@@ -2094,11 +2358,15 @@ def test_player_turn_continues_after_summoning_for_summon_action(monkeypatch):
         return "action_taken"
 
     manager._execute_action = execute_action
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, [])
+    )
 
     assert manager._player_turn(player, enemy) is True
     assert actions == ["Summon", "Attack"]
@@ -2126,9 +2394,11 @@ def test_execute_skill_uses_active_summon_spellbook(monkeypatch):
             action=action,
             choice=choice,
             slot_machine_callback=slot_machine_callback,
-        ) or SimpleNamespace(message="Patagon uses Throw Rock.\n", fled=False),
+        )
+        or SimpleNamespace(message="Patagon uses Throw Rock.\n", fled=False),
         flee=False,
     )
+
     def select_skill(actor, _enemy):
         calls["selected_actor"] = actor
         return "Throw Rock"
@@ -2160,12 +2430,16 @@ def test_select_skill_for_active_summon_renders_player_frame(monkeypatch):
     manager.engine = SimpleNamespace(player=player)
 
     rendered_players = []
-    manager._render_combat_frame = lambda frame_player, *_args, **_kwargs: rendered_players.append(frame_player)
+    manager._render_combat_frame = lambda frame_player, *_args, **_kwargs: rendered_players.append(
+        frame_player
+    )
     manager._render_selection_menu = lambda *_args, **_kwargs: None
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.display.flip", lambda: None)
     monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
     event_batches = iter([[SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)]])
-    monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, []))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: next(event_batches, [])
+    )
 
     assert manager._select_skill(summon, enemy) == "Throw Rock"
     assert rendered_players == [player]
@@ -2178,29 +2452,39 @@ def test_enemy_turn_covers_skip_forced_nothing_and_damage_paths(monkeypatch):
 
     manager._render_combat_frame = lambda *args, **kwargs: None
     flushed_messages = []
-    manager._flush_result_frame = lambda *_args: flushed_messages.append(tuple(manager.combat_view.messages))
+    manager._flush_result_frame = lambda *_args: flushed_messages.append(
+        tuple(manager.combat_view.messages)
+    )
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.display.flip", lambda: None)
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.event.get", lambda: [])
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.time.Clock", lambda: DummyClock())
     player.status_effects = {"Stun": SimpleNamespace(active=False)}
 
     manager.engine = SimpleNamespace(
-        pre_turn=lambda: SimpleNamespace(effects_text="Bleeding", died_from_effects=True, can_act=True, inactive_reason=""),
+        pre_turn=lambda: SimpleNamespace(
+            effects_text="Bleeding", died_from_effects=True, can_act=True, inactive_reason=""
+        ),
     )
     assert manager._enemy_turn(player, enemy) is None
     assert manager.combat_view.messages[-1] == "Bleeding"
     assert flushed_messages[-1] == ("Bleeding",)
 
     manager.engine = SimpleNamespace(
-        pre_turn=lambda: SimpleNamespace(effects_text="", died_from_effects=False, can_act=False, inactive_reason="Stunned"),
+        pre_turn=lambda: SimpleNamespace(
+            effects_text="", died_from_effects=False, can_act=False, inactive_reason="Stunned"
+        ),
     )
     assert manager._enemy_turn(player, enemy) is None
     assert manager.combat_view.messages[-1] == "Stunned"
     assert flushed_messages[-1][-1] == "Stunned"
 
     manager.engine = SimpleNamespace(
-        pre_turn=lambda: SimpleNamespace(effects_text="", died_from_effects=False, can_act=True, inactive_reason=""),
-        get_forced_action=lambda: SimpleNamespace(action="Cancelled", cancel_message="Charge broken", choice=None),
+        pre_turn=lambda: SimpleNamespace(
+            effects_text="", died_from_effects=False, can_act=True, inactive_reason=""
+        ),
+        get_forced_action=lambda: SimpleNamespace(
+            action="Cancelled", cancel_message="Charge broken", choice=None
+        ),
     )
     assert manager._enemy_turn(player, enemy) is None
     assert manager.combat_view.messages[-1] == "Charge broken"
@@ -2209,7 +2493,9 @@ def test_enemy_turn_covers_skip_forced_nothing_and_damage_paths(monkeypatch):
     enemy.spellbook = {"Skills": {}}
     player.health.current = 42
     manager.engine = SimpleNamespace(
-        pre_turn=lambda: SimpleNamespace(effects_text="", died_from_effects=False, can_act=True, inactive_reason=""),
+        pre_turn=lambda: SimpleNamespace(
+            effects_text="", died_from_effects=False, can_act=True, inactive_reason=""
+        ),
         get_forced_action=lambda: None,
         get_enemy_action=lambda: ("Nothing", None),
     )
@@ -2227,14 +2513,18 @@ def test_enemy_turn_covers_skip_forced_nothing_and_damage_paths(monkeypatch):
         return SimpleNamespace(message="Dark blast", fled=False)
 
     manager.engine = SimpleNamespace(
-        pre_turn=lambda: SimpleNamespace(effects_text="", died_from_effects=False, can_act=True, inactive_reason=""),
+        pre_turn=lambda: SimpleNamespace(
+            effects_text="", died_from_effects=False, can_act=True, inactive_reason=""
+        ),
         get_forced_action=lambda: None,
         get_enemy_action=lambda: ("Use Skill", "Hex"),
         show_enemy_details=lambda: True,
         execute_action=execute_action,
     )
     ability_calls = []
-    player.record_bestiary_ability = lambda observed, ability_name: ability_calls.append((observed, ability_name))
+    player.record_bestiary_ability = lambda observed, ability_name: ability_calls.append(
+        (observed, ability_name)
+    )
     assert manager._enemy_turn(player, enemy) is None
     assert ability_calls == [(enemy, "Hex")]
     assert "Dark blast" in manager.combat_view.messages
@@ -2255,7 +2545,9 @@ def test_enemy_turn_applies_vesperion_phase_pressure_before_action(monkeypatch):
     monkeypatch.setattr("src.ui_pygame.gui.combat_manager.pygame.time.Clock", lambda: DummyClock())
 
     manager.engine = SimpleNamespace(
-        pre_turn=lambda: SimpleNamespace(effects_text="", died_from_effects=False, can_act=True, inactive_reason=""),
+        pre_turn=lambda: SimpleNamespace(
+            effects_text="", died_from_effects=False, can_act=True, inactive_reason=""
+        ),
         get_forced_action=lambda: None,
         get_enemy_action=lambda: ("Nothing", None),
     )
@@ -2266,7 +2558,10 @@ def test_enemy_turn_applies_vesperion_phase_pressure_before_action(monkeypatch):
         "Hexagonum answers twilight's attrition with living choice that refuses to be managed into stillness."
         in manager.combat_view.messages
     )
-    assert "Luna refuses mercy that would make love into a cage; Voluntas leaves compassion free." in manager.combat_view.messages
+    assert (
+        "Luna refuses mercy that would make love into a cage; Voluntas leaves compassion free."
+        in manager.combat_view.messages
+    )
     assert manager.combat_view.messages[-1] == "Vesperion does nothing."
     assert enemy._vesperion_pressure_phases_used == {1}
 
@@ -2299,7 +2594,9 @@ def test_enemy_smoke_screen_flee_keeps_enemy_hidden_for_end_transition(monkeypat
 
     manager.engine = SimpleNamespace(
         flee=False,
-        pre_turn=lambda: SimpleNamespace(effects_text="", died_from_effects=False, can_act=True, inactive_reason=""),
+        pre_turn=lambda: SimpleNamespace(
+            effects_text="", died_from_effects=False, can_act=True, inactive_reason=""
+        ),
         get_forced_action=lambda: None,
         get_enemy_action=lambda: ("Use Skill", "Smoke Screen"),
         execute_action=execute_smoke_screen,
@@ -2328,7 +2625,9 @@ def test_enemy_smoke_screen_without_flee_does_not_play_smoke_or_hide_enemy(monke
 
     manager.engine = SimpleNamespace(
         flee=False,
-        pre_turn=lambda: SimpleNamespace(effects_text="", died_from_effects=False, can_act=True, inactive_reason=""),
+        pre_turn=lambda: SimpleNamespace(
+            effects_text="", died_from_effects=False, can_act=True, inactive_reason=""
+        ),
         get_forced_action=lambda: None,
         get_enemy_action=lambda: ("Use Skill", "Smoke Screen"),
         execute_action=lambda *_args, **_kwargs: SimpleNamespace(
@@ -2373,7 +2672,9 @@ def test_enemy_shapeshift_gets_one_same_turn_followup_action(monkeypatch):
 
     manager.engine = SimpleNamespace(
         flee=False,
-        pre_turn=lambda: SimpleNamespace(effects_text="", died_from_effects=False, can_act=True, inactive_reason=""),
+        pre_turn=lambda: SimpleNamespace(
+            effects_text="", died_from_effects=False, can_act=True, inactive_reason=""
+        ),
         get_forced_action=lambda: None,
         get_enemy_action=lambda: next(actions),
         show_enemy_details=lambda: False,

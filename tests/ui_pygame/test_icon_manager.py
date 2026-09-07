@@ -62,7 +62,9 @@ def test_icon_manager_missing_mapping_infers_archetype_and_logs(tmp_path, caplog
     manager = IconManager(icon_root=tmp_path)
 
     with caplog.at_level("WARNING"):
-        key = manager.icon_key_for_item(SimpleNamespace(name="Mystery Blade", typ="Weapon", subtyp="Sword"))
+        key = manager.icon_key_for_item(
+            SimpleNamespace(name="Mystery Blade", typ="Weapon", subtyp="Sword")
+        )
 
     assert key == "sword"
     assert "Item icon mapping missing for Mystery Blade" in caplog.text
@@ -83,12 +85,30 @@ def test_icon_manager_infers_more_specific_weapon_archetypes(tmp_path):
     _write_icon_fixture(tmp_path)
     manager = IconManager(icon_root=tmp_path)
 
-    assert manager.infer_icon_key(SimpleNamespace(name="War Hammer", typ="Weapon", subtyp="Hammer")) == "hammer"
-    assert manager.infer_icon_key(SimpleNamespace(name="Bear Claw", typ="Weapon", subtyp="Natural")) == "claw"
-    assert manager.infer_icon_key(SimpleNamespace(name="Brass Knuckles", typ="Weapon", subtyp="Fist")) == "fist_weapon"
-    assert manager.infer_icon_key(SimpleNamespace(name="Claymore", typ="Weapon", subtyp="Longsword")) == "longsword"
-    assert manager.infer_icon_key(SimpleNamespace(name="Rapier", typ="Weapon", subtyp="Sword")) == "sword"
-    assert manager.infer_icon_key(SimpleNamespace(name="Iron Helm", typ="Helmet", subtyp="Heavy")) == "helmet"
+    assert (
+        manager.infer_icon_key(SimpleNamespace(name="War Hammer", typ="Weapon", subtyp="Hammer"))
+        == "hammer"
+    )
+    assert (
+        manager.infer_icon_key(SimpleNamespace(name="Bear Claw", typ="Weapon", subtyp="Natural"))
+        == "claw"
+    )
+    assert (
+        manager.infer_icon_key(SimpleNamespace(name="Brass Knuckles", typ="Weapon", subtyp="Fist"))
+        == "fist_weapon"
+    )
+    assert (
+        manager.infer_icon_key(SimpleNamespace(name="Claymore", typ="Weapon", subtyp="Longsword"))
+        == "longsword"
+    )
+    assert (
+        manager.infer_icon_key(SimpleNamespace(name="Rapier", typ="Weapon", subtyp="Sword"))
+        == "sword"
+    )
+    assert (
+        manager.infer_icon_key(SimpleNamespace(name="Iron Helm", typ="Helmet", subtyp="Heavy"))
+        == "helmet"
+    )
 
 
 def test_icon_manager_uses_default_icon_root():
@@ -102,7 +122,12 @@ def test_default_item_icon_map_resolves_gold_currency_and_empty_helmet(caplog):
 
     assert manager.icon_key_for_item("Gold") == "gold"
     with caplog.at_level("WARNING"):
-        assert manager.icon_key_for_item(SimpleNamespace(name="No Helmet", typ="Helmet", subtyp="None")) == "helmet"
+        assert (
+            manager.icon_key_for_item(
+                SimpleNamespace(name="No Helmet", typ="Helmet", subtyp="None")
+            )
+            == "helmet"
+        )
     assert "Item icon mapping missing for No Helmet" not in caplog.text
 
 
@@ -140,7 +165,10 @@ def test_icon_manager_slot_and_generic_fallbacks(tmp_path):
     _write_icon_fixture(tmp_path)
     manager = IconManager(icon_root=tmp_path)
 
-    assert manager.icon_key_for_item(SimpleNamespace(name="", typ="", subtyp=""), slot="Weapon") == "weapon"
+    assert (
+        manager.icon_key_for_item(SimpleNamespace(name="", typ="", subtyp=""), slot="Weapon")
+        == "weapon"
+    )
     assert manager.icon_key_for_item(SimpleNamespace(name="", typ="", subtyp="")) == "generic_item"
 
 

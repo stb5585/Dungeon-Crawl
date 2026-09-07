@@ -40,6 +40,8 @@ env/
 
 # pytest files
 .coverage
+coverage.xml
+htmlcov/
 
 # skip currently unneeded files/directories
 test_suite.py
@@ -55,7 +57,6 @@ backup_saves/*
 # ignore old files
 docs/archive/
 old_assets/
-map_files/text_files/
 
 # ignore system files
 .DS_Store

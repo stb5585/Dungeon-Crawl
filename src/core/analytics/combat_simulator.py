@@ -140,6 +140,7 @@ def _classify_action_economy_text(value: object) -> dict[str, int]:
 @dataclass
 class CombatStats:
     """Statistics from a single combat encounter."""
+
     winner: str
     loser: str
     winner_class: str
@@ -181,7 +182,7 @@ class CombatStats:
         if self.winner_hp_max == 0:
             return 0.0
         return (self.winner_hp_remaining / self.winner_hp_max) * 100
-    
+
     @property
     def was_close(self) -> bool:
         """Was this a close fight? (winner had < 30% HP)"""
@@ -193,50 +194,51 @@ class BalanceReport:
     """
     Comprehensive report on combat balance from multiple simulations.
     """
+
     total_battles: int
     results: list[CombatStats]
-    
+
     def __post_init__(self):
         self._win_rates: dict[str, float] = {}
         self._calculate_metrics()
-    
+
     def _calculate_metrics(self) -> None:
         """Pre-calculate common metrics."""
         if not self.results:
             return
-        
+
         # Win rates by class
         wins_by_class = defaultdict(int)
         total_by_class = defaultdict(int)
-        
+
         for result in self.results:
             wins_by_class[result.winner_class] += 1
             total_by_class[result.winner_class] += 1
             total_by_class[result.loser_class] += 1
-        
+
         for cls, wins in wins_by_class.items():
             total = total_by_class[cls]
             self._win_rates[cls] = (wins / total) * 100 if total > 0 else 0
-    
+
     @property
     def win_rates(self) -> dict[str, float]:
         """Win rate percentage by class."""
         return self._win_rates
-    
+
     @property
     def average_turns(self) -> float:
         """Average number of turns per battle."""
         if not self.results:
             return 0.0
         return statistics.mean(r.turns for r in self.results)
-    
+
     @property
     def median_turns(self) -> float:
         """Median number of turns per battle."""
         if not self.results:
             return 0.0
         return statistics.median(r.turns for r in self.results)
-    
+
     @property
     def close_fight_rate(self) -> float:
         """Percentage of fights that were close (< 30% HP remaining)."""
@@ -244,7 +246,7 @@ class BalanceReport:
             return 0.0
         close_fights = sum(1 for r in self.results if r.was_close)
         return (close_fights / len(self.results)) * 100
-    
+
     @property
     def stomp_rate(self) -> float:
         """Percentage of fights that were stomps (> 90% HP remaining)."""
@@ -252,7 +254,7 @@ class BalanceReport:
             return 0.0
         stomps = sum(1 for r in self.results if r.hp_remaining_percent > 90)
         return (stomps / len(self.results)) * 100
-    
+
     def get_ability_usage(self) -> dict[str, int]:
         """Get total usage count for each ability across all battles."""
         usage = defaultdict(int)
@@ -260,12 +262,12 @@ class BalanceReport:
             for ability, count in result.abilities_used.items():
                 usage[ability] += count
         return dict(usage)
-    
+
     def get_most_used_abilities(self, limit: int = 10) -> list[tuple[str, int]]:
         """Get the most frequently used abilities."""
         usage = self.get_ability_usage()
         return sorted(usage.items(), key=lambda x: x[1], reverse=True)[:limit]
-    
+
     def get_status_effect_frequency(self) -> dict[str, int]:
         """Get frequency of status effects applied across all battles."""
         freq = defaultdict(int)
@@ -322,7 +324,7 @@ class BalanceReport:
                 status_frequency.items(),
                 key=lambda item: item[1],
                 reverse=True,
-            )[:max(0, status_limit)],
+            )[: max(0, status_limit)],
             "class_kit_events": self.get_class_kit_events(),
             "action_economy_events": self.get_action_economy_events(),
             "outliers": self.identify_outliers(),
@@ -338,39 +340,39 @@ class BalanceReport:
         output_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_text(self.export_json(indent=indent), encoding="utf-8")
         return output_path
-    
+
     def identify_outliers(self, threshold: float = 2.0) -> dict[str, list]:
         """
         Identify statistical outliers in the data.
-        
+
         Args:
             threshold: Number of standard deviations to consider an outlier
-            
+
         Returns:
             Dictionary with 'overpowered' and 'underpowered' classes
         """
         if len(self._win_rates) < 2:
-            return {'overpowered': [], 'underpowered': []}
-        
+            return {"overpowered": [], "underpowered": []}
+
         mean_wr = statistics.mean(self._win_rates.values())
         stdev_wr = statistics.stdev(self._win_rates.values())
-        
+
         overpowered = []
         underpowered = []
-        
+
         for cls, win_rate in self._win_rates.items():
             z_score = (win_rate - mean_wr) / stdev_wr if stdev_wr > 0 else 0
-            
+
             if z_score > threshold:
                 overpowered.append((cls, win_rate, z_score))
             elif z_score < -threshold:
                 underpowered.append((cls, win_rate, z_score))
-        
+
         return {
-            'overpowered': sorted(overpowered, key=lambda x: x[2], reverse=True),
-            'underpowered': sorted(underpowered, key=lambda x: x[2])
+            "overpowered": sorted(overpowered, key=lambda x: x[2], reverse=True),
+            "underpowered": sorted(underpowered, key=lambda x: x[2]),
         }
-    
+
     def generate_summary(self) -> str:
         """Generate a text summary of the balance report."""
         lines = [
@@ -386,55 +388,57 @@ class BalanceReport:
             "Win Rates by Class:",
             "-" * 40,
         ]
-        
-        for cls, win_rate in sorted(
-            self._win_rates.items(),
-            key=lambda x: x[1],
-            reverse=True
-        ):
+
+        for cls, win_rate in sorted(self._win_rates.items(), key=lambda x: x[1], reverse=True):
             lines.append(f"  {cls:20s} {win_rate:6.2f}%")
-        
+
         outliers = self.identify_outliers()
-        
-        if outliers['overpowered']:
-            lines.extend([
-                "",
-                "⚠️  Overpowered Classes:",
-                "-" * 40,
-            ])
-            for cls, win_rate, z_score in outliers['overpowered']:
+
+        if outliers["overpowered"]:
+            lines.extend(
+                [
+                    "",
+                    "⚠️  Overpowered Classes:",
+                    "-" * 40,
+                ]
+            )
+            for cls, win_rate, z_score in outliers["overpowered"]:
                 lines.append(f"  {cls:20s} {win_rate:6.2f}% (z={z_score:.2f})")
-        
-        if outliers['underpowered']:
-            lines.extend([
-                "",
-                "⚠️  Underpowered Classes:",
-                "-" * 40,
-            ])
-            for cls, win_rate, z_score in outliers['underpowered']:
+
+        if outliers["underpowered"]:
+            lines.extend(
+                [
+                    "",
+                    "⚠️  Underpowered Classes:",
+                    "-" * 40,
+                ]
+            )
+            for cls, win_rate, z_score in outliers["underpowered"]:
                 lines.append(f"  {cls:20s} {win_rate:6.2f}% (z={z_score:.2f})")
-        
-        lines.extend([
-            "",
-            "Most Used Abilities:",
-            "-" * 40,
-        ])
-        
+
+        lines.extend(
+            [
+                "",
+                "Most Used Abilities:",
+                "-" * 40,
+            ]
+        )
+
         for ability, count in self.get_most_used_abilities(5):
             lines.append(f"  {ability:30s} {count:5d} uses")
-        
+
         lines.append("=" * 60)
-        
+
         return "\n".join(lines)
 
 
 class CombatSimulator:
     """
     Simulates combat encounters for balance testing.
-    
+
     This is a simplified simulator that doesn't require the full game infrastructure.
     """
-    
+
     def __init__(self):
         self.results: list[CombatStats] = []
 
@@ -504,10 +508,7 @@ class CombatSimulator:
         non_progress_streak = 0
         prior_non_progress_action = None
         invalid_intents = 0
-        member_labels = {
-            member.combatant_id: member.display_label
-            for member in encounter.members
-        }
+        member_labels = {member.combatant_id: member.display_label for member in encounter.members}
 
         def record_analytics_text(value: object) -> None:
             _merge_counts(class_kit_events, _classify_class_kit_text(value))
@@ -550,10 +551,7 @@ class CombatSimulator:
                     dmg = int(ev.data.get("damage", 0) or 0)
                     if actor and dmg > 0:
                         damage_by_actor[str(actor)] += dmg
-                    target_id = (
-                        ev.data.get("target_combatant_id")
-                        or ev.data.get("target_id")
-                    )
+                    target_id = ev.data.get("target_combatant_id") or ev.data.get("target_id")
                     if target_id in member_labels and dmg > 0:
                         damage_by_combatant[member_labels[target_id]] += dmg
             except Exception:
@@ -637,7 +635,10 @@ class CombatSimulator:
                 if (
                     attacker == char1
                     and "Totem" in _engine.available_actions
-                    and not (attacker.magic_effects.get("Totem") and attacker.magic_effects["Totem"].active)
+                    and not (
+                        attacker.magic_effects.get("Totem")
+                        and attacker.magic_effects["Totem"].active
+                    )
                 ):
                     return "Totem", "Earth"
             except Exception:
@@ -727,7 +728,8 @@ class CombatSimulator:
                         or "Drain" in nm
                         or "Lifesteal" in nm
                         or "Kill" in nm
-                        or nm in {
+                        or nm
+                        in {
                             "GoldTossEffect",
                             "SlotMachineEffect",
                             "LickEffect",
@@ -738,7 +740,10 @@ class CombatSimulator:
                             "StompEffect",
                             "BreathDamageEffect",
                         }
-                        or any(k in nm for k in ("Punch", "Crush", "Lick", "Toss", "Breath", "Devour", "Stomp"))
+                        or any(
+                            k in nm
+                            for k in ("Punch", "Crush", "Lick", "Toss", "Breath", "Devour", "Stomp")
+                        )
                     ):
                         return True
                 return False
@@ -789,25 +794,26 @@ class CombatSimulator:
                         if hp:
                             return "Use Item", hp
                     # Mana potions: only if we are resource-starved and could plausibly cast something.
-                    if mp_pct <= 0.15 and (not attacker.status_effects.get("Silence") or not attacker.status_effects["Silence"].active):
+                    if mp_pct <= 0.15 and (
+                        not attacker.status_effects.get("Silence")
+                        or not attacker.status_effects["Silence"].active
+                    ):
                         mp = _best_item("Mana")
                         if mp:
                             return "Use Item", mp
             except Exception:
                 pass
 
-            if (
-                not paired_policy
-                or turns < int(max_turns * 0.6)
-                or max_turns == 1
-            ) and (
+            if (not paired_policy or turns < int(max_turns * 0.6) or max_turns == 1) and (
                 hp_pct < 0.35
                 and "Spells" in attacker.spellbook
                 and not attacker.status_effects["Silence"].active
             ):
                 for nm, sp in attacker.spellbook["Spells"].items():
                     if getattr(sp, "subtyp", "") in ["Heal", "Support"]:
-                        if getattr(attacker, "mana", None) and attacker.mana.current >= getattr(sp, "cost", 0):
+                        if getattr(attacker, "mana", None) and attacker.mana.current >= getattr(
+                            sp, "cost", 0
+                        ):
                             return "Cast Spell", nm
 
             # Note: "Smoke Screen" is primarily an escape tool (it triggers flee logic in BattleEngine),
@@ -826,6 +832,7 @@ class CombatSimulator:
                                 return "Cast Spell", nm
             # Offensive skill if affordable
             if "Skills" in attacker.spellbook:
+
                 def _skill_score(name: str, ab) -> float:
                     # Avoid analytics degeneracy: these are valuable in the real game,
                     # but in the simulator they often waste turns and swamp results.
@@ -836,9 +843,15 @@ class CombatSimulator:
                     # Don't spam Disarm into natural weapons / already-disarmed targets.
                     if name == "Disarm":
                         try:
-                            if getattr(defender, "physical_effects", {}).get("Disarm") and defender.physical_effects["Disarm"].active:
+                            if (
+                                getattr(defender, "physical_effects", {}).get("Disarm")
+                                and defender.physical_effects["Disarm"].active
+                            ):
                                 return -1e9
-                            if hasattr(defender, "can_be_disarmed") and not defender.can_be_disarmed():
+                            if (
+                                hasattr(defender, "can_be_disarmed")
+                                and not defender.can_be_disarmed()
+                            ):
                                 return -1e9
                         except Exception:
                             return -1e9
@@ -870,8 +883,7 @@ class CombatSimulator:
                         best_score = sc
                         best = nm
                 if best is not None and (
-                    best_score > 0
-                    or (not paired_policy and best_score > -1e8)
+                    best_score > 0 or (not paired_policy and best_score > -1e8)
                 ):
                     return "Use Skill", best
 
@@ -884,10 +896,7 @@ class CombatSimulator:
             if pre.can_act:
                 hp_before = (
                     int(char1.health.current),
-                    tuple(
-                        int(member.enemy.health.current)
-                        for member in encounter.members
-                    ),
+                    tuple(int(member.enemy.health.current) for member in encounter.members),
                 )
                 forced = engine.get_forced_action()
                 if forced:
@@ -918,24 +927,11 @@ class CombatSimulator:
                         else:
                             action, choice = engine.get_enemy_action()
                 record_action_selection(action, choice)
-                action_name = (
-                    action.action
-                    if isinstance(action, ActionIntent)
-                    else str(action)
-                )
-                action_choice = (
-                    action.choice
-                    if isinstance(action, ActionIntent)
-                    else choice
-                )
+                action_name = action.action if isinstance(action, ActionIntent) else str(action)
+                action_choice = action.choice if isinstance(action, ActionIntent) else choice
+                action_label = f"{action_name}:{action_choice}" if action_choice else action_name
                 action_label = (
-                    f"{action_name}:{action_choice}"
-                    if action_choice
-                    else action_name
-                )
-                action_label = (
-                    f"{getattr(engine, 'current_actor_id', None) or 'unknown'}="
-                    f"{action_label}"
+                    f"{getattr(engine, 'current_actor_id', None) or 'unknown'}=" f"{action_label}"
                 )
                 action_sequence.append(action_label)
                 if not hasattr(engine, "execute_intent"):
@@ -947,8 +943,7 @@ class CombatSimulator:
                     scope = engine.target_scope_for_action(action, choice)
                     target_ids = (
                         (engine.focus_target_id,)
-                        if engine.is_player_turn()
-                        and scope == TargetScope.SINGLE_ENEMY
+                        if engine.is_player_turn() and scope == TargetScope.SINGLE_ENEMY
                         else ()
                     )
                     intent = ActionIntent(action, choice, target_ids)
@@ -957,10 +952,7 @@ class CombatSimulator:
                     invalid_intents += 1
                 hp_after = (
                     int(char1.health.current),
-                    tuple(
-                        int(member.enemy.health.current)
-                        for member in encounter.members
-                    ),
+                    tuple(int(member.enemy.health.current) for member in encounter.members),
                 )
                 if hp_after == hp_before and action_label == prior_non_progress_action:
                     repeated_non_progress_actions += 1
@@ -969,9 +961,7 @@ class CombatSimulator:
                     non_progress_streak = 1
                 else:
                     non_progress_streak = 0
-                prior_non_progress_action = (
-                    action_label if hp_after == hp_before else None
-                )
+                prior_non_progress_action = action_label if hp_after == hp_before else None
                 max_non_progress_streak = max(
                     max_non_progress_streak,
                     non_progress_streak,
@@ -986,9 +976,7 @@ class CombatSimulator:
 
         # Outcome (avoid engine.end_battle bookkeeping for analytics)
         living_enemies = [member.enemy for member in encounter.living_members]
-        roster_name = " / ".join(
-            member.display_label for member in encounter.members
-        )
+        roster_name = " / ".join(member.display_label for member in encounter.members)
         if turns >= max_turns and char1.is_alive() and living_enemies:
             winner = "draw"
             loser = "draw"
@@ -1010,16 +998,18 @@ class CombatSimulator:
             winner_obj = primary_enemy
             loser_obj = char1
 
-        winner_class = winner_obj.cls.name if hasattr(winner_obj, "cls") and winner_obj.cls else "Unknown"
-        loser_class = loser_obj.cls.name if hasattr(loser_obj, "cls") and loser_obj.cls else "Unknown"
+        winner_class = (
+            winner_obj.cls.name if hasattr(winner_obj, "cls") and winner_obj.cls else "Unknown"
+        )
+        loser_class = (
+            loser_obj.cls.name if hasattr(loser_obj, "cls") and loser_obj.cls else "Unknown"
+        )
         winner_hp = max(0, winner_obj.health.current)
         winner_max = winner_obj.health.max
         outcome = None
         if turns < max_turns or not char1.is_alive() or not living_enemies:
             outcome = engine.end_battle()
-        settlements = tuple(
-            getattr(outcome, "member_settlements", ()) or ()
-        )
+        settlements = tuple(getattr(outcome, "member_settlements", ()) or ())
 
         return CombatStats(
             winner=winner,
@@ -1040,12 +1030,8 @@ class CombatSimulator:
             critical_hits=crits,
             misses=misses,
             rounds=int(getattr(engine, "round_number", 0) or 0),
-            actor_turns=int(
-                getattr(engine, "total_started_actor_turns", turns) or turns
-            ),
-            roster=tuple(
-                member.display_label for member in encounter.members
-            ),
+            actor_turns=int(getattr(engine, "total_started_actor_turns", turns) or turns),
+            roster=tuple(member.display_label for member in encounter.members),
             enemy_hp_remaining={
                 member.combatant_id: max(
                     0,
@@ -1062,24 +1048,15 @@ class CombatSimulator:
             ),
             consumables_used=consumables_used,
             damage_by_combatant=dict(damage_by_combatant),
-            reward_experience=int(
-                getattr(outcome, "total_experience", 0) or 0
-            ),
-            reward_gold=sum(
-                int(getattr(settlement, "gold", 0) or 0)
-                for settlement in settlements
-            ),
+            reward_experience=int(getattr(outcome, "total_experience", 0) or 0),
+            reward_gold=sum(int(getattr(settlement, "gold", 0) or 0) for settlement in settlements),
             action_sequence=tuple(action_sequence[-80:]),
             repeated_non_progress_actions=repeated_non_progress_actions,
             max_non_progress_streak=max_non_progress_streak,
             invalid_intents=invalid_intents,
-            max_turns_reached=(
-                turns >= max_turns
-                and char1.is_alive()
-                and bool(living_enemies)
-            ),
+            max_turns_reached=(turns >= max_turns and char1.is_alive() and bool(living_enemies)),
         )
-    
+
     def run_simulations(
         self,
         char1: Player | Callable[[], Player],
@@ -1091,13 +1068,13 @@ class CombatSimulator:
     ) -> BalanceReport:
         """
         Run multiple simulations between two characters.
-        
+
         Args:
             char1: First combatant
             char2: Legacy singleton combatant or factory.
             encounter: Encounter instance or zero-argument factory.
             iterations: Number of battles to simulate
-            
+
         Returns:
             Balance report with aggregated statistics
         """
@@ -1111,6 +1088,7 @@ class CombatSimulator:
             # initial stats/equipment are part of the deterministic run.
             if base_seed is not None:
                 import random
+
                 random.seed(base_seed + i)
             if callable(char1):
                 c1 = char1()
@@ -1153,13 +1131,10 @@ class CombatSimulator:
                     seed=sim_seed,
                 )
             results.append(result)
-        
+
         self.results.extend(results)
-        
-        return BalanceReport(
-            total_battles=iterations,
-            results=results
-        )
+
+        return BalanceReport(total_battles=iterations, results=results)
 
 
 def remaining_improvement_tuning_report() -> dict[str, object]:
@@ -1191,7 +1166,13 @@ def remaining_improvement_tuning_report() -> dict[str, object]:
         "poison_consistency": {
             "status": "measure_before_tuning",
             "sources": ["Poison Dart", "Poison Breath", "Poison Strike", "Hex"],
-            "metrics": ["application_rate", "duration", "tick_damage", "resist_outcome", "immunity_outcome"],
+            "metrics": [
+                "application_rate",
+                "duration",
+                "tick_damage",
+                "resist_outcome",
+                "immunity_outcome",
+            ],
         },
     }
 
@@ -1199,11 +1180,11 @@ def remaining_improvement_tuning_report() -> dict[str, object]:
 def quick_balance_test(class_name: str, level: int = 10) -> BalanceReport:
     """
     Quick helper function to test a class against all other classes.
-    
+
     Args:
         class_name: Name of the class to test
         level: Level to test at
-        
+
     Returns:
         Balance report
     """

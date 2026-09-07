@@ -49,7 +49,7 @@ priority, owner documents define current behavior and decision gates, and
 - [`STORY_AND_ENDGAME_DESIGN.md`](STORY_AND_ENDGAME_DESIGN.md) — current
   Vesperion/Voluntas canon, route contract, and future story gates.
 - [`QUEST_STORY_INTEGRATION_DESIGN.md`](QUEST_STORY_INTEGRATION_DESIGN.md) —
-  quest staging, save migration, and postgame dialogue boundaries.
+  quest staging, persisted-state normalization, and postgame dialogue boundaries.
 - [`EQUIPMENT_ITEMS_ECONOMY_DESIGN_GATES.md`](EQUIPMENT_ITEMS_ECONOMY_DESIGN_GATES.md)
   — equipment, item state, shop, and economy gates.
 - [`PRESENTATION_ASSET_DESIGN_GATES.md`](PRESENTATION_ASSET_DESIGN_GATES.md) —
@@ -60,9 +60,15 @@ priority, owner documents define current behavior and decision gates, and
   inspection art, and scale rules.
 - [`SOUND_SYSTEM.md`](SOUND_SYSTEM.md) — audio runtime, routing, assets, and
   future audio gates.
+- [`spreadsheets/README.md`](spreadsheets/README.md) — generated CSV snapshots
+  for classes, races, specials, items, enemies, quests, and Google Sheets.
 
 ## Architecture And Development References
 
+- [`ARCHITECTURE.md`](ARCHITECTURE.md) — runtime boundaries, public APIs,
+  combat/targeting flow, save policy, resource paths, and distribution.
+- [`ASSET_PROVENANCE.md`](ASSET_PROVENANCE.md) — runtime and source asset
+  inventory, known provenance, and attribution gaps.
 - [`EVENT_EMISSIONS.md`](EVENT_EMISSIONS.md) — event contracts, emitters,
   consumers, and payload-enrichment gate.
 - [`CURSES_UI_RETIREMENT.md`](CURSES_UI_RETIREMENT.md) — why Pygame is the only

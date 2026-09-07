@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-from .base import Job
 from .. import items
-
+from .base import Job
 
 COMMITMENT_ACCURACY_PER_STACK = 0.03
 COMMITMENT_CRITICAL_BONUS_PER_STACK = 0.05
@@ -63,10 +62,7 @@ def commitment_accuracy_bonus(character) -> float:
     """Return Commitment's current weapon accuracy bonus."""
     if not has_skill(character, "Commitment"):
         return 0.0
-    return (
-        int(getattr(character, "_commitment_stacks", 0) or 0)
-        * COMMITMENT_ACCURACY_PER_STACK
-    )
+    return int(getattr(character, "_commitment_stacks", 0) or 0) * COMMITMENT_ACCURACY_PER_STACK
 
 
 def commitment_critical_multiplier(character, multiplier: float) -> float:
@@ -74,10 +70,7 @@ def commitment_critical_multiplier(character, multiplier: float) -> float:
     if multiplier <= 1 or not has_skill(character, "Commitment"):
         return multiplier
     stacks = int(getattr(character, "_commitment_stacks", 0) or 0)
-    return 1 + (
-        (multiplier - 1)
-        * (1 + stacks * COMMITMENT_CRITICAL_BONUS_PER_STACK)
-    )
+    return 1 + ((multiplier - 1) * (1 + stacks * COMMITMENT_CRITICAL_BONUS_PER_STACK))
 
 
 class Warrior(Job):

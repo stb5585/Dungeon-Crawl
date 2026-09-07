@@ -1,0 +1,5 @@
+Name,Class ID,Category,Specialization,HP,MP,Specials,Description
+Fairy,Fairy,Familiar,Support,0,0,Heal; Regen; Bless,
+Homunculus,Homunculus,Familiar,Defense,0,0,Stupefy; Disarm; Pocket Sand,
+Jinkin,Jinkin,Familiar,Luck,0,0,Corruption; Gold Toss; Steal,
+Mephit,Mephit,Familiar,Arcane,0,0,Magic Missile; Silence,

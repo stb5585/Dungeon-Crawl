@@ -13,7 +13,6 @@ import pygame
 
 from src.paths import PYGAME_ASSETS_DIR
 
-
 logger = logging.getLogger(__name__)
 
 PORTRAIT_ROOT = PYGAME_ASSETS_DIR / "portraits"
@@ -46,13 +45,18 @@ class PortraitManager:
         self.base_root = self.portrait_root / "base"
         self.fallback_root = self.base_root / "fallback_individuals"
         self.overlay_root = Path(overlay_root or self.portrait_root / "overlays")
-        self.atlas_json_path = Path(atlas_json or self._first_existing(
-            self.portrait_root / "portrait_atlas_mapping.json",
-            self.base_root / "base_portrait_atlas.json",
-            self.portrait_root / "base_portrait_atlas.json",
-        ))
+        self.atlas_json_path = Path(
+            atlas_json
+            or self._first_existing(
+                self.portrait_root / "portrait_atlas_mapping.json",
+                self.base_root / "base_portrait_atlas.json",
+                self.portrait_root / "base_portrait_atlas.json",
+            )
+        )
         self.atlas_image_path = Path(atlas_image) if atlas_image else None
-        self.atlas_image_paths: list[Path] = [self.atlas_image_path] if self.atlas_image_path else []
+        self.atlas_image_paths: list[Path] = (
+            [self.atlas_image_path] if self.atlas_image_path else []
+        )
         self.sheet_image_paths: dict[str, Path] = {}
         self.sheet_variant_count = 0
         self.frames: dict[str, PortraitFrame] = {}
@@ -120,13 +124,17 @@ class PortraitManager:
         if self.atlas_image_path is not None:
             self.atlas_image_paths = [self.atlas_image_path]
         else:
-            self.atlas_image_paths = self._discover_atlas_images(self.atlas_json_path.parent / image_name)
+            self.atlas_image_paths = self._discover_atlas_images(
+                self.atlas_json_path.parent / image_name
+            )
             self.atlas_image_path = self.atlas_image_paths[0]
         for entry_key, entry in (data.get("entries") or {}).items():
             try:
                 race = self.normalize_key(entry.get("race", entry_key.rsplit("_", 1)[0]))
                 gender = self.normalize_key(entry.get("gender", entry_key.rsplit("_", 1)[-1]))
-                rect = pygame.Rect(int(entry["x"]), int(entry["y"]), int(entry["w"]), int(entry["h"]))
+                rect = pygame.Rect(
+                    int(entry["x"]), int(entry["y"]), int(entry["w"]), int(entry["h"])
+                )
             except (KeyError, TypeError, ValueError) as exc:
                 logger.warning("Skipping invalid portrait atlas entry %s: %s", entry_key, exc)
                 continue
@@ -155,7 +163,9 @@ class PortraitManager:
                     continue
                 gender, variant_number = parsed
                 try:
-                    rect = pygame.Rect(int(frame["x"]), int(frame["y"]), int(frame["w"]), int(frame["h"]))
+                    rect = pygame.Rect(
+                        int(frame["x"]), int(frame["y"]), int(frame["w"]), int(frame["h"])
+                    )
                 except (KeyError, TypeError, ValueError) as exc:
                     logger.warning("Skipping invalid portrait sheet frame %s: %s", frame_key, exc)
                     continue
@@ -186,12 +196,18 @@ class PortraitManager:
         if image_name:
             path = base_dir / image_name
             candidates.append(path)
-            if image_name.endswith("_portraits.png") and not image_name.endswith("_base_portraits.png"):
-                candidates.append(base_dir / image_name.replace("_portraits.png", "_base_portraits.png"))
-        candidates.extend([
-            base_dir / f"{race}_base_portraits.png",
-            base_dir / f"{race}_portraits.png",
-        ])
+            if image_name.endswith("_portraits.png") and not image_name.endswith(
+                "_base_portraits.png"
+            ):
+                candidates.append(
+                    base_dir / image_name.replace("_portraits.png", "_base_portraits.png")
+                )
+        candidates.extend(
+            [
+                base_dir / f"{race}_base_portraits.png",
+                base_dir / f"{race}_portraits.png",
+            ]
+        )
         return self._first_existing(*candidates)
 
     @staticmethod
@@ -199,7 +215,7 @@ class PortraitManager:
         key = PortraitManager.normalize_key(frame_key, "")
         race_prefix = f"{race}_"
         if key.startswith(race_prefix):
-            key = key[len(race_prefix):]
+            key = key[len(race_prefix) :]
         match = re.fullmatch(r"(male|female)_(\d+)", key)
         if not match:
             return None
@@ -210,7 +226,9 @@ class PortraitManager:
 
     @staticmethod
     def entry_key(race: Any, gender: Any) -> str:
-        return f"{PortraitManager.normalize_key(race)}_{PortraitManager.normalize_key(gender, 'male')}"
+        return (
+            f"{PortraitManager.normalize_key(race)}_{PortraitManager.normalize_key(gender, 'male')}"
+        )
 
     @staticmethod
     def variant_entry_key(race: Any, gender: Any, variant: Any = None) -> str:
@@ -265,7 +283,9 @@ class PortraitManager:
         effects: Iterable[Any] | None = None,
         variant: Any = None,
     ) -> pygame.Surface:
-        key = self.cache_key(race, gender, class_name, first_promotion, second_promotion, effects, variant=variant)
+        key = self.cache_key(
+            race, gender, class_name, first_promotion, second_promotion, effects, variant=variant
+        )
         cached = self._portrait_cache.get(key)
         if cached is not None:
             return cached
@@ -318,7 +338,9 @@ class PortraitManager:
         """Return a frame rect adjusted when atlas images are scaled variants."""
         atlas_width, atlas_height = atlas.get_size()
         max_right = max((frame.rect.right for frame in self.frames.values()), default=atlas_width)
-        max_bottom = max((frame.rect.bottom for frame in self.frames.values()), default=atlas_height)
+        max_bottom = max(
+            (frame.rect.bottom for frame in self.frames.values()), default=atlas_height
+        )
         scale_x = atlas_width / max_right if max_right > atlas_width else 1.0
         scale_y = atlas_height / max_bottom if max_bottom > atlas_height else 1.0
         adjusted = pygame.Rect(
@@ -331,7 +353,9 @@ class PortraitManager:
         adjusted.height = min(adjusted.height, max(1, atlas_height - adjusted.y))
         return adjusted
 
-    def atlas_surface(self, variant: Any = None, *, race: str | None = None) -> pygame.Surface | None:
+    def atlas_surface(
+        self, variant: Any = None, *, race: str | None = None
+    ) -> pygame.Surface | None:
         if race and race in self.sheet_image_paths:
             cache_key: Any = ("sheet", race)
             if cache_key in self._atlas_surfaces:

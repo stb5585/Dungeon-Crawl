@@ -6,7 +6,6 @@ import math
 import random
 from typing import Any
 
-
 ELEMENTAL_SCHOOLS = ("Fire", "Ice", "Electric", "Wind", "Water", "Earth")
 ENHANCEMENT_BY_SCHOOL = {
     "Fire": "Fire Inside",
@@ -152,9 +151,8 @@ def spell_damage_multiplier(
         multiplier *= 1.0 + astromancer.threaded_bonus(character, "output")
     except Exception:
         pass
-    if (
-        str(getattr(ability, "name", "")).startswith("Shadow Bolt")
-        and has_talent(character, "mage.forbidden-studies")
+    if str(getattr(ability, "name", "")).startswith("Shadow Bolt") and has_talent(
+        character, "mage.forbidden-studies"
     ):
         multiplier *= 1.20
     if (
@@ -177,10 +175,7 @@ def spell_damage_multiplier(
         and int(getattr(character, "warlock_eclipse_turns", 0) or 0) > 0
     ):
         multiplier *= 1.15
-    if (
-        has_skill(character, "Force Multiplier")
-        and _is_magic_missile(ability)
-    ):
+    if has_skill(character, "Force Multiplier") and _is_magic_missile(ability):
         multiplier *= 1.25
     if has_skill(character, "Arcane Empowerment"):
         stacks = min(5, max(0, int(_combat_state(character).get("arcane_empowerment", 0))))
@@ -189,8 +184,7 @@ def spell_damage_multiplier(
         school_from_ability(ability) == "Electric"
         and has_skill(character, "Divine Wind")
         and target is not None
-        and getattr(target.physical_effects.get("Prone"), "source", "")
-        == "Divine Wind"
+        and getattr(target.physical_effects.get("Prone"), "source", "") == "Divine Wind"
     ):
         multiplier *= 2.0
     return multiplier
@@ -235,9 +229,7 @@ def record_spell_damage_hit(
             24,
             int(state.get("arcane_crystal_shards", 0) or 0) + 1,
         )
-        state["new_arcane_crystal_shards"] = int(
-            state.get("new_arcane_crystal_shards", 0) or 0
-        ) + 1
+        state["new_arcane_crystal_shards"] = int(state.get("new_arcane_crystal_shards", 0) or 0) + 1
     if (
         str(metadata.get("damage_type") or "") == "Electric"
         and bool(metadata.get("is_critical"))
@@ -305,8 +297,7 @@ def _random_school_rider_triggers(
     base_chance = RANDOM_SCHOOL_RIDERS.get((school, passive_name))
     if base_chance is None or not has_skill(character, passive_name):
         return False
-    from . import class_rings
-    from . import promotion_kits
+    from . import class_rings, promotion_kits
 
     streak_active = (
         getattr(getattr(character, "cls", None), "name", "") == "Wizard"
@@ -366,9 +357,7 @@ def process_cast(
         character.stat_effects["Defense"].duration = max(
             character.stat_effects["Defense"].duration, 1
         )
-        character.stat_effects["Defense"].extra = max(
-            character.stat_effects["Defense"].extra, 10
-        )
+        character.stat_effects["Defense"].extra = max(character.stat_effects["Defense"].extra, 10)
         return message + f"Frozen Armor protects {character.name} for one turn.\n"
     if school == "Electric":
         state["electrified"] = 3
@@ -376,12 +365,8 @@ def process_cast(
     if school == "Wind":
         state["wind_currents"] = 3
         character.stat_effects["Speed"].active = True
-        character.stat_effects["Speed"].duration = max(
-            character.stat_effects["Speed"].duration, 3
-        )
-        character.stat_effects["Speed"].extra = max(
-            character.stat_effects["Speed"].extra, 3
-        )
+        character.stat_effects["Speed"].duration = max(character.stat_effects["Speed"].duration, 3)
+        character.stat_effects["Speed"].extra = max(character.stat_effects["Speed"].extra, 3)
         return message + f"Wind Currents quicken {character.name} for three turns.\n"
     if school == "Water":
         hp = max(1, int(character.health.max * 0.05))
@@ -440,10 +425,14 @@ def tick_combat_state(character: Any, *, end: bool = False) -> str:
 def save_roll_multiplier(character: Any) -> float:
     """Return the defensive-save multiplier for prone or Refueling characters."""
     prone = getattr(character, "physical_effects", {}).get("Prone")
-    return 0.5 if (
-        bool(getattr(character, "mage_refueling", False))
-        or bool(getattr(prone, "active", False))
-    ) else 1.0
+    return (
+        0.5
+        if (
+            bool(getattr(character, "mage_refueling", False))
+            or bool(getattr(prone, "active", False))
+        )
+        else 1.0
+    )
 
 
 def _apply_sorcerer_modifier(
@@ -575,9 +564,8 @@ def _apply_wizard_modifier(
         target.apply_stun(2, source="Subzero", applier=character)
         message += f"{target.name} is frozen solid.\n"
     elif school == "Electric" and has_skill(character, "Electrical Burns"):
-        if (
-            getattr(target.magic_effects.get("DOT"), "source", "") == "Drowning"
-            and has_skill(character, "Aspirate")
+        if getattr(target.magic_effects.get("DOT"), "source", "") == "Drowning" and has_skill(
+            character, "Aspirate"
         ):
             target.health.current = 0
             message += f"The charge courses through {target.name}'s drowning body.\n"
@@ -614,16 +602,24 @@ def _apply_wizard_modifier(
         message += "The ground continues to reverberate.\n"
 
     # These cross-school reactions are deliberately absent from descriptions.
-    if school == "Wind" and getattr(target, "windswept_ejected", False) and has_skill(
-        character,
-        "Inferno",
+    if (
+        school == "Wind"
+        and getattr(target, "windswept_ejected", False)
+        and has_skill(
+            character,
+            "Inferno",
+        )
     ):
         extra = max(1, damage)
         target.health.current -= extra
         message += f"A vortex of flame tears through {target.name} for {extra} damage.\n"
-    if school == "Earth" and getattr(target, "mage_frozen", 0) and has_skill(
-        character,
-        "Subzero",
+    if (
+        school == "Earth"
+        and getattr(target, "mage_frozen", 0)
+        and has_skill(
+            character,
+            "Subzero",
+        )
     ):
         target.health.current = 0
         message += f"{target.name} shatters.\n"
@@ -653,9 +649,8 @@ def _resolve_arcane_battlefield_effects(character: Any, ability: Any) -> str:
     if new_shards:
         noun = "shard" if new_shards == 1 else "shards"
         message += f"{new_shards} Arcane crystal {noun} scatter across the battlefield.\n"
-    if (
-        str(getattr(ability, "name", "")) == "Kinetic Explosion"
-        and has_skill(character, "Detonation Cascade")
+    if str(getattr(ability, "name", "")) == "Kinetic Explosion" and has_skill(
+        character, "Detonation Cascade"
     ):
         shards = int(state.pop("arcane_crystal_shards", 0) or 0)
         targets = _encounter_targets(character)
@@ -905,12 +900,10 @@ def permanent_summon_multipliers(character: Any) -> tuple[float, float]:
     health = 1.10 if has_talent(character, "mage.binding-circle") else 1.0
     damage = 1.10 if has_talent(character, "mage.binding-circle") else 1.0
     conduit_ranks = sum(
-        node_id.startswith("summoner.talent.summoner-conduit-mastery")
-        for node_id in purchased
+        node_id.startswith("summoner.talent.summoner-conduit-mastery") for node_id in purchased
     )
     ward_ranks = sum(
-        node_id.startswith("summoner.talent.summoner-true-name-ward")
-        for node_id in purchased
+        node_id.startswith("summoner.talent.summoner-true-name-ward") for node_id in purchased
     )
     return health * (1 + 0.05 * ward_ranks), damage * (1 + 0.05 * conduit_ranks)
 

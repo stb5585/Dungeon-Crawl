@@ -10,7 +10,6 @@ from PIL import Image
 from src.ui_pygame.assets.npc_art_manager import NpcArtManager
 from tools import build_npc_art_sheet
 
-
 V1_NPC_KEYS = {
     "alchemist",
     "barkeep",
@@ -105,7 +104,9 @@ def test_default_npc_art_map_covers_v1_dialogue_npcs():
     assert manager.get_image_path("Old Warehouse Guard").endswith("old_warehouse_guard.png")
     assert manager.get_image_path("Warehouse Guard").endswith("old_warehouse_guard.png")
     assert manager.get_image_path("Warp Point Scientist").endswith("warp_point_scientist.png")
-    assert manager.get_image_path("Staffed Warp Point Scientist").endswith("warp_point_scientist.png")
+    assert manager.get_image_path("Staffed Warp Point Scientist").endswith(
+        "warp_point_scientist.png"
+    )
     assert manager.get_image_path("Mara Vale").endswith("mara_vale.png")
     assert manager.get_image_path("The Gray Broker").endswith("gray_broker.png")
     assert manager.get_image_path("Seraphine Voss").endswith("seraphine_voss.png")

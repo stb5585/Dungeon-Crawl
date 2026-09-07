@@ -37,7 +37,9 @@ class RectF:
 
 @dataclass(frozen=True)
 class Quad:
-    points: tuple[tuple[float, float], tuple[float, float], tuple[float, float], tuple[float, float]]
+    points: tuple[
+        tuple[float, float], tuple[float, float], tuple[float, float], tuple[float, float]
+    ]
 
     @classmethod
     def from_rect(cls, rect: RectF) -> "Quad":

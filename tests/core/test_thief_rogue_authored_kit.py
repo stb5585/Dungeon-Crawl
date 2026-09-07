@@ -2,7 +2,8 @@
 
 from types import SimpleNamespace
 
-from src.core import abilities, enemies, items, map_tiles, player as player_module
+from src.core import abilities, enemies, items, map_tiles
+from src.core import player as player_module
 from src.core.classes import class_rings, footpad, promotion_kits
 from src.core.combat.combat_result import CombatResult
 from src.core.progression import ABILITY_TREES, NodeKind, ProgressionState
@@ -494,10 +495,12 @@ def test_all_in_spends_both_meters_and_can_preserve_fortune(monkeypatch):
 def test_detected_trap_can_be_disarmed_on_the_second_approach():
     rogue = _player("Rogue")
     rogue.stats.dex = 20
-    rogue.spellbook["Skills"].update({
-        "Find Traps": abilities.FindTraps(),
-        "Disarm Traps": abilities.DisarmTraps(),
-    })
+    rogue.spellbook["Skills"].update(
+        {
+            "Find Traps": abilities.FindTraps(),
+            "Disarm Traps": abilities.DisarmTraps(),
+        }
+    )
     tile = SimpleNamespace(
         trap_type="Tripwire",
         trap_triggered=False,

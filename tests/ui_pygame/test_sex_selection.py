@@ -70,7 +70,10 @@ def test_sex_selection_draws_options(monkeypatch):
     presenter = _make_presenter()
     screen = sex_selection.SexSelectionScreen(presenter)
     draw_calls = []
-    monkeypatch.setattr("src.ui_pygame.gui.sex_selection.pygame.draw.rect", lambda *_args, **_kwargs: draw_calls.append((_args, _kwargs)))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.sex_selection.pygame.draw.rect",
+        lambda *_args, **_kwargs: draw_calls.append((_args, _kwargs)),
+    )
 
     screen.draw()
 
@@ -88,20 +91,28 @@ def test_sex_selection_navigation_and_cancel(monkeypatch):
     monkeypatch.setattr("src.ui_pygame.gui.sex_selection.pygame.display.flip", lambda: None)
     monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
 
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)],
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_SPACE)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.sex_selection.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_SPACE)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.sex_selection.pygame.event.get", lambda: next(event_batches, [])
+    )
     assert screen.navigate() == "Female"
 
     event_batches = iter([[SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_ESCAPE)]])
-    monkeypatch.setattr("src.ui_pygame.gui.sex_selection.pygame.event.get", lambda: next(event_batches, []))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.sex_selection.pygame.event.get", lambda: next(event_batches, [])
+    )
     assert screen.navigate() is None
 
     click_pos = screen.option_rects()[1].center
     event_batches = iter([[SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=click_pos)]])
-    monkeypatch.setattr("src.ui_pygame.gui.sex_selection.pygame.event.get", lambda: next(event_batches, []))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.sex_selection.pygame.event.get", lambda: next(event_batches, [])
+    )
     assert screen.navigate() == "Female"
 
 
@@ -111,9 +122,14 @@ def test_sex_selection_quit_exits(monkeypatch):
     quit_calls = []
     monkeypatch.setattr(screen, "draw", lambda *_args, **_kwargs: None)
     monkeypatch.setattr("src.ui_pygame.gui.sex_selection.pygame.display.flip", lambda: None)
-    monkeypatch.setattr("src.ui_pygame.gui.sex_selection.pygame.quit", lambda: quit_calls.append(True))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.sex_selection.pygame.quit", lambda: quit_calls.append(True)
+    )
     monkeypatch.setattr("sys.exit", lambda: (_ for _ in ()).throw(SystemExit()))
-    monkeypatch.setattr("src.ui_pygame.gui.sex_selection.pygame.event.get", lambda: [SimpleNamespace(type=pygame.QUIT)])
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.sex_selection.pygame.event.get",
+        lambda: [SimpleNamespace(type=pygame.QUIT)],
+    )
 
     with pytest.raises(SystemExit):
         screen.navigate()

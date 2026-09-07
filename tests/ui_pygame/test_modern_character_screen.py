@@ -23,9 +23,9 @@ from src.core.progression import ProgressionState
 from src.ui_pygame import game as pygame_game
 from src.ui_pygame.gui.dungeon_manager import DungeonManager
 from src.ui_pygame.gui.modern_character_screen import (
+    RESISTANCE_ORDER,
     ClassCompanionDetailsPopup,
     ModernCharacterScreen,
-    RESISTANCE_ORDER,
 )
 
 
@@ -161,12 +161,26 @@ def _make_player():
             "Physical": 0.1,
         },
         equipment={
-            "Weapon": SimpleNamespace(name="Sword", typ="Weapon", subtyp="Sword", damage=12, crit_chance=0.15, weight=4, description="Reliable steel."),
+            "Weapon": SimpleNamespace(
+                name="Sword",
+                typ="Weapon",
+                subtyp="Sword",
+                damage=12,
+                crit_chance=0.15,
+                weight=4,
+                description="Reliable steel.",
+            ),
             "Armor": SimpleNamespace(name="Mail", typ="Armor", subtyp="Medium", armor=8, weight=12),
-            "Helmet": SimpleNamespace(name="Iron Helm", typ="Helmet", subtyp="Heavy", armor=4, weight=6),
+            "Helmet": SimpleNamespace(
+                name="Iron Helm", typ="Helmet", subtyp="Heavy", armor=4, weight=6
+            ),
             "OffHand": None,
-            "Ring": SimpleNamespace(name="Ruby Ring", typ="Accessory", subtyp="Ring", mod="Block", weight=0.1),
-            "Pendant": SimpleNamespace(name="Pendant of Sight", typ="Accessory", subtyp="Pendant", mod="Vision", weight=0.2),
+            "Ring": SimpleNamespace(
+                name="Ruby Ring", typ="Accessory", subtyp="Ring", mod="Block", weight=0.1
+            ),
+            "Pendant": SimpleNamespace(
+                name="Pendant of Sight", typ="Accessory", subtyp="Pendant", mod="Vision", weight=0.2
+            ),
         },
         buffs=[SimpleNamespace(name="Might"), SimpleNamespace(name="Might")],
         stat_effects={"Attack": _effect(True, 3, 4), "Speed": _effect(False)},
@@ -183,12 +197,20 @@ def _make_player():
     player.max_weight = lambda: 140
     player.level_exp = lambda: 300
     player.critical_chance = lambda _slot: 0.125
+
     def check_mod(mod, typ=None):
         if mod == "resist":
             value = player.resistance.get(typ, 0)
             pendant = player.equipment.get("Pendant")
             pendant_mod = str(getattr(pendant, "mod", "") or "")
-            if pendant_mod.split("-")[-1] in {typ, "Elemental"} and typ in {"Fire", "Ice", "Electric", "Water", "Earth", "Wind"}:
+            if pendant_mod.split("-")[-1] in {typ, "Elemental"} and typ in {
+                "Fire",
+                "Ice",
+                "Electric",
+                "Water",
+                "Earth",
+                "Wind",
+            }:
                 value += 1 if "Immune" in pendant_mod else 0.5
             return value
         return {
@@ -207,13 +229,25 @@ def _make_player():
 
 
 def _stub_character_screen_drawing(monkeypatch, screen):
-    monkeypatch.setattr(screen, "draw_semi_transparent_panel", lambda rect, alpha=180: DummySurface((rect.width, rect.height)))
-    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.rect", lambda *_args, **_kwargs: None)
-    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.line", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(
+        screen,
+        "draw_semi_transparent_panel",
+        lambda rect, alpha=180: DummySurface((rect.width, rect.height)),
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.modern_character_screen.pygame.draw.rect", lambda *_args, **_kwargs: None
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.modern_character_screen.pygame.draw.line", lambda *_args, **_kwargs: None
+    )
 
 
 def _rendered_text(presenter):
-    return set(presenter.large_font.render_calls + presenter.normal_font.render_calls + presenter.small_font.render_calls)
+    return set(
+        presenter.large_font.render_calls
+        + presenter.normal_font.render_calls
+        + presenter.small_font.render_calls
+    )
 
 
 def test_modern_character_tabs_are_generic_and_switchable():
@@ -280,18 +314,12 @@ def test_progression_tab_draws_tree_inside_character_menu(monkeypatch):
 
     screen.draw_all(player, do_flip=False)
 
-    rendered = set(
-        presenter.normal_font.render_calls
-        + presenter.small_font.render_calls
-    )
+    rendered = set(presenter.normal_font.render_calls + presenter.small_font.render_calls)
     assert not any(text.startswith("Progression  |  Level") for text in rendered)
     assert "Available Progression Points: 6" in rendered
     assert "Warrior Ability Tree" not in rendered
     assert "P: Navigate tree" in rendered
-    assert not any(
-        "Tree Navigation" in text
-        for text in presenter.large_font.render_calls
-    )
+    assert not any("Tree Navigation" in text for text in presenter.large_font.render_calls)
 
 
 def test_modern_character_summary_helpers_cover_xp_equipment_resistances_and_effects():
@@ -340,7 +368,14 @@ def test_modern_character_summary_helpers_cover_xp_equipment_resistances_and_eff
     player.equipment["OffHand"] = None
 
     slots = screen.build_equipment_slots(player)
-    assert [slot.slot for slot in slots] == ["Weapon", "Armor", "Helmet", "OffHand", "Ring", "Pendant"]
+    assert [slot.slot for slot in slots] == [
+        "Weapon",
+        "Armor",
+        "Helmet",
+        "OffHand",
+        "Ring",
+        "Pendant",
+    ]
     helmet = next(slot for slot in slots if slot.slot == "Helmet")
     assert helmet.implemented is True
     assert helmet.item_name == "Iron Helm"
@@ -359,13 +394,21 @@ def test_modern_character_summary_helpers_cover_xp_equipment_resistances_and_eff
     assert pendant.icon_item is player.equipment["Pendant"]
     assert weapon.icon_item is player.equipment["Weapon"]
 
-    player.equipment["Ring"] = SimpleNamespace(name="Weightless Ring", typ="Accessory", subtyp="Ring", mod="Dodge", weight=0)
-    weightless_ring = next(slot for slot in screen.build_equipment_slots(player) if slot.slot == "Ring")
+    player.equipment["Ring"] = SimpleNamespace(
+        name="Weightless Ring", typ="Accessory", subtyp="Ring", mod="Dodge", weight=0
+    )
+    weightless_ring = next(
+        slot for slot in screen.build_equipment_slots(player) if slot.slot == "Ring"
+    )
     assert weightless_ring.details == ()
     assert weightless_ring.buffs == ("Dodge",)
-    player.equipment["Ring"] = SimpleNamespace(name="Ruby Ring", typ="Accessory", subtyp="Ring", mod="Block", weight=0.1)
+    player.equipment["Ring"] = SimpleNamespace(
+        name="Ruby Ring", typ="Accessory", subtyp="Ring", mod="Block", weight=0.1
+    )
 
-    player.equipment["OffHand"] = SimpleNamespace(name="Aspis", typ="OffHand", subtyp="Shield", mod=0.1, weight=10)
+    player.equipment["OffHand"] = SimpleNamespace(
+        name="Aspis", typ="OffHand", subtyp="Shield", mod=0.1, weight=10
+    )
     shield = next(slot for slot in screen.build_equipment_slots(player) if slot.slot == "OffHand")
     assert shield.details == ("Type: Shield", "Block: 10%")
     assert shield.buffs == ()
@@ -377,15 +420,13 @@ def test_modern_character_summary_helpers_cover_xp_equipment_resistances_and_eff
         mod=12,
         weight=2,
     )
-    tome = next(
-        slot
-        for slot in screen.build_equipment_slots(player)
-        if slot.slot == "OffHand"
-    )
+    tome = next(slot for slot in screen.build_equipment_slots(player) if slot.slot == "OffHand")
     assert tome.details == ("Type: Tome", "Spell Mod: 12")
     assert tome.buffs == ()
 
-    player.equipment["OffHand"] = SimpleNamespace(name="Svalinn", typ="OffHand", subtyp="Shield", mod=0.35, weight=18)
+    player.equipment["OffHand"] = SimpleNamespace(
+        name="Svalinn", typ="OffHand", subtyp="Shield", mod=0.35, weight=18
+    )
     svalinn = next(slot for slot in screen.build_equipment_slots(player) if slot.slot == "OffHand")
     assert svalinn.details == ("Type: Shield", "Block: 35%")
     assert svalinn.buffs == ("+25% Fire Resistance",)
@@ -398,7 +439,9 @@ def test_modern_character_summary_helpers_cover_xp_equipment_resistances_and_eff
         mod="Resist-Fire",
         weight=0.2,
     )
-    fire_chain = next(slot for slot in screen.build_equipment_slots(player) if slot.slot == "Pendant")
+    fire_chain = next(
+        slot for slot in screen.build_equipment_slots(player) if slot.slot == "Pendant"
+    )
     assert fire_chain.buffs == ("+50% Fire Resistance",)
 
     player.equipment["Armor"] = SimpleNamespace(
@@ -409,7 +452,9 @@ def test_modern_character_summary_helpers_cover_xp_equipment_resistances_and_eff
         resistances={"Fire": 0.25, "Water": 0.25},
         weight=18,
     )
-    resist_armor = next(slot for slot in screen.build_equipment_slots(player) if slot.slot == "Armor")
+    resist_armor = next(
+        slot for slot in screen.build_equipment_slots(player) if slot.slot == "Armor"
+    )
     assert "+25% Fire Resistance" in resist_armor.buffs
     assert "+25% Water Resistance" in resist_armor.buffs
 
@@ -430,35 +475,51 @@ def test_modern_character_summary_helpers_cover_xp_equipment_resistances_and_eff
     assert occupied_offhand.icon_item is player.equipment["Weapon"]
     assert occupied_offhand.details == ("Type: Longsword", "Base Damage: 28", "Crit: 15%")
 
-    player.cls = SimpleNamespace(name="Berserker", equip_check=lambda _item, slot: slot == "OffHand")
-    berserker_offhand = next(slot for slot in screen.build_equipment_slots(player) if slot.slot == "OffHand")
+    player.cls = SimpleNamespace(
+        name="Berserker", equip_check=lambda _item, slot: slot == "OffHand"
+    )
+    berserker_offhand = next(
+        slot for slot in screen.build_equipment_slots(player) if slot.slot == "OffHand"
+    )
     assert berserker_offhand.item_name == "(empty)"
 
     player.cls = SimpleNamespace(name="Lancer", equip_check=lambda _item, _slot: False)
     player.equipment["Weapon"].subtyp = "Polearm"
-    lancer_offhand = next(slot for slot in screen.build_equipment_slots(player) if slot.slot == "OffHand")
+    lancer_offhand = next(
+        slot for slot in screen.build_equipment_slots(player) if slot.slot == "OffHand"
+    )
     assert lancer_offhand.item_name == "(empty)"
 
     player.cls = SimpleNamespace(name="Hierophant", equip_check=lambda _item, _slot: False)
     player.spellbook = {"Skills": {"Staff Conduit": object()}}
     player.equipment["Weapon"].subtyp = "Staff"
-    hierophant_offhand = next(slot for slot in screen.build_equipment_slots(player) if slot.slot == "OffHand")
+    hierophant_offhand = next(
+        slot for slot in screen.build_equipment_slots(player) if slot.slot == "OffHand"
+    )
     assert hierophant_offhand.item_name == "(empty)"
 
-    player.equipment["Weapon"] = SimpleNamespace(name="Sword", typ="Weapon", subtyp="Sword", damage=12, crit_chance=0.15, weight=4)
+    player.equipment["Weapon"] = SimpleNamespace(
+        name="Sword", typ="Weapon", subtyp="Sword", damage=12, crit_chance=0.15, weight=4
+    )
     player.equipment["OffHand"] = None
-    player.equipment["Pendant"] = SimpleNamespace(name="Pendant of Sight", typ="Accessory", subtyp="Pendant", mod="Vision", weight=0.2)
+    player.equipment["Pendant"] = SimpleNamespace(
+        name="Pendant of Sight", typ="Accessory", subtyp="Pendant", mod="Vision", weight=0.2
+    )
     player.cls = SimpleNamespace(name="Warrior", equip_check=lambda _item, _slot: True)
 
     grouped_resistances = screen.group_resistances(player)
     assert [entry.name for entry in grouped_resistances["weaknesses"]] == ["Fire", "Ice", "Water"]
     assert [entry.name for entry in grouped_resistances["resistances"]] == ["Poison", "Physical"]
 
-    player.equipment["Pendant"] = SimpleNamespace(name="Fire Chain", typ="Accessory", subtyp="Pendant", mod="Resist-Fire", weight=0.2)
+    player.equipment["Pendant"] = SimpleNamespace(
+        name="Fire Chain", typ="Accessory", subtyp="Pendant", mod="Resist-Fire", weight=0.2
+    )
     grouped_resistances = screen.group_resistances(player)
     assert "Fire" not in [entry.name for entry in grouped_resistances["weaknesses"]]
     assert "Fire" in [entry.name for entry in grouped_resistances["resistances"]]
-    player.equipment["Pendant"] = SimpleNamespace(name="Pendant of Sight", typ="Accessory", subtyp="Pendant", mod="Vision", weight=0.2)
+    player.equipment["Pendant"] = SimpleNamespace(
+        name="Pendant of Sight", typ="Accessory", subtyp="Pendant", mod="Vision", weight=0.2
+    )
 
     equipment_buffs = screen.collect_equipment_buffs(player)
     assert [(buff.name, buff.source) for buff in equipment_buffs] == [
@@ -479,7 +540,9 @@ def test_portrait_details_draws_long_location_without_truncating(monkeypatch):
     monkeypatch.setattr(
         screen,
         "_draw_text",
-        lambda text, font, _color, _x, y, _max_width=None: drawn.append((text, y, font.get_height())),
+        lambda text, font, _color, _x, y, _max_width=None: drawn.append(
+            (text, y, font.get_height())
+        ),
     )
 
     detail_rect = pygame.Rect(0, 0, 120, 80)
@@ -500,7 +563,9 @@ def test_portrait_details_compact_rows_stay_inside_short_detail_box(monkeypatch)
     monkeypatch.setattr(
         screen,
         "_draw_text",
-        lambda text, font, _color, _x, y, _max_width=None: drawn.append((text, y, font.get_height())),
+        lambda text, font, _color, _x, y, _max_width=None: drawn.append(
+            (text, y, font.get_height())
+        ),
     )
 
     detail_rect = pygame.Rect(0, 0, 210, 46)
@@ -521,9 +586,17 @@ def test_character_panel_reserves_portrait_detail_rows_after_large_portrait(monk
     player = _make_player()
     player.location_z = 7
     player.gold = 71789
-    monkeypatch.setattr(screen, "draw_semi_transparent_panel", lambda rect, alpha=180: DummySurface((rect.width, rect.height)))
-    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.rect", lambda *_args, **_kwargs: None)
-    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.line", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(
+        screen,
+        "draw_semi_transparent_panel",
+        lambda rect, alpha=180: DummySurface((rect.width, rect.height)),
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.modern_character_screen.pygame.draw.rect", lambda *_args, **_kwargs: None
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.modern_character_screen.pygame.draw.line", lambda *_args, **_kwargs: None
+    )
     screen.load_portrait = lambda _player: pygame.Surface((225, 400), pygame.SRCALPHA)
 
     screen.draw_character_panel(player)
@@ -546,7 +619,9 @@ def test_modern_character_companion_display_prefers_familiar_then_living_summon(
 
     assert screen.active_companion_for_display(player) is None
 
-    familiar = SimpleNamespace(name="Aster", race="Fairy", level=SimpleNamespace(level=4), is_alive=lambda: True)
+    familiar = SimpleNamespace(
+        name="Aster", race="Fairy", level=SimpleNamespace(level=4), is_alive=lambda: True
+    )
     player.familiar = familiar
     player.summons = {"Fuath": SimpleNamespace(name="Fuath", is_alive=lambda: True)}
     assert screen.active_companion_for_display(player) == ("Familiar", familiar)
@@ -554,12 +629,16 @@ def test_modern_character_companion_display_prefers_familiar_then_living_summon(
 
     player.familiar = None
     spent = SimpleNamespace(name="Spent", is_alive=lambda: False)
-    living = SimpleNamespace(name="Fuath", race="Spirit", level=SimpleNamespace(pro_level=2), is_alive=lambda: True)
+    living = SimpleNamespace(
+        name="Fuath", race="Spirit", level=SimpleNamespace(pro_level=2), is_alive=lambda: True
+    )
     player.summons = {"Spent": spent, "Fuath": living}
     assert screen.active_companion_for_display(player) == ("Xenid", living)
     assert ("Type", "Spirit") in screen.companion_summary_rows("Summon", living)
 
-    patagon = SimpleNamespace(name="Patagon", cls=None, level=SimpleNamespace(level=1), is_alive=lambda: True)
+    patagon = SimpleNamespace(
+        name="Patagon", cls=None, level=SimpleNamespace(level=1), is_alive=lambda: True
+    )
     assert ("Type", "Summon") in screen.companion_summary_rows("Summon", patagon)
 
     player.summons = {"Spent": spent}
@@ -579,16 +658,26 @@ def test_modern_character_class_tab_lists_companions_without_art(monkeypatch):
         level=SimpleNamespace(level=1),
         is_alive=lambda: True,
     )
-    player.cls = SimpleNamespace(name="Thaumaturgist", description="Calls Xenids from distant realms.")
+    player.cls = SimpleNamespace(
+        name="Thaumaturgist", description="Calls Xenids from distant realms."
+    )
     player.summons = {"Patagon": companion}
     calls = []
     screen.companion_art_manager = SimpleNamespace(
         get_scaled_sprite=lambda entity, size: calls.append((entity, size)) or DummySurface(size)
     )
 
-    monkeypatch.setattr(screen, "draw_semi_transparent_panel", lambda rect, alpha=180: DummySurface((rect.width, rect.height)))
-    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.rect", lambda *_args, **_kwargs: None)
-    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.line", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(
+        screen,
+        "draw_semi_transparent_panel",
+        lambda rect, alpha=180: DummySurface((rect.width, rect.height)),
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.modern_character_screen.pygame.draw.rect", lambda *_args, **_kwargs: None
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.modern_character_screen.pygame.draw.line", lambda *_args, **_kwargs: None
+    )
 
     screen.draw_class_tab(player)
 
@@ -615,9 +704,17 @@ def test_modern_character_warlock_class_tab_uses_familiar_label(monkeypatch):
     player.familiar = familiar
     player.summons = {}
 
-    monkeypatch.setattr(screen, "draw_semi_transparent_panel", lambda rect, alpha=180: DummySurface((rect.width, rect.height)))
-    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.rect", lambda *_args, **_kwargs: None)
-    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.line", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(
+        screen,
+        "draw_semi_transparent_panel",
+        lambda rect, alpha=180: DummySurface((rect.width, rect.height)),
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.modern_character_screen.pygame.draw.rect", lambda *_args, **_kwargs: None
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.modern_character_screen.pygame.draw.line", lambda *_args, **_kwargs: None
+    )
 
     screen.draw_class_tab(player)
 
@@ -709,10 +806,15 @@ def test_modern_character_ranger_companion_tab_shows_bond_form_and_special(monke
         "25/100",
     }.issubset(rendered_text)
     assert {"Held", "2/6", "Held Companion"}.isdisjoint(rendered_text)
-    assert {"Level", "HP", "MP", "Attack", "Defense", "Magic", "XP", "0/0 XP"}.isdisjoint(rendered_text)
+    assert {"Level", "HP", "MP", "Attack", "Defense", "Magic", "XP", "0/0 XP"}.isdisjoint(
+        rendered_text
+    )
     assert ("Level", "1") not in screen.companion_summary_rows("Companion", player.familiar)
     detail_rows = screen.companion_detail_rows("Companion", player.familiar)
-    assert all(label not in {"HP", "MP", "Attack", "Defense", "Magic", "Magic Defense"} for label, _value in detail_rows)
+    assert all(
+        label not in {"HP", "MP", "Attack", "Defense", "Magic", "Magic Defense"}
+        for label, _value in detail_rows
+    )
 
 
 def test_modern_character_ranger_without_companion_shows_one_large_empty_slot(monkeypatch):
@@ -833,22 +935,24 @@ def test_modern_character_ranger_companion_tab_releases_active_companion(monkeyp
     assert len(player.tamed_companion["companions"]) == 1
     assert player.tamed_companion["enemy_class"] == "Direwolf"
 
-    player.tamed_companion = ability_mechanics.normalize_tamed_companion({
-        "active": True,
-        "enemy_class": "GiantRat",
-        "name": "Giant Rat",
-        "species": "Rat",
-        "bond": 25,
-        "companions": [
-            {
-                "active": True,
-                "enemy_class": "GiantRat",
-                "name": "Giant Rat",
-                "species": "Rat",
-                "bond": 25,
-            }
-        ],
-    })
+    player.tamed_companion = ability_mechanics.normalize_tamed_companion(
+        {
+            "active": True,
+            "enemy_class": "GiantRat",
+            "name": "Giant Rat",
+            "species": "Rat",
+            "bond": 25,
+            "companions": [
+                {
+                    "active": True,
+                    "enemy_class": "GiantRat",
+                    "name": "Giant Rat",
+                    "species": "Rat",
+                    "bond": 25,
+                }
+            ],
+        }
+    )
     screen.selected_class_companion_index = 0
     popup_messages.clear()
 
@@ -905,15 +1009,25 @@ def test_modern_character_oath_conviction_tab_shows_vow_details(monkeypatch):
     player.paladin_vow = {"path": "Redemption"}
     promotion_kits.combat_state(player)["oath_conviction"] = 1
 
-    monkeypatch.setattr(screen, "draw_semi_transparent_panel", lambda rect, alpha=180: DummySurface((rect.width, rect.height)))
-    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.rect", lambda *_args, **_kwargs: None)
-    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.line", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(
+        screen,
+        "draw_semi_transparent_panel",
+        lambda rect, alpha=180: DummySurface((rect.width, rect.height)),
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.modern_character_screen.pygame.draw.rect", lambda *_args, **_kwargs: None
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.modern_character_screen.pygame.draw.line", lambda *_args, **_kwargs: None
+    )
 
     screen.select_tab("class")
     screen.draw_class_tab(player)
 
     rendered_text = set(
-        presenter.large_font.render_calls + presenter.normal_font.render_calls + presenter.small_font.render_calls
+        presenter.large_font.render_calls
+        + presenter.normal_font.render_calls
+        + presenter.small_font.render_calls
     )
     assert {
         "Oath Conviction",
@@ -932,7 +1046,10 @@ def test_modern_character_oath_conviction_tab_shows_vow_details(monkeypatch):
         "Risk",
     }.issubset(rendered_text)
     assert "Paladin" not in rendered_text
-    assert not any("class ring" in str(text).lower() or "ring identity" in str(text).lower() for text in rendered_text)
+    assert not any(
+        "class ring" in str(text).lower() or "ring identity" in str(text).lower()
+        for text in rendered_text
+    )
 
 
 def test_modern_character_aerial_tempo_tab_owns_jump_mods(monkeypatch):
@@ -943,15 +1060,25 @@ def test_modern_character_aerial_tempo_tab_owns_jump_mods(monkeypatch):
     player.spellbook["Skills"]["Jump"] = FakeJumpSkill()
     promotion_kits.combat_state(player)["aerial_tempo"] = 1
 
-    monkeypatch.setattr(screen, "draw_semi_transparent_panel", lambda rect, alpha=180: DummySurface((rect.width, rect.height)))
-    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.rect", lambda *_args, **_kwargs: None)
-    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.line", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(
+        screen,
+        "draw_semi_transparent_panel",
+        lambda rect, alpha=180: DummySurface((rect.width, rect.height)),
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.modern_character_screen.pygame.draw.rect", lambda *_args, **_kwargs: None
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.modern_character_screen.pygame.draw.line", lambda *_args, **_kwargs: None
+    )
 
     screen.select_tab("class")
     screen.draw_class_tab(player)
 
     rendered_text = set(
-        presenter.large_font.render_calls + presenter.normal_font.render_calls + presenter.small_font.render_calls
+        presenter.large_font.render_calls
+        + presenter.normal_font.render_calls
+        + presenter.small_font.render_calls
     )
     assert {
         "Aerial Tempo",
@@ -968,12 +1095,12 @@ def test_modern_character_aerial_tempo_tab_owns_jump_mods(monkeypatch):
     assert screen.jump_mod_row_rects()
     assert len(screen.jump_mod_row_rects()) == 3
     assert "Lancer" not in rendered_text
-    assert any(
-        "Build with clean Jump landings" in str(text)
+    assert any("Build with clean Jump landings" in str(text) for text in rendered_text)
+    assert "Ring Identity" not in rendered_text
+    assert not any(
+        "class ring" in str(text).lower() or "ring identity" in str(text).lower()
         for text in rendered_text
     )
-    assert "Ring Identity" not in rendered_text
-    assert not any("class ring" in str(text).lower() or "ring identity" in str(text).lower() for text in rendered_text)
 
 
 def test_aerial_tempo_tab_fits_every_jump_mod_without_scrolling(monkeypatch):
@@ -1047,18 +1174,28 @@ def test_modern_character_resolve_tab_shows_meter_progression(monkeypatch):
     promotion_kits.combat_state(player)["hold_the_line"] = 1
     rect_calls = []
 
-    monkeypatch.setattr(screen, "draw_semi_transparent_panel", lambda rect, alpha=180: DummySurface((rect.width, rect.height)))
+    monkeypatch.setattr(
+        screen,
+        "draw_semi_transparent_panel",
+        lambda rect, alpha=180: DummySurface((rect.width, rect.height)),
+    )
     monkeypatch.setattr(
         "src.ui_pygame.gui.modern_character_screen.pygame.draw.rect",
-        lambda _surface, color, rect, *_args, **_kwargs: rect_calls.append((color, rect.copy())) if isinstance(rect, pygame.Rect) else None,
+        lambda _surface, color, rect, *_args, **_kwargs: (
+            rect_calls.append((color, rect.copy())) if isinstance(rect, pygame.Rect) else None
+        ),
     )
-    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.line", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.modern_character_screen.pygame.draw.line", lambda *_args, **_kwargs: None
+    )
 
     screen.select_tab("class")
     screen.draw_class_tab(player)
 
     rendered_text = set(
-        presenter.large_font.render_calls + presenter.normal_font.render_calls + presenter.small_font.render_calls
+        presenter.large_font.render_calls
+        + presenter.normal_font.render_calls
+        + presenter.small_font.render_calls
     )
     assert {
         "25/50",
@@ -1092,7 +1229,10 @@ def test_modern_character_resolve_tab_shows_meter_progression(monkeypatch):
     assert "Resolve Flow" not in rendered_text
     assert "Guard Stance" not in rendered_text
     assert "Build" not in rendered_text
-    assert not any("class ring" in str(text).lower() or "ring identity" in str(text).lower() for text in rendered_text)
+    assert not any(
+        "class ring" in str(text).lower() or "ring identity" in str(text).lower()
+        for text in rendered_text
+    )
 
 
 def test_modern_character_resolve_tab_shows_stalwart_surges(monkeypatch):
@@ -1118,15 +1258,25 @@ def test_modern_character_resolve_tab_shows_stalwart_surges(monkeypatch):
     data["guard_meter"] = 100
     data["resolve_mastery"].update({key: 4 for key in data["resolve_mastery"]})
 
-    monkeypatch.setattr(screen, "draw_semi_transparent_panel", lambda rect, alpha=180: DummySurface((rect.width, rect.height)))
-    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.rect", lambda *_args, **_kwargs: None)
-    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.line", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(
+        screen,
+        "draw_semi_transparent_panel",
+        lambda rect, alpha=180: DummySurface((rect.width, rect.height)),
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.modern_character_screen.pygame.draw.rect", lambda *_args, **_kwargs: None
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.modern_character_screen.pygame.draw.line", lambda *_args, **_kwargs: None
+    )
 
     screen.select_tab("class")
     screen.draw_class_tab(player)
 
     rendered_text = set(
-        presenter.large_font.render_calls + presenter.normal_font.render_calls + presenter.small_font.render_calls
+        presenter.large_font.render_calls
+        + presenter.normal_font.render_calls
+        + presenter.small_font.render_calls
     )
     assert {
         "100/100",
@@ -1140,35 +1290,53 @@ def test_modern_character_resolve_tab_shows_stalwart_surges(monkeypatch):
     assert "Resolve" not in presenter.large_font.render_calls
     assert "???" not in rendered_text
     assert any("Full bar" in str(text) for text in rendered_text)
-    assert not any("class ring" in str(text).lower() or "ring identity" in str(text).lower() for text in rendered_text)
+    assert not any(
+        "class ring" in str(text).lower() or "ring identity" in str(text).lower()
+        for text in rendered_text
+    )
 
 
 def test_modern_character_class_tab_shows_weapon_discipline_for_weapon_master(monkeypatch):
     presenter = _make_presenter()
     screen = ModernCharacterScreen(presenter)
     player = _make_player()
-    player.cls = SimpleNamespace(name="Weapon Master", description="Builds mastery through repeated weapon use.")
+    player.cls = SimpleNamespace(
+        name="Weapon Master", description="Builds mastery through repeated weapon use."
+    )
     player.equipment["Weapon"] = SimpleNamespace(name="Broadaxe", typ="Weapon", subtyp="Battle Axe")
     player.equipment["OffHand"] = SimpleNamespace(name="No OffHand", typ="OffHand", subtyp="None")
     player.grandmaster_discipline = grandmaster.default_state()
     battle_axe_xp = grandmaster.XP_THRESHOLDS[0] + 1
     player.grandmaster_discipline["disciplines"]["Battle Axe"]["xp"] = battle_axe_xp
-    player.grandmaster_discipline["disciplines"]["Battle Axe"]["rank"] = grandmaster.rank_for_xp(battle_axe_xp)
+    player.grandmaster_discipline["disciplines"]["Battle Axe"]["rank"] = grandmaster.rank_for_xp(
+        battle_axe_xp
+    )
     render_calls = []
     screen.item_render_manager = SimpleNamespace(
-        get_scaled_render=lambda item, size: render_calls.append((getattr(item, "name", ""), size)) or DummySurface(size)
+        get_scaled_render=lambda item, size: render_calls.append((getattr(item, "name", ""), size))
+        or DummySurface(size)
     )
 
-    monkeypatch.setattr(screen, "draw_semi_transparent_panel", lambda rect, alpha=180: DummySurface((rect.width, rect.height)))
-    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.rect", lambda *_args, **_kwargs: None)
-    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.line", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(
+        screen,
+        "draw_semi_transparent_panel",
+        lambda rect, alpha=180: DummySurface((rect.width, rect.height)),
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.modern_character_screen.pygame.draw.rect", lambda *_args, **_kwargs: None
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.modern_character_screen.pygame.draw.line", lambda *_args, **_kwargs: None
+    )
 
     screen.draw_class_tab(player)
 
     assert screen.class_summary_rows(player) == []
 
     rendered_text = set(
-        presenter.large_font.render_calls + presenter.small_font.render_calls + presenter.normal_font.render_calls
+        presenter.large_font.render_calls
+        + presenter.small_font.render_calls
+        + presenter.normal_font.render_calls
     )
     assert {
         "Weapon Discipline",
@@ -1197,7 +1365,9 @@ def test_modern_character_weapon_discipline_popup_uses_selected_row(monkeypatch)
     presenter = _make_presenter()
     screen = ModernCharacterScreen(presenter)
     player = _make_player()
-    player.cls = SimpleNamespace(name="Weapon Master", description="Builds mastery through repeated weapon use.")
+    player.cls = SimpleNamespace(
+        name="Weapon Master", description="Builds mastery through repeated weapon use."
+    )
     player.equipment["Weapon"] = SimpleNamespace(name="Framea", typ="Weapon", subtyp="Polearm")
     player.grandmaster_discipline = grandmaster.default_state()
     screen.selected_weapon_discipline_index = grandmaster.WEAPON_TYPES.index("Polearm")
@@ -1248,13 +1418,13 @@ def test_modern_character_school_affinity_tab_shows_affinity_grid(monkeypatch):
     player.wizard_affinity["Fire"] = 82
     player.wizard_affinity["Ice"] = 50
     player.wizard_affinity_version = 2
-    player.spellbook["Spells"] = {"Fireball": SimpleNamespace(name="Fireball"), "Ice Lance": SimpleNamespace(name="Ice Lance")}
+    player.spellbook["Spells"] = {
+        "Fireball": SimpleNamespace(name="Fireball"),
+        "Ice Lance": SimpleNamespace(name="Ice Lance"),
+    }
     icon_keys = []
     icon_manager = SimpleNamespace(
-        get_icon=lambda key: (
-            icon_keys.append(key)
-            or DummySurface((32, 32), text=f"icon:{key}")
-        ),
+        get_icon=lambda key: (icon_keys.append(key) or DummySurface((32, 32), text=f"icon:{key}")),
     )
     monkeypatch.setattr(
         "src.ui_pygame.gui.modern_character_screen.mechanics.get_ability_icon_manager",
@@ -1270,7 +1440,15 @@ def test_modern_character_school_affinity_tab_shows_affinity_grid(monkeypatch):
     assert "Fire" not in rendered_text
     assert "Wizard Ring" not in rendered_text
     assert {"Fireball", "Ice Lance"}.isdisjoint(rendered_text)
-    assert {"Affinity Cap 100", "Sorcerer Upgrade", "Wizard Upgrade", "Opposite Drift", "Ring Acceleration", "Affinity Notes", "Specialization"}.isdisjoint(rendered_text)
+    assert {
+        "Affinity Cap 100",
+        "Sorcerer Upgrade",
+        "Wizard Upgrade",
+        "Opposite Drift",
+        "Ring Acceleration",
+        "Affinity Notes",
+        "Specialization",
+    }.isdisjoint(rendered_text)
     assert "Promotion Tier" not in rendered_text
     radar_surfaces = [
         surface
@@ -1307,7 +1485,9 @@ def test_modern_character_school_affinity_tab_hides_wizard_details_for_sorcerer(
     assert {"School Affinity", "12/50"}.issubset(rendered_text)
     assert "Fire" not in rendered_text
     assert "Firebolt" not in rendered_text
-    assert {"Affinity Cap 50", "Wizard Ring", "Not visible", "Specialization"}.isdisjoint(rendered_text)
+    assert {"Affinity Cap 50", "Wizard Ring", "Not visible", "Specialization"}.isdisjoint(
+        rendered_text
+    )
 
 
 def test_modern_character_contracts_tab_shows_patron_state(monkeypatch):
@@ -1333,7 +1513,16 @@ def test_modern_character_contracts_tab_shows_patron_state(monkeypatch):
     screen.draw_class_tab(player)
 
     rendered_text = _rendered_text(presenter)
-    assert {"Contracts", "Bargain Taint", "55/100 Tier 2", "Active Patron", "Imp", "Recent Contracts", "Imp - Harm", "Echo"}.issubset(rendered_text)
+    assert {
+        "Contracts",
+        "Bargain Taint",
+        "55/100 Tier 2",
+        "Active Patron",
+        "Imp",
+        "Recent Contracts",
+        "Imp - Harm",
+        "Echo",
+    }.issubset(rendered_text)
     assert {"Available Intents", "Withheld Intents", "Cost 160"}.isdisjoint(rendered_text)
     assert "Promotion Tier" not in rendered_text
 
@@ -1346,15 +1535,30 @@ def test_modern_character_runes_tab_shows_constellation_and_boosts(monkeypatch):
     player.astromancer_state = astromancer.default_state()
     player.astromancer_state["runes"]["Ember"] = 2
     player.astromancer_state["active_constellation_index"] = 0
-    player.spellbook["Spells"] = {"Firebolt": SimpleNamespace(name="Firebolt", subtyp="Fire", passive=False, cost=1)}
+    player.spellbook["Spells"] = {
+        "Firebolt": SimpleNamespace(name="Firebolt", subtyp="Fire", passive=False, cost=1)
+    }
     _stub_character_screen_drawing(monkeypatch, screen)
 
     screen.select_tab("class")
     screen.draw_class_tab(player)
 
     rendered_text = _rendered_text(presenter)
-    assert {"Runes", "Active Constellation: Ember", "Ember", "2/3 Fire active", "Boostable Spells", "Firebolt"}.issubset(rendered_text)
-    assert {"Runic Boost Floor", "Active Ring Floor", "Rune Source", "75%", "Rune Notes"}.isdisjoint(rendered_text)
+    assert {
+        "Runes",
+        "Active Constellation: Ember",
+        "Ember",
+        "2/3 Fire active",
+        "Boostable Spells",
+        "Firebolt",
+    }.issubset(rendered_text)
+    assert {
+        "Runic Boost Floor",
+        "Active Ring Floor",
+        "Rune Source",
+        "75%",
+        "Rune Notes",
+    }.isdisjoint(rendered_text)
     assert "Promotion Tier" not in rendered_text
 
 
@@ -1365,7 +1569,9 @@ def test_modern_character_runes_tab_hides_astromancer_details_for_diviner(monkey
     player.cls = SimpleNamespace(name="Diviner", description="Reads runes.")
     player.astromancer_state = astromancer.default_state()
     player.astromancer_state["runes"]["Tide"] = 1
-    player.spellbook["Spells"] = {"Water Jet": SimpleNamespace(name="Water Jet", subtyp="Water", passive=False, cost=1)}
+    player.spellbook["Spells"] = {
+        "Water Jet": SimpleNamespace(name="Water Jet", subtyp="Water", passive=False, cost=1)
+    }
     _stub_character_screen_drawing(monkeypatch, screen)
 
     screen.select_tab("class")
@@ -1382,7 +1588,11 @@ def test_modern_character_totems_tab_shows_review_and_selector(monkeypatch):
     player = _make_player()
     player.cls = SimpleNamespace(name="Soulcatcher", description="Binds nature.")
     player.spellbook["Skills"]["Totem"] = FakeTotemSkill()
-    player.spellbook["Spells"] = {"Fireball": SimpleNamespace(name="Fireball"), "Tsunami": SimpleNamespace(name="Tsunami"), "Soul Drain": SimpleNamespace(name="Soul Drain")}
+    player.spellbook["Spells"] = {
+        "Fireball": SimpleNamespace(name="Fireball"),
+        "Tsunami": SimpleNamespace(name="Tsunami"),
+        "Soul Drain": SimpleNamespace(name="Soul Drain"),
+    }
     player.magic_effects["Totem"] = _effect(True, 3, {"aspect": "Fire", "resonance": 2})
     promotion_kits.combat_state(player)["totem_resonance"] = 2
     _stub_character_screen_drawing(monkeypatch, screen)
@@ -1391,7 +1601,22 @@ def test_modern_character_totems_tab_shows_review_and_selector(monkeypatch):
     screen.draw_class_tab(player)
 
     rendered_text = _rendered_text(presenter)
-    assert {"Totems", "Totem Resonance", "2/3 Pulse strength", "Active Aspect", "Fire", "Unlocked Aspects", "Fire, Water, Soul", "Staff Bond", "Unfocused", "Select", "C/Enter: Totem Aspects", "Communions", "Soul", "Unlocked - Soul Drain"}.issubset(rendered_text)
+    assert {
+        "Totems",
+        "Totem Resonance",
+        "2/3 Pulse strength",
+        "Active Aspect",
+        "Fire",
+        "Unlocked Aspects",
+        "Fire, Water, Soul",
+        "Staff Bond",
+        "Unfocused",
+        "Select",
+        "C/Enter: Totem Aspects",
+        "Communions",
+        "Soul",
+        "Unlocked - Soul Drain",
+    }.issubset(rendered_text)
     assert {"Pulse Chance", "Staff Bonus", "+20% matching cast"}.isdisjoint(rendered_text)
     assert "Promotion Tier" not in rendered_text
 
@@ -1432,11 +1657,16 @@ def test_modern_character_totems_tab_c_opens_existing_aspect_popup(monkeypatch):
     monkeypatch.setattr(modern_module, "TotemAspectsPopupMenu", FakePopup)
     monkeypatch.setattr(screen, "draw_all", lambda *_args, **_kwargs: None)
     monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
-    event_batches = iter([
-        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_c)],
-        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_c)],
+            [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.modern_character_screen.pygame.event.get",
+        lambda: next(event_batches, []),
+    )
 
     assert screen.navigate(player) == "Exit Menu"
     assert opened == ["Totem Aspects", "Shaman"]
@@ -1474,7 +1704,18 @@ def test_modern_character_case_journal_tab_shows_progress_and_wayfinding(monkeyp
     screen.draw_class_tab(player)
 
     rendered_text = _rendered_text(presenter)
-    assert {"Case Journal", "Best Case", "Fiend", "Best Rank", "Pattern Lock", "Revelation", "Target-specific in combat", "Wayfinding", "Contextual", "Studied Enemy Types"}.issubset(rendered_text)
+    assert {
+        "Case Journal",
+        "Best Case",
+        "Fiend",
+        "Best Rank",
+        "Pattern Lock",
+        "Revelation",
+        "Target-specific in combat",
+        "Wayfinding",
+        "Contextual",
+        "Studied Enemy Types",
+    }.issubset(rendered_text)
     assert "5%" not in rendered_text
     assert "Promotion Tier" not in rendered_text
 
@@ -1492,7 +1733,9 @@ def test_modern_character_case_journal_tab_hides_seeker_tools_for_inquisitor(mon
     screen.draw_class_tab(player)
 
     rendered_text = _rendered_text(presenter)
-    assert {"Case Journal", "Best Case", "Beast", "Known Tells", "Studied Enemy Types"}.issubset(rendered_text)
+    assert {"Case Journal", "Best Case", "Beast", "Known Tells", "Studied Enemy Types"}.issubset(
+        rendered_text
+    )
     assert {"Wayfinding", "Hidden Cache", "Not visible"}.isdisjoint(rendered_text)
 
 
@@ -1504,8 +1747,16 @@ def test_modern_character_crescendo_tab_shows_song_and_repertoire(monkeypatch):
     player.bard_song = {"active": "Valor", "turns": 2, "encore": "Shelter"}
     player.bard_exploration_song = {"active": "Gold Trigger", "steps": 40, "effect": "loot_rate_up"}
     player.promotion_kit_state = promotion_kits.default_state()
-    player.promotion_kit_state["bard_repertoire"]["Battle Hymn"] = {"known": True, "practice_xp": 18, "clean_finishes": 3}
-    player.promotion_kit_state["bard_repertoire"]["Chorus Time"] = {"known": False, "practice_xp": 9, "clean_finishes": 1}
+    player.promotion_kit_state["bard_repertoire"]["Battle Hymn"] = {
+        "known": True,
+        "practice_xp": 18,
+        "clean_finishes": 3,
+    }
+    player.promotion_kit_state["bard_repertoire"]["Chorus Time"] = {
+        "known": False,
+        "practice_xp": 9,
+        "clean_finishes": 1,
+    }
     promotion_kits.combat_state(player)["crescendo"] = 3
     _stub_character_screen_drawing(monkeypatch, screen)
 
@@ -1513,8 +1764,22 @@ def test_modern_character_crescendo_tab_shows_song_and_repertoire(monkeypatch):
     screen.draw_class_tab(player)
 
     rendered_text = _rendered_text(presenter)
-    assert {"Crescendo", "3/3 Coda", "Combat Song", "Valor", "Exploration Song", "Gold Trigger", "Encore", "Shelter", "Advanced Repertoire", "Battle Hymn", "Mastered - Complete"}.issubset(rendered_text)
-    assert {"Exploration Effect", "loot_rate_up", "Mastered - 18/18 XP - 3/3 clean"}.isdisjoint(rendered_text)
+    assert {
+        "Crescendo",
+        "3/3 Coda",
+        "Combat Song",
+        "Valor",
+        "Exploration Song",
+        "Gold Trigger",
+        "Encore",
+        "Shelter",
+        "Advanced Repertoire",
+        "Battle Hymn",
+        "Mastered - Complete",
+    }.issubset(rendered_text)
+    assert {"Exploration Effect", "loot_rate_up", "Mastered - 18/18 XP - 3/3 clean"}.isdisjoint(
+        rendered_text
+    )
     assert "Promotion Tier" not in rendered_text
 
 
@@ -1573,7 +1838,12 @@ def test_modern_character_forms_tab_shows_lycan_control(monkeypatch):
     player = _make_player()
     player.cls = SimpleNamespace(name="Lycan", description="Changes shape.")
     player.transform_type = SimpleNamespace(name="Lycan")
-    player.lycan_state = {"moon_phase": "Full", "moon_steps": 60, "frenzy_turns": 2, "dragon_essence": True}
+    player.lycan_state = {
+        "moon_phase": "Full",
+        "moon_steps": 60,
+        "frenzy_turns": 2,
+        "dragon_essence": True,
+    }
     player.promotion_kit_state = promotion_kits.default_state()
     player.promotion_kit_state["lycan_control"] = {
         "rank": "Tethered",
@@ -1587,7 +1857,21 @@ def test_modern_character_forms_tab_shows_lycan_control(monkeypatch):
     screen.draw_class_tab(player)
 
     rendered_text = _rendered_text(presenter)
-    assert {"Forms", "Current Form", "Humanoid", "Stored Form", "Lycan", "Moon Cycle", "60/120 Full", "Frenzy Lock", "2 turn(s)", "Control Rank", "Tethered", "Dragon Essence", "Yes"}.issubset(rendered_text)
+    assert {
+        "Forms",
+        "Current Form",
+        "Humanoid",
+        "Stored Form",
+        "Lycan",
+        "Moon Cycle",
+        "60/120 Full",
+        "Frenzy Lock",
+        "2 turn(s)",
+        "Control Rank",
+        "Tethered",
+        "Dragon Essence",
+        "Yes",
+    }.issubset(rendered_text)
     assert "Full_Moon Gate" not in rendered_text
     assert "Promotion Tier" not in rendered_text
 
@@ -1605,7 +1889,15 @@ def test_modern_character_forms_tab_hides_lycan_details_for_druid(monkeypatch):
 
     rendered_text = _rendered_text(presenter)
     assert {"Forms", "Current Form", "Humanoid", "Stored Form", "Druid"}.issubset(rendered_text)
-    assert {"Ring", "Moon Cycle", "Frenzy Lock", "Control Rank", "Dragon Essence", "Lycan only", "Not visible"}.isdisjoint(rendered_text)
+    assert {
+        "Ring",
+        "Moon Cycle",
+        "Frenzy Lock",
+        "Control Rank",
+        "Dragon Essence",
+        "Lycan only",
+        "Not visible",
+    }.isdisjoint(rendered_text)
 
 
 def test_modern_character_aspects_tab_shows_attunement_and_harmony(monkeypatch):
@@ -1626,7 +1918,19 @@ def test_modern_character_aspects_tab_shows_attunement_and_harmony(monkeypatch):
     screen.draw_class_tab(player)
 
     rendered_text = _rendered_text(presenter)
-    assert {"Aspects", "Venom", "75/100 Awake, catalyst", "Grove", "Unlocked", "Aspect Harmony", "Storm, Venom", "Fourfold Surge", "Ready", "Catalyst Progress", "Stirring"}.issubset(rendered_text)
+    assert {
+        "Aspects",
+        "Venom",
+        "75/100 Awake, catalyst",
+        "Grove",
+        "Unlocked",
+        "Aspect Harmony",
+        "Storm, Venom",
+        "Fourfold Surge",
+        "Ready",
+        "Catalyst Progress",
+        "Stirring",
+    }.issubset(rendered_text)
     assert {"Harmony Bonus", "storm_damage_dealt 42"}.isdisjoint(rendered_text)
     assert "Promotion Tier" not in rendered_text
 
@@ -1767,10 +2071,18 @@ def test_modern_character_class_tab_supports_multiple_summon_tiles_and_popup(mon
             is_alive=lambda: True,
         )
 
-    player.cls = SimpleNamespace(name="Thaumaturgist", description="Calls Xenids from distant realms. " * 12)
+    player.cls = SimpleNamespace(
+        name="Thaumaturgist", description="Calls Xenids from distant realms. " * 12
+    )
     player.promotion_kit_state = {"summon_bonds": {"Patagon": 15, "Dilong": 0, "Agloolik": 0}}
-    player.summons = {"Patagon": summon("Patagon"), "Dilong": summon("Dilong"), "Agloolik": summon("Agloolik")}
-    screen.companion_art_manager = SimpleNamespace(get_scaled_sprite=lambda _entity, size: DummySurface(size))
+    player.summons = {
+        "Patagon": summon("Patagon"),
+        "Dilong": summon("Dilong"),
+        "Agloolik": summon("Agloolik"),
+    }
+    screen.companion_art_manager = SimpleNamespace(
+        get_scaled_sprite=lambda _entity, size: DummySurface(size)
+    )
     popups = []
 
     class FakeCompanionPopup:
@@ -1787,15 +2099,25 @@ def test_modern_character_class_tab_supports_multiple_summon_tiles_and_popup(mon
     import src.ui_pygame.gui.modern_character_screen as modern_module
 
     monkeypatch.setattr(modern_module, "ClassCompanionDetailsPopup", FakeCompanionPopup)
-    monkeypatch.setattr(screen, "draw_semi_transparent_panel", lambda rect, alpha=180: DummySurface((rect.width, rect.height)))
-    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.rect", lambda *_args, **_kwargs: None)
-    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.line", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(
+        screen,
+        "draw_semi_transparent_panel",
+        lambda rect, alpha=180: DummySurface((rect.width, rect.height)),
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.modern_character_screen.pygame.draw.rect", lambda *_args, **_kwargs: None
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.modern_character_screen.pygame.draw.line", lambda *_args, **_kwargs: None
+    )
 
     screen.draw_class_tab(player)
 
     assert len(screen.class_companion_tile_rects(screen.class_companion_entries(player))) == 3
     rendered_text = set(presenter.small_font.render_calls + presenter.normal_font.render_calls)
-    assert {"Patagon", "Dilong", "Agloolik", "XP", "25/100 XP", "Bond", "15/100"}.issubset(rendered_text)
+    assert {"Patagon", "Dilong", "Agloolik", "XP", "25/100 XP", "Bond", "15/100"}.issubset(
+        rendered_text
+    )
     assert "Calls allies from distant realms." not in rendered_text
 
     screen.selected_class_companion_index = 1
@@ -1841,9 +2163,17 @@ def test_modern_character_class_tab_stacks_all_eleven_summons(monkeypatch):
     player.promotion_kit_state = {"summon_bonds": {name: 0 for name in summon_names}}
     player.summons = {name: summon(name) for name in summon_names}
 
-    monkeypatch.setattr(screen, "draw_semi_transparent_panel", lambda rect, alpha=180: DummySurface((rect.width, rect.height)))
-    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.rect", lambda *_args, **_kwargs: None)
-    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.line", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(
+        screen,
+        "draw_semi_transparent_panel",
+        lambda rect, alpha=180: DummySurface((rect.width, rect.height)),
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.modern_character_screen.pygame.draw.rect", lambda *_args, **_kwargs: None
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.modern_character_screen.pygame.draw.line", lambda *_args, **_kwargs: None
+    )
 
     screen.draw_class_tab(player)
     rects = screen.class_companion_tile_rects(screen.class_companion_entries(player))
@@ -1876,11 +2206,24 @@ def test_class_companion_details_popup_uses_character_tab_style_and_art(monkeypa
         get_scaled_sprite=lambda entity, size: calls.append((entity, size)) or DummySurface(size)
     )
 
-    monkeypatch.setattr(screen, "draw_semi_transparent_panel", lambda rect, alpha=180: DummySurface((rect.width, rect.height)))
-    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.rect", lambda *_args, **_kwargs: None)
-    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.line", lambda *_args, **_kwargs: None)
-    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.draw_popup_close_button", lambda *_args, **_kwargs: pygame.Rect(0, 0, 20, 20))
-    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.display.flip", lambda: None)
+    monkeypatch.setattr(
+        screen,
+        "draw_semi_transparent_panel",
+        lambda rect, alpha=180: DummySurface((rect.width, rect.height)),
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.modern_character_screen.pygame.draw.rect", lambda *_args, **_kwargs: None
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.modern_character_screen.pygame.draw.line", lambda *_args, **_kwargs: None
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.modern_character_screen.draw_popup_close_button",
+        lambda *_args, **_kwargs: pygame.Rect(0, 0, 20, 20),
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.modern_character_screen.pygame.display.flip", lambda: None
+    )
 
     popup = ClassCompanionDetailsPopup(presenter, screen, player, "Summon", companion)
     popup.draw("background")
@@ -1938,11 +2281,24 @@ def test_tamed_companion_details_popup_uses_flavor_instead_of_stats(monkeypatch)
         get_scaled_sprite=lambda entity, size: calls.append((entity, size)) or DummySurface(size)
     )
 
-    monkeypatch.setattr(screen, "draw_semi_transparent_panel", lambda rect, alpha=180: DummySurface((rect.width, rect.height)))
-    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.rect", lambda *_args, **_kwargs: None)
-    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.line", lambda *_args, **_kwargs: None)
-    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.draw_popup_close_button", lambda *_args, **_kwargs: pygame.Rect(0, 0, 20, 20))
-    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.display.flip", lambda: None)
+    monkeypatch.setattr(
+        screen,
+        "draw_semi_transparent_panel",
+        lambda rect, alpha=180: DummySurface((rect.width, rect.height)),
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.modern_character_screen.pygame.draw.rect", lambda *_args, **_kwargs: None
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.modern_character_screen.pygame.draw.line", lambda *_args, **_kwargs: None
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.modern_character_screen.draw_popup_close_button",
+        lambda *_args, **_kwargs: pygame.Rect(0, 0, 20, 20),
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.modern_character_screen.pygame.display.flip", lambda: None
+    )
 
     popup = ClassCompanionDetailsPopup(presenter, screen, player, "Companion", companion)
     popup.draw("background")
@@ -1963,7 +2319,9 @@ def test_tamed_companion_details_popup_uses_flavor_instead_of_stats(monkeypatch)
         "The animal acts through bond and instinct rather than a",
         "visible resource pool.",
     }.issubset(rendered_text)
-    assert {"Core Attributes", "Combat Stats", "HP", "MP", "Strength", "Attack"}.isdisjoint(rendered_text)
+    assert {"Core Attributes", "Combat Stats", "HP", "MP", "Strength", "Attack"}.isdisjoint(
+        rendered_text
+    )
 
 
 def test_modern_character_draw_all_renders_active_tabs(monkeypatch):
@@ -1971,21 +2329,40 @@ def test_modern_character_draw_all_renders_active_tabs(monkeypatch):
     screen = ModernCharacterScreen(presenter)
     player = _make_player()
 
-    monkeypatch.setattr(screen, "draw_semi_transparent_panel", lambda rect, alpha=180: DummySurface((rect.width, rect.height)))
+    monkeypatch.setattr(
+        screen,
+        "draw_semi_transparent_panel",
+        lambda rect, alpha=180: DummySurface((rect.width, rect.height)),
+    )
     draw_rect_calls = []
-    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.rect", lambda *_args, **_kwargs: draw_rect_calls.append((_args, _kwargs)))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.modern_character_screen.pygame.draw.rect",
+        lambda *_args, **_kwargs: draw_rect_calls.append((_args, _kwargs)),
+    )
     draw_line_calls = []
-    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.line", lambda *_args, **_kwargs: draw_line_calls.append((_args, _kwargs)))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.modern_character_screen.pygame.draw.line",
+        lambda *_args, **_kwargs: draw_line_calls.append((_args, _kwargs)),
+    )
     flip_calls = []
-    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.display.flip", lambda: flip_calls.append(True))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.modern_character_screen.pygame.display.flip",
+        lambda: flip_calls.append(True),
+    )
     loaded_renders = []
     screen.item_render_manager = SimpleNamespace(
-        get_scaled_render=lambda item, size: loaded_renders.append((getattr(item, "name", ""), size))
+        get_scaled_render=lambda item, size: loaded_renders.append(
+            (getattr(item, "name", ""), size)
+        )
         or pygame.Surface(size, pygame.SRCALPHA)
     )
 
     screen.draw_all(player)
-    rendered_text = set(presenter.large_font.render_calls + presenter.normal_font.render_calls + presenter.small_font.render_calls)
+    rendered_text = set(
+        presenter.large_font.render_calls
+        + presenter.normal_font.render_calls
+        + presenter.small_font.render_calls
+    )
     assert "Character" in presenter.large_font.render_calls
     assert "Combat Stats" in presenter.large_font.render_calls
     assert "Core Attributes" in presenter.large_font.render_calls
@@ -2021,7 +2398,9 @@ def test_modern_character_draw_all_renders_active_tabs(monkeypatch):
     assert "Equipment Layout" not in presenter.large_font.render_calls
     assert "Item Details" not in presenter.normal_font.render_calls
     assert "Equipment Buffs" not in presenter.normal_font.render_calls
-    assert {"Helmet", "Weapon", "Armor", "OffHand", "Ring", "Pendant"}.issubset(set(presenter.normal_font.render_calls))
+    assert {"Helmet", "Weapon", "Armor", "OffHand", "Ring", "Pendant"}.issubset(
+        set(presenter.normal_font.render_calls)
+    )
     assert "Sword (1H)" in presenter.normal_font.render_calls
     assert "Type:" in presenter.small_font.render_calls
     assert "Sword" in presenter.small_font.render_calls
@@ -2047,10 +2426,20 @@ def test_modern_character_menu_renders_with_and_without_portrait_assets(monkeypa
     presenter = _make_presenter()
     screen = ModernCharacterScreen(presenter)
     player = _make_player()
-    monkeypatch.setattr(screen, "draw_semi_transparent_panel", lambda rect, alpha=180: DummySurface((rect.width, rect.height)))
-    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.rect", lambda *_args, **_kwargs: None)
-    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.line", lambda *_args, **_kwargs: None)
-    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.display.flip", lambda: None)
+    monkeypatch.setattr(
+        screen,
+        "draw_semi_transparent_panel",
+        lambda rect, alpha=180: DummySurface((rect.width, rect.height)),
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.modern_character_screen.pygame.draw.rect", lambda *_args, **_kwargs: None
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.modern_character_screen.pygame.draw.line", lambda *_args, **_kwargs: None
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.modern_character_screen.pygame.display.flip", lambda: None
+    )
 
     screen.load_portrait = lambda _player: pygame.Surface((225, 400), pygame.SRCALPHA)
     screen.draw_all(player)
@@ -2059,8 +2448,16 @@ def test_modern_character_menu_renders_with_and_without_portrait_assets(monkeypa
     assert "321G" in presenter.small_font.render_calls
     assert "Location" in presenter.small_font.render_calls
     assert "Town" in presenter.small_font.render_calls
-    gold_label_x = next(position[0] for surface, position in presenter.screen.blit_calls if getattr(surface, "text", None) == "Gold")
-    gold_value_x = next(position[0] for surface, position in presenter.screen.blit_calls if getattr(surface, "text", None) == "321G")
+    gold_label_x = next(
+        position[0]
+        for surface, position in presenter.screen.blit_calls
+        if getattr(surface, "text", None) == "Gold"
+    )
+    gold_value_x = next(
+        position[0]
+        for surface, position in presenter.screen.blit_calls
+        if getattr(surface, "text", None) == "321G"
+    )
     assert gold_value_x > gold_label_x
 
     atlas_surface = pygame.Surface((225, 400), pygame.SRCALPHA)
@@ -2079,10 +2476,20 @@ def test_modern_character_resistance_columns_render_all_possible_entries(monkeyp
     player = _make_player()
     player.resistance = {name: -0.1 for name in RESISTANCE_ORDER}
 
-    monkeypatch.setattr(screen, "draw_semi_transparent_panel", lambda rect, alpha=180: DummySurface((rect.width, rect.height)))
-    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.rect", lambda *_args, **_kwargs: None)
-    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.draw.line", lambda *_args, **_kwargs: None)
-    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.display.flip", lambda: None)
+    monkeypatch.setattr(
+        screen,
+        "draw_semi_transparent_panel",
+        lambda rect, alpha=180: DummySurface((rect.width, rect.height)),
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.modern_character_screen.pygame.draw.rect", lambda *_args, **_kwargs: None
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.modern_character_screen.pygame.draw.line", lambda *_args, **_kwargs: None
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.modern_character_screen.pygame.display.flip", lambda: None
+    )
 
     screen.draw_all(player)
     rendered_text = set(presenter.normal_font.render_calls + presenter.small_font.render_calls)
@@ -2095,14 +2502,19 @@ def test_modern_character_navigation_switches_tabs_and_exits(monkeypatch):
     screen = ModernCharacterScreen(presenter)
     player = _make_player()
 
-    event_batches = iter([
-        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_2)],
-        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_3)],
-        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE)],
-    ])
+    event_batches = iter(
+        [
+            [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_2)],
+            [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_3)],
+            [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE)],
+        ]
+    )
     monkeypatch.setattr(screen, "draw_all", lambda *_args, **_kwargs: None)
     monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
-    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.event.get", lambda: next(event_batches, []))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.modern_character_screen.pygame.event.get",
+        lambda: next(event_batches, []),
+    )
 
     assert screen.navigate(player) == "Exit Menu"
     assert screen.active_tab.key == "progression"
@@ -2131,15 +2543,17 @@ def test_progression_tree_requires_shortcut_before_arrow_navigation(monkeypatch)
         "src.ui_pygame.gui.input_guards.pygame.key.get_pressed",
         lambda: [],
     )
-    event_batches = iter([
-        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_DOWN)],
-        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_p)],
-        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RIGHT)],
-        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_LEFT)],
-        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_DOWN)],
-        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_p)],
-        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE)],
-    ])
+    event_batches = iter(
+        [
+            [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_DOWN)],
+            [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_p)],
+            [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RIGHT)],
+            [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_LEFT)],
+            [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_DOWN)],
+            [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_p)],
+            [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE)],
+        ]
+    )
     monkeypatch.setattr(
         "src.ui_pygame.gui.modern_character_screen.pygame.event.get",
         lambda: next(event_batches, []),
@@ -2160,18 +2574,23 @@ def test_modern_equipment_selector_requires_explicit_toggle(monkeypatch):
     screen = ModernCharacterScreen(presenter)
     player = _make_player()
 
-    event_batches = iter([
-        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_2)],
-        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RIGHT)],
-        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_2)],
-        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_e)],
-        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RIGHT)],
-        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE)],
-        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE)],
-    ])
+    event_batches = iter(
+        [
+            [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_2)],
+            [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RIGHT)],
+            [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_2)],
+            [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_e)],
+            [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RIGHT)],
+            [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE)],
+            [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE)],
+        ]
+    )
     monkeypatch.setattr(screen, "draw_all", lambda *_args, **_kwargs: None)
     monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
-    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.event.get", lambda: next(event_batches, []))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.modern_character_screen.pygame.event.get",
+        lambda: next(event_batches, []),
+    )
 
     assert screen.navigate(player) == "Exit Menu"
     assert screen.active_tab.key == "equipment"
@@ -2241,16 +2660,21 @@ def test_modern_character_c_toggles_class_summon_focus_and_opens_popup(monkeypat
     monkeypatch.setattr(modern_module, "ClassCompanionDetailsPopup", FakeCompanionPopup)
     monkeypatch.setattr(screen, "draw_all", lambda *_args, **_kwargs: None)
     monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
-    event_batches = iter([
-        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_c)],
-        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_3)],
-        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_c)],
-        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_DOWN)],
-        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN)],
-        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE)],
-        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_c)],
+            [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_3)],
+            [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_c)],
+            [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_DOWN)],
+            [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN)],
+            [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE)],
+            [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.modern_character_screen.pygame.event.get",
+        lambda: next(event_batches, []),
+    )
 
     assert screen.navigate(player) == "Exit Menu"
     assert screen.active_tab.key == "class"
@@ -2266,16 +2690,25 @@ def test_modern_character_menu_mouse_selects_equipment_slot(monkeypatch):
     opened = []
 
     monkeypatch.setattr(screen, "draw_all", lambda *_args, **_kwargs: None)
-    monkeypatch.setattr(screen, "open_selected_equipment_change", lambda _player: opened.append(screen.selected_equipment_slot(_player)))
+    monkeypatch.setattr(
+        screen,
+        "open_selected_equipment_change",
+        lambda _player: opened.append(screen.selected_equipment_slot(_player)),
+    )
     monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
 
     click_pos = screen.equipment_slot_rects()["Ring"].center
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=click_pos)],
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_ESCAPE)],
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_ESCAPE)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=click_pos)],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_ESCAPE)],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_ESCAPE)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.modern_character_screen.pygame.event.get",
+        lambda: next(event_batches, []),
+    )
 
     assert screen.navigate(player) == "Exit Menu"
     assert screen.equipment_selector_active is False
@@ -2292,11 +2725,16 @@ def test_modern_character_menu_mouse_tabs_and_actions(monkeypatch):
 
     equipment_tab_pos = screen.tab_button_rects(player)[1].center
     exit_pos = screen.action_rects()[-1].center
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=equipment_tab_pos)],
-        [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=exit_pos)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=equipment_tab_pos)],
+            [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=exit_pos)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.modern_character_screen.pygame.event.get",
+        lambda: next(event_batches, []),
+    )
 
     assert screen.navigate(player) == "Exit Menu"
     assert screen.active_tab.key == "equipment"
@@ -2310,10 +2748,20 @@ def test_modern_character_menu_actions_remove_quit_and_put_exit_last(monkeypatch
     event_batches = iter([[pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE)]])
     monkeypatch.setattr(screen, "draw_all", lambda *_args, **_kwargs: None)
     monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
-    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.event.get", lambda: next(event_batches, []))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.modern_character_screen.pygame.event.get",
+        lambda: next(event_batches, []),
+    )
 
     assert screen.navigate(player) == "Exit Menu"
-    assert screen.menu_options == ["Inventory", "Quests", "Key Items", "Bestiary", "Specials", "Exit Menu"]
+    assert screen.menu_options == [
+        "Inventory",
+        "Quests",
+        "Key Items",
+        "Bestiary",
+        "Specials",
+        "Exit Menu",
+    ]
     assert "Change Equipment" not in screen.menu_options
     assert "Quit Game" not in screen.menu_options
 
@@ -2327,14 +2775,19 @@ def test_modern_character_aerial_tempo_tab_toggles_jump_mods_inline(monkeypatch)
     player.spellbook["Skills"]["Jump"] = jump_skill
     screen.select_tab("class")
 
-    event_batches = iter([
-        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_DOWN)],
-        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN)],
-        [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE)],
-    ])
+    event_batches = iter(
+        [
+            [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_DOWN)],
+            [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN)],
+            [pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE)],
+        ]
+    )
     monkeypatch.setattr(screen, "draw_all", lambda *_args, **_kwargs: None)
     monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
-    monkeypatch.setattr("src.ui_pygame.gui.modern_character_screen.pygame.event.get", lambda: next(event_batches, []))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.modern_character_screen.pygame.event.get",
+        lambda: next(event_batches, []),
+    )
 
     assert screen.navigate(player) == "Exit Menu"
     assert "Jump Mods" not in screen.menu_options

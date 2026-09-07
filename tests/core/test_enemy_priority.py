@@ -107,7 +107,9 @@ def test_priority_ai_skips_weapon_skills_while_disarmed(monkeypatch):
     enemy = _make_enemy()
     target = _make_target(True)
     enemy.spellbook["Skills"]["Mortal Strike"] = abilities.MortalStrike()
-    enemy.equipment["Weapon"] = items.Weapon("Axe", "", 0, 0.0, 1, 1, "1-Handed", "Axe", False, True)
+    enemy.equipment["Weapon"] = items.Weapon(
+        "Axe", "", 0, 0.0, 1, 1, "1-Handed", "Axe", False, True
+    )
     enemy.physical_effects["Disarm"].active = True
     enemy.action_stack = [
         {"ability": "Mortal Strike", "priority": ActionPriority.HIGH},
@@ -132,7 +134,9 @@ def test_priority_ai_prioritizes_pickup_for_weapon_dependent_enemy(monkeypatch):
     target = _make_target(True)
     enemy.spellbook["Spells"] = {}
     enemy.spellbook["Skills"] = {"Mortal Strike": abilities.MortalStrike()}
-    enemy.equipment["Weapon"] = items.Weapon("Axe", "", 0, 0.0, 1, 1, "1-Handed", "Axe", False, True)
+    enemy.equipment["Weapon"] = items.Weapon(
+        "Axe", "", 0, 0.0, 1, 1, "1-Handed", "Axe", False, True
+    )
     enemy.physical_effects["Disarm"].active = True
     enemy.action_stack = [
         {"ability": "Mortal Strike", "priority": ActionPriority.HIGH},
@@ -161,7 +165,9 @@ def test_priority_ai_keeps_pickup_low_for_spell_focused_enemy(monkeypatch):
         "Firebolt": abilities.Firebolt(),
         "Enfeeble": abilities.Enfeeble(),
     }
-    enemy.equipment["Weapon"] = items.Weapon("Staff", "", 0, 0.0, 1, 1, "1-Handed", "Staff", False, True)
+    enemy.equipment["Weapon"] = items.Weapon(
+        "Staff", "", 0, 0.0, 1, 1, "1-Handed", "Staff", False, True
+    )
     enemy.physical_effects["Disarm"].active = True
     enemy.action_stack = [
         {"ability": "Firebolt", "priority": ActionPriority.NORMAL},
@@ -214,7 +220,9 @@ def test_priority_action_stack_can_explicitly_request_pickup_weapon(monkeypatch)
     enemy = _make_enemy()
     target = _make_target(True)
     enemy._pickup_weapon_priority = lambda: ActionPriority.SKIP
-    enemy.equipment["Weapon"] = items.Weapon("Sword", "", 0, 0.0, 1, 1, "1-Handed", "Sword", False, True)
+    enemy.equipment["Weapon"] = items.Weapon(
+        "Sword", "", 0, 0.0, 1, 1, "1-Handed", "Sword", False, True
+    )
     enemy.physical_effects["Disarm"].active = True
     enemy.action_stack = [
         {"ability": "Pickup Weapon", "priority": ActionPriority.HIGH},
@@ -372,7 +380,9 @@ def test_jester_dispel_only_targets_positive_player_stat_effects(monkeypatch):
 
 def test_jester_mana_shield_skips_when_mana_is_low(monkeypatch):
     jester = Jester()
-    jester._apply_jester_form("amber", track_cooldown=False)  # noqa: SLF001 - explicit form setup for AI coverage
+    jester._apply_jester_form(
+        "amber", track_cooldown=False
+    )  # noqa: SLF001 - explicit form setup for AI coverage
     target = _make_target(True)
 
     def choose_mana_shield_if_available(seq):

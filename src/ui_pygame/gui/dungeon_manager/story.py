@@ -1,8 +1,8 @@
 """Story behavior for the dungeon manager package."""
 
+import src.ui_pygame.gui.dungeon_manager as dungeon_manager
 from src.core import enemies, main_story
 from src.core.classes import class_rings
-import src.ui_pygame.gui.dungeon_manager as dungeon_manager
 
 
 class DungeonStoryMixin:
@@ -27,7 +27,9 @@ class DungeonStoryMixin:
         """Handle the Hooded Figure's Liminal Gap guide interaction."""
         story_state = self.player_char.ensure_main_story_state()
         if not story_state.get("liminal_gap_guide_revealed"):
-            self._show_special_event_dialogue("Hooded Figure Liminal Reveal", title="The Hooded Figure")
+            self._show_special_event_dialogue(
+                "Hooded Figure Liminal Reveal", title="The Hooded Figure"
+            )
             story_state["liminal_gap_guide_revealed"] = True
 
         options = ["Save Game", "Review Guardian Clues"]
@@ -49,7 +51,9 @@ class DungeonStoryMixin:
             flush_events=True,
             require_key_release=True,
         )
-        selected = options[choice] if isinstance(choice, int) and 0 <= choice < len(options) else "Leave"
+        selected = (
+            options[choice] if isinstance(choice, int) and 0 <= choice < len(options) else "Leave"
+        )
         if selected == "Review Guardian Clues":
             self._review_liminal_guardian_clues(story_state)
             guide_tile.read = True
@@ -109,9 +113,9 @@ class DungeonStoryMixin:
             identity.get("class_name"),
             identity.get("awakened"),
         )
-        archetype = story_state.get("class_voluntas_affirmed_archetype") or main_story.class_voluntas_archetype(
-            identity.get("class_name")
-        )
+        archetype = story_state.get(
+            "class_voluntas_affirmed_archetype"
+        ) or main_story.class_voluntas_archetype(identity.get("class_name"))
         self._show_special_event_dialogue(
             f"Class Voluntas Archetype {str(archetype).title()}",
             title="Class Ring",
@@ -119,16 +123,18 @@ class DungeonStoryMixin:
         guide_tile.read = True
         if recorded:
             ring_state = "awakened" if identity.get("awakened") else "dormant"
-            self.add_message(f"{identity.get('class_name')} is affirmed through a {ring_state} Class Ring.")
+            self.add_message(
+                f"{identity.get('class_name')} is affirmed through a {ring_state} Class Ring."
+            )
         else:
             self.add_message("The Class Ring has already answered Voluntas.")
 
     def _revisit_class_voluntas_path(self, story_state, guide_tile):
         """Play and record the optional Class Ring/Voluntas follow-up."""
         class_name = story_state.get("class_voluntas_affirmed_class") or "The chosen class"
-        archetype = story_state.get("class_voluntas_affirmed_archetype") or main_story.class_voluntas_archetype(
-            class_name
-        )
+        archetype = story_state.get(
+            "class_voluntas_affirmed_archetype"
+        ) or main_story.class_voluntas_archetype(class_name)
         self._show_special_event_dialogue("Class Voluntas Followup", title="Voluntas")
         self._show_special_event_dialogue(
             f"Class Voluntas Followup {str(archetype).title()}",
@@ -137,7 +143,11 @@ class DungeonStoryMixin:
         recorded = main_story.record_class_voluntas_followup(story_state)
         guide_tile.read = True
         if recorded:
-            ring_state = "awakened" if story_state.get("class_voluntas_affirmed_ring_awakened") else "dormant"
+            ring_state = (
+                "awakened"
+                if story_state.get("class_voluntas_affirmed_ring_awakened")
+                else "dormant"
+            )
             self.add_message(f"{class_name} is remembered through a {ring_state} Class Ring.")
         else:
             self.add_message("The Class Ring follow-up has already been remembered.")
@@ -157,7 +167,9 @@ class DungeonStoryMixin:
 
     def _show_hooded_witness_farewell(self, story_state, guide_tile):
         """Play the optional unnamed Hooded Figure witness farewell."""
-        self._show_special_event_dialogue("Hooded Figure Witness Farewell", title="The Hooded Figure")
+        self._show_special_event_dialogue(
+            "Hooded Figure Witness Farewell", title="The Hooded Figure"
+        )
         story_state["hooded_figure_witness_farewell_seen"] = True
         guide_tile.read = True
         self.add_message("The Hooded Figure remains unnamed, but their witness is given freely.")
@@ -168,7 +180,9 @@ class DungeonStoryMixin:
         story_state["liminal_gap_clues_reviewed"] = True
         summaries = main_story.guardian_clue_summary(story_state)
         completed_count = main_story.completed_guardian_count(story_state)
-        self.add_message(f"Guardian clues awakened: {completed_count}/{len(main_story.GUARDIAN_TRIALS)}.")
+        self.add_message(
+            f"Guardian clues awakened: {completed_count}/{len(main_story.GUARDIAN_TRIALS)}."
+        )
         if not summaries:
             self.add_message("No Guardian clue has awakened yet.")
             return
@@ -181,7 +195,9 @@ class DungeonStoryMixin:
         story_state["liminal_trial_v2_reviewed"] = True
         summaries = main_story.guardian_vignette_summary(story_state)
         completed_count = main_story.completed_guardian_vignette_count(story_state)
-        self.add_message(f"Guardian trial depths witnessed: {completed_count}/{len(main_story.GUARDIAN_TRIALS)}.")
+        self.add_message(
+            f"Guardian trial depths witnessed: {completed_count}/{len(main_story.GUARDIAN_TRIALS)}."
+        )
         if not summaries:
             self.add_message("No deeper Guardian trial has been witnessed yet.")
             return
@@ -217,7 +233,9 @@ class DungeonStoryMixin:
                 else:
                     self.add_message(f"You step back from the quiet gate of {guardian_name}.")
                 return
-            self._show_special_event_dialogue(f"{guardian_name} Trial Complete", title=guardian_name)
+            self._show_special_event_dialogue(
+                f"{guardian_name} Trial Complete", title=guardian_name
+            )
             self.add_message(f"The gate of {guardian_name} is quiet. Its trial is complete.")
             gate_tile.read = True
             return
@@ -288,7 +306,9 @@ class DungeonStoryMixin:
 
     def _show_guardian_trial_v2_threshold(self, guardian_name: str):
         """Show the deeper threshold vignette for a Guardian trial."""
-        self._show_special_event_dialogue(f"{guardian_name} Trial V2 Threshold", title=guardian_name)
+        self._show_special_event_dialogue(
+            f"{guardian_name} Trial V2 Threshold", title=guardian_name
+        )
 
     def _show_guardian_trial_v2_choice(self, guardian_name: str, answer: str):
         """Show the deeper choice-specific vignette for a Guardian trial."""
@@ -307,7 +327,9 @@ class DungeonStoryMixin:
         self._show_guardian_trial_v2_choice(guardian_name, answer)
         main_story.record_guardian_trial_vignette(story_state, guardian_name)
         gate_tile.read = True
-        self.add_message(f"{guardian_name}'s deeper trial memory settles without changing the path already chosen.")
+        self.add_message(
+            f"{guardian_name}'s deeper trial memory settles without changing the path already chosen."
+        )
 
     def _run_guardian_trial_echo(self, gate_tile, guardian_name: str, answer: str) -> bool:
         """Run a combat-heavy Guardian trial and return whether it was won."""
@@ -346,7 +368,9 @@ class DungeonStoryMixin:
         if guardian_name == "Luna":
             hp_restored = self._restore_resource(player.health, 0.08, minimum=1)
             mp_restored = self._restore_resource(player.mana, 0.08)
-            return [f"Luna returns mercy freely chosen, restoring {hp_restored} HP and {mp_restored} MP."]
+            return [
+                f"Luna returns mercy freely chosen, restoring {hp_restored} HP and {mp_restored} MP."
+            ]
         if guardian_name == "Polaris":
             status_effects = getattr(player, "status_effects", {})
             for status_name in ("Blind", "Silence"):
@@ -358,7 +382,9 @@ class DungeonStoryMixin:
         if guardian_name == "Infinitas":
             hp_restored = self._restore_to_half(player.health, minimum=1)
             mp_restored = self._restore_to_half(player.mana)
-            return [f"Infinitas makes another step possible, restoring {hp_restored} HP and {mp_restored} MP."]
+            return [
+                f"Infinitas makes another step possible, restoring {hp_restored} HP and {mp_restored} MP."
+            ]
         return []
 
     @staticmethod
@@ -405,7 +431,9 @@ class DungeonStoryMixin:
         story_state = self.player_char.ensure_main_story_state()
         if story_state.get("voluntas_revealed"):
             self._show_special_event_dialogue("Seventh Seat Reveal", title="Voluntas")
-            self.add_message("The empty Seventh Seat is quiet. Voluntas has already been remembered.")
+            self.add_message(
+                "The empty Seventh Seat is quiet. Voluntas has already been remembered."
+            )
             seat_tile.read = True
             return
 
@@ -454,10 +482,7 @@ class DungeonStoryMixin:
             return
 
         prior_attempts = int(story_state.get("reflection_attempts", 0))
-        show_class_echo = bool(
-            story_state.get("class_voluntas_affirmed")
-            and prior_attempts == 0
-        )
+        show_class_echo = bool(story_state.get("class_voluntas_affirmed") and prior_attempts == 0)
         story_state["reflection_attempts"] = prior_attempts + 1
         reflection = enemies.ReflectionPsychopomp()
         mirror_player = getattr(reflection, "mirror_player", None)
@@ -487,9 +512,13 @@ class DungeonStoryMixin:
             victory_event = self._reflection_profile_event(reflection, "Victory")
             self._show_special_event_dialogue(victory_event, title="Reflection")
             if story_state.get("reflection_voluntas_answer"):
-                self._show_special_event_dialogue("Reflection Voluntas Victory Echo", title="Voluntas")
+                self._show_special_event_dialogue(
+                    "Reflection Voluntas Victory Echo", title="Voluntas"
+                )
             if story_state.get("reflection_path_mirror_seen"):
-                self._show_special_event_dialogue("Reflection Path Victory Echo", title="Reflection")
+                self._show_special_event_dialogue(
+                    "Reflection Path Victory Echo", title="Reflection"
+                )
             self._show_hooded_angelic_confirmation_if_ready(story_state)
             reflection_tile.read = True
             self.add_message("The chosen self holds. The way back to Vesperion opens.")
@@ -530,7 +559,9 @@ class DungeonStoryMixin:
         """Return a profile-specific Reflection event key."""
         mirrored_path = getattr(reflection, "mirrored_path", {})
         profile = mirrored_path.get("profile") if isinstance(mirrored_path, dict) else None
-        profile_suffix = str(profile).title() if profile in {"martial", "mystic", "hybrid"} else "Hybrid"
+        profile_suffix = (
+            str(profile).title() if profile in {"martial", "mystic", "hybrid"} else "Hybrid"
+        )
         event_name = f"Reflection {beat} {profile_suffix}"
         try:
             if event_name in dungeon_manager.get_special_events():
@@ -543,7 +574,9 @@ class DungeonStoryMixin:
         """Play the one-time post-Reflection Hooded Figure confirmation."""
         if not main_story.should_confirm_hooded_figure_angelic(story_state):
             return False
-        self._show_special_event_dialogue("Hooded Figure Angelic Confirmation", title="The Hooded Figure")
+        self._show_special_event_dialogue(
+            "Hooded Figure Angelic Confirmation", title="The Hooded Figure"
+        )
         story_state["hooded_figure_angelic_confirmed"] = True
         self.add_message("The Hooded Figure's hidden light answers Voluntas one last time.")
         return True
@@ -577,7 +610,7 @@ class DungeonStoryMixin:
             return
 
         # If already defeated in this encounter, don't respawn
-        if hasattr(incubus_tile, 'defeated') and incubus_tile.defeated:
+        if hasattr(incubus_tile, "defeated") and incubus_tile.defeated:
             self.add_message("The Incubus has been vanquished.")
             return
 
@@ -588,14 +621,10 @@ class DungeonStoryMixin:
         incubus_tile.enter_combat(self.player_char)
         enemy = incubus_tile.enemy
 
-        self.player_char.state = 'fight'
+        self.player_char.state = "fight"
         self._refresh_cached_frame()
 
-        combat_won = self.combat_manager.start_combat(
-            self.player_char,
-            enemy,
-            incubus_tile
-        )
+        combat_won = self.combat_manager.start_combat(self.player_char, enemy, incubus_tile)
 
         if combat_won:
             # Complete quest
@@ -623,6 +652,7 @@ class DungeonStoryMixin:
 
         # Prompt player to take the chalice
         from ..confirmation_popup import ConfirmationPopup
+
         popup = ConfirmationPopup(
             self.presenter,
             "A golden chalice rests on the pedestal, radiating holy light.\n\n"

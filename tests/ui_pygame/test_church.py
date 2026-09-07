@@ -121,7 +121,9 @@ def test_visit_church_routes_actions(monkeypatch):
     FakePopup.show_kwargs = []
     player = _make_player()
     presenter = _make_presenter()
-    monkeypatch.setattr(church.ChurchManager, "_load_background", lambda self: setattr(self, "background", None))
+    monkeypatch.setattr(
+        church.ChurchManager, "_load_background", lambda self: setattr(self, "background", None)
+    )
     monkeypatch.setattr("src.ui_pygame.gui.church.ConfirmationPopup", FakePopup)
     manager = church.ChurchManager(presenter, player)
 
@@ -188,23 +190,25 @@ def test_save_game_reports_success_and_failure(monkeypatch):
     )
     manager = church.ChurchManager(presenter, player)
 
-    save_paths = []
+    save_calls = []
     monkeypatch.setattr(
-        "src.ui_pygame.gui.church.os.path.exists",
-        lambda _path: True,
+        church.SaveManager,
+        "save_player",
+        lambda saved_player, filename: save_calls.append((saved_player, filename)) or True,
     )
-    player.save = lambda filepath=None: save_paths.append(filepath)
     manager.save_game()
 
-    assert save_paths == ["save_files/ada_hero.save"]
+    assert save_calls == [(player, "ada_hero.save")]
     assert "Game saved successfully!" in FakePopup.messages[-1]
 
-    player.save = lambda filepath=None: (_ for _ in ()).throw(
-        RuntimeError("disk full")
+    monkeypatch.setattr(
+        church.SaveManager,
+        "save_player",
+        lambda _saved_player, _filename: False,
     )
     manager.save_game()
 
-    assert "Error saving game:" in FakePopup.messages[-1]
+    assert "Error saving game." in FakePopup.messages[-1]
 
 
 def test_hidden_crypt_binds_contract_and_awakens_ring(monkeypatch):
@@ -225,7 +229,9 @@ def test_hidden_crypt_binds_contract_and_awakens_ring(monkeypatch):
     selections = iter([1, 1, 2, 2])
     presenter.render_menu = lambda *_args, **_kwargs: next(selections)
 
-    monkeypatch.setattr(church.ChurchManager, "_load_background", lambda self: setattr(self, "background", None))
+    monkeypatch.setattr(
+        church.ChurchManager, "_load_background", lambda self: setattr(self, "background", None)
+    )
     monkeypatch.setattr("src.ui_pygame.gui.church.ConfirmationPopup", FakePopup)
 
     manager = church.ChurchManager(presenter, player)
@@ -244,7 +250,9 @@ def test_arcane_class_ring_rite_requires_visible_dormant_ring(monkeypatch):
     player.class_ring_awakening = class_rings.default_state()
     player.inventory = {"Class Ring": [items.ClassRing()]}
     presenter = _make_presenter()
-    monkeypatch.setattr(church.ChurchManager, "_load_background", lambda self: setattr(self, "background", None))
+    monkeypatch.setattr(
+        church.ChurchManager, "_load_background", lambda self: setattr(self, "background", None)
+    )
 
     manager = church.ChurchManager(presenter, player)
     assert manager._arcane_class_ring_rite_label() == "Four Formulae"
@@ -264,7 +272,9 @@ def test_arcane_class_ring_rite_requires_visible_dormant_ring(monkeypatch):
 def test_arcane_class_ring_rites_awaken_ring_and_apply_mods(monkeypatch):
     FakePopup.messages = []
     presenter = _make_presenter()
-    monkeypatch.setattr(church.ChurchManager, "_load_background", lambda self: setattr(self, "background", None))
+    monkeypatch.setattr(
+        church.ChurchManager, "_load_background", lambda self: setattr(self, "background", None)
+    )
     monkeypatch.setattr("src.ui_pygame.gui.church.ConfirmationPopup", FakePopup)
 
     for class_name, expected_mod, expected_label in (
@@ -287,10 +297,12 @@ def test_arcane_class_ring_rites_awaken_ring_and_apply_mods(monkeypatch):
         player.class_ring_awakening = class_rings.default_state()
         player.equipment["Ring"] = items.ClassRing()
         player.health = SimpleNamespace(current=200, max=200)
-        player.awaken_class_ring = lambda class_name=None, _player=player, **kwargs: class_rings.activate(
-            _player,
-            class_name,
-            **kwargs,
+        player.awaken_class_ring = (
+            lambda class_name=None, _player=player, **kwargs: class_rings.activate(
+                _player,
+                class_name,
+                **kwargs,
+            )
         )
 
         manager = church.ChurchManager(presenter, player)
@@ -307,7 +319,9 @@ def test_paladin_legacy_vow_choice_and_crusader_vow_trial(monkeypatch):
     FakePopup.messages = []
     FakePopup.show_kwargs = []
     presenter = _make_presenter()
-    monkeypatch.setattr(church.ChurchManager, "_load_background", lambda self: setattr(self, "background", None))
+    monkeypatch.setattr(
+        church.ChurchManager, "_load_background", lambda self: setattr(self, "background", None)
+    )
     monkeypatch.setattr("src.ui_pygame.gui.church.ConfirmationPopup", FakePopup)
 
     class FakeVowSelectionPopup:
@@ -342,7 +356,9 @@ def test_paladin_legacy_vow_choice_and_crusader_vow_trial(monkeypatch):
     player.cls = SimpleNamespace(name="Crusader")
     player.class_ring_awakening = class_rings.default_state()
     player.equipment = {"Ring": items.ClassRing()}
-    player.awaken_class_ring = lambda class_name=None, **kwargs: class_rings.activate(player, class_name, **kwargs)
+    player.awaken_class_ring = lambda class_name=None, **kwargs: class_rings.activate(
+        player, class_name, **kwargs
+    )
 
     assert manager._crusader_vow_trial_available() is True
     assert manager.visit_crusader_vow_trial() is True

@@ -6,7 +6,7 @@ tracked separately in `FOUNDATIONAL_REFACTOR_PLAN.md`.
 
 | Area | Why deferred | Owner document |
 | --- | --- | --- |
-| Durability, identification, item modification, and rarity changes | Save, UI, economy, and old-save contracts are not approved. | [`EQUIPMENT_ITEMS_ECONOMY_DESIGN_GATES.md`](../EQUIPMENT_ITEMS_ECONOMY_DESIGN_GATES.md) |
+| Durability, identification, item modification, and rarity changes | Current-save/reset, UI, and economy contracts are not approved. | [`EQUIPMENT_ITEMS_ECONOMY_DESIGN_GATES.md`](../EQUIPMENT_ITEMS_ECONOMY_DESIGN_GATES.md) |
 | Multi-enemy normal generation, floor 5, and rosters larger than two | The one-or-two-enemy architecture and development pilots exist; rollout, enemy-area-action, floor-5 matrix, and larger-layout decisions remain open. | [`FOUNDATIONAL_REFACTOR_PLAN.md`](../FOUNDATIONAL_REFACTOR_PLAN.md) |
 | Account-wide Bestiary, profiles, achievements, and persistent meta statistics | Profile ownership, storage, migration, and privacy decisions are open. | [`DEVELOPMENT_ROADMAP.md`](../DEVELOPMENT_ROADMAP.md) |
 | Broader divine economy and deep class-kit expansions | Manual cadence, readability, preservation, and action-economy evidence is still pending. | [`CLASS_KIT_DESIGN_GATES.md`](../CLASS_KIT_DESIGN_GATES.md) |

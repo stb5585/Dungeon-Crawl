@@ -73,9 +73,7 @@ class NaturalAttunement(Skill):
     def __init__(self):
         super().__init__(
             name="Natural Attunement",
-            description=(
-                "Attune to nature, increasing Defense and Magic Defense."
-            ),
+            description=("Attune to nature, increasing Defense and Magic Defense."),
         )
         self.subtyp = "Enhance"
         self.cost = 5
@@ -108,9 +106,7 @@ class Rally(Skill):
     def __init__(self):
         super().__init__(
             name="Rally",
-            description=(
-                "Steel your resolve, increasing Defense and Magic Defense."
-            ),
+            description=("Steel your resolve, increasing Defense and Magic Defense."),
         )
         self.subtyp = "Enhance"
         self.cost = 5
@@ -161,9 +157,7 @@ class Adrenaline(Skill):
         result = super().use(user, user, **kwargs)
         maximum = max(1, int(user.health.max))
         if int(user.health.current) * 10 >= maximum:
-            result.message = (
-                f"{user.name} can only trigger Adrenaline below 10% health.\n"
-            )
+            result.message = f"{user.name} can only trigger Adrenaline below 10% health.\n"
             return result
         healing = max(1, int(maximum * 0.20))
         healing_multiplier = getattr(user, "healing_received_multiplier", None)
@@ -177,9 +171,7 @@ class Adrenaline(Skill):
         if hasattr(user, "_emit_healing_event"):
             user._emit_healing_event(actual, source=self.name)
         result.healing = actual
-        result.message = (
-            f"{user.name}'s adrenaline surges, restoring {actual} health.\n"
-        )
+        result.message = f"{user.name}'s adrenaline surges, restoring {actual} health.\n"
         return result
 
 
@@ -189,9 +181,7 @@ class HonedAttack(Class):
     def __init__(self):
         super().__init__(
             name="Honed Attack",
-            description=(
-                "Passive: Increase the damage bonus from critical hits by 25%."
-            ),
+            description=("Passive: Increase the damage bonus from critical hits by 25%."),
         )
         self.passive = True
 
@@ -308,9 +298,7 @@ class AchillesHeel(Skill):
             effect.source = self.name
             target._achilles_heel_turns = 3
             result.effects_applied["Stat"].append("Speed Debuff")
-            message += (
-                f"{target.name}'s speed is crippled and their footing becomes vulnerable.\n"
-            )
+            message += f"{target.name}'s speed is crippled and their footing becomes vulnerable.\n"
         result.message = message
         return result
 
@@ -327,7 +315,7 @@ class EvasiveGuard(Defensive):
         super().__init__(
             name="Evasive Guard",
             description="Each time you are hit, you learn and reduce future damage (stacks up to 3). "
-                        "Stacks reset when you dodge an attack.",
+            "Stacks reset when you dodge an attack.",
         )
         self.passive = True
 
@@ -439,7 +427,9 @@ class StumbleUpon(Skill):
         generator = kwargs.get("rng") or random
         if hit and not getattr(target, "flying", False):
             attack_roll = generator.randint(max(1, user.stats.dex // 2), max(1, user.stats.dex))
-            defense_roll = generator.randint(max(1, target.stats.dex // 2), max(1, target.stats.dex))
+            defense_roll = generator.randint(
+                max(1, target.stats.dex // 2), max(1, target.stats.dex)
+            )
             speed_effect = target.stat_effects.get("Speed")
             if (
                 speed_effect is not None
@@ -524,11 +514,12 @@ class Disruption(Skill):
             return result
         battle_engine = kwargs.get("battle_engine")
         charging_entry = getattr(battle_engine, "charging_ability", None)
-        charging_skill = charging_entry[2] if charging_entry and charging_entry[0] is target else None
+        charging_skill = (
+            charging_entry[2] if charging_entry and charging_entry[0] is target else None
+        )
         if charging_skill is None:
-            known_abilities = (
-                list(target.spellbook.get("Skills", {}).values())
-                + list(target.spellbook.get("Spells", {}).values())
+            known_abilities = list(target.spellbook.get("Skills", {}).values()) + list(
+                target.spellbook.get("Spells", {}).values()
             )
             charging_skill = next(
                 (skill for skill in known_abilities if getattr(skill, "charging", False)),
@@ -567,6 +558,7 @@ class Disruption(Skill):
 
 class Disarm:
     """Disarm the enemy - data-driven (Batch 4)."""
+
     def __new__(cls):
         return _load_yaml_ability("disarm.yaml", cls_name="Disarm")
 
@@ -587,6 +579,7 @@ class Cover(Defensive):
 
 class Goad:
     """Data-driven (goad.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("goad.yaml", cls_name="Goad")
 
@@ -598,8 +591,7 @@ class Dishearten(Skill):
         super().__init__(
             name="Dishearten",
             description=(
-                "Shout at an enemy, reducing the melee damage they deal by 25% "
-                "for three turns."
+                "Shout at an enemy, reducing the melee damage they deal by 25% " "for three turns."
             ),
         )
         self.subtyp = "Defensive"
@@ -628,48 +620,56 @@ class Dishearten(Skill):
 # Stealth skills
 class Backstab:
     """Data-driven (backstab.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("backstab.yaml", cls_name="Backstab")
 
 
 class PocketSand:
     """Data-driven (pocket_sand.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("pocket_sand.yaml", cls_name="PocketSand")
 
 
 class SleepingPowder:
     """Data-driven (sleeping_powder.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("sleeping_powder.yaml", cls_name="SleepingPowder")
 
 
 class KidneyPunch:
     """Data-driven (kidney_punch.yaml) - weapon hit + stun."""
+
     def __new__(cls):
         return _load_yaml_ability("kidney_punch.yaml", cls_name="KidneyPunch")
 
 
 class SmokeScreen:
     """Data-driven (smoke_screen.yaml); player use consumes a Smoke Bomb."""
+
     def __new__(cls):
         return _load_yaml_ability("smoke_screen.yaml", cls_name="SmokeScreen")
 
 
 class Steal:
     """Data-driven (steal.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("steal.yaml", cls_name="Steal")
 
 
 class Mug:
     """Data-driven (mug.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("mug.yaml", cls_name="Mug")
 
 
 class ShadowStrike:
     """Data-driven (shadow_strike.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("shadow_strike.yaml", cls_name="ShadowStrike")
 
@@ -704,12 +704,14 @@ class MasterLockpick(Lockpick):
 
 class PoisonStrike:
     """Data-driven (poison_strike.yaml) - weapon hit + poison."""
+
     def __new__(cls):
         return _load_yaml_ability("poison_strike.yaml", cls_name="PoisonStrike")
 
 
 class SneakAttack:
     """Data-driven (sneak_attack.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("sneak_attack.yaml", cls_name="SneakAttack")
 
@@ -717,24 +719,28 @@ class SneakAttack:
 # Enhance skills
 class ImbueWeapon:
     """Data-driven (imbue_weapon.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("imbue_weapon.yaml", cls_name="ImbueWeapon")
 
 
 class ManaSlice:
     """Data-driven (mana_slice.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("mana_slice.yaml", cls_name="ManaSlice")
 
 
 class ManaSlice2:
     """Data-driven (mana_slice_2.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("mana_slice_2.yaml", cls_name="ManaSlice2")
 
 
 class DispelSlash:
     """Data-driven (dispel_slash.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("dispel_slash.yaml", cls_name="DispelSlash")
 
@@ -771,18 +777,21 @@ class EnhanceArmor(Enhance):
 
 class ManaShield:
     """Skill — data-driven (mana_shield.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("mana_shield.yaml", cls_name="ManaShield")
 
 
 class ManaShield2:
     """Skill — data-driven (mana_shield_2.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("mana_shield_2.yaml", cls_name="ManaShield2")
 
 
 class ElementalStrike:
     """Data-driven (elemental_strike.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("elemental_strike.yaml", cls_name="ElementalStrike")
 
@@ -790,30 +799,35 @@ class ElementalStrike:
 # Drain skills
 class HealthDrain:
     """Skill — data-driven (health_drain.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("health_drain.yaml", cls_name="HealthDrain")
 
 
 class ManaDrain:
     """Skill — data-driven (mana_drain.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("mana_drain.yaml", cls_name="ManaDrain")
 
 
 class HealthManaDrain:
     """Skill — data-driven (health_mana_drain.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("health_mana_drain.yaml", cls_name="HealthManaDrain")
 
 
 class LifeTap:
     """Data-driven (life_tap.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("life_tap.yaml", cls_name="LifeTap")
 
 
 class ManaTap:
     """Data-driven (mana_tap.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("mana_tap.yaml", cls_name="ManaTap")
 
@@ -851,30 +865,35 @@ class LearnSpell2(LearnSpell):
 
 class Transform:
     """Data-driven (transform.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("transform.yaml", cls_name="Transform")
 
 
 class Transform2:
     """Data-driven (transform2.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("transform2.yaml", cls_name="Transform2")
 
 
 class Transform3:
     """Data-driven (transform3.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("transform3.yaml", cls_name="Transform3")
 
 
 class Transform4:
     """Data-driven (transform4.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("transform4.yaml", cls_name="Transform4")
 
 
 class Totem:
     """Data-driven (totem.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("totem.yaml", cls_name="Totem")
 
@@ -995,7 +1014,9 @@ class Familiar3(Familiar):
 
     def __init__(self):
         super().__init__()
-        self.description = "The warlock's familiar gains additional strength, unlocking even more abilities."
+        self.description = (
+            "The warlock's familiar gains additional strength, unlocking even more abilities."
+        )
 
 
 class Tame(Class):
@@ -1090,18 +1111,21 @@ class AbsorbEssence(Class):
 
 class Reveal:
     """Data-driven (reveal.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("reveal.yaml", cls_name="Reveal")
 
 
 class Inspect:
     """Data-driven (inspect.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("inspect.yaml", cls_name="Inspect")
 
 
 class ExploitWeakness:
     """Data-driven (exploit_weakness.yaml) - weakness detection + weapon."""
+
     def __new__(cls):
         return _load_yaml_ability("exploit_weakness.yaml", cls_name="ExploitWeakness")
 
@@ -1126,8 +1150,7 @@ class ThirdEye(Truth):
         super().__init__(
             name="Third Eye",
             description=(
-                "Passive: Add Intelligence to critical-hit and dodge chance "
-                "calculations."
+                "Passive: Add Intelligence to critical-hit and dodge chance " "calculations."
             ),
         )
         self.passive = True
@@ -1151,24 +1174,28 @@ class Cartography(Truth):
 # Martial Art Skills
 class LegSweep:
     """Sweep the leg, trip the enemy - data-driven (Batch 4)."""
+
     def __new__(cls):
         return _load_yaml_ability("leg_sweep.yaml", cls_name="LegSweep")
 
 
 class ChiHeal:
     """Skill — data-driven (chi_heal.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("chi_heal.yaml", cls_name="ChiHeal")
 
 
 class PurityBody:
     """Data-driven (purity_body.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("purity_body.yaml", cls_name="PurityBody")
 
 
 class PurityBody2:
     """Data-driven (purity_body2.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("purity_body2.yaml", cls_name="PurityBody2")
 
@@ -1213,18 +1240,21 @@ class StaffConduit(Class):
 # Luck
 class GoldToss:
     """Data-driven (gold_toss.yaml) - gold-based unblockable damage."""
+
     def __new__(cls):
         return _load_yaml_ability("gold_toss.yaml", cls_name="GoldToss")
 
 
 class SlotMachine:
     """Data-driven (slot_machine.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("slot_machine.yaml", cls_name="SlotMachine")
 
 
 class Blackjack:
     """Data-driven (blackjack.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("blackjack.yaml", cls_name="Blackjack")
 

@@ -31,12 +31,14 @@ class BloodRage(PowerUp):
 
 class ArsenalMastery(PowerUp):
     """Skill — data-driven (arsenal_mastery.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("arsenal_mastery.yaml", cls_name="ArsenalMastery")
 
 
 class DivineAegis(PowerUp):
     """Skill — data-driven (divine_aegis.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("divine_aegis.yaml", cls_name="DivineAegis")
 
@@ -161,12 +163,14 @@ class AbyssalAuthority(_ContractModifier):
 
 class AbyssalCovenant(PowerUp):
     """Skill — data-driven (abyssal_covenant.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("abyssal_covenant.yaml", cls_name="AbyssalCovenant")
 
 
 class ArcaneBlast(PowerUp):
     """Data-driven (arcane_blast.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("arcane_blast.yaml", cls_name="ArcaneBlast")
 
@@ -178,6 +182,7 @@ class EternalConduit(Ability):
     healing and buffs their Xenids receive, and their Xenids gain a portion of all healing and buffs the Thaumaturgist
     receives.
     """
+
     def __init__(self):
         super().__init__(
             name="Eternal Conduit",
@@ -187,7 +192,7 @@ class EternalConduit(Ability):
             " receives.",
             passive=True,
             typ="Skill",
-            subtyp="Power Up"
+            subtyp="Power Up",
         )
 
     def special_effect(self, user: Character, *args: Any, **kwargs: Any) -> CombatResult:
@@ -230,30 +235,35 @@ class EyesUnseen(PowerUp):
 
 class BladeFatalities(PowerUp):
     """Skill — data-driven (blade_fatalities.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("blade_fatalities.yaml", cls_name="BladeFatalities")
 
 
 class TrickstersGambit(PowerUp):
     """Skill — data-driven (tricksters_gambit.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("tricksters_gambit.yaml", cls_name="TrickstersGambit")
 
 
 class HolyRetribution(PowerUp):
     """Skill — data-driven (holy_retribution.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("holy_retribution.yaml", cls_name="HolyRetribution")
 
 
 class SacredOverchannel(PowerUp):
     """Skill — data-driven (sacred_overchannel.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("sacred_overchannel.yaml", cls_name="SacredOverchannel")
 
 
 class GreatGospel(PowerUp):
     """Skill — data-driven (great_gospel.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("great_gospel.yaml", cls_name="GreatGospel")
 
@@ -282,6 +292,7 @@ class MelodyInspiration(PowerUp):
     Melody of Inspiration (Passive): The Troubadour's presence inspires allies and self, granting a small bonus to all stats
     and occasionally removing negative status effects at the start of combat.
     """
+
     def __init__(self):
         super().__init__(
             name="Melody of Inspiration",
@@ -304,6 +315,7 @@ class PrimalAscendance(PowerUp):
     """
     Primal Ascendance (Passive): The Archdruid becomes a living embodiment of nature.
     """
+
     def __init__(self):
         super().__init__(
             name="Primal Ascendance",
@@ -341,6 +353,7 @@ class LunarFrenzy(PowerUp):
 
 class AstralJudgment(PowerUp):
     """Data-driven (astral_judgment.yaml) - active-sign fate judgment."""
+
     def __new__(cls):
         return _load_yaml_ability("astral_judgment.yaml", cls_name="AstralJudgment")
 
@@ -368,6 +381,7 @@ class PackBond(PowerUp):
     Pack Bond (Passive): The Beast Master and their animal companion(s) share a deep bond, granting increased damage and defense
     when fighting alongside a companion. Occasionally, the companion will intercept attacks or provide a healing effect.
     """
+
     def __init__(self):
         super().__init__(
             name="Pack Bond",

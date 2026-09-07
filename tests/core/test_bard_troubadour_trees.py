@@ -62,9 +62,7 @@ def test_bard_rows_follow_first_promotion_level_bands_and_fit_eight_rows():
         else:
             assert node.payload["level_requirement"] == expected_levels[row]
 
-    battle_arrangement = next(
-        node for node in tree.nodes if node.name == "Battle Arrangement"
-    )
+    battle_arrangement = next(node for node in tree.nodes if node.name == "Battle Arrangement")
     assert battle_arrangement.position == (3, 0)
 
 
@@ -82,6 +80,8 @@ def test_troubadour_tree_has_twenty_seven_authored_terminal_nodes():
         "Syncopated Strike",
         "Countermelody",
     } <= {node.name for node in tree.nodes}
+    assert "Cutting Refrain" in {node.name for node in tree.nodes}
+    assert "Cutting Encore" not in {node.name for node in tree.nodes}
 
 
 def test_compose_is_inherent_and_selects_matching_custom_song():
@@ -217,7 +217,13 @@ def test_prismatic_finale_spends_crescendo_for_elemental_damage(monkeypatch):
     result = abilities.PrismaticFinale().cast(performer, target, rng=FireRng())
 
     assert result.damage == 15
-    assert result.extra == {"cost": 18, "type": "Spell", "subtype": "Elemental", "element": "Fire", "crescendo_spent": 3}
+    assert result.extra == {
+        "cost": 18,
+        "type": "Spell",
+        "subtype": "Elemental",
+        "element": "Fire",
+        "crescendo_spent": 3,
+    }
     assert promotion_kits.combat_state(performer)["crescendo"] == 0
 
 

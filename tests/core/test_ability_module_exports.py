@@ -14,15 +14,14 @@ from src.core.abilities import (
     pathfinder,
     powerups,
     promotions,
+    shaman,
     skills,
     spell_stealer,
     spell_types,
-    shaman,
     spells,
     thief,
     utility,
 )
-
 
 ABILITY_MODULES = (
     base,

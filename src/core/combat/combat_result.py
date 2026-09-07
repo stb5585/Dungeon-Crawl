@@ -24,13 +24,9 @@ class CombatResult:
     block_amount: int | None = None
     damage: int | None = None
     healing: int | None = None
-    effects_applied: dict[str, list[Any]] = field(default_factory=lambda: {
-        'Status': [],
-        'Physical': [],
-        'Stat': [],
-        'Magic': [],
-        'Class': []
-    })
+    effects_applied: dict[str, list[Any]] = field(
+        default_factory=lambda: {"Status": [], "Physical": [], "Stat": [], "Magic": [], "Class": []}
+    )
     extra: dict[str, Any] = field(default_factory=dict)
     message: str = ""
     actor_id: str | None = None
@@ -72,7 +68,7 @@ class CombatResultGroup:
     def add(self, result: CombatResult) -> None:
         self.results.append(result)
         self.message += result.message
-    
+
     def __getitem__(self, index: int) -> CombatResult:
         """Make CombatResultGroup subscriptable for backward compatibility."""
         return self.results[index]

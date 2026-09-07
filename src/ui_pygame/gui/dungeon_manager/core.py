@@ -11,7 +11,6 @@ import src.ui_pygame.gui.dungeon_manager as dungeon_manager
 from src.core import map_tiles
 from src.paths import PYGAME_ASSETS_DIR
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -42,10 +41,12 @@ class DungeonCoreMixin:
 
         # Import shop manager (lazy import to avoid circular dependencies)
         from ..shops import ShopManager
+
         self.shop_manager = ShopManager(presenter, player_char)
 
         # Import ultimate armor shop
         from ..ultimate_armor import UltimateArmorShop
+
         self.ultimate_armor_shop = UltimateArmorShop(presenter)
 
         # Message log
@@ -101,6 +102,7 @@ class DungeonCoreMixin:
     def _get_character_screen(self):
         if self.character_screen is None:
             from ..modern_character_screen import ModernCharacterScreen
+
             self.character_screen = ModernCharacterScreen(self.presenter)
             if self._dungeon_background is not None:
                 self.character_screen.background = self._dungeon_background
@@ -117,7 +119,7 @@ class DungeonCoreMixin:
             current_line = ""
             for word in words:
                 if len(current_line) + len(word) + 1 <= max_length:
-                    current_line += (word + " ")
+                    current_line += word + " "
                 else:
                     if current_line:
                         lines.append(current_line.strip())
@@ -131,7 +133,7 @@ class DungeonCoreMixin:
 
         # Keep only last max_messages
         if len(self.messages) > self.max_messages:
-            self.messages = self.messages[-self.max_messages:]
+            self.messages = self.messages[-self.max_messages :]
 
         if was_at_bottom:
             self.message_scroll_offset = self._max_message_scroll()
@@ -152,7 +154,9 @@ class DungeonCoreMixin:
 
     def scroll_message_log(self, delta: int):
         """Scroll dungeon navigation log by delta lines (negative=older, positive=newer)."""
-        self.message_scroll_offset = max(0, min(self._max_message_scroll(), self.message_scroll_offset + delta))
+        self.message_scroll_offset = max(
+            0, min(self._max_message_scroll(), self.message_scroll_offset + delta)
+        )
         self.ui_dirty = True
 
     def reset_message_log(self):
@@ -177,10 +181,10 @@ class DungeonCoreMixin:
             return
 
         # Check if quest "Something to Cry About" is active and not completed
-        if 'Something to Cry About' not in self.player_char.quest_dict.get('Side', {}):
+        if "Something to Cry About" not in self.player_char.quest_dict.get("Side", {}):
             return
 
-        if self.player_char.quest_dict['Side']['Something to Cry About'].get('Completed'):
+        if self.player_char.quest_dict["Side"]["Something to Cry About"].get("Completed"):
             return
 
         # Dead body is at approximately (18, 12, 2) - you can adjust these coords if needed
@@ -262,8 +266,7 @@ class DungeonCoreMixin:
 
             # Create scaled sprite with alpha
             scaled_sprite = pygame.transform.scale(
-                nimue_sprite,
-                (int(sprite_width * scale), int(sprite_height * scale))
+                nimue_sprite, (int(sprite_width * scale), int(sprite_height * scale))
             )
             scaled_sprite.set_alpha(alpha)
 
@@ -322,10 +325,16 @@ class DungeonCoreMixin:
         """Show special event text using split dialogue layout."""
         try:
             lines = dungeon_manager.get_special_events().get(event_name, {}).get("Text", [])
-            message = " ".join(line.strip() for line in lines if line is not None).strip() if lines else event_name
+            message = (
+                " ".join(line.strip() for line in lines if line is not None).strip()
+                if lines
+                else event_name
+            )
         except Exception:
             message = event_name
-        image_path = image_path or dungeon_manager.get_npc_art_manager().get_image_path(title or event_name)
+        image_path = image_path or dungeon_manager.get_npc_art_manager().get_image_path(
+            title or event_name
+        )
         self.presenter.show_message(
             message,
             title=title or event_name,
@@ -349,7 +358,9 @@ class DungeonCoreMixin:
         if isinstance(picture, str) and picture.lower().endswith(".png"):
             return self._enemy_combat_sprite_image_path(Path(picture).name)
         try:
-            from src.ui_pygame.assets.enemy_combat_sprite_manager import get_enemy_combat_sprite_manager
+            from src.ui_pygame.assets.enemy_combat_sprite_manager import (
+                get_enemy_combat_sprite_manager,
+            )
 
             manager = get_enemy_combat_sprite_manager()
             sprite_key = manager.get_sprite_key_for_enemy(enemy)
@@ -456,7 +467,9 @@ class DungeonCoreMixin:
 
             # Draw background + dim overlay
             if bg:
-                bg_rect = bg.get_rect(center=(self.presenter.width // 2, self.presenter.height // 2))
+                bg_rect = bg.get_rect(
+                    center=(self.presenter.width // 2, self.presenter.height // 2)
+                )
                 screen.blit(bg, bg_rect)
             else:
                 screen.fill((0, 0, 0))
@@ -467,7 +480,9 @@ class DungeonCoreMixin:
 
             # Title text
             text = self.presenter.title_font.render(message, True, (255, 255, 255))
-            text_rect = text.get_rect(center=(self.presenter.width // 2, self.presenter.height // 2 - 40))
+            text_rect = text.get_rect(
+                center=(self.presenter.width // 2, self.presenter.height // 2 - 40)
+            )
             screen.blit(text, text_rect)
 
             # Progress bar
@@ -477,14 +492,20 @@ class DungeonCoreMixin:
             bar_y = self.presenter.height // 2 + 10
 
             border_rect = pygame.Rect(bar_x, bar_y, bar_width, bar_height)
-            fill_rect = pygame.Rect(bar_x + 3, bar_y + 3, int((bar_width - 6) * progress), bar_height - 6)
+            fill_rect = pygame.Rect(
+                bar_x + 3, bar_y + 3, int((bar_width - 6) * progress), bar_height - 6
+            )
 
             pygame.draw.rect(screen, (220, 220, 220), border_rect, 2)
             pygame.draw.rect(screen, (218, 165, 32), fill_rect)
 
             # Percent text
-            percent_text = self.presenter.small_font.render(f"{int(progress * 100)}%", True, (255, 255, 255))
-            percent_rect = percent_text.get_rect(center=(self.presenter.width // 2, bar_y + bar_height + 16))
+            percent_text = self.presenter.small_font.render(
+                f"{int(progress * 100)}%", True, (255, 255, 255)
+            )
+            percent_rect = percent_text.get_rect(
+                center=(self.presenter.width // 2, bar_y + bar_height + 16)
+            )
             screen.blit(percent_text, percent_rect)
 
             pygame.display.flip()

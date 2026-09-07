@@ -2,14 +2,10 @@
 
 from __future__ import annotations
 
-from contextlib import contextmanager
 import random
+from contextlib import contextmanager
 from typing import TYPE_CHECKING
 
-from ..actor_cycle import ActorCycle, PLAYER_ACTOR_ID, build_actor_order
-from ..battle_logger import BattleLogger
-from ..encounter import CombatEncounter
-from ..initiative import determine_initiative
 from ...classes import ability_mechanics, astromancer, bard, footpad, paladin, promotion_kits
 from ...enemies.identity import remember_defeat_identity
 from ...events.event_bus import (
@@ -18,6 +14,10 @@ from ...events.event_bus import (
     create_combat_event,
     get_event_bus,
 )
+from ..actor_cycle import PLAYER_ACTOR_ID, ActorCycle, build_actor_order
+from ..battle_logger import BattleLogger
+from ..encounter import CombatEncounter
+from ..initiative import determine_initiative
 from .actions import BattleActionMixin
 from .models import ActionResult
 from .outcomes import BattleOutcomeMixin
@@ -336,7 +336,9 @@ class BattleEngine(BattleTurnMixin, BattleActionMixin, BattleOutcomeMixin):
         actions.append("Recall")
         skills = getattr(self.player, "spellbook", {}).get("Skills", {})
         for name in skills:
-            if name in {"Heal Summon", "Raise Summon", "Conduit Command"} or name.startswith("Invoke "):
+            if name in {"Heal Summon", "Raise Summon", "Conduit Command"} or name.startswith(
+                "Invoke "
+            ):
                 actions.append("Use Skill")
                 break
         return actions
@@ -345,7 +347,8 @@ class BattleEngine(BattleTurnMixin, BattleActionMixin, BattleOutcomeMixin):
         """Return owner skill names valid through the active-summon Support menu."""
         skills = getattr(self.player, "spellbook", {}).get("Skills", {})
         return [
-            name for name, skill in skills.items()
+            name
+            for name, skill in skills.items()
             if (
                 name in {"Heal Summon", "Raise Summon", "Conduit Command"}
                 or name.startswith("Invoke ")
@@ -379,10 +382,7 @@ class BattleEngine(BattleTurnMixin, BattleActionMixin, BattleOutcomeMixin):
                 self.attacker = self.player
                 self.defender = self._focused_enemy()
             self.available_actions = self._available_actions()
-            if (
-                not self.summon_active
-                and self._member_for_character(original_attacker) is not None
-            ):
+            if not self.summon_active and self._member_for_character(original_attacker) is not None:
                 self.attacker = original_attacker
                 self.defender = original_defender
         return result
@@ -406,9 +406,7 @@ class BattleEngine(BattleTurnMixin, BattleActionMixin, BattleOutcomeMixin):
             (first_actor, second_actor) — the initiative order.
         """
         if len(self.encounter.members) > 2:
-            raise NotImplementedError(
-                "Multi-enemy combat currently supports at most two enemies."
-            )
+            raise NotImplementedError("Multi-enemy combat currently supports at most two enemies.")
         if len(self.encounter.members) > 1 and (
             self.boss
             or any(
@@ -450,8 +448,7 @@ class BattleEngine(BattleTurnMixin, BattleActionMixin, BattleOutcomeMixin):
         promotion_kits.combat_state(self.player)["visible_enemy_types"] = {
             str(getattr(member.enemy, "enemy_typ", ""))
             for member in self.encounter.members
-            if self.show_enemy_details(member.enemy)
-            and getattr(member.enemy, "enemy_typ", None)
+            if self.show_enemy_details(member.enemy) and getattr(member.enemy, "enemy_typ", None)
         }
         if kit_start_message:
             messages = getattr(self.player, "_promotion_kit_messages", None)
@@ -459,9 +456,7 @@ class BattleEngine(BattleTurnMixin, BattleActionMixin, BattleOutcomeMixin):
                 messages = []
                 self.player._promotion_kit_messages = messages
             messages.append(kit_start_message)
-        forced_enemy_initiative = bool(
-            getattr(self.tile, "trap_forced_initiative", False)
-        )
+        forced_enemy_initiative = bool(getattr(self.tile, "trap_forced_initiative", False))
         if len(self.encounter.members) == 1:
             if forced_enemy_initiative:
                 first = self.encounter.primary_enemy
@@ -472,9 +467,7 @@ class BattleEngine(BattleTurnMixin, BattleActionMixin, BattleOutcomeMixin):
                 )
             enemy_id = self.encounter.primary_member.combatant_id
             order = (
-                (PLAYER_ACTOR_ID, enemy_id)
-                if first is self.player
-                else (enemy_id, PLAYER_ACTOR_ID)
+                (PLAYER_ACTOR_ID, enemy_id) if first is self.player else (enemy_id, PLAYER_ACTOR_ID)
             )
         else:
             order = build_actor_order(self.player, self.encounter, rng=self._rng)
@@ -494,15 +487,17 @@ class BattleEngine(BattleTurnMixin, BattleActionMixin, BattleOutcomeMixin):
         self._current_actor_turn_id = self._actor_cycle.start_current_turn()
         self.available_actions = self._available_actions()
 
-        self._event_bus.emit(create_combat_event(
-            EventType.COMBAT_START,
-            actor=self.player,
-            target=self.encounter.primary_enemy,
-            initiative=self.attacker == self.player,
-            boss=self.boss,
-            encounter_id=self.encounter.encounter_id,
-            enemies=self.encounter.roster_summary(),
-        ))
+        self._event_bus.emit(
+            create_combat_event(
+                EventType.COMBAT_START,
+                actor=self.player,
+                target=self.encounter.primary_enemy,
+                initiative=self.attacker == self.player,
+                boss=self.boss,
+                encounter_id=self.encounter.encounter_id,
+                enemies=self.encounter.roster_summary(),
+            )
+        )
 
         self.logger.start_battle(
             self.player,
@@ -512,24 +507,28 @@ class BattleEngine(BattleTurnMixin, BattleActionMixin, BattleOutcomeMixin):
             encounter=self.encounter,
         )
 
-        self._event_bus.emit(create_combat_event(
-            EventType.ROUND_START,
-            actor=self.attacker,
-            target=self.defender,
-            encounter_id=self.encounter.encounter_id,
-            actor_id=self.current_actor_id,
-            round=self.round_number,
-            actor_turn_id=self._current_actor_turn_id,
-        ))
-        self._event_bus.emit(create_combat_event(
-            EventType.TURN_START,
-            actor=self.attacker,
-            target=self.defender,
-            encounter_id=self.encounter.encounter_id,
-            actor_id=self.current_actor_id,
-            round=self.round_number,
-            actor_turn_id=self._current_actor_turn_id,
-        ))
+        self._event_bus.emit(
+            create_combat_event(
+                EventType.ROUND_START,
+                actor=self.attacker,
+                target=self.defender,
+                encounter_id=self.encounter.encounter_id,
+                actor_id=self.current_actor_id,
+                round=self.round_number,
+                actor_turn_id=self._current_actor_turn_id,
+            )
+        )
+        self._event_bus.emit(
+            create_combat_event(
+                EventType.TURN_START,
+                actor=self.attacker,
+                target=self.defender,
+                encounter_id=self.encounter.encounter_id,
+                actor_id=self.current_actor_id,
+                round=self.round_number,
+                actor_turn_id=self._current_actor_turn_id,
+            )
+        )
 
         paladin.advance_encounter(self.player)
         paladin.clear_transient_marks(self.player)
@@ -552,8 +551,4 @@ class BattleEngine(BattleTurnMixin, BattleActionMixin, BattleOutcomeMixin):
 
     def battle_continues(self) -> bool:
         """Return True while both combatants are alive and nobody fled."""
-        return (
-            self.player.is_alive()
-            and bool(self.encounter.living_members)
-            and not self.flee
-        )
+        return self.player.is_alive() and bool(self.encounter.living_members) and not self.flee

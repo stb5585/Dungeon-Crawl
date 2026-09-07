@@ -1,0 +1,33 @@
+Name,Class ID,Type,Subtype,Value,Rarity,Weight,Damage,Critical Chance,Hands,Offhand Eligible,Armor,Modifier,Element,Restricted To,Restricted Against,Ultimate,Random Drop,Unequipped,Description
+Ariadne's Diadem,AriadnesDiadem,Helmet,Cloth,0,0,1,,,,,12,0,,,,False,True,False,A legendary diadem whose threadlike filigree guides the wearer safely through impossible danger.
+Circlet,Circlet,Helmet,Cloth,12000,0.4,2,,,,,8,0,,,Priest; Archbishop; Diviner; Astromancer,False,True,False,A thin metal circlet that focuses the wearer's will into a protective halo.
+Cloth Cap,ClothCap,Helmet,Cloth,45,0.95,1,,,,,1,0,,,,False,True,False,A simple padded cap that offers modest protection without interfering with spellcasting.
+Cohuleen Druith,CohuleenDruith,Helmet,Cloth,40000,0.2,1,,,,,10,0,Water,,,False,True,False,A fey cap steeped in old river magic and woven with reeds from a hidden ford.
+Enchanted Hood,EnchantedHood,Helmet,Cloth,3500,0.5,1,,,,,5,0,,,,False,True,False,A hood embroidered with protective thread that turns aside glancing blows.
+Jaapi,Jaapi,Helmet,Cloth,180,0.9,1,,,,,2,0,,,,False,True,False,A quilted cloth head wrap that cushions blows while staying light enough for spellwork.
+Mitre Hat,MitreHat,Helmet,Cloth,10000,0.4,1,,,,,9,0,,Priest; Archbishop; Diviner; Astromancer,,False,True,False,A ceremonial mitre reinforced with sacred thread and geomantic sigils.
+Turban,Turban,Helmet,Cloth,550,0.8,1,,,,,3,0,,,,False,True,False,Layered cloth wound into a protective wrap that softens glancing strikes.
+Witch Hat,WitchHat,Helmet,Cloth,1600,0.65,1,,,,,4,0,,,,False,True,False,A tall enchanted hat stiffened with hidden ribs and protective wards.
+Barbute,Barbute,Helmet,Heavy,3200,0.75,7,,,,,8,0,,,,False,True,False,A heavy helm with a T-shaped opening and strong cheek protection.
+Close Helm,CloseHelm,Helmet,Heavy,62000,0.2,14,,,,,18,0,,,,False,True,False,A fully enclosing heavy helm with a fitted visor and reinforced gorget.
+Great Helm,GreatHelm,Helmet,Heavy,13000,0.5,8,,,,,10,0,,,,False,True,False,A full steel helm with narrow eye slits and thick plates.
+Iron Helm,IronHelm,Helmet,Heavy,160,0.95,6,,,,,4,0,,,,False,True,False,A heavy iron helmet that favors protection over comfort.
+Kabuto,Kabuto,Helmet,Heavy,0,0,16,,,,,25,0,,,,False,True,False,A legendary heavy helm with layered plates and a commanding crest.
+Kettle Helm,KettleHelm,Helmet,Heavy,1200,0.85,5,,,,,6,0,,,,False,True,False,A brimmed iron helmet that sheds blows away from the face and neck.
+Plate Helm,PlateHelm,Helmet,Heavy,28000,0.4,9,,,,,12,0,,,,False,True,False,A masterwork plate helmet that completes a knight's heavy armor kit.
+Arming Cap,ArmingCap,Helmet,Light,8500,0.5,3,,,,,5,0,,,,False,True,False,A reinforced cap worn under heavier helms or alone by light fighters.
+Demon Cowl,DemonCowl,Helmet,Light,0,0,4,,,,,16,0,Death,,,False,True,False,A sinister cowl threaded with funereal charms and ash-dark silk.
+Katapu,Katapu,Helmet,Light,18000,0.4,2,,,,,7,0,,,,False,True,False,A light protective headpiece built from layered plates and lacquered leather.
+Leather Cap,LeatherCap,Helmet,Light,80,0.95,2,,,,,2,0,,,,False,True,False,A boiled leather cap that protects the head while keeping movement light.
+Pith Helmet,PithHelmet,Helmet,Light,700,0.85,3,,,,,3,0,,,,False,True,False,A stiffened light helmet with a broad brim and padded crown.
+Sōmen,Somen,Helmet,Light,48000,0.2,4,,,,,10,0,,,,False,True,False,A full-face light helm that protects without sacrificing agility.
+War Mask,WarMask,Helmet,Light,1800,0.75,2,,,,,4,0,,,,False,True,False,A hardened leather mask shaped to intimidate and deflect cuts.
+Cervelliere,Cervelliere,Helmet,Medium,10000,0.5,8,,,,,8,0,,,,False,True,False,A close-fitting steel skullcap that can be worn beneath other headgear.
+Chain Coif,ChainCoif,Helmet,Medium,900,0.85,5,,,,,4,0,,,,False,True,False,A hood of interlocking metal rings worn under or instead of a helmet.
+Helm of Rostam,HelmOfRostam,Helmet,Medium,0,0,8,,,,,19,Status-Berserk Status-Stun,,,,False,True,False,A heroic medium helm whose crest steadies the wearer against panic and stunning blows.
+Kulah Khud,KulahKhud,Helmet,Medium,2400,0.75,4,,,,,6,0,,,,False,True,False,A domed medium helm with cheek guards and a mail aventail.
+Scale Helm,ScaleHelm,Helmet,Medium,120,0.95,4,,,,,3,0,,,,False,True,False,A sturdy helmet of overlapping metal scales.
+Tarnhelm,Tarnhelm,Helmet,Medium,55000,0.2,11,,,,,13,0,,,,False,True,False,A mythic helm that bends sight around its wearer and grants invisibility.
+Tolga,Tolga,Helmet,Medium,22000,0.4,6,,,,,10,0,,,,False,True,False,A heavy medium helm with reinforced bands and a high nasal guard.
+Visored Sallet,VisoredSallet,Helmet,Medium,22000,0.4,6,,,,,10,0,,,,False,True,False,A fitted steel helmet with a narrow visor and strong neck guard.
+No Helmet,NoHelmet,Helmet,None,0,0,0,,,,,0,0,,,,False,True,True,No helmet equipped.

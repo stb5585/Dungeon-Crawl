@@ -113,25 +113,32 @@ def status_summary_rows(character: Any, target: Any | None = None) -> list[tuple
             if echo.get("name") or echo.get("spec"):
                 rows.append(("Echo", str(echo.get("name") or echo.get("spec"))))
             if contracts.get("ring_awakened"):
-                ready = "Equipped" if demonologist.has_equipped_class_ring(character) else "Awakened"
+                ready = (
+                    "Equipped" if demonologist.has_equipped_class_ring(character) else "Awakened"
+                )
                 rows.append(("Ring Ready", ready))
         except Exception:
             pass
     if cls == "Astromancer":
-        threads = int(state.get('foresight_threads', 0) or 0)
+        threads = int(state.get("foresight_threads", 0) or 0)
         rows.append(("Threads", _meter_hint(threads, 3, ready="Threaded ready")))
         if state.get("threaded_cast_pending"):
             rows.append(("Threaded", "Pending next spell"))
     if cls == "Shadowcaster":
         data = _class_ring_data(character, "Shadowcaster")
         debt = int(data.get("debt", 0) or 0)
-        rows.append(("Umbral Debt", _meter_hint(debt, shadowcaster_debt_cap(character), ready="Shade ready")))
-        rows.append(("Backlash", str(int(data.get('backlash', 0) or 0))))
+        rows.append(
+            (
+                "Umbral Debt",
+                _meter_hint(debt, shadowcaster_debt_cap(character), ready="Shade ready"),
+            )
+        )
+        rows.append(("Backlash", str(int(data.get("backlash", 0) or 0))))
         eclipse = int(data.get("eclipse_turns", 0) or 0)
         if eclipse:
             rows.append(("Shade of Ahool", f"{eclipse} turn(s)"))
     if cls in {"Spellblade", "Knight Enchanter"}:
-        charge = state.get('blade_charge')
+        charge = state.get("blade_charge")
         if isinstance(charge, dict):
             arcane = int(charge.get("Arcane", 0) or 0)
             elemental = int(charge.get("Elemental", 0) or 0)
@@ -142,14 +149,16 @@ def status_summary_rows(character: Any, target: Any | None = None) -> list[tuple
         rows.append(("Blade Charge", charge_text))
         novel_shield = state.get("novel_shield")
         if isinstance(novel_shield, dict):
-            rows.append((
-                "Novel Shielding",
+            rows.append(
                 (
-                    f"{int(novel_shield.get('remaining', 0) or 0)} / "
-                    f"{int(novel_shield.get('maximum', 0) or 0)} · "
-                    f"{int(novel_shield.get('turns', 0) or 0)} turn(s)"
-                ),
-            ))
+                    "Novel Shielding",
+                    (
+                        f"{int(novel_shield.get('remaining', 0) or 0)} / "
+                        f"{int(novel_shield.get('maximum', 0) or 0)} · "
+                        f"{int(novel_shield.get('turns', 0) or 0)} turn(s)"
+                    ),
+                )
+            )
         breakdown = state.get("breakdown_stacks", {})
         if isinstance(breakdown, dict) and breakdown:
             rows.append(("Breakdown", f"{max(int(value or 0) for value in breakdown.values())}/5"))
@@ -166,17 +175,19 @@ def status_summary_rows(character: Any, target: Any | None = None) -> list[tuple
                 rows.append(("Spellbind", f"Ready · {turns} turn(s)"))
             defensive_stacks = int(state.get("defensive_release", 0) or 0)
             if defensive_stacks:
-                rows.append((
-                    "Defensive Release",
-                    f"{defensive_stacks}/3 · +{defensive_stacks * 25}%",
-                ))
+                rows.append(
+                    (
+                        "Defensive Release",
+                        f"{defensive_stacks}/3 · +{defensive_stacks * 25}%",
+                    )
+                )
             if isinstance(state.get("echoing_weave"), dict):
                 rows.append(("Echoing Blade", "Repeats next turn"))
     if cls == "Berserker":
         from .. import berserker
 
-        momentum = int(state.get('bloodied_momentum', 0) or 0)
-        cap = cap_for(character, 'bloodied_momentum')
+        momentum = int(state.get("bloodied_momentum", 0) or 0)
+        cap = cap_for(character, "bloodied_momentum")
         hp_max = max(1, int(getattr(character.health, "max", 1) or 1))
         hp_ratio = character.health.current / hp_max
         if hp_ratio < 0.25:
@@ -189,14 +200,14 @@ def status_summary_rows(character: Any, target: Any | None = None) -> list[tuple
         scar_ready = (
             "Locked (<10 scars)"
             if scars < 10
-            else "Used"
-            if state.get("battle_scar_momentum_preserved")
-            else "Ready"
+            else "Used" if state.get("battle_scar_momentum_preserved") else "Ready"
         )
-        rows.append((
-            "Bloodied Momentum",
-            _meter_hint(momentum, cap, ready="Heavy art"),
-        ))
+        rows.append(
+            (
+                "Bloodied Momentum",
+                _meter_hint(momentum, cap, ready="Heavy art"),
+            )
+        )
         rows.append(("Bloodied State", threshold))
         rows.append(("Scar Cap", f"+{cap - 3} from {scars} scars"))
         rows.append(("Scar Preserve", scar_ready))
@@ -204,25 +215,44 @@ def status_summary_rows(character: Any, target: Any | None = None) -> list[tuple
             ring_ready = "Used" if state.get("bloodied_ring_miss_preserved") else "Ready"
             rows.append(("Ring Preserve", ring_ready))
     if cls in {"Paladin", "Crusader"}:
-        conviction = int(state.get('oath_conviction', 0) or 0)
-        rows.append(("Conviction", _meter_hint(conviction, cap_for(character, 'oath_conviction'), ready="Vow ready")))
+        conviction = int(state.get("oath_conviction", 0) or 0)
+        rows.append(
+            (
+                "Conviction",
+                _meter_hint(conviction, cap_for(character, "oath_conviction"), ready="Vow ready"),
+            )
+        )
     if cls in {"Lancer", "Dragoon"}:
-        aerial = int(state.get('aerial_tempo', 0) or 0)
-        rows.append(("Aerial Tempo", _meter_hint(aerial, cap_for(character, 'aerial_tempo'), ready="Follow-up")))
+        aerial = int(state.get("aerial_tempo", 0) or 0)
+        rows.append(
+            (
+                "Aerial Tempo",
+                _meter_hint(aerial, cap_for(character, "aerial_tempo"), ready="Follow-up"),
+            )
+        )
         shield = _class_ring_data(character, "Dragoon")
         if int(shield.get("meteor_guard_turns", 0) or 0) > 0:
-            rows.append(("Landing Shield", f"{int(shield.get('meteor_guard_turns', 0) or 0)} turn(s)"))
+            rows.append(
+                ("Landing Shield", f"{int(shield.get('meteor_guard_turns', 0) or 0)} turn(s)")
+            )
     if cls in {"Sentinel", "Stalwart Defender"}:
         cap = resolve_cap(character)
-        resolve = int(_resolve_data(character).get('guard_meter', 0) or 0)
+        resolve = int(_resolve_data(character).get("guard_meter", 0) or 0)
         rows.append(("Resolve", _meter_hint(resolve, cap, ready="Guard ready")))
     if cls in {"Sentinel", "Stalwart Defender"} and int(state.get("hold_the_line", 0) or 0) > 0:
         rows.append(("Guard Stance", f"Hold ({int(state.get('hold_the_line', 0) or 0)})"))
     if cls in {"Thief", "Rogue"}:
-        fortune = int(state.get('fortune', 0) or 0)
-        misfortune = int(state.get('misfortune', 0) or 0)
-        rows.append(("Fortune", _meter_hint(fortune, cap_for(character, 'fortune'), ready="Steal/Mug")))
-        rows.append(("Misfortune", _meter_hint(misfortune, cap_for(character, 'misfortune'), ready="Payoff on hit")))
+        fortune = int(state.get("fortune", 0) or 0)
+        misfortune = int(state.get("misfortune", 0) or 0)
+        rows.append(
+            ("Fortune", _meter_hint(fortune, cap_for(character, "fortune"), ready="Steal/Mug"))
+        )
+        rows.append(
+            (
+                "Misfortune",
+                _meter_hint(misfortune, cap_for(character, "misfortune"), ready="Payoff on hit"),
+            )
+        )
         if int(state.get("jinx_turns", 0) or 0) > 0:
             rows.append(("Jinx", f"{int(state.get('jinx_turns', 0) or 0)} turn(s)"))
     if cls in {"Inquisitor", "Seeker"}:
@@ -244,16 +274,23 @@ def status_summary_rows(character: Any, target: Any | None = None) -> list[tuple
             current = _target_stacks(revelation, target)
         else:
             current = 0
-        rows.append(("Revelation", _meter_hint(current, cap_for(character, 'revelation'), ready="Target read")))
+        rows.append(
+            (
+                "Revelation",
+                _meter_hint(current, cap_for(character, "revelation"), ready="Target read"),
+            )
+        )
         details_visible = bool(
             target is not None
             and not getattr(target, "boss", False)
             and getattr(target, "name", "") != "Waitress"
         )
-        rows.append((
-            "Enemy Detail",
-            "Visible" if details_visible else "No visible target selected",
-        ))
+        rows.append(
+            (
+                "Enemy Detail",
+                "Visible" if details_visible else "No visible target selected",
+            )
+        )
     if cls in {"Assassin", "Ninja"}:
         marks = state.get("death_marks", {})
         if target is not None and isinstance(marks, dict):
@@ -261,11 +298,30 @@ def status_summary_rows(character: Any, target: Any | None = None) -> list[tuple
 
             current = _target_stacks(marks, target)
         else:
-            current = max((int(value or 0) for value in marks.values()), default=0) if isinstance(marks, dict) else 0
-        rows.append(("Death Mark", _meter_hint(current, cap_for(character, 'death_marks'), ready="Finisher")))
+            current = (
+                max((int(value or 0) for value in marks.values()), default=0)
+                if isinstance(marks, dict)
+                else 0
+            )
+        rows.append(
+            (
+                "Death Mark",
+                _meter_hint(current, cap_for(character, "death_marks"), ready="Finisher"),
+            )
+        )
     if cls in {"Spell Stealer", "Arcane Trickster"}:
-        stolen = int(state.get('stolen_charge', 0) or 0)
-        rows.append(("Stolen Charge", _meter_hint(stolen, cap_for(character, 'stolen_charge'), ready="Charge ready", empty="Steal first")))
+        stolen = int(state.get("stolen_charge", 0) or 0)
+        rows.append(
+            (
+                "Stolen Charge",
+                _meter_hint(
+                    stolen,
+                    cap_for(character, "stolen_charge"),
+                    ready="Charge ready",
+                    empty="Steal first",
+                ),
+            )
+        )
         if cls == "Arcane Trickster" and _ring_awakened_equipped(character, "Arcane Trickster"):
             from .. import class_rings
 
@@ -282,19 +338,21 @@ def status_summary_rows(character: Any, target: Any | None = None) -> list[tuple
             )
             if turns > 0:
                 rows.append(("Arcane Larceny", f"Active · {turns} turns"))
-            rows.append((
-                "Ring Preserve",
-                "Spent" if preserved else "Arcane Larceny ready",
-            ))
+            rows.append(
+                (
+                    "Ring Preserve",
+                    "Spent" if preserved else "Arcane Larceny ready",
+                )
+            )
     if cls in {"Cleric", "Templar", "Hierophant"}:
-        devotion = int(state.get('devotion', 0) or 0)
+        devotion = int(state.get("devotion", 0) or 0)
         if cls == "Templar" and devotion >= 2:
             hint = "Aegis ready"
         elif cls == "Hierophant" and devotion >= 1:
             hint = "Conduit ready"
         else:
             hint = "Ward ready"
-        rows.append(("Devotion", _meter_hint(devotion, cap_for(character, 'devotion'), ready=hint)))
+        rows.append(("Devotion", _meter_hint(devotion, cap_for(character, "devotion"), ready=hint)))
         if cls == "Templar" and _ring_awakened_equipped(character, "Templar"):
             try:
                 from .. import class_rings
@@ -305,16 +363,15 @@ def status_summary_rows(character: Any, target: Any | None = None) -> list[tuple
             except Exception:
                 pass
         if cls == "Templar" and (
-            state.get("relic_aegis_counter")
-            or state.get("ordered_blessing_counter")
+            state.get("relic_aegis_counter") or state.get("ordered_blessing_counter")
         ):
             rows.append(("Holy Counter", "Armed"))
         if cls == "Hierophant" and state.get("consecrated_conduit"):
             rows.append(("Conduit", "Pending payoff"))
     if cls in {"Priest", "Archbishop"}:
-        prayer = int(state.get('prayer', 0) or 0)
+        prayer = int(state.get("prayer", 0) or 0)
         hint = "Benediction ready" if cls == "Archbishop" and prayer >= 3 else "Supplication ready"
-        rows.append(("Prayer", _meter_hint(prayer, cap_for(character, 'prayer'), ready=hint)))
+        rows.append(("Prayer", _meter_hint(prayer, cap_for(character, "prayer"), ready=hint)))
         benediction = state.get("great_benediction")
         if isinstance(benediction, dict) and int(benediction.get("turns", 0) or 0) > 0:
             rows.append(("Benediction", f"{int(benediction['turns'])} turns"))
@@ -322,21 +379,23 @@ def status_summary_rows(character: Any, target: Any | None = None) -> list[tuple
         if cls == "Archbishop" and power_up is not None and power_up.active:
             rows.append(("Great Gospel", f"{int(power_up.duration or 0)} rounds"))
     if cls in {"Monk", "Master Monk"}:
-        ki = int(state.get('ki', 0) or 0)
-        rows.append(("Ki", _meter_hint(ki, cap_for(character, 'ki'), ready="Dim Mak")))
+        ki = int(state.get("ki", 0) or 0)
+        rows.append(("Ki", _meter_hint(ki, cap_for(character, "ki"), ready="Dim Mak")))
     if cls in {"Bard", "Troubadour"}:
-        crescendo = int(state.get('crescendo', 0) or 0)
-        rows.append((
-            "Crescendo",
-            _meter_hint(crescendo, cap_for(character, "crescendo"), ready="Coda"),
-        ))
+        crescendo = int(state.get("crescendo", 0) or 0)
+        rows.append(
+            (
+                "Crescendo",
+                _meter_hint(crescendo, cap_for(character, "crescendo"), ready="Coda"),
+            )
+        )
         if cls == "Troubadour":
             repertoire = ensure_state(character)["bard_repertoire"]
             mastered = sum(1 for entry in repertoire.values() if entry.get("known"))
             rows.append(("Repertoire", f"{mastered}/{len(repertoire)} mastered"))
     if cls == "Lycan":
         control = lycan_control_state(character)
-        rows.append(("Control", str(control['rank'])))
+        rows.append(("Control", str(control["rank"])))
         try:
             from .. import lycan
 
@@ -356,10 +415,12 @@ def status_summary_rows(character: Any, target: Any | None = None) -> list[tuple
             }
         else:
             aspects = {}
-        harmony_value = ",".join(
-            f"{name}×{count}" if count > 1 else name
-            for name, count in sorted(aspects.items())
-        ) or "None"
+        harmony_value = (
+            ",".join(
+                f"{name}×{count}" if count > 1 else name for name, count in sorted(aspects.items())
+            )
+            or "None"
+        )
         if len(aspects) >= 2:
             harmony_value += " Surge ready"
         rows.append(("Harmony", harmony_value))
@@ -371,7 +432,9 @@ def status_summary_rows(character: Any, target: Any | None = None) -> list[tuple
         except Exception:
             pass
         companion = getattr(character, "tamed_companion", {}) or {}
-        active_companion = bool(isinstance(companion, dict) and companion.get("active") and companion.get("name"))
+        active_companion = bool(
+            isinstance(companion, dict) and companion.get("active") and companion.get("name")
+        )
         if active_companion:
             bond = _clamp_int(companion.get("bond", 0), 0, 100)
             try:
@@ -388,7 +451,12 @@ def status_summary_rows(character: Any, target: Any | None = None) -> list[tuple
             rows.append(("Command", f"{command} Pending"))
     if cls == "Thaumaturgist":
         name, bond = _best_summon_bond(character)
-        rows.append(("Xenid Conduit", f"{name} {int(bond)}/100 {_active_summon_bond_hint(character, name, int(bond))}"))
+        rows.append(
+            (
+                "Xenid Conduit",
+                f"{name} {int(bond)}/100 {_active_summon_bond_hint(character, name, int(bond))}",
+            )
+        )
         if state.get("conduit_command"):
             rows.append(("Conduit", "Primed next Xenid action"))
     if cls in {"Shaman", "Soulcatcher"}:

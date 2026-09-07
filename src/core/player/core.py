@@ -58,7 +58,19 @@ class Player(
     ABSORB_ESSENCE_MAX_MANA_GAINS = 60
     ABSORB_ESSENCE_MAX_LEVEL_GAINS = 3
 
-    def __init__(self, location_x, location_y, location_z, level, health, mana, stats, combat, gold, resistance):
+    def __init__(
+        self,
+        location_x,
+        location_y,
+        location_z,
+        level,
+        health,
+        mana,
+        stats,
+        combat,
+        gold,
+        resistance,
+    ):
         super().__init__(name="", health=health, mana=mana, stats=stats, combat=combat)
         self.location_x = location_x
         self.location_y = location_y
@@ -84,7 +96,7 @@ class Player(
         self.special_inventory = {}
         self.world_dict = {}
         self.dungeon_trap_seed = random.SystemRandom().randrange(2**32)
-        self.quest_dict = {'Bounty': {}, 'Main': {}, 'Side': {}}
+        self.quest_dict = {"Bounty": {}, "Main": {}, "Side": {}}
         self.bounty_board_state = town.default_bounty_board_state()
         self.kill_dict = {}
         self.last_defeated_enemy = None
@@ -131,21 +143,21 @@ class Player(
         # for a number of steps after using combat consumables.
         self.dwarf_hangover_steps = 0
         self.absorb_essence_state = {
-            'floor': self.location_z,
-            'procs_this_floor': 0,
-            'procs_by_enemy': {},
-            'stat_gains': {
-                'strength': 0,
-                'intel': 0,
-                'wisdom': 0,
-                'con': 0,
-                'charisma': 0,
-                'dex': 0,
+            "floor": self.location_z,
+            "procs_this_floor": 0,
+            "procs_by_enemy": {},
+            "stat_gains": {
+                "strength": 0,
+                "intel": 0,
+                "wisdom": 0,
+                "con": 0,
+                "charisma": 0,
+                "dex": 0,
             },
-            'health_gains': 0,
-            'mana_gains': 0,
-            'level_gains': 0,
-            'dragon_gold_claimed': False,
+            "health_gains": 0,
+            "mana_gains": 0,
+            "level_gains": 0,
+            "dragon_gold_claimed": False,
         }
 
     def __str__(self):
@@ -153,4 +165,4 @@ class Player(
             f"{self.name} | "
             f"Health: {self.health.current}/{self.health.max} | "
             f"Mana: {self.mana.current}/{self.mana.max}"
-            )
+        )

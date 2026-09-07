@@ -1,4 +1,4 @@
-"""Tiled and legacy player-map loading helpers."""
+"""Tiled and text player-map loading helpers."""
 
 import json
 import os
@@ -10,6 +10,7 @@ def _parse_tiled_properties(props):
         return {}
     return {prop.get("name"): prop.get("value") for prop in props}
 
+
 def _tiled_bool(value, default=False):
     if value is None:
         return default
@@ -19,6 +20,7 @@ def _tiled_bool(value, default=False):
         return value.strip().lower() in {"1", "true", "yes", "on"}
     return bool(value)
 
+
 def _extract_tile_type(tile_data):
     tile_type = tile_data.get("type") or tile_data.get("class")
     if tile_type:
@@ -26,11 +28,10 @@ def _extract_tile_type(tile_data):
     props = _parse_tiled_properties(tile_data.get("properties"))
     return props.get("tile") or props.get("type") or props.get("class")
 
+
 def _select_tiled_gameplay_layer(layers):
     visible_tile_layers = [
-        layer
-        for layer in layers
-        if layer.get("type") == "tilelayer" and layer.get("visible", True)
+        layer for layer in layers if layer.get("type") == "tilelayer" and layer.get("visible", True)
     ]
     if not visible_tile_layers:
         return None
@@ -46,6 +47,7 @@ def _select_tiled_gameplay_layer(layers):
             return layer
 
     return visible_tile_layers[0]
+
 
 def _load_tiled_tileset(tileset_entry, map_dir):
     if "source" in tileset_entry:
@@ -67,10 +69,7 @@ def _load_tiled_tileset(tileset_entry, map_dir):
                     tile_id = int(tile_elem.get("id", 0))
                     tile_type = tile_elem.get("type", "")
                     if tile_type:
-                        tileset_data["tiles"].append({
-                            "id": tile_id,
-                            "type": tile_type
-                        })
+                        tileset_data["tiles"].append({"id": tile_id, "type": tile_type})
                 return tileset_data, tileset_entry["firstgid"]
             else:
                 # Parse JSON tileset
@@ -78,6 +77,7 @@ def _load_tiled_tileset(tileset_entry, map_dir):
                 return tileset_data, tileset_entry["firstgid"]
 
     return tileset_entry, tileset_entry.get("firstgid", 1)
+
 
 def _load_tiled_map(map_file, z, map_tiles):
     with open(map_file, "r", encoding="utf-8") as file_handle:
@@ -134,5 +134,40 @@ def _load_tiled_map(map_file, z, map_tiles):
                     if not infinite and width and height and (map_x >= width or map_y >= height):
                         continue
                     add_tile(map_x, map_y, chunk_data[row_offset + x])
+
+    return world_dict
+
+
+def _load_text_map(map_file, z, map_tiles):
+    """Load a tab-delimited special-area map.
+
+    Args:
+        map_file: Path to the text map.
+        z: Dungeon level assigned to every loaded tile.
+        map_tiles: Module containing the referenced tile classes.
+
+    Returns:
+        A position-to-tile mapping for the special area.
+
+    Raises:
+        ValueError: If the map is empty or has inconsistent row widths.
+    """
+    with open(map_file, "r", encoding="utf-8") as file_handle:
+        rows = [line.rstrip("\r\n").split("\t") for line in file_handle if line.strip()]
+
+    if not rows:
+        raise ValueError(f"Empty text map: {map_file}")
+
+    width = len(rows[0])
+    world_dict = {}
+    for y, row in enumerate(rows):
+        if len(row) != width:
+            raise ValueError(
+                f"Inconsistent row width in {map_file}: row {y + 1} has "
+                f"{len(row)} tiles; expected {width}"
+            )
+        for x, tile_name in enumerate(row):
+            tile = getattr(map_tiles, tile_name)(x, y, z)
+            world_dict[(x, y, z)] = tile
 
     return world_dict

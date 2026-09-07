@@ -8,6 +8,7 @@ import pygame
 from src.core import map_tiles
 from src.core.abilities import detects_encounter
 from src.core.player import DIRECTIONS
+
 from ..input_guards import (
     prepare_guarded_input,
     release_guard_allows_input,
@@ -23,56 +24,58 @@ class DungeonExplorationMixin:
         # Check current tile (for stairs, shops, enemies you're standing on)
         current_tile = self.get_current_tile()
         if current_tile:
-            intro_text = current_tile.intro_text(self.game).strip('\n')
+            intro_text = current_tile.intro_text(self.game).strip("\n")
             tile_type = type(current_tile).__name__
 
-            if 'StairsUp' in tile_type:
+            if "StairsUp" in tile_type:
                 messages.append("You see stairs leading upward.")
-            elif 'LadderUp' in tile_type:
+            elif "LadderUp" in tile_type:
                 messages.append("A sturdy ladder leads upward.")
-            elif 'StairsDown' in tile_type:
+            elif "StairsDown" in tile_type:
                 messages.append("You see stairs descending into darkness.")
-            elif 'LadderDown' in tile_type:
+            elif "LadderDown" in tile_type:
                 messages.append("A sturdy ladder descends into darkness.")
-            elif 'SecretShop' in tile_type:
+            elif "SecretShop" in tile_type:
                 messages.append("You've found a secret shop! (Press O to enter)")
-            elif 'UltimateArmorShop' in tile_type:
+            elif "UltimateArmorShop" in tile_type:
                 messages.append("You've found a mysterious forge! (Press O to enter)")
-            elif 'WarpPoint' in tile_type:
-                if getattr(self.player_char, 'warp_point', False):
+            elif "WarpPoint" in tile_type:
+                if getattr(self.player_char, "warp_point", False):
                     messages.append("A warp point shimmers before you! (Press O to use)")
                 else:
                     messages.append("An inactive warp point hums faintly. (Press O to inspect)")
-            elif 'UndergroundSpring' in tile_type:
+            elif "UndergroundSpring" in tile_type:
                 messages.append("An underground spring bubbles nearby. (Press O to interact)")
-            elif 'AntiMagicSwitch' in tile_type:
-                messages.append("A humming terminal waits here. The anti-magic field may be tied to it.")
-            elif 'UnobtainiumRoom' in tile_type:
-                if not (hasattr(current_tile, 'looted') and not current_tile.looted):
+            elif "AntiMagicSwitch" in tile_type:
+                messages.append(
+                    "A humming terminal waits here. The anti-magic field may be tied to it."
+                )
+            elif "UnobtainiumRoom" in tile_type:
+                if not (hasattr(current_tile, "looted") and not current_tile.looted):
                     messages.append("You happen upon a strange metal! (Press O to take)")
-            elif 'DeadBody' in tile_type:
+            elif "DeadBody" in tile_type:
                 messages.append("The body of a fallen soldier lies here.")
-            elif 'FinalBlocker' in tile_type:
+            elif "FinalBlocker" in tile_type:
                 if not self.player_char.has_relics():
                     messages.append("An invisible force blocks your path northward.")
                 else:
                     messages.append("The way to the final chamber has opened!")
-            elif 'FinalRoom' in tile_type:
+            elif "FinalRoom" in tile_type:
                 messages.append("The final chamber awaits. (Press O to proceed)")
-            elif 'LiminalGuide' in tile_type:
+            elif "LiminalGuide" in tile_type:
                 messages.append("The Hooded Figure waits here. (Press O to speak)")
-            elif 'LiminalSeventhSeat' in tile_type:
+            elif "LiminalSeventhSeat" in tile_type:
                 messages.append("The empty Seventh Seat waits here. (Press O to inspect)")
-            elif 'LiminalAcolyte' in tile_type:
+            elif "LiminalAcolyte" in tile_type:
                 messages.append("The Acolyte kneels in silence. (Press O to speak)")
-            elif 'LiminalReflection' in tile_type:
+            elif "LiminalReflection" in tile_type:
                 messages.append("A mirror-dark threshold waits here. (Press O to face it)")
             elif getattr(current_tile, "liminal_gate_event", None):
                 guardian_name = getattr(current_tile, "guardian_name", "Guardian")
                 messages.append(f"The gate of {guardian_name} is sealed. (Press O to inspect)")
-            elif 'LiminalExitBlocker' in tile_type:
+            elif "LiminalExitBlocker" in tile_type:
                 messages.append("A torn threshold refuses to open. (Press O to inspect)")
-            elif 'Boss' in tile_type or 'Lair' in tile_type:
+            elif "Boss" in tile_type or "Lair" in tile_type:
                 if self._resolve_tile_enemy(current_tile):
                     messages.append("You sense a powerful presence nearby...")
                 else:
@@ -85,7 +88,7 @@ class DungeonExplorationMixin:
 
         # Check tile ahead (for interactive objects like chests, doors, relics)
         direction = self.player_char.facing
-        dx, dy = DIRECTIONS[direction]['move']
+        dx, dy = DIRECTIONS[direction]["move"]
         ahead_x = self.player_char.location_x + dx
         ahead_y = self.player_char.location_y + dy
         ahead_z = self.player_char.location_z
@@ -94,20 +97,20 @@ class DungeonExplorationMixin:
         if ahead_tile:
             tile_type = type(ahead_tile).__name__
 
-            if 'Chest' in tile_type:
-                if hasattr(ahead_tile, 'open') and ahead_tile.open:
+            if "Chest" in tile_type:
+                if hasattr(ahead_tile, "open") and ahead_tile.open:
                     messages.append("There's an open chest ahead.")
-                elif hasattr(ahead_tile, 'locked') and ahead_tile.locked:
+                elif hasattr(ahead_tile, "locked") and ahead_tile.locked:
                     messages.append("There's a locked chest ahead! (Press O to unlock)")
                 else:
                     messages.append("There's a chest ahead! (Press O to open)")
-            elif tile_type == 'OreVaultDoor':
+            elif tile_type == "OreVaultDoor":
                 # Hidden door: appears as wall unless detected or open
                 # Show identification message once when the player has means to detect it
-                is_open = getattr(ahead_tile, 'open', False)
-                is_detected = getattr(ahead_tile, 'detected', False)
+                is_open = getattr(ahead_tile, "open", False)
+                is_detected = getattr(ahead_tile, "detected", False)
                 has_cryptic_key = "Cryptic Key" in self.player_char.inventory
-                has_keen_eye = 'Keen Eye' in self.player_char.spellbook.get('Skills', [])
+                has_keen_eye = "Keen Eye" in self.player_char.spellbook.get("Skills", [])
 
                 if is_open:
                     messages.append("The secret vault door stands open ahead.")
@@ -115,40 +118,46 @@ class DungeonExplorationMixin:
                     # Mark as detected and inform the player
                     ahead_tile.detected = True
                     if has_cryptic_key:
-                        messages.append("The Cryptic Key begins to glow; faint seams reveal a hidden door ahead!")
+                        messages.append(
+                            "The Cryptic Key begins to glow; faint seams reveal a hidden door ahead!"
+                        )
                     else:
-                        messages.append(f"{self.player_char.name}'s keen eye spots a hidden door ahead!")
+                        messages.append(
+                            f"{self.player_char.name}'s keen eye spots a hidden door ahead!"
+                        )
                     # View changed (door will render as detected)
                     self._mark_view_dirty()
-            elif 'Door' in tile_type:
-                if hasattr(ahead_tile, 'open') and ahead_tile.open:
+            elif "Door" in tile_type:
+                if hasattr(ahead_tile, "open") and ahead_tile.open:
                     messages.append("An open doorway ahead.")
-                elif hasattr(ahead_tile, 'locked') and ahead_tile.locked:
+                elif hasattr(ahead_tile, "locked") and ahead_tile.locked:
                     messages.append("A locked door blocks your path. (Press O to unlock)")
                 else:
                     messages.append("An open doorway ahead.")
-            elif 'Relic' in tile_type:
-                if hasattr(ahead_tile, 'read') and ahead_tile.read:
+            elif "Relic" in tile_type:
+                if hasattr(ahead_tile, "read") and ahead_tile.read:
                     messages.append("An empty altar stands ahead.")
                 else:
                     messages.append("A glowing relic rests on a altar ahead! (Press O to collect)")
-            elif 'Boulder' in tile_type:
-                if hasattr(ahead_tile, 'read') and ahead_tile.read:
+            elif "Boulder" in tile_type:
+                if hasattr(ahead_tile, "read") and ahead_tile.read:
                     messages.append("A broken boulder ahead.")
                 else:
                     messages.append("An oddly placed boulder ahead. (Press O to examine)")
-            elif 'UnobtainiumRoom' in tile_type:
-                is_looted = bool(getattr(ahead_tile, 'visited', False))
+            elif "UnobtainiumRoom" in tile_type:
+                is_looted = bool(getattr(ahead_tile, "visited", False))
                 if is_looted:
                     messages.append("The ground ahead is already cleared.")
                 else:
                     messages.append("You see Unobtainium on the ground ahead! (Press O to take)")
-            elif 'GoldenChaliceRoom' in tile_type:
+            elif "GoldenChaliceRoom" in tile_type:
                 if map_tiles.chalice_altar_visible(self.player_char):
-                    if getattr(ahead_tile, 'read', False):
+                    if getattr(ahead_tile, "read", False):
                         messages.append("An empty chalice pedestal stands ahead.")
                     else:
-                        messages.append("A golden chalice rests on a pedestal ahead! (Press O to take)")
+                        messages.append(
+                            "A golden chalice rests on a pedestal ahead! (Press O to take)"
+                        )
 
         return messages if messages else None
 
@@ -167,31 +176,34 @@ class DungeonExplorationMixin:
 
         # Check for stairs - automatically use them when stepping on them
         tile_type = type(current_tile).__name__
-        if 'StairsUp' in tile_type:
+        if "StairsUp" in tile_type:
             self.use_stairs_up()
             return  # Don't check for other effects when using stairs
-        elif 'StairsDown' in tile_type:
+        elif "StairsDown" in tile_type:
             self.use_stairs_down()
             return  # Don't check for other effects when using stairs
-        elif 'FinalRoom' in tile_type:
+        elif "FinalRoom" in tile_type:
             # Automatically trigger final room conversation when stepping on the tile
             self._interact_final_room(current_tile)
             return  # Don't check for other effects after final room interaction
-        elif 'AntiMagicSwitch' in tile_type:
+        elif "AntiMagicSwitch" in tile_type:
             self._interact_anti_magic_switch(current_tile)
 
         current_enemy = self._resolve_tile_enemy(current_tile)
-        is_boss_encounter = current_enemy is not None and ('Boss' in tile_type or 'Lair' in tile_type)
+        is_boss_encounter = current_enemy is not None and (
+            "Boss" in tile_type or "Lair" in tile_type
+        )
         if is_boss_encounter and not getattr(current_tile, "read", False):
             self._show_boss_intro_dialogue(current_tile, current_enemy)
 
         # Display special event text BEFORE tile effects and combat
-        if hasattr(current_tile, 'special_text') and not is_boss_encounter:
+        if hasattr(current_tile, "special_text") and not is_boss_encounter:
             try:
                 special = current_tile.special_text(self.game)
                 special_text = str(special).strip() if special else ""
                 if special_text:
                     from ..confirmation_popup import ConfirmationPopup
+
                     popup = ConfirmationPopup(
                         self.presenter,
                         special_text,
@@ -208,10 +220,11 @@ class DungeonExplorationMixin:
 
         # Apply tile-defined effects (original game behavior)
         # This enables effects like FirePath damage on entry.
-        hp_before = getattr(self.player_char.health, 'current', None)
+        hp_before = getattr(self.player_char.health, "current", None)
         try:
-            if 'UndergroundSpring' not in tile_type:
+            if "UndergroundSpring" not in tile_type:
                 from ..confirmation_popup import ConfirmationPopup
+
                 try:
                     current_tile.modify_player(self.game, popup_class=ConfirmationPopup)
                 except TypeError:
@@ -221,13 +234,17 @@ class DungeonExplorationMixin:
         except Exception as e:
             pass
         else:
-            hp_after = getattr(self.player_char.health, 'current', None)
-            if ('FirePath' in tile_type and hp_before is not None and hp_after is not None
-                    and hp_after < hp_before):
+            hp_after = getattr(self.player_char.health, "current", None)
+            if (
+                "FirePath" in tile_type
+                and hp_before is not None
+                and hp_after is not None
+                and hp_after < hp_before
+            ):
                 damage = hp_before - hp_after
                 self.add_message(f"The heat sears you for {damage} damage!")
                 # Brief red flash when the floor burns the player
-                if hasattr(self.renderer, 'trigger_damage_flash'):
+                if hasattr(self.renderer, "trigger_damage_flash"):
                     self.renderer.trigger_damage_flash()
                 self.ui_dirty = True
                 self.view_dirty = True
@@ -240,16 +257,11 @@ class DungeonExplorationMixin:
             self.add_message("You've been teleported back to town!")
             try:
                 from ..confirmation_popup import ConfirmationPopup
+
                 popup = ConfirmationPopup(
-                    self.presenter,
-                    "You've been teleported back to town!",
-                    show_buttons=False
+                    self.presenter, "You've been teleported back to town!", show_buttons=False
                 )
-                popup.show(
-                    flush_events=True,
-                    require_key_release=True,
-                    min_display_ms=300
-                )
+                popup.show(flush_events=True, require_key_release=True, min_display_ms=300)
             except Exception:
                 pass
             self._show_town_entry_loading_screen()
@@ -257,7 +269,7 @@ class DungeonExplorationMixin:
             return
 
         # Check for enemy encounter after enter_combat has had a chance to spawn one
-        if hasattr(current_tile, 'enemy') and current_tile.enemy:
+        if hasattr(current_tile, "enemy") and current_tile.enemy:
             enemy = self._resolve_tile_enemy(current_tile)
 
             if hasattr(enemy, "is_alive") and not enemy.is_alive():
@@ -267,9 +279,8 @@ class DungeonExplorationMixin:
                 current_tile.enemy = None
                 return
 
-            if (
-                getattr(current_tile, "detectable_random_encounter", False)
-                and detects_encounter(self.player_char, enemy)
+            if getattr(current_tile, "detectable_random_encounter", False) and detects_encounter(
+                self.player_char, enemy
             ):
                 from ..confirmation_popup import ConfirmationPopup
 
@@ -280,7 +291,7 @@ class DungeonExplorationMixin:
                 if not fight:
                     current_tile.enemy = None
                     current_tile.detectable_random_encounter = False
-                    self.player_char.state = 'normal'
+                    self.player_char.state = "normal"
                     self.add_message(f"You avoid the {enemy.name}.")
                     return
 
@@ -288,22 +299,18 @@ class DungeonExplorationMixin:
 
             # Set player state to fight BEFORE calling start_combat
             # This ensures available_actions returns combat actions
-            self.player_char.state = 'fight'
+            self.player_char.state = "fight"
 
             # Update combat manager with current world state for rendering
             self.combat_manager.player_world_dict = self.player_char.world_dict
 
             # Initiate combat
             self._refresh_cached_frame()
-            combat_won = self.combat_manager.start_combat(
-                self.player_char,
-                enemy,
-                current_tile
-            )
+            combat_won = self.combat_manager.start_combat(self.player_char, enemy, current_tile)
 
             if self.player_char.in_town():
                 self._detach_dungeon_background_provider()
-                self.player_char.state = 'normal'
+                self.player_char.state = "normal"
                 self.running = False
                 return
 
@@ -313,7 +320,7 @@ class DungeonExplorationMixin:
                 current_tile.detectable_random_encounter = False
                 self.add_message("You emerge victorious!")
                 self._handle_defeated_jester_boss(current_tile)
-                if 'MerzhinBossRoom' in type(current_tile).__name__:
+                if "MerzhinBossRoom" in type(current_tile).__name__:
                     self.add_message("Merzhin falls and the Realm of Cambion collapses around you.")
                     self.player_char.exit_realm_of_cambion()
                     self._mark_view_dirty()
@@ -324,7 +331,9 @@ class DungeonExplorationMixin:
                     self.add_message("You were defeated... The funhouse spits you back out.")
                     self.player_char.exit_funhouse()
                 elif self.player_char.in_realm_of_cambion():
-                    self.add_message("You were defeated... The Realm of Cambion hurls you back to the spring.")
+                    self.add_message(
+                        "You were defeated... The Realm of Cambion hurls you back to the spring."
+                    )
                     self.player_char.exit_realm_of_cambion()
                     self._mark_view_dirty()
                 else:
@@ -334,7 +343,7 @@ class DungeonExplorationMixin:
                     for line in str(death_message or "").splitlines():
                         if line.strip():
                             self.add_message(line.strip())
-                self.player_char.state = 'normal'
+                self.player_char.state = "normal"
                 # End dungeon exploration loop (return control to town menu)
                 self.running = False
             else:
@@ -343,8 +352,10 @@ class DungeonExplorationMixin:
                 self.add_message("You escaped from combat.")
 
         # Check for warning tiles (difficulty increase)
-        if 'WarningTile' in tile_type and not hasattr(current_tile, '_warning_shown'):
-            self.add_message("*** WARNING: Enemies beyond this point increase in difficulty. Plan accordingly. ***")
+        if "WarningTile" in tile_type and not hasattr(current_tile, "_warning_shown"):
+            self.add_message(
+                "*** WARNING: Enemies beyond this point increase in difficulty. Plan accordingly. ***"
+            )
             current_tile._warning_shown = True
 
     def explore_dungeon(self):
@@ -354,7 +365,11 @@ class DungeonExplorationMixin:
         """
         # Always show a loading screen on entry. If we're in town coordinates, use a descending message.
         if hasattr(self.player_char, "in_town") and callable(self.player_char.in_town):
-            msg = "Descending further into the dungeon..." if self.player_char.in_town() else "Entering the dungeon..."
+            msg = (
+                "Descending further into the dungeon..."
+                if self.player_char.in_town()
+                else "Entering the dungeon..."
+            )
         else:
             msg = "Entering the dungeon..."
         self._show_dungeon_loading_screen(msg, duration=1.25)
@@ -371,9 +386,13 @@ class DungeonExplorationMixin:
 
         # Show controls
         if getattr(self.game, "debug_mode", False):
-            self.add_message("Controls: Arrows/WASD=Move/Turn, O=Interact, U=Stairs Up, J=Stairs Down, M=Map, ESC=Menu, L=Debug Level Up")
+            self.add_message(
+                "Controls: Arrows/WASD=Move/Turn, O=Interact, U=Stairs Up, J=Stairs Down, M=Map, ESC=Menu, L=Debug Level Up"
+            )
         else:
-            self.add_message("Controls: Arrows/WASD=Move/Turn, O=Interact, U=Stairs Up, J=Stairs Down, M=Map, ESC=Menu")
+            self.add_message(
+                "Controls: Arrows/WASD=Move/Turn, O=Interact, U=Stairs Up, J=Stairs Down, M=Map, ESC=Menu"
+            )
 
         clock = pygame.time.Clock()
         self.running = True
@@ -404,7 +423,9 @@ class DungeonExplorationMixin:
 
                 elif event.type == pygame.MOUSEBUTTONDOWN and getattr(event, "button", None) == 1:
                     minimap_rect = getattr(self.hud, "last_minimap_rect", None)
-                    if minimap_rect is not None and minimap_rect.collidepoint(getattr(event, "pos", (-1, -1))):
+                    if minimap_rect is not None and minimap_rect.collidepoint(
+                        getattr(event, "pos", (-1, -1))
+                    ):
                         self._show_enlarged_minimap()
 
                 elif event.type == pygame.KEYDOWN:
@@ -429,7 +450,7 @@ class DungeonExplorationMixin:
                 self._last_cry_time = now
 
             # Keep UI refreshing while a damage flash is active so the fade animates
-            if getattr(self.renderer, '_damage_flash_active', False):
+            if getattr(self.renderer, "_damage_flash_active", False):
                 self.ui_dirty = True
 
             # Only redraw when something changed.
@@ -557,6 +578,7 @@ class DungeonExplorationMixin:
 
         elif menu_options[choice] == "Save Game":
             from ..confirmation_popup import ConfirmationPopup
+
             popup = ConfirmationPopup(self.presenter, "Save your progress?")
             if popup.show(
                 background_draw_func=self._dungeon_dialog_background,
@@ -568,6 +590,7 @@ class DungeonExplorationMixin:
 
         elif menu_options[choice] == "Quit Game (No Save)":
             from ..confirmation_popup import ConfirmationPopup
+
             popup = ConfirmationPopup(self.presenter, "Quit without saving? Progress will be lost.")
             if popup.show(
                 background_draw_func=self._dungeon_dialog_background,

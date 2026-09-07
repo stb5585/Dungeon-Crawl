@@ -1,5 +1,6 @@
 name: Stupefy
 type: Status
+rank: 1
 subtype: Status
 description: "Hit the enemy so hard, they go stupid and cannot act."
 cost: 14

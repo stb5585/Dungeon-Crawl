@@ -36,8 +36,9 @@ Future interaction mechanics should attach to the existing tile classes:
 - `BonePileTile`: inspection or lore-drop hooks.
 - `BrokenGearTile`: salvage hooks.
 
-Any new per-tile state must default safely for old saves. Missing state should
-behave like the current decorative hook: traversable, readable, and inert.
+Any new per-tile state must define current-save defaults. Missing state should
+behave like the current decorative hook—traversable, readable, and inert—or the
+implementation must document a required local-save reset.
 
 Hidden passages remain opt-in discovery beats. `Keen Eye` and the Magic Shop
 `Oculus` can reveal the suspicious shimmer of nearby unvisited fake walls, but

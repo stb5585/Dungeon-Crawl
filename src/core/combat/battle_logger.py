@@ -3,6 +3,7 @@ This module handles combat between the player and enemies. It includes functions
 turns, and executing actions. The BattleManager class manages the flow of combat, while the BattleLogger class records
 combat events for later analysis.
 """
+
 from __future__ import annotations
 
 import datetime
@@ -13,8 +14,8 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ..enemies import Enemy
     from ..character import Character
+    from ..enemies import Enemy
     from ..player import Player
     from .encounter import CombatEncounter
 
@@ -36,10 +37,7 @@ class BattleLogger:
         if hasattr(value, "value") and isinstance(value.value, str):
             return value.value
         if isinstance(value, dict):
-            return {
-                str(key): BattleLogger._serialize_value(val)
-                for key, val in value.items()
-            }
+            return {str(key): BattleLogger._serialize_value(val) for key, val in value.items()}
         if isinstance(value, (list, tuple, set)):
             return [BattleLogger._serialize_value(val) for val in value]
         if hasattr(value, "__dict__"):
@@ -82,15 +80,17 @@ class BattleLogger:
         legacy_enemy = self._enemy_metadata(enemy)
         legacy_enemy["boss"] = boss
         if encounter is None:
-            enemies = [{
-                **legacy_enemy,
-                "combatant_id": None,
-                "canonical_name": enemy.name,
-                "display_label": enemy.name,
-                "slot": 0,
-                "resolution": None,
-                "cause": None,
-            }]
+            enemies = [
+                {
+                    **legacy_enemy,
+                    "combatant_id": None,
+                    "canonical_name": enemy.name,
+                    "display_label": enemy.name,
+                    "slot": 0,
+                    "resolution": None,
+                    "cause": None,
+                }
+            ]
             encounter_id = None
         else:
             enemies = []
@@ -122,19 +122,19 @@ class BattleLogger:
         }
 
     def log_event(
-            self,
-            event_type: str,
-            actor: Character,
-            target: Character=None,
-            action: str=None,
-            outcome: str=None,
-            damage: int=None,
-            flags: list=None,
-            status_changes: dict=None,
-            notes: str=None,
-            actor_id: str | None = None,
-            target_id: str | None = None,
-            ) -> None:
+        self,
+        event_type: str,
+        actor: Character,
+        target: Character = None,
+        action: str = None,
+        outcome: str = None,
+        damage: int = None,
+        flags: list = None,
+        status_changes: dict = None,
+        notes: str = None,
+        actor_id: str | None = None,
+        target_id: str | None = None,
+    ) -> None:
         """
         Logs a combat event with details about the action taken.
         Args:
@@ -187,24 +187,23 @@ class BattleLogger:
         total_experience: int = 0,
     ) -> None:
         if encounter is not None:
-            summaries = {
-                summary["combatant_id"]: summary
-                for summary in encounter.roster_summary()
-            }
+            summaries = {summary["combatant_id"]: summary for summary in encounter.roster_summary()}
             for enemy_metadata in self.metadata.get("enemies", []):
                 summary = summaries.get(enemy_metadata.get("combatant_id"))
                 if summary:
                     enemy_metadata.update(summary)
-        self.metadata.update({
-            "result": result,
-            "winner": winner,
-            "boss": boss,
-            "turns": self.turn_counter,
-            "rounds": self.round_counter,
-            "end_time": datetime.datetime.now().isoformat(),
-            "settlements": self._serialize_value(settlements or ()),
-            "total_experience": int(total_experience),
-        })
+        self.metadata.update(
+            {
+                "result": result,
+                "winner": winner,
+                "boss": boss,
+                "turns": self.turn_counter,
+                "rounds": self.round_counter,
+                "end_time": datetime.datetime.now().isoformat(),
+                "settlements": self._serialize_value(settlements or ()),
+                "total_experience": int(total_experience),
+            }
+        )
 
     def get_event_type_counts(self) -> dict[str, int]:
         """Return compact event-type counts for logged battle events."""

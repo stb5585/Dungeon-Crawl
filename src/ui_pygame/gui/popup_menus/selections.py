@@ -5,11 +5,13 @@ import re
 import pygame
 
 from src.core import items
+
 from .base import BasePopupMenu
 
 
 class SelectionPopup(BasePopupMenu):
     """Generic selection popup: header + options, returns selected item."""
+
     def __init__(self, presenter, parent_screen, title="Select", header_message=None, options=None):
         super().__init__(presenter, parent_screen, title=title)
         self.header_message = header_message or ""
@@ -29,7 +31,18 @@ class SelectionPopup(BasePopupMenu):
 
 class EquipmentSelectionPopup(BasePopupMenu):
     """Equipment selection popup with stat diff display."""
-    def __init__(self, presenter, parent_screen, title="Select", header_message=None, options=None, slot=None, current_item=None, player_char=None):
+
+    def __init__(
+        self,
+        presenter,
+        parent_screen,
+        title="Select",
+        header_message=None,
+        options=None,
+        slot=None,
+        current_item=None,
+        player_char=None,
+    ):
         super().__init__(presenter, parent_screen, title=title)
         self.header_message = header_message or ""
         self._options = options or []
@@ -110,8 +123,14 @@ class EquipmentSelectionPopup(BasePopupMenu):
 
         # Extract the actual item from the option string
         item_str = str(item)
-        actual_item = None if item_str in {"Cancel", "Unequip"} else self._find_option_item(player_char, item_str)
-        display_name = self._equipment_display_name(actual_item) if actual_item is not None else item_str
+        actual_item = (
+            None
+            if item_str in {"Cancel", "Unequip"}
+            else self._find_option_item(player_char, item_str)
+        )
+        display_name = (
+            self._equipment_display_name(actual_item) if actual_item is not None else item_str
+        )
 
         if actual_item is not None:
             art_height = min(140, max(92, self.details_rect.height // 3))
@@ -139,7 +158,7 @@ class EquipmentSelectionPopup(BasePopupMenu):
                     "Helmet": items.NoHelmet,
                     "OffHand": items.NoOffHand,
                     "Ring": items.NoRing,
-                    "Pendant": items.NoPendant
+                    "Pendant": items.NoPendant,
                 }
 
                 if self.slot in no_item_classes:

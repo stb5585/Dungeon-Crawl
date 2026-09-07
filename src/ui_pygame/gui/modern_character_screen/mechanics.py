@@ -7,6 +7,7 @@ from typing import Any
 
 import pygame
 
+import src.ui_pygame.gui.modern_character_screen as character_screen
 from src.core.classes import (
     archdruid,
     astromancer,
@@ -20,8 +21,6 @@ from src.core.classes import (
     wizard,
 )
 from src.ui_pygame.assets.ability_icon_manager import get_ability_icon_manager
-import src.ui_pygame.gui.modern_character_screen as character_screen
-
 
 SCHOOL_AFFINITY_ICON_KEYS = {
     "Fire": "spell_fire",
@@ -39,9 +38,21 @@ class CharacterMechanicsMixin:
         jump_skill = self._get_jump_skill(player_char)
         if not jump_skill or not hasattr(jump_skill, "modifications"):
             return [("Jump Mods", "Jump not learned")]
-        active_count = jump_skill.get_active_count() if hasattr(jump_skill, "get_active_count") else sum(bool(v) for v in jump_skill.modifications.values())
-        max_count = jump_skill.get_max_active_modifications(player_char) if hasattr(jump_skill, "get_max_active_modifications") else len(jump_skill.modifications)
-        unlocked = jump_skill.get_unlocked_modifications() if hasattr(jump_skill, "get_unlocked_modifications") else list(jump_skill.modifications.keys())
+        active_count = (
+            jump_skill.get_active_count()
+            if hasattr(jump_skill, "get_active_count")
+            else sum(bool(v) for v in jump_skill.modifications.values())
+        )
+        max_count = (
+            jump_skill.get_max_active_modifications(player_char)
+            if hasattr(jump_skill, "get_max_active_modifications")
+            else len(jump_skill.modifications)
+        )
+        unlocked = (
+            jump_skill.get_unlocked_modifications()
+            if hasattr(jump_skill, "get_unlocked_modifications")
+            else list(jump_skill.modifications.keys())
+        )
         active = [name for name in unlocked if jump_skill.modifications.get(name)]
         return [
             ("Active Mods", f"{active_count}/{max_count}"),
@@ -64,8 +75,16 @@ class CharacterMechanicsMixin:
         jump_skill = self._get_jump_skill(player_char)
         if not jump_skill or not hasattr(jump_skill, "modifications"):
             return 0, 0
-        active_count = jump_skill.get_active_count() if hasattr(jump_skill, "get_active_count") else sum(bool(v) for v in jump_skill.modifications.values())
-        max_count = jump_skill.get_max_active_modifications(player_char) if hasattr(jump_skill, "get_max_active_modifications") else len(jump_skill.modifications)
+        active_count = (
+            jump_skill.get_active_count()
+            if hasattr(jump_skill, "get_active_count")
+            else sum(bool(v) for v in jump_skill.modifications.values())
+        )
+        max_count = (
+            jump_skill.get_max_active_modifications(player_char)
+            if hasattr(jump_skill, "get_max_active_modifications")
+            else len(jump_skill.modifications)
+        )
         return int(active_count), int(max_count)
 
     def _toggle_selected_jump_mod(self, player_char) -> None:
@@ -193,12 +212,7 @@ class CharacterMechanicsMixin:
             list_rect.width,
         )
 
-        y_cursor = (
-            list_rect.top
-            + self.normal_font.get_height()
-            + self.small_font.get_height()
-            + 10
-        )
+        y_cursor = list_rect.top + self.normal_font.get_height() + self.small_font.get_height() + 10
         columns = 2
         column_gap = 10
         row_gap = 5
@@ -209,8 +223,7 @@ class CharacterMechanicsMixin:
             36,
             max(
                 26,
-                (available_height - (rows_per_column - 1) * row_gap)
-                // rows_per_column,
+                (available_height - (rows_per_column - 1) * row_gap) // rows_per_column,
             ),
         )
         self._jump_mod_row_rects = []
@@ -321,7 +334,9 @@ class CharacterMechanicsMixin:
     def resolve_spend_rows(self, player_char) -> list[dict[str, Any]]:
         return promotion_kits.resolve_spend_rows(player_char)
 
-    def _draw_resolve_ability_box(self, entry: dict[str, Any], rect: pygame.Rect, *, surge: bool = False) -> None:
+    def _draw_resolve_ability_box(
+        self, entry: dict[str, Any], rect: pygame.Rect, *, surge: bool = False
+    ) -> None:
         unlocked = bool(entry.get("unlocked"))
         bg = (14, 14, 20) if unlocked else (24, 24, 28)
         border = self.colors.GOLD if unlocked else self.colors.DARK_GRAY
@@ -336,9 +351,7 @@ class CharacterMechanicsMixin:
         if surge:
             learned = bool(entry.get("learned"))
             if learned and not unlocked:
-                description = (
-                    "Discovered through defensive mastery; available after promotion"
-                )
+                description = "Discovered through defensive mastery; available after promotion"
             elif not learned:
                 title = "Unknown Burst"
                 role = "Unrevealed"
@@ -346,15 +359,35 @@ class CharacterMechanicsMixin:
         elif not unlocked:
             description = "Locked"
         cost = (
-            "Full bar" if surge and unlocked
-            else "Discovered" if surge and bool(entry.get("learned"))
-            else "Locked" if surge
-            else f"{int(entry.get('cost', 0) or 0)} Resolve"
+            "Full bar"
+            if surge and unlocked
+            else (
+                "Discovered"
+                if surge and bool(entry.get("learned"))
+                else "Locked" if surge else f"{int(entry.get('cost', 0) or 0)} Resolve"
+            )
         )
 
-        self._draw_text(title, self.normal_font, title_color, rect.left + 10, rect.top + 8, rect.width - 20)
-        self._draw_text(f"{role} - {cost}", self.small_font, text_color, rect.left + 10, rect.top + 34, rect.width - 20)
-        self._draw_wrapped_text(description, self.small_font, text_color, rect.left + 10, rect.top + 56, rect.width - 20, max_lines=2)
+        self._draw_text(
+            title, self.normal_font, title_color, rect.left + 10, rect.top + 8, rect.width - 20
+        )
+        self._draw_text(
+            f"{role} - {cost}",
+            self.small_font,
+            text_color,
+            rect.left + 10,
+            rect.top + 34,
+            rect.width - 20,
+        )
+        self._draw_wrapped_text(
+            description,
+            self.small_font,
+            text_color,
+            rect.left + 10,
+            rect.top + 56,
+            rect.width - 20,
+            max_lines=2,
+        )
 
     def _draw_resolve_tab(self, player_char, y: int) -> None:
         self.class_companion_selector_active = False
@@ -371,7 +404,14 @@ class CharacterMechanicsMixin:
         self.screen.blit(value_surface, value_surface.get_rect(center=bar_rect.center))
 
         section_y = bar_rect.bottom + 36
-        self._draw_text("Resolve Spends", self.normal_font, self.colors.GOLD, content.left, section_y, content.width)
+        self._draw_text(
+            "Resolve Spends",
+            self.normal_font,
+            self.colors.GOLD,
+            content.left,
+            section_y,
+            content.width,
+        )
         box_top = section_y + self.normal_font.get_height() + 14
         columns = 4
         gap = 12
@@ -380,7 +420,12 @@ class CharacterMechanicsMixin:
         for index, entry in enumerate(self.resolve_spend_rows(player_char)):
             col = index % columns
             row = index // columns
-            rect = pygame.Rect(content.left + col * (box_width + gap), box_top + row * (box_height + gap), box_width, box_height)
+            rect = pygame.Rect(
+                content.left + col * (box_width + gap),
+                box_top + row * (box_height + gap),
+                box_width,
+                box_height,
+            )
             self._draw_resolve_ability_box(entry, rect)
 
         class_name = self._attr_name(getattr(player_char, "cls", None), "")
@@ -391,11 +436,7 @@ class CharacterMechanicsMixin:
                 for entry in promotion_kits.resolve_surge_rows(player_char)
                 if entry.get("learned")
             ]
-            heading = (
-                "Resolve Bursts"
-                if class_name == "Stalwart Defender"
-                else "Defensive Mastery"
-            )
+            heading = "Resolve Bursts" if class_name == "Stalwart Defender" else "Defensive Mastery"
             self._draw_text(
                 heading,
                 self.normal_font,
@@ -435,10 +476,21 @@ class CharacterMechanicsMixin:
         content.top = y
         left_width = max(320, (content.width * 2) // 5)
         left_rect = pygame.Rect(content.left, content.top, left_width, content.height)
-        right_rect = pygame.Rect(left_rect.right + 18, content.top, content.right - left_rect.right - 18, content.height)
+        right_rect = pygame.Rect(
+            left_rect.right + 18, content.top, content.right - left_rect.right - 18, content.height
+        )
 
-        self._draw_text(f"Conviction {conviction}/{cap}", self.large_font, self.colors.WHITE, left_rect.left, y, left_rect.width)
-        bar_rect = pygame.Rect(left_rect.left, y + self.large_font.get_height() + 8, left_rect.width, 16)
+        self._draw_text(
+            f"Conviction {conviction}/{cap}",
+            self.large_font,
+            self.colors.WHITE,
+            left_rect.left,
+            y,
+            left_rect.width,
+        )
+        bar_rect = pygame.Rect(
+            left_rect.left, y + self.large_font.get_height() + 8, left_rect.width, 16
+        )
         self._draw_meter_bar(bar_rect, conviction, cap, color=self.colors.GOLD)
         rows = [("Vow", vow)]
         if vow in paladin.PATHS:
@@ -449,19 +501,34 @@ class CharacterMechanicsMixin:
                     ("Mark", paladin.MARK_NAMES[vow]),
                 ]
             )
-        self._draw_key_values(rows, left_rect, bar_rect.bottom + 18, font=self.normal_font, row_gap=8)
+        self._draw_key_values(
+            rows, left_rect, bar_rect.bottom + 18, font=self.normal_font, row_gap=8
+        )
 
         detail_y = right_rect.top
-        self._draw_text("Oath Rhythm", self.normal_font, self.colors.GOLD, right_rect.left, detail_y, right_rect.width)
+        self._draw_text(
+            "Oath Rhythm",
+            self.normal_font,
+            self.colors.GOLD,
+            right_rect.left,
+            detail_y,
+            right_rect.width,
+        )
         detail_y += self.normal_font.get_height() + 12
         for title, body in (
-            ("Build", "Use your sworn vow skill and complete its clean payoff to build Conviction."),
+            (
+                "Build",
+                "Use your sworn vow skill and complete its clean payoff to build Conviction.",
+            ),
             (
                 "Spend",
                 "Oath's Judgment and Oath's Shelter consume all stored "
                 "Conviction for vow-specific offense or defense.",
             ),
-            ("Risk", "Aura and mark pressure still matter; Conviction reinforces the oath without erasing its drawback."),
+            (
+                "Risk",
+                "Aura and mark pressure still matter; Conviction reinforces the oath without erasing its drawback.",
+            ),
         ):
             if detail_y + 80 > right_rect.bottom:
                 break
@@ -472,7 +539,9 @@ class CharacterMechanicsMixin:
         content.top = y
         left_width = max(320, (content.width * 2) // 5)
         left_rect = pygame.Rect(content.left, content.top, left_width, content.height)
-        right_rect = pygame.Rect(left_rect.right + 18, content.top, content.right - left_rect.right - 18, content.height)
+        right_rect = pygame.Rect(
+            left_rect.right + 18, content.top, content.right - left_rect.right - 18, content.height
+        )
         return left_rect, right_rect
 
     def _draw_progress_row(
@@ -490,8 +559,20 @@ class CharacterMechanicsMixin:
         value = max(0.0, min(cap, float(value or 0)))
         self._draw_text(label, self.normal_font, self.colors.WHITE, rect.left, y, rect.width)
         value_text = f"{value:g}/{cap:g}" if detail == "" else f"{value:g}/{cap:g} {detail}"
-        self._draw_text(value_text, self.small_font, self.colors.GRAY, rect.left, y + self.normal_font.get_height() + 2, rect.width)
-        bar_rect = pygame.Rect(rect.left, y + self.normal_font.get_height() + self.small_font.get_height() + 8, rect.width, 12)
+        self._draw_text(
+            value_text,
+            self.small_font,
+            self.colors.GRAY,
+            rect.left,
+            y + self.normal_font.get_height() + 2,
+            rect.width,
+        )
+        bar_rect = pygame.Rect(
+            rect.left,
+            y + self.normal_font.get_height() + self.small_font.get_height() + 8,
+            rect.width,
+            12,
+        )
         self._draw_meter_bar(bar_rect, int(value), int(cap), color=color or self.colors.GOLD)
         return bar_rect.bottom + 12
 
@@ -500,7 +581,11 @@ class CharacterMechanicsMixin:
             from src.core.classes import class_rings
 
             if class_rings.is_awakened(player_char, class_name):
-                return "Awakened, equipped" if class_rings.has_equipped_class_ring(player_char) else "Awakened, unequipped"
+                return (
+                    "Awakened, equipped"
+                    if class_rings.has_equipped_class_ring(player_char)
+                    else "Awakened, unequipped"
+                )
             if class_rings.has_visible_class_ring(player_char):
                 return "Dormant"
         except Exception:
@@ -606,26 +691,25 @@ class CharacterMechanicsMixin:
             affinity_points = []
             for school, angle in zip(elemental_schools, angles):
                 scale = max(0.0, min(1.0, float(affinity.get(school, 0)) / cap))
-                affinity_points.append((
-                    round(center[0] + math.cos(angle) * radius * scale),
-                    round(center[1] + math.sin(angle) * radius * scale),
-                ))
+                affinity_points.append(
+                    (
+                        round(center[0] + math.cos(angle) * radius * scale),
+                        round(center[1] + math.sin(angle) * radius * scale),
+                    )
+                )
             overlay = pygame.Surface(
                 (chart_rect.width, chart_rect.height),
                 pygame.SRCALPHA,
             )
             local_points = [
-                (point[0] - chart_rect.left, point[1] - chart_rect.top)
-                for point in affinity_points
+                (point[0] - chart_rect.left, point[1] - chart_rect.top) for point in affinity_points
             ]
             pygame.draw.polygon(overlay, (*self.colors.GOLD[:3], 70), local_points)
             pygame.draw.polygon(overlay, self.colors.GOLD, local_points, 2)
             self.screen.blit(overlay, chart_rect.topleft)
 
             for school, angle in zip(elemental_schools, angles):
-                label_radius = radius + (
-                    30 if abs(math.sin(angle)) > 0.8 else 48
-                )
+                label_radius = radius + (30 if abs(math.sin(angle)) > 0.8 else 48)
                 anchor_x = round(center[0] + math.cos(angle) * label_radius)
                 anchor_y = round(center[1] + math.sin(angle) * label_radius)
                 icon = get_ability_icon_manager().get_icon(
@@ -662,27 +746,63 @@ class CharacterMechanicsMixin:
         unlocked = list(state.get("unlocked_contracts", []))
         echo = state.get("imprisoned_familiar") or {}
 
-        row_y = self._draw_progress_row(left_rect, "Bargain Taint", corruption, 100, y, detail=f"Tier {demonologist.corruption_tier(player_char)}", color=self.colors.RED)
+        row_y = self._draw_progress_row(
+            left_rect,
+            "Bargain Taint",
+            corruption,
+            100,
+            y,
+            detail=f"Tier {demonologist.corruption_tier(player_char)}",
+            color=self.colors.RED,
+        )
         rows = [
             ("Crypt", "Unlocked" if state.get("crypt_unlocked") else "Hidden"),
             ("Active Patron", patron),
             ("Patron Mood", str(mood)),
             ("Unlocked", ", ".join(unlocked) if unlocked else "None"),
             ("Echo", str(echo.get("name") or echo.get("spec") or "None")),
-            ("Ring", "Awakened" if state.get("ring_awakened") else self._ring_state_text(player_char, "Demonologist")),
+            (
+                "Ring",
+                (
+                    "Awakened"
+                    if state.get("ring_awakened")
+                    else self._ring_state_text(player_char, "Demonologist")
+                ),
+            ),
         ]
         self._draw_key_values(rows, left_rect, row_y, font=self.normal_font, row_gap=8)
 
-        self._draw_text("Recent Contracts", self.normal_font, self.colors.GOLD, right_rect.left, y, right_rect.width)
+        self._draw_text(
+            "Recent Contracts",
+            self.normal_font,
+            self.colors.GOLD,
+            right_rect.left,
+            y,
+            right_rect.width,
+        )
         history_y = y + self.normal_font.get_height() + 12
         history = list(state.get("contract_history", []))[-5:]
         if not history:
-            self._draw_text("No contract history", self.normal_font, self.colors.GRAY, right_rect.left, history_y, right_rect.width)
+            self._draw_text(
+                "No contract history",
+                self.normal_font,
+                self.colors.GRAY,
+                right_rect.left,
+                history_y,
+                right_rect.width,
+            )
             return
         for entry in reversed(history):
             patron_text = str(entry.get("patron") or "?")
             intent_text = str(entry.get("intent") or "?")
-            self._draw_text(f"{patron_text} - {intent_text}", self.normal_font, self.colors.WHITE, right_rect.left, history_y, right_rect.width)
+            self._draw_text(
+                f"{patron_text} - {intent_text}",
+                self.normal_font,
+                self.colors.WHITE,
+                right_rect.left,
+                history_y,
+                right_rect.width,
+            )
             history_y += self.normal_font.get_height() + self.small_font.get_height() + 12
             if history_y > right_rect.bottom - 24:
                 break
@@ -694,11 +814,20 @@ class CharacterMechanicsMixin:
         left_rect, right_rect = self._split_mechanic_content(y)
         class_name = self._attr_name(getattr(player_char, "cls", None), "")
         state = astromancer.ensure_state(player_char)
-        active = astromancer.active_constellation(player_char) if class_name == "Astromancer" else ""
+        active = (
+            astromancer.active_constellation(player_char) if class_name == "Astromancer" else ""
+        )
 
         row_y = y
         if active:
-            self._draw_text(f"Active Constellation: {active}", self.normal_font, self.colors.GOLD, left_rect.left, y, left_rect.width)
+            self._draw_text(
+                f"Active Constellation: {active}",
+                self.normal_font,
+                self.colors.GOLD,
+                left_rect.left,
+                y,
+                left_rect.width,
+            )
             row_y += self.normal_font.get_height() + 14
         for sign in astromancer.CONSTELLATIONS:
             count = int(state["runes"].get(sign, 0) or 0)
@@ -706,7 +835,9 @@ class CharacterMechanicsMixin:
             detail = f"{element}"
             if sign == active and astromancer.is_astromancer(player_char):
                 detail += " active"
-            row_y = self._draw_progress_row(left_rect, sign, count, astromancer.RUNE_CAP, row_y, detail=detail)
+            row_y = self._draw_progress_row(
+                left_rect, sign, count, astromancer.RUNE_CAP, row_y, detail=detail
+            )
 
         boostable = astromancer.boostable_spells(player_char)
         rows = [
@@ -747,32 +878,67 @@ class CharacterMechanicsMixin:
         unlocked = self._totem_unlocked_aspects(player_char, totem_skill)
         if class_name != "Soulcatcher":
             unlocked = [aspect for aspect in unlocked if aspect != "Soul"]
-        active = nature_totems.active_totem_aspect(player_char) or getattr(totem_skill, "active_aspect", "") or "None"
+        active = (
+            nature_totems.active_totem_aspect(player_char)
+            or getattr(totem_skill, "active_aspect", "")
+            or "None"
+        )
         if active == "Soul" and class_name != "Soulcatcher":
             active = "None"
         resonance = promotion_kits.totem_resonance(player_char)
         cap = promotion_kits.cap_for(player_char, "totem_resonance")
 
-        row_y = self._draw_progress_row(left_rect, "Totem Resonance", resonance, cap, y, detail="Pulse strength", color=self.colors.GREEN)
+        row_y = self._draw_progress_row(
+            left_rect,
+            "Totem Resonance",
+            resonance,
+            cap,
+            y,
+            detail="Pulse strength",
+            color=self.colors.GREEN,
+        )
         rows = [
             ("Active Aspect", str(active)),
             ("Unlocked Aspects", ", ".join(unlocked) if unlocked else "None"),
             ("Spirit Animal", str(getattr(player_char, "spirit_animal", "Not chosen"))),
-            ("Staff Bond", "Aligned" if nature_totems.has_staff_equipped(player_char) else "Unfocused"),
+            (
+                "Staff Bond",
+                "Aligned" if nature_totems.has_staff_equipped(player_char) else "Unfocused",
+            ),
             ("Select", "C/Enter: Totem Aspects"),
         ]
         self._draw_key_values(rows, left_rect, row_y, font=self.normal_font, row_gap=8)
 
-        self._draw_text("Communions", self.normal_font, self.colors.GOLD, right_rect.left, y, right_rect.width)
+        self._draw_text(
+            "Communions", self.normal_font, self.colors.GOLD, right_rect.left, y, right_rect.width
+        )
         list_y = y + self.normal_font.get_height() + 12
         aspects = list(nature_totems.ELEMENTAL_ASPECTS)
         if class_name == "Soulcatcher" and "Soul" in unlocked:
             aspects.append("Soul")
         for aspect in aspects:
-            spell_name = nature_totems.highest_unlocked_spell_name(player_char, aspect) or nature_totems.communion_spell_name(aspect) or "None"
-            status = "Unlocked" if aspect in unlocked or spell_name in getattr(player_char, "spellbook", {}).get("Spells", {}) else "Locked"
-            self._draw_text(aspect, self.normal_font, self.colors.WHITE, right_rect.left, list_y, 110)
-            self._draw_text(f"{status} - {spell_name}", self.small_font, self.colors.GRAY, right_rect.left + 118, list_y + 2, right_rect.width - 118)
+            spell_name = (
+                nature_totems.highest_unlocked_spell_name(player_char, aspect)
+                or nature_totems.communion_spell_name(aspect)
+                or "None"
+            )
+            status = (
+                "Unlocked"
+                if aspect in unlocked
+                or spell_name in getattr(player_char, "spellbook", {}).get("Spells", {})
+                else "Locked"
+            )
+            self._draw_text(
+                aspect, self.normal_font, self.colors.WHITE, right_rect.left, list_y, 110
+            )
+            self._draw_text(
+                f"{status} - {spell_name}",
+                self.small_font,
+                self.colors.GRAY,
+                right_rect.left + 118,
+                list_y + 2,
+                right_rect.width - 118,
+            )
             list_y += self.normal_font.get_height() + 12
             if list_y > right_rect.bottom - 24:
                 break
@@ -785,7 +951,9 @@ class CharacterMechanicsMixin:
         class_name = self._attr_name(getattr(player_char, "cls", None), "")
         state = promotion_kits.ensure_state(player_char)
         journal = state["case_journal"]
-        best_type, best_progress = max(journal.items(), key=lambda item: (int(item[1]), item[0]), default=("None", 0))
+        best_type, best_progress = max(
+            journal.items(), key=lambda item: (int(item[1]), item[0]), default=("None", 0)
+        )
 
         rows = [
             ("Best Case", best_type),
@@ -801,16 +969,39 @@ class CharacterMechanicsMixin:
             )
         self._draw_key_values(rows, left_rect, y, font=self.normal_font, row_gap=10)
 
-        self._draw_text("Studied Enemy Types", self.normal_font, self.colors.GOLD, right_rect.left, y, right_rect.width)
+        self._draw_text(
+            "Studied Enemy Types",
+            self.normal_font,
+            self.colors.GOLD,
+            right_rect.left,
+            y,
+            right_rect.width,
+        )
         list_y = y + self.normal_font.get_height() + 12
         entries = sorted(journal.items(), key=lambda item: (-int(item[1]), item[0]))
         if not entries:
-            self._draw_text("No cases recorded", self.normal_font, self.colors.GRAY, right_rect.left, list_y, right_rect.width)
+            self._draw_text(
+                "No cases recorded",
+                self.normal_font,
+                self.colors.GRAY,
+                right_rect.left,
+                list_y,
+                right_rect.width,
+            )
             return
         for enemy_type, progress in entries[:8]:
             detail = promotion_kits.case_rank(progress)
-            self._draw_text(str(enemy_type), self.normal_font, self.colors.WHITE, right_rect.left, list_y, 150)
-            self._draw_text(detail, self.small_font, self.colors.GRAY, right_rect.left + 158, list_y + 2, right_rect.width - 158)
+            self._draw_text(
+                str(enemy_type), self.normal_font, self.colors.WHITE, right_rect.left, list_y, 150
+            )
+            self._draw_text(
+                detail,
+                self.small_font,
+                self.colors.GRAY,
+                right_rect.left + 158,
+                list_y + 2,
+                right_rect.width - 158,
+            )
             list_y += self.normal_font.get_height() + 12
             if list_y > right_rect.bottom - 40:
                 break
@@ -847,7 +1038,13 @@ class CharacterMechanicsMixin:
         if class_name == "Troubadour":
             rows.extend(
                 [
-                    ("Encore", str(song_state.get("encore") or self._ring_state_text(player_char, "Troubadour"))),
+                    (
+                        "Encore",
+                        str(
+                            song_state.get("encore")
+                            or self._ring_state_text(player_char, "Troubadour")
+                        ),
+                    ),
                     ("Mastered", f"{mastered}/{len(repertoire)}"),
                 ]
             )
@@ -856,7 +1053,14 @@ class CharacterMechanicsMixin:
         available = bard.available_compositions(player_char)
         equipped_song = next(iter(available), "None")
         if class_name != "Troubadour":
-            self._draw_text("Composition", self.normal_font, self.colors.GOLD, right_rect.left, y, right_rect.width)
+            self._draw_text(
+                "Composition",
+                self.normal_font,
+                self.colors.GOLD,
+                right_rect.left,
+                y,
+                right_rect.width,
+            )
             self._draw_key_values(
                 [
                     ("Instrument Match", equipped_song),
@@ -869,7 +1073,14 @@ class CharacterMechanicsMixin:
             )
             return
 
-        self._draw_text("Advanced Repertoire", self.normal_font, self.colors.GOLD, right_rect.left, y, right_rect.width)
+        self._draw_text(
+            "Advanced Repertoire",
+            self.normal_font,
+            self.colors.GOLD,
+            right_rect.left,
+            y,
+            right_rect.width,
+        )
         list_y = y + self.normal_font.get_height() + 12
         self._draw_text(
             f"Compose: C/Enter ({equipped_song})",
@@ -884,7 +1095,9 @@ class CharacterMechanicsMixin:
             known = "Mastered" if entry.get("known") else "Practice"
             xp = int(entry.get("practice_xp", 0) or 0)
             finishes = int(entry.get("clean_finishes", 0) or 0)
-            self._draw_text(song, self.normal_font, self.colors.WHITE, right_rect.left, list_y, right_rect.width)
+            self._draw_text(
+                song, self.normal_font, self.colors.WHITE, right_rect.left, list_y, right_rect.width
+            )
             if known == "Mastered":
                 practice = "Complete"
             else:
@@ -922,9 +1135,7 @@ class CharacterMechanicsMixin:
         active_form = str(transform_state.get("active_form") or "None")
         available = getattr(player_char, "available_transform_forms", None)
         forms = tuple(
-            available()
-            if callable(available)
-            else transformation.available_forms(player_char)
+            available() if callable(available) else transformation.available_forms(player_char)
         )
         rows = [
             ("Current Form", active_form if shifted else "Humanoid"),
@@ -942,8 +1153,7 @@ class CharacterMechanicsMixin:
         button_y = left_rect.bottom - 48
         button_width = max(
             120,
-            (left_rect.width - 12 * max(0, len(labels) - 1))
-            // max(1, len(labels)),
+            (left_rect.width - 12 * max(0, len(labels) - 1)) // max(1, len(labels)),
         )
         for index, label in enumerate(labels):
             rect = pygame.Rect(
@@ -976,9 +1186,11 @@ class CharacterMechanicsMixin:
                 ("Stress Records", str(control.get("stress_events", 0))),
                 (
                     "Dragon Essence",
-                    "Yes"
-                    if control.get("dragon_essence") or lycan_state.get("dragon_essence")
-                    else "No",
+                    (
+                        "Yes"
+                        if control.get("dragon_essence") or lycan_state.get("dragon_essence")
+                        else "No"
+                    ),
                 ),
             ]
             self._draw_key_values(rows, right_rect, list_y, font=self.normal_font, row_gap=8)
@@ -1002,7 +1214,15 @@ class CharacterMechanicsMixin:
             status = "Awake" if state["aspects"].get(affinity) else "Sealed"
             if state["catalysts"].get(affinity):
                 status += ", catalyst"
-            row_y = self._draw_progress_row(left_rect, affinity, attunement, archdruid.MASTERY_THRESHOLD, row_y, detail=status, color=self.colors.GREEN)
+            row_y = self._draw_progress_row(
+                left_rect,
+                affinity,
+                attunement,
+                archdruid.MASTERY_THRESHOLD,
+                row_y,
+                detail=status,
+                color=self.colors.GREEN,
+            )
             if row_y > left_rect.bottom - 40:
                 break
 
@@ -1011,17 +1231,42 @@ class CharacterMechanicsMixin:
             ("Grove", "Unlocked" if state.get("grove_unlocked") else "Hidden"),
             ("Aspect Harmony", harmony_text),
             ("Fourfold Surge", "Ready" if len(harmony) >= 2 else "Building"),
-            ("Ring", "Awakened" if state.get("ring_awakened") else self._ring_state_text(player_char, "Archdruid")),
+            (
+                "Ring",
+                (
+                    "Awakened"
+                    if state.get("ring_awakened")
+                    else self._ring_state_text(player_char, "Archdruid")
+                ),
+            ),
         ]
         self._draw_key_values(rows, right_rect, y, font=self.normal_font, row_gap=8)
         detail_y = y + self.normal_font.get_height() * 6 + 64
-        self._draw_text("Catalyst Progress", self.normal_font, self.colors.GOLD, right_rect.left, detail_y, right_rect.width)
+        self._draw_text(
+            "Catalyst Progress",
+            self.normal_font,
+            self.colors.GOLD,
+            right_rect.left,
+            detail_y,
+            right_rect.width,
+        )
         detail_y += self.normal_font.get_height() + 10
         for affinity in archdruid.AFFINITIES:
             progress = state["progress"].get(affinity, {})
-            text = "Stirring" if any(int(value or 0) > 0 for value in progress.values()) else "Quiet"
-            self._draw_text(affinity, self.small_font, self.colors.GRAY, right_rect.left, detail_y, 90)
-            self._draw_text(text, self.small_font, self.colors.WHITE, right_rect.left + 96, detail_y, right_rect.width - 96)
+            text = (
+                "Stirring" if any(int(value or 0) > 0 for value in progress.values()) else "Quiet"
+            )
+            self._draw_text(
+                affinity, self.small_font, self.colors.GRAY, right_rect.left, detail_y, 90
+            )
+            self._draw_text(
+                text,
+                self.small_font,
+                self.colors.WHITE,
+                right_rect.left + 96,
+                detail_y,
+                right_rect.width - 96,
+            )
             detail_y += self.small_font.get_height() + 8
             if detail_y > right_rect.bottom - 12:
                 break
@@ -1118,7 +1363,9 @@ class CharacterMechanicsMixin:
         class_name = self._attr_name(getattr(player_char, "cls", None), "")
         if class_name in {"Ranger", "Beast Master"}:
             overview_y += 8
-            overview_y = self._draw_favored_enemy_progress_panel(player_char, overview_rect, overview_y)
+            overview_y = self._draw_favored_enemy_progress_panel(
+                player_char, overview_rect, overview_y
+            )
 
         entries = self.class_companion_entries(player_char)
         if not entries:
@@ -1146,7 +1393,9 @@ class CharacterMechanicsMixin:
             if class_name in {"Ranger", "Beast Master"}
             else mechanic_tab.label if mechanic_tab is not None else "Companions"
         )
-        self._draw_text(heading, self.normal_font, self.colors.GOLD, roster_rect.left, y, roster_rect.width)
+        self._draw_text(
+            heading, self.normal_font, self.colors.GOLD, roster_rect.left, y, roster_rect.width
+        )
         singular_label = {
             "Familiar": "familiar",
             "Companion": "companion",

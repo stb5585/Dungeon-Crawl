@@ -5,8 +5,7 @@ from __future__ import annotations
 import pytest
 
 from src.core import abilities, items
-from src.core.classes import astromancer
-from src.core.classes import promotion_kits
+from src.core.classes import astromancer, promotion_kits
 from src.core.combat.battle_engine import BattleEngine
 from src.core.combat.combat_result import CombatResult
 from src.core.save_system import PlayerDataSerializer
@@ -163,6 +162,38 @@ def test_astromancer_learning_rejects_miss_rank_three_and_unranked_spell():
     assert "learns Tornado" in astromancer.learn_witnessed_spell(
         player,
         abilities.Tornado(),
+        success,
+    )
+
+
+def test_witnessed_learning_includes_stupefy_and_volcano_at_authored_ranks():
+    diviner = TestGameState.create_player(class_name="Diviner", race_name="Human")
+    diviner.spellbook["Skills"]["Learn Spell"] = abilities.LearnSpell()
+    astromancer_player = TestGameState.create_player(
+        class_name="Astromancer",
+        race_name="Human",
+    )
+    astromancer_player.spellbook["Skills"]["Learn Spell"] = abilities.LearnSpell2()
+    success = CombatResult(action="Spell", actor=object(), target=object(), hit=True)
+
+    assert abilities.Stupefy().rank == 1
+    assert "learns Stupefy" in astromancer.learn_witnessed_spell(
+        diviner,
+        abilities.Stupefy(),
+        success,
+    )
+    assert abilities.Volcano().rank == 2
+    assert (
+        astromancer.learn_witnessed_spell(
+            diviner,
+            abilities.Volcano(),
+            success,
+        )
+        == ""
+    )
+    assert "learns Volcano" in astromancer.learn_witnessed_spell(
+        astromancer_player,
+        abilities.Volcano(),
         success,
     )
 

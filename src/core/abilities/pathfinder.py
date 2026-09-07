@@ -254,7 +254,10 @@ class UnnaturalPurge(Skill):
             return result
         user.mana.current -= self.cost
         unnatural = str(getattr(target, "enemy_typ", "")) in {
-            "Slime", "Monster", "Undead", "Aberration",
+            "Slime",
+            "Monster",
+            "Undead",
+            "Aberration",
         }
         message, hit, crit = user.weapon_damage(
             target,
@@ -491,11 +494,7 @@ class NoxiousMist(Spell):
         message, damage = _simple_spell_damage(user, target, dmg_mod=0.75, typ="Poison")
         result.damage = damage
         result.hit = damage > 0
-        if (
-            damage > 0
-            and not target.has_status_protection("Poison")
-            and rng.random() < 0.45
-        ):
+        if damage > 0 and not target.has_status_protection("Poison") and rng.random() < 0.45:
             poison = target.status_effects["Poison"]
             poison.active = True
             poison.duration = max(3, int(poison.duration or 0))
@@ -576,7 +575,7 @@ class RestoringBoon(Spell):
 class Starfall(Spell):
     """Strike every hostile with three small falling stars."""
 
-    damage_types = ("Earth")
+    damage_types = "Earth"
 
     def __init__(self) -> None:
         super().__init__(

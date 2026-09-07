@@ -10,8 +10,8 @@ should keep active, deferred, or decision-gated direction.
 Status: `Shop Polish V1 Shipped; Save-Heavy Systems Gated`
 
 The first implementation slice shipped for the existing pygame shop purchase
-and equip-now flow because it did not require new economy rules, new item state,
-or save migration.
+and equip-now flow because it did not require new economy rules or new item
+state.
 
 Save-heavy systems such as durability, identification, item modification, and
 equipment active abilities remain deferred until their serializer, UI, economy,
@@ -113,7 +113,7 @@ Future work must define:
 - broken-state behavior;
 - shatter or permanent-loss rules;
 - display in inventory, equipment, shop, loot, and combat UI;
-- old-save defaults.
+- current-save defaults and the local-save reset policy.
 
 Any durability fields must round-trip for equipped items, inventory, special
 inventory, and storage.
@@ -128,7 +128,7 @@ Item identification is deferred. Future work must define:
 - inventory grouping;
 - loot popup display;
 - shop buy/sell behavior;
-- save fields and legacy defaults.
+- current-save fields and missing-field defaults or an explicit local reset.
 
 Identification must not obscure quest-critical items, relics, class rings, or
 other special inventory that the player needs to route progression.
@@ -233,7 +233,7 @@ Each block must cover:
 - shop, drop, crafting, or quest source;
 - subtype;
 - icon/render mapping;
-- save compatibility;
+- current-save fields and reset policy;
 - tests;
 - whether the item is inert reagent-only or actively usable.
 
@@ -249,7 +249,8 @@ Focused tests should cover:
 - Durability/repair: serializer defaults, durability loss triggers, repair
   pricing, broken behavior, shatter/loss rules, and UI display.
 - Identification: unidentified loot display, identify services/items, inventory
-  grouping, shop sell/buy behavior, old saves, and identified round trip.
+  grouping, shop sell/buy behavior, missing-field defaults, and identified
+  round trip.
 - Tome/equipment actives/modification: action availability, costs/cooldowns,
   combat results, item state changes, and save/load.
 - Economy content: rarity bucket placement, shop availability, drop eligibility,

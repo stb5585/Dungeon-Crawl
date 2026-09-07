@@ -56,7 +56,10 @@ def test_create_bounty_force_enemy_collision_falls_back_to_catalog(monkeypatch):
     board = town.BountyBoard()
     game = _make_game(bounty_quests={"Goblin": {"Completed": False}}, player_level=1, luck=0)
 
-    monkeypatch.setattr("src.core.town.enemies.random_enemy", lambda level: SimpleNamespace(name="Goblin", experience=10))
+    monkeypatch.setattr(
+        "src.core.town.enemies.random_enemy",
+        lambda level: SimpleNamespace(name="Goblin", experience=10),
+    )
     monkeypatch.setattr("src.core.town.random.choice", lambda candidates: candidates[0])
     monkeypatch.setattr("src.core.town.random.randint", lambda a, b: 0 if a == 0 else a)
 
@@ -84,7 +87,10 @@ def test_generate_bounties_force_enemy_can_fill_multiple_slots(monkeypatch):
     board = town.BountyBoard()
     game = _make_game(player_level=1, luck=0)
 
-    monkeypatch.setattr("src.core.town.enemies.random_enemy", lambda level: SimpleNamespace(name="Goblin", experience=10))
+    monkeypatch.setattr(
+        "src.core.town.enemies.random_enemy",
+        lambda level: SimpleNamespace(name="Goblin", experience=10),
+    )
     monkeypatch.setattr("src.core.town.random.choice", lambda candidates: candidates[0])
 
     def fake_randint(a, b):
@@ -111,7 +117,9 @@ def test_generate_bounties_appends_requested_count(monkeypatch):
     game = _make_game()
 
     monkeypatch.setattr("src.core.town.random.randint", lambda _a, _b: 3)
-    monkeypatch.setattr(board, "create_bounty", lambda _game: {"name": f"Bounty-{len(board.bounties)}"})
+    monkeypatch.setattr(
+        board, "create_bounty", lambda _game: {"name": f"Bounty-{len(board.bounties)}"}
+    )
 
     board.generate_bounties(game)
 
@@ -248,7 +256,9 @@ def test_prior_bounty_target_defeats_counts_kill_dict_across_enemy_types():
         }
     )
 
-    assert town.prior_bounty_target_defeats(player, {"enemy": SimpleNamespace(name="Barghest")}) == 3
+    assert (
+        town.prior_bounty_target_defeats(player, {"enemy": SimpleNamespace(name="Barghest")}) == 3
+    )
     assert town.prior_bounty_target_defeats(player, {"enemy_name": "Goblin"}) == 4
     assert town.prior_bounty_target_defeats(player, {"enemy": SimpleNamespace(name="Missing")}) == 0
 

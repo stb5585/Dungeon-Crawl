@@ -24,8 +24,7 @@ def _talent_cap_bonus(character: Any, key: str) -> int:
     return sum(
         int(effect[2])
         for talent_key, effect in _TALENT_KIT_EFFECTS.items()
-        if effect[:2] == ("meter_cap", effect_key)
-        and has_talent(character, talent_key)
+        if effect[:2] == ("meter_cap", effect_key) and has_talent(character, talent_key)
     )
 
 
@@ -120,10 +119,7 @@ def gain_bloodied_momentum(
     state = combat_state(character)
     amount = 1
     current_round = int(state.get("action_round", 0) or 0)
-    if (
-        _hp_ratio(character) < 0.25
-        and state.get("bloodied_bonus_round") != current_round
-    ):
+    if _hp_ratio(character) < 0.25 and state.get("bloodied_bonus_round") != current_round:
         amount += 1
         state["bloodied_bonus_round"] = current_round
     return gain_meter(character, "bloodied_momentum", amount, reason)
@@ -140,7 +136,11 @@ def _power_up_active(character: Any, skill_name: str) -> bool:
 
 
 def _devotion_amount(character: Any, *, holy_or_shield: bool) -> int:
-    amount = 2 if class_name(character) == "Hierophant" and _hierophant_overchannel_active(character) else 1
+    amount = (
+        2
+        if class_name(character) == "Hierophant" and _hierophant_overchannel_active(character)
+        else 1
+    )
     from ..cleric import has_cleric_talent
 
     if (
@@ -177,15 +177,9 @@ def record_devotion_source(
     amount = _devotion_amount(character, holy_or_shield=holy_or_shield)
     from ..cleric import has_cleric_talent
 
-    if (
-        reason == "Holy pressure"
-        and has_cleric_talent(character, "cleric.consecrated-blows")
-    ):
+    if reason == "Holy pressure" and has_cleric_talent(character, "cleric.consecrated-blows"):
         amount += 1
-    if (
-        reason == "Holy pressure"
-        and has_cleric_talent(character, "hierophant.luminous-doctrine")
-    ):
+    if reason == "Holy pressure" and has_cleric_talent(character, "hierophant.luminous-doctrine"):
         amount += 1
     return _gain_or_queue_devotion(
         character,
@@ -209,9 +203,8 @@ def record_prayer_source(character: Any, reason: str, *, divine_support: bool = 
 
     if divine_support and has_talent(character, "priest.deliberate-prayer"):
         amount += 1
-    if (
-        int(combat_state(character).get("prayer", 0) or 0) == 0
-        and has_talent(character, "archbishop.first-words")
+    if int(combat_state(character).get("prayer", 0) or 0) == 0 and has_talent(
+        character, "archbishop.first-words"
     ):
         amount += 1
     state = combat_state(character)
@@ -257,11 +250,13 @@ def _gain_or_queue_devotion(
     if not isinstance(pending, list):
         pending = []
         state["pending_devotion_gains"] = pending
-    pending.append({
-        "amount": max(0, int(amount or 0)),
-        "reason": reason,
-        "require_survivor": bool(require_survivor),
-    })
+    pending.append(
+        {
+            "amount": max(0, int(amount or 0)),
+            "reason": reason,
+            "require_survivor": bool(require_survivor),
+        }
+    )
     return ""
 
 
@@ -276,11 +271,15 @@ def finish_action(character: Any, *, defender_survived: bool) -> str:
     state["pending_hierophant_devotion_token"] = None
     msg = finish_aerial_follow_through(character)
     msg += finish_stolen_charge_payoff(character)
-    if choice == "Defend" and getattr(
-        getattr(character, "equipment", {}).get("OffHand"),
-        "subtyp",
-        None,
-    ) == "Shield":
+    if (
+        choice == "Defend"
+        and getattr(
+            getattr(character, "equipment", {}).get("OffHand"),
+            "subtyp",
+            None,
+        )
+        == "Shield"
+    ):
         msg += record_devotion_source(
             character,
             "shielded Defend",
@@ -413,9 +412,7 @@ def _resolve_stolen_charge_payoff(character: Any, portions: list[Any]) -> str:
             effect.duration = max(int(effect.duration or 0), 2)
             effect.extra = min(int(effect.extra or 0), -penalty)
             effect.source = "Misdirection"
-        lines.append(
-            f"Misdirection lowers {target.name}'s Attack and Magic by {penalty}.\n"
-        )
+        lines.append(f"Misdirection lowers {target.name}'s Attack and Magic by {penalty}.\n")
     _maybe_preserve(
         character,
         "stolen_charge",
@@ -551,11 +548,7 @@ def _consume_consecrated_conduit(
     if ward is not None:
         ward.active = True
         ward.duration = max(int(getattr(ward, "duration", 0) or 0), 2)
-        ward_scale = (
-            1.5
-            if has_cleric_talent(actor, "hierophant.staff-ward")
-            else 1.0
-        )
+        ward_scale = 1.5 if has_cleric_talent(actor, "hierophant.staff-ward") else 1.0
         ward.extra = max(
             int(getattr(ward, "extra", 0) or 0),
             max(8, int(stacks * 6 * ward_scale)),
@@ -565,7 +558,10 @@ def _consume_consecrated_conduit(
         return_floor = stacks if _hierophant_overchannel_active(actor) else max(1, stacks // 2)
         if has_cleric_talent(actor, "hierophant.radiant-return"):
             return_floor = stacks
-        returned = min(int(getattr(mana, "max", 0) or 0) - int(getattr(mana, "current", 0) or 0), max(1, return_floor))
+        returned = min(
+            int(getattr(mana, "max", 0) or 0) - int(getattr(mana, "current", 0) or 0),
+            max(1, return_floor),
+        )
         if returned > 0:
             mana.current += returned
     lines = [
@@ -595,20 +591,22 @@ def record_devotion_block(character: Any) -> str:
     )
 
 
-PRAYER_SUPPORT_ABILITIES = frozenset({
-    "Bless",
-    "Cleanse",
-    "Dispel",
-    "Mana Shield",
-    "Mana Shield 2",
-    "Prayer of Faith",
-    "Regen",
-    "Regen2",
-    "Regen3",
-    "Resurrection",
-    "Shell",
-    "Silence",
-})
+PRAYER_SUPPORT_ABILITIES = frozenset(
+    {
+        "Bless",
+        "Cleanse",
+        "Dispel",
+        "Mana Shield",
+        "Mana Shield 2",
+        "Prayer of Faith",
+        "Regen",
+        "Regen2",
+        "Regen3",
+        "Resurrection",
+        "Shell",
+        "Silence",
+    }
+)
 STORM_UTILITY_ABILITIES = frozenset({"Ball Lightning", "Windswept"})
 STONE_UTILITY_ABILITIES = frozenset({"Nature Shield", "Stone Skin"})
 
@@ -627,7 +625,9 @@ def record_action_resolution(character: Any, result: Any | None) -> str:
         damage = max(0, int(getattr(portion, "damage", 0) or 0))
         healing = max(0, int(getattr(portion, "healing", 0) or 0))
         effects = getattr(portion, "effects_applied", {}) or {}
-        changed = any(bool(values) for values in effects.values()) if isinstance(effects, dict) else False
+        changed = (
+            any(bool(values) for values in effects.values()) if isinstance(effects, dict) else False
+        )
         successful = successful or damage > 0 or healing > 0 or bool(getattr(portion, "hit", False))
         applied = applied or changed
     msg = _resolve_stolen_charge_payoff(character, portions)
@@ -655,8 +655,7 @@ def record_action_resolution(character: Any, result: Any | None) -> str:
 
         if (
             choice != "Totem Surge"
-            and nature_totems.spell_aspect(choice)
-            == nature_totems.active_totem_aspect(character)
+            and nature_totems.spell_aspect(choice) == nature_totems.active_totem_aspect(character)
             and _claim_action(character, "totem_resonance")
         ):
             msg += gain_totem_resonance(character, "matching cast")
@@ -715,10 +714,7 @@ def record_damage_event(
             _message(actor, nature_totems.add_dread(actor, target, "a critical hit"))
             if nature_totems.has_nature_talent(actor, "soulcatcher.haunting-blows"):
                 _message(actor, nature_totems.add_dread(actor, target, "Haunting Blows"))
-    if (
-        cls == "Soulcatcher"
-        and str((metadata or {}).get("ability_name") or "") == "Soul Drain"
-    ):
+    if cls == "Soulcatcher" and str((metadata or {}).get("ability_name") or "") == "Soul Drain":
         from .. import nature_totems
 
         if nature_totems.has_nature_talent(actor, "soulcatcher.gentle-reaping"):
@@ -781,30 +777,45 @@ def record_damage_event(
             _message(actor, record_luck_roll(actor, True, reason))
 
     if not resource_payoff and cls in {"Cleric", "Templar"} and damage_type == "Holy":
-        _message(actor, record_devotion_source(
+        _message(
             actor,
-            "Holy pressure",
-            hostile=True,
-            holy_or_shield=True,
-        ))
-    if not resource_payoff and cls in {"Cleric", "Templar"} and str((metadata or {}).get("ability_name") or "") == "Shield Slam":
-        _message(actor, record_devotion_source(
-            actor,
-            "Shield Slam",
-            hostile=True,
-            holy_or_shield=True,
-        ))
-    if cls == "Hierophant" and not resource_payoff:
-        staff_hit = _is_hierophant_staff_hit(actor, metadata)
-        turn_undead = str((metadata or {}).get("ability_name") or "").lower().startswith("turn undead")
-        if damage_type == "Holy" or staff_hit or turn_undead:
-            reason = "staff conduit" if staff_hit else "holy action"
-            _message(actor, record_devotion_source(
+            record_devotion_source(
                 actor,
-                reason,
+                "Holy pressure",
                 hostile=True,
                 holy_or_shield=True,
-            ))
+            ),
+        )
+    if (
+        not resource_payoff
+        and cls in {"Cleric", "Templar"}
+        and str((metadata or {}).get("ability_name") or "") == "Shield Slam"
+    ):
+        _message(
+            actor,
+            record_devotion_source(
+                actor,
+                "Shield Slam",
+                hostile=True,
+                holy_or_shield=True,
+            ),
+        )
+    if cls == "Hierophant" and not resource_payoff:
+        staff_hit = _is_hierophant_staff_hit(actor, metadata)
+        turn_undead = (
+            str((metadata or {}).get("ability_name") or "").lower().startswith("turn undead")
+        )
+        if damage_type == "Holy" or staff_hit or turn_undead:
+            reason = "staff conduit" if staff_hit else "holy action"
+            _message(
+                actor,
+                record_devotion_source(
+                    actor,
+                    reason,
+                    hostile=True,
+                    holy_or_shield=True,
+                ),
+            )
         _consume_consecrated_conduit(actor, target, amount, damage_type, metadata)
 
     if not resource_payoff and cls in {"Priest", "Archbishop"} and damage_type == "Holy":
@@ -828,11 +839,9 @@ def record_damage_event(
         from .companions import gain_totem_resonance
 
         ability_name = str((metadata or {}).get("ability_name") or "")
-        if (
-            nature_totems.spell_aspect(ability_name)
-            == nature_totems.active_totem_aspect(actor)
-            and _claim_action(actor, "totem_resonance")
-        ):
+        if nature_totems.spell_aspect(ability_name) == nature_totems.active_totem_aspect(
+            actor
+        ) and _claim_action(actor, "totem_resonance"):
             _message(actor, gain_totem_resonance(actor, "matching cast"))
 
     if weapon_hit:
@@ -875,10 +884,7 @@ def record_damage_taken(defender: Any, amount: int, damage_type: str) -> None:
                     incoming=True,
                 ),
             )
-    if (
-        cls in {"Sentinel", "Stalwart Defender"}
-        and damage_type in {"Physical", "Melee"}
-    ):
+    if cls in {"Sentinel", "Stalwart Defender"} and damage_type in {"Physical", "Melee"}:
         _message(
             defender,
             build_resolve(
@@ -930,8 +936,8 @@ def record_healing_done(
     source: str = "Unknown",
     target: Any | None = None,
 ) -> str:
-    from .companions import add_aspect
     from ..cleric import has_cleric_talent
+    from .companions import add_aspect
 
     if not amount or amount <= 0:
         return ""
@@ -971,11 +977,9 @@ def record_healing_done(
         from .. import nature_totems
         from .companions import gain_totem_resonance
 
-        if (
-            nature_totems.spell_aspect(source)
-            == nature_totems.active_totem_aspect(actor)
-            and _claim_action(actor, "totem_resonance")
-        ):
+        if nature_totems.spell_aspect(source) == nature_totems.active_totem_aspect(
+            actor
+        ) and _claim_action(actor, "totem_resonance"):
             msg += gain_totem_resonance(actor, "matching cast")
     return msg
 
@@ -1007,15 +1011,17 @@ def _consume_weapon_payoffs(actor: Any, target: Any, amount: int, damage_type: s
         _message(actor, line)
 
 
-_ELEMENTAL_CHARGE_TYPES = frozenset({
-    "Earth",
-    "Electric",
-    "Fire",
-    "Ice",
-    "Lightning",
-    "Water",
-    "Wind",
-})
+_ELEMENTAL_CHARGE_TYPES = frozenset(
+    {
+        "Earth",
+        "Electric",
+        "Fire",
+        "Ice",
+        "Lightning",
+        "Water",
+        "Wind",
+    }
+)
 _ELEMENTAL_RESISTANCE_TYPES = (
     "Earth",
     "Electric",
@@ -1040,11 +1046,7 @@ def _normalized_blade_charge(value: Any) -> dict[str, Any] | None:
 
 def _blade_charge_type(damage_type: str) -> str:
     """Collapse damaging spell types into Arcane or Elemental charges."""
-    return (
-        "Elemental"
-        if str(damage_type or "") in _ELEMENTAL_CHARGE_TYPES
-        else "Arcane"
-    )
+    return "Elemental" if str(damage_type or "") in _ELEMENTAL_CHARGE_TYPES else "Arcane"
 
 
 def _blade_charge_capacity(actor: Any) -> int:
@@ -1125,11 +1127,7 @@ def _store_blade_charge(
     """Store one typed charge, normally at most once per combat action."""
     state = combat_state(actor)
     action_token = int(state.get("action_token", 0) or 0)
-    if (
-        deduplicate
-        and action_token > 0
-        and state.get("blade_charge_action_token") == action_token
-    ):
+    if deduplicate and action_token > 0 and state.get("blade_charge_action_token") == action_token:
         return
     current = _normalized_blade_charge(state.get("blade_charge"))
     capacity = _blade_charge_capacity(actor)
@@ -1141,9 +1139,7 @@ def _store_blade_charge(
     pools[normalized_type] = min(capacity, pools[normalized_type] + 1)
     state["blade_charge"] = pools
     if deduplicate:
-        state["blade_charge_action_token"] = (
-            action_token if action_token > 0 else None
-        )
+        state["blade_charge_action_token"] = action_token if action_token > 0 else None
     _message(
         actor,
         f"{actor.name}'s blade stores {normalized_type} "
@@ -1222,13 +1218,8 @@ def absorb_novel_shield(
     broken = shield["remaining"] <= 0
     if broken:
         state["novel_shield"] = None
-    message = (
-        f"{defender.name}'s Novel Shielding absorbs {absorbed} damage"
-        + (
-            " and shatters.\n"
-            if broken
-            else f" ({shield['remaining']} remains).\n"
-        )
+    message = f"{defender.name}'s Novel Shielding absorbs {absorbed} damage" + (
+        " and shatters.\n" if broken else f" ({shield['remaining']} remains).\n"
     )
     return resulting_damage, message, resulting_damage <= 0
 
@@ -1409,9 +1400,8 @@ def convert_shadow_backlash(
     amount = min(backlash, max(1, int(hp_max * fraction)))
     if stable_ring:
         amount = max(1, int(amount * 0.75))
-    if (
-        getattr(getattr(character, "familiar", None), "spec", "") == "Luck"
-        and not data.get("familiar_echo_used")
+    if getattr(getattr(character, "familiar", None), "spec", "") == "Luck" and not data.get(
+        "familiar_echo_used"
     ):
         data["familiar_echo_used"] = True
         if random.random() < 0.30:

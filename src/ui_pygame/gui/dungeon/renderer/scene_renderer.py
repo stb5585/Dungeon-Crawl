@@ -7,5 +7,11 @@ from .overlays import RendererOverlayMixin
 from .specials import RendererSpecialTileMixin
 
 
-class SceneRenderer(RendererOverlayMixin,RendererSpecialTileMixin,RendererDebugMixin,RendererCommandMixin,RendererCoreMixin):
+class SceneRenderer(
+    RendererOverlayMixin,
+    RendererSpecialTileMixin,
+    RendererDebugMixin,
+    RendererCommandMixin,
+    RendererCoreMixin,
+):
     """Render the dungeon scene from explicit quads and cached projections."""

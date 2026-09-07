@@ -9,7 +9,6 @@ import pygame
 
 from src.ui_pygame.assets.portrait_manager import PortraitManager
 
-
 DEFAULT_PLAYER_TOKEN_SIZE = (96, 96)
 FACE_INSET_RATIO = 0.16
 
@@ -109,7 +108,10 @@ class PlayerTokenManager:
     def _compose_face_token(self, face: pygame.Surface) -> pygame.Surface:
         token = pygame.Surface(self.token_size, pygame.SRCALPHA)
         inset = max(2, int(min(self.token_size) * FACE_INSET_RATIO))
-        inner_size = (max(1, self.token_size[0] - inset * 2), max(1, self.token_size[1] - inset * 2))
+        inner_size = (
+            max(1, self.token_size[0] - inset * 2),
+            max(1, self.token_size[1] - inset * 2),
+        )
         scaled_face = pygame.transform.smoothscale(face, inner_size)
         token.blit(scaled_face, (inset, inset))
         return token

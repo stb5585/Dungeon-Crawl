@@ -2,7 +2,6 @@
 
 from src.paths import PYGAME_ASSETS_DIR
 
-
 _DISPLAY_TO_ENGINE = {
     "Spells": "Cast Spell",
     "Skills": "Use Skill",

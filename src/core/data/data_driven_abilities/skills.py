@@ -145,15 +145,14 @@ class DataDrivenSkill(Skill):
                     return result
             except (AttributeError, KeyError, TypeError, ValueError):
                 pass
-        result.extra['cost'] = self.cost
-        result.extra['cover'] = cover
-        result.extra['use_kwargs'] = kwargs
+        result.extra["cost"] = self.cost
+        result.extra["cover"] = cover
+        result.extra["use_kwargs"] = kwargs
         msg = ""
 
         # Pre-execution checks
         if self._ice_block_check and target is not None:
-            if any([target.magic_effects["Ice Block"].active,
-                    getattr(target, "tunnel", False)]):
+            if any([target.magic_effects["Ice Block"].active, getattr(target, "tunnel", False)]):
                 return "It has no effect.\n"
 
         if self.weapon and hasattr(user, "is_disarmed") and user.is_disarmed():
@@ -172,8 +171,8 @@ class DataDrivenSkill(Skill):
             try:
                 from src.core.classes import promotion_kits
 
-                fortune_bonus, fortune_msg = (
-                    promotion_kits.consume_fortune_for_risky_action(user, self.name)
+                fortune_bonus, fortune_msg = promotion_kits.consume_fortune_for_risky_action(
+                    user, self.name
                 )
                 msg += fortune_msg
             except Exception:
@@ -223,9 +222,7 @@ class DataDrivenSkill(Skill):
                         from src.core.classes import mage_mechanics
 
                         potency = mage_mechanics.arcane_potency_multiplier(user)
-                        wd_kwargs["dmg_mod"] = 1 + (
-                            (wd_kwargs["dmg_mod"] - 1) * potency
-                        )
+                        wd_kwargs["dmg_mod"] = 1 + ((wd_kwargs["dmg_mod"] - 1) * potency)
                     except Exception:
                         pass
 
@@ -319,20 +316,14 @@ class DataDrivenSkill(Skill):
         if hit:
             result.extra["last_damage"] = result.damage
             result.extra["last_crit"] = crit
-            result.extra["dmg_mod"] = (
-                wd_kwargs["dmg_mod"] if self.weapon else self.dmg_mod
-            )
+            result.extra["dmg_mod"] = wd_kwargs["dmg_mod"] if self.weapon else self.dmg_mod
             effect_target = user if self._self_target else target
             for effect in self._effects:
                 try:
                     effect.apply(user, effect_target, result)
                 except Exception:
                     continue
-            if (
-                smash_and_grab
-                and result.extra.get("hit_count", 0) >= 2
-                and target.is_alive()
-            ):
+            if smash_and_grab and result.extra.get("hit_count", 0) >= 2 and target.is_alive():
                 import random
 
                 if "Stun" not in getattr(target, "status_immunity", ()) and random.random() < 0.25:
@@ -461,6 +452,7 @@ class DataDrivenSkill(Skill):
 # ======================================================================
 # DataDrivenStatusSkill - replaces status-applying Skill subclasses
 # ======================================================================
+
 
 class DataDrivenStatusSkill(Skill):
     """
@@ -620,8 +612,7 @@ class DataDrivenStatusSkill(Skill):
             prefix = self._action_message.format(**fmt)
 
         # Ice Block / tunnel check
-        if any([target.magic_effects["Ice Block"].active,
-                getattr(target, "tunnel", False)]):
+        if any([target.magic_effects["Ice Block"].active, getattr(target, "tunnel", False)]):
             return item_message + prefix + "It has no effect.\n"
 
         # Flying check (physical effects like Prone)
@@ -633,8 +624,7 @@ class DataDrivenStatusSkill(Skill):
             if not hasattr(target, "can_be_disarmed") or not target.can_be_disarmed():
                 return item_message + prefix + self._messages.get("immune", "").format(**fmt)
 
-        effects_dict = (target.physical_effects if self._physical
-                        else target.status_effects)
+        effects_dict = target.physical_effects if self._physical else target.status_effects
 
         # Immunity check (for status_effects only)
         if not self._physical:
@@ -674,19 +664,19 @@ class DataDrivenStatusSkill(Skill):
         if self._add_luck_chance:
             luck_bonus = target.check_mod("luck", enemy=user, luck_factor=10)
             target_val += luck_bonus
-        elif (
-            not self._physical
-            and self._status_name
-            in {"Stun", "Sleep", "Silence", "Blind", "Stupefy", "Stone"}
-        ):
+        elif not self._physical and self._status_name in {
+            "Stun",
+            "Sleep",
+            "Silence",
+            "Blind",
+            "Stupefy",
+            "Stone",
+        }:
             # Make WIS/CHA matter broadly for resisting control effects even if
             # the YAML entry didn't explicitly opt into luck-based resistance.
             # (Luck is derived from WIS/CHA via Character.check_mod("luck").)
             target_val += target.check_mod("luck", enemy=user, luck_factor=20)
-        if (
-            self._status_name == "Blind"
-            and "Blind Fighting" in target.spellbook.get("Skills", {})
-        ):
+        if self._status_name == "Blind" and "Blind Fighting" in target.spellbook.get("Skills", {}):
             target_val += max(3, int(getattr(target.stats, "wisdom", 10)) // 2)
         if bool(getattr(target, "mage_refueling", False)):
             target_val //= 2
@@ -694,8 +684,8 @@ class DataDrivenStatusSkill(Skill):
         fortune_bonus = 0.0
         fortune_message = ""
         if self.name in promotion_kits.RISKY_LUCK_ACTIONS:
-            fortune_bonus, fortune_message = (
-                promotion_kits.consume_fortune_for_risky_action(user, self.name)
+            fortune_bonus, fortune_message = promotion_kits.consume_fortune_for_risky_action(
+                user, self.name
             )
             actor_val += max(1, int(max(1, actor_val) * fortune_bonus)) if fortune_bonus else 0
 

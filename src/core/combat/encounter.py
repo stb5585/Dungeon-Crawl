@@ -233,10 +233,7 @@ class CombatEncounter:
         remember_defeat_identity(enemy)
         slot = len(self.members)
         canonical_name = defeat_credit_name(enemy) or enemy.__class__.__name__
-        same_name_count = sum(
-            member.canonical_name == canonical_name
-            for member in self.members
-        )
+        same_name_count = sum(member.canonical_name == canonical_name for member in self.members)
         display_label = canonical_name
         if same_name_count:
             display_label = f"{canonical_name} {self._alpha_suffix(same_name_count)}"

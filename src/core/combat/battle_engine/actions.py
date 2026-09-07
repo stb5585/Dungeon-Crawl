@@ -2,21 +2,21 @@
 
 from __future__ import annotations
 
-from copy import deepcopy
 import inspect
 import random
 import re
+from copy import deepcopy
 from typing import TYPE_CHECKING
 
 from ... import items
 from ...classes import (
     ability_mechanics,
     astromancer,
+    footpad,
     mage_mechanics,
     promotion_kits,
     wizard,
 )
-from ...classes import footpad
 from ...constants import SPECIAL_ATTACK_LUCK_FACTOR, SPECIAL_ATTACK_ROLL_MAX
 from ...events.event_bus import EventType, create_combat_event
 from ..actor_cycle import initiative_rating
@@ -35,36 +35,42 @@ STOLEN_SCROLL_CHOICE_PREFIX = "__scroll__:"
 class BattleActionMixin:
     def player_has_sight(self) -> bool:
         """Check if the player can see enemy details (Seeker/Inquisitor/Vision)."""
-        return any([
-            promotion_kits.class_name(self.player) in ["Inquisitor", "Seeker"],
-            getattr(self.player.equipment.get("Pendant"), "mod", None) == "Vision",
-            getattr(self.player, "sight", False),
-        ])
+        return any(
+            [
+                promotion_kits.class_name(self.player) in ["Inquisitor", "Seeker"],
+                getattr(self.player.equipment.get("Pendant"), "mod", None) == "Vision",
+                getattr(self.player, "sight", False),
+            ]
+        )
 
     def show_enemy_details(self, enemy=None) -> bool:
         """Return whether details for one enemy should be visible."""
         enemy = enemy or self._focused_enemy()
-        return all([
-            self.player_has_sight(),
-            not self.boss,
-            enemy.name != "Waitress",
-        ])
+        return all(
+            [
+                self.player_has_sight(),
+                not self.boss,
+                enemy.name != "Waitress",
+            ]
+        )
 
     # ── Private action helpers ───────────────────────────────────────
 
     def _execute_attack(self) -> str:
         """Execute a basic/special attack."""
-        self._event_bus.emit(create_combat_event(
-            EventType.ATTACK,
-            actor=self.attacker,
-            target=self.defender,
-            is_special=False,
-            source="weapon_damage",
-            attack_source="weapon",
-            weapon_name=getattr(self.attacker.equipment.get("Weapon"), "name", None),
-            weapon_slot="Weapon",
-            weapon_type=getattr(self.attacker.equipment.get("Weapon"), "subtyp", None),
-        ))
+        self._event_bus.emit(
+            create_combat_event(
+                EventType.ATTACK,
+                actor=self.attacker,
+                target=self.defender,
+                is_special=False,
+                source="weapon_damage",
+                attack_source="weapon",
+                weapon_name=getattr(self.attacker.equipment.get("Weapon"), "name", None),
+                weapon_slot="Weapon",
+                weapon_type=getattr(self.attacker.equipment.get("Weapon"), "subtyp", None),
+            )
+        )
 
         # Roll for special attack
         luck_mod = self.attacker.check_mod("luck", luck_factor=SPECIAL_ATTACK_LUCK_FACTOR)
@@ -72,14 +78,16 @@ class BattleActionMixin:
         if not random.randint(0, roll_max):
             try:
                 result = self.attacker.special_attack(target=self.defender)
-                self._event_bus.emit(create_combat_event(
-                    EventType.ATTACK,
-                    actor=self.attacker,
-                    target=self.defender,
-                    is_special=True,
-                    source="special_attack",
-                    attack_source="special_attack",
-                ))
+                self._event_bus.emit(
+                    create_combat_event(
+                        EventType.ATTACK,
+                        actor=self.attacker,
+                        target=self.defender,
+                        is_special=True,
+                        source="special_attack",
+                        attack_source="special_attack",
+                    )
+                )
                 return result
             except NotImplementedError:
                 pass
@@ -135,8 +143,7 @@ class BattleActionMixin:
             # third tuple position instead of the Character critical multiplier.
             damage = crit
         damage_instances = list(
-            getattr(self.attacker, "_last_weapon_primary_damage_instances", ())
-            or ()
+            getattr(self.attacker, "_last_weapon_primary_damage_instances", ()) or ()
         )
         self._last_combat_result = CombatResult(
             action="Attack",
@@ -168,11 +175,13 @@ class BattleActionMixin:
                 self.attacker.state = "normal"
             return message, escaped
         hostile = self._fastest_living_hostile()
-        self._event_bus.emit(create_combat_event(
-            EventType.FLEE_ATTEMPT,
-            actor=self.attacker,
-            target=hostile,
-        ))
+        self._event_bus.emit(
+            create_combat_event(
+                EventType.FLEE_ATTEMPT,
+                actor=self.attacker,
+                target=hostile,
+            )
+        )
         success, message = self.attacker.flee(hostile)
         return message, success
 
@@ -191,11 +200,13 @@ class BattleActionMixin:
 
     def _execute_defend(self) -> str:
         """Enter defensive stance."""
-        self._event_bus.emit(create_combat_event(
-            EventType.DEFEND,
-            actor=self.attacker,
-            target=self.defender,
-        ))
+        self._event_bus.emit(
+            create_combat_event(
+                EventType.DEFEND,
+                actor=self.attacker,
+                target=self.defender,
+            )
+        )
         skills = getattr(self.attacker, "spellbook", {}).get("Skills", {})
         hold_the_line = skills.get("Hold the Line")
         class_name = getattr(getattr(self.attacker, "cls", None), "name", "")
@@ -239,16 +250,20 @@ class BattleActionMixin:
         if (fractures.get("Ribs") or fractures.get("Exoskeleton")) and random.random() < 0.25:
             return f"{self.attacker.name}'s fractured body disrupts the spell.\n"
         if self.attacker.abilities_suppressed():
-            reason = "the anti-magic field" if getattr(self.attacker, "anti_magic_active", False) else "silence"
+            reason = (
+                "the anti-magic field"
+                if getattr(self.attacker, "anti_magic_active", False)
+                else "silence"
+            )
             return f"{self.attacker.name} cannot cast spells because of {reason}!\n"
 
         if choice and choice.startswith(STOLEN_SCROLL_CHOICE_PREFIX):
             return self._execute_stolen_scroll_spell(choice)
 
-        if not choice or choice not in self.attacker.spellbook.get('Spells', {}):
+        if not choice or choice not in self.attacker.spellbook.get("Spells", {}):
             return f"{self.attacker.name} fumbles the spell.\n"
 
-        spell = self.attacker.spellbook['Spells'][choice]
+        spell = self.attacker.spellbook["Spells"][choice]
         from ... import curses
 
         if curses.spell_delay(self.attacker):
@@ -270,10 +285,7 @@ class BattleActionMixin:
         )
 
         threaded_validation = True
-        if (
-            choice == "Rewind"
-            and getattr(self.attacker, "_rewind_snapshot", None) is None
-        ):
+        if choice == "Rewind" and getattr(self.attacker, "_rewind_snapshot", None) is None:
             threaded_validation = False
         elif choice == "Wormhole":
             candidates = [
@@ -295,19 +307,20 @@ class BattleActionMixin:
         else:
             _thread_count, threaded_message = 0, ""
 
-        self._event_bus.emit(create_combat_event(
-            EventType.SPELL_CAST,
-            actor=self.attacker,
-            target=self.defender,
-            spell_name=choice,
-            ability_name=choice,
-            source="spell",
-        ))
+        self._event_bus.emit(
+            create_combat_event(
+                EventType.SPELL_CAST,
+                actor=self.attacker,
+                target=self.defender,
+                spell_name=choice,
+                ability_name=choice,
+                source="spell",
+            )
+        )
 
         defender_was_alive = self.defender.is_alive()
         message = (
-            f"{self.attacker.name} casts {choice}.\n"
-            f"{threaded_message}{stolen_payoff_message}"
+            f"{self.attacker.name} casts {choice}.\n" f"{threaded_message}{stolen_payoff_message}"
         )
         try:
             cast_result = self._cast_spell_with_context(
@@ -342,9 +355,8 @@ class BattleActionMixin:
             )
         if defender_was_alive and not self.defender.is_alive():
             self.defender._killed_by_ability = choice
-            if (
-                choice == "Desoul"
-                and "Death Becomes Us" in self.attacker.spellbook.get("Skills", {})
+            if choice == "Desoul" and "Death Becomes Us" in self.attacker.spellbook.get(
+                "Skills", {}
             ):
                 self.attacker.shadow_dungeon_darkness_steps = max(
                     100,
@@ -399,15 +411,17 @@ class BattleActionMixin:
             scroll.spell,
         )
 
-        self._event_bus.emit(create_combat_event(
-            EventType.ITEM_USE,
-            actor=self.attacker,
-            target=self.defender,
-            item_name=scroll.name,
-            item_type=getattr(scroll, "typ", ""),
-            item_subtype=getattr(scroll, "subtyp", ""),
-            source="stolen_spell_scroll",
-        ))
+        self._event_bus.emit(
+            create_combat_event(
+                EventType.ITEM_USE,
+                actor=self.attacker,
+                target=self.defender,
+                item_name=scroll.name,
+                item_type=getattr(scroll, "typ", ""),
+                item_subtype=getattr(scroll, "subtyp", ""),
+                source="stolen_spell_scroll",
+            )
+        )
 
         message = payoff_message + str(scroll.use(self.attacker, target=self.defender))
         recorded_result = getattr(scroll.spell, "result", None)
@@ -441,8 +455,7 @@ class BattleActionMixin:
         except (TypeError, ValueError):
             return cast(caster, target=target)
         accepts_engine = any(
-            parameter.kind == inspect.Parameter.VAR_KEYWORD
-            or parameter.name == "battle_engine"
+            parameter.kind == inspect.Parameter.VAR_KEYWORD or parameter.name == "battle_engine"
             for parameter in signature.parameters.values()
         )
         if accepts_engine:
@@ -452,7 +465,11 @@ class BattleActionMixin:
     def _execute_runic_boost(self, choice: str | None) -> str:
         """Spend a rune to empower and cast a matching natural spell."""
         if self.attacker.abilities_suppressed():
-            reason = "the anti-magic field" if getattr(self.attacker, "anti_magic_active", False) else "silence"
+            reason = (
+                "the anti-magic field"
+                if getattr(self.attacker, "anti_magic_active", False)
+                else "silence"
+            )
             return f"{self.attacker.name} cannot cast spells because of {reason}!\n"
 
         if self.attacker != self.player or not astromancer.has_rune_system(self.player):
@@ -514,7 +531,11 @@ class BattleActionMixin:
         if self.attacker != self.player:
             return f"{self.attacker.name} cannot use Steal As Well.\n"
         if self.attacker.abilities_suppressed():
-            reason = "the anti-magic field" if getattr(self.attacker, "anti_magic_active", False) else "silence"
+            reason = (
+                "the anti-magic field"
+                if getattr(self.attacker, "anti_magic_active", False)
+                else "silence"
+            )
             return f"{self.attacker.name} cannot use Steal As Well because of {reason}!\n"
         if not choice:
             return f"{self.attacker.name} fumbles the spell theft.\n"
@@ -568,7 +589,9 @@ class BattleActionMixin:
             )
 
         if before_hp > self.defender.health.current:
-            steal_skill = self.attacker.spellbook.get("Skills", {}).get("Steal") or abilities.Steal()
+            steal_skill = (
+                self.attacker.spellbook.get("Skills", {}).get("Steal") or abilities.Steal()
+            )
             message += str(steal_skill.use(self.attacker, target=self.defender))
         else:
             message += "The spell fails to open a path for theft.\n"
@@ -597,21 +620,15 @@ class BattleActionMixin:
         if choice == "Remove Shield":
             choice = "Mana Shield"
 
-        skills = self.attacker.spellbook.get('Skills', {})
+        skills = self.attacker.spellbook.get("Skills", {})
         if choice not in skills:
             return f"{self.attacker.name} does not know {choice}.\n"
 
         skill = skills[choice]
-        if (
-            skill.name == "Mortal Strike"
-            and not getattr(self.attacker, "_transformed", False)
-        ):
+        if skill.name == "Mortal Strike" and not getattr(self.attacker, "_transformed", False):
             weapon = self.attacker.equipment.get("Weapon")
             if int(getattr(weapon, "handed", 0) or 0) != 2:
-                return (
-                    f"{self.attacker.name} needs a two-handed weapon to use "
-                    "Mortal Strike.\n"
-                )
+                return f"{self.attacker.name} needs a two-handed weapon to use " "Mortal Strike.\n"
         # Charging skills deduct mana at start, then must be allowed to continue
         # even when the user is at 0 mana or becomes silenced (otherwise the
         # charge can never resolve). Resolve actions spend shield pressure, not
@@ -619,15 +636,11 @@ class BattleActionMixin:
         already_charging = bool(getattr(skill, "charging", False))
         is_resolve_skill = self._skill_uses_resolve(skill)
         is_class_resource_skill = (
-            is_resolve_skill
-            or getattr(skill, "resource_type", None) == "Oath Conviction"
+            is_resolve_skill or getattr(skill, "resource_type", None) == "Oath Conviction"
         )
         abilities_suppressed = self.attacker.abilities_suppressed()
         anti_magic_active = bool(getattr(self.attacker, "anti_magic_active", False))
-        requires_mana = (
-            int(getattr(skill, "cost", 0) or 0) > 0
-            and not is_class_resource_skill
-        )
+        requires_mana = int(getattr(skill, "cost", 0) or 0) > 0 and not is_class_resource_skill
         if (
             abilities_suppressed
             and not already_charging
@@ -656,8 +669,7 @@ class BattleActionMixin:
             and not martial_weapon_check(self.attacker)
         ):
             return (
-                f"{self.attacker.name} needs a free hand or fist weapon to use "
-                f"{skill.name}.\n"
+                f"{self.attacker.name} needs a free hand or fist weapon to use " f"{skill.name}.\n"
             )
 
         ki_health_before = int(getattr(self.attacker.health, "current", 0) or 0)
@@ -671,14 +683,16 @@ class BattleActionMixin:
             skill,
         )
 
-        self._event_bus.emit(create_combat_event(
-            EventType.SKILL_USE,
-            actor=self.attacker,
-            target=self.defender,
-            skill_name=skill.name,
-            ability_name=skill.name,
-            source="resolve" if is_resolve_skill else "skill",
-        ))
+        self._event_bus.emit(
+            create_combat_event(
+                EventType.SKILL_USE,
+                actor=self.attacker,
+                target=self.defender,
+                skill_name=skill.name,
+                ability_name=skill.name,
+                source="resolve" if is_resolve_skill else "skill",
+            )
+        )
 
         message = (
             f"{self.attacker.name} uses {skill.name}.\n"
@@ -719,13 +733,10 @@ class BattleActionMixin:
             if not perceived:
                 self.flee = True
                 if not attempted:
-                    flee_str = (
-                        f"{self.attacker.name} disappears in a cloud of smoke."
-                    )
+                    flee_str = f"{self.attacker.name} disappears in a cloud of smoke."
             else:
                 self.flee = bool(
-                    attempted
-                    and has_thief_talent(self.attacker, "thief.clean-getaway")
+                    attempted and has_thief_talent(self.attacker, "thief.clean-getaway")
                 )
                 if not self.flee:
                     flee_str = f"{hostile.name} sees through the smoke."
@@ -736,10 +747,7 @@ class BattleActionMixin:
                 stolen = Steal().use(self.attacker, hostile)
                 message += getattr(stolen, "message", str(stolen))
                 stolen_gold = int(getattr(stolen, "extra", {}).get("stolen_gold", 0) or 0)
-                if (
-                    stolen_gold > 0
-                    and has_thief_talent(self.attacker, "rogue.gone-before-dawn")
-                ):
+                if stolen_gold > 0 and has_thief_talent(self.attacker, "rogue.gone-before-dawn"):
                     bonus = min(stolen_gold, max(0, int(getattr(hostile, "gold", 0) or 0)))
                     hostile.gold -= bonus
                     self.attacker.gold += bonus
@@ -795,10 +803,10 @@ class BattleActionMixin:
             else:
                 self.pending_actions.pop(owner_id, None)
 
-        elif hasattr(skill, 'get_charge_time') and skill.get_charge_time() > 0:
+        elif hasattr(skill, "get_charge_time") and skill.get_charge_time() > 0:
             # Charging abilities (Charge, Crushing Blow, etc.)
             message += skill.use(self.attacker, target=self.defender)
-            if getattr(skill, 'charging', False):
+            if getattr(skill, "charging", False):
                 self.charging_ability = (self.attacker, choice, skill)
                 member = self._member_for_character(self.defender)
                 owner_id = self._actor_id_for(self.attacker)
@@ -866,15 +874,17 @@ class BattleActionMixin:
             if itm.spell.subtyp != "Support":
                 target = self.defender
 
-        self._event_bus.emit(create_combat_event(
-            EventType.ITEM_USE,
-            actor=self.attacker,
-            target=target,
-            item_name=itm.name,
-            item_type=getattr(itm, "typ", ""),
-            item_subtype=getattr(itm, "subtyp", ""),
-            source="item",
-        ))
+        self._event_bus.emit(
+            create_combat_event(
+                EventType.ITEM_USE,
+                actor=self.attacker,
+                target=target,
+                item_name=itm.name,
+                item_type=getattr(itm, "typ", ""),
+                item_subtype=getattr(itm, "subtyp", ""),
+                source="item",
+            )
+        )
 
         message = str(itm.use(self.attacker, target=target))
         if isinstance(itm, items.Potion):
@@ -885,7 +895,11 @@ class BattleActionMixin:
         """Summon a companion. Returns (message, success, summon_character)."""
         summoner = self.player
         if summoner.abilities_suppressed():
-            reason = "the anti-magic field" if getattr(summoner, "anti_magic_active", False) else "being silenced"
+            reason = (
+                "the anti-magic field"
+                if getattr(summoner, "anti_magic_active", False)
+                else "being silenced"
+            )
             return f"{summoner.name} cannot summon because of {reason}!\n", False, None
 
         summons = getattr(summoner, "summons", {}) or {}

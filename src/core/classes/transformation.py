@@ -5,7 +5,6 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import Any
 
-
 FORM_NODE_IDS = {
     "Druid": {
         "Panther": "druid.ability.transform",
@@ -42,9 +41,7 @@ def is_transformed(character: Any) -> bool:
 def available_forms(character: Any) -> tuple[str, ...]:
     """Return forms unlocked by purchased progression nodes."""
     class_name = permanent_class_name(character)
-    purchased = set(
-        getattr(getattr(character, "progression", None), "purchased_node_ids", ())
-    )
+    purchased = set(getattr(getattr(character, "progression", None), "purchased_node_ids", ()))
     return tuple(
         form_name
         for form_name, node_id in FORM_NODE_IDS.get(class_name, {}).items()
@@ -84,14 +81,8 @@ def build_overlay(form_name: str) -> dict[str, Any]:
     return {
         "health_bonus": int(creature.health.max),
         "mana_bonus": int(creature.mana.max),
-        "stats": {
-            name: int(getattr(creature.stats, name))
-            for name in STAT_NAMES
-        },
-        "equipment": {
-            slot: deepcopy(creature.equipment[slot])
-            for slot in FORM_EQUIPMENT_SLOTS
-        },
+        "stats": {name: int(getattr(creature.stats, name)) for name in STAT_NAMES},
+        "equipment": {slot: deepcopy(creature.equipment[slot]) for slot in FORM_EQUIPMENT_SLOTS},
         "spellbook": deepcopy(creature.spellbook),
         "resistance": deepcopy(creature.resistance),
     }
@@ -183,9 +174,7 @@ def dismiss_form(character: Any, *, force: bool = False) -> str:
     health_deficit = max(0, character.health.max - character.health.current)
     mana_deficit = max(0, character.mana.max - character.mana.current)
     alive = character.health.current > 0
-    active_form = str(
-        getattr(character, "transformation_state", {}).get("active_form", "") or ""
-    )
+    active_form = str(getattr(character, "transformation_state", {}).get("active_form", "") or "")
     character.cls = snapshot["cls"]
     character.health = snapshot["health"]
     character.health.current = max(1 if alive else 0, character.health.max - health_deficit)

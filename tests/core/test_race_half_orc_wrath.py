@@ -8,10 +8,16 @@ sys.path.insert(0, str(Path(__file__).parents[2]))
 def test_half_orc_reduces_weapon_crit_damage_taken(monkeypatch):
     from tests.test_framework import TestGameState
 
-    attacker = TestGameState.create_player(class_name="Warrior", race_name="Human", level=30, health=(999, 999))
+    attacker = TestGameState.create_player(
+        class_name="Warrior", race_name="Human", level=30, health=(999, 999)
+    )
     # Keep defenders identical except for race.
-    human_def = TestGameState.create_player(class_name="Warrior", race_name="Human", level=30, health=(500, 500))
-    orc_def = TestGameState.create_player(class_name="Warrior", race_name="Half Orc", level=30, health=(500, 500))
+    human_def = TestGameState.create_player(
+        class_name="Warrior", race_name="Human", level=30, health=(500, 500)
+    )
+    orc_def = TestGameState.create_player(
+        class_name="Warrior", race_name="Half Orc", level=30, health=(500, 500)
+    )
 
     # Make the swing deterministic and non-dodge.
     monkeypatch.setattr(human_def, "dodge_chance", lambda *a, **k: 0.0)
@@ -32,8 +38,12 @@ def test_half_orc_reduces_weapon_crit_damage_taken(monkeypatch):
 def test_half_orc_blind_rage_procs_on_damage(monkeypatch):
     from tests.test_framework import TestGameState
 
-    attacker = TestGameState.create_player(class_name="Warrior", race_name="Human", level=30, health=(999, 999))
-    defender = TestGameState.create_player(class_name="Warrior", race_name="Half Orc", level=30, health=(500, 500))
+    attacker = TestGameState.create_player(
+        class_name="Warrior", race_name="Human", level=30, health=(999, 999)
+    )
+    defender = TestGameState.create_player(
+        class_name="Warrior", race_name="Half Orc", level=30, health=(500, 500)
+    )
 
     monkeypatch.setattr(defender, "dodge_chance", lambda *a, **k: 0.0)
     monkeypatch.setattr(attacker, "hit_chance", lambda *a, **k: 1.0)

@@ -139,7 +139,9 @@ def test_portrait_key_normalization_variants():
     assert PortraitManager.normalize_key("Half Giant") == "half_giant"
     assert PortraitManager.normalize_key("Male") == "male"
     assert PortraitManager.normalize_key("female") == "female"
-    assert PortraitManager.entry_key(SimpleNamespace(name="Half Orc"), "Female") == "half_orc_female"
+    assert (
+        PortraitManager.entry_key(SimpleNamespace(name="Half Orc"), "Female") == "half_orc_female"
+    )
 
 
 def test_base_portrait_lookup_uses_selected_sheet_variant(tmp_path):
@@ -248,7 +250,9 @@ def test_portrait_cache_distinguishes_promotion_and_effects(tmp_path):
 
     base = manager.get_portrait("Human", "Male", first_promotion="Paladin")
     promoted = manager.get_portrait("Human", "Male", first_promotion="Crusader")
-    affected = manager.get_portrait("Human", "Male", first_promotion="Paladin", effects=("Blessed",))
+    affected = manager.get_portrait(
+        "Human", "Male", first_promotion="Paladin", effects=("Blessed",)
+    )
     variant = manager.get_portrait("Human", "Male", first_promotion="Paladin", variant=1)
 
     assert promoted is not base

@@ -29,9 +29,7 @@ def _node():
 
 
 def test_draw_all_accepts_player_from_shared_popup_contract():
-    screen = progression_screen.ProgressionScreen.__new__(
-        progression_screen.ProgressionScreen
-    )
+    screen = progression_screen.ProgressionScreen.__new__(progression_screen.ProgressionScreen)
     player = object()
     screen.width = 1024
     screen.height = 768
@@ -50,9 +48,7 @@ def test_draw_all_accepts_player_from_shared_popup_contract():
 
 
 def test_blocked_node_selection_does_not_stage_or_open_popup(monkeypatch):
-    screen = progression_screen.ProgressionScreen.__new__(
-        progression_screen.ProgressionScreen
-    )
+    screen = progression_screen.ProgressionScreen.__new__(progression_screen.ProgressionScreen)
     screen._selected_status = lambda: NodeStatus(
         _node(),
         NodeState.BLOCKED,
@@ -72,9 +68,7 @@ def test_blocked_node_selection_does_not_stage_or_open_popup(monkeypatch):
 
 
 def test_available_node_toggles_in_and_out_of_staged_plan():
-    screen = progression_screen.ProgressionScreen.__new__(
-        progression_screen.ProgressionScreen
-    )
+    screen = progression_screen.ProgressionScreen.__new__(progression_screen.ProgressionScreen)
     screen._selected_status = lambda: NodeStatus(_node(), NodeState.AVAILABLE)
 
     screen._toggle_selected_node()
@@ -88,9 +82,7 @@ def test_available_node_toggles_in_and_out_of_staged_plan():
 def test_paladin_promotion_uses_descriptive_vow_popup_and_confirmation(
     monkeypatch,
 ):
-    screen = progression_screen.ProgressionScreen.__new__(
-        progression_screen.ProgressionScreen
-    )
+    screen = progression_screen.ProgressionScreen.__new__(progression_screen.ProgressionScreen)
     screen.presenter = object()
     screen._popup_background = lambda: None
     calls = []
@@ -132,9 +124,7 @@ def test_paladin_promotion_uses_descriptive_vow_popup_and_confirmation(
 def test_canceling_paladin_vow_confirmation_cancels_promotion_choice(
     monkeypatch,
 ):
-    screen = progression_screen.ProgressionScreen.__new__(
-        progression_screen.ProgressionScreen
-    )
+    screen = progression_screen.ProgressionScreen.__new__(progression_screen.ProgressionScreen)
     screen.presenter = object()
     screen._popup_background = lambda: None
 
@@ -167,9 +157,7 @@ def test_canceling_paladin_vow_confirmation_cancels_promotion_choice(
 
 
 def test_spend_button_commits_entire_distribution_once(monkeypatch):
-    screen = progression_screen.ProgressionScreen.__new__(
-        progression_screen.ProgressionScreen
-    )
+    screen = progression_screen.ProgressionScreen.__new__(progression_screen.ProgressionScreen)
     screen.player_char = SimpleNamespace(
         progression=SimpleNamespace(unspent_points=3),
     )
@@ -210,9 +198,7 @@ def test_spend_button_commits_entire_distribution_once(monkeypatch):
 
 
 def test_spend_distribution_confirms_permanent_node_closures(monkeypatch):
-    screen = progression_screen.ProgressionScreen.__new__(
-        progression_screen.ProgressionScreen
-    )
+    screen = progression_screen.ProgressionScreen.__new__(progression_screen.ProgressionScreen)
     screen.player_char = SimpleNamespace(
         cls=SimpleNamespace(name="Mage"),
         progression=SimpleNamespace(unspent_points=5),
@@ -252,9 +238,7 @@ def test_spend_distribution_confirms_permanent_node_closures(monkeypatch):
 
 
 def test_attribute_incrementer_adds_and_subtracts_without_mutating_player():
-    screen = progression_screen.ProgressionScreen.__new__(
-        progression_screen.ProgressionScreen
-    )
+    screen = progression_screen.ProgressionScreen.__new__(progression_screen.ProgressionScreen)
     screen.player_char = SimpleNamespace(
         progression=SimpleNamespace(
             unspent_points=2,
@@ -276,9 +260,7 @@ def test_attribute_incrementer_adds_and_subtracts_without_mutating_player():
 
 
 def test_exit_confirmation_discards_staged_distribution(monkeypatch):
-    screen = progression_screen.ProgressionScreen.__new__(
-        progression_screen.ProgressionScreen
-    )
+    screen = progression_screen.ProgressionScreen.__new__(progression_screen.ProgressionScreen)
     screen.player_char = SimpleNamespace(
         progression=SimpleNamespace(
             unspent_points=2,
@@ -307,9 +289,7 @@ def test_exit_confirmation_discards_staged_distribution(monkeypatch):
 
 
 def test_reset_clears_distributed_points_without_spending():
-    screen = progression_screen.ProgressionScreen.__new__(
-        progression_screen.ProgressionScreen
-    )
+    screen = progression_screen.ProgressionScreen.__new__(progression_screen.ProgressionScreen)
     screen.pending_node_ids = ["warrior.ability.piercingstrike"]
     screen.pending_attributes = {"strength": 2}
 
@@ -320,9 +300,7 @@ def test_reset_clears_distributed_points_without_spending():
 
 
 def test_spending_a_promotion_reuses_church_promotion_screen(monkeypatch):
-    screen = progression_screen.ProgressionScreen.__new__(
-        progression_screen.ProgressionScreen
-    )
+    screen = progression_screen.ProgressionScreen.__new__(progression_screen.ProgressionScreen)
     screen.player_char = SimpleNamespace(
         progression=SimpleNamespace(
             unspent_points=2,
@@ -375,8 +353,7 @@ def test_spending_a_promotion_reuses_church_promotion_screen(monkeypatch):
         progression_screen,
         "apply_progression_plan",
         lambda *_args, **_kwargs: (
-            committed.append(True)
-            or PurchaseResult(True, "Spent 2 points.")
+            committed.append(True) or PurchaseResult(True, "Spent 2 points.")
         ),
     )
 
@@ -460,9 +437,7 @@ def test_talent_layout_uses_explicit_columns_and_flows_down():
             bulwark_promotion,
         )
     ]
-    screen = progression_screen.ProgressionScreen.__new__(
-        progression_screen.ProgressionScreen
-    )
+    screen = progression_screen.ProgressionScreen.__new__(progression_screen.ProgressionScreen)
     panel = pygame.Rect(20, 100, 700, 380)
     screen.current_node = 0
     screen.tree_scroll_row = 0
@@ -482,17 +457,12 @@ def test_talent_layout_uses_explicit_columns_and_flows_down():
 
 
 def test_terminal_weapon_tree_explicit_columns_fit_inside_panel():
-    screen = progression_screen.ProgressionScreen.__new__(
-        progression_screen.ProgressionScreen
-    )
+    screen = progression_screen.ProgressionScreen.__new__(progression_screen.ProgressionScreen)
     panel = pygame.Rect(20, 100, 700, 600)
 
     for class_name in ("Berserker", "Grandmaster of Arms"):
         tree = ABILITY_TREES[class_name]
-        statuses = [
-            NodeStatus(node, NodeState.AVAILABLE)
-            for node in tree.nodes
-        ]
+        statuses = [NodeStatus(node, NodeState.AVAILABLE) for node in tree.nodes]
         screen.current_node = 0
         screen.tree_scroll_row = 0
 
@@ -503,14 +473,9 @@ def test_terminal_weapon_tree_explicit_columns_fit_inside_panel():
 
 
 def test_eight_row_dragoon_tree_fits_standard_panel_without_scrolling():
-    screen = progression_screen.ProgressionScreen.__new__(
-        progression_screen.ProgressionScreen
-    )
+    screen = progression_screen.ProgressionScreen.__new__(progression_screen.ProgressionScreen)
     tree = ABILITY_TREES["Dragoon"]
-    statuses = [
-        NodeStatus(node, NodeState.AVAILABLE)
-        for node in tree.nodes
-    ]
+    statuses = [NodeStatus(node, NodeState.AVAILABLE) for node in tree.nodes]
     panel = pygame.Rect(24, 100, 716, 525)
     screen.current_node = 0
     screen.tree_scroll_row = 0
@@ -526,14 +491,9 @@ def test_eight_row_dragoon_tree_fits_standard_panel_without_scrolling():
     ("Warrior", "Footpad", "Healer", "Pathfinder", "Assassin", "Paladin", "Bard"),
 )
 def test_eight_row_promotion_tree_fits_standard_panel_without_scrolling(class_name):
-    screen = progression_screen.ProgressionScreen.__new__(
-        progression_screen.ProgressionScreen
-    )
+    screen = progression_screen.ProgressionScreen.__new__(progression_screen.ProgressionScreen)
     tree = ABILITY_TREES[class_name]
-    statuses = [
-        NodeStatus(node, NodeState.AVAILABLE)
-        for node in tree.nodes
-    ]
+    statuses = [NodeStatus(node, NodeState.AVAILABLE) for node in tree.nodes]
     panel = pygame.Rect(24, 100, 716, 525)
     screen.current_node = 0
     screen.tree_scroll_row = 0
@@ -551,14 +511,9 @@ def test_eight_row_promotion_tree_fits_standard_panel_without_scrolling(class_na
 def test_mage_line_trees_fit_standard_panel_without_overlap_or_scrolling(
     class_name,
 ):
-    screen = progression_screen.ProgressionScreen.__new__(
-        progression_screen.ProgressionScreen
-    )
+    screen = progression_screen.ProgressionScreen.__new__(progression_screen.ProgressionScreen)
     tree = ABILITY_TREES[class_name]
-    statuses = [
-        NodeStatus(node, NodeState.AVAILABLE)
-        for node in tree.nodes
-    ]
+    statuses = [NodeStatus(node, NodeState.AVAILABLE) for node in tree.nodes]
     panel = pygame.Rect(24, 100, 716, 525)
     screen.current_node = 0
     screen.tree_scroll_row = 0
@@ -570,7 +525,7 @@ def test_mage_line_trees_fit_standard_panel_without_overlap_or_scrolling(
     assert all(
         not left.colliderect(right)
         for index, left in enumerate(rects)
-        for right in rects[index + 1:]
+        for right in rects[index + 1 :]
     )
 
 
@@ -586,9 +541,7 @@ def test_cross_column_connectors_enter_the_side_of_target_nodes(monkeypatch):
         prerequisites=(source.id,),
         payload={"name": "Cross Target"},
     )
-    screen = progression_screen.ProgressionScreen.__new__(
-        progression_screen.ProgressionScreen
-    )
+    screen = progression_screen.ProgressionScreen.__new__(progression_screen.ProgressionScreen)
     screen.screen = object()
     source_rect = pygame.Rect(50, 60, 32, 32)
     target_rect = pygame.Rect(150, 180, 32, 32)
@@ -598,15 +551,15 @@ def test_cross_column_connectors_enter_the_side_of_target_nodes(monkeypatch):
     monkeypatch.setattr(
         progression_screen.pygame.draw,
         "lines",
-        lambda _screen, _color, _closed, points, _width: (
-            line_points.append(points)
-        ),
+        lambda _screen, _color, _closed, points, _width: (line_points.append(points)),
     )
 
-    screen._draw_connectors([
-        NodeStatus(source, NodeState.AVAILABLE),
-        NodeStatus(target, NodeState.BLOCKED),
-    ])
+    screen._draw_connectors(
+        [
+            NodeStatus(source, NodeState.AVAILABLE),
+            NodeStatus(target, NodeState.BLOCKED),
+        ]
+    )
 
     assert line_points
     assert line_points[0][-1] == target_rect.midleft
@@ -627,9 +580,7 @@ def test_rebuilt_warrior_branches_directly_from_shared_half_column_trunks():
 def test_familiar_bond_connector_joins_both_node_side_midpoints(monkeypatch):
     source = progression_screen.TREE_NODES["warlock.ability.familiar-bond"]
     target = progression_screen.TREE_NODES["warlock.ability.familiar-bond-2"]
-    screen = progression_screen.ProgressionScreen.__new__(
-        progression_screen.ProgressionScreen
-    )
+    screen = progression_screen.ProgressionScreen.__new__(progression_screen.ProgressionScreen)
     screen.screen = object()
     source_rect = pygame.Rect(600, 100, 32, 32)
     target_rect = pygame.Rect(600, 400, 32, 32)
@@ -644,10 +595,12 @@ def test_familiar_bond_connector_joins_both_node_side_midpoints(monkeypatch):
         lambda _screen, _color, _closed, points, _width: line_points.append(points),
     )
 
-    screen._draw_connectors([
-        NodeStatus(source, NodeState.AVAILABLE),
-        NodeStatus(target, NodeState.BLOCKED),
-    ])
+    screen._draw_connectors(
+        [
+            NodeStatus(source, NodeState.AVAILABLE),
+            NodeStatus(target, NodeState.BLOCKED),
+        ]
+    )
 
     expected_channel_x = int(40 + 5.5 * 110)
     assert line_points == [
@@ -683,9 +636,7 @@ def test_mage_specialization_connectors_use_midpoint_and_enter_from_top(
 ):
     source = progression_screen.TREE_NODES[source_id]
     target = progression_screen.TREE_NODES[target_id]
-    screen = progression_screen.ProgressionScreen.__new__(
-        progression_screen.ProgressionScreen
-    )
+    screen = progression_screen.ProgressionScreen.__new__(progression_screen.ProgressionScreen)
     screen.screen = object()
     source_rect = pygame.Rect(300, 100, 32, 32)
     target_rect = pygame.Rect(
@@ -702,15 +653,15 @@ def test_mage_specialization_connectors_use_midpoint_and_enter_from_top(
     monkeypatch.setattr(
         progression_screen.pygame.draw,
         "lines",
-        lambda _screen, _color, _closed, points, _width: (
-            line_points.append(points)
-        ),
+        lambda _screen, _color, _closed, points, _width: (line_points.append(points)),
     )
 
-    screen._draw_connectors([
-        NodeStatus(source, NodeState.AVAILABLE),
-        NodeStatus(target, NodeState.BLOCKED),
-    ])
+    screen._draw_connectors(
+        [
+            NodeStatus(source, NodeState.AVAILABLE),
+            NodeStatus(target, NodeState.BLOCKED),
+        ]
+    )
 
     expected_channel_x = int(100 + channel_column * 120)
     assert line_points[0][1][0] == expected_channel_x
@@ -721,18 +672,10 @@ def test_mage_specialization_connectors_use_midpoint_and_enter_from_top(
 def test_paladin_oath_connectors_enter_opposite_promotion_sides(
     monkeypatch,
 ):
-    judgment = progression_screen.TREE_NODES[
-        "paladin.ability.oath-judgment"
-    ]
-    shelter = progression_screen.TREE_NODES[
-        "paladin.ability.oath-shelter"
-    ]
-    promotion = progression_screen.TREE_NODES[
-        "paladin.promotion.crusader"
-    ]
-    screen = progression_screen.ProgressionScreen.__new__(
-        progression_screen.ProgressionScreen
-    )
+    judgment = progression_screen.TREE_NODES["paladin.ability.oath-judgment"]
+    shelter = progression_screen.TREE_NODES["paladin.ability.oath-shelter"]
+    promotion = progression_screen.TREE_NODES["paladin.promotion.crusader"]
+    screen = progression_screen.ProgressionScreen.__new__(progression_screen.ProgressionScreen)
     screen.screen = object()
     judgment_rect = pygame.Rect(180, 120, 32, 32)
     shelter_rect = pygame.Rect(520, 120, 32, 32)
@@ -748,23 +691,21 @@ def test_paladin_oath_connectors_enter_opposite_promotion_sides(
     monkeypatch.setattr(
         progression_screen.pygame.draw,
         "lines",
-        lambda _screen, _color, _closed, points, _width: (
-            line_points.append(points)
-        ),
+        lambda _screen, _color, _closed, points, _width: (line_points.append(points)),
     )
     monkeypatch.setattr(
         progression_screen.pygame.draw,
         "line",
-        lambda _screen, _color, start, end, _width: straight_lines.append(
-            (start, end)
-        ),
+        lambda _screen, _color, start, end, _width: straight_lines.append((start, end)),
     )
 
-    screen._draw_connectors([
-        NodeStatus(judgment, NodeState.AVAILABLE),
-        NodeStatus(shelter, NodeState.AVAILABLE),
-        NodeStatus(promotion, NodeState.BLOCKED),
-    ])
+    screen._draw_connectors(
+        [
+            NodeStatus(judgment, NodeState.AVAILABLE),
+            NodeStatus(shelter, NodeState.AVAILABLE),
+            NodeStatus(promotion, NodeState.BLOCKED),
+        ]
+    )
 
     assert line_points == [
         (
@@ -786,16 +727,10 @@ def test_paladin_oath_connectors_enter_opposite_promotion_sides(
 
 
 def test_lancer_promotion_connectors_merge_in_buffer_row(monkeypatch):
-    vigilant = progression_screen.TREE_NODES[
-        "lancer.ability.vigilant-landing"
-    ]
-    excellence = progression_screen.TREE_NODES[
-        "lancer.ability.polearm-excellence"
-    ]
+    vigilant = progression_screen.TREE_NODES["lancer.ability.vigilant-landing"]
+    excellence = progression_screen.TREE_NODES["lancer.ability.polearm-excellence"]
     promotion = progression_screen.TREE_NODES["lancer.promotion.dragoon"]
-    screen = progression_screen.ProgressionScreen.__new__(
-        progression_screen.ProgressionScreen
-    )
+    screen = progression_screen.ProgressionScreen.__new__(progression_screen.ProgressionScreen)
     screen.screen = object()
     vigilant_rect = pygame.Rect(184, 220, 32, 32)
     excellence_rect = pygame.Rect(544, 390, 32, 32)
@@ -813,23 +748,21 @@ def test_lancer_promotion_connectors_merge_in_buffer_row(monkeypatch):
     monkeypatch.setattr(
         progression_screen.pygame.draw,
         "lines",
-        lambda _screen, _color, _closed, points, _width: (
-            line_points.append(points)
-        ),
+        lambda _screen, _color, _closed, points, _width: (line_points.append(points)),
     )
     monkeypatch.setattr(
         progression_screen.pygame.draw,
         "line",
-        lambda _screen, _color, start, end, _width: straight_lines.append(
-            (start, end)
-        ),
+        lambda _screen, _color, start, end, _width: straight_lines.append((start, end)),
     )
 
-    screen._draw_connectors([
-        NodeStatus(vigilant, NodeState.AVAILABLE),
-        NodeStatus(excellence, NodeState.AVAILABLE),
-        NodeStatus(promotion, NodeState.BLOCKED),
-    ])
+    screen._draw_connectors(
+        [
+            NodeStatus(vigilant, NodeState.AVAILABLE),
+            NodeStatus(excellence, NodeState.AVAILABLE),
+            NodeStatus(promotion, NodeState.BLOCKED),
+        ]
+    )
 
     assert line_points == [
         (
@@ -854,16 +787,12 @@ def test_base_promotions_describe_exact_required_branch_endpoints():
     assassin = progression_screen.TREE_NODES["footpad.promotion.assassin"]
     ranger = progression_screen.TREE_NODES["pathfinder.promotion.ranger"]
 
-    assert progression_screen.ProgressionScreen._promotion_requirement_lines(
-        assassin
-    ) == [
+    assert progression_screen.ProgressionScreen._promotion_requirement_lines(assassin) == [
         "Path requirements (all required):",
         "- Control: Sleeping Powder",
         "- Assassin: Obscuration",
     ]
-    assert progression_screen.ProgressionScreen._promotion_requirement_lines(
-        ranger
-    ) == [
+    assert progression_screen.ProgressionScreen._promotion_requirement_lines(ranger) == [
         "Path requirements (all required):",
         "- Naturalism: Call Animal",
         "- Ranger: Bounce Back",
@@ -872,26 +801,18 @@ def test_base_promotions_describe_exact_required_branch_endpoints():
 
 
 def test_either_or_promotions_explicitly_say_to_choose_one_endpoint():
-    knight_enchanter = progression_screen.TREE_NODES[
-        "spellblade.promotion.knight-enchanter"
-    ]
+    knight_enchanter = progression_screen.TREE_NODES["spellblade.promotion.knight-enchanter"]
 
-    lines = progression_screen.ProgressionScreen._promotion_requirement_lines(
-        knight_enchanter
-    )
+    lines = progression_screen.ProgressionScreen._promotion_requirement_lines(knight_enchanter)
 
     assert lines[0] == "Path requirement (choose any one):"
     assert len(lines[1:]) == 3
 
 
 def test_grouped_promotion_requirements_distinguish_required_and_choice_paths():
-    shadowcaster = progression_screen.TREE_NODES[
-        "warlock.promotion.shadowcaster"
-    ]
+    shadowcaster = progression_screen.TREE_NODES["warlock.promotion.shadowcaster"]
 
-    assert progression_screen.ProgressionScreen._promotion_requirement_lines(
-        shadowcaster
-    ) == [
+    assert progression_screen.ProgressionScreen._promotion_requirement_lines(shadowcaster) == [
         "Path requirements (all groups required):",
         "- Choose one: Shadow Control: Doom or Draining: Mana Drain",
         "- Required: Umbral Offense: Shadow Bolt II",
@@ -907,11 +828,9 @@ def test_hovered_promotion_highlights_required_paths_only_to_their_endpoints():
         if status.node.id == "footpad.promotion.assassin"
     )
 
-    highlighted, endpoints = (
-        progression_screen.ProgressionScreen._promotion_highlight_node_ids(
-            statuses,
-            assassin_index,
-        )
+    highlighted, endpoints = progression_screen.ProgressionScreen._promotion_highlight_node_ids(
+        statuses,
+        assassin_index,
     )
 
     assert endpoints == {
@@ -928,16 +847,12 @@ def test_bard_promotion_hover_highlights_all_four_any_path_options():
     tree = ABILITY_TREES["Bard"]
     statuses = [NodeStatus(node, NodeState.BLOCKED) for node in tree.nodes]
     promotion_index = next(
-        index
-        for index, status in enumerate(statuses)
-        if status.node.kind == NodeKind.PROMOTION
+        index for index, status in enumerate(statuses) if status.node.kind == NodeKind.PROMOTION
     )
 
-    highlighted, endpoints = (
-        progression_screen.ProgressionScreen._promotion_highlight_node_ids(
-            statuses,
-            promotion_index,
-        )
+    highlighted, endpoints = progression_screen.ProgressionScreen._promotion_highlight_node_ids(
+        statuses,
+        promotion_index,
     )
 
     assert endpoints == {
@@ -956,9 +871,7 @@ def test_bard_promotion_hover_highlights_all_four_any_path_options():
 
 
 def test_requirement_highlight_overrides_available_node_color():
-    screen = progression_screen.ProgressionScreen.__new__(
-        progression_screen.ProgressionScreen
-    )
+    screen = progression_screen.ProgressionScreen.__new__(progression_screen.ProgressionScreen)
     status = NodeStatus(_node(), NodeState.AVAILABLE)
 
     path_color = screen._node_display_color(
@@ -981,9 +894,7 @@ def test_requirement_highlight_overrides_available_node_color():
 
 
 def test_hover_highlight_clears_when_pointer_leaves_node():
-    screen = progression_screen.ProgressionScreen.__new__(
-        progression_screen.ProgressionScreen
-    )
+    screen = progression_screen.ProgressionScreen.__new__(progression_screen.ProgressionScreen)
     screen.node_rects = [pygame.Rect(10, 10, 40, 40)]
     screen.attribute_rects = []
     screen.attribute_minus_rects = []
@@ -994,14 +905,10 @@ def test_hover_highlight_clears_when_pointer_leaves_node():
     screen.current_node = 0
     screen.hovered_node_index = None
 
-    assert screen.handle_event(
-        SimpleNamespace(type=pygame.MOUSEMOTION, pos=(20, 20))
-    )
+    assert screen.handle_event(SimpleNamespace(type=pygame.MOUSEMOTION, pos=(20, 20)))
     assert screen.hovered_node_index == 0
 
-    assert not screen.handle_event(
-        SimpleNamespace(type=pygame.MOUSEMOTION, pos=(80, 80))
-    )
+    assert not screen.handle_event(SimpleNamespace(type=pygame.MOUSEMOTION, pos=(80, 80)))
     assert screen.hovered_node_index is None
 
 
@@ -1023,9 +930,7 @@ def test_shared_promotion_prerequisite_fans_out_from_distinct_source_anchors(
         pygame.Rect(100, 200, 32, 32),
         pygame.Rect(200, 200, 32, 32),
     ]
-    screen = progression_screen.ProgressionScreen.__new__(
-        progression_screen.ProgressionScreen
-    )
+    screen = progression_screen.ProgressionScreen.__new__(progression_screen.ProgressionScreen)
     screen.screen = object()
     screen.node_icon_rects = rects
     screen._tree_viewport = pygame.Rect(0, 0, 400, 300)
@@ -1041,16 +946,13 @@ def test_shared_promotion_prerequisite_fans_out_from_distinct_source_anchors(
         lambda *_args, **_kwargs: None,
     )
 
-    screen._draw_connectors(
-        [NodeStatus(node, NodeState.BLOCKED) for node in nodes]
-    )
+    screen._draw_connectors([NodeStatus(node, NodeState.BLOCKED) for node in nodes])
 
     sleeping_bottom = rects[1].bottom
     sleeping_starts = sorted(
         points[0][0]
         for points in line_points
-        if points[0][1] == sleeping_bottom
-        and rects[1].left < points[0][0] < rects[1].right
+        if points[0][1] == sleeping_bottom and rects[1].left < points[0][0] < rects[1].right
     )
     assert sleeping_starts == [160, 171]
 
@@ -1058,17 +960,13 @@ def test_shared_promotion_prerequisite_fans_out_from_distinct_source_anchors(
 def test_node_highlight_uses_exact_node_frame_bounds():
     icon_rect = pygame.Rect(50, 60, 32, 32)
 
-    frame_rect = progression_screen.ProgressionScreen._node_frame_rect(
-        icon_rect
-    )
+    frame_rect = progression_screen.ProgressionScreen._node_frame_rect(icon_rect)
 
     assert frame_rect == pygame.Rect(48, 58, 36, 36)
 
 
 def test_embedded_layout_fills_left_height_and_stacks_right_panels():
-    screen = progression_screen.ProgressionScreen.__new__(
-        progression_screen.ProgressionScreen
-    )
+    screen = progression_screen.ProgressionScreen.__new__(progression_screen.ProgressionScreen)
     captured = {}
     screen._draw_tree = lambda rect: captured.setdefault("tree", rect.copy())
     screen._draw_attributes = lambda rect: captured.setdefault(
@@ -1115,9 +1013,7 @@ def test_attribute_highlight_previews_increased_value_without_training_text(
         def blit(self, surface, _position):
             self.surfaces.append(surface)
 
-    screen = progression_screen.ProgressionScreen.__new__(
-        progression_screen.ProgressionScreen
-    )
+    screen = progression_screen.ProgressionScreen.__new__(progression_screen.ProgressionScreen)
     screen.screen = FakeScreen()
     screen.normal_font = FakeFont()
     screen.small_font = FakeFont()
@@ -1183,9 +1079,7 @@ def test_details_rendering_never_spills_below_panel(monkeypatch):
             self.surfaces.append(surface)
             self.positions.append(position)
 
-    screen = progression_screen.ProgressionScreen.__new__(
-        progression_screen.ProgressionScreen
-    )
+    screen = progression_screen.ProgressionScreen.__new__(progression_screen.ProgressionScreen)
     screen.screen = FakeScreen()
     screen.small_font = FakeFont()
     screen.colors = SimpleNamespace(
@@ -1215,14 +1109,9 @@ def test_details_rendering_never_spills_below_panel(monkeypatch):
 
     assert screen.screen.positions
     assert all(
-        y + screen.small_font.get_height() <= panel.bottom
-        for _x, y in screen.screen.positions
+        y + screen.small_font.get_height() <= panel.bottom for _x, y in screen.screen.positions
     )
-    rendered_text = [
-        surface
-        for surface in screen.screen.surfaces
-        if isinstance(surface, str)
-    ]
+    rendered_text = [surface for surface in screen.screen.surfaces if isinstance(surface, str)]
     assert rendered_text == screen.screen.surfaces
     assert "1 Point" in rendered_text
     assert all("BLOCKED" not in line for line in rendered_text)
@@ -1250,9 +1139,7 @@ def test_weapon_specialization_requirement_wraps_once_inside_details(monkeypatch
         def blit(self, surface, _position):
             self.surfaces.append(surface)
 
-    screen = progression_screen.ProgressionScreen.__new__(
-        progression_screen.ProgressionScreen
-    )
+    screen = progression_screen.ProgressionScreen.__new__(progression_screen.ProgressionScreen)
     screen.screen = FakeScreen()
     screen.small_font = FakeFont()
     screen.colors = SimpleNamespace(
@@ -1261,15 +1148,11 @@ def test_weapon_specialization_requirement_wraps_once_inside_details(monkeypatch
         WHITE=(3, 3, 3),
     )
     screen.draw_semi_transparent_panel = lambda *_args, **_kwargs: None
-    node = progression_screen.TREE_NODES[
-        "weapon-master.ability.reavers-mark"
-    ]
+    node = progression_screen.TREE_NODES["weapon-master.ability.reavers-mark"]
     screen._selected_status = lambda: NodeStatus(
         node,
         NodeState.BLOCKED,
-        (
-            "Requires Battle Axe specialization level 1 (current 0).",
-        ),
+        ("Requires Battle Axe specialization level 1 (current 0).",),
     )
     monkeypatch.setattr(
         progression_screen.pygame.draw,
@@ -1280,20 +1163,10 @@ def test_weapon_specialization_requirement_wraps_once_inside_details(monkeypatch
 
     screen._draw_details(panel)
 
-    rendered_text = [
-        surface
-        for surface in screen.screen.surfaces
-        if isinstance(surface, str)
-    ]
+    rendered_text = [surface for surface in screen.screen.surfaces if isinstance(surface, str)]
     content_width = panel.width - 20
-    assert all(
-        screen.small_font.size(line)[0] <= content_width
-        for line in rendered_text
-    )
-    assert sum(
-        "specialization level" in line
-        for line in rendered_text
-    ) == 1
+    assert all(screen.small_font.size(line)[0] <= content_width for line in rendered_text)
+    assert sum("specialization level" in line for line in rendered_text) == 1
     assert all("(current" not in line for line in rendered_text)
 
 
@@ -1318,9 +1191,7 @@ def test_promotion_details_wrap_blocker_and_omit_tree_warning(monkeypatch):
         def blit(self, _surface, position):
             self.positions.append(position)
 
-    screen = progression_screen.ProgressionScreen.__new__(
-        progression_screen.ProgressionScreen
-    )
+    screen = progression_screen.ProgressionScreen.__new__(progression_screen.ProgressionScreen)
     screen.screen = FakeScreen()
     screen.small_font = FakeFont()
     screen.colors = SimpleNamespace(
@@ -1330,9 +1201,7 @@ def test_promotion_details_wrap_blocker_and_omit_tree_warning(monkeypatch):
         GRAY=(4, 4, 4),
     )
     screen.draw_semi_transparent_panel = lambda *_args, **_kwargs: None
-    node = progression_screen.TREE_NODES[
-        "warrior.promotion.weapon-master"
-    ]
+    node = progression_screen.TREE_NODES["warrior.promotion.weapon-master"]
     screen._selected_status = lambda: NodeStatus(
         node,
         NodeState.BLOCKED,
@@ -1401,9 +1270,7 @@ def test_tree_warning_moves_to_footer_and_turns_red_for_pending_promotion(
         def blit(self, _surface, _position):
             return None
 
-    screen = progression_screen.ProgressionScreen.__new__(
-        progression_screen.ProgressionScreen
-    )
+    screen = progression_screen.ProgressionScreen.__new__(progression_screen.ProgressionScreen)
     screen.screen = FakeScreen()
     screen.small_font = FakeFont()
     screen.colors = SimpleNamespace(GRAY=(4, 4, 4))
@@ -1423,10 +1290,7 @@ def test_tree_warning_moves_to_footer_and_turns_red_for_pending_promotion(
         "Permanent choice: Buying promotion nodes may prevent the player "
         "from buying learning certain abilities. Choose carefully."
     )
-    assert all(
-        color == screen.PROMOTION_WARNING_COLOR
-        for _line, color in renders
-    )
+    assert all(color == screen.PROMOTION_WARNING_COLOR for _line, color in renders)
     assert all(len(line) * 7 <= panel.width - 32 for line, _color in renders)
 
 
@@ -1444,9 +1308,7 @@ def test_lancer_tree_warning_explains_dragoon_node_retention(monkeypatch):
             renders.append((text, color))
             return text
 
-    screen = progression_screen.ProgressionScreen.__new__(
-        progression_screen.ProgressionScreen
-    )
+    screen = progression_screen.ProgressionScreen.__new__(progression_screen.ProgressionScreen)
     screen.screen = SimpleNamespace(blit=lambda *_args: None)
     screen.small_font = FakeFont()
     screen.colors = SimpleNamespace(GRAY=(4, 4, 4))
@@ -1467,6 +1329,5 @@ def test_lancer_tree_warning_explains_dragoon_node_retention(monkeypatch):
 
     text = " ".join(line for line, _color in renders)
     assert text == (
-        "Promoting to Dragoon retains all unpurchased Lancer nodes in the "
-        "Dragoon tree."
+        "Promoting to Dragoon retains all unpurchased Lancer nodes in the " "Dragoon tree."
     )

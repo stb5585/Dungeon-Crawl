@@ -12,7 +12,6 @@ from src.core.player import (
     state,
 )
 
-
 PLAYER_BEHAVIOR_MODULES = (
     state,
     exploration,

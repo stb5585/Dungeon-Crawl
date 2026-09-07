@@ -21,8 +21,12 @@ class RendererDebugMixin:
 
         for visible_depth in scene.depths:
             zone = zones[visible_depth.depth]
-            pygame.draw.polygon(self.screen, colors["center_floor"], zone.center_floor.as_int_points(), 1)
-            pygame.draw.polygon(self.screen, colors["ceiling"], zone.center_ceiling.as_int_points(), 1)
+            pygame.draw.polygon(
+                self.screen, colors["center_floor"], zone.center_floor.as_int_points(), 1
+            )
+            pygame.draw.polygon(
+                self.screen, colors["ceiling"], zone.center_ceiling.as_int_points(), 1
+            )
             self._draw_surface_slot_overlay(
                 panel_id=f"d{visible_depth.depth}:center_floor",
                 quad=zone.center_floor,
@@ -36,18 +40,28 @@ class RendererDebugMixin:
             if is_wall(visible_depth.left):
                 pygame.draw.polygon(self.screen, colors["wall"], zone.left_wall.as_int_points(), 1)
             else:
-                pygame.draw.polygon(self.screen, colors["side_floor"], zone.left_floor_open.as_int_points(), 1)
-                pygame.draw.polygon(self.screen, colors["ceiling"], zone.left_ceiling_open.as_int_points(), 1)
+                pygame.draw.polygon(
+                    self.screen, colors["side_floor"], zone.left_floor_open.as_int_points(), 1
+                )
+                pygame.draw.polygon(
+                    self.screen, colors["ceiling"], zone.left_ceiling_open.as_int_points(), 1
+                )
             if is_wall(visible_depth.right):
                 pygame.draw.polygon(self.screen, colors["wall"], zone.right_wall.as_int_points(), 1)
             else:
-                pygame.draw.polygon(self.screen, colors["side_floor"], zone.right_floor_open.as_int_points(), 1)
-                pygame.draw.polygon(self.screen, colors["ceiling"], zone.right_ceiling_open.as_int_points(), 1)
+                pygame.draw.polygon(
+                    self.screen, colors["side_floor"], zone.right_floor_open.as_int_points(), 1
+                )
+                pygame.draw.polygon(
+                    self.screen, colors["ceiling"], zone.right_ceiling_open.as_int_points(), 1
+                )
             if is_wall(visible_depth.center):
                 pygame.draw.rect(self.screen, colors["back"], zone.back_wall_rect.to_int_tuple(), 1)
                 break
 
-    def _draw_surface_slot_overlay(self, panel_id: str, quad: Quad, color: tuple[int, int, int]) -> None:
+    def _draw_surface_slot_overlay(
+        self, panel_id: str, quad: Quad, color: tuple[int, int, int]
+    ) -> None:
         if not self.debug_surface_slots:
             return
 
@@ -149,7 +163,9 @@ class RendererDebugMixin:
                             for slot_id in slot_ids
                         ]
                         lines.append("  " + f"resolved {panel_id} " + ", ".join(resolved))
-            for command in sorted(commands, key=lambda item: (-item.depth, item.order, item.panel_id)):
+            for command in sorted(
+                commands, key=lambda item: (-item.depth, item.order, item.panel_id)
+            ):
                 bounds = command.quad.bounding_rect()
                 lines.append(
                     "  "

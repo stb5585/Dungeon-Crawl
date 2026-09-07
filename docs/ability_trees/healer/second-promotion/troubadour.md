@@ -30,7 +30,7 @@ or Encore systems.
 | Reviving Finale | Renewal codas gain one effective Crescendo and cleanse poison at two spent. |
 | Riotous Finale | Battle Hymn's controlled Berserk coda lasts one additional turn. |
 | Rallying Chorus | Restores HP and raises Attack and Magic. |
-| Cutting Encore | Strengthens enemy-stat exploration debuffs by 5 percentage points. |
+| Cutting Refrain | Strengthens enemy-stat exploration debuffs by 5 percentage points. |
 | Resonant Wave | Deals non-elemental damage and reduces enemy Attack and Magic. |
 
 ## Mastery

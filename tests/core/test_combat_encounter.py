@@ -179,9 +179,7 @@ def test_explicit_singleton_matches_legacy_start_behavior(monkeypatch):
     legacy_order = legacy.start_battle()
     explicit_order = explicit.start_battle()
 
-    assert [actor.name for actor in legacy_order] == [
-        actor.name for actor in explicit_order
-    ]
+    assert [actor.name for actor in legacy_order] == [actor.name for actor in explicit_order]
     assert legacy.available_actions == explicit.available_actions
     assert legacy_player.bestiary["Goblin"] == explicit_player.bestiary["Goblin"]
     assert legacy.logger.metadata["player"] == explicit.logger.metadata["player"]

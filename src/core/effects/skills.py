@@ -9,6 +9,7 @@ from .base import Effect
 
 if TYPE_CHECKING:
     from character import Character
+
     from src.core.combat.combat_result import CombatResult
 
 
@@ -25,7 +26,9 @@ class ShieldSlamEffect(Effect):
     # noinspection PyMethodOverriding
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
         import random as _rng
-        from src.core.constants import DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH
+
+        from src.core.constants import DAMAGE_VARIANCE_HIGH, DAMAGE_VARIANCE_LOW
+
         messages = result.extra.setdefault("messages", [])
 
         # Shield requirement
@@ -55,11 +58,13 @@ class ShieldSlamEffect(Effect):
 
         # Stun check
         if target.is_alive():
-            if not any([
-                "Stun" in getattr(target, "status_immunity", []),
-                f"Status-Stun" in target.equipment["Pendant"].mod,
-                "Status-All" in target.equipment["Pendant"].mod,
-            ]):
+            if not any(
+                [
+                    "Stun" in getattr(target, "status_immunity", []),
+                    f"Status-Stun" in target.equipment["Pendant"].mod,
+                    "Status-All" in target.equipment["Pendant"].mod,
+                ]
+            ):
                 att_roll = _rng.randint(0, actor.stats.strength)
                 def_roll = _rng.randint(target.stats.strength // 2, target.stats.strength)
                 if target.stun_contest_success(actor, att_roll, def_roll):
@@ -80,6 +85,7 @@ class KidneyPunchEffect(Effect):
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
         import random as _rng
+
         messages = result.extra.setdefault("messages", [])
 
         # Offhand weapon requirement
@@ -127,11 +133,13 @@ class KidneyPunchEffect(Effect):
         )
 
         if hit and target.is_alive() and not crusader_aegis:
-            if not any([
-                "Stun" in getattr(target, "status_immunity", []),
-                f"Status-Stun" in target.equipment["Pendant"].mod,
-                "Status-All" in target.equipment["Pendant"].mod,
-            ]):
+            if not any(
+                [
+                    "Stun" in getattr(target, "status_immunity", []),
+                    f"Status-Stun" in target.equipment["Pendant"].mod,
+                    "Status-All" in target.equipment["Pendant"].mod,
+                ]
+            ):
                 speed = actor.check_mod("speed", enemy=actor)
                 att_roll = _rng.randint(0, int(speed * crit))
                 fortune_bonus = max(
@@ -181,17 +189,20 @@ class PoisonStrikeEffect(Effect):
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
         import random as _rng
+
         messages = result.extra.setdefault("messages", [])
-        hit = getattr(result, 'hit', False)
+        hit = getattr(result, "hit", False)
         crit = result.extra.get("last_crit", 1)
         if not (hit and target.is_alive()):
             return
 
-        if any([
-            "Poison" in getattr(target, "status_immunity", []),
-            "Status-Poison" in target.equipment["Pendant"].mod,
-            "Status-All" in target.equipment["Pendant"].mod,
-        ]):
+        if any(
+            [
+                "Poison" in getattr(target, "status_immunity", []),
+                "Status-Poison" in target.equipment["Pendant"].mod,
+                "Status-All" in target.equipment["Pendant"].mod,
+            ]
+        ):
             messages.append(f"{target.name} is immune to poison.\n")
             return
 
@@ -211,9 +222,11 @@ class PoisonStrikeEffect(Effect):
             )
             try:
                 actor._emit_status_event(
-                    target, "Poison", applied=True,
+                    target,
+                    "Poison",
+                    applied=True,
                     duration=target.status_effects["Poison"].duration,
-                    source="Poison Blade"
+                    source="Poison Blade",
                 )
             except Exception:
                 pass
@@ -234,20 +247,19 @@ class DimMakEffect(Effect):
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
         import random as _rng
+
         messages = result.extra.setdefault("messages", [])
 
         if target.is_alive():
             # Ice block / tunnel — no secondary effect
-            if any([target.magic_effects["Ice Block"].active,
-                    getattr(target, "tunnel", False)]):
+            if any([target.magic_effects["Ice Block"].active, getattr(target, "tunnel", False)]):
                 return
 
             # Instant kill check
             con_val = getattr(target.stats, "con", getattr(target, "con", 0))
             luck = target.check_mod("luck", enemy=actor, luck_factor=5)
-            if (
-                not (_rng.randint(0, con_val) + luck)
-                and "Death" not in getattr(target, "status_immunity", [])
+            if not (_rng.randint(0, con_val) + luck) and "Death" not in getattr(
+                target, "status_immunity", []
             ):
                 messages.append(
                     f"{target.name} sustains a lethal blow and collapses to the ground.\n"
@@ -255,12 +267,14 @@ class DimMakEffect(Effect):
                 target.health.current = 0
             else:
                 # Stun fallback
-                if not any([
-                    "Stun" in getattr(target, "status_immunity", []),
-                    f"Status-Stun" in target.equipment["Pendant"].mod,
-                    "Status-All" in target.equipment["Pendant"].mod,
-                    target.check_mod("resist", enemy=actor, typ="Physical") > _rng.random(),
-                ]):
+                if not any(
+                    [
+                        "Stun" in getattr(target, "status_immunity", []),
+                        f"Status-Stun" in target.equipment["Pendant"].mod,
+                        "Status-All" in target.equipment["Pendant"].mod,
+                        target.check_mod("resist", enemy=actor, typ="Physical") > _rng.random(),
+                    ]
+                ):
                     dur = actor.stats.wisdom // 10
                     if target.apply_stun(dur, source="Devour", applier=actor):
                         messages.append(f"{target.name} is stunned.\n")
@@ -269,12 +283,8 @@ class DimMakEffect(Effect):
                 return
 
         # Essence absorb (target is dead)
-        actor.health.current = min(
-            actor.health.max, actor.health.current + target.health.max
-        )
-        actor.mana.current = min(
-            actor.mana.max, actor.mana.current + target.mana.max
-        )
+        actor.health.current = min(actor.health.max, actor.health.current + target.health.max)
+        actor.mana.current = min(actor.mana.max, actor.mana.current + target.mana.max)
         messages.append(
             f"{actor.name} gains the essence of {target.name}, gaining health and mana.\n"
         )
@@ -293,6 +303,7 @@ class ExploitWeaknessEffect(Effect):
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
         import random as _rng
+
         messages = result.extra.setdefault("messages", [])
 
         types = list(target.resistance)
@@ -320,11 +331,13 @@ class ExploitWeaknessEffect(Effect):
                     f"{target.name} has no identifiable weakness. The skill is ineffective.\n"
                 )
             else:
-                if any([
-                    effect in getattr(target, "status_immunity", []),
-                    f"Status-{effect}" in target.equipment["Pendant"].mod,
-                    "Status-All" in target.equipment["Pendant"].mod,
-                ]):
+                if any(
+                    [
+                        effect in getattr(target, "status_immunity", []),
+                        f"Status-{effect}" in target.equipment["Pendant"].mod,
+                        "Status-All" in target.equipment["Pendant"].mod,
+                    ]
+                ):
                     messages.append(f"{target.name} is immune to {effect.lower()}.\n")
                 else:
                     messages.append(f"{target.name} is affected by {effect.lower()}.\n")
@@ -350,6 +363,7 @@ class GoldTossEffect(Effect):
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
         import random as _rng
+
         messages = result.extra.setdefault("messages", [])
 
         gold_pool_name = "_gold_toss_pool"
@@ -381,8 +395,7 @@ class GoldTossEffect(Effect):
             actor.gold -= gold_thrown
         messages.append(f"{actor.name} throws {gold_thrown} gold at {target.name}.\n")
 
-        if any([target.magic_effects["Ice Block"].active,
-                getattr(target, "tunnel", False)]):
+        if any([target.magic_effects["Ice Block"].active, getattr(target, "tunnel", False)]):
             messages.append("It has no effect.\n")
             result.extra["luck_success"] = False
             return
@@ -410,9 +423,7 @@ class GoldTossEffect(Effect):
             target.health.current -= damage
             result.damage = damage
             try:
-                actor._emit_damage_event(
-                    target, damage, damage_type="Gold", is_critical=False
-                )
+                actor._emit_damage_event(target, damage, damage_type="Gold", is_critical=False)
             except Exception:
                 pass
             messages.append(f"{actor.name} does {damage} damage to {target.name}.\n")
@@ -442,42 +453,41 @@ class LickEffect(Effect):
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
         import random as _rng
+
         messages = result.extra.setdefault("messages", [])
-        hit = getattr(result, 'hit', False)
+        hit = getattr(result, "hit", False)
         if not hit:
             return
 
-        if _rng.randint(
-            actor.stats.strength // 2, actor.stats.strength
-        ) > _rng.randint(target.stats.con // 2, target.stats.con):
+        if _rng.randint(actor.stats.strength // 2, actor.stats.strength) > _rng.randint(
+            target.stats.con // 2, target.stats.con
+        ):
             available_effects = [
-                effect
-                for effect in self.RANDOM_STATUS_POOL
-                if effect in target.status_effects
+                effect for effect in self.RANDOM_STATUS_POOL if effect in target.status_effects
             ]
             if not available_effects:
                 return
             random_effect = _rng.choice(available_effects)
-            if not any([
-                random_effect in getattr(target, "status_immunity", []),
-                f"Status-{random_effect}" in target.equipment["Pendant"].mod,
-                "Status-All" in target.equipment["Pendant"].mod,
-            ]):
+            if not any(
+                [
+                    random_effect in getattr(target, "status_immunity", []),
+                    f"Status-{random_effect}" in target.equipment["Pendant"].mod,
+                    "Status-All" in target.equipment["Pendant"].mod,
+                ]
+            ):
                 if not target.status_effects[random_effect].active:
                     target.status_effects[random_effect].active = True
                     if random_effect in ["Silence", "Blind"]:
                         target.status_effects[random_effect].duration = -1
                     else:
-                        target.status_effects[random_effect].duration = (
-                            _rng.randint(2, max(3, actor.stats.strength // 8))
+                        target.status_effects[random_effect].duration = _rng.randint(
+                            2, max(3, actor.stats.strength // 8)
                         )
                         if random_effect == "Poison":
                             target.status_effects[random_effect].extra = int(
                                 target.health.max * 0.05
                             )
-                    messages.append(
-                        f"{target.name} is affected by {random_effect.lower()}.\n"
-                    )
+                    messages.append(f"{target.name} is affected by {random_effect.lower()}.\n")
 
 
 class BrainGorgeEffect(Effect):
@@ -491,8 +501,9 @@ class BrainGorgeEffect(Effect):
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
         import random as _rng
+
         messages = result.extra.setdefault("messages", [])
-        hit = getattr(result, 'hit', False)
+        hit = getattr(result, "hit", False)
         crit = result.extra.get("last_crit", 1)
         if not hit:
             return
@@ -506,8 +517,7 @@ class BrainGorgeEffect(Effect):
         ):
             resist = target.check_mod("resist", enemy=actor, typ="Physical")
             damage = int(
-                _rng.randint(actor.stats.strength // 4, actor.stats.strength)
-                * (1 - resist) * crit
+                _rng.randint(actor.stats.strength // 4, actor.stats.strength) * (1 - resist) * crit
             )
             target.health.current -= damage
             if damage > 0:
@@ -538,10 +548,9 @@ class DetonateEffect(Effect):
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
         import random as _rng
+
         messages = result.extra.setdefault("messages", [])
-        messages.append(
-            f"{actor.name} explodes, sending shrapnel in all directions.\n"
-        )
+        messages.append(f"{actor.name} explodes, sending shrapnel in all directions.\n")
 
         resist = target.check_mod("resist", enemy=actor, typ="Physical")
         damage = max(
@@ -567,24 +576,18 @@ class DetonateEffect(Effect):
             messages.append(message)
 
         if damage > 0:
-            if any([target.magic_effects["Ice Block"].active,
-                    getattr(target, "tunnel", False)]):
+            if any([target.magic_effects["Ice Block"].active, getattr(target, "tunnel", False)]):
                 messages.append("It has no effect.\n")
             else:
                 t_chance = target.check_mod("luck", enemy=actor, luck_factor=20)
-                if (
-                    _rng.randint(0, target.check_mod("speed", enemy=actor) // 15)
-                    + t_chance
-                ):
+                if _rng.randint(0, target.check_mod("speed", enemy=actor) // 15) + t_chance:
                     damage = max(1, damage // 2)
                     messages.append(
                         f"{target.name} dodges the shrapnel, only taking half damage.\n"
                     )
                 target.health.current -= damage
                 result.damage = damage
-                messages.append(
-                    f"{target.name} takes {damage} damage from the shrapnel.\n"
-                )
+                messages.append(f"{target.name} takes {damage} damage from the shrapnel.\n")
         else:
             messages.append(f"{target.name} was unhurt by the explosion.\n")
 
@@ -604,6 +607,7 @@ class CrushEffect(Effect):
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
         import random as _rng
+
         messages = result.extra.setdefault("messages", [])
 
         resist = target.check_mod("resist", enemy=actor, typ="Physical")
@@ -648,14 +652,13 @@ class CrushEffect(Effect):
                 int(target.health.current * 0.25),
                 int(
                     _rng.randint(actor.stats.strength // 2, actor.stats.strength)
-                    * (1 - resist) * crit
+                    * (1 - resist)
+                    * crit
                 ),
             )
             target.health.current -= damage
             result.damage = damage
-            dmg_msg = (
-                f"{actor.name} crushes {target.name}, dealing {damage} damage"
-            )
+            dmg_msg = f"{actor.name} crushes {target.name}, dealing {damage} damage"
             if crit > 1:
                 dmg_msg += " (Critical hit!)"
             messages.append(dmg_msg + ".\n")
@@ -666,8 +669,7 @@ class CrushEffect(Effect):
                 > _rng.randint(0, target.check_mod("speed", enemy=actor)) + d_chance
             ):
                 fall_damage = int(
-                    _rng.randint(actor.stats.strength // 2, actor.stats.strength)
-                    * (1 - resist)
+                    _rng.randint(actor.stats.strength // 2, actor.stats.strength) * (1 - resist)
                 )
                 target.health.current -= fall_damage
                 messages.append(
@@ -676,13 +678,10 @@ class CrushEffect(Effect):
                 )
             else:
                 messages.append(
-                    f"{target.name} rolls as they hit the ground, "
-                    f"preventing any fall damage.\n"
+                    f"{target.name} rolls as they hit the ground, " f"preventing any fall damage.\n"
                 )
         else:
-            messages.append(
-                f"{actor.name} grabs for {target.name} but misses.\n"
-            )
+            messages.append(f"{actor.name} grabs for {target.name} but misses.\n")
 
 
 class MaelstromEffect(Effect):
@@ -699,6 +698,7 @@ class MaelstromEffect(Effect):
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
         import random as _rng
+
         messages = result.extra.setdefault("messages", [])
 
         if _rng.randint(0, actor.stats.intel) > _rng.randint(
@@ -712,8 +712,7 @@ class MaelstromEffect(Effect):
         # Original message logic (preserved faithfully, including quirks)
         if hp_cap > target.health.current:
             messages.append(
-                f"{target.name} has their health reduced to "
-                f"{int(self.fail_pct * 100)}%.\n"
+                f"{target.name} has their health reduced to " f"{int(self.fail_pct * 100)}%.\n"
             )
         else:
             messages.append("The spell is ineffective.\n")
@@ -732,6 +731,7 @@ class DisintegrateEffect(Effect):
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
         import random as _rng
+
         messages = result.extra.setdefault("messages", [])
 
         resist = target.check_mod("resist", enemy=actor, typ="Death")
@@ -754,15 +754,13 @@ class DisintegrateEffect(Effect):
             damage = int(actor.stats.charisma + (target.health.current * 0.25))
             if _rng.randint(0, chance):
                 messages.append(
-                    f"{target.name} dodges the brunt of the blast, "
-                    f"taking only half damage.\n"
+                    f"{target.name} dodges the brunt of the blast, " f"taking only half damage.\n"
                 )
                 damage //= 2
             target.health.current -= damage
             result.damage = damage
             messages.append(
-                f"The blast from disintegrate hurts "
-                f"{target.name} for {damage} damage.\n"
+                f"The blast from disintegrate hurts " f"{target.name} for {damage} damage.\n"
             )
 
 
@@ -825,9 +823,7 @@ class ResurrectionEffect(Effect):
             if target.mana.current > max_heal:
                 target.health.current = target.health.max
                 target.mana.current -= max_heal
-                messages.append(
-                    f"{target.name} expends mana and is healed to full life!"
-                )
+                messages.append(f"{target.name} expends mana and is healed to full life!")
             else:
                 heal_amount = target.mana.current
                 target.health.current += heal_amount
@@ -841,8 +837,7 @@ class ResurrectionEffect(Effect):
             heal = int(target.health.max * self.revive_pct)
             target.health.current = heal
             messages.append(
-                f"{target.name} is brought back to life and is healed "
-                f"for {heal} hit points.\n"
+                f"{target.name} is brought back to life and is healed " f"for {heal} hit points.\n"
             )
 
 
@@ -896,6 +891,7 @@ class StompEffect(Effect):
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
         import random as _rng
+
         messages = result.extra.setdefault("messages", [])
 
         resist = target.check_mod("resist", enemy=actor, typ="Physical")
@@ -937,8 +933,7 @@ class StompEffect(Effect):
             if (a_chance - d_chance) * 0.1 > _rng.random():
                 crit = 2
             damage = int(
-                _rng.randint(actor.stats.strength // 2, actor.stats.strength)
-                * (1 - resist) * crit
+                _rng.randint(actor.stats.strength // 2, actor.stats.strength) * (1 - resist) * crit
             )
 
             # Mana Shield
@@ -963,37 +958,38 @@ class StompEffect(Effect):
             if damage > 0:
                 target.health.current -= damage
                 result.damage = damage
-                dmg_msg = (
-                    f"{actor.name} stomps {target.name}, dealing "
-                    f"{damage} damage"
-                )
+                dmg_msg = f"{actor.name} stomps {target.name}, dealing " f"{damage} damage"
                 if crit > 1:
                     dmg_msg += " (Critical hit!)"
                 messages.append(dmg_msg + ".\n")
 
                 # Stun check (with immunity)
-                if not any([
-                    "Stun" in getattr(target, "status_immunity", []),
-                    f"Status-Stun" in getattr(
-                        target.equipment.get("Pendant", None), "mod", ""
-                    ) if hasattr(target, "equipment") else False,
-                    "Status-All" in getattr(
-                        target.equipment.get("Pendant", None), "mod", ""
-                    ) if hasattr(target, "equipment") else False,
-                ]):
+                if not any(
+                    [
+                        "Stun" in getattr(target, "status_immunity", []),
+                        (
+                            f"Status-Stun"
+                            in getattr(target.equipment.get("Pendant", None), "mod", "")
+                            if hasattr(target, "equipment")
+                            else False
+                        ),
+                        (
+                            "Status-All"
+                            in getattr(target.equipment.get("Pendant", None), "mod", "")
+                            if hasattr(target, "equipment")
+                            else False
+                        ),
+                    ]
+                ):
                     if not target.status_effects["Stun"].active:
                         att_roll = _rng.randint(actor.stats.strength // 2, actor.stats.strength)
                         def_roll = _rng.randint(target.stats.con // 2, target.stats.con)
                         if target.stun_contest_success(actor, att_roll, def_roll):
                             turns = 1 + int(crit > 1)
                             if target.apply_stun(turns, source="Stomp", applier=actor):
-                                messages.append(
-                                    f"{actor.name} stunned {target.name}.\n"
-                                )
+                                messages.append(f"{actor.name} stunned {target.name}.\n")
             else:
-                messages.append(
-                    f"{actor.name} stomps {target.name} but deals no damage.\n"
-                )
+                messages.append(f"{actor.name} stomps {target.name} but deals no damage.\n")
         else:
             messages.append(f"{actor.name} misses {target.name}.\n")
 
@@ -1010,13 +1006,12 @@ class ThrowRockEffect(Effect):
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
         import random as _rng
+
         messages = result.extra.setdefault("messages", [])
 
         size = _rng.randint(0, 4)
         sizes = ["tiny", "small", "medium", "large", "massive"]
-        messages.append(
-            f"{actor.name} throws a {sizes[size]} rock at {target.name}.\n"
-        )
+        messages.append(f"{actor.name} throws a {sizes[size]} rock at {target.name}.\n")
 
         a_chance = actor.check_mod("luck", enemy=target, luck_factor=10)
         d_chance = target.check_mod("luck", enemy=actor, luck_factor=15)
@@ -1089,46 +1084,36 @@ class ThrowRockEffect(Effect):
             if damage > 0:
                 target.health.current -= damage
                 result.damage = damage
-                dmg_msg = (
-                    f"{target.name} is hit by the rock and takes "
-                    f"{damage} damage"
-                )
+                dmg_msg = f"{target.name} is hit by the rock and takes " f"{damage} damage"
                 if crit > 1:
                     dmg_msg += " (Critical hit!)"
                 messages.append(dmg_msg + ".\n")
 
                 # Prone check
                 if not target.physical_effects["Prone"].active:
-                    if (
-                        _rng.randint(
-                            actor.stats.strength // 2,
-                            actor.stats.strength,
-                        )
-                        > _rng.randint(
-                            target.stats.strength // 2,
-                            target.stats.strength,
-                        )
+                    if _rng.randint(
+                        actor.stats.strength // 2,
+                        actor.stats.strength,
+                    ) > _rng.randint(
+                        target.stats.strength // 2,
+                        target.stats.strength,
                     ):
                         prone_dur = max(1, size)
                         target.physical_effects["Prone"].active = True
                         target.physical_effects["Prone"].duration = prone_dur
                         if hasattr(actor, "_emit_status_event"):
                             actor._emit_status_event(
-                                target, "Prone",
+                                target,
+                                "Prone",
                                 applied=True,
                                 duration=prone_dur,
                                 source="Throw Rock",
                             )
-                        messages.append(
-                            f"{target.name} is knocked over and falls "
-                            f"prone.\n"
-                        )
+                        messages.append(f"{target.name} is knocked over and falls " f"prone.\n")
             else:
                 messages.append(f"{target.name} shrugs off the damage.\n")
         else:
-            messages.append(
-                f"{actor.name} misses {target.name} with the throw.\n"
-            )
+            messages.append(f"{actor.name} misses {target.name} with the throw.\n")
 
 
 class StealEffect(Effect):
@@ -1144,6 +1129,7 @@ class StealEffect(Effect):
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
         import random as _rng
+
         messages = result.extra.setdefault("messages", [])
 
         # Get crit from caller (Mug passes crit via use_kwargs)
@@ -1182,35 +1168,23 @@ class StealEffect(Effect):
                     steal_effect = actor.status_effects.get("Steal Success")
                     if steal_effect is not None:
                         steal_effect.active = True
-                        steal_effect.duration = max(
-                            steal_effect.duration, 5
-                        )
-                    messages.append(
-                        f"{actor.name} steals {item_key} from "
-                        f"{target.name}.\n"
-                    )
+                        steal_effect.duration = max(steal_effect.duration, 5)
+                    messages.append(f"{actor.name} steals {item_key} from " f"{target.name}.\n")
                     result.extra["luck_success"] = True
                     result.extra["stolen_item"] = item_key
                     return
-                messages.append(
-                    f"{target.name} doesn't have anything to steal.\n"
-                )
+                messages.append(f"{target.name} doesn't have anything to steal.\n")
                 result.extra["luck_success"] = False
                 return
             else:
-                gold_amount = _rng.randint(
-                    1, max(1, int(target.gold * self.gold_cap))
-                )
+                gold_amount = _rng.randint(1, max(1, int(target.gold * self.gold_cap)))
                 actor.gold += gold_amount
                 target.gold -= gold_amount
                 steal_effect = actor.status_effects.get("Steal Success")
                 if steal_effect is not None:
                     steal_effect.active = True
                     steal_effect.duration = max(steal_effect.duration, 5)
-                messages.append(
-                    f"{actor.name} steals {gold_amount} gold from "
-                    f"{target.name}.\n"
-                )
+                messages.append(f"{actor.name} steals {gold_amount} gold from " f"{target.name}.\n")
                 result.extra["luck_success"] = True
                 result.extra["stolen_gold"] = gold_amount
                 return
@@ -1234,6 +1208,7 @@ class MugEffect(Effect):
         messages = result.extra.setdefault("messages", [])
         crit = result.extra.get("last_crit", 1)
         from src.core.abilities import Steal
+
         steal_result = Steal().use(actor, target, crit=crit, mug=True)
         if isinstance(steal_result, str):
             messages.append(steal_result)
@@ -1252,6 +1227,7 @@ class CounterspellEffect(Effect):
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
         import random as _rng
+
         messages = result.extra.setdefault("messages", [])
         spells = list(actor.spellbook["Spells"].values())
         if not spells:
@@ -1275,8 +1251,13 @@ class ElementalStrikeEffect(Effect):
     """
 
     _SPELL_NAMES = [
-        "Firebolt", "Ice Lance", "Shock", "Scorch",
-        "Water Jet", "Tremor", "Gust",
+        "Firebolt",
+        "Ice Lance",
+        "Shock",
+        "Scorch",
+        "Water Jet",
+        "Tremor",
+        "Gust",
     ]
 
     def __init__(self, **_kw):
@@ -1284,6 +1265,7 @@ class ElementalStrikeEffect(Effect):
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
         import random as _rng
+
         messages = result.extra.setdefault("messages", [])
         if not result.hit:
             return
@@ -1304,10 +1286,7 @@ class ElementalStrikeEffect(Effect):
         if forced_spell is not None:
             spell = forced_spell
             cover = result.extra.get("use_kwargs", {}).get("cover", False)
-            messages.append(
-                f"The enemy is struck by the elemental force of "
-                f"{spell.subtyp}.\n"
-            )
+            messages.append(f"The enemy is struck by the elemental force of " f"{spell.subtyp}.\n")
             spell.cast(actor, target=target, special=True, cover=cover)
 
             crit = result.extra.get("last_crit", 1)
@@ -1317,6 +1296,7 @@ class ElementalStrikeEffect(Effect):
 
         # Build list of available elemental spells from actor's spellbook
         from src.core import abilities as _abilities
+
         cast_list = []
         for spell_name in self._SPELL_NAMES:
             if spell_name in actor.spellbook.get("Spells", {}):
@@ -1330,10 +1310,7 @@ class ElementalStrikeEffect(Effect):
 
         cover = result.extra.get("use_kwargs", {}).get("cover", False)
         spell = _rng.choice(cast_list)
-        messages.append(
-            f"The enemy is struck by the elemental force of "
-            f"{spell.subtyp}.\n"
-        )
+        messages.append(f"The enemy is struck by the elemental force of " f"{spell.subtyp}.\n")
         spell.cast(actor, target=target, special=True, cover=cover)
 
         crit = result.extra.get("last_crit", 1)
@@ -1353,6 +1330,7 @@ class BlackjackEffect(Effect):
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
         import random as _rng
+
         messages = result.extra.setdefault("messages", [])
 
         use_kw = result.extra.get("use_kwargs", {})
@@ -1360,10 +1338,15 @@ class BlackjackEffect(Effect):
         if callback is not None:
             outcome = callback(actor, target)
         else:
-            outcome = _rng.choice([
-                "User Win", "Target Win", "Draw",
-                "User Break", "Target Break",
-            ])
+            outcome = _rng.choice(
+                [
+                    "User Win",
+                    "Target Win",
+                    "Draw",
+                    "User Break",
+                    "Target Break",
+                ]
+            )
 
         if outcome == "Target Win":
             messages.append(f"{target.name} wins the hand!\n")

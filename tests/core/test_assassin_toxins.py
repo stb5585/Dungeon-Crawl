@@ -39,9 +39,7 @@ def test_toxins_are_craftable_coatable_and_excluded_from_random_loot():
     assert not player.inventory.get("Mild Toxin")
 
     random_drop_classes = {
-        item_class
-        for bucket in items._build_rarity_table().values()
-        for item_class in bucket
+        item_class for bucket in items._build_rarity_table().values() for item_class in bucket
     }
     assert items.MildToxin not in random_drop_classes
     assert items.Necrotoxin not in random_drop_classes

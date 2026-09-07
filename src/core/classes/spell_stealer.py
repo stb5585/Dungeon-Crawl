@@ -5,8 +5,8 @@ from __future__ import annotations
 import random
 from typing import Any
 
-from .base import Job
 from .. import abilities, items
+from .base import Job
 
 
 class SpellStealer(Job):
@@ -58,7 +58,9 @@ def has_stolen_magic_talent(character: Any, talent_key: str) -> bool:
 
 
 def eligible_spell_classes(target: Any) -> list[type]:
-    if getattr(target, "class_ring_trial_enemy", False) and not getattr(target, "thieves_guild_trial_enemy", False):
+    if getattr(target, "class_ring_trial_enemy", False) and not getattr(
+        target, "thieves_guild_trial_enemy", False
+    ):
         return []
     spells = getattr(target, "spellbook", {}).get("Spells", {})
     classes: list[type] = []
@@ -84,8 +86,7 @@ def steal_spell(user: Any, target: Any, *, rng: Any = random) -> tuple[bool, str
     spell_cls = rng.choice(spell_classes)
     blank = blanks[0]
     preserve_blank = (
-        has_stolen_magic_talent(user, "spell-stealer.perfect-forgery")
-        and rng.random() < 0.25
+        has_stolen_magic_talent(user, "spell-stealer.perfect-forgery") and rng.random() < 0.25
     )
     if not preserve_blank:
         user.modify_inventory(blank, subtract=True)

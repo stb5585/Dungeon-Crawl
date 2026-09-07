@@ -36,6 +36,7 @@ def wrap_text_to_pixel_width(text: str, font: pygame.font.Font, max_width: int) 
 
 class TownColors:
     """Centralized color definitions for town UI."""
+
     BLACK = (0, 0, 0)
     WHITE = (255, 255, 255)
     GOLD = (218, 165, 32)  # Warm gold for highlights
@@ -55,28 +56,28 @@ class TownScreenBase:
     Base class for all town-related UI screens.
     Manages the town background and provides common functionality.
     """
-    
+
     def __init__(self, presenter):
         self.presenter = presenter
         self.screen = presenter.screen
         self.width = presenter.width
         self.height = presenter.height
-        
+
         # Use centralized colors
         self.colors = TownColors
-        
+
         # Fonts
         self.title_font = presenter.title_font
         self.large_font = presenter.large_font
         self.normal_font = presenter.normal_font
         self.small_font = presenter.small_font
-        
+
         # Load background once
         self.background = None
         self._npc_portrait_surface_cache = {}
         self._popup_background_draw_func = None
         self._load_background()
-    
+
     def _load_background(self):
         """Load and scale the town background image."""
         bg_path = PYGAME_ASSETS_DIR / "backgrounds" / "town.png"
@@ -88,7 +89,7 @@ class TownScreenBase:
                 scale_x = self.width / bg_width
                 scale_y = self.height / bg_height
                 scale = max(scale_x, scale_y)  # Use max to cover entire screen
-                
+
                 new_width = int(bg_width * scale)
                 new_height = int(bg_height * scale)
                 self.background = pygame.transform.scale(bg_image, (new_width, new_height))
@@ -97,7 +98,7 @@ class TownScreenBase:
                 self.background = None
         else:
             print(f"Warning: Town background not found at {bg_path}")
-    
+
     def draw_background(self):
         """Draw the town background image."""
         if self.background:
@@ -148,7 +149,9 @@ class TownScreenBase:
             return None
         if portrait_path not in self._npc_portrait_surface_cache:
             try:
-                self._npc_portrait_surface_cache[portrait_path] = pygame.image.load(portrait_path).convert_alpha()
+                self._npc_portrait_surface_cache[portrait_path] = pygame.image.load(
+                    portrait_path
+                ).convert_alpha()
             except Exception:
                 self._npc_portrait_surface_cache[portrait_path] = None
         return self._npc_portrait_surface_cache[portrait_path]
@@ -187,6 +190,7 @@ class TownScreenBase:
     def display_quest_text(self, quest_text, *, npc_name: str | None = None, image_path: str = ""):
         """Display quest text in the content area with slow printing animation."""
         import time
+
         import pygame
 
         # Normalize text and peel off a header line if present (====== Name ======)
@@ -206,7 +210,9 @@ class TownScreenBase:
             text = lines[1] if len(lines) > 1 else ""
             if text.startswith("\n"):
                 text = text[1:]
-        portrait_surface = self.npc_portrait_surface(npc_name=npc_name or header_text or "", image_path=image_path)
+        portrait_surface = self.npc_portrait_surface(
+            npc_name=npc_name or header_text or "", image_path=image_path
+        )
 
         def text_wrap_width() -> int:
             content_width = 2 * self.width // 3
@@ -231,10 +237,10 @@ class TownScreenBase:
             content_x = self.width // 3
             content_y = top_height
             content_rect = pygame.Rect(content_x, content_y, content_width, content_height)
-            
+
             self.draw_semi_transparent_panel(content_rect)
             pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, content_rect, 2)
-            
+
             if lines_to_draw:
                 text_rect = content_rect.inflate(-40, -40)
 
@@ -252,7 +258,7 @@ class TownScreenBase:
                     if line == "":
                         text_y += self.large_font.get_height()
                         continue
-                    
+
                     surface = self.large_font.render(line, True, self.colors.WHITE)
                     self.screen.blit(surface, (text_x, text_y))
                     text_y += self.large_font.get_height() + 4
@@ -272,6 +278,7 @@ class TownScreenBase:
                     if event.type == pygame.QUIT:
                         pygame.quit()
                         import sys
+
                         sys.exit()
                     elif event.type == pygame.KEYDOWN or is_left_click(event):
                         return
@@ -312,6 +319,7 @@ class TownScreenBase:
                         if event.type == pygame.QUIT:
                             pygame.quit()
                             import sys
+
                             sys.exit()
                         elif event.type == pygame.KEYDOWN:
                             if event.key in (pygame.K_SPACE, pygame.K_RETURN, pygame.K_ESCAPE):
@@ -342,6 +350,7 @@ class TownScreenBase:
                     if event.type == pygame.QUIT:
                         pygame.quit()
                         import sys
+
                         sys.exit()
                     elif event.type == pygame.KEYDOWN or is_left_click(event):
                         break

@@ -37,7 +37,9 @@ def test_enemy_character_sprite_uses_combat_sprite_manager(monkeypatch):
     monkeypatch.setattr(
         manager,
         "load_sprite",
-        lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("enemy sprites must not load from sprites/enemies")),
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("enemy sprites must not load from sprites/enemies")
+        ),
     )
 
     result = manager.get_character_sprite(SimpleNamespace(name="Goblin"))
@@ -49,7 +51,11 @@ def test_enemy_character_sprite_uses_combat_sprite_manager(monkeypatch):
 def test_preload_common_sprites_does_not_load_retired_enemy_directory(monkeypatch):
     loaded = []
     manager = SpriteManager()
-    monkeypatch.setattr(manager, "load_sprite", lambda name, category="sprites": loaded.append((name, category)) or None)
+    monkeypatch.setattr(
+        manager,
+        "load_sprite",
+        lambda name, category="sprites": loaded.append((name, category)) or None,
+    )
 
     manager.preload_common_sprites()
 

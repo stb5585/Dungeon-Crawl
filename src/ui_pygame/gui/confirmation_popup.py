@@ -25,7 +25,9 @@ def popup_close_rect(popup_rect: pygame.Rect) -> pygame.Rect:
     return pygame.Rect(popup_rect.right - 30, popup_rect.top + 8, 20, 20)
 
 
-def draw_popup_close_button(screen, popup_rect: pygame.Rect, font, *, hovered: bool = False) -> pygame.Rect:
+def draw_popup_close_button(
+    screen, popup_rect: pygame.Rect, font, *, hovered: bool = False
+) -> pygame.Rect:
     """Draw a compact x close button and return its hitbox."""
     rect = popup_close_rect(popup_rect)
     fill = (72, 48, 56) if hovered else (36, 32, 40)
@@ -39,15 +41,19 @@ def draw_popup_close_button(screen, popup_rect: pygame.Rect, font, *, hovered: b
 
 def popup_close_clicked(event, popup_rect: pygame.Rect) -> bool:
     """Return whether a mouse event clicked the shared popup close button."""
-    return is_left_click(event) and popup_close_rect(popup_rect).collidepoint(mouse_position(event) or (-1, -1))
+    return is_left_click(event) and popup_close_rect(popup_rect).collidepoint(
+        mouse_position(event) or (-1, -1)
+    )
 
 
 class ConfirmationPopup:
     """
     A Yes/No confirmation popup that appears over the current screen.
     """
-    
-    def __init__(self, presenter, message: str, show_buttons: bool = True, slow_print: bool = False):
+
+    def __init__(
+        self, presenter, message: str, show_buttons: bool = True, slow_print: bool = False
+    ):
         self.presenter = presenter
         self.screen = presenter.screen
         self.width = presenter.width
@@ -58,7 +64,7 @@ class ConfirmationPopup:
         self.slow_print = not getattr(presenter, "debug_mode", False) and slow_print
         self._start_ms = 10
         self._reveal_cps = 30  # characters per second
-        
+
         # Colors
         self.BLACK = (0, 0, 0)
         self.WHITE = (255, 255, 255)
@@ -67,17 +73,17 @@ class ConfirmationPopup:
         self.BORDER_COLOR = (200, 200, 200)
         self.HIGHLIGHT_BG = (60, 60, 80)
         self.POPUP_BG = (20, 20, 30)
-        
+
         # Fonts
         self.normal_font = presenter.normal_font
         self.small_font = presenter.small_font
         self.message_font = presenter.normal_font
         self.instruction_font = presenter.small_font
-        
+
         # State
         self.current_selection = 0  # 0 = Yes, 1 = No
         self.options = ["Yes", "No"]
-        
+
         # Calculate popup size based on message content
         self.popup_width = 500
         # First, wrap text to calculate required height
@@ -91,16 +97,23 @@ class ConfirmationPopup:
 
         self.popup_x = (self.width - self.popup_width) // 2
         self.popup_y = (self.height - self.popup_height) // 2
-        self.popup_rect = pygame.Rect(self.popup_x, self.popup_y, self.popup_width, self.popup_height)
+        self.popup_rect = pygame.Rect(
+            self.popup_x, self.popup_y, self.popup_width, self.popup_height
+        )
 
     def button_rects(self) -> list[pygame.Rect]:
         """Return clickable Yes/No button rectangles."""
         y = self.popup_y + self.popup_height - 70
         return [
-            pygame.Rect(self.popup_x + (self.popup_width // 4) + i * (self.popup_width // 2) - 50, y - 5, 100, 35)
+            pygame.Rect(
+                self.popup_x + (self.popup_width // 4) + i * (self.popup_width // 2) - 50,
+                y - 5,
+                100,
+                35,
+            )
             for i, _option in enumerate(self.options)
         ]
-    
+
     def _get_visible_lines(self):
         if not self.slow_print or not self._full_text:
             return self._wrapped_lines
@@ -123,12 +136,12 @@ class ConfirmationPopup:
         overlay.set_alpha(180)
         overlay.fill((0, 0, 0))
         self.screen.blit(overlay, (0, 0))
-        
+
         # Draw popup background
         pygame.draw.rect(self.screen, self.POPUP_BG, self.popup_rect)
         pygame.draw.rect(self.screen, self.BORDER_COLOR, self.popup_rect, 3)
         draw_popup_close_button(self.screen, self.popup_rect, self.small_font)
-        
+
         # Original compact confirmation layout
         y = self.popup_y + 30
         message_lines = self._get_visible_lines()
@@ -157,50 +170,59 @@ class ConfirmationPopup:
                 self.screen.blit(text, text_rect)
         else:
             instr_text = self.small_font.render("Press any key to continue...", True, self.GRAY)
-            instr_rect = instr_text.get_rect(centerx=self.popup_x + self.popup_width // 2, bottom=self.popup_y + self.popup_height - 10)
+            instr_rect = instr_text.get_rect(
+                centerx=self.popup_x + self.popup_width // 2,
+                bottom=self.popup_y + self.popup_height - 10,
+            )
             self.screen.blit(instr_text, instr_rect)
 
         pygame.display.flip()
-    
+
     def _wrap_text(self, text, max_width):
         """Wrap text to fit within max_width while preserving explicit line breaks."""
         lines = []
         # First split by newlines to preserve explicit line breaks
-        paragraphs = text.split('\n')
-        
+        paragraphs = text.split("\n")
+
         for paragraph in paragraphs:
             if not paragraph.strip():
                 # Preserve empty lines
                 lines.append("")
                 continue
-            
+
             # Then wrap each paragraph by word
             words = paragraph.split()
             current_line = []
-            
+
             for word in words:
                 current_line.append(word)
                 line = " ".join(current_line)
                 line_width = self.message_font.size(line)[0]
-                
+
                 if line_width > max_width:
                     current_line.pop()
                     if current_line:
                         lines.append(" ".join(current_line))
                     current_line = [word]
-            
+
             if current_line:
                 lines.append(" ".join(current_line))
-        
+
         return lines
-    
-    def show(self, background_draw_func=None, flush_events: bool = False, require_key_release: bool = False, min_display_ms: int = 0) -> bool:
+
+    def show(
+        self,
+        background_draw_func=None,
+        flush_events: bool = False,
+        require_key_release: bool = False,
+        min_display_ms: int = 0,
+    ) -> bool:
         """
         Show the popup and wait for user response.
-        
+
         Args:
             background_draw_func: Optional function to redraw background screen
-            
+
         Returns:
             True if Yes (or any key if no buttons), False if No
         """
@@ -227,10 +249,10 @@ class ConfirmationPopup:
             # Draw background each frame
             if background_draw_func:
                 background_draw_func()
-            
+
             # Draw popup on top
             self.draw_popup()
-            
+
             # Arm input once all keys are released (prevents buffered input from skipping popups)
             input_armed = release_guard_allows_input(require_key_release, input_armed)
 
@@ -238,6 +260,7 @@ class ConfirmationPopup:
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     import sys
+
                     sys.exit()
                 elif event.type == pygame.KEYDOWN:
                     if not input_armed:
@@ -276,7 +299,7 @@ class ConfirmationPopup:
                                 return finish(self.current_selection == 0)
                     elif event.type == pygame.MOUSEBUTTONDOWN:
                         return finish(True)
-            
+
             self.presenter.clock.tick(30)
 
     def _get_background_surface(self):
@@ -286,7 +309,9 @@ class ConfirmationPopup:
 class ChoicePopup:
     """Popup for selecting one option from a list."""
 
-    def __init__(self, presenter, title: str, options: list[str], header_message: str | None = None):
+    def __init__(
+        self, presenter, title: str, options: list[str], header_message: str | None = None
+    ):
         self.presenter = presenter
         self.screen = presenter.screen
         self.width = presenter.width
@@ -315,7 +340,9 @@ class ChoicePopup:
         # Layout
         self.popup_width = 520
         max_content_width = self.popup_width - 60
-        header_lines = self._wrap_text(self.header_message, max_content_width) if self.header_message else []
+        header_lines = (
+            self._wrap_text(self.header_message, max_content_width) if self.header_message else []
+        )
         self._header_lines = header_lines
         line_height = 30
         min_height = 220
@@ -323,7 +350,9 @@ class ChoicePopup:
         self.popup_height = max(min_height, content_height)
         self.popup_x = (self.width - self.popup_width) // 2
         self.popup_y = (self.height - self.popup_height) // 2
-        self.popup_rect = pygame.Rect(self.popup_x, self.popup_y, self.popup_width, self.popup_height)
+        self.popup_rect = pygame.Rect(
+            self.popup_x, self.popup_y, self.popup_width, self.popup_height
+        )
 
     def option_rects(self) -> list[pygame.Rect]:
         """Return clickable option rectangles."""
@@ -395,7 +424,9 @@ class ChoicePopup:
 
         instr = "UP/DOWN: Navigate  ENTER: Select  ESC: Cancel"
         instr_text = self.small_font.render(instr, True, self.GRAY)
-        instr_rect = instr_text.get_rect(centerx=self.popup_rect.centerx, bottom=self.popup_rect.bottom - 10)
+        instr_rect = instr_text.get_rect(
+            centerx=self.popup_rect.centerx, bottom=self.popup_rect.bottom - 10
+        )
         self.screen.blit(instr_text, instr_rect)
 
         if do_flip:
@@ -415,6 +446,7 @@ class ChoicePopup:
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     import sys
+
                     sys.exit()
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_UP:
@@ -467,9 +499,21 @@ class RewardSelectionPopup:
         self.selected_index = 0
 
         # Layout
-        self.popup_rect = pygame.Rect(self.width // 10, self.height // 8, self.width * 8 // 10, self.height * 3 // 4)
-        self.list_rect = pygame.Rect(self.popup_rect.left + 24, self.popup_rect.top + 72, self.popup_rect.width * 2 // 5, self.popup_rect.height - 120)
-        self.details_rect = pygame.Rect(self.popup_rect.left + self.popup_rect.width * 2 // 5 + 40, self.popup_rect.top + 72, self.popup_rect.width * 3 // 5 - 64, self.popup_rect.height - 160)
+        self.popup_rect = pygame.Rect(
+            self.width // 10, self.height // 8, self.width * 8 // 10, self.height * 3 // 4
+        )
+        self.list_rect = pygame.Rect(
+            self.popup_rect.left + 24,
+            self.popup_rect.top + 72,
+            self.popup_rect.width * 2 // 5,
+            self.popup_rect.height - 120,
+        )
+        self.details_rect = pygame.Rect(
+            self.popup_rect.left + self.popup_rect.width * 2 // 5 + 40,
+            self.popup_rect.top + 72,
+            self.popup_rect.width * 3 // 5 - 64,
+            self.popup_rect.height - 160,
+        )
         self.line_height = 24
 
     def row_rects(self) -> list[pygame.Rect]:
@@ -522,7 +566,10 @@ class RewardSelectionPopup:
         draw_popup_close_button(self.screen, self.popup_rect, self.small_font)
 
         title_text = self.title_font.render(self.title, True, self.GOLD)
-        self.screen.blit(title_text, (self.popup_rect.centerx - title_text.get_width() // 2, self.popup_rect.top + 16))
+        self.screen.blit(
+            title_text,
+            (self.popup_rect.centerx - title_text.get_width() // 2, self.popup_rect.top + 16),
+        )
 
         pygame.draw.rect(self.screen, self.BLACK, self.list_rect)
         pygame.draw.rect(self.screen, self.BORDER_COLOR, self.list_rect, 2)
@@ -562,7 +609,10 @@ class RewardSelectionPopup:
 
         help_str = "UP/DOWN: Navigate  ENTER: Select  ESC: Cancel"
         help_text = self.small_font.render(help_str, True, self.GRAY)
-        self.screen.blit(help_text, (self.popup_rect.left + 16, self.popup_rect.bottom - help_text.get_height() - 12))
+        self.screen.blit(
+            help_text,
+            (self.popup_rect.left + 16, self.popup_rect.bottom - help_text.get_height() - 12),
+        )
 
         if do_flip:
             pygame.display.flip()
@@ -587,6 +637,7 @@ class RewardSelectionPopup:
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     import sys
+
                     sys.exit()
                 elif event.type == pygame.KEYDOWN:
                     if not input_armed:
@@ -598,7 +649,9 @@ class RewardSelectionPopup:
                     elif event.key in (pygame.K_RETURN, pygame.K_SPACE):
                         current_item = self.items[self.selected_index]
                         name = getattr(current_item, "name", str(current_item))
-                        confirm_popup = ConfirmationPopup(self.presenter, f"Take {name}?", show_buttons=True)
+                        confirm_popup = ConfirmationPopup(
+                            self.presenter, f"Take {name}?", show_buttons=True
+                        )
                         choice = confirm_popup.show(
                             background_draw_func=lambda: self.draw_popup(background, do_flip=False),
                             flush_events=True,
@@ -619,9 +672,13 @@ class RewardSelectionPopup:
                         if is_left_click(event):
                             current_item = self.items[self.selected_index]
                             name = getattr(current_item, "name", str(current_item))
-                            confirm_popup = ConfirmationPopup(self.presenter, f"Take {name}?", show_buttons=True)
+                            confirm_popup = ConfirmationPopup(
+                                self.presenter, f"Take {name}?", show_buttons=True
+                            )
                             choice = confirm_popup.show(
-                                background_draw_func=lambda: self.draw_popup(background, do_flip=False),
+                                background_draw_func=lambda: self.draw_popup(
+                                    background, do_flip=False
+                                ),
                                 flush_events=True,
                                 require_key_release=True,
                             )
@@ -651,8 +708,10 @@ class QuantityPopup:
     A popup for selecting quantity with incremental controls.
     UP/DOWN adjusts ones place, LEFT/RIGHT adjusts tens place.
     """
-    
-    def __init__(self, presenter, item_name, unit_cost=0, max_quantity=999, action="buy", default_quantity=0):
+
+    def __init__(
+        self, presenter, item_name, unit_cost=0, max_quantity=999, action="buy", default_quantity=0
+    ):
         self.presenter = presenter
         self.screen = presenter.screen
         self.width = presenter.width
@@ -661,7 +720,7 @@ class QuantityPopup:
         self.unit_cost = unit_cost
         self.max_quantity = max_quantity
         self.action = action  # "buy", "store", "retrieve", "sell"
-        
+
         # Colors
         self.BLACK = (0, 0, 0)
         self.WHITE = (255, 255, 255)
@@ -670,25 +729,27 @@ class QuantityPopup:
         self.BORDER_COLOR = (200, 200, 200)
         self.HIGHLIGHT_BG = (60, 60, 80)
         self.POPUP_BG = (20, 20, 30)
-        
+
         # Fonts
         self.title_font = presenter.title_font
         self.normal_font = presenter.normal_font
         self.small_font = presenter.small_font
-        
+
         # State - quantity as [tens, ones], initialized from default_quantity
         default_quantity = min(default_quantity, max_quantity)  # Clamp to max
         self.tens = (default_quantity // 10) % 10
         self.ones = default_quantity % 10
         self.selected_place = 0  # 0 = ones, 1 = tens
         self.focus_control = "ones"
-        
+
         # Calculate popup position (centered)
         self.popup_width = 500
         self.popup_height = 300
         self.popup_x = (self.width - self.popup_width) // 2
         self.popup_y = (self.height - self.popup_height) // 2
-        self.popup_rect = pygame.Rect(self.popup_x, self.popup_y, self.popup_width, self.popup_height)
+        self.popup_rect = pygame.Rect(
+            self.popup_x, self.popup_y, self.popup_width, self.popup_height
+        )
 
     def digit_rects(self) -> list[pygame.Rect]:
         """Return clickable tens/ones rectangles in index order [tens, ones]."""
@@ -705,7 +766,7 @@ class QuantityPopup:
             "confirm": pygame.Rect(self.popup_rect.centerx - 150, button_y, 130, 36),
             "cancel": pygame.Rect(self.popup_rect.centerx + 20, button_y, 130, 36),
         }
-    
+
     @property
     def quantity(self):
         """Get current quantity."""
@@ -727,7 +788,7 @@ class QuantityPopup:
         order = self._focus_order()
         index = order.index(self.focus_control) if self.focus_control in order else 1
         self._set_focus(order[(index + delta) % len(order)])
-    
+
     def draw_popup(self, background_draw_func=None):
         """Draw the quantity popup over the current screen."""
         # Draw background if provided
@@ -735,18 +796,18 @@ class QuantityPopup:
             background_draw_func()
         else:
             self.screen.fill(self.BLACK)
-        
+
         # Draw semi-transparent overlay
         overlay = pygame.Surface((self.width, self.height))
         overlay.set_alpha(180)
         overlay.fill((0, 0, 0))
         self.screen.blit(overlay, (0, 0))
-        
+
         # Draw popup background
         pygame.draw.rect(self.screen, self.POPUP_BG, self.popup_rect)
         pygame.draw.rect(self.screen, self.BORDER_COLOR, self.popup_rect, 3)
         draw_popup_close_button(self.screen, self.popup_rect, self.small_font)
-        
+
         # Title based on action
         if self.action == "store":
             title = f"Store {self.item_name}"
@@ -756,16 +817,16 @@ class QuantityPopup:
             title = f"Sell {self.item_name}"
         else:
             title = f"Buy {self.item_name}"
-        
+
         title_text = self.title_font.render(title, True, self.GOLD)
         title_rect = title_text.get_rect(centerx=self.popup_rect.centerx, top=self.popup_y + 20)
         self.screen.blit(title_text, title_rect)
-        
+
         # Quantity selector with tens and ones
         qty_y = self.popup_y + 80
         qty_label = self.normal_font.render("Quantity:", True, self.WHITE)
         self.screen.blit(qty_label, (self.popup_x + 50, qty_y))
-        
+
         # Tens place
         tens_x = self.popup_x + 250
         tens_highlight = pygame.Rect(tens_x - 30, qty_y - 10, 60, 50)
@@ -775,10 +836,10 @@ class QuantityPopup:
             tens_color = self.GOLD
         else:
             tens_color = self.WHITE
-        
+
         tens_text = self.title_font.render(str(self.tens), True, tens_color)
         self.screen.blit(tens_text, (tens_x - tens_text.get_width() // 2, qty_y))
-        
+
         # Ones place
         ones_x = self.popup_x + 320
         ones_highlight = pygame.Rect(ones_x - 30, qty_y - 10, 60, 50)
@@ -788,10 +849,10 @@ class QuantityPopup:
             ones_color = self.GOLD
         else:
             ones_color = self.WHITE
-        
+
         ones_text = self.title_font.render(str(self.ones), True, ones_color)
         self.screen.blit(ones_text, (ones_x - ones_text.get_width() // 2, qty_y))
-        
+
         # Total cost/value
         cost_y = self.popup_y + 160
         if self.unit_cost > 0:
@@ -802,14 +863,16 @@ class QuantityPopup:
                 cost_text = self.normal_font.render(f"Total Cost: {total_value}g", True, self.GOLD)
             else:
                 cost_text = None
-            
+
             if cost_text:
                 cost_rect = cost_text.get_rect(centerx=self.popup_rect.centerx, top=cost_y)
                 self.screen.blit(cost_text, cost_rect)
-        
+
         # Instructions
         instr_y = self.popup_y + 254
-        instr1 = self.small_font.render("UP/DOWN: Adjust | LEFT/RIGHT: Switch | ENTER: Confirm | ESC: Cancel", True, self.GRAY)
+        instr1 = self.small_font.render(
+            "UP/DOWN: Adjust | LEFT/RIGHT: Switch | ENTER: Confirm | ESC: Cancel", True, self.GRAY
+        )
         instr_rect = instr1.get_rect(centerx=self.popup_rect.centerx, top=instr_y)
         self.screen.blit(instr1, instr_rect)
 
@@ -824,14 +887,19 @@ class QuantityPopup:
             text = self.small_font.render(label.title(), True, text_color)
             text_rect = text.get_rect(center=rect.center)
             self.screen.blit(text, text_rect)
-    
-    def show(self, background_draw_func=None, flush_events: bool = False, require_key_release: bool = False):
+
+    def show(
+        self,
+        background_draw_func=None,
+        flush_events: bool = False,
+        require_key_release: bool = False,
+    ):
         """
         Show the quantity popup and return selected quantity or None if cancelled.
-        
+
         Args:
             background_draw_func: Optional function to draw the background
-            
+
         Returns:
             int: Selected quantity, or None if cancelled
         """
@@ -857,11 +925,12 @@ class QuantityPopup:
             pygame.display.flip()
 
             input_armed = release_guard_allows_input(require_key_release, input_armed)
-            
+
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     import sys
+
                     sys.exit()
                 elif event.type == pygame.KEYDOWN:
                     if not input_armed:
@@ -876,14 +945,14 @@ class QuantityPopup:
                             self.ones = min(9, self.ones + 1)
                         else:  # Tens
                             self.tens = min(9, self.tens + 1)
-                        
+
                         # Ensure we don't exceed max quantity
                         if self.quantity > self.max_quantity:
                             if self.selected_place == 0:
                                 self.ones = max(0, self.ones - 1)
                             else:
                                 self.tens = max(0, self.tens - 1)
-                    
+
                     elif event.key == pygame.K_DOWN:
                         # Decrease current digit (clamp to 0-9)
                         if self.focus_control not in {"ones", "tens"}:
@@ -892,13 +961,13 @@ class QuantityPopup:
                             self.ones = max(0, self.ones - 1)
                         else:  # Tens
                             self.tens = max(0, self.tens - 1)
-                    
+
                     elif event.key == pygame.K_LEFT:
                         self._move_focus(-1)
-                    
+
                     elif event.key == pygame.K_RIGHT:
                         self._move_focus(1)
-                    
+
                     elif event.key == pygame.K_RETURN or event.key == pygame.K_SPACE:
                         if self.focus_control == "cancel":
                             return finish(None)
@@ -936,7 +1005,7 @@ class QuantityPopup:
                             return finish(self.quantity)
                         if buttons["cancel"].collidepoint(pos or (-1, -1)):
                             return finish(None)
-            
+
             self.presenter.clock.tick(30)
 
     def _get_background_surface(self):
@@ -971,7 +1040,9 @@ class CodeEntryPopup:
         self.popup_height = 260
         self.popup_x = (self.width - self.popup_width) // 2
         self.popup_y = (self.height - self.popup_height) // 2
-        self.popup_rect = pygame.Rect(self.popup_x, self.popup_y, self.popup_width, self.popup_height)
+        self.popup_rect = pygame.Rect(
+            self.popup_x, self.popup_y, self.popup_width, self.popup_height
+        )
 
     def digit_rects(self) -> list[pygame.Rect]:
         """Return clickable code digit rectangles."""
@@ -1035,19 +1106,32 @@ class CodeEntryPopup:
             True,
             self.GRAY,
         )
-        instructions_rect = instructions.get_rect(centerx=self.popup_rect.centerx, top=self.popup_y + 220)
+        instructions_rect = instructions.get_rect(
+            centerx=self.popup_rect.centerx, top=self.popup_y + 220
+        )
         self.screen.blit(instructions, instructions_rect)
 
         for label, rect in self.button_rects().items():
-            pygame.draw.rect(self.screen, self.HIGHLIGHT_BG if label == "confirm" else self.POPUP_BG, rect)
-            pygame.draw.rect(self.screen, self.GOLD if label == "confirm" else self.BORDER_COLOR, rect, 2)
-            text = self.small_font.render(label.title(), True, self.GOLD if label == "confirm" else self.WHITE)
+            pygame.draw.rect(
+                self.screen, self.HIGHLIGHT_BG if label == "confirm" else self.POPUP_BG, rect
+            )
+            pygame.draw.rect(
+                self.screen, self.GOLD if label == "confirm" else self.BORDER_COLOR, rect, 2
+            )
+            text = self.small_font.render(
+                label.title(), True, self.GOLD if label == "confirm" else self.WHITE
+            )
             text_rect = text.get_rect(center=rect.center)
             self.screen.blit(text, text_rect)
 
         pygame.display.flip()
 
-    def show(self, background_draw_func=None, flush_events: bool = False, require_key_release: bool = False):
+    def show(
+        self,
+        background_draw_func=None,
+        flush_events: bool = False,
+        require_key_release: bool = False,
+    ):
         background = None
         if background_draw_func is None:
             background = self._get_background_surface()
@@ -1073,6 +1157,7 @@ class CodeEntryPopup:
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     import sys
+
                     sys.exit()
                 if event.type == pygame.KEYDOWN:
                     if not input_armed:
@@ -1084,9 +1169,13 @@ class CodeEntryPopup:
                     elif event.key == pygame.K_RIGHT:
                         self.selected_digit = min(3, self.selected_digit + 1)
                     elif event.key == pygame.K_UP:
-                        self.digits[self.selected_digit] = min(9, self.digits[self.selected_digit] + 1)
+                        self.digits[self.selected_digit] = min(
+                            9, self.digits[self.selected_digit] + 1
+                        )
                     elif event.key == pygame.K_DOWN:
-                        self.digits[self.selected_digit] = max(0, self.digits[self.selected_digit] - 1)
+                        self.digits[self.selected_digit] = max(
+                            0, self.digits[self.selected_digit] - 1
+                        )
                     elif event.key in (pygame.K_RETURN, pygame.K_SPACE):
                         return finish("".join(str(digit) for digit in self.digits))
                 elif event.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN, pygame.MOUSEWHEEL):
@@ -1096,7 +1185,9 @@ class CodeEntryPopup:
                         return finish(None)
                     if event.type == pygame.MOUSEWHEEL:
                         delta = 1 if getattr(event, "y", 0) > 0 else -1
-                        self.digits[self.selected_digit] = max(0, min(9, self.digits[self.selected_digit] + delta))
+                        self.digits[self.selected_digit] = max(
+                            0, min(9, self.digits[self.selected_digit] + delta)
+                        )
                         continue
                     digit_hit = hit_index(self.digit_rects(), mouse_position(event))
                     if digit_hit is not None:

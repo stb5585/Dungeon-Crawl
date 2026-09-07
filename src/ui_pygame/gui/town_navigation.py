@@ -6,7 +6,11 @@ from dataclasses import dataclass
 
 import pygame
 
-from .input_guards import prepare_guarded_input, release_guard_allows_input, update_input_armed_from_event
+from .input_guards import (
+    prepare_guarded_input,
+    release_guard_allows_input,
+    update_input_armed_from_event,
+)
 from .mouse_helpers import is_left_click, mouse_position
 from .town_base import TownScreenBase
 
@@ -185,7 +189,9 @@ class TownNavigationScreen(TownScreenBase):
         self.screen.blit(title, (detail_rect.left + 18, detail_rect.top + 14))
         y = detail_rect.top + 52
         for line in self._wrap(node.description, detail_rect.width - 320, self.normal_font)[:3]:
-            self.screen.blit(self.normal_font.render(line, True, self.colors.WHITE), (detail_rect.left + 16, y))
+            self.screen.blit(
+                self.normal_font.render(line, True, self.colors.WHITE), (detail_rect.left + 16, y)
+            )
             y += self.normal_font.get_height() + 4
 
         self._draw_action_bar(detail_rect, node)
@@ -212,7 +218,9 @@ class TownNavigationScreen(TownScreenBase):
                 (rect.left + 76, rect.bottom - 8),
             ],
         )
-        pygame.draw.line(self.screen, (120, 110, 82), (center_x, horizon_y), (center_x, rect.bottom - 8), 2)
+        pygame.draw.line(
+            self.screen, (120, 110, 82), (center_x, horizon_y), (center_x, rect.bottom - 8), 2
+        )
 
         building_rect = pygame.Rect(center_x - 120, horizon_y - 112, 240, 112)
         pygame.draw.rect(self.screen, node.landmark_color, building_rect)
@@ -229,7 +237,9 @@ class TownNavigationScreen(TownScreenBase):
             pygame.Rect(building_rect.centerx - 22, building_rect.bottom - 54, 44, 54),
         )
         label = self.normal_font.render(node.name, True, self.colors.WHITE)
-        self.screen.blit(label, label.get_rect(centerx=building_rect.centerx, bottom=building_rect.top - 8))
+        self.screen.blit(
+            label, label.get_rect(centerx=building_rect.centerx, bottom=building_rect.top - 8)
+        )
 
         self._direction_rects = self._town_direction_rects(rect)
         for direction, target in node.exits.items():
@@ -241,10 +251,24 @@ class TownNavigationScreen(TownScreenBase):
         prompt_width = min(250, max(170, rect.width // 4))
         prompt_height = 48
         return {
-            "north": pygame.Rect(rect.centerx - prompt_width // 2, rect.top + 18, prompt_width, prompt_height),
-            "east": pygame.Rect(rect.right - prompt_width - 24, rect.centery - prompt_height // 2, prompt_width, prompt_height),
-            "south": pygame.Rect(rect.centerx - prompt_width // 2, rect.bottom - prompt_height - 18, prompt_width, prompt_height),
-            "west": pygame.Rect(rect.left + 24, rect.centery - prompt_height // 2, prompt_width, prompt_height),
+            "north": pygame.Rect(
+                rect.centerx - prompt_width // 2, rect.top + 18, prompt_width, prompt_height
+            ),
+            "east": pygame.Rect(
+                rect.right - prompt_width - 24,
+                rect.centery - prompt_height // 2,
+                prompt_width,
+                prompt_height,
+            ),
+            "south": pygame.Rect(
+                rect.centerx - prompt_width // 2,
+                rect.bottom - prompt_height - 18,
+                prompt_width,
+                prompt_height,
+            ),
+            "west": pygame.Rect(
+                rect.left + 24, rect.centery - prompt_height // 2, prompt_width, prompt_height
+            ),
         }
 
     def _draw_direction_prompt(self, direction: str, target: str) -> None:
@@ -255,7 +279,9 @@ class TownNavigationScreen(TownScreenBase):
         pygame.draw.rect(self.screen, fill, rect)
         pygame.draw.rect(self.screen, border, rect, 2)
         label = f"{DIRECTION_LABELS[direction]}: {target}"
-        surface = self.small_font.render(label, True, self.colors.GOLD if selected else self.colors.WHITE)
+        surface = self.small_font.render(
+            label, True, self.colors.GOLD if selected else self.colors.WHITE
+        )
         self.screen.blit(surface, surface.get_rect(center=rect.center))
 
     def _draw_town_position_map(self, view_rect: pygame.Rect) -> None:
@@ -274,7 +300,11 @@ class TownNavigationScreen(TownScreenBase):
         }
         for key, node in self.nodes.items():
             x, y = positions.get(key, map_rect.center)
-            color = self.colors.GOLD if key == self.current_node_key else getattr(node, "landmark_color", (110, 110, 120))
+            color = (
+                self.colors.GOLD
+                if key == self.current_node_key
+                else getattr(node, "landmark_color", (110, 110, 120))
+            )
             pygame.draw.circle(self.screen, color, (x, y), 6)
             if key == self.current_node_key:
                 pygame.draw.circle(self.screen, (10, 10, 10), (x, y), 3)
@@ -339,6 +369,7 @@ class TownNavigationScreen(TownScreenBase):
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     import sys
+
                     sys.exit()
                 input_armed = update_input_armed_from_event(event, require_key_release, input_armed)
                 pos = mouse_position(event)

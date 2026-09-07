@@ -8,5 +8,12 @@ from .layout import CharacterLayoutMixin
 from .mechanics import CharacterMechanicsMixin
 
 
-class ModernCharacterScreen(CharacterEquipmentMixin,CharacterMechanicsMixin,CharacterLayoutMixin,CharacterDataMixin,CharacterCoreMixin,TownScreenBase):
+class ModernCharacterScreen(
+    CharacterEquipmentMixin,
+    CharacterMechanicsMixin,
+    CharacterLayoutMixin,
+    CharacterDataMixin,
+    CharacterCoreMixin,
+    TownScreenBase,
+):
     """RPG-style character menu used by the standard pygame character flow."""

@@ -4,11 +4,11 @@
 from __future__ import annotations
 
 import argparse
-from itertools import combinations, product
 import json
-from pathlib import Path
 import statistics
 import sys
+from itertools import combinations, product
+from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -17,7 +17,6 @@ from src.core.analytics.combat_simulator import CombatSimulator
 from src.core.combat import CombatEncounter
 from tests.test_framework import TestGameState
 from tools import run_balance_suite
-
 
 BASE_CLASSES = ("Warrior", "Mage", "Footpad", "Healer", "Pathfinder")
 HARD_CONTROL_ABILITIES = {
@@ -76,11 +75,7 @@ def _make_player(class_name: str, level: int):
 
 
 def _ability_names(enemy) -> set[str]:
-    return {
-        str(name)
-        for group in getattr(enemy, "spellbook", {}).values()
-        for name in group
-    }
+    return {str(name) for group in getattr(enemy, "spellbook", {}).values() for name in group}
 
 
 def _has_support_loop(enemy) -> bool:
@@ -103,16 +98,10 @@ def _eligible_pair(first_factory, second_factory) -> bool:
         for flag in ("boss", "is_boss")
     ):
         return False
-    controls = [
-        bool(_ability_names(enemy) & HARD_CONTROL_ABILITIES)
-        for enemy in (first, second)
-    ]
+    controls = [bool(_ability_names(enemy) & HARD_CONTROL_ABILITIES) for enemy in (first, second)]
     if all(controls):
         return False
-    invisible = [
-        getattr(enemy, "name", "") == "Invisible Stalker"
-        for enemy in (first, second)
-    ]
+    invisible = [getattr(enemy, "name", "") == "Invisible Stalker" for enemy in (first, second)]
     if all(invisible):
         return False
     if _has_support_loop(first) and _has_support_loop(second):
@@ -127,9 +116,7 @@ def _encounter_factory(
     offense_multiplier: float,
 ):
     def build():
-        encounter = CombatEncounter.from_enemies(
-            [first_factory(), second_factory()]
-        )
+        encounter = CombatEncounter.from_enemies([first_factory(), second_factory()])
         for member in encounter.members:
             enemy = member.enemy
             enemy.health.max = max(
@@ -215,11 +202,7 @@ def _evaluate(
                 iterations,
                 seed,
             )
-            cached = (
-                singleton_cache.get(cache_key)
-                if singleton_cache is not None
-                else None
-            )
+            cached = singleton_cache.get(cache_key) if singleton_cache is not None else None
             if cached is None:
                 report = CombatSimulator().run_simulations(
                     make_player,
@@ -227,15 +210,11 @@ def _evaluate(
                     iterations=iterations,
                     seed=seed,
                 )
-                cached = statistics.mean(
-                    result.actor_turns for result in report.results
-                )
+                cached = statistics.mean(result.actor_turns for result in report.results)
                 if singleton_cache is not None:
                     singleton_cache[cache_key] = cached
             singleton_turns.append(cached)
-        pair_turns = statistics.mean(
-            result.actor_turns for result in pair_report.results
-        )
+        pair_turns = statistics.mean(result.actor_turns for result in pair_report.results)
         ratios.append(pair_turns / max(singleton_turns))
 
     winners = set(classes)
@@ -244,8 +223,7 @@ def _evaluate(
     turn_ratio = statistics.mean(ratios)
     winning_hp = (
         statistics.median(
-            result.player_hp_remaining * 100 / result.player_hp_max
-            for result in wins
+            result.player_hp_remaining * 100 / result.player_hp_max for result in wins
         )
         if wins
         else 0.0
@@ -293,9 +271,7 @@ def main() -> int:
         "--members",
         nargs=2,
         metavar=("FIRST", "SECOND"),
-        help=(
-            "Restrict screening and modifier search to one named catalog pair."
-        ),
+        help=("Restrict screening and modifier search to one named catalog pair."),
     )
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
@@ -305,10 +281,7 @@ def main() -> int:
         factories = dict(catalog)
         unknown = [name for name in args.members if name not in factories]
         if unknown:
-            parser.error(
-                "unknown floor catalog member(s): "
-                + ", ".join(unknown)
-            )
+            parser.error("unknown floor catalog member(s): " + ", ".join(unknown))
         first = (args.members[0], factories[args.members[0]])
         second = (args.members[1], factories[args.members[1]])
         if not _eligible_pair(first[1], second[1]):
@@ -324,8 +297,7 @@ def main() -> int:
     singleton_cache: dict[tuple[object, ...], float] = {}
     for index, (first, second) in enumerate(candidates, start=1):
         print(
-            f"# candidate {index}/{len(candidates)}: "
-            f"{first[0]} & {second[0]}",
+            f"# candidate {index}/{len(candidates)}: " f"{first[0]} & {second[0]}",
             file=sys.stderr,
             flush=True,
         )
@@ -345,10 +317,7 @@ def main() -> int:
     modifier_results = []
     if args.modifier_search and results:
         best_names = results[0]["members"]
-        factories = {
-            name: factory
-            for name, factory in catalog
-        }
+        factories = {name: factory for name, factory in catalog}
         values = [value / 100 for value in range(80, 121, 5)]
         for health, offense in product(values, repeat=2):
             modifier_results.append(
@@ -373,8 +342,8 @@ def main() -> int:
         "seed": args.seed,
         "classes": args.classes,
         "candidate_count": len(candidates),
-        "top_candidates": results[:args.top],
-        "top_modifier_results": modifier_results[:args.top],
+        "top_candidates": results[: args.top],
+        "top_modifier_results": modifier_results[: args.top],
     }
     text = json.dumps(payload, indent=2)
     print(text)

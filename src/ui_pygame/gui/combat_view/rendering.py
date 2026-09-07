@@ -8,6 +8,7 @@ import sys
 import pygame
 
 from src.core.classes import astromancer
+
 from ..enemy_presentation import (
     invisible_target_note,
     presented_enemy_name,
@@ -24,7 +25,9 @@ class CombatRenderingMixin:
         center_x = self.combat_width // 2 + visual_offset_x + self._enemy_recoil_offset()
         polymorphed = self._enemy_is_polymorphed(enemy)
         boss_enemy = self._is_boss_enemy(enemy) and not polymorphed
-        center_y = (int(self.combat_height * 0.42) if boss_enemy else self.combat_height // 3) + visual_offset_y
+        center_y = (
+            int(self.combat_height * 0.42) if boss_enemy else self.combat_height // 3
+        ) + visual_offset_y
 
         is_flying = getattr(enemy, "flying", False)
         is_tunneled = getattr(enemy, "tunnel", False)
@@ -46,16 +49,15 @@ class CombatRenderingMixin:
                 bar_y = center_y + 60
 
                 # Background
-                pygame.draw.rect(self.screen, (50, 50, 50),
-                               (bar_x, bar_y, bar_width, bar_height))
+                pygame.draw.rect(self.screen, (50, 50, 50), (bar_x, bar_y, bar_width, bar_height))
                 # HP fill
                 hp_pct = max(0, enemy.health.current / enemy.health.max) if enemy.health.max else 0
                 filled_width = int(bar_width * hp_pct)
-                pygame.draw.rect(self.screen, (0, 200, 0),
-                               (bar_x, bar_y, filled_width, bar_height))
+                pygame.draw.rect(self.screen, (0, 200, 0), (bar_x, bar_y, filled_width, bar_height))
                 # Border
-                pygame.draw.rect(self.screen, (255, 255, 255),
-                               (bar_x, bar_y, bar_width, bar_height), 2)
+                pygame.draw.rect(
+                    self.screen, (255, 255, 255), (bar_x, bar_y, bar_width, bar_height), 2
+                )
             return
 
         # Get animator for this enemy
@@ -68,10 +70,12 @@ class CombatRenderingMixin:
         if display_sprite is not None:
             # Apply damage flash tint
             if animator.damage_flash > 0:
-                display_sprite = animator.apply_tint(display_sprite, (255, 100, 100), animator.damage_flash)
+                display_sprite = animator.apply_tint(
+                    display_sprite, (255, 100, 100), animator.damage_flash
+                )
 
             # Apply death animation (scale down and fade)
-            if animator.animation_type == 'death':
+            if animator.animation_type == "death":
                 # Scale from 1.0 to 0.3 as death progresses
                 scale = 1.0 - (animator.death_progress * 0.7)
                 death_size = (
@@ -87,19 +91,15 @@ class CombatRenderingMixin:
                 display_sprite = display_sprite.copy()
                 display_sprite.blit(alpha_surf, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
 
-            if animator.animation_type != 'death':
+            if animator.animation_type != "death":
                 display_sprite = self._fade_sprite_for_smoke_screen(display_sprite, enemy, "enemy")
 
             # Calculate Y position with bob animation
             bob_y = center_y + animator.bob_offset if is_flying else center_y
             pace_offset = animator.confused_pace_offset() if polymorphed else 0
-            bob_x = (
-                center_x
-                if is_flying
-                else center_x + animator.sway_offset + pace_offset
-            )
+            bob_x = center_x if is_flying else center_x + animator.sway_offset + pace_offset
 
-            if animator.animation_type != 'death':
+            if animator.animation_type != "death":
                 self._draw_mirror_images(
                     display_sprite,
                     (int(bob_x), int(bob_y)),
@@ -117,8 +117,9 @@ class CombatRenderingMixin:
             enemy_size = 120
             fallback_x = center_x if is_flying else center_x + animator.sway_offset
             fallback_y = center_y + animator.bob_offset if is_flying else center_y
-            pygame.draw.circle(self.screen, self.colors['enemy'],
-                             (int(fallback_x), int(fallback_y)), enemy_size)
+            pygame.draw.circle(
+                self.screen, self.colors["enemy"], (int(fallback_x), int(fallback_y)), enemy_size
+            )
             self._last_enemy_target_rect = pygame.Rect(
                 int(fallback_x - enemy_size),
                 int(fallback_y - enemy_size),
@@ -129,14 +130,30 @@ class CombatRenderingMixin:
             # Add eyes
             eye_offset = enemy_size // 3
             eye_size = enemy_size // 6
-            pygame.draw.circle(self.screen, (255, 255, 255),
-                             (int(fallback_x - eye_offset), int(fallback_y - eye_offset)), eye_size)
-            pygame.draw.circle(self.screen, (255, 255, 255),
-                             (int(fallback_x + eye_offset), int(fallback_y - eye_offset)), eye_size)
-            pygame.draw.circle(self.screen, (0, 0, 0),
-                             (int(fallback_x - eye_offset), int(fallback_y - eye_offset)), eye_size // 2)
-            pygame.draw.circle(self.screen, (0, 0, 0),
-                             (int(fallback_x + eye_offset), int(fallback_y - eye_offset)), eye_size // 2)
+            pygame.draw.circle(
+                self.screen,
+                (255, 255, 255),
+                (int(fallback_x - eye_offset), int(fallback_y - eye_offset)),
+                eye_size,
+            )
+            pygame.draw.circle(
+                self.screen,
+                (255, 255, 255),
+                (int(fallback_x + eye_offset), int(fallback_y - eye_offset)),
+                eye_size,
+            )
+            pygame.draw.circle(
+                self.screen,
+                (0, 0, 0),
+                (int(fallback_x - eye_offset), int(fallback_y - eye_offset)),
+                eye_size // 2,
+            )
+            pygame.draw.circle(
+                self.screen,
+                (0, 0, 0),
+                (int(fallback_x + eye_offset), int(fallback_y - eye_offset)),
+                eye_size // 2,
+            )
 
         self._render_ability_status_visuals(enemy, "enemy", include_duplicates=False)
 
@@ -145,7 +162,7 @@ class CombatRenderingMixin:
         name_surf = font.render(
             presented_enemy_name(enemy, has_sight),
             True,
-            self.colors['text'],
+            self.colors["text"],
         )
         name_rect = name_surf.get_rect(center=(center_x, center_y - enemy_size - 30))
         self.screen.blit(name_surf, name_rect)
@@ -158,33 +175,39 @@ class CombatRenderingMixin:
             bar_y = center_y + enemy_size + 20
 
             # Background
-            pygame.draw.rect(self.screen, (100, 100, 100),
-                           pygame.Rect(bar_x, bar_y, bar_width, bar_height))
+            pygame.draw.rect(
+                self.screen, (100, 100, 100), pygame.Rect(bar_x, bar_y, bar_width, bar_height)
+            )
 
             # HP fill
             hp_ratio = enemy.health.current / max(enemy.health.max, 1)
             hp_width = int(bar_width * hp_ratio)
-            pygame.draw.rect(self.screen, self.colors['hp_bar'],
-                           pygame.Rect(bar_x, bar_y, hp_width, bar_height))
+            pygame.draw.rect(
+                self.screen, self.colors["hp_bar"], pygame.Rect(bar_x, bar_y, hp_width, bar_height)
+            )
 
             # HP text
             small_font = pygame.font.Font(None, 18)
             hp_text = f"HP {enemy.health.current}/{enemy.health.max}"
-            hp_surf = small_font.render(hp_text, True, self.colors['text'])
+            hp_surf = small_font.render(hp_text, True, self.colors["text"])
             hp_rect = hp_surf.get_rect(center=(center_x, bar_y + bar_height // 2))
             self.screen.blit(hp_surf, hp_rect)
 
             enemy_mana = getattr(enemy, "mana", None)
             if enemy_mana is not None and getattr(enemy_mana, "max", 0) > 0:
                 mp_y = bar_y + bar_height + 6
-                pygame.draw.rect(self.screen, (100, 100, 100),
-                               pygame.Rect(bar_x, mp_y, bar_width, bar_height))
+                pygame.draw.rect(
+                    self.screen, (100, 100, 100), pygame.Rect(bar_x, mp_y, bar_width, bar_height)
+                )
                 mp_ratio = enemy_mana.current / max(enemy_mana.max, 1)
                 mp_width = int(bar_width * mp_ratio)
-                pygame.draw.rect(self.screen, self.colors['mp_bar'],
-                               pygame.Rect(bar_x, mp_y, mp_width, bar_height))
+                pygame.draw.rect(
+                    self.screen,
+                    self.colors["mp_bar"],
+                    pygame.Rect(bar_x, mp_y, mp_width, bar_height),
+                )
                 mp_text = f"MP {enemy_mana.current}/{enemy_mana.max}"
-                mp_surf = small_font.render(mp_text, True, self.colors['text'])
+                mp_surf = small_font.render(mp_text, True, self.colors["text"])
                 mp_rect = mp_surf.get_rect(center=(center_x, mp_y + bar_height // 2))
                 self.screen.blit(mp_surf, mp_rect)
 
@@ -240,8 +263,12 @@ class CombatRenderingMixin:
         if has_sight:
             try:
                 artwork = self.enemy_combat_sprite_manager.get_scaled_sprite(enemy, art_rect.size)
-            except Exception as exc:  # pragma: no cover - hard runtime fallback for broken external assets
-                print(f"Failed to render enemy combat sprite for {getattr(enemy, 'name', enemy)}: {exc}")
+            except (
+                Exception
+            ) as exc:  # pragma: no cover - hard runtime fallback for broken external assets
+                print(
+                    f"Failed to render enemy combat sprite for {getattr(enemy, 'name', enemy)}: {exc}"
+                )
                 artwork = self.enemy_combat_sprite_manager.fallback_surface()
                 artwork = pygame.transform.smoothscale(artwork, art_rect.size)
             self.screen.blit(artwork, art_rect.topleft)
@@ -256,11 +283,7 @@ class CombatRenderingMixin:
             self.screen.blit(hp_surf, (panel_rect.left + pad, y))
             y += 22
 
-        enemy_type = (
-            ""
-            if hidden_by_invisibility
-            else getattr(enemy, "enemy_typ", "")
-        )
+        enemy_type = "" if hidden_by_invisibility else getattr(enemy, "enemy_typ", "")
         if enemy_type:
             type_surf = body_font.render(f"Type {enemy_type}", True, (205, 197, 176))
             self.screen.blit(type_surf, (panel_rect.left + pad, y))
@@ -271,7 +294,9 @@ class CombatRenderingMixin:
 
         icons = [] if hidden_by_invisibility else self._collect_status_icons(enemy)
         if icons and y + 20 < panel_rect.bottom:
-            self._render_status_icons(icons, panel_rect.left + pad, y + 4, max_width=panel_w - (pad * 2), max_rows=2)
+            self._render_status_icons(
+                icons, panel_rect.left + pad, y + 4, max_width=panel_w - (pad * 2), max_rows=2
+            )
 
     def _render_enemy_resistance_summary(self, enemy, panel_rect, y, font):
         resistance = getattr(enemy, "resistance", {}) or {}
@@ -316,19 +341,21 @@ class CombatRenderingMixin:
 
         # HP
         hp_text = f"HP: {player_char.health.current}/{player_char.health.max}"
-        hp_surf = font.render(hp_text, True, self.colors['hp_bar'])
+        hp_surf = font.render(hp_text, True, self.colors["hp_bar"])
         self.screen.blit(hp_surf, (x, y))
 
         # MP
         mp_text = f"MP: {player_char.mana.current}/{player_char.mana.max}"
-        mp_surf = font.render(mp_text, True, self.colors['mp_bar'])
+        mp_surf = font.render(mp_text, True, self.colors["mp_bar"])
         self.screen.blit(mp_surf, (x, y + 30))
 
         if astromancer.has_rune_system(player_char):
             rune_y = y + 56
             if astromancer.is_astromancer(player_char):
                 sign_text = f"Sign: {astromancer.active_constellation(player_char)}"
-                sign_surf = small_font.render(sign_text, True, self.colors.get("gold", (232, 196, 92)))
+                sign_surf = small_font.render(
+                    sign_text, True, self.colors.get("gold", (232, 196, 92))
+                )
                 self.screen.blit(sign_surf, (x, rune_y))
                 rune_y += 16
             for line in astromancer.rune_grid_lines(player_char):
@@ -347,7 +374,7 @@ class CombatRenderingMixin:
         self._render_ability_status_visuals(player_char, "player")
 
         # Encumbered warning
-        if getattr(player_char, 'encumbered', False):
+        if getattr(player_char, "encumbered", False):
             y += 60
             # Warning icon/text
             warning_text = "⚠ ENCUMBERED"
@@ -355,11 +382,7 @@ class CombatRenderingMixin:
             self.screen.blit(warning_surf, (x, y))
 
             # Penalties list
-            penalty_lines = [
-                "• Always lose initiative",
-                "• -25% hit chance",
-                "• -50% dodge chance"
-            ]
+            penalty_lines = ["• Always lose initiative", "• -25% hit chance", "• -50% dodge chance"]
             y += 25
             for line in penalty_lines:
                 penalty_surf = small_font.render(line, True, (255, 100, 100))  # Light red
@@ -367,7 +390,9 @@ class CombatRenderingMixin:
                 y += 18
 
     @staticmethod
-    def _action_grid_layout(width: int, menu_height: int, action_count: int) -> tuple[int, int, int, int, int]:
+    def _action_grid_layout(
+        width: int, menu_height: int, action_count: int
+    ) -> tuple[int, int, int, int, int]:
         actions_per_row = 3
         row_count = max(1, math.ceil(max(1, action_count) / actions_per_row))
         start_y_offset = 46
@@ -389,10 +414,12 @@ class CombatRenderingMixin:
         border_color=None,
         translucent_highlight: bool = False,
     ) -> None:
-        actions_per_row, _row_count, start_y_offset, row_height, cell_width = self._action_grid_layout(
-            rect.width,
-            rect.height,
-            len(actions),
+        actions_per_row, _row_count, start_y_offset, row_height, cell_width = (
+            self._action_grid_layout(
+                rect.width,
+                rect.height,
+                len(actions),
+            )
         )
         cell_padding = 10
 
@@ -401,7 +428,9 @@ class CombatRenderingMixin:
             col = i % actions_per_row
             x = rect.left + 28 + col * cell_width
             y = rect.top + start_y_offset + row * row_height
-            highlight_rect = pygame.Rect(x - 5, y - 4, max(42, cell_width - 12), max(20, row_height - 3))
+            highlight_rect = pygame.Rect(
+                x - 5, y - 4, max(42, cell_width - 12), max(20, row_height - 3)
+            )
 
             if i == selected_action:
                 if translucent_highlight:
@@ -424,7 +453,9 @@ class CombatRenderingMixin:
                 except TypeError:
                     pass
 
-            fitted_action = self._truncate_text(action_font, str(action), max(20, highlight_rect.width - cell_padding))
+            fitted_action = self._truncate_text(
+                action_font, str(action), max(20, highlight_rect.width - cell_padding)
+            )
             action_surf = action_font.render(fitted_action, True, text_color)
             self.screen.blit(action_surf, (x, y))
 
@@ -453,8 +484,8 @@ class CombatRenderingMixin:
             selected_action,
             rect=menu_rect,
             action_font=action_font,
-            text_color=self.colors['text'],
-            highlight_color=self.colors['action_selected'],
+            text_color=self.colors["text"],
+            highlight_color=self.colors["action_selected"],
         )
 
     def _render_combat_log(self):
@@ -482,7 +513,7 @@ class CombatRenderingMixin:
         max_scroll = max(0, len(display_lines) - max_lines)
         self.log_scroll_offset = min(self.log_scroll_offset, max_scroll)
 
-        for line in display_lines[self.log_scroll_offset:self.log_scroll_offset + max_lines]:
+        for line in display_lines[self.log_scroll_offset : self.log_scroll_offset + max_lines]:
             if lines_rendered >= max_lines:
                 break
             marker_color = (90, 90, 98) if line.continuation else line.marker_color

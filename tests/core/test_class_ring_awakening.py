@@ -7,8 +7,8 @@ from types import SimpleNamespace
 sys.path.insert(0, str(Path(__file__).parents[2]))
 
 from src.core import abilities, items
-from src.core.combat.battle_engine import BattleEngine
 from src.core.classes import archdruid, class_rings, demonologist, grandmaster, paladin
+from src.core.combat.battle_engine import BattleEngine
 from src.core.save_system import PlayerDataSerializer
 from tests.test_framework import TestGameState
 

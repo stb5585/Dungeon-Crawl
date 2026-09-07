@@ -1,0 +1,31 @@
+Name,Class ID,Type,Subtype,Value,Rarity,Weight,Damage,Critical Chance,Hands,Offhand Eligible,Armor,Modifier,Element,Restricted To,Restricted Against,Ultimate,Random Drop,Unequipped,Description
+Cloak of Enchantment,CloakEnchantment,Armor,Cloth,22000,0.5,3,,,,,14,0,,,,False,True,False,A magical cloak that shields the wearer from all forms of attack.
+Cloth Cloak,ClothCloak,Armor,Cloth,200,0.9,2,,,,,4,0,,,,False,True,False,"An outdoor cloth garment, typically sleeveless, that hangs loosely from the shoulders."
+Gold Cloak,GoldCloak,Armor,Cloth,7000,0.75,4,,,,,10,0,,,,False,True,False,A cloak weaved with strands of gold to improve protective power.
+Robes of Merlin,MerlinRobe,Armor,Cloth,0,0.0,2,,,,,30,0,,,,False,True,False,The enchanted robes of Merlin the enchanter.
+Silver Cloak,SilverCloak,Armor,Cloth,2500,0.85,3,,,,,6,0,,,,False,True,False,A cloak weaved with strands of silver to improve protective power.
+Tarnkappe,Tarnkappe,Armor,Cloth,90000,0.2,1,,,,,24,0,,,,False,True,False,"A tarnkappe is a mythical garment that grants its wearer the power to become invisible and move undetected. The Tarnkappe is depicted as a dark, enchanted cloak or hood, embodying the idea of secrecy, stealth, and mysticism."
+Tunic,Tunic,Armor,Cloth,60,0.95,2,,,,,2,0,,,,False,True,False,"A close-fitting short coat as part of a uniform, especially a police or military uniform."
+Wizard's Robe,WizardRobe,Armor,Cloth,45000,0.4,4,,,,,20,0,,,,False,True,False,"A knee-length, long-sleeved robe with an impressive hood designed to add a mysterious feel to magic users."
+Chain Mail,ChainMail,Armor,Heavy,1000,0.85,18,,,,,10,0,,,,False,True,False,"Made of interlocking metal rings, includes a layer of quilted fabric worn underneath the mail to prevent chafing and to cushion the impact of blows. The suit includes gauntlets."
+Genji Armor,Genji,Armor,Heavy,0,0.0,25,,,,,50,0,,,,False,True,False,Mythical armor crafted by an unknown master blacksmith and embued with protective enchantments that allow the user to shrug off damage.
+Maximilian,Maximilian,Armor,Heavy,110000,0.2,30,,,,,40,0,,,,False,True,False,"Maximilian armor is characterized by its intricate designs and full-coverage plates. Known for its effectiveness in both defense and mobility, this armor often features a distinctive fluted design, which not only enhances its aesthetic appeal but also reinforces the structure, providing extra strength without adding excessive weight."
+Palangina,Palangina,Armor,Heavy,55000,0.4,30,,,,,30,0,,,,False,True,False,A Persian lamellar cuirass worked with fire-red and water-blue inlays.
+Plate Mail,PlateMail,Armor,Heavy,27500,0.5,25,,,,,20,0,,,,False,True,False,"Armor consisting of shaped, interlocking metal plates to cover most of the body."
+Ring Mail,RingMail,Armor,Heavy,200,0.95,15,,,,,8,0,,,,False,True,False,Leather armor with heavy rings sewn into it. The rings help reinforce the armor against blows from Swords and axes.
+Splint Mail,Splint,Armor,Heavy,6000,0.75,20,,,,,14,0,,,,False,True,False,Armor made of narrow vertical strips of metal riveted to a backing of leather that is worn over cloth padding. Flexible chain mail protects the joints.
+Cuirboulli,Cuirboulli,Armor,Light,3000,0.75,6,,,,,8,0,,,,False,True,False,"French for ""boiled leather"", this armor has increased rigidity for add protection"
+Dragon Hide,DragonHide,Armor,Light,0,0.0,10,,,,,36,0,Fire,,,False,True,False,"Hide armor made from the scales of a red dragon, inconceivably light for this type of armor."
+Leather Armor,LeatherArmor,Armor,Light,600,0.85,5,,,,,6,0,,,,False,True,False,"A protective covering made of animal hide, boiled to make it tough and rigid and worn over the torso to protect it from injury."
+Mithril Coat,MithrilCoat,Armor,Light,95000,0.2,2,,,,,28,0,,,,False,True,False,"A mithril coat is a lightweight, shimmering shirt of armor made from mithril, a rare and incredibly strong metal. Known for its silver-like appearance and superior durability, the mithril coat offers exceptional protection while remaining much lighter than traditional steel armor."
+Padded Armor,PaddedArmor,Armor,Light,75,0.95,4,,,,,4,0,,,,False,True,False,Consists of quilted layers of cloth and feathers to provide some protection from attack.
+Studded Cuirboulli,StuddedCuirboulli,Armor,Light,42000,0.4,8,,,,,24,0,,,,False,True,False,Boiled leather armor embedded with iron studs to improve defensive capabilities.
+Studded Leather,StuddedLeather,Armor,Light,20000,0.5,7,,,,,16,0,,,,False,True,False,Leather armor embedded with iron studs to improve defensive capabilities.
+Breastplate,Breastplate,Armor,Medium,23500,0.5,15,,,,,18,0,,,,False,True,False,"Armor consisting of a fitted metal chest piece worn with supple leather. Although it leaves the legs and arms relatively unprotected, this armor provides good protection for the wearer's vital organs while leaving the wearer relatively unencumbered."
+Chain Shirt,ChainShirt,Armor,Medium,800,0.85,12,,,,,8,0,,,,False,True,False,A type of armor consisting of small metal rings linked together in a pattern to form a mesh.
+Half Plate,HalfPlate,Armor,Medium,46000,0.4,20,,,,,26,0,,,,False,True,False,Armor consisting of shaped metal plates that cover most of the wearer's body. It does not include leg Protection beyond simple greaves that are attached with leather straps.
+Hide Armor,HideArmor,Armor,Medium,100,0.95,9,,,,,6,0,,,,False,True,False,A crude armor made from thick furs and pelts.
+Klivanion,Klivanion,Armor,Medium,0,0.0,18,,,,,36,0,Electric,,,False,True,False,A lamellar breastplate whose charged plates lash attackers with lightning and can stun them in place.
+Kusari,Kusari,Armor,Medium,100000,0.2,17,,,,,32,0,,,,False,True,False,"Kusari armor is made from interconnected metal rings, providing excellent flexibility and mobility. This chain mail offers robust protection while allowing for ease of movement, making it ideal for both ranged and close combat."
+Scale Mail,ScaleMail,Armor,Medium,4000,0.75,10,,,,,10,0,,,,False,True,False,"Armor consisting of a coat and leggings of leather covered with overlapping pieces of metal, mimicking the scales of a fish."
+No Armor,NoArmor,Armor,None,0,0,0,,,,,0,0,,,,False,True,True,No armor equipped.

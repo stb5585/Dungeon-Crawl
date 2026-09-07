@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import pygame
 
-from src.core.classes import grandmaster
 import src.ui_pygame.gui.modern_character_screen as character_screen
+from src.core.classes import grandmaster
+
 from ..input_guards import (
     prepare_guarded_input,
     release_guard_allows_input,
@@ -30,7 +31,9 @@ class CharacterEquipmentMixin:
     ) -> int:
         font = font or self.normal_font
         bottom_limit = bottom_limit if bottom_limit is not None else rect.bottom - 24
-        label_width = min(220, max((font.size(label)[0] for label, _ in rows), default=80) + label_padding)
+        label_width = min(
+            220, max((font.size(label)[0] for label, _ in rows), default=80) + label_padding
+        )
         x = rect.left + 16
         value_x = x + label_width
         max_value_width = rect.right - value_x - 16
@@ -47,7 +50,16 @@ class CharacterEquipmentMixin:
                 break
         return y
 
-    def _draw_resistance_group(self, entries: list[ResistanceSummary], rect: pygame.Rect, y: int, color, *, font=None, row_gap: int = 6) -> int:
+    def _draw_resistance_group(
+        self,
+        entries: list[ResistanceSummary],
+        rect: pygame.Rect,
+        y: int,
+        color,
+        *,
+        font=None,
+        row_gap: int = 6,
+    ) -> int:
         font = font or self.normal_font
         if not entries:
             self._draw_text("None", font, self.colors.GRAY, rect.left, y, rect.width)
@@ -59,9 +71,19 @@ class CharacterEquipmentMixin:
             y += row_height
         return y
 
-    def _draw_equipment_slot_box(self, slot: EquipmentSlotSummary, rect: pygame.Rect, *, selected: bool = False) -> None:
-        bg_color = (18, 16, 15) if slot.item_name != "(empty)" and slot.implemented else self.colors.DARK_GRAY
-        border_color = self.colors.GOLD if slot.implemented and slot.item_name != "(empty)" else self.colors.BORDER_COLOR
+    def _draw_equipment_slot_box(
+        self, slot: EquipmentSlotSummary, rect: pygame.Rect, *, selected: bool = False
+    ) -> None:
+        bg_color = (
+            (18, 16, 15)
+            if slot.item_name != "(empty)" and slot.implemented
+            else self.colors.DARK_GRAY
+        )
+        border_color = (
+            self.colors.GOLD
+            if slot.implemented and slot.item_name != "(empty)"
+            else self.colors.BORDER_COLOR
+        )
         text_color = self.colors.WHITE if slot.implemented else self.colors.GRAY
         pygame.draw.rect(self.screen, bg_color, rect)
         pygame.draw.rect(self.screen, border_color, rect, 2)
@@ -73,9 +95,14 @@ class CharacterEquipmentMixin:
             pygame.draw.rect(self.screen, self.colors.GOLD, inner, 4)
             pygame.draw.rect(self.screen, (255, 244, 170), inner.inflate(-8, -8), 1)
             corner_len = min(28, max(14, rect.width // 7))
-            for x1, x2 in ((inner.left, inner.left + corner_len), (inner.right - corner_len, inner.right)):
+            for x1, x2 in (
+                (inner.left, inner.left + corner_len),
+                (inner.right - corner_len, inner.right),
+            ):
                 pygame.draw.line(self.screen, (255, 244, 170), (x1, inner.top), (x2, inner.top), 3)
-                pygame.draw.line(self.screen, (255, 244, 170), (x1, inner.bottom), (x2, inner.bottom), 3)
+                pygame.draw.line(
+                    self.screen, (255, 244, 170), (x1, inner.bottom), (x2, inner.bottom), 3
+                )
         x = rect.left + 10
         y = rect.top + 8
         width = rect.width - 20
@@ -102,10 +129,14 @@ class CharacterEquipmentMixin:
             value_text = self._fit_text(value, self.small_font, value_width)
             rendered_width = self.small_font.size(value_text)[0]
             value_draw_x = value_x + max(0, value_width - rendered_width)
-            self._draw_text(value_text, self.small_font, self.colors.WHITE, value_draw_x, y, value_width)
+            self._draw_text(
+                value_text, self.small_font, self.colors.WHITE, value_draw_x, y, value_width
+            )
             y += self.small_font.get_height()
         for buff in slot.buffs[:2]:
-            self._draw_text(f"Buff: {buff}", self.small_font, self.colors.GOLD, text_x, y, text_width)
+            self._draw_text(
+                f"Buff: {buff}", self.small_font, self.colors.GOLD, text_x, y, text_width
+            )
             y += self.small_font.get_height()
 
     def _draw_item_art_backdrop(self, rect: pygame.Rect) -> None:
@@ -137,15 +168,26 @@ class CharacterEquipmentMixin:
     def equipment_layout_rect(self) -> pygame.Rect:
         """Return the paper-doll layout rect without drawing the surrounding panel."""
         y = self.details_rect.top + 14 + self.large_font.get_height() + 10
-        return pygame.Rect(self.details_rect.left + 28, y, self.details_rect.width - 56, self.details_rect.bottom - y - 20)
+        return pygame.Rect(
+            self.details_rect.left + 28,
+            y,
+            self.details_rect.width - 56,
+            self.details_rect.bottom - y - 20,
+        )
 
-    def _draw_equipment_paper_doll(self, slots: list[EquipmentSlotSummary], rect: pygame.Rect, selected_slot: str) -> None:
+    def _draw_equipment_paper_doll(
+        self, slots: list[EquipmentSlotSummary], rect: pygame.Rect, selected_slot: str
+    ) -> None:
         slot_by_name = {slot.slot: slot for slot in slots}
         positions = self.equipment_slot_rects(rect)
         for slot_name in EQUIPMENT_SLOT_ORDER:
             slot = slot_by_name.get(slot_name)
             if slot is not None:
-                self._draw_equipment_slot_box(slot, positions[slot_name], selected=slot_name == selected_slot and slot.implemented)
+                self._draw_equipment_slot_box(
+                    slot,
+                    positions[slot_name],
+                    selected=slot_name == selected_slot and slot.implemented,
+                )
 
     def draw_equipment_tab(self, player_char):
         y = self._draw_panel(self.details_rect, "Equipment")
@@ -165,7 +207,9 @@ class CharacterEquipmentMixin:
         )
         layout_rect = self.equipment_layout_rect()
         slots = self.build_equipment_slots(player_char)
-        selected_slot = self.selected_equipment_slot(player_char) if self.equipment_selector_active else ""
+        selected_slot = (
+            self.selected_equipment_slot(player_char) if self.equipment_selector_active else ""
+        )
         self._draw_equipment_paper_doll(slots, layout_rect, selected_slot)
 
     def action_rects(self) -> list[pygame.Rect]:
@@ -174,7 +218,9 @@ class CharacterEquipmentMixin:
         x = self.actions_rect.left + 16
         option_width = max(130, (self.actions_rect.width - 32) // max(1, len(self.menu_options)))
         return [
-            pygame.Rect(x + (index * option_width), y, option_width - 8, self.actions_rect.bottom - y - 12)
+            pygame.Rect(
+                x + (index * option_width), y, option_width - 8, self.actions_rect.bottom - y - 12
+            )
             for index, _option in enumerate(self.menu_options)
         ]
 
@@ -185,7 +231,14 @@ class CharacterEquipmentMixin:
             if index == self.current_selection:
                 pygame.draw.rect(self.screen, self.colors.HIGHLIGHT_BG, rect)
                 pygame.draw.rect(self.screen, self.colors.GOLD, rect, 1)
-            self._draw_text(option, self.small_font, self.colors.GOLD if index == self.current_selection else self.colors.WHITE, rect.left + 8, rect.centery - self.small_font.get_height() // 2, rect.width - 16)
+            self._draw_text(
+                option,
+                self.small_font,
+                self.colors.GOLD if index == self.current_selection else self.colors.WHITE,
+                rect.left + 8,
+                rect.centery - self.small_font.get_height() // 2,
+                rect.width - 16,
+            )
 
     def draw_all(self, player_char, do_flip=True):
         self._progression_player = player_char
@@ -201,9 +254,7 @@ class CharacterEquipmentMixin:
             self.draw_equipment_tab(player_char)
         elif self.active_tab.key == "progression":
             self.progression_view.show_embedded_navigation_helper = True
-            self.progression_view.embedded_navigation_active = (
-                self.progression_selector_active
-            )
+            self.progression_view.embedded_navigation_active = self.progression_selector_active
             self.progression_view.draw_embedded(player_char, self.content_rect)
         self.draw_menu()
         if do_flip:
@@ -220,19 +271,27 @@ class CharacterEquipmentMixin:
             special_inv = getattr(player_char, "special_inventory", {})
             if not special_inv:
                 self.draw_all(player_char, do_flip=False)
-                popup = character_screen.ConfirmationPopup(self.presenter, "You do not have any key items.", show_buttons=False)
+                popup = character_screen.ConfirmationPopup(
+                    self.presenter, "You do not have any key items.", show_buttons=False
+                )
                 popup.show(flush_events=True, require_key_release=True)
             else:
-                popup = character_screen.SimpleListPopupMenu(self.presenter, self, title="Key Items", source_fn=self._get_key_items_list)
+                popup = character_screen.SimpleListPopupMenu(
+                    self.presenter, self, title="Key Items", source_fn=self._get_key_items_list
+                )
                 _ = popup.show(player_char, flush_events=True, require_key_release=True)
         elif chosen == "Bestiary":
             popup = character_screen.BestiaryPopupMenu(self.presenter, self)
             _ = popup.show(player_char, flush_events=True, require_key_release=True)
         elif chosen == "Specials":
-            popup = character_screen.SimpleListPopupMenu(self.presenter, self, title="Special Abilities", source_fn=self._get_specials_list)
+            popup = character_screen.SimpleListPopupMenu(
+                self.presenter, self, title="Special Abilities", source_fn=self._get_specials_list
+            )
             _ = popup.show(player_char, flush_events=True, require_key_release=True)
         elif chosen == "Totem Aspects":
-            popup = character_screen.TotemAspectsPopupMenu(self.presenter, self, title="Totem Aspects")
+            popup = character_screen.TotemAspectsPopupMenu(
+                self.presenter, self, title="Totem Aspects"
+            )
             _ = popup.show(player_char, flush_events=True, require_key_release=True)
         elif chosen == "Exit Menu":
             return chosen
@@ -270,7 +329,9 @@ class CharacterEquipmentMixin:
 
         started_in_town = player_char.in_town()
         try:
-            input_armed = prepare_guarded_input(flush_events=flush_events, require_key_release=require_key_release)
+            input_armed = prepare_guarded_input(
+                flush_events=flush_events, require_key_release=require_key_release
+            )
         except pygame.error:
             input_armed = not require_key_release
 
@@ -285,13 +346,13 @@ class CharacterEquipmentMixin:
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     import sys
+
                     sys.exit()
                 input_armed = update_input_armed_from_event(event, True, input_armed)
 
                 if event.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN):
-                    if (
-                        self.active_tab.key == "progression"
-                        and self.content_rect.collidepoint(mouse_position(event))
+                    if self.active_tab.key == "progression" and self.content_rect.collidepoint(
+                        mouse_position(event)
                     ):
                         self.progression_selector_active = True
                         if self.progression_view.handle_event(event):
@@ -316,10 +377,7 @@ class CharacterEquipmentMixin:
                         if input_armed:
                             self.current_selection = action_index
                             chosen = self.menu_options[self.current_selection]
-                            if (
-                                chosen == "Exit Menu"
-                                and not self._confirm_progression_departure()
-                            ):
+                            if chosen == "Exit Menu" and not self._confirm_progression_departure():
                                 continue
                             result = self._open_menu_choice(chosen, player_char)
                             if result:
@@ -363,7 +421,10 @@ class CharacterEquipmentMixin:
                             elif player_char.select_transform_form(form_action):
                                 player_char.transform()
                             continue
-                    elif self.active_tab.key == "class" and not grandmaster.is_weapon_discipline_class(player_char):
+                    elif (
+                        self.active_tab.key == "class"
+                        and not grandmaster.is_weapon_discipline_class(player_char)
+                    ):
                         entries = self.class_companion_entries(player_char)
                         tile_index = hit_index(self.class_companion_tile_rects(entries), pos)
                         if tile_index is not None:
@@ -372,7 +433,9 @@ class CharacterEquipmentMixin:
                             if is_left_click(event) and input_armed:
                                 self._open_class_companion_popup(player_char)
                             continue
-                    elif self.active_tab.key == "class" and grandmaster.is_weapon_discipline_class(player_char):
+                    elif self.active_tab.key == "class" and grandmaster.is_weapon_discipline_class(
+                        player_char
+                    ):
                         row_index = hit_index(self.weapon_discipline_row_rects(), pos)
                         if row_index is not None:
                             self.selected_weapon_discipline_index = row_index
@@ -386,9 +449,7 @@ class CharacterEquipmentMixin:
                     continue
 
                 if self.active_tab.key == "progression" and event.key == pygame.K_p:
-                    self.progression_selector_active = (
-                        not self.progression_selector_active
-                    )
+                    self.progression_selector_active = not self.progression_selector_active
                     continue
 
                 if (
@@ -402,10 +463,7 @@ class CharacterEquipmentMixin:
                     self.equipment_selector_active = False
                 elif event.key == pygame.K_ESCAPE and self.class_companion_selector_active:
                     self.class_companion_selector_active = False
-                elif (
-                    event.key == pygame.K_ESCAPE
-                    and self.progression_selector_active
-                ):
+                elif event.key == pygame.K_ESCAPE and self.progression_selector_active:
                     self.progression_selector_active = False
                 elif event.key == pygame.K_ESCAPE:
                     if not self._confirm_progression_departure():
@@ -420,9 +478,15 @@ class CharacterEquipmentMixin:
                         self._open_composition_popup(player_char)
                     elif not grandmaster.is_weapon_discipline_class(player_char):
                         entries = self.class_companion_entries(player_char)
-                        self.class_companion_selector_active = bool(entries) and not self.class_companion_selector_active
+                        self.class_companion_selector_active = (
+                            bool(entries) and not self.class_companion_selector_active
+                        )
                 elif event.key in (pygame.K_TAB, pygame.K_RIGHT):
-                    if self.active_tab.key == "equipment" and self.equipment_selector_active and event.key == pygame.K_RIGHT:
+                    if (
+                        self.active_tab.key == "equipment"
+                        and self.equipment_selector_active
+                        and event.key == pygame.K_RIGHT
+                    ):
                         self.move_equipment_selector(player_char, "right")
                     elif (
                         self.active_tab.key == "class"
@@ -431,7 +495,9 @@ class CharacterEquipmentMixin:
                         and self.class_companion_entries(player_char)
                     ):
                         entries = self.class_companion_entries(player_char)
-                        self.selected_class_companion_index = min(len(entries) - 1, self.selected_class_companion_index + 1)
+                        self.selected_class_companion_index = min(
+                            len(entries) - 1, self.selected_class_companion_index + 1
+                        )
                     else:
                         visible = self.visible_tabs(player_char)
                         active_index = next(
@@ -454,7 +520,9 @@ class CharacterEquipmentMixin:
                         and self.class_companion_selector_active
                         and self.class_companion_entries(player_char)
                     ):
-                        self.selected_class_companion_index = max(0, self.selected_class_companion_index - 1)
+                        self.selected_class_companion_index = max(
+                            0, self.selected_class_companion_index - 1
+                        )
                     else:
                         visible = self.visible_tabs(player_char)
                         active_index = next(
@@ -490,24 +558,54 @@ class CharacterEquipmentMixin:
                 elif event.key == pygame.K_UP:
                     if self.active_tab.key == "equipment" and self.equipment_selector_active:
                         self.move_equipment_selector(player_char, "up")
-                    elif self.active_tab.key == "class" and self.active_mechanic_label(player_char) == "Aerial Tempo" and self.jump_mod_entries(player_char):
+                    elif (
+                        self.active_tab.key == "class"
+                        and self.active_mechanic_label(player_char) == "Aerial Tempo"
+                        and self.jump_mod_entries(player_char)
+                    ):
                         self.selected_jump_mod_index = max(0, self.selected_jump_mod_index - 1)
-                    elif self.active_tab.key == "class" and self.class_companion_selector_active and self.class_companion_entries(player_char):
-                        self.selected_class_companion_index = max(0, self.selected_class_companion_index - 1)
-                    elif self.active_tab.key == "class" and grandmaster.is_weapon_discipline_class(player_char):
-                        self.selected_weapon_discipline_index = max(0, self.selected_weapon_discipline_index - 1)
+                    elif (
+                        self.active_tab.key == "class"
+                        and self.class_companion_selector_active
+                        and self.class_companion_entries(player_char)
+                    ):
+                        self.selected_class_companion_index = max(
+                            0, self.selected_class_companion_index - 1
+                        )
+                    elif self.active_tab.key == "class" and grandmaster.is_weapon_discipline_class(
+                        player_char
+                    ):
+                        self.selected_weapon_discipline_index = max(
+                            0, self.selected_weapon_discipline_index - 1
+                        )
                     else:
-                        self.current_selection = (self.current_selection - 1) % len(self.menu_options)
+                        self.current_selection = (self.current_selection - 1) % len(
+                            self.menu_options
+                        )
                 elif event.key == pygame.K_DOWN:
                     if self.active_tab.key == "equipment" and self.equipment_selector_active:
                         self.move_equipment_selector(player_char, "down")
-                    elif self.active_tab.key == "class" and self.active_mechanic_label(player_char) == "Aerial Tempo" and self.jump_mod_entries(player_char):
+                    elif (
+                        self.active_tab.key == "class"
+                        and self.active_mechanic_label(player_char) == "Aerial Tempo"
+                        and self.jump_mod_entries(player_char)
+                    ):
                         entries = self.jump_mod_entries(player_char)
-                        self.selected_jump_mod_index = min(len(entries) - 1, self.selected_jump_mod_index + 1)
-                    elif self.active_tab.key == "class" and self.class_companion_selector_active and self.class_companion_entries(player_char):
+                        self.selected_jump_mod_index = min(
+                            len(entries) - 1, self.selected_jump_mod_index + 1
+                        )
+                    elif (
+                        self.active_tab.key == "class"
+                        and self.class_companion_selector_active
+                        and self.class_companion_entries(player_char)
+                    ):
                         entries = self.class_companion_entries(player_char)
-                        self.selected_class_companion_index = min(len(entries) - 1, self.selected_class_companion_index + 1)
-                    elif self.active_tab.key == "class" and grandmaster.is_weapon_discipline_class(player_char):
+                        self.selected_class_companion_index = min(
+                            len(entries) - 1, self.selected_class_companion_index + 1
+                        )
+                    elif self.active_tab.key == "class" and grandmaster.is_weapon_discipline_class(
+                        player_char
+                    ):
                         weapon_types = grandmaster.weapon_discipline_types(
                             player_char,
                         )
@@ -516,15 +614,39 @@ class CharacterEquipmentMixin:
                             self.selected_weapon_discipline_index + 1,
                         )
                     else:
-                        self.current_selection = (self.current_selection + 1) % len(self.menu_options)
-                elif event.key == pygame.K_a and self.active_tab.key == "class" and self.class_companion_selector_active and self.class_companion_entries(player_char):
-                    self.selected_class_companion_index = max(0, self.selected_class_companion_index - 1)
-                elif event.key == pygame.K_d and self.active_tab.key == "class" and self.class_companion_selector_active and self.class_companion_entries(player_char):
+                        self.current_selection = (self.current_selection + 1) % len(
+                            self.menu_options
+                        )
+                elif (
+                    event.key == pygame.K_a
+                    and self.active_tab.key == "class"
+                    and self.class_companion_selector_active
+                    and self.class_companion_entries(player_char)
+                ):
+                    self.selected_class_companion_index = max(
+                        0, self.selected_class_companion_index - 1
+                    )
+                elif (
+                    event.key == pygame.K_d
+                    and self.active_tab.key == "class"
+                    and self.class_companion_selector_active
+                    and self.class_companion_entries(player_char)
+                ):
                     entries = self.class_companion_entries(player_char)
-                    self.selected_class_companion_index = min(len(entries) - 1, self.selected_class_companion_index + 1)
-                elif event.key == pygame.K_s and self.active_tab.key == "class" and self.class_companion_selector_active:
+                    self.selected_class_companion_index = min(
+                        len(entries) - 1, self.selected_class_companion_index + 1
+                    )
+                elif (
+                    event.key == pygame.K_s
+                    and self.active_tab.key == "class"
+                    and self.class_companion_selector_active
+                ):
                     self._activate_selected_tamed_companion(player_char)
-                elif event.key == pygame.K_r and self.active_tab.key == "class" and self.class_companion_selector_active:
+                elif (
+                    event.key == pygame.K_r
+                    and self.active_tab.key == "class"
+                    and self.class_companion_selector_active
+                ):
                     self._release_selected_tamed_companion(player_char)
                 elif event.key in (pygame.K_RETURN, pygame.K_SPACE):
                     if self.active_tab.key == "equipment" and self.equipment_selector_active:
@@ -535,20 +657,29 @@ class CharacterEquipmentMixin:
                         and self._has_jump_mods(player_char)
                     ):
                         self._toggle_selected_jump_mod(player_char)
-                    elif self.active_tab.key == "class" and self.active_mechanic_label(player_char) == "Totems":
+                    elif (
+                        self.active_tab.key == "class"
+                        and self.active_mechanic_label(player_char) == "Totems"
+                    ):
                         self._open_totem_aspects_popup(player_char)
-                    elif self.active_tab.key == "class" and self.active_mechanic_label(player_char) == "Crescendo":
+                    elif (
+                        self.active_tab.key == "class"
+                        and self.active_mechanic_label(player_char) == "Crescendo"
+                    ):
                         self._open_composition_popup(player_char)
-                    elif self.active_tab.key == "class" and self.class_companion_selector_active and self.class_companion_entries(player_char):
+                    elif (
+                        self.active_tab.key == "class"
+                        and self.class_companion_selector_active
+                        and self.class_companion_entries(player_char)
+                    ):
                         self._open_class_companion_popup(player_char)
-                    elif self.active_tab.key == "class" and grandmaster.is_weapon_discipline_class(player_char):
+                    elif self.active_tab.key == "class" and grandmaster.is_weapon_discipline_class(
+                        player_char
+                    ):
                         self._open_weapon_discipline_popup(player_char)
                     else:
                         chosen = self.menu_options[self.current_selection]
-                        if (
-                            chosen == "Exit Menu"
-                            and not self._confirm_progression_departure()
-                        ):
+                        if chosen == "Exit Menu" and not self._confirm_progression_departure():
                             continue
                         result = self._open_menu_choice(chosen, player_char)
                         if result:

@@ -4,10 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from src.core import abilities
-from src.core import items
-from src.core.classes import ability_mechanics
-from src.core.classes import grandmaster
+from src.core import abilities, items
+from src.core.classes import ability_mechanics, grandmaster
 from src.core.combat import CombatEncounter
 from src.core.combat.battle_engine import BattleEngine
 from src.core.progression import (
@@ -91,17 +89,11 @@ def test_berserker_tree_has_centered_development_and_heavy_weapon_arts():
     assert "level_requirement" not in by_name["Parry"].payload
     assert by_name["Hemorrhage Thirst"].payload["ability_class"]().passive is True
     assert by_name["+30 Attack"].payload["amount"] == 30
-    assert by_name["Reckless Onslaught"].prerequisites == (
-        by_name["Final Assault"].id,
-    )
-    assert by_name["Monkey Grip 2"].prerequisites == (
-        by_name["Tectonic Rift"].id,
-    )
+    assert by_name["Reckless Onslaught"].prerequisites == (by_name["Final Assault"].id,)
+    assert by_name["Monkey Grip 2"].prerequisites == (by_name["Tectonic Rift"].id,)
     assert by_name["Momentum"].prerequisites == (by_name["Monkey Grip"].id,)
     assert by_name["Tectonic Rift"].prerequisites == (by_name["Momentum"].id,)
-    assert by_name["Fatality"].prerequisites == (
-        by_name["Hemorrhage Thirst"].id,
-    )
+    assert by_name["Fatality"].prerequisites == (by_name["Hemorrhage Thirst"].id,)
     assert by_name["Composed Wrath"].prerequisites == (by_name["Fatality"].id,)
     assert not hasattr(
         by_name["Reckless Onslaught"].payload["ability_class"],
@@ -112,15 +104,10 @@ def test_berserker_tree_has_centered_development_and_heavy_weapon_arts():
     for name, level in expected_levels.items():
         assert by_name[name].payload["level_requirement"] == level
 
-    art_nodes = [
-        node
-        for node in tree.nodes
-        if node.payload.get("weapon_specialization")
-    ]
+    art_nodes = [node for node in tree.nodes if node.payload.get("weapon_specialization")]
     assert len(art_nodes) == 8
     assert {
-        node.payload["weapon_specialization"][0]
-        for node in art_nodes
+        node.payload["weapon_specialization"][0] for node in art_nodes
     } == grandmaster.TWO_HANDED_WEAPONS
     assert all("level_requirement" not in node.payload for node in art_nodes)
     assert {node.position[0] for node in art_nodes} == {4, 5}
@@ -130,11 +117,7 @@ def test_berserker_tree_has_centered_development_and_heavy_weapon_arts():
 def test_grandmaster_tree_has_three_rank_gated_art_levels_and_floating_talents():
     tree = ABILITY_TREES["Grandmaster of Arms"]
     by_name = {node.name: node for node in tree.nodes}
-    art_nodes = [
-        node
-        for node in tree.nodes
-        if node.payload.get("weapon_specialization")
-    ]
+    art_nodes = [node for node in tree.nodes if node.payload.get("weapon_specialization")]
 
     assert len(art_nodes) == 24
     assert {node.payload["weapon_specialization"][1] for node in art_nodes} == {
@@ -144,16 +127,9 @@ def test_grandmaster_tree_has_three_rank_gated_art_levels_and_floating_talents()
     }
     assert all("level_requirement" not in node.payload for node in art_nodes)
     for base_name in grandmaster.WEAPON_ARTS.values():
-        assert by_name[f"{base_name} 2"].prerequisites == (
-            by_name[base_name].id,
-        )
-        assert by_name[f"{base_name} 3"].prerequisites == (
-            by_name[f"{base_name} 2"].id,
-        )
-        assert (
-            by_name[f"{base_name} 3"].payload["ability_class"].replaces
-            == f"{base_name} 2"
-        )
+        assert by_name[f"{base_name} 2"].prerequisites == (by_name[base_name].id,)
+        assert by_name[f"{base_name} 3"].prerequisites == (by_name[f"{base_name} 2"].id,)
+        assert by_name[f"{base_name} 3"].payload["ability_class"].replaces == f"{base_name} 2"
 
     perfect_form = by_name["Perfect Form"]
     adaptive_arsenal = by_name["Adaptive Arsenal"]
@@ -273,10 +249,7 @@ def test_tectonic_rift_hits_all_enemies_but_only_prones_grounded_targets():
     engine.attacker = player
     engine.defender = grounded
     ability = abilities.TectonicRift()
-    targets = [
-        (member.combatant_id, member.enemy)
-        for member in encounter.members
-    ]
+    targets = [(member.combatant_id, member.enemy) for member in encounter.members]
 
     result = ability.use_group(player, targets, battle_engine=engine)
 
@@ -445,9 +418,7 @@ def test_hemorrhage_thirst_heals_bleed_and_crashes_after_three_turns():
     player = _player("Berserker")
     enemy = _player("Grandmaster of Arms")
     player.health.current = 100
-    player.spellbook["Skills"]["Hemorrhage Thirst"] = (
-        abilities.HemorrhageThirst()
-    )
+    player.spellbook["Skills"]["Hemorrhage Thirst"] = abilities.HemorrhageThirst()
     bleed = enemy.physical_effects["Bleed"]
     bleed.active = True
     bleed.duration = 4

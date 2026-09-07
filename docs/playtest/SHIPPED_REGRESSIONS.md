@@ -105,7 +105,7 @@ remain the prompts; the evidence ledger is the running decision record.
     declining it returns without committing the promotion.
   - Expected: Canceling the vow choice cancels promotion.
   - Expected: Completing promotion grants the matching vow skill: `Redeem`, `Challenge`, `Interpose`, or `Judgment Riposte`.
-- [ ] Load or create a legacy Paladin/Crusader save with no vow, then visit the Church.
+- [ ] Load or create a Paladin/Crusader test fixture with missing vow state, then visit the Church.
   - Expected: The Church menu includes `Swear Paladin Vow`.
   - Expected: Choosing a vow persists it and grants the matching vow skill.
 - [ ] Visit the Church as a Crusader with a dormant Class Ring equipped or stored and a sworn vow.
@@ -174,7 +174,7 @@ remain the prompts; the evidence ledger is the running decision record.
   - Expected: Any postgame town dialogue is local, repeat-safe, and does not mutate quests, shops, bounties, church, inn, barracks, storage, or NPC availability.
 - [ ] Run the Red Dragon route as a Lancer/Dragoon with `Recover`, as a Thaumaturgist choosing a Dragon Xenid, and as another class.
   - Expected: Copy distinguishes Red Dragon boss defeat, Kaelenon restoration, and Zahhak binding without declaring ordinary victories invalid.
-  - Expected: Red Dragon floor gates, boss-room state, `Dragon's Fury`, summon unlock behavior, class rewards, and old-save compatibility remain unchanged.
+  - Expected: Red Dragon floor gates, boss-room state, `Dragon's Fury`, summon unlock behavior, class rewards, and current-save behavior remain unchanged.
 
 ### Weapon Discipline And School Affinity
 - [ ] Promote a Warrior to Weapon Master.
@@ -281,8 +281,9 @@ remain the prompts; the evidence ledger is the running decision record.
 - [ ] Cast Fire/Ice/Water/Electric/Earth/Wind spells as Wizard before and after awakening the Wizard Class Ring.
   - Expected: Wizard affinity caps at 100, unlocks tier-3 spell upgrades at 80, and applies matching damage bonuses per full 10 affinity.
   - Expected: With the awakened ring equipped, matching casts gain +3 affinity instead of +2 and final mastery enables 3-stack school buffs.
-- [ ] Load a legacy Sorcerer/Wizard save with old 50-centered affinity values.
-  - Expected: Values migrate to the new 0-based model, clamp to the active class cap, and remain readable in character/ring status text.
+- [ ] Inject pre-normalization 50-centered affinity values for a Sorcerer or Wizard.
+  - Expected: Values normalize to the 0-based model, clamp to the active class
+    cap, and remain readable in character/ring status text.
 
 The September 2026 critical closure pass completed the Pathfinder promotion
 mechanics covered below. These entries are regression prompts for the shipped
@@ -745,7 +746,7 @@ absent from player-facing explanations.
 - [ ] Run renderer diagnostics with all shipped dungeon assets present.
   - Expected: Texture, special-tile, and manifest fallback counts remain zero for shipped dungeon-render assets.
 - [x] Review active and inactive Warp Point dungeon art.
-  - Expected: `src/ui_pygame/assets/dungeon_tiles/special_tiles/warp_point_art_review_sheet.png` shows both approved variants.
+  - Expected: `docs/assets/review-sheets/warp-point-art.png` shows both approved variants.
   - Expected: Active Warp Points use the active platform plus existing spark overlay; inactive/spent Warp Points use the dim platform; missing approved art falls back to the readable legacy teleporter.
 - [ ] Inspect aggregate texture diagnostics after entering and leaving several rooms.
   - Expected: Loaded state, fallback counts/totals, cache size/limit/capacity, and override counts are visible in one diagnostic payload.
@@ -841,7 +842,7 @@ absent from player-facing explanations.
 - [x] Enter combat with more than six available actions, such as debug actions plus item/spell/skill options.
   - Expected: The action menu compacts into the bottom command panel without overflowing below the screen.
   - Expected: Long action labels are truncated inside their cells instead of overlapping neighboring actions.
-- [x] Set `DUNGEON_FORCE_ENEMY=Test` before running `launch_gui_debug.sh`, or uncomment the matching line in the script during an ability debug run.
+- [x] Set `DUNGEON_FORCE_ENEMY=Test` before running `./launch_debug.sh`, or uncomment the matching line in the script during an ability debug run.
   - Expected: Random encounters use the requested debug enemy only while the environment variable is active, then return to normal catalog selection.
 - [x] Trigger random encounters while an active defeat, collection, or bounty quest target exists in the current floor catalog.
   - Expected: The helper can softly prefer matching active quest enemies, ignores completed/turned-in targets, falls back on soft-roll failure, and still lets debug overrides win.
@@ -952,7 +953,7 @@ absent from player-facing explanations.
   - Expected: Status changes to `Detailed`.
   - Expected: Resistances, known abilities, immunities, and features appear alongside Locations and Possible Drops after defeat.
   - Expected: Repeated combat-frame rendering does not inflate Seen count.
-- [ ] Defeat or load a legacy-save defeated enemy with no detailed record.
+- [ ] Defeat or load a defeated enemy with no detailed identity record.
   - Expected: The entry still appears from `kill_dict`, shows defeated count, and displays defeated-gated practical info.
 - [ ] Defeat or load a defeated boss with no detailed Bestiary record.
   - Expected: The entry shows defeated-gated practical info but does not suggest using Vision to reveal boss details.
@@ -1051,10 +1052,11 @@ absent from player-facing explanations.
   - Expected: Visible saves, temp leftovers, directory entries, and ignored entries are counted separately.
   - Expected: Hidden-entry filename lists identify temp leftovers, directory-like saves, and ignored files.
   - Expected: Hidden-entry totals match temp leftovers plus directory-like saves plus ignored files.
-- [ ] Load an older or partially malformed save with tile-state data.
+- [ ] Load a partially malformed current save with tile-state data.
   - Expected: Valid door/chest/boss room states still restore, while malformed tile-state entries are ignored.
   - Expected: Tile-state diagnostics count valid entries, malformed positions, malformed state payloads, and positions absent from the loaded world.
-  - Expected: Tile-state diagnostics identify restorable attribute counts and any unknown legacy/custom attribute keys.
+  - Expected: Tile-state diagnostics identify restorable attribute counts and
+    any unknown or custom attribute keys.
 - [x] Attempt to load a corrupted save file.
   - Expected: Loading fails gracefully without deleting or rewriting the corrupted file.
 
@@ -1063,7 +1065,8 @@ absent from player-facing explanations.
   - Expected: Quest completion and turned-in state are recorded correctly.
 - [ ] Inspect quest status summary diagnostics after accepting, completing, and turning in quests.
   - Expected: Main/Side/Bounty category counts distinguish total, completed, turned-in, ready-to-turn-in, and active quests.
-  - Expected: Malformed or legacy non-dictionary quest entries are ignored instead of crashing diagnostics.
+  - Expected: Malformed non-dictionary quest entries are ignored instead of
+    crashing diagnostics.
 
 ### Developer Tooling
 - [ ] Generate or inspect a `CombatResult` / `CombatResultGroup` diagnostic payload after combat.
@@ -1186,13 +1189,13 @@ absent from player-facing explanations.
 
 ### NPC Story Artwork
 - [ ] Review the generated NPC portrait sheet after the story portrait batch.
-  - Expected: `src/ui_pygame/assets/npc_art/npc_art_review_sheet.png` shows recurring town NPCs, Seraphine Voss, Mara Vale, The Gray Broker, Old Warehouse Guard, Warp Point Scientist, Acolyte, Reflection, and Vesperion.
+  - Expected: `docs/assets/review-sheets/npc-art.png` shows recurring town NPCs, Seraphine Voss, Mara Vale, The Gray Broker, Old Warehouse Guard, Warp Point Scientist, Acolyte, Reflection, and Vesperion.
   - Expected: Portraits have transparent edges, no rectangular backgrounds, no labels or watermarks, consistent dark fantasy painterly style, and readable silhouettes.
 - [ ] Inspect Seraphine Voss, Mara Vale, The Gray Broker, Old Warehouse Guard, and Warp Point Scientist portrait aliases.
   - Expected: Their assets appear in the NPC review sheet and resolve through `NpcArtManager` without appearing in unrelated shop, combat, bounty, or town hover panels.
 - [ ] Visit the Old Warehouse after the Thieves Guild has unlocked.
   - Expected: The off-limits warning uses the split dialogue popup with the Old Warehouse Guard portrait instead of a plain text-only popup.
-- [ ] Review `src/ui_pygame/assets/npc_art/npc_art_review_sheet.png` after the V3 diversity replacements.
+- [ ] Review `docs/assets/review-sheets/npc-art.png` after the V3 diversity replacements.
   - Expected: Alchemist, Barkeep, Jeweler, Priest, Soldier, Waitress, and Warp Point Scientist use the approved replacement portraits.
   - Expected: Busboy, Drunkard, Griswold, Old Warehouse Guard, and Sergeant retain their prior approved portraits.
   - Expected: Archived originals and rejected candidates under `npc_art/old_files/` do not appear in live dialogue, shops, town menus, combat, bounty boards, or hover panels.
@@ -1242,7 +1245,7 @@ absent from player-facing explanations.
 
 ### Enemy Combat Sprites
 - [x] Review the generated enemy combat sprite sheet.
-  - Expected: `src/ui_pygame/assets/enemy_combat_sprites/enemy_combat_sprite_review_sheet.png` shows every sprite on a neutral dungeon background.
+  - Expected: `docs/assets/review-sheets/enemy-combat-sprites.png` shows every sprite on a neutral dungeon background.
   - Expected: Sprites have transparent backgrounds, clean silhouettes, no rectangular cards, no labels, and no clipping.
   - Expected: Quasit is visually distinct from Imp, with green warted skin, spiky horns, barbed tail, and long clawed digits.
 - [x] Start combat against Skeleton, Giant Rat, an elemental such as Ice Myrmidon, Dragon, Demon, boss fallback, and generic fallback enemies.

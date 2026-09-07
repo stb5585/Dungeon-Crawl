@@ -138,14 +138,24 @@ def _make_presenter():
 
 def _make_parent():
     calls = []
-    return SimpleNamespace(draw_all=lambda player_char, do_flip=False: calls.append((player_char, do_flip)), calls=calls)
+    return SimpleNamespace(
+        draw_all=lambda player_char, do_flip=False: calls.append((player_char, do_flip)),
+        calls=calls,
+    )
 
 
 def _make_player():
     inventory = {
-        "Weapons": [DummyItem("Bronze Sword"), DummyItem("Bronze Sword"), DummyItem("Apple", typ="Misc", subtyp="Health")],
+        "Weapons": [
+            DummyItem("Bronze Sword"),
+            DummyItem("Bronze Sword"),
+            DummyItem("Apple", typ="Misc", subtyp="Health"),
+        ],
         "Helmets": [DummyItem("Iron Helm", typ="Helmet", subtyp="Heavy")],
-        "Accessories": [DummyItem("Silver Ring", typ="Accessory", subtyp="Ring"), DummyItem("Sun Pendant", typ="Accessory", subtyp="Pendant")],
+        "Accessories": [
+            DummyItem("Silver Ring", typ="Accessory", subtyp="Ring"),
+            DummyItem("Sun Pendant", typ="Accessory", subtyp="Pendant"),
+        ],
     }
     equipment = {
         "Weapon": DummyItem("Starter Blade"),
@@ -170,8 +180,13 @@ def _make_player():
 
 def _patch_visuals(monkeypatch):
     monkeypatch.setattr("src.ui_pygame.gui.popup_menus.pygame.display.flip", lambda: None)
-    monkeypatch.setattr("src.ui_pygame.gui.popup_menus.pygame.draw.rect", lambda *_args, **_kwargs: None)
-    monkeypatch.setattr("src.ui_pygame.gui.popup_menus.pygame.Surface", lambda size, *_args: SimpleNamespace(fill=lambda *_a, **_k: None))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.popup_menus.pygame.draw.rect", lambda *_args, **_kwargs: None
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.popup_menus.pygame.Surface",
+        lambda size, *_args: SimpleNamespace(fill=lambda *_a, **_k: None),
+    )
 
 
 def test_base_popup_helpers_and_show_navigation(monkeypatch):
@@ -203,11 +218,13 @@ def test_base_popup_helpers_and_show_navigation(monkeypatch):
     popup._capture_menu_surface(player)
     assert parent.calls
 
-    events = iter([
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)],
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_PAGEDOWN)],
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
-    ])
+    events = iter(
+        [
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_PAGEDOWN)],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+        ]
+    )
     monkeypatch.setattr("src.ui_pygame.gui.popup_menus.pygame.event.get", lambda: next(events, []))
     result = popup.show(player)
     assert result[0] == "selected"
@@ -223,10 +240,12 @@ def test_base_popup_supports_mouse_hover_click_and_wheel(monkeypatch):
     rows = dict(popup.visible_row_rects())
 
     beta_pos = rows[2].center
-    events = iter([
-        [SimpleNamespace(type=pygame.MOUSEMOTION, pos=beta_pos)],
-        [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=beta_pos)],
-    ])
+    events = iter(
+        [
+            [SimpleNamespace(type=pygame.MOUSEMOTION, pos=beta_pos)],
+            [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=beta_pos)],
+        ]
+    )
     monkeypatch.setattr("src.ui_pygame.gui.popup_menus.pygame.event.get", lambda: next(events, []))
 
     assert popup.show(player) == ("selected", "Beta")
@@ -234,10 +253,12 @@ def test_base_popup_supports_mouse_hover_click_and_wheel(monkeypatch):
     popup = DemoPopup(presenter, parent, title="Test")
     popup.build_items(player)
     rows = dict(popup.visible_row_rects())
-    events = iter([
-        [SimpleNamespace(type=pygame.MOUSEWHEEL, y=-1)],
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
-    ])
+    events = iter(
+        [
+            [SimpleNamespace(type=pygame.MOUSEWHEEL, y=-1)],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+        ]
+    )
     monkeypatch.setattr("src.ui_pygame.gui.popup_menus.pygame.event.get", lambda: next(events, []))
 
     assert popup.show(player) == ("selected", "Beta")
@@ -280,10 +301,13 @@ def test_specials_popup_casts_exploration_spells_with_confirmation(monkeypatch):
 
     monkeypatch.setattr(popup_menus, "ConfirmationPopup", FakeConfirmation)
 
-    assert popup.on_select(
-        player,
-        {"is_header": False, "text": spell.name, "value": spell},
-    ) is None
+    assert (
+        popup.on_select(
+            player,
+            {"is_header": False, "text": spell.name, "value": spell},
+        )
+        is None
+    )
     assert cast_calls == [player]
     assert player.mana.current == 5
     assert confirmations == [
@@ -303,10 +327,12 @@ def test_base_popup_ignores_header_click_and_keeps_open_on_none(monkeypatch):
     rows = dict(popup.visible_row_rects())
     header_pos = rows[0].center
     gamma_pos = rows[3].center
-    events = iter([
-        [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=header_pos)],
-        [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=gamma_pos)],
-    ])
+    events = iter(
+        [
+            [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=header_pos)],
+            [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=gamma_pos)],
+        ]
+    )
     monkeypatch.setattr("src.ui_pygame.gui.popup_menus.pygame.event.get", lambda: next(events, []))
 
     assert popup.show(player) == ("selected", "Gamma")
@@ -317,10 +343,12 @@ def test_base_popup_ignores_header_click_and_keeps_open_on_none(monkeypatch):
     alpha_pos = rows[1].center
     beta_pos = rows[2].center
     parent.calls.clear()
-    events = iter([
-        [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=alpha_pos)],
-        [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=beta_pos)],
-    ])
+    events = iter(
+        [
+            [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=alpha_pos)],
+            [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=beta_pos)],
+        ]
+    )
     monkeypatch.setattr("src.ui_pygame.gui.popup_menus.pygame.event.get", lambda: next(events, []))
 
     assert popup.show(player) == ("selected", "Beta")
@@ -461,7 +489,11 @@ def test_bestiary_popup_merges_seen_defeated_and_detailed_entries(monkeypatch):
 
     popup.build_items(player)
 
-    assert [popup.item_display_text(item) for item in popup.items] == ["Goblin x1", "Specter Seen", "Wraith Seen"]
+    assert [popup.item_display_text(item) for item in popup.items] == [
+        "Goblin x1",
+        "Specter Seen",
+        "Wraith Seen",
+    ]
     assert popup.summary_text == "Seen: 3 | Defeated: 1 | Detailed: 1"
     popup.draw_popup(player)
     assert "Seen: 3 | Defeated: 1 | Detailed: 1" in presenter.small_font.render_calls
@@ -496,7 +528,8 @@ def test_bestiary_popup_defeated_entries_show_locations_and_drops(monkeypatch):
     monkeypatch.setattr(
         popup_menus.enemies,
         "bestiary_drop_hints",
-        lambda enemy, boss=False: drop_calls.append((getattr(enemy, "name", None), boss)) or ["Key (Common)"],
+        lambda enemy, boss=False: drop_calls.append((getattr(enemy, "name", None), boss))
+        or ["Key (Common)"],
     )
 
     popup.build_items(player)
@@ -529,7 +562,10 @@ def test_bestiary_popup_undetailed_boss_does_not_suggest_vision(monkeypatch):
     assert "Details unknown." in presenter.normal_font.render_calls
     assert "Boss details cannot be revealed" in presenter.small_font.render_calls
     assert "with Vision." in presenter.small_font.render_calls
-    assert "Use Vision while fighting this enemy to reveal bestiary details." not in presenter.small_font.render_calls
+    assert (
+        "Use Vision while fighting this enemy to reveal bestiary details."
+        not in presenter.small_font.render_calls
+    )
 
 
 def test_bestiary_popup_detailed_defeated_entries_keep_mechanics_with_practical_info(monkeypatch):
@@ -593,7 +629,9 @@ def test_bestiary_popup_resolves_mimic_details_and_art_lazily(monkeypatch):
     monkeypatch.setattr(
         popup,
         "_draw_enemy_sprite",
-        lambda enemy, _rect, enemy_name=None: draw_calls.append((getattr(enemy, "name", None), enemy_name)),
+        lambda enemy, _rect, enemy_name=None: draw_calls.append(
+            (getattr(enemy, "name", None), enemy_name)
+        ),
     )
 
     popup.build_items(player)
@@ -645,7 +683,9 @@ def test_equipment_popup_wraps_long_plain_descriptions(monkeypatch):
     popup = popup_menus.EquipmentPopupMenu(presenter, parent)
     popup.build_items(player)
     popup.selected_index = 5
-    monkeypatch.setattr("src.ui_pygame.gui.popup_menus.pygame.draw.rect", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.popup_menus.pygame.draw.rect", lambda *_args, **_kwargs: None
+    )
 
     popup.draw_details(player)
 
@@ -665,11 +705,13 @@ def test_base_popup_can_wait_for_key_release_before_accepting_input(monkeypatch)
     popup = DemoPopup(presenter, parent, title="Test")
     player = _make_player()
 
-    events = iter([
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
-        [SimpleNamespace(type=pygame.KEYUP, key=pygame.K_RETURN)],
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
-    ])
+    events = iter(
+        [
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+            [SimpleNamespace(type=pygame.KEYUP, key=pygame.K_RETURN)],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+        ]
+    )
     monkeypatch.setattr("src.ui_pygame.gui.popup_menus.pygame.event.get", lambda: next(events, []))
     monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [1])
 
@@ -685,12 +727,16 @@ def test_base_popup_accepts_fresh_key_without_keyup(monkeypatch):
     popup = DemoPopup(presenter, parent, title="Test")
     player = _make_player()
 
-    events = iter([
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
-    ])
+    events = iter(
+        [
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+        ]
+    )
     clear_calls = []
     monkeypatch.setattr("src.ui_pygame.gui.popup_menus.pygame.event.get", lambda: next(events, []))
-    monkeypatch.setattr("src.ui_pygame.gui.popup_menus.pygame.event.clear", lambda: clear_calls.append(True))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.popup_menus.pygame.event.clear", lambda: clear_calls.append(True)
+    )
     monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
 
     result = popup.show(player, flush_events=True, require_key_release=True)
@@ -735,7 +781,9 @@ def test_inventory_popup_build_sort_cycle_and_item_actions(monkeypatch):
     assert popup.title.startswith("Inventory [Name]")
     assert popup.item_display_text(("Weapons", DummyItem("Potion", qty=3), 1)) == "Potion x3"
     assert popup._is_combat_usable(DummyItem("Potion", typ="Misc", subtyp="Health")) is True
-    assert popup._is_combat_usable(DummyItem("Sanctuary Scroll", typ="Misc", subtyp="Scroll")) is False
+    assert (
+        popup._is_combat_usable(DummyItem("Sanctuary Scroll", typ="Misc", subtyp="Scroll")) is False
+    )
 
     popup.handle_key_down(player, SimpleNamespace(key=pygame.K_s))
     assert popup.title.startswith("Inventory [Type]")
@@ -756,7 +804,9 @@ def test_inventory_popup_build_sort_cycle_and_item_actions(monkeypatch):
     monkeypatch.setattr(popup_menus, "ConfirmationPopup", FakePopup)
     no_equip_player = _make_player()
     no_equip_player.cls = SimpleNamespace(equip_check=lambda item, slot: False)
-    popup._equip_item(no_equip_player, DummyItem("Forbidden"), "Weapons", background_surface="inventory-bg")
+    popup._equip_item(
+        no_equip_player, DummyItem("Forbidden"), "Weapons", background_surface="inventory-bg"
+    )
     assert notices == [("You cannot equip Forbidden.", False)]
 
     player.equipment["Weapon"] = DummyItem("No Weapon", unequip=True)
@@ -792,13 +842,16 @@ def test_inventory_popup_draw_list_renders_item_icons(monkeypatch):
     )
     icon_calls = []
     popup.icon_manager = SimpleNamespace(
-        get_icon=lambda item, **_kwargs: icon_calls.append(getattr(item, "name", "")) or pygame.surface.Surface((32, 32), pygame.SRCALPHA)
+        get_icon=lambda item, **_kwargs: icon_calls.append(getattr(item, "name", ""))
+        or pygame.surface.Surface((32, 32), pygame.SRCALPHA)
     )
 
     popup.draw_list()
 
     assert icon_calls
-    assert any(name in icon_calls for name in {"Bronze Sword", "Apple", "Silver Ring", "Sun Pendant"})
+    assert any(
+        name in icon_calls for name in {"Bronze Sword", "Apple", "Silver Ring", "Sun Pendant"}
+    )
     assert presenter.screen.blit_calls
 
 
@@ -826,7 +879,10 @@ def test_inventory_and_equipment_details_render_large_item_art(monkeypatch):
     equipment.item_render_manager = fake_render_manager
     equipment.draw_details(player)
 
-    assert any(name in {"Bronze Sword", "Apple", "Silver Ring", "Sun Pendant"} for name, _size in render_calls)
+    assert any(
+        name in {"Bronze Sword", "Apple", "Silver Ring", "Sun Pendant"}
+        for name, _size in render_calls
+    )
     assert ("Starter Blade", (142, 114)) in render_calls
 
 
@@ -841,7 +897,9 @@ def test_inventory_details_center_name_and_hide_category(monkeypatch):
     popup = popup_menus.InventoryPopupMenu(presenter, parent)
     popup.build_items(player)
     popup.selected_index = next(
-        index for index, (_category, obj, _count) in enumerate(popup.items) if getattr(obj, "name", "") == "Bronze Sword"
+        index
+        for index, (_category, obj, _count) in enumerate(popup.items)
+        if getattr(obj, "name", "") == "Bronze Sword"
     )
     popup.item_render_manager = SimpleNamespace(
         get_scaled_render=lambda _item, size: pygame.surface.Surface(size, pygame.SRCALPHA)
@@ -852,9 +910,13 @@ def test_inventory_details_center_name_and_hide_category(monkeypatch):
     assert not any(call.startswith("Category:") for call in presenter.normal_font.render_calls)
     assert "Sub-type: Sword" in presenter.normal_font.render_calls
     assert "Description:" in presenter.normal_font.render_calls
-    assert not any(call.startswith("Description:") and call != "Description:" for call in presenter.normal_font.render_calls)
+    assert not any(
+        call.startswith("Description:") and call != "Description:"
+        for call in presenter.normal_font.render_calls
+    )
     name_blits = [
-        position for surface, position in presenter.screen.blit_calls
+        position
+        for surface, position in presenter.screen.blit_calls
         if getattr(surface, "text", None) == "Bronze Sword"
     ]
     assert name_blits
@@ -881,7 +943,9 @@ def test_base_popup_skips_icons_for_plain_labels(monkeypatch):
         ("[Main] First Quest", "Main", "First Quest", {}),
         "Side",
     ]
-    popup.icon_manager = SimpleNamespace(get_icon=lambda _item, **_kwargs: pytest.fail("plain labels should not request icons"))
+    popup.icon_manager = SimpleNamespace(
+        get_icon=lambda _item, **_kwargs: pytest.fail("plain labels should not request icons")
+    )
 
     popup.draw_list()
     popup.draw_details(_make_player())
@@ -924,7 +988,16 @@ def test_simple_list_key_item_details_use_large_art_layout(monkeypatch):
         presenter,
         parent,
         "Key Items",
-        lambda _player: [DummyItem("Ancient Key", typ="Misc", subtyp="Key", description="Opens a sealed vault.", value=0, weight=0)],
+        lambda _player: [
+            DummyItem(
+                "Ancient Key",
+                typ="Misc",
+                subtyp="Key",
+                description="Opens a sealed vault.",
+                value=0,
+                weight=0,
+            )
+        ],
     )
     popup.build_items(player)
     render_calls = []
@@ -986,10 +1059,14 @@ def test_simple_list_relic_key_item_details_use_relic_sprite(monkeypatch):
     )
     popup.build_items(player)
     popup.item_render_manager = SimpleNamespace(
-        get_scaled_render=lambda _item, _size: pytest.fail("relic sprites should bypass the item render atlas")
+        get_scaled_render=lambda _item, _size: pytest.fail(
+            "relic sprites should bypass the item render atlas"
+        )
     )
     relic_surface = pygame.surface.Surface((32, 32), pygame.SRCALPHA)
-    monkeypatch.setattr("src.ui_pygame.gui.popup_menus.pygame.image.load", lambda _path: relic_surface)
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.popup_menus.pygame.image.load", lambda _path: relic_surface
+    )
 
     popup.draw_details(player)
 
@@ -1008,7 +1085,14 @@ def test_inventory_popup_on_select_uses_nested_selection_popup(monkeypatch):
         get_scaled_render=lambda _item, size: pygame.surface.Surface(size, pygame.SRCALPHA)
     )
 
-    actions = iter([("selection", "Equip"), ("selection", "Use"), ("selection", "Drop"), ("selection", "Cancel")])
+    actions = iter(
+        [
+            ("selection", "Equip"),
+            ("selection", "Use"),
+            ("selection", "Drop"),
+            ("selection", "Cancel"),
+        ]
+    )
 
     class FakeSelectionPopup:
         def __init__(self, *_args, **_kwargs):
@@ -1070,7 +1154,9 @@ def test_equipment_popup_build_details_and_selection_flows(monkeypatch):
     )
 
     popup.build_items(player)
-    assert popup.item_display_text(("Weapon", DummyItem("Very Long Equipment Name That Truncates"))) .startswith("Weapon:")
+    assert popup.item_display_text(
+        ("Weapon", DummyItem("Very Long Equipment Name That Truncates"))
+    ).startswith("Weapon:")
     popup.draw_details(player)
 
     equippable = popup._get_equippable_items_for_slot(player, "Ring")
@@ -1118,13 +1204,17 @@ def test_equipment_popup_uses_player_equip_logic_for_two_handed_weapons(monkeypa
 
     two_hander = SimpleNamespace(name="Great Pike", typ="Weapon", subtyp="Polearm", handed=2)
     player.inventory.setdefault("Weapons", []).append(two_hander)
-    player.equipment["OffHand"] = DummyItem("Kite Shield", typ="OffHand", subtyp="Shield", unequip=False)
+    player.equipment["OffHand"] = DummyItem(
+        "Kite Shield", typ="OffHand", subtyp="Shield", unequip=False
+    )
     calls = []
 
     def fake_equip(slot, item):
         calls.append((slot, item.name))
         if slot == "Weapon" and getattr(item, "handed", 1) == 2:
-            player.equipment["OffHand"] = DummyItem("None", typ="OffHand", subtyp="Shield", unequip=True)
+            player.equipment["OffHand"] = DummyItem(
+                "None", typ="OffHand", subtyp="Shield", unequip=True
+            )
         player.equipment[slot] = item
         if item in player.inventory["Weapons"]:
             player.inventory["Weapons"].remove(item)
@@ -1175,7 +1265,10 @@ def test_equipment_selection_popup_right_aligns_values_and_shows_handedness(monk
     assert render_calls == [("Bastard Sword", (88, 92))]
     rendered = presenter.large_font.render_calls + presenter.normal_font.render_calls
     assert "Bastard Sword (2H)" in rendered
-    assert popup._equipment_display_name(DummyItem("Dirk", typ="Weapon", subtyp="Dagger")) == "Dirk (1H)"
+    assert (
+        popup._equipment_display_name(DummyItem("Dirk", typ="Weapon", subtyp="Dagger"))
+        == "Dirk (1H)"
+    )
     assert "Hands" not in rendered
     assert "Two-handed" not in rendered
     assert "Attack" in rendered
@@ -1217,7 +1310,9 @@ def test_equipment_popup_offhand_includes_allowed_weapons(monkeypatch):
     shield = DummyItem("Buckler", typ="OffHand", subtyp="Shield")
     player.inventory.setdefault("Weapons", []).extend([fist, sword])
     player.inventory.setdefault("Shields", []).append(shield)
-    player.cls = SimpleNamespace(equip_check=lambda item, slot: slot == "OffHand" and item.subtyp in {"Fist", "Shield"})
+    player.cls = SimpleNamespace(
+        equip_check=lambda item, slot: slot == "OffHand" and item.subtyp in {"Fist", "Shield"}
+    )
 
     equippable = popup._get_equippable_items_for_slot(player, "OffHand")
 
@@ -1259,19 +1354,38 @@ def test_quest_popup_build_and_details_cover_main_side_and_bounty(monkeypatch):
                 "Experience": 100,
                 "Help Text": "The dragon has returned to the mountain pass.",
             },
-            "Turned Quest": {"Type": "Locate", "What": "Tower", "Completed": True, "Turned In": True},
+            "Turned Quest": {
+                "Type": "Locate",
+                "What": "Tower",
+                "Completed": True,
+                "Turned In": True,
+            },
         },
         "Side": {
-            "Relic Hunt": {"Type": "Collect", "What": "Relics", "Total": 6, "Completed": True, "Turned In": False, "Reward": ["Gold"], "Reward Number": 50},
+            "Relic Hunt": {
+                "Type": "Collect",
+                "What": "Relics",
+                "Total": 6,
+                "Completed": True,
+                "Turned In": False,
+                "Reward": ["Gold"],
+                "Reward Number": 50,
+            },
         },
         "Bounty": {
-            "Goblin Hunt": [{"enemy": SimpleNamespace(name="Goblin"), "num": 3, "gold": 40, "exp": 20}, 1, False],
+            "Goblin Hunt": [
+                {"enemy": SimpleNamespace(name="Goblin"), "num": 3, "gold": 40, "exp": 20},
+                1,
+                False,
+            ],
         },
     }
     popup = popup_menus.QuestPopupMenu(presenter, parent)
     popup.build_items(player)
     assert any(isinstance(item, dict) and item.get("is_header") for item in popup.items)
-    popup.icon_manager = SimpleNamespace(get_icon=lambda _item, **_kwargs: pytest.fail("quest labels should not request icons"))
+    popup.icon_manager = SimpleNamespace(
+        get_icon=lambda _item, **_kwargs: pytest.fail("quest labels should not request icons")
+    )
     popup.draw_list()
     popup.draw_details(player)
     assert "Description:" in presenter.normal_font.render_calls
@@ -1357,15 +1471,34 @@ def test_simple_list_jumpmods_totems_and_selection_popups(monkeypatch):
     parent = _make_parent()
     player = _make_player()
 
-    simple = popup_menus.SimpleListPopupMenu(presenter, parent, "Simple", lambda _player: ["--- Header ---", DummyItem("Lore Entry", description="Story text"), "Plain"])
+    simple = popup_menus.SimpleListPopupMenu(
+        presenter,
+        parent,
+        "Simple",
+        lambda _player: [
+            "--- Header ---",
+            DummyItem("Lore Entry", description="Story text"),
+            "Plain",
+        ],
+    )
     simple.build_items(player)
     simple.draw_details(player)
 
     messages = []
     presenter.show_message = lambda message, **kwargs: messages.append(message)
-    monkeypatch.setattr(popup_menus.map_tiles, "reveal_chalice_map_on_inspect", lambda _player, _value: None)
-    monkeypatch.setattr(popup_menus.map_tiles, "get_chalice_progress", lambda _player: {"Revealed": True, "Adventurer": False})
-    chalice_item = {"is_header": False, "text": "Chalice Map", "value": SimpleNamespace(name="Chalice Map")}
+    monkeypatch.setattr(
+        popup_menus.map_tiles, "reveal_chalice_map_on_inspect", lambda _player, _value: None
+    )
+    monkeypatch.setattr(
+        popup_menus.map_tiles,
+        "get_chalice_progress",
+        lambda _player: {"Revealed": True, "Adventurer": False},
+    )
+    chalice_item = {
+        "is_header": False,
+        "text": "Chalice Map",
+        "value": SimpleNamespace(name="Chalice Map"),
+    }
     assert simple.on_select(player, chalice_item) is None
 
     jump_skill = SimpleNamespace(
@@ -1414,16 +1547,14 @@ def test_simple_list_jumpmods_totems_and_selection_popups(monkeypatch):
     )
     composition_popup = popup_menus.CompositionPopupMenu(presenter, parent)
     composition_popup.build_items(player)
-    battle_hymn = next(
-        item
-        for item in composition_popup.items
-        if item["value"] == "Battle Hymn"
-    )
+    battle_hymn = next(item for item in composition_popup.items if item["value"] == "Battle Hymn")
     assert battle_hymn["available"] is True
     assert composition_popup.on_select(player, battle_hymn) is None
     assert composed == ["Battle Hymn"]
 
-    selection = popup_menus.SelectionPopup(presenter, parent, title="Pick", header_message="Choose wisely", options=["A", "B"])
+    selection = popup_menus.SelectionPopup(
+        presenter, parent, title="Pick", header_message="Choose wisely", options=["A", "B"]
+    )
     selection.build_items(player)
     selection.draw_details(player)
     assert selection.on_select(player, "A") == ("selection", "A")
@@ -1509,7 +1640,9 @@ def test_second_popup_menus_pass_covers_remaining_helper_branches(monkeypatch):
 
     real_equipment_selection_popup = popup_menus.EquipmentSelectionPopup
     monkeypatch.setattr(popup_menus, "EquipmentSelectionPopup", UnequipPopup)
-    monkeypatch.setattr(eq, "_unequip_item", lambda *_args, **_kwargs: setattr(eq, "_unequipped", True))
+    monkeypatch.setattr(
+        eq, "_unequip_item", lambda *_args, **_kwargs: setattr(eq, "_unequipped", True)
+    )
     eq.build_items(player)
     eq.on_select(player, eq.items[0])
     assert getattr(eq, "_unequipped", False) is True
@@ -1541,18 +1674,36 @@ def test_second_popup_menus_pass_covers_remaining_helper_branches(monkeypatch):
         presenter,
         parent,
         "Simple",
-        lambda _player: [DummyItem("Passive Aura", typ="Skill", description="", passive=True, cost=4)],
+        lambda _player: [
+            DummyItem("Passive Aura", typ="Skill", description="", passive=True, cost=4)
+        ],
     )
     simple.build_items(player)
     simple.draw_details(player)
 
     messages = []
     presenter.show_message = lambda message, **kwargs: messages.append(message)
-    monkeypatch.setattr(popup_menus.map_tiles, "reveal_chalice_map_on_inspect", lambda _player, _value: None)
-    monkeypatch.setattr(popup_menus.map_tiles, "get_chalice_progress", lambda _player: {"Revealed": False, "Adventurer": True})
-    simple.on_select(player, {"is_header": False, "text": "Chalice Map", "value": SimpleNamespace(name="Chalice Map")})
-    monkeypatch.setattr(popup_menus.map_tiles, "get_chalice_progress", lambda _player: {"Revealed": False, "Adventurer": False})
-    simple.on_select(player, {"is_header": False, "text": "Chalice Map", "value": SimpleNamespace(name="Chalice Map")})
+    monkeypatch.setattr(
+        popup_menus.map_tiles, "reveal_chalice_map_on_inspect", lambda _player, _value: None
+    )
+    monkeypatch.setattr(
+        popup_menus.map_tiles,
+        "get_chalice_progress",
+        lambda _player: {"Revealed": False, "Adventurer": True},
+    )
+    simple.on_select(
+        player,
+        {"is_header": False, "text": "Chalice Map", "value": SimpleNamespace(name="Chalice Map")},
+    )
+    monkeypatch.setattr(
+        popup_menus.map_tiles,
+        "get_chalice_progress",
+        lambda _player: {"Revealed": False, "Adventurer": False},
+    )
+    simple.on_select(
+        player,
+        {"is_header": False, "text": "Chalice Map", "value": SimpleNamespace(name="Chalice Map")},
+    )
     assert len(messages) == 2
 
     # Jump/Totem not learned or unsuccessful selection
@@ -1587,7 +1738,13 @@ def test_second_popup_menus_pass_covers_remaining_helper_branches(monkeypatch):
     assert totem_popup.on_select(player, totem_popup.items[1]) is None
 
     # Selection popup header wrapping and equipment selection diff branches
-    selection = popup_menus.SelectionPopup(presenter, parent, title="Pick", header_message="A very long header message that should wrap across multiple lines in the details panel.", options=["A"])
+    selection = popup_menus.SelectionPopup(
+        presenter,
+        parent,
+        title="Pick",
+        header_message="A very long header message that should wrap across multiple lines in the details panel.",
+        options=["A"],
+    )
     selection.build_items(player)
     selection.draw_details(player)
 

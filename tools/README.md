@@ -61,6 +61,15 @@ by the design-gate documents, use the standalone suite:
 ./.venv/bin/python tools/run_balance_suite.py --help
 ```
 
+#### Export Game Spreadsheets
+
+Regenerate the reviewable CSV snapshots under `docs/spreadsheets/` after
+changing classes, races, abilities, items, enemies, or quests:
+
+```bash
+./.venv/bin/python tools/export_game_spreadsheets.py
+```
+
 ### Help
 ```bash
 ./.venv/bin/python tools/dev_tools.py --help

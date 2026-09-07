@@ -59,14 +59,9 @@ def summarize_gameplay_stats(gameplay_stats=None, *, current_level=1) -> dict[st
         0,
         summary["enemies_defeated"] + summary["flees"] - summary["deaths"],
     )
-    summary["combat_outcomes"] = (
-        summary["enemies_defeated"] + summary["flees"] + summary["deaths"]
-    )
+    summary["combat_outcomes"] = summary["enemies_defeated"] + summary["flees"] + summary["deaths"]
     summary["exploration_actions"] = summary["steps_taken"] + summary["stairs_used"]
-    summary["total_activity"] = (
-        summary["exploration_actions"]
-        + summary["combat_outcomes"]
-    )
+    summary["total_activity"] = summary["exploration_actions"] + summary["combat_outcomes"]
     summary["combat_survival_rate_percent"] = (
         0
         if summary["combat_outcomes"] <= 0
@@ -75,7 +70,9 @@ def summarize_gameplay_stats(gameplay_stats=None, *, current_level=1) -> dict[st
     return summary
 
 
-def summarize_gameplay_stat_groups(gameplay_stats=None, *, current_level=1) -> dict[str, dict[str, int]]:
+def summarize_gameplay_stat_groups(
+    gameplay_stats=None, *, current_level=1
+) -> dict[str, dict[str, int]]:
     """Return gameplay statistics organized for grouped UI displays."""
     summary = summarize_gameplay_stats(gameplay_stats, current_level=current_level)
     return {

@@ -5,7 +5,6 @@ import inspect
 from src.core import enemies
 from src.core.enemies import base, early, endgame, midgame
 
-
 ENEMY_MODULES = (base, early, midgame, endgame)
 
 
@@ -33,9 +32,7 @@ def test_enemies_facade_preserves_all_split_class_exports():
 
 def test_encounter_catalogs_reference_split_implementations():
     catalog_entries = [
-        entry
-        for floor_entries in enemies._RANDOM_ENEMY_CATALOG.values()
-        for entry in floor_entries
+        entry for floor_entries in enemies._RANDOM_ENEMY_CATALOG.values() for entry in floor_entries
     ]
     catalog_entries.extend(enemies._FUNHOUSE_ENEMY_CATALOG)
 

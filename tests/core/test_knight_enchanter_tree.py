@@ -105,11 +105,7 @@ def test_tree_matches_the_authored_release_lanes_and_independent_options():
         "Triple Strike": ((4, 5), 85),
     }
     assert len(tree.nodes) == len(expected)
-    assert {
-        node.name: node.cost
-        for node in tree.nodes
-        if node.cost == 2
-    } == {
+    assert {node.name: node.cost for node in tree.nodes if node.cost == 2} == {
         "Quick Recharge": 2,
         "Storage Capacity II": 2,
         "Third Eye": 2,
@@ -126,9 +122,7 @@ def test_tree_matches_the_authored_release_lanes_and_independent_options():
         )
         for name, node in nodes.items()
     } == expected
-    assert nodes["Spellbind"].prerequisites == (
-        nodes["Storage Capacity II"].id,
-    )
+    assert nodes["Spellbind"].prerequisites == (nodes["Storage Capacity II"].id,)
     assert nodes["Parry"].prerequisites == ()
     assert nodes["True Piercing Strike"].prerequisites == ()
     assert nodes["Triple Strike"].prerequisites == ()
@@ -154,9 +148,7 @@ def test_storage_capacity_two_adds_two_and_stacks_with_spellblade_training():
     from src.core.classes.promotion_kits import meters
 
     player = _player()
-    player.spellbook["Skills"]["Storage Capacity II"] = (
-        abilities.StorageCapacity2()
-    )
+    player.spellbook["Skills"]["Storage Capacity II"] = abilities.StorageCapacity2()
 
     assert meters._blade_charge_capacity(player) == 3
 
@@ -424,20 +416,24 @@ def test_weave_reservoir_regenerates_only_when_both_pools_are_full():
 
 def test_cleaving_edge_and_re_debuff_affect_adjacent_enemy():
     player = _player()
-    player.spellbook["Skills"].update({
-        "Cleaving Edge": abilities.CleavingEdge(),
-        "Re-debuff": abilities.ReDebuff(),
-    })
+    player.spellbook["Skills"].update(
+        {
+            "Cleaving Edge": abilities.CleavingEdge(),
+            "Re-debuff": abilities.ReDebuff(),
+        }
+    )
     primary = enemies.Goblin()
     adjacent = enemies.Goblin()
     for target in (primary, adjacent):
         target.health.current = target.health.max = 500
         target.status_effects["Blind"].active = True
         target.status_effects["Blind"].duration = 1
-    player._combat_encounter = SimpleNamespace(living_members=(
-        SimpleNamespace(enemy=primary, slot=0),
-        SimpleNamespace(enemy=adjacent, slot=1),
-    ))
+    player._combat_encounter = SimpleNamespace(
+        living_members=(
+            SimpleNamespace(enemy=primary, slot=0),
+            SimpleNamespace(enemy=adjacent, slot=1),
+        )
+    )
     _charge(player, arcane=1, elemental=0)
     state = promotion_kits.combat_state(player)
     state["weave_foundation"] = "Element"
@@ -487,11 +483,13 @@ def test_echoing_blade_repeats_release_at_next_turn(monkeypatch):
 def test_arcane_riposte_guarantees_parry_counter_releases_weave(monkeypatch):
     defender = _player()
     attacker = enemies.Goblin()
-    defender.spellbook["Skills"].update({
-        "Parry": abilities.Parry(),
-        "Riposte": abilities.Riposte(),
-        "Arcane Riposte": abilities.ArcaneRiposte(),
-    })
+    defender.spellbook["Skills"].update(
+        {
+            "Parry": abilities.Parry(),
+            "Riposte": abilities.Riposte(),
+            "Arcane Riposte": abilities.ArcaneRiposte(),
+        }
+    )
     _charge(defender, arcane=1, elemental=0)
     state = promotion_kits.combat_state(defender)
     state["weave_foundation"] = "Element"

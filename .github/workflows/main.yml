@@ -3,9 +3,12 @@ name: Game CI
 on:
   push:
   pull_request:
+  workflow_dispatch:
+  release:
+    types: [published]
 
 jobs:
-  build:
+  validation:
     runs-on: ubuntu-latest
 
     steps:
@@ -21,54 +24,79 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install .
-          python -m pip install pytest pytest-cov
+          python -m pip install ".[dev]"
 
-      - name: Run Tests
+      - name: Check formatting
+        run: python -m black --check src tests tools game_pygame.py
+
+      - name: Check import order
+        run: python -m isort --check-only src tests tools game_pygame.py
+
+      - name: Run focused Ruff correctness checks
+        run: |
+          python -m ruff check \
+            src/paths.py \
+            src/core/save_system/manager.py \
+            src/core/events/event_bus.py \
+            tools/build_distribution.py \
+            tests/test_distribution.py
+
+      - name: Run strict typing baseline
+        run: |
+          python -m mypy --strict --follow-imports=skip \
+            src/paths.py \
+            tools/build_distribution.py
+
+      - name: Run tests with source coverage
         env:
-          # Prevent CI from writing .pyc/__pycache__ into the repo workspace
           PYTHONDONTWRITEBYTECODE: "1"
           PYTHONPYCACHEPREFIX: /tmp/pycache
         run: |
-          pytest tests/ -v
+          python -m pytest tests/ -q \
+            --cov=src \
+            --cov-report=term-missing:skip-covered \
+            --cov-report=xml
 
       - name: Check for syntax errors
         env:
-          # Ensure compileall doesn't create __pycache__ in the repo
           PYTHONDONTWRITEBYTECODE: "1"
           PYTHONPYCACHEPREFIX: /tmp/pycache
+        run: python -m compileall src
+
+  artifact-smoke:
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'release'
+    needs: validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install build dependencies
         run: |
-          python -m compileall .
+          python -m pip install --upgrade pip
+          python -m pip install ".[dev]"
 
-      - name: Package Game (stable snapshot)
-        run: |
-          set -euo pipefail
+      - name: Build onedir application
+        run: python tools/build_distribution.py --clean
 
-          STAGE_DIR="/tmp/dungeon_crawl_pkg"
-          rm -rf "${STAGE_DIR}"
-          mkdir -p "${STAGE_DIR}"
+      - name: Smoke-test frozen application outside checkout
+        env:
+          SDL_VIDEODRIVER: dummy
+          SDL_AUDIODRIVER: dummy
+          FORSAKEN_TENET_DATA_DIR: ${{ runner.temp }}/forsaken-tenet-smoke-data
+        working-directory: ${{ runner.temp }}
+        run: ${{ github.workspace }}/dist/forsaken-tenet/forsaken-tenet --smoke-test
 
-          # Create a stable snapshot of the repo (avoids tar "file changed as we read it")
-          rsync -a --delete \
-            --exclude='.git' \
-            --exclude='.github' \
-            --exclude='.venv' \
-            --exclude='__pycache__' \
-            --exclude='*.pyc' \
-            --exclude='.pytest_cache' \
-            --exclude='.coverage' \
-            --exclude='htmlcov' \
-            --exclude='*.egg-info' \
-            --exclude='dist' \
-            --exclude='build' \
-            --exclude='*.tar.gz' \
-            ./ "${STAGE_DIR}/"
-
-          tar -C "${STAGE_DIR}" -czf dungeon_crawl.tar.gz .
-
-      - name: Upload Artifact
+      - name: Upload intentional application artifact
         uses: actions/upload-artifact@v4
         with:
-          name: dungeon_crawl_build
-          path: dungeon_crawl.tar.gz
+          name: forsaken-tenet-linux-onedir
+          path: dist/forsaken-tenet/
           if-no-files-found: error

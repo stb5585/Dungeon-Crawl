@@ -35,6 +35,8 @@ dev = [
     "mypy>=1.10.0",
     "pytest>=7.4.2",
     "pytest-cov>=4.1.0",
+    "pyinstaller>=6.0.0",
+    "ruff>=0.6.0",
 ]
 tools = [
     "scipy==1.17.0",
@@ -59,7 +61,12 @@ include = ["src*"]
 "src.core.data" = [
     "abilities/*.yaml",
     "content/*.json",
+    "maps/*.json",
+    "maps/*.txt",
+    "maps/*.tsx",
+    "maps/tileset/*.png",
 ]
+"src.ui_pygame.assets" = ["**/*.json", "**/*.png", "**/*.wav", "**/*.ogg"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -74,7 +81,7 @@ addopts = [
 ]
 
 [tool.coverage.run]
-source = ["."]
+source = ["src"]
 omit = [
     "tests/*",
     ".venv/*",
@@ -109,6 +116,17 @@ exclude = '''
 profile = "black"
 line_length = 100
 skip_gitignore = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F"]
+
+[tool.ruff.lint.per-file-ignores]
+# Package initializers intentionally expose compatibility and public APIs.
+"**/__init__.py" = ["F401"]
 
 [tool.mypy]
 python_version = "3.12"

@@ -34,15 +34,45 @@ class BaselineCommand:
 CANONICAL_BASELINE_COMMANDS: tuple[BaselineCommand, ...] = (
     BaselineCommand(
         "base_level_10",
-        ("tools/run_balance_suite.py", "--tier", "base", "--level", "10", "--iters", "30", "--seed", "1337"),
+        (
+            "tools/run_balance_suite.py",
+            "--tier",
+            "base",
+            "--level",
+            "10",
+            "--iters",
+            "30",
+            "--seed",
+            "1337",
+        ),
     ),
     BaselineCommand(
         "first_level_20",
-        ("tools/run_balance_suite.py", "--tier", "first", "--level", "20", "--iters", "30", "--seed", "1337"),
+        (
+            "tools/run_balance_suite.py",
+            "--tier",
+            "first",
+            "--level",
+            "20",
+            "--iters",
+            "30",
+            "--seed",
+            "1337",
+        ),
     ),
     BaselineCommand(
         "second_level_30",
-        ("tools/run_balance_suite.py", "--tier", "second", "--level", "30", "--iters", "30", "--seed", "1337"),
+        (
+            "tools/run_balance_suite.py",
+            "--tier",
+            "second",
+            "--level",
+            "30",
+            "--iters",
+            "30",
+            "--seed",
+            "1337",
+        ),
     ),
     BaselineCommand(
         "race_delta_level_20",
@@ -168,7 +198,9 @@ def run_baseline_bundle(
         stdout_path = bundle_dir / f"{index:02d}_{command.label}.txt"
         stderr_path = bundle_dir / f"{index:02d}_{command.label}.err"
         if dry_run:
-            stdout_path.write_text(f"DRY RUN: {command.display(python_executable)}\n", encoding="utf-8")
+            stdout_path.write_text(
+                f"DRY RUN: {command.display(python_executable)}\n", encoding="utf-8"
+            )
             stderr_path.write_text("", encoding="utf-8")
             returncode = 0
         else:
@@ -204,7 +236,9 @@ def main() -> int:
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
     parser.add_argument("--timestamp", type=str, default=None)
     parser.add_argument("--python", dest="python_executable", default=DEFAULT_PYTHON)
-    parser.add_argument("--dry-run", action="store_true", help="Write the bundle plan without running simulations.")
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Write the bundle plan without running simulations."
+    )
     args = parser.parse_args()
 
     text_path, json_path = run_baseline_bundle(

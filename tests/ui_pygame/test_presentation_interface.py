@@ -3,8 +3,8 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
@@ -128,8 +128,12 @@ def test_event_driven_presenter_subscribes_and_forwards_message_events():
 
 def test_console_presenter_renders_text_views(capsys):
     presenter = interface.ConsolePresenter()
-    player = TestGameState.create_player(name="Hero", class_name="Warrior", race_name="Human", health=(100, 80), mana=(40, 25))
-    enemy = TestGameState.create_player(name="Goblin", class_name="Warrior", race_name="Human", health=(30, 10), mana=(0, 0))
+    player = TestGameState.create_player(
+        name="Hero", class_name="Warrior", race_name="Human", health=(100, 80), mana=(40, 25)
+    )
+    enemy = TestGameState.create_player(
+        name="Goblin", class_name="Warrior", race_name="Human", health=(30, 10), mana=(0, 0)
+    )
 
     presenter.initialize()
     presenter.render_combat(player, enemy, ["Attack", "Defend"], message="A wild foe appears!")

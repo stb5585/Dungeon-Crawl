@@ -7,7 +7,6 @@ from src.core.classes import ability_mechanics
 from src.core.combat import battle_engine
 from src.core.data import ability_loader
 
-
 SAVE_MODULES = (
     save_system.models,
     save_system.item_serialization,
@@ -72,7 +71,7 @@ def test_save_system_facade_preserves_all_serializer_classes():
         for name, implementation in _owned_classes(module).items()
     }
 
-    assert len(exports) == 15
+    assert len(exports) == 14
     for name, implementation in exports.items():
         assert getattr(save_system, name) is implementation
 

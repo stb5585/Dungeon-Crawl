@@ -23,7 +23,9 @@ def _init_pygame():
 
 def _write_token_fixture(root: Path) -> None:
     root.mkdir(exist_ok=True)
-    (root / "enemy_combat_sprite_map.json").write_text(json.dumps({"Goblin Raider": "goblin"}), encoding="utf-8")
+    (root / "enemy_combat_sprite_map.json").write_text(
+        json.dumps({"Goblin Raider": "goblin"}), encoding="utf-8"
+    )
     (root / "enemy_token_crop.json").write_text(
         json.dumps({"goblin": {"crop_x": 0, "crop_y": 0, "crop_w": 40, "crop_h": 40}}),
         encoding="utf-8",

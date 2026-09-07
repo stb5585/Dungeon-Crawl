@@ -1,0 +1,107 @@
+Name,Class ID,Type,Subtype,Value,Rarity,Weight,Damage,Critical Chance,Hands,Offhand Eligible,Armor,Modifier,Element,Restricted To,Restricted Against,Ultimate,Random Drop,Unequipped,Description
+Dragon's Tear,DragonTear,Misc,Ability,0,0.01,0,,,,,,0,,,,False,True,False,A crystallized tear shed by a dragon. Said to contain the essence of draconic vitality and regeneration. Extremely rare.
+Throwing Daggers,ThrowingDaggers,Misc,Ammunition,1000,0.7,0,,,,,,0,,,,False,False,False,A pack used by Hidden Blade. Daggers remaining: 10.
+Armor Piercing Bolts,ArmorPiercingBolts,Misc,Crossbow Bolts,1200,0.6,0,,,,,,0,,,,False,False,False,Hardened bolts that ignore armor. Bolts remaining: 10.
+Delayed Bolts,DelayedBolts,Misc,Crossbow Bolts,32000,0.1,0,,,,,,0,,,,False,False,False,Bolts that explode one turn after attaching. Bolts remaining: 10.
+Heat-Seeking Bolts,HeatSeekingBolts,Misc,Crossbow Bolts,6000,0.4,0,,,,,,0,,,,False,False,False,Bolts that curve toward warm targets. Bolts remaining: 10.
+Magic Bolts,MagicBolts,Misc,Crossbow Bolts,2500,0.5,0,,,,,,0,,,,False,False,False,Arcane ammunition for a Magic Crossbow. Bolts remaining: 10.
+Metal Bolts,MetalBolts,Misc,Crossbow Bolts,600,0.7,0,,,,,,0,,,,False,False,False,Durable ammunition with a high recovery chance. Bolts remaining: 10.
+Napalm Bolts,NapalmBolts,Misc,Crossbow Bolts,15000,0.2,0,,,,,,0,,,,False,False,False,Explosive bolts that spread burning material. Bolts remaining: 10.
+Wooden Bolts,WoodenBolts,Misc,Crossbow Bolts,250,0.75,0,,,,,,0,,,,False,False,False,Fragile wooden crossbow ammunition. Bolts remaining: 10.
+Cryptic Key,CrypticKey,Misc,Key,0,0,0,,,,,,0,,,,False,True,False,"A pristine key forged by Griswold. Its purpose is shrouded in mystery, but it feels important."
+Key,Key,Misc,Key,500,0.9,0,,,,,,0,,,,False,True,False,Unlocks a locked chest but is consumed.
+Master Key,MasterKey,Misc,Key,0,0,0,,,,,,0,,,,False,True,False,Unlocks doors that may lead to either valuable treasure or to powerful enemies.
+Old Key,OldKey,Misc,Key,50000,0.5,0,,,,,,0,,,,False,True,False,Unlocks doors that may lead to either valuable treasure or to powerful enemies.
+Censer of Choking Ash,CenserOfChokingAsh,Misc,Magic Tool,5000,0.35,0,,,,,,0,,,,False,True,False,A reusable censer that blankets the surrounding area in choking smoke. Required to cast Obscuration.
+Oculus,Oculus,Misc,Magic Tool,35000,0.25,0,,,,,,0,,,,False,True,False,An expensive arcane lens that reveals the telltale shimmer of fake walls.
+Bird Fat,BirdFat,Misc,Quest,0,0.1,0,,,,,,0,,,,False,True,False,"The fat from a bird, used as a fuel for lamps."
+Cursed Hops,CursedHops,Misc,Quest,0,1,0,,,,,,0,,,,False,True,False,"Hops from a cursed tree, these flower are used primarily in the creation of beer and other beverages, as well as herbal medicines."
+Dead Soldier,DeadSoldier,Misc,Quest,0,0,100,,,,,,0,,,,False,True,False,The partially eaten body of a very green soldier. He never stood a chance...
+Elemental Mote,ElementalMote,Misc,Quest,0,1,0,,,,,,0,,,,False,True,False,The elemental core of a Myrmidon.
+Feather,Feather,Misc,Quest,0,0.5,0,,,,,,0,,,,False,True,False,The feather of a bird.
+Jester Token,JesterToken,Misc,Quest,0,0,0,,,,,,0,,,,False,True,False,A carnival token that shimmers with magical energy. These are required to breach the Jester's inner sanctum.
+Leather,Leather,Misc,Quest,0,0.5,0,,,,,,0,,,,False,True,False,"The dried skin of an animal, used for various purposes."
+Mystery Meat,MysteryMeat,Misc,Quest,0,0.5,0,,,,,,0,,,,False,True,False,Unknown meat with a strange smell. Maybe you could do something with this.
+Phylactery,Phylactery,Misc,Quest,0,0.05,0,,,,,,0,,,,False,True,False,"The soul artifcat of a Lich, given up willingly to achieve immortality."
+Power Core,PowerCore,Misc,Quest,0,1,0,,,,,,0,,,,False,True,False,The power source of a Golem.
+Rat Tail,RatTail,Misc,Quest,0,1,0,,,,,,0,,,,False,True,False,The tail of a rat.
+Scrap Metal,ScrapMetal,Misc,Quest,0,0.5,0,,,,,,0,,,,False,True,False,A chunk of metal.
+Snake Skin,SnakeSkin,Misc,Quest,0,1,0,,,,,,0,,,,False,True,False,The skin of a snake.
+Ticket Piece,TicketPiece,Misc,Quest,0,0,0,,,,,,0,,,,False,True,False,A scrap of a lottery ticket with a few numbers on it.
+Acorn,Acorn,Misc,Reagent,25,0.5,0,,,,,,0,,,,False,True,False,A hardy oak seed prized by druids for growth rites.
+Fungus Spore,FungusSpore,Misc,Reagent,25,0.5,0,,,,,,0,,,,False,True,False,A powdery spore bundle useful in poison and decay rites.
+Hemlock Root,HemlockRoot,Misc,Reagent,25,0.5,0,,,,,,0,,,,False,True,False,A bitter root gathered for dangerous druidic mixtures.
+Reality Fragment,RealityFragment,Misc,Reagent,100000,0.01,0,,,,,,0,,,,False,True,False,A splinter of impossible matter. Thaumaturgists consume it to force a Miracle past the ordinary laws of conjuration.
+Soul Gem,SoulGem,Misc,Reagent,5000,0,0,,,,,,0,,,,False,True,False,A crystallized soul used to barter for stronger fiend-contract outcomes.
+Vine Seed,VineSeed,Misc,Reagent,25,0.5,0,,,,,,0,,,,False,True,False,A coiled seed that hums with grasping green life.
+Blank Scroll,BlankScroll,Misc,Scroll,2500,0.45,0,,,,,,0,,,,False,True,False,A prepared scroll with enough receptive ink to hold one stolen spell.
+Bless Scroll,BlessScroll,Misc,Scroll,1000,0.9,0,,,,,,0,,,,False,True,False,"Scroll inscribed with an incantation allowing the user to cast Bless, which increases attack damage for several turns. The scroll will be consumed when it is out of charges."
+Boost Scroll,BoostScroll,Misc,Scroll,8000,0.6,0,,,,,,0,,,,False,True,False,Scroll inscribed with an incantation allowing the user to cast the heal spell Boost. The scroll will be consumed when it is out of charges.
+Cleanse Scroll,CleanseScroll,Misc,Scroll,4000,0.7,0,,,,,,0,,,,False,True,False,Scroll inscribed with an incantation allowing the user to cast the holy spell Cleanse. The scroll will be consumed when it is out of charges.
+Death Scroll,DeathScroll,Misc,Scroll,15000,0.4,0,,,,,,0,,,,False,True,False,"Scroll inscribed with an incantation allowing the user to cast Desoul, which can kill the target. The scroll will be consumed when it is out of charges."
+Dispel Scroll,DispelScroll,Misc,Scroll,10000,0.5,0,,,,,,0,,,,False,True,False,"Scroll inscribed with an incantation allowing the user to cast Dispel, which can remove all positive status effects from the target. The scroll will be consumed when it is out of charges."
+Earth Scroll,EarthScroll,Misc,Scroll,3000,0.75,0,,,,,,0,,,,False,True,False,Scroll inscribed with an incantation allowing the user to cast the earth spell Tremor. The scroll will be consumed when it is out of charges.
+Electric Scroll,ElectricScroll,Misc,Scroll,3000,0.75,0,,,,,,0,,,,False,True,False,Scroll inscribed with an incantation allowing the user to cast the electric spell Shock. The scroll will be consumed when it is out of charges.
+Fire Scroll,FireScroll,Misc,Scroll,3000,0.75,0,,,,,,0,,,,False,True,False,Scroll inscribed with an incantation allowing the user to cast the fire spell Firebolt. The scroll will be consumed when it is out of charges.
+Holy Scroll,HolyScroll,Misc,Scroll,4000,0.7,0,,,,,,0,,,,False,True,False,Scroll inscribed with an incantation allowing the user to cast the holy spell Holy. The scroll will be consumed when it is out of charges.
+Ice Scroll,IceScroll,Misc,Scroll,3000,0.75,0,,,,,,0,,,,False,True,False,Scroll inscribed with an incantation allowing the user to cast the ice spell Ice Lance. The scroll will be consumed when it is out of charges.
+Photon Sphere Scroll,UltimaScroll,Misc,Scroll,100000,0.01,0,,,,,,0,,,,False,True,False,Scroll inscribed with an incantation allowing the user to cast the powerful Photon Sphere. The scroll will be consumed when it is out of charges.
+Sanctuary Scroll,SanctuaryScroll,Misc,Scroll,50000,0.25,0,,,,,,0,,,,False,True,False,"Scroll inscribed with an incantation allowing the user to cast Sanctuary, which can return the user to town. The scroll will be consumed when it is out of charges."
+Scroll,Scroll,Misc,Scroll,0,0,0,,,,,,0,,,,False,True,False,Base class for scrolls.
+Shadow Scroll,ShadowScroll,Misc,Scroll,4000,0.7,0,,,,,,0,,,,False,True,False,Scroll inscribed with an incantation allowing the user to cast the shadow spell Shadow Bolt. The scroll will be consumed when it is out of charges.
+Sheet Music: Battle Hymn,BattleHymnSheet,Misc,Scroll,2500,0,0,,,,,,0,,,,False,True,False,A martial hymn for battle.
+"Sheet Music: Bones, Thugs, and Harmony",BonesThugsHarmonySheet,Misc,Scroll,2500,0,0,,,,,,0,,,,False,True,False,A graveyard harmony.
+Sheet Music: Chorus Time,ChorusTimeSheet,Misc,Scroll,2500,0,0,,,,,,0,,,,False,True,False,A looping chorus.
+Sheet Music: Gold Trigger,GoldTriggerSheet,Misc,Scroll,2500,0,0,,,,,,0,,,,False,True,False,A glittering trigger phrase.
+Sheet Music: Low-defense-ian Rhapsody,LowDefenseRhapsodySheet,Misc,Scroll,2500,0,0,,,,,,0,,,,False,True,False,A tune that lowers defenses.
+Sheet Music: Ode to the Ramparts,RampartsOdeSheet,Misc,Scroll,2500,0,0,,,,,,0,,,,False,True,False,A protective ode.
+Sheet Music: Scores and Scores Score,ScoresAndScoresScoreSheet,Misc,Scroll,2500,0,0,,,,,,0,,,,False,True,False,A score about scoring.
+Sheet Music: Slow Ride,SlowRideSheet,Misc,Scroll,2500,0,0,,,,,,0,,,,False,True,False,A dragging song.
+Sheet Music: Symphony of Disfunction,DysfunctionSymphonySheet,Misc,Scroll,2500,0,0,,,,,,0,,,,False,True,False,A discordant enemy-breaking score.
+Shell Scroll,ShellScroll,Misc,Scroll,8000,0.6,0,,,,,,0,,,,False,True,False,Scroll inscribed with an incantation allowing the user to cast the heal spell Shell. The scroll will be consumed when it is out of charges.
+Silence Scroll,SilenceScroll,Misc,Scroll,8000,0.6,0,,,,,,0,,,,False,True,False,"Scroll inscribed with an incantation allowing the user to cast Silence, which can prevent an target from casting spell for a time. The scroll will be consumed when it is out of charges."
+Sleep Scroll,SleepScroll,Misc,Scroll,2000,0.85,0,,,,,,0,,,,False,True,False,Scroll inscribed with an incantation allowing the user to cast Sleep. The scroll will be consumed when it is out of charges.
+Stolen Magic Missile Scroll,InscribedSpellScroll,Misc,Scroll,5000,0.2,0,,,,,,0,,,,False,True,False,Scroll inscribed with a stolen copy of Magic Missile. Charges: 5. The scroll crumbles when its charges run out.
+Water Scroll,WaterScroll,Misc,Scroll,3000,0.75,0,,,,,,0,,,,False,True,False,Scroll inscribed with an incantation allowing the user to cast the water spell Water Jet. The scroll will be consumed when it is out of charges.
+Wind Scroll,WindScroll,Misc,Scroll,3000,0.75,0,,,,,,0,,,,False,True,False,Scroll inscribed with an incantation allowing the user to cast the wind spell Gust. The scroll will be consumed when it is out of charges.
+Brass Key,BrassKey,Misc,Special,0,0,0,,,,,,0,,,,False,True,False,"A brass key, similar to the key for your storage locker in the barracks."
+Chalice Map,ChaliceMap,Misc,Special,0,0,0,,,,,,0,,,,False,True,False,A weathered map whose ink appears almost completely faded.
+Draconite,Draconite,Misc,Special,0,0,0,,,,,,0,,,,False,True,False,"A red-black shard from Kaelenon's home realm, warm with restored draconic power."
+Empty Vial,EmptyVial,Misc,Special,0,0,0,,,,,,0,,,,False,True,False,"An empty vial, perfect for storing liquids and other tinctures."
+Excaliper,Excaliper,Misc,Special,0,0,0,,,,,,0,,,,False,True,False,The broken fragments of a failed experiment. It appears someone tried to forge the legendary sword Excalibur using a caliper tool. It did not go well...
+Golden Chalice,GoldenChalice,Misc,Special,0,0,0,,,,,,0,,,,False,True,False,"A golden chalice that once held the Holy Grail. It is said that the chalice can grant immense power to those who drink from it, but it is also cursed with a terrible thirst."
+Heartstone Shard,HeartstoneShard,Misc,Special,0,0,0,,,,,,0,,,,False,True,False,A mineral fragment that beats once when held still.
+Hexagonum,Relic3,Misc,Special,0,0,0,,,,,,0,,,,False,True,False,"The Hexagonum relic represents the natural world, since the hexagon is the considered the strongest shape and regularly found in nature."
+Infinitas,Relic6,Misc,Special,0,0,0,,,,,,0,,,,False,True,False,"Shaped like a circle, the Infinitas relic represents the never-ending struggle between good and evil."
+Joffrey's Letter,JoffreysLetter,Misc,Special,0,0,0,,,,,,0,,,,False,True,False,A letter written from Joffrey to the waitress; maybe there is some use of this.
+Joker,Joker,Misc,Special,0,1,0,,,,,,0,,,,False,True,False,They say that Joker's are wild; you'll see how wild this one is.
+Kaelenon's Portal Key,KaelenonPortalKey,Misc,Special,0,0,0,,,,,,0,,,,False,True,False,A glass-dark key printed from the Realm of Cambion terminal for Kaelenon's return home.
+Lucky Locket,LuckyLocket,Misc,Special,0,0,0,,,,,,0,,,,False,True,False,A simple gold necklace with a locket containing the picture of a fair lass.
+Luna,Relic4,Misc,Special,0,0,0,,,,,,0,,,,False,True,False,"The Moon, our celestial partner, is the inspiration for the Luna relic and represents love for others."
+Polaris,Relic5,Misc,Special,0,0,0,,,,,,0,,,,False,True,False,The Polaris relic resembles the shape of a star and represents the guiding light of the North Star.
+Quadrata,Relic2,Misc,Special,0,0,0,,,,,,0,,,,False,True,False,"The Quadrata relic symbolizes order, trust, stability, and logic, the hallmarks of a well-balanced person."
+Serpent Venom Heart,SerpentVenomHeart,Misc,Special,0,0,0,,,,,,0,,,,False,True,False,A pulsing knot of venom that refuses to die.
+Spring Water,SpringWater,Misc,Special,0,0,0,,,,,,0,,,,False,True,False,A vial of the finest spring water.
+Stormglass Feather,StormglassFeather,Misc,Special,0,0,0,,,,,,0,,,,False,True,False,A translucent feather with lightning trapped along its spine.
+Thieves Guild Signet,ThievesGuildSignet,Misc,Special,0,1,0,,,,,,0,,,,False,True,False,A blackened silver signet taken from the guild's hidden initiation trial.
+Triangulus,Relic1,Misc,Special,0,0,0,,,,,,0,,,,False,True,False,"The holy trinity of mind, body, and spirit are represented by the Triangulus relic."
+Unobtainium,Unobtainium,Misc,Special,0,0,0,,,,,,0,,,,False,True,False,The legendary ore that has only been theorized. Can be used to create ultimate weapons.
+Verdant Seed,VerdantSeed,Misc,Special,0,0,0,,,,,,0,,,,False,True,False,A sleeping seed warm with impossible spring.
+Blacksmith's Hammer,BlacksmithsHammer,Misc,Summon - Cacus,0,0,0,,,,,,0,,,,False,True,False,It looks like a normal blacksmithing hammer but something seems...special about this one.
+Chiryu Koma,ChiryuKoma,Misc,Summon - Dilong,0,0.1,0,,,,,,0,,,,False,True,False,"A game piece used for shogi, depicting an earth dragon."
+Lockpick Kit,LockpickKit,Misc,Tool,1500,0.55,0,,,,,,0,,,,False,True,False,"A compact set of picks, tension wrenches, and shims required to use lockpicking skills. Durability: 3."
+Monocane,Monocane,Misc,Tool,2500,0.45,0,,,,,,0,,,,False,True,False,A hollow gentleman's cane used to cast Sleeping Powder. Uses remaining: 5.
+Smoke Bomb,SmokeBomb,Misc,Tool,750,0.65,0,,,,,,0,,,,False,True,False,A packed clay pellet that bursts into concealing smoke. Required and consumed by Smoke Screen.
+Water Bladder,WaterBladder,Misc,Tool,400,0.8,0,,,,,,0,,,,False,True,False,Carries ten restorative sips of water. Sips remaining: 10.
+Amatoxin,Amatoxin,Misc,Toxin,15000,0,0,,,,,,0,,,,False,False,False,Standard: Severe poison with a chance to enfeeble. Severe: Critical poison that can kill in five turns if not cured.
+Hemotoxin,Hemotoxin,Misc,Toxin,8000,0,0,,,,,,0,,,,False,False,False,Standard: Moderate poison with a chance to blind. Severe: Severe poison and hemorrhaging.
+Mild Toxin,MildToxin,Misc,Toxin,1000,0,0,,,,,,0,,,,False,False,False,Standard: Mild poison. Severe: Moderate poison.
+Myotoxin,Myotoxin,Misc,Toxin,20000,0,0,,,,,,0,,,,False,False,False,Standard: Severe poison with a chance to stun. Severe: Critical poison that can petrify in three turns if not cured.
+Necrotoxin,Necrotoxin,Misc,Toxin,30000,0,0,,,,,,0,,,,False,False,False,Standard: Severe poison with a chance to incapacitate. Severe: Critical poison that can kill in two turns if not cured.
+Neurotoxin,Neurotoxin,Misc,Toxin,4000,0,0,,,,,,0,,,,False,False,False,"Standard: Mild poison with a chance to numb and disarm. Severe: Moderate poison and anaphylaxis, causing damage and silence."
+Deathcap Mushroom,DeathcapMushroom,Misc,Toxin Reagent,5000,0.2,0,,,,,,0,,,,False,False,False,A toxin reagent used to make Amatoxin.
+Lizard Venom,LizardVenom,Misc,Toxin Reagent,7500,0.15,0,,,,,,0,,,,False,False,False,A toxin reagent used to make Myotoxin.
+Scorpion Venom,ScorpionVenom,Misc,Toxin Reagent,1000,0.33,0,,,,,,0,,,,False,False,False,A toxin reagent used to make Neurotoxin.
+Shadow Venom,ShadowVenom,Misc,Toxin Reagent,10000,0.1,0,,,,,,0,,,,False,False,False,A toxin reagent used to make Necrotoxin.
+Snake Venom,SnakeVenom,Misc,Toxin Reagent,200,0.33,0,,,,,,0,,,,False,False,False,A toxin reagent used to make Mild Toxin.
+Viper Venom,ViperVenom,Misc,Toxin Reagent,2500,0.25,0,,,,,,0,,,,False,False,False,A toxin reagent used to make Hemotoxin.

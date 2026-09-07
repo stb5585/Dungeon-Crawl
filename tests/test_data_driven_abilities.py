@@ -17,26 +17,29 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import pytest
 
-
 # ---------------------------------------------------------------------------
 # CombatResult
 # ---------------------------------------------------------------------------
+
 
 class TestCombatResultMessage:
     """Verify the new message field and __str__ on CombatResult."""
 
     def test_message_field_defaults_empty(self):
         from src.core.combat.combat_result import CombatResult
+
         result = CombatResult(action="Test")
         assert result.message == ""
 
     def test_str_returns_message(self):
         from src.core.combat.combat_result import CombatResult
+
         result = CombatResult(action="Test", message="Hello world")
         assert str(result) == "Hello world"
 
     def test_message_in_to_dict(self):
         from src.core.combat.combat_result import CombatResult
+
         result = CombatResult(action="Test", message="abc")
         d = result.to_dict()
         assert d["message"] == "abc"
@@ -44,6 +47,7 @@ class TestCombatResultMessage:
     def test_empty_str_for_legacy_results(self):
         """Old code that doesn't set message should get empty string."""
         from src.core.combat.combat_result import CombatResult
+
         result = CombatResult(action="Legacy")
         assert str(result) == ""
 
@@ -52,12 +56,14 @@ class TestCombatResultMessage:
 # EffectFactory
 # ---------------------------------------------------------------------------
 
+
 class TestEffectFactory:
     """Verify EffectFactory can create all registered types."""
 
     def test_create_damage(self):
         from src.core.data.ability_loader import EffectFactory
         from src.core.effects import DamageEffect
+
         e = EffectFactory.create({"type": "damage", "base": 10, "scaling": {"ratio": 1.5}})
         assert isinstance(e, DamageEffect)
         assert e.base_damage == 10
@@ -65,12 +71,14 @@ class TestEffectFactory:
     def test_create_heal(self):
         from src.core.data.ability_loader import EffectFactory
         from src.core.effects import HealEffect
+
         e = EffectFactory.create({"type": "heal", "base": 20})
         assert isinstance(e, HealEffect)
 
     def test_create_regen(self):
         from src.core.data.ability_loader import EffectFactory
         from src.core.effects import RegenEffect
+
         e = EffectFactory.create({"type": "regen", "base": 15, "duration": 3})
         assert isinstance(e, RegenEffect)
         assert e.duration == 3
@@ -78,6 +86,7 @@ class TestEffectFactory:
     def test_create_status(self):
         from src.core.data.ability_loader import EffectFactory
         from src.core.effects import StatusEffect
+
         e = EffectFactory.create({"type": "status", "name": "Stun", "duration": 2})
         assert isinstance(e, StatusEffect)
         assert e.name == "Stun"
@@ -85,58 +94,73 @@ class TestEffectFactory:
     def test_create_buff_attack(self):
         from src.core.data.ability_loader import EffectFactory
         from src.core.effects import AttackBuffEffect
+
         e = EffectFactory.create({"type": "buff", "stat": "attack", "amount": 10, "duration": 5})
         assert isinstance(e, AttackBuffEffect)
 
     def test_create_buff_speed(self):
         from src.core.data.ability_loader import EffectFactory
         from src.core.effects import SpeedBuffEffect
+
         e = EffectFactory.create({"type": "buff", "stat": "speed", "amount": 5, "duration": 3})
         assert isinstance(e, SpeedBuffEffect)
 
     def test_create_debuff_defense(self):
         from src.core.data.ability_loader import EffectFactory
         from src.core.effects import DefenseDebuffEffect
+
         e = EffectFactory.create({"type": "debuff", "stat": "defense", "amount": 8, "duration": 3})
         assert isinstance(e, DefenseDebuffEffect)
 
     def test_create_debuff_speed(self):
         from src.core.data.ability_loader import EffectFactory
         from src.core.effects import SpeedDebuffEffect
+
         e = EffectFactory.create({"type": "debuff", "stat": "speed", "amount": 3, "duration": 2})
         assert isinstance(e, SpeedDebuffEffect)
 
     def test_create_dot(self):
         from src.core.data.ability_loader import EffectFactory
         from src.core.effects import DamageOverTimeEffect
-        e = EffectFactory.create({"type": "dot", "dot_type": "Burn", "damage_per_tick": 5, "duration": 3})
+
+        e = EffectFactory.create(
+            {"type": "dot", "dot_type": "Burn", "damage_per_tick": 5, "duration": 3}
+        )
         assert isinstance(e, DamageOverTimeEffect)
 
     def test_create_chance(self):
         from src.core.data.ability_loader import EffectFactory
         from src.core.effects import ChanceEffect
-        e = EffectFactory.create({
-            "type": "chance", "chance": 0.3,
-            "effect": {"type": "status", "name": "Stun", "duration": 1}
-        })
+
+        e = EffectFactory.create(
+            {
+                "type": "chance",
+                "chance": 0.3,
+                "effect": {"type": "status", "name": "Stun", "duration": 1},
+            }
+        )
         assert isinstance(e, ChanceEffect)
 
     def test_create_composite(self):
         from src.core.data.ability_loader import EffectFactory
         from src.core.effects import CompositeEffect
-        e = EffectFactory.create({
-            "type": "composite",
-            "effects": [
-                {"type": "damage", "base": 10},
-                {"type": "buff", "stat": "attack", "amount": 5, "duration": 3},
-            ]
-        })
+
+        e = EffectFactory.create(
+            {
+                "type": "composite",
+                "effects": [
+                    {"type": "damage", "base": 10},
+                    {"type": "buff", "stat": "attack", "amount": 5, "duration": 3},
+                ],
+            }
+        )
         assert isinstance(e, CompositeEffect)
         assert len(e.effects) == 2
 
     def test_create_lifesteal(self):
         from src.core.data.ability_loader import EffectFactory
         from src.core.effects import LifestealEffect
+
         e = EffectFactory.create({"type": "lifesteal", "percent": 0.5})
         assert isinstance(e, LifestealEffect)
         assert e.lifesteal_percent == 0.5
@@ -144,55 +168,70 @@ class TestEffectFactory:
     def test_create_reflect(self):
         from src.core.data.ability_loader import EffectFactory
         from src.core.effects import ReflectDamageEffect
+
         e = EffectFactory.create({"type": "reflect", "percent": 0.25, "duration": 4})
         assert isinstance(e, ReflectDamageEffect)
 
     def test_create_shield(self):
         from src.core.data.ability_loader import EffectFactory
         from src.core.effects import ShieldEffect
+
         e = EffectFactory.create({"type": "shield", "amount": 100, "duration": 5})
         assert isinstance(e, ShieldEffect)
 
     def test_create_dispel(self):
         from src.core.data.ability_loader import EffectFactory
         from src.core.effects import DispelEffect
+
         e = EffectFactory.create({"type": "dispel", "dispel_type": "buffs"})
         assert isinstance(e, DispelEffect)
 
     def test_create_resistance(self):
         from src.core.data.ability_loader import EffectFactory
         from src.core.effects import ResistanceEffect
-        e = EffectFactory.create({"type": "resistance", "element": "Fire", "amount": 0.5, "duration": 3})
+
+        e = EffectFactory.create(
+            {"type": "resistance", "element": "Fire", "amount": 0.5, "duration": 3}
+        )
         assert isinstance(e, ResistanceEffect)
 
     def test_create_multi_buff(self):
         from src.core.data.ability_loader import EffectFactory
         from src.core.effects import MultiStatBuffEffect
-        e = EffectFactory.create({"type": "multi_buff", "stats": {"attack": 5, "defense": 3}, "duration": 4})
+
+        e = EffectFactory.create(
+            {"type": "multi_buff", "stats": {"attack": 5, "defense": 3}, "duration": 4}
+        )
         assert isinstance(e, MultiStatBuffEffect)
 
     def test_create_stat_contest(self):
         from src.core.data.ability_loader import EffectFactory
         from src.core.effects import StatContestEffect
-        e = EffectFactory.create({
-            "type": "stat_contest",
-            "actor_stat": "intel",
-            "actor_divisor": 2,
-            "target_stat": "wisdom",
-            "effect": {"type": "status", "name": "Stun", "duration": 1}
-        })
+
+        e = EffectFactory.create(
+            {
+                "type": "stat_contest",
+                "actor_stat": "intel",
+                "actor_divisor": 2,
+                "target_stat": "wisdom",
+                "effect": {"type": "status", "name": "Stun", "duration": 1},
+            }
+        )
         assert isinstance(e, StatContestEffect)
 
     def test_create_dynamic_dot(self):
         from src.core.data.ability_loader import EffectFactory
         from src.core.effects import DynamicDotEffect
-        e = EffectFactory.create({
-            "type": "dynamic_dot",
-            "dot_type": "DOT",
-            "duration": 2,
-            "damage_lo_fraction": 0.25,
-            "damage_hi_fraction": 0.5,
-        })
+
+        e = EffectFactory.create(
+            {
+                "type": "dynamic_dot",
+                "dot_type": "DOT",
+                "duration": 2,
+                "damage_lo_fraction": 0.25,
+                "damage_hi_fraction": 0.5,
+            }
+        )
         assert isinstance(e, DynamicDotEffect)
         assert e.duration == 2
 
@@ -201,13 +240,15 @@ class TestEffectFactory:
         from src.core.data.ability_loader import EffectFactory
         from tests.test_framework import TestGameState
 
-        effect = EffectFactory.create({
-            "type": "dynamic_dot",
-            "dot_type": "DOT",
-            "duration": 2,
-            "damage_lo_fraction": 1.0,
-            "damage_hi_fraction": 1.0,
-        })
+        effect = EffectFactory.create(
+            {
+                "type": "dynamic_dot",
+                "dot_type": "DOT",
+                "duration": 2,
+                "damage_lo_fraction": 1.0,
+                "damage_hi_fraction": 1.0,
+            }
+        )
         actor = TestGameState.create_player(name="Caster")
         target = TestGameState.create_player(name="Target")
 
@@ -229,27 +270,34 @@ class TestEffectFactory:
     def test_create_dynamic_extra_damage(self):
         from src.core.data.ability_loader import EffectFactory
         from src.core.effects import DynamicExtraDamageEffect
-        e = EffectFactory.create({
-            "type": "dynamic_extra_damage",
-            "damage_lo_fraction": 0.5,
-            "damage_hi_fraction": 1.0,
-        })
+
+        e = EffectFactory.create(
+            {
+                "type": "dynamic_extra_damage",
+                "damage_lo_fraction": 0.5,
+                "damage_hi_fraction": 1.0,
+            }
+        )
         assert isinstance(e, DynamicExtraDamageEffect)
 
     def test_create_status_apply(self):
         from src.core.data.ability_loader import EffectFactory
         from src.core.effects import StatusApplyEffect
-        e = EffectFactory.create({
-            "type": "status_apply",
-            "status_name": "Stun",
-            "duration": 1,
-            "use_crit_bonus": True,
-        })
+
+        e = EffectFactory.create(
+            {
+                "type": "status_apply",
+                "status_name": "Stun",
+                "duration": 1,
+                "use_crit_bonus": True,
+            }
+        )
         assert isinstance(e, StatusApplyEffect)
         assert e.status_name == "Stun"
 
     def test_unknown_type_raises(self):
         from src.core.data.ability_loader import EffectFactory
+
         with pytest.raises(ValueError, match="Unknown effect type"):
             EffectFactory.create({"type": "nonexistent"})
 
@@ -258,21 +306,25 @@ class TestEffectFactory:
 # AbilityFactory
 # ---------------------------------------------------------------------------
 
+
 class TestAbilityFactory:
     """Test that AbilityFactory produces the right types."""
 
     def test_combat_ready_spell(self):
         from src.core.data.ability_loader import AbilityFactory
         from src.core.data.data_driven_abilities import DataDrivenSpell
-        ability = AbilityFactory.create_from_dict({
-            "name": "TestSpell",
-            "type": "Spell",
-            "subtype": "Fire",
-            "cost": 10,
-            "damage_mod": 1.5,
-            "crit": 5,
-            "effects": [{"type": "damage", "base": 25}],
-        })
+
+        ability = AbilityFactory.create_from_dict(
+            {
+                "name": "TestSpell",
+                "type": "Spell",
+                "subtype": "Fire",
+                "cost": 10,
+                "damage_mod": 1.5,
+                "crit": 5,
+                "effects": [{"type": "damage", "base": 25}],
+            }
+        )
         assert isinstance(ability, DataDrivenSpell)
         assert ability.name == "TestSpell"
         assert ability.cost == 10
@@ -282,21 +334,25 @@ class TestAbilityFactory:
     def test_combat_ready_skill(self):
         from src.core.data.ability_loader import AbilityFactory
         from src.core.data.data_driven_abilities import DataDrivenSkill
-        ability = AbilityFactory.create_from_dict({
-            "name": "TestSkill",
-            "type": "Skill",
-            "subtype": "Offensive",
-            "cost": 5,
-            "weapon": True,
-            "damage_mod": 2.0,
-            "effects": [],
-        })
+
+        ability = AbilityFactory.create_from_dict(
+            {
+                "name": "TestSkill",
+                "type": "Skill",
+                "subtype": "Offensive",
+                "cost": 5,
+                "weapon": True,
+                "damage_mod": 2.0,
+                "effects": [],
+            }
+        )
         assert isinstance(ability, DataDrivenSkill)
         assert ability.weapon is True
         assert ability.dmg_mod == 2.0
 
     def test_simple_ability_fallback(self):
         from src.core.data.ability_loader import AbilityFactory
+
         ability = AbilityFactory.create_from_dict(
             {"name": "Config", "type": "Spell", "cost": 5},
             combat_ready=False,
@@ -308,12 +364,15 @@ class TestAbilityFactory:
     def test_combat_ready_is_default(self):
         from src.core.data.ability_loader import AbilityFactory
         from src.core.data.data_driven_abilities import DataDrivenSpell
-        ability = AbilityFactory.create_from_dict({
-            "name": "DefaultSpell",
-            "type": "Spell",
-            "subtype": "Non-elemental",
-            "cost": 0,
-        })
+
+        ability = AbilityFactory.create_from_dict(
+            {
+                "name": "DefaultSpell",
+                "type": "Spell",
+                "subtype": "Non-elemental",
+                "cost": 0,
+            }
+        )
         assert isinstance(ability, DataDrivenSpell)
 
 
@@ -321,25 +380,29 @@ class TestAbilityFactory:
 # YAML loading — end-to-end
 # ---------------------------------------------------------------------------
 
+
 class TestYAMLLoading:
     """Load actual YAML files and verify they produce combat-ready instances."""
 
     ABILITIES_DIR = Path(__file__).parent.parent / "src" / "core" / "data" / "abilities"
 
-    @pytest.mark.parametrize("filename,expected_subtyp", [
-        ("firebolt.yaml", "Fire"),
-        ("fireball.yaml", "Fire"),
-        ("firestorm.yaml", "Fire"),
-        ("scorch.yaml", "Fire"),
-        ("molten_rock.yaml", "Fire"),
-        ("volcano.yaml", "Fire"),
-        ("ice_lance.yaml", "Ice"),
-        ("icicle.yaml", "Ice"),
-        ("blizzard.yaml", "Ice"),
-        ("shock.yaml", "Electric"),
-        ("lightning.yaml", "Electric"),
-        ("electrocution.yaml", "Electric"),
-    ])
+    @pytest.mark.parametrize(
+        "filename,expected_subtyp",
+        [
+            ("firebolt.yaml", "Fire"),
+            ("fireball.yaml", "Fire"),
+            ("firestorm.yaml", "Fire"),
+            ("scorch.yaml", "Fire"),
+            ("molten_rock.yaml", "Fire"),
+            ("volcano.yaml", "Fire"),
+            ("ice_lance.yaml", "Ice"),
+            ("icicle.yaml", "Ice"),
+            ("blizzard.yaml", "Ice"),
+            ("shock.yaml", "Electric"),
+            ("lightning.yaml", "Electric"),
+            ("electrocution.yaml", "Electric"),
+        ],
+    )
     def test_load_batch1_spell(self, filename, expected_subtyp):
         from src.core.data.ability_loader import AbilityFactory
         from src.core.data.data_driven_abilities import DataDrivenSpell
@@ -421,7 +484,7 @@ class TestYAMLLoading:
 
     def test_load_directory_produces_combat_ready(self):
         from src.core.data.ability_loader import AbilityFactory
-        from src.core.data.data_driven_abilities import DataDrivenSpell, DataDrivenSkill
+        from src.core.data.data_driven_abilities import DataDrivenSkill, DataDrivenSpell
 
         abilities = AbilityFactory.load_abilities_from_directory(self.ABILITIES_DIR)
         assert len(abilities) > 0
@@ -440,21 +503,23 @@ class TestYAMLLoading:
         assert len(abilities) > 0
         # None should be DataDrivenSpell
         for name, ab in abilities.items():
-            assert not hasattr(ab, "cast") or type(ab).__name__ != "DataDrivenSpell", \
-                f"{name} should be SimpleAbility in non-combat mode"
+            assert (
+                not hasattr(ab, "cast") or type(ab).__name__ != "DataDrivenSpell"
+            ), f"{name} should be SimpleAbility in non-combat mode"
 
 
 # ---------------------------------------------------------------------------
 # DataDrivenSpell — integration with real characters
 # ---------------------------------------------------------------------------
 
+
 class TestDataDrivenSpellCast:
     """Test DataDrivenSpell.cast() with real Player/Enemy objects."""
 
     @staticmethod
     def _make_combatants():
-        from tests.test_framework import TestGameState
         from src.core.enemies import Enemy
+        from tests.test_framework import TestGameState
 
         caster = TestGameState.create_player(
             name="Caster",
@@ -463,8 +528,7 @@ class TestDataDrivenSpellCast:
             level=30,
             health=(300, 300),
             mana=(200, 200),
-            stats={"strength": 10, "intel": 25, "wisdom": 20,
-                   "con": 15, "charisma": 10, "dex": 15},
+            stats={"strength": 10, "intel": 25, "wisdom": 20, "con": 15, "charisma": 10, "dex": 15},
         )
         # Ensure the Wizard power-up is off so mana deduction works normally
         caster.class_effects["Power Up"].active = False
@@ -476,16 +540,17 @@ class TestDataDrivenSpellCast:
             level=30,
             health=(500, 500),
             mana=(50, 50),
-            stats={"strength": 20, "intel": 8, "wisdom": 10,
-                   "con": 18, "charisma": 10, "dex": 12},
+            stats={"strength": 20, "intel": 8, "wisdom": 10, "con": 18, "charisma": 10, "dex": 12},
         )
         return caster, target
 
     def test_cast_returns_combat_result(self):
-        from src.core.data.ability_loader import AbilityFactory
         from src.core.combat.combat_result import CombatResult
+        from src.core.data.ability_loader import AbilityFactory
 
-        filepath = Path(__file__).parent.parent / "src" / "core" / "data" / "abilities" / "fireball.yaml"
+        filepath = (
+            Path(__file__).parent.parent / "src" / "core" / "data" / "abilities" / "fireball.yaml"
+        )
         spell = AbilityFactory.create_from_yaml(filepath)
         caster, target = self._make_combatants()
 
@@ -498,7 +563,9 @@ class TestDataDrivenSpellCast:
         """str(spell.cast(...)) should give the same result as result.message."""
         from src.core.data.ability_loader import AbilityFactory
 
-        filepath = Path(__file__).parent.parent / "src" / "core" / "data" / "abilities" / "fireball.yaml"
+        filepath = (
+            Path(__file__).parent.parent / "src" / "core" / "data" / "abilities" / "fireball.yaml"
+        )
         spell = AbilityFactory.create_from_yaml(filepath)
         caster, target = self._make_combatants()
 
@@ -508,7 +575,9 @@ class TestDataDrivenSpellCast:
     def test_cast_deducts_mana(self):
         from src.core.data.ability_loader import AbilityFactory
 
-        filepath = Path(__file__).parent.parent / "src" / "core" / "data" / "abilities" / "fireball.yaml"
+        filepath = (
+            Path(__file__).parent.parent / "src" / "core" / "data" / "abilities" / "fireball.yaml"
+        )
         spell = AbilityFactory.create_from_yaml(filepath)
         caster, target = self._make_combatants()
 
@@ -520,7 +589,9 @@ class TestDataDrivenSpellCast:
         """After casting, target should have taken damage OR dodge should have occurred."""
         from src.core.data.ability_loader import AbilityFactory
 
-        filepath = Path(__file__).parent.parent / "src" / "core" / "data" / "abilities" / "fireball.yaml"
+        filepath = (
+            Path(__file__).parent.parent / "src" / "core" / "data" / "abilities" / "fireball.yaml"
+        )
         spell = AbilityFactory.create_from_yaml(filepath)
         caster, target = self._make_combatants()
 
@@ -539,7 +610,9 @@ class TestDataDrivenSpellCast:
         """Target with Ice Block active should be unaffected."""
         from src.core.data.ability_loader import AbilityFactory
 
-        filepath = Path(__file__).parent.parent / "src" / "core" / "data" / "abilities" / "fireball.yaml"
+        filepath = (
+            Path(__file__).parent.parent / "src" / "core" / "data" / "abilities" / "fireball.yaml"
+        )
         spell = AbilityFactory.create_from_yaml(filepath)
         caster, target = self._make_combatants()
 
@@ -552,10 +625,13 @@ class TestDataDrivenSpellCast:
 
     def test_fire_spell_special_effect_can_apply_dot(self):
         """Fire spells should sometimes apply DOT via the stat contest."""
-        from src.core.data.ability_loader import AbilityFactory
         import random
 
-        filepath = Path(__file__).parent.parent / "src" / "core" / "data" / "abilities" / "fireball.yaml"
+        from src.core.data.ability_loader import AbilityFactory
+
+        filepath = (
+            Path(__file__).parent.parent / "src" / "core" / "data" / "abilities" / "fireball.yaml"
+        )
         spell = AbilityFactory.create_from_yaml(filepath)
 
         # Run many times — DOT should trigger at least once
@@ -576,7 +652,9 @@ class TestDataDrivenSpellCast:
         """Corruption DOT should not reuse burn text."""
         from src.core.data.ability_loader import AbilityFactory
 
-        filepath = Path(__file__).parent.parent / "src" / "core" / "data" / "abilities" / "corruption.yaml"
+        filepath = (
+            Path(__file__).parent.parent / "src" / "core" / "data" / "abilities" / "corruption.yaml"
+        )
         spell = AbilityFactory.create_from_yaml(filepath)
 
         for _ in range(80):
@@ -677,7 +755,9 @@ class TestDataDrivenSpellCast:
         """Electric spells should sometimes apply Stun."""
         from src.core.data.ability_loader import AbilityFactory
 
-        filepath = Path(__file__).parent.parent / "src" / "core" / "data" / "abilities" / "shock.yaml"
+        filepath = (
+            Path(__file__).parent.parent / "src" / "core" / "data" / "abilities" / "shock.yaml"
+        )
         spell = AbilityFactory.create_from_yaml(filepath)
 
         stun_applied = False
@@ -697,12 +777,14 @@ class TestDataDrivenSpellCast:
 # Backward Compatibility
 # ---------------------------------------------------------------------------
 
+
 class TestBackwardCompatibility:
     """Ensure existing abilities still work unchanged."""
 
     def test_existing_fireball_class_unmodified(self):
         """The Python Fireball class should be unaffected."""
         from src.core.abilities import Fireball
+
         fb = Fireball()
         assert fb.name == "Fireball"
         assert fb.cost == 10
@@ -711,6 +793,7 @@ class TestBackwardCompatibility:
     def test_existing_charge_yaml_loading_unchanged(self):
         """Charge class should still load YAML config via DataDrivenChargingSkill."""
         from src.core.abilities import Charge
+
         ch = Charge()
         assert ch.name == "Charge"
         # Should have loaded YAML config — now uses _charge_time
@@ -719,6 +802,7 @@ class TestBackwardCompatibility:
     def test_combat_result_str_compat(self):
         """str() on old-style results (no message) should return empty string."""
         from src.core.combat.combat_result import CombatResult
+
         result = CombatResult(action="Test")
         # Battle engine does: message += str(result)
         msg = "prefix" + str(result)
@@ -729,6 +813,7 @@ class TestBackwardCompatibility:
 # Batch 1 YAML Migration — New Effect Types
 # ---------------------------------------------------------------------------
 
+
 class TestNewEffectTypes:
     """Validate the new effect types added for Batch 1."""
 
@@ -736,17 +821,20 @@ class TestNewEffectTypes:
         """StatContestEffect with use_crit_multiplier should scale actor stat."""
         from src.core.data.ability_loader import EffectFactory
         from src.core.effects import StatContestEffect
-        e = EffectFactory.create({
-            "type": "stat_contest",
-            "actor_stat": "charisma",
-            "actor_lo_divisor": 2,
-            "actor_divisor": 1,
-            "target_stat": "wisdom",
-            "target_lo_divisor": 2,
-            "target_hi_divisor": 1,
-            "use_crit_multiplier": True,
-            "effect": {"type": "status_apply", "status_name": "Stun", "duration": 1},
-        })
+
+        e = EffectFactory.create(
+            {
+                "type": "stat_contest",
+                "actor_stat": "charisma",
+                "actor_lo_divisor": 2,
+                "actor_divisor": 1,
+                "target_stat": "wisdom",
+                "target_lo_divisor": 2,
+                "target_hi_divisor": 1,
+                "use_crit_multiplier": True,
+                "effect": {"type": "status_apply", "status_name": "Stun", "duration": 1},
+            }
+        )
         assert isinstance(e, StatContestEffect)
         assert e.use_crit_multiplier is True
         assert e.actor_lo_divisor == 2
@@ -755,12 +843,15 @@ class TestNewEffectTypes:
         """StatusApplyEffect with crit_only should be loadable."""
         from src.core.data.ability_loader import EffectFactory
         from src.core.effects import StatusApplyEffect
-        e = EffectFactory.create({
-            "type": "status_apply",
-            "status_name": "Blind",
-            "duration": 2,
-            "crit_only": True,
-        })
+
+        e = EffectFactory.create(
+            {
+                "type": "status_apply",
+                "status_name": "Blind",
+                "duration": 2,
+                "crit_only": True,
+            }
+        )
         assert isinstance(e, StatusApplyEffect)
         assert e.crit_only is True
 
@@ -768,16 +859,19 @@ class TestNewEffectTypes:
         """DynamicStatusDotEffect should be creatable from EffectFactory."""
         from src.core.data.ability_loader import EffectFactory
         from src.core.effects.composite import DynamicStatusDotEffect
-        e = EffectFactory.create({
-            "type": "dynamic_status_dot",
-            "status_name": "Poison",
-            "duration_stat": "intel",
-            "duration_stat_divisor": 10,
-            "duration_min": 2,
-            "damage_lo_fraction": 1.0,
-            "damage_hi_fraction": 1.0,
-            "health_multiplier": 0.005,
-        })
+
+        e = EffectFactory.create(
+            {
+                "type": "dynamic_status_dot",
+                "status_name": "Poison",
+                "duration_stat": "intel",
+                "duration_stat_divisor": 10,
+                "duration_min": 2,
+                "damage_lo_fraction": 1.0,
+                "damage_hi_fraction": 1.0,
+                "health_multiplier": 0.005,
+            }
+        )
         assert isinstance(e, DynamicStatusDotEffect)
         assert e.status_name == "Poison"
         assert e.health_multiplier == 0.005
@@ -827,9 +921,7 @@ class TestBatch1YAMLLoading:
         filepath = Path(__file__).parent.parent / "src" / "core" / "data" / "abilities" / yaml_file
         spell = AbilityFactory.create_from_yaml(filepath)
         expected_type = (
-            DataDrivenMagicMissileSpell
-            if yaml_file == "ultima.yaml"
-            else DataDrivenSpell
+            DataDrivenMagicMissileSpell if yaml_file == "ultima.yaml" else DataDrivenSpell
         )
         assert isinstance(spell, expected_type)
         assert spell.name == expected_name
@@ -842,20 +934,29 @@ class TestBatch1YAMLLoading:
         from src.core.data.ability_loader import AbilityFactory
 
         ranked = {
-            "aqualung.yaml": 1, "tsunami.yaml": 2,
-            "mudslide.yaml": 1, "earthquake.yaml": 2,
-            "hurricane.yaml": 1, "tornado.yaml": 2,
-            "ultima.yaml": 3, "poison_breath.yaml": 2,
+            "aqualung.yaml": 1,
+            "tsunami.yaml": 2,
+            "mudslide.yaml": 1,
+            "earthquake.yaml": 2,
+            "hurricane.yaml": 1,
+            "tornado.yaml": 2,
+            "ultima.yaml": 3,
+            "poison_breath.yaml": 2,
         }
         for yaml_file, expected_rank in ranked.items():
-            filepath = Path(__file__).parent.parent / "src" / "core" / "data" / "abilities" / yaml_file
+            filepath = (
+                Path(__file__).parent.parent / "src" / "core" / "data" / "abilities" / yaml_file
+            )
             spell = AbilityFactory.create_from_yaml(filepath)
-            assert spell.rank == expected_rank, f"{yaml_file}: expected rank {expected_rank}, got {spell.rank}"
+            assert (
+                spell.rank == expected_rank
+            ), f"{yaml_file}: expected rank {expected_rank}, got {spell.rank}"
 
 
 # ---------------------------------------------------------------------------
 # Batch 1 — ability wrapper factory functions
 # ---------------------------------------------------------------------------
+
 
 class TestBatch1AbilityFactories:
     """Test that ability wrapper classes produce DataDrivenSpell instances."""
@@ -962,6 +1063,7 @@ class TestBatch1AbilityFactories:
 # Batch 1 — Combat Integration
 # ---------------------------------------------------------------------------
 
+
 class TestBatch1CombatIntegration:
     """Test migrated spells work correctly in combat."""
 
@@ -976,8 +1078,7 @@ class TestBatch1CombatIntegration:
             level=30,
             health=(300, 300),
             mana=(200, 200),
-            stats={"strength": 10, "intel": 25, "wisdom": 20,
-                   "con": 15, "charisma": 10, "dex": 15},
+            stats={"strength": 10, "intel": 25, "wisdom": 20, "con": 15, "charisma": 10, "dex": 15},
         )
         caster.class_effects["Power Up"].active = False
 
@@ -988,19 +1089,24 @@ class TestBatch1CombatIntegration:
             level=30,
             health=(500, 500),
             mana=(50, 50),
-            stats={"strength": 20, "intel": 8, "wisdom": 10,
-                   "con": 18, "charisma": 10, "dex": 12},
+            stats={"strength": 20, "intel": 8, "wisdom": 10, "con": 18, "charisma": 10, "dex": 12},
         )
         return caster, target
 
-    @pytest.mark.parametrize("yaml_file", [
-        "water_jet.yaml", "tremor.yaml", "gust.yaml",
-        "shadow_bolt.yaml", "ultima.yaml",
-    ])
+    @pytest.mark.parametrize(
+        "yaml_file",
+        [
+            "water_jet.yaml",
+            "tremor.yaml",
+            "gust.yaml",
+            "shadow_bolt.yaml",
+            "ultima.yaml",
+        ],
+    )
     def test_simple_spell_deals_damage(self, yaml_file):
         """Simple spells (no special effect) should deal damage."""
-        from src.core.data.ability_loader import AbilityFactory
         from src.core.combat.combat_result import CombatResult
+        from src.core.data.ability_loader import AbilityFactory
 
         filepath = Path(__file__).parent.parent / "src" / "core" / "data" / "abilities" / yaml_file
         spell = AbilityFactory.create_from_yaml(filepath)
@@ -1019,7 +1125,9 @@ class TestBatch1CombatIntegration:
         """Sandstorm should sometimes apply Blind."""
         from src.core.data.ability_loader import AbilityFactory
 
-        filepath = Path(__file__).parent.parent / "src" / "core" / "data" / "abilities" / "sandstorm.yaml"
+        filepath = (
+            Path(__file__).parent.parent / "src" / "core" / "data" / "abilities" / "sandstorm.yaml"
+        )
         spell = AbilityFactory.create_from_yaml(filepath)
 
         blind_applied = False
@@ -1038,7 +1146,9 @@ class TestBatch1CombatIntegration:
         """Holy should apply Blind on critical hits."""
         from src.core.data.ability_loader import AbilityFactory
 
-        filepath = Path(__file__).parent.parent / "src" / "core" / "data" / "abilities" / "holy.yaml"
+        filepath = (
+            Path(__file__).parent.parent / "src" / "core" / "data" / "abilities" / "holy.yaml"
+        )
         spell = AbilityFactory.create_from_yaml(filepath)
 
         blind_applied = False
@@ -1055,7 +1165,9 @@ class TestBatch1CombatIntegration:
         """Corruption should sometimes apply DOT."""
         from src.core.data.ability_loader import AbilityFactory
 
-        filepath = Path(__file__).parent.parent / "src" / "core" / "data" / "abilities" / "corruption.yaml"
+        filepath = (
+            Path(__file__).parent.parent / "src" / "core" / "data" / "abilities" / "corruption.yaml"
+        )
         spell = AbilityFactory.create_from_yaml(filepath)
 
         dot_applied = False
@@ -1074,7 +1186,9 @@ class TestBatch1CombatIntegration:
         """Terrify should sometimes apply Fear."""
         from src.core.data.ability_loader import AbilityFactory
 
-        filepath = Path(__file__).parent.parent / "src" / "core" / "data" / "abilities" / "terrify.yaml"
+        filepath = (
+            Path(__file__).parent.parent / "src" / "core" / "data" / "abilities" / "terrify.yaml"
+        )
         spell = AbilityFactory.create_from_yaml(filepath)
 
         stun_applied = False
@@ -1093,7 +1207,9 @@ class TestBatch1CombatIntegration:
         """Hellfire should sometimes apply DOT."""
         from src.core.data.ability_loader import AbilityFactory
 
-        filepath = Path(__file__).parent.parent / "src" / "core" / "data" / "abilities" / "hellfire.yaml"
+        filepath = (
+            Path(__file__).parent.parent / "src" / "core" / "data" / "abilities" / "hellfire.yaml"
+        )
         spell = AbilityFactory.create_from_yaml(filepath)
 
         dot_applied = False
@@ -1112,7 +1228,14 @@ class TestBatch1CombatIntegration:
         """PoisonBreath should sometimes apply Poison."""
         from src.core.data.ability_loader import AbilityFactory
 
-        filepath = Path(__file__).parent.parent / "src" / "core" / "data" / "abilities" / "poison_breath.yaml"
+        filepath = (
+            Path(__file__).parent.parent
+            / "src"
+            / "core"
+            / "data"
+            / "abilities"
+            / "poison_breath.yaml"
+        )
         spell = AbilityFactory.create_from_yaml(filepath)
 
         poison_applied = False
@@ -1132,22 +1255,28 @@ class TestBatch1CombatIntegration:
 # Batch 2 - Healing / Support / Status spell migration tests
 # ======================================================================
 
+
 class TestBatch2NewEffects:
     """Validate the 5 new effect types added for Batch 2."""
 
     @staticmethod
     def _make_char():
         from tests.test_framework import TestGameState
+
         return TestGameState.create_player(
-            name="Tester", class_name="Wizard", race_name="Human",
-            level=30, health=(500, 500), mana=(200, 200),
-            stats={"strength": 10, "intel": 25, "wisdom": 20,
-                   "con": 15, "charisma": 10, "dex": 15},
+            name="Tester",
+            class_name="Wizard",
+            race_name="Human",
+            level=30,
+            health=(500, 500),
+            mana=(200, 200),
+            stats={"strength": 10, "intel": 25, "wisdom": 20, "con": 15, "charisma": 10, "dex": 15},
         )
 
     def test_magic_effect_apply(self):
-        from src.core.effects import MagicEffectApplyEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import MagicEffectApplyEffect
+
         actor = self._make_char()
         target = actor
         effect = MagicEffectApplyEffect(effect_name="Reflect", duration=5)
@@ -1158,15 +1287,18 @@ class TestBatch2NewEffects:
         assert "Reflect" in result.effects_applied.get("Magic", [])
 
     def test_magic_effect_apply_stat_duration(self):
-        from src.core.effects import MagicEffectApplyEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import MagicEffectApplyEffect
+
         actor = self._make_char()
         actor.stats.intel = 80
         target = actor
         # mode "max" → max(duration, stat // divisor)
         effect = MagicEffectApplyEffect(
-            effect_name="Reflect", duration=4,
-            duration_stat="intel", duration_stat_divisor=10,
+            effect_name="Reflect",
+            duration=4,
+            duration_stat="intel",
+            duration_stat_divisor=10,
             duration_stat_mode="max",
         )
         result = CombatResult(action="Test")
@@ -1174,14 +1306,18 @@ class TestBatch2NewEffects:
         assert target.magic_effects["Reflect"].duration >= 8  # max(4, 80//10)
 
     def test_dynamic_stat_buff(self):
-        from src.core.effects import DynamicStatBuffEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import DynamicStatBuffEffect
+
         actor = self._make_char()
         target = actor
         target.combat.magic = 100
         effect = DynamicStatBuffEffect(
-            buff_stat="Magic", source="target_combat",
-            source_stat="magic", lo_divisor=4, hi_divisor=2,
+            buff_stat="Magic",
+            source="target_combat",
+            source_stat="magic",
+            lo_divisor=4,
+            hi_divisor=2,
             duration=5,
         )
         result = CombatResult(action="Test")
@@ -1191,8 +1327,9 @@ class TestBatch2NewEffects:
         assert target.stat_effects["Magic"].duration >= 5
 
     def test_dynamic_multi_debuff(self):
-        from src.core.effects import DynamicMultiDebuffEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import DynamicMultiDebuffEffect
+
         actor = self._make_char()
         actor.stats.intel = 50
         target = self._make_char()
@@ -1203,8 +1340,10 @@ class TestBatch2NewEffects:
                 {"stat_name": "Attack", "combat_attr": "attack"},
                 {"stat_name": "Defense", "combat_attr": "defense"},
             ],
-            scaling_stat="intel", scaling_divisor=10,
-            amount_divisor=10, duration_min=3,
+            scaling_stat="intel",
+            scaling_divisor=10,
+            amount_divisor=10,
+            duration_min=3,
         )
         result = CombatResult(action="Test")
         effect.apply(actor, target, result)
@@ -1215,8 +1354,9 @@ class TestBatch2NewEffects:
         assert len(result.extra.get("messages", [])) == 2
 
     def test_dynamic_multi_debuff_skips_zero_stat_changes(self):
-        from src.core.effects import DynamicMultiDebuffEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import DynamicMultiDebuffEffect
+
         actor = self._make_char()
         actor.stats.intel = 10
         target = self._make_char()
@@ -1227,8 +1367,10 @@ class TestBatch2NewEffects:
                 {"stat_name": "Attack", "combat_attr": "attack"},
                 {"stat_name": "Defense", "combat_attr": "defense"},
             ],
-            scaling_stat="intel", scaling_divisor=10,
-            amount_divisor=10, duration_min=3,
+            scaling_stat="intel",
+            scaling_divisor=10,
+            amount_divisor=10,
+            duration_min=3,
         )
         result = CombatResult(action="Test")
         effect.apply(actor, target, result)
@@ -1239,8 +1381,9 @@ class TestBatch2NewEffects:
         assert result.extra.get("messages", []) == []
 
     def test_fixed_stat_modifier_skips_zero_changes(self):
-        from src.core.effects import StatModifierEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import StatModifierEffect
+
         actor = self._make_char()
         target = self._make_char()
         effect = StatModifierEffect("attack", 0, 3)
@@ -1252,8 +1395,9 @@ class TestBatch2NewEffects:
         assert result.effects_applied["Stat"] == []
 
     def test_cleanse_effect(self):
-        from src.core.effects import CleanseEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import CleanseEffect
+
         actor = self._make_char()
         target = actor
         target.status_effects["Blind"].active = True
@@ -1265,8 +1409,9 @@ class TestBatch2NewEffects:
         assert not target.status_effects["Poison"].active
 
     def test_full_dispel_effect(self):
-        from src.core.effects import FullDispelEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import FullDispelEffect
+
         actor = self._make_char()
         target = self._make_char()
         target.magic_effects["Regen"].active = True
@@ -1281,14 +1426,17 @@ class TestBatch2NewEffects:
         assert not target.stat_effects["Attack"].active
 
     def test_status_apply_skip_if_active(self):
-        from src.core.effects import StatusApplyEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import StatusApplyEffect
+
         actor = self._make_char()
         target = self._make_char()
         target.status_effects["Blind"].active = True
         target.status_effects["Blind"].duration = 2
         effect = StatusApplyEffect(
-            status_name="Blind", duration=3, skip_if_active=True,
+            status_name="Blind",
+            duration=3,
+            skip_if_active=True,
         )
         result = CombatResult(action="Test")
         result.extra["last_crit"] = 1
@@ -1298,15 +1446,19 @@ class TestBatch2NewEffects:
         assert target.status_effects["Blind"].duration == 2
 
     def test_status_apply_duration_random(self):
-        from src.core.effects import StatusApplyEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import StatusApplyEffect
+
         actor = self._make_char()
         actor.stats.intel = 60
         target = self._make_char()
         effect = StatusApplyEffect(
-            status_name="Berserk", skip_if_active=True,
-            duration_stat="intel", duration_stat_divisor=10,
-            duration_min=2, duration_random=True,
+            status_name="Berserk",
+            skip_if_active=True,
+            duration_stat="intel",
+            duration_stat_divisor=10,
+            duration_min=2,
+            duration_random=True,
         )
         durations = set()
         for _ in range(50):
@@ -1340,9 +1492,8 @@ class TestBatch2YAMLLoading:
     def test_load_heal_spell(self, filename, name, cost, heal):
         from src.core.data.ability_loader import AbilityFactory
         from src.core.data.data_driven_abilities import DataDrivenHealSpell
-        ability = AbilityFactory.create_from_yaml(
-            self.YAML_DIR / filename, combat_ready=True
-        )
+
+        ability = AbilityFactory.create_from_yaml(self.YAML_DIR / filename, combat_ready=True)
         assert isinstance(ability, DataDrivenHealSpell)
         assert ability.name == name
         assert ability.cost == cost
@@ -1370,9 +1521,8 @@ class TestBatch2YAMLLoading:
     def test_load_support_spell(self, filename, name, cost):
         from src.core.data.ability_loader import AbilityFactory
         from src.core.data.data_driven_abilities import DataDrivenSupportSpell
-        ability = AbilityFactory.create_from_yaml(
-            self.YAML_DIR / filename, combat_ready=True
-        )
+
+        ability = AbilityFactory.create_from_yaml(self.YAML_DIR / filename, combat_ready=True)
         assert isinstance(ability, DataDrivenSupportSpell)
         assert ability.name == name
         assert ability.cost == cost
@@ -1392,9 +1542,8 @@ class TestBatch2YAMLLoading:
     def test_load_status_spell(self, filename, name, cost):
         from src.core.data.ability_loader import AbilityFactory
         from src.core.data.data_driven_abilities import DataDrivenStatusSpell
-        ability = AbilityFactory.create_from_yaml(
-            self.YAML_DIR / filename, combat_ready=True
-        )
+
+        ability = AbilityFactory.create_from_yaml(self.YAML_DIR / filename, combat_ready=True)
         assert isinstance(ability, DataDrivenStatusSpell)
         assert ability.name == name
         assert ability.cost == cost
@@ -1406,6 +1555,7 @@ class TestBatch2AbilityFactories:
     def test_heal_spells(self):
         from src.core import abilities
         from src.core.data.data_driven_abilities import DataDrivenHealSpell
+
         h1 = abilities.Heal()
         h2 = abilities.Heal2()
         h3 = abilities.Heal3()
@@ -1422,6 +1572,7 @@ class TestBatch2AbilityFactories:
     def test_regen_spells(self):
         from src.core import abilities
         from src.core.data.data_driven_abilities import DataDrivenHealSpell
+
         r1 = abilities.Regen()
         r2 = abilities.Regen2()
         r3 = abilities.Regen3()
@@ -1433,6 +1584,7 @@ class TestBatch2AbilityFactories:
     def test_hydration(self):
         from src.core import abilities
         from src.core.data.data_driven_abilities import DataDrivenHealSpell
+
         h = abilities.Hydration()
         assert isinstance(h, DataDrivenHealSpell)
         assert h._instant_heal is True
@@ -1441,17 +1593,37 @@ class TestBatch2AbilityFactories:
     def test_support_spells(self):
         from src.core import abilities
         from src.core.data.data_driven_abilities import DataDrivenSupportSpell
-        for name in ["Bless", "Boost", "Shell", "Reflect", "Cleanse",
-                      "DivineProtection", "IceBlock", "WindSpeed",
-                      "MirrorImage", "MirrorImage2", "AstralShift"]:
+
+        for name in [
+            "Bless",
+            "Boost",
+            "Shell",
+            "Reflect",
+            "Cleanse",
+            "DivineProtection",
+            "IceBlock",
+            "WindSpeed",
+            "MirrorImage",
+            "MirrorImage2",
+            "AstralShift",
+        ]:
             spell = getattr(abilities, name)()
             assert isinstance(spell, DataDrivenSupportSpell), f"{name} failed"
 
     def test_status_spells(self):
         from src.core import abilities
         from src.core.data.data_driven_abilities import DataDrivenStatusSpell
-        for name in ["BlindingFog", "Sleep", "Stupefy", "Silence", "Berserk",
-                      "Dispel", "WeakenMind", "Enfeeble"]:
+
+        for name in [
+            "BlindingFog",
+            "Sleep",
+            "Stupefy",
+            "Silence",
+            "Berserk",
+            "Dispel",
+            "WeakenMind",
+            "Enfeeble",
+        ]:
             spell = getattr(abilities, name)()
             assert isinstance(spell, DataDrivenStatusSpell), f"{name} failed"
 
@@ -1462,17 +1634,22 @@ class TestBatch2CombatIntegration:
     @staticmethod
     def _make_char():
         from tests.test_framework import TestGameState
+
         return TestGameState.create_player(
-            name="Tester", class_name="Wizard", race_name="Human",
-            level=30, health=(500, 500), mana=(200, 200),
-            stats={"strength": 10, "intel": 25, "wisdom": 20,
-                   "con": 15, "charisma": 10, "dex": 15},
+            name="Tester",
+            class_name="Wizard",
+            race_name="Human",
+            level=30,
+            health=(500, 500),
+            mana=(200, 200),
+            stats={"strength": 10, "intel": 25, "wisdom": 20, "con": 15, "charisma": 10, "dex": 15},
         )
 
     # ── Healing ──────────────────────────────────────────────────
 
     def test_heal_restores_hp(self):
         from src.core import abilities
+
         caster = self._make_char()
         caster.mana.current = 100
         caster.health.current = 50
@@ -1483,6 +1660,7 @@ class TestBatch2CombatIntegration:
 
     def test_regen_applies_hot(self):
         from src.core import abilities
+
         caster = self._make_char()
         caster.mana.current = 100
         spell = abilities.Regen()
@@ -1492,6 +1670,7 @@ class TestBatch2CombatIntegration:
 
     def test_hydration_heals_and_regens(self):
         from src.core import abilities
+
         caster = self._make_char()
         caster.mana.current = 100
         caster.health.current = 50
@@ -1502,6 +1681,7 @@ class TestBatch2CombatIntegration:
 
     def test_heal_cast_out(self):
         from src.core import abilities
+
         caster = self._make_char()
         caster.mana.current = 100
         caster.health.current = 50
@@ -1514,6 +1694,7 @@ class TestBatch2CombatIntegration:
 
     def test_bless_buffs_attack_defense(self):
         from src.core import abilities
+
         caster = self._make_char()
         caster.mana.current = 100
         spell = abilities.Bless()
@@ -1525,6 +1706,7 @@ class TestBatch2CombatIntegration:
 
     def test_boost_buffs_magic(self):
         from src.core import abilities
+
         caster = self._make_char()
         caster.mana.current = 100
         spell = abilities.Boost()
@@ -1534,6 +1716,7 @@ class TestBatch2CombatIntegration:
 
     def test_reflect_applies_magic_effect(self):
         from src.core import abilities
+
         caster = self._make_char()
         caster.mana.current = 100
         spell = abilities.Reflect()
@@ -1542,6 +1725,7 @@ class TestBatch2CombatIntegration:
 
     def test_ice_block_applies(self):
         from src.core import abilities
+
         caster = self._make_char()
         caster.mana.current = 100
         spell = abilities.IceBlock()
@@ -1551,6 +1735,7 @@ class TestBatch2CombatIntegration:
 
     def test_cleanse_clears_statuses(self):
         from src.core import abilities
+
         caster = self._make_char()
         caster.mana.current = 100
         caster.status_effects["Blind"].active = True
@@ -1563,6 +1748,7 @@ class TestBatch2CombatIntegration:
 
     def test_mirror_image_creates_duplicates(self):
         from src.core import abilities
+
         caster = self._make_char()
         caster.mana.current = 100
         spell = abilities.MirrorImage()
@@ -1573,6 +1759,7 @@ class TestBatch2CombatIntegration:
 
     def test_sleep_can_apply(self):
         from src.core import abilities
+
         caster = self._make_char()
         caster.stats.intel = 200
         caster.mana.current = 100
@@ -1591,6 +1778,7 @@ class TestBatch2CombatIntegration:
 
     def test_stupefy_can_stun(self):
         from src.core import abilities
+
         caster = self._make_char()
         caster.stats.intel = 200
         caster.mana.current = 1000
@@ -1609,6 +1797,7 @@ class TestBatch2CombatIntegration:
 
     def test_enfeeble_can_debuff(self):
         from src.core import abilities
+
         caster = self._make_char()
         caster.stats.intel = 200
         caster.mana.current = 1000
@@ -1689,6 +1878,7 @@ class TestBatch2CombatIntegration:
 
     def test_dispel_removes_buffs(self):
         from src.core import abilities
+
         caster = self._make_char()
         caster.stats.intel = 200
         caster.mana.current = 1000
@@ -1716,6 +1906,7 @@ class TestBatch2CombatIntegration:
 
     def test_blinding_fog_can_blind(self):
         from src.core import abilities
+
         caster = self._make_char()
         caster.stats.intel = 200
         caster.mana.current = 1000
@@ -1735,6 +1926,7 @@ class TestBatch2CombatIntegration:
     def test_status_immune_target(self):
         """Ice Block makes status spells have no effect."""
         from src.core import abilities
+
         caster = self._make_char()
         caster.mana.current = 100
         target = self._make_char()
@@ -1750,20 +1942,34 @@ class TestBatch2SaveSystem:
     def test_serialise_heal(self):
         from src.core import abilities
         from src.core.save_system import AbilitySerializer
+
         h = abilities.Heal()
         assert AbilitySerializer.serialize(h) == "Heal"
 
     def test_serialise_heal2(self):
         from src.core import abilities
         from src.core.save_system import AbilitySerializer
+
         h = abilities.Heal2()
         assert AbilitySerializer.serialize(h) == "Heal2"
 
     def test_round_trip(self):
         from src.core import abilities
         from src.core.save_system import AbilitySerializer
-        for name in ["Heal", "Heal2", "Heal3", "Regen", "Bless", "Boost",
-                      "Shell", "Reflect", "Cleanse", "Sleep", "Enfeeble"]:
+
+        for name in [
+            "Heal",
+            "Heal2",
+            "Heal3",
+            "Regen",
+            "Bless",
+            "Boost",
+            "Shell",
+            "Reflect",
+            "Cleanse",
+            "Sleep",
+            "Enfeeble",
+        ]:
             original = getattr(abilities, name)()
             serialized = AbilitySerializer.serialize(original)
             assert serialized == name, f"Serialize failed for {name}"
@@ -1776,22 +1982,28 @@ class TestBatch2SaveSystem:
 # BATCH 3 — Complex skills (multi-hit, conditional, scaling, status)
 # ======================================================================
 
+
 class TestBatch3NewEffects:
     """Validate the 3 new effect types added for Batch 3."""
 
     @staticmethod
     def _make_char():
         from tests.test_framework import TestGameState
+
         return TestGameState.create_player(
-            name="Tester", class_name="Warrior", race_name="Human",
-            level=30, health=(500, 500), mana=(200, 200),
-            stats={"strength": 25, "intel": 15, "wisdom": 15,
-                   "con": 20, "charisma": 10, "dex": 20},
+            name="Tester",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(500, 500),
+            mana=(200, 200),
+            stats={"strength": 25, "intel": 15, "wisdom": 15, "con": 20, "charisma": 10, "dex": 20},
         )
 
     def test_mana_drain_on_hit(self):
-        from src.core.effects import ManaDrainOnHitEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import ManaDrainOnHitEffect
+
         actor = self._make_char()
         target = self._make_char()
         target.mana.current = 100
@@ -1805,14 +2017,13 @@ class TestBatch3NewEffects:
         assert target.mana.current < 100, "Mana should have been drained"
 
     def test_resource_convert_health_to_mana(self):
-        from src.core.effects import ResourceConvertEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import ResourceConvertEffect
+
         actor = self._make_char()
         actor.mana.current = 100  # not full
         hp_before = actor.health.current
-        effect = ResourceConvertEffect(
-            source="health", target_resource="mana", percent=0.1
-        )
+        effect = ResourceConvertEffect(source="health", target_resource="mana", percent=0.1)
         result = CombatResult(action="Test")
         effect.apply(actor, actor, result)
         msgs = result.extra.get("messages", [])
@@ -1821,14 +2032,13 @@ class TestBatch3NewEffects:
         assert actor.mana.current > 100, "Mana should increase"
 
     def test_resource_convert_mana_to_health(self):
-        from src.core.effects import ResourceConvertEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import ResourceConvertEffect
+
         actor = self._make_char()
         actor.health.current = 100  # not full
         mp_before = actor.mana.current
-        effect = ResourceConvertEffect(
-            source="mana", target_resource="health", percent=0.1
-        )
+        effect = ResourceConvertEffect(source="mana", target_resource="health", percent=0.1)
         result = CombatResult(action="Test")
         effect.apply(actor, actor, result)
         msgs = result.extra.get("messages", [])
@@ -1838,15 +2048,14 @@ class TestBatch3NewEffects:
 
     def test_resource_convert_full_guard(self):
         """If target resource is already full, no conversion happens."""
-        from src.core.effects import ResourceConvertEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import ResourceConvertEffect
+
         actor = self._make_char()
         # mana is already at max
         actor.mana.current = actor.mana.max
         hp_before = actor.health.current
-        effect = ResourceConvertEffect(
-            source="health", target_resource="mana", percent=0.1
-        )
+        effect = ResourceConvertEffect(source="health", target_resource="mana", percent=0.1)
         result = CombatResult(action="Test")
         effect.apply(actor, actor, result)
         assert actor.health.current == hp_before, "Health shouldn't change if mana is full"
@@ -1858,63 +2067,75 @@ class TestBatch3YAMLLoading:
 
     YAML_DIR = Path(__file__).parent.parent / "src" / "core" / "data" / "abilities"
 
-    @pytest.mark.parametrize("filename,expected_name,expected_cost", [
-        # Elemental spells
-        ("firebolt.yaml", "Firebolt", 2),
-        ("fireball.yaml", "Fireball", 10),
-        ("firestorm.yaml", "Firestorm", 20),
-        ("scorch.yaml", "Scorch", 6),
-        ("molten_rock.yaml", "Molten Rock", 16),
-        ("volcano.yaml", "Volcano", 24),
-        ("ice_lance.yaml", "Ice Lance", 4),
-        ("icicle.yaml", "Icicle", 9),
-        ("blizzard.yaml", "Blizzard", 18),
-        ("shock.yaml", "Shock", 6),
-        ("lightning.yaml", "Lightning", 15),
-        ("electrocution.yaml", "Electrocution", 25),
-        ("bolt.yaml", "Bolt", 18),
-        ("ball_lightning.yaml", "Ball Lightning", 34),
-        ("poison_dart.yaml", "Poison Dart", 8),
-        ("meteor.yaml", "Meteor", 0),
-    ])
+    @pytest.mark.parametrize(
+        "filename,expected_name,expected_cost",
+        [
+            # Elemental spells
+            ("firebolt.yaml", "Firebolt", 2),
+            ("fireball.yaml", "Fireball", 10),
+            ("firestorm.yaml", "Firestorm", 20),
+            ("scorch.yaml", "Scorch", 6),
+            ("molten_rock.yaml", "Molten Rock", 16),
+            ("volcano.yaml", "Volcano", 24),
+            ("ice_lance.yaml", "Ice Lance", 4),
+            ("icicle.yaml", "Icicle", 9),
+            ("blizzard.yaml", "Blizzard", 18),
+            ("shock.yaml", "Shock", 6),
+            ("lightning.yaml", "Lightning", 15),
+            ("electrocution.yaml", "Electrocution", 25),
+            ("bolt.yaml", "Bolt", 18),
+            ("ball_lightning.yaml", "Ball Lightning", 34),
+            ("poison_dart.yaml", "Poison Dart", 8),
+            ("meteor.yaml", "Meteor", 0),
+        ],
+    )
     def test_load_elemental_spell(self, filename, expected_name, expected_cost):
         from src.core.data.ability_loader import AbilityFactory
+
         ability = AbilityFactory.create_from_yaml(self.YAML_DIR / filename)
         assert ability.name == expected_name
         assert ability.cost == expected_cost
 
-    @pytest.mark.parametrize("filename,expected_name,expected_cost", [
-        ("piercing_strike.yaml", "Piercing Strike", 5),
-        ("true_strike.yaml", "True Strike", 12),
-        ("true_piercing_strike.yaml", "True Piercing Strike", 15),
-        ("backstab.yaml", "Backstab", 6),
-        ("sneak_attack.yaml", "Sneak Attack", 15),
-        ("double_strike.yaml", "Double Strike", 14),
-        ("triple_strike.yaml", "Triple Strike", 26),
-        ("flurry_blades.yaml", "Flurry of Blades", 40),
-        ("battle_cry.yaml", "Battle Cry", 16),
-        ("imbue_weapon.yaml", "Imbue Weapon", 12),
-        ("mana_slice.yaml", "Mana Slice", 0),
-        ("mana_slice_2.yaml", "Mana Slice II", 0),
-        ("dispel_slash.yaml", "Dispel Slash", 20),
-        ("life_tap.yaml", "Life Tap", 0),
-        ("mana_tap.yaml", "Mana Tap", 0),
-        ("smoke_screen.yaml", "Smoke Screen", 5),
-    ])
+    @pytest.mark.parametrize(
+        "filename,expected_name,expected_cost",
+        [
+            ("piercing_strike.yaml", "Piercing Strike", 5),
+            ("true_strike.yaml", "True Strike", 12),
+            ("true_piercing_strike.yaml", "True Piercing Strike", 15),
+            ("backstab.yaml", "Backstab", 6),
+            ("sneak_attack.yaml", "Sneak Attack", 15),
+            ("double_strike.yaml", "Double Strike", 14),
+            ("triple_strike.yaml", "Triple Strike", 26),
+            ("flurry_blades.yaml", "Flurry of Blades", 40),
+            ("battle_cry.yaml", "Battle Cry", 16),
+            ("imbue_weapon.yaml", "Imbue Weapon", 12),
+            ("mana_slice.yaml", "Mana Slice", 0),
+            ("mana_slice_2.yaml", "Mana Slice II", 0),
+            ("dispel_slash.yaml", "Dispel Slash", 20),
+            ("life_tap.yaml", "Life Tap", 0),
+            ("mana_tap.yaml", "Mana Tap", 0),
+            ("smoke_screen.yaml", "Smoke Screen", 5),
+        ],
+    )
     def test_load_skill(self, filename, expected_name, expected_cost):
         from src.core.data.ability_loader import AbilityFactory
+
         ability = AbilityFactory.create_from_yaml(self.YAML_DIR / filename)
         assert ability.name == expected_name
         assert ability.cost == expected_cost
 
-    @pytest.mark.parametrize("filename,expected_name,expected_cost,expected_status", [
-        ("goad.yaml", "Goad", 12, "Berserk"),
-        ("pocket_sand.yaml", "Pocket Sand", 8, "Blind"),
-        ("sleeping_powder.yaml", "Sleeping Powder", 11, "Sleep"),
-    ])
+    @pytest.mark.parametrize(
+        "filename,expected_name,expected_cost,expected_status",
+        [
+            ("goad.yaml", "Goad", 12, "Berserk"),
+            ("pocket_sand.yaml", "Pocket Sand", 8, "Blind"),
+            ("sleeping_powder.yaml", "Sleeping Powder", 11, "Sleep"),
+        ],
+    )
     def test_load_status_skill(self, filename, expected_name, expected_cost, expected_status):
         from src.core.data.ability_loader import AbilityFactory
         from src.core.data.data_driven_abilities import DataDrivenStatusSkill
+
         ability = AbilityFactory.create_from_yaml(self.YAML_DIR / filename)
         assert ability.name == expected_name
         assert ability.cost == expected_cost
@@ -1929,16 +2150,27 @@ class TestBatch3AbilityFactories:
         from src.core import abilities
         from src.core.data.data_driven_abilities import DataDrivenSkill
 
-        for name in ["PiercingStrike", "TrueStrike", "TruePiercingStrike",
-                      "Backstab", "SneakAttack", "DoubleStrike", "TripleStrike",
-                      "FlurryBlades", "ImbueWeapon", "ManaSlice", "ManaSlice2",
-                      "DispelSlash"]:
+        for name in [
+            "PiercingStrike",
+            "TrueStrike",
+            "TruePiercingStrike",
+            "Backstab",
+            "SneakAttack",
+            "DoubleStrike",
+            "TripleStrike",
+            "FlurryBlades",
+            "ImbueWeapon",
+            "ManaSlice",
+            "ManaSlice2",
+            "DispelSlash",
+        ]:
             ability = getattr(abilities, name)()
             assert isinstance(ability, DataDrivenSkill), f"{name} should be DataDrivenSkill"
             assert ability.weapon is True, f"{name} should be weapon-based"
 
     def test_multi_strike_counts(self):
         from src.core import abilities
+
         ds = abilities.DoubleStrike()
         assert ds._strikes == 2
         ts = abilities.TripleStrike()
@@ -1950,6 +2182,7 @@ class TestBatch3AbilityFactories:
 
     def test_piercing_flags(self):
         from src.core import abilities
+
         ps = abilities.PiercingStrike()
         assert ps._ignore_armor is True
         assert ps._guaranteed_hit is False
@@ -1962,6 +2195,7 @@ class TestBatch3AbilityFactories:
 
     def test_sneak_attack_flags(self):
         from src.core import abilities
+
         sa = abilities.SneakAttack()
         assert sa._requires_incapacitated is True
         assert sa._crit_override == 2
@@ -1969,22 +2203,26 @@ class TestBatch3AbilityFactories:
 
     def test_backstab_requires_incapacitated_target(self):
         from src.core import abilities
+
         bs = abilities.Backstab()
         assert bs._requires_incapacitated is True
 
     def test_imbue_weapon_intel_mod(self):
         from src.core import abilities
+
         iw = abilities.ImbueWeapon()
         assert iw._intel_dmg_mod is True
 
     def test_battle_cry_self_target(self):
         from src.core import abilities
+
         bc = abilities.BattleCry()
         assert bc._self_target is True
 
     def test_non_weapon_skills(self):
         from src.core import abilities
         from src.core.data.data_driven_abilities import DataDrivenSkill
+
         for name in ["LifeTap", "ManaTap", "SmokeScreen", "BattleCry"]:
             ability = getattr(abilities, name)()
             assert isinstance(ability, DataDrivenSkill), f"{name} should be DataDrivenSkill"
@@ -1992,6 +2230,7 @@ class TestBatch3AbilityFactories:
 
     def test_use_out_enabled(self):
         from src.core import abilities
+
         lt = abilities.LifeTap()
         assert lt._use_out_enabled is True
         mt = abilities.ManaTap()
@@ -2000,17 +2239,32 @@ class TestBatch3AbilityFactories:
     def test_status_skills(self):
         from src.core import abilities
         from src.core.data.data_driven_abilities import DataDrivenStatusSkill
+
         for name in ["Goad", "PocketSand", "SleepingPowder"]:
             ability = getattr(abilities, name)()
-            assert isinstance(ability, DataDrivenStatusSkill), f"{name} should be DataDrivenStatusSkill"
+            assert isinstance(
+                ability, DataDrivenStatusSkill
+            ), f"{name} should be DataDrivenStatusSkill"
 
     def test_elemental_spells(self):
         from src.core import abilities
         from src.core.data.data_driven_abilities import DataDrivenSpell
-        for name in ["Firebolt", "Fireball", "Firestorm", "Scorch",
-                      "MoltenRock", "Volcano", "IceLance", "Icicle",
-                      "IceBlizzard", "Shock", "Lightning", "Electrocution",
-                      "Meteor"]:
+
+        for name in [
+            "Firebolt",
+            "Fireball",
+            "Firestorm",
+            "Scorch",
+            "MoltenRock",
+            "Volcano",
+            "IceLance",
+            "Icicle",
+            "IceBlizzard",
+            "Shock",
+            "Lightning",
+            "Electrocution",
+            "Meteor",
+        ]:
             ability = getattr(abilities, name)()
             assert isinstance(ability, DataDrivenSpell), f"{name} should be DataDrivenSpell"
 
@@ -2021,22 +2275,30 @@ class TestBatch3CombatIntegration:
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Fighter", class_name="Warrior", race_name="Human",
-            level=30, health=(500, 500), mana=(200, 200),
-            stats={"strength": 25, "intel": 15, "wisdom": 15,
-                   "con": 20, "charisma": 10, "dex": 20},
+            name="Fighter",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(500, 500),
+            mana=(200, 200),
+            stats={"strength": 25, "intel": 15, "wisdom": 15, "con": 20, "charisma": 10, "dex": 20},
         )
         target = TestGameState.create_player(
-            name="Dummy", class_name="Warrior", race_name="Human",
-            level=30, health=(500, 500), mana=(100, 100),
-            stats={"strength": 15, "intel": 10, "wisdom": 10,
-                   "con": 15, "charisma": 10, "dex": 15},
+            name="Dummy",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(500, 500),
+            mana=(100, 100),
+            stats={"strength": 15, "intel": 10, "wisdom": 10, "con": 15, "charisma": 10, "dex": 15},
         )
         return user, target
 
     def test_piercing_strike_deducts_mana(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         ps = abilities.PiercingStrike()
         mana_before = user.mana.current
@@ -2045,6 +2307,7 @@ class TestBatch3CombatIntegration:
 
     def test_piercing_strike_requires_weapon_when_disarmed(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         user.is_disarmed = lambda: True
         ps = abilities.PiercingStrike()
@@ -2057,6 +2320,7 @@ class TestBatch3CombatIntegration:
 
     def test_double_strike_deducts_mana(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         ds = abilities.DoubleStrike()
         mana_before = user.mana.current
@@ -2065,6 +2329,7 @@ class TestBatch3CombatIntegration:
 
     def test_sneak_attack_ineffective_on_active_target(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         sa = abilities.SneakAttack()
         mana_before = user.mana.current
@@ -2074,6 +2339,7 @@ class TestBatch3CombatIntegration:
 
     def test_backstab_ineffective_on_active_target(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         backstab = abilities.Backstab()
         mana_before = user.mana.current
@@ -2083,6 +2349,7 @@ class TestBatch3CombatIntegration:
 
     def test_sneak_attack_works_when_incapacitated(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         # Stun the target so it's incapacitated
         target.status_effects["Stun"].active = True
@@ -2095,6 +2362,7 @@ class TestBatch3CombatIntegration:
 
     def test_battle_cry_buffs_attack(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         bc = abilities.BattleCry()
         bc.use(user, target)
@@ -2103,6 +2371,7 @@ class TestBatch3CombatIntegration:
 
     def test_smoke_screen_deducts_mana_returns_empty(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         ss = abilities.SmokeScreen()
         mana_before = user.mana.current
@@ -2112,6 +2381,7 @@ class TestBatch3CombatIntegration:
 
     def test_goad_ice_block_check(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         target.magic_effects["Ice Block"].active = True
         goad = abilities.Goad()
@@ -2120,6 +2390,7 @@ class TestBatch3CombatIntegration:
 
     def test_pocket_sand_immune_target(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         target.status_immunity.append("Blind")
         ps = abilities.PocketSand()
@@ -2128,6 +2399,7 @@ class TestBatch3CombatIntegration:
 
     def test_sleeping_powder_immune_target(self):
         from src.core import abilities, items
+
         user, target = self._make_combatants()
         target.status_immunity.append("Sleep")
         user.modify_inventory(items.Monocane())
@@ -2137,6 +2409,7 @@ class TestBatch3CombatIntegration:
 
     def test_goad_already_berserk(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         target.status_effects["Berserk"].active = True
         target.status_effects["Berserk"].duration = 5
@@ -2146,6 +2419,7 @@ class TestBatch3CombatIntegration:
 
     def test_life_tap_converts_health_to_mana(self):
         from src.core import abilities
+
         user, _ = self._make_combatants()
         user.mana.current = 100  # not full
         hp_before = user.health.current
@@ -2157,6 +2431,7 @@ class TestBatch3CombatIntegration:
 
     def test_life_tap_full_mana_guard(self):
         from src.core import abilities
+
         user, _ = self._make_combatants()
         user.mana.current = user.mana.max
         lt = abilities.LifeTap()
@@ -2165,6 +2440,7 @@ class TestBatch3CombatIntegration:
 
     def test_mana_tap_converts_mana_to_health(self):
         from src.core import abilities
+
         user, _ = self._make_combatants()
         user.health.current = 100  # not full
         hp_before = user.health.current
@@ -2176,6 +2452,7 @@ class TestBatch3CombatIntegration:
 
     def test_mana_tap_full_health_guard(self):
         from src.core import abilities
+
         user, _ = self._make_combatants()
         user.health.current = user.health.max
         mt = abilities.ManaTap()
@@ -2184,8 +2461,8 @@ class TestBatch3CombatIntegration:
 
     def test_elemental_spell_cast(self):
         """Elemental spells should cast and return CombatResult."""
-        from src.core.data.ability_loader import AbilityFactory
         from src.core.combat.combat_result import CombatResult
+        from src.core.data.ability_loader import AbilityFactory
 
         user, target = self._make_combatants()
         # Use a high-intel caster
@@ -2208,11 +2485,24 @@ class TestBatch3SaveSystem:
         from src.core import abilities
         from src.core.save_system import AbilitySerializer
 
-        for name in ["PiercingStrike", "TrueStrike", "TruePiercingStrike",
-                      "Backstab", "SneakAttack", "DoubleStrike", "TripleStrike",
-                      "FlurryBlades", "BattleCry", "ImbueWeapon",
-                      "ManaSlice", "ManaSlice2", "DispelSlash",
-                      "LifeTap", "ManaTap", "SmokeScreen"]:
+        for name in [
+            "PiercingStrike",
+            "TrueStrike",
+            "TruePiercingStrike",
+            "Backstab",
+            "SneakAttack",
+            "DoubleStrike",
+            "TripleStrike",
+            "FlurryBlades",
+            "BattleCry",
+            "ImbueWeapon",
+            "ManaSlice",
+            "ManaSlice2",
+            "DispelSlash",
+            "LifeTap",
+            "ManaTap",
+            "SmokeScreen",
+        ]:
             ability = getattr(abilities, name)()
             serialized = AbilitySerializer.serialize(ability)
             assert serialized == name, f"Serialize failed for {name}"
@@ -2236,10 +2526,21 @@ class TestBatch3SaveSystem:
         from src.core import abilities
         from src.core.save_system import AbilitySerializer
 
-        for name in ["Firebolt", "Fireball", "Firestorm", "Scorch",
-                      "MoltenRock", "Volcano", "IceLance", "Icicle",
-                      "IceBlizzard", "Shock", "Lightning", "Electrocution",
-                      "Meteor"]:
+        for name in [
+            "Firebolt",
+            "Fireball",
+            "Firestorm",
+            "Scorch",
+            "MoltenRock",
+            "Volcano",
+            "IceLance",
+            "Icicle",
+            "IceBlizzard",
+            "Shock",
+            "Lightning",
+            "Electrocution",
+            "Meteor",
+        ]:
             ability = getattr(abilities, name)()
             serialized = AbilitySerializer.serialize(ability)
             assert serialized == name, f"Serialize failed for {name}"
@@ -2252,6 +2553,7 @@ class TestBatch3SaveSystem:
 # BATCH 4: Weapon+Status Skills & StatusSkill Extensions
 # ======================================================================
 
+
 class TestBatch4StatusSkillExtensions:
     """Test the new DataDrivenStatusSkill parameters added in Batch 4:
     check_flying, actor_stat_alt, extend_if_active, action_message."""
@@ -2259,23 +2561,31 @@ class TestBatch4StatusSkillExtensions:
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Fighter", class_name="Warrior", race_name="Human",
-            level=30, health=(500, 500), mana=(200, 200),
-            stats={"strength": 30, "intel": 15, "wisdom": 15,
-                   "con": 20, "charisma": 10, "dex": 25},
+            name="Fighter",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(500, 500),
+            mana=(200, 200),
+            stats={"strength": 30, "intel": 15, "wisdom": 15, "con": 20, "charisma": 10, "dex": 25},
         )
         target = TestGameState.create_player(
-            name="Dummy", class_name="Warrior", race_name="Human",
-            level=30, health=(500, 500), mana=(100, 100),
-            stats={"strength": 10, "intel": 10, "wisdom": 10,
-                   "con": 10, "charisma": 10, "dex": 10},
+            name="Dummy",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(500, 500),
+            mana=(100, 100),
+            stats={"strength": 10, "intel": 10, "wisdom": 10, "con": 10, "charisma": 10, "dex": 10},
         )
         return user, target
 
     def test_check_flying_blocks_prone(self):
         """check_flying should prevent Prone application on flying targets."""
         from src.core.data.data_driven_abilities import DataDrivenStatusSkill
+
         user, target = self._make_combatants()
         target.flying = True
         skill = DataDrivenStatusSkill(
@@ -2301,6 +2611,7 @@ class TestBatch4StatusSkillExtensions:
     def test_check_flying_allows_grounded(self):
         """check_flying should allow Prone on non-flying targets."""
         from src.core.data.data_driven_abilities import DataDrivenStatusSkill
+
         user, target = self._make_combatants()
         target.flying = False
         # Use high actor stats to ensure contest win
@@ -2327,6 +2638,7 @@ class TestBatch4StatusSkillExtensions:
     def test_actor_stat_alt_uses_max(self):
         """actor_stat_alt should pick max(primary, alt) for contest."""
         from src.core.data.data_driven_abilities import DataDrivenStatusSkill
+
         user, target = self._make_combatants()
         # dex > strength → should use dex
         user.stats.strength = 5
@@ -2354,6 +2666,7 @@ class TestBatch4StatusSkillExtensions:
     def test_extend_if_active_adds_duration(self):
         """extend_if_active should add turns to existing active effect."""
         from src.core.data.data_driven_abilities import DataDrivenStatusSkill
+
         user, target = self._make_combatants()
         # Pre-set Prone active with 2 turns
         target.physical_effects["Prone"].active = True
@@ -2381,6 +2694,7 @@ class TestBatch4StatusSkillExtensions:
     def test_action_message_always_shown(self):
         """action_message should appear in output regardless of result."""
         from src.core.data.data_driven_abilities import DataDrivenStatusSkill
+
         user, target = self._make_combatants()
         target.status_immunity.append("Stun")  # force immune path
         skill = DataDrivenStatusSkill(
@@ -2397,6 +2711,7 @@ class TestBatch4StatusSkillExtensions:
     def test_negative_duration_permanent_effect(self):
         """duration=-1 should be set directly (permanent), not max'd."""
         from src.core.data.data_driven_abilities import DataDrivenStatusSkill
+
         user, target = self._make_combatants()
         user.stats.strength = 100
         target.stats.con = 1
@@ -2441,6 +2756,7 @@ class TestBatch4YAMLLoading:
 
     def test_yaml_files_parse(self):
         import yaml
+
         for filename in self.BATCH4_FILES:
             path = self.YAML_DIR / filename
             with open(path) as f:
@@ -2450,6 +2766,7 @@ class TestBatch4YAMLLoading:
 
     def test_factory_loads_all(self):
         from src.core.data.ability_loader import AbilityFactory
+
         for filename in self.BATCH4_FILES:
             path = self.YAML_DIR / filename
             ability = AbilityFactory.create_from_yaml(path)
@@ -2459,6 +2776,7 @@ class TestBatch4YAMLLoading:
     def test_howl_loads_as_status_skill(self):
         from src.core.data.ability_loader import AbilityFactory
         from src.core.data.data_driven_abilities import DataDrivenStatusSkill
+
         ability = AbilityFactory.create_from_yaml(self.YAML_DIR / "howl.yaml")
         assert isinstance(ability, DataDrivenStatusSkill)
         assert ability.name == "Howl"
@@ -2469,6 +2787,7 @@ class TestBatch4YAMLLoading:
     def test_slam_loads_as_skill(self):
         from src.core.data.ability_loader import AbilityFactory
         from src.core.data.data_driven_abilities import DataDrivenSkill
+
         ability = AbilityFactory.create_from_yaml(self.YAML_DIR / "slam.yaml")
         assert isinstance(ability, DataDrivenSkill)
         assert ability.name == "Slam"
@@ -2479,6 +2798,7 @@ class TestBatch4YAMLLoading:
     def test_leg_sweep_loads_as_skill(self):
         from src.core.data.ability_loader import AbilityFactory
         from src.core.data.data_driven_abilities import DataDrivenSkill
+
         ability = AbilityFactory.create_from_yaml(self.YAML_DIR / "leg_sweep.yaml")
         assert isinstance(ability, DataDrivenSkill)
         assert ability.name == "Leg Sweep"
@@ -2488,6 +2808,7 @@ class TestBatch4YAMLLoading:
     def test_trip_loads_with_check_flying(self):
         from src.core.data.ability_loader import AbilityFactory
         from src.core.data.data_driven_abilities import DataDrivenStatusSkill
+
         ability = AbilityFactory.create_from_yaml(self.YAML_DIR / "trip.yaml")
         assert isinstance(ability, DataDrivenStatusSkill)
         assert ability._check_flying is True
@@ -2497,6 +2818,7 @@ class TestBatch4YAMLLoading:
     def test_web_loads_with_extend_if_active(self):
         from src.core.data.ability_loader import AbilityFactory
         from src.core.data.data_driven_abilities import DataDrivenStatusSkill
+
         ability = AbilityFactory.create_from_yaml(self.YAML_DIR / "web.yaml")
         assert isinstance(ability, DataDrivenStatusSkill)
         assert ability._extend_if_active == 1
@@ -2506,6 +2828,7 @@ class TestBatch4YAMLLoading:
     def test_disarm_loads_with_all_features(self):
         from src.core.data.ability_loader import AbilityFactory
         from src.core.data.data_driven_abilities import DataDrivenStatusSkill
+
         ability = AbilityFactory.create_from_yaml(self.YAML_DIR / "disarm.yaml")
         assert isinstance(ability, DataDrivenStatusSkill)
         assert ability._check_disarmable is True
@@ -2520,6 +2843,7 @@ class TestBatch4AbilityFactories:
     def test_howl_factory(self):
         from src.core.abilities import Howl
         from src.core.data.data_driven_abilities import DataDrivenStatusSkill
+
         howl = Howl()
         assert isinstance(howl, DataDrivenStatusSkill)
         assert howl.name == "Howl"
@@ -2528,6 +2852,7 @@ class TestBatch4AbilityFactories:
     def test_slam_factory(self):
         from src.core.abilities import Slam
         from src.core.data.data_driven_abilities import DataDrivenSkill
+
         slam = Slam()
         assert isinstance(slam, DataDrivenSkill)
         assert slam.name == "Slam"
@@ -2536,6 +2861,7 @@ class TestBatch4AbilityFactories:
     def test_leg_sweep_factory(self):
         from src.core.abilities import LegSweep
         from src.core.data.data_driven_abilities import DataDrivenSkill
+
         ls = LegSweep()
         assert isinstance(ls, DataDrivenSkill)
         assert ls.name == "Leg Sweep"
@@ -2543,6 +2869,7 @@ class TestBatch4AbilityFactories:
     def test_trip_factory(self):
         from src.core.abilities import Trip
         from src.core.data.data_driven_abilities import DataDrivenStatusSkill
+
         trip = Trip()
         assert isinstance(trip, DataDrivenStatusSkill)
         assert trip.name == "Trip"
@@ -2550,6 +2877,7 @@ class TestBatch4AbilityFactories:
     def test_web_factory(self):
         from src.core.abilities import Web
         from src.core.data.data_driven_abilities import DataDrivenStatusSkill
+
         web = Web()
         assert isinstance(web, DataDrivenStatusSkill)
         assert web.name == "Web"
@@ -2557,6 +2885,7 @@ class TestBatch4AbilityFactories:
     def test_disarm_factory(self):
         from src.core.abilities import Disarm
         from src.core.data.data_driven_abilities import DataDrivenStatusSkill
+
         dis = Disarm()
         assert isinstance(dis, DataDrivenStatusSkill)
         assert dis.name == "Disarm"
@@ -2568,17 +2897,24 @@ class TestBatch4CombatIntegration:
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Fighter", class_name="Warrior", race_name="Human",
-            level=30, health=(500, 500), mana=(200, 200),
-            stats={"strength": 30, "intel": 15, "wisdom": 15,
-                   "con": 20, "charisma": 10, "dex": 25},
+            name="Fighter",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(500, 500),
+            mana=(200, 200),
+            stats={"strength": 30, "intel": 15, "wisdom": 15, "con": 20, "charisma": 10, "dex": 25},
         )
         target = TestGameState.create_player(
-            name="Dummy", class_name="Warrior", race_name="Human",
-            level=30, health=(500, 500), mana=(100, 100),
-            stats={"strength": 10, "intel": 10, "wisdom": 10,
-                   "con": 10, "charisma": 10, "dex": 10},
+            name="Dummy",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(500, 500),
+            mana=(100, 100),
+            stats={"strength": 10, "intel": 10, "wisdom": 10, "con": 10, "charisma": 10, "dex": 10},
         )
         return user, target
 
@@ -2586,6 +2922,7 @@ class TestBatch4CombatIntegration:
 
     def test_howl_deducts_mana(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         howl = abilities.Howl()
         mana_before = user.mana.current
@@ -2594,6 +2931,7 @@ class TestBatch4CombatIntegration:
 
     def test_howl_shows_action_message(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         howl = abilities.Howl()
         result = howl.use(user, target)
@@ -2601,6 +2939,7 @@ class TestBatch4CombatIntegration:
 
     def test_howl_ice_block_check(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         target.magic_effects["Ice Block"].active = True
         howl = abilities.Howl()
@@ -2609,6 +2948,7 @@ class TestBatch4CombatIntegration:
 
     def test_howl_immune_target(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         target.status_immunity.append("Stun")
         howl = abilities.Howl()
@@ -2617,6 +2957,7 @@ class TestBatch4CombatIntegration:
 
     def test_howl_already_stunned(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         target.status_effects["Stun"].active = True
         target.status_effects["Stun"].duration = 5
@@ -2628,6 +2969,7 @@ class TestBatch4CombatIntegration:
 
     def test_slam_deducts_mana(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         slam = abilities.Slam()
         mana_before = user.mana.current
@@ -2636,6 +2978,7 @@ class TestBatch4CombatIntegration:
 
     def test_slam_is_weapon_skill(self):
         from src.core import abilities
+
         slam = abilities.Slam()
         assert slam.weapon is True
         assert slam.dmg_mod == 1.5
@@ -2644,6 +2987,7 @@ class TestBatch4CombatIntegration:
 
     def test_leg_sweep_deducts_mana(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         ls = abilities.LegSweep()
         mana_before = user.mana.current
@@ -2652,6 +2996,7 @@ class TestBatch4CombatIntegration:
 
     def test_leg_sweep_is_weapon_skill(self):
         from src.core import abilities
+
         ls = abilities.LegSweep()
         assert ls.weapon is True
         assert ls.dmg_mod == 0.75
@@ -2660,6 +3005,7 @@ class TestBatch4CombatIntegration:
 
     def test_trip_deducts_mana(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         trip = abilities.Trip()
         mana_before = user.mana.current
@@ -2668,6 +3014,7 @@ class TestBatch4CombatIntegration:
 
     def test_trip_ice_block_check(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         target.magic_effects["Ice Block"].active = True
         trip = abilities.Trip()
@@ -2676,6 +3023,7 @@ class TestBatch4CombatIntegration:
 
     def test_trip_check_flying(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         target.flying = True
         trip = abilities.Trip()
@@ -2684,6 +3032,7 @@ class TestBatch4CombatIntegration:
 
     def test_trip_already_prone(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         target.physical_effects["Prone"].active = True
         target.physical_effects["Prone"].duration = 3
@@ -2695,6 +3044,7 @@ class TestBatch4CombatIntegration:
 
     def test_web_deducts_mana(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         web = abilities.Web()
         mana_before = user.mana.current
@@ -2703,6 +3053,7 @@ class TestBatch4CombatIntegration:
 
     def test_web_ice_block_check(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         target.magic_effects["Ice Block"].active = True
         web = abilities.Web()
@@ -2711,6 +3062,7 @@ class TestBatch4CombatIntegration:
 
     def test_web_extends_existing_prone(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         target.physical_effects["Prone"].active = True
         target.physical_effects["Prone"].duration = 2
@@ -2725,6 +3077,7 @@ class TestBatch4CombatIntegration:
 
     def test_disarm_deducts_mana(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         dis = abilities.Disarm()
         mana_before = user.mana.current
@@ -2733,6 +3086,7 @@ class TestBatch4CombatIntegration:
 
     def test_disarm_fam_skips_mana(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         dis = abilities.Disarm()
         mana_before = user.mana.current
@@ -2741,6 +3095,7 @@ class TestBatch4CombatIntegration:
 
     def test_disarm_ice_block_check(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         target.magic_effects["Ice Block"].active = True
         dis = abilities.Disarm()
@@ -2749,6 +3104,7 @@ class TestBatch4CombatIntegration:
 
     def test_disarm_not_disarmable(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         # Make target not disarmable
         target.can_be_disarmed = lambda: False
@@ -2758,6 +3114,7 @@ class TestBatch4CombatIntegration:
 
     def test_disarm_already_disarmed(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         target.physical_effects["Disarm"].active = True
         target.physical_effects["Disarm"].duration = -1
@@ -2767,6 +3124,7 @@ class TestBatch4CombatIntegration:
 
     def test_disarm_uses_permanent_duration(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         user.stats.strength = 100
         user.stats.dex = 100
@@ -2797,30 +3155,39 @@ class TestBatch4SaveSystem:
 # Batch 5 - MortalStrike, MortalStrike2, Doom, Tunnel, Surface
 # ===========================================================================
 
+
 class TestBatch5NewEffects:
     """Test the new SetFlagEffect and the PhysicalEffectApplyEffect bleed fix."""
 
     def test_set_flag_effect_factory(self):
         from src.core.data.ability_loader import EffectFactory
         from src.core.effects import SetFlagEffect
-        eff = EffectFactory.create({
-            'type': 'set_flag',
-            'flag': 'tunnel',
-            'value': True,
-            'message': '{target} digs down.',
-        })
+
+        eff = EffectFactory.create(
+            {
+                "type": "set_flag",
+                "flag": "tunnel",
+                "value": True,
+                "message": "{target} digs down.",
+            }
+        )
         assert isinstance(eff, SetFlagEffect)
-        assert eff.flag == 'tunnel'
+        assert eff.flag == "tunnel"
         assert eff.value is True
-        assert eff.message == '{target} digs down.'
+        assert eff.message == "{target} digs down."
 
     def test_set_flag_effect_applies_flag(self):
-        from src.core.effects import SetFlagEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import SetFlagEffect
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Digger", class_name="Warrior", race_name="Human",
-            level=10, health=(100, 100), mana=(50, 50),
+            name="Digger",
+            class_name="Warrior",
+            race_name="Human",
+            level=10,
+            health=(100, 100),
+            mana=(50, 50),
         )
         result = CombatResult(action="Tunnel")
         user.tunnel = False
@@ -2831,12 +3198,17 @@ class TestBatch5NewEffects:
         assert any("Digger digs." in m for m in msgs)
 
     def test_set_flag_effect_clears_flag(self):
-        from src.core.effects import SetFlagEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import SetFlagEffect
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Mole", class_name="Warrior", race_name="Human",
-            level=10, health=(100, 100), mana=(50, 50),
+            name="Mole",
+            class_name="Warrior",
+            race_name="Human",
+            level=10,
+            health=(100, 100),
+            mana=(50, 50),
         )
         user.tunnel = True
         result = CombatResult(action="Surface")
@@ -2846,20 +3218,27 @@ class TestBatch5NewEffects:
 
     def test_physical_effect_apply_bleed_no_double_multiply(self):
         """Bleed damage should not double-apply crit & damage_multiplier."""
-        from src.core.effects import PhysicalEffectApplyEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import PhysicalEffectApplyEffect
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Att", class_name="Warrior", race_name="Human",
-            level=30, health=(500, 500), mana=(200, 200),
-            stats={"strength": 40, "intel": 10, "wisdom": 10,
-                   "con": 10, "charisma": 10, "dex": 10},
+            name="Att",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(500, 500),
+            mana=(200, 200),
+            stats={"strength": 40, "intel": 10, "wisdom": 10, "con": 10, "charisma": 10, "dex": 10},
         )
         target = TestGameState.create_player(
-            name="Def", class_name="Warrior", race_name="Human",
-            level=10, health=(200, 200), mana=(50, 50),
-            stats={"strength": 5, "intel": 5, "wisdom": 5,
-                   "con": 1, "charisma": 5, "dex": 5},
+            name="Def",
+            class_name="Warrior",
+            race_name="Human",
+            level=10,
+            health=(200, 200),
+            mana=(50, 50),
+            stats={"strength": 5, "intel": 5, "wisdom": 5, "con": 1, "charisma": 5, "dex": 5},
         )
         result = CombatResult(action="Mortal Strike")
         result.extra["last_crit"] = 2
@@ -2892,19 +3271,23 @@ class TestBatch5NewEffects:
 class TestBatch5YAMLLoading:
     """Test that all Batch 5 YAML files load correctly."""
 
-    @pytest.fixture(params=[
-        "mortal_strike.yaml",
-        "mortal_strike_2.yaml",
-        "doom.yaml",
-        "tunnel.yaml",
-        "surface.yaml",
-    ])
+    @pytest.fixture(
+        params=[
+            "mortal_strike.yaml",
+            "mortal_strike_2.yaml",
+            "doom.yaml",
+            "tunnel.yaml",
+            "surface.yaml",
+        ]
+    )
     def yaml_file(self, request):
         return request.param
 
     def test_yaml_loads(self, yaml_file):
         from pathlib import Path
+
         import yaml
+
         yaml_dir = Path(__file__).parent.parent / "src" / "core" / "data" / "abilities"
         path = yaml_dir / yaml_file
         assert path.exists(), f"{yaml_file} not found"
@@ -2916,7 +3299,9 @@ class TestBatch5YAMLLoading:
 
     def test_mortal_strike_yaml_fields(self):
         from pathlib import Path
+
         import yaml
+
         yaml_dir = Path(__file__).parent.parent / "src" / "core" / "data" / "abilities"
         with open(yaml_dir / "mortal_strike.yaml") as f:
             data = yaml.safe_load(f)
@@ -2934,7 +3319,9 @@ class TestBatch5YAMLLoading:
 
     def test_mortal_strike_2_yaml_fields(self):
         from pathlib import Path
+
         import yaml
+
         yaml_dir = Path(__file__).parent.parent / "src" / "core" / "data" / "abilities"
         with open(yaml_dir / "mortal_strike_2.yaml") as f:
             data = yaml.safe_load(f)
@@ -2943,7 +3330,9 @@ class TestBatch5YAMLLoading:
 
     def test_doom_yaml_fields(self):
         from pathlib import Path
+
         import yaml
+
         yaml_dir = Path(__file__).parent.parent / "src" / "core" / "data" / "abilities"
         with open(yaml_dir / "doom.yaml") as f:
             data = yaml.safe_load(f)
@@ -2962,7 +3351,9 @@ class TestBatch5YAMLLoading:
 
     def test_tunnel_yaml_fields(self):
         from pathlib import Path
+
         import yaml
+
         yaml_dir = Path(__file__).parent.parent / "src" / "core" / "data" / "abilities"
         with open(yaml_dir / "tunnel.yaml") as f:
             data = yaml.safe_load(f)
@@ -2975,7 +3366,9 @@ class TestBatch5YAMLLoading:
 
     def test_surface_yaml_fields(self):
         from pathlib import Path
+
         import yaml
+
         yaml_dir = Path(__file__).parent.parent / "src" / "core" / "data" / "abilities"
         with open(yaml_dir / "surface.yaml") as f:
             data = yaml.safe_load(f)
@@ -2995,6 +3388,7 @@ class TestBatch5AbilityFactories:
     def test_mortal_strike_factory(self):
         from src.core.data.ability_loader import AbilityFactory
         from src.core.data.data_driven_abilities import DataDrivenSkill
+
         ability = AbilityFactory.create_from_yaml(self.ABILITIES_DIR / "mortal_strike.yaml")
         assert isinstance(ability, DataDrivenSkill)
         assert ability.name == "Mortal Strike"
@@ -3005,6 +3399,7 @@ class TestBatch5AbilityFactories:
     def test_mortal_strike_2_factory(self):
         from src.core.data.ability_loader import AbilityFactory
         from src.core.data.data_driven_abilities import DataDrivenSkill
+
         ability = AbilityFactory.create_from_yaml(self.ABILITIES_DIR / "mortal_strike_2.yaml")
         assert isinstance(ability, DataDrivenSkill)
         assert ability.cost == 30
@@ -3013,6 +3408,7 @@ class TestBatch5AbilityFactories:
     def test_doom_factory(self):
         from src.core.data.ability_loader import AbilityFactory
         from src.core.data.data_driven_abilities import DataDrivenStatusSpell
+
         ability = AbilityFactory.create_from_yaml(self.ABILITIES_DIR / "doom.yaml")
         assert isinstance(ability, DataDrivenStatusSpell)
         assert ability.name == "Doom"
@@ -3021,6 +3417,7 @@ class TestBatch5AbilityFactories:
     def test_tunnel_factory(self):
         from src.core.data.ability_loader import AbilityFactory
         from src.core.data.data_driven_abilities import DataDrivenSkill
+
         ability = AbilityFactory.create_from_yaml(self.ABILITIES_DIR / "tunnel.yaml")
         assert isinstance(ability, DataDrivenSkill)
         assert ability.name == "Tunnel"
@@ -3030,6 +3427,7 @@ class TestBatch5AbilityFactories:
     def test_surface_factory(self):
         from src.core.data.ability_loader import AbilityFactory
         from src.core.data.data_driven_abilities import DataDrivenSkill
+
         ability = AbilityFactory.create_from_yaml(self.ABILITIES_DIR / "surface.yaml")
         assert isinstance(ability, DataDrivenSkill)
         assert ability.name == "Surface"
@@ -3043,17 +3441,24 @@ class TestBatch5CombatIntegration:
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Fighter", class_name="Warrior", race_name="Human",
-            level=30, health=(500, 500), mana=(200, 200),
-            stats={"strength": 40, "intel": 15, "wisdom": 15,
-                   "con": 20, "charisma": 30, "dex": 25},
+            name="Fighter",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(500, 500),
+            mana=(200, 200),
+            stats={"strength": 40, "intel": 15, "wisdom": 15, "con": 20, "charisma": 30, "dex": 25},
         )
         target = TestGameState.create_player(
-            name="Dummy", class_name="Warrior", race_name="Human",
-            level=30, health=(500, 500), mana=(100, 100),
-            stats={"strength": 10, "intel": 10, "wisdom": 10,
-                   "con": 10, "charisma": 10, "dex": 10},
+            name="Dummy",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(500, 500),
+            mana=(100, 100),
+            stats={"strength": 10, "intel": 10, "wisdom": 10, "con": 10, "charisma": 10, "dex": 10},
         )
         return user, target
 
@@ -3061,6 +3466,7 @@ class TestBatch5CombatIntegration:
 
     def test_mortal_strike_deducts_mana(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         ms = abilities.MortalStrike()
         mana_before = user.mana.current
@@ -3069,18 +3475,21 @@ class TestBatch5CombatIntegration:
 
     def test_mortal_strike_is_weapon_skill(self):
         from src.core import abilities
+
         ms = abilities.MortalStrike()
         assert ms.weapon is True
         assert ms.dmg_mod == 1.5
 
     def test_mortal_strike_has_crit_override(self):
         from src.core import abilities
+
         ms = abilities.MortalStrike()
         assert ms._crit_override == 2
 
     def test_mortal_strike_can_apply_bleed(self):
         """Over many trials, MortalStrike should apply Bleed at least once."""
         from src.core import abilities
+
         applied = False
         for _ in range(50):
             user, target = self._make_combatants()
@@ -3097,6 +3506,7 @@ class TestBatch5CombatIntegration:
 
     def test_mortal_strike_2_deducts_mana(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         ms2 = abilities.MortalStrike2()
         mana_before = user.mana.current
@@ -3105,6 +3515,7 @@ class TestBatch5CombatIntegration:
 
     def test_mortal_strike_2_higher_crit(self):
         from src.core import abilities
+
         ms2 = abilities.MortalStrike2()
         assert ms2._crit_override == 3
 
@@ -3112,6 +3523,7 @@ class TestBatch5CombatIntegration:
 
     def test_doom_deducts_mana(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         doom = abilities.Doom()
         mana_before = user.mana.current
@@ -3120,6 +3532,7 @@ class TestBatch5CombatIntegration:
 
     def test_doom_special_skips_mana(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         doom = abilities.Doom()
         mana_before = user.mana.current
@@ -3128,6 +3541,7 @@ class TestBatch5CombatIntegration:
 
     def test_doom_ice_block_check(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         target.magic_effects["Ice Block"].active = True
         doom = abilities.Doom()
@@ -3136,6 +3550,7 @@ class TestBatch5CombatIntegration:
 
     def test_doom_immune_target(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         user.stats.charisma = 200  # Guarantee contest win to reach immunity check
         target.stats.wisdom = 1
@@ -3147,6 +3562,7 @@ class TestBatch5CombatIntegration:
     def test_doom_applies_status(self):
         """With high CHA vs low WIS, Doom should apply at least once in trials."""
         from src.core import abilities
+
         applied = False
         for _ in range(50):
             user, target = self._make_combatants()
@@ -3163,6 +3579,7 @@ class TestBatch5CombatIntegration:
 
     def test_doom_already_active(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         target.status_effects["Doom"].active = True
         target.status_effects["Doom"].duration = 3
@@ -3176,6 +3593,7 @@ class TestBatch5CombatIntegration:
 
     def test_tunnel_deducts_mana(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         tun = abilities.Tunnel()
         mana_before = user.mana.current
@@ -3184,6 +3602,7 @@ class TestBatch5CombatIntegration:
 
     def test_tunnel_sets_flag(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         user.tunnel = False
         tun = abilities.Tunnel()
@@ -3193,6 +3612,7 @@ class TestBatch5CombatIntegration:
 
     def test_tunnel_is_self_target(self):
         from src.core import abilities
+
         tun = abilities.Tunnel()
         assert tun._self_target is True
 
@@ -3200,6 +3620,7 @@ class TestBatch5CombatIntegration:
 
     def test_surface_no_mana_cost(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         surf = abilities.Surface()
         mana_before = user.mana.current
@@ -3208,6 +3629,7 @@ class TestBatch5CombatIntegration:
 
     def test_surface_clears_flag(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         user.tunnel = True
         surf = abilities.Surface()
@@ -3221,42 +3643,60 @@ class TestBatch5CombatIntegration:
 # New effects: InstantKillEffect, StatReduceEffect
 # ═══════════════════════════════════════════════════════════════════════
 
+
 class TestBatch6NewEffects:
     """Test the new InstantKillEffect and StatReduceEffect."""
 
     def test_instant_kill_effect_factory(self):
         from src.core.data.ability_loader import EffectFactory
         from src.core.effects import InstantKillEffect
-        eff = EffectFactory.create({
-            'type': 'instant_kill',
-            'success_message': '{target} is slain.',
-            'actor_stat': 'charisma',
-            'actor_divisor': 4,
-            'luck_factor': 10,
-        })
+
+        eff = EffectFactory.create(
+            {
+                "type": "instant_kill",
+                "success_message": "{target} is slain.",
+                "actor_stat": "charisma",
+                "actor_divisor": 4,
+                "luck_factor": 10,
+            }
+        )
         assert isinstance(eff, InstantKillEffect)
-        assert eff.actor_stat == 'charisma'
+        assert eff.actor_stat == "charisma"
         assert eff.actor_divisor == 4
         assert eff.luck_factor == 10
         assert eff.apply_resist_multiplier is True
 
     def test_instant_kill_effect_kills_target(self):
-        from src.core.effects import InstantKillEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import InstantKillEffect
         from tests.test_framework import TestGameState
+
         killed = False
         for _ in range(50):
             user = TestGameState.create_player(
-                name="Caster", class_name="Mage", race_name="Human",
-                level=30, health=(500, 500), mana=(200, 200),
-                stats={"strength": 10, "intel": 10, "wisdom": 10,
-                       "con": 10, "charisma": 200, "dex": 10},
+                name="Caster",
+                class_name="Mage",
+                race_name="Human",
+                level=30,
+                health=(500, 500),
+                mana=(200, 200),
+                stats={
+                    "strength": 10,
+                    "intel": 10,
+                    "wisdom": 10,
+                    "con": 10,
+                    "charisma": 200,
+                    "dex": 10,
+                },
             )
             target = TestGameState.create_player(
-                name="Victim", class_name="Warrior", race_name="Human",
-                level=1, health=(100, 100), mana=(50, 50),
-                stats={"strength": 5, "intel": 5, "wisdom": 5,
-                       "con": 1, "charisma": 5, "dex": 5},
+                name="Victim",
+                class_name="Warrior",
+                race_name="Human",
+                level=1,
+                health=(100, 100),
+                mana=(50, 50),
+                stats={"strength": 5, "intel": 5, "wisdom": 5, "con": 1, "charisma": 5, "dex": 5},
             )
             eff = InstantKillEffect(
                 success_message="{target} is slain.",
@@ -3277,16 +3717,25 @@ class TestBatch6NewEffects:
 
     def test_instant_kill_resist_immunity(self):
         """Full resist (>=1) should block the kill."""
-        from src.core.effects import InstantKillEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import InstantKillEffect
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Caster", class_name="Mage", race_name="Human",
-            level=30, health=(500, 500), mana=(200, 200),
+            name="Caster",
+            class_name="Mage",
+            race_name="Human",
+            level=30,
+            health=(500, 500),
+            mana=(200, 200),
         )
         target = TestGameState.create_player(
-            name="Immune", class_name="Warrior", race_name="Human",
-            level=30, health=(100, 100), mana=(50, 50),
+            name="Immune",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(100, 100),
+            mana=(50, 50),
         )
         # Give target full Death resist
         target.resistance["Death"] = 1.0
@@ -3301,16 +3750,25 @@ class TestBatch6NewEffects:
 
     def test_instant_kill_status_immunity(self):
         """Status immunity (e.g. Stone) should block the kill."""
-        from src.core.effects import InstantKillEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import InstantKillEffect
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Caster", class_name="Mage", race_name="Human",
-            level=30, health=(500, 500), mana=(200, 200),
+            name="Caster",
+            class_name="Mage",
+            race_name="Human",
+            level=30,
+            health=(500, 500),
+            mana=(200, 200),
         )
         target = TestGameState.create_player(
-            name="StoneImmune", class_name="Warrior", race_name="Human",
-            level=30, health=(100, 100), mana=(50, 50),
+            name="StoneImmune",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(100, 100),
+            mana=(50, 50),
         )
         target.status_immunity.append("Stone")
         eff = InstantKillEffect(
@@ -3324,20 +3782,27 @@ class TestBatch6NewEffects:
 
     def test_instant_kill_reflect(self):
         """Reflect item should redirect the kill to the caster."""
-        from src.core.effects import InstantKillEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import InstantKillEffect
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Gorgon", class_name="Mage", race_name="Human",
-            level=30, health=(100, 100), mana=(200, 200),
-            stats={"strength": 10, "intel": 10, "wisdom": 10,
-                   "con": 1, "charisma": 200, "dex": 10},
+            name="Gorgon",
+            class_name="Mage",
+            race_name="Human",
+            level=30,
+            health=(100, 100),
+            mana=(200, 200),
+            stats={"strength": 10, "intel": 10, "wisdom": 10, "con": 1, "charisma": 200, "dex": 10},
         )
         target = TestGameState.create_player(
-            name="Hero", class_name="Warrior", race_name="Human",
-            level=30, health=(100, 100), mana=(50, 50),
-            stats={"strength": 10, "intel": 10, "wisdom": 10,
-                   "con": 1, "charisma": 10, "dex": 10},
+            name="Hero",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(100, 100),
+            mana=(50, 50),
+            stats={"strength": 10, "intel": 10, "wisdom": 10, "con": 1, "charisma": 10, "dex": 10},
         )
         # Equip Medusa Shield on target
         target.equipment["OffHand"].name = "Medusa Shield"
@@ -3362,43 +3827,63 @@ class TestBatch6NewEffects:
     def test_stat_reduce_effect_factory(self):
         from src.core.data.ability_loader import EffectFactory
         from src.core.effects import StatReduceEffect
-        eff = EffectFactory.create({
-            'type': 'stat_reduce',
-            'stat': 'con',
-            'amount': 1,
-            'actor_stat': 'intel',
-            'actor_divisor': 2,
-            'luck_factor': 10,
-            'success_message': '{target} loses con.',
-        })
+
+        eff = EffectFactory.create(
+            {
+                "type": "stat_reduce",
+                "stat": "con",
+                "amount": 1,
+                "actor_stat": "intel",
+                "actor_divisor": 2,
+                "luck_factor": 10,
+                "success_message": "{target} loses con.",
+            }
+        )
         assert isinstance(eff, StatReduceEffect)
-        assert eff.stat == 'con'
+        assert eff.stat == "con"
         assert eff.amount == 1
         assert eff.actor_divisor == 2
 
     def test_stat_reduce_effect_reduces_stat(self):
         """With extreme stats, the two-stage contest should succeed."""
-        from src.core.effects import StatReduceEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import StatReduceEffect
         from tests.test_framework import TestGameState
+
         reduced = False
         for _ in range(100):
             user = TestGameState.create_player(
-                name="Plagued", class_name="Mage", race_name="Human",
-                level=30, health=(500, 500), mana=(200, 200),
-                stats={"strength": 10, "intel": 200, "wisdom": 10,
-                       "con": 10, "charisma": 10, "dex": 10},
+                name="Plagued",
+                class_name="Mage",
+                race_name="Human",
+                level=30,
+                health=(500, 500),
+                mana=(200, 200),
+                stats={
+                    "strength": 10,
+                    "intel": 200,
+                    "wisdom": 10,
+                    "con": 10,
+                    "charisma": 10,
+                    "dex": 10,
+                },
             )
             target = TestGameState.create_player(
-                name="Sick", class_name="Warrior", race_name="Human",
-                level=1, health=(100, 100), mana=(50, 50),
-                stats={"strength": 5, "intel": 5, "wisdom": 5,
-                       "con": 1, "charisma": 5, "dex": 5},
+                name="Sick",
+                class_name="Warrior",
+                race_name="Human",
+                level=1,
+                health=(100, 100),
+                mana=(50, 50),
+                stats={"strength": 5, "intel": 5, "wisdom": 5, "con": 1, "charisma": 5, "dex": 5},
             )
             eff = StatReduceEffect(
-                stat="con", amount=1,
-                actor_stat="intel", actor_divisor=2,
-                target_stat="con", target_lo_divisor=2,
+                stat="con",
+                amount=1,
+                actor_stat="intel",
+                actor_divisor=2,
+                target_stat="con",
+                target_lo_divisor=2,
                 luck_factor=1,
                 success_message="{target} loses constitution.",
             )
@@ -3415,27 +3900,41 @@ class TestBatch6NewEffects:
 class TestBatch6YAMLLoading:
     """Test that all Batch 6 YAML files load correctly."""
 
-    @pytest.fixture(params=[
-        "desoul.yaml",
-        "petrify.yaml",
-        "ruin.yaml",
-        "disease_breath.yaml",
-    ])
+    @pytest.fixture(
+        params=[
+            "desoul.yaml",
+            "petrify.yaml",
+            "ruin.yaml",
+            "disease_breath.yaml",
+        ]
+    )
     def yaml_file(self, request):
         return request.param
 
     def test_yaml_loads(self, yaml_file):
         from src.core.data.ability_loader import AbilityFactory
+
         ability = AbilityFactory.create_from_yaml(
-            Path(__file__).resolve().parent.parent / "src" / "core" / "data" / "abilities" / yaml_file,
+            Path(__file__).resolve().parent.parent
+            / "src"
+            / "core"
+            / "data"
+            / "abilities"
+            / yaml_file,
         )
         assert ability is not None
         assert ability.name != ""
 
     def test_desoul_yaml_fields(self):
         from src.core.data.ability_loader import AbilityFactory
+
         a = AbilityFactory.create_from_yaml(
-            Path(__file__).resolve().parent.parent / "src" / "core" / "data" / "abilities" / "desoul.yaml",
+            Path(__file__).resolve().parent.parent
+            / "src"
+            / "core"
+            / "data"
+            / "abilities"
+            / "desoul.yaml",
         )
         assert a.name == "Desoul"
         assert a.cost == 50
@@ -3444,8 +3943,14 @@ class TestBatch6YAMLLoading:
 
     def test_petrify_yaml_fields(self):
         from src.core.data.ability_loader import AbilityFactory
+
         a = AbilityFactory.create_from_yaml(
-            Path(__file__).resolve().parent.parent / "src" / "core" / "data" / "abilities" / "petrify.yaml",
+            Path(__file__).resolve().parent.parent
+            / "src"
+            / "core"
+            / "data"
+            / "abilities"
+            / "petrify.yaml",
         )
         assert a.name == "Petrify"
         assert a.cost == 50
@@ -3455,8 +3960,14 @@ class TestBatch6YAMLLoading:
 
     def test_ruin_yaml_fields(self):
         from src.core.data.ability_loader import AbilityFactory
+
         a = AbilityFactory.create_from_yaml(
-            Path(__file__).resolve().parent.parent / "src" / "core" / "data" / "abilities" / "ruin.yaml",
+            Path(__file__).resolve().parent.parent
+            / "src"
+            / "core"
+            / "data"
+            / "abilities"
+            / "ruin.yaml",
         )
         assert a.name == "Ruin"
         assert a.cost == 28
@@ -3465,8 +3976,14 @@ class TestBatch6YAMLLoading:
 
     def test_disease_breath_yaml_fields(self):
         from src.core.data.ability_loader import AbilityFactory
+
         a = AbilityFactory.create_from_yaml(
-            Path(__file__).resolve().parent.parent / "src" / "core" / "data" / "abilities" / "disease_breath.yaml",
+            Path(__file__).resolve().parent.parent
+            / "src"
+            / "core"
+            / "data"
+            / "abilities"
+            / "disease_breath.yaml",
         )
         assert a.name == "Disease Breath"
         assert a.cost == 25
@@ -3479,6 +3996,7 @@ class TestBatch6AbilityFactories:
 
     def test_desoul_factory(self):
         from src.core import abilities
+
         a = abilities.Desoul()
         assert a.name == "Desoul"
         assert a.cost == 50
@@ -3486,6 +4004,7 @@ class TestBatch6AbilityFactories:
 
     def test_petrify_factory(self):
         from src.core import abilities
+
         a = abilities.Petrify()
         assert a.name == "Petrify"
         assert a.cost == 50
@@ -3493,12 +4012,14 @@ class TestBatch6AbilityFactories:
 
     def test_ruin_factory(self):
         from src.core import abilities
+
         a = abilities.Ruin()
         assert a.name == "Ruin"
         assert a.cost == 28
 
     def test_disease_breath_factory(self):
         from src.core import abilities
+
         a = abilities.DiseaseBreath()
         assert a.name == "Disease Breath"
         assert a.cost == 25
@@ -3511,17 +4032,38 @@ class TestBatch6CombatIntegration:
     @staticmethod
     def _make_combatants(caster_cha=60, target_con=10):
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Caster", class_name="Mage", race_name="Human",
-            level=30, health=(500, 500), mana=(200, 200),
-            stats={"strength": 10, "intel": 40, "wisdom": 10,
-                   "con": 20, "charisma": caster_cha, "dex": 10},
+            name="Caster",
+            class_name="Mage",
+            race_name="Human",
+            level=30,
+            health=(500, 500),
+            mana=(200, 200),
+            stats={
+                "strength": 10,
+                "intel": 40,
+                "wisdom": 10,
+                "con": 20,
+                "charisma": caster_cha,
+                "dex": 10,
+            },
         )
         target = TestGameState.create_player(
-            name="Dummy", class_name="Warrior", race_name="Human",
-            level=30, health=(500, 500), mana=(100, 100),
-            stats={"strength": 10, "intel": 10, "wisdom": 10,
-                   "con": target_con, "charisma": 10, "dex": 10},
+            name="Dummy",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(500, 500),
+            mana=(100, 100),
+            stats={
+                "strength": 10,
+                "intel": 10,
+                "wisdom": 10,
+                "con": target_con,
+                "charisma": 10,
+                "dex": 10,
+            },
         )
         return user, target
 
@@ -3529,6 +4071,7 @@ class TestBatch6CombatIntegration:
 
     def test_desoul_deducts_mana(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         desoul = abilities.Desoul()
         mana_before = user.mana.current
@@ -3537,6 +4080,7 @@ class TestBatch6CombatIntegration:
 
     def test_desoul_special_skips_mana(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         desoul = abilities.Desoul()
         mana_before = user.mana.current
@@ -3545,6 +4089,7 @@ class TestBatch6CombatIntegration:
 
     def test_desoul_ice_block_check(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         target.magic_effects["Ice Block"].active = True
         desoul = abilities.Desoul()
@@ -3553,6 +4098,7 @@ class TestBatch6CombatIntegration:
 
     def test_desoul_immune_target(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         target.resistance["Death"] = 1.0
         desoul = abilities.Desoul()
@@ -3562,6 +4108,7 @@ class TestBatch6CombatIntegration:
     def test_desoul_kills_target(self):
         """With extreme CHA vs low CON, Desoul should kill at least once."""
         from src.core import abilities
+
         killed = False
         for _ in range(100):
             user, target = self._make_combatants(caster_cha=200, target_con=1)
@@ -3569,7 +4116,11 @@ class TestBatch6CombatIntegration:
             result = desoul.cast(user, target)
             if target.health.current == 0:
                 killed = True
-                assert "soul" in result.lower() or "slain" in result.lower() or "dead" in result.lower()
+                assert (
+                    "soul" in result.lower()
+                    or "slain" in result.lower()
+                    or "dead" in result.lower()
+                )
                 break
         assert killed, "Desoul never killed in 100 attempts"
 
@@ -3577,6 +4128,7 @@ class TestBatch6CombatIntegration:
 
     def test_petrify_deducts_mana(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         petrify = abilities.Petrify()
         mana_before = user.mana.current
@@ -3585,6 +4137,7 @@ class TestBatch6CombatIntegration:
 
     def test_petrify_ice_block_check(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         target.magic_effects["Ice Block"].active = True
         petrify = abilities.Petrify()
@@ -3593,6 +4146,7 @@ class TestBatch6CombatIntegration:
 
     def test_petrify_stone_immune(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         target.status_immunity.append("Stone")
         petrify = abilities.Petrify()
@@ -3602,6 +4156,7 @@ class TestBatch6CombatIntegration:
     def test_petrify_kills_target(self):
         """With extreme CHA vs low CON, Petrify should kill at least once."""
         from src.core import abilities
+
         killed = False
         for _ in range(100):
             user, target = self._make_combatants(caster_cha=200, target_con=1)
@@ -3616,6 +4171,7 @@ class TestBatch6CombatIntegration:
     def test_petrify_reflect_medusa_shield(self):
         """Medusa Shield should reflect Petrify back at caster."""
         from src.core import abilities
+
         reflected = False
         for _ in range(100):
             user, target = self._make_combatants(caster_cha=200, target_con=1)
@@ -3635,6 +4191,7 @@ class TestBatch6CombatIntegration:
 
     def test_ruin_deducts_mana(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         ruin = abilities.Ruin()
         mana_before = user.mana.current
@@ -3643,6 +4200,7 @@ class TestBatch6CombatIntegration:
 
     def test_ruin_ice_block_check(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         target.magic_effects["Ice Block"].active = True
         ruin = abilities.Ruin()
@@ -3652,6 +4210,7 @@ class TestBatch6CombatIntegration:
     def test_ruin_applies_debuffs(self):
         """With high INT vs low CON, Ruin should apply debuffs."""
         from src.core import abilities
+
         debuffed = False
         for _ in range(50):
             user, target = self._make_combatants()
@@ -3660,11 +4219,16 @@ class TestBatch6CombatIntegration:
             ruin = abilities.Ruin()
             result = ruin.cast(user, target)
             # Check if any combat_attr was debuffed
-            if any([
-                target.combat.attack != target._base_combat_attack
-                    if hasattr(target, '_base_combat_attack') else False,
-                "reduced" in result.lower() or "lowered" in result.lower(),
-            ]):
+            if any(
+                [
+                    (
+                        target.combat.attack != target._base_combat_attack
+                        if hasattr(target, "_base_combat_attack")
+                        else False
+                    ),
+                    "reduced" in result.lower() or "lowered" in result.lower(),
+                ]
+            ):
                 debuffed = True
                 break
             # Check via the result message containing stat names
@@ -3677,6 +4241,7 @@ class TestBatch6CombatIntegration:
 
     def test_disease_breath_deducts_mana(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         db = abilities.DiseaseBreath()
         mana_before = user.mana.current
@@ -3685,6 +4250,7 @@ class TestBatch6CombatIntegration:
 
     def test_disease_breath_ice_block_check(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         target.magic_effects["Ice Block"].active = True
         db = abilities.DiseaseBreath()
@@ -3694,6 +4260,7 @@ class TestBatch6CombatIntegration:
     def test_disease_breath_can_reduce_con(self):
         """With high INT vs low CON/luck, Disease Breath should reduce CON."""
         from src.core import abilities
+
         reduced = False
         for _ in range(200):
             user, target = self._make_combatants()
@@ -3746,12 +4313,14 @@ def run_tests():
     print("DATA-DRIVEN ABILITIES TESTS")
     print("=" * 70)
     import pytest
-    return pytest.main([__file__, '-v', '--tb=short', '--color=yes'])
+
+    return pytest.main([__file__, "-v", "--tb=short", "--color=yes"])
 
 
 # ======================================================================
 # Batch 7 - PowerUp, Chain, Drain, Toggle abilities
 # ======================================================================
+
 
 class TestBatch7YAMLLoading:
     """Verify YAML files load and produce correct DataDriven types."""
@@ -3773,8 +4342,14 @@ class TestBatch7YAMLLoading:
     @staticmethod
     def test_all_yaml_files_load():
         from src.core.data.ability_loader import AbilityFactory
+
         yaml_dir = Path(__file__).parent.parent / "src" / "core" / "data" / "abilities"
-        for filename, expected_name, expected_subtyp, expected_cost in TestBatch7YAMLLoading._SKILLS:
+        for (
+            filename,
+            expected_name,
+            expected_subtyp,
+            expected_cost,
+        ) in TestBatch7YAMLLoading._SKILLS:
             ability = AbilityFactory.create_from_yaml(yaml_dir / filename)
             assert ability.name == expected_name, f"{filename}: name mismatch"
             assert ability.subtyp == expected_subtyp, f"{filename}: subtyp mismatch"
@@ -3786,9 +4361,17 @@ class TestBatch7YAMLLoading:
         from src.core.data.data_driven_abilities import DataDrivenSkill
 
         for cls_name in [
-            "HolyRetribution", "DivineAegis", "BladeFatalities", "SacredOverchannel", "GreatGospel",
-            "ChiHeal", "HealthDrain", "ManaDrain", "HealthManaDrain",
-            "ManaShield", "ManaShield2",
+            "HolyRetribution",
+            "DivineAegis",
+            "BladeFatalities",
+            "SacredOverchannel",
+            "GreatGospel",
+            "ChiHeal",
+            "HealthDrain",
+            "ManaDrain",
+            "HealthManaDrain",
+            "ManaShield",
+            "ManaShield2",
         ]:
             ability = getattr(abilities, cls_name)()
             assert isinstance(ability, DataDrivenSkill), f"{cls_name} is not DataDrivenSkill"
@@ -3801,6 +4384,7 @@ class TestBatch7PowerUpAbilities:
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
             name="Paladin",
             class_name="Warrior",
@@ -3808,8 +4392,7 @@ class TestBatch7PowerUpAbilities:
             level=30,
             health=(400, 400),
             mana=(200, 200),
-            stats={"strength": 25, "intel": 15, "wisdom": 20,
-                   "con": 20, "charisma": 15, "dex": 15},
+            stats={"strength": 25, "intel": 15, "wisdom": 20, "con": 20, "charisma": 15, "dex": 15},
         )
         target = TestGameState.create_player(
             name="Enemy",
@@ -3818,13 +4401,13 @@ class TestBatch7PowerUpAbilities:
             level=30,
             health=(300, 300),
             mana=(50, 50),
-            stats={"strength": 20, "intel": 8, "wisdom": 10,
-                   "con": 18, "charisma": 10, "dex": 12},
+            stats={"strength": 20, "intel": 8, "wisdom": 10, "con": 18, "charisma": 10, "dex": 12},
         )
         return user, target
 
     def test_holy_retribution_activates_power_up(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         skill = abilities.HolyRetribution()
         mana_before = user.mana.current
@@ -3838,6 +4421,7 @@ class TestBatch7PowerUpAbilities:
 
     def test_divine_aegis_sets_random_extra(self):
         from src.core import abilities
+
         extras = set()
         for _ in range(50):
             user, target = self._make_combatants()
@@ -3852,6 +4436,7 @@ class TestBatch7PowerUpAbilities:
 
     def test_divine_aegis_deducts_mana(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         mana_before = user.mana.current
         abilities.DivineAegis().use(user, target)
@@ -3859,6 +4444,7 @@ class TestBatch7PowerUpAbilities:
 
     def test_blade_fatalities_sacrifices_health(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         hp_before = user.health.current
         skill = abilities.BladeFatalities()
@@ -3874,6 +4460,7 @@ class TestBatch7PowerUpAbilities:
 
     def test_great_gospel_activates_and_cleanses(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         # Apply some negative statuses
         user.status_effects["Poison"].active = True
@@ -3892,6 +4479,7 @@ class TestBatch7PowerUpAbilities:
 
     def test_sacred_overchannel_activates_power_up(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         skill = abilities.SacredOverchannel()
         mana_before = user.mana.current
@@ -3904,6 +4492,7 @@ class TestBatch7PowerUpAbilities:
 
     def test_holy_retribution_special_skips_mana(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         mana_before = user.mana.current
         skill = abilities.HolyRetribution()
@@ -3917,6 +4506,7 @@ class TestBatch7ChainAbilities:
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
             name="Monk",
             class_name="Warrior",
@@ -3924,8 +4514,7 @@ class TestBatch7ChainAbilities:
             level=30,
             health=(400, 400),
             mana=(200, 200),
-            stats={"strength": 20, "intel": 15, "wisdom": 25,
-                   "con": 20, "charisma": 15, "dex": 15},
+            stats={"strength": 20, "intel": 15, "wisdom": 25, "con": 20, "charisma": 15, "dex": 15},
         )
         target = TestGameState.create_player(
             name="Enemy",
@@ -3934,13 +4523,13 @@ class TestBatch7ChainAbilities:
             level=30,
             health=(300, 300),
             mana=(150, 150),
-            stats={"strength": 20, "intel": 8, "wisdom": 10,
-                   "con": 18, "charisma": 10, "dex": 12},
+            stats={"strength": 20, "intel": 8, "wisdom": 10, "con": 18, "charisma": 10, "dex": 12},
         )
         return user, target
 
     def test_chi_heal_heals_and_cleanses(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         user.health.current = 200  # Damaged
         user.status_effects["Poison"].active = True
@@ -3958,6 +4547,7 @@ class TestBatch7ChainAbilities:
 
     def test_health_mana_drain_drains_both(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         user.health.current = 200  # Damaged
         user.mana.current = 100  # Low mana
@@ -3972,6 +4562,7 @@ class TestBatch7ChainAbilities:
 
     def test_health_mana_drain_ice_block(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         target.magic_effects["Ice Block"].active = True
         skill = abilities.HealthManaDrain()
@@ -3985,6 +4576,7 @@ class TestBatch7DrainAbilities:
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
             name="Warlock",
             class_name="Warrior",
@@ -3992,8 +4584,7 @@ class TestBatch7DrainAbilities:
             level=30,
             health=(400, 400),
             mana=(200, 200),
-            stats={"strength": 15, "intel": 20, "wisdom": 25,
-                   "con": 15, "charisma": 30, "dex": 15},
+            stats={"strength": 15, "intel": 20, "wisdom": 25, "con": 15, "charisma": 30, "dex": 15},
         )
         target = TestGameState.create_player(
             name="Victim",
@@ -4002,13 +4593,13 @@ class TestBatch7DrainAbilities:
             level=30,
             health=(300, 300),
             mana=(150, 150),
-            stats={"strength": 15, "intel": 8, "wisdom": 5,
-                   "con": 15, "charisma": 5, "dex": 12},
+            stats={"strength": 15, "intel": 8, "wisdom": 5, "con": 15, "charisma": 5, "dex": 12},
         )
         return user, target
 
     def test_health_drain_transfers_health(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         user.health.current = 200  # Damaged
         target_hp_before = target.health.current
@@ -4031,6 +4622,7 @@ class TestBatch7DrainAbilities:
 
     def test_health_drain_caps_at_18_percent(self):
         from src.core import abilities
+
         for _ in range(50):
             user, target = self._make_combatants()
             user.health.current = 200
@@ -4044,6 +4636,7 @@ class TestBatch7DrainAbilities:
 
     def test_health_drain_ice_block(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         target.magic_effects["Ice Block"].active = True
         skill = abilities.HealthDrain()
@@ -4052,6 +4645,7 @@ class TestBatch7DrainAbilities:
 
     def test_health_drain_special_skips_mana(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         mana_before = user.mana.current
         skill = abilities.HealthDrain()
@@ -4060,6 +4654,7 @@ class TestBatch7DrainAbilities:
 
     def test_health_drain_deducts_mana(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         mana_before = user.mana.current
         skill = abilities.HealthDrain()
@@ -4068,6 +4663,7 @@ class TestBatch7DrainAbilities:
 
     def test_mana_drain_transfers_mana(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         user.mana.current = 100
         target_mp_before = target.mana.current
@@ -4087,6 +4683,7 @@ class TestBatch7DrainAbilities:
 
     def test_mana_drain_caps_at_22_percent(self):
         from src.core import abilities
+
         for _ in range(50):
             user, target = self._make_combatants()
             user.mana.current = 100
@@ -4105,6 +4702,7 @@ class TestBatch7ManaShield:
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
             name="Mage",
             class_name="Warrior",
@@ -4112,8 +4710,7 @@ class TestBatch7ManaShield:
             level=30,
             health=(300, 300),
             mana=(200, 200),
-            stats={"strength": 10, "intel": 25, "wisdom": 20,
-                   "con": 15, "charisma": 15, "dex": 15},
+            stats={"strength": 10, "intel": 25, "wisdom": 20, "con": 15, "charisma": 15, "dex": 15},
         )
         target = TestGameState.create_player(
             name="Enemy",
@@ -4122,13 +4719,13 @@ class TestBatch7ManaShield:
             level=30,
             health=(300, 300),
             mana=(50, 50),
-            stats={"strength": 20, "intel": 8, "wisdom": 10,
-                   "con": 18, "charisma": 10, "dex": 12},
+            stats={"strength": 20, "intel": 8, "wisdom": 10, "con": 18, "charisma": 10, "dex": 12},
         )
         return user, target
 
     def test_mana_shield_activate(self):
         from src.core import abilities
+
         user, _ = self._make_combatants()
         mana_before = user.mana.current
         assert not user.magic_effects["Mana Shield"].active
@@ -4141,6 +4738,7 @@ class TestBatch7ManaShield:
 
     def test_mana_shield_deactivate(self):
         from src.core import abilities
+
         user, _ = self._make_combatants()
         # Activate first
         user.magic_effects["Mana Shield"].active = True
@@ -4154,6 +4752,7 @@ class TestBatch7ManaShield:
 
     def test_mana_shield_toggle_cycle(self):
         from src.core import abilities
+
         user, _ = self._make_combatants()
         skill = abilities.ManaShield()
         # Activate
@@ -4170,6 +4769,7 @@ class TestBatch7ManaShield:
 
     def test_mana_shield_2_reduction_4(self):
         from src.core import abilities
+
         user, _ = self._make_combatants()
         skill = abilities.ManaShield2()
         skill.use(user, user)
@@ -4185,9 +4785,17 @@ class TestBatch7SaveSystem:
         from src.core.save_system import AbilitySerializer
 
         for name in [
-            "HolyRetribution", "DivineAegis", "BladeFatalities", "SacredOverchannel", "GreatGospel",
-            "ChiHeal", "HealthDrain", "ManaDrain", "HealthManaDrain",
-            "ManaShield", "ManaShield2",
+            "HolyRetribution",
+            "DivineAegis",
+            "BladeFatalities",
+            "SacredOverchannel",
+            "GreatGospel",
+            "ChiHeal",
+            "HealthDrain",
+            "ManaDrain",
+            "HealthManaDrain",
+            "ManaShield",
+            "ManaShield2",
         ]:
             ability = getattr(abilities, name)()
             serialized = AbilitySerializer.serialize(ability)
@@ -4197,14 +4805,14 @@ class TestBatch7SaveSystem:
             assert restored.name == ability.name
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(run_tests())
-
 
 
 # =====================================================================
 # Batch 12 - Steal, Mug, Counterspell, ElementalStrike, Blackjack
 # =====================================================================
+
 
 class TestBatch12YAMLLoading:
     """Verify all 5 Batch 12 YAML files load correctly."""
@@ -4219,6 +4827,7 @@ class TestBatch12YAMLLoading:
 
     def test_all_yaml_files_load(self):
         from src.core.data.ability_loader import AbilityFactory
+
         yaml_dir = Path(__file__).parent.parent / "src" / "core" / "data" / "abilities"
         for filename, expected_name, expected_cost in self._YAMLS:
             ability = AbilityFactory.create_from_yaml(yaml_dir / filename)
@@ -4232,23 +4841,31 @@ class TestBatch12Steal:
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Thief", class_name="Warrior", race_name="Human",
-            level=30, health=(300, 300), mana=(100, 100),
-            stats={"strength": 15, "intel": 10, "wisdom": 10,
-                   "con": 12, "charisma": 10, "dex": 30},
+            name="Thief",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(300, 300),
+            mana=(100, 100),
+            stats={"strength": 15, "intel": 10, "wisdom": 10, "con": 12, "charisma": 10, "dex": 30},
         )
         target = TestGameState.create_player(
-            name="Target", class_name="Warrior", race_name="Human",
-            level=30, health=(300, 300), mana=(50, 50),
-            stats={"strength": 10, "intel": 8, "wisdom": 10,
-                   "con": 10, "charisma": 10, "dex": 5},
+            name="Target",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(300, 300),
+            mana=(50, 50),
+            stats={"strength": 10, "intel": 8, "wisdom": 10, "con": 10, "charisma": 10, "dex": 5},
         )
         target.gold = 1000
         return user, target
 
     def test_steal_deducts_mana(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         mana_before = user.mana.current
         abilities.Steal().use(user, target)
@@ -4256,6 +4873,7 @@ class TestBatch12Steal:
 
     def test_steal_can_steal_gold(self):
         from src.core import abilities
+
         gold_stolen = False
         for _ in range(100):
             user, target = self._make_combatants()
@@ -4268,6 +4886,7 @@ class TestBatch12Steal:
 
     def test_steal_success_lasts_long_enough_for_smoke_screen_retries(self, monkeypatch):
         from src.core import abilities
+
         user, target = self._make_combatants()
         monkeypatch.setattr("random.choice", lambda _seq: "Gold")
         monkeypatch.setattr("random.randint", lambda _low, high: high)
@@ -4279,6 +4898,7 @@ class TestBatch12Steal:
 
     def test_steal_blocked_by_ice_block(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         target.magic_effects["Ice Block"].active = True
         result = abilities.Steal().use(user, target)
@@ -4286,6 +4906,7 @@ class TestBatch12Steal:
 
     def test_steal_fails_sometimes(self):
         from src.core import abilities
+
         failed = False
         for _ in range(100):
             user, target = self._make_combatants()
@@ -4304,23 +4925,31 @@ class TestBatch12Mug:
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Rogue", class_name="Warrior", race_name="Human",
-            level=30, health=(300, 300), mana=(100, 100),
-            stats={"strength": 25, "intel": 10, "wisdom": 10,
-                   "con": 15, "charisma": 10, "dex": 25},
+            name="Rogue",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(300, 300),
+            mana=(100, 100),
+            stats={"strength": 25, "intel": 10, "wisdom": 10, "con": 15, "charisma": 10, "dex": 25},
         )
         target = TestGameState.create_player(
-            name="Target", class_name="Warrior", race_name="Human",
-            level=30, health=(300, 300), mana=(50, 50),
-            stats={"strength": 10, "intel": 8, "wisdom": 10,
-                   "con": 10, "charisma": 10, "dex": 5},
+            name="Target",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(300, 300),
+            mana=(50, 50),
+            stats={"strength": 10, "intel": 8, "wisdom": 10, "con": 10, "charisma": 10, "dex": 5},
         )
         target.gold = 1000
         return user, target
 
     def test_mug_deducts_mana(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         mana_before = user.mana.current
         abilities.Mug().use(user, target)
@@ -4329,6 +4958,7 @@ class TestBatch12Mug:
 
     def test_mug_can_deal_damage(self):
         from src.core import abilities
+
         damaged = False
         for _ in range(50):
             user, target = self._make_combatants()
@@ -4340,6 +4970,7 @@ class TestBatch12Mug:
 
     def test_mug_can_steal(self):
         from src.core import abilities
+
         stolen = False
         for _ in range(100):
             user, target = self._make_combatants()
@@ -4360,13 +4991,17 @@ class TestBatch12Counterspell:
 
     @staticmethod
     def _make_combatants():
-        from tests.test_framework import TestGameState
         from src.core import abilities
+        from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Behemoth", class_name="Wizard", race_name="Human",
-            level=30, health=(600, 600), mana=(200, 200),
-            stats={"strength": 30, "intel": 25, "wisdom": 20,
-                   "con": 30, "charisma": 10, "dex": 10},
+            name="Behemoth",
+            class_name="Wizard",
+            race_name="Human",
+            level=30,
+            health=(600, 600),
+            mana=(200, 200),
+            stats={"strength": 30, "intel": 25, "wisdom": 20, "con": 30, "charisma": 10, "dex": 10},
         )
         user.class_effects["Power Up"].active = False
         # Give behemoth some spells in its spellbook
@@ -4374,20 +5009,25 @@ class TestBatch12Counterspell:
             "Firebolt": abilities.Firebolt(),
         }
         target = TestGameState.create_player(
-            name="Player", class_name="Warrior", race_name="Human",
-            level=30, health=(300, 300), mana=(50, 50),
-            stats={"strength": 20, "intel": 8, "wisdom": 10,
-                   "con": 15, "charisma": 10, "dex": 12},
+            name="Player",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(300, 300),
+            mana=(50, 50),
+            stats={"strength": 20, "intel": 8, "wisdom": 10, "con": 15, "charisma": 10, "dex": 12},
         )
         return user, target
 
     def test_counterspell_passive_flag(self):
         from src.core import abilities
+
         ability = abilities.Counterspell()
         assert ability.passive is True
 
     def test_counterspell_casts_spell(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         result = abilities.Counterspell().use(user, target)
         # Should produce some output from casting Firebolt
@@ -4398,6 +5038,7 @@ class TestBatch12Counterspell:
 
     def test_counterspell_can_deal_damage(self):
         from src.core import abilities
+
         damaged = False
         for _ in range(50):
             user, target = self._make_combatants()
@@ -4413,13 +5054,17 @@ class TestBatch12ElementalStrike:
 
     @staticmethod
     def _make_combatants():
-        from tests.test_framework import TestGameState
         from src.core import abilities
+        from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Spellblade", class_name="Warrior", race_name="Human",
-            level=30, health=(300, 300), mana=(150, 150),
-            stats={"strength": 25, "intel": 20, "wisdom": 15,
-                   "con": 15, "charisma": 10, "dex": 20},
+            name="Spellblade",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(300, 300),
+            mana=(150, 150),
+            stats={"strength": 25, "intel": 20, "wisdom": 15, "con": 15, "charisma": 10, "dex": 20},
         )
         user.class_effects["Power Up"].active = False
         # Give elemental spells in spellbook
@@ -4429,15 +5074,19 @@ class TestBatch12ElementalStrike:
             "Shock": abilities.Shock(),
         }
         target = TestGameState.create_player(
-            name="Target", class_name="Warrior", race_name="Human",
-            level=30, health=(400, 400), mana=(50, 50),
-            stats={"strength": 10, "intel": 8, "wisdom": 10,
-                   "con": 10, "charisma": 10, "dex": 5},
+            name="Target",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(400, 400),
+            mana=(50, 50),
+            stats={"strength": 10, "intel": 8, "wisdom": 10, "con": 10, "charisma": 10, "dex": 5},
         )
         return user, target
 
     def test_elemental_strike_deducts_mana(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         mana_before = user.mana.current
         abilities.ElementalStrike().use(user, target)
@@ -4445,6 +5094,7 @@ class TestBatch12ElementalStrike:
 
     def test_elemental_strike_can_deal_damage(self):
         from src.core import abilities
+
         damaged = False
         for _ in range(50):
             user, target = self._make_combatants()
@@ -4456,6 +5106,7 @@ class TestBatch12ElementalStrike:
 
     def test_elemental_strike_mentions_element(self):
         from src.core import abilities
+
         element_seen = False
         for _ in range(50):
             user, target = self._make_combatants()
@@ -4468,6 +5119,7 @@ class TestBatch12ElementalStrike:
 
     def test_elemental_strike_does_not_embed_nested_spell_damage_log(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         result = abilities.ElementalStrike().use(user, target)
         msg = str(result)
@@ -4481,22 +5133,30 @@ class TestBatch12Blackjack:
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Jester", class_name="Warrior", race_name="Human",
-            level=30, health=(300, 300), mana=(100, 100),
-            stats={"strength": 15, "intel": 15, "wisdom": 10,
-                   "con": 15, "charisma": 25, "dex": 15},
+            name="Jester",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(300, 300),
+            mana=(100, 100),
+            stats={"strength": 15, "intel": 15, "wisdom": 10, "con": 15, "charisma": 25, "dex": 15},
         )
         target = TestGameState.create_player(
-            name="Target", class_name="Warrior", race_name="Human",
-            level=30, health=(300, 300), mana=(50, 50),
-            stats={"strength": 15, "intel": 8, "wisdom": 10,
-                   "con": 15, "charisma": 10, "dex": 10},
+            name="Target",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(300, 300),
+            mana=(50, 50),
+            stats={"strength": 15, "intel": 8, "wisdom": 10, "con": 15, "charisma": 10, "dex": 10},
         )
         return user, target
 
     def test_blackjack_deducts_mana(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         mana_before = user.mana.current
         abilities.Blackjack().use(user, target)
@@ -4504,6 +5164,7 @@ class TestBatch12Blackjack:
 
     def test_blackjack_returns_outcome(self):
         from src.core import abilities
+
         outcomes_seen = set()
         for _ in range(200):
             user, target = self._make_combatants()
@@ -4519,10 +5180,9 @@ class TestBatch12Blackjack:
 
     def test_blackjack_with_callback(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
-        result = abilities.Blackjack().use(
-            user, target, blackjack_callback=lambda u, t: "User Win"
-        )
+        result = abilities.Blackjack().use(user, target, blackjack_callback=lambda u, t: "User Win")
         msg = result if isinstance(result, str) else str(result)
         assert "wins the hand" in msg
 
@@ -4535,7 +5195,11 @@ class TestBatch12SaveSystem:
         from src.core.save_system import AbilitySerializer
 
         for name in [
-            "Steal", "Mug", "Counterspell", "ElementalStrike", "Blackjack",
+            "Steal",
+            "Mug",
+            "Counterspell",
+            "ElementalStrike",
+            "Blackjack",
         ]:
             ability = getattr(abilities, name)()
             serialized = AbilitySerializer.serialize(ability)
@@ -4563,6 +5227,7 @@ class TestBatch13YAMLLoading:
 
     def test_all_yaml_files_load(self):
         from src.core.data.ability_loader import AbilityFactory
+
         yaml_dir = Path(__file__).parent.parent / "src" / "core" / "data" / "abilities"
         for filename, expected_name, expected_cost in self._YAMLS:
             ability = AbilityFactory.create_from_yaml(yaml_dir / filename)
@@ -4575,13 +5240,17 @@ class TestBatch13Doublecast:
 
     @staticmethod
     def _make_combatants():
-        from tests.test_framework import TestGameState
         from src.core import abilities
+        from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Mage", class_name="Wizard", race_name="Human",
-            level=30, health=(300, 300), mana=(200, 200),
-            stats={"strength": 10, "intel": 30, "wisdom": 20,
-                   "con": 12, "charisma": 10, "dex": 10},
+            name="Mage",
+            class_name="Wizard",
+            race_name="Human",
+            level=30,
+            health=(300, 300),
+            mana=(200, 200),
+            stats={"strength": 10, "intel": 30, "wisdom": 20, "con": 12, "charisma": 10, "dex": 10},
         )
         user.class_effects["Power Up"].active = False
         user.spellbook["Spells"] = {
@@ -4589,15 +5258,19 @@ class TestBatch13Doublecast:
             "Ice Lance": abilities.IceLance(),
         }
         target = TestGameState.create_player(
-            name="Target", class_name="Warrior", race_name="Human",
-            level=30, health=(400, 400), mana=(50, 50),
-            stats={"strength": 10, "intel": 8, "wisdom": 10,
-                   "con": 10, "charisma": 10, "dex": 5},
+            name="Target",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(400, 400),
+            mana=(50, 50),
+            stats={"strength": 10, "intel": 8, "wisdom": 10, "con": 10, "charisma": 10, "dex": 5},
         )
         return user, target
 
     def test_doublecast_deducts_mana(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         mana_before = user.mana.current
         abilities.Doublecast().use(user, target)
@@ -4606,6 +5279,7 @@ class TestBatch13Doublecast:
 
     def test_doublecast_casts_spells(self):
         from src.core import abilities
+
         hit = False
         for _ in range(50):
             user, target = self._make_combatants()
@@ -4618,6 +5292,7 @@ class TestBatch13Doublecast:
 
     def test_doublecast_spell_selector_callback(self):
         from src.core import abilities
+
         calls = []
 
         def selector(user, spell_list, cast_index):
@@ -4631,6 +5306,7 @@ class TestBatch13Doublecast:
 
     def test_doublecast_refunds_if_no_spells(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         user.mana.current = 11  # Just enough for Doublecast cost (10)
         # Both spells in spellbook cost more than 1 remaining mana
@@ -4647,13 +5323,17 @@ class TestBatch13Triplecast:
 
     @staticmethod
     def _make_combatants():
-        from tests.test_framework import TestGameState
         from src.core import abilities
+        from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Archmage", class_name="Wizard", race_name="Human",
-            level=30, health=(300, 300), mana=(500, 500),
-            stats={"strength": 10, "intel": 30, "wisdom": 20,
-                   "con": 12, "charisma": 10, "dex": 10},
+            name="Archmage",
+            class_name="Wizard",
+            race_name="Human",
+            level=30,
+            health=(300, 300),
+            mana=(500, 500),
+            stats={"strength": 10, "intel": 30, "wisdom": 20, "con": 12, "charisma": 10, "dex": 10},
         )
         user.class_effects["Power Up"].active = False
         user.spellbook["Spells"] = {
@@ -4662,15 +5342,19 @@ class TestBatch13Triplecast:
             "Shock": abilities.Shock(),
         }
         target = TestGameState.create_player(
-            name="Target", class_name="Warrior", race_name="Human",
-            level=30, health=(800, 800), mana=(50, 50),
-            stats={"strength": 10, "intel": 8, "wisdom": 10,
-                   "con": 10, "charisma": 10, "dex": 5},
+            name="Target",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(800, 800),
+            mana=(50, 50),
+            stats={"strength": 10, "intel": 8, "wisdom": 10, "con": 10, "charisma": 10, "dex": 5},
         )
         return user, target
 
     def test_triplecast_deducts_mana(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         mana_before = user.mana.current
         abilities.Triplecast().use(user, target)
@@ -4678,6 +5362,7 @@ class TestBatch13Triplecast:
 
     def test_triplecast_name_and_cost(self):
         from src.core import abilities
+
         ability = abilities.Triplecast()
         assert ability.name == "Triplecast"
         assert ability.cost == 20
@@ -4689,58 +5374,77 @@ class TestBatch13ChooseFate:
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Devil", class_name="Warrior", race_name="Human",
-            level=50, health=(1000, 1000), mana=(200, 200),
-            stats={"strength": 40, "intel": 30, "wisdom": 20,
-                   "con": 30, "charisma": 10, "dex": 20},
+            name="Devil",
+            class_name="Warrior",
+            race_name="Human",
+            level=50,
+            health=(1000, 1000),
+            mana=(200, 200),
+            stats={"strength": 40, "intel": 30, "wisdom": 20, "con": 30, "charisma": 10, "dex": 20},
         )
         user.damage_mod = 0
         user.spell_mod = 0
         target = TestGameState.create_player(
-            name="Player", class_name="Warrior", race_name="Human",
-            level=30, health=(400, 400), mana=(50, 50),
-            stats={"strength": 15, "intel": 10, "wisdom": 10,
-                   "con": 15, "charisma": 10, "dex": 12},
+            name="Player",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(400, 400),
+            mana=(50, 50),
+            stats={"strength": 15, "intel": 10, "wisdom": 10, "con": 15, "charisma": 10, "dex": 12},
         )
         return user, target
 
     def test_choose_fate_no_mana_cost(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         mana_before = user.mana.current
         abilities.ChooseFate().use(
-            user, target, selection_callback=lambda msg, opts: 0,
+            user,
+            target,
+            selection_callback=lambda msg, opts: 0,
         )
         assert user.mana.current == mana_before
 
     def test_choose_fate_attack_increases_dmg_mod(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         mod_before = user.damage_mod
         abilities.ChooseFate().use(
-            user, target, selection_callback=lambda msg, opts: 0,
+            user,
+            target,
+            selection_callback=lambda msg, opts: 0,
         )
         assert user.damage_mod > mod_before
 
     def test_choose_fate_hellfire_increases_spell_mod(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         mod_before = user.spell_mod
         abilities.ChooseFate().use(
-            user, target, selection_callback=lambda msg, opts: 1,
+            user,
+            target,
+            selection_callback=lambda msg, opts: 1,
         )
         assert user.spell_mod > mod_before
 
     def test_choose_fate_crush_can_decrease_mods(self):
         from src.core import abilities
+
         decreased = False
         for _ in range(50):
             user, target = self._make_combatants()
             user.damage_mod = 50
             user.spell_mod = 50
             abilities.ChooseFate().use(
-                user, target, selection_callback=lambda msg, opts: 2,
+                user,
+                target,
+                selection_callback=lambda msg, opts: 2,
             )
             if user.damage_mod < 50 or user.spell_mod < 50:
                 decreased = True
@@ -4749,6 +5453,7 @@ class TestBatch13ChooseFate:
 
     def test_choose_fate_blocked_by_ice_block(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         target.magic_effects["Ice Block"].active = True
         result = abilities.ChooseFate().use(user, target)
@@ -4761,23 +5466,30 @@ class TestBatch13Shapeshift:
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Shapeshifter", class_name="Warrior", race_name="Human",
-            level=20, health=(200, 200), mana=(50, 50),
-            stats={"strength": 15, "intel": 10, "wisdom": 10,
-                   "con": 15, "charisma": 10, "dex": 15},
+            name="Shapeshifter",
+            class_name="Warrior",
+            race_name="Human",
+            level=20,
+            health=(200, 200),
+            mana=(50, 50),
+            stats={"strength": 15, "intel": 10, "wisdom": 10, "con": 15, "charisma": 10, "dex": 15},
         )
         target = TestGameState.create_player(
-            name="Target", class_name="Warrior", race_name="Human",
-            level=20, health=(200, 200), mana=(50, 50),
-            stats={"strength": 15, "intel": 10, "wisdom": 10,
-                   "con": 15, "charisma": 10, "dex": 15},
+            name="Target",
+            class_name="Warrior",
+            race_name="Human",
+            level=20,
+            health=(200, 200),
+            mana=(50, 50),
+            stats={"strength": 15, "intel": 10, "wisdom": 10, "con": 15, "charisma": 10, "dex": 15},
         )
         return user, target
 
     def test_shapeshift_transforms_user(self):
-        from src.core import abilities
-        from src.core import enemies
+        from src.core import abilities, enemies
+
         user, target = self._make_combatants()
         # Give user a transform list with at least 2 creature types
         user.transform = [enemies.Zombie, enemies.Skeleton]
@@ -4788,8 +5500,8 @@ class TestBatch13Shapeshift:
         assert user.name != old_name
 
     def test_shapeshift_applies_shapeshifted_status(self):
-        from src.core import abilities
-        from src.core import enemies
+        from src.core import abilities, enemies
+
         user, target = self._make_combatants()
         user.transform = [enemies.Zombie, enemies.Skeleton]
         abilities.Shapeshift().use(user, target)
@@ -4797,16 +5509,16 @@ class TestBatch13Shapeshift:
         assert user.status_effects["Shapeshifted"].duration == 3
 
     def test_shapeshift_readds_shapeshift_to_spellbook(self):
-        from src.core import abilities
-        from src.core import enemies
+        from src.core import abilities, enemies
+
         user, target = self._make_combatants()
         user.transform = [enemies.Zombie, enemies.Skeleton]
         abilities.Shapeshift().use(user, target)
         assert "Shapeshift" in user.spellbook["Skills"]
 
     def test_shapeshift_no_mana_cost(self):
-        from src.core import abilities
-        from src.core import enemies
+        from src.core import abilities, enemies
+
         user, target = self._make_combatants()
         user.transform = [enemies.Zombie, enemies.Skeleton]
         mana_before = user.mana.current
@@ -4819,13 +5531,17 @@ class TestBatch13AstralJudgment:
 
     @staticmethod
     def _make_combatants():
-        from tests.test_framework import TestGameState
         from src.core import abilities
+        from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Astromancer", class_name="Astromancer", race_name="Human",
-            level=30, health=(300, 300), mana=(300, 300),
-            stats={"strength": 10, "intel": 30, "wisdom": 20,
-                   "con": 12, "charisma": 10, "dex": 10},
+            name="Astromancer",
+            class_name="Astromancer",
+            race_name="Human",
+            level=30,
+            health=(300, 300),
+            mana=(300, 300),
+            stats={"strength": 10, "intel": 30, "wisdom": 20, "con": 12, "charisma": 10, "dex": 10},
         )
         user.class_effects["Power Up"].active = False
         user.class_effects["Power Up"].duration = 0
@@ -4837,15 +5553,19 @@ class TestBatch13AstralJudgment:
             "Tremor": abilities.Tremor(),
         }
         target = TestGameState.create_player(
-            name="Target", class_name="Warrior", race_name="Human",
-            level=30, health=(800, 800), mana=(50, 50),
-            stats={"strength": 10, "intel": 8, "wisdom": 10,
-                   "con": 10, "charisma": 10, "dex": 5},
+            name="Target",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(800, 800),
+            mana=(50, 50),
+            stats={"strength": 10, "intel": 8, "wisdom": 10, "con": 10, "charisma": 10, "dex": 5},
         )
         return user, target
 
     def test_astral_judgment_deducts_mana(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         mana_before = user.mana.current
         abilities.AstralJudgment().use(user, target)
@@ -4854,6 +5574,7 @@ class TestBatch13AstralJudgment:
     def test_astral_judgment_resolves_sign_and_spins_constellation(self, monkeypatch):
         from src.core import abilities
         from src.core.classes import astromancer
+
         user, target = self._make_combatants()
         monkeypatch.setattr("src.core.classes.astromancer.random.choice", lambda choices: 1)
         abilities.AstralJudgment().use(user, target)
@@ -4862,6 +5583,7 @@ class TestBatch13AstralJudgment:
 
     def test_astral_judgment_blocked_by_ice_block(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         target.magic_effects["Ice Block"].active = True
         result = abilities.AstralJudgment().use(user, target)
@@ -4870,6 +5592,7 @@ class TestBatch13AstralJudgment:
     def test_astral_judgment_tide_heals_and_wards(self, monkeypatch):
         from src.core import abilities
         from src.core.classes import astromancer
+
         user, target = self._make_combatants()
         user.health.current = 200
         user.astromancer_state["active_constellation_index"] = 1
@@ -4888,8 +5611,12 @@ class TestBatch13SaveSystem:
         from src.core.save_system import AbilitySerializer
 
         for name in [
-            "Doublecast", "Triplecast", "ChooseFate", "Shapeshift",
-            "AstralJudgment", "VesperionChooseFate",
+            "Doublecast",
+            "Triplecast",
+            "ChooseFate",
+            "Shapeshift",
+            "AstralJudgment",
+            "VesperionChooseFate",
         ]:
             ability = getattr(abilities, name)()
             serialized = AbilitySerializer.serialize(ability)
@@ -4902,6 +5629,7 @@ class TestBatch13SaveSystem:
 # =====================================================================
 # Batch 11 - Reveal, Transform/2/3/4, Stomp, ThrowRock
 # =====================================================================
+
 
 class TestBatch11YAMLLoading:
     """Verify all 7 Batch 11 YAML files load correctly."""
@@ -4918,6 +5646,7 @@ class TestBatch11YAMLLoading:
 
     def test_all_yaml_files_load(self):
         from src.core.data.ability_loader import AbilityFactory
+
         yaml_dir = Path(__file__).parent.parent / "src" / "core" / "data" / "abilities"
         for filename, expected_name, expected_cost in self._YAMLS:
             ability = AbilityFactory.create_from_yaml(yaml_dir / filename)
@@ -4931,21 +5660,27 @@ class TestBatch11Reveal:
     @staticmethod
     def _make_user():
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Inquisitor", class_name="Warrior", race_name="Human",
-            level=30, health=(300, 300), mana=(100, 100),
-            stats={"strength": 15, "intel": 20, "wisdom": 20,
-                   "con": 15, "charisma": 10, "dex": 15},
+            name="Inquisitor",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(300, 300),
+            mana=(100, 100),
+            stats={"strength": 15, "intel": 20, "wisdom": 20, "con": 15, "charisma": 10, "dex": 15},
         )
         return user
 
     def test_reveal_passive_flag(self):
         from src.core import abilities
+
         ability = abilities.Reveal()
         assert ability.passive is True
 
     def test_reveal_sets_sight(self):
         from src.core import abilities
+
         user = self._make_user()
         user.sight = False
         abilities.Reveal().use(user, user)
@@ -4953,6 +5688,7 @@ class TestBatch11Reveal:
 
     def test_reveal_adds_shadow_resist(self):
         from src.core import abilities
+
         user = self._make_user()
         base_resist = user.resistance["Shadow"]
         abilities.Reveal().use(user, user)
@@ -4960,6 +5696,7 @@ class TestBatch11Reveal:
 
     def test_reveal_unequips_pendant_of_vision(self):
         from src.core import abilities
+
         user = self._make_user()
         user.equipment["Pendant"].name = "Pendant of Vision"
         abilities.Reveal().use(user, user)
@@ -4972,16 +5709,21 @@ class TestBatch11Transform:
     @staticmethod
     def _make_user(class_name="Druid"):
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name=class_name, class_name=class_name, race_name="Human",
-            level=30, health=(300, 300), mana=(100, 100),
-            stats={"strength": 20, "intel": 15, "wisdom": 20,
-                   "con": 18, "charisma": 10, "dex": 15},
+            name=class_name,
+            class_name=class_name,
+            race_name="Human",
+            level=30,
+            health=(300, 300),
+            mana=(100, 100),
+            stats={"strength": 20, "intel": 15, "wisdom": 20, "con": 18, "charisma": 10, "dex": 15},
         )
         return user
 
     def test_transform_sets_panther(self):
         from src.core import abilities
+
         user = self._make_user()
         user.progression.purchased_node_ids.add("druid.ability.transform")
         abilities.Transform().use(user, user)
@@ -4990,6 +5732,7 @@ class TestBatch11Transform:
 
     def test_transform2_sets_direbear(self):
         from src.core import abilities
+
         user = self._make_user()
         user.progression.purchased_node_ids.add("druid.ability.transform2")
         abilities.Transform2().use(user, user)
@@ -4998,6 +5741,7 @@ class TestBatch11Transform:
 
     def test_transform3_sets_werewolf(self):
         from src.core import abilities
+
         user = self._make_user("Lycan")
         user.progression.purchased_node_ids.add("lycan.ability.transform3")
         abilities.Transform3().use(user, user)
@@ -5006,6 +5750,7 @@ class TestBatch11Transform:
 
     def test_transform4_cannot_bypass_authored_form_unlocks(self):
         from src.core import abilities
+
         user = self._make_user()
         abilities.Transform4().use(user, user)
         assert user.cls.name == "Druid"
@@ -5013,6 +5758,7 @@ class TestBatch11Transform:
 
     def test_transform_name(self):
         from src.core import abilities
+
         for cls_name in ["Transform", "Transform2", "Transform3", "Transform4"]:
             ability = getattr(abilities, cls_name)()
             assert ability.name == "Transform"
@@ -5024,22 +5770,30 @@ class TestBatch11Stomp:
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Ogre", class_name="Warrior", race_name="Human",
-            level=30, health=(500, 500), mana=(100, 100),
-            stats={"strength": 40, "intel": 5, "wisdom": 5,
-                   "con": 30, "charisma": 5, "dex": 10},
+            name="Ogre",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(500, 500),
+            mana=(100, 100),
+            stats={"strength": 40, "intel": 5, "wisdom": 5, "con": 30, "charisma": 5, "dex": 10},
         )
         target = TestGameState.create_player(
-            name="Target", class_name="Warrior", race_name="Human",
-            level=30, health=(300, 300), mana=(50, 50),
-            stats={"strength": 10, "intel": 8, "wisdom": 10,
-                   "con": 8, "charisma": 10, "dex": 5},
+            name="Target",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(300, 300),
+            mana=(50, 50),
+            stats={"strength": 10, "intel": 8, "wisdom": 10, "con": 8, "charisma": 10, "dex": 5},
         )
         return user, target
 
     def test_stomp_deducts_mana(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         mana_before = user.mana.current
         abilities.Stomp().use(user, target)
@@ -5047,6 +5801,7 @@ class TestBatch11Stomp:
 
     def test_stomp_can_deal_damage(self):
         from src.core import abilities
+
         damaged = False
         for _ in range(100):
             user, target = self._make_combatants()
@@ -5058,6 +5813,7 @@ class TestBatch11Stomp:
 
     def test_stomp_can_stun(self):
         from src.core import abilities
+
         stunned = False
         for _ in range(200):
             user, target = self._make_combatants()
@@ -5069,6 +5825,7 @@ class TestBatch11Stomp:
 
     def test_stomp_blocked_by_ice_block(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         target.magic_effects["Ice Block"].active = True
         result = abilities.Stomp().use(user, target)
@@ -5077,6 +5834,7 @@ class TestBatch11Stomp:
 
     def test_stomp_stun_respects_immunity(self):
         from src.core import abilities
+
         stunned = False
         for _ in range(200):
             user, target = self._make_combatants()
@@ -5094,22 +5852,30 @@ class TestBatch11ThrowRock:
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Troll", class_name="Warrior", race_name="Human",
-            level=30, health=(500, 500), mana=(100, 100),
-            stats={"strength": 40, "intel": 5, "wisdom": 5,
-                   "con": 30, "charisma": 5, "dex": 10},
+            name="Troll",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(500, 500),
+            mana=(100, 100),
+            stats={"strength": 40, "intel": 5, "wisdom": 5, "con": 30, "charisma": 5, "dex": 10},
         )
         target = TestGameState.create_player(
-            name="Target", class_name="Warrior", race_name="Human",
-            level=30, health=(300, 300), mana=(50, 50),
-            stats={"strength": 10, "intel": 8, "wisdom": 10,
-                   "con": 8, "charisma": 10, "dex": 5},
+            name="Target",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(300, 300),
+            mana=(50, 50),
+            stats={"strength": 10, "intel": 8, "wisdom": 10, "con": 8, "charisma": 10, "dex": 5},
         )
         return user, target
 
     def test_throw_rock_deducts_mana(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         mana_before = user.mana.current
         abilities.ThrowRock().use(user, target)
@@ -5117,6 +5883,7 @@ class TestBatch11ThrowRock:
 
     def test_throw_rock_can_deal_damage(self):
         from src.core import abilities
+
         damaged = False
         for _ in range(100):
             user, target = self._make_combatants()
@@ -5128,6 +5895,7 @@ class TestBatch11ThrowRock:
 
     def test_throw_rock_can_cause_prone(self):
         from src.core import abilities
+
         prone = False
         for _ in range(200):
             user, target = self._make_combatants()
@@ -5139,6 +5907,7 @@ class TestBatch11ThrowRock:
 
     def test_throw_rock_blocked_by_ice_block(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         target.magic_effects["Ice Block"].active = True
         result = abilities.ThrowRock().use(user, target)
@@ -5147,6 +5916,7 @@ class TestBatch11ThrowRock:
 
     def test_throw_rock_mentions_rock_size(self):
         from src.core import abilities
+
         sizes_seen = set()
         for _ in range(200):
             user, target = self._make_combatants()
@@ -5166,8 +5936,13 @@ class TestBatch11SaveSystem:
         from src.core.save_system import AbilitySerializer
 
         for name in [
-            "Reveal", "Transform", "Transform2", "Transform3",
-            "Transform4", "Stomp", "ThrowRock",
+            "Reveal",
+            "Transform",
+            "Transform2",
+            "Transform3",
+            "Transform4",
+            "Stomp",
+            "ThrowRock",
         ]:
             ability = getattr(abilities, name)()
             serialized = AbilitySerializer.serialize(ability)
@@ -5180,6 +5955,7 @@ class TestBatch11SaveSystem:
 # =====================================================================
 # Batch 10 - Maelstrom, Disintegrate, Inspect, PurityBody, Resurrection, ResistAll
 # =====================================================================
+
 
 class TestBatch10YAMLLoading:
     """Verify all 7 Batch 10 YAML files load correctly."""
@@ -5196,6 +5972,7 @@ class TestBatch10YAMLLoading:
 
     def test_all_yaml_files_load(self):
         from src.core.data.ability_loader import AbilityFactory
+
         yaml_dir = Path(__file__).parent.parent / "src" / "core" / "data" / "abilities"
         for filename, expected_name, expected_cost in self._YAMLS:
             ability = AbilityFactory.create_from_yaml(yaml_dir / filename)
@@ -5209,23 +5986,31 @@ class TestBatch10Maelstrom:
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
+
         caster = TestGameState.create_player(
-            name="Behemoth", class_name="Wizard", race_name="Human",
-            level=30, health=(500, 500), mana=(200, 200),
-            stats={"strength": 30, "intel": 40, "wisdom": 20,
-                   "con": 30, "charisma": 20, "dex": 10},
+            name="Behemoth",
+            class_name="Wizard",
+            race_name="Human",
+            level=30,
+            health=(500, 500),
+            mana=(200, 200),
+            stats={"strength": 30, "intel": 40, "wisdom": 20, "con": 30, "charisma": 20, "dex": 10},
         )
         caster.class_effects["Power Up"].active = False
         target = TestGameState.create_player(
-            name="Target", class_name="Warrior", race_name="Human",
-            level=30, health=(400, 400), mana=(50, 50),
-            stats={"strength": 20, "intel": 10, "wisdom": 15,
-                   "con": 18, "charisma": 10, "dex": 12},
+            name="Target",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(400, 400),
+            mana=(50, 50),
+            stats={"strength": 20, "intel": 10, "wisdom": 15, "con": 18, "charisma": 10, "dex": 12},
         )
         return caster, target
 
     def test_maelstrom_deducts_mana(self):
         from src.core import abilities
+
         caster, target = self._make_combatants()
         mana_before = caster.mana.current
         abilities.Maelstrom().cast(caster, target)
@@ -5233,6 +6018,7 @@ class TestBatch10Maelstrom:
 
     def test_maelstrom_caps_hp(self):
         from src.core import abilities
+
         reduced = False
         for _ in range(50):
             caster, target = self._make_combatants()
@@ -5240,14 +6026,16 @@ class TestBatch10Maelstrom:
             if target.health.current < 400:
                 reduced = True
                 # HP should be capped at 10% or 25% of max (40 or 100)
-                assert target.health.current in (40, 100), (
-                    f"HP should be 40 or 100, got {target.health.current}"
-                )
+                assert target.health.current in (
+                    40,
+                    100,
+                ), f"HP should be 40 or 100, got {target.health.current}"
                 break
         assert reduced, "Maelstrom should reduce target HP"
 
     def test_maelstrom_blocked_by_ice_block(self):
         from src.core import abilities
+
         caster, target = self._make_combatants()
         target.magic_effects["Ice Block"].active = True
         result = abilities.Maelstrom().cast(caster, target)
@@ -5256,6 +6044,7 @@ class TestBatch10Maelstrom:
 
     def test_maelstrom_blocked_by_tunnel(self):
         from src.core import abilities
+
         caster, target = self._make_combatants()
         target.tunnel = True
         result = abilities.Maelstrom().cast(caster, target)
@@ -5263,6 +6052,7 @@ class TestBatch10Maelstrom:
 
     def test_maelstrom_no_effect_when_already_low(self):
         from src.core import abilities
+
         caster, target = self._make_combatants()
         target.health.current = 30  # Below 10% of 400 = 40
         result = abilities.Maelstrom().cast(caster, target)
@@ -5276,23 +6066,31 @@ class TestBatch10Disintegrate:
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
+
         caster = TestGameState.create_player(
-            name="Archvile", class_name="Wizard", race_name="Human",
-            level=30, health=(400, 400), mana=(200, 200),
-            stats={"strength": 10, "intel": 30, "wisdom": 20,
-                   "con": 15, "charisma": 50, "dex": 15},
+            name="Archvile",
+            class_name="Wizard",
+            race_name="Human",
+            level=30,
+            health=(400, 400),
+            mana=(200, 200),
+            stats={"strength": 10, "intel": 30, "wisdom": 20, "con": 15, "charisma": 50, "dex": 15},
         )
         caster.class_effects["Power Up"].active = False
         target = TestGameState.create_player(
-            name="Target", class_name="Warrior", race_name="Human",
-            level=30, health=(300, 300), mana=(50, 50),
-            stats={"strength": 20, "intel": 8, "wisdom": 10,
-                   "con": 5, "charisma": 10, "dex": 5},
+            name="Target",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(300, 300),
+            mana=(50, 50),
+            stats={"strength": 20, "intel": 8, "wisdom": 10, "con": 5, "charisma": 10, "dex": 5},
         )
         return caster, target
 
     def test_disintegrate_deducts_mana(self):
         from src.core import abilities
+
         caster, target = self._make_combatants()
         mana_before = caster.mana.current
         abilities.Disintegrate().cast(caster, target)
@@ -5300,6 +6098,7 @@ class TestBatch10Disintegrate:
 
     def test_disintegrate_can_kill(self):
         from src.core import abilities
+
         killed = False
         for _ in range(200):
             caster, target = self._make_combatants()
@@ -5311,6 +6110,7 @@ class TestBatch10Disintegrate:
 
     def test_disintegrate_deals_damage_when_not_killing(self):
         from src.core import abilities
+
         damaged = False
         for _ in range(50):
             caster, target = self._make_combatants()
@@ -5324,6 +6124,7 @@ class TestBatch10Disintegrate:
 
     def test_disintegrate_blocked_by_ice_block(self):
         from src.core import abilities
+
         caster, target = self._make_combatants()
         target.magic_effects["Ice Block"].active = True
         result = abilities.Disintegrate().cast(caster, target)
@@ -5332,6 +6133,7 @@ class TestBatch10Disintegrate:
 
     def test_disintegrate_full_resist_prevents_kill(self):
         from src.core import abilities
+
         for _ in range(100):
             caster, target = self._make_combatants()
             target.resistance["Death"] = 1.0
@@ -5347,22 +6149,30 @@ class TestBatch10Inspect:
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Seeker", class_name="Warrior", race_name="Human",
-            level=30, health=(300, 300), mana=(100, 100),
-            stats={"strength": 15, "intel": 20, "wisdom": 20,
-                   "con": 15, "charisma": 10, "dex": 15},
+            name="Seeker",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(300, 300),
+            mana=(100, 100),
+            stats={"strength": 15, "intel": 20, "wisdom": 20, "con": 15, "charisma": 10, "dex": 15},
         )
         target = TestGameState.create_player(
-            name="Enemy", class_name="Warrior", race_name="Human",
-            level=30, health=(400, 400), mana=(50, 50),
-            stats={"strength": 20, "intel": 8, "wisdom": 10,
-                   "con": 18, "charisma": 10, "dex": 12},
+            name="Enemy",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(400, 400),
+            mana=(50, 50),
+            stats={"strength": 20, "intel": 8, "wisdom": 10, "con": 18, "charisma": 10, "dex": 12},
         )
         return user, target
 
     def test_inspect_deducts_mana(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         mana_before = user.mana.current
         abilities.Inspect().use(user, target)
@@ -5370,6 +6180,7 @@ class TestBatch10Inspect:
 
     def test_inspect_returns_info(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         # inspect() is an Enemy-only method; monkey-patch for test
         target.inspect = lambda: f"Name: {target.name}\nHP: {target.health.current}"
@@ -5385,21 +6196,27 @@ class TestBatch10PurityBody:
     @staticmethod
     def _make_user():
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Monk", class_name="Warrior", race_name="Human",
-            level=30, health=(300, 300), mana=(100, 100),
-            stats={"strength": 20, "intel": 10, "wisdom": 20,
-                   "con": 18, "charisma": 10, "dex": 20},
+            name="Monk",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(300, 300),
+            mana=(100, 100),
+            stats={"strength": 20, "intel": 10, "wisdom": 20, "con": 18, "charisma": 10, "dex": 20},
         )
         return user
 
     def test_purity_body_passive_flag(self):
         from src.core import abilities
+
         ability = abilities.PurityBody()
         assert ability.passive is True
 
     def test_purity_body_sets_poison_resist(self):
         from src.core import abilities
+
         user = self._make_user()
         user.resistance["Poison"] = 0.0
         abilities.PurityBody().use(user, user)
@@ -5407,6 +6224,7 @@ class TestBatch10PurityBody:
 
     def test_purity_body_does_not_lower_resist(self):
         from src.core import abilities
+
         user = self._make_user()
         user.resistance["Poison"] = 0.8
         abilities.PurityBody().use(user, user)
@@ -5414,6 +6232,7 @@ class TestBatch10PurityBody:
 
     def test_purity_body_adds_poison_immunity(self):
         from src.core import abilities
+
         user = self._make_user()
         abilities.PurityBody().use(user, user)
         assert "Poison" in user.status_immunity
@@ -5425,21 +6244,27 @@ class TestBatch10PurityBody2:
     @staticmethod
     def _make_user():
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Monk", class_name="Warrior", race_name="Human",
-            level=30, health=(300, 300), mana=(100, 100),
-            stats={"strength": 20, "intel": 10, "wisdom": 20,
-                   "con": 18, "charisma": 10, "dex": 20},
+            name="Monk",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(300, 300),
+            mana=(100, 100),
+            stats={"strength": 20, "intel": 10, "wisdom": 20, "con": 18, "charisma": 10, "dex": 20},
         )
         return user
 
     def test_purity_body2_passive_flag(self):
         from src.core import abilities
+
         ability = abilities.PurityBody2()
         assert ability.passive is True
 
     def test_purity_body2_sets_full_poison_resist(self):
         from src.core import abilities
+
         user = self._make_user()
         user.resistance["Poison"] = 0.0
         abilities.PurityBody2().use(user, user)
@@ -5447,6 +6272,7 @@ class TestBatch10PurityBody2:
 
     def test_purity_body2_adds_stone_immunity(self):
         from src.core import abilities
+
         user = self._make_user()
         abilities.PurityBody2().use(user, user)
         assert "Stone" in user.status_immunity
@@ -5458,28 +6284,37 @@ class TestBatch10Resurrection:
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
+
         caster = TestGameState.create_player(
-            name="CasterWhiteMage", class_name="Wizard", race_name="Human",
-            level=30, health=(300, 200), mana=(200, 150),
-            stats={"strength": 10, "intel": 25, "wisdom": 25,
-                   "con": 15, "charisma": 15, "dex": 10},
+            name="CasterWhiteMage",
+            class_name="Wizard",
+            race_name="Human",
+            level=30,
+            health=(300, 200),
+            mana=(200, 150),
+            stats={"strength": 10, "intel": 25, "wisdom": 25, "con": 15, "charisma": 15, "dex": 10},
         )
         caster.class_effects["Power Up"].active = False
         target = TestGameState.create_player(
-            name="FallenAlly", class_name="Warrior", race_name="Human",
-            level=30, health=(400, 0), mana=(50, 50),
-            stats={"strength": 20, "intel": 8, "wisdom": 10,
-                   "con": 18, "charisma": 10, "dex": 12},
+            name="FallenAlly",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(400, 0),
+            mana=(50, 50),
+            stats={"strength": 20, "intel": 8, "wisdom": 10, "con": 18, "charisma": 10, "dex": 12},
         )
         return caster, target
 
     def test_resurrection_passive_flag(self):
         from src.core import abilities
+
         ability = abilities.Resurrection()
         assert ability.passive is True
 
     def test_resurrection_self_heal_full(self):
         from src.core import abilities
+
         caster, _ = self._make_combatants()
         # Self-cast: caster has 200 HP, 300 max, 150 mana
         # max_heal = 100, mana(150) > max_heal → full heal, mana -= 100
@@ -5490,6 +6325,7 @@ class TestBatch10Resurrection:
 
     def test_resurrection_self_heal_partial(self):
         from src.core import abilities
+
         caster, _ = self._make_combatants()
         caster.health.current = 50
         caster.mana.current = 30
@@ -5501,6 +6337,7 @@ class TestBatch10Resurrection:
 
     def test_resurrection_revive_other(self):
         from src.core import abilities
+
         caster, target = self._make_combatants()
         result = abilities.Resurrection().cast(caster, target)
         expected_heal = int(400 * 0.1)  # 40
@@ -5514,17 +6351,22 @@ class TestBatch10ResistAll:
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
+
         caster = TestGameState.create_player(
-            name="Protector", class_name="Wizard", race_name="Human",
-            level=30, health=(300, 300), mana=(200, 200),
-            stats={"strength": 10, "intel": 25, "wisdom": 20,
-                   "con": 15, "charisma": 15, "dex": 10},
+            name="Protector",
+            class_name="Wizard",
+            race_name="Human",
+            level=30,
+            health=(300, 300),
+            mana=(200, 200),
+            stats={"strength": 10, "intel": 25, "wisdom": 20, "con": 15, "charisma": 15, "dex": 10},
         )
         caster.class_effects["Power Up"].active = False
         return caster
 
     def test_resist_all_deducts_mana(self):
         from src.core import abilities
+
         caster = self._make_combatants()
         mana_before = caster.mana.current
         abilities.ResistAll().cast(caster, caster)
@@ -5532,6 +6374,7 @@ class TestBatch10ResistAll:
 
     def test_resist_all_returns_message(self):
         from src.core import abilities
+
         caster = self._make_combatants()
         result = abilities.ResistAll().cast(caster, caster)
         assert "resist fire" in result.lower()
@@ -5544,9 +6387,7 @@ class TestBatch10ResistAll:
         caster = self._make_combatants()
         abilities.ResistAll().cast(caster, caster)
 
-        for element in (
-            "Fire", "Ice", "Electric", "Water", "Earth", "Wind", "Shadow", "Holy"
-        ):
+        for element in ("Fire", "Ice", "Electric", "Water", "Earth", "Wind", "Shadow", "Holy"):
             effect = caster.magic_effects[f"Resist {element}"]
             assert effect.active is True
             assert effect.duration == 5
@@ -5561,8 +6402,13 @@ class TestBatch10SaveSystem:
         from src.core.save_system import AbilitySerializer
 
         for name in [
-            "Maelstrom", "Disintegrate", "Inspect", "PurityBody",
-            "PurityBody2", "Resurrection", "ResistAll",
+            "Maelstrom",
+            "Disintegrate",
+            "Inspect",
+            "PurityBody",
+            "PurityBody2",
+            "Resurrection",
+            "ResistAll",
         ]:
             ability = getattr(abilities, name)()
             serialized = AbilitySerializer.serialize(ability)
@@ -5575,6 +6421,7 @@ class TestBatch10SaveSystem:
 # =====================================================================
 # Batch 9 - Equipment skills, remaining enemy skills, GoldToss, DimMak
 # =====================================================================
+
 
 class TestBatch9YAMLLoading:
     """Verify all 10 Batch 9 YAML files load correctly."""
@@ -5594,6 +6441,7 @@ class TestBatch9YAMLLoading:
 
     def test_all_yaml_files_load(self):
         from src.core.data.ability_loader import AbilityFactory
+
         yaml_dir = Path(__file__).parent.parent / "src" / "core" / "data" / "abilities"
         for filename, expected_name, expected_cost in self._YAMLS:
             ability = AbilityFactory.create_from_yaml(yaml_dir / filename)
@@ -5607,11 +6455,15 @@ class TestBatch9ShieldSlam:
     @staticmethod
     def _make_combatants(has_shield=True):
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Knight", class_name="Warrior", race_name="Human",
-            level=30, health=(400, 400), mana=(100, 100),
-            stats={"strength": 30, "intel": 10, "wisdom": 10,
-                   "con": 20, "charisma": 10, "dex": 15},
+            name="Knight",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(400, 400),
+            mana=(100, 100),
+            stats={"strength": 30, "intel": 10, "wisdom": 10, "con": 20, "charisma": 10, "dex": 15},
         )
         if has_shield:
             user.equipment["OffHand"].subtyp = "Shield"
@@ -5620,15 +6472,19 @@ class TestBatch9ShieldSlam:
             user.equipment["OffHand"].subtyp = "Weapon"
             user.equipment["OffHand"].weight = 5
         target = TestGameState.create_player(
-            name="Enemy", class_name="Warrior", race_name="Human",
-            level=30, health=(400, 400), mana=(50, 50),
-            stats={"strength": 10, "intel": 8, "wisdom": 10,
-                   "con": 10, "charisma": 10, "dex": 5},
+            name="Enemy",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(400, 400),
+            mana=(50, 50),
+            stats={"strength": 10, "intel": 8, "wisdom": 10, "con": 10, "charisma": 10, "dex": 5},
         )
         return user, target
 
     def test_shield_slam_deducts_mana(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         mana_before = user.mana.current
         abilities.ShieldSlam().use(user, target)
@@ -5636,6 +6492,7 @@ class TestBatch9ShieldSlam:
 
     def test_shield_slam_can_deal_damage_and_stun(self):
         from src.core import abilities
+
         damaged = False
         stunned = False
         for _ in range(100):
@@ -5652,12 +6509,14 @@ class TestBatch9ShieldSlam:
 
     def test_shield_slam_requires_shield(self):
         from src.core import abilities
+
         user, target = self._make_combatants(has_shield=False)
         result = abilities.ShieldSlam().use(user, target)
         assert "no shield" in result.lower()
 
     def test_shield_slam_blocked_by_ice_block(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         target.magic_effects["Ice Block"].active = True
         result = abilities.ShieldSlam().use(user, target)
@@ -5665,6 +6524,7 @@ class TestBatch9ShieldSlam:
 
     def test_shield_slam_does_not_replay_prior_messages(self, monkeypatch):
         import random
+
         from src.core import abilities
 
         user, target = self._make_combatants()
@@ -5696,32 +6556,41 @@ class TestBatch9KidneyPunch:
     @staticmethod
     def _make_combatants(has_offhand=True):
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Thief", class_name="Warrior", race_name="Human",
-            level=30, health=(300, 300), mana=(100, 100),
-            stats={"strength": 20, "intel": 12, "wisdom": 10,
-                   "con": 15, "charisma": 10, "dex": 30},
+            name="Thief",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(300, 300),
+            mana=(100, 100),
+            stats={"strength": 20, "intel": 12, "wisdom": 10, "con": 15, "charisma": 10, "dex": 30},
         )
         if has_offhand:
             user.equipment["OffHand"].typ = "Weapon"
         else:
             user.equipment["OffHand"].typ = "Shield"
         target = TestGameState.create_player(
-            name="Enemy", class_name="Warrior", race_name="Human",
-            level=30, health=(400, 400), mana=(50, 50),
-            stats={"strength": 10, "intel": 8, "wisdom": 10,
-                   "con": 5, "charisma": 10, "dex": 5},
+            name="Enemy",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(400, 400),
+            mana=(50, 50),
+            stats={"strength": 10, "intel": 8, "wisdom": 10, "con": 5, "charisma": 10, "dex": 5},
         )
         return user, target
 
     def test_kidney_punch_requires_offhand_weapon(self):
         from src.core import abilities
+
         user, target = self._make_combatants(has_offhand=False)
         result = abilities.KidneyPunch().use(user, target)
         assert "off-hand weapon" in result.lower()
 
     def test_kidney_punch_can_stun(self):
         from src.core import abilities
+
         stunned = False
         for _ in range(100):
             user, target = self._make_combatants()
@@ -5733,6 +6602,7 @@ class TestBatch9KidneyPunch:
 
     def test_kidney_punch_deducts_mana(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         mana_before = user.mana.current
         abilities.KidneyPunch().use(user, target)
@@ -5740,6 +6610,7 @@ class TestBatch9KidneyPunch:
 
     def test_kidney_punch_mana_never_goes_negative(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         user.mana.current = 10
         abilities.KidneyPunch().use(user, target)
@@ -5752,22 +6623,30 @@ class TestBatch9PoisonStrike:
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Assassin", class_name="Warrior", race_name="Human",
-            level=30, health=(300, 300), mana=(100, 100),
-            stats={"strength": 20, "intel": 12, "wisdom": 10,
-                   "con": 15, "charisma": 10, "dex": 30},
+            name="Assassin",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(300, 300),
+            mana=(100, 100),
+            stats={"strength": 20, "intel": 12, "wisdom": 10, "con": 15, "charisma": 10, "dex": 30},
         )
         target = TestGameState.create_player(
-            name="Enemy", class_name="Warrior", race_name="Human",
-            level=30, health=(500, 500), mana=(50, 50),
-            stats={"strength": 10, "intel": 8, "wisdom": 10,
-                   "con": 5, "charisma": 10, "dex": 5},
+            name="Enemy",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(500, 500),
+            mana=(50, 50),
+            stats={"strength": 10, "intel": 8, "wisdom": 10, "con": 5, "charisma": 10, "dex": 5},
         )
         return user, target
 
     def test_poison_strike_deducts_mana(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         mana_before = user.mana.current
         abilities.PoisonStrike().cast(user, target)
@@ -5775,6 +6654,7 @@ class TestBatch9PoisonStrike:
 
     def test_poison_strike_can_poison(self):
         from src.core import abilities
+
         poisoned = False
         for _ in range(100):
             user, target = self._make_combatants()
@@ -5787,6 +6667,7 @@ class TestBatch9PoisonStrike:
 
     def test_poison_strike_respects_immunity(self):
         from src.core import abilities
+
         for _ in range(100):
             user, target = self._make_combatants()
             target.status_immunity = ["Poison"]
@@ -5800,23 +6681,31 @@ class TestBatch9DimMak:
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Monk", class_name="Master Monk", race_name="Human",
-            level=30, health=(400, 400), mana=(200, 200),
-            stats={"strength": 30, "intel": 15, "wisdom": 30,
-                   "con": 20, "charisma": 10, "dex": 25},
+            name="Monk",
+            class_name="Master Monk",
+            race_name="Human",
+            level=30,
+            health=(400, 400),
+            mana=(200, 200),
+            stats={"strength": 30, "intel": 15, "wisdom": 30, "con": 20, "charisma": 10, "dex": 25},
         )
         target = TestGameState.create_player(
-            name="Enemy", class_name="Warrior", race_name="Human",
-            level=30, health=(100, 100), mana=(50, 50),
-            stats={"strength": 10, "intel": 8, "wisdom": 5,
-                   "con": 3, "charisma": 10, "dex": 5},
+            name="Enemy",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(100, 100),
+            mana=(50, 50),
+            stats={"strength": 10, "intel": 8, "wisdom": 5, "con": 3, "charisma": 10, "dex": 5},
         )
         return user, target
 
     @staticmethod
     def _fill_ki(user):
         from src.core.classes import promotion_kits
+
         promotion_kits.gain_meter(
             user,
             "ki",
@@ -5826,6 +6715,7 @@ class TestBatch9DimMak:
 
     def test_dim_mak_deducts_mana(self, monkeypatch):
         from src.core import abilities
+
         user, target = self._make_combatants()
         self._fill_ki(user)
         monkeypatch.setattr(
@@ -5839,6 +6729,7 @@ class TestBatch9DimMak:
 
     def test_dim_mak_absorbs_essence_on_kill(self, monkeypatch):
         from src.core import abilities
+
         user, target = self._make_combatants()
         self._fill_ki(user)
         user.health.current = 200
@@ -5855,6 +6746,7 @@ class TestBatch9DimMak:
 
     def test_dim_mak_can_stun_on_survival(self, monkeypatch):
         from src.core import abilities
+
         user, target = self._make_combatants()
         self._fill_ki(user)
         monkeypatch.setattr(
@@ -5884,17 +6776,24 @@ class TestBatch9ExploitWeakness:
     @staticmethod
     def _make_combatants(fire_weak=True):
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Seeker", class_name="Warrior", race_name="Human",
-            level=30, health=(300, 300), mana=(100, 100),
-            stats={"strength": 20, "intel": 12, "wisdom": 10,
-                   "con": 15, "charisma": 10, "dex": 20},
+            name="Seeker",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(300, 300),
+            mana=(100, 100),
+            stats={"strength": 20, "intel": 12, "wisdom": 10, "con": 15, "charisma": 10, "dex": 20},
         )
         target = TestGameState.create_player(
-            name="Enemy", class_name="Warrior", race_name="Human",
-            level=30, health=(400, 400), mana=(50, 50),
-            stats={"strength": 10, "intel": 8, "wisdom": 10,
-                   "con": 5, "charisma": 10, "dex": 5},
+            name="Enemy",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(400, 400),
+            mana=(50, 50),
+            stats={"strength": 10, "intel": 8, "wisdom": 10, "con": 5, "charisma": 10, "dex": 5},
         )
         if fire_weak:
             target.resistance["Fire"] = -0.5  # 50% weakness
@@ -5902,6 +6801,7 @@ class TestBatch9ExploitWeakness:
 
     def test_exploit_weakness_deducts_mana(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         mana_before = user.mana.current
         abilities.ExploitWeakness().use(user, target)
@@ -5909,12 +6809,14 @@ class TestBatch9ExploitWeakness:
 
     def test_exploit_weakness_finds_elemental_weakness(self):
         from src.core import abilities
+
         user, target = self._make_combatants(fire_weak=True)
         result = abilities.ExploitWeakness().use(user, target)
         assert "weakness" in result.lower() or "fire" in result.lower()
 
     def test_exploit_weakness_random_status_when_no_weakness(self):
         from src.core import abilities
+
         affected = False
         for _ in range(100):
             user, target = self._make_combatants(fire_weak=False)
@@ -5929,6 +6831,7 @@ class TestBatch9ExploitWeakness:
 
     def test_exploit_weakness_blocked_by_ice_block(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         target.magic_effects["Ice Block"].active = True
         result = abilities.ExploitWeakness().use(user, target)
@@ -5941,23 +6844,31 @@ class TestBatch9GoldToss:
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Gambler", class_name="Warrior", race_name="Human",
-            level=30, health=(300, 300), mana=(100, 100),
-            stats={"strength": 15, "intel": 10, "wisdom": 10,
-                   "con": 15, "charisma": 15, "dex": 15},
+            name="Gambler",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(300, 300),
+            mana=(100, 100),
+            stats={"strength": 15, "intel": 10, "wisdom": 10, "con": 15, "charisma": 15, "dex": 15},
         )
         user.gold = 500
         target = TestGameState.create_player(
-            name="Enemy", class_name="Warrior", race_name="Human",
-            level=30, health=(400, 400), mana=(50, 50),
-            stats={"strength": 10, "intel": 8, "wisdom": 10,
-                   "con": 10, "charisma": 10, "dex": 5},
+            name="Enemy",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(400, 400),
+            mana=(50, 50),
+            stats={"strength": 10, "intel": 8, "wisdom": 10, "con": 10, "charisma": 10, "dex": 5},
         )
         return user, target
 
     def test_gold_toss_no_gold_does_nothing(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         user.gold = 0
         result = abilities.GoldToss().use(user, target)
@@ -5965,6 +6876,7 @@ class TestBatch9GoldToss:
 
     def test_gold_toss_spends_gold(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         gold_before = user.gold
         abilities.GoldToss().use(user, target)
@@ -5972,6 +6884,7 @@ class TestBatch9GoldToss:
 
     def test_gold_toss_can_use_private_enemy_pool_without_spending_reward_gold(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         user.gold = 25000
         user._gold_toss_pool = 500
@@ -5981,6 +6894,7 @@ class TestBatch9GoldToss:
 
     def test_gold_toss_can_deal_damage(self):
         from src.core import abilities
+
         damaged = False
         for _ in range(50):
             user, target = self._make_combatants()
@@ -5992,6 +6906,7 @@ class TestBatch9GoldToss:
 
     def test_gold_toss_target_can_catch(self):
         from src.core import abilities
+
         caught = False
         for _ in range(100):
             user, target = self._make_combatants()
@@ -6009,22 +6924,30 @@ class TestBatch9Lick:
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Battletoad", class_name="Warrior", race_name="Human",
-            level=30, health=(300, 300), mana=(100, 100),
-            stats={"strength": 30, "intel": 10, "wisdom": 10,
-                   "con": 15, "charisma": 10, "dex": 15},
+            name="Battletoad",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(300, 300),
+            mana=(100, 100),
+            stats={"strength": 30, "intel": 10, "wisdom": 10, "con": 15, "charisma": 10, "dex": 15},
         )
         target = TestGameState.create_player(
-            name="Target", class_name="Warrior", race_name="Human",
-            level=30, health=(400, 400), mana=(50, 50),
-            stats={"strength": 10, "intel": 8, "wisdom": 10,
-                   "con": 5, "charisma": 10, "dex": 5},
+            name="Target",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(400, 400),
+            mana=(50, 50),
+            stats={"strength": 10, "intel": 8, "wisdom": 10, "con": 5, "charisma": 10, "dex": 5},
         )
         return user, target
 
     def test_lick_deducts_mana(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         mana_before = user.mana.current
         abilities.Lick().use(user, target)
@@ -6032,6 +6955,7 @@ class TestBatch9Lick:
 
     def test_lick_can_apply_status(self):
         from src.core import abilities
+
         affected = False
         for _ in range(100):
             user, target = self._make_combatants()
@@ -6047,7 +6971,9 @@ class TestBatch9Lick:
     def test_lick_does_not_apply_hangover(self, monkeypatch):
         from src.core import abilities
 
-        monkeypatch.setattr("random.choice", lambda seq: "Hangover" if "Hangover" in seq else seq[0])
+        monkeypatch.setattr(
+            "random.choice", lambda seq: "Hangover" if "Hangover" in seq else seq[0]
+        )
         monkeypatch.setattr("random.randint", lambda start, end: end)
 
         user, target = self._make_combatants()
@@ -6062,22 +6988,30 @@ class TestBatch9BrainGorge:
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="MindFlayer", class_name="Warrior", race_name="Human",
-            level=30, health=(300, 300), mana=(200, 200),
-            stats={"strength": 30, "intel": 30, "wisdom": 15,
-                   "con": 15, "charisma": 10, "dex": 15},
+            name="MindFlayer",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(300, 300),
+            mana=(200, 200),
+            stats={"strength": 30, "intel": 30, "wisdom": 15, "con": 15, "charisma": 10, "dex": 15},
         )
         target = TestGameState.create_player(
-            name="Target", class_name="Warrior", race_name="Human",
-            level=30, health=(400, 400), mana=(50, 50),
-            stats={"strength": 10, "intel": 20, "wisdom": 5,
-                   "con": 5, "charisma": 10, "dex": 5},
+            name="Target",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(400, 400),
+            mana=(50, 50),
+            stats={"strength": 10, "intel": 20, "wisdom": 5, "con": 5, "charisma": 10, "dex": 5},
         )
         return user, target
 
     def test_brain_gorge_deducts_mana(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         mana_before = user.mana.current
         abilities.BrainGorge().use(user, target)
@@ -6085,6 +7019,7 @@ class TestBatch9BrainGorge:
 
     def test_brain_gorge_can_drain_intel(self):
         from src.core import abilities
+
         intel_drained = False
         for _ in range(100):
             user, target = self._make_combatants()
@@ -6097,11 +7032,12 @@ class TestBatch9BrainGorge:
 
     def test_brain_gorge_deals_extra_damage(self):
         from src.core import abilities
+
         extra_hit = False
         for _ in range(50):
             user, target = self._make_combatants()
             result = abilities.BrainGorge().use(user, target)
-            text = result.message if hasattr(result, 'message') else str(result)
+            text = result.message if hasattr(result, "message") else str(result)
             if "additional" in text.lower() or "latches" in text.lower():
                 extra_hit = True
                 break
@@ -6114,28 +7050,37 @@ class TestBatch9Detonate:
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Cyborg", class_name="Warrior", race_name="Human",
-            level=30, health=(500, 500), mana=(100, 100),
-            stats={"strength": 30, "intel": 10, "wisdom": 10,
-                   "con": 20, "charisma": 10, "dex": 15},
+            name="Cyborg",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(500, 500),
+            mana=(100, 100),
+            stats={"strength": 30, "intel": 10, "wisdom": 10, "con": 20, "charisma": 10, "dex": 15},
         )
         target = TestGameState.create_player(
-            name="Target", class_name="Warrior", race_name="Human",
-            level=30, health=(800, 800), mana=(50, 50),
-            stats={"strength": 10, "intel": 8, "wisdom": 10,
-                   "con": 10, "charisma": 10, "dex": 5},
+            name="Target",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(800, 800),
+            mana=(50, 50),
+            stats={"strength": 10, "intel": 8, "wisdom": 10, "con": 10, "charisma": 10, "dex": 5},
         )
         return user, target
 
     def test_detonate_kills_user(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         abilities.Detonate().use(user, target)
         assert user.health.current <= 0
 
     def test_detonate_deals_massive_damage(self):
         from src.core import abilities
+
         damaged = False
         for _ in range(10):
             user, target = self._make_combatants()
@@ -6147,6 +7092,7 @@ class TestBatch9Detonate:
 
     def test_detonate_no_mana_cost(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         mana_before = user.mana.current
         abilities.Detonate().use(user, target)
@@ -6159,22 +7105,30 @@ class TestBatch9Crush:
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Ogre", class_name="Warrior", race_name="Human",
-            level=30, health=(600, 600), mana=(100, 100),
-            stats={"strength": 40, "intel": 5, "wisdom": 5,
-                   "con": 25, "charisma": 5, "dex": 15},
+            name="Ogre",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(600, 600),
+            mana=(100, 100),
+            stats={"strength": 40, "intel": 5, "wisdom": 5, "con": 25, "charisma": 5, "dex": 15},
         )
         target = TestGameState.create_player(
-            name="Target", class_name="Warrior", race_name="Human",
-            level=30, health=(400, 400), mana=(50, 50),
-            stats={"strength": 10, "intel": 8, "wisdom": 10,
-                   "con": 10, "charisma": 10, "dex": 5},
+            name="Target",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(400, 400),
+            mana=(50, 50),
+            stats={"strength": 10, "intel": 8, "wisdom": 10, "con": 10, "charisma": 10, "dex": 5},
         )
         return user, target
 
     def test_crush_deducts_mana(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         mana_before = user.mana.current
         abilities.Crush().use(user, target)
@@ -6182,6 +7136,7 @@ class TestBatch9Crush:
 
     def test_crush_can_deal_damage(self):
         from src.core import abilities
+
         damaged = False
         for _ in range(50):
             user, target = self._make_combatants()
@@ -6193,6 +7148,7 @@ class TestBatch9Crush:
 
     def test_crush_can_throw(self):
         from src.core import abilities
+
         thrown = False
         for _ in range(100):
             user, target = self._make_combatants()
@@ -6204,6 +7160,7 @@ class TestBatch9Crush:
 
     def test_crush_blocked_by_ice_block(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         target.magic_effects["Ice Block"].active = True
         result = abilities.Crush().use(user, target)
@@ -6218,9 +7175,16 @@ class TestBatch9SaveSystem:
         from src.core.save_system import AbilitySerializer
 
         for name in [
-            "ShieldSlam", "KidneyPunch", "PoisonStrike", "DimMak",
-            "ExploitWeakness", "GoldToss", "Lick", "BrainGorge",
-            "Detonate", "Crush",
+            "ShieldSlam",
+            "KidneyPunch",
+            "PoisonStrike",
+            "DimMak",
+            "ExploitWeakness",
+            "GoldToss",
+            "Lick",
+            "BrainGorge",
+            "Detonate",
+            "Crush",
         ]:
             ability = getattr(abilities, name)()
             serialized = AbilitySerializer.serialize(ability)
@@ -6233,6 +7197,7 @@ class TestBatch9SaveSystem:
 # =====================================================================
 # Batch 8 - Enemy skills, Hex, Vulcanize, Smite family, Turn Undead
 # =====================================================================
+
 
 class TestBatch8YAMLLoading:
     """Verify all 13 Batch 8 YAML files load correctly."""
@@ -6255,6 +7220,7 @@ class TestBatch8YAMLLoading:
 
     def test_all_yaml_files_load(self):
         from src.core.data.ability_loader import AbilityFactory
+
         yaml_dir = Path(__file__).parent.parent / "src" / "core" / "data" / "abilities"
         for filename, expected_name, expected_cost in self._YAMLS:
             ability = AbilityFactory.create_from_yaml(yaml_dir / filename)
@@ -6268,22 +7234,30 @@ class TestBatch8Screech:
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Banshee", class_name="Warrior", race_name="Human",
-            level=30, health=(300, 300), mana=(200, 200),
-            stats={"strength": 15, "intel": 30, "wisdom": 15,
-                   "con": 15, "charisma": 10, "dex": 20},
+            name="Banshee",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(300, 300),
+            mana=(200, 200),
+            stats={"strength": 15, "intel": 30, "wisdom": 15, "con": 15, "charisma": 10, "dex": 20},
         )
         target = TestGameState.create_player(
-            name="Target", class_name="Warrior", race_name="Human",
-            level=30, health=(400, 400), mana=(50, 50),
-            stats={"strength": 20, "intel": 8, "wisdom": 5,
-                   "con": 5, "charisma": 10, "dex": 12},
+            name="Target",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(400, 400),
+            mana=(50, 50),
+            stats={"strength": 20, "intel": 8, "wisdom": 5, "con": 5, "charisma": 10, "dex": 12},
         )
         return user, target
 
     def test_screech_deducts_mana(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         mana_before = user.mana.current
         abilities.Screech().use(user, target)
@@ -6291,6 +7265,7 @@ class TestBatch8Screech:
 
     def test_screech_can_deal_damage_and_silence(self):
         from src.core import abilities
+
         damaged = False
         silenced = False
         for _ in range(100):
@@ -6308,6 +7283,7 @@ class TestBatch8Screech:
 
     def test_screech_blocked_by_ice_block(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         target.magic_effects["Ice Block"].active = True
         result = abilities.Screech().use(user, target)
@@ -6315,6 +7291,7 @@ class TestBatch8Screech:
 
     def test_screech_respects_silence_immunity(self):
         from src.core import abilities
+
         for _ in range(100):
             user, target = self._make_combatants()
             target.status_immunity = ["Silence"]
@@ -6328,22 +7305,30 @@ class TestBatch8AcidSpit:
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Spider", class_name="Warrior", race_name="Human",
-            level=30, health=(300, 300), mana=(200, 200),
-            stats={"strength": 15, "intel": 25, "wisdom": 15,
-                   "con": 15, "charisma": 10, "dex": 20},
+            name="Spider",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(300, 300),
+            mana=(200, 200),
+            stats={"strength": 15, "intel": 25, "wisdom": 15, "con": 15, "charisma": 10, "dex": 20},
         )
         target = TestGameState.create_player(
-            name="Target", class_name="Warrior", race_name="Human",
-            level=30, health=(400, 400), mana=(50, 50),
-            stats={"strength": 20, "intel": 8, "wisdom": 10,
-                   "con": 2, "charisma": 10, "dex": 5},
+            name="Target",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(400, 400),
+            mana=(50, 50),
+            stats={"strength": 20, "intel": 8, "wisdom": 10, "con": 2, "charisma": 10, "dex": 5},
         )
         return user, target
 
     def test_acid_spit_dynamic_cost(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         mana_before = user.mana.current
         abilities.AcidSpit().use(user, target)
@@ -6352,6 +7337,7 @@ class TestBatch8AcidSpit:
 
     def test_acid_spit_can_deal_damage(self):
         from src.core import abilities
+
         damaged = False
         for _ in range(50):
             user, target = self._make_combatants()
@@ -6363,6 +7349,7 @@ class TestBatch8AcidSpit:
 
     def test_acid_spit_can_apply_dot(self):
         from src.core import abilities
+
         dotted = False
         for _ in range(100):
             user, target = self._make_combatants()
@@ -6375,6 +7362,7 @@ class TestBatch8AcidSpit:
 
     def test_acid_spit_blocked_by_ice_block(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         target.magic_effects["Ice Block"].active = True
         result = abilities.AcidSpit().use(user, target)
@@ -6387,22 +7375,30 @@ class TestBatch8BreatheFire:
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Dragon", class_name="Warrior", race_name="Human",
-            level=30, health=(500, 500), mana=(100, 100),
-            stats={"strength": 30, "intel": 25, "wisdom": 15,
-                   "con": 25, "charisma": 10, "dex": 15},
+            name="Dragon",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(500, 500),
+            mana=(100, 100),
+            stats={"strength": 30, "intel": 25, "wisdom": 15, "con": 25, "charisma": 10, "dex": 15},
         )
         target = TestGameState.create_player(
-            name="Target", class_name="Warrior", race_name="Human",
-            level=30, health=(400, 400), mana=(50, 50),
-            stats={"strength": 20, "intel": 8, "wisdom": 10,
-                   "con": 18, "charisma": 10, "dex": 12},
+            name="Target",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(400, 400),
+            mana=(50, 50),
+            stats={"strength": 20, "intel": 8, "wisdom": 10, "con": 18, "charisma": 10, "dex": 12},
         )
         return user, target
 
     def test_breathe_fire_deals_damage(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         result = abilities.BreatheFire().use(user, target)
         assert target.health.current < 400
@@ -6410,12 +7406,14 @@ class TestBatch8BreatheFire:
 
     def test_breathe_fire_respects_element_type(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         result = abilities.BreatheFire().use(user, target, typ="Fire")
         assert "Fire" in result
 
     def test_breathe_fire_no_mana_cost(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         mana_before = user.mana.current
         abilities.BreatheFire().use(user, target)
@@ -6428,22 +7426,30 @@ class TestBatch8NightmareFuel:
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="NightHag", class_name="Warrior", race_name="Human",
-            level=30, health=(300, 300), mana=(200, 200),
-            stats={"strength": 15, "intel": 30, "wisdom": 15,
-                   "con": 15, "charisma": 10, "dex": 15},
+            name="NightHag",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(300, 300),
+            mana=(200, 200),
+            stats={"strength": 15, "intel": 30, "wisdom": 15, "con": 15, "charisma": 10, "dex": 15},
         )
         target = TestGameState.create_player(
-            name="Target", class_name="Warrior", race_name="Human",
-            level=30, health=(400, 400), mana=(50, 50),
-            stats={"strength": 20, "intel": 8, "wisdom": 5,
-                   "con": 18, "charisma": 10, "dex": 12},
+            name="Target",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(400, 400),
+            mana=(50, 50),
+            stats={"strength": 20, "intel": 8, "wisdom": 5, "con": 18, "charisma": 10, "dex": 12},
         )
         return user, target
 
     def test_nightmare_fuel_deducts_mana(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         target.status_effects["Sleep"].active = True
         target.status_effects["Sleep"].duration = 3
@@ -6453,6 +7459,7 @@ class TestBatch8NightmareFuel:
 
     def test_nightmare_fuel_does_nothing_if_not_asleep(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         result = abilities.NightmareFuel().use(user, target)
         assert target.health.current == 400
@@ -6460,6 +7467,7 @@ class TestBatch8NightmareFuel:
 
     def test_nightmare_fuel_deals_damage_if_asleep(self):
         from src.core import abilities
+
         damaged = False
         for _ in range(50):
             user, target = self._make_combatants()
@@ -6473,6 +7481,7 @@ class TestBatch8NightmareFuel:
 
     def test_nightmare_fuel_blocked_by_ice_block(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         target.magic_effects["Ice Block"].active = True
         result = abilities.NightmareFuel().use(user, target)
@@ -6485,23 +7494,30 @@ class TestBatch8WidowsWail:
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Widow", class_name="Warrior", race_name="Human",
-            level=30, health=(400, 100),  # low current HP for high damage
+            name="Widow",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(400, 100),  # low current HP for high damage
             mana=(200, 200),
-            stats={"strength": 15, "intel": 30, "wisdom": 5,
-                   "con": 15, "charisma": 10, "dex": 15},
+            stats={"strength": 15, "intel": 30, "wisdom": 5, "con": 15, "charisma": 10, "dex": 15},
         )
         target = TestGameState.create_player(
-            name="Target", class_name="Warrior", race_name="Human",
-            level=30, health=(400, 400), mana=(50, 50),
-            stats={"strength": 20, "intel": 8, "wisdom": 5,
-                   "con": 18, "charisma": 10, "dex": 12},
+            name="Target",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(400, 400),
+            mana=(50, 50),
+            stats={"strength": 20, "intel": 8, "wisdom": 5, "con": 18, "charisma": 10, "dex": 12},
         )
         return user, target
 
     def test_widows_wail_deducts_mana(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         mana_before = user.mana.current
         abilities.WidowsWail().use(user, target)
@@ -6509,6 +7525,7 @@ class TestBatch8WidowsWail:
 
     def test_widows_wail_can_damage_both(self):
         from src.core import abilities
+
         user_hit = False
         target_hit = False
         for _ in range(100):
@@ -6525,6 +7542,7 @@ class TestBatch8WidowsWail:
 
     def test_widows_wail_damage_scales_inversely(self):
         from src.core import abilities
+
         # Low HP user → high damage
         damages = []
         for _ in range(50):
@@ -6538,6 +7556,7 @@ class TestBatch8WidowsWail:
 
     def test_widows_wail_target_ice_block(self):
         from src.core import abilities
+
         for _ in range(50):
             user, target = self._make_combatants()
             target.magic_effects["Ice Block"].active = True
@@ -6551,22 +7570,30 @@ class TestBatch8GoblinPunch:
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Goblin", class_name="Warrior", race_name="Human",
-            level=30, health=(200, 200), mana=(50, 50),
-            stats={"strength": 8, "intel": 5, "wisdom": 5,
-                   "con": 10, "charisma": 5, "dex": 15},
+            name="Goblin",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(200, 200),
+            mana=(50, 50),
+            stats={"strength": 8, "intel": 5, "wisdom": 5, "con": 10, "charisma": 5, "dex": 15},
         )
         target = TestGameState.create_player(
-            name="Target", class_name="Warrior", race_name="Human",
-            level=30, health=(400, 400), mana=(50, 50),
-            stats={"strength": 30, "intel": 8, "wisdom": 10,
-                   "con": 18, "charisma": 10, "dex": 5},
+            name="Target",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(400, 400),
+            mana=(50, 50),
+            stats={"strength": 30, "intel": 8, "wisdom": 10, "con": 18, "charisma": 10, "dex": 5},
         )
         return user, target
 
     def test_goblin_punch_no_mana_cost(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         mana_before = user.mana.current
         abilities.GoblinPunch().use(user, target)
@@ -6574,6 +7601,7 @@ class TestBatch8GoblinPunch:
 
     def test_goblin_punch_multi_hit(self):
         from src.core import abilities
+
         multi = False
         for _ in range(50):
             user, target = self._make_combatants()
@@ -6585,6 +7613,7 @@ class TestBatch8GoblinPunch:
 
     def test_goblin_punch_blocked_by_ice_block(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         target.magic_effects["Ice Block"].active = True
         result = abilities.GoblinPunch().use(user, target)
@@ -6592,6 +7621,7 @@ class TestBatch8GoblinPunch:
 
     def test_goblin_punch_str_diff_damage(self):
         from src.core import abilities
+
         # target.str=30, user.str=8 → str_diff = max(1+pro_level, (30-8)//2) = max(4, 11) = 11
         for _ in range(50):
             user, target = self._make_combatants()
@@ -6614,23 +7644,31 @@ class TestBatch8Hex:
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
+
         caster = TestGameState.create_player(
-            name="Witch", class_name="Wizard", race_name="Human",
-            level=30, health=(300, 300), mana=(200, 200),
-            stats={"strength": 10, "intel": 40, "wisdom": 20,
-                   "con": 15, "charisma": 10, "dex": 15},
+            name="Witch",
+            class_name="Wizard",
+            race_name="Human",
+            level=30,
+            health=(300, 300),
+            mana=(200, 200),
+            stats={"strength": 10, "intel": 40, "wisdom": 20, "con": 15, "charisma": 10, "dex": 15},
         )
         caster.class_effects["Power Up"].active = False
         target = TestGameState.create_player(
-            name="Target", class_name="Warrior", race_name="Human",
-            level=30, health=(400, 400), mana=(50, 50),
-            stats={"strength": 20, "intel": 8, "wisdom": 5,
-                   "con": 5, "charisma": 10, "dex": 12},
+            name="Target",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(400, 400),
+            mana=(50, 50),
+            stats={"strength": 20, "intel": 8, "wisdom": 5, "con": 5, "charisma": 10, "dex": 12},
         )
         return caster, target
 
     def test_hex_deducts_mana(self):
         from src.core import abilities
+
         caster, target = self._make_combatants()
         mana_before = caster.mana.current
         abilities.Hex().cast(caster, target)
@@ -6638,6 +7676,7 @@ class TestBatch8Hex:
 
     def test_hex_can_apply_all_three_statuses(self):
         from src.core import abilities
+
         poison = False
         blind = False
         silence = False
@@ -6658,6 +7697,7 @@ class TestBatch8Hex:
 
     def test_hex_blocked_by_ice_block(self):
         from src.core import abilities
+
         caster, target = self._make_combatants()
         target.magic_effects["Ice Block"].active = True
         result = abilities.Hex().cast(caster, target)
@@ -6665,6 +7705,7 @@ class TestBatch8Hex:
 
     def test_hex_respects_immunity(self):
         from src.core import abilities
+
         for _ in range(100):
             caster, target = self._make_combatants()
             target.status_immunity = ["Poison", "Blind", "Silence"]
@@ -6675,6 +7716,7 @@ class TestBatch8Hex:
 
     def test_hex_poison_sets_extra(self):
         from src.core import abilities
+
         for _ in range(200):
             caster, target = self._make_combatants()
             abilities.Hex().cast(caster, target)
@@ -6690,17 +7732,22 @@ class TestBatch8Vulcanize:
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
+
         caster = TestGameState.create_player(
-            name="Mage", class_name="Wizard", race_name="Human",
-            level=30, health=(300, 300), mana=(200, 200),
-            stats={"strength": 10, "intel": 25, "wisdom": 20,
-                   "con": 15, "charisma": 10, "dex": 15},
+            name="Mage",
+            class_name="Wizard",
+            race_name="Human",
+            level=30,
+            health=(300, 300),
+            mana=(200, 200),
+            stats={"strength": 10, "intel": 25, "wisdom": 20, "con": 15, "charisma": 10, "dex": 15},
         )
         caster.class_effects["Power Up"].active = False
         return caster
 
     def test_vulcanize_deducts_mana(self):
         from src.core import abilities
+
         caster = self._make_combatants()
         mana_before = caster.mana.current
         abilities.Vulcanize().cast(caster)
@@ -6708,6 +7755,7 @@ class TestBatch8Vulcanize:
 
     def test_vulcanize_applies_self_damage(self):
         from src.core import abilities
+
         caster = self._make_combatants()
         hp_before = caster.health.current
         abilities.Vulcanize().cast(caster)
@@ -6716,6 +7764,7 @@ class TestBatch8Vulcanize:
 
     def test_vulcanize_grants_defense_buff(self):
         from src.core import abilities
+
         caster = self._make_combatants()
         abilities.Vulcanize().cast(caster)
         assert caster.stat_effects["Defense"].active
@@ -6724,6 +7773,7 @@ class TestBatch8Vulcanize:
 
     def test_vulcanize_fire_resist_reduces_self_damage(self):
         from src.core import abilities
+
         # With high fire resist, damage should be lower
         caster = self._make_combatants()
         caster.resistance["Fire"] = 0.5
@@ -6742,22 +7792,30 @@ class TestBatch8SmiteFamily:
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Paladin", class_name="Warrior", race_name="Human",
-            level=30, health=(400, 400), mana=(200, 200),
-            stats={"strength": 25, "intel": 20, "wisdom": 20,
-                   "con": 18, "charisma": 15, "dex": 18},
+            name="Paladin",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(400, 400),
+            mana=(200, 200),
+            stats={"strength": 25, "intel": 20, "wisdom": 20, "con": 18, "charisma": 15, "dex": 18},
         )
         target = TestGameState.create_player(
-            name="Enemy", class_name="Warrior", race_name="Human",
-            level=30, health=(500, 500), mana=(50, 50),
-            stats={"strength": 20, "intel": 8, "wisdom": 10,
-                   "con": 8, "charisma": 10, "dex": 5},
+            name="Enemy",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(500, 500),
+            mana=(50, 50),
+            stats={"strength": 20, "intel": 8, "wisdom": 10, "con": 8, "charisma": 10, "dex": 5},
         )
         return user, target
 
     def test_smite_deducts_mana(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         mana_before = user.mana.current
         abilities.Smite().cast(user, target)
@@ -6765,6 +7823,7 @@ class TestBatch8SmiteFamily:
 
     def test_smite2_deducts_mana(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         mana_before = user.mana.current
         abilities.Smite2().cast(user, target)
@@ -6772,6 +7831,7 @@ class TestBatch8SmiteFamily:
 
     def test_smite3_deducts_mana(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         mana_before = user.mana.current
         abilities.Smite3().cast(user, target)
@@ -6779,6 +7839,7 @@ class TestBatch8SmiteFamily:
 
     def test_smite_can_deal_damage(self):
         from src.core import abilities
+
         damaged = False
         for _ in range(50):
             user, target = self._make_combatants()
@@ -6790,6 +7851,7 @@ class TestBatch8SmiteFamily:
 
     def test_smite_returns_string(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         result = abilities.Smite().cast(user, target)
         assert isinstance(result, str)
@@ -6797,6 +7859,7 @@ class TestBatch8SmiteFamily:
 
     def test_smite_followup_bypasses_physical_only_mana_shield(self, monkeypatch):
         from src.core import abilities
+
         user, target = self._make_combatants()
         target.magic_effects["Mana Shield"].active = True
         target.magic_effects["Mana Shield"].duration = 25
@@ -6825,18 +7888,25 @@ class TestBatch8TurnUndeadFamily:
     @staticmethod
     def _make_combatants(undead=True):
         from tests.test_framework import TestGameState
+
         caster = TestGameState.create_player(
-            name="Cleric", class_name="Wizard", race_name="Human",
-            level=30, health=(300, 300), mana=(200, 200),
-            stats={"strength": 10, "intel": 25, "wisdom": 20,
-                   "con": 15, "charisma": 10, "dex": 15},
+            name="Cleric",
+            class_name="Wizard",
+            race_name="Human",
+            level=30,
+            health=(300, 300),
+            mana=(200, 200),
+            stats={"strength": 10, "intel": 25, "wisdom": 20, "con": 15, "charisma": 10, "dex": 15},
         )
         caster.class_effects["Power Up"].active = False
         target = TestGameState.create_player(
-            name="Zombie", class_name="Warrior", race_name="Human",
-            level=30, health=(300, 300), mana=(50, 50),
-            stats={"strength": 20, "intel": 8, "wisdom": 10,
-                   "con": 15, "charisma": 10, "dex": 12},
+            name="Zombie",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(300, 300),
+            mana=(50, 50),
+            stats={"strength": 20, "intel": 8, "wisdom": 10, "con": 15, "charisma": 10, "dex": 12},
         )
         if undead:
             target.enemy_typ = "Undead"
@@ -6846,6 +7916,7 @@ class TestBatch8TurnUndeadFamily:
 
     def test_turn_undead_deducts_mana(self):
         from src.core import abilities
+
         caster, target = self._make_combatants()
         mana_before = caster.mana.current
         abilities.TurnUndead().cast(caster, target)
@@ -6853,6 +7924,7 @@ class TestBatch8TurnUndeadFamily:
 
     def test_turn_undead2_deducts_mana(self):
         from src.core import abilities
+
         caster, target = self._make_combatants()
         mana_before = caster.mana.current
         abilities.TurnUndead2().cast(caster, target)
@@ -6860,6 +7932,7 @@ class TestBatch8TurnUndeadFamily:
 
     def test_turn_undead_does_nothing_to_non_undead(self):
         from src.core import abilities
+
         caster, target = self._make_combatants(undead=False)
         result = abilities.TurnUndead().cast(caster, target)
         assert target.health.current == 300
@@ -6867,6 +7940,7 @@ class TestBatch8TurnUndeadFamily:
 
     def test_turn_undead_damages_undead(self):
         from src.core import abilities
+
         damaged = False
         for _ in range(50):
             caster, target = self._make_combatants()
@@ -6878,6 +7952,7 @@ class TestBatch8TurnUndeadFamily:
 
     def test_turn_undead_can_kill(self):
         from src.core import abilities
+
         killed = False
         for _ in range(200):
             caster, target = self._make_combatants()
@@ -6889,6 +7964,7 @@ class TestBatch8TurnUndeadFamily:
 
     def test_turn_undead_blocked_by_ice_block(self):
         from src.core import abilities
+
         caster, target = self._make_combatants()
         target.magic_effects["Ice Block"].active = True
         result = abilities.TurnUndead().cast(caster, target)
@@ -6903,9 +7979,19 @@ class TestBatch8SaveSystem:
         from src.core.save_system import AbilitySerializer
 
         for name in [
-            "Screech", "AcidSpit", "BreatheFire", "NightmareFuel",
-            "WidowsWail", "GoblinPunch", "Hex", "Vulcanize",
-            "Smite", "Smite2", "Smite3", "TurnUndead", "TurnUndead2",
+            "Screech",
+            "AcidSpit",
+            "BreatheFire",
+            "NightmareFuel",
+            "WidowsWail",
+            "GoblinPunch",
+            "Hex",
+            "Vulcanize",
+            "Smite",
+            "Smite2",
+            "Smite3",
+            "TurnUndead",
+            "TurnUndead2",
         ]:
             ability = getattr(abilities, name)()
             serialized = AbilitySerializer.serialize(ability)
@@ -6932,6 +8018,7 @@ class TestBatch14YAMLLoading:
 
     def test_all_yaml_files_load(self):
         from src.core.data.ability_loader import AbilityFactory
+
         yaml_dir = Path(__file__).parent.parent / "src" / "core" / "data" / "abilities"
         for filename, expected_name, expected_cost in self._YAMLS:
             ability = AbilityFactory.create_from_yaml(yaml_dir / filename)
@@ -6944,20 +8031,27 @@ class TestBatch14ConsumeItem:
 
     @staticmethod
     def _make_combatants(target_has_items=True):
-        from tests.test_framework import TestGameState
         from src.core import items as _items
+        from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Xorn", class_name="Warrior", race_name="Human",
-            level=30, health=(300, 300), mana=(100, 100),
-            stats={"strength": 20, "intel": 10, "wisdom": 10,
-                   "con": 15, "charisma": 10, "dex": 25},
+            name="Xorn",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(300, 300),
+            mana=(100, 100),
+            stats={"strength": 20, "intel": 10, "wisdom": 10, "con": 15, "charisma": 10, "dex": 25},
             gold=5000,
         )
         target = TestGameState.create_player(
-            name="Victim", class_name="Warrior", race_name="Human",
-            level=30, health=(300, 300), mana=(50, 50),
-            stats={"strength": 10, "intel": 8, "wisdom": 10,
-                   "con": 10, "charisma": 10, "dex": 5},
+            name="Victim",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(300, 300),
+            mana=(50, 50),
+            stats={"strength": 10, "intel": 8, "wisdom": 10, "con": 10, "charisma": 10, "dex": 5},
             gold=10000,
         )
         if target_has_items:
@@ -6967,6 +8061,7 @@ class TestBatch14ConsumeItem:
 
     def test_consume_item_deducts_mana(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         mana_before = user.mana.current
         abilities.ConsumeItem().use(user, target)
@@ -6975,6 +8070,7 @@ class TestBatch14ConsumeItem:
 
     def test_consume_item_produces_output(self):
         from src.core import abilities
+
         for _ in range(50):
             user, target = self._make_combatants()
             result = abilities.ConsumeItem().use(user, target)
@@ -6983,6 +8079,7 @@ class TestBatch14ConsumeItem:
 
     def test_consume_item_blocked_by_ice_block(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         target.magic_effects["Ice Block"].active = True
         result = abilities.ConsumeItem().use(user, target)
@@ -6992,6 +8089,7 @@ class TestBatch14ConsumeItem:
     def test_consume_item_gold_fallback(self):
         """When target has no items, should steal gold and heal."""
         from src.core import abilities
+
         saw_valid_outcome = False
         for _ in range(100):
             user, target = self._make_combatants(target_has_items=False)
@@ -7005,7 +8103,9 @@ class TestBatch14ConsumeItem:
 
     def test_consume_item_potion_effect_applies_to_user_not_target(self, monkeypatch):
         import random
-        from src.core import abilities, items as _items
+
+        from src.core import abilities
+        from src.core import items as _items
 
         user, target = self._make_combatants(target_has_items=False)
         target.modify_inventory(_items.EchoScreen())
@@ -7027,22 +8127,30 @@ class TestBatch14DestroyMetal:
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Rust", class_name="Warrior", race_name="Human",
-            level=30, health=(300, 300), mana=(100, 100),
-            stats={"strength": 20, "intel": 10, "wisdom": 10,
-                   "con": 15, "charisma": 10, "dex": 20},
+            name="Rust",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(300, 300),
+            mana=(100, 100),
+            stats={"strength": 20, "intel": 10, "wisdom": 10, "con": 15, "charisma": 10, "dex": 20},
         )
         target = TestGameState.create_player(
-            name="Target", class_name="Warrior", race_name="Human",
-            level=30, health=(300, 300), mana=(50, 50),
-            stats={"strength": 15, "intel": 8, "wisdom": 10,
-                   "con": 15, "charisma": 10, "dex": 10},
+            name="Target",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(300, 300),
+            mana=(50, 50),
+            stats={"strength": 15, "intel": 8, "wisdom": 10, "con": 15, "charisma": 10, "dex": 10},
         )
         return user, target
 
     def test_destroy_metal_deducts_mana(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         mana_before = user.mana.current
         abilities.DestroyMetal().use(user, target)
@@ -7050,6 +8158,7 @@ class TestBatch14DestroyMetal:
 
     def test_destroy_metal_produces_output(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         result = abilities.DestroyMetal().use(user, target)
         msg = result if isinstance(result, str) else str(result)
@@ -7058,6 +8167,7 @@ class TestBatch14DestroyMetal:
     def test_destroy_metal_no_metal(self):
         """When no metal items exist, should report appropriately."""
         from src.core import abilities
+
         user, target = self._make_combatants()
         # Clear inventory and check output
         target.inventory.clear()
@@ -7073,24 +8183,32 @@ class TestBatch14SlotMachine:
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Jester", class_name="Warrior", race_name="Human",
-            level=30, health=(300, 300), mana=(100, 100),
-            stats={"strength": 15, "intel": 15, "wisdom": 10,
-                   "con": 15, "charisma": 25, "dex": 15},
+            name="Jester",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(300, 300),
+            mana=(100, 100),
+            stats={"strength": 15, "intel": 15, "wisdom": 10, "con": 15, "charisma": 25, "dex": 15},
             gold=5000,
         )
         target = TestGameState.create_player(
-            name="Target", class_name="Warrior", race_name="Human",
-            level=30, health=(300, 300), mana=(50, 50),
-            stats={"strength": 15, "intel": 8, "wisdom": 10,
-                   "con": 15, "charisma": 10, "dex": 10},
+            name="Target",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(300, 300),
+            mana=(50, 50),
+            stats={"strength": 15, "intel": 8, "wisdom": 10, "con": 15, "charisma": 10, "dex": 10},
             gold=5000,
         )
         return user, target
 
     def test_slot_machine_deducts_mana(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         mana_before = user.mana.current
         abilities.SlotMachine().use(
@@ -7102,9 +8220,11 @@ class TestBatch14SlotMachine:
 
     def test_slot_machine_death_spin(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         result = abilities.SlotMachine().use(
-            user, target,
+            user,
+            target,
             slot_machine_callback=lambda u, t: "666",
         )
         msg = result if isinstance(result, str) else str(result)
@@ -7112,9 +8232,11 @@ class TestBatch14SlotMachine:
 
     def test_slot_machine_trips_spin(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         result = abilities.SlotMachine().use(
-            user, target,
+            user,
+            target,
             slot_machine_callback=lambda u, t: "777",
         )
         msg = result if isinstance(result, str) else str(result)
@@ -7122,9 +8244,11 @@ class TestBatch14SlotMachine:
 
     def test_slot_machine_straight_spin(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         result = abilities.SlotMachine().use(
-            user, target,
+            user,
+            target,
             slot_machine_callback=lambda u, t: "345",
         )
         msg = result if isinstance(result, str) else str(result)
@@ -7132,9 +8256,11 @@ class TestBatch14SlotMachine:
 
     def test_slot_machine_palindrome_spin(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         result = abilities.SlotMachine().use(
-            user, target,
+            user,
+            target,
             slot_machine_callback=lambda u, t: "121",
         )
         msg = result if isinstance(result, str) else str(result)
@@ -7142,9 +8268,11 @@ class TestBatch14SlotMachine:
 
     def test_slot_machine_evens_spin(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         result = abilities.SlotMachine().use(
-            user, target,
+            user,
+            target,
             slot_machine_callback=lambda u, t: "246",
         )
         msg = result if isinstance(result, str) else str(result)
@@ -7152,9 +8280,11 @@ class TestBatch14SlotMachine:
 
     def test_slot_machine_odds_spin(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         result = abilities.SlotMachine().use(
-            user, target,
+            user,
+            target,
             slot_machine_callback=lambda u, t: "135",
         )
         msg = result if isinstance(result, str) else str(result)
@@ -7162,11 +8292,13 @@ class TestBatch14SlotMachine:
 
     def test_slot_machine_straight_flush_card_hand(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         health_before = target.health.current
         mana_before = target.mana.current
         result = abilities.SlotMachine().use(
-            user, target,
+            user,
+            target,
             slot_machine_callback=lambda u, t: "AS,2S,3S",
         )
         msg = result if isinstance(result, str) else str(result)
@@ -7176,12 +8308,14 @@ class TestBatch14SlotMachine:
 
     def test_slot_machine_flush_card_hand_drains_gold_and_mana(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         user_gold_before = user.gold
         target_gold_before = target.gold
         target_mana_before = target.mana.current
         result = abilities.SlotMachine().use(
-            user, target,
+            user,
+            target,
             slot_machine_callback=lambda u, t: "AS,9S,KS",
         )
         msg = result if isinstance(result, str) else str(result)
@@ -7192,9 +8326,11 @@ class TestBatch14SlotMachine:
 
     def test_slot_machine_chance_card_hand_logs_outcome_once(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         result = abilities.SlotMachine().use(
-            user, target,
+            user,
+            target,
             slot_machine_callback=lambda u, t: "AH,7D,9C",
         )
         msg = result if isinstance(result, str) else str(result)
@@ -7204,14 +8340,20 @@ class TestBatch14SlotMachine:
 
     def test_slot_machine_pair_card_hand_applies_pair_effect(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         result = abilities.SlotMachine().use(
-            user, target,
+            user,
+            target,
             slot_machine_callback=lambda u, t: "AS,AD,9C",
         )
         msg = result if isinstance(result, str) else str(result)
         assert "pair" in msg.lower()
-        assert "randomly selected" in msg.lower() or "immune" in msg.lower() or "no effect" in msg.lower()
+        assert (
+            "randomly selected" in msg.lower()
+            or "immune" in msg.lower()
+            or "no effect" in msg.lower()
+        )
 
     def test_slot_machine_pair_can_apply_visible_dot_debuff(self, monkeypatch):
         from src.core import abilities
@@ -7221,7 +8363,8 @@ class TestBatch14SlotMachine:
 
         user, target = self._make_combatants()
         result = abilities.SlotMachine().use(
-            user, target,
+            user,
+            target,
             slot_machine_callback=lambda u, t: "AS,AD,9C",
         )
 
@@ -7234,6 +8377,7 @@ class TestBatch14SlotMachine:
     def test_slot_machine_random_produces_output(self):
         """Random spins should always produce some output."""
         from src.core import abilities
+
         for _ in range(20):
             user, target = self._make_combatants()
             result = abilities.SlotMachine().use(user, target)
@@ -7247,22 +8391,37 @@ class TestBatch14Totem:
     @staticmethod
     def _make_combatants(wisdom=20):
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Shaman", class_name="Warrior", race_name="Human",
-            level=30, health=(300, 300), mana=(100, 100),
-            stats={"strength": 15, "intel": 15, "wisdom": wisdom,
-                   "con": 15, "charisma": 10, "dex": 15},
+            name="Shaman",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(300, 300),
+            mana=(100, 100),
+            stats={
+                "strength": 15,
+                "intel": 15,
+                "wisdom": wisdom,
+                "con": 15,
+                "charisma": 10,
+                "dex": 15,
+            },
         )
         target = TestGameState.create_player(
-            name="Target", class_name="Warrior", race_name="Human",
-            level=30, health=(300, 300), mana=(50, 50),
-            stats={"strength": 15, "intel": 8, "wisdom": 10,
-                   "con": 15, "charisma": 10, "dex": 10},
+            name="Target",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(300, 300),
+            mana=(50, 50),
+            stats={"strength": 15, "intel": 8, "wisdom": 10, "con": 15, "charisma": 10, "dex": 10},
         )
         return user, target
 
     def test_totem_deducts_mana(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         mana_before = user.mana.current
         abilities.Totem().use(user, target)
@@ -7270,12 +8429,14 @@ class TestBatch14Totem:
 
     def test_totem_activates_magic_effect(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         abilities.Totem().use(user, target)
         assert user.magic_effects["Totem"].active is True
 
     def test_totem_earth_aspect_default(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         abilities.Totem().use(user, target)
         extra = user.magic_effects["Totem"].extra
@@ -7285,6 +8446,7 @@ class TestBatch14Totem:
 
     def test_totem_fire_aspect(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         abilities.Totem().use(user, target, active_aspect="Fire")
         extra = user.magic_effects["Totem"].extra
@@ -7294,6 +8456,7 @@ class TestBatch14Totem:
 
     def test_totem_duration_scales_with_wisdom(self):
         from src.core import abilities
+
         user, target = self._make_combatants(wisdom=30)
         abilities.Totem().use(user, target)
         # duration_base=5 + wisdom//10 = 5 + 3 = 8
@@ -7301,6 +8464,7 @@ class TestBatch14Totem:
 
     def test_totem_produces_output(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         result = abilities.Totem().use(user, target)
         msg = result if isinstance(result, str) else str(result)
@@ -7308,6 +8472,7 @@ class TestBatch14Totem:
 
     def test_totem_unknown_aspect(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         result = abilities.Totem().use(user, target, active_aspect="Unknown")
         msg = result if isinstance(result, str) else str(result)
@@ -7322,7 +8487,10 @@ class TestBatch14SaveSystem:
         from src.core.save_system import AbilitySerializer
 
         for name in [
-            "ConsumeItem", "DestroyMetal", "SlotMachine", "Totem",
+            "ConsumeItem",
+            "DestroyMetal",
+            "SlotMachine",
+            "Totem",
         ]:
             ability = getattr(abilities, name)()
             serialized = AbilitySerializer.serialize(ability)
@@ -7351,6 +8519,7 @@ class TestBatch15YAMLLoading:
 
     def test_all_yaml_files_load(self):
         from src.core.data.ability_loader import AbilityFactory
+
         yaml_dir = Path(__file__).parent.parent / "src" / "core" / "data" / "abilities"
         for filename, expected_name, expected_cost in self._YAMLS:
             ability = AbilityFactory.create_from_yaml(yaml_dir / filename)
@@ -7364,17 +8533,24 @@ class TestBatch15Charge:
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Charger", class_name="Warrior", race_name="Human",
-            level=30, health=(300, 300), mana=(100, 100),
-            stats={"strength": 50, "intel": 10, "wisdom": 10,
-                   "con": 20, "charisma": 10, "dex": 20},
+            name="Charger",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(300, 300),
+            mana=(100, 100),
+            stats={"strength": 50, "intel": 10, "wisdom": 10, "con": 20, "charisma": 10, "dex": 20},
         )
         target = TestGameState.create_player(
-            name="Defender", class_name="Warrior", race_name="Human",
-            level=30, health=(300, 300), mana=(50, 50),
-            stats={"strength": 15, "intel": 10, "wisdom": 10,
-                   "con": 10, "charisma": 10, "dex": 10},
+            name="Defender",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(300, 300),
+            mana=(50, 50),
+            stats={"strength": 15, "intel": 10, "wisdom": 10, "con": 10, "charisma": 10, "dex": 10},
         )
         return user, target
 
@@ -7382,6 +8558,7 @@ class TestBatch15Charge:
         """Charge() returns a DataDrivenChargingSkill."""
         from src.core import abilities
         from src.core.data.data_driven_abilities import DataDrivenChargingSkill
+
         charge = abilities.Charge()
         assert isinstance(charge, DataDrivenChargingSkill)
         assert charge.name == "Charge"
@@ -7390,6 +8567,7 @@ class TestBatch15Charge:
     def test_charge_starts_charging_phase(self):
         """With charge_time > 0, first use starts charging."""
         from src.core import abilities
+
         user, target = self._make_combatants()
         charge = abilities.Charge()
         result = charge.use(user, target)
@@ -7403,6 +8581,7 @@ class TestBatch15Charge:
     def test_charge_execute_does_damage(self):
         """After charge phase, execute deals weapon damage."""
         from src.core import abilities
+
         user, target = self._make_combatants()
         charge = abilities.Charge()
         # Start charging
@@ -7410,7 +8589,7 @@ class TestBatch15Charge:
         hp_before = target.health.current
         # Execute (charge_turns ticks to 0)
         result = charge.use(user, target)
-        assert isinstance(result, str) if not hasattr(result, 'message') else True
+        assert isinstance(result, str) if not hasattr(result, "message") else True
         # Something should have happened
         msg = result if isinstance(result, str) else str(result)
         assert len(msg) > 0
@@ -7418,6 +8597,7 @@ class TestBatch15Charge:
     def test_charge_cancel_on_incapacitated(self):
         """If user is incapacitated during charge, cancel."""
         from src.core import abilities
+
         user, target = self._make_combatants()
         charge = abilities.Charge()
         charge.use(user, target)
@@ -7431,6 +8611,7 @@ class TestBatch15Charge:
     def test_charge_instant_if_zero_charge_time(self):
         """If charge_time is 0, executes immediately."""
         from src.core import abilities
+
         user, target = self._make_combatants()
         charge = abilities.Charge()
         charge._charge_time = 0  # override to 0
@@ -7447,23 +8628,31 @@ class TestBatch15CrushingBlow:
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Crusher", class_name="Warrior", race_name="Human",
-            level=30, health=(300, 300), mana=(100, 100),
-            stats={"strength": 50, "intel": 10, "wisdom": 10,
-                   "con": 20, "charisma": 10, "dex": 20},
+            name="Crusher",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(300, 300),
+            mana=(100, 100),
+            stats={"strength": 50, "intel": 10, "wisdom": 10, "con": 20, "charisma": 10, "dex": 20},
         )
         target = TestGameState.create_player(
-            name="Victim", class_name="Warrior", race_name="Human",
-            level=30, health=(500, 500), mana=(50, 50),
-            stats={"strength": 10, "intel": 10, "wisdom": 10,
-                   "con": 10, "charisma": 10, "dex": 10},
+            name="Victim",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(500, 500),
+            mana=(50, 50),
+            stats={"strength": 10, "intel": 10, "wisdom": 10, "con": 10, "charisma": 10, "dex": 10},
         )
         return user, target
 
     def test_crushing_blow_creates_charging_skill(self):
         from src.core import abilities
         from src.core.data.data_driven_abilities import DataDrivenChargingSkill
+
         cb = abilities.CrushingBlow()
         assert isinstance(cb, DataDrivenChargingSkill)
         assert cb.name == "Crushing Blow"
@@ -7472,6 +8661,7 @@ class TestBatch15CrushingBlow:
     def test_crushing_blow_charge_and_execute(self):
         """Start charge → execute → weapon damage applied."""
         from src.core import abilities
+
         user, target = self._make_combatants()
         cb = abilities.CrushingBlow()
         # Start charging
@@ -7488,14 +8678,16 @@ class TestBatch15CrushingBlow:
     def test_crushing_blow_stun_with_high_chance(self):
         """With stun_chance=1.0, stun should always apply when not immune."""
         import random
+
         from src.core import abilities
+
         user, target = self._make_combatants()
         cb = abilities.CrushingBlow()
         # Force immediate execution and guaranteed stun
         cb._charge_time = 0
         # Patch the effect to guarantee stun
         for eff in cb._effects:
-            if hasattr(eff, 'stun_chance'):
+            if hasattr(eff, "stun_chance"):
                 eff.stun_chance = 1.0
         random.seed(42)
         result = cb.use(user, target)
@@ -7506,12 +8698,13 @@ class TestBatch15CrushingBlow:
     def test_crushing_blow_stun_blocked_by_immunity(self):
         """Stun immunity prevents stun application."""
         from src.core import abilities
+
         user, target = self._make_combatants()
         target.status_immunity.append("Stun")
         cb = abilities.CrushingBlow()
         cb._charge_time = 0
         for eff in cb._effects:
-            if hasattr(eff, 'stun_chance'):
+            if hasattr(eff, "stun_chance"):
                 eff.stun_chance = 1.0
         result = cb.use(user, target)
         msg = result if isinstance(result, str) else str(result)
@@ -7524,23 +8717,31 @@ class TestBatch15ArcaneBlast:
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Enchanter", class_name="Warrior", race_name="Human",
-            level=30, health=(300, 300), mana=(200, 200),
-            stats={"strength": 10, "intel": 40, "wisdom": 20,
-                   "con": 15, "charisma": 10, "dex": 15},
+            name="Enchanter",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(300, 300),
+            mana=(200, 200),
+            stats={"strength": 10, "intel": 40, "wisdom": 20, "con": 15, "charisma": 10, "dex": 15},
         )
         target = TestGameState.create_player(
-            name="Target", class_name="Warrior", race_name="Human",
-            level=30, health=(500, 500), mana=(50, 50),
-            stats={"strength": 10, "intel": 10, "wisdom": 10,
-                   "con": 10, "charisma": 10, "dex": 10},
+            name="Target",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(500, 500),
+            mana=(50, 50),
+            stats={"strength": 10, "intel": 10, "wisdom": 10, "con": 10, "charisma": 10, "dex": 10},
         )
         return user, target
 
     def test_arcane_blast_creates_charging_skill(self):
         from src.core import abilities
         from src.core.data.data_driven_abilities import DataDrivenChargingSkill
+
         ab = abilities.ArcaneBlast()
         assert isinstance(ab, DataDrivenChargingSkill)
         assert ab.name == "Arcane Blast"
@@ -7549,6 +8750,7 @@ class TestBatch15ArcaneBlast:
     def test_arcane_blast_requires_mana(self):
         """Should fail if user has 0 mana."""
         from src.core import abilities
+
         user, target = self._make_combatants()
         user.mana.current = 0
         ab = abilities.ArcaneBlast()
@@ -7558,6 +8760,7 @@ class TestBatch15ArcaneBlast:
     def test_arcane_blast_drains_all_mana(self):
         """After execution, user.mana.current should be 0."""
         from src.core import abilities
+
         user, target = self._make_combatants()
         ab = abilities.ArcaneBlast()
         ab._charge_time = 0  # instant execution
@@ -7567,6 +8770,7 @@ class TestBatch15ArcaneBlast:
     def test_arcane_blast_charge_and_execute(self):
         """Start charge → execute → mana drained."""
         from src.core import abilities
+
         user, target = self._make_combatants()
         ab = abilities.ArcaneBlast()
         mana_before = user.mana.current
@@ -7582,11 +8786,12 @@ class TestBatch15ArcaneBlast:
     def test_arcane_blast_activates_power_up(self):
         """If target survives, Power Up should activate for regen."""
         from src.core import abilities
+
         user, target = self._make_combatants()
         target.health.current = 10000  # make sure target survives
         target.health.max = 10000
         # Give user class_effects with Power Up
-        if not hasattr(user, 'class_effects') or "Power Up" not in user.class_effects:
+        if not hasattr(user, "class_effects") or "Power Up" not in user.class_effects:
             # Some test chars may not have this, so skip check if attributes missing
             pass
         ab = abilities.ArcaneBlast()
@@ -7594,7 +8799,7 @@ class TestBatch15ArcaneBlast:
         ab.use(user, target)
         assert user.mana.current == 0
         # If user has class_effects, Power Up should be active
-        if hasattr(user, 'class_effects') and "Power Up" in user.class_effects:
+        if hasattr(user, "class_effects") and "Power Up" in user.class_effects:
             assert user.class_effects["Power Up"].active is True
 
 
@@ -7604,23 +8809,31 @@ class TestBatch15MagicMissile:
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
+
         caster = TestGameState.create_player(
-            name="Wizard", class_name="Wizard", race_name="Human",
-            level=30, health=(200, 200), mana=(200, 200),
-            stats={"strength": 10, "intel": 50, "wisdom": 20,
-                   "con": 15, "charisma": 10, "dex": 20},
+            name="Wizard",
+            class_name="Wizard",
+            race_name="Human",
+            level=30,
+            health=(200, 200),
+            mana=(200, 200),
+            stats={"strength": 10, "intel": 50, "wisdom": 20, "con": 15, "charisma": 10, "dex": 20},
         )
         target = TestGameState.create_player(
-            name="Target", class_name="Warrior", race_name="Human",
-            level=30, health=(500, 500), mana=(50, 50),
-            stats={"strength": 10, "intel": 10, "wisdom": 10,
-                   "con": 10, "charisma": 10, "dex": 10},
+            name="Target",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(500, 500),
+            mana=(50, 50),
+            stats={"strength": 10, "intel": 10, "wisdom": 10, "con": 10, "charisma": 10, "dex": 10},
         )
         return caster, target
 
     def test_magic_missile_creates_correct_type(self):
         from src.core import abilities
         from src.core.data.data_driven_abilities import DataDrivenMagicMissileSpell
+
         mm = abilities.MagicMissile()
         assert isinstance(mm, DataDrivenMagicMissileSpell)
         assert mm.name == "Magic Missile"
@@ -7629,18 +8842,21 @@ class TestBatch15MagicMissile:
 
     def test_magic_missile_2_has_2_missiles(self):
         from src.core import abilities
+
         mm2 = abilities.MagicMissile2()
         assert mm2.cost == 18
         assert mm2.missiles == 2
 
     def test_magic_missile_3_has_3_missiles(self):
         from src.core import abilities
+
         mm3 = abilities.MagicMissile3()
         assert mm3.cost == 40
         assert mm3.missiles == 3
 
     def test_magic_missile_cast_deducts_mana(self):
         from src.core import abilities
+
         caster, target = self._make_combatants()
         mm = abilities.MagicMissile()
         mana_before = caster.mana.current
@@ -7649,6 +8865,7 @@ class TestBatch15MagicMissile:
 
     def test_magic_missile_cast_returns_string(self):
         from src.core import abilities
+
         caster, target = self._make_combatants()
         mm = abilities.MagicMissile()
         result = mm.cast(caster, target)
@@ -7659,6 +8876,7 @@ class TestBatch15MagicMissile:
 
     def test_magic_missile_ice_block_immunity(self):
         from src.core import abilities
+
         caster, target = self._make_combatants()
         target.magic_effects["Ice Block"].active = True
         mm = abilities.MagicMissile()
@@ -7668,6 +8886,7 @@ class TestBatch15MagicMissile:
     def test_magic_missile_special_free_cast(self):
         """special=True should not deduct mana."""
         from src.core import abilities
+
         caster, target = self._make_combatants()
         mm = abilities.MagicMissile()
         mana_before = caster.mana.current
@@ -7677,6 +8896,7 @@ class TestBatch15MagicMissile:
     def test_magic_missile_2_cast(self):
         """MagicMissile2 should cost 18 and fire 2 missiles."""
         from src.core import abilities
+
         caster, target = self._make_combatants()
         mm2 = abilities.MagicMissile2()
         mana_before = caster.mana.current
@@ -7686,6 +8906,7 @@ class TestBatch15MagicMissile:
 
     def test_magic_missile_2_can_consume_multiple_mirror_images(self, monkeypatch):
         from src.core import abilities
+
         caster, target = self._make_combatants()
         target.magic_effects["Duplicates"].active = True
         target.magic_effects["Duplicates"].duration = 2
@@ -7710,8 +8931,12 @@ class TestBatch15SaveSystem:
         from src.core.save_system import AbilitySerializer
 
         for name in [
-            "Charge", "CrushingBlow", "ArcaneBlast",
-            "MagicMissile", "MagicMissile2", "MagicMissile3",
+            "Charge",
+            "CrushingBlow",
+            "ArcaneBlast",
+            "MagicMissile",
+            "MagicMissile2",
+            "MagicMissile3",
         ]:
             ability = getattr(abilities, name)()
             serialized = AbilitySerializer.serialize(ability)
@@ -7719,6 +8944,7 @@ class TestBatch15SaveSystem:
             restored = AbilitySerializer.deserialize(serialized)
             assert restored is not None, f"Deserialize failed for {name}"
             assert restored.name == ability.name
+
 
 # ======================================================================
 # BATCH 16 - Jump (DataDrivenJumpSkill)
@@ -7730,12 +8956,14 @@ class TestBatch16YAMLLoading:
 
     def test_jump_yaml_loads(self):
         from pathlib import Path
+
         from src.core.data.ability_loader import AbilityFactory
 
         p = Path(__file__).parent.parent / "src" / "core" / "data" / "abilities" / "jump.yaml"
         ability = AbilityFactory.create_from_yaml(p)
         assert ability.name == "Jump"
         from src.core.data.data_driven_abilities import DataDrivenJumpSkill
+
         assert isinstance(ability, DataDrivenJumpSkill)
         assert ability.cost == 10
         assert ability._charge_time == 1
@@ -7743,6 +8971,7 @@ class TestBatch16YAMLLoading:
     def test_jump_wrapper_returns_data_driven(self):
         from src.core import abilities
         from src.core.data.data_driven_abilities import DataDrivenJumpSkill
+
         j = abilities.Jump()
         assert isinstance(j, DataDrivenJumpSkill)
         assert j.name == "Jump"
@@ -7754,16 +8983,21 @@ class TestBatch16Modifications:
     @staticmethod
     def _make_jump():
         from src.core import abilities
+
         return abilities.Jump()
 
     @staticmethod
     def _make_user(level=30, class_name="Lancer"):
         from tests.test_framework import TestGameState
+
         return TestGameState.create_player(
-            name="Lancer", class_name=class_name, race_name="Human",
-            level=level, health=(300, 300), mana=(100, 100),
-            stats={"strength": 50, "intel": 20, "wisdom": 15,
-                   "con": 25, "charisma": 10, "dex": 25},
+            name="Lancer",
+            class_name=class_name,
+            race_name="Human",
+            level=level,
+            health=(300, 300),
+            mana=(100, 100),
+            stats={"strength": 50, "intel": 20, "wisdom": 15, "con": 25, "charisma": 10, "dex": 25},
         )
 
     def test_default_modifications(self):
@@ -7868,27 +9102,36 @@ class TestBatch16Charging:
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Lancer", class_name="Lancer", race_name="Human",
-            level=30, health=(300, 300), mana=(100, 100),
-            stats={"strength": 50, "intel": 20, "wisdom": 15,
-                   "con": 25, "charisma": 10, "dex": 25},
+            name="Lancer",
+            class_name="Lancer",
+            race_name="Human",
+            level=30,
+            health=(300, 300),
+            mana=(100, 100),
+            stats={"strength": 50, "intel": 20, "wisdom": 15, "con": 25, "charisma": 10, "dex": 25},
         )
         target = TestGameState.create_player(
-            name="Enemy", class_name="Warrior", race_name="Human",
-            level=20, health=(200, 200), mana=(50, 50),
-            stats={"strength": 15, "intel": 10, "wisdom": 10,
-                   "con": 10, "charisma": 10, "dex": 10},
+            name="Enemy",
+            class_name="Warrior",
+            race_name="Human",
+            level=20,
+            health=(200, 200),
+            mana=(50, 50),
+            stats={"strength": 15, "intel": 10, "wisdom": 10, "con": 10, "charisma": 10, "dex": 10},
         )
         return user, target
 
     def test_default_charge_time(self):
         from src.core import abilities
+
         j = abilities.Jump()
         assert j.get_charge_time() == 1
 
     def test_quick_dive_instant(self):
         from src.core import abilities
+
         j = abilities.Jump()
         j.unlock_modification("Quick Dive")
         j.modifications["Quick Dive"] = True
@@ -7897,6 +9140,7 @@ class TestBatch16Charging:
 
     def test_soaring_strike_two_turns(self):
         from src.core import abilities
+
         j = abilities.Jump()
         j.unlock_modification("Soaring Strike")
         j.modifications["Soaring Strike"] = True
@@ -7905,6 +9149,7 @@ class TestBatch16Charging:
 
     def test_start_charge_deducts_mana_and_sets_state(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         j = abilities.Jump()
         mana_before = user.mana.current
@@ -7915,6 +9160,7 @@ class TestBatch16Charging:
 
     def test_charge_executes_after_one_turn(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         j = abilities.Jump()
         j.use(user, target)  # start charge
@@ -7925,6 +9171,7 @@ class TestBatch16Charging:
 
     def test_cancel_charge_when_incapacitated(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         j = abilities.Jump()
         j.use(user, target)
@@ -7936,6 +9183,7 @@ class TestBatch16Charging:
 
     def test_unstoppable_prevents_cancel(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         j = abilities.Jump()
         j.unlock_modification("Unstoppable")
@@ -7944,10 +9192,15 @@ class TestBatch16Charging:
         user.status_effects["Stun"].active = True
         user.status_effects["Stun"].duration = 2
         result = j.use(user, target)
-        assert "cannot be stopped" not in result.lower() or "descends" in result.lower() or "interrupted" not in result.lower()
+        assert (
+            "cannot be stopped" not in result.lower()
+            or "descends" in result.lower()
+            or "interrupted" not in result.lower()
+        )
 
     def test_damage_threshold_interrupt(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         j = abilities.Jump()
         j.use(user, target)  # start charge (records health)
@@ -7959,6 +9212,7 @@ class TestBatch16Charging:
 
     def test_quick_dive_executes_immediately(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         j = abilities.Jump()
         j.unlock_modification("Quick Dive")
@@ -7975,22 +9229,30 @@ class TestBatch16Execute:
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Lancer", class_name="Lancer", race_name="Human",
-            level=30, health=(300, 300), mana=(100, 100),
-            stats={"strength": 50, "intel": 20, "wisdom": 15,
-                   "con": 25, "charisma": 10, "dex": 25},
+            name="Lancer",
+            class_name="Lancer",
+            race_name="Human",
+            level=30,
+            health=(300, 300),
+            mana=(100, 100),
+            stats={"strength": 50, "intel": 20, "wisdom": 15, "con": 25, "charisma": 10, "dex": 25},
         )
         target = TestGameState.create_player(
-            name="Enemy", class_name="Warrior", race_name="Human",
-            level=20, health=(200, 200), mana=(50, 50),
-            stats={"strength": 15, "intel": 10, "wisdom": 10,
-                   "con": 10, "charisma": 10, "dex": 10},
+            name="Enemy",
+            class_name="Warrior",
+            race_name="Human",
+            level=20,
+            health=(200, 200),
+            mana=(50, 50),
+            stats={"strength": 15, "intel": 10, "wisdom": 10, "con": 10, "charisma": 10, "dex": 10},
         )
         return user, target
 
     def test_basic_execute_deals_damage(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         j = abilities.Jump()
         j.use(user, target)  # start charge
@@ -8001,6 +9263,7 @@ class TestBatch16Execute:
 
     def test_recover_heals(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         j = abilities.Jump()
         j.unlock_modification("Recover")
@@ -8015,6 +9278,7 @@ class TestBatch16Execute:
 
     def test_retribution_adds_damage_message(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         j = abilities.Jump()
         j.unlock_modification("Retribution")
@@ -8056,11 +9320,13 @@ class TestBatch17YAMLLoading:
 
     def test_sanctuary_yaml_loads(self):
         from pathlib import Path
+
         from src.core.data.ability_loader import AbilityFactory
 
         p = Path(__file__).parent.parent / "src" / "core" / "data" / "abilities" / "sanctuary.yaml"
         ability = AbilityFactory.create_from_yaml(p)
         from src.core.data.data_driven_abilities import DataDrivenMovementSpell
+
         assert isinstance(ability, DataDrivenMovementSpell)
         assert ability.name == "Sanctuary"
         assert ability.cost == 100
@@ -8068,11 +9334,13 @@ class TestBatch17YAMLLoading:
 
     def test_teleport_yaml_loads(self):
         from pathlib import Path
+
         from src.core.data.ability_loader import AbilityFactory
 
         p = Path(__file__).parent.parent / "src" / "core" / "data" / "abilities" / "teleport.yaml"
         ability = AbilityFactory.create_from_yaml(p)
         from src.core.data.data_driven_abilities import DataDrivenMovementSpell
+
         assert isinstance(ability, DataDrivenMovementSpell)
         assert ability.name == "Teleport"
         assert ability.cost == 50
@@ -8082,6 +9350,7 @@ class TestBatch17YAMLLoading:
     def test_sanctuary_wrapper(self):
         from src.core import abilities
         from src.core.data.data_driven_abilities import DataDrivenMovementSpell
+
         s = abilities.Sanctuary()
         assert isinstance(s, DataDrivenMovementSpell)
         assert s.name == "Sanctuary"
@@ -8089,6 +9358,7 @@ class TestBatch17YAMLLoading:
     def test_teleport_wrapper(self):
         from src.core import abilities
         from src.core.data.data_driven_abilities import DataDrivenMovementSpell
+
         t = abilities.Teleport()
         assert isinstance(t, DataDrivenMovementSpell)
         assert t.name == "Teleport"
@@ -8101,15 +9371,20 @@ class TestBatch17Sanctuary:
     @staticmethod
     def _make_user():
         from tests.test_framework import TestGameState
+
         return TestGameState.create_player(
-            name="Wizard", class_name="Wizard", race_name="Human",
-            level=30, health=(300, 300), mana=(200, 200),
-            stats={"strength": 10, "intel": 40, "wisdom": 30,
-                   "con": 15, "charisma": 10, "dex": 15},
+            name="Wizard",
+            class_name="Wizard",
+            race_name="Human",
+            level=30,
+            health=(300, 300),
+            mana=(200, 200),
+            stats={"strength": 10, "intel": 40, "wisdom": 30, "con": 15, "charisma": 10, "dex": 15},
         )
 
     def test_cast_out_heals_fully(self):
         from src.core import abilities
+
         user = self._make_user()
         user.health.current = 100
         user.mana.current = 150
@@ -8122,6 +9397,7 @@ class TestBatch17Sanctuary:
 
     def test_cast_out_calls_to_town(self):
         from src.core import abilities
+
         user = self._make_user()
         to_town_called = []
         original = user.to_town
@@ -8132,6 +9408,7 @@ class TestBatch17Sanctuary:
 
     def test_cast_out_message(self):
         from src.core import abilities
+
         user = self._make_user()
         s = abilities.Sanctuary()
         result = s.cast_out(user=user)
@@ -8143,12 +9420,15 @@ class TestBatch17Teleport:
     """Teleport cast_out behaviour."""
 
     def test_teleport_set_location(self):
-        from src.core import abilities
         from types import SimpleNamespace
+
+        from src.core import abilities
 
         player = SimpleNamespace(
             name="Seeker",
-            location_x=5, location_y=10, location_z=2,
+            location_x=5,
+            location_y=10,
+            location_z=2,
             teleport=(0, 0, 0),
             mana=SimpleNamespace(current=100, max=100),
         )
@@ -8160,12 +9440,15 @@ class TestBatch17Teleport:
         assert player.teleport == (5, 10, 2)
 
     def test_teleport_to_location(self):
-        from src.core import abilities
         from types import SimpleNamespace
+
+        from src.core import abilities
 
         player = SimpleNamespace(
             name="Seeker",
-            location_x=5, location_y=10, location_z=2,
+            location_x=5,
+            location_y=10,
+            location_z=2,
             teleport=(1, 2, 3),
             mana=SimpleNamespace(current=100, max=100),
         )
@@ -8180,12 +9463,15 @@ class TestBatch17Teleport:
         assert player.mana.current == 100 - 50
 
     def test_teleport_random_when_no_callback(self):
-        from src.core import abilities
         from types import SimpleNamespace
+
+        from src.core import abilities
 
         player = SimpleNamespace(
             name="Seeker",
-            location_x=5, location_y=10, location_z=2,
+            location_x=5,
+            location_y=10,
+            location_z=2,
             teleport=(1, 2, 3),
             mana=SimpleNamespace(current=100, max=100),
         )
@@ -8197,6 +9483,7 @@ class TestBatch17Teleport:
 
     def test_teleport_not_usable_in_combat(self):
         from src.core import abilities
+
         t = abilities.Teleport()
         assert t.combat is False
 
@@ -8228,12 +9515,14 @@ class TestBatch18ShadowStrikeYAML:
     def test_loads_as_charging_skill(self):
         from src.core import abilities
         from src.core.data.data_driven_abilities import DataDrivenChargingSkill
+
         ss = abilities.ShadowStrike()
         assert isinstance(ss, DataDrivenChargingSkill)
         assert ss.name == "Shadow Strike"
 
     def test_cost_and_charge_time(self):
         from src.core import abilities
+
         ss = abilities.ShadowStrike()
         assert ss.cost == 20
         assert ss.get_charge_time() == 1
@@ -8241,6 +9530,7 @@ class TestBatch18ShadowStrikeYAML:
     def test_has_shadow_strike_effect(self):
         from src.core import abilities
         from src.core.effects import ShadowStrikeEffect
+
         ss = abilities.ShadowStrike()
         assert any(isinstance(e, ShadowStrikeEffect) for e in ss._effects)
 
@@ -8251,22 +9541,30 @@ class TestBatch18ShadowStrikeCharging:
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Rogue", class_name="Warrior", race_name="Human",
-            level=30, health=(200, 200), mana=(100, 100),
-            stats={"strength": 20, "intel": 15, "wisdom": 10,
-                   "con": 14, "charisma": 22, "dex": 30},
+            name="Rogue",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(200, 200),
+            mana=(100, 100),
+            stats={"strength": 20, "intel": 15, "wisdom": 10, "con": 14, "charisma": 22, "dex": 30},
         )
         target = TestGameState.create_player(
-            name="Victim", class_name="Warrior", race_name="Human",
-            level=30, health=(500, 500), mana=(50, 50),
-            stats={"strength": 10, "intel": 10, "wisdom": 10,
-                   "con": 10, "charisma": 10, "dex": 10},
+            name="Victim",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(500, 500),
+            mana=(50, 50),
+            stats={"strength": 10, "intel": 10, "wisdom": 10, "con": 10, "charisma": 10, "dex": 10},
         )
         return user, target
 
     def test_starts_charging(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         ss = abilities.ShadowStrike()
         result = ss.use(user, target)
@@ -8276,6 +9574,7 @@ class TestBatch18ShadowStrikeCharging:
 
     def test_executes_after_charge(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         ss = abilities.ShadowStrike()
         ss.use(user, target)
@@ -8287,6 +9586,7 @@ class TestBatch18ShadowStrikeCharging:
 
     def test_cancel_on_incapacitated(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         ss = abilities.ShadowStrike()
         ss.use(user, target)
@@ -8298,6 +9598,7 @@ class TestBatch18ShadowStrikeCharging:
 
     def test_instant_if_charge_time_zero(self):
         from src.core import abilities
+
         user, target = self._make_combatants()
         ss = abilities.ShadowStrike()
         ss._charge_time = 0
@@ -8313,24 +9614,32 @@ class TestBatch18ShadowStrikeEffect:
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Rogue", class_name="Warrior", race_name="Human",
-            level=30, health=(200, 200), mana=(100, 100),
-            stats={"strength": 20, "intel": 15, "wisdom": 10,
-                   "con": 14, "charisma": 22, "dex": 30},
+            name="Rogue",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(200, 200),
+            mana=(100, 100),
+            stats={"strength": 20, "intel": 15, "wisdom": 10, "con": 14, "charisma": 22, "dex": 30},
         )
         target = TestGameState.create_player(
-            name="Victim", class_name="Warrior", race_name="Human",
-            level=30, health=(500, 500), mana=(50, 50),
-            stats={"strength": 10, "intel": 10, "wisdom": 10,
-                   "con": 10, "charisma": 10, "dex": 10},
+            name="Victim",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(500, 500),
+            mana=(50, 50),
+            stats={"strength": 10, "intel": 10, "wisdom": 10, "con": 10, "charisma": 10, "dex": 10},
         )
         return user, target
 
     def test_effect_does_weapon_damage(self):
         """ShadowStrikeEffect should deal weapon damage with guaranteed crit."""
-        from src.core.effects import ShadowStrikeEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import ShadowStrikeEffect
+
         user, target = self._make_combatants()
         effect = ShadowStrikeEffect(dmg_mod=2.0, blind_chance=0.0)
         result = CombatResult(action="Shadow Strike", actor=user, target=target)
@@ -8342,8 +9651,9 @@ class TestBatch18ShadowStrikeEffect:
 
     def test_blind_blocked_by_immunity(self):
         """Blind should not apply if target has Blind immunity."""
-        from src.core.effects import ShadowStrikeEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import ShadowStrikeEffect
+
         user, target = self._make_combatants()
         target.status_immunity.append("Blind")
         effect = ShadowStrikeEffect(dmg_mod=2.0, blind_chance=1.0, blind_duration=2)
@@ -8353,8 +9663,9 @@ class TestBatch18ShadowStrikeEffect:
 
     def test_blind_blocked_by_mana_shield(self):
         """Blind should not apply if target has Mana Shield active."""
-        from src.core.effects import ShadowStrikeEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import ShadowStrikeEffect
+
         user, target = self._make_combatants()
         target.magic_effects["Mana Shield"].active = True
         target.magic_effects["Mana Shield"].duration = 3
@@ -8366,8 +9677,10 @@ class TestBatch18ShadowStrikeEffect:
     def test_blind_applies_with_full_chance(self):
         """With blind_chance=1.0, blind should always apply when not immune."""
         import random
-        from src.core.effects import ShadowStrikeEffect
+
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import ShadowStrikeEffect
+
         user, target = self._make_combatants()
         effect = ShadowStrikeEffect(dmg_mod=2.0, blind_chance=1.0, blind_duration=3)
         result = CombatResult(action="Shadow Strike", actor=user, target=target)
@@ -8387,16 +9700,19 @@ class TestBatch18DeletedAbilities:
 
     def test_holy_smite_yaml_not_present(self):
         from pathlib import Path
+
         yaml_dir = Path(__file__).parent.parent / "src" / "core" / "data" / "abilities"
         assert not (yaml_dir / "holy_smite.yaml").exists()
 
     def test_power_strike_yaml_not_present(self):
         from pathlib import Path
+
         yaml_dir = Path(__file__).parent.parent / "src" / "core" / "data" / "abilities"
         assert not (yaml_dir / "power_strike.yaml").exists()
 
     def test_summon_allies_yaml_not_present(self):
         from pathlib import Path
+
         yaml_dir = Path(__file__).parent.parent / "src" / "core" / "data" / "abilities"
         assert not (yaml_dir / "summon_allies.yaml").exists()
 
@@ -8406,11 +9722,13 @@ class TestBatch18DrowAssassin:
 
     def test_drow_assassin_has_shadow_strike(self):
         from src.core.enemies import DrowAssassin
+
         enemy = DrowAssassin()
         assert "Shadow Strike" in enemy.spellbook["Skills"]
 
     def test_drow_assassin_action_stack_includes_shadow_strike(self):
         from src.core.enemies import DrowAssassin
+
         enemy = DrowAssassin()
         ss_entries = [a for a in enemy.action_stack if a["ability"] == "Shadow Strike"]
         assert len(ss_entries) == 1
@@ -8424,6 +9742,7 @@ class TestBatch18SaveSystem:
     def test_serialize_shadow_strike(self):
         from src.core import abilities
         from src.core.save_system import AbilitySerializer
+
         ss = abilities.ShadowStrike()
         serialized = AbilitySerializer.serialize(ss)
         assert serialized == "ShadowStrike"
@@ -8440,47 +9759,63 @@ class TestBatch18SaveSystem:
 class TestBatch19DragonBreathYAML:
     """All three elemental Dragon Breath YAMLs load correctly."""
 
-    @pytest.mark.parametrize("cls_name,element", [
-        ("DragonBreathFire", "Fire"),
-        ("DragonBreathWater", "Water"),
-        ("DragonBreathWind", "Wind"),
-    ])
+    @pytest.mark.parametrize(
+        "cls_name,element",
+        [
+            ("DragonBreathFire", "Fire"),
+            ("DragonBreathWater", "Water"),
+            ("DragonBreathWind", "Wind"),
+        ],
+    )
     def test_loads_as_charging_skill(self, cls_name, element):
         from src.core import abilities
         from src.core.data.data_driven_abilities import DataDrivenChargingSkill
+
         ab = getattr(abilities, cls_name)()
         assert isinstance(ab, DataDrivenChargingSkill)
 
-    @pytest.mark.parametrize("cls_name,element", [
-        ("DragonBreathFire", "Fire"),
-        ("DragonBreathWater", "Water"),
-        ("DragonBreathWind", "Wind"),
-    ])
+    @pytest.mark.parametrize(
+        "cls_name,element",
+        [
+            ("DragonBreathFire", "Fire"),
+            ("DragonBreathWater", "Water"),
+            ("DragonBreathWind", "Wind"),
+        ],
+    )
     def test_charge_time_and_cost(self, cls_name, element):
         from src.core import abilities
+
         ab = getattr(abilities, cls_name)()
         assert ab.get_charge_time() == 2
         assert ab.cost == 0
 
-    @pytest.mark.parametrize("cls_name,element", [
-        ("DragonBreathFire", "Fire"),
-        ("DragonBreathWater", "Water"),
-        ("DragonBreathWind", "Wind"),
-    ])
+    @pytest.mark.parametrize(
+        "cls_name,element",
+        [
+            ("DragonBreathFire", "Fire"),
+            ("DragonBreathWater", "Water"),
+            ("DragonBreathWind", "Wind"),
+        ],
+    )
     def test_has_breath_damage_effect(self, cls_name, element):
         from src.core import abilities
         from src.core.effects.composite import BreathDamageEffect
+
         ab = getattr(abilities, cls_name)()
         assert any(isinstance(e, BreathDamageEffect) for e in ab._effects)
 
-    @pytest.mark.parametrize("cls_name,element", [
-        ("DragonBreathFire", "Fire"),
-        ("DragonBreathWater", "Water"),
-        ("DragonBreathWind", "Wind"),
-    ])
+    @pytest.mark.parametrize(
+        "cls_name,element",
+        [
+            ("DragonBreathFire", "Fire"),
+            ("DragonBreathWater", "Water"),
+            ("DragonBreathWind", "Wind"),
+        ],
+    )
     def test_element_matches(self, cls_name, element):
         from src.core import abilities
         from src.core.effects.composite import BreathDamageEffect
+
         ab = getattr(abilities, cls_name)()
         breath_eff = [e for e in ab._effects if isinstance(e, BreathDamageEffect)][0]
         assert breath_eff.element == element
@@ -8491,16 +9826,19 @@ class TestBatch19DragonBreathWrappers:
 
     def test_dragon_breath_fire(self):
         from src.core import abilities
+
         ab = abilities.DragonBreathFire()
         assert ab.name == "Dragon Breath (Fire)"
 
     def test_dragon_breath_water(self):
         from src.core import abilities
+
         ab = abilities.DragonBreathWater()
         assert ab.name == "Dragon Breath (Water)"
 
     def test_dragon_breath_wind(self):
         from src.core import abilities
+
         ab = abilities.DragonBreathWind()
         assert ab.name == "Dragon Breath (Wind)"
 
@@ -8511,22 +9849,30 @@ class TestBatch19DragonBreathCharging:
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Wyrm", class_name="Warrior", race_name="Human",
-            level=30, health=(400, 400), mana=(150, 150),
-            stats={"strength": 38, "intel": 28, "wisdom": 30,
-                   "con": 28, "charisma": 22, "dex": 23},
+            name="Wyrm",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(400, 400),
+            mana=(150, 150),
+            stats={"strength": 38, "intel": 28, "wisdom": 30, "con": 28, "charisma": 22, "dex": 23},
         )
         target = TestGameState.create_player(
-            name="Hero", class_name="Warrior", race_name="Human",
-            level=30, health=(200, 200), mana=(100, 100),
-            stats={"strength": 20, "intel": 20, "wisdom": 20,
-                   "con": 20, "charisma": 20, "dex": 20},
+            name="Hero",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(200, 200),
+            mana=(100, 100),
+            stats={"strength": 20, "intel": 20, "wisdom": 20, "con": 20, "charisma": 20, "dex": 20},
         )
         return user, target
 
     def test_start_charge(self):
         from src.core import abilities
+
         ab = abilities.DragonBreathFire()
         user, target = self._make_combatants()
         result = ab.use(user, target)
@@ -8534,6 +9880,7 @@ class TestBatch19DragonBreathCharging:
 
     def test_execute_after_charge(self):
         from src.core import abilities
+
         ab = abilities.DragonBreathFire()
         user, target = self._make_combatants()
         ab.use(user, target)  # start charging (charge_turns = 2)
@@ -8543,6 +9890,7 @@ class TestBatch19DragonBreathCharging:
 
     def test_cancel_on_incapacitated(self):
         from src.core import abilities
+
         ab = abilities.DragonBreathWater()
         user, target = self._make_combatants()
         ab.use(user, target)
@@ -8555,12 +9903,14 @@ class TestBatch19DragonBreathCharging:
 
     def test_telegraph_message_present(self):
         from src.core import abilities
+
         ab = abilities.DragonBreathFire()
         assert ab._telegraph_message and len(ab._telegraph_message) > 0
 
     def test_breath_deals_damage(self):
         """Dragon Breath (Water) should deal damage after charge."""
         from src.core import abilities
+
         ab = abilities.DragonBreathWater()
         user, target = self._make_combatants()
         ab.use(user, target)  # start charging (charge_turns = 2)
@@ -8597,6 +9947,7 @@ class TestBatch19EnemySpellbooks:
 
     def test_pseudodragon_has_dragon_breath_fire(self):
         from src.core.enemies import Pseudodragon
+
         enemy = Pseudodragon()
         assert "Dragon Breath (Fire)" in enemy.spellbook["Skills"]
         entries = [a for a in enemy.action_stack if a["ability"] == "Dragon Breath (Fire)"]
@@ -8605,6 +9956,7 @@ class TestBatch19EnemySpellbooks:
 
     def test_wyrm_has_dragon_breath_fire(self):
         from src.core.enemies import Wyrm
+
         enemy = Wyrm()
         assert "Dragon Breath (Fire)" in enemy.spellbook["Skills"]
         entries = [a for a in enemy.action_stack if a["ability"] == "Dragon Breath (Fire)"]
@@ -8613,6 +9965,7 @@ class TestBatch19EnemySpellbooks:
 
     def test_hydra_has_dragon_breath_water(self):
         from src.core.enemies import Hydra
+
         enemy = Hydra()
         assert "Dragon Breath (Water)" in enemy.spellbook["Skills"]
         entries = [a for a in enemy.action_stack if a["ability"] == "Dragon Breath (Water)"]
@@ -8621,6 +9974,7 @@ class TestBatch19EnemySpellbooks:
 
     def test_wyvern_has_dragon_breath_wind(self):
         from src.core.enemies import Wyvern
+
         enemy = Wyvern()
         assert "Dragon Breath (Wind)" in enemy.spellbook["Skills"]
         entries = [a for a in enemy.action_stack if a["ability"] == "Dragon Breath (Wind)"]
@@ -8629,6 +9983,7 @@ class TestBatch19EnemySpellbooks:
 
     def test_red_dragon_has_dragon_breath_fire(self):
         from src.core.enemies import RedDragon
+
         enemy = RedDragon()
         assert "Dragon Breath (Fire)" in enemy.spellbook["Skills"]
         entries = [a for a in enemy.action_stack if a["ability"] == "Dragon Breath (Fire)"]
@@ -8637,7 +9992,8 @@ class TestBatch19EnemySpellbooks:
 
     def test_enemy_telegraphs_are_unique(self):
         """Each enemy has a different telegraph message for their breath."""
-        from src.core.enemies import Pseudodragon, Wyrm, Hydra, Wyvern, RedDragon
+        from src.core.enemies import Hydra, Pseudodragon, RedDragon, Wyrm, Wyvern
+
         telegraphs = set()
         for EnemyClass in [Pseudodragon, Wyrm, Hydra, Wyvern, RedDragon]:
             enemy = EnemyClass()
@@ -8652,6 +10008,7 @@ class TestBatch19OldYAMLRemoved:
 
     def test_old_dragon_breath_yaml_gone(self):
         from pathlib import Path
+
         yaml_dir = Path(__file__).parent.parent / "src" / "core" / "data" / "abilities"
         assert not (yaml_dir / "dragon_breath.yaml").exists()
 
@@ -8659,12 +10016,18 @@ class TestBatch19OldYAMLRemoved:
 class TestBatch19SaveSystem:
     """Dragon Breath abilities serialize and deserialize."""
 
-    @pytest.mark.parametrize("cls_name", [
-        "DragonBreathFire", "DragonBreathWater", "DragonBreathWind",
-    ])
+    @pytest.mark.parametrize(
+        "cls_name",
+        [
+            "DragonBreathFire",
+            "DragonBreathWater",
+            "DragonBreathWind",
+        ],
+    )
     def test_serialize_dragon_breath(self, cls_name):
         from src.core import abilities
         from src.core.save_system import AbilitySerializer
+
         ab = getattr(abilities, cls_name)()
         serialized = AbilitySerializer.serialize(ab)
         assert serialized == cls_name
@@ -8719,6 +10082,7 @@ class TestCompanionUltimateYAMLLoading:
     @pytest.mark.parametrize("cls_name,yaml_info", list(ULTIMATE_YAML_MAP.items()))
     def test_wrapper_class_instantiates(self, cls_name, yaml_info):
         from src.core import abilities
+
         _, display_name, _ = yaml_info
         ab = getattr(abilities, cls_name)()
         assert ab.name == display_name
@@ -8727,6 +10091,7 @@ class TestCompanionUltimateYAMLLoading:
     def test_correct_type(self, cls_name, yaml_info):
         from src.core import abilities
         from src.core.data.data_driven_abilities import DataDrivenSkill, DataDrivenSpell
+
         _, _, expected_type = yaml_info
         ab = getattr(abilities, cls_name)()
         if expected_type == "Skill":
@@ -8737,6 +10102,7 @@ class TestCompanionUltimateYAMLLoading:
     @pytest.mark.parametrize("cls_name,yaml_info", list(ULTIMATE_YAML_MAP.items()))
     def test_has_effect(self, cls_name, yaml_info):
         from src.core import abilities
+
         ab = getattr(abilities, cls_name)()
         assert len(ab._effects) > 0
 
@@ -8747,12 +10113,14 @@ class TestCompanionUltimateSummonWiring:
     @pytest.mark.parametrize("summon_name,info", list(SUMMON_ABILITY_MAP.items()))
     def test_summon_has_level_10(self, summon_name, info):
         from src.core.companions import summon_abilities
+
         typ, cls_name = info
         assert "10" in summon_abilities[summon_name][typ]
 
     @pytest.mark.parametrize("summon_name,info", list(SUMMON_ABILITY_MAP.items()))
     def test_level_10_produces_correct_ability(self, summon_name, info):
         from src.core.companions import summon_abilities
+
         typ, cls_name = info
         ab = summon_abilities[summon_name][typ]["10"]()
         expected_name = ULTIMATE_YAML_MAP[cls_name][1]
@@ -8766,6 +10134,7 @@ class TestCompanionUltimateSerialize:
     def test_serialize_roundtrip(self, cls_name):
         from src.core import abilities
         from src.core.save_system import AbilitySerializer
+
         ab = getattr(abilities, cls_name)()
         serialized = AbilitySerializer.serialize(ab)
         assert serialized == cls_name
@@ -8779,23 +10148,31 @@ class TestTitanicSlamEffect:
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Patagon", class_name="Warrior", race_name="Human",
-            level=30, health=(500, 500), mana=(100, 100),
-            stats={"strength": 30, "intel": 10, "wisdom": 10,
-                   "con": 25, "charisma": 10, "dex": 15},
+            name="Patagon",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(500, 500),
+            mana=(100, 100),
+            stats={"strength": 30, "intel": 10, "wisdom": 10, "con": 25, "charisma": 10, "dex": 15},
         )
         target = TestGameState.create_player(
-            name="Target", class_name="Warrior", race_name="Human",
-            level=30, health=(500, 500), mana=(50, 50),
-            stats={"strength": 10, "intel": 10, "wisdom": 10,
-                   "con": 10, "charisma": 10, "dex": 10},
+            name="Target",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(500, 500),
+            mana=(50, 50),
+            stats={"strength": 10, "intel": 10, "wisdom": 10, "con": 10, "charisma": 10, "dex": 10},
         )
         return user, target
 
     def test_deals_damage(self):
-        from src.core.effects import TitanicSlamEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import TitanicSlamEffect
+
         user, target = self._make_combatants()
         result = CombatResult(action="Titanic Slam", actor=user, target=target)
         effect = TitanicSlamEffect(dmg_mod=4.0, stun_duration=2)
@@ -8804,8 +10181,9 @@ class TestTitanicSlamEffect:
         assert target.health.current < 500
 
     def test_stun_applied(self):
-        from src.core.effects import TitanicSlamEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import TitanicSlamEffect
+
         user, target = self._make_combatants()
         result = CombatResult(action="Titanic Slam", actor=user, target=target)
         effect = TitanicSlamEffect(dmg_mod=4.0, stun_duration=2)
@@ -8815,8 +10193,9 @@ class TestTitanicSlamEffect:
             assert target.status_effects["Stun"].duration == 2
 
     def test_stun_blocked_by_mana_shield(self):
-        from src.core.effects import TitanicSlamEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import TitanicSlamEffect
+
         user, target = self._make_combatants()
         target.magic_effects["Mana Shield"].active = True
         target.magic_effects["Mana Shield"].duration = 3
@@ -8828,8 +10207,9 @@ class TestTitanicSlamEffect:
         assert target.status_effects["Stun"].active is False
 
     def test_has_messages(self):
-        from src.core.effects import TitanicSlamEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import TitanicSlamEffect
+
         user, target = self._make_combatants()
         result = CombatResult(action="Titanic Slam", actor=user, target=target)
         effect = TitanicSlamEffect()
@@ -8844,23 +10224,31 @@ class TestDevourEffect:
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Dilong", class_name="Warrior", race_name="Human",
-            level=30, health=(500, 500), mana=(100, 100),
-            stats={"strength": 25, "intel": 10, "wisdom": 10,
-                   "con": 25, "charisma": 10, "dex": 15},
+            name="Dilong",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(500, 500),
+            mana=(100, 100),
+            stats={"strength": 25, "intel": 10, "wisdom": 10, "con": 25, "charisma": 10, "dex": 15},
         )
         target = TestGameState.create_player(
-            name="Target", class_name="Warrior", race_name="Human",
-            level=30, health=(500, 500), mana=(50, 50),
-            stats={"strength": 10, "intel": 10, "wisdom": 10,
-                   "con": 10, "charisma": 10, "dex": 10},
+            name="Target",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(500, 500),
+            mana=(50, 50),
+            stats={"strength": 10, "intel": 10, "wisdom": 10, "con": 10, "charisma": 10, "dex": 10},
         )
         return user, target
 
     def test_deals_multi_hit_damage(self):
-        from src.core.effects import DevourEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import DevourEffect
+
         user, target = self._make_combatants()
         result = CombatResult(action="Devour", actor=user, target=target)
         effect = DevourEffect(num_bites=3, multiplier=1.5, element="Earth")
@@ -8869,14 +10257,19 @@ class TestDevourEffect:
         assert result.damage > 0
 
     def test_bite_messages(self):
-        from src.core.effects import DevourEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import DevourEffect
+
         user, target = self._make_combatants()
         result = CombatResult(action="Devour", actor=user, target=target)
         effect = DevourEffect(num_bites=3, multiplier=1.5)
         effect.apply(user, target, result)
         messages = result.extra.get("messages", [])
-        crush_msgs = [m for m in messages if "crushes" in m.lower() or "devours" in m.lower() or "spits" in m.lower()]
+        crush_msgs = [
+            m
+            for m in messages
+            if "crushes" in m.lower() or "devours" in m.lower() or "spits" in m.lower()
+        ]
         assert len(crush_msgs) >= 1
 
 
@@ -8886,24 +10279,32 @@ class TestAbsoluteZeroEffect:
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Agloolik", class_name="Wizard", race_name="Human",
-            level=30, health=(300, 300), mana=(200, 200),
-            stats={"strength": 10, "intel": 30, "wisdom": 20,
-                   "con": 15, "charisma": 10, "dex": 15},
+            name="Agloolik",
+            class_name="Wizard",
+            race_name="Human",
+            level=30,
+            health=(300, 300),
+            mana=(200, 200),
+            stats={"strength": 10, "intel": 30, "wisdom": 20, "con": 15, "charisma": 10, "dex": 15},
         )
         user.class_effects["Power Up"].active = False
         target = TestGameState.create_player(
-            name="Target", class_name="Warrior", race_name="Human",
-            level=30, health=(500, 500), mana=(50, 50),
-            stats={"strength": 10, "intel": 10, "wisdom": 10,
-                   "con": 10, "charisma": 10, "dex": 10},
+            name="Target",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(500, 500),
+            mana=(50, 50),
+            stats={"strength": 10, "intel": 10, "wisdom": 10, "con": 10, "charisma": 10, "dex": 10},
         )
         return user, target
 
     def test_deals_damage(self):
-        from src.core.effects import AbsoluteZeroEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import AbsoluteZeroEffect
+
         user, target = self._make_combatants()
         result = CombatResult(action="Absolute Zero", actor=user, target=target)
         effect = AbsoluteZeroEffect(damage_mod=3.0, stun_duration=3, def_reduction=5)
@@ -8911,8 +10312,9 @@ class TestAbsoluteZeroEffect:
         assert target.health.current < 500
 
     def test_stun_applied(self):
-        from src.core.effects import AbsoluteZeroEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import AbsoluteZeroEffect
+
         user, target = self._make_combatants()
         result = CombatResult(action="Absolute Zero", actor=user, target=target)
         effect = AbsoluteZeroEffect(damage_mod=3.0, stun_duration=3, def_reduction=5)
@@ -8922,8 +10324,9 @@ class TestAbsoluteZeroEffect:
             assert target.status_effects["Stun"].duration == 3
 
     def test_defense_permanently_reduced(self):
-        from src.core.effects import AbsoluteZeroEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import AbsoluteZeroEffect
+
         user, target = self._make_combatants()
         def_before = target.combat.defense
         result = CombatResult(action="Absolute Zero", actor=user, target=target)
@@ -8939,24 +10342,32 @@ class TestEruptionEffect:
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Cacus", class_name="Wizard", race_name="Human",
-            level=30, health=(400, 400), mana=(200, 200),
-            stats={"strength": 20, "intel": 25, "wisdom": 15,
-                   "con": 15, "charisma": 10, "dex": 15},
+            name="Cacus",
+            class_name="Wizard",
+            race_name="Human",
+            level=30,
+            health=(400, 400),
+            mana=(200, 200),
+            stats={"strength": 20, "intel": 25, "wisdom": 15, "con": 15, "charisma": 10, "dex": 15},
         )
         user.class_effects["Power Up"].active = False
         target = TestGameState.create_player(
-            name="Target", class_name="Warrior", race_name="Human",
-            level=30, health=(500, 500), mana=(50, 50),
-            stats={"strength": 10, "intel": 10, "wisdom": 10,
-                   "con": 10, "charisma": 10, "dex": 10},
+            name="Target",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(500, 500),
+            mana=(50, 50),
+            stats={"strength": 10, "intel": 10, "wisdom": 10, "con": 10, "charisma": 10, "dex": 10},
         )
         return user, target
 
     def test_deals_fire_damage(self):
-        from src.core.effects import EruptionEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import EruptionEffect
+
         user, target = self._make_combatants()
         result = CombatResult(action="Eruption", actor=user, target=target)
         effect = EruptionEffect(damage_mod=3.5, burn_duration=3)
@@ -8964,8 +10375,9 @@ class TestEruptionEffect:
         assert target.health.current < 500
 
     def test_burn_applied(self):
-        from src.core.effects import EruptionEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import EruptionEffect
+
         user, target = self._make_combatants()
         result = CombatResult(action="Eruption", actor=user, target=target)
         effect = EruptionEffect(damage_mod=3.5, burn_duration=3)
@@ -8975,8 +10387,9 @@ class TestEruptionEffect:
             assert target.magic_effects["DOT"].duration == 3
 
     def test_self_defense_buff(self):
-        from src.core.effects import EruptionEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import EruptionEffect
+
         user, target = self._make_combatants()
         result = CombatResult(action="Eruption", actor=user, target=target)
         effect = EruptionEffect(damage_mod=3.5, vulcanize_duration=3)
@@ -8991,24 +10404,32 @@ class TestMaelstromVortexEffect:
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Fuath", class_name="Wizard", race_name="Human",
-            level=30, health=(300, 300), mana=(200, 200),
-            stats={"strength": 10, "intel": 30, "wisdom": 20,
-                   "con": 15, "charisma": 10, "dex": 15},
+            name="Fuath",
+            class_name="Wizard",
+            race_name="Human",
+            level=30,
+            health=(300, 300),
+            mana=(200, 200),
+            stats={"strength": 10, "intel": 30, "wisdom": 20, "con": 15, "charisma": 10, "dex": 15},
         )
         user.class_effects["Power Up"].active = False
         target = TestGameState.create_player(
-            name="Target", class_name="Warrior", race_name="Human",
-            level=30, health=(500, 500), mana=(50, 50),
-            stats={"strength": 10, "intel": 10, "wisdom": 10,
-                   "con": 10, "charisma": 10, "dex": 10},
+            name="Target",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(500, 500),
+            mana=(50, 50),
+            stats={"strength": 10, "intel": 10, "wisdom": 10, "con": 10, "charisma": 10, "dex": 10},
         )
         return user, target
 
     def test_deals_water_damage(self):
-        from src.core.effects import MaelstromVortexEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import MaelstromVortexEffect
+
         user, target = self._make_combatants()
         result = CombatResult(action="Maelstrom Vortex", actor=user, target=target)
         effect = MaelstromVortexEffect(damage_mod=3.0, status_duration=3)
@@ -9016,8 +10437,9 @@ class TestMaelstromVortexEffect:
         assert target.health.current < 500
 
     def test_debuffs_applied(self):
-        from src.core.effects import MaelstromVortexEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import MaelstromVortexEffect
+
         user, target = self._make_combatants()
         result = CombatResult(action="Maelstrom Vortex", actor=user, target=target)
         effect = MaelstromVortexEffect(damage_mod=3.0, status_duration=3)
@@ -9028,8 +10450,9 @@ class TestMaelstromVortexEffect:
             assert target.status_effects["Silence"].active is True
 
     def test_debuffs_blocked_by_mana_shield(self):
-        from src.core.effects import MaelstromVortexEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import MaelstromVortexEffect
+
         user, target = self._make_combatants()
         target.magic_effects["Mana Shield"].active = True
         target.magic_effects["Mana Shield"].duration = 3
@@ -9047,24 +10470,32 @@ class TestThunderstrikeEffect:
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Izulu", class_name="Wizard", race_name="Human",
-            level=30, health=(300, 300), mana=(200, 200),
-            stats={"strength": 10, "intel": 30, "wisdom": 20,
-                   "con": 15, "charisma": 10, "dex": 15},
+            name="Izulu",
+            class_name="Wizard",
+            race_name="Human",
+            level=30,
+            health=(300, 300),
+            mana=(200, 200),
+            stats={"strength": 10, "intel": 30, "wisdom": 20, "con": 15, "charisma": 10, "dex": 15},
         )
         user.class_effects["Power Up"].active = False
         target = TestGameState.create_player(
-            name="Target", class_name="Warrior", race_name="Human",
-            level=30, health=(500, 500), mana=(50, 50),
-            stats={"strength": 10, "intel": 10, "wisdom": 10,
-                   "con": 10, "charisma": 10, "dex": 10},
+            name="Target",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(500, 500),
+            mana=(50, 50),
+            stats={"strength": 10, "intel": 10, "wisdom": 10, "con": 10, "charisma": 10, "dex": 10},
         )
         return user, target
 
     def test_deals_damage_with_chains(self):
-        from src.core.effects import ThunderstrikeEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import ThunderstrikeEffect
+
         user, target = self._make_combatants()
         result = CombatResult(action="Thunderstrike", actor=user, target=target)
         effect = ThunderstrikeEffect(damage_mod=3.0, chain_hits=2, chain_multiplier=0.5)
@@ -9075,8 +10506,9 @@ class TestThunderstrikeEffect:
         assert len(chain_msgs) >= 1
 
     def test_stun_applied(self):
-        from src.core.effects import ThunderstrikeEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import ThunderstrikeEffect
+
         user, target = self._make_combatants()
         result = CombatResult(action="Thunderstrike", actor=user, target=target)
         effect = ThunderstrikeEffect(damage_mod=3.0, stun_duration=2)
@@ -9092,24 +10524,32 @@ class TestWindShrapnelEffect:
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Hala", class_name="Wizard", race_name="Human",
-            level=30, health=(300, 300), mana=(200, 200),
-            stats={"strength": 10, "intel": 30, "wisdom": 20,
-                   "con": 15, "charisma": 10, "dex": 15},
+            name="Hala",
+            class_name="Wizard",
+            race_name="Human",
+            level=30,
+            health=(300, 300),
+            mana=(200, 200),
+            stats={"strength": 10, "intel": 30, "wisdom": 20, "con": 15, "charisma": 10, "dex": 15},
         )
         user.class_effects["Power Up"].active = False
         target = TestGameState.create_player(
-            name="Target", class_name="Warrior", race_name="Human",
-            level=30, health=(500, 500), mana=(50, 50),
-            stats={"strength": 10, "intel": 10, "wisdom": 10,
-                   "con": 10, "charisma": 10, "dex": 10},
+            name="Target",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(500, 500),
+            mana=(50, 50),
+            stats={"strength": 10, "intel": 10, "wisdom": 10, "con": 10, "charisma": 10, "dex": 10},
         )
         return user, target
 
     def test_multiple_hits(self):
-        from src.core.effects import WindShrapnelEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import WindShrapnelEffect
+
         user, target = self._make_combatants()
         result = CombatResult(action="Wind Shrapnel", actor=user, target=target)
         effect = WindShrapnelEffect(num_hits=5, damage_mod=1.2)
@@ -9120,8 +10560,9 @@ class TestWindShrapnelEffect:
         assert len(shard_msgs) >= 1
 
     def test_total_damage_is_sum(self):
-        from src.core.effects import WindShrapnelEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import WindShrapnelEffect
+
         user, target = self._make_combatants()
         result = CombatResult(action="Wind Shrapnel", actor=user, target=target)
         effect = WindShrapnelEffect(num_hits=5, damage_mod=1.2, crit_chance=0.0)
@@ -9135,23 +10576,31 @@ class TestDivineJudgmentEffect:
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Seraphim", class_name="Cleric", race_name="Human",
-            level=30, health=(400, 400), mana=(200, 200),
-            stats={"strength": 10, "intel": 15, "wisdom": 30,
-                   "con": 15, "charisma": 15, "dex": 10},
+            name="Seraphim",
+            class_name="Cleric",
+            race_name="Human",
+            level=30,
+            health=(400, 400),
+            mana=(200, 200),
+            stats={"strength": 10, "intel": 15, "wisdom": 30, "con": 15, "charisma": 15, "dex": 10},
         )
         target = TestGameState.create_player(
-            name="Target", class_name="Warrior", race_name="Human",
-            level=30, health=(500, 500), mana=(50, 50),
-            stats={"strength": 10, "intel": 10, "wisdom": 10,
-                   "con": 10, "charisma": 10, "dex": 10},
+            name="Target",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(500, 500),
+            mana=(50, 50),
+            stats={"strength": 10, "intel": 10, "wisdom": 10, "con": 10, "charisma": 10, "dex": 10},
         )
         return user, target
 
     def test_deals_holy_damage(self):
-        from src.core.effects import DivineJudgmentEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import DivineJudgmentEffect
+
         user, target = self._make_combatants()
         result = CombatResult(action="Divine Judgment", actor=user, target=target)
         effect = DivineJudgmentEffect(damage_mod=3.0)
@@ -9159,8 +10608,9 @@ class TestDivineJudgmentEffect:
         assert target.health.current < 500
 
     def test_heals_owner(self):
-        from src.core.effects import DivineJudgmentEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import DivineJudgmentEffect
+
         user, target = self._make_combatants()
         # Simulate owner (summoner) who is damaged
         owner = self._make_combatants()[0]  # another player
@@ -9173,8 +10623,9 @@ class TestDivineJudgmentEffect:
         assert owner.health.current > 100
 
     def test_cleanses_owner_status(self):
-        from src.core.effects import DivineJudgmentEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import DivineJudgmentEffect
+
         user, target = self._make_combatants()
         owner = self._make_combatants()[0]
         owner.status_effects["Poison"].active = True
@@ -9189,8 +10640,9 @@ class TestDivineJudgmentEffect:
         assert owner.status_effects["Blind"].active is False
 
     def test_double_damage_vs_undead(self):
-        from src.core.effects import DivineJudgmentEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import DivineJudgmentEffect
+
         user, target = self._make_combatants()
         target.enemy_typ = "Undead"
         result = CombatResult(action="Divine Judgment", actor=user, target=target)
@@ -9206,24 +10658,32 @@ class TestOblivionEffect:
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Bardi", class_name="Wizard", race_name="Human",
-            level=30, health=(300, 300), mana=(200, 200),
-            stats={"strength": 10, "intel": 30, "wisdom": 20,
-                   "con": 15, "charisma": 10, "dex": 15},
+            name="Bardi",
+            class_name="Wizard",
+            race_name="Human",
+            level=30,
+            health=(300, 300),
+            mana=(200, 200),
+            stats={"strength": 10, "intel": 30, "wisdom": 20, "con": 15, "charisma": 10, "dex": 15},
         )
         user.class_effects["Power Up"].active = False
         target = TestGameState.create_player(
-            name="Target", class_name="Warrior", race_name="Human",
-            level=30, health=(500, 500), mana=(50, 50),
-            stats={"strength": 20, "intel": 15, "wisdom": 15,
-                   "con": 20, "charisma": 10, "dex": 10},
+            name="Target",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(500, 500),
+            mana=(50, 50),
+            stats={"strength": 20, "intel": 15, "wisdom": 15, "con": 20, "charisma": 10, "dex": 10},
         )
         return user, target
 
     def test_deals_shadow_damage(self):
-        from src.core.effects import OblivionEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import OblivionEffect
+
         user, target = self._make_combatants()
         result = CombatResult(action="Oblivion", actor=user, target=target)
         effect = OblivionEffect(damage_mod=4.0, kill_chance=0.0, stat_drain=3)
@@ -9231,8 +10691,9 @@ class TestOblivionEffect:
         assert target.health.current < 500
 
     def test_stat_drain(self):
-        from src.core.effects import OblivionEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import OblivionEffect
+
         user, target = self._make_combatants()
         str_before = target.stats.strength
         int_before = target.stats.intel
@@ -9244,8 +10705,9 @@ class TestOblivionEffect:
             assert target.stats.intel == int_before - 3
 
     def test_instant_kill_blocked_by_death_immunity(self):
-        from src.core.effects import OblivionEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import OblivionEffect
+
         user, target = self._make_combatants()
         target.status_immunity.append("Death")
         result = CombatResult(action="Oblivion", actor=user, target=target)
@@ -9262,24 +10724,32 @@ class TestGrandHeistEffect:
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Kobalos", class_name="Thief", race_name="Human",
-            level=30, health=(300, 300), mana=(100, 100),
-            stats={"strength": 15, "intel": 15, "wisdom": 10,
-                   "con": 15, "charisma": 20, "dex": 25},
+            name="Kobalos",
+            class_name="Thief",
+            race_name="Human",
+            level=30,
+            health=(300, 300),
+            mana=(100, 100),
+            stats={"strength": 15, "intel": 15, "wisdom": 10, "con": 15, "charisma": 20, "dex": 25},
         )
         target = TestGameState.create_player(
-            name="Target", class_name="Warrior", race_name="Human",
-            level=30, health=(500, 500), mana=(50, 50),
-            stats={"strength": 10, "intel": 10, "wisdom": 10,
-                   "con": 10, "charisma": 10, "dex": 10},
+            name="Target",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(500, 500),
+            mana=(50, 50),
+            stats={"strength": 10, "intel": 10, "wisdom": 10, "con": 10, "charisma": 10, "dex": 10},
             gold=1000,
         )
         return user, target
 
     def test_steals_gold(self):
-        from src.core.effects import GrandHeistEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import GrandHeistEffect
+
         user, target = self._make_combatants()
         user.owner = self._make_combatants()[0]  # summoner
         user.owner.gold = 500
@@ -9292,8 +10762,9 @@ class TestGrandHeistEffect:
         assert any("steal" in m.lower() for m in messages)
 
     def test_gold_toss_damage(self):
-        from src.core.effects import GrandHeistEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import GrandHeistEffect
+
         user, target = self._make_combatants()
         user.owner = self._make_combatants()[0]
         user.owner.gold = 10000  # lots of gold for big toss
@@ -9305,8 +10776,9 @@ class TestGrandHeistEffect:
         assert any("gold" in m.lower() or "coin" in m.lower() for m in messages)
 
     def test_debuff_blocked_by_immunity(self):
-        from src.core.effects import GrandHeistEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import GrandHeistEffect
+
         user, target = self._make_combatants()
         target.status_immunity.extend(["Blind", "Silence", "Poison"])
         result = CombatResult(action="Grand Heist", actor=user, target=target)
@@ -9323,24 +10795,32 @@ class TestCataclysmEffect:
     @staticmethod
     def _make_combatants():
         from tests.test_framework import TestGameState
+
         user = TestGameState.create_player(
-            name="Zahhak", class_name="Wizard", race_name="Human",
-            level=30, health=(400, 400), mana=(300, 300),
-            stats={"strength": 20, "intel": 30, "wisdom": 20,
-                   "con": 15, "charisma": 10, "dex": 15},
+            name="Zahhak",
+            class_name="Wizard",
+            race_name="Human",
+            level=30,
+            health=(400, 400),
+            mana=(300, 300),
+            stats={"strength": 20, "intel": 30, "wisdom": 20, "con": 15, "charisma": 10, "dex": 15},
         )
         user.class_effects["Power Up"].active = False
         target = TestGameState.create_player(
-            name="Target", class_name="Warrior", race_name="Human",
-            level=30, health=(500, 500), mana=(50, 50),
-            stats={"strength": 10, "intel": 10, "wisdom": 10,
-                   "con": 10, "charisma": 10, "dex": 10},
+            name="Target",
+            class_name="Warrior",
+            race_name="Human",
+            level=30,
+            health=(500, 500),
+            mana=(50, 50),
+            stats={"strength": 10, "intel": 10, "wisdom": 10, "con": 10, "charisma": 10, "dex": 10},
         )
         return user, target
 
     def test_deals_breath_damage(self):
-        from src.core.effects import CataclysmEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import CataclysmEffect
+
         user, target = self._make_combatants()
         result = CombatResult(action="Cataclysm", actor=user, target=target)
         effect = CataclysmEffect(spell_count=0, breath_multiplier=2.0)
@@ -9350,8 +10830,9 @@ class TestCataclysmEffect:
         assert any("breath" in m.lower() or "fire" in m.lower() for m in messages)
 
     def test_self_power_up(self):
-        from src.core.effects import CataclysmEffect
         from src.core.combat.combat_result import CombatResult
+        from src.core.effects import CataclysmEffect
+
         user, target = self._make_combatants()
         result = CombatResult(action="Cataclysm", actor=user, target=target)
         effect = CataclysmEffect(spell_count=0, power_up_duration=3)
@@ -9360,9 +10841,10 @@ class TestCataclysmEffect:
         assert user.stat_effects["Attack"].duration == 3
 
     def test_casts_spells_from_spellbook(self):
-        from src.core.effects import CataclysmEffect
-        from src.core.combat.combat_result import CombatResult
         from src.core import abilities
+        from src.core.combat.combat_result import CombatResult
+        from src.core.effects import CataclysmEffect
+
         user, target = self._make_combatants()
         # Give the user some spells
         fireball = abilities.Fireball()
@@ -9379,13 +10861,25 @@ class TestCataclysmEffect:
 class TestCompanionUltimateEffectFactory:
     """All 11 effects are registered in EffectFactory."""
 
-    @pytest.mark.parametrize("effect_type", [
-        "titanic_slam", "devour", "absolute_zero", "eruption",
-        "maelstrom_vortex", "thunderstrike", "wind_shrapnel",
-        "divine_judgment", "oblivion", "grand_heist", "cataclysm",
-    ])
+    @pytest.mark.parametrize(
+        "effect_type",
+        [
+            "titanic_slam",
+            "devour",
+            "absolute_zero",
+            "eruption",
+            "maelstrom_vortex",
+            "thunderstrike",
+            "wind_shrapnel",
+            "divine_judgment",
+            "oblivion",
+            "grand_heist",
+            "cataclysm",
+        ],
+    )
     def test_effect_factory_creates(self, effect_type):
         from src.core.data.ability_loader import EffectFactory
+
         effect = EffectFactory.create({"type": effect_type})
         assert effect is not None
 
@@ -9393,23 +10887,26 @@ class TestCompanionUltimateEffectFactory:
 class TestClassAbilityMechanicsSlice:
     """Class ability mechanics are real, loadable, and class-granted."""
 
-    @pytest.mark.parametrize("class_name,expected_name,passive", [
-        ("Zephyrstrike", "Zephyrstrike", True),
-        ("Retaliate", "Retaliate", True),
-        ("DefensiveRegen", "Defensive Regen", True),
-        ("Posturing", "Posturing", True),
-        ("ThirdEye", "Third Eye", True),
-        ("PiousBounty", "Pious Bounty", True),
-        ("PoisonDart", "Poison Dart", False),
-        ("Bolt", "Bolt", False),
-        ("BallLightning", "Ball Lightning", False),
-        ("StoneSkin", "Stone Skin", False),
-        ("CalmingBreeze", "Calming Breeze", False),
-        ("Windswept", "Windswept", False),
-        ("Regrowth", "Regrowth", False),
-        ("NatureShield", "Nature Shield", False),
-        ("Haste", "Haste", False),
-    ])
+    @pytest.mark.parametrize(
+        "class_name,expected_name,passive",
+        [
+            ("Zephyrstrike", "Zephyrstrike", True),
+            ("Retaliate", "Retaliate", True),
+            ("DefensiveRegen", "Defensive Regen", True),
+            ("Posturing", "Posturing", True),
+            ("ThirdEye", "Third Eye", True),
+            ("PiousBounty", "Pious Bounty", True),
+            ("PoisonDart", "Poison Dart", False),
+            ("Bolt", "Bolt", False),
+            ("BallLightning", "Ball Lightning", False),
+            ("StoneSkin", "Stone Skin", False),
+            ("CalmingBreeze", "Calming Breeze", False),
+            ("Windswept", "Windswept", False),
+            ("Regrowth", "Regrowth", False),
+            ("NatureShield", "Nature Shield", False),
+            ("Haste", "Haste", False),
+        ],
+    )
     def test_class_ability_factories(self, class_name, expected_name, passive):
         from src.core import abilities
 
@@ -9476,8 +10973,12 @@ class TestClassAbilityMechanicsSlice:
         ]
         assert abilities.skill_dict["Stalwart Defender"]["18"] is abilities.LastStand
         assert abilities.skill_dict["Seeker"]["5"] is abilities.ThirdEye
-        assert "Third Eye" not in [skill().name for skill in abilities.skill_dict["Inquisitor"].values()]
-        assert "Pious Bounty" not in [skill().name for skill in abilities.skill_dict["Priest"].values()]
+        assert "Third Eye" not in [
+            skill().name for skill in abilities.skill_dict["Inquisitor"].values()
+        ]
+        assert "Pious Bounty" not in [
+            skill().name for skill in abilities.skill_dict["Priest"].values()
+        ]
         assert abilities.skill_dict["Cleric"]["1"] is abilities.SanctuaryWard
         assert "8" not in abilities.skill_dict["Cleric"]
         assert abilities.skill_dict["Cleric"]["24"] is abilities.PiousBounty
@@ -9513,10 +11014,16 @@ class TestClassAbilityMechanicsSlice:
             "2": abilities.ResonantWave,
             "3": abilities.PrismaticFinale,
         }
-        assert all(spell is not abilities.Haste for spell in abilities.spell_dict["Sorcerer"].values())
-        assert all(spell is not abilities.Haste for spell in abilities.spell_dict["Wizard"].values())
+        assert all(
+            spell is not abilities.Haste for spell in abilities.spell_dict["Sorcerer"].values()
+        )
+        assert all(
+            spell is not abilities.Haste for spell in abilities.spell_dict["Wizard"].values()
+        )
         assert abilities.spell_dict["Diviner"]["8"] is abilities.Haste
-        assert "Steal As Well" not in [skill().name for skill in abilities.skill_dict["Arcane Trickster"].values()]
+        assert "Steal As Well" not in [
+            skill().name for skill in abilities.skill_dict["Arcane Trickster"].values()
+        ]
         assert abilities.skill_dict["Spell Stealer"]["12"] is abilities.StealAsWell
         assert abilities.skill_dict["Ranger"]["1"] == [abilities.Tame, abilities.FavoredEnemy]
         assert abilities.skill_dict["Beast Master"] == {
@@ -9530,7 +11037,9 @@ class TestClassAbilityMechanicsSlice:
             "14": abilities.RallyPartner,
         }
         assert abilities.spell_dict["Shadowcaster"]["16"] is abilities.Nightmare
-        assert "Nightmare" not in [spell().name for spell in abilities.spell_dict["Demonologist"].values()]
+        assert "Nightmare" not in [
+            spell().name for spell in abilities.spell_dict["Demonologist"].values()
+        ]
 
     def test_archdruid_nature_spell_line_is_registered(self):
         from src.core import abilities

@@ -102,16 +102,10 @@ def test_combo_breaker_scales_only_within_one_enemy_action():
     attacker = enemies.Goblin()
     pathfinder.record_incoming_action_start(ranger)
 
-    first, _message = pathfinder.ranger_damage_reduction(
-        ranger, attacker, 100, physical=True
-    )
-    second, message = pathfinder.ranger_damage_reduction(
-        ranger, attacker, 100, physical=True
-    )
+    first, _message = pathfinder.ranger_damage_reduction(ranger, attacker, 100, physical=True)
+    second, message = pathfinder.ranger_damage_reduction(ranger, attacker, 100, physical=True)
     pathfinder.record_incoming_action_end(ranger, ranger.health.current)
-    reset, _message = pathfinder.ranger_damage_reduction(
-        ranger, attacker, 100, physical=True
-    )
+    reset, _message = pathfinder.ranger_damage_reduction(ranger, attacker, 100, physical=True)
 
     assert first == 100
     assert second == 92

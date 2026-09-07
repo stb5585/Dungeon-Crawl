@@ -5,7 +5,6 @@ import inspect
 from src.core import items
 from src.core.items import accessories, armor, consumables, misc, offhands, weapons
 
-
 ITEM_MODULES = (
     weapons,
     armor,

@@ -1,14 +1,14 @@
 ###########################################
-""" map manager """
+"""map manager"""
 
 import random
 from functools import lru_cache
 from textwrap import wrap
 
 from src.paths import PYGAME_ASSETS_DIR
+
 from .. import enemies
 from ..player import DIRECTIONS, REALM_OF_CAMBION_LEVEL
-
 
 # Feature flag: Set to True to use enhanced combat with action queue
 USE_ENHANCED_COMBAT = True
@@ -33,7 +33,11 @@ def ordinary_chest_mimic_chance(player_char, *, locked: int = 0, plus: int = 0) 
     """Return the non-funhouse chest mimic chance for the current player."""
     level_fn = getattr(player_char, "player_level", None)
     try:
-        player_level = int(level_fn() if callable(level_fn) else getattr(getattr(player_char, "level", None), "level", 1))
+        player_level = int(
+            level_fn()
+            if callable(level_fn)
+            else getattr(getattr(player_char, "level", None), "level", 1)
+        )
     except (TypeError, ValueError):
         player_level = 1
     if player_level < 5:
@@ -43,11 +47,18 @@ def ordinary_chest_mimic_chance(player_char, *, locked: int = 0, plus: int = 0) 
         luck_mod = int(player_char.check_mod("luck", luck_factor=3))
     except Exception:
         luck_mod = 0
-    chance = 0.12 + (0.05 * int(bool(locked))) + (0.03 * int(bool(plus))) - min(0.07, max(0, luck_mod) * 0.01)
+    chance = (
+        0.12
+        + (0.05 * int(bool(locked)))
+        + (0.03 * int(bool(plus)))
+        - min(0.07, max(0, luck_mod) * 0.01)
+    )
     return max(0.05, min(0.25, chance))
 
 
-def ordinary_chest_spawns_mimic(player_char, *, locked: int = 0, plus: int = 0, roll: float | None = None) -> bool:
+def ordinary_chest_spawns_mimic(
+    player_char, *, locked: int = 0, plus: int = 0, roll: float | None = None
+) -> bool:
     """Return whether a non-funhouse chest becomes a mimic."""
     chance = ordinary_chest_mimic_chance(player_char, locked=locked, plus=plus)
     if chance <= 0:
@@ -68,7 +79,11 @@ CAMBION_ALARM_ENEMY = enemies.Warforged
 CAMBION_CODE_CLUES = {
     (1, 1, REALM_OF_CAMBION_LEVEL): "A sigil burned into the stone shows the first digit: 2.",
     (23, 9, REALM_OF_CAMBION_LEVEL): "A charred warning plate hisses. The second digit is 7.",
-    (20, 20, REALM_OF_CAMBION_LEVEL): "A rotating ring clicks into place and reveals the third digit: 4.",
+    (
+        20,
+        20,
+        REALM_OF_CAMBION_LEVEL,
+    ): "A rotating ring clicks into place and reveals the third digit: 4.",
     (25, 28, REALM_OF_CAMBION_LEVEL): "An etched rune near the terminal reveals the last digit: 9.",
 }
 CAMBION_PORTAL_PAIRS = [
@@ -183,8 +198,10 @@ def rookie_body_visible_for_player(player_char, tile) -> bool:
     if bool(getattr(tile, "dropped_rookie_body", False)):
         dropped_at = quest.get("Body Dropped At")
         tile_pos = [getattr(tile, "x", None), getattr(tile, "y", None), getattr(tile, "z", None)]
-        return bool(dropped_at) and list(dropped_at) == tile_pos and "Dead Soldier" not in getattr(
-            player_char, "special_inventory", {}
+        return (
+            bool(dropped_at)
+            and list(dropped_at) == tile_pos
+            and "Dead Soldier" not in getattr(player_char, "special_inventory", {})
         )
 
     if not bool(getattr(tile, "rookie_body_marker", False)):
@@ -206,7 +223,9 @@ def reveal_chalice_map_on_inspect(player_char, item) -> bool:
     if progress.get("Adventurer") and not progress.get("Revealed"):
         progress["Revealed"] = True
         if quest_data is not None:
-            quest_data["Help Text"] = "The map reveals the altar at 6:2,17. Seek the Golden Chalice there."
+            quest_data["Help Text"] = (
+                "The map reveals the altar at 6:2,17. Seek the Golden Chalice there."
+            )
         revealed_now = True
 
     sync_chalice_map_description(player_char)
@@ -247,13 +266,33 @@ for left, right in CAMBION_PORTAL_PAIRS:
     CAMBION_PORTAL_MAP[right] = left
 
 CAMBION_PORTAL_FLAVOR = {
-    (1, 1, REALM_OF_CAMBION_LEVEL): "The portal exhales cold mist, carrying the echo of a voice counting backward.",
-    (9, 1, REALM_OF_CAMBION_LEVEL): "For an instant, the corridor beyond the portal appears upside down.",
-    (11, 1, REALM_OF_CAMBION_LEVEL): "The portal flashes with the silhouette of a tower that is not on any map.",
+    (
+        1,
+        1,
+        REALM_OF_CAMBION_LEVEL,
+    ): "The portal exhales cold mist, carrying the echo of a voice counting backward.",
+    (
+        9,
+        1,
+        REALM_OF_CAMBION_LEVEL,
+    ): "For an instant, the corridor beyond the portal appears upside down.",
+    (
+        11,
+        1,
+        REALM_OF_CAMBION_LEVEL,
+    ): "The portal flashes with the silhouette of a tower that is not on any map.",
     (17, 1, REALM_OF_CAMBION_LEVEL): "The portal smells sharply of rain on hot stone.",
-    (28, 1, REALM_OF_CAMBION_LEVEL): "A ribbon of green light coils around your wrist before snapping back into the portal.",
+    (
+        28,
+        1,
+        REALM_OF_CAMBION_LEVEL,
+    ): "A ribbon of green light coils around your wrist before snapping back into the portal.",
     (1, 4, REALM_OF_CAMBION_LEVEL): "The portal surface ripples like water disturbed from below.",
-    (24, 6, REALM_OF_CAMBION_LEVEL): "Something laughs from the other side, then abruptly forgets the joke.",
+    (
+        24,
+        6,
+        REALM_OF_CAMBION_LEVEL,
+    ): "Something laughs from the other side, then abruptly forgets the joke.",
     (4, 11, REALM_OF_CAMBION_LEVEL): "The portal reflects you a heartbeat too late.",
     (20, 13, REALM_OF_CAMBION_LEVEL): "The portal's edge briefly hardens into black glass.",
     (28, 15, REALM_OF_CAMBION_LEVEL): "A pressure behind your eyes fades as the portal takes hold.",
@@ -383,7 +422,9 @@ def quest_biased_random_enemy(player_char, level: str, rng=random):
     )
 
 
-def _enterable_adjacent_positions(world_dict, x: int, y: int, z: int) -> list[tuple[str, tuple[int, int, int]]]:
+def _enterable_adjacent_positions(
+    world_dict, x: int, y: int, z: int
+) -> list[tuple[str, tuple[int, int, int]]]:
     positions = []
     for direction, data in DIRECTIONS.items():
         dx, dy = data["move"]
@@ -413,7 +454,9 @@ def _queue_cambion_message(player_char, message: str):
 
 
 def pop_cambion_messages(player_char) -> list[str]:
-    if getattr(player_char, "location_z", None) != REALM_OF_CAMBION_LEVEL and not hasattr(player_char, "cambion_state"):
+    if getattr(player_char, "location_z", None) != REALM_OF_CAMBION_LEVEL and not hasattr(
+        player_char, "cambion_state"
+    ):
         return []
     state = _ensure_cambion_state(player_char)
     messages = list(state.get("messages", []))
@@ -487,7 +530,9 @@ def jester_token_count(player_char) -> int:
     for inventory_name in ("special_inventory", "inventory"):
         inventory = getattr(player_char, inventory_name, {})
         for item_list in inventory.values():
-            count += sum(1 for item in item_list if getattr(item, "name", None) == JESTER_TOKEN_NAME)
+            count += sum(
+                1 for item in item_list if getattr(item, "name", None) == JESTER_TOKEN_NAME
+            )
     return count
 
 
@@ -534,6 +579,7 @@ def update_chalice_location(game):
     """Hide or reveal the Golden Chalice altar based on quest progression."""
     from .paths import CavePath
     from .rooms import GoldenChaliceRoom
+
     player_char = game.player_char
     quest_data = player_char.quest_dict.get("Side", {}).get(CHALICE_QUEST_NAME)
     progress = _ensure_chalice_progress(quest_data)
@@ -570,7 +616,11 @@ def handle_chalice_adventurer(game):
         return
     if progress.get("Adventurer"):
         return
-    if (player_char.location_x, player_char.location_y, player_char.location_z) != CHALICE_ADVENTURER_POS:
+    if (
+        player_char.location_x,
+        player_char.location_y,
+        player_char.location_z,
+    ) != CHALICE_ADVENTURER_POS:
         return
     if not progress.get("Sergeant"):
         return

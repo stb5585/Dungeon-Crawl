@@ -85,10 +85,7 @@ class DataDrivenMagicMissileSpell(Spell):
         if not _kwargs.get("_skip_cost", False) and not (
             special
             or fam
-            or (
-                caster.cls.name == "Wizard"
-                and caster.class_effects["Power Up"].active
-            )
+            or (caster.cls.name == "Wizard" and caster.class_effects["Power Up"].active)
         ):
             caster.mana.current -= effective_cost
 
@@ -118,9 +115,7 @@ class DataDrivenMagicMissileSpell(Spell):
                 hits[i] = True
 
             if dodge:
-                cast_message += (
-                    f"{target.name} dodged the {self.name} and was unhurt.\n"
-                )
+                cast_message += f"{target.name} dodged the {self.name} and was unhurt.\n"
             elif cover:
                 cast_message += (
                     f"{target.familiar.name} steps in front of the attack, "
@@ -161,13 +156,10 @@ class DataDrivenMagicMissileSpell(Spell):
 
                         damage = int(damage * mage_mechanics.spell_potency_multiplier(caster, self))
                         damage = int(
-                            damage
-                            * mage_mechanics.spell_damage_multiplier(caster, self, target)
+                            damage * mage_mechanics.spell_damage_multiplier(caster, self, target)
                         )
                         school = mage_mechanics.school_from_ability(self)
-                        damage = int(
-                            damage * (1 + wizard.affinity_damage_bonus(caster, school))
-                        )
+                        damage = int(damage * (1 + wizard.affinity_damage_bonus(caster, school)))
                     except Exception:
                         pass
 
@@ -185,32 +177,21 @@ class DataDrivenMagicMissileSpell(Spell):
                         and target.power_up
                         and target.class_effects["Power Up"].active
                     ):
-                        damage, message, _absorbed = caster._apply_crusader_shield(
-                            target, damage
-                        )
+                        damage, message, _absorbed = caster._apply_crusader_shield(target, damage)
                         cast_message += message
 
                     # Armor scaling
                     dam_red = target.check_mod("magic def", enemy=caster)
-                    damage = int(
-                        damage
-                        * (1 - (dam_red / (dam_red + ARMOR_SCALING_FACTOR)))
-                    )
+                    damage = int(damage * (1 - (dam_red / (dam_red + ARMOR_SCALING_FACTOR))))
 
                     # Variance
-                    variance = random.uniform(
-                        DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH
-                    )
+                    variance = random.uniform(DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH)
                     damage = int(damage * variance)
 
                     if damage <= 0:
-                        cast_message += (
-                            f"{self.name} was ineffective and does no damage.\n"
-                        )
+                        cast_message += f"{self.name} was ineffective and does no damage.\n"
                         damage = 0
-                    elif random.randint(
-                        0, target.stats.con // 2
-                    ) > random.randint(
+                    elif random.randint(0, target.stats.con // 2) > random.randint(
                         caster.stats.intel // 2, caster.stats.intel
                     ):
                         damage //= 2
@@ -220,21 +201,16 @@ class DataDrivenMagicMissileSpell(Spell):
                                 f"and only receives half of the damage.\n"
                             )
                             damage_msg = (
-                                f"{caster.name} damages {target.name} "
-                                f"for {damage} hit points"
+                                f"{caster.name} damages {target.name} " f"for {damage} hit points"
                             )
                             if crit > 1:
                                 damage_msg += " (Critical hit!)"
                             cast_message += damage_msg + ".\n"
                         else:
-                            cast_message += (
-                                f"{self.name} was ineffective and does "
-                                f"no damage.\n"
-                            )
+                            cast_message += f"{self.name} was ineffective and does " f"no damage.\n"
                     else:
                         damage_msg = (
-                            f"{caster.name} damages {target.name} "
-                            f"for {damage} hit points"
+                            f"{caster.name} damages {target.name} " f"for {damage} hit points"
                         )
                         if crit > 1:
                             damage_msg += " (Critical hit!)"
@@ -265,8 +241,7 @@ class DataDrivenMagicMissileSpell(Spell):
                             if mage_mechanics.has_skill(caster, "Spaghettification"):
                                 target.health.current = 0
                                 cast_message += (
-                                    f"Spaghettification erases {target.name} "
-                                    "from existence.\n"
+                                    f"Spaghettification erases {target.name} " "from existence.\n"
                                 )
                         except Exception:
                             pass
@@ -300,10 +275,7 @@ class DataDrivenMagicMissileSpell(Spell):
 
         # ── 4. Counterspell check ───────────────────────────────────
         if any(hits):
-            if (
-                "Counterspell" in target.spellbook.get("Spells", {})
-                and not random.randint(0, 4)
-            ):
+            if "Counterspell" in target.spellbook.get("Spells", {}) and not random.randint(0, 4):
                 from src.core.abilities import Counterspell
 
                 cast_message += f"{target.name} uses Counterspell.\n"

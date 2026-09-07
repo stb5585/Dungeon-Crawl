@@ -79,11 +79,20 @@ def test_location_menu_draw_helpers(monkeypatch):
     screen.current_option = 1
 
     panel_calls = []
-    monkeypatch.setattr(screen, "draw_semi_transparent_panel", lambda rect, alpha=180: panel_calls.append((rect, alpha)))
+    monkeypatch.setattr(
+        screen,
+        "draw_semi_transparent_panel",
+        lambda rect, alpha=180: panel_calls.append((rect, alpha)),
+    )
     draw_rect_calls = []
-    monkeypatch.setattr("src.ui_pygame.gui.location_menu.pygame.draw.rect", lambda *_args, **_kwargs: draw_rect_calls.append((_args, _kwargs)))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.location_menu.pygame.draw.rect",
+        lambda *_args, **_kwargs: draw_rect_calls.append((_args, _kwargs)),
+    )
     flip_calls = []
-    monkeypatch.setattr("src.ui_pygame.gui.location_menu.pygame.display.flip", lambda: flip_calls.append(True))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.location_menu.pygame.display.flip", lambda: flip_calls.append(True)
+    )
 
     screen.draw_top()
     assert "Church" in presenter.large_font.render_calls
@@ -97,7 +106,11 @@ def test_location_menu_draw_helpers(monkeypatch):
 
     items_data = [(0, "Potion", 2, False), (1, "Elixir", 1, True)]
     screen.draw_content(items_data=items_data)
-    assert any(surface.text == ">" for surface, _pos in presenter.screen.blit_calls if hasattr(surface, "text"))
+    assert any(
+        surface.text == ">"
+        for surface, _pos in presenter.screen.blit_calls
+        if hasattr(surface, "text")
+    )
 
     screen.draw_options_instructions()
     assert "[Use arrows to select]" in presenter.normal_font.render_calls
@@ -105,7 +118,13 @@ def test_location_menu_draw_helpers(monkeypatch):
     monkeypatch.setattr(screen, "draw_background", lambda: panel_calls.append(("background", None)))
     monkeypatch.setattr(screen, "draw_top", lambda: panel_calls.append(("top", None)))
     monkeypatch.setattr(screen, "draw_options", lambda: panel_calls.append(("options", None)))
-    monkeypatch.setattr(screen, "draw_content", lambda *args, **kwargs: panel_calls.append(("content", kwargs.get("items_data", args[0] if args else None))))
+    monkeypatch.setattr(
+        screen,
+        "draw_content",
+        lambda *args, **kwargs: panel_calls.append(
+            ("content", kwargs.get("items_data", args[0] if args else None))
+        ),
+    )
     screen.draw_all()
     assert ("background", None) in panel_calls
     assert flip_calls
@@ -122,7 +141,9 @@ def test_location_menu_draws_static_and_option_portraits(monkeypatch):
     monkeypatch.setattr(screen, "draw_top", lambda: None)
     monkeypatch.setattr(screen, "draw_options", lambda: None)
     monkeypatch.setattr(screen, "draw_content", lambda *args, **kwargs: None)
-    monkeypatch.setattr(screen, "draw_npc_portrait", lambda **kwargs: drawn_portraits.append(kwargs.get("npc_name")))
+    monkeypatch.setattr(
+        screen, "draw_npc_portrait", lambda **kwargs: drawn_portraits.append(kwargs.get("npc_name"))
+    )
     monkeypatch.setattr("src.ui_pygame.gui.location_menu.pygame.display.flip", lambda: None)
 
     screen.set_location_portrait("Priest")
@@ -150,133 +171,193 @@ def test_location_menu_navigation_and_item_navigation(monkeypatch):
     monkeypatch.setattr(screen, "draw_content", lambda *args, **kwargs: None)
     monkeypatch.setattr("src.ui_pygame.gui.location_menu.pygame.display.flip", lambda: None)
 
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)],
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.location_menu.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.location_menu.pygame.event.get", lambda: next(event_batches, [])
+    )
     assert screen.navigate(["Rest", "Leave"]) == 1
 
     screen.current_option = 1
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_ESCAPE)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.location_menu.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_ESCAPE)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.location_menu.pygame.event.get", lambda: next(event_batches, [])
+    )
     assert screen.navigate(["Rest", "Leave"], reset_cursor=False) is None
     assert screen.current_option == 1
 
     screen.current_option = 4
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_ESCAPE)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.location_menu.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_ESCAPE)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.location_menu.pygame.event.get", lambda: next(event_batches, [])
+    )
     assert screen.navigate(["Only"], reset_cursor=False) is None
     assert screen.current_option == 0
 
     screen.current_option = 1
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_ESCAPE)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.location_menu.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_ESCAPE)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.location_menu.pygame.event.get", lambda: next(event_batches, [])
+    )
     assert screen.navigate(["Rest", "Leave"], reset_cursor=True) is None
     assert screen.current_option == 0
 
     screen.current_option = 0
     clear_calls = []
     pressed_states = iter([[1], [1], [], []])
-    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: next(pressed_states, []))
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
-        [SimpleNamespace(type=pygame.KEYUP, key=pygame.K_RETURN)],
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)],
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.location_menu.pygame.event.get", lambda: next(event_batches, []))
-    monkeypatch.setattr("src.ui_pygame.gui.location_menu.pygame.event.clear", lambda: clear_calls.append(True))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: next(pressed_states, [])
+    )
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+            [SimpleNamespace(type=pygame.KEYUP, key=pygame.K_RETURN)],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.location_menu.pygame.event.get", lambda: next(event_batches, [])
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.location_menu.pygame.event.clear", lambda: clear_calls.append(True)
+    )
     assert screen.navigate(["Rest", "Leave"], flush_events=True, require_key_release=True) == 1
     assert clear_calls == [True]
 
     screen.current_option = 0
     monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
     event_batches = iter([[SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)]])
-    monkeypatch.setattr("src.ui_pygame.gui.location_menu.pygame.event.get", lambda: next(event_batches, []))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.location_menu.pygame.event.get", lambda: next(event_batches, [])
+    )
     assert screen.navigate(["Rest", "Leave"], flush_events=True, require_key_release=True) == 0
 
     screen.options_list = ["Rest", "Leave"]
     click_pos = screen.option_rects()[1].center
     event_batches = iter([[SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=click_pos)]])
-    monkeypatch.setattr("src.ui_pygame.gui.location_menu.pygame.event.get", lambda: next(event_batches, []))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.location_menu.pygame.event.get", lambda: next(event_batches, [])
+    )
     assert screen.navigate(["Rest", "Leave"]) == 1
 
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_SPACE)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.location_menu.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_SPACE)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.location_menu.pygame.event.get", lambda: next(event_batches, [])
+    )
     screen.display_items_list([("Potion", 2)])
 
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=(450, 250))],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.location_menu.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=(450, 250))],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.location_menu.pygame.event.get", lambda: next(event_batches, [])
+    )
     screen.display_items_list([("Potion", 2)])
 
     items = [(f"Item {idx}", idx + 1) for idx in range(25)]
     screen.current_option = 0
     screen.scroll_offset = 0
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)],
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.location_menu.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.location_menu.pygame.event.get", lambda: next(event_batches, [])
+    )
     assert screen.navigate_with_content(items) == 1
 
     screen.current_option = 0
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_UP)],
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.location_menu.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_UP)],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.location_menu.pygame.event.get", lambda: next(event_batches, [])
+    )
     assert screen.navigate_with_content(items) == len(items) - 1
     assert screen.scroll_offset > 0
 
     screen.current_option = 0
     screen.scroll_offset = 0
     row_pos = dict(screen.content_row_rects(len(items)))[2].center
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.MOUSEMOTION, pos=row_pos)],
-        [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=row_pos)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.location_menu.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.MOUSEMOTION, pos=row_pos)],
+            [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=row_pos)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.location_menu.pygame.event.get", lambda: next(event_batches, [])
+    )
     assert screen.navigate_with_content(items) == 2
 
     screen.current_option = 0
     screen.scroll_offset = 0
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.MOUSEWHEEL, y=-1)],
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.location_menu.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.MOUSEWHEEL, y=-1)],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.location_menu.pygame.event.get", lambda: next(event_batches, [])
+    )
     assert screen.navigate_with_content(items) == 1
 
     screen.current_option = 0
     screen.scroll_offset = 0
     clear_calls.clear()
     pressed_states = iter([[1], [1], [], []])
-    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: next(pressed_states, []))
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
-        [SimpleNamespace(type=pygame.KEYUP, key=pygame.K_RETURN)],
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)],
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.location_menu.pygame.event.get", lambda: next(event_batches, []))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: next(pressed_states, [])
+    )
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+            [SimpleNamespace(type=pygame.KEYUP, key=pygame.K_RETURN)],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.location_menu.pygame.event.get", lambda: next(event_batches, [])
+    )
     assert screen.navigate_with_content(items, flush_events=True, require_key_release=True) == 1
     assert clear_calls == [True]
 
     screen.current_option = 0
     monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
     event_batches = iter([[SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)]])
-    monkeypatch.setattr("src.ui_pygame.gui.location_menu.pygame.event.get", lambda: next(event_batches, []))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.location_menu.pygame.event.get", lambda: next(event_batches, [])
+    )
     assert screen.navigate_with_content(items, flush_events=True, require_key_release=True) == 0
 
 
@@ -285,7 +366,9 @@ def test_location_menu_quit_event_raises(monkeypatch):
     screen = location_menu.LocationMenuScreen(presenter, "Shop")
     monkeypatch.setattr(screen, "draw_all", lambda: None)
     quit_calls = []
-    monkeypatch.setattr("src.ui_pygame.gui.location_menu.pygame.quit", lambda: quit_calls.append(True))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.location_menu.pygame.quit", lambda: quit_calls.append(True)
+    )
     monkeypatch.setattr("sys.exit", lambda: (_ for _ in ()).throw(SystemExit()))
     monkeypatch.setattr(
         "src.ui_pygame.gui.location_menu.pygame.event.get",

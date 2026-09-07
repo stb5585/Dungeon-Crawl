@@ -41,3 +41,29 @@ def test_event_bus_diagnostics_report_history_and_subscribers():
     assert diagnostics["history_full"] is True
     assert diagnostics["history_counts"] == {"DEFEND": 1, "ATTACK": 1}
     assert diagnostics["subscriber_counts"] == {"ATTACK": 1}
+    assert diagnostics["dispatch_failure_count"] == 0
+    assert diagnostics["last_dispatch_failure"] is None
+
+
+def test_subscriber_failures_are_logged_retained_and_do_not_stop_dispatch(caplog):
+    bus = EventBus(max_dispatch_failures=1)
+    received = []
+
+    def broken(_event):
+        raise RuntimeError("subscriber exploded")
+
+    bus.subscribe(EventType.ATTACK, broken)
+    bus.subscribe(EventType.ATTACK, lambda event: received.append(event.type))
+
+    bus.emit_simple(EventType.ATTACK)
+
+    assert received == [EventType.ATTACK]
+    failure = bus.get_dispatch_failures()[0]
+    assert failure.event_type == "ATTACK"
+    assert failure.exception_type == "RuntimeError"
+    assert failure.message == "subscriber exploded"
+    assert "failed while handling ATTACK" in caplog.text
+    assert bus.get_diagnostics()["dispatch_failure_count"] == 1
+
+    bus.clear_dispatch_failures()
+    assert bus.get_dispatch_failures() == ()

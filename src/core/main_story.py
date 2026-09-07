@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from copy import deepcopy
 
-
 GUARDIAN_TRIALS = (
     "Triangulus",
     "Quadrata",
@@ -44,7 +43,14 @@ GUARDIAN_VIGNETTE_SUMMARIES = {
 CLASS_VOLUNTAS_ARCHETYPES = {
     "martial": ("Grandmaster of Arms", "Berserker", "Dragoon", "Stalwart Defender", "Master Monk"),
     "mystic": ("Wizard", "Archbishop", "Astromancer", "Archdruid"),
-    "hybrid": ("Crusader", "Knight Enchanter", "Seeker", "Arcane Trickster", "Templar", "Hierophant"),
+    "hybrid": (
+        "Crusader",
+        "Knight Enchanter",
+        "Seeker",
+        "Arcane Trickster",
+        "Templar",
+        "Hierophant",
+    ),
     "companion": ("Thaumaturgist", "Troubadour", "Beast Master"),
     "shadow": ("Demonologist", "Shadowcaster", "Rogue", "Ninja", "Lycan", "Soulcatcher"),
 }
@@ -132,8 +138,7 @@ GUARDIAN_TRIAL_DEFINITIONS = {
 for _guardian, _definition in GUARDIAN_TRIAL_DEFINITIONS.items():
     _definition["choices"] = GUARDIAN_TRIAL_CHOICES[_guardian]
     _definition["choice_events"] = {
-        choice: f"{_guardian} Trial {choice}"
-        for choice in GUARDIAN_TRIAL_CHOICES[_guardian]
+        choice: f"{_guardian} Trial {choice}" for choice in GUARDIAN_TRIAL_CHOICES[_guardian]
     }
 
 DEFAULT_MAIN_STORY_STATE = {
@@ -143,26 +148,11 @@ DEFAULT_MAIN_STORY_STATE = {
     "liminal_gap_guide_revealed": False,
     "liminal_gap_guide_save_used": False,
     "liminal_gap_clues_reviewed": False,
-    "guardian_trials_started": {
-        guardian: False
-        for guardian in GUARDIAN_TRIALS
-    },
-    "guardian_trials_completed": {
-        guardian: False
-        for guardian in GUARDIAN_TRIALS
-    },
-    "guardian_trial_choices": {
-        guardian: None
-        for guardian in GUARDIAN_TRIALS
-    },
-    "voluntas_clues_found": {
-        guardian: False
-        for guardian in GUARDIAN_TRIALS
-    },
-    "guardian_trial_vignettes_seen": {
-        guardian: False
-        for guardian in GUARDIAN_TRIALS
-    },
+    "guardian_trials_started": {guardian: False for guardian in GUARDIAN_TRIALS},
+    "guardian_trials_completed": {guardian: False for guardian in GUARDIAN_TRIALS},
+    "guardian_trial_choices": {guardian: None for guardian in GUARDIAN_TRIALS},
+    "voluntas_clues_found": {guardian: False for guardian in GUARDIAN_TRIALS},
+    "guardian_trial_vignettes_seen": {guardian: False for guardian in GUARDIAN_TRIALS},
     "liminal_trial_v2_reviewed": False,
     "voluntas_revealed": False,
     "seventh_seat_revealed": False,
@@ -216,9 +206,11 @@ def normalize_state(state: object = None) -> dict[str, object]:
                 saved_choices = state.get(key, {})
                 if isinstance(saved_choices, dict):
                     normalized[key] = {
-                        guardian: saved_choices.get(guardian)
-                        if saved_choices.get(guardian) in GUARDIAN_TRIAL_CHOICES[guardian]
-                        else None
+                        guardian: (
+                            saved_choices.get(guardian)
+                            if saved_choices.get(guardian) in GUARDIAN_TRIAL_CHOICES[guardian]
+                            else None
+                        )
                         for guardian in GUARDIAN_TRIALS
                     }
                 continue
@@ -243,7 +235,9 @@ def normalize_state(state: object = None) -> dict[str, object]:
                 continue
             if key == "reflection_voluntas_answer":
                 saved_answer = state.get(key)
-                normalized[key] = saved_answer if saved_answer in REFLECTION_VOLUNTAS_ANSWERS else None
+                normalized[key] = (
+                    saved_answer if saved_answer in REFLECTION_VOLUNTAS_ANSWERS else None
+                )
                 continue
             normalized[key] = bool(state.get(key, normalized[key]))
     if (
@@ -266,7 +260,9 @@ def ensure_state(player) -> dict[str, object]:
 def all_guardian_trials_completed(story_state: dict[str, object]) -> bool:
     """Return whether every Guardian trial has been completed."""
     completed = story_state.get("guardian_trials_completed", {})
-    return isinstance(completed, dict) and all(completed.get(guardian) for guardian in GUARDIAN_TRIALS)
+    return isinstance(completed, dict) and all(
+        completed.get(guardian) for guardian in GUARDIAN_TRIALS
+    )
 
 
 def all_voluntas_clues_found(story_state: dict[str, object]) -> bool:
@@ -318,10 +314,7 @@ def record_guardian_trial_vignette(story_state: dict[str, object], guardian_name
     seen = story_state.get("guardian_trial_vignettes_seen")
     if not isinstance(seen, dict):
         seen = {}
-    normalized_seen = {
-        guardian: bool(seen.get(guardian, False))
-        for guardian in GUARDIAN_TRIALS
-    }
+    normalized_seen = {guardian: bool(seen.get(guardian, False)) for guardian in GUARDIAN_TRIALS}
     already_seen = normalized_seen[guardian_name]
     normalized_seen[guardian_name] = True
     story_state["guardian_trial_vignettes_seen"] = normalized_seen
@@ -370,7 +363,9 @@ def guardian_trial_question(guardian_name: str) -> str:
     return str(GUARDIAN_TRIAL_DEFINITIONS[guardian_name]["question"])
 
 
-def guardian_trial_event(guardian_name: str, answer: str | None = None, *, event: str | None = None) -> str | None:
+def guardian_trial_event(
+    guardian_name: str, answer: str | None = None, *, event: str | None = None
+) -> str | None:
     """Return the special-event key for a Guardian trial beat."""
     definition = GUARDIAN_TRIAL_DEFINITIONS[guardian_name]
     if answer is not None:
@@ -387,7 +382,9 @@ def is_guardian_trial_choice(guardian_name: str, answer: object) -> bool:
     return answer in GUARDIAN_TRIAL_CHOICES[guardian_name]
 
 
-def record_guardian_trial_completion(story_state: dict[str, object], guardian_name: str, answer: str) -> bool:
+def record_guardian_trial_completion(
+    story_state: dict[str, object], guardian_name: str, answer: str
+) -> bool:
     """Record a completed Guardian trial and awakened clue."""
     if guardian_name not in GUARDIAN_TRIALS or not is_guardian_trial_choice(guardian_name, answer):
         return False
@@ -528,8 +525,12 @@ def voluntas_path_summary(story_state: dict[str, object]) -> list[str]:
 
     class_name = story_state.get("class_voluntas_affirmed_class")
     if story_state.get("class_voluntas_affirmed") and class_name:
-        ring_state = "awakened" if story_state.get("class_voluntas_affirmed_ring_awakened") else "dormant"
-        archetype = story_state.get("class_voluntas_affirmed_archetype") or class_voluntas_archetype(class_name)
+        ring_state = (
+            "awakened" if story_state.get("class_voluntas_affirmed_ring_awakened") else "dormant"
+        )
+        archetype = story_state.get(
+            "class_voluntas_affirmed_archetype"
+        ) or class_voluntas_archetype(class_name)
         summaries.append(f"Class path: {class_name} ({archetype}, {ring_state} ring).")
     else:
         summaries.append("Class path: no Class Ring affirmation recorded.")

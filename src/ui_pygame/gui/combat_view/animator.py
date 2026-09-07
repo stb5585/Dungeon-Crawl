@@ -5,7 +5,6 @@ import random
 
 import pygame
 
-
 DEATH_ANIMATION_FRAMES = 36
 
 
@@ -30,7 +29,7 @@ class SpriteAnimator:
         self.animation_time += dt
 
         # Idle idle animation (2-frame breathe/sway)
-        if self.animation_type != 'death':
+        if self.animation_type != "death":
             # Cycle between 0 and 1 every 60 frames (about 1 second at 60fps)
             self.frame = int((self.animation_time // 30) % 2)
 
@@ -47,7 +46,7 @@ class SpriteAnimator:
             self.damage_flash = max(0, self.damage_flash - 0.1)  # Fade over ~10 frames
 
         # Death animation progress
-        if self.animation_type == 'death':
+        if self.animation_type == "death":
             self.death_progress = min(1.0, self.animation_time / DEATH_ANIMATION_FRAMES)
             if self.death_progress >= 1.0:
                 self.is_dead = True
@@ -78,7 +77,7 @@ class SpriteAnimator:
         """Trigger death animation."""
         if self.animation_type == "death" or self.is_dead:
             return
-        self.animation_type = 'death'
+        self.animation_type = "death"
         self.animation_time = 0
         self.death_progress = 0
         self.damage_flash = 0  # Clear damage flash for clean death animation

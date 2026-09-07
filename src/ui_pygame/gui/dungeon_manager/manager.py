@@ -7,5 +7,11 @@ from .navigation import DungeonNavigationMixin
 from .story import DungeonStoryMixin
 
 
-class DungeonManager(DungeonExplorationMixin,DungeonStoryMixin,DungeonInteractionMixin,DungeonNavigationMixin,DungeonCoreMixin):
+class DungeonManager(
+    DungeonExplorationMixin,
+    DungeonStoryMixin,
+    DungeonInteractionMixin,
+    DungeonNavigationMixin,
+    DungeonCoreMixin,
+):
     """Coordinates dungeon input, interactions, combat, and rendering."""

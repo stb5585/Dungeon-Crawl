@@ -103,7 +103,9 @@ def cap_for(character: Any | None) -> float:
     return WIZARD_CAP if class_name == "Wizard" else SORCERER_CAP
 
 
-def normalize_affinity(state: Any, *, cap: float = WIZARD_CAP, migrate_legacy: bool = False) -> dict[str, float]:
+def normalize_affinity(
+    state: Any, *, cap: float = WIZARD_CAP, migrate_legacy: bool = False
+) -> dict[str, float]:
     affinity = default_affinity()
     if isinstance(state, dict):
         for school in AFFINITY_SCHOOLS:
@@ -147,11 +149,7 @@ def record_cast(character: Any, school: str | None) -> dict[str, float]:
     cap = cap_for(character)
     ring_accelerates = _wizard_ring_accelerates(character)
     if school == "Arcane":
-        step = (
-            RING_ARCANE_AFFINITY_STEP
-            if ring_accelerates
-            else ARCANE_AFFINITY_STEP
-        )
+        step = RING_ARCANE_AFFINITY_STEP if ring_accelerates else ARCANE_AFFINITY_STEP
     else:
         step = RING_AFFINITY_STEP if ring_accelerates else AFFINITY_STEP
     affinity[school] = min(cap, affinity[school] + step)
@@ -210,7 +208,9 @@ def _wizard_ring_accelerates(character: Any) -> bool:
     try:
         from . import class_rings
 
-        return class_rings.is_awakened(character, "Wizard") and class_rings.has_equipped_class_ring(character)
+        return class_rings.is_awakened(character, "Wizard") and class_rings.has_equipped_class_ring(
+            character
+        )
     except Exception:
         return False
 
@@ -283,10 +283,7 @@ def observe_photon_sphere(observer: Any, caster: Any) -> str:
         "Completed": False,
         "Turned In": False,
     }
-    return (
-        "Quest started: The Light Beyond Domingo. You witnessed Domingo cast "
-        "Photon Sphere.\n"
-    )
+    return "Quest started: The Light Beyond Domingo. You witnessed Domingo cast " "Photon Sphere.\n"
 
 
 def observe_elemental_ultimate(observer: Any, caster: Any) -> str:
@@ -328,23 +325,23 @@ def observe_elemental_ultimate(observer: Any, caster: Any) -> str:
 
 def consult_photon_sphere_scientists(character: Any) -> str:
     """Advance the Photon Sphere investigation at the staffed warp point."""
-    quest = getattr(character, "quest_dict", {}).get("Side", {}).get(
-        PHOTON_SPHERE_QUEST
-    )
+    quest = getattr(character, "quest_dict", {}).get("Side", {}).get(PHOTON_SPHERE_QUEST)
     if not isinstance(quest, dict) or quest.get("Turned In"):
         return ""
     if quest.get("Stage") == "consult_scientists":
-        quest.update({
-            "Stage": "recover_arcane_proofs",
-            "Type": "Discovery",
-            "What": "",
-            "Required Enemies": list(ARCANE_EVIDENCE_ENEMIES),
-            "Defeated Enemies": [],
-            "Help Text": (
-                "Recover six distinct proofs of self-taught magic from a Lich, "
-                "Beholder, Brain Gorger, Mind Flayer, Warforged, and Aboleth."
-            ),
-        })
+        quest.update(
+            {
+                "Stage": "recover_arcane_proofs",
+                "Type": "Discovery",
+                "What": "",
+                "Required Enemies": list(ARCANE_EVIDENCE_ENEMIES),
+                "Defeated Enemies": [],
+                "Help Text": (
+                    "Recover six distinct proofs of self-taught magic from a Lich, "
+                    "Beholder, Brain Gorger, Mind Flayer, Warforged, and Aboleth."
+                ),
+            }
+        )
         return (
             "The scientists confirm they never taught Domingo Photon Sphere. "
             "To explain how it invented the spell, recover six distinct proofs "
@@ -371,23 +368,23 @@ def consult_photon_sphere_scientists(character: Any) -> str:
 
 def consult_elemental_ultimate_scientists(character: Any) -> str:
     """Advance or complete the elemental ultimate investigation."""
-    quest = getattr(character, "quest_dict", {}).get("Side", {}).get(
-        ELEMENTAL_ULTIMATE_QUEST
-    )
+    quest = getattr(character, "quest_dict", {}).get("Side", {}).get(ELEMENTAL_ULTIMATE_QUEST)
     if not isinstance(quest, dict) or quest.get("Turned In"):
         return ""
     if quest.get("Stage") == "consult_scientists":
-        quest.update({
-            "Stage": "recover_elemental_proofs",
-            "Type": "Discovery",
-            "What": "",
-            "Required Enemies": list(ELEMENTAL_EVIDENCE_ENEMIES),
-            "Defeated Enemies": [],
-            "Help Text": (
-                "Master all six elemental affinities and recover a core proof "
-                "from each of the six Myrmidon schools."
-            ),
-        })
+        quest.update(
+            {
+                "Stage": "recover_elemental_proofs",
+                "Type": "Discovery",
+                "What": "",
+                "Required Enemies": list(ELEMENTAL_EVIDENCE_ENEMIES),
+                "Defeated Enemies": [],
+                "Help Text": (
+                    "Master all six elemental affinities and recover a core proof "
+                    "from each of the six Myrmidon schools."
+                ),
+            }
+        )
         return (
             "The pattern requires complete elemental mastery and six living "
             "proofs. Defeat one Myrmidon of every school after mastering all "
@@ -398,9 +395,7 @@ def consult_elemental_ultimate_scientists(character: Any) -> str:
         ensure_affinity(character).get(school, 0) >= WIZARD_MASTERY_THRESHOLD
         for school in OPPOSITES
     )
-    quest["Completed"] = (
-        set(ELEMENTAL_EVIDENCE_ENEMIES).issubset(defeated) and mastered
-    )
+    quest["Completed"] = set(ELEMENTAL_EVIDENCE_ENEMIES).issubset(defeated) and mastered
     if not quest["Completed"]:
         return ""
 
@@ -422,10 +417,15 @@ def consult_elemental_ultimate_scientists(character: Any) -> str:
 
 def consult_ultimate_research(character: Any) -> str:
     """Resolve every ultimate-spell discussion available at the scientists."""
-    return "\n\n".join(filter(None, (
-        consult_photon_sphere_scientists(character),
-        consult_elemental_ultimate_scientists(character),
-    )))
+    return "\n\n".join(
+        filter(
+            None,
+            (
+                consult_photon_sphere_scientists(character),
+                consult_elemental_ultimate_scientists(character),
+            ),
+        )
+    )
 
 
 def record_ultimate_quest_defeat(character: Any, enemy_name: str) -> str:
@@ -514,26 +514,40 @@ def _apply_mastery_proc(character: Any, school: str, target: Any | None) -> str:
         return f"{character.name}'s fire affinity burns brighter ({stack}).\n"
     if school == "Ice":
         character.stat_effects["Defense"].active = True
-        character.stat_effects["Defense"].duration = max(character.stat_effects["Defense"].duration, 2)
-        character.stat_effects["Defense"].extra = max(character.stat_effects["Defense"].extra, stack)
+        character.stat_effects["Defense"].duration = max(
+            character.stat_effects["Defense"].duration, 2
+        )
+        character.stat_effects["Defense"].extra = max(
+            character.stat_effects["Defense"].extra, stack
+        )
         return f"{character.name}'s ice affinity hardens their guard ({stack}).\n"
     if school == "Water":
         heal = min(character.health.max - character.health.current, stack)
         mana = min(character.mana.max - character.mana.current, stack)
         character.health.current += max(0, heal)
         character.mana.current += max(0, mana)
-        return f"{character.name}'s water affinity restores {max(0, heal)} HP and {max(0, mana)} MP.\n"
+        return (
+            f"{character.name}'s water affinity restores {max(0, heal)} HP and {max(0, mana)} MP.\n"
+        )
     if school == "Electric" and target is not None:
         damage = max(1, stack * (2 if mastery else 1))
         target.health.current -= damage
         return f"{character.name}'s electric affinity arcs for {damage} extra damage.\n"
     if school == "Earth":
         character.stat_effects["Defense"].active = True
-        character.stat_effects["Defense"].duration = max(character.stat_effects["Defense"].duration, 2)
-        character.stat_effects["Defense"].extra = max(character.stat_effects["Defense"].extra, stack)
+        character.stat_effects["Defense"].duration = max(
+            character.stat_effects["Defense"].duration, 2
+        )
+        character.stat_effects["Defense"].extra = max(
+            character.stat_effects["Defense"].extra, stack
+        )
         character.stat_effects["Magic Defense"].active = True
-        character.stat_effects["Magic Defense"].duration = max(character.stat_effects["Magic Defense"].duration, 2)
-        character.stat_effects["Magic Defense"].extra = max(character.stat_effects["Magic Defense"].extra, stack)
+        character.stat_effects["Magic Defense"].duration = max(
+            character.stat_effects["Magic Defense"].duration, 2
+        )
+        character.stat_effects["Magic Defense"].extra = max(
+            character.stat_effects["Magic Defense"].extra, stack
+        )
         return f"{character.name}'s earth affinity settles into a ward ({stack}).\n"
     if school == "Wind":
         character.stat_effects["Speed"].active = True

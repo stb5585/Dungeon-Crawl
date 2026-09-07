@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import argparse
 import json
-from pathlib import Path
 import sys
+from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -15,7 +15,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 
 DEFAULT_SPRITE_ROOT = PROJECT_ROOT / "src" / "ui_pygame" / "assets" / "enemy_combat_sprites"
-DEFAULT_OUTPUT = DEFAULT_SPRITE_ROOT / "enemy_combat_sprite_review_sheet.png"
+DEFAULT_OUTPUT = PROJECT_ROOT / "docs" / "assets" / "review-sheets" / "enemy-combat-sprites.png"
 CELL_SIZE = (220, 250)
 PREVIEW_SIZE = (180, 180)
 HEADER_HEIGHT = 42
@@ -79,7 +79,12 @@ def draw_review_sheet(sprite_root: Path, output: Path, *, columns: int = 5) -> N
 
         label = key.replace("_", " ")
         text_width = draw.textlength(label, font=font)
-        draw.text((x + (CELL_SIZE[0] - text_width) / 2, y + CELL_SIZE[1] - 34), label, fill=LABEL, font=font)
+        draw.text(
+            (x + (CELL_SIZE[0] - text_width) / 2, y + CELL_SIZE[1] - 34),
+            label,
+            fill=LABEL,
+            font=font,
+        )
 
     output.parent.mkdir(parents=True, exist_ok=True)
     sheet.convert("RGB").save(output)

@@ -8,16 +8,17 @@ import pygame
 
 from src.core import items
 from src.core.classes import ability_mechanics, grandmaster
+
 from ..status_icons import active_resist_effect_names
 from .models import (
-    _whole_stat_text,
     EQUIPMENT_SLOT_ORDER,
-    EquipmentBuffSummary,
-    EquipmentSlotSummary,
     RESISTANCE_ORDER,
-    ResistanceSummary,
     TWO_HANDED_WEAPON_SUBTYPES,
     WEAPON_DISCIPLINE_ICON_FACTORIES,
+    EquipmentBuffSummary,
+    EquipmentSlotSummary,
+    ResistanceSummary,
+    _whole_stat_text,
 )
 
 
@@ -38,7 +39,12 @@ class CharacterDataMixin:
         max_width = min(source_width, max(150, self.character_panel_rect.width // 2 - 12))
         max_height = min(
             source_height,
-            max(120, self.character_panel_rect.height - (y - self.character_panel_rect.top) - reserved_bottom),
+            max(
+                120,
+                self.character_panel_rect.height
+                - (y - self.character_panel_rect.top)
+                - reserved_bottom,
+            ),
         )
         scale = min(max_width / source_width, max_height / source_height, 1.0)
         portrait_width = max(1, int(source_width * scale))
@@ -141,9 +147,7 @@ class CharacterDataMixin:
                 *getattr(companion, "spellbook", {}).get("Skills", {}),
                 *getattr(companion, "spellbook", {}).get("Spells", {}),
             ]
-            rows.append(
-                ("Specialization", str(getattr(companion, "spec", "General")))
-            )
+            rows.append(("Specialization", str(getattr(companion, "spec", "General"))))
             rows.append(("Abilities", ", ".join(abilities) or "None"))
             return rows
         health = getattr(companion, "health", None)
@@ -195,8 +199,14 @@ class CharacterDataMixin:
                 if special:
                     rows.append(("Special", special))
                 roster = tamed.get("companions", []) if isinstance(tamed, dict) else []
-                if class_name not in {"Ranger", "Beast Master"} and isinstance(roster, list) and roster:
-                    rows.append(("Held", f"{len(roster)}/{ability_mechanics.TAMED_COMPANION_ROSTER_LIMIT}"))
+                if (
+                    class_name not in {"Ranger", "Beast Master"}
+                    and isinstance(roster, list)
+                    and roster
+                ):
+                    rows.append(
+                        ("Held", f"{len(roster)}/{ability_mechanics.TAMED_COMPANION_ROSTER_LIMIT}")
+                    )
             else:
                 rows.append(("Familiar", self._attr_name(familiar, "Familiar")))
         return rows
@@ -222,12 +232,16 @@ class CharacterDataMixin:
 
     def _draw_favored_enemy_progress_panel(self, player_char, rect: pygame.Rect, y: int) -> int:
         """Draw Ranger/Beast Master enemy-type tracking mastery progress."""
-        self._draw_text("Tracking Mastery", self.normal_font, self.colors.GOLD, rect.left, y, rect.width)
+        self._draw_text(
+            "Tracking Mastery", self.normal_font, self.colors.GOLD, rect.left, y, rect.width
+        )
         y += self.normal_font.get_height() + 10
         for label, value, cap, detail in self.favored_enemy_progress_rows(player_char):
             if y + 54 > rect.bottom:
                 break
-            y = self._draw_progress_row(rect, label, value, cap, y, detail=detail, color=self.colors.GREEN)
+            y = self._draw_progress_row(
+                rect, label, value, cap, y, detail=detail, color=self.colors.GREEN
+            )
         try:
             switches = ability_mechanics.favored_enemy_state(player_char).get("switches", 0)
         except Exception:
@@ -466,9 +480,7 @@ class CharacterDataMixin:
             ("Location", self.location_label(player_char)),
         ]
         if getattr(player_char, "_transformed", False):
-            rows.append(
-                ("Form", self._attr_name(getattr(player_char, "cls", None), "Transformed"))
-            )
+            rows.append(("Form", self._attr_name(getattr(player_char, "cls", None), "Transformed")))
         return rows
 
     def _draw_portrait_details(self, rows: list[tuple[str, str]], rect: pygame.Rect, y: int) -> int:
@@ -554,7 +566,9 @@ class CharacterDataMixin:
         weapon = equipment.get("Weapon") if isinstance(equipment, dict) else None
         for slot in EQUIPMENT_SLOT_ORDER:
             item = equipment.get(slot) if isinstance(equipment, dict) else None
-            if slot == "OffHand" and self.should_show_two_handed_occupancy(player_char, weapon, item):
+            if slot == "OffHand" and self.should_show_two_handed_occupancy(
+                player_char, weapon, item
+            ):
                 item = weapon
                 description = "Off-hand occupied by two-handed weapon."
                 detail_rows = self.equipment_slot_detail_rows("Weapon", item)
@@ -600,7 +614,9 @@ class CharacterDataMixin:
         slots = self.selectable_equipment_slots(player_char)
         if not slots:
             return "Weapon"
-        self.selected_equipment_slot_index = max(0, min(self.selected_equipment_slot_index, len(slots) - 1))
+        self.selected_equipment_slot_index = max(
+            0, min(self.selected_equipment_slot_index, len(slots) - 1)
+        )
         return slots[self.selected_equipment_slot_index]
 
     def set_selected_equipment_slot(self, player_char, slot_name: str) -> None:
@@ -643,9 +659,14 @@ class CharacterDataMixin:
     def can_use_two_hander_without_blocking_offhand(self, player_char, weapon: Any) -> bool:
         cls = getattr(player_char, "cls", None)
         cls_name = self._attr_name(cls, "")
-        if cls_name in {"Lancer", "Dragoon"} and str(getattr(weapon, "subtyp", "") or "") == "Polearm":
+        if (
+            cls_name in {"Lancer", "Dragoon"}
+            and str(getattr(weapon, "subtyp", "") or "") == "Polearm"
+        ):
             return True
-        if str(getattr(weapon, "subtyp", "") or "") == "Staff" and ability_mechanics.has_skill(player_char, "Staff Conduit"):
+        if str(getattr(weapon, "subtyp", "") or "") == "Staff" and ability_mechanics.has_skill(
+            player_char, "Staff Conduit"
+        ):
             return True
         equipment = getattr(player_char, "equipment", {}) or {}
         offhand = equipment.get("OffHand")
@@ -707,10 +728,21 @@ class CharacterDataMixin:
         if subtyp and subtyp != "None" and slot in {"Weapon", "Armor", "OffHand", "Helmet"}:
             details.append(("Type", subtyp))
 
-        if slot in {"Weapon", "OffHand"} and (typ == "Weapon" or getattr(item, "damage", None) not in (None, 0, "")):
+        if slot in {"Weapon", "OffHand"} and (
+            typ == "Weapon" or getattr(item, "damage", None) not in (None, 0, "")
+        ):
             details.append(("Base Damage", self._display_number(getattr(item, "damage", 0))))
-            details.append(("Crit", self._display_percent(getattr(item, "crit_chance", getattr(item, "crit", 0)))))
-        elif slot in {"Armor", "Helmet"} or typ in {"Armor", "Helmet"} or getattr(item, "armor", None) not in (None, 0, ""):
+            details.append(
+                (
+                    "Crit",
+                    self._display_percent(getattr(item, "crit_chance", getattr(item, "crit", 0))),
+                )
+            )
+        elif (
+            slot in {"Armor", "Helmet"}
+            or typ in {"Armor", "Helmet"}
+            or getattr(item, "armor", None) not in (None, 0, "")
+        ):
             details.append(("Base Armor", self._display_number(getattr(item, "armor", 0))))
         elif slot == "OffHand" or typ == "OffHand":
             mod = getattr(item, "mod", None)
@@ -725,7 +757,9 @@ class CharacterDataMixin:
         return tuple(details)
 
     def equipment_slot_details(self, slot: str, item) -> tuple[str, ...]:
-        return tuple(f"{label}: {value}" for label, value in self.equipment_slot_detail_rows(slot, item))
+        return tuple(
+            f"{label}: {value}" for label, value in self.equipment_slot_detail_rows(slot, item)
+        )
 
     def equipment_slot_buffs(self, item) -> tuple[str, ...]:
         buffs: list[str] = []
@@ -754,11 +788,7 @@ class CharacterDataMixin:
 
         subtyp = str(getattr(item, "subtyp", "") or "")
         mod = str(getattr(item, "mod", "") or "")
-        if (
-            mod
-            and mod not in {"0", "No Mod", "None"}
-            and not self._is_number(mod)
-        ):
+        if mod and mod not in {"0", "No Mod", "None"} and not self._is_number(mod):
             if mod.startswith("Resist-"):
                 buffs.append(f"+50% {mod.removeprefix('Resist-')} Resistance")
             elif mod.startswith("Immune-"):
@@ -807,7 +837,14 @@ class CharacterDataMixin:
             mod = str(getattr(item, "mod", "") or "")
             if not mod:
                 continue
-            if mod in {"Vision", "Flying", "Invisible", "Accuracy", "Dodge", "Block"} or mod.startswith("Status-"):
+            if mod in {
+                "Vision",
+                "Flying",
+                "Invisible",
+                "Accuracy",
+                "Dodge",
+                "Block",
+            } or mod.startswith("Status-"):
                 add(mod, f"{slot}: {self._attr_name(item)}")
 
         if getattr(player_char, "sight", False):

@@ -8,6 +8,7 @@ from .base import Effect
 
 if TYPE_CHECKING:
     from character import Character
+
     from src.core.combat.combat_result import CombatResult
 
 
@@ -31,17 +32,19 @@ class TitanicSlamEffect(Effect):
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
         import random
+
         messages = result.extra.setdefault("messages", [])
         cover = result.extra.get("cover", False)
 
         messages.append(
-            f"{actor.name} raises both fists and brings them crashing "
-            f"down on {target.name}!\n"
+            f"{actor.name} raises both fists and brings them crashing " f"down on {target.name}!\n"
         )
 
         # ── Weapon damage ───────────────────────────────────────────
         wd_str, hit, crit = actor.weapon_damage(
-            target, cover=cover, dmg_mod=self.dmg_mod,
+            target,
+            cover=cover,
+            dmg_mod=self.dmg_mod,
             crit=self.crit_override,
         )
         messages.append(wd_str)
@@ -57,9 +60,7 @@ class TitanicSlamEffect(Effect):
                         f"for {self.stun_duration} turns!\n"
                     )
             else:
-                messages.append(
-                    f"The mana shield absorbs the stunning force.\n"
-                )
+                messages.append(f"The mana shield absorbs the stunning force.\n")
 
 
 class DevourEffect(Effect):
@@ -83,24 +84,22 @@ class DevourEffect(Effect):
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
         import random
-        from src.core.constants import DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH
+
+        from src.core.constants import DAMAGE_VARIANCE_HIGH, DAMAGE_VARIANCE_LOW
 
         messages = result.extra.setdefault("messages", [])
-        messages.append(
-            f"{actor.name} lunges forward and swallows "
-            f"{target.name} whole!\n"
-        )
+        messages.append(f"{actor.name} lunges forward and swallows " f"{target.name} whole!\n")
 
         total_damage = 0
         for i in range(self.num_bites):
-            base = int(
-                (actor.stats.strength + actor.stats.con) * self.multiplier
-            )
+            base = int((actor.stats.strength + actor.stats.con) * self.multiplier)
             variance = random.uniform(DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH)
             damage = int(base * variance)
 
             _, red_msg, damage = target.damage_reduction(
-                damage, actor, typ=self.element,
+                damage,
+                actor,
+                typ=self.element,
             )
             if red_msg:
                 messages.append(red_msg)
@@ -110,20 +109,16 @@ class DevourEffect(Effect):
                 total_damage += damage
                 if i < self.num_bites - 1:
                     messages.append(
-                        f"{actor.name} crushes {target.name} for "
-                        f"{damage} damage!\n"
+                        f"{actor.name} crushes {target.name} for " f"{damage} damage!\n"
                     )
 
             if not target.is_alive():
-                messages.append(
-                    f"{actor.name} devours {target.name} completely!\n"
-                )
+                messages.append(f"{actor.name} devours {target.name} completely!\n")
                 break
 
         if target.is_alive():
             messages.append(
-                f"{actor.name} spits out {target.name}, dealing "
-                f"{total_damage} total damage!\n"
+                f"{actor.name} spits out {target.name}, dealing " f"{total_damage} total damage!\n"
             )
 
         result.damage = total_damage
@@ -148,12 +143,11 @@ class AbsoluteZeroEffect(Effect):
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
         import random
-        from src.core.constants import DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH
+
+        from src.core.constants import DAMAGE_VARIANCE_HIGH, DAMAGE_VARIANCE_LOW
 
         messages = result.extra.setdefault("messages", [])
-        messages.append(
-            f"{actor.name} channels the essence of absolute cold!\n"
-        )
+        messages.append(f"{actor.name} channels the essence of absolute cold!\n")
 
         # ── Ice damage ──────────────────────────────────────────────
         base = int(actor.stats.intel * self.damage_mod)
@@ -161,13 +155,17 @@ class AbsoluteZeroEffect(Effect):
         damage = int(base * variance)
 
         hit, def_msg, damage = target.handle_defenses(
-            actor, damage, typ="Magic",
+            actor,
+            damage,
+            typ="Magic",
         )
         if def_msg:
             messages.append(def_msg)
 
         _, red_msg, damage = target.damage_reduction(
-            damage, actor, typ="Ice",
+            damage,
+            actor,
+            typ="Ice",
         )
         if red_msg:
             messages.append(red_msg)
@@ -177,13 +175,10 @@ class AbsoluteZeroEffect(Effect):
             result.damage = damage
             result.hit = True
             messages.append(
-                f"{target.name} takes {damage} ice damage as the "
-                f"temperature plummets!\n"
+                f"{target.name} takes {damage} ice damage as the " f"temperature plummets!\n"
             )
         else:
-            messages.append(
-                f"The freezing blast has no effect on {target.name}.\n"
-            )
+            messages.append(f"The freezing blast has no effect on {target.name}.\n")
             return
 
         if not target.is_alive():
@@ -193,16 +188,14 @@ class AbsoluteZeroEffect(Effect):
         if not target.magic_effects["Mana Shield"].active:
             if target.apply_stun(self.stun_duration, source="Absolute Zero", applier=actor):
                 messages.append(
-                    f"{target.name} is frozen solid for "
-                    f"{self.stun_duration} turns!\n"
+                    f"{target.name} is frozen solid for " f"{self.stun_duration} turns!\n"
                 )
 
         # ── Defense shatter ─────────────────────────────────────────
         if target.combat.defense > self.def_reduction:
             target.combat.defense -= self.def_reduction
             messages.append(
-                f"{target.name}'s defense is permanently shattered "
-                f"by {self.def_reduction}!\n"
+                f"{target.name}'s defense is permanently shattered " f"by {self.def_reduction}!\n"
             )
 
 
@@ -224,28 +217,29 @@ class EruptionEffect(Effect):
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
         import random
-        from src.core.constants import DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH
+
+        from src.core.constants import DAMAGE_VARIANCE_HIGH, DAMAGE_VARIANCE_LOW
 
         messages = result.extra.setdefault("messages", [])
-        messages.append(
-            f"{actor.name} erupts in a cataclysmic blaze of fire!\n"
-        )
+        messages.append(f"{actor.name} erupts in a cataclysmic blaze of fire!\n")
 
         # ── Fire damage ─────────────────────────────────────────────
-        base = int(
-            (actor.stats.strength + actor.stats.intel) * self.damage_mod
-        )
+        base = int((actor.stats.strength + actor.stats.intel) * self.damage_mod)
         variance = random.uniform(DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH)
         damage = int(base * variance)
 
         hit, def_msg, damage = target.handle_defenses(
-            actor, damage, typ="Magic",
+            actor,
+            damage,
+            typ="Magic",
         )
         if def_msg:
             messages.append(def_msg)
 
         _, red_msg, damage = target.damage_reduction(
-            damage, actor, typ="Fire",
+            damage,
+            actor,
+            typ="Fire",
         )
         if red_msg:
             messages.append(red_msg)
@@ -254,43 +248,34 @@ class EruptionEffect(Effect):
             target.health.current -= damage
             result.damage = damage
             result.hit = True
-            messages.append(
-                f"{target.name} is engulfed in flames for {damage} damage!\n"
-            )
+            messages.append(f"{target.name} is engulfed in flames for {damage} damage!\n")
         else:
-            messages.append(
-                f"The eruption has no effect on {target.name}.\n"
-            )
+            messages.append(f"The eruption has no effect on {target.name}.\n")
             return
 
         if not target.is_alive():
             return
 
         # ── Burn DOT ────────────────────────────────────────────────
-        if (
-            "DOT" not in target.status_immunity
-            and not target.magic_effects["DOT"].active
-        ):
+        if "DOT" not in target.status_immunity and not target.magic_effects["DOT"].active:
             target.magic_effects["DOT"].active = True
             target.magic_effects["DOT"].duration = self.burn_duration
             target.magic_effects["DOT"].extra = max(
-                1, actor.stats.intel // 4,
+                1,
+                actor.stats.intel // 4,
             )
             target.magic_effects["DOT"].source = "Burn"
-            messages.append(
-                f"{target.name} is set ablaze!\n"
-            )
+            messages.append(f"{target.name} is set ablaze!\n")
 
         # ── Self Vulcanize buff ─────────────────────────────────────
         if hasattr(actor, "stat_effects") and "Defense" in actor.stat_effects:
             actor.stat_effects["Defense"].active = True
             actor.stat_effects["Defense"].duration = self.vulcanize_duration
             actor.stat_effects["Defense"].extra = max(
-                1, actor.combat.defense // 4,
+                1,
+                actor.combat.defense // 4,
             )
-            messages.append(
-                f"{actor.name}'s skin hardens into volcanic rock!\n"
-            )
+            messages.append(f"{actor.name}'s skin hardens into volcanic rock!\n")
 
 
 class MaelstromVortexEffect(Effect):
@@ -309,12 +294,11 @@ class MaelstromVortexEffect(Effect):
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
         import random
-        from src.core.constants import DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH
+
+        from src.core.constants import DAMAGE_VARIANCE_HIGH, DAMAGE_VARIANCE_LOW
 
         messages = result.extra.setdefault("messages", [])
-        messages.append(
-            f"{actor.name} summons a maddening vortex of swirling water!\n"
-        )
+        messages.append(f"{actor.name} summons a maddening vortex of swirling water!\n")
 
         # ── Water damage ────────────────────────────────────────────
         base = int(actor.stats.intel * self.damage_mod)
@@ -322,13 +306,17 @@ class MaelstromVortexEffect(Effect):
         damage = int(base * variance)
 
         hit, def_msg, damage = target.handle_defenses(
-            actor, damage, typ="Magic",
+            actor,
+            damage,
+            typ="Magic",
         )
         if def_msg:
             messages.append(def_msg)
 
         _, red_msg, damage = target.damage_reduction(
-            damage, actor, typ="Water",
+            damage,
+            actor,
+            typ="Water",
         )
         if red_msg:
             messages.append(red_msg)
@@ -337,14 +325,9 @@ class MaelstromVortexEffect(Effect):
             target.health.current -= damage
             result.damage = damage
             result.hit = True
-            messages.append(
-                f"{target.name} is torn apart by the vortex for "
-                f"{damage} damage!\n"
-            )
+            messages.append(f"{target.name} is torn apart by the vortex for " f"{damage} damage!\n")
         else:
-            messages.append(
-                f"The vortex has no effect on {target.name}.\n"
-            )
+            messages.append(f"The vortex has no effect on {target.name}.\n")
             return
 
         if not target.is_alive():
@@ -366,7 +349,9 @@ class MaelstromVortexEffect(Effect):
                 target.status_effects[status_name].duration = self.status_duration
                 try:
                     actor._emit_status_event(
-                        target, status_name, applied=True,
+                        target,
+                        status_name,
+                        applied=True,
                         duration=self.status_duration,
                         source="Maelstrom Vortex",
                     )
@@ -381,9 +366,7 @@ class MaelstromVortexEffect(Effect):
         ):
             target.magic_effects["Terrify"].active = True
             target.magic_effects["Terrify"].duration = self.status_duration
-            messages.append(
-                f"{target.name} is terrified by the maelstrom!\n"
-            )
+            messages.append(f"{target.name} is terrified by the maelstrom!\n")
 
 
 class ThunderstrikeEffect(Effect):
@@ -406,12 +389,12 @@ class ThunderstrikeEffect(Effect):
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
         import random
-        from src.core.constants import DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH
+
+        from src.core.constants import DAMAGE_VARIANCE_HIGH, DAMAGE_VARIANCE_LOW
 
         messages = result.extra.setdefault("messages", [])
         messages.append(
-            f"{actor.name} screeches and calls down a devastating "
-            f"bolt of lightning!\n"
+            f"{actor.name} screeches and calls down a devastating " f"bolt of lightning!\n"
         )
 
         total_damage = 0
@@ -422,13 +405,17 @@ class ThunderstrikeEffect(Effect):
         damage = int(base * variance)
 
         hit, def_msg, damage = target.handle_defenses(
-            actor, damage, typ="Magic",
+            actor,
+            damage,
+            typ="Magic",
         )
         if def_msg:
             messages.append(def_msg)
 
         _, red_msg, damage = target.damage_reduction(
-            damage, actor, typ="Electric",
+            damage,
+            actor,
+            typ="Electric",
         )
         if red_msg:
             messages.append(red_msg)
@@ -436,13 +423,9 @@ class ThunderstrikeEffect(Effect):
         if hit and damage > 0:
             target.health.current -= damage
             total_damage += damage
-            messages.append(
-                f"The lightning strikes {target.name} for {damage} damage!\n"
-            )
+            messages.append(f"The lightning strikes {target.name} for {damage} damage!\n")
         else:
-            messages.append(
-                f"The lightning has no effect on {target.name}.\n"
-            )
+            messages.append(f"The lightning has no effect on {target.name}.\n")
             result.damage = 0
             return
 
@@ -455,7 +438,9 @@ class ThunderstrikeEffect(Effect):
             chain_dmg = int(chain_base * variance)
 
             _, red_msg, chain_dmg = target.damage_reduction(
-                chain_dmg, actor, typ="Electric",
+                chain_dmg,
+                actor,
+                typ="Electric",
             )
             if red_msg:
                 messages.append(red_msg)
@@ -464,8 +449,7 @@ class ThunderstrikeEffect(Effect):
                 target.health.current -= chain_dmg
                 total_damage += chain_dmg
                 messages.append(
-                    f"The lightning chains through {target.name} for "
-                    f"{chain_dmg} damage!\n"
+                    f"The lightning chains through {target.name} for " f"{chain_dmg} damage!\n"
                 )
 
         result.damage = total_damage
@@ -480,10 +464,7 @@ class ThunderstrikeEffect(Effect):
                 and not target.magic_effects["Mana Shield"].active
             ):
                 if target.apply_stun(self.stun_duration, source="Thunderstrike", applier=actor):
-                    messages.append(
-                        f"{target.name} is paralyzed by the electrical "
-                        f"surge!\n"
-                    )
+                    messages.append(f"{target.name} is paralyzed by the electrical " f"surge!\n")
 
 
 class WindShrapnelEffect(Effect):
@@ -506,12 +487,11 @@ class WindShrapnelEffect(Effect):
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
         import random
-        from src.core.constants import DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH
+
+        from src.core.constants import DAMAGE_VARIANCE_HIGH, DAMAGE_VARIANCE_LOW
 
         messages = result.extra.setdefault("messages", [])
-        messages.append(
-            f"{actor.name} conjures a storm of razor-sharp wind blades!\n"
-        )
+        messages.append(f"{actor.name} conjures a storm of razor-sharp wind blades!\n")
 
         total_damage = 0
         total_crits = 0
@@ -528,7 +508,9 @@ class WindShrapnelEffect(Effect):
             damage = int(base * variance)
 
             _, red_msg, damage = target.damage_reduction(
-                damage, actor, typ="Wind",
+                damage,
+                actor,
+                typ="Wind",
             )
             if red_msg:
                 messages.append(red_msg)
@@ -540,8 +522,7 @@ class WindShrapnelEffect(Effect):
                     total_crits += 1
                 crit_str = " (Critical!)" if is_crit else ""
                 messages.append(
-                    f"Wind blade hits {target.name} for "
-                    f"{damage} damage!{crit_str}\n"
+                    f"Wind blade hits {target.name} for " f"{damage} damage!{crit_str}\n"
                 )
 
         if total_damage > 0:
@@ -574,36 +555,35 @@ class DivineJudgmentEffect(Effect):
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
         import random
-        from src.core.constants import DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH
+
+        from src.core.constants import DAMAGE_VARIANCE_HIGH, DAMAGE_VARIANCE_LOW
 
         messages = result.extra.setdefault("messages", [])
-        messages.append(
-            f"{actor.name} raises a holy sword and passes "
-            f"divine judgment!\n"
-        )
+        messages.append(f"{actor.name} raises a holy sword and passes " f"divine judgment!\n")
 
         # ── Holy damage ─────────────────────────────────────────────
         mod = self.damage_mod
         is_undead = getattr(target, "enemy_typ", "") == "Undead"
         if is_undead:
             mod *= self.undead_multiplier
-            messages.append(
-                f"The holy light burns with terrible fury "
-                f"against the undead!\n"
-            )
+            messages.append(f"The holy light burns with terrible fury " f"against the undead!\n")
 
         base = int(actor.stats.wisdom * mod)
         variance = random.uniform(DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH)
         damage = int(base * variance)
 
         hit, def_msg, damage = target.handle_defenses(
-            actor, damage, typ="Magic",
+            actor,
+            damage,
+            typ="Magic",
         )
         if def_msg:
             messages.append(def_msg)
 
         _, red_msg, damage = target.damage_reduction(
-            damage, actor, typ="Holy",
+            damage,
+            actor,
+            typ="Holy",
         )
         if red_msg:
             messages.append(red_msg)
@@ -612,14 +592,9 @@ class DivineJudgmentEffect(Effect):
             target.health.current -= damage
             result.damage = damage
             result.hit = True
-            messages.append(
-                f"Divine light strikes {target.name} for "
-                f"{damage} damage!\n"
-            )
+            messages.append(f"Divine light strikes {target.name} for " f"{damage} damage!\n")
         else:
-            messages.append(
-                f"The divine judgment has no effect on {target.name}.\n"
-            )
+            messages.append(f"The divine judgment has no effect on {target.name}.\n")
 
         # ── Heal the summoner (actor's owner) ───────────────────────
         # Summons are the actor; try to heal via owner reference,
@@ -629,10 +604,7 @@ class DivineJudgmentEffect(Effect):
         actual_heal = min(heal_amount, healer.health.max - healer.health.current)
         if actual_heal > 0:
             healer.health.current += actual_heal
-            messages.append(
-                f"Holy light restores {actual_heal} HP to "
-                f"{healer.name}!\n"
-            )
+            messages.append(f"Holy light restores {actual_heal} HP to " f"{healer.name}!\n")
 
         # ── Cleanse status effects on the summoner ──────────────────
         cleansed = []
@@ -642,10 +614,7 @@ class DivineJudgmentEffect(Effect):
                 status.duration = 0
                 cleansed.append(status_name)
         if cleansed:
-            messages.append(
-                f"{healer.name} is cleansed of "
-                f"{', '.join(cleansed)}!\n"
-            )
+            messages.append(f"{healer.name} is cleansed of " f"{', '.join(cleansed)}!\n")
 
 
 class OblivionEffect(Effect):
@@ -667,12 +636,12 @@ class OblivionEffect(Effect):
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
         import random
-        from src.core.constants import DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH
+
+        from src.core.constants import DAMAGE_VARIANCE_HIGH, DAMAGE_VARIANCE_LOW
 
         messages = result.extra.setdefault("messages", [])
         messages.append(
-            f"{actor.name} tears open a rift to the void, "
-            f"unleashing pure oblivion!\n"
+            f"{actor.name} tears open a rift to the void, " f"unleashing pure oblivion!\n"
         )
 
         # ── Shadow damage ───────────────────────────────────────────
@@ -681,13 +650,17 @@ class OblivionEffect(Effect):
         damage = int(base * variance)
 
         hit, def_msg, damage = target.handle_defenses(
-            actor, damage, typ="Magic",
+            actor,
+            damage,
+            typ="Magic",
         )
         if def_msg:
             messages.append(def_msg)
 
         _, red_msg, damage = target.damage_reduction(
-            damage, actor, typ="Shadow",
+            damage,
+            actor,
+            typ="Shadow",
         )
         if red_msg:
             messages.append(red_msg)
@@ -696,29 +669,20 @@ class OblivionEffect(Effect):
             target.health.current -= damage
             result.damage = damage
             result.hit = True
-            messages.append(
-                f"The void consumes {target.name} for {damage} damage!\n"
-            )
+            messages.append(f"The void consumes {target.name} for {damage} damage!\n")
         else:
-            messages.append(
-                f"The void has no hold on {target.name}.\n"
-            )
+            messages.append(f"The void has no hold on {target.name}.\n")
             return
 
         if not target.is_alive():
             return
 
         # ── Instant kill chance ─────────────────────────────────────
-        if (
-            "Death" not in target.status_immunity
-            and random.random() < self.kill_chance
-        ):
+        if "Death" not in target.status_immunity and random.random() < self.kill_chance:
             resist = target.check_mod("resist", enemy=actor, typ="Death")
             if resist < 1:
                 target.health.current = 0
-                messages.append(
-                    f"{target.name} is consumed by oblivion!\n"
-                )
+                messages.append(f"{target.name} is consumed by oblivion!\n")
                 return
 
         # ── Permanent stat drain ────────────────────────────────────
@@ -754,10 +718,7 @@ class GrandHeistEffect(Effect):
         import random
 
         messages = result.extra.setdefault("messages", [])
-        messages.append(
-            f"{actor.name} cackles and launches into the heist "
-            f"of a lifetime!\n"
-        )
+        messages.append(f"{actor.name} cackles and launches into the heist " f"of a lifetime!\n")
 
         total_damage = 0
 
@@ -770,10 +731,7 @@ class GrandHeistEffect(Effect):
                 actor.owner.gold += stolen_gold
             else:
                 actor.gold += stolen_gold
-            messages.append(
-                f"{actor.name} steals {stolen_gold} gold from "
-                f"{target.name}!\n"
-            )
+            messages.append(f"{actor.name} steals {stolen_gold} gold from " f"{target.name}!\n")
 
         # ── Random debuff ───────────────────────────────────────────
         possible_debuffs = ["Blind", "Silence", "Poison"]
@@ -789,30 +747,30 @@ class GrandHeistEffect(Effect):
             target.status_effects[debuff].duration = self.debuff_duration
             if debuff == "Poison":
                 target.status_effects[debuff].extra = max(
-                    1, actor.stats.dex // 4,
+                    1,
+                    actor.stats.dex // 4,
                 )
             try:
                 actor._emit_status_event(
-                    target, debuff, applied=True,
+                    target,
+                    debuff,
+                    applied=True,
                     duration=self.debuff_duration,
                     source="Grand Heist",
                 )
             except (AttributeError, Exception):
                 pass
-            messages.append(
-                f"{actor.name} inflicts {debuff} on {target.name}!\n"
-            )
+            messages.append(f"{actor.name} inflicts {debuff} on {target.name}!\n")
 
         # ── Gold Toss finisher ──────────────────────────────────────
         recipient = getattr(actor, "owner", actor)
         toss_gold = getattr(recipient, "gold", 0)
         if toss_gold > 0:
-            gold_dmg = int(
-                random.randint(1, max(1, int(toss_gold ** 0.5)))
-                * self.gold_multiplier
-            )
+            gold_dmg = int(random.randint(1, max(1, int(toss_gold**0.5))) * self.gold_multiplier)
             _, red_msg, gold_dmg = target.damage_reduction(
-                gold_dmg, actor, typ="Physical",
+                gold_dmg,
+                actor,
+                typ="Physical",
             )
             if red_msg:
                 messages.append(red_msg)
@@ -847,12 +805,11 @@ class CataclysmEffect(Effect):
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
         import random
-        from src.core.constants import DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH
+
+        from src.core.constants import DAMAGE_VARIANCE_HIGH, DAMAGE_VARIANCE_LOW
 
         messages = result.extra.setdefault("messages", [])
-        messages.append(
-            f"{actor.name} roars and unleashes total cataclysm!\n"
-        )
+        messages.append(f"{actor.name} roars and unleashes total cataclysm!\n")
 
         total_damage = 0
 
@@ -860,32 +817,26 @@ class CataclysmEffect(Effect):
         spells = list(actor.spellbook.get("Spells", {}).items())
         if spells:
             chosen = random.sample(
-                spells, min(self.spell_count, len(spells)),
+                spells,
+                min(self.spell_count, len(spells)),
             )
             for spell_name, spell in chosen:
                 try:
                     cast_result = spell.cast(actor, target, special=True)
-                    cast_msg = (
-                        cast_result if isinstance(cast_result, str)
-                        else str(cast_result)
-                    )
+                    cast_msg = cast_result if isinstance(cast_result, str) else str(cast_result)
                     messages.append(cast_msg)
                 except Exception:
-                    messages.append(
-                        f"{actor.name} attempts {spell_name} "
-                        f"but it fizzles.\n"
-                    )
+                    messages.append(f"{actor.name} attempts {spell_name} " f"but it fizzles.\n")
 
         # ── Dragon Breath ───────────────────────────────────────────
-        base = int(
-            (actor.stats.strength + actor.stats.intel)
-            * self.breath_multiplier
-        )
+        base = int((actor.stats.strength + actor.stats.intel) * self.breath_multiplier)
         variance = random.uniform(DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH)
         breath_dmg = int(base * variance)
 
         _, red_msg, breath_dmg = target.damage_reduction(
-            breath_dmg, actor, typ="Fire",
+            breath_dmg,
+            actor,
+            typ="Fire",
         )
         if red_msg:
             messages.append(red_msg)
@@ -899,18 +850,14 @@ class CataclysmEffect(Effect):
             )
 
         # ── Power Up self ───────────────────────────────────────────
-        if (
-            hasattr(actor, "stat_effects")
-            and "Attack" in actor.stat_effects
-        ):
+        if hasattr(actor, "stat_effects") and "Attack" in actor.stat_effects:
             actor.stat_effects["Attack"].active = True
             actor.stat_effects["Attack"].duration = self.power_up_duration
             actor.stat_effects["Attack"].extra = max(
-                1, actor.combat.attack // 4,
+                1,
+                actor.combat.attack // 4,
             )
-            messages.append(
-                f"{actor.name} surges with draconic power!\n"
-            )
+            messages.append(f"{actor.name} surges with draconic power!\n")
 
         result.damage = total_damage
         result.hit = True

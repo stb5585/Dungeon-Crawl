@@ -214,20 +214,23 @@ def test_spellblade_gates_branches_and_promotion_are_authored():
 
 def test_spellblade_and_knight_enchanter_adopt_known_catchup_abilities():
     spellblade = _player()
-    spellblade.spellbook["Skills"].update({
-        "Imbue Weapon": abilities.ImbueWeapon(),
-        "True Strike": abilities.TrueStrike(),
-        "Parry": abilities.Parry(),
-        "Double Strike": abilities.DoubleStrike(),
-    })
-    spellblade.spellbook["Spells"].update({
-        "Reflect": abilities.Reflect(),
-        "Boost": abilities.Boost(),
-    })
+    spellblade.spellbook["Skills"].update(
+        {
+            "Imbue Weapon": abilities.ImbueWeapon(),
+            "True Strike": abilities.TrueStrike(),
+            "Parry": abilities.Parry(),
+            "Double Strike": abilities.DoubleStrike(),
+        }
+    )
+    spellblade.spellbook["Spells"].update(
+        {
+            "Reflect": abilities.Reflect(),
+            "Boost": abilities.Boost(),
+        }
+    )
     before = spellblade.progression.unspent_points
     statuses = {
-        status.node.name: status.state
-        for status in available_nodes(spellblade, "Spellblade")
+        status.node.name: status.state for status in available_nodes(spellblade, "Spellblade")
     }
 
     for name in ("Reflect", "Boost", "True Strike", "Parry", "Double Strike"):
@@ -236,15 +239,16 @@ def test_spellblade_and_knight_enchanter_adopt_known_catchup_abilities():
     assert spellblade.progression.unspent_points == before
 
     knight = _player("Knight Enchanter")
-    knight.spellbook["Skills"].update({
-        "Double Strike": abilities.DoubleStrike(),
-        "Mana Tap": abilities.ManaTap(),
-        "Enhance Armor": abilities.EnhanceArmor(),
-        "Parry": abilities.Parry(),
-    })
+    knight.spellbook["Skills"].update(
+        {
+            "Double Strike": abilities.DoubleStrike(),
+            "Mana Tap": abilities.ManaTap(),
+            "Enhance Armor": abilities.EnhanceArmor(),
+            "Parry": abilities.Parry(),
+        }
+    )
     knight_statuses = {
-        status.node.name: status.state
-        for status in available_nodes(knight, "Knight Enchanter")
+        status.node.name: status.state for status in available_nodes(knight, "Knight Enchanter")
     }
     for name in ("Double Strike", "Enhance Armor", "Mana Tap", "Parry"):
         assert knight_statuses[name] == NodeState.OWNED
@@ -381,10 +385,12 @@ def test_multimissile_cast_stores_only_one_arcane_charge():
 def test_counter_charge_gains_once_per_incoming_spell_action():
     caster = _player("Mage")
     defender = _player()
-    defender.spellbook["Skills"].update({
-        "Counter Charge": abilities.CounterCharge(),
-        "Storage Capacity": abilities.StorageCapacity(),
-    })
+    defender.spellbook["Skills"].update(
+        {
+            "Counter Charge": abilities.CounterCharge(),
+            "Storage Capacity": abilities.StorageCapacity(),
+        }
+    )
 
     promotion_kits.begin_action(caster)
     _record_spell_hit(caster, defender, "Holy", "Holy")
@@ -404,10 +410,12 @@ def test_counter_charge_gains_once_per_incoming_spell_action():
 
 def test_typed_charge_pools_release_with_matching_amplify_and_resistance():
     player = _player()
-    player.spellbook["Skills"].update({
-        "Storage Capacity": abilities.StorageCapacity(),
-        "Amplify Elemental": abilities.AmplifyElemental(),
-    })
+    player.spellbook["Skills"].update(
+        {
+            "Storage Capacity": abilities.StorageCapacity(),
+            "Amplify Elemental": abilities.AmplifyElemental(),
+        }
+    )
     target = _player("Mage")
     target.resistance["Fire"] = 1.0
     promotion_kits.begin_action(player)
@@ -544,10 +552,12 @@ def test_enhance_blade_and_armor_scale_from_current_mana():
     armor_rating = int(player.equipment["Armor"].armor)
     base_weapon = player.check_mod("weapon")
     base_armor = player.check_mod("armor")
-    player.spellbook["Skills"].update({
-        "Enhance Blade": abilities.EnhanceBlade(),
-        "Enhance Armor": abilities.EnhanceArmor(),
-    })
+    player.spellbook["Skills"].update(
+        {
+            "Enhance Blade": abilities.EnhanceBlade(),
+            "Enhance Armor": abilities.EnhanceArmor(),
+        }
+    )
 
     assert player.check_mod("weapon") == base_weapon + weapon_damage
     assert player.check_mod("armor") == base_armor
@@ -559,10 +569,12 @@ def test_enhance_blade_and_armor_scale_from_current_mana():
 
 def test_spellblade_combat_state_clears_all_new_mechanics():
     player = _player()
-    player.spellbook["Skills"].update({
-        "Breakdown": abilities.Breakdown(),
-        "Storage Capacity": abilities.StorageCapacity(),
-    })
+    player.spellbook["Skills"].update(
+        {
+            "Breakdown": abilities.Breakdown(),
+            "Storage Capacity": abilities.StorageCapacity(),
+        }
+    )
     target = enemies.Goblin()
     promotion_kits.begin_action(player)
     _record_spell_hit(player, target, "Fire", "Firebolt")

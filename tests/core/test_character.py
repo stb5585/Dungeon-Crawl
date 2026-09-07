@@ -14,8 +14,8 @@ sys.path.insert(0, str(Path(__file__).parents[2]))
 
 import pytest
 
+from src.core import abilities, companions, enemies, items
 from src.core.enemies import Goblin
-from src.core import items, enemies, abilities, companions
 from src.core.save_system import PlayerDataSerializer, QuestDataSerializer, TileStateSerializer
 from tests.test_framework import TestGameState
 
@@ -25,11 +25,7 @@ class TestCharacterCreation:
 
     def test_create_basic_character(self):
         """Test creating a basic character."""
-        char = TestGameState.create_player(
-            name="TestHero",
-            class_name="Warrior",
-            race_name="Human"
-        )
+        char = TestGameState.create_player(name="TestHero", class_name="Warrior", race_name="Human")
         assert char.name == "TestHero"
         assert char.race.name == "Human"
         assert char.cls.name == "Warrior"
@@ -40,24 +36,24 @@ class TestCharacterCreation:
         char = TestGameState.create_player(name="Test", class_name="Warrior", race_name="Human")
 
         # Core attributes
-        assert hasattr(char, 'name')
-        assert hasattr(char, 'health')
-        assert hasattr(char, 'mana')
-        assert hasattr(char, 'stats')
-        assert hasattr(char, 'combat')
-        assert hasattr(char, 'equipment')
+        assert hasattr(char, "name")
+        assert hasattr(char, "health")
+        assert hasattr(char, "mana")
+        assert hasattr(char, "stats")
+        assert hasattr(char, "combat")
+        assert hasattr(char, "equipment")
 
         # Combat attributes
-        assert hasattr(char, 'magic_effects')
-        assert hasattr(char, 'status_effects')
-        assert hasattr(char, 'physical_effects')
-        assert hasattr(char, 'stat_effects')
+        assert hasattr(char, "magic_effects")
+        assert hasattr(char, "status_effects")
+        assert hasattr(char, "physical_effects")
+        assert hasattr(char, "stat_effects")
 
         # Methods
-        assert hasattr(char, 'is_alive')
-        assert hasattr(char, 'weapon_damage')
-        assert hasattr(char, 'hit_chance')
-        assert hasattr(char, 'dodge_chance')
+        assert hasattr(char, "is_alive")
+        assert hasattr(char, "weapon_damage")
+        assert hasattr(char, "hit_chance")
+        assert hasattr(char, "dodge_chance")
 
     def test_resource_current_cannot_go_negative(self):
         """Resource pools should floor at zero when costs overrun."""
@@ -82,7 +78,7 @@ class TestCharacterMethods:
     def test_incapacitated_method(self):
         """Test incapacitated method."""
         char = TestGameState.create_player(name="Test", class_name="Warrior", race_name="Human")
-        assert hasattr(char, 'incapacitated')
+        assert hasattr(char, "incapacitated")
         result = char.incapacitated()
         assert isinstance(result, bool)
 
@@ -159,7 +155,9 @@ class TestCharacterMethods:
 
     def test_magic_pendant_increases_spell_dodge(self, monkeypatch):
         attacker = TestGameState.create_player(name="Mage", class_name="Wizard", race_name="Human")
-        defender = TestGameState.create_player(name="Target", class_name="Warrior", race_name="Human")
+        defender = TestGameState.create_player(
+            name="Target", class_name="Warrior", race_name="Human"
+        )
 
         defender.equipment["Pendant"] = items.NoPendant()
         monkeypatch.setattr("src.core.character.random.randint", lambda lo, hi: (lo + hi) // 2)
@@ -179,28 +177,30 @@ class TestCombatAPIContract:
         from src.core.enemies import Goblin
 
         enemy = Goblin()
-        assert hasattr(enemy, 'name')
-        assert hasattr(enemy, 'health')
-        assert hasattr(enemy, 'magic_effects')
-        assert hasattr(enemy, 'status_effects')
-        assert hasattr(enemy, 'tunnel')
-        assert hasattr(enemy, 'is_alive')
-        assert hasattr(enemy, 'weapon_damage')
-        assert hasattr(enemy, 'dodge_chance')
+        assert hasattr(enemy, "name")
+        assert hasattr(enemy, "health")
+        assert hasattr(enemy, "magic_effects")
+        assert hasattr(enemy, "status_effects")
+        assert hasattr(enemy, "tunnel")
+        assert hasattr(enemy, "is_alive")
+        assert hasattr(enemy, "weapon_damage")
+        assert hasattr(enemy, "dodge_chance")
 
     def test_player_has_combat_attributes(self):
         """Verify player has all required combat attributes."""
         # Use TestGameState to properly create a player
-        player = TestGameState.create_player(name="TestPlayer", class_name="Warrior", race_name="Human")
+        player = TestGameState.create_player(
+            name="TestPlayer", class_name="Warrior", race_name="Human"
+        )
 
         # Basic attributes
-        assert hasattr(player, 'name')
-        assert hasattr(player, 'health')
-        assert hasattr(player, 'cls')
+        assert hasattr(player, "name")
+        assert hasattr(player, "health")
+        assert hasattr(player, "cls")
 
         # Combat methods
-        assert hasattr(player, 'weapon_damage')
-        assert hasattr(player, 'is_alive')
+        assert hasattr(player, "weapon_damage")
+        assert hasattr(player, "is_alive")
 
 
 class TestEnhancedCombatRequirements:
@@ -230,8 +230,8 @@ class TestEnhancedCombatRequirements:
         char = TestGameState.create_player(name="Test", class_name="Warrior", race_name="Human")
 
         # Check for speed or dexterity stat
-        assert hasattr(char, 'stats')
-        assert hasattr(char.stats, 'dex') or hasattr(char.stats, 'speed')
+        assert hasattr(char, "stats")
+        assert hasattr(char.stats, "dex") or hasattr(char.stats, "speed")
 
 
 class TestStatusEffectImprovements:
@@ -276,11 +276,19 @@ class TestStatusEffectImprovements:
     def test_bleed_increases_melee_damage_taken(self, monkeypatch):
         import src.core.character as character_mod
 
-        attacker = TestGameState.create_player(name="Attacker", class_name="Warrior", race_name="Human")
-        defender = TestGameState.create_player(name="Defender", class_name="Warrior", race_name="Human")
+        attacker = TestGameState.create_player(
+            name="Attacker", class_name="Warrior", race_name="Human"
+        )
+        defender = TestGameState.create_player(
+            name="Defender", class_name="Warrior", race_name="Human"
+        )
 
-        monkeypatch.setattr(character_mod.random, "uniform", lambda _a, _b: 1.0)  # deterministic variance
-        monkeypatch.setattr(character_mod.random, "random", lambda: 1.0)  # avoid block/dodge randomness
+        monkeypatch.setattr(
+            character_mod.random, "uniform", lambda _a, _b: 1.0
+        )  # deterministic variance
+        monkeypatch.setattr(
+            character_mod.random, "random", lambda: 1.0
+        )  # avoid block/dodge randomness
         monkeypatch.setattr(attacker, "critical_chance", lambda _att: 0.0)  # no crits
 
         defender.health.current = defender.health.max
@@ -318,7 +326,9 @@ class TestStatusEffectImprovements:
         assert "bites Electric Bat" in message
 
     def test_equip_diff_pendant_preview_does_not_leak_vision_buff(self):
-        player = TestGameState.create_player(name="PendantHero", class_name="Warrior", race_name="Human")
+        player = TestGameState.create_player(
+            name="PendantHero", class_name="Warrior", race_name="Human"
+        )
         player.equipment["Pendant"] = items.VisionPendant()
         player.sight = True
 
@@ -331,7 +341,9 @@ class TestStatusEffectImprovements:
         assert player.sight is True
 
     def test_magic_pendant_reports_magic_dodge_buff(self):
-        player = TestGameState.create_player(name="PendantHero", class_name="Warrior", race_name="Human")
+        player = TestGameState.create_player(
+            name="PendantHero", class_name="Warrior", race_name="Human"
+        )
         player.equipment["Pendant"] = items.MagicPendant()
 
         assert "Magic Dodge" in player.buff_str()
@@ -401,16 +413,18 @@ class TestGameplayStatistics:
             race_name="Human",
             level=15,
         )
-        player.gameplay_stats.update({
-            "steps_taken": 42,
-            "stairs_used": 7,
-            "enemies_defeated": 11,
-            "deaths": 2,
-            "flees": 3,
-            "highest_level_reached": 16,
-            "highest_damage_dealt": 88,
-            "highest_damage_taken": 34,
-        })
+        player.gameplay_stats.update(
+            {
+                "steps_taken": 42,
+                "stairs_used": 7,
+                "enemies_defeated": 11,
+                "deaths": 2,
+                "flees": 3,
+                "highest_level_reached": 16,
+                "highest_damage_dealt": 88,
+                "highest_damage_taken": 34,
+            }
+        )
         player.inventory_sort_mode = "Combat"
 
         serialized = PlayerDataSerializer.serialize(player)
@@ -613,7 +627,7 @@ class TestPlayerUtilityBehaviors:
         assert player.gameplay_stats["highest_level_reached"] == 18
 
     def test_exp_gain_multiplier_matches_race(self):
-        from src.core.constants import HUMAN_EXP_MULTIPLIER, HALF_GIANT_EXP_MULTIPLIER
+        from src.core.constants import HALF_GIANT_EXP_MULTIPLIER, HUMAN_EXP_MULTIPLIER
 
         human = TestGameState.create_player(class_name="Warrior", race_name="Human")
         half_giant = TestGameState.create_player(class_name="Warrior", race_name="Half Giant")
@@ -754,7 +768,9 @@ class TestPlayerUtilityBehaviors:
 
         player.physical_effects["Disarm"].active = True
         player.cls.name = "Thaumaturgist"
-        alive_summon = TestGameState.create_player(name="Summon", class_name="Warrior", race_name="Human")
+        alive_summon = TestGameState.create_player(
+            name="Summon", class_name="Warrior", race_name="Human"
+        )
         player.summons["Summon"] = alive_summon
         player.abilities_suppressed = lambda: False
         actions = player.additional_actions(["Attack", "Use Item", "Flee"])
@@ -850,8 +866,12 @@ class TestPlayerUtilityBehaviors:
         familiar = Jinkin()
         familiar.name = "Gremlin"
         familiar.spellbook["Skills"] = {
-            "Lockpick": SimpleNamespace(name="Lockpick", typ="Skill", use=lambda *_args, **_kwargs: "noop"),
-            "Steal": SimpleNamespace(name="Steal", typ="Skill", use=lambda *_args, **_kwargs: "Stolen!\n"),
+            "Lockpick": SimpleNamespace(
+                name="Lockpick", typ="Skill", use=lambda *_args, **_kwargs: "noop"
+            ),
+            "Steal": SimpleNamespace(
+                name="Steal", typ="Skill", use=lambda *_args, **_kwargs: "Stolen!\n"
+            ),
         }
         player.familiar = familiar
 
@@ -922,6 +942,7 @@ class TestPlayerUtilityBehaviors:
         assert "Dragon Essence" in msg
         assert player.promotion_kit_state["lycan_control"]["dragon_essence"] is True
         assert "Transform" not in player.spellbook["Skills"]
+
 
 class TestSaveSystemQuestCompatibility:
     def test_collect_quest_legacy_string_is_deserialized_to_item_instance(self):
@@ -1125,7 +1146,9 @@ class TestSaveSystemRoundTrips:
         assert restored_jump.unlocked_modifications["Retribution"] is True
 
     def test_stun_has_post_expiry_immunity_window(self):
-        attacker = TestGameState.create_player(name="Attacker", class_name="Warrior", race_name="Human")
+        attacker = TestGameState.create_player(
+            name="Attacker", class_name="Warrior", race_name="Human"
+        )
         target = TestGameState.create_player(name="Target", class_name="Warrior", race_name="Human")
 
         assert target.apply_stun(1, source="Test", applier=attacker) is True
@@ -1145,9 +1168,15 @@ class TestSaveSystemRoundTrips:
         assert target.apply_stun(1, source="Test", applier=attacker) is True
 
     def test_stun_contest_is_biased_by_level_difference(self):
-        high = TestGameState.create_player(name="High", class_name="Warrior", race_name="Human", level=20)
-        low = TestGameState.create_player(name="Low", class_name="Warrior", race_name="Human", level=1)
-        target = TestGameState.create_player(name="Target", class_name="Warrior", race_name="Human", level=10)
+        high = TestGameState.create_player(
+            name="High", class_name="Warrior", race_name="Human", level=20
+        )
+        low = TestGameState.create_player(
+            name="Low", class_name="Warrior", race_name="Human", level=1
+        )
+        target = TestGameState.create_player(
+            name="Target", class_name="Warrior", race_name="Human", level=10
+        )
 
         attacker_roll = 10
         defender_roll = 11
@@ -1165,15 +1194,11 @@ def run_tests():
 
     # Run pytest with verbose output
     import pytest
-    exit_code = pytest.main([
-        __file__,
-        '-v',
-        '--tb=short',
-        '--color=yes'
-    ])
+
+    exit_code = pytest.main([__file__, "-v", "--tb=short", "--color=yes"])
 
     return exit_code
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(run_tests())

@@ -19,7 +19,7 @@ class BossRoom(SpecialTile):
         self.defeated = False
 
     def available_actions(self, player_char):
-        if player_char.state == 'fight':
+        if player_char.state == "fight":
             action_list = ["Attack", "Use Item"]
             if not player_char.abilities_suppressed():
                 if player_char.usable_abilities("Spells"):
@@ -42,12 +42,18 @@ class BossRoom(SpecialTile):
 
     def enter_combat(self, player_char):
         _apply_cambion_antimagic(self, player_char, self.enemy)
-        player_char.state = 'fight'
+        player_char.state = "fight"
 
     def special_text(self, game):
         if not self.read:
-            enemy_instance = self.enemy if isinstance(self.enemy, str) else (self.enemy() if callable(self.enemy) else self.enemy)
-            enemy_name = enemy_instance.name if hasattr(enemy_instance, 'name') else str(enemy_instance)
+            enemy_instance = (
+                self.enemy
+                if isinstance(self.enemy, str)
+                else (self.enemy() if callable(self.enemy) else self.enemy)
+            )
+            enemy_name = (
+                enemy_instance.name if hasattr(enemy_instance, "name") else str(enemy_instance)
+            )
             game.special_event(enemy_name)
             self.read = True
 
@@ -150,8 +156,10 @@ class NightmareBossRoom(BossRoom):
 
     def intro_text(self, game):
         if not self.enemy:
-            return ("A heap of bone and sinew is all that is left of the horror that \n"
-                    "once befell this hall.\n")
+            return (
+                "A heap of bone and sinew is all that is left of the horror that \n"
+                "once befell this hall.\n"
+            )
         return super().intro_text(game)
 
 
@@ -162,8 +170,10 @@ class CockatriceBossRoom(BossRoom):
 
     def intro_text(self, game):
         if not self.enemy:
-            return ("Nothing but bones and feathers are left to mark the spot where \n"
-                    "the Cockatrice was defeated.")
+            return (
+                "Nothing but bones and feathers are left to mark the spot where \n"
+                "the Cockatrice was defeated."
+            )
         return super().intro_text(game)
 
 
@@ -188,7 +198,7 @@ class IronGolemBossRoom(BossRoom):
 
     def intro_text(self, game):
         if not self.enemy:
-            return ("")
+            return ""
         return super().intro_text(game)
 
 
@@ -199,7 +209,7 @@ class GolemBossRoom(BossRoom):
 
     def intro_text(self, game):
         if not self.enemy:
-            return ("")
+            return ""
         return super().intro_text(game)
 
 
@@ -220,7 +230,7 @@ class JesterBossRoom(BossRoom):
             # Jester defeated - exit the funhouse
             deactivate_funhouse_teleporters(game.player_char)
             game.player_char.exit_funhouse()
-            if hasattr(game, 'special_event'):
+            if hasattr(game, "special_event"):
                 game.special_event("Jester Defeated")
         else:
             super().special_text(game)
@@ -233,7 +243,7 @@ class DomingoBossRoom(BossRoom):
 
     def intro_text(self, game):
         if not self.enemy:
-            return ("")
+            return ""
         return super().intro_text(game)
 
 
@@ -244,7 +254,7 @@ class RedDragonBossRoom(BossRoom):
 
     def intro_text(self, game):
         if not self.enemy:
-            return ("")
+            return ""
         return super().intro_text(game)
 
 
@@ -255,7 +265,7 @@ class CirceBossRoom(BossRoom):
 
     def intro_text(self, game):
         if not self.enemy:
-            return ("")
+            return ""
         return super().intro_text(game)
 
 
@@ -266,7 +276,9 @@ class MerzhinBossRoom(BossRoom):
 
     def intro_text(self, game):
         if not self.enemy:
-            return ("Merzhin's illusions have collapsed, leaving only the fading hush of the realm.\n")
+            return (
+                "Merzhin's illusions have collapsed, leaving only the fading hush of the realm.\n"
+            )
         return super().intro_text(game)
 
 
@@ -277,7 +289,7 @@ class CerberusBossRoom(BossRoom):
 
     def intro_text(self, game):
         if not self.enemy:
-            return ("")
+            return ""
         return super().intro_text(game)
 
 
@@ -288,5 +300,5 @@ class FinalBossRoom(BossRoom):
 
     def intro_text(self, game):
         if not self.enemy:
-            return ("")
+            return ""
         return super().intro_text(game)

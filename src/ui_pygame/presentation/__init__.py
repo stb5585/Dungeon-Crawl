@@ -5,15 +5,15 @@ Provides abstract interfaces and implementations for different UI technologies.
 """
 
 from .interface import (
+    ConsolePresenter,
+    EventDrivenPresenter,
     GamePresenter,
     NullPresenter,
-    EventDrivenPresenter,
-    ConsolePresenter,
 )
 
 __all__ = [
-    'GamePresenter',
-    'NullPresenter',
-    'EventDrivenPresenter',
-    'ConsolePresenter',
+    "GamePresenter",
+    "NullPresenter",
+    "EventDrivenPresenter",
+    "ConsolePresenter",
 ]

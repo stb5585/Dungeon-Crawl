@@ -68,9 +68,7 @@ class SpellbreakersCut(Skill):
             penalty = max(2, int(user.stats.intel) // 5)
             _apply_stat_effect(target, "Magic Defense", -penalty, 3, self.name)
             result.effects_applied["Stat"].append("Magic Defense Debuff")
-            result.message += (
-                f"{target.name}'s Magic Defense falls by {penalty}.\n"
-            )
+            result.message += f"{target.name}'s Magic Defense falls by {penalty}.\n"
         return result
 
 
@@ -239,7 +237,6 @@ class FalseOpening(Skill):
                 _apply_stat_effect(target, stat_name, -penalty, 3, self.name)
                 result.effects_applied["Stat"].append(f"{stat_name} Debuff")
             result.message += (
-                f"The false opening lowers {target.name}'s Attack and Magic by "
-                f"{penalty}.\n"
+                f"The false opening lowers {target.name}'s Attack and Magic by " f"{penalty}.\n"
             )
         return result

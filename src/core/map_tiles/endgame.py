@@ -148,7 +148,7 @@ class FinalRoom(SpecialTile):
     """
 
     def adjacent_visited(self, player_char):
-        """"
+        """ "
         Changes visited parameter for area around final boss
         """
 
@@ -184,7 +184,7 @@ class SecretShop(SpecialTile):
     def modify_player(self, game):
         self.visited = True
         self.adjacent_visited(game.player_char)
-        game.player_char.state = 'normal'
+        game.player_char.state = "normal"
         town.secret_shop(game)
 
     def special_text(self, game):
@@ -204,14 +204,16 @@ class UltimateArmorShop(SpecialTile):
 
     def intro_text(self, game):
         intro_str = super().intro_text(game)
-        intro_str += (f"{game.player_char.name} finds a forge in the depths of the dungeon.\n"
-                        f"A large man stands in front of you.\n")
+        intro_str += (
+            f"{game.player_char.name} finds a forge in the depths of the dungeon.\n"
+            f"A large man stands in front of you.\n"
+        )
         return intro_str
 
     def modify_player(self, game):
         self.visited = True
         self.adjacent_visited(game.player_char)
-        game.player_char.state = 'normal'
+        game.player_char.state = "normal"
         town.ultimate_armor_repo(game)
 
     def available_actions(self, player_char):
@@ -276,6 +278,7 @@ class FunhouseTeleporter(SpecialTile):
         # Trigger funhouse entry special event
         game.special_event("Funhouse Entry")
 
+
 class FunhouseMimicChest(ChestRoom):
     """A special chest for the funhouse that guarantees a Mimic encounter and drops a Jester Token."""
 
@@ -294,7 +297,7 @@ class FunhouseMimicChest(ChestRoom):
 
     def available_actions(self, player_char):
         if not self.open:
-            if player_char.state == 'fight':
+            if player_char.state == "fight":
                 action_list = ["Attack", "Use Item", "Flee"]
                 if not player_char.abilities_suppressed():
                     if player_char.usable_abilities("Spells"):

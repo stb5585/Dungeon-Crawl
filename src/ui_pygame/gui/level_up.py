@@ -67,8 +67,7 @@ class LevelUpScreen:
         point_messages = []
         if points_awarded:
             point_messages.append(
-                f"+{points_awarded} progression point"
-                f"{'s' if points_awarded != 1 else ''}"
+                f"+{points_awarded} progression point" f"{'s' if points_awarded != 1 else ''}"
             )
         if attribute_points_awarded:
             point_messages.append(

@@ -240,7 +240,7 @@ def promotion_mechanic_details(new_class_name: str) -> str:
 
     guidance = guidance.removeprefix("Character Menu tab available: ").strip()
     if guidance.startswith(mechanic_tab):
-        guidance = guidance[len(mechanic_tab):].lstrip()
+        guidance = guidance[len(mechanic_tab) :].lstrip()
         guidance = guidance.removeprefix(".").lstrip()
     return guidance
 

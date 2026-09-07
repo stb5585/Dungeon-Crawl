@@ -6,7 +6,12 @@ from src.core import abilities, enemies, items
 from src.core.classes import promotion_kits
 from src.core.combat.combat_result import CombatResult
 from src.core.effects.common import DynamicMultiDebuffEffect
-from src.core.progression import ABILITY_TREES, NodeKind, ProgressionState
+from src.core.progression import (
+    ABILITY_TREES,
+    NodeKind,
+    ProgressionState,
+    ensure_progression,
+)
 from tests.test_framework import TestGameState
 
 
@@ -37,14 +42,10 @@ class _CertainRng:
         return 0.0
 
 
-def test_stolen_magic_trees_use_compact_sixty_to_seventy_percent_budgets():
+def test_stolen_magic_trees_preserve_compact_build_pressure():
     stealer_tree = ABILITY_TREES["Spell Stealer"]
-    stealer_nodes = [
-        node for node in stealer_tree.nodes if node.kind != NodeKind.PROMOTION
-    ]
-    promotion = next(
-        node for node in stealer_tree.nodes if node.kind == NodeKind.PROMOTION
-    )
+    stealer_nodes = [node for node in stealer_tree.nodes if node.kind != NodeKind.PROMOTION]
+    promotion = next(node for node in stealer_tree.nodes if node.kind == NodeKind.PROMOTION)
     trickster_tree = ABILITY_TREES["Arcane Trickster"]
 
     assert len(stealer_nodes) == 12
@@ -53,9 +54,39 @@ def test_stolen_magic_trees_use_compact_sixty_to_seventy_percent_budgets():
     assert promotion.cost == 3
     assert promotion.payload["prerequisite_mode"] == "any"
     assert len(promotion.prerequisites) == 2
-    assert len(trickster_tree.nodes) == 12
-    assert sum(node.cost for node in trickster_tree.nodes) == 30
-    assert 0.60 <= 20 / 30 <= 0.70
+    assert len(trickster_tree.nodes) == 11
+    assert sum(node.cost for node in trickster_tree.nodes) == 28
+    assert 0.70 <= 20 / 28 <= 0.72
+    assert trickster_tree.branches == (
+        "Spell Theft",
+        "Stolen Spell Mastery",
+        "Misdirection",
+    )
+
+
+def test_external_weaken_mind_does_not_gate_arcane_trickster_progression():
+    tree = ABILITY_TREES["Arcane Trickster"]
+    nodes = {node.name: node for node in tree.nodes}
+
+    assert "Weaken Mind" not in nodes
+    assert nodes["Neural Connection"].lane == "Stolen Spell Mastery"
+    assert nodes["Neural Connection"].prerequisites == (nodes["Steal Spell 2"].id,)
+    assert not any(
+        nodes["Neural Connection"].id in candidate.prerequisites for candidate in tree.nodes
+    )
+
+
+def test_retired_external_spell_nodes_are_refunded_without_forgetting_spells():
+    trickster = _player("Arcane Trickster")
+    trickster.progression.unspent_points = 0
+    trickster.progression.purchased_node_ids.add("arcane-trickster.ability.weaken-mind")
+    trickster.spellbook["Spells"]["Weaken Mind"] = abilities.WeakenMind()
+
+    ensure_progression(trickster)
+
+    assert "arcane-trickster.ability.weaken-mind" not in (trickster.progression.purchased_node_ids)
+    assert trickster.progression.unspent_points == 2
+    assert "Weaken Mind" in trickster.spellbook["Spells"]
 
 
 def test_stolen_magic_rows_use_standard_level_bands_and_fit_eight_rows():
@@ -186,9 +217,7 @@ def test_neural_connection_mirrors_weaken_mind_amount_and_duration():
     effect.apply(trickster, target, result)
 
     for stat_name in ("Magic", "Magic Defense"):
-        assert trickster.stat_effects[stat_name].extra == abs(
-            target.stat_effects[stat_name].extra
-        )
+        assert trickster.stat_effects[stat_name].extra == abs(target.stat_effects[stat_name].extra)
         assert trickster.stat_effects[stat_name].duration == 4
     assert "Neural Connection" in "".join(result.extra["messages"])
 

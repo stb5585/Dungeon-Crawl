@@ -40,18 +40,23 @@ def test_ninja_tree_has_five_authored_columns_and_planned_budget():
 
 def test_death_mark_registry_is_authored_and_action_token_idempotent():
     assert set(promotion_kits.DEATH_MARK_ACTION_REGISTRY) == (
-        set(promotion_kits.DEATH_MARK_SETUP_ABILITIES)
-        | set(promotion_kits.DEATH_MARK_FINISHERS)
+        set(promotion_kits.DEATH_MARK_SETUP_ABILITIES) | set(promotion_kits.DEATH_MARK_FINISHERS)
     )
     ninja = _player()
     target = enemies.Goblin()
     promotion_kits.begin_action(ninja, action="Use Skill", choice="Momentum")
 
     first = promotion_kits.resolve_death_mark_setup(
-        ninja, target, "Momentum", hit=True,
+        ninja,
+        target,
+        "Momentum",
+        hit=True,
     )
     second = promotion_kits.resolve_death_mark_setup(
-        ninja, target, "Momentum", hit=True,
+        ninja,
+        target,
+        "Momentum",
+        hit=True,
     )
 
     assert "gains a Death Mark" in first
@@ -76,31 +81,59 @@ def test_setup_actions_apply_one_mark_plus_one_successful_status():
     target = enemies.Goblin()
 
     msg = promotion_kits.resolve_death_mark_setup(
-        ninja, target, "Kidney Punch", hit=True, status_applied=True,
+        ninja,
+        target,
+        "Kidney Punch",
+        hit=True,
+        status_applied=True,
     )
 
     assert msg.count("gains a Death Mark") == 2
     assert promotion_kits.death_mark_stacks(ninja, target) == 2
-    assert promotion_kits.resolve_death_mark_setup(
-        ninja, target, "Triple Strike", hit=True, status_applied=True,
-    ) == ""
+    assert (
+        promotion_kits.resolve_death_mark_setup(
+            ninja,
+            target,
+            "Triple Strike",
+            hit=True,
+            status_applied=True,
+        )
+        == ""
+    )
 
 
 def test_setup_misses_dead_targets_and_assassin_cap_are_respected():
     assassin = _player("Assassin")
     target = enemies.Goblin()
 
-    assert promotion_kits.resolve_death_mark_setup(
-        assassin, target, "Backstab", hit=False, status_applied=True,
-    ) == ""
+    assert (
+        promotion_kits.resolve_death_mark_setup(
+            assassin,
+            target,
+            "Backstab",
+            hit=False,
+            status_applied=True,
+        )
+        == ""
+    )
     promotion_kits.resolve_death_mark_setup(
-        assassin, target, "Backstab", hit=True, status_applied=True,
+        assassin,
+        target,
+        "Backstab",
+        hit=True,
+        status_applied=True,
     )
     assert promotion_kits.death_mark_stacks(assassin, target) == 1
     target.health.current = 0
-    assert promotion_kits.resolve_death_mark_setup(
-        assassin, target, "Sneak Attack", hit=True,
-    ) == ""
+    assert (
+        promotion_kits.resolve_death_mark_setup(
+            assassin,
+            target,
+            "Sneak Attack",
+            hit=True,
+        )
+        == ""
+    )
 
 
 def test_deathblow_spends_on_miss_and_applies_shared_bonus_on_hit():
@@ -139,7 +172,10 @@ def test_death_contest_honors_weakness_immunity_and_bosses():
     rng = SimpleNamespace(randint=lambda low, high: high)
 
     killed, immune = promotion_kits.resolve_death_contest(
-        ninja, target, marks=3, rng=rng,
+        ninja,
+        target,
+        marks=3,
+        rng=rng,
     )
     assert killed and not immune
 
@@ -186,7 +222,10 @@ def test_toxin_result_is_structured_and_conservation_keeps_immune_coating():
 def test_find_traps_warns_once_without_disarming():
     ninja = _player(skills=("Find Traps",))
     tile = SimpleNamespace(
-        trap_type="Tripwire", trap_triggered=False, trap_warned=False, z=0,
+        trap_type="Tripwire",
+        trap_triggered=False,
+        trap_warned=False,
+        z=0,
     )
     rng = SimpleNamespace(random=lambda: 0.0)
 
@@ -232,12 +271,21 @@ def test_no_trace_opener_applies_and_spends_before_preserving_once():
     assert "spends 3" in message
     assert promotion_kits.death_mark_stacks(ninja, target) == 0
     assert "preserves 1" in promotion_kits.finish_no_trace_opener(
-        ninja, target, marks=marks, hit=True,
+        ninja,
+        target,
+        marks=marks,
+        hit=True,
     )
     assert promotion_kits.death_mark_stacks(ninja, target) == 1
-    assert promotion_kits.finish_no_trace_opener(
-        ninja, target, marks=marks, hit=True,
-    ) == ""
+    assert (
+        promotion_kits.finish_no_trace_opener(
+            ninja,
+            target,
+            marks=marks,
+            hit=True,
+        )
+        == ""
+    )
 
 
 def test_no_trace_miss_consumes_marks_without_preservation():
@@ -251,9 +299,15 @@ def test_no_trace_miss_consumes_marks_without_preservation():
     marks, multiplier, _message = promotion_kits.begin_no_trace_opener(ninja, target)
 
     assert (marks, multiplier) == (1, 2.0)
-    assert promotion_kits.finish_no_trace_opener(
-        ninja, target, marks=marks, hit=False,
-    ) == ""
+    assert (
+        promotion_kits.finish_no_trace_opener(
+            ninja,
+            target,
+            marks=marks,
+            hit=False,
+        )
+        == ""
+    )
     assert promotion_kits.death_mark_stacks(ninja, target) == 0
 
 

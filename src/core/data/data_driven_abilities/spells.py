@@ -13,6 +13,7 @@ if TYPE_CHECKING:
 import random
 
 from src.core.combat.combat_result import CombatResult
+
 from .base import _get_heal_spell_class, _get_status_spell_class, _get_support_spell_class
 
 
@@ -63,12 +64,12 @@ class DataDrivenHealSpell(_get_heal_spell_class()):
         target.magic_effects["Regen"].duration = max(
             self.turns, target.magic_effects["Regen"].duration
         )
-        target.magic_effects["Regen"].extra = max(
-            heal, target.magic_effects["Regen"].extra
-        )
+        target.magic_effects["Regen"].extra = max(heal, target.magic_effects["Regen"].extra)
         try:
             target._emit_status_event(
-                target, "Regen", applied=True,
+                target,
+                "Regen",
+                applied=True,
                 duration=target.magic_effects["Regen"].duration,
                 source="Heal",
             )
@@ -86,11 +87,7 @@ class DataDrivenHealSpell(_get_heal_spell_class()):
         **_kwargs: Any,
     ) -> str:
         resolved_target = target if fam else caster
-        health_before = (
-            int(resolved_target.health.current)
-            if resolved_target is not None
-            else 0
-        )
+        health_before = int(resolved_target.health.current) if resolved_target is not None else 0
         if self._instant_heal and self.turns > 0:
             message = self._cast_hybrid(caster, target, cover, special, fam)
         else:
@@ -130,8 +127,7 @@ class DataDrivenHealSpell(_get_heal_spell_class()):
         crit = 1
         heal_mod = caster.check_mod("heal")
         heal = int(
-            (random.randint(target.health.max // 2, target.health.max) + heal_mod)
-            * self.heal
+            (random.randint(target.health.max // 2, target.health.max) + heal_mod) * self.heal
         )
         if not random.randint(0, self.crit):
             cast_message += "Critical Heal!\n"
@@ -139,9 +135,7 @@ class DataDrivenHealSpell(_get_heal_spell_class()):
         crit_per = random.uniform(1, crit)
         heal = int(heal * crit_per)
         actual_heal = self._apply_instant_healing(caster, target, heal)
-        cast_message += (
-            f"{caster.name} heals {target.name} for {actual_heal} hit points.\n"
-        )
+        cast_message += f"{caster.name} heals {target.name} for {actual_heal} hit points.\n"
         if target.health.current >= target.health.max:
             target.health.current = target.health.max
             cast_message += f"{target.name} is at full health.\n"
@@ -164,9 +158,7 @@ class DataDrivenHealSpell(_get_heal_spell_class()):
             crit = 2
         heal *= crit
         actual_heal = self._apply_instant_healing(actor, actor, heal)
-        cast_message += (
-            f"{actor.name} heals themself for {actual_heal} hit points.\n"
-        )
+        cast_message += f"{actor.name} heals themself for {actual_heal} hit points.\n"
         if actor.health.current >= actor.health.max:
             actor.health.current = actor.health.max
             cast_message += f"{actor.name} is at full health.\n"
@@ -176,6 +168,7 @@ class DataDrivenHealSpell(_get_heal_spell_class()):
 # ======================================================================
 # DataDrivenSupportSpell - replaces SupportSpell / IllusionSpell subs
 # ======================================================================
+
 
 class DataDrivenSupportSpell(_get_support_spell_class()):
     """
@@ -245,16 +238,11 @@ class DataDrivenSupportSpell(_get_support_spell_class()):
 
         # Stat buff messages (from DynamicStatBuffEffect)
         for stat, amount in result.extra.get("buff_amounts", {}).items():
-            messages.append(
-                f"{target.name}'s {stat.lower()} increases by {amount}."
-            )
+            messages.append(f"{target.name}'s {stat.lower()} increases by {amount}.")
 
         # Cleanse message
         if result.effects_applied.get("Cleansed"):
-            messages.append(
-                f"All negative status effects have been cured for "
-                f"{target.name}!"
-            )
+            messages.append(f"All negative status effects have been cured for " f"{target.name}!")
 
         # Magic effect messages
         for eff_name in result.effects_applied.get("Magic", []):
@@ -267,24 +255,18 @@ class DataDrivenSupportSpell(_get_support_spell_class()):
                     f"{caster.name} creates duplicates of themself "
                     f"to fool {target.name if target != caster else 'the enemy'}."
                 ),
-                "Reflect": (
-                    f"A magic force field envelopes {target.name}."
-                ),
+                "Reflect": (f"A magic force field envelopes {target.name}."),
                 "Astral Shift": (
                     f"{target.name} shifts partially into the astral plane, "
                     "reducing damage taken by 25%."
                 ),
                 "Regen": f"{target.name} begins to regenerate.",
             }
-            messages.append(
-                _magic_msgs.get(eff_name, f"{target.name} gains {eff_name}.")
-            )
+            messages.append(_magic_msgs.get(eff_name, f"{target.name} gains {eff_name}."))
 
         # Stat modifier messages for fixed multi_buff (no dynamic amounts)
         for stat_info in result.effects_applied.get("Stat", []):
-            if stat_info not in [
-                f"{s} Buff" for s in result.extra.get("buff_amounts", {})
-            ]:
+            if stat_info not in [f"{s} Buff" for s in result.extra.get("buff_amounts", {})]:
                 stat = stat_info.replace(" Buff", "").replace(" Debuff", "")
                 val = getattr(target.stat_effects.get(stat), "extra", "?")
                 messages.append(
@@ -294,9 +276,7 @@ class DataDrivenSupportSpell(_get_support_spell_class()):
 
         # Static message template fallback
         if not messages and self._message:
-            messages = [
-                self._message.format(target=target.name, caster=caster.name)
-            ]
+            messages = [self._message.format(target=target.name, caster=caster.name)]
 
         if not messages:
             messages = [f"{self.name} was cast."]
@@ -307,6 +287,7 @@ class DataDrivenSupportSpell(_get_support_spell_class()):
 # ======================================================================
 # DataDrivenStatusSpell - replaces StatusSpell subclasses
 # ======================================================================
+
 
 class DataDrivenStatusSpell(_get_status_spell_class()):
     """
@@ -408,9 +389,7 @@ class DataDrivenStatusSpell(_get_status_spell_class()):
         immune_status = result.extra.get("status_immune")
         if immune_status:
             msgs = self._STATUS_MESSAGES.get(immune_status, {})
-            tmpl = self._messages.get(
-                "immune", msgs.get("immune", "{target} is immune.")
-            )
+            tmpl = self._messages.get("immune", msgs.get("immune", "{target} is immune."))
             return tmpl.format(**fmt) + "\n"
 
         # Already active
@@ -459,13 +438,9 @@ class DataDrivenStatusSpell(_get_status_spell_class()):
                     break
             if first_status:
                 msgs = self._STATUS_MESSAGES.get(first_status, {})
-                tmpl = self._messages.get(
-                    "resist", msgs.get("resist", "The spell is ineffective.")
-                )
+                tmpl = self._messages.get("resist", msgs.get("resist", "The spell is ineffective."))
             else:
-                tmpl = self._messages.get(
-                    "resist", "{target} resists the spell."
-                )
+                tmpl = self._messages.get("resist", "{target} resists the spell.")
             return tmpl.format(**fmt) + "\n"
 
         return ""

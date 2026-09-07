@@ -169,10 +169,7 @@ class Cacophany(Skill):
 
     def use_group(self, user, targets, *, battle_engine, rng=None):
         """Resolve one performance once while recording every affected enemy."""
-        health_before = {
-            target_id: int(target.health.current)
-            for target_id, target in targets
-        }
+        health_before = {target_id: int(target.health.current) for target_id, target in targets}
         first_target = targets[0][1] if targets else None
         resolved = self.use(
             user,
@@ -187,15 +184,17 @@ class Cacophany(Skill):
             target_ids=tuple(target_id for target_id, _target in targets),
         )
         for index, (target_id, target) in enumerate(targets):
-            group.add(CombatResult(
-                action=self.name,
-                actor=user,
-                target=target,
-                actor_id=battle_engine.current_actor_id,
-                target_id=target_id,
-                damage=max(0, health_before[target_id] - int(target.health.current)),
-                message=resolved.message if index == 0 else "",
-            ))
+            group.add(
+                CombatResult(
+                    action=self.name,
+                    actor=user,
+                    target=target,
+                    actor_id=battle_engine.current_actor_id,
+                    target_id=target_id,
+                    damage=max(0, health_before[target_id] - int(target.health.current)),
+                    message=resolved.message if index == 0 else "",
+                )
+            )
         return group
 
 

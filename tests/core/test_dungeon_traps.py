@@ -91,7 +91,9 @@ def test_magic_ward_uses_an_offensive_spell_and_magic_defense(monkeypatch):
     player = _player()
     tile = map_tiles.EmptyCavePath(1, 1, 3)
     tile.trap_type = "Magic Ward"
-    monkeypatch.setattr(player, "damage_reduction", lambda damage, _source, typ: (True, "warded", damage // 2))
+    monkeypatch.setattr(
+        player, "damage_reduction", lambda damage, _source, typ: (True, "warded", damage // 2)
+    )
     rng = SimpleNamespace(
         random=lambda: 1.0,
         choice=lambda entries: entries[-1],

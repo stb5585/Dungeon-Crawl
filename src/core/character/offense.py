@@ -47,7 +47,7 @@ class CharacterOffenseMixin:
             return 1 + ((multiplier - 1) * (1 + (0.25 * ranks)))
         return multiplier
 
-    def hit_chance(self, defender: Character, typ: str = 'weapon') -> float:
+    def hit_chance(self, defender: Character, typ: str = "weapon") -> float:
         """
         Calculate hit chance based on various factors.
 
@@ -64,8 +64,8 @@ class CharacterOffenseMixin:
         num = random.randint(a_speed // 2, a_speed)
         den = random.randint(d_speed // 4, d_speed // 2)
         hit_mod = sigmoid(num / max(1, den))  # base hit percentage
-        if typ == 'weapon':
-            hit_mod *= 1 + (ACCURACY_RING_BONUS * ('Accuracy' in self.equipment['Ring'].mod))
+        if typ == "weapon":
+            hit_mod *= 1 + (ACCURACY_RING_BONUS * ("Accuracy" in self.equipment["Ring"].mod))
             blind_pen = BLIND_ACCURACY_PENALTY
             try:
                 if getattr(getattr(self, "race", None), "name", None) == "Elf":
@@ -80,11 +80,9 @@ class CharacterOffenseMixin:
                 and getattr(self.equipment.get("Weapon"), "subtyp", None) == "Polearm"
                 and "Extended Reach" in self.spellbook.get("Skills", {})
             )
-            hit_mod *= 1 - FLYING_ACCURACY_PENALTY * (
-                defender.flying and not extended_reach
-            )
+            hit_mod *= 1 - FLYING_ACCURACY_PENALTY * (defender.flying and not extended_reach)
             hit_mod *= 1 - (DISARM_HIT_PENALTY * self.is_disarmed())
-            hit_mod *= 1 - (BERSERK_HIT_PENALTY * (self.status_effects['Berserk'].active))
+            hit_mod *= 1 - (BERSERK_HIT_PENALTY * (self.status_effects["Berserk"].active))
             hit_mod *= 1 - (BLIND_RAGE_HIT_PENALTY * (self.status_effects["Blind Rage"].active))
             if self.status_effects.get("Peaceful") and self.status_effects["Peaceful"].active:
                 hit_mod += 0.10
@@ -145,16 +143,22 @@ class CharacterOffenseMixin:
             d_stat = max(0, int(self.stats.wisdom) + cha_term)
         d_stat += ability_mechanics.third_eye_intelligence(self)
         armor_factor = {"None": 1, "Natural": 1, "Cloth": 1, "Light": 2, "Medium": 3, "Heavy": 4}
-        a_chance = random.randint(a_stat // 2, a_stat) + \
-            attacker.check_mod('luck', enemy=self, luck_factor=10)
-        d_chance = random.randint(0, d_stat // 2) + self.check_mod('luck', enemy=attacker, luck_factor=15) + \
-            (self.stat_effects["Speed"].active * self.stat_effects["Speed"].extra)
+        a_chance = random.randint(a_stat // 2, a_stat) + attacker.check_mod(
+            "luck", enemy=self, luck_factor=10
+        )
+        d_chance = (
+            random.randint(0, d_stat // 2)
+            + self.check_mod("luck", enemy=attacker, luck_factor=15)
+            + (self.stat_effects["Speed"].active * self.stat_effects["Speed"].extra)
+        )
         denom = a_chance + d_chance
         if denom <= 0:
             return 0.0
         af = armor_factor.get(getattr(self.equipment.get("Armor"), "subtyp", "None"), 1)
         chance = max(0, (d_chance - a_chance) / denom / af)
-        chance += 0.1 * ('Dodge' in self.equipment['Ring'].mod + "Evasion" in self.spellbook['Skills'])
+        chance += 0.1 * (
+            "Dodge" in self.equipment["Ring"].mod + "Evasion" in self.spellbook["Skills"]
+        )
         chance += footpad.concealment_dodge_bonus(self)
         if spell:
             pendant_mod = getattr(self.equipment.get("Pendant"), "mod", "")
@@ -192,8 +196,10 @@ class CharacterOffenseMixin:
         except Exception:
             pass
         cls_name = _class_name(self)
-        if cls_name == "Seeker" or (cls_name == "Templar" and self.class_effects["Power Up"].active):
-            chance += (0.25 * self.power_up)
+        if cls_name == "Seeker" or (
+            cls_name == "Templar" and self.class_effects["Power Up"].active
+        ):
+            chance += 0.25 * self.power_up
         try:
             from ..classes import class_rings
 
@@ -227,7 +233,8 @@ class CharacterOffenseMixin:
         from ..classes import ability_mechanics, footpad
 
         base_crit = BASE_CRIT_PER_POINT * (
-            self.check_mod("speed") + self.check_mod("luck", luck_factor=10)
+            self.check_mod("speed")
+            + self.check_mod("luck", luck_factor=10)
             + ability_mechanics.third_eye_intelligence(self)
         )
         crit_chance = base_crit
@@ -236,7 +243,7 @@ class CharacterOffenseMixin:
             weapon_crit = getattr(weapon, "crit_chance", getattr(weapon, "crit", 0.0))
             crit_chance += float(weapon_crit or 0.0) * WEAPON_CRIT_WEIGHT
         if _class_name(self) == "Seeker":
-            crit_chance += (SEEKER_CRIT_BONUS * self.power_up)
+            crit_chance += SEEKER_CRIT_BONUS * self.power_up
         try:
             from ..classes import class_rings
 
@@ -256,11 +263,7 @@ class CharacterOffenseMixin:
         crit_chance += footpad.surprise_critical_bonus(self)
         crit_chance += footpad.toxic_precision_bonus(self, att)
         berserk = self.status_effects.get("Berserk")
-        if (
-            berserk is not None
-            and berserk.active
-            and int(getattr(berserk, "extra", 0) or 0) == 1
-        ):
+        if berserk is not None and berserk.active and int(getattr(berserk, "extra", 0) or 0) == 1:
             crit_chance += 0.15
         try:
             from ..classes import mage_mechanics
@@ -304,7 +307,6 @@ class CharacterOffenseMixin:
         cover(bool): whether the attack can be blocked by a familiar or pet
         hit(bool): guarantees hit if target doesn't dodge
         """
-        from ..combat.combat_result import CombatResult, CombatResultGroup
         from ..classes import (
             ability_mechanics,
             footpad,
@@ -314,6 +316,7 @@ class CharacterOffenseMixin:
             pathfinder,
             warrior,
         )
+        from ..combat.combat_result import CombatResult, CombatResultGroup
 
         revelation_message = ""
         dmg_mod *= pathfinder.melee_damage_multiplier(self)
@@ -333,9 +336,7 @@ class CharacterOffenseMixin:
             from ..classes import mage_mechanics
 
             dmg_mod *= mage_mechanics.melee_damage_multiplier(self)
-            fire_inside_active = (
-                random.random() < mage_mechanics.fire_inside_critical_bonus(self)
-            )
+            fire_inside_active = random.random() < mage_mechanics.fire_inside_critical_bonus(self)
             mage_mechanics.consume_fire_inside(self)
         except Exception:
             fire_inside_active = False
@@ -358,8 +359,8 @@ class CharacterOffenseMixin:
             maim = self.physical_effects.get("Maim")
             if maim is None or not maim.active:
                 attacks.append("Weapon")
-            if use_offhand and self.equipment['OffHand'].typ == 'Weapon':
-                attacks.append('OffHand')
+            if use_offhand and self.equipment["OffHand"].typ == "Weapon":
+                attacks.append("OffHand")
         if not attacks:
             self._surprise_attack = False
             return f"{self.name} cannot use their main-hand weapon.\n", False, crit
@@ -385,14 +386,13 @@ class CharacterOffenseMixin:
             ignore = ignore or self.equipment[att].ignore
             damage = 0
             # attacker variables
-            typ = 'attacks'
-            if self.equipment[att].subtyp == 'Natural':
+            typ = "attacks"
+            if self.equipment[att].subtyp == "Natural":
                 typ = self.equipment[att].att_name
-                if typ == 'leers':
+                if typ == "leers":
                     hits[i] = True
                     result = CombatResult(
-                        action="Leer", actor=self, target=defender,
-                        hit=True, crit=1, damage=0
+                        action="Leer", actor=self, target=defender, hit=True, crit=1, damage=0
                     )
                     results = CombatResultGroup()
                     results.add(result)
@@ -403,11 +403,7 @@ class CharacterOffenseMixin:
                 fire_inside_active
                 or self.critical_chance(att) + critical_chance_modifier > random.random()
             )
-            crits[i] = (
-                int(critical_multiplier or 2)
-                if natural_crit
-                else crit
-            )
+            crits[i] = int(critical_multiplier or 2) if natural_crit else crit
             weapon_type = getattr(self.equipment[att], "subtyp", None)
             style_modifier = (
                 ability_mechanics.duelist_damage_multiplier(self)
@@ -461,13 +457,18 @@ class CharacterOffenseMixin:
                 except Exception:
                     pass
             if weapon_type == "Sword":
-                precision = getattr(self, "grandmaster_technique_stacks", {}).get("Sword Precision", {})
+                precision = getattr(self, "grandmaster_technique_stacks", {}).get(
+                    "Sword Precision", {}
+                )
                 stacks = int(precision.get("stacks", 0) or 0)
                 if stacks and crit_per > 1:
                     crit_per += 0.05 * min(3, stacks)
             # Half Elf racial sin: slightly reduced crit spike potential.
             try:
-                if getattr(getattr(self, "race", None), "name", None) == "Half Elf" and crit_per > 1.0:
+                if (
+                    getattr(getattr(self, "race", None), "name", None) == "Half Elf"
+                    and crit_per > 1.0
+                ):
                     crit_per = 1.0 + ((crit_per - 1.0) * HALF_ELF_CRIT_SPIKE_MULTIPLIER)
             except Exception:
                 pass
@@ -479,7 +480,7 @@ class CharacterOffenseMixin:
                 if counterattack:
                     dodge_chance += pathfinder.counterattack_dodge_bonus(defender)
                 dodge = dodge_chance > random.random()
-                hit_per = self.hit_chance(defender, typ='weapon')
+                hit_per = self.hit_chance(defender, typ="weapon")
                 hit_per += accuracy_modifier
                 hit_per += ability_mechanics.dual_wield_accuracy_modifier(self, att)
                 hit_per += grandmaster.accuracy_bonus(self, weapon_type)
@@ -588,9 +589,7 @@ class CharacterOffenseMixin:
 
             # --- Phase 5: Resistance / armor / damage reduction ---
             if damage > 0:
-                damage, msg = self._apply_damage_reduction(
-                    defender, damage, att, ignore
-                )
+                damage, msg = self._apply_damage_reduction(defender, damage, att, ignore)
                 weapon_dam_str += msg
                 if crits[i] > 1:
                     damage, msg = healer.delay_critical_damage(defender, damage)
@@ -598,9 +597,7 @@ class CharacterOffenseMixin:
                 release = healer.meditation_release(self)
                 if release:
                     damage += release
-                    weapon_dam_str += (
-                        f"{self.name} releases {release} stored meditation damage.\n"
-                    )
+                    weapon_dam_str += f"{self.name} releases {release} stored meditation damage.\n"
             # --- Phase 6: Apply damage and on-hit effects ---
             if damage > 0:
                 mark = getattr(defender, "_reavers_mark", None)
@@ -639,12 +636,10 @@ class CharacterOffenseMixin:
                     try:
                         from ..classes import promotion_kits
 
-                        damage, msg, fully_absorbed = (
-                            promotion_kits.absorb_novel_shield(
-                                defender,
-                                damage,
-                                source="weapon",
-                            )
+                        damage, msg, fully_absorbed = promotion_kits.absorb_novel_shield(
+                            defender,
+                            damage,
+                            source="weapon",
                         )
                         weapon_dam_str += msg
                         if fully_absorbed:
@@ -671,7 +666,9 @@ class CharacterOffenseMixin:
                 if lethal_msg:
                     weapon_dam_str += lethal_msg
                 else:
-                    final_msg, stabilized = ability_mechanics.final_assault_response(defender, self, damage)
+                    final_msg, stabilized = ability_mechanics.final_assault_response(
+                        defender, self, damage
+                    )
                     if final_msg:
                         weapon_dam_str += final_msg
                     if stabilized:
@@ -734,11 +731,15 @@ class CharacterOffenseMixin:
                         att,
                         damage_type_override=damage_type_override,
                     )
-                    weapon_dam_str += grandmaster.apply_weapon_technique(self, defender, weapon_type)
+                    weapon_dam_str += grandmaster.apply_weapon_technique(
+                        self, defender, weapon_type
+                    )
                 # Evasive Guard: build stacks when you get hit; capped at 3.
                 # This encourages "stay in the fight" play without altering race resistances.
                 if "Evasive Guard" in defender.spellbook.get("Skills", {}):
-                    defender.evasive_guard_stacks = min(3, int(getattr(defender, "evasive_guard_stacks", 0)) + 1)
+                    defender.evasive_guard_stacks = min(
+                        3, int(getattr(defender, "evasive_guard_stacks", 0)) + 1
+                    )
                 # Half Orc racial sin: small chance on taking damage to enter Blind Rage
                 # (retains control, but reduced hit chance for a few turns).
                 try:
@@ -755,19 +756,17 @@ class CharacterOffenseMixin:
                 except Exception:
                     pass
             else:
-                defender.health.current -= damage  # 0 damage still needs to be "applied" for consistency
+                defender.health.current -= (
+                    damage  # 0 damage still needs to be "applied" for consistency
+                )
                 weapon_dam_str += f"{self.name} {typ} {defender.name} but deals no damage.\n"
                 hits[i] = False
                 self._reset_maelstrom()
 
             # --- Phase 7: Equipment special effects on successful hit ---
             if hits[i]:
-                weapon_dam_str += self._apply_equipment_effects(
-                    defender, att, damage, crits[i]
-                )
-                toxin_result = footpad.apply_coated_toxin(
-                    self, defender, att, crits[i] > 1
-                )
+                weapon_dam_str += self._apply_equipment_effects(defender, att, damage, crits[i])
+                toxin_result = footpad.apply_coated_toxin(self, defender, att, crits[i] > 1)
                 weapon_dam_str += toxin_result.message
                 if _class_name(self) == "Dragoon" and self.power_up:
                     self.class_effects["Power Up"].active = True
@@ -831,10 +830,11 @@ class CharacterOffenseMixin:
         if "Evasive Guard" in defender.spellbook.get("Skills", {}):
             defender.evasive_guard_stacks = 0
         try:
-            from ..events.event_bus import get_event_bus, create_combat_event, EventType
-            get_event_bus().emit(create_combat_event(
-                EventType.DODGE, actor=defender, target=self, damage=damage
-            ))
+            from ..events.event_bus import EventType, create_combat_event, get_event_bus
+
+            get_event_bus().emit(
+                create_combat_event(EventType.DODGE, actor=defender, target=self, damage=damage)
+            )
         except Exception:
             pass
         ghost = footpad.restore_ghost_step(defender)
@@ -875,9 +875,7 @@ class CharacterOffenseMixin:
         if random.random() >= chance:
             return damage, "", False, False
         self._last_attack_parried = True
-        deflect_ratio = (
-            1.0 if random.random() < 0.20 else random.uniform(0.50, 0.85)
-        )
+        deflect_ratio = 1.0 if random.random() < 0.20 else random.uniform(0.50, 0.85)
         deflected = max(1, int(damage * deflect_ratio))
         remaining = max(0, damage - deflected)
         msg = f"{defender.name} parries and deflects {deflected} damage.\n"
@@ -961,19 +959,24 @@ class CharacterOffenseMixin:
         """
         if defender.consume_mirror_image(self):
             self._reset_maelstrom()
-            msg = (f"{self.name} {typ} at {defender.name} but hits a mirror image and it "
-                   f"vanishes from existence.\n")
+            msg = (
+                f"{self.name} {typ} at {defender.name} but hits a mirror image and it "
+                f"vanishes from existence.\n"
+            )
             return False, msg
         return True, ""
 
     def _emit_crit_event(self, defender: Character, crit_mult: int) -> None:
         """Emit a CRITICAL_HIT event."""
         try:
-            from ..events.event_bus import get_event_bus, create_combat_event, EventType
+            from ..events.event_bus import EventType, create_combat_event, get_event_bus
+
             event_bus = get_event_bus()
-            event_bus.emit(create_combat_event(
-                EventType.CRITICAL_HIT, actor=self, target=defender, multiplier=crit_mult
-            ))
+            event_bus.emit(
+                create_combat_event(
+                    EventType.CRITICAL_HIT, actor=self, target=defender, multiplier=crit_mult
+                )
+            )
         except Exception:
             pass
 

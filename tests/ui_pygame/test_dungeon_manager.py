@@ -89,7 +89,9 @@ class DummyTile:
         self.adjacent_calls = []
 
     def adjacent_visited(self, player_char):
-        self.adjacent_calls.append((player_char.location_x, player_char.location_y, player_char.location_z))
+        self.adjacent_calls.append(
+            (player_char.location_x, player_char.location_y, player_char.location_z)
+        )
 
 
 class DoorTile(DummyTile):
@@ -257,9 +259,13 @@ def _make_player():
         player.state = "normal"
 
     def return_from_liminal_gap():
-        if not player.main_story["true_final_unlocked"] or not getattr(player, "liminal_gap_return", None):
+        if not player.main_story["true_final_unlocked"] or not getattr(
+            player, "liminal_gap_return", None
+        ):
             return False
-        player.location_x, player.location_y, player.location_z, player.facing = player.liminal_gap_return
+        player.location_x, player.location_y, player.location_z, player.facing = (
+            player.liminal_gap_return
+        )
         player.liminal_gap_return = None
         player.main_story["returned_from_liminal_gap"] = True
         player.state = "normal"
@@ -325,11 +331,25 @@ def _make_manager(monkeypatch):
             player_world_dict=None,
         ),
     )
-    monkeypatch.setattr(dungeon_manager, "LootPopup", lambda screen, presenter: SimpleNamespace(show_unlock_prompt=lambda kind: True, show_loot=lambda *args: None))
-    monkeypatch.setattr("src.ui_pygame.gui.shops.ShopManager", lambda presenter, player_char: SimpleNamespace(visit_secret_shop=lambda: None))
-    monkeypatch.setattr("src.ui_pygame.gui.ultimate_armor.UltimateArmorShop", lambda presenter: SimpleNamespace(visit_shop=lambda *_args: None))
+    monkeypatch.setattr(
+        dungeon_manager,
+        "LootPopup",
+        lambda screen, presenter: SimpleNamespace(
+            show_unlock_prompt=lambda kind: True, show_loot=lambda *args: None
+        ),
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.shops.ShopManager",
+        lambda presenter, player_char: SimpleNamespace(visit_secret_shop=lambda: None),
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.ultimate_armor.UltimateArmorShop",
+        lambda presenter: SimpleNamespace(visit_shop=lambda *_args: None),
+    )
     original_loader = dungeon_manager.DungeonManager._load_dungeon_background
-    monkeypatch.setattr(dungeon_manager.DungeonManager, "_load_dungeon_background", lambda self: None)
+    monkeypatch.setattr(
+        dungeon_manager.DungeonManager, "_load_dungeon_background", lambda self: None
+    )
     manager = dungeon_manager.DungeonManager(presenter, player, game)
     monkeypatch.setattr(dungeon_manager.DungeonManager, "_load_dungeon_background", original_loader)
     game.player = player
@@ -366,7 +386,9 @@ def test_resolve_enemy_messages_and_random_cry(monkeypatch):
     assert any("sobs echo" in message for message in manager.messages)
 
 
-def test_boss_intro_uses_split_dialogue_and_jester_defeat_returns_to_funhouse_teleporter(monkeypatch):
+def test_boss_intro_uses_split_dialogue_and_jester_defeat_returns_to_funhouse_teleporter(
+    monkeypatch,
+):
     manager, presenter, player, _game = _make_manager(monkeypatch)
     shown = []
     presenter.show_message = lambda *args, **kwargs: shown.append((args, kwargs))
@@ -442,12 +464,21 @@ def test_background_loading_loading_screen_and_popup_background(monkeypatch, cap
     manager._dungeon_background_loaded = True
     manager._dungeon_background = DummySurface((640, 480))
     tick_values = iter([0, 1000])
-    monkeypatch.setattr("src.ui_pygame.gui.dungeon_manager.pygame.time.get_ticks", lambda: next(tick_values))
-    monkeypatch.setattr("src.ui_pygame.gui.dungeon_manager.pygame.time.Clock", lambda: SimpleNamespace(tick=lambda _fps: None))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.dungeon_manager.pygame.time.get_ticks", lambda: next(tick_values)
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.dungeon_manager.pygame.time.Clock",
+        lambda: SimpleNamespace(tick=lambda _fps: None),
+    )
     monkeypatch.setattr("src.ui_pygame.gui.dungeon_manager.pygame.event.get", lambda *_args: [])
     monkeypatch.setattr("src.ui_pygame.gui.dungeon_manager.pygame.display.flip", lambda: None)
-    monkeypatch.setattr("src.ui_pygame.gui.dungeon_manager.pygame.draw.rect", lambda *_args, **_kwargs: None)
-    monkeypatch.setattr("src.ui_pygame.gui.dungeon_manager.pygame.Surface", lambda size, *_args: DummySurface(size))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.dungeon_manager.pygame.draw.rect", lambda *_args, **_kwargs: None
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.dungeon_manager.pygame.Surface", lambda size, *_args: DummySurface(size)
+    )
     manager._show_dungeon_loading_screen("Loading...", duration=0.5)
     assert presenter.screen.blit_calls
 
@@ -457,7 +488,9 @@ def test_background_loading_loading_screen_and_popup_background(monkeypatch, cap
     manager.view_dirty = True
     manager.ui_dirty = True
     loading_calls = []
-    manager._show_dungeon_loading_screen = lambda message, duration=1.25: loading_calls.append((message, duration))
+    manager._show_dungeon_loading_screen = lambda message, duration=1.25: loading_calls.append(
+        (message, duration)
+    )
 
     manager._show_town_entry_loading_screen("Returning to town...")
 
@@ -504,8 +537,10 @@ def test_move_forward_branches_and_turning(monkeypatch):
     manager._get_tile_intro = lambda: ["Intro text"]
     manager._check_tile_effects = lambda: manager.messages.append("effects")
     dialogues = []
-    manager._show_special_event_dialogue = lambda event_name, title="", image_path="": dialogues.append(
-        (event_name, title, image_path)
+    manager._show_special_event_dialogue = (
+        lambda event_name, title="", image_path="": dialogues.append(
+            (event_name, title, image_path)
+        )
     )
 
     assert manager.move_forward() is False
@@ -580,8 +615,7 @@ def test_navigation_awards_hidden_cache_after_floor_is_mapped(monkeypatch):
     player.equipment["Ring"] = items.ClassRing()
     class_rings.ensure_state(player)["awakened"]["Seeker"] = True
     player.world_dict = {
-        (index, 0, 1): SimpleNamespace(visited=index < 3, near=False)
-        for index in range(4)
+        (index, 0, 1): SimpleNamespace(visited=index < 3, near=False) for index in range(4)
     }
 
     manager._check_hidden_cache()
@@ -609,7 +643,9 @@ def test_use_stairs_up_interact_secret_shop_and_dialogue_helpers(monkeypatch):
         kwargs.get("background_draw_func") and kwargs["background_draw_func"](),
         0,
     )[1]
-    manager.shop_manager = SimpleNamespace(visit_secret_shop=lambda: manager.messages.append("shop-opened"))
+    manager.shop_manager = SimpleNamespace(
+        visit_secret_shop=lambda: manager.messages.append("shop-opened")
+    )
 
     current_tile = StairsUpTile()
     player.world_dict[(player.location_x, player.location_y, player.location_z)] = current_tile
@@ -619,7 +655,9 @@ def test_use_stairs_up_interact_secret_shop_and_dialogue_helpers(monkeypatch):
 
     player.location_z = 1
     player.world_dict[(player.location_x, player.location_y, player.location_z)] = DummyTile()
-    player.world_dict[(player.location_x, player.location_y - 1, player.location_z)] = SecretShopTile()
+    player.world_dict[(player.location_x, player.location_y - 1, player.location_z)] = (
+        SecretShopTile()
+    )
     manager.interact()
     assert any("secret shop" in message.lower() for message, _kwargs in shown_messages)
     assert "shop-opened" in manager.messages
@@ -629,15 +667,17 @@ def test_use_stairs_up_interact_secret_shop_and_dialogue_helpers(monkeypatch):
     manager._render = lambda: manager.messages.append("rendered")
     manager._show_dungeon_dialogue("hello", title="NPC", image_path="npc.png")
     manager._show_dungeon_choice("prompt", ["Yes", "No"], image_path="npc.png")
-    monkeypatch.setattr(dungeon_manager, "get_special_events", lambda: {"Event": {"Text": ["Line 1", "Line 2"]}})
+    monkeypatch.setattr(
+        dungeon_manager, "get_special_events", lambda: {"Event": {"Text": ["Line 1", "Line 2"]}}
+    )
     manager._show_special_event_dialogue("Event", title="Title", image_path="img.png")
     monkeypatch.setattr(
         dungeon_manager,
         "get_npc_art_manager",
         lambda: SimpleNamespace(
-            get_image_path=lambda name: f"npc:{name}"
-            if name in {"Nimue", "The Acolyte", "Reflection", "Vesperion"}
-            else ""
+            get_image_path=lambda name: (
+                f"npc:{name}" if name in {"Nimue", "The Acolyte", "Reflection", "Vesperion"} else ""
+            )
         ),
     )
     manager._show_dungeon_dialogue("water", title="Nimue")
@@ -660,9 +700,13 @@ def test_interact_chest_covers_unlock_mimic_loot_and_empty_cases(monkeypatch):
     combat_calls = []
     manager.loot_popup = SimpleNamespace(
         show_unlock_prompt=lambda kind, **kwargs: unlock_prompts.append((kind, kwargs)) or True,
-        show_loot=lambda loot, label, **kwargs: loot_calls.append((getattr(loot, "name", loot), label, kwargs)),
+        show_loot=lambda loot, label, **kwargs: loot_calls.append(
+            (getattr(loot, "name", loot), label, kwargs)
+        ),
     )
-    manager.combat_manager.start_combat = lambda player_char, enemy, tile: combat_calls.append((enemy.level, tile)) or True
+    manager.combat_manager.start_combat = (
+        lambda player_char, enemy, tile: combat_calls.append((enemy.level, tile)) or True
+    )
     manager._refresh_cached_frame = lambda: manager.messages.append("refresh")
 
     class MimicEnemy:
@@ -714,7 +758,9 @@ def test_interact_chest_covers_unlock_mimic_loot_and_empty_cases(monkeypatch):
         generate_loot=lambda: None,
     )
     manager._interact_chest(funhouse, "FunhouseMimicChest")
-    assert any(call[0] == "Jester Token" and call[1].get("rare") is True for call in player.inventory_calls)
+    assert any(
+        call[0] == "Jester Token" and call[1].get("rare") is True for call in player.inventory_calls
+    )
     assert loot_calls[-2][0:2] == ("Fun Loot", "Chest")
     assert loot_calls[-1][0:2] == ("Jester Token", "Mimic Reward")
     assert loot_calls[-1][2]["flush_events"] is True
@@ -752,10 +798,14 @@ def test_interact_chest_requires_lockpick_kit_for_lockpick_skill(monkeypatch):
     loot_calls = []
     manager.loot_popup = SimpleNamespace(
         show_unlock_prompt=lambda *_args, **_kwargs: False,
-        show_loot=lambda loot, label, **_kwargs: loot_calls.append((getattr(loot, "name", loot), label)),
+        show_loot=lambda loot, label, **_kwargs: loot_calls.append(
+            (getattr(loot, "name", loot), label)
+        ),
     )
     manager._refresh_cached_frame = lambda: None
-    monkeypatch.setattr(dungeon_manager.map_tiles, "ordinary_chest_spawns_mimic", lambda *_args, **_kwargs: False)
+    monkeypatch.setattr(
+        dungeon_manager.map_tiles, "ordinary_chest_spawns_mimic", lambda *_args, **_kwargs: False
+    )
     monkeypatch.setattr("src.core.items.random.random", lambda: 0.99)
     player.spellbook["Skills"]["Lockpick"] = SimpleNamespace(name="Lockpick")
     chest = SimpleNamespace(
@@ -792,14 +842,19 @@ def test_relic_discovery_text_mapping_and_fallback():
     for relic_name, phrase in expected.items():
         assert phrase in dungeon_manager.relic_discovery_text(SimpleNamespace(name=relic_name))
 
-    assert dungeon_manager.relic_discovery_text(SimpleNamespace(name="Relic X")) == "You found a relic: Relic X!"
+    assert (
+        dungeon_manager.relic_discovery_text(SimpleNamespace(name="Relic X"))
+        == "You found a relic: Relic X!"
+    )
 
 
 def test_interact_door_relic_warp_terminal_and_room_pickups(monkeypatch):
     manager, presenter, player, game = _make_manager(monkeypatch)
     sfx_calls = []
     presenter.sound_manager = SimpleNamespace(play_sfx=lambda name: sfx_calls.append(name))
-    manager.loot_popup = SimpleNamespace(show_unlock_prompt=lambda kind, **_kwargs: True, show_loot=lambda *_args, **_kwargs: None)
+    manager.loot_popup = SimpleNamespace(
+        show_unlock_prompt=lambda kind, **_kwargs: True, show_loot=lambda *_args, **_kwargs: None
+    )
     dirty_calls = []
     manager._refresh_cached_frame = lambda: manager.messages.append("refresh")
     manager._mark_view_dirty = lambda: dirty_calls.append("dirty")
@@ -866,16 +921,29 @@ def test_interact_door_relic_warp_terminal_and_room_pickups(monkeypatch):
             return "1234"
 
     monkeypatch.setattr("src.ui_pygame.gui.confirmation_popup.CodeEntryPopup", FakeCodeEntryPopup)
-    monkeypatch.setattr(dungeon_manager.map_tiles, "pop_cambion_messages", lambda _player: ["Field offline", "Barrier gone"])
+    monkeypatch.setattr(
+        dungeon_manager.map_tiles,
+        "pop_cambion_messages",
+        lambda _player: ["Field offline", "Barrier gone"],
+    )
     switch_calls = []
-    switch_tile = SimpleNamespace(attempt_disable=lambda game_arg, code: switch_calls.append((game_arg, code)))
+    switch_tile = SimpleNamespace(
+        attempt_disable=lambda game_arg, code: switch_calls.append((game_arg, code))
+    )
     manager._interact_anti_magic_switch(switch_tile)
     assert switch_calls == [(game, "1234")]
     assert "Barrier gone" in manager.messages
 
     branch_calls = []
-    monkeypatch.setattr("src.ui_pygame.gui.confirmation_popup.CodeEntryPopup", lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("code popup should not open")))
-    monkeypatch.setattr(dungeon_manager.map_tiles, "pop_cambion_messages", lambda _player: ["Kaelenon returns home"])
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.confirmation_popup.CodeEntryPopup",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("code popup should not open")
+        ),
+    )
+    monkeypatch.setattr(
+        dungeon_manager.map_tiles, "pop_cambion_messages", lambda _player: ["Kaelenon returns home"]
+    )
     kaelenon_switch = SimpleNamespace(
         has_kaelenon_branch=lambda game_arg: True,
         resolve_kaelenon_branch=lambda game_arg: branch_calls.append(game_arg),
@@ -929,13 +997,18 @@ def test_dead_body_waitress_hook_uses_existing_sprite_and_missing_safe_sfx(monke
     combats = []
     game.special_event = lambda name: events.append(name)
     presenter.sound_manager = SimpleNamespace(play_sfx=lambda name: sfx_calls.append(name))
-    manager._show_special_event_dialogue = lambda event_name, title="", image_path="": dialogues.append(
-        (event_name, title, image_path)
+    manager._show_special_event_dialogue = (
+        lambda event_name, title="", image_path="": dialogues.append(
+            (event_name, title, image_path)
+        )
     )
     manager._refresh_cached_frame = lambda: None
-    manager.combat_manager.start_combat = lambda player_arg, enemy_arg, tile_arg: combats.append(
-        (player_arg, getattr(enemy_arg, "name", ""), tile_arg)
-    ) or True
+    manager.combat_manager.start_combat = (
+        lambda player_arg, enemy_arg, tile_arg: combats.append(
+            (player_arg, getattr(enemy_arg, "name", ""), tile_arg)
+        )
+        or True
+    )
     player.quest_dict["Main"]["A Bad Dream"] = {
         "Completed": True,
         "Turned In": True,
@@ -947,11 +1020,13 @@ def test_dead_body_waitress_hook_uses_existing_sprite_and_missing_safe_sfx(monke
 
     assert events == ["Waitress"]
     assert sfx_calls == ["waitress_wail"]
-    assert dialogues == [(
-        "Waitress",
-        "Waitress",
-        str(PYGAME_ASSETS_DIR / "enemy_combat_sprites" / "mad_waitress.png"),
-    )]
+    assert dialogues == [
+        (
+            "Waitress",
+            "Waitress",
+            str(PYGAME_ASSETS_DIR / "enemy_combat_sprites" / "mad_waitress.png"),
+        )
+    ]
     assert combats and combats[0][0] is player and combats[0][2] is body_tile
     assert player.quest_dict["Main"]["A Bad Dream"]["Waitress Defeated"] is True
 
@@ -962,8 +1037,12 @@ def test_underground_spring_intro_and_tile_effect_branches(monkeypatch):
     _presenter.sound_manager = SimpleNamespace(play_sfx=lambda name: sfx_calls.append(name))
     manager._refresh_cached_frame = lambda: manager.messages.append("refresh")
     manager._animate_nimue_materialization = lambda: manager.messages.append("nimue-animation")
-    manager._show_special_event_dialogue = lambda *args, **kwargs: manager.messages.append("nimue-dialogue")
-    manager._show_dungeon_dialogue = lambda text, **kwargs: manager.messages.append(f"dialog:{text}")
+    manager._show_special_event_dialogue = lambda *args, **kwargs: manager.messages.append(
+        "nimue-dialogue"
+    )
+    manager._show_dungeon_dialogue = lambda text, **kwargs: manager.messages.append(
+        f"dialog:{text}"
+    )
     manager._show_dungeon_choice = lambda prompt, options, **kwargs: 0
     dirty_calls = []
     manager._mark_view_dirty = lambda: dirty_calls.append("dirty")
@@ -996,7 +1075,11 @@ def test_underground_spring_intro_and_tile_effect_branches(monkeypatch):
     monkeypatch.setattr("src.core.items.SpringWater", lambda: SimpleNamespace(name="Spring Water"))
     monkeypatch.setattr("src.core.items.Excaliper", lambda: SimpleNamespace(name="Excaliper"))
     monkeypatch.setattr("src.core.items.Excalibur2", lambda: SimpleNamespace(name="Excalibur2"))
-    monkeypatch.setattr(dungeon_manager.map_tiles, "enter_realm_of_cambion", lambda _player: manager.messages.append("entered-realm"))
+    monkeypatch.setattr(
+        dungeon_manager.map_tiles,
+        "enter_realm_of_cambion",
+        lambda _player: manager.messages.append("entered-realm"),
+    )
 
     player.level.pro_level = 2
     player.cls.name = "Thaumaturgist"
@@ -1029,7 +1112,9 @@ def test_underground_spring_intro_and_tile_effect_branches(monkeypatch):
 def test_get_tile_intro_check_tile_effects_and_menu_helpers(monkeypatch):
     manager, presenter, player, game = _make_manager(monkeypatch)
     manager._refresh_cached_frame = lambda: manager.messages.append("refresh")
-    manager._show_town_entry_loading_screen = lambda *_args, **_kwargs: manager.messages.append("town-loading")
+    manager._show_town_entry_loading_screen = lambda *_args, **_kwargs: manager.messages.append(
+        "town-loading"
+    )
     manager.renderer = SimpleNamespace(
         trigger_damage_flash=lambda: manager.messages.append("flash"),
         render_dungeon_view=lambda player_char, world_dict: manager.messages.append("render-view"),
@@ -1037,10 +1122,22 @@ def test_get_tile_intro_check_tile_effects_and_menu_helpers(monkeypatch):
         render_damage_flash=lambda: manager.messages.append("render-flash"),
         _damage_flash_active=False,
     )
-    manager.hud = SimpleNamespace(render_hud=lambda player_char: manager.messages.append("render-hud"))
-    monkeypatch.setattr(dungeon_manager.map_tiles, "update_chalice_location", lambda game_arg: manager.messages.append("update-chalice"))
-    monkeypatch.setattr(dungeon_manager.map_tiles, "handle_chalice_adventurer", lambda game_arg: manager.messages.append("handle-adventurer"))
-    monkeypatch.setattr(dungeon_manager.map_tiles, "pop_cambion_messages", lambda _player: ["Cambion warning"])
+    manager.hud = SimpleNamespace(
+        render_hud=lambda player_char: manager.messages.append("render-hud")
+    )
+    monkeypatch.setattr(
+        dungeon_manager.map_tiles,
+        "update_chalice_location",
+        lambda game_arg: manager.messages.append("update-chalice"),
+    )
+    monkeypatch.setattr(
+        dungeon_manager.map_tiles,
+        "handle_chalice_adventurer",
+        lambda game_arg: manager.messages.append("handle-adventurer"),
+    )
+    monkeypatch.setattr(
+        dungeon_manager.map_tiles, "pop_cambion_messages", lambda _player: ["Cambion warning"]
+    )
 
     player.name = "Hero"
     player.warp_point = True
@@ -1128,30 +1225,49 @@ def test_get_tile_intro_check_tile_effects_and_menu_helpers(monkeypatch):
     assert manager.messages.count("town-loading") == loading_count
     assert manager.running is False
 
-    popup_events = iter([
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)],
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.dungeon_manager.pygame.event.get", lambda: next(popup_events, []))
+    popup_events = iter(
+        [
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.dungeon_manager.pygame.event.get", lambda: next(popup_events, [])
+    )
     monkeypatch.setattr("src.ui_pygame.gui.dungeon_manager.pygame.display.flip", lambda: None)
-    monkeypatch.setattr("src.ui_pygame.gui.dungeon_manager.pygame.draw.rect", lambda *_args, **_kwargs: None)
-    monkeypatch.setattr("src.ui_pygame.gui.dungeon_manager.pygame.Surface", lambda size, *_args: DummySurface(size))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.dungeon_manager.pygame.draw.rect", lambda *_args, **_kwargs: None
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.dungeon_manager.pygame.Surface", lambda size, *_args: DummySurface(size)
+    )
     assert manager._popup_menu("Menu", ["A", "B"]) == 1
 
-    events = iter([
-        [SimpleNamespace(type=pygame.KEYUP, key=pygame.K_RETURN)],
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)],
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
-    ])
+    events = iter(
+        [
+            [SimpleNamespace(type=pygame.KEYUP, key=pygame.K_RETURN)],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+        ]
+    )
     clear_calls = []
-    monkeypatch.setattr("src.ui_pygame.gui.dungeon_manager.pygame.event.get", lambda: next(events, []))
-    monkeypatch.setattr("src.ui_pygame.gui.dungeon_manager.pygame.event.clear", lambda: clear_calls.append(True))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.dungeon_manager.pygame.event.get", lambda: next(events, [])
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.dungeon_manager.pygame.event.clear", lambda: clear_calls.append(True)
+    )
     monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [1])
     assert manager._popup_menu("Menu", ["A", "B"], flush_events=True, require_key_release=True) == 1
     assert clear_calls == [True]
 
     manager.character_screen = SimpleNamespace(navigate=lambda _player: "Exit Menu")
-    manager.game = SimpleNamespace(debug_mode=False, running=True, save_game=lambda: manager.messages.append("saved"), debug_level_up=lambda: manager.messages.append("debug-level"))
+    manager.game = SimpleNamespace(
+        debug_mode=False,
+        running=True,
+        save_game=lambda: manager.messages.append("saved"),
+        debug_level_up=lambda: manager.messages.append("debug-level"),
+    )
     manager._popup_menu = lambda title, options, **_kwargs: 0
     manager._show_menu()
     manager._popup_menu = lambda title, options, **_kwargs: len(options) - 1
@@ -1184,7 +1300,9 @@ def test_merzhin_victory_collapses_realm_and_returns_to_saved_location(monkeypat
         setattr(player, "facing", "south"),
         setattr(player, "cambion_return", None),
     )
-    enemy = SimpleNamespace(name="Merzhin", health=SimpleNamespace(current=5), is_alive=lambda: True)
+    enemy = SimpleNamespace(
+        name="Merzhin", health=SimpleNamespace(current=5), is_alive=lambda: True
+    )
     tile = MerzhinBossRoom(enemy)
     tile.read = True
     player.world_dict[(player.location_x, player.location_y, player.location_z)] = tile
@@ -1195,7 +1313,12 @@ def test_merzhin_victory_collapses_realm_and_returns_to_saved_location(monkeypat
     assert tile.enemy is None
     assert "You emerge victorious!" in manager.messages
     assert "Merzhin falls and the Realm of Cambion collapses around you." in manager.messages
-    assert (player.location_x, player.location_y, player.location_z, player.facing) == (4, 9, 3, "south")
+    assert (player.location_x, player.location_y, player.location_z, player.facing) == (
+        4,
+        9,
+        3,
+        "south",
+    )
     assert dirty_calls == ["dirty"]
 
 
@@ -1215,7 +1338,9 @@ def test_merzhin_defeat_returns_from_realm_without_town_death_flow(monkeypatch):
     )
     player.to_town = lambda: manager.messages.append("unexpected-town")
     player.is_alive = lambda: False
-    enemy = SimpleNamespace(name="Merzhin", health=SimpleNamespace(current=5), is_alive=lambda: True)
+    enemy = SimpleNamespace(
+        name="Merzhin", health=SimpleNamespace(current=5), is_alive=lambda: True
+    )
     tile = MerzhinBossRoom(enemy)
     tile.read = True
     player.world_dict[(player.location_x, player.location_y, player.location_z)] = tile
@@ -1224,7 +1349,9 @@ def test_merzhin_defeat_returns_from_realm_without_town_death_flow(monkeypatch):
 
     manager._check_tile_effects()
 
-    assert "You were defeated... The Realm of Cambion hurls you back to the spring." in " ".join(manager.messages)
+    assert "You were defeated... The Realm of Cambion hurls you back to the spring." in " ".join(
+        manager.messages
+    )
     assert "unexpected-town" not in manager.messages
     assert (player.location_x, player.location_y, player.location_z) == (4, 9, 3)
     assert player.state == "normal"
@@ -1235,15 +1362,25 @@ def test_merzhin_defeat_returns_from_realm_without_town_death_flow(monkeypatch):
 def test_dungeon_popup_menu_guard_accepts_fresh_key_without_keyup(monkeypatch):
     manager, _presenter, _player, _game = _make_manager(monkeypatch)
 
-    events = iter([
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
-    ])
+    events = iter(
+        [
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+        ]
+    )
     clear_calls = []
-    monkeypatch.setattr("src.ui_pygame.gui.dungeon_manager.pygame.event.get", lambda: next(events, []))
-    monkeypatch.setattr("src.ui_pygame.gui.dungeon_manager.pygame.event.clear", lambda: clear_calls.append(True))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.dungeon_manager.pygame.event.get", lambda: next(events, [])
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.dungeon_manager.pygame.event.clear", lambda: clear_calls.append(True)
+    )
     monkeypatch.setattr("src.ui_pygame.gui.dungeon_manager.pygame.display.flip", lambda: None)
-    monkeypatch.setattr("src.ui_pygame.gui.dungeon_manager.pygame.draw.rect", lambda *_args, **_kwargs: None)
-    monkeypatch.setattr("src.ui_pygame.gui.dungeon_manager.pygame.Surface", lambda size, *_args: DummySurface(size))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.dungeon_manager.pygame.draw.rect", lambda *_args, **_kwargs: None
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.dungeon_manager.pygame.Surface", lambda size, *_args: DummySurface(size)
+    )
     monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
 
     assert manager._popup_menu("Menu", ["A", "B"], flush_events=True, require_key_release=True) == 0
@@ -1263,9 +1400,33 @@ def test_dungeon_popup_menu_guard_accepts_fresh_key_without_keyup(monkeypatch):
     manager.presenter.show_message = lambda message: move_calls.append(message)
     manager.game.debug_mode = True
     manager.game.debug_level_up = lambda: move_calls.append("debug")
-    for key in (pygame.K_w, pygame.K_a, pygame.K_d, pygame.K_s, pygame.K_u, pygame.K_j, pygame.K_o, pygame.K_PAGEUP, pygame.K_PAGEDOWN, pygame.K_l, pygame.K_ESCAPE):
+    for key in (
+        pygame.K_w,
+        pygame.K_a,
+        pygame.K_d,
+        pygame.K_s,
+        pygame.K_u,
+        pygame.K_j,
+        pygame.K_o,
+        pygame.K_PAGEUP,
+        pygame.K_PAGEDOWN,
+        pygame.K_l,
+        pygame.K_ESCAPE,
+    ):
         manager._handle_keypress(key)
-    assert move_calls[:11] == ["forward", "left", "right", "around", "up", "down", "interact", -1, 1, "debug", "menu"]
+    assert move_calls[:11] == [
+        "forward",
+        "left",
+        "right",
+        "around",
+        "up",
+        "down",
+        "interact",
+        -1,
+        1,
+        "debug",
+        "menu",
+    ]
 
 
 def test_stair_transition_suppresses_buffered_navigation_input(monkeypatch):
@@ -1273,7 +1434,9 @@ def test_stair_transition_suppresses_buffered_navigation_input(monkeypatch):
     now = {"ticks": 1000}
     clear_calls = []
     monkeypatch.setattr(dungeon_manager.pygame.time, "get_ticks", lambda: now["ticks"])
-    monkeypatch.setattr(dungeon_manager.pygame.event, "clear", lambda events: clear_calls.append(events))
+    monkeypatch.setattr(
+        dungeon_manager.pygame.event, "clear", lambda events: clear_calls.append(events)
+    )
     move_calls = []
     manager.move_forward = lambda: move_calls.append("forward")
     manager.scroll_message_log = lambda delta: move_calls.append(delta)
@@ -1318,8 +1481,15 @@ def test_final_room_incubus_and_golden_chalice_branches(monkeypatch):
         f"{kwargs.get('title', title)}:{message}"
     )
     presenter.render_menu = lambda prompt, options: 0
-    monkeypatch.setattr(dungeon_manager, "get_special_events", lambda: {"Final Boss": {"Text": ["I await", "your challenge"]}})
-    monkeypatch.setattr("src.ui_pygame.gui.dungeon_manager.pygame.event.clear", lambda: manager.messages.append("clear-events"))
+    monkeypatch.setattr(
+        dungeon_manager,
+        "get_special_events",
+        lambda: {"Final Boss": {"Text": ["I await", "your challenge"]}},
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.dungeon_manager.pygame.event.clear",
+        lambda: manager.messages.append("clear-events"),
+    )
     monkeypatch.setattr("src.core.enemies.Vesperion", lambda: SimpleNamespace(name="Vesperion"))
 
     final_tile = FinalRoom()
@@ -1337,7 +1507,9 @@ def test_final_room_incubus_and_golden_chalice_branches(monkeypatch):
     final_provider_calls = []
     presenter.set_background_provider = lambda provider: final_provider_calls.append(provider)
     player.to_town = lambda: manager.messages.append(
-        "to-town-after-detach" if final_provider_calls and final_provider_calls[-1] is None else "to-town"
+        "to-town-after-detach"
+        if final_provider_calls and final_provider_calls[-1] is None
+        else "to-town"
     )
     loading_calls = []
     manager._show_dungeon_loading_screen = lambda msg, duration=1.25: loading_calls.append(msg)
@@ -1396,7 +1568,9 @@ def test_final_room_pending_false_final_enters_liminal_stub(monkeypatch):
     monkeypatch.setattr(
         dungeon_manager,
         "get_npc_art_manager",
-        lambda: SimpleNamespace(get_image_path=lambda name: f"npc:{name}" if name == "Vesperion" else ""),
+        lambda: SimpleNamespace(
+            get_image_path=lambda name: f"npc:{name}" if name == "Vesperion" else ""
+        ),
     )
     monkeypatch.setattr("src.ui_pygame.gui.dungeon_manager.pygame.event.clear", lambda: None)
     monkeypatch.setattr("src.core.enemies.Vesperion", lambda: SimpleNamespace(name="Vesperion"))
@@ -1439,7 +1613,9 @@ def test_final_room_reentry_before_true_final_shows_liminal_blocker(monkeypatch)
     shown = []
     player.main_story["vesperion_false_final_triggered"] = True
     presenter.show_message = lambda *args, **kwargs: shown.append((args, kwargs))
-    presenter.render_menu = lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("menu should not open"))
+    presenter.render_menu = lambda *_args, **_kwargs: (_ for _ in ()).throw(
+        AssertionError("menu should not open")
+    )
     manager.combat_manager.start_combat = lambda *_args, **_kwargs: (_ for _ in ()).throw(
         AssertionError("combat should not start")
     )
@@ -1452,7 +1628,9 @@ def test_final_room_reentry_before_true_final_shows_liminal_blocker(monkeypatch)
     manager._interact_final_room(FinalRoom())
 
     assert shown[-1][1]["title"] == "Voluntas"
-    assert "Voluntas remains unresolved. The final chamber will not open yet." in " ".join(manager.messages)
+    assert "Voluntas remains unresolved. The final chamber will not open yet." in " ".join(
+        manager.messages
+    )
 
 
 def test_liminal_guide_reveals_hooded_figure_and_saves(monkeypatch):
@@ -1507,7 +1685,9 @@ def test_liminal_guide_reviews_awakened_guardian_clues(monkeypatch):
     joined_messages = " ".join(manager.messages)
     assert "Guardian clues awakened: 2/6." in joined_messages
     assert "Triangulus (Memory): selfhood is chosen, not assigned." in joined_messages
-    assert "Luna (Release): love without freedom becomes possession or obligation." in joined_messages
+    assert (
+        "Luna (Release): love without freedom becomes possession or obligation." in joined_messages
+    )
 
 
 def test_liminal_guide_reviews_guardian_trial_depths(monkeypatch):
@@ -1518,9 +1698,9 @@ def test_liminal_guide_reviews_guardian_trial_depths(monkeypatch):
     player.main_story["guardian_trial_vignettes_seen"]["Triangulus"] = True
     player.main_story["guardian_trial_choices"]["Triangulus"] = "Memory"
     presenter.show_message = lambda *args, **kwargs: shown.append((args, kwargs))
-    manager._popup_menu = lambda _title, options, **_kwargs: captured_options.append(list(options)) or options.index(
-        "Review Trial Depths"
-    )
+    manager._popup_menu = lambda _title, options, **_kwargs: captured_options.append(
+        list(options)
+    ) or options.index("Review Trial Depths")
     monkeypatch.setattr(
         dungeon_manager,
         "get_special_events",
@@ -1547,9 +1727,13 @@ def test_liminal_guide_affirm_class_path_visibility_requires_voluntas_and_ring(m
     player.main_story["liminal_gap_guide_revealed"] = True
     player.cls.name = "Wizard"
     player.equipment["Ring"] = items.ClassRing()
-    manager._popup_menu = lambda _title, options, **_kwargs: captured_options.append(list(options)) or options.index("Leave")
+    manager._popup_menu = lambda _title, options, **_kwargs: captured_options.append(
+        list(options)
+    ) or options.index("Leave")
 
-    manager._interact_liminal_guide(dungeon_manager.map_tiles.LiminalGuide(5, 4, LIMINAL_GAP_ENTRY_POS[2]))
+    manager._interact_liminal_guide(
+        dungeon_manager.map_tiles.LiminalGuide(5, 4, LIMINAL_GAP_ENTRY_POS[2])
+    )
 
     assert "Affirm Class Path" not in captured_options[-1]
 
@@ -1559,9 +1743,13 @@ def test_liminal_guide_affirm_class_path_visibility_requires_voluntas_and_ring(m
     player.main_story["voluntas_revealed"] = True
     player.cls.name = "Wizard"
     player.equipment["Ring"] = items.NoRing()
-    manager._popup_menu = lambda _title, options, **_kwargs: captured_options.append(list(options)) or options.index("Leave")
+    manager._popup_menu = lambda _title, options, **_kwargs: captured_options.append(
+        list(options)
+    ) or options.index("Leave")
 
-    manager._interact_liminal_guide(dungeon_manager.map_tiles.LiminalGuide(5, 4, LIMINAL_GAP_ENTRY_POS[2]))
+    manager._interact_liminal_guide(
+        dungeon_manager.map_tiles.LiminalGuide(5, 4, LIMINAL_GAP_ENTRY_POS[2])
+    )
 
     assert "Affirm Class Path" not in captured_options[-1]
 
@@ -1571,9 +1759,13 @@ def test_liminal_guide_affirm_class_path_visibility_requires_voluntas_and_ring(m
     player.main_story["voluntas_revealed"] = True
     player.cls.name = "Wizard"
     player.equipment["Ring"] = items.ClassRing()
-    manager._popup_menu = lambda _title, options, **_kwargs: captured_options.append(list(options)) or options.index("Leave")
+    manager._popup_menu = lambda _title, options, **_kwargs: captured_options.append(
+        list(options)
+    ) or options.index("Leave")
 
-    manager._interact_liminal_guide(dungeon_manager.map_tiles.LiminalGuide(5, 4, LIMINAL_GAP_ENTRY_POS[2]))
+    manager._interact_liminal_guide(
+        dungeon_manager.map_tiles.LiminalGuide(5, 4, LIMINAL_GAP_ENTRY_POS[2])
+    )
 
     assert "Affirm Class Path" in captured_options[-1]
     assert player.main_story["class_voluntas_affirmed"] is False
@@ -1591,9 +1783,9 @@ def test_liminal_guide_affirms_class_path_once(monkeypatch, ring_awakened):
     if ring_awakened:
         class_rings.ensure_state(player)["awakened"]["Wizard"] = True
     presenter.show_message = lambda *args, **kwargs: shown.append((args, kwargs))
-    manager._popup_menu = lambda _title, options, **_kwargs: captured_options.append(list(options)) or options.index(
-        "Affirm Class Path"
-    )
+    manager._popup_menu = lambda _title, options, **_kwargs: captured_options.append(
+        list(options)
+    ) or options.index("Affirm Class Path")
     monkeypatch.setattr(
         dungeon_manager,
         "get_special_events",
@@ -1630,9 +1822,9 @@ def test_liminal_guide_revisits_class_path_once(monkeypatch):
     player.main_story["class_voluntas_affirmed_ring_awakened"] = False
     player.main_story["class_voluntas_affirmed_archetype"] = "mystic"
     presenter.show_message = lambda *args, **kwargs: shown.append((args, kwargs))
-    manager._popup_menu = lambda _title, options, **_kwargs: captured_options.append(list(options)) or options.index(
-        "Revisit Class Path"
-    )
+    manager._popup_menu = lambda _title, options, **_kwargs: captured_options.append(
+        list(options)
+    ) or options.index("Revisit Class Path")
     monkeypatch.setattr(
         dungeon_manager,
         "get_special_events",
@@ -1651,7 +1843,9 @@ def test_liminal_guide_revisits_class_path_once(monkeypatch):
     assert guide_tile.read is True
     assert "Wizard is remembered through a dormant Class Ring." in manager.messages
 
-    manager._popup_menu = lambda _title, options, **_kwargs: captured_options.append(list(options)) or options.index("Leave")
+    manager._popup_menu = lambda _title, options, **_kwargs: captured_options.append(
+        list(options)
+    ) or options.index("Leave")
     manager._interact_liminal_guide(guide_tile)
 
     assert "Revisit Class Path" not in captured_options[-1]
@@ -1673,7 +1867,9 @@ def test_liminal_guide_bridges_recorded_class_identity_once_and_story_only(monke
     player.gold = 456
     player.experience = 123
     presenter.show_message = lambda *args, **kwargs: shown.append((args, kwargs))
-    manager._popup_menu = lambda _title, options, **_kwargs: captured_options.append(list(options)) or options.index("Leave")
+    manager._popup_menu = lambda _title, options, **_kwargs: captured_options.append(
+        list(options)
+    ) or options.index("Leave")
     guide_tile = dungeon_manager.map_tiles.LiminalGuide(5, 4, LIMINAL_GAP_ENTRY_POS[2])
 
     manager._interact_liminal_guide(guide_tile)
@@ -1681,9 +1877,9 @@ def test_liminal_guide_bridges_recorded_class_identity_once_and_story_only(monke
     assert "Bridge Class Identity" not in captured_options[-1]
 
     player.main_story["class_voluntas_followup_seen"] = True
-    manager._popup_menu = lambda _title, options, **_kwargs: captured_options.append(list(options)) or options.index(
-        "Bridge Class Identity"
-    )
+    manager._popup_menu = lambda _title, options, **_kwargs: captured_options.append(
+        list(options)
+    ) or options.index("Bridge Class Identity")
     monkeypatch.setattr(
         dungeon_manager,
         "get_special_events",
@@ -1708,7 +1904,9 @@ def test_liminal_guide_bridges_recorded_class_identity_once_and_story_only(monke
     assert player.inventory_calls == []
     assert player.main_story["true_final_unlocked"] is False
 
-    manager._popup_menu = lambda _title, options, **_kwargs: captured_options.append(list(options)) or options.index("Leave")
+    manager._popup_menu = lambda _title, options, **_kwargs: captured_options.append(
+        list(options)
+    ) or options.index("Leave")
     manager._interact_liminal_guide(guide_tile)
 
     assert "Bridge Class Identity" not in captured_options[-1]
@@ -1720,7 +1918,9 @@ def test_liminal_guide_witness_farewell_visibility_and_once(monkeypatch):
     captured_options = []
     player.main_story["liminal_gap_guide_revealed"] = True
     presenter.show_message = lambda *args, **kwargs: shown.append((args, kwargs))
-    manager._popup_menu = lambda _title, options, **_kwargs: captured_options.append(list(options)) or options.index("Leave")
+    manager._popup_menu = lambda _title, options, **_kwargs: captured_options.append(
+        list(options)
+    ) or options.index("Leave")
     guide_tile = dungeon_manager.map_tiles.LiminalGuide(5, 4, LIMINAL_GAP_ENTRY_POS[2])
 
     manager._interact_liminal_guide(guide_tile)
@@ -1728,9 +1928,9 @@ def test_liminal_guide_witness_farewell_visibility_and_once(monkeypatch):
     assert "Ask About the Witness" not in captured_options[-1]
 
     player.main_story["reflection_defeated"] = True
-    manager._popup_menu = lambda _title, options, **_kwargs: captured_options.append(list(options)) or options.index(
-        "Ask About the Witness"
-    )
+    manager._popup_menu = lambda _title, options, **_kwargs: captured_options.append(
+        list(options)
+    ) or options.index("Ask About the Witness")
     monkeypatch.setattr(
         dungeon_manager,
         "get_special_events",
@@ -1745,7 +1945,9 @@ def test_liminal_guide_witness_farewell_visibility_and_once(monkeypatch):
     assert guide_tile.read is True
     assert "The Hooded Figure remains unnamed" in " ".join(manager.messages)
 
-    manager._popup_menu = lambda _title, options, **_kwargs: captured_options.append(list(options)) or options.index("Leave")
+    manager._popup_menu = lambda _title, options, **_kwargs: captured_options.append(
+        list(options)
+    ) or options.index("Leave")
     manager._interact_liminal_guide(guide_tile)
 
     assert "Ask About the Witness" not in captured_options[-1]
@@ -1840,7 +2042,9 @@ def test_triangulus_trial_completes_and_records_self_choice(monkeypatch):
     presenter.show_message = lambda *args, **kwargs: shown.append((args, kwargs))
     manager._popup_menu = lambda title, options, **kwargs: next(menu_choices)
     manager._refresh_cached_frame = lambda: None
-    manager.combat_manager.start_combat = lambda player_char, enemy, tile: combat_calls.append((player_char, enemy, tile)) or True
+    manager.combat_manager.start_combat = (
+        lambda player_char, enemy, tile: combat_calls.append((player_char, enemy, tile)) or True
+    )
     monkeypatch.setattr(
         dungeon_manager,
         "get_special_events",
@@ -1939,7 +2143,9 @@ def test_guardian_trial_consequences_restore_and_clear_statuses(monkeypatch):
     assert player.status_effects["Silence"].duration == 0
     assert hex_messages == ["Hexagonum answers through living endurance, restoring 15 HP."]
     assert polaris_messages == ["Polaris fixes true north, clearing blindness and silence."]
-    assert infinitas_messages == ["Infinitas makes another step possible, restoring 15 HP and 30 MP."]
+    assert infinitas_messages == [
+        "Infinitas makes another step possible, restoring 15 HP and 30 MP."
+    ]
 
 
 def test_completed_triangulus_trial_does_not_reaward_progress(monkeypatch):
@@ -1952,7 +2158,9 @@ def test_completed_triangulus_trial_does_not_reaward_progress(monkeypatch):
     player.main_story["voluntas_clues_found"]["Triangulus"] = True
     player.main_story["guardian_trial_vignettes_seen"]["Triangulus"] = True
     presenter.show_message = lambda *args, **kwargs: shown.append((args, kwargs))
-    manager._popup_menu = lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("trial menu should not reopen"))
+    manager._popup_menu = lambda *_args, **_kwargs: (_ for _ in ()).throw(
+        AssertionError("trial menu should not reopen")
+    )
     monkeypatch.setattr(
         dungeon_manager,
         "get_special_events",
@@ -2095,7 +2303,9 @@ def test_liminal_seventh_seat_reveals_voluntas_after_all_clues(monkeypatch):
     assert player.main_story["hooded_figure_witness_revealed"] is True
     assert player.main_story["true_final_unlocked"] is False
     assert seat_tile.read is True
-    assert "Voluntas is remembered. The Reflection waits beyond the Acolyte." in " ".join(manager.messages)
+    assert "Voluntas is remembered. The Reflection waits beyond the Acolyte." in " ".join(
+        manager.messages
+    )
 
 
 def test_liminal_acolyte_scene_is_non_combat_and_repeat_safe(monkeypatch):
@@ -2126,7 +2336,12 @@ def test_liminal_acolyte_scene_is_non_combat_and_repeat_safe(monkeypatch):
     assert player.main_story["acolyte_liminal_seen"] is True
     assert acolyte_tile.read is True
     assert [call[1]["title"] for call in shown].count("The Acolyte") == 3
-    assert " ".join(manager.messages).count("The Acolyte remains behind, emptied by the peace they accepted.") == 2
+    assert (
+        " ".join(manager.messages).count(
+            "The Acolyte remains behind, emptied by the peace they accepted."
+        )
+        == 2
+    )
 
 
 def test_liminal_reflection_unlocks_true_final_after_voluntas_and_acolyte(monkeypatch):
@@ -2210,7 +2425,9 @@ def test_liminal_reflection_unlocks_true_final_after_voluntas_and_acolyte(monkey
     assert player.main_story["reflection_failures"] == 0
     assert reflection_tile.read is True
     assert "The chosen self holds. The way back to Vesperion opens." in manager.messages
-    assert "The Hooded Figure's hidden light answers Voluntas one last time." in " ".join(manager.messages)
+    assert "The Hooded Figure's hidden light answers Voluntas one last time." in " ".join(
+        manager.messages
+    )
 
 
 def test_liminal_reflection_class_voluntas_echo_is_story_only_and_once(monkeypatch):
@@ -2288,7 +2505,12 @@ def test_liminal_reflection_defeat_keeps_route_locked(monkeypatch):
 
     manager._interact_liminal_reflection(reflection_tile)
 
-    assert [call[1]["title"] for call in shown] == ["Reflection", "Voluntas", "Reflection", "Reflection"]
+    assert [call[1]["title"] for call in shown] == [
+        "Reflection",
+        "Voluntas",
+        "Reflection",
+        "Reflection",
+    ]
     assert player.main_story["reflection_voluntas_answer"] == "ChooseAgain"
     assert player.main_story["reflection_path_mirror_seen"] is True
     assert player.main_story["reflection_defeated"] is False
@@ -2296,7 +2518,9 @@ def test_liminal_reflection_defeat_keeps_route_locked(monkeypatch):
     assert player.main_story["reflection_attempts"] == 1
     assert player.main_story["reflection_failures"] == 1
     assert reflection_tile.read is False
-    assert "The Reflection returns you to the Liminal hub to choose again." in " ".join(manager.messages)
+    assert "The Reflection returns you to the Liminal hub to choose again." in " ".join(
+        manager.messages
+    )
 
 
 def test_liminal_exit_returns_after_true_final_unlock(monkeypatch):
@@ -2315,7 +2539,12 @@ def test_liminal_exit_returns_after_true_final_unlock(monkeypatch):
 
     manager._interact_liminal_exit_blocker(blocker_tile)
 
-    assert (player.location_x, player.location_y, player.location_z, player.facing) == (14, 12, 6, "north")
+    assert (player.location_x, player.location_y, player.location_z, player.facing) == (
+        14,
+        12,
+        6,
+        "north",
+    )
     assert player.liminal_gap_return is None
     assert player.main_story["returned_from_liminal_gap"] is True
     assert blocker_tile.read is True
@@ -2357,7 +2586,9 @@ def test_final_room_true_final_reentry_uses_true_final_prelude(monkeypatch):
     monkeypatch.setattr(
         dungeon_manager,
         "get_npc_art_manager",
-        lambda: SimpleNamespace(get_image_path=lambda name: f"npc:{name}" if name == "Vesperion" else ""),
+        lambda: SimpleNamespace(
+            get_image_path=lambda name: f"npc:{name}" if name == "Vesperion" else ""
+        ),
     )
     monkeypatch.setattr("src.ui_pygame.gui.dungeon_manager.pygame.event.clear", lambda: None)
     monkeypatch.setattr("src.core.enemies.Vesperion", lambda: SimpleNamespace(name="Vesperion"))
@@ -2398,7 +2629,10 @@ def test_final_room_true_final_reentry_uses_true_final_prelude(monkeypatch):
     assert "Reflection answer: claimed the chosen path." in joined_messages
     assert "Triangulus (Memory): selfhood is chosen, not assigned." in joined_messages
     assert "Guardian trial depths witnessed: 1/6." in joined_messages
-    assert "Vesperion is defeated. Voluntas endures, and the main story is complete." in joined_messages
+    assert (
+        "Vesperion is defeated. Voluntas endures, and the main story is complete."
+        in joined_messages
+    )
 
 
 def test_final_room_after_main_story_complete_does_not_restart_finale(monkeypatch):
@@ -2406,7 +2640,9 @@ def test_final_room_after_main_story_complete_does_not_restart_finale(monkeypatc
     shown = []
     player.main_story["main_story_complete"] = True
     presenter.show_message = lambda *args, **kwargs: shown.append((args, kwargs))
-    presenter.render_menu = lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("menu should not open"))
+    presenter.render_menu = lambda *_args, **_kwargs: (_ for _ in ()).throw(
+        AssertionError("menu should not open")
+    )
     manager.combat_manager.start_combat = lambda *_args, **_kwargs: (_ for _ in ()).throw(
         AssertionError("combat should not start")
     )
@@ -2436,16 +2672,22 @@ def test_non_debug_dungeon_menu_does_not_offer_ordinary_save(monkeypatch):
 def test_explore_dungeon_loop_and_render_paths(monkeypatch):
     manager, presenter, player, game = _make_manager(monkeypatch)
     player.world_dict[(player.location_x, player.location_y, player.location_z)] = DummyTile()
-    player.world_dict[(player.location_x, player.location_y, player.location_z)].intro_text = lambda _game: ""
+    player.world_dict[(player.location_x, player.location_y, player.location_z)].intro_text = (
+        lambda _game: ""
+    )
     game.debug_mode = False
     loading_calls = []
     suppressed = []
     handled_keys = []
     manager._show_dungeon_loading_screen = lambda msg, duration=1.25: loading_calls.append(msg)
     manager._suppress_navigation_input = lambda ms=250: suppressed.append(ms)
-    manager._handle_keypress = lambda key: handled_keys.append(key) or setattr(manager, "running", False)
+    manager._handle_keypress = lambda key: handled_keys.append(key) or setattr(
+        manager, "running", False
+    )
     manager._check_random_cry = lambda: manager.messages.append("cry-check")
-    original_render = dungeon_manager.DungeonManager._render.__get__(manager, dungeon_manager.DungeonManager)
+    original_render = dungeon_manager.DungeonManager._render.__get__(
+        manager, dungeon_manager.DungeonManager
+    )
     manager._render = lambda: manager.messages.append("render-loop")
     manager.reset_message_log = lambda: manager.messages.append("reset-log")
     manager.add_message = lambda message: manager.messages.append(message)
@@ -2453,10 +2695,20 @@ def test_explore_dungeon_loop_and_render_paths(monkeypatch):
     player.quit = False
     event_batches = iter([[SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_w)], []])
     tick_values = iter([0, 9000])
-    monkeypatch.setattr("src.ui_pygame.gui.dungeon_manager.pygame.event.get", lambda: next(event_batches, []))
-    monkeypatch.setattr("src.ui_pygame.gui.dungeon_manager.pygame.time.get_ticks", lambda: next(tick_values, 9000))
-    monkeypatch.setattr("src.ui_pygame.gui.dungeon_manager.pygame.display.flip", lambda: manager.messages.append("flip"))
-    monkeypatch.setattr("src.ui_pygame.gui.dungeon_manager.pygame.time.Clock", lambda: SimpleNamespace(tick=lambda _fps: None))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.dungeon_manager.pygame.event.get", lambda: next(event_batches, [])
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.dungeon_manager.pygame.time.get_ticks", lambda: next(tick_values, 9000)
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.dungeon_manager.pygame.display.flip",
+        lambda: manager.messages.append("flip"),
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.dungeon_manager.pygame.time.Clock",
+        lambda: SimpleNamespace(tick=lambda _fps: None),
+    )
 
     assert manager.explore_dungeon() is True
     assert loading_calls == ["Entering the dungeon..."]
@@ -2467,16 +2719,22 @@ def test_explore_dungeon_loop_and_render_paths(monkeypatch):
 
     screen = presenter.screen
     screen_size = (presenter.width, presenter.height)
-    monkeypatch.setattr("src.ui_pygame.gui.dungeon_manager.pygame.Surface", lambda size: DummySurface(size))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.dungeon_manager.pygame.Surface", lambda size: DummySurface(size)
+    )
     manager._render = original_render
 
     manager.renderer = SimpleNamespace(
         render_dungeon_view=lambda player_char, world_dict: None,
-        render_message_area=lambda messages, **kwargs: manager.messages.append("render-message-area"),
+        render_message_area=lambda messages, **kwargs: manager.messages.append(
+            "render-message-area"
+        ),
         render_damage_flash=lambda: manager.messages.append("render-damage-flash"),
         _damage_flash_active=False,
     )
-    manager.hud = SimpleNamespace(render_hud=lambda player_char: manager.messages.append("render-hud"))
+    manager.hud = SimpleNamespace(
+        render_hud=lambda player_char: manager.messages.append("render-hud")
+    )
     manager._cached_view = None
     manager.view_dirty = True
     manager.ui_dirty = True
@@ -2485,7 +2743,9 @@ def test_explore_dungeon_loop_and_render_paths(monkeypatch):
     assert manager._cached_frame == "screen-copy"
     assert manager.view_dirty is False and manager.ui_dirty is False
 
-    manager.renderer.render_dungeon_view = lambda *_args, **_kwargs: (_ for _ in ()).throw(RuntimeError("boom"))
+    manager.renderer.render_dungeon_view = lambda *_args, **_kwargs: (_ for _ in ()).throw(
+        RuntimeError("boom")
+    )
     manager.view_dirty = True
     manager._render()
 
@@ -2502,10 +2762,18 @@ def test_explore_dungeon_does_not_render_after_keypress_returns_to_town(monkeypa
     manager.add_message = lambda message: manager.messages.append(message)
     event_batches = iter([[SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_w)]])
 
-    monkeypatch.setattr("src.ui_pygame.gui.dungeon_manager.pygame.event.get", lambda: next(event_batches, []))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.dungeon_manager.pygame.event.get", lambda: next(event_batches, [])
+    )
     monkeypatch.setattr("src.ui_pygame.gui.dungeon_manager.pygame.time.get_ticks", lambda: 0)
-    monkeypatch.setattr("src.ui_pygame.gui.dungeon_manager.pygame.display.flip", lambda: manager.messages.append("flip"))
-    monkeypatch.setattr("src.ui_pygame.gui.dungeon_manager.pygame.time.Clock", lambda: SimpleNamespace(tick=lambda _fps: None))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.dungeon_manager.pygame.display.flip",
+        lambda: manager.messages.append("flip"),
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.dungeon_manager.pygame.time.Clock",
+        lambda: SimpleNamespace(tick=lambda _fps: None),
+    )
 
     assert manager.explore_dungeon() is True
     assert "render-after-town" not in manager.messages
@@ -2576,7 +2844,9 @@ def test_additional_tile_intro_effect_menu_and_render_error_branches(monkeypatch
     player.world_dict[(player.location_x, player.location_y, player.location_z)] = current_tile
     manager.running = True
     transition_calls = []
-    manager._show_town_entry_loading_screen = lambda *_args, **_kwargs: transition_calls.append("town-loading")
+    manager._show_town_entry_loading_screen = lambda *_args, **_kwargs: transition_calls.append(
+        "town-loading"
+    )
 
     class FakeConfirmTown:
         def __init__(self, *_args, **_kwargs):
@@ -2612,7 +2882,9 @@ def test_additional_tile_intro_effect_menu_and_render_error_branches(monkeypatch
     assert calls == ["up", "down", "final", "switch"]
 
     manager.character_screen = SimpleNamespace(navigate=lambda _player: "Quit Game")
-    manager.game = SimpleNamespace(debug_mode=True, running=True, save_game=lambda: manager.messages.append("saved"))
+    manager.game = SimpleNamespace(
+        debug_mode=True, running=True, save_game=lambda: manager.messages.append("saved")
+    )
     manager.running = True
     manager._popup_menu = lambda title, options, **_kwargs: 3
     manager._show_menu()
@@ -2642,11 +2914,15 @@ def test_additional_tile_intro_effect_menu_and_render_error_branches(monkeypatch
 
     manager.renderer = SimpleNamespace(
         render_dungeon_view=lambda *_args, **_kwargs: None,
-        render_message_area=lambda *_args, **_kwargs: (_ for _ in ()).throw(RuntimeError("msg boom")),
+        render_message_area=lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            RuntimeError("msg boom")
+        ),
         render_damage_flash=lambda: (_ for _ in ()).throw(RuntimeError("flash boom")),
         _damage_flash_active=False,
     )
-    manager.hud = SimpleNamespace(render_hud=lambda _player: (_ for _ in ()).throw(RuntimeError("hud boom")))
+    manager.hud = SimpleNamespace(
+        render_hud=lambda _player: (_ for _ in ()).throw(RuntimeError("hud boom"))
+    )
     manager._cached_view = DummySurface((640, 480))
     manager._cached_view.blit = lambda *_args, **_kwargs: None
     manager.view_dirty = False
@@ -2660,17 +2936,25 @@ def test_remaining_menu_and_popup_branches_push_dungeon_manager_over_target(monk
     presenter.show_message = lambda message: notices.append(message)
     char_choices = iter(["Inventory", "Exit Menu"])
     manager.character_screen = SimpleNamespace(navigate=lambda _player: next(char_choices))
-    manager.game = SimpleNamespace(debug_mode=False, running=True, save_game=lambda: notices.append("saved"))
+    manager.game = SimpleNamespace(
+        debug_mode=False, running=True, save_game=lambda: notices.append("saved")
+    )
     manager.running = True
 
     manager._handle_keypress(pygame.K_c)
     assert notices == ["This menu is not yet implemented in the dungeon."]
 
     popup_events = iter([[SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_ESCAPE)]])
-    monkeypatch.setattr("src.ui_pygame.gui.dungeon_manager.pygame.event.get", lambda: next(popup_events, []))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.dungeon_manager.pygame.event.get", lambda: next(popup_events, [])
+    )
     monkeypatch.setattr("src.ui_pygame.gui.dungeon_manager.pygame.display.flip", lambda: None)
-    monkeypatch.setattr("src.ui_pygame.gui.dungeon_manager.pygame.draw.rect", lambda *_args, **_kwargs: None)
-    monkeypatch.setattr("src.ui_pygame.gui.dungeon_manager.pygame.Surface", lambda size, *_args: DummySurface(size))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.dungeon_manager.pygame.draw.rect", lambda *_args, **_kwargs: None
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.dungeon_manager.pygame.Surface", lambda size, *_args: DummySurface(size)
+    )
     assert manager._popup_menu("Menu", ["One", "Two"]) is None
 
     false_confirm_kwargs = []
@@ -2726,21 +3010,36 @@ def test_last_dungeon_manager_branches_cover_quit_paths_and_render_bookkeeping(m
     manager._show_menu()
     assert notices[-1] == "This menu is not yet implemented in the dungeon."
 
-    popup_events = iter([
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_UP)],
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.dungeon_manager.pygame.event.get", lambda: next(popup_events, []))
+    popup_events = iter(
+        [
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_UP)],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.dungeon_manager.pygame.event.get", lambda: next(popup_events, [])
+    )
     monkeypatch.setattr("src.ui_pygame.gui.dungeon_manager.pygame.display.flip", lambda: None)
-    monkeypatch.setattr("src.ui_pygame.gui.dungeon_manager.pygame.draw.rect", lambda *_args, **_kwargs: None)
-    monkeypatch.setattr("src.ui_pygame.gui.dungeon_manager.pygame.Surface", lambda size, *_args: DummySurface(size))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.dungeon_manager.pygame.draw.rect", lambda *_args, **_kwargs: None
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.dungeon_manager.pygame.Surface", lambda size, *_args: DummySurface(size)
+    )
     assert manager._popup_menu("Menu", ["One", "Two"]) == 1
 
     quit_called = {"value": False}
-    monkeypatch.setattr("src.ui_pygame.gui.dungeon_manager.pygame.quit", lambda: quit_called.__setitem__("value", True))
-    monkeypatch.setattr("src.ui_pygame.gui.dungeon_manager.sys.exit", lambda: (_ for _ in ()).throw(SystemExit))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.dungeon_manager.pygame.quit",
+        lambda: quit_called.__setitem__("value", True),
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.dungeon_manager.sys.exit", lambda: (_ for _ in ()).throw(SystemExit)
+    )
     quit_events = iter([[SimpleNamespace(type=pygame.QUIT)]])
-    monkeypatch.setattr("src.ui_pygame.gui.dungeon_manager.pygame.event.get", lambda: next(quit_events, []))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.dungeon_manager.pygame.event.get", lambda: next(quit_events, [])
+    )
     try:
         manager._popup_menu("Menu", ["One"])
     except SystemExit:
@@ -2749,7 +3048,9 @@ def test_last_dungeon_manager_branches_cover_quit_paths_and_render_bookkeeping(m
 
     manager.renderer = SimpleNamespace(
         render_dungeon_view=lambda *_args, **_kwargs: None,
-        render_message_area=lambda *_args, **_kwargs: (_ for _ in ()).throw(RuntimeError("msg boom")),
+        render_message_area=lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            RuntimeError("msg boom")
+        ),
         render_damage_flash=lambda: (_ for _ in ()).throw(RuntimeError("flash boom")),
         _damage_flash_active=False,
     )

@@ -85,12 +85,21 @@ def test_visit_barracks_routes_and_special_event(monkeypatch):
     player = _make_player()
     player.special_inventory = {"Brass Key": [SimpleNamespace(name="Brass Key")]}
     presenter = _make_presenter()
-    monkeypatch.setattr(barracks.BarracksManager, "_load_background", lambda self: setattr(self, "background", None))
+    monkeypatch.setattr(
+        barracks.BarracksManager, "_load_background", lambda self: setattr(self, "background", None)
+    )
     monkeypatch.setattr("src.ui_pygame.gui.barracks.ConfirmationPopup", FakePopup)
-    monkeypatch.setattr("src.ui_pygame.gui.barracks.get_special_events", lambda: {"Joffrey's Key": {"Text": ["Line one", "Line two"]}})
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.barracks.get_special_events",
+        lambda: {"Joffrey's Key": {"Text": ["Line one", "Line two"]}},
+    )
     monkeypatch.setattr(barracks.items, "BrassKey", lambda: SimpleNamespace(name="Brass Key"))
-    monkeypatch.setattr(barracks.items, "JoffreysLetter", lambda: SimpleNamespace(name="Joffrey's Letter"))
-    monkeypatch.setattr(barracks.items, "GreatHealthPotion", lambda: SimpleNamespace(name="Great Health Potion"))
+    monkeypatch.setattr(
+        barracks.items, "JoffreysLetter", lambda: SimpleNamespace(name="Joffrey's Letter")
+    )
+    monkeypatch.setattr(
+        barracks.items, "GreatHealthPotion", lambda: SimpleNamespace(name="Great Health Potion")
+    )
 
     manager = barracks.BarracksManager(presenter, player)
     storage_calls = []
@@ -152,7 +161,9 @@ def test_milestone_storage_rewards_are_deposited_once(monkeypatch):
         },
     }
     presenter = _make_presenter()
-    monkeypatch.setattr(barracks.BarracksManager, "_load_background", lambda self: setattr(self, "background", None))
+    monkeypatch.setattr(
+        barracks.BarracksManager, "_load_background", lambda self: setattr(self, "background", None)
+    )
     monkeypatch.setattr("src.ui_pygame.gui.barracks.ConfirmationPopup", FakePopup)
     manager = barracks.BarracksManager(presenter, player)
 
@@ -182,7 +193,9 @@ def test_grandmaster_hall_requires_equipped_or_stored_class_ring(monkeypatch):
     player.cls = SimpleNamespace(name="Grandmaster of Arms")
     player.inventory = {"Class Ring": [items.ClassRing()]}
     presenter = _make_presenter()
-    monkeypatch.setattr(barracks.BarracksManager, "_load_background", lambda self: setattr(self, "background", None))
+    monkeypatch.setattr(
+        barracks.BarracksManager, "_load_background", lambda self: setattr(self, "background", None)
+    )
 
     manager = barracks.BarracksManager(presenter, player)
     assert manager._grandmaster_hall_available() is False
@@ -205,12 +218,16 @@ def test_grandmaster_hall_binds_after_successful_gauntlet(monkeypatch):
     }
     player.grandmaster_discipline = grandmaster.default_state()
     presenter = _make_presenter()
-    monkeypatch.setattr(barracks.BarracksManager, "_load_background", lambda self: setattr(self, "background", None))
+    monkeypatch.setattr(
+        barracks.BarracksManager, "_load_background", lambda self: setattr(self, "background", None)
+    )
     monkeypatch.setattr("src.ui_pygame.gui.barracks.ConfirmationPopup", FakePopup)
 
     manager = barracks.BarracksManager(presenter, player)
     monkeypatch.setattr(manager, "_choose_grandmaster_weapon", lambda rebind=False: "Sword")
-    monkeypatch.setattr(manager, "_run_grandmaster_gauntlet", lambda weapon_type, rebind=False: True)
+    monkeypatch.setattr(
+        manager, "_run_grandmaster_gauntlet", lambda weapon_type, rebind=False: True
+    )
 
     assert manager.visit_grandmaster_secret_hall() is True
     assert player.grandmaster_discipline["activated"] is True
@@ -225,7 +242,9 @@ def test_berserker_duel_requires_visible_dormant_class_ring(monkeypatch):
     player.class_ring_awakening = class_rings.default_state()
     player.inventory = {"Class Ring": [items.ClassRing()]}
     presenter = _make_presenter()
-    monkeypatch.setattr(barracks.BarracksManager, "_load_background", lambda self: setattr(self, "background", None))
+    monkeypatch.setattr(
+        barracks.BarracksManager, "_load_background", lambda self: setattr(self, "background", None)
+    )
 
     manager = barracks.BarracksManager(presenter, player)
     assert manager._berserker_duel_available() is False
@@ -247,9 +266,13 @@ def test_berserker_duel_awakes_ring_after_successful_bout(monkeypatch):
     player.cls = SimpleNamespace(name="Berserker")
     player.class_ring_awakening = class_rings.default_state()
     player.equipment["Ring"] = items.ClassRing()
-    player.awaken_class_ring = lambda class_name=None, **kwargs: class_rings.activate(player, class_name, **kwargs)
+    player.awaken_class_ring = lambda class_name=None, **kwargs: class_rings.activate(
+        player, class_name, **kwargs
+    )
     presenter = _make_presenter()
-    monkeypatch.setattr(barracks.BarracksManager, "_load_background", lambda self: setattr(self, "background", None))
+    monkeypatch.setattr(
+        barracks.BarracksManager, "_load_background", lambda self: setattr(self, "background", None)
+    )
     monkeypatch.setattr("src.ui_pygame.gui.barracks.ConfirmationPopup", FakePopup)
 
     manager = barracks.BarracksManager(presenter, player)
@@ -267,7 +290,9 @@ def test_legacy_barracks_trials_require_visible_dormant_class_ring(monkeypatch):
     player.class_ring_awakening = class_rings.default_state()
     player.inventory = {"Class Ring": [items.ClassRing()]}
     presenter = _make_presenter()
-    monkeypatch.setattr(barracks.BarracksManager, "_load_background", lambda self: setattr(self, "background", None))
+    monkeypatch.setattr(
+        barracks.BarracksManager, "_load_background", lambda self: setattr(self, "background", None)
+    )
 
     manager = barracks.BarracksManager(presenter, player)
     assert manager._legacy_barracks_trial_label() == "Guard The Fall"
@@ -287,7 +312,9 @@ def test_legacy_barracks_trials_require_visible_dormant_class_ring(monkeypatch):
 def test_dragoon_and_stalwart_trials_awaken_ring_after_success(monkeypatch):
     FakePopup.messages = []
     presenter = _make_presenter()
-    monkeypatch.setattr(barracks.BarracksManager, "_load_background", lambda self: setattr(self, "background", None))
+    monkeypatch.setattr(
+        barracks.BarracksManager, "_load_background", lambda self: setattr(self, "background", None)
+    )
     monkeypatch.setattr("src.ui_pygame.gui.barracks.ConfirmationPopup", FakePopup)
 
     for class_name, expected_mod, expected_label in (
@@ -298,10 +325,12 @@ def test_dragoon_and_stalwart_trials_awaken_ring_after_success(monkeypatch):
         player.cls = SimpleNamespace(name=class_name)
         player.class_ring_awakening = class_rings.default_state()
         player.equipment["Ring"] = items.ClassRing()
-        player.awaken_class_ring = lambda class_name=None, _player=player, **kwargs: class_rings.activate(
-            _player,
-            class_name,
-            **kwargs,
+        player.awaken_class_ring = (
+            lambda class_name=None, _player=player, **kwargs: class_rings.activate(
+                _player,
+                class_name,
+                **kwargs,
+            )
         )
         manager = barracks.BarracksManager(presenter, player)
         monkeypatch.setattr(manager, "_run_legacy_barracks_trial", lambda: True)
@@ -318,10 +347,18 @@ def test_manage_storage_store_and_retrieve(monkeypatch):
     FakeQuantityPopup.responses = [2, 1]
     FakeQuantityPopup.created = []
     player = _make_player()
-    player.inventory = {"Potion": [SimpleNamespace(name="Potion"), SimpleNamespace(name="Potion"), SimpleNamespace(name="Potion")]}
+    player.inventory = {
+        "Potion": [
+            SimpleNamespace(name="Potion"),
+            SimpleNamespace(name="Potion"),
+            SimpleNamespace(name="Potion"),
+        ]
+    }
     player.storage = {"Elixir": [SimpleNamespace(name="Elixir"), SimpleNamespace(name="Elixir")]}
     presenter = _make_presenter()
-    monkeypatch.setattr(barracks.BarracksManager, "_load_background", lambda self: setattr(self, "background", None))
+    monkeypatch.setattr(
+        barracks.BarracksManager, "_load_background", lambda self: setattr(self, "background", None)
+    )
     monkeypatch.setattr("src.ui_pygame.gui.barracks.ConfirmationPopup", FakePopup)
     monkeypatch.setattr("src.ui_pygame.gui.confirmation_popup.QuantityPopup", FakeQuantityPopup)
     manager = barracks.BarracksManager(presenter, player)
@@ -368,7 +405,9 @@ def test_store_and_retrieve_empty_states(monkeypatch):
     FakePopup.calls = []
     player = _make_player()
     presenter = _make_presenter()
-    monkeypatch.setattr(barracks.BarracksManager, "_load_background", lambda self: setattr(self, "background", None))
+    monkeypatch.setattr(
+        barracks.BarracksManager, "_load_background", lambda self: setattr(self, "background", None)
+    )
     monkeypatch.setattr("src.ui_pygame.gui.barracks.ConfirmationPopup", FakePopup)
     manager = barracks.BarracksManager(presenter, player)
 

@@ -23,7 +23,7 @@ intermediate ruleset.
   combatants.
 - Verify ordinary, charged, delayed, forced, reaction, companion, summon, Totem,
   item, and flee actions under the revised timing model.
-- Verify save/load across every migrated gameplay or UI state.
+- Verify current-save round trips across every changed gameplay or UI state.
 
 ## Class Rings And Kit Evidence
 
@@ -42,7 +42,7 @@ intermediate ruleset.
 - Verify all five base lineages and representative promotion paths under the
   final progression contract.
 - Verify staged spending, permanent closures, promotion previews, retained
-  abilities, equipment routing, and old-save ownership.
+  abilities, equipment routing, and current-save ownership.
 - Confirm active, passive, reaction, and unavailable abilities appear only on
   their intended final surfaces.
 - Confirm class resources remain readable at empty, building, ready, spent,

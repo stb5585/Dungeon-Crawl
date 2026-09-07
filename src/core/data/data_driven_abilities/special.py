@@ -143,6 +143,7 @@ class DataDrivenCustomSpell(Spell):
 
         return msg if msg else "The spell has no effect.\n"
 
+
 class DataDrivenChargingSkill(Skill):
     """
     A skill with a charging phase before execution.
@@ -259,9 +260,7 @@ class DataDrivenChargingSkill(Skill):
 
             self.charge_turns -= 1
             if self.charge_turns <= 0:
-                return self._execute(
-                    user, self.charge_target or target, cover
-                )
+                return self._execute(user, self.charge_target or target, cover)
             turns_left = self.charge_turns
             return (
                 f"{user.name} continues charging... "

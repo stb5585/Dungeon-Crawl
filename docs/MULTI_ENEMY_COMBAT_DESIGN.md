@@ -63,7 +63,7 @@ existing one-enemy game reliable.
   rewards, logs, and presentation state.
 - Keep gameplay authority in the UI-agnostic `BattleEngine`.
 - Keep targeting rules in the engine rather than the Pygame frontend.
-- Extend encounter generation, save compatibility, analytics, and balance
+- Extend encounter generation, current-save persistence, analytics, and balance
   tooling before multi-enemy encounters become common.
 - Provide a safe rollout that begins with curated, opt-in two-enemy encounters.
 
@@ -521,10 +521,10 @@ numeric tuning:
 A two-enemy fight must not be represented as an ordinary PvP-style
 `winner`/`loser` pair in `CombatStats`.
 
-## Save Compatibility
+## Current-Save Persistence
 
-Current saves may contain one tile `enemy_state`. They must continue to load as
-a singleton encounter.
+The current serializer may contain one tile `enemy_state`; it loads as a
+singleton encounter.
 
 If encounters need to persist outside active combat, add a versioned
 `encounter_state` with:
@@ -535,9 +535,10 @@ If encounters need to persist outside active combat, add a versioned
 - combatant/display identity sufficient to restore duplicates;
 - resolution state for members already removed, if partial encounters persist.
 
-For one release, singleton writers may continue writing `enemy_state`, or write
-both forms if the save-size and migration policy permits it. Load precedence
-must be explicit when both keys exist.
+During a transition, singleton writers may continue writing `enemy_state`, or
+write both forms if the current-save contract requires it. Load precedence must
+be explicit when both keys exist. Because saves are pre-release development
+artifacts, an approved implementation may instead require a local-save reset.
 
 V1 should avoid persisting active turn order, selected target, temporary
 combat-only IDs, or charged actions unless mid-combat save/resume is approved.
@@ -581,9 +582,8 @@ The foundational ability-taxonomy refactor may relocate metadata, but it must
 preserve this ownership rule.
 
 Changing only an ability's target scope should not require a progression node
-ID migration. Renaming or replacing a version-5 node/ability identity remains
-subject to the existing save and ownership rules in
-`ABILITY_TREE_DESIGN.md`.
+ID change. Renaming or replacing a node/ability identity remains subject to
+the current-save and reset rules in `ABILITY_TREE_DESIGN.md`.
 
 ## Implemented Rollout Record
 
@@ -695,12 +695,13 @@ Sight the presentation omits exact resources and approximate health labels.
 ### Slice 5 - Outcomes, Save State, And Simulation
 
 - Settle ledger-based XP, loot, quest, bounty, class-kit, and removal results.
-- Add the approved encounter serializer/migration if persistent pairs require
-  it.
+- Add the approved encounter serializer changes if persistent pairs require
+  them.
 - Extend simulator, battle reports, debug override, and balance suite.
 - Run singleton regression and paired encounter baselines.
 
-Exit condition: no duplicate encounter rewards/cleanup and old saves load.
+Exit condition: no duplicate encounter rewards/cleanup and the current save
+shape round-trips, or the slice documents a required local-save reset.
 
 Implemented. Multi-enemy outcomes settle immutable per-member summaries in
 authored order and cache the final outcome to prevent duplicate rewards.
@@ -808,8 +809,9 @@ rollout remains gated where noted.
     focus, or action target as appropriate.
 
 12. **Persistence:** Encounters and their IDs, order, focus, ledger, and
-    charges remain runtime-only. Continue reading and writing legacy
-    `enemy_state`; do not add `encounter_state` or mid-combat save/resume.
+    charges remain runtime-only. Continue reading and writing the current
+    singleton `enemy_state`; do not add `encounter_state` or mid-combat
+    save/resume.
 
 ## Approved Content And Balance Decisions
 
@@ -865,7 +867,8 @@ The initial multi-enemy release is complete only when:
   cadence;
 - mixed kill/removal encounters resolve correctly;
 - Pygame makes focus, active actor, HP/status, and duplicate identity legible;
-- old singleton saves load without data loss;
+- current singleton saves load without data loss, or the implementation
+  explicitly requires a local reset;
 - debug selection can force a specific pair;
 - simulator and logger output distinguish duplicate combatants;
 - scripted bosses and trials remain singleton and retain their existing

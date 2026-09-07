@@ -2,12 +2,8 @@
 
 import pytest
 
-from src.core import abilities
-from src.core import curses
-from src.core import enemies
-from src.core.classes import demonologist
-from src.core.classes import mage_mechanics
-from src.core.classes import warlock
+from src.core import abilities, curses, enemies
+from src.core.classes import demonologist, mage_mechanics, warlock
 from src.core.combat import CombatEncounter
 from src.core.combat.battle_engine.outcomes import BattleOutcomeMixin
 from src.core.combat.combat_result import CombatResult
@@ -47,7 +43,12 @@ def test_warlock_tree_has_authored_six_column_paths():
 
     assert len(tree.nodes) == 31
     assert tree.branches == (
-        "Shadow Control", "Draining", "Umbral Offense", "Curses", "Corruption", "Familiar"
+        "Shadow Control",
+        "Draining",
+        "Umbral Offense",
+        "Curses",
+        "Corruption",
+        "Familiar",
     )
     assert nodes["Sleep"].position == (0, 1)
     assert nodes["Doom"].prerequisites == (nodes["Terrify"].id,)
@@ -110,9 +111,7 @@ def test_shadowcaster_requires_umbral_offense_and_one_control_path():
     state.purchased_node_ids.update(closure(nodes["Doom"].id))
     assert promotion_state() == NodeState.AVAILABLE
 
-    state.purchased_node_ids = (
-        closure(nodes["Doom"].id) | closure(nodes["Mana Drain"].id)
-    )
+    state.purchased_node_ids = closure(nodes["Doom"].id) | closure(nodes["Mana Drain"].id)
     assert promotion_state() == NodeState.BLOCKED
 
 

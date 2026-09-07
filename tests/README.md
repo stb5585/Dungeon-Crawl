@@ -5,8 +5,8 @@
 This directory contains the automated regression suite for The Forsaken Tenet.
 
 Current snapshot:
-- The August 2, 2026 Pygame-only validation passed the full suite plus the
-  final launcher/packaging regressions, for `2516` current tests.
+- The authoritative test count and pass/fail status come from the latest CI
+  run rather than a copied total in this document.
 - Coverage is measured on demand rather than copied here as a stale percentage
 - The suite covers core combat/content systems, integration and persistence
   flows, pygame-facing UI helpers, dungeon rendering/math, and
@@ -46,7 +46,11 @@ Run a specific test:
 
 High-coverage areas:
 - `test_data_driven_abilities.py`: migrated abilities and effect behaviors
-- `core/test_character.py` / `integration/test_battle.py`: character logic, battle engine flow, gameplay statistics, save/load compatibility, and battle logging
+- `core/test_character.py` / `integration/test_battle.py`: character logic, battle
+  engine flow, gameplay statistics, current-save round trips, and battle logging
+- `integration/test_save_system_manager.py`: current-save round trips, atomic
+  persistence behavior, metadata, and invalid-file handling
+- `test_distribution.py`: runtime path and frozen-build configuration contracts
 - Dungeon renderer/math tests:
   - `tests/ui_pygame/test_dungeon_renderer_smoke.py`
   - `tests/ui_pygame/test_dungeon_geometry.py`
@@ -92,9 +96,20 @@ Recent test-debt cleanup completed:
 - The most active regression surfaces are the shared core systems, the Pygame
   helper/presenter layer, and headless combat and balance tooling.
 
-## Next Useful Additions
+## Quality Gates
 
-- broader end-to-end `SaveManager` file round-trip tests
-- more quest completion flow coverage
-- more event-bus infrastructure assertions where behavior matters
-- continued cleanup of low-value legacy test helpers as they are encountered
+CI reports coverage for `src`, checks formatting and import order, applies the
+focused Ruff baseline configured in `pyproject.toml`, and runs `compileall` for
+`src`. The incremental strict mypy baseline is:
+
+```bash
+./.venv/bin/mypy --strict --follow-imports=skip \
+  src/paths.py \
+  tools/build_distribution.py
+```
+
+`--follow-imports=skip` keeps unrelated legacy annotation debt from entering
+the strict set through imports. Expand Ruff and strict mypy coverage one
+package at a time after that package passes; do not disable useful rules
+globally to absorb the existing backlog. Frozen artifact builds are
+intentionally limited to manual dispatches and releases.

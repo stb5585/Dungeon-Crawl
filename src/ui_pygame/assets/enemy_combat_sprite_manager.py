@@ -12,7 +12,6 @@ import pygame
 
 from src.paths import PYGAME_ASSETS_DIR
 
-
 logger = logging.getLogger(__name__)
 
 ENEMY_COMBAT_SPRITE_ROOT = PYGAME_ASSETS_DIR / "enemy_combat_sprites"
@@ -110,8 +109,12 @@ class EnemyCombatSpriteManager:
         dungeon_scale_map_path: Path | None = None,
     ) -> None:
         self.sprite_root = Path(sprite_root or ENEMY_COMBAT_SPRITE_ROOT)
-        self.sprite_map_path = Path(sprite_map_path or self.sprite_root / "enemy_combat_sprite_map.json")
-        self.scale_map_path = Path(scale_map_path or self.sprite_root / "enemy_combat_sprite_scale.json")
+        self.sprite_map_path = Path(
+            sprite_map_path or self.sprite_root / "enemy_combat_sprite_map.json"
+        )
+        self.scale_map_path = Path(
+            scale_map_path or self.sprite_root / "enemy_combat_sprite_scale.json"
+        )
         self.dungeon_scale_map_path = Path(
             dungeon_scale_map_path or self.sprite_root / "enemy_dungeon_sprite_scale.json"
         )
@@ -136,7 +139,9 @@ class EnemyCombatSpriteManager:
         try:
             data = json.loads(self.sprite_map_path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError) as exc:
-            logger.warning("Could not load enemy combat sprite map %s: %s", self.sprite_map_path, exc)
+            logger.warning(
+                "Could not load enemy combat sprite map %s: %s", self.sprite_map_path, exc
+            )
             return
         self.sprite_map = {str(name): str(key) for name, key in data.items()}
 
@@ -146,10 +151,14 @@ class EnemyCombatSpriteManager:
         try:
             data = json.loads(self.scale_map_path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError) as exc:
-            logger.warning("Could not load enemy combat sprite scale map %s: %s", self.scale_map_path, exc)
+            logger.warning(
+                "Could not load enemy combat sprite scale map %s: %s", self.scale_map_path, exc
+            )
             return
         if not isinstance(data, dict):
-            logger.warning("Enemy combat sprite scale map must be an object: %s", self.scale_map_path)
+            logger.warning(
+                "Enemy combat sprite scale map must be an object: %s", self.scale_map_path
+            )
             return
 
         scales: dict[str, float] = {}
@@ -248,10 +257,14 @@ class EnemyCombatSpriteManager:
     def get_scaled_sprite(self, enemy: Any, target_size: tuple[int, int]) -> pygame.Surface:
         return self.get_scaled_sprite_by_key(self.get_sprite_key_for_enemy(enemy), target_size)
 
-    def get_scaled_sprite_by_name(self, enemy_name: str, target_size: tuple[int, int]) -> pygame.Surface:
+    def get_scaled_sprite_by_name(
+        self, enemy_name: str, target_size: tuple[int, int]
+    ) -> pygame.Surface:
         return self.get_scaled_sprite_by_key(self.get_sprite_key_for_enemy(enemy_name), target_size)
 
-    def get_scaled_sprite_by_key(self, sprite_key: str, target_size: tuple[int, int]) -> pygame.Surface:
+    def get_scaled_sprite_by_key(
+        self, sprite_key: str, target_size: tuple[int, int]
+    ) -> pygame.Surface:
         key = self._valid_key(sprite_key)
         target = (max(1, int(target_size[0])), max(1, int(target_size[1])))
         cache_key = (key, target)
@@ -303,7 +316,9 @@ class EnemyCombatSpriteManager:
             if class_key in self.available_keys:
                 return class_key
 
-            archetype = self._attribute_key(enemy, "combat_sprite_archetype", "render_archetype", "archetype")
+            archetype = self._attribute_key(
+                enemy, "combat_sprite_archetype", "render_archetype", "archetype"
+            )
             if archetype:
                 return self._valid_key(archetype, prefer_boss=self._is_boss(enemy))
 
@@ -313,7 +328,9 @@ class EnemyCombatSpriteManager:
 
             category = self._attribute_key(enemy, "enemy_typ", "category", "typ")
             if category in self.CATEGORY_FALLBACKS:
-                return self._valid_key(self.CATEGORY_FALLBACKS[category], prefer_boss=self._is_boss(enemy))
+                return self._valid_key(
+                    self.CATEGORY_FALLBACKS[category], prefer_boss=self._is_boss(enemy)
+                )
 
             if self._is_boss(enemy):
                 return self._valid_key("boss")
@@ -382,7 +399,9 @@ class EnemyCombatSpriteManager:
             return self._fallback_surface
         surface = pygame.Surface((384, 384), pygame.SRCALPHA)
         pygame.draw.ellipse(surface, (34, 31, 36, 235), pygame.Rect(128, 84, 128, 216))
-        pygame.draw.polygon(surface, (74, 63, 50, 245), [(152, 138), (232, 138), (250, 270), (134, 270)])
+        pygame.draw.polygon(
+            surface, (74, 63, 50, 245), [(152, 138), (232, 138), (250, 270), (134, 270)]
+        )
         pygame.draw.circle(surface, (210, 172, 88, 255), (168, 154), 7)
         pygame.draw.circle(surface, (210, 172, 88, 255), (216, 154), 7)
         self._fallback_surface = surface

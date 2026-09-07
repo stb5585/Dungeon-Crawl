@@ -11,7 +11,9 @@ if TYPE_CHECKING:
 
 class CharacterEventsMixin:
     def abilities_suppressed(self) -> bool:
-        return bool(self.status_effects["Silence"].active or getattr(self, "anti_magic_active", False))
+        return bool(
+            self.status_effects["Silence"].active or getattr(self, "anti_magic_active", False)
+        )
 
     def _emit_damage_event(
         self,
@@ -43,9 +45,8 @@ class CharacterEventsMixin:
                 if target.war_turtle_shell_health <= 0:
                     target.turtle = False
                     target.war_turtle_shell_health = 0
-            if (
-                damage_type == "Holy"
-                and "Dazed or Confused" in getattr(self, "spellbook", {}).get("Skills", {})
+            if damage_type == "Holy" and "Dazed or Confused" in getattr(self, "spellbook", {}).get(
+                "Skills", {}
             ):
                 from ..progression import has_talent
 
@@ -103,10 +104,12 @@ class CharacterEventsMixin:
 
                 reduced_damage = class_rings.reduce_major_hit(target, damage)
                 if reduced_damage < damage:
-                    target.health.current = min(target.health.max, target.health.current + (damage - reduced_damage))
+                    target.health.current = min(
+                        target.health.max, target.health.current + (damage - reduced_damage)
+                    )
                     damage = reduced_damage
-                shielded_damage, shield_message = (
-                    class_rings.absorb_aerial_supremacy_shield(target, damage)
+                shielded_damage, shield_message = class_rings.absorb_aerial_supremacy_shield(
+                    target, damage
                 )
                 if shielded_damage < damage:
                     target.health.current = min(
@@ -163,7 +166,8 @@ class CharacterEventsMixin:
             except Exception:
                 pass
         try:
-            from ..events.event_bus import get_event_bus, create_combat_event, EventType
+            from ..events.event_bus import EventType, create_combat_event, get_event_bus
+
             event_bus = get_event_bus()
             event_data = {
                 "damage": damage,
@@ -181,12 +185,14 @@ class CharacterEventsMixin:
                 "item_name": item_name,
             }
             event_data.update({key: value for key, value in optional_payload.items() if value})
-            event_bus.emit(create_combat_event(
-                EventType.DAMAGE_DEALT if damage > 0 else EventType.MISS,
-                actor=self,
-                target=target,
-                **event_data,
-            ))
+            event_bus.emit(
+                create_combat_event(
+                    EventType.DAMAGE_DEALT if damage > 0 else EventType.MISS,
+                    actor=self,
+                    target=target,
+                    **event_data,
+                )
+            )
         except Exception:
             pass
 
@@ -203,7 +209,9 @@ class CharacterEventsMixin:
                 and "Restorative Barrier" in skills
                 and not str(source).lower().startswith("regen")
             ):
-                self.restorative_barrier = int(getattr(self, "restorative_barrier", 0) or 0) + int(amount)
+                self.restorative_barrier = int(getattr(self, "restorative_barrier", 0) or 0) + int(
+                    amount
+                )
             try:
                 from ..classes import ability_mechanics
 
@@ -216,34 +224,48 @@ class CharacterEventsMixin:
                 echo = class_rings.shared_recovery_amount(self, amount)
                 familiar = getattr(self, "familiar", None)
                 if echo and familiar is not None and familiar.is_alive():
-                    familiar.health.current = min(familiar.health.max, familiar.health.current + echo)
+                    familiar.health.current = min(
+                        familiar.health.max, familiar.health.current + echo
+                    )
             except Exception:
                 pass
             try:
-                if getattr(self, "power_up", False) and "Eternal Conduit" in getattr(self, "spellbook", {}).get("Skills", {}):
+                if getattr(self, "power_up", False) and "Eternal Conduit" in getattr(
+                    self, "spellbook", {}
+                ).get("Skills", {}):
                     echo = max(1, int(amount * 0.25))
                     for summon in getattr(self, "summons", {}).values():
                         if summon.is_alive():
-                            summon.health.current = min(summon.health.max, summon.health.current + echo)
+                            summon.health.current = min(
+                                summon.health.max, summon.health.current + echo
+                            )
                     familiar = getattr(self, "familiar", None)
                     if familiar is not None and familiar.is_alive():
-                        familiar.health.current = min(familiar.health.max, familiar.health.current + echo)
+                        familiar.health.current = min(
+                            familiar.health.max, familiar.health.current + echo
+                        )
             except Exception:
                 pass
         try:
-            from ..events.event_bus import get_event_bus, create_combat_event, EventType
+            from ..events.event_bus import EventType, create_combat_event, get_event_bus
+
             event_bus = get_event_bus()
-            event_bus.emit(create_combat_event(
-                EventType.HEALING_DONE,
-                actor=self,
-                target=self,
-                amount=amount,
-                source=source
-            ))
+            event_bus.emit(
+                create_combat_event(
+                    EventType.HEALING_DONE, actor=self, target=self, amount=amount, source=source
+                )
+            )
         except Exception:
             pass
 
-    def _emit_status_event(self, target: Character, status_name: str, applied: bool, duration: int = 0, source: str = "Unknown") -> None:
+    def _emit_status_event(
+        self,
+        target: Character,
+        status_name: str,
+        applied: bool,
+        duration: int = 0,
+        source: str = "Unknown",
+    ) -> None:
         """Helper to emit status effect events."""
         if applied:
             try:
@@ -258,6 +280,7 @@ class CharacterEventsMixin:
                 pass
             try:
                 from ..classes import archdruid
+
                 archdruid.record_status_applied(self, target, status_name)
             except Exception:
                 pass
@@ -276,16 +299,19 @@ class CharacterEventsMixin:
             except Exception:
                 pass
         try:
-            from ..events.event_bus import get_event_bus, create_combat_event, EventType
+            from ..events.event_bus import EventType, create_combat_event, get_event_bus
+
             event_bus = get_event_bus()
-            event_bus.emit(create_combat_event(
-                EventType.STATUS_APPLIED if applied else EventType.STATUS_REMOVED,
-                actor=self,
-                target=target,
-                status_name=status_name,
-                duration=duration,
-                source=source
-            ))
+            event_bus.emit(
+                create_combat_event(
+                    EventType.STATUS_APPLIED if applied else EventType.STATUS_REMOVED,
+                    actor=self,
+                    target=target,
+                    status_name=status_name,
+                    duration=duration,
+                    source=source,
+                )
+            )
         except Exception:
             pass
 
@@ -300,22 +326,35 @@ class CharacterEventsMixin:
         """Emit a status tick (damage/heal) event for analytics/tests."""
         if kind == "damage" and amount and amount > 0 and hasattr(target, "record_damage_taken"):
             target.record_damage_taken(amount)
-        if kind == "damage" and amount and amount > 0 and hasattr(target, "record_archdruid_damage_taken"):
+        if (
+            kind == "damage"
+            and amount
+            and amount > 0
+            and hasattr(target, "record_archdruid_damage_taken")
+        ):
             damage_type = "Poison" if status_name == "Poison" else status_name
             target.record_archdruid_damage_taken(amount, damage_type)
-        if kind == "healing" and amount and amount > 0 and hasattr(self, "record_archdruid_healing_done"):
+        if (
+            kind == "healing"
+            and amount
+            and amount > 0
+            and hasattr(self, "record_archdruid_healing_done")
+        ):
             self.record_archdruid_healing_done(amount)
         try:
-            from ..events.event_bus import get_event_bus, create_combat_event, EventType
+            from ..events.event_bus import EventType, create_combat_event, get_event_bus
+
             event_bus = get_event_bus()
-            event_bus.emit(create_combat_event(
-                EventType.STATUS_TICK,
-                actor=self,
-                target=target,
-                status_name=status_name,
-                amount=amount,
-                kind=kind,
-                source=source,
-            ))
+            event_bus.emit(
+                create_combat_event(
+                    EventType.STATUS_TICK,
+                    actor=self,
+                    target=target,
+                    status_name=status_name,
+                    amount=amount,
+                    kind=kind,
+                    source=source,
+                )
+            )
         except Exception:
             pass

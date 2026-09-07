@@ -1,0 +1,50 @@
+Class,Stage,Weapon,OffHand,Armor,Helmet
+Arcane Trickster,Second Promotion,Dagger; Sword,Dagger; Tome,Cloth; Light,Cloth; Light
+Archbishop,Second Promotion,Club; Staff,Tome,Cloth,Cloth
+Archdruid,Second Promotion,Dagger; Staff,Tome,Cloth,Cloth
+Assassin,First Promotion,Fist; Dagger,Fist; Dagger,Light,Light
+Astromancer,Second Promotion,Dagger; Staff,Rod,Cloth,Cloth
+Bard,First Promotion,Dagger; Sword; Staff,Musical Instrument,Cloth; Light,Cloth; Light
+Beast Master,Second Promotion,Dagger; Sword; Longsword; Battle Axe; Polearm,Dagger; Crossbow,Light,Light
+Berserker,Second Promotion,Longsword; Battle Axe; Polearm; Hammer,Longsword; Battle Axe; Polearm; Hammer,Light,Light
+Cleric,First Promotion,Club; Staff,Shield,Light; Medium,Light; Medium
+Conjurer,First Promotion,Dagger; Staff,Tome,Cloth,Cloth
+Crusader,Second Promotion,Sword; Club; Longsword; Hammer,Shield,Medium; Heavy,Medium; Heavy
+Demonologist,Second Promotion,Dagger; Staff,Tome,Cloth,Cloth
+Diviner,First Promotion,Dagger; Staff,Rod,Cloth,Cloth
+Dragoon,Second Promotion,Sword; Polearm,Shield,Heavy,Heavy
+Druid,First Promotion,Dagger; Club; Polearm; Hammer; Staff,Tome,Cloth; Light,Cloth; Light
+Footpad,Base,Fist; Dagger; Sword; Club,Fist; Dagger,Light,Light
+Grandmaster of Arms,Second Promotion,Fist; Dagger; Sword; Club; Longsword; Battle Axe; Polearm; Hammer,,Light; Medium,Light; Medium
+Healer,Base,Club; Staff,Shield; Tome,Cloth; Light,Cloth; Light
+Hierophant,Second Promotion,Club; Staff,Shield,Cloth; Light,Cloth; Light
+Inquisitor,First Promotion,Dagger; Sword; Club,Shield,Light; Medium,Light; Medium
+Knight Enchanter,Second Promotion,Dagger; Sword,Tome,Cloth; Light,Cloth; Light
+Lancer,First Promotion,Sword; Polearm,Shield,Medium; Heavy,Medium; Heavy
+Lycan,Second Promotion,Dagger; Club; Polearm; Hammer; Staff,Tome,Cloth; Light,Cloth; Light
+Mage,Base,Dagger; Staff,Tome,Cloth,Cloth
+Master Monk,Second Promotion,Fist; Staff,Fist,Light,Light
+Monk,First Promotion,Fist; Staff,Fist,Light,Light
+Ninja,Second Promotion,Fist; Dagger; Ninja Blade,Fist; Dagger; Ninja Blade,Light,Light
+Paladin,First Promotion,Sword; Club; Longsword; Hammer,Shield,Medium; Heavy,Medium; Heavy
+Pathfinder,Base,Dagger; Club; Polearm; Hammer; Staff,Shield; Tome,Cloth; Light; Medium,Cloth; Light; Medium
+Priest,First Promotion,Club; Staff,Tome,Cloth,Cloth
+Ranger,First Promotion,Dagger; Sword; Longsword; Battle Axe; Polearm,Dagger; Crossbow,Light; Medium,Light; Medium
+Rogue,Second Promotion,Fist; Dagger; Sword; Club,Fist; Dagger; Sword; Club,Light,Light
+Seeker,Second Promotion,Dagger; Sword; Club,Shield,Light; Medium,Light; Medium
+Sentinel,First Promotion,Fist; Sword; Club,Shield,Heavy,Heavy
+Shadowcaster,Second Promotion,Dagger; Staff,Tome,Cloth,Cloth
+Shaman,First Promotion,Fist; Dagger; Club; Staff,Fist; Shield,Light; Medium,Light; Medium
+Sorcerer,First Promotion,Dagger; Staff,Tome,Cloth,Cloth
+Soulcatcher,Second Promotion,Fist; Dagger; Club; Staff,Fist; Shield,Light; Medium,Light; Medium
+Spell Stealer,First Promotion,Dagger; Sword,Dagger; Tome,Cloth; Light,Cloth; Light
+Spellblade,First Promotion,Dagger; Sword,Tome,Cloth; Light,Cloth; Light
+Stalwart Defender,Second Promotion,Fist; Sword; Club,Shield,Heavy,Heavy
+Templar,Second Promotion,Club; Hammer,Shield,Light; Medium; Heavy,Light; Medium; Heavy
+Thaumaturgist,Second Promotion,Dagger; Staff,Tome,Cloth,Cloth
+Thief,First Promotion,Fist; Dagger; Sword; Club,Fist; Dagger,Light,Light
+Troubadour,Second Promotion,Dagger; Sword; Staff,Dagger; Musical Instrument,Cloth; Light,Cloth; Light
+Warlock,First Promotion,Dagger; Staff,Tome,Cloth,Cloth
+Warrior,Base,Dagger; Sword; Club; Longsword; Battle Axe; Hammer,Shield,Light; Medium; Heavy,Light; Medium; Heavy
+Weapon Master,First Promotion,Fist; Dagger; Sword; Club; Longsword; Battle Axe; Polearm; Hammer,,Light; Medium,Light; Medium
+Wizard,Second Promotion,Dagger; Staff,Tome,Cloth,Cloth

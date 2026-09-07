@@ -6,7 +6,6 @@ from src.core import character, map_tiles
 from src.core.classes import promotion_kits
 from src.core.data import data_driven_abilities
 
-
 MAP_TILE_MODULES = (
     map_tiles.rules,
     map_tiles.paths,

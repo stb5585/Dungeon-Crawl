@@ -55,7 +55,8 @@ The ordered planning sequence is:
 6. Decide whether dungeon resting belongs in the same gameplay revision.
 
 This order records dependencies, not pre-approval. Each phase must preserve
-stable IDs and save compatibility or include an explicit migration plan.
+stable IDs and the current save shape or explicitly require local development
+saves to be reset.
 
 ### First Implementation Target
 
@@ -110,7 +111,7 @@ The broad playtest milestone resumes when:
 
 1. combat timing, targeting, and multi-enemy scope are stable;
 2. the combat action interface and resource presentation are stable;
-3. save migrations for the milestone are complete;
+3. current save serialization and any required local-save reset are complete;
 4. focused regression suites pass; and
 5. the roadmap records the new baseline to test.
 
@@ -130,8 +131,8 @@ These are bounded follow-ups, not current priorities:
 
 | Area | Required before promotion | Owner |
 | --- | --- | --- |
-| Durability, identification, item modification, equipment actives, and rarity | State model, serializer, old-save migration, UI, economy, and balance contract. | [`EQUIPMENT_ITEMS_ECONOMY_DESIGN_GATES.md`](EQUIPMENT_ITEMS_ECONOMY_DESIGN_GATES.md) |
-| Harvesting, salvage, destructible dungeon features, and deeper Cambion rooms | Content beat, tile state, reward, persistence, and inert old-save behavior. | [`DUNGEON_WORLD_ENCOUNTER_DESIGN_GATES.md`](DUNGEON_WORLD_ENCOUNTER_DESIGN_GATES.md) |
+| Durability, identification, item modification, equipment actives, and rarity | State model, current serializer, local-save reset policy, UI, economy, and balance contract. | [`EQUIPMENT_ITEMS_ECONOMY_DESIGN_GATES.md`](EQUIPMENT_ITEMS_ECONOMY_DESIGN_GATES.md) |
+| Harvesting, salvage, destructible dungeon features, and deeper Cambion rooms | Content beat, tile state, reward, current persistence, and local-save reset policy. | [`DUNGEON_WORLD_ENCOUNTER_DESIGN_GATES.md`](DUNGEON_WORLD_ENCOUNTER_DESIGN_GATES.md) |
 | Broader class-kit systems | One track-specific trigger, state, UI, save, action-economy, and tuning spec. | [`CLASS_KIT_DESIGN_GATES.md`](CLASS_KIT_DESIGN_GATES.md) |
 | Guardian rooms, mini-bosses, deeper Reflection, and Vesperion tuning | Story trigger, failure/retry behavior, route compatibility, and balance target. | [`STORY_AND_ENDGAME_DESIGN.md`](STORY_AND_ENDGAME_DESIGN.md) |
 | Dynamic/spatial audio and final asset replacement | Concrete asset list, runtime routing, fallback, and settings behavior. | [`SOUND_SYSTEM.md`](SOUND_SYSTEM.md) |
@@ -162,8 +163,8 @@ findings using [`CLASS_KIT_EVIDENCE_NOTES.md`](CLASS_KIT_EVIDENCE_NOTES.md).
 2. `CHANGELOG.md` owns shipped history. Do not leave completed phase narratives
    in the active roadmap.
 3. Do not implement a `Spec Gate` by inference from a loose idea.
-4. Preserve stable ability, node, event, item, quest, and save identifiers unless
-   a migration is part of the approved slice.
+4. Preserve stable ability, node, event, item, quest, and current-save identifiers
+   unless the approved slice explicitly requires a local-save reset.
 5. Run focused tests for every changed system before broad validation.
 6. Update the owner document and roadmap in the same change when a gate is
    promoted, completed, or deferred.

@@ -43,7 +43,9 @@ def test_zone_geometry_has_expected_perspective_shapes():
 
     left_floor_bottom_width = zone.left_floor_open.points[1][0] - zone.left_floor_open.points[0][0]
     left_floor_top_width = zone.left_floor_open.points[2][0] - zone.left_floor_open.points[3][0]
-    right_floor_bottom_width = zone.right_floor_open.points[1][0] - zone.right_floor_open.points[0][0]
+    right_floor_bottom_width = (
+        zone.right_floor_open.points[1][0] - zone.right_floor_open.points[0][0]
+    )
     right_floor_top_width = zone.right_floor_open.points[2][0] - zone.right_floor_open.points[3][0]
 
     assert left_floor_bottom_width > left_floor_top_width

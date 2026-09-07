@@ -3,8 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from math import ceil, floor
 
-import pygame
 import numpy as np
+import pygame
 from PIL import Image, ImageChops, ImageDraw
 
 from .geometry import Quad
@@ -22,8 +22,12 @@ def _get_perspective_coeffs(
 ) -> tuple[float, ...]:
     matrix = []
     for source, target in zip(source_points, target_points):
-        matrix.append([target[0], target[1], 1, 0, 0, 0, -source[0] * target[0], -source[0] * target[1]])
-        matrix.append([0, 0, 0, target[0], target[1], 1, -source[1] * target[0], -source[1] * target[1]])
+        matrix.append(
+            [target[0], target[1], 1, 0, 0, 0, -source[0] * target[0], -source[0] * target[1]]
+        )
+        matrix.append(
+            [0, 0, 0, target[0], target[1], 1, -source[1] * target[0], -source[1] * target[1]]
+        )
 
     a_rows = []
     b_rows = []
@@ -69,7 +73,9 @@ def project_texture_to_quad(
     except np.linalg.LinAlgError:
         # Rounded screen-space quads can become numerically singular at extreme
         # slot widths. Returning a transparent surface avoids aborting the frame.
-        return ProjectedSurface(surface=pygame.Surface((out_w, out_h), pygame.SRCALPHA), topleft=(min_x, min_y))
+        return ProjectedSurface(
+            surface=pygame.Surface((out_w, out_h), pygame.SRCALPHA), topleft=(min_x, min_y)
+        )
 
     transformed = pil_image.transform(
         (out_w, out_h),

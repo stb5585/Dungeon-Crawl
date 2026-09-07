@@ -26,44 +26,51 @@ from .state import (
     ensure_state,
 )
 
+MARTIAL_KI_ACTIONS = frozenset(
+    {
+        "Double Strike",
+        "Leg Sweep",
+        "True Strike",
+        "Uppercut",
+        "Headbutt",
+        "Hyakuretsukyaku",
+        "Triple Strike",
+        "Spinning Back Elbow",
+        "Suplex",
+        "Hadouken",
+    }
+)
 
-MARTIAL_KI_ACTIONS = frozenset({
-    "Double Strike",
-    "Leg Sweep",
-    "True Strike",
-    "Uppercut",
-    "Headbutt",
-    "Hyakuretsukyaku",
-    "Triple Strike",
-    "Spinning Back Elbow",
-    "Suplex",
-    "Hadouken",
-})
-
-RISKY_LUCK_ACTIONS = frozenset({
-    "Steal",
-    "Mug",
-    "Gold Toss",
-    "Slot Machine",
-    "Sneak Attack",
-    "Pocket Sand",
-    "Kidney Punch",
-    "Sleeping Powder",
-    "Pilfering Strike",
-    "Dirty Trick",
-})
-STATUS_LUCK_ACTIONS = frozenset({
-    "Pocket Sand",
-    "Kidney Punch",
-    "Sleeping Powder",
-})
-KI_SPEND_ABILITIES = frozenset({
-    "Chi Heal",
-    "Leg Sweep",
-    "Hyakuretsukyaku",
-    "Suplex",
-    "Hadouken",
-})
+RISKY_LUCK_ACTIONS = frozenset(
+    {
+        "Steal",
+        "Mug",
+        "Gold Toss",
+        "Slot Machine",
+        "Sneak Attack",
+        "Pocket Sand",
+        "Kidney Punch",
+        "Sleeping Powder",
+        "Pilfering Strike",
+        "Dirty Trick",
+    }
+)
+STATUS_LUCK_ACTIONS = frozenset(
+    {
+        "Pocket Sand",
+        "Kidney Punch",
+        "Sleeping Powder",
+    }
+)
+KI_SPEND_ABILITIES = frozenset(
+    {
+        "Chi Heal",
+        "Leg Sweep",
+        "Hyakuretsukyaku",
+        "Suplex",
+        "Hadouken",
+    }
+)
 
 HOSTILE_STATUS_GROUPS = ("status_effects", "physical_effects")
 
@@ -316,9 +323,7 @@ def resolve_misfortune_payoff(
         scaled_detail = ""
         extra = getattr(result, "extra", {}) if result is not None else {}
         stolen_gold = (
-            max(0, int(extra.get("stolen_gold", 0) or 0))
-            if isinstance(extra, dict)
-            else 0
+            max(0, int(extra.get("stolen_gold", 0) or 0)) if isinstance(extra, dict) else 0
         )
         if target is not None and stolen_gold:
             gold_bonus = min(
@@ -395,9 +400,7 @@ def cheat_death(character: Any) -> str:
     if not success:
         return "Cheat Death fails to find a way out.\n"
     state["misfortune"] = 0
-    state["jinx_turns"] = (
-        1 if has_thief_talent(character, "rogue.break-the-jinx") else 2
-    )
+    state["jinx_turns"] = 1 if has_thief_talent(character, "rogue.break-the-jinx") else 2
     character.health.current = 1
     msg = "Loaded Dice turns the failed save.\n" if loaded_dice else ""
     if misfortune > 0:
@@ -434,14 +437,16 @@ def apply_death_mark(character: Any, target: Any, reason: str = "setup") -> str:
     return f"{target.name} gains a Death Mark from {reason} ({after}/{cap}).\n"
 
 
-DEATH_MARK_SETUP_ABILITIES = frozenset({
-    "Backstab",
-    "Sneak Attack",
-    "Momentum",
-    "Kidney Punch",
-    "Disembowel",
-    "Marked Shuriken",
-})
+DEATH_MARK_SETUP_ABILITIES = frozenset(
+    {
+        "Backstab",
+        "Sneak Attack",
+        "Momentum",
+        "Kidney Punch",
+        "Disembowel",
+        "Marked Shuriken",
+    }
+)
 DEATH_MARK_FINISHERS = frozenset({"Deathblow", "Thousand Cuts", "Death Sentence"})
 DEATH_MARK_ACTION_REGISTRY = {
     **{name: "setup" for name in DEATH_MARK_SETUP_ABILITIES},
@@ -635,17 +640,21 @@ def add_revelation(character: Any, target: Any, amount: int = 1, reason: str = "
     return f"{character.name} gains Revelation on {target.name} from {reason} ({after}/{cap}).\n"
 
 
-REVELATION_PRECISION_ACTIONS = frozenset({
-    "Piercing Strike",
-    "True Strike",
-    "True Piercing Strike",
-})
-INVESTIGATION_SETUP_ACTIONS = frozenset({
-    "Silence",
-    "Dispel",
-    "Enfeeble",
-    "Weaken Mind",
-})
+REVELATION_PRECISION_ACTIONS = frozenset(
+    {
+        "Piercing Strike",
+        "True Strike",
+        "True Piercing Strike",
+    }
+)
+INVESTIGATION_SETUP_ACTIONS = frozenset(
+    {
+        "Silence",
+        "Dispel",
+        "Enfeeble",
+        "Weaken Mind",
+    }
+)
 
 
 def _has_track_talent(character: Any, key: str) -> bool:
@@ -699,23 +708,21 @@ def prepare_revelation_payoff(
         return 0.0, 1.0, ""
     stacks = revelation_stacks(character, target)
     studied_accuracy = (
-        0.10
-        if action == "Exploit Weakness" and case_progress(character, target) >= 50
-        else 0.0
+        0.10 if action == "Exploit Weakness" and case_progress(character, target) >= 50 else 0.0
     )
     if stacks <= 0:
-        return studied_accuracy, 1.0, (
-            f"{character.name}'s Weakness Brief steadies the exploit.\n"
-            if studied_accuracy
-            else ""
+        return (
+            studied_accuracy,
+            1.0,
+            (
+                f"{character.name}'s Weakness Brief steadies the exploit.\n"
+                if studied_accuracy
+                else ""
+            ),
         )
     mapping = state.setdefault("revelation", {})
     mapping.pop(target_key, None)
-    accuracy_per_stack = (
-        0.05
-        if _has_track_talent(character, "seeker.precise-revelation")
-        else 0.04
-    )
+    accuracy_per_stack = 0.05 if _has_track_talent(character, "seeker.precise-revelation") else 0.04
     accuracy = (accuracy_per_stack * stacks) + studied_accuracy
     state["active_revelation_payoff"] = {
         "target_key": target_key,
@@ -723,8 +730,10 @@ def prepare_revelation_payoff(
         "accuracy": accuracy,
         "resolved": False,
     }
-    return accuracy, 1.0 + (0.05 * stacks), (
-        f"{character.name} commits {stacks} Revelation to reading {target.name}.\n"
+    return (
+        accuracy,
+        1.0 + (0.05 * stacks),
+        (f"{character.name} commits {stacks} Revelation to reading {target.name}.\n"),
     )
 
 
@@ -778,18 +787,11 @@ def record_inspect(character: Any, target: Any) -> str:
     msg = add_revelation(character, target, 1, "Inspect")
     enemy_type = str(getattr(target, "enemy_typ", "") or "")
     state = combat_state(character)
-    if (
-        case_progress(character, enemy_type) >= 25
-        and not state.get("inspect_studied_bonus_used")
-    ):
+    if case_progress(character, enemy_type) >= 25 and not state.get("inspect_studied_bonus_used"):
         state["inspect_studied_bonus_used"] = True
         msg += add_revelation(character, target, 1, "a familiar tell")
     msg += _ring_insight_bonus(character, target, "Inspect")
-    amount = (
-        4
-        if _has_track_talent(character, "seeker.practiced-inspection")
-        else 3
-    )
+    amount = 4 if _has_track_talent(character, "seeker.practiced-inspection") else 3
     msg += gain_case_progress(character, enemy_type, amount, "Inspect")
     return msg
 
@@ -877,11 +879,7 @@ def wayfinding_discount(
     route_type = enemy_type or ensure_state(character).get("case_focus")
     progress = case_progress(character, route_type) if route_type else 0
     discount = 0.10 if progress >= 100 else 0.0
-    mapping_threshold = (
-        0.35
-        if _has_track_talent(character, "seeker.early-bearings")
-        else 0.50
-    )
+    mapping_threshold = 0.35 if _has_track_talent(character, "seeker.early-bearings") else 0.50
     if mapping_progress is not None and float(mapping_progress) >= mapping_threshold:
         discount = max(discount, 0.05)
     if discount and _has_track_talent(character, "seeker.efficient-passage"):
@@ -902,11 +900,7 @@ def wayfinding_cost(character: Any, base_cost: int, **context: Any) -> tuple[int
 
 def level_mapping_progress(character: Any, dungeon_level: int | None = None) -> float:
     """Return the explored fraction of one loaded dungeon level."""
-    level = int(
-        getattr(character, "location_z", 0)
-        if dungeon_level is None
-        else dungeon_level
-    )
+    level = int(getattr(character, "location_z", 0) if dungeon_level is None else dungeon_level)
     tiles = [
         tile
         for position, tile in getattr(character, "world_dict", {}).items()
@@ -915,8 +909,7 @@ def level_mapping_progress(character: Any, dungeon_level: int | None = None) -> 
     if not tiles:
         return 0.0
     mapped = sum(
-        bool(getattr(tile, "visited", False) or getattr(tile, "near", False))
-        for tile in tiles
+        bool(getattr(tile, "visited", False) or getattr(tile, "near", False)) for tile in tiles
     )
     return mapped / len(tiles)
 
@@ -963,8 +956,7 @@ def combat_skill_visible(character: Any, skill: Any) -> bool:
     name = str(getattr(skill, "name", "") or "")
     if name == "Sanctuary Ward":
         return int(combat_state(character).get("devotion", 0) or 0) > 0
-    from .resolve import RESOLVE_SURGES
-    from .resolve import resolve_surge_available
+    from .resolve import RESOLVE_SURGES, resolve_surge_available
 
     if name in {entry["name"] for entry in RESOLVE_SURGES}:
         return resolve_surge_available(character, name)
@@ -984,9 +976,7 @@ def sanctuary_ward(character: Any) -> str:
     effect.active = True
     from ..cleric import has_cleric_talent
 
-    effect.duration = (
-        3 if has_cleric_talent(character, "cleric.lasting-sanctuary") else 2
-    )
+    effect.duration = 3 if has_cleric_talent(character, "cleric.lasting-sanctuary") else 2
     effect.extra = max(10, spent * 12)
     msg = f"{character.name} spends {spent} Devotion on Sanctuary Ward.\n"
     if spent >= 3:
@@ -1016,15 +1006,10 @@ def relic_aegis(character: Any) -> str:
     spent = spend_meter(character, "devotion")
     from ..cleric import has_cleric_talent
 
-    relic_scale = (
-        1.25
-        if has_cleric_talent(character, "templar.reinforced-relic")
-        else 1.0
-    )
-    if (
-        has_cleric_talent(character, "templar.unbroken-reliquary")
-        and int(character.health.current) * 2 < int(character.health.max)
-    ):
+    relic_scale = 1.25 if has_cleric_talent(character, "templar.reinforced-relic") else 1.0
+    if has_cleric_talent(character, "templar.unbroken-reliquary") and int(
+        character.health.current
+    ) * 2 < int(character.health.max):
         relic_scale *= 1.25
     extra_turn = int(has_cleric_talent(character, "templar.enduring-aegis"))
     effect = character.magic_effects["Nature Shield"]
@@ -1160,16 +1145,32 @@ def great_benediction(character: Any) -> str:
     character.stat_effects["Magic Defense"].active = True
     character.stat_effects["Magic Defense"].duration = duration
     defense_scale = 5 if _has_track_talent(character, "archbishop.benediction-aegis") else 4
-    character.stat_effects["Magic Defense"].extra = max(int(character.stat_effects["Magic Defense"].extra or 0), int(spent * defense_scale * scale))
+    character.stat_effects["Magic Defense"].extra = max(
+        int(character.stat_effects["Magic Defense"].extra or 0), int(spent * defense_scale * scale)
+    )
     character.magic_effects["Regen"].active = True
     character.magic_effects["Regen"].duration = duration
-    character.magic_effects["Regen"].extra = max(int(character.magic_effects["Regen"].extra or 0), int(spent * 5 * scale))
+    character.magic_effects["Regen"].extra = max(
+        int(character.magic_effects["Regen"].extra or 0), int(spent * 5 * scale)
+    )
     combat_state(character)["great_benediction"] = {
         "turns": duration,
-        "healing": (0.05 if _has_track_talent(character, "archbishop.healing-liturgy") else 0.04) * spent * scale,
-        "reduction": (0.025 if _has_track_talent(character, "archbishop.protective-liturgy") else 0.02) * spent * scale,
-        "status": (0.07 if _has_track_talent(character, "archbishop.unshaken-congregation") else 0.05) * spent * scale,
-        "mana": int(math.ceil(spent / (2 if _has_track_talent(character, "archbishop.mana-liturgy") else 3))),
+        "healing": (0.05 if _has_track_talent(character, "archbishop.healing-liturgy") else 0.04)
+        * spent
+        * scale,
+        "reduction": (
+            0.025 if _has_track_talent(character, "archbishop.protective-liturgy") else 0.02
+        )
+        * spent
+        * scale,
+        "status": (
+            0.07 if _has_track_talent(character, "archbishop.unshaken-congregation") else 0.05
+        )
+        * spent
+        * scale,
+        "mana": int(
+            math.ceil(spent / (2 if _has_track_talent(character, "archbishop.mana-liturgy") else 3))
+        ),
     }
     msg = f"{character.name} spends {spent} Prayer on Great Benediction.\n"
     return _preserve_spent_meter(character, "prayer", "Archbishop", "Divine Intervention", msg)
@@ -1350,9 +1351,8 @@ def record_ki_martial_hit(character: Any, metadata: dict[str, Any] | None) -> st
         return ""
     state["ki_action_token"] = token if token > 0 else -1
     amount = 1
-    if (
-        int(state.get("ki", 0) or 0) == 0
-        and _has_track_talent(character, "monk.rhythmic-breathing")
+    if int(state.get("ki", 0) or 0) == 0 and _has_track_talent(
+        character, "monk.rhythmic-breathing"
     ):
         amount += 1
     return gain_meter(character, "ki", amount, "martial hit")
@@ -1497,7 +1497,9 @@ def dim_mak(character: Any, target: Any | None) -> str:
                 if target.apply_stun(2, source="Dim Mak", applier=character):
                     msg += f"{target.name} is stunned by the disrupted chi.\n"
     if hit and not target.is_alive():
-        recovery_scale = 1.25 if _has_track_talent(character, "master-monk.essence-mastery") else 1.0
+        recovery_scale = (
+            1.25 if _has_track_talent(character, "master-monk.essence-mastery") else 1.0
+        )
         character.health.current = min(
             character.health.max,
             character.health.current + int(target.health.max * recovery_scale),
@@ -1509,7 +1511,12 @@ def dim_mak(character: Any, target: Any | None) -> str:
         msg += f"{character.name} absorbs {target.name}'s essence.\n"
     state = combat_state(character)
     refund_training = _has_track_talent(character, "master-monk.inner-reserve")
-    if (ring or refund_training) and hit and damage > 0 and not state.get("martial_master_refund_used"):
+    if (
+        (ring or refund_training)
+        and hit
+        and damage > 0
+        and not state.get("martial_master_refund_used")
+    ):
         state["martial_master_refund_used"] = True
         refund = 2 if _has_track_talent(character, "master-monk.perfect-recovery") else 1
         state["ki"] = refund

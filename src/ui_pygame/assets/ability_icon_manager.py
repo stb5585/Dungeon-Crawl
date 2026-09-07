@@ -11,7 +11,6 @@ import pygame
 
 from src.paths import PYGAME_ASSETS_DIR
 
-
 logger = logging.getLogger(__name__)
 
 ABILITY_ICON_ROOT = PYGAME_ASSETS_DIR / "ability_icons"

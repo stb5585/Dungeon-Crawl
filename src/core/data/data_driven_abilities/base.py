@@ -13,8 +13,8 @@ works transparently with the existing battle engine code.
 
 from __future__ import annotations
 
-from copy import deepcopy
 import random
+from copy import deepcopy
 from typing import TYPE_CHECKING
 
 from src.core.abilities import Spell
@@ -38,16 +38,19 @@ if TYPE_CHECKING:
 # ---------------------------------------------------------------------------
 def _get_heal_spell_class():
     from src.core.abilities import HealSpell
+
     return HealSpell
 
 
 def _get_support_spell_class():
     from src.core.abilities import SupportSpell
+
     return SupportSpell
 
 
 def _get_status_spell_class():
     from src.core.abilities import StatusSpell
+
     return StatusSpell
 
 
@@ -138,17 +141,14 @@ class DataDrivenSpell(Spell):
             effective_cost = mage_mechanics.spell_mana_cost(caster, self)
         except Exception:
             pass
-        result.extra['cost'] = effective_cost
+        result.extra["cost"] = effective_cost
         msg = ""
 
         # ── 1. Mana cost ────────────────────────────────────────────
         if not kwargs.get("_skip_cost", False) and not (
             special
             or fam
-            or (
-                caster.cls.name == "Wizard"
-                and caster.class_effects["Power Up"].active
-            )
+            or (caster.cls.name == "Wizard" and caster.class_effects["Power Up"].active)
         ):
             caster.mana.current -= effective_cost
 
@@ -220,19 +220,14 @@ class DataDrivenSpell(Spell):
         damage = int(self.dmg_mod * spell_mod * crit_per)
 
         # ── 7. Defenses & resistance ────────────────────────────────
-        hit, message, damage = target.handle_defenses(
-            caster, damage, cover, typ="Magic"
-        )
+        hit, message, damage = target.handle_defenses(caster, damage, cover, typ="Magic")
         msg += message
-        piercing_bolt = (
-            self.name.startswith("Shadow Bolt")
-            and "Piercing Bolt" in getattr(caster, "spellbook", {}).get("Skills", {})
-        )
+        piercing_bolt = self.name.startswith("Shadow Bolt") and "Piercing Bolt" in getattr(
+            caster, "spellbook", {}
+        ).get("Skills", {})
         caster._piercing_bolt_cast = piercing_bolt
         try:
-            hit, message, damage = target.damage_reduction(
-                damage, caster, typ=self.subtyp
-            )
+            hit, message, damage = target.damage_reduction(damage, caster, typ=self.subtyp)
         finally:
             caster._piercing_bolt_cast = False
         msg += message
@@ -281,7 +276,9 @@ class DataDrivenSpell(Spell):
                     and getattr(getattr(caster, "familiar", None), "spec", "") == "Arcane"
                     and "Insult to Injury" in skills
                     and school_name == "Arcane"
-                    and str(getattr(target.magic_effects.get("DOT"), "source", "")).lower().startswith("corruption")
+                    and str(getattr(target.magic_effects.get("DOT"), "source", ""))
+                    .lower()
+                    .startswith("corruption")
                 ):
                     damage = int(damage * 1.50)
                 if (
@@ -295,14 +292,11 @@ class DataDrivenSpell(Spell):
 
                     damage = int(damage * mage_mechanics.spell_potency_multiplier(caster, self))
                     damage = int(
-                        damage
-                        * mage_mechanics.spell_damage_multiplier(caster, self, target)
+                        damage * mage_mechanics.spell_damage_multiplier(caster, self, target)
                     )
                     damage += mage_mechanics.consume_shadow_overheal_bonus(caster, self)
                     school = mage_mechanics.school_from_ability(self)
-                    damage = int(
-                        damage * (1 + wizard.affinity_damage_bonus(caster, school))
-                    )
+                    damage = int(damage * (1 + wizard.affinity_damage_bonus(caster, school)))
                 except Exception:
                     pass
                 try:
@@ -324,7 +318,7 @@ class DataDrivenSpell(Spell):
                 else:
                     target_roll = random.randint(0, target.stats.con // 2)
                     caster_lo = (caster.stats.intel * crit) // 2
-                    caster_hi = (caster.stats.intel * crit)
+                    caster_hi = caster.stats.intel * crit
                     caster_roll = _floor_int(
                         caster,
                         random.randint(caster_lo, caster_hi),
@@ -333,7 +327,7 @@ class DataDrivenSpell(Spell):
                     )
                     resisted = target_roll > caster_roll
                     if resisted:
-                    # ── 10. CON save → half damage ──────────────────
+                        # ── 10. CON save → half damage ──────────────────
                         damage //= 2
                         if damage > 0:
                             msg += (
@@ -341,8 +335,7 @@ class DataDrivenSpell(Spell):
                                 f"receives half of the damage.\n"
                             )
                             damage_msg = (
-                                f"{caster.name} damages {target.name} "
-                                f"for {damage} hit points"
+                                f"{caster.name} damages {target.name} " f"for {damage} hit points"
                             )
                             if crit > 1:
                                 damage_msg += " (Critical hit!)"
@@ -351,8 +344,7 @@ class DataDrivenSpell(Spell):
                             msg += "The spell was ineffective and does no damage.\n"
                     else:
                         damage_msg = (
-                            f"{caster.name} damages {target.name} "
-                            f"for {damage} hit points"
+                            f"{caster.name} damages {target.name} " f"for {damage} hit points"
                         )
                         if crit > 1:
                             damage_msg += " (Critical hit!)"
@@ -368,12 +360,10 @@ class DataDrivenSpell(Spell):
                         spell=self,
                     )
                     msg += block_message
-                    damage, shield_message, _fully_absorbed = (
-                        promotion_kits.absorb_novel_shield(
-                            target,
-                            damage,
-                            source="reflected" if reflect else "spell",
-                        )
+                    damage, shield_message, _fully_absorbed = promotion_kits.absorb_novel_shield(
+                        target,
+                        damage,
+                        source="reflected" if reflect else "spell",
                     )
                     msg += shield_message
                 except Exception:
@@ -414,14 +404,11 @@ class DataDrivenSpell(Spell):
                 # ── 12. Execute composed effects (secondary) ────────
                 if target.is_alive() and damage > 0:
                     effect_target = caster if reflect else target
-                    msg += self._apply_effects(
-                        caster, effect_target, damage, crit, result
-                    )
+                    msg += self._apply_effects(caster, effect_target, damage, crit, result)
 
             # ── 13. Counterspell check ──────────────────────────────
-            if (
-                "Counterspell" in reaction_owner.spellbook.get("Spells", {})
-                and not random.randint(0, 4)
+            if "Counterspell" in reaction_owner.spellbook.get("Spells", {}) and not random.randint(
+                0, 4
             ):
                 from src.core.abilities import Counterspell
 
@@ -431,11 +418,7 @@ class DataDrivenSpell(Spell):
             msg += f"The spell misses {target.name}.\n"
 
         # ── 14. Wizard mana regen on Power Up ───────────────────────
-        if (
-            caster.cls.name == "Wizard"
-            and caster.class_effects["Power Up"].active
-            and damage > 0
-        ):
+        if caster.cls.name == "Wizard" and caster.class_effects["Power Up"].active and damage > 0:
             msg += f"{caster.name} regens {damage} mana.\n"
             caster.mana.current += damage
             if caster.mana.current > caster.mana.max:
@@ -521,10 +504,7 @@ class DataDrivenSpell(Spell):
         for effect in self._effects:
             # Snapshot target HP before effect
             hp_before = target.health.current
-            effects_before = {
-                key: list(values)
-                for key, values in result.effects_applied.items()
-            }
+            effects_before = {key: list(values) for key, values in result.effects_applied.items()}
             messages_before = len(result.extra.get("messages", []))
 
             try:
@@ -541,9 +521,7 @@ class DataDrivenSpell(Spell):
                 if effect_messages:
                     msg += "".join(effect_messages)
                 else:
-                    msg += (
-                        f"{target.name} takes an extra {hp_diff} damage.\n"
-                    )
+                    msg += f"{target.name} takes an extra {hp_diff} damage.\n"
             elif effect_messages:
                 msg += "".join(effect_messages)
 

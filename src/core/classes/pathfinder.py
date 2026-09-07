@@ -2,17 +2,23 @@
 
 from __future__ import annotations
 
-from copy import deepcopy
 import random
+from copy import deepcopy
 from typing import Any
 
-from .base import Job
 from .. import items
+from .base import Job
 
-
-ELEMENTAL_DAMAGE_TYPES = frozenset({
-    "Fire", "Water", "Earth", "Wind", "Ice", "Electric",
-})
+ELEMENTAL_DAMAGE_TYPES = frozenset(
+    {
+        "Fire",
+        "Water",
+        "Earth",
+        "Wind",
+        "Ice",
+        "Electric",
+    }
+)
 UNNATURAL_ENEMY_TYPES = frozenset({"Slime", "Monster", "Undead", "Aberration"})
 CREATURE_COMFORT_STEPS = 50
 
@@ -43,9 +49,8 @@ def is_favored_enemy(character: Any, enemy: Any | None) -> bool:
         return False
     from . import ability_mechanics
 
-    return (
-        str(getattr(enemy, "enemy_typ", "") or "")
-        == ability_mechanics.favorite_enemy_type(character)
+    return str(getattr(enemy, "enemy_typ", "") or "") == ability_mechanics.favorite_enemy_type(
+        character
     )
 
 
@@ -78,9 +83,7 @@ def wild_sense_report(character: Any, enemy: Any | None) -> str:
             if float(value or 0)
         ]
         resistance_text = ", ".join(resistances) if resistances else "none observed"
-        lines.append(
-            f"Resistances: {resistance_text}."
-        )
+        lines.append(f"Resistances: {resistance_text}.")
     if detail >= 7:
         known = []
         for book in (getattr(enemy, "spellbook", {}) or {}).values():
@@ -115,7 +118,8 @@ def ranger_weapon_damage_multiplier(character: Any, enemy: Any | None) -> float:
         has_ranger_talent(character, "ranger.apex-hunter")
         and ability_mechanics.favored_enemy_rank(
             ability_mechanics.favored_enemy_state(character).get("practice", 0)
-        ) == "Mastered Trail"
+        )
+        == "Mastered Trail"
     ):
         multiplier *= 1.10
     return multiplier
@@ -162,18 +166,12 @@ def ranger_damage_reduction(
     if reduced <= 0 or not labels:
         return reduced_damage, ""
     label_text = ", ".join(labels)
-    return reduced_damage, (
-        f"{defender.name}'s {label_text} reduces damage by {reduced}.\n"
-    )
+    return reduced_damage, (f"{defender.name}'s {label_text} reduces damage by {reduced}.\n")
 
 
 def ability_damage_types(ability: Any) -> frozenset[str]:
     """Return every declared damage/school type attached to an ability."""
-    types = {
-        str(value)
-        for value in getattr(ability, "damage_types", ())
-        if value
-    }
+    types = {str(value) for value in getattr(ability, "damage_types", ()) if value}
     for attribute in ("damage_type", "subtyp", "school"):
         value = str(getattr(ability, attribute, "") or "")
         if value:
@@ -290,7 +288,10 @@ def spell_damage(
         attack_source="spell",
         ability_name=ability.name,
     )
-    return message + f"{caster.name} deals {damage} {damage_type} damage to {target.name}.\n", damage
+    return (
+        message + f"{caster.name} deals {damage} {damage_type} damage to {target.name}.\n",
+        damage,
+    )
 
 
 def suppress_shapeshifting(target: Any) -> str:
@@ -582,13 +583,15 @@ def geomancy_exploration(character: Any) -> str:
     for position, tile in world.items():
         if len(position) != 3 or position[2] != origin[2] or position == origin:
             continue
-        unfinished = any([
-            hasattr(tile, "enemy") and getattr(tile, "enemy", None) is not None,
-            hasattr(tile, "open") and not getattr(tile, "open", False),
-            hasattr(tile, "read") and not getattr(tile, "read", False),
-            hasattr(tile, "defeated") and not getattr(tile, "defeated", False),
-            not getattr(tile, "visited", False),
-        ])
+        unfinished = any(
+            [
+                hasattr(tile, "enemy") and getattr(tile, "enemy", None) is not None,
+                hasattr(tile, "open") and not getattr(tile, "open", False),
+                hasattr(tile, "read") and not getattr(tile, "read", False),
+                hasattr(tile, "defeated") and not getattr(tile, "defeated", False),
+                not getattr(tile, "visited", False),
+            ]
+        )
         if unfinished and getattr(tile, "enter", True):
             distance = abs(position[0] - origin[0]) + abs(position[1] - origin[1])
             candidates.append((distance, position))
@@ -598,10 +601,9 @@ def geomancy_exploration(character: Any) -> str:
     dx = destination[0] - origin[0]
     dy = destination[1] - origin[1]
     direction = (
-        "east" if abs(dx) >= abs(dy) and dx > 0
-        else "west" if abs(dx) >= abs(dy)
-        else "south" if dy > 0
-        else "north"
+        "east"
+        if abs(dx) >= abs(dy) and dx > 0
+        else "west" if abs(dx) >= abs(dy) else "south" if dy > 0 else "north"
     )
     character._geomancy_target = destination
     return f"Lines of earthen light point {direction} toward a useful location.\n"
@@ -676,8 +678,7 @@ def tick_combat_state(character: Any, *, end: bool = False) -> str:
         status = character.status_effects.get(status_name)
         physical = character.physical_effects.get(status_name)
         active = bool(
-            (status is not None and status.active)
-            or (physical is not None and physical.active)
+            (status is not None and status.active) or (physical is not None and physical.active)
         )
         barrier["turns"] = max(0, int(barrier.get("turns", 0) or 0) - 1)
         if not active or barrier["turns"] <= 0:

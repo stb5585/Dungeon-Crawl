@@ -45,7 +45,7 @@ class UndergroundSpring(SpecialTile):
         pass
 
     def available_actions(self, player_char):
-        if player_char.state == 'fight':
+        if player_char.state == "fight":
             action_list = ["Attack", "Use Item"]
             if not player_char.abilities_suppressed():
                 if player_char.usable_abilities("Spells"):
@@ -92,7 +92,9 @@ class Boulder(SpecialTile):
                 game.player_char.modify_inventory(items.ChaliceMap(), rare=True, quest=True)
                 progress["Map"] = True
                 sync_chalice_map_description(game.player_char)
-                quest_data["Help Text"] = "Bring the map to the Sergeant at the barracks for help deciphering it."
+                quest_data["Help Text"] = (
+                    "Bring the map to the Sergeant at the barracks for help deciphering it."
+                )
         return earth_message
 
 
@@ -106,7 +108,9 @@ class Portal(EmptyCavePath):
 
     def intro_text(self, game):
         intro_str = super().intro_text(game)
-        intro_str += "A shimmering portal flickers here, reflecting impossible corridors in its surface.\n"
+        intro_str += (
+            "A shimmering portal flickers here, reflecting impossible corridors in its surface.\n"
+        )
         return intro_str
 
     def modify_player(self, game):
@@ -144,7 +148,9 @@ class Rotator(EmptyCavePath):
 
     def intro_text(self, game):
         intro_str = super().intro_text(game)
-        intro_str += "The floor hums beneath your feet, as if some hidden mechanism is waiting to trigger.\n"
+        intro_str += (
+            "The floor hums beneath your feet, as if some hidden mechanism is waiting to trigger.\n"
+        )
         return intro_str
 
     def modify_player(self, game):
@@ -171,13 +177,16 @@ class Rotator(EmptyCavePath):
         if destination_tile:
             destination_tile.visited = True
             destination_tile.adjacent_visited(player_char)
-        _queue_cambion_message(player_char, "The room spins violently and throws you down a different passage.")
-        _queue_cambion_message(player_char, CAMBION_ROTATOR_FLAVOR[cambion_anti_magic_active(player_char)])
+        _queue_cambion_message(
+            player_char, "The room spins violently and throws you down a different passage."
+        )
+        _queue_cambion_message(
+            player_char, CAMBION_ROTATOR_FLAVOR[cambion_anti_magic_active(player_char)]
+        )
 
 
 class Trap(EmptyCavePath):
-    """
-    """
+    """ """
 
     def __init__(self, x, y, z):
         super().__init__(x, y, z)
@@ -193,14 +202,15 @@ class Trap(EmptyCavePath):
         damage, avoidance_message = footpad.trap_damage(player_char, damage)
         if damage > 0:
             player_char.health.current -= damage
-            _queue_cambion_message(player_char, f"A hidden trap snaps shut, dealing {damage} damage!")
+            _queue_cambion_message(
+                player_char, f"A hidden trap snaps shut, dealing {damage} damage!"
+            )
         if avoidance_message:
             _queue_cambion_message(player_char, avoidance_message)
 
 
 class AntiMagicSwitch(EmptyCavePath):
-    """
-    """
+    """ """
 
     def __init__(self, x, y, z):
         super().__init__(x, y, z)
@@ -234,7 +244,10 @@ class AntiMagicSwitch(EmptyCavePath):
             return True
         state = _ensure_cambion_state(player_char)
         if not state["anti_magic_active"]:
-            _queue_cambion_message(player_char, "The terminal displays: SHIELD OFFLINE. The realm feels less certain without its hum.")
+            _queue_cambion_message(
+                player_char,
+                "The terminal displays: SHIELD OFFLINE. The realm feels less certain without its hum.",
+            )
             return True
 
         if str(code).strip() == CAMBION_SWITCH_CODE:
@@ -249,5 +262,7 @@ class AntiMagicSwitch(EmptyCavePath):
         self.enemy = CAMBION_ALARM_ENEMY()
         _apply_cambion_antimagic(self, player_char, self.enemy)
         player_char.state = "fight"
-        _queue_cambion_message(player_char, "The terminal flashes red. An alarm sounds and a guardian attacks!")
+        _queue_cambion_message(
+            player_char, "The terminal flashes red. An alarm sounds and a guardian attacks!"
+        )
         return False

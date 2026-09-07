@@ -26,5 +26,5 @@ class StatusEffect(Effect):
         if self.name in target.status_effects:
             target.status_effects[self.name].active = True
             target.status_effects[self.name].duration = self.duration
-            result.effects_applied.setdefault('Status', []).append(self.name)
-            result.extra['status_effect'] = self.name
+            result.effects_applied.setdefault("Status", []).append(self.name)
+            result.extra["status_effect"] = self.name

@@ -11,8 +11,9 @@ from src.core.classes import grandmaster, promotion_mechanic_tab_label, transfor
 from src.ui_pygame.assets.companion_art_manager import get_companion_art_manager
 from src.ui_pygame.assets.item_render_manager import get_item_render_manager
 from src.ui_pygame.assets.portrait_manager import PortraitManager
+
 from ..progression_screen import ProgressionScreen
-from .models import CharacterTab, DEFAULT_CHARACTER_TABS, PORTRAIT_DIR
+from .models import DEFAULT_CHARACTER_TABS, PORTRAIT_DIR, CharacterTab
 
 
 class CharacterCoreMixin:
@@ -55,14 +56,30 @@ class CharacterCoreMixin:
         content_height = max(320, content_height)
 
         self.tab_rect = pygame.Rect(margin, margin, self.width - (margin * 2), tab_height)
-        self.content_rect = pygame.Rect(margin, content_top, self.width - (margin * 2), content_height)
-        self.actions_rect = pygame.Rect(margin, self.content_rect.bottom + gap, self.width - (margin * 2), action_height)
+        self.content_rect = pygame.Rect(
+            margin, content_top, self.width - (margin * 2), content_height
+        )
+        self.actions_rect = pygame.Rect(
+            margin, self.content_rect.bottom + gap, self.width - (margin * 2), action_height
+        )
 
         available_panel_width = self.content_rect.width - gap
         character_width = (available_panel_width * 3) // 5
-        self.character_panel_rect = pygame.Rect(self.content_rect.left, self.content_rect.top, character_width, self.content_rect.height)
-        self.combat_panel_rect = pygame.Rect(self.character_panel_rect.right + gap, self.content_rect.top, self.content_rect.right - self.character_panel_rect.right - gap, self.content_rect.height)
-        self.details_rect = pygame.Rect(self.content_rect.left, self.content_rect.top, self.content_rect.width, self.content_rect.height)
+        self.character_panel_rect = pygame.Rect(
+            self.content_rect.left, self.content_rect.top, character_width, self.content_rect.height
+        )
+        self.combat_panel_rect = pygame.Rect(
+            self.character_panel_rect.right + gap,
+            self.content_rect.top,
+            self.content_rect.right - self.character_panel_rect.right - gap,
+            self.content_rect.height,
+        )
+        self.details_rect = pygame.Rect(
+            self.content_rect.left,
+            self.content_rect.top,
+            self.content_rect.width,
+            self.content_rect.height,
+        )
         self.equipment_panel_rect = self.details_rect
 
         self.menu_rect = self.actions_rect

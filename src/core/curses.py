@@ -5,7 +5,6 @@ from __future__ import annotations
 import random
 from typing import Any
 
-
 CURSE_NAMES = (
     "Umbra",
     "Frailty",
@@ -191,7 +190,9 @@ def polydipsia_tick(character: Any, *, rng: Any = random) -> str:
         return f"{character.name} harms themself in a thirsty delirium for {damage} damage.\n"
     if turn >= 11:
         character.status_effects["Berserk"].active = True
-        character.status_effects["Berserk"].duration = max(1, character.status_effects["Berserk"].duration)
+        character.status_effects["Berserk"].duration = max(
+            1, character.status_effects["Berserk"].duration
+        )
         return f"{character.name} loses control to a thirsty rage.\n"
     if rng.random() < 0.25:
         character.status_effects["Fear"].active = True
@@ -290,4 +291,6 @@ def drink(character: Any) -> str:
     entry = ensure_curses(character)["Polydipsia"]
     if entry["active"]:
         entry["held_turns"] = 1
-    return f"{character.name} drinks deeply and recovers {character.health.current - before} health.\n"
+    return (
+        f"{character.name} drinks deeply and recovers {character.health.current - before} health.\n"
+    )

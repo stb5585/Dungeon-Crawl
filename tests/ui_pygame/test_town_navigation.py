@@ -75,10 +75,18 @@ def test_town_navigation_draws_current_node_and_options(monkeypatch):
     screen = town_navigation.TownNavigationScreen(presenter)
     monkeypatch.setattr(screen, "_load_background", lambda: None)
     monkeypatch.setattr(screen, "draw_semi_transparent_panel", lambda *_args, **_kwargs: None)
-    monkeypatch.setattr("src.ui_pygame.gui.town_navigation.pygame.draw.rect", lambda *_args, **_kwargs: None)
-    monkeypatch.setattr("src.ui_pygame.gui.town_navigation.pygame.draw.polygon", lambda *_args, **_kwargs: None)
-    monkeypatch.setattr("src.ui_pygame.gui.town_navigation.pygame.draw.line", lambda *_args, **_kwargs: None)
-    monkeypatch.setattr("src.ui_pygame.gui.town_navigation.pygame.draw.circle", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.town_navigation.pygame.draw.rect", lambda *_args, **_kwargs: None
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.town_navigation.pygame.draw.polygon", lambda *_args, **_kwargs: None
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.town_navigation.pygame.draw.line", lambda *_args, **_kwargs: None
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.town_navigation.pygame.draw.circle", lambda *_args, **_kwargs: None
+    )
 
     options = screen.build_options()
     screen.draw()
@@ -97,11 +105,15 @@ def test_town_navigation_moves_with_arrow_keys_and_returns_action(monkeypatch):
     monkeypatch.setattr("src.ui_pygame.gui.town_navigation.pygame.display.flip", lambda: None)
     monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
 
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_UP)],
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.town_navigation.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_UP)],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.town_navigation.pygame.event.get", lambda: next(event_batches, [])
+    )
 
     assert screen.navigate() == "Barracks"
     assert screen.current_node_key == "Barracks"
@@ -116,16 +128,22 @@ def test_town_navigation_mouse_click_moves_and_escape(monkeypatch):
     monkeypatch.setattr("src.ui_pygame.gui.town_navigation.pygame.display.flip", lambda: None)
     monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
 
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=click_pos)],
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_ESCAPE)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.town_navigation.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=click_pos)],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_ESCAPE)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.town_navigation.pygame.event.get", lambda: next(event_batches, [])
+    )
     assert screen.navigate() is None
     assert screen.current_node_key == "Shops"
 
     event_batches = iter([[SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_ESCAPE)]])
-    monkeypatch.setattr("src.ui_pygame.gui.town_navigation.pygame.event.get", lambda: next(event_batches, []))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.town_navigation.pygame.event.get", lambda: next(event_batches, [])
+    )
     assert screen.navigate() is None
 
 
@@ -145,9 +163,14 @@ def test_town_navigation_quit_exits(monkeypatch):
     quit_calls = []
     monkeypatch.setattr(screen, "draw", lambda: screen.build_options())
     monkeypatch.setattr("src.ui_pygame.gui.town_navigation.pygame.display.flip", lambda: None)
-    monkeypatch.setattr("src.ui_pygame.gui.town_navigation.pygame.quit", lambda: quit_calls.append(True))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.town_navigation.pygame.quit", lambda: quit_calls.append(True)
+    )
     monkeypatch.setattr("sys.exit", lambda: (_ for _ in ()).throw(SystemExit()))
-    monkeypatch.setattr("src.ui_pygame.gui.town_navigation.pygame.event.get", lambda: [SimpleNamespace(type=pygame.QUIT)])
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.town_navigation.pygame.event.get",
+        lambda: [SimpleNamespace(type=pygame.QUIT)],
+    )
 
     with pytest.raises(SystemExit):
         screen.navigate()

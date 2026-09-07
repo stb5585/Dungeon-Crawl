@@ -2,11 +2,13 @@
 
 from src.core import map_tiles
 from src.core.classes import bard
+
 from .base import BasePopupMenu
 
 
 class SimpleListPopupMenu(BasePopupMenu):
     """Generic simple list popup for placeholders like Quests, Key Items, Specials, Class Menu."""
+
     def __init__(self, presenter, parent_screen, title, source_fn):
         super().__init__(presenter, parent_screen, title=title)
         self.source_fn = source_fn  # function(player_char) -> list[str]
@@ -17,8 +19,12 @@ class SimpleListPopupMenu(BasePopupMenu):
         if callable(raw):
             raw = raw()
         self.items = []
-        for entry in (raw or []):
-            if isinstance(entry, str) and entry.strip().startswith("---") and entry.strip().endswith("---"):
+        for entry in raw or []:
+            if (
+                isinstance(entry, str)
+                and entry.strip().startswith("---")
+                and entry.strip().endswith("---")
+            ):
                 # Treat as header row
                 self.items.append({"is_header": True, "text": entry})
             elif isinstance(entry, dict) and "text" in entry:
@@ -26,7 +32,13 @@ class SimpleListPopupMenu(BasePopupMenu):
                 self.items.append(entry)
             else:
                 if isinstance(entry, object) and not isinstance(entry, str):
-                    self.items.append({"is_header": False, "text": getattr(entry, 'name', str(entry)), "value": entry})
+                    self.items.append(
+                        {
+                            "is_header": False,
+                            "text": getattr(entry, "name", str(entry)),
+                            "value": entry,
+                        }
+                    )
                 else:
                     self.items.append({"is_header": False, "text": str(entry), "value": entry})
         self.selected_index = 0
@@ -150,10 +162,7 @@ class SimpleListPopupMenu(BasePopupMenu):
 
     def on_select(self, player_char, item):
         value = item.get("value") if isinstance(item, dict) else item
-        if (
-            getattr(value, "exploration_cast", False)
-            and callable(getattr(value, "cast_out", None))
-        ):
+        if getattr(value, "exploration_cast", False) and callable(getattr(value, "cast_out", None)):
             from . import ConfirmationPopup
 
             menu_background = self._capture_menu_surface(player_char)
@@ -262,7 +271,6 @@ class JumpModsPopupMenu(BasePopupMenu):
                 return skill
         return None
 
-
     def build_items(self, player_char):
         self.jump_skill = self._get_jump_skill(player_char)
         self.items = []
@@ -274,22 +282,36 @@ class JumpModsPopupMenu(BasePopupMenu):
             return
 
         # Show active/max count in header
-        active_count = self.jump_skill.get_active_count() if hasattr(self.jump_skill, "get_active_count") else 0
-        max_count = self.jump_skill.get_max_active_modifications(player_char) if hasattr(self.jump_skill, "get_max_active_modifications") else 99
+        active_count = (
+            self.jump_skill.get_active_count()
+            if hasattr(self.jump_skill, "get_active_count")
+            else 0
+        )
+        max_count = (
+            self.jump_skill.get_max_active_modifications(player_char)
+            if hasattr(self.jump_skill, "get_max_active_modifications")
+            else 99
+        )
         header_text = f"Toggle Modifications ({active_count}/{max_count} active)"
         self.items.append({"is_header": True, "text": header_text})
 
         # Only show unlocked modifications
-        unlocked_mods = self.jump_skill.get_unlocked_modifications() if hasattr(self.jump_skill, "get_unlocked_modifications") else list(self.jump_skill.modifications.keys())
+        unlocked_mods = (
+            self.jump_skill.get_unlocked_modifications()
+            if hasattr(self.jump_skill, "get_unlocked_modifications")
+            else list(self.jump_skill.modifications.keys())
+        )
 
         for mod_name in unlocked_mods:
             active = self.jump_skill.modifications.get(mod_name, False)
             prefix = "[X]" if active else "[ ]"
-            self.items.append({
-                "is_header": False,
-                "text": f"{prefix} {mod_name}",
-                "value": mod_name,
-            })
+            self.items.append(
+                {
+                    "is_header": False,
+                    "text": f"{prefix} {mod_name}",
+                    "value": mod_name,
+                }
+            )
 
         self.selected_index = 1 if len(self.items) > 1 else 0
         self.scroll_offset = 0
@@ -436,11 +458,7 @@ class CompositionPopupMenu(BasePopupMenu):
             y,
             self.details_rect.width - 32,
         )
-        status = (
-            "Ready to compose"
-            if item.get("available")
-            else "Matching instrument required"
-        )
+        status = "Ready to compose" if item.get("available") else "Matching instrument required"
         y += 8
         self.screen.blit(
             self.normal_font.render(
@@ -513,24 +531,28 @@ class TotemAspectsPopupMenu(BasePopupMenu):
         unlocked = self.totem_skill.get_unlocked_aspects(player_char)
         for aspect in unlocked:
             prefix = "[X]" if aspect == active else "[ ]"
-            self.items.append({
-                "is_header": False,
-                "text": f"{prefix} {aspect}",
-                "value": aspect,
-                "kind": "aspect",
-            })
+            self.items.append(
+                {
+                    "is_header": False,
+                    "text": f"{prefix} {aspect}",
+                    "value": aspect,
+                    "kind": "aspect",
+                }
+            )
 
         if self.spirit_skill is not None:
             chosen = str(getattr(player_char, "spirit_animal", "Bear"))
             self.items.append({"is_header": True, "text": f"Spirit Animal: {chosen}"})
             for animal in self.spirit_skill.ANIMALS:
                 prefix = "[X]" if animal == chosen else "[ ]"
-                self.items.append({
-                    "is_header": False,
-                    "text": f"{prefix} {animal}",
-                    "value": animal,
-                    "kind": "spirit",
-                })
+                self.items.append(
+                    {
+                        "is_header": False,
+                        "text": f"{prefix} {animal}",
+                        "value": animal,
+                        "kind": "spirit",
+                    }
+                )
 
         self.selected_index = 1 if len(self.items) > 1 else 0
         self.scroll_offset = 0

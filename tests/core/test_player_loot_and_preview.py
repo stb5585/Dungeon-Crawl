@@ -9,7 +9,8 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parents[2]))
 
-from src.core import abilities, items, player as player_module
+from src.core import abilities, items
+from src.core import player as player_module
 from tests.test_framework import TestGameState
 
 
@@ -101,9 +102,15 @@ class TestPlayerLootCoverage:
             "Bounty": {},
         }
         captured = []
-        player.modify_inventory = lambda item, rare=False, **_kwargs: captured.append((item.name, rare))
-        player.quests = lambda enemy=None, item=None: f"Quest:{item.name}\n" if item is not None else ""
-        player.check_mod = lambda mod, enemy=None, typ=None, luck_factor=1, **_kwargs: 2 if mod == "luck" else 0
+        player.modify_inventory = lambda item, rare=False, **_kwargs: captured.append(
+            (item.name, rare)
+        )
+        player.quests = lambda enemy=None, item=None: (
+            f"Quest:{item.name}\n" if item is not None else ""
+        )
+        player.check_mod = lambda mod, enemy=None, typ=None, luck_factor=1, **_kwargs: (
+            2 if mod == "luck" else 0
+        )
         player.spellbook["Skills"]["Jump"] = SimpleNamespace(
             unlock_item_modification=lambda name: "Recover" if name == "Dragon's Tear" else None
         )
@@ -126,10 +133,14 @@ class TestPlayerLootCoverage:
         assert "New Jump modification unlocked: Recover." in message
         assert player.gold == 125
 
-    def test_loot_boss_branch_drops_special_and_regular_items_but_not_unneeded_quest_items(self, monkeypatch):
+    def test_loot_boss_branch_drops_special_and_regular_items_but_not_unneeded_quest_items(
+        self, monkeypatch
+    ):
         player = TestGameState.create_player(class_name="Warrior", race_name="Human")
         captured = []
-        player.modify_inventory = lambda item, rare=False, **_kwargs: captured.append((item.name, rare))
+        player.modify_inventory = lambda item, rare=False, **_kwargs: captured.append(
+            (item.name, rare)
+        )
         player.quests = lambda enemy=None, item=None: ""
         player.spellbook["Skills"]["Jump"] = SimpleNamespace(
             unlock_boss_modification=lambda name: "Skyfall" if name == "Red Dragon" else None
@@ -153,14 +164,23 @@ class TestPlayerLootCoverage:
         player = TestGameState.create_player(class_name="Warrior", race_name="Human")
         player.cls.name = "Thaumaturgist"
         player.special_inventory = {"Spirit Sigil": [SimpleNamespace(name="Spirit Sigil")]}
-        player.check_mod = lambda mod, enemy=None, typ=None, luck_factor=1, **_kwargs: 4 if mod == "luck" else 0
+        player.check_mod = lambda mod, enemy=None, typ=None, luck_factor=1, **_kwargs: (
+            4 if mod == "luck" else 0
+        )
         captured = []
-        player.modify_inventory = lambda item, rare=False, **_kwargs: captured.append((item.name, rare))
+        player.modify_inventory = lambda item, rare=False, **_kwargs: captured.append(
+            (item.name, rare)
+        )
         player.quests = lambda enemy=None, item=None: ""
         enemy = SimpleNamespace(
             name="Imp",
             gold=0,
-            inventory={"drops": [SimpleNamespace(name="Spirit Sigil", subtyp="Summon - Spirit", rarity=1.0), items.DragonTear]},
+            inventory={
+                "drops": [
+                    SimpleNamespace(name="Spirit Sigil", subtyp="Summon - Spirit", rarity=1.0),
+                    items.DragonTear,
+                ]
+            },
         )
         rolls = iter([0.0, 0.0])
         monkeypatch.setattr(player_module.random, "random", lambda: next(rolls))
@@ -175,12 +195,16 @@ class TestPlayerLootCoverage:
         player.spellbook["Skills"]["Scavenger's Eye"] = abilities.ScavengersEye()
         player.check_mod = lambda mod, enemy=None, typ=None, luck_factor=1, **_kwargs: 0
         captured = []
-        player.modify_inventory = lambda item, rare=False, **_kwargs: captured.append((item.name, rare))
+        player.modify_inventory = lambda item, rare=False, **_kwargs: captured.append(
+            (item.name, rare)
+        )
         player.quests = lambda enemy=None, item=None: ""
         enemy = SimpleNamespace(
             name="Bandit",
             gold=0,
-            inventory={"drops": [SimpleNamespace(name="Iron Dagger", subtyp="Dagger", rarity=0.005)]},
+            inventory={
+                "drops": [SimpleNamespace(name="Iron Dagger", subtyp="Dagger", rarity=0.005)]
+            },
         )
         monkeypatch.setattr(player_module.random, "random", lambda: 0.02)
 
@@ -219,7 +243,9 @@ class TestPlayerPreviewCoverage:
         assert player.equipment["Weapon"].name == "Blade"
         assert player.equipment["OffHand"].name == "Dagger"
 
-        offhand_diff = player.equip_diff(_fake_item("Twinblade", typ="Weapon", subtyp="Dagger", crit=0.15), "OffHand")
+        offhand_diff = player.equip_diff(
+            _fake_item("Twinblade", typ="Weapon", subtyp="Dagger", crit=0.15), "OffHand"
+        )
         assert "OffHand Attack" in offhand_diff
         assert "5 -> 15" in offhand_diff
         assert "OffHand Crit" in offhand_diff
@@ -309,11 +335,19 @@ class TestPlayerPreviewCoverage:
         player.cls.equip_check = lambda item, equip_slot: True
         player.equipment["Weapon"] = _fake_item("Great Pike", subtyp="Polearm", handed=2, crit=0.2)
         player.equipment["OffHand"] = items.NoOffHand()
-        player.spellbook["Skills"] = {"Leap Alias": SimpleNamespace(name="Jump", enforce_modification_limit=lambda _player: ["Long"])}
+        player.spellbook["Skills"] = {
+            "Leap Alias": SimpleNamespace(
+                name="Jump", enforce_modification_limit=lambda _player: ["Long"]
+            )
+        }
         captured = []
-        player.modify_inventory = lambda item, num=1, subtract=False, **_kwargs: captured.append((item.name, subtract))
+        player.modify_inventory = lambda item, num=1, subtract=False, **_kwargs: captured.append(
+            (item.name, subtract)
+        )
 
-        result = player.equip("OffHand", _fake_item("Buckler", typ="OffHand", subtyp="Shield", handed=0))
+        result = player.equip(
+            "OffHand", _fake_item("Buckler", typ="OffHand", subtyp="Shield", handed=0)
+        )
 
         assert result is True
         assert player.equipment["Weapon"].subtyp == "None"
@@ -323,7 +357,9 @@ class TestPlayerPreviewCoverage:
     def test_unequip_promo_and_missing_slot_branch(self):
         player = TestGameState.create_player(class_name="Warrior", race_name="Human")
         captured = []
-        player.modify_inventory = lambda item, num=1, subtract=False, **_kwargs: captured.append((item.name, subtract))
+        player.modify_inventory = lambda item, num=1, subtract=False, **_kwargs: captured.append(
+            (item.name, subtract)
+        )
 
         empty_weapon = player.unequip("Weapon")
         player.unequip(promo=True)

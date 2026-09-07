@@ -3,15 +3,22 @@
 import pygame
 
 from src.core import enemies, items
+
 from .base import BasePopupMenu
 
 
 class QuestPopupMenu(BasePopupMenu):
     """Quest-specific popup that shows quest details."""
+
     def __init__(self, presenter, parent_screen):
         super().__init__(presenter, parent_screen, title="Quests")
         # Make quest popup larger for long descriptions
-        self.popup_rect = pygame.Rect(int(self.width * 0.05), int(self.height * 0.08), int(self.width * 0.9), int(self.height * 0.82))
+        self.popup_rect = pygame.Rect(
+            int(self.width * 0.05),
+            int(self.height * 0.08),
+            int(self.width * 0.9),
+            int(self.height * 0.82),
+        )
         self.list_rect = pygame.Rect(
             self.popup_rect.left + 24,
             self.popup_rect.top + 72,
@@ -46,11 +53,12 @@ class QuestPopupMenu(BasePopupMenu):
                 for quest_name, quest_info in quests_by_type.items():
                     if isinstance(quest_info, list) and len(quest_info) >= 3:
                         bounty_data, count, completed = quest_info[0], quest_info[1], quest_info[2]
-                        entry = (f"[{quest_type}] {quest_name}", quest_type, quest_name, {
-                            'bounty_data': bounty_data,
-                            'count': count,
-                            'completed': completed
-                        })
+                        entry = (
+                            f"[{quest_type}] {quest_name}",
+                            quest_type,
+                            quest_name,
+                            {"bounty_data": bounty_data, "count": count, "completed": completed},
+                        )
                         if completed:
                             completed_items.append(entry)
                         else:
@@ -60,12 +68,12 @@ class QuestPopupMenu(BasePopupMenu):
                 for key, value in quests_by_type.items():
                     if isinstance(value, dict):
                         # Check if this looks like quest data (has quest properties) or nested structure
-                        if 'Type' in value or 'Who' in value or 'What' in value:
+                        if "Type" in value or "Who" in value or "What" in value:
                             # This is quest data directly - flat structure
                             quest_name = key
                             quest_data = value
-                            completed = quest_data.get('Completed', False)
-                            turned_in = quest_data.get('Turned In', False)
+                            completed = quest_data.get("Completed", False)
+                            turned_in = quest_data.get("Turned In", False)
                             display_name = f"[{quest_type}] {quest_name}"
                             entry = (display_name, quest_type, quest_name, quest_data)
                             if turned_in:
@@ -77,8 +85,8 @@ class QuestPopupMenu(BasePopupMenu):
                         else:
                             # This is a nested structure (level -> quests)
                             for quest_name, quest_data in value.items():
-                                completed = quest_data.get('Completed', False)
-                                turned_in = quest_data.get('Turned In', False)
+                                completed = quest_data.get("Completed", False)
+                                turned_in = quest_data.get("Turned In", False)
                                 display_name = f"[{quest_type}] {quest_name}"
                                 entry = (display_name, quest_type, quest_name, quest_data)
                                 if turned_in:
@@ -143,14 +151,14 @@ class QuestPopupMenu(BasePopupMenu):
 
     def _draw_bounty_details(self, quest_data, x, y):
         """Draw bounty quest details."""
-        bounty_data = quest_data.get('bounty_data', {})
-        count = quest_data.get('count', 0)
-        completed = quest_data.get('completed', False)
+        bounty_data = quest_data.get("bounty_data", {})
+        count = quest_data.get("count", 0)
+        completed = quest_data.get("completed", False)
 
         # Target - handle both enemy object and string
-        if 'enemy' in bounty_data:
-            enemy = bounty_data['enemy']
-            if hasattr(enemy, 'name'):
+        if "enemy" in bounty_data:
+            enemy = bounty_data["enemy"]
+            if hasattr(enemy, "name"):
                 target = enemy.name
             else:
                 target = str(enemy)
@@ -159,7 +167,9 @@ class QuestPopupMenu(BasePopupMenu):
 
         description = self._quest_description_text(bounty_data)
         if description:
-            y = self._render_wrapped_attribute("Description", description, x, y, self.quest_description_width())
+            y = self._render_wrapped_attribute(
+                "Description", description, x, y, self.quest_description_width()
+            )
             y += self.line_height // 2
 
         lines = [
@@ -186,7 +196,7 @@ class QuestPopupMenu(BasePopupMenu):
         y = self._draw_reward_line(f"{bounty_data.get('exp', 0)} Experience", None, x, y)
         y += self.line_height
 
-        reward = bounty_data.get('reward')
+        reward = bounty_data.get("reward")
         if reward:
             reward_item = None
             reward_name = "Unknown Item"
@@ -215,26 +225,28 @@ class QuestPopupMenu(BasePopupMenu):
             return
 
         # Quest type
-        quest_type = quest_data.get('Type', 'Unknown')
+        quest_type = quest_data.get("Type", "Unknown")
         text = self.normal_font.render(f"Type: {quest_type}", True, self.WHITE)
         self.screen.blit(text, (x, y))
         y += self.line_height
 
         description = self._quest_description_text(quest_data)
         if description:
-            y = self._render_wrapped_attribute("Description", description, x, y, self.quest_description_width())
+            y = self._render_wrapped_attribute(
+                "Description", description, x, y, self.quest_description_width()
+            )
             y += self.line_height // 2
 
         # Quest objective
-        if quest_type == 'Defeat':
-            what = quest_data.get('What', 'Unknown')
-            total = quest_data.get('Total', 1)
+        if quest_type == "Defeat":
+            what = quest_data.get("What", "Unknown")
+            total = quest_data.get("Total", 1)
             objective = f"Defeat: {what}" if total == 1 else f"Defeat: {what} ({total})"
             text = self.normal_font.render(objective, True, self.WHITE)
             self.screen.blit(text, (x, y))
             y += self.line_height
-        elif quest_type == 'Collect':
-            what = quest_data.get('What')
+        elif quest_type == "Collect":
+            what = quest_data.get("What")
 
             # Resolve a readable target name and aliases for progress matching.
             item_name = None
@@ -242,10 +254,10 @@ class QuestPopupMenu(BasePopupMenu):
             target_classes = set()
 
             if isinstance(what, str):
-                if what == 'Relics':
-                    item_name = 'Relics'
-                    target_names.add('Relics')
-                    target_classes.add('Relics')
+                if what == "Relics":
+                    item_name = "Relics"
+                    target_names.add("Relics")
+                    target_classes.add("Relics")
                 else:
                     target_names.add(what)
                     target_classes.add(what)
@@ -253,7 +265,7 @@ class QuestPopupMenu(BasePopupMenu):
                     if item_cls and callable(item_cls):
                         try:
                             item_obj = item_cls()
-                            item_name = getattr(item_obj, 'name', what)
+                            item_name = getattr(item_obj, "name", what)
                             target_names.add(item_name)
                             target_classes.add(item_cls.__name__)
                         except Exception:
@@ -263,12 +275,12 @@ class QuestPopupMenu(BasePopupMenu):
             elif callable(what):
                 try:
                     item_obj = what()
-                    item_name = getattr(item_obj, 'name', getattr(what, '__name__', str(what)))
+                    item_name = getattr(item_obj, "name", getattr(what, "__name__", str(what)))
                 except Exception:
-                    item_name = getattr(what, '__name__', str(what))
+                    item_name = getattr(what, "__name__", str(what))
                 target_names.add(item_name)
-                target_classes.add(getattr(what, '__name__', item_name))
-            elif hasattr(what, 'name'):
+                target_classes.add(getattr(what, "__name__", item_name))
+            elif hasattr(what, "name"):
                 item_name = what.name
                 target_names.add(item_name)
                 target_classes.add(what.__class__.__name__)
@@ -277,33 +289,37 @@ class QuestPopupMenu(BasePopupMenu):
                 target_names.add(item_name)
                 target_classes.add(item_name)
 
-            total = quest_data.get('Total', 1)
+            total = quest_data.get("Total", 1)
             text = self.normal_font.render(f"Collect: {item_name}", True, self.WHITE)
             self.screen.blit(text, (x, y))
             y += self.line_height
 
             # Progress (parity with bounty-style visibility).
-            if isinstance(what, str) and what == 'Relics':
+            if isinstance(what, str) and what == "Relics":
                 relics = ["Triangulus", "Quadrata", "Hexagonum", "Luna", "Polaris", "Infinitas"]
                 current = sum(1 for relic in relics if relic in player_char.special_inventory)
             else:
                 current = 0
-                for inventory_name in ('special_inventory', 'inventory'):
+                for inventory_name in ("special_inventory", "inventory"):
                     inventory = getattr(player_char, inventory_name, {})
                     for key, item_list in inventory.items():
                         if not item_list:
                             continue
                         sample = item_list[0]
-                        sample_name = getattr(sample, 'name', key)
+                        sample_name = getattr(sample, "name", key)
                         sample_class = sample.__class__.__name__
-                        if key in target_names or sample_name in target_names or sample_class in target_classes:
+                        if (
+                            key in target_names
+                            or sample_name in target_names
+                            or sample_class in target_classes
+                        ):
                             current += len(item_list)
 
             text = self.normal_font.render(f"Collected: {current}/{total}", True, self.WHITE)
             self.screen.blit(text, (x, y))
             y += self.line_height
-        elif quest_type == 'Locate':
-            what = quest_data.get('What', 'Unknown')
+        elif quest_type == "Locate":
+            what = quest_data.get("What", "Unknown")
             text = self.normal_font.render(f"Locate: {what}", True, self.WHITE)
             self.screen.blit(text, (x, y))
             y += self.line_height
@@ -311,15 +327,17 @@ class QuestPopupMenu(BasePopupMenu):
         y += self.line_height // 2
 
         # Status
-        completed = quest_data.get('Completed', False)
-        turned_in = quest_data.get('Turned In', False)
+        completed = quest_data.get("Completed", False)
+        turned_in = quest_data.get("Turned In", False)
         if turned_in:
             status = "Turned In"
         elif completed:
             status = "Complete - Ready to Turn In"
         else:
             status = "In Progress"
-        text = self.normal_font.render(f"Status: {status}", True, self.GOLD if completed and not turned_in else self.WHITE)
+        text = self.normal_font.render(
+            f"Status: {status}", True, self.GOLD if completed and not turned_in else self.WHITE
+        )
         self.screen.blit(text, (x, y))
         y += self.line_height * 1.5
 
@@ -328,15 +346,15 @@ class QuestPopupMenu(BasePopupMenu):
         self.screen.blit(text, (x, y))
         y += self.line_height
 
-        exp = quest_data.get('Experience', 0)
+        exp = quest_data.get("Experience", 0)
         if exp:
             y = self._draw_reward_line(f"{exp} Experience", None, x, y)
             y += self.line_height
 
-        reward = quest_data.get('Reward')
-        reward_num = quest_data.get('Reward Number', 0)
+        reward = quest_data.get("Reward")
+        reward_num = quest_data.get("Reward Number", 0)
         if reward:
-            if isinstance(reward, list) and len(reward) > 0 and reward[0] == 'Gold':
+            if isinstance(reward, list) and len(reward) > 0 and reward[0] == "Gold":
                 y = self._draw_reward_line(f"{reward_num} Gold", "Gold", x, y)
                 y += self.line_height
             elif isinstance(reward, list):
@@ -351,7 +369,7 @@ class QuestPopupMenu(BasePopupMenu):
                         if callable(item_cls):
                             try:
                                 item_obj = item_cls()
-                                name = getattr(item_obj, 'name', r)
+                                name = getattr(item_obj, "name", r)
                             except Exception:
                                 name = r
                         else:
@@ -363,10 +381,10 @@ class QuestPopupMenu(BasePopupMenu):
                         name = r.__name__
                         try:
                             item_obj = r()
-                            name = getattr(item_obj, 'name', name)
+                            name = getattr(item_obj, "name", name)
                         except Exception:
                             pass
-                    elif hasattr(r, 'name'):
+                    elif hasattr(r, "name"):
                         # It's an instance with a name attribute
                         name = r.name
                         item_obj = r
@@ -374,10 +392,12 @@ class QuestPopupMenu(BasePopupMenu):
                         # It's callable but not a class, try to instantiate
                         try:
                             instance = r()
-                            name = getattr(instance, 'name', r.__name__ if hasattr(r, '__name__') else None)
+                            name = getattr(
+                                instance, "name", r.__name__ if hasattr(r, "__name__") else None
+                            )
                             item_obj = instance
                         except Exception:
-                            name = r.__name__ if hasattr(r, '__name__') else None
+                            name = r.__name__ if hasattr(r, "__name__") else None
 
                     # Last resort
                     if name is None:
@@ -391,7 +411,9 @@ class QuestPopupMenu(BasePopupMenu):
         text_x = x + 16
         if icon_subject is not None:
             icon = self.icon_manager.get_icon(icon_subject)
-            icon_rect = pygame.Rect(text_x, y + max(0, (self.line_height - icon_size) // 2), icon_size, icon_size)
+            icon_rect = pygame.Rect(
+                text_x, y + max(0, (self.line_height - icon_size) // 2), icon_size, icon_size
+            )
             self.screen.blit(pygame.transform.smoothscale(icon, icon_rect.size), icon_rect)
             text_x = icon_rect.right + 8
         rendered = self.normal_font.render(str(text), True, self.WHITE)
@@ -433,7 +455,12 @@ class BestiaryPopupMenu(BasePopupMenu):
         self._enemy_cache: dict[str, enemies.Enemy | None] = {}
         self._hint_cache: dict[tuple[str, bool], tuple[list[str], list[str]]] = {}
         self.summary_text = "Seen: 0 | Defeated: 0 | Detailed: 0"
-        self.popup_rect = pygame.Rect(int(self.width * 0.05), int(self.height * 0.08), int(self.width * 0.9), int(self.height * 0.82))
+        self.popup_rect = pygame.Rect(
+            int(self.width * 0.05),
+            int(self.height * 0.08),
+            int(self.width * 0.9),
+            int(self.height * 0.82),
+        )
         self.list_rect = pygame.Rect(
             self.popup_rect.left + 24,
             self.popup_rect.top + 72,
@@ -453,7 +480,15 @@ class BestiaryPopupMenu(BasePopupMenu):
             return False
         if record.get("details_unlocked") is True:
             return True
-        detail_keys = {"difficulty_level", "level", "pro_level", "resistances", "known_abilities", "features", "immunities"}
+        detail_keys = {
+            "difficulty_level",
+            "level",
+            "pro_level",
+            "resistances",
+            "known_abilities",
+            "features",
+            "immunities",
+        }
         return any(key in record for key in detail_keys)
 
     def build_items(self, player_char):
@@ -512,14 +547,24 @@ class BestiaryPopupMenu(BasePopupMenu):
         for entry in entries_by_name.values():
             defeated_count = int(entry.get("count", 0) or 0)
             seen_count = int(entry.get("seen_count", 0) or 0)
-            entry["display_seen_count"] = seen_count if seen_count > 0 else max(1 if defeated_count > 0 else 0, defeated_count)
-            entry["text"] = f"{entry['enemy_name']} x{defeated_count}" if defeated_count > 0 else f"{entry['enemy_name']} Seen"
+            entry["display_seen_count"] = (
+                seen_count
+                if seen_count > 0
+                else max(1 if defeated_count > 0 else 0, defeated_count)
+            )
+            entry["text"] = (
+                f"{entry['enemy_name']} x{defeated_count}"
+                if defeated_count > 0
+                else f"{entry['enemy_name']} Seen"
+            )
             entries.append(entry)
 
         seen_entries = len(entries)
         defeated_entries = sum(1 for entry in entries if int(entry.get("count", 0) or 0) > 0)
         detailed_entries = sum(1 for entry in entries if entry.get("details_unlocked"))
-        self.summary_text = f"Seen: {seen_entries} | Defeated: {defeated_entries} | Detailed: {detailed_entries}"
+        self.summary_text = (
+            f"Seen: {seen_entries} | Defeated: {defeated_entries} | Detailed: {detailed_entries}"
+        )
 
         self.items = sorted(entries, key=lambda item: item["enemy_name"]) or [
             {"is_header": False, "text": "No bestiary entries", "empty": True}
@@ -541,7 +586,9 @@ class BestiaryPopupMenu(BasePopupMenu):
     def draw_popup(self, player_char):
         super().draw_popup(player_char)
         summary = self.small_font.render(self.summary_text, True, self.LIGHT_GRAY)
-        self.screen.blit(summary, (self.popup_rect.centerx - summary.get_width() // 2, self.popup_rect.top + 48))
+        self.screen.blit(
+            summary, (self.popup_rect.centerx - summary.get_width() // 2, self.popup_rect.top + 48)
+        )
 
     @classmethod
     def _build_enemy_class_index(cls) -> dict[str, type[enemies.Enemy]]:
@@ -621,7 +668,9 @@ class BestiaryPopupMenu(BasePopupMenu):
         if rect.width <= 0 or rect.height <= 0:
             return
         try:
-            from src.ui_pygame.assets.enemy_combat_sprite_manager import get_enemy_combat_sprite_manager
+            from src.ui_pygame.assets.enemy_combat_sprite_manager import (
+                get_enemy_combat_sprite_manager,
+            )
 
             manager = get_enemy_combat_sprite_manager()
             sprite = (
@@ -638,7 +687,9 @@ class BestiaryPopupMenu(BasePopupMenu):
         self.screen.blit(self.normal_font.render(f"{label}: {value}", True, self.WHITE), (x, y))
         return y + self.line_height
 
-    def _draw_detail_section(self, title: str, rows: list[str], x: int, y: int, empty_text: str = "None") -> int:
+    def _draw_detail_section(
+        self, title: str, rows: list[str], x: int, y: int, empty_text: str = "None"
+    ) -> int:
         self.screen.blit(self.normal_font.render(title, True, self.GOLD), (x, y))
         y += self.line_height
         for row in rows or [empty_text]:
@@ -663,7 +714,9 @@ class BestiaryPopupMenu(BasePopupMenu):
         y = self.details_rect.top + 12
 
         if not isinstance(item, dict) or item.get("empty"):
-            self.screen.blit(self.normal_font.render("No bestiary entries recorded.", True, self.GRAY), (x, y))
+            self.screen.blit(
+                self.normal_font.render("No bestiary entries recorded.", True, self.GRAY), (x, y)
+            )
             return
 
         enemy_name = item["enemy_name"]
@@ -684,7 +737,9 @@ class BestiaryPopupMenu(BasePopupMenu):
         if difficulty is None:
             difficulty = observed.get("pro_level", observed.get("level", "Unknown"))
         y = self._draw_detail_line("Type", observed.get("type", item["enemy_type"]), x, y)
-        y = self._draw_detail_line("Seen", item.get("display_seen_count", item.get("seen_count", 0)), x, y)
+        y = self._draw_detail_line(
+            "Seen", item.get("display_seen_count", item.get("seen_count", 0)), x, y
+        )
         y = self._draw_detail_line("Defeated", item["count"], x, y)
 
         defeated_count = int(item.get("count", 0) or 0)
@@ -700,7 +755,9 @@ class BestiaryPopupMenu(BasePopupMenu):
             y += 8
             self.screen.blit(self.normal_font.render("Details unknown.", True, self.GRAY), (x, y))
             y += self.line_height
-            boss_entry = enemies.bestiary_uses_boss_drop_rules(enemy_name) or "Boss" in set(observed.get("features", []) or [])
+            boss_entry = enemies.bestiary_uses_boss_drop_rules(enemy_name) or "Boss" in set(
+                observed.get("features", []) or []
+            )
             if boss_entry:
                 hint = "Boss details cannot be revealed with Vision."
             else:
@@ -715,14 +772,18 @@ class BestiaryPopupMenu(BasePopupMenu):
         resistances = observed.get("resistances", {}) or {}
         if isinstance(resistances, dict):
             resistance_rows = [
-                f"{name} {self._format_resistance(value)}"
-                for name, value in resistances.items()
+                f"{name} {self._format_resistance(value)}" for name, value in resistances.items()
             ]
         else:
             resistance_rows = []
         y = self._draw_detail_section("Resistances", resistance_rows, x, y)
         y += 4
-        y = self._draw_detail_line("Known Abilities", self._display_list(observed.get("known_abilities"), "None observed"), x, y)
+        y = self._draw_detail_line(
+            "Known Abilities",
+            self._display_list(observed.get("known_abilities"), "None observed"),
+            x,
+            y,
+        )
         features = list(observed.get("features", []) or [])
         immunities = set(observed.get("immunities", []) or [])
         for feature in list(features):

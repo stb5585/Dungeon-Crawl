@@ -7,6 +7,7 @@ import math
 import pygame
 
 from src.ui_pygame.assets.enemy_combat_sprite_manager import EnemyCombatSpriteManager
+
 from ..enemy_presentation import is_invisible_target, player_has_sight
 
 
@@ -44,9 +45,9 @@ class CombatSpriteMixin:
     def _colorize_sprite(self, sprite, enemy):
         """Prepare sprite for rendering.
 
-        With the new colored sprite system (ascii_to_sprite_colored.py), sprites
-        are generated with full color palettes that preserve detail and outlines.
-        This method now skips blanket colorization which was destroying detail.
+        Current combat sprites are authored as full-color PNG assets that
+        preserve detail and outlines. This method skips blanket colorization,
+        which would destroy that detail.
 
         Combat sprites now include:
         - Base color for the enemy type
@@ -65,8 +66,12 @@ class CombatSpriteMixin:
             try:
                 sprite_key = self.enemy_combat_sprite_manager.get_sprite_key_for_enemy(enemy)
                 return self.enemy_combat_sprite_manager.get_scaled_sprite_by_key(sprite_key, size)
-            except Exception as exc:  # pragma: no cover - defensive fallback for asset loading failures
-                print(f"Failed to render enemy combat sprite for {getattr(enemy, 'name', enemy)}: {exc}")
+            except (
+                Exception
+            ) as exc:  # pragma: no cover - defensive fallback for asset loading failures
+                print(
+                    f"Failed to render enemy combat sprite for {getattr(enemy, 'name', enemy)}: {exc}"
+                )
         return None
 
     def _is_boss_enemy(self, enemy) -> bool:
@@ -291,7 +296,9 @@ class CombatSpriteMixin:
         faded.set_alpha(int(56 + pulse * 42))
         return faded
 
-    def _render_ability_status_visuals(self, character, target: str, *, include_duplicates: bool = True) -> None:
+    def _render_ability_status_visuals(
+        self, character, target: str, *, include_duplicates: bool = True
+    ) -> None:
         rect = self._target_rect_for_effect(target)
         if self._magic_effect_active(character, "Mana Shield"):
             self._render_mana_shield_visual(
@@ -318,7 +325,7 @@ class CombatSpriteMixin:
 
         # Fill combat area background
         combat_rect = pygame.Rect(0, 0, self.combat_width, self.combat_height)
-        self.screen.fill(self.colors['background'], combat_rect)
+        self.screen.fill(self.colors["background"], combat_rect)
 
         # Check if player can see enemy details
         has_sight = self._enemy_details_visible(player_char, enemy, show_enemy_details)
@@ -328,7 +335,9 @@ class CombatSpriteMixin:
         self._render_enemy_info_panel(enemy, has_sight, overlay=False)
 
         # Render current turn indicator
-        self._render_turn_indicator(player_char, enemy, current_turn=current_turn, current_actor=current_actor)
+        self._render_turn_indicator(
+            player_char, enemy, current_turn=current_turn, current_actor=current_actor
+        )
         self._render_telegraph_banner(enemy=enemy, overlay=False)
 
         # Render player status at bottom left

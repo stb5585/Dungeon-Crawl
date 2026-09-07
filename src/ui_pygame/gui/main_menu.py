@@ -5,7 +5,12 @@ Main menu screen for the Pygame GUI.
 import pygame
 
 from src.paths import PYGAME_ASSETS_DIR
-from .input_guards import prepare_guarded_input, release_guard_allows_input, update_input_armed_from_event
+
+from .input_guards import (
+    prepare_guarded_input,
+    release_guard_allows_input,
+    update_input_armed_from_event,
+)
 from .mouse_helpers import hit_index, is_left_click, mouse_position
 
 
@@ -15,13 +20,13 @@ class MainMenuScreen:
     """
 
     BACKGROUND_PATH = PYGAME_ASSETS_DIR / "backgrounds" / "main_menu.png"
-    
+
     def __init__(self, presenter):
         self.presenter = presenter
         self.screen = presenter.screen
         self.width = presenter.width
         self.height = presenter.height
-        
+
         # Colors
         self.BLACK = (0, 0, 0)
         self.WHITE = (255, 255, 255)
@@ -29,13 +34,13 @@ class MainMenuScreen:
         self.GRAY = (128, 128, 128)
         self.BORDER_COLOR = (200, 200, 200)
         self.HIGHLIGHT_BG = (60, 60, 80)
-        
+
         # Fonts
         self.title_font = presenter.title_font
         self.normal_font = presenter.normal_font
         self.small_font = presenter.small_font
         self.background = self._load_background()
-        
+
         self.current_option = 0
         self.options = []
 
@@ -88,19 +93,21 @@ class MainMenuScreen:
 
         scaled, offset = self._scale_background(self.background)
         self.screen.blit(scaled, offset)
-    
+
     def draw_title(self):
         """Draw a text title only when the title background is unavailable."""
         if self.background is not None:
             return
 
         title = self.title_font.render("The Forsaken Tenet", True, self.GOLD)
-        subtitle = self.normal_font.render("A tale of choice, memory, and the Seventh Principle", True, self.WHITE)
+        subtitle = self.normal_font.render(
+            "A tale of choice, memory, and the Seventh Principle", True, self.WHITE
+        )
         title_rect = title.get_rect(centerx=self.width // 2, top=max(40, self.height // 5))
         subtitle_rect = subtitle.get_rect(centerx=self.width // 2, top=title_rect.bottom + 16)
         self.screen.blit(title, title_rect)
         self.screen.blit(subtitle, subtitle_rect)
-    
+
     def draw_menu(self):
         """Draw the menu options."""
         menu_width = min(360, self.width - 80)
@@ -112,12 +119,14 @@ class MainMenuScreen:
         panel = pygame.Surface((menu_width, menu_height), pygame.SRCALPHA)
         panel.fill((0, 0, 0, 150))
         self.screen.blit(panel, (menu_x, menu_y))
-        
+
         option_rects = self.option_rects()
         for i, option in enumerate(self.options):
             y = menu_y + 14 + i * line_height
-            text = self.normal_font.render(option, True, self.BLACK if i == self.current_option else self.WHITE)
-            
+            text = self.normal_font.render(
+                option, True, self.BLACK if i == self.current_option else self.WHITE
+            )
+
             # Highlight selected option
             if i == self.current_option:
                 pygame.draw.rect(self.screen, self.WHITE, option_rects[i])
@@ -127,14 +136,14 @@ class MainMenuScreen:
             else:
                 text_rect = text.get_rect(centerx=self.width // 2, top=y)
                 self.screen.blit(text, text_rect)
-    
+
     def draw(self):
         """Draw the entire main menu."""
         self.draw_background()
         self.draw_title()
         self.draw_menu()
         pygame.display.flip()
-    
+
     def navigate(
         self,
         options,
@@ -143,10 +152,10 @@ class MainMenuScreen:
     ):
         """
         Navigate the main menu and return selected option index.
-        
+
         Args:
             options: List of menu option strings
-            
+
         Returns:
             int: Index of selected option, or None if cancelled
         """
@@ -156,15 +165,16 @@ class MainMenuScreen:
             flush_events=flush_events,
             require_key_release=require_key_release,
         )
-        
+
         while True:
             self.draw()
-            
+
             input_armed = release_guard_allows_input(require_key_release, input_armed)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     import sys
+
                     sys.exit()
                 input_armed = update_input_armed_from_event(event, require_key_release, input_armed)
                 hovered = hit_index(self.option_rects(), mouse_position(event))
@@ -185,5 +195,5 @@ class MainMenuScreen:
                         return self.current_option
                     elif event.key == pygame.K_ESCAPE:
                         return None
-            
+
             self.presenter.clock.tick(30)

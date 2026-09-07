@@ -41,7 +41,9 @@ def _tamed_enemy_class_key(enemy_class: Any) -> str | None:
     return TAMED_COMPANION_CLASS_ALIASES.get(key, key)
 
 
-def _tamed_species_data(enemy_class: Any = None, species: Any = None, name: Any = None) -> dict[str, Any] | None:
+def _tamed_species_data(
+    enemy_class: Any = None, species: Any = None, name: Any = None
+) -> dict[str, Any] | None:
     key = _tamed_enemy_class_key(enemy_class)
     if key and key in TAMED_COMPANION_SPECIES:
         return TAMED_COMPANION_SPECIES[key]
@@ -57,7 +59,9 @@ def tamed_companion_species(enemy: Any) -> str:
     return str(data["species"]) if data else str(getattr(enemy, "name", "Animal") or "Animal")
 
 
-def tamed_companion_evolution_for_bond(bond: Any, enemy_class: Any = None, species: Any = None) -> str:
+def tamed_companion_evolution_for_bond(
+    bond: Any, enemy_class: Any = None, species: Any = None
+) -> str:
     try:
         value = max(0, min(100, int(bond or 0)))
     except (TypeError, ValueError):
@@ -117,14 +121,18 @@ def _known_tamed_evolutions() -> set[str]:
 def tamed_companion_display_name(state: Any) -> str:
     """Return the visible tamed companion name, preserving species identity."""
     entry = state if isinstance(state, dict) else {}
-    base_name = str(entry.get("name") or entry.get("species") or entry.get("enemy_class") or "Companion")
+    base_name = str(
+        entry.get("name") or entry.get("species") or entry.get("enemy_class") or "Companion"
+    )
     custom_name = str(entry.get("custom_name") or "").strip()
     if custom_name and custom_name != base_name:
         return f"{custom_name} ({base_name})"
     return base_name
 
 
-def rename_tamed_companion(character: Any, custom_name: Any, roster_index: int | None = None) -> None:
+def rename_tamed_companion(
+    character: Any, custom_name: Any, roster_index: int | None = None
+) -> None:
     """Set a tamed companion nickname while keeping the original animal identity."""
     state = normalize_tamed_companion(getattr(character, "tamed_companion", None))
     roster = list(state.get("companions", []))
@@ -140,7 +148,9 @@ def rename_tamed_companion(character: Any, custom_name: Any, roster_index: int |
     entry = dict(roster[roster_index])
     entry["custom_name"] = nickname or None
     roster[roster_index] = entry
-    character.tamed_companion = _with_active_tamed_companion(roster, int(state.get("active_index", roster_index) or 0))
+    character.tamed_companion = _with_active_tamed_companion(
+        roster, int(state.get("active_index", roster_index) or 0)
+    )
     try:
         from ... import companions
 
@@ -153,11 +163,15 @@ def _tamed_entry_from_state(state: Any) -> dict[str, Any]:
     normalized = default_tamed_companion()
     if isinstance(state, dict):
         normalized["active"] = bool(state.get("active", False))
-        normalized["enemy_class"] = _tamed_enemy_class_key(state.get("enemy_class")) if state.get("enemy_class") else None
+        normalized["enemy_class"] = (
+            _tamed_enemy_class_key(state.get("enemy_class")) if state.get("enemy_class") else None
+        )
         normalized["name"] = state.get("name") if state.get("name") else normalized["enemy_class"]
         custom_name = str(state.get("custom_name") or "").strip()
         normalized["custom_name"] = custom_name or None
-        species_data = _tamed_species_data(normalized["enemy_class"], state.get("species"), normalized["name"])
+        species_data = _tamed_species_data(
+            normalized["enemy_class"], state.get("species"), normalized["name"]
+        )
         normalized["species"] = (
             str(species_data["species"])
             if species_data
@@ -173,13 +187,21 @@ def _tamed_entry_from_state(state: Any) -> dict[str, Any]:
             normalized["bond"] = 0
         special = str(state.get("special_ability") or "")
         if special not in TAMED_COMPANION_SPECIALS:
-            special = str(species_data["special_ability"]) if species_data else _infer_tamed_special_from_name(normalized["enemy_class"] or normalized["name"])
+            special = (
+                str(species_data["special_ability"])
+                if species_data
+                else _infer_tamed_special_from_name(normalized["enemy_class"] or normalized["name"])
+            )
         normalized["special_ability"] = special
         evolution = str(state.get("evolution") or "")
         expected_evolution = tamed_companion_evolution_for_bond(
             normalized["bond"], normalized["enemy_class"], normalized["species"]
         )
-        normalized["evolution"] = evolution if evolution in _known_tamed_evolutions() and evolution == expected_evolution else expected_evolution
+        normalized["evolution"] = (
+            evolution
+            if evolution in _known_tamed_evolutions() and evolution == expected_evolution
+            else expected_evolution
+        )
         pending = state.get("pending_command")
         normalized["pending_command"] = str(pending) if pending else None
         base = state.get("base")
@@ -214,7 +236,9 @@ def _tamed_roster_key(entry: dict[str, Any]) -> str:
     return str(entry.get("enemy_class") or entry.get("species") or entry.get("name") or "")
 
 
-def _with_active_tamed_companion(roster: list[dict[str, Any]], active_index: int | None) -> dict[str, Any]:
+def _with_active_tamed_companion(
+    roster: list[dict[str, Any]], active_index: int | None
+) -> dict[str, Any]:
     normalized = default_tamed_companion()
     normalized["companions"] = roster[:TAMED_COMPANION_ROSTER_LIMIT]
     if active_index is None or active_index < 0 or active_index >= len(normalized["companions"]):
@@ -246,14 +270,22 @@ def normalize_tamed_companion(state: Any) -> dict[str, Any]:
             roster.append(entry)
             if len(roster) >= TAMED_COMPANION_ROSTER_LIMIT:
                 break
-    if active_entry.get("active") and active_entry.get("enemy_class") and _tamed_roster_key(active_entry) not in seen:
+    if (
+        active_entry.get("active")
+        and active_entry.get("enemy_class")
+        and _tamed_roster_key(active_entry) not in seen
+    ):
         roster.insert(0, active_entry)
         roster = roster[:TAMED_COMPANION_ROSTER_LIMIT]
 
     active_index = None
     if roster:
         try:
-            requested_index = int(state.get("active_index")) if isinstance(state, dict) and state.get("active_index") is not None else None
+            requested_index = (
+                int(state.get("active_index"))
+                if isinstance(state, dict) and state.get("active_index") is not None
+                else None
+            )
         except (TypeError, ValueError):
             requested_index = None
         if requested_index is not None and 0 <= requested_index < len(roster):
@@ -273,7 +305,9 @@ def normalize_tamed_companion(state: Any) -> dict[str, Any]:
     normalized = _with_active_tamed_companion(roster, active_index)
     if isinstance(state, dict) and state.get("pending_command") and normalized["active"]:
         normalized["pending_command"] = str(state["pending_command"])
-        normalized["companions"][normalized["active_index"]]["pending_command"] = normalized["pending_command"]
+        normalized["companions"][normalized["active_index"]]["pending_command"] = normalized[
+            "pending_command"
+        ]
     return normalized
 
 
@@ -314,7 +348,9 @@ def release_tamed_companion(character: Any, roster_index: int | None = None) -> 
 
 
 def tamed_special_description(special_ability: str | None) -> str:
-    return TAMED_COMPANION_SPECIALS.get(str(special_ability or ""), TAMED_COMPANION_SPECIALS["Keen Scent"])
+    return TAMED_COMPANION_SPECIALS.get(
+        str(special_ability or ""), TAMED_COMPANION_SPECIALS["Keen Scent"]
+    )
 
 
 def apply_tamed_companion_growth(companion: Any, state: dict[str, Any]) -> None:
@@ -335,10 +371,14 @@ def apply_tamed_companion_growth(companion: Any, state: dict[str, Any]) -> None:
     for attr in ("strength", "con", "dex"):
         setattr(companion.stats, attr, max(1, int(getattr(companion.stats, attr, 1) * multiplier)))
     for attr in ("attack", "defense"):
-        setattr(companion.combat, attr, max(1, int(getattr(companion.combat, attr, 1) * multiplier)))
+        setattr(
+            companion.combat, attr, max(1, int(getattr(companion.combat, attr, 1) * multiplier))
+        )
 
 
-def tamed_companion_special_turn(owner: Any, target: Any, *, hit: bool = False, crit: bool = False) -> str:
+def tamed_companion_special_turn(
+    owner: Any, target: Any, *, hit: bool = False, crit: bool = False
+) -> str:
     companion = getattr(owner, "familiar", None)
     if companion is None or getattr(companion, "spec", "") != "Tamed":
         return ""
@@ -359,9 +399,7 @@ def tamed_companion_special_turn(owner: Any, target: Any, *, hit: bool = False, 
         damage = max(
             1,
             int(
-                getattr(companion.combat, "attack", 1)
-                * (0.12 + (0.08 if crit else 0.0))
-                * potency
+                getattr(companion.combat, "attack", 1) * (0.12 + (0.08 if crit else 0.0)) * potency
             ),
         )
         target.health.current = max(0, target.health.current - damage)
@@ -492,7 +530,9 @@ def tamed_companion_should_auto_act(character: Any, *, rng: Any = random) -> boo
 
 
 def _favored_enemy_pressure(character: Any, target: Any | None) -> bool:
-    return bool(target is not None and getattr(target, "enemy_typ", None) == favorite_enemy_type(character))
+    return bool(
+        target is not None and getattr(target, "enemy_typ", None) == favorite_enemy_type(character)
+    )
 
 
 def _clear_harmful_companion_condition(target: Any) -> str | None:
@@ -536,14 +576,8 @@ def resolve_tamed_companion_command(character: Any, target: Any | None) -> str:
     bond = tamed_companion_bond(character)
     rank = max(0, bond // 25)
     favored = _favored_enemy_pressure(character, target)
-    command_power = (
-        1.15
-        if _has_talent(character, "beast-master.commanders-voice")
-        else 1.0
-    )
-    duration_bonus = int(
-        favored and _has_talent(character, "beast-master.adaptive-orders")
-    )
+    command_power = 1.15 if _has_talent(character, "beast-master.commanders-voice") else 1.0
+    duration_bonus = int(favored and _has_talent(character, "beast-master.adaptive-orders"))
     from .. import class_rings, promotion_kits
 
     ring_enhanced = bool(
@@ -583,18 +617,12 @@ def resolve_tamed_companion_command(character: Any, target: Any | None) -> str:
         if ring_enhanced:
             amount = max(1, int(amount * 1.25))
         effect.active = True
-        duration = (
-            1
-            + (1 if rank >= 3 else 0)
-            + int(ring_enhanced)
-            + duration_bonus
-        )
+        duration = 1 + (1 if rank >= 3 else 0) + int(ring_enhanced) + duration_bonus
         effect.duration = max(effect.duration, duration)
         effect.extra = max(int(effect.extra or 0), amount)
         effect.source = "Guard Partner"
         return (
-            f"{companion.name} guards {character.name}, bracing the next hit.\n"
-            f"{ring_message}"
+            f"{companion.name} guards {character.name}, bracing the next hit.\n" f"{ring_message}"
         )
 
     if command == "Harry Prey":
@@ -654,7 +682,9 @@ def resolve_tamed_companion_command(character: Any, target: Any | None) -> str:
                 max(owner_missing, companion_missing),
                 max(1, int(amount * 1.25)),
             )
-        heal_target.health.current = min(heal_target.health.max, heal_target.health.current + amount)
+        heal_target.health.current = min(
+            heal_target.health.max, heal_target.health.current + amount
+        )
         msg = (
             f"{companion.name} mends {heal_target.name}'s wounds for {amount} HP.\n"
             f"{ring_message}"

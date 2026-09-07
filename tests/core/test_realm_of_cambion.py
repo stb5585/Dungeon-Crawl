@@ -1,9 +1,9 @@
 import random
 from types import SimpleNamespace
 
-from src.core.character import Combat, Level, Resource, Stats
 from src.core import map_tiles
-from src.core.player import Player, REALM_OF_CAMBION_LEVEL
+from src.core.character import Combat, Level, Resource, Stats
+from src.core.player import REALM_OF_CAMBION_LEVEL, Player
 
 
 def _build_player():
@@ -42,7 +42,11 @@ def test_portal_uses_cambion_pair_mapping():
     portal = player.world_dict[(5, 28, REALM_OF_CAMBION_LEVEL)]
     portal.modify_player(game)
 
-    assert (player.location_x, player.location_y, player.location_z) == (17, 1, REALM_OF_CAMBION_LEVEL)
+    assert (player.location_x, player.location_y, player.location_z) == (
+        17,
+        1,
+        REALM_OF_CAMBION_LEVEL,
+    )
     assert player.facing == "east"
     assert map_tiles.pop_cambion_messages(player) == [
         "The portal smells sharply of rain on hot stone."
@@ -67,7 +71,11 @@ def test_rotator_pushes_to_a_walkable_neighbor():
         (12, 18, REALM_OF_CAMBION_LEVEL),
         (11, 19, REALM_OF_CAMBION_LEVEL),
     }
-    assert (player.location_x, player.location_y, player.location_z) != (10, 18, REALM_OF_CAMBION_LEVEL)
+    assert (player.location_x, player.location_y, player.location_z) != (
+        10,
+        18,
+        REALM_OF_CAMBION_LEVEL,
+    )
     messages = map_tiles.pop_cambion_messages(player)
     assert "The room spins violently" in messages[-2]
     assert "anti-magic field hums" in messages[-1]

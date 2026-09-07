@@ -14,7 +14,6 @@ import pygame
 from src.paths import PYGAME_ASSETS_DIR
 from src.ui_pygame.assets.icon_manager import IconManager
 
-
 logger = logging.getLogger(__name__)
 
 ITEM_RENDER_ROOT = PYGAME_ASSETS_DIR
@@ -109,12 +108,16 @@ class ItemRenderManager:
         try:
             data = json.loads(self.atlas_json_path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError) as exc:
-            logger.warning("Could not load item render atlas JSON %s: %s", self.atlas_json_path, exc)
+            logger.warning(
+                "Could not load item render atlas JSON %s: %s", self.atlas_json_path, exc
+            )
             return
 
         for key, entry in data.items():
             try:
-                rect = pygame.Rect(int(entry["x"]), int(entry["y"]), int(entry["w"]), int(entry["h"]))
+                rect = pygame.Rect(
+                    int(entry["x"]), int(entry["y"]), int(entry["w"]), int(entry["h"])
+                )
             except (KeyError, TypeError, ValueError) as exc:
                 logger.warning("Skipping invalid item render frame %s: %s", key, exc)
                 continue
@@ -210,7 +213,9 @@ class ItemRenderManager:
         return surface
 
     @staticmethod
-    def trim_transparent_padding(surface: pygame.Surface, *, alpha_threshold: int = 8, padding: int = 6) -> pygame.Surface:
+    def trim_transparent_padding(
+        surface: pygame.Surface, *, alpha_threshold: int = 8, padding: int = 6
+    ) -> pygame.Surface:
         mask = pygame.mask.from_surface(surface, alpha_threshold)
         rects = mask.get_bounding_rects()
         if not rects:
@@ -238,7 +243,9 @@ class ItemRenderManager:
         del alpha
         return enhanced
 
-    def get_scaled_render_by_key(self, render_key: str, target_size: tuple[int, int]) -> pygame.Surface:
+    def get_scaled_render_by_key(
+        self, render_key: str, target_size: tuple[int, int]
+    ) -> pygame.Surface:
         key = str(render_key or "generic_item")
         target = (max(1, int(target_size[0])), max(1, int(target_size[1])))
         cache_key = (key, target)

@@ -5,7 +5,6 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import Any
 
-
 UNCERTAIN_REPORTS = "Uncertain Reports"
 HOLY_RELICS = "The Holy Relics"
 RELIC_NAMES = (
@@ -132,7 +131,9 @@ def update_staged_help_text(quest_data: dict[str, Any]) -> None:
         quest_data["Help Text"] = help_text
 
 
-def ensure_holy_relics_quest(player, *, completed: bool | None = None, turned_in: bool = False) -> dict[str, Any]:
+def ensure_holy_relics_quest(
+    player, *, completed: bool | None = None, turned_in: bool = False
+) -> dict[str, Any]:
     """Ensure the staged Holy Relics quest exists in the player's main log."""
     quest_dict = ensure_quest_categories(player)
     main_quests = quest_dict["Main"]
@@ -176,7 +177,9 @@ def sync_relic_story_progress(player) -> str:
     holy = main_quests.get(HOLY_RELICS)
     if isinstance(holy, dict):
         was_completed = bool(holy.get("Completed"))
-        ensure_holy_relics_quest(player, completed=has_all_relics(player), turned_in=bool(holy.get("Turned In")))
+        ensure_holy_relics_quest(
+            player, completed=has_all_relics(player), turned_in=bool(holy.get("Turned In"))
+        )
         if has_all_relics(player) and not was_completed:
             message += f"You have completed the quest {HOLY_RELICS}!\n"
 

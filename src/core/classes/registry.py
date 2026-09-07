@@ -2,56 +2,55 @@
 
 from __future__ import annotations
 
+from .arcane_trickster import ArcaneTrickster
+from .archbishop import Archbishop
+from .archdruid import Archdruid
+from .assassin import Assassin
+from .astromancer import Astromancer
+from .bard import Bard
+from .beast_master import BeastMaster
+from .berserker import Berserker
+from .cleric import Cleric
+from .conjurer import Conjurer
+from .crusader import Crusader
+from .demonologist import Demonologist
+from .diviner import Diviner
+from .dragoon import Dragoon
+from .druid import Druid
+from .footpad import Footpad
+from .grandmaster import GrandmasterOfArms
+from .healer import Healer
+from .hierophant import Hierophant
+from .inquisitor import Inquisitor
+from .knight_enchanter import KnightEnchanter
+from .lancer import Lancer
+from .lycan import Lycan
+from .mage import Mage
+from .master_monk import MasterMonk
+from .monk import Monk
+from .ninja import Ninja
+from .paladin import Paladin
+from .pathfinder import Pathfinder
+from .priest import Priest
+from .ranger import Ranger
+from .rogue import Rogue
+from .seeker import Seeker
+from .sentinel import Sentinel
+from .shadowcaster import Shadowcaster
+from .shaman import Shaman
+from .sorcerer import Sorcerer
+from .soulcatcher import Soulcatcher
+from .spell_stealer import SpellStealer
+from .spellblade import Spellblade
+from .stalwart_defender import StalwartDefender
+from .templar import Templar
+from .thaumaturgist import Thaumaturgist
+from .thief import Thief
+from .troubadour import Troubadour
+from .warlock import Warlock
 from .warrior import Warrior
 from .weapon_master import WeaponMaster
-from .grandmaster import GrandmasterOfArms
-from .berserker import Berserker
-from .paladin import Paladin
-from .crusader import Crusader
-from .lancer import Lancer
-from .dragoon import Dragoon
-from .sentinel import Sentinel
-from .stalwart_defender import StalwartDefender
-from .mage import Mage
-from .sorcerer import Sorcerer
 from .wizard import Wizard
-from .warlock import Warlock
-from .shadowcaster import Shadowcaster
-from .demonologist import Demonologist
-from .spellblade import Spellblade
-from .knight_enchanter import KnightEnchanter
-from .conjurer import Conjurer
-from .thaumaturgist import Thaumaturgist
-from .footpad import Footpad
-from .thief import Thief
-from .rogue import Rogue
-from .inquisitor import Inquisitor
-from .seeker import Seeker
-from .assassin import Assassin
-from .ninja import Ninja
-from .spell_stealer import SpellStealer
-from .arcane_trickster import ArcaneTrickster
-from .healer import Healer
-from .cleric import Cleric
-from .templar import Templar
-from .hierophant import Hierophant
-from .priest import Priest
-from .archbishop import Archbishop
-from .monk import Monk
-from .master_monk import MasterMonk
-from .bard import Bard
-from .troubadour import Troubadour
-from .pathfinder import Pathfinder
-from .druid import Druid
-from .lycan import Lycan
-from .archdruid import Archdruid
-from .diviner import Diviner
-from .astromancer import Astromancer
-from .shaman import Shaman
-from .soulcatcher import Soulcatcher
-from .ranger import Ranger
-from .beast_master import BeastMaster
-
 
 classes_dict = {
     "Warrior": {
@@ -64,14 +63,8 @@ classes_dict = {
                     "Grandmaster of Arms": {"class": GrandmasterOfArms},
                 },
             },
-            "Paladin": {
-                "class": Paladin,
-                "pro": {"Crusader": {"class": Crusader}}
-                },
-            "Lancer": {
-                "class": Lancer,
-                "pro": {"Dragoon": {"class": Dragoon}}
-                },
+            "Paladin": {"class": Paladin, "pro": {"Crusader": {"class": Crusader}}},
+            "Lancer": {"class": Lancer, "pro": {"Dragoon": {"class": Dragoon}}},
             "Sentinel": {
                 "class": Sentinel,
                 "pro": {"Stalwart Defender": {"class": StalwartDefender}},
@@ -81,16 +74,13 @@ classes_dict = {
     "Mage": {
         "class": Mage,
         "pro": {
-            "Sorcerer": {
-                "class": Sorcerer,
-                "pro": {"Wizard": {"class": Wizard}}
-            },
+            "Sorcerer": {"class": Sorcerer, "pro": {"Wizard": {"class": Wizard}}},
             "Warlock": {
                 "class": Warlock,
                 "pro": {
                     "Shadowcaster": {"class": Shadowcaster},
                     "Demonologist": {"class": Demonologist},
-                    },
+                },
             },
             "Spellblade": {
                 "class": Spellblade,
@@ -105,18 +95,9 @@ classes_dict = {
     "Footpad": {
         "class": Footpad,
         "pro": {
-            "Thief": {
-                "class": Thief,
-                "pro": {"Rogue": {"class": Rogue}}
-                },
-            "Inquisitor": {
-                "class": Inquisitor,
-                "pro": {"Seeker": {"class": Seeker}}
-                },
-            "Assassin": {
-                "class": Assassin,
-                "pro": {"Ninja": {"class": Ninja}}
-                },
+            "Thief": {"class": Thief, "pro": {"Rogue": {"class": Rogue}}},
+            "Inquisitor": {"class": Inquisitor, "pro": {"Seeker": {"class": Seeker}}},
+            "Assassin": {"class": Assassin, "pro": {"Ninja": {"class": Ninja}}},
             "Spell Stealer": {
                 "class": SpellStealer,
                 "pro": {"Arcane Trickster": {"class": ArcaneTrickster}},
@@ -131,20 +112,11 @@ classes_dict = {
                 "pro": {
                     "Templar": {"class": Templar},
                     "Hierophant": {"class": Hierophant},
-                }
+                },
             },
-            "Monk": {
-                "class": Monk,
-                "pro": {"Master Monk": {"class": MasterMonk}}
-            },
-            "Priest": {
-                "class": Priest,
-                "pro": {"Archbishop": {"class": Archbishop}}
-            },
-            "Bard": {
-                "class": Bard,
-                "pro": {"Troubadour": {"class": Troubadour}}
-            },
+            "Monk": {"class": Monk, "pro": {"Master Monk": {"class": MasterMonk}}},
+            "Priest": {"class": Priest, "pro": {"Archbishop": {"class": Archbishop}}},
+            "Bard": {"class": Bard, "pro": {"Troubadour": {"class": Troubadour}}},
         },
     },
     "Pathfinder": {

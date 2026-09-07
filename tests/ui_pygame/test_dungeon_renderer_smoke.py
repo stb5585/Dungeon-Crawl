@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import os
 import json
+import os
 from dataclasses import dataclass
 from types import SimpleNamespace
 
@@ -10,13 +10,16 @@ import pytest
 
 from src.core import map_tiles
 from src.ui_pygame.gui.dungeon.assets import TEXTURE_PATHS, TextureLibrary
-from src.ui_pygame.gui.dungeon.geometry import build_depth_rect, build_next_depth_rect, build_zone_geometry
-from src.ui_pygame.gui.dungeon.geometry import Quad
+from src.ui_pygame.gui.dungeon.geometry import (
+    Quad,
+    build_depth_rect,
+    build_next_depth_rect,
+    build_zone_geometry,
+)
 from src.ui_pygame.gui.dungeon.projector import project_texture_to_quad
 from src.ui_pygame.gui.dungeon.renderer import SceneRenderer
 from src.ui_pygame.gui.dungeon.scene import extract_visible_scene
 from src.ui_pygame.gui.dungeon_renderer import DungeonRenderer
-
 
 os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
 
@@ -411,9 +414,17 @@ def test_dungeon_renderer_render_view_invokes_low_health_overlay(monkeypatch):
     player = SimpleNamespace(health=SimpleNamespace(current=5, max=20))
     calls = []
 
-    monkeypatch.setattr(renderer.scene_renderer, "render", lambda player_char, world_dict: calls.append(("scene", player_char, world_dict)))
+    monkeypatch.setattr(
+        renderer.scene_renderer,
+        "render",
+        lambda player_char, world_dict: calls.append(("scene", player_char, world_dict)),
+    )
     monkeypatch.setattr(renderer.overlays, "render_vignette", lambda: calls.append(("vignette",)))
-    monkeypatch.setattr(renderer.overlays, "render_low_health_vignette", lambda player_char: calls.append(("low-health", player_char)))
+    monkeypatch.setattr(
+        renderer.overlays,
+        "render_low_health_vignette",
+        lambda player_char: calls.append(("low-health", player_char)),
+    )
 
     renderer.render_dungeon_view(player, {"world": True})
 
@@ -433,10 +444,22 @@ def test_texture_library_does_not_tile_ladder_pit_panels():
     floor = textures.get_texture("floor_pit")
 
     assert textures.get_ceiling_key(LadderUp()) == "ceiling_pit"
-    assert textures.get_panel_texture("d2:center_ceiling", "ceiling_pit").get_size() == (ceiling.get_width() * 5, ceiling.get_height())
-    assert textures.get_panel_texture("d2:center_floor", "floor_pit").get_size() == (floor.get_width() * 5, floor.get_height())
-    assert textures.get_panel_texture("d2:right_corridor_outer_ceiling", "ceiling_pit").get_size() == ceiling.get_size()
-    assert textures.get_panel_texture("d2:right_corridor_outer_floor", "floor_pit").get_size() == floor.get_size()
+    assert textures.get_panel_texture("d2:center_ceiling", "ceiling_pit").get_size() == (
+        ceiling.get_width() * 5,
+        ceiling.get_height(),
+    )
+    assert textures.get_panel_texture("d2:center_floor", "floor_pit").get_size() == (
+        floor.get_width() * 5,
+        floor.get_height(),
+    )
+    assert (
+        textures.get_panel_texture("d2:right_corridor_outer_ceiling", "ceiling_pit").get_size()
+        == ceiling.get_size()
+    )
+    assert (
+        textures.get_panel_texture("d2:right_corridor_outer_floor", "floor_pit").get_size()
+        == floor.get_size()
+    )
 
     pygame.quit()
 
@@ -463,26 +486,13 @@ def test_stair_special_tile_sprites_are_opaque_and_directionally_distinct():
 
     def alpha_stats(surface):
         width, height = surface.get_size()
-        alphas = [
-            surface.get_at((x, y)).a
-            for y in range(height)
-            for x in range(width)
-        ]
+        alphas = [surface.get_at((x, y)).a for y in range(height) for x in range(width)]
         coverage = sum(alpha > 128 for alpha in alphas) / len(alphas)
-        top = min(
-            y
-            for y in range(height)
-            for x in range(width)
-            if surface.get_at((x, y)).a > 128
-        )
+        top = min(y for y in range(height) for x in range(width) if surface.get_at((x, y)).a > 128)
         return coverage, top
 
     def opaque_row_width(surface, row):
-        opaque_columns = [
-            x
-            for x in range(surface.get_width())
-            if surface.get_at((x, row)).a > 128
-        ]
+        opaque_columns = [x for x in range(surface.get_width()) if surface.get_at((x, row)).a > 128]
         if not opaque_columns:
             return 0
         return max(opaque_columns) - min(opaque_columns) + 1
@@ -494,7 +504,9 @@ def test_stair_special_tile_sprites_are_opaque_and_directionally_distinct():
             for x in range(surface.get_width())
             if surface.get_at((x, y)).a > 128
         ]
-        return sum((0.2126 * color.r) + (0.7152 * color.g) + (0.0722 * color.b) for color in colors) / len(colors)
+        return sum(
+            (0.2126 * color.r) + (0.7152 * color.g) + (0.0722 * color.b) for color in colors
+        ) / len(colors)
 
     def opaque_rgb_mean(surface):
         colors = [
@@ -614,13 +626,18 @@ def test_wall_overlay_key_is_stable_for_same_map_tile_at_different_depths():
 
     tile = WallWithPosition()
 
-    assert SceneRenderer._get_wall_overlay_key(tile, depth=1) == SceneRenderer._get_wall_overlay_key(tile, depth=3)
+    assert SceneRenderer._get_wall_overlay_key(
+        tile, depth=1
+    ) == SceneRenderer._get_wall_overlay_key(tile, depth=3)
 
 
 def test_wall_overlay_key_hides_sconces_on_fake_walls():
     assert SceneRenderer._get_wall_overlay_key(FakeWall(visited=False), depth=1) is None
     assert SceneRenderer._get_wall_overlay_key(FakeWall(visited=True), depth=3) is None
-    assert SceneRenderer._get_wall_overlay_key(ThievesGuildTrialFakeWall(visited=False), depth=2) is None
+    assert (
+        SceneRenderer._get_wall_overlay_key(ThievesGuildTrialFakeWall(visited=False), depth=2)
+        is None
+    )
     assert SceneRenderer._get_wall_overlay_key(StairsUp(), depth=1) is None
 
 
@@ -861,10 +878,9 @@ def test_texture_library_records_missing_asset_fallbacks(tmp_path):
     special = textures.get_special_texture("stairs_down", size=24)
     enemy = textures.get_enemy_texture("Missing Enemy", size=24)
     fallbacks = textures.get_asset_fallbacks()
-    expected_texture_fallbacks = len([
-        path for path in TEXTURE_PATHS.values()
-        if not path.startswith("__generated__/")
-    ])
+    expected_texture_fallbacks = len(
+        [path for path in TEXTURE_PATHS.values() if not path.startswith("__generated__/")]
+    )
 
     assert wall.get_size() == (128, 128)
     assert special is not None
@@ -1065,9 +1081,7 @@ def test_texture_library_describes_ceiling_and_wall_slot_ids():
     assert textures.describe_ceiling_slot_ids("d3:left_corridor_outer_ceiling") == (
         "ceiling:corridor_outer:left:d3:tile",
     )
-    assert textures.describe_wall_slot_ids("d1:back_wall") == (
-        "wall:visible:d1:center",
-    )
+    assert textures.describe_wall_slot_ids("d1:back_wall") == ("wall:visible:d1:center",)
     assert textures.describe_wall_slot_ids("d1:right_wall") == (
         "wall:visible:d1:right:right:near",
         "wall:visible:d1:right:right:far",
@@ -1136,14 +1150,18 @@ def test_texture_library_can_override_individual_ceiling_and_wall_slots():
     baseline_ceiling = textures.get_panel_texture("d2:center_ceiling", "ceiling")
     textures.set_ceiling_slot_override("ceiling:visible:d2:xp1", "ceiling_pit")
     overridden_ceiling = textures.get_panel_texture("d2:center_ceiling", "ceiling")
-    assert pygame.image.tostring(overridden_ceiling, "RGBA") != pygame.image.tostring(baseline_ceiling, "RGBA")
+    assert pygame.image.tostring(overridden_ceiling, "RGBA") != pygame.image.tostring(
+        baseline_ceiling, "RGBA"
+    )
 
     textures.clear_surface_slot_overrides()
 
     baseline_wall = textures.get_panel_texture("d1:right_wall", "wall")
     textures.set_wall_slot_override("wall:visible:d1:right:right:near", "floor_funhouse")
     overridden_wall = textures.get_panel_texture("d1:right_wall", "wall")
-    assert pygame.image.tostring(overridden_wall, "RGBA") != pygame.image.tostring(baseline_wall, "RGBA")
+    assert pygame.image.tostring(overridden_wall, "RGBA") != pygame.image.tostring(
+        baseline_wall, "RGBA"
+    )
 
     textures.clear_surface_slot_overrides()
     pygame.quit()
@@ -1275,10 +1293,13 @@ def test_texture_library_summarizes_panel_surface_slot_state_sources():
         "manual_override_count": 1,
         "has_overrides": True,
     }
-    assert textures.summarize_panel_surface_slot_state(
-        "d2:left_corridor_outer_floor",
-        "floor",
-    )["scene_override_count"] == 1
+    assert (
+        textures.summarize_panel_surface_slot_state(
+            "d2:left_corridor_outer_floor",
+            "floor",
+        )["scene_override_count"]
+        == 1
+    )
     assert textures.summarize_panel_surface_slot_state("unknown_panel", "floor") == {
         "panel_id": "unknown_panel",
         "texture_key": "floor",
@@ -1436,7 +1457,9 @@ def test_scene_renderer_renders_side_corridor_outer_wall_in_side_wall_layer():
 
     commands, _ = _build_scene_commands(scene_renderer, player, world)
 
-    corridor_wall = next(command for command in commands if command.panel_id == "d2:right_corridor_outer_wall")
+    corridor_wall = next(
+        command for command in commands if command.panel_id == "d2:right_corridor_outer_wall"
+    )
     assert corridor_wall.order == 3
 
     pygame.quit()
@@ -1490,7 +1513,9 @@ def test_scene_renderer_keeps_left_depth3_outer_corridor_wall_continuation():
     commands, _ = _build_scene_commands(scene_renderer, player, world)
 
     assert any(command.panel_id == "d2:left_corridor_outer_wall" for command in commands)
-    depth3_wall = next(command for command in commands if command.panel_id == "d3:left_corridor_outer_wall")
+    depth3_wall = next(
+        command for command in commands if command.panel_id == "d3:left_corridor_outer_wall"
+    )
     assert depth3_wall.texture_key == "wall"
     assert depth3_wall.order == 3
     assert not any(command.panel_id == "d3:right_corridor_outer_wall" for command in commands)
@@ -2266,7 +2291,9 @@ def test_scene_renderer_marks_revealed_fake_wall_as_translucent_wall_panel():
         special_calls.append((texture_key, size))
         return original_get_special_texture(texture_key, size)
 
-    def recording_render_translucent_fake_wall_panel(tile, rect, darkness, depth, side=None, lateral_view=False):
+    def recording_render_translucent_fake_wall_panel(
+        tile, rect, darkness, depth, side=None, lateral_view=False
+    ):
         translucent_wall_calls.append((depth, side, lateral_view))
         return original_render_translucent_fake_wall_panel(
             tile,
@@ -2279,7 +2306,9 @@ def test_scene_renderer_marks_revealed_fake_wall_as_translucent_wall_panel():
 
     scene_renderer.textures.get_projected_surface = recording_get_projected_surface
     scene_renderer.textures.get_special_texture = recording_get_special_texture
-    scene_renderer._render_translucent_fake_wall_panel = recording_render_translucent_fake_wall_panel
+    scene_renderer._render_translucent_fake_wall_panel = (
+        recording_render_translucent_fake_wall_panel
+    )
 
     scene_renderer.render(player, world)
 
@@ -2313,7 +2342,9 @@ def test_scene_renderer_marks_revealed_side_fake_wall_as_translucent_wall_panel(
         special_calls.append((texture_key, size))
         return original_get_special_texture(texture_key, size)
 
-    def recording_render_translucent_fake_wall_panel(tile, rect, darkness, depth, side=None, lateral_view=False):
+    def recording_render_translucent_fake_wall_panel(
+        tile, rect, darkness, depth, side=None, lateral_view=False
+    ):
         translucent_wall_calls.append((depth, side, lateral_view))
         return original_render_translucent_fake_wall_panel(
             tile,
@@ -2325,7 +2356,9 @@ def test_scene_renderer_marks_revealed_side_fake_wall_as_translucent_wall_panel(
         )
 
     scene_renderer.textures.get_special_texture = recording_get_special_texture
-    scene_renderer._render_translucent_fake_wall_panel = recording_render_translucent_fake_wall_panel
+    scene_renderer._render_translucent_fake_wall_panel = (
+        recording_render_translucent_fake_wall_panel
+    )
 
     scene_renderer.render(player, world)
 
@@ -2469,7 +2502,9 @@ def test_scene_renderer_renders_center_special_tiles_back_to_front():
 
     scene_renderer.render(player, world)
 
-    center_draws = [entry for entry in rendered_tiles if entry[2] is None and not entry[3] and entry[1] > 0]
+    center_draws = [
+        entry for entry in rendered_tiles if entry[2] is None and not entry[3] and entry[1] > 0
+    ]
     assert center_draws[:2] == [("LockedDoor", 2, None, False), ("LadderUp", 1, None, False)]
 
     pygame.quit()
@@ -2491,10 +2526,18 @@ def test_scene_renderer_builds_skewed_lateral_floor_sprite_quads():
 
 
 def test_scene_renderer_scales_ladder_down_as_pit_floor_sprite():
-    assert SceneRenderer._get_floor_sprite_ratio(1, "ladder_down") > SceneRenderer._get_floor_sprite_ratio(2, "ladder_down")
-    assert SceneRenderer._get_floor_sprite_ratio(1, "ladder_down") > SceneRenderer._get_floor_sprite_ratio(1, "chest")
-    assert SceneRenderer._get_floor_sprite_ratio(1, "dead_soldier_item") < SceneRenderer._get_floor_sprite_ratio(1, "dead_body")
-    assert SceneRenderer._get_floor_sprite_ratio(1, "dead_body") < SceneRenderer._get_floor_sprite_ratio(1, "boulder")
+    assert SceneRenderer._get_floor_sprite_ratio(
+        1, "ladder_down"
+    ) > SceneRenderer._get_floor_sprite_ratio(2, "ladder_down")
+    assert SceneRenderer._get_floor_sprite_ratio(
+        1, "ladder_down"
+    ) > SceneRenderer._get_floor_sprite_ratio(1, "chest")
+    assert SceneRenderer._get_floor_sprite_ratio(
+        1, "dead_soldier_item"
+    ) < SceneRenderer._get_floor_sprite_ratio(1, "dead_body")
+    assert SceneRenderer._get_floor_sprite_ratio(
+        1, "dead_body"
+    ) < SceneRenderer._get_floor_sprite_ratio(1, "boulder")
 
 
 def test_scene_renderer_places_dead_body_lower_than_default_floor_anchor(monkeypatch):
@@ -2511,8 +2554,12 @@ def test_scene_renderer_places_dead_body_lower_than_default_floor_anchor(monkeyp
     sprite = pygame.Surface((54, 54), pygame.SRCALPHA)
     sprite.fill((120, 60, 40, 255))
 
-    monkeypatch.setattr(scene_renderer.textures, "get_special_texture", lambda _key, _size=None: sprite)
-    monkeypatch.setattr(scene_renderer, "_apply_darkness_to_surface", lambda surface, _darkness: surface)
+    monkeypatch.setattr(
+        scene_renderer.textures, "get_special_texture", lambda _key, _size=None: sprite
+    )
+    monkeypatch.setattr(
+        scene_renderer, "_apply_darkness_to_surface", lambda surface, _darkness: surface
+    )
 
     rect = pygame.Rect(0, 0, 100, 100)
     scene_renderer._render_floor_sprite("dead_body", rect, darkness=0.0, depth=1, kind="dead_body")
@@ -2564,7 +2611,9 @@ def test_scene_renderer_scales_bone_pile_larger_than_other_decorative_props(monk
     monkeypatch.setattr(scene_renderer.textures, "get_special_texture", fake_get_special_texture)
 
     rect = pygame.Rect(100, 120, 180, 100)
-    scene_renderer._render_floor_sprite("bone_pile", rect, darkness=0, depth=1, kind="decorative_prop")
+    scene_renderer._render_floor_sprite(
+        "bone_pile", rect, darkness=0, depth=1, kind="decorative_prop"
+    )
     scene_renderer._render_floor_sprite("rubble", rect, darkness=0, depth=1, kind="decorative_prop")
 
     assert requested_sizes == [("bone_pile", 96), ("rubble", 62)]
@@ -2603,7 +2652,9 @@ def test_scene_renderer_places_center_ladder_down_on_next_floor_slot():
         build_next_depth_rect(build_depth_rect(view_w, view_h, 2)),
         depth=2,
     )
-    expected_bounds = scene_renderer._get_center_floor_slot_quad(depth2_zone, 2, "x0").bounding_rect()
+    expected_bounds = scene_renderer._get_center_floor_slot_quad(
+        depth2_zone, 2, "x0"
+    ).bounding_rect()
 
     assert rendered
     rect, depth, side, lateral_view = rendered[0]
@@ -2717,7 +2768,9 @@ def test_scene_renderer_uses_ceiling_void_for_current_stairs_up_opening():
     assert scene_renderer.textures.get_surface_slot_overrides() == {
         "ceiling:visible:d1:x0": "ceiling_void",
     }
-    assert scene_renderer.textures.get_texture("ceiling_void").get_at((0, 0)) == pygame.Color(4, 5, 7, 255)
+    assert scene_renderer.textures.get_texture("ceiling_void").get_at((0, 0)) == pygame.Color(
+        4, 5, 7, 255
+    )
 
     pygame.quit()
 
@@ -2761,15 +2814,21 @@ def test_scene_renderer_stairs_up_ceiling_void_replaces_center_ceiling_slot():
         )
         for depth in (1, 2, 3)
     }
-    scene_renderer.textures.set_scene_surface_slot_overrides({
-        "ceiling:visible:d2:x0": "ceiling_void",
-    })
+    scene_renderer.textures.set_scene_surface_slot_overrides(
+        {
+            "ceiling:visible:d2:x0": "ceiling_void",
+        }
+    )
 
-    slot_state = scene_renderer.textures.describe_panel_surface_slot_state("d2:center_ceiling", "ceiling")
+    slot_state = scene_renderer.textures.describe_panel_surface_slot_state(
+        "d2:center_ceiling", "ceiling"
+    )
     center_slots = [slot for slot in slot_state if slot["slot_id"] == "ceiling:visible:d2:x0"]
     assert center_slots
     assert center_slots[0]["texture_key"] == "ceiling_void"
-    assert zones[2].center_ceiling.bounding_rect().top < zones[2].center_ceiling.bounding_rect().bottom
+    assert (
+        zones[2].center_ceiling.bounding_rect().top < zones[2].center_ceiling.bounding_rect().bottom
+    )
 
     pygame.quit()
 
@@ -2805,7 +2864,9 @@ def test_scene_renderer_places_center_decorative_prop_on_next_floor_slot():
         build_next_depth_rect(build_depth_rect(view_w, view_h, 2)),
         depth=2,
     )
-    expected_bounds = scene_renderer._get_center_floor_slot_quad(depth2_zone, 2, "x0").bounding_rect()
+    expected_bounds = scene_renderer._get_center_floor_slot_quad(
+        depth2_zone, 2, "x0"
+    ).bounding_rect()
 
     assert rendered
     rect, depth, side, lateral_view = rendered[0]
@@ -2906,13 +2967,27 @@ def test_side_floor_special_clip_rect_keeps_chest_behind_blocking_corner():
         next_zone=zones[2],
         depth=1,
     )
-    walled_render = scene_renderer._get_side_special_render_rect(rect, ChestRoom(), "left", center_tile=WallTile())
-    left_clip = SceneRenderer._get_side_special_clip_rect(rect, Boulder(), "left", center_tile=WallTile())
-    right_clip = SceneRenderer._get_side_special_clip_rect(rect, Boulder(), "right", center_tile=WallTile())
-    portal_clip = SceneRenderer._get_side_special_clip_rect(rect, Portal(), "left", center_tile=WallTile())
-    chest_clip = SceneRenderer._get_side_special_clip_rect(rect, ChestRoom(), "left", center_tile=WallTile())
-    boss_clip = SceneRenderer._get_side_special_clip_rect(rect, BossRoom(), "left", center_tile=WallTile())
-    unclipped_boulder = SceneRenderer._get_side_special_clip_rect(rect, Boulder(), "left", center_tile=OpenTile())
+    walled_render = scene_renderer._get_side_special_render_rect(
+        rect, ChestRoom(), "left", center_tile=WallTile()
+    )
+    left_clip = SceneRenderer._get_side_special_clip_rect(
+        rect, Boulder(), "left", center_tile=WallTile()
+    )
+    right_clip = SceneRenderer._get_side_special_clip_rect(
+        rect, Boulder(), "right", center_tile=WallTile()
+    )
+    portal_clip = SceneRenderer._get_side_special_clip_rect(
+        rect, Portal(), "left", center_tile=WallTile()
+    )
+    chest_clip = SceneRenderer._get_side_special_clip_rect(
+        rect, ChestRoom(), "left", center_tile=WallTile()
+    )
+    boss_clip = SceneRenderer._get_side_special_clip_rect(
+        rect, BossRoom(), "left", center_tile=WallTile()
+    )
+    unclipped_boulder = SceneRenderer._get_side_special_clip_rect(
+        rect, Boulder(), "left", center_tile=OpenTile()
+    )
 
     assert left_render.w > rect.width
     assert right_render.w > rect.width
@@ -2945,7 +3020,9 @@ def test_lateral_chest_floor_sprite_stays_upright_without_projection(monkeypatch
     sprite = pygame.Surface((24, 24), pygame.SRCALPHA)
     sprite.fill((200, 140, 40, 255))
 
-    monkeypatch.setattr(scene_renderer.textures, "get_special_texture", lambda *_args, **_kwargs: sprite)
+    monkeypatch.setattr(
+        scene_renderer.textures, "get_special_texture", lambda *_args, **_kwargs: sprite
+    )
 
     def fail_project(*_args, **_kwargs):
         raise AssertionError("side-view chests should not be perspective-projected")
@@ -2973,7 +3050,9 @@ def test_lateral_decorative_floor_sprite_stays_upright_without_projection(monkey
     sprite = pygame.Surface((24, 24), pygame.SRCALPHA)
     sprite.fill((164, 150, 126, 255))
 
-    monkeypatch.setattr(scene_renderer.textures, "get_special_texture", lambda *_args, **_kwargs: sprite)
+    monkeypatch.setattr(
+        scene_renderer.textures, "get_special_texture", lambda *_args, **_kwargs: sprite
+    )
 
     def fail_project(*_args, **_kwargs):
         raise AssertionError("side-view decorative floor props should not be perspective-projected")
@@ -3070,7 +3149,9 @@ def test_scene_renderer_places_depth2_side_floor_sprites_at_depth3_edges():
     original_render_special_tile = scene_renderer._render_special_tile
 
     def recording_render_special_tile(tile, rect, darkness, depth, side=None, lateral_view=False):
-        rendered_tiles.append((type(tile).__name__ if tile else None, rect, depth, side, lateral_view))
+        rendered_tiles.append(
+            (type(tile).__name__ if tile else None, rect, depth, side, lateral_view)
+        )
         return original_render_special_tile(
             tile,
             rect,
@@ -3084,8 +3165,12 @@ def test_scene_renderer_places_depth2_side_floor_sprites_at_depth3_edges():
 
     scene_renderer.render(player, world)
 
-    left_chest = next(item for item in rendered_tiles if item[0] == "ChestRoom" and item[3] == "left")
-    right_chest = next(item for item in rendered_tiles if item[0] == "ChestRoom" and item[3] == "right")
+    left_chest = next(
+        item for item in rendered_tiles if item[0] == "ChestRoom" and item[3] == "left"
+    )
+    right_chest = next(
+        item for item in rendered_tiles if item[0] == "ChestRoom" and item[3] == "right"
+    )
 
     assert left_chest[2:] == (3, "left", True)
     assert right_chest[2:] == (3, "right", True)
@@ -3123,11 +3208,14 @@ def test_scene_renderer_routes_left_side_floor_special_to_outer_depth3_floor():
     scene_renderer.render(player, world)
 
     left_floor = next(
-        item for item in calls
+        item
+        for item in calls
         if item[0] == "d3:left_corridor_outer_floor" and item[1] == "floor_fire"
     )
     assert left_floor[2].right < scene_renderer._get_viewport_size()[0] / 2
-    assert not any(panel_id == "d3:right_corridor_outer_floor" for panel_id, _texture, _rect in calls)
+    assert not any(
+        panel_id == "d3:right_corridor_outer_floor" for panel_id, _texture, _rect in calls
+    )
 
     pygame.quit()
 
@@ -3160,11 +3248,14 @@ def test_scene_renderer_routes_right_side_floor_special_to_outer_depth3_floor():
     scene_renderer.render(player, world)
 
     right_floor = next(
-        item for item in calls
+        item
+        for item in calls
         if item[0] == "d3:right_corridor_outer_floor" and item[1] == "floor_fire"
     )
     assert right_floor[2].left > scene_renderer._get_viewport_size()[0] / 2
-    assert not any(panel_id == "d3:left_corridor_outer_floor" for panel_id, _texture, _rect in calls)
+    assert not any(
+        panel_id == "d3:left_corridor_outer_floor" for panel_id, _texture, _rect in calls
+    )
 
     pygame.quit()
 
@@ -3200,7 +3291,9 @@ def test_texture_library_floor_slot_override_changes_projected_corridor_floor_su
         view_size=scene_renderer._get_viewport_size(),
     )
 
-    scene_renderer.textures.set_floor_slot_override("floor:corridor_outer:right:d2:tile", "floor_pit")
+    scene_renderer.textures.set_floor_slot_override(
+        "floor:corridor_outer:right:d2:tile", "floor_pit"
+    )
     overridden = scene_renderer.textures.get_projected_surface(
         panel_id="d2:right_corridor_outer_floor",
         texture_key="floor",
@@ -3209,7 +3302,9 @@ def test_texture_library_floor_slot_override_changes_projected_corridor_floor_su
         view_size=scene_renderer._get_viewport_size(),
     )
 
-    assert pygame.image.tostring(overridden.surface, "RGBA") != pygame.image.tostring(baseline.surface, "RGBA")
+    assert pygame.image.tostring(overridden.surface, "RGBA") != pygame.image.tostring(
+        baseline.surface, "RGBA"
+    )
 
     scene_renderer.textures.clear_floor_slot_overrides()
 
@@ -3255,7 +3350,9 @@ def test_scene_renderer_routes_side_ladder_floor_through_center_floor_slot_overr
 def test_scene_renderer_keeps_side_ladder_down_surface_only_at_all_visible_depths():
     for side in ("left", "right"):
         for side_depth in (1, 2, 3):
-            calls, rendered_tiles, overrides = _render_side_forward_tile_case(LadderDown(), side, side_depth)
+            calls, rendered_tiles, overrides = _render_side_forward_tile_case(
+                LadderDown(), side, side_depth
+            )
             assert ("LadderDown", side_depth, side, True) not in rendered_tiles
 
             if side_depth == 3:
@@ -3269,7 +3366,8 @@ def test_scene_renderer_keeps_side_ladder_down_surface_only_at_all_visible_depth
                 f"floor:visible:d{surface_depth}:{slot_suffix}": "floor_pit",
             }
             assert any(
-                panel_id.startswith(f"d{surface_depth}:center_floor_slot") and texture_key == "floor_pit"
+                panel_id.startswith(f"d{surface_depth}:center_floor_slot")
+                and texture_key == "floor_pit"
                 for panel_id, texture_key in calls
             )
 
@@ -3335,7 +3433,9 @@ def test_scene_renderer_maps_adjacent_side_spring_to_left_visible_floor_slot():
 
     assert ("d1:center_floor", "floor") not in calls
     assert ("d1:center_floor_slot0", "floor_spring") in calls
-    assert scene_renderer.textures.get_floor_slot_overrides()["floor:visible:d1:xm1"] == "floor_spring"
+    assert (
+        scene_renderer.textures.get_floor_slot_overrides()["floor:visible:d1:xm1"] == "floor_spring"
+    )
 
     pygame.quit()
 
@@ -3388,7 +3488,10 @@ def test_scene_renderer_hides_side_ladder_beyond_max_visible_depth():
 
     assert ("d3:center_floor", "floor") not in calls
     assert any(panel_id.startswith("d3:center_floor_slot") for panel_id, _ in calls)
-    assert not any(panel_id.startswith("d3:center_floor_slot") and texture_key == "floor_pit" for panel_id, texture_key in calls)
+    assert not any(
+        panel_id.startswith("d3:center_floor_slot") and texture_key == "floor_pit"
+        for panel_id, texture_key in calls
+    )
     assert ("LadderDown", 3, "right", True) not in rendered_tiles
     assert scene_renderer.textures.get_floor_slot_overrides() == {}
 
@@ -3652,7 +3755,9 @@ def test_scene_renderer_draws_jester_force_field_at_all_visible_depths_until_tok
                     render_order.append("force_field_arcs")
                 calls.append((rect.copy(), darkness, depth, body, arcs))
 
-            def recording_render_boss_enemy(tile, rect, darkness, depth, side=None, lateral_view=False):
+            def recording_render_boss_enemy(
+                tile, rect, darkness, depth, side=None, lateral_view=False
+            ):
                 render_order.append("boss")
                 boss_calls.append((tile, rect.copy(), darkness, depth, side, lateral_view))
 
@@ -3682,7 +3787,8 @@ def test_scene_renderer_draws_jester_force_field_at_all_visible_depths_until_tok
             render_order.clear()
             player.special_inventory = {
                 "Jester Token": [
-                    SimpleNamespace(name="Jester Token") for _ in range(map_tiles.JESTER_TOKENS_REQUIRED)
+                    SimpleNamespace(name="Jester Token")
+                    for _ in range(map_tiles.JESTER_TOKENS_REQUIRED)
                 ],
             }
 
@@ -3972,7 +4078,9 @@ def test_scene_renderer_renders_current_tile_warp_point_on_front_floor_band():
 
     def recording_render_center_floor_warp_point(quad, darkness, depth):
         nonlocal teleporter_rect
-        sprite = scene_renderer._trim_transparent_sprite(scene_renderer.textures.get_special_texture(scene_renderer._warp_point_sprite_key()))
+        sprite = scene_renderer._trim_transparent_sprite(
+            scene_renderer.textures.get_special_texture(scene_renderer._warp_point_sprite_key())
+        )
         teleporter_rect = scene_renderer._get_center_floor_warp_point_rect(quad, sprite)
         return original_render_center_floor_warp_point(quad, darkness, depth)
 
@@ -3993,7 +4101,9 @@ def test_scene_renderer_renders_current_tile_warp_point_on_front_floor_band():
         depth=1,
     )
     slot_quad = scene_renderer._get_center_floor_slot_quad(zone, depth=1, slot_suffix="x0")
-    sprite = scene_renderer._trim_transparent_sprite(scene_renderer.textures.get_special_texture(scene_renderer._warp_point_sprite_key()))
+    sprite = scene_renderer._trim_transparent_sprite(
+        scene_renderer.textures.get_special_texture(scene_renderer._warp_point_sprite_key())
+    )
     expected_rect = scene_renderer._get_center_floor_warp_point_rect(slot_quad, sprite)
     assert teleporter_rect == expected_rect
 
@@ -4181,7 +4291,9 @@ def test_scene_renderer_routes_left_side_ladder_ceiling_through_center_ceiling_s
 def test_scene_renderer_keeps_side_ladder_up_surface_only_at_all_visible_depths():
     for side in ("left", "right"):
         for side_depth in (1, 2, 3):
-            calls, rendered_tiles, overrides = _render_side_forward_tile_case(LadderUp(), side, side_depth)
+            calls, rendered_tiles, overrides = _render_side_forward_tile_case(
+                LadderUp(), side, side_depth
+            )
             assert ("LadderUp", side_depth, side, True) not in rendered_tiles
 
             if side_depth == 3:
@@ -4195,7 +4307,8 @@ def test_scene_renderer_keeps_side_ladder_up_surface_only_at_all_visible_depths(
                 f"ceiling:visible:d{surface_depth}:{slot_suffix}": "ceiling_pit",
             }
             assert any(
-                panel_id.startswith(f"d{surface_depth}:center_ceiling_slot") and texture_key == "ceiling_pit"
+                panel_id.startswith(f"d{surface_depth}:center_ceiling_slot")
+                and texture_key == "ceiling_pit"
                 for panel_id, texture_key in calls
             )
 
@@ -4205,7 +4318,9 @@ def test_scene_renderer_routes_side_wall_through_wall_slot_commands():
     screen = pygame.display.set_mode((640, 480))
     presenter = DummyPresenter(width=640, height=480, screen=screen)
     scene_renderer = SceneRenderer(presenter, TextureLibrary())
-    scene_renderer.textures.set_wall_slot_override("wall:visible:d1:right:right:near", "floor_funhouse")
+    scene_renderer.textures.set_wall_slot_override(
+        "wall:visible:d1:right:right:near", "floor_funhouse"
+    )
     player = DummyPlayer()
     world = {
         (0, 0, 1): OpenTile(),

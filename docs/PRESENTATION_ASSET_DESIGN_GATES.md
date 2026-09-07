@@ -312,7 +312,7 @@ middle tab entirely.
 The first summon art pass covers Patagon, Dilong, Agloolik, Cacus, Fuath,
 Izulu, Hala, Lamashtu, Seraphim, Bardi, Kobalos, Tiamat, and Zahhak. The
 checked-in review sheet is
-`src/ui_pygame/assets/companion_art/summon_companion_art_review_sheet.png`.
+`docs/assets/review-sheets/companion-art.png`.
 Rebuild the review sheet with
 `./.venv/bin/python tools/build_companion_art_sprites.py` after changing those
 sprites.

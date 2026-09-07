@@ -25,6 +25,8 @@ Ruyi Jingu Bang exception, and once-per-combat refund boundary.
 
 - Rows follow ungated, 65, 70, 75, 80, 85, and 90.
 - Every Dim Mak modifier is a leaf and cannot block ordinary class progress.
+- Perfect Recovery explicitly requires either Martial Master or Inner Reserve
+  to enable the refund that it improves.
 - Ki capacity remains five and no talent creates unconditional execution.
 - Rope-a-Dope tracks only combat state and clears with normal combat cleanup.
 - Focused tests cover its escalating dodge and four hits, Dim Mak adjustments,

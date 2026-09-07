@@ -146,8 +146,7 @@ MARK_DESCRIPTIONS = {
         "cleared by defeating a bounty foe."
     ),
     "Protection": (
-        "Being incapacitated applies this Mark: +20% incoming physical damage "
-        "until recovery."
+        "Being incapacitated applies this Mark: +20% incoming physical damage " "until recovery."
     ),
     "Retribution": (
         "Being unable to answer with a weapon applies this Mark. At or below "
@@ -161,13 +160,14 @@ def vow_selection_summary(vow_path: Any) -> str:
     selected = normalize_path(vow_path)
     if not selected:
         return ""
-    return " ".join((
-        DESCRIPTIONS[selected],
-        f"Learned ability — {SKILL_NAMES[selected]}: "
-        f"{SIGNATURE_DESCRIPTIONS[selected]}",
-        f"{AURA_NAMES[selected]}: {AURA_DESCRIPTIONS[selected]}",
-        f"{MARK_NAMES[selected]}: {MARK_DESCRIPTIONS[selected]}",
-    ))
+    return " ".join(
+        (
+            DESCRIPTIONS[selected],
+            f"Learned ability — {SKILL_NAMES[selected]}: " f"{SIGNATURE_DESCRIPTIONS[selected]}",
+            f"{AURA_NAMES[selected]}: {AURA_DESCRIPTIONS[selected]}",
+            f"{MARK_NAMES[selected]}: {MARK_DESCRIPTIONS[selected]}",
+        )
+    )
 
 
 def default_state() -> dict[str, Any]:
@@ -295,10 +295,9 @@ def has_affirmation(character: Any) -> bool:
     try:
         from . import class_rings
 
-        return (
-            class_rings.is_awakened(character, "Crusader")
-            and class_rings.has_equipped_class_ring(character)
-        )
+        return class_rings.is_awakened(
+            character, "Crusader"
+        ) and class_rings.has_equipped_class_ring(character)
     except Exception:
         return False
 
@@ -469,9 +468,7 @@ def protection_block_bonus(character: Any) -> float:
     try:
         from . import promotion_kits
 
-        guard = promotion_kits.combat_state(character).get(
-            "oath_protection_guard"
-        )
+        guard = promotion_kits.combat_state(character).get("oath_protection_guard")
         if isinstance(guard, dict) and int(guard.get("turns", 0) or 0) > 0:
             bonus += float(guard.get("block_bonus", 0.0) or 0.0)
     except Exception:
@@ -489,9 +486,7 @@ def protection_mitigation_bonus(character: Any) -> float:
     try:
         from . import promotion_kits
 
-        guard = promotion_kits.combat_state(character).get(
-            "oath_protection_guard"
-        )
+        guard = promotion_kits.combat_state(character).get("oath_protection_guard")
         if isinstance(guard, dict) and int(guard.get("turns", 0) or 0) > 0:
             bonus += float(guard.get("mitigation_bonus", 0.0) or 0.0)
     except Exception:
@@ -523,10 +518,9 @@ def mercy_lethal_threshold(character: Any) -> float:
 
 def challenge_matches(character: Any, target: Any) -> bool:
     state = ensure_state(character)
-    return (
-        int(state["challenge"].get("turns", 0) or 0) > 0
-        and state["challenge"].get("target_id") == id(target)
-    )
+    return int(state["challenge"].get("turns", 0) or 0) > 0 and state["challenge"].get(
+        "target_id"
+    ) == id(target)
 
 
 def start_challenge(character: Any, target: Any) -> str:
@@ -572,7 +566,11 @@ def start_riposte(character: Any) -> str:
 
 def weapon_missing(character: Any) -> bool:
     weapon = getattr(character, "equipment", {}).get("Weapon")
-    return weapon is None or getattr(weapon, "subtyp", "None") == "None" or getattr(character, "is_disarmed", lambda: False)()
+    return (
+        weapon is None
+        or getattr(weapon, "subtyp", "None") == "None"
+        or getattr(character, "is_disarmed", lambda: False)()
+    )
 
 
 def sword_and_board_active(character: Any) -> bool:
@@ -630,9 +628,7 @@ def condemnation(
         0,
         int(target.check_mod("magic def", enemy=character)),
     )
-    resistance = float(
-        target.check_mod("resist", enemy=character, typ="Holy")
-    )
+    resistance = float(target.check_mod("resist", enemy=character, typ="Holy"))
     holy_damage = max(
         1,
         int(
@@ -644,16 +640,10 @@ def condemnation(
         ),
     )
     target.health.current -= holy_damage
-    message += (
-        f"Condemnation burns {target.name} for {holy_damage} Holy damage.\n"
-    )
+    message += f"Condemnation burns {target.name} for {holy_damage} Holy damage.\n"
 
     skills = getattr(character, "spellbook", {}).get("Skills", {})
-    if (
-        "Beyond Reproach" in skills
-        and _wicked_target(target)
-        and target.is_alive()
-    ):
+    if "Beyond Reproach" in skills and _wicked_target(target) and target.is_alive():
         generator = rng or random
         stats = int(character.stats.wisdom) + int(character.stats.charisma)
         mark_chance = max(0.25, min(0.75, 0.35 + ((stats - 20) / 200)))
@@ -764,10 +754,7 @@ def radiant_healing_damage(
         )
     except Exception:
         pass
-    return (
-        defense_message
-        + f"Radiant Healing strikes {target.name} for {damage} Holy damage.\n"
-    )
+    return defense_message + f"Radiant Healing strikes {target.name} for {damage} Holy damage.\n"
 
 
 def _shield_equipped(character: Any) -> bool:
@@ -893,12 +880,14 @@ def shield_ricochet(
         target_ids=tuple(target_id for target_id, _target in targets),
     )
     if not _shield_equipped(character):
-        group.add(CombatResult(
-            action="Shield Ricochet",
-            actor=character,
-            actor_id=battle_engine.current_actor_id,
-            message="Shield Ricochet requires an equipped shield.\n",
-        ))
+        group.add(
+            CombatResult(
+                action="Shield Ricochet",
+                actor=character,
+                actor_id=battle_engine.current_actor_id,
+                message="Shield Ricochet requires an equipped shield.\n",
+            )
+        )
         return group
     character.mana.current -= 16
     generator = rng or random
@@ -932,23 +921,25 @@ def shield_ricochet(
             )
         except (AttributeError, KeyError, TypeError, ValueError):
             pass
-        group.add(CombatResult(
-            action="Shield Ricochet",
-            actor=character,
-            target=target,
-            actor_id=battle_engine.current_actor_id,
-            target_id=target_id,
-            hit=damage > 0,
-            damage=damage,
-            effects_applied={
-                "Status": ["Stun"] if stunned else [],
-                "Physical": [],
-                "Stat": [],
-                "Magic": [],
-                "Class": [],
-            },
-            message=message,
-        ))
+        group.add(
+            CombatResult(
+                action="Shield Ricochet",
+                actor=character,
+                target=target,
+                actor_id=battle_engine.current_actor_id,
+                target_id=target_id,
+                hit=damage > 0,
+                damage=damage,
+                effects_applied={
+                    "Status": ["Stun"] if stunned else [],
+                    "Physical": [],
+                    "Stat": [],
+                    "Magic": [],
+                    "Class": [],
+                },
+                message=message,
+            )
+        )
     return group
 
 
@@ -970,12 +961,14 @@ def prayer_of_faith(
         target_ids=tuple(target_id for target_id, _target in targets),
     )
     if character.health.current * 10 >= character.health.max:
-        group.add(CombatResult(
-            action="Prayer of Faith",
-            actor=character,
-            actor_id=battle_engine.current_actor_id,
-            message="Prayer of Faith requires health below 10%.\n",
-        ))
+        group.add(
+            CombatResult(
+                action="Prayer of Faith",
+                actor=character,
+                actor_id=battle_engine.current_actor_id,
+                message="Prayer of Faith requires health below 10%.\n",
+            )
+        )
         return group
     character.mana.current -= 20
     generator = rng or random
@@ -983,15 +976,17 @@ def prayer_of_faith(
     if outcome == "heal":
         healing = max(0, character.health.max - character.health.current)
         character.health.current = character.health.max
-        group.add(CombatResult(
-            action="Prayer of Faith",
-            actor=character,
-            target=character,
-            actor_id=battle_engine.current_actor_id,
-            target_id="player",
-            healing=healing,
-            message=f"Faith restores {character.name} to full health ({healing} HP).\n",
-        ))
+        group.add(
+            CombatResult(
+                action="Prayer of Faith",
+                actor=character,
+                target=character,
+                actor_id=battle_engine.current_actor_id,
+                target_id="player",
+                healing=healing,
+                message=f"Faith restores {character.name} to full health ({healing} HP).\n",
+            )
+        )
     elif outcome == "barrier":
         character.temporary_health = {
             "amount": 1,
@@ -999,16 +994,16 @@ def prayer_of_faith(
             "source": "Prayer of Faith barrier",
             "blocks_all_damage": True,
         }
-        group.add(CombatResult(
-            action="Prayer of Faith",
-            actor=character,
-            target=character,
-            actor_id=battle_engine.current_actor_id,
-            target_id="player",
-            message=(
-                f"A Prayer of Faith barrier surrounds {character.name} for 2 turns.\n"
-            ),
-        ))
+        group.add(
+            CombatResult(
+                action="Prayer of Faith",
+                actor=character,
+                target=character,
+                actor_id=battle_engine.current_actor_id,
+                target_id="player",
+                message=(f"A Prayer of Faith barrier surrounds {character.name} for 2 turns.\n"),
+            )
+        )
     else:
         for target_id, target in targets:
             raw_damage = max(
@@ -1022,16 +1017,18 @@ def prayer_of_faith(
             )
             target.health.current = max(0, target.health.current - damage)
             message += f"Faith judges {target.name} for {damage} Holy damage.\n"
-            group.add(CombatResult(
-                action="Prayer of Faith",
-                actor=character,
-                target=target,
-                actor_id=battle_engine.current_actor_id,
-                target_id=target_id,
-                hit=damage > 0,
-                damage=damage,
-                message=message,
-            ))
+            group.add(
+                CombatResult(
+                    action="Prayer of Faith",
+                    actor=character,
+                    target=target,
+                    actor_id=battle_engine.current_actor_id,
+                    target_id=target_id,
+                    hit=damage > 0,
+                    damage=damage,
+                    message=message,
+                )
+            )
     return group
 
 
@@ -1046,10 +1043,7 @@ def repel_the_wicked(
         return "There is no foe to repel.\n"
     cost = 12
     if character.mana.current < cost:
-        return (
-            f"{character.name} does not have enough mana to cast "
-            "Repel the Wicked.\n"
-        )
+        return f"{character.name} does not have enough mana to cast " "Repel the Wicked.\n"
     character.mana.current -= cost
     if not _wicked_target(target):
         return "Repel the Wicked affects only fiends and undead.\n"
@@ -1058,10 +1052,7 @@ def repel_the_wicked(
 
     generator = rng or random
     stats = int(character.stats.wisdom) + int(character.stats.charisma)
-    target_wisdom = int(
-        getattr(getattr(target, "stats", None), "wisdom", 10)
-        or 10
-    )
+    target_wisdom = int(getattr(getattr(target, "stats", None), "wisdom", 10) or 10)
     success_chance = max(
         0.10,
         min(0.85, 0.35 + ((stats - (target_wisdom * 2)) / 100)),
@@ -1072,10 +1063,7 @@ def repel_the_wicked(
     target.health.current = 0
     if bool(getattr(target, "condemned_by_crusader", False)):
         setattr(target, "paladin_disintegrated", True)
-        return (
-            f"Repel the Wicked ignites Condemnation and disintegrates "
-            f"{target.name}.\n"
-        )
+        return f"Repel the Wicked ignites Condemnation and disintegrates " f"{target.name}.\n"
     setattr(target, "paladin_repelled", True)
     return f"{target.name} flees from the sacred force.\n"
 
@@ -1088,10 +1076,7 @@ def clear_condemnation(target: Any) -> None:
 
 def block_succeeded(character: Any) -> str:
     state = ensure_state(character)
-    guarded = bool(
-        state["interpose"].get("turns")
-        and not state["interpose"].get("spent")
-    )
+    guarded = bool(state["interpose"].get("turns") and not state["interpose"].get("spent"))
     if state["interpose"].get("turns") and not state["interpose"].get("spent"):
         state["interpose"]["spent"] = True
     if path(character) == "Protection":
@@ -1112,8 +1097,12 @@ def redeem_chance(character: Any, target: Any) -> float:
     if target is None or mercy_immune(target):
         return 0.0
     hp_max = max(1, int(getattr(getattr(target, "health", None), "max", 1) or 1))
-    missing_ratio = max(0.0, min(1.0, (hp_max - getattr(target.health, "current", hp_max)) / hp_max))
-    stats_bonus = (int(getattr(character.stats, "charisma", 0)) + int(getattr(character.stats, "wisdom", 0))) / 300.0
+    missing_ratio = max(
+        0.0, min(1.0, (hp_max - getattr(target.health, "current", hp_max)) / hp_max)
+    )
+    stats_bonus = (
+        int(getattr(character.stats, "charisma", 0)) + int(getattr(character.stats, "wisdom", 0))
+    ) / 300.0
     chance = 0.10 + stats_bonus + (missing_ratio * 0.45)
     if aura_active(character, "Redemption Aura"):
         chance += 0.10 * aura_multiplier(character)
@@ -1148,15 +1137,13 @@ def attempt_redeem(character: Any, target: Any, rng: Any | None = None) -> str:
             "successful Redeem",
             clean=True,
         )
-        return (
-            message
-            + trigger_aura(character, "Redemption")
-            + f"{target.name} yields to mercy.\n"
-        )
+        return message + trigger_aura(character, "Redemption") + f"{target.name} yields to mercy.\n"
     return message + f"{target.name} rejects mercy.\n"
 
 
-def on_enemy_defeated(character: Any, enemy: Any, bounty_target: bool = False, mercy: bool = False) -> str:
+def on_enemy_defeated(
+    character: Any, enemy: Any, bounty_target: bool = False, mercy: bool = False
+) -> str:
     if mercy:
         return ""
     selected = path(character)
@@ -1169,13 +1156,10 @@ def on_enemy_defeated(character: Any, enemy: Any, bounty_target: bool = False, m
             clear_mark(character)
         from . import promotion_kits
 
-        return (
-            trigger_aura(character, "Conquest")
-            + promotion_kits.conviction_action(
-                character,
-                "defeated challenged foe",
-                clean=True,
-            )
+        return trigger_aura(character, "Conquest") + promotion_kits.conviction_action(
+            character,
+            "defeated challenged foe",
+            clean=True,
         )
     return ""
 
@@ -1195,7 +1179,10 @@ def on_incapacitated(character: Any) -> str:
 def clear_transient_marks(character: Any) -> None:
     state = ensure_state(character)
     mark = state["mark"]
-    if mark.get("name") == "Mark of Vulnerability" and not getattr(character, "incapacitated", lambda: False)():
+    if (
+        mark.get("name") == "Mark of Vulnerability"
+        and not getattr(character, "incapacitated", lambda: False)()
+    ):
         clear_mark(character)
     if mark.get("name") == "Mark of Mercy" and not weapon_missing(character):
         clear_mark(character)
@@ -1217,7 +1204,9 @@ def resolve_riposte(character: Any, target: Any) -> str:
     damage = max(1, int(character.check_mod("weapon", enemy=target) * 0.75))
     damage += max(1, int(character.check_mod("heal", enemy=target) * 0.25))
     target.health.current -= damage
-    message = f"{character.name}'s Judgment Riposte strikes {target.name} for {damage} Holy damage.\n"
+    message = (
+        f"{character.name}'s Judgment Riposte strikes {target.name} for {damage} Holy damage.\n"
+    )
     if getattr(target.health, "current", 1) <= 0:
         message += trigger_aura(character, "Retribution", doubled=True)
     from . import promotion_kits
@@ -1247,11 +1236,15 @@ def _valid_oath_weapon(character: Any, *, require_shield: bool = False) -> str:
     allowed = set(getattr(character.cls, "restrictions", {}).get("Weapon", ()))
     if allowed and getattr(weapon, "subtyp", None) not in allowed:
         return "A class-legal main-hand weapon is required.\n"
-    if require_shield and getattr(
-        character.equipment.get("OffHand"),
-        "subtyp",
-        None,
-    ) != "Shield":
+    if (
+        require_shield
+        and getattr(
+            character.equipment.get("OffHand"),
+            "subtyp",
+            None,
+        )
+        != "Shield"
+    ):
         return "The Vow of Protection requires a shield for Oath's Judgment.\n"
     return ""
 
@@ -1300,28 +1293,17 @@ def _apply_oath_barrier(
 
 _OATH_JUDGMENT_DESCRIPTIONS = {
     "Redemption": (
-        "0.9x Holy weapon strike; +3 accuracy per stack and heal 5% maximum "
-        "HP per stack on hit."
+        "0.9x Holy weapon strike; +3 accuracy per stack and heal 5% maximum " "HP per stack on hit."
     ),
-    "Conquest": (
-        "1.0x plus 0.15x weapon damage per stack and +5 accuracy per stack."
-    ),
-    "Protection": (
-        "Shield-required 0.75x strike; lower Attack and gain a barrier on hit."
-    ),
-    "Retribution": (
-        "1.0x Holy strike; prepare a 0.25x-per-stack Holy counter on hit."
-    ),
+    "Conquest": ("1.0x plus 0.15x weapon damage per stack and +5 accuracy per stack."),
+    "Protection": ("Shield-required 0.75x strike; lower Attack and gain a barrier on hit."),
+    "Retribution": ("1.0x Holy strike; prepare a 0.25x-per-stack Holy counter on hit."),
 }
 
 _OATH_SHELTER_DESCRIPTIONS = {
-    "Redemption": (
-        "Heal 10% maximum HP per stack and cleanse Poison at two stacks."
-    ),
+    "Redemption": ("Heal 10% maximum HP per stack and cleanse Poison at two stacks."),
     "Conquest": "Gain 3 Attack and Speed per stack for two turns.",
-    "Protection": (
-        "Gain 15 barrier and 5 points of block chance and mitigation per stack."
-    ),
+    "Protection": ("Gain 15 barrier and 5 points of block chance and mitigation per stack."),
     "Retribution": (
         "Reduce the next damaging hit by 8% per stack and return the prevented "
         "amount as Holy damage."
@@ -1336,9 +1318,7 @@ def oath_technique_description(character: Any, action_name: str) -> str:
         return "No vow sworn. Requires at least 1 Conviction and spends all stacks."
     from . import promotion_kits
 
-    conviction = int(
-        promotion_kits.combat_state(character).get("oath_conviction", 0) or 0
-    )
+    conviction = int(promotion_kits.combat_state(character).get("oath_conviction", 0) or 0)
     descriptions = (
         _OATH_JUDGMENT_DESCRIPTIONS
         if action_name == "Oath's Judgment"
@@ -1407,9 +1387,7 @@ def oaths_judgment(character: Any, target: Any | None) -> str:
         )
         character.health.current += healing
         if healing > 0:
-            message += (
-                f"Redemption restores {healing} HP through Oath's Judgment.\n"
-            )
+            message += f"Redemption restores {healing} HP through Oath's Judgment.\n"
     elif hit and selected == "Protection":
         penalty = max(1, math.ceil(2 * potency * spent))
         attack = target.stat_effects["Attack"]
@@ -1431,13 +1409,10 @@ def oaths_judgment(character: Any, target: Any | None) -> str:
             "damage_mod": counter_mod,
         }
         message += (
-            "Retribution prepares a Holy counter against the next incoming "
-            "weapon attack.\n"
+            "Retribution prepares a Holy counter against the next incoming " "weapon attack.\n"
         )
     elif hit and selected == "Conquest":
-        message += (
-            f"Conquest drives the judgment for {actual_damage} weapon damage.\n"
-        )
+        message += f"Conquest drives the judgment for {actual_damage} weapon damage.\n"
 
     if not hit:
         message += "Oath's Judgment misses, but its Conviction is spent.\n"
@@ -1487,10 +1462,7 @@ def oaths_shelter(character: Any) -> str:
             effect.duration = max(int(effect.duration or 0), duration)
             effect.extra = max(int(effect.extra or 0), bonus)
         applied = True
-        message += (
-            f"Conquest raises Attack and Speed by {bonus} for {duration} "
-            "turns.\n"
-        )
+        message += f"Conquest raises Attack and Speed by {bonus} for {duration} " "turns.\n"
     elif selected == "Protection":
         from . import promotion_kits
 

@@ -6,7 +6,8 @@ from __future__ import annotations
 from copy import deepcopy
 from types import SimpleNamespace
 
-from src.core import items as core_items, quest_progress
+from src.core import items as core_items
+from src.core import quest_progress
 from src.core.data.data_loader import get_quests
 from src.ui_pygame.gui import quest_manager
 from tests.test_framework import TestGameState
@@ -186,13 +187,17 @@ def test_formatting_and_chalice_hint_helpers(monkeypatch):
         "Help Text": "",
     }
     rendered = []
-    manager = _manager(player, quest_text_renderer=lambda text: rendered.append(text), wrap_width=12)
+    manager = _manager(
+        player, quest_text_renderer=lambda text: rendered.append(text), wrap_width=12
+    )
 
     assert manager._format_for_renderer("alpha beta gamma") == "alpha beta\ngamma"
     preserved = _manager(player, renderer_preserve_formatting=True)
     assert preserved._format_for_renderer("a\nb") == "a\nb"
 
-    progress = manager._ensure_chalice_progress(player.quest_dict["Side"]["The Holy Grail of Quests"])
+    progress = manager._ensure_chalice_progress(
+        player.quest_dict["Side"]["The Holy Grail of Quests"]
+    )
     assert progress["Hooded"] is False
     assert progress["Spawned"] is False
 
@@ -214,7 +219,9 @@ def test_show_hint_eligible_quests_and_random_help(monkeypatch):
         "Side": {"Quest B": {"Help Text": "Visit the ruins.", "Turned In": False}},
     }
     rendered = []
-    manager = _manager(player, quest_text_renderer=lambda text: rendered.append(text), wrap_width=15)
+    manager = _manager(
+        player, quest_text_renderer=lambda text: rendered.append(text), wrap_width=15
+    )
 
     monkeypatch.setattr(
         quest_manager,
@@ -226,7 +233,9 @@ def test_show_hint_eligible_quests_and_random_help(monkeypatch):
             }
         },
     )
-    monkeypatch.setattr(quest_manager, "get_reactive_town_hints", lambda _player, _giver: ["Secret grail hint"])
+    monkeypatch.setattr(
+        quest_manager, "get_reactive_town_hints", lambda _player, _giver: ["Secret grail hint"]
+    )
     monkeypatch.setattr(quest_manager.random, "choice", lambda seq: seq[0])
 
     mains, sides = manager._eligible_quests("Guide")
@@ -256,7 +265,9 @@ def test_random_help_hint_uses_reactive_town_hints_when_no_quest_help(monkeypatc
         "quest_dict",
         {"Guide": {"Main": {}, "Side": {}}},
     )
-    monkeypatch.setattr(quest_manager, "get_reactive_town_hints", lambda _player, _giver: ["Reactive warning"])
+    monkeypatch.setattr(
+        quest_manager, "get_reactive_town_hints", lambda _player, _giver: ["Reactive warning"]
+    )
     monkeypatch.setattr(quest_manager.random, "choice", lambda seq: seq[0])
 
     assert manager.get_random_help_hint("Guide") == "Reactive warning"
@@ -333,10 +344,16 @@ def test_offer_accept_covers_kill_check_relics_naivete_and_decline(monkeypatch):
     monkeypatch.setattr(quest_manager, "RESPONSE_MAP", {"Guide": ["Accepted!", "Declined!"]})
     monkeypatch.setattr(quest_manager.items, "EmptyVial", EmptyVial, raising=False)
 
-    assert manager._offer("Guide", "Defeat Quest", {"Type": "Defeat", "What": "Goblin King"}, "Main") is True
+    assert (
+        manager._offer("Guide", "Defeat Quest", {"Type": "Defeat", "What": "Goblin King"}, "Main")
+        is True
+    )
     assert player.quest_dict["Main"]["Defeat Quest"]["Completed"] is True
 
-    assert manager._offer("Guide", "The Holy Relics", {"Type": "Collect", "What": "Relics"}, "Main") is True
+    assert (
+        manager._offer("Guide", "The Holy Relics", {"Type": "Collect", "What": "Relics"}, "Main")
+        is True
+    )
     assert player.quest_dict["Main"]["The Holy Relics"]["Completed"] is True
 
     assert manager._offer("Guide", "Naivete", {"Type": "Collect", "What": "Vial"}, "Side") is True
@@ -360,7 +377,10 @@ def test_turn_in_handles_gold_collect_cleanup_and_levelup(monkeypatch):
         "Completed": True,
         "Turned In": False,
     }
-    player.inventory["QuestGem"] = [DummyItem("QuestGem", typ="Misc", subtyp="Gem"), DummyItem("QuestGem", typ="Misc", subtyp="Gem")]
+    player.inventory["QuestGem"] = [
+        DummyItem("QuestGem", typ="Misc", subtyp="Gem"),
+        DummyItem("QuestGem", typ="Misc", subtyp="Gem"),
+    ]
     rendered = []
     manager = _manager(player, quest_text_renderer=lambda text: rendered.append(text))
 
@@ -368,7 +388,9 @@ def test_turn_in_handles_gold_collect_cleanup_and_levelup(monkeypatch):
     monkeypatch.setattr(quest_manager, "LevelUpScreen", FakeLevelUpScreen)
 
     events = []
-    monkeypatch.setattr(manager, "_handle_quest_events", lambda quest_name: events.append(quest_name))
+    monkeypatch.setattr(
+        manager, "_handle_quest_events", lambda quest_name: events.append(quest_name)
+    )
 
     manager._turn_in("Collect Quest", "Main")
 
@@ -453,7 +475,9 @@ def test_turn_in_handles_reward_selection_and_bad_dream_event(monkeypatch):
     assert any(call[0] == "Shield Reward" for call in player.inventory_calls)
     assert ("Lucky Locket", 1, True, True) in player.inventory_calls
     assert all(kwargs["flush_events"] is True for kwargs in FakeRewardSelectionPopup.show_kwargs)
-    assert all(kwargs["require_key_release"] is True for kwargs in FakeRewardSelectionPopup.show_kwargs)
+    assert all(
+        kwargs["require_key_release"] is True for kwargs in FakeRewardSelectionPopup.show_kwargs
+    )
     beef = player.quest_dict["Side"]["Where's the Beef?"]
     assert beef["Who"] == "Busboy"
     assert "help feed a lot of people" in beef["End Text"]
@@ -481,7 +505,9 @@ def test_content_old_key_rewards_turn_in_through_pygame_manager(monkeypatch):
 
 def test_bring_him_home_turn_in_shows_timmy_home_event(monkeypatch):
     player = _make_player(level=5)
-    player.quest_dict["Side"]["Bring Him Home"] = _content_quest("Sergeant", "Side", "Bring Him Home")
+    player.quest_dict["Side"]["Bring Him Home"] = _content_quest(
+        "Sergeant", "Side", "Bring Him Home"
+    )
     rendered = []
     manager = _manager(player, quest_text_renderer=lambda text: rendered.append(text))
     monkeypatch.setattr(quest_manager, "LevelUpScreen", FakeLevelUpScreen)
@@ -508,7 +534,9 @@ def test_check_and_offer_covers_turnin_offer_help_and_noquest(monkeypatch):
     turnins = []
     offers = []
     monkeypatch.setattr(manager, "_turn_in", lambda name, typ: turnins.append((name, typ)))
-    monkeypatch.setattr(manager, "_offer", lambda giver, name, q, typ: offers.append((giver, name, typ)) or False)
+    monkeypatch.setattr(
+        manager, "_offer", lambda giver, name, q, typ: offers.append((giver, name, typ)) or False
+    )
     monkeypatch.setattr(manager, "_handle_chalice_giver_hint", lambda giver: False)
     monkeypatch.setattr(quest_manager, "get_reactive_town_hints", lambda _player, _giver: [])
     monkeypatch.setattr(quest_manager.random, "choice", lambda seq: seq[0])
@@ -523,7 +551,14 @@ def test_check_and_offer_covers_turnin_offer_help_and_noquest(monkeypatch):
     monkeypatch.setattr(
         manager,
         "_eligible_quests",
-        lambda giver: ([{"Done Quest": {"Type": "Talk"}}, {"Help Quest": {"Type": "Talk"}}, {"New Quest": {"Type": "Talk"}}], []),
+        lambda giver: (
+            [
+                {"Done Quest": {"Type": "Talk"}},
+                {"Help Quest": {"Type": "Talk"}},
+                {"New Quest": {"Type": "Talk"}},
+            ],
+            [],
+        ),
     )
     acted, showed = manager.check_and_offer("Guide")
     assert (acted, showed) == (False, True)
@@ -639,11 +674,17 @@ def test_offer_without_renderer_and_check_and_offer_side_branches(monkeypatch):
     FakePopup.responses = [None, True, None, False]
     FakePopup.show_kwargs = []
     monkeypatch.setattr(quest_manager, "ConfirmationPopup", FakePopup)
-    monkeypatch.setattr(quest_manager, "RESPONSE_MAP", {"Priest": ["Blessings.", "Come back later."]})
+    monkeypatch.setattr(
+        quest_manager, "RESPONSE_MAP", {"Priest": ["Blessings.", "Come back later."]}
+    )
 
     manager = _manager(player)
-    accepted = manager._offer("Priest", "Popup Quest", {"Start Text": "A popup intro.", "Type": "Talk"}, "Main")
-    declined = manager._offer("Priest", "Declined Popup Quest", {"Start Text": "Second intro.", "Type": "Talk"}, "Main")
+    accepted = manager._offer(
+        "Priest", "Popup Quest", {"Start Text": "A popup intro.", "Type": "Talk"}, "Main"
+    )
+    declined = manager._offer(
+        "Priest", "Declined Popup Quest", {"Start Text": "Second intro.", "Type": "Talk"}, "Main"
+    )
 
     assert accepted is True
     assert declined is False
@@ -658,11 +699,18 @@ def test_offer_without_renderer_and_check_and_offer_side_branches(monkeypatch):
     monkeypatch.setattr(
         manager,
         "_eligible_quests",
-        lambda giver: ([{"Relic Quest": {"Type": "Collect", "What": "Relics"}}], [{"Pandora's Box": {"Type": "Talk"}}]),
+        lambda giver: (
+            [{"Relic Quest": {"Type": "Collect", "What": "Relics"}}],
+            [{"Pandora's Box": {"Type": "Talk"}}],
+        ),
     )
     turnins = []
     monkeypatch.setattr(manager, "_turn_in", lambda name, typ: turnins.append((name, typ)))
-    monkeypatch.setattr(manager, "_offer", lambda giver, name, q, typ: (_ for _ in ()).throw(AssertionError("should not offer")))
+    monkeypatch.setattr(
+        manager,
+        "_offer",
+        lambda giver, name, q, typ: (_ for _ in ()).throw(AssertionError("should not offer")),
+    )
     monkeypatch.setattr(manager, "_handle_chalice_giver_hint", lambda giver: True)
     acted, showed = manager.check_and_offer("Priest", show_help=False)
     assert (acted, showed) == (True, True)
@@ -704,7 +752,9 @@ def test_wizards_folly_turn_in_shows_nimue_followup_with_renderer(monkeypatch):
         lambda: {"Nimue After Merzhin": {"Text": ["The water settles.", "Nimue remembers."]}},
     )
 
-    manager = _manager(player, quest_text_renderer=lambda text: rendered.append(text), wrap_width=18)
+    manager = _manager(
+        player, quest_text_renderer=lambda text: rendered.append(text), wrap_width=18
+    )
     manager._handle_quest_events("The Wizard's Folly")
 
     assert rendered

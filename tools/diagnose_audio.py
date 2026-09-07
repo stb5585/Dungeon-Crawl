@@ -3,20 +3,22 @@
 Sound System Diagnostic Tool
 Checks common audio issues and provides troubleshooting steps.
 """
-import sys
+
 import os
 import subprocess
-sys.path.insert(0, '.')
+import sys
 
-print("="*60)
+sys.path.insert(0, ".")
+
+print("=" * 60)
 print("THE FORSAKEN TENET - SOUND DIAGNOSTIC TOOL")
-print("="*60)
+print("=" * 60)
 
 # Check 1: System audio configuration
 print("\n[1] Checking system audio...")
 try:
     # Check if pulseaudio is running
-    result = subprocess.run(['pulseaudio', '--check'], capture_output=True)
+    result = subprocess.run(["pulseaudio", "--check"], capture_output=True)
     if result.returncode == 0:
         print("  ✓ PulseAudio is running")
     else:
@@ -32,7 +34,7 @@ if os.path.exists(test_sound):
     print(f"  Found test sound: {test_sound}")
     print("  Attempting to play test sound...")
     try:
-        result = subprocess.run(['aplay', test_sound], capture_output=True, timeout=3)
+        result = subprocess.run(["aplay", test_sound], capture_output=True, timeout=3)
         if result.returncode == 0:
             print("  ✓ System audio works! (You should have heard a test sound)")
         else:
@@ -53,10 +55,10 @@ if os.path.exists(sound_file):
     print(f"  Size: {size} bytes")
     if size < 100:
         print("  ⚠ File is suspiciously small!")
-    
+
     print("  Attempting to play with aplay...")
     try:
-        result = subprocess.run(['aplay', sound_file], capture_output=True, timeout=2)
+        result = subprocess.run(["aplay", sound_file], capture_output=True, timeout=2)
         if result.returncode == 0:
             print("  ✓ File played successfully!")
             print("    >> Did you hear a beep? If yes, Pygame mixer might be the issue.")
@@ -66,7 +68,7 @@ if os.path.exists(sound_file):
     except FileNotFoundError:
         print("  ⚠ 'aplay' not available, trying paplay...")
         try:
-            result = subprocess.run(['paplay', sound_file], capture_output=True, timeout=2)
+            result = subprocess.run(["paplay", sound_file], capture_output=True, timeout=2)
             if result.returncode == 0:
                 print("  ✓ File played with paplay!")
         except Exception:
@@ -81,13 +83,14 @@ else:
 print("\n[4] Testing Pygame mixer...")
 try:
     import pygame
+
     pygame.init()
     mixer_info = pygame.mixer.get_init()
     if mixer_info:
         print(f"  ✓ Pygame mixer initialized: {mixer_info}")
         print(f"    Frequency: {mixer_info[0]} Hz")
         print(f"    Channels: {mixer_info[2]} (stereo)")
-        
+
         # Try loading and playing a sound
         if os.path.exists(sound_file):
             print("  Loading sound into pygame...")
@@ -100,11 +103,12 @@ try:
                 print("  ✓ Sound playing on channel", channel)
                 print("    >> Listening for 2 seconds...")
                 import time
+
                 time.sleep(2)
                 print("    >> Did you hear it?")
             else:
                 print("  ✗ Failed to play sound (no channel available)")
-        
+
         pygame.quit()
     else:
         print("  ✗ Pygame mixer failed to initialize")
@@ -113,7 +117,7 @@ except Exception as e:
 
 # Check 5: Environment variables
 print("\n[5] Checking audio environment...")
-audio_vars = ['SDL_AUDIODRIVER', 'AUDIODEV', 'AUDIODRIVER']
+audio_vars = ["SDL_AUDIODRIVER", "AUDIODEV", "AUDIODRIVER"]
 for var in audio_vars:
     value = os.environ.get(var)
     if value:
@@ -122,9 +126,9 @@ for var in audio_vars:
         print(f"  {var} = (not set)")
 
 # Summary and recommendations
-print("\n" + "="*60)
+print("\n" + "=" * 60)
 print("RECOMMENDATIONS:")
-print("="*60)
+print("=" * 60)
 print("""
 1. If aplay/paplay worked but pygame didn't:
    - This is a pygame/SDL audio driver issue
@@ -146,4 +150,4 @@ print("""
    - Watch for errors in terminal output
 """)
 
-print("\n" + "="*60)
+print("\n" + "=" * 60)

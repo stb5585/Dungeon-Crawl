@@ -99,8 +99,14 @@ def test_level_up_popup_prepares_draws_and_shows(monkeypatch):
     assert ("subheader", "Upgrades:") in popup.content_lines
 
     draw_calls = []
-    monkeypatch.setattr("src.ui_pygame.gui.level_up_popup.pygame.Surface", lambda size, *_args, **_kwargs: DummySurface(size))
-    monkeypatch.setattr("src.ui_pygame.gui.level_up_popup.pygame.draw.rect", lambda *_args, **_kwargs: draw_calls.append((_args, _kwargs)))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.level_up_popup.pygame.Surface",
+        lambda size, *_args, **_kwargs: DummySurface(size),
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.level_up_popup.pygame.draw.rect",
+        lambda *_args, **_kwargs: draw_calls.append((_args, _kwargs)),
+    )
     popup.draw_popup()
     assert "LEVEL UP!" in presenter.title_font.render_calls
     assert "Press any key to continue..." in presenter.small_font.render_calls
@@ -116,34 +122,50 @@ def test_level_up_popup_prepares_draws_and_shows(monkeypatch):
     assert popup._get_background_surface() == "screen-copy"
 
     monkeypatch.setattr("src.ui_pygame.gui.level_up_popup.pygame.display.flip", lambda: None)
-    event_batches = iter([
-        [],
-        [SimpleNamespace(type=pygame.KEYDOWN)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.level_up_popup.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [],
+            [SimpleNamespace(type=pygame.KEYDOWN)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.level_up_popup.pygame.event.get", lambda: next(event_batches, [])
+    )
     bg_calls = []
     popup.show(background_draw_func=lambda: bg_calls.append(True))
     assert bg_calls
 
     presenter.get_background_surface = lambda: "bg-default"
     popup = level_up_popup.LevelUpPopup(presenter, level_info)
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.QUIT)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.level_up_popup.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.QUIT)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.level_up_popup.pygame.event.get", lambda: next(event_batches, [])
+    )
     popup.show()
     assert ("bg-default", (0, 0)) in presenter.screen.blit_calls
 
     popup = level_up_popup.LevelUpPopup(presenter, level_info)
     clear_calls = []
     key_states = iter([[1], []])
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.KEYDOWN)],
-        [SimpleNamespace(type=pygame.KEYDOWN)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.event.clear", lambda: clear_calls.append(True))
-    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: next(key_states, []))
-    monkeypatch.setattr("src.ui_pygame.gui.level_up_popup.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.KEYDOWN)],
+            [SimpleNamespace(type=pygame.KEYDOWN)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.input_guards.pygame.event.clear", lambda: clear_calls.append(True)
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: next(key_states, [])
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.level_up_popup.pygame.event.get", lambda: next(event_batches, [])
+    )
     popup.show(flush_events=True, require_key_release=True)
     assert clear_calls == [True]
 
@@ -154,8 +176,14 @@ def test_stat_selection_popup_draws_and_selects(monkeypatch):
     popup = stat_selection_popup.StatSelectionPopup(presenter, options)
 
     draw_calls = []
-    monkeypatch.setattr("src.ui_pygame.gui.stat_selection_popup.pygame.Surface", lambda size, *_args, **_kwargs: DummySurface(size))
-    monkeypatch.setattr("src.ui_pygame.gui.stat_selection_popup.pygame.draw.rect", lambda *_args, **_kwargs: draw_calls.append((_args, _kwargs)))
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.stat_selection_popup.pygame.Surface",
+        lambda size, *_args, **_kwargs: DummySurface(size),
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.stat_selection_popup.pygame.draw.rect",
+        lambda *_args, **_kwargs: draw_calls.append((_args, _kwargs)),
+    )
     popup.draw_popup()
     assert "Choose Stat to Increase" in presenter.title_font.render_calls
     assert "Strength: 10 -> 11" in presenter.normal_font.render_calls
@@ -172,54 +200,82 @@ def test_stat_selection_popup_draws_and_selects(monkeypatch):
     assert popup._get_background_surface() == "screen-copy"
 
     monkeypatch.setattr("src.ui_pygame.gui.stat_selection_popup.pygame.display.flip", lambda: None)
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)],
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.stat_selection_popup.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_DOWN)],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.stat_selection_popup.pygame.event.get", lambda: next(event_batches, [])
+    )
     assert popup.show(background_draw_func=lambda: presenter.screen.fill((1, 2, 3))) == "Dexterity"
 
     popup = stat_selection_popup.StatSelectionPopup(presenter, options)
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_UP)],
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_SPACE)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.stat_selection_popup.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_UP)],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_SPACE)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.stat_selection_popup.pygame.event.get", lambda: next(event_batches, [])
+    )
     assert popup.show() == "Wisdom"
 
     popup = stat_selection_popup.StatSelectionPopup(presenter, options)
     clear_calls = []
     key_states = iter([[1], []])
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.event.clear", lambda: clear_calls.append(True))
-    monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: next(key_states, []))
-    monkeypatch.setattr("src.ui_pygame.gui.stat_selection_popup.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.input_guards.pygame.event.clear", lambda: clear_calls.append(True)
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: next(key_states, [])
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.stat_selection_popup.pygame.event.get", lambda: next(event_batches, [])
+    )
     assert popup.show(flush_events=True, require_key_release=True) == "Strength"
     assert clear_calls == [True]
 
     popup = stat_selection_popup.StatSelectionPopup(presenter, options)
     monkeypatch.setattr("src.ui_pygame.gui.input_guards.pygame.key.get_pressed", lambda: [])
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.stat_selection_popup.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.KEYDOWN, key=pygame.K_RETURN)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.stat_selection_popup.pygame.event.get", lambda: next(event_batches, [])
+    )
     assert popup.show(flush_events=True, require_key_release=True) == "Strength"
 
     popup = stat_selection_popup.StatSelectionPopup(presenter, options)
     click_pos = popup.option_rects()[2].center
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.MOUSEMOTION, pos=click_pos)],
-        [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=click_pos)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.stat_selection_popup.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.MOUSEMOTION, pos=click_pos)],
+            [SimpleNamespace(type=pygame.MOUSEBUTTONDOWN, button=1, pos=click_pos)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.stat_selection_popup.pygame.event.get", lambda: next(event_batches, [])
+    )
     assert popup.show() == "Wisdom"
 
     popup = stat_selection_popup.StatSelectionPopup(presenter, options)
-    event_batches = iter([
-        [SimpleNamespace(type=pygame.QUIT)],
-    ])
-    monkeypatch.setattr("src.ui_pygame.gui.stat_selection_popup.pygame.event.get", lambda: next(event_batches, []))
+    event_batches = iter(
+        [
+            [SimpleNamespace(type=pygame.QUIT)],
+        ]
+    )
+    monkeypatch.setattr(
+        "src.ui_pygame.gui.stat_selection_popup.pygame.event.get", lambda: next(event_batches, [])
+    )
     assert popup.show() is None

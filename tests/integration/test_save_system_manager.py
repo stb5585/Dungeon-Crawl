@@ -3,8 +3,8 @@
 Additional save-system coverage for serializers and SaveManager flows.
 """
 
-import sys
 import json
+import sys
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -159,7 +159,9 @@ def test_tile_state_restore_ignores_invalid_or_executable_position_keys(tmp_path
 
 
 def test_player_data_deserialize_marks_killed_boss_tiles_defeated_without_world_state(monkeypatch):
-    player = TestGameState.create_player(name="BossSlayer", class_name="Warrior", race_name="Human", level=12)
+    player = TestGameState.create_player(
+        name="BossSlayer", class_name="Warrior", race_name="Human", level=12
+    )
     player.kill_dict = {"Boss": {"Minotaur": 1}}
     serialized = PlayerDataSerializer.serialize(player)
     serialized.pop("world_state", None)
@@ -185,7 +187,9 @@ def test_player_data_deserialize_marks_killed_boss_tiles_defeated_without_world_
 
 
 def test_player_data_serializer_round_trips_bestiary_records():
-    player = TestGameState.create_player(name="Scout", class_name="Warrior", race_name="Human", level=12)
+    player = TestGameState.create_player(
+        name="Scout", class_name="Warrior", race_name="Human", level=12
+    )
     player.bestiary = {
         "Seen Only": {
             "name": "Seen Only",
@@ -202,10 +206,12 @@ def test_player_data_serializer_round_trips_bestiary_records():
             "resistances": {"Fire": 0.25},
             "known_abilities": ["Hex"],
             "features": ["Sight"],
-        }
+        },
     }
 
-    restored = PlayerDataSerializer.deserialize(PlayerDataSerializer.serialize(player), skip_tiles=True)
+    restored = PlayerDataSerializer.deserialize(
+        PlayerDataSerializer.serialize(player), skip_tiles=True
+    )
 
     assert restored.bestiary == player.bestiary
 
@@ -273,8 +279,12 @@ def test_player_data_deserialize_does_not_grant_an_unselected_xenid():
     assert restored.summons == {}
 
 
-def test_player_data_deserialize_deactivates_funhouse_teleporter_for_existing_jester_save(monkeypatch):
-    player = TestGameState.create_player(name="JesterSlayer", class_name="Warrior", race_name="Human", level=12)
+def test_player_data_deserialize_deactivates_funhouse_teleporter_for_existing_jester_save(
+    monkeypatch,
+):
+    player = TestGameState.create_player(
+        name="JesterSlayer", class_name="Warrior", race_name="Human", level=12
+    )
     player.kill_dict = {"Boss": {"Jester": 1}}
     serialized = PlayerDataSerializer.serialize(player)
     serialized["world_state"] = {
@@ -304,7 +314,9 @@ def test_player_data_deserialize_deactivates_funhouse_teleporter_for_existing_je
 
 
 def test_player_data_deserialize_migrates_jester_tokens_to_special_inventory():
-    player = TestGameState.create_player(name="TokenTester", class_name="Warrior", race_name="Human", level=12)
+    player = TestGameState.create_player(
+        name="TokenTester", class_name="Warrior", race_name="Human", level=12
+    )
     player.inventory = {"Jester Token": [items.JesterToken() for _ in range(2)]}
     serialized = PlayerDataSerializer.serialize(player)
 
@@ -331,17 +343,21 @@ def test_player_data_deserialize_replaces_legacy_holy_relics_by_relic_count():
         (6, True, True, quest_progress.HOLY_RELICS, True, True),
     ]
 
-    for count, old_completed, old_turned_in, expected_name, expected_completed, expected_turned_in in cases:
+    for (
+        count,
+        old_completed,
+        old_turned_in,
+        expected_name,
+        expected_completed,
+        expected_turned_in,
+    ) in cases:
         player = TestGameState.create_player(
             name=f"Relic{count}",
             class_name="Warrior",
             race_name="Human",
             level=30,
         )
-        player.special_inventory = {
-            name: [item]
-            for name, item in relic_items[:count]
-        }
+        player.special_inventory = {name: [item] for name, item in relic_items[:count]}
         player.quest_dict["Main"][quest_progress.HOLY_RELICS] = {
             "Who": "Sergeant",
             "Type": "Collect",
@@ -354,7 +370,9 @@ def test_player_data_deserialize_replaces_legacy_holy_relics_by_relic_count():
             "Turned In": old_turned_in,
         }
 
-        restored = PlayerDataSerializer.deserialize(PlayerDataSerializer.serialize(player), skip_tiles=True)
+        restored = PlayerDataSerializer.deserialize(
+            PlayerDataSerializer.serialize(player), skip_tiles=True
+        )
 
         assert list(restored.quest_dict["Main"]) == [expected_name]
         restored_quest = restored.quest_dict["Main"][expected_name]
@@ -372,7 +390,9 @@ def test_save_manager_round_trip_list_and_delete(monkeypatch, tmp_path):
     monkeypatch.setattr(SaveManager, "SAVE_DIR", str(save_dir))
     monkeypatch.setattr(SaveManager, "TMP_DIR", str(tmp_dir))
 
-    player = TestGameState.create_player(name="Saver", class_name="Warrior", race_name="Human", level=10)
+    player = TestGameState.create_player(
+        name="Saver", class_name="Warrior", race_name="Human", level=10
+    )
 
     assert SaveManager.save_player(player, "hero.save") is True
     assert SaveManager.save_player(player, "alpha.save") is True
@@ -400,7 +420,9 @@ def test_save_manager_round_trip_preserves_old_key_counts(monkeypatch, tmp_path)
     monkeypatch.setattr(SaveManager, "SAVE_DIR", str(save_dir))
     monkeypatch.setattr(SaveManager, "TMP_DIR", str(tmp_dir))
 
-    player = TestGameState.create_player(name="KeySaver", class_name="Warrior", race_name="Human", level=10)
+    player = TestGameState.create_player(
+        name="KeySaver", class_name="Warrior", race_name="Human", level=10
+    )
     player.inventory = {"Old Key": [items.OldKey() for _ in range(5)]}
 
     assert SaveManager.save_player(player, "keys.save") is True
@@ -413,7 +435,9 @@ def test_save_manager_round_trip_preserves_old_key_counts(monkeypatch, tmp_path)
 
 
 def test_player_data_preserves_and_defaults_thieves_guild_state():
-    player = TestGameState.create_player(name="GuildSaver", class_name="Rogue", race_name="Human", level=10)
+    player = TestGameState.create_player(
+        name="GuildSaver", class_name="Rogue", race_name="Human", level=10
+    )
     player.thieves_guild = {
         "member": True,
         "trial_started": True,
@@ -439,7 +463,9 @@ def test_load_player_fills_missing_equipment_slots(monkeypatch, tmp_path):
     monkeypatch.setattr(SaveManager, "SAVE_DIR", str(save_dir))
     monkeypatch.setattr(SaveManager, "TMP_DIR", str(tmp_dir))
 
-    player = TestGameState.create_player(name="SlotSaver", class_name="Warrior", race_name="Human", level=10)
+    player = TestGameState.create_player(
+        name="SlotSaver", class_name="Warrior", race_name="Human", level=10
+    )
     assert SaveManager.save_player(player, "slots.save") is True
 
     save_path = save_dir / "slots.save"
@@ -500,9 +526,17 @@ def test_save_manager_describes_save_files_without_reading_payload(monkeypatch, 
     }
     assert SaveManager.describe_save_file("folder.save")["is_dir"] is True
     assert SaveManager.describe_save_file("folder.save")["loadable"] is False
-    assert SaveManager.describe_save_file("hero.tmp", is_tmp=True)["path"] == str(tmp_dir / "hero.tmp")
-    assert SaveManager.describe_save_file("hero.tmp", is_tmp=True)["extension_matches_expected"] is True
-    assert SaveManager.describe_save_file("hero.tmp", is_tmp=False)["extension_matches_expected"] is False
+    assert SaveManager.describe_save_file("hero.tmp", is_tmp=True)["path"] == str(
+        tmp_dir / "hero.tmp"
+    )
+    assert (
+        SaveManager.describe_save_file("hero.tmp", is_tmp=True)["extension_matches_expected"]
+        is True
+    )
+    assert (
+        SaveManager.describe_save_file("hero.tmp", is_tmp=False)["extension_matches_expected"]
+        is False
+    )
     assert SaveManager.describe_save_file("../outside.save") == {
         "filename": "../outside.save",
         "is_tmp": False,
@@ -582,7 +616,9 @@ def test_save_manager_rejects_path_components(monkeypatch, tmp_path):
     monkeypatch.setattr(SaveManager, "SAVE_DIR", str(save_dir))
     monkeypatch.setattr(SaveManager, "TMP_DIR", str(tmp_dir))
 
-    player = TestGameState.create_player(name="Traveler", class_name="Warrior", race_name="Human", level=10)
+    player = TestGameState.create_player(
+        name="Traveler", class_name="Warrior", race_name="Human", level=10
+    )
 
     assert SaveManager.is_valid_save_filename("hero.save") is True
     assert SaveManager.is_valid_save_filename("hero.tmp") is True
@@ -620,8 +656,12 @@ def test_save_manager_failed_atomic_write_preserves_existing_save(monkeypatch, t
     monkeypatch.setattr(SaveManager, "SAVE_DIR", str(save_dir))
     monkeypatch.setattr(SaveManager, "TMP_DIR", str(tmp_dir))
 
-    stable_player = TestGameState.create_player(name="Stable", class_name="Warrior", race_name="Human", level=10)
-    broken_player = TestGameState.create_player(name="Broken", class_name="Warrior", race_name="Human", level=10)
+    stable_player = TestGameState.create_player(
+        name="Stable", class_name="Warrior", race_name="Human", level=10
+    )
+    broken_player = TestGameState.create_player(
+        name="Broken", class_name="Warrior", race_name="Human", level=10
+    )
     assert SaveManager.save_player(stable_player, "hero.save") is True
 
     def failing_dump(_data, file_obj, *args, **kwargs):
@@ -645,7 +685,9 @@ def test_save_manager_file_round_trip_restores_mutable_tile_state(monkeypatch, t
 
     door_pos = (1, 2, 0)
     boss_pos = (3, 4, 0)
-    player = TestGameState.create_player(name="TileSaver", class_name="Warrior", race_name="Human", level=10)
+    player = TestGameState.create_player(
+        name="TileSaver", class_name="Warrior", race_name="Human", level=10
+    )
     player.world_dict = {
         door_pos: SimpleNamespace(
             visited=True,
@@ -715,9 +757,14 @@ def test_save_manager_returns_false_or_none_on_failures(monkeypatch, tmp_path):
     monkeypatch.setattr(SaveManager, "SAVE_DIR", str(save_dir))
     monkeypatch.setattr(SaveManager, "TMP_DIR", str(tmp_dir))
 
-    player = TestGameState.create_player(name="Broken", class_name="Warrior", race_name="Human", level=10)
+    player = TestGameState.create_player(
+        name="Broken", class_name="Warrior", race_name="Human", level=10
+    )
 
-    monkeypatch.setattr("src.core.save_system.json.dump", lambda *args, **kwargs: (_ for _ in ()).throw(TypeError("dump fail")))
+    monkeypatch.setattr(
+        "src.core.save_system.json.dump",
+        lambda *args, **kwargs: (_ for _ in ()).throw(TypeError("dump fail")),
+    )
     assert SaveManager.save_player(player, "broken.save") is False
 
     assert SaveManager.load_player("missing.save", skip_tiles=True) is None

@@ -7,7 +7,6 @@ from typing import Any
 
 from .state import _ring_awakened_equipped, class_name, combat_state
 
-
 LEGAL_AERIAL_WEAPONS = {"Sword", "Polearm"}
 AUTOMATIC_FOLLOW_THROUGH_EXCLUSIONS = {"Jump", "Dragon Dive"}
 
@@ -31,11 +30,7 @@ def _jump_skill(character: Any) -> Any | None:
     if jump is not None:
         return jump
     return next(
-        (
-            skill
-            for skill in skills.values()
-            if getattr(skill, "name", "") == "Jump"
-        ),
+        (skill for skill in skills.values() if getattr(skill, "name", "") == "Jump"),
         None,
     )
 
@@ -54,10 +49,7 @@ def record_clean_jump_landing(
 
     modifications = modifications or {}
     amount = 1
-    if (
-        modifications.get("Soaring Strike")
-        and has_talent(character, "dragoon.dragons-ascent")
-    ):
+    if modifications.get("Soaring Strike") and has_talent(character, "dragoon.dragons-ascent"):
         amount = 2
     message = gain_meter(character, "aerial_tempo", amount, "clean Jump landing")
     shield = class_rings.apply_aerial_supremacy_shield(
@@ -66,8 +58,7 @@ def record_clean_jump_landing(
     )
     if shield:
         message += (
-            f"Aerial Supremacy forms a {shield}-point Landing Shield around "
-            f"{character.name}.\n"
+            f"Aerial Supremacy forms a {shield}-point Landing Shield around " f"{character.name}.\n"
         )
     if "Vigilant Landing" in getattr(character, "spellbook", {}).get("Skills", {}):
         chance = min(0.85, 0.15 + int(character.stats.dex) / 100)
@@ -109,9 +100,7 @@ def try_dragon_soul(character: Any) -> str:
         return ""
     state["dragon_soul_used"] = True
     state["dragon_soul_immediate_turn"] = True
-    character.health.current = (
-        max(1, int(character.health.max * 0.25)) if improved else 1
-    )
+    character.health.current = max(1, int(character.health.max * 0.25)) if improved else 1
     return (
         f"{character.name}'s {'Dragonheart' if improved else 'Dragon Soul'} "
         f"stabilizes them at {character.health.current} HP and seizes the next turn.\n"
@@ -221,10 +210,7 @@ def finish_aerial_follow_through(character: Any) -> str:
     if stacks <= 0:
         return ""
     if damage <= 0 or target is None:
-        return (
-            f"{character.name} spends {stacks} Aerial Tempo, but the "
-            "follow-through misses.\n"
-        )
+        return f"{character.name} spends {stacks} Aerial Tempo, but the " "follow-through misses.\n"
 
     per_stack = 0.08 if _ring_awakened_equipped(character, "Dragoon") else 0.06
     bonus = max(1, int(damage * per_stack * stacks))
@@ -238,10 +224,7 @@ def finish_aerial_follow_through(character: Any) -> str:
         speed.active = True
         speed.duration = max(2, int(speed.duration or 0))
         speed.extra = min(int(speed.extra or 0), -stacks)
-        message += (
-            f"Dragoon pressure reduces {target.name}'s Speed by {stacks} "
-            "for two turns.\n"
-        )
+        message += f"Dragoon pressure reduces {target.name}'s Speed by {stacks} " "for two turns.\n"
     return message
 
 
@@ -265,6 +248,5 @@ def grounded_landing_reduction(
     reduction = max(1, int(damage * 0.10))
     return (
         max(0, damage - reduction),
-        f"{character.name}'s Grounded Landing training reduces damage by "
-        f"{reduction}.\n",
+        f"{character.name}'s Grounded Landing training reduces damage by " f"{reduction}.\n",
     )

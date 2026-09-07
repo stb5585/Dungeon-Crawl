@@ -264,8 +264,8 @@ systems below.
 
 Status locks to preserve unless a later spec explicitly changes them:
 
-- `Transform4` is retired as a live Lycan Red Dragon reward. The legacy wrapper
-  remains loadable for old saves/tests, while Lycan Red Dragon victories set
+- `Transform4` is retired as a live Lycan Red Dragon reward. The compatibility
+  wrapper remains available to internal tests, while Lycan Red Dragon victories set
   Dragon Essence state for the transformed-only `Winged Pounce` action.
 - `Frozen Armor` is implemented as a Sorcerer-line Ice mastery passive.
 - `Shade of Ahool` is covered by the Shadowcaster Umbral Debt spec.
@@ -320,7 +320,7 @@ implementation:
   for a select few."
 
 Future class ability work needs a one-page decision block covering trigger,
-class eligibility, storage/save migration, combat and exploration behavior,
+class eligibility, current-save storage, combat and exploration behavior,
 UI/menu/status/combat-log copy, event/audio needs, balance assumptions,
 regression tests, and manual playtest checks.
 
@@ -439,7 +439,7 @@ If future Totem work changes code, cover the final behavior with focused tests a
 The specs below are the accepted V1 implementation contracts. They remain here
 as durable behavior references and as the source of follow-up tuning/polish
 items. When changing one of these class tracks, preserve the storage boundaries,
-save migration assumptions, and test intent unless a later spec explicitly
+current-save assumptions, and test intent unless a later spec explicitly
 updates them.
 
 ### Diviner/Astromancer Foresight Threads
@@ -551,7 +551,7 @@ familiar into a permanent contract-shaping echo.
   contracts plus the imprisoned familiar echo's current corruption-shaping
   effect.
 - Tests: cover state normalization, save/load, corruption clamping, patron mood
-  clamping, legacy saves without new fields, corruption gain/cooling, tiered
+  clamping, missing-field defaults, corruption gain/cooling, tiered
   strength/risk scaling, twist severity amplification, patron favor/resentment
   intent changes, `Abyssal Covenant` channeling, and representative familiar
   echo modifiers including Jinkin's combat reset.
@@ -572,7 +572,7 @@ and transformation stability.
 
 - Storage: use existing `class_ring_awakening["data"]["Shadowcaster"]` state
   even before ring awakening. Track `debt`, `backlash`, `eclipse_turns`, and
-  `familiar_echo_used`. Missing or legacy state normalizes cleanly; `debt` and
+  `familiar_echo_used`. Missing or invalid state normalizes cleanly; `debt` and
   `backlash` clamp to nonnegative integers; combat-only fields clear on combat
   end and save/load.
 - Debt generation: Shadow/Dark damage dealt by a Shadowcaster stores `20%` of
@@ -607,7 +607,7 @@ and transformation stability.
   awakened debt capacity, low-HP auto-heal, and Shade stabilization. Combat
   logs should report debt gain, Shade activation/expiration, auto-heal
   spending, and backlash conversion.
-- Tests: cover debt normalization, legacy state compatibility, cap calculation,
+- Tests: cover debt normalization, missing/invalid-state handling, cap calculation,
   debt generation from Shadow/Dark damage only, overcap-to-backlash behavior,
   `Shade of Ahool` gating/spend/refresh/duration/reset, shadow damage and Speed boosts,
   Holy resistance penalty, awakened ring cap and auto-heal, reduced backlash
@@ -1022,7 +1022,7 @@ keeps the permanent four-vow choice and existing aura/mark tension; Crusader
 carries that vow forward with a higher combat-only `Oath Conviction` cap and
 awakened `Vow Affirmation` smoothing the loop without erasing mark drawbacks.
 
-- Preserve shipped behavior: permanent vow choice, legacy no-vow Church choice,
+- Preserve shipped behavior: permanent vow choice, missing-vow Church choice,
   `Redeem`, `Challenge`, `Interpose`, `Judgment Riposte`, aura/mark state,
   mercy immunity for bosses and Class Ring trials, Church `Vow Trial`, and
   current `Vow Affirmation` aura/mark tuning.
@@ -1073,7 +1073,7 @@ awakened `Vow Affirmation` smoothing the loop without erasing mark drawbacks.
   and `Oath Conviction` stacks/cap without surfacing class-ring details in the
   Character Menu class tab. Combat logs should report Conviction gain, spend,
   cap, clean outcome bonus, vow-specific rider, and mark/aura changes.
-- Tests: cover vow normalization, legacy no-vow saves, permanent vow locking,
+- Tests: cover vow normalization, missing-vow persisted state, permanent vow locking,
   signature skill grants, Conviction cap/gain/extra gain/spend order/cleanup,
   all four vow spend riders, immunity boundaries, marks staying separate, and
   awakened/equipped `Vow Affirmation` preserving `1` Conviction once per combat
@@ -1101,7 +1101,7 @@ the vow into a casual menu toggle.
   starting Conviction/Devotion band reflects how cleanly the oath was renewed.
 - Required design decisions before implementation: devotion scale, oathless
   boundaries, ritual list, save/load shape, Church UI copy, combat status copy,
-  and regression coverage for vow loss, restoration, and migration.
+  and regression coverage for vow loss, restoration, and normalization.
 
 ### Lancer/Dragoon Aerial Tempo And Aerial Supremacy
 
@@ -1137,8 +1137,8 @@ landing protection.
   active Jump modification capacity in V1. Existing modification unlocks,
   conflicts, save/load, and execution rules remain intact.
 - Class Ring redesign: display the awakened Dragoon ring effect as
-  `Aerial Supremacy`. Preserve old `+1 Jump Mod` compatibility internally for
-  legacy saves/tests, but the redesign should no longer grant extra active Jump
+  `Aerial Supremacy`. Preserve old `+1 Jump Mod` compatibility for internal
+  tests, but the redesign should no longer grant extra active Jump
   modification capacity.
 - `Aerial Supremacy`: while the awakened ring is equipped, each spent stack
   grants `+8%` total weapon damage and `+4` accuracy points. A clean damaging
@@ -1154,7 +1154,7 @@ landing protection.
   and uses a compact selected-modification detail card; class-tab copy should
   avoid class-ring details. Combat logs should report Tempo gain, interruption
   cleanup, Tempo spend, follow-through damage/control, landing shield, and
-  legacy ring migration/display.
+  the internal ring-mod alias and canonical display.
 - Tests: cover Aerial Tempo cap, clean-landing gain, no gain on interrupted
   Jump, follow-through consumption, miss behavior, combat-end/save-load
   cleanup, effective Lancer cap `3`, effective Dragoon cap `4`, eligible
@@ -1224,7 +1224,7 @@ actions, raises the cap from `50` to `100`, and gains four full-bar Bursts.
   evenly distributes Citadel's accumulated absorbed damage among living
   enemies when it ends. Final Redoubt retains Last Bastion's `40%` heal,
   75-point barrier, and three-turn stance.
-- Keep `guard_meter` save compatibility and the awakened Shield Mastery ring's
+- Keep current `guard_meter` persistence and the awakened Shield Mastery ring's
   automatic major-hit mitigation. Combat-only preparations and temporary
   pools reset at combat boundaries.
 - Shipped: runtime stores four capped mastery tracks, credits only their
@@ -1251,7 +1251,7 @@ trees also contain a three-point level-60 promotion node.
 | Inquisitor | 23 / 24 | Case Journal and Judgment promotion routes, optional elemental-ward passives, and read-only Take Notes | Finished authored tree; 50% tier-earned cost coverage |
 | Seeker | 28 / 30 | Four route, defense, Revelation, and Judgment disciplines with four new active techniques | Finished authored tree; 67% tier-earned coverage |
 | Spell Stealer | 12 / 19 | Blank Scroll theft, inscribed scrolls, active charged offense/defense, and action-scoped Stolen Charge | Finished authored tree; 63% tier-earned cost coverage |
-| Arcane Trickster | 12 / 30 | Permanent Steal Spell II learning, Neural Connection, misdirection actions, and Charge preservation | Finished authored tree; 67% tier-earned cost coverage |
+| Arcane Trickster | 11 / 28 | Permanent Steal Spell II learning, optional stolen-spell mastery, misdirection actions, and Charge preservation | Finished authored tree; 71% tier-earned cost coverage |
 
 Resolved structural gap — generated promoted trees:
 
@@ -1569,7 +1569,8 @@ that loop through the awakened `Arcane Larceny` ring identity.
   unless Controlled Discharge retains one stack.
 - Class Ring display: show the awakened Arcane Trickster effect as
   `Arcane Larceny`, while preserving existing internal `Spell Steal Buff`
-  compatibility for saves and tests. Awakened/equipped `Arcane Larceny` keeps
+  compatibility for internal tests and current persisted state.
+  Awakened/equipped `Arcane Larceny` keeps
   the current 3-turn `+20%` Magic damage and `+10%` dodge after successful spell
   theft.
 - Ring enhancement: once per combat after a clean charged payoff,
@@ -1692,7 +1693,7 @@ rating scaffolds remain removed.
 | Lycan | 28 / 30 | Persistent Werewolf, moon stress, behavior-earned control, Dragon Essence, and four disciplines | Authored tree finished; stress pacing needs playtest |
 | Archdruid | 28 / 30 | Four affinity disciplines, attunement memories, Harmony, typed Surge riders, and ring preservation | Authored tree finished; Surge tuning needs playtest |
 | Diviner | 22 / 22 | Four rune/foresight/time disciplines, two intentional gaps, rank-1 learning, and level-55 endpoints | Authored tree finished; enemy-spell availability remains content-authored |
-| Astromancer | 28 / 30 | Four Thread/rune/celestial/lucid disciplines, Tephra, storage access, and asleep casting | Authored tree finished; payoff tuning needs playtest |
+| Astromancer | 27 / 29 | Four Thread/rune/celestial/lucid disciplines, optional Tephra, storage access, and asleep casting | Authored tree finished; payoff tuning needs playtest |
 | Shaman | 19 / 21 | Inherent Totem, communions, elemental wards, Spirit Animal, expanded Bad Omens, Resonance, and Surge | Authored tree finished; Skinwalker deferred pending defeat/traversal contract |
 | Soulcatcher | 28 / 30 | Soul Drain, harvest mastery, Soul Totem/Surge, Ancestral Aegis, and spirit combat | Authored tree finished; nonlethal tuning needs playtest |
 | Ranger | 24 + promotion | Tame, bounded roster, naming, evolution, bond, quarry mastery, crossbows, weapon styles, and layered defense | Authored tree and runtime kit implemented; balance evidence remains |
@@ -1745,7 +1746,8 @@ Resolved Diviner/Astromancer findings:
   explicitly rank-1 hostile spell successfully resolves while the learner is
   present; the Astromancer upgrade admits ranks 1-2. Misses, full negation,
   duplicate interception, known spells, rank 3, and unranked content teach
-  nothing. Rank metadata is authored on the nine accepted enemy spells.
+  nothing. Rank metadata is authored on eleven accepted enemy spells, including
+  rank-one Stupefy and rank-two Volcano.
 - The four-sign rune system is functional and covered. Natural-spell kills,
   rune cap/normalization, resistance/weakness scaling, Runic Boost spending,
   constellation advancement, and active-sign ring floors all have runtime
@@ -1840,6 +1842,10 @@ through `Staff Conduit`, `Consecrated Conduit`, and awakened `Sacred Conduit`.
 - Class Ring enhancement: `Relic Defense` still awakens displayed
   `Ordered Blessings`. Preserve the existing Regen, Defense, and Holy Damage
   blessing rotation through the current ring state for compatibility.
+- Ability-tree boundary: Smite III, Regen II, Bless, and Dispel form the
+  independent `Sacred Rites` path. Ordered Purpose, Liturgical Renewal, and
+  Perfect Order are optional terminal leaves because they only modify the
+  awakened, equipped ring.
 - `Ordered Blessings`: while awakened and equipped, the ring improves the next
   matching Devotion payoff and preserves `1` Devotion once per combat after a
   clean ward or holy-retaliation payoff. Do not replace the rotation with
@@ -1911,6 +1917,9 @@ Gospel` as a major Prayer reset/setup power-up, and awakened
 - Class Ring enhancement: `Miracle Vigil` still awakens displayed
   `Divine Intervention`. Preserve the existing once-per-combat 35% chance to
   heal 25% max HP when first falling below 50% HP.
+- Ability-tree boundary: Assured Intervention and Miraculous Recovery are
+  optional terminal leaves. Neither may gate Swift Exorcism or another
+  ordinary Archbishop node.
 - `Divine Intervention`: while awakened and equipped, the ring also improves
   Prayer stability. After a clean `Supplication` or `Great Benediction` payoff,
   the ring preserves `1` Prayer once per combat. It does not spend Prayer,
@@ -2025,7 +2034,7 @@ naturally.
   and equipment rather than pruning divine or higher-healing abilities.
 - Storage: add persistent `bard_repertoire` state with `known`,
   `practice_xp`, and `clean_finishes` keyed by advanced song name. Missing or
-  invalid legacy state normalizes cleanly; unknown song keys are ignored.
+  invalid persisted state normalizes cleanly; unknown song keys are ignored.
 - Repertoire mastery: Troubadour-only. Composing an advanced song sheet with
   the matching instrument grants `+1` practice XP. Performing a combat song
   grants `+1` practice XP per resolved active song turn. Performing an
@@ -2135,9 +2144,10 @@ through behavior, not form mastery.
 - Compatibility: preserve existing Moon Cycle phases and step cadence. Preserve
   existing Druid nature spells and Lycan combat skills unless implementation
   requires minor text updates.
-- Save migration: old saves default to untransformed persistent transform state,
-  current Lycan moon/frenzy state, `Feral` control rank for Lycans, and locked
-  Dragon Essence.
+- Current-save/reset behavior: missing fields normalize to untransformed
+  persistent transform state, current Lycan moon/frenzy state, `Feral` control
+  rank for Lycans, and locked Dragon Essence; an incompatible redesign may
+  instead require a documented local-save reset.
 - Tests: cover Druid Panther/Direbear persistence and dismissal, save/load
   round-trips without duplicated transform bonuses, Lycan promotion merging
   Panther/Direbear into Werewolf, stress pushback by rank, behavior-only rank
@@ -2225,8 +2235,8 @@ and stronger awakened-ring `Shared Recovery`.
 - Storage: extend existing `tamed_companion` save state with `bond` from `0` to
   `100`, `species`, `evolution`, `special_ability`, `active_index`, and a
   bounded `companions` list, plus combat-only `pending_command`, cleared on
-  combat end and save/load. Clamp invalid values on load; legacy saves without
-  roster/flavor fields default cleanly.
+  combat end and save/load. Clamp invalid values on load; missing roster/flavor
+  fields default cleanly.
 - Tame flavor: a successful Ranger `Tame` starts the new companion at a small
   fresh bond with a species-derived special ability. The special should feel
   like a monster-training trait, not a separate command menu. The tame flow
@@ -2291,7 +2301,7 @@ and stronger awakened-ring `Shared Recovery`.
   increase line, evolution, special-trigger flavor, command use/expiration,
   general Favored Enemy bonus triggers, full-roster tame blocks, and Shared
   Recovery echo.
-- Tests: cover tamed companion normalization, legacy save compatibility, flavor
+- Tests: cover tamed companion normalization, missing-field behavior, flavor
   field defaults, bond clamping, save/load, new species tames adding to the
   bounded roster, duplicate species retames growing/switching bond, full-roster
   release-required blocks, species special assignment, evolution on bond

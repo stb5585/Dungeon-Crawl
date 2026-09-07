@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import json
 import logging
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -15,7 +15,6 @@ from src.ui_pygame.assets.enemy_combat_sprite_manager import (
     EnemyCombatSpriteManager,
     get_enemy_combat_sprite_manager,
 )
-
 
 logger = logging.getLogger(__name__)
 
@@ -90,12 +89,20 @@ class EnemyTokenManager:
         return framed
 
     def get_scaled_token(self, enemy: Any, target_size: tuple[int, int]) -> pygame.Surface:
-        return self.get_scaled_token_by_key(self.sprite_manager.get_sprite_key_for_enemy(enemy), target_size)
+        return self.get_scaled_token_by_key(
+            self.sprite_manager.get_sprite_key_for_enemy(enemy), target_size
+        )
 
-    def get_scaled_token_by_name(self, enemy_name: str, target_size: tuple[int, int]) -> pygame.Surface:
-        return self.get_scaled_token_by_key(self.sprite_manager.get_sprite_key_for_enemy(enemy_name), target_size)
+    def get_scaled_token_by_name(
+        self, enemy_name: str, target_size: tuple[int, int]
+    ) -> pygame.Surface:
+        return self.get_scaled_token_by_key(
+            self.sprite_manager.get_sprite_key_for_enemy(enemy_name), target_size
+        )
 
-    def get_scaled_token_by_key(self, sprite_key: str, target_size: tuple[int, int]) -> pygame.Surface:
+    def get_scaled_token_by_key(
+        self, sprite_key: str, target_size: tuple[int, int]
+    ) -> pygame.Surface:
         key = self.sprite_manager._valid_key(sprite_key)
         target = (max(1, int(target_size[0])), max(1, int(target_size[1])))
         cache_key = (key, target)

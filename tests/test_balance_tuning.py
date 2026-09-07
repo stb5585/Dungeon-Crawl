@@ -65,8 +65,8 @@ def test_pair_tuning_builds_promoted_class_benchmarks():
 
 
 def test_crit_chance_is_capped():
-    from tests.test_framework import TestGameState
     from src.core.constants import MAX_CRIT_CHANCE
+    from tests.test_framework import TestGameState
 
     player = TestGameState.create_player(
         class_name="Warrior",
@@ -83,8 +83,8 @@ def test_crit_chance_is_capped():
 
 
 def test_laser2_applies_temporary_combat_stat_debuff(monkeypatch):
-    from src.core.combat.combat_result import CombatResult, CombatResultGroup
     from src.core import items
+    from src.core.combat.combat_result import CombatResult, CombatResultGroup
     from tests.test_framework import TestGameState
 
     actor = TestGameState.create_player(class_name="Warrior", level=30)
@@ -117,8 +117,8 @@ def test_mimic_scales_with_player_level():
 
 
 def test_clannfear_has_more_threatening_action_stack():
-    from src.core.enemies import Clannfear
     from src.core.combat.action_queue import ActionPriority
+    from src.core.enemies import Clannfear
 
     c = Clannfear()
     names = [e["ability"] for e in c.action_stack]

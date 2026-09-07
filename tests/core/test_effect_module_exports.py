@@ -3,7 +3,6 @@
 from src.core import effects
 from src.core.effects import common, composite, enemy, skills, special, summon
 
-
 EFFECT_MODULES = (common, enemy, skills, special, summon)
 
 

@@ -9,7 +9,7 @@ points; every other node costs one.
 
 ## Decision
 
-Sacred Conduit contains Staff Conduit, Conduit Strike, Consecrated Conduit,
+Consecrated Conduit contains Staff Conduit, Conduit Strike, Consecrated Conduit,
 Deep Conduit, Holy II, Staff Ward, and Radiant Return. It provides a complete
 staff battle-caster path: stronger typed Holy discharge, a larger resulting
 ward, and one MP returned per spent Devotion.
@@ -30,7 +30,7 @@ and Resurrection remain exclusive to the Archbishop identity.
 
 | Discipline | Nodes in order |
 | --- | --- |
-| Sacred Conduit | Staff Conduit; Conduit Strike; Consecrated Conduit; Deep Conduit; Holy II; Staff Ward; Radiant Return |
+| Consecrated Conduit | Staff Conduit; Conduit Strike; Consecrated Conduit; Deep Conduit; Holy II; Staff Ward; Radiant Return |
 | Devotional Grace | Regen II; Gentle Grace; Graceful Intercession; Greater Intercession; Dispel; Warded Faith; Abundant Grace |
 | Radiant Office | Smite III; Luminous Doctrine; Resist Shadow; Devotional Rebuke; Turn Undead II; Cleanse; Silence |
 | Pastoral Office | Heal II; Bless; Sanctuary Ward; Shell; Reflect; Merciful Ward; Bastion Prayer |

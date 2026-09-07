@@ -31,14 +31,10 @@ class _AlwaysTrigger:
 
 def test_momentum_keeps_death_mark_copy_on_the_ninja_tree_only():
     assert "Death Mark" not in abilities.Momentum().description
-    ninja_momentum = next(
-        node for node in ABILITY_TREES["Ninja"].nodes if node.name == "Momentum"
-    )
+    ninja_momentum = next(node for node in ABILITY_TREES["Ninja"].nodes if node.name == "Momentum")
     assert ninja_momentum.payload["description"].startswith("Death Mark setup:")
     for class_name in ("Weapon Master", "Berserker"):
-        momentum = next(
-            node for node in ABILITY_TREES[class_name].nodes if node.name == "Momentum"
-        )
+        momentum = next(node for node in ABILITY_TREES[class_name].nodes if node.name == "Momentum")
         assert "Death Mark" not in momentum.payload.get("description", "")
 
 
@@ -377,9 +373,7 @@ def test_shadowcaster_familiar_terminal_passives_cover_all_four_echoes(monkeypat
         spec="Defense",
         spellbook={"Spells": {}, "Skills": {"Goad": _Goad()}},
     )
-    shadow.spellbook["Skills"]["Indiscriminate Provocation"] = SimpleNamespace(
-        passive=True
-    )
+    shadow.spellbook["Skills"]["Indiscriminate Provocation"] = SimpleNamespace(passive=True)
     rolls = iter((0, 1))
     monkeypatch.setattr(
         "src.core.player.combat.random.randint",

@@ -52,41 +52,41 @@ class TileStateSerializer:
         for pos, tile in world_dict.items():
             # Store mutable state attributes
             state = {
-                'visited': getattr(tile, 'visited', False),
-                'near': getattr(tile, 'near', False),
-                'open': getattr(tile, 'open', False),
-                'read': getattr(tile, 'read', False),
-                'blocked': getattr(tile, 'blocked', None),
-                'warped': getattr(tile, 'warped', False),
+                "visited": getattr(tile, "visited", False),
+                "near": getattr(tile, "near", False),
+                "open": getattr(tile, "open", False),
+                "read": getattr(tile, "read", False),
+                "blocked": getattr(tile, "blocked", None),
+                "warped": getattr(tile, "warped", False),
             }
 
-            if hasattr(tile, 'trap_type'):
-                state['trap_type'] = tile.trap_type
-            if hasattr(tile, 'trap_triggered'):
-                state['trap_triggered'] = tile.trap_triggered
-            if hasattr(tile, 'trap_warned'):
-                state['trap_warned'] = tile.trap_warned
-            if hasattr(tile, 'deathcap_available'):
-                state['deathcap_available'] = tile.deathcap_available
-            if hasattr(tile, 'deathcap_gathered'):
-                state['deathcap_gathered'] = tile.deathcap_gathered
+            if hasattr(tile, "trap_type"):
+                state["trap_type"] = tile.trap_type
+            if hasattr(tile, "trap_triggered"):
+                state["trap_triggered"] = tile.trap_triggered
+            if hasattr(tile, "trap_warned"):
+                state["trap_warned"] = tile.trap_warned
+            if hasattr(tile, "deathcap_available"):
+                state["deathcap_available"] = tile.deathcap_available
+            if hasattr(tile, "deathcap_gathered"):
+                state["deathcap_gathered"] = tile.deathcap_gathered
 
-            if hasattr(tile, 'active'):
-                state['active'] = tile.active
+            if hasattr(tile, "active"):
+                state["active"] = tile.active
 
             # For tiles with enemies and defeated flag
-            if hasattr(tile, 'defeated'):
-                state['defeated'] = tile.defeated
-                if hasattr(tile, 'enemy') and tile.enemy:
-                    state['enemy_state'] = EnemyStateSerializer.serialize(tile.enemy)
+            if hasattr(tile, "defeated"):
+                state["defeated"] = tile.defeated
+                if hasattr(tile, "enemy") and tile.enemy:
+                    state["enemy_state"] = EnemyStateSerializer.serialize(tile.enemy)
 
             # For tiles with other special state (drink, nimue, etc.)
-            if hasattr(tile, 'drink'):
-                state['drink'] = tile.drink
-            if hasattr(tile, 'nimue'):
-                state['nimue'] = tile.nimue
-            if hasattr(tile, 'nimue_met_before'):
-                state['nimue_met_before'] = tile.nimue_met_before
+            if hasattr(tile, "drink"):
+                state["drink"] = tile.drink
+            if hasattr(tile, "nimue"):
+                state["nimue"] = tile.nimue
+            if hasattr(tile, "nimue_met_before"):
+                state["nimue_met_before"] = tile.nimue_met_before
 
             tile_states[str(pos)] = state
 
@@ -110,50 +110,50 @@ class TileStateSerializer:
             tile = world_dict[pos]
 
             # Restore basic attributes
-            if 'visited' in state:
-                tile.visited = state['visited']
-            if 'near' in state:
-                tile.near = state['near']
-            if 'open' in state:
-                tile.open = state['open']
-            if 'read' in state:
-                tile.read = state['read']
-            if 'blocked' in state:
-                tile.blocked = state['blocked']
-            if 'warped' in state:
-                tile.warped = state['warped']
-            if 'active' in state and hasattr(tile, 'active'):
-                tile.active = state['active']
-            if 'trap_type' in state and hasattr(tile, 'trap_type'):
-                tile.trap_type = state['trap_type']
-            if 'trap_triggered' in state and hasattr(tile, 'trap_triggered'):
-                tile.trap_triggered = state['trap_triggered']
-            if 'trap_warned' in state and hasattr(tile, 'trap_warned'):
-                tile.trap_warned = state['trap_warned']
-            if 'deathcap_available' in state and hasattr(tile, 'deathcap_available'):
-                tile.deathcap_available = state['deathcap_available']
-            if 'deathcap_gathered' in state and hasattr(tile, 'deathcap_gathered'):
-                tile.deathcap_gathered = state['deathcap_gathered']
+            if "visited" in state:
+                tile.visited = state["visited"]
+            if "near" in state:
+                tile.near = state["near"]
+            if "open" in state:
+                tile.open = state["open"]
+            if "read" in state:
+                tile.read = state["read"]
+            if "blocked" in state:
+                tile.blocked = state["blocked"]
+            if "warped" in state:
+                tile.warped = state["warped"]
+            if "active" in state and hasattr(tile, "active"):
+                tile.active = state["active"]
+            if "trap_type" in state and hasattr(tile, "trap_type"):
+                tile.trap_type = state["trap_type"]
+            if "trap_triggered" in state and hasattr(tile, "trap_triggered"):
+                tile.trap_triggered = state["trap_triggered"]
+            if "trap_warned" in state and hasattr(tile, "trap_warned"):
+                tile.trap_warned = state["trap_warned"]
+            if "deathcap_available" in state and hasattr(tile, "deathcap_available"):
+                tile.deathcap_available = state["deathcap_available"]
+            if "deathcap_gathered" in state and hasattr(tile, "deathcap_gathered"):
+                tile.deathcap_gathered = state["deathcap_gathered"]
 
             # Restore defeated flag
-            if 'defeated' in state and hasattr(tile, 'defeated'):
-                tile.defeated = state['defeated']
+            if "defeated" in state and hasattr(tile, "defeated"):
+                tile.defeated = state["defeated"]
 
             # Restore enemy state if present
-            if 'enemy_state' in state and hasattr(tile, 'enemy'):
-                tile.enemy = EnemyStateSerializer.deserialize(state['enemy_state'])
+            if "enemy_state" in state and hasattr(tile, "enemy"):
+                tile.enemy = EnemyStateSerializer.deserialize(state["enemy_state"])
 
             # If defeated, ensure the boss/enemy is cleared to prevent respawns
-            if getattr(tile, 'defeated', False) and hasattr(tile, 'enemy'):
+            if getattr(tile, "defeated", False) and hasattr(tile, "enemy"):
                 tile.enemy = None
 
             # Restore special attributes
-            if 'drink' in state and hasattr(tile, 'drink'):
-                tile.drink = state['drink']
-            if 'nimue' in state and hasattr(tile, 'nimue'):
-                tile.nimue = state['nimue']
-            if 'nimue_met_before' in state and hasattr(tile, 'nimue_met_before'):
-                tile.nimue_met_before = state['nimue_met_before']
+            if "drink" in state and hasattr(tile, "drink"):
+                tile.drink = state["drink"]
+            if "nimue" in state and hasattr(tile, "nimue"):
+                tile.nimue = state["nimue"]
+            if "nimue_met_before" in state and hasattr(tile, "nimue_met_before"):
+                tile.nimue_met_before = state["nimue_met_before"]
 
     @staticmethod
     def summarize_tile_state_payload(world_dict: dict, tile_states: object) -> dict[str, object]:

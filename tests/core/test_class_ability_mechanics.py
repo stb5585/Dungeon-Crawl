@@ -88,7 +88,9 @@ def test_tame_is_animal_only_and_round_trips_save(monkeypatch):
     assert player.familiar.evolution == "Skittish Rat"
     assert player.familiar.special_ability == "Pounce"
 
-    restored = PlayerDataSerializer.deserialize(PlayerDataSerializer.serialize(player), skip_tiles=True)
+    restored = PlayerDataSerializer.deserialize(
+        PlayerDataSerializer.serialize(player), skip_tiles=True
+    )
     assert restored.tamed_companion["enemy_class"] == "GiantRat"
     assert restored.tamed_companion["bond"] == ability_mechanics.TAMED_COMPANION_START_BOND
     assert restored.tamed_companion["special_ability"] == "Pounce"
@@ -126,8 +128,12 @@ def test_tame_victory_grants_no_exp_gold_loot_or_extra_bond(monkeypatch):
 
     loot_calls = []
     quest_calls = []
-    monkeypatch.setattr(player, "loot", lambda *_args, **_kwargs: loot_calls.append(True) or "loot called\n")
-    monkeypatch.setattr(player, "quests", lambda *_args, **_kwargs: quest_calls.append(True) or "quest called\n")
+    monkeypatch.setattr(
+        player, "loot", lambda *_args, **_kwargs: loot_calls.append(True) or "loot called\n"
+    )
+    monkeypatch.setattr(
+        player, "quests", lambda *_args, **_kwargs: quest_calls.append(True) or "quest called\n"
+    )
 
     before_exp = player.level.exp
     before_exp_to_gain = player.level.exp_to_gain
@@ -207,7 +213,12 @@ def test_tamed_companion_auto_chance_scales_by_bond(monkeypatch):
 
 def test_beast_master_companion_action_gates_and_command_resolution(monkeypatch):
     beast = TestGameState.create_player(class_name="Beast Master", level=30, stats={"charisma": 40})
-    for command_cls in (abilities.PackStrike, abilities.GuardPartner, abilities.HarryPrey, abilities.MendWounds):
+    for command_cls in (
+        abilities.PackStrike,
+        abilities.GuardPartner,
+        abilities.HarryPrey,
+        abilities.MendWounds,
+    ):
         command = command_cls()
         beast.spellbook["Skills"][command.name] = command
     rat = enemies.GiantRat()
@@ -253,7 +264,12 @@ def test_beast_master_companion_action_gates_and_command_resolution(monkeypatch)
 
 def test_beast_master_commands_always_do_something_and_scale_by_bond(monkeypatch):
     beast = TestGameState.create_player(class_name="Beast Master", level=30, stats={"charisma": 40})
-    for command_cls in (abilities.PackStrike, abilities.GuardPartner, abilities.HarryPrey, abilities.MendWounds):
+    for command_cls in (
+        abilities.PackStrike,
+        abilities.GuardPartner,
+        abilities.HarryPrey,
+        abilities.MendWounds,
+    ):
         command = command_cls()
         beast.spellbook["Skills"][command.name] = command
     rat = enemies.GiantRat()
@@ -303,7 +319,9 @@ def test_tame_keeps_bounded_roster_and_requires_release_when_full(monkeypatch):
         target.health.current = 1
         assert "Tamed companions held:" in abilities.Tame().use(player, target)
 
-    assert len(player.tamed_companion["companions"]) == ability_mechanics.TAMED_COMPANION_ROSTER_LIMIT
+    assert (
+        len(player.tamed_companion["companions"]) == ability_mechanics.TAMED_COMPANION_ROSTER_LIMIT
+    )
     assert [entry["enemy_class"] for entry in player.tamed_companion["companions"]][0] == "GiantRat"
     assert player.tamed_companion["enemy_class"] == "Panther"
 
@@ -312,14 +330,18 @@ def test_tame_keeps_bounded_roster_and_requires_release_when_full(monkeypatch):
     message = abilities.Tame().use(player, direwolf)
     assert "cannot keep another tamed companion" in message
     assert "Release one from the Companion & Hunt tab" in message
-    assert len(player.tamed_companion["companions"]) == ability_mechanics.TAMED_COMPANION_ROSTER_LIMIT
+    assert (
+        len(player.tamed_companion["companions"]) == ability_mechanics.TAMED_COMPANION_ROSTER_LIMIT
+    )
 
     release_message = ability_mechanics.release_tamed_companion(player, 0)
     assert "returns to the wild" in release_message
     direwolf.health.current = 1
     assert "tames Direwolf" in abilities.Tame().use(player, direwolf)
     assert player.tamed_companion["enemy_class"] == "Direwolf"
-    assert len(player.tamed_companion["companions"]) == ability_mechanics.TAMED_COMPANION_ROSTER_LIMIT
+    assert (
+        len(player.tamed_companion["companions"]) == ability_mechanics.TAMED_COMPANION_ROSTER_LIMIT
+    )
 
 
 def test_tamed_companion_rebuild_keeps_random_animal_stats_stable(monkeypatch):
@@ -381,7 +403,9 @@ def test_tamed_companion_bond_growth_evolves_and_syncs_familiar():
     }
     player.ensure_tamed_companion()
 
-    message = promotion_kits.gain_companion_bond(player, 1, "new trail", rng=SimpleNamespace(random=lambda: 0.0))
+    message = promotion_kits.gain_companion_bond(
+        player, 1, "new trail", rng=SimpleNamespace(random=lambda: 0.0)
+    )
 
     assert "bond increased" in message
     assert "bond grows by" not in message
@@ -415,7 +439,10 @@ def test_tamed_companion_rename_keeps_species_visible():
 
     assert player.tamed_companion["custom_name"] == "Needle"
     assert player.tamed_companion["companions"][0]["custom_name"] == "Needle"
-    assert ability_mechanics.tamed_companion_display_name(player.tamed_companion) == "Needle (Giant Hornet)"
+    assert (
+        ability_mechanics.tamed_companion_display_name(player.tamed_companion)
+        == "Needle (Giant Hornet)"
+    )
     assert player.familiar.name == "Needle (Giant Hornet)"
 
 
@@ -475,7 +502,9 @@ def test_favored_enemy_marks_current_type_persists_and_rewards_discipline():
     assert "practice" not in repeat_message
     assert ability_mechanics.favored_enemy_state(player)["practice"] == 2
 
-    restored = PlayerDataSerializer.deserialize(PlayerDataSerializer.serialize(player), skip_tiles=True)
+    restored = PlayerDataSerializer.deserialize(
+        PlayerDataSerializer.serialize(player), skip_tiles=True
+    )
     assert ability_mechanics.favorite_enemy_type(restored) == goblin.enemy_typ
     assert ability_mechanics.favored_enemy_state(restored)["practice"] == 2
 
@@ -500,10 +529,18 @@ def test_favored_enemy_does_not_fall_back_to_kill_history():
 
 
 def test_tamed_companion_bond_gain_slows_as_bond_rises():
-    assert promotion_kits.companion_bond_gain_roll(5, 4, rng=SimpleNamespace(random=lambda: 0.0)) == 4
-    assert promotion_kits.companion_bond_gain_roll(50, 4, rng=SimpleNamespace(random=lambda: 0.0)) == 2
-    assert promotion_kits.companion_bond_gain_roll(90, 4, rng=SimpleNamespace(random=lambda: 0.0)) == 1
-    assert promotion_kits.companion_bond_gain_roll(90, 4, rng=SimpleNamespace(random=lambda: 0.5)) == 0
+    assert (
+        promotion_kits.companion_bond_gain_roll(5, 4, rng=SimpleNamespace(random=lambda: 0.0)) == 4
+    )
+    assert (
+        promotion_kits.companion_bond_gain_roll(50, 4, rng=SimpleNamespace(random=lambda: 0.0)) == 2
+    )
+    assert (
+        promotion_kits.companion_bond_gain_roll(90, 4, rng=SimpleNamespace(random=lambda: 0.0)) == 1
+    )
+    assert (
+        promotion_kits.companion_bond_gain_roll(90, 4, rng=SimpleNamespace(random=lambda: 0.5)) == 0
+    )
 
 
 def test_favored_enemy_practice_grows_on_marked_victories(monkeypatch):
@@ -607,7 +644,9 @@ def test_reagent_spells_consume_required_items_and_apply_effects(monkeypatch):
 def test_tree_of_life_is_growth_mastery_oak_form():
     from src.core.classes import archdruid
 
-    player = TestGameState.create_player(class_name="Archdruid", level=30, health=(300, 100), mana=(200, 200))
+    player = TestGameState.create_player(
+        class_name="Archdruid", level=30, health=(300, 100), mana=(200, 200)
+    )
     state = archdruid.default_state()
     state["aspects"]["Growth"] = True
     state["attunement"]["Growth"] = archdruid.MASTERY_THRESHOLD
@@ -690,12 +729,16 @@ def test_foretell_and_rewind_restore_combat_snapshot():
     engine.attacker = player
     engine.defender = enemy
 
-    assert "next action: Stab" in abilities.Foretell().cast(player, target=enemy, battle_engine=engine)
+    assert "next action: Stab" in abilities.Foretell().cast(
+        player, target=enemy, battle_engine=engine
+    )
     ability_mechanics.store_rewind_snapshot(engine)
     player.health.current -= 50
     enemy.health.current = 1
 
-    assert "previous choice point" in abilities.Rewind().cast(player, target=enemy, battle_engine=engine)
+    assert "previous choice point" in abilities.Rewind().cast(
+        player, target=enemy, battle_engine=engine
+    )
     assert player.health.current == player.health.max
     assert enemy.health.current == enemy.health.max
 
@@ -732,7 +775,10 @@ def test_steal_spell_2_learns_spell_without_scroll(monkeypatch):
     message = abilities.StealSpell2().use(player, target)
 
     assert "permanently learns" in message
-    assert "Firebolt" in [getattr(spell, "_class_name", spell.__class__.__name__) for spell in player.spellbook["Spells"].values()]
+    assert "Firebolt" in [
+        getattr(spell, "_class_name", spell.__class__.__name__)
+        for spell in player.spellbook["Spells"].values()
+    ]
     assert "Stolen Firebolt Scroll" not in player.inventory
 
 
@@ -759,9 +805,7 @@ def test_mastered_repertoire_is_available_through_the_combat_action():
 
     player = TestGameState.create_player(class_name="Troubadour", level=30)
     player.equipment["OffHand"] = items.Lute()
-    promotion_kits.ensure_state(player)["bard_repertoire"]["Battle Hymn"][
-        "known"
-    ] = True
+    promotion_kits.ensure_state(player)["bard_repertoire"]["Battle Hymn"]["known"] = True
     enemy = enemies.Goblin()
     tile = _Tile()
     tile.enemy = enemy
@@ -813,7 +857,9 @@ def test_composable_song_effects_apply_in_combat_and_exploration(monkeypatch):
     engine.attacker = enemy
     engine.defender = player
     rolls = iter([100, 1])
-    monkeypatch.setattr("src.core.combat.battle_engine.random.randint", lambda _lo, _hi: next(rolls))
+    monkeypatch.setattr(
+        "src.core.combat.battle_engine.random.randint", lambda _lo, _hi: next(rolls)
+    )
     pre = engine.pre_turn()
     assert pre.can_act is False
     assert "Chorus Time" in pre.effects_text
@@ -840,7 +886,9 @@ def test_class_power_ups_have_runtime_effects():
     trickster.class_effects["Power Up"].active = True
     trickster.class_effects["Power Up"].duration = 3
     trickster.power_up = True
-    assert trickster.check_mod("magic") > TestGameState.create_player(class_name="Arcane Trickster", level=30).check_mod("magic")
+    assert trickster.check_mod("magic") > TestGameState.create_player(
+        class_name="Arcane Trickster", level=30
+    ).check_mod("magic")
     assert trickster.critical_chance("Weapon") > 0
 
     archdruid = TestGameState.create_player(class_name="Archdruid", level=30)
@@ -856,7 +904,9 @@ def test_class_power_ups_have_runtime_effects():
     demonologist.class_effects["Power Up"].active = True
     demonologist.class_effects["Power Up"].duration = 3
     demonologist.power_up = True
-    assert demonologist.check_mod("magic") > TestGameState.create_player(class_name="Demonologist", level=30).check_mod("magic")
+    assert demonologist.check_mod("magic") > TestGameState.create_player(
+        class_name="Demonologist", level=30
+    ).check_mod("magic")
 
     grandmaster_pc = TestGameState.create_player(class_name="Grandmaster of Arms", level=30)
     grandmaster_pc.spellbook["Skills"]["Arsenal Mastery"] = abilities.ArsenalMastery()
@@ -867,7 +917,9 @@ def test_class_power_ups_have_runtime_effects():
     state["disciplines"]["Sword"]["xp"] = 500
     state["disciplines"]["Sword"]["rank"] = 10
     grandmaster_pc.grandmaster_discipline = state
-    assert grandmaster_pc.check_mod("weapon") > TestGameState.create_player(class_name="Grandmaster of Arms", level=30).check_mod("weapon")
+    assert grandmaster_pc.check_mod("weapon") > TestGameState.create_player(
+        class_name="Grandmaster of Arms", level=30
+    ).check_mod("weapon")
 
     hierophant = TestGameState.create_player(class_name="Hierophant", level=30)
     hierophant.equipment["Weapon"] = items.Quarterstaff()
@@ -885,7 +937,9 @@ def test_hierophant_power_core_grants_sacred_overchannel():
     player = TestGameState.create_player(class_name="Hierophant", level=30)
     events = []
 
-    message = player.special_power(SimpleNamespace(special_event=lambda event: events.append(event)))
+    message = player.special_power(
+        SimpleNamespace(special_event=lambda event: events.append(event))
+    )
 
     assert events == ["Power Up"]
     assert "Sacred Overchannel" in player.spellbook["Skills"]
@@ -940,14 +994,20 @@ def test_passive_power_ups_support_defender_troubadour_and_beast_master():
     troubadour = TestGameState.create_player(class_name="Troubadour", level=30, stats={"dex": 40})
     troubadour.spellbook["Skills"]["Melody of Inspiration"] = abilities.MelodyInspiration()
     troubadour.power_up = True
-    base_speed = TestGameState.create_player(class_name="Troubadour", level=30, stats={"dex": 40}).check_mod("speed")
+    base_speed = TestGameState.create_player(
+        class_name="Troubadour", level=30, stats={"dex": 40}
+    ).check_mod("speed")
     assert troubadour.check_mod("speed") > base_speed
 
     beast = TestGameState.create_player(class_name="Beast Master", level=30)
     beast.spellbook["Skills"]["Pack Bond"] = abilities.PackBond()
     beast.power_up = True
-    beast.familiar = SimpleNamespace(is_alive=lambda: True, health=SimpleNamespace(current=10, max=20))
-    base_weapon = TestGameState.create_player(class_name="Beast Master", level=30).check_mod("weapon")
+    beast.familiar = SimpleNamespace(
+        is_alive=lambda: True, health=SimpleNamespace(current=10, max=20)
+    )
+    base_weapon = TestGameState.create_player(class_name="Beast Master", level=30).check_mod(
+        "weapon"
+    )
     assert beast.check_mod("weapon") > base_weapon
 
 

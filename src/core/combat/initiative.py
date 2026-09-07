@@ -46,13 +46,11 @@ def determine_initiative(
     elif enemy.invisible and not player.sight:
         first = enemy
     else:
-        p_chance = (
-            player.check_mod("speed", enemy=enemy)
-            + player.check_mod("luck", enemy=enemy, luck_factor=10)
+        p_chance = player.check_mod("speed", enemy=enemy) + player.check_mod(
+            "luck", enemy=enemy, luck_factor=10
         )
-        e_chance = (
-            enemy.check_mod("speed", enemy=player)
-            + enemy.check_mod("luck", enemy=player, luck_factor=10)
+        e_chance = enemy.check_mod("speed", enemy=player) + enemy.check_mod(
+            "luck", enemy=player, luck_factor=10
         )
         total = p_chance + e_chance
         if total > 0:

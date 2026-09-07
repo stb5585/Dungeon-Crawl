@@ -119,8 +119,7 @@ class QuarryCleave(Skill):
     def _has_two_handed_weapon(user: Any) -> bool:
         weapon = getattr(user, "equipment", {}).get("Weapon")
         return (
-            getattr(weapon, "typ", None) == "Weapon"
-            and int(getattr(weapon, "handed", 1) or 1) == 2
+            getattr(weapon, "typ", None) == "Weapon" and int(getattr(weapon, "handed", 1) or 1) == 2
         )
 
     def is_available(self, user: Any, target: Any | None = None) -> bool:
@@ -192,7 +191,6 @@ class HuntersSnare(Skill):
         result.effects_applied["Stat"].append("Speed Debuff")
         mastery_text = " Tracking Mastery tightens it." if favored else ""
         result.message = (
-            f"{user.name} snares {target.name}, reducing Speed by {penalty}."
-            f"{mastery_text}\n"
+            f"{user.name} snares {target.name}, reducing Speed by {penalty}." f"{mastery_text}\n"
         )
         return result

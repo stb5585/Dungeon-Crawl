@@ -72,8 +72,37 @@ def test_terminal_trees_each_cost_thirty_points_for_two_thirds_coverage():
         assert sum(node.cost for node in tree.nodes) == 30
         assert 0.60 <= 20 / 30 <= 0.70
         assert max(node.position[1] for node in tree.nodes) == 6
-        assert len(tree.branches) == 4
         assert sum(node.cost > 1 for node in tree.nodes) == 2
+    assert ABILITY_TREES["Templar"].branches == (
+        "Relic Discipline",
+        "Vanguard",
+        "Sacred Rites",
+        "Judgment",
+        "Ordered Blessings",
+    )
+    assert ABILITY_TREES["Hierophant"].branches == (
+        "Consecrated Conduit",
+        "Devotional Grace",
+        "Radiant Office",
+        "Pastoral Office",
+    )
+
+
+def test_templar_ring_modifiers_are_terminal_and_do_not_gate_sacred_rites():
+    tree = ABILITY_TREES["Templar"]
+    nodes = {node.name: node for node in tree.nodes}
+    ring_modifiers = ("Ordered Purpose", "Liturgical Renewal", "Perfect Order")
+
+    assert nodes["Regen II"].prerequisites == (nodes["Smite III"].id,)
+    assert nodes["Bless"].prerequisites == (nodes["Regen II"].id,)
+    assert nodes["Dispel"].prerequisites == (nodes["Bless"].id,)
+    assert nodes["Regen II"].payload["level_requirement"] == 70
+    assert nodes["Bless"].payload["level_requirement"] == 75
+    assert nodes["Dispel"].payload["level_requirement"] == 80
+    for name in ring_modifiers:
+        node = nodes[name]
+        assert node.lane == "Ordered Blessings"
+        assert not any(node.id in candidate.prerequisites for candidate in tree.nodes)
 
 
 def test_cleric_level_bands_and_promotion_rows_fit_the_standard_panel():

@@ -567,7 +567,7 @@ interception attack. Smoke Screen escapes bypass Aggressive Pursuit.
 | Assassin | Utility, Combat, Status / Death, Stealth, Counter | 25 / 25 | Ninja: Cutthroat path + 3 | Twist the Knife, OffHand Excellence, For Good Measure, Cutthroat, Surprise!, Main Gauche, Live and Learn |
 | Ninja | Utility, Combat, Toxin / Death, Stealth, Defense | 28 / 33 | Terminal | Find Traps, Smash and Grab, Execution Rhythm, toxin mastery, concealment, counters, dedicated Death Mark finishers |
 | Spell Stealer | Spell Theft, Stolen Charge | 12 / 19 | Arcane Trickster: either complete path + 3 | Five authored talents |
-| Arcane Trickster | Arcane Larceny, Misdirection | 12 / 30 | Terminal | Six authored talents |
+| Arcane Trickster | Spell Theft, Stolen Spell Mastery, Misdirection | 11 / 28 | Terminal | Weaken Mind remains externally stolen; Neural Connection is an optional leaf; Arcane Larceny remains ring-only |
 
 Fortune and Revelation use their canonical class caps. Stolen Charge uses its
 canonical cap until the visible Grand Larceny purchase expands it. Ninja keeps its fixed
@@ -608,12 +608,12 @@ Delayed Reaction, Leg Sweep, and Meditation.
 | Tree | Paths | Development nodes / total cost | Promotion route cost | Retained talents |
 | --- | --- | ---: | ---: | --- |
 | Cleric | Devotion, Sacred Office, Bulwark, Judgment, Shared Ministry | 26 / 26 | Either terminal: one route endpoint + 3 | Nine authored talents and two shared active rites |
-| Templar | Relic Discipline, Vanguard, Ordered Blessings, Judgment | 28 / 30 | Terminal | Relic durability, martial coverage, blessing riders, Holy judgment |
-| Hierophant | Sacred Conduit, Devotional Grace, Radiant Office, Pastoral Office | 28 / 30 | Terminal | Staff payoff, partial spending, Holy pressure, direct-heal wards |
+| Templar | Relic Discipline, Vanguard, Sacred Rites, Judgment, Ordered Blessings | 28 / 30 | Terminal | Ordinary rites remain independent; three ring modifiers are terminal leaves |
+| Hierophant | Consecrated Conduit, Devotional Grace, Radiant Office, Pastoral Office | 28 / 30 | Terminal | Staff payoff remains distinct from the Sacred Conduit ring modifier |
 | Monk | Ki Assault, Ki Discipline, Centering, Open Hand | 23 / 23 | Master Monk: any complete primary route + 3 | Six authored Ki and centering talents plus three stat choices |
 | Master Monk | Perfected Flurry, Final Art, Diamond Body, Rope-a-Dope, Dim Mak Mastery | 27 / 28 | Terminal | Dim Mak remains quest-awarded; its six optional modifiers are terminal leaves |
 | Priest | Prayer, Exorcism, Grace, Protection | 22 / 22 | Archbishop: any complete discipline + 3 | Seven authored Prayer/support talents plus Magic and Magic Defense choices |
-| Archbishop | Benediction, Great Gospel, Intervention, Sustaining Grace, Perfect Supplication | 29 / 31 | Terminal | Twenty authored support and crisis talents |
+| Archbishop | Benediction, Great Gospel, Intervention, Sustaining Grace, Perfect Supplication, Divine Intervention | 29 / 31 | Terminal | Two ring modifiers are terminal leaves and do not gate exorcism |
 | Bard | Performance, Composition | 26 / 26 | Troubadour: 7 | Five visual columns, four `any` route capstones; Compose is inherent in the Class tab |
 | Troubadour | Finale, Mastery | 27 / 27 | Terminal | Authored terminal kit |
 
@@ -649,7 +649,7 @@ inspect all declared types rather than forcing each spell into one school.
 | Lycan | Frenzy, Moon Hunt, Dragon Essence, Control | 28 / 30 | Terminal | Nineteen authored form/control talents and three added active techniques |
 | Archdruid | Venom, Stone, Growth, Storm | 28 / 30 | Terminal | Eighteen authored affinity talents |
 | Diviner | Rune Lore, Rune Flow, Foresight, Chronomancy | 22 / 22 | Astromancer: any endpoint + 3 | Eleven authored rune/foresight talents plus three rating nodes and intentional gaps |
-| Astromancer | Foresight Threads, Runic Constellations, Celestial Force, Lucid Utility | 28 / 30 | Terminal | Fourteen authored thread/rune/utility talents |
+| Astromancer | Foresight Threads, Runic Constellations, Celestial Force, Lucid Utility, Witnessed Magic | 27 / 29 | Terminal | Volcano remains witnessed magic; Tephra is an optional terminal modifier |
 | Shaman | Totems, Elements, Spirit Warrior, Bad Omens | 19 / 21 | Soulcatcher: Totems, Elements, or Spirit Warrior endpoint | Totem is inherent; Hexcraft and Omen Ward deepen the optional omen route |
 | Soulcatcher | Soul Dominion, Essence, Ancestral Totem, Spirit Warrior | 28 / 30 | Terminal | None |
 | Ranger | Hunt, Companion Bond, Duelist/Ranged, Two-Handed, Defense | 24 / 24 | Beast Master: Companion Bond + 3 | Authored hunt, weapon, and defense talents |
@@ -698,5 +698,6 @@ every Lancer development node into the editable Dragoon tree. Mage to Sorcerer
 and Sorcerer to Wizard keep only the declared elemental nodes editable in the
 current tree; other historical development stays closed.
 
-Version-5 node and talent IDs are persistent save API. Renaming one requires a
-save migration or alias.
+Node and talent IDs are part of the current save shape. Renaming one may
+invalidate local development saves; update the serializer and document any
+required local-save reset.

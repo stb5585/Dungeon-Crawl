@@ -5,9 +5,9 @@ import random
 from .. import companions, enemies, items, thieves_guild
 from ..combat import CombatEncounter
 from .rules import (
+    _CARDINAL_DIRECTIONS,
     JESTER_TOKENS_REQUIRED,
     REALM_OF_CAMBION_LEVEL,
-    _CARDINAL_DIRECTIONS,
     _apply_cambion_antimagic,
     _queue_cambion_message,
     check_fake_wall,
@@ -48,33 +48,45 @@ class MapTile:
         # reveals 4 spaces in cardinal directions
         see = [True] * 4
         try:
-            if 'LockedDoor' in str(self):
-                if not self.open and self.blocked == "East" and \
-                    not player_char.world_dict[(self.x + 1, self.y, self.z)].near:
+            if "LockedDoor" in str(self):
+                if (
+                    not self.open
+                    and self.blocked == "East"
+                    and not player_char.world_dict[(self.x + 1, self.y, self.z)].near
+                ):
                     see[0] = False
             player_char.world_dict[(self.x + 1, self.y, self.z)].near = see[0]
         except KeyError:
             pass
         try:
-            if 'LockedDoor' in str(self):
-                if not self.open and self.blocked == "West" and \
-                    not player_char.world_dict[(self.x - 1, self.y, self.z)].near:
+            if "LockedDoor" in str(self):
+                if (
+                    not self.open
+                    and self.blocked == "West"
+                    and not player_char.world_dict[(self.x - 1, self.y, self.z)].near
+                ):
                     see[1] = False
             player_char.world_dict[(self.x - 1, self.y, self.z)].near = see[1]
         except KeyError:
             pass
         try:
-            if 'LockedDoor' in str(self) or "FinalBlocker" in str(self):
-                if not self.open and self.blocked == "North" and \
-                    not player_char.world_dict[(self.x, self.y - 1, self.z)].near:
+            if "LockedDoor" in str(self) or "FinalBlocker" in str(self):
+                if (
+                    not self.open
+                    and self.blocked == "North"
+                    and not player_char.world_dict[(self.x, self.y - 1, self.z)].near
+                ):
                     see[2] = False
             player_char.world_dict[(self.x, self.y - 1, self.z)].near = see[2]
         except KeyError:
             pass
         try:
-            if 'LockedDoor' in str(self):
-                if not self.open and self.blocked == "South" and \
-                    not player_char.world_dict[(self.x, self.y + 1, self.z)].near:
+            if "LockedDoor" in str(self):
+                if (
+                    not self.open
+                    and self.blocked == "South"
+                    and not player_char.world_dict[(self.x, self.y + 1, self.z)].near
+                ):
                     see[3] = False
             player_char.world_dict[(self.x, self.y + 1, self.z)].near = see[3]
         except KeyError:
@@ -85,8 +97,9 @@ class StairsUp(MapTile):
 
     def intro_text(self, game):
         intro_str = super().intro_text(game)
-        intro_str += (f"{game.player_char.name} sees a flight of stairs going up.\n"
-                      f"(Enter 'u' to use)\n")
+        intro_str += (
+            f"{game.player_char.name} sees a flight of stairs going up.\n" f"(Enter 'u' to use)\n"
+        )
         return intro_str
 
     def modify_player(self, game):
@@ -101,8 +114,9 @@ class StairsDown(MapTile):
 
     def intro_text(self, game):
         intro_str = super().intro_text(game)
-        intro_str += (f"{game.player_char.name} sees a flight of stairs going down.\n"
-                      f"(Enter 'j' to use)\n")
+        intro_str += (
+            f"{game.player_char.name} sees a flight of stairs going down.\n" f"(Enter 'j' to use)\n"
+        )
         return intro_str
 
     def modify_player(self, game):
@@ -117,8 +131,9 @@ class LadderUp(MapTile):
 
     def intro_text(self, game):
         intro_str = super().intro_text(game)
-        intro_str += (f"{game.player_char.name} sees a sturdy ladder leading up.\n"
-                      f"(Enter 'u' to use)\n")
+        intro_str += (
+            f"{game.player_char.name} sees a sturdy ladder leading up.\n" f"(Enter 'u' to use)\n"
+        )
         return intro_str
 
     def modify_player(self, game):
@@ -133,8 +148,9 @@ class LadderDown(MapTile):
 
     def intro_text(self, game):
         intro_str = super().intro_text(game)
-        intro_str += (f"{game.player_char.name} sees a sturdy ladder leading down.\n"
-                      f"(Enter 'j' to use)\n")
+        intro_str += (
+            f"{game.player_char.name} sees a sturdy ladder leading down.\n" f"(Enter 'j' to use)\n"
+        )
         return intro_str
 
     def modify_player(self, game):
@@ -251,15 +267,19 @@ class CavePath(MapTile):
             reveal_cambion_code_clue(game.player_char, (self.x, self.y, self.z))
         class_name = getattr(getattr(game.player_char, "cls", None), "name", "")
         familiar = getattr(game.player_char, "familiar", None)
-        if class_name in ['Warlock', 'Shadowcaster', 'Demonologist'] and familiar is not None:
-            if familiar.race == 'Jinkin' and familiar.level.pro_level == 3:
-                if not random.randint(0, int(20 - game.player_char.check_mod('luck', luck_factor=10))):
+        if class_name in ["Warlock", "Shadowcaster", "Demonologist"] and familiar is not None:
+            if familiar.race == "Jinkin" and familiar.level.pro_level == 3:
+                if not random.randint(
+                    0, int(20 - game.player_char.check_mod("luck", luck_factor=10))
+                ):
                     bonus = int("Master Locator" in game.player_char.spellbook.get("Skills", {}))
                     rand_item = items.random_item(self.z + bonus)()
                     game.player_char.modify_inventory(rand_item, 1)
         # Scale random encounter rate down if player greatly outlevels the area
         try:
-            if hasattr(game.player_char, "player_level") and callable(game.player_char.player_level):
+            if hasattr(game.player_char, "player_level") and callable(
+                game.player_char.player_level
+            ):
                 player_level = game.player_char.player_level()
             else:
                 player_level = game.player_char.level.level
@@ -279,18 +299,16 @@ class CavePath(MapTile):
                 paladin.encounter_rate_multiplier(game.player_char)
                 * bard.encounter_rate_multiplier(game.player_char)
                 * footpad.encounter_rate_multiplier(game.player_char)
-                * mage_mechanics.torchlight_encounter_multiplier(
-                    game.player_char
-                )
+                * mage_mechanics.torchlight_encounter_multiplier(game.player_char)
             )
             encounter_slots = max(1, int(round((encounter_roll_max + 1) / multiplier)))
             encounter_roll_max = max(0, encounter_slots - 1)
         except Exception:
             pass
 
-        if all([not random.randint(0, encounter_roll_max),
-                self.enemy is None,
-                game._random_combat]):
+        if all(
+            [not random.randint(0, encounter_roll_max), self.enemy is None, game._random_combat]
+        ):
             self.enter_combat(game.player_char)
             try:
                 from ..classes import pathfinder
@@ -306,7 +324,7 @@ class CavePath(MapTile):
             self.detectable_random_encounter = self.enemy is not None
 
     def available_actions(self, player_char):
-        if player_char.state == 'fight':
+        if player_char.state == "fight":
             action_list = ["Attack", "Use Item", "Flee"]
             if not player_char.abilities_suppressed():
                 if player_char.usable_abilities("Spells"):
@@ -392,15 +410,15 @@ class CavePath0(CavePath):
 
     def modify_player(self, game, popup_class=None):
         super().modify_player(game)
-        if 'Bring Him Home' in game.player_char.quest_dict['Side']:
-            if not game.player_char.quest_dict['Side']['Bring Him Home']['Completed']:
-                if not random.randint(0, 20 - game.player_char.check_mod('luck', luck_factor=10)):
+        if "Bring Him Home" in game.player_char.quest_dict["Side"]:
+            if not game.player_char.quest_dict["Side"]["Bring Him Home"]["Completed"]:
+                if not random.randint(0, 20 - game.player_char.check_mod("luck", luck_factor=10)):
                     game.special_event("Timmy")
-                    game.player_char.quest_dict['Side']['Bring Him Home']['Completed'] = True
+                    game.player_char.quest_dict["Side"]["Bring Him Home"]["Completed"] = True
                     game.player_char.to_town()
-        if "Ticket to Ride" in game.player_char.quest_dict['Side']:
-            if not game.player_char.quest_dict['Side']['Ticket to Ride']['Completed']:
-                if not random.randint(0, 20 - game.player_char.check_mod('luck', luck_factor=5)):
+        if "Ticket to Ride" in game.player_char.quest_dict["Side"]:
+            if not game.player_char.quest_dict["Side"]["Ticket to Ride"]["Completed"]:
+                if not random.randint(0, 20 - game.player_char.check_mod("luck", luck_factor=5)):
                     quest_message = f"You find a piece of the raffle ticket.\n"
                     game.player_char.modify_inventory(items.TicketPiece(), rare=True)
                     quest_message += game.player_char.quests(item=items.TicketPiece())
@@ -409,15 +427,18 @@ class CavePath0(CavePath):
                         dungeon_bg = game.presenter.screen.copy()
                         popup = popup_class(game.presenter, quest_message, show_buttons=False)
                         popup.show(
-                            background_draw_func=lambda: game.presenter.screen.blit(dungeon_bg, (0, 0)),
+                            background_draw_func=lambda: game.presenter.screen.blit(
+                                dungeon_bg, (0, 0)
+                            ),
                             flush_events=True,
                             require_key_release=True,
-                            min_display_ms=300
+                            min_display_ms=300,
                         )
+
     def enter_combat(self, player_char):
-        self.enemy = quest_biased_random_enemy(player_char, '0')
+        self.enemy = quest_biased_random_enemy(player_char, "0")
         _apply_cambion_antimagic(self, player_char, self.enemy)
-        player_char.state = 'fight'
+        player_char.state = "fight"
 
 
 class CavePath1(CavePath):
@@ -427,18 +448,21 @@ class CavePath1(CavePath):
         return (self.x, self.y, self.z) == (8, 8, 1)
 
     def _dropped_rookie_body_here(self, player_char):
-        rookie_quest = player_char.quest_dict.get('Side', {}).get('Rookie Mistake')
+        rookie_quest = player_char.quest_dict.get("Side", {}).get("Rookie Mistake")
         if not rookie_quest:
             return False
         dropped_at = rookie_quest.get("Body Dropped At")
-        return list(dropped_at or []) == [self.x, self.y, self.z] and "Dead Soldier" not in player_char.special_inventory
+        return (
+            list(dropped_at or []) == [self.x, self.y, self.z]
+            and "Dead Soldier" not in player_char.special_inventory
+        )
 
     def _should_trigger_rookie_event(self, player_char):
-        rookie_quest = player_char.quest_dict.get('Side', {}).get('Rookie Mistake')
+        rookie_quest = player_char.quest_dict.get("Side", {}).get("Rookie Mistake")
         return bool(
             self.rookie_body_marker
             and rookie_quest
-            and not rookie_quest.get('Completed')
+            and not rookie_quest.get("Completed")
             and not rookie_quest.get("Body Dropped At")
         )
 
@@ -448,8 +472,8 @@ class CavePath1(CavePath):
             self.adjacent_visited(game.player_char)
             rookie_item = items.DeadSoldier()
             game.player_char.modify_inventory(rookie_item, rare=True)
-            rookie_quest = game.player_char.quest_dict['Side']['Rookie Mistake']
-            rookie_quest['Completed'] = True
+            rookie_quest = game.player_char.quest_dict["Side"]["Rookie Mistake"]
+            rookie_quest["Completed"] = True
             rookie_quest.pop("Body Dropped At", None)
             self.dropped_rookie_body = False
             self.read = True
@@ -461,7 +485,7 @@ class CavePath1(CavePath):
             rookie_item = items.DeadSoldier()
             game.player_char.modify_inventory(rookie_item, rare=True)
             quest_message = "You found the rookie! He's dead...\n"
-            game.player_char.quest_dict['Side']['Rookie Mistake']['Completed'] = True
+            game.player_char.quest_dict["Side"]["Rookie Mistake"]["Completed"] = True
             quest_message += "You have completed the quest Rookie Mistake.\n"
             self.read = True
             self._enter_rookie_combat(game.player_char)
@@ -475,12 +499,12 @@ class CavePath1(CavePath):
         self.enemy._runtime_combat_encounter = encounter
         for zombie in zombies:
             _apply_cambion_antimagic(self, player_char, zombie)
-        player_char.state = 'fight'
+        player_char.state = "fight"
 
     def enter_combat(self, player_char):
         self.enemy = quest_biased_random_enemy(player_char, str(self.z))
         _apply_cambion_antimagic(self, player_char, self.enemy)
-        player_char.state = 'fight'
+        player_char.state = "fight"
 
 
 class CavePath2(CavePath):
@@ -488,7 +512,7 @@ class CavePath2(CavePath):
     def enter_combat(self, player_char):
         self.enemy = quest_biased_random_enemy(player_char, str(self.z + 1))
         _apply_cambion_antimagic(self, player_char, self.enemy)
-        player_char.state = 'fight'
+        player_char.state = "fight"
 
 
 class FunhouseEmptyPath(EmptyCavePath):
@@ -545,7 +569,7 @@ class FunhousePath(CavePath):
 
     def enter_combat(self, player_char):
         self.enemy = enemies.funhouse_enemy()
-        player_char.state = 'fight'
+        player_char.state = "fight"
 
 
 class FunhouseWall(FakeWall):
@@ -557,7 +581,9 @@ class FunhouseWall(FakeWall):
 
     def intro_text(self, game):
         intro_str = super().intro_text(game)
-        intro_str += f"{game.player_char.name} sees only endless reflections and twisted corridors.\n"
+        intro_str += (
+            f"{game.player_char.name} sees only endless reflections and twisted corridors.\n"
+        )
         intro_str += "Which way is forward?\n"
         return intro_str
 
@@ -582,10 +608,9 @@ class FunhouseBoundaryWall(Wall):
 class BossPath(CavePath):
 
     def enter_combat(self, player_char):
-        self.enemy = random.choice([enemies.Minotaur(),
-                                    enemies.Barghest(),
-                                    enemies.Pseudodragon(),
-                                    enemies.Nightmare()])
+        self.enemy = random.choice(
+            [enemies.Minotaur(), enemies.Barghest(), enemies.Pseudodragon(), enemies.Nightmare()]
+        )
         player_char.state = "fight"
 
 

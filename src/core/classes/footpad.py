@@ -6,9 +6,8 @@ import random
 from dataclasses import dataclass
 from typing import Any
 
-from .base import Job
 from .. import items
-
+from .base import Job
 
 OBSCURATION_STEPS = 50
 TOXIN_RECIPES = {
@@ -59,9 +58,10 @@ def concealment_dodge_bonus(character: Any) -> float:
     """Return active Invisibility and post-break Shadow Evasion dodge."""
     if getattr(character, "_combat_concealed", False):
         return 0.25
-    if has_skill(character, "Shadow Evasion") and int(
-        getattr(character, "_shadow_evasion_turns", 0) or 0
-    ) > 0:
+    if (
+        has_skill(character, "Shadow Evasion")
+        and int(getattr(character, "_shadow_evasion_turns", 0) or 0) > 0
+    ):
         return 0.15
     return 0.0
 
@@ -267,11 +267,7 @@ def apply_coated_toxin(
         )
     severe_chance = 0.40 if has_skill(attacker, "Black Lotus Mastery") else 0.25
     severe = bool(
-        critical
-        or (
-            has_skill(attacker, "Potentiation")
-            and random.random() < severe_chance
-        )
+        critical or (has_skill(attacker, "Potentiation") and random.random() < severe_chance)
     )
     severity = "severe" if severe else "standard"
     potency = 1.0
@@ -279,10 +275,7 @@ def apply_coated_toxin(
         potency += 0.20
     if has_skill(attacker, "Black Lotus Mastery"):
         potency += 0.25
-    preserved = bool(
-        has_skill(attacker, "Black Lotus Mastery")
-        and random.random() < 0.25
-    )
+    preserved = bool(has_skill(attacker, "Black Lotus Mastery") and random.random() < 0.25)
     if not preserved:
         attacker._applied_toxin = None
     if poison is not None:
@@ -294,9 +287,7 @@ def apply_coated_toxin(
             "Myotoxin": ((5, 0.05), (6, 0.08)),
             "Necrotoxin": ((5, 0.05), (6, 0.08)),
         }
-        turns, amount = poison_tiers.get(name, poison_tiers["Mild Toxin"])[
-            int(severe)
-        ]
+        turns, amount = poison_tiers.get(name, poison_tiers["Mild Toxin"])[int(severe)]
         if has_skill(attacker, "Lingering Venom"):
             turns += 1
         poison.active = True
@@ -338,17 +329,9 @@ def apply_coated_toxin(
                     effect.active = True
                     effect.duration = max(int(effect.duration or 0), 4)
                     effect.extra = min(int(effect.extra or 0), -3)
-    elif (
-        name == "Myotoxin"
-        and severe
-        and "Stone" not in getattr(target, "status_immunity", [])
-    ):
+    elif name == "Myotoxin" and severe and "Stone" not in getattr(target, "status_immunity", []):
         target._toxin_petrify_turns = 2 if has_skill(attacker, "Lingering Venom") else 3
-    elif (
-        name == "Necrotoxin"
-        and severe
-        and "Death" not in getattr(target, "status_immunity", [])
-    ):
+    elif name == "Necrotoxin" and severe and "Death" not in getattr(target, "status_immunity", []):
         target._toxin_death_turns = 1 if has_skill(attacker, "Lingering Venom") else 2
     elif name in {"Myotoxin", "Necrotoxin"}:
         effect = target.status_effects.get("Stun")
@@ -367,8 +350,11 @@ def apply_coated_toxin(
 def throwing_dagger_pack(character: Any) -> Any | None:
     """Return the first nonempty throwing-dagger pack."""
     return next(
-        (pack for pack in _inventory_stack(character, "Throwing Daggers")
-         if int(getattr(pack, "charges", 0) or 0) > 0),
+        (
+            pack
+            for pack in _inventory_stack(character, "Throwing Daggers")
+            if int(getattr(pack, "charges", 0) or 0) > 0
+        ),
         None,
     )
 
@@ -390,10 +376,14 @@ def offhand_damage_multiplier(character: Any) -> float:
 
 def main_gauche_parry_bonus(character: Any) -> float:
     offhand = getattr(character, "equipment", {}).get("OffHand")
-    return 0.12 if (
-        has_skill(character, "Main Gauche")
-        and getattr(offhand, "subtyp", None) in {"Dagger", "Ninja Blade"}
-    ) else 0.0
+    return (
+        0.12
+        if (
+            has_skill(character, "Main Gauche")
+            and getattr(offhand, "subtyp", None) in {"Dagger", "Ninja Blade"}
+        )
+        else 0.0
+    )
 
 
 def record_live_and_learn(character: Any) -> None:
@@ -418,11 +408,15 @@ def toxic_precision_bonus(character: Any, slot: str | None = None) -> float:
     """Return coated-weapon critical chance from Toxic Precision."""
     coating = getattr(character, "_applied_toxin", None)
     coated_slot = coating.get("slot") if isinstance(coating, dict) else None
-    return 0.10 if (
-        has_skill(character, "Toxic Precision")
-        and coated_slot is not None
-        and (slot is None or slot == coated_slot)
-    ) else 0.0
+    return (
+        0.10
+        if (
+            has_skill(character, "Toxic Precision")
+            and coated_slot is not None
+            and (slot is None or slot == coated_slot)
+        )
+        else 0.0
+    )
 
 
 def obscuration_accuracy_penalty(defender: Any) -> float:

@@ -249,11 +249,7 @@ class AllIn(Skill):
             damage_modifier=1.0 + (0.12 * total),
             accuracy_modifier=min(0.20, 0.05 * fortune),
         )
-        if (
-            result.hit
-            and fortune > 0
-            and _has_talent(user, "rogue.house-always-wins")
-        ):
+        if result.hit and fortune > 0 and _has_talent(user, "rogue.house-always-wins"):
             state["fortune"] = 1
             result.message += "The House Always Wins preserves 1 Fortune.\n"
         result.extra.update({"fortune_spent": fortune, "misfortune_spent": misfortune})

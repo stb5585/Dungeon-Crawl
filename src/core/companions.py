@@ -1,5 +1,5 @@
 ###########################################
-""" companion manager """
+"""companion manager"""
 
 from __future__ import annotations
 
@@ -8,7 +8,6 @@ import random
 
 from . import abilities, items
 from .character import Character, Combat, Resource, Stats
-
 
 XENID_PAIRS = {
     "Animal": ("Hodag", "Caladrius"),
@@ -19,11 +18,7 @@ XENID_PAIRS = {
     "Celestial": ("Seraphim", "Bardi"),
     "Dragon": ("Tiamat", "Zahhak"),
 }
-XENID_NAMES = tuple(
-    name
-    for pair in XENID_PAIRS.values()
-    for name in pair
-)
+XENID_NAMES = tuple(name for pair in XENID_PAIRS.values() for name in pair)
 
 
 # familiars
@@ -32,7 +27,9 @@ class Familiar(Character):
     Base Familiar class
     """
 
-    def __init__(self, name: str, health: Resource, mana: Resource, stats: Stats, combat: Combat) -> None:
+    def __init__(
+        self, name: str, health: Resource, mana: Resource, stats: Stats, combat: Combat
+    ) -> None:
         super().__init__(name=name, health=health, mana=mana, stats=stats, combat=combat)
         # Familiars grow twice. Their body is abstract: their Warlock supplies
         # attributes/resources whenever they act.
@@ -101,8 +98,8 @@ class TamedCompanion(Familiar):
 
 def tamed_companion_from_state(state):
     """Rebuild a tamed companion from compact save state."""
-    from .classes import ability_mechanics
     from . import enemies
+    from .classes import ability_mechanics
 
     normalized = ability_mechanics.normalize_tamed_companion(state)
     if not normalized["active"] or not normalized["enemy_class"]:
@@ -140,20 +137,49 @@ def tamed_companion_from_state(state):
         stats = base.get("stats", {})
         if isinstance(stats, dict):
             companion.stats = Stats(
-                strength=max(1, int(stats.get("strength", companion.stats.strength) or companion.stats.strength)),
-                intel=max(1, int(stats.get("intel", companion.stats.intel) or companion.stats.intel)),
-                wisdom=max(1, int(stats.get("wisdom", companion.stats.wisdom) or companion.stats.wisdom)),
+                strength=max(
+                    1,
+                    int(
+                        stats.get("strength", companion.stats.strength) or companion.stats.strength
+                    ),
+                ),
+                intel=max(
+                    1, int(stats.get("intel", companion.stats.intel) or companion.stats.intel)
+                ),
+                wisdom=max(
+                    1, int(stats.get("wisdom", companion.stats.wisdom) or companion.stats.wisdom)
+                ),
                 con=max(1, int(stats.get("con", companion.stats.con) or companion.stats.con)),
-                charisma=max(1, int(stats.get("charisma", companion.stats.charisma) or companion.stats.charisma)),
+                charisma=max(
+                    1,
+                    int(
+                        stats.get("charisma", companion.stats.charisma) or companion.stats.charisma
+                    ),
+                ),
                 dex=max(1, int(stats.get("dex", companion.stats.dex) or companion.stats.dex)),
             )
         combat = base.get("combat", {})
         if isinstance(combat, dict):
             companion.combat = Combat(
-                attack=max(1, int(combat.get("attack", companion.combat.attack) or companion.combat.attack)),
-                defense=max(1, int(combat.get("defense", companion.combat.defense) or companion.combat.defense)),
-                magic=max(1, int(combat.get("magic", companion.combat.magic) or companion.combat.magic)),
-                magic_def=max(1, int(combat.get("magic_def", companion.combat.magic_def) or companion.combat.magic_def)),
+                attack=max(
+                    1, int(combat.get("attack", companion.combat.attack) or companion.combat.attack)
+                ),
+                defense=max(
+                    1,
+                    int(
+                        combat.get("defense", companion.combat.defense) or companion.combat.defense
+                    ),
+                ),
+                magic=max(
+                    1, int(combat.get("magic", companion.combat.magic) or companion.combat.magic)
+                ),
+                magic_def=max(
+                    1,
+                    int(
+                        combat.get("magic_def", companion.combat.magic_def)
+                        or companion.combat.magic_def
+                    ),
+                ),
             )
     companion.name = ability_mechanics.tamed_companion_display_name(normalized)
     ability_mechanics.apply_tamed_companion_growth(companion, normalized)
@@ -169,20 +195,25 @@ class Homunculus(Familiar):
     """
 
     def __init__(self) -> None:
-        super().__init__(name="", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat())
-        self.race = 'Homunculus'
+        super().__init__(
+            name="", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat()
+        )
+        self.race = "Homunculus"
         self.name = self.race
-        self.spellbook = {"Spells": {'Stupefy': abilities.Stupefy()},
-                          "Skills": {"Disarm": abilities.Disarm(),
-                                     'Pocket Sand': abilities.PocketSand()}}
+        self.spellbook = {
+            "Spells": {"Stupefy": abilities.Stupefy()},
+            "Skills": {"Disarm": abilities.Disarm(), "Pocket Sand": abilities.PocketSand()},
+        }
         self.spec = "Defense"
-        self.cls = 'Familiar'
+        self.cls = "Familiar"
 
     def inspect(self) -> str:
-        return (f"A tiny construct that serves and protects its master from anything that challenges them, regardless"
-                f" of the enemy's size or toughness. The {self.race} specializes in defensive abilities, either to "
-                f"prevent direct damage or to limit the enemy's ability to deal damage. Choose this familiar if you "
-                f"are a tad bit squishy, or your favorite movie is The Bodyguard.")
+        return (
+            f"A tiny construct that serves and protects its master from anything that challenges them, regardless"
+            f" of the enemy's size or toughness. The {self.race} specializes in defensive abilities, either to "
+            f"prevent direct damage or to limit the enemy's ability to deal damage. Choose this familiar if you "
+            f"are a tad bit squishy, or your favorite movie is The Bodyguard."
+        )
 
     def level_up(self) -> str:
         fam_level_str = f"{self.name} has leveled up!\n"
@@ -190,12 +221,12 @@ class Homunculus(Familiar):
             self.level.pro_level = 2
             skill_list = [abilities.Cover(), abilities.Goad(), abilities.Slow()]
             for skill in skill_list:
-                self.spellbook['Skills'][skill.name] = skill
+                self.spellbook["Skills"][skill.name] = skill
                 fam_level_str += f"{self.name} has gain the ability {skill.name}.\n"
             fam_level_str += f"{self.name} also increases your defense.\n"
         else:
             self.level.pro_level = 3
-            self.spellbook['Spells']['Resurrection'] = abilities.Resurrection()
+            self.spellbook["Spells"]["Resurrection"] = abilities.Resurrection()
             fam_level_str += f"{self.name} has gain the ability Resurrection.\n"
         return fam_level_str
 
@@ -209,21 +240,29 @@ class Fairy(Familiar):
     """
 
     def __init__(self) -> None:
-        super().__init__(name="", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat())
-        self.race = 'Fairy'
+        super().__init__(
+            name="", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat()
+        )
+        self.race = "Fairy"
         self.name = self.race
-        self.spellbook = {"Spells": {'Heal': abilities.Heal(),
-                                     "Regen": abilities.Regen(),
-                                     'Bless': abilities.Bless()},
-                          "Skills": {}}
-        self.spec = 'Support'
-        self.cls = 'Familiar'
+        self.spellbook = {
+            "Spells": {
+                "Heal": abilities.Heal(),
+                "Regen": abilities.Regen(),
+                "Bless": abilities.Bless(),
+            },
+            "Skills": {},
+        }
+        self.spec = "Support"
+        self.cls = "Familiar"
 
     def inspect(self) -> str:
-        return (f"These small, flying creatures hail from a parallel plane of existence and are typically associated"
-                f" with a connection to nature. While the {self.race} is not known for its constitution, they more than"
-                f" make up for it with support magics. If you hate having to stock up on potions, this familiar is the "
-                f"one for you!")
+        return (
+            f"These small, flying creatures hail from a parallel plane of existence and are typically associated"
+            f" with a connection to nature. While the {self.race} is not known for its constitution, they more than"
+            f" make up for it with support magics. If you hate having to stock up on potions, this familiar is the "
+            f"one for you!"
+        )
 
     def level_up(self) -> str:
         fam_level_str = f"{self.name} has leveled up!\n"
@@ -231,7 +270,7 @@ class Fairy(Familiar):
             self.level.pro_level = 2
             spell_list = [abilities.Reflect(), abilities.Heal2(), abilities.Regen2()]
             for spell in spell_list:
-                self.spellbook['Spells'][spell.name] = spell
+                self.spellbook["Spells"][spell.name] = spell
                 fam_level_str += f"{self.name} has gained the ability {spell.name}.\n"
         else:
             self.level.pro_level = 3
@@ -242,7 +281,7 @@ class Fairy(Familiar):
                 abilities.ExpelCurse(),
             ]
             for spell in spell_list:
-                self.spellbook['Spells'][spell.name] = spell
+                self.spellbook["Spells"][spell.name] = spell
                 fam_level_str += f"{self.name} has gained the ability {spell.name}.\n"
         return fam_level_str
 
@@ -256,42 +295,56 @@ class Mephit(Familiar):
     """
 
     def __init__(self) -> None:
-        super().__init__(name="", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat())
-        self.race = 'Mephit'
+        super().__init__(
+            name="", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat()
+        )
+        self.race = "Mephit"
         self.name = self.race
-        self.spellbook = {"Spells": {'Magic Missile': abilities.MagicMissile(),
-                                     'Silence': abilities.Silence()},
-                          "Skills": {}}
-        self.spec = 'Arcane'
-        self.cls = 'Familiar'
+        self.spellbook = {
+            "Spells": {"Magic Missile": abilities.MagicMissile(), "Silence": abilities.Silence()},
+            "Skills": {},
+        }
+        self.spec = "Arcane"
+        self.cls = "Familiar"
 
     def inspect(self) -> str:
-        return (f"A {self.race} is similar to an imp, except this little guy can blast arcane spells. It also "
-                f"gains some crowd control and support abilities. Who wouldn't want a their "
-                f"very own pocket caster?")
+        return (
+            f"A {self.race} is similar to an imp, except this little guy can blast arcane spells. It also "
+            f"gains some crowd control and support abilities. Who wouldn't want a their "
+            f"very own pocket caster?"
+        )
 
     def level_up(self) -> str:
         fam_level_str = f"{self.name} has leveled up!\n"
         if self.level.pro_level == 1:
             self.level.pro_level = 2
             spell_list = [
-                abilities.Fireball(), abilities.Icicle(), abilities.Lightning(),
-                abilities.Hurricane(), abilities.Aqualung(), abilities.Mudslide(),
+                abilities.Fireball(),
+                abilities.Icicle(),
+                abilities.Lightning(),
+                abilities.Hurricane(),
+                abilities.Aqualung(),
+                abilities.Mudslide(),
                 abilities.Boost(),
             ]
             for spell in spell_list:
-                self.spellbook['Spells'][spell.name] = spell
+                self.spellbook["Spells"][spell.name] = spell
                 fam_level_str += f"{self.name} has gained the ability {spell.name}.\n"
             fam_level_str += f"{self.name} also increases your magic defense.\n"
         else:
             self.level.pro_level = 3
             spell_list = [
-                abilities.Firestorm(), abilities.IceBlizzard(), abilities.Electrocution(),
-                abilities.Tornado(), abilities.Tsunami(), abilities.Earthquake(),
-                abilities.Invisibility(), abilities.Polymorph(),
+                abilities.Firestorm(),
+                abilities.IceBlizzard(),
+                abilities.Electrocution(),
+                abilities.Tornado(),
+                abilities.Tsunami(),
+                abilities.Earthquake(),
+                abilities.Invisibility(),
+                abilities.Polymorph(),
             ]
             for spell in spell_list:
-                self.spellbook['Spells'][spell.name] = spell
+                self.spellbook["Spells"][spell.name] = spell
                 fam_level_str += f"{self.name} has gained the ability {spell.name}.\n"
         return fam_level_str
 
@@ -305,34 +358,39 @@ class Jinkin(Familiar):
     """
 
     def __init__(self) -> None:
-        super().__init__(name="", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat())
-        self.race = 'Jinkin'
+        super().__init__(
+            name="", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat()
+        )
+        self.race = "Jinkin"
         self.name = self.race
-        self.spellbook = {"Spells": {'Corruption': abilities.Corruption()},
-                          "Skills": {'Gold Toss': abilities.GoldToss(),
-                                     'Steal': abilities.Steal()}}
-        self.spec = 'Luck'
-        self.cls = 'Familiar'
+        self.spellbook = {
+            "Spells": {"Corruption": abilities.Corruption()},
+            "Skills": {"Gold Toss": abilities.GoldToss(), "Steal": abilities.Steal()},
+        }
+        self.spec = "Luck"
+        self.cls = "Familiar"
 
     def inspect(self) -> str:
-        return (f"{self.race}s are vindictive little tricksters. While they mostly rely on (their very good) luck, "
-                f"Jinkins also enjoy the occasional curse to really add a thorn to your enemy's paw. You may not always"
-                f" like what you get but you also may just love it! (low charisma characters should probably avoid this"
-                f" familiar)...")
+        return (
+            f"{self.race}s are vindictive little tricksters. While they mostly rely on (their very good) luck, "
+            f"Jinkins also enjoy the occasional curse to really add a thorn to your enemy's paw. You may not always"
+            f" like what you get but you also may just love it! (low charisma characters should probably avoid this"
+            f" familiar)..."
+        )
 
     def level_up(self) -> str:
         fam_level_str = f"{self.name} has leveled up!\n"
         if self.level.pro_level == 1:
             self.level.pro_level = 2
-            self.spellbook['Spells']['Enfeeble'] = abilities.Enfeeble()
+            self.spellbook["Spells"]["Enfeeble"] = abilities.Enfeeble()
             fam_level_str += f"{self.name} has gained the ability Enfeeble.\n"
-            self.spellbook['Skills']['Lockpick'] = abilities.Lockpick()
+            self.spellbook["Skills"]["Lockpick"] = abilities.Lockpick()
             fam_level_str += f"{self.name} has gained the ability Lockpick.\n"
         else:
             self.level.pro_level = 3
-            self.spellbook['Skills']['Slot Machine'] = abilities.SlotMachine()
+            self.spellbook["Skills"]["Slot Machine"] = abilities.SlotMachine()
             fam_level_str += f"{self.name} has gained the ability Slot Machine.\n"
-            self.spellbook['Spells']['Twist Fate'] = abilities.TwistFate()
+            self.spellbook["Spells"]["Twist Fate"] = abilities.TwistFate()
             fam_level_str += f"{self.name} has gained the ability Twist Fate.\n"
         return fam_level_str
 
@@ -344,9 +402,20 @@ class Summons(Character):
     Odd number levels result in ability gain (except 10); even levels gain stat(s)
     """
 
-    def __init__(self, name: str, health: Resource, mana: Resource, stats: Stats, combat: Combat) -> None:
+    def __init__(
+        self, name: str, health: Resource, mana: Resource, stats: Stats, combat: Combat
+    ) -> None:
         super().__init__(name=name, health=health, mana=mana, stats=stats, combat=combat)
-        self.start_stats: list[int] = [0, 0, 0, 0, 0, 0, 0, 0]  # health, mana, str, intel, wis, con, cha, dex
+        self.start_stats: list[int] = [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+        ]  # health, mana, str, intel, wis, con, cha, dex
         self.start_combat: list[int] = [0, 0, 0, 0]  # attack, defense, magic, magic_def
         self.cls = self
         self.exp_scale: int = 1000
@@ -365,8 +434,13 @@ class Summons(Character):
     def initialize_stats(self, player_char: Character) -> None:
         self.level.exp_to_gain = self.level.pro_level * self.exp_scale
         stat_scale = 25 - self.level.pro_level
-        stat_adj = 1 + (((player_char.stats.intel - random.randint(10, 20)) + 
-                         (player_char.stats.charisma - random.randint(10, 20))) / stat_scale)
+        stat_adj = 1 + (
+            (
+                (player_char.stats.intel - random.randint(10, 20))
+                + (player_char.stats.charisma - random.randint(10, 20))
+            )
+            / stat_scale
+        )
         stats = [int(x * stat_adj) for x in self._starting_stat_values()]
         self.health = Resource(stats[0], stats[0])
         self.mana = Resource(stats[1], stats[1])
@@ -377,21 +451,15 @@ class Summons(Character):
             from .classes import class_rings, mage_mechanics
 
             ring_multiplier = class_rings.summon_multiplier(player_char)
-            health_multiplier, damage_multiplier = (
-                mage_mechanics.permanent_summon_multipliers(player_char)
+            health_multiplier, damage_multiplier = mage_mechanics.permanent_summon_multipliers(
+                player_char
             )
             if ring_multiplier != 1.0 or health_multiplier != 1.0:
-                self.health.max = max(
-                    1, int(self.health.max * ring_multiplier * health_multiplier)
-                )
+                self.health.max = max(1, int(self.health.max * ring_multiplier * health_multiplier))
                 self.health.current = self.health.max
             if ring_multiplier != 1.0 or damage_multiplier != 1.0:
-                self.combat.attack = int(
-                    self.combat.attack * ring_multiplier * damage_multiplier
-                )
-                self.combat.magic = int(
-                    self.combat.magic * ring_multiplier * damage_multiplier
-                )
+                self.combat.attack = int(self.combat.attack * ring_multiplier * damage_multiplier)
+                self.combat.magic = int(self.combat.magic * ring_multiplier * damage_multiplier)
         except Exception:
             pass
         self._conduit_base = {
@@ -431,7 +499,9 @@ class Summons(Character):
     def options(self) -> list[str]:
         if getattr(self, "tunnel", False):
             action_list = []
-            if not self.status_effects["Silence"].active and "Surface" in self.spellbook.get("Skills", {}):
+            if not self.status_effects["Silence"].active and "Surface" in self.spellbook.get(
+                "Skills", {}
+            ):
                 action_list.append("Use Skill")
             action_list.append("Support")
             return action_list
@@ -448,12 +518,14 @@ class Summons(Character):
     def inspect(self) -> str:
         inspect_str = f"{self.name} - Level {self.level.level}\n\n"
         inspect_str += self.description
-        inspect_str += (f"{'Hit Points:':13}{' ':1}{self.health.current:3}/{self.health.max:>3}\n"
-                        f"{'Mana Points:':13}{' ':1}{self.mana.current:3}/{self.mana.max:>3}\n"
-                        f"{'Attack:':13}{' ':1}{self.combat.attack:>7}\n"
-                        f"{'Defense:':13}{' ':1}{self.combat.defense:>7}\n"
-                        f"{'Magic:':13}{' ':1}{self.combat.magic:>7}\n"
-                        f"{'Magic Defense:':13}{' ':1}{self.combat.magic_def:>7}\n")
+        inspect_str += (
+            f"{'Hit Points:':13}{' ':1}{self.health.current:3}/{self.health.max:>3}\n"
+            f"{'Mana Points:':13}{' ':1}{self.mana.current:3}/{self.mana.max:>3}\n"
+            f"{'Attack:':13}{' ':1}{self.combat.attack:>7}\n"
+            f"{'Defense:':13}{' ':1}{self.combat.defense:>7}\n"
+            f"{'Magic:':13}{' ':1}{self.combat.magic:>7}\n"
+            f"{'Magic Defense:':13}{' ':1}{self.combat.magic_def:>7}\n"
+        )
         return inspect_str
 
 
@@ -494,40 +566,36 @@ def sync_xenid_conduit(
         }
         xenid._conduit_base = base
     was_alive = xenid.health.current > 0
-    health_ratio = (
-        xenid.health.current / xenid.health.max
-        if xenid.health.max
-        else 1.0
-    )
-    mana_ratio = (
-        xenid.mana.current / xenid.mana.max
-        if xenid.mana.max
-        else 1.0
-    )
+    health_ratio = xenid.health.current / xenid.health.max if xenid.health.max else 1.0
+    mana_ratio = xenid.mana.current / xenid.mana.max if xenid.mana.max else 1.0
     resource_scale = 1.0 + 0.50 * conduit / 100
     rating_scale = 1.0 + 0.35 * conduit / 100
     xenid.health.max = max(1, int(base["health"] * resource_scale))
     xenid.health.current = (
-        max(1, min(
-            xenid.health.max,
-            int(xenid.health.max * health_ratio),
-        ))
+        max(
+            1,
+            min(
+                xenid.health.max,
+                int(xenid.health.max * health_ratio),
+            ),
+        )
         if was_alive
         else 0
     )
     xenid.mana.max = max(0, int(base["mana"] * resource_scale))
-    xenid.mana.current = max(0, min(
-        xenid.mana.max,
-        int(xenid.mana.max * mana_ratio),
-    ))
-    xenid.stats = Stats(**{
-        key: max(1, int(value * rating_scale))
-        for key, value in base["stats"].items()
-    })
-    xenid.combat = Combat(**{
-        key: max(1, int(value * rating_scale))
-        for key, value in base["combat"].items()
-    })
+    xenid.mana.current = max(
+        0,
+        min(
+            xenid.mana.max,
+            int(xenid.mana.max * mana_ratio),
+        ),
+    )
+    xenid.stats = Stats(
+        **{key: max(1, int(value * rating_scale)) for key, value in base["stats"].items()}
+    )
+    xenid.combat = Combat(
+        **{key: max(1, int(value * rating_scale)) for key, value in base["combat"].items()}
+    )
     xenid.level.level = _conduit_level(conduit)
     xenid.level.exp = 0
     xenid.level.exp_to_gain = 0
@@ -633,9 +701,7 @@ class Hodag(Summons):
         self.spellbook["Skills"]["Charge"] = abilities.Charge()
         self.spellbook["Skills"]["Crush"] = abilities.Crush()
         self.resistance["Physical"] = 0.25
-        self.description = (
-            "A massive bull-horned carnivore protected by curved dorsal spines.\n\n"
-        )
+        self.description = "A massive bull-horned carnivore protected by curved dorsal spines.\n\n"
 
 
 class Caladrius(Summons):
@@ -664,9 +730,7 @@ class Caladrius(Summons):
         self.resistance["Holy"] = 0.75
         self.resistance["Poison"] = 0.75
         self.flying = True
-        self.description = (
-            "A snow-white bird that absorbs sickness and disperses it in flight.\n\n"
-        )
+        self.description = "A snow-white bird that absorbs sickness and disperses it in flight.\n\n"
 
 
 class Patagon(Summons):
@@ -691,17 +755,24 @@ class Patagon(Summons):
     """
 
     def __init__(self) -> None:
-        super().__init__(name="Patagon", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat())
+        super().__init__(
+            name="Patagon", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat()
+        )
         self.level.pro_level = 1
         self.start_stats = [125, 85, 20, 5, 8, 15, 3, 14]
         self.start_combat = [75, 40, 15, 25]
-        self.equipment = {'Weapon': items.GiantClub(), 'Armor': items.NoArmor(), 'OffHand': items.NoOffHand(),
-                          'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
-        self.spellbook["Skills"]["Throw Rock"] =  abilities.ThrowRock()
-        self.spellbook["Skills"]["Charge"] =  abilities.Charge()
-        self.resistance['Holy'] = -0.3
+        self.equipment = {
+            "Weapon": items.GiantClub(),
+            "Armor": items.NoArmor(),
+            "OffHand": items.NoOffHand(),
+            "Ring": items.NoRing(),
+            "Pendant": items.NoPendant(),
+        }
+        self.spellbook["Skills"]["Throw Rock"] = abilities.ThrowRock()
+        self.spellbook["Skills"]["Charge"] = abilities.Charge()
+        self.resistance["Holy"] = -0.3
         self.resistance["Poison"] = 0.33
-        self.resistance['Physical'] = 0.2
+        self.resistance["Physical"] = 0.2
         self.description = "A giant mountain man that wields a giant club.\n\n"
 
 
@@ -727,12 +798,19 @@ class Dilong(Summons):
     """
 
     def __init__(self) -> None:
-        super().__init__(name="Dilong", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat())
+        super().__init__(
+            name="Dilong", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat()
+        )
         self.level.pro_level = 2
         self.start_stats = [225, 118, 24, 7, 12, 23, 4, 15]
         self.start_combat = [105, 80, 65, 55]
-        self.equipment = {'Weapon': items.EarthMaw(), 'Armor': items.SnakeScales2(), 'OffHand': items.NoOffHand(),
-                          'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
+        self.equipment = {
+            "Weapon": items.EarthMaw(),
+            "Armor": items.SnakeScales2(),
+            "OffHand": items.NoOffHand(),
+            "Ring": items.NoRing(),
+            "Pendant": items.NoPendant(),
+        }
         self.spellbook["Spells"]["Tremor"] = abilities.Tremor()
         self.spellbook["Skills"]["Tunnel"] = abilities.Tunnel()
         self.spellbook["Skills"]["Surface"] = abilities.Surface()
@@ -764,18 +842,27 @@ class Agloolik(Summons):
     """
 
     def __init__(self) -> None:
-        super().__init__(name="Agloolik", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat())
+        super().__init__(
+            name="Agloolik", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat()
+        )
         self.level.pro_level = 2
         self.start_stats = [190, 168, 18, 15, 13, 12, 9, 18]
         self.start_combat = [80, 55, 88, 70]
-        self.equipment = {'Weapon': items.IceShard(), 'Armor': items.NoArmor(), 'OffHand': items.NoOffHand(),
-                          'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
+        self.equipment = {
+            "Weapon": items.IceShard(),
+            "Armor": items.NoArmor(),
+            "OffHand": items.NoOffHand(),
+            "Ring": items.NoRing(),
+            "Pendant": items.NoPendant(),
+        }
         self.spellbook["Spells"]["Ice Lance"] = abilities.IceLance()
         self.spellbook["Skills"]["Piercing Strike"] = abilities.PiercingStrike()
         self.resistance["Fire"] = -0.5
         self.resistance["Ice"] = 1.25
         self.resistance["Physical"] = -0.2
-        self.description = "An ice spirit, said to provide aid to fishermen and hunters in the Inuit culture.\n\n"
+        self.description = (
+            "An ice spirit, said to provide aid to fishermen and hunters in the Inuit culture.\n\n"
+        )
 
 
 class Cacus(Summons):
@@ -801,12 +888,19 @@ class Cacus(Summons):
     """
 
     def __init__(self) -> None:
-        super().__init__(name="Cacus", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat())
+        super().__init__(
+            name="Cacus", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat()
+        )
         self.level.pro_level = 2
         self.start_stats = [215, 112, 25, 11, 13, 21, 7, 15]
         self.start_combat = [110, 60, 90, 65]
-        self.equipment = {'Weapon': items.VulcansHammer(), 'Armor': items.Splint(), 'OffHand': items.NoOffHand(),
-                          'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
+        self.equipment = {
+            "Weapon": items.VulcansHammer(),
+            "Armor": items.Splint(),
+            "OffHand": items.NoOffHand(),
+            "Ring": items.NoRing(),
+            "Pendant": items.NoPendant(),
+        }
         self.spellbook["Spells"]["Scorch"] = abilities.Scorch()
         self.spellbook["Skills"]["Mortal Strike"] = abilities.MortalStrike()
         self.resistance["Fire"] = 1.0
@@ -837,12 +931,19 @@ class Izulu(Summons):
     """
 
     def __init__(self) -> None:
-        super().__init__(name="Izulu", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat())
+        super().__init__(
+            name="Izulu", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat()
+        )
         self.level.pro_level = 2
         self.start_stats = [212, 123, 18, 11, 12, 14, 13, 22]
         self.start_combat = [85, 50, 86, 62]
-        self.equipment = {'Weapon': items.VampireBite(), 'Armor': items.NoArmor(), 'OffHand': items.VampireBite(),
-                          'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
+        self.equipment = {
+            "Weapon": items.VampireBite(),
+            "Armor": items.NoArmor(),
+            "OffHand": items.VampireBite(),
+            "Ring": items.NoRing(),
+            "Pendant": items.NoPendant(),
+        }
         self.spellbook["Spells"]["Shock"] = abilities.Shock()
         self.spellbook["Skills"]["True Strike"] = abilities.TrueStrike()
         self.resistance["Electric"] = 1.0
@@ -851,7 +952,9 @@ class Izulu(Summons):
         self.resistance["Shadow"] = 0.5
         self.status_immunity = ["Death"]
         self.flying = True
-        self.description = "The lightning bird, a vampiric spirit with an insatiable lust for blood.\n\n"
+        self.description = (
+            "The lightning bird, a vampiric spirit with an insatiable lust for blood.\n\n"
+        )
 
 
 class Hala(Summons):
@@ -876,12 +979,19 @@ class Hala(Summons):
     """
 
     def __init__(self) -> None:
-        super().__init__(name="Hala", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat())
+        super().__init__(
+            name="Hala", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat()
+        )
         self.level.pro_level = 2
         self.start_stats = [224, 109, 20, 12, 9, 15, 10, 24]
         self.start_combat = [105, 65, 72, 60]
-        self.equipment = {'Weapon': items.Claw2(), 'Armor': items.DemonArmor(), 'OffHand': items.DemonClaw(),
-                          'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
+        self.equipment = {
+            "Weapon": items.Claw2(),
+            "Armor": items.DemonArmor(),
+            "OffHand": items.DemonClaw(),
+            "Ring": items.NoRing(),
+            "Pendant": items.NoPendant(),
+        }
         self.spellbook["Skills"]["Parry"] = abilities.Parry()
         self.spellbook["Spells"]["Gust"] = abilities.Gust()
         self.resistance["Wind"] = 1.0
@@ -889,7 +999,9 @@ class Hala(Summons):
         self.resistance["Holy"] = -1.0
         self.status_immunity = ["Death"]
         self.flying = True
-        self.description = "A female demon that can harness the power of the wind for devious purposes.\n\n"
+        self.description = (
+            "A female demon that can harness the power of the wind for devious purposes.\n\n"
+        )
 
 
 class Lamashtu(Summons):
@@ -926,7 +1038,7 @@ class Lamashtu(Summons):
 class Seraphim(Summons):
     """
     Summon creature
-    An angelic spirit known as the Watcher 
+    An angelic spirit known as the Watcher
 
     Abilities:
     Level 1 (start)
@@ -946,12 +1058,19 @@ class Seraphim(Summons):
     """
 
     def __init__(self) -> None:
-        super().__init__(name="Seraphim", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat())
+        super().__init__(
+            name="Seraphim", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat()
+        )
         self.level.pro_level = 3
         self.start_stats = [280, 205, 29, 12, 18, 30, 14, 12]
         self.start_combat = [130, 90, 115, 105]
-        self.equipment = {'Weapon': items.Pernach(), 'Armor': items.Breastplate(), 'OffHand': items.KiteShield(),
-                          'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
+        self.equipment = {
+            "Weapon": items.Pernach(),
+            "Armor": items.Breastplate(),
+            "OffHand": items.KiteShield(),
+            "Ring": items.NoRing(),
+            "Pendant": items.NoPendant(),
+        }
         self.spellbook["Spells"]["Smite"] = abilities.Smite2()
         self.spellbook["Spells"]["Holy"] = abilities.Holy2()
         self.spellbook["Skills"]["Shield Slam"] = abilities.ShieldSlam()
@@ -986,12 +1105,19 @@ class Bardi(Summons):
     """
 
     def __init__(self) -> None:
-        super().__init__(name="Bardi", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat())
+        super().__init__(
+            name="Bardi", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat()
+        )
         self.level.pro_level = 4
         self.start_stats = [321, 285, 32, 19, 22, 27, 19, 18]
         self.start_combat = [155, 80, 132, 95]
-        self.equipment = {'Weapon': items.Scythe(), 'Armor': items.DemonArmor2(), 'OffHand': items.NoOffHand(),
-                          'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
+        self.equipment = {
+            "Weapon": items.Scythe(),
+            "Armor": items.DemonArmor2(),
+            "OffHand": items.NoOffHand(),
+            "Ring": items.NoRing(),
+            "Pendant": items.NoPendant(),
+        }
         self.spellbook["Skills"]["Battle Cry"] = abilities.BattleCry()
         self.spellbook["Skills"]["Double Strike"] = abilities.DoubleStrike()
         self.spellbook["Spells"]["Shadow Bolt"] = abilities.ShadowBolt2()
@@ -1027,28 +1153,36 @@ class Kobalos(Summons):
     """
 
     def __init__(self) -> None:
-        super().__init__(name="Kobalos", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat())
+        super().__init__(
+            name="Kobalos", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat()
+        )
         self.level.pro_level = 4
         self.start_stats = [365, 305, 23, 14, 13, 19, 20, 25]
         self.start_combat = [130, 75, 55, 65]
         self.summon_gold_cost = 100
-        self.equipment = {'Weapon': items.KoboldDagger(), 'Armor': items.StuddedCuirboulli(),
-                          'OffHand': items.KoboldDagger(),
-                          'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
+        self.equipment = {
+            "Weapon": items.KoboldDagger(),
+            "Armor": items.StuddedCuirboulli(),
+            "OffHand": items.KoboldDagger(),
+            "Ring": items.NoRing(),
+            "Pendant": items.NoPendant(),
+        }
         self.spellbook["Skills"]["Steal"] = abilities.Steal()
         self.spellbook["Skills"]["Backstab"] = abilities.Backstab()
         self.spellbook["Skills"]["Pocket Sand"] = abilities.PocketSand()
         self.spellbook["Skills"]["Gold Toss"] = abilities.GoldToss()
-        self.resistance = {'Fire': 0.1,
-                           'Ice': 0.1,
-                           'Electric': 0.1,
-                           'Water': 0.1,
-                           'Earth': 0.1,
-                           'Wind': 0.1,
-                           'Shadow': 0.1,
-                           'Holy': 0.0,
-                           "Poison": 1.,
-                           'Physical': 0.0}
+        self.resistance = {
+            "Fire": 0.1,
+            "Ice": 0.1,
+            "Electric": 0.1,
+            "Water": 0.1,
+            "Earth": 0.1,
+            "Wind": 0.1,
+            "Shadow": 0.1,
+            "Holy": 0.0,
+            "Poison": 1.0,
+            "Physical": 0.0,
+        }
         self.status_immunity.append("Poison")
         self.invisible = True
         self.description = "A filthy little trickster. Watch your back with this guy around.\n\n"
@@ -1110,26 +1244,35 @@ class Zahhak(Summons):
     """
 
     def __init__(self) -> None:
-        super().__init__(name="Zahhak", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat())
+        super().__init__(
+            name="Zahhak", health=Resource(), mana=Resource(), stats=Stats(), combat=Combat()
+        )
         self.level.pro_level = 5
         self.start_stats = [455, 402, 32, 29, 31, 35, 23, 26]
         self.start_combat = [190, 100, 165, 130]
-        self.equipment = {'Weapon': items.DragonClaw2(), 'Armor': items.DragonScale(), 'OffHand': items.DragonTail2(),
-                          'Ring': items.NoRing(), 'Pendant': items.NoPendant()}
+        self.equipment = {
+            "Weapon": items.DragonClaw2(),
+            "Armor": items.DragonScale(),
+            "OffHand": items.DragonTail2(),
+            "Ring": items.NoRing(),
+            "Pendant": items.NoPendant(),
+        }
         self.spellbook["Spells"]["Magic Missile"] = abilities.MagicMissile2()
         self.spellbook["Spells"]["Mirror Image"] = abilities.MirrorImage()
         self.spellbook["Spells"]["Heal"] = abilities.Heal3()
         self.spellbook["Spells"]["Reflect"] = abilities.Reflect()
-        self.resistance = {'Fire': 0.25,
-                           'Ice': 0.25,
-                           'Electric': 0.25,
-                           'Water': 0.25,
-                           'Earth': 0.25,
-                           'Wind': 0.25,
-                           'Shadow': 0.25,
-                           'Holy': 0.25,
-                           "Poison": 1.,
-                           'Physical': 0.25}
+        self.resistance = {
+            "Fire": 0.25,
+            "Ice": 0.25,
+            "Electric": 0.25,
+            "Water": 0.25,
+            "Earth": 0.25,
+            "Wind": 0.25,
+            "Shadow": 0.25,
+            "Holy": 0.25,
+            "Poison": 1.0,
+            "Physical": 0.25,
+        }
         self.status_immunity.append("Poison")
         self.description = ""  # TODO
 
@@ -1138,80 +1281,130 @@ class Zahhak(Summons):
 
 
 summon_abilities = {
-    "Hodag": {"Skills": {"3": abilities.MortalStrike,
-                          "5": abilities.Stomp,
-                          "7": abilities.MortalStrike2,
-                          "9": abilities.Crush,
-                          "10": abilities.TitanicSlam},
-              "Spells": {}},
-    "Caladrius": {"Skills": {},
-                   "Spells": {"3": abilities.Reflect,
-                              "5": abilities.Heal3,
-                              "7": abilities.Regen3,
-                              "9": abilities.DivineProtection,
-                              "10": abilities.Resurrection}},
-    "Patagon": {"Skills": {"3": abilities.PiercingStrike,
-                           "5": abilities.Stomp,
-                           "7": abilities.MortalStrike,
-                           "9": abilities.Crush,
-                           "10": abilities.TitanicSlam},
-                "Spells": {}},
-    "Dilong": {"Skills": {"3": abilities.Slam,
-                          "7": abilities.ConsumeItem,
-                          "10": abilities.Devour},
-               "Spells": {"5": abilities.Mudslide,
-                          "9": abilities.Earthquake}},
-    "Agloolik": {"Skills": {"7": abilities.TruePiercingStrike},
-                 "Spells": {"3": abilities.IceBlock,
-                            "5": abilities.Icicle,
-                            "9": abilities.IceBlizzard,
-                            "10": abilities.AbsoluteZero}},
-    "Cacus": {"Skills": {"7": abilities.MortalStrike2},
-              "Spells": {"3": abilities.Vulcanize,
-                         "5": abilities.MoltenRock,
-                         "9": abilities.Volcano,
-                         "10": abilities.Eruption}},
-    "Izulu": {"Skills": {"7": abilities.TruePiercingStrike},
-              "Spells": {"3": abilities.Berserk,
-                         "5": abilities.Lightning,
-                         "9": abilities.Electrocution,
-                         "10": abilities.Thunderstrike}},
-    "Hala": {"Skills": {"3": abilities.DoubleStrike},
-              "Spells": {"5": abilities.Hurricane,
-                         "7": abilities.WindSpeed,
-                         "9": abilities.Tornado,
-                         "10": abilities.WindShrapnel}},
-    "Lamashtu": {"Skills": {},
-                 "Spells": {"3": abilities.Terrify,
-                            "5": abilities.PoisonBreath,
-                            "7": abilities.WeakenMind,
-                            "9": abilities.Corruption2,
-                            "10": abilities.Oblivion}},
-    "Seraphim": {"Skills": {},
-                 "Spells": {"3": abilities.DivineProtection,
-                            "5": abilities.Regen2,
-                            "7": abilities.Holy3,
-                            "9": abilities.Resurrection,
-                            "10": abilities.DivineJudgment}},
-    "Bardi": {"Skills": {"5": abilities.SleepingPowder},
-              "Spells": {"3": abilities.Corruption,
-                         "7": abilities.Ruin,
-                         "9": abilities.ShadowBolt3,
-                         "10": abilities.Oblivion}},
-    "Kobalos": {"Skills": {"5": abilities.Mug,
-                           "7": abilities.SneakAttack,
-                           "9": abilities.SlotMachine,
-                           "10": abilities.GrandHeist},
-                "Spells": {"3": abilities.PoisonStrike}},
-    "Tiamat": {"Skills": {"3": abilities.PiercingStrike,
-                          "7": abilities.TruePiercingStrike},
-               "Spells": {"5": abilities.Hydration,
-                          "9": abilities.Tsunami,
-                          "10": abilities.MaelstromVortex}},
-    "Zahhak": {"Skills": {},
-               "Spells": {"3": abilities.MagicMissile3,
-                          "5": abilities.PhotonSphere,
-                          "7": abilities.Disintegrate,
-                          "9": abilities.Meteor,
-                          "10": abilities.Cataclysm}}
+    "Hodag": {
+        "Skills": {
+            "3": abilities.MortalStrike,
+            "5": abilities.Stomp,
+            "7": abilities.MortalStrike2,
+            "9": abilities.Crush,
+            "10": abilities.TitanicSlam,
+        },
+        "Spells": {},
+    },
+    "Caladrius": {
+        "Skills": {},
+        "Spells": {
+            "3": abilities.Reflect,
+            "5": abilities.Heal3,
+            "7": abilities.Regen3,
+            "9": abilities.DivineProtection,
+            "10": abilities.Resurrection,
+        },
+    },
+    "Patagon": {
+        "Skills": {
+            "3": abilities.PiercingStrike,
+            "5": abilities.Stomp,
+            "7": abilities.MortalStrike,
+            "9": abilities.Crush,
+            "10": abilities.TitanicSlam,
+        },
+        "Spells": {},
+    },
+    "Dilong": {
+        "Skills": {"3": abilities.Slam, "7": abilities.ConsumeItem, "10": abilities.Devour},
+        "Spells": {"5": abilities.Mudslide, "9": abilities.Earthquake},
+    },
+    "Agloolik": {
+        "Skills": {"7": abilities.TruePiercingStrike},
+        "Spells": {
+            "3": abilities.IceBlock,
+            "5": abilities.Icicle,
+            "9": abilities.IceBlizzard,
+            "10": abilities.AbsoluteZero,
+        },
+    },
+    "Cacus": {
+        "Skills": {"7": abilities.MortalStrike2},
+        "Spells": {
+            "3": abilities.Vulcanize,
+            "5": abilities.MoltenRock,
+            "9": abilities.Volcano,
+            "10": abilities.Eruption,
+        },
+    },
+    "Izulu": {
+        "Skills": {"7": abilities.TruePiercingStrike},
+        "Spells": {
+            "3": abilities.Berserk,
+            "5": abilities.Lightning,
+            "9": abilities.Electrocution,
+            "10": abilities.Thunderstrike,
+        },
+    },
+    "Hala": {
+        "Skills": {"3": abilities.DoubleStrike},
+        "Spells": {
+            "5": abilities.Hurricane,
+            "7": abilities.WindSpeed,
+            "9": abilities.Tornado,
+            "10": abilities.WindShrapnel,
+        },
+    },
+    "Lamashtu": {
+        "Skills": {},
+        "Spells": {
+            "3": abilities.Terrify,
+            "5": abilities.PoisonBreath,
+            "7": abilities.WeakenMind,
+            "9": abilities.Corruption2,
+            "10": abilities.Oblivion,
+        },
+    },
+    "Seraphim": {
+        "Skills": {},
+        "Spells": {
+            "3": abilities.DivineProtection,
+            "5": abilities.Regen2,
+            "7": abilities.Holy3,
+            "9": abilities.Resurrection,
+            "10": abilities.DivineJudgment,
+        },
+    },
+    "Bardi": {
+        "Skills": {"5": abilities.SleepingPowder},
+        "Spells": {
+            "3": abilities.Corruption,
+            "7": abilities.Ruin,
+            "9": abilities.ShadowBolt3,
+            "10": abilities.Oblivion,
+        },
+    },
+    "Kobalos": {
+        "Skills": {
+            "5": abilities.Mug,
+            "7": abilities.SneakAttack,
+            "9": abilities.SlotMachine,
+            "10": abilities.GrandHeist,
+        },
+        "Spells": {"3": abilities.PoisonStrike},
+    },
+    "Tiamat": {
+        "Skills": {"3": abilities.PiercingStrike, "7": abilities.TruePiercingStrike},
+        "Spells": {
+            "5": abilities.Hydration,
+            "9": abilities.Tsunami,
+            "10": abilities.MaelstromVortex,
+        },
+    },
+    "Zahhak": {
+        "Skills": {},
+        "Spells": {
+            "3": abilities.MagicMissile3,
+            "5": abilities.PhotonSphere,
+            "7": abilities.Disintegrate,
+            "9": abilities.Meteor,
+            "10": abilities.Cataclysm,
+        },
+    },
 }

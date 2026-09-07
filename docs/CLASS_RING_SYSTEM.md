@@ -375,8 +375,8 @@ additional visual presentation, and playtest follow-up.
 - `Crusader`: `Vow Trial` awakens `Vow Affirmation`.
   - Status: playable in the Church when a dormant Crusader Class Ring is
     equipped or stored and the character has already sworn a Paladin vow.
-  - Promotion to `Paladin` permanently chooses one vow path. Legacy
-    Paladin/Crusader saves with no vow can swear one at the Church.
+  - Promotion to `Paladin` permanently chooses one vow path. A Paladin or
+    Crusader with missing vow state can swear one at the Church.
   - `Vow Affirmation` records the chosen vow in
     `class_ring_awakening["data"]["Crusader"]["vow"]`. While the affirmed ring
     is equipped, aura benefits are multiplied by 1.5 and mark penalties or
@@ -416,9 +416,9 @@ additional visual presentation, and playtest follow-up.
 - `Dragoon`: `Guard The Fall` awakens `Aerial Supremacy`, preserving the
   legacy `+1 Jump Mod` hook internally for compatibility.
   - The promotion-kit V1 pass replaces the displayed awakened identity with
-    `Aerial Supremacy`. Legacy `+1 Jump Mod` save/test
-    compatibility remains accepted internally, but the ring no longer grants
-    extra active Jump modification capacity.
+    `Aerial Supremacy`. The internal `+1 Jump Mod` alias remains accepted by
+    tests, but the ring no longer grants extra active Jump modification
+    capacity.
   - `Aerial Supremacy` enhances the automatic Aerial Tempo follow-through after
     a clean Jump landing from `+6%` damage and `+3` accuracy points per stack
     to `+8%` damage and `+4` accuracy points per stack. A clean damaging Jump

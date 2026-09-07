@@ -77,11 +77,7 @@ def spread_corruption(target: Any, *, rng: Any = random) -> str:
     encounter = getattr(caster, "_combat_encounter", None)
     living_members = list(getattr(encounter, "living_members", ()))
     source_member = next(
-        (
-            member
-            for member in getattr(encounter, "members", ())
-            if member.enemy is target
-        ),
+        (member for member in getattr(encounter, "members", ()) if member.enemy is target),
         None,
     )
     if source_member is None:

@@ -7,14 +7,27 @@ from src.core.classes import footpad
 from src.core.progression import ABILITY_TREES, NodeKind
 from tests.test_framework import TestGameState
 
-
 EXPECTED_COLUMNS = (
     ("Stumble Upon", "Steal", "Lockpick", "Avoid Traps", "Do-over", "Serendipity"),
     ("Disarm", "Pocket Sand", "Smoke Screen", None, "Aggressive Pursuit", "Sleeping Powder"),
     ("Dual Wield", "Backstab", "Cripple", "Kidney Punch", "Double Strike", "Obscuration"),
-    ("Duelist", "Incantation Comprehension", "+10 Magic", "Mana Depletion", "Imbue Weapon", "Disruption"),
+    (
+        "Duelist",
+        "Incantation Comprehension",
+        "+10 Magic",
+        "Mana Depletion",
+        "Imbue Weapon",
+        "Disruption",
+    ),
     ("Quickstep", None, "Parry", "Retort", "Evasive Guard", "Mystical Evasion"),
-    ("Piercing Strike", "Detect Animal", "Inspect", "Detect Humanoid", "+10 Magic Defense", "Detect Slime"),
+    (
+        "Piercing Strike",
+        "Detect Animal",
+        "Inspect",
+        "Detect Humanoid",
+        "+10 Magic Defense",
+        "Detect Slime",
+    ),
 )
 EXPECTED_LEVELS = (
     (None, 5, 10, 15, 20, 25),
@@ -32,22 +45,30 @@ def _player():
 
 def test_footpad_tree_matches_the_six_authored_columns_and_gates():
     development = [
-        node for node in ABILITY_TREES["Footpad"].nodes
-        if node.kind != NodeKind.PROMOTION
+        node for node in ABILITY_TREES["Footpad"].nodes if node.kind != NodeKind.PROMOTION
     ]
     by_position = {node.position: node for node in development}
 
     assert len(development) == 34
     for column, expected_names in enumerate(EXPECTED_COLUMNS):
-        assert tuple(
-            by_position[(column, row)].name if (column, row) in by_position else None
-            for row in range(6)
-        ) == expected_names
-        assert tuple(
-            by_position[(column, row)].payload.get("level_requirement")
-            if (column, row) in by_position else None
-            for row in range(6)
-        ) == EXPECTED_LEVELS[column]
+        assert (
+            tuple(
+                by_position[(column, row)].name if (column, row) in by_position else None
+                for row in range(6)
+            )
+            == expected_names
+        )
+        assert (
+            tuple(
+                (
+                    by_position[(column, row)].payload.get("level_requirement")
+                    if (column, row) in by_position
+                    else None
+                )
+                for row in range(6)
+            )
+            == EXPECTED_LEVELS[column]
+        )
 
 
 def test_footpad_promotions_join_identity_and_shared_tracks():
@@ -59,9 +80,7 @@ def test_footpad_promotions_join_identity_and_shared_tracks():
     assert by_name["Promote: Inquisitor"].position == (4.5, 7)
     assert by_name["Sleeping Powder"].id in by_name["Promote: Thief"].prerequisites
     assert by_name["Sleeping Powder"].id in by_name["Promote: Assassin"].prerequisites
-    assert by_name["Mystical Evasion"].id in (
-        by_name["Promote: Spell Stealer"].prerequisites
-    )
+    assert by_name["Mystical Evasion"].id in (by_name["Promote: Spell Stealer"].prerequisites)
     assert by_name["Mystical Evasion"].id in by_name["Promote: Inquisitor"].prerequisites
 
 
@@ -120,11 +139,13 @@ def test_footpad_passive_multipliers_are_scoped_to_their_effects():
     assert footpad.scroll_effectiveness_multiplier(player) == 1.0
     assert footpad.spell_dodge_bonus(player) == 0.0
 
-    player.spellbook["Skills"].update({
-        "Serendipity": abilities.Serendipity(),
-        "Incantation Comprehension": abilities.IncantationComprehension(),
-        "Mystical Evasion": abilities.MysticalEvasion(),
-    })
+    player.spellbook["Skills"].update(
+        {
+            "Serendipity": abilities.Serendipity(),
+            "Incantation Comprehension": abilities.IncantationComprehension(),
+            "Mystical Evasion": abilities.MysticalEvasion(),
+        }
+    )
 
     assert footpad.loot_drop_multiplier(player) == 1.25
     assert footpad.scroll_effectiveness_multiplier(player) == 1.25

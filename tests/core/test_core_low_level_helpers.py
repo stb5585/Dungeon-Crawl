@@ -9,8 +9,8 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parents[2]))
 
-from src.core.combat.combat_result import CombatResult
 from src.core.character import Character, Combat, Resource, Stats
+from src.core.combat.combat_result import CombatResult
 from src.core.effects.damage import DamageEffect
 from src.core.effects.healing import HealEffect, RegenEffect
 from src.core.effects.status import StatusEffect
@@ -125,9 +125,7 @@ def test_regen_effect_applies_magic_status_payload():
 
 def test_status_effect_activates_known_status_and_records_extra():
     actor = SimpleNamespace(name="Caster")
-    target = SimpleNamespace(
-        status_effects={"Stun": SimpleNamespace(active=False, duration=0)}
-    )
+    target = SimpleNamespace(status_effects={"Stun": SimpleNamespace(active=False, duration=0)})
     result = CombatResult(action="Status", actor=actor, target=target, hit=True, crit=1)
 
     effect = StatusEffect(name="Stun", duration=2)

@@ -200,7 +200,9 @@ def test_weapon_discipline_xp_chance_scales_by_enemy_pro_level_and_intellect(mon
     low_int.stats.intel = 5
     high_int = _weapon_master()
     high_int.stats.intel = 18
-    assert grandmaster.discipline_xp_chance(high_int, baseline_enemy, reason="hit") > grandmaster.discipline_xp_chance(
+    assert grandmaster.discipline_xp_chance(
+        high_int, baseline_enemy, reason="hit"
+    ) > grandmaster.discipline_xp_chance(
         low_int,
         baseline_enemy,
         reason="hit",
@@ -224,7 +226,9 @@ def test_weapon_master_battle_axe_hits_show_rank_progression_text(monkeypatch):
     target = Goblin()
     target.level.pro_level = 2
     target.health.current = target.health.max = 999
-    player.grandmaster_discipline["disciplines"]["Battle Axe"]["xp"] = grandmaster.XP_THRESHOLDS[0] - 1
+    player.grandmaster_discipline["disciplines"]["Battle Axe"]["xp"] = (
+        grandmaster.XP_THRESHOLDS[0] - 1
+    )
     player.ensure_grandmaster_discipline()
     monkeypatch.setattr(grandmaster.random, "random", lambda: 0.0)
 
@@ -252,12 +256,16 @@ def test_weapon_art_can_grant_discipline_insight(monkeypatch):
         grandmaster.XP_THRESHOLDS[0],
     )
     before_xp = player.grandmaster_discipline["disciplines"]["Fist"]["xp"]
-    monkeypatch.setattr(player, "weapon_damage", lambda *_args, **_kwargs: ("Iron Palm lands.\n", True, 1))
+    monkeypatch.setattr(
+        player, "weapon_damage", lambda *_args, **_kwargs: ("Iron Palm lands.\n", True, 1)
+    )
     monkeypatch.setattr(grandmaster.random, "random", lambda: 0.0)
 
     message = player.spellbook["Skills"]["Iron Palm"].use(player, enemy)
 
-    assert player.grandmaster_discipline["disciplines"]["Fist"]["xp"] == before_xp + grandmaster.ART_XP
+    assert (
+        player.grandmaster_discipline["disciplines"]["Fist"]["xp"] == before_xp + grandmaster.ART_XP
+    )
     assert f"Fist Discipline +{grandmaster.ART_XP} XP" in message
 
 

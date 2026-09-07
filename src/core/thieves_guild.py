@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import Any
 
-
 UNLOCK_LEVEL = 10
 DISCOUNT_MULTIPLIER = 0.75
 SIGNET_NAME = "Thieves Guild Signet"
@@ -138,9 +137,15 @@ def complete_membership(character: Any) -> tuple[bool, str]:
     if state["member"]:
         return False, "The Gray Broker taps the mark you already carry. You are known here."
     if not can_join(character):
-        return False, "Mara smiles without opening the ledger. Only promoted Footpad-line candidates join."
+        return (
+            False,
+            "Mara smiles without opening the ledger. Only promoted Footpad-line candidates join.",
+        )
     if not has_signet(character):
-        return False, "Bring the Thieves Guild Signet from the hidden trial room on dungeon level 2."
+        return (
+            False,
+            "Bring the Thieves Guild Signet from the hidden trial room on dungeon level 2.",
+        )
     state["member"] = True
     state["trial_started"] = True
     if not state["trial_branch"]:

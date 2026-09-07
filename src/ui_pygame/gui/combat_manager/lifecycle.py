@@ -7,16 +7,17 @@ from typing import TYPE_CHECKING
 
 import pygame
 
+import src.ui_pygame.gui.combat_manager as combat_manager
 from src.core import enemies
 from src.core.character import Character
 from src.core.classes import ability_mechanics, promotion_kits
 from src.core.combat import ActionIntent, CombatEncounter, TargetScope
 from src.core.player import Player
-import src.ui_pygame.gui.combat_manager as combat_manager
 from src.ui_pygame.gui.enemy_presentation import (
     is_invisible_target,
     player_has_sight,
 )
+
 from ..input_guards import release_guard_allows_input
 from ..mouse_helpers import hit_index, is_left_click, mouse_position
 from .constants import (
@@ -25,7 +26,6 @@ from .constants import (
     POST_TURN_DELAY_FRAMES,
     VESPERION_FALSE_FINAL_ENEMY_TURNS,
 )
-
 
 if TYPE_CHECKING:
     from src.core.map_tiles import MapTile
@@ -159,9 +159,8 @@ class CombatLifecycleMixin:
         clock = pygame.time.Clock()
         fled = False
         singleton = len(encounter.members) == 1
-        vesperion_false_final = (
-            singleton
-            and self._is_vesperion_false_final_combat(player_char, primary_enemy)
+        vesperion_false_final = singleton and self._is_vesperion_false_final_combat(
+            player_char, primary_enemy
         )
         vesperion_enemy_turns = 0
 
@@ -190,9 +189,8 @@ class CombatLifecycleMixin:
                         self.combat_view.enemy_dies(primary_enemy)
                     break
 
-                if (
-                    vesperion_false_final
-                    and self._vesperion_false_final_hp_threshold_met(primary_enemy)
+                if vesperion_false_final and self._vesperion_false_final_hp_threshold_met(
+                    primary_enemy
                 ):
                     return self._handle_vesperion_false_final(
                         player_char,
@@ -302,13 +300,15 @@ class CombatLifecycleMixin:
         action_names = []
         for action in raw_actions:
             if isinstance(action, dict):
-                action_name = action.get('name', str(action))
+                action_name = action.get("name", str(action))
             else:
                 action_name = str(action)
             # Rename for display
-            action_name = action_name.replace("Cast Spell", "Spells") \
-                                    .replace("Use Skill", "Skills") \
-                                    .replace("Use Item", "Items")
+            action_name = (
+                action_name.replace("Cast Spell", "Spells")
+                .replace("Use Skill", "Skills")
+                .replace("Use Item", "Items")
+            )
             action_names.append(action_name)
 
         # Deduplicate while preserving order
@@ -330,13 +330,9 @@ class CombatLifecycleMixin:
         target = getattr(self.engine, "defender", None)
         if actor is not None:
             resolve_names = self._available_skill_names(actor, target, resolve=True)
-            surge_names = {
-                entry["name"]
-                for entry in promotion_kits.RESOLVE_SURGES
-            }
+            surge_names = {entry["name"] for entry in promotion_kits.RESOLVE_SURGES}
             has_resolve = any(
-                name != "Hold the Line" and name not in surge_names
-                for name in resolve_names
+                name != "Hold the Line" and name not in surge_names for name in resolve_names
             )
             has_bursts = any(name in surge_names for name in resolve_names)
             has_standard_skills = bool(self._available_skill_names(actor, target, resolve=False))
@@ -365,10 +361,7 @@ class CombatLifecycleMixin:
             if class_name == "Knight Enchanter" and defensive_release is not None:
                 defend_index = deduped.index("Defend")
                 deduped[defend_index] = "Defensive Release"
-            elif (
-                class_name in {"Sentinel", "Stalwart Defender"}
-                and hold_the_line is not None
-            ):
+            elif class_name in {"Sentinel", "Stalwart Defender"} and hold_the_line is not None:
                 defend_index = deduped.index("Defend")
                 deduped.pop(defend_index)
                 if self._skill_available_for_selection(
@@ -380,7 +373,12 @@ class CombatLifecycleMixin:
 
         # Add Pickup Weapon if the active actor is disarmed
         is_disarmed = getattr(actor, "is_disarmed", None)
-        if actor is not None and callable(is_disarmed) and is_disarmed() and "Pickup Weapon" not in deduped:
+        if (
+            actor is not None
+            and callable(is_disarmed)
+            and is_disarmed()
+            and "Pickup Weapon" not in deduped
+        ):
             idx = 2 if "Defend" in deduped else 1
             deduped.insert(idx, "Pickup Weapon")
 
@@ -405,7 +403,7 @@ class CombatLifecycleMixin:
         added_message = False
         for msg in post.messages:
             if msg:
-                for line in msg.strip().split('\n'):
+                for line in msg.strip().split("\n"):
                     if line.strip():
                         self.combat_view.add_combat_message(line)
                         added_message = True
@@ -432,9 +430,7 @@ class CombatLifecycleMixin:
             except KeyError:
                 continue
             resolution = labels.get(record.resolution.value, record.resolution.value)
-            self.combat_view.add_combat_message(
-                f"{member.display_label} {resolution}."
-            )
+            self.combat_view.add_combat_message(f"{member.display_label} {resolution}.")
             self.combat_view.enemy_dies(member.enemy)
 
     def _flush_result_frame(self, player_char, enemy) -> None:
@@ -500,7 +496,7 @@ class CombatLifecycleMixin:
         # Pre-turn: process status effects and check if player can act
         pre = self.engine.pre_turn()
         if pre.effects_text:
-            for line in pre.effects_text.strip().split('\n'):
+            for line in pre.effects_text.strip().split("\n"):
                 if line.strip():
                     self.combat_view.add_combat_message(line)
             self._flush_result_frame(player_char, enemy)
@@ -520,22 +516,26 @@ class CombatLifecycleMixin:
         forced = self.engine.get_forced_action()
         if forced:
             if forced.action == "Cancelled":
-                for line in forced.cancel_message.strip().split('\n'):
+                for line in forced.cancel_message.strip().split("\n"):
                     if line.strip():
                         self.combat_view.add_combat_message(line)
                 self._flush_result_frame(player_char, enemy)
                 return True
 
             if forced.action == "Attack":
-                actor_name = getattr(getattr(self.engine, "attacker", None), "name", player_char.name)
-                self.combat_view.add_combat_message(f"{actor_name} is BERSERKED and attacks wildly!")
+                actor_name = getattr(
+                    getattr(self.engine, "attacker", None), "name", player_char.name
+                )
+                self.combat_view.add_combat_message(
+                    f"{actor_name} is BERSERKED and attacks wildly!"
+                )
 
             # Execute the forced action via engine
             enemy_hp_before = enemy.health.current
             result = self.engine.execute_action(forced.action, choice=forced.choice)
             self._announce_new_resolutions(result)
 
-            for line in result.message.strip().split('\n'):
+            for line in result.message.strip().split("\n"):
                 if line.strip():
                     self.combat_view.add_combat_message(line)
 
@@ -622,9 +622,7 @@ class CombatLifecycleMixin:
                     elif event.key == pygame.K_RETURN or event.key == pygame.K_SPACE:
                         # Execute selected action
                         action_result = self._execute_action(
-                            actions[selected_action],
-                            player_char,
-                            enemy
+                            actions[selected_action], player_char, enemy
                         )
                         if action_result == "flee":
                             return "flee"
@@ -636,15 +634,18 @@ class CombatLifecycleMixin:
                             break
                         elif action_result is not None:
                             action_taken = True
-                    elif event.key in [pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4, pygame.K_5, pygame.K_6]:
+                    elif event.key in [
+                        pygame.K_1,
+                        pygame.K_2,
+                        pygame.K_3,
+                        pygame.K_4,
+                        pygame.K_5,
+                        pygame.K_6,
+                    ]:
                         # Number keys for quick selection
                         num = event.key - pygame.K_1
                         if num < len(actions):
-                            action_result = self._execute_action(
-                                actions[num],
-                                player_char,
-                                enemy
-                            )
+                            action_result = self._execute_action(actions[num], player_char, enemy)
                             if action_result == "flee":
                                 return "flee"
                             elif action_result == "continue_turn":
@@ -658,11 +659,7 @@ class CombatLifecycleMixin:
                 elif event.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN):
                     if is_left_click(event) and input_armed:
                         card_at = getattr(self.combat_view, "enemy_card_at", None)
-                        target_id = (
-                            card_at(mouse_position(event))
-                            if callable(card_at)
-                            else None
-                        )
+                        target_id = card_at(mouse_position(event)) if callable(card_at) else None
                         if target_id is not None:
                             try:
                                 self.engine.set_focus_target(target_id)
@@ -697,7 +694,7 @@ class CombatLifecycleMixin:
         # Companion / familiar turn
         companion_msg = self.engine.companion_turn()
         if companion_msg:
-            for line in companion_msg.strip().split('\n'):
+            for line in companion_msg.strip().split("\n"):
                 if line.strip():
                     self.combat_view.add_combat_message(line)
 
@@ -714,7 +711,7 @@ class CombatLifecycleMixin:
             return
 
         # Check if already transitioned
-        if getattr(enemy, '_form_changed', False):
+        if getattr(enemy, "_form_changed", False):
             return
 
         # Check health threshold (below 10%)
@@ -732,7 +729,7 @@ class CombatLifecycleMixin:
             "Her eyes clear. She sees what she has become.",
             "",
             "Recognizing the horror of her actions,",
-            "she takes her own life, finally finding peace with Joffrey..."
+            "she takes her own life, finally finding peace with Joffrey...",
         ]
 
         # Change name and sprite back to normal Waitress
@@ -745,6 +742,7 @@ class CombatLifecycleMixin:
 
         # Show popup with the wail/transition narrative
         from ..confirmation_popup import ConfirmationPopup
+
         popup_text = "\n".join(transition_messages)
         popup = ConfirmationPopup(self.presenter, popup_text, show_buttons=False)
         popup.show(flush_events=True, require_key_release=True)
@@ -753,12 +751,8 @@ class CombatLifecycleMixin:
         self.combat_view.add_combat_message(
             "The Mad Waitress visibly changes form without changing her true identity."
         )
-        self.combat_view.add_combat_message(
-            f"{enemy.name} turns her weapon on herself in despair!"
-        )
-        self.combat_view.add_combat_message(
-            f"{enemy.name} takes {damage} damage from the attack!"
-        )
+        self.combat_view.add_combat_message(f"{enemy.name} turns her weapon on herself in despair!")
+        self.combat_view.add_combat_message(f"{enemy.name} takes {damage} damage from the attack!")
 
         # Enemy is now dead
         self.combat_view.enemy_dies(enemy)
@@ -767,7 +761,7 @@ class CombatLifecycleMixin:
         """Prevent killing the Mad Waitress before her transition triggers."""
         if not isinstance(enemy, enemies.NightHag2):
             return
-        if getattr(enemy, '_form_changed', False):
+        if getattr(enemy, "_form_changed", False):
             return
         if enemy.health.current <= 0:
             enemy.health.current = 1
@@ -809,7 +803,11 @@ class CombatLifecycleMixin:
 
         elif action == "Spells":
             if actor.abilities_suppressed():
-                reason = "the anti-magic field" if getattr(actor, "anti_magic_active", False) else "silence"
+                reason = (
+                    "the anti-magic field"
+                    if getattr(actor, "anti_magic_active", False)
+                    else "silence"
+                )
                 self.combat_view.add_combat_message(
                     f"{actor.name} cannot cast spells because of {reason}!"
                 )
@@ -834,7 +832,11 @@ class CombatLifecycleMixin:
 
         elif action == "Runic Boost":
             if player_char.abilities_suppressed():
-                reason = "the anti-magic field" if getattr(player_char, "anti_magic_active", False) else "silence"
+                reason = (
+                    "the anti-magic field"
+                    if getattr(player_char, "anti_magic_active", False)
+                    else "silence"
+                )
                 self.combat_view.add_combat_message(
                     f"{player_char.name} cannot cast spells because of {reason}!"
                 )
@@ -852,7 +854,11 @@ class CombatLifecycleMixin:
 
         elif action == "Companion":
             if player_char.abilities_suppressed():
-                reason = "the anti-magic field" if getattr(player_char, "anti_magic_active", False) else "silence"
+                reason = (
+                    "the anti-magic field"
+                    if getattr(player_char, "anti_magic_active", False)
+                    else "silence"
+                )
                 self.combat_view.add_combat_message(
                     f"{player_char.name} cannot command their companion because of {reason}!"
                 )
@@ -889,7 +895,7 @@ class CombatLifecycleMixin:
                 intent = self._select_contract_intent(player_char, enemy)
                 if not intent:
                     return None
-                skill_obj = actor.spellbook.get('Skills', {}).get("Call Contract")
+                skill_obj = actor.spellbook.get("Skills", {}).get("Call Contract")
                 if skill_obj:
                     skill_obj.pending_intent = intent
 
@@ -911,7 +917,11 @@ class CombatLifecycleMixin:
 
         elif action == "Summon":
             if player_char.abilities_suppressed():
-                reason = "the anti-magic field" if getattr(player_char, "anti_magic_active", False) else "silence"
+                reason = (
+                    "the anti-magic field"
+                    if getattr(player_char, "anti_magic_active", False)
+                    else "silence"
+                )
                 self.combat_view.add_combat_message(
                     f"{player_char.name} cannot summon because of {reason}!"
                 )
@@ -922,9 +932,7 @@ class CombatLifecycleMixin:
             choice = selected_summon
 
         elif action == "Transform":
-            forms = tuple(
-                getattr(player_char, "available_transform_forms", lambda: ())()
-            )
+            forms = tuple(getattr(player_char, "available_transform_forms", lambda: ())())
             if len(forms) > 1:
                 choice = self._select_transform_form(player_char, enemy, forms)
                 if not choice:
@@ -946,10 +954,7 @@ class CombatLifecycleMixin:
         enemy_hp_before = enemy.health.current
         encounter = getattr(self.engine, "encounter", None)
         enemy_hp_by_id = (
-            {
-                member.combatant_id: member.enemy.health.current
-                for member in encounter.members
-            }
+            {member.combatant_id: member.enemy.health.current for member in encounter.members}
             if encounter is not None
             else {}
         )
@@ -960,22 +965,20 @@ class CombatLifecycleMixin:
         # Delegate to engine (handles attack rolls, spell casts, skill use, etc.)
         slot_cb = None
         if action in {"Skills", "Resolve", "Bursts"} and choice:
-            skill_obj = actor.spellbook.get('Skills', {}).get(choice)
+            skill_obj = actor.spellbook.get("Skills", {}).get(choice)
             if skill_obj and skill_obj.name == "Slot Machine":
                 slot_cb = lambda _u, _t: self._show_slot_machine_reveal(actor, enemy)
 
         if support_mode:
-            result = self.engine.execute_summoner_support_action(engine_action, choice=choice, slot_machine_callback=slot_cb)
+            result = self.engine.execute_summoner_support_action(
+                engine_action, choice=choice, slot_machine_callback=slot_cb
+            )
         elif encounter is not None and hasattr(
             self.engine,
             "target_scope_for_action",
         ):
             scope = self.engine.target_scope_for_action(engine_action, choice)
-            target_ids = (
-                (self.engine.focus_target_id,)
-                if scope == TargetScope.SINGLE_ENEMY
-                else ()
-            )
+            target_ids = (self.engine.focus_target_id,) if scope == TargetScope.SINGLE_ENEMY else ()
             result = self.engine.execute_intent(
                 ActionIntent(engine_action, choice, target_ids),
                 slot_machine_callback=slot_cb,
@@ -991,12 +994,12 @@ class CombatLifecycleMixin:
         damage_to_enemy = max(0, enemy_hp_before - enemy.health.current)
         favored_msg = ability_mechanics.consume_favored_enemy_bonus_message(player_char)
         if damage_to_enemy > 0:
-            for line in favored_msg.strip().split('\n'):
+            for line in favored_msg.strip().split("\n"):
                 if line.strip():
                     self.combat_view.add_combat_message(line)
 
         # Display result messages
-        for line in result.message.strip().split('\n'):
+        for line in result.message.strip().split("\n"):
             if line.strip():
                 self.combat_view.add_combat_message(line)
 
@@ -1058,7 +1061,9 @@ class CombatLifecycleMixin:
         if actor is not player_char:
             damage_to_player = max(0, actor_hp_before - active_hp_after)
         if damage_to_player > 0:
-            self._show_combat_damage_effect("player", action, choice, result.message, damage_to_player)
+            self._show_combat_damage_effect(
+                "player", action, choice, result.message, damage_to_player
+            )
             showed_damage_effect = True
         else:
             heal_amount = max(0, player_char.health.current - player_hp_before)

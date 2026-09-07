@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable
 import random
+from collections.abc import Callable, Iterable
 from textwrap import wrap
 
 from .. import items
@@ -11,22 +11,21 @@ from ..character import Character, Combat, Resource, Stats, StatusEffect
 from ..combat.action_queue import ActionPriority
 from ..constants import ENEMY_LOW_HEALTH_THRESHOLD
 
-
 AbilityFactory = Callable[[], object]
 
 
 def _fixed_resistances(**overrides: float) -> dict[str, float]:
     resistances = {
-        'Fire': 0.0,
-        'Ice': 0.0,
-        'Electric': 0.0,
-        'Water': 0.0,
-        'Earth': 0.0,
-        'Wind': 0.0,
-        'Shadow': 0.0,
-        'Holy': 0.0,
-        'Poison': 0.0,
-        'Physical': 0.0,
+        "Fire": 0.0,
+        "Ice": 0.0,
+        "Electric": 0.0,
+        "Water": 0.0,
+        "Earth": 0.0,
+        "Wind": 0.0,
+        "Shadow": 0.0,
+        "Holy": 0.0,
+        "Poison": 0.0,
+        "Physical": 0.0,
     }
     resistances.update(overrides)
     return resistances
@@ -76,12 +75,30 @@ class Enemy(Character):
         "Blinding Fog": {"status": "Blind"},
     }
 
-    def __init__(self, name: str, health: int, mana: int, strength: int, intel: int, wisdom: int,
-                 con: int, charisma: int, dex: int,
-                 attack: int, defense: int, magic: int, magic_def: int, exp: int) -> None:
-        super().__init__(name, Resource(health+con, health+con), Resource(mana+intel, mana+intel),
-                         Stats(strength, intel, wisdom, con, charisma, dex),
-                         Combat(attack, defense, magic, magic_def))
+    def __init__(
+        self,
+        name: str,
+        health: int,
+        mana: int,
+        strength: int,
+        intel: int,
+        wisdom: int,
+        con: int,
+        charisma: int,
+        dex: int,
+        attack: int,
+        defense: int,
+        magic: int,
+        magic_def: int,
+        exp: int,
+    ) -> None:
+        super().__init__(
+            name,
+            Resource(health + con, health + con),
+            Resource(mana + intel, mana + intel),
+            Stats(strength, intel, wisdom, con, charisma, dex),
+            Combat(attack, defense, magic, magic_def),
+        )
         self.name = name
         self.cls = self
         self.experience = exp
@@ -95,9 +112,11 @@ class Enemy(Character):
         self.picture: str = "test.txt"
 
     def __str__(self) -> str:
-        return (f"{self.name} | "
-                f"Health: {self.health.current}/{self.health.max} | "
-                f"Mana: {self.mana.current}/{self.mana.max}")
+        return (
+            f"{self.name} | "
+            f"Health: {self.health.current}/{self.health.max} | "
+            f"Mana: {self.mana.current}/{self.mana.max}"
+        )
 
     def inspect(self) -> str:
         stats_str = [
@@ -106,24 +125,35 @@ class Enemy(Character):
             "{:15}{:>4}".format("Wisdom:", f"{self.stats.wisdom}"),
             "{:15}{:>4}".format("Constitution:", f"{self.stats.con}"),
             "{:15}{:>4}".format("Charisma:", f"{self.stats.charisma}"),
-            "{:15}{:>4}".format("Dexterity:", f"{self.stats.dex}")
-                    ]
+            "{:15}{:>4}".format("Dexterity:", f"{self.stats.dex}"),
+        ]
         stats_str = "\n".join(stats_str)
         resist_str = [
             "{:12}{:>6}  {:12}{:>6}".format(
-                "Fire:", f"{self.resistance['Fire']}", "Ice:", f"{self.resistance['Ice']}"),
+                "Fire:", f"{self.resistance['Fire']}", "Ice:", f"{self.resistance['Ice']}"
+            ),
             "{:12}{:>6}  {:12}{:>6}".format(
-                "Electric:", f"{self.resistance['Electric']}", "Water:", f"{self.resistance['Water']}"),
+                "Electric:",
+                f"{self.resistance['Electric']}",
+                "Water:",
+                f"{self.resistance['Water']}",
+            ),
             "{:12}{:>6}  {:12}{:>6}".format(
-                "Earth:", f"{self.resistance['Earth']}", "Wind:", f"{self.resistance['Wind']}"),
+                "Earth:", f"{self.resistance['Earth']}", "Wind:", f"{self.resistance['Wind']}"
+            ),
             "{:12}{:>6}  {:12}{:>6}".format(
-                "Shadow:", f"{self.resistance['Shadow']}", "Holy:", f"{self.resistance['Holy']}"),
+                "Shadow:", f"{self.resistance['Shadow']}", "Holy:", f"{self.resistance['Holy']}"
+            ),
             "{:12}{:>6}  {:12}{:>6}".format(
-                "Poison:", f"{self.resistance['Poison']}", "Physical:", f"{self.resistance['Physical']}")
-                        ]
+                "Poison:",
+                f"{self.resistance['Poison']}",
+                "Physical:",
+                f"{self.resistance['Physical']}",
+            ),
+        ]
         resist_str = "\n".join(resist_str)
         immunity_str = ", ".join(self.status_immunity) if self.status_immunity else "None"
-        specials = list(self.spellbook['Spells'].keys()) + list(self.spellbook['Skills'].keys())
+        specials = list(self.spellbook["Spells"].keys()) + list(self.spellbook["Skills"].keys())
         specials = ", ".join(specials)
         specials = "\n".join(wrap(f"Specials: {specials}", 50, break_on_hyphens=False))
         text = (
@@ -137,7 +167,9 @@ class Enemy(Character):
         )
         return text
 
-    def options(self, target: Character, action_list: list[str], tile: object) -> tuple[str, str | None]:
+    def options(
+        self, target: Character, action_list: list[str], tile: object
+    ) -> tuple[str, str | None]:
         self.last_action_stack_entry = None
         for skill_name, skill in self.spellbook.get("Skills", {}).items():
             if getattr(skill, "charging", False):
@@ -148,44 +180,57 @@ class Enemy(Character):
             return "Nothing", None
 
         # If action_stack is defined with priorities, use weighted selection
-        if self.action_stack and any(isinstance(item, dict) and "priority" in item for item in self.action_stack):
+        if self.action_stack and any(
+            isinstance(item, dict) and "priority" in item for item in self.action_stack
+        ):
             return self._choose_action_by_priority(target, tile)
 
         # Legacy path: standard random action selection
-        if self.name != 'Test' and not self.tunnel:
+        if self.name != "Test" and not self.tunnel:
             action_list = ["Attack"]
         else:
             action_list = []
         if not self.abilities_suppressed():
             spell_list = []
-            for spell_name, spell in self.spellbook['Spells'].items():
-                if spell_name in self.single_use_abilities and spell_name in self._used_single_use_abilities:
+            for spell_name, spell in self.spellbook["Spells"].items():
+                if (
+                    spell_name in self.single_use_abilities
+                    and spell_name in self._used_single_use_abilities
+                ):
                     continue
-                if self.spellbook['Spells'][spell_name].passive:
+                if self.spellbook["Spells"][spell_name].passive:
                     continue
                 if self._should_skip_reapply_debuff(spell_name, target):
                     continue
                 if self.tunnel:
                     if spell.subtyp not in ["Heal", "Support"]:
                         continue
-                if self.spellbook['Spells'][spell_name].cost <= self.mana.current:
+                if self.spellbook["Spells"][spell_name].cost <= self.mana.current:
                     spell_list.append(spell_name)
             if spell_list:
                 action_list.append("Cast Spell")
             skill_list = []
-            for skill_name, _ in self.spellbook['Skills'].items():
-                if skill_name in self.single_use_abilities and skill_name in self._used_single_use_abilities:
+            for skill_name, _ in self.spellbook["Skills"].items():
+                if (
+                    skill_name in self.single_use_abilities
+                    and skill_name in self._used_single_use_abilities
+                ):
                     continue
-                if any([self.spellbook['Skills'][skill_name].passive,
-                        self.spellbook['Skills'][skill_name].name == "Backstab" and not target.incapacitated(),
+                if any(
+                    [
+                        self.spellbook["Skills"][skill_name].passive,
+                        self.spellbook["Skills"][skill_name].name == "Backstab"
+                        and not target.incapacitated(),
                         self.spellbook["Skills"][skill_name].weapon and self.is_disarmed(),
-                        self.spellbook["Skills"][skill_name].name == "Smoke Screen" and
-                            self.health.current > self.health.max * ENEMY_LOW_HEALTH_THRESHOLD,
-                        self.tunnel]):
+                        self.spellbook["Skills"][skill_name].name == "Smoke Screen"
+                        and self.health.current > self.health.max * ENEMY_LOW_HEALTH_THRESHOLD,
+                        self.tunnel,
+                    ]
+                ):
                     continue
                 if self._should_skip_reapply_debuff(skill_name, target):
                     continue
-                if self.spellbook['Skills'][skill_name].cost <= self.mana.current:
+                if self.spellbook["Skills"][skill_name].cost <= self.mana.current:
                     skill_list.append(skill_name)
             if skill_list:
                 action_list.append("Use Skill")
@@ -222,9 +267,12 @@ class Enemy(Character):
         self.last_action_stack_entry = None
         weighted_actions = []
         if self._should_attempt_flee(target, tile):
-            weighted_actions.extend([
-                ("Flee", None, {"ability": "Flee", "reason": "outclassed"}),
-            ] * self._priority_to_weight(ActionPriority.HIGH))
+            weighted_actions.extend(
+                [
+                    ("Flee", None, {"ability": "Flee", "reason": "outclassed"}),
+                ]
+                * self._priority_to_weight(ActionPriority.HIGH)
+            )
         pickup_priority = self._pickup_weapon_priority()
         if pickup_priority != ActionPriority.SKIP:
             for _ in range(self._priority_to_weight(pickup_priority)):
@@ -245,7 +293,10 @@ class Enemy(Character):
                 continue
 
             ability_name = action_entry.get("ability", "Attack")
-            if ability_name in self.single_use_abilities and ability_name in self._used_single_use_abilities:
+            if (
+                ability_name in self.single_use_abilities
+                and ability_name in self._used_single_use_abilities
+            ):
                 continue
             priority = action_entry.get("priority", ActionPriority.NORMAL)
             priority_if = action_entry.get("priority_if")
@@ -307,10 +358,18 @@ class Enemy(Character):
                 if skill.weapon and self.is_disarmed():
                     continue
                 if ability_name == "Smoke Screen":
-                    steal_ready = bool(self.status_effects.get("Steal Success", StatusEffect()).active)
-                    if not steal_ready and self.health.current > self.health.max * ENEMY_LOW_HEALTH_THRESHOLD:
+                    steal_ready = bool(
+                        self.status_effects.get("Steal Success", StatusEffect()).active
+                    )
+                    if (
+                        not steal_ready
+                        and self.health.current > self.health.max * ENEMY_LOW_HEALTH_THRESHOLD
+                    ):
                         continue
-                if ability_name == "Tunnel" and (self.health.current > self.health.max * ENEMY_LOW_HEALTH_THRESHOLD or self.tunnel):
+                if ability_name == "Tunnel" and (
+                    self.health.current > self.health.max * ENEMY_LOW_HEALTH_THRESHOLD
+                    or self.tunnel
+                ):
                     # Don't use Tunnel if health is above 25% OR if already tunneled
                     continue
                 if ability_name == "Disarm" and not self._target_has_weapon(target):
@@ -348,11 +407,13 @@ class Enemy(Character):
             return ActionPriority.SKIP
 
         skills = [
-            skill for skill in self.spellbook.get("Skills", {}).values()
+            skill
+            for skill in self.spellbook.get("Skills", {}).values()
             if not getattr(skill, "passive", False)
         ]
         spells = [
-            spell for spell in self.spellbook.get("Spells", {}).values()
+            spell
+            for spell in self.spellbook.get("Spells", {}).values()
             if not getattr(spell, "passive", False)
             and getattr(spell, "cost", 0) <= self.mana.current
         ]
@@ -367,7 +428,7 @@ class Enemy(Character):
     def _fallback_action_selection(self, target: Character, tile: object) -> tuple[str, str | None]:
         """Fallback to standard random action selection if action_stack can't be used."""
         self.last_action_stack_entry = None
-        if self.name != 'Test' and not self.tunnel:
+        if self.name != "Test" and not self.tunnel:
             action_list = ["Attack"]
         else:
             action_list = []
@@ -376,35 +437,46 @@ class Enemy(Character):
         skill_list = []
 
         if not self.abilities_suppressed():
-            for spell_name, spell in self.spellbook['Spells'].items():
-                if spell_name in self.single_use_abilities and spell_name in self._used_single_use_abilities:
+            for spell_name, spell in self.spellbook["Spells"].items():
+                if (
+                    spell_name in self.single_use_abilities
+                    and spell_name in self._used_single_use_abilities
+                ):
                     continue
-                if self.spellbook['Spells'][spell_name].passive:
+                if self.spellbook["Spells"][spell_name].passive:
                     continue
                 if self._should_skip_reapply_debuff(spell_name, target):
                     continue
                 if self.tunnel:
                     if spell.subtyp not in ["Heal", "Support"]:
                         continue
-                if self.spellbook['Spells'][spell_name].cost <= self.mana.current:
+                if self.spellbook["Spells"][spell_name].cost <= self.mana.current:
                     spell_list.append(spell_name)
             if spell_list:
                 action_list.append("Cast Spell")
 
-            for skill_name, _ in self.spellbook['Skills'].items():
-                if skill_name in self.single_use_abilities and skill_name in self._used_single_use_abilities:
+            for skill_name, _ in self.spellbook["Skills"].items():
+                if (
+                    skill_name in self.single_use_abilities
+                    and skill_name in self._used_single_use_abilities
+                ):
                     continue
-                if any([self.spellbook['Skills'][skill_name].passive,
-                        self.spellbook['Skills'][skill_name].name == "Backstab" and not target.incapacitated(),
+                if any(
+                    [
+                        self.spellbook["Skills"][skill_name].passive,
+                        self.spellbook["Skills"][skill_name].name == "Backstab"
+                        and not target.incapacitated(),
                         self.spellbook["Skills"][skill_name].weapon and self.is_disarmed(),
-                        self.spellbook["Skills"][skill_name].name == "Smoke Screen" and
-                            self.health.current > self.health.max * ENEMY_LOW_HEALTH_THRESHOLD and
-                            not self.status_effects.get("Steal Success", StatusEffect()).active,
-                        self.tunnel]):
+                        self.spellbook["Skills"][skill_name].name == "Smoke Screen"
+                        and self.health.current > self.health.max * ENEMY_LOW_HEALTH_THRESHOLD
+                        and not self.status_effects.get("Steal Success", StatusEffect()).active,
+                        self.tunnel,
+                    ]
+                ):
                     continue
                 if self._should_skip_reapply_debuff(skill_name, target):
                     continue
-                if self.spellbook['Skills'][skill_name].cost <= self.mana.current:
+                if self.spellbook["Skills"][skill_name].cost <= self.mana.current:
                     skill_list.append(skill_name)
             if skill_list:
                 action_list.append("Use Skill")
@@ -481,8 +553,9 @@ class Enemy(Character):
             "from_action_stack": bool(entry),
         }
 
-    def _resolve_priority_condition(self, condition: dict, fallback_priority: ActionPriority,
-                                     target: Character, tile: object) -> ActionPriority:
+    def _resolve_priority_condition(
+        self, condition: dict, fallback_priority: ActionPriority, target: Character, tile: object
+    ) -> ActionPriority:
         """
         Resolve action_stack priority conditions.
 
@@ -490,6 +563,7 @@ class Enemy(Character):
         1) Dict format (legacy/new): {"target_has_weapon": True, "priority": HIGH, "else": SKIP}
         2) List format (newer): [{"condition": "self_hp_pct_lt", "value": 0.5, "priority": HIGH}, ...]
         """
+
         def _pct_threshold(val: object) -> float | None:
             """
             Convert a % or ratio threshold into a 0..1 float.
@@ -534,8 +608,7 @@ class Enemy(Character):
             if not isinstance(stat_effects, dict):
                 return False
             return any(
-                bool(getattr(effect, "active", False))
-                and getattr(effect, "extra", 0) > 0
+                bool(getattr(effect, "active", False)) and getattr(effect, "extra", 0) > 0
                 for effect in stat_effects.values()
             )
 
@@ -568,9 +641,8 @@ class Enemy(Character):
                 desired = bool(value)
                 stat_effects = getattr(target, "stat_effects", {})
                 magic_effects = getattr(target, "magic_effects", {})
-                has_pos = (
-                    any(bool(effect.active) for effect in stat_effects.values())
-                    or any(bool(effect.active) for effect in magic_effects.values())
+                has_pos = any(bool(effect.active) for effect in stat_effects.values()) or any(
+                    bool(effect.active) for effect in magic_effects.values()
                 )
                 return bool(has_pos) == desired
             if cond == "target_has_positive_stat_effects":
@@ -585,7 +657,10 @@ class Enemy(Character):
                 threshold = _pct_threshold(value)
                 if threshold is None:
                     return False
-                return bool(getattr(self, "mana", None) and self.mana.max) and (self.mana.current / self.mana.max) < threshold
+                return (
+                    bool(getattr(self, "mana", None) and self.mana.max)
+                    and (self.mana.current / self.mana.max) < threshold
+                )
             if cond == "self_stat":
                 stat_effects = getattr(self, "stat_effects", {})
                 return bool(stat_effects.get(str(value), StatusEffect()).active)
@@ -593,7 +668,10 @@ class Enemy(Character):
                 stat_effects = getattr(self, "stat_effects", {})
                 if not isinstance(value, (list, tuple)):
                     return False
-                return any(bool(stat_effects.get(str(stat_name), StatusEffect()).active) for stat_name in value)
+                return any(
+                    bool(stat_effects.get(str(stat_name), StatusEffect()).active)
+                    for stat_name in value
+                )
             return False
 
         if isinstance(condition, list):
@@ -648,10 +726,9 @@ class Enemy(Character):
             # Check for active positive effects (stat buffs or magic buffs)
             stat_effects = getattr(target, "stat_effects", {})
             magic_effects = getattr(target, "magic_effects", {})
-            has_positive_effects = (
-                any(bool(effect.active) for effect in stat_effects.values()) or
-                any(bool(effect.active) for effect in magic_effects.values())
-            )
+            has_positive_effects = any(
+                bool(effect.active) for effect in stat_effects.values()
+            ) or any(bool(effect.active) for effect in magic_effects.values())
             if has_positive_effects:
                 return condition.get("priority", fallback_priority)
             return condition.get("else", fallback_priority)
@@ -676,7 +753,11 @@ class Enemy(Character):
             threshold = _pct_threshold(self_mana_pct_lt)
             if threshold is None:
                 return fallback_priority
-            if hasattr(self, "mana") and self.mana.max and (self.mana.current / self.mana.max) < threshold:
+            if (
+                hasattr(self, "mana")
+                and self.mana.max
+                and (self.mana.current / self.mana.max) < threshold
+            ):
                 return condition.get("priority", fallback_priority)
             return condition.get("else", fallback_priority)
 
@@ -752,8 +833,7 @@ class Enemy(Character):
         if stat_all:
             stat_effects = getattr(target, "stat_effects", {})
             return all(
-                bool(stat_effects.get(stat_name, StatusEffect()).active)
-                for stat_name in stat_all
+                bool(stat_effects.get(stat_name, StatusEffect()).active) for stat_name in stat_all
             )
 
         return False
@@ -798,11 +878,40 @@ class Enemy(Character):
 
 
 class Misc(Enemy):
-    def __init__(self, name, health, mana, strength, intel, wisdom, con, charisma, dex,
-                 attack, defense, magic, magic_def, exp):
-        super().__init__(name, health, mana, strength, intel, wisdom, con, charisma, dex,
-                         attack, defense, magic, magic_def, exp)
-        self.enemy_typ = 'Misc'
+    def __init__(
+        self,
+        name,
+        health,
+        mana,
+        strength,
+        intel,
+        wisdom,
+        con,
+        charisma,
+        dex,
+        attack,
+        defense,
+        magic,
+        magic_def,
+        exp,
+    ):
+        super().__init__(
+            name,
+            health,
+            mana,
+            strength,
+            intel,
+            wisdom,
+            con,
+            charisma,
+            dex,
+            attack,
+            defense,
+            magic,
+            magic_def,
+            exp,
+        )
+        self.enemy_typ = "Misc"
 
 
 class Slime(Enemy):
@@ -810,20 +919,49 @@ class Slime(Enemy):
     Slime type; resistance against all attack magic types; weak against physical damage
     """
 
-    def __init__(self, name, health, mana, strength, intel, wisdom, con, charisma, dex,
-                 attack, defense, magic, magic_def, exp):
-        super().__init__(name, health, mana, strength, intel, wisdom, con, charisma, dex,
-                         attack, defense, magic, magic_def, exp)
-        self.enemy_typ = 'Slime'
-        self.resistance['Fire'] = 0.75
-        self.resistance['Ice'] = 0.75
-        self.resistance['Electric'] = 0.75
-        self.resistance['Water'] = 0.75
-        self.resistance['Earth'] = 0.75
-        self.resistance['Wind'] = 0.75
-        self.resistance['Shadow'] = 0.75
-        self.resistance['Holy'] = 0.75
-        self.resistance['Physical'] = -0.5
+    def __init__(
+        self,
+        name,
+        health,
+        mana,
+        strength,
+        intel,
+        wisdom,
+        con,
+        charisma,
+        dex,
+        attack,
+        defense,
+        magic,
+        magic_def,
+        exp,
+    ):
+        super().__init__(
+            name,
+            health,
+            mana,
+            strength,
+            intel,
+            wisdom,
+            con,
+            charisma,
+            dex,
+            attack,
+            defense,
+            magic,
+            magic_def,
+            exp,
+        )
+        self.enemy_typ = "Slime"
+        self.resistance["Fire"] = 0.75
+        self.resistance["Ice"] = 0.75
+        self.resistance["Electric"] = 0.75
+        self.resistance["Water"] = 0.75
+        self.resistance["Earth"] = 0.75
+        self.resistance["Wind"] = 0.75
+        self.resistance["Shadow"] = 0.75
+        self.resistance["Holy"] = 0.75
+        self.resistance["Physical"] = -0.5
         self.picture = "slime.txt"
 
 
@@ -832,12 +970,41 @@ class Animal(Enemy):
     Animal type; no special features
     """
 
-    def __init__(self, name, health, mana, strength, intel, wisdom, con, charisma, dex,
-                 attack, defense, magic, magic_def, exp):
-        super().__init__(name, health, mana, strength, intel, wisdom, con, charisma, dex,
-                         attack, defense, magic, magic_def, exp)
-        self.enemy_typ = 'Animal'
-        self.inventory['Mystery Meat'] = [items.MysteryMeat]
+    def __init__(
+        self,
+        name,
+        health,
+        mana,
+        strength,
+        intel,
+        wisdom,
+        con,
+        charisma,
+        dex,
+        attack,
+        defense,
+        magic,
+        magic_def,
+        exp,
+    ):
+        super().__init__(
+            name,
+            health,
+            mana,
+            strength,
+            intel,
+            wisdom,
+            con,
+            charisma,
+            dex,
+            attack,
+            defense,
+            magic,
+            magic_def,
+            exp,
+        )
+        self.enemy_typ = "Animal"
+        self.inventory["Mystery Meat"] = [items.MysteryMeat]
 
 
 class Humanoid(Enemy):
@@ -845,11 +1012,40 @@ class Humanoid(Enemy):
     Humanoid type; no special features
     """
 
-    def __init__(self, name, health, mana, strength, intel, wisdom, con, charisma, dex,
-                 attack, defense, magic, magic_def, exp):
-        super().__init__(name, health, mana, strength, intel, wisdom, con, charisma, dex,
-                         attack, defense, magic, magic_def, exp)
-        self.enemy_typ = 'Humanoid'
+    def __init__(
+        self,
+        name,
+        health,
+        mana,
+        strength,
+        intel,
+        wisdom,
+        con,
+        charisma,
+        dex,
+        attack,
+        defense,
+        magic,
+        magic_def,
+        exp,
+    ):
+        super().__init__(
+            name,
+            health,
+            mana,
+            strength,
+            intel,
+            wisdom,
+            con,
+            charisma,
+            dex,
+            attack,
+            defense,
+            magic,
+            magic_def,
+            exp,
+        )
+        self.enemy_typ = "Humanoid"
 
 
 class Fey(Enemy):
@@ -857,12 +1053,41 @@ class Fey(Enemy):
     Fey type; resistance against shadow damage
     """
 
-    def __init__(self, name, health, mana, strength, intel, wisdom, con, charisma, dex,
-                 attack, defense, magic, magic_def, exp):
-        super().__init__(name, health, mana, strength, intel, wisdom, con, charisma, dex,
-                         attack, defense, magic, magic_def, exp)
-        self.enemy_typ = 'Fey'
-        self.resistance['Shadow'] = 0.25
+    def __init__(
+        self,
+        name,
+        health,
+        mana,
+        strength,
+        intel,
+        wisdom,
+        con,
+        charisma,
+        dex,
+        attack,
+        defense,
+        magic,
+        magic_def,
+        exp,
+    ):
+        super().__init__(
+            name,
+            health,
+            mana,
+            strength,
+            intel,
+            wisdom,
+            con,
+            charisma,
+            dex,
+            attack,
+            defense,
+            magic,
+            magic_def,
+            exp,
+        )
+        self.enemy_typ = "Fey"
+        self.resistance["Shadow"] = 0.25
 
 
 class Fiend(Enemy):
@@ -870,13 +1095,42 @@ class Fiend(Enemy):
     Fiend type; resistance against shadow damage and weak against holy; immune to death
     """
 
-    def __init__(self, name, health, mana, strength, intel, wisdom, con, charisma, dex,
-                 attack, defense, magic, magic_def, exp):
-        super().__init__(name, health, mana, strength, intel, wisdom, con, charisma, dex,
-                         attack, defense, magic, magic_def, exp)
-        self.enemy_typ = 'Fiend'
-        self.resistance['Shadow'] = 0.25
-        self.resistance['Holy'] = -0.25
+    def __init__(
+        self,
+        name,
+        health,
+        mana,
+        strength,
+        intel,
+        wisdom,
+        con,
+        charisma,
+        dex,
+        attack,
+        defense,
+        magic,
+        magic_def,
+        exp,
+    ):
+        super().__init__(
+            name,
+            health,
+            mana,
+            strength,
+            intel,
+            wisdom,
+            con,
+            charisma,
+            dex,
+            attack,
+            defense,
+            magic,
+            magic_def,
+            exp,
+        )
+        self.enemy_typ = "Fiend"
+        self.resistance["Shadow"] = 0.25
+        self.resistance["Holy"] = -0.25
         self.status_immunity = ["Death"]
 
 
@@ -885,14 +1139,43 @@ class Undead(Enemy):
     Undead type; resistance against shadow and poison and weak against fire; very weak against holy and immune to death
     """
 
-    def __init__(self, name, health, mana, strength, intel, wisdom, con, charisma, dex,
-                 attack, defense, magic, magic_def, exp):
-        super().__init__(name, health, mana, strength, intel, wisdom, con, charisma, dex,
-                         attack, defense, magic, magic_def, exp)
-        self.enemy_typ = 'Undead'
-        self.resistance['Fire'] = -0.25
-        self.resistance['Shadow'] = 0.5
-        self.resistance['Holy'] = -0.75
+    def __init__(
+        self,
+        name,
+        health,
+        mana,
+        strength,
+        intel,
+        wisdom,
+        con,
+        charisma,
+        dex,
+        attack,
+        defense,
+        magic,
+        magic_def,
+        exp,
+    ):
+        super().__init__(
+            name,
+            health,
+            mana,
+            strength,
+            intel,
+            wisdom,
+            con,
+            charisma,
+            dex,
+            attack,
+            defense,
+            magic,
+            magic_def,
+            exp,
+        )
+        self.enemy_typ = "Undead"
+        self.resistance["Fire"] = -0.25
+        self.resistance["Shadow"] = 0.5
+        self.resistance["Holy"] = -0.75
         self.resistance["Poison"] = 0.5
         self.status_immunity = ["Death"]
 
@@ -902,12 +1185,41 @@ class Elemental(Enemy):
     Elemental type; high resistance against physical damage
     """
 
-    def __init__(self, name, health, mana, strength, intel, wisdom, con, charisma, dex,
-                 attack, defense, magic, magic_def, exp):
-        super().__init__(name, health, mana, strength, intel, wisdom, con, charisma, dex,
-                         attack, defense, magic, magic_def, exp)
-        self.enemy_typ = 'Elemental'
-        self.resistance['Physical'] = 0.25
+    def __init__(
+        self,
+        name,
+        health,
+        mana,
+        strength,
+        intel,
+        wisdom,
+        con,
+        charisma,
+        dex,
+        attack,
+        defense,
+        magic,
+        magic_def,
+        exp,
+    ):
+        super().__init__(
+            name,
+            health,
+            mana,
+            strength,
+            intel,
+            wisdom,
+            con,
+            charisma,
+            dex,
+            attack,
+            defense,
+            magic,
+            magic_def,
+            exp,
+        )
+        self.enemy_typ = "Elemental"
+        self.resistance["Physical"] = 0.25
 
 
 class Dragon(Enemy):
@@ -915,18 +1227,47 @@ class Dragon(Enemy):
     Dragon type; resistance against elemental and immune to death magic types; mild resistance against physical
     """
 
-    def __init__(self, name, health, mana, strength, intel, wisdom, con, charisma, dex,
-                 attack, defense, magic, magic_def, exp):
-        super().__init__(name, health, mana, strength, intel, wisdom, con, charisma, dex,
-                         attack, defense, magic, magic_def, exp)
-        self.enemy_typ = 'Dragon'
-        self.resistance['Fire'] = 0.25
-        self.resistance['Ice'] = 0.25
-        self.resistance['Electric'] = 0.25
-        self.resistance['Water'] = 0.25
-        self.resistance['Earth'] = 0.25
-        self.resistance['Wind'] = 0.25
-        self.resistance['Physical'] = 0.1
+    def __init__(
+        self,
+        name,
+        health,
+        mana,
+        strength,
+        intel,
+        wisdom,
+        con,
+        charisma,
+        dex,
+        attack,
+        defense,
+        magic,
+        magic_def,
+        exp,
+    ):
+        super().__init__(
+            name,
+            health,
+            mana,
+            strength,
+            intel,
+            wisdom,
+            con,
+            charisma,
+            dex,
+            attack,
+            defense,
+            magic,
+            magic_def,
+            exp,
+        )
+        self.enemy_typ = "Dragon"
+        self.resistance["Fire"] = 0.25
+        self.resistance["Ice"] = 0.25
+        self.resistance["Electric"] = 0.25
+        self.resistance["Water"] = 0.25
+        self.resistance["Earth"] = 0.25
+        self.resistance["Wind"] = 0.25
+        self.resistance["Physical"] = 0.1
         self.status_immunity = ["Death", "Stone"]
         self.inventory["Dragon's Tear"] = [items.DragonTear]
 
@@ -936,11 +1277,40 @@ class Monster(Enemy):
     Monster type; no special resistances
     """
 
-    def __init__(self, name, health, mana, strength, intel, wisdom, con, charisma, dex,
-                 attack, defense, magic, magic_def, exp):
-        super().__init__(name, health, mana, strength, intel, wisdom, con, charisma, dex,
-                         attack, defense, magic, magic_def, exp)
-        self.enemy_typ = 'Monster'
+    def __init__(
+        self,
+        name,
+        health,
+        mana,
+        strength,
+        intel,
+        wisdom,
+        con,
+        charisma,
+        dex,
+        attack,
+        defense,
+        magic,
+        magic_def,
+        exp,
+    ):
+        super().__init__(
+            name,
+            health,
+            mana,
+            strength,
+            intel,
+            wisdom,
+            con,
+            charisma,
+            dex,
+            attack,
+            defense,
+            magic,
+            magic_def,
+            exp,
+        )
+        self.enemy_typ = "Monster"
 
 
 class Aberration(Enemy):
@@ -948,11 +1318,40 @@ class Aberration(Enemy):
     Aberration type; no special resistances
     """
 
-    def __init__(self, name, health, mana, strength, intel, wisdom, con, charisma, dex,
-                 attack, defense, magic, magic_def, exp):
-        super().__init__(name, health, mana, strength, intel, wisdom, con, charisma, dex,
-                         attack, defense, magic, magic_def, exp)
-        self.enemy_typ = 'Aberration'
+    def __init__(
+        self,
+        name,
+        health,
+        mana,
+        strength,
+        intel,
+        wisdom,
+        con,
+        charisma,
+        dex,
+        attack,
+        defense,
+        magic,
+        magic_def,
+        exp,
+    ):
+        super().__init__(
+            name,
+            health,
+            mana,
+            strength,
+            intel,
+            wisdom,
+            con,
+            charisma,
+            dex,
+            attack,
+            defense,
+            magic,
+            magic_def,
+            exp,
+        )
+        self.enemy_typ = "Aberration"
 
 
 class Construct(Enemy):
@@ -960,11 +1359,40 @@ class Construct(Enemy):
     Construct type: immune to death, stone, and poison, strong against physical
     """
 
-    def __init__(self, name, health, mana, strength, intel, wisdom, con, charisma, dex,
-                 attack, defense, magic, magic_def, exp):
-        super().__init__(name, health, mana, strength, intel, wisdom, con, charisma, dex,
-                         attack, defense, magic, magic_def, exp)
-        self.enemy_typ = 'Construct'
-        self.resistance["Poison"] = 1.
-        self.resistance['Physical'] = 0.5
+    def __init__(
+        self,
+        name,
+        health,
+        mana,
+        strength,
+        intel,
+        wisdom,
+        con,
+        charisma,
+        dex,
+        attack,
+        defense,
+        magic,
+        magic_def,
+        exp,
+    ):
+        super().__init__(
+            name,
+            health,
+            mana,
+            strength,
+            intel,
+            wisdom,
+            con,
+            charisma,
+            dex,
+            attack,
+            defense,
+            magic,
+            magic_def,
+            exp,
+        )
+        self.enemy_typ = "Construct"
+        self.resistance["Poison"] = 1.0
+        self.resistance["Physical"] = 0.5
         self.status_immunity = ["Poison", "Death", "Stone"]

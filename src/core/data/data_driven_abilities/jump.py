@@ -134,19 +134,13 @@ class DataDrivenJumpSkill(Skill):
     # Modification management (1-to-1 parity with original Jump)
     # ==================================================================
 
-    def get_max_active_modifications(
-        self, user: Character | None = None
-    ) -> int:
+    def get_max_active_modifications(self, user: Character | None = None) -> int:
         """Return the global-level active-mod capacity, capped at five."""
         if user is None:
             return 5
 
         if hasattr(user, "level"):
-            base_level = (
-                user.level.level
-                if hasattr(user.level, "level")
-                else user.level
-            )
+            base_level = user.level.level if hasattr(user.level, "level") else user.level
         else:
             base_level = 99
 
@@ -176,16 +170,10 @@ class DataDrivenJumpSkill(Skill):
             req_type = req["type"]
             req_level = req["requirement"]
             should_unlock = False
-            if (
-                req_type == "lancer_level"
-                and "Lancer" in user_class
-                and req_level <= user_level
-            ):
+            if req_type == "lancer_level" and "Lancer" in user_class and req_level <= user_level:
                 should_unlock = True
             elif (
-                req_type == "dragoon_level"
-                and "Dragoon" in user_class
-                and req_level <= user_level
+                req_type == "dragoon_level" and "Dragoon" in user_class and req_level <= user_level
             ):
                 should_unlock = True
             if should_unlock and not self.unlocked_modifications[mod_name]:
@@ -246,11 +234,7 @@ class DataDrivenJumpSkill(Skill):
             max_active = self.get_max_active_modifications(user)
             if current_active >= max_active:
                 if user and hasattr(user, "level"):
-                    base_level = (
-                        user.level.level
-                        if hasattr(user.level, "level")
-                        else user.level
-                    )
+                    base_level = user.level.level if hasattr(user.level, "level") else user.level
                     user_level = int(base_level)
                 else:
                     user_level = "?"
@@ -263,23 +247,14 @@ class DataDrivenJumpSkill(Skill):
         self.modifications[mod_name] = active
 
         if active:
-            if (
-                mod_name == "Quick Dive"
-                and self.modifications["Soaring Strike"]
-            ):
+            if mod_name == "Quick Dive" and self.modifications["Soaring Strike"]:
                 self.modifications["Soaring Strike"] = False
-            elif (
-                mod_name == "Soaring Strike"
-                and self.modifications["Quick Dive"]
-            ):
+            elif mod_name == "Soaring Strike" and self.modifications["Quick Dive"]:
                 self.modifications["Quick Dive"] = False
             elif mod_name == "Crit":
                 if self.modifications["Soaring Strike"]:
                     self.modifications["Soaring Strike"] = False
-            elif (
-                mod_name == "Soaring Strike"
-                and self.modifications["Crit"]
-            ):
+            elif mod_name == "Soaring Strike" and self.modifications["Crit"]:
                 self.modifications["Crit"] = False
 
         return (True, "")
@@ -321,9 +296,7 @@ class DataDrivenJumpSkill(Skill):
             if not hasattr(user, "jump_defend_active"):
                 user.jump_defend_active = False
             user.jump_defend_active = True
-            use_str += (
-                f"{user.name} assumes a defensive stance while preparing.\n"
-            )
+            use_str += f"{user.name} assumes a defensive stance while preparing.\n"
 
         if self.modifications["Acrobat"]:
             if not hasattr(user, "jump_acrobat_active"):
@@ -359,9 +332,7 @@ class DataDrivenJumpSkill(Skill):
     # Execute phase - delegates to composed effects
     # ==================================================================
 
-    def _execute(
-        self, user: Character, target: Character, cover: bool = False
-    ) -> str:
+    def _execute(self, user: Character, target: Character, cover: bool = False) -> str:
         result = self._reset_result(actor=user, target=target)
         result.extra["cover"] = cover
         result.extra["modifications"] = dict(self.modifications)
@@ -409,13 +380,8 @@ class DataDrivenJumpSkill(Skill):
                 return self.cancel_charge(user)
 
             # Interrupt if hit hard enough during charge
-            if (
-                not self.modifications["Unstoppable"]
-                and self.jump_charge_health is not None
-            ):
-                damage_taken = max(
-                    0, self.jump_charge_health - user.health.current
-                )
+            if not self.modifications["Unstoppable"] and self.jump_charge_health is not None:
+                damage_taken = max(0, self.jump_charge_health - user.health.current)
                 # Half Giant racial virtue: perseverance — pain alone doesn't interrupt a charge.
                 # Only incapacitation can interrupt.
                 is_half_giant = getattr(getattr(user, "race", None), "name", None) == "Half Giant"
@@ -425,17 +391,12 @@ class DataDrivenJumpSkill(Skill):
                         return self.cancel_charge(user)
 
                 # Retribution tracks max damage taken
-                if (
-                    self.modifications["Retribution"]
-                    and damage_taken > self.retribution_damage
-                ):
+                if self.modifications["Retribution"] and damage_taken > self.retribution_damage:
                     self.retribution_damage = damage_taken
 
             self.charge_turns -= 1
             if self.charge_turns <= 0:
-                return self._execute(
-                    user, self.charge_target or target, cover
-                )
+                return self._execute(user, self.charge_target or target, cover)
             turns_left = self.charge_turns
             return (
                 f"{user.name} continues to gather power... "

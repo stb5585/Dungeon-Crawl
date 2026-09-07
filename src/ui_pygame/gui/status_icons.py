@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from src.paths import PYGAME_ASSETS_DIR
 
-
 StatusIcon = tuple[str, bool | None]
 
 RESIST_STATUS_LABELS = {
@@ -100,11 +99,7 @@ IMPORTANT_POSITIVE_STATUS_LABELS = {
 def active_resist_effect_names(character) -> list[str]:
     """Return active resistance-ward names in stable display order."""
     effects = getattr(character, "magic_effects", {}) or {}
-    return [
-        name
-        for name in RESIST_STATUS_LABELS
-        if getattr(effects.get(name), "active", False)
-    ]
+    return [name for name in RESIST_STATUS_LABELS if getattr(effects.get(name), "active", False)]
 
 
 def stat_effect_status_icon(label: str, effect) -> StatusIcon | None:
@@ -192,7 +187,7 @@ def _split_counted_label(label: str) -> tuple[str, int]:
     stripped = label.rstrip("0123456789")
     if not stripped:
         return label, 1
-    suffix = label[len(stripped):]
+    suffix = label[len(stripped) :]
     count = int(suffix) if suffix else 1
     return stripped, count
 
@@ -356,6 +351,7 @@ def describe_status_icon_layout(icons, per_row: int, max_rows: int | None) -> di
 
 def fit_status_icon_label(font, label: str, max_width: int) -> str:
     """Shorten an icon label so it stays inside the icon pill."""
+
     def measured_width(value: str) -> int:
         if hasattr(font, "size"):
             return font.size(value)[0]

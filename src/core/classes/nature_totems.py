@@ -5,7 +5,6 @@ from __future__ import annotations
 import random
 from typing import Any
 
-
 ELIGIBLE_CLASSES = {"Shaman", "Soulcatcher"}
 ELEMENTAL_ASPECTS = ("Earth", "Water", "Fire", "Wind")
 COMMUNION_SPELLS = {
@@ -129,9 +128,17 @@ def passive_rating_bonus(character: Any, rating: str) -> int:
         )
     except (AttributeError, KeyError, TypeError):
         count = 0
-    if rating == "magic" and count >= 3 and has_nature_talent(character, "soulcatcher.varied-harvest"):
+    if (
+        rating == "magic"
+        and count >= 3
+        and has_nature_talent(character, "soulcatcher.varied-harvest")
+    ):
         bonus += 10
-    if rating == "armor" and count >= 5 and has_nature_talent(character, "soulcatcher.essence-shell"):
+    if (
+        rating == "armor"
+        and count >= 5
+        and has_nature_talent(character, "soulcatcher.essence-shell")
+    ):
         bonus += 10
     if count >= 7 and has_nature_talent(character, "soulcatcher.perfect-vessel"):
         if rating in {"weapon", "magic def"}:
@@ -179,11 +186,7 @@ def spell_output_multiplier(character: Any, spell_or_name: Any) -> float:
             return multiplier
 
     aspect = spell_aspect(spell_or_name)
-    if (
-        aspect
-        and has_staff_equipped(character)
-        and active_totem_aspect(character) == aspect
-    ):
+    if aspect and has_staff_equipped(character) and active_totem_aspect(character) == aspect:
         multiplier *= STAFF_MATCHING_CAST_MULTIPLIER
     if aspect and active_totem_aspect(character) == aspect:
         try:
@@ -236,7 +239,9 @@ def _restore_temp_attr(character: Any, attr: str, sentinel: object, prior: Any) 
 
 
 def resolve_totem_pulse(character: Any, target: Any, rng: Any = random) -> str:
-    if not (is_nature_totem_class(character) and target and getattr(target, "is_alive", lambda: False)()):
+    if not (
+        is_nature_totem_class(character) and target and getattr(target, "is_alive", lambda: False)()
+    ):
         return ""
     aspect = active_totem_aspect(character)
     if not aspect:
@@ -267,8 +272,7 @@ def resolve_totem_pulse(character: Any, target: Any, rng: Any = random) -> str:
             or max(0, int(getattr(result, "healing", 0) or 0))
             or getattr(result, "hit", False)
             or any(
-                bool(values)
-                for values in (getattr(result, "effects_applied", {}) or {}).values()
+                bool(values) for values in (getattr(result, "effects_applied", {}) or {}).values()
             )
         )
         try:

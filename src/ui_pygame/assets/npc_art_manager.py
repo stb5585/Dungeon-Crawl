@@ -9,7 +9,6 @@ from typing import Any
 
 from src.paths import PYGAME_ASSETS_DIR
 
-
 logger = logging.getLogger(__name__)
 
 NPC_ART_ROOT = PYGAME_ASSETS_DIR / "npc_art"

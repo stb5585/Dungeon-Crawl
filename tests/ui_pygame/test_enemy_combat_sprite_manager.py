@@ -4,13 +4,13 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 import re
+from pathlib import Path
 from types import SimpleNamespace
 
-from PIL import Image
 import pygame
 import pytest
+from PIL import Image
 
 from src.core import enemies
 from src.ui_pygame.assets.enemy_combat_sprite_manager import (
@@ -18,7 +18,6 @@ from src.ui_pygame.assets.enemy_combat_sprite_manager import (
     EnemyCombatSpriteManager,
 )
 from tools.build_enemy_combat_sprites import mapped_sprite_keys
-
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
@@ -30,7 +29,9 @@ def _init_pygame():
     yield
 
 
-def _write_sprite(path: Path, color: tuple[int, int, int, int], size: tuple[int, int] = (32, 48)) -> None:
+def _write_sprite(
+    path: Path, color: tuple[int, int, int, int], size: tuple[int, int] = (32, 48)
+) -> None:
     surface = pygame.Surface(size, pygame.SRCALPHA)
     pygame.draw.rect(surface, color, pygame.Rect(4, 2, size[0] - 8, size[1] - 4))
     pygame.image.save(surface, path)
@@ -50,7 +51,9 @@ def test_enemy_combat_sprite_manager_loads_mapping_and_exact_sprite(tmp_path):
     manager = EnemyCombatSpriteManager(sprite_root=sprite_root)
 
     assert manager.get_sprite_key_for_enemy(SimpleNamespace(name="Goblin Raider")) == "goblin"
-    assert manager.get_sprite_by_name("Goblin Raider").get_at((5, 5)) == pygame.Color(220, 30, 20, 255)
+    assert manager.get_sprite_by_name("Goblin Raider").get_at((5, 5)) == pygame.Color(
+        220, 30, 20, 255
+    )
     assert manager.get_sprite_by_key("goblin") is manager.get_sprite_by_key("goblin")
 
 
@@ -76,8 +79,12 @@ def test_enemy_combat_sprite_manager_scaled_cache_fallbacks_and_aspect_ratio(tmp
 
     manager = EnemyCombatSpriteManager(sprite_root=sprite_root)
 
-    assert manager.get_sprite_key_for_enemy(SimpleNamespace(name="Goblin Raider")) == "generic_enemy"
-    assert manager.get_sprite_key_for_enemy(SimpleNamespace(name="Goblin Raider", boss=True)) == "boss"
+    assert (
+        manager.get_sprite_key_for_enemy(SimpleNamespace(name="Goblin Raider")) == "generic_enemy"
+    )
+    assert (
+        manager.get_sprite_key_for_enemy(SimpleNamespace(name="Goblin Raider", boss=True)) == "boss"
+    )
 
     scaled = manager.get_scaled_sprite_by_name("Named Boss", (40, 40))
     scaled_again = manager.get_scaled_sprite_by_name("Named Boss", (40, 40))
@@ -144,7 +151,9 @@ def test_enemy_combat_sprite_manager_loads_dungeon_scale_map(tmp_path):
     manager = EnemyCombatSpriteManager(sprite_root=sprite_root)
 
     assert manager.get_dungeon_scale_for_enemy("Jester") == 0.65
-    assert manager.get_dungeon_scale_for_enemy(SimpleNamespace(name="Unknown Boss", boss=True)) == 1.25
+    assert (
+        manager.get_dungeon_scale_for_enemy(SimpleNamespace(name="Unknown Boss", boss=True)) == 1.25
+    )
     assert manager.get_dungeon_scale_for_enemy("Goblin") == 1.0
 
 
@@ -161,8 +170,14 @@ def test_enemy_combat_sprite_manager_prefers_explicit_png_picture_key(tmp_path):
 
     manager = EnemyCombatSpriteManager(sprite_root=sprite_root)
 
-    assert manager.get_sprite_key_for_enemy(SimpleNamespace(name="Jester", picture="jester2.png")) == "jester2"
-    assert manager.get_sprite_key_for_enemy(SimpleNamespace(name="Jester", picture="jester.txt")) == "jester"
+    assert (
+        manager.get_sprite_key_for_enemy(SimpleNamespace(name="Jester", picture="jester2.png"))
+        == "jester2"
+    )
+    assert (
+        manager.get_sprite_key_for_enemy(SimpleNamespace(name="Jester", picture="jester.txt"))
+        == "jester"
+    )
 
 
 def test_enemy_combat_sprite_manager_strict_map_avoids_broad_render_reuse(tmp_path):
@@ -173,7 +188,9 @@ def test_enemy_combat_sprite_manager_strict_map_avoids_broad_render_reuse(tmp_pa
     _write_sprite(sprite_root / "evil_crusader.png", (220, 220, 30, 255))
     _write_sprite(sprite_root / "generic_enemy.png", (20, 30, 220, 255))
     (sprite_root / "enemy_combat_sprite_map.json").write_text(
-        json.dumps({"Battle Toad": "battle_toad", "Direbear": "bear", "Evil Crusader": "evil_crusader"}),
+        json.dumps(
+            {"Battle Toad": "battle_toad", "Direbear": "bear", "Evil Crusader": "evil_crusader"}
+        ),
         encoding="utf-8",
     )
 
@@ -243,7 +260,9 @@ def test_default_enemy_combat_sprite_map_covers_concrete_enemy_names():
     manager = EnemyCombatSpriteManager()
     enemy_names = _concrete_enemy_names()
     ignored = {"Test", "Myrmidon"}
-    missing = sorted(name for name in enemy_names if name not in manager.sprite_map and name not in ignored)
+    missing = sorted(
+        name for name in enemy_names if name not in manager.sprite_map and name not in ignored
+    )
 
     assert missing == []
 
@@ -254,7 +273,9 @@ def test_default_jester_form_combat_sprites_exist_and_resolve():
     for picture in ("jester.png", "jester1.png", "jester2.png", "jester3.png", "jester4.png"):
         key = Path(picture).stem
         assert key in manager.available_keys
-        assert manager.get_sprite_key_for_enemy(SimpleNamespace(name="Jester", picture=picture)) == key
+        assert (
+            manager.get_sprite_key_for_enemy(SimpleNamespace(name="Jester", picture=picture)) == key
+        )
 
 
 def test_default_guild_trial_bosses_resolve_expected_combat_art():

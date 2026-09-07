@@ -14,7 +14,6 @@ from src.core.combat.combat_result import CombatResult
 from src.core.effects.composite import StatusApplyEffect
 from tests.test_framework import TestGameState
 
-
 _BASE_ITEM_CLASSES = {
     items.Item,
     items.Weapon,
@@ -150,8 +149,8 @@ def test_helmet_catalog_matches_equipment_table():
 
     mitre = items.MitreHat()
     circlet = items.Circlet()
-    assert mitre.restriction == ['Priest', 'Archbishop', 'Diviner', 'Astromancer']
-    assert circlet.restricted_against == ['Priest', 'Archbishop', 'Diviner', 'Astromancer']
+    assert mitre.restriction == ["Priest", "Archbishop", "Diviner", "Astromancer"]
+    assert circlet.restricted_against == ["Priest", "Archbishop", "Diviner", "Astromancer"]
     assert items.CohuleenDruith().resist_mod == 0.5
     assert items.DemonCowl().element == "Death"
     assert items.VisoredSallet().name == "Visored Sallet"
@@ -248,8 +247,12 @@ def test_base_item_classes_and_helper_utilities(monkeypatch):
     assert base_item.special_effect(None) is None
     assert "Sub-type: Special" in str(base_item)
 
-    fist_weapon = items.Weapon("Fist Wrap", "Simple wraps.", 10, 0.5, 2, 0.1, 1, "Fist", False, True)
-    sword_weapon = items.Weapon("Training Sword", "A blunt sword.", 10, 0.5, 3, 0.2, 1, "Sword", False, True)
+    fist_weapon = items.Weapon(
+        "Fist Wrap", "Simple wraps.", 10, 0.5, 2, 0.1, 1, "Fist", False, True
+    )
+    sword_weapon = items.Weapon(
+        "Training Sword", "A blunt sword.", 10, 0.5, 3, 0.2, 1, "Sword", False, True
+    )
     armor = items.Armor("Padded Coat", "Simple protection.", 10, 0.5, 2, "Cloth", False)
     helmet = items.Helmet("Padded Cap", "Simple head protection.", 10, 0.5, 1, "Cloth", False)
     shield = items.OffHand("Practice Shield", "A round shield.", 10, 0.5, 0.25, "Shield", False)
@@ -299,11 +302,23 @@ def test_base_item_classes_and_helper_utilities(monkeypatch):
     assert censer.subtyp == "Magic Tool"
     assert items.CenserOfChokingAsh in items.items_dict["Misc"]["Magic Tool"]
     assert items.has_lockpick_kit(SimpleNamespace(inventory={})) is False
-    assert items.has_lockpick_kit(SimpleNamespace(inventory={"Lockpick Kit": [lockpick_kit]})) is True
+    assert (
+        items.has_lockpick_kit(SimpleNamespace(inventory={"Lockpick Kit": [lockpick_kit]})) is True
+    )
     assert items.has_smoke_bomb(SimpleNamespace(inventory={"Smoke Bomb": [smoke_bomb]})) is True
     assert items.has_oculus(SimpleNamespace(inventory={"Oculus": [oculus]})) is True
-    assert items.can_detect_fake_walls(SimpleNamespace(inventory={"Oculus": [oculus]}, spellbook={"Skills": {}})) is True
-    assert items.can_detect_fake_walls(SimpleNamespace(inventory={}, spellbook={"Skills": {"Keen Eye": object()}})) is True
+    assert (
+        items.can_detect_fake_walls(
+            SimpleNamespace(inventory={"Oculus": [oculus]}, spellbook={"Skills": {}})
+        )
+        is True
+    )
+    assert (
+        items.can_detect_fake_walls(
+            SimpleNamespace(inventory={}, spellbook={"Skills": {"Keen Eye": object()}})
+        )
+        is True
+    )
 
     utility_player = TestGameState.create_player(stats={"dex": 18})
     utility_player.inventory = {"Lockpick Kit": [lockpick_kit], "Smoke Bomb": [smoke_bomb]}
@@ -344,7 +359,9 @@ def test_base_item_classes_and_helper_utilities(monkeypatch):
     assert items.stat_theme_for_item(items.FireChain()) == "resistance"
     assert items.stat_theme_for_item(items.IronHelm()) == "constitution"
     assert items.stat_themed_item_name(items.PowerRing()) == "Mighty Power Ring"
-    assert items.stat_themed_item_name(items.Item("Pebble", "A pebble.", 0, 1.0, "Misc")) == "Pebble"
+    assert (
+        items.stat_themed_item_name(items.Item("Pebble", "A pebble.", 0, 1.0, "Misc")) == "Pebble"
+    )
 
     assert isinstance(items.remove_equipment("Weapon"), items.NoWeapon)
     assert isinstance(items.remove_equipment("OffHand"), items.NoOffHand)

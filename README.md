@@ -50,16 +50,35 @@ Always prefer the project virtual environment for Python commands:
 # Standard Pygame launch
 ./launch.sh
 
-# Explicit Pygame alias
-./launch_gui.sh
-
 # Direct Pygame entry point
 ./.venv/bin/python game_pygame.py
 
 # Character Menu preview
-./launch_gui_character_menu.sh
+./launch_character_menu.sh
 ./.venv/bin/python game_pygame.py --character-menu
+
+# Debug launch
+./launch_debug.sh
 ```
+
+Installed and frozen builds store saves and other mutable state in the
+platform user-data directory. Set `FORSAKEN_TENET_DATA_DIR` to override that
+location for development or testing.
+
+## Distribution
+
+Build the supported PyInstaller onedir application and run its headless
+resource smoke test:
+
+```bash
+./.venv/bin/python tools/build_distribution.py --clean
+SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy \
+  FORSAKEN_TENET_DATA_DIR=/tmp/forsaken-tenet-smoke \
+  ./dist/forsaken-tenet/forsaken-tenet --smoke-test
+```
+
+Release artifacts are built by manual dispatch or a published GitHub release;
+ordinary pushes perform validation only.
 
 ## Terminal Development
 
@@ -98,10 +117,10 @@ layout.
 ```text
 src/
   core/          Shared game logic, combat, data, classes, items, saves
+    data/maps/   Packaged dungeon maps and tileset images
   ui_pygame/     Pygame UI, assets, renderer, menus, combat view
 
 docs/            Roadmap, durable design references, implementation notes, archive
-map_files/       Dungeon maps
 tools/           Development, asset, audio, and balance utilities
 tests/           Regression suite
 
@@ -113,6 +132,7 @@ game_pygame.py   Pygame entry point
 Start with [docs/README.md](docs/README.md). The most useful current docs are:
 
 - [docs/DEVELOPMENT_ROADMAP.md](docs/DEVELOPMENT_ROADMAP.md)
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - [docs/FOUNDATIONAL_REFACTOR_PLAN.md](docs/FOUNDATIONAL_REFACTOR_PLAN.md)
 - [docs/CLASS_KIT_DESIGN_GATES.md](docs/CLASS_KIT_DESIGN_GATES.md)
 - [docs/COMBAT_BALANCE_DESIGN_GATES.md](docs/COMBAT_BALANCE_DESIGN_GATES.md)
@@ -124,6 +144,7 @@ Start with [docs/README.md](docs/README.md). The most useful current docs are:
 - [docs/PLAYTEST_CHECKLIST.md](docs/PLAYTEST_CHECKLIST.md)
 - [docs/ENEMY_VISUAL_SYSTEM.md](docs/ENEMY_VISUAL_SYSTEM.md)
 - [docs/DUNGEON_TILE_ART.md](docs/DUNGEON_TILE_ART.md)
+- [docs/ASSET_PROVENANCE.md](docs/ASSET_PROVENANCE.md)
 
 ## Development Tools
 

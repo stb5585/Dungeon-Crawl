@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import random
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -44,8 +44,7 @@ def build_actor_order(
     enemy_by_id = {member.combatant_id: member for member in living}
     tiers: dict[int, list[str]] = {}
     forced_last = bool(
-        getattr(player, "dwarf_hangover_steps", 0) > 0
-        or getattr(player, "encumbered", False)
+        getattr(player, "dwarf_hangover_steps", 0) > 0 or getattr(player, "encumbered", False)
     )
     player_surprise = bool(
         not forced_last
@@ -69,8 +68,7 @@ def build_actor_order(
 
     for member in living:
         unseen = bool(
-            getattr(member.enemy, "invisible", False)
-            and not getattr(player, "sight", False)
+            getattr(member.enemy, "invisible", False) and not getattr(player, "sight", False)
         )
         enemy_tier = 1 if unseen else 2
         if forced_last:

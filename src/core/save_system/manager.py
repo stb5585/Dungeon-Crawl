@@ -4,7 +4,9 @@ import json
 import os
 from dataclasses import dataclass
 
-from .player import PlayerDataSerializer, UnsupportedSaveVersionError
+from src.paths import USER_SAVE_DIR, USER_TEMP_DIR
+
+from .player import PlayerDataSerializer
 
 
 @dataclass(frozen=True)
@@ -13,14 +15,13 @@ class SaveLoadResult:
 
     player: object | None
     error: str | None = None
-    unsupported_version: bool = False
 
 
 class SaveManager:
     """High-level save/load management."""
 
-    SAVE_DIR = "save_files"
-    TMP_DIR = "tmp_files"
+    SAVE_DIR = str(USER_SAVE_DIR)
+    TMP_DIR = str(USER_TEMP_DIR)
     last_load_result = SaveLoadResult(None)
 
     @staticmethod
@@ -52,30 +53,33 @@ class SaveManager:
                 os.makedirs(dir_path, exist_ok=True)
 
     @staticmethod
+    def _write_json_atomic(filepath: str, data: dict[str, object]) -> None:
+        """Replace one JSON file only after a complete, durable temporary write."""
+        tmp_filepath = f"{filepath}.tmp"
+        try:
+            with open(tmp_filepath, "w", encoding="utf-8") as file_obj:
+                json.dump(data, file_obj, indent=2, default=str)
+                file_obj.flush()
+                os.fsync(file_obj.fileno())
+            os.replace(tmp_filepath, filepath)
+        except (OSError, TypeError, ValueError):
+            try:
+                os.remove(tmp_filepath)
+            except FileNotFoundError:
+                pass
+            raise
+
+    @staticmethod
     def save_player(player, filename: str, is_tmp: bool = False) -> bool:
         """Save player to file."""
         SaveManager.ensure_dirs()
 
-        tmp_filepath = None
         try:
             filepath = SaveManager._resolve_save_path(filename, is_tmp=is_tmp)
-            tmp_filepath = f"{filepath}.tmp"
-
-            # Serialize player
             data = PlayerDataSerializer.serialize(player)
-
-            # Write atomically so a failed save does not corrupt the prior file.
-            with open(tmp_filepath, 'w') as f:
-                json.dump(data, f, indent=2, default=str)
-            os.replace(tmp_filepath, filepath)
-
+            SaveManager._write_json_atomic(filepath, data)
             return True
-        except Exception as e:
-            if tmp_filepath and os.path.exists(tmp_filepath):
-                try:
-                    os.remove(tmp_filepath)
-                except OSError:
-                    pass
+        except (OSError, TypeError, ValueError) as e:
             print(f"Error saving player: {e}")
             return False
 
@@ -101,7 +105,7 @@ class SaveManager:
         is_tmp: bool = False,
         skip_tiles: bool = False,
     ) -> SaveLoadResult:
-        """Load a player and retain a clear unsupported-version outcome."""
+        """Load one current-development save and retain a clear error outcome."""
         try:
             filepath = SaveManager._resolve_save_path(filename, is_tmp=is_tmp)
 
@@ -110,20 +114,23 @@ class SaveManager:
                 SaveManager.last_load_result = result
                 return result
 
-            # Load JSON
-            with open(filepath, 'r') as f:
-                data = json.load(f)
-
-            # Deserialize player
-            player = PlayerDataSerializer.deserialize(data, skip_tiles=skip_tiles)
+            with open(filepath, "r", encoding="utf-8") as file_obj:
+                data = json.load(file_obj)
+            player = PlayerDataSerializer.deserialize(
+                data,
+                skip_tiles=skip_tiles,
+            )
             result = SaveLoadResult(player)
             SaveManager.last_load_result = result
             return result
-        except UnsupportedSaveVersionError as error:
-            result = SaveLoadResult(None, str(error), unsupported_version=True)
-            SaveManager.last_load_result = result
-            return result
-        except Exception as e:
+        except (
+            AttributeError,
+            IndexError,
+            KeyError,
+            OSError,
+            TypeError,
+            ValueError,
+        ) as e:
             print(f"Error loading player: {e}")
             result = SaveLoadResult(None, f"Unable to load save: {e}")
             SaveManager.last_load_result = result
@@ -138,7 +145,7 @@ class SaveManager:
         saves = []
         for filename in os.listdir(SaveManager.SAVE_DIR):
             filepath = os.path.join(SaveManager.SAVE_DIR, filename)
-            if filename.endswith('.save') and os.path.isfile(filepath):
+            if filename.endswith(".save") and os.path.isfile(filepath):
                 saves.append(filename)
         return sorted(saves)
 
@@ -183,10 +190,7 @@ class SaveManager:
     @staticmethod
     def list_save_metadata() -> list[dict[str, object]]:
         """Return metadata for player-visible save files in load-menu order."""
-        return [
-            SaveManager.describe_save_file(filename)
-            for filename in SaveManager.list_saves()
-        ]
+        return [SaveManager.describe_save_file(filename) for filename in SaveManager.list_saves()]
 
     @staticmethod
     def summarize_save_metadata() -> dict[str, object]:
@@ -245,13 +249,13 @@ class SaveManager:
         }
 
     @staticmethod
-    def delete_save(filename: str) -> bool:
+    def delete_save(filename: str, is_tmp: bool = False) -> bool:
         """Delete a save file."""
         try:
-            filepath = SaveManager._resolve_save_path(filename)
+            filepath = SaveManager._resolve_save_path(filename, is_tmp=is_tmp)
             if os.path.isfile(filepath):
                 os.remove(filepath)
                 return True
-        except Exception:
-            pass
+        except (OSError, ValueError) as error:
+            print(f"Error deleting save: {error}")
         return False

@@ -7,6 +7,7 @@ import math
 import pygame
 
 import src.ui_pygame.gui.combat_view as combat_view
+
 from ..enemy_presentation import effect_icon_label
 from ..status_icons import (
     RESIST_STATUS_LABELS,
@@ -51,8 +52,20 @@ class CombatStatusMixin:
         pygame.draw.rect(self.screen, border, rect, border_width)
         if accent is not None and rect.height >= 10:
             try:
-                pygame.draw.line(self.screen, accent, (rect.left + 2, rect.top + 2), (rect.right - 3, rect.top + 2), 1)
-                pygame.draw.line(self.screen, (18, 18, 22), (rect.left + 2, rect.bottom - 3), (rect.right - 3, rect.bottom - 3), 1)
+                pygame.draw.line(
+                    self.screen,
+                    accent,
+                    (rect.left + 2, rect.top + 2),
+                    (rect.right - 3, rect.top + 2),
+                    1,
+                )
+                pygame.draw.line(
+                    self.screen,
+                    (18, 18, 22),
+                    (rect.left + 2, rect.bottom - 3),
+                    (rect.right - 3, rect.bottom - 3),
+                    1,
+                )
             except TypeError:
                 return
 
@@ -155,15 +168,11 @@ class CombatStatusMixin:
 
         charging_skills = [
             name
-            for name, skill in getattr(character, "spellbook", {})
-            .get("Skills", {})
-            .items()
+            for name, skill in getattr(character, "spellbook", {}).get("Skills", {}).items()
             if getattr(skill, "charging", False)
         ]
         jump_effect = character.class_effects.get("Jump")
-        if charging_skills or (
-            jump_effect is not None and jump_effect.active
-        ):
+        if charging_skills or (jump_effect is not None and jump_effect.active):
             icons.append(("CHG", True))
 
         if self._vision_icon_active(character):
@@ -188,7 +197,12 @@ class CombatStatusMixin:
                 icons.append((self._effect_label(name), name in positive_status))
         for name, effect in character.physical_effects.items():
             if effect.active and name not in skip_effects:
-                icons.append((effect_icon_label(name, self._effect_label(name), character), name in positive_status))
+                icons.append(
+                    (
+                        effect_icon_label(name, self._effect_label(name), character),
+                        name in positive_status,
+                    )
+                )
         for name, effect in character.stat_effects.items():
             if name not in skip_effects:
                 icon = stat_effect_status_icon(self._effect_label(name), effect)
@@ -196,7 +210,9 @@ class CombatStatusMixin:
                     icons.append(icon)
         for name, effect in character.magic_effects.items():
             if effect.active and name not in skip_effects:
-                icons.append((self._effect_label(name), name in positive_magic or name in positive_status))
+                icons.append(
+                    (self._effect_label(name), name in positive_magic or name in positive_status)
+                )
         for name, effect in character.class_effects.items():
             if effect.active and name not in skip_effects:
                 icons.append((self._effect_label(name), True))
@@ -295,7 +311,15 @@ class CombatStatusMixin:
             return self.colors["telegraph"]
         if any(
             term in lower
-            for term in ("health regenerated", "health has regenerated", "regenerates", "restore", "restores", "recovers", "heals")
+            for term in (
+                "health regenerated",
+                "health has regenerated",
+                "regenerates",
+                "restore",
+                "restores",
+                "recovers",
+                "heals",
+            )
         ):
             return self.colors["log_heal"]
         if any(term in lower for term in ("miss", "resist", "immune", "fails")):
@@ -337,7 +361,9 @@ class CombatStatusMixin:
         if not actor_name:
             return False
         actor = actor_name.strip().lower()
-        return bool(actor) and (lower_line.startswith(actor + " ") or lower_line.startswith(actor + "'"))
+        return bool(actor) and (
+            lower_line.startswith(actor + " ") or lower_line.startswith(actor + "'")
+        )
 
     def _set_combat_log_actors(self, player_char, enemy) -> None:
         player_name = str(getattr(player_char, "name", "") or "") or None
@@ -398,7 +424,9 @@ class CombatStatusMixin:
             color = status_icon_color(is_positive, label)
 
             rect = pygame.Rect(icon_x, icon_y, icon_w, icon_h)
-            icon_surface = combat_view.load_status_icon_surface(label, (icon_h - 2, icon_h - 2), is_positive)
+            icon_surface = combat_view.load_status_icon_surface(
+                label, (icon_h - 2, icon_h - 2), is_positive
+            )
             if icon_surface is not None:
                 icon_rect = icon_surface.get_rect(center=rect.center)
                 self.screen.blit(icon_surface, icon_rect)

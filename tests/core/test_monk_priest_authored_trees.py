@@ -1,7 +1,6 @@
 """Regression coverage for the authored Monk and Priest promotion paths."""
 
-from types import MethodType
-from types import SimpleNamespace
+from types import MethodType, SimpleNamespace
 
 import pytest
 
@@ -10,7 +9,6 @@ from src.core.classes import class_rings, healer, promotion_kits
 from src.core.progression import ABILITY_TREES, NodeKind, ProgressionState, ensure_progression
 from src.core.progression_manifest import EXTERNAL_ACQUISITION_ABILITIES
 from tests.test_framework import TestGameState
-
 
 TREE_NAMES = ("Monk", "Master Monk", "Priest", "Archbishop")
 
@@ -57,7 +55,10 @@ def test_four_trees_use_authored_budgets_and_standard_rows():
     assert 0.60 <= 20 / 31 <= 0.70
     assert monk_promotion.payload["prerequisite_mode"] == "any"
     assert priest_promotion.payload["prerequisite_mode"] == "any"
-    assert max(node.position[1] for tree in (monk, master, priest, archbishop) for node in tree.nodes) <= 7
+    assert (
+        max(node.position[1] for tree in (monk, master, priest, archbishop) for node in tree.nodes)
+        <= 7
+    )
 
 
 def test_dim_mak_is_external_and_its_tree_modifiers_are_terminal():
@@ -79,6 +80,19 @@ def test_dim_mak_is_external_and_its_tree_modifiers_are_terminal():
         node = nodes[name]
         assert node.lane == "Dim Mak Mastery"
         assert not any(node.id in candidate.prerequisites for candidate in master.nodes)
+
+
+def test_archbishop_ring_modifiers_are_terminal_and_do_not_gate_exorcism():
+    tree = ABILITY_TREES["Archbishop"]
+    nodes = {node.name: node for node in tree.nodes}
+
+    assert nodes["Swift Exorcism"].prerequisites == (nodes["Expel Curse"].id,)
+    assert nodes["Swift Exorcism"].payload["level_requirement"] == 90
+    for name in ("Assured Intervention", "Miraculous Recovery"):
+        node = nodes[name]
+        assert node.lane == "Divine Intervention"
+        assert node.prerequisites == (nodes["Expel Curse"].id,)
+        assert not any(node.id in candidate.prerequisites for candidate in tree.nodes)
 
 
 def test_legacy_tree_dim_mak_is_removed_and_refunded_without_quest_unlock():

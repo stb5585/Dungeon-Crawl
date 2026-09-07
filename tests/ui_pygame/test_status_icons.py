@@ -16,9 +16,9 @@ from src.ui_pygame.gui.status_icons import (
     prioritize_status_icons,
     stat_effect_status_icon,
     status_icon_asset_path,
-    status_icon_stack_count,
     status_icon_color,
     status_icon_priority,
+    status_icon_stack_count,
     totem_status_icons,
 )
 
@@ -185,9 +185,12 @@ def test_describe_status_icon_layout_reports_overflow_and_urgent_visibility():
         ("STN", False),
         ("PSN", False),
     ]
-    assert describe_status_icon_layout(unprioritized_icons, per_row=2, max_rows=1)[
-        "urgent_hidden_count"
-    ] == 2
+    assert (
+        describe_status_icon_layout(unprioritized_icons, per_row=2, max_rows=1)[
+            "urgent_hidden_count"
+        ]
+        == 2
+    )
     assert describe_status_icon_layout(unprioritized_icons, per_row=2, max_rows=1)[
         "urgent_hidden_labels"
     ] == ("STN", "PSN")

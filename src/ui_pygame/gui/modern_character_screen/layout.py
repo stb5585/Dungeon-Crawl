@@ -6,19 +6,26 @@ from typing import Any
 
 import pygame
 
-from src.core.classes import ability_mechanics, grandmaster
 import src.ui_pygame.gui.modern_character_screen as character_screen
+from src.core.classes import ability_mechanics, grandmaster
+
 from .models import RESISTANCE_SLOT_COUNT
 
 
 class CharacterLayoutMixin:
-    def _draw_text(self, text: str, font, color, x: int, y: int, max_width: int | None = None) -> int:
-        display_text = self._fit_text(str(text), font, max_width) if max_width is not None else str(text)
+    def _draw_text(
+        self, text: str, font, color, x: int, y: int, max_width: int | None = None
+    ) -> int:
+        display_text = (
+            self._fit_text(str(text), font, max_width) if max_width is not None else str(text)
+        )
         surface = font.render(display_text, True, color)
         self.screen.blit(surface, (x, y))
         return surface.get_height()
 
-    def _draw_wrapped_text(self, text: str, font, color, x: int, y: int, max_width: int, max_lines: int = 2) -> int:
+    def _draw_wrapped_text(
+        self, text: str, font, color, x: int, y: int, max_width: int, max_lines: int = 2
+    ) -> int:
         words = str(text).split()
         if not words:
             return y
@@ -39,7 +46,12 @@ class CharacterLayoutMixin:
             lines.append(current)
 
         for index, line in enumerate(lines[:max_lines]):
-            if index == max_lines - 1 and len(lines) == max_lines and words and " ".join(words) != " ".join(lines):
+            if (
+                index == max_lines - 1
+                and len(lines) == max_lines
+                and words
+                and " ".join(words) != " ".join(lines)
+            ):
                 line = self._fit_text(line, font, max_width)
             self._draw_text(line, font, color, x, y, max_width)
             y += font.get_height() + 4
@@ -50,7 +62,9 @@ class CharacterLayoutMixin:
         pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, rect, 2)
         y = rect.top + 14
         if title:
-            self._draw_text(title, self.large_font, self.colors.GOLD, rect.left + 16, y, rect.width - 32)
+            self._draw_text(
+                title, self.large_font, self.colors.GOLD, rect.left + 16, y, rect.width - 32
+            )
             y += self.large_font.get_height() + 10
         return y
 
@@ -72,7 +86,14 @@ class CharacterLayoutMixin:
             if active:
                 pygame.draw.rect(self.screen, self.colors.HIGHLIGHT_BG, rect)
                 pygame.draw.rect(self.screen, self.colors.GOLD, rect, 2)
-            self._draw_text(tab.label, self.normal_font, self.colors.GOLD if active else self.colors.WHITE, rect.left + 12, rect.centery - self.normal_font.get_height() // 2, rect.width - 24)
+            self._draw_text(
+                tab.label,
+                self.normal_font,
+                self.colors.GOLD if active else self.colors.WHITE,
+                rect.left + 12,
+                rect.centery - self.normal_font.get_height() // 2,
+                rect.width - 24,
+            )
 
     def tab_button_rects(self, player_char=None) -> list[pygame.Rect]:
         """Return clickable rectangles for character tabs."""
@@ -80,7 +101,12 @@ class CharacterLayoutMixin:
         x = self.tab_rect.left + 12
         tab_width = max(120, min(220, (self.tab_rect.width - 24) // max(1, len(visible_tabs))))
         return [
-            pygame.Rect(x + (index * tab_width), self.tab_rect.top + 8, tab_width - 8, self.tab_rect.height - 16)
+            pygame.Rect(
+                x + (index * tab_width),
+                self.tab_rect.top + 8,
+                tab_width - 8,
+                self.tab_rect.height - 16,
+            )
             for index, _tab in enumerate(visible_tabs)
         ]
 
@@ -103,10 +129,22 @@ class CharacterLayoutMixin:
             self._draw_fitted_surface(portrait_surface, portrait)
             pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, portrait, 2)
         else:
-            self._draw_text("Portrait", self.small_font, self.colors.GRAY, portrait.left + 10, portrait.centery - self.small_font.get_height() // 2, portrait.width - 20)
+            self._draw_text(
+                "Portrait",
+                self.small_font,
+                self.colors.GRAY,
+                portrait.left + 10,
+                portrait.centery - self.small_font.get_height() // 2,
+                portrait.width - 20,
+            )
 
         detail_y = portrait.bottom + detail_gap
-        detail_rect = pygame.Rect(portrait.left, detail_y, portrait.width, self.character_panel_rect.bottom - detail_y - detail_bottom_padding)
+        detail_rect = pygame.Rect(
+            portrait.left,
+            detail_y,
+            portrait.width,
+            self.character_panel_rect.bottom - detail_y - detail_bottom_padding,
+        )
         self._draw_portrait_details(portrait_rows, detail_rect, detail_y)
 
         info_x = portrait.right + 16
@@ -117,31 +155,63 @@ class CharacterLayoutMixin:
         for label, value in self.build_character_summary(player_char):
             label_text = label.upper()
             label_width = identity_label_font.size(label_text)[0]
-            self._draw_text(label_text, identity_label_font, self.colors.GRAY, info_x + max(0, info_width - label_width), info_y, info_width)
+            self._draw_text(
+                label_text,
+                identity_label_font,
+                self.colors.GRAY,
+                info_x + max(0, info_width - label_width),
+                info_y,
+                info_width,
+            )
             info_y += identity_label_font.get_height()
             value_text = self._fit_text(value, identity_value_font, info_width)
             value_width = identity_value_font.size(value_text)[0]
-            self._draw_text(value_text, identity_value_font, self.colors.WHITE, info_x + max(0, info_width - value_width), info_y, info_width)
+            self._draw_text(
+                value_text,
+                identity_value_font,
+                self.colors.WHITE,
+                info_x + max(0, info_width - value_width),
+                info_y,
+                info_width,
+            )
             info_y += identity_value_font.get_height() + 8
 
         bar_width = max(140, info_width * 3 // 4)
-        bar_rect = pygame.Rect(self.character_panel_rect.right - 16 - bar_width, info_y + 2, bar_width, 18)
+        bar_rect = pygame.Rect(
+            self.character_panel_rect.right - 16 - bar_width, info_y + 2, bar_width, 18
+        )
         pygame.draw.rect(self.screen, self.colors.DARK_GRAY, bar_rect)
-        fill_rect = pygame.Rect(bar_rect.left, bar_rect.top, int(bar_rect.width * self.xp_progress(player_char)), bar_rect.height)
+        fill_rect = pygame.Rect(
+            bar_rect.left,
+            bar_rect.top,
+            int(bar_rect.width * self.xp_progress(player_char)),
+            bar_rect.height,
+        )
         pygame.draw.rect(self.screen, self.colors.GREEN, fill_rect)
         pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, bar_rect, 1)
         xp_label = self.xp_label(player_char)
         xp_label_width = self.small_font.size(xp_label)[0]
         xp_label_x = self.character_panel_rect.right - 16 - min(info_width, xp_label_width)
-        self._draw_text(xp_label, self.small_font, self.colors.GRAY, xp_label_x, bar_rect.bottom + 6, info_width)
+        self._draw_text(
+            xp_label, self.small_font, self.colors.GRAY, xp_label_x, bar_rect.bottom + 6, info_width
+        )
 
         attribute_rows = self.build_core_attributes(player_char)
         y = bar_rect.bottom + self.small_font.get_height() + 22
-        attribute_rect = pygame.Rect(info_x - 16, y, self.character_panel_rect.right - info_x + 16, self.character_panel_rect.bottom - y - 16)
+        attribute_rect = pygame.Rect(
+            info_x - 16,
+            y,
+            self.character_panel_rect.right - info_x + 16,
+            self.character_panel_rect.bottom - y - 16,
+        )
         attribute_font = self.large_font
         attribute_gap = 8
-        available_attribute_height = self.character_panel_rect.bottom - y - self.large_font.get_height() - 16
-        large_attribute_height = len(attribute_rows) * (self.large_font.get_height() + attribute_gap)
+        available_attribute_height = (
+            self.character_panel_rect.bottom - y - self.large_font.get_height() - 16
+        )
+        large_attribute_height = len(attribute_rows) * (
+            self.large_font.get_height() + attribute_gap
+        )
         normal_attribute_height = len(attribute_rows) * (self.normal_font.get_height() + 2)
         if large_attribute_height > available_attribute_height:
             attribute_font = self.normal_font
@@ -170,7 +240,9 @@ class CharacterLayoutMixin:
         resistance_font = self.small_font
         resistance_row_gap = 3
         resistance_row_height = resistance_font.get_height() + resistance_row_gap
-        resistance_height = self.large_font.get_height() + 6 + (RESISTANCE_SLOT_COUNT * resistance_row_height)
+        resistance_height = (
+            self.large_font.get_height() + 6 + (RESISTANCE_SLOT_COUNT * resistance_row_height)
+        )
         resistance_top = self.combat_panel_rect.bottom - resistance_height - 16
         available_stat_height = resistance_top - y - 12
         if available_stat_height >= len(combat_rows) * (self.large_font.get_height() + 4):
@@ -196,19 +268,56 @@ class CharacterLayoutMixin:
         self._draw_divider(self.combat_panel_rect, y - 10)
         column_gap = 12
         column_width = (self.combat_panel_rect.width - 32 - column_gap) // 2
-        weakness_rect = pygame.Rect(self.combat_panel_rect.left + 16, y, column_width, self.combat_panel_rect.bottom - y - 16)
-        resistance_rect = pygame.Rect(weakness_rect.right + column_gap, y, column_width, weakness_rect.height)
-        self._draw_text("Weaknesses", self.large_font, self.colors.RED, weakness_rect.left, y, weakness_rect.width)
-        self._draw_text("Resistances", self.large_font, self.colors.GREEN, resistance_rect.left, y, resistance_rect.width)
+        weakness_rect = pygame.Rect(
+            self.combat_panel_rect.left + 16,
+            y,
+            column_width,
+            self.combat_panel_rect.bottom - y - 16,
+        )
+        resistance_rect = pygame.Rect(
+            weakness_rect.right + column_gap, y, column_width, weakness_rect.height
+        )
+        self._draw_text(
+            "Weaknesses",
+            self.large_font,
+            self.colors.RED,
+            weakness_rect.left,
+            y,
+            weakness_rect.width,
+        )
+        self._draw_text(
+            "Resistances",
+            self.large_font,
+            self.colors.GREEN,
+            resistance_rect.left,
+            y,
+            resistance_rect.width,
+        )
         group_y = y + self.large_font.get_height() + 6
-        self._draw_resistance_group(groups["weaknesses"], weakness_rect, group_y, self.colors.RED, font=resistance_font, row_gap=resistance_row_gap)
-        self._draw_resistance_group(groups["resistances"], resistance_rect, group_y, self.colors.GREEN, font=resistance_font, row_gap=resistance_row_gap)
+        self._draw_resistance_group(
+            groups["weaknesses"],
+            weakness_rect,
+            group_y,
+            self.colors.RED,
+            font=resistance_font,
+            row_gap=resistance_row_gap,
+        )
+        self._draw_resistance_group(
+            groups["resistances"],
+            resistance_rect,
+            group_y,
+            self.colors.GREEN,
+            font=resistance_font,
+            row_gap=resistance_row_gap,
+        )
 
     def _draw_companion_art_block(self, kind: str, companion: Any, rect: pygame.Rect) -> None:
         pygame.draw.rect(self.screen, (14, 14, 19), rect)
         pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, rect, 1)
         art_size = max(54, min(84, rect.height - 20, rect.width // 4))
-        art_rect = pygame.Rect(rect.left + 10, rect.top + (rect.height - art_size) // 2, art_size, art_size)
+        art_rect = pygame.Rect(
+            rect.left + 10, rect.top + (rect.height - art_size) // 2, art_size, art_size
+        )
         sprite = self.companion_art_manager.get_scaled_sprite(companion, art_rect.size)
         self.screen.blit(sprite, art_rect)
 
@@ -218,7 +327,9 @@ class CharacterLayoutMixin:
         self._draw_text(kind, self.small_font, self.colors.GOLD, text_x, y, text_width)
         y += self.small_font.get_height() + 4
         for label, value in self.companion_summary_rows(kind, companion)[:3]:
-            self._draw_text(label, self.small_font, self.colors.GRAY, text_x, y, max(70, text_width // 3))
+            self._draw_text(
+                label, self.small_font, self.colors.GRAY, text_x, y, max(70, text_width // 3)
+            )
             self._draw_text(
                 value,
                 self.small_font,
@@ -234,7 +345,9 @@ class CharacterLayoutMixin:
         entries: list[tuple[str, Any]] = []
         familiar = getattr(player_char, "familiar", None)
         class_name = self._attr_name(getattr(player_char, "cls", None), "")
-        tamed_state = ability_mechanics.normalize_tamed_companion(getattr(player_char, "tamed_companion", None))
+        tamed_state = ability_mechanics.normalize_tamed_companion(
+            getattr(player_char, "tamed_companion", None)
+        )
         tamed_roster = tamed_state.get("companions", [])
         if isinstance(tamed_roster, list) and tamed_roster:
             try:
@@ -244,9 +357,7 @@ class CharacterLayoutMixin:
                 if class_name in {"Ranger", "Beast Master"}:
                     active_index = tamed_state.get("active_index")
                     indexed_roster = [
-                        (index, entry)
-                        for index, entry in indexed_roster
-                        if index == active_index
+                        (index, entry) for index, entry in indexed_roster if index == active_index
                     ]
                 for index, entry in indexed_roster:
                     display_entry = dict(entry)
@@ -254,7 +365,11 @@ class CharacterLayoutMixin:
                     companion = companions.tamed_companion_from_state(display_entry)
                     if companion is None:
                         continue
-                    kind = "Companion" if index == tamed_state.get("active_index") else "Held Companion"
+                    kind = (
+                        "Companion"
+                        if index == tamed_state.get("active_index")
+                        else "Held Companion"
+                    )
                     entries.append((kind, companion))
             except Exception:
                 if familiar is not None:
@@ -295,7 +410,9 @@ class CharacterLayoutMixin:
         pygame.draw.rect(self.screen, (14, 14, 19), rect)
         pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, rect, 1)
         art_size = max(72, min(116, rect.height - 22, rect.width // 5))
-        art_rect = pygame.Rect(rect.left + 12, rect.top + (rect.height - art_size) // 2, art_size, art_size)
+        art_rect = pygame.Rect(
+            rect.left + 12, rect.top + (rect.height - art_size) // 2, art_size, art_size
+        )
         sprite = self.companion_art_manager.get_scaled_sprite(companion, art_rect.size)
         self.screen.blit(sprite, art_rect)
 
@@ -365,7 +482,9 @@ class CharacterLayoutMixin:
         tile_width = roster_rect.width
         top = roster_rect.top + self.normal_font.get_height() + 10
         available_height = max(1, roster_rect.bottom - top)
-        tile_height = min(64, max(30, (available_height - gap * (len(entries) - 1)) // len(entries)))
+        tile_height = min(
+            64, max(30, (available_height - gap * (len(entries) - 1)) // len(entries))
+        )
         rects = []
         for index, _entry in enumerate(entries):
             rects.append(
@@ -424,7 +543,12 @@ class CharacterLayoutMixin:
             return
 
         pygame.draw.rect(self.screen, self.colors.HIGHLIGHT_BG if selected else (14, 14, 19), rect)
-        pygame.draw.rect(self.screen, self.colors.GOLD if selected else self.colors.BORDER_COLOR, rect, 2 if selected else 1)
+        pygame.draw.rect(
+            self.screen,
+            self.colors.GOLD if selected else self.colors.BORDER_COLOR,
+            rect,
+            2 if selected else 1,
+        )
 
         text_x = rect.left + 12
         text_width = rect.right - text_x - 8
@@ -461,7 +585,9 @@ class CharacterLayoutMixin:
             y + 2,
             selected=selected,
         )
-        detail_y = min(rect.bottom - self.small_font.get_height() - 4, y + self.normal_font.get_height() + 1)
+        detail_y = min(
+            rect.bottom - self.small_font.get_height() - 4, y + self.normal_font.get_height() + 1
+        )
         self._draw_inline_companion_fields(
             second_line_fields,
             pygame.Rect(text_x, detail_y, text_width, self.small_font.get_height()),
@@ -479,7 +605,9 @@ class CharacterLayoutMixin:
         )
         kind, companion = entries[self.selected_class_companion_index]
         background = self.screen.copy()
-        popup = character_screen.ClassCompanionDetailsPopup(self.presenter, self, player_char, kind, companion)
+        popup = character_screen.ClassCompanionDetailsPopup(
+            self.presenter, self, player_char, kind, companion
+        )
         popup.show(
             background_draw_func=lambda: self.screen.blit(background, (0, 0)),
             flush_events=True,
@@ -503,7 +631,10 @@ class CharacterLayoutMixin:
             return active_index if isinstance(active_index, int) else None
         roster_index = 0
         for entry_kind, entry_companion in entries[: selected_index + 1]:
-            if entry_kind in {"Companion", "Held Companion"} and getattr(entry_companion, "spec", "") == "Tamed":
+            if (
+                entry_kind in {"Companion", "Held Companion"}
+                and getattr(entry_companion, "spec", "") == "Tamed"
+            ):
                 if entry_companion is companion:
                     return roster_index
                 roster_index += 1
@@ -524,7 +655,10 @@ class CharacterLayoutMixin:
         companion_name = "this companion"
         tamed_index = -1
         for kind, companion in entries:
-            if kind in {"Companion", "Held Companion"} and getattr(companion, "spec", "") == "Tamed":
+            if (
+                kind in {"Companion", "Held Companion"}
+                and getattr(companion, "spec", "") == "Tamed"
+            ):
                 tamed_index += 1
                 if tamed_index == roster_index:
                     companion_name = getattr(companion, "name", companion_name)
@@ -582,8 +716,12 @@ class CharacterLayoutMixin:
         pygame.draw.rect(self.screen, (24, 24, 28), rect)
         if fill_width > 0:
             fill_rect = pygame.Rect(rect.left, rect.top, fill_width, rect.height)
-            pygame.draw.rect(self.screen, self.colors.GOLD if equipped else self.colors.GREEN, fill_rect)
-        pygame.draw.rect(self.screen, self.colors.GOLD if equipped else self.colors.BORDER_COLOR, rect, 1)
+            pygame.draw.rect(
+                self.screen, self.colors.GOLD if equipped else self.colors.GREEN, fill_rect
+            )
+        pygame.draw.rect(
+            self.screen, self.colors.GOLD if equipped else self.colors.BORDER_COLOR, rect, 1
+        )
 
     def _draw_weapon_discipline_row(
         self,
@@ -596,11 +734,15 @@ class CharacterLayoutMixin:
     ) -> None:
         highlighted = equipped or selected
         border_color = self.colors.GOLD if highlighted else self.colors.BORDER_COLOR
-        pygame.draw.rect(self.screen, self.colors.HIGHLIGHT_BG if highlighted else (14, 14, 19), rect)
+        pygame.draw.rect(
+            self.screen, self.colors.HIGHLIGHT_BG if highlighted else (14, 14, 19), rect
+        )
         pygame.draw.rect(self.screen, border_color, rect, 2 if highlighted else 1)
 
         icon_size = min(40, max(28, rect.height - 12))
-        icon_rect = pygame.Rect(rect.left + 8, rect.top + (rect.height - icon_size) // 2, icon_size, icon_size)
+        icon_rect = pygame.Rect(
+            rect.left + 8, rect.top + (rect.height - icon_size) // 2, icon_size, icon_size
+        )
         self._draw_item_art_backdrop(icon_rect)
         icon_item = self._weapon_discipline_icon_item(weapon_type)
         render = self.item_render_manager.get_scaled_render(icon_item, icon_rect.size)
@@ -615,14 +757,21 @@ class CharacterLayoutMixin:
         name_y = rect.centery - self.normal_font.get_height() // 2
         self._draw_text(weapon_type, self.normal_font, name_color, text_x, name_y, name_width)
         if equipped:
-            equipped_y = min(rect.bottom - self.small_font.get_height() - 4, name_y + self.normal_font.get_height() - 1)
-            self._draw_text("Equipped", self.small_font, detail_color, text_x, equipped_y, name_width)
+            equipped_y = min(
+                rect.bottom - self.small_font.get_height() - 4,
+                name_y + self.normal_font.get_height() - 1,
+            )
+            self._draw_text(
+                "Equipped", self.small_font, detail_color, text_x, equipped_y, name_width
+            )
 
         bar_x = text_x + name_width + 12
         bar_width = max(80, rect.right - bar_x - 12)
         rank_text = f"Rank {rank}"
         xp_text = self._weapon_discipline_progress_label(xp, rank)
-        self._draw_text(rank_text, self.small_font, self.colors.WHITE, bar_x, rect.top + 7, bar_width)
+        self._draw_text(
+            rank_text, self.small_font, self.colors.WHITE, bar_x, rect.top + 7, bar_width
+        )
         xp_width = self.small_font.size(xp_text)[0]
         self._draw_text(
             xp_text,
@@ -635,9 +784,13 @@ class CharacterLayoutMixin:
         bar_rect = pygame.Rect(bar_x, rect.top + 30, bar_width, 10)
         self._draw_weapon_discipline_progress_bar(bar_rect, xp=xp, rank=rank, equipped=equipped)
 
-    def _draw_weapon_discipline_panel(self, player_char, rect: pygame.Rect, y: int, *, show_heading: bool = True) -> None:
+    def _draw_weapon_discipline_panel(
+        self, player_char, rect: pygame.Rect, y: int, *, show_heading: bool = True
+    ) -> None:
         if show_heading:
-            self._draw_text("Weapon Discipline", self.normal_font, self.colors.GOLD, rect.left, y, rect.width)
+            self._draw_text(
+                "Weapon Discipline", self.normal_font, self.colors.GOLD, rect.left, y, rect.width
+            )
             y += self.normal_font.get_height() + 10
         weapon_types = grandmaster.weapon_discipline_types(player_char)
         self.selected_weapon_discipline_index = max(
@@ -670,14 +823,14 @@ class CharacterLayoutMixin:
             54,
             max(
                 42,
-                (
-                    available_height - row_gap * (len(weapon_types) - 1)
-                ) // len(weapon_types),
+                (available_height - row_gap * (len(weapon_types) - 1)) // len(weapon_types),
             ),
         )
         self._weapon_discipline_row_rects = []
         for index, weapon_type in enumerate(weapon_types):
-            row_rect = pygame.Rect(rect.left, y + index * (row_height + row_gap), rect.width, row_height)
+            row_rect = pygame.Rect(
+                rect.left, y + index * (row_height + row_gap), rect.width, row_height
+            )
             if row_rect.bottom > rect.bottom:
                 break
             self._weapon_discipline_row_rects.append(row_rect)
@@ -695,20 +848,34 @@ class CharacterLayoutMixin:
         fill_width = int(rect.width * (value / cap))
         pygame.draw.rect(self.screen, (24, 24, 28), rect)
         if fill_width > 0:
-            pygame.draw.rect(self.screen, color or self.colors.GREEN, pygame.Rect(rect.left, rect.top, fill_width, rect.height))
+            pygame.draw.rect(
+                self.screen,
+                color or self.colors.GREEN,
+                pygame.Rect(rect.left, rect.top, fill_width, rect.height),
+            )
         pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, rect, 1)
 
     def _draw_mechanic_note_card(self, rect: pygame.Rect, title: str, body: str, y: int) -> int:
         card = pygame.Rect(rect.left, y, rect.width, max(74, self.small_font.get_height() * 3 + 28))
         pygame.draw.rect(self.screen, (14, 14, 19), card)
         pygame.draw.rect(self.screen, self.colors.BORDER_COLOR, card, 1)
-        self._draw_text(title, self.normal_font, self.colors.GOLD, card.left + 12, card.top + 10, card.width - 24)
-        return self._draw_wrapped_text(
-            body,
-            self.small_font,
-            self.colors.WHITE,
+        self._draw_text(
+            title,
+            self.normal_font,
+            self.colors.GOLD,
             card.left + 12,
-            card.top + self.normal_font.get_height() + 14,
+            card.top + 10,
             card.width - 24,
-            max_lines=3,
-        ) + 10
+        )
+        return (
+            self._draw_wrapped_text(
+                body,
+                self.small_font,
+                self.colors.WHITE,
+                card.left + 12,
+                card.top + self.normal_font.get_height() + 14,
+                card.width - 24,
+                max_lines=3,
+            )
+            + 10
+        )

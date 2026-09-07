@@ -4,8 +4,8 @@ from dataclasses import dataclass
 
 from src.paths import PYGAME_ASSETS_DIR
 
-
 ASSETS_BASE_DIR = PYGAME_ASSETS_DIR
+
 
 @dataclass
 class CombatImpactEffect:

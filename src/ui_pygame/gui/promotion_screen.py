@@ -55,16 +55,8 @@ class PromotionScreen(TownScreenBase):
         for slot in dict.fromkeys((*current, *target)):
             current_allowed = list(current.get(slot, ()))
             target_allowed = list(target.get(slot, ()))
-            gained = [
-                item_type
-                for item_type in target_allowed
-                if item_type not in current_allowed
-            ]
-            lost = [
-                item_type
-                for item_type in current_allowed
-                if item_type not in target_allowed
-            ]
+            gained = [item_type for item_type in target_allowed if item_type not in current_allowed]
+            lost = [item_type for item_type in current_allowed if item_type not in target_allowed]
             if gained or lost:
                 changes.append((slot, gained, lost))
         return changes
@@ -83,22 +75,38 @@ class PromotionScreen(TownScreenBase):
         pc = self.player_char
         combat_bonuses = promotion_combat_bonuses(cls_instance)
         return [
-            (("Strength", pc.stats.strength + cls_instance.str_plus, cls_instance.str_plus),
-             ("Health", pc.health.max + (cls_instance.con_plus * 2), cls_instance.con_plus * 2)),
-            (("Intelligence", pc.stats.intel + cls_instance.int_plus, cls_instance.int_plus),
-             ("Mana", pc.mana.max + (cls_instance.int_plus * 2), cls_instance.int_plus * 2)),
-            (("Wisdom", pc.stats.wisdom + cls_instance.wis_plus, cls_instance.wis_plus),
-             ("Attack", pc.combat.attack + combat_bonuses["attack"], combat_bonuses["attack"])),
-            (("Constitution", pc.stats.con + cls_instance.con_plus, cls_instance.con_plus),
-             ("Defense", pc.combat.defense + combat_bonuses["defense"], combat_bonuses["defense"])),
-            (("Charisma", pc.stats.charisma + cls_instance.cha_plus, cls_instance.cha_plus),
-             ("Magic", pc.combat.magic + combat_bonuses["magic"], combat_bonuses["magic"])),
-            (("Dexterity", pc.stats.dex + cls_instance.dex_plus, cls_instance.dex_plus),
-             (
-                 "Magic Defense",
-                 pc.combat.magic_def + combat_bonuses["magic defense"],
-                 combat_bonuses["magic defense"],
-             )),
+            (
+                ("Strength", pc.stats.strength + cls_instance.str_plus, cls_instance.str_plus),
+                ("Health", pc.health.max + (cls_instance.con_plus * 2), cls_instance.con_plus * 2),
+            ),
+            (
+                ("Intelligence", pc.stats.intel + cls_instance.int_plus, cls_instance.int_plus),
+                ("Mana", pc.mana.max + (cls_instance.int_plus * 2), cls_instance.int_plus * 2),
+            ),
+            (
+                ("Wisdom", pc.stats.wisdom + cls_instance.wis_plus, cls_instance.wis_plus),
+                ("Attack", pc.combat.attack + combat_bonuses["attack"], combat_bonuses["attack"]),
+            ),
+            (
+                ("Constitution", pc.stats.con + cls_instance.con_plus, cls_instance.con_plus),
+                (
+                    "Defense",
+                    pc.combat.defense + combat_bonuses["defense"],
+                    combat_bonuses["defense"],
+                ),
+            ),
+            (
+                ("Charisma", pc.stats.charisma + cls_instance.cha_plus, cls_instance.cha_plus),
+                ("Magic", pc.combat.magic + combat_bonuses["magic"], combat_bonuses["magic"]),
+            ),
+            (
+                ("Dexterity", pc.stats.dex + cls_instance.dex_plus, cls_instance.dex_plus),
+                (
+                    "Magic Defense",
+                    pc.combat.magic_def + combat_bonuses["magic defense"],
+                    combat_bonuses["magic defense"],
+                ),
+            ),
         ]
 
     def _stat_delta_color(self, delta):
@@ -141,7 +149,9 @@ class PromotionScreen(TownScreenBase):
                 self.screen.blit(value_text, (value_x, y))
 
                 delta_text = f"+{delta}" if delta >= 0 else str(delta)
-                delta_surface = self.small_font.render(delta_text, True, self._stat_delta_color(delta))
+                delta_surface = self.small_font.render(
+                    delta_text, True, self._stat_delta_color(delta)
+                )
                 self.screen.blit(delta_surface, (value_x + 48, y))
             y += line_height
         return y
@@ -155,8 +165,12 @@ class PromotionScreen(TownScreenBase):
         title_rect = title.get_rect(center=(self.width // 2, top_rect.centery - 12))
         self.screen.blit(title, title_rect)
 
-        tier_label = {1: "First Promotion", 2: "Second Promotion"}.get(self.pro_level, "Final Promotion")
-        subtext = self.small_font.render(f"Current Class: {self.current_class}  •  {tier_label}", True, self.colors.WHITE)
+        tier_label = {1: "First Promotion", 2: "Second Promotion"}.get(
+            self.pro_level, "Final Promotion"
+        )
+        subtext = self.small_font.render(
+            f"Current Class: {self.current_class}  •  {tier_label}", True, self.colors.WHITE
+        )
         sub_rect = subtext.get_rect(center=(self.width // 2, top_rect.centery + 12))
         self.screen.blit(subtext, sub_rect)
 
@@ -361,6 +375,7 @@ class PromotionScreen(TownScreenBase):
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     import sys
+
                     sys.exit()
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_UP:
@@ -371,10 +386,7 @@ class PromotionScreen(TownScreenBase):
                         selected_name = self.options[self.current_selection]
                         if selected_name == "Go Back":
                             return None
-                        popup = ConfirmationPopup(
-                            self.presenter,
-                            f"Promote to {selected_name}?"
-                        )
+                        popup = ConfirmationPopup(self.presenter, f"Promote to {selected_name}?")
                         if popup.show(**self._confirmation_kwargs()):
                             return selected_name
                     elif event.key == pygame.K_ESCAPE:
@@ -389,10 +401,7 @@ class PromotionScreen(TownScreenBase):
                     selected_name = self.options[self.current_selection]
                     if selected_name == "Go Back":
                         return None
-                    popup = ConfirmationPopup(
-                        self.presenter,
-                        f"Promote to {selected_name}?"
-                    )
+                    popup = ConfirmationPopup(self.presenter, f"Promote to {selected_name}?")
                     if popup.show(**self._confirmation_kwargs()):
                         return selected_name
             self.presenter.clock.tick(30)

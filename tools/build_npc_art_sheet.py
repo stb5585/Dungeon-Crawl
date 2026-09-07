@@ -8,10 +8,9 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_ART_ROOT = PROJECT_ROOT / "src" / "ui_pygame" / "assets" / "npc_art"
-DEFAULT_REVIEW_SHEET = DEFAULT_ART_ROOT / "npc_art_review_sheet.png"
+DEFAULT_REVIEW_SHEET = PROJECT_ROOT / "docs" / "assets" / "review-sheets" / "npc-art.png"
 CELL_SIZE = (220, 300)
 PREVIEW_SIZE = (170, 230)
 HEADER_HEIGHT = 42

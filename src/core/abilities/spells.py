@@ -17,18 +17,21 @@ if TYPE_CHECKING:
 # Spells
 class MagicMissile(Attack):
     """Data-driven (magic_missile.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("magic_missile.yaml", cls_name="MagicMissile")
 
 
 class MagicMissile2(MagicMissile):
     """Data-driven (magic_missile_2.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("magic_missile_2.yaml", cls_name="MagicMissile2")
 
 
 class MagicMissile3(MagicMissile):
     """Data-driven (magic_missile_3.yaml)"""
+
     replaces = "Magic Missile II"
 
     def __new__(cls):
@@ -37,6 +40,7 @@ class MagicMissile3(MagicMissile):
 
 class PhotonSphere:
     """Ultimate multi-hit non-elemental spell — data-driven (ultima.yaml)."""
+
     def __new__(cls):
         return _load_yaml_ability("ultima.yaml", cls_name="PhotonSphere")
 
@@ -47,12 +51,14 @@ class Ultima(PhotonSphere):
 
 class Maelstrom:
     """Data-driven (maelstrom.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("maelstrom.yaml", cls_name="Maelstrom")
 
 
 class Meteor:
     """Data-driven (meteor.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("meteor.yaml", cls_name="Meteor")
 
@@ -74,25 +80,29 @@ class FireSpell(Attack):
             special_str += f"{target.name} is set ablaze.\n"
             dmg = random.randint(damage // 4, damage // 2)
             target.magic_effects["DOT"].active = True
-            target.magic_effects["DOT"].duration = max(
-                2, target.magic_effects["DOT"].duration
-            )
-            target.magic_effects["DOT"].extra = max(
-                dmg, target.magic_effects["DOT"].extra
-            )
+            target.magic_effects["DOT"].duration = max(2, target.magic_effects["DOT"].duration)
+            target.magic_effects["DOT"].extra = max(dmg, target.magic_effects["DOT"].extra)
             target.magic_effects["DOT"].source = "Burn"
-            caster._emit_status_event(target, "DOT", applied=True, duration=target.magic_effects["DOT"].duration, source=self.name)
+            caster._emit_status_event(
+                target,
+                "DOT",
+                applied=True,
+                duration=target.magic_effects["DOT"].duration,
+                source=self.name,
+            )
         return special_str
 
 
 class Firebolt:
     """Data-driven (firebolt.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("firebolt.yaml", cls_name="Firebolt")
 
 
 class Fireball:
     """Data-driven (fireball.yaml)"""
+
     replaces = "Firebolt"
 
     def __new__(cls):
@@ -101,24 +111,28 @@ class Fireball:
 
 class Firestorm:
     """Data-driven (firestorm.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("firestorm.yaml", cls_name="Firestorm")
 
 
 class Scorch:
     """Data-driven (scorch.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("scorch.yaml", cls_name="Scorch")
 
 
 class MoltenRock:
     """Data-driven (molten_rock.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("molten_rock.yaml", cls_name="MoltenRock")
 
 
 class Volcano:
     """Data-driven (volcano.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("volcano.yaml", cls_name="Volcano")
 
@@ -138,21 +152,21 @@ class IceSpell(Attack):
             target.stats.wisdom // 4, target.stats.wisdom
         ):
             dmg = random.randint(damage // 2, damage)
-            special_str += (
-                f"{target.name} is chilled to the bone, taking an extra {dmg} damage.\n"
-            )
+            special_str += f"{target.name} is chilled to the bone, taking an extra {dmg} damage.\n"
             target.health.current -= dmg
         return special_str
 
 
 class IceLance:
     """Data-driven (ice_lance.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("ice_lance.yaml", cls_name="IceLance")
 
 
 class Icicle:
     """Data-driven (icicle.yaml)"""
+
     replaces = "Ice Lance"
 
     def __new__(cls):
@@ -161,6 +175,7 @@ class Icicle:
 
 class IceBlizzard:
     """Data-driven (blizzard.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("blizzard.yaml", cls_name="IceBlizzard")
 
@@ -198,12 +213,14 @@ class ElectricSpell(Attack):
 
 class Shock:
     """Data-driven (shock.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("shock.yaml", cls_name="Shock")
 
 
 class Lightning:
     """Data-driven (lightning.yaml)"""
+
     replaces = "Shock"
 
     def __new__(cls):
@@ -212,19 +229,25 @@ class Lightning:
 
 class Electrocution:
     """Data-driven (electrocution.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("electrocution.yaml", cls_name="Electrocution")
 
 
 class Bolt:
     """Data-driven (bolt.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("bolt.yaml", cls_name="Bolt")
 
 
 class BallLightning(Spell):
     def __init__(self):
-        super().__init__("Ball Lightning", "Conjure a ball of electricity that repeatedly zaps the target.", school="Nature")
+        super().__init__(
+            "Ball Lightning",
+            "Conjure a ball of electricity that repeatedly zaps the target.",
+            school="Nature",
+        )
         self.cost = 34
         self.subtyp = "Electric"
 
@@ -343,12 +366,14 @@ def _kaleidoscope_cadence(character: Any) -> None:
 
 class WaterJet:
     """Data-driven (water_jet.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("water_jet.yaml", cls_name="WaterJet")
 
 
 class Aqualung:
     """Rank 1 Enemy Spell — data-driven (aqualung.yaml)"""
+
     replaces = "Water Jet"
 
     def __new__(cls):
@@ -357,6 +382,7 @@ class Aqualung:
 
 class Tsunami:
     """Rank 2 Enemy Spell — data-driven (tsunami.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("tsunami.yaml", cls_name="Tsunami")
 
@@ -368,12 +394,14 @@ class Hydration:
 
 class Tremor:
     """Data-driven (tremor.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("tremor.yaml", cls_name="Tremor")
 
 
 class Mudslide:
     """Rank 1 Enemy Spell — data-driven (mudslide.yaml)"""
+
     replaces = "Tremor"
 
     def __new__(cls):
@@ -382,24 +410,28 @@ class Mudslide:
 
 class Earthquake:
     """Rank 2 Enemy Spell — data-driven (earthquake.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("earthquake.yaml", cls_name="Earthquake")
 
 
 class Sandstorm:
     """Enemy Spell — data-driven (sandstorm.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("sandstorm.yaml", cls_name="Sandstorm")
 
 
 class Gust:
     """Data-driven (gust.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("gust.yaml", cls_name="Gust")
 
 
 class Hurricane:
     """Rank 1 Enemy Spell — data-driven (hurricane.yaml)"""
+
     replaces = "Gust"
 
     def __new__(cls):
@@ -408,6 +440,7 @@ class Hurricane:
 
 class Tornado:
     """Rank 2 Enemy Spell — data-driven (tornado.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("tornado.yaml", cls_name="Tornado")
 
@@ -415,30 +448,35 @@ class Tornado:
 # Shadow spells
 class ShadowBolt:
     """Data-driven (shadow_bolt.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("shadow_bolt.yaml", cls_name="ShadowBolt")
 
 
 class ShadowBolt2:
     """Data-driven (shadow_bolt_2.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("shadow_bolt_2.yaml", cls_name="ShadowBolt2")
 
 
 class ShadowBolt3:
     """Data-driven (shadow_bolt_3.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("shadow_bolt_3.yaml", cls_name="ShadowBolt3")
 
 
 class Corruption:
     """Data-driven (corruption.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("corruption.yaml", cls_name="Corruption")
 
 
 class Terrify:
     """Data-driven (terrify.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("terrify.yaml", cls_name="Terrify")
 
@@ -446,36 +484,42 @@ class Terrify:
 # Death spells
 class Doom:
     """Data-driven (doom.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("doom.yaml", cls_name="Doom")
 
 
 class Desoul:
     """Death spell — data-driven (desoul.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("desoul.yaml", cls_name="Desoul")
 
 
 class SoulDrain:
     """Soul spell — data-driven (soul_drain.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("soul_drain.yaml", cls_name="SoulDrain")
 
 
 class PoisonDart:
     """Nature spell — data-driven (poison_dart.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("poison_dart.yaml", cls_name="PoisonDart")
 
 
 class Petrify:
     """Death spell — data-driven (petrify.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("petrify.yaml", cls_name="Petrify")
 
 
 class Disintegrate:
     """Data-driven (disintegrate.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("disintegrate.yaml", cls_name="Disintegrate")
 
@@ -483,48 +527,56 @@ class Disintegrate:
 # Holy spells
 class Smite:
     """Data-driven (smite.yaml) - weapon strike + holy follow-up."""
+
     def __new__(cls):
         return _load_yaml_ability("smite.yaml", cls_name="Smite")
 
 
 class Smite2:
     """Data-driven (smite_2.yaml) - upgraded Smite."""
+
     def __new__(cls):
         return _load_yaml_ability("smite_2.yaml", cls_name="Smite2")
 
 
 class Smite3:
     """Data-driven (smite_3.yaml) - upgraded Smite."""
+
     def __new__(cls):
         return _load_yaml_ability("smite_3.yaml", cls_name="Smite3")
 
 
 class Holy:
     """Data-driven (holy.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("holy.yaml", cls_name="Holy")
 
 
 class Holy2:
     """Data-driven (holy_2.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("holy_2.yaml", cls_name="Holy2")
 
 
 class Holy3:
     """Data-driven (holy_3.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("holy_3.yaml", cls_name="Holy3")
 
 
 class TurnUndead:
     """Data-driven (turn_undead.yaml) - undead-only kill or holy damage."""
+
     def __new__(cls):
         return _load_yaml_ability("turn_undead.yaml", cls_name="TurnUndead")
 
 
 class TurnUndead2:
     """Data-driven (turn_undead_2.yaml) - upgraded Turn Undead."""
+
     def __new__(cls):
         return _load_yaml_ability("turn_undead_2.yaml", cls_name="TurnUndead2")
 
@@ -613,6 +665,7 @@ class Reflect:
 
 class Resurrection:
     """Data-driven (resurrection.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("resurrection.yaml", cls_name="Resurrection")
 
@@ -624,6 +677,7 @@ class Cleanse:
 
 class ResistAll:
     """Data-driven (resist_all.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("resist_all.yaml", cls_name="ResistAll")
 
@@ -687,13 +741,9 @@ class DivineProtection2(Spell):
                 effect.source = self.name
             weakened.append(enemy.name)
 
-        message = (
-            f"Divine Protection II greatly fortifies {caster.name} for five turns.\n"
-        )
+        message = f"Divine Protection II greatly fortifies {caster.name} for five turns.\n"
         if weakened:
-            message += (
-                f"Sacred pressure weakens {', '.join(weakened)} for three turns.\n"
-            )
+            message += f"Sacred pressure weakens {', '.join(weakened)} for three turns.\n"
         return message
 
 
@@ -704,6 +754,7 @@ class IceBlock:
 
 class Vulcanize:
     """Data-driven (vulcanize.yaml) - self fire-damage + defense buff."""
+
     def __new__(cls):
         return _load_yaml_ability("vulcanize.yaml", cls_name="Vulcanize")
 
@@ -715,13 +766,18 @@ class WindSpeed:
 
 class Haste:
     """Data-driven (haste.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("haste.yaml", cls_name="Haste")
 
 
 class StoneSkin(Spell):
     def __init__(self):
-        super().__init__("Stone Skin", "Transform your skin into solid rock, reducing melee damage and resisting fire.", school="Nature")
+        super().__init__(
+            "Stone Skin",
+            "Transform your skin into solid rock, reducing melee damage and resisting fire.",
+            school="Nature",
+        )
         self.cost = 21
         self.subtyp = "Support"
 
@@ -736,7 +792,9 @@ class StoneSkin(Spell):
 
 class CalmingBreeze(Spell):
     def __init__(self):
-        super().__init__("Calming Breeze", "Conjure a gentle breeze that grants peaceful focus.", school="Nature")
+        super().__init__(
+            "Calming Breeze", "Conjure a gentle breeze that grants peaceful focus.", school="Nature"
+        )
         self.cost = 18
         self.subtyp = "Support"
 
@@ -753,7 +811,9 @@ class CalmingBreeze(Spell):
 
 class Windswept(Spell):
     def __init__(self):
-        super().__init__("Windswept", "Launch the target on a mighty gust of wind.", school="Nature")
+        super().__init__(
+            "Windswept", "Launch the target on a mighty gust of wind.", school="Nature"
+        )
         self.cost = 15
         self.subtyp = "Wind"
 
@@ -777,13 +837,18 @@ class Windswept(Spell):
 
 class Regrowth:
     """Data-driven (regrowth.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("regrowth.yaml", cls_name="Regrowth")
 
 
 class NatureShield(Spell):
     def __init__(self):
-        super().__init__("Nature Shield", "Conjure life-orbs that intercept attack spells and heal you.", school="Nature")
+        super().__init__(
+            "Nature Shield",
+            "Conjure life-orbs that intercept attack spells and heal you.",
+            school="Nature",
+        )
         self.cost = 28
         self.subtyp = "Support"
 
@@ -800,12 +865,14 @@ class NatureShield(Spell):
 # Movement spells
 class Sanctuary:
     """Data-driven (sanctuary.yaml) - return to town, full heal."""
+
     def __new__(cls):
         return _load_yaml_ability("sanctuary.yaml", cls_name="Sanctuary")
 
 
 class Teleport:
     """Data-driven (teleport.yaml) - set/restore location."""
+
     def __new__(cls):
         return _load_yaml_ability("teleport.yaml", cls_name="Teleport")
 
@@ -831,6 +898,7 @@ class AstralShift:
 # Status spells
 class Hex:
     """Data-driven (hex.yaml) - multi-status spell (Poison/Blind/Silence)."""
+
     def __new__(cls):
         return _load_yaml_ability("hex.yaml", cls_name="Hex")
 
@@ -842,12 +910,14 @@ class BlindingFog:
 
 class PoisonBreath:
     """Rank 2 Enemy Spell — data-driven (poison_breath.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("poison_breath.yaml", cls_name="PoisonBreath")
 
 
 class DiseaseBreath:
     """Status spell — data-driven (disease_breath.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("disease_breath.yaml", cls_name="DiseaseBreath")
 
@@ -874,6 +944,7 @@ class Enfeeble:
 
 class Ruin:
     """Status spell — data-driven (ruin.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("ruin.yaml", cls_name="Ruin")
 
@@ -896,5 +967,6 @@ class Berserk:
 # Enemy spells
 class Hellfire:
     """Devil's spell — data-driven (hellfire.yaml)"""
+
     def __new__(cls):
         return _load_yaml_ability("hellfire.yaml", cls_name="Hellfire")

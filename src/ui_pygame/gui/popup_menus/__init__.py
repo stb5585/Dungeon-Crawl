@@ -3,6 +3,7 @@
 import pygame
 
 from src.core import enemies, map_tiles
+
 from ..confirmation_popup import ConfirmationPopup
 from .base import BasePopupMenu
 from .equipment import EquipmentPopupMenu
@@ -15,7 +16,6 @@ from .mechanics import (
     TotemAspectsPopupMenu,
 )
 from .selections import EquipmentSelectionPopup, SelectionPopup
-
 
 __all__ = [
     "BasePopupMenu",

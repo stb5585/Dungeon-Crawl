@@ -12,10 +12,21 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import Any
 
-
 SUMMON_NAMES = (
-    "Hodag", "Caladrius", "Patagon", "Kobalos", "Dilong", "Cacus", "Agloolik", "Izulu",
-    "Hala", "Lamashtu", "Seraphim", "Bardi", "Tiamat", "Zahhak",
+    "Hodag",
+    "Caladrius",
+    "Patagon",
+    "Kobalos",
+    "Dilong",
+    "Cacus",
+    "Agloolik",
+    "Izulu",
+    "Hala",
+    "Lamashtu",
+    "Seraphim",
+    "Bardi",
+    "Tiamat",
+    "Zahhak",
 )
 
 ADVANCED_SONGS = (
@@ -105,8 +116,7 @@ def default_state() -> dict[str, Any]:
         "case_journal": {},
         "case_focus": None,
         "bard_repertoire": {
-            song: {"known": False, "practice_xp": 0, "clean_finishes": 0}
-            for song in ADVANCED_SONGS
+            song: {"known": False, "practice_xp": 0, "clean_finishes": 0} for song in ADVANCED_SONGS
         },
         "lycan_control": {
             "rank": "Feral",
@@ -172,10 +182,11 @@ def normalize_state(state: Any) -> dict[str, Any]:
             "rank": rank,
             "stress_events": _clamp_int(control.get("stress_events", 0), 0, 999),
             "dragon_essence": bool(control.get("dragon_essence", False)),
-            "rank_progress": {
-                str(key): _clamp_int(value, 0, 999)
-                for key, value in progress.items()
-            } if isinstance(progress, dict) else {},
+            "rank_progress": (
+                {str(key): _clamp_int(value, 0, 999) for key, value in progress.items()}
+                if isinstance(progress, dict)
+                else {}
+            ),
         }
 
     favored = state.get("favored_enemy", {})
@@ -434,6 +445,7 @@ def end_combat(
     boss: bool = False,
     show_progress_messages: bool = False,
 ) -> str:
+    from .. import lycan
     from .companions import (
         clear_conduit_command,
         favorite_enemy_type,
@@ -444,8 +456,6 @@ def end_combat(
     )
     from .meters import convert_shadow_backlash
     from .tracks import gain_case_progress
-
-    from .. import lycan
 
     msg = ""
     msg += clear_conduit_command(character, "leaves combat")
@@ -471,11 +481,15 @@ def end_combat(
             companion_bond_before = _clamp_int(companion_state.get("bond", 0), 0, 100)
         companion_bond_msg = gain_companion_bond(character, 4, reason="victory", announce=False)
         if getattr(enemy, "enemy_typ", None) == favorite_enemy_type(character):
-            companion_bond_msg += gain_companion_bond(character, 2, reason="Favored Enemy hunt", announce=False)
+            companion_bond_msg += gain_companion_bond(
+                character, 2, reason="Favored Enemy hunt", announce=False
+            )
             try:
                 from .. import ability_mechanics
 
-                practice_msg = ability_mechanics.gain_favored_enemy_practice(character, enemy, 1, "the hunt")
+                practice_msg = ability_mechanics.gain_favored_enemy_practice(
+                    character, enemy, 1, "the hunt"
+                )
                 if show_progress_messages:
                     msg += practice_msg
             except Exception:
@@ -531,10 +545,7 @@ def _ring_awakened_equipped(character: Any, class_value: str | None = None) -> b
         awakened = class_rings.is_awakened(character, target)
         if not awakened and target == class_name(character):
             awakened = bool(class_rings._special_system_awakened(character, target))
-        return bool(
-            awakened
-            and class_rings.has_equipped_class_ring(character)
-        )
+        return bool(awakened and class_rings.has_equipped_class_ring(character))
     except Exception:
         return False
 
