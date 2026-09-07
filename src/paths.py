@@ -52,4 +52,4 @@ USER_DATA_DIR = default_user_data_dir()
 USER_SAVE_DIR = USER_DATA_DIR / "saves"
 USER_TEMP_DIR = USER_DATA_DIR / "temporary"
 USER_CONFIG_DIR = USER_DATA_DIR / "config"
-DEBUG_LOGS_DIR = USER_DATA_DIR / "logs"
+DEBUG_LOGS_DIR = USER_DATA_DIR / "debug_logs"

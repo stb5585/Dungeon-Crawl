@@ -82,7 +82,7 @@ Packaged maps live under `src/core/data/maps/`, and Pygame assets live under
 `src/ui_pygame/assets/`. Runtime code must not use the current working directory
 to find either category.
 
-Saves, temporary files, configuration, and logs use the platform user-data
+Saves, temporary files, configuration, and debug logs use the platform user-data
 directory: `%LOCALAPPDATA%` on Windows, `~/Library/Application Support` on
 macOS, and `$XDG_DATA_HOME` or `~/.local/share` on Linux. The
 `FORSAKEN_TENET_DATA_DIR` environment variable provides an explicit test and
