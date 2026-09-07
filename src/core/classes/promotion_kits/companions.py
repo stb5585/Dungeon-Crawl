@@ -6,17 +6,17 @@ import math
 import random
 from typing import Any
 
-from .meters import _spend_mp, cap_for, gain_meter
+from .meters import _preserve_spent_meter, _spend_mp, cap_for, gain_meter
 from .state import (
     ADVANCED_SONGS,
     SUMMON_NAMES,
     _clamp_int,
+    _cleanse_one_hostile_status,
     _ring_awakened_equipped,
     class_name,
     combat_state,
     ensure_state,
 )
-from .tracks import _preserve_spent_meter
 
 XENID_CASTER_EFFECTS = {
     "Hodag": {"strength": 4, "melee": 0.10},
@@ -248,8 +248,6 @@ def fourfold_surge(character: Any, target: Any | None) -> str:
         msg += f"Growth restores {heal} HP.\n"
         clean = clean or heal > 0
         if distinct >= 3:
-            from .tracks import _cleanse_one_hostile_status
-
             cleansed = _cleanse_one_hostile_status(character)
             if cleansed:
                 clean = True
@@ -616,8 +614,6 @@ def _apply_xenid_signature_rider(
         actor.health.current += healing
         message = f"{label} restores {healing} HP to {actor.name}.\n" if healing else ""
         if rider == "heal_cleanse":
-            from .tracks import _cleanse_one_hostile_status
-
             cleansed = _cleanse_one_hostile_status(actor)
             if cleansed:
                 message += f"{label} cleanses {cleansed}.\n"

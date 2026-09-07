@@ -8,6 +8,7 @@ from typing import Any
 
 from .meters import (
     _maybe_preserve,
+    _preserve_spent_meter,
     _set_target_stacks,
     _spend_mp,
     _target_key,
@@ -19,6 +20,7 @@ from .meters import (
 from .state import (
     CASE_MILESTONES,
     _claim_action,
+    _cleanse_one_hostile_status,
     _has_skill,
     _ring_awakened_equipped,
     class_name,
@@ -71,33 +73,6 @@ KI_SPEND_ABILITIES = frozenset(
         "Hadouken",
     }
 )
-
-HOSTILE_STATUS_GROUPS = ("status_effects", "physical_effects")
-
-
-def _hostile_status_names(character: Any) -> list[str]:
-    ignored = {"Defend", "Peaceful", "Shapeshifted", "Steal Success"}
-    names: list[str] = []
-    for group_name in HOSTILE_STATUS_GROUPS:
-        for name, effect in getattr(character, group_name, {}).items():
-            if name not in ignored and getattr(effect, "active", False):
-                names.append(name)
-    return sorted(names)
-
-
-def _cleanse_one_hostile_status(character: Any) -> str | None:
-    names = _hostile_status_names(character)
-    if not names:
-        return None
-    name = names[0]
-    for group_name in HOSTILE_STATUS_GROUPS:
-        effect = getattr(character, group_name, {}).get(name)
-        if effect is not None:
-            effect.active = False
-            effect.duration = 0
-            effect.extra = 0
-            return name
-    return None
 
 
 def _power_up_active(character: Any, name: str) -> bool:
@@ -204,12 +179,6 @@ def record_luck_roll(
             if random.random() < 0.25:
                 message += gain_meter(character, "fortune", 1, "Read the Room")
     return message
-
-
-def _preserve_spent_meter(character: Any, key: str, ring_class: str, label: str, msg: str) -> str:
-    lines: list[str] = []
-    _maybe_preserve(character, key, ring_class, label, lines)
-    return msg + "".join(lines)
 
 
 def consume_fortune_for_risky_action(character: Any, reason: str) -> tuple[float, str]:
