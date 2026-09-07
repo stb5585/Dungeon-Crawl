@@ -27,6 +27,8 @@
   base-class lineage modules while preserving its existing import facade.
 - Split the progression runtime into value models, tree construction/registry,
   and player-facing service modules while preserving `src.core.progression`.
+- Split the pygame progression screen into tree rendering, panel rendering,
+  and interaction orchestration modules while preserving its public class.
 - Removed pre-release progression migrations and refunds, including a reversed
   Spell Reflection node-ID rewrite that corrupted current persisted ownership.
 - Retired the obsolete tab-delimited numbered-map conversion workflow, made
