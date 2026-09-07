@@ -26,6 +26,7 @@ from .bosses import (
     ThievesGuildTrialBossRoom,
     WendigoBossRoom,
 )
+from .chalice import update_chalice_location
 from .endgame import (
     FinalBlocker,
     FinalRoom,
@@ -156,7 +157,6 @@ from .rules import (
     rookie_body_visible_for_player,
     sync_chalice_map_description,
     sync_rookie_body_drop_marker,
-    update_chalice_location,
 )
 from .special import (
     AntiMagicSwitch,

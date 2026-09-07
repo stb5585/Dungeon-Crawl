@@ -7,6 +7,8 @@ from typing import Any
 
 from ...progression_manifest import TALENT_KIT_EFFECTS as _TALENT_KIT_EFFECTS
 from .state import (
+    _claim_action,
+    _class_ring_data,
     _has_skill,
     _hierophant_overchannel_active,
     _is_weapon_hit,
@@ -67,15 +69,6 @@ def cap_for(character: Any, key: str) -> int:
     return base + _talent_cap_bonus(character, key) if base else 0
 
 
-def _class_ring_data(character: Any, class_value: str) -> dict[str, Any]:
-    try:
-        from .. import class_rings
-
-        return class_rings.ensure_state(character)["data"][class_value]
-    except Exception:
-        return {}
-
-
 def gain_meter(character: Any, key: str, amount: int = 1, reason: str = "") -> str:
     cap = cap_for(character, key)
     if cap <= 0:
@@ -89,20 +82,6 @@ def gain_meter(character: Any, key: str, amount: int = 1, reason: str = "") -> s
     label = key.replace("_", " ").title()
     suffix = f" from {reason}" if reason else ""
     return f"{character.name} gains {after - before} {label}{suffix} ({after}/{cap}).\n"
-
-
-def _claim_action(character: Any, claim: str, *, incoming: bool = False) -> bool:
-    """Claim one authored resource outcome inside the current action."""
-    state = combat_state(character)
-    key = "incoming_claims" if incoming else "action_claims"
-    claims = state.setdefault(key, set())
-    if not isinstance(claims, set):
-        claims = set(claims)
-        state[key] = claims
-    if claim in claims:
-        return False
-    claims.add(claim)
-    return True
 
 
 def gain_bloodied_momentum(

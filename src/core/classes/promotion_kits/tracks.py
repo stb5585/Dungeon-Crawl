@@ -7,7 +7,6 @@ import random
 from typing import Any
 
 from .meters import (
-    _claim_action,
     _maybe_preserve,
     _set_target_stacks,
     _spend_mp,
@@ -19,6 +18,7 @@ from .meters import (
 )
 from .state import (
     CASE_MILESTONES,
+    _claim_action,
     _has_skill,
     _ring_awakened_equipped,
     class_name,
