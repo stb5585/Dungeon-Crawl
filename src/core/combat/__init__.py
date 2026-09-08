@@ -7,6 +7,15 @@ This module contains the core combat mechanics, including:
 - Combat logging and analytics
 """
 
+from .action_interface import (
+    SHORTCUT_SLOT_COUNT,
+    SYSTEM_COMMANDS,
+    CombatActionPresentation,
+    CombatInterfaceSnapshot,
+    ShortcutSlotPresentation,
+    assign_shortcut,
+    combat_interface_snapshot,
+)
 from .action_queue import (
     ActionPriority,
     ActionQueue,
@@ -35,10 +44,15 @@ from .targeting import (
 __all__ = [
     "ActionQueue",
     "ActionIntent",
+    "CombatActionPresentation",
+    "CombatInterfaceSnapshot",
     "ActionPriority",
     "ActionType",
     "ActionValidationCode",
     "ScheduledAction",
+    "SHORTCUT_SLOT_COUNT",
+    "SYSTEM_COMMANDS",
+    "ShortcutSlotPresentation",
     "TurnManager",
     "create_attack_action",
     "create_spell_action",
@@ -48,4 +62,6 @@ __all__ = [
     "EnemyResolutionRecord",
     "TargetLossPolicy",
     "TargetScope",
+    "assign_shortcut",
+    "combat_interface_snapshot",
 ]

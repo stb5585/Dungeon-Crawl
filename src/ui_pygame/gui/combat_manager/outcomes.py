@@ -230,6 +230,12 @@ class CombatOutcomeMixin:
         if not hasattr(player_char, "level_exp"):
             player_char = self._selection_frame_player(player_char)
 
+        from src.core.combat.action_interface import combat_interface_snapshot
+
+        interface_snapshot = (
+            combat_interface_snapshot(self.engine, player_char) if self.engine is not None else None
+        )
+
         # Clear screen
         self.screen.fill((0, 0, 0))
 
@@ -313,6 +319,7 @@ class CombatOutcomeMixin:
             current_turn=current_turn,
             show_enemy_details=show_enemy_details,
             current_actor=current_actor,
+            timeline_entries=interface_snapshot.timeline if interface_snapshot is not None else (),
         )
 
         # Render HUD (right 1/3) with combat mode indicator
@@ -322,7 +329,13 @@ class CombatOutcomeMixin:
             is_alive = getattr(summon, "is_alive", None)
             if summon is not None and (bool(is_alive()) if callable(is_alive) else True):
                 active_summon = summon
-        self.hud.render_hud(player_char, combat_mode=True, enemy=enemy, active_summon=active_summon)
+        self.hud.render_hud(
+            player_char,
+            combat_mode=True,
+            enemy=enemy,
+            active_summon=active_summon,
+            combat_resources=interface_snapshot.resources if interface_snapshot is not None else (),
+        )
 
     def _record_bestiary_ability_if_visible(self, player_char, enemy, ability_name) -> None:
         if self.engine is None or not hasattr(self.engine, "show_enemy_details"):

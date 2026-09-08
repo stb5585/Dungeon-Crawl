@@ -93,6 +93,8 @@ class Player(
         self.sex = "Male"
         self.portrait_variant = 0
         self.inventory = {}
+        self.action_bar_assignments = ()
+        self.action_bar_autofill_complete = False
         self.special_inventory = {}
         self.world_dict = {}
         self.dungeon_trap_seed = random.SystemRandom().randrange(2**32)

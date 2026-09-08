@@ -1,6 +1,6 @@
 # Foundational Gameplay Refactor Plan
 
-Status: `Active — Ability Contract Migrated; Timeline Complete`
+Status: `Active — Interface Complete; Evidence And Rollout Next`
 
 This document organizes the gameplay-changing work that should be resolved
 before broad manual playtesting. It does not approve new mechanics by itself.
@@ -357,6 +357,15 @@ Current slice status:
   actor-turn ID, and scheduled opportunity actor. Simulator results now retain
   a bounded normal-opportunity trace, final actor readiness, monotonic-time
   check, and consecutive-actor diagnostic for deterministic investigation.
+- Interface: complete; the Pygame combat surface projects six persisted typed
+  shortcut slots, fixed system commands, and an All Actions catalog that keeps
+  learned-but-unavailable actions visible with an engine-derived reason.
+  Character Menu Action Layout and All Actions share the same non-turn shortcut
+  editor. The HUD receives prioritized text-complete class-resource rows and
+  the next six core-owned readiness opportunities; existing concealed enemy
+  lanes retain their generic presence presentation. Keyboard/mouse operations
+  now have controller parity for navigation, confirmation, cancellation,
+  focus, All Actions, and resource details.
 
 ## Progression Boundary
 

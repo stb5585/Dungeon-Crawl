@@ -5,6 +5,11 @@ from __future__ import annotations
 import pygame
 
 from src.core.classes import grandmaster
+from src.core.combat.action_interface import (
+    assign_shortcut,
+    learned_action_presentations,
+    shortcut_presentations,
+)
 
 from ..confirmation_popup import ConfirmationPopup
 from ..input_guards import (
@@ -292,6 +297,8 @@ class CharacterEquipmentMixin:
                 self.presenter, self, title="Special Abilities", source_fn=self._get_specials_list
             )
             _ = popup.show(player_char, flush_events=True, require_key_release=True)
+        elif chosen == "Action Layout":
+            self._edit_action_layout(player_char)
         elif chosen == "Totem Aspects":
             popup = TotemAspectsPopupMenu(self.presenter, self, title="Totem Aspects")
             _ = popup.show(player_char, flush_events=True, require_key_release=True)
@@ -300,7 +307,140 @@ class CharacterEquipmentMixin:
         return None
 
     def _base_menu_options(self) -> list[str]:
-        return ["Inventory", "Quests", "Key Items", "Bestiary", "Specials", "Exit Menu"]
+        return [
+            "Inventory",
+            "Quests",
+            "Key Items",
+            "Bestiary",
+            "Specials",
+            "Action Layout",
+            "Exit Menu",
+        ]
+
+    def _edit_action_layout(self, player_char) -> None:
+        """Edit the same persisted shortcut layout used by in-combat All Actions."""
+        actions = learned_action_presentations(player_char)
+        if not actions:
+            popup = ConfirmationPopup(
+                self.presenter, "No active learned actions.", show_buttons=False
+            )
+            popup.show(flush_events=True, require_key_release=True)
+            return
+        selected_action = 0
+        selected_slot = 0
+        action_offset = 0
+        input_armed = prepare_guarded_input(flush_events=True, require_key_release=True)
+        while True:
+            self.draw_all(player_char, do_flip=False)
+            panel = pygame.Rect(
+                self.content_rect.left + 24,
+                self.content_rect.top + 24,
+                self.content_rect.width - 48,
+                self.content_rect.height - 48,
+            )
+            self.draw_semi_transparent_panel(panel, alpha=235)
+            pygame.draw.rect(self.screen, self.colors.GOLD, panel, 2)
+            self._draw_text(
+                "Action Layout", self.large_font, self.colors.GOLD, panel.left + 18, panel.top + 14
+            )
+            self._draw_text(
+                "Up/Down select action · Left/Right select slot · Enter assign · Backspace clear · Esc close",
+                self.small_font,
+                self.colors.LIGHT_GRAY,
+                panel.left + 18,
+                panel.top + 48,
+                panel.width - 36,
+            )
+            action_rect = pygame.Rect(
+                panel.left + 18, panel.top + 82, panel.width * 3 // 5, panel.height - 100
+            )
+            slot_rect = pygame.Rect(
+                action_rect.right + 14,
+                action_rect.top,
+                panel.right - action_rect.right - 32,
+                action_rect.height,
+            )
+            action_rows = []
+            y = action_rect.top + 8
+            action_offset = max(0, min(action_offset, max(0, len(actions) - 10)))
+            if selected_action < action_offset:
+                action_offset = selected_action
+            elif selected_action >= action_offset + 10:
+                action_offset = selected_action - 9
+            for index, action in enumerate(
+                actions[action_offset : action_offset + 10], start=action_offset
+            ):
+                rect = pygame.Rect(action_rect.left + 6, y, action_rect.width - 12, 28)
+                action_rows.append(rect)
+                if index == selected_action:
+                    pygame.draw.rect(self.screen, self.colors.HIGHLIGHT_BG, rect)
+                self._draw_text(
+                    action.display_label,
+                    self.small_font,
+                    self.colors.WHITE,
+                    rect.left + 6,
+                    rect.top + 5,
+                    rect.width - 12,
+                )
+                y += 31
+            slot_rows = []
+            y = slot_rect.top + 8
+            for slot in shortcut_presentations(player_char):
+                rect = pygame.Rect(slot_rect.left + 4, y, slot_rect.width - 8, 34)
+                slot_rows.append(rect)
+                if slot.index == selected_slot:
+                    pygame.draw.rect(self.screen, self.colors.HIGHLIGHT_BG, rect)
+                    pygame.draw.rect(self.screen, self.colors.GOLD, rect, 1)
+                self._draw_text(
+                    slot.display_label,
+                    self.small_font,
+                    self.colors.WHITE,
+                    rect.left + 5,
+                    rect.top + 7,
+                    rect.width - 10,
+                )
+                y += 38
+            pygame.display.flip()
+            input_armed = release_guard_allows_input(True, input_armed)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    import sys
+
+                    sys.exit()
+                input_armed = update_input_armed_from_event(event, True, input_armed)
+                if event.type == pygame.KEYDOWN and not input_armed:
+                    continue
+                if event.type == pygame.KEYDOWN:
+                    if event.key in (pygame.K_ESCAPE, pygame.K_BACKSPACE):
+                        if event.key == pygame.K_BACKSPACE:
+                            assign_shortcut(player_char, selected_slot, None)
+                            continue
+                        return
+                    if event.key in (pygame.K_UP, pygame.K_w):
+                        selected_action = (selected_action - 1) % len(actions)
+                    elif event.key in (pygame.K_DOWN, pygame.K_s):
+                        selected_action = (selected_action + 1) % len(actions)
+                    elif event.key in (pygame.K_LEFT, pygame.K_a):
+                        selected_slot = (selected_slot - 1) % 6
+                    elif event.key in (pygame.K_RIGHT, pygame.K_d):
+                        selected_slot = (selected_slot + 1) % 6
+                    elif event.key in (pygame.K_RETURN, pygame.K_SPACE):
+                        reference = actions[selected_action].reference
+                        if reference is not None:
+                            assign_shortcut(player_char, selected_slot, reference)
+                elif event.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN):
+                    position = mouse_position(event)
+                    action_index = hit_index(action_rows, position)
+                    slot_index = hit_index(slot_rows, position)
+                    if action_index is not None:
+                        selected_action = action_offset + action_index
+                    if slot_index is not None:
+                        selected_slot = slot_index
+                        if is_left_click(event):
+                            reference = actions[selected_action].reference
+                            if reference is not None:
+                                assign_shortcut(player_char, selected_slot, reference)
 
     def open_selected_equipment_change(self, player_char) -> None:
         slot_name = self.selected_equipment_slot(player_char)

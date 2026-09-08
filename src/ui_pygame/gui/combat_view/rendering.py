@@ -393,7 +393,7 @@ class CombatRenderingMixin:
     def _action_grid_layout(
         width: int, menu_height: int, action_count: int
     ) -> tuple[int, int, int, int, int]:
-        actions_per_row = 3
+        actions_per_row = 4 if action_count > 9 else 3
         row_count = max(1, math.ceil(max(1, action_count) / actions_per_row))
         start_y_offset = 46
         bottom_padding = 14
