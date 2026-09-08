@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from random import Random
 
 import pytest
 
@@ -153,19 +154,12 @@ def test_engine_accepts_explicit_singleton_encounter():
     assert engine.encounter.primary_enemy is enemy
 
 
-def test_explicit_singleton_matches_legacy_start_behavior(monkeypatch):
-    import src.core.combat.battle_engine.core as battle_core
-
-    monkeypatch.setattr(
-        battle_core,
-        "determine_initiative",
-        lambda player, enemy: (player, enemy),
-    )
+def test_explicit_singleton_matches_legacy_start_behavior():
     legacy_player = _player()
     explicit_player = _player()
     legacy_enemy = Goblin()
     explicit_enemy = deepcopy(legacy_enemy)
-    legacy = BattleEngine(legacy_player, legacy_enemy, DummyCombatTile())
+    legacy = BattleEngine(legacy_player, legacy_enemy, DummyCombatTile(), rng=Random(1337))
     explicit = BattleEngine(
         explicit_player,
         tile=DummyCombatTile(),
@@ -174,6 +168,7 @@ def test_explicit_singleton_matches_legacy_start_behavior(monkeypatch):
             encounter_id="parity",
             combatant_id="parity-enemy",
         ),
+        rng=Random(1337),
     )
 
     legacy_order = legacy.start_battle()

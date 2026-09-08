@@ -1,6 +1,6 @@
 # Foundational Gameplay Refactor Plan
 
-Status: `Active — Ability Contract Migrated; Timeline Next`
+Status: `Active — Ability Contract Migrated; Timeline In Progress`
 
 This document organizes the gameplay-changing work that should be resolved
 before broad manual playtesting. It does not approve new mechanics by itself.
@@ -341,7 +341,11 @@ Current slice status:
 - Resolution: complete; one-roll contact, core concealment/Sight/Detect,
   canonical target-loss behavior, symmetric enemy-area results, and concealed
   area-result identity redaction are complete.
-- Timeline through milestone closure: next, in the order above.
+- Timeline: in progress; virtual readiness now owns actor scheduling with
+  seeded initial jitter, bounded Luck head starts, encounter-median tempo,
+  two-consecutive-turn protection, and owner opportunity round accounting.
+  Charges, forced actions, reactions, owner-turn status migration, logs, and
+  simulator diagnostics remain in the ordered work.
 
 ## Progression Boundary
 

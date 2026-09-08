@@ -7,6 +7,7 @@ from contextlib import contextmanager
 from typing import TYPE_CHECKING
 
 from ...classes import ability_mechanics, astromancer, bard, footpad, paladin, promotion_kits
+from ...contracts import TimelineEntry
 from ...enemies.identity import remember_defeat_identity
 from ...events.event_bus import (
     EventType,
@@ -14,10 +15,16 @@ from ...events.event_bus import (
     create_combat_event,
     get_event_bus,
 )
-from ..actor_cycle import PLAYER_ACTOR_ID, ActorCycle, build_actor_order
+from ..actor_cycle import (
+    MAX_TEMPO,
+    MIN_TEMPO,
+    PLAYER_ACTOR_ID,
+    STANDARD_ACTION_COST,
+    ActorCycle,
+    build_readiness_cycle,
+)
 from ..battle_logger import BattleLogger
 from ..encounter import CombatEncounter
-from ..initiative import determine_initiative
 from .actions import BattleActionMixin
 from .models import ActionResult
 from .outcomes import BattleOutcomeMixin
@@ -101,7 +108,7 @@ class BattleEngine(BattleTurnMixin, BattleActionMixin, BattleOutcomeMixin):
 
     @property
     def fixed_turn_order(self) -> tuple[str, ...]:
-        """Return the immutable actor order rolled at battle start."""
+        """Return stable actor IDs retained for compatibility with legacy callers."""
         return self._actor_cycle.order if self._actor_cycle else ()
 
     @property
@@ -118,6 +125,62 @@ class BattleEngine(BattleTurnMixin, BattleActionMixin, BattleOutcomeMixin):
     def total_started_actor_turns(self) -> int:
         """Return the number of actor turns begun by the cycle."""
         return self._actor_cycle.total_started_actor_turns if self._actor_cycle else 0
+
+    @property
+    def current_readiness(self) -> float:
+        """Return the virtual readiness time of the current opportunity."""
+        return self._actor_cycle.current_ready_at if self._actor_cycle else 0.0
+
+    def readiness_cost(self, actor: Character | None = None) -> float:
+        """Return the current actor's approved virtual-time action cost.
+
+        Effective Speed may change during combat, while the encounter-start
+        median retained by the cycle remains the tempo baseline.
+        """
+        if self._actor_cycle is None:
+            return STANDARD_ACTION_COST
+        active_actor = actor if actor is not None else self.attacker
+        if active_actor is None:
+            return STANDARD_ACTION_COST
+        member = self._member_for_character(active_actor)
+        opponent = self.active_player_character if member is not None else self._focused_enemy()
+        speed = max(0.0, float(active_actor.check_mod("speed", enemy=opponent)))
+        tempo = max(
+            MIN_TEMPO,
+            min(MAX_TEMPO, speed / self._actor_cycle.median_speed),
+        )
+        return STANDARD_ACTION_COST / tempo
+
+    def timeline_entries(self, limit: int = 6) -> tuple[TimelineEntry, ...]:
+        """Return predicted normal opportunities for timeline consumers.
+
+        This is a read-only runtime projection; presentation never owns or
+        mutates readiness scheduling.
+        """
+        if self._actor_cycle is None or limit <= 0:
+            return ()
+
+        def actor_for_id(actor_id: str) -> Character:
+            return (
+                self.active_player_character
+                if actor_id == PLAYER_ACTOR_ID
+                else self.encounter.member_by_id(actor_id).enemy
+            )
+
+        opportunities = self._actor_cycle.preview(
+            self._valid_actor_ids(),
+            lambda actor_id: self.readiness_cost(actor_for_id(actor_id)),
+            limit,
+        )
+        return tuple(
+            TimelineEntry(
+                actor_id=actor_id,
+                display_label=str(getattr(actor, "name", actor_id)),
+                ready_at=ready_at,
+            )
+            for actor_id, ready_at in opportunities
+            for actor in (actor_for_id(actor_id),)
+        )
 
     @property
     def focus_target_id(self) -> str:
@@ -462,27 +525,14 @@ class BattleEngine(BattleTurnMixin, BattleActionMixin, BattleOutcomeMixin):
                 self.player._promotion_kit_messages = messages
             messages.append(kit_start_message)
         forced_enemy_initiative = bool(getattr(self.tile, "trap_forced_initiative", False))
-        if len(self.encounter.members) == 1:
-            if forced_enemy_initiative:
-                first = self.encounter.primary_enemy
-            else:
-                first, _second = determine_initiative(
-                    self.player,
-                    self.encounter.primary_enemy,
-                )
-            enemy_id = self.encounter.primary_member.combatant_id
-            order = (
-                (PLAYER_ACTOR_ID, enemy_id) if first is self.player else (enemy_id, PLAYER_ACTOR_ID)
-            )
-        else:
-            order = build_actor_order(self.player, self.encounter, rng=self._rng)
-            if forced_enemy_initiative and PLAYER_ACTOR_ID in order:
-                order = tuple(actor for actor in order if actor != PLAYER_ACTOR_ID) + (
-                    PLAYER_ACTOR_ID,
-                )
+        self._actor_cycle = build_readiness_cycle(
+            self.player,
+            self.encounter,
+            rng=self._rng,
+            force_player_last=forced_enemy_initiative,
+        )
         if forced_enemy_initiative:
             self.tile.trap_forced_initiative = False
-        self._actor_cycle = ActorCycle(order)
         if self.boss:
             for member in self.encounter.living_members:
                 member.enemy.boss = True

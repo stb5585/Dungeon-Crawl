@@ -142,6 +142,13 @@ def capture_battle_snapshot(engine: Any) -> dict[str, Any]:
                 "cursor": cycle.cursor,
                 "round_number": cycle.round_number,
                 "total_started_actor_turns": cycle.total_started_actor_turns,
+                "readiness": dict(cycle.readiness),
+                "median_speed": cycle.median_speed,
+                "current_time": cycle.current_time,
+                "round_pending_actor_ids": set(cycle.round_pending_actor_ids),
+                "consecutive_actor_id": cycle.consecutive_actor_id,
+                "consecutive_normal_turns": cycle.consecutive_normal_turns,
+                "immediate_actor_id": cycle._immediate_actor_id,
                 "current_actor_turn_id": getattr(engine, "_current_actor_turn_id", 0),
             }
             if cycle
@@ -197,6 +204,17 @@ def restore_battle_snapshot(engine: Any, snapshot: dict[str, Any]) -> str:
         engine._actor_cycle.cursor = cycle_state["cursor"]
         engine._actor_cycle.round_number = cycle_state["round_number"]
         engine._actor_cycle.total_started_actor_turns = cycle_state["total_started_actor_turns"]
+        engine._actor_cycle.readiness = dict(cycle_state.get("readiness", {}))
+        engine._actor_cycle.median_speed = float(cycle_state.get("median_speed", 1.0))
+        engine._actor_cycle.current_time = float(cycle_state.get("current_time", 0.0))
+        engine._actor_cycle.round_pending_actor_ids = set(
+            cycle_state.get("round_pending_actor_ids", ())
+        )
+        engine._actor_cycle.consecutive_actor_id = cycle_state.get("consecutive_actor_id")
+        engine._actor_cycle.consecutive_normal_turns = int(
+            cycle_state.get("consecutive_normal_turns", 0)
+        )
+        engine._actor_cycle._immediate_actor_id = cycle_state.get("immediate_actor_id")
         engine._current_actor_turn_id = cycle_state["current_actor_turn_id"]
     engine._focus_target_id = snapshot.get(
         "focus_target_id",

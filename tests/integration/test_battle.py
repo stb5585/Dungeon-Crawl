@@ -123,22 +123,13 @@ class TestBattleEngineBasics:
         engine = BattleEngine(player=player, enemy=enemy, tile=tile)
         return engine, player, enemy, tile
 
-    def test_start_battle_sets_attacker_and_defender(self, monkeypatch):
-        import src.core.combat.battle_engine as battle_engine
-
+    def test_start_battle_sets_attacker_and_defender(self):
         engine, player, enemy, _tile = self._make_engine()
 
-        monkeypatch.setattr(
-            battle_engine.core,
-            "determine_initiative",
-            lambda _p, _e: (player, enemy),
-        )
-
         attacker, defender = engine.start_battle()
-        assert attacker == player
-        assert defender == enemy
-        assert engine.attacker == player
-        assert engine.defender == enemy
+        assert {attacker, defender} == {player, enemy}
+        assert engine.attacker is attacker
+        assert engine.defender is defender
 
     def test_execute_attack_uses_weapon_damage(self, monkeypatch):
         import src.core.combat.battle_engine as battle_engine

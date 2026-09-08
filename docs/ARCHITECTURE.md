@@ -58,11 +58,13 @@ in the legacy combat adapter during migration.
 
 The engine validates the intent, expands and resolves targets against the live
 `CombatEncounter`, executes the action, and returns an `ActionResult` with a
-machine-readable validation code when rejected. Until the timeline slice, the
-actor cycle still owns fixed turn order; pre-turn and post-turn results carry
-status and resolution effects, and `BattleOutcome` carries final settlement.
-Events and the battle logger observe this flow without becoming the source of
-combat truth.
+machine-readable validation code when rejected. The actor cycle now owns
+virtual readiness timestamps: initial seeded jitter and bounded Luck head
+starts determine the first opportunity, while current effective Speed advances
+readiness against the encounter-start median. Pre-turn and post-turn results
+carry status and resolution effects, and `BattleOutcome` carries final
+settlement. Events and the battle logger observe this flow without becoming the
+source of combat truth.
 
 The next combat architecture phase is intentionally deferred. Large mutation
 methods such as weapon damage and status-effect resolution should be replaced

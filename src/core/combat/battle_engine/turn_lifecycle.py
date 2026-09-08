@@ -305,16 +305,19 @@ class TurnLifecycleMixin:
             self.available_actions = self._available_actions()
             return
         old_round = self.round_number
+        readiness_cost = self.readiness_cost(self.attacker)
         dragon_soul_turn = bool(
             promotion_kits.combat_state(self.player).pop(
                 "dragon_soul_immediate_turn",
                 False,
             )
         )
-        if dragon_soul_turn and PLAYER_ACTOR_ID in self._actor_cycle.order:
-            player_index = self._actor_cycle.order.index(PLAYER_ACTOR_ID)
-            self._actor_cycle.cursor = (player_index - 1) % len(self._actor_cycle.order)
-        wrapped, _actor_id = self._actor_cycle.advance(self._valid_actor_ids())
+        if dragon_soul_turn:
+            self._actor_cycle.schedule_immediate(PLAYER_ACTOR_ID)
+        wrapped, _actor_id = self._actor_cycle.advance(
+            self._valid_actor_ids(),
+            readiness_cost=readiness_cost,
+        )
         if wrapped:
             self.logger.next_round()
             self._event_bus.emit(

@@ -102,6 +102,22 @@ def test_pair_cycle_is_fixed_and_emits_round_and_turn_identity():
     assert len(get_event_bus().get_history(EventType.ROUND_END)) == 1
 
 
+def test_timeline_entries_preview_six_opportunities_without_advancing_combat():
+    engine, _player, _enemies, _tile = _engine()
+    engine.start_battle()
+    actor_id = engine.current_actor_id
+    ready_at = engine.current_readiness
+
+    entries = engine.timeline_entries()
+
+    assert len(entries) == 6
+    assert entries[0].actor_id == actor_id
+    assert entries[0].ready_at == ready_at
+    assert [entry.ready_at for entry in entries] == sorted(entry.ready_at for entry in entries)
+    assert engine.current_actor_id == actor_id
+    assert engine.current_readiness == ready_at
+
+
 def test_invalid_intents_do_not_commit_or_change_focus():
     engine, _player, enemies, _tile = _engine()
     engine.start_battle()

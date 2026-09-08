@@ -72,9 +72,10 @@ allowlist is empty and CI requires complete validation.
 The resolution slice is complete: fitted one-roll weapon and spell contact,
 core concealment/Sight/Detect, symmetric target resolution, canonical
 target-loss behavior, structured enemy-area results, and concealed area-result
-identity redaction are implemented. The next target is the timeline slice:
-virtual readiness, charges, forced actions, reactions, owner-turn statuses,
-rounds, logs, and simulator diagnostics.
+identity redaction are implemented. The timeline slice is in progress: virtual
+readiness now schedules actor opportunities from seeded jitter, bounded Luck
+head starts, and encounter-median Speed tempo. Charges, forced actions,
+reactions, owner-turn status migration, logs, and simulator diagnostics remain.
 
 UI replacement and encounter expansion follow only after the migrated action
 contract, resolution rules, and timeline are stable. Numeric tuning remains a
