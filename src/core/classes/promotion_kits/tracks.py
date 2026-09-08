@@ -1003,32 +1003,37 @@ def resolve_devotion_counter(character: Any, attacker: Any, damage: int) -> str:
     """Resolve one armed Templar counter after a positive incoming weapon hit."""
     if damage <= 0 or attacker is None or class_name(character) != "Templar":
         return ""
-    state = combat_state(character)
-    total = 0
-    labels: list[str] = []
-    for key, label in (
-        ("relic_aegis_counter", "Relic Aegis"),
-        ("ordered_blessing_counter", "Ordered Blessings"),
-    ):
-        counter = state.get(key)
-        if isinstance(counter, dict) and int(counter.get("turns", 0) or 0) > 0:
-            total += max(0, int(counter.get("damage", 0) or 0))
-            labels.append(label)
-            state[key] = None
-    if total <= 0:
-        return ""
-    _hit, reduction, dealt = attacker.damage_reduction(total, character, typ="Holy")
-    dealt = max(0, min(int(dealt or 0), attacker.health.current))
-    if dealt:
-        attacker.health.current -= dealt
-        character._emit_damage_event(
-            attacker,
-            dealt,
-            damage_type="Holy",
-            source="promotion_kit_payoff",
-            ability_name=" / ".join(labels),
-        )
-    return reduction + f"{' and '.join(labels)} return {dealt} Holy damage.\n"
+    from ...combat.reactions import execute_reaction
+
+    def resolve() -> str:
+        state = combat_state(character)
+        total = 0
+        labels: list[str] = []
+        for key, label in (
+            ("relic_aegis_counter", "Relic Aegis"),
+            ("ordered_blessing_counter", "Ordered Blessings"),
+        ):
+            counter = state.get(key)
+            if isinstance(counter, dict) and int(counter.get("turns", 0) or 0) > 0:
+                total += max(0, int(counter.get("damage", 0) or 0))
+                labels.append(label)
+                state[key] = None
+        if total <= 0:
+            return ""
+        _hit, reduction, dealt = attacker.damage_reduction(total, character, typ="Holy")
+        dealt = max(0, min(int(dealt or 0), attacker.health.current))
+        if dealt:
+            attacker.health.current -= dealt
+            character._emit_damage_event(
+                attacker,
+                dealt,
+                damage_type="Holy",
+                source="promotion_kit_payoff",
+                ability_name=" / ".join(labels),
+            )
+        return reduction + f"{' and '.join(labels)} return {dealt} Holy damage.\n"
+
+    return execute_reaction("devotion_counter", character, resolve) or ""
 
 
 def consecrated_conduit(character: Any) -> str:

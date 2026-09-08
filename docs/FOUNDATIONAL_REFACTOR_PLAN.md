@@ -350,8 +350,9 @@ Current slice status:
   or target loss. Forced actions are complete: canonical intents cannot bypass
   Berserk, charge, Jump, or cancellation decisions, and a cancellation stays
   enforced for its owner opportunity after clearing its charge state.
-  Reactions, owner-turn status migration, logs, and simulator diagnostics
-  remain in the ordered work.
+  Reactions now resolve inside their triggering result without advancing
+  readiness and cannot re-enter through a counter-result. Owner-turn status
+  migration, logs, and simulator diagnostics remain in the ordered work.
 
 ## Progression Boundary
 

@@ -227,6 +227,7 @@ def restore_battle_snapshot(engine: Any, snapshot: dict[str, Any]) -> str:
     engine._forced_cancellation = None
     engine._forced_cancellation_actor_id = None
     engine._forced_cancellation_turn_id = 0
+    engine._reaction_executions = set()
     from .. import promotion_kits
 
     promotion_state = promotion_kits.combat_state(engine.player)

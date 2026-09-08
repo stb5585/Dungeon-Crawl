@@ -1510,17 +1510,22 @@ def resolve_oath_judgment_counter(
         counter = state.get("oath_judgment_counter")
         if not isinstance(counter, dict) or int(counter.get("turns", 0) or 0) <= 0:
             return ""
-        state["oath_judgment_counter"] = None
-        if weapon_missing(defender):
-            return "Oath's Judgment cannot answer while its user is disarmed.\n"
-        message, _hit, _crit = defender.weapon_damage(
-            attacker,
-            dmg_mod=float(counter.get("damage_mod", 0.25) or 0.25),
-            use_offhand=False,
-            attack_slots=("Weapon",),
-            damage_type_override="Holy",
-        )
-        return "Oath's Judgment answers with a Holy counter.\n" + message
+        from ..combat.reactions import execute_reaction
+
+        def resolve() -> str:
+            state["oath_judgment_counter"] = None
+            if weapon_missing(defender):
+                return "Oath's Judgment cannot answer while its user is disarmed.\n"
+            message, _hit, _crit = defender.weapon_damage(
+                attacker,
+                dmg_mod=float(counter.get("damage_mod", 0.25) or 0.25),
+                use_offhand=False,
+                attack_slots=("Weapon",),
+                damage_type_override="Holy",
+            )
+            return "Oath's Judgment answers with a Holy counter.\n" + message
+
+        return execute_reaction("oaths_judgment", defender, resolve) or ""
     except Exception:
         return ""
 

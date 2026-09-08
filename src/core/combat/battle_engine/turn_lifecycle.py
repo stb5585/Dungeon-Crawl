@@ -28,6 +28,14 @@ if TYPE_CHECKING:
 class TurnLifecycleMixin:
     """Advance turns and settle completed combat encounters."""
 
+    def _resolve_reaction_once(self, reaction_id: str, resolver) -> str:
+        """Resolve one engine-owned reaction once for the current action result."""
+        key = (self._current_actor_turn_id, reaction_id)
+        if key in self._reaction_executions:
+            return ""
+        self._reaction_executions.add(key)
+        return resolver()
+
     def companion_turn(self) -> str:
         """Process the attacker's familiar/companion turn. Returns message text."""
         undead_text = ""
@@ -122,7 +130,10 @@ class TurnLifecycleMixin:
 
         if not self.flee:
             # Defender's passive special effects (e.g. thorns, counter-attack)
-            special = self.defender.special_effects(self.attacker)
+            special = self._resolve_reaction_once(
+                f"post_action_special:{self._actor_id_for(self.defender)}",
+                lambda: self.defender.special_effects(self.attacker),
+            )
             if special:
                 result.messages.append(special)
                 self.logger.log_event(
@@ -253,7 +264,10 @@ class TurnLifecycleMixin:
 
                 # Behemoth death special (Meteor on death)
                 if self.defender.name == "Behemoth":
-                    special = self.defender.special_effects(self.attacker)
+                    special = self._resolve_reaction_once(
+                        f"death_special:{self._actor_id_for(self.defender)}",
+                        lambda: self.defender.special_effects(self.attacker),
+                    )
                     if special:
                         result.messages.append(special)
 
@@ -261,7 +275,10 @@ class TurnLifecycleMixin:
                 self._member_for_character(self.attacker) is not None
                 and self.defender == self.player
             ):
-                riposte = paladin.resolve_riposte(self.player, self.attacker)
+                riposte = self._resolve_reaction_once(
+                    "judgment_riposte",
+                    lambda: paladin.resolve_riposte(self.player, self.attacker),
+                )
                 if riposte:
                     result.messages.append(riposte)
 
@@ -291,6 +308,7 @@ class TurnLifecycleMixin:
 
     def swap_turns(self) -> None:
         """Advance the fixed actor cycle while preserving legacy aliases."""
+        self._reaction_executions.clear()
         if not self._turn_action_committed:
             self._turn_action_committed = True
             return

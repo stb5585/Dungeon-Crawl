@@ -6,6 +6,7 @@ import random
 from typing import TYPE_CHECKING
 
 from ..combat.combat_result import CombatResult, CombatResultGroup
+from ..combat.reactions import execute_reaction, reaction_result
 from ..combat.targeting import TargetLossPolicy, TargetScope
 from ..constants import DAMAGE_VARIANCE_HIGH, DAMAGE_VARIANCE_LOW
 from ..events.event_bus import combat_event_context
@@ -34,6 +35,7 @@ class Attack(Spell):
         self.crit = crit
         self.turns = None
 
+    @reaction_result
     def cast(
         self,
         caster: Character,
@@ -162,8 +164,14 @@ class Attack(Spell):
                 if "Counterspell" in target.spellbook["Spells"] and not random.randint(
                     0, 4
                 ):  # TODO
-                    cast_message += f"{target.name} uses Counterspell.\n"
-                    cast_message += Counterspell().use(target, caster)
+                    counterspell = execute_reaction(
+                        "counterspell",
+                        target,
+                        lambda: Counterspell().use(target, caster),
+                    )
+                    if counterspell:
+                        cast_message += f"{target.name} uses Counterspell.\n"
+                        cast_message += counterspell
             if (
                 caster.cls.name == "Wizard"
                 and caster.class_effects["Power Up"].active
