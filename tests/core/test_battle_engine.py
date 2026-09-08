@@ -296,6 +296,47 @@ def test_charging_skill_forced_action_takes_priority_over_berserk():
     assert forced.choice == "Dragon Breath (Fire)"
 
 
+def test_forced_berserk_action_cannot_be_bypassed_by_a_direct_intent():
+    engine, player = _make_engine_with_player_attacking()
+    player.status_effects["Berserk"].active = True
+
+    blocked = engine.execute_action("Defend")
+
+    assert blocked.committed is False
+    assert blocked.validation_code.name == "FORCED_ACTION_REQUIRED"
+    assert "forced action: Attack" in blocked.message
+
+
+def test_forced_jump_cannot_be_bypassed_by_a_direct_intent():
+    engine, player = _make_engine_with_player_attacking()
+    jump = FakeJumpSkill()
+    player.spellbook["Skills"] = {"Jump": jump}
+    player.class_effects["Jump"].active = True
+
+    blocked = engine.execute_action("Attack")
+    resolved = engine.execute_action("Use Skill", "Jump")
+
+    assert blocked.committed is False
+    assert blocked.validation_code.name == "FORCED_ACTION_REQUIRED"
+    assert "Jump hits" in resolved.message
+
+
+def test_forced_cancellation_remains_enforceable_after_its_charge_is_cleared():
+    engine, player = _make_engine_with_player_attacking()
+    jump = FakeJumpSkill()
+    player.spellbook["Skills"] = {"Jump": jump}
+    player.class_effects["Jump"].active = True
+    player.incapacitated = lambda: True
+
+    blocked = engine.execute_action("Attack")
+    cancelled = engine.execute_action("Cancelled")
+
+    assert blocked.committed is False
+    assert blocked.validation_code.name == "FORCED_ACTION_REQUIRED"
+    assert jump.charging is False
+    assert cancelled.committed is True
+
+
 def test_resolved_jump_clears_forced_action_and_returns_control():
     engine, player = _make_engine_with_player_attacking()
     jump = FakeJumpSkill()

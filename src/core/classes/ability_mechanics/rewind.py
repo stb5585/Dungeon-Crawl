@@ -224,6 +224,9 @@ def restore_battle_snapshot(engine: Any, snapshot: dict[str, Any]) -> str:
         key: dict(value) for key, value in snapshot.get("pending_actions", {}).items()
     }
     engine.delayed_spells = [dict(entry) for entry in snapshot.get("delayed_spells", [])]
+    engine._forced_cancellation = None
+    engine._forced_cancellation_actor_id = None
+    engine._forced_cancellation_turn_id = 0
     from .. import promotion_kits
 
     promotion_state = promotion_kits.combat_state(engine.player)

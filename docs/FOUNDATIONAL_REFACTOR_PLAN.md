@@ -347,8 +347,11 @@ Current slice status:
   Charges are complete: their pending intent records the starting owner turn,
   cannot resolve or cancel on that same opportunity, preserves its committed
   target through subsequent charge ticks, and refunds nothing on cancellation
-  or target loss. Forced actions, reactions, owner-turn status migration,
-  logs, and simulator diagnostics remain in the ordered work.
+  or target loss. Forced actions are complete: canonical intents cannot bypass
+  Berserk, charge, Jump, or cancellation decisions, and a cancellation stays
+  enforced for its owner opportunity after clearing its charge state.
+  Reactions, owner-turn status migration, logs, and simulator diagnostics
+  remain in the ordered work.
 
 ## Progression Boundary
 

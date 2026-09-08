@@ -26,6 +26,30 @@ if TYPE_CHECKING:
 class TurnPreparationMixin:
     """Prepare combatants and determine forced actions at turn start."""
 
+    def _cached_forced_cancellation(self) -> ForcedAction | None:
+        """Return a cancellation that already consumed this actor's choice."""
+        forced = self._forced_cancellation
+        actor_id = self.current_actor_id or self._actor_id_for(self.attacker)
+        if (
+            forced is not None
+            and self._forced_cancellation_actor_id == actor_id
+            and self._forced_cancellation_turn_id == self._current_actor_turn_id
+        ):
+            return forced
+        self._forced_cancellation = None
+        self._forced_cancellation_actor_id = None
+        return None
+
+    def _remember_forced_cancellation(self, message: str) -> ForcedAction:
+        """Keep a forced cancellation enforceable after its charge state is cleared."""
+        forced = ForcedAction(action="Cancelled", cancel_message=message)
+        self._forced_cancellation = forced
+        self._forced_cancellation_actor_id = self.current_actor_id or self._actor_id_for(
+            self.attacker
+        )
+        self._forced_cancellation_turn_id = self._current_actor_turn_id
+        return forced
+
     @staticmethod
     def _clear_stale_charging_actions(character: Character) -> None:
         """Clear charge state that should never persist across battles."""
@@ -207,6 +231,10 @@ class TurnPreparationMixin:
         Returns a ForcedAction when the attacker must perform a specific action
         (berserk, charging skill, jump), or None when the actor has free choice.
         """
+        cached_cancellation = self._cached_forced_cancellation()
+        if cached_cancellation is not None:
+            return cached_cancellation
+
         # Jump in progress. Resolve the airborne/charging state before Berserk
         # can force a basic attack, especially when Unstoppable is active.
         if self.attacker.class_effects["Jump"].active:
@@ -224,7 +252,8 @@ class TurnPreparationMixin:
                 if not cancel_msg:
                     cancel_msg = f"{self.attacker.name}'s Jump was cancelled.\n"
                 self.attacker.class_effects["Jump"].active = False
-                return ForcedAction(action="Cancelled", cancel_message=cancel_msg)
+                self._clear_pending_charge(self._actor_id_for(self.attacker), jump_skill)
+                return self._remember_forced_cancellation(cancel_msg)
 
             if jump_choice:
                 self.attacker.class_effects["Jump"].active = False
