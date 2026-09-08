@@ -26,7 +26,7 @@ from ..actor_cycle import (
 from ..battle_logger import BattleLogger
 from ..encounter import CombatEncounter
 from .actions import BattleActionMixin
-from .models import ActionResult
+from .models import ActionResult, ForcedAction
 from .outcomes import BattleOutcomeMixin
 from .turns import BattleTurnMixin
 
@@ -95,6 +95,9 @@ class BattleEngine(BattleTurnMixin, BattleActionMixin, BattleOutcomeMixin):
         self._current_actor_turn_id = 0
         self._turn_action_committed = True
         self._completed_outcome = None
+        self._forced_cancellation: ForcedAction | None = None
+        self._forced_cancellation_actor_id: str | None = None
+        self._forced_cancellation_turn_id = 0
 
         # Track charging abilities across turns
         self.charging_ability: tuple[Character, str, Any] | None = None  # (owner, name, skill_obj)

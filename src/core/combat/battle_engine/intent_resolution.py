@@ -51,6 +51,19 @@ class IntentResolutionMixin:
                 f"{self.attacker.name} has no charge to cancel.\n",
             )
 
+        forced_action = self.get_forced_action()
+        cancelling_pending_charge = intent.action == "Cancel Charge" and pending_charge is not None
+        if (
+            forced_action is not None
+            and not cancelling_pending_charge
+            and (intent.action != forced_action.action or intent.choice != forced_action.choice)
+        ):
+            required = forced_action.choice or forced_action.action
+            return self._reject_intent(
+                ActionValidationCode.FORCED_ACTION_REQUIRED,
+                f"{self.attacker.name} must perform their forced action: {required}.\n",
+            )
+
         scope = self._target_scope_for_action(intent.action, intent.choice)
         targets = self._validated_intent_targets(intent, scope)
         if isinstance(targets, ActionResult):

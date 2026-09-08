@@ -752,26 +752,30 @@ class TestDataDrivenSpellCast:
         assert result.damage > 0
         assert flying_target.health.current < hp_before
 
-    def test_electric_spell_can_apply_stun(self):
-        """Electric spells should sometimes apply Stun."""
+    def test_electric_spell_can_apply_stun(self, monkeypatch):
+        """Electric spells apply Stun when their authored contests succeed."""
+        import random
+
         from src.core.data.ability_loader import AbilityFactory
+
+        # Shock first makes its authored Intelligence-versus-Wisdom contest,
+        # then Stun makes its status-resistance contest. Use the upper bound
+        # for both rolls so this verifies the effect pipeline rather than
+        # intermittently sampling two independent random gates.
+        monkeypatch.setattr(random, "randint", lambda _lower, upper: upper)
 
         filepath = (
             Path(__file__).parent.parent / "src" / "core" / "data" / "abilities" / "shock.yaml"
         )
         spell = AbilityFactory.create_from_yaml(filepath)
 
-        stun_applied = False
-        for _ in range(50):
-            caster, target = self._make_combatants()
-            caster.stats.intel = 100
-            target.stats.wisdom = 5
-            result = spell.cast(caster, target)
-            if target.status_effects["Stun"].active:
-                stun_applied = True
-                break
+        caster, target = self._make_combatants()
+        caster.stats.intel = 100
+        target.stats.wisdom = 5
+        target.status_effects["Sleep"].active = True
+        spell.cast(caster, target)
 
-        assert stun_applied, "Stun should have triggered at least once in 50 casts"
+        assert target.status_effects["Stun"].active
 
 
 # ---------------------------------------------------------------------------

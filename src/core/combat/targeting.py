@@ -43,6 +43,7 @@ class ActionValidationCode(str, Enum):
     CHARGE_NOT_READY = "charge_not_ready"
     CHARGE_PENDING = "charge_pending"
     NO_CHARGE_TO_CANCEL = "no_charge_to_cancel"
+    FORCED_ACTION_REQUIRED = "forced_action_required"
 
 
 @dataclass(frozen=True, init=False)
