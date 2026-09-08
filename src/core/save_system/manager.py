@@ -3,6 +3,7 @@
 import json
 import os
 from dataclasses import dataclass
+from typing import TypedDict
 
 from src.paths import USER_SAVE_DIR, USER_TEMP_DIR
 
@@ -15,6 +16,23 @@ class SaveLoadResult:
 
     player: object | None
     error: str | None = None
+
+
+class SaveFileMetadata(TypedDict):
+    """Filesystem facts used to render and diagnose one save entry."""
+
+    filename: object
+    is_tmp: bool
+    valid: bool
+    expected_extension: str
+    extension_matches_expected: bool
+    path: str | None
+    exists: bool
+    is_file: bool
+    is_dir: bool
+    loadable: bool
+    size: int | None
+    empty: bool
 
 
 class SaveManager:
@@ -46,7 +64,7 @@ class SaveManager:
         return os.path.join(directory, filename)
 
     @staticmethod
-    def ensure_dirs():
+    def ensure_dirs() -> None:
         """Ensure save directories exist."""
         for dir_path in [SaveManager.SAVE_DIR, SaveManager.TMP_DIR]:
             if not os.path.isdir(dir_path):
@@ -70,7 +88,7 @@ class SaveManager:
             raise
 
     @staticmethod
-    def save_player(player, filename: str, is_tmp: bool = False) -> bool:
+    def save_player(player: object, filename: str, is_tmp: bool = False) -> bool:
         """Save player to file."""
         SaveManager.ensure_dirs()
 
@@ -84,7 +102,11 @@ class SaveManager:
             return False
 
     @staticmethod
-    def load_player(filename: str, is_tmp: bool = False, skip_tiles=False):
+    def load_player(
+        filename: str,
+        is_tmp: bool = False,
+        skip_tiles: bool = False,
+    ) -> object | None:
         """Load player from file.
 
         Args:
@@ -150,9 +172,9 @@ class SaveManager:
         return sorted(saves)
 
     @staticmethod
-    def describe_save_file(filename: object, is_tmp: bool = False) -> dict[str, object]:
+    def describe_save_file(filename: object, is_tmp: bool = False) -> SaveFileMetadata:
         """Return filesystem metadata for one save entry without reading its contents."""
-        metadata: dict[str, object] = {
+        metadata: SaveFileMetadata = {
             "filename": filename,
             "is_tmp": is_tmp,
             "valid": SaveManager.is_valid_save_filename(filename),
@@ -169,9 +191,10 @@ class SaveManager:
         if not metadata["valid"]:
             return metadata
 
-        metadata["extension_matches_expected"] = str(filename).endswith(
-            str(metadata["expected_extension"])
-        )
+        if not isinstance(filename, str):
+            return metadata
+
+        metadata["extension_matches_expected"] = filename.endswith(metadata["expected_extension"])
         filepath = SaveManager._resolve_save_path(filename, is_tmp=is_tmp)
         metadata["path"] = filepath
         metadata["exists"] = os.path.exists(filepath)
@@ -188,7 +211,7 @@ class SaveManager:
         return metadata
 
     @staticmethod
-    def list_save_metadata() -> list[dict[str, object]]:
+    def list_save_metadata() -> list[SaveFileMetadata]:
         """Return metadata for player-visible save files in load-menu order."""
         return [SaveManager.describe_save_file(filename) for filename in SaveManager.list_saves()]
 
@@ -196,16 +219,16 @@ class SaveManager:
     def summarize_save_metadata() -> dict[str, object]:
         """Return compact summary diagnostics for player-visible save files."""
         metadata = SaveManager.list_save_metadata()
-        sizes = [entry["size"] for entry in metadata if isinstance(entry.get("size"), int)]
+        sizes = [entry["size"] for entry in metadata if entry["size"] is not None]
         largest = max(
             metadata,
-            key=lambda entry: entry["size"] if isinstance(entry.get("size"), int) else -1,
+            key=lambda entry: entry["size"] if entry["size"] is not None else -1,
             default=None,
         )
         return {
             "visible_count": len(metadata),
             "visible_filenames": [entry["filename"] for entry in metadata],
-            "loadable_count": sum(1 for entry in metadata if entry.get("loadable")),
+            "loadable_count": sum(1 for entry in metadata if entry["loadable"]),
             "total_size": sum(sizes),
             "empty_save_count": sum(1 for size in sizes if size == 0),
             "largest_save": None if largest is None else largest["filename"],
