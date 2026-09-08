@@ -338,7 +338,8 @@ Current slice status:
 - Ability migration: complete; all 197 definitions have canonical IDs,
   taxonomy, aliases, targeting policy, and registered traits. CI rejects any
   incomplete definition and new saves serialize ability slugs.
-- Resolution: next.
+- Resolution: in progress; one-roll contact is complete, while visibility,
+  Detect, target-loss behavior, and symmetric enemy-area results remain.
 - Timeline through milestone closure: queued in the order above.
 
 ## Progression Boundary

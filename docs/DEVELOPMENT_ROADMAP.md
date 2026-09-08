@@ -69,13 +69,25 @@ slices are complete. All 197 YAML definitions now use immutable slug identity,
 closed taxonomy, registered traits, and actor-relative targeting; the legacy
 allowlist is empty and CI requires complete validation.
 
-The current target is the resolution slice: deterministic fitted one-roll
-weapon and spell contact, core concealment and Detect rules, symmetric target
-resolution, target-loss behavior, and structured enemy-area results.
+The current target is the remainder of the resolution slice: core
+concealment/Sight/Detect rules, symmetric target resolution, target-loss
+behavior, and structured enemy-area results. The fitted one-roll weapon and
+spell contact contract is complete.
 
 UI replacement and encounter expansion follow only after the migrated action
 contract, resolution rules, and timeline are stable. Numeric tuning remains a
 separate evidence-gated activity.
+
+### Priority Queue After The Foundational Milestone
+
+After milestone closure, prioritize correctness work on broad exception
+handling in combat/progression/save paths, then extend strict typing through
+stable non-Pygame contracts. Follow with deliberate decomposition of the
+largest combat functions and Pygame import-cycle reduction. Package-barrel
+cleanup, asset optimization/LFS evaluation, and public-release infrastructure
+(platform builds, release attachments, provenance, and branch protection) are
+separate infrastructure initiatives; none should be bundled into numeric
+combat tuning.
 
 ## Evidence Task — Multi-Enemy Pilot 3 Rebenchmark
 

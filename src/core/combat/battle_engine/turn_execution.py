@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 from ..actor_cycle import PLAYER_ACTOR_ID
 from ..combat_result import CombatResultGroup
 from ..targeting import TargetScope
+from ..visibility import is_revealed_to
 from .models import (
     ActionIntent,
     ActionResult,
@@ -118,7 +119,7 @@ class TurnExecutionMixin:
             "Dismiss Form",
         }:
             return TargetScope.NONE
-        if action in {"Defend", "Summon"}:
+        if action in {"Defend", "Summon", "Detect"}:
             return TargetScope.SELF
         if action == "Use Item":
             if choice:
@@ -233,5 +234,10 @@ class TurnExecutionMixin:
             return self._reject_intent(
                 ActionValidationCode.UNAVAILABLE_TARGET,
                 "That target is dead or has already left the encounter.\n",
+            )
+        if not is_revealed_to(self.attacker, member.enemy):
+            return self._reject_intent(
+                ActionValidationCode.CONCEALED_TARGET,
+                "That concealed opponent cannot be targeted directly. Use Detect or an area action.\n",
             )
         return [member]

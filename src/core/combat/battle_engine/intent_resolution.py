@@ -10,7 +10,8 @@ from ...events.event_bus import EventType, create_combat_event
 from ..actor_cycle import PLAYER_ACTOR_ID
 from ..combat_result import CombatResult, CombatResultGroup
 from ..targeting import TargetScope
-from .models import ActionIntent, ActionResult, ActionValidationCode
+from ..visibility import break_concealment
+from .models import ActionIntent, ActionResult
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -46,12 +47,12 @@ class IntentResolutionMixin:
             if allies and random.random() < 0.50:
                 targets = [random.choice(allies)]
                 confused_friendly_fire = True
-        if scope == TargetScope.ALL_ENEMIES and actor_id != PLAYER_ACTOR_ID:
-            return self._reject_intent(
-                ActionValidationCode.ENEMY_AREA_UNSUPPORTED,
-                "Enemy-authored all-enemy actions are not supported yet.\n",
-            )
         self._turn_action_committed = True
+
+        if scope == TargetScope.SINGLE_ENEMY and actor_id != PLAYER_ACTOR_ID:
+            # A hostile committed direct action identifies the concealed actor,
+            # even when its contact roll later misses.
+            break_concealment(self.attacker)
 
         target_ids = tuple(member.combatant_id for member in targets)
         if scope == TargetScope.SELF:
