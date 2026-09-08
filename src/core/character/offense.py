@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import random
+from dataclasses import replace
 from typing import TYPE_CHECKING
 
 from ..constants import (
@@ -34,6 +35,7 @@ from ..constants import (
 from .models import _class_name, sigmoid
 
 if TYPE_CHECKING:
+    from ..combat.contact import ContactInputs
     from .core import Character
     from .models import WeaponDamageResult
 
@@ -42,6 +44,196 @@ _WeaponStrike = tuple[str | None, int, int, int, float]
 
 
 class CharacterOffenseMixin:
+    def contact_inputs(
+        self,
+        defender: Character,
+        *,
+        typ: str,
+        accuracy_points: float = 0.0,
+        dodge_points: float = 0.0,
+        always_hit: bool = False,
+    ):
+        """Build approved one-roll contact inputs from current combat state."""
+        from ..classes import ability_mechanics, footpad, healer, paladin, warrior
+        from ..combat.contact import ContactInputs, ContactKind, armor_group_for_subtype
+
+        def pro_level(character: Character) -> int:
+            return int(getattr(getattr(character, "level", None), "pro_level", 1) or 1)
+
+        weapon_type = getattr(self.equipment.get("Weapon"), "subtyp", None)
+        multiplier = 1.0
+        points = accuracy_points
+        if typ == "weapon":
+            multiplier *= 1 + (ACCURACY_RING_BONUS * ("Accuracy" in self.equipment["Ring"].mod))
+            blind_penalty = BLIND_ACCURACY_PENALTY
+            if getattr(getattr(self, "race", None), "name", None) == "Elf":
+                blind_penalty *= ELF_BLIND_PENALTY_MULTIPLIER
+            if ability_mechanics.has_skill(self, "Blind Fighting"):
+                blind_penalty *= 0.50
+            multiplier *= 1 - (blind_penalty * self.status_effects["Blind"].active)
+            extended_reach = bool(
+                defender.flying
+                and weapon_type == "Polearm"
+                and "Extended Reach" in self.spellbook.get("Skills", {})
+            )
+            multiplier *= 1 - FLYING_ACCURACY_PENALTY * (defender.flying and not extended_reach)
+            multiplier *= 1 - (DISARM_HIT_PENALTY * self.is_disarmed())
+            multiplier *= 1 - (BERSERK_HIT_PENALTY * self.status_effects["Berserk"].active)
+            multiplier *= 1 - (BLIND_RAGE_HIT_PENALTY * self.status_effects["Blind Rage"].active)
+            if self.status_effects.get("Peaceful") and self.status_effects["Peaceful"].active:
+                points += 0.10
+            if "Weapon Focus" in self.spellbook.get("Skills", {}):
+                points += 0.05
+            points += ability_mechanics.duelist_accuracy_bonus(self)
+            points += paladin.sword_and_board_accuracy_bonus(self)
+            points += warrior.commitment_accuracy_bonus(self)
+            try:
+                from ..classes import mage_mechanics
+
+                points += mage_mechanics.melee_accuracy_bonus(self)
+            except (AttributeError, KeyError, TypeError):
+                pass
+        else:
+            try:
+                from ..classes import astromancer
+
+                points += astromancer.threaded_bonus(self, "accuracy")
+            except (AttributeError, KeyError, TypeError):
+                pass
+            points += max(0.0, float(getattr(self, "_totem_surge_reliability", 0.0) or 0.0))
+
+        points += PRO_LEVEL_HIT_MODIFIER * (pro_level(self) - pro_level(defender))
+        invisibility_penalty = INVISIBLE_ACCURACY_PENALTY
+        if getattr(getattr(self, "race", None), "name", None) == "Elf":
+            invisibility_penalty *= ELF_INVISIBLE_PENALTY_MULTIPLIER
+        multiplier *= 1 - invisibility_penalty * defender.invisible
+        points -= footpad.obscuration_accuracy_penalty(defender)
+        points += footpad.surprise_accuracy_bonus(self)
+        points += healer.accuracy_bonus(self, weapon_type if typ == "weapon" else None)
+        if getattr(self, "encumbered", False):
+            multiplier *= ENCUMBERED_HIT_MULTIPLIER
+            if getattr(getattr(self, "race", None), "name", None) == "Gnome":
+                multiplier *= GNOME_ENCUMBERED_HIT_MULTIPLIER
+
+        dodge_points += 0.1 * (
+            "Dodge"
+            in defender.equipment["Ring"].mod + "Evasion"
+            in defender.spellbook.get("Skills", {})
+        )
+        dodge_points += footpad.concealment_dodge_bonus(defender)
+        third_eye = ability_mechanics.third_eye_intelligence(defender)
+        if typ == "weapon":
+            if "Quickstep" in defender.spellbook.get("Skills", {}):
+                dodge_points += min(0.15, max(0.0, (int(defender.stats.dex) - 10) / 100))
+            dodge_points += footpad.live_and_learn_dodge_bonus(defender)
+        else:
+            pendant_mod = getattr(defender.equipment.get("Pendant"), "mod", "")
+            dodge_points += 0.25 * ("Magic Dodge" in pendant_mod)
+            dodge_points += footpad.spell_dodge_bonus(defender)
+
+        try:
+            from ..classes import promotion_kits
+
+            dodge_points += promotion_kits.case_prediction_dodge_bonus(defender, self)
+            dodge_points += promotion_kits.rope_a_dope_dodge_bonus(defender)
+        except (AttributeError, KeyError, TypeError):
+            pass
+        defender_class = _class_name(defender)
+        if defender_class == "Seeker" or (
+            defender_class == "Templar" and defender.class_effects["Power Up"].active
+        ):
+            dodge_points += 0.25 * defender.power_up
+        try:
+            from ..classes import class_rings
+            from ..classes import paladin as defender_paladin
+
+            dodge_points += class_rings.arcane_trickster_dodge_bonus(defender)
+            dodge_points += defender_paladin.retribution_dodge_bonus(defender)
+        except (AttributeError, KeyError, TypeError):
+            pass
+        dodge_points += ability_mechanics.tricksters_gambit_dodge_bonus(defender)
+        if defender.status_effects.get("Hangover") and defender.status_effects["Hangover"].active:
+            dodge_points *= DWARF_HANGOVER_DODGE_MULTIPLIER
+        if getattr(defender, "encumbered", False):
+            dodge_points /= 2
+            if getattr(getattr(defender, "race", None), "name", None) == "Gnome":
+                dodge_points *= GNOME_ENCUMBERED_DODGE_MULTIPLIER
+
+        if typ == "weapon":
+            return ContactInputs(
+                kind=ContactKind.WEAPON,
+                proficiency_difference=pro_level(self) - pro_level(defender),
+                defender_speed=defender.check_mod("speed", enemy=self) + third_eye,
+                armor_group=armor_group_for_subtype(
+                    getattr(defender.equipment.get("Armor"), "subtyp", None)
+                ),
+                accuracy_multiplier=multiplier,
+                accuracy_points=points,
+                dodge_points=dodge_points,
+                always_hit=always_hit,
+            )
+        charisma_term = max(-5, min(5, int(defender.stats.charisma) - 10))
+        return ContactInputs(
+            kind=ContactKind.SPELL,
+            intelligence=self.stats.intel,
+            wisdom=max(0, int(defender.stats.wisdom) + third_eye),
+            charisma_term=charisma_term,
+            accuracy_multiplier=multiplier,
+            accuracy_points=points,
+            dodge_points=dodge_points,
+            always_hit=always_hit,
+        )
+
+    def resolve_contact(
+        self,
+        defender: Character,
+        *,
+        typ: str,
+        accuracy_points: float = 0.0,
+        dodge_points: float = 0.0,
+        always_hit: bool = False,
+        rng=random,
+    ):
+        """Resolve one authoritative weapon or spell contact attempt."""
+        from ..combat.contact import ContactResult, FailureAttribution, resolve_contact
+
+        # Public tests and third-party extensions historically override these
+        # compatibility calculators on an instance. Honor an explicit override
+        # at this boundary while production callers use the fitted resolver.
+        legacy_hit = self.__dict__.get("hit_chance")
+        legacy_dodge = defender.__dict__.get("dodge_chance")
+        if callable(legacy_hit) or callable(legacy_dodge):
+            hit_chance = float(legacy_hit(defender, typ=typ)) if callable(legacy_hit) else 1.0
+            if callable(legacy_dodge):
+                dodge_chance = float(
+                    legacy_dodge(self, spell=True) if typ == "magic" else legacy_dodge(self)
+                )
+            else:
+                dodge_chance = 0.0
+            if always_hit:
+                return ContactResult(hit=True, chance=1.0, roll=None, always_hit=True)
+            hit = hit_chance > 0.0 and dodge_chance <= 0.0
+            attribution = (
+                FailureAttribution.DODGE if dodge_chance > 0.0 else FailureAttribution.MISS
+            )
+            return ContactResult(
+                hit=hit,
+                chance=max(0.0, min(1.0, hit_chance * (1.0 - dodge_chance))),
+                roll=None,
+                attribution=None if hit else attribution,
+            )
+
+        return resolve_contact(
+            self.contact_inputs(
+                defender,
+                typ=typ,
+                accuracy_points=accuracy_points,
+                dodge_points=dodge_points,
+                always_hit=always_hit,
+            ),
+            rng=rng,
+        )
+
     def _honed_attack_critical_multiplier(self, multiplier: float) -> float:
         """Increase only the bonus portion of weapon critical damage."""
         honed_attack = self.spellbook.get("Skills", {}).get("Honed Attack")
@@ -312,6 +504,7 @@ class CharacterOffenseMixin:
         """
         from ..classes import ability_mechanics, footpad, grandmaster, healer
         from ..combat.combat_result import CombatResult, CombatResultGroup
+        from ..combat.contact import FailureAttribution, resolve_contact
 
         dmg_mod, hit, conversion_bonus, fire_inside_active, early_result = (
             self._prepare_weapon_damage(
@@ -376,7 +569,7 @@ class CharacterOffenseMixin:
             )
             weapon_type, damage, dmg, crits[i], crit_per = strike
 
-            hits[i], dodge, hit_per, hit_message = self._resolve_weapon_hit(
+            hits[i], dodge, _hit_per, hit_message, contact_inputs = self._resolve_weapon_hit(
                 defender,
                 att,
                 weapon_type,
@@ -417,10 +610,13 @@ class CharacterOffenseMixin:
                 and not defender.incapacitated()
             ):
                 defender._untouchable_used = True
-                reroll_dodge = defender.dodge_chance(self) > random.random()
-                reroll_hit = (hit_per if not hit else 1.0) > random.random()
                 weapon_dam_str += f"{defender.name}'s Untouchable rerolls the attack.\n"
-                if reroll_dodge or not reroll_hit:
+                reroll = resolve_contact(
+                    replace(contact_inputs, always_hit=hit or defender.incapacitated()),
+                    rng=random,
+                )
+                reroll_dodge = reroll.attribution is FailureAttribution.DODGE
+                if not reroll.hit:
                     hits[i] = False
                     self._reset_maelstrom()
                     if reroll_dodge:
@@ -821,40 +1017,43 @@ class CharacterOffenseMixin:
         hit: bool,
         counterattack: bool,
         accuracy_modifier: float,
-    ) -> tuple[bool, bool, float, str]:
+    ) -> tuple[bool, bool, float, str, ContactInputs]:
         """Resolve dodge, accuracy, and Do-over for one non-guaranteed attack."""
         from ..classes import ability_mechanics, footpad, grandmaster, pathfinder, promotion_kits
+        from ..combat.contact import FailureAttribution, resolve_contact
 
         message = ""
-        hit_per = 1.0
-        resolved_hit = hit
-        if not hit:
-            dodge_chance = defender.dodge_chance(self)
-            if counterattack:
-                dodge_chance += pathfinder.counterattack_dodge_bonus(defender)
-            dodge = dodge_chance > random.random()
-            hit_per = self.hit_chance(defender, typ="weapon")
-            hit_per += accuracy_modifier
-            hit_per += ability_mechanics.dual_wield_accuracy_modifier(self, slot)
-            hit_per += grandmaster.accuracy_bonus(self, weapon_type)
-            hit_per += grandmaster.two_handed_accuracy_bonus(self, slot)
-            hit_per += grandmaster.perfect_form_accuracy_bonus(self, weapon_type)
-            hit_per += ability_mechanics.polearm_accuracy_modifier(self, weapon_type)
-            hit_per += ability_mechanics.monkey_grip_accuracy_modifier(self, slot)
-            hit_per += promotion_kits.aerial_accuracy_bonus(self)
-            hit_per += promotion_kits.focused_assault_accuracy(self)
-            hit_per += promotion_kits.jinx_accuracy_modifier(self)
-            resolved_hit = hit_per > random.random()
-        else:
-            dodge = False
-        if defender.incapacitated():
-            dodge = False
-            resolved_hit = True
-        if (dodge or not resolved_hit) and footpad.try_do_over(self):
-            dodge = defender.dodge_chance(self) > random.random()
-            resolved_hit = (hit_per > random.random()) and not dodge
+        bonus = accuracy_modifier
+        bonus += ability_mechanics.dual_wield_accuracy_modifier(self, slot)
+        bonus += grandmaster.accuracy_bonus(self, weapon_type)
+        bonus += grandmaster.two_handed_accuracy_bonus(self, slot)
+        bonus += grandmaster.perfect_form_accuracy_bonus(self, weapon_type)
+        bonus += ability_mechanics.polearm_accuracy_modifier(self, weapon_type)
+        bonus += ability_mechanics.monkey_grip_accuracy_modifier(self, slot)
+        bonus += promotion_kits.aerial_accuracy_bonus(self)
+        bonus += promotion_kits.focused_assault_accuracy(self)
+        bonus += promotion_kits.jinx_accuracy_modifier(self)
+        counter_dodge = pathfinder.counterattack_dodge_bonus(defender) if counterattack else 0.0
+        inputs = self.contact_inputs(
+            defender,
+            typ="weapon",
+            accuracy_points=bonus,
+            dodge_points=counter_dodge,
+            always_hit=hit or defender.incapacitated(),
+        )
+        contact = self.resolve_contact(
+            defender,
+            typ="weapon",
+            accuracy_points=bonus,
+            dodge_points=counter_dodge,
+            always_hit=hit or defender.incapacitated(),
+            rng=random,
+        )
+        if not contact.hit and footpad.try_do_over(self):
+            contact = resolve_contact(replace(inputs, always_hit=False), rng=random)
             message = f"{self.name} uses Do-over to reroll the missed attack.\n"
-        return resolved_hit, dodge, hit_per, message
+        dodge = contact.attribution is FailureAttribution.DODGE
+        return contact.hit, dodge, contact.chance, message, inputs
 
     def _finish_weapon_damage(
         self,

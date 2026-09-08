@@ -6524,6 +6524,7 @@ class TestBatch9ShieldSlam:
 
     def test_shield_slam_does_not_replay_prior_messages(self, monkeypatch):
         import random
+        from types import SimpleNamespace
 
         from src.core import abilities
 
@@ -6532,6 +6533,11 @@ class TestBatch9ShieldSlam:
 
         # Deterministic execution: always hit, fixed damage, win stun contest.
         monkeypatch.setattr(target, "dodge_chance", lambda _actor: 0.0)
+        monkeypatch.setattr(
+            user,
+            "resolve_contact",
+            lambda *_args, **_kwargs: SimpleNamespace(hit=True, attribution=None),
+        )
         monkeypatch.setattr(target, "stun_contest_success", lambda _a, _r1, _r2: True)
         monkeypatch.setattr(random, "uniform", lambda _lo, _hi: 1.0)
         monkeypatch.setattr(random, "randint", lambda lo, hi: hi)
@@ -8864,10 +8870,17 @@ class TestBatch15MagicMissile:
         mm.cast(caster, target)
         assert caster.mana.current == mana_before - 5
 
-    def test_magic_missile_cast_returns_string(self):
+    def test_magic_missile_cast_returns_string(self, monkeypatch):
+        from types import SimpleNamespace
+
         from src.core import abilities
 
         caster, target = self._make_combatants()
+        monkeypatch.setattr(
+            caster,
+            "resolve_contact",
+            lambda *_args, **_kwargs: SimpleNamespace(hit=True, attribution=None),
+        )
         mm = abilities.MagicMissile()
         result = mm.cast(caster, target)
         assert isinstance(result, str)

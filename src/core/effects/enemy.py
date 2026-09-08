@@ -365,10 +365,8 @@ class AcidSpitEffect:
         variance = _rng.uniform(DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH)
         damage = int(damage * variance)
 
-        if actor.hit_chance(target, typ="magic"):
-            if target.dodge_chance(actor, spell=True):
-                messages.append(self.dodge_message.format(target=target.name))
-                damage //= 2
+        contact = actor.resolve_contact(target, typ="magic", rng=_rng)
+        if contact.hit:
             if damage > 0:
                 messages.append(self.damage_message.format(target=target.name, damage=damage))
                 target.health.current -= damage
@@ -589,7 +587,7 @@ class GoblinPunchEffect:
         )
         total_damage = 0
         for _ in range(num_attacks):
-            if actor.hit_chance(target, typ="weapon"):
+            if actor.resolve_contact(target, typ="weapon", rng=_rng).hit:
                 target.health.current -= str_diff
                 total_damage += str_diff
                 messages.append(

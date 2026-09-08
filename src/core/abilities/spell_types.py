@@ -20,7 +20,6 @@ if TYPE_CHECKING:
 
 # Spell types
 class Attack(Spell):
-
     def __init__(
         self,
         name: str,
@@ -54,13 +53,17 @@ class Attack(Spell):
             return "It has no effect.\n"
         reflect = target.magic_effects["Reflect"].active
         spell_mod = caster.check_mod("magic", enemy=target)
-        dodge = target.dodge_chance(caster, spell=True)
-        hit = caster.hit_chance(target, typ="magic")
-        if target.incapacitated():
-            dodge = False
-            hit = True
-        if dodge and not reflect:
-            cast_message += f"{target.name} dodged the {self.name} and was unhurt.\n"
+        contact = caster.resolve_contact(
+            target,
+            typ="magic",
+            always_hit=target.incapacitated(),
+            rng=random,
+        )
+        if not contact.hit and not reflect:
+            if contact.attribution is not None and contact.attribution.value == "dodge":
+                cast_message += f"{target.name} dodged the {self.name} and was unhurt.\n"
+            else:
+                cast_message += f"The spell misses {target.name}.\n"
         else:
             if reflect:
                 target = caster
@@ -161,8 +164,6 @@ class Attack(Spell):
                 ):  # TODO
                     cast_message += f"{target.name} uses Counterspell.\n"
                     cast_message += Counterspell().use(target, caster)
-            else:
-                cast_message += f"The spell misses {target.name}.\n"
             if (
                 caster.cls.name == "Wizard"
                 and caster.class_effects["Power Up"].active
@@ -176,7 +177,6 @@ class Attack(Spell):
 
 
 class HolySpell(Spell):
-
     def __init__(self, name: str, description: str, cost: int, dmg_mod: float, crit: int) -> None:
         super().__init__(name, description)
         self.cost = cost
@@ -350,8 +350,16 @@ def _simple_spell_damage(
     guaranteed = bool(getattr(caster, "_twist_fate_success", False))
     if guaranteed:
         caster._twist_fate_success = False
-    if not guaranteed and target.dodge_chance(caster, spell=True) > random.random():
-        return f"{target.name} dodged the spell and was unhurt.\n", 0
+    contact = caster.resolve_contact(
+        target,
+        typ="magic",
+        always_hit=guaranteed or target.incapacitated(),
+        rng=random,
+    )
+    if not contact.hit:
+        if contact.attribution is not None and contact.attribution.value == "dodge":
+            return f"{target.name} dodged the spell and was unhurt.\n", 0
+        return f"The spell misses {target.name}.\n", 0
     spell_mod = caster.check_mod("magic", enemy=target)
     damage = max(1, int(spell_mod * dmg_mod))
     hit, msg, damage = target.damage_reduction(damage, caster, typ=typ)
@@ -741,7 +749,7 @@ class ResistShadow(Spell):
     def __init__(self):
         super().__init__(
             "Resist Shadow",
-            ("Increase Shadow resistance outside battle for 100 steps of " "game time."),
+            ("Increase Shadow resistance outside battle for 100 steps of game time."),
             school="Abjuration",
         )
         self.cost = 15
@@ -768,7 +776,7 @@ class ResistShadow(Spell):
             "resist_shadow",
             100,
         )
-        return f"{user.name} gains 50% Shadow resistance for 100 steps of " "game time.\n"
+        return f"{user.name} gains 50% Shadow resistance for 100 steps of game time.\n"
 
 
 class ResistHoly(Spell):

@@ -24,7 +24,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade --constraint constraints.txt pip
-          python -m pip install --constraint constraints.txt --build-constraint constraints.txt ".[dev]"
+          python -m pip install --constraint constraints.txt --build-constraint constraints.txt ".[dev,tools]"
 
       - name: Check formatting
         run: python -m black --check src tests tools game_pygame.py
@@ -38,6 +38,9 @@ jobs:
       - name: Validate ability taxonomy migration
         run: python tools/validate_ability_taxonomy.py --require-complete
 
+      - name: Verify deterministic contact fit
+        run: python tools/fit_contact_model.py --check
+
       - name: Run strict typing baseline
         run: |
           python -m mypy --strict --follow-imports=skip \
@@ -50,7 +53,10 @@ jobs:
             src/core/data/ability_schema.py \
             src/core/data/ability_traits.py \
             src/core/progression/models.py \
-            src/core/save_system/manager.py
+            src/core/save_system/manager.py \
+            src/core/combat/contact.py \
+            tools/fit_contact_model.py \
+            tools/characterize_foundational_contract.py
 
       - name: Run tests with source coverage
         env:

@@ -9,6 +9,7 @@ import random
 import sys
 from collections import Counter
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 import yaml
@@ -19,6 +20,14 @@ if str(PROJECT_ROOT) not in sys.path:
 
 ABILITY_DIRECTORY = PROJECT_ROOT / "src" / "core" / "data" / "abilities"
 CONTACT_STATS = (6, 10, 14, 18, 22)
+PROFICIENCY_DIFFERENCES = (-2, -1, 0, 1, 2)
+CHARISMA_TERMS = (-5, 0, 5)
+ARMOR_GROUPS = {
+    "none": "None",
+    "light": "Light",
+    "medium": "Medium",
+    "heavy": "Heavy",
+}
 
 
 def ability_inventory(directory: Path = ABILITY_DIRECTORY) -> dict[str, Any]:
@@ -53,7 +62,7 @@ def ability_inventory(directory: Path = ABILITY_DIRECTORY) -> dict[str, Any]:
     }
 
 
-def _neutral_character(name: str, *, primary_stat: int):
+def _neutral_character(name: str, *, primary_stat: int) -> Any:
     """Build a character without class, race, status, or equipment bonuses."""
     from src.core.character import Character, Combat, Resource, Stats
     from src.core.items import NoArmor, NoHelmet, NoOffHand, NoPendant, NoRing, NoWeapon
@@ -129,12 +138,109 @@ def contact_matrix(*, samples: int = 10_000, seed: int = 1337) -> dict[str, Any]
     }
 
 
-def foundational_characterization(*, samples: int = 10_000, seed: int = 1337) -> dict[str, Any]:
+def approved_contact_matrix(*, samples: int = 10_000, seed: int = 1337) -> dict[str, Any]:
+    """Sample legacy combined contact outcomes across approved replacement axes."""
+    if samples <= 0:
+        raise ValueError("samples must be positive")
+
+    def character(name: str) -> Any:
+        return _neutral_character(name, primary_stat=14)
+
+    weapon_cells: list[dict[str, int | float | str]] = []
+    for proficiency_index, proficiency_difference in enumerate(PROFICIENCY_DIFFERENCES):
+        for speed_index, defender_speed in enumerate(CONTACT_STATS):
+            for armor_index, (armor_group, armor_subtype) in enumerate(ARMOR_GROUPS.items()):
+                attacker = character("Attacker")
+                defender = character("Defender")
+                attacker.level.pro_level = 3 + proficiency_difference
+                defender.level.pro_level = 3
+                defender.stats.dex = defender_speed
+                defender.equipment["Armor"] = SimpleNamespace(subtyp=armor_subtype)
+                cell_seed = seed + (proficiency_index * 10_000) + (speed_index * 100) + armor_index
+                random.seed(cell_seed)
+                landed = 0
+                for _sample in range(samples):
+                    dodge = defender.dodge_chance(attacker)
+                    hit = attacker.hit_chance(defender, typ="weapon")
+                    landed += hit > random.random() and not dodge > random.random()
+                weapon_cells.append(
+                    {
+                        "proficiency_difference": proficiency_difference,
+                        "defender_speed": defender_speed,
+                        "armor_group": armor_group,
+                        "land_rate": round(landed / samples, 6),
+                    }
+                )
+
+    spell_cells: list[dict[str, int | float]] = []
+    for intelligence_index, intelligence in enumerate(CONTACT_STATS):
+        for wisdom_index, wisdom in enumerate(CONTACT_STATS):
+            for charisma_index, charisma_term in enumerate(CHARISMA_TERMS):
+                attacker = character("Attacker")
+                defender = character("Defender")
+                attacker.stats.intel = intelligence
+                defender.stats.wisdom = wisdom
+                defender.stats.charisma = 10 + charisma_term
+                cell_seed = (
+                    seed
+                    + 100_000
+                    + (intelligence_index * 10_000)
+                    + (wisdom_index * 100)
+                    + charisma_index
+                )
+                random.seed(cell_seed)
+                landed = 0
+                for _sample in range(samples):
+                    dodge = defender.dodge_chance(attacker, spell=True)
+                    hit = attacker.hit_chance(defender, typ="magic")
+                    landed += hit > random.random() and not dodge > random.random()
+                spell_cells.append(
+                    {
+                        "intelligence": intelligence,
+                        "wisdom": wisdom,
+                        "charisma_term": charisma_term,
+                        "land_rate": round(landed / samples, 6),
+                    }
+                )
+
+    return {
+        "seed": seed,
+        "samples_per_cell": samples,
+        "reference_profile": {
+            "fixed_primary_stats": 14,
+            "luck_and_unrelated_stats": 10,
+            "class_race_status_and_equipment_bonuses": "none",
+        },
+        "weapon": {
+            "proficiency_differences": list(PROFICIENCY_DIFFERENCES),
+            "defender_speeds": list(CONTACT_STATS),
+            "armor_groups": list(ARMOR_GROUPS),
+            "cells": weapon_cells,
+        },
+        "spell": {
+            "intelligence": list(CONTACT_STATS),
+            "wisdom": list(CONTACT_STATS),
+            "charisma_terms": list(CHARISMA_TERMS),
+            "cells": spell_cells,
+        },
+    }
+
+
+def foundational_characterization(
+    *,
+    samples: int = 10_000,
+    approved_samples: int = 1_000,
+    seed: int = 1337,
+) -> dict[str, Any]:
     """Return the complete deterministic pre-refactor characterization."""
     return {
         "source_revision": "f7a4b25e5a405ba6d9c5006b84d92584d818ebc3",
         "ability_inventory": ability_inventory(),
         "contact_characterization": contact_matrix(samples=samples, seed=seed),
+        "approved_contact_characterization": approved_contact_matrix(
+            samples=approved_samples,
+            seed=seed,
+        ),
         "retained_reports": [
             "reports/balance_baselines/multi_enemy_slice0_pre_refactor.txt",
             "reports/balance_baselines/multi_enemy_slice6_pilot.txt",
@@ -147,11 +253,16 @@ def foundational_characterization(*, samples: int = 10_000, seed: int = 1337) ->
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--samples", type=int, default=10_000)
+    parser.add_argument("--approved-samples", type=int, default=1_000)
     parser.add_argument("--seed", type=int, default=1337)
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
     rendered = json.dumps(
-        foundational_characterization(samples=args.samples, seed=args.seed), indent=2
+        foundational_characterization(
+            samples=args.samples,
+            approved_samples=args.approved_samples,
+            seed=args.seed,
+        ),
     )
     if args.output is None:
         print(rendered)

@@ -111,6 +111,8 @@ def test_weapon_art_descriptions_do_not_duplicate_tree_weapon_requirement():
 
 
 def test_weapon_art_requires_matching_weapon_and_applies_effect(monkeypatch):
+    from types import SimpleNamespace
+
     player = _weapon_master()
     player.equipment["Weapon"] = items.BrassKnuckles()
     enemy = Goblin()
@@ -121,6 +123,11 @@ def test_weapon_art_requires_matching_weapon_and_applies_effect(monkeypatch):
         grandmaster.XP_THRESHOLDS[4],
     )
     monkeypatch.setattr(grandmaster.random, "random", lambda: 1.0)
+    monkeypatch.setattr(
+        player,
+        "resolve_contact",
+        lambda *_args, **_kwargs: SimpleNamespace(hit=True, chance=1.0, attribution=None),
+    )
 
     message = player.spellbook["Skills"]["Iron Palm"].use(player, enemy)
 
@@ -131,6 +138,8 @@ def test_weapon_art_requires_matching_weapon_and_applies_effect(monkeypatch):
 
 
 def test_perfect_bound_art_adds_grandmaster_ring_bonus(monkeypatch):
+    from types import SimpleNamespace
+
     player = _grandmaster()
     player.equipment["Weapon"] = items.BrassKnuckles()
     enemy = Goblin()
@@ -142,6 +151,11 @@ def test_perfect_bound_art_adds_grandmaster_ring_bonus(monkeypatch):
     )
     grandmaster.bind_weapon(player, "Fist")
     monkeypatch.setattr(grandmaster.random, "random", lambda: 1.0)
+    monkeypatch.setattr(
+        player,
+        "resolve_contact",
+        lambda *_args, **_kwargs: SimpleNamespace(hit=True, chance=1.0, attribution=None),
+    )
 
     message = player.spellbook["Skills"]["Iron Palm"].use(player, enemy)
 

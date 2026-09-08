@@ -1,0 +1,1832 @@
+{
+  "schema_version": 1,
+  "seed": 1337,
+  "regularization": 0.001,
+  "feature_order": {
+    "weapon": [
+      "1",
+      "proficiency",
+      "speed",
+      "proficiency_speed",
+      "speed2",
+      "armor_light",
+      "armor_medium",
+      "armor_heavy",
+      "light_speed",
+      "medium_speed",
+      "heavy_speed",
+      "light_speed2",
+      "medium_speed2",
+      "heavy_speed2"
+    ],
+    "spell": [
+      "1",
+      "intelligence",
+      "wisdom",
+      "charisma",
+      "intelligence_wisdom",
+      "intelligence_charisma",
+      "wisdom_charisma",
+      "intelligence2",
+      "wisdom2",
+      "charisma2"
+    ]
+  },
+  "normalization": {
+    "stat_center": 14.0,
+    "stat_scale": 8.0,
+    "charisma_scale": 5.0
+  },
+  "fits": {
+    "weapon": {
+      "coefficients": [
+        2.196017117580274,
+        1.0826241866516044,
+        -1.1779354313213697,
+        -0.5635489834499144,
+        0.35108418067201397,
+        0.00627346460331834,
+        -0.017602861712730133,
+        0.02510273086731499,
+        0.050559870108057306,
+        -0.02483345821977801,
+        -0.03151720006974427,
+        -0.052912455191929844,
+        0.08089948276048431,
+        0.030750816112461176
+      ],
+      "weighted_mean_error": 0.011707019133180443,
+      "maximum_ordinary_cell_error": 0.03713011319304671,
+      "cells": [
+        {
+          "inputs": {
+            "proficiency_difference": -2,
+            "defender_speed": 6,
+            "armor_group": "none"
+          },
+          "observed": 0.892,
+          "fitted": 0.8888317913941368,
+          "absolute_error": 0.0031682086058631986
+        },
+        {
+          "inputs": {
+            "proficiency_difference": -2,
+            "defender_speed": 6,
+            "armor_group": "light"
+          },
+          "observed": 0.867,
+          "fitted": 0.8788585081209122,
+          "absolute_error": 0.011858508120912159
+        },
+        {
+          "inputs": {
+            "proficiency_difference": -2,
+            "defender_speed": 6,
+            "armor_group": "medium"
+          },
+          "observed": 0.888,
+          "fitted": 0.8972461243577318,
+          "absolute_error": 0.009246124357731755
+        },
+        {
+          "inputs": {
+            "proficiency_difference": -2,
+            "defender_speed": 6,
+            "armor_group": "heavy"
+          },
+          "observed": 0.889,
+          "fitted": 0.8971760962115084,
+          "absolute_error": 0.008176096211508388
+        },
+        {
+          "inputs": {
+            "proficiency_difference": -2,
+            "defender_speed": 10,
+            "armor_group": "none"
+          },
+          "observed": 0.85,
+          "fitted": 0.8188176163568195,
+          "absolute_error": 0.03118238364318049
+        },
+        {
+          "inputs": {
+            "proficiency_difference": -2,
+            "defender_speed": 10,
+            "armor_group": "light"
+          },
+          "observed": 0.815,
+          "fitted": 0.8139862102583916,
+          "absolute_error": 0.001013789741608373
+        },
+        {
+          "inputs": {
+            "proficiency_difference": -2,
+            "defender_speed": 10,
+            "armor_group": "medium"
+          },
+          "observed": 0.814,
+          "fitted": 0.8210380055131689,
+          "absolute_error": 0.00703800551316891
+        },
+        {
+          "inputs": {
+            "proficiency_difference": -2,
+            "defender_speed": 10,
+            "armor_group": "heavy"
+          },
+          "observed": 0.84,
+          "fitted": 0.8259089695196308,
+          "absolute_error": 0.014091030480369193
+        },
+        {
+          "inputs": {
+            "proficiency_difference": -2,
+            "defender_speed": 14,
+            "armor_group": "none"
+          },
+          "observed": 0.782,
+          "fitted": 0.7527611173841231,
+          "absolute_error": 0.029238882615876927
+        },
+        {
+          "inputs": {
+            "proficiency_difference": -2,
+            "defender_speed": 14,
+            "armor_group": "light"
+          },
+          "observed": 0.779,
+          "fitted": 0.7539268310025208,
+          "absolute_error": 0.025073168997479245
+        },
+        {
+          "inputs": {
+            "proficiency_difference": -2,
+            "defender_speed": 14,
+            "armor_group": "medium"
+          },
+          "observed": 0.771,
+          "fitted": 0.749470460585087,
+          "absolute_error": 0.02152953941491298
+        },
+        {
+          "inputs": {
+            "proficiency_difference": -2,
+            "defender_speed": 14,
+            "armor_group": "heavy"
+          },
+          "observed": 0.784,
+          "fitted": 0.7574033336445986,
+          "absolute_error": 0.026596666355401477
+        },
+        {
+          "inputs": {
+            "proficiency_difference": -2,
+            "defender_speed": 18,
+            "armor_group": "none"
+          },
+          "observed": 0.727,
+          "fitted": 0.709708916238487,
+          "absolute_error": 0.017291083761513004
+        },
+        {
+          "inputs": {
+            "proficiency_difference": -2,
+            "defender_speed": 18,
+            "armor_group": "light"
+          },
+          "observed": 0.738,
+          "fitted": 0.7134697732768519,
+          "absolute_error": 0.024530226723148085
+        },
+        {
+          "inputs": {
+            "proficiency_difference": -2,
+            "defender_speed": 18,
+            "armor_group": "medium"
+          },
+          "observed": 0.744,
+          "fitted": 0.7076868494973941,
+          "absolute_error": 0.03631315050260586
+        },
+        {
+          "inputs": {
+            "proficiency_difference": -2,
+            "defender_speed": 18,
+            "armor_group": "heavy"
+          },
+          "observed": 0.748,
+          "fitted": 0.7132052792475121,
+          "absolute_error": 0.034794720752487907
+        },
+        {
+          "inputs": {
+            "proficiency_difference": -2,
+            "defender_speed": 22,
+            "armor_group": "none"
+          },
+          "observed": 0.689,
+          "fitted": 0.7005861609144006,
+          "absolute_error": 0.011586160914400678
+        },
+        {
+          "inputs": {
+            "proficiency_difference": -2,
+            "defender_speed": 22,
+            "armor_group": "light"
+          },
+          "observed": 0.687,
+          "fitted": 0.7014079775693931,
+          "absolute_error": 0.014407977569393049
+        },
+        {
+          "inputs": {
+            "proficiency_difference": -2,
+            "defender_speed": 22,
+            "armor_group": "medium"
+          },
+          "observed": 0.698,
+          "fitted": 0.7085916430030905,
+          "absolute_error": 0.010591643003090567
+        },
+        {
+          "inputs": {
+            "proficiency_difference": -2,
+            "defender_speed": 22,
+            "armor_group": "heavy"
+          },
+          "observed": 0.695,
+          "fitted": 0.7056660311230322,
+          "absolute_error": 0.010666031123032216
+        },
+        {
+          "inputs": {
+            "proficiency_difference": -1,
+            "defender_speed": 6,
+            "armor_group": "none"
+          },
+          "observed": 0.932,
+          "fitted": 0.9479427553735745,
+          "absolute_error": 0.01594275537357448
+        },
+        {
+          "inputs": {
+            "proficiency_difference": -1,
+            "defender_speed": 6,
+            "armor_group": "light"
+          },
+          "observed": 0.929,
+          "fitted": 0.9429320351565827,
+          "absolute_error": 0.0139320351565827
+        },
+        {
+          "inputs": {
+            "proficiency_difference": -1,
+            "defender_speed": 6,
+            "armor_group": "medium"
+          },
+          "observed": 0.945,
+          "fitted": 0.9521239671974319,
+          "absolute_error": 0.007123967197431913
+        },
+        {
+          "inputs": {
+            "proficiency_difference": -1,
+            "defender_speed": 6,
+            "armor_group": "heavy"
+          },
+          "observed": 0.939,
+          "fitted": 0.9520893419740531,
+          "absolute_error": 0.013089341974053204
+        },
+        {
+          "inputs": {
+            "proficiency_difference": -1,
+            "defender_speed": 10,
+            "armor_group": "none"
+          },
+          "observed": 0.863,
+          "fitted": 0.8993982738660136,
+          "absolute_error": 0.036398273866013575
+        },
+        {
+          "inputs": {
+            "proficiency_difference": -1,
+            "defender_speed": 10,
+            "armor_group": "light"
+          },
+          "observed": 0.891,
+          "fitted": 0.896443875438278,
+          "absolute_error": 0.005443875438277956
+        },
+        {
+          "inputs": {
+            "proficiency_difference": -1,
+            "defender_speed": 10,
+            "armor_group": "medium"
+          },
+          "observed": 0.896,
+          "fitted": 0.9007508445753755,
+          "absolute_error": 0.004750844575375446
+        },
+        {
+          "inputs": {
+            "proficiency_difference": -1,
+            "defender_speed": 10,
+            "armor_group": "heavy"
+          },
+          "observed": 0.9,
+          "fitted": 0.9037066526120865,
+          "absolute_error": 0.0037066526120864696
+        },
+        {
+          "inputs": {
+            "proficiency_difference": -1,
+            "defender_speed": 14,
+            "armor_group": "none"
+          },
+          "observed": 0.856,
+          "fitted": 0.8395259344009304,
+          "absolute_error": 0.01647406559906961
+        },
+        {
+          "inputs": {
+            "proficiency_difference": -1,
+            "defender_speed": 14,
+            "armor_group": "light"
+          },
+          "observed": 0.837,
+          "fitted": 0.8403693098177158,
+          "absolute_error": 0.003369309817715882
+        },
+        {
+          "inputs": {
+            "proficiency_difference": -1,
+            "defender_speed": 14,
+            "armor_group": "medium"
+          },
+          "observed": 0.836,
+          "fitted": 0.8371402424118314,
+          "absolute_error": 0.0011402424118314158
+        },
+        {
+          "inputs": {
+            "proficiency_difference": -1,
+            "defender_speed": 14,
+            "armor_group": "heavy"
+          },
+          "observed": 0.829,
+          "fitted": 0.8428790730458285,
+          "absolute_error": 0.013879073045828583
+        },
+        {
+          "inputs": {
+            "proficiency_difference": -1,
+            "defender_speed": 18,
+            "armor_group": "none"
+          },
+          "observed": 0.787,
+          "fitted": 0.784890260726955,
+          "absolute_error": 0.0021097392730450304
+        },
+        {
+          "inputs": {
+            "proficiency_difference": -1,
+            "defender_speed": 18,
+            "armor_group": "light"
+          },
+          "observed": 0.782,
+          "fitted": 0.7879681022937776,
+          "absolute_error": 0.005968102293777533
+        },
+        {
+          "inputs": {
+            "proficiency_difference": -1,
+            "defender_speed": 18,
+            "armor_group": "medium"
+          },
+          "observed": 0.759,
+          "fitted": 0.783231930099519,
+          "absolute_error": 0.02423193009951896
+        },
+        {
+          "inputs": {
+            "proficiency_difference": -1,
+            "defender_speed": 18,
+            "armor_group": "heavy"
+          },
+          "observed": 0.775,
+          "fitted": 0.787751919288247,
+          "absolute_error": 0.012751919288246927
+        },
+        {
+          "inputs": {
+            "proficiency_difference": -1,
+            "defender_speed": 22,
+            "armor_group": "none"
+          },
+          "observed": 0.742,
+          "fitted": 0.7520598021111163,
+          "absolute_error": 0.010059802111116345
+        },
+        {
+          "inputs": {
+            "proficiency_difference": -1,
+            "defender_speed": 22,
+            "armor_group": "light"
+          },
+          "observed": 0.746,
+          "fitted": 0.7527901894928916,
+          "absolute_error": 0.006790189492891563
+        },
+        {
+          "inputs": {
+            "proficiency_difference": -1,
+            "defender_speed": 22,
+            "armor_group": "medium"
+          },
+          "observed": 0.769,
+          "fitted": 0.7591621358638679,
+          "absolute_error": 0.00983786413613208
+        },
+        {
+          "inputs": {
+            "proficiency_difference": -1,
+            "defender_speed": 22,
+            "armor_group": "heavy"
+          },
+          "observed": 0.74,
+          "fitted": 0.75656981191616,
+          "absolute_error": 0.016569811916160027
+        },
+        {
+          "inputs": {
+            "proficiency_difference": 0,
+            "defender_speed": 6,
+            "armor_group": "none"
+          },
+          "observed": 0.977,
+          "fitted": 0.9764554953732463,
+          "absolute_error": 0.0005445046267537057
+        },
+        {
+          "inputs": {
+            "proficiency_difference": 0,
+            "defender_speed": 6,
+            "armor_group": "light"
+          },
+          "observed": 0.987,
+          "fitted": 0.9741142978230646,
+          "absolute_error": 0.01288570217693541
+        },
+        {
+          "inputs": {
+            "proficiency_difference": 0,
+            "defender_speed": 6,
+            "armor_group": "medium"
+          },
+          "observed": 0.983,
+          "fitted": 0.9783987644867564,
+          "absolute_error": 0.00460123551324354
+        },
+        {
+          "inputs": {
+            "proficiency_difference": 0,
+            "defender_speed": 6,
+            "armor_group": "heavy"
+          },
+          "observed": 0.985,
+          "fitted": 0.9783827104561784,
+          "absolute_error": 0.0066172895438215695
+        },
+        {
+          "inputs": {
+            "proficiency_difference": 0,
+            "defender_speed": 10,
+            "armor_group": "none"
+          },
+          "observed": 0.939,
+          "fitted": 0.9464831129187811,
+          "absolute_error": 0.007483112918781121
+        },
+        {
+          "inputs": {
+            "proficiency_difference": 0,
+            "defender_speed": 10,
+            "armor_group": "light"
+          },
+          "observed": 0.947,
+          "fitted": 0.9448266431968413,
+          "absolute_error": 0.002173356803158666
+        },
+        {
+          "inputs": {
+            "proficiency_difference": 0,
+            "defender_speed": 10,
+            "armor_group": "medium"
+          },
+          "observed": 0.952,
+          "fitted": 0.9472397726758418,
+          "absolute_error": 0.0047602273241581505
+        },
+        {
+          "inputs": {
+            "proficiency_difference": 0,
+            "defender_speed": 10,
+            "armor_group": "heavy"
+          },
+          "observed": 0.953,
+          "fitted": 0.9488896219931824,
+          "absolute_error": 0.004110378006817572
+        },
+        {
+          "inputs": {
+            "proficiency_difference": 0,
+            "defender_speed": 14,
+            "armor_group": "none"
+          },
+          "observed": 0.881,
+          "fitted": 0.8998912761232922,
+          "absolute_error": 0.018891276123292222
+        },
+        {
+          "inputs": {
+            "proficiency_difference": 0,
+            "defender_speed": 14,
+            "armor_group": "light"
+          },
+          "observed": 0.887,
+          "fitted": 0.9004550174149462,
+          "absolute_error": 0.013455017414946147
+        },
+        {
+          "inputs": {
+            "proficiency_difference": 0,
+            "defender_speed": 14,
+            "armor_group": "medium"
+          },
+          "observed": 0.891,
+          "fitted": 0.8982942873603909,
+          "absolute_error": 0.007294287360390839
+        },
+        {
+          "inputs": {
+            "proficiency_difference": 0,
+            "defender_speed": 14,
+            "armor_group": "heavy"
+          },
+          "observed": 0.865,
+          "fitted": 0.9021301131930467,
+          "absolute_error": 0.03713011319304671
+        },
+        {
+          "inputs": {
+            "proficiency_difference": 0,
+            "defender_speed": 18,
+            "armor_group": "none"
+          },
+          "observed": 0.825,
+          "fitted": 0.8448570441808915,
+          "absolute_error": 0.019857044180891514
+        },
+        {
+          "inputs": {
+            "proficiency_difference": 0,
+            "defender_speed": 18,
+            "armor_group": "light"
+          },
+          "observed": 0.835,
+          "fitted": 0.8472438552249554,
+          "absolute_error": 0.012243855224955413
+        },
+        {
+          "inputs": {
+            "proficiency_difference": 0,
+            "defender_speed": 18,
+            "armor_group": "medium"
+          },
+          "observed": 0.83,
+          "fitted": 0.8435688739102934,
+          "absolute_error": 0.013568873910293489
+        },
+        {
+          "inputs": {
+            "proficiency_difference": 0,
+            "defender_speed": 18,
+            "armor_group": "heavy"
+          },
+          "observed": 0.843,
+          "fitted": 0.8470763793941117,
+          "absolute_error": 0.004076379394111762
+        },
+        {
+          "inputs": {
+            "proficiency_difference": 0,
+            "defender_speed": 22,
+            "armor_group": "none"
+          },
+          "observed": 0.815,
+          "fitted": 0.7972453533926512,
+          "absolute_error": 0.017754646607348712
+        },
+        {
+          "inputs": {
+            "proficiency_difference": 0,
+            "defender_speed": 22,
+            "armor_group": "light"
+          },
+          "observed": 0.783,
+          "fitted": 0.7978784061356069,
+          "absolute_error": 0.01487840613560687
+        },
+        {
+          "inputs": {
+            "proficiency_difference": 0,
+            "defender_speed": 22,
+            "armor_group": "medium"
+          },
+          "observed": 0.768,
+          "fitted": 0.8033917100304836,
+          "absolute_error": 0.03539171003048358
+        },
+        {
+          "inputs": {
+            "proficiency_difference": 0,
+            "defender_speed": 22,
+            "armor_group": "heavy"
+          },
+          "observed": 0.808,
+          "fitted": 0.801150763093958,
+          "absolute_error": 0.006849236906042
+        },
+        {
+          "inputs": {
+            "proficiency_difference": 1,
+            "defender_speed": 6,
+            "armor_group": "none"
+          },
+          "observed": 0.998,
+          "fitted": 0.9895238571712144,
+          "absolute_error": 0.008476142828785616
+        },
+        {
+          "inputs": {
+            "proficiency_difference": 1,
+            "defender_speed": 6,
+            "armor_group": "light"
+          },
+          "observed": 0.996,
+          "fitted": 0.9884667912304953,
+          "absolute_error": 0.007533208769504696
+        },
+        {
+          "inputs": {
+            "proficiency_difference": 1,
+            "defender_speed": 6,
+            "armor_group": "medium"
+          },
+          "observed": 0.998,
+          "fitted": 0.9903991213448275,
+          "absolute_error": 0.007600878655172449
+        },
+        {
+          "inputs": {
+            "proficiency_difference": 1,
+            "defender_speed": 6,
+            "armor_group": "heavy"
+          },
+          "observed": 0.999,
+          "fitted": 0.9903918983919051,
+          "absolute_error": 0.008608101608094887
+        },
+        {
+          "inputs": {
+            "proficiency_difference": 1,
+            "defender_speed": 10,
+            "armor_group": "none"
+          },
+          "observed": 0.981,
+          "fitted": 0.972211611043832,
+          "absolute_error": 0.008788388956167958
+        },
+        {
+          "inputs": {
+            "proficiency_difference": 1,
+            "defender_speed": 10,
+            "armor_group": "light"
+          },
+          "observed": 0.965,
+          "fitted": 0.9713273723342937,
+          "absolute_error": 0.006327372334293702
+        },
+        {
+          "inputs": {
+            "proficiency_difference": 1,
+            "defender_speed": 10,
+            "armor_group": "medium"
+          },
+          "observed": 0.976,
+          "fitted": 0.9726150280597783,
+          "absolute_error": 0.0033849719402216927
+        },
+        {
+          "inputs": {
+            "proficiency_difference": 1,
+            "defender_speed": 10,
+            "armor_group": "heavy"
+          },
+          "observed": 0.97,
+          "fitted": 0.9734935797497055,
+          "absolute_error": 0.0034935797497055443
+        },
+        {
+          "inputs": {
+            "proficiency_difference": 1,
+            "defender_speed": 14,
+            "armor_group": "none"
+          },
+          "observed": 0.924,
+          "fitted": 0.9391937497827377,
+          "absolute_error": 0.015193749782737687
+        },
+        {
+          "inputs": {
+            "proficiency_difference": 1,
+            "defender_speed": 14,
+            "armor_group": "light"
+          },
+          "observed": 0.936,
+          "fitted": 0.9395510345461969,
+          "absolute_error": 0.003551034546196874
+        },
+        {
+          "inputs": {
+            "proficiency_difference": 1,
+            "defender_speed": 14,
+            "armor_group": "medium"
+          },
+          "observed": 0.92,
+          "fitted": 0.938180664520541,
+          "absolute_error": 0.018180664520541012
+        },
+        {
+          "inputs": {
+            "proficiency_difference": 1,
+            "defender_speed": 14,
+            "armor_group": "heavy"
+          },
+          "observed": 0.924,
+          "fitted": 0.940611631331951,
+          "absolute_error": 0.016611631331950982
+        },
+        {
+          "inputs": {
+            "proficiency_difference": 1,
+            "defender_speed": 18,
+            "armor_group": "none"
+          },
+          "observed": 0.88,
+          "fitted": 0.8904401869537959,
+          "absolute_error": 0.010440186953795894
+        },
+        {
+          "inputs": {
+            "proficiency_difference": 1,
+            "defender_speed": 18,
+            "armor_group": "light"
+          },
+          "observed": 0.906,
+          "fitted": 0.8922151873059488,
+          "absolute_error": 0.013784812694051185
+        },
+        {
+          "inputs": {
+            "proficiency_difference": 1,
+            "defender_speed": 18,
+            "armor_group": "medium"
+          },
+          "observed": 0.891,
+          "fitted": 0.8894809881772694,
+          "absolute_error": 0.0015190118227306204
+        },
+        {
+          "inputs": {
+            "proficiency_difference": 1,
+            "defender_speed": 18,
+            "armor_group": "heavy"
+          },
+          "observed": 0.906,
+          "fitted": 0.8920907365665687,
+          "absolute_error": 0.013909263433431351
+        },
+        {
+          "inputs": {
+            "proficiency_difference": 1,
+            "defender_speed": 22,
+            "armor_group": "none"
+          },
+          "observed": 0.831,
+          "fitted": 0.8359919495427992,
+          "absolute_error": 0.0049919495427992455
+        },
+        {
+          "inputs": {
+            "proficiency_difference": 1,
+            "defender_speed": 22,
+            "armor_group": "light"
+          },
+          "observed": 0.858,
+          "fitted": 0.8365288310528841,
+          "absolute_error": 0.02147116894711587
+        },
+        {
+          "inputs": {
+            "proficiency_difference": 1,
+            "defender_speed": 22,
+            "armor_group": "medium"
+          },
+          "observed": 0.852,
+          "fitted": 0.8411976938630834,
+          "absolute_error": 0.010802306136916573
+        },
+        {
+          "inputs": {
+            "proficiency_difference": 1,
+            "defender_speed": 22,
+            "armor_group": "heavy"
+          },
+          "observed": 0.831,
+          "fitted": 0.8393014670485207,
+          "absolute_error": 0.00830146704852075
+        },
+        {
+          "inputs": {
+            "proficiency_difference": 2,
+            "defender_speed": 6,
+            "armor_group": "none"
+          },
+          "observed": 1.0,
+          "fitted": 0.9953730049202304,
+          "absolute_error": 0.0046269950797696024
+        },
+        {
+          "inputs": {
+            "proficiency_difference": 2,
+            "defender_speed": 6,
+            "armor_group": "light"
+          },
+          "observed": 1.0,
+          "fitted": 0.9949030908990998,
+          "absolute_error": 0.005096909100900215
+        },
+        {
+          "inputs": {
+            "proficiency_difference": 2,
+            "defender_speed": 6,
+            "armor_group": "medium"
+          },
+          "observed": 1.0,
+          "fitted": 0.9957616757433808,
+          "absolute_error": 0.004238324256619186
+        },
+        {
+          "inputs": {
+            "proficiency_difference": 2,
+            "defender_speed": 6,
+            "armor_group": "heavy"
+          },
+          "observed": 1.0,
+          "fitted": 0.995758469880719,
+          "absolute_error": 0.004241530119280967
+        },
+        {
+          "inputs": {
+            "proficiency_difference": 2,
+            "defender_speed": 10,
+            "armor_group": "none"
+          },
+          "observed": 0.99,
+          "fitted": 0.9857571437817083,
+          "absolute_error": 0.00424285621829168
+        },
+        {
+          "inputs": {
+            "proficiency_difference": 2,
+            "defender_speed": 10,
+            "armor_group": "light"
+          },
+          "observed": 0.993,
+          "fitted": 0.9852974115441664,
+          "absolute_error": 0.007702588455833603
+        },
+        {
+          "inputs": {
+            "proficiency_difference": 2,
+            "defender_speed": 10,
+            "armor_group": "medium"
+          },
+          "observed": 0.99,
+          "fitted": 0.9859667524449964,
+          "absolute_error": 0.004033247555003561
+        },
+        {
+          "inputs": {
+            "proficiency_difference": 2,
+            "defender_speed": 10,
+            "armor_group": "heavy"
+          },
+          "observed": 0.993,
+          "fitted": 0.986422939835235,
+          "absolute_error": 0.006577060164765003
+        },
+        {
+          "inputs": {
+            "proficiency_difference": 2,
+            "defender_speed": 14,
+            "armor_group": "none"
+          },
+          "observed": 0.954,
+          "fitted": 0.9636887690994502,
+          "absolute_error": 0.009688769099450267
+        },
+        {
+          "inputs": {
+            "proficiency_difference": 2,
+            "defender_speed": 14,
+            "armor_group": "light"
+          },
+          "observed": 0.963,
+          "fitted": 0.9639076572743132,
+          "absolute_error": 0.0009076572743131894
+        },
+        {
+          "inputs": {
+            "proficiency_difference": 2,
+            "defender_speed": 14,
+            "armor_group": "medium"
+          },
+          "observed": 0.967,
+          "fitted": 0.9630677440678277,
+          "absolute_error": 0.003932255932172279
+        },
+        {
+          "inputs": {
+            "proficiency_difference": 2,
+            "defender_speed": 14,
+            "armor_group": "heavy"
+          },
+          "observed": 0.964,
+          "fitted": 0.9645570300429499,
+          "absolute_error": 0.0005570300429499353
+        },
+        {
+          "inputs": {
+            "proficiency_difference": 2,
+            "defender_speed": 18,
+            "armor_group": "none"
+          },
+          "observed": 0.931,
+          "fitted": 0.9238377228505119,
+          "absolute_error": 0.007162277149488139
+        },
+        {
+          "inputs": {
+            "proficiency_difference": 2,
+            "defender_speed": 18,
+            "armor_group": "light"
+          },
+          "observed": 0.901,
+          "fitted": 0.9251171459871711,
+          "absolute_error": 0.024117145987171074
+        },
+        {
+          "inputs": {
+            "proficiency_difference": 2,
+            "defender_speed": 18,
+            "armor_group": "medium"
+          },
+          "observed": 0.924,
+          "fitted": 0.923145683440106,
+          "absolute_error": 0.0008543165598940972
+        },
+        {
+          "inputs": {
+            "proficiency_difference": 2,
+            "defender_speed": 18,
+            "armor_group": "heavy"
+          },
+          "observed": 0.931,
+          "fitted": 0.9250274923509002,
+          "absolute_error": 0.005972507649099845
+        },
+        {
+          "inputs": {
+            "proficiency_difference": 2,
+            "defender_speed": 22,
+            "armor_group": "none"
+          },
+          "observed": 0.878,
+          "fitted": 0.8685548483922841,
+          "absolute_error": 0.009445151607715863
+        },
+        {
+          "inputs": {
+            "proficiency_difference": 2,
+            "defender_speed": 22,
+            "armor_group": "light"
+          },
+          "observed": 0.885,
+          "fitted": 0.8690018382142962,
+          "absolute_error": 0.01599816178570379
+        },
+        {
+          "inputs": {
+            "proficiency_difference": 2,
+            "defender_speed": 22,
+            "armor_group": "medium"
+          },
+          "observed": 0.898,
+          "fitted": 0.8728841793621955,
+          "absolute_error": 0.025115820637804487
+        },
+        {
+          "inputs": {
+            "proficiency_difference": 2,
+            "defender_speed": 22,
+            "armor_group": "heavy"
+          },
+          "observed": 0.888,
+          "fitted": 0.87130843044241,
+          "absolute_error": 0.01669156955758999
+        }
+      ]
+    },
+    "spell": {
+      "coefficients": [
+        2.083496322599882,
+        0.08929383062312002,
+        -0.07708612665683551,
+        -0.06706465941156274,
+        0.15574292349193025,
+        0.05429918945446811,
+        -0.058232975985693214,
+        -0.13168434804004975,
+        -0.035455780259402485,
+        -0.02159167222110652
+      ],
+      "weighted_mean_error": 0.01085851524568139,
+      "maximum_ordinary_cell_error": 0.04630838362311751,
+      "cells": [
+        {
+          "inputs": {
+            "intelligence": 6,
+            "wisdom": 6,
+            "charisma_term": -5
+          },
+          "observed": 0.87,
+          "fitted": 0.8910421492166011,
+          "absolute_error": 0.02104214921660108
+        },
+        {
+          "inputs": {
+            "intelligence": 6,
+            "wisdom": 6,
+            "charisma_term": 0
+          },
+          "observed": 0.898,
+          "fitted": 0.8869432819180497,
+          "absolute_error": 0.0110567180819503
+        },
+        {
+          "inputs": {
+            "intelligence": 6,
+            "wisdom": 6,
+            "charisma_term": 5
+          },
+          "observed": 0.888,
+          "fitted": 0.8781652178294089,
+          "absolute_error": 0.009834782170591083
+        },
+        {
+          "inputs": {
+            "intelligence": 6,
+            "wisdom": 10,
+            "charisma_term": -5
+          },
+          "observed": 0.891,
+          "fitted": 0.8850070116996943,
+          "absolute_error": 0.005992988300305702
+        },
+        {
+          "inputs": {
+            "intelligence": 6,
+            "wisdom": 10,
+            "charisma_term": 0
+          },
+          "observed": 0.889,
+          "fitted": 0.8776184946139585,
+          "absolute_error": 0.011381505386041546
+        },
+        {
+          "inputs": {
+            "intelligence": 6,
+            "wisdom": 10,
+            "charisma_term": 5
+          },
+          "observed": 0.889,
+          "fitted": 0.864856882253824,
+          "absolute_error": 0.024143117746176057
+        },
+        {
+          "inputs": {
+            "intelligence": 6,
+            "wisdom": 14,
+            "charisma_term": -5
+          },
+          "observed": 0.891,
+          "fitted": 0.8767806039736052,
+          "absolute_error": 0.01421939602639477
+        },
+        {
+          "inputs": {
+            "intelligence": 6,
+            "wisdom": 14,
+            "charisma_term": 0
+          },
+          "observed": 0.873,
+          "fitted": 0.8655901883228775,
+          "absolute_error": 0.007409811677122513
+        },
+        {
+          "inputs": {
+            "intelligence": 6,
+            "wisdom": 14,
+            "charisma_term": 5
+          },
+          "observed": 0.845,
+          "fitted": 0.8480724908265972,
+          "absolute_error": 0.0030724908265972184
+        },
+        {
+          "inputs": {
+            "intelligence": 6,
+            "wisdom": 18,
+            "charisma_term": -5
+          },
+          "observed": 0.875,
+          "fitted": 0.8660096580274549,
+          "absolute_error": 0.008990341972545113
+        },
+        {
+          "inputs": {
+            "intelligence": 6,
+            "wisdom": 18,
+            "charisma_term": 0
+          },
+          "observed": 0.848,
+          "fitted": 0.8503361132460753,
+          "absolute_error": 0.0023361132460753
+        },
+        {
+          "inputs": {
+            "intelligence": 6,
+            "wisdom": 18,
+            "charisma_term": 5
+          },
+          "observed": 0.783,
+          "fitted": 0.8270936291095031,
+          "absolute_error": 0.044093629109503096
+        },
+        {
+          "inputs": {
+            "intelligence": 6,
+            "wisdom": 22,
+            "charisma_term": -5
+          },
+          "observed": 0.852,
+          "fitted": 0.8522349155939432,
+          "absolute_error": 0.00023491559394317463
+        },
+        {
+          "inputs": {
+            "intelligence": 6,
+            "wisdom": 22,
+            "charisma_term": 0
+          },
+          "observed": 0.803,
+          "fitted": 0.8312108672928477,
+          "absolute_error": 0.028210867292847608
+        },
+        {
+          "inputs": {
+            "intelligence": 6,
+            "wisdom": 22,
+            "charisma_term": 5
+          },
+          "observed": 0.797,
+          "fitted": 0.8010778858944083,
+          "absolute_error": 0.004077885894408273
+        },
+        {
+          "inputs": {
+            "intelligence": 10,
+            "wisdom": 6,
+            "charisma_term": -5
+          },
+          "observed": 0.881,
+          "fitted": 0.8947136304545464,
+          "absolute_error": 0.013713630454546433
+        },
+        {
+          "inputs": {
+            "intelligence": 10,
+            "wisdom": 6,
+            "charisma_term": 0
+          },
+          "observed": 0.902,
+          "fitted": 0.8933503936750514,
+          "absolute_error": 0.0086496063249486
+        },
+        {
+          "inputs": {
+            "intelligence": 10,
+            "wisdom": 6,
+            "charisma_term": 5
+          },
+          "observed": 0.877,
+          "fitted": 0.8877395894330065,
+          "absolute_error": 0.010739589433006458
+        },
+        {
+          "inputs": {
+            "intelligence": 10,
+            "wisdom": 10,
+            "charisma_term": -5
+          },
+          "observed": 0.896,
+          "fitted": 0.8926451339466147,
+          "absolute_error": 0.003354866053385308
+        },
+        {
+          "inputs": {
+            "intelligence": 10,
+            "wisdom": 10,
+            "charisma_term": 0
+          },
+          "observed": 0.87,
+          "fitted": 0.8884041766654982,
+          "absolute_error": 0.018404176665498206
+        },
+        {
+          "inputs": {
+            "intelligence": 10,
+            "wisdom": 10,
+            "charisma_term": 5
+          },
+          "observed": 0.884,
+          "fitted": 0.879515887559074,
+          "absolute_error": 0.004484112440926058
+        },
+        {
+          "inputs": {
+            "intelligence": 10,
+            "wisdom": 14,
+            "charisma_term": -5
+          },
+          "observed": 0.876,
+          "fitted": 0.8888008940233564,
+          "absolute_error": 0.01280089402335638
+        },
+        {
+          "inputs": {
+            "intelligence": 10,
+            "wisdom": 14,
+            "charisma_term": 0
+          },
+          "observed": 0.892,
+          "fitted": 0.8814181097892125,
+          "absolute_error": 0.010581890210787481
+        },
+        {
+          "inputs": {
+            "intelligence": 10,
+            "wisdom": 14,
+            "charisma_term": 5
+          },
+          "observed": 0.859,
+          "fitted": 0.8687694852077212,
+          "absolute_error": 0.009769485207721251
+        },
+        {
+          "inputs": {
+            "intelligence": 10,
+            "wisdom": 18,
+            "charisma_term": -5
+          },
+          "observed": 0.882,
+          "fitted": 0.8830179114002813,
+          "absolute_error": 0.0010179114002812906
+        },
+        {
+          "inputs": {
+            "intelligence": 10,
+            "wisdom": 18,
+            "charisma_term": 0
+          },
+          "observed": 0.894,
+          "fitted": 0.8720922134545659,
+          "absolute_error": 0.021907786545434127
+        },
+        {
+          "inputs": {
+            "intelligence": 10,
+            "wisdom": 18,
+            "charisma_term": 5
+          },
+          "observed": 0.872,
+          "fitted": 0.8550366233503744,
+          "absolute_error": 0.01696337664962555
+        },
+        {
+          "inputs": {
+            "intelligence": 10,
+            "wisdom": 22,
+            "charisma_term": -5
+          },
+          "observed": 0.89,
+          "fitted": 0.8750503432338672,
+          "absolute_error": 0.014949656766132802
+        },
+        {
+          "inputs": {
+            "intelligence": 10,
+            "wisdom": 22,
+            "charisma_term": 0
+          },
+          "observed": 0.844,
+          "fitted": 0.8600270859974004,
+          "absolute_error": 0.016027085997400436
+        },
+        {
+          "inputs": {
+            "intelligence": 10,
+            "wisdom": 22,
+            "charisma_term": 5
+          },
+          "observed": 0.845,
+          "fitted": 0.8377356836367318,
+          "absolute_error": 0.007264316363268186
+        },
+        {
+          "inputs": {
+            "intelligence": 14,
+            "wisdom": 6,
+            "charisma_term": -5
+          },
+          "observed": 0.894,
+          "fitted": 0.8920993568576967,
+          "absolute_error": 0.0019006431423033154
+        },
+        {
+          "inputs": {
+            "intelligence": 14,
+            "wisdom": 6,
+            "charisma_term": 0
+          },
+          "observed": 0.871,
+          "fitted": 0.8933214779851103,
+          "absolute_error": 0.022321477985110305
+        },
+        {
+          "inputs": {
+            "intelligence": 14,
+            "wisdom": 6,
+            "charisma_term": 5
+          },
+          "observed": 0.891,
+          "fitted": 0.8903873019965012,
+          "absolute_error": 0.000612698003498835
+        },
+        {
+          "inputs": {
+            "intelligence": 14,
+            "wisdom": 10,
+            "charisma_term": -5
+          },
+          "observed": 0.903,
+          "fitted": 0.893740565628117,
+          "absolute_error": 0.009259434371883035
+        },
+        {
+          "inputs": {
+            "intelligence": 14,
+            "wisdom": 10,
+            "charisma_term": 0
+          },
+          "observed": 0.891,
+          "fitted": 0.892177181934042,
+          "absolute_error": 0.0011771819340420375
+        },
+        {
+          "inputs": {
+            "intelligence": 14,
+            "wisdom": 10,
+            "charisma_term": 5
+          },
+          "observed": 0.895,
+          "fitted": 0.8863144604516829,
+          "absolute_error": 0.008685539548317078
+        },
+        {
+          "inputs": {
+            "intelligence": 14,
+            "wisdom": 14,
+            "charisma_term": -5
+          },
+          "observed": 0.885,
+          "fitted": 0.8936871217120536,
+          "absolute_error": 0.008687121712053547
+        },
+        {
+          "inputs": {
+            "intelligence": 14,
+            "wisdom": 14,
+            "charisma_term": 0
+          },
+          "observed": 0.874,
+          "fitted": 0.8892887300374869,
+          "absolute_error": 0.015288730037486875
+        },
+        {
+          "inputs": {
+            "intelligence": 14,
+            "wisdom": 14,
+            "charisma_term": 5
+          },
+          "observed": 0.875,
+          "fitted": 0.8802542447112904,
+          "absolute_error": 0.0052542447112904345
+        },
+        {
+          "inputs": {
+            "intelligence": 14,
+            "wisdom": 18,
+            "charisma_term": -5
+          },
+          "observed": 0.898,
+          "fitted": 0.8919367761439285,
+          "absolute_error": 0.006063223856071498
+        },
+        {
+          "inputs": {
+            "intelligence": 14,
+            "wisdom": 18,
+            "charisma_term": 0
+          },
+          "observed": 0.893,
+          "fitted": 0.8845344571370163,
+          "absolute_error": 0.008465542862983733
+        },
+        {
+          "inputs": {
+            "intelligence": 14,
+            "wisdom": 18,
+            "charisma_term": 5
+          },
+          "observed": 0.888,
+          "fitted": 0.8719505833210779,
+          "absolute_error": 0.016049416678922124
+        },
+        {
+          "inputs": {
+            "intelligence": 14,
+            "wisdom": 22,
+            "charisma_term": -5
+          },
+          "observed": 0.889,
+          "fitted": 0.8884157965382043,
+          "absolute_error": 0.0005842034617956626
+        },
+        {
+          "inputs": {
+            "intelligence": 14,
+            "wisdom": 22,
+            "charisma_term": 0
+          },
+          "observed": 0.89,
+          "fitted": 0.8777135898795273,
+          "absolute_error": 0.012286410120472713
+        },
+        {
+          "inputs": {
+            "intelligence": 14,
+            "wisdom": 22,
+            "charisma_term": 5
+          },
+          "observed": 0.892,
+          "fitted": 0.8610531931786877,
+          "absolute_error": 0.030946806821312345
+        },
+        {
+          "inputs": {
+            "intelligence": 18,
+            "wisdom": 6,
+            "charisma_term": -5
+          },
+          "observed": 0.873,
+          "fitted": 0.882784961143308,
+          "absolute_error": 0.009784961143307958
+        },
+        {
+          "inputs": {
+            "intelligence": 18,
+            "wisdom": 6,
+            "charisma_term": 0
+          },
+          "observed": 0.89,
+          "fitted": 0.8868519616682611,
+          "absolute_error": 0.0031480383317389338
+        },
+        {
+          "inputs": {
+            "intelligence": 18,
+            "wisdom": 6,
+            "charisma_term": 5
+          },
+          "observed": 0.881,
+          "fitted": 0.8865230380211244,
+          "absolute_error": 0.005523038021124416
+        },
+        {
+          "inputs": {
+            "intelligence": 18,
+            "wisdom": 10,
+            "charisma_term": -5
+          },
+          "observed": 0.887,
+          "fitted": 0.8884665489601526,
+          "absolute_error": 0.001466548960152636
+        },
+        {
+          "inputs": {
+            "intelligence": 18,
+            "wisdom": 10,
+            "charisma_term": 0
+          },
+          "observed": 0.898,
+          "fitted": 0.8895316013216731,
+          "absolute_error": 0.008468398678326938
+        },
+        {
+          "inputs": {
+            "intelligence": 18,
+            "wisdom": 10,
+            "charisma_term": 5
+          },
+          "observed": 0.84,
+          "fitted": 0.8863083836231175,
+          "absolute_error": 0.04630838362311751
+        },
+        {
+          "inputs": {
+            "intelligence": 18,
+            "wisdom": 14,
+            "charisma_term": -5
+          },
+          "observed": 0.915,
+          "fitted": 0.8922127795385576,
+          "absolute_error": 0.022787220461442437
+        },
+        {
+          "inputs": {
+            "intelligence": 18,
+            "wisdom": 14,
+            "charisma_term": 0
+          },
+          "observed": 0.888,
+          "fitted": 0.8904379291208688,
+          "absolute_error": 0.0024379291208688203
+        },
+        {
+          "inputs": {
+            "intelligence": 18,
+            "wisdom": 14,
+            "charisma_term": 5
+          },
+          "observed": 0.896,
+          "fitted": 0.8842917815787525,
+          "absolute_error": 0.011708218421247474
+        },
+        {
+          "inputs": {
+            "intelligence": 18,
+            "wisdom": 18,
+            "charisma_term": -5
+          },
+          "observed": 0.877,
+          "fitted": 0.8941821946573374,
+          "absolute_error": 0.01718219465733739
+        },
+        {
+          "inputs": {
+            "intelligence": 18,
+            "wisdom": 18,
+            "charisma_term": 0
+          },
+          "observed": 0.873,
+          "fitted": 0.8896087487731738,
+          "absolute_error": 0.016608748773173754
+        },
+        {
+          "inputs": {
+            "intelligence": 18,
+            "wisdom": 18,
+            "charisma_term": 5
+          },
+          "observed": 0.88,
+          "fitted": 0.8803899060092546,
+          "absolute_error": 0.0003899060092545925
+        },
+        {
+          "inputs": {
+            "intelligence": 18,
+            "wisdom": 22,
+            "charisma_term": -5
+          },
+          "observed": 0.894,
+          "fitted": 0.8944579154053612,
+          "absolute_error": 0.00045791540536122
+        },
+        {
+          "inputs": {
+            "intelligence": 18,
+            "wisdom": 22,
+            "charisma_term": 0
+          },
+          "observed": 0.881,
+          "fitted": 0.8870094757059225,
+          "absolute_error": 0.0060094757059224735
+        },
+        {
+          "inputs": {
+            "intelligence": 18,
+            "wisdom": 22,
+            "charisma_term": 5
+          },
+          "observed": 0.873,
+          "fitted": 0.8744413222891698,
+          "absolute_error": 0.0014413222891698219
+        },
+        {
+          "inputs": {
+            "intelligence": 22,
+            "wisdom": 6,
+            "charisma_term": -5
+          },
+          "observed": 0.878,
+          "fitted": 0.8652892608346677,
+          "absolute_error": 0.012710739165332274
+        },
+        {
+          "inputs": {
+            "intelligence": 22,
+            "wisdom": 6,
+            "charisma_term": 0
+          },
+          "observed": 0.893,
+          "fitted": 0.8729162420516012,
+          "absolute_error": 0.020083757948398784
+        },
+        {
+          "inputs": {
+            "intelligence": 22,
+            "wisdom": 6,
+            "charisma_term": 5
+          },
+          "observed": 0.892,
+          "fitted": 0.8755413732490104,
+          "absolute_error": 0.016458626750989636
+        },
+        {
+          "inputs": {
+            "intelligence": 22,
+            "wisdom": 10,
+            "charisma_term": -5
+          },
+          "observed": 0.87,
+          "fitted": 0.8759876430691963,
+          "absolute_error": 0.005987643069196302
+        },
+        {
+          "inputs": {
+            "intelligence": 22,
+            "wisdom": 10,
+            "charisma_term": 0
+          },
+          "observed": 0.886,
+          "fitted": 0.880051026792083,
+          "absolute_error": 0.0059489732079169855
+        },
+        {
+          "inputs": {
+            "intelligence": 22,
+            "wisdom": 10,
+            "charisma_term": 5
+          },
+          "observed": 0.865,
+          "fitted": 0.8794967141936048,
+          "absolute_error": 0.014496714193604765
+        },
+        {
+          "inputs": {
+            "intelligence": 22,
+            "wisdom": 14,
+            "charisma_term": -5
+          },
+          "observed": 0.891,
+          "fitted": 0.8841447885571573,
+          "absolute_error": 0.006855211442842735
+        },
+        {
+          "inputs": {
+            "intelligence": 22,
+            "wisdom": 14,
+            "charisma_term": 0
+          },
+          "observed": 0.885,
+          "fitted": 0.8850458201717738,
+          "absolute_error": 4.582017177379161e-05
+        },
+        {
+          "inputs": {
+            "intelligence": 22,
+            "wisdom": 14,
+            "charisma_term": 5
+          },
+          "observed": 0.876,
+          "fitted": 0.8815038253713262,
+          "absolute_error": 0.00550382537132621
+        },
+        {
+          "inputs": {
+            "intelligence": 22,
+            "wisdom": 18,
+            "charisma_term": -5
+          },
+          "observed": 0.884,
+          "fitted": 0.8901095460561314,
+          "absolute_error": 0.006109546056131343
+        },
+        {
+          "inputs": {
+            "intelligence": 22,
+            "wisdom": 18,
+            "charisma_term": 0
+          },
+          "observed": 0.877,
+          "fitted": 0.8881090952432316,
+          "absolute_error": 0.01110909524323156
+        },
+        {
+          "inputs": {
+            "intelligence": 22,
+            "wisdom": 18,
+            "charisma_term": 5
+          },
+          "observed": 0.894,
+          "fitted": 0.8816445544736848,
+          "absolute_error": 0.012355445526315179
+        },
+        {
+          "inputs": {
+            "intelligence": 22,
+            "wisdom": 22,
+            "charisma_term": -5
+          },
+          "observed": 0.885,
+          "fitted": 0.8941370372512998,
+          "absolute_error": 0.009137037251299773
+        },
+        {
+          "inputs": {
+            "intelligence": 22,
+            "wisdom": 22,
+            "charisma_term": 0
+          },
+          "observed": 0.9,
+          "fitted": 0.8893685019785198,
+          "absolute_error": 0.010631498021480223
+        },
+        {
+          "inputs": {
+            "intelligence": 22,
+            "wisdom": 22,
+            "charisma_term": 5
+          },
+          "observed": 0.871,
+          "fitted": 0.8799246380797533,
+          "absolute_error": 0.0089246380797533
+        }
+      ]
+    }
+  }
+}

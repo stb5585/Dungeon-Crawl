@@ -203,7 +203,9 @@ def test_corruption_tick_can_jump_only_to_an_adjacent_enemy(monkeypatch):
     assert not targets[2].magic_effects["DOT"].active
 
 
-def test_corruption_two_scales_with_unlocked_contracts():
+def test_corruption_two_scales_with_unlocked_contracts(monkeypatch):
+    from types import SimpleNamespace
+
     player = _player("Demonologist")
     player.demonologist_contracts = demonologist.default_state()
     player.demonologist_contracts["unlocked_contracts"] = [
@@ -213,6 +215,11 @@ def test_corruption_two_scales_with_unlocked_contracts():
     ]
     player.demonologist_contracts["active_patron"] = "Imp"
     target = enemies.Goblin()
+    monkeypatch.setattr(
+        player,
+        "resolve_contact",
+        lambda *_args, **_kwargs: SimpleNamespace(hit=True, attribution=None),
+    )
 
     abilities.Corruption2().cast(player, target)
 

@@ -708,12 +708,19 @@ def test_surge_modifiers_apply_locked_tuning(monkeypatch):
 
 
 def test_tower_offense_and_battle_determination_generate_resolve(monkeypatch):
+    from types import SimpleNamespace
+
     player = _player("Stalwart Defender")
     target = _player("Warrior")
     player.equipment["OffHand"] = items.KiteShield()
     player.spellbook["Skills"]["Tower Offense"] = abilities.TowerOffense()
     player.spellbook["Skills"]["Battle Determination"] = abilities.BattleDetermination()
     monkeypatch.setattr(target, "dodge_chance", lambda _actor: 0.0)
+    monkeypatch.setattr(
+        player,
+        "resolve_contact",
+        lambda *_args, **_kwargs: SimpleNamespace(hit=True, attribution=None),
+    )
 
     health_before = target.health.current
     abilities.ShieldSlam().use(player, target)
