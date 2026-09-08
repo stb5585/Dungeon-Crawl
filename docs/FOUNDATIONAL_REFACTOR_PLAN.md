@@ -330,6 +330,14 @@ foundation:
 8. Closure: remove internal adapters, update baselines and playtest material,
    and record rest as deferred.
 
+Current slice status:
+
+- Decision and characterization: complete in `8e64224`.
+- Core contracts: complete; typed models, v1 save rejection, migration
+  validation, and compatibility adapters are established.
+- Ability migration: next.
+- Resolution through milestone closure: queued in the order above.
+
 ## Progression Boundary
 
 The flat-level, separate-currency, point-purchased tree system is the current

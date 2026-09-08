@@ -18,7 +18,16 @@ from ..classes import promotion_kits
 from .enemy import EnemyStateSerializer
 from .item_serialization import AbilitySerializer, ItemSerializer
 from .manager import SaveFileMetadata, SaveLoadResult, SaveManager, json, os
-from .models import CombatData, LevelData, ResourceData, StatsData, StatusEffectData
+from .models import (
+    SAVE_SCHEMA_VERSION,
+    CombatData,
+    LevelData,
+    ResourceData,
+    SaveCompatibilityStatus,
+    SaveLoadCode,
+    StatsData,
+    StatusEffectData,
+)
 from .player import PlayerDataSerializer
 from .quests import QuestDataSerializer
 from .summons import SummonSerializer

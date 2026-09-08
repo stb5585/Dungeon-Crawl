@@ -3,6 +3,30 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import Enum
+
+SAVE_SCHEMA_VERSION = 1
+
+
+class SaveCompatibilityStatus(str, Enum):
+    """Compatibility state shown for one player-visible save."""
+
+    COMPATIBLE = "compatible"
+    PRE_FOUNDATION = "pre_foundation"
+    UNSUPPORTED_VERSION = "unsupported_version"
+    UNREADABLE = "unreadable"
+    NOT_A_FILE = "not_a_file"
+    INVALID_NAME = "invalid_name"
+
+
+class SaveLoadCode(str, Enum):
+    """Machine-readable result of a save load attempt."""
+
+    SUCCESS = "success"
+    NOT_FOUND = "not_found"
+    INVALID_FILENAME = "invalid_filename"
+    INCOMPATIBLE_SCHEMA = "incompatible_schema"
+    UNREADABLE = "unreadable"
 
 
 @dataclass

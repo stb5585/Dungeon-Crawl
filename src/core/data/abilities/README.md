@@ -1,6 +1,49 @@
 # Ability YAML Definitions
 
-This directory contains **196 YAML files** defining active abilities in the game. Definitions are loaded on first use by `ability_loader.py`; parsed YAML is cached by file path and modification time, while each call still receives a deep-copied definition and a fresh ability instance. Abilities are instantiated as one of **12 DataDriven classes** from `data_driven_abilities.py`. Wrapper classes in the `abilities/` package delegate to the YAML loader.
+This directory contains **197 YAML files** defining abilities in the game.
+Definitions are loaded on first use by `ability_loader`; parsed YAML is cached
+by file path and modification time, while each call still receives a
+deep-copied definition and a fresh ability instance. Abilities are instantiated
+as one of 12 data-driven classes. Wrapper classes in the `abilities` package
+delegate to the YAML loader.
+
+## Foundational Taxonomy Migration
+
+Every loaded YAML ability already receives an immutable ID equal to its
+filename stem. The files are being migrated family by family to declare that
+ID plus complete canonical metadata:
+
+```yaml
+id: fireball
+aliases: [Fireball]
+taxonomy:
+  origin: arcane
+  method: projection
+  primary_intent: damage
+  activation: active
+  form: direct
+  traits: []
+targeting:
+  scope: single_opponent
+  loss_policy: retarget_focus
+  hostile: true
+```
+
+Closed values and typed models live in `src/core/contracts`. Secondary traits
+must be namespaced and registered centrally in
+`src/core/data/ability_traits.py`; `internal.*` traits never appear in
+player-facing descriptions. `legacy_taxonomy_allowlist.txt` is the exact set
+of definitions temporarily permitted to omit this block. Remove an ID from
+the allowlist in the same commit that completes its metadata. Validate the
+current migration state with:
+
+```bash
+./.venv/bin/python tools/validate_ability_taxonomy.py
+```
+
+CI will switch to `--require-complete` when the allowlist reaches zero.
+Legacy `type` and `subtype` fields below continue to select execution classes
+during migration; they are not the canonical taxonomy.
 
 ## Progression Ownership
 
@@ -30,14 +73,14 @@ turns at a cost of 5 MP.
 | YAML `type:` | DataDriven Class | Count | Description |
 |---|---|---:|---|
 | `Skill` | `DataDrivenSkill` | 81 | Physical/weapon abilities, fallback for unknown types |
-| `Spell` | `DataDrivenSpell` | 46 | Offensive magic (elemental, arcane) |
+| `Spell` | `DataDrivenSpell` | 47 | Offensive magic (elemental, arcane) |
 | `Support` | `DataDrivenSupportSpell` | 18 | Buff/utility spells (Bless, Protect, Shell, etc.) |
 | `Status` | `DataDrivenStatusSpell` | 14 | Debuff/status-inflicting spells (Doom, Blind, etc.) |
 | `StatusSkill` | `DataDrivenStatusSkill` | 7 | Physical-stat-based status infliction (Disarm, Goad) |
 | `Heal` | `DataDrivenHealSpell` | 8 | Healing spells (Heal, Cure, Raise, etc.) |
 | `CustomSpell` | `DataDrivenCustomSpell` | 5 | Abilities with unique execution logic (Disintegrate, etc.) |
 | `WeaponSpell` | `DataDrivenWeaponSpell` | 3 | Hybrid weapon+spell attacks (Smite, Dispel Slash) |
-| `MagicMissile` | `DataDrivenMagicMissileSpell` | 3 | Multi-projectile spells with configurable missile count |
+| `MagicMissile` | `DataDrivenMagicMissileSpell` | 4 | Multi-projectile spells with configurable missile count |
 | `ChargingSkill` | `DataDrivenChargingSkill` | 7 | Multi-turn charge abilities (Charge, Crushing Blow, Shadow Strike, Dragon Breath ×3) |
 | `Movement` | `DataDrivenMovementSpell` | 2 | Non-combat world-state abilities (Sanctuary, Teleport) |
 | `JumpSkill` | `DataDrivenJumpSkill` | 1 | Jump with full modification system (13 mods) |

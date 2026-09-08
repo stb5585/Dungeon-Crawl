@@ -109,6 +109,9 @@ focused Ruff baseline configured in `pyproject.toml`, and runs `compileall` for
   src/core/combat/encounter.py \
   src/core/combat/targeting.py \
   src/core/combat/battle_engine/models.py \
+  src/core/contracts \
+  src/core/data/ability_schema.py \
+  src/core/data/ability_traits.py \
   src/core/progression/models.py \
   src/core/save_system/manager.py
 ```

@@ -35,6 +35,9 @@ jobs:
       - name: Run Ruff correctness checks
         run: python -m ruff check src
 
+      - name: Validate ability taxonomy migration
+        run: python tools/validate_ability_taxonomy.py
+
       - name: Run strict typing baseline
         run: |
           python -m mypy --strict --follow-imports=skip \
@@ -43,6 +46,9 @@ jobs:
             src/core/combat/encounter.py \
             src/core/combat/targeting.py \
             src/core/combat/battle_engine/models.py \
+            src/core/contracts \
+            src/core/data/ability_schema.py \
+            src/core/data/ability_traits.py \
             src/core/progression/models.py \
             src/core/save_system/manager.py
 

@@ -58,16 +58,21 @@ This order records implementation dependencies. The six gates are approved in
 the foundational plan. The milestone deliberately introduces ability slug IDs
 and a version-1 save format that rejects unmarked pre-foundation saves.
 
-### First Implementation Target
+### Current Implementation Target
 
 The first three decision blocks are approved together: ability metadata,
 combat timing/accuracy, and targeting. They share one action contract and must
 be implemented before interface replacement or multi-enemy rollout.
 
-After those decisions, the first implementation slice should establish the
-shared core contracts and characterization tests without changing content
-balance. UI replacement, encounter expansion, and numeric tuning follow only
-after the core rules are stable.
+The decision/characterization and additive core-contract slices are complete.
+The current target is family-by-family migration of all 197 YAML definitions
+to immutable slug identity, closed taxonomy, registered traits, and
+actor-relative targeting. Each family removes its entries from the exact
+legacy allowlist; CI becomes complete-only when that list reaches zero.
+
+UI replacement and encounter expansion follow only after the migrated action
+contract, resolution rules, and timeline are stable. Numeric tuning remains a
+separate evidence-gated activity.
 
 ## Evidence Task — Multi-Enemy Pilot 3 Rebenchmark
 

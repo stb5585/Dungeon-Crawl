@@ -4,6 +4,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
+from typing import Iterable
+
+from ..contracts.targeting import (
+    TargetingPolicy,
+)
+from ..contracts.targeting import TargetLossPolicy as CanonicalTargetLossPolicy
+from ..contracts.targeting import TargetScope as CanonicalTargetScope
 
 
 class TargetScope(str, Enum):
@@ -34,10 +41,73 @@ class ActionValidationCode(str, Enum):
     ENEMY_AREA_UNSUPPORTED = "enemy_area_unsupported"
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, init=False)
 class ActionIntent:
-    """Immutable player or AI action request; the engine owns the actor."""
+    """Immutable ID-based action request; the engine owns the actor.
 
-    action: str
-    choice: str | None = None
-    target_ids: tuple[str, ...] = ()
+    The ``action`` property and keyword remain a temporary compatibility
+    boundary for legacy command strings. New callers use ``action_id``.
+    """
+
+    action_id: str
+    choice: str | None
+    target_ids: tuple[str, ...]
+
+    def __init__(
+        self,
+        action_id: str | None = None,
+        choice: str | None = None,
+        target_ids: Iterable[str] = (),
+        *,
+        action: str | None = None,
+    ) -> None:
+        resolved_action_id = action_id if action_id is not None else action
+        if resolved_action_id is None or not resolved_action_id:
+            raise ValueError("action_id must not be empty")
+        if action_id is not None and action is not None and action_id != action:
+            raise ValueError("action and action_id cannot disagree")
+        object.__setattr__(self, "action_id", resolved_action_id)
+        object.__setattr__(self, "choice", choice)
+        object.__setattr__(self, "target_ids", tuple(target_ids))
+
+    @property
+    def action(self) -> str:
+        """Return the legacy command string during internal migration."""
+        return self.action_id
+
+    @classmethod
+    def from_legacy(
+        cls,
+        action: str,
+        choice: str | None = None,
+        target_ids: Iterable[str] = (),
+    ) -> ActionIntent:
+        """Adapt the former command/choice request shape at a public boundary."""
+        return cls(action_id=action, choice=choice, target_ids=target_ids)
+
+
+def canonical_targeting_policy(
+    scope: TargetScope,
+    loss_policy: TargetLossPolicy,
+    *,
+    hostile: bool = False,
+) -> TargetingPolicy:
+    """Adapt enemy-named runtime targeting values to canonical actor-relative values."""
+    canonical_scope = {
+        TargetScope.NONE: CanonicalTargetScope.NONE,
+        TargetScope.SELF: CanonicalTargetScope.SELF,
+        TargetScope.SINGLE_ENEMY: CanonicalTargetScope.SINGLE_OPPONENT,
+        TargetScope.ALL_ENEMIES: CanonicalTargetScope.ALL_OPPONENTS,
+    }[scope]
+    canonical_loss_policy = CanonicalTargetLossPolicy(loss_policy.value)
+    return TargetingPolicy(canonical_scope, canonical_loss_policy, hostile=hostile)
+
+
+def legacy_target_scope(scope: CanonicalTargetScope) -> TargetScope:
+    """Adapt a canonical actor-relative scope for unmigrated runtime callers."""
+    return {
+        CanonicalTargetScope.NONE: TargetScope.NONE,
+        CanonicalTargetScope.SELF: TargetScope.SELF,
+        CanonicalTargetScope.SINGLE_OPPONENT: TargetScope.SINGLE_ENEMY,
+        CanonicalTargetScope.ALL_OPPONENTS: TargetScope.ALL_ENEMIES,
+    }[scope]

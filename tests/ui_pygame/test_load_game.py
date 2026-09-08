@@ -192,6 +192,45 @@ def test_load_game_draw_helpers_and_data_loading(monkeypatch):
     assert draw_calls
 
 
+def test_load_game_lists_incompatible_save_with_schema_explanation(monkeypatch):
+    presenter = _make_presenter()
+    screen = load_game.LoadGameScreen(presenter)
+    load_calls = []
+    monkeypatch.setattr(
+        load_game.SaveManager,
+        "describe_save_file",
+        staticmethod(
+            lambda filename: {
+                **_valid_save_metadata(filename),
+                "loadable": False,
+                "compatibility_status": "pre_foundation",
+                "status_message": "Start a new game after the foundational update.",
+            }
+        ),
+    )
+    monkeypatch.setattr(
+        load_game.SaveManager,
+        "load_player",
+        staticmethod(lambda filename: load_calls.append(filename)),
+    )
+
+    screen.load_save_files(["legacy.save"])
+
+    assert load_calls == []
+    assert screen.save_data == [
+        {
+            "name": "Incompatible save",
+            "race": "?",
+            "sex": "?",
+            "class": "?",
+            "level": "?",
+            "file": "legacy.save",
+            "loadable": False,
+            "status_message": "Start a new game after the foundational update.",
+        }
+    ]
+
+
 def test_load_game_navigation_selects_and_cancels(monkeypatch):
     presenter = _make_presenter()
     screen = load_game.LoadGameScreen(presenter)
