@@ -77,7 +77,8 @@ def test_ability_serializer_supports_class_name_display_name_and_yaml_override()
     heal = abilities.Heal()
     heal._class_name = "HealYaml"
 
-    assert AbilitySerializer.serialize(heal) == "HealYaml"
+    assert AbilitySerializer.serialize(heal) == "heal"
+    assert AbilitySerializer.deserialize("heal_2").ability_id == "heal_2"
     assert AbilitySerializer.deserialize("Heal2").name == "Heal"
     assert AbilitySerializer.deserialize("Heal").name == "Heal"
     assert AbilitySerializer.deserialize("") is None

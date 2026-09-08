@@ -1,3 +1,20 @@
+id: pocket_sand
+aliases:
+- PocketSand
+- Pocket Sand
+taxonomy:
+  origin: martial
+  method: binding
+  primary_intent: control
+  activation: active
+  form: direct
+  traits:
+  - combat.status_contest
+  - visibility.stealth
+targeting:
+  scope: single_opponent
+  loss_policy: retarget_focus
+  hostile: true
 name: Pocket Sand
 type: StatusSkill
 subtype: Stealth

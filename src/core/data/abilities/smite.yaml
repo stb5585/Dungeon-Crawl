@@ -1,3 +1,18 @@
+id: smite
+aliases:
+- Smite
+taxonomy:
+  origin: divine
+  method: strike
+  primary_intent: damage
+  activation: active
+  form: direct
+  traits:
+  - combat.weapon
+targeting:
+  scope: single_opponent
+  loss_policy: retarget_focus
+  hostile: true
 name: Smite
 description: >-
   The power of light rebukes the enemy, adding bonus holy damage to a

@@ -1,3 +1,19 @@
+id: primal_ascendance
+aliases:
+- PrimalAscendance
+- Primal Ascendance
+taxonomy:
+  origin: natural
+  method: command
+  primary_intent: protection
+  activation: active
+  form: direct
+  traits:
+  - internal.specialized_execution
+targeting:
+  scope: self
+  loss_policy: locked
+  hostile: false
 name: Primal Ascendance
 type: Skill
 subtype: Power Up

@@ -1,3 +1,17 @@
+id: transform
+aliases:
+- Transform
+taxonomy:
+  origin: natural
+  method: transformation
+  primary_intent: utility
+  activation: active
+  form: direct
+  traits: []
+targeting:
+  scope: self
+  loss_policy: locked
+  hostile: false
 name: Transform
 type: Skill
 subtype: Class

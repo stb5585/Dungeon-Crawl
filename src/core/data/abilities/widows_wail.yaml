@@ -1,3 +1,18 @@
+id: widows_wail
+aliases:
+- WidowsWail
+- Widow's Wail
+taxonomy:
+  origin: innate
+  method: command
+  primary_intent: damage
+  activation: active
+  form: direct
+  traits: []
+targeting:
+  scope: single_opponent
+  loss_policy: retarget_focus
+  hostile: true
 name: Widow's Wail
 description: >-
   The agony of loss is released, affecting both the target and user. Both

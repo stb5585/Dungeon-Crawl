@@ -1,3 +1,17 @@
+id: counterspell
+aliases:
+- Counterspell
+taxonomy:
+  origin: innate
+  method: command
+  primary_intent: protection
+  activation: reaction
+  form: direct
+  traits: []
+targeting:
+  scope: none
+  loss_policy: locked
+  hostile: false
 name: Counterspell
 type: Skill
 description: >-

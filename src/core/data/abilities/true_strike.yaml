@@ -1,3 +1,20 @@
+id: true_strike
+aliases:
+- TrueStrike
+- True Strike
+taxonomy:
+  origin: martial
+  method: strike
+  primary_intent: damage
+  activation: active
+  form: direct
+  traits:
+  - combat.always_hit
+  - combat.weapon
+targeting:
+  scope: single_opponent
+  loss_policy: retarget_focus
+  hostile: true
 name: True Strike
 type: Skill
 subtype: Offensive

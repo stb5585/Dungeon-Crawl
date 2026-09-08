@@ -1,3 +1,18 @@
+id: sacred_overchannel
+aliases:
+- SacredOverchannel
+- Sacred Overchannel
+taxonomy:
+  origin: divine
+  method: command
+  primary_intent: protection
+  activation: active
+  form: direct
+  traits: []
+targeting:
+  scope: self
+  loss_policy: locked
+  hostile: false
 name: Sacred Overchannel
 type: Skill
 subtype: Power Up

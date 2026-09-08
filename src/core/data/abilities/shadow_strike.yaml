@@ -1,3 +1,21 @@
+id: shadow_strike
+aliases:
+- ShadowStrike
+- Shadow Strike
+taxonomy:
+  origin: extraplanar
+  method: strike
+  primary_intent: damage
+  activation: active
+  form: direct
+  traits:
+  - combat.charged
+  - combat.delayed
+  - combat.weapon
+targeting:
+  scope: single_opponent
+  loss_policy: locked
+  hostile: true
 name: Shadow Strike
 type: ChargingSkill
 subtype: Shadow

@@ -1,3 +1,19 @@
+id: weaken_mind
+aliases:
+- WeakenMind
+- Weaken Mind
+taxonomy:
+  origin: martial
+  method: binding
+  primary_intent: control
+  activation: active
+  form: direct
+  traits:
+  - combat.status_contest
+targeting:
+  scope: single_opponent
+  loss_policy: retarget_focus
+  hostile: true
 name: Weaken Mind
 type: Status
 subtype: Status

@@ -1944,14 +1944,14 @@ class TestBatch2SaveSystem:
         from src.core.save_system import AbilitySerializer
 
         h = abilities.Heal()
-        assert AbilitySerializer.serialize(h) == "Heal"
+        assert AbilitySerializer.serialize(h) == "heal"
 
     def test_serialise_heal2(self):
         from src.core import abilities
         from src.core.save_system import AbilitySerializer
 
         h = abilities.Heal2()
-        assert AbilitySerializer.serialize(h) == "Heal2"
+        assert AbilitySerializer.serialize(h) == "heal_2"
 
     def test_round_trip(self):
         from src.core import abilities
@@ -1972,7 +1972,7 @@ class TestBatch2SaveSystem:
         ]:
             original = getattr(abilities, name)()
             serialized = AbilitySerializer.serialize(original)
-            assert serialized == name, f"Serialize failed for {name}"
+            assert serialized == original.ability_id, f"Serialize failed for {name}"
             restored = AbilitySerializer.deserialize(serialized)
             assert restored is not None, f"Deserialize failed for {name}"
             assert restored.name == original.name
@@ -2505,7 +2505,7 @@ class TestBatch3SaveSystem:
         ]:
             ability = getattr(abilities, name)()
             serialized = AbilitySerializer.serialize(ability)
-            assert serialized == name, f"Serialize failed for {name}"
+            assert serialized == ability.ability_id, f"Serialize failed for {name}"
             restored = AbilitySerializer.deserialize(serialized)
             assert restored is not None, f"Deserialize failed for {name}"
             assert restored.name == ability.name
@@ -2517,7 +2517,7 @@ class TestBatch3SaveSystem:
         for name in ["Goad", "PocketSand", "SleepingPowder"]:
             ability = getattr(abilities, name)()
             serialized = AbilitySerializer.serialize(ability)
-            assert serialized == name, f"Serialize failed for {name}"
+            assert serialized == ability.ability_id, f"Serialize failed for {name}"
             restored = AbilitySerializer.deserialize(serialized)
             assert restored is not None, f"Deserialize failed for {name}"
             assert restored.name == ability.name
@@ -2543,7 +2543,7 @@ class TestBatch3SaveSystem:
         ]:
             ability = getattr(abilities, name)()
             serialized = AbilitySerializer.serialize(ability)
-            assert serialized == name, f"Serialize failed for {name}"
+            assert serialized == ability.ability_id, f"Serialize failed for {name}"
             restored = AbilitySerializer.deserialize(serialized)
             assert restored is not None, f"Deserialize failed for {name}"
             assert restored.name == ability.name
@@ -3145,7 +3145,7 @@ class TestBatch4SaveSystem:
         for name in ["Howl", "Slam", "LegSweep", "Trip", "Web", "Disarm"]:
             ability = getattr(abilities, name)()
             serialized = AbilitySerializer.serialize(ability)
-            assert serialized == name, f"Serialize failed for {name}"
+            assert serialized == ability.ability_id, f"Serialize failed for {name}"
             restored = AbilitySerializer.deserialize(serialized)
             assert restored is not None, f"Deserialize failed for {name}"
             assert restored.name == ability.name
@@ -4285,7 +4285,7 @@ class TestBatch6SaveSystem:
         for name in ["Desoul", "Petrify", "Ruin", "DiseaseBreath"]:
             ability = getattr(abilities, name)()
             serialized = AbilitySerializer.serialize(ability)
-            assert serialized == name, f"Serialize failed for {name}"
+            assert serialized == ability.ability_id, f"Serialize failed for {name}"
             restored = AbilitySerializer.deserialize(serialized)
             assert restored is not None, f"Deserialize failed for {name}"
             assert restored.name == ability.name
@@ -4301,7 +4301,7 @@ class TestBatch5SaveSystem:
         for name in ["MortalStrike", "MortalStrike2", "Doom", "Tunnel", "Surface"]:
             ability = getattr(abilities, name)()
             serialized = AbilitySerializer.serialize(ability)
-            assert serialized == name, f"Serialize failed for {name}"
+            assert serialized == ability.ability_id, f"Serialize failed for {name}"
             restored = AbilitySerializer.deserialize(serialized)
             assert restored is not None, f"Deserialize failed for {name}"
             assert restored.name == ability.name
@@ -4799,7 +4799,7 @@ class TestBatch7SaveSystem:
         ]:
             ability = getattr(abilities, name)()
             serialized = AbilitySerializer.serialize(ability)
-            assert serialized == name, f"Serialize failed for {name}"
+            assert serialized == ability.ability_id, f"Serialize failed for {name}"
             restored = AbilitySerializer.deserialize(serialized)
             assert restored is not None, f"Deserialize failed for {name}"
             assert restored.name == ability.name
@@ -5203,7 +5203,7 @@ class TestBatch12SaveSystem:
         ]:
             ability = getattr(abilities, name)()
             serialized = AbilitySerializer.serialize(ability)
-            assert serialized == name, f"Serialize failed for {name}"
+            assert serialized == ability.ability_id, f"Serialize failed for {name}"
             restored = AbilitySerializer.deserialize(serialized)
             assert restored is not None, f"Deserialize failed for {name}"
             assert restored.name == ability.name
@@ -5620,7 +5620,7 @@ class TestBatch13SaveSystem:
         ]:
             ability = getattr(abilities, name)()
             serialized = AbilitySerializer.serialize(ability)
-            assert serialized == name, f"Serialize failed for {name}"
+            assert serialized == ability.ability_id, f"Serialize failed for {name}"
             restored = AbilitySerializer.deserialize(serialized)
             assert restored is not None, f"Deserialize failed for {name}"
             assert restored.name == ability.name
@@ -5946,7 +5946,7 @@ class TestBatch11SaveSystem:
         ]:
             ability = getattr(abilities, name)()
             serialized = AbilitySerializer.serialize(ability)
-            assert serialized == name, f"Serialize failed for {name}"
+            assert serialized == ability.ability_id, f"Serialize failed for {name}"
             restored = AbilitySerializer.deserialize(serialized)
             assert restored is not None, f"Deserialize failed for {name}"
             assert restored.name == ability.name
@@ -6412,7 +6412,7 @@ class TestBatch10SaveSystem:
         ]:
             ability = getattr(abilities, name)()
             serialized = AbilitySerializer.serialize(ability)
-            assert serialized == name, f"Serialize failed for {name}"
+            assert serialized == ability.ability_id, f"Serialize failed for {name}"
             restored = AbilitySerializer.deserialize(serialized)
             assert restored is not None, f"Deserialize failed for {name}"
             assert restored.name == ability.name
@@ -7174,23 +7174,24 @@ class TestBatch9SaveSystem:
         from src.core import abilities
         from src.core.save_system import AbilitySerializer
 
-        for name in [
-            "ShieldSlam",
-            "KidneyPunch",
-            "PoisonStrike",
-            "DimMak",
-            "ExploitWeakness",
-            "GoldToss",
-            "Lick",
-            "BrainGorge",
-            "Detonate",
-            "Crush",
+        for name, expected in [
+            ("ShieldSlam", "shield_slam"),
+            ("KidneyPunch", "kidney_punch"),
+            ("PoisonStrike", "poison_strike"),
+            ("DimMak", "dim_mak"),
+            ("ExploitWeakness", "exploit_weakness"),
+            ("GoldToss", "gold_toss"),
+            ("Lick", "lick"),
+            ("BrainGorge", "brain_gorge"),
+            ("Detonate", "detonate"),
+            ("Crush", "crush"),
         ]:
             ability = getattr(abilities, name)()
             serialized = AbilitySerializer.serialize(ability)
-            assert serialized == name, f"Serialize failed for {name}"
+            assert serialized == expected, f"Serialize failed for {name}"
             restored = AbilitySerializer.deserialize(serialized)
             assert restored is not None, f"Deserialize failed for {name}"
+            assert restored.ability_id == expected
             assert restored.name == ability.name
 
 
@@ -7995,7 +7996,7 @@ class TestBatch8SaveSystem:
         ]:
             ability = getattr(abilities, name)()
             serialized = AbilitySerializer.serialize(ability)
-            assert serialized == name, f"Serialize failed for {name}"
+            assert serialized == ability.ability_id, f"Serialize failed for {name}"
             restored = AbilitySerializer.deserialize(serialized)
             assert restored is not None, f"Deserialize failed for {name}"
             assert restored.name == ability.name
@@ -8494,7 +8495,7 @@ class TestBatch14SaveSystem:
         ]:
             ability = getattr(abilities, name)()
             serialized = AbilitySerializer.serialize(ability)
-            assert serialized == name, f"Serialize failed for {name}"
+            assert serialized == ability.ability_id, f"Serialize failed for {name}"
             restored = AbilitySerializer.deserialize(serialized)
             assert restored is not None, f"Deserialize failed for {name}"
             assert restored.name == ability.name
@@ -8940,7 +8941,7 @@ class TestBatch15SaveSystem:
         ]:
             ability = getattr(abilities, name)()
             serialized = AbilitySerializer.serialize(ability)
-            assert serialized == name, f"Serialize failed for {name}"
+            assert serialized == ability.ability_id, f"Serialize failed for {name}"
             restored = AbilitySerializer.deserialize(serialized)
             assert restored is not None, f"Deserialize failed for {name}"
             assert restored.name == ability.name
@@ -9302,7 +9303,7 @@ class TestBatch16SaveSystem:
 
         j = abilities.Jump()
         serialized = AbilitySerializer.serialize(j)
-        assert serialized == "Jump"
+        assert serialized == "jump"
         restored = AbilitySerializer.deserialize(serialized)
         assert restored is not None
         assert restored.name == "Jump"
@@ -9498,7 +9499,7 @@ class TestBatch17SaveSystem:
         for name in ["Sanctuary", "Teleport"]:
             ability = getattr(abilities, name)()
             serialized = AbilitySerializer.serialize(ability)
-            assert serialized == name, f"Serialize failed for {name}"
+            assert serialized == ability.ability_id, f"Serialize failed for {name}"
             restored = AbilitySerializer.deserialize(serialized)
             assert restored is not None, f"Deserialize failed for {name}"
             assert restored.name == ability.name
@@ -9745,7 +9746,7 @@ class TestBatch18SaveSystem:
 
         ss = abilities.ShadowStrike()
         serialized = AbilitySerializer.serialize(ss)
-        assert serialized == "ShadowStrike"
+        assert serialized == "shadow_strike"
         restored = AbilitySerializer.deserialize(serialized)
         assert restored is not None
         assert restored.name == "Shadow Strike"
@@ -10030,7 +10031,7 @@ class TestBatch19SaveSystem:
 
         ab = getattr(abilities, cls_name)()
         serialized = AbilitySerializer.serialize(ab)
-        assert serialized == cls_name
+        assert serialized == ab.ability_id
         restored = AbilitySerializer.deserialize(serialized)
         assert restored is not None
 
@@ -10137,7 +10138,7 @@ class TestCompanionUltimateSerialize:
 
         ab = getattr(abilities, cls_name)()
         serialized = AbilitySerializer.serialize(ab)
-        assert serialized == cls_name
+        assert serialized == ab.ability_id
         restored = AbilitySerializer.deserialize(serialized)
         assert restored is not None
 

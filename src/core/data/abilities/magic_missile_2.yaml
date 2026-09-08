@@ -1,3 +1,19 @@
+id: magic_missile_2
+aliases:
+- MagicMissile2
+- Magic Missile II
+taxonomy:
+  origin: arcane
+  method: projection
+  primary_intent: damage
+  activation: active
+  form: direct
+  traits:
+  - combat.multi_strike
+targeting:
+  scope: single_opponent
+  loss_policy: retarget_focus
+  hostile: true
 name: Magic Missile II
 type: MagicMissile
 subtype: Non-elemental

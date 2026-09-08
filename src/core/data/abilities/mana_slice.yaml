@@ -1,3 +1,19 @@
+id: mana_slice
+aliases:
+- ManaSlice
+- Mana Slice
+taxonomy:
+  origin: arcane
+  method: strike
+  primary_intent: damage
+  activation: active
+  form: direct
+  traits:
+  - combat.weapon
+targeting:
+  scope: single_opponent
+  loss_policy: retarget_focus
+  hostile: true
 name: Mana Slice
 type: Skill
 subtype: Enhance

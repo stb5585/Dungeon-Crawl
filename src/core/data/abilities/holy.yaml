@@ -1,3 +1,17 @@
+id: holy
+aliases:
+- Holy
+taxonomy:
+  origin: divine
+  method: projection
+  primary_intent: damage
+  activation: active
+  form: direct
+  traits: []
+targeting:
+  scope: single_opponent
+  loss_policy: retarget_focus
+  hostile: true
 name: Holy
 type: Spell
 subtype: Holy

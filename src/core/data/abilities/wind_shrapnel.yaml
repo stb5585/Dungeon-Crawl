@@ -1,3 +1,18 @@
+id: wind_shrapnel
+aliases:
+- WindShrapnel
+- Wind Shrapnel
+taxonomy:
+  origin: innate
+  method: projection
+  primary_intent: damage
+  activation: active
+  form: direct
+  traits: []
+targeting:
+  scope: single_opponent
+  loss_policy: retarget_focus
+  hostile: true
 name: Wind Shrapnel
 type: Spell
 subtype: Wind

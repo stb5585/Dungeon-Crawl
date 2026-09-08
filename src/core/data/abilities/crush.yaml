@@ -1,3 +1,17 @@
+id: crush
+aliases:
+- Crush
+taxonomy:
+  origin: innate
+  method: command
+  primary_intent: damage
+  activation: active
+  form: direct
+  traits: []
+targeting:
+  scope: single_opponent
+  loss_policy: retarget_focus
+  hostile: true
 name: Crush
 description: >-
   Take the enemy into your clutches and attempt to squeeze the life from them.

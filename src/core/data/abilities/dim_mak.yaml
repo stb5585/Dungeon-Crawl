@@ -1,3 +1,20 @@
+id: dim_mak
+aliases:
+- DimMak
+- Dim Mak
+taxonomy:
+  origin: spiritual
+  method: strike
+  primary_intent: damage
+  activation: active
+  form: direct
+  traits:
+  - combat.always_hit
+  - combat.weapon
+targeting:
+  scope: single_opponent
+  loss_policy: retarget_focus
+  hostile: true
 name: Dim Mak
 description: >-
   Master Monk finisher requiring full Ki and 18 MP. Strike at 2.10 power with

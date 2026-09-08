@@ -1,3 +1,18 @@
+id: divine_protection
+aliases:
+- DivineProtection
+- Divine Protection
+taxonomy:
+  origin: divine
+  method: channeling
+  primary_intent: protection
+  activation: active
+  form: direct
+  traits: []
+targeting:
+  scope: self
+  loss_policy: locked
+  hostile: false
 name: Divine Protection
 type: Support
 subtype: Support

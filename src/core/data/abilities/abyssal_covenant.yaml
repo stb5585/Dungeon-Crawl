@@ -1,3 +1,18 @@
+id: abyssal_covenant
+aliases:
+- AbyssalCovenant
+- Abyssal Covenant
+taxonomy:
+  origin: extraplanar
+  method: command
+  primary_intent: protection
+  activation: active
+  form: direct
+  traits: []
+targeting:
+  scope: self
+  loss_policy: locked
+  hostile: false
 name: Abyssal Covenant
 type: Skill
 subtype: Power Up

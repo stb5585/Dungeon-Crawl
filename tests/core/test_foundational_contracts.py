@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections import Counter
 from pathlib import Path
 
 import pytest
@@ -151,20 +152,63 @@ def test_action_and_presentation_models_are_typed_and_text_complete():
     )
 
 
-def test_current_legacy_allowlist_is_exact_and_validator_passes():
+def test_complete_ability_taxonomy_has_no_legacy_allowlist():
     allowlist = load_legacy_allowlist()
-    report = validate_ability_directory()
+    report = validate_ability_directory(require_complete=True)
 
-    assert len(allowlist) == 197
+    assert allowlist == frozenset()
     assert report.valid is True
-    assert report.definitions == ()
-    assert frozenset(report.legacy_ability_ids) == allowlist
+    assert len(report.definitions) == 197
+    assert report.legacy_ability_ids == ()
+    assert {definition.ability_id for definition in report.definitions} == {
+        path.stem for path in ABILITY_DIRECTORY.glob("*.yaml")
+    }
 
 
-def test_yaml_loader_assigns_immutable_filename_slug_before_metadata_migration():
+def test_complete_taxonomy_matches_reviewed_inventory_and_semantic_exceptions():
+    definitions = validate_ability_directory(require_complete=True).definitions
+    by_id = {definition.ability_id: definition for definition in definitions}
+
+    assert Counter(definition.taxonomy.origin.value for definition in definitions) == {
+        "martial": 56,
+        "innate": 34,
+        "natural": 30,
+        "arcane": 29,
+        "divine": 27,
+        "extraplanar": 11,
+        "spiritual": 6,
+        "alchemical": 4,
+    }
+    assert Counter(definition.taxonomy.activation.value for definition in definitions) == {
+        "active": 192,
+        "passive": 3,
+        "reaction": 2,
+    }
+    assert Counter(definition.taxonomy.primary_intent.value for definition in definitions) == {
+        "damage": 112,
+        "protection": 29,
+        "control": 25,
+        "restoration": 12,
+        "utility": 9,
+        "mobility": 7,
+        "information": 2,
+        "summoning": 1,
+    }
+    assert by_id["arcane_blast"].taxonomy.primary_intent is PrimaryIntent.DAMAGE
+    assert by_id["great_gospel"].taxonomy.primary_intent is PrimaryIntent.RESTORATION
+    assert by_id["consume_item"].taxonomy.form is AbilityForm.DIRECT
+    assert by_id["consume_item"].taxonomy.method is AbilityMethod.CONSUMPTION
+    assert by_id["consume_item"].targeting.hostile is True
+    assert by_id["imbue_weapon"].taxonomy.primary_intent is PrimaryIntent.DAMAGE
+    assert by_id["smoke_screen"].targeting.scope is TargetScope.SELF
+    assert "Heal" in by_id["heal"].aliases and "Heal" in by_id["heal_2"].aliases
+
+
+def test_yaml_loader_assigns_immutable_filename_slug_and_aliases():
     ability = AbilityFactory.create_from_yaml(ABILITY_DIRECTORY / "magic_missile_2.yaml")
 
     assert ability.ability_id == "magic_missile_2"
+    assert {"MagicMissile2", "Magic Missile II"}.issubset(ability.aliases)
     with pytest.raises(AttributeError, match="immutable"):
         ability.ability_id = "different_slug"
 
@@ -174,7 +218,7 @@ def test_validator_accepts_complete_metadata_and_rejects_stale_allowlist(tmp_pat
     ability_dir.mkdir()
     payload = {
         "id": "test_bolt",
-        "aliases": ["TestBolt"],
+        "aliases": ["TestBolt", "Test Bolt"],
         "name": "Test Bolt",
         "description": "A test projection.",
         "type": "Spell",
@@ -209,6 +253,43 @@ def test_validator_accepts_complete_metadata_and_rejects_stale_allowlist(tmp_pat
     ]
 
 
+def test_validator_allows_shared_display_names_but_not_shared_class_aliases(tmp_path: Path):
+    ability_dir = tmp_path / "abilities"
+    ability_dir.mkdir()
+    allowlist_path = tmp_path / "allowlist.txt"
+    allowlist_path.write_text("", encoding="utf-8")
+
+    def payload(ability_id: str, class_alias: str) -> dict[str, object]:
+        return {
+            "id": ability_id,
+            "aliases": [class_alias, "Heal"],
+            "name": "Heal",
+            "description": "Test healing.",
+            "taxonomy": {
+                "origin": "divine",
+                "method": "channeling",
+                "primary_intent": "restoration",
+                "activation": "active",
+                "form": "direct",
+                "traits": [],
+            },
+            "targeting": {"scope": "self", "loss_policy": "locked", "hostile": False},
+        }
+
+    first = payload("heal_a", "HealA")
+    second = payload("heal_b", "HealB")
+    (ability_dir / "heal_a.yaml").write_text(yaml.safe_dump(first), encoding="utf-8")
+    (ability_dir / "heal_b.yaml").write_text(yaml.safe_dump(second), encoding="utf-8")
+    assert validate_ability_directory(ability_dir, allowlist_path=allowlist_path).valid
+
+    second["aliases"] = ["HealA", "Heal"]
+    (ability_dir / "heal_b.yaml").write_text(yaml.safe_dump(second), encoding="utf-8")
+    report = validate_ability_directory(ability_dir, allowlist_path=allowlist_path)
+    assert [(issue.ability_id, issue.code) for issue in report.issues] == [
+        ("heal_b", "duplicate_alias")
+    ]
+
+
 def test_validator_rejects_unknown_traits_and_partial_metadata(tmp_path: Path):
     ability_dir = tmp_path / "abilities"
     ability_dir.mkdir()
@@ -225,7 +306,7 @@ def test_validator_rejects_unknown_traits_and_partial_metadata(tmp_path: Path):
     (ability_dir / "partial.yaml").unlink()
     unknown_trait = {
         "id": "unknown_trait",
-        "aliases": [],
+        "aliases": ["Unknown Trait"],
         "name": "Unknown Trait",
         "description": "Invalid test metadata.",
         "taxonomy": {

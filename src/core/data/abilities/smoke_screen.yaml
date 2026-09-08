@@ -1,3 +1,19 @@
+id: smoke_screen
+aliases:
+- SmokeScreen
+- Smoke Screen
+taxonomy:
+  origin: alchemical
+  method: command
+  primary_intent: protection
+  activation: active
+  form: direct
+  traits:
+  - visibility.stealth
+targeting:
+  scope: self
+  loss_policy: locked
+  hostile: false
 name: Smoke Screen
 type: Skill
 subtype: Stealth

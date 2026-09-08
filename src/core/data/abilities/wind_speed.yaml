@@ -1,3 +1,18 @@
+id: wind_speed
+aliases:
+- WindSpeed
+- Wind Speed
+taxonomy:
+  origin: natural
+  method: movement
+  primary_intent: mobility
+  activation: active
+  form: direct
+  traits: []
+targeting:
+  scope: self
+  loss_policy: locked
+  hostile: false
 name: Wind Speed
 type: Support
 subtype: Support

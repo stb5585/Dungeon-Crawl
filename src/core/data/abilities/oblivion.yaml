@@ -1,3 +1,17 @@
+id: oblivion
+aliases:
+- Oblivion
+taxonomy:
+  origin: extraplanar
+  method: projection
+  primary_intent: damage
+  activation: active
+  form: direct
+  traits: []
+targeting:
+  scope: single_opponent
+  loss_policy: retarget_focus
+  hostile: true
 name: Oblivion
 type: Spell
 subtype: Shadow

@@ -1,3 +1,19 @@
+id: mana_drain
+aliases:
+- ManaDrain
+- Mana Drain
+taxonomy:
+  origin: arcane
+  method: command
+  primary_intent: damage
+  activation: active
+  form: direct
+  traits:
+  - combat.resource_drain
+targeting:
+  scope: single_opponent
+  loss_policy: retarget_focus
+  hostile: true
 name: Mana Drain
 type: Skill
 subtype: Drain

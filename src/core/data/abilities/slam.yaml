@@ -1,3 +1,18 @@
+id: slam
+aliases:
+- Slam
+taxonomy:
+  origin: innate
+  method: strike
+  primary_intent: damage
+  activation: active
+  form: direct
+  traits:
+  - combat.weapon
+targeting:
+  scope: single_opponent
+  loss_policy: retarget_focus
+  hostile: true
 name: Slam
 type: Skill
 subtype: Offensive

@@ -1,3 +1,18 @@
+id: goblin_punch
+aliases:
+- GoblinPunch
+- Goblin Punch
+taxonomy:
+  origin: innate
+  method: command
+  primary_intent: damage
+  activation: active
+  form: direct
+  traits: []
+targeting:
+  scope: single_opponent
+  loss_policy: retarget_focus
+  hostile: true
 name: Goblin Punch
 description: >-
   Attack the target multiple times with a flurry of punches, dealing

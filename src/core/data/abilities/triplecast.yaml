@@ -1,3 +1,17 @@
+id: triplecast
+aliases:
+- Triplecast
+taxonomy:
+  origin: martial
+  method: command
+  primary_intent: damage
+  activation: active
+  form: direct
+  traits: []
+targeting:
+  scope: single_opponent
+  loss_policy: retarget_focus
+  hostile: true
 name: Triplecast
 description: Cast multiple spells in a single turn.
 type: Skill

@@ -1,3 +1,18 @@
+id: mirror_image
+aliases:
+- MirrorImage
+- Mirror Image
+taxonomy:
+  origin: arcane
+  method: channeling
+  primary_intent: protection
+  activation: active
+  form: direct
+  traits: []
+targeting:
+  scope: self
+  loss_policy: locked
+  hostile: false
 name: Mirror Image
 type: Support
 subtype: Illusion

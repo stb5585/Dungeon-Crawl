@@ -1,3 +1,18 @@
+id: water_jet
+aliases:
+- WaterJet
+- Water Jet
+taxonomy:
+  origin: natural
+  method: projection
+  primary_intent: damage
+  activation: active
+  form: direct
+  traits: []
+targeting:
+  scope: single_opponent
+  loss_policy: retarget_focus
+  hostile: true
 name: Water Jet
 type: Spell
 subtype: Water

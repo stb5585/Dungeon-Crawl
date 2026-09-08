@@ -1,3 +1,17 @@
+id: vulcanize
+aliases:
+- Vulcanize
+taxonomy:
+  origin: arcane
+  method: channeling
+  primary_intent: protection
+  activation: active
+  form: direct
+  traits: []
+targeting:
+  scope: self
+  loss_policy: locked
+  hostile: false
 name: Vulcanize
 description: >-
   Fire can be very destructive but can sometimes harden. The user is

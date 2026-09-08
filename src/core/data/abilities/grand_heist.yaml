@@ -1,3 +1,18 @@
+id: grand_heist
+aliases:
+- GrandHeist
+- Grand Heist
+taxonomy:
+  origin: innate
+  method: command
+  primary_intent: damage
+  activation: active
+  form: direct
+  traits: []
+targeting:
+  scope: single_opponent
+  loss_policy: retarget_focus
+  hostile: true
 name: Grand Heist
 type: Skill
 subtype: Offensive

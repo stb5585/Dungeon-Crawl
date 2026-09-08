@@ -1,3 +1,21 @@
+id: crushing_blow
+aliases:
+- CrushingBlow
+- Crushing Blow
+taxonomy:
+  origin: innate
+  method: strike
+  primary_intent: damage
+  activation: active
+  form: direct
+  traits:
+  - combat.charged
+  - combat.delayed
+  - combat.weapon
+targeting:
+  scope: single_opponent
+  loss_policy: locked
+  hostile: true
 name: Crushing Blow
 type: ChargingSkill
 subtype: Physical

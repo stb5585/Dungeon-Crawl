@@ -1,3 +1,18 @@
+id: breathe_fire
+aliases:
+- BreatheFire
+- Breathe Fire
+taxonomy:
+  origin: innate
+  method: command
+  primary_intent: damage
+  activation: active
+  form: direct
+  traits: []
+targeting:
+  scope: single_opponent
+  loss_policy: retarget_focus
+  hostile: true
 name: Breathe Fire
 description: >-
   Special attack used randomly when attack is selected. Only used by

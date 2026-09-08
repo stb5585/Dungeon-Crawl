@@ -1,3 +1,20 @@
+id: triple_strike
+aliases:
+- TripleStrike
+- Triple Strike
+taxonomy:
+  origin: martial
+  method: strike
+  primary_intent: damage
+  activation: active
+  form: direct
+  traits:
+  - combat.multi_strike
+  - combat.weapon
+targeting:
+  scope: single_opponent
+  loss_policy: retarget_focus
+  hostile: true
 name: Triple Strike
 type: Skill
 subtype: Offensive

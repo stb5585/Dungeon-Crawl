@@ -1,3 +1,17 @@
+id: sanctuary
+aliases:
+- Sanctuary
+taxonomy:
+  origin: martial
+  method: movement
+  primary_intent: mobility
+  activation: active
+  form: direct
+  traits: []
+targeting:
+  scope: self
+  loss_policy: locked
+  hostile: false
 name: Sanctuary
 type: Movement
 subtype: Movement

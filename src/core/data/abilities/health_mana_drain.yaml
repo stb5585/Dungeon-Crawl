@@ -1,3 +1,19 @@
+id: health_mana_drain
+aliases:
+- HealthManaDrain
+- Health/Mana Drain
+taxonomy:
+  origin: martial
+  method: command
+  primary_intent: damage
+  activation: active
+  form: direct
+  traits:
+  - combat.resource_drain
+targeting:
+  scope: single_opponent
+  loss_policy: retarget_focus
+  hostile: true
 name: Health/Mana Drain
 type: Skill
 subtype: Drain

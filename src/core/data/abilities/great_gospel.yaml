@@ -1,3 +1,18 @@
+id: great_gospel
+aliases:
+- GreatGospel
+- Great Gospel
+taxonomy:
+  origin: divine
+  method: command
+  primary_intent: restoration
+  activation: active
+  form: direct
+  traits: []
+targeting:
+  scope: self
+  loss_policy: locked
+  hostile: false
 name: Great Gospel
 type: Skill
 subtype: Power Up

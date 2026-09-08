@@ -2716,13 +2716,13 @@ class Copycat(FunhouseMinion):
 
     MAX_COPIED_SPELLS = 2
     MAX_COPIED_SKILLS = 2
-    _BLACKLIST_CLASS_NAMES = {
+    _BLACKLIST_ACTION_IDS = {
         # World-state / UI-callback / special-context abilities
-        "Teleport",
-        "Sanctuary",
-        "ChooseFate",
-        "SlotMachine",
-        "Inspect",
+        "teleport",
+        "sanctuary",
+        "choose_fate",
+        "slot_machine",
+        "inspect",
     }
 
     def __init__(self):
@@ -2756,15 +2756,15 @@ class Copycat(FunhouseMinion):
                 if bool(getattr(ab, "passive", False)):
                     continue
                 try:
-                    cls_name = AbilitySerializer.serialize(ab)
+                    action_id = AbilitySerializer.serialize(ab)
                 except Exception:
-                    cls_name = ab.__class__.__name__
-                if cls_name in self._BLACKLIST_CLASS_NAMES:
+                    action_id = ab.__class__.__name__
+                if action_id in self._BLACKLIST_ACTION_IDS:
                     continue
                 cost = int(getattr(ab, "cost", 0) or 0)
                 if cost > int(getattr(self.mana, "max", 0) or 0):
                     continue
-                out.append((str(key), ab, cls_name))
+                out.append((str(key), ab, action_id))
             return out
 
         spells_pool = _pool("Spells")

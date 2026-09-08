@@ -1,3 +1,18 @@
+id: tricksters_gambit
+aliases:
+- TrickstersGambit
+- Trickster's Gambit
+taxonomy:
+  origin: martial
+  method: command
+  primary_intent: protection
+  activation: active
+  form: direct
+  traits: []
+targeting:
+  scope: self
+  loss_policy: locked
+  hostile: false
 name: Trickster's Gambit
 type: Skill
 subtype: Power Up

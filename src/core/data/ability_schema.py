@@ -85,6 +85,10 @@ def parse_ability_definition(path: Path, payload: Mapping[str, object]) -> Abili
     ability_id = str(payload.get("id", ""))
     if ability_id != path.stem:
         raise ValueError(f"id must equal filename stem {path.stem!r}")
+    name = str(payload.get("name", ""))
+    aliases = _strings(payload.get("aliases", ()), field="aliases")
+    if name not in aliases:
+        raise ValueError("aliases must preserve the display name")
 
     taxonomy_data = _mapping(payload.get("taxonomy"), field="taxonomy")
     unknown_taxonomy = set(taxonomy_data) - _TAXONOMY_KEYS
@@ -129,11 +133,11 @@ def parse_ability_definition(path: Path, payload: Mapping[str, object]) -> Abili
     )
     return AbilityDefinition(
         ability_id=ability_id,
-        name=str(payload.get("name", "")),
+        name=name,
         description=str(payload.get("description", "")),
         taxonomy=taxonomy,
         targeting=targeting,
-        aliases=_strings(payload.get("aliases", ()), field="aliases"),
+        aliases=aliases,
         effects=effects,
     )
 
@@ -149,7 +153,7 @@ def validate_ability_directory(
     definitions: list[AbilityDefinition] = []
     legacy_ids: list[str] = []
     issues: list[AbilitySchemaIssue] = []
-    aliases: dict[str, str] = {}
+    alias_owners: dict[str, list[AbilityDefinition]] = {}
 
     for path in sorted(directory.glob("*.yaml")):
         payload = yaml.safe_load(path.read_text(encoding="utf-8"))
@@ -177,15 +181,7 @@ def validate_ability_directory(
             continue
         definitions.append(definition)
         for alias in definition.aliases:
-            owner = aliases.setdefault(alias, definition.ability_id)
-            if owner != definition.ability_id:
-                issues.append(
-                    AbilitySchemaIssue(
-                        definition.ability_id,
-                        "duplicate_alias",
-                        f"alias {alias!r} is already owned by {owner!r}",
-                    )
-                )
+            alias_owners.setdefault(alias, []).append(definition)
 
     actual_legacy = frozenset(legacy_ids)
     for unexpected in sorted(actual_legacy - allowed_legacy):
@@ -199,11 +195,20 @@ def validate_ability_directory(
             )
         )
     canonical_ids = {definition.ability_id for definition in definitions}
-    for alias, owner in sorted(aliases.items()):
-        if alias in canonical_ids and alias != owner:
+    for alias, owners in sorted(alias_owners.items()):
+        owner_ids = [owner.ability_id for owner in owners]
+        if len(owners) > 1 and any(owner.name != alias for owner in owners):
             issues.append(
                 AbilitySchemaIssue(
-                    owner,
+                    owners[-1].ability_id,
+                    "duplicate_alias",
+                    f"non-display alias {alias!r} is shared by {owner_ids}",
+                )
+            )
+        if alias in canonical_ids and any(alias != owner.ability_id for owner in owners):
+            issues.append(
+                AbilitySchemaIssue(
+                    owners[-1].ability_id,
                     "alias_conflicts_with_id",
                     f"alias {alias!r} conflicts with a canonical ability ID",
                 )

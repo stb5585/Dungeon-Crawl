@@ -1,3 +1,20 @@
+id: arcane_blast
+aliases:
+- ArcaneBlast
+- Arcane Blast
+taxonomy:
+  origin: arcane
+  method: command
+  primary_intent: damage
+  activation: active
+  form: direct
+  traits:
+  - combat.charged
+  - combat.delayed
+targeting:
+  scope: single_opponent
+  loss_policy: locked
+  hostile: true
 name: Arcane Blast
 type: ChargingSkill
 subtype: PowerUp

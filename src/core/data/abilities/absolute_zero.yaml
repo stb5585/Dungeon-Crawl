@@ -1,3 +1,18 @@
+id: absolute_zero
+aliases:
+- AbsoluteZero
+- Absolute Zero
+taxonomy:
+  origin: innate
+  method: projection
+  primary_intent: damage
+  activation: active
+  form: direct
+  traits: []
+targeting:
+  scope: single_opponent
+  loss_policy: retarget_focus
+  hostile: true
 name: Absolute Zero
 type: Spell
 subtype: Ice

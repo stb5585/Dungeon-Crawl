@@ -1,3 +1,18 @@
+id: divine_aegis
+aliases:
+- DivineAegis
+- Divine Aegis
+taxonomy:
+  origin: divine
+  method: command
+  primary_intent: protection
+  activation: active
+  form: direct
+  traits: []
+targeting:
+  scope: self
+  loss_policy: locked
+  hostile: false
 name: Divine Aegis
 type: Skill
 subtype: Power Up

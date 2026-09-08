@@ -1,3 +1,18 @@
+id: petrify
+aliases:
+- Petrify
+taxonomy:
+  origin: spiritual
+  method: binding
+  primary_intent: control
+  activation: active
+  form: direct
+  traits:
+  - combat.status_contest
+targeting:
+  scope: single_opponent
+  loss_policy: retarget_focus
+  hostile: true
 name: Petrify
 type: Status
 rank: 2

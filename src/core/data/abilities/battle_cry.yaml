@@ -1,3 +1,18 @@
+id: battle_cry
+aliases:
+- BattleCry
+- Battle Cry
+taxonomy:
+  origin: martial
+  method: command
+  primary_intent: protection
+  activation: active
+  form: direct
+  traits: []
+targeting:
+  scope: self
+  loss_policy: locked
+  hostile: false
 name: Battle Cry
 type: Skill
 subtype: Offensive

@@ -1,3 +1,18 @@
+id: nightmare_fuel
+aliases:
+- NightmareFuel
+- Nightmare Fuel
+taxonomy:
+  origin: innate
+  method: command
+  primary_intent: damage
+  activation: active
+  form: direct
+  traits: []
+targeting:
+  scope: single_opponent
+  loss_policy: retarget_focus
+  hostile: true
 name: Nightmare Fuel
 description: >-
   Invade the enemy's dreams, messing with their mind and dealing damage.

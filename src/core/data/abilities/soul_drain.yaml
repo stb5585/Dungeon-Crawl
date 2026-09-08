@@ -1,3 +1,19 @@
+id: soul_drain
+aliases:
+- SoulDrain
+- Soul Drain
+taxonomy:
+  origin: spiritual
+  method: projection
+  primary_intent: damage
+  activation: active
+  form: direct
+  traits:
+  - internal.specialized_execution
+targeting:
+  scope: single_opponent
+  loss_policy: retarget_focus
+  hostile: true
 name: Soul Drain
 type: CustomSpell
 subtype: Soul

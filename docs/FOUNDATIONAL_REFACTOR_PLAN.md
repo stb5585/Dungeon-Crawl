@@ -1,6 +1,6 @@
 # Foundational Gameplay Refactor Plan
 
-Status: `Active — Decisions Approved; Implementation Sequenced`
+Status: `Active — Ability Contract Migrated; Resolution Next`
 
 This document organizes the gameplay-changing work that should be resolved
 before broad manual playtesting. It does not approve new mechanics by itself.
@@ -335,8 +335,11 @@ Current slice status:
 - Decision and characterization: complete in `8e64224`.
 - Core contracts: complete; typed models, v1 save rejection, migration
   validation, and compatibility adapters are established.
-- Ability migration: next.
-- Resolution through milestone closure: queued in the order above.
+- Ability migration: complete; all 197 definitions have canonical IDs,
+  taxonomy, aliases, targeting policy, and registered traits. CI rejects any
+  incomplete definition and new saves serialize ability slugs.
+- Resolution: next.
+- Timeline through milestone closure: queued in the order above.
 
 ## Progression Boundary
 

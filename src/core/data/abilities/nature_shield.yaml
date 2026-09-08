@@ -1,3 +1,19 @@
+id: nature_shield
+aliases:
+- NatureShield
+- Nature Shield
+taxonomy:
+  origin: natural
+  method: channeling
+  primary_intent: protection
+  activation: active
+  form: direct
+  traits:
+  - internal.specialized_execution
+targeting:
+  scope: self
+  loss_policy: locked
+  hostile: false
 name: Nature Shield
 type: Support
 subtype: Support
