@@ -77,6 +77,27 @@ This file defines repo-specific instructions for Codex agents working in this pr
 - When changing progression or gating logic, verify both the data definition and the runtime behavior.
 - Prefer small, explicit rule changes over broad behavioral rewrites.
 
+## Foundational Gameplay Refactor
+
+- Treat `docs/FOUNDATIONAL_REFACTOR_PLAN.md` as the active authority for
+  ability identity, actions, targeting, timing, visibility, combat UI, and the
+  bounded multi-enemy rollout. Update the relevant owner document in the same
+  change when a slice changes one of those contracts.
+- Do not add new uses of overloaded ability `type`/`subtype` semantics or
+  legacy class-name serialization. New and migrated callers use immutable
+  ability slugs and typed taxonomy/action models; compatibility adapters may
+  exist only at documented migration boundaries.
+- Keep canonical combat intents actor-relative and ID-based. Do not introduce
+  player/enemy-named target scopes or frontend-only target legality rules.
+- Preserve the seed-1337 characterization and acceptance thresholds when
+  replacing contact or timing behavior. Structural refactors must not include
+  incidental numeric balance tuning.
+- Keep ordinary encounter generation singleton until the post-refactor Pilot
+  3 gate passes. Any approved pair rollout remains capped at two hostiles and
+  must stay behind its default-on runtime kill switch.
+- Preserve the versioned-save boundary. Unmarked pre-foundation saves are
+  intentionally rejected rather than guessed or partially migrated.
+
 ## Assets And Generated Content
 
 - Avoid modifying generated or asset-heavy content unless the task requires it.

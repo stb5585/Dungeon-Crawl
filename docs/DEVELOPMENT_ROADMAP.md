@@ -36,7 +36,7 @@ and detailed runtime contracts belong in their owner documents.
 
 ## Active Priority — Foundational Gameplay Refactors
 
-Status: `Active — Specification And Sequencing`
+Status: `Active — Decisions Approved; Implementation In Progress`
 
 The next development milestone is to settle the gameplay-changing refactors
 listed in [`FOUNDATIONAL_REFACTOR_PLAN.md`](FOUNDATIONAL_REFACTOR_PLAN.md).
@@ -54,16 +54,15 @@ The ordered planning sequence is:
    presentation.
 6. Decide whether dungeon resting belongs in the same gameplay revision.
 
-This order records dependencies, not pre-approval. Each phase must preserve
-stable IDs and the current save shape or explicitly require local development
-saves to be reset.
+This order records implementation dependencies. The six gates are approved in
+the foundational plan. The milestone deliberately introduces ability slug IDs
+and a version-1 save format that rejects unmarked pre-foundation saves.
 
 ### First Implementation Target
 
-No broad refactor should begin until the first three decision blocks are
-approved together: ability metadata, combat timing/accuracy, and targeting.
-They share enough runtime and UI assumptions that implementing one against the
-old behavior risks immediate rework.
+The first three decision blocks are approved together: ability metadata,
+combat timing/accuracy, and targeting. They share one action contract and must
+be implemented before interface replacement or multi-enemy rollout.
 
 After those decisions, the first implementation slice should establish the
 shared core contracts and characterization tests without changing content
@@ -72,25 +71,24 @@ after the core rules are stable.
 
 ## Evidence Task — Multi-Enemy Pilot 3 Rebenchmark
 
-Status: `Ready — Tree Dependency Complete`
+Status: `Deferred Until New Resolution And Timeline Are Complete`
 
-The authored-tree dependency is complete, so the existing floor-3/floor-4
-promoted-class matrices may be rerun against the current progression baseline.
-This is evidence collection, not authorization to enable random pairs or tune
-global combat values.
+The authored-tree dependency is complete, but current results describe the old
+resolution and actor cycle. Rerun the floor-3/floor-4 promoted-class matrices
+only after the new resolution and timeline are integrated. This is evidence
+collection, not authorization to tune global combat values.
 
 Use [`MULTI_ENEMY_PILOT_3_PLAN.md`](MULTI_ENEMY_PILOT_3_PLAN.md) for the exact
-matrix and retained pre-tree results. The result informs the multi-enemy scope
-decision in the foundational refactor:
+matrix and retained pre-tree results. The result determines which approved
+two-enemy pairs, if any, qualify for the bounded rollout:
 
 - whether curated pairs should enter ordinary generation;
-- whether floor 5 should be added;
-- how enemy-authored area actions resolve; and
-- whether the redesigned combat view should support two enemies or a larger
-  bounded roster.
+- whether each pair passes without local numeric tuning; and
+- whether singleton behavior has drifted under the new model.
 
-Until that decision is approved, keep ordinary generation singleton and keep
-rosters larger than two out of scope.
+Keep ordinary generation singleton until the evidence-and-rollout slice. Floor
+5 and rosters larger than two remain outside this milestone regardless of the
+result.
 
 ## Deferred Milestone — Broad Manual Playtest
 

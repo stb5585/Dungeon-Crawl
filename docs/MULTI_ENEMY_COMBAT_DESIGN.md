@@ -2,7 +2,16 @@
 
 ## Status
 
-Status: `Implemented - Slices 0 through 6; early-floor curated pilots complete`
+Status: `Implemented Pilot; Foundational Replacement In Progress`
+
+The fixed-cycle and permissive-invisibility decisions below document the
+development pilot that produced the retained baselines. They are not the
+active design authority for the next milestone. The approved replacement in
+[`FOUNDATIONAL_REFACTOR_PLAN.md`](FOUNDATIONAL_REFACTOR_PLAN.md) introduces
+virtual-time readiness, core concealment legality, actor-relative opponent
+scopes, symmetric enemy-area resolution, a two-hostile cap, and a gated 15%
+floor-3/4 rollout. Ordinary generation must remain singleton until that model
+passes its post-refactor evidence gate.
 
 This document defines the implemented multi-enemy architecture and the gates
 for promoting it beyond development-only encounters. Architecture decisions
@@ -740,10 +749,11 @@ no balance values were changed. Detailed evidence remains available in Git
 history. The post-Slice 6 singleton report remained byte-identical to the Slice
 0 baseline.
 
-## Approved Architecture Decisions
+## Historical Pilot Architecture Decisions
 
-The following contracts are implemented for the development pilot. Later
-rollout remains gated where noted.
+The following contracts remain implemented while the foundational slices are
+in progress. They define the reproducibility baseline, not the replacement
+design. Later rollout remains gated where noted.
 
 ### Blocking The Architecture Slices
 

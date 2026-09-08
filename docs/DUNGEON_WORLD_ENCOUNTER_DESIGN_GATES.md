@@ -132,6 +132,11 @@ content-table additions unless they require new state.
 
 ## Additional Improvements
 
+Foundational decision: dungeon camping, paid Inn recovery, bedrolls,
+interruption encounters, recovery supplies, and out-of-combat status duration
+are deferred until after the foundational combat milestone. Preserve current
+town auto-heal in the meantime; this section is not implementation authority.
+
 - Create casino/gambling hall/backroom poker/blackjack/etc.
 - Remove auto-heal when entering town
   - Add resting at the Tavern/Inn

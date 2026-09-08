@@ -200,10 +200,12 @@ requirements. The smaller follow-ups below remain independent gates.
 
 ### Combat Semantics
 
-The foundational combat spec must resolve Speed/dodge double counting,
-initiative and action frequency, invisibility/reveal, targetability, and target
-loss before broad balance playtesting. Preserve the current formulas until that
-decision is approved.
+The foundational combat decisions are approved in
+`FOUNDATIONAL_REFACTOR_PLAN.md`: bounded virtual-time readiness, one fitted
+contact roll, owner-turn effects, core concealment and Detect, actor-relative
+target scopes, and default focus retargeting. Preserve current formulas until
+their ordered implementation slices replace them; numeric tuning remains
+separately gated.
 
 - DnD-style dice roll conversion.
 - Charisma or alternate-stat experience modifiers.

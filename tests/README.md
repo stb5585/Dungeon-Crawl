@@ -105,7 +105,12 @@ focused Ruff baseline configured in `pyproject.toml`, and runs `compileall` for
 ```bash
 ./.venv/bin/mypy --strict --follow-imports=skip \
   src/paths.py \
-  tools/build_distribution.py
+  tools/build_distribution.py \
+  src/core/combat/encounter.py \
+  src/core/combat/targeting.py \
+  src/core/combat/battle_engine/models.py \
+  src/core/progression/models.py \
+  src/core/save_system/manager.py
 ```
 
 `--follow-imports=skip` keeps unrelated legacy annotation debt from entering

@@ -1,5 +1,11 @@
 # Multi-Enemy Ability And Mechanic Inventory
 
+> Historical baseline: permissive direct targeting of invisible enemies in
+> this inventory is superseded by the approved concealment contract in
+> [`FOUNDATIONAL_REFACTOR_PLAN.md`](FOUNDATIONAL_REFACTOR_PLAN.md). Keep this
+> record unchanged for pilot comparison while implementation migrates to the
+> new rule.
+
 ## Status
 
 Status: `Implemented through Slice 6 development pilot`
