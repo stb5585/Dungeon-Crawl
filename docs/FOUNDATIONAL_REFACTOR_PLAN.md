@@ -1,6 +1,6 @@
 # Foundational Gameplay Refactor Plan
 
-Status: `Active — Decisions Required Before Implementation`
+Status: `Active — Decisions Approved; Implementation Sequenced`
 
 This document organizes the gameplay-changing work that should be resolved
 before broad manual playtesting. It does not approve new mechanics by itself.
@@ -20,7 +20,7 @@ after the refactor baseline is stable.
 
 ### 1. Ability Taxonomy And Ownership
 
-State: `Spec Gate`
+State: `Approved`
 
 Define canonical metadata for each spell and skill without changing stable
 ability IDs merely to improve organization.
@@ -52,7 +52,7 @@ Owner references:
 
 ### 2. Combat Timing, Speed, And Accuracy
 
-State: `Spec Gate`
+State: `Approved`
 
 Define one combat timing model before extending the existing action-queue helper
 or replacing the actor-cycle UI.
@@ -77,7 +77,7 @@ Owner reference: [`COMBAT_BALANCE_DESIGN_GATES.md`](COMBAT_BALANCE_DESIGN_GATES.
 
 ### 3. Visibility, Reveal, And Targetability
 
-State: `Spec Gate`
+State: `Approved`
 
 Define invisibility as a targeting rule shared by combat logic, AI, ability
 metadata, and presentation.
@@ -103,7 +103,7 @@ Owner references:
 
 ### 4. Multi-Enemy Scope And Combat View
 
-State: `Evidence Gate`, then `Spec Gate`
+State: `Approved; Post-Refactor Evidence Required Before Rollout`
 
 First rerun the Pilot 3 promoted-class matrices now that all authored trees are
 complete. Then decide:
@@ -129,7 +129,7 @@ Owner references:
 
 ### 5. Combat Actions And Resource Presentation
 
-State: `Spec Gate`
+State: `Approved`
 
 Replace or extend the combat ability menus only after ability categories and
 combat timing are stable.
@@ -159,7 +159,7 @@ Owner references:
 
 ### 6. Dungeon Rest And Recovery
 
-State: `Decision Gate`
+State: `Deferred By Decision`
 
 Decide whether resting is part of this foundational milestone or a later
 exploration feature. A promoted spec must define recovery amounts, resource
@@ -169,6 +169,166 @@ recovery services.
 
 Owner reference:
 [`DUNGEON_WORLD_ENCOUNTER_DESIGN_GATES.md`](DUNGEON_WORLD_ENCOUNTER_DESIGN_GATES.md).
+
+## Approved Foundational Decisions
+
+These decisions were approved together because ability identity, timing, and
+target legality share one action contract. Implementation must preserve this
+dependency order and must not bundle unrelated numeric tuning into the
+structural work.
+
+### Ability And Action Contract
+
+- Every YAML ability receives an immutable ID equal to its filename stem.
+  Display names and legacy Python class tokens remain aliases.
+- Canonical taxonomy uses closed axes: `origin` is `martial`, `arcane`,
+  `divine`, `natural`, `spiritual`, `extraplanar`, `innate`, or `alchemical`;
+  `method` is `strike`, `projection`, `manifestation`, `binding`,
+  `transformation`, `channeling`, `movement`, `command`, or `consumption`;
+  `primary_intent` is `damage`, `protection`, `restoration`, `control`,
+  `mobility`, `information`, `summoning`, or `utility`; `activation` is
+  `active`, `passive`, or `reaction`; and `form` is `direct`, `field`,
+  `summon`, or `item_action`.
+- Registered namespaced traits express secondary roles and hidden
+  interactions. Unknown traits fail validation and `internal.*` traits are
+  never player-facing. YAML owns declarative metadata/effects; specialized
+  Python modules own only execution that validated effects cannot express.
+  Progression remains separate from combat definitions.
+- Canonical target scopes are actor-relative. Single-opponent actions retarget
+  the current legal focus by default, explicitly locked actions fail if their
+  target is lost, and area actions snapshot their roster.
+- Six persisted shortcut slots hold typed ability or item references. Attack,
+  Defend, Items, All Actions, Detect, Cancel Charge, and Flee remain fixed
+  system commands. Unavailable learned actions remain visible with a reason.
+- Versioned saves begin at `schema_version: 1`. Unmarked saves are rejected
+  with a new-game-required message; no migration is provided for this
+  pre-release reset.
+- Public contracts introduce typed `AbilityDefinition`, `AbilityTaxonomy`,
+  `TargetingPolicy`, `ActionDefinition`, `ActionReference`,
+  `ActionAvailability`, timeline entry, visibility state, and combat-resource
+  presentation models. Canonical intents carry an action ID and target IDs;
+  the legacy string adapter is temporary and must have no internal users at
+  milestone closure.
+- Actor-relative scopes include `SINGLE_OPPONENT` and `ALL_OPPONENTS`.
+  Deprecated enemy-named aliases exist only at the public compatibility
+  boundary. Version-1 saves persist shortcut references, but combat timelines,
+  visibility observations, encounters, and mid-combat state remain runtime
+  only.
+
+### Timing And Resolution Contract
+
+- Combat uses virtual readiness timestamps. Standard actions cost 100 units.
+  Tempo is current effective Speed divided by the encounter-start median,
+  clamped to `0.75-1.5`; readiness advances by `100 / tempo`.
+- Initial readiness adds seeded jitter in `[-10, 10]` and subtracts at most 10
+  units of the existing Luck rating. Surprise acts at time zero; forced-last
+  conditions follow every initial opponent.
+- An actor may not take more than two consecutive normal turns while another
+  living actor waits. A round completes after each combatant present at its
+  start receives or loses an eligible turn. Reinforcements act immediately but
+  enter that completion set next round. Effects tick at owner-turn start;
+  stuns and forced skips consume the opportunity, and pre-turn death removes
+  the actor before action selection.
+- Charges spend their starting turn and resolve at a later owner readiness.
+  Manual cancellation spends that later turn and refunds nothing. Reactions
+  cost no readiness and are limited to one execution per triggering result.
+- Companions, familiars, and Totems remain attached output. An active summon
+  continues to replace the player-side actor slot.
+- Each strike makes one contact roll. Weapon evasion uses Speed; spell
+  accuracy uses Intelligence and spell evasion uses Wisdom plus the existing
+  bounded Charisma term. Weapon accuracy also preserves its fitted base,
+  proficiency differential, and explicit accuracy modifiers; armor and
+  explicit dodge modifiers contribute to weapon evasion. Authored contests
+  remain post-contact checks. Always-hit bypasses contact but not resistance
+  or immunity.
+- The weapon and spell curves are fitted deterministically to the old combined
+  hit/dodge distributions with seed 1337 and regularization. Weighted mean
+  error must be at most three percentage points and no ordinary cell may
+  exceed seven points; failure blocks implementation rather than authorizing
+  hand tuning.
+
+### Visibility And Multi-Enemy Contract
+
+- Concealed combatants cannot be selected by single-target hostile actions.
+  Hostile damage/control breaks the actor's concealment on commitment even on
+  a miss. Defensive, informational, and self-support actions preserve it unless
+  explicitly tagged otherwise.
+- Area actions include concealed opponents without revealing them. Existing
+  Sight sources reveal automatically; area results redact concealed identity.
+  Detect spends a turn and checks every concealed foe independently at
+  `clamp(25%, 90%, 50% + 2.5% * (Wisdom - 10) + bonuses - concealment)`.
+  Success reveals until concealment is reapplied; failure still spends the
+  turn.
+- Enemy AI Detects when it has no legal hostile target. Otherwise it chooses
+  among visible legal targets plus self/area actions, and Defends if nothing
+  else is legal. Bosses, trials, and transformations receive no implicit
+  exception.
+- Default single-target loss is `RETARGET_FOCUS`; charged, delayed, and
+  identity-dependent actions can explicitly use `LOCKED`, and area actions use
+  `SNAPSHOT_ROSTER`. If no legal retarget exists, the action fails with clear
+  diagnostics while retaining its time and resource cost.
+- Supported hostile rosters remain capped at two. Enemy area actions use the
+  same structured all-opponents result pipeline; the initial player side has
+  one active player-or-summon slot.
+- Ordinary generation remains singleton until the new model is benchmarked.
+  Passing authored floor-3/4 pairs occur 15% of the time behind a default-on
+  runtime kill switch. Tutorials, quests, chests, bosses, trials, and scripted
+  encounters are excluded. Telemetry records encounter key, roster, timeline
+  turns, invalid intents, and resolution outcomes. If no pair passes the
+  existing Pilot 3 bands, rollout stays blocked without local tuning. Floor 5
+  remains deferred.
+
+### Presentation And Recovery Contract
+
+- Keyboard keys 1-6 activate shortcuts. Character Menu and in-combat All
+  Actions assignment share one non-turn-consuming editor. Mouse and controller
+  navigation provide equivalent selection, target, detail, and cancellation
+  operations.
+- Shortcut references contain an ability slug or existing item serializer
+  token. Missing items leave a disabled assignment. Empty slots auto-fill from
+  learned active abilities in acquisition order without overwriting a player
+  choice; upgrades replace their predecessor in place.
+- All Actions lists every learned active action and keeps assigned or
+  unavailable entries visible with a specific MP, status, equipment, target,
+  item-count, or class-resource reason. Passives and reactions remain read-only
+  Spellbook categories. Single targets use legal focus and area actions preview
+  all affected lanes.
+- Keyboard Q/E, lane clicks, and controller LB/RB change focus. Controller
+  parity uses D-pad navigation, A confirm, B back, Y for All Actions, and X for
+  resource details.
+- The HUD shows the next six predicted normal actor opportunities and up to
+  three prioritized class-resource rows supplied under stable provider keys.
+  Extra rows collapse behind an accessible `+N` detail entry; icons, labels,
+  values/caps or state text, and ready indicators carry meaning without relying
+  on color.
+- The minimum supported layout remains 1024x720 and the existing two enemy
+  lanes remain authoritative. Concealed lanes show only a generic presence.
+- Dungeon and paid Inn resting are deferred. Current town auto-heal remains
+  unchanged throughout this milestone.
+
+## Implementation Sequence
+
+Each slice updates its owner documentation, avoids unrelated numeric tuning,
+and is developed as a short sequential branch from the preceding reviewed
+foundation:
+
+1. Decision and characterization: approve all gates and freeze ability,
+   contact, singleton, and Pilot 3 evidence.
+2. Core contracts: add typed models, save rejection, validators, and temporary
+   compatibility adapters without changing combat behavior.
+3. Ability migration: migrate all 197 YAML definitions in coherent families,
+   shrink the legacy allowlist, switch serialization to slugs, and gate the
+   complete taxonomy in CI.
+4. Resolution: fit and introduce one-roll contact, concealment/Detect,
+   symmetric targeting, retarget behavior, and structured enemy areas.
+5. Timeline: replace the actor cycle and migrate charges, forced actions,
+   reactions, owner-turn statuses, rounds, logs, and simulator diagnostics.
+6. Interface: implement shortcuts, All Actions, availability reasons,
+   resources, timeline ribbon, concealed lanes, and controller parity.
+7. Evidence and rollout: rerun singleton and Pilot 3 matrices and enable only
+   qualifying floor-3/4 pairs at 15% behind the kill switch.
+8. Closure: remove internal adapters, update baselines and playtest material,
+   and record rest as deferred.
 
 ## Progression Boundary
 

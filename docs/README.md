@@ -9,7 +9,9 @@ priority, owner documents define current behavior and decision gates, and
 - [`DEVELOPMENT_ROADMAP.md`](DEVELOPMENT_ROADMAP.md) — current priorities,
   ordered candidates, and deferred gates.
 - [`FOUNDATIONAL_REFACTOR_PLAN.md`](FOUNDATIONAL_REFACTOR_PLAN.md) — active
-  pre-playtest gameplay-refactor dependencies and decision-block template.
+  approved gameplay-refactor contract and implementation sequence.
+- [`FOUNDATIONAL_CHARACTERIZATION_BASELINE.md`](FOUNDATIONAL_CHARACTERIZATION_BASELINE.md)
+  — reproducible pre-refactor ability, contact, singleton, and Pilot 3 evidence.
 - [`PLAYTEST_CHECKLIST.md`](PLAYTEST_CHECKLIST.md) — playtest index and current
   deferral policy.
 
