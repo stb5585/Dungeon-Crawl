@@ -1068,6 +1068,32 @@ class TestBattleEngineBasics:
 
 
 class TestBattleLogger:
+    def test_rollout_metadata_and_invalid_intents_are_exported(self):
+        from src.core import enemies
+        from src.core.combat.battle_logger import BattleLogger
+        from tests.test_framework import TestGameState
+
+        player = TestGameState.create_player(
+            name="Hero", class_name="Warrior", race_name="Human", level=7
+        )
+        encounter = enemies.build_curated_encounter("rot_and_raptor")
+        logger = BattleLogger()
+        logger.start_battle(
+            player,
+            encounter.primary_enemy,
+            initiative=True,
+            boss=False,
+            encounter=encounter,
+        )
+        logger.log_event("Invalid Intent", actor=player, outcome="unknown_target")
+
+        payload = logger.summary_payload()
+
+        assert payload["metadata"]["encounter_key"] == "rot_and_raptor"
+        assert payload["metadata"]["encounter_source"] == "curated"
+        assert payload["summary"]["invalid_intent_count"] == 1
+        assert payload["summary"]["timeline_turns"] == 0
+
     def test_export_payload_includes_metadata_events_and_summary(self):
         from src.core.combat.battle_logger import BattleLogger
         from tests.test_framework import TestGameState

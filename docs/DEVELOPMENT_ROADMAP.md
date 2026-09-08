@@ -91,7 +91,8 @@ shows prioritized class-resource rows and the next six readiness opportunities,
 while concealed lanes retain generic presentation. Keyboard, mouse, and
 controller input support equivalent combat navigation, confirmation,
 cancellation, focus, All Actions, and resource-detail operations. Evidence and
-rollout are next.
+rollout are complete: the regenerated Pilot 3 matrices did not qualify a
+floor-3/4 pair, so ordinary generation remains singleton. Closure is next.
 
 UI replacement and encounter expansion follow only after the migrated action
 contract, resolution rules, and timeline are stable. Numeric tuning remains a
@@ -110,7 +111,7 @@ combat tuning.
 
 ## Evidence Task — Multi-Enemy Pilot 3 Rebenchmark
 
-Status: `Deferred Until New Resolution And Timeline Are Complete`
+Status: `Complete — Rollout Blocked By Post-Refactor Evidence`
 
 The authored-tree dependency is complete, but current results describe the old
 resolution and actor cycle. Rerun the floor-3/floor-4 promoted-class matrices
@@ -118,16 +119,15 @@ only after the new resolution and timeline are integrated. This is evidence
 collection, not authorization to tune global combat values.
 
 Use [`MULTI_ENEMY_PILOT_3_PLAN.md`](MULTI_ENEMY_PILOT_3_PLAN.md) for the exact
-matrix and retained pre-tree results. The result determines which approved
+matrix and retained pre-tree results. The result determined which approved
 two-enemy pairs, if any, qualify for the bounded rollout:
 
 - whether curated pairs should enter ordinary generation;
 - whether each pair passes without local numeric tuning; and
 - whether singleton behavior has drifted under the new model.
 
-Keep ordinary generation singleton until the evidence-and-rollout slice. Floor
-5 and rosters larger than two remain outside this milestone regardless of the
-result.
+The post-refactor result qualified no pair, so ordinary generation remains
+singleton. Floor 5 and rosters larger than two remain outside this milestone.
 
 ## Deferred Milestone — Broad Manual Playtest
 

@@ -9,6 +9,16 @@ import pytest
 from src.core import enemies
 
 
+class _RolloutRng:
+    """Deterministic source that selects the Pilot 3 branch."""
+
+    def random(self):
+        return 0.0
+
+    def choice(self, candidates):
+        return candidates[0]
+
+
 def test_curated_pair_catalog_is_stable_and_builds_fresh_rosters():
     specs = enemies.curated_encounter_specs()
 
@@ -174,6 +184,60 @@ def test_curated_runtime_metadata_is_not_written_to_enemy_state():
 
     assert "encounter_state" not in state
     assert "_runtime_combat_encounter" not in state
+
+
+def test_ordinary_rollout_requires_evidence_qualification(monkeypatch):
+    monkeypatch.setattr(enemies.encounters, "QUALIFIED_PILOT3_PAIR_KEYS", ())
+
+    selected = enemies.random_enemy(
+        "3",
+        rng=_RolloutRng(),
+        allow_pilot3_rollout=True,
+    )
+
+    assert not hasattr(selected, "_runtime_combat_encounter")
+
+
+def test_qualified_ordinary_rollout_builds_a_pair_at_fixed_rate(monkeypatch):
+    monkeypatch.setattr(
+        enemies.encounters,
+        "QUALIFIED_PILOT3_PAIR_KEYS",
+        ("rot_and_raptor",),
+    )
+
+    selected = enemies.random_enemy(
+        "3",
+        rng=_RolloutRng(),
+        allow_pilot3_rollout=True,
+    )
+
+    encounter = selected._runtime_combat_encounter
+    assert enemies.encounters.PILOT3_PAIR_CHANCE == 0.15
+    assert selected._curated_encounter_key == "rot_and_raptor"
+    assert encounter.encounter_key == "rot_and_raptor"
+    assert encounter.encounter_source == "curated"
+    assert tuple(member.enemy.name for member in encounter.members) == ("Ghoul", "Golden Eagle")
+
+
+def test_rollout_kill_switch_and_quest_targets_keep_generation_singleton(monkeypatch):
+    monkeypatch.setattr(
+        enemies.encounters,
+        "QUALIFIED_PILOT3_PAIR_KEYS",
+        ("rot_and_raptor",),
+    )
+    monkeypatch.setenv("DUNGEON_PILOT3_ROLLOUT", "off")
+
+    disabled = enemies.random_enemy("3", rng=_RolloutRng(), allow_pilot3_rollout=True)
+    assert not hasattr(disabled, "_runtime_combat_encounter")
+
+    monkeypatch.setenv("DUNGEON_PILOT3_ROLLOUT", "on")
+    quest_targeted = enemies.random_enemy(
+        "3",
+        preferred_names=("Ghoul",),
+        rng=_RolloutRng(),
+        allow_pilot3_rollout=True,
+    )
+    assert not hasattr(quest_targeted, "_runtime_combat_encounter")
 
 
 def test_curated_multipliers_apply_only_to_fresh_pair_members():

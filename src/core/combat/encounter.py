@@ -74,6 +74,11 @@ class CombatEncounter:
             raise ValueError("A combat encounter requires at least one enemy.")
 
         self.encounter_id = encounter_id or f"enc-{uuid4().hex}"
+        # Encounter authoring/source are runtime-only diagnostic fields.  They
+        # let rollout telemetry distinguish ordinary singleton and curated
+        # roster fights without expanding save-state ownership.
+        self.encounter_key: str | None = None
+        self.encounter_source = "singleton"
         self.members = list(members)
         expected_slots = list(range(len(self.members)))
         actual_slots = [member.slot for member in self.members]
