@@ -39,6 +39,7 @@ class ActionValidationCode(str, Enum):
     WRONG_TARGET_COUNT = "wrong_target_count"
     WRONG_TARGET_SCOPE = "wrong_target_scope"
     ENEMY_AREA_UNSUPPORTED = "enemy_area_unsupported"
+    CONCEALED_TARGET = "concealed_target"
 
 
 @dataclass(frozen=True, init=False)
