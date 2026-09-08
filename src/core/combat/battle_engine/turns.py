@@ -1,6 +1,7 @@
 """Compatibility composition for battle turn-phase behavior."""
 
 from .area_resolution import AreaActionResolutionMixin
+from .intent_resolution import IntentResolutionMixin
 from .single_target_resolution import SingleTargetActionResolutionMixin
 from .turn_execution import TurnExecutionMixin
 from .turn_lifecycle import TurnLifecycleMixin
@@ -13,6 +14,7 @@ class BattleTurnMixin(
     TurnExecutionMixin,
     AreaActionResolutionMixin,
     SingleTargetActionResolutionMixin,
+    IntentResolutionMixin,
     TurnResolutionMixin,
     TurnLifecycleMixin,
 ):
