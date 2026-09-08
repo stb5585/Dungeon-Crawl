@@ -1,3 +1,19 @@
+id: ball_lightning
+aliases:
+- BallLightning
+- Ball Lightning
+taxonomy:
+  origin: natural
+  method: projection
+  primary_intent: damage
+  activation: active
+  form: direct
+  traits:
+  - internal.specialized_execution
+targeting:
+  scope: single_opponent
+  loss_policy: retarget_focus
+  hostile: true
 name: Ball Lightning
 type: Spell
 subtype: Electric

@@ -1,3 +1,17 @@
+id: lightning
+aliases:
+- Lightning
+taxonomy:
+  origin: arcane
+  method: projection
+  primary_intent: damage
+  activation: active
+  form: direct
+  traits: []
+targeting:
+  scope: single_opponent
+  loss_policy: retarget_focus
+  hostile: true
 name: Lightning
 type: Spell
 subtype: Electric

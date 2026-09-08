@@ -1,3 +1,20 @@
+id: jump
+aliases:
+- Jump
+taxonomy:
+  origin: martial
+  method: movement
+  primary_intent: mobility
+  activation: active
+  form: direct
+  traits:
+  - combat.charged
+  - combat.weapon
+  - internal.specialized_execution
+targeting:
+  scope: single_opponent
+  loss_policy: locked
+  hostile: true
 name: Jump
 type: JumpSkill
 subtype: Offensive

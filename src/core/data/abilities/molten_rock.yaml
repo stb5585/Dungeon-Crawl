@@ -1,3 +1,18 @@
+id: molten_rock
+aliases:
+- MoltenRock
+- Molten Rock
+taxonomy:
+  origin: natural
+  method: projection
+  primary_intent: damage
+  activation: active
+  form: direct
+  traits: []
+targeting:
+  scope: single_opponent
+  loss_policy: retarget_focus
+  hostile: true
 name: Molten Rock
 type: Spell
 subtype: Fire

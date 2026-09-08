@@ -1,3 +1,17 @@
+id: heal
+aliases:
+- Heal
+taxonomy:
+  origin: divine
+  method: channeling
+  primary_intent: restoration
+  activation: active
+  form: direct
+  traits: []
+targeting:
+  scope: self
+  loss_policy: locked
+  hostile: false
 name: Heal
 type: Heal
 subtype: Heal

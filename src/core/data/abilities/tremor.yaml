@@ -1,3 +1,18 @@
+id: tremor
+aliases:
+- Tremor
+taxonomy:
+  origin: natural
+  method: projection
+  primary_intent: damage
+  activation: active
+  form: direct
+  traits:
+  - targeting.grounded
+targeting:
+  scope: single_opponent
+  loss_policy: retarget_focus
+  hostile: true
 name: Tremor
 type: Spell
 subtype: Earth

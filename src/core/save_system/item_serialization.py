@@ -2,19 +2,42 @@
 
 from __future__ import annotations
 
+import re
+from functools import lru_cache
 from typing import TYPE_CHECKING
 
+from src.paths import CORE_DATA_DIR
+
 from .. import abilities, items
+from ..data.ability_loader import AbilityFactory
+from ..data.ability_schema import validate_ability_directory
 
 if TYPE_CHECKING:
     from typing import Any
+
+
+@lru_cache(maxsize=1)
+def _ability_identity_maps() -> tuple[dict[str, str], dict[str, tuple[str, ...]]]:
+    """Return validated legacy-token-to-slug and slug-to-alias maps."""
+    report = validate_ability_directory(require_complete=True)
+    if not report.valid:
+        details = "; ".join(f"{issue.ability_id}: {issue.message}" for issue in report.issues)
+        raise RuntimeError(f"ability identity registry is invalid: {details}")
+    aliases_to_ids: dict[str, str] = {}
+    ids_to_aliases: dict[str, tuple[str, ...]] = {}
+    for definition in report.definitions:
+        ids_to_aliases[definition.ability_id] = definition.aliases
+        for alias in definition.aliases:
+            if alias.isidentifier():
+                aliases_to_ids[alias] = definition.ability_id
+    return aliases_to_ids, ids_to_aliases
 
 
 class ItemSerializer:
     """Serializes items to IDs and names."""
 
     @staticmethod
-    def serialize(item) -> dict[str, Any]:
+    def serialize(item: Any) -> dict[str, Any]:
         """Convert item object to data dict."""
         if item is None or not hasattr(item, "name"):
             return {"name": "None", "typ": "None", "subtyp": "None"}
@@ -39,7 +62,7 @@ class ItemSerializer:
         return data
 
     @staticmethod
-    def deserialize(data: dict[str, Any]):
+    def deserialize(data: dict[str, Any]) -> Any:
         """Reconstruct item from data dict."""
         # Normalize typ for Accessory items (Ring/Pendant)
         typ = data.get("typ", "Weapon")
@@ -92,37 +115,47 @@ class ItemSerializer:
 
 
 class AbilitySerializer:
-    """Serializes abilities by class name to avoid ambiguity with variants."""
+    """Serializes YAML abilities by stable slug with legacy read adapters."""
 
     @staticmethod
-    def serialize(ability) -> str:
-        """Convert ability to class name (e.g. 'Heal2' instead of 'Heal').
-
-        Uses class name instead of display name to distinguish variants
-        like Heal, Heal2, Heal3 which all have name='Heal'.
-        """
+    def serialize(ability: Any) -> str:
+        """Convert an ability to its canonical slug or legacy class token."""
         if ability is None:
             return ""
-        # Support YAML-migrated abilities that carry their original class name
-        if hasattr(ability, "_class_name"):
-            return ability._class_name
-        # Use class name for unambiguous serialization
-        return ability.__class__.__name__
+        if getattr(ability, "ability_id", None):
+            return str(ability.ability_id)
+        legacy_token = str(getattr(ability, "_class_name", ability.__class__.__name__))
+        aliases_to_ids, _ = _ability_identity_maps()
+        return aliases_to_ids.get(legacy_token, legacy_token)
 
     @staticmethod
-    def deserialize(name: str):
-        """Reconstruct ability from class name or display name.
+    def deserialize(name: str) -> Any | None:
+        """Reconstruct an ability from a slug, class token, or display name.
 
         Supports:
+        - Canonical slugs: 'heal_2' (preferred)
         - Class names: 'Heal', 'Heal2', 'Heal3' (unambiguous)
         - Display names: 'Heal' (ambiguous, returns first match)
-
-        Prefers class name lookup for reliability.
         """
         if not name:
             return None
 
-        # First try direct class name lookup (most reliable)
+        if re.fullmatch(r"[a-z][a-z0-9_]*", name):
+            yaml_path = CORE_DATA_DIR / "abilities" / f"{name}.yaml"
+            if yaml_path.is_file():
+                _, ids_to_aliases = _ability_identity_maps()
+                for alias in ids_to_aliases.get(name, ()):
+                    if alias.isidentifier() and hasattr(abilities, alias):
+                        try:
+                            ability = getattr(abilities, alias)()
+                            if getattr(ability, "ability_id", None) is None:
+                                ability.ability_id = name
+                            return ability
+                        except Exception:
+                            continue
+                return AbilityFactory.create_from_yaml(yaml_path)
+
+        # Temporary compatibility adapter for version-1 development saves.
         if hasattr(abilities, name):
             try:
                 attr = getattr(abilities, name)

@@ -1,3 +1,18 @@
+id: disintegrate
+aliases:
+- Disintegrate
+taxonomy:
+  origin: martial
+  method: projection
+  primary_intent: damage
+  activation: active
+  form: direct
+  traits:
+  - internal.specialized_execution
+targeting:
+  scope: single_opponent
+  loss_policy: retarget_focus
+  hostile: true
 name: Disintegrate
 type: CustomSpell
 subtype: Death

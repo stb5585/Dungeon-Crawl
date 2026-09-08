@@ -1,3 +1,20 @@
+id: charge
+aliases:
+- Charge
+taxonomy:
+  origin: martial
+  method: strike
+  primary_intent: damage
+  activation: active
+  form: direct
+  traits:
+  - combat.charged
+  - combat.delayed
+  - combat.weapon
+targeting:
+  scope: single_opponent
+  loss_policy: locked
+  hostile: true
 name: Charge
 type: ChargingSkill
 subtype: Offensive

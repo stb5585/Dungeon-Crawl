@@ -1,6 +1,6 @@
 # The Forsaken Tenet Development Roadmap
 
-*Updated: September 5, 2026*
+*Updated: September 8, 2026*
 
 This roadmap contains only active priorities, ordered candidates, and deferred
 decision gates. Shipped history belongs in [`CHANGELOG.md`](../CHANGELOG.md),
@@ -64,11 +64,14 @@ The first three decision blocks are approved together: ability metadata,
 combat timing/accuracy, and targeting. They share one action contract and must
 be implemented before interface replacement or multi-enemy rollout.
 
-The decision/characterization and additive core-contract slices are complete.
-The current target is family-by-family migration of all 197 YAML definitions
-to immutable slug identity, closed taxonomy, registered traits, and
-actor-relative targeting. Each family removes its entries from the exact
-legacy allowlist; CI becomes complete-only when that list reaches zero.
+The decision/characterization, additive core-contract, and ability-migration
+slices are complete. All 197 YAML definitions now use immutable slug identity,
+closed taxonomy, registered traits, and actor-relative targeting; the legacy
+allowlist is empty and CI requires complete validation.
+
+The current target is the resolution slice: deterministic fitted one-roll
+weapon and spell contact, core concealment and Detect rules, symmetric target
+resolution, target-loss behavior, and structured enemy-area results.
 
 UI replacement and encounter expansion follow only after the migrated action
 contract, resolution rules, and timeline are stable. Numeric tuning remains a

@@ -1,3 +1,18 @@
+id: shield_slam
+aliases:
+- ShieldSlam
+- Shield Slam
+taxonomy:
+  origin: martial
+  method: command
+  primary_intent: damage
+  activation: active
+  form: direct
+  traits: []
+targeting:
+  scope: single_opponent
+  loss_policy: retarget_focus
+  hostile: true
 name: Shield Slam
 description: >-
   Slam the enemy with your shield, damaging with a chance to stun for several turns.

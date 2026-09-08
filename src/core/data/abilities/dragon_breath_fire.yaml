@@ -1,3 +1,20 @@
+id: dragon_breath_fire
+aliases:
+- DragonBreathFire
+- Dragon Breath (Fire)
+taxonomy:
+  origin: innate
+  method: projection
+  primary_intent: damage
+  activation: active
+  form: direct
+  traits:
+  - combat.charged
+  - combat.delayed
+targeting:
+  scope: single_opponent
+  loss_policy: locked
+  hostile: true
 name: Dragon Breath (Fire)
 type: ChargingSkill
 subtype: Fire

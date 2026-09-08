@@ -1,3 +1,17 @@
+id: bolt
+aliases:
+- Bolt
+taxonomy:
+  origin: natural
+  method: projection
+  primary_intent: damage
+  activation: active
+  form: direct
+  traits: []
+targeting:
+  scope: single_opponent
+  loss_policy: retarget_focus
+  hostile: true
 name: Bolt
 type: Spell
 subtype: Electric

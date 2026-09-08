@@ -1,3 +1,19 @@
+id: mug
+aliases:
+- Mug
+taxonomy:
+  origin: martial
+  method: strike
+  primary_intent: damage
+  activation: active
+  form: direct
+  traits:
+  - combat.weapon
+  - visibility.stealth
+targeting:
+  scope: single_opponent
+  loss_policy: retarget_focus
+  hostile: true
 name: Mug
 type: Skill
 subtype: Stealth

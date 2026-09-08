@@ -1,3 +1,18 @@
+id: regen_2
+aliases:
+- Regen2
+- Regen
+taxonomy:
+  origin: divine
+  method: channeling
+  primary_intent: restoration
+  activation: active
+  form: direct
+  traits: []
+targeting:
+  scope: self
+  loss_policy: locked
+  hostile: false
 name: Regen
 type: Heal
 subtype: Heal

@@ -1,3 +1,18 @@
+id: maelstrom_vortex
+aliases:
+- MaelstromVortex
+- Maelstrom Vortex
+taxonomy:
+  origin: innate
+  method: projection
+  primary_intent: damage
+  activation: active
+  form: direct
+  traits: []
+targeting:
+  scope: single_opponent
+  loss_policy: retarget_focus
+  hostile: true
 name: Maelstrom Vortex
 type: Spell
 subtype: Water

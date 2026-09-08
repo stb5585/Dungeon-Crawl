@@ -36,7 +36,7 @@ jobs:
         run: python -m ruff check src
 
       - name: Validate ability taxonomy migration
-        run: python tools/validate_ability_taxonomy.py
+        run: python tools/validate_ability_taxonomy.py --require-complete
 
       - name: Run strict typing baseline
         run: |

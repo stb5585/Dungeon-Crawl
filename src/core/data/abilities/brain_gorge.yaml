@@ -1,3 +1,19 @@
+id: brain_gorge
+aliases:
+- BrainGorge
+- Brain Gorge
+taxonomy:
+  origin: innate
+  method: strike
+  primary_intent: damage
+  activation: active
+  form: direct
+  traits:
+  - combat.weapon
+targeting:
+  scope: single_opponent
+  loss_policy: retarget_focus
+  hostile: true
 name: Brain Gorge
 description: >-
   Attack the enemy and attempt to latch on and eat its brain; a successful

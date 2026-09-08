@@ -1,3 +1,19 @@
+id: calming_breeze
+aliases:
+- CalmingBreeze
+- Calming Breeze
+taxonomy:
+  origin: natural
+  method: channeling
+  primary_intent: protection
+  activation: active
+  form: direct
+  traits:
+  - internal.specialized_execution
+targeting:
+  scope: self
+  loss_policy: locked
+  hostile: false
 name: Calming Breeze
 type: Support
 subtype: Support

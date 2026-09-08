@@ -1,3 +1,18 @@
+id: purity_body2
+aliases:
+- PurityBody2
+- Purity of Body
+taxonomy:
+  origin: martial
+  method: command
+  primary_intent: protection
+  activation: passive
+  form: direct
+  traits: []
+targeting:
+  scope: none
+  loss_policy: locked
+  hostile: false
 name: Purity of Body
 type: Skill
 subtype: Martial Arts

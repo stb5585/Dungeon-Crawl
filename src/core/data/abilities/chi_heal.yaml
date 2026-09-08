@@ -1,3 +1,18 @@
+id: chi_heal
+aliases:
+- ChiHeal
+- Chi Heal
+taxonomy:
+  origin: spiritual
+  method: command
+  primary_intent: restoration
+  activation: active
+  form: direct
+  traits: []
+targeting:
+  scope: self
+  loss_policy: locked
+  hostile: false
 name: Chi Heal
 type: Skill
 subtype: Chi Strike

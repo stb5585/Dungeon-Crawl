@@ -1,3 +1,20 @@
+id: double_strike
+aliases:
+- DoubleStrike
+- Double Strike
+taxonomy:
+  origin: martial
+  method: strike
+  primary_intent: damage
+  activation: active
+  form: direct
+  traits:
+  - combat.multi_strike
+  - combat.weapon
+targeting:
+  scope: single_opponent
+  loss_policy: retarget_focus
+  hostile: true
 name: Double Strike
 type: Skill
 subtype: Offensive

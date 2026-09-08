@@ -1,3 +1,19 @@
+id: earthquake
+aliases:
+- Earthquake
+taxonomy:
+  origin: natural
+  method: projection
+  primary_intent: damage
+  activation: active
+  form: direct
+  traits:
+  - targeting.area
+  - targeting.grounded
+targeting:
+  scope: all_opponents
+  loss_policy: snapshot_roster
+  hostile: true
 name: Earthquake
 type: Spell
 rank: 2

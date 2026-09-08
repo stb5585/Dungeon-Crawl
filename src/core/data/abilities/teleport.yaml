@@ -1,3 +1,17 @@
+id: teleport
+aliases:
+- Teleport
+taxonomy:
+  origin: martial
+  method: movement
+  primary_intent: mobility
+  activation: active
+  form: direct
+  traits: []
+targeting:
+  scope: none
+  loss_policy: locked
+  hostile: false
 name: Teleport
 type: Movement
 subtype: Movement

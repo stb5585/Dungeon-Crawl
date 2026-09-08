@@ -1,3 +1,17 @@
+id: hydration
+aliases:
+- Hydration
+taxonomy:
+  origin: natural
+  method: channeling
+  primary_intent: restoration
+  activation: active
+  form: direct
+  traits: []
+targeting:
+  scope: self
+  loss_policy: locked
+  hostile: false
 name: Hydration
 type: Heal
 subtype: Water

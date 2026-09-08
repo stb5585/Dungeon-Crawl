@@ -9,9 +9,8 @@ delegate to the YAML loader.
 
 ## Foundational Taxonomy Migration
 
-Every loaded YAML ability already receives an immutable ID equal to its
-filename stem. The files are being migrated family by family to declare that
-ID plus complete canonical metadata:
+Every YAML ability declares an immutable ID equal to its filename stem plus
+complete canonical metadata:
 
 ```yaml
 id: fireball
@@ -32,18 +31,22 @@ targeting:
 Closed values and typed models live in `src/core/contracts`. Secondary traits
 must be namespaced and registered centrally in
 `src/core/data/ability_traits.py`; `internal.*` traits never appear in
-player-facing descriptions. `legacy_taxonomy_allowlist.txt` is the exact set
-of definitions temporarily permitted to omit this block. Remove an ID from
-the allowlist in the same commit that completes its metadata. Validate the
-current migration state with:
+player-facing descriptions. `legacy_taxonomy_allowlist.txt` is deliberately
+empty and retained as evidence that the migration gate is closed. Validate
+the complete inventory with:
 
 ```bash
-./.venv/bin/python tools/validate_ability_taxonomy.py
+./.venv/bin/python tools/validate_ability_taxonomy.py --require-complete
 ```
 
-CI will switch to `--require-complete` when the allowlist reaches zero.
-Legacy `type` and `subtype` fields below continue to select execution classes
-during migration; they are not the canonical taxonomy.
+CI runs the same complete-only check. Each aliases list preserves both the
+legacy Python class token and display name; shared display names are valid for
+upgrade families, while shared non-display aliases fail validation. Legacy
+`type` and `subtype` fields below continue to select execution classes during
+the compatibility period; they are not the canonical taxonomy.
+
+New saves serialize abilities by slug. Class tokens and display names remain
+read-only compatibility inputs; new code must not persist them.
 
 ## Progression Ownership
 

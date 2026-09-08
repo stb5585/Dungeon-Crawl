@@ -1,3 +1,19 @@
+id: driving_thrust
+aliases:
+- DrivingThrust
+- Driving Thrust
+taxonomy:
+  origin: martial
+  method: strike
+  primary_intent: damage
+  activation: active
+  form: direct
+  traits:
+  - combat.weapon
+targeting:
+  scope: single_opponent
+  loss_policy: retarget_focus
+  hostile: true
 name: Driving Thrust
 type: Skill
 subtype: Offensive

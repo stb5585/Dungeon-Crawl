@@ -1,3 +1,19 @@
+id: disease_breath
+aliases:
+- DiseaseBreath
+- Disease Breath
+taxonomy:
+  origin: martial
+  method: binding
+  primary_intent: control
+  activation: active
+  form: direct
+  traits:
+  - combat.status_contest
+targeting:
+  scope: single_opponent
+  loss_policy: retarget_focus
+  hostile: true
 name: Disease Breath
 type: Status
 subtype: Status

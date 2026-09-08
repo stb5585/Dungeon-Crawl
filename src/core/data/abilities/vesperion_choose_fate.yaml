@@ -1,3 +1,18 @@
+id: vesperion_choose_fate
+aliases:
+- VesperionChooseFate
+- Choose Fate
+taxonomy:
+  origin: innate
+  method: command
+  primary_intent: control
+  activation: active
+  form: direct
+  traits: []
+targeting:
+  scope: single_opponent
+  loss_policy: retarget_focus
+  hostile: true
 name: Choose Fate
 description: >-
   Vesperion forces the hero to choose which consequence of Voluntas they will

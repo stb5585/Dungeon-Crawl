@@ -1,3 +1,18 @@
+id: lick
+aliases:
+- Lick
+taxonomy:
+  origin: innate
+  method: strike
+  primary_intent: damage
+  activation: active
+  form: direct
+  traits:
+  - combat.weapon
+targeting:
+  scope: single_opponent
+  loss_policy: retarget_focus
+  hostile: true
 name: Lick
 description: >-
   Lick the target, dealing damage and inflicting random status effect(s).

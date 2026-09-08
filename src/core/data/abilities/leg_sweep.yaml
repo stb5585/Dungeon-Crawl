@@ -1,3 +1,19 @@
+id: leg_sweep
+aliases:
+- LegSweep
+- Leg Sweep
+taxonomy:
+  origin: martial
+  method: strike
+  primary_intent: damage
+  activation: active
+  form: direct
+  traits:
+  - combat.weapon
+targeting:
+  scope: single_opponent
+  loss_policy: retarget_focus
+  hostile: true
 name: Leg Sweep
 type: Skill
 subtype: Offensive

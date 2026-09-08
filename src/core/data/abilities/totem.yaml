@@ -1,3 +1,17 @@
+id: totem
+aliases:
+- Totem
+taxonomy:
+  origin: natural
+  method: manifestation
+  primary_intent: summoning
+  activation: active
+  form: summon
+  traits: []
+targeting:
+  scope: self
+  loss_policy: locked
+  hostile: false
 name: Totem
 description: >-
   Summon a totem channeling a sacred aspect. Choose Earth for defense,

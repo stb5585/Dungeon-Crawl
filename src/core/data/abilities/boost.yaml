@@ -1,3 +1,17 @@
+id: boost
+aliases:
+- Boost
+taxonomy:
+  origin: divine
+  method: channeling
+  primary_intent: protection
+  activation: active
+  form: direct
+  traits: []
+targeting:
+  scope: self
+  loss_policy: locked
+  hostile: false
 name: Boost
 type: Support
 subtype: Support

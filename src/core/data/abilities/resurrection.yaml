@@ -1,3 +1,17 @@
+id: resurrection
+aliases:
+- Resurrection
+taxonomy:
+  origin: divine
+  method: channeling
+  primary_intent: restoration
+  activation: reaction
+  form: direct
+  traits: []
+targeting:
+  scope: none
+  loss_policy: locked
+  hostile: false
 name: Resurrection
 type: Support
 subtype: Support

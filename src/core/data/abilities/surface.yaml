@@ -1,3 +1,17 @@
+id: surface
+aliases:
+- Surface
+taxonomy:
+  origin: innate
+  method: movement
+  primary_intent: mobility
+  activation: active
+  form: direct
+  traits: []
+targeting:
+  scope: self
+  loss_policy: locked
+  hostile: false
 name: Surface
 type: Skill
 subtype: Offensive

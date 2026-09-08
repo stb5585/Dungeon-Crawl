@@ -1,3 +1,18 @@
+id: windswept
+aliases:
+- Windswept
+taxonomy:
+  origin: natural
+  method: projection
+  primary_intent: control
+  activation: active
+  form: direct
+  traits:
+  - internal.specialized_execution
+targeting:
+  scope: single_opponent
+  loss_policy: retarget_focus
+  hostile: true
 name: Windswept
 type: Spell
 subtype: Wind

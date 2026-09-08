@@ -1,3 +1,21 @@
+id: ultima
+aliases:
+- PhotonSphere
+- Ultima
+- Photon Sphere
+taxonomy:
+  origin: arcane
+  method: projection
+  primary_intent: damage
+  activation: active
+  form: direct
+  traits:
+  - combat.multi_strike
+  - targeting.area
+targeting:
+  scope: all_opponents
+  loss_policy: snapshot_roster
+  hostile: true
 name: Photon Sphere
 type: MagicMissile
 rank: 3

@@ -1,3 +1,19 @@
+id: elemental_strike
+aliases:
+- ElementalStrike
+- Elemental Strike
+taxonomy:
+  origin: martial
+  method: strike
+  primary_intent: damage
+  activation: active
+  form: direct
+  traits:
+  - combat.weapon
+targeting:
+  scope: single_opponent
+  loss_policy: retarget_focus
+  hostile: true
 name: Elemental Strike
 type: Skill
 subtype: Enhance

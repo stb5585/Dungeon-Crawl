@@ -1,3 +1,17 @@
+id: firestorm
+aliases:
+- Firestorm
+taxonomy:
+  origin: arcane
+  method: manifestation
+  primary_intent: damage
+  activation: active
+  form: field
+  traits: []
+targeting:
+  scope: single_opponent
+  loss_policy: retarget_focus
+  hostile: true
 name: Firestorm
 type: Spell
 subtype: Fire

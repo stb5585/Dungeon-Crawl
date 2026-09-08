@@ -1,3 +1,18 @@
+id: mana_shield
+aliases:
+- ManaShield
+- Mana Shield
+taxonomy:
+  origin: arcane
+  method: command
+  primary_intent: protection
+  activation: active
+  form: direct
+  traits: []
+targeting:
+  scope: self
+  loss_policy: locked
+  hostile: false
 name: Mana Shield
 type: Skill
 subtype: Enhance

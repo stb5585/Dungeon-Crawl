@@ -1,3 +1,17 @@
+id: blackjack
+aliases:
+- Blackjack
+taxonomy:
+  origin: martial
+  method: command
+  primary_intent: utility
+  activation: active
+  form: direct
+  traits: []
+targeting:
+  scope: single_opponent
+  loss_policy: retarget_focus
+  hostile: true
 name: Blackjack
 type: Skill
 subtype: Luck

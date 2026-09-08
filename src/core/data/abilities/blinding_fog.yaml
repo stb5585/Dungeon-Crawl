@@ -1,3 +1,20 @@
+id: blinding_fog
+aliases:
+- BlindingFog
+- Blinding Fog
+taxonomy:
+  origin: martial
+  method: manifestation
+  primary_intent: control
+  activation: active
+  form: field
+  traits:
+  - combat.status_contest
+  - targeting.area
+targeting:
+  scope: all_opponents
+  loss_policy: snapshot_roster
+  hostile: true
 name: Blinding Fog
 type: Status
 rank: 1

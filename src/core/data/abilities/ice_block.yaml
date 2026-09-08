@@ -1,3 +1,18 @@
+id: ice_block
+aliases:
+- IceBlock
+- Ice Block
+taxonomy:
+  origin: arcane
+  method: channeling
+  primary_intent: protection
+  activation: active
+  form: direct
+  traits: []
+targeting:
+  scope: self
+  loss_policy: locked
+  hostile: false
 name: Ice Block
 type: Support
 subtype: Support

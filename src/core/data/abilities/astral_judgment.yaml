@@ -1,3 +1,18 @@
+id: astral_judgment
+aliases:
+- AstralJudgment
+- Astral Judgment
+taxonomy:
+  origin: extraplanar
+  method: command
+  primary_intent: damage
+  activation: active
+  form: direct
+  traits: []
+targeting:
+  scope: single_opponent
+  loss_policy: retarget_focus
+  hostile: true
 name: Astral Judgment
 description: >-
   Call judgment from the active constellation, bending fate through one
