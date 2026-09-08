@@ -88,6 +88,18 @@ def test_simulator_accepts_explicit_encounter_and_reports_roster_metrics():
     assert stats.roster == ("Giant Hornet", "Battle Toad")
     assert stats.actor_turns >= stats.turns
     assert stats.rounds >= 1
+    assert len(stats.timeline_trace) == stats.turns
+    assert stats.readiness_is_monotonic is True
+    assert stats.max_consecutive_actor_turns <= 2
+    assert all(
+        later.ready_at >= earlier.ready_at
+        for earlier, later in zip(stats.timeline_trace, stats.timeline_trace[1:])
+    )
+    assert [entry.actor_turn_id for entry in stats.timeline_trace] == list(
+        range(1, len(stats.timeline_trace) + 1)
+    )
+    assert "player" in stats.final_readiness
+    assert len(stats.final_readiness) == 3
     assert len(stats.enemy_hp_remaining) == 2
     assert stats.player_hp_max == 500
     assert set(stats.damage_by_combatant).issubset({"Giant Hornet", "Battle Toad"})
@@ -286,21 +298,34 @@ def test_balance_report_aggregates_metrics_and_usage():
 def test_balance_report_exports_payload_json_and_file(tmp_path):
     import json
 
-    from src.core.analytics.combat_simulator import BalanceReport
+    from src.core.analytics.combat_simulator import BalanceReport, TimelineTurnDiagnostic
+
+    stat = _make_stat(
+        winner_class="Warrior",
+        loser_class="Mage",
+        turns=4,
+        abilities={"Attack": 2},
+        statuses={"Blind": 1},
+        class_kit_events={"payoff": 1},
+        action_economy_events={"companion_output": 1},
+    )
+    stat.timeline_trace = (
+        TimelineTurnDiagnostic(
+            actor_id="player",
+            ready_at=0.0,
+            round_number=1,
+            actor_turn_id=1,
+            can_act=True,
+            action="player=Attack",
+            committed=True,
+        ),
+    )
+    stat.final_readiness = {"player": 100.0, "enemy:0": 50.0}
+    stat.max_consecutive_actor_turns = 1
 
     report = BalanceReport(
         total_battles=1,
-        results=[
-            _make_stat(
-                winner_class="Warrior",
-                loser_class="Mage",
-                turns=4,
-                abilities={"Attack": 2},
-                statuses={"Blind": 1},
-                class_kit_events={"payoff": 1},
-                action_economy_events={"companion_output": 1},
-            )
-        ],
+        results=[stat],
     )
 
     payload = report.export_payload()
@@ -309,8 +334,25 @@ def test_balance_report_exports_payload_json_and_file(tmp_path):
     assert payload["status_effect_frequency"] == {"Blind": 1}
     assert payload["class_kit_events"] == {"payoff": 1}
     assert payload["action_economy_events"] == {"companion_output": 1}
+    assert payload["timeline_diagnostics"] == {
+        "traced_actor_turns": 1,
+        "readiness_monotonic_battles": 1,
+        "max_consecutive_actor_turns": 1,
+    }
     assert payload["results"][0]["winner_class"] == "Warrior"
     assert payload["results"][0]["class_kit_events"] == {"payoff": 1}
+    assert payload["results"][0]["timeline_trace"] == [
+        {
+            "actor_id": "player",
+            "ready_at": 0.0,
+            "round_number": 1,
+            "actor_turn_id": 1,
+            "can_act": True,
+            "action": "player=Attack",
+            "committed": True,
+            "forced": False,
+        }
+    ]
 
     json_payload = json.loads(report.export_json())
     assert json_payload["win_rates"] == {"Warrior": 100.0}
