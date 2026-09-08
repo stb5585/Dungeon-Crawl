@@ -68,7 +68,7 @@ class Ability:
         subtyp: str = "",
         dmg_mod: float = 1.0,
         target_scope: TargetScope = TargetScope.SINGLE_ENEMY,
-        target_loss_policy: TargetLossPolicy = TargetLossPolicy.LOCKED,
+        target_loss_policy: TargetLossPolicy = TargetLossPolicy.RETARGET_FOCUS,
     ) -> None:
         """
         Args:

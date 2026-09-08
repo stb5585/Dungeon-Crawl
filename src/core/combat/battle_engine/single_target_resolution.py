@@ -60,15 +60,22 @@ class SingleTargetActionResolutionMixin:
             return result
 
         if action == "Detect":
-            concealed = [
-                member.enemy
-                for member in self.encounter.living_members
-                if is_concealed(member.enemy)
-            ]
+            if self._member_for_character(self.attacker) is not None:
+                concealed = (
+                    [self.active_player_character]
+                    if is_concealed(self.active_player_character)
+                    else []
+                )
+            else:
+                concealed = [
+                    member.enemy
+                    for member in self.encounter.living_members
+                    if is_concealed(member.enemy)
+                ]
             if not concealed:
                 result.message = f"{self.attacker.name} finds no concealed opponents.\n"
             else:
-                found = sum(detect(self.attacker, target) for target in concealed)
+                found = sum(detect(self.attacker, target, rng=self._rng) for target in concealed)
                 result.message = f"{self.attacker.name} detects {found} of {len(concealed)} concealed opponents.\n"
             return result
 

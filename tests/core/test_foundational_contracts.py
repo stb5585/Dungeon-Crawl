@@ -93,6 +93,16 @@ def test_targeting_policy_enforces_area_snapshot_contract():
         TargetingPolicy(TargetScope.SINGLE_OPPONENT, TargetLossPolicy.SNAPSHOT_ROSTER)
 
 
+def test_ability_factory_uses_canonical_targeting_metadata_at_runtime():
+    direct = AbilityFactory.create_from_yaml(ABILITY_DIRECTORY / "magic_missile_2.yaml")
+    locked_charge = AbilityFactory.create_from_yaml(ABILITY_DIRECTORY / "shadow_strike.yaml")
+
+    assert direct.target_scope is LegacyTargetScope.SINGLE_ENEMY
+    assert direct.target_loss_policy is LegacyTargetLossPolicy.RETARGET_FOCUS
+    assert direct.targeting_hostile is True
+    assert locked_charge.target_loss_policy is LegacyTargetLossPolicy.LOCKED
+
+
 def test_action_intent_uses_canonical_id_with_legacy_adapter():
     canonical = ActionIntent(action_id="system.attack", target_ids=("enemy-a",))
     legacy = ActionIntent.from_legacy("Attack", target_ids=("enemy-a",))

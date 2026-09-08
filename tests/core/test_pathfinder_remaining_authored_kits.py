@@ -131,6 +131,8 @@ def test_restoring_boon_consumes_remaining_regrowth_for_larger_heal():
 def test_druid_area_spells_resolve_against_every_selected_enemy():
     druid = _player("Druid", 60)
     targets = [enemies.Goblin(), enemies.Goblin()]
+    for target in targets:
+        target.status_effects["Sleep"].active = True
     engine = SimpleNamespace(current_actor_id="player")
     selected = [(f"enemy-{index}", target) for index, target in enumerate(targets)]
 

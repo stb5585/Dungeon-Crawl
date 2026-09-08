@@ -49,12 +49,28 @@ class TurnExecutionMixin:
                 except KeyError:
                     member = None
                 policy = pending.get("policy")
-                if member is not None and member.is_living_hostile:
+                if (
+                    member is not None
+                    and member.is_living_hostile
+                    and is_revealed_to(self.attacker, member.enemy)
+                ):
                     target_ids = (member.combatant_id,)
                 elif getattr(policy, "value", policy) == "retarget_focus":
-                    self._refresh_focus()
-                    if self.encounter.living_members:
-                        member = self.encounter.member_by_id(self._focus_target_id)
+                    legal_targets = [
+                        candidate
+                        for candidate in self.encounter.living_members
+                        if is_revealed_to(self.attacker, candidate.enemy)
+                    ]
+                    if legal_targets:
+                        member = next(
+                            (
+                                candidate
+                                for candidate in legal_targets
+                                if candidate.combatant_id == self._focus_target_id
+                            ),
+                            legal_targets[0],
+                        )
+                        self._focus_target_id = member.combatant_id
                         target_ids = (member.combatant_id,)
                         skill = pending.get("ability")
                         if skill is not None and hasattr(skill, "charge_target"):
@@ -68,9 +84,14 @@ class TurnExecutionMixin:
                         if hasattr(skill, "charge_target"):
                             skill.charge_target = None
                     self.pending_actions.pop(PLAYER_ACTOR_ID, None)
+                    loss_description = (
+                        "has no legal focus"
+                        if getattr(policy, "value", policy) == "retarget_focus"
+                        else "lost its locked target"
+                    )
                     message = (
                         f"{getattr(skill, 'name', 'The charged action')} fizzles "
-                        "because its locked target is gone.\n"
+                        f"because it {loss_description}.\n"
                     )
                     group = CombatResultGroup(
                         action=getattr(skill, "name", action),
@@ -140,18 +161,6 @@ class TurnExecutionMixin:
         ability = self._ability_for_action(action, choice)
         if ability is not None:
             declared = getattr(ability, "target_scope", TargetScope.SINGLE_ENEMY)
-            if (
-                declared == TargetScope.ALL_ENEMIES
-                and self.attacker != self.player
-                and getattr(ability, "name", "")
-                in {
-                    "Photon Sphere",
-                    "Prismatic Cataclysm",
-                }
-            ):
-                # Enemy AI still has a single player-side target. The player
-                # version expands across the hostile encounter roster.
-                return TargetScope.SINGLE_ENEMY
             raw_data = getattr(ability, "_raw_data", {})
             if isinstance(raw_data, dict) and "target_scope" in raw_data:
                 return declared
@@ -200,6 +209,11 @@ class TurnExecutionMixin:
                     f"{scope.value} actions do not accept explicit target IDs.\n",
                 )
             if scope == TargetScope.ALL_ENEMIES:
+                player_side = self.current_actor_id == PLAYER_ACTOR_ID or (
+                    self.current_actor_id is None and self.is_player_turn()
+                )
+                if not player_side:
+                    return []
                 return list(self.encounter.living_members)
             return []
 
@@ -211,6 +225,11 @@ class TurnExecutionMixin:
                 return self._reject_intent(
                     ActionValidationCode.WRONG_TARGET_SCOPE,
                     "Enemy actions target the active player-side combatant.\n",
+                )
+            if not is_revealed_to(self.attacker, self.active_player_character):
+                return self._reject_intent(
+                    ActionValidationCode.CONCEALED_TARGET,
+                    "That concealed opponent cannot be targeted directly. Use Detect or an area action.\n",
                 )
             return []
         if not supplied:

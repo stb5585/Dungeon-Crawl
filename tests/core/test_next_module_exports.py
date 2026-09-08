@@ -119,7 +119,7 @@ def test_battle_engine_composes_every_split_behavior_method():
         for name, implementation in _defined_methods(mixin).items()
     }
 
-    assert len(methods) == 67
+    assert len(methods) == 69
     assert len(_defined_methods(battle_engine.BattleEngine)) == 23
     for name, implementation in methods.items():
         assert getattr(battle_engine.BattleEngine, name) is implementation

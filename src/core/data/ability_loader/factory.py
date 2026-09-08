@@ -52,8 +52,17 @@ class AbilityFactory:
         notes = ability_data.get("notes")
         school = ability_data.get("school")
         weapon = ability_data.get("weapon", False)
-        raw_target_scope = ability_data.get("target_scope")
-        raw_target_loss_policy = ability_data.get("target_loss_policy")
+        targeting = ability_data.get("targeting")
+        if isinstance(targeting, dict):
+            # Fully migrated definitions own their combat targeting contract.
+            # The old top-level fields remain only for external legacy content.
+            raw_target_scope = targeting.get("scope")
+            raw_target_loss_policy = targeting.get("loss_policy")
+            targeting_hostile = bool(targeting.get("hostile", False))
+        else:
+            raw_target_scope = ability_data.get("target_scope")
+            raw_target_loss_policy = ability_data.get("target_loss_policy")
+            targeting_hostile = True
 
         # Create Effect objects
         effects = []
@@ -292,6 +301,7 @@ class AbilityFactory:
             name,
             raw_target_loss_policy,
         )
+        ability.targeting_hostile = targeting_hostile
         # Carry over passive flag from YAML
         if ability_data.get("passive", False):
             ability.passive = True
@@ -301,7 +311,14 @@ class AbilityFactory:
     def _target_scope(ability_data: dict, raw_scope: str | None) -> TargetScope:
         """Load explicit targeting metadata or apply the migration default."""
         if raw_scope is not None:
-            return TargetScope(str(raw_scope).lower())
+            migrated_scopes = {
+                "single_opponent": TargetScope.SINGLE_ENEMY,
+                "all_opponents": TargetScope.ALL_ENEMIES,
+            }
+            normalized_scope = str(raw_scope).lower()
+            if normalized_scope in migrated_scopes:
+                return migrated_scopes[normalized_scope]
+            return TargetScope(normalized_scope)
         if ability_data.get("passive", False) or not ability_data.get("combat", True):
             return TargetScope.NONE
         ability_type = ability_data.get("type", "Skill")
@@ -316,17 +333,24 @@ class AbilityFactory:
         name: str,
         raw_policy: str | None,
     ) -> TargetLossPolicy:
-        """Load explicit target retention or map known legacy charges."""
+        """Load explicit target retention or use the approved direct-action default."""
         if raw_policy is not None:
             return TargetLossPolicy(str(raw_policy).lower())
-        if name in {"Shadow Strike", "Arcane Blast"}:
-            return TargetLossPolicy.RETARGET_FOCUS
-        return TargetLossPolicy.LOCKED
+        del name
+        return TargetLossPolicy.RETARGET_FOCUS
 
     @staticmethod
     def _create_simple(ability_data: dict, effects: list):
         """Produce a lightweight SimpleAbility (config loading only)."""
         from dataclasses import dataclass, field
+
+        targeting = ability_data.get("targeting")
+        if isinstance(targeting, dict):
+            raw_target_scope = targeting.get("scope")
+            raw_target_loss_policy = targeting.get("loss_policy")
+        else:
+            raw_target_scope = ability_data.get("target_scope")
+            raw_target_loss_policy = ability_data.get("target_loss_policy")
 
         @dataclass
         class SimpleAbility:
@@ -349,7 +373,7 @@ class AbilityFactory:
             ability_id: str | None = None
             aliases: tuple[str, ...] = ()
             target_scope: TargetScope = TargetScope.SINGLE_ENEMY
-            target_loss_policy: TargetLossPolicy = TargetLossPolicy.LOCKED
+            target_loss_policy: TargetLossPolicy = TargetLossPolicy.RETARGET_FOCUS
 
         return SimpleAbility(
             name=ability_data.get("name", "Unknown"),
@@ -368,13 +392,10 @@ class AbilityFactory:
             raw_data=ability_data,
             ability_id=(str(ability_data["id"]) if ability_data.get("id") else None),
             aliases=tuple(str(alias) for alias in ability_data.get("aliases", ())),
-            target_scope=AbilityFactory._target_scope(
-                ability_data,
-                ability_data.get("target_scope"),
-            ),
+            target_scope=AbilityFactory._target_scope(ability_data, raw_target_scope),
             target_loss_policy=AbilityFactory._target_loss_policy(
                 ability_data.get("name", "Unknown"),
-                ability_data.get("target_loss_policy"),
+                raw_target_loss_policy,
             ),
         )
 

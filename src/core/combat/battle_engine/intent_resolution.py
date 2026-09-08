@@ -49,14 +49,16 @@ class IntentResolutionMixin:
                 confused_friendly_fire = True
         self._turn_action_committed = True
 
-        if scope == TargetScope.SINGLE_ENEMY and actor_id != PLAYER_ACTOR_ID:
-            # A hostile committed direct action identifies the concealed actor,
-            # even when its contact roll later misses.
+        if self._is_hostile_action(intent.action, intent.choice, scope):
+            # A hostile committed action identifies the concealed actor, even
+            # when its contact roll later misses or it affects an area.
             break_concealment(self.attacker)
 
         target_ids = tuple(member.combatant_id for member in targets)
         if scope == TargetScope.SELF:
             target_ids = (actor_id or PLAYER_ACTOR_ID,)
+        elif scope == TargetScope.ALL_ENEMIES and actor_id != PLAYER_ACTOR_ID:
+            target_ids = (PLAYER_ACTOR_ID,)
         elif (
             scope == TargetScope.SINGLE_ENEMY
             and actor_id != PLAYER_ACTOR_ID
@@ -152,3 +154,12 @@ class IntentResolutionMixin:
         if member is not None and actor_id == PLAYER_ACTOR_ID and bool(intent.target_ids):
             self._focus_target_id = member.combatant_id
         return result
+
+    def _is_hostile_action(self, action: str, choice: str | None, scope: TargetScope) -> bool:
+        """Return whether a committed action exposes a concealed acting combatant."""
+        if scope not in {TargetScope.SINGLE_ENEMY, TargetScope.ALL_ENEMIES}:
+            return False
+        if action == "Attack":
+            return True
+        ability = self._ability_for_action(action, choice)
+        return ability is None or bool(getattr(ability, "targeting_hostile", True))
