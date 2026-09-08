@@ -70,6 +70,9 @@ class BattleLogger:
         boss: bool,
         *,
         encounter: CombatEncounter | None = None,
+        ready_at: float | None = None,
+        round_number: int | None = None,
+        actor_turn_id: int | None = None,
     ) -> None:
         """
         Initializes the battle logger with metadata about the battle.
@@ -119,6 +122,12 @@ class BattleLogger:
             },
             "enemy": legacy_enemy,
             "enemies": enemies,
+            "timeline": {
+                "scheduler": "virtual_readiness",
+                "ready_at": ready_at,
+                "round": round_number,
+                "actor_turn_id": actor_turn_id,
+            },
         }
 
     def log_event(
@@ -134,6 +143,10 @@ class BattleLogger:
         notes: str = None,
         actor_id: str | None = None,
         target_id: str | None = None,
+        opportunity_actor_id: str | None = None,
+        ready_at: float | None = None,
+        round_number: int | None = None,
+        actor_turn_id: int | None = None,
     ) -> None:
         """
         Logs a combat event with details about the action taken.
@@ -156,6 +169,10 @@ class BattleLogger:
             "target": target.name if target else None,
             "actor_id": actor_id,
             "target_id": target_id,
+            "opportunity_actor_id": opportunity_actor_id,
+            "ready_at": ready_at,
+            "round": round_number,
+            "actor_turn_id": actor_turn_id,
             "action": action,
             "outcome": outcome,
             "damage": damage,

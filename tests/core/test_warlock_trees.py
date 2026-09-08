@@ -345,6 +345,7 @@ def test_persistent_corruption_extends_and_strengthens_corruption_two():
     player = _player("Demonologist")
     target = enemies.Goblin()
     player.spellbook["Skills"]["Persistent Corruption"] = abilities.PersistentCorruption()
+    target.status_effects["Sleep"].active = True
 
     abilities.Corruption2().cast(player, target)
 

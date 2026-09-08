@@ -80,7 +80,9 @@ ticks, and support no-refund cancellation. Forced actions are now enforced by
 canonical intent validation, including cancellation turns. Reactions now
 resolve without readiness cost and cannot re-enter through a counter-result.
 Statuses, including Paladin encounter timers, now tick only on their owner's
-pre-turn readiness opportunity. Logs and simulator diagnostics remain.
+pre-turn readiness opportunity. Battle logs now retain virtual readiness,
+round, actor-turn identity, and the scheduled opportunity actor. Simulator
+diagnostics remain.
 
 UI replacement and encounter expansion follow only after the migrated action
 contract, resolution rules, and timeline are stable. Numeric tuning remains a

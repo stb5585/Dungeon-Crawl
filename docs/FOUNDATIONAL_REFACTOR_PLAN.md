@@ -353,7 +353,9 @@ Current slice status:
   Reactions now resolve inside their triggering result without advancing
   readiness and cannot re-enter through a counter-result. Statuses now tick
   only at their owner's pre-turn readiness opportunity, including Paladin
-  encounter timers. Logs and simulator diagnostics remain in the ordered work.
+  encounter timers. Battle logs now record each event's virtual readiness,
+  round, actor-turn ID, and scheduled opportunity actor. Simulator diagnostics
+  remain in the ordered work.
 
 ## Progression Boundary
 
