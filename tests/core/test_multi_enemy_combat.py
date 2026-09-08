@@ -6,12 +6,13 @@ import pytest
 
 from src.core import abilities, items
 from src.core.classes import ability_mechanics
-from src.core.combat import CombatEncounter, EnemyResolution, TargetScope
+from src.core.combat import CombatEncounter, EnemyResolution, TargetLossPolicy, TargetScope
 from src.core.combat.battle_engine import (
     ActionIntent,
     ActionValidationCode,
     BattleEngine,
 )
+from src.core.combat.visibility import conceal, is_concealed, is_revealed_to
 from src.core.events.event_bus import EventType, get_event_bus, reset_event_bus
 from tests.test_framework import TestGameState
 
@@ -20,6 +21,9 @@ class _FirstRng:
     def choices(self, population, weights, k):
         del weights, k
         return [population[0]]
+
+    def random(self):
+        return 0.0
 
 
 class _Tile:
@@ -119,6 +123,106 @@ def test_invalid_intents_do_not_commit_or_change_focus():
     engine.swap_turns()
     assert engine.current_actor_id == actor_id
     assert engine.logger.turn_counter == turns
+
+
+def test_concealed_enemy_rejects_direct_player_intent_but_not_area_targeting():
+    engine, _player, enemies, _tile = _engine()
+    engine.start_battle()
+    conceal(enemies[1])
+
+    result = engine.execute_intent(ActionIntent("Attack", target_ids=("enemy-b",)))
+
+    assert result.committed is False
+    assert result.validation_code is ActionValidationCode.CONCEALED_TARGET
+
+
+def test_hostile_action_breaks_player_concealment_on_commit(monkeypatch):
+    engine, player, enemies, _tile = _engine()
+    engine.start_battle()
+    conceal(player)
+    monkeypatch.setattr(
+        player,
+        "weapon_damage",
+        lambda target, **_kwargs: ("Hit.\n", True, 0),
+    )
+
+    result = engine.execute_intent(ActionIntent("Attack", target_ids=("enemy-a",)))
+
+    assert result.committed is True
+    assert is_concealed(player) is False
+
+
+def test_enemy_detects_a_concealed_player_and_cannot_attack_them_directly():
+    engine, player, _enemies, _tile = _engine()
+    engine.start_battle()
+    conceal(player)
+    engine.post_turn()
+    engine.swap_turns()
+
+    invalid = engine.execute_intent(ActionIntent("Attack"))
+    action, choice = engine.get_enemy_action()
+    result = engine.execute_action(action, choice)
+
+    assert invalid.committed is False
+    assert invalid.validation_code is ActionValidationCode.CONCEALED_TARGET
+    assert (action, choice) == ("Detect", None)
+    assert result.committed is True
+    assert is_revealed_to(engine.attacker, player) is True
+
+
+def test_enemy_area_action_records_the_player_side_as_its_structured_target():
+    reset_event_bus()
+    engine, player, enemies, _tile = _engine()
+    enemies[0].spellbook["Spells"]["Earthquake"] = abilities.Earthquake()
+    engine.start_battle()
+    engine.post_turn()
+    engine.swap_turns()
+
+    result = engine.execute_intent(ActionIntent("Cast Spell", "Earthquake"))
+
+    assert result.committed is True
+    assert result.combat_results.target_scope is TargetScope.ALL_ENEMIES
+    assert result.combat_results.target_ids == ("player",)
+    assert result.combat_results.results[0].target is player
+    assert result.combat_results.results[0].target_id == "player"
+    event = get_event_bus().get_history(EventType.ACTION_RESULT)[-1]
+    assert event.data["target_id"] == "player"
+    assert event.data["target_scope"] == TargetScope.ALL_ENEMIES.value
+
+
+def test_pending_retarget_action_uses_a_visible_focus_after_target_loss():
+    engine, player, enemies, _tile = _engine()
+    engine.start_battle()
+    calls = []
+
+    class _RetargetingCharge:
+        name = "Retargeting Charge"
+        cost = 0
+        passive = False
+        target_scope = TargetScope.SINGLE_ENEMY
+        target_loss_policy = TargetLossPolicy.RETARGET_FOCUS
+
+        @staticmethod
+        def use(_user, target=None):
+            calls.append(target)
+            return "Retargeted hit.\n"
+
+    charge = _RetargetingCharge()
+    player.spellbook["Skills"][charge.name] = charge
+    conceal(enemies[0])
+    engine.pending_actions["player"] = {
+        "action": "Use Skill",
+        "choice": charge.name,
+        "ability": charge,
+        "target_id": "enemy-a",
+        "policy": TargetLossPolicy.RETARGET_FOCUS,
+    }
+
+    result = engine.execute_action("Use Skill", charge.name)
+
+    assert result.committed is True
+    assert calls == [enemies[1]]
+    assert engine.focus_target_id == "enemy-b"
 
 
 def test_focus_controls_cycle_living_members_without_consuming_turn():

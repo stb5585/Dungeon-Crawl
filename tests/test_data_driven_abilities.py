@@ -3844,57 +3844,58 @@ class TestBatch6NewEffects:
         assert eff.amount == 1
         assert eff.actor_divisor == 2
 
-    def test_stat_reduce_effect_reduces_stat(self):
-        """With extreme stats, the two-stage contest should succeed."""
+    def test_stat_reduce_effect_reduces_stat(self, monkeypatch):
+        """A won contest and luck gate permanently reduce the configured stat."""
+        import random
+
         from src.core.combat.combat_result import CombatResult
         from src.core.effects import StatReduceEffect
         from tests.test_framework import TestGameState
 
-        reduced = False
-        for _ in range(100):
-            user = TestGameState.create_player(
-                name="Plagued",
-                class_name="Mage",
-                race_name="Human",
-                level=30,
-                health=(500, 500),
-                mana=(200, 200),
-                stats={
-                    "strength": 10,
-                    "intel": 200,
-                    "wisdom": 10,
-                    "con": 10,
-                    "charisma": 10,
-                    "dex": 10,
-                },
-            )
-            target = TestGameState.create_player(
-                name="Sick",
-                class_name="Warrior",
-                race_name="Human",
-                level=1,
-                health=(100, 100),
-                mana=(50, 50),
-                stats={"strength": 5, "intel": 5, "wisdom": 5, "con": 1, "charisma": 5, "dex": 5},
-            )
-            eff = StatReduceEffect(
-                stat="con",
-                amount=1,
-                actor_stat="intel",
-                actor_divisor=2,
-                target_stat="con",
-                target_lo_divisor=2,
-                luck_factor=1,
-                success_message="{target} loses constitution.",
-            )
-            result = CombatResult(action="Disease Breath")
-            eff.apply(user, target, result)
-            if target.stats.con == 0:
-                reduced = True
-                msgs = result.extra.get("messages", [])
-                assert any("loses constitution" in m for m in msgs)
-                break
-        assert reduced, "StatReduceEffect never reduced stat in 100 trials"
+        user = TestGameState.create_player(
+            name="Plagued",
+            class_name="Mage",
+            race_name="Human",
+            level=30,
+            health=(500, 500),
+            mana=(200, 200),
+            stats={
+                "strength": 10,
+                "intel": 200,
+                "wisdom": 10,
+                "con": 10,
+                "charisma": 10,
+                "dex": 10,
+            },
+        )
+        target = TestGameState.create_player(
+            name="Sick",
+            class_name="Warrior",
+            race_name="Human",
+            level=1,
+            health=(100, 100),
+            mana=(50, 50),
+            stats={"strength": 5, "intel": 5, "wisdom": 5, "con": 1, "charisma": 5, "dex": 5},
+        )
+        rolls = iter((100, 0, 0))
+        monkeypatch.setattr(random, "randint", lambda *_args: next(rolls))
+        eff = StatReduceEffect(
+            stat="con",
+            amount=1,
+            actor_stat="intel",
+            actor_divisor=2,
+            target_stat="con",
+            target_lo_divisor=2,
+            luck_factor=1,
+            success_message="{target} loses constitution.",
+        )
+        result = CombatResult(action="Disease Breath")
+
+        eff.apply(user, target, result)
+
+        assert target.stats.con == 0
+        messages = result.extra.get("messages", [])
+        assert any("loses constitution" in message for message in messages)
 
 
 class TestBatch6YAMLLoading:

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
 from typing import TYPE_CHECKING
 
 from ...classes import (
@@ -31,6 +32,8 @@ class AreaActionResolutionMixin:
         group: CombatResultGroup,
     ) -> ActionResult:
         """Resolve a committed all-enemy cast in authored order."""
+        if self._member_for_character(self.attacker) is not None:
+            return self._execute_enemy_all_opponents_intent(intent, group)
         ability = self._ability_for_action(intent.action, intent.choice)
         if intent.action not in {"Cast Spell", "Use Skill"} or ability is None:
             return self._reject_intent(
@@ -238,4 +241,47 @@ class AreaActionResolutionMixin:
             actor_id=self.current_actor_id,
             target_id=targets[0].combatant_id if targets else None,
         )
+        return result
+
+    def _execute_enemy_all_opponents_intent(
+        self,
+        intent: ActionIntent,
+        group: CombatResultGroup,
+    ) -> ActionResult:
+        """Resolve an enemy area action against the one active player-side slot."""
+        with self._target_resolution_context(None, TargetScope.ALL_ENEMIES, group.target_ids):
+            result = self._execute_committed_action(intent.action, intent.choice)
+        raw_portion = getattr(self, "_last_combat_result", None)
+        if isinstance(raw_portion, CombatResult):
+            portion = deepcopy(raw_portion)
+            portion.action = intent.choice or intent.action
+            portion.actor = self.attacker
+            portion.target = self.active_player_character
+            portion.actor_id = self.current_actor_id
+            portion.target_id = "player"
+            portion.message = result.message
+        else:
+            portion = CombatResult(
+                action=intent.choice or intent.action,
+                actor=self.attacker,
+                target=self.active_player_character,
+                actor_id=self.current_actor_id,
+                target_id="player",
+                message=result.message,
+            )
+        group.add(portion)
+        self._event_bus.emit(
+            create_combat_event(
+                EventType.ACTION_RESULT,
+                actor=self.attacker,
+                target=self.active_player_character,
+                result=portion,
+                encounter_id=self.encounter.encounter_id,
+                actor_id=self.current_actor_id,
+                target_id="player",
+                target_scope=TargetScope.ALL_ENEMIES.value,
+                expanded_target_ids=list(group.target_ids),
+            )
+        )
+        result.combat_results = group
         return result

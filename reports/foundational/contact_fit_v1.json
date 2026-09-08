@@ -40,23 +40,23 @@
   "fits": {
     "weapon": {
       "coefficients": [
-        2.196017117580274,
-        1.0826241866516044,
-        -1.1779354313213697,
-        -0.5635489834499144,
-        0.35108418067201397,
-        0.00627346460331834,
-        -0.017602861712730133,
-        0.02510273086731499,
-        0.050559870108057306,
-        -0.02483345821977801,
-        -0.03151720006974427,
-        -0.052912455191929844,
-        0.08089948276048431,
-        0.030750816112461176
+        2.19601711758,
+        1.082624186652,
+        -1.177935431321,
+        -0.56354898345,
+        0.351084180672,
+        0.006273464603,
+        -0.017602861713,
+        0.025102730867,
+        0.050559870108,
+        -0.02483345822,
+        -0.03151720007,
+        -0.052912455192,
+        0.08089948276,
+        0.030750816112
       ],
-      "weighted_mean_error": 0.011707019133180443,
-      "maximum_ordinary_cell_error": 0.03713011319304671,
+      "weighted_mean_error": 0.011707019133,
+      "maximum_ordinary_cell_error": 0.037130113193,
       "cells": [
         {
           "inputs": {
@@ -65,8 +65,8 @@
             "armor_group": "none"
           },
           "observed": 0.892,
-          "fitted": 0.8888317913941368,
-          "absolute_error": 0.0031682086058631986
+          "fitted": 0.888831791394,
+          "absolute_error": 0.003168208606
         },
         {
           "inputs": {
@@ -75,8 +75,8 @@
             "armor_group": "light"
           },
           "observed": 0.867,
-          "fitted": 0.8788585081209122,
-          "absolute_error": 0.011858508120912159
+          "fitted": 0.878858508121,
+          "absolute_error": 0.011858508121
         },
         {
           "inputs": {
@@ -85,8 +85,8 @@
             "armor_group": "medium"
           },
           "observed": 0.888,
-          "fitted": 0.8972461243577318,
-          "absolute_error": 0.009246124357731755
+          "fitted": 0.897246124358,
+          "absolute_error": 0.009246124358
         },
         {
           "inputs": {
@@ -95,8 +95,8 @@
             "armor_group": "heavy"
           },
           "observed": 0.889,
-          "fitted": 0.8971760962115084,
-          "absolute_error": 0.008176096211508388
+          "fitted": 0.897176096212,
+          "absolute_error": 0.008176096212
         },
         {
           "inputs": {
@@ -105,8 +105,8 @@
             "armor_group": "none"
           },
           "observed": 0.85,
-          "fitted": 0.8188176163568195,
-          "absolute_error": 0.03118238364318049
+          "fitted": 0.818817616357,
+          "absolute_error": 0.031182383643
         },
         {
           "inputs": {
@@ -115,8 +115,8 @@
             "armor_group": "light"
           },
           "observed": 0.815,
-          "fitted": 0.8139862102583916,
-          "absolute_error": 0.001013789741608373
+          "fitted": 0.813986210258,
+          "absolute_error": 0.001013789742
         },
         {
           "inputs": {
@@ -125,8 +125,8 @@
             "armor_group": "medium"
           },
           "observed": 0.814,
-          "fitted": 0.8210380055131689,
-          "absolute_error": 0.00703800551316891
+          "fitted": 0.821038005513,
+          "absolute_error": 0.007038005513
         },
         {
           "inputs": {
@@ -135,8 +135,8 @@
             "armor_group": "heavy"
           },
           "observed": 0.84,
-          "fitted": 0.8259089695196308,
-          "absolute_error": 0.014091030480369193
+          "fitted": 0.82590896952,
+          "absolute_error": 0.01409103048
         },
         {
           "inputs": {
@@ -145,8 +145,8 @@
             "armor_group": "none"
           },
           "observed": 0.782,
-          "fitted": 0.7527611173841231,
-          "absolute_error": 0.029238882615876927
+          "fitted": 0.752761117384,
+          "absolute_error": 0.029238882616
         },
         {
           "inputs": {
@@ -155,8 +155,8 @@
             "armor_group": "light"
           },
           "observed": 0.779,
-          "fitted": 0.7539268310025208,
-          "absolute_error": 0.025073168997479245
+          "fitted": 0.753926831003,
+          "absolute_error": 0.025073168997
         },
         {
           "inputs": {
@@ -165,8 +165,8 @@
             "armor_group": "medium"
           },
           "observed": 0.771,
-          "fitted": 0.749470460585087,
-          "absolute_error": 0.02152953941491298
+          "fitted": 0.749470460585,
+          "absolute_error": 0.021529539415
         },
         {
           "inputs": {
@@ -175,8 +175,8 @@
             "armor_group": "heavy"
           },
           "observed": 0.784,
-          "fitted": 0.7574033336445986,
-          "absolute_error": 0.026596666355401477
+          "fitted": 0.757403333645,
+          "absolute_error": 0.026596666355
         },
         {
           "inputs": {
@@ -185,8 +185,8 @@
             "armor_group": "none"
           },
           "observed": 0.727,
-          "fitted": 0.709708916238487,
-          "absolute_error": 0.017291083761513004
+          "fitted": 0.709708916238,
+          "absolute_error": 0.017291083762
         },
         {
           "inputs": {
@@ -195,8 +195,8 @@
             "armor_group": "light"
           },
           "observed": 0.738,
-          "fitted": 0.7134697732768519,
-          "absolute_error": 0.024530226723148085
+          "fitted": 0.713469773277,
+          "absolute_error": 0.024530226723
         },
         {
           "inputs": {
@@ -205,8 +205,8 @@
             "armor_group": "medium"
           },
           "observed": 0.744,
-          "fitted": 0.7076868494973941,
-          "absolute_error": 0.03631315050260586
+          "fitted": 0.707686849497,
+          "absolute_error": 0.036313150503
         },
         {
           "inputs": {
@@ -215,8 +215,8 @@
             "armor_group": "heavy"
           },
           "observed": 0.748,
-          "fitted": 0.7132052792475121,
-          "absolute_error": 0.034794720752487907
+          "fitted": 0.713205279248,
+          "absolute_error": 0.034794720752
         },
         {
           "inputs": {
@@ -225,8 +225,8 @@
             "armor_group": "none"
           },
           "observed": 0.689,
-          "fitted": 0.7005861609144006,
-          "absolute_error": 0.011586160914400678
+          "fitted": 0.700586160914,
+          "absolute_error": 0.011586160914
         },
         {
           "inputs": {
@@ -235,8 +235,8 @@
             "armor_group": "light"
           },
           "observed": 0.687,
-          "fitted": 0.7014079775693931,
-          "absolute_error": 0.014407977569393049
+          "fitted": 0.701407977569,
+          "absolute_error": 0.014407977569
         },
         {
           "inputs": {
@@ -245,8 +245,8 @@
             "armor_group": "medium"
           },
           "observed": 0.698,
-          "fitted": 0.7085916430030905,
-          "absolute_error": 0.010591643003090567
+          "fitted": 0.708591643003,
+          "absolute_error": 0.010591643003
         },
         {
           "inputs": {
@@ -255,8 +255,8 @@
             "armor_group": "heavy"
           },
           "observed": 0.695,
-          "fitted": 0.7056660311230322,
-          "absolute_error": 0.010666031123032216
+          "fitted": 0.705666031123,
+          "absolute_error": 0.010666031123
         },
         {
           "inputs": {
@@ -265,8 +265,8 @@
             "armor_group": "none"
           },
           "observed": 0.932,
-          "fitted": 0.9479427553735745,
-          "absolute_error": 0.01594275537357448
+          "fitted": 0.947942755374,
+          "absolute_error": 0.015942755374
         },
         {
           "inputs": {
@@ -275,8 +275,8 @@
             "armor_group": "light"
           },
           "observed": 0.929,
-          "fitted": 0.9429320351565827,
-          "absolute_error": 0.0139320351565827
+          "fitted": 0.942932035157,
+          "absolute_error": 0.013932035157
         },
         {
           "inputs": {
@@ -285,8 +285,8 @@
             "armor_group": "medium"
           },
           "observed": 0.945,
-          "fitted": 0.9521239671974319,
-          "absolute_error": 0.007123967197431913
+          "fitted": 0.952123967197,
+          "absolute_error": 0.007123967197
         },
         {
           "inputs": {
@@ -295,8 +295,8 @@
             "armor_group": "heavy"
           },
           "observed": 0.939,
-          "fitted": 0.9520893419740531,
-          "absolute_error": 0.013089341974053204
+          "fitted": 0.952089341974,
+          "absolute_error": 0.013089341974
         },
         {
           "inputs": {
@@ -305,8 +305,8 @@
             "armor_group": "none"
           },
           "observed": 0.863,
-          "fitted": 0.8993982738660136,
-          "absolute_error": 0.036398273866013575
+          "fitted": 0.899398273866,
+          "absolute_error": 0.036398273866
         },
         {
           "inputs": {
@@ -315,8 +315,8 @@
             "armor_group": "light"
           },
           "observed": 0.891,
-          "fitted": 0.896443875438278,
-          "absolute_error": 0.005443875438277956
+          "fitted": 0.896443875438,
+          "absolute_error": 0.005443875438
         },
         {
           "inputs": {
@@ -325,8 +325,8 @@
             "armor_group": "medium"
           },
           "observed": 0.896,
-          "fitted": 0.9007508445753755,
-          "absolute_error": 0.004750844575375446
+          "fitted": 0.900750844575,
+          "absolute_error": 0.004750844575
         },
         {
           "inputs": {
@@ -335,8 +335,8 @@
             "armor_group": "heavy"
           },
           "observed": 0.9,
-          "fitted": 0.9037066526120865,
-          "absolute_error": 0.0037066526120864696
+          "fitted": 0.903706652612,
+          "absolute_error": 0.003706652612
         },
         {
           "inputs": {
@@ -345,8 +345,8 @@
             "armor_group": "none"
           },
           "observed": 0.856,
-          "fitted": 0.8395259344009304,
-          "absolute_error": 0.01647406559906961
+          "fitted": 0.839525934401,
+          "absolute_error": 0.016474065599
         },
         {
           "inputs": {
@@ -355,8 +355,8 @@
             "armor_group": "light"
           },
           "observed": 0.837,
-          "fitted": 0.8403693098177158,
-          "absolute_error": 0.003369309817715882
+          "fitted": 0.840369309818,
+          "absolute_error": 0.003369309818
         },
         {
           "inputs": {
@@ -365,8 +365,8 @@
             "armor_group": "medium"
           },
           "observed": 0.836,
-          "fitted": 0.8371402424118314,
-          "absolute_error": 0.0011402424118314158
+          "fitted": 0.837140242412,
+          "absolute_error": 0.001140242412
         },
         {
           "inputs": {
@@ -375,8 +375,8 @@
             "armor_group": "heavy"
           },
           "observed": 0.829,
-          "fitted": 0.8428790730458285,
-          "absolute_error": 0.013879073045828583
+          "fitted": 0.842879073046,
+          "absolute_error": 0.013879073046
         },
         {
           "inputs": {
@@ -385,8 +385,8 @@
             "armor_group": "none"
           },
           "observed": 0.787,
-          "fitted": 0.784890260726955,
-          "absolute_error": 0.0021097392730450304
+          "fitted": 0.784890260727,
+          "absolute_error": 0.002109739273
         },
         {
           "inputs": {
@@ -395,8 +395,8 @@
             "armor_group": "light"
           },
           "observed": 0.782,
-          "fitted": 0.7879681022937776,
-          "absolute_error": 0.005968102293777533
+          "fitted": 0.787968102294,
+          "absolute_error": 0.005968102294
         },
         {
           "inputs": {
@@ -405,8 +405,8 @@
             "armor_group": "medium"
           },
           "observed": 0.759,
-          "fitted": 0.783231930099519,
-          "absolute_error": 0.02423193009951896
+          "fitted": 0.7832319301,
+          "absolute_error": 0.0242319301
         },
         {
           "inputs": {
@@ -415,8 +415,8 @@
             "armor_group": "heavy"
           },
           "observed": 0.775,
-          "fitted": 0.787751919288247,
-          "absolute_error": 0.012751919288246927
+          "fitted": 0.787751919288,
+          "absolute_error": 0.012751919288
         },
         {
           "inputs": {
@@ -425,8 +425,8 @@
             "armor_group": "none"
           },
           "observed": 0.742,
-          "fitted": 0.7520598021111163,
-          "absolute_error": 0.010059802111116345
+          "fitted": 0.752059802111,
+          "absolute_error": 0.010059802111
         },
         {
           "inputs": {
@@ -435,8 +435,8 @@
             "armor_group": "light"
           },
           "observed": 0.746,
-          "fitted": 0.7527901894928916,
-          "absolute_error": 0.006790189492891563
+          "fitted": 0.752790189493,
+          "absolute_error": 0.006790189493
         },
         {
           "inputs": {
@@ -445,8 +445,8 @@
             "armor_group": "medium"
           },
           "observed": 0.769,
-          "fitted": 0.7591621358638679,
-          "absolute_error": 0.00983786413613208
+          "fitted": 0.759162135864,
+          "absolute_error": 0.009837864136
         },
         {
           "inputs": {
@@ -455,8 +455,8 @@
             "armor_group": "heavy"
           },
           "observed": 0.74,
-          "fitted": 0.75656981191616,
-          "absolute_error": 0.016569811916160027
+          "fitted": 0.756569811916,
+          "absolute_error": 0.016569811916
         },
         {
           "inputs": {
@@ -465,8 +465,8 @@
             "armor_group": "none"
           },
           "observed": 0.977,
-          "fitted": 0.9764554953732463,
-          "absolute_error": 0.0005445046267537057
+          "fitted": 0.976455495373,
+          "absolute_error": 0.000544504627
         },
         {
           "inputs": {
@@ -475,8 +475,8 @@
             "armor_group": "light"
           },
           "observed": 0.987,
-          "fitted": 0.9741142978230646,
-          "absolute_error": 0.01288570217693541
+          "fitted": 0.974114297823,
+          "absolute_error": 0.012885702177
         },
         {
           "inputs": {
@@ -485,8 +485,8 @@
             "armor_group": "medium"
           },
           "observed": 0.983,
-          "fitted": 0.9783987644867564,
-          "absolute_error": 0.00460123551324354
+          "fitted": 0.978398764487,
+          "absolute_error": 0.004601235513
         },
         {
           "inputs": {
@@ -495,8 +495,8 @@
             "armor_group": "heavy"
           },
           "observed": 0.985,
-          "fitted": 0.9783827104561784,
-          "absolute_error": 0.0066172895438215695
+          "fitted": 0.978382710456,
+          "absolute_error": 0.006617289544
         },
         {
           "inputs": {
@@ -505,8 +505,8 @@
             "armor_group": "none"
           },
           "observed": 0.939,
-          "fitted": 0.9464831129187811,
-          "absolute_error": 0.007483112918781121
+          "fitted": 0.946483112919,
+          "absolute_error": 0.007483112919
         },
         {
           "inputs": {
@@ -515,8 +515,8 @@
             "armor_group": "light"
           },
           "observed": 0.947,
-          "fitted": 0.9448266431968413,
-          "absolute_error": 0.002173356803158666
+          "fitted": 0.944826643197,
+          "absolute_error": 0.002173356803
         },
         {
           "inputs": {
@@ -525,8 +525,8 @@
             "armor_group": "medium"
           },
           "observed": 0.952,
-          "fitted": 0.9472397726758418,
-          "absolute_error": 0.0047602273241581505
+          "fitted": 0.947239772676,
+          "absolute_error": 0.004760227324
         },
         {
           "inputs": {
@@ -535,8 +535,8 @@
             "armor_group": "heavy"
           },
           "observed": 0.953,
-          "fitted": 0.9488896219931824,
-          "absolute_error": 0.004110378006817572
+          "fitted": 0.948889621993,
+          "absolute_error": 0.004110378007
         },
         {
           "inputs": {
@@ -545,8 +545,8 @@
             "armor_group": "none"
           },
           "observed": 0.881,
-          "fitted": 0.8998912761232922,
-          "absolute_error": 0.018891276123292222
+          "fitted": 0.899891276123,
+          "absolute_error": 0.018891276123
         },
         {
           "inputs": {
@@ -555,8 +555,8 @@
             "armor_group": "light"
           },
           "observed": 0.887,
-          "fitted": 0.9004550174149462,
-          "absolute_error": 0.013455017414946147
+          "fitted": 0.900455017415,
+          "absolute_error": 0.013455017415
         },
         {
           "inputs": {
@@ -565,8 +565,8 @@
             "armor_group": "medium"
           },
           "observed": 0.891,
-          "fitted": 0.8982942873603909,
-          "absolute_error": 0.007294287360390839
+          "fitted": 0.89829428736,
+          "absolute_error": 0.00729428736
         },
         {
           "inputs": {
@@ -575,8 +575,8 @@
             "armor_group": "heavy"
           },
           "observed": 0.865,
-          "fitted": 0.9021301131930467,
-          "absolute_error": 0.03713011319304671
+          "fitted": 0.902130113193,
+          "absolute_error": 0.037130113193
         },
         {
           "inputs": {
@@ -585,8 +585,8 @@
             "armor_group": "none"
           },
           "observed": 0.825,
-          "fitted": 0.8448570441808915,
-          "absolute_error": 0.019857044180891514
+          "fitted": 0.844857044181,
+          "absolute_error": 0.019857044181
         },
         {
           "inputs": {
@@ -595,8 +595,8 @@
             "armor_group": "light"
           },
           "observed": 0.835,
-          "fitted": 0.8472438552249554,
-          "absolute_error": 0.012243855224955413
+          "fitted": 0.847243855225,
+          "absolute_error": 0.012243855225
         },
         {
           "inputs": {
@@ -605,8 +605,8 @@
             "armor_group": "medium"
           },
           "observed": 0.83,
-          "fitted": 0.8435688739102934,
-          "absolute_error": 0.013568873910293489
+          "fitted": 0.84356887391,
+          "absolute_error": 0.01356887391
         },
         {
           "inputs": {
@@ -615,8 +615,8 @@
             "armor_group": "heavy"
           },
           "observed": 0.843,
-          "fitted": 0.8470763793941117,
-          "absolute_error": 0.004076379394111762
+          "fitted": 0.847076379394,
+          "absolute_error": 0.004076379394
         },
         {
           "inputs": {
@@ -625,8 +625,8 @@
             "armor_group": "none"
           },
           "observed": 0.815,
-          "fitted": 0.7972453533926512,
-          "absolute_error": 0.017754646607348712
+          "fitted": 0.797245353393,
+          "absolute_error": 0.017754646607
         },
         {
           "inputs": {
@@ -635,8 +635,8 @@
             "armor_group": "light"
           },
           "observed": 0.783,
-          "fitted": 0.7978784061356069,
-          "absolute_error": 0.01487840613560687
+          "fitted": 0.797878406136,
+          "absolute_error": 0.014878406136
         },
         {
           "inputs": {
@@ -645,8 +645,8 @@
             "armor_group": "medium"
           },
           "observed": 0.768,
-          "fitted": 0.8033917100304836,
-          "absolute_error": 0.03539171003048358
+          "fitted": 0.80339171003,
+          "absolute_error": 0.03539171003
         },
         {
           "inputs": {
@@ -655,8 +655,8 @@
             "armor_group": "heavy"
           },
           "observed": 0.808,
-          "fitted": 0.801150763093958,
-          "absolute_error": 0.006849236906042
+          "fitted": 0.801150763094,
+          "absolute_error": 0.006849236906
         },
         {
           "inputs": {
@@ -665,8 +665,8 @@
             "armor_group": "none"
           },
           "observed": 0.998,
-          "fitted": 0.9895238571712144,
-          "absolute_error": 0.008476142828785616
+          "fitted": 0.989523857171,
+          "absolute_error": 0.008476142829
         },
         {
           "inputs": {
@@ -675,8 +675,8 @@
             "armor_group": "light"
           },
           "observed": 0.996,
-          "fitted": 0.9884667912304953,
-          "absolute_error": 0.007533208769504696
+          "fitted": 0.98846679123,
+          "absolute_error": 0.00753320877
         },
         {
           "inputs": {
@@ -685,8 +685,8 @@
             "armor_group": "medium"
           },
           "observed": 0.998,
-          "fitted": 0.9903991213448275,
-          "absolute_error": 0.007600878655172449
+          "fitted": 0.990399121345,
+          "absolute_error": 0.007600878655
         },
         {
           "inputs": {
@@ -695,8 +695,8 @@
             "armor_group": "heavy"
           },
           "observed": 0.999,
-          "fitted": 0.9903918983919051,
-          "absolute_error": 0.008608101608094887
+          "fitted": 0.990391898392,
+          "absolute_error": 0.008608101608
         },
         {
           "inputs": {
@@ -705,8 +705,8 @@
             "armor_group": "none"
           },
           "observed": 0.981,
-          "fitted": 0.972211611043832,
-          "absolute_error": 0.008788388956167958
+          "fitted": 0.972211611044,
+          "absolute_error": 0.008788388956
         },
         {
           "inputs": {
@@ -715,8 +715,8 @@
             "armor_group": "light"
           },
           "observed": 0.965,
-          "fitted": 0.9713273723342937,
-          "absolute_error": 0.006327372334293702
+          "fitted": 0.971327372334,
+          "absolute_error": 0.006327372334
         },
         {
           "inputs": {
@@ -725,8 +725,8 @@
             "armor_group": "medium"
           },
           "observed": 0.976,
-          "fitted": 0.9726150280597783,
-          "absolute_error": 0.0033849719402216927
+          "fitted": 0.97261502806,
+          "absolute_error": 0.00338497194
         },
         {
           "inputs": {
@@ -735,8 +735,8 @@
             "armor_group": "heavy"
           },
           "observed": 0.97,
-          "fitted": 0.9734935797497055,
-          "absolute_error": 0.0034935797497055443
+          "fitted": 0.97349357975,
+          "absolute_error": 0.00349357975
         },
         {
           "inputs": {
@@ -745,8 +745,8 @@
             "armor_group": "none"
           },
           "observed": 0.924,
-          "fitted": 0.9391937497827377,
-          "absolute_error": 0.015193749782737687
+          "fitted": 0.939193749783,
+          "absolute_error": 0.015193749783
         },
         {
           "inputs": {
@@ -755,8 +755,8 @@
             "armor_group": "light"
           },
           "observed": 0.936,
-          "fitted": 0.9395510345461969,
-          "absolute_error": 0.003551034546196874
+          "fitted": 0.939551034546,
+          "absolute_error": 0.003551034546
         },
         {
           "inputs": {
@@ -765,8 +765,8 @@
             "armor_group": "medium"
           },
           "observed": 0.92,
-          "fitted": 0.938180664520541,
-          "absolute_error": 0.018180664520541012
+          "fitted": 0.938180664521,
+          "absolute_error": 0.018180664521
         },
         {
           "inputs": {
@@ -775,8 +775,8 @@
             "armor_group": "heavy"
           },
           "observed": 0.924,
-          "fitted": 0.940611631331951,
-          "absolute_error": 0.016611631331950982
+          "fitted": 0.940611631332,
+          "absolute_error": 0.016611631332
         },
         {
           "inputs": {
@@ -785,8 +785,8 @@
             "armor_group": "none"
           },
           "observed": 0.88,
-          "fitted": 0.8904401869537959,
-          "absolute_error": 0.010440186953795894
+          "fitted": 0.890440186954,
+          "absolute_error": 0.010440186954
         },
         {
           "inputs": {
@@ -795,8 +795,8 @@
             "armor_group": "light"
           },
           "observed": 0.906,
-          "fitted": 0.8922151873059488,
-          "absolute_error": 0.013784812694051185
+          "fitted": 0.892215187306,
+          "absolute_error": 0.013784812694
         },
         {
           "inputs": {
@@ -805,8 +805,8 @@
             "armor_group": "medium"
           },
           "observed": 0.891,
-          "fitted": 0.8894809881772694,
-          "absolute_error": 0.0015190118227306204
+          "fitted": 0.889480988177,
+          "absolute_error": 0.001519011823
         },
         {
           "inputs": {
@@ -815,8 +815,8 @@
             "armor_group": "heavy"
           },
           "observed": 0.906,
-          "fitted": 0.8920907365665687,
-          "absolute_error": 0.013909263433431351
+          "fitted": 0.892090736567,
+          "absolute_error": 0.013909263433
         },
         {
           "inputs": {
@@ -825,8 +825,8 @@
             "armor_group": "none"
           },
           "observed": 0.831,
-          "fitted": 0.8359919495427992,
-          "absolute_error": 0.0049919495427992455
+          "fitted": 0.835991949543,
+          "absolute_error": 0.004991949543
         },
         {
           "inputs": {
@@ -835,8 +835,8 @@
             "armor_group": "light"
           },
           "observed": 0.858,
-          "fitted": 0.8365288310528841,
-          "absolute_error": 0.02147116894711587
+          "fitted": 0.836528831053,
+          "absolute_error": 0.021471168947
         },
         {
           "inputs": {
@@ -845,8 +845,8 @@
             "armor_group": "medium"
           },
           "observed": 0.852,
-          "fitted": 0.8411976938630834,
-          "absolute_error": 0.010802306136916573
+          "fitted": 0.841197693863,
+          "absolute_error": 0.010802306137
         },
         {
           "inputs": {
@@ -855,8 +855,8 @@
             "armor_group": "heavy"
           },
           "observed": 0.831,
-          "fitted": 0.8393014670485207,
-          "absolute_error": 0.00830146704852075
+          "fitted": 0.839301467049,
+          "absolute_error": 0.008301467049
         },
         {
           "inputs": {
@@ -865,8 +865,8 @@
             "armor_group": "none"
           },
           "observed": 1.0,
-          "fitted": 0.9953730049202304,
-          "absolute_error": 0.0046269950797696024
+          "fitted": 0.99537300492,
+          "absolute_error": 0.00462699508
         },
         {
           "inputs": {
@@ -875,8 +875,8 @@
             "armor_group": "light"
           },
           "observed": 1.0,
-          "fitted": 0.9949030908990998,
-          "absolute_error": 0.005096909100900215
+          "fitted": 0.994903090899,
+          "absolute_error": 0.005096909101
         },
         {
           "inputs": {
@@ -885,8 +885,8 @@
             "armor_group": "medium"
           },
           "observed": 1.0,
-          "fitted": 0.9957616757433808,
-          "absolute_error": 0.004238324256619186
+          "fitted": 0.995761675743,
+          "absolute_error": 0.004238324257
         },
         {
           "inputs": {
@@ -895,8 +895,8 @@
             "armor_group": "heavy"
           },
           "observed": 1.0,
-          "fitted": 0.995758469880719,
-          "absolute_error": 0.004241530119280967
+          "fitted": 0.995758469881,
+          "absolute_error": 0.004241530119
         },
         {
           "inputs": {
@@ -905,8 +905,8 @@
             "armor_group": "none"
           },
           "observed": 0.99,
-          "fitted": 0.9857571437817083,
-          "absolute_error": 0.00424285621829168
+          "fitted": 0.985757143782,
+          "absolute_error": 0.004242856218
         },
         {
           "inputs": {
@@ -915,8 +915,8 @@
             "armor_group": "light"
           },
           "observed": 0.993,
-          "fitted": 0.9852974115441664,
-          "absolute_error": 0.007702588455833603
+          "fitted": 0.985297411544,
+          "absolute_error": 0.007702588456
         },
         {
           "inputs": {
@@ -925,8 +925,8 @@
             "armor_group": "medium"
           },
           "observed": 0.99,
-          "fitted": 0.9859667524449964,
-          "absolute_error": 0.004033247555003561
+          "fitted": 0.985966752445,
+          "absolute_error": 0.004033247555
         },
         {
           "inputs": {
@@ -935,8 +935,8 @@
             "armor_group": "heavy"
           },
           "observed": 0.993,
-          "fitted": 0.986422939835235,
-          "absolute_error": 0.006577060164765003
+          "fitted": 0.986422939835,
+          "absolute_error": 0.006577060165
         },
         {
           "inputs": {
@@ -945,8 +945,8 @@
             "armor_group": "none"
           },
           "observed": 0.954,
-          "fitted": 0.9636887690994502,
-          "absolute_error": 0.009688769099450267
+          "fitted": 0.963688769099,
+          "absolute_error": 0.009688769099
         },
         {
           "inputs": {
@@ -955,8 +955,8 @@
             "armor_group": "light"
           },
           "observed": 0.963,
-          "fitted": 0.9639076572743132,
-          "absolute_error": 0.0009076572743131894
+          "fitted": 0.963907657274,
+          "absolute_error": 0.000907657274
         },
         {
           "inputs": {
@@ -965,8 +965,8 @@
             "armor_group": "medium"
           },
           "observed": 0.967,
-          "fitted": 0.9630677440678277,
-          "absolute_error": 0.003932255932172279
+          "fitted": 0.963067744068,
+          "absolute_error": 0.003932255932
         },
         {
           "inputs": {
@@ -975,8 +975,8 @@
             "armor_group": "heavy"
           },
           "observed": 0.964,
-          "fitted": 0.9645570300429499,
-          "absolute_error": 0.0005570300429499353
+          "fitted": 0.964557030043,
+          "absolute_error": 0.000557030043
         },
         {
           "inputs": {
@@ -985,8 +985,8 @@
             "armor_group": "none"
           },
           "observed": 0.931,
-          "fitted": 0.9238377228505119,
-          "absolute_error": 0.007162277149488139
+          "fitted": 0.923837722851,
+          "absolute_error": 0.007162277149
         },
         {
           "inputs": {
@@ -995,8 +995,8 @@
             "armor_group": "light"
           },
           "observed": 0.901,
-          "fitted": 0.9251171459871711,
-          "absolute_error": 0.024117145987171074
+          "fitted": 0.925117145987,
+          "absolute_error": 0.024117145987
         },
         {
           "inputs": {
@@ -1005,8 +1005,8 @@
             "armor_group": "medium"
           },
           "observed": 0.924,
-          "fitted": 0.923145683440106,
-          "absolute_error": 0.0008543165598940972
+          "fitted": 0.92314568344,
+          "absolute_error": 0.00085431656
         },
         {
           "inputs": {
@@ -1015,8 +1015,8 @@
             "armor_group": "heavy"
           },
           "observed": 0.931,
-          "fitted": 0.9250274923509002,
-          "absolute_error": 0.005972507649099845
+          "fitted": 0.925027492351,
+          "absolute_error": 0.005972507649
         },
         {
           "inputs": {
@@ -1025,8 +1025,8 @@
             "armor_group": "none"
           },
           "observed": 0.878,
-          "fitted": 0.8685548483922841,
-          "absolute_error": 0.009445151607715863
+          "fitted": 0.868554848392,
+          "absolute_error": 0.009445151608
         },
         {
           "inputs": {
@@ -1035,8 +1035,8 @@
             "armor_group": "light"
           },
           "observed": 0.885,
-          "fitted": 0.8690018382142962,
-          "absolute_error": 0.01599816178570379
+          "fitted": 0.869001838214,
+          "absolute_error": 0.015998161786
         },
         {
           "inputs": {
@@ -1045,8 +1045,8 @@
             "armor_group": "medium"
           },
           "observed": 0.898,
-          "fitted": 0.8728841793621955,
-          "absolute_error": 0.025115820637804487
+          "fitted": 0.872884179362,
+          "absolute_error": 0.025115820638
         },
         {
           "inputs": {
@@ -1055,26 +1055,26 @@
             "armor_group": "heavy"
           },
           "observed": 0.888,
-          "fitted": 0.87130843044241,
-          "absolute_error": 0.01669156955758999
+          "fitted": 0.871308430442,
+          "absolute_error": 0.016691569558
         }
       ]
     },
     "spell": {
       "coefficients": [
-        2.083496322599882,
-        0.08929383062312002,
-        -0.07708612665683551,
-        -0.06706465941156274,
-        0.15574292349193025,
-        0.05429918945446811,
-        -0.058232975985693214,
-        -0.13168434804004975,
-        -0.035455780259402485,
-        -0.02159167222110652
+        2.0834963226,
+        0.089293830623,
+        -0.077086126657,
+        -0.067064659412,
+        0.155742923492,
+        0.054299189454,
+        -0.058232975986,
+        -0.13168434804,
+        -0.035455780259,
+        -0.021591672221
       ],
-      "weighted_mean_error": 0.01085851524568139,
-      "maximum_ordinary_cell_error": 0.04630838362311751,
+      "weighted_mean_error": 0.010858515246,
+      "maximum_ordinary_cell_error": 0.046308383623,
       "cells": [
         {
           "inputs": {
@@ -1083,8 +1083,8 @@
             "charisma_term": -5
           },
           "observed": 0.87,
-          "fitted": 0.8910421492166011,
-          "absolute_error": 0.02104214921660108
+          "fitted": 0.891042149217,
+          "absolute_error": 0.021042149217
         },
         {
           "inputs": {
@@ -1093,8 +1093,8 @@
             "charisma_term": 0
           },
           "observed": 0.898,
-          "fitted": 0.8869432819180497,
-          "absolute_error": 0.0110567180819503
+          "fitted": 0.886943281918,
+          "absolute_error": 0.011056718082
         },
         {
           "inputs": {
@@ -1103,8 +1103,8 @@
             "charisma_term": 5
           },
           "observed": 0.888,
-          "fitted": 0.8781652178294089,
-          "absolute_error": 0.009834782170591083
+          "fitted": 0.878165217829,
+          "absolute_error": 0.009834782171
         },
         {
           "inputs": {
@@ -1113,8 +1113,8 @@
             "charisma_term": -5
           },
           "observed": 0.891,
-          "fitted": 0.8850070116996943,
-          "absolute_error": 0.005992988300305702
+          "fitted": 0.8850070117,
+          "absolute_error": 0.0059929883
         },
         {
           "inputs": {
@@ -1123,8 +1123,8 @@
             "charisma_term": 0
           },
           "observed": 0.889,
-          "fitted": 0.8776184946139585,
-          "absolute_error": 0.011381505386041546
+          "fitted": 0.877618494614,
+          "absolute_error": 0.011381505386
         },
         {
           "inputs": {
@@ -1133,8 +1133,8 @@
             "charisma_term": 5
           },
           "observed": 0.889,
-          "fitted": 0.864856882253824,
-          "absolute_error": 0.024143117746176057
+          "fitted": 0.864856882254,
+          "absolute_error": 0.024143117746
         },
         {
           "inputs": {
@@ -1143,8 +1143,8 @@
             "charisma_term": -5
           },
           "observed": 0.891,
-          "fitted": 0.8767806039736052,
-          "absolute_error": 0.01421939602639477
+          "fitted": 0.876780603974,
+          "absolute_error": 0.014219396026
         },
         {
           "inputs": {
@@ -1153,8 +1153,8 @@
             "charisma_term": 0
           },
           "observed": 0.873,
-          "fitted": 0.8655901883228775,
-          "absolute_error": 0.007409811677122513
+          "fitted": 0.865590188323,
+          "absolute_error": 0.007409811677
         },
         {
           "inputs": {
@@ -1163,8 +1163,8 @@
             "charisma_term": 5
           },
           "observed": 0.845,
-          "fitted": 0.8480724908265972,
-          "absolute_error": 0.0030724908265972184
+          "fitted": 0.848072490827,
+          "absolute_error": 0.003072490827
         },
         {
           "inputs": {
@@ -1173,8 +1173,8 @@
             "charisma_term": -5
           },
           "observed": 0.875,
-          "fitted": 0.8660096580274549,
-          "absolute_error": 0.008990341972545113
+          "fitted": 0.866009658027,
+          "absolute_error": 0.008990341973
         },
         {
           "inputs": {
@@ -1183,8 +1183,8 @@
             "charisma_term": 0
           },
           "observed": 0.848,
-          "fitted": 0.8503361132460753,
-          "absolute_error": 0.0023361132460753
+          "fitted": 0.850336113246,
+          "absolute_error": 0.002336113246
         },
         {
           "inputs": {
@@ -1193,8 +1193,8 @@
             "charisma_term": 5
           },
           "observed": 0.783,
-          "fitted": 0.8270936291095031,
-          "absolute_error": 0.044093629109503096
+          "fitted": 0.82709362911,
+          "absolute_error": 0.04409362911
         },
         {
           "inputs": {
@@ -1203,8 +1203,8 @@
             "charisma_term": -5
           },
           "observed": 0.852,
-          "fitted": 0.8522349155939432,
-          "absolute_error": 0.00023491559394317463
+          "fitted": 0.852234915594,
+          "absolute_error": 0.000234915594
         },
         {
           "inputs": {
@@ -1213,8 +1213,8 @@
             "charisma_term": 0
           },
           "observed": 0.803,
-          "fitted": 0.8312108672928477,
-          "absolute_error": 0.028210867292847608
+          "fitted": 0.831210867293,
+          "absolute_error": 0.028210867293
         },
         {
           "inputs": {
@@ -1223,8 +1223,8 @@
             "charisma_term": 5
           },
           "observed": 0.797,
-          "fitted": 0.8010778858944083,
-          "absolute_error": 0.004077885894408273
+          "fitted": 0.801077885894,
+          "absolute_error": 0.004077885894
         },
         {
           "inputs": {
@@ -1233,8 +1233,8 @@
             "charisma_term": -5
           },
           "observed": 0.881,
-          "fitted": 0.8947136304545464,
-          "absolute_error": 0.013713630454546433
+          "fitted": 0.894713630455,
+          "absolute_error": 0.013713630455
         },
         {
           "inputs": {
@@ -1243,8 +1243,8 @@
             "charisma_term": 0
           },
           "observed": 0.902,
-          "fitted": 0.8933503936750514,
-          "absolute_error": 0.0086496063249486
+          "fitted": 0.893350393675,
+          "absolute_error": 0.008649606325
         },
         {
           "inputs": {
@@ -1253,8 +1253,8 @@
             "charisma_term": 5
           },
           "observed": 0.877,
-          "fitted": 0.8877395894330065,
-          "absolute_error": 0.010739589433006458
+          "fitted": 0.887739589433,
+          "absolute_error": 0.010739589433
         },
         {
           "inputs": {
@@ -1263,8 +1263,8 @@
             "charisma_term": -5
           },
           "observed": 0.896,
-          "fitted": 0.8926451339466147,
-          "absolute_error": 0.003354866053385308
+          "fitted": 0.892645133947,
+          "absolute_error": 0.003354866053
         },
         {
           "inputs": {
@@ -1273,8 +1273,8 @@
             "charisma_term": 0
           },
           "observed": 0.87,
-          "fitted": 0.8884041766654982,
-          "absolute_error": 0.018404176665498206
+          "fitted": 0.888404176665,
+          "absolute_error": 0.018404176665
         },
         {
           "inputs": {
@@ -1283,8 +1283,8 @@
             "charisma_term": 5
           },
           "observed": 0.884,
-          "fitted": 0.879515887559074,
-          "absolute_error": 0.004484112440926058
+          "fitted": 0.879515887559,
+          "absolute_error": 0.004484112441
         },
         {
           "inputs": {
@@ -1293,8 +1293,8 @@
             "charisma_term": -5
           },
           "observed": 0.876,
-          "fitted": 0.8888008940233564,
-          "absolute_error": 0.01280089402335638
+          "fitted": 0.888800894023,
+          "absolute_error": 0.012800894023
         },
         {
           "inputs": {
@@ -1303,8 +1303,8 @@
             "charisma_term": 0
           },
           "observed": 0.892,
-          "fitted": 0.8814181097892125,
-          "absolute_error": 0.010581890210787481
+          "fitted": 0.881418109789,
+          "absolute_error": 0.010581890211
         },
         {
           "inputs": {
@@ -1313,8 +1313,8 @@
             "charisma_term": 5
           },
           "observed": 0.859,
-          "fitted": 0.8687694852077212,
-          "absolute_error": 0.009769485207721251
+          "fitted": 0.868769485208,
+          "absolute_error": 0.009769485208
         },
         {
           "inputs": {
@@ -1323,8 +1323,8 @@
             "charisma_term": -5
           },
           "observed": 0.882,
-          "fitted": 0.8830179114002813,
-          "absolute_error": 0.0010179114002812906
+          "fitted": 0.8830179114,
+          "absolute_error": 0.0010179114
         },
         {
           "inputs": {
@@ -1333,8 +1333,8 @@
             "charisma_term": 0
           },
           "observed": 0.894,
-          "fitted": 0.8720922134545659,
-          "absolute_error": 0.021907786545434127
+          "fitted": 0.872092213455,
+          "absolute_error": 0.021907786545
         },
         {
           "inputs": {
@@ -1343,8 +1343,8 @@
             "charisma_term": 5
           },
           "observed": 0.872,
-          "fitted": 0.8550366233503744,
-          "absolute_error": 0.01696337664962555
+          "fitted": 0.85503662335,
+          "absolute_error": 0.01696337665
         },
         {
           "inputs": {
@@ -1353,8 +1353,8 @@
             "charisma_term": -5
           },
           "observed": 0.89,
-          "fitted": 0.8750503432338672,
-          "absolute_error": 0.014949656766132802
+          "fitted": 0.875050343234,
+          "absolute_error": 0.014949656766
         },
         {
           "inputs": {
@@ -1363,8 +1363,8 @@
             "charisma_term": 0
           },
           "observed": 0.844,
-          "fitted": 0.8600270859974004,
-          "absolute_error": 0.016027085997400436
+          "fitted": 0.860027085997,
+          "absolute_error": 0.016027085997
         },
         {
           "inputs": {
@@ -1373,8 +1373,8 @@
             "charisma_term": 5
           },
           "observed": 0.845,
-          "fitted": 0.8377356836367318,
-          "absolute_error": 0.007264316363268186
+          "fitted": 0.837735683637,
+          "absolute_error": 0.007264316363
         },
         {
           "inputs": {
@@ -1383,8 +1383,8 @@
             "charisma_term": -5
           },
           "observed": 0.894,
-          "fitted": 0.8920993568576967,
-          "absolute_error": 0.0019006431423033154
+          "fitted": 0.892099356858,
+          "absolute_error": 0.001900643142
         },
         {
           "inputs": {
@@ -1393,8 +1393,8 @@
             "charisma_term": 0
           },
           "observed": 0.871,
-          "fitted": 0.8933214779851103,
-          "absolute_error": 0.022321477985110305
+          "fitted": 0.893321477985,
+          "absolute_error": 0.022321477985
         },
         {
           "inputs": {
@@ -1403,8 +1403,8 @@
             "charisma_term": 5
           },
           "observed": 0.891,
-          "fitted": 0.8903873019965012,
-          "absolute_error": 0.000612698003498835
+          "fitted": 0.890387301997,
+          "absolute_error": 0.000612698003
         },
         {
           "inputs": {
@@ -1413,8 +1413,8 @@
             "charisma_term": -5
           },
           "observed": 0.903,
-          "fitted": 0.893740565628117,
-          "absolute_error": 0.009259434371883035
+          "fitted": 0.893740565628,
+          "absolute_error": 0.009259434372
         },
         {
           "inputs": {
@@ -1423,8 +1423,8 @@
             "charisma_term": 0
           },
           "observed": 0.891,
-          "fitted": 0.892177181934042,
-          "absolute_error": 0.0011771819340420375
+          "fitted": 0.892177181934,
+          "absolute_error": 0.001177181934
         },
         {
           "inputs": {
@@ -1433,8 +1433,8 @@
             "charisma_term": 5
           },
           "observed": 0.895,
-          "fitted": 0.8863144604516829,
-          "absolute_error": 0.008685539548317078
+          "fitted": 0.886314460452,
+          "absolute_error": 0.008685539548
         },
         {
           "inputs": {
@@ -1443,8 +1443,8 @@
             "charisma_term": -5
           },
           "observed": 0.885,
-          "fitted": 0.8936871217120536,
-          "absolute_error": 0.008687121712053547
+          "fitted": 0.893687121712,
+          "absolute_error": 0.008687121712
         },
         {
           "inputs": {
@@ -1453,8 +1453,8 @@
             "charisma_term": 0
           },
           "observed": 0.874,
-          "fitted": 0.8892887300374869,
-          "absolute_error": 0.015288730037486875
+          "fitted": 0.889288730037,
+          "absolute_error": 0.015288730037
         },
         {
           "inputs": {
@@ -1463,8 +1463,8 @@
             "charisma_term": 5
           },
           "observed": 0.875,
-          "fitted": 0.8802542447112904,
-          "absolute_error": 0.0052542447112904345
+          "fitted": 0.880254244711,
+          "absolute_error": 0.005254244711
         },
         {
           "inputs": {
@@ -1473,8 +1473,8 @@
             "charisma_term": -5
           },
           "observed": 0.898,
-          "fitted": 0.8919367761439285,
-          "absolute_error": 0.006063223856071498
+          "fitted": 0.891936776144,
+          "absolute_error": 0.006063223856
         },
         {
           "inputs": {
@@ -1483,8 +1483,8 @@
             "charisma_term": 0
           },
           "observed": 0.893,
-          "fitted": 0.8845344571370163,
-          "absolute_error": 0.008465542862983733
+          "fitted": 0.884534457137,
+          "absolute_error": 0.008465542863
         },
         {
           "inputs": {
@@ -1493,8 +1493,8 @@
             "charisma_term": 5
           },
           "observed": 0.888,
-          "fitted": 0.8719505833210779,
-          "absolute_error": 0.016049416678922124
+          "fitted": 0.871950583321,
+          "absolute_error": 0.016049416679
         },
         {
           "inputs": {
@@ -1503,8 +1503,8 @@
             "charisma_term": -5
           },
           "observed": 0.889,
-          "fitted": 0.8884157965382043,
-          "absolute_error": 0.0005842034617956626
+          "fitted": 0.888415796538,
+          "absolute_error": 0.000584203462
         },
         {
           "inputs": {
@@ -1513,8 +1513,8 @@
             "charisma_term": 0
           },
           "observed": 0.89,
-          "fitted": 0.8777135898795273,
-          "absolute_error": 0.012286410120472713
+          "fitted": 0.87771358988,
+          "absolute_error": 0.01228641012
         },
         {
           "inputs": {
@@ -1523,8 +1523,8 @@
             "charisma_term": 5
           },
           "observed": 0.892,
-          "fitted": 0.8610531931786877,
-          "absolute_error": 0.030946806821312345
+          "fitted": 0.861053193179,
+          "absolute_error": 0.030946806821
         },
         {
           "inputs": {
@@ -1533,8 +1533,8 @@
             "charisma_term": -5
           },
           "observed": 0.873,
-          "fitted": 0.882784961143308,
-          "absolute_error": 0.009784961143307958
+          "fitted": 0.882784961143,
+          "absolute_error": 0.009784961143
         },
         {
           "inputs": {
@@ -1543,8 +1543,8 @@
             "charisma_term": 0
           },
           "observed": 0.89,
-          "fitted": 0.8868519616682611,
-          "absolute_error": 0.0031480383317389338
+          "fitted": 0.886851961668,
+          "absolute_error": 0.003148038332
         },
         {
           "inputs": {
@@ -1553,8 +1553,8 @@
             "charisma_term": 5
           },
           "observed": 0.881,
-          "fitted": 0.8865230380211244,
-          "absolute_error": 0.005523038021124416
+          "fitted": 0.886523038021,
+          "absolute_error": 0.005523038021
         },
         {
           "inputs": {
@@ -1563,8 +1563,8 @@
             "charisma_term": -5
           },
           "observed": 0.887,
-          "fitted": 0.8884665489601526,
-          "absolute_error": 0.001466548960152636
+          "fitted": 0.88846654896,
+          "absolute_error": 0.00146654896
         },
         {
           "inputs": {
@@ -1573,8 +1573,8 @@
             "charisma_term": 0
           },
           "observed": 0.898,
-          "fitted": 0.8895316013216731,
-          "absolute_error": 0.008468398678326938
+          "fitted": 0.889531601322,
+          "absolute_error": 0.008468398678
         },
         {
           "inputs": {
@@ -1583,8 +1583,8 @@
             "charisma_term": 5
           },
           "observed": 0.84,
-          "fitted": 0.8863083836231175,
-          "absolute_error": 0.04630838362311751
+          "fitted": 0.886308383623,
+          "absolute_error": 0.046308383623
         },
         {
           "inputs": {
@@ -1593,8 +1593,8 @@
             "charisma_term": -5
           },
           "observed": 0.915,
-          "fitted": 0.8922127795385576,
-          "absolute_error": 0.022787220461442437
+          "fitted": 0.892212779539,
+          "absolute_error": 0.022787220461
         },
         {
           "inputs": {
@@ -1603,8 +1603,8 @@
             "charisma_term": 0
           },
           "observed": 0.888,
-          "fitted": 0.8904379291208688,
-          "absolute_error": 0.0024379291208688203
+          "fitted": 0.890437929121,
+          "absolute_error": 0.002437929121
         },
         {
           "inputs": {
@@ -1613,8 +1613,8 @@
             "charisma_term": 5
           },
           "observed": 0.896,
-          "fitted": 0.8842917815787525,
-          "absolute_error": 0.011708218421247474
+          "fitted": 0.884291781579,
+          "absolute_error": 0.011708218421
         },
         {
           "inputs": {
@@ -1623,8 +1623,8 @@
             "charisma_term": -5
           },
           "observed": 0.877,
-          "fitted": 0.8941821946573374,
-          "absolute_error": 0.01718219465733739
+          "fitted": 0.894182194657,
+          "absolute_error": 0.017182194657
         },
         {
           "inputs": {
@@ -1633,8 +1633,8 @@
             "charisma_term": 0
           },
           "observed": 0.873,
-          "fitted": 0.8896087487731738,
-          "absolute_error": 0.016608748773173754
+          "fitted": 0.889608748773,
+          "absolute_error": 0.016608748773
         },
         {
           "inputs": {
@@ -1643,8 +1643,8 @@
             "charisma_term": 5
           },
           "observed": 0.88,
-          "fitted": 0.8803899060092546,
-          "absolute_error": 0.0003899060092545925
+          "fitted": 0.880389906009,
+          "absolute_error": 0.000389906009
         },
         {
           "inputs": {
@@ -1653,8 +1653,8 @@
             "charisma_term": -5
           },
           "observed": 0.894,
-          "fitted": 0.8944579154053612,
-          "absolute_error": 0.00045791540536122
+          "fitted": 0.894457915405,
+          "absolute_error": 0.000457915405
         },
         {
           "inputs": {
@@ -1663,8 +1663,8 @@
             "charisma_term": 0
           },
           "observed": 0.881,
-          "fitted": 0.8870094757059225,
-          "absolute_error": 0.0060094757059224735
+          "fitted": 0.887009475706,
+          "absolute_error": 0.006009475706
         },
         {
           "inputs": {
@@ -1673,8 +1673,8 @@
             "charisma_term": 5
           },
           "observed": 0.873,
-          "fitted": 0.8744413222891698,
-          "absolute_error": 0.0014413222891698219
+          "fitted": 0.874441322289,
+          "absolute_error": 0.001441322289
         },
         {
           "inputs": {
@@ -1683,8 +1683,8 @@
             "charisma_term": -5
           },
           "observed": 0.878,
-          "fitted": 0.8652892608346677,
-          "absolute_error": 0.012710739165332274
+          "fitted": 0.865289260835,
+          "absolute_error": 0.012710739165
         },
         {
           "inputs": {
@@ -1693,8 +1693,8 @@
             "charisma_term": 0
           },
           "observed": 0.893,
-          "fitted": 0.8729162420516012,
-          "absolute_error": 0.020083757948398784
+          "fitted": 0.872916242052,
+          "absolute_error": 0.020083757948
         },
         {
           "inputs": {
@@ -1703,8 +1703,8 @@
             "charisma_term": 5
           },
           "observed": 0.892,
-          "fitted": 0.8755413732490104,
-          "absolute_error": 0.016458626750989636
+          "fitted": 0.875541373249,
+          "absolute_error": 0.016458626751
         },
         {
           "inputs": {
@@ -1713,8 +1713,8 @@
             "charisma_term": -5
           },
           "observed": 0.87,
-          "fitted": 0.8759876430691963,
-          "absolute_error": 0.005987643069196302
+          "fitted": 0.875987643069,
+          "absolute_error": 0.005987643069
         },
         {
           "inputs": {
@@ -1723,8 +1723,8 @@
             "charisma_term": 0
           },
           "observed": 0.886,
-          "fitted": 0.880051026792083,
-          "absolute_error": 0.0059489732079169855
+          "fitted": 0.880051026792,
+          "absolute_error": 0.005948973208
         },
         {
           "inputs": {
@@ -1733,8 +1733,8 @@
             "charisma_term": 5
           },
           "observed": 0.865,
-          "fitted": 0.8794967141936048,
-          "absolute_error": 0.014496714193604765
+          "fitted": 0.879496714194,
+          "absolute_error": 0.014496714194
         },
         {
           "inputs": {
@@ -1743,8 +1743,8 @@
             "charisma_term": -5
           },
           "observed": 0.891,
-          "fitted": 0.8841447885571573,
-          "absolute_error": 0.006855211442842735
+          "fitted": 0.884144788557,
+          "absolute_error": 0.006855211443
         },
         {
           "inputs": {
@@ -1753,8 +1753,8 @@
             "charisma_term": 0
           },
           "observed": 0.885,
-          "fitted": 0.8850458201717738,
-          "absolute_error": 4.582017177379161e-05
+          "fitted": 0.885045820172,
+          "absolute_error": 4.5820172e-05
         },
         {
           "inputs": {
@@ -1763,8 +1763,8 @@
             "charisma_term": 5
           },
           "observed": 0.876,
-          "fitted": 0.8815038253713262,
-          "absolute_error": 0.00550382537132621
+          "fitted": 0.881503825371,
+          "absolute_error": 0.005503825371
         },
         {
           "inputs": {
@@ -1773,8 +1773,8 @@
             "charisma_term": -5
           },
           "observed": 0.884,
-          "fitted": 0.8901095460561314,
-          "absolute_error": 0.006109546056131343
+          "fitted": 0.890109546056,
+          "absolute_error": 0.006109546056
         },
         {
           "inputs": {
@@ -1783,8 +1783,8 @@
             "charisma_term": 0
           },
           "observed": 0.877,
-          "fitted": 0.8881090952432316,
-          "absolute_error": 0.01110909524323156
+          "fitted": 0.888109095243,
+          "absolute_error": 0.011109095243
         },
         {
           "inputs": {
@@ -1793,8 +1793,8 @@
             "charisma_term": 5
           },
           "observed": 0.894,
-          "fitted": 0.8816445544736848,
-          "absolute_error": 0.012355445526315179
+          "fitted": 0.881644554474,
+          "absolute_error": 0.012355445526
         },
         {
           "inputs": {
@@ -1803,8 +1803,8 @@
             "charisma_term": -5
           },
           "observed": 0.885,
-          "fitted": 0.8941370372512998,
-          "absolute_error": 0.009137037251299773
+          "fitted": 0.894137037251,
+          "absolute_error": 0.009137037251
         },
         {
           "inputs": {
@@ -1813,8 +1813,8 @@
             "charisma_term": 0
           },
           "observed": 0.9,
-          "fitted": 0.8893685019785198,
-          "absolute_error": 0.010631498021480223
+          "fitted": 0.889368501979,
+          "absolute_error": 0.010631498021
         },
         {
           "inputs": {
@@ -1823,8 +1823,8 @@
             "charisma_term": 5
           },
           "observed": 0.871,
-          "fitted": 0.8799246380797533,
-          "absolute_error": 0.0089246380797533
+          "fitted": 0.87992463808,
+          "absolute_error": 0.00892463808
         }
       ]
     }

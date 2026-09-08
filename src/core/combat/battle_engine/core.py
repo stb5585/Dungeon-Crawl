@@ -240,6 +240,11 @@ class BattleEngine(BattleTurnMixin, BattleActionMixin, BattleOutcomeMixin):
             target_id = self._actor_id_for(self.attacker)
         elif getattr(scope, "value", scope) == "single_enemy":
             target_id = PLAYER_ACTOR_ID
+        elif (
+            getattr(scope, "value", scope) == "all_enemies"
+            and self._actor_id_for(self.attacker) != PLAYER_ACTOR_ID
+        ):
+            target_id = PLAYER_ACTOR_ID
         else:
             target_id = None
         try:

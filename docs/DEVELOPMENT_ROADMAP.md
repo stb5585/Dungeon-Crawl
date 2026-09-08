@@ -69,10 +69,11 @@ slices are complete. All 197 YAML definitions now use immutable slug identity,
 closed taxonomy, registered traits, and actor-relative targeting; the legacy
 allowlist is empty and CI requires complete validation.
 
-The current target is the remainder of the resolution slice: core
-concealment/Sight/Detect rules, symmetric target resolution, target-loss
-behavior, and structured enemy-area results. The fitted one-roll weapon and
-spell contact contract is complete.
+The current target is the final resolution boundary: redact concealed identity
+from area-action outcomes without concealing the affected lane. The fitted
+one-roll weapon and spell contact, core concealment/Sight/Detect, symmetric
+target resolution, canonical target-loss behavior, and structured enemy-area
+results are complete.
 
 UI replacement and encounter expansion follow only after the migrated action
 contract, resolution rules, and timeline are stable. Numeric tuning remains a

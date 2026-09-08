@@ -13,6 +13,7 @@ from ...classes import (
 )
 from ...events.event_bus import combat_event_context
 from ..targeting import TargetScope
+from ..visibility import is_revealed_to
 from .models import (
     ForcedAction,
     PreTurnResult,
@@ -249,6 +250,8 @@ class TurnPreparationMixin:
 
     def get_enemy_action(self) -> tuple[str, str | None]:
         """Ask the enemy AI for its chosen action. Returns (action, choice)."""
+        if not is_revealed_to(self.attacker, self.active_player_character):
+            return "Detect", None
         return self.attacker.options(
             self.active_player_character,
             self.available_actions,
