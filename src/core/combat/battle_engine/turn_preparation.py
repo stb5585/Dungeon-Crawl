@@ -110,6 +110,7 @@ class TurnPreparationMixin:
                 result.effects_text = f"{result.effects_text or ''}{thirst_text}"
 
         if self.attacker == self.player:
+            paladin.tick_turn(self.player)
             song_text = bard.tick_song(self.player)
             if song_text:
                 result.effects_text = f"{result.effects_text or ''}{song_text}"

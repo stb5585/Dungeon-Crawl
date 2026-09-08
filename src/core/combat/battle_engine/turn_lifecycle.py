@@ -284,7 +284,6 @@ class TurnLifecycleMixin:
 
         self._record_final_enemy_resolutions()
         result.new_resolutions = self._consume_new_resolution_records()
-        paladin.tick_turn(self.player)
         if self.defender == self.player and self.player.is_alive():
             hp_max = max(1, int(self.player.health.max or 1))
             if self.player.health.current / hp_max <= 0.25:

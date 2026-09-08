@@ -351,8 +351,9 @@ Current slice status:
   Berserk, charge, Jump, or cancellation decisions, and a cancellation stays
   enforced for its owner opportunity after clearing its charge state.
   Reactions now resolve inside their triggering result without advancing
-  readiness and cannot re-enter through a counter-result. Owner-turn status
-  migration, logs, and simulator diagnostics remain in the ordered work.
+  readiness and cannot re-enter through a counter-result. Statuses now tick
+  only at their owner's pre-turn readiness opportunity, including Paladin
+  encounter timers. Logs and simulator diagnostics remain in the ordered work.
 
 ## Progression Boundary
 
