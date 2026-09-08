@@ -108,14 +108,19 @@ class DataDrivenMagicMissileSpell(Spell):
         # ── 3. Per-missile loop ─────────────────────────────────────
         for i in range(self.missiles):
             hits.append(False)
-            dodge = target.dodge_chance(caster, spell=True)
-            hits[i] = caster.hit_chance(target, typ="magic")
-            if target.incapacitated():
-                dodge = False
-                hits[i] = True
+            contact = caster.resolve_contact(
+                target,
+                typ="magic",
+                always_hit=target.incapacitated(),
+                rng=random,
+            )
+            hits[i] = contact.hit
 
-            if dodge:
-                cast_message += f"{target.name} dodged the {self.name} and was unhurt.\n"
+            if not contact.hit:
+                if contact.attribution is not None and contact.attribution.value == "dodge":
+                    cast_message += f"{target.name} dodged the {self.name} and was unhurt.\n"
+                else:
+                    cast_message += f"The spell misses {target.name}.\n"
             elif cover:
                 cast_message += (
                     f"{target.familiar.name} steps in front of the attack, "
@@ -201,17 +206,15 @@ class DataDrivenMagicMissileSpell(Spell):
                                 f"and only receives half of the damage.\n"
                             )
                             damage_msg = (
-                                f"{caster.name} damages {target.name} " f"for {damage} hit points"
+                                f"{caster.name} damages {target.name} for {damage} hit points"
                             )
                             if crit > 1:
                                 damage_msg += " (Critical hit!)"
                             cast_message += damage_msg + ".\n"
                         else:
-                            cast_message += f"{self.name} was ineffective and does " f"no damage.\n"
+                            cast_message += f"{self.name} was ineffective and does no damage.\n"
                     else:
-                        damage_msg = (
-                            f"{caster.name} damages {target.name} " f"for {damage} hit points"
-                        )
+                        damage_msg = f"{caster.name} damages {target.name} for {damage} hit points"
                         if crit > 1:
                             damage_msg += " (Critical hit!)"
                         cast_message += damage_msg + ".\n"
@@ -241,7 +244,7 @@ class DataDrivenMagicMissileSpell(Spell):
                             if mage_mechanics.has_skill(caster, "Spaghettification"):
                                 target.health.current = 0
                                 cast_message += (
-                                    f"Spaghettification erases {target.name} " "from existence.\n"
+                                    f"Spaghettification erases {target.name} from existence.\n"
                                 )
                         except Exception:
                             pass

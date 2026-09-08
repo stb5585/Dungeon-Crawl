@@ -1,0 +1,1562 @@
+{
+  "source_revision": "f7a4b25e5a405ba6d9c5006b84d92584d818ebc3",
+  "ability_inventory": {
+    "ability_count": 197,
+    "filename_slugs_unique": true,
+    "legacy_value_counts": {
+      "type": {
+        "ChargingSkill": 7,
+        "CustomSpell": 5,
+        "Heal": 8,
+        "JumpSkill": 1,
+        "MagicMissile": 4,
+        "Movement": 2,
+        "Skill": 81,
+        "Spell": 47,
+        "Status": 14,
+        "StatusSkill": 7,
+        "Support": 18,
+        "WeaponSpell": 3
+      },
+      "subtype": {
+        "Arcane": 1,
+        "Chi Strike": 1,
+        "Class": 5,
+        "Death": 4,
+        "Defensive": 2,
+        "Drain": 5,
+        "Earth": 4,
+        "Electric": 6,
+        "Enhance": 7,
+        "Fire": 8,
+        "Heal": 7,
+        "Holy": 9,
+        "Ice": 4,
+        "Illusion": 3,
+        "Luck": 3,
+        "Martial Arts": 2,
+        "Movement": 2,
+        "Nature": 1,
+        "Non-elemental": 8,
+        "Offensive": 32,
+        "Physical": 1,
+        "Poison": 2,
+        "Power Up": 10,
+        "PowerUp": 1,
+        "Shadow": 7,
+        "Skill": 3,
+        "Soul": 1,
+        "Status": 10,
+        "Stealth": 8,
+        "Support": 14,
+        "Truth": 3,
+        "Water": 6,
+        "Wind": 6
+      },
+      "school": {
+        "Arcane": 10,
+        "Disease": 1,
+        "Elemental": 12,
+        "Fire": 1,
+        "Holy": 5,
+        "Ice": 1,
+        "Nature": 5,
+        "Poison": 1,
+        "Shadow": 3
+      },
+      "target_scope": {
+        "all_enemies": 4
+      },
+      "target_loss_policy": {
+        "snapshot_roster": 2
+      }
+    },
+    "missing_legacy_fields": {
+      "type": 0,
+      "subtype": 11,
+      "school": 158,
+      "target_scope": 193,
+      "target_loss_policy": 195
+    }
+  },
+  "contact_characterization": {
+    "seed": 1337,
+    "samples_per_cell": 1000,
+    "ordinary_stats": [
+      6,
+      10,
+      14,
+      18,
+      22
+    ],
+    "resolution": "hit > U(0,1) and not dodge > U(0,1)",
+    "matrices": {
+      "weapon": [
+        {
+          "attack_stat": 6,
+          "defense_stat": 6,
+          "mean_hit_roll": 0.899919,
+          "mean_dodge_roll": 0.0,
+          "land_rate": 0.887
+        },
+        {
+          "attack_stat": 6,
+          "defense_stat": 10,
+          "mean_hit_roll": 0.791644,
+          "mean_dodge_roll": 0.003385,
+          "land_rate": 0.81
+        },
+        {
+          "attack_stat": 6,
+          "defense_stat": 14,
+          "mean_hit_roll": 0.71948,
+          "mean_dodge_roll": 0.040002,
+          "land_rate": 0.675
+        },
+        {
+          "attack_stat": 6,
+          "defense_stat": 18,
+          "mean_hit_roll": 0.675924,
+          "mean_dodge_roll": 0.079599,
+          "land_rate": 0.641
+        },
+        {
+          "attack_stat": 6,
+          "defense_stat": 22,
+          "mean_hit_roll": 0.643487,
+          "mean_dodge_roll": 0.14289,
+          "land_rate": 0.538
+        },
+        {
+          "attack_stat": 10,
+          "defense_stat": 6,
+          "mean_hit_roll": 0.962861,
+          "mean_dodge_roll": 0.0,
+          "land_rate": 0.953
+        },
+        {
+          "attack_stat": 10,
+          "defense_stat": 10,
+          "mean_hit_roll": 0.88919,
+          "mean_dodge_roll": 0.0,
+          "land_rate": 0.881
+        },
+        {
+          "attack_stat": 10,
+          "defense_stat": 14,
+          "mean_hit_roll": 0.823538,
+          "mean_dodge_roll": 0.001105,
+          "land_rate": 0.811
+        },
+        {
+          "attack_stat": 10,
+          "defense_stat": 18,
+          "mean_hit_roll": 0.764358,
+          "mean_dodge_roll": 0.006907,
+          "land_rate": 0.757
+        },
+        {
+          "attack_stat": 10,
+          "defense_stat": 22,
+          "mean_hit_roll": 0.72468,
+          "mean_dodge_roll": 0.031563,
+          "land_rate": 0.708
+        },
+        {
+          "attack_stat": 14,
+          "defense_stat": 6,
+          "mean_hit_roll": 0.98371,
+          "mean_dodge_roll": 0.0,
+          "land_rate": 0.985
+        },
+        {
+          "attack_stat": 14,
+          "defense_stat": 10,
+          "mean_hit_roll": 0.940239,
+          "mean_dodge_roll": 0.0,
+          "land_rate": 0.956
+        },
+        {
+          "attack_stat": 14,
+          "defense_stat": 14,
+          "mean_hit_roll": 0.882188,
+          "mean_dodge_roll": 0.0,
+          "land_rate": 0.871
+        },
+        {
+          "attack_stat": 14,
+          "defense_stat": 18,
+          "mean_hit_roll": 0.833281,
+          "mean_dodge_roll": 0.00087,
+          "land_rate": 0.831
+        },
+        {
+          "attack_stat": 14,
+          "defense_stat": 22,
+          "mean_hit_roll": 0.79037,
+          "mean_dodge_roll": 0.007012,
+          "land_rate": 0.77
+        },
+        {
+          "attack_stat": 18,
+          "defense_stat": 6,
+          "mean_hit_roll": 0.993889,
+          "mean_dodge_roll": 0.0,
+          "land_rate": 0.996
+        },
+        {
+          "attack_stat": 18,
+          "defense_stat": 10,
+          "mean_hit_roll": 0.96564,
+          "mean_dodge_roll": 0.0,
+          "land_rate": 0.959
+        },
+        {
+          "attack_stat": 18,
+          "defense_stat": 14,
+          "mean_hit_roll": 0.927436,
+          "mean_dodge_roll": 0.0,
+          "land_rate": 0.921
+        },
+        {
+          "attack_stat": 18,
+          "defense_stat": 18,
+          "mean_hit_roll": 0.886355,
+          "mean_dodge_roll": 0.0,
+          "land_rate": 0.896
+        },
+        {
+          "attack_stat": 18,
+          "defense_stat": 22,
+          "mean_hit_roll": 0.842244,
+          "mean_dodge_roll": 0.000345,
+          "land_rate": 0.847
+        },
+        {
+          "attack_stat": 22,
+          "defense_stat": 6,
+          "mean_hit_roll": 0.99729,
+          "mean_dodge_roll": 0.0,
+          "land_rate": 0.995
+        },
+        {
+          "attack_stat": 22,
+          "defense_stat": 10,
+          "mean_hit_roll": 0.981115,
+          "mean_dodge_roll": 0.0,
+          "land_rate": 0.976
+        },
+        {
+          "attack_stat": 22,
+          "defense_stat": 14,
+          "mean_hit_roll": 0.951097,
+          "mean_dodge_roll": 0.0,
+          "land_rate": 0.948
+        },
+        {
+          "attack_stat": 22,
+          "defense_stat": 18,
+          "mean_hit_roll": 0.918371,
+          "mean_dodge_roll": 0.0,
+          "land_rate": 0.902
+        },
+        {
+          "attack_stat": 22,
+          "defense_stat": 22,
+          "mean_hit_roll": 0.882993,
+          "mean_dodge_roll": 0.0,
+          "land_rate": 0.877
+        }
+      ],
+      "spell": [
+        {
+          "attack_stat": 6,
+          "defense_stat": 6,
+          "mean_hit_roll": 0.891723,
+          "mean_dodge_roll": 0.0,
+          "land_rate": 0.897
+        },
+        {
+          "attack_stat": 6,
+          "defense_stat": 10,
+          "mean_hit_roll": 0.788652,
+          "mean_dodge_roll": 0.003462,
+          "land_rate": 0.792
+        },
+        {
+          "attack_stat": 6,
+          "defense_stat": 14,
+          "mean_hit_roll": 0.720646,
+          "mean_dodge_roll": 0.041818,
+          "land_rate": 0.707
+        },
+        {
+          "attack_stat": 6,
+          "defense_stat": 18,
+          "mean_hit_roll": 0.681178,
+          "mean_dodge_roll": 0.071124,
+          "land_rate": 0.621
+        },
+        {
+          "attack_stat": 6,
+          "defense_stat": 22,
+          "mean_hit_roll": 0.643517,
+          "mean_dodge_roll": 0.132858,
+          "land_rate": 0.568
+        },
+        {
+          "attack_stat": 10,
+          "defense_stat": 6,
+          "mean_hit_roll": 0.959461,
+          "mean_dodge_roll": 0.0,
+          "land_rate": 0.965
+        },
+        {
+          "attack_stat": 10,
+          "defense_stat": 10,
+          "mean_hit_roll": 0.890612,
+          "mean_dodge_roll": 0.0,
+          "land_rate": 0.903
+        },
+        {
+          "attack_stat": 10,
+          "defense_stat": 14,
+          "mean_hit_roll": 0.81716,
+          "mean_dodge_roll": 0.001632,
+          "land_rate": 0.8
+        },
+        {
+          "attack_stat": 10,
+          "defense_stat": 18,
+          "mean_hit_roll": 0.765278,
+          "mean_dodge_roll": 0.006522,
+          "land_rate": 0.776
+        },
+        {
+          "attack_stat": 10,
+          "defense_stat": 22,
+          "mean_hit_roll": 0.727473,
+          "mean_dodge_roll": 0.030939,
+          "land_rate": 0.696
+        },
+        {
+          "attack_stat": 14,
+          "defense_stat": 6,
+          "mean_hit_roll": 0.985428,
+          "mean_dodge_roll": 0.0,
+          "land_rate": 0.978
+        },
+        {
+          "attack_stat": 14,
+          "defense_stat": 10,
+          "mean_hit_roll": 0.938253,
+          "mean_dodge_roll": 0.0,
+          "land_rate": 0.925
+        },
+        {
+          "attack_stat": 14,
+          "defense_stat": 14,
+          "mean_hit_roll": 0.886066,
+          "mean_dodge_roll": 0.0,
+          "land_rate": 0.896
+        },
+        {
+          "attack_stat": 14,
+          "defense_stat": 18,
+          "mean_hit_roll": 0.834296,
+          "mean_dodge_roll": 0.000478,
+          "land_rate": 0.836
+        },
+        {
+          "attack_stat": 14,
+          "defense_stat": 22,
+          "mean_hit_roll": 0.792177,
+          "mean_dodge_roll": 0.008115,
+          "land_rate": 0.806
+        },
+        {
+          "attack_stat": 18,
+          "defense_stat": 6,
+          "mean_hit_roll": 0.993682,
+          "mean_dodge_roll": 0.0,
+          "land_rate": 0.993
+        },
+        {
+          "attack_stat": 18,
+          "defense_stat": 10,
+          "mean_hit_roll": 0.965829,
+          "mean_dodge_roll": 0.0,
+          "land_rate": 0.959
+        },
+        {
+          "attack_stat": 18,
+          "defense_stat": 14,
+          "mean_hit_roll": 0.926784,
+          "mean_dodge_roll": 0.0,
+          "land_rate": 0.911
+        },
+        {
+          "attack_stat": 18,
+          "defense_stat": 18,
+          "mean_hit_roll": 0.880407,
+          "mean_dodge_roll": 0.0,
+          "land_rate": 0.873
+        },
+        {
+          "attack_stat": 18,
+          "defense_stat": 22,
+          "mean_hit_roll": 0.842117,
+          "mean_dodge_roll": 0.000207,
+          "land_rate": 0.855
+        },
+        {
+          "attack_stat": 22,
+          "defense_stat": 6,
+          "mean_hit_roll": 0.997256,
+          "mean_dodge_roll": 0.0,
+          "land_rate": 0.998
+        },
+        {
+          "attack_stat": 22,
+          "defense_stat": 10,
+          "mean_hit_roll": 0.981558,
+          "mean_dodge_roll": 0.0,
+          "land_rate": 0.988
+        },
+        {
+          "attack_stat": 22,
+          "defense_stat": 14,
+          "mean_hit_roll": 0.951786,
+          "mean_dodge_roll": 0.0,
+          "land_rate": 0.951
+        },
+        {
+          "attack_stat": 22,
+          "defense_stat": 18,
+          "mean_hit_roll": 0.91607,
+          "mean_dodge_roll": 0.0,
+          "land_rate": 0.923
+        },
+        {
+          "attack_stat": 22,
+          "defense_stat": 22,
+          "mean_hit_roll": 0.882983,
+          "mean_dodge_roll": 0.0,
+          "land_rate": 0.899
+        }
+      ]
+    }
+  },
+  "approved_contact_characterization": {
+    "seed": 1337,
+    "samples_per_cell": 1000,
+    "reference_profile": {
+      "fixed_primary_stats": 14,
+      "luck_and_unrelated_stats": 10,
+      "class_race_status_and_equipment_bonuses": "none"
+    },
+    "weapon": {
+      "proficiency_differences": [
+        -2,
+        -1,
+        0,
+        1,
+        2
+      ],
+      "defender_speeds": [
+        6,
+        10,
+        14,
+        18,
+        22
+      ],
+      "armor_groups": [
+        "none",
+        "light",
+        "medium",
+        "heavy"
+      ],
+      "cells": [
+        {
+          "proficiency_difference": -2,
+          "defender_speed": 6,
+          "armor_group": "none",
+          "land_rate": 0.892
+        },
+        {
+          "proficiency_difference": -2,
+          "defender_speed": 6,
+          "armor_group": "light",
+          "land_rate": 0.867
+        },
+        {
+          "proficiency_difference": -2,
+          "defender_speed": 6,
+          "armor_group": "medium",
+          "land_rate": 0.888
+        },
+        {
+          "proficiency_difference": -2,
+          "defender_speed": 6,
+          "armor_group": "heavy",
+          "land_rate": 0.889
+        },
+        {
+          "proficiency_difference": -2,
+          "defender_speed": 10,
+          "armor_group": "none",
+          "land_rate": 0.85
+        },
+        {
+          "proficiency_difference": -2,
+          "defender_speed": 10,
+          "armor_group": "light",
+          "land_rate": 0.815
+        },
+        {
+          "proficiency_difference": -2,
+          "defender_speed": 10,
+          "armor_group": "medium",
+          "land_rate": 0.814
+        },
+        {
+          "proficiency_difference": -2,
+          "defender_speed": 10,
+          "armor_group": "heavy",
+          "land_rate": 0.84
+        },
+        {
+          "proficiency_difference": -2,
+          "defender_speed": 14,
+          "armor_group": "none",
+          "land_rate": 0.782
+        },
+        {
+          "proficiency_difference": -2,
+          "defender_speed": 14,
+          "armor_group": "light",
+          "land_rate": 0.779
+        },
+        {
+          "proficiency_difference": -2,
+          "defender_speed": 14,
+          "armor_group": "medium",
+          "land_rate": 0.771
+        },
+        {
+          "proficiency_difference": -2,
+          "defender_speed": 14,
+          "armor_group": "heavy",
+          "land_rate": 0.784
+        },
+        {
+          "proficiency_difference": -2,
+          "defender_speed": 18,
+          "armor_group": "none",
+          "land_rate": 0.727
+        },
+        {
+          "proficiency_difference": -2,
+          "defender_speed": 18,
+          "armor_group": "light",
+          "land_rate": 0.738
+        },
+        {
+          "proficiency_difference": -2,
+          "defender_speed": 18,
+          "armor_group": "medium",
+          "land_rate": 0.744
+        },
+        {
+          "proficiency_difference": -2,
+          "defender_speed": 18,
+          "armor_group": "heavy",
+          "land_rate": 0.748
+        },
+        {
+          "proficiency_difference": -2,
+          "defender_speed": 22,
+          "armor_group": "none",
+          "land_rate": 0.689
+        },
+        {
+          "proficiency_difference": -2,
+          "defender_speed": 22,
+          "armor_group": "light",
+          "land_rate": 0.687
+        },
+        {
+          "proficiency_difference": -2,
+          "defender_speed": 22,
+          "armor_group": "medium",
+          "land_rate": 0.698
+        },
+        {
+          "proficiency_difference": -2,
+          "defender_speed": 22,
+          "armor_group": "heavy",
+          "land_rate": 0.695
+        },
+        {
+          "proficiency_difference": -1,
+          "defender_speed": 6,
+          "armor_group": "none",
+          "land_rate": 0.932
+        },
+        {
+          "proficiency_difference": -1,
+          "defender_speed": 6,
+          "armor_group": "light",
+          "land_rate": 0.929
+        },
+        {
+          "proficiency_difference": -1,
+          "defender_speed": 6,
+          "armor_group": "medium",
+          "land_rate": 0.945
+        },
+        {
+          "proficiency_difference": -1,
+          "defender_speed": 6,
+          "armor_group": "heavy",
+          "land_rate": 0.939
+        },
+        {
+          "proficiency_difference": -1,
+          "defender_speed": 10,
+          "armor_group": "none",
+          "land_rate": 0.863
+        },
+        {
+          "proficiency_difference": -1,
+          "defender_speed": 10,
+          "armor_group": "light",
+          "land_rate": 0.891
+        },
+        {
+          "proficiency_difference": -1,
+          "defender_speed": 10,
+          "armor_group": "medium",
+          "land_rate": 0.896
+        },
+        {
+          "proficiency_difference": -1,
+          "defender_speed": 10,
+          "armor_group": "heavy",
+          "land_rate": 0.9
+        },
+        {
+          "proficiency_difference": -1,
+          "defender_speed": 14,
+          "armor_group": "none",
+          "land_rate": 0.856
+        },
+        {
+          "proficiency_difference": -1,
+          "defender_speed": 14,
+          "armor_group": "light",
+          "land_rate": 0.837
+        },
+        {
+          "proficiency_difference": -1,
+          "defender_speed": 14,
+          "armor_group": "medium",
+          "land_rate": 0.836
+        },
+        {
+          "proficiency_difference": -1,
+          "defender_speed": 14,
+          "armor_group": "heavy",
+          "land_rate": 0.829
+        },
+        {
+          "proficiency_difference": -1,
+          "defender_speed": 18,
+          "armor_group": "none",
+          "land_rate": 0.787
+        },
+        {
+          "proficiency_difference": -1,
+          "defender_speed": 18,
+          "armor_group": "light",
+          "land_rate": 0.782
+        },
+        {
+          "proficiency_difference": -1,
+          "defender_speed": 18,
+          "armor_group": "medium",
+          "land_rate": 0.759
+        },
+        {
+          "proficiency_difference": -1,
+          "defender_speed": 18,
+          "armor_group": "heavy",
+          "land_rate": 0.775
+        },
+        {
+          "proficiency_difference": -1,
+          "defender_speed": 22,
+          "armor_group": "none",
+          "land_rate": 0.742
+        },
+        {
+          "proficiency_difference": -1,
+          "defender_speed": 22,
+          "armor_group": "light",
+          "land_rate": 0.746
+        },
+        {
+          "proficiency_difference": -1,
+          "defender_speed": 22,
+          "armor_group": "medium",
+          "land_rate": 0.769
+        },
+        {
+          "proficiency_difference": -1,
+          "defender_speed": 22,
+          "armor_group": "heavy",
+          "land_rate": 0.74
+        },
+        {
+          "proficiency_difference": 0,
+          "defender_speed": 6,
+          "armor_group": "none",
+          "land_rate": 0.977
+        },
+        {
+          "proficiency_difference": 0,
+          "defender_speed": 6,
+          "armor_group": "light",
+          "land_rate": 0.987
+        },
+        {
+          "proficiency_difference": 0,
+          "defender_speed": 6,
+          "armor_group": "medium",
+          "land_rate": 0.983
+        },
+        {
+          "proficiency_difference": 0,
+          "defender_speed": 6,
+          "armor_group": "heavy",
+          "land_rate": 0.985
+        },
+        {
+          "proficiency_difference": 0,
+          "defender_speed": 10,
+          "armor_group": "none",
+          "land_rate": 0.939
+        },
+        {
+          "proficiency_difference": 0,
+          "defender_speed": 10,
+          "armor_group": "light",
+          "land_rate": 0.947
+        },
+        {
+          "proficiency_difference": 0,
+          "defender_speed": 10,
+          "armor_group": "medium",
+          "land_rate": 0.952
+        },
+        {
+          "proficiency_difference": 0,
+          "defender_speed": 10,
+          "armor_group": "heavy",
+          "land_rate": 0.953
+        },
+        {
+          "proficiency_difference": 0,
+          "defender_speed": 14,
+          "armor_group": "none",
+          "land_rate": 0.881
+        },
+        {
+          "proficiency_difference": 0,
+          "defender_speed": 14,
+          "armor_group": "light",
+          "land_rate": 0.887
+        },
+        {
+          "proficiency_difference": 0,
+          "defender_speed": 14,
+          "armor_group": "medium",
+          "land_rate": 0.891
+        },
+        {
+          "proficiency_difference": 0,
+          "defender_speed": 14,
+          "armor_group": "heavy",
+          "land_rate": 0.865
+        },
+        {
+          "proficiency_difference": 0,
+          "defender_speed": 18,
+          "armor_group": "none",
+          "land_rate": 0.825
+        },
+        {
+          "proficiency_difference": 0,
+          "defender_speed": 18,
+          "armor_group": "light",
+          "land_rate": 0.835
+        },
+        {
+          "proficiency_difference": 0,
+          "defender_speed": 18,
+          "armor_group": "medium",
+          "land_rate": 0.83
+        },
+        {
+          "proficiency_difference": 0,
+          "defender_speed": 18,
+          "armor_group": "heavy",
+          "land_rate": 0.843
+        },
+        {
+          "proficiency_difference": 0,
+          "defender_speed": 22,
+          "armor_group": "none",
+          "land_rate": 0.815
+        },
+        {
+          "proficiency_difference": 0,
+          "defender_speed": 22,
+          "armor_group": "light",
+          "land_rate": 0.783
+        },
+        {
+          "proficiency_difference": 0,
+          "defender_speed": 22,
+          "armor_group": "medium",
+          "land_rate": 0.768
+        },
+        {
+          "proficiency_difference": 0,
+          "defender_speed": 22,
+          "armor_group": "heavy",
+          "land_rate": 0.808
+        },
+        {
+          "proficiency_difference": 1,
+          "defender_speed": 6,
+          "armor_group": "none",
+          "land_rate": 0.998
+        },
+        {
+          "proficiency_difference": 1,
+          "defender_speed": 6,
+          "armor_group": "light",
+          "land_rate": 0.996
+        },
+        {
+          "proficiency_difference": 1,
+          "defender_speed": 6,
+          "armor_group": "medium",
+          "land_rate": 0.998
+        },
+        {
+          "proficiency_difference": 1,
+          "defender_speed": 6,
+          "armor_group": "heavy",
+          "land_rate": 0.999
+        },
+        {
+          "proficiency_difference": 1,
+          "defender_speed": 10,
+          "armor_group": "none",
+          "land_rate": 0.981
+        },
+        {
+          "proficiency_difference": 1,
+          "defender_speed": 10,
+          "armor_group": "light",
+          "land_rate": 0.965
+        },
+        {
+          "proficiency_difference": 1,
+          "defender_speed": 10,
+          "armor_group": "medium",
+          "land_rate": 0.976
+        },
+        {
+          "proficiency_difference": 1,
+          "defender_speed": 10,
+          "armor_group": "heavy",
+          "land_rate": 0.97
+        },
+        {
+          "proficiency_difference": 1,
+          "defender_speed": 14,
+          "armor_group": "none",
+          "land_rate": 0.924
+        },
+        {
+          "proficiency_difference": 1,
+          "defender_speed": 14,
+          "armor_group": "light",
+          "land_rate": 0.936
+        },
+        {
+          "proficiency_difference": 1,
+          "defender_speed": 14,
+          "armor_group": "medium",
+          "land_rate": 0.92
+        },
+        {
+          "proficiency_difference": 1,
+          "defender_speed": 14,
+          "armor_group": "heavy",
+          "land_rate": 0.924
+        },
+        {
+          "proficiency_difference": 1,
+          "defender_speed": 18,
+          "armor_group": "none",
+          "land_rate": 0.88
+        },
+        {
+          "proficiency_difference": 1,
+          "defender_speed": 18,
+          "armor_group": "light",
+          "land_rate": 0.906
+        },
+        {
+          "proficiency_difference": 1,
+          "defender_speed": 18,
+          "armor_group": "medium",
+          "land_rate": 0.891
+        },
+        {
+          "proficiency_difference": 1,
+          "defender_speed": 18,
+          "armor_group": "heavy",
+          "land_rate": 0.906
+        },
+        {
+          "proficiency_difference": 1,
+          "defender_speed": 22,
+          "armor_group": "none",
+          "land_rate": 0.831
+        },
+        {
+          "proficiency_difference": 1,
+          "defender_speed": 22,
+          "armor_group": "light",
+          "land_rate": 0.858
+        },
+        {
+          "proficiency_difference": 1,
+          "defender_speed": 22,
+          "armor_group": "medium",
+          "land_rate": 0.852
+        },
+        {
+          "proficiency_difference": 1,
+          "defender_speed": 22,
+          "armor_group": "heavy",
+          "land_rate": 0.831
+        },
+        {
+          "proficiency_difference": 2,
+          "defender_speed": 6,
+          "armor_group": "none",
+          "land_rate": 1.0
+        },
+        {
+          "proficiency_difference": 2,
+          "defender_speed": 6,
+          "armor_group": "light",
+          "land_rate": 1.0
+        },
+        {
+          "proficiency_difference": 2,
+          "defender_speed": 6,
+          "armor_group": "medium",
+          "land_rate": 1.0
+        },
+        {
+          "proficiency_difference": 2,
+          "defender_speed": 6,
+          "armor_group": "heavy",
+          "land_rate": 1.0
+        },
+        {
+          "proficiency_difference": 2,
+          "defender_speed": 10,
+          "armor_group": "none",
+          "land_rate": 0.99
+        },
+        {
+          "proficiency_difference": 2,
+          "defender_speed": 10,
+          "armor_group": "light",
+          "land_rate": 0.993
+        },
+        {
+          "proficiency_difference": 2,
+          "defender_speed": 10,
+          "armor_group": "medium",
+          "land_rate": 0.99
+        },
+        {
+          "proficiency_difference": 2,
+          "defender_speed": 10,
+          "armor_group": "heavy",
+          "land_rate": 0.993
+        },
+        {
+          "proficiency_difference": 2,
+          "defender_speed": 14,
+          "armor_group": "none",
+          "land_rate": 0.954
+        },
+        {
+          "proficiency_difference": 2,
+          "defender_speed": 14,
+          "armor_group": "light",
+          "land_rate": 0.963
+        },
+        {
+          "proficiency_difference": 2,
+          "defender_speed": 14,
+          "armor_group": "medium",
+          "land_rate": 0.967
+        },
+        {
+          "proficiency_difference": 2,
+          "defender_speed": 14,
+          "armor_group": "heavy",
+          "land_rate": 0.964
+        },
+        {
+          "proficiency_difference": 2,
+          "defender_speed": 18,
+          "armor_group": "none",
+          "land_rate": 0.931
+        },
+        {
+          "proficiency_difference": 2,
+          "defender_speed": 18,
+          "armor_group": "light",
+          "land_rate": 0.901
+        },
+        {
+          "proficiency_difference": 2,
+          "defender_speed": 18,
+          "armor_group": "medium",
+          "land_rate": 0.924
+        },
+        {
+          "proficiency_difference": 2,
+          "defender_speed": 18,
+          "armor_group": "heavy",
+          "land_rate": 0.931
+        },
+        {
+          "proficiency_difference": 2,
+          "defender_speed": 22,
+          "armor_group": "none",
+          "land_rate": 0.878
+        },
+        {
+          "proficiency_difference": 2,
+          "defender_speed": 22,
+          "armor_group": "light",
+          "land_rate": 0.885
+        },
+        {
+          "proficiency_difference": 2,
+          "defender_speed": 22,
+          "armor_group": "medium",
+          "land_rate": 0.898
+        },
+        {
+          "proficiency_difference": 2,
+          "defender_speed": 22,
+          "armor_group": "heavy",
+          "land_rate": 0.888
+        }
+      ]
+    },
+    "spell": {
+      "intelligence": [
+        6,
+        10,
+        14,
+        18,
+        22
+      ],
+      "wisdom": [
+        6,
+        10,
+        14,
+        18,
+        22
+      ],
+      "charisma_terms": [
+        -5,
+        0,
+        5
+      ],
+      "cells": [
+        {
+          "intelligence": 6,
+          "wisdom": 6,
+          "charisma_term": -5,
+          "land_rate": 0.87
+        },
+        {
+          "intelligence": 6,
+          "wisdom": 6,
+          "charisma_term": 0,
+          "land_rate": 0.898
+        },
+        {
+          "intelligence": 6,
+          "wisdom": 6,
+          "charisma_term": 5,
+          "land_rate": 0.888
+        },
+        {
+          "intelligence": 6,
+          "wisdom": 10,
+          "charisma_term": -5,
+          "land_rate": 0.891
+        },
+        {
+          "intelligence": 6,
+          "wisdom": 10,
+          "charisma_term": 0,
+          "land_rate": 0.889
+        },
+        {
+          "intelligence": 6,
+          "wisdom": 10,
+          "charisma_term": 5,
+          "land_rate": 0.889
+        },
+        {
+          "intelligence": 6,
+          "wisdom": 14,
+          "charisma_term": -5,
+          "land_rate": 0.891
+        },
+        {
+          "intelligence": 6,
+          "wisdom": 14,
+          "charisma_term": 0,
+          "land_rate": 0.873
+        },
+        {
+          "intelligence": 6,
+          "wisdom": 14,
+          "charisma_term": 5,
+          "land_rate": 0.845
+        },
+        {
+          "intelligence": 6,
+          "wisdom": 18,
+          "charisma_term": -5,
+          "land_rate": 0.875
+        },
+        {
+          "intelligence": 6,
+          "wisdom": 18,
+          "charisma_term": 0,
+          "land_rate": 0.848
+        },
+        {
+          "intelligence": 6,
+          "wisdom": 18,
+          "charisma_term": 5,
+          "land_rate": 0.783
+        },
+        {
+          "intelligence": 6,
+          "wisdom": 22,
+          "charisma_term": -5,
+          "land_rate": 0.852
+        },
+        {
+          "intelligence": 6,
+          "wisdom": 22,
+          "charisma_term": 0,
+          "land_rate": 0.803
+        },
+        {
+          "intelligence": 6,
+          "wisdom": 22,
+          "charisma_term": 5,
+          "land_rate": 0.797
+        },
+        {
+          "intelligence": 10,
+          "wisdom": 6,
+          "charisma_term": -5,
+          "land_rate": 0.881
+        },
+        {
+          "intelligence": 10,
+          "wisdom": 6,
+          "charisma_term": 0,
+          "land_rate": 0.902
+        },
+        {
+          "intelligence": 10,
+          "wisdom": 6,
+          "charisma_term": 5,
+          "land_rate": 0.877
+        },
+        {
+          "intelligence": 10,
+          "wisdom": 10,
+          "charisma_term": -5,
+          "land_rate": 0.896
+        },
+        {
+          "intelligence": 10,
+          "wisdom": 10,
+          "charisma_term": 0,
+          "land_rate": 0.87
+        },
+        {
+          "intelligence": 10,
+          "wisdom": 10,
+          "charisma_term": 5,
+          "land_rate": 0.884
+        },
+        {
+          "intelligence": 10,
+          "wisdom": 14,
+          "charisma_term": -5,
+          "land_rate": 0.876
+        },
+        {
+          "intelligence": 10,
+          "wisdom": 14,
+          "charisma_term": 0,
+          "land_rate": 0.892
+        },
+        {
+          "intelligence": 10,
+          "wisdom": 14,
+          "charisma_term": 5,
+          "land_rate": 0.859
+        },
+        {
+          "intelligence": 10,
+          "wisdom": 18,
+          "charisma_term": -5,
+          "land_rate": 0.882
+        },
+        {
+          "intelligence": 10,
+          "wisdom": 18,
+          "charisma_term": 0,
+          "land_rate": 0.894
+        },
+        {
+          "intelligence": 10,
+          "wisdom": 18,
+          "charisma_term": 5,
+          "land_rate": 0.872
+        },
+        {
+          "intelligence": 10,
+          "wisdom": 22,
+          "charisma_term": -5,
+          "land_rate": 0.89
+        },
+        {
+          "intelligence": 10,
+          "wisdom": 22,
+          "charisma_term": 0,
+          "land_rate": 0.844
+        },
+        {
+          "intelligence": 10,
+          "wisdom": 22,
+          "charisma_term": 5,
+          "land_rate": 0.845
+        },
+        {
+          "intelligence": 14,
+          "wisdom": 6,
+          "charisma_term": -5,
+          "land_rate": 0.894
+        },
+        {
+          "intelligence": 14,
+          "wisdom": 6,
+          "charisma_term": 0,
+          "land_rate": 0.871
+        },
+        {
+          "intelligence": 14,
+          "wisdom": 6,
+          "charisma_term": 5,
+          "land_rate": 0.891
+        },
+        {
+          "intelligence": 14,
+          "wisdom": 10,
+          "charisma_term": -5,
+          "land_rate": 0.903
+        },
+        {
+          "intelligence": 14,
+          "wisdom": 10,
+          "charisma_term": 0,
+          "land_rate": 0.891
+        },
+        {
+          "intelligence": 14,
+          "wisdom": 10,
+          "charisma_term": 5,
+          "land_rate": 0.895
+        },
+        {
+          "intelligence": 14,
+          "wisdom": 14,
+          "charisma_term": -5,
+          "land_rate": 0.885
+        },
+        {
+          "intelligence": 14,
+          "wisdom": 14,
+          "charisma_term": 0,
+          "land_rate": 0.874
+        },
+        {
+          "intelligence": 14,
+          "wisdom": 14,
+          "charisma_term": 5,
+          "land_rate": 0.875
+        },
+        {
+          "intelligence": 14,
+          "wisdom": 18,
+          "charisma_term": -5,
+          "land_rate": 0.898
+        },
+        {
+          "intelligence": 14,
+          "wisdom": 18,
+          "charisma_term": 0,
+          "land_rate": 0.893
+        },
+        {
+          "intelligence": 14,
+          "wisdom": 18,
+          "charisma_term": 5,
+          "land_rate": 0.888
+        },
+        {
+          "intelligence": 14,
+          "wisdom": 22,
+          "charisma_term": -5,
+          "land_rate": 0.889
+        },
+        {
+          "intelligence": 14,
+          "wisdom": 22,
+          "charisma_term": 0,
+          "land_rate": 0.89
+        },
+        {
+          "intelligence": 14,
+          "wisdom": 22,
+          "charisma_term": 5,
+          "land_rate": 0.892
+        },
+        {
+          "intelligence": 18,
+          "wisdom": 6,
+          "charisma_term": -5,
+          "land_rate": 0.873
+        },
+        {
+          "intelligence": 18,
+          "wisdom": 6,
+          "charisma_term": 0,
+          "land_rate": 0.89
+        },
+        {
+          "intelligence": 18,
+          "wisdom": 6,
+          "charisma_term": 5,
+          "land_rate": 0.881
+        },
+        {
+          "intelligence": 18,
+          "wisdom": 10,
+          "charisma_term": -5,
+          "land_rate": 0.887
+        },
+        {
+          "intelligence": 18,
+          "wisdom": 10,
+          "charisma_term": 0,
+          "land_rate": 0.898
+        },
+        {
+          "intelligence": 18,
+          "wisdom": 10,
+          "charisma_term": 5,
+          "land_rate": 0.84
+        },
+        {
+          "intelligence": 18,
+          "wisdom": 14,
+          "charisma_term": -5,
+          "land_rate": 0.915
+        },
+        {
+          "intelligence": 18,
+          "wisdom": 14,
+          "charisma_term": 0,
+          "land_rate": 0.888
+        },
+        {
+          "intelligence": 18,
+          "wisdom": 14,
+          "charisma_term": 5,
+          "land_rate": 0.896
+        },
+        {
+          "intelligence": 18,
+          "wisdom": 18,
+          "charisma_term": -5,
+          "land_rate": 0.877
+        },
+        {
+          "intelligence": 18,
+          "wisdom": 18,
+          "charisma_term": 0,
+          "land_rate": 0.873
+        },
+        {
+          "intelligence": 18,
+          "wisdom": 18,
+          "charisma_term": 5,
+          "land_rate": 0.88
+        },
+        {
+          "intelligence": 18,
+          "wisdom": 22,
+          "charisma_term": -5,
+          "land_rate": 0.894
+        },
+        {
+          "intelligence": 18,
+          "wisdom": 22,
+          "charisma_term": 0,
+          "land_rate": 0.881
+        },
+        {
+          "intelligence": 18,
+          "wisdom": 22,
+          "charisma_term": 5,
+          "land_rate": 0.873
+        },
+        {
+          "intelligence": 22,
+          "wisdom": 6,
+          "charisma_term": -5,
+          "land_rate": 0.878
+        },
+        {
+          "intelligence": 22,
+          "wisdom": 6,
+          "charisma_term": 0,
+          "land_rate": 0.893
+        },
+        {
+          "intelligence": 22,
+          "wisdom": 6,
+          "charisma_term": 5,
+          "land_rate": 0.892
+        },
+        {
+          "intelligence": 22,
+          "wisdom": 10,
+          "charisma_term": -5,
+          "land_rate": 0.87
+        },
+        {
+          "intelligence": 22,
+          "wisdom": 10,
+          "charisma_term": 0,
+          "land_rate": 0.886
+        },
+        {
+          "intelligence": 22,
+          "wisdom": 10,
+          "charisma_term": 5,
+          "land_rate": 0.865
+        },
+        {
+          "intelligence": 22,
+          "wisdom": 14,
+          "charisma_term": -5,
+          "land_rate": 0.891
+        },
+        {
+          "intelligence": 22,
+          "wisdom": 14,
+          "charisma_term": 0,
+          "land_rate": 0.885
+        },
+        {
+          "intelligence": 22,
+          "wisdom": 14,
+          "charisma_term": 5,
+          "land_rate": 0.876
+        },
+        {
+          "intelligence": 22,
+          "wisdom": 18,
+          "charisma_term": -5,
+          "land_rate": 0.884
+        },
+        {
+          "intelligence": 22,
+          "wisdom": 18,
+          "charisma_term": 0,
+          "land_rate": 0.877
+        },
+        {
+          "intelligence": 22,
+          "wisdom": 18,
+          "charisma_term": 5,
+          "land_rate": 0.894
+        },
+        {
+          "intelligence": 22,
+          "wisdom": 22,
+          "charisma_term": -5,
+          "land_rate": 0.885
+        },
+        {
+          "intelligence": 22,
+          "wisdom": 22,
+          "charisma_term": 0,
+          "land_rate": 0.9
+        },
+        {
+          "intelligence": 22,
+          "wisdom": 22,
+          "charisma_term": 5,
+          "land_rate": 0.871
+        }
+      ]
+    }
+  },
+  "retained_reports": [
+    "reports/balance_baselines/multi_enemy_slice0_pre_refactor.txt",
+    "reports/balance_baselines/multi_enemy_slice6_pilot.txt",
+    "reports/balance_baselines/multi_enemy_pilot3_floor3.txt",
+    "reports/balance_baselines/multi_enemy_pilot3_floor4.txt"
+  ]
+}

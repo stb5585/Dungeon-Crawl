@@ -272,8 +272,11 @@ def spell_damage(
     generator = rng or random
     if target.magic_effects["Ice Block"].active or target.tunnel:
         return "The spell has no effect.\n", 0
-    if target.dodge_chance(caster, spell=True) > generator.random():
-        return f"{target.name} dodges the spell.\n", 0
+    contact = caster.resolve_contact(target, typ="magic", rng=generator)
+    if not contact.hit:
+        if contact.attribution is not None and contact.attribution.value == "dodge":
+            return f"{target.name} dodges the spell.\n", 0
+        return f"{caster.name}'s spell misses {target.name}.\n", 0
     raw = max(1, int(caster.check_mod("magic", enemy=target) * damage_modifier))
     hit, message, damage = target.damage_reduction(raw, caster, typ=damage_type)
     if not hit:
@@ -359,8 +362,8 @@ def poison_strike(
 ) -> tuple[str, int]:
     """Resolve Poison Strike's main-hand bite and secondary poison damage."""
     generator = rng or random
-    hit_roll = caster.hit_chance(target, typ="weapon")
-    if target.dodge_chance(caster) > generator.random() or hit_roll <= generator.random():
+    contact = caster.resolve_contact(target, typ="weapon", rng=generator)
+    if not contact.hit:
         return f"{caster.name}'s transformed fangs miss {target.name}.\n", 0
     bite_message, _hit, _crit = caster.weapon_damage(
         target,

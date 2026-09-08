@@ -38,8 +38,12 @@ class ShieldSlamEffect(Effect):
             return
 
         # Dodge
-        if target.dodge_chance(actor) > _rng.random():
-            messages.append(f"{target.name} dodges {actor.name}'s shield slam!\n")
+        contact = actor.resolve_contact(target, typ="weapon", rng=_rng)
+        if not contact.hit:
+            if contact.attribution is not None and contact.attribution.value == "dodge":
+                messages.append(f"{target.name} dodges {actor.name}'s shield slam!\n")
+            else:
+                messages.append(f"{actor.name}'s shield slam misses {target.name}!\n")
             return
 
         # Damage = strength + shield weight
@@ -678,7 +682,7 @@ class CrushEffect(Effect):
                 )
             else:
                 messages.append(
-                    f"{target.name} rolls as they hit the ground, " f"preventing any fall damage.\n"
+                    f"{target.name} rolls as they hit the ground, preventing any fall damage.\n"
                 )
         else:
             messages.append(f"{actor.name} grabs for {target.name} but misses.\n")
@@ -712,7 +716,7 @@ class MaelstromEffect(Effect):
         # Original message logic (preserved faithfully, including quirks)
         if hp_cap > target.health.current:
             messages.append(
-                f"{target.name} has their health reduced to " f"{int(self.fail_pct * 100)}%.\n"
+                f"{target.name} has their health reduced to {int(self.fail_pct * 100)}%.\n"
             )
         else:
             messages.append("The spell is ineffective.\n")
@@ -754,13 +758,13 @@ class DisintegrateEffect(Effect):
             damage = int(actor.stats.charisma + (target.health.current * 0.25))
             if _rng.randint(0, chance):
                 messages.append(
-                    f"{target.name} dodges the brunt of the blast, " f"taking only half damage.\n"
+                    f"{target.name} dodges the brunt of the blast, taking only half damage.\n"
                 )
                 damage //= 2
             target.health.current -= damage
             result.damage = damage
             messages.append(
-                f"The blast from disintegrate hurts " f"{target.name} for {damage} damage.\n"
+                f"The blast from disintegrate hurts {target.name} for {damage} damage.\n"
             )
 
 
@@ -828,8 +832,7 @@ class ResurrectionEffect(Effect):
                 heal_amount = target.mana.current
                 target.health.current += heal_amount
                 messages.append(
-                    f"{target.name} expends all mana and is healed "
-                    f"for {heal_amount} hit points!"
+                    f"{target.name} expends all mana and is healed for {heal_amount} hit points!"
                 )
                 target.mana.current = 0
         else:
@@ -837,7 +840,7 @@ class ResurrectionEffect(Effect):
             heal = int(target.health.max * self.revive_pct)
             target.health.current = heal
             messages.append(
-                f"{target.name} is brought back to life and is healed " f"for {heal} hit points.\n"
+                f"{target.name} is brought back to life and is healed for {heal} hit points.\n"
             )
 
 
@@ -897,19 +900,11 @@ class StompEffect(Effect):
         resist = target.check_mod("resist", enemy=actor, typ="Physical")
         a_chance = actor.check_mod("luck", enemy=target, luck_factor=10)
         d_chance = target.check_mod("luck", enemy=actor, luck_factor=15)
-
-        # Dodge
-        dodge = (
-            _rng.randint(0, target.check_mod("speed", enemy=actor) // 2) + d_chance
-            > _rng.randint(0, actor.check_mod("speed", enemy=actor)) + a_chance
+        contact = actor.resolve_contact(
+            target, typ="weapon", always_hit=target.incapacitated(), rng=_rng
         )
-        if target.incapacitated():
-            dodge = False
-            hit = True
-        else:
-            hit = actor.hit_chance(target, typ="weapon")
-
-        if dodge:
+        hit = contact.hit
+        if not hit:
             messages.append(f"{target.name} evades the attack.\n")
             return
 
@@ -958,7 +953,7 @@ class StompEffect(Effect):
             if damage > 0:
                 target.health.current -= damage
                 result.damage = damage
-                dmg_msg = f"{actor.name} stomps {target.name}, dealing " f"{damage} damage"
+                dmg_msg = f"{actor.name} stomps {target.name}, dealing {damage} damage"
                 if crit > 1:
                     dmg_msg += " (Critical hit!)"
                 messages.append(dmg_msg + ".\n")
@@ -1013,23 +1008,15 @@ class ThrowRockEffect(Effect):
         sizes = ["tiny", "small", "medium", "large", "massive"]
         messages.append(f"{actor.name} throws a {sizes[size]} rock at {target.name}.\n")
 
-        a_chance = actor.check_mod("luck", enemy=target, luck_factor=10)
-        d_chance = target.check_mod("luck", enemy=actor, luck_factor=15)
         dam_red = target.check_mod("armor", enemy=actor)
         resist = target.check_mod("resist", enemy=actor, typ="Physical")
-
-        # Dodge
-        dodge = (
-            _rng.randint(0, target.check_mod("speed", enemy=actor) // 2) + d_chance
-            > _rng.randint(0, actor.check_mod("speed", enemy=actor)) + a_chance
+        a_chance = actor.check_mod("luck", enemy=target, luck_factor=10)
+        d_chance = target.check_mod("luck", enemy=actor, luck_factor=15)
+        contact = actor.resolve_contact(
+            target, typ="weapon", always_hit=target.incapacitated(), rng=_rng
         )
-        hit = actor.hit_chance(target, typ="weapon")
-
-        if target.incapacitated():
-            dodge = False
-            hit = True
-
-        if dodge:
+        hit = contact.hit
+        if not hit:
             messages.append(f"{target.name} evades the attack.\n")
             return
 
@@ -1084,7 +1071,7 @@ class ThrowRockEffect(Effect):
             if damage > 0:
                 target.health.current -= damage
                 result.damage = damage
-                dmg_msg = f"{target.name} is hit by the rock and takes " f"{damage} damage"
+                dmg_msg = f"{target.name} is hit by the rock and takes {damage} damage"
                 if crit > 1:
                     dmg_msg += " (Critical hit!)"
                 messages.append(dmg_msg + ".\n")
@@ -1109,7 +1096,7 @@ class ThrowRockEffect(Effect):
                                 duration=prone_dur,
                                 source="Throw Rock",
                             )
-                        messages.append(f"{target.name} is knocked over and falls " f"prone.\n")
+                        messages.append(f"{target.name} is knocked over and falls prone.\n")
             else:
                 messages.append(f"{target.name} shrugs off the damage.\n")
         else:
@@ -1169,7 +1156,7 @@ class StealEffect(Effect):
                     if steal_effect is not None:
                         steal_effect.active = True
                         steal_effect.duration = max(steal_effect.duration, 5)
-                    messages.append(f"{actor.name} steals {item_key} from " f"{target.name}.\n")
+                    messages.append(f"{actor.name} steals {item_key} from {target.name}.\n")
                     result.extra["luck_success"] = True
                     result.extra["stolen_item"] = item_key
                     return
@@ -1184,7 +1171,7 @@ class StealEffect(Effect):
                 if steal_effect is not None:
                     steal_effect.active = True
                     steal_effect.duration = max(steal_effect.duration, 5)
-                messages.append(f"{actor.name} steals {gold_amount} gold from " f"{target.name}.\n")
+                messages.append(f"{actor.name} steals {gold_amount} gold from {target.name}.\n")
                 result.extra["luck_success"] = True
                 result.extra["stolen_gold"] = gold_amount
                 return
@@ -1286,7 +1273,7 @@ class ElementalStrikeEffect(Effect):
         if forced_spell is not None:
             spell = forced_spell
             cover = result.extra.get("use_kwargs", {}).get("cover", False)
-            messages.append(f"The enemy is struck by the elemental force of " f"{spell.subtyp}.\n")
+            messages.append(f"The enemy is struck by the elemental force of {spell.subtyp}.\n")
             spell.cast(actor, target=target, special=True, cover=cover)
 
             crit = result.extra.get("last_crit", 1)
@@ -1310,7 +1297,7 @@ class ElementalStrikeEffect(Effect):
 
         cover = result.extra.get("use_kwargs", {}).get("cover", False)
         spell = _rng.choice(cast_list)
-        messages.append(f"The enemy is struck by the elemental force of " f"{spell.subtyp}.\n")
+        messages.append(f"The enemy is struck by the elemental force of {spell.subtyp}.\n")
         spell.cast(actor, target=target, special=True, cover=cover)
 
         crit = result.extra.get("last_crit", 1)

@@ -177,15 +177,18 @@ class DataDrivenSpell(Spell):
             mage_mechanics.consume_fire_inside(caster)
         except Exception:
             pass
-        dodge = target.dodge_chance(caster, spell=True)
-        hit = caster.hit_chance(target, typ="magic")
-        if target.incapacitated():
-            dodge = False
-            hit = True
-
-        if dodge and not reflect:
-            msg += f"{target.name} dodged the {self.name} and was unhurt.\n"
-            result.dodge = True
+        contact = caster.resolve_contact(
+            target,
+            typ="magic",
+            always_hit=target.incapacitated(),
+            rng=random,
+        )
+        if not contact.hit and not reflect:
+            if contact.attribution is not None and contact.attribution.value == "dodge":
+                msg += f"{target.name} dodged the {self.name} and was unhurt.\n"
+                result.dodge = True
+            else:
+                msg += f"The spell misses {target.name}.\n"
             result.hit = False
             result.message = msg
             return result
@@ -245,8 +248,7 @@ class DataDrivenSpell(Spell):
                 # Absorption - target heals
                 target.health.current -= damage
                 msg += (
-                    f"{target.name} absorbs {self.subtyp} and is healed "
-                    f"for {abs(damage)} health.\n"
+                    f"{target.name} absorbs {self.subtyp} and is healed for {abs(damage)} health.\n"
                 )
             else:
                 # ── 9. Variance ─────────────────────────────────────
@@ -335,7 +337,7 @@ class DataDrivenSpell(Spell):
                                 f"receives half of the damage.\n"
                             )
                             damage_msg = (
-                                f"{caster.name} damages {target.name} " f"for {damage} hit points"
+                                f"{caster.name} damages {target.name} for {damage} hit points"
                             )
                             if crit > 1:
                                 damage_msg += " (Critical hit!)"
@@ -343,9 +345,7 @@ class DataDrivenSpell(Spell):
                         else:
                             msg += "The spell was ineffective and does no damage.\n"
                     else:
-                        damage_msg = (
-                            f"{caster.name} damages {target.name} " f"for {damage} hit points"
-                        )
+                        damage_msg = f"{caster.name} damages {target.name} for {damage} hit points"
                         if crit > 1:
                             damage_msg += " (Critical hit!)"
                         msg += damage_msg + ".\n"

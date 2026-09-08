@@ -91,7 +91,7 @@ def test_nature_is_a_resistance_type_and_spells_can_have_multiple_types():
         abilities.RayOfMoonlight(),
         damage_type="Nature",
         damage_modifier=1.0,
-        rng=SimpleNamespace(random=lambda: 1.0),
+        rng=SimpleNamespace(random=lambda: 0.0),
     )
 
     assert damage == 0
@@ -120,7 +120,7 @@ def test_ray_of_moonlight_restores_and_suppresses_enemy_shapeshifting():
     result = abilities.RayOfMoonlight().cast(
         player,
         target,
-        rng=SimpleNamespace(random=lambda: 1.0),
+        rng=SimpleNamespace(random=lambda: 0.0),
     )
 
     assert result.damage > 0
@@ -163,7 +163,7 @@ def test_poison_strike_is_a_main_hand_nature_spell_with_poison_damage(monkeypatc
         return original(defender, **kwargs)
 
     monkeypatch.setattr(player, "weapon_damage", tracked_weapon_damage)
-    rolls = iter((1.0, 0.0))
+    rolls = iter((0.0, 0.0))
     result = abilities.PoisonStrike().cast(
         player,
         target,

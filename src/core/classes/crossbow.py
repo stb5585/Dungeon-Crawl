@@ -135,17 +135,23 @@ def fire_crossbow(
         if pack is None:
             messages.append(f"{crossbow.name} has no crossbow bolts to fire.\n")
             break
-        accuracy = float(attacker.hit_chance(target, typ="weapon"))
+        accuracy_bonus = 0.0
         try:
             from ..progression import has_talent
 
             if has_talent(attacker, "ranger.crossbow-training"):
-                accuracy += 0.10
+                accuracy_bonus += 0.10
         except (AttributeError, KeyError, TypeError):
             pass
         if pack.name == "Heat-Seeking Bolts":
-            accuracy += _heat_seeking_bonus(target)
-        if generator.random() >= min(0.95, accuracy):
+            accuracy_bonus += _heat_seeking_bonus(target)
+        contact = attacker.resolve_contact(
+            target,
+            typ="weapon",
+            accuracy_points=accuracy_bonus,
+            rng=generator,
+        )
+        if not contact.hit:
             messages.append(f"{attacker.name} fires {crossbow.name} but misses {target.name}.\n")
             messages.append(_recover_bolt(attacker, pack, rng=generator))
             continue

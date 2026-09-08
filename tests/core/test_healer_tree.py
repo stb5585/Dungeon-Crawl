@@ -160,7 +160,7 @@ def test_flash_blindness_and_incite_panic_affect_nearby_enemies():
     assert "2 target" in panic.message
 
 
-def test_cacophany_resolves_once_across_an_all_enemy_group():
+def test_cacophany_resolves_once_across_an_all_enemy_group(monkeypatch):
     player = _player()
     targets = [enemies.Goblin(), enemies.Goblin()]
     members = [SimpleNamespace(enemy=target) for target in targets]
@@ -170,6 +170,11 @@ def test_cacophany_resolves_once_across_an_all_enemy_group():
         encounter=SimpleNamespace(living_members=members),
     )
     mana_before = player.mana.current
+    monkeypatch.setattr(
+        player,
+        "resolve_contact",
+        lambda *_args, **_kwargs: SimpleNamespace(hit=True, attribution=None),
+    )
 
     group = abilities.Cacophany().use_group(
         player,

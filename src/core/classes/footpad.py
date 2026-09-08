@@ -447,12 +447,13 @@ def aggressive_pursuit(
     if not has_skill(character, "Aggressive Pursuit"):
         return True, f"{target.name} flees from battle.\n"
     generator = rng or random
-    first = generator.random()
-    second = generator.random()
+    contact = character.resolve_contact(target, typ="weapon", rng=generator)
+    if not contact.hit:
+        return True, f"{character.name}'s pursuit attack misses {target.name}.\n"
     message, _hit, _crit = character.weapon_damage(
         target,
         use_offhand=False,
-        hit=character.hit_chance(target, typ="weapon") > min(first, second),
+        hit=True,
     )
     if not target.is_alive():
         return False, message + f"{character.name}'s pursuit stops {target.name} from fleeing.\n"

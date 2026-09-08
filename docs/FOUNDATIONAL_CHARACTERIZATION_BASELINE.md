@@ -81,6 +81,52 @@ uses Intelligence/Wisdom in analogous independent spell rolls. This snapshot
 therefore measures the combined outcome the one-roll resolver must fit, not
 either intermediate percentage in isolation.
 
+## Approved Contact-Fit Contract
+
+The resolution slice replaces the independent legacy gates with exactly one
+shared contact draw per strike. Its reproducible characterization is
+[`contact_axes_characterization_v1.json`](../reports/foundational/contact_axes_characterization_v1.json),
+and its committed review artifact is
+[`contact_fit_v1.json`](../reports/foundational/contact_fit_v1.json).
+
+The characterization uses seed `1337`, 1,000 samples per cell, and a neutral
+profile: relevant primary stats are fixed at 14 unless varied by the cell;
+Luck and unrelated stats are 10; no class, race, status, or equipment bonus is
+present. Weapon cells cover proficiency differential `-2..2`, defender Speed
+`6/10/14/18/22`, and `None` (including Natural and Cloth), Light, Medium, and
+Heavy armor. Spell cells cover Intelligence and Wisdom on the same stat grid
+and bounded Charisma terms `-5/0/+5`.
+
+Separate regularized logistic curves are fitted deterministically. They must
+remain at or below 3 percentage points weighted mean error and 7 percentage
+points maximum ordinary-cell error. Reproduce and verify the artifact with:
+
+```bash
+./.venv/bin/python tools/fit_contact_model.py --check
+```
+
+The resolver applies effects in this exact order:
+
+1. Fitted baseline from the approved axes.
+2. Multiplicative accuracy effects.
+3. Additive accuracy points.
+4. Explicit dodge-point reduction.
+5. Clamp to `[0, 1]`.
+
+Armor plus baseline Speed/Wisdom/Charisma avoidance are fitted inputs. Parry,
+Reflect, immunity, resistance, damage reduction, and authored status contests
+remain post-contact. Always-hit performs no random draw and bypasses contact
+only; it does not bypass any of those later defenses.
+
+Failure attribution uses the same contact roll, never a second roll. On a
+failure, the resolver compares that roll with a no-evasion counterfactual that
+preserves the attacker's accuracy effects but removes explicit dodge points,
+armor avoidance, and baseline defender avoidance. A failure that would have
+landed under that counterfactual is a dodge; every other failure is an accuracy
+miss. The modifier registry in `src/core/combat/contact.py` classifies every
+known hook as fitted input, accuracy multiplier, accuracy points, dodge points,
+post-contact, or non-contact behavior.
+
 ## Retained Combat Evidence
 
 The last byte-comparable singleton baseline is

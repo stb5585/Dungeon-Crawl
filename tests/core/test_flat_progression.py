@@ -29,6 +29,7 @@ from src.core.classes import (
     WeaponMaster,
 )
 from src.core.combat.combat_result import CombatResult
+from src.core.combat.contact import ContactResult
 from src.core.effects.skills import ShieldSlamEffect
 from src.core.player import Player
 from src.core.progression import (
@@ -703,7 +704,11 @@ def test_chastise_increases_shield_slam_damage(monkeypatch):
     actor = _player(Warrior)
     target = _player(Warrior)
     actor.equipment["OffHand"] = items.Buckler()
-    target.dodge_chance = lambda _actor: 0
+    monkeypatch.setattr(
+        actor,
+        "resolve_contact",
+        lambda _target, **_kwargs: ContactResult(hit=True, chance=1.0, roll=None),
+    )
     target.status_immunity.append("Stun")
     monkeypatch.setattr(random, "uniform", lambda _low, _high: 1.0)
     effect = ShieldSlamEffect()
