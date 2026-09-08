@@ -19,6 +19,11 @@ RandomEnemyOverride = str | type[Enemy] | EnemyFactory
 _random_enemy_override: RandomEnemyOverride | None = None
 _RANDOM_ENEMY_OVERRIDE_ENV = "DUNGEON_FORCE_ENEMY"
 _CURATED_ENCOUNTER_OVERRIDE_ENV = "DUNGEON_FORCE_ENCOUNTER"
+_PILOT3_ROLLOUT_ENV = "DUNGEON_PILOT3_ROLLOUT"
+PILOT3_PAIR_CHANCE = 0.15
+# This tuple is evidence-owned.  A pair may be added only after it clears the
+# promoted-class Pilot 3 gates recorded in MULTI_ENEMY_PILOT_3_PLAN.md.
+QUALIFIED_PILOT3_PAIR_KEYS: tuple[str, ...] = ()
 
 _ENEMY_NAMESPACE = ENEMY_NAMESPACE
 _RANDOM_ENEMY_CATALOG = RANDOM_ENEMY_CATALOG
@@ -54,7 +59,12 @@ class CuratedEncounterSpec:
             )
             enemy.health.current = enemy.health.max
             enemy._encounter_offense_multiplier = self.offense_multiplier
-        return CombatEncounter.from_enemies(members)
+        encounter = CombatEncounter.from_enemies(members)
+        # Runtime-only rollout metadata belongs on the encounter, never on a
+        # persistent enemy state.  BattleLogger exports it for rollout review.
+        encounter.encounter_key = self.key
+        encounter.encounter_source = "curated"
+        return encounter
 
 
 def set_random_enemy_override(enemy: RandomEnemyOverride | None) -> None:
@@ -105,6 +115,37 @@ def build_curated_encounter(key: str) -> CombatEncounter:
     return curated_encounter_spec(key).build()
 
 
+def pilot3_rollout_enabled() -> bool:
+    """Return whether the default-on ordinary Pilot 3 rollout is enabled.
+
+    Set ``DUNGEON_PILOT3_ROLLOUT=0`` (or ``false``/``off``) to immediately
+    return ordinary generation to singleton encounters.  Development overrides
+    intentionally remain available while the rollout is disabled.
+    """
+    value = os.getenv(_PILOT3_ROLLOUT_ENV, "1").strip().lower()
+    return value not in {"0", "false", "no", "off"}
+
+
+def qualified_pilot3_encounter_specs(level: str) -> tuple[CuratedEncounterSpec, ...]:
+    """Return approved rollout pairs for one floor in stable authored order."""
+    try:
+        floor = int(level)
+    except (TypeError, ValueError):
+        return ()
+    return tuple(
+        spec
+        for spec in curated_encounter_specs()
+        if spec.key in QUALIFIED_PILOT3_PAIR_KEYS and spec.floor == floor
+    )
+
+
+def _attach_runtime_encounter(enemy: Enemy, encounter: CombatEncounter, key: str) -> Enemy:
+    """Attach runtime-only roster metadata to the legacy primary-enemy API."""
+    enemy._runtime_combat_encounter = encounter
+    enemy._curated_encounter_key = key
+    return enemy
+
+
 def _forced_curated_encounter(
     level: str,
     *,
@@ -127,6 +168,23 @@ def _forced_curated_encounter(
             f"Curated encounter {key!r} belongs to floor {spec.floor}, " f"not floor {level}."
         )
     return spec.build()
+
+
+def _rollout_curated_encounter(
+    level: str,
+    *,
+    enabled: bool,
+    rng: random.Random,
+) -> Enemy | None:
+    """Choose an evidence-qualified ordinary pair at the fixed rollout rate."""
+    if not enabled or not pilot3_rollout_enabled() or rng.random() >= PILOT3_PAIR_CHANCE:
+        return None
+    candidates = qualified_pilot3_encounter_specs(level)
+    if not candidates:
+        return None
+    spec = rng.choice(candidates)
+    encounter = spec.build()
+    return _attach_runtime_encounter(encounter.primary_enemy, encounter, spec.key)
 
 
 def _build_random_enemy_override() -> Enemy | None:
@@ -177,6 +235,7 @@ def random_enemy(
     rng=random,
     *,
     allow_curated_encounter: bool = False,
+    allow_pilot3_rollout: bool = False,
 ) -> Enemy:
     """Return an enemy appropriate for one random-selection consumer.
 
@@ -188,18 +247,28 @@ def random_enemy(
         level,
         enabled=allow_curated_encounter,
     ):
-        primary = forced_encounter.primary_enemy
-        primary._runtime_combat_encounter = forced_encounter
-        primary._curated_encounter_key = os.getenv(
-            _CURATED_ENCOUNTER_OVERRIDE_ENV,
-            "",
-        ).strip()
-        return primary
+        return _attach_runtime_encounter(
+            forced_encounter.primary_enemy,
+            forced_encounter,
+            os.getenv(_CURATED_ENCOUNTER_OVERRIDE_ENV, "").strip(),
+        )
     if forced_enemy := _build_random_enemy_override():
         return forced_enemy
 
+    preferred_names = tuple(preferred_names or ())
+    # Quest-biased calls supply preferred targets.  Keeping those and all
+    # callers that do not explicitly opt in singleton protects quests, chests,
+    # bosses, trials, scripted fights, bounties, and utility catalog users.
+    if not preferred_names:
+        if rollout_enemy := _rollout_curated_encounter(
+            level,
+            enabled=allow_pilot3_rollout,
+            rng=rng,
+        ):
+            return rollout_enemy
+
     candidates = tuple(EnemyCandidate(*entry) for entry in random_enemy_candidates(level))
-    preferred = {str(name) for name in (preferred_names or []) if str(name)}
+    preferred = {str(name) for name in preferred_names if str(name)}
     preferred_candidates = [entry for entry in candidates if entry.name in preferred]
     if preferred_candidates and rng.random() < max(0.0, min(1.0, preferred_chance)):
         candidates = tuple(preferred_candidates)

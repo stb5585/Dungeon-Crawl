@@ -257,6 +257,19 @@ class TurnExecutionMixin:
         message: str,
     ) -> ActionResult:
         self._turn_action_committed = False
+        self.logger.log_event(
+            "Invalid Intent",
+            self.attacker,
+            target=self.defender,
+            outcome=code.value,
+            notes=message.strip(),
+            actor_id=self.current_actor_id,
+            target_id=self._actor_id_for(self.defender),
+            opportunity_actor_id=self.current_actor_id,
+            ready_at=self.current_readiness,
+            round_number=self.round_number,
+            actor_turn_id=getattr(self, "_current_actor_turn_id", 0),
+        )
         return ActionResult(
             message=message,
             committed=False,

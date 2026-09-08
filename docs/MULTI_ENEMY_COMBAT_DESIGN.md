@@ -2,7 +2,7 @@
 
 ## Status
 
-Status: `Implemented Pilot; Foundational Replacement In Progress`
+Status: `Implemented Pilot; Post-Refactor Rollout Blocked By Evidence`
 
 The fixed-cycle and permissive-invisibility decisions below document the
 development pilot that produced the retained baselines. They are not the
@@ -35,12 +35,12 @@ that ceiling until playtest and simulator evidence support expanding it.
 Pilot 1 closed with its 20-battle evidence pass. Pilot 2 closed with seven
 targeted manual battles, including a dedicated Hallowed Ground `ALL_ENEMIES`
 run. Pilot 3's six-run manual acceptance is complete for three development-only
-pairs across floors 3 and 4. All authored class trees are now complete, so its
-promoted-class matrices are ready to rebenchmark: one pair passed the earlier
-aggregate gates and two were blocked. Floor 5 remains deferred behind that
-rebenchmark, a second-promotion benchmark, and an
-enemy-area-action gate. Ordinary random pair generation remains disabled
-pending its separate promotion decision.
+pairs across floors 3 and 4. Its post-refactor promoted-class matrices are
+complete: no pair passed every aggregate gate, and the floor-4 candidate also
+recorded invalid intents. The runtime has the default-on 15% rollout switch
+and structured encounter telemetry, but its evidence-qualified pair list is
+empty, so ordinary random pair generation remains disabled. Floor 5 remains
+deferred behind a second-promotion benchmark and an enemy-area-action gate.
 
 ## Motivation
 
@@ -102,8 +102,10 @@ existing one-enemy game reliable.
 - Pygame supports lane selection, keyboard and mouse targeting, focus state,
   target cancellation, and target-loss feedback for one or two enemies.
 - Outcomes, rewards, logs, events, and simulator records are roster-aware.
-- Ordinary generation remains singleton. Curated pairs require explicit
-  development override keys, and saves do not preserve mid-combat snapshots.
+- Ordinary generation remains singleton because no Pilot 3 candidate qualified.
+  Curated pairs require explicit development override keys; future qualifying
+  pairs would use the default-on `DUNGEON_PILOT3_ROLLOUT` kill switch and fixed
+  15% rate. Saves do not preserve mid-combat snapshots.
 
 ## Current V1 Player Experience
 

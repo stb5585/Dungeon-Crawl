@@ -2,7 +2,7 @@
 
 ## Status
 
-Status: `Ready For Post-Tree Rebenchmark`
+Status: `Complete — No Pair Qualified For Ordinary Rollout`
 
 Pre-tree automated result: `Partial pass (1 accepted, 2 blocked)`
 
@@ -11,10 +11,10 @@ does not enable random pair generation, change save data, or permit more than
 two enemies.
 
 The six required manual runs are complete. Their targeting, presentation,
-cleanup, and encounter-flow acceptance is closed. All authored trees are now
-complete, so rerun the promoted-class matrices and compare them with the
-pre-tree reports below before changing pair balance or enabling deeper-floor
-random generation.
+cleanup, and encounter-flow acceptance is closed. The promoted-class matrices
+were rerun after the completed resolution and virtual-readiness work. No
+candidate met every aggregate gate, so ordinary random generation remains
+singleton; this slice made no local pair or global balance adjustments.
 
 ## Benchmark Contract
 
@@ -51,27 +51,32 @@ The keys are development-only and work through
 
 ## Automated Evidence
 
-The canonical 100-iteration, five-class matrices produced:
+The canonical post-refactor 100-iteration, five-class matrices produced:
 
 | Key | Battles | Wins | Turns | Winning HP | Invalid/max-turn | Gate |
 |---|---:|---:|---:|---:|---:|---|
-| `rot_and_raptor` | 500 | 66.0% | 1.86x | 57.6% | 0 / 0 | Pass |
-| `venomous_dream` | 500 | 88.0% | 2.53x | 63.4% | 0 / 0 | Blocked: wins, duration, HP |
-| `burrow_and_bone` | 500 | 65.4% | 2.45x | 65.2% | 0 / 0 | Blocked: duration, HP |
+| `rot_and_raptor` | 500 | 25.2% | 2.10x | 67.0% | 0 / 0 | Blocked: wins, duration, HP |
+| `venomous_dream` | 500 | 94.6% | 1.92x | 68.6% | 0 / 0 | Blocked: wins, HP |
+| `burrow_and_bone` | 500 | 77.6% | 1.97x | 71.7% | 12 / 0 | Blocked: wins, HP, invalid intents |
 
-No candidate produced an invalid intent, max-turn loop, or repeated
-non-progress diagnostic. The accepted pair has a wide diagnostic class spread:
-Weapon Master 26%, Sorcerer 99%, Thief 99%, Cleric 93%, and Druid 13%.
-Individual class rates do not gate acceptance, but its manual runs must include
-Weapon Master and Druid.
+The floor-3 matrices produced no invalid intent or max-turn loop, but their
+aggregate bands blocked both candidates. `burrow_and_bone` also produced 12
+invalid intents, independently blocking the floor-4 candidate. Individual
+class rates remain diagnostic rather than a rollout gate.
 
 Reports:
 
-- `reports/balance_baselines/multi_enemy_pilot3_floor3.txt`
-- `reports/balance_baselines/multi_enemy_pilot3_floor4.txt`
+- `reports/balance_baselines/multi_enemy_pilot3_floor3.txt` (retained pre-tree)
+- `reports/balance_baselines/multi_enemy_pilot3_floor4.txt` (retained pre-tree)
+- `reports/balance_baselines/multi_enemy_pilot3_foundation_floor3.txt`
+- `reports/balance_baselines/multi_enemy_pilot3_foundation_floor4.txt`
+- `reports/balance_baselines/multi_enemy_foundation_singleton.txt`
 
-The two blocked keys remain explicit development overrides for targeted
-testing. Their stability does not qualify them for later normal generation.
+All three keys remain explicit development overrides for targeted testing. The
+default-on `DUNGEON_PILOT3_ROLLOUT` kill switch controls only future qualified
+ordinary pairs; with no qualified keys it cannot produce a roster. Tutorials,
+quests, chests, bosses, trials, scripted encounters, bounties, and other
+non-opt-in random consumers remain singleton.
 
 ## Floor 5 Boundary
 

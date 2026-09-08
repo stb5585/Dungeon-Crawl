@@ -1,6 +1,6 @@
 # Foundational Gameplay Refactor Plan
 
-Status: `Active — Interface Complete; Evidence And Rollout Next`
+Status: `Active — Evidence And Rollout Complete; Closure Next`
 
 This document organizes the gameplay-changing work that should be resolved
 before broad manual playtesting. It does not approve new mechanics by itself.
@@ -366,6 +366,13 @@ Current slice status:
   lanes retain their generic presence presentation. Keyboard/mouse operations
   now have controller parity for navigation, confirmation, cancellation,
   focus, All Actions, and resource details.
+- Evidence and rollout: complete; the seed-1337 singleton baseline and all
+  three promoted Pilot 3 matrices were regenerated against the completed
+  resolution and timeline. No floor-3/4 pair met every existing aggregate
+  gate, so `QUALIFIED_PILOT3_PAIR_KEYS` is intentionally empty and ordinary
+  generation remains singleton. The default-on rollout kill switch, 15% gate,
+  source exclusions, and roster/timeline/intent/resolution telemetry are in
+  place for a future evidence-qualified pair; no local balance tuning was made.
 
 ## Progression Boundary
 

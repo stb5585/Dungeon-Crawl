@@ -1,0 +1,117 @@
+Balance Suite: level=10 iters=30 seed=1337
+Class                Enemy                WinRate% AvgTurns
+Footpad              Goblin                  100.0     1.57
+Footpad              Green Slime             100.0     1.60
+Footpad              Bandit                  100.0     1.73
+Footpad              Skeleton                100.0     1.57
+Footpad              Giant Spider            100.0     2.73
+Footpad              Harpy                    36.7    13.67
+Footpad              Naga                     80.0     8.73
+Footpad              Night Hag                46.7    18.43
+Footpad              Imp                      90.0     6.03
+Footpad              Clannfear               100.0     8.80
+Footpad              Werewolf                  0.0    10.37
+Footpad              Evil Crusader            10.0    20.27
+Footpad              Troll                    20.0     9.60
+Footpad              Vampire                  83.3     9.47
+Footpad              Necromancer              53.3    21.97
+Footpad              Gargoyle                  0.0     6.17
+Footpad              Steel Predator           80.0    19.33
+Footpad              Dark Knight               0.0    20.10
+Footpad              Displacer Beast           0.0     4.53
+Footpad              Chimera                   0.0    11.37
+Footpad              Shadow Serpent            0.0     5.13
+Footpad              Aboleth                 100.0    41.23
+Footpad              Mimic                    63.3    20.40
+Healer               Goblin                  100.0     2.97
+Healer               Green Slime             100.0     2.40
+Healer               Bandit                  100.0     5.23
+Healer               Skeleton                100.0     3.30
+Healer               Giant Spider            100.0    11.70
+Healer               Harpy                    10.0    18.57
+Healer               Naga                     10.0    17.60
+Healer               Night Hag                 0.0    20.53
+Healer               Imp                      93.3     9.43
+Healer               Clannfear                 3.3    23.70
+Healer               Werewolf                  0.0     7.97
+Healer               Evil Crusader             0.0    15.47
+Healer               Troll                     0.0     6.63
+Healer               Vampire                   3.3    26.97
+Healer               Necromancer               0.0    16.10
+Healer               Gargoyle                  0.0     6.37
+Healer               Steel Predator            0.0    27.90
+Healer               Dark Knight               0.0    14.50
+Healer               Displacer Beast           0.0     4.23
+Healer               Chimera                   0.0     7.53
+Healer               Shadow Serpent            0.0     4.73
+Healer               Aboleth                   0.0    30.27
+Healer               Mimic                     6.7    27.03
+Mage                 Goblin                  100.0     1.57
+Mage                 Green Slime             100.0     9.93
+Mage                 Bandit                  100.0     1.70
+Mage                 Skeleton                100.0     1.87
+Mage                 Giant Spider            100.0     6.50
+Mage                 Harpy                    36.7    13.80
+Mage                 Naga                     63.3    11.90
+Mage                 Night Hag                 3.3    18.50
+Mage                 Imp                     100.0     4.73
+Mage                 Clannfear                 0.0    22.80
+Mage                 Werewolf                  0.0     8.80
+Mage                 Evil Crusader             3.3    14.30
+Mage                 Troll                     0.0     6.17
+Mage                 Vampire                  70.0    14.23
+Mage                 Necromancer               0.0    15.90
+Mage                 Gargoyle                  0.0     6.00
+Mage                 Steel Predator           33.3    25.37
+Mage                 Dark Knight               0.0    18.10
+Mage                 Displacer Beast           0.0     4.27
+Mage                 Chimera                   0.0     6.47
+Mage                 Shadow Serpent            0.0     4.80
+Mage                 Aboleth                   0.0    30.37
+Mage                 Mimic                    26.7    21.23
+Pathfinder           Goblin                  100.0     2.17
+Pathfinder           Green Slime             100.0     4.53
+Pathfinder           Bandit                  100.0     2.53
+Pathfinder           Skeleton                100.0     3.80
+Pathfinder           Giant Spider            100.0     8.30
+Pathfinder           Harpy                    50.0    13.00
+Pathfinder           Naga                     76.7    16.40
+Pathfinder           Night Hag                46.7    23.27
+Pathfinder           Imp                     100.0     4.33
+Pathfinder           Clannfear                80.0    17.43
+Pathfinder           Werewolf                  0.0     9.30
+Pathfinder           Evil Crusader            53.3    28.90
+Pathfinder           Troll                     0.0     7.53
+Pathfinder           Vampire                  73.3    26.10
+Pathfinder           Necromancer               3.3    16.80
+Pathfinder           Gargoyle                  0.0     6.13
+Pathfinder           Steel Predator            0.0    88.30
+Pathfinder           Dark Knight               0.0    20.60
+Pathfinder           Displacer Beast           0.0     4.33
+Pathfinder           Chimera                   0.0     7.93
+Pathfinder           Shadow Serpent            0.0     4.70
+Pathfinder           Aboleth                   0.0    59.27
+Pathfinder           Mimic                    10.0    56.47
+Warrior              Goblin                  100.0     1.43
+Warrior              Green Slime             100.0     1.47
+Warrior              Bandit                  100.0     2.37
+Warrior              Skeleton                100.0     1.97
+Warrior              Giant Spider            100.0     5.87
+Warrior              Harpy                    23.3    16.57
+Warrior              Naga                     66.7    12.47
+Warrior              Night Hag                 3.3    19.77
+Warrior              Imp                      83.3     8.30
+Warrior              Clannfear                76.7    15.90
+Warrior              Werewolf                  0.0     8.77
+Warrior              Evil Crusader             0.0    15.30
+Warrior              Troll                     0.0     7.07
+Warrior              Vampire                  53.3    20.33
+Warrior              Necromancer               0.0    14.57
+Warrior              Gargoyle                  0.0     6.10
+Warrior              Steel Predator           36.7    26.63
+Warrior              Dark Knight               0.0    15.83
+Warrior              Displacer Beast           0.0     4.37
+Warrior              Chimera                   0.0     7.40
+Warrior              Shadow Serpent            0.0     4.70
+Warrior              Aboleth                   0.0    32.07
+Warrior              Mimic                    16.7    27.43

@@ -107,6 +107,14 @@ class BattleLogger:
         self.metadata = {
             "start_time": datetime.datetime.now().isoformat(),
             "encounter_id": encounter_id,
+            "encounter_key": (
+                getattr(encounter, "encounter_key", None) if encounter is not None else None
+            ),
+            "encounter_source": (
+                getattr(encounter, "encounter_source", "singleton")
+                if encounter is not None
+                else "singleton"
+            ),
             "player": {
                 "name": player.name,
                 "cls": player.cls.name,
@@ -265,6 +273,7 @@ class BattleLogger:
 
         return {
             "turns": self.turn_counter,
+            "timeline_turns": self.turn_counter,
             "event_count": len(self.events),
             "damage_event_count": len(damage_events),
             "positive_damage_event_count": len(positive_damage_events),
@@ -276,6 +285,9 @@ class BattleLogger:
             "damage_by_target": self.get_damage_by_target(),
             "total_damage_logged": total_damage,
             "max_damage_logged": max((event["damage"] for event in damage_events), default=0),
+            "invalid_intent_count": sum(
+                event["event_type"] == "Invalid Intent" for event in self.events
+            ),
             "result": self.metadata.get("result"),
             "winner": self.metadata.get("winner"),
         }
@@ -297,6 +309,8 @@ class BattleLogger:
                 "enemy": metadata.get("enemy"),
                 "enemies": metadata.get("enemies"),
                 "encounter_id": metadata.get("encounter_id"),
+                "encounter_key": metadata.get("encounter_key"),
+                "encounter_source": metadata.get("encounter_source"),
                 "boss": metadata.get("boss"),
                 "result": metadata.get("result"),
                 "winner": metadata.get("winner"),
