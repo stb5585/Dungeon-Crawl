@@ -120,6 +120,6 @@ def test_battle_engine_composes_every_split_behavior_method():
     }
 
     assert len(methods) == 71
-    assert len(_defined_methods(battle_engine.BattleEngine)) == 23
+    assert len(_defined_methods(battle_engine.BattleEngine)) == 25
     for name, implementation in methods.items():
         assert getattr(battle_engine.BattleEngine, name) is implementation

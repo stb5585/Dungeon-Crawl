@@ -369,6 +369,7 @@ def test_natural_damaging_spell_releases_stolen_charge_once_per_action():
     )
     player.spellbook["Spells"] = {spell.name: spell}
     promotion_kits.combat_state(player)["stolen_charge"] = 2
+    enemy.status_effects["Sleep"].active = True
 
     result = engine.execute_action("Cast Spell", spell.name)
 
