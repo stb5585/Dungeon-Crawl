@@ -564,6 +564,9 @@ class BattleEngine(BattleTurnMixin, BattleActionMixin, BattleOutcomeMixin):
             initiative=self.attacker == self.player,
             boss=self.boss,
             encounter=self.encounter,
+            ready_at=self.current_readiness,
+            round_number=self.round_number,
+            actor_turn_id=self._current_actor_turn_id,
         )
 
         self._event_bus.emit(
@@ -605,6 +608,12 @@ class BattleEngine(BattleTurnMixin, BattleActionMixin, BattleOutcomeMixin):
                     self.player,
                     target=enemy,
                     outcome=debuff_text,
+                    actor_id=PLAYER_ACTOR_ID,
+                    target_id=member.combatant_id,
+                    opportunity_actor_id=self.current_actor_id,
+                    ready_at=self.current_readiness,
+                    round_number=self.round_number,
+                    actor_turn_id=self._current_actor_turn_id,
                 )
         return self.attacker, self.defender
 

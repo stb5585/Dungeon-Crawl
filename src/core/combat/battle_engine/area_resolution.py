@@ -243,6 +243,10 @@ class AreaActionResolutionMixin:
             outcome=result.message,
             actor_id=self.current_actor_id,
             target_id=targets[0].combatant_id if targets else None,
+            opportunity_actor_id=self.current_actor_id,
+            ready_at=self.current_readiness,
+            round_number=self.round_number,
+            actor_turn_id=self._current_actor_turn_id,
         )
         return result
 

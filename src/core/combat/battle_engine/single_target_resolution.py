@@ -269,6 +269,10 @@ class SingleTargetActionResolutionMixin:
             outcome=result.message,
             actor_id=self.current_actor_id,
             target_id=self._actor_id_for(self.defender),
+            opportunity_actor_id=self.current_actor_id,
+            ready_at=self.current_readiness,
+            round_number=self.round_number,
+            actor_turn_id=self._current_actor_turn_id,
         )
 
         if self.attacker != self.player:

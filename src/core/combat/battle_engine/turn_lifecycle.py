@@ -69,7 +69,16 @@ class TurnLifecycleMixin:
         familiar_text = self.attacker.familiar_turn(self.defender)
         if familiar_text:
             self.logger.log_event(
-                "Familiar", self.attacker, target=self.defender, outcome=familiar_text
+                "Familiar",
+                self.attacker,
+                target=self.defender,
+                outcome=familiar_text,
+                actor_id=self._actor_id_for(self.attacker),
+                target_id=self._actor_id_for(self.defender),
+                opportunity_actor_id=self.current_actor_id,
+                ready_at=self.current_readiness,
+                round_number=self.round_number,
+                actor_turn_id=self._current_actor_turn_id,
             )
         return undead_text + (familiar_text or "")
 
@@ -137,7 +146,16 @@ class TurnLifecycleMixin:
             if special:
                 result.messages.append(special)
                 self.logger.log_event(
-                    "Special Effect", self.defender, target=self.attacker, outcome=special
+                    "Special Effect",
+                    self.defender,
+                    target=self.attacker,
+                    outcome=special,
+                    actor_id=self._actor_id_for(self.defender),
+                    target_id=self._actor_id_for(self.attacker),
+                    opportunity_actor_id=self.current_actor_id,
+                    ready_at=self.current_readiness,
+                    round_number=self.round_number,
+                    actor_turn_id=self._current_actor_turn_id,
                 )
 
             delayed_messages = self._tick_delayed_spells()
