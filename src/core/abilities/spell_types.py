@@ -90,7 +90,7 @@ class Attack(Spell):
                     variance = random.uniform(DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH)
                     damage = int(damage * variance)
                     if damage <= 0:
-                        cast_message += f"The spell was ineffective and does no damage.\n"
+                        cast_message += "The spell was ineffective and does no damage.\n"
                         damage = 0
                     elif random.randint(0, target.stats.con // 2) > random.randint(
                         (caster.stats.intel * crit) // 2, (caster.stats.intel * crit)
@@ -105,7 +105,7 @@ class Attack(Spell):
                                 damage_msg += " (Critical hit!)"
                             cast_message += damage_msg + ".\n"
                         else:
-                            cast_message += f"The spell was ineffective and does no damage.\n"
+                            cast_message += "The spell was ineffective and does no damage.\n"
                     else:
                         damage_msg = f"{caster.name} damages {target.name} for {damage} hit points"
                         if crit > 1:
@@ -509,7 +509,6 @@ class Foretell(Spell):
         self.subtyp = "Time"
 
     def cast(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
-        from ..classes import ability_mechanics
 
         super().cast(user, target, **kwargs)
         engine = kwargs.get("battle_engine")

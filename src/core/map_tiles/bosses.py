@@ -1,6 +1,6 @@
 """Boss-room tiles and their encounter rules."""
 
-from .. import companions, enemies, thieves_guild
+from .. import enemies, thieves_guild
 from .paths import SpecialTile
 from .rules import (
     JESTER_TOKENS_REQUIRED,

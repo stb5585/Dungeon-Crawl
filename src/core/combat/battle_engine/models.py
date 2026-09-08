@@ -7,7 +7,8 @@ from typing import TYPE_CHECKING
 
 from ..combat_result import CombatResultGroup
 from ..encounter import EnemyResolution, EnemyResolutionRecord
-from ..targeting import ActionIntent, ActionValidationCode
+from ..targeting import ActionIntent as ActionIntent
+from ..targeting import ActionValidationCode
 
 if TYPE_CHECKING:
     from ...character import Character

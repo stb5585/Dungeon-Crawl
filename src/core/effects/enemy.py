@@ -839,14 +839,12 @@ class HolyFollowupEffect:
             pass
 
         # Mana Shield / Crusader Shield
-        hit = True
         if target.magic_effects["Mana Shield"].active:
             damage, shield_msg, absorbed = actor._apply_mana_shield(
                 target,
                 damage,
                 physical=False,
             )
-            hit = not absorbed
             messages.append(shield_msg)
         elif (
             target.cls.name == "Crusader"
@@ -854,7 +852,6 @@ class HolyFollowupEffect:
             and target.class_effects["Power Up"].active
         ):
             damage, shield_msg, absorbed = actor._apply_crusader_shield(target, damage)
-            hit = not absorbed
             messages.append(shield_msg)
 
         # Holy resist

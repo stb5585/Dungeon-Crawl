@@ -18,7 +18,7 @@ from ..targeting import TargetScope
 from .models import ActionIntent, ActionResult, ActionValidationCode
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    pass
 
 
 class AreaActionResolutionMixin:

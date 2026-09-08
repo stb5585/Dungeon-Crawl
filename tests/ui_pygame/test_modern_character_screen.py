@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import typing
 from types import SimpleNamespace
 
 import pygame
@@ -248,6 +249,12 @@ def _rendered_text(presenter):
         + presenter.normal_font.render_calls
         + presenter.small_font.render_calls
     )
+
+
+def test_companion_popup_annotations_resolve_at_runtime():
+    hints = typing.get_type_hints(ClassCompanionDetailsPopup.__init__)
+
+    assert hints["parent_screen"].__name__ == "ModernCharacterScreenProtocol"
 
 
 def test_modern_character_tabs_are_generic_and_switchable():

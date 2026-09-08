@@ -50,7 +50,7 @@ class MainMenuScreen:
         menu_width = min(360, self.width - 80)
         line_height = 40
         menu_height = max(1, len(options)) * line_height + 28
-        menu_x = self.width // 2 - menu_width // 2
+        self.width // 2 - menu_width // 2
         menu_y = self.height - menu_height - 54
         rects = []
         for i, option in enumerate(options):

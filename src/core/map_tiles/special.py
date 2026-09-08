@@ -2,7 +2,7 @@
 
 import random
 
-from .. import companions, enemies, items
+from .. import items
 from ..classes import dragoon, footpad
 from .paths import EmptyCavePath, SpecialTile
 from .rules import (

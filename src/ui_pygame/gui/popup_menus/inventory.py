@@ -2,8 +2,6 @@
 
 import pygame
 
-from src.core import items
-
 from ..confirmation_popup import ConfirmationPopup
 from .base import BasePopupMenu
 from .selections import SelectionPopup
@@ -351,7 +349,7 @@ class InventoryPopupMenu(BasePopupMenu):
 
     def _use_item(self, player_char, item, category, background_surface=None):
         """Use a consumable item."""
-        menu_bg = background_surface or self._capture_menu_surface(player_char)
+        background_surface or self._capture_menu_surface(player_char)
 
         # Call the item's use method if it has one
         if hasattr(item, "use") and callable(item.use):

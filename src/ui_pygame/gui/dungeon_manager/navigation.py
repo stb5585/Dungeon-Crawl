@@ -108,13 +108,10 @@ class DungeonNavigationMixin:
 
         # Debug: log tile type and FirePath state on each step
         try:
-            x = self.player_char.location_x
-            y = self.player_char.location_y
-            z = self.player_char.location_z
             tname = type(new_tile).__name__ if new_tile else "None"
             if new_tile and ("FirePath" in tname):
-                resist = self.player_char.check_mod("resist", typ="Fire")
-        except Exception as e:
+                self.player_char.check_mod("resist", typ="Fire")
+        except Exception:
             pass
 
         # Get tile intro text
@@ -189,7 +186,7 @@ class DungeonNavigationMixin:
             self._move_to_adjacent_from_stairs()
         self._mark_view_dirty()
         self._suppress_navigation_input()
-        self.add_message(f"You climb the stairs upward...")
+        self.add_message("You climb the stairs upward...")
 
         # Check if returned to town
         if self.player_char.in_town():
@@ -220,7 +217,7 @@ class DungeonNavigationMixin:
             self._move_to_adjacent_from_stairs()
         self._mark_view_dirty()
         self._suppress_navigation_input()
-        self.add_message(f"You descend the stairs deeper into the dungeon...")
+        self.add_message("You descend the stairs deeper into the dungeon...")
         self.add_message(f"Now on dungeon level {self.player_char.location_z}")
         self._check_hidden_cache()
 

@@ -1,2 +1,3 @@
 # Editable development install, including optional asset-generation tools.
+-c constraints.txt
 -e .[dev,tools]

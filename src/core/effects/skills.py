@@ -61,7 +61,7 @@ class ShieldSlamEffect(Effect):
             if not any(
                 [
                     "Stun" in getattr(target, "status_immunity", []),
-                    f"Status-Stun" in target.equipment["Pendant"].mod,
+                    "Status-Stun" in target.equipment["Pendant"].mod,
                     "Status-All" in target.equipment["Pendant"].mod,
                 ]
             ):
@@ -136,7 +136,7 @@ class KidneyPunchEffect(Effect):
             if not any(
                 [
                     "Stun" in getattr(target, "status_immunity", []),
-                    f"Status-Stun" in target.equipment["Pendant"].mod,
+                    "Status-Stun" in target.equipment["Pendant"].mod,
                     "Status-All" in target.equipment["Pendant"].mod,
                 ]
             ):
@@ -270,7 +270,7 @@ class DimMakEffect(Effect):
                 if not any(
                     [
                         "Stun" in getattr(target, "status_immunity", []),
-                        f"Status-Stun" in target.equipment["Pendant"].mod,
+                        "Status-Stun" in target.equipment["Pendant"].mod,
                         "Status-All" in target.equipment["Pendant"].mod,
                         target.check_mod("resist", enemy=actor, typ="Physical") > _rng.random(),
                     ]
@@ -852,7 +852,7 @@ class RevealEffect(Effect):
         self.resist_bonus = resist_bonus
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
-        messages = result.extra.setdefault("messages", [])
+        result.extra.setdefault("messages", [])
         target.sight = True
         target.resistance["Shadow"] += self.resist_bonus
         if (
@@ -968,7 +968,7 @@ class StompEffect(Effect):
                     [
                         "Stun" in getattr(target, "status_immunity", []),
                         (
-                            f"Status-Stun"
+                            "Status-Stun"
                             in getattr(target.equipment.get("Pendant", None), "mod", "")
                             if hasattr(target, "equipment")
                             else False

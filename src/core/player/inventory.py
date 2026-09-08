@@ -124,7 +124,7 @@ class PlayerInventoryMixin:
                         summon, name = item.subtyp.split(" - ")
                         summon_drop = item.name in self.special_inventory
                     except ValueError:
-                        summon, name = None, None
+                        summon, _name = None, None
                         summon_drop = False
                     if summon and "Thaumaturgist" not in self.cls.name:
                         continue
@@ -313,7 +313,7 @@ class PlayerInventoryMixin:
                         break
 
             if jump_skill and hasattr(jump_skill, "enforce_modification_limit"):
-                deactivated = jump_skill.enforce_modification_limit(self)
+                jump_skill.enforce_modification_limit(self)
                 # Could emit a message here if needed
                 # if deactivated:
                 #     print(f"Jump modifications deactivated due to equipment change: {', '.join(deactivated)}")

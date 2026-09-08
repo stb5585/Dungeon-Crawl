@@ -137,7 +137,9 @@ class BarracksManager(TownScreenBase):
         # Pre-render barracks frame so entry popups draw over the proper background.
         barracks_screen.draw_all()
         barracks_background = self.presenter.screen.copy()
-        draw_barracks_background = lambda: self.presenter.screen.blit(barracks_background, (0, 0))
+
+        def draw_barracks_background():
+            return self.presenter.screen.blit(barracks_background, (0, 0))
 
         self._grant_milestone_storage_rewards(draw_barracks_background)
 

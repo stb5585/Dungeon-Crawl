@@ -895,7 +895,7 @@ class RendererSpecialTileMixin:
         overlay = pygame.Surface(field_rect.size, pygame.SRCALPHA)
 
         border_color = (124, 176, 236, max(54, alpha - 14))
-        inner_color = (92, 224, 246, max(48, alpha - 28))
+        (92, 224, 246, max(48, alpha - 28))
         glow_color = (40, 184, 230, max(42, alpha // 2))
         hot_color = (96, 230, 255, max(90, min(178, alpha + 34)))
         core_color = (244, 254, 255, max(150, min(232, alpha + 82)))

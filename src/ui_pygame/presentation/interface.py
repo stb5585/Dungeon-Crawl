@@ -272,7 +272,7 @@ class ConsolePresenter(GamePresenter):
     ) -> None:
         print("\n" + "=" * 50)
         print(f"{player.name} (HP: {player.health.current}/{player.health.max})")
-        print(f"  VS  ")
+        print("  VS  ")
         print(f"{enemy.name} (HP: {enemy.health.current}/{enemy.health.max})")
         print("=" * 50)
         if message:

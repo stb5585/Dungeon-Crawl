@@ -157,7 +157,7 @@ class IndrasFist(Weapon):
         if not any(
             [
                 "Stun" in result.target.status_immunity,
-                f"Status-Stun" in result.target.equipment["Pendant"].mod,
+                "Status-Stun" in result.target.equipment["Pendant"].mod,
                 "Status-All" in result.target.equipment["Pendant"].mod,
             ]
         ):
@@ -349,7 +349,7 @@ class Carnwennan(Weapon):
         if not any(
             [
                 "Stun" in result.target.status_immunity,
-                f"Status-Stun" in result.target.equipment["Pendant"].mod,
+                "Status-Stun" in result.target.equipment["Pendant"].mod,
                 "Status-All" in result.target.equipment["Pendant"].mod,
             ]
         ):
@@ -695,7 +695,7 @@ class Mjolnir(Weapon):
         if not any(
             [
                 "Stun" in result.target.status_immunity,
-                f"Status-Stun" in result.target.equipment["Pendant"].mod,
+                "Status-Stun" in result.target.equipment["Pendant"].mod,
                 "Status-All" in result.target.equipment["Pendant"].mod,
             ]
         ):
@@ -780,7 +780,7 @@ class Ninjato(Weapon):
     def special_effect(self, results: CombatResultGroup) -> None:
         result = results[-1]
         if result.crit > 1:
-            if not "Death" in result.target.status_immunity:
+            if "Death" not in result.target.status_immunity:
                 w_chance = result.actor.check_mod("luck", enemy=result.target, luck_factor=10)
                 t_chance = result.target.check_mod("luck", enemy=result.actor, luck_factor=10)
                 if (
@@ -943,7 +943,7 @@ class Executioner(Weapon):
     def special_effect(self, results: CombatResultGroup) -> None:
         result = results[-1]
         if result.crit > 1:
-            if not "Death" in result.target.status_immunity:
+            if "Death" not in result.target.status_immunity:
                 w_chance = result.actor.check_mod("luck", enemy=result.target, luck_factor=10)
                 t_chance = result.target.check_mod("luck", enemy=result.actor, luck_factor=10)
                 if (
@@ -1689,7 +1689,7 @@ class Skullcrusher(Weapon):
         if not any(
             [
                 "Stun" in result.target.status_immunity,
-                f"Status-Stun" in result.target.equipment["Pendant"].mod,
+                "Status-Stun" in result.target.equipment["Pendant"].mod,
                 "Status-All" in result.target.equipment["Pendant"].mod,
             ]
         ):
@@ -1835,7 +1835,7 @@ class KoboldDagger(Weapon):
     def special_effect(self, results: CombatResultGroup) -> None:
         result = results[-1]
         if result.crit > 1:
-            effects = []
+            pass
         return results
 
 
@@ -2044,7 +2044,7 @@ class Pincers(NaturalWeapon):
             if not any(
                 [
                     "Stun" in result.target.status_immunity,
-                    f"Status-Stun" in result.target.equipment["Pendant"].mod,
+                    "Status-Stun" in result.target.equipment["Pendant"].mod,
                     "Status-All" in result.target.equipment["Pendant"].mod,
                 ]
             ):
@@ -2169,7 +2169,7 @@ class AlligatorTail(NaturalWeapon):
         if not any(
             [
                 "Stun" in result.target.status_immunity,
-                f"Status-Stun" in result.target.equipment["Pendant"].mod,
+                "Status-Stun" in result.target.equipment["Pendant"].mod,
                 "Status-All" in result.target.equipment["Pendant"].mod,
             ]
         ):
@@ -2358,7 +2358,7 @@ class DragonTail2(DragonTail):
         if not any(
             [
                 "Stun" in result.target.status_immunity,
-                f"Status-Stun" in result.target.equipment["Pendant"].mod,
+                "Status-Stun" in result.target.equipment["Pendant"].mod,
                 "Status-All" in result.target.equipment["Pendant"].mod,
             ]
         ):
@@ -2520,7 +2520,7 @@ class Tentacle2(Tentacle):
         if not any(
             [
                 "Stun" in result.target.status_immunity,
-                f"Status-Stun" in result.target.equipment["Pendant"].mod,
+                "Status-Stun" in result.target.equipment["Pendant"].mod,
                 "Status-All" in result.target.equipment["Pendant"].mod,
             ]
         ):
@@ -2561,7 +2561,7 @@ class InvisibleBlade(NaturalWeapon):
         if not any(
             [
                 "Stun" in result.target.status_immunity,
-                f"Status-Stun" in result.target.equipment["Pendant"].mod,
+                "Status-Stun" in result.target.equipment["Pendant"].mod,
                 "Status-All" in result.target.equipment["Pendant"].mod,
             ]
         ):
@@ -2646,7 +2646,7 @@ class LichHand(NaturalWeapon):
         if not any(
             [
                 "Stun" in result.target.status_immunity,
-                f"Status-Stun" in result.target.equipment["Pendant"].mod,
+                "Status-Stun" in result.target.equipment["Pendant"].mod,
                 "Status-All" in result.target.equipment["Pendant"].mod,
             ]
         ):
@@ -2678,7 +2678,7 @@ class Cannon(NaturalWeapon):
         if not any(
             [
                 "Stun" in result.target.status_immunity,
-                f"Status-Stun" in result.target.equipment["Pendant"].mod,
+                "Status-Stun" in result.target.equipment["Pendant"].mod,
                 "Status-All" in result.target.equipment["Pendant"].mod,
             ]
         ):

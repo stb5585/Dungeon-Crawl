@@ -7,7 +7,6 @@ from .assassin import (
     BlackLotusMastery,
     CoatingConservation,
     Cutthroat,
-    Deathblow,
     DeathSentence,
     Disembowel,
     Distract,
@@ -60,7 +59,6 @@ from .cleric import (
 from .defender import (
     BattleDetermination,
     Boast,
-    Braggadocious,
     BulwarkGuard,
     CriticalVigor,
     CrushingVengeance,
@@ -75,7 +73,6 @@ from .defender import (
     Phalanx,
     PurgeWeakness,
     Repercussion,
-    ShieldingWard,
     ShieldRiposte,
     SpellBlock,
     SpellReflection,
@@ -85,19 +82,14 @@ from .defender import (
     VigilantLanding,
 )
 from .detection import (
-    DetectAberration,
     DetectAnimal,
-    DetectConstruct,
-    DetectDragon,
     DetectElemental,
-    DetectFey,
     DetectFiend,
     DetectHumanoid,
-    DetectMonster,
     DetectSlime,
     DetectUndead,
 )
-from .enemy import Counterspell, DazedOrConfused, Gore, NightmareFuel, Retract
+from .enemy import Counterspell, DazedOrConfused, NightmareFuel
 from .healer import (
     BeginnersLuck,
     Cacophany,
@@ -295,7 +287,6 @@ from .promotions import (
     Sanctification,
     SanctuaryWard,
     ScavengersEye,
-    ShadeOfAhool,
     ShieldRicochet,
     Supplication,
     ThreadedCast,
@@ -308,8 +299,6 @@ from .promotions import (
 from .ranger import HuntersSnare, QuarryCleave, UncannyVolley, WildSense
 from .shaman import (
     AncestralAegis,
-    DreadfulSign,
-    OmenStrike,
     ResonantWard,
     SoulRend,
     Soulstorm,
@@ -526,7 +515,6 @@ from .spells import (
     Tsunami,
     TurnUndead,
     TurnUndead2,
-    Volcano,
     Vulcanize,
     WaterJet,
     WeakenMind,
@@ -636,7 +624,6 @@ from .warlock import (
     CurseDysarthria,
     CurseElijah,
     CurseFrailty,
-    CursePolydipsia,
     CurseSwarms,
     CurseUmbra,
     DanceOfTheDead,

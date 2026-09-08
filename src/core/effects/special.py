@@ -1536,7 +1536,6 @@ class JumpEffect(Effect):
         self.base_dmg_mod = base_dmg_mod
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
-        import random
 
         messages = result.extra.setdefault("messages", [])
         cover = result.extra.get("cover", False)

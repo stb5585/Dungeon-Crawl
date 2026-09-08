@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import typing
 from types import SimpleNamespace
 
 from src.ui_pygame.gui.status_icons import (
@@ -241,6 +242,10 @@ def test_status_icon_asset_path_uses_existing_effect_art_with_text_fallback():
     assert status_icon_asset_path("SPD", False).name == "speed_down.png"
     assert status_icon_stack_count("MW5") == 5
     assert status_icon_stack_count("MW") == 1
+
+
+def test_status_icon_asset_path_annotations_resolve_at_runtime():
+    assert typing.get_type_hints(status_icon_asset_path)["return"] is not None
 
 
 def test_totem_reflect_uses_melee_reflect_icon():

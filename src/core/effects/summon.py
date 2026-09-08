@@ -31,7 +31,6 @@ class TitanicSlamEffect(Effect):
         self.stun_duration = stun_duration
 
     def apply(self, actor: Character, target: Character, result: CombatResult) -> None:
-        import random
 
         messages = result.extra.setdefault("messages", [])
         cover = result.extra.get("cover", False)
@@ -60,7 +59,7 @@ class TitanicSlamEffect(Effect):
                         f"for {self.stun_duration} turns!\n"
                     )
             else:
-                messages.append(f"The mana shield absorbs the stunning force.\n")
+                messages.append("The mana shield absorbs the stunning force.\n")
 
 
 class DevourEffect(Effect):
@@ -361,7 +360,7 @@ class MaelstromVortexEffect(Effect):
 
         # Terrify uses magic_effects
         if (
-            not target.magic_effects.get("Terrify") is None
+            target.magic_effects.get("Terrify") is not None
             and not target.magic_effects["Terrify"].active
         ):
             target.magic_effects["Terrify"].active = True
@@ -566,7 +565,7 @@ class DivineJudgmentEffect(Effect):
         is_undead = getattr(target, "enemy_typ", "") == "Undead"
         if is_undead:
             mod *= self.undead_multiplier
-            messages.append(f"The holy light burns with terrible fury " f"against the undead!\n")
+            messages.append("The holy light burns with terrible fury " "against the undead!\n")
 
         base = int(actor.stats.wisdom * mod)
         variance = random.uniform(DAMAGE_VARIANCE_LOW, DAMAGE_VARIANCE_HIGH)

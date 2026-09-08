@@ -17,7 +17,7 @@ from ..character import Combat, Level, Resource, Stats
 from ..classes import promotion_kits
 from .enemy import EnemyStateSerializer
 from .item_serialization import AbilitySerializer, ItemSerializer
-from .manager import SaveLoadResult, SaveManager, json, os
+from .manager import SaveFileMetadata, SaveLoadResult, SaveManager, json, os
 from .models import CombatData, LevelData, ResourceData, StatsData, StatusEffectData
 from .player import PlayerDataSerializer
 from .quests import QuestDataSerializer

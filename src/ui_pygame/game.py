@@ -503,7 +503,7 @@ class PygameGame:
             )
             if class_name is None:
                 return None  # ESC pressed, return to main menu
-            char_class = self.classes_dict[class_name]["class"]()  # Get class from nested dict
+            self.classes_dict[class_name]["class"]()  # Get class from nested dict
 
             # Confirm class selection with popup
             confirm_class = ConfirmationPopup(
@@ -1080,7 +1080,10 @@ class PygameGame:
         shop_screen = ShopScreen(self.presenter, self.player_char, "Mara Vale's Counter")
         shop_screen.set_location_portrait("Mara Vale")
         shop_screen.set_options(["Buy", "Sell", "Ask About Backroom", "Leave"])
-        bg_func = lambda: shop_screen.draw_all(do_flip=False)
+
+        def bg_func():
+            return shop_screen.draw_all(do_flip=False)
+
         while True:
             choice = shop_screen.navigate_options()
             if choice is None or choice == "Leave":

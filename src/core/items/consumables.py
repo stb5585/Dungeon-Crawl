@@ -691,7 +691,7 @@ class Remedy(Status):
     ) -> str:
         use_str = ""
         if not any([user.status_effects[x].active for x in self.status]):
-            use_str += f"You are not affected by any negative status effects.\n"
+            use_str += "You are not affected by any negative status effects.\n"
             return use_str
         user.modify_inventory(self, subtract=True)
         for status in self.status:

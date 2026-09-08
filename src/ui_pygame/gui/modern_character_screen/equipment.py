@@ -194,7 +194,7 @@ class CharacterEquipmentMixin:
                 )
 
     def draw_equipment_tab(self, player_char):
-        y = self._draw_panel(self.details_rect, "Equipment")
+        self._draw_panel(self.details_rect, "Equipment")
         helper = (
             "Arrows: Select gear  Enter: Change  E/Esc: Back"
             if self.equipment_selector_active
@@ -229,7 +229,7 @@ class CharacterEquipmentMixin:
         ]
 
     def draw_menu(self):
-        y = self._draw_panel(self.actions_rect, "Actions")
+        self._draw_panel(self.actions_rect, "Actions")
         for index, option in enumerate(self.menu_options):
             rect = self.action_rects()[index]
             if index == self.current_selection:

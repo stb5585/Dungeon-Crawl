@@ -11,7 +11,6 @@ from .state import (
     _class_ring_data,
     _has_skill,
     _hierophant_overchannel_active,
-    _is_weapon_hit,
     _message,
     _ring_awakened_equipped,
     class_name,

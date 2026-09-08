@@ -786,7 +786,7 @@ class CharacterDataMixin:
                 if percent:
                     buffs.append(f"{percent:+d}% {name} Resistance")
 
-        subtyp = str(getattr(item, "subtyp", "") or "")
+        str(getattr(item, "subtyp", "") or "")
         mod = str(getattr(item, "mod", "") or "")
         if mod and mod not in {"0", "No Mod", "None"} and not self._is_number(mod):
             if mod.startswith("Resist-"):
