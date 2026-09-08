@@ -16,6 +16,7 @@ from ...classes import (
 from ...events.event_bus import EventType, create_combat_event
 from ..combat_result import CombatResult, CombatResultGroup
 from ..targeting import TargetScope
+from ..visibility import is_revealed_to
 from .models import ActionIntent, ActionResult, ActionValidationCode
 
 if TYPE_CHECKING:
@@ -124,6 +125,7 @@ class AreaActionResolutionMixin:
                     battle_engine=self,
                 )
                 for portion in resolved.results:
+                    self._redact_concealed_area_outcome(portion)
                     group.add(portion)
                     self._event_bus.emit(
                         create_combat_event(
@@ -231,6 +233,7 @@ class AreaActionResolutionMixin:
         duel_text = self._fail_no_healing_duel_if_healed(hp_before)
         if duel_text:
             group.message += duel_text
+        self._redact_concealed_area_outcomes(group)
         result = ActionResult(message=group.message, combat_results=group)
         self.logger.log_event(
             "Action",
@@ -242,6 +245,36 @@ class AreaActionResolutionMixin:
             target_id=targets[0].combatant_id if targets else None,
         )
         return result
+
+    def _redact_concealed_area_outcomes(self, group: CombatResultGroup) -> None:
+        """Hide unrevealed enemy identities while retaining their affected lanes."""
+        redacted_names = []
+        for portion in group.results:
+            target_name = self._redact_concealed_area_outcome(portion)
+            if target_name is not None:
+                redacted_names.append(target_name)
+        for target_name in redacted_names:
+            group.message = group.message.replace(target_name, "a concealed opponent")
+
+    def _redact_concealed_area_outcome(self, portion: CombatResult) -> str | None:
+        """Normalize one affected lane and conceal its target from player-facing output."""
+        if portion.target_id is None:
+            return None
+        try:
+            target = self.encounter.member_by_id(portion.target_id).enemy
+        except KeyError:
+            return None
+        # Group resolvers carry the authoritative affected lane in target_id.
+        # Individual effect results may instead retain an incidental target.
+        portion.target = target
+        if is_revealed_to(self.player, target):
+            return None
+        target_name = str(getattr(target, "name", ""))
+        if portion.extra.get("identity_redacted"):
+            portion.target = None
+        else:
+            portion.redact_target_identity()
+        return target_name or None
 
     def _execute_enemy_all_opponents_intent(
         self,
