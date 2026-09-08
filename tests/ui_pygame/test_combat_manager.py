@@ -174,6 +174,35 @@ class DummyClock:
         return self.frame_ms
 
 
+def test_controller_parity_maps_dpad_buttons_and_focus_bumpers(monkeypatch):
+    manager = _make_manager(monkeypatch)
+
+    assert (
+        manager._controller_key(SimpleNamespace(type=pygame.JOYHATMOTION, value=(0, 1)))
+        == pygame.K_UP
+    )
+    assert (
+        manager._controller_key(SimpleNamespace(type=pygame.JOYBUTTONDOWN, button=0))
+        == pygame.K_RETURN
+    )
+    assert (
+        manager._controller_key(SimpleNamespace(type=pygame.JOYBUTTONDOWN, button=1))
+        == pygame.K_ESCAPE
+    )
+    assert (
+        manager._controller_key(SimpleNamespace(type=pygame.JOYBUTTONDOWN, button=2)) == pygame.K_x
+    )
+    assert (
+        manager._controller_key(SimpleNamespace(type=pygame.JOYBUTTONDOWN, button=3)) == pygame.K_y
+    )
+    assert (
+        manager._controller_key(SimpleNamespace(type=pygame.JOYBUTTONDOWN, button=4)) == pygame.K_q
+    )
+    assert (
+        manager._controller_key(SimpleNamespace(type=pygame.JOYBUTTONDOWN, button=5)) == pygame.K_e
+    )
+
+
 class DummySurface:
     def __init__(self, size=(800, 600)):
         self._size = size

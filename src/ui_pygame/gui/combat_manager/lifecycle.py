@@ -11,6 +11,12 @@ from src.core import enemies
 from src.core.character import Character
 from src.core.classes import ability_mechanics, promotion_kits
 from src.core.combat import ActionIntent, CombatEncounter, TargetScope
+from src.core.combat.action_interface import (
+    SYSTEM_COMMANDS,
+    CombatActionPresentation,
+    assign_shortcut,
+    combat_interface_snapshot,
+)
 from src.core.combat.battle_engine import BattleEngine
 from src.core.player import Player
 from src.ui_pygame.gui.enemy_presentation import (
@@ -311,6 +317,10 @@ class CombatLifecycleMixin:
             )
             action_names.append(action_name)
 
+        is_player_turn = getattr(self.engine, "is_player_turn", None)
+        if callable(is_player_turn) and is_player_turn():
+            return self._build_foundational_display_actions(action_names)
+
         # Deduplicate while preserving order
         deduped = []
         seen = set()
@@ -386,6 +396,28 @@ class CombatLifecycleMixin:
             deduped.append("Auto Kill")
 
         return deduped
+
+    def _build_foundational_display_actions(self, action_names: list[str]) -> list[str]:
+        """Project core shortcuts and fixed commands without changing combat rules."""
+        snapshot = combat_interface_snapshot(self.engine, self.engine.player)
+        self._display_action_presentations: dict[str, CombatActionPresentation] = {}
+        labels: list[str] = []
+        for slot in snapshot.shortcuts:
+            label = slot.display_label
+            labels.append(label)
+            if slot.action is not None:
+                self._display_action_presentations[label] = slot.action
+
+        available = set(action_names)
+        for command in SYSTEM_COMMANDS:
+            if command == "All Actions" or command in available:
+                labels.append(command)
+            else:
+                labels.append(f"{command} — Not available this turn.")
+
+        fixed_or_catalog = {*SYSTEM_COMMANDS, "Spells", "Skills"}
+        labels.extend(name for name in action_names if name not in fixed_or_catalog)
+        return labels
 
     def _refresh_display_actions(self) -> None:
         """Refresh the visible combat action list when turn-start effects change availability."""
@@ -589,37 +621,56 @@ class CombatLifecycleMixin:
                 if self._handle_combat_log_scroll_event(event):
                     continue
 
-                elif event.type == pygame.KEYDOWN:
-                    # Grid navigation: 3 actions per row
-                    actions_per_row = 3
+                controller_key = self._controller_key(event)
+                if event.type == pygame.KEYDOWN or controller_key is not None:
+                    key = event.key if event.type == pygame.KEYDOWN else controller_key
+                    # Match navigation to the adaptive action-grid layout.
+                    layout = getattr(self.combat_view, "_action_grid_layout", None)
+                    actions_per_row = (
+                        layout(
+                            int(getattr(self.combat_view, "combat_width", self.screen.get_width())),
+                            150,
+                            len(actions),
+                        )[0]
+                        if callable(layout)
+                        else 4 if len(actions) > 9 else 3
+                    )
                     current_row = selected_action // actions_per_row
                     current_col = selected_action % actions_per_row
                     (len(actions) + actions_per_row - 1) // actions_per_row
 
-                    if event.key == pygame.K_q:
+                    if key == pygame.K_q:
                         self.engine.cycle_focus(-1)
                         enemy = self.engine._focused_enemy()
-                    elif event.key == pygame.K_e:
+                    elif key == pygame.K_e:
                         self.engine.cycle_focus(1)
                         enemy = self.engine._focused_enemy()
-                    elif event.key == pygame.K_UP or event.key == pygame.K_w:
+                    elif key == pygame.K_UP or key == pygame.K_w:
                         # Move up one row
                         if current_row > 0:
                             selected_action -= actions_per_row
-                    elif event.key == pygame.K_DOWN or event.key == pygame.K_s:
+                    elif key == pygame.K_DOWN or key == pygame.K_s:
                         # Move down one row
                         new_action = selected_action + actions_per_row
                         if new_action < len(actions):
                             selected_action = new_action
-                    elif event.key == pygame.K_LEFT or event.key == pygame.K_a:
+                    elif key == pygame.K_LEFT or key == pygame.K_a:
                         # Move left one column
                         if current_col > 0:
                             selected_action -= 1
-                    elif event.key == pygame.K_RIGHT or event.key == pygame.K_d:
+                    elif key == pygame.K_RIGHT or key == pygame.K_d:
                         # Move right one column
                         if current_col < actions_per_row - 1 and selected_action + 1 < len(actions):
                             selected_action += 1
-                    elif event.key == pygame.K_RETURN or event.key == pygame.K_SPACE:
+                    elif key == pygame.K_y:
+                        action_result = self._execute_action("All Actions", player_char, enemy)
+                        if action_result == "flee":
+                            return "flee"
+                        elif action_result is not None:
+                            action_taken = True
+                    elif key == pygame.K_x:
+                        self._show_combat_resource_details(player_char)
+                    elif key == pygame.K_RETURN or key == pygame.K_SPACE:
                         # Execute selected action
                         action_result = self._execute_action(
                             actions[selected_action], player_char, enemy
@@ -634,7 +685,7 @@ class CombatLifecycleMixin:
                             break
                         elif action_result is not None:
                             action_taken = True
-                    elif event.key in [
+                    elif key in [
                         pygame.K_1,
                         pygame.K_2,
                         pygame.K_3,
@@ -643,7 +694,7 @@ class CombatLifecycleMixin:
                         pygame.K_6,
                     ]:
                         # Number keys for quick selection
-                        num = event.key - pygame.K_1
+                        num = key - pygame.K_1
                         if num < len(actions):
                             action_result = self._execute_action(actions[num], player_char, enemy)
                             if action_result == "flee":
@@ -766,9 +817,110 @@ class CombatLifecycleMixin:
         if enemy.health.current <= 0:
             enemy.health.current = 1
 
+    def _select_all_action(self, player_char, enemy) -> CombatActionPresentation | None:
+        """Select any learned active action while retaining unavailable explanations."""
+        entries = combat_interface_snapshot(self.engine, player_char).all_actions
+        if not entries:
+            self.combat_view.add_combat_message("No active learned actions.")
+            return None
+        selected = 0
+        scroll_offset = 0
+        input_armed = self._clear_pending_input()
+        frame_player = self._selection_frame_player(player_char)
+        while True:
+            self._render_combat_frame(frame_player, enemy, [], -1)
+            options = [entry.display_label for entry in entries]
+            descriptions = [entry.description for entry in entries]
+            self._render_described_selection_menu(
+                "All Actions",
+                options,
+                selected,
+                scroll_offset,
+                descriptions,
+            )
+            pygame.display.flip()
+            input_armed = release_guard_allows_input(True, input_armed)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit(0)
+                input_armed = self._arm_guarded_input(event, input_armed)
+                if event.type == pygame.KEYDOWN and not input_armed:
+                    continue
+                controller_key = self._controller_key(event)
+                if event.type == pygame.KEYDOWN or controller_key is not None:
+                    key = event.key if event.type == pygame.KEYDOWN else controller_key
+                    if key in (pygame.K_ESCAPE, pygame.K_BACKSPACE):
+                        return None
+                    if key in (pygame.K_UP, pygame.K_w):
+                        selected = (selected - 1) % len(entries)
+                    elif key in (pygame.K_DOWN, pygame.K_s):
+                        selected = (selected + 1) % len(entries)
+                    elif key == pygame.K_PAGEUP:
+                        selected = max(0, selected - 10)
+                    elif key == pygame.K_PAGEDOWN:
+                        selected = min(len(entries) - 1, selected + 10)
+                    elif key in (
+                        pygame.K_1,
+                        pygame.K_2,
+                        pygame.K_3,
+                        pygame.K_4,
+                        pygame.K_5,
+                        pygame.K_6,
+                    ):
+                        reference = entries[selected].reference
+                        if reference is None:
+                            self.combat_view.add_combat_message(
+                                "Only data-backed abilities can be assigned to shortcuts."
+                            )
+                        else:
+                            slot = key - pygame.K_1
+                            assign_shortcut(player_char, slot, reference)
+                            self.combat_view.add_combat_message(
+                                f"Assigned {entries[selected].display_name} to shortcut {slot + 1}."
+                            )
+                    elif key in (pygame.K_RETURN, pygame.K_SPACE):
+                        return entries[selected]
+                    scroll_offset = self._scroll_offset_for_selection(selected, scroll_offset)
+                elif event.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN):
+                    selected, scroll_offset, confirmed = self._selection_menu_mouse_update(
+                        event,
+                        options,
+                        selected,
+                        scroll_offset,
+                        input_armed,
+                    )
+                    if confirmed:
+                        return entries[selected]
+            clock = getattr(self.presenter, "clock", None)
+            if clock is not None:
+                clock.tick(60)
+
     def _execute_action(self, action, player_char, enemy):
         """Execute a player action by delegating to the engine."""
         actor = getattr(self.engine, "attacker", None) or player_char
+        if isinstance(action, str) and action.endswith(" — Not available this turn."):
+            self.combat_view.add_combat_message("That system command is not available this turn.")
+            return None
+        presentation = (
+            action
+            if isinstance(action, CombatActionPresentation)
+            else getattr(self, "_display_action_presentations", {}).get(action)
+        )
+        direct_choice = None
+        if presentation is not None:
+            if not presentation.enabled:
+                self.combat_view.add_combat_message(
+                    presentation.availability.reason or "That action is unavailable."
+                )
+                return None
+            action = presentation.engine_action
+            direct_choice = presentation.choice
+        if action == "All Actions":
+            selected = self._select_all_action(player_char, enemy)
+            return (
+                self._execute_action(selected, player_char, enemy) if selected is not None else None
+            )
         if action == "Auto Kill":
             if not self._debug_mode_enabled():
                 self.combat_view.add_combat_message("Auto Kill is only available in debug mode.")
@@ -786,7 +938,7 @@ class CombatLifecycleMixin:
         support_mode = action == "Support"
 
         # Sub-menu actions need a selection UI first
-        choice = None
+        choice = direct_choice
 
         if support_mode:
             support = self._select_summoner_support_action(player_char, enemy)
@@ -795,7 +947,7 @@ class CombatLifecycleMixin:
             action, engine_action, choice = support
             actor = player_char
 
-        if action == "Items":
+        if action == "Items" and choice is None:
             selected_item = self._select_item(actor, enemy, support_only=support_mode)
             if not selected_item:
                 return None  # Cancelled

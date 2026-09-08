@@ -75,6 +75,43 @@ class CombatManagerCoreMixin:
             getattr(self.game, "debug_mode", False) or getattr(self.presenter, "debug_mode", False)
         )
 
+    @staticmethod
+    def _controller_key(event):
+        """Map the supported controller parity controls onto combat key semantics."""
+        if event.type == pygame.JOYHATMOTION:
+            value = getattr(event, "value", (0, 0))
+            mapping = {
+                (0, 1): pygame.K_UP,
+                (0, -1): pygame.K_DOWN,
+                (-1, 0): pygame.K_LEFT,
+                (1, 0): pygame.K_RIGHT,
+            }
+            return mapping.get(value)
+        if event.type != pygame.JOYBUTTONDOWN:
+            return None
+        return {
+            0: pygame.K_RETURN,  # A: confirm
+            1: pygame.K_ESCAPE,  # B: back
+            2: pygame.K_x,  # X: resource details
+            3: pygame.K_y,  # Y: All Actions
+            4: pygame.K_q,  # LB: previous hostile lane
+            5: pygame.K_e,  # RB: next hostile lane
+        }.get(getattr(event, "button", -1))
+
+    def _show_combat_resource_details(self, player_char) -> None:
+        """Expose text-complete resource detail without committing an action."""
+        from src.core.combat.action_interface import combat_interface_snapshot
+
+        if self.engine is None:
+            return
+        resources = combat_interface_snapshot(self.engine, player_char).resources
+        if not resources:
+            self.combat_view.add_combat_message("No class resources are active.")
+            return
+        for resource in resources:
+            detail = resource.state_text or ("Ready" if resource.ready else "Inactive")
+            self.combat_view.add_combat_message(f"{resource.label}: {detail}")
+
     def _slot_symbol_surfaces(self) -> list[pygame.Surface]:
         """Load and slice the slot-machine symbol atlas."""
         if self._slot_symbol_cache is not None:
@@ -410,7 +447,7 @@ class CombatManagerCoreMixin:
                 len(actions),
             )
         else:
-            actions_per_row = 3
+            actions_per_row = 4 if len(actions) > 9 else 3
             row_count = max(1, (max(1, len(actions)) + actions_per_row - 1) // actions_per_row)
             start_y_offset = 46
             available_height = max(24, menu_height - start_y_offset - 14)

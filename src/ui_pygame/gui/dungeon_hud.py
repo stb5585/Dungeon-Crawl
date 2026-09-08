@@ -63,7 +63,14 @@ class DungeonHUD:
         self.status_colors = STATUS_ICON_COLORS
         self.last_minimap_rect: pygame.Rect | None = None
 
-    def render_hud(self, player_char, combat_mode=False, enemy=None, active_summon=None):
+    def render_hud(
+        self,
+        player_char,
+        combat_mode=False,
+        enemy=None,
+        active_summon=None,
+        combat_resources=(),
+    ):
         """Render the complete HUD.
 
         Args:
@@ -106,13 +113,13 @@ class DungeonHUD:
         if combat_mode:
             feature_height = self._combat_feature_height()
             feature_y = self._combat_feature_title_y(feature_height)
-            self._render_combat_features(
-                player_char,
-                enemy,
-                feature_y,
-                feature_height=feature_height,
-                active_summon=active_summon,
-            )
+            feature_kwargs = {
+                "feature_height": feature_height,
+                "active_summon": active_summon,
+            }
+            if combat_resources:
+                feature_kwargs["combat_resources"] = combat_resources
+            self._render_combat_features(player_char, enemy, feature_y, **feature_kwargs)
             return
 
         # Compass - hide during combat and keep it above the anchored minimap.
@@ -908,7 +915,13 @@ class DungeonHUD:
         return y + 9
 
     def _render_combat_features(
-        self, player_char, enemy, y_offset, feature_height=None, active_summon=None
+        self,
+        player_char,
+        enemy,
+        y_offset,
+        feature_height=None,
+        active_summon=None,
+        combat_resources=(),
     ):
         """Render combat-relevant class systems in place of the exploration minimap."""
         x_margin = self.hud_x + 20
@@ -922,8 +935,25 @@ class DungeonHUD:
 
         y = panel_rect.top + 12
         y = self._render_active_summon_focus(active_summon, panel_rect, y)
-        lines = self._combat_feature_lines(player_char, enemy, active_summon=active_summon)
-        max_lines = 4 if self._is_living_active_summon(active_summon) else 7
+        if combat_resources:
+            lines = [
+                (
+                    resource.label,
+                    resource.state_text or "Ready" if resource.ready else resource.state_text,
+                    (248, 226, 142) if resource.ready else self.text_color,
+                )
+                for resource in sorted(combat_resources, key=lambda resource: resource.priority)
+            ]
+            max_lines = 3
+            if len(lines) > max_lines:
+                lines = [
+                    *lines[:max_lines],
+                    ("More", f"+{len(lines) - max_lines} details", self.text_color),
+                ]
+                max_lines += 1
+        else:
+            lines = self._combat_feature_lines(player_char, enemy, active_summon=active_summon)
+            max_lines = 4 if self._is_living_active_summon(active_summon) else 7
         visible_lines = lines[:max_lines]
         label_gap = 10
         label_widths = [

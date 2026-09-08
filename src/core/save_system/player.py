@@ -213,6 +213,9 @@ class PlayerDataSerializer:
                 "Skills": {},
             },
             "action_bar_assignments": PlayerDataSerializer._serialize_action_bar(player),
+            "action_bar_autofill_complete": bool(
+                getattr(player, "action_bar_autofill_complete", False)
+            ),
             # Character attributes
             "class_name": canonical["cls"].name if canonical["cls"] else None,
             "race_name": player.race.name if player.race else None,
@@ -394,6 +397,7 @@ class PlayerDataSerializer:
         player.action_bar_assignments = PlayerDataSerializer._deserialize_action_bar(
             data.get("action_bar_assignments")
         )
+        player.action_bar_autofill_complete = bool(data.get("action_bar_autofill_complete", False))
 
         # Restore class and race
         if data.get("class_name"):

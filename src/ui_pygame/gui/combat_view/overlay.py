@@ -416,6 +416,7 @@ class CombatOverlayMixin:
         current_turn=None,
         show_enemy_details=None,
         current_actor=None,
+        timeline_entries=(),
     ):
         """Render combat UI overlay (action menu and combat log) over the dungeon view."""
         self._set_combat_log_actors(player_char, enemy)
@@ -441,10 +442,31 @@ class CombatOverlayMixin:
 
         # Render combat log at bottom-left
         self._render_combat_log_overlay()
+        self._render_timeline_ribbon(timeline_entries)
 
         # Render action menu at bottom
         if actions:  # Only show action menu if there are actions
             self._render_action_menu_overlay(actions, selected_action)
+
+    def _render_timeline_ribbon(self, entries) -> None:
+        """Render the next core-owned readiness opportunities without mutating them."""
+        if not entries:
+            return
+        view_width = int(self.screen_width * 0.65)
+        rect = pygame.Rect(0, 164, view_width, 30)
+        self._draw_panel_surface(
+            rect,
+            fill=(20, 20, 25),
+            border=(100, 100, 115),
+            accent=(105, 90, 58),
+            alpha=210,
+            border_width=1,
+        )
+        font = pygame.font.Font(None, 18)
+        labels = [f"{entry.display_label} @{entry.ready_at:g}" for entry in entries[:6]]
+        text = self._truncate_text(font, "Timeline: " + "  |  ".join(labels), rect.width - 18)
+        surface = font.render(text, True, (225, 220, 205))
+        self.screen.blit(surface, (rect.left + 9, rect.top + 7))
 
     def _render_combat_log_overlay(self):
         """Render combat log as semi-transparent overlay on dungeon view."""

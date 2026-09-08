@@ -83,7 +83,15 @@ including Paladin encounter timers, tick only on their owner's pre-turn
 readiness opportunity. Battle logs retain virtual readiness, round, actor-turn
 identity, and the scheduled opportunity actor. Simulator results retain a
 bounded normal-opportunity trace, final actor readiness, and timing-invariant
-diagnostics. Interface replacement is next.
+diagnostics. The interface slice is complete: six persisted typed shortcuts
+auto-fill once without overwriting later layout choices; fixed commands and
+All Actions expose learned active actions with availability explanations; and
+the Character Menu and combat surfaces share shortcut assignment. The HUD
+shows prioritized class-resource rows and the next six readiness opportunities,
+while concealed lanes retain generic presentation. Keyboard, mouse, and
+controller input support equivalent combat navigation, confirmation,
+cancellation, focus, All Actions, and resource-detail operations. Evidence and
+rollout are next.
 
 UI replacement and encounter expansion follow only after the migrated action
 contract, resolution rules, and timeline are stable. Numeric tuning remains a
