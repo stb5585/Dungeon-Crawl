@@ -120,14 +120,14 @@ def build_zone_geometry(rect: RectF, next_rect: RectF, depth: int = 0) -> ZoneGe
 
     next_left_w = nw // 4
     next_center_w = nw // 2
-    next_right_w = nw - next_left_w - next_center_w
+    nw - next_left_w - next_center_w
 
     top_h = h // 4
     center_h = h // 2
-    bottom_h = h - top_h - center_h
+    h - top_h - center_h
 
-    next_top_h = nh // 4
-    next_center_h = nh // 2
+    nh // 4
+    nh // 2
 
     front_center_left = x + left_w
     front_center_mid = x + left_w + (center_w // 2)

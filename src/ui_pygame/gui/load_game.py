@@ -385,7 +385,7 @@ class LoadGameScreen:
                             "loadable": False,
                         }
                     )
-            except Exception as e:
+            except Exception:
                 # Error loading save
                 self.save_data.append(
                     {

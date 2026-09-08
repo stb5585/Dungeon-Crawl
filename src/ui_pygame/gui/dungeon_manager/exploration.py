@@ -231,7 +231,7 @@ class DungeonExplorationMixin:
                     current_tile.modify_player(self.game)
         except AttributeError:
             pass
-        except Exception as e:
+        except Exception:
             pass
         else:
             hp_after = getattr(self.player_char.health, "current", None)

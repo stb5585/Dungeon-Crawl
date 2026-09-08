@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Protocol
 
 import pygame
 
@@ -15,13 +15,20 @@ from ..input_guards import (
 from .models import _whole_stat_text
 
 
+class ModernCharacterScreenProtocol(Protocol):
+    """Structural parent-screen contract used by the companion details popup."""
+
+    colors: Any
+    companion_art_manager: Any
+
+
 class ClassCompanionDetailsPopup:
     """Character-tab-style details modal for familiars, companions, and summons."""
 
     def __init__(
         self,
         presenter,
-        parent_screen: "ModernCharacterScreen",
+        parent_screen: ModernCharacterScreenProtocol,
         player_char,
         kind: str,
         companion: Any,
@@ -400,7 +407,10 @@ class ClassCompanionDetailsPopup:
     ) -> None:
         if background_draw_func is None:
             background = self.screen.copy()
-            background_draw_func = lambda: self.screen.blit(background, (0, 0))
+
+            def background_draw_func():
+                return self.screen.blit(background, (0, 0))
+
         background_draw_func()
         background_surface = self.screen.copy()
         input_armed = prepare_guarded_input(

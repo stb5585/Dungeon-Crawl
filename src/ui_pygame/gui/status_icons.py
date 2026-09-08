@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from src.paths import PYGAME_ASSETS_DIR
 
 StatusIcon = tuple[str, bool | None]
@@ -156,7 +158,9 @@ def totem_status_icons(character) -> list[StatusIcon]:
 def describe_stat_effect_icon_filtering(stat_effects, labeler=None) -> dict[str, object]:
     """Return diagnostics for stat effects hidden before icon layout."""
     if labeler is None:
-        labeler = lambda name: str(name)[:3].upper()
+
+        def labeler(name):
+            return str(name)[:3].upper()
 
     active_labels: list[str] = []
     emitted_labels: list[str] = []

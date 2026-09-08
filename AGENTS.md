@@ -15,6 +15,26 @@ This file defines repo-specific instructions for Codex agents working in this pr
 - When fixing gameplay rules, add or update a regression test when practical.
 - If a test cannot be run, say so clearly and explain why.
 
+## Quality Gates And Reliability
+
+- Keep the Ruff gate source-wide: run `./.venv/bin/python -m ruff check src`.
+  Do not suppress a correctness rule globally to absorb existing findings. A
+  narrow, documented per-file exemption is acceptable only for intentional
+  compatibility exports in package `__init__.py` files.
+- When adding or changing annotations that may be inspected at runtime, ensure
+  `typing.get_type_hints()` can resolve them. Prefer concrete imports or
+  runtime-available protocols over unresolved forward references.
+- Do not add broad `except Exception` handlers around combat, progression,
+  persistence, or other gameplay rules. Catch only expected exception types;
+  if a fallback is intentional, document it and cover it with a regression
+  test. Never silently disable a gameplay mechanic.
+- Preserve and expand strict mypy coverage over stable contracts. Do not remove
+  an existing strict target or use a broad mypy suppression to make a target
+  pass; fix the target or add a narrowly scoped, documented exception.
+- Keep CI and distribution tooling reproducible. Update the committed
+  constraints/lock inputs whenever a dependency or tool version changes, and
+  validate the affected command with the project virtual environment.
+
 ## Editing
 
 - Preserve existing project structure and code style unless the task specifically calls for a refactor.

@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING
 from .models import (
     ActionIntent,
     ActionResult,
-    ActionValidationCode,
 )
 
 if TYPE_CHECKING:

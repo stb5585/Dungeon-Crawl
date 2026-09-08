@@ -479,7 +479,8 @@ class ShopManager(TownScreenBase):
         shop_screen.update_item_list(itemdict, "Buy")
 
         # Create background function for popups
-        bg_func = lambda: shop_screen.draw_all(do_flip=False)
+        def bg_func():
+            return shop_screen.draw_all(do_flip=False)
 
         while True:
             result = shop_screen.navigate_items()
@@ -495,7 +496,7 @@ class ShopManager(TownScreenBase):
                 continue
 
             # Use QuantityPopup for better quantity selection
-            max_can_carry = self.player_char.stats.strength * 10
+            self.player_char.stats.strength * 10
             max_qty = min(self.player_char.gold // cost, 99) if cost > 0 else 99
 
             qty_popup = QuantityPopup(self.presenter, item.name, cost, max_qty)
@@ -920,7 +921,9 @@ class ShopManager(TownScreenBase):
 
         # Now set up background function for popups if using custom background
         if background_image != "town.png":
-            bg_func = lambda: shop_screen.draw_all(do_flip=False)
+
+            def bg_func():
+                return shop_screen.draw_all(do_flip=False)
 
         while True:
             # Build sellable inventory (exclude ultimate items)
@@ -1020,7 +1023,8 @@ class ShopManager(TownScreenBase):
         shop_screen.set_options(["Buy", "Sell", "Leave"])
 
         # Create background function for popups
-        bg_func = lambda: shop_screen.draw_all(do_flip=False)
+        def bg_func():
+            return shop_screen.draw_all(do_flip=False)
 
         while True:
             choice = shop_screen.navigate_options()

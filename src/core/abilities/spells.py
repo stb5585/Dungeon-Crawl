@@ -194,7 +194,7 @@ class ElectricSpell(Attack):
         if not any(
             [
                 "Stun" in target.status_immunity,
-                f"Status-Stun" in target.equipment["Pendant"].mod,
+                "Status-Stun" in target.equipment["Pendant"].mod,
                 "Status-All" in target.equipment["Pendant"].mod,
             ]
         ):

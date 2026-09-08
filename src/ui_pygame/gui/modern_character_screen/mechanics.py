@@ -598,7 +598,7 @@ class CharacterMechanicsMixin:
         self.weapon_discipline_selector_active = False
         self._jump_mod_row_rects = []
         left_rect, right_rect = self._split_mechanic_content(y)
-        class_name = self._attr_name(getattr(player_char, "cls", None), "")
+        self._attr_name(getattr(player_char, "cls", None), "")
         affinity = wizard.ensure_affinity(player_char)
         cap = wizard.cap_for(player_char)
         from src.core.classes import mage_mechanics

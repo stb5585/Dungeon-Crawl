@@ -115,7 +115,7 @@ class CharacterCoreMixin:
             return CharacterTab("class", "Weapon Discipline")
         class_name = transformation.permanent_class_name(player_char)
         mechanic_label = promotion_mechanic_tab_label(class_name)
-        familiar = getattr(player_char, "familiar", None)
+        getattr(player_char, "familiar", None)
         if class_name == "Thaumaturgist":
             return CharacterTab("class", "Xenids")
         if class_name in {"Ranger", "Beast Master"}:

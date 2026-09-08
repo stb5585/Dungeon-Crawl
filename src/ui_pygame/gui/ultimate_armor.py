@@ -44,7 +44,7 @@ class UltimateArmorShop:
             return
 
         # Show introduction
-        intro = self.presenter.show_message(
+        self.presenter.show_message(
             "A large man stands before a blazing forge.\n\n"
             '"I can craft you a legendary armor, but you may only choose one.\n\n'
             'Choose wisely, for this opportunity comes but once."',

@@ -594,7 +594,7 @@ class CombatLifecycleMixin:
                     actions_per_row = 3
                     current_row = selected_action // actions_per_row
                     current_col = selected_action % actions_per_row
-                    num_rows = (len(actions) + actions_per_row - 1) // actions_per_row
+                    (len(actions) + actions_per_row - 1) // actions_per_row
 
                     if event.key == pygame.K_q:
                         self.engine.cycle_focus(-1)
@@ -967,7 +967,9 @@ class CombatLifecycleMixin:
         if action in {"Skills", "Resolve", "Bursts"} and choice:
             skill_obj = actor.spellbook.get("Skills", {}).get(choice)
             if skill_obj and skill_obj.name == "Slot Machine":
-                slot_cb = lambda _u, _t: self._show_slot_machine_reveal(actor, enemy)
+
+                def slot_cb(_u, _t):
+                    return self._show_slot_machine_reveal(actor, enemy)
 
         if support_mode:
             result = self.engine.execute_summoner_support_action(

@@ -151,7 +151,7 @@ class LockedDoor(MapTile):
                     f"If only you could find the key...\n"
                 )
             else:
-                intro_str += f"There is an unlocked door.\n" f"(Enter 'o' to open)\n"
+                intro_str += "There is an unlocked door.\n" "(Enter 'o' to open)\n"
         else:
             intro_str += "There is an open door.\n"
         return intro_str
@@ -288,9 +288,7 @@ class WarningTile(CavePath):
     def intro_text(self, game):
         intro_str = super().intro_text(game)
         if not self.warning:
-            intro_str += (
-                f"Enemies beyond this point increase in difficulty.\n" f"Plan accordingly.\n"
-            )
+            intro_str += "Enemies beyond this point increase in difficulty.\n" "Plan accordingly.\n"
         return intro_str
 
     def modify_player(self, game):
@@ -497,11 +495,11 @@ class DeadBody(SpecialTile):
         else:
             if "Something to Cry About" in game.player_char.quest_dict["Side"]:
                 if game.player_char.quest_dict["Side"]["Something to Cry About"]["Completed"]:
-                    intro_str += f"The two lovers have been reunited. May they rest in peace.\n"
+                    intro_str += "The two lovers have been reunited. May they rest in peace.\n"
             else:
                 intro_str += (
-                    f"'Here lies Joffrey, survived by his one true love.\n"
-                    f"May he be a reminder of the horrors of combat.\n"
+                    "'Here lies Joffrey, survived by his one true love.\n"
+                    "May he be a reminder of the horrors of combat.\n"
                 )
         return intro_str
 

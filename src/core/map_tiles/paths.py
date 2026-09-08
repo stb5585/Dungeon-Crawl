@@ -2,7 +2,7 @@
 
 import random
 
-from .. import companions, enemies, items, thieves_guild
+from .. import enemies, items, thieves_guild
 from ..combat import CombatEncounter
 from .rules import (
     _CARDINAL_DIRECTIONS,
@@ -419,7 +419,7 @@ class CavePath0(CavePath):
         if "Ticket to Ride" in game.player_char.quest_dict["Side"]:
             if not game.player_char.quest_dict["Side"]["Ticket to Ride"]["Completed"]:
                 if not random.randint(0, 20 - game.player_char.check_mod("luck", luck_factor=5)):
-                    quest_message = f"You find a piece of the raffle ticket.\n"
+                    quest_message = "You find a piece of the raffle ticket.\n"
                     game.player_char.modify_inventory(items.TicketPiece(), rare=True)
                     quest_message += game.player_char.quests(item=items.TicketPiece())
                     if popup_class and game.presenter is not None:

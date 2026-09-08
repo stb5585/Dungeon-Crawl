@@ -214,9 +214,14 @@ class PaladinVowSelectionPopup:
         background = None
         if background_draw_func is None and hasattr(self.screen, "copy"):
             background = self.screen.copy()
-            background_draw_func = lambda: self.screen.blit(background, (0, 0))
+
+            def background_draw_func():
+                return self.screen.blit(background, (0, 0))
+
         elif background_draw_func is None:
-            background_draw_func = lambda: self.screen.fill(self.colors.BLACK)
+
+            def background_draw_func():
+                return self.screen.fill(self.colors.BLACK)
 
         input_armed = prepare_guarded_input(
             flush_events=flush_events,

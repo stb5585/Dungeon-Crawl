@@ -490,7 +490,6 @@ class PurgingKata(_PromotionActive):
         )
 
     def use(self, user: Character, target: Character | None = None, **kwargs: Any) -> str:
-        from ..classes import promotion_kits
 
         user.mana.current -= self.cost
         removed = []

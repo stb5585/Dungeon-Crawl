@@ -229,7 +229,9 @@ class ConfirmationPopup:
         background = None
         if background_draw_func is None:
             background = self._get_background_surface()
-            background_draw_func = lambda: self.screen.blit(background, (0, 0))
+
+            def background_draw_func():
+                return self.screen.blit(background, (0, 0))
 
         start_ms = pygame.time.get_ticks()
         self._start_ms = start_ms
@@ -906,7 +908,9 @@ class QuantityPopup:
         background = None
         if background_draw_func is None:
             background = self._get_background_surface()
-            background_draw_func = lambda: self.screen.blit(background, (0, 0))
+
+            def background_draw_func():
+                return self.screen.blit(background, (0, 0))
 
         def finish(result):
             if background_draw_func is not None:
@@ -1083,11 +1087,11 @@ class CodeEntryPopup:
         message_rect = message_text.get_rect(centerx=self.popup_rect.centerx, top=self.popup_y + 72)
         self.screen.blit(message_text, message_rect)
 
-        digit_y = self.popup_y + 130
+        self.popup_y + 130
         spacing = 72
         start_x = self.popup_rect.centerx - (spacing * 3) // 2
         for idx, digit in enumerate(self.digits):
-            x = start_x + idx * spacing
+            start_x + idx * spacing
             rect = self.digit_rects()[idx]
             if idx == self.selected_digit:
                 pygame.draw.rect(self.screen, self.HIGHLIGHT_BG, rect)
@@ -1135,7 +1139,9 @@ class CodeEntryPopup:
         background = None
         if background_draw_func is None:
             background = self._get_background_surface()
-            background_draw_func = lambda: self.screen.blit(background, (0, 0))
+
+            def background_draw_func():
+                return self.screen.blit(background, (0, 0))
 
         def finish(result):
             if background_draw_func is not None:

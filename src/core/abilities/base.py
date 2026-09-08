@@ -179,7 +179,7 @@ class Ability:
             str_text += f"Mana Cost: {self.cost}\n"
         else:
             str_text += "Passive\n"
-        str_text += f"==================================="
+        str_text += "==================================="
         return str_text
 
     def special_effect(self, *args: Any, **kwargs: Any) -> CombatResult:

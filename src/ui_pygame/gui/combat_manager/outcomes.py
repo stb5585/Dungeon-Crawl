@@ -123,7 +123,9 @@ class CombatOutcomeMixin:
             if action_name == "Use Skill" and choice_name:
                 skill_obj = enemy.spellbook.get("Skills", {}).get(choice_name)
                 if skill_obj and skill_obj.name == "Slot Machine":
-                    slot_cb = lambda _u, _t: self._show_slot_machine_reveal(player_char, enemy)
+
+                    def slot_cb(_u, _t):
+                        return self._show_slot_machine_reveal(player_char, enemy)
 
             result = self.engine.execute_action(
                 action_name, choice=choice_name, slot_machine_callback=slot_cb
@@ -236,7 +238,7 @@ class CombatOutcomeMixin:
         if self.dungeon_renderer and self.player_world_dict:
             try:
                 self.dungeon_renderer.render_dungeon_view(player_char, self.player_world_dict)
-            except Exception as e:
+            except Exception:
                 # Fallback to black screen if dungeon rendering fails
                 self.screen.fill((0, 0, 0))
 
@@ -345,7 +347,10 @@ class CombatOutcomeMixin:
             if refresh_background:
                 self._refresh_combat_background(player_char, enemy)
             background = background or self._combat_background or self._capture_background()
-            draw_background = lambda: self.screen.blit(background, (0, 0))
+
+            def draw_background():
+                return self.screen.blit(background, (0, 0))
+
             from ..confirmation_popup import ConfirmationPopup
 
             popup = ConfirmationPopup(self.presenter, message_text, show_buttons=False)

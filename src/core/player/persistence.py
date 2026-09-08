@@ -1,6 +1,6 @@
 """Player save-loading helpers."""
 
-import os  # Compatibility re-exported by src.core.player.
+import os as os
 
 from ..save_system import SaveManager
 

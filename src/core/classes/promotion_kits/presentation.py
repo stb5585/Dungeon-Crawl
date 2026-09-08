@@ -10,7 +10,7 @@ from .companions import (
     lycan_control_state,
     totem_resonance,
 )
-from .meters import cap_for, eclipse, shadowcaster_debt_cap
+from .meters import cap_for, shadowcaster_debt_cap
 from .resolve import _resolve_data, resolve_cap
 from .state import (
     _clamp_int,
@@ -85,9 +85,9 @@ def _active_summon_bond_hint(character: Any, summon_name: str, bond: int) -> str
     summon = summons.get(summon_name)
     level = getattr(getattr(summon, "level", None), "level", None)
     try:
-        level_value = int(level)
+        int(level)
     except (TypeError, ValueError):
-        level_value = None
+        pass
     if bond >= 100:
         return "Perfected"
     if bond >= 50:

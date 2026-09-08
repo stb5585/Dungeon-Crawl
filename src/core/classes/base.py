@@ -62,7 +62,7 @@ class Job:
         Checks if the class allows the item type to be equipped
         """
 
-        item = item if type(item) != type else item()
+        item = item if type(item) is not type else item()
         if equip_slot in ["Ring", "Pendant"]:
             if item.subtyp == equip_slot:
                 return True

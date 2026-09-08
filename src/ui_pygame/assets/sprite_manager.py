@@ -241,5 +241,5 @@ if __name__ == "__main__":
     stun_icon = manager.load_sprite("icon_stun", "ui")
     print(f"✓ Loaded stun icon: {stun_icon.get_size() if stun_icon else 'FAILED'}")
 
-    print(f"\n✓ Sprite manager test complete!")
+    print("\n✓ Sprite manager test complete!")
     print(f"  Cache contains {len(manager.sprite_cache)} sprites")

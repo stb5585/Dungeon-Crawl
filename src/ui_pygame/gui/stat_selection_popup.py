@@ -93,7 +93,9 @@ class StatSelectionPopup:
 
         if background_draw_func is None:
             background = self._get_background_surface()
-            background_draw_func = lambda: self.screen.blit(background, (0, 0))
+
+            def background_draw_func():
+                return self.screen.blit(background, (0, 0))
 
         while selecting:
             # Draw background if provided

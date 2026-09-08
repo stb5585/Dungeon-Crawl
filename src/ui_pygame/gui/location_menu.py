@@ -189,8 +189,6 @@ class LocationMenuScreen(TownScreenBase):
 
             # Highlight background for selected
             if idx == self.current_option:
-                highlight_pad_x = 12
-                highlight_pad_y = 6
                 highlight_rect = option_rects[idx]
                 pygame.draw.rect(self.screen, self.colors.HIGHLIGHT_BG, highlight_rect)
                 pygame.draw.rect(self.screen, self.colors.GOLD, highlight_rect, 1)
