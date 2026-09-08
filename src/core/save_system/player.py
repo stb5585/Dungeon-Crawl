@@ -9,8 +9,9 @@ from .. import items, main_story, quest_progress, thieves_guild
 from .. import town as town_core
 from ..character import Combat, Level, Resource, Stats
 from ..classes import bard, promotion_kits, transformation
+from ..contracts import ActionReference
 from .item_serialization import AbilitySerializer, ItemSerializer
-from .models import CombatData, LevelData, ResourceData, StatsData
+from .models import SAVE_SCHEMA_VERSION, CombatData, LevelData, ResourceData, StatsData
 from .quests import QuestDataSerializer
 from .summons import SummonSerializer
 from .tiles import TileStateSerializer
@@ -43,6 +44,43 @@ class PlayerDataSerializer:
             return max(0, int(value or 0))
         except (TypeError, ValueError):
             return 0
+
+    @staticmethod
+    def _serialize_action_bar(player) -> list[dict[str, str] | None]:
+        """Return exactly six typed action-reference save slots."""
+        raw_assignments = list(getattr(player, "action_bar_assignments", ()) or ())[:6]
+        raw_assignments.extend([None] * (6 - len(raw_assignments)))
+        serialized: list[dict[str, str] | None] = []
+        for assignment in raw_assignments:
+            if assignment is None:
+                serialized.append(None)
+            elif isinstance(assignment, ActionReference):
+                serialized.append(assignment.to_dict())
+            elif isinstance(assignment, dict):
+                serialized.append(ActionReference.from_dict(assignment).to_dict())
+            else:
+                raise TypeError("action bar entries must be ActionReference, mapping, or None")
+        return serialized
+
+    @staticmethod
+    def _deserialize_action_bar(payload: object) -> tuple[ActionReference | None, ...]:
+        """Parse and normalize exactly six version-1 shortcut slots."""
+        if payload is None:
+            entries: list[object] = []
+        elif isinstance(payload, list):
+            entries = list(payload[:6])
+        else:
+            raise TypeError("action_bar_assignments must be a list")
+        entries.extend([None] * (6 - len(entries)))
+        assignments: list[ActionReference | None] = []
+        for entry in entries:
+            if entry is None:
+                assignments.append(None)
+            elif isinstance(entry, dict):
+                assignments.append(ActionReference.from_dict(entry))
+            else:
+                raise TypeError("action bar entries must be mappings or null")
+        return tuple(assignments)
 
     @staticmethod
     def _serialize_transformation_state(player) -> dict[str, Any] | None:
@@ -107,6 +145,7 @@ class PlayerDataSerializer:
 
         # Basic attributes
         data = {
+            "schema_version": SAVE_SCHEMA_VERSION,
             "name": player.name,
             "location": (player.location_x, player.location_y, player.location_z),
             "facing": player.facing,
@@ -173,6 +212,7 @@ class PlayerDataSerializer:
             "spellbook_state": {
                 "Skills": {},
             },
+            "action_bar_assignments": PlayerDataSerializer._serialize_action_bar(player),
             # Character attributes
             "class_name": canonical["cls"].name if canonical["cls"] else None,
             "race_name": player.race.name if player.race else None,
@@ -351,6 +391,9 @@ class PlayerDataSerializer:
         player.warp_point = data["warp_point"]
         player.facing = data["facing"]
         player.inventory_sort_mode = data.get("inventory_sort_mode", "Name")
+        player.action_bar_assignments = PlayerDataSerializer._deserialize_action_bar(
+            data.get("action_bar_assignments")
+        )
 
         # Restore class and race
         if data.get("class_name"):

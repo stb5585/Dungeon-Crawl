@@ -7,7 +7,17 @@ from typing import TypedDict
 
 from src.paths import USER_SAVE_DIR, USER_TEMP_DIR
 
+from .models import (
+    SAVE_SCHEMA_VERSION,
+    SaveCompatibilityStatus,
+    SaveLoadCode,
+)
 from .player import PlayerDataSerializer
+
+PRE_FOUNDATION_SAVE_MESSAGE = (
+    "This save predates save schema version 1 and is incompatible with the "
+    "foundational gameplay update. Start a new game."
+)
 
 
 @dataclass(frozen=True)
@@ -16,6 +26,7 @@ class SaveLoadResult:
 
     player: object | None
     error: str | None = None
+    code: SaveLoadCode = SaveLoadCode.SUCCESS
 
 
 class SaveFileMetadata(TypedDict):
@@ -33,6 +44,9 @@ class SaveFileMetadata(TypedDict):
     loadable: bool
     size: int | None
     empty: bool
+    schema_version: int | None
+    compatibility_status: SaveCompatibilityStatus
+    status_message: str
 
 
 class SaveManager:
@@ -40,7 +54,34 @@ class SaveManager:
 
     SAVE_DIR = str(USER_SAVE_DIR)
     TMP_DIR = str(USER_TEMP_DIR)
-    last_load_result = SaveLoadResult(None)
+    last_load_result = SaveLoadResult(None, code=SaveLoadCode.NOT_FOUND)
+
+    @staticmethod
+    def _schema_status(data: object) -> tuple[SaveCompatibilityStatus, int | None, str]:
+        """Return compatibility facts for a decoded save payload."""
+        if not isinstance(data, dict):
+            return (
+                SaveCompatibilityStatus.UNREADABLE,
+                None,
+                "Save data is not a JSON object.",
+            )
+        raw_version = data.get("schema_version")
+        if raw_version is None:
+            return SaveCompatibilityStatus.PRE_FOUNDATION, None, PRE_FOUNDATION_SAVE_MESSAGE
+        if isinstance(raw_version, bool) or not isinstance(raw_version, int):
+            return (
+                SaveCompatibilityStatus.UNSUPPORTED_VERSION,
+                None,
+                "Save schema version is invalid. Start a new game.",
+            )
+        if raw_version != SAVE_SCHEMA_VERSION:
+            return (
+                SaveCompatibilityStatus.UNSUPPORTED_VERSION,
+                raw_version,
+                f"Save schema version {raw_version} is unsupported; this build requires "
+                f"version {SAVE_SCHEMA_VERSION}.",
+            )
+        return SaveCompatibilityStatus.COMPATIBLE, raw_version, "Ready to load."
 
     @staticmethod
     def is_valid_save_filename(filename: object) -> bool:
@@ -132,17 +173,26 @@ class SaveManager:
             filepath = SaveManager._resolve_save_path(filename, is_tmp=is_tmp)
 
             if not os.path.isfile(filepath):
-                result = SaveLoadResult(None, "Save file not found.")
+                result = SaveLoadResult(
+                    None,
+                    "Save file not found.",
+                    SaveLoadCode.NOT_FOUND,
+                )
                 SaveManager.last_load_result = result
                 return result
 
             with open(filepath, "r", encoding="utf-8") as file_obj:
                 data = json.load(file_obj)
+            status, _version, message = SaveManager._schema_status(data)
+            if status is not SaveCompatibilityStatus.COMPATIBLE:
+                result = SaveLoadResult(None, message, SaveLoadCode.INCOMPATIBLE_SCHEMA)
+                SaveManager.last_load_result = result
+                return result
             player = PlayerDataSerializer.deserialize(
                 data,
                 skip_tiles=skip_tiles,
             )
-            result = SaveLoadResult(player)
+            result = SaveLoadResult(player, code=SaveLoadCode.SUCCESS)
             SaveManager.last_load_result = result
             return result
         except (
@@ -154,7 +204,12 @@ class SaveManager:
             ValueError,
         ) as e:
             print(f"Error loading player: {e}")
-            result = SaveLoadResult(None, f"Unable to load save: {e}")
+            code = (
+                SaveLoadCode.INVALID_FILENAME
+                if isinstance(e, ValueError) and not SaveManager.is_valid_save_filename(filename)
+                else SaveLoadCode.UNREADABLE
+            )
+            result = SaveLoadResult(None, f"Unable to load save: {e}", code)
             SaveManager.last_load_result = result
             return result
 
@@ -173,7 +228,7 @@ class SaveManager:
 
     @staticmethod
     def describe_save_file(filename: object, is_tmp: bool = False) -> SaveFileMetadata:
-        """Return filesystem metadata for one save entry without reading its contents."""
+        """Return filesystem and schema-compatibility metadata for one save entry."""
         metadata: SaveFileMetadata = {
             "filename": filename,
             "is_tmp": is_tmp,
@@ -187,6 +242,9 @@ class SaveManager:
             "loadable": False,
             "size": None,
             "empty": False,
+            "schema_version": None,
+            "compatibility_status": SaveCompatibilityStatus.INVALID_NAME,
+            "status_message": "Invalid save filename.",
         }
         if not metadata["valid"]:
             return metadata
@@ -200,7 +258,9 @@ class SaveManager:
         metadata["exists"] = os.path.exists(filepath)
         metadata["is_file"] = os.path.isfile(filepath)
         metadata["is_dir"] = os.path.isdir(filepath)
-        metadata["loadable"] = bool(metadata["valid"] and metadata["is_file"])
+        if not metadata["is_file"]:
+            metadata["compatibility_status"] = SaveCompatibilityStatus.NOT_A_FILE
+            metadata["status_message"] = "Save file not found."
         if metadata["is_file"]:
             try:
                 metadata["size"] = os.path.getsize(filepath)
@@ -208,6 +268,24 @@ class SaveManager:
             except OSError:
                 metadata["size"] = None
                 metadata["empty"] = False
+            if metadata["empty"]:
+                metadata["compatibility_status"] = SaveCompatibilityStatus.UNREADABLE
+                metadata["status_message"] = "Save file is empty or corrupted."
+            else:
+                try:
+                    with open(filepath, "r", encoding="utf-8") as file_obj:
+                        payload = json.load(file_obj)
+                    status, version, message = SaveManager._schema_status(payload)
+                    metadata["compatibility_status"] = status
+                    metadata["schema_version"] = version
+                    metadata["status_message"] = message
+                except (OSError, TypeError, ValueError, json.JSONDecodeError):
+                    metadata["compatibility_status"] = SaveCompatibilityStatus.UNREADABLE
+                    metadata["status_message"] = "Save file is unreadable or corrupted."
+        metadata["loadable"] = (
+            metadata["is_file"]
+            and metadata["compatibility_status"] is SaveCompatibilityStatus.COMPATIBLE
+        )
         return metadata
 
     @staticmethod

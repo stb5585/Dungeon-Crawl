@@ -83,7 +83,7 @@ class TurnExecutionMixin:
                 if self.encounter.living_members:
                     target_ids = (self._focus_target_id,)
         return self.execute_intent(
-            ActionIntent(action=action, choice=choice, target_ids=target_ids),
+            ActionIntent(action_id=action, choice=choice, target_ids=target_ids),
             slot_machine_callback=slot_machine_callback,
         )
 

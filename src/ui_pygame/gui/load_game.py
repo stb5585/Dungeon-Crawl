@@ -333,6 +333,27 @@ class LoadGameScreen:
                         }
                     )
                     continue
+                if not metadata.get("loadable", True):
+                    raw_status = metadata.get("compatibility_status", "")
+                    compatibility_status = str(getattr(raw_status, "value", raw_status))
+                    incompatible = compatibility_status.endswith(
+                        ("pre_foundation", "unsupported_version")
+                    )
+                    self.save_data.append(
+                        {
+                            "name": "Incompatible save" if incompatible else "Corrupted save",
+                            "race": "?",
+                            "sex": "?",
+                            "class": "?",
+                            "level": "?",
+                            "file": save_file,
+                            "loadable": False,
+                            "status_message": metadata.get(
+                                "status_message", "This save cannot be loaded."
+                            ),
+                        }
+                    )
+                    continue
 
                 player_char = SaveManager.load_player(save_file)
                 if player_char:
@@ -401,9 +422,17 @@ class LoadGameScreen:
 
     def show_unloadable_save_notice(self, save_file) -> None:
         """Warn that the selected save cannot be loaded without leaving this screen."""
+        save_data = next(
+            (entry for entry in self.save_data if entry.get("file") == save_file),
+            {},
+        )
+        reason = save_data.get(
+            "status_message",
+            f"{save_file} cannot be loaded.\n\nUse DEL/BACKSPACE to delete it.",
+        )
         notice = ConfirmationPopup(
             self.presenter,
-            f"{save_file} cannot be loaded.\n\nUse DEL/BACKSPACE to delete it.",
+            reason,
             show_buttons=False,
         )
         self.draw_all()

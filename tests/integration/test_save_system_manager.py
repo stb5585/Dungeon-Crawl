@@ -11,11 +11,15 @@ from types import SimpleNamespace
 sys.path.insert(0, str(Path(__file__).parents[2]))
 
 from src.core import abilities, companions, enemies, items, quest_progress, thieves_guild
+from src.core.contracts import ActionReference, ActionReferenceKind
 from src.core.save_system import (
+    SAVE_SCHEMA_VERSION,
     AbilitySerializer,
     EnemyStateSerializer,
     ItemSerializer,
     PlayerDataSerializer,
+    SaveCompatibilityStatus,
+    SaveLoadCode,
     SaveManager,
     TileStateSerializer,
 )
@@ -414,6 +418,57 @@ def test_save_manager_round_trip_list_and_delete(monkeypatch, tmp_path):
     assert SaveManager.load_player("hero.save", skip_tiles=True) is None
 
 
+def test_save_manager_rejects_unmarked_save_and_reports_new_game_status(monkeypatch, tmp_path):
+    save_dir = tmp_path / "saves"
+    tmp_dir = tmp_path / "tmp"
+    monkeypatch.setattr(SaveManager, "SAVE_DIR", str(save_dir))
+    monkeypatch.setattr(SaveManager, "TMP_DIR", str(tmp_dir))
+    SaveManager.ensure_dirs()
+    (save_dir / "legacy.save").write_text(json.dumps({"name": "Old Hero"}), encoding="utf-8")
+
+    metadata = SaveManager.describe_save_file("legacy.save")
+    result = SaveManager.load_player_result("legacy.save", skip_tiles=True)
+
+    assert metadata["compatibility_status"] is SaveCompatibilityStatus.PRE_FOUNDATION
+    assert metadata["schema_version"] is None
+    assert metadata["loadable"] is False
+    assert "Start a new game" in metadata["status_message"]
+    assert result.player is None
+    assert result.code is SaveLoadCode.INCOMPATIBLE_SCHEMA
+    assert result.error is not None and "Start a new game" in result.error
+
+
+def test_version_one_save_round_trips_typed_action_bar_references(monkeypatch, tmp_path):
+    save_dir = tmp_path / "saves"
+    tmp_dir = tmp_path / "tmp"
+    monkeypatch.setattr(SaveManager, "SAVE_DIR", str(save_dir))
+    monkeypatch.setattr(SaveManager, "TMP_DIR", str(tmp_dir))
+    player = TestGameState.create_player(
+        name="Shortcut Saver", class_name="Warrior", race_name="Human", level=10
+    )
+    player.action_bar_assignments = (
+        ActionReference(ActionReferenceKind.ABILITY, "true_strike"),
+        None,
+        ActionReference(ActionReferenceKind.ITEM, "MissingFutureItem"),
+    )
+
+    assert SaveManager.save_player(player, "shortcuts.save") is True
+    payload = json.loads((save_dir / "shortcuts.save").read_text(encoding="utf-8"))
+    restored = SaveManager.load_player("shortcuts.save", skip_tiles=True)
+
+    assert payload["schema_version"] == SAVE_SCHEMA_VERSION == 1
+    assert len(payload["action_bar_assignments"]) == 6
+    assert restored is not None
+    assert restored.action_bar_assignments == (
+        ActionReference(ActionReferenceKind.ABILITY, "true_strike"),
+        None,
+        ActionReference(ActionReferenceKind.ITEM, "MissingFutureItem"),
+        None,
+        None,
+        None,
+    )
+
+
 def test_save_manager_round_trip_preserves_old_key_counts(monkeypatch, tmp_path):
     save_dir = tmp_path / "saves"
     tmp_dir = tmp_path / "tmp"
@@ -485,7 +540,7 @@ def test_load_player_fills_missing_equipment_slots(monkeypatch, tmp_path):
     assert restored.equipment["Pendant"].name == "No Pendant"
 
 
-def test_save_manager_describes_save_files_without_reading_payload(monkeypatch, tmp_path):
+def test_save_manager_describes_save_files_with_schema_status(monkeypatch, tmp_path):
     save_dir = tmp_path / "saves"
     tmp_dir = tmp_path / "tmp"
     monkeypatch.setattr(SaveManager, "SAVE_DIR", str(save_dir))
@@ -506,9 +561,12 @@ def test_save_manager_describes_save_files_without_reading_payload(monkeypatch, 
         "exists": True,
         "is_file": True,
         "is_dir": False,
-        "loadable": True,
+        "loadable": False,
         "size": len("{not json"),
         "empty": False,
+        "schema_version": None,
+        "compatibility_status": SaveCompatibilityStatus.UNREADABLE,
+        "status_message": "Save file is unreadable or corrupted.",
     }
     assert SaveManager.describe_save_file("missing.save") == {
         "filename": "missing.save",
@@ -523,6 +581,9 @@ def test_save_manager_describes_save_files_without_reading_payload(monkeypatch, 
         "loadable": False,
         "size": None,
         "empty": False,
+        "schema_version": None,
+        "compatibility_status": SaveCompatibilityStatus.NOT_A_FILE,
+        "status_message": "Save file not found.",
     }
     assert SaveManager.describe_save_file("folder.save")["is_dir"] is True
     assert SaveManager.describe_save_file("folder.save")["loadable"] is False
@@ -550,6 +611,9 @@ def test_save_manager_describes_save_files_without_reading_payload(monkeypatch, 
         "loadable": False,
         "size": None,
         "empty": False,
+        "schema_version": None,
+        "compatibility_status": SaveCompatibilityStatus.INVALID_NAME,
+        "status_message": "Invalid save filename.",
     }
 
 
@@ -560,8 +624,10 @@ def test_save_manager_lists_metadata_for_visible_save_files(monkeypatch, tmp_pat
     monkeypatch.setattr(SaveManager, "TMP_DIR", str(tmp_dir))
     SaveManager.ensure_dirs()
 
-    (save_dir / "zeta.save").write_text("z", encoding="utf-8")
-    (save_dir / "alpha.save").write_text("alpha", encoding="utf-8")
+    zeta_payload = json.dumps({"schema_version": SAVE_SCHEMA_VERSION, "name": "zeta"})
+    alpha_payload = json.dumps({"schema_version": SAVE_SCHEMA_VERSION, "name": "alpha"})
+    (save_dir / "zeta.save").write_text(zeta_payload, encoding="utf-8")
+    (save_dir / "alpha.save").write_text(alpha_payload, encoding="utf-8")
     (save_dir / "empty.save").write_text("", encoding="utf-8")
     (save_dir / "alpha.save.tmp").write_text("partial", encoding="utf-8")
     (save_dir / "folder.save").mkdir()
@@ -569,19 +635,20 @@ def test_save_manager_lists_metadata_for_visible_save_files(monkeypatch, tmp_pat
     metadata = SaveManager.list_save_metadata()
 
     assert [entry["filename"] for entry in metadata] == ["alpha.save", "empty.save", "zeta.save"]
-    assert [entry["size"] for entry in metadata] == [len("alpha"), 0, len("z")]
+    assert [entry["size"] for entry in metadata] == [len(alpha_payload), 0, len(zeta_payload)]
     assert [entry["empty"] for entry in metadata] == [False, True, False]
     assert all(entry["valid"] and entry["is_file"] for entry in metadata)
     assert all(not entry["is_tmp"] for entry in metadata)
     assert all(entry["extension_matches_expected"] for entry in metadata)
+    assert [entry["loadable"] for entry in metadata] == [True, False, True]
     assert SaveManager.summarize_save_metadata() == {
         "visible_count": 3,
         "visible_filenames": ["alpha.save", "empty.save", "zeta.save"],
-        "loadable_count": 3,
-        "total_size": len("alpha") + len("z"),
+        "loadable_count": 2,
+        "total_size": len(alpha_payload) + len(zeta_payload),
         "empty_save_count": 1,
         "largest_save": "alpha.save",
-        "largest_size": len("alpha"),
+        "largest_size": len(alpha_payload),
     }
     (save_dir / "notes.txt").write_text("ignore me", encoding="utf-8")
     assert SaveManager.summarize_save_directory() == {

@@ -32,6 +32,7 @@ def _load_yaml_ability(filename: str, cls_name: str | None = None) -> Ability:
     ability = AbilityFactory.create_from_yaml(_YAML_DIR / filename, combat_ready=True)
     if cls_name:
         ability._class_name = cls_name
+        ability.aliases = tuple(dict.fromkeys((*getattr(ability, "aliases", ()), cls_name)))
     return ability
 
 
@@ -91,9 +92,25 @@ class Ability:
         self.dmg_mod = dmg_mod
         self.target_scope = target_scope
         self.target_loss_policy = target_loss_policy
+        self._ability_id: str | None = None
         self.result = CombatResult(
             action=name, extra={"cost": cost, "type": self.typ, "subtype": self.subtyp}
         )
+
+    @property
+    def ability_id(self) -> str | None:
+        """Return the immutable YAML slug when this ability is data-backed."""
+        return getattr(self, "_ability_id", None)
+
+    @ability_id.setter
+    def ability_id(self, value: str) -> None:
+        """Set a data-backed slug once, permitting idempotent loader reuse."""
+        if not value:
+            raise ValueError("ability_id must not be empty")
+        existing = getattr(self, "_ability_id", None)
+        if existing is not None and existing != value:
+            raise AttributeError("ability_id is immutable")
+        self._ability_id = value
 
     def _ensure_result(self) -> None:
         """

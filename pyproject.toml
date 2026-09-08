@@ -60,6 +60,7 @@ include = ["src*"]
 [tool.setuptools.package-data]
 "src.core.data" = [
     "abilities/*.yaml",
+    "abilities/*.txt",
     "content/*.json",
     "maps/*.json",
     "maps/*.txt",

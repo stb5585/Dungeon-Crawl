@@ -1,0 +1,251 @@
+"""Focused coverage for additive foundational gameplay contracts."""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+import pytest
+import yaml
+
+from src.core.combat.targeting import (
+    ActionIntent,
+)
+from src.core.combat.targeting import TargetLossPolicy as LegacyTargetLossPolicy
+from src.core.combat.targeting import TargetScope as LegacyTargetScope
+from src.core.combat.targeting import canonical_targeting_policy
+from src.core.contracts import (
+    AbilityActivation,
+    AbilityDefinition,
+    AbilityForm,
+    AbilityMethod,
+    AbilityOrigin,
+    AbilityTaxonomy,
+    ActionAvailability,
+    ActionAvailabilityCode,
+    ActionDefinition,
+    ActionReference,
+    ActionReferenceKind,
+    CombatResourcePresentation,
+    PrimaryIntent,
+    TargetingPolicy,
+    TargetLossPolicy,
+    TargetScope,
+    TimelineEntry,
+    VisibilityState,
+)
+from src.core.data.ability_loader import AbilityFactory
+from src.core.data.ability_schema import (
+    ABILITY_DIRECTORY,
+    load_legacy_allowlist,
+    validate_ability_directory,
+)
+
+
+def test_closed_ability_taxonomy_and_internal_trait_filtering():
+    assert {member.value for member in AbilityOrigin} == {
+        "martial",
+        "arcane",
+        "divine",
+        "natural",
+        "spiritual",
+        "extraplanar",
+        "innate",
+        "alchemical",
+    }
+    taxonomy = AbilityTaxonomy(
+        AbilityOrigin.ARCANE,
+        AbilityMethod.PROJECTION,
+        PrimaryIntent.DAMAGE,
+        AbilityActivation.ACTIVE,
+        AbilityForm.DIRECT,
+        frozenset({"combat.projectile", "internal.combo_trigger"}),
+    )
+    definition = AbilityDefinition(
+        "magic_missile_2",
+        "Magic Missile",
+        "Launches two arcane missiles.",
+        taxonomy,
+        TargetingPolicy(
+            TargetScope.SINGLE_OPPONENT,
+            TargetLossPolicy.RETARGET_FOCUS,
+            hostile=True,
+        ),
+        aliases=("MagicMissile2",),
+    )
+
+    assert definition.player_facing_traits == ("combat.projectile",)
+    assert AbilityForm("item_action") is AbilityForm.ITEM_ACTION
+    assert AbilityActivation("reaction") is AbilityActivation.REACTION
+
+
+def test_targeting_policy_enforces_area_snapshot_contract():
+    policy = TargetingPolicy(
+        TargetScope.ALL_OPPONENTS,
+        TargetLossPolicy.SNAPSHOT_ROSTER,
+        hostile=True,
+    )
+
+    assert policy.scope is TargetScope.ALL_OPPONENTS
+    with pytest.raises(ValueError, match="snapshot"):
+        TargetingPolicy(TargetScope.ALL_OPPONENTS, TargetLossPolicy.RETARGET_FOCUS)
+    with pytest.raises(ValueError, match="only"):
+        TargetingPolicy(TargetScope.SINGLE_OPPONENT, TargetLossPolicy.SNAPSHOT_ROSTER)
+
+
+def test_action_intent_uses_canonical_id_with_legacy_adapter():
+    canonical = ActionIntent(action_id="system.attack", target_ids=("enemy-a",))
+    legacy = ActionIntent.from_legacy("Attack", target_ids=("enemy-a",))
+
+    assert canonical.action_id == "system.attack"
+    assert canonical.action == "system.attack"
+    assert legacy.action_id == legacy.action == "Attack"
+    with pytest.raises(ValueError, match="disagree"):
+        ActionIntent(action_id="system.attack", action="Attack")
+
+    adapted = canonical_targeting_policy(
+        LegacyTargetScope.ALL_ENEMIES,
+        LegacyTargetLossPolicy.SNAPSHOT_ROSTER,
+        hostile=True,
+    )
+    assert adapted == TargetingPolicy(
+        TargetScope.ALL_OPPONENTS,
+        TargetLossPolicy.SNAPSHOT_ROSTER,
+        hostile=True,
+    )
+
+
+def test_action_and_presentation_models_are_typed_and_text_complete():
+    reference = ActionReference(ActionReferenceKind.ITEM, "ThrowingDaggers")
+    action = ActionDefinition(
+        "item.ThrowingDaggers",
+        "Throwing Daggers",
+        AbilityActivation.ACTIVE,
+        TargetingPolicy(TargetScope.SINGLE_OPPONENT, TargetLossPolicy.RETARGET_FOCUS),
+    )
+    unavailable = ActionAvailability(
+        ActionAvailabilityCode.INSUFFICIENT_ITEM_COUNT,
+        "No throwing daggers remain.",
+    )
+    resource = CombatResourcePresentation(
+        "warrior.resolve",
+        "Resolve",
+        10,
+        "resource.resolve",
+        value=3,
+        capacity=3,
+        state_text="Full",
+        ready=True,
+    )
+
+    assert ActionReference.from_dict(reference.to_dict()) == reference
+    assert action.action_id == "item.ThrowingDaggers"
+    assert unavailable.available is False
+    assert resource.ready is True and resource.label == "Resolve"
+    assert TimelineEntry("player", "Hero", 25.5).ready_at == 25.5
+    assert VisibilityState("enemy-a", concealed=True).hostile_single_target_legal is False
+    assert (
+        VisibilityState(
+            "enemy-a", concealed=True, revealed_by=frozenset({"sight.player"})
+        ).hostile_single_target_legal
+        is True
+    )
+
+
+def test_current_legacy_allowlist_is_exact_and_validator_passes():
+    allowlist = load_legacy_allowlist()
+    report = validate_ability_directory()
+
+    assert len(allowlist) == 197
+    assert report.valid is True
+    assert report.definitions == ()
+    assert frozenset(report.legacy_ability_ids) == allowlist
+
+
+def test_yaml_loader_assigns_immutable_filename_slug_before_metadata_migration():
+    ability = AbilityFactory.create_from_yaml(ABILITY_DIRECTORY / "magic_missile_2.yaml")
+
+    assert ability.ability_id == "magic_missile_2"
+    with pytest.raises(AttributeError, match="immutable"):
+        ability.ability_id = "different_slug"
+
+
+def test_validator_accepts_complete_metadata_and_rejects_stale_allowlist(tmp_path: Path):
+    ability_dir = tmp_path / "abilities"
+    ability_dir.mkdir()
+    payload = {
+        "id": "test_bolt",
+        "aliases": ["TestBolt"],
+        "name": "Test Bolt",
+        "description": "A test projection.",
+        "type": "Spell",
+        "taxonomy": {
+            "origin": "arcane",
+            "method": "projection",
+            "primary_intent": "damage",
+            "activation": "active",
+            "form": "direct",
+            "traits": [],
+        },
+        "targeting": {
+            "scope": "single_opponent",
+            "loss_policy": "retarget_focus",
+            "hostile": True,
+        },
+        "effects": [],
+    }
+    (ability_dir / "test_bolt.yaml").write_text(yaml.safe_dump(payload), encoding="utf-8")
+    allowlist_path = tmp_path / "allowlist.txt"
+    allowlist_path.write_text("", encoding="utf-8")
+
+    report = validate_ability_directory(ability_dir, allowlist_path=allowlist_path)
+
+    assert report.valid is True
+    assert report.definitions[0].ability_id == "test_bolt"
+
+    allowlist_path.write_text("test_bolt\n", encoding="utf-8")
+    stale = validate_ability_directory(ability_dir, allowlist_path=allowlist_path)
+    assert [(issue.ability_id, issue.code) for issue in stale.issues] == [
+        ("test_bolt", "stale_allowlist")
+    ]
+
+
+def test_validator_rejects_unknown_traits_and_partial_metadata(tmp_path: Path):
+    ability_dir = tmp_path / "abilities"
+    ability_dir.mkdir()
+    (ability_dir / "partial.yaml").write_text("id: partial\nname: Partial\n", encoding="utf-8")
+    allowlist_path = tmp_path / "allowlist.txt"
+    allowlist_path.write_text("", encoding="utf-8")
+
+    report = validate_ability_directory(ability_dir, allowlist_path=allowlist_path)
+
+    assert [(issue.ability_id, issue.code) for issue in report.issues] == [
+        ("partial", "partial_metadata")
+    ]
+
+    (ability_dir / "partial.yaml").unlink()
+    unknown_trait = {
+        "id": "unknown_trait",
+        "aliases": [],
+        "name": "Unknown Trait",
+        "description": "Invalid test metadata.",
+        "taxonomy": {
+            "origin": "innate",
+            "method": "command",
+            "primary_intent": "utility",
+            "activation": "active",
+            "form": "direct",
+            "traits": ["unregistered.example"],
+        },
+        "targeting": {
+            "scope": "self",
+            "loss_policy": "retarget_focus",
+            "hostile": False,
+        },
+    }
+    (ability_dir / "unknown_trait.yaml").write_text(yaml.safe_dump(unknown_trait), encoding="utf-8")
+
+    report = validate_ability_directory(ability_dir, allowlist_path=allowlist_path)
+    assert [(issue.ability_id, issue.code) for issue in report.issues] == [
+        ("unknown_trait", "invalid_metadata")
+    ]
+    assert "unregistered traits" in report.issues[0].message

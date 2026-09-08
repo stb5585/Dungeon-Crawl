@@ -30,21 +30,39 @@ inventory external and internal callers, document a replacement import for
 each symbol, add a deprecation period where practical, and remove the alias in
 a separately announced breaking release.
 
+## Foundational Contracts
+
+Dependency-free contracts in `src/core/contracts` define ability identity and
+taxonomy, actor-relative targeting, action references and availability,
+timeline entries, visibility observations, and combat-resource presentation.
+Core systems and Pygame may depend on these models; the contracts do not depend
+on either runtime. This keeps validation, persistence, simulation, and
+presentation on one vocabulary.
+
+The YAML taxonomy validator enforces complete closed enum values and registered
+namespaced traits for migrated definitions. Its exact legacy allowlist must
+shrink whenever a family migrates and becomes an error once complete
+validation is enabled.
+
 ## Combat Actions And Targets
 
 The Pygame combat manager drives `BattleEngine`; the engine owns the combat
 state and never reads input. A requested action is represented by an immutable
-`ActionIntent` containing the action, optional choice, and stable encounter
-target IDs. `TargetScope` defines no-target, self, single-enemy, and all-enemy
-shapes. `TargetLossPolicy` determines whether a committed action stays locked,
-retargets to focus, or uses a roster snapshot.
+`ActionIntent` containing an action ID, optional migration choice, and stable
+encounter target IDs. The temporary `action` property adapts legacy command
+strings while callers migrate. Canonical `TargetScope` values are
+actor-relative: no target, self, single opponent, and all opponents.
+`TargetLossPolicy` determines whether a committed action stays locked,
+retargets to focus, or uses a roster snapshot. Enemy-named scopes remain only
+in the legacy combat adapter during migration.
 
 The engine validates the intent, expands and resolves targets against the live
 `CombatEncounter`, executes the action, and returns an `ActionResult` with a
-machine-readable validation code when rejected. The actor cycle owns fixed
-turn order; pre-turn and post-turn results carry status and resolution effects,
-and `BattleOutcome` carries final settlement. Events and the battle logger
-observe this flow without becoming the source of combat truth.
+machine-readable validation code when rejected. Until the timeline slice, the
+actor cycle still owns fixed turn order; pre-turn and post-turn results carry
+status and resolution effects, and `BattleOutcome` carries final settlement.
+Events and the battle logger observe this flow without becoming the source of
+combat truth.
 
 The next combat architecture phase is intentionally deferred. Large mutation
 methods such as weapon damage and status-effect resolution should be replaced
@@ -54,16 +72,17 @@ design approval; it is not part of stabilization.
 
 ## Saves
 
-Save files are development artifacts, not a distributed compatibility
-contract. The game writes only the current serializer shape and does not stamp
-a format version, migrate historical payloads, or promise that saves survive
-refactors. `SaveManager` still uses atomic replacement so an interrupted write
-does not leave a partially written current save.
+Save files are stamped with root `schema_version: 1`. Unmarked pre-foundation
+saves and saves with another version remain visible with an explanatory status
+but cannot be loaded; this deliberate pre-release reset has no migration path.
+Version 1 stores six typed action-bar slots as ability-slug or item-token
+references. Missing item inventory never deletes the assignment. Combat
+timelines, visibility observations, encounters, and mid-combat state remain
+runtime-only.
 
-When a gameplay or content refactor changes persisted state, developers may
-delete local saves and create new ones. A future public-distribution milestone
-must define a versioning and migration policy before any release that promises
-save compatibility.
+`SaveManager` uses typed result codes and atomic replacement so an interrupted
+write does not leave a partially written current save. Any future schema change
+must explicitly choose a new reset or migration before implementation.
 
 ## Resources And Writable Data
 

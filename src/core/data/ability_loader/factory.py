@@ -280,6 +280,9 @@ class AbilityFactory:
 
         # Stash raw data for inspection / analytics
         ability._raw_data = ability_data
+        if ability_data.get("id"):
+            ability.ability_id = str(ability_data["id"])
+        ability.aliases = tuple(str(alias) for alias in ability_data.get("aliases", ()))
         ability.damage_types = tuple(ability_data.get("damage_types", ()))
         ability.target_scope = AbilityFactory._target_scope(
             ability_data,
@@ -343,6 +346,8 @@ class AbilityFactory:
             prone_while_charging: bool | None = None
             notes: str | None = None
             raw_data: dict = field(default_factory=dict)
+            ability_id: str | None = None
+            aliases: tuple[str, ...] = ()
             target_scope: TargetScope = TargetScope.SINGLE_ENEMY
             target_loss_policy: TargetLossPolicy = TargetLossPolicy.LOCKED
 
@@ -361,6 +366,8 @@ class AbilityFactory:
             prone_while_charging=ability_data.get("prone_while_charging"),
             notes=ability_data.get("notes"),
             raw_data=ability_data,
+            ability_id=(str(ability_data["id"]) if ability_data.get("id") else None),
+            aliases=tuple(str(alias) for alias in ability_data.get("aliases", ())),
             target_scope=AbilityFactory._target_scope(
                 ability_data,
                 ability_data.get("target_scope"),
@@ -385,7 +392,12 @@ class AbilityFactory:
         """
         path = Path(file_path).resolve()
         data = deepcopy(_load_yaml_definition(str(path), path.stat().st_mtime_ns))
-        return AbilityFactory.create_from_dict(data, combat_ready=combat_ready)
+        declared_id = data.get("id")
+        if declared_id is not None and str(declared_id) != path.stem:
+            raise ValueError(f"Ability id {declared_id!r} must match filename stem {path.stem!r}")
+        ability = AbilityFactory.create_from_dict(data, combat_ready=combat_ready)
+        ability.ability_id = path.stem
+        return ability
 
     @staticmethod
     def load_abilities_from_directory(directory: str | Path, *, combat_ready: bool = True) -> dict:
