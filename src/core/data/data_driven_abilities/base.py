@@ -19,6 +19,7 @@ from typing import TYPE_CHECKING
 
 from src.core.abilities import Spell
 from src.core.combat.combat_result import CombatResult, CombatResultGroup
+from src.core.combat.reactions import execute_reaction, reaction_result
 from src.core.combat.targeting import TargetScope
 from src.core.constants import (
     DAMAGE_VARIANCE_HIGH,
@@ -124,6 +125,7 @@ class DataDrivenSpell(Spell):
     # ------------------------------------------------------------------
     # Attack.cast() replica with composed-effects integration
     # ------------------------------------------------------------------
+    @reaction_result
     def cast(
         self,
         caster: Character,
@@ -412,8 +414,14 @@ class DataDrivenSpell(Spell):
             ):
                 from src.core.abilities import Counterspell
 
-                msg += f"{reaction_owner.name} uses Counterspell.\n"
-                msg += Counterspell().use(reaction_owner, caster)
+                counterspell = execute_reaction(
+                    "counterspell",
+                    reaction_owner,
+                    lambda: Counterspell().use(reaction_owner, caster),
+                )
+                if counterspell:
+                    msg += f"{reaction_owner.name} uses Counterspell.\n"
+                    msg += counterspell
         else:
             msg += f"The spell misses {target.name}.\n"
 

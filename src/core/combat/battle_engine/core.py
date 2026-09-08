@@ -98,6 +98,7 @@ class BattleEngine(BattleTurnMixin, BattleActionMixin, BattleOutcomeMixin):
         self._forced_cancellation: ForcedAction | None = None
         self._forced_cancellation_actor_id: str | None = None
         self._forced_cancellation_turn_id = 0
+        self._reaction_executions: set[tuple[int, str]] = set()
 
         # Track charging abilities across turns
         self.charging_ability: tuple[Character, str, Any] | None = None  # (owner, name, skill_obj)

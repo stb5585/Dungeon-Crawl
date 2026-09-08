@@ -77,8 +77,9 @@ readiness now schedules actor opportunities from seeded jitter, bounded Luck
 head starts, and encounter-median Speed tempo. Charges now wait for a later
 owner readiness opportunity, preserve their committed target across charge
 ticks, and support no-refund cancellation. Forced actions are now enforced by
-canonical intent validation, including cancellation turns. Reactions,
-owner-turn status migration, logs, and simulator diagnostics remain.
+canonical intent validation, including cancellation turns. Reactions now
+resolve without readiness cost and cannot re-enter through a counter-result.
+Owner-turn status migration, logs, and simulator diagnostics remain.
 
 UI replacement and encounter expansion follow only after the migrated action
 contract, resolution rules, and timeline are stable. Numeric tuning remains a

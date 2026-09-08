@@ -295,13 +295,22 @@ def retaliate_after_block(defender: Any, attacker: Any, *, rng: Any = random) ->
         pass
     if rng.random() >= chance:
         return ""
-    msg = f"{defender.name} retaliates after the block!\n"
-    counter, hit, _crit = defender.weapon_damage(
-        attacker,
-        dmg_mod=0.75,
-        use_offhand=False,
-        counterattack=True,
+    from ...combat.reactions import execute_reaction
+
+    reaction = execute_reaction(
+        "retaliate_after_block",
+        defender,
+        lambda: defender.weapon_damage(
+            attacker,
+            dmg_mod=0.75,
+            use_offhand=False,
+            counterattack=True,
+        ),
     )
+    if reaction is None:
+        return ""
+    counter, hit, _crit = reaction
+    msg = f"{defender.name} retaliates after the block!\n"
     if hit:
         try:
             from .. import promotion_kits
@@ -334,13 +343,21 @@ def final_assault_response(defender: Any, attacker: Any, incoming_damage: int) -
         momentum, momentum_msg = berserker.prepare_final_assault_payoff(defender)
         msg = f"{defender.name} answers lethal force with a Final Assault!\n"
         msg += momentum_msg
-        counter, _hit, _crit = defender.weapon_damage(
-            attacker,
-            dmg_mod=1.25 + momentum.damage_bonus,
-            use_offhand=False,
-            accuracy_modifier=momentum.accuracy_bonus,
+        from ...combat.reactions import execute_reaction
+
+        reaction = execute_reaction(
+            "final_assault",
+            defender,
+            lambda: defender.weapon_damage(
+                attacker,
+                dmg_mod=1.25 + momentum.damage_bonus,
+                use_offhand=False,
+                accuracy_modifier=momentum.accuracy_bonus,
+            ),
         )
-        msg += counter
+        if reaction is not None:
+            counter, _hit, _crit = reaction
+            msg += counter
     finally:
         defender._final_assault_countering = False
     if getattr(attacker.health, "current", 0) <= 0:

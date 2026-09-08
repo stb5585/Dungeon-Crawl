@@ -6,6 +6,7 @@ import random
 from dataclasses import replace
 from typing import TYPE_CHECKING
 
+from ..combat.reactions import reaction_result
 from ..constants import (
     ACCURACY_RING_BONUS,
     BASE_CRIT_PER_POINT,
@@ -476,6 +477,7 @@ class CharacterOffenseMixin:
 
         return max(0.0, min(MAX_CRIT_CHANCE, crit_chance))
 
+    @reaction_result
     def weapon_damage(
         self,
         defender: Character,
