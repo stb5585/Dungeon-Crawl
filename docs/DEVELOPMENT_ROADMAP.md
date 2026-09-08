@@ -72,17 +72,18 @@ allowlist is empty and CI requires complete validation.
 The resolution slice is complete: fitted one-roll weapon and spell contact,
 core concealment/Sight/Detect, symmetric target resolution, canonical
 target-loss behavior, structured enemy-area results, and concealed area-result
-identity redaction are implemented. The timeline slice is in progress: virtual
-readiness now schedules actor opportunities from seeded jitter, bounded Luck
-head starts, and encounter-median Speed tempo. Charges now wait for a later
-owner readiness opportunity, preserve their committed target across charge
-ticks, and support no-refund cancellation. Forced actions are now enforced by
-canonical intent validation, including cancellation turns. Reactions now
-resolve without readiness cost and cannot re-enter through a counter-result.
-Statuses, including Paladin encounter timers, now tick only on their owner's
-pre-turn readiness opportunity. Battle logs now retain virtual readiness,
-round, actor-turn identity, and the scheduled opportunity actor. Simulator
-diagnostics remain.
+identity redaction are implemented. The timeline slice is complete: virtual
+readiness schedules actor opportunities from seeded jitter, bounded Luck head
+starts, and encounter-median Speed tempo. Charges wait for a later owner
+readiness opportunity, preserve their committed target across charge ticks,
+and support no-refund cancellation. Forced actions are enforced by canonical
+intent validation, including cancellation turns. Reactions resolve without
+readiness cost and cannot re-enter through a counter-result. Statuses,
+including Paladin encounter timers, tick only on their owner's pre-turn
+readiness opportunity. Battle logs retain virtual readiness, round, actor-turn
+identity, and the scheduled opportunity actor. Simulator results retain a
+bounded normal-opportunity trace, final actor readiness, and timing-invariant
+diagnostics. Interface replacement is next.
 
 UI replacement and encounter expansion follow only after the migrated action
 contract, resolution rules, and timeline are stable. Numeric tuning remains a

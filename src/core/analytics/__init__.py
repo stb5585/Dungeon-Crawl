@@ -8,6 +8,7 @@ from .combat_simulator import (
     BalanceReport,
     CombatSimulator,
     CombatStats,
+    TimelineTurnDiagnostic,
     quick_balance_test,
 )
 
@@ -15,5 +16,6 @@ __all__ = [
     "CombatSimulator",
     "CombatStats",
     "BalanceReport",
+    "TimelineTurnDiagnostic",
     "quick_balance_test",
 ]

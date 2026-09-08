@@ -175,6 +175,10 @@ class CombatStats:
     max_non_progress_streak: int = 0
     invalid_intents: int = 0
     max_turns_reached: bool = False
+    timeline_trace: tuple[TimelineTurnDiagnostic, ...] = ()
+    final_readiness: dict[str, float] = field(default_factory=dict)
+    readiness_is_monotonic: bool = True
+    max_consecutive_actor_turns: int = 0
 
     @property
     def hp_remaining_percent(self) -> float:
@@ -187,6 +191,33 @@ class CombatStats:
     def was_close(self) -> bool:
         """Was this a close fight? (winner had < 30% HP)"""
         return self.hp_remaining_percent < 30
+
+
+@dataclass(frozen=True)
+class TimelineTurnDiagnostic:
+    """One scheduled actor opportunity captured by a combat simulation."""
+
+    actor_id: str
+    ready_at: float
+    round_number: int
+    actor_turn_id: int
+    can_act: bool
+    action: str | None = None
+    committed: bool | None = None
+    forced: bool = False
+
+    def export_payload(self) -> dict[str, object]:
+        """Return a JSON-compatible diagnostic record."""
+        return {
+            "actor_id": self.actor_id,
+            "ready_at": self.ready_at,
+            "round_number": self.round_number,
+            "actor_turn_id": self.actor_turn_id,
+            "can_act": self.can_act,
+            "action": self.action,
+            "committed": self.committed,
+            "forced": self.forced,
+        }
 
 
 @dataclass
@@ -292,6 +323,19 @@ class BalanceReport:
                 events[event_name] += count
         return dict(events)
 
+    def get_timeline_diagnostics(self) -> dict[str, int]:
+        """Return aggregate readiness-schedule diagnostics across simulations."""
+        return {
+            "traced_actor_turns": sum(len(result.timeline_trace) for result in self.results),
+            "readiness_monotonic_battles": sum(
+                result.readiness_is_monotonic for result in self.results
+            ),
+            "max_consecutive_actor_turns": max(
+                (result.max_consecutive_actor_turns for result in self.results),
+                default=0,
+            ),
+        }
+
     def export_payload(self) -> dict:
         """Export report metrics and raw combat stats for tooling."""
         return {
@@ -305,9 +349,19 @@ class BalanceReport:
             "status_effect_frequency": self.get_status_effect_frequency(),
             "class_kit_events": self.get_class_kit_events(),
             "action_economy_events": self.get_action_economy_events(),
+            "timeline_diagnostics": self.get_timeline_diagnostics(),
             "outliers": self.identify_outliers(),
-            "results": [result.__dict__.copy() for result in self.results],
+            "results": [self._result_payload(result) for result in self.results],
         }
+
+    @staticmethod
+    def _result_payload(result: CombatStats) -> dict[str, object]:
+        """Convert nested simulation diagnostics to JSON-compatible values."""
+        payload = result.__dict__.copy()
+        payload["timeline_trace"] = [
+            diagnostic.export_payload() for diagnostic in result.timeline_trace
+        ]
+        return payload
 
     def summary_payload(self, *, ability_limit: int = 5, status_limit: int = 5) -> dict:
         """Export compact report metrics for dashboards and quick balance checks."""
@@ -327,6 +381,7 @@ class BalanceReport:
             )[: max(0, status_limit)],
             "class_kit_events": self.get_class_kit_events(),
             "action_economy_events": self.get_action_economy_events(),
+            "timeline_diagnostics": self.get_timeline_diagnostics(),
             "outliers": self.identify_outliers(),
         }
 
@@ -503,6 +558,12 @@ class CombatSimulator:
         action_economy_events: dict[str, int] = defaultdict(int)
         consumables_used = 0
         action_sequence: list[str] = []
+        timeline_trace: list[TimelineTurnDiagnostic] = []
+        readiness_is_monotonic = True
+        previous_ready_at: float | None = None
+        previous_actor_id: str | None = None
+        consecutive_actor_turns = 0
+        max_consecutive_actor_turns = 0
         repeated_non_progress_actions = 0
         max_non_progress_streak = 0
         non_progress_streak = 0
@@ -892,7 +953,26 @@ class CombatSimulator:
         turns = 0
         while engine.battle_continues() and turns < max_turns:
             turns += 1
+            actor_id = str(getattr(engine, "current_actor_id", None) or "unknown")
+            ready_at = float(getattr(engine, "current_readiness", 0.0) or 0.0)
+            if previous_ready_at is not None and ready_at < previous_ready_at:
+                readiness_is_monotonic = False
+            previous_ready_at = ready_at
+            if actor_id == previous_actor_id:
+                consecutive_actor_turns += 1
+            else:
+                consecutive_actor_turns = 1
+            previous_actor_id = actor_id
+            max_consecutive_actor_turns = max(
+                max_consecutive_actor_turns,
+                consecutive_actor_turns,
+            )
+            round_number = int(getattr(engine, "round_number", 0) or 0)
+            actor_turn_id = int(getattr(engine, "total_started_actor_turns", turns) or turns)
             pre = engine.pre_turn()
+            action_label: str | None = None
+            action_committed: bool | None = None
+            forced_action = False
             if pre.can_act:
                 hp_before = (
                     int(char1.health.current),
@@ -901,6 +981,7 @@ class CombatSimulator:
                 forced = engine.get_forced_action()
                 if forced:
                     action, choice = forced.action, forced.choice
+                    forced_action = True
                 else:
                     if engine.is_player_turn():
                         policy = char1_policy or default_policy
@@ -930,9 +1011,7 @@ class CombatSimulator:
                 action_name = action.action if isinstance(action, ActionIntent) else str(action)
                 action_choice = action.choice if isinstance(action, ActionIntent) else choice
                 action_label = f"{action_name}:{action_choice}" if action_choice else action_name
-                action_label = (
-                    f"{getattr(engine, 'current_actor_id', None) or 'unknown'}=" f"{action_label}"
-                )
+                action_label = f"{actor_id}=" f"{action_label}"
                 action_sequence.append(action_label)
                 if not hasattr(engine, "execute_intent"):
                     action_result = engine.execute_action(action, choice)
@@ -950,6 +1029,7 @@ class CombatSimulator:
                     action_result = engine.execute_intent(intent)
                 if not getattr(action_result, "committed", True):
                     invalid_intents += 1
+                action_committed = bool(getattr(action_result, "committed", True))
                 hp_after = (
                     int(char1.health.current),
                     tuple(int(member.enemy.health.current) for member in encounter.members),
@@ -967,6 +1047,18 @@ class CombatSimulator:
                     non_progress_streak,
                 )
                 record_analytics_text(getattr(action_result, "message", ""))
+            timeline_trace.append(
+                TimelineTurnDiagnostic(
+                    actor_id=actor_id,
+                    ready_at=ready_at,
+                    round_number=round_number,
+                    actor_turn_id=actor_turn_id,
+                    can_act=bool(pre.can_act),
+                    action=action_label,
+                    committed=action_committed,
+                    forced=forced_action,
+                )
+            )
             companion_text = engine.companion_turn()
             record_analytics_text(companion_text)
             post = engine.post_turn()
@@ -1055,6 +1147,15 @@ class CombatSimulator:
             max_non_progress_streak=max_non_progress_streak,
             invalid_intents=invalid_intents,
             max_turns_reached=(turns >= max_turns and char1.is_alive() and bool(living_enemies)),
+            timeline_trace=tuple(timeline_trace[-80:]),
+            final_readiness={
+                actor_id: float(ready_at)
+                for actor_id, ready_at in sorted(
+                    getattr(getattr(engine, "_actor_cycle", None), "readiness", {}).items()
+                )
+            },
+            readiness_is_monotonic=readiness_is_monotonic,
+            max_consecutive_actor_turns=max_consecutive_actor_turns,
         )
 
     def run_simulations(
