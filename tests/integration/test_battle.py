@@ -338,7 +338,7 @@ class TestBattleEngineBasics:
         assert forced.action == "Use Skill"
         assert forced.choice == "Sky Jump"
 
-    def test_charging_skill_can_continue_after_paying_mana_cost(self, monkeypatch):
+    def test_charging_skill_resolves_only_on_a_later_owner_opportunity(self, monkeypatch):
         """
         Regression: charging skills pay mana up-front. The engine must allow the
         follow-up turns even if mana is now 0, otherwise the charge can never
@@ -347,8 +347,9 @@ class TestBattleEngineBasics:
         from src.core import abilities
 
         engine, player, enemy, _tile = self._make_engine()
-        engine.attacker = player
-        engine.defender = enemy
+        engine.start_battle()
+        while engine.attacker is not player:
+            engine.swap_turns()
 
         # Add Charge to the player's skillbook. Give exactly enough mana to start.
         player.spellbook["Skills"]["Charge"] = abilities.Charge()
@@ -367,9 +368,48 @@ class TestBattleEngineBasics:
         assert player.mana.current == 0
         assert "is lowering their head" in res1.message or "begins to charge" in res1.message
 
+        # The start opportunity cannot also resolve the charge.
+        too_soon = engine.execute_action("Use Skill", choice="Charge")
+        assert too_soon.committed is False
+        assert "later readiness" in too_soon.message
+
         # Turn 2: resolve charge with mana == 0 (should be allowed).
+        engine.swap_turns()  # Clear the rejected same-opportunity request.
+        engine.post_turn()
+        engine.swap_turns()
+        while engine.attacker is not player:
+            engine.swap_turns()
         res2 = engine.execute_action("Use Skill", choice="Charge")
         assert "Hit for 5 damage" in res2.message
+
+    def test_charge_cancellation_waits_for_later_owner_opportunity_and_refunds_nothing(self):
+        """A charge can be cancelled only when its owner next becomes ready."""
+        from src.core import abilities
+
+        engine, player, _enemy, _tile = self._make_engine()
+        engine.start_battle()
+        while engine.attacker is not player:
+            engine.swap_turns()
+        player.spellbook["Skills"]["Charge"] = abilities.Charge()
+
+        engine.execute_action("Use Skill", choice="Charge")
+        mana_after_start = player.mana.current
+
+        too_soon = engine.execute_action("Cancel Charge")
+        assert too_soon.committed is False
+        assert too_soon.validation_code.name == "CHARGE_NOT_READY"
+
+        engine.swap_turns()  # Clear the rejected same-opportunity request.
+        engine.post_turn()
+        engine.swap_turns()
+        while engine.attacker is not player:
+            engine.swap_turns()
+        cancelled = engine.execute_action("Cancel Charge")
+
+        assert cancelled.committed is True
+        assert player.mana.current == mana_after_start
+        assert player.spellbook["Skills"]["Charge"].charging is False
+        assert "player" not in engine.pending_actions
 
     def test_charging_skill_can_resolve_while_silenced(self):
         """

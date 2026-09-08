@@ -11,7 +11,7 @@ from ..actor_cycle import PLAYER_ACTOR_ID
 from ..combat_result import CombatResult, CombatResultGroup
 from ..targeting import TargetScope
 from ..visibility import break_concealment
-from .models import ActionIntent, ActionResult
+from .models import ActionIntent, ActionResult, ActionValidationCode
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -27,8 +27,31 @@ class IntentResolutionMixin:
         slot_machine_callback: Callable | None = None,
     ) -> ActionResult:
         """Validate and execute an action for the engine-owned active actor."""
-        scope = self._target_scope_for_action(intent.action, intent.choice)
         actor_id = self.current_actor_id or self._actor_id_for(self.attacker)
+        pending_charge = self._pending_charge(actor_id)
+        if pending_charge is not None:
+            if not self._charge_is_ready(pending_charge):
+                return self._reject_intent(
+                    ActionValidationCode.CHARGE_NOT_READY,
+                    f"{self.attacker.name}'s charge resolves on a later readiness opportunity.\n",
+                )
+            if intent.action == "Cancel Charge":
+                pass
+            elif intent.action != pending_charge.get(
+                "action"
+            ) or intent.choice != pending_charge.get("choice"):
+                return self._reject_intent(
+                    ActionValidationCode.CHARGE_PENDING,
+                    f"{self.attacker.name} must resolve or cancel their charge.\n",
+                )
+
+        if intent.action == "Cancel Charge" and pending_charge is None:
+            return self._reject_intent(
+                ActionValidationCode.NO_CHARGE_TO_CANCEL,
+                f"{self.attacker.name} has no charge to cancel.\n",
+            )
+
+        scope = self._target_scope_for_action(intent.action, intent.choice)
         targets = self._validated_intent_targets(intent, scope)
         if isinstance(targets, ActionResult):
             return targets

@@ -202,37 +202,28 @@ class SkillActionMixin:
                 message = ""
             message += skill.use(self.attacker, target=self.defender)
             self.attacker.class_effects["Jump"].active = bool(getattr(skill, "charging", False))
-            owner_id = self._actor_id_for(self.attacker)
             if getattr(skill, "charging", False):
-                member = self._member_for_character(self.defender)
-                self.pending_actions[owner_id] = {
-                    "action": "Use Skill",
-                    "choice": choice,
-                    "ability": skill,
-                    "target_id": member.combatant_id if member else None,
-                    "policy": getattr(skill, "target_loss_policy", "locked"),
-                }
+                self._register_pending_charge(
+                    choice,
+                    skill,
+                    preserve_start=already_charging,
+                )
             else:
-                self.pending_actions.pop(owner_id, None)
+                self._clear_pending_charge(self._actor_id_for(self.attacker), skill)
 
         elif hasattr(skill, "get_charge_time") and skill.get_charge_time() > 0:
             # Charging abilities (Charge, Crushing Blow, etc.)
             message += skill.use(self.attacker, target=self.defender)
             if getattr(skill, "charging", False):
                 self.charging_ability = (self.attacker, choice, skill)
-                member = self._member_for_character(self.defender)
-                owner_id = self._actor_id_for(self.attacker)
-                self.pending_actions[owner_id] = {
-                    "action": "Use Skill",
-                    "choice": choice,
-                    "ability": skill,
-                    "target_id": member.combatant_id if member else None,
-                    "policy": getattr(skill, "target_loss_policy", "locked"),
-                }
+                self._register_pending_charge(
+                    choice,
+                    skill,
+                    preserve_start=already_charging,
+                )
             else:
                 # Charge completed this turn
-                self.charging_ability = None
-                self.pending_actions.pop(self._actor_id_for(self.attacker), None)
+                self._clear_pending_charge(self._actor_id_for(self.attacker), skill)
 
         else:
             message += str(skill.use(self.attacker, target=self.defender))

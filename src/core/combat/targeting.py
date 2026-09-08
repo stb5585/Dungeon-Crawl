@@ -40,6 +40,9 @@ class ActionValidationCode(str, Enum):
     WRONG_TARGET_SCOPE = "wrong_target_scope"
     ENEMY_AREA_UNSUPPORTED = "enemy_area_unsupported"
     CONCEALED_TARGET = "concealed_target"
+    CHARGE_NOT_READY = "charge_not_ready"
+    CHARGE_PENDING = "charge_pending"
+    NO_CHARGE_TO_CANCEL = "no_charge_to_cancel"
 
 
 @dataclass(frozen=True, init=False)

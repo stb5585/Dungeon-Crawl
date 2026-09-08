@@ -74,8 +74,10 @@ core concealment/Sight/Detect, symmetric target resolution, canonical
 target-loss behavior, structured enemy-area results, and concealed area-result
 identity redaction are implemented. The timeline slice is in progress: virtual
 readiness now schedules actor opportunities from seeded jitter, bounded Luck
-head starts, and encounter-median Speed tempo. Charges, forced actions,
-reactions, owner-turn status migration, logs, and simulator diagnostics remain.
+head starts, and encounter-median Speed tempo. Charges now wait for a later
+owner readiness opportunity, preserve their committed target across charge
+ticks, and support no-refund cancellation. Forced actions, reactions,
+owner-turn status migration, logs, and simulator diagnostics remain.
 
 UI replacement and encounter expansion follow only after the migrated action
 contract, resolution rules, and timeline are stable. Numeric tuning remains a

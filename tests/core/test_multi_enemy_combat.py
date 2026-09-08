@@ -480,6 +480,10 @@ def test_locked_charge_fizzles_without_refund_when_target_is_gone():
     mana_after_commit = player.mana.current
     enemies[0].health.current = 0
     engine._record_final_enemy_resolutions()
+    engine.post_turn()
+    engine.swap_turns()
+    while engine.attacker is not player:
+        engine.swap_turns()
     released = engine.execute_action("Use Skill", "Charge")
 
     assert "building momentum" in started.message

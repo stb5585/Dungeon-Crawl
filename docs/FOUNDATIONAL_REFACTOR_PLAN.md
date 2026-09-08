@@ -344,8 +344,11 @@ Current slice status:
 - Timeline: in progress; virtual readiness now owns actor scheduling with
   seeded initial jitter, bounded Luck head starts, encounter-median tempo,
   two-consecutive-turn protection, and owner opportunity round accounting.
-  Charges, forced actions, reactions, owner-turn status migration, logs, and
-  simulator diagnostics remain in the ordered work.
+  Charges are complete: their pending intent records the starting owner turn,
+  cannot resolve or cancel on that same opportunity, preserves its committed
+  target through subsequent charge ticks, and refunds nothing on cancellation
+  or target loss. Forced actions, reactions, owner-turn status migration,
+  logs, and simulator diagnostics remain in the ordered work.
 
 ## Progression Boundary
 
