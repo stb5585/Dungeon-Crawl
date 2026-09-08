@@ -59,6 +59,12 @@ class SingleTargetActionResolutionMixin:
                 warrior.finish_action(self.player)
             return result
 
+        if action == "Cancel Charge":
+            result.message = self._cancel_pending_charge()
+            if self.attacker == self.player:
+                warrior.finish_action(self.player)
+            return result
+
         if action == "Detect":
             if self._member_for_character(self.attacker) is not None:
                 concealed = (

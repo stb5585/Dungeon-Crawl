@@ -186,15 +186,18 @@ class TurnPreparationMixin:
             except AttributeError:
                 cancel_msg = ""
             self.attacker.class_effects["Jump"].active = False
+            self._clear_pending_charge(self._actor_id_for(self.attacker), jump_skill)
             return cancel_msg or f"{self.attacker.name}'s Jump was cancelled.\n"
 
         for _skill_name, skill in self.attacker.spellbook.get("Skills", {}).items():
             if getattr(skill, "charging", False):
                 try:
-                    return skill.cancel_charge(self.attacker)
+                    message = skill.cancel_charge(self.attacker)
                 except AttributeError:
                     skill.charging = False
-                    return f"{self.attacker.name}'s {getattr(skill, 'name', 'charge')} was interrupted!\n"
+                    message = f"{self.attacker.name}'s {getattr(skill, 'name', 'charge')} was interrupted!\n"
+                self._clear_pending_charge(self._actor_id_for(self.attacker), skill)
+                return message
         return ""
 
     def get_forced_action(self) -> ForcedAction | None:

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from ..actor_cycle import PLAYER_ACTOR_ID
 from ..combat_result import CombatResultGroup
@@ -20,6 +20,73 @@ if TYPE_CHECKING:
 
 class TurnExecutionMixin:
     """Translate actions into validated, explicitly targeted intents."""
+
+    def _pending_charge(self, actor_id: str) -> dict[str, Any] | None:
+        """Return the active charged action for an actor, if one is registered."""
+        pending = self.pending_actions.get(actor_id)
+        if pending is None or pending.get("action") != "Use Skill":
+            return None
+        return pending
+
+    def _charge_is_ready(self, pending: dict[str, Any]) -> bool:
+        """Return whether a pending charge has reached a later owner turn."""
+        started_turn_id = pending.get("started_actor_turn_id")
+        return started_turn_id is None or self._current_actor_turn_id > started_turn_id
+
+    def _clear_pending_charge(self, actor_id: str, skill: Any | None = None) -> None:
+        """Forget engine-owned bookkeeping for a completed or cancelled charge."""
+        self.pending_actions.pop(actor_id, None)
+        if self.charging_ability and self.charging_ability[0] is self.attacker:
+            self.charging_ability = None
+        if skill is not None and "Jump" in str(getattr(skill, "name", "")):
+            self.attacker.class_effects["Jump"].active = False
+
+    def _register_pending_charge(
+        self,
+        choice: str,
+        skill: Any,
+        *,
+        preserve_start: bool,
+    ) -> None:
+        """Record a charge so it can progress only on later owner opportunities."""
+        owner_id = self._actor_id_for(self.attacker)
+        existing = self._pending_charge(owner_id)
+        member = self._member_for_character(self.defender)
+        target_id = existing.get("target_id") if preserve_start and existing else None
+        if target_id is None:
+            target_id = member.combatant_id if member else None
+        self.pending_actions[owner_id] = {
+            "action": "Use Skill",
+            "choice": choice,
+            "ability": skill,
+            "target_id": target_id,
+            "policy": getattr(skill, "target_loss_policy", "locked"),
+            "started_actor_turn_id": (
+                existing.get("started_actor_turn_id")
+                if preserve_start and existing
+                else self._current_actor_turn_id
+            ),
+        }
+
+    def _cancel_pending_charge(self) -> str:
+        """Cancel the current actor's ready charge without refunding its cost."""
+        actor_id = self.current_actor_id or self._actor_id_for(self.attacker)
+        pending = self._pending_charge(actor_id)
+        if pending is None:
+            return f"{self.attacker.name} has no charge to cancel.\n"
+        skill = pending.get("ability")
+        try:
+            message = skill.cancel_charge(self.attacker) if skill is not None else ""
+        except AttributeError:
+            if skill is not None:
+                skill.charging = False
+                if hasattr(skill, "charge_turns"):
+                    skill.charge_turns = 0
+                if hasattr(skill, "charge_target"):
+                    skill.charge_target = None
+            message = ""
+        self._clear_pending_charge(actor_id, skill)
+        return message or f"{self.attacker.name} cancels their charge.\n"
 
     def execute_action(
         self,
@@ -41,7 +108,7 @@ class TurnExecutionMixin:
         ):
             target_ids = (self.encounter.living_members[0].combatant_id,)
         elif scope == TargetScope.SINGLE_ENEMY and player_side:
-            pending = self.pending_actions.get(PLAYER_ACTOR_ID)
+            pending = self._pending_charge(PLAYER_ACTOR_ID)
             if pending:
                 target_id = pending.get("target_id")
                 try:
@@ -83,7 +150,7 @@ class TurnExecutionMixin:
                             skill.charge_turns = 0
                         if hasattr(skill, "charge_target"):
                             skill.charge_target = None
-                    self.pending_actions.pop(PLAYER_ACTOR_ID, None)
+                    self._clear_pending_charge(PLAYER_ACTOR_ID, skill)
                     loss_description = (
                         "has no legal focus"
                         if getattr(policy, "value", policy) == "retarget_focus"
@@ -129,6 +196,7 @@ class TurnExecutionMixin:
         if action in {
             "Nothing",
             "Cancelled",
+            "Cancel Charge",
             "Pickup Weapon",
             "Flee",
             "Recall",
