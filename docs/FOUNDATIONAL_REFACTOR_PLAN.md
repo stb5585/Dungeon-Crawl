@@ -1,6 +1,6 @@
 # Foundational Gameplay Refactor Plan
 
-Status: `Active — Ability Contract Migrated; Resolution In Progress`
+Status: `Active — Ability Contract Migrated; Timeline Next`
 
 This document organizes the gameplay-changing work that should be resolved
 before broad manual playtesting. It does not approve new mechanics by itself.
@@ -338,11 +338,10 @@ Current slice status:
 - Ability migration: complete; all 197 definitions have canonical IDs,
   taxonomy, aliases, targeting policy, and registered traits. CI rejects any
   incomplete definition and new saves serialize ability slugs.
-- Resolution: in progress; one-roll contact, core concealment/Sight/Detect,
-  canonical target-loss behavior, and symmetric enemy-area results are
-  complete. Concealed area-result identity redaction remains before timeline
-  work can begin.
-- Timeline through milestone closure: queued in the order above.
+- Resolution: complete; one-roll contact, core concealment/Sight/Detect,
+  canonical target-loss behavior, symmetric enemy-area results, and concealed
+  area-result identity redaction are complete.
+- Timeline through milestone closure: next, in the order above.
 
 ## Progression Boundary
 

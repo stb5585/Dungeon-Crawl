@@ -36,6 +36,18 @@ class CombatResult:
         """Return the display message, enabling transparent use with str()."""
         return self.message
 
+    def redact_target_identity(self, label: str = "a concealed opponent") -> str | None:
+        """Remove a target identity from a player-facing outcome while retaining its lane ID."""
+        if self.target is None:
+            return None
+        target_name = str(getattr(self.target, "name", ""))
+        self.target = None
+        self.extra["identity_redacted"] = True
+        self.extra["target_label"] = label
+        if target_name:
+            self.message = self.message.replace(target_name, label)
+        return target_name or None
+
     def to_dict(self) -> dict[str, object]:
         return {
             "action": self.action,

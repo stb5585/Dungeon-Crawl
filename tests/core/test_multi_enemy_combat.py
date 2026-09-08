@@ -335,6 +335,8 @@ def test_dead_enemy_is_skipped_without_changing_fixed_order():
 def test_earthquake_resolves_each_enemy_for_one_mana_cost():
     engine, player, enemies, _tile = _engine()
     player.spellbook["Spells"]["Earthquake"] = abilities.Earthquake()
+    for enemy in enemies:
+        enemy.status_effects["Sleep"].active = True
     engine.start_battle()
 
     result = engine.execute_intent(ActionIntent("Cast Spell", "Earthquake"))
@@ -347,6 +349,43 @@ def test_earthquake_resolves_each_enemy_for_one_mana_cost():
     ]
     assert all(portion.damage > 0 for portion in result.combat_results.results)
     assert all(enemy.health.current < enemy.health.max for enemy in enemies)
+
+
+def test_area_outcomes_redact_concealed_enemy_identity_but_keep_the_lane():
+    reset_event_bus()
+    engine, player, enemies, _tile = _engine()
+    player.spellbook["Spells"]["Earthquake"] = abilities.Earthquake()
+    conceal(enemies[1])
+    engine.start_battle()
+
+    result = engine.execute_intent(ActionIntent("Cast Spell", "Earthquake"))
+    concealed_portion = result.combat_results.results[1]
+
+    assert concealed_portion.target is None
+    assert concealed_portion.target_id == "enemy-b"
+    assert concealed_portion.extra["identity_redacted"] is True
+    assert concealed_portion.extra["target_label"] == "a concealed opponent"
+    assert enemies[1].name not in result.message
+    serialized = result.combat_results.summary_dict()
+    assert serialized["target_ids"] == ["enemy-a", "enemy-b"]
+    assert serialized["results"][1]["target"] is None
+    event = get_event_bus().get_history(EventType.ACTION_RESULT)[1]
+    assert event.target is None
+    assert event.result is concealed_portion
+
+
+def test_sight_preserves_concealed_area_target_identity():
+    engine, player, enemies, _tile = _engine()
+    player.spellbook["Spells"]["Earthquake"] = abilities.Earthquake()
+    player.sight = True
+    conceal(enemies[1])
+    engine.start_battle()
+
+    result = engine.execute_intent(ActionIntent("Cast Spell", "Earthquake"))
+    concealed_portion = result.combat_results.results[1]
+
+    assert concealed_portion.target is enemies[1]
+    assert "identity_redacted" not in concealed_portion.extra
 
 
 def test_shield_ricochet_resolves_as_an_all_enemy_skill(monkeypatch):

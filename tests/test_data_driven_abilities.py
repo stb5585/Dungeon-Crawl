@@ -737,19 +737,20 @@ class TestDataDrivenSpellCast:
     def test_non_grounded_earth_spells_can_damage_flying_targets(self):
         from src.core import abilities
 
-        for _ in range(50):
-            caster, flying_target = self._make_combatants()
-            caster.stats.intel = 120
-            flying_target.stats.dex = 1
-            flying_target.stats.con = 1
-            flying_target.flying = True
-            hp_before = flying_target.health.current
-            result = abilities.Sandstorm().cast(caster, flying_target)
-            if flying_target.health.current < hp_before:
-                assert result.damage > 0
-                return
+        caster, flying_target = self._make_combatants()
+        caster.stats.intel = 120
+        flying_target.stats.dex = 1
+        flying_target.stats.con = 1
+        flying_target.flying = True
+        # Incapacitation guarantees the contact roll so this test isolates
+        # Sandstorm's non-grounded targeting rule from chance to hit.
+        flying_target.status_effects["Sleep"].active = True
+        hp_before = flying_target.health.current
 
-        pytest.fail("Sandstorm should be able to damage flying targets")
+        result = abilities.Sandstorm().cast(caster, flying_target)
+
+        assert result.damage > 0
+        assert flying_target.health.current < hp_before
 
     def test_electric_spell_can_apply_stun(self):
         """Electric spells should sometimes apply Stun."""
