@@ -623,8 +623,8 @@ class TestDataDrivenSpellCast:
         assert target.health.current == hp_before
         assert "no effect" in result.message.lower()
 
-    def test_fire_spell_special_effect_can_apply_dot(self):
-        """Fire spells should sometimes apply DOT via the stat contest."""
+    def test_fire_spell_special_effect_can_apply_dot(self, monkeypatch):
+        """Fireball applies DOT when its stat contest succeeds."""
         import random
 
         from src.core.data.ability_loader import AbilityFactory
@@ -634,19 +634,23 @@ class TestDataDrivenSpellCast:
         )
         spell = AbilityFactory.create_from_yaml(filepath)
 
-        # Run many times — DOT should trigger at least once
-        dot_applied = False
-        for _ in range(50):
-            caster, target = self._make_combatants()
-            # Boost intel to make contest nearly guaranteed
-            caster.stats.intel = 100
-            target.stats.wisdom = 5
-            result = spell.cast(caster, target)
-            if target.magic_effects["DOT"].active:
-                dot_applied = True
-                break
+        def _upper_bound(_low: int, high: int) -> int:
+            return high
 
-        assert dot_applied, "DOT should have triggered at least once in 50 casts"
+        # Make the target an always-hit contact target and select the upper
+        # contest rolls. This verifies the real Fireball effect pipeline
+        # without a probabilistic retry loop.
+        monkeypatch.setattr(random, "randint", _upper_bound)
+        caster, target = self._make_combatants()
+        caster.stats.intel = 100
+        target.stats.wisdom = 5
+        target.status_effects["Stun"].active = True
+
+        result = spell.cast(caster, target)
+
+        assert result.hit is True
+        assert result.extra["stat_contest_won"] is True
+        assert target.magic_effects["DOT"].active is True
 
     def test_corruption_dot_uses_corruption_message(self):
         """Corruption DOT should not reuse burn text."""

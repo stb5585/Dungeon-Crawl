@@ -41,6 +41,18 @@ This file defines repo-specific instructions for Codex agents working in this pr
 - Avoid changing unrelated files while solving a focused bug or feature request.
 - Do not revert user changes or untracked work unless explicitly asked.
 
+## Branch Workflow
+
+- Never make or commit implementation work directly on `master`. Before editing
+  source, tests, gameplay data, tooling, CI, or implementation documentation,
+  create or switch to a clearly named feature branch based on current
+  `origin/master`.
+- Treat `master` as an integration branch: it may be inspected or fast-forwarded
+  to its remote, but implementation commits reach it only through a merged
+  feature branch.
+- Before committing, confirm that `HEAD` is on the intended feature branch and
+  that the change does not include unrelated working-tree edits.
+
 ## Python Style
 
 - Follow the Google Python Style Guide unless a repository-specific rule below
