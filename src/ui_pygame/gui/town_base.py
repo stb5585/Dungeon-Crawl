@@ -42,6 +42,7 @@ class TownColors:
     GOLD = (218, 165, 32)  # Warm gold for highlights
     YELLOW = (255, 255, 0)  # Bright yellow for special cases
     GRAY = (128, 128, 128)
+    LIGHT_GRAY = (192, 192, 192)
     DARK_GRAY = (64, 64, 64)
     BLUE = (100, 149, 237)
     GREEN = (0, 200, 0)

@@ -231,10 +231,7 @@ class ShopManager(TownScreenBase):
         if self.player_char.player_level() < self.MAGIC_SHOP_MIN_LEVEL:
             popup = ConfirmationPopup(
                 self.presenter,
-                (
-                    "The Magic Shop is currently closed. "
-                    f"Seraphine opens her doors at level {self.MAGIC_SHOP_MIN_LEVEL}."
-                ),
+                "The Magic Shop is currently closed.",
                 show_buttons=False,
             )
             popup.show(flush_events=True, require_key_release=True)
