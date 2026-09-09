@@ -233,7 +233,6 @@ class ShopManager(TownScreenBase):
                 self.presenter,
                 (
                     "The Magic Shop is currently closed. "
-                    f"Seraphine opens her doors at level {self.MAGIC_SHOP_MIN_LEVEL}."
                 ),
                 show_buttons=False,
             )

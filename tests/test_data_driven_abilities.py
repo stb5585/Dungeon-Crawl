@@ -673,20 +673,28 @@ class TestDataDrivenSpellCast:
 
         pytest.fail("Corruption DOT should have triggered at least once in 80 casts")
 
-    def test_water_attack_spells_can_reduce_attack(self):
+    def test_water_attack_spells_can_reduce_attack(self, monkeypatch):
+        import random
+
         from src.core import abilities
 
-        spell = abilities.WaterJet()
-        for _ in range(50):
-            caster, target = self._make_combatants()
-            caster.stats.intel = 120
-            target.stats.con = 1
-            target.combat.attack = 140
-            spell.cast(caster, target)
-            if target.stat_effects["Attack"].active:
-                return
+        def _upper_bound(_low: int, high: int) -> int:
+            return high
 
-        pytest.fail("Water Jet should have reduced Attack at least once")
+        spell = abilities.WaterJet()
+        monkeypatch.setattr(random, "randint", _upper_bound)
+        caster, target = self._make_combatants()
+        caster.stats.intel = 120
+        target.stats.con = 1
+        target.combat.attack = 140
+        target.status_effects["Stun"].active = True
+
+        result = spell.cast(caster, target)
+
+        assert result.hit is True
+        assert result.extra["stat_contest_won"] is True
+        assert target.stat_effects["Attack"].active is True
+        assert target.stat_effects["Attack"].extra < 0
 
     def test_wind_attack_spells_can_reduce_speed(self):
         from src.core import abilities

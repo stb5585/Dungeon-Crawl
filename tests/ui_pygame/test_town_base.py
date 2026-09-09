@@ -116,6 +116,10 @@ def test_draw_background_and_panel_helpers(monkeypatch):
     assert screen.blit_calls[-1][1] == (10, 20)
 
 
+def test_town_colors_provide_light_gray_for_character_screen_hint_text():
+    assert town_base.TownColors.LIGHT_GRAY == (192, 192, 192)
+
+
 def test_wrap_text_to_pixel_width_allows_narrow_text_to_use_full_line():
     pygame.font.init()
     font = pygame.font.Font(None, 24)

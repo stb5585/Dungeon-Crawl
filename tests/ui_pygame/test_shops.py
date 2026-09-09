@@ -388,7 +388,8 @@ def test_magic_shop_is_closed_until_level_three(monkeypatch):
     manager.visit_magic_shop()
 
     assert len(FakeShopScreen.instances) == instance_count
-    assert "level 3" in FakePopup.messages[-1][0]
+    assert "The Magic Shop is currently closed." in FakePopup.messages[-1][0]
+    assert "level" not in FakePopup.messages[-1][0].lower()
 
 
 def test_visit_blacksmith_crafts_master_monk_ultimate_staff(monkeypatch):
