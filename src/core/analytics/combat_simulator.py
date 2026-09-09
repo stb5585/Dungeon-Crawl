@@ -1025,7 +1025,7 @@ class CombatSimulator:
                         if engine.is_player_turn() and scope == TargetScope.SINGLE_ENEMY
                         else ()
                     )
-                    intent = ActionIntent(action, choice, target_ids)
+                    intent = ActionIntent(action_id=action, choice=choice, target_ids=target_ids)
                     action_result = engine.execute_intent(intent)
                 if not getattr(action_result, "committed", True):
                     invalid_intents += 1

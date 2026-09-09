@@ -1134,7 +1134,7 @@ class CombatLifecycleMixin:
             scope = self.engine.target_scope_for_action(engine_action, choice)
             target_ids = (self.engine.focus_target_id,) if scope == TargetScope.SINGLE_ENEMY else ()
             result = self.engine.execute_intent(
-                ActionIntent(engine_action, choice, target_ids),
+                ActionIntent(action_id=engine_action, choice=choice, target_ids=target_ids),
                 slot_machine_callback=slot_cb,
             )
         else:

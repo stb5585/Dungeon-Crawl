@@ -1,15 +1,24 @@
-# Deferred Comprehensive Playtest Queue
+# Comprehensive Playtest Queue
 
-Status: `Deferred Until Foundational Gameplay Refactors Stabilize`
+Status: `Ready — Foundational Baseline Established`
 
-The automated class-tree and critical class-kit closure passes are complete.
-The manual routes below remain valuable, but broad evidence collection is
-postponed because combat timing, targeting, multi-enemy scope, ability
-organization, and the combat action interface may change.
+The foundational gameplay refactor is complete. Broad evidence collection now
+uses the committed baseline: typed ability slugs and version-1 saves,
+one-roll fitted contact, virtual-readiness timing, core concealment/targeting,
+the shortcut and All Actions interface, and a singleton ordinary encounter
+catalog. The post-refactor seed-1337 reports are committed at:
 
-During the refactor milestone, use focused manual validation only for the slice
-being changed. Do not mark the comprehensive items below complete against an
-intermediate ruleset.
+- `reports/balance_baselines/multi_enemy_foundation_singleton.txt`
+- `reports/balance_baselines/multi_enemy_pilot3_foundation_floor3.txt`
+- `reports/balance_baselines/multi_enemy_pilot3_foundation_floor4.txt`
+
+Pilot 3 qualified no ordinary pairs. `DUNGEON_PILOT3_ROLLOUT` remains a
+default-on kill switch for a future evidence-qualified pair, but the qualified
+catalog is currently empty and normal generation is singleton.
+
+Record results against this baseline. Do not alter combat numbers merely to
+resolve an observation; promote a reproducible defect to a focused regression
+or a proposed, separately approved tuning slice.
 
 ## Post-Refactor Smoke Coverage
 

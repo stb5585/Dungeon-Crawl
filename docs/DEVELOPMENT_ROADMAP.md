@@ -36,7 +36,7 @@ and detailed runtime contracts belong in their owner documents.
 
 ## Active Priority — Foundational Gameplay Refactors
 
-Status: `Active — Decisions Approved; Implementation In Progress`
+Status: `Complete — Foundational Baseline Established`
 
 The next development milestone is to settle the gameplay-changing refactors
 listed in [`FOUNDATIONAL_REFACTOR_PLAN.md`](FOUNDATIONAL_REFACTOR_PLAN.md).
@@ -92,7 +92,9 @@ while concealed lanes retain generic presentation. Keyboard, mouse, and
 controller input support equivalent combat navigation, confirmation,
 cancellation, focus, All Actions, and resource-detail operations. Evidence and
 rollout are complete: the regenerated Pilot 3 matrices did not qualify a
-floor-3/4 pair, so ordinary generation remains singleton. Closure is next.
+floor-3/4 pair, so ordinary generation remains singleton. Closure is complete:
+the internal intent accessor adapter is removed, the baseline reports are
+committed, and broad manual playtesting may now begin.
 
 UI replacement and encounter expansion follow only after the migrated action
 contract, resolution rules, and timeline are stable. Numeric tuning remains a
@@ -131,7 +133,7 @@ singleton. Floor 5 and rosters larger than two remain outside this milestone.
 
 ## Deferred Milestone — Broad Manual Playtest
 
-Status: `Deferred Until Foundational Refactors Stabilize`
+Status: `Ready — Foundational Baseline Established`
 
 Manual playtesting remains important, but the comprehensive class-kit,
 progression, balance, and endgame pass should begin after the foundational

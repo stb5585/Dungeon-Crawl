@@ -1,6 +1,6 @@
 # Foundational Gameplay Refactor Plan
 
-Status: `Active — Evidence And Rollout Complete; Closure Next`
+Status: `Complete — Foundational Baseline Established`
 
 This document organizes the gameplay-changing work that should be resolved
 before broad manual playtesting. It does not approve new mechanics by itself.
@@ -373,6 +373,11 @@ Current slice status:
   generation remains singleton. The default-on rollout kill switch, 15% gate,
   source exclusions, and roster/timeline/intent/resolution telemetry are in
   place for a future evidence-qualified pair; no local balance tuning was made.
+- Closure: complete; internal engine, simulator, and Pygame consumers use
+  `ActionIntent.action_id` directly, leaving legacy command construction only
+  at the public compatibility boundary. The regenerated singleton/Pilot 3
+  evidence is committed, the playtest queue is rebased onto this baseline, and
+  dungeon rest remains deferred by the approved decision.
 
 ## Progression Boundary
 
