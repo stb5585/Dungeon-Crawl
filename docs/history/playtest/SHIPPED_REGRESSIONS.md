@@ -1,8 +1,11 @@
 # Shipped Regression Checklist
 
+> Historical manual-regression prompts only. The active playtest queue is
+> [`../../playtest/CURRENT.md`](../../playtest/CURRENT.md).
+
 Record class-kit UI/log, meter cadence, preservation, action-economy, and
 progression pacing findings in
-[`CLASS_KIT_EVIDENCE_NOTES.md`](../CLASS_KIT_EVIDENCE_NOTES.md). Checklist items
+[`CLASS_KIT_EVIDENCE_NOTES.md`](../../CLASS_KIT_EVIDENCE_NOTES.md). Checklist items
 remain the prompts; the evidence ledger is the running decision record.
 
 ## Found Issues

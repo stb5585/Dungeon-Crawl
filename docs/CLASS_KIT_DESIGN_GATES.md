@@ -2,13 +2,13 @@
 
 This is the durable class-kit design gate reference. It records shipped
 class-mechanics baselines, scope boundaries, and the one-page decision gates
-used for deeper class-kit work. The manual evidence queue is deferred until the
-foundational gameplay refactors stabilize; focused regression requirements
-remain active.
+used for deeper class-kit work. The foundational gameplay refactors are stable;
+the manual evidence queue is active and focused regression requirements remain
+active.
 
 ## Promotion Kit V1 Status
 
-Status: `Critical Closure Shipped; Manual Tuning Evidence Deferred`
+Status: `Critical Closure Shipped; Manual Tuning Evidence Active`
 
 The promotion class-track V1 pass created shared state, helpers, UI rows, and
 selected runtime hooks through the
@@ -63,10 +63,9 @@ Implemented foundations and presentation surfaces include:
 Critical implementation closure is complete. Remaining work is tuning,
 presentation review, manual validation, or separately gated expansion:
 
-- After the foundational gameplay refactors, broaden manual playtest and
-  balance evidence for the new meters, especially preservation effects, payoff
-  strength, and high-action-economy loops such as Totems, songs, summons, and
-  Doublecast-adjacent divine support.
+- Broaden manual playtest and balance evidence for the new meters, especially
+  preservation effects, payoff strength, and high-action-economy loops such as
+  Totems, songs, summons, and Doublecast-adjacent divine support.
 - Deeper narrative beats tying second-promotion identity back to `Voluntas`
   remain deferred until their quest/content spec defines timing, text, flags,
   and optional/required status.

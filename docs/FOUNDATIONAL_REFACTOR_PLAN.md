@@ -47,7 +47,7 @@ Owner references:
 
 - [`src/core/data/abilities/README.md`](../src/core/data/abilities/README.md)
 - [`PROMOTION_ABILITY_RULES.md`](PROMOTION_ABILITY_RULES.md)
-- [`MULTI_ENEMY_ABILITY_INVENTORY.md`](MULTI_ENEMY_ABILITY_INVENTORY.md)
+- [`MULTI_ENEMY_COMBAT_DESIGN.md`](MULTI_ENEMY_COMBAT_DESIGN.md)
 - [`WIZARD_CROSS_ELEMENT_INTERACTIONS.md`](WIZARD_CROSS_ELEMENT_INTERACTIONS.md)
 
 ### 2. Combat Timing, Speed, And Accuracy
@@ -125,7 +125,7 @@ approved larger-roster contract.
 Owner references:
 
 - [`MULTI_ENEMY_COMBAT_DESIGN.md`](MULTI_ENEMY_COMBAT_DESIGN.md)
-- [`MULTI_ENEMY_PILOT_3_PLAN.md`](MULTI_ENEMY_PILOT_3_PLAN.md)
+- [`MULTI_ENEMY_FUTURE_GATE.md`](MULTI_ENEMY_FUTURE_GATE.md)
 
 ### 5. Combat Actions And Resource Presentation
 

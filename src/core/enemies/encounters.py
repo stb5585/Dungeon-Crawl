@@ -22,7 +22,7 @@ _CURATED_ENCOUNTER_OVERRIDE_ENV = "DUNGEON_FORCE_ENCOUNTER"
 _PILOT3_ROLLOUT_ENV = "DUNGEON_PILOT3_ROLLOUT"
 PILOT3_PAIR_CHANCE = 0.15
 # This tuple is evidence-owned.  A pair may be added only after it clears the
-# promoted-class Pilot 3 gates recorded in MULTI_ENEMY_PILOT_3_PLAN.md.
+# promoted-class future-expansion gates recorded in MULTI_ENEMY_FUTURE_GATE.md.
 QUALIFIED_PILOT3_PAIR_KEYS: tuple[str, ...] = ()
 
 _ENEMY_NAMESPACE = ENEMY_NAMESPACE
