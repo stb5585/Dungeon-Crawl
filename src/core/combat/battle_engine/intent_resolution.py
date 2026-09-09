@@ -35,9 +35,9 @@ class IntentResolutionMixin:
                     ActionValidationCode.CHARGE_NOT_READY,
                     f"{self.attacker.name}'s charge resolves on a later readiness opportunity.\n",
                 )
-            if intent.action == "Cancel Charge":
+            if intent.action_id == "Cancel Charge":
                 pass
-            elif intent.action != pending_charge.get(
+            elif intent.action_id != pending_charge.get(
                 "action"
             ) or intent.choice != pending_charge.get("choice"):
                 return self._reject_intent(
@@ -45,18 +45,20 @@ class IntentResolutionMixin:
                     f"{self.attacker.name} must resolve or cancel their charge.\n",
                 )
 
-        if intent.action == "Cancel Charge" and pending_charge is None:
+        if intent.action_id == "Cancel Charge" and pending_charge is None:
             return self._reject_intent(
                 ActionValidationCode.NO_CHARGE_TO_CANCEL,
                 f"{self.attacker.name} has no charge to cancel.\n",
             )
 
         forced_action = self.get_forced_action()
-        cancelling_pending_charge = intent.action == "Cancel Charge" and pending_charge is not None
+        cancelling_pending_charge = (
+            intent.action_id == "Cancel Charge" and pending_charge is not None
+        )
         if (
             forced_action is not None
             and not cancelling_pending_charge
-            and (intent.action != forced_action.action or intent.choice != forced_action.choice)
+            and (intent.action_id != forced_action.action or intent.choice != forced_action.choice)
         ):
             required = forced_action.choice or forced_action.action
             return self._reject_intent(
@@ -64,7 +66,7 @@ class IntentResolutionMixin:
                 f"{self.attacker.name} must perform their forced action: {required}.\n",
             )
 
-        scope = self._target_scope_for_action(intent.action, intent.choice)
+        scope = self._target_scope_for_action(intent.action_id, intent.choice)
         targets = self._validated_intent_targets(intent, scope)
         if isinstance(targets, ActionResult):
             return targets
@@ -85,7 +87,7 @@ class IntentResolutionMixin:
                 confused_friendly_fire = True
         self._turn_action_committed = True
 
-        if self._is_hostile_action(intent.action, intent.choice, scope):
+        if self._is_hostile_action(intent.action_id, intent.choice, scope):
             # A hostile committed action identifies the concealed actor, even
             # when its contact roll later misses or it affects an area.
             break_concealment(self.attacker)
@@ -102,7 +104,7 @@ class IntentResolutionMixin:
         ):
             target_ids = (PLAYER_ACTOR_ID,)
         group = CombatResultGroup(
-            action=intent.choice or intent.action,
+            action=intent.choice or intent.action_id,
             actor_id=actor_id,
             target_scope=scope,
             target_ids=target_ids,
@@ -121,7 +123,7 @@ class IntentResolutionMixin:
         try:
             with self._target_resolution_context(member, scope, target_ids):
                 result = self._execute_committed_action(
-                    intent.action,
+                    intent.action_id,
                     intent.choice,
                     slot_machine_callback,
                 )
@@ -157,7 +159,7 @@ class IntentResolutionMixin:
         raw_portion = getattr(self, "_last_combat_result", None)
         if isinstance(raw_portion, CombatResult):
             portion = deepcopy(raw_portion)
-            portion.action = intent.choice or intent.action
+            portion.action = intent.choice or intent.action_id
             portion.actor = self.attacker
             portion.target = member.enemy if member else resolved_target
             portion.actor_id = actor_id
@@ -165,7 +167,7 @@ class IntentResolutionMixin:
             portion.message = result.message
         else:
             portion = CombatResult(
-                action=intent.choice or intent.action,
+                action=intent.choice or intent.action_id,
                 actor=self.attacker,
                 target=member.enemy if member else resolved_target,
                 actor_id=actor_id,

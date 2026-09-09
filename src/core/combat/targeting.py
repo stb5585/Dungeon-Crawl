@@ -50,8 +50,9 @@ class ActionValidationCode(str, Enum):
 class ActionIntent:
     """Immutable ID-based action request; the engine owns the actor.
 
-    The ``action`` property and keyword remain a temporary compatibility
-    boundary for legacy command strings. New callers use ``action_id``.
+    The ``action`` keyword and :meth:`from_legacy` remain the public
+    compatibility boundary for legacy command strings. Internal callers use
+    ``action_id`` exclusively.
     """
 
     action_id: str
@@ -74,11 +75,6 @@ class ActionIntent:
         object.__setattr__(self, "action_id", resolved_action_id)
         object.__setattr__(self, "choice", choice)
         object.__setattr__(self, "target_ids", tuple(target_ids))
-
-    @property
-    def action(self) -> str:
-        """Return the legacy command string during internal migration."""
-        return self.action_id
 
     @classmethod
     def from_legacy(

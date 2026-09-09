@@ -103,13 +103,15 @@ def test_ability_factory_uses_canonical_targeting_metadata_at_runtime():
     assert locked_charge.target_loss_policy is LegacyTargetLossPolicy.LOCKED
 
 
-def test_action_intent_uses_canonical_id_with_legacy_adapter():
+def test_action_intent_uses_canonical_id_without_internal_legacy_accessor():
     canonical = ActionIntent(action_id="system.attack", target_ids=("enemy-a",))
     legacy = ActionIntent.from_legacy("Attack", target_ids=("enemy-a",))
+    keyword_legacy = ActionIntent(action="Attack", target_ids=("enemy-a",))
 
     assert canonical.action_id == "system.attack"
-    assert canonical.action == "system.attack"
-    assert legacy.action_id == legacy.action == "Attack"
+    assert not hasattr(canonical, "action")
+    assert legacy.action_id == "Attack"
+    assert keyword_legacy == legacy
     with pytest.raises(ValueError, match="disagree"):
         ActionIntent(action_id="system.attack", action="Attack")
 
