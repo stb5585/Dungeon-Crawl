@@ -546,13 +546,7 @@ class Excalibur(Weapon):
 
 
 class Excalibur2(Excalibur):
-    """
-    TODO Upgraded version of the sword; obtained by bringing Excalibur to the UndergroundSpring
-    Ideas for upgrade
-    - increased damage and/or crit chance
-    - different/additional status effect
-    -
-    """
+    """Upgraded Excalibur bestowed by the Lady of the Lake."""
 
     def __init__(self):
         super().__init__()

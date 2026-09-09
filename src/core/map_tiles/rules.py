@@ -453,11 +453,12 @@ def _queue_cambion_message(player_char, message: str):
 
 
 def pop_cambion_messages(player_char) -> list[str]:
-    if getattr(player_char, "location_z", None) != REALM_OF_CAMBION_LEVEL and not hasattr(
-        player_char, "cambion_state"
-    ):
-        return []
-    state = _ensure_cambion_state(player_char)
+    if getattr(player_char, "location_z", None) != REALM_OF_CAMBION_LEVEL:
+        state = getattr(player_char, "cambion_state", None)
+        if not isinstance(state, dict):
+            return []
+    else:
+        state = _ensure_cambion_state(player_char)
     messages = list(state.get("messages", []))
     state["messages"] = []
     return messages
@@ -510,6 +511,7 @@ def return_to_underground_spring(player_char):
         return
     player_char.location_x, player_char.location_y, player_char.location_z = UNDERGROUND_SPRING_POS
     player_char.facing = "east"
+    player_char.anti_magic_active = False
 
 
 JESTER_TOKEN_NAME = "Jester Token"

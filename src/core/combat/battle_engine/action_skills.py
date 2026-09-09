@@ -110,6 +110,7 @@ class SkillActionMixin:
         message = (
             f"{self.attacker.name} uses {skill.name}.\n{ki_spend_message}{stolen_payoff_message}"
         )
+        bypass_required_item = self.attacker is not self.player
 
         # ── Special skill handling ───────────────────────────────────
         if skill.name == "Smoke Screen":
@@ -226,7 +227,10 @@ class SkillActionMixin:
                 self._clear_pending_charge(self._actor_id_for(self.attacker), skill)
 
         else:
-            message += str(skill.use(self.attacker, target=self.defender))
+            use_kwargs = {"target": self.defender}
+            if bypass_required_item and getattr(skill, "_required_item", None):
+                use_kwargs["bypass_required_item"] = True
+            message += str(skill.use(self.attacker, **use_kwargs))
 
         recorded_result = getattr(skill, "result", None)
         if (

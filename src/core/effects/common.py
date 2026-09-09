@@ -881,12 +881,9 @@ class DynamicMultiDebuffEffect(Effect):
             applied_amounts[stat_name] = stat_mod
             if self.percentage is not None:
                 percent = round(self.percentage * 100)
-                message = (
-                    f"{target.name}'s {stat_name.lower()} is lowered by "
-                    f"{percent}% ({stat_mod}) for {dur} turns."
-                )
+                message = f"{target.name}'s {stat_name.lower()} is lowered by {percent}%."
             else:
-                message = f"{target.name}'s {stat_name.lower()} is lowered by {stat_mod}."
+                message = f"{target.name}'s {stat_name.lower()} is lowered."
             result.extra.setdefault("messages", []).append(message)
 
         if result.action == "Weaken Mind" and applied_amounts:

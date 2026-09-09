@@ -16,7 +16,12 @@ from .actions import (
     ActionReference,
     ActionReferenceKind,
 )
-from .presentation import CombatResourcePresentation, TimelineEntry, VisibilityState
+from .presentation import (
+    CombatResourcePresentation,
+    EnvironmentalEffectPresentation,
+    TimelineEntry,
+    VisibilityState,
+)
 from .targeting import TargetingPolicy, TargetLossPolicy, TargetScope
 
 __all__ = [
@@ -32,6 +37,7 @@ __all__ = [
     "ActionReference",
     "ActionReferenceKind",
     "CombatResourcePresentation",
+    "EnvironmentalEffectPresentation",
     "PrimaryIntent",
     "TargetingPolicy",
     "TargetLossPolicy",

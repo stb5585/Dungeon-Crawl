@@ -320,6 +320,8 @@ class CombatOutcomeMixin:
             show_enemy_details=show_enemy_details,
             current_actor=current_actor,
             timeline_entries=interface_snapshot.timeline if interface_snapshot is not None else (),
+            interface_snapshot=interface_snapshot,
+            engine=self.engine,
         )
 
         # Render HUD (right 1/3) with combat mode indicator

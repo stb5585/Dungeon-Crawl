@@ -588,7 +588,8 @@ class DataDrivenStatusSkill(Skill):
 
         from src.core.classes import class_rings, promotion_kits
 
-        if self._required_item:
+        bypass_required_item = bool(kwargs.get("bypass_required_item", False) or fam)
+        if self._required_item and not bypass_required_item:
             from ...items import use_reusable_tool
 
             used, item_message = use_reusable_tool(user, self._required_item)

@@ -534,18 +534,6 @@ class DeadBody(SpecialTile):
             action_list.insert(1, "Defend")
             if player_char.is_disarmed():
                 action_list.insert(2, "Pickup Weapon")
-            action_list.insert(1, "Defend")
-            if player_char.is_disarmed():
-                action_list.insert(2, "Pickup Weapon")
-            action_list.insert(1, "Defend")
-            if player_char.is_disarmed():
-                action_list.insert(2, "Pickup Weapon")
-            action_list.insert(1, "Defend")
-            if player_char.is_disarmed():
-                action_list.insert(2, "Pickup Weapon")
-            action_list.insert(1, "Defend")
-            if player_char.is_disarmed():
-                action_list.insert(2, "Pickup Weapon")
             action_list = player_char.additional_actions(action_list)
             return action_list
         return []

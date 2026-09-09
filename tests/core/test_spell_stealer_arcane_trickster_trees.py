@@ -205,6 +205,8 @@ def test_neural_connection_mirrors_weaken_mind_amount_and_duration():
     for stat_name in ("Magic", "Magic Defense"):
         assert trickster.stat_effects[stat_name].extra == abs(target.stat_effects[stat_name].extra)
         assert trickster.stat_effects[stat_name].duration == 4
+    assert any("lowered by 20%." in message for message in result.extra["messages"])
+    assert all("(" not in message and "turn" not in message for message in result.extra["messages"])
     assert "Neural Connection" in "".join(result.extra["messages"])
 
 

@@ -210,7 +210,7 @@ Verdant Seed,VerdantSeed,Misc,Special,0,0,0,,,,,,0,,,,False,True,False,A sleepin
 Blacksmith's Hammer,BlacksmithsHammer,Misc,Summon - Cacus,0,0,0,,,,,,0,,,,False,True,False,It looks like a normal blacksmithing hammer but something seems...special about this one.
 Chiryu Koma,ChiryuKoma,Misc,Summon - Dilong,0,0.1,0,,,,,,0,,,,False,True,False,"A game piece used for shogi, depicting an earth dragon."
 Lockpick Kit,LockpickKit,Misc,Tool,1500,0.55,0,,,,,,0,,,,False,True,False,"A compact set of picks, tension wrenches, and shims required to use lockpicking skills. Durability: 3."
-Monocane,Monocane,Misc,Tool,2500,0.45,0,,,,,,0,,,,False,True,False,A hollow gentleman's cane used to cast Sleeping Powder. Uses remaining: 5.
+Monocane,Monocane,Misc,Tool,2500,0.45,0,,,,,,0,,,,False,True,False,A potent medicinal powder that causes those affected by it to fall asleep. Required to cast Sleeping Powder.
 Smoke Bomb,SmokeBomb,Misc,Tool,750,0.65,0,,,,,,0,,,,False,True,False,A packed clay pellet that bursts into concealing smoke. Required and consumed by Smoke Screen.
 Water Bladder,WaterBladder,Misc,Tool,400,0.8,0,,,,,,0,,,,False,True,False,Carries ten restorative sips of water. Sips remaining: 10.
 Amatoxin,Amatoxin,Misc,Toxin,15000,0,0,,,,,,0,,,,False,False,False,Standard: Severe poison with a chance to enfeeble. Severe: Critical poison that can kill in five turns if not cured.

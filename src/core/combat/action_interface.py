@@ -5,12 +5,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Iterable
 
+from ..abilities.presentation import ability_icon_key
 from ..contracts import (
     ActionAvailability,
     ActionAvailabilityCode,
     ActionReference,
     ActionReferenceKind,
     CombatResourcePresentation,
+    EnvironmentalEffectPresentation,
     TimelineEntry,
 )
 
@@ -20,8 +22,6 @@ SYSTEM_COMMANDS = (
     "Defend",
     "Items",
     "All Actions",
-    "Detect",
-    "Cancel Charge",
     "Flee",
 )
 
@@ -37,6 +37,7 @@ class CombatActionPresentation:
     availability: ActionAvailability
     description: str = ""
     reference: ActionReference | None = None
+    icon_key: str = "unknown"
 
     @property
     def enabled(self) -> bool:
@@ -78,6 +79,7 @@ class CombatInterfaceSnapshot:
     all_actions: tuple[CombatActionPresentation, ...]
     resources: tuple[CombatResourcePresentation, ...]
     timeline: tuple[TimelineEntry, ...]
+    environmental_effects: tuple[EnvironmentalEffectPresentation, ...] = ()
 
 
 def _slug(value: object) -> str:
@@ -175,6 +177,7 @@ def learned_action_presentations(
             reference.action_id if reference else f"runtime.{_slug(engine_action)}.{_slug(name)}"
         )
         category = "Spell" if engine_action == "Cast Spell" else "Skill"
+        book = "Spells" if engine_action == "Cast Spell" else "Skills"
         cost = int(getattr(ability, "cost", 0) or 0)
         cost_text = f" ({cost} MP)" if cost else ""
         entries.append(
@@ -192,6 +195,7 @@ def learned_action_presentations(
                 ),
                 description=str(getattr(ability, "description", "") or ""),
                 reference=reference,
+                icon_key=ability_icon_key(book, ability),
             )
         )
     return tuple(entries)
@@ -262,6 +266,7 @@ def shortcut_presentations(
                     "Assigned item is unavailable.",
                 ),
                 reference=reference,
+                icon_key="unknown",
             )
         return CombatActionPresentation(
             action_id=f"item.{_slug(reference.action_id)}",
@@ -270,6 +275,7 @@ def shortcut_presentations(
             choice=reference.action_id,
             availability=ActionAvailability(),
             reference=reference,
+            icon_key="unknown",
         )
 
     return tuple(
@@ -302,6 +308,20 @@ def combat_resource_presentations(
     return tuple(resources)
 
 
+def environmental_effect_presentations(player: Any) -> tuple[EnvironmentalEffectPresentation, ...]:
+    """Return active world modifiers for every frontend without tile-type checks."""
+    if not getattr(player, "anti_magic_active", False):
+        return ()
+    return (
+        EnvironmentalEffectPresentation(
+            stable_key="environment.anti_magic_field",
+            label="Anti-Magic Field",
+            detail="Spells and standard skills are suppressed.",
+            icon_label="AM",
+        ),
+    )
+
+
 def combat_interface_snapshot(engine: Any, player: Any) -> CombatInterfaceSnapshot:
     """Build the complete read-only combat interface state from engine-owned rules."""
     timeline_entries = getattr(engine, "timeline_entries", None)
@@ -315,4 +335,5 @@ def combat_interface_snapshot(engine: Any, player: Any) -> CombatInterfaceSnapsh
         all_actions=learned_action_presentations(player, engine=engine),
         resources=combat_resource_presentations(player, target),
         timeline=timeline,
+        environmental_effects=environmental_effect_presentations(player),
     )

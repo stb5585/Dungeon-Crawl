@@ -188,7 +188,7 @@ class PlayerExplorationMixin:
             action_list.insert(1, "Dismiss Form")
         elif self.available_transform_forms():
             action_list.insert(1, "Transform")
-        if self.is_disarmed():
+        if self.is_disarmed() and "Pickup Weapon" not in action_list:
             action_list.insert(1, "Pickup Weapon")
         if (
             getattr(getattr(self, "cls", None), "name", "") == "Thaumaturgist"

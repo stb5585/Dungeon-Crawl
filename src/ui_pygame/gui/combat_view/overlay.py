@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import pygame
 
+from src.core.combat.actor_cycle import PLAYER_ACTOR_ID
+from src.ui_pygame.assets.ability_icon_manager import get_ability_icon_manager
 from src.ui_pygame.assets.companion_art_manager import get_companion_art_manager
 
 from ..enemy_presentation import presented_enemy_name
@@ -417,6 +419,8 @@ class CombatOverlayMixin:
         show_enemy_details=None,
         current_actor=None,
         timeline_entries=(),
+        interface_snapshot=None,
+        engine=None,
     ):
         """Render combat UI overlay (action menu and combat log) over the dungeon view."""
         self._set_combat_log_actors(player_char, enemy)
@@ -442,18 +446,34 @@ class CombatOverlayMixin:
 
         # Render combat log at bottom-left
         self._render_combat_log_overlay()
-        self._render_timeline_ribbon(timeline_entries)
+        self._render_timeline_ribbon(
+            timeline_entries,
+            player_char,
+            engine=engine,
+            current_actor=current_actor,
+        )
+        if interface_snapshot is not None:
+            self._render_environmental_effect_banner(interface_snapshot.environmental_effects)
 
         # Render action menu at bottom
         if actions:  # Only show action menu if there are actions
-            self._render_action_menu_overlay(actions, selected_action)
+            self._render_action_menu_overlay(actions, selected_action, interface_snapshot)
 
-    def _render_timeline_ribbon(self, entries) -> None:
-        """Render the next core-owned readiness opportunities without mutating them."""
+    def _render_timeline_ribbon(
+        self, entries, player_char, *, engine=None, current_actor=None
+    ) -> None:
+        """Render upcoming opportunities as actor tokens, never readiness values."""
         if not entries:
             return
         view_width = int(self.screen_width * 0.65)
-        rect = pygame.Rect(0, 164, view_width, 30)
+        token_size = 26
+        visible_entries = entries[:6]
+        rect = pygame.Rect(
+            max(8, view_width - (len(visible_entries) * (token_size + 5)) - 18),
+            164,
+            len(visible_entries) * (token_size + 5) + 12,
+            token_size + 10,
+        )
         self._draw_panel_surface(
             rect,
             fill=(20, 20, 25),
@@ -462,11 +482,78 @@ class CombatOverlayMixin:
             alpha=210,
             border_width=1,
         )
-        font = pygame.font.Font(None, 18)
-        labels = [f"{entry.display_label} @{entry.ready_at:g}" for entry in entries[:6]]
-        text = self._truncate_text(font, "Timeline: " + "  |  ".join(labels), rect.width - 18)
-        surface = font.render(text, True, (225, 220, 205))
-        self.screen.blit(surface, (rect.left + 9, rect.top + 7))
+        active_actor_id = getattr(engine, "current_actor_id", None)
+        for index, entry in enumerate(visible_entries):
+            token_rect = pygame.Rect(
+                rect.left + 7 + index * (token_size + 5),
+                rect.top + 5,
+                token_size,
+                token_size,
+            )
+            active = entry.actor_id == active_actor_id
+            border = (246, 206, 91) if active else (110, 110, 125)
+            pygame.draw.rect(self.screen, (30, 30, 38), token_rect.inflate(4, 4), border_radius=4)
+            pygame.draw.rect(self.screen, border, token_rect.inflate(4, 4), 2, border_radius=4)
+            actor = self._timeline_actor(entry.actor_id, player_char, engine, current_actor)
+            token = self._timeline_token(actor, entry.actor_id, player_char, token_size)
+            if token is not None:
+                self.screen.blit(token, token.get_rect(center=token_rect.center))
+            else:
+                fallback = pygame.font.Font(None, 17).render(
+                    str(entry.display_label or "?")[:1].upper(), True, (230, 225, 210)
+                )
+                self.screen.blit(fallback, fallback.get_rect(center=token_rect.center))
+
+    @staticmethod
+    def _timeline_actor(actor_id, player_char, engine, current_actor):
+        """Resolve a timeline actor from its stable ID for token rendering."""
+        if actor_id == PLAYER_ACTOR_ID:
+            return player_char
+        if getattr(engine, "current_actor_id", None) == actor_id and current_actor is not None:
+            return current_actor
+        encounter = getattr(engine, "encounter", None)
+        member_by_id = getattr(encounter, "member_by_id", None)
+        if callable(member_by_id):
+            try:
+                return member_by_id(actor_id).enemy
+            except (KeyError, AttributeError):
+                return None
+        return None
+
+    def _timeline_token(self, actor, actor_id, player_char, size):
+        """Load a compact player-side or enemy token with safe visual fallback."""
+        if actor is None:
+            return None
+        try:
+            if actor_id == PLAYER_ACTOR_ID:
+                return self.player_token_manager.get_scaled_token(player_char, (size, size))
+            return self.enemy_token_manager.get_scaled_token(actor, (size, size))
+        except (AttributeError, OSError, pygame.error):
+            return None
+
+    def _render_environmental_effect_banner(self, effects) -> None:
+        """Show persistent, reusable world-modifier feedback above combat controls."""
+        if not effects:
+            return
+        view_width = int(self.screen_width * 0.65)
+        y = self.screen_height - 198
+        rect = pygame.Rect(10, y, max(180, view_width - 20), 23)
+        self._draw_panel_surface(
+            rect,
+            fill=(66, 42, 72),
+            border=(190, 118, 205),
+            accent=(236, 190, 98),
+            alpha=225,
+            border_width=1,
+        )
+        effect = effects[0]
+        font = pygame.font.Font(None, 19)
+        text = self._truncate_text(
+            font,
+            f"{effect.icon_label}  {effect.label}: {effect.detail}",
+            rect.width - 14,
+        )
+        self.screen.blit(font.render(text, True, (247, 226, 245)), (rect.left + 7, rect.top + 4))
 
     def _render_combat_log_overlay(self):
         """Render combat log as semi-transparent overlay on dungeon view."""
@@ -517,10 +604,10 @@ class CombatOverlayMixin:
             hint = indicator_font.render("PgUp/PgDn or Mouse Wheel", True, (170, 170, 170))
             self.screen.blit(hint, (view_width - hint.get_width() - 34, log_y + log_height - 22))
 
-    def _render_action_menu_overlay(self, actions, selected_action):
-        """Render action menu as semi-transparent overlay."""
+    def _render_action_menu_overlay(self, actions, selected_action, interface_snapshot=None):
+        """Render a six-slot ability bar and compact fixed-system commands."""
         view_width = int(self.screen_width * 0.65)
-        menu_height = 150
+        menu_height = 174
         menu_y = self.screen_height - menu_height
 
         menu_rect = pygame.Rect(0, menu_y, view_width, menu_height)
@@ -533,22 +620,90 @@ class CombatOverlayMixin:
             border_width=3,
         )
 
-        # Title
-        font = pygame.font.Font(None, 30)
-        title_surf = font.render("Choose Action:", True, (232, 224, 205))
-        self.screen.blit(title_surf, (24, menu_y + 10))
+        slots = tuple(getattr(interface_snapshot, "shortcuts", ()) or ())
+        if len(slots) != 6:
+            self._render_action_grid(
+                actions,
+                selected_action,
+                rect=menu_rect,
+                action_font=pygame.font.Font(None, 26),
+                text_color=(240, 240, 240),
+                highlight_color=(100, 100, 120),
+                border_color=(150, 150, 170),
+                translucent_highlight=True,
+            )
+            return
 
-        action_font = pygame.font.Font(None, 26)
-        self._render_action_grid(
-            actions,
-            selected_action,
-            rect=pygame.Rect(0, menu_y, view_width, menu_height),
-            action_font=action_font,
-            text_color=(240, 240, 240),
-            highlight_color=(100, 100, 120),
-            border_color=(150, 150, 170),
-            translucent_highlight=True,
-        )
+        card_y = menu_y + 9
+        card_height = 104
+        card_width = max(72, (view_width - 28) // 6)
+        icon_manager = get_ability_icon_manager()
+        name_font = pygame.font.Font(None, 18)
+        slot_font = pygame.font.Font(None, 17)
+        for index, slot in enumerate(slots):
+            rect = pygame.Rect(12 + index * card_width, card_y, card_width - 4, card_height)
+            action = slot.action
+            enabled = action is not None and action.enabled
+            selected = selected_action == index
+            fill = (45, 52, 66) if enabled else (45, 40, 47)
+            border = (244, 204, 91) if selected else (118, 128, 150) if enabled else (100, 74, 86)
+            self._draw_panel_surface(
+                rect,
+                fill=fill,
+                border=border,
+                accent=(150, 170, 206),
+                alpha=240,
+                border_width=3 if selected else 1,
+            )
+            slot_text = slot_font.render(str(index + 1), True, (248, 226, 151))
+            self.screen.blit(slot_text, (rect.left + 5, rect.top + 4))
+            icon_key = getattr(action, "icon_key", "unknown") if action is not None else "unknown"
+            icon = icon_manager.get_icon(icon_key)
+            icon = pygame.transform.smoothscale(icon, (34, 34))
+            self.screen.blit(icon, icon.get_rect(centerx=rect.centerx, top=rect.top + 18))
+            label = action.display_name if action is not None else "Empty"
+            label = label.replace("Spell: ", "").replace("Skill: ", "")
+            label = self._truncate_text(name_font, label, rect.width - 8)
+            color = (242, 242, 238) if enabled else (178, 154, 160)
+            label_surf = name_font.render(label, True, color)
+            self.screen.blit(
+                label_surf, label_surf.get_rect(centerx=rect.centerx, top=rect.top + 57)
+            )
+            if action is not None and not action.enabled:
+                reason = self._truncate_text(name_font, action.availability.reason, rect.width - 8)
+                reason_surf = name_font.render(reason, True, (226, 154, 148))
+                self.screen.blit(
+                    reason_surf, reason_surf.get_rect(centerx=rect.centerx, top=rect.top + 78)
+                )
+
+        commands = actions[6:]
+        command_y = menu_y + 122
+        if commands:
+            command_width = max(70, (view_width - 24) // len(commands))
+            command_font = pygame.font.Font(None, 20)
+            for offset, command in enumerate(commands):
+                index = offset + 6
+                rect = pygame.Rect(12 + offset * command_width, command_y, command_width - 4, 37)
+                selected = selected_action == index
+                unavailable = " — Not available this turn." in str(command)
+                pygame.draw.rect(
+                    self.screen,
+                    (73, 67, 78) if unavailable else (52, 58, 70),
+                    rect,
+                    border_radius=4,
+                )
+                pygame.draw.rect(
+                    self.screen,
+                    (244, 204, 91) if selected else (128, 125, 145),
+                    rect,
+                    2 if selected else 1,
+                    border_radius=4,
+                )
+                label = str(command).replace(" — Not available this turn.", "")
+                label = self._truncate_text(command_font, label, rect.width - 8)
+                color = (185, 170, 175) if unavailable else (238, 235, 225)
+                text = command_font.render(label, True, color)
+                self.screen.blit(text, text.get_rect(center=rect.center))
 
     def _render_turn_indicator(
         self, player_char, enemy, current_turn=None, overlay=False, current_actor=None

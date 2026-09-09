@@ -600,11 +600,13 @@ def test_move_forward_branches_and_turning(monkeypatch):
     player.location_x, player.location_y = (5, 5)
     player.step_calls.clear()
     player.has_relics = lambda: True
+    player.anti_magic_active = True
     destination = DummyTile()
     player.world_dict[(5, 4, 1)] = destination
     assert manager.move_forward() is True
     assert (player.location_x, player.location_y) == (5, 4)
     assert player.step_calls == ["step"]
+    assert player.anti_magic_active is False
     assert destination.visited is True
     assert "Intro text" in manager.messages
     assert "effects" in manager.messages

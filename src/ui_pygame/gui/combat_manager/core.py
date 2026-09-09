@@ -434,34 +434,28 @@ class CombatManagerCoreMixin:
         return update_input_armed_from_event(event, True, input_armed)
 
     def _combat_action_rects(self, actions) -> list[pygame.Rect]:
-        """Return clickable rectangles for the main combat action grid."""
+        """Return clickable rectangles for the six-slot bar and command row."""
         combat_width = int(getattr(self.combat_view, "combat_width", self.screen.get_width()))
         combat_height = int(getattr(self.combat_view, "combat_height", self.screen.get_height()))
-        menu_height = 150
+        menu_height = 174
         menu_rect = pygame.Rect(0, combat_height - menu_height, combat_width, menu_height)
-        layout_func = getattr(self.combat_view, "_action_grid_layout", None)
-        if callable(layout_func):
-            actions_per_row, _row_count, start_y_offset, row_height, cell_width = layout_func(
-                menu_rect.width,
-                menu_rect.height,
-                len(actions),
-            )
-        else:
-            actions_per_row = 4 if len(actions) > 9 else 3
-            row_count = max(1, (max(1, len(actions)) + actions_per_row - 1) // actions_per_row)
-            start_y_offset = 46
-            available_height = max(24, menu_height - start_y_offset - 14)
-            row_height = max(22, min(34, available_height // row_count))
-            cell_width = max(92, (menu_rect.width - 54) // actions_per_row)
-
-        rects = []
-        for index, _action in enumerate(actions):
-            row = index // actions_per_row
-            col = index % actions_per_row
-            x = menu_rect.left + 28 + col * cell_width
-            y = menu_rect.top + start_y_offset + row * row_height
-            rects.append(
-                pygame.Rect(x - 5, y - 4, max(42, cell_width - 12), max(20, row_height - 3))
+        shortcut_count = min(6, len(actions))
+        card_width = max(72, (menu_rect.width - 28) // 6)
+        rects = [
+            pygame.Rect(12 + index * card_width, menu_rect.top + 9, card_width - 4, 104)
+            for index in range(shortcut_count)
+        ]
+        command_count = max(0, len(actions) - shortcut_count)
+        if command_count:
+            command_width = max(70, (menu_rect.width - 24) // command_count)
+            rects.extend(
+                pygame.Rect(
+                    12 + index * command_width,
+                    menu_rect.top + 122,
+                    command_width - 4,
+                    37,
+                )
+                for index in range(command_count)
             )
         return rects
 

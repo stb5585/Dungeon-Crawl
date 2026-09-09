@@ -273,6 +273,17 @@ class TestMapTileHelpers:
         assert player.anti_magic_active is False
         assert enemy.anti_magic_active is False
 
+    def test_cambion_messages_do_not_restore_anti_magic_after_leaving_realm(self):
+        player = _make_player()
+        map_tiles.enter_realm_of_cambion(player)
+        map_tiles._queue_cambion_message(player, "The field fades behind you.")
+
+        player.exit_realm_of_cambion()
+        messages = map_tiles.pop_cambion_messages(player)
+
+        assert messages == ["The field fades behind you."]
+        assert player.anti_magic_active is False
+
     def test_helper_guard_paths_and_realm_entry_return_helpers(self):
         player = _make_player()
         item = SimpleNamespace(name="Not A Map")
@@ -293,6 +304,16 @@ class TestMapTileHelpers:
         player.cambion_return = True
         map_tiles.return_to_underground_spring(player)
         assert exited == ["exit"]
+
+        player.cambion_return = None
+        player.anti_magic_active = True
+        map_tiles.return_to_underground_spring(player)
+        assert (
+            player.location_x,
+            player.location_y,
+            player.location_z,
+        ) == map_tiles.UNDERGROUND_SPRING_POS
+        assert player.anti_magic_active is False
 
     def test_update_chalice_location_reveals_and_hides_altar_tile(self):
         player = _make_player()
@@ -417,6 +438,17 @@ class TestBasicTiles:
             "Flee",
             "Summon",
         ]
+
+    def test_dead_body_lists_one_weapon_recovery_action_when_disarmed(self):
+        player = _make_player()
+        player.state = "fight"
+        player.usable_abilities = lambda _typ: False
+        player.is_disarmed = lambda: True
+
+        actions = map_tiles.DeadBody(0, 0, 0).available_actions(player)
+
+        assert actions.count("Defend") == 1
+        assert actions.count("Pickup Weapon") == 1
 
     def test_funhouse_wall_and_fire_paths_cover_behavioral_branches(self, monkeypatch):
         player = _make_player(class_name="Thaumaturgist")

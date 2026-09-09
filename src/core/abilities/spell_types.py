@@ -161,9 +161,7 @@ class Attack(Spell):
                         cast_message += self.special_effect(caster, target, damage, crit)
                     elif target.is_alive() and damage > 0 and reflect:
                         cast_message += self.special_effect(caster, caster, damage, crit)
-                if "Counterspell" in target.spellbook["Spells"] and not random.randint(
-                    0, 4
-                ):  # TODO
+                if "Counterspell" in target.spellbook["Spells"] and not random.randint(0, 4):
                     counterspell = execute_reaction(
                         "counterspell",
                         target,
@@ -387,7 +385,10 @@ def _simple_spell_damage(
     except Exception:
         pass
     target.health.current -= damage
-    return msg + f"{caster.name} damages {target.name} for {damage} hit points.\n", damage
+    return (
+        msg + f"{caster.name} damages {target.name} for {damage} hit points.\n",
+        damage,
+    )
 
 
 class _ReagentSpell(Spell):
@@ -428,7 +429,8 @@ class PlantSeeds(_ReagentSpell):
         selected = kwargs.get("reagent") or kwargs.get("seed")
         if selected is None:
             selected = next(
-                (name for name in self.reagent_effects if _inventory_count(user, name) > 0), None
+                (name for name in self.reagent_effects if _inventory_count(user, name) > 0),
+                None,
             )
         if selected not in self.reagent_effects:
             return f"{selected or 'That reagent'} cannot be planted with Plant Seeds.\n"
@@ -489,7 +491,9 @@ class VilePotion(_ReagentSpell):
 
     def __init__(self):
         super().__init__(
-            "Vile Potion", "Imbibe rot and spew putrid vomitus at a foe.", school="Nature"
+            "Vile Potion",
+            "Imbibe rot and spew putrid vomitus at a foe.",
+            school="Nature",
         )
         self.cost = 0
         self.subtyp = "Poison"
@@ -551,7 +555,9 @@ class Foretell(Spell):
 class Rewind(Spell):
     def __init__(self):
         super().__init__(
-            "Rewind", "Return combat to the previous player choice point.", school="Time"
+            "Rewind",
+            "Return combat to the previous player choice point.",
+            school="Time",
         )
         self.cost = 40
         self.subtyp = "Time"
@@ -1065,7 +1071,9 @@ class Corruption2(Spell):
 class Nightmare(Spell):
     def __init__(self):
         super().__init__(
-            "Nightmare", "Twist fear into shadow damage against the enemy.", school="Shadow"
+            "Nightmare",
+            "Twist fear into shadow damage against the enemy.",
+            school="Shadow",
         )
         self.cost = 24
         self.subtyp = "Shadow"
