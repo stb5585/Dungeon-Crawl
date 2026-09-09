@@ -1,5 +1,8 @@
 # Multi-Enemy Deeper-Floor Pilot
 
+> Historical evidence only. The live rollout, floor-5, and larger-roster gate
+> is owned by [`../MULTI_ENEMY_FUTURE_GATE.md`](../MULTI_ENEMY_FUTURE_GATE.md).
+
 ## Status
 
 Status: `Complete — No Pair Qualified For Ordinary Rollout`

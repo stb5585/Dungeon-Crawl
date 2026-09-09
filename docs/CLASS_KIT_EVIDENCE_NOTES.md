@@ -22,16 +22,15 @@ evidence remains useful during implementation.
 
 ## Current Evidence Summary
 
-- Overall state: `Manual Evidence Deferred Until Foundational Refactors Stabilize`.
+- Overall state: `Manual Evidence Active — Foundational Baseline Established`.
 - Automated regression evidence exists for class-kit shared status lines,
   representative combat-log messages, pygame log filtering/wrapping, class-ring
   readiness/status behavior, and simulator payload aggregation/export.
 - The presentation-only UI/log baseline and critical class-kit implementation
   closure are shipped.
 - Manual readability, cadence, preservation feel, action-economy pressure, and
-  pacing remain pending. Collect them after combat timing, targeting, encounter
-  scope, and the action interface stabilize so results describe the intended
-  gameplay baseline.
+  pacing remain pending. Collect them now against the completed combat timing,
+  targeting, encounter-scope, and action-interface baseline.
 
 ## Seeded Objective Evidence
 

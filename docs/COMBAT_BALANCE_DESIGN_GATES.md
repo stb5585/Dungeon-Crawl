@@ -26,8 +26,9 @@ and gates future combat or balance changes behind explicit one-page specs.
 - `BattleEngine` supports singleton and explicit one-or-two-enemy encounters.
   Curated pairs remain development-only; ordinary random generation is
   singleton.
-- `src/core/combat/action_queue.py` exists as a priority/delay scheduling
-  helper, but it is not yet the authoritative player/enemy timing model.
+- `src/core/combat/actor_cycle.py` owns the authoritative virtual-readiness
+  player/enemy timing model. `action_queue.py` remains a bounded compatibility
+  helper and does not schedule ordinary combat turns.
 
 ### Analytics And Tooling
 
@@ -59,8 +60,8 @@ and gates future combat or balance changes behind explicit one-page specs.
   defines a replacement order.
 - Keep ordinary random generation singleton. The implemented development pilot
   may run one-or-two-enemy encounters through explicit APIs and override keys.
-  Normal pair generation, rosters larger than two, and a speed-based combat
-  stack remain gated.
+  Normal pair generation and rosters larger than two remain gated; the approved
+  virtual-readiness model remains the ordinary combat timing baseline.
 - Keep current experience rules. Class/race-specific level scaling,
   charisma-driven experience, unlockable race/class/level strategy, and
   difficulty-level strategy are deferred.
@@ -200,12 +201,11 @@ requirements. The smaller follow-ups below remain independent gates.
 
 ### Combat Semantics
 
-The foundational combat decisions are approved in
-`FOUNDATIONAL_REFACTOR_PLAN.md`: bounded virtual-time readiness, one fitted
-contact roll, owner-turn effects, core concealment and Detect, actor-relative
-target scopes, and default focus retargeting. Preserve current formulas until
-their ordered implementation slices replace them; numeric tuning remains
-separately gated.
+The foundational combat decisions in `FOUNDATIONAL_REFACTOR_PLAN.md` are live:
+bounded virtual-time readiness, one fitted contact roll, owner-turn effects,
+core concealment and Detect, actor-relative target scopes, and default focus
+retargeting. Preserve those formulas and semantics unless a separately approved
+spec changes them; numeric tuning remains separately gated.
 
 - DnD-style dice roll conversion.
 - Charisma or alternate-stat experience modifiers.
@@ -222,13 +222,14 @@ separately gated.
 
 ### Architecture Expansions
 
-- Multi-enemy combat has an implemented development pilot. Its post-tree
-  rebenchmark, normal-generation decision, floor-5 boundary, enemy area actions,
-  and roster-size limit are tracked in `MULTI_ENEMY_PILOT_3_PLAN.md` and
+- Multi-enemy combat has an implemented development pilot. Its post-refactor
+  rebenchmark qualified no ordinary pair; floor 5, ordinary generation, and
+  rosters larger than two remain gated in `MULTI_ENEMY_FUTURE_GATE.md` and
   `FOUNDATIONAL_REFACTOR_PLAN.md`.
-- Speed-based combat stacks remain a spec gate covering initiative/action-queue
-  rules, multiple-turn caps, UI messaging, simulator impact, and save
-  compatibility.
+- Unbounded or multi-action speed-stack extensions remain a spec gate. They
+  must not replace the shipped virtual-readiness timing, two-consecutive-turn
+  protection, UI messaging, simulator diagnostics, or save compatibility by
+  inference.
 
 ## Validation
 

@@ -2,9 +2,10 @@
 
 *Updated: September 8, 2026*
 
-This roadmap contains only active priorities, ordered candidates, and deferred
-decision gates. Shipped history belongs in [`CHANGELOG.md`](../CHANGELOG.md),
-and detailed runtime contracts belong in their owner documents.
+This roadmap contains the current priority, completed baseline summaries needed
+for sequencing, ordered candidates, and deferred decision gates. Detailed
+shipped history belongs in [`CHANGELOG.md`](../CHANGELOG.md), and runtime
+contracts belong in their owner documents.
 
 ## Current Baseline
 
@@ -34,125 +35,63 @@ and detailed runtime contracts belong in their owner documents.
 - `Deferred`: intentionally postponed until its dependency is complete.
 - `Watch`: preserve current behavior and record issues encountered nearby.
 
-## Active Priority — Foundational Gameplay Refactors
+## Completed Milestone — Foundational Gameplay Refactors
 
 Status: `Complete — Foundational Baseline Established`
 
-The next development milestone is to settle the gameplay-changing refactors
-listed in [`FOUNDATIONAL_REFACTOR_PLAN.md`](FOUNDATIONAL_REFACTOR_PLAN.md).
-Broad manual playtesting is deferred because its balance, pacing, and interface
-findings would be invalidated by changes to combat timing, targeting, ability
-organization, or the combat action interface.
+[`FOUNDATIONAL_REFACTOR_PLAN.md`](FOUNDATIONAL_REFACTOR_PLAN.md) records the
+completed contract: immutable ability slugs and taxonomy, version-1 saves,
+one-roll contact, virtual readiness, core concealment and targeting, the
+action interface, and bounded multi-enemy support. Its committed reports are
+the baseline for all subsequent evidence. Ordinary random encounters remain
+singleton because no Pilot 3 pair qualified; dungeon rest remains deferred.
 
-The ordered planning sequence is:
+## Active Priority — Post-Foundation Stabilization And Playtest
 
-1. Define the canonical ability taxonomy and ownership boundary.
-2. Define combat timing, initiative, Speed, dodge, and action scheduling.
-3. Define invisibility, reveal, targetability, and area-target interaction.
-4. Decide the supported multi-enemy encounter scope and combat-view layout.
-5. Define the combat action bar, active/passive organization, and class-resource
-   presentation.
-6. Decide whether dungeon resting belongs in the same gameplay revision.
+Status: `Active — Evidence Collection And Reliability Hardening`
 
-This order records implementation dependencies. The six gates are approved in
-the foundational plan. The milestone deliberately introduces ability slug IDs
-and a version-1 save format that rejects unmarked pre-foundation saves.
+Use [`playtest/CURRENT.md`](playtest/CURRENT.md) and
+[`CLASS_KIT_EVIDENCE_NOTES.md`](CLASS_KIT_EVIDENCE_NOTES.md) to collect broad
+manual evidence against the completed baseline. Record reproducible defects
+and promote numeric, content, or architecture changes only through their owner
+gate. Do not tune combat values merely to resolve an observation.
 
-### Current Implementation Target
+The ordered stabilization work is:
 
-The first three decision blocks are approved together: ability metadata,
-combat timing/accuracy, and targeting. They share one action contract and must
-be implemented before interface replacement or multi-enemy rollout.
+1. Run the post-refactor smoke, class-kit, progression/interface, and
+   world/story evidence queues.
+2. Fix reproducible correctness defects, starting with broad exception handling
+   in save, progression, simulator, and combat-presentation paths.
+3. Extend strict typing through stable non-Pygame contracts and converge
+   remaining compatibility seams only when covered by focused regressions.
+4. Decompose the largest combat and Pygame functions behind preserved behavior
+   and tests.
+5. Promote one evidence-supported tuning or presentation slice at a time.
 
-The decision/characterization, additive core-contract, and ability-migration
-slices are complete. All 197 YAML definitions now use immutable slug identity,
-closed taxonomy, registered traits, and actor-relative targeting; the legacy
-allowlist is empty and CI requires complete validation.
+Package-barrel cleanup, asset optimization/LFS evaluation, and public-release
+infrastructure (platform builds, release attachments, provenance, and branch
+protection) are separate infrastructure initiatives. Do not bundle them into
+numeric combat tuning.
 
-The resolution slice is complete: fitted one-roll weapon and spell contact,
-core concealment/Sight/Detect, symmetric target resolution, canonical
-target-loss behavior, structured enemy-area results, and concealed area-result
-identity redaction are implemented. The timeline slice is complete: virtual
-readiness schedules actor opportunities from seeded jitter, bounded Luck head
-starts, and encounter-median Speed tempo. Charges wait for a later owner
-readiness opportunity, preserve their committed target across charge ticks,
-and support no-refund cancellation. Forced actions are enforced by canonical
-intent validation, including cancellation turns. Reactions resolve without
-readiness cost and cannot re-enter through a counter-result. Statuses,
-including Paladin encounter timers, tick only on their owner's pre-turn
-readiness opportunity. Battle logs retain virtual readiness, round, actor-turn
-identity, and the scheduled opportunity actor. Simulator results retain a
-bounded normal-opportunity trace, final actor readiness, and timing-invariant
-diagnostics. The interface slice is complete: six persisted typed shortcuts
-auto-fill once without overwriting later layout choices; fixed commands and
-All Actions expose learned active actions with availability explanations; and
-the Character Menu and combat surfaces share shortcut assignment. The HUD
-shows prioritized class-resource rows and the next six readiness opportunities,
-while concealed lanes retain generic presentation. Keyboard, mouse, and
-controller input support equivalent combat navigation, confirmation,
-cancellation, focus, All Actions, and resource-detail operations. Evidence and
-rollout are complete: the regenerated Pilot 3 matrices did not qualify a
-floor-3/4 pair, so ordinary generation remains singleton. Closure is complete:
-the internal intent accessor adapter is removed, the baseline reports are
-committed, and broad manual playtesting may now begin.
-
-UI replacement and encounter expansion follow only after the migrated action
-contract, resolution rules, and timeline are stable. Numeric tuning remains a
-separate evidence-gated activity.
-
-### Priority Queue After The Foundational Milestone
-
-After milestone closure, prioritize correctness work on broad exception
-handling in combat/progression/save paths, then extend strict typing through
-stable non-Pygame contracts. Follow with deliberate decomposition of the
-largest combat functions and Pygame import-cycle reduction. Package-barrel
-cleanup, asset optimization/LFS evaluation, and public-release infrastructure
-(platform builds, release attachments, provenance, and branch protection) are
-separate infrastructure initiatives; none should be bundled into numeric
-combat tuning.
-
-## Evidence Task — Multi-Enemy Pilot 3 Rebenchmark
+## Completed Evidence — Multi-Enemy Pilot 3 Rebenchmark
 
 Status: `Complete — Rollout Blocked By Post-Refactor Evidence`
 
-The authored-tree dependency is complete, but current results describe the old
-resolution and actor cycle. Rerun the floor-3/floor-4 promoted-class matrices
-only after the new resolution and timeline are integrated. This is evidence
-collection, not authorization to tune global combat values.
+The post-refactor floor-3/floor-4 matrices are complete. No candidate met every
+aggregate gate, so ordinary generation remains singleton. The retained reports
+and any future qualified-pair work are owned by
+[`MULTI_ENEMY_FUTURE_GATE.md`](MULTI_ENEMY_FUTURE_GATE.md). Floor 5 and rosters
+larger than two remain deferred.
 
-Use [`MULTI_ENEMY_PILOT_3_PLAN.md`](MULTI_ENEMY_PILOT_3_PLAN.md) for the exact
-matrix and retained pre-tree results. The result determined which approved
-two-enemy pairs, if any, qualify for the bounded rollout:
+## Active Program — Broad Manual Playtest
 
-- whether curated pairs should enter ordinary generation;
-- whether each pair passes without local numeric tuning; and
-- whether singleton behavior has drifted under the new model.
+Status: `Active — Foundational Baseline Established`
 
-The post-refactor result qualified no pair, so ordinary generation remains
-singleton. Floor 5 and rosters larger than two remain outside this milestone.
-
-## Deferred Milestone — Broad Manual Playtest
-
-Status: `Ready — Foundational Baseline Established`
-
-Manual playtesting remains important, but the comprehensive class-kit,
-progression, balance, and endgame pass should begin after the foundational
-refactor milestone. Preserve the queue in
-[`playtest/CURRENT.md`](playtest/CURRENT.md) and the evidence format in
-[`CLASS_KIT_EVIDENCE_NOTES.md`](CLASS_KIT_EVIDENCE_NOTES.md).
-
-During refactor implementation, use only focused manual checks needed to verify
-the changed slice. Automated regressions remain mandatory. A reproducible bug
-encountered during focused validation may be fixed immediately when the fix is
-small and does not settle an open design question by accident.
-
-The broad playtest milestone resumes when:
-
-1. combat timing, targeting, and multi-enemy scope are stable;
-2. the combat action interface and resource presentation are stable;
-3. current save serialization and any required local-save reset are complete;
-4. focused regression suites pass; and
-5. the roadmap records the new baseline to test.
+The comprehensive class-kit, progression, balance, interface, and endgame pass
+now begins. Follow the current queue and evidence format above. A reproducible
+defect may be fixed when the fix is narrow and does not settle an unapproved
+design question. Numeric tuning requires a focused evidence row and promoted
+one-page spec.
 
 ## Ready After The Foundational Refactors
 
@@ -161,7 +100,7 @@ These are bounded follow-ups, not current priorities:
 | Area | State | First safe slice | Owner |
 | --- | --- | --- | --- |
 | Final-room and ending continuity | `Ready` | Story-card and dialogue continuity only; no boss or route-rule changes. | [`STORY_AND_ENDGAME_DESIGN.md`](STORY_AND_ENDGAME_DESIGN.md) |
-| Postgame town fallout | `Ready` | Local acknowledgement dialogue without changing services, quests, or rewards. | [`QUEST_STORY_INTEGRATION_DESIGN.md`](QUEST_STORY_INTEGRATION_DESIGN.md) |
+| Postgame town fallout | `Ready` | Extend the shipped V1 acknowledgement dialogue only with local, repeat-safe copy. | [`QUEST_STORY_INTEGRATION_DESIGN.md`](QUEST_STORY_INTEGRATION_DESIGN.md) |
 | Red Dragon continuity | `Ready` | Copy-only distinction between defeat, restoration, and binding outcomes. | [`STORY_AND_ENDGAME_DESIGN.md`](STORY_AND_ENDGAME_DESIGN.md) |
 | Presentation readability | `Evidence Gate` | One UI/log or asset fix supported by a concrete readability finding. | [`PRESENTATION_ASSET_DESIGN_GATES.md`](PRESENTATION_ASSET_DESIGN_GATES.md) |
 | Class-kit tuning | `Evidence Gate` | One mechanic and one explicit tuning contract. | [`CLASS_KIT_DESIGN_GATES.md`](CLASS_KIT_DESIGN_GATES.md) |

@@ -8,12 +8,12 @@ priority, owner documents define current behavior and decision gates, and
 
 - [`DEVELOPMENT_ROADMAP.md`](DEVELOPMENT_ROADMAP.md) — current priorities,
   ordered candidates, and deferred gates.
-- [`FOUNDATIONAL_REFACTOR_PLAN.md`](FOUNDATIONAL_REFACTOR_PLAN.md) — active
-  approved gameplay-refactor contract and implementation sequence.
-- [`FOUNDATIONAL_CHARACTERIZATION_BASELINE.md`](FOUNDATIONAL_CHARACTERIZATION_BASELINE.md)
-  — reproducible pre-refactor ability, contact, singleton, and Pilot 3 evidence.
+- [`FOUNDATIONAL_REFACTOR_PLAN.md`](FOUNDATIONAL_REFACTOR_PLAN.md) — completed
+  gameplay-refactor contract, implementation record, and preserved boundaries.
+- [`CONTACT_MODEL_CONTRACT.md`](CONTACT_MODEL_CONTRACT.md) — active fitted-contact
+  behavior and characterization acceptance thresholds.
 - [`PLAYTEST_CHECKLIST.md`](PLAYTEST_CHECKLIST.md) — playtest index and current
-  deferral policy.
+  evidence policy.
 
 ## Gameplay And Progression Contracts
 
@@ -39,10 +39,8 @@ priority, owner documents define current behavior and decision gates, and
   validation commands.
 - [`MULTI_ENEMY_COMBAT_DESIGN.md`](MULTI_ENEMY_COMBAT_DESIGN.md) — implemented
   one-or-two-enemy architecture and remaining rollout decisions.
-- [`MULTI_ENEMY_PILOT_3_PLAN.md`](MULTI_ENEMY_PILOT_3_PLAN.md) — current
-  post-tree rebenchmark and floor-5 boundary.
-- [`MULTI_ENEMY_ABILITY_INVENTORY.md`](MULTI_ENEMY_ABILITY_INVENTORY.md) —
-  targeting and multi-target ability audit.
+- [`MULTI_ENEMY_FUTURE_GATE.md`](MULTI_ENEMY_FUTURE_GATE.md) — rollout block,
+  floor-5 boundary, and larger-roster requirements.
 - [`DUNGEON_WORLD_ENCOUNTER_DESIGN_GATES.md`](DUNGEON_WORLD_ENCOUNTER_DESIGN_GATES.md)
   — dungeon interaction, encounter, recovery, and world-content gates.
 
@@ -86,14 +84,15 @@ priority, owner documents define current behavior and decision gates, and
   queue and milestone exit criteria.
 - [`CLASS_KIT_EVIDENCE_NOTES.md`](CLASS_KIT_EVIDENCE_NOTES.md) — evidence
   ledger and capture format.
-- [`playtest/SHIPPED_REGRESSIONS.md`](playtest/SHIPPED_REGRESSIONS.md) — detailed
-  historical/manual regression prompts; not the current implementation queue.
+- [`history/playtest/SHIPPED_REGRESSIONS.md`](history/playtest/SHIPPED_REGRESSIONS.md)
+  — detailed historical/manual regression prompts; not the current queue.
 - [`playtest/DEFERRED_SPEC.md`](playtest/DEFERRED_SPEC.md) — features that need
   a promoted design contract before implementation or broad testing.
 
 ## Historical Material
 
-Completed phase plans are removed from the active documentation set after
-their durable contracts are consolidated. Their original text remains
-recoverable through Git history. Local notes under `docs/archive/` are ignored
-and must not be treated as current direction.
+[`history/`](history/README.md) contains tracked, browsable records whose
+original evidence remains useful but is not current implementation authority.
+Local recovery copies under `docs/archive/` are ignored and must not be treated
+as current direction. Deleted stale material remains recoverable through Git
+history.

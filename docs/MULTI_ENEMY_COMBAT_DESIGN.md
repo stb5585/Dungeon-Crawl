@@ -2,45 +2,20 @@
 
 ## Status
 
-Status: `Implemented Pilot; Post-Refactor Rollout Blocked By Evidence`
+Status: `Implemented One-or-Two-Enemy Support; Ordinary Rollout Deferred`
 
-The fixed-cycle and permissive-invisibility decisions below document the
-development pilot that produced the retained baselines. They are not the
-active design authority for the next milestone. The approved replacement in
-[`FOUNDATIONAL_REFACTOR_PLAN.md`](FOUNDATIONAL_REFACTOR_PLAN.md) introduces
-virtual-time readiness, core concealment legality, actor-relative opponent
-scopes, symmetric enemy-area resolution, a two-hostile cap, and a gated 15%
-floor-3/4 rollout. Ordinary generation must remain singleton until that model
-passes its post-refactor evidence gate.
+This document owns the current runtime contract for explicit one- or two-enemy
+encounters. The foundational baseline supplies virtual readiness, concealment
+legality, actor-relative target scopes, symmetric area resolution, and the
+two-hostile cap. Ordinary random generation remains singleton: no pair has
+qualified for rollout, and the rollout switch has no catalog entry.
 
-This document defines the implemented multi-enemy architecture and the gates
-for promoting it beyond development-only encounters. Architecture decisions
-1-12 and content, frontend, and balance decisions 13-21 are implemented through
-the development pilot. Two-enemy execution is
-available to headless callers and Pygame only through direct APIs or the
-explicit development override; ordinary random generation remains singleton.
-
-Slices 2 and 3 add the public `TargetScope`, `TargetLossPolicy`,
-`ActionIntent`, structured `CombatResultGroup`, fixed actor-cycle diagnostics,
-and provisional `BattleOutcome.rewards_settled` contracts. Invalid target
-intents do not commit or advance the actor cycle. Slices 2 and 3 used a
-contextual `engine.enemy` migration bridge; Slice 6 removed it after reward,
-UI, logger, and test consumers moved to encounter members or action context.
-
-The first stable release remains intentionally limited to one player-facing
-combat slot against one or two enemies. The architecture does not impose a
-permanent two-enemy ceiling, but content generation and UI acceptance enforce
-that ceiling until playtest and simulator evidence support expanding it.
-
-Pilot 1 closed with its 20-battle evidence pass. Pilot 2 closed with seven
-targeted manual battles, including a dedicated Hallowed Ground `ALL_ENEMIES`
-run. Pilot 3's six-run manual acceptance is complete for three development-only
-pairs across floors 3 and 4. Its post-refactor promoted-class matrices are
-complete: no pair passed every aggregate gate, and the floor-4 candidate also
-recorded invalid intents. The runtime has the default-on 15% rollout switch
-and structured encounter telemetry, but its evidence-qualified pair list is
-empty, so ordinary random pair generation remains disabled. Floor 5 remains
-deferred behind a second-promotion benchmark and an enemy-area-action gate.
+The engine and Pygame support explicit development encounters and overrides.
+A proposal to add ordinary pairs, floor-5 content, or larger rosters must meet
+the promotion requirements in
+[`MULTI_ENEMY_FUTURE_GATE.md`](MULTI_ENEMY_FUTURE_GATE.md). The completed
+Pilot 1-3 narrative, evidence matrices, and manual runs remain browsable in
+[`history/MULTI_ENEMY_PILOT_3_PLAN.md`](history/MULTI_ENEMY_PILOT_3_PLAN.md).
 
 ## Motivation
 
@@ -94,18 +69,19 @@ existing one-enemy game reliable.
 ## Current Runtime Contract
 
 - `BattleEngine` normalizes legacy singleton construction into an `Encounter`
-  and supports a fixed actor cycle with stable combatant IDs.
-- Explicit `ActionIntent` targets, `TargetScope`, `TargetLossPolicy`, and
-  `CombatResultGroup` own target validation and multi-target results.
-- Invalid intents do not spend resources or advance the actor cycle; defeated
-  actors are skipped.
+  and schedules living combatants through virtual readiness with stable IDs.
+- Explicit actor-relative `ActionIntent` targets, `TargetScope`,
+  `TargetLossPolicy`, and `CombatResultGroup` own validation and area results.
+- Invalid intents return a machine-readable validation result; committed
+  actions own their scheduling and resource effects, and defeated actors are
+  skipped.
 - Pygame supports lane selection, keyboard and mouse targeting, focus state,
   target cancellation, and target-loss feedback for one or two enemies.
 - Outcomes, rewards, logs, events, and simulator records are roster-aware.
-- Ordinary generation remains singleton because no Pilot 3 candidate qualified.
-  Curated pairs require explicit development override keys; future qualifying
-  pairs would use the default-on `DUNGEON_PILOT3_ROLLOUT` kill switch and fixed
-  15% rate. Saves do not preserve mid-combat snapshots.
+- Ordinary generation remains singleton because no pair qualified. Curated
+  pairs require explicit development override keys. The default-on
+  `DUNGEON_PILOT3_ROLLOUT` kill switch remains available for an approved
+  rollout; saves do not preserve mid-combat snapshots.
 
 ## Current V1 Player Experience
 
@@ -206,19 +182,16 @@ encounter
 └── resolution_ledger
 ```
 
-During migration, `BattleEngine(player, enemy, tile, ...)` remains supported
-and creates a singleton encounter. A new `encounter=` entry point accepts the
-roster model. Supplying both is an error.
+`BattleEngine(player, enemy, tile, ...)` remains a singleton compatibility
+entry point and creates an encounter. The `encounter=` entry point accepts the
+roster model; supplying both is an error.
 
-The migration temporarily allowed a legacy `engine.enemy` property to return
-`selected_target.character` for old singleton callers. It was never permitted
-for reward iteration, encounter completion, or story identity and was removed
-in Slice 6 after callers moved to `encounter`, `primary_enemy`, or explicit
-action targets.
+The old contextual `engine.enemy` bridge is removed. Callers use the encounter
+primary member, current actor, focus, or an explicit action target according to
+their need.
 
-`attacker` and `defender` may remain as action-resolution aliases during the
-migration. They are not sufficient to represent the encounter and should not
-own turn scheduling.
+`attacker` and `defender` remain action-resolution aliases. They do not
+represent the encounter as a whole and do not own scheduling.
 
 ### Action Intent And Target Scope
 
@@ -595,327 +568,3 @@ preserve this ownership rule.
 Changing only an ability's target scope should not require a progression node
 ID change. Renaming or replacing a node/ability identity remains subject to
 the current-save and reset rules in `ABILITY_TREE_DESIGN.md`.
-
-## Implemented Rollout Record
-
-Slices 0-6 below are retained as an architecture record, not as the current
-backlog. Current rollout work begins with the Pilot 3 rebenchmark.
-
-### Slice 0 - Decision And Characterization Gate
-
-- Answer Required Decisions 1-12.
-- Inventory abilities and mechanics by target scope and trigger cadence.
-- Add singleton characterization tests around current turn order, rewards,
-  statuses, summons, Rewind, events, logger output, and Pygame presentation.
-- Record a simulator singleton baseline before architecture changes.
-
-Exit condition: approved target/turn/reward contracts and a parity test set.
-
-#### Slice 0 Singleton Simulator Baseline
-
-The pre-refactor singleton baseline completed successfully on 2026-08-03 with:
-
-```bash
-./.venv/bin/python tools/run_balance_suite.py --tier base --level 10 --iters 30 --seed 1337
-```
-
-The retained local report is
-`reports/balance_baselines/multi_enemy_slice0_pre_refactor.txt` (117 lines,
-SHA-256 `edccb0d62fecdf1d350189421aa9d5d9a2004a388c9bde2664df3896b7993fbe`).
-Balance-baseline reports are intentionally gitignored; the command, seed,
-status, location, and checksum here are the durable record. This run is a
-parity reference, not authorization for numeric tuning.
-
-The same command completed after Slice 1 and wrote
-`reports/balance_baselines/multi_enemy_slice1_post_refactor.txt`. The report
-was byte-for-byte identical (`cmp` exit 0) and had the same SHA-256 checksum,
-confirming no measured singleton simulator drift.
-
-### Slice 1 - Encounter Roster With Singleton Parity
-
-- Add `CombatEncounter`, member identity, and resolution ledger.
-- Allow the engine to consume singleton encounters through the legacy
-  constructor.
-- Replace internal completion and stable-identity reads without exposing
-  two-enemy content.
-- Extend logger/event lifecycle payloads with compatible roster data.
-
-Exit condition: existing singleton tests and focused parity tests pass with
-multi-enemy generation disabled.
-
-### Slice 2 - Actor Cycle And Explicit Single Targeting
-
-- Add the actor cycle, living-actor skipping, rounds, and explicit
-  `ActionIntent`.
-- Add target-scope declarations and compatibility defaults.
-- Refactor forced, charged, delayed, passive, familiar, summon, and Totem paths
-  to use explicit targets.
-- Add headless two-enemy engine tests; keep gameplay generation disabled.
-
-Exit condition: two enemies can complete a headless battle with correct status
-ticks, turns, target validation, and mixed death order.
-
-Implemented. The fixed order contains the dynamic `"player"` slot and stable
-enemy combatant IDs. It is rolled once by priority tier and weighted sampling,
-then reused with dead/resolved actors skipped. `ROUND_START`, `ROUND_END`,
-`TURN_START`, and `TURN_END` carry encounter, actor, round, and actor-turn
-identity. Pairs remain rejected for bosses, trials, and scripted combat.
-
-### Slice 3 - Multi-Target Ability Contract
-
-- Use `CombatResultGroup` and per-target event emission.
-- Convert Hallowed Ground as the first all-enemy reference ability.
-- Add one simple direct-damage all-enemy test ability or approved real ability.
-- Resolve reaction, cost, death-during-action, and per-kill trigger semantics.
-
-Exit condition: single-target and all-enemy actions share one validated engine
-path and are deterministic under seeded tests.
-
-Implemented. Every canonical engine action exposes a result group. Hallowed
-Ground produces one ordered enemy field result and one tagged self-healing
-field result. Earthquake is the first direct-damage `ALL_ENEMIES` ability: it
-retains its 26 MP cost and 2.5 damage modifier, pays once, rolls each target
-independently, and includes flying targets as explicit grounded no-effect
-portions. Multi-enemy victory, flee, and defeat finalize logs and transient
-state but intentionally settle no rewards or tile persistence; their outcomes
-return `rewards_settled=False`.
-
-The same seeded singleton balance command completed after Slices 2 and 3 and
-wrote `reports/balance_baselines/multi_enemy_slice3_post_refactor.txt`. Its
-117-line output is byte-for-byte identical to the Slice 0 report (`cmp` exit
-0), with SHA-256
-`edccb0d62fecdf1d350189421aa9d5d9a2004a388c9bde2664df3896b7993fbe`.
-The full repository validation completed with 2,533 passing tests.
-
-### Slice 4 - Frontend Targeting
-
-- Implement pygame dual-slot layout, focus, target selection, effects, and
-  duplicate labels.
-- Add automated layout/input tests and manual 1v1/1v2 acceptance checks.
-
-Exit condition: singleton presentation remains readable, Pygame can finish a
-curated two-enemy debug encounter, and the same encounter completes through
-the headless engine harness.
-
-Implemented. Singleton combat retains its existing composition. Pair combat
-uses two free-standing battlefield sprites, a focused detail panel,
-duplicate-safe labels, combatant-ID effects, `Q`/`E` focus cycling, and
-clickable living lanes. Hidden information is evaluated per member; without
-Sight the presentation omits exact resources and approximate health labels.
-
-### Slice 5 - Outcomes, Save State, And Simulation
-
-- Settle ledger-based XP, loot, quest, bounty, class-kit, and removal results.
-- Add the approved encounter serializer changes if persistent pairs require
-  them.
-- Extend simulator, battle reports, debug override, and balance suite.
-- Run singleton regression and paired encounter baselines.
-
-Exit condition: no duplicate encounter rewards/cleanup and the current save
-shape round-trips, or the slice documents a required local-save reset.
-
-Implemented. Multi-enemy outcomes settle immutable per-member summaries in
-authored order and cache the final outcome to prevent duplicate rewards.
-Defeat and flee discard the ledger and restore the authored roster. The
-simulator accepts runtime encounters and records roster, round, actor-turn,
-remaining-resource, consumable, per-combatant damage, resolution, and reward
-metadata. Pair reports also measure each member's singleton actor-turn
-baseline. Saves remain unchanged.
-
-### Slice 6 - Curated Content Pilot
-
-- Author a very small opt-in pair catalog.
-- Enable pairs behind a development flag or debug encounter key.
-- Playtest action economy, readability, control chains, and resource pressure.
-- Promote one bounded floor band only after its evidence is reviewed.
-
-Exit condition: stable crash-free playtests, acceptable balance evidence, and
-no unresolved blocker from the special-mechanic audit.
-
-Implemented as a development-only pilot. `DUNGEON_FORCE_ENCOUNTER` accepts
-`carrion_crawl`, `wing_and_mattock`, `fang_and_spear`, `grave_web`,
-`lesser_conspiracy`, or `hoof_and_howl` at their authored
-floors. Ordinary random probabilities remain singleton-only. Promotion to
-normal generation remains blocked on the evidence gate below.
-The override is opted into only by ordinary dungeon tile generation; bounty
-generation and other random-enemy utility consumers continue using the
-singleton catalog and therefore cannot receive or validate a curated roster.
-
-The 2026-08-03 automated pilot completed 500 pair battles per encounter with
-zero crashes or invalid actor/target states. Carrion Crawl measured 100.0%
-wins, a 2.11x actor-turn ratio, and 81.8% median winning HP; Wing and Mattock
-measured 80.0%, 1.49x, and 74.6%; Fang and Spear measured 85.8%, 2.07x, and
-58.9%. No pair passed every initial band. The subsequent 20-battle manual gate,
-corrected floor-level balance pass, and targeted confirmation were completed;
-no balance values were changed. Detailed evidence remains available in Git
-history. The post-Slice 6 singleton report remained byte-identical to the Slice
-0 baseline.
-
-## Historical Pilot Architecture Decisions
-
-The following contracts remain implemented while the foundational slices are
-in progress. They define the reproducibility baseline, not the replacement
-design. Later rollout remains gated where noted.
-
-### Blocking The Architecture Slices
-
-1. **Turn order:** Roll an individual weighted actor permutation once at
-   combat start and reuse it each round. Existing hangover, encumbrance,
-   invisibility, speed, and luck rules inform that initial ordering. Resolved
-   or dead actors are skipped. Implementation begins in Slice 2.
-
-2. **Durations:** Effects tick only on their owner's turns. A one-turn effect
-   therefore expires at that combatant's next owner-turn tick; fields that
-   pulse per round must declare that cadence separately.
-
-3. **Target scopes:** V1 uses `NONE`, `SELF`, `SINGLE_ENEMY`, and
-   `ALL_ENEMIES`. Invisible unrevealed enemies remain directly targetable with
-   existing information and accuracy penalties and remain included in
-   `ALL_ENEMIES`.
-
-4. **Reflect and Counterspell:** Resolve reactions independently per target
-   portion. Reflect changes only the reflecting target's result. Counterspell
-   remains retaliation and may trigger independently for each target; it does
-   not cancel the cast or other target portions.
-
-5. **Lost charged or delayed targets:** Each affected ability declares
-   `LOCKED`, `RETARGET_FOCUS`, or `SNAPSHOT_ROSTER`. Costs are paid once when
-   charging begins and are neither refunded nor charged again. Initial locked
-   abilities are Jump, Charge, Crushing Blow, and Wormhole-delayed spells.
-   Shadow Strike and Arcane Blast use `RETARGET_FOCUS`. Future charged
-   `ALL_ENEMIES` actions use `SNAPSHOT_ROSTER`.
-
-6. **Trigger cadence:** Resource spend, runes, and cast-level hooks run once
-   per action. Kill records, Bestiary defeats, bounties, quests, soul harvest,
-   death marks, enemy-specific Paladin hooks, loot, and explicit on-kill
-   resources run once per eligible enemy. Total XP settlement, summon XP,
-   level-up, Battle Scar, Demonologist settlement, Grandmaster settlement,
-   cleanup, encounter statistics, and `promotion_kits.end_combat` run once per
-   encounter. Lycan frenzy checks per kill without extending an active frenzy.
-
-7. **Resolution ledger:** Terminal values are `defeated`, `mercy`, `tamed`,
-   `ejected`, and `escaped`, with an optional cause. An encounter is won when
-   no unresolved living hostile remains. Ejection awards half XP only and no
-   kill, loot, bounty, quest, or on-kill credit. Reward settlement is deferred
-   to Slice 5.
-
-8. **Partial progress:** Flee or player defeat discards partial ledger
-   progress and all corresponding rewards. A later encounter restores the
-   full authored roster; V1 has no persistent attrition.
-
-9. **Flee:** Make one attempt against the fastest living hostile. Smoke Screen
-   automatically succeeds only when no living hostile can perceive the user;
-   otherwise it contests the fastest perceiving hostile. Windswept is
-   target-only ejection, not player flee.
-
-10. **Allies:** Maintain one active player-side slot. An active summon replaces
-    the player in that slot. Familiars, companions, and Totems are automatic
-    output and cannot be targeted independently. Their actions use the current
-    valid focus or the first living authored slot.
-
-11. **Compatibility API:** During Slice 1, `engine.enemy` returns the singleton
-    primary enemy. In multi-enemy migration it may return the selected target
-    only during an active action context and must raise on ambiguous access.
-    Production core uses were removed and the bridge was deleted in Slice 6.
-    Callers now use the encounter primary member, current actor, explicit
-    focus, or action target as appropriate.
-
-12. **Persistence:** Encounters and their IDs, order, focus, ledger, and
-    charges remain runtime-only. Continue reading and writing the current
-    singleton `enemy_state`; do not add `encounter_state` or mid-combat
-    save/resume.
-
-## Approved Content And Balance Decisions
-
-13. **Difficulty budget:** The pilot is moderately harder than an ordinary
-    same-floor singleton. Its aggregate target is 55-75% player wins, roughly
-    1.25-2.0 times the harder member's singleton actor-turn count, and 20-60%
-    median remaining HP on wins.
-
-14. **Occurrence:** Pairs are development-only on floors 1-4. They have no
-    random chance and cannot replace tutorial, chest, quest, boss, trial, or
-    scripted encounters.
-
-15. **Compositions:** The first catalog uses distinct mixed enemies and avoids
-    double hard control, double invisibility, healer loops, and extreme burst.
-
-16. **Reward budget:** Sum eligible member XP without an encounter multiplier
-    and process loot/gold/quest hooks in authored order. Ejection remains half
-    XP only.
-
-17. **Area power:** Earthquake retains full current damage per target. No
-    broader coefficient change is authorized without simulator and playtest
-    evidence.
-
-18. **Initial multi-target abilities:** Hallowed Ground and Earthquake remain
-    the bounded reference set.
-
-19. **Enemy area actions:** Deferred. V1 retains one active player-side slot.
-
-20. **Frontend:** Support at least 1024x720. Two stable battlefield lanes use
-    free-standing independently animated sprites, a single focus arrow, and
-    lane-sized hitboxes. A resolved member animates out and leaves no corpse
-    or terminal card. Without Sight, ordinary enemies retain their sprite but
-    expose no resource or approximate-health label; genuinely invisible
-    enemies hide their sprite. Sight reveals exact HP, MP, statuses,
-    resistances, and focused details.
-
-21. **Promotion evidence:** Rebenchmark Pilot 3 against representative promoted
-    classes after authored-tree completion. Require zero crashes or invalid
-    target states and no unexplained singleton drift. Passing evidence may
-    recommend normal 1v2 rollout but never authorizes rosters larger than two.
-
-## Acceptance Criteria
-
-The initial multi-enemy release is complete only when:
-
-- all approved one-enemy characterization tests still pass;
-- the engine supports one or two enemies without a second combat code path;
-- every action is validated against an explicit target scope;
-- each living combatant gets no more than one ordinary action per round;
-- statuses tick at the approved cadence and dead actors never act;
-- an all-enemy action pays once and records independent target results;
-- rewards and cleanup occur exactly once at their declared enemy/encounter
-  cadence;
-- mixed kill/removal encounters resolve correctly;
-- Pygame makes focus, active actor, HP/status, and duplicate identity legible;
-- current singleton saves load without data loss, or the implementation
-  explicitly requires a local reset;
-- debug selection can force a specific pair;
-- simulator and logger output distinguish duplicate combatants;
-- scripted bosses and trials remain singleton and retain their existing
-  behavior;
-- curated pair generation is capped at two and can be disabled independently
-  of singleton encounters.
-
-## Validation Plan
-
-Focused implementation validation should grow by slice, beginning with:
-
-```bash
-./.venv/bin/python -m pytest \
-  tests/core/test_battle_engine.py \
-  tests/core/test_combat_result.py \
-  tests/core/test_status_effect_interactions.py
-
-./.venv/bin/python -m pytest \
-  tests/ui_pygame/test_combat_manager.py \
-  tests/ui_pygame/test_combat_view.py
-
-./.venv/bin/python -m pytest \
-  tests/core/test_combat_simulator.py \
-  tests/core/test_combat_simulator_advanced.py \
-  tests/integration/test_battle.py
-```
-
-Every implementation slice should also run `git diff --check`. A full core,
-integration, and frontend regression run is required before curated pairs are
-enabled outside debug mode.
-
-## Improvements
-
-- Add new target scopes `COMBO` (used for some multi-hit,
-  sequential abilities that allows automatic target switching if the enemy is
-  felled before completion), `SPLASH` (for abilities that have an added effect
-  when the main effect hits), `MULTI` (applies to multi-hit abilities
-  that have an area-of-effect) and `MULTI-ALL` (reserved for Photon Sphere)

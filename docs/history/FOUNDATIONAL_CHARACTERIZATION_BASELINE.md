@@ -2,6 +2,9 @@
 
 Status: `Captured From master f7a4b25 Before Gameplay Refactor`
 
+> Historical evidence only. The live contact behavior and acceptance thresholds
+> are owned by [`../CONTACT_MODEL_CONTRACT.md`](../CONTACT_MODEL_CONTRACT.md).
+
 This record freezes the inputs that the foundational implementation must
 preserve or deliberately replace. It is characterization, not a balance
 target: no numeric tuning is authorized from these observations.
@@ -9,7 +12,7 @@ target: no numeric tuning is authorized from these observations.
 ## Reproduction
 
 The machine-readable snapshot is
-[`reports/foundational/characterization_v0.json`](../reports/foundational/characterization_v0.json).
+[`reports/foundational/characterization_v0.json`](../../reports/foundational/characterization_v0.json).
 Regenerate it from the recorded source revision with:
 
 ```bash
@@ -85,9 +88,9 @@ either intermediate percentage in isolation.
 
 The resolution slice replaces the independent legacy gates with exactly one
 shared contact draw per strike. Its reproducible characterization is
-[`contact_axes_characterization_v1.json`](../reports/foundational/contact_axes_characterization_v1.json),
+[`contact_axes_characterization_v1.json`](../../reports/foundational/contact_axes_characterization_v1.json),
 and its committed review artifact is
-[`contact_fit_v1.json`](../reports/foundational/contact_fit_v1.json).
+[`contact_fit_v1.json`](../../reports/foundational/contact_fit_v1.json).
 
 The characterization uses seed `1337`, 1,000 samples per cell, and a neutral
 profile: relevant primary stats are fixed at 14 unless varied by the cell;
@@ -130,9 +133,9 @@ post-contact, or non-contact behavior.
 ## Retained Combat Evidence
 
 The last byte-comparable singleton baseline is
-[`multi_enemy_slice0_pre_refactor.txt`](../reports/balance_baselines/multi_enemy_slice0_pre_refactor.txt);
+[`multi_enemy_slice0_pre_refactor.txt`](../../reports/balance_baselines/multi_enemy_slice0_pre_refactor.txt);
 the post-pilot report is
-[`multi_enemy_slice6_pilot.txt`](../reports/balance_baselines/multi_enemy_slice6_pilot.txt).
+[`multi_enemy_slice6_pilot.txt`](../../reports/balance_baselines/multi_enemy_slice6_pilot.txt).
 These remain the pre-foundation drift references.
 
 Pilot 3's pre-tree, seed-1337 promoted-class evidence remains:
@@ -144,8 +147,8 @@ Pilot 3's pre-tree, seed-1337 promoted-class evidence remains:
 | `burrow_and_bone` | 500 | 65.4% | 2.45x | 65.2% | 0 / 0 | Blocked |
 
 The detailed reports remain
-[`multi_enemy_pilot3_floor3.txt`](../reports/balance_baselines/multi_enemy_pilot3_floor3.txt)
+[`multi_enemy_pilot3_floor3.txt`](../../reports/balance_baselines/multi_enemy_pilot3_floor3.txt)
 and
-[`multi_enemy_pilot3_floor4.txt`](../reports/balance_baselines/multi_enemy_pilot3_floor4.txt).
+[`multi_enemy_pilot3_floor4.txt`](../../reports/balance_baselines/multi_enemy_pilot3_floor4.txt).
 None of this evidence authorizes normal pair generation under the new timing,
 contact, or visibility rules.
